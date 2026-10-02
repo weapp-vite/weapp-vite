@@ -7,7 +7,10 @@ describe('host method namespace', () => {
   it('delegates installation without reading or assigning a same-name property', () => {
     const propertyRead = vi.fn(() => false)
     const propertyWrite = vi.fn()
-    const install = vi.fn()
+    let installed: Record<string, (...args: unknown[]) => unknown> = {}
+    const install = (methods: typeof installed) => {
+      installed = methods
+    }
     const proxy = {}
     const back = vi.fn(function (this: unknown, value: string) {
       return [this, value]
@@ -21,8 +24,7 @@ describe('host method namespace', () => {
     bridgeRuntimeMethodsToTarget(target, runtime)
     expect(propertyRead).not.toHaveBeenCalled()
     expect(propertyWrite).not.toHaveBeenCalled()
-    const [name, method] = install.mock.calls[0]!
-    expect(name).toBe('back')
+    const method = installed.back!
     expect(method.call(target, 'first')).toEqual([proxy, 'first'])
     const replacement = vi.fn(() => 'updated')
     runtime.methods.back = replacement

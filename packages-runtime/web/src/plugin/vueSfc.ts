@@ -184,10 +184,8 @@ export async function transformWebVueSfcScript(options: {
   if (templateIdent) {
     imports.push(`import ${templateIdent} from '${toRelativeImport(filename, filename)}?weapp-web-sfc-template'`)
   }
-  if (styleIdent) {
-    const styleFilename = `${filename}.${styleLanguage}`
-    imports.push(`import ${styleIdent} from '${appendInlineQuery(`${toRelativeImport(filename, styleFilename)}?weapp-web-sfc-style`)}'`)
-  }
+  const styleFilename = `${filename}.${styleLanguage}`
+  imports.push(`import ${styleIdent} from '${appendInlineQuery(`${toRelativeImport(filename, styleFilename)}?weapp-web-sfc-style`)}'`)
   s.prepend(`${imports.join('\n')}\n`)
   if (enableHmr && hmrAcceptCode) {
     s.append(`\n${hmrAcceptCode}\n`)

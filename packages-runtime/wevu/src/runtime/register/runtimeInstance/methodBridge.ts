@@ -68,13 +68,14 @@ export function bridgeRuntimeMethodsToTarget(
   runtime: RuntimeInstance<any, any, any>,
 ) {
   try {
-    const methods = (runtime.methods as unknown) as Record<string, any>
+    const methods = runtime.methods as Record<string, (...args: unknown[]) => unknown>
+    const installMethods: unknown = Reflect.get(target, WEVU_HOST_INSTALL_METHOD_KEY)
+    const hostMethods: typeof methods | undefined = typeof installMethods === 'function' ? {} : undefined
     for (const name of Object.keys(methods)) {
       if (setupInstanceMethodNames.includes(name as SetupInstanceMethodName)) {
         continue
       }
-      const installMethod = (target as any)[WEVU_HOST_INSTALL_METHOD_KEY]
-      if (typeof installMethod === 'function' || typeof (target as any)[name] !== 'function') {
+      if (hostMethods || typeof (target as any)[name] !== 'function') {
         const bridged = function (this: any, ...args: any[]) {
           const runtime = this[WEVU_PUBLIC_RUNTIME_KEY] ?? target[WEVU_PUBLIC_RUNTIME_KEY]
           syncRuntimeNativeInstance(runtime, this)
@@ -83,13 +84,16 @@ export function bridgeRuntimeMethodsToTarget(
             return bound.apply(runtime.proxy, args)
           }
         }
-        if (typeof installMethod === 'function') {
-          installMethod.call(target, name, bridged)
+        if (hostMethods) {
+          hostMethods[name] = bridged
         }
         else {
           ;(target as any)[name] = bridged
         }
       }
+    }
+    if (typeof installMethods === 'function') {
+      installMethods.call(target, hostMethods)
     }
   }
   catch {

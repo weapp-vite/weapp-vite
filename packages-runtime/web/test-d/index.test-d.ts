@@ -9,7 +9,9 @@ import type {
   BeforePageUnloadCallback,
   BeforePageUnloadEvent,
 } from '@weapp-vite/web'
+import type { Plugin } from 'vite'
 import {
+  defineComponent,
   offAppHide,
   offAppRoute,
   offAppRouteDone,
@@ -23,7 +25,8 @@ import {
   onBeforeAppRoute,
   onBeforePageUnload,
 } from '@weapp-vite/web'
-import { expectError, expectType } from 'tsd'
+import { weappWebPlugin } from '@weapp-vite/web/plugin'
+import { expectAssignable, expectError, expectType } from 'tsd'
 
 const showCallback: AppShowCallback = (options) => {
   expectType<AppLaunchOptions>(options)
@@ -70,3 +73,15 @@ expectError(onBeforeAppRoute())
 expectError(onAppRoute())
 expectError(onAppRouteDone())
 expectError(onBeforePageUnload())
+
+expectAssignable<CustomElementConstructor>(defineComponent('typed-page', {
+  kind: 'page',
+  template: () => '',
+}))
+expectAssignable<CustomElementConstructor>(defineComponent('typed-component', {
+  kind: 'component',
+  template: () => '',
+  component: { options: { styleIsolation: 'isolated', addGlobalClass: true } },
+}))
+expectError(defineComponent('typed-app', { kind: 'app', template: () => '' }))
+expectAssignable<Plugin>(weappWebPlugin())

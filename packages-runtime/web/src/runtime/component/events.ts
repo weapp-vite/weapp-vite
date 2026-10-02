@@ -7,7 +7,12 @@ import {
   EVENT_FLAG_ATTRIBUTE_PREFIXES,
 } from './constants'
 
-function parseEventFlags(value: string | null) {
+interface RuntimeEventFlags {
+  catch: boolean
+  capture: boolean
+}
+
+function parseEventFlags(value: string | null): RuntimeEventFlags {
   if (!value) {
     return { catch: false, capture: false }
   }
@@ -17,6 +22,26 @@ function parseEventFlags(value: string | null) {
     catch: tokenSet.has('catch'),
     capture: tokenSet.has('capture'),
   }
+}
+
+interface RuntimeEventBinding {
+  encodedEventName: string
+  flagAttributeValue: string | null
+  handler: (event: unknown) => unknown
+  instance: ComponentPublicInstance
+  dispose: () => void
+}
+
+const runtimeEventBindings = new WeakMap<HTMLElement, Map<string, RuntimeEventBinding>>()
+
+function getEventFlagAttributeValue(element: HTMLElement, encodedEventName: string) {
+  for (const prefix of EVENT_FLAG_ATTRIBUTE_PREFIXES) {
+    const value = element.getAttribute(`${prefix}${encodedEventName}`)
+    if (value !== null) {
+      return value
+    }
+  }
+  return null
 }
 
 export function bindRuntimeEvents(
@@ -30,7 +55,26 @@ export function bindRuntimeEvents(
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT)
   while (walker.nextNode()) {
     const element = walker.currentNode as HTMLElement
+    let bindings = runtimeEventBindings.get(element)
+    if (bindings) {
+      for (const [attribute, binding] of bindings) {
+        const handlerName = element.getAttribute(attribute)
+        if (
+          handlerName
+          && methods[handlerName] === binding.handler
+          && instance === binding.instance
+          && getEventFlagAttributeValue(element, binding.encodedEventName) === binding.flagAttributeValue
+        ) {
+          continue
+        }
+        binding.dispose()
+        bindings.delete(attribute)
+      }
+    }
     for (const attribute of element.getAttributeNames()) {
+      if (bindings?.has(attribute)) {
+        continue
+      }
       const matchedPrefix = EVENT_ATTRIBUTE_PREFIXES.find(prefix => attribute.startsWith(prefix))
       if (!matchedPrefix || EVENT_FLAG_ATTRIBUTE_PREFIXES.some(prefix => attribute.startsWith(prefix))) {
         continue
@@ -45,9 +89,7 @@ export function bindRuntimeEvents(
       }
       const encodedEventName = attribute.slice(matchedPrefix.length)
       const eventName = decodeEventAttributeName(encodedEventName)
-      const flagAttributeValue = EVENT_FLAG_ATTRIBUTE_PREFIXES
-        .map(prefix => element.getAttribute(`${prefix}${encodedEventName}`))
-        .find(value => value !== null) ?? null
+      const flagAttributeValue = getEventFlagAttributeValue(element, encodedEventName)
       const flags = parseEventFlags(flagAttributeValue)
       const listener = nameRuntimeEventHandler((nativeEvent) => {
         if (flags.catch) {
@@ -68,7 +110,15 @@ export function bindRuntimeEvents(
         }
         invokeMiniProgramEventHandler(handler, instance, syntheticEvent, nativeEvent)
       }, eventName)
-      listenRuntimeEvent(element, eventName, listener, flags.capture)
+      const dispose = listenRuntimeEvent(element, eventName, listener, flags.capture)
+      if (!bindings) {
+        bindings = new Map()
+        runtimeEventBindings.set(element, bindings)
+      }
+      bindings.set(attribute, { encodedEventName, flagAttributeValue, handler, instance, dispose })
+    }
+    if (bindings?.size === 0) {
+      runtimeEventBindings.delete(element)
     }
   }
 }

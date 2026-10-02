@@ -221,7 +221,6 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
   const tag = slugify(meta.id, 'wv-page')
   const template = meta.template ?? (() => '')
   const normalized = normalizePageOptions(options)
-  normalized.component.options = { styleIsolation: 'shared', ...normalized.component.options }
   const existing = pageRegistry.get(meta.id)
   if (existing) {
     existing.hooks = normalized.hooks
@@ -229,6 +228,7 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
     const component = augmentPageComponentOptions(normalized.component, existing)
     defineComponent(tag, {
       id: meta.id,
+      kind: 'page',
       template,
       style: meta.style,
       component,
@@ -244,6 +244,7 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
   const component = augmentPageComponentOptions(normalized.component, record)
   defineComponent(tag, {
     id: meta.id,
+    kind: 'page',
     template,
     style: meta.style,
     component,

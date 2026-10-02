@@ -1,0 +1,7 @@
+.local-probe {
+  color: rgb(15 121 37);
+}
+
+.local-theme {
+  --probe-theme: rgb(157 47 113);
+}

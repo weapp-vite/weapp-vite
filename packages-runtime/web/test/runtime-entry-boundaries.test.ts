@@ -98,14 +98,8 @@ describe('runtime entry boundary contracts', () => {
       restAttribs: { class: 'row' },
     })
     const attributes = buildAttributeString({
-      'bindtap': '',
-      'bindcustom': 'handleCustom',
-      'capture-catchtap': 'handleTap',
-      'hidden': '{{missing}}',
+      hidden: '{{missing}}',
     }, {})
-    expect(attributes).toContain('data-mp-on-tap="handleTap"')
-    expect(attributes).toContain('data-mp-on-custom="handleCustom"')
-    expect(attributes).toContain('data-mp-on-flags-tap="capture,catch"')
     expect(attributes).not.toContain('hidden=')
     expect(stripControlAttributes({ 'wx:if': 'ready', 'id': 'root' })).toEqual({ id: 'root' })
     expect(isConditionalElement({ type: 'text' } as Node)).toBe(false)

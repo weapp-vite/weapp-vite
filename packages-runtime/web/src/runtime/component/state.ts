@@ -18,6 +18,7 @@ export interface ComponentRuntimeState {
   id?: string
   templateRef: DefineComponentOptions['template']
   styleRef: string
+  inheritAppStyle: boolean
   componentRef: NormalizedComponentOptions
   observerInitEnabled: boolean
   propertyEntries: PropertyEntry[]
@@ -71,6 +72,14 @@ function createObservedAttributes(propertyEntries: PropertyEntry[]) {
   return propertyEntries.map(([name]) => hyphenate(name))
 }
 
+function inheritsAppStyle(kind: DefineComponentOptions['kind'], component: NormalizedComponentOptions) {
+  if (kind === 'page') {
+    return true
+  }
+  const { styleIsolation, addGlobalClass } = component.options ?? {}
+  return styleIsolation === undefined ? Boolean(addGlobalClass) : styleIsolation !== 'isolated'
+}
+
 export function createComponentRuntimeState(options: DefineComponentOptions) {
   const { component, warnings } = resolveNormalizedComponent(options.component ?? {})
   const propertyEntries = createPropertyEntries(component)
@@ -78,6 +87,7 @@ export function createComponentRuntimeState(options: DefineComponentOptions) {
     id: options.id,
     templateRef: options.template,
     styleRef: options.style ?? '',
+    inheritAppStyle: inheritsAppStyle(options.kind, component),
     componentRef: component,
     observerInitEnabled: Boolean(options.observerInit),
     propertyEntries,
@@ -98,6 +108,7 @@ export function updateComponentRuntimeState(state: ComponentRuntimeState, option
   state.templateRef = options.template
   state.id = options.id
   state.styleRef = options.style ?? ''
+  state.inheritAppStyle = inheritsAppStyle(options.kind, component)
   state.componentRef = component
   state.observerInitEnabled = Boolean(options.observerInit)
   state.lifetimes = component.lifetimes ?? {}

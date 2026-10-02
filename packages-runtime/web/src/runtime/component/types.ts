@@ -64,6 +64,8 @@ export type NormalizedComponentOptions = Omit<ComponentOptions, 'properties'> & 
 
 export interface DefineComponentOptions {
   id?: string
+  /** 注册层提供的样式域；组件仍按 styleIsolation 决定是否接收应用样式。 */
+  kind?: 'page' | 'component'
   template: TemplateRenderer
   style?: string
   component?: ComponentOptions
