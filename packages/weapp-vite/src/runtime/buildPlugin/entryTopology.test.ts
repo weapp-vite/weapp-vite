@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { entryTopologySignature, hasEntryTopologyChange } from './entryTopology'
 
 it('compares entry references independently from presentation fields and key ordering', () => {
@@ -23,4 +23,23 @@ it('compares the previously compiled JSON before reading its new value', async (
   } as any
   expect(await hasEntryTopologyChange(ctx, ['page.json'])).toBe(true)
   expect(await hasEntryTopologyChange(ctx, ['page.json'])).toBe(false)
+})
+
+it('does not parse external JSON dependencies as mini-program entry configuration', async () => {
+  const read = vi.fn(async () => ({ usingComponents: { external: '/unrelated' } }))
+  const ctx = { jsonService: { cache: new Map(), read } } as any
+  expect(await hasEntryTopologyChange(ctx, ['transform-rules.json', 'data.json.ts'])).toBe(false)
+  expect(read).not.toHaveBeenCalled()
+})
+
+it('detects the first configuration added to a previously compiled native entry', async () => {
+  const read = vi.fn(async () => ({ usingComponents: { card: '/card' } }))
+  const ctx = {
+    jsonService: { cache: new Map(), read },
+    runtimeState: { build: { hmr: { entriesMap: new Map([
+      ['/project/pages/home.ts', { path: '/project/pages/home.ts', type: 'page' }],
+    ]) } } },
+  } as any
+  expect(await hasEntryTopologyChange(ctx, ['/project/pages/home.json.ts'])).toBe(true)
+  expect(read).toHaveBeenCalledWith('/project/pages/home.json.ts')
 })

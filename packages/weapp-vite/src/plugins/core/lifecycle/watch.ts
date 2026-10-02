@@ -682,7 +682,8 @@ async function processChangedFile(
   let handledByIndependentWatcher = false
   let independentMeta: SubPackageMetaValue | undefined
   const isPluginManifest = configService.pluginOnly
-    && configSuffixes.some(suffix => relativeSrc === `plugin${suffix}`)
+    && scanService.pluginJsonPath !== undefined
+    && normalizedId === normalizeFsResolvedId(scanService.pluginJsonPath)
   const isConfigDependency = isConfigFileDependencyChange(state, normalizedId) || Boolean(isPluginManifest)
   const isWxmlDependencyFile = isWxmlDependency(ctx, normalizedId)
 

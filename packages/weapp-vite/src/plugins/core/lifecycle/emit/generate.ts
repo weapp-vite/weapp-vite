@@ -492,6 +492,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           state.ctx.configService.outputExtensions?.wxss,
           asset => this.emitFile(asset),
         )
+        // 插件目标提前结束 generate，仍须推进自身构建生命周期；后续增量不能被当成完整首轮发布。
+        state.hmrState.hasBuiltOnce = true
         return
       }
 

@@ -193,6 +193,8 @@ class StatefulHmrSession {
   private rebuiltEntryGraphRevision = 0
   // 分类由实际源事件持有，避免其他侧车事件覆盖全局诊断信息后误判当前批次。
   private readonly sourceDirtyReasons = new Map<string, { reasons: string[] }>()
+  // 原生脚本 patch 只写 delta；独立资产刷新前仍需将这些源码交给完整构建持久化。
+  private readonly unpersistedNativeScripts = new Map<string, object>()
   private readonly sourceChangeListener = (file: string, dirtyReasonSummary: string[]) => {
     this.handleSourceUpdate(file, dirtyReasonSummary)
   }
@@ -347,6 +349,7 @@ class StatefulHmrSession {
     await this.snapshotScheduler.close()
     await this.adapter.close()
     this.sourceDirtyReasons.clear()
+    this.unpersistedNativeScripts.clear()
     await this.outputChain
   }
 
@@ -402,6 +405,13 @@ class StatefulHmrSession {
     if (!getCompilerHmrHost(this.ctx).ownsDependency(normalizedFile) && shouldRebuildStatefulDependency(normalizedFile, this.entryIds, affectedEntries, hasTrackedModule, isEmittedDependency)) {
       this.requestFullBuild([normalizedFile])
       return
+    }
+    if (/\.[cm]?[jt]s$/.test(normalizedFile) && (this.entryIds.has(normalizedFile) || isEmittedDependency)) {
+      this.unpersistedNativeScripts.set(normalizedFile, {})
+      if (this.snapshotScheduler.isPending()) {
+        this.requestFullBuild([normalizedFile])
+        return
+      }
     }
     if (getCompilerHmrHost(this.ctx).ownsDependency(normalizedFile) || dirtyReasonSummary.some(reason => isCompilerContentDirtyReason(reason) || reason.startsWith('entry-mixed-asset:'))) {
       // 同批次的视觉资产由原生更新回调交付，不能提前启动独立快照。
@@ -701,6 +711,10 @@ class StatefulHmrSession {
   }
 
   private requestSnapshotRefresh(files: Iterable<string> = []): void {
+    if (this.unpersistedNativeScripts.size) {
+      this.requestFullBuild([...this.unpersistedNativeScripts.keys(), ...files])
+      return
+    }
     if (this.diagnostics) {
       files = [...files]
       this.diagnostics.request('refresh', files as string[])
@@ -775,6 +789,7 @@ class StatefulHmrSession {
   }, traceBatchId?: number): Promise<void> {
     this.buildEvents.emitEvent({ code: 'START' })
     const entryGraphRevision = this.entryGraphRevision
+    const nativeScriptChanges = new Map(this.unpersistedNativeScripts)
     // 完整构建只消费启动时捕获的事件；同一路径的新事件仍归后续批次所有。
     const sourceChanges = new Map(batch.files.map(file => [file, this.sourceDirtyReasons.get(file)]))
     const releaseSourceChanges = () => {
@@ -825,6 +840,11 @@ class StatefulHmrSession {
           }
           this.resynchronizing = false
           this.rebuiltEntryGraphRevision = entryGraphRevision
+          for (const [file, change] of nativeScriptChanges) {
+            if (this.unpersistedNativeScripts.get(file) === change) {
+              this.unpersistedNativeScripts.delete(file)
+            }
+          }
           releaseSourceChanges()
           this.commitSnapshotMetadata(snapshot, 'full')
           this.buildEvents.emitEvent({ code: 'END' })

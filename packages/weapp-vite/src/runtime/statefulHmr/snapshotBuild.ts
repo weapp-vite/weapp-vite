@@ -28,11 +28,12 @@ export async function buildStatefulHmrSnapshot(
   sources?: ReadonlyMap<string, string | null>,
 ) {
   const ctx = createCompilerContextInstance()
-  const inheritedVueEntryIds = owner
+  const ownerConfig = owner?.configService
+  const inheritedVueEntryIds = owner && ownerConfig
     ? (await Promise.all(Array.from(owner.runtimeState.build.hmr.resolvedEntryMap.keys())
         .filter(id => /\.(?:vue|jsx|tsx)$/.test(id))
         .filter(id => owner.runtimeState.build.hmr.entriesMap.get(
-          owner.configService.relativeAbsoluteSrcRoot(removeExtensionDeep(id)),
+          ownerConfig.relativeAbsoluteSrcRoot(removeExtensionDeep(id)),
         )?.type === 'component')
         .map(async id => await fs.pathExists(id) ? normalizeFsResolvedId(id) : undefined))).filter((id): id is string => Boolean(id))
     : []
@@ -44,7 +45,6 @@ export async function buildStatefulHmrSnapshot(
   }
   return await ctx.autoImportService.runWithoutOutputWrites(async () => {
     ctx.currentBuildTarget = 'app'
-    const ownerConfig = owner?.configService
     await ctx.configService.load(ownerConfig?.options.sourceConfig
       ? {
           ...loadOptions,

@@ -58,7 +58,7 @@ export function isWxmlDependency(ctx: Pick<CompilerContext, 'runtimeState'>, fil
 }
 
 export function observeWxmlDependencies(ctx: Pick<CompilerContext, 'runtimeState'>, listener: (files: string[]) => void) {
-  const state = ctx.runtimeState.wxmlProcessing
+  const state = ctx.runtimeState?.wxmlProcessing
   if (!state) {
     return () => {}
   }

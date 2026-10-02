@@ -12,6 +12,7 @@ import {
 } from '../plugins/autoRoutes.shared'
 import { resolveNpmBuildCandidateDependenciesSync } from '../runtime/npmPlugin/service/dependencies'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../runtime/watch/options'
+import { isCSSRequest } from '../utils/regexp'
 import { bindWxmlDependencyWatch, ownsExternalWxmlWatch } from '../wxml/processing/watch'
 import { connectDevModuleGraphHost } from './host'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
@@ -22,6 +23,7 @@ import {
   parseSidecarSourceRequest,
   resolveVirtualModuleId,
 } from './protocol'
+import { normalizeSourceId } from './traversal'
 
 const DEV_EXTERNAL_PREFIX = '\0weapp-vite:module-graph-external:'
 
@@ -189,6 +191,11 @@ export function createDevModuleGraphPlugin(
       return null
     },
     async transform(code, id) {
+      if (isCSSRequest(id) && !id.startsWith('\0')) {
+        // CSS 本身始终是转换输入。Vite 在本轮没有 watch 声明时不会替换 CSS
+        // 依赖集合，因此保留源码声明，让最后一个外部依赖移除后也由 Vite 清理旧边。
+        this.addWatchFile(normalizeSourceId(id))
+      }
       for (const dependency of ctx.moduleGraphService.getTransformDependencies?.(id) ?? []) {
         this.addWatchFile(dependency)
       }

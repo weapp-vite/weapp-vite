@@ -417,6 +417,7 @@ describe('core lifecycle emit hook extra branches', () => {
 
     expect(filterPluginBundleOutputsMock).toHaveBeenCalledWith(bundle, state.ctx.configService)
     expect(removeImplicitPagePreloadsMock).not.toHaveBeenCalled()
+    expect(state.hmrState.hasBuiltOnce).toBe(true)
   })
 
   it('drops graph-only chunks during metadata-only dev hmr', async () => {
