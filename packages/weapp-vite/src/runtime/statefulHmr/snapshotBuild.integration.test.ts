@@ -58,6 +58,26 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 }
 
 describe('stateful snapshot component metadata', () => {
+  it('reloads app topology metadata between snapshots', async () => {
+    const root = await createProject()
+    const options = { cwd: root, isDev: true, mode: 'development' as const }
+    const readApp = async () => {
+      const snapshot = await buildStatefulHmrSnapshot(options)
+      const outputs = Array.isArray(snapshot.output) ? snapshot.output.flatMap(item => item.output) : 'output' in snapshot.output ? snapshot.output.output : []
+      const app = outputs.find(item => item.fileName === 'app.json') as OutputAsset
+      return JSON.parse(String(app.source)) as { pages?: string[] }
+    }
+
+    expect(await readApp()).toMatchObject({ pages: ['pages/index/index'] })
+    await fs.mkdir(path.join(root, 'src/pages/next'), { recursive: true })
+    await fs.writeFile(path.join(root, 'src/pages/next/index.ts'), 'Page({})')
+    await fs.writeFile(path.join(root, 'src/pages/next/index.json'), '{}')
+    await fs.writeFile(path.join(root, 'src/pages/next/index.wxml'), '<view />')
+    await fs.writeFile(path.join(root, 'src/app.json'), JSON.stringify({ pages: ['pages/index/index', 'pages/next/index'] }))
+
+    expect(await readApp()).toMatchObject({ pages: ['pages/index/index', 'pages/next/index'] })
+  })
+
   it('reuses the CLI dual config source across snapshots without evaluating either file again', async () => {
     const root = await createProject()
     const configFile = path.join(root, 'vite.config.ts')

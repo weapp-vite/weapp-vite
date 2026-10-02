@@ -89,6 +89,18 @@ async function createFixture() {
 }
 
 describe('snapshot source diagnostics', () => {
+  it('invalidates the cached app entry when the app config changes', async () => {
+    const markDirty = vi.fn()
+    const ctx = {
+      configService: { absoluteSrcRoot: '/project/src' },
+      scanService: { markDirty },
+    } as unknown as CompilerContext
+
+    await refreshSnapshotSources(ctx, [{ file: '/project/src/app.json', event: 'update' }], undefined)
+
+    expect(markDirty).toHaveBeenCalledTimes(1)
+  })
+
   it('revokes deleted source and output diagnostics without losing uncovered files', async () => {
     const { ctx, sourceFile, notify } = await createFixture()
     expect(createGlassEaselAnalyzeResult(ctx).diagnostics.map(item => item.code).sort()).toEqual(['GE002', 'GE005', 'GE005'])

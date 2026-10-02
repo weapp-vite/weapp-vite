@@ -5,8 +5,16 @@ import { fs } from '@weapp-core/shared/fs'
 import { invalidateGlassEaselSource } from '../../analyze/glassEasel'
 import { RESOLVED_VIRTUAL_ID } from '../../plugins/autoRoutes.shared'
 import { invalidateFileCache } from '../../plugins/utils/cache'
+import { configSuffixes } from '../../plugins/utils/invalidateEntry/shared'
 import { isTemplate } from '../../utils'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { resolveScanAppBasename } from '../scanPlugin/service'
+
+function isAppConfigSource(ctx: MutableCompilerContext, file: string) {
+  const appBasename = normalizeFsResolvedId(resolveScanAppBasename(ctx.configService!.absoluteSrcRoot))
+  const normalizedFile = normalizeFsResolvedId(file)
+  return configSuffixes.some(suffix => normalizedFile === `${appBasename}${suffix}`)
+}
 
 /** 一次性 snapshot 不经过 watchChange，构建前必须刷新整个批次的真实源状态。 */
 export async function refreshSnapshotSources(
@@ -22,6 +30,12 @@ export async function refreshSnapshotSources(
     invalidateFileCache(file)
   }
   for (const [file, event] of changedFiles) {
+    // module-graph provider 直接调度 snapshot 时不会经过 lifecycle watchChange；
+    // 先失效入口缓存，确保本批次重建读取最新 app.json/app.json.ts，尤其是
+    // 页面拓扑和 workers 配置删除场景。
+    if (isAppConfigSource(ctx, file)) {
+      ctx.scanService?.markDirty()
+    }
     await ctx.autoRoutesService?.handleFileChange(file)
     if (event === 'delete' && !await fs.pathExists(file)) {
       // 完整 snapshot 不再从入口缓存重新发射已经删除的源文件。

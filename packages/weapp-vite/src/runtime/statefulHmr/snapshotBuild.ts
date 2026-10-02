@@ -9,10 +9,13 @@ import { createCompilerContextInstance } from '../../context/createCompilerConte
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { getTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
+import { invalidateFileCache } from '../../plugins/utils/cache'
+import { configSuffixes } from '../../plugins/utils/invalidateEntry/shared'
 import { setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
 import { getWorkerSources } from '../buildPlugin/workerPlan'
+import { resolveScanAppBasename } from '../scanPlugin/service'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
 
@@ -42,6 +45,14 @@ export async function buildStatefulHmrSnapshot(
       : loadOptions)
     if (sources) {
       setCompilerSourceSnapshot(ctx.configService, sources)
+    }
+    // 快照使用独立上下文，但仍共享编译器的文件缓存；拓扑批次可能只收到
+    // 页面目录的 create/delete，不能依赖 app.json 自身也出现在同一批事件中。
+    // 每次快照读取前失效所有受支持的 app 配置后缀，确保 pages/workers 等
+    // 元数据与磁盘上的最新内容一致。
+    const appBasename = normalizeFsResolvedId(resolveScanAppBasename(ctx.configService.absoluteSrcRoot))
+    for (const suffix of configSuffixes) {
+      invalidateFileCache(`${appBasename}${suffix}`)
     }
     await ctx.scanService.loadAppEntry()
     ctx.scanService.loadSubPackages()
