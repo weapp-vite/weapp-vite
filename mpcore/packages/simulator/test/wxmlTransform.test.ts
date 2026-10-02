@@ -46,6 +46,7 @@ describe.each(['node', 'browser'] as const)('%s final template transform parity'
       session.reLaunch(`/pages/${kind}/index`)
       const renamed = await render().$('view#renamed')
       expect(await renamed?.text()).toBe('renamed')
+      expect(await renamed?.attr('data-rule')).toBe('initial')
       expect(await renamed?.attr('data-literal')).toBe('中文 & "单\'双" \\ {{literal}}')
       expect(await renamed?.attr('data-number')).toBe('42')
       expect(await renamed?.attr('data-bool')).toBe('false')

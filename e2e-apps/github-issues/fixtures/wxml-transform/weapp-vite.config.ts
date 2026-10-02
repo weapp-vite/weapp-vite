@@ -1,4 +1,6 @@
 import type { WxmlTransformNode } from 'weapp-vite/config'
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
@@ -29,16 +31,21 @@ export default defineConfig({
         }
       }),
       transform: async (code, ctx) => {
+        ctx.addWatchFile('transform-rules.json')
+        const rules = JSON.parse(await readFile(resolve(ctx.root, 'transform-rules.json'), 'utf8')) as { label: string }
         const editNode = (node: WxmlTransformNode) => {
           if (node.hasAttribute('data-remove-subtree')) {
             node.remove()
             return
           }
-          if (node.hasAttribute('data-subtree-visited'))
+          if (node.hasAttribute('data-subtree-visited')) {
             throw new Error('subtree processed twice')
+          }
           node.setAttribute('data-subtree-visited', true)
-          if (node.tagName === 'view')
+          node.setAttribute('data-rule', rules.label)
+          if (node.tagName === 'view') {
             node.removeAttribute('data-testid')
+          }
           if (node.tagName === 'text' && node.hasAttribute('data-use-view')) {
             node.renameTag('view')
             node.removeAttribute('data-use-view')
@@ -55,8 +62,9 @@ export default defineConfig({
         }
         return ctx.edit(code, async (node) => {
           for (const child of node.children) {
-            if (child.tagName === 'text')
+            if (child.tagName === 'text') {
               child.setAttribute('data-direct-child', true)
+            }
           }
           editNode(node)
           await node.walk(editNode)

@@ -44,6 +44,7 @@ describe('e2e suite manifest', () => {
     'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
     'ide/issue-1072-json-context.runtime.test.ts',
     'ide/wxml-transform.runtime.test.ts',
+    'ide/wxml-transform-watch.runtime.test.ts',
     'ide/template-retail-checkout.runtime.test.ts',
     'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
     'ide/wevu-subpackage-placement.runtime.test.ts',
