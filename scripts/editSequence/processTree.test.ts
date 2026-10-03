@@ -44,6 +44,7 @@ it('queries the registered Windows process tree without starting the CIM provide
   const script = Buffer.from(args!.at(-1)!, 'base64').toString('utf16le')
   expect(script).toContain('CreateToolhelp32Snapshot')
   expect(script).toContain('WorkingSet64')
+  expect(script).toContain('weapp-vite-edit-sequence-process-tree-v2.dll')
   expect(script).toContain('-RootProcessId 10')
   expect(script).not.toContain('Get-CimInstance')
   expect(options).toMatchObject({ timeout: 10_000, throwOnError: true })

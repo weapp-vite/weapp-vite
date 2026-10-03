@@ -1,9 +1,16 @@
-param([uint32]$RootProcessId)
+param([uint32]$RootProcessId, [switch]$Warm)
 
 $ErrorActionPreference = 'Stop'
 
+$assemblyPath = Join-Path ([IO.Path]::GetTempPath()) 'weapp-vite-edit-sequence-process-tree-v2.dll'
+
 # 直接读取内核进程快照，避免 WMI/CIM provider 的冷启动进入采样路径。
-Add-Type -ReferencedAssemblies System.Core.dll -TypeDefinition @'
+if (Test-Path -LiteralPath $assemblyPath) {
+  Add-Type -Path $assemblyPath
+}
+else {
+  $temporaryAssemblyPath = "$assemblyPath.$PID.tmp"
+  Add-Type -ReferencedAssemblies System.Core.dll -OutputAssembly $temporaryAssemblyPath -TypeDefinition @'
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -90,6 +97,21 @@ public static class EditSequenceProcessTree {
   }
 }
 '@
+  try {
+    Move-Item -LiteralPath $temporaryAssemblyPath -Destination $assemblyPath -Force
+  }
+  catch {
+    # 另一个并发采样进程可能已经发布了同一版本的缓存；当前进程已加载自己的临时 assembly。
+    if (-not (Test-Path -LiteralPath $assemblyPath)) {
+      throw
+    }
+    Remove-Item -LiteralPath $temporaryAssemblyPath -Force -ErrorAction SilentlyContinue
+  }
+}
+
+if ($Warm) {
+  return
+}
 
 $observations = [EditSequenceProcessTree]::Read($RootProcessId)
 ConvertTo-Json -InputObject @($observations) -Compress
