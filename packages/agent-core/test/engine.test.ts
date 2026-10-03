@@ -15,22 +15,32 @@ import { z } from 'zod'
 import {
   compactMessages,
   configSchema,
+  runAgent as executeAgent,
   fileTools,
   hash,
-  runAgent,
   Session,
 } from '../src/index.js'
+import { createTaskScope } from './taskScope'
 
 let root: string
-beforeEach(async () => {
+let tasks: ReturnType<typeof createTaskScope>
+beforeEach(async ({ signal }) => {
+  tasks = createTaskScope(signal)
   root = await mkdtemp(path.join(tmpdir(), 'weapp-engine-'))
   process.env.WEAPP_AGENT_STATE_DIR = path.join(root, 'state')
 })
 afterEach(async () => {
+  await tasks.close()
   delete process.env.WEAPP_AGENT_STATE_DIR
   delete process.env.TEST_API_KEY
   await rm(root, { recursive: true, force: true })
 })
+function runAgent(options: Parameters<typeof executeAgent>[0]) {
+  return tasks.run(() => executeAgent({
+    ...options,
+    signal: options.signal ? AbortSignal.any([tasks.signal, options.signal]) : tasks.signal,
+  }))
+}
 const config = configSchema.parse({
   model: { provider: 'openai', name: 'test' },
 })
@@ -53,7 +63,8 @@ function call(id: string, name: string, input: unknown): ModelChunk {
     call: { id, name, input },
   }
 }
-it('completes a read/edit/verify loop, preserves existing user content, and resumes without replay', async () => {
+// 两轮会话逐条 fsync 日志；Windows 完整 coverage 曾超过默认 5 秒，保留真实持久化并单独分配集成预算。
+it('completes a read/edit/verify loop, preserves existing user content, and resumes without replay', { timeout: 30_000 }, () => tasks.run(async () => {
   const source = 'user customization\ncount: 0\n'
   await writeFile(path.join(root, 'page.ts'), source)
   const model = scripted([
@@ -110,7 +121,7 @@ it('completes a read/edit/verify loop, preserves existing user content, and resu
     ),
   ).toBe(true)
   expect(checks).toBe(1)
-})
+}))
 it('requires verification after edits even if the model tries to finish early', async () => {
   const model = scripted([
     [call('w', 'create_file', { path: 'new.ts', content: 'export {}' })],

@@ -7,13 +7,16 @@ import { createTempFixtureProject, createTestCompilerContext, getFixture } from 
 const outputs = ['pages/native/index.wxml', 'pages/vue/index.wxml', 'sub/index.wxml', 'independent/index.wxml']
 
 async function waitForOutputs(root: string, label: string) {
+  let contents: string[] = []
   await expect.poll(async () => {
     // 原生写出期间文件可能暂时不完整；标签与转换次数必须检查同一次读取。
-    return Promise.all(outputs.map(async (file) => {
-      const code = await fs.readFile(path.join(root, 'dist', file), 'utf8').catch(() => '')
+    contents = await Promise.all(outputs.map(file => fs.readFile(path.join(root, 'dist', file), 'utf8').catch(() => '')))
+    return contents.map((code, index) => {
+      const file = outputs[index]
       return { file, label: code.includes(`data-rule="${label}"`), transforms: code.match(/<!-- transform-once -->/g)?.length ?? 0 }
-    }))
+    })
   }, { timeout: 45_000, interval: 100 }).toEqual(outputs.map(file => ({ file, label: true, transforms: 1 })))
+  return contents
 }
 
 describe('WXML transform external dependencies', { concurrent: false }, () => {
@@ -69,7 +72,8 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
       }
       const rules = path.join(project.tempDir, 'transform-rules.json')
       const independentInput = await fs.readFile(independentSource, 'utf8')
-      const previousOutputs = await Promise.all(outputs.map(file => fs.readFile(path.join(project.tempDir, 'dist', file), 'utf8')))
+      // 直接保存已验证的读取结果，避免再次读盘命中原生写出的 truncate 窗口。
+      const previousOutputs = await waitForOutputs(project.tempDir, 'initial')
       await fs.appendFile(independentSource, '<view data-subtree-visited />')
       await expect.poll(() => failures.length, { timeout: 45_000 }).toBeGreaterThan(0)
       expect(await Promise.all(outputs.map(file => fs.readFile(path.join(project.tempDir, 'dist', file), 'utf8')))).toEqual(previousOutputs)

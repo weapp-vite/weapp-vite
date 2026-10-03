@@ -7,9 +7,18 @@ import { createServer } from 'vite'
 import { expect, it } from 'vitest'
 import { weapp } from '../src/vite'
 
-it.each([true, false])('starts stateful in the native host, updates topology and closes (middleware: %s)', async (middlewareMode) => {
+it.each([
+  { middlewareMode: true, holdReplacement: false },
+  { middlewareMode: false, holdReplacement: false },
+  { middlewareMode: true, holdReplacement: true },
+  { middlewareMode: false, holdReplacement: true },
+])('starts stateful in the native host, updates topology and closes (middleware: $middlewareMode, hold replacement: $holdReplacement)', async ({ middlewareMode, holdReplacement }) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-stateful-host-'))
   let server: ViteDevServer | undefined
+  const replacementReady = Promise.withResolvers<void>()
+  const releaseReplacement = Promise.withResolvers<void>()
+  let starts = 0
+  let restartRequestedDuringReplacement = false
   try {
     for (const [file, content] of Object.entries({
       'package.json': '{"name":"stateful-host-fixture","type":"module"}',
@@ -31,7 +40,23 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
     const start = () => createServer({
       root,
       configFile: path.join(root, 'vite.config.mjs'),
-      plugins: [weapp()],
+      plugins: [weapp(), {
+        name: 'test:hold-topology-replacement',
+        enforce: 'post',
+        async configureServer(replacement) {
+          if (!holdReplacement || ++starts !== 2) {
+            return
+          }
+          const restart = replacement.restart.bind(replacement)
+          replacement.restart = (...args) => {
+            restartRequestedDuringReplacement = true
+            return restart(...args)
+          }
+          // 新产物已发布，但父重启仍在等待 configureServer；用门闩固定连续保存窗口。
+          replacementReady.resolve()
+          await releaseReplacement.promise
+        },
+      }],
       logLevel: 'silent',
       server: { middlewareMode, port: 0, host: '127.0.0.1' },
       weapp: { srcRoot: 'src', autoRoutes: false, vue: { enable: false }, hmr: { runtime: 'stateful-experimental' } },
@@ -54,8 +79,15 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
     await writeFile(path.join(root, 'src/pages/extra/index.wxml'), '<view>{{message}}</view>')
     await writeFile(path.join(root, 'src/app.json'), '{"pages":["pages/home/index","pages/extra/index"]}')
     await expect.poll(() => readFile(path.join(root, 'dist/pages/extra/index.js'), 'utf8'), { timeout: 15_000 }).toContain('stateful-added')
+    if (holdReplacement) {
+      await replacementReady.promise
+    }
     await writeFile(path.join(root, 'src/app.json'), '{"pages":["pages/home/index"]}')
     await rm(path.join(root, 'src/pages/extra'), { recursive: true })
+    if (holdReplacement) {
+      await expect.poll(() => restartRequestedDuringReplacement, { timeout: 15_000 }).toBe(true)
+      releaseReplacement.resolve()
+    }
     await expect.poll(() => readFile(path.join(root, 'dist/app.json'), 'utf8'), { timeout: 15_000 }).not.toContain('pages/extra/index')
     await expect.poll(() => readFile(path.join(root, 'dist/pages/extra/index.js'), 'utf8').catch(error => error.code), { timeout: 15_000 }).toBe('ENOENT')
     await server.restart()
@@ -77,6 +109,7 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
     await expect(start()).rejects.toThrow('Skyline 项目请显式选择')
   }
   finally {
+    releaseReplacement.resolve()
     await server?.close()
     await rm(root, { recursive: true, force: true })
   }
