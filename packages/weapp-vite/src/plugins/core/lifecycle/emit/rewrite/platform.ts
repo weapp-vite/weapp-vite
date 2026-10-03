@@ -11,7 +11,7 @@ import {
   resolveNpmDependencyId,
 } from '../../../../../utils/npmImport'
 import { applyMagicStringChunkRewrite } from '../../../../../utils/outputChunk'
-import { createMiniProgramPlatformApiRewrite, rewriteMiniProgramPlatformApiAccess } from '../../platformApiRewrite'
+import { createMiniProgramPlatformApiRewrite, createPlatformApiAccessCollector, rewriteMiniProgramPlatformApiAccess } from '../../platformApiRewrite'
 import {
   BROWSER_GLOBAL_HOST_TERNARY_RE,
   DYNAMIC_GLOBAL_RESOLUTION_RE,
@@ -172,8 +172,10 @@ function createPlatformNpmImportRewrite(
     const ast = parseJsLike(code)
     const magicString = new MagicString(code)
     let mutated = false
+    const platformApiAccess = createPlatformApiAccessCollector()
 
     traverse(ast as any, {
+      ...platformApiAccess.visitor,
       CallExpression(path: any) {
         const callee = path.node?.callee
         if (!callee || callee.type !== 'Identifier' || callee.name !== 'require') {
@@ -213,8 +215,9 @@ function createPlatformNpmImportRewrite(
       },
     })
 
-    if (mutated) {
-      return magicString
+    return {
+      magicString: mutated ? magicString : undefined,
+      hasPlatformApiAccess: platformApiAccess.hasPlatformApiAccess(),
     }
   }
   catch {
@@ -231,7 +234,7 @@ export function rewriteChunkNpmImportsByPlatform(
     astEngine?: 'babel' | 'oxc'
   },
 ) {
-  return createPlatformNpmImportRewrite(platform, code, dependencies, mode, options)?.toString() ?? code
+  return createPlatformNpmImportRewrite(platform, code, dependencies, mode, options)?.magicString?.toString() ?? code
 }
 
 export function rewriteBundleNpmImportsByPlatform(
@@ -259,17 +262,20 @@ export function rewriteBundleNpmImportsByPlatform(
       astEngine: options?.astEngine,
       cache: options?.analysisCache,
     })
-    const magicString = createPlatformNpmImportRewrite(platform, chunk.code, dependencies, mode, {
+    const rewrite = createPlatformNpmImportRewrite(platform, chunk.code, dependencies, mode, {
       ...options,
       analysis,
     })
-    if (!magicString) {
+    if (!rewrite) {
       continue
     }
-    applyMagicStringChunkRewrite(chunk, magicString)
-    rememberChunkScriptAnalysis(chunk, analysis, {
-      cache: options?.analysisCache,
-    })
+    if (rewrite.magicString) {
+      applyMagicStringChunkRewrite(chunk, rewrite.magicString)
+    }
+    rememberChunkScriptAnalysis(chunk, {
+      ...analysis,
+      hasPlatformApiAccess: rewrite.hasPlatformApiAccess,
+    }, { cache: options?.analysisCache })
   }
 }
 

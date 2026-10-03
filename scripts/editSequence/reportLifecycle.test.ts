@@ -55,6 +55,35 @@ it('does not declare success until collection and cleanup have completed', async
   expect(entry.status).toBe('passed')
 })
 
+it('preserves and redacts nested worker causes and aggregate failures', async () => {
+  const root = path.join(os.tmpdir(), 'nested-sequence-evidence')
+  const entry = { status: 'failed' }
+  const error = new AggregateError([
+    new Error(`publication failed in ${root}`, { cause: new Error(`worker timed out at ${encodeURIComponent(root)}`) }),
+    new Error(`cleanup failed in ${root}`),
+  ], 'worker observation and cleanup failed')
+  await completeSequenceEntry(entry, {
+    fixtureRoot: () => root,
+    run: async () => { throw new Error('edit failed before comparison', { cause: error }) },
+    profile: async () => {},
+    cleanup: async () => {},
+  })
+
+  expect(entry).toMatchObject({ status: 'failed', errors: [{
+    phase: 'run',
+    message: 'edit failed before comparison',
+    cause: {
+      message: 'worker observation and cleanup failed',
+      errors: [
+        { message: 'publication failed in <fixture>', cause: { message: 'worker timed out at <fixture>' } },
+        { message: 'cleanup failed in <fixture>' },
+      ],
+    },
+  }] })
+  expect(JSON.stringify(entry)).not.toContain(root)
+  expect(JSON.stringify(entry)).not.toContain(encodeURIComponent(root))
+})
+
 it.each(['profile', 'cleanup'] as const)('fails completed observations when %s fails', async (failedPhase) => {
   const entry = { status: 'failed', steps: ['all observations passed'] }
   const fail = async () => {

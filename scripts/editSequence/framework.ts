@@ -62,7 +62,8 @@ export class FrameworkSequenceSession {
           writeBundle: (_options, bundle) => { this.measurements.publish(Object.values(bundle)) },
         }],
         weapp: { srcRoot: 'src', vue: { enable: true }, autoRoutes: false, hmr: { runtime: this.stateful ? 'stateful-experimental' : 'classic' } },
-        server: { host: '127.0.0.1', port: 0, hmr: false },
+        // classic 通过 Vite hotUpdate 调度快照；只关闭浏览器 WebSocket，保留文件更新事件。
+        server: { host: '127.0.0.1', port: 0, hmr: true, ws: false },
         build: { outDir: this.outDir, emptyOutDir: false, minify: false, sourcemap: false },
       })
       await this.server.listen()
@@ -75,11 +76,11 @@ export class FrameworkSequenceSession {
       throw new Error('Framework resource fixture requires an explicit message literal')
     }
     if (!first && !this.stateful) {
-      await this.waitUntil(async () => (await readFile(path.join(this.outDir, `${routes[0]}.js`), 'utf8')).includes(expected), input.signal)
+      await this.waitUntil('classic output publication', async () => (await readFile(path.join(this.outDir, `${routes[0]}.js`), 'utf8')).includes(expected), input.signal)
       // classic 的宿主重载边界只重建测试 VM；Vite/编译器/worker 始终保持运行。
       await this.runtime.start()
     }
-    await this.waitUntil(async () => await this.runtime.currentMessage() === expected, input.signal)
+    await this.waitUntil('runtime message update', async () => await this.runtime.currentMessage() === expected, input.signal)
     return observeSettledSequencePublication(async () => {
       if (this.stateful) {
         const api: unknown = this.server?.config.plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-session')?.api
@@ -102,13 +103,18 @@ export class FrameworkSequenceSession {
     return { watchers: this.watchers.size, engines: this.engines.size }
   }
 
-  private async waitUntil(predicate: () => Promise<boolean>, signal: AbortSignal) {
-    await bounded(async () => {
-      while (!await predicate()) {
-        signal.throwIfAborted()
-        await new Promise(resolve => setTimeout(resolve, 20))
-      }
-    }, signal)
+  private async waitUntil(stage: string, predicate: () => Promise<boolean>, signal: AbortSignal) {
+    try {
+      await bounded(async () => {
+        while (!await predicate()) {
+          signal.throwIfAborted()
+          await new Promise(resolve => setTimeout(resolve, 20))
+        }
+      }, signal)
+    }
+    catch (error) {
+      throw new Error(`Framework observation failed while waiting for ${stage}`, { cause: error })
+    }
   }
 
   private async writeSources(input: SequenceInput) {

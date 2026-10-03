@@ -5,6 +5,7 @@ import path from 'pathe'
 import { toPosixPath } from '../../../../../utils'
 import { parseJsLike, traverse } from '../../../../../utils/babel'
 import { applyMagicStringChunkRewrite } from '../../../../../utils/outputChunk'
+import { createPlatformApiAccessCollector } from '../../platformApiRewrite'
 import {
   getRequireImportLiteral,
   normalizeWeappLocalNpmImport,
@@ -120,8 +121,10 @@ export function rewriteChunkNpmImportsToLocalRoot(
     const magicString = new MagicString(chunk.code)
     let mutated = false
     const localizedRequireBindings = new Set<string>()
+    const platformApiAccess = createPlatformApiAccessCollector()
 
     traverse(ast as any, {
+      ...platformApiAccess.visitor,
       VariableDeclarator(path: any) {
         const id = path.node?.id
         const init = path.node?.init
@@ -225,10 +228,11 @@ export function rewriteChunkNpmImportsToLocalRoot(
 
     if (mutated) {
       applyMagicStringChunkRewrite(chunk, magicString)
-      rememberChunkScriptAnalysis(chunk, analysis, {
-        cache: options?.analysisCache,
-      })
     }
+    rememberChunkScriptAnalysis(chunk, {
+      ...analysis,
+      hasPlatformApiAccess: platformApiAccess.hasPlatformApiAccess(),
+    }, { cache: options?.analysisCache })
   }
   catch {
   }

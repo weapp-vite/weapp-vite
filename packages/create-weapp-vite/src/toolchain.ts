@@ -6,11 +6,12 @@ import { satisfies } from 'semver'
 import { parseDocument } from 'yaml'
 import { TEMPLATE_CATALOG } from './generated/catalog'
 import { findPnpmWorkspaceRoot } from './pnpmBuildPolicy'
+import vitePlusVersions from './vitePlusVersions.json'
 
 export type Toolchain = 'wv' | 'vite' | 'vite-plus'
 
-const VITE_PLUS_VERSION = '1.0.0'
-const VITE_PLUS_VITEST_VERSION = '5.0.1'
+const VITE_PLUS_VERSION = vitePlusVersions.version
+const VITE_PLUS_VITEST_VERSION = vitePlusVersions.vitest
 const VITE_PLUS_CORE = `npm:@voidzero-dev/vite-plus-core@${VITE_PLUS_VERSION}`
 
 /** 工具链与业务模板正交，非法选择必须在复制模板前失败。 */

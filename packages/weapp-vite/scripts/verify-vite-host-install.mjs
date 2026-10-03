@@ -6,8 +6,10 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 消费安装需在各平台正确解析 npm/pnpm 启动器。
 import { execa } from 'execa'
+import { readPackedPackageJsonFromTarball } from '../../../scripts/print-rolldown-versions.mjs'
 import { inspectConsumerInstallation, profileConsumerStartup, verifyConsumerExports, verifyConsumerNegativeControls } from './consumerEvidence.mjs'
 import { createConsumerTemporaryRoot, packConsumerTarballs, readConsumerTarballs, verifyConsumerTarballProvenance } from './consumerTarballs.mjs'
+import { resolveConsumerToolchain } from './consumerToolchains.mjs'
 import { verifyDependencySemantics } from './verify-dependency-semantics.mjs'
 import { verifyPlatformConsumer } from './verify-vite-host-platform.mjs'
 import { verifyTailwindConsumer } from './verify-vite-host-tailwind.mjs'
@@ -31,21 +33,12 @@ try {
     : await packConsumerTarballs(repoRoot, temporaryRoot, entryPackages)
   const candidates = { ...dependencies }
   // 所有候选已是直接 tarball 依赖；额外覆盖整个闭包会触发 npm 11.6 的 override-set 冲突。
-  const overrides = {}
+  const toolchainSelection = resolveConsumerToolchain(toolchain, readPackedPackageJsonFromTarball(dependencies['weapp-vite'].slice(5)))
+  const { overrides } = toolchainSelection
+  Object.assign(dependencies, toolchainSelection.dependencies)
   dependencies.typescript = '6.0.3'
   if (!runtime || runtimeSuite === 'web') {
     dependencies.tailwindcss = '4.3.3'
-  }
-  if (toolchain !== 'wv') {
-    Object.assign(dependencies, { vite: '8.3.1', vitest: '5.0.2' })
-  }
-  if (toolchain === 'vite-plus') {
-    Object.assign(dependencies, {
-      'vite': 'npm:@voidzero-dev/vite-plus-core@1.0.0',
-      'vite-plus': '1.0.0',
-      'vitest': '5.0.1',
-    })
-    overrides.vite = 'npm:@voidzero-dev/vite-plus-core@1.0.0'
   }
   if (runtimeSuite === 'plugin') {
     // 消费用例固定公开版本，不依赖维护仓库 node_modules 的安装状态。

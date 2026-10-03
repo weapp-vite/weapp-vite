@@ -135,6 +135,7 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
   let scheduled: ReturnType<typeof setTimeout> | undefined
   let active: Promise<WeappViteTestArtifact> | undefined
   let dirty = false
+  let forced = false
   let closing: Promise<void> | undefined
   const watchedInputs = () => artifactInputs.get(artifact)!.paths.filter(file => file !== artifact.miniprogramRootPath
     && (file === artifact.sourceRootPath || !file.startsWith(`${artifact.sourceRootPath}${path.sep}`)))
@@ -149,15 +150,25 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
         || file === artifact.miniprogramRootPath || file.startsWith(`${artifact.miniprogramRootPath}${path.sep}`)
     },
   })
-  const rebuild = (): Promise<WeappViteTestArtifact> => {
+  const requestRebuild = (force: boolean): Promise<WeappViteTestArtifact> => {
     if (closed) {
       return Promise.reject(new Error('The weapp-vite test artifact watcher has already closed.'))
     }
     dirty = true
+    forced ||= force
     if (!active) {
       active = (async () => {
         do {
           dirty = false
+          const forceBuild = forced
+          forced = false
+          // 文件通知只表示可能变脏；迟到或重复通知不能为相同输入再次发布产物。
+          if (!forceBuild && await isTestArtifactCurrent(artifact)) {
+            continue
+          }
+          if (closed) {
+            break
+          }
           artifact = await buildTestArtifact(options)
           if (!closed) {
             const next = watchedInputs()
@@ -183,7 +194,7 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
     }
     scheduled = setTimeout(() => {
       scheduled = undefined
-      void rebuild().catch((error) => {
+      void requestRebuild(false).catch((error) => {
         if (!closed) {
           options.onError?.(error)
         }
@@ -200,7 +211,7 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
       watcher.once('error', reject)
     })
     if (!await isTestArtifactCurrent(artifact)) {
-      await rebuild()
+      await requestRebuild(false)
     }
   }
   catch (error) {
@@ -231,6 +242,6 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
       })()
       return closing
     },
-    rebuild,
+    rebuild: () => requestRebuild(true),
   }
 }

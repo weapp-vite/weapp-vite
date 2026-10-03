@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -6,7 +8,7 @@ const closeSessionMock = vi.hoisted(() => vi.fn(async () => undefined))
 const createCompilerContextMock = vi.hoisted(() => vi.fn(async (options: any) => ({
   buildService: { build: buildMock },
   configService: {
-    absoluteSrcRoot: '/project/src',
+    absoluteSrcRoot: path.join(options.cwd, 'src'),
     outDir: options.inlineConfig.build.outDir,
   },
 })))
@@ -93,37 +95,48 @@ describe('test artifact build API', () => {
       appConfigPath: path.join(testArtifactPath, 'app.json'),
       miniprogramRootPath: testArtifactPath,
       projectPath,
-      sourceRootPath: '/project/src',
+      sourceRootPath: path.join(projectPath, 'src'),
     })
   })
 
   it('rebuilds the complete artifact after watched source changes', async () => {
     vi.useFakeTimers()
     const { watchTestArtifact } = await import('./testArtifact')
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'artifact-watch-'))
+    const sourceRoot = path.join(cwd, 'src')
+    const sourceFile = path.join(sourceRoot, 'page.ts')
+    await fs.mkdir(sourceRoot)
+    await fs.writeFile(sourceFile, 'one')
     let markRebuilt: (() => void) | undefined
     const rebuilt = new Promise<void>((resolve) => {
       markRebuilt = resolve
     })
     const onRebuilt = vi.fn(() => markRebuilt?.())
     const watcher = await watchTestArtifact({
-      cwd: '/project',
+      cwd,
       onRebuilt,
       skipNpm: true,
     })
 
-    expect(buildMock).toHaveBeenCalledTimes(1)
-    expect(watcherMock.watch).toHaveBeenCalledWith(expect.arrayContaining(['/project/src', path.join(projectPath, 'vite.config.ts')]), {
-      ignoreInitial: true,
-      ignored: expect.any(Function),
-    })
+    try {
+      expect(buildMock).toHaveBeenCalledTimes(1)
+      expect(watcherMock.watch).toHaveBeenCalledWith(expect.arrayContaining([sourceRoot, path.join(cwd, 'vite.config.ts')]), {
+        ignoreInitial: true,
+        ignored: expect.any(Function),
+      })
 
-    watcherMock.handlers.get('change')?.()
-    await vi.advanceTimersByTimeAsync(20)
-    await rebuilt
-    expect(buildMock).toHaveBeenCalledTimes(2)
-    expect(onRebuilt).toHaveBeenCalledWith(watcher.artifact)
+      await fs.writeFile(sourceFile, 'two')
+      watcherMock.handlers.get('change')?.()
+      await vi.advanceTimersByTimeAsync(20)
+      await rebuilt
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      expect(onRebuilt).toHaveBeenCalledWith(watcher.artifact)
+    }
+    finally {
+      await watcher.close()
+      await fs.rm(cwd, { force: true, recursive: true })
+    }
 
-    await watcher.close()
     expect(watcherMock.close).toHaveBeenCalledTimes(1)
   })
 

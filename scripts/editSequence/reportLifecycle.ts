@@ -1,11 +1,11 @@
+import type { SequenceErrorEvidence } from './errorEvidence'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { redactSequenceEvidenceText } from './evidenceRedaction'
+import { serializeSequenceError } from './errorEvidence'
+import { redactSequenceEvidence } from './evidenceRedaction'
 
-export interface SequenceEntryFailure {
+export interface SequenceEntryFailure extends SequenceErrorEvidence {
   phase: 'run' | 'profile' | 'cleanup'
-  message: string
-  stack?: string
 }
 
 interface SequenceEntryState {
@@ -29,8 +29,7 @@ export async function completeSequenceEntry(entry: SequenceEntryState, actions: 
     catch (error) {
       entry.errors.push({
         phase,
-        message: redactSequenceEvidenceText(error instanceof Error ? error.message : String(error), actions.fixtureRoot()),
-        stack: error instanceof Error && error.stack ? redactSequenceEvidenceText(error.stack, actions.fixtureRoot()) : undefined,
+        ...redactSequenceEvidence(serializeSequenceError(error), actions.fixtureRoot()),
       })
     }
   }

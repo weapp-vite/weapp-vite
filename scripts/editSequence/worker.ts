@@ -4,6 +4,7 @@ import process from 'node:process'
 import path from 'pathe'
 import { BuildSequenceSession } from './build'
 import { observeCompiler } from './compiler'
+import { serializeSequenceError } from './errorEvidence'
 import { observeProcessResources, SequenceGcObserver } from './measurement'
 
 interface Request {
@@ -74,7 +75,7 @@ process.on('message', (request: Request | { type: 'close' }) => {
       } })
     }
     catch (error) {
-      process.send?.({ id: request.id, error: error instanceof Error ? error.stack : String(error) })
+      process.send?.({ id: request.id, error: serializeSequenceError(error) })
     }
   })
 })

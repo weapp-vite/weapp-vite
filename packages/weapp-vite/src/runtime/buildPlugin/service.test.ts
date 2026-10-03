@@ -2367,7 +2367,7 @@ describe('runtime buildPlugin service', () => {
     directory.resolve()
     await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(1))
     const first = JSON.parse(appendFileMock.mock.calls[0][1]) as HmrProfileJsonSample
-    expect(first).toMatchObject({ schemaVersion: 1, status: 'complete', eventId: 'first', dirtyReasonSummary: ['first:1'] })
+    expect(first).toMatchObject({ schemaVersion: 1, pipeline: 'standard', status: 'complete', eventId: 'first', dirtyReasonSummary: ['first:1'] })
     expect(ctx.runtimeState.build.hmr.profile.eventId).toBe('second')
     watcher.emit('END')
     await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(2))
@@ -2384,7 +2384,7 @@ describe('runtime buildPlugin service', () => {
     watcher.emitPayload({ code: 'ERROR', error: new Error('syntax error') })
     await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(1))
     const sample = JSON.parse(appendFileMock.mock.calls[0][1]) as HmrProfileJsonSample
-    expect(sample).toMatchObject({ schemaVersion: 1, status: 'failed' })
+    expect(sample).toMatchObject({ schemaVersion: 1, pipeline: 'standard', status: 'failed' })
     expect(sample.totalMs).toBeUndefined()
     expect(sample.elapsedMs).toBeGreaterThanOrEqual(0)
     expect(ctx.runtimeState.build.hmr.recentProfiles).toHaveLength(0)

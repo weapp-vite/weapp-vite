@@ -81,6 +81,7 @@ export interface BuildService {
 }
 
 interface HmrProfileJsonSample extends HmrProfileRecordMetadata {
+  pipeline: 'standard'
   timestamp: string
   totalMs: number
   eventId?: string
@@ -505,6 +506,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : undefined
     return {
       schemaVersion: 1,
+      pipeline: 'standard',
       sessionId: profileSessionId,
       buildId: profile.buildId,
       batchId: profile.batchId,

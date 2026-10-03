@@ -1,15 +1,17 @@
 import type { ChildProcess } from 'node:child_process'
 import type { SequenceInput, SequenceObserver } from './driver'
+import type { SequenceErrorEvidence } from './errorEvidence'
 import type { SequenceMeasurement } from './measurement'
 import { fork } from 'node:child_process'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { restoreSequenceError } from './errorEvidence'
 import { observeProcessTree } from './processTree'
 
 interface WorkerReply<T> {
   id: number
   value?: T
-  error?: string
+  error?: SequenceErrorEvidence
   measurement?: SequenceMeasurement
 }
 
@@ -72,7 +74,7 @@ export function createProcessObserver<T>(mode: SequenceProcessMode, root: string
         return
       }
       if (message.error) {
-        result.reject(new Error(message.error))
+        result.reject(restoreSequenceError(message.error))
       }
       else {
         void (async () => {
