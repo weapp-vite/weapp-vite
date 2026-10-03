@@ -17,6 +17,7 @@ on:
           - shared-layout-windows
           - lifecycle
           - runtime-publication
+          - native-source-notification
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.hmr-diagnostic || 'full' }}
@@ -26,6 +27,98 @@ permissions:
   contents: read
 
 jobs:
+  native-source-notification-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'native-source-notification'
+    name: Native Notification Diagnostic (Ubuntu / Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CANDIDATE_SHA: a88e9e260ccc684f4cf3501a38fc919d3a63cc42
+    steps:
+      - name: Check out the temporary diagnostic driver
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: driver
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check out the exact unmodified product candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: a88e9e260ccc684f4cf3501a38fc919d3a63cc42
+          path: candidate
+          persist-credentials: false
+      - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+        with:
+          package_json_file: candidate/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: candidate/pnpm-lock.yaml
+      - name: Install the candidate dependencies
+        working-directory: candidate
+        run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Build the candidate package closure
+        working-directory: candidate
+        run: pnpm exec turbo run build --filter=weapp-vite...
+      - name: Prepare immutable in-memory observation
+        working-directory: candidate
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { execFileSync } from 'node:child_process'
+          import { cp, mkdir, writeFile } from 'node:fs/promises'
+          import os from 'node:os'
+          const product = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+          const driver = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: '../driver', encoding: 'utf8' }).trim()
+          assert.equal(product, process.env.CANDIDATE_SHA)
+          assert.equal(execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(), '')
+          const changed = execFileSync('git', ['diff', '--name-only', product, driver], { cwd: '../driver', encoding: 'utf8' }).trim().split('\n')
+          assert(changed.every(file => file === '.github/workflows/ci-e2e.yml' || file.startsWith('scripts/diagnostics/nativeNotification/')))
+          await mkdir('.tmp/native-source-notification-probe', { recursive: true })
+          await cp('../driver/scripts/diagnostics/nativeNotification', '.tmp/native-source-notification-probe', { recursive: true })
+          await writeFile('.tmp/native-source-notification-probe/dispatch.json', JSON.stringify({
+            candidate: product, driver, changed, node: process.version, platform: process.platform,
+            architecture: process.arch, cpu: os.cpus()[0]?.model, runnerImage: process.env.ImageOS,
+            scope: 'diagnostic only; original app-json then native script, two edit/restore cycles each, one serial control/probe pair; no formal performance verdict',
+          }, null, 2) + '\n')
+          NODE
+          node .tmp/native-source-notification-probe/prepare.mjs
+          node .tmp/native-source-notification-probe/prepareHarness.mjs
+          node .tmp/native-source-notification-probe/selfCheck.mjs
+      - name: Observe the same sequence without changing product files
+        working-directory: candidate
+        env:
+          WEAPP_NATIVE_NOTIFICATION_SLOT: '1'
+        run: node .tmp/native-source-notification-probe/runPair.mjs
+      - name: Analyze available notification boundaries
+        if: always()
+        working-directory: candidate
+        run: |
+          node --input-type=module <<'NODE'
+          import { readdir } from 'node:fs/promises'
+          import { spawnSync } from 'node:child_process'
+          const runs = (await readdir('.tmp')).filter(name => name.startsWith('native-source-notification-run-'))
+          for (const run of runs) {
+            const result = spawnSync(process.execPath, ['.tmp/native-source-notification-probe/analyze.mjs', `.tmp/${run}`], { stdio: 'inherit' })
+            if (result.status !== 0) process.exitCode = result.status ?? 1
+          }
+          NODE
+      - name: Preserve every result and failed attempt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-notification-ubuntu-${{ github.sha }}
+          include-hidden-files: true
+          path: |
+            candidate/.tmp/native-source-notification-run-*/**
+            candidate/.tmp/native-source-notification-probe/dispatch.json
+            candidate/.tmp/native-source-notification-probe/manifest.json
+            candidate/.tmp/native-source-notification-probe/harness-manifest.json
+          if-no-files-found: error
+          retention-days: 90
+
   runtime-publication-diagnostic:
     if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'runtime-publication'
     name: Runtime Publication Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})
