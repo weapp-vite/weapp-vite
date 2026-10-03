@@ -35,6 +35,7 @@
     "build": "tsdown",
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "lint": "eslint .",
     "prebuild": "node ../../scripts/weapp-agent/sync-skill.mjs",
     "test:pack": "node ../../scripts/weapp-agent/smoke-pack.mjs"

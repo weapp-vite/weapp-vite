@@ -1,5 +1,5 @@
+import type { PendingToolCall, SessionSummary } from './session/types.js'
 import type { Message, SessionEvent, ToolCall } from './types.js'
-import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
 import {
   mkdir,
@@ -13,6 +13,11 @@ import path from 'node:path'
 import process from 'node:process'
 import { hash, stateRoot } from './config.js'
 import { redactor, redactValue } from './security.js'
+import { readSessionJournal } from './session/reader.js'
+import { reduceSession } from './session/reducer.js'
+import { inspectSession } from './session/summary.js'
+
+export type { PendingToolCall, SessionSummary } from './session/types.js'
 
 export class Session {
   private sequence = 0
@@ -62,29 +67,22 @@ export class Session {
       await unlink(lock)
       this.handle = await open(lock, 'wx', 0o600)
     }
-    await this.handle.writeFile(String(process.pid))
     try {
+      await this.handle.writeFile(String(process.pid))
       if (resume) {
-        const raw = await readFile(this.filename, 'utf8')
-        const end = raw.lastIndexOf('\n') + 1
-        const complete = raw.slice(0, end)
-        if (end !== raw.length) {
-          await truncate(this.filename, Buffer.byteLength(complete))
+        const journal = await readSessionJournal(this.filename, this.id)
+        const state = reduceSession(journal.events)
+        if (journal.incompleteTail) {
+          await truncate(this.filename, journal.completeBytes)
         }
-        for (const line of complete.split('\n').filter(Boolean)) {
-          const event = JSON.parse(line) as SessionEvent
-          if (
-            event.version !== 1
-            || event.sessionId !== this.id
-            || event.sequence !== this.sequence + 1
-          ) {
-            throw new Error('Invalid session journal; refusing to replay it.')
-          }
-          this.sequence = event.sequence
+        this.sequence = journal.events.at(-1)?.sequence ?? 0
+        this.events.length = 0
+        this.messages.length = 0
+        for (const event of journal.events) {
           this.events.push(event)
-          if (event.type === 'message') {
-            this.messages.push(event.data.message as Message)
-          }
+        }
+        for (const message of state.messages) {
+          this.messages.push(message)
         }
       }
       else {
@@ -127,14 +125,11 @@ export class Session {
   }
 
   unresolved(): ToolCall[] {
-    const results = new Set(
-      this.messages.filter(m => m.role === 'tool').map(m => m.callId),
-    )
-    return this.messages.flatMap(m =>
-      m.role === 'assistant'
-        ? (m.calls ?? []).filter(call => !results.has(call.id))
-        : [],
-    )
+    return this.recovery()
+  }
+
+  recovery(): PendingToolCall[] {
+    return reduceSession(this.events).pendingCalls
   }
 
   async close(): Promise<void> {
@@ -155,5 +150,32 @@ export class Session {
     catch {
       return []
     }
+  }
+
+  static async inspect(root: string, id: string): Promise<SessionSummary> {
+    return inspectSession(new Session(root, id).filename, id)
+  }
+
+  static async listSummaries(root: string): Promise<SessionSummary[]> {
+    const ids = await Session.list(root)
+    const summaries = await Promise.all(ids.map(async (id): Promise<SessionSummary> => {
+      try {
+        return await Session.inspect(root, id)
+      }
+      catch {
+        return {
+          sessionId: id,
+          updatedAt: null,
+          prompt: '',
+          status: 'invalid',
+          steps: 0,
+          usage: { inputTokens: 0, outputTokens: 0 },
+          pendingCalls: [],
+          diagnostics: ['Could not read this session journal.'],
+        }
+      }
+    }))
+    return summaries.sort((a, b) => (b.updatedAt ? Date.parse(b.updatedAt) : -Infinity) - (a.updatedAt ? Date.parse(a.updatedAt) : -Infinity)
+      || a.sessionId.localeCompare(b.sessionId))
   }
 }

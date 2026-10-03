@@ -1,21 +1,16 @@
 import type {
   Approval,
   Approver,
-  RunResult,
   SessionEvent,
 } from '@weapp-agent/core'
+import type { InteractiveRunner } from './ui/commands.js'
 import { Box, render, Text, useApp, useInput } from 'ink'
 import TextInput from 'ink-text-input'
 import { useRef, useState } from 'react'
+import { runInteractiveTask } from './ui/commands.js'
 
-export type InteractiveRunner = (
-  prompt: string,
-  sessionId: string | undefined,
-  signal: AbortSignal,
-  onEvent: (e: SessionEvent) => void,
-  approve: Approver,
-) => Promise<RunResult>
-export function eventText(event: SessionEvent): string {
+export type { InteractiveRunner } from './ui/commands.js'
+export function eventText(event: SessionEvent, mode: 'cli' | 'interactive' = 'cli'): string {
   if (event.type === 'text.delta') {
     return String(event.data.text)
   }
@@ -29,6 +24,16 @@ export function eventText(event: SessionEvent): string {
   }
   if (event.type === 'context.compacted') {
     return '\n· Earlier context summarized\n'
+  }
+  if (event.type === 'recovery.required') {
+    const calls = Array.isArray(event.data.calls)
+      ? event.data.calls as Array<{ name: string, state?: string }>
+      : []
+    const summary = calls.map(call => `  ${call.name}: ${call.state === 'not_executed' ? 'not executed' : 'outcome unknown'}`).join('\n')
+    const command = mode === 'interactive'
+      ? '/acknowledge-interrupted [follow-up task]'
+      : `weapp-agent resume ${event.sessionId} --acknowledge-interrupted [follow-up task]`
+    return `\nRecovery requires inspection:\n${summary}\nInspect the working tree and tool outcomes, then enter ${command}. Completed calls will not be replayed.\n`
   }
   if (event.type === 'run.completed') {
     return `\n[${event.data.status}]\n`
@@ -99,12 +104,13 @@ function App({
         }
       })
     try {
-      const result = await runner(
+      const result = await runInteractiveTask(
+        runner,
         prompt,
         session,
         abort.signal,
         (event) => {
-          append(eventText(event))
+          append(eventText(event, 'interactive'))
           if (event.type === 'run.started') {
             setSession(event.sessionId)
           }

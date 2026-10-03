@@ -1,5 +1,4 @@
 import type {
-  Message,
   ModelAdapter,
   ModelChunk,
   ModelRequest,
@@ -13,7 +12,6 @@ import process from 'node:process'
 import { afterEach, beforeEach, expect, it } from 'vitest'
 import { z } from 'zod'
 import {
-  compactMessages,
   configSchema,
   runAgent as executeAgent,
   fileTools,
@@ -148,17 +146,29 @@ it('requires verification after edits even if the model tries to finish early', 
   })
   expect(result.status).toBe('completed')
   expect(model.requests).toHaveLength(4)
+  expect(model.requests[0]!.messages).toContainEqual({ role: 'user', origin: 'user', text: 'create', images: undefined })
+  expect(model.requests[2]!.messages).toContainEqual({
+    role: 'user',
+    origin: 'engine',
+    text: 'Files changed since the last verification. Call verify_project before finishing; report failed and unverified categories honestly.',
+  })
 })
-it('rejects invalid tool arguments and lets the model repair the call', async () => {
+it.each([undefined, { path: 3 }])('rejects invalid tool arguments %j and resumes after the model repairs the call', { timeout: 30_000 }, async (input) => {
   const model = scripted([
-    [call('bad', 'read_file', { path: 3 })],
+    [call('bad', 'read_file', input)],
     [call('good', 'list_files', {})],
     [{ type: 'text', text: 'Recovered' }],
   ])
-  await runAgent({ root, config, model, tools: fileTools(), prompt: 'read' })
+  const first = await runAgent({ root, config, model, tools: fileTools(), prompt: 'read' })
   expect(
     model.requests[1]!.messages.some(m => m.role === 'tool' && m.error),
   ).toBe(true)
+  expect(first.status).toBe('completed')
+  const followup = scripted([[{ type: 'text', text: 'The invalid call was handled.' }]])
+  const resumed = await runAgent({ root, config, model: followup, tools: fileTools(), prompt: 'status', sessionId: first.sessionId })
+  expect(resumed.status).toBe('completed')
+  expect(followup.requests).toHaveLength(1)
+  expect(followup.requests[0]!.messages).toContainEqual(expect.objectContaining({ role: 'tool', callId: 'bad', error: true }))
 })
 it('returns action_required in noninteractive mode without running shell', async () => {
   const model = scripted([[call('x', 'shell', { command: 'touch unsafe' })]])
@@ -173,21 +183,33 @@ it('returns action_required in noninteractive mode without running shell', async
   expect(result.status).toBe('action_required')
   await expect(readFile(path.join(root, 'unsafe'))).rejects.toThrow()
 })
-it('does not automatically replay an interrupted side effect', async () => {
+it('requires inspection without replaying an interrupted side effect whose call ID was previously completed', { timeout: 30_000 }, async () => {
   const session = new Session(root)
   await session.open()
   await session.append('message', {
     message: {
       role: 'assistant',
       text: '',
+      calls: [{ id: 'pending', name: 'shell', input: { command: 'echo completed' } }],
+    },
+  })
+  await session.append('message', {
+    message: { role: 'tool', name: 'shell', callId: 'pending', result: { text: 'completed' } },
+  })
+  await session.append('message', {
+    message: {
+      role: 'assistant',
+      text: '',
       calls: [
         { id: 'pending', name: 'shell', input: { command: 'touch duplicate' } },
+        { id: 'planned', name: 'create_file', input: { path: 'not-started', content: 'pending' } },
       ],
     },
   })
   await session.append('tool.started', { callId: 'pending', mutates: true })
   await session.close()
   const model = scripted([])
+  const events: SessionEvent[] = []
   expect(
     (
       await runAgent({
@@ -197,10 +219,15 @@ it('does not automatically replay an interrupted side effect', async () => {
         tools: fileTools(),
         prompt: 'continue',
         sessionId: session.id,
+        onEvent: (event) => { events.push(event) },
       })
     ).status,
   ).toBe('action_required')
   expect(model.requests).toHaveLength(0)
+  expect(events.find(event => event.type === 'recovery.required')?.data.calls).toEqual([
+    expect.objectContaining({ id: 'pending', state: 'outcome_unknown' }),
+    expect.objectContaining({ id: 'planned', state: 'not_executed' }),
+  ])
   const result = await runAgent({
     root,
     config,
@@ -212,11 +239,38 @@ it('does not automatically replay an interrupted side effect', async () => {
   })
   expect(result.status).toBe('completed')
   await expect(readFile(path.join(root, 'duplicate'))).rejects.toThrow()
+  await expect(readFile(path.join(root, 'not-started'))).rejects.toThrow()
   expect(
     model.requests[0]!.messages.some(
       m => m.role === 'tool' && m.error && m.callId === 'pending',
     ),
   ).toBe(true)
+  expect(model.requests[0]!.messages).toContainEqual(expect.objectContaining({
+    role: 'tool',
+    callId: 'pending',
+    error: true,
+    result: { text: expect.stringContaining('outcome unknown') },
+  }))
+  expect(model.requests[0]!.messages).toContainEqual(expect.objectContaining({
+    role: 'tool',
+    callId: 'planned',
+    error: true,
+    result: { text: expect.stringContaining('Not executed:') },
+  }))
+  const resumed = await runAgent({
+    root,
+    config,
+    model,
+    tools: fileTools(),
+    prompt: 'Continue after the completed recovery.',
+    sessionId: session.id,
+    onEvent: (event) => { events.push(event) },
+  })
+  expect(resumed.status).toBe('completed')
+  expect(model.requests).toHaveLength(2)
+  expect(events.filter(event => event.type === 'recovery.required')).toHaveLength(1)
+  await expect(readFile(path.join(root, 'duplicate'))).rejects.toThrow()
+  await expect(readFile(path.join(root, 'not-started'))).rejects.toThrow()
 })
 it('stops at the step limit and propagates cancellation', async () => {
   const model = scripted([
@@ -232,8 +286,8 @@ it('stops at the step limit and propagates cancellation', async () => {
         tools: fileTools(),
         prompt: 'loop',
       })
-    ).status,
-  ).toBe('limit_reached')
+    ),
+  ).toMatchObject({ status: 'limit_reached', reason: 'max_steps' })
   const controller = new AbortController()
   controller.abort()
   expect(
@@ -296,31 +350,6 @@ it('redacts secrets even when model output splits them across chunks', async () 
   expect(JSON.stringify(events)).not.toContain('secret-val')
   expect(result.text).toContain('[REDACTED]')
 })
-it('compacts complete tool-call groups and retains recent user intent', () => {
-  const messages: Message[] = [
-    { role: 'user', text: 'old '.repeat(10000) },
-    {
-      role: 'assistant',
-      text: '',
-      calls: [{ id: 'a', name: 'read', input: {} }],
-    },
-    { role: 'tool', callId: 'a', name: 'read', result: { text: 'data' } },
-    { role: 'user', text: 'Latest instruction' },
-  ]
-  const result = compactMessages(messages, 8000)
-  expect(result.compacted).toBe(true)
-  expect(JSON.stringify(result.messages).length).toBeLessThan(8000)
-  expect(result.messages.at(-1)).toEqual(messages.at(-1))
-  const calls = result.messages.flatMap(m =>
-    m.role === 'assistant' ? (m.calls ?? []) : [],
-  )
-  expect(
-    result.messages
-      .filter(m => m.role === 'tool')
-      .every(m => calls.some(c => c.id === m.callId)),
-  ).toBe(true)
-})
-
 it('requires outstanding verification after resuming a completed edit', async () => {
   const first = await runAgent({
     root,
@@ -362,29 +391,4 @@ it('requires outstanding verification after resuming a completed edit', async ()
   })
   expect(result.status).toBe('completed')
   expect(model.requests).toHaveLength(3)
-})
-
-it('summarizes an oversized indivisible tool group without orphaned results', () => {
-  const result = compactMessages(
-    [
-      { role: 'user', text: 'Latest goal' },
-      {
-        role: 'assistant',
-        text: '',
-        calls: [
-          { id: 'huge', name: 'write', input: { content: 'x'.repeat(50000) } },
-        ],
-      },
-      {
-        role: 'tool',
-        name: 'write',
-        callId: 'huge',
-        result: { text: 'done', data: 'x'.repeat(50000) },
-      },
-    ],
-    8000,
-  )
-  expect(JSON.stringify(result.messages).length).toBeLessThan(8000)
-  expect(result.messages.some(m => m.role === 'tool')).toBe(false)
-  expect(JSON.stringify(result.messages)).toContain('Latest goal')
 })

@@ -19,6 +19,16 @@ Set your provider API key in the environment. Project configuration never stores
 
 [Documentation](https://vite.weapp.dev/guide/agent/) · [Model-free acceptance](https://vite.weapp.dev/guide/acceptance) · [Source and validation](https://github.com/weapp-vite/weapp-vite/tree/main/docs/migrations/weapp-agent)
 
+Inspect a saved session before continuing:
+
+```sh
+weapp-agent sessions --details
+weapp-agent session SESSION_ID --json
+weapp-agent resume SESSION_ID "Continue the task"
+```
+
+Inspection is read-only and requires no model credentials. Context compression preserves complete user requests and images; if they exceed `contextCharacters`, the run stops with `reason: context_budget` before calling the model. Increase the budget to resume. Interrupted calls are never replayed automatically: inspect their outcomes, then use `resume --acknowledge-interrupted` or `/acknowledge-interrupted [prompt]` in the interactive terminal. See the [session guide](https://vite.weapp.dev/guide/agent/sessions).
+
 MIT. Tool permissions are not an operating-system sandbox.
 
 ## Use with an existing AI host
