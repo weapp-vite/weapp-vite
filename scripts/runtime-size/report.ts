@@ -73,6 +73,15 @@ export function renderRuntimeSizeMarkdown(current: RuntimeSizeReport, baseline?:
         : renderMeasurement(tier.production.gzipBytes, baselineTier?.production.gzipBytes)
       lines.push(`| ${tier.label} | ${renderMeasurement(tier.dev.bytes, baselineTier?.dev.bytes)} | ${renderMeasurement(tier.production.bytes, baselineTier?.production.bytes)} | ${gzip} |`)
     }
+    if (target.tiers.every(tier => tier.capabilityAttribution)) {
+      lines.push('', '| 能力比较 | 生产字节增量 | 实际保留模块 | 未归因字节 |', '| --- | ---: | ---: | ---: |')
+      for (const tier of target.tiers) {
+        const attribution = tier.capabilityAttribution!
+        const comparison = attribution.comparison
+        const label = comparison ? `${comparison.tier} → ${tier.id}` : `${tier.id}（起点）`
+        lines.push(`| ${label} | ${comparison ? formatBytes(comparison.bytesDelta) : '不适用'} | ${attribution.modules.length} | ${attribution.unattributedBytes} |`)
+      }
+    }
   }
 
   lines.push(
@@ -82,6 +91,7 @@ export function renderRuntimeSizeMarkdown(current: RuntimeSizeReport, baseline?:
     `- 当前 commit：\`${current.commit}\``,
     ...(baseline ? [`- 对比基线：\`${baseline.commit}\``] : []),
     '- 阶梯使用具名导入模拟正常 tree-shaking；完整 Provider 行表示全部能力上限。',
+    '- JSON 保存每阶梯的生成入口、模块归属、引用链、保留/移除模块和明确比较基线；公共入口与内部入口的差值不是新增业务能力的成本。',
     '- Web 最小应用包含 app 注册桥；典型页面及以上同时包含组件/页面注册桥。',
     '- 小程序仅统计产物字节；Web gzip 使用 level 9。',
     '',
