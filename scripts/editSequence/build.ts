@@ -447,6 +447,8 @@ export class BuildSequenceSession {
     }
     this.engine = await createViteDevEngine({
       cwd: this.root,
+      // 此 JS/compiler fixture 显式提供全部编译选项，不读取外围工作区的 TS 项目引用。
+      tsconfig: false,
       input: { main: path.join(this.root, 'main.js') },
       transform: { define: config.define },
       plugins,

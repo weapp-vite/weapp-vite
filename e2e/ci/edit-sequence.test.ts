@@ -1,4 +1,5 @@
 import type { SequenceStepResult } from '../../scripts/editSequence/measurement'
+import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { BuildSequenceSession } from '../../scripts/editSequence/build'
@@ -17,6 +18,28 @@ interface BuildSnapshot {
 // 单个序列首次分歧即失败；独立测试保证该失败不遮蔽其他动作族。
 // 这是 compiler/真实 engine 集成校验，不替代 DevTools 的宿主、页面及热更新最终验收。
 describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, () => {
+  it('isolates the native fixture from an unrelated parent TypeScript project', async () => {
+    const project = await createSequenceProject()
+    const root = path.join(project.root, 'native-fixture')
+    const session = new BuildSequenceSession('stateful-experimental', root, path.join(root, 'dist'))
+    try {
+      await mkdir(path.join(project.root, 'unrelated'))
+      await writeFile(path.join(project.root, 'tsconfig.json'), JSON.stringify({ references: [{ path: './unrelated' }], files: [] }))
+      await writeFile(path.join(project.root, 'unrelated/tsconfig.json'), JSON.stringify({ extends: './generated/tsconfig.json' }))
+      const snapshot = await session.observe({ files: buildSequences[0]!.files, step: 0, signal: AbortSignal.timeout(10_000) })
+      assertSuccessfulSequenceBuild(snapshot)
+      expect(snapshot.published?.semantics).toMatchObject({ value: 'one' })
+    }
+    finally {
+      try {
+        await session.close()
+      }
+      finally {
+        await project.close()
+      }
+    }
+  }, 15_000)
+
   for (const sequence of compilerSequences) {
     it(sequence.name, async () => {
       const project = await createSequenceProject()
