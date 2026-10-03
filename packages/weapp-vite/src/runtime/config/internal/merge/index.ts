@@ -4,6 +4,7 @@ import type { MutableCompilerContext } from '../../../../context'
 import type { SubPackageMetaValue } from '../../../../types'
 import type { WevuRuntimeAliasMode } from '../../../packageAliases'
 import type { LoadConfigResult } from '../../types'
+import type { createBuiltinAliasResolver } from '../packageResolution'
 import { platformBackendRegistry } from '../../../../backends'
 import { createSharedBuildOutput } from '../../../sharedBuildConfig'
 import { ensureConfigService, mergeInlineConfig } from './inline'
@@ -16,6 +17,7 @@ export interface MergeFactoryOptions {
   getOptions: () => LoadConfigResult
   setOptions: (value: LoadConfigResult) => void
   injectBuiltinAliases: (config: InlineConfig, wevuRuntime?: WevuRuntimeAliasMode) => void
+  resolveBuiltinAliases?: ReturnType<typeof createBuiltinAliasResolver>['resolve']
   getDefineImportMetaEnv: () => Record<string, any>
   applyRuntimePlatform: (runtime: 'miniprogram' | 'web') => void
   oxcRolldownPlugin: RolldownPluginOption<any> | undefined
@@ -34,6 +36,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
     getOptions,
     setOptions,
     injectBuiltinAliases,
+    resolveBuiltinAliases,
     getDefineImportMetaEnv,
     applyRuntimePlatform,
     oxcRolldownPlugin,
@@ -79,6 +82,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
         isDev: currentOptions.isDev,
         applyRuntimePlatform,
         injectBuiltinAliases,
+        resolveBuiltinAliases,
         getDefineImportMetaEnv,
         setOptions: next => setOptions({
           ...currentOptions,

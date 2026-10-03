@@ -22,6 +22,7 @@ const {
   resolveBuiltinPackageAliasesMock,
   injectBuiltinAliasesMock,
   loadConfigFactoryOptionsMock,
+  mergeFactoryOptionsMock,
 } = vi.hoisted(() => ({
   configureLoggerMock: vi.fn(),
   loggerInfoMock: vi.fn(),
@@ -34,6 +35,9 @@ const {
   resolveBuiltinPackageAliasesMock: vi.fn(() => []),
   injectBuiltinAliasesMock: vi.fn((entries: any[]) => entries),
   loadConfigFactoryOptionsMock: {
+    value: undefined as any,
+  },
+  mergeFactoryOptionsMock: {
     value: undefined as any,
   },
 }))
@@ -83,6 +87,7 @@ vi.mock('./internal/loadConfig', () => ({
 
 vi.mock('./internal/merge', () => ({
   createMergeFactories: vi.fn((args: any) => {
+    mergeFactoryOptionsMock.value = args
     mergeWebMock.mockImplementation(() => {
       args.applyRuntimePlatform('web')
     })
@@ -217,6 +222,73 @@ describe('createConfigService', () => {
       resetTakeImportRegistry()
       fs.rmSync(root, { recursive: true, force: true })
     }
+  })
+
+  it('resolves builtin aliases only for the loaded project and reuses them while merging that configuration', async () => {
+    const root = path.resolve('fixtures/alias-owner')
+    const config = { weapp: {} }
+    loadConfigImplMock.mockImplementationOnce(async (input) => {
+      loadConfigFactoryOptionsMock.value.injectBuiltinAliases(config)
+      return createBaseOptions({ cwd: input.cwd, isDev: input.isDev, config })
+    })
+    const service = createConfigService(createCtx())
+    expect(resolveBuiltinPackageAliasesMock).not.toHaveBeenCalled()
+
+    await service.load({ cwd: root, isDev: true })
+    mergeMock.mockImplementationOnce(() => {
+      mergeFactoryOptionsMock.value.injectBuiltinAliases(config)
+      return config
+    })
+    service.merge(undefined)
+
+    expect(resolveBuiltinPackageAliasesMock).toHaveBeenCalledExactlyOnceWith({ cwd: root, isDev: true, wevuRuntime: undefined })
+    expect(injectBuiltinAliasesMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('refreshes aliases on each load and project change while separating runtime modes', async () => {
+    const root = path.resolve('fixtures/alias-reload')
+    const otherRoot = path.resolve('fixtures/alias-other')
+    loadConfigImplMock.mockImplementation(async (input) => {
+      const config = { weapp: {} }
+      loadConfigFactoryOptionsMock.value.injectBuiltinAliases(config)
+      return createBaseOptions({ cwd: input.cwd, isDev: input.isDev, config })
+    })
+    const service = createConfigService(createCtx())
+    resolveBuiltinPackageAliasesMock.mockClear()
+
+    await service.load({ cwd: root, isDev: true })
+    mergeFactoryOptionsMock.value.injectBuiltinAliases({ weapp: {} })
+    mergeFactoryOptionsMock.value.injectBuiltinAliases({ weapp: {} }, 'build')
+    mergeFactoryOptionsMock.value.injectBuiltinAliases({ weapp: {} }, 'build')
+    expect(resolveBuiltinPackageAliasesMock.mock.calls).toEqual([
+      [{ cwd: root, isDev: true, wevuRuntime: undefined }],
+      [{ cwd: root, isDev: true, wevuRuntime: 'build' }],
+    ])
+
+    await service.load({ cwd: root, isDev: true })
+    await service.load({ cwd: otherRoot, isDev: false })
+    expect(resolveBuiltinPackageAliasesMock.mock.calls.slice(2)).toEqual([
+      [{ cwd: root, isDev: true, wevuRuntime: undefined }],
+      [{ cwd: otherRoot, isDev: false, wevuRuntime: undefined }],
+    ])
+  })
+
+  it('invalidates alias ownership for public options replacement but preserves internal merge updates', async () => {
+    const root = path.resolve('fixtures/alias-options')
+    const config = { weapp: {} }
+    loadConfigImplMock.mockImplementationOnce(async (input) => {
+      loadConfigFactoryOptionsMock.value.injectBuiltinAliases(config)
+      return createBaseOptions({ cwd: input.cwd, isDev: input.isDev, config })
+    })
+    const service = createConfigService(createCtx())
+    await service.load({ cwd: root, isDev: true })
+    mergeFactoryOptionsMock.value.setOptions({ ...service.options, currentSubPackageRoot: 'pkg' })
+    mergeFactoryOptionsMock.value.injectBuiltinAliases(config)
+    expect(resolveBuiltinPackageAliasesMock).toHaveBeenCalledTimes(1)
+
+    service.options = { ...service.options }
+    mergeFactoryOptionsMock.value.injectBuiltinAliases(config)
+    expect(resolveBuiltinPackageAliasesMock).toHaveBeenCalledTimes(2)
   })
 
   it.each([
