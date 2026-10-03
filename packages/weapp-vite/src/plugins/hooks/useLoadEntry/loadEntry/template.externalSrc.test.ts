@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { expect, it, vi } from 'vitest'
 import logger from '../../../../logger'
+import { compilerSourceId } from '../../../compilerPlugin/hmr'
 import { setCompilerSourceSnapshot } from '../../../utils/sourceSnapshot'
 import { createScriptSetupAnalyzer } from './scriptSetupAnalysis'
 import { applyScriptSetupUsingComponents } from './template'
@@ -18,9 +19,9 @@ vi.mock('../../../../logger', () => ({ default: { warn: vi.fn() } }))
 it('reanalyzes resolved external blocks while preserving every src lookup and missing-source warning', async () => {
   const temporaryRoot = await realpath(await mkdtemp(path.join(os.tmpdir(), 'script-setup-src-')))
   try {
-    const vueEntryPath = path.join(temporaryRoot, 'index.vue')
-    const templateId = path.join(temporaryRoot, 'template.html')
-    const scriptId = path.join(temporaryRoot, 'setup.ts')
+    const vueEntryPath = compilerSourceId(path.join(temporaryRoot, 'index.vue'))
+    const templateId = compilerSourceId(path.join(temporaryRoot, 'template.html'))
+    const scriptId = compilerSourceId(path.join(temporaryRoot, 'setup.ts'))
     const snapshots = new Map<string, string | null>([
       [templateId, '<DemoCard />'],
       [scriptId, 'import DemoCard from "./Original.vue"'],

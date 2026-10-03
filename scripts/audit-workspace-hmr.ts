@@ -1,11 +1,12 @@
 /* eslint-disable ts/no-use-before-define */
 import type { WorkspaceHmrBaseline, WorkspaceHmrThresholds } from './workspace-hmr/baseline'
 import type { DynamicReactDeliveryEvidence, DynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
+import type { DistFileSnapshot } from './workspace-hmr/output'
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
 import { execFile as execFileCallback } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
-import { access, appendFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { access, appendFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
@@ -27,6 +28,7 @@ import {
 } from './workspace-hmr/baseline'
 import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable } from './workspace-hmr/cleanup'
 import { prepareDynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
+import { listFiles, snapshotDist, waitForInitialDistSnapshot, waitForStableDistSnapshot } from './workspace-hmr/output'
 import { isDynamicReactTemplateOutput } from './workspace-hmr/reactTemplate'
 import { renderWorkspaceHmrExecution, summarizeWorkspaceHmrExecution } from './workspace-hmr/report'
 import {
@@ -118,11 +120,6 @@ interface HmrProfileSample {
   emittedCount?: number
   dirtyReasonSummary?: string[]
   pendingReasonSummary?: string[]
-}
-
-interface DistFileSnapshot {
-  hash: string
-  size: number
 }
 
 interface ImpactFile {
@@ -599,8 +596,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
 
   try {
     const startupStart = performance.now()
-    await dev.waitFor(waitForFile(path.join(distRoot, 'app.json'), startupTimeoutMs), `${project.id} app.json`)
-    await waitForStableDistSnapshot(distRoot, startupDistStableMs, startupTimeoutMs)
+    await waitForInitialDistSnapshot(dev, distRoot, startupDistStableMs, startupTimeoutMs)
     await sleep(settleMs)
     project.hmrRuntime = resolveWorkspaceHmrRuntime(await pathExists(path.join(
       distRoot,
@@ -1214,57 +1210,6 @@ function isLowSignalAuditSource(filePath: string) {
   return normalizePath(filePath).split('/').includes('blank')
 }
 
-async function snapshotDist(distRoot: string) {
-  const snapshot = new Map<string, DistFileSnapshot>()
-  for (const filePath of await listFiles(distRoot)) {
-    const fileStat = await stat(filePath)
-    if (!fileStat.isFile()) {
-      continue
-    }
-    const content = await readFile(filePath)
-    snapshot.set(normalizePath(path.relative(distRoot, filePath)), {
-      hash: createHash('sha256').update(content).digest('hex'),
-      size: fileStat.size,
-    })
-  }
-  return snapshot
-}
-
-async function waitForStableDistSnapshot(
-  distRoot: string,
-  stableMs: number,
-  timeoutMs: number,
-) {
-  const startedAt = Date.now()
-  let previousSignature: string | undefined
-  let stableStartedAt = Date.now()
-
-  while (Date.now() - startedAt < timeoutMs) {
-    const snapshot = await snapshotDist(distRoot)
-    const signature = createDistSnapshotSignature(snapshot)
-
-    if (signature === previousSignature) {
-      if (Date.now() - stableStartedAt >= stableMs) {
-        return snapshot
-      }
-    }
-    else {
-      previousSignature = signature
-      stableStartedAt = Date.now()
-    }
-
-    await sleep(Math.min(250, stableMs))
-  }
-
-  throw new Error(`Timed out waiting for ${formatReportPath(distRoot)} to stabilize`)
-}
-
-function createDistSnapshotSignature(snapshot: Map<string, DistFileSnapshot>) {
-  return [...snapshot.entries()]
-    .map(([filePath, value]) => `${filePath}:${value.hash}:${value.size}`)
-    .join('\n')
-}
-
 function diffDistSnapshots(before: Map<string, DistFileSnapshot>, after: Map<string, DistFileSnapshot>) {
   const result: ImpactFile[] = []
   const paths = new Set([...before.keys(), ...after.keys()])
@@ -1444,35 +1389,6 @@ async function waitForFileNotContains(filePath: string, marker: string, timeoutM
 
 function isStylesheetOutput(filename: string) {
   return ['.wxss', '.acss'].includes(path.extname(filename))
-}
-
-async function listFiles(root: string) {
-  if (!(await pathExists(root))) {
-    return []
-  }
-  const result: string[] = []
-  const entries = await readdir(root, { withFileTypes: true })
-  for (const entry of entries) {
-    const filePath = path.join(root, entry.name)
-    if (entry.isDirectory()) {
-      if (shouldSkipDir(entry.name)) {
-        continue
-      }
-      result.push(...await listFiles(filePath))
-    }
-    else if (entry.isFile()) {
-      result.push(filePath)
-    }
-  }
-  return result.sort((left, right) => left.localeCompare(right))
-}
-
-function shouldSkipDir(name: string) {
-  return name === 'node_modules'
-    || name === 'dist'
-    || name === '.weapp-vite'
-    || name === '.turbo'
-    || name === '.tmp'
 }
 
 async function pathExists(filePath: string) {
