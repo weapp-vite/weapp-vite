@@ -190,3 +190,125 @@ it('releases unconsumed restart data on close and failed replacement startup', a
   expect(takeHostRestartData(replacement!, key)).toBeUndefined()
   await Promise.all([server.close(), server.close(), replacement!.close()])
 })
+
+it('waits for abandoned data to flush while closing its original session in parallel', async () => {
+  const flushed = Promise.withResolvers<void>()
+  const closeSession = vi.fn(async () => {})
+  const dispose = vi.fn(async () => {
+    await flushed.promise
+  })
+  const server = { config: { inlineConfig: {} }, close: vi.fn(async () => {}), restart: vi.fn(async () => {}) } as unknown as ViteDevServer
+  bindHostLifecycle(server, closeSession)
+  await setHostRestartData(server, Symbol('profile'), {}, dispose)
+  let closed = false
+  const closing = server.close().then(() => {
+    closed = true
+  })
+  await Promise.resolve()
+  expect(closeSession).toHaveBeenCalledOnce()
+  expect(dispose).toHaveBeenCalledExactlyOnceWith('incomplete')
+  expect(closed).toBe(false)
+  flushed.resolve()
+  await Promise.all([closing, server.close()])
+  expect(dispose).toHaveBeenCalledOnce()
+})
+
+it('preserves restart failure and awaits the failed handoff sink', async () => {
+  const entered = Promise.withResolvers<void>()
+  const flushed = Promise.withResolvers<void>()
+  const failure = new Error('native replacement failed')
+  const dispose = vi.fn(async () => {
+    entered.resolve()
+    await flushed.promise
+  })
+  const server = { config: { inlineConfig: {} }, close: vi.fn(async () => {}), restart: vi.fn(async () => {
+    throw failure
+  }) } as unknown as ViteDevServer
+  bindHostLifecycle(server, async () => {})
+  await setHostRestartData(server, Symbol('profile'), {}, dispose)
+  let settled = false
+  const restarting = server.restart().finally(() => {
+    settled = true
+  })
+  const rejected = expect(restarting).rejects.toBe(failure)
+  await entered.promise
+  expect(settled).toBe(false)
+  expect(dispose).toHaveBeenCalledExactlyOnceWith('failed')
+  flushed.resolve()
+  await rejected
+  await server.close()
+  expect(dispose).toHaveBeenCalledOnce()
+})
+
+it('retains both the native failure and a failed handoff cleanup', async () => {
+  const failure = new Error('native replacement failed')
+  const cleanup = new Error('handoff cleanup failed')
+  const server = { config: { inlineConfig: {} }, close: vi.fn(async () => {}), restart: vi.fn(async () => {
+    throw failure
+  }) } as unknown as ViteDevServer
+  bindHostLifecycle(server, async () => {})
+  await setHostRestartData(server, Symbol('profile'), {}, async () => {
+    throw cleanup
+  })
+  await expect(server.restart()).rejects.toMatchObject({ errors: [failure, cleanup], cause: failure })
+  await server.close()
+})
+
+it('releases the handoff as failed when closing the original session fails before native restart', async () => {
+  const failure = new Error('old session close failed')
+  const dispose = vi.fn(async () => {})
+  const nativeRestart = vi.fn(async () => {})
+  const server = { config: { inlineConfig: {} }, close: vi.fn(async () => {}), restart: nativeRestart } as unknown as ViteDevServer
+  const closeSession = vi.fn(async () => {}).mockRejectedValueOnce(failure)
+  bindHostLifecycle(server, closeSession)
+  await setHostRestartData(server, Symbol('profile'), {}, dispose)
+  await expect(server.restart()).rejects.toBe(failure)
+  expect(nativeRestart).not.toHaveBeenCalled()
+  expect(dispose).toHaveBeenCalledExactlyOnceWith('failed')
+  await server.close()
+  expect(dispose).toHaveBeenCalledOnce()
+})
+
+it('awaits all handoff sinks after one cleanup fails before closing the native host', async () => {
+  const failure = new Error('first sink failed')
+  const entered = Promise.withResolvers<void>()
+  const flushed = Promise.withResolvers<void>()
+  const nativeClose = vi.fn(async () => {})
+  const server = { config: { inlineConfig: {} }, close: nativeClose, restart: vi.fn(async () => {}) } as unknown as ViteDevServer
+  bindHostLifecycle(server, async () => {})
+  await setHostRestartData(server, Symbol('failed'), {}, async () => {
+    throw failure
+  })
+  await setHostRestartData(server, Symbol('flushing'), {}, async () => {
+    entered.resolve()
+    await flushed.promise
+  })
+  const closing = expect(server.close()).rejects.toBe(failure)
+  await entered.promise
+  await Promise.resolve()
+  expect(nativeClose).not.toHaveBeenCalled()
+  flushed.resolve()
+  await closing
+  expect(nativeClose).toHaveBeenCalledOnce()
+})
+
+it('flushes abandoned data even when closing the original session throws synchronously', async () => {
+  const failure = new Error('synchronous close failure')
+  const flushed = Promise.withResolvers<void>()
+  const nativeClose = vi.fn(async () => {})
+  const dispose = vi.fn(async () => {
+    await flushed.promise
+  })
+  const server = { config: { inlineConfig: {} }, close: nativeClose, restart: vi.fn(async () => {}) } as unknown as ViteDevServer
+  bindHostLifecycle(server, () => {
+    throw failure
+  })
+  await setHostRestartData(server, Symbol('profile'), {}, dispose)
+  const closing = expect(server.close()).rejects.toBe(failure)
+  await Promise.resolve()
+  expect(dispose).toHaveBeenCalledExactlyOnceWith('incomplete')
+  expect(nativeClose).not.toHaveBeenCalled()
+  flushed.resolve()
+  await closing
+  expect(nativeClose).toHaveBeenCalledOnce()
+})

@@ -17,42 +17,107 @@ interface ProfileOptions {
   buildId?: () => string | undefined
 }
 
+interface BatchState {
+  sample: HmrProfileJsonSample
+  startedAt: number
+  batchStartedAt: number
+  previous: number
+  stage: Stage
+  now: () => number
+  durations: Partial<Record<Stage, number>>
+  validate?: () => Promise<boolean>
+}
+
 /** 记录同一批次的相邻时间边界，不把并行 provider 或嵌套 hook 再次累加。 */
 export class StatefulHmrProfileBatch {
-  private previous: number
-  private stage: Stage
-  private completed = false
-  private readonly durations: Partial<Record<Stage, number>> = {}
+  private owned = true
 
   constructor(
-    private readonly sample: HmrProfileJsonSample,
-    private readonly startedAt: number,
-    stage: Stage,
-    private readonly now: () => number,
+    private readonly state: BatchState,
     private readonly emit: (sample: HmrProfileJsonSample) => void,
-  ) {
-    this.previous = now()
-    this.stage = stage
-  }
+  ) {}
 
   mark(stage: Stage) {
-    if (this.completed) {
+    if (!this.owned) {
       return
     }
-    const now = this.now()
-    this.durations[this.stage] = (this.durations[this.stage] ?? 0) + now - this.previous
-    this.previous = now
-    this.stage = stage
+    const state = this.state
+    const now = state.now()
+    state.durations[state.stage] = (state.durations[state.stage] ?? 0) + now - state.previous
+    state.previous = now
+    state.stage = stage
   }
 
   finish(status: Status) {
-    if (this.completed) {
+    if (this.owned) {
+      this.finishAt(status, this.state.now())
+    }
+  }
+
+  /** 异步诊断校验不计入真实发布边界；校验期间关闭仍可先行结束所有权。 */
+  async finishPublished() {
+    if (!this.owned) {
       return
     }
-    this.mark(this.stage)
-    this.completed = true
-    const elapsedMs = this.previous - this.startedAt
-    this.emit({ ...this.sample, ...this.durations, timestamp: new Date().toISOString(), status, ...(status === 'complete' ? { totalMs: elapsedMs } : { elapsedMs }) })
+    const publishedAt = this.state.now()
+    try {
+      this.finishAt(await this.state.validate?.() === false ? 'incomplete' : 'complete', publishedAt)
+    }
+    catch {
+      this.finishAt('failed', publishedAt)
+    }
+  }
+
+  private finishAt(status: Status, endedAt: number) {
+    if (!this.owned) {
+      return
+    }
+    const state = this.state
+    state.durations[state.stage] = (state.durations[state.stage] ?? 0) + endedAt - state.previous
+    state.previous = endedAt
+    this.owned = false
+    const elapsedMs = endedAt - state.startedAt
+    this.emit({ ...state.sample, ...state.durations, timestamp: new Date().toISOString(), status, ...(status === 'complete' ? { totalMs: elapsedMs } : { elapsedMs }) })
+  }
+
+  /** 移交后旧调用方不能再结束记录；完整重载继续计入快照发布阶段。 */
+  detach() {
+    if (!this.owned) {
+      return undefined
+    }
+    const state = this.state
+    this.mark(state.stage)
+    this.owned = false
+    state.sample = { ...state.sample, profileMode: 'full', completionBoundary: 'output-published' }
+    state.durations = { snapshotBuildMs: state.previous - state.batchStartedAt }
+    state.stage = 'snapshotPublishMs'
+    return state
+  }
+}
+
+/** 交接期间独占记录；取消必须等待原接收方写完，接管后只由新接收方发布。 */
+export class StatefulHmrProfileHandoff {
+  constructor(private state: BatchState | undefined, private readonly source: StatefulHmrProfile) {}
+
+  sourceFiles() {
+    return [...new Set(this.state?.sample.sourceEvents?.flatMap(event => event.file ? [event.file] : []))]
+  }
+
+  validateWith(validate: () => Promise<boolean>) {
+    if (this.state) {
+      this.state.validate = validate
+    }
+  }
+
+  take(emit: (sample: HmrProfileJsonSample) => void) {
+    const state = this.state
+    this.state = undefined
+    return state ? new StatefulHmrProfileBatch(state, emit) : undefined
+  }
+
+  async cancel(status: 'incomplete' | 'failed' = 'incomplete') {
+    this.take(sample => this.source.record(sample))?.finish(status)
+    await this.source.flush()
   }
 }
 
@@ -100,7 +165,8 @@ export class StatefulHmrProfile {
       ...(sourceEvents.length === 1 ? { eventId: sourceEvents[0]!.eventId, file: sourceEvents[0]!.file } : {}),
       ...(known ? { sourceToBatchMs: receivedAt - startedAt } : {}),
     }
-    const batch = new StatefulHmrProfileBatch(sample, startedAt, mode === 'delivery' ? 'deliveryQueueMs' : 'snapshotBuildMs', this.now, (result) => {
+    const batchStartedAt = this.now()
+    const batch = new StatefulHmrProfileBatch({ sample, startedAt, batchStartedAt, previous: batchStartedAt, stage: mode === 'delivery' ? 'deliveryQueueMs' : 'snapshotBuildMs', now: this.now, durations: {} }, (result) => {
       this.active.delete(batch)
       this.record(result)
     })
@@ -111,7 +177,26 @@ export class StatefulHmrProfile {
     return batch
   }
 
-  private record(sample: HmrProfileJsonSample) {
+  transfer(batch: StatefulHmrProfileBatch) {
+    if (!this.active.delete(batch)) {
+      return undefined
+    }
+    const state = batch.detach()
+    return state ? new StatefulHmrProfileHandoff(state, this) : undefined
+  }
+
+  adopt(handoff: StatefulHmrProfileHandoff) {
+    const batch = handoff.take((sample) => {
+      this.active.delete(batch!)
+      this.record(sample)
+    })
+    if (batch) {
+      this.active.add(batch)
+    }
+    return batch
+  }
+
+  record(sample: HmrProfileJsonSample) {
     try {
       sample = { ...sample, buildId: this.options.buildId?.() }
       if (this.options.emit) {
@@ -139,11 +224,16 @@ export class StatefulHmrProfile {
     }
   }
 
-  async close() {
+  async close(status: 'incomplete' | 'failed' = 'incomplete') {
     for (const batch of this.active) {
-      batch.finish('incomplete')
+      batch.finish(status)
     }
     this.pending.clear()
+    await this.flush()
+  }
+
+  async flush() {
+    // close 只结束本会话持有的批次，不关闭文件资源；交接取消可继续入队，并由交接方等待本次写完。
     await this.writeChain
   }
 }

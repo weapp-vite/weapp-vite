@@ -12,6 +12,7 @@ import type { HmrProfileRecordMetadata, HmrProfileSourceEvent } from '../../util
 import type { HmrRuntimeDecision } from '../hmrRuntime'
 import type { StatefulHmrSnapshot } from '../statefulHmr/globalStyles'
 import type { StatefulHmrOutputFile } from '../statefulHmr/outputWriter'
+import type { StatefulHmrProfileHandoff } from '../statefulHmr/profile'
 import type { DevBuildWatcherController } from './devBuildWatcher'
 import { randomUUID } from 'node:crypto'
 import { appendFile, mkdir } from 'node:fs/promises'
@@ -1351,7 +1352,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let closePromise: Promise<void> | undefined
     buildEvents.watcher.close = () => closePromise ??= (async () => {
       try {
-        clearStatefulHmrSnapshot(ctx)
+        await clearStatefulHmrSnapshot(ctx)
         await stopStatefulWatcher!()
       }
       finally {
@@ -1429,13 +1430,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (target === 'app' && hmrDecision.runtime === 'stateful-experimental') {
       const nativeBuildEvents = getStatefulBuildEvents()
       nativeBuildEvents.emitEvent({ code: 'START' })
+      let profile: StatefulHmrProfileHandoff | undefined
       try {
         await syncProjectConfigToOutput({
           outDir: configService.outDir,
           projectConfigPath: configService.projectConfigPath,
           enabled: configService.multiPlatform.enabled,
         })
-        const snapshot = await takeStatefulHmrSnapshot(ctx)
+        const handoff = await takeStatefulHmrSnapshot(ctx)
+        profile = handoff?.profile
+        const snapshot = handoff?.snapshot
           ?? prepareStatefulHmrSnapshot(await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin, ctx))
         let inputFiles = snapshot.inputFiles ?? []
         const initialSnapshot = snapshot.output
@@ -1499,6 +1503,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           entryIds: initialEntryIds,
           delegatedComponentEntryIds: snapshot.delegatedComponentEntryIds,
           initial: snapshot,
+          profile,
           rebuild: async (files, sources) => {
             for (const file of files) {
               invalidateFileCache(file)
@@ -1524,6 +1529,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         return facade
       }
       catch (error) {
+        await profile?.cancel('failed')
         if (statefulWatcherClosed) {
           return nativeBuildEvents.watcher
         }
@@ -1552,6 +1558,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         await scanService.loadAppEntry()
         scanService.loadSubPackages()
         return await restartDev(target)
+      }
+      finally {
+        await profile?.cancel()
       }
     }
     const snapshotBuildOptions: InlineConfig = {

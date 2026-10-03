@@ -5,6 +5,8 @@ import path from 'node:path'
 import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 import { createServer } from 'vite'
 import { expect, it } from 'vitest'
+import { attributeHmrProfile } from '../src/analyze/hmr/attribution'
+import { readHmrProfileLines } from '../src/analyze/hmr/reader'
 import { weapp } from '../src/vite'
 
 interface TestDevEngine {
@@ -45,7 +47,7 @@ it('hands the validated topology snapshot to the replacement native host without
         },
       }],
       server: { middlewareMode: true, port: 0, host: '127.0.0.1' },
-      weapp: { srcRoot: 'src', autoRoutes: false, vue: { enable: false }, hmr: { runtime: 'stateful-experimental' } },
+      weapp: { srcRoot: 'src', autoRoutes: false, vue: { enable: false }, hmr: { runtime: 'stateful-experimental', profileJson: path.join(root, 'profile.jsonl') } },
     })
     expect(snapshots).toBe(1)
     await writeFile(path.join(root, 'src/app.json'), '{"pages":["pages/home/index","pages/extra/index"]}')
@@ -55,6 +57,14 @@ it('hands the validated topology snapshot to the replacement native host without
     await server.close()
     expect(JSON.parse(await readFile(path.join(root, 'project.private.config.json'), 'utf8')) as unknown).toEqual({ setting: { compileHotReLoad: true } })
     expect(snapshots).toBe(2)
+    const profile = readHmrProfileLines(await readFile(path.join(root, 'profile.jsonl'), 'utf8'))
+    expect(profile.skippedLineCount).toBe(0)
+    expect(profile.samples).toHaveLength(1)
+    expect(profile.samples[0]).toMatchObject({ pipeline: 'stateful', profileMode: 'full', status: 'complete', completionBoundary: 'output-published', correlation: 'known' })
+    expect(profile.samples[0]!.buildId).toEqual(expect.any(String))
+    expect(await readFile(path.join(root, 'dist/app.js'), 'utf8')).toContain(profile.samples[0]!.buildId!)
+    expect(profile.samples[0]!.sourceEvents?.map(event => event.file?.replaceAll('\\', '/').split('/src/')[1])).toEqual(['app.json'])
+    expect(attributeHmrProfile(profile.samples[0]!)).toMatchObject({ status: 'complete' })
   }
   finally {
     await server?.close()

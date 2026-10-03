@@ -288,8 +288,8 @@ describe('runtime npm package builder core', () => {
     })
 
     expect(viteBuildMock).toHaveBeenCalledTimes(1)
-    expect(getPackageInfoMock).toHaveBeenCalledWith('demo', { paths: [path.join(ctx.configService!.cwd, 'package.json')] })
-    expect(getPackageInfoMock).toHaveBeenCalledWith('fs/', { paths: [path.resolve(root, 'demo/package.json')] })
+    expect(getPackageInfoMock).toHaveBeenCalledWith('demo', { paths: [`${path.resolve(ctx.configService!.cwd)}/`] })
+    expect(getPackageInfoMock).toHaveBeenCalledWith('fs/', { paths: [`${path.resolve(root, 'demo')}/`] })
     expect(getPackageInfoMock.mock.calls.map(([dep]) => dep)).not.toContain('lodash')
   })
 

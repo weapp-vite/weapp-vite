@@ -135,8 +135,8 @@ describe('runtime npm builder concurrent dedupe', () => {
 
     const sharedDest = path.resolve(outDir, 'shared')
     expect(await fs.pathExists(path.resolve(sharedDest, 'index.js'))).toBe(true)
-    expect(getPackageInfoMock).toHaveBeenCalledWith('shared', { paths: [path.join(pkgARoot, 'package.json')] })
-    expect(getPackageInfoMock).toHaveBeenCalledWith('shared', { paths: [path.join(pkgBRoot, 'package.json')] })
+    expect(getPackageInfoMock).toHaveBeenCalledWith('shared', { paths: [`${path.resolve(pkgARoot)}/`] })
+    expect(getPackageInfoMock).toHaveBeenCalledWith('shared', { paths: [`${path.resolve(pkgBRoot)}/`] })
     expect(copySpy.mock.calls.filter(([from]) => from === path.resolve(sharedRoot, 'miniprogram_dist'))).toHaveLength(1)
   })
 })

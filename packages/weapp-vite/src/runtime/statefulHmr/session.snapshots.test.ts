@@ -1,8 +1,10 @@
 import type { OutputBundle } from 'rolldown'
 import type { InlineConfig } from 'vite'
+import type { HmrProfileJsonSample } from '../../analyze/hmr'
 import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
+import type { StatefulHmrProfileHandoff } from './profile'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { EventEmitter } from 'node:events'
 import { realpathSync } from 'node:fs'
@@ -19,6 +21,7 @@ import { getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
 import { createRuntimeState } from '../runtimeState'
 import { createStatefulHmrHostPlugins } from './hostPlugins'
+import { StatefulHmrProfile } from './profile'
 import { runStatefulHmrDev } from './session'
 import { StatefulHmrTransport } from './transport'
 
@@ -38,6 +41,7 @@ const harness = vi.hoisted(() => ({
   fullBuild: vi.fn<() => Promise<void>>(),
   beforeInitialReady: vi.fn<() => Promise<void>>(),
   beforeFullPrepare: vi.fn<() => Promise<void>>(),
+  registerBundleModules: vi.fn<() => Promise<number>>(),
 }))
 
 vi.mock('vite', async importOriginal => ({
@@ -55,7 +59,7 @@ vi.mock('./viteAdapter', () => ({
     install() {}
     async close() {}
     async registerBundleModules() {
-      return 1
+      return harness.registerBundleModules()
     }
 
     async registerPatchModules() {}
@@ -123,7 +127,7 @@ function analyzedSnapshot(paired: boolean, selector = '.valid'): StatefulHmrSnap
   }
 }
 
-async function start(initial = snapshot('red'), entryIds: string[] = [], inlineConfig: InlineConfig = {}, nativeSources = new Map<string, string>()) {
+async function start(initial = snapshot('red'), entryIds: string[] = [], inlineConfig: InlineConfig = {}, nativeSources = new Map<string, string>(), profile?: StatefulHmrProfileHandoff, onContext?: (ctx: MutableCompilerContext) => void) {
   const rebuild = vi.fn(async (_files: string[]) => snapshot('blue'))
   const changes = new Map<string, string>()
   const ctx = {
@@ -133,7 +137,7 @@ async function start(initial = snapshot('red'), entryIds: string[] = [], inlineC
       cwd: root,
       absoluteSrcRoot: path.join(root, 'src'),
       outDir: path.join(root, 'dist'),
-      weappViteConfig: {},
+      weappViteConfig: { hmr: { profileJson: profile ? true : undefined } },
       inlineConfig,
     },
     scanService: { subPackageMap: new Map() },
@@ -146,9 +150,10 @@ async function start(initial = snapshot('red'), entryIds: string[] = [], inlineC
   for (const [file, source] of nativeSources) {
     getCompilerHmrHost(ctx).captureNative(file, source)
   }
+  onContext?.(ctx)
   const events = createDevBuildWatcher()
   const restart = vi.fn(async () => {})
-  const watcher = await runStatefulHmrDev(ctx, { root }, restart, { initial, entryIds, rebuild }, events)
+  const watcher = await runStatefulHmrDev(ctx, { root }, restart, { initial, entryIds, rebuild, profile }, events)
   watchers.push(watcher)
   const plugins = harness.createServer.mock.calls.at(-1)![0].plugins as Array<{ name: string, api?: { whenSettled: () => Promise<void> } }>
   const whenSettled = plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-session')!.api!.whenSettled
@@ -440,6 +445,7 @@ describe('stateful snapshot output transactions', () => {
     harness.writeOutput.mockReset().mockResolvedValue()
     harness.beforeInitialReady.mockReset().mockResolvedValue()
     harness.beforeFullPrepare.mockReset().mockResolvedValue()
+    harness.registerBundleModules.mockReset().mockResolvedValue(1)
     harness.fullBuild.mockReset().mockImplementation(async () => {
       harness.callbacks!.onOutput(appOutput())
     })
@@ -475,6 +481,79 @@ describe('stateful snapshot output transactions', () => {
   it('applies configured build polling to the Vite source watcher', async () => {
     await start(snapshot('red'), [], { build: { watch: { chokidar: { usePolling: true, interval: 50 } } } })
     expect(harness.createServer.mock.calls.at(-1)?.[0].server.watch).toMatchObject({ usePolling: true, interval: 50 })
+  })
+
+  it.each(['write', 'register'] as const)('keeps a transferred profile pending until replacement %s succeeds', async (stage) => {
+    const samples: HmrProfileJsonSample[] = []
+    vi.spyOn(StatefulHmrProfile.prototype, 'record').mockImplementation(sample => samples.push(sample))
+    const original = new StatefulHmrProfile({ root })
+    original.source('app.json')
+    const profile = original.transfer(original.begin(['app.json'], 'delivery'))!
+    await original.close()
+    const gate = Promise.withResolvers<void>()
+    if (stage === 'write') {
+      harness.writeOutput.mockImplementationOnce(() => gate.promise)
+    }
+    else {
+      harness.registerBundleModules.mockImplementationOnce(async () => {
+        await gate.promise
+        return 1
+      })
+    }
+    const starting = start(snapshot('blue'), [], {}, new Map(), profile)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(harness.writeOutput).toHaveBeenCalledOnce()
+    expect(samples).toEqual([])
+    gate.resolve()
+    const replacement = await starting
+    expect(samples).toHaveLength(1)
+    expect(samples[0]).toMatchObject({ status: 'complete', completionBoundary: 'output-published', profileMode: 'full' })
+    await replacement.close()
+    expect(samples).toHaveLength(1)
+  })
+
+  it('ends the original profile when a newer source event arrives before replacement publication', async () => {
+    const samples: HmrProfileJsonSample[] = []
+    vi.spyOn(StatefulHmrProfile.prototype, 'record').mockImplementation(sample => samples.push(sample))
+    const original = new StatefulHmrProfile({ root })
+    original.source('app.json')
+    const profile = original.transfer(original.begin(['app.json'], 'delivery'))!
+    await original.close()
+    const gate = Promise.withResolvers<void>()
+    harness.writeOutput.mockImplementationOnce(() => gate.promise)
+    let context: MutableCompilerContext | undefined
+    const starting = start(snapshot('blue'), [], {}, new Map(), profile, (ctx) => {
+      context = ctx
+    })
+    await vi.advanceTimersByTimeAsync(1)
+    context!.onStatefulHmrSourceChange!(path.join(root, 'src/app.json'), [])
+    expect(samples).toHaveLength(1)
+    expect(samples[0]).toMatchObject({ status: 'incomplete', file: 'app.json' })
+    gate.resolve()
+    const replacement = await starting
+    await replacement.close()
+    expect(samples).toHaveLength(1)
+    expect(samples[0]!.totalMs).toBeUndefined()
+  })
+
+  it.each(['write', 'register'] as const)('preserves failed replacement %s in the transferred profile', async (stage) => {
+    const samples: HmrProfileJsonSample[] = []
+    vi.spyOn(StatefulHmrProfile.prototype, 'record').mockImplementation(sample => samples.push(sample))
+    const original = new StatefulHmrProfile({ root })
+    original.source('app.json')
+    const profile = original.transfer(original.begin(['app.json'], 'delivery'))!
+    await original.close()
+    const failure = new Error('replacement publication failed')
+    if (stage === 'write') {
+      harness.writeOutput.mockRejectedValueOnce(failure)
+    }
+    else {
+      harness.registerBundleModules.mockRejectedValueOnce(failure)
+    }
+    await expect(start(snapshot('blue'), [], {}, new Map(), profile)).rejects.toBe(failure)
+    expect(samples).toHaveLength(1)
+    expect(samples[0]).toMatchObject({ status: 'failed', completionBoundary: 'output-published' })
+    expect(samples[0]!.totalMs).toBeUndefined()
   })
 
   it('rejects old-engine patches and retains successful assets until a metadata topology change replaces the engine', async () => {

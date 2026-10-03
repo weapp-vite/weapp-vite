@@ -128,9 +128,14 @@ describe('explicit artifacts from Vite configuration in the real Vitest host', {
   }, 90_000)
 
   it('rebuilds a changed source once and reruns only the owning project through the real watcher', async () => {
-    const cwd = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'mpcore-vite-watch-')))
+    const workspace = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'mpcore-vite-watch-')))
+    const cwd = path.join(workspace, 'project')
+    const externalManifest = path.join(workspace, 'dependency/package.json')
     let runner: Awaited<ReturnType<typeof createVitest>> | undefined
     try {
+      await fs.mkdir(cwd)
+      await fs.mkdir(path.dirname(externalManifest))
+      await fs.writeFile(externalManifest, JSON.stringify({ name: 'external-fixture' }))
       const fixture = await createFixture(cwd, 'vite')
       const { mpcoreTest } = await import(configEntry.href) as typeof import('../../vitest/src/config')
       const build = vi.fn(() => buildWeappViteTestArtifact(fixture.options))
@@ -168,6 +173,8 @@ describe('explicit artifacts from Vite configuration in the real Vitest host', {
         root: cwd,
         config: path.join(cwd, 'vite.config.ts'),
         watch: true,
+        // 外层测试会修改 monorepo 清单；只允许本 fixture 配置触发全量重跑，绝对导入的依赖仍由模块图监听。
+        forceRerunTriggers: ['package.json', 'vite.config.ts'].map(file => path.join(cwd, file).split(path.sep).join('/')),
         pool: 'threads',
         maxWorkers: 1,
         fileParallelism: false,
@@ -191,6 +198,9 @@ describe('explicit artifacts from Vite configuration in the real Vitest host', {
       expect((await fixture.events()).filter(event => event.project === 'other')).toHaveLength(1)
       await fs.writeFile(path.join(cwd, 'src/value.ts'), 'export default "second"')
       await expect.poll(() => rebuilt.mock.calls.length, { timeout: 45_000 }).toBe(1)
+      // 模拟已被宿主观察到的外部清单变化，验证默认 package.json 全局规则不会污染此 fixture。
+      // 原始源码修改仍通过真实文件监听；此处不改共享仓库文件，也不依赖并行测试时序。
+      runner.vite.watcher.emit('change', externalManifest.split(path.sep).join('/'))
       // 给源码事件防抖及 runner 的文件监听留出稳定窗口，排除一次编辑重复触发。
       await new Promise(resolve => setTimeout(resolve, 1_000))
       expect(errors).toEqual([])
@@ -206,7 +216,7 @@ describe('explicit artifacts from Vite configuration in the real Vitest host', {
     finally {
       await runner?.close()
       clearWeappViteTestArtifactCache({ cwd, configFile: 'vite.config.ts', skipNpm: true })
-      await fs.rm(cwd, { recursive: true, force: true })
+      await fs.rm(workspace, { recursive: true, force: true })
     }
   }, 120_000)
 })

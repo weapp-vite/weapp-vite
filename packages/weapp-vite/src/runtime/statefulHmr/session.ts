@@ -7,7 +7,7 @@ import type { DevBuildWatcherController } from '../buildPlugin/devBuildWatcher'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrOutputSource } from './outputPublication'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
-import type { StatefulHmrProfileBatch } from './profile'
+import type { StatefulHmrProfileBatch, StatefulHmrProfileHandoff } from './profile'
 import type { StatefulHmrDevEngineBatch, StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { Buffer } from 'node:buffer'
 import {
@@ -69,6 +69,7 @@ interface StatefulHmrSnapshots {
   entryIds: Iterable<string>
   delegatedComponentEntryIds?: Iterable<string>
   initial: StatefulHmrSnapshot
+  profile?: StatefulHmrProfileHandoff
   rebuild: (files: string[], sources?: ReadonlyMap<string, string | null>) => Promise<StatefulHmrSnapshot>
 }
 
@@ -165,7 +166,7 @@ export async function runStatefulHmrDev(
     return createWatcherAdapter(server, session, buildEvents, Boolean(host))
   }
   catch (error) {
-    await session?.close().catch(() => {})
+    await session?.close('failed').catch(() => {})
     if (!host) {
       await server.close().catch(() => {})
     }
@@ -192,6 +193,7 @@ class StatefulHmrSession {
   private readonly snapshotScheduler: StatefulHmrSnapshotScheduler
   private readonly diagnostics: ReturnType<typeof createStatefulHmrSnapshotDiagnostics>
   private readonly profile: ReturnType<typeof createStatefulHmrProfile>
+  private initialProfile?: StatefulHmrProfileBatch
   private readonly transport: StatefulHmrTransport
   private outputChain: Promise<void> = Promise.resolve()
   private restartTimer?: ReturnType<typeof setTimeout>
@@ -275,6 +277,7 @@ class StatefulHmrSession {
         this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', { error: failure })
       },
     })
+    this.initialProfile = snapshots.profile && this.profile?.adopt(snapshots.profile)
   }
 
   async prepareIdeAssetWatch(): Promise<void> {
@@ -332,10 +335,10 @@ class StatefulHmrSession {
     await this.assetWatcher.ready
   }
 
-  close(): Promise<void> {
+  close(status: 'incomplete' | 'failed' = 'incomplete'): Promise<void> {
     return this.closing ??= (async () => {
       try {
-        await this.closeResources()
+        await this.closeResources(status)
       }
       finally {
         const restore = this.restoreIdeAssetWatch
@@ -345,18 +348,21 @@ class StatefulHmrSession {
     })()
   }
 
-  private async closeResources(): Promise<void> {
+  private async closeResources(status: 'incomplete' | 'failed'): Promise<void> {
     this.closed = true
+    this.initialProfile?.finish(status)
+    this.initialProfile = undefined
     this.interruptSettlement()
     this.releaseSettlement?.()
-    this.restartHandoff?.invalidate()
+    if (this.restartTimer) {
+      clearTimeout(this.restartTimer)
+      this.restartTimer = undefined
+    }
+    await this.restartHandoff?.invalidate(status)
     this.restartHandoff = undefined
     this.childSources?.close()
     getCompilerHmrHost(this.ctx).onDependencyChange = undefined
     await this.assetWatcher?.close()
-    if (this.restartTimer) {
-      clearTimeout(this.restartTimer)
-    }
     if (this.ctx.onStatefulHmrSourceChange === this.sourceChangeListener) {
       this.ctx.onStatefulHmrSourceChange = undefined
     }
@@ -368,7 +374,7 @@ class StatefulHmrSession {
     this.unpersistedNativeScripts.clear()
     this.nativeScriptInputs.clear()
     await this.outputChain
-    await this.profile?.close()
+    await this.profile?.close(status)
   }
 
   async refreshControl(): Promise<void> {
@@ -394,6 +400,8 @@ class StatefulHmrSession {
     if (normalizedFile === normalizedOutDir || normalizedFile.startsWith(`${normalizedOutDir}/`)) {
       return
     }
+    this.initialProfile?.finish('incomplete')
+    this.initialProfile = undefined
     this.profile?.source(normalizedFile)
     this.settlementRevision += 1
     if (this.restartHandoff) {
@@ -550,6 +558,8 @@ class StatefulHmrSession {
           if (snapshot) {
             this.commitSnapshotMetadata(snapshot, 'full')
           }
+          await this.initialProfile?.finishPublished()
+          this.initialProfile = undefined
           this.buildEvents.emitEvent({ code: 'END' })
         }
         this.server.config.logger.info(`[weapp-vite] 微信状态保持 HMR 已就绪（${moduleCount} modules）`)
@@ -558,11 +568,13 @@ class StatefulHmrSession {
     })
     snapshotBatch?.outputTasks.push(outputTask)
     void outputTask.catch((error) => {
+      this.initialProfile?.finish('failed')
+      this.initialProfile = undefined
       if (nativeInputs) {
         // 完整发布失败可能已部分落盘，旧源码版本不能再证明脚本与磁盘一致。
         this.nativeScriptInputs.clear()
       }
-      if (!snapshotBatch && this.initialSnapshot) {
+      if (!snapshotBatch) {
         this.initialBundle.reject(error)
       }
     })
@@ -685,7 +697,7 @@ class StatefulHmrSession {
           })
           const { compilerAssets, snapshot, code, changedIds, filenames } = compiled
           profile?.mark('commitQueueMs')
-          if (snapshot && this.restartForEntryGraph(snapshot)) {
+          if (snapshot && this.restartForEntryGraph(snapshot, profile, input.sources)) {
             // reset 已撤销本代交付；保留 dispose 供协调器释放预编译资源。
             return { commit: async () => {}, publish: async () => {}, dispose: () => {
               profile?.finish('incomplete')
@@ -806,7 +818,7 @@ class StatefulHmrSession {
     this.snapshotScheduler.request('refresh', files)
   }
 
-  private restartForEntryGraph(snapshot: StatefulHmrSnapshot): boolean {
+  private restartForEntryGraph(snapshot: StatefulHmrSnapshot, profile?: StatefulHmrProfileBatch, sources?: ReadonlyMap<string, string | null>): boolean {
     const nextEntryIds = snapshot.entryIds?.map(id => normalizeFsResolvedId(id))
     if (!nextEntryIds || (nextEntryIds.length === this.entryIds.size && nextEntryIds.every(id => this.entryIds.has(id)))) {
       return false
@@ -815,10 +827,11 @@ class StatefulHmrSession {
       this.entryGraphRevision += 1
     }
     // DevEngine 的入口图固定；所有快照交付路径必须先撤销旧引擎批次，再交给新引擎完整发布。
+    const continuation = profile && this.profile?.transfer(profile)
     this.delivery.reset()
     this.transport.cancelPendingDeliveries()
     this.restartHandoff?.invalidate()
-    this.restartHandoff = new StatefulHmrSnapshotHandoff(snapshot, snapshot.inputs)
+    this.restartHandoff = new StatefulHmrSnapshotHandoff(snapshot, snapshot.inputs, undefined, continuation, continuation ? sources : undefined)
     // 延迟重启，避免 close 等待正在执行的批次形成自锁。
     this.requestServerRestart()
     return true
@@ -834,15 +847,23 @@ class StatefulHmrSession {
       this.restartTimer = undefined
       const handoff = this.restartHandoff
       this.restartHandoff = undefined
-      if (handoff) {
-        offerStatefulHmrSnapshot(this.ctx, handoff)
-      }
-      void this.restart().catch((error) => {
-        handoff?.invalidate()
-        const failure = error instanceof Error ? error : new Error(String(error))
-        this.buildEvents.emitEvent({ code: 'ERROR', error: failure, result: undefined as never })
-        this.server.config.logger.error('[weapp-vite] stateful HMR server restart failed', { error: failure })
-      })
+      void (async () => {
+        try {
+          if (handoff) {
+            await offerStatefulHmrSnapshot(this.ctx, handoff)
+          }
+          await this.restart()
+        }
+        catch (error) {
+          await handoff?.invalidate('failed')
+          const failure = error instanceof Error ? error : new Error(String(error))
+          this.buildEvents.emitEvent({ code: 'ERROR', error: failure, result: undefined as never })
+          this.server.config.logger.error(`[weapp-vite] stateful HMR server restart failed: ${formatStatefulHmrError(failure)}`, { error: failure })
+        }
+        finally {
+          await handoff?.invalidate()
+        }
+      })()
     }, 100)
   }
 
@@ -926,7 +947,7 @@ class StatefulHmrSession {
       return
     }
     const nextEntryIds = snapshot.entryIds?.map(id => normalizeFsResolvedId(id))
-    if (this.restartForEntryGraph(snapshot)) {
+    if (this.restartForEntryGraph(snapshot, profile)) {
       return
     }
     if (batch.mode === 'full') {
