@@ -289,6 +289,7 @@ describe('stateful snapshot output transactions', () => {
     harness.createServer.mockImplementation(async (options: InlineConfig) => {
       const server = {
         config: {
+          inlineConfig: options,
           root: options.root,
           publicDir: path.join(root, 'static-assets'),
           build: { copyPublicDir: true },

@@ -37,8 +37,8 @@ let root: string
 beforeEach(async () => {
   vi.resetAllMocks()
   root = await fs.mkdtemp(path.join(tmpdir(), 'stateful-asset-lease-'))
-  harness.createServer.mockImplementation(async () => ({
-    config: { root, publicDir: false, build: {}, server: {}, logger: { error: vi.fn() } },
+  harness.createServer.mockImplementation(async (inlineConfig = {}) => ({
+    config: { inlineConfig, root, publicDir: false, build: {}, server: {}, logger: { error: vi.fn() } },
     watcher: Object.assign(new EventEmitter(), { add: vi.fn() }),
     middlewares: { use: vi.fn() },
     httpServer: { address: () => undefined },

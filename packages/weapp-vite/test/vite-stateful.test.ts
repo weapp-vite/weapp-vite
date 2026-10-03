@@ -7,6 +7,10 @@ import { createServer } from 'vite'
 import { expect, it } from 'vitest'
 import { weapp } from '../src/vite'
 
+interface TestDevEngine {
+  close: () => Promise<void>
+}
+
 it.each([
   { middlewareMode: true, holdReplacement: false },
   { middlewareMode: false, holdReplacement: false },
@@ -19,6 +23,8 @@ it.each([
   const releaseReplacement = Promise.withResolvers<void>()
   let starts = 0
   let restartRequestedDuringReplacement = false
+  const engines = new Set<TestDevEngine>()
+  const closedEngines = new Set<TestDevEngine>()
   try {
     for (const [file, content] of Object.entries({
       'package.json': '{"name":"stateful-host-fixture","type":"module"}',
@@ -44,6 +50,13 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
         name: 'test:hold-topology-replacement',
         enforce: 'post',
         async configureServer(replacement) {
+          const engine = (replacement.environments.client as unknown as { bundledDev: { _devEngine: TestDevEngine } }).bundledDev._devEngine
+          engines.add(engine)
+          const close = engine.close.bind(engine)
+          engine.close = async () => {
+            await close()
+            closedEngines.add(engine)
+          }
           if (!holdReplacement || ++starts !== 2) {
             return
           }
@@ -91,6 +104,9 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
     await expect.poll(() => readFile(path.join(root, 'dist/app.json'), 'utf8'), { timeout: 15_000 }).not.toContain('pages/extra/index')
     await expect.poll(() => readFile(path.join(root, 'dist/pages/extra/index.js'), 'utf8').catch(error => error.code), { timeout: 15_000 }).toBe('ENOENT')
     await server.restart()
+    if (holdReplacement) {
+      await server.restart(true)
+    }
     await writeFile(path.join(root, 'src/pages/home/index.wxml'), '<view>stateful-restarted {{message}}</view>')
     await expect.poll(() => readFile(path.join(root, 'dist/pages/home/index.wxml'), 'utf8'), { timeout: 10_000 }).toContain('stateful-restarted')
     const callsBefore = await readFile(path.join(root, 'config-calls.txt'), 'utf8')
@@ -99,18 +115,21 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
     expect(await readFile(path.join(root, 'config-calls.txt'), 'utf8')).toBe(`${callsBefore}loaded\n`)
     await server.close()
     await server.close()
+    expect(closedEngines.size).toBe(engines.size)
     await writeFile(path.join(root, 'src/pages/home/index.ts'), 'Page({ syntax error')
     await expect(start()).rejects.toThrow()
     await writeFile(path.join(root, 'src/pages/home/index.ts'), 'Page({ data: { message: STATEFUL_MESSAGE } })')
     server = await start()
     expect(await readFile(path.join(root, 'dist/pages/home/index.js'), 'utf8')).toContain('stateful-new-config')
     await server.close()
+    expect(closedEngines.size).toBe(engines.size)
     await writeFile(path.join(root, 'src/app.json'), '{"pages":["pages/home/index"],"renderer":"skyline"}')
     await expect(start()).rejects.toThrow('Skyline 项目请显式选择')
   }
   finally {
     releaseReplacement.resolve()
     await server?.close()
+    await Promise.all([...engines].filter(engine => !closedEngines.has(engine)).map(engine => engine.close()))
     await rm(root, { recursive: true, force: true })
   }
 }, 90_000)

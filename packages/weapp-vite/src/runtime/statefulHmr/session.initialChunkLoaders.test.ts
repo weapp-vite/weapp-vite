@@ -66,6 +66,7 @@ describe('stateful session initial chunk package boundaries', () => {
     harness.createServer.mockImplementation(async (options: InlineConfig) => {
       const server = {
         config: {
+          inlineConfig: options,
           root: options.root,
           publicDir: path.join(options.root!, 'static-assets'),
           build: { copyPublicDir: true },

@@ -1,14 +1,30 @@
-import type { ViteDevServer } from 'vite'
+import type { InlineConfig, ViteDevServer } from 'vite'
+
+const hostLifecycleKey = Symbol.for('weapp-vite:host-lifecycle')
+
+interface HostLifecycle {
+  readonly restartTask: Promise<void> | undefined
+}
+
+type HostInlineConfig = InlineConfig & { [hostLifecycleKey]?: HostLifecycle }
 
 /** 关闭等待正在替换服务器的重启，避免旧入口返回后新会话继续写出。 */
 export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Promise<void>) {
   const nativeRestart = server.restart.bind(server)
   const nativeClose = server.close.bind(server)
-  // Vite 在 configureServer 阶段向替换宿主传递父重启；原生 restart 会合并该 Promise。
-  const inheritedRestart = (server as ViteDevServer & { _restartPromise?: Promise<void> | null })._restartPromise
+  // Vite 在赋值 _restartPromise 前已创建替换宿主，不能用其私有字段识别父重启。
+  // 只接收本次原生重启传入的私有配置，新的插件实例也能接续同一条宿主链。
+  const inlineConfig = server.config.inlineConfig as HostInlineConfig
+  const inheritedRestart = inlineConfig[hostLifecycleKey]?.restartTask
+  delete inlineConfig[hostLifecycleKey]
   const stopping = Promise.withResolvers<void>()
   let restartTask: Promise<void> | undefined
   let closeTask: Promise<void> | undefined
+  const lifecycle: HostLifecycle = {
+    get restartTask() {
+      return restartTask
+    },
+  }
 
   const close = (): Promise<void> => closeTask ??= (async () => {
     stopping.resolve()
@@ -43,7 +59,21 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
       }
       await closeSession()
       if (!closeTask) {
-        await nativeRestart(force)
+        const config = server.config
+        // 不把重启状态写入调用方的配置；两个独立宿主可以安全复用同一份配置。
+        // Vite 的 force 重启通过对象展开合并 defaults，会继续保留此 symbol。
+        const restartConfig: HostInlineConfig = { ...config.inlineConfig, [hostLifecycleKey]: lifecycle }
+        const restartHostConfig = { ...config, inlineConfig: restartConfig }
+        server.config = restartHostConfig
+        try {
+          await nativeRestart(force)
+        }
+        finally {
+          delete restartConfig[hostLifecycleKey]
+          if (server.config === restartHostConfig) {
+            server.config = config
+          }
+        }
       }
     })().finally(() => {
       restartTask = undefined
