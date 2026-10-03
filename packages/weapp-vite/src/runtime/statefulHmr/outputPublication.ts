@@ -13,8 +13,11 @@ export interface StatefulHmrOutputPublicationHooks {
 export class StatefulHmrOutputPublication {
   private readonly fullOutputs = new Set<(task: Promise<void>) => void>()
   private readonly pendingOutputs = new Set<Promise<void>>()
+  private revision = 0
+  private failure?: { error: unknown, revision: number }
 
   publish(source: StatefulHmrOutputSource, publish: () => void | Promise<void>): Promise<void> {
+    const revision = ++this.revision
     let task: Promise<void>
     try {
       task = Promise.resolve(publish())
@@ -25,13 +28,41 @@ export class StatefulHmrOutputPublication {
     // 原生回调不等待 Promise；拒绝由重建调用和日志层分别观察。
     void task.catch(() => {})
     this.pendingOutputs.add(task)
-    void task.then(() => this.pendingOutputs.delete(task), () => this.pendingOutputs.delete(task))
+    void task.then(() => {
+      this.pendingOutputs.delete(task)
+      if (source === 'full') {
+        // 增量资产成功不能证明其他失败产物已恢复，只有后续完整基线可清除失败。
+        if (this.failure && this.failure.revision <= revision) {
+          this.failure = undefined
+        }
+      }
+    }, (error) => {
+      this.pendingOutputs.delete(task)
+      if (revision >= (this.failure?.revision ?? 0)) {
+        this.failure = { error, revision }
+      }
+    })
     if (source === 'full') {
       for (const receive of this.fullOutputs) {
         receive(task)
       }
     }
     return task
+  }
+
+  /** 仅供事务外的观察者等待；发布回调不得等待包含自身的交付集合。 */
+  async whenSettled(): Promise<void> {
+    for (;;) {
+      const revision = this.revision
+      await Promise.allSettled(this.pendingOutputs)
+      if (revision !== this.revision || this.pendingOutputs.size) {
+        continue
+      }
+      if (this.failure) {
+        throw this.failure.error
+      }
+      return
+    }
   }
 
   async rebuild(

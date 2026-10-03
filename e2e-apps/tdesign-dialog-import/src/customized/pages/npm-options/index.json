@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "npm output options",
+  "usingComponents": {
+    "callback-button": "/customized/custom-components/tdesign-miniprogram/button/button",
+    "mapped-button": "/manual-output/miniprogram_npm/tdesign-miniprogram/button/button"
+  }
+}

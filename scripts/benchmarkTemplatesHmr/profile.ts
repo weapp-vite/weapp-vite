@@ -2,9 +2,9 @@ import type { HmrProfileJsonSample } from '../../packages/weapp-vite/src/analyze
 import { readHmrProfileLines } from '../../packages/weapp-vite/src/analyze/hmr/reader'
 
 export type BenchmarkHmrRuntime = 'stateful' | 'standard'
-export type BenchmarkProfileStatus = 'available' | 'unavailable-stateful' | 'disabled' | 'missing' | 'read-error' | 'incompatible' | 'incomplete'
+export type BenchmarkProfileStatus = 'available' | 'disabled' | 'missing' | 'read-error' | 'incompatible' | 'incomplete'
 
-/** stateful 由传输与输出确认更新，不等待仅标准构建链提供的编译 profile。 */
+/** 两条管线都读取实际 profile；缺失或不匹配时保留 unknown，不使用外部时长填充。 */
 export async function collectBenchmarkHmrProfile<T extends { totalMs?: number }>(
   runtime: BenchmarkHmrRuntime,
   readProfile: () => Promise<T>,
@@ -13,14 +13,14 @@ export async function collectBenchmarkHmrProfile<T extends { totalMs?: number }>
   if (!enabled) {
     return { profile: {}, status: 'disabled' }
   }
-  if (runtime === 'stateful') {
-    return { profile: {}, status: 'unavailable-stateful' }
-  }
   try {
     const profile = await readProfile()
     const { samples, coverage } = readHmrProfileLines(JSON.stringify(profile))
     if (!samples.length) {
       return { profile: {}, status: coverage.incompatible ? 'incompatible' : coverage.incomplete ? 'incomplete' : 'missing' }
+    }
+    if (runtime === 'stateful' && samples[0]?.pipeline !== 'stateful') {
+      return { profile: {}, status: 'incompatible' }
     }
     return { profile, status: 'available' }
   }

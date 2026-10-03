@@ -1,5 +1,6 @@
 import type { SequenceMeasurement, SequenceStepResult } from './measurement'
 import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 
 export type EditAction
   = | { kind: 'write', file: string, content: string }
@@ -39,6 +40,13 @@ export interface Divergence {
 }
 
 export type SequenceComparator<T> = (incremental: T, fresh: T) => Divergence | undefined
+
+/** 只规范对象键顺序，供 profile 开关两次运行比较完整的成功观察结果。 */
+export function hashSequenceObservation(value: unknown): string {
+  return createHash('sha256').update(JSON.stringify(value, (_key, current) => current && typeof current === 'object' && !Array.isArray(current)
+    ? Object.fromEntries(Object.entries(current).sort(([left], [right]) => left.localeCompare(right)))
+    : current)).digest('hex')
+}
 
 export class EditSequenceDivergence extends Error {
   constructor(
@@ -171,6 +179,7 @@ export async function verifyEditSequence<T>(
   }
   const files = { ...sequence.files }
   const signal = AbortSignal.timeout(timeoutMs)
+  let failure: { error: unknown } | undefined
   try {
     for (let step = 0; step <= sequence.steps.length; step++) {
       const current = sequence.steps[step - 1]
@@ -198,6 +207,7 @@ export async function verifyEditSequence<T>(
         if (difference) {
           throw new EditSequenceDivergence(sequence.name, observer.name, step, current?.name ?? 'initial', difference, replay)
         }
+        stepResult.observationSha256 = hashSequenceObservation(incremental)
         stepResult.status = 'passed'
       }
       catch (error) {
@@ -212,7 +222,19 @@ export async function verifyEditSequence<T>(
       }
     }
   }
-  finally {
+  catch (error) {
+    failure = { error }
+  }
+  try {
     await observer.close()
+  }
+  catch (error) {
+    if (failure) {
+      throw new AggregateError([failure.error, error], 'Edit sequence and resource cleanup both failed')
+    }
+    throw error
+  }
+  if (failure) {
+    throw failure.error
   }
 }

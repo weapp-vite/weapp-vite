@@ -19,10 +19,7 @@ export function entryTopologySignature(value: unknown) {
   return JSON.stringify(canonical(Object.fromEntries(fields.map(field => [field, config[field]]))))
 }
 
-export async function hasEntryTopologyChange(ctx: MutableCompilerContext, files: Iterable<string>) {
-  if (!ctx.jsonService) {
-    return false
-  }
+function collectEntryConfigs(ctx: MutableCompilerContext) {
   const entryConfigs = new Map<string, unknown>()
   for (const entry of ctx.runtimeState?.build.hmr.entriesMap.values() ?? []) {
     if (!entry) {
@@ -39,6 +36,23 @@ export async function hasEntryTopologyChange(ctx: MutableCompilerContext, files:
       }
     }
   }
+  return entryConfigs
+}
+
+/** 冻结已发布完整扫描的入口拓扑，局部资源构建不得推进此基线。 */
+export function captureEntryTopology(ctx: MutableCompilerContext) {
+  return new Map([...collectEntryConfigs(ctx)].map(([file, value]) => [file, entryTopologySignature(value)]))
+}
+
+export async function hasEntryTopologyChange(
+  ctx: MutableCompilerContext,
+  files: Iterable<string>,
+  committed?: ReadonlyMap<string, string>,
+) {
+  if (!ctx.jsonService) {
+    return false
+  }
+  const entryConfigs = collectEntryConfigs(ctx)
   let changed = false
   for (const file of files) {
     if (!/\.json(?:\.[jt]s)?$/.test(file)) {
@@ -48,11 +62,11 @@ export async function hasEntryTopologyChange(ctx: MutableCompilerContext, files:
     const normalizedFile = normalizeFsResolvedId(file)
     const before = cached === undefined ? entryConfigs.get(normalizedFile) : cached
     // 外部转换输入即使是 JSON，也不属于入口配置；解析、错误恢复由声明它的转换器负责。
-    if (before === undefined && !entryConfigs.has(normalizedFile)) {
+    if (before === undefined && !entryConfigs.has(normalizedFile) && !committed?.has(normalizedFile)) {
       continue
     }
     const after = await ctx.jsonService.read(file) as unknown
-    if (entryTopologySignature(before) !== entryTopologySignature(after)) {
+    if ((committed?.get(normalizedFile) ?? entryTopologySignature(before)) !== entryTopologySignature(after)) {
       changed = true
     }
   }

@@ -122,7 +122,7 @@ function hasPrecomputedScriptPhaseInfo<Key extends keyof PrecomputedScriptPhaseI
   return Boolean(info) && Object.prototype.hasOwnProperty.call(info, key)
 }
 
-function collectScriptSetupReturnInfo(scriptCode: string) {
+function collectScriptSetupReturnInfo(getScriptAst: () => ReturnType<typeof parseJsLike>) {
   const keys = new Set<string>()
   const propsObjectAliases = new Set<string>(['__props'])
   const propsRefsAliases = new Set<string>()
@@ -143,7 +143,7 @@ function collectScriptSetupReturnInfo(scriptCode: string) {
   }
 
   try {
-    const ast = parseJsLike(scriptCode)
+    const ast = getScriptAst()
     traverse(ast, {
       VariableDeclarator(path) {
         const init = path.node.init
@@ -223,13 +223,14 @@ function collectScriptSetupReturnInfo(scriptCode: string) {
 export function resolveEffectivePropsDerivedKeys(
   bindings: Record<string, any> | undefined,
   scriptCode: string,
+  getScriptAst = () => parseJsLike(scriptCode),
 ) {
   if (!bindingsMayContainProps(bindings, scriptCode)) {
     return undefined
   }
 
   const directKeys = resolveScriptSetupPropsDerivedKeys(bindings) ?? []
-  const { returnedKeys, destructuredPropsKeys } = collectScriptSetupReturnInfo(scriptCode)
+  const { returnedKeys, destructuredPropsKeys } = collectScriptSetupReturnInfo(getScriptAst)
   const aliases = resolveScriptSetupPropsAliases(bindings) ?? {}
   const propsKeys = new Set(
     Object.entries(bindings ?? {})

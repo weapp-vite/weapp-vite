@@ -46,6 +46,8 @@ export default defineConfig({
 
 `stateful-experimental` 目前只支持微信小程序平台。它使用 Vite bundled dev graph 和微信 App Service 内的增量补丁协议，JavaScript/Vue 安全更新会在现有实例上替换方法并恢复状态。可处理的模板和样式变化通过资产更新同步；JSON/配置、模块边界不兼容、补丁积压超过保留上限或补丁执行失败等情况使用完整构建回退。
 
+入口拓扑变化会先编译并验证新快照，再替换固定入口图的开发引擎。输入版本仍一致时，新宿主直接接管这份快照，避免重复编译；源目录增删、声明的外部依赖变化或输入覆盖不足时重新编译。快照失败及交接等待期间的再次保存仍由旧宿主接收，修复尚未进入旧入口图的文件也会重新验证保留批次。关闭会取消未交接的候选，不会继续发布。
+
 状态保持开发期间，weapp-vite 会临时在 IDE 私有配置中排除输出目录内静态资源的原生监听，避免 PNG 等资源变更触发整页重编译。资源仍由 Vite 写出，运行时按路径重新读取时可获得最新内容。代码、模板、样式和 JSON 配置继续交给 IDE 处理。JSON 声明的资源（包括 tabBar 图标和主题图标）保留在 IDE 原生文件索引中，其变更仍由 IDE 编译处理。会话关闭或下一次构建前会恢复原有监听配置，并保留用户在会话内修改的其他设置；发布前请运行正式构建，不直接使用开发产物。
 
 Vue `<style module>` 同时参与样式和脚本类名映射的编译。修改其内容、模块名称或 `src`，以及新增或移除该块时，会将脚本与样式一起纳入更新，避免后续脚本补丁引用未交付的样式模块。独立的普通 `<style>` 变化仍按纯样式处理；真实页面是否已经应用颜色需要在 DevTools 中验证。
@@ -201,7 +203,11 @@ weapp-vite 的 `weapp.hmr`、`weapp.tailwindcss` 和可选 `prepareHmr` 类型�
 
 `status: 'complete'` 才能进入正常耗时统计。失败记录为 `failed`，只提供 `elapsedMs`，不提供成功的 `totalMs`。未影响任何入口的批次记为 `incomplete`，并附 `reason: 'no-affected-entries'`；其观测状态随批次结束，不混入下一次构建。未完成、未知版本、损坏行与缺失阶段不会被补为 0；`analyze --hmr-profile --json` 的 `inputCoverage` 报告旧版、兼容、不兼容、未完成和无效行数，各阶段的 `count` 表示实际观测数。没有版本的旧记录继续兼容，旧字段缺失时保持未知。
 
-阶段可能相互包含，不能相加当作总时间。`buildCoreMs` 保留旧口径，但由 `estimates.buildCoreMs` 明确标记为残差估算，不是独立计时；`snapshotBuildMs` 包含 snapshot 准备与构建。外部产物可见时间单独记录，不能冒充内部编译时间。当前 stateful benchmark 若没有编译 profile，继续报告 `unavailable-stateful`。
+阶段可能相互包含，不能相加当作总时间。`buildCoreMs` 保留旧口径，但由 `estimates.buildCoreMs` 明确标记为残差估算，不是独立计时；`snapshotBuildMs` 包含 snapshot 准备与构建。外部产物可见时间单独记录，不能冒充内部编译时间。
+
+stateful 记录带有 `pipeline: 'stateful'`。`sourceToBatchMs` 只表示源通知到批次接收的已观察间隔，不假称原生 bundler 的全部耗时；交付批次依次记录 `deliveryQueueMs`、`prepareMs`、`commitQueueMs`、`commitMs`、`publishMs`，快照批次记录 `snapshotBuildMs`、`snapshotPublishMs`。`completionBoundary` 区分 `delivery-acknowledged` 与 `output-published`；发布包含客户端确认等待时，不能直接拿来替代更早发生的产物可见时间。失败、取消和未完成的批次不会进入成功统计。
+
+分析 JSON 的 `timelines` 提供各批次互不重叠的外层阶段、残差和归因状态。standard 的批次等待、队列等待已包含在 `watchToDirtyMs`，因此其他构建前时间为三者差值，不能重复相加。stateful 与 standard 分别解释；无法匹配唯一源事件、阶段缺失或出现负残差时保留 `null` / `partial`，不以零填补。benchmark 的预算和编辑/恢复样本选择统一使用 `wallMs`，内部 `totalMs` 仅保留实际 profile 值。
 
 一次编辑的消费方式是先记下 JSONL 当前行位置，再修改源文件，等待输出断言通过后，从新增的兼容、完成记录中按 `sourceEvents[].file` 精确匹配。仓库可运行示例为 `scripts/benchmark-templates-hmr.ts`，匹配逻辑与回归在 `scripts/benchmarkTemplatesHmr/profile.ts`；找不到关联时返回 `missing`，外部观察结果单独保留。
 
@@ -217,7 +223,24 @@ pnpm verify:edit-sequence --engine stateful-experimental --resource-cycles 60 --
 
 两条命令必须串行执行。每步报告 load/transform 调用及模块集合、原生产物发布文件与字节、stateful 补丁次数与字节、RSS/heap、Node 活动资源类型、进程监听器和会话句柄，结束后检查工具拥有的子进程已退出。它们来自 compiler/native fixture；不能把 load 数量解释为框架脏入口数，Node 活动资源也不等于原生 watcher 的全部内部资源。
 
-资源门禁跳过最初三个样本，按四个样本一个窗口计算中位数。最后三个完整窗口持续上升且超过阈值时失败：RSS 32 MiB、heap 16 MiB，资源/监听器计数为 0。不足三个窗口报告 unknown；一次峰值不能证明泄漏，门禁失败表示需要结合原始样本调查。正确性比较始终逐步执行，不因观测成本而省略失败恢复或完整基线。
+资源门禁跳过最初三个样本，按四个样本一个窗口计算中位数。持续上涨和上涨后保持高位都会触发门禁：进程及进程树 RSS 32 MiB、强制 GC 后 heap 16 MiB、GC 时长增长 50 ms、GC 次数增长 2；进程、资源、监听器、会话和转换范围计数不允许增长。缺少进程树、强制 GC 或构建范围观测时失败；不足三个窗口报告 unknown。GC 和进程树采样在编辑计时之外，原始值、采样耗时与强制回收标记均保留。一次峰值不能证明泄漏，门禁失败表示需要结合原始样本调查。
+
+完整框架资源入口为 `--engine weapp-classic` 和 `--engine weapp-stateful`，默认 512 个真实 Vue SFC 页面、14 次连续保存。它们沿用同一 driver、长期 Vite/Wevu 编译宿主与每步独立新进程基线，通过 mpcore 执行全部页面 JS、比较 data/逻辑文本/WXML，以及完整产物集合和非 JS 字节。stateful 使用实际回环 transport 和 emitted delta；classic 只按宿主重载边界重建测试 VM，编译进程不重启。这里的 heap/RSS 包含测试 runtime，不能冒充纯编译器内存或真实 IDE 页面帧验收。
+
+调试驱动本身时可传 `--framework-pages 2` 缩小 fixture；正式大项目资源验收保留默认 512 页，报告会记录实际页面数量。每步计时包含全部页面的重新进入、语义观察及产物扫描，只用于固定规模下的资源和 profile 开销比较，不能解释为单次 HMR 可见延迟。
+
+```sh
+pnpm --filter weapp-vite build
+pnpm verify:edit-sequence --engine weapp-stateful --require-clean --report .tmp/framework-profile-off.json
+```
+
+profile 开关对照按 off/on/on/off 顺序串行运行四次相同命令，分别设置 `WEAPP_VITE_HMR_PROFILE_JSON=0` 和 `1`，并写入独立报告。两组对照采用相反顺序，减轻机器随运行时间变化带来的偏差。例如预算为 5% 时，运行：
+
+```sh
+pnpm exec tsx scripts/editSequence/compareProfiles.ts 5 .tmp/framework-profile-off.json .tmp/framework-profile-on.json .tmp/framework-profile-off-second.json .tmp/framework-profile-on-second.json
+```
+
+比较器要求相同干净提交、输入摘要、逐步语义摘要和已完成资源清理；开启时每次编辑必须有同一 worker 时间窗口内的真实完整源事件，关闭时不得产生 profile 记录。报告保留各组预热后耗时中位数和相对开销，以两组相对开销的中位数判断显式预算。它与模板 benchmark 的外部 HMR `wallMs` 是不同观测口径，不能混排。
 
 比较 profile 开销时，使用相同的 `TEMPLATES_HMR_MARKER_SEED`、场景、迭代次数与源码，分别设置 `TEMPLATES_HMR_PROFILE=1` 和 `0`。每个样本保存输入 SHA-256；关闭 profile 时报告 `profileStatus: 'disabled'`，只比较同口径的 `wallMs`，不等待 profile、不伪造内部阶段。此开关仅控制 JSONL profile；采样器自身的输出轮询和内存探针仍保持一致。
 
@@ -236,10 +259,12 @@ Vite/Rolldown 负责构建产物的 emit/write。默认清理策略适用于构�
 
 ```sh
 pnpm --filter weapp-vite build
-pnpm verify:edit-sequence --engine weapp-modes --report .tmp/output-mode-sequence.json
+pnpm verify:edit-sequence --engine weapp-modes --require-clean --report .tmp/output-mode-sequence.json
 ```
 
 该观察器使用完整 weapp 插件，覆盖 production→dev→production、dev→production、组件移动/删除、页面及分包迁移/删除、共享依赖变化，以及旧生产缓存恢复。每步完整生产磁盘文件集合及字节与独立进程基线比较，检查 emitted JS 引用和路由文件存在性；`emptyOutDir: false` 额外验证每次切换都保留用户文件。它验证的是模式切换后的产物，不测量编辑 HMR 延迟，也不能替代真实 IDE 页面验收。
+
+`--require-clean` 要求源码已提交且无未跟踪项目文件，报告绑定实际提交与干净状态，避免把本地未提交修改归因于候选提交。
 
 ### 原生编辑类别与输出范围采样
 

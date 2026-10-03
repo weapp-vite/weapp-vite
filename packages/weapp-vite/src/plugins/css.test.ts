@@ -987,6 +987,7 @@ describe('css plugin shared style injection', () => {
       scanService: {
         subPackageMap: new Map([
           ['pages', {
+            subPackage: { root: 'pages' },
             styleEntries: [{
               ...subPackageStyleEntry,
               outputRelativePath: 'pages/shared/styles/index.wxss',
@@ -1045,6 +1046,7 @@ describe('css plugin shared style injection', () => {
       scanService: {
         subPackageMap: new Map([
           ['pages', {
+            subPackage: { root: 'pages' },
             styleEntries: [{
               ...subPackageStyleEntry,
               outputRelativePath: 'pages/shared/styles/index.wxss',

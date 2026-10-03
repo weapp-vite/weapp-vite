@@ -16,6 +16,7 @@ import { createSequenceFixturePlugin } from './buildFixture'
 import { applyAction, bounded } from './driver'
 import { observeError } from './editor'
 import { SequenceMeasurements } from './measurement'
+import { SequencePublicationBarrier } from './publicationBarrier'
 import { observePublishedFiles, PublishedRuntime } from './published'
 
 interface ModuleObservation {
@@ -30,6 +31,10 @@ interface PublicationReceipt {
   ready: boolean
 }
 
+interface SequenceSaveOptions {
+  afterSave?: (files: Readonly<Record<string, string>>) => Promise<void>
+}
+
 export class BuildSequenceSession {
   private engine?: DevEngine
   private engineRun?: Promise<void>
@@ -40,6 +45,7 @@ export class BuildSequenceSession {
   private outputTask: Promise<void> = Promise.resolve()
   private readonly publication = new StatefulHmrOutputPublication()
   private readonly runtime = new PublishedRuntime()
+  private readonly consumed = new SequencePublicationBarrier<ReturnType<PublishedRuntime['observe']>>()
   private modules: Record<string, ModuleObservation> = {}
   private entries: Record<string, string | null> = {}
   private readonly stateful: boolean
@@ -59,7 +65,7 @@ export class BuildSequenceSession {
     this.measurements = new SequenceMeasurements(root)
   }
 
-  async observe(input: SequenceInput) {
+  async observe(input: SequenceInput, options: SequenceSaveOptions = {}) {
     this.measurements.reset()
     const topologyChange = this.started && (
       Object.keys(input.files).some(file => !Object.hasOwn(this.sourceFiles, file))
@@ -79,7 +85,7 @@ export class BuildSequenceSession {
     void this.completion.promise.catch(() => {})
     this.writing = true
     try {
-      await this.writeSources(input)
+      await this.writeSources(input, options)
     }
     finally {
       this.writing = false
@@ -234,7 +240,7 @@ export class BuildSequenceSession {
     }
   }
 
-  private async writeSources(input: SequenceInput) {
+  private async writeSources(input: SequenceInput, options: SequenceSaveOptions) {
     const save = async (files: Readonly<Record<string, string>>) => {
       for (const file of Object.keys(this.sourceFiles)) {
         if (!Object.hasOwn(files, file)) {
@@ -286,6 +292,7 @@ export class BuildSequenceSession {
         }
         applyAction(intermediate, action)
         await save(intermediate)
+        await options.afterSave?.({ ...intermediate })
       }
     }
     await save(input.files)
@@ -392,6 +399,7 @@ export class BuildSequenceSession {
         else if (event.code === 'END' && !buildFailed) {
           const receipt = this.capturePublication()
           this.outputTask = this.runtime.load(this.outDir).then(() => {
+            this.consumed.consume(() => this.runtime.observe(false), Promise.resolve())
             this.failure = undefined
             this.finishPublication(receipt)
           })
@@ -425,7 +433,9 @@ export class BuildSequenceSession {
             if (update.type === 'Patch') {
               this.runtime.apply(update)
               this.measurements.patch(update.code)
-              await this.engine!.notifyPayloadDelivered(update.filename)
+              const delivered = this.engine!.notifyPayloadDelivered(update.filename)
+              this.consumed.consume(() => this.runtime.observe(true), delivered)
+              await delivered
             }
             else if (update.type === 'FullReload') {
               // 与生产 adapter 相同，只在引擎要求 reload 时请求完整发布。
@@ -464,11 +474,16 @@ export class BuildSequenceSession {
           ? [[item.fileName, item.facadeModuleId && toStableModuleId(item.facadeModuleId, this.root)]]
           : []))
         await this.runtime.load(this.outDir)
-        for (const output of result.output) {
-          if (output.type === 'chunk') {
-            await this.engine?.notifyPayloadDelivered(output.fileName)
+        const delivered = async () => {
+          for (const output of result.output) {
+            if (output.type === 'chunk') {
+              await this.engine?.notifyPayloadDelivered(output.fileName)
+            }
           }
         }
+        const delivery = delivered()
+        this.consumed.consume(() => this.runtime.observe(true), delivery)
+        await delivery
         this.failure = undefined
         this.finishPublication(receipt)
       }
@@ -479,6 +494,16 @@ export class BuildSequenceSession {
 
   observeSession() {
     return { watchers: this.watcher ? 1 : 0, engines: this.engine ? 1 : 0 }
+  }
+
+  waitForPublication(predicate: (observation: ReturnType<PublishedRuntime['observe']>) => boolean, signal: AbortSignal) {
+    return this.consumed.waitFor(predicate, async () => {
+      if (this.engine) {
+        await this.engine.ensureCurrentBuildFinish()
+        await this.engine.getBundleState()
+      }
+      await this.outputTask
+    }, signal)
   }
 
   async close() {

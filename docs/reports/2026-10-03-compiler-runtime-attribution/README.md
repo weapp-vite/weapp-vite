@@ -44,6 +44,8 @@ node --import tsx scripts/runtime-size/verifyConsumer.ts <上一步输出的独�
 
 需要网络代理时按 Node 的环境代理配置运行准备命令。准备器固定公开源提交、锁文件和 repoctl tsconfig 的 SHA-256；验证器保留源码备份，并在成功或失败后恢复源码及配置。它校验 benchmark、最小页面和典型页面构建，不启动 IDE，也不宣称页面运行时行为通过。
 
+已安装候选 `@mpcore/test` tarball 的独立消费者可额外传入 `--runtime=headless`。验证器通过消费者内部的 ESM 解析加载自身 `node_modules` 下的测试包，记录版本、入口相对路径与 SHA-256；每次最小/典型场景构建后显式指定 `dist/app.json` 和产物根创建测试项目。最小场景验证文本，典型场景将原来的 `view` 改为可按角色查询的 `button`，验证 `onLoad` 后 `1 / 2`、点击后 `2 / 4`，并在 `finally` 关闭会话。本次场景源码及适配说明、逐场景观察值和关闭结果写入 `verification.json`；失败会保留已有观察值并标记未完成，不沿用上次通过结果。未传入此选项时维持原场景，不要求安装测试包。此入口只提供 headless 辅助证据，报告始终明确真实 Stable 微信开发者工具尚未运行、最终 runtime 验收未完成。
+
 ## 当前七端能力阶梯
 
 `seven-target-capabilities.json.gz` 保存当前工作树已有 dist 的七端 × 七阶梯数据。原预算及禁入模块门禁全部通过，未提高预算。JSON 新增每阶梯实际生成入口、明确比较基线、整体与模块字节差、保留/移除模块、模块引用链、类别与未归因字节。公共入口和内部入口的差值是入口兼容成本比较，不是新增业务能力成本。

@@ -35,9 +35,22 @@ export function createSessionEnvironmentPlugin(session: WeappBuildSession, serve
       order: 'post',
       async handler() {
         if (!serve) {
-          for (const asset of await session.buildDependencies()) {
+          const dependencies = await session.buildDependencies()
+          for (const file of dependencies.watchFiles) {
+            this.addWatchFile(file)
+          }
+          for (const asset of dependencies.assets) {
             this.emitFile(asset)
           }
+        }
+      },
+    },
+    writeBundle: {
+      order: 'post',
+      sequential: true,
+      async handler() {
+        if (!serve) {
+          await session.publishDependencies()
         }
       },
     },

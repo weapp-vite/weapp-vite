@@ -10,6 +10,7 @@ import type { PublicAssetOptions } from '../../plugins/asset/publicSources'
 import type { ChangeEvent, SubPackageMetaValue } from '../../types'
 import type { HmrProfileRecordMetadata, HmrProfileSourceEvent } from '../../utils/hmrProfile/provenance'
 import type { HmrRuntimeDecision } from '../hmrRuntime'
+import type { StatefulHmrSnapshot } from '../statefulHmr/globalStyles'
 import type { StatefulHmrOutputFile } from '../statefulHmr/outputWriter'
 import type { DevBuildWatcherController } from './devBuildWatcher'
 import { randomUUID } from 'node:crypto'
@@ -50,11 +51,13 @@ import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRun
 import { getStatefulHmrHost } from '../statefulHmr/hostPlugins'
 import { runStatefulHmrDev } from '../statefulHmr/session'
 import { buildStatefulHmrSnapshot } from '../statefulHmr/snapshotBuild'
+import { clearStatefulHmrSnapshot, takeStatefulHmrSnapshot } from '../statefulHmr/snapshotHandoff'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { watchAssetSources } from '../watch/assets'
 import { createSidecarWatchOptions } from '../watch/options'
 import { retainWatcherService } from '../watcherPlugin'
 import { createDevBuildWatcher } from './devBuildWatcher'
+import { captureEntryTopology } from './entryTopology'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
 import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shouldCleanOutputs } from './outputs'
@@ -228,6 +231,20 @@ function collectStatefulHmrEntryIds(
   // Modules discovered inside emitted chunks are dependencies and must not be
   // promoted to entries, otherwise dependency changes bypass full rebuilds.
   return new Set(Array.from(initialEntryIds, id => normalizeFsResolvedId(id)))
+}
+
+function prepareStatefulHmrSnapshot(snapshot: Awaited<ReturnType<typeof buildStatefulHmrSnapshot>>): StatefulHmrSnapshot {
+  return {
+    output: toStatefulHmrOutput(snapshot.output),
+    childSources: snapshot.getChildSources(),
+    tailwindStyleOwners: snapshot.getTailwindStyleOwners(),
+    entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
+    delegatedComponentEntryIds: [...snapshot.getDelegatedComponentEntryIds()],
+    componentPageGlobalStyleRoutes: snapshot.getGlobalStyleRoutes(),
+    glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
+    inputFiles: snapshot.getInputFiles?.(),
+    inputs: snapshot.getInputs?.(),
+  }
 }
 
 function resolveSnapshotSidecarDirtySummary(
@@ -1332,6 +1349,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let closePromise: Promise<void> | undefined
     buildEvents.watcher.close = () => closePromise ??= (async () => {
       try {
+        clearStatefulHmrSnapshot(ctx)
         await stopStatefulWatcher!()
       }
       finally {
@@ -1415,11 +1433,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           projectConfigPath: configService.projectConfigPath,
           enabled: configService.multiPlatform.enabled,
         })
-        const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin, ctx)
-        const initialSnapshot = toStatefulHmrOutput(snapshot.output)
-        const initialGlobalStyleRoutes = snapshot.getGlobalStyleRoutes()
+        const snapshot = await takeStatefulHmrSnapshot(ctx)
+          ?? prepareStatefulHmrSnapshot(await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin, ctx))
+        let inputFiles = snapshot.inputFiles ?? []
+        const initialSnapshot = snapshot.output
         const initialEntryIds = collectStatefulHmrEntryIds(
-          snapshot.getEntryIds(),
+          snapshot.entryIds ?? [],
         )
         const skylineFiles = findSkylineRendererFiles(initialSnapshot)
         if (skylineFiles.length > 0) {
@@ -1476,47 +1495,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           }
         }), {
           entryIds: initialEntryIds,
-          delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
-          initial: {
-            output: initialSnapshot,
-            childSources: snapshot.getChildSources(),
-            tailwindStyleOwners: snapshot.getTailwindStyleOwners(),
-            componentPageGlobalStyleRoutes: initialGlobalStyleRoutes,
-            glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
-          },
+          delegatedComponentEntryIds: snapshot.delegatedComponentEntryIds,
+          initial: snapshot,
           rebuild: async (files, sources) => {
             for (const file of files) {
               invalidateFileCache(file)
             }
-            const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, (options) => {
+            const snapshot = prepareStatefulHmrSnapshot(await buildStatefulHmrSnapshot(configService.loadOptions, (options) => {
               const snapshotOptions = appendHmrMetricsPlugin(options)
               snapshotOptions.build = { ...(snapshotOptions.build ?? {}), emptyOutDir: false }
-              snapshotOptions.plugins = [
-                ...(snapshotOptions.plugins ?? []),
-                {
-                  name: 'weapp-vite:stateful-hmr-snapshot-assets',
-                  enforce: 'post',
-                  generateBundle(_options, bundle) {
-                    for (const [fileName, item] of Object.entries(bundle)) {
-                      if (item.type === 'chunk') {
-                        delete bundle[fileName]
-                      }
-                    }
-                  },
-                },
-              ]
               return snapshotOptions
-            }, ctx, sources)
-            const output = toStatefulHmrOutput(snapshot.output)
-            return {
-              output,
-              childSources: snapshot.getChildSources(),
-              tailwindStyleOwners: snapshot.getTailwindStyleOwners(),
-              entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
-              delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
-              componentPageGlobalStyleRoutes: snapshot.getGlobalStyleRoutes(),
-              glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
-            }
+            }, ctx, sources, files.length && files.every(file => watchedCssExts.has(path.extname(file))) ? undefined : inputFiles))
+            inputFiles = snapshot.inputFiles ?? inputFiles
+            return snapshot
           },
         }, nativeBuildEvents)
         if (statefulWatcherClosed) {
@@ -1570,7 +1561,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     delete snapshotBuildOptions.build?.watch
     const snapshotWatcherRoot = `${configService.absoluteSrcRoot}::dev-snapshot`
-    let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = Promise.resolve(undefined)
+    // provider 在首构期间也会收集事件；首构写入结束前不得并发推进共享缓存与输出目录。
+    const initialSnapshot = Promise.withResolvers<undefined>()
+    let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = target === 'app' ? initialSnapshot.promise : Promise.resolve(undefined)
     let devWatcherClosed = false
     let pendingSnapshotBatch: SnapshotBuildBatch | undefined
     let failedSnapshotReasons: SnapshotBuildReason[] = []
@@ -1579,6 +1572,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
     // Web 可能先刷新共享服务，native 快照必须比较自身已成功写出的路由版本。
     let emittedAutoRoutesSignature: string | undefined
+    let emittedEntryTopology: ReadonlyMap<string, string> | undefined
     const devBuildWatcher = target === 'app' ? (statefulBuildEvents ?? createDevBuildWatcher()) : undefined
 
     function markSnapshotEntriesFullDirty() {
@@ -1692,6 +1686,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           ctx,
           batchReasons.filter((batchReason): batchReason is SnapshotBuildReason & { file: string } => Boolean(batchReason.file)),
           emittedAutoRoutesSignature,
+          emittedEntryTopology,
         )
         const fullEntryScan = entryTopologyChanged || failedEntryTopologyChange
         requiresFullRescan ||= fullEntryScan
@@ -1786,6 +1781,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           emittedAutoRoutesSignature = routeSignature
           recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
           failedEntryTopologyChange = false
+          if (fullEntryScan) {
+            emittedEntryTopology = captureEntryTopology(ctx)
+          }
           devBuildWatcher?.emitEvent({ code: 'END' })
           return 'snapshot'
         }
@@ -1891,6 +1889,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             const routeSignature = ctx.autoRoutesService?.getSignature()
             await build(snapshotBuildOptions)
             emittedAutoRoutesSignature = routeSignature
+            emittedEntryTopology = captureEntryTopology(ctx)
             devBuildWatcher!.emitEvent({ code: 'END' })
             return devBuildWatcher!.watcher
           }
@@ -1901,6 +1900,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               result: undefined as never,
             })
             if (!hasDevModuleGraphHost(ctx)) {
+              devWatcherClosed = true
               throw error
             }
             // 借用宿主时保留恢复调度，首构建失败后下次输入变更执行完整快照。
@@ -1908,6 +1908,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             failedSnapshotReasons = [{ forceFullRescan: true }]
             logger.error(error)
             return devBuildWatcher!.watcher
+          }
+          finally {
+            initialSnapshot.resolve(undefined)
           }
         })()
       : build(buildOptions) as unknown as Promise<RolldownWatcher>

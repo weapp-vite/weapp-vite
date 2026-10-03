@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer'
+import { PerformanceObserver } from 'node:perf_hooks'
 import process from 'node:process'
-import path from 'pathe'
+import { normalizeSequenceModuleId } from './moduleId'
 
 interface EmittedFile {
   type: 'asset' | 'chunk'
@@ -33,12 +34,12 @@ export class SequenceMeasurements {
 
   load(id: string) {
     this.loadCalls++
-    this.loaded.add(path.relative(this.root, id))
+    this.loaded.add(id)
   }
 
   transform(id: string) {
     this.transformCalls++
-    this.transformed.add(path.relative(this.root, id))
+    this.transformed.add(id)
   }
 
   publish(files: EmittedFile[]) {
@@ -61,9 +62,9 @@ export class SequenceMeasurements {
   snapshot() {
     return {
       loadCalls: this.loadCalls,
-      loadedModules: [...this.loaded].sort(),
+      loadedModules: [...this.loaded].map(id => normalizeSequenceModuleId(id, this.root)).sort(),
       transformCalls: this.transformCalls,
-      transformedModules: [...this.transformed].sort(),
+      transformedModules: [...this.transformed].map(id => normalizeSequenceModuleId(id, this.root)).sort(),
       publications: this.publications,
       outputFiles: [...this.outputs].sort(),
       outputBytes: this.outputBytes,
@@ -87,9 +88,51 @@ export function observeProcessResources() {
 
 export interface SequenceMeasurement {
   elapsedMs: number
+  clock?: { timeOrigin: number, startedAtMs: number, endedAtMs: number }
   process: ReturnType<typeof observeProcessResources>
   build?: ReturnType<SequenceMeasurements['snapshot']>
   session?: { watchers: number, engines: number }
+  processTree?: { rssBytes: number, processCount: number, observationMs: number }
+  gc?: { count: number, durationMs: number, forced: boolean, observationMs: number }
+  outputChanges?: { added: string[], changed: string[], removed: string[], changedBytes: number }
+}
+
+/** GC 观测置于编辑计时之后；显式报告强制回收，不能混入普通 HMR 延迟排名。 */
+export class SequenceGcObserver {
+  private count = 0
+  private durationMs = 0
+  private readonly observer = new PerformanceObserver((list) => {
+    for (const entry of list.getEntries()) {
+      this.count++
+      this.durationMs += entry.duration
+    }
+  })
+
+  constructor() {
+    this.observer.observe({ entryTypes: ['gc'] })
+  }
+
+  async sample(force: boolean) {
+    const started = performance.now()
+    if (force) {
+      if (!globalThis.gc) {
+        throw new Error('Resource gates require the worker --expose-gc flag')
+      }
+      globalThis.gc()
+      await new Promise<void>(resolve => setImmediate(resolve))
+    }
+    for (const entry of this.observer.takeRecords()) {
+      this.count++
+      this.durationMs += entry.duration
+    }
+    const result = { count: this.count, durationMs: this.durationMs, forced: force, observationMs: performance.now() - started }
+    this.count = this.durationMs = 0
+    return result
+  }
+
+  close() {
+    this.observer.disconnect()
+  }
 }
 
 export interface SequenceStepResult {
@@ -100,9 +143,10 @@ export interface SequenceStepResult {
   freshMs?: number
   elapsedMs?: number
   measurement?: SequenceMeasurement
+  observationSha256?: string
 }
 
-/** 至少三个预热后窗口持续上升才触发增长门禁；原始样本仍须保留，不将其称为泄漏证明。 */
+/** 同时检查连续增长与增长后滞留的平台，避免仅比较最后三个窗口而漏掉历史增长。 */
 export function evaluateResourceTrend(samples: number[], options: { warmup: number, window: number, maxGrowth: number }) {
   const { warmup, window, maxGrowth } = options
   if (!Number.isInteger(warmup) || warmup < 0 || !Number.isInteger(window) || window < 1 || !Number.isFinite(maxGrowth) || maxGrowth < 0
@@ -119,7 +163,9 @@ export function evaluateResourceTrend(samples: number[], options: { warmup: numb
     return { status: 'unknown' as const, medians, growth: null }
   }
   const recent = medians.slice(-3)
-  const growth = recent[2]! - recent[0]!
+  const growth = medians.at(-1)! - medians[0]!
+  const recentGrowth = recent[2]! - recent[0]!
   const sustained = recent[1]! > recent[0]! && recent[2]! > recent[1]!
-  return { status: sustained && growth > maxGrowth ? 'growth' as const : 'stable' as const, medians, growth }
+  const retained = medians.slice(-2).every(value => value - medians[0]! > maxGrowth)
+  return { status: (sustained && recentGrowth > maxGrowth) || retained ? 'growth' as const : 'stable' as const, medians, growth, recentGrowth }
 }

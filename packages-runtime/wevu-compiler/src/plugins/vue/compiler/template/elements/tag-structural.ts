@@ -20,7 +20,7 @@ import { transformSlotElement } from './tag-slot'
 const REGEX_SPECIAL_CHARS_RE = /[.*+?^${}()|[\]\\]/g
 
 function resolveListExpression(rawExpValue: string, context: TransformContext, hint: string) {
-  const runtimeExp = (context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExpValue, context.templateSafeCallNames))
+  const runtimeExp = (context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExpValue, context.templateSafeCallNames, context))
     ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
     : null
   return runtimeExp ?? normalizeWxmlExpressionWithContext(rawExpValue, context)

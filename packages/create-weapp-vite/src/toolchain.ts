@@ -1,6 +1,8 @@
 import type { PackageJson } from 'pkg-types'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
+// eslint-disable-next-line e18e/ban-dependencies -- 复用脚手架现有 semver，保持 pnpm peer 范围的 caret、并集和预发布语义。
+import { satisfies } from 'semver'
 import { parseDocument } from 'yaml'
 import { TEMPLATE_CATALOG } from './generated/catalog'
 import { findPnpmWorkspaceRoot } from './pnpmBuildPolicy'
@@ -9,7 +11,6 @@ export type Toolchain = 'wv' | 'vite' | 'vite-plus'
 
 const VITE_PLUS_VERSION = '1.0.0'
 const VITE_PLUS_VITEST_VERSION = '5.0.1'
-const VITE_PLUS_VITE_PEERS = [`vitest@${VITE_PLUS_VITEST_VERSION}>vite`, `@vitest/mocker@${VITE_PLUS_VITEST_VERSION}>vite`]
 const VITE_PLUS_CORE = `npm:@voidzero-dev/vite-plus-core@${VITE_PLUS_VERSION}`
 
 /** 工具链与业务模板正交，非法选择必须在复制模板前失败。 */
@@ -34,6 +35,10 @@ export async function validateToolchainWorkspace(root: string, toolchain: Toolch
   }
   if (document.getIn(['overrides', 'vitest']) !== VITE_PLUS_VITEST_VERSION) {
     throw new Error(`Vite+ 项目所属工作区须先配置 overrides.vitest: ${VITE_PLUS_VITEST_VERSION}，以保证测试包与 vp test 使用同一 runner。`)
+  }
+  const vitePeers = document.getIn(['peerDependencyRules', 'allowedVersions', 'vite'])
+  if (typeof vitePeers !== 'string' || !satisfies(VITE_PLUS_VERSION, vitePeers)) {
+    throw new Error(`Vite+ 项目所属工作区须先配置 peerDependencyRules.allowedVersions.vite: ${VITE_PLUS_VERSION}，以声明 core alias 的工具链版本兼容并保留严格 peer 检查。`)
   }
 }
 
@@ -106,10 +111,8 @@ export async function applyToolchain(root: string, pkg: PackageJson, toolchain: 
     const document = parseDocument(await fs.readFile(fileName, 'utf8'))
     document.setIn(['overrides', 'vite'], VITE_PLUS_CORE)
     document.setIn(['overrides', 'vitest'], VITE_PLUS_VITEST_VERSION)
-    // alias 的发布版本为 1.0.0；只声明配套 Vitest 的两项 peer 兼容，不关闭严格检查。
-    for (const consumer of VITE_PLUS_VITE_PEERS) {
-      document.setIn(['peerDependencyRules', 'allowedVersions', consumer], VITE_PLUS_VERSION)
-    }
+    // core 使用工具链版本号，声明精确 alias 版本兼容，其他依赖仍保持严格 peer 检查。
+    document.setIn(['peerDependencyRules', 'allowedVersions', 'vite'], VITE_PLUS_VERSION)
     await fs.writeFile(fileName, document.toString())
   }
 }

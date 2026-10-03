@@ -1,5 +1,5 @@
-import type { EmittedAsset } from 'rolldown'
 import type { InlineConfig, ViteDevServer } from 'vite'
+import type { PreparedNpmOutput } from './npm'
 import { attachDevModuleGraphHost } from '../moduleGraph/host'
 import { checkAppWorkersOptions } from '../runtime/buildPlugin/workers'
 import { CompilerSession } from '../runtime/compilerSession'
@@ -9,10 +9,11 @@ import { attachStatefulHmrHost, createStatefulHmrHostPlugins, getStatefulHmrHost
 import { syncManagedTsconfigFiles } from '../runtime/tsconfigSupport'
 import { resolveRealpath } from '../utils/realpathScope'
 import { prepareNpmAssets } from './npm'
+import { publishOwnedNpmAssets } from './npm/ownership'
 
 /** 标准插件的目标校验和依赖准备，共享底层编译会话生命周期。 */
 export class WeappBuildSession extends CompilerSession {
-  private dependencyBuild?: Promise<EmittedAsset[]>
+  private dependencyBuild?: Promise<PreparedNpmOutput>
   private validating?: Promise<void>
   isWeb = false
   statefulController?: ReturnType<typeof createStatefulHmrHostPlugins>
@@ -55,9 +56,6 @@ export class WeappBuildSession extends CompilerSession {
         throw new Error('[weapp-vite] stateful-experimental 仅支持微信；其他平台请配置 hmr.runtime=classic。')
       }
       this.statefulController = createStatefulHmrHostPlugins(this.context)
-    }
-    if (service.weappViteConfig.npm?.enable && (service.weappViteConfig.npm.buildOptions || service.projectConfig.setting?.packNpmManually)) {
-      throw new Error('[weapp-vite] 标准插件 alpha 尚不支持自定义 npm 构建回调或手工 npm 输出映射，请使用 wv build。')
     }
     const merged = this.context.configService.merge(undefined, createSharedBuildConfig(this.context.configService, this.context.scanService))
     return merged
@@ -131,11 +129,20 @@ export class WeappBuildSession extends CompilerSession {
 
   buildDependencies() {
     if (this.isWeb) {
-      return Promise.resolve([])
+      return Promise.resolve({ assets: [], external: new Map(), watchFiles: [] })
     }
     if (this.state !== 'building') {
       throw new Error('[weapp-vite] 依赖构建需要活动的构建会话。')
     }
     return this.dependencyBuild ??= this.run(() => prepareNpmAssets(this.context))
+  }
+
+  async publishDependencies() {
+    if (!this.dependencyBuild) {
+      return
+    }
+    const { external } = await this.dependencyBuild
+    const { cwd, outDir } = this.context.configService
+    await this.run(() => publishOwnedNpmAssets(cwd, outDir, external))
   }
 }

@@ -35,7 +35,7 @@ describe('sharedStyles helpers', () => {
     expect(collected.size).toBe(0)
   })
 
-  it('collects style entries from scan service and filters by current subpackage root', () => {
+  it('assigns independent styles only to the matching child build', () => {
     const mainEntry = createStyleEntry({
       outputRelativePath: 'styles/main.wxss',
     })
@@ -48,9 +48,9 @@ describe('sharedStyles helpers', () => {
       scanService: {
         mainPackageStyleEntries: [mainEntry],
         subPackageMap: new Map([
-          ['pkgA', { styleEntries: [entryA] }],
-          ['pkgB', { styleEntries: [entryB] }],
-          ['pkgC', { styleEntries: [] }],
+          ['pkgA', { subPackage: { root: 'pkgA' }, styleEntries: [entryA] }],
+          ['pkgB', { subPackage: { root: 'pkgB', independent: true }, styleEntries: [entryB] }],
+          ['pkgC', { subPackage: { root: 'pkgC' }, styleEntries: [] }],
         ]),
       },
     } as any
@@ -62,7 +62,7 @@ describe('sharedStyles helpers', () => {
       currentSubPackageRoot: 'pkgB',
     } as any)
 
-    expect(Array.from(all.keys())).toEqual(['', 'pkgA', 'pkgB'])
+    expect(Array.from(all.keys())).toEqual(['', 'pkgA'])
     expect(Array.from(onlyPkgB.keys())).toEqual(['pkgB'])
   })
 

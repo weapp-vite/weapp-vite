@@ -219,10 +219,16 @@ async function waitForExitWithTimeout(
   settledExit: Promise<DevProcessExitInfo>,
   timeoutMs: number,
 ) {
-  await Promise.race([
-    settledExit,
-    sleep(timeoutMs),
-  ])
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    await Promise.race([
+      settledExit,
+      new Promise<void>(resolve => timer = setTimeout(resolve, timeoutMs)),
+    ])
+  }
+  finally {
+    clearTimeout(timer)
+  }
 }
 
 export async function cleanupTrackedDevProcesses(forceKillDelayMs = 3_000) {
@@ -349,6 +355,13 @@ export function startDevProcess(
           // 原生进程退出先撤销终止权限，仍等待 execa 排空输出并完成诊断。
           await waitForExitWithTimeout(settledExit, forceKillDelayMs + 1_000)
           return
+        }
+        if (child.nodeChildProcess?.connected) {
+          child.nodeChildProcess.disconnect()
+          await waitForExitWithTimeout(settledExit, forceKillDelayMs)
+          if (exited || child.nodeChildProcess.exitCode != null || child.nodeChildProcess.signalCode != null) {
+            return
+          }
         }
         if (typeof child.pid === 'number') {
           await terminatePid(child.pid, forceKillDelayMs, () => !exited && child.nodeChildProcess?.exitCode == null && child.nodeChildProcess?.signalCode == null)

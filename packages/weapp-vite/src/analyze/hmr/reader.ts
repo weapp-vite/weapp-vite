@@ -27,6 +27,11 @@ function isSample(value: unknown): value is HmrProfileJsonSample {
     return false
   }
   const sample = value as Record<string, unknown>
+  for (const [key, values] of Object.entries({ pipeline: ['standard', 'stateful'], profileMode: ['delivery', 'full', 'refresh'], completionBoundary: ['delivery-acknowledged', 'output-published'] })) {
+    if (sample[key] !== undefined && !values.includes(String(sample[key]))) {
+      return false
+    }
+  }
   if (typeof sample.totalMs !== 'number' || !Number.isFinite(sample.totalMs) || sample.totalMs < 0) {
     return false
   }

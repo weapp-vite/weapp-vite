@@ -16,6 +16,7 @@ import { registerManagedTailwindcssEntries } from '../../plugins/tailwindcssMark
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createRuntimeState } from '../runtimeState'
 import { StatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
+import { offerStatefulHmrSnapshot, StatefulHmrSnapshotHandoff } from '../statefulHmr/snapshotHandoff'
 import { createWatcherServicePlugin } from '../watcherPlugin'
 import { createBuildService } from './service'
 
@@ -715,6 +716,32 @@ describe('runtime buildPlugin service', () => {
     expect(graph.collectAffectedEntries(`${entries[1]}.wxml`)).toEqual(new Set())
   })
 
+  it.each([true, false])('consumes a topology snapshot once and rebuilds when its input version changed (current: %s)', async (current) => {
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockResolvedValue({ close: vi.fn(async () => {}) })
+    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+    const entry = `${ctx.configService.absoluteSrcRoot}/added.vue`
+    const snapshot = {
+      output: [{ type: 'asset' as const, fileName: 'added.json', source: '{"component":true}' }],
+      entryIds: [entry],
+      delegatedComponentEntryIds: [entry],
+      componentPageGlobalStyleRoutes: [],
+      glassEaselAnalysisByOwner: new Map<string, GlassEaselAnalysisFact>(),
+    }
+    offerStatefulHmrSnapshot(ctx, new StatefulHmrSnapshotHandoff(snapshot, { scope: { roots: [], files: [], excluded: [] }, versions: new Map() }, async () => current))
+    await runStatefulHmrDevMock.mock.calls[0]![2]()
+    expect(buildMock).toHaveBeenCalledTimes(current ? 1 : 2)
+    if (current) {
+      expect(runStatefulHmrDevMock.mock.calls[1]![3].initial).toBe(snapshot)
+      expect(runStatefulHmrDevMock.mock.calls[1]![3].entryIds).toEqual(new Set([entry]))
+    }
+    await runStatefulHmrDevMock.mock.calls[1]![2]()
+    expect(buildMock).toHaveBeenCalledTimes(current ? 2 : 3)
+    await watcher.close()
+  })
+
   it('releases graph inputs registered after the original watcher closes during native restart', async () => {
     const graph = createModuleGraphService()
     const ctx = createMockContext({ moduleGraphService: graph })
@@ -1366,6 +1393,64 @@ describe('runtime buildPlugin service', () => {
       ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh = false
       vi.useRealTimers()
     }
+  })
+
+  it('serializes source changes received during the initial publication behind that build', async () => {
+    const watcher = createManualWatcher()
+    chokidarWatchMock.mockReturnValue(createManualSidecarWatcher())
+    const ctx = createMockContext()
+    const initialRelease = Promise.withResolvers<void>()
+    const initialStarted = Promise.withResolvers<void>()
+    const sequence: string[] = []
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set(HMR_PAGE_ID, { id: HMR_PAGE_ID })
+    ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([HMR_PAGE_ID]))
+    buildMock.mockImplementationOnce(async () => {
+      sequence.push('initial-start')
+      initialStarted.resolve()
+      await initialRelease.promise
+      sequence.push('initial-write-complete')
+      return watcher
+    }).mockImplementation(async () => {
+      sequence.push('snapshot-write')
+      return { output: [] }
+    })
+    const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+    await initialStarted.promise
+    try {
+      moduleGraphProviderChange.handler?.({ event: 'update', file: HMR_PAGE_ID })
+      await waitForTimers(25)
+      expect(buildMock).toHaveBeenCalledTimes(1)
+    }
+    finally {
+      initialRelease.resolve()
+      await watcher.subscribed
+      watcher.emit('START')
+      watcher.emit('END')
+      await firstBuild
+      await waitForMockCalls(buildMock, 2)
+      await watcher.close()
+    }
+    expect(sequence).toEqual(['initial-start', 'initial-write-complete', 'snapshot-write'])
+  })
+
+  it('discards queued source changes after an unrecoverable initial publication failure', async () => {
+    const ctx = createMockContext()
+    const initialRelease = Promise.withResolvers<void>()
+    const initialStarted = Promise.withResolvers<void>()
+    const error = new Error('initial publication failed')
+    buildMock.mockImplementationOnce(async () => {
+      initialStarted.resolve()
+      await initialRelease.promise
+      throw error
+    }).mockResolvedValue({ output: [] })
+    const failure = expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toBe(error)
+    await initialStarted.promise
+    moduleGraphProviderChange.handler?.({ event: 'update', file: HMR_PAGE_ID })
+    await waitForTimers(25)
+    initialRelease.resolve()
+    await failure
+    await waitForTimers(25)
+    expect(buildMock).toHaveBeenCalledTimes(1)
   })
 
   it('runs a stable narrow metadata snapshot build for direct sidecar updates', async () => {

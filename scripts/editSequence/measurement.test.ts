@@ -10,9 +10,9 @@ describe('edit sequence observation gates', () => {
     observer.publish([{ type: 'asset', fileName: 'page.wxss', source: '你好' }])
     expect(observer.snapshot()).toMatchObject({
       loadCalls: 2,
-      loadedModules: ['changed.js'],
+      loadedModules: ['<fixture>/changed.js'],
       transformCalls: 1,
-      transformedModules: ['changed.js'],
+      transformedModules: ['<fixture>/changed.js'],
       publications: 1,
       outputFiles: ['page.wxss'],
       outputBytes: 6,
@@ -37,5 +37,20 @@ describe('edit sequence observation gates', () => {
   it('rejects invalid samples and unbounded window settings', () => {
     expect(() => evaluateResourceTrend([Number.NaN], { warmup: 0, window: 1, maxGrowth: 0 })).toThrow()
     expect(() => evaluateResourceTrend([], { warmup: 0, window: 0, maxGrowth: 0 })).toThrow()
+  })
+
+  it('detects retained growth even after the latest windows become flat', () => {
+    expect(evaluateResourceTrend([10, 10, 20, 20, 30, 30, 30, 30, 30, 30], { warmup: 0, window: 2, maxGrowth: 5 }))
+      .toMatchObject({ status: 'growth', growth: 20, recentGrowth: 0 })
+    expect(evaluateResourceTrend([10, 10, 40, 40, 10, 10, 10, 10, 10, 10], { warmup: 0, window: 2, maxGrowth: 5 }))
+      .toMatchObject({ status: 'stable', growth: 0 })
+  })
+
+  it('detects a retained plateau within the default fourteen-edit observation', () => {
+    const samples = [99, 99, 99, ...Array.from<number>({ length: 4 }).fill(10), ...Array.from<number>({ length: 8 }).fill(30)]
+    expect(evaluateResourceTrend(samples, { warmup: 3, window: 4, maxGrowth: 5 }))
+      .toMatchObject({ status: 'growth', medians: [10, 30, 30], growth: 20 })
+    expect(evaluateResourceTrend(samples.map(value => value === 30 ? 12 : value), { warmup: 3, window: 4, maxGrowth: 5 }))
+      .toMatchObject({ status: 'stable', medians: [10, 12, 12], growth: 2 })
   })
 })

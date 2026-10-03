@@ -55,21 +55,31 @@ export function captureWatchDependencies(register: (file: string) => void): Plug
           if (existing) {
             return existing
           }
-          const copy = { ...plugin }
+          const hookEntries = [...hooks].flatMap((key) => {
+            const hook = (plugin as unknown as Record<string, unknown>)[key]
+            const handler = typeof hook === 'function' ? hook : (hook as { handler?: unknown } | undefined)?.handler
+            return typeof handler === 'function' ? [{ key, hook, handler }] : []
+          })
+          // 原生插件通过实例原型注册，不能展开成普通对象；无 JS hook 时保持原实例。
+          if (!plugin.applyToEnvironment && hookEntries.length === 0) {
+            wrapped.set(plugin, plugin)
+            return plugin
+          }
+          const copy = Object.create(Object.getPrototypeOf(plugin)) as Plugin
+          const descriptors = Object.getOwnPropertyDescriptors(plugin)
+          const replaceHook = (key: string, value: unknown) => {
+            descriptors[key] = { configurable: true, enumerable: descriptors[key]?.enumerable ?? true, writable: true, value }
+          }
           wrapped.set(plugin, copy)
           wrapped.set(copy, copy)
           if (plugin.applyToEnvironment) {
             const apply = plugin.applyToEnvironment
-            copy.applyToEnvironment = function (environment) {
+            const captureEnvironment: typeof apply = function (this: Plugin, environment) {
               return wrapPluginOptions(apply.call(this, environment), wrap) as ReturnType<typeof apply>
             }
+            replaceHook('applyToEnvironment', captureEnvironment)
           }
-          for (const key of hooks) {
-            const hook = (plugin as unknown as Record<string, unknown>)[key]
-            const handler = typeof hook === 'function' ? hook : (hook as { handler?: unknown } | undefined)?.handler
-            if (typeof handler !== 'function') {
-              continue
-            }
+          for (const { key, hook, handler } of hookEntries) {
             const capture = function (this: unknown, ...args: unknown[]) {
               const context = this as { addWatchFile?: (file: string) => unknown } | undefined
               if (!context?.addWatchFile) {
@@ -90,10 +100,11 @@ export function captureWatchDependencies(register: (file: string) => void): Plug
               })
               return Reflect.apply(handler, proxy, args)
             }
-            ;(copy as unknown as Record<string, unknown>)[key] = typeof hook === 'function'
+            replaceHook(key, typeof hook === 'function'
               ? capture
-              : { ...hook as object, handler: capture }
+              : { ...hook as object, handler: capture })
           }
+          Object.defineProperties(copy, descriptors)
           return copy
         }
         const plugins = config.plugins as Plugin[]

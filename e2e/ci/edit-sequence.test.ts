@@ -1,10 +1,8 @@
 import type { SequenceStepResult } from '../../scripts/editSequence/measurement'
-import fs from 'node:fs/promises'
-import { syncBuiltinESMExports } from 'node:module'
 import path from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { BuildSequenceSession } from '../../scripts/editSequence/build'
-import { bounded, verifyEditSequence } from '../../scripts/editSequence/driver'
+import { verifyEditSequence } from '../../scripts/editSequence/driver'
 import { createProcessObserver } from '../../scripts/editSequence/processObserver'
 import { createSequenceProject } from '../../scripts/editSequence/project'
 import { assertResourceSequence, createResourceSequence, summarizeResourceSequence } from '../../scripts/editSequence/resourceSequence'
@@ -63,7 +61,7 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
 
     it(`${engine}: observes warm resource windows without restarting the incremental session`, async () => {
       const project = await createSequenceProject()
-      const observer = createProcessObserver<BuildSnapshot>(engine, project.root)
+      const observer = createProcessObserver<BuildSnapshot>(engine, project.root, { resources: true })
       const steps: SequenceStepResult[] = []
       try {
         await verifyEditSequence(createResourceSequence(), observer, { timeoutMs: 90_000, onStep: step => steps.push(step) })
@@ -84,9 +82,8 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
       const project = await createSequenceProject()
       const session = new BuildSequenceSession(engine, project.root, path.join(project.root, '.sequence-output', 'incremental'))
       const baseline = createProcessObserver<unknown>(engine, project.root)
-      const marker = 'sequence-consumed-value'
-      const intermediate = `export const value = "intermediate"; console.log("${marker}", value);`
-      const final = `export const value = "final"; console.log("${marker}", value);`
+      const intermediate = 'export const value = "intermediate";'
+      const final = 'export const value = "final";'
       try {
         await verifyEditSequence({
           name: 'rapid-publication-boundary',
@@ -104,31 +101,20 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
             if (input.step === 0) {
               return session.observe(input)
             }
-            const consumed = Promise.withResolvers<void>()
-            const rename = fs.rename
-            const logSpy = vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-              if (args[0] === marker && args[1] === 'intermediate') {
-                consumed.resolve()
-              }
+            const observed: unknown[] = []
+            const snapshot = await session.observe(input, {
+              afterSave: async (files) => {
+                if (files['value.js'] !== intermediate) {
+                  return
+                }
+                // 中间版本须真实执行、确认 delivery 并完成 coordinator，才开始第二次保存。
+                const publication = await session.waitForPublication(value => (value.semantics as { value: string }).value === 'intermediate', input.signal)
+                observed.push(publication.semantics)
+              },
             })
-            const renameSpy = vi.spyOn(fs, 'rename').mockImplementation(async (from, to) => {
-              await rename(from, to)
-              if (to === path.join(project.root, 'value.js') && await fs.readFile(to, 'utf8') === intermediate) {
-                // 等待真实已发布代码执行；不靠 sleep 猜测 watcher 是否跨过 debounce。
-                await bounded(() => consumed.promise, input.signal)
-              }
-            })
-            syncBuiltinESMExports()
-            try {
-              const snapshot = await session.observe(input)
-              expect(snapshot.published?.semantics).toMatchObject({ value: 'final' })
-              return snapshot
-            }
-            finally {
-              renameSpy.mockRestore()
-              logSpy.mockRestore()
-              syncBuiltinESMExports()
-            }
+            expect(observed).toEqual([expect.objectContaining({ value: 'intermediate' })])
+            expect(snapshot.published?.semantics).toMatchObject({ value: 'final' })
+            return snapshot
           },
           fresh: input => baseline.fresh(input),
           close: async () => {

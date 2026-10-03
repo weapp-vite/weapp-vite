@@ -40,6 +40,7 @@ export interface ComponentLibraryWebSuiteOptions {
   serverPortEnv: string
   suiteName: string
   updateBaselinesEnv: string
+  verifyRendered?: (page: Page, scenario: ComponentScenarioLike) => Promise<void>
 }
 
 function reportProgress(
@@ -178,8 +179,10 @@ export function defineComponentLibraryWebSuite(options: ComponentLibraryWebSuite
       for (const [index, scenario] of scenarios.entries()) {
         reportProgress(reportProgressEnabled, options.progressLabel, scenarios.length, 'behavior', 'mobile', index, scenario.component)
         failures.push(...collectFailures('mobile', await runWebScenario(mobilePage, scenario, mobileIssues)))
+        await options.verifyRendered?.(mobilePage, scenario)
         reportProgress(reportProgressEnabled, options.progressLabel, scenarios.length, 'behavior', 'desktop', index, scenario.component)
         failures.push(...collectFailures('desktop', await runWebScenario(desktopPage, scenario, desktopIssues)))
+        await options.verifyRendered?.(desktopPage, scenario)
       }
       expect(scenarios.length).toBeGreaterThan(0)
       expect(failures, failures.join('\n')).toEqual([])
@@ -200,6 +203,7 @@ export function defineComponentLibraryWebSuite(options: ComponentLibraryWebSuite
             scenario,
             viewport === 'mobile' ? mobileIssues : desktopIssues,
           )
+          await options.verifyRendered?.(page, scenario)
           const screenshot = await captureStableScreenshot(page, `${viewport}/${scenario.component}`)
           const baselinePath = path.join(baselineRoot, viewport, `${scenario.component}.png`)
           const currentPath = path.join(outputRoot, viewport, `${scenario.component}.current.png`)

@@ -1,3 +1,4 @@
+import type { ConsumerRuntimeObservation } from './consumerRuntime'
 import { createHash } from 'node:crypto'
 import { cp, mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -5,6 +6,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 import { exec } from 'tinyexec'
+import { loadConsumerRuntime, verifyConsumerRuntime } from './consumerRuntime'
 
 async function inventory(directory: string, prefix = ''): Promise<Array<{ file: string, bytes: number, sha256: string }>> {
   const files = []
@@ -24,10 +26,16 @@ async function inventory(directory: string, prefix = ''): Promise<Array<{ file: 
 
 async function main() {
   const directory = process.argv[2]
+  const runtimeArguments = process.argv.slice(3).filter(argument => argument.startsWith('--runtime'))
+  if (runtimeArguments.length > 1 || runtimeArguments.some(argument => argument !== '--runtime=headless')) {
+    throw new Error('The only supported runtime option is --runtime=headless; omit it for historical build-only verification.')
+  }
+  const runtimeMode = runtimeArguments.length > 0 ? 'headless' : undefined
   if (!directory || !process.argv.includes('--disposable-consumer')) {
-    throw new Error('Usage: node --import tsx scripts/runtime-size/verifyConsumer.ts <installed consumer> --disposable-consumer')
+    throw new Error('Usage: node --import tsx scripts/runtime-size/verifyConsumer.ts <installed consumer> --disposable-consumer [--runtime=headless]')
   }
   const root = await realpath(path.resolve(directory))
+  const runtime = runtimeMode === 'headless' ? await loadConsumerRuntime(root) : undefined
   const configFile = path.join(root, 'weapp-vite.config.ts')
   const originalConfig = await readFile(configFile, 'utf8')
   if (!originalConfig.includes('defineConfig(() => ({') || originalConfig.includes('captureConsumerAttribution')) {
@@ -39,6 +47,17 @@ async function main() {
   await mkdir(backup)
   await cp(path.join(root, 'src'), path.join(backup, 'src'), { recursive: true })
   await mkdir(output, { recursive: true })
+  await rm(path.join(output, 'verification.json'), { force: true })
+  const runtimeObservations: ConsumerRuntimeObservation[] = []
+  const verification: Record<string, unknown> = {
+    schemaVersion: 2,
+    generatedAt: new Date().toISOString(),
+    status: 'in-progress',
+    runtimeValidation: runtime ? 'headless-pending' : 'not-run-build-and-attribution-only',
+    ...(runtime ? { runtimePackage: runtime.package, runtimeObservations, scenarioAdaptations: ['typical counter uses a native button for role-based headless interaction'] } : {}),
+    stableDevtoolsValidation: 'not-run-final-runtime-acceptance-incomplete',
+  }
+  const saveVerification = () => writeFile(path.join(output, 'verification.json'), `${JSON.stringify(verification, null, 2)}\n`)
   const run = async () => {
     const result = await exec(process.execPath, [path.join(root, 'node_modules/weapp-vite/bin/weapp-vite.js'), 'build'], {
       nodeOptions: { cwd: root, env: { ...process.env, RUNTIME_ATTRIBUTION_LOCKFILE: lockfile } },
@@ -61,13 +80,19 @@ async function main() {
     if (JSON.stringify(baseline) !== JSON.stringify(instrumented)) {
       throw new Error('Attribution instrumentation changed emitted artifacts.')
     }
+    verification.instrumentationPreservesEveryArtifact = true
+    verification.uninstrumentedFiles = baseline
     await rename(path.join(root, 'consumer-attribution.json'), path.join(output, 'benchmark.json'))
     const appSource = '<script setup>\ndefineAppJson({ pages: ["pages/index/index"] })\n</script>\n'
+    const counterTag = runtime ? 'button' : 'view'
     const scenarios = {
       minimal: '<template><view>minimal published consumer</view></template>\n',
-      typical: '<script setup>\nimport { ref, computed, onLoad } from "wevu"\nconst count = ref(0)\nconst doubled = computed(() => count.value * 2)\nonLoad(() => { count.value = 1 })\nfunction increment() { count.value++ }\n</script>\n<template><view @tap="increment">{{ count }} / {{ doubled }}</view></template>\n',
+      typical: `<script setup>\nimport { ref, computed, onLoad } from "wevu"\nconst count = ref(0)\nconst doubled = computed(() => count.value * 2)\nonLoad(() => { count.value = 1 })\nfunction increment() { count.value++ }\n</script>\n<template><${counterTag} @tap="increment">{{ count }} / {{ doubled }}</${counterTag}></template>\n`,
     }
-    for (const [name, source] of Object.entries(scenarios)) {
+    verification.scenarioSource = { app: appSource, ...scenarios }
+    await saveVerification()
+    for (const name of ['minimal', 'typical'] as const) {
+      const source = scenarios[name]
       await rm(path.join(root, 'src'), { recursive: true })
       await mkdir(path.join(root, 'src/pages/index'), { recursive: true })
       await writeFile(path.join(root, 'src/app.vue'), appSource)
@@ -80,9 +105,25 @@ async function main() {
         }
       }
       await rename(path.join(root, 'consumer-attribution.json'), path.join(output, `${name}.json`))
+      if (runtime) {
+        runtimeObservations.push(await verifyConsumerRuntime(root, name, runtime))
+        await saveVerification()
+      }
     }
-    await writeFile(path.join(output, 'verification.json'), `${JSON.stringify({ schemaVersion: 1, instrumentationPreservesEveryArtifact: true, uninstrumentedFiles: baseline, scenarioSource: { app: appSource, ...scenarios }, runtimeValidation: 'not-run-build-and-attribution-only' }, null, 2)}\n`)
-    process.stdout.write('Published consumer benchmark, minimal and typical builds passed; instrumentation preserved every emitted file. Runtime behavior is not asserted by this command.\n')
+    verification.status = 'passed'
+    verification.runtimeValidation = runtime ? 'headless-passed-stable-devtools-not-run' : 'not-run-build-and-attribution-only'
+    await saveVerification()
+    process.stdout.write('Published consumer benchmark, minimal and typical builds passed; instrumentation preserved every emitted file.\n')
+    process.stdout.write(runtime
+      ? `Headless observations: ${JSON.stringify(runtimeObservations)}\nReal Stable WeChat DevTools validation was not run; final runtime acceptance is incomplete.\n`
+      : 'Runtime behavior is not asserted in build-only mode. Real Stable WeChat DevTools validation was not run; final runtime acceptance is incomplete.\n')
+  }
+  catch (error) {
+    verification.status = 'failed'
+    verification.runtimeValidation = runtime ? 'headless-not-completed' : 'not-run-build-and-attribution-only'
+    verification.failure = (error instanceof Error ? error.message : String(error)).replaceAll(root, '[consumer]')
+    await saveVerification()
+    throw error
   }
   finally {
     await writeFile(configFile, originalConfig)

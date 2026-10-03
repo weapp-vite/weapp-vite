@@ -1,10 +1,21 @@
 import type { HmrProfileRecordMetadata } from '../utils/hmrProfile/provenance'
 import type { HmrProfileInputCoverage } from './hmr/reader'
 import { fs } from '@weapp-core/shared/fs'
+import { attributeHmrProfile } from './hmr/attribution'
 import { readHmrProfileLines } from './hmr/reader'
 
 export interface HmrProfileJsonSample extends Partial<Omit<HmrProfileRecordMetadata, 'schemaVersion'>> {
   schemaVersion?: number
+  pipeline?: 'standard' | 'stateful'
+  profileMode?: 'delivery' | 'full' | 'refresh'
+  completionBoundary?: 'delivery-acknowledged' | 'output-published'
+  sourceToBatchMs?: number
+  deliveryQueueMs?: number
+  prepareMs?: number
+  commitQueueMs?: number
+  commitMs?: number
+  publishMs?: number
+  snapshotPublishMs?: number
   batchWaitMs?: number
   queueWaitMs?: number
   bundlerMs?: number
@@ -100,6 +111,7 @@ export interface HmrProfileAnalyzeResult {
   sampleCount: number
   skippedLineCount: number
   inputCoverage: HmrProfileInputCoverage
+  timelines: Array<ReturnType<typeof attributeHmrProfile> & { batchId?: string, completionBoundary?: HmrProfileJsonSample['completionBoundary'] }>
   firstTimestamp?: string
   lastTimestamp?: string
   metrics: {
@@ -487,6 +499,7 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     sampleCount: samples.length,
     skippedLineCount,
     inputCoverage,
+    timelines: samples.map(sample => ({ batchId: sample.batchId, completionBoundary: sample.completionBoundary, ...attributeHmrProfile(sample) })),
     firstTimestamp: orderedByTime[0]?.timestamp,
     lastTimestamp: orderedByTime[orderedByTime.length - 1]?.timestamp,
     metrics: {

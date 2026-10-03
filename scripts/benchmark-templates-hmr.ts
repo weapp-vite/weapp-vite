@@ -15,6 +15,7 @@ import { sampleHeapAfterGc, waitForInspectorUrl } from '../e2e/utils/dev-memory'
 import { startDevProcess } from '../e2e/utils/dev-process'
 import { readEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
+import { attributeHmrProfile } from '../packages/weapp-vite/src/analyze/hmr/attribution'
 import { readHmrProfileLines } from '../packages/weapp-vite/src/analyze/hmr/reader'
 import { readDeclaredScenarios } from './benchmarkTemplatesHmr/declaredScenarios'
 import { sanitizeBenchmarkDevLog } from './benchmarkTemplatesHmr/diagnostics'
@@ -64,6 +65,7 @@ export interface ScenarioCase {
 }
 
 interface ScenarioSample extends HmrProfileJsonSample {
+  attribution: ReturnType<typeof attributeHmrProfile>
   outputChanges?: ReturnType<typeof compareBenchmarkOutputs>
   inputSha256?: string
   profileStatus: Awaited<ReturnType<typeof collectBenchmarkHmrProfile>>['status']
@@ -115,6 +117,7 @@ interface TemplateResult {
 
 interface BenchmarkReport {
   budgetMs: number
+  budgetMetric: 'wallMs'
   generatedAt: string
   iterations: number
   summary: {
@@ -694,9 +697,9 @@ async function benchmarkScenario(
       await waitForOutput(expectedMarker)
       const wallMs = performance.now() - startedAt
       await acknowledgeArtifact(expectedMarker)
-      const profileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs), profileEnabled)
+      const profileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs, runtime), profileEnabled)
       const editMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
-      const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample)
+      const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample, performance.timeOrigin + startedAt)
       editSample.inputSha256 = createHash('sha256').update(updated).digest('hex')
       const editedOutputs = observeOutputScope ? await snapshotBenchmarkOutputs(path.join(template.workspaceRoot, 'dist')) : undefined
       if (beforeOutputs && editedOutputs) {
@@ -710,9 +713,9 @@ async function benchmarkScenario(
       await waitForOutput(expectedMarker, true)
       const restoreWallMs = performance.now() - restoreStartedAt
       await acknowledgeArtifact(expectedMarker, true)
-      const restoreProfileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs), profileEnabled)
+      const restoreProfileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs, runtime), profileEnabled)
       const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
-      const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample)
+      const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample, performance.timeOrigin + restoreStartedAt)
       restoreSample.inputSha256 = createHash('sha256').update(original).digest('hex')
       if (editedOutputs) {
         restoreSample.outputChanges = compareBenchmarkOutputs(editedOutputs, await snapshotBenchmarkOutputs(path.join(template.workspaceRoot, 'dist')))
@@ -782,7 +785,7 @@ async function benchmarkScenario(
     maxMs,
     maxWallMs,
     outputFile: formatReportPath(scenario.outputFile),
-    overBudget: typeof maxMs === 'number' && maxMs > budgetMs,
+    overBudget: typeof maxWallMs === 'number' && maxWallMs > budgetMs,
     samples,
     cycles,
     sourceFile: formatReportPath(scenario.sourceFile),
@@ -795,10 +798,12 @@ function createScenarioSample(
   wallMs: number,
   phase: SamplePhase,
   memorySample?: { heapUsed: number, rss: number },
+  writtenAtEpochMs?: number,
 ): ScenarioSample {
   const profileSample = profileResult.profile
   return {
     ...profileSample,
+    attribution: attributeHmrProfile(profileSample, writtenAtEpochMs === undefined ? undefined : { sourceFile: scenario.sourceFile, writtenAtEpochMs, visibleAtEpochMs: writtenAtEpochMs + wallMs }),
     sourceEvents: profileSample.sourceEvents?.map(event => ({ ...event, file: event.file ? formatReportPath(event.file) : undefined })),
     file: formatReportPath(profileSample.file ?? scenario.sourceFile),
     heapUsedBytes: memorySample?.heapUsed,
@@ -808,19 +813,12 @@ function createScenarioSample(
     phase,
     profileStatus: profileResult.status,
     timingSource: typeof profileSample.totalMs === 'number' ? 'compiler-profile' : 'output-observation',
-    totalMs: profileSample.totalMs ?? wallMs,
     wallMs,
   }
 }
 
 function selectBestScenarioSample(editSample: ScenarioSample, restoreSample: ScenarioSample) {
-  if (typeof editSample.totalMs !== 'number') {
-    return restoreSample
-  }
-  if (typeof restoreSample.totalMs !== 'number') {
-    return editSample
-  }
-  return restoreSample.totalMs < editSample.totalMs ? restoreSample : editSample
+  return restoreSample.wallMs < editSample.wallMs ? restoreSample : editSample
 }
 
 function createReport(templates: TemplateResult[]): BenchmarkReport {
@@ -830,6 +828,7 @@ function createReport(templates: TemplateResult[]): BenchmarkReport {
   const maxWallMs = maxOptional(measuredScenarios.map(scenario => scenario.maxWallMs))
   return {
     budgetMs,
+    budgetMetric: 'wallMs',
     generatedAt: new Date().toISOString(),
     iterations,
     profileTimeoutMs,
@@ -870,6 +869,7 @@ async function waitForHmrProfileSample(
   sourceFile: string,
   startLineCount: number,
   waitMs: number,
+  runtime: 'standard' | 'stateful',
 ) {
   const startedAt = Date.now()
   while (Date.now() - startedAt < waitMs) {
@@ -877,7 +877,7 @@ async function waitForHmrProfileSample(
     let matched: HmrProfileJsonSample | undefined
     for (let index = samples.length - 1; index >= 0; index -= 1) {
       const sample = samples[index]
-      if (isProfileSampleForSource(template, sample, sourceFile)) {
+      if ((runtime !== 'stateful' || sample?.pipeline === 'stateful') && isProfileSampleForSource(template, sample, sourceFile)) {
         matched = sample
         break
       }

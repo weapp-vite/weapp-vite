@@ -996,6 +996,73 @@ const count = 1
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
   })
 
+  it.each(['pages/logs/index.vue', 'app.vue', 'layouts/default.vue'])('does not invalidate an unchanged %s after its script update was compiled', async (relativeEntry) => {
+    const state = createState()
+    const entryId = `${state.ctx.configService.absoluteSrcRoot}/${relativeEntry}`
+    const otherEntry = `${state.ctx.configService.absoluteSrcRoot}/pages/other/index.vue`
+    const source = '<script setup>const count = 1</script><template><view>{{ count }}</view></template><style>view { color: red }</style>'
+    const next = source.replace('count = 1', 'count = 2')
+    state.loadedEntrySet.add(entryId)
+    state.resolvedEntryMap.set(entryId, { id: entryId })
+    state.resolvedEntryMap.set(otherEntry, { id: otherEntry })
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    state.ctx.moduleGraphService.recordChangedFile = vi.fn()
+    collectAffectedEntriesMock.mockReturnValue(new Set([entryId, otherEntry]))
+    setVueEntrySfcSignatures(state, entryId, source)
+    vi.spyOn(fs, 'readFile').mockResolvedValue(next)
+    const hook = createWatchChangeHook(state)
+    await hook(entryId, { event: 'update' })
+    expect(state.markEntryDirty).toHaveBeenCalled()
+
+    setVueEntrySfcSignatures(state, entryId, next)
+    vi.clearAllMocks()
+    const profileBefore = structuredClone(state.ctx.runtimeState.build.hmr.profile)
+    await hook(entryId, { event: 'update' })
+    await hook(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).not.toHaveBeenCalled()
+    expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+    expect(collectAffectedEntriesMock).not.toHaveBeenCalled()
+    expect(invalidateFileCacheMock).not.toHaveBeenCalled()
+    expect(state.ctx.moduleGraphService.recordChangedFile).not.toHaveBeenCalled()
+    expect(state.ctx.onStatefulHmrSourceChange).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile).toEqual(profileBefore)
+  })
+
+  it.each(['style-sidecar', 'json-sidecar', 'sidecar-direct'])('preserves explicit %s invalidation when Vue source blocks are unchanged', async (cause) => {
+    const state = createState()
+    const entryId = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/index.vue`
+    const source = '<template><view /></template><style src="./external.scss" />'
+    state.loadedEntrySet.add(entryId)
+    state.ctx.runtimeState.watcher = { sidecarDirtyFiles: new Map([[entryId, cause]]) }
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    setVueEntrySfcSignatures(state, entryId, source)
+    vi.spyOn(fs, 'readFile').mockResolvedValue(source)
+
+    await createWatchChangeHook(state)(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledExactlyOnceWith(entryId, 'metadata')
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledExactlyOnceWith(entryId, [`${cause}:1`])
+    expect(state.ctx.runtimeState.watcher.sidecarDirtyFiles.size).toBe(0)
+  })
+
+  it('preserves external stylesheet changes when the owning Vue source is unchanged', async () => {
+    const state = createState()
+    const entryId = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/index.vue`
+    const stylesheet = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/external.scss`
+    const source = '<template><view /></template><style src="./external.scss" />'
+    state.loadedEntrySet.add(entryId)
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    setVueEntrySfcSignatures(state, entryId, source)
+    collectAffectedEntriesMock.mockReturnValue(new Set([entryId]))
+    vi.spyOn(fs, 'readFile').mockResolvedValue(source)
+
+    await createWatchChangeHook(state)(stylesheet, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledWith(stylesheet, ['style-sidecar:1'])
+  })
+
   it('marks vue entry updates as metadata when only json macro content changed', async () => {
     const entryId = '/project/src/pages/logs/index.vue'
     const previousSource = `<script setup lang="ts">

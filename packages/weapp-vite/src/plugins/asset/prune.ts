@@ -18,7 +18,16 @@ export async function pruneOwnedAssetFiles(outDir: string, fileNames: Iterable<s
   if (!files.length) {
     return
   }
-  const realRoot = await realpath(root)
+  let realRoot: string
+  try {
+    realRoot = await realpath(root)
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return
+    }
+    throw error
+  }
   for (const file of files) {
     try {
       const parent = await realpath(path.dirname(file))

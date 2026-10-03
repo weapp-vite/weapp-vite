@@ -108,7 +108,7 @@ describe('runtime npm builder concurrent dedupe', () => {
     const parentCopyBarrier = new Promise<void>((resolve) => {
       releaseParentCopies = resolve
     })
-    vi.spyOn(fs, 'copy').mockImplementation(async (from: string, to: string, ...rest: unknown[]) => {
+    const copySpy = vi.spyOn(fs, 'copy').mockImplementation(async (from: string, to: string, ...rest: unknown[]) => {
       await (originalCopy as (...args: unknown[]) => Promise<void>)(from, to, ...rest)
       const packageName = path.basename(to)
       if (packageName === 'pkg-a' || packageName === 'pkg-b') {
@@ -134,9 +134,9 @@ describe('runtime npm builder concurrent dedupe', () => {
     ])
 
     const sharedDest = path.resolve(outDir, 'shared')
-    const sharedPackageInfoCalls = getPackageInfoMock.mock.calls.filter(([dep]) => dep === 'shared')
-
     expect(await fs.pathExists(path.resolve(sharedDest, 'index.js'))).toBe(true)
-    expect(sharedPackageInfoCalls).toHaveLength(1)
+    expect(getPackageInfoMock).toHaveBeenCalledWith('shared', { paths: [path.join(pkgARoot, 'package.json')] })
+    expect(getPackageInfoMock).toHaveBeenCalledWith('shared', { paths: [path.join(pkgBRoot, 'package.json')] })
+    expect(copySpy.mock.calls.filter(([from]) => from === path.resolve(sharedRoot, 'miniprogram_dist'))).toHaveLength(1)
   })
 })

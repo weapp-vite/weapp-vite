@@ -56,6 +56,31 @@ it('keeps native registration errors observable and does not register rejected p
   expect(register).not.toHaveBeenCalled()
 })
 
+it.each(['plugin', 'environment'] as const)('captures dependencies from a frozen %s without changing its hooks', (placement) => {
+  const root = path.resolve('fixture')
+  const register = vi.fn()
+  const original = vi.fn(function (this: { addWatchFile: (file: string) => void }, code: string) {
+    this.addWatchFile('external.json')
+    return code
+  })
+  const plugin = Object.freeze({ name: 'frozen-input', transform: original })
+  const environmentPlugin = Object.freeze({ name: 'frozen-environment', applyToEnvironment: () => plugin })
+  const config = { root, plugins: [placement === 'plugin' ? plugin : environmentPlugin] } as unknown as ResolvedConfig
+  const capture = captureWatchDependencies(register)
+  ;(capture.configResolved as { handler: (config: ResolvedConfig) => void }).handler(config)
+  const wrapped = placement === 'plugin'
+    ? config.plugins[0]!
+    : (config.plugins[0]!.applyToEnvironment as () => Plugin)()
+  const context = { addWatchFile: vi.fn() }
+  expect((wrapped.transform as typeof original).call(context, 'export default 1')).toBe('export default 1')
+  expect(register).toHaveBeenCalledExactlyOnceWith(path.join(root, 'external.json'))
+  expect(context.addWatchFile).toHaveBeenCalledExactlyOnceWith('external.json')
+  expect(Object.isFrozen(plugin)).toBe(true)
+  expect(Object.isFrozen(environmentPlugin)).toBe(true)
+  expect(plugin.transform).toBe(original)
+  expect(environmentPlugin.applyToEnvironment()).toBe(plugin)
+})
+
 it.each(['plugin', 'environment', 'rolldown'] as const)('captures third-party %s dependencies in a real Vite build', async (placement) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'watch-dependencies-'))
   try {
@@ -100,6 +125,47 @@ it.each(['plugin', 'environment', 'rolldown'] as const)('captures third-party %s
     expect(registered.has(external)).toBe(true)
     const output = Array.isArray(result) ? result[0]! : result
     expect('output' in output && output.output.some(file => file.type === 'chunk' && file.code.includes('external-value'))).toBe(true)
+  }
+  finally {
+    await fs.rm(root, { recursive: true, force: true })
+  }
+})
+
+it.each(['alias', 'typescript', 'json'] as const)('preserves Vite native %s plugins while capturing watch dependencies', async (feature) => {
+  const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'watch-native-plugins-')))
+  try {
+    const entry = path.join(root, `entry.${feature === 'typescript' ? 'ts' : 'js'}`)
+    await fs.writeFile(entry, feature === 'typescript'
+      ? 'interface Value { label: string }; const value: Value = { label: "typed-value" }; export default value'
+      : feature === 'alias' ? 'export { default } from "@/value.js"' : 'export { default } from "./value.json"')
+    await fs.writeFile(path.join(root, 'value.js'), 'export default "aliased-value"')
+    await fs.writeFile(path.join(root, 'value.json'), JSON.stringify({ label: 'json-value' }))
+    const parsed = vi.fn()
+    const result = await build({
+      root,
+      configFile: false,
+      logLevel: 'silent',
+      resolve: { alias: { '@': root } },
+      plugins: [
+        {
+          name: 'post-transform-analysis',
+          enforce: 'post',
+          transform(code, id) {
+            if (id.replaceAll('\\', '/') === entry.replaceAll('\\', '/')) {
+              this.parse(code)
+              parsed()
+            }
+          },
+        },
+        captureWatchDependencies(() => {}),
+      ],
+      build: { write: false, minify: false, lib: { entry, formats: ['es'] } },
+    })
+    expect(parsed).toHaveBeenCalledOnce()
+    const output = Array.isArray(result) ? result[0]! : result
+    const expected = { alias: 'aliased-value', typescript: 'typed-value', json: 'json-value' }[feature]
+    expect('output' in output && output.output.some(file => file.type === 'chunk'
+      && file.code.includes(expected))).toBe(true)
   }
   finally {
     await fs.rm(root, { recursive: true, force: true })

@@ -113,7 +113,7 @@ const title = 'same'
 
     await expect(inspector.getChangedBlocks()).resolves.toEqual([])
     await expect(inspector.isJsonOnlyUpdate()).resolves.toBe(false)
-    await expect(inspector.isLocalAssetOnlyUpdate()).resolves.toBe(true)
+    await expect(inspector.isLocalAssetOnlyUpdate()).resolves.toBe(false)
     await expect(inspector.isStyleOnlyUpdate()).resolves.toBe(false)
     await expect(inspector.isTailwindContentUpdate()).resolves.toBe(false)
     await expect(inspector.isAppShellTopologyUpdate()).resolves.toBe(false)

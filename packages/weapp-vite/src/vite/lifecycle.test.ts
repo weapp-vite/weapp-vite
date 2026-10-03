@@ -1,7 +1,7 @@
 import type { ViteDevServer } from 'vite'
 import { mergeConfig } from 'vite'
 import { expect, it, vi } from 'vitest'
-import { bindHostLifecycle } from './lifecycle'
+import { bindHostLifecycle, setHostRestartData, takeHostRestartData } from './lifecycle'
 
 it('waits for replacement startup and closes the replacement session before returning', async () => {
   const entered = Promise.withResolvers<void>()
@@ -137,4 +137,56 @@ it('cancels a replacement restart on startup failure without waiting for the par
   await parent.restart()
   expect(nativeRestart).not.toHaveBeenCalled()
   expect(nativeClose).toHaveBeenCalledOnce()
+})
+
+it('hands off data once and keeps a replacement generation separate from its parent', async () => {
+  const key = Symbol('snapshot')
+  const first = { value: 'first' }
+  const second = { value: 'second' }
+  let replacement: ViteDevServer
+  let next: ViteDevServer
+  const parent = {
+    config: { inlineConfig: {} },
+    close: vi.fn(async () => {}),
+    restart: async () => {
+      replacement = {
+        config: { inlineConfig: parent.config.inlineConfig },
+        close: vi.fn(async () => {}),
+        restart: async () => {
+          next = { config: { inlineConfig: replacement.config.inlineConfig }, close: vi.fn(async () => {}), restart: vi.fn(async () => {}) } as unknown as ViteDevServer
+          bindHostLifecycle(next, async () => {})
+          expect(takeHostRestartData(next, key)).toBe(second)
+          expect(takeHostRestartData(next, key)).toBeUndefined()
+        },
+      } as unknown as ViteDevServer
+      bindHostLifecycle(replacement, async () => {})
+      expect(takeHostRestartData(replacement, key)).toBe(first)
+      expect(takeHostRestartData(replacement, key)).toBeUndefined()
+      setHostRestartData(replacement, key, second)
+    },
+  } as unknown as ViteDevServer
+  bindHostLifecycle(parent, async () => {})
+  setHostRestartData(parent, key, first)
+  await parent.restart()
+  await replacement!.restart()
+  await next!.close()
+})
+
+it('releases unconsumed restart data on close and failed replacement startup', async () => {
+  const key = Symbol('snapshot')
+  let replacement: ViteDevServer
+  const server = {
+    config: { inlineConfig: {} },
+    close: vi.fn(async () => {}),
+    restart: async () => {
+      replacement = { config: { inlineConfig: server.config.inlineConfig }, close: vi.fn(async () => {}), restart: vi.fn(async () => {}) } as unknown as ViteDevServer
+      bindHostLifecycle(replacement, async () => {})
+      throw new Error('startup failed')
+    },
+  } as unknown as ViteDevServer
+  bindHostLifecycle(server, async () => {})
+  setHostRestartData(server, key, { value: 'retired' })
+  await expect(server.restart()).rejects.toThrow('startup failed')
+  expect(takeHostRestartData(replacement!, key)).toBeUndefined()
+  await Promise.all([server.close(), server.close(), replacement!.close()])
 })

@@ -6,9 +6,14 @@ on:
   workflow_dispatch:
     inputs:
       pr-number:
-        description: Optional open PR number; empty selects main and the oldest pending labelled PR
+        description: Optional open PR number; empty selects main and the oldest pending labelled PR unless main-only is enabled
         type: string
         required: false
+      main-only:
+        description: Only freeze main; do not select a PR or repeat an existing attempt
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: nightly-performance
@@ -42,6 +47,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ inputs.pr-number }}
+          MAIN_ONLY: ${{ inputs.main-only }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: node scripts/performanceGate/schedule.mjs
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

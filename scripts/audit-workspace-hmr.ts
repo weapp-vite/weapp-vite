@@ -582,7 +582,6 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     'dev',
     '--platform',
     project.platform,
-    '--skipNpm',
   ], {
     cwd: project.root,
     env: {

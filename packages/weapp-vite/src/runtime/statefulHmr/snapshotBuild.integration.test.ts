@@ -1,4 +1,5 @@
 import type { OutputAsset, OutputChunk } from 'rolldown'
+import type { InlineConfig } from 'vite'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -14,6 +15,7 @@ import { createRuntimeState } from '../runtimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { buildStatefulHmrSnapshot } from './snapshotBuild'
+import { validateSnapshotInputs } from './snapshotInputs'
 
 const temporaryRoots: string[] = []
 
@@ -60,6 +62,56 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 }
 
 describe('stateful snapshot component metadata', () => {
+  it('reuses only complete input versions and rejects an edit made while the snapshot is compiling', async () => {
+    const root = await createProject()
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const initial = await buildStatefulHmrSnapshot(options)
+    const candidate = await buildStatefulHmrSnapshot(options, undefined, undefined, undefined, initial.getInputFiles())
+    expect(candidate.getInputs()).toBeDefined()
+    expect(await validateSnapshotInputs(candidate.getInputs()!)).toBe(true)
+    const style = path.join(root, 'src/pages/index/index.wxss')
+    const changedDuringBuild = await buildStatefulHmrSnapshot(options, config => ({
+      ...config,
+      plugins: [...(config.plugins ?? []), {
+        name: 'snapshot-edit-during-build',
+        async generateBundle() {
+          await fs.writeFile(style, '.page { color: blue; }')
+        },
+      }],
+    }), undefined, undefined, candidate.getInputFiles())
+    expect(changedDuringBuild.getInputs()).toBeUndefined()
+    expect(await validateSnapshotInputs(candidate.getInputs()!)).toBe(false)
+  })
+
+  it('captures declared external inputs and refuses a newly discovered unversioned dependency', async () => {
+    const root = await createProject()
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const first = path.join(root, 'external-one.txt')
+    const second = path.join(root, 'external-two.txt')
+    await fs.writeFile(first, 'first')
+    await fs.writeFile(second, 'second')
+    let external = first
+    const configure = (config: InlineConfig): InlineConfig => ({
+      ...config,
+      plugins: [...(config.plugins ?? []), {
+        name: 'snapshot-external-input',
+        buildStart(this: { addWatchFile: (file: string) => void }) {
+          this.addWatchFile(external)
+        },
+      }],
+    })
+    const initial = await buildStatefulHmrSnapshot(options, configure)
+    expect(initial.getInputFiles()).toContain(first)
+    external = second
+    const unknown = await buildStatefulHmrSnapshot(options, configure, undefined, undefined, initial.getInputFiles())
+    expect(unknown.getInputFiles()).toContain(second)
+    expect(unknown.getInputs()).toBeUndefined()
+    const known = await buildStatefulHmrSnapshot(options, configure, undefined, undefined, unknown.getInputFiles())
+    expect(known.getInputs()).toBeDefined()
+    await fs.writeFile(second, 'changed')
+    expect(await validateSnapshotInputs(known.getInputs()!)).toBe(false)
+  })
+
   it('builds from load options when an optional owner has no config service yet', async () => {
     const root = await createProject()
     const runtimeState = createRuntimeState()

@@ -49,7 +49,7 @@ describe('scaffold toolchain selection', () => {
     expect(workspace.overrides.vite).toBe(pkg.devDependencies?.vite)
     expect(workspace.overrides.vitest).toBe('5.0.1')
     expect(pkg.overrides?.vitest).toBe('5.0.1')
-    expect(workspace.peerDependencyRules.allowedVersions).toEqual({ 'vitest@5.0.1>vite': '1.0.0', '@vitest/mocker@5.0.1>vite': '1.0.0' })
+    expect(workspace.peerDependencyRules.allowedVersions).toEqual({ vite: '1.0.0' })
     expect(workspace.allowBuilds.rolldown).toBe(true)
     expect(pkg.engines?.node).toBe('^24.15.0 || >=26.0.0')
     expect(await fs.readFile(path.join(root, 'vite.config.ts'), 'utf8')).toContain('from \'vite-plus\'')
@@ -95,7 +95,16 @@ describe('scaffold toolchain selection', () => {
     const target = path.join(root, 'apps/demo')
     await expect(createProject(target, TemplateName.default, { toolchain: 'vite-plus' })).rejects.toThrow('overrides.vitest')
     expect(await fs.pathExists(target)).toBe(false)
-    const configured = `${workspace}  vitest: 5.0.1\n`
+    const runnerConfigured = `${workspace}  vitest: 5.0.1\n`
+    await fs.writeFile(workspaceFile, runnerConfigured)
+    await expect(createProject(target, TemplateName.default, { toolchain: 'vite-plus' })).rejects.toThrow('peerDependencyRules.allowedVersions.vite')
+    expect(await fs.pathExists(target)).toBe(false)
+    expect(await fs.readFile(workspaceFile, 'utf8')).toBe(runnerConfigured)
+    const peerPolicy = 'peerDependencyRules:\n  allowedVersions:\n    vite: '
+    await fs.writeFile(workspaceFile, `${runnerConfigured}${peerPolicy}^8.0.0\n`)
+    await expect(createProject(target, TemplateName.default, { toolchain: 'vite-plus' })).rejects.toThrow('peerDependencyRules.allowedVersions.vite')
+    expect(await fs.pathExists(target)).toBe(false)
+    const configured = `${runnerConfigured}${peerPolicy}1.0.0 || ^8.0.0\n`
     await fs.writeFile(workspaceFile, configured)
     await createProject(target, TemplateName.default, { toolchain: 'vite-plus' })
     expect(await fs.readFile(workspaceFile, 'utf8')).toBe(configured)

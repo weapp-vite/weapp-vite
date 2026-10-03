@@ -111,7 +111,6 @@ async function startDevRuntime(options: RequestClientsRealDevPluginOptions): Pro
   let projectPrivateConfigSnapshot: Awaited<ReturnType<typeof patchProjectPrivateConfig>> | undefined
   let generatedBaseUrlModuleSnapshot: Awaited<ReturnType<typeof patchGeneratedBaseUrlModule>> | undefined
   let stopping: Promise<void> | undefined
-  let hasDevServer = false
   const removeCleanupListeners: Array<() => void> = []
 
   function restoreSnapshotsSync() {
@@ -170,13 +169,16 @@ async function startDevRuntime(options: RequestClientsRealDevPluginOptions): Pro
       baseUrl: devServerHandle.baseUrl,
       plugin: {
         name: 'request-clients-real-dev-plugin',
-        configureServer() {
-          hasDevServer = true
-        },
-        // 小程序快照也会关闭 bundle，只有 Web 服务的关闭才能释放进程级资源。
-        closeBundle() {
-          if (hasDevServer) {
-            return cleanup()
+        configureServer(server) {
+          const closeServer = server.close.bind(server)
+          // 同一插件实例也会交给小程序快照；资源仅归实际宿主关闭所有，不归 closeBundle。
+          server.close = async () => {
+            try {
+              await closeServer()
+            }
+            finally {
+              await cleanup()
+            }
           }
         },
       },

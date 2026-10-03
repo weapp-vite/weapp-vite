@@ -1,0 +1,9 @@
+<view id="npm-options-root">
+  <view class="title">npm output options</view>
+  <callback-button t-id="npm-callback-button" content="callback output" bind:tap="onCallbackTap" />
+  <mapped-button t-id="npm-mapped-button" content="manual mapped output" bind:tap="onMappedTap" />
+  <callback-button t-id="npm-disabled-button" content="disabled callback output" disabled="{{true}}" bind:tap="onDisabledTap" />
+  <view id="npm-callback-count">callback = {{callbackCount}}</view>
+  <view id="npm-mapped-count">mapped = {{mappedCount}}</view>
+  <view id="npm-disabled-count">disabled = {{disabledCount}}</view>
+</view>

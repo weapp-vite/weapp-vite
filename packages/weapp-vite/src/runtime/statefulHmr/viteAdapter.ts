@@ -262,7 +262,20 @@ export class StatefulHmrViteAdapter {
   }
 
   async waitForNativeUpdates(): Promise<void> {
-    await this.bundledDev?._devEngine?.ensureCurrentBuildFinish()
+    const engine = this.bundledDev?._devEngine
+    await engine?.ensureCurrentBuildFinish()
+    if (engine && (await engine.getBundleState()).lastBuildErrored) {
+      throw new Error('微信状态保持 HMR 当前原生构建失败。')
+    }
+  }
+
+  /** 外部验收还必须等待原生回调异步发布；内部编译回调只等待引擎，避免自等待。 */
+  async whenSettled(): Promise<void> {
+    await this.waitForNativeUpdates()
+    await this.publication.whenSettled()
+    if (this.closed) {
+      throw new Error('Stateful HMR adapter closed before settlement')
+    }
   }
 
   async collectGlassEaselScriptUpdates(

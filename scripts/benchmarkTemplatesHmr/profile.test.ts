@@ -7,10 +7,10 @@ describe('benchmark compiler profile capability', () => {
     expect(await collectBenchmarkHmrProfile('standard', reader, false)).toEqual({ profile: {}, status: 'disabled' })
     expect(reader).not.toHaveBeenCalled()
   })
-  it('does not start a profile timeout for a stateful runtime', async () => {
-    const reader = vi.fn(() => new Promise<{ totalMs?: number }>(() => {}))
-    expect(await collectBenchmarkHmrProfile('stateful', reader)).toEqual({ profile: {}, status: 'unavailable-stateful' })
-    expect(reader).not.toHaveBeenCalled()
+  it('accepts stateful timing only from its actual producer', async () => {
+    const profile = { schemaVersion: 1, status: 'complete', pipeline: 'stateful', totalMs: 12 }
+    expect(await collectBenchmarkHmrProfile('stateful', async () => profile)).toEqual({ profile, status: 'available' })
+    expect(await collectBenchmarkHmrProfile('stateful', async () => ({ totalMs: 12 }))).toEqual({ profile: {}, status: 'incompatible' })
   })
 
   it('retains real standard compiler timing', async () => {

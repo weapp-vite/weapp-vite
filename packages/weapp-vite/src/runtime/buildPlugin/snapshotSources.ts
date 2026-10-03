@@ -22,6 +22,7 @@ export async function refreshSnapshotSources(
   ctx: MutableCompilerContext,
   changes: Iterable<{ file: string, event?: ChangeEvent }>,
   emittedRouteSignature: string | undefined,
+  emittedEntryTopology?: ReadonlyMap<string, string>,
 ) {
   const changedFiles = new Map<string, ChangeEvent | undefined>()
   for (const change of changes) {
@@ -30,7 +31,7 @@ export async function refreshSnapshotSources(
   for (const file of changedFiles.keys()) {
     invalidateFileCache(file)
   }
-  const entryTopologyChanged = await hasEntryTopologyChange(ctx, changedFiles.keys())
+  const entryTopologyChanged = await hasEntryTopologyChange(ctx, changedFiles.keys(), emittedEntryTopology)
   if (entryTopologyChanged) {
     // options 钩子先于 buildStart 读取页面 input，必须先撤销扫描快照。
     ctx.scanService?.markDirty()
