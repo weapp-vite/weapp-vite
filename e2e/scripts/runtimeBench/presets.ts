@@ -31,7 +31,7 @@ export async function runPublishedPresetBench(options: {
     architecture: process.arch,
     complete: false,
     limitations: [
-      'Host heap memory is unavailable through the current automator contract; worker RSS is not host memory.',
+      'AppService JS heap is capability-probed before/after each workload outside its timer; unsupported hosts retain explicit reasons. This excludes renderer/native memory and is not a peak or forced-GC measurement; worker RSS is separate.',
       'Commit means adapter callback/Promise/return settlement; visible state is asserted separately through DOM observations.',
       'Official stable DevTools channel provenance must be recorded by the acceptance operator alongside this report.',
     ],

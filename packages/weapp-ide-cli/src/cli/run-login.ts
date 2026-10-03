@@ -1,4 +1,4 @@
-import type { OperationLifecycle } from '@weapp-vite/miniprogram-automator'
+import type { OperationLifecycle } from '@weapp-vite/miniprogram-automator/operation'
 import type { LoginRetryConfig } from './run-login-config'
 import process from 'node:process'
 import { i18nText } from '../i18n'

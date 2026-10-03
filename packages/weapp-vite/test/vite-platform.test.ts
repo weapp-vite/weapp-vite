@@ -143,8 +143,12 @@ it('returns inline platform metadata in memory without writing final outputs', a
   await expect(read('app.js')).rejects.toMatchObject({ code: 'ENOENT' })
 })
 
-it('uses the platform npm directory for Alipay native component assets', async () => {
+it.each([undefined, 'custom/application'])('uses the platform npm directory for Alipay native component assets with outDir %s', async (outDir) => {
   const { root, config, read } = await fixture('alipay')
+  if (outDir) {
+    config.build!.outDir = outDir
+  }
+  const readOutput = outDir ? (file: string) => readFile(path.join(root, outDir, file), 'utf8') : read
   await writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'platform-consumer', type: 'module', dependencies: { 'mini-card': '1.0.0' } }))
   const pkg = path.join(root, 'node_modules/mini-card')
   await mkdir(path.join(pkg, 'miniprogram'), { recursive: true })
@@ -153,6 +157,7 @@ it('uses the platform npm directory for Alipay native component assets', async (
     await writeFile(path.join(pkg, `miniprogram/index.${extension}`), source)
   }
   await build(config)
-  expect(await read('node_modules/mini-card/index.axml')).toContain('npm platform')
-  expect((JSON.parse(await read('node_modules/mini-card/index.json')) as { component: boolean }).component).toBe(true)
+  expect(await readOutput('node_modules/mini-card/index.axml')).toContain('npm platform')
+  expect((JSON.parse(await readOutput('node_modules/mini-card/index.json')) as { component: boolean }).component).toBe(true)
+  expect((JSON.parse(await readOutput('mini.project.json')) as { miniprogramRoot: string }).miniprogramRoot).toBe('.')
 })

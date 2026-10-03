@@ -20,7 +20,7 @@ import { validateSnapshotInputs } from './snapshotInputs'
 const temporaryRoots: string[] = []
 
 async function createProject(autoImport = false, withWorker = false) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-snapshot-component-'))
+  const root = path.normalize(await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-snapshot-component-'))))
   temporaryRoots.push(root)
   const files = {
     'package.json': JSON.stringify({ name: 'snapshot-component-regression', private: true, dependencies: { wevu: '*' } }),

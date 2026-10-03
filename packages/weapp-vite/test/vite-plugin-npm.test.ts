@@ -2,7 +2,7 @@ import type { InlineConfig } from 'vite'
 import { mkdir, mkdtemp, readFile, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { build } from 'vite'
+import { build, normalizePath } from 'vite'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { weapp } from '../src/vite'
 
@@ -50,7 +50,7 @@ describe('native host npm customization', () => {
   it('resolves callbacks against final paths, captures native/bundled output and supports skipped packages', async () => {
     const { root, config } = await fixture()
     const callback = vi.fn((options, meta) => {
-      expect(options.build.outDir).toBe(path.join(root, 'dist/miniprogram_npm', meta.name))
+      expect(options.build.outDir).toBe(normalizePath(path.join(root, 'dist/miniprogram_npm', meta.name)))
       if (meta.name === 'skip-value') {
         return false
       }
@@ -134,8 +134,8 @@ describe('native host npm customization', () => {
     }))
     config.weapp!.npm!.strategy = strategy
     config.weapp!.npm!.buildOptions = (options, meta) => {
-      expect(options.root).toBe(root)
-      expect(options.build!.outDir).toBe(path.join(root, 'dist/manual/miniprogram_npm', meta.name))
+      expect(options.root).toBe(normalizePath(root))
+      expect(options.build!.outDir).toBe(normalizePath(path.join(root, 'dist/manual/miniprogram_npm', meta.name)))
       return options
     }
     await build(config)

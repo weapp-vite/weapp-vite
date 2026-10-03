@@ -1,4 +1,4 @@
-import { OperationLifecycle } from '@weapp-vite/miniprogram-automator'
+import { OperationLifecycle } from '@weapp-vite/miniprogram-automator/operation'
 
 export interface RetryableCommandExecutorOptions<TResult, TPromptResult> {
   timeout?: number

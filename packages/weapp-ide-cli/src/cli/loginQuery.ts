@@ -1,4 +1,4 @@
-import { readWechatLoginState } from '@weapp-vite/miniprogram-automator'
+import { readWechatLoginState } from '@weapp-vite/miniprogram-automator/operation'
 import { execute } from '../utils'
 
 export type WechatIdeLoginQueryResult

@@ -51,7 +51,7 @@ function resolveDefaultNpmDistDir(configService: MutableCompilerContext['configS
   return '.'
 }
 
-export function getPackNpmRelationList(ctx: MutableCompilerContext) {
+export function getPackNpmRelationList(ctx: MutableCompilerContext, options: { defaultOutputRoot?: string } = {}) {
   const configService = requireConfigService(ctx, '解析 npm 关联列表前必须初始化 configService。')
   const isMultiPlatformEnabled = configService.multiPlatform.enabled
 
@@ -85,6 +85,14 @@ export function getPackNpmRelationList(ctx: MutableCompilerContext) {
         miniprogramNpmDistDir: pluginOutputRoot,
       },
     ]
+  }
+
+  // 原生宿主已解析最终输出根；项目元信息中的相对根不能再次用于推导输出目录。
+  if (!hasManualRelations && options.defaultOutputRoot) {
+    return [{
+      ...packNpmRelationList[0],
+      miniprogramNpmDistDir: options.defaultOutputRoot,
+    }]
   }
 
   if (!isMultiPlatformEnabled) {

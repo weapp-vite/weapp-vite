@@ -3,7 +3,7 @@ import type { DevEngine } from 'rolldown/experimental'
 import type { Plugin } from 'vite'
 import type { StatefulHmrDevEngineUpdate } from '../../packages/weapp-vite/src/runtime/statefulHmr/viteAdapter'
 import type { SequenceInput } from './driver'
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, utimes, writeFile } from 'node:fs/promises'
 import path from 'pathe'
 import { build } from 'vite'
 import { createStatefulHmrRolldownRuntimeSource } from '../../packages/weapp-vite/src/runtime/statefulHmr/commonRuntime'
@@ -33,6 +33,7 @@ interface PublicationReceipt {
 
 interface SequenceSaveOptions {
   afterSave?: (files: Readonly<Record<string, string>>) => Promise<void>
+  fileTimestamp?: Date
 }
 
 export class BuildSequenceSession {
@@ -267,6 +268,9 @@ export class BuildSequenceSession {
           this.noteSourceWrite(file)
           await mkdir(path.dirname(target), { recursive: true })
           await writeFile(`${target}.pending`, content)
+          if (options.fileTimestamp) {
+            await utimes(`${target}.pending`, options.fileTimestamp, options.fileTimestamp)
+          }
           await rename(`${target}.pending`, target)
         }
       }
@@ -416,7 +420,7 @@ export class BuildSequenceSession {
       plugins,
       experimental: { devMode: { lazy: false, implement: createStatefulHmrRolldownRuntimeSource() } },
     }, output, {
-      watch: { skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: false },
+      watch: { skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: true },
       onOutput: result => this.publish(result),
       onAdditionalAssets: result => this.publish(result, true),
       onHmrUpdates: (result) => {

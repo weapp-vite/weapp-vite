@@ -3252,6 +3252,9 @@ importers:
       '@modelcontextprotocol/server':
         specifier: ^2.2.0
         version: 2.3.0
+      '@weapp-core/constants':
+        specifier: workspace:*
+        version: link:../../@weapp-core/constants
       '@weapp-vite/acceptance':
         specifier: workspace:*
         version: link:../acceptance

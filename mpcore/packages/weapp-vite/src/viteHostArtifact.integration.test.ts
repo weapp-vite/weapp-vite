@@ -153,8 +153,14 @@ describe('explicit artifacts from Vite configuration in the real Vitest host', {
         return { artifact: watcher.artifact, close }
       })
       const results: TestRunResult[] = []
+      const reruns: { files: string[], trigger?: string }[] = []
+      const runs: { files: string[], reason: string, states: string[] }[] = []
       const reporter: Reporter = {
-        onTestRunEnd(testModules, unhandledErrors) {
+        onWatcherRerun(files, trigger) {
+          reruns.push({ files: files.map(file => path.relative(cwd, file).split(path.sep).join('/')), trigger })
+        },
+        onTestRunEnd(testModules, unhandledErrors, reason) {
+          runs.push({ files: testModules.map(module => module.relativeModuleId), reason, states: testModules.map(module => module.state()) })
           results.push({ testModules: [...testModules], unhandledErrors: [...unhandledErrors] })
         },
       }
@@ -179,6 +185,7 @@ describe('explicit artifacts from Vite configuration in the real Vitest host', {
         server: { fs: { allow: [cwd, vitestBridgeRoot, weappRoot] }, watch: { ignored: ['**/events.log', '**/.weapp-vite/**'] } },
       })
       assertPassed(await runner.start())
+      expect(results, JSON.stringify({ reruns, runs })).toHaveLength(1)
       expect(watch).toHaveBeenCalledOnce()
       expect(build).not.toHaveBeenCalled()
       expect((await fixture.events()).filter(event => event.project === 'other')).toHaveLength(1)
@@ -188,7 +195,7 @@ describe('explicit artifacts from Vite configuration in the real Vitest host', {
       await new Promise(resolve => setTimeout(resolve, 1_000))
       expect(errors).toEqual([])
       expect(rebuilt).toHaveBeenCalledOnce()
-      expect(results).toHaveLength(2)
+      expect(results, JSON.stringify({ reruns, runs, events: await fixture.events() })).toHaveLength(2)
       assertPassed(results[1]!)
       const events = await fixture.events()
       expect(events.filter(event => event.project === 'owned').map(event => event.revision)).toEqual(['first', 'second'])

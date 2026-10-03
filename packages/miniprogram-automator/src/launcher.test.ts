@@ -130,7 +130,7 @@ describe('Launcher', () => {
 
   it('passes the connect timeout to the version probe', async () => {
     const { default: Launcher } = await loadLauncherModule()
-    const checkVersion = vi.fn(async () => {})
+    const checkVersion = vi.fn(async (_timeout: number) => {})
     const launcher = new Launcher()
     vi.spyOn(launcher as any, 'connectTool').mockResolvedValueOnce({ checkVersion })
 

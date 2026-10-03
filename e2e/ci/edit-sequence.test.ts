@@ -82,8 +82,10 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
       const project = await createSequenceProject()
       const session = new BuildSequenceSession(engine, project.root, path.join(project.root, '.sequence-output', 'incremental'))
       const baseline = createProcessObserver<unknown>(engine, project.root)
-      const intermediate = 'export const value = "intermediate";'
-      const final = 'export const value = "final";'
+      const intermediate = 'export const value = "two";'
+      const final = 'export const value = "end";'
+      // 保存同长度内容并固定 mtime，确保轮询依据内容发现每一版，而非依赖平台时间戳精度。
+      const fileTimestamp = new Date('2020-01-01T00:00:00.000Z')
       try {
         await verifyEditSequence({
           name: 'rapid-publication-boundary',
@@ -99,21 +101,22 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
           name: engine,
           incremental: async (input) => {
             if (input.step === 0) {
-              return session.observe(input)
+              return session.observe(input, { fileTimestamp })
             }
             const observed: unknown[] = []
             const snapshot = await session.observe(input, {
+              fileTimestamp,
               afterSave: async (files) => {
                 if (files['value.js'] !== intermediate) {
                   return
                 }
                 // 中间版本须真实执行、确认 delivery 并完成 coordinator，才开始第二次保存。
-                const publication = await session.waitForPublication(value => (value.semantics as { value: string }).value === 'intermediate', input.signal)
+                const publication = await session.waitForPublication(value => (value.semantics as { value: string }).value === 'two', input.signal)
                 observed.push(publication.semantics)
               },
             })
-            expect(observed).toEqual([expect.objectContaining({ value: 'intermediate' })])
-            expect(snapshot.published?.semantics).toMatchObject({ value: 'final' })
+            expect(observed).toEqual([expect.objectContaining({ value: 'two' })])
+            expect(snapshot.published?.semantics).toMatchObject({ value: 'end' })
             return snapshot
           },
           fresh: input => baseline.fresh(input),

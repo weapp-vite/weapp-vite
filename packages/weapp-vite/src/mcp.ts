@@ -1,26 +1,28 @@
-import type { CreateServerOptions, McpServerHandle, StartMcpServerOptions } from '@weapp-vite/mcp'
+import type { createWeappViteMcpServer as createMcpServer, CreateServerOptions, McpServerHandle, StartMcpServerOptions } from '@weapp-vite/mcp'
 import type { WeappMcpConfig } from './types'
 import process from 'node:process'
 import {
-  createWeappViteMcpServer,
   DEFAULT_MCP_ENDPOINT,
   DEFAULT_MCP_HOST,
   DEFAULT_MCP_PORT,
   DEFAULT_RUNTIME_REST_ENDPOINT,
-  startWeappViteMcpServer as startMcpServer,
-} from '@weapp-vite/mcp'
-import { connectMiniProgram, prepareAcceptanceProject } from 'weapp-ide-cli'
+} from '@weapp-core/constants'
 import { resolveAiDevelopmentEnvironmentFromEnv, resolveBooleanLikeEnv } from './aiEnvironment'
 import logger from './logger'
 
 export {
-  createWeappViteMcpServer,
   DEFAULT_MCP_ENDPOINT,
   DEFAULT_MCP_HOST,
   DEFAULT_MCP_PORT,
   DEFAULT_RUNTIME_REST_ENDPOINT,
 }
 export type { CreateServerOptions }
+
+/** 创建服务时才加载 MCP 运行时；配置解析与公开常量保持同步。 */
+export async function createWeappViteMcpServer(options?: CreateServerOptions): ReturnType<typeof createMcpServer> {
+  const { createWeappViteMcpServer } = await import('@weapp-vite/mcp')
+  return createWeappViteMcpServer(options)
+}
 
 export interface ResolvedWeappMcpConfig {
   agentName?: string
@@ -115,6 +117,10 @@ export function resolveWeappMcpConfig(
 }
 
 export async function startWeappViteMcpServer(options?: WeappViteMcpServerOptions): Promise<WeappViteMcpServerHandle> {
+  const [{ startWeappViteMcpServer: startMcpServer }, { connectMiniProgram, prepareAcceptanceProject }] = await Promise.all([
+    import('@weapp-vite/mcp'),
+    import('weapp-ide-cli'),
+  ])
   return startMcpServer({
     runtimeHooks: {
       connectMiniProgram,

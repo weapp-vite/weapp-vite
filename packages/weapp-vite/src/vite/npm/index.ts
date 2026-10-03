@@ -26,7 +26,7 @@ export async function prepareNpmAssets(ctx: CompilerContext): Promise<PreparedNp
   if (config.weappLibConfig?.enabled || !config.weappViteConfig.npm?.enable) {
     return empty
   }
-  const [main, ...mirrors] = getPackNpmRelationList(ctx)
+  const [main, ...mirrors] = getPackNpmRelationList(ctx, { defaultOutputRoot: config.outDir })
   if (!main) {
     return empty
   }

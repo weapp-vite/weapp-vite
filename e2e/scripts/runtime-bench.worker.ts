@@ -109,6 +109,7 @@ async function measureUpdate(session: MiniProgramSession, projectRoot: string, r
     method,
     rounds,
     sampleCount: SAMPLE_COUNT,
+    provider: runtimeProvider,
     requirePhases: (process.env.WEVU_BENCH_PROJECT ?? path.basename(projectRoot)) === 'runtime-bench-vue',
     log: message => logStep(projectRoot, message),
   })
@@ -161,6 +162,7 @@ async function main() {
           rounds: 1,
           sampleCount: SAMPLE_COUNT,
           requirePhases: true,
+          provider: runtimeProvider,
           workload,
           log: message => logStep(projectRoot, message),
         })

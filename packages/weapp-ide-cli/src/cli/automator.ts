@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { Launcher, OperationLifecycle } from '@weapp-vite/miniprogram-automator'
+import { OperationLifecycle } from '@weapp-vite/miniprogram-automator/operation'
 import { readCustomConfig } from '../config/custom'
 import { resolveAutomatorProjectPath } from './automatorProject'
 import { resolveCliPath } from './resolver'
@@ -290,6 +290,7 @@ export async function launchAutomator(options: AutomatorOptions) {
   const { cliPath, port, projectPath, sessionId, timeout = 30_000 } = options
   const lifecycle = new OperationLifecycle(timeout, 'IDE launch', options.signal)
   return await lifecycle.run(async (scope) => {
+    const { Launcher } = await scope.step(() => import('@weapp-vite/miniprogram-automator'), { stage: 'load-automator' })
     const resolvedCliPath = cliPath ?? (await scope.step(() => resolveCliPath(), { stage: 'resolve-cli' })).cliPath ?? undefined
     const config = await scope.step(() => readCustomConfig(), { stage: 'configuration' })
     const resolvedTrustProject = options.trustProject ?? config.autoTrustProject ?? false
@@ -370,6 +371,7 @@ export async function connectOpenedAutomator(options: AutomatorOptions) {
   const { port, projectPath, sessionId } = options
   const lifecycle = new OperationLifecycle(options.timeout ?? 30_000, 'IDE connect', options.signal)
   return await lifecycle.run(async (scope) => {
+    const { Launcher } = await scope.step(() => import('@weapp-vite/miniprogram-automator'), { stage: 'load-automator' })
     scope.attempt()
     const launcher = new Launcher()
     const persistedSession = await scope.step(() => readPersistedAutomatorSession(projectPath, sessionId, port), { stage: 'session-lookup' })

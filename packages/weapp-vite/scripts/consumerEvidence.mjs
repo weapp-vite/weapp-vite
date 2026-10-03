@@ -81,7 +81,18 @@ export async function verifyConsumerExports(root, candidates) {
   for (const name of Object.keys(candidates).sort()) {
     const directory = path.join(root, 'node_modules', name)
     const manifest = JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8'))
-    const files = await readdir(directory, { recursive: true })
+    const files = []
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      // 包根的 node_modules 属于安装器；dist/node_modules 等已发布 vendor 仍须校验。
+      if (entry.name === 'node_modules') {
+        continue
+      }
+      files.push(entry.name)
+      if (entry.isDirectory()) {
+        files.push(...(await readdir(path.join(directory, entry.name), { recursive: true })).map(file => path.join(entry.name, file)))
+      }
+    }
+    const resolvedDirectory = await realpath(directory)
     const targets = new Set()
     function collect(value) {
       if (typeof value === 'string') {
@@ -100,18 +111,31 @@ export async function verifyConsumerExports(root, candidates) {
       assert(!path.isAbsolute(relative) && !relative.split(/[\\/]/).includes('..'), `Invalid published target: ${name} -> ${target}`)
       const expression = new RegExp(`^${relative.split('*').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}$`)
       const matches = []
-      for (const file of files.filter(file => expression.test(file.replaceAll('\\', '/')))) {
-        // 通配导出描述一组文件，不承诺匹配到的中间目录也是模块入口。
-        if (target.includes('*') && (await lstat(path.join(directory, file))).isDirectory()) {
-          continue
+      if (target.includes('*')) {
+        for (const file of files.filter(file => expression.test(file.replaceAll('\\', '/')))) {
+          // 通配导出描述一组文件，不承诺匹配到的中间目录也是模块入口。
+          if (!(await lstat(path.join(directory, file))).isDirectory()) {
+            matches.push(file)
+          }
         }
-        matches.push(file)
+      }
+      else {
+        // 显式入口独立于通配枚举，不能因安装目录被排除而绕过验证。
+        try {
+          await lstat(path.join(directory, relative))
+          matches.push(relative)
+        }
+        catch (error) {
+          if (error.code !== 'ENOENT') {
+            throw error
+          }
+        }
       }
       assert(matches.length, `Missing published target: ${name}@${manifest.version} -> ${target}`)
       for (const match of matches) {
         const filename = path.join(directory, match)
-        assert((await lstat(filename)).isFile(), `Published target is not a file: ${name} -> ${target}`)
-        assert((await realpath(filename)).startsWith(`${await realpath(directory)}${path.sep}`), `Published target escapes candidate: ${name} -> ${target}`)
+        assert((await realpath(filename)).startsWith(`${resolvedDirectory}${path.sep}`), `Published target escapes candidate: ${name} -> ${target} (${match})`)
+        assert((await lstat(filename)).isFile(), `Published target is not a file: ${name} -> ${target} (${match})`)
       }
     }
     verified.push({ name, version: manifest.version, targets: [...targets].sort() })

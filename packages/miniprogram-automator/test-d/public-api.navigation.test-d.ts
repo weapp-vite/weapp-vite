@@ -1,4 +1,4 @@
-import type { Element, MiniProgram, Page } from '..'
+import type { Element, MiniProgram, Page } from '@weapp-vite/miniprogram-automator'
 import { expectError, expectType } from 'tsd'
 
 declare const miniProgram: MiniProgram

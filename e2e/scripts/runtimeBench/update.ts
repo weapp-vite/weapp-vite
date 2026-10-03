@@ -1,6 +1,7 @@
 import type { RecoverableSession } from '../runtimeBench'
 import type { BenchUpdateSample, BenchUpdateSummary } from './types'
 import process from 'node:process'
+import { readBenchHostHeap } from './heap'
 import { median, observedNumber } from './metrics'
 
 async function settleObservation(page: any, state: any, startedAt: number) {
@@ -42,6 +43,7 @@ export async function measureUpdate(options: {
   rounds: number
   sampleCount: number
   requirePhases: boolean
+  provider: string
   workload?: string
   log: (message: string) => void
 }): Promise<BenchUpdateSummary> {
@@ -55,6 +57,7 @@ export async function measureUpdate(options: {
       const page = await miniProgram.reLaunch(options.route)
       await page.waitFor('#bench-ready-marker')
       await page.waitFor(100)
+      const hostHeapBefore = await readBenchHostHeap(miniProgram, options.provider)
       const workerRssBefore = process.memoryUsage().rss
       const startedAt = Date.now()
       let state = options.workload
@@ -64,10 +67,13 @@ export async function measureUpdate(options: {
         state = await settleObservation(page, state, startedAt)
       }
       const visible = options.requirePhases ? await observeVisibleState(page, state, startedAt) : undefined
+      const wallMs = Date.now() - startedAt
+      const workerRssAfter = process.memoryUsage().rss
+      const hostHeapAfter = await readBenchHostHeap(miniProgram, options.provider)
       const diagnostics = state?.setDataDiagnostics?.[prefix] ?? {}
       const phases = options.requirePhases ? state.measurement.phases : undefined
       return {
-        wallMs: Date.now() - startedAt,
+        wallMs,
         metricMs: observedNumber(state?.metrics?.[`${prefix}Ms`]),
         computeMs: observedNumber(state?.metrics?.[`${prefix}ComputeMs`]),
         commitMs: observedNumber(phases?.commitMs),
@@ -91,9 +97,11 @@ export async function measureUpdate(options: {
         visible,
         memory: {
           workerRssBefore,
-          workerRssAfter: process.memoryUsage().rss,
-          hostHeapBytes: null,
-          hostHeapCapability: 'unavailable' as const,
+          workerRssAfter,
+          hostHeapBytes: hostHeapAfter.usage.status === 'available' ? hostHeapAfter.usage.usedSize : null,
+          hostHeapCapability: hostHeapAfter.usage.status === 'available' ? 'available' as const : 'unavailable' as const,
+          hostHeapBefore,
+          hostHeapAfter,
         },
       }
     })
