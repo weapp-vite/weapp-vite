@@ -1,6 +1,6 @@
 ---
 title: Wot UI 与 uni-app 组件库
-description: 使用实验性的 uni-app 源码兼容层和 WotUiResolver，在微信小程序与 Web 中运行 Wot UI 2.2.0 的 99 个公开 Vue 组件。
+description: 使用实验性的 uni-app 源码兼容层和 WotUiResolver，在微信小程序与 Web 中运行 Wot UI 2.3.2 的 100 个公开 Vue 组件。
 keywords:
   - Wot UI
   - uni-app
@@ -13,12 +13,12 @@ keywords:
 # Wot UI 与 uni-app 组件库兼容（实验性）
 
 > [!WARNING]
-> 这是实验性能力，当前兼容基线固定为 `@wot-ui/ui@2.2.0`。默认完全关闭；只有项目源码和 `weapp.uniApp.include` 明确列出的 npm 包会进入 uni-app 方言转换。
+> 这是实验性能力，当前兼容基线固定为 `@wot-ui/ui@2.3.2`。默认完全关闭；只有项目源码和 `weapp.uniApp.include` 明确列出的 npm 包会进入 uni-app 方言转换。
 
 ## 安装
 
 ```bash
-pnpm add weapp-vite wevu @wot-ui/ui@2.2.0
+pnpm add weapp-vite wevu @wot-ui/ui@2.3.2
 ```
 
 ## 配置
@@ -41,7 +41,7 @@ export default defineConfig({
 })
 ```
 
-`WotUiResolver()` 使用 Wot UI 2.2.0 的真实公开 SFC 清单建立标签映射，并返回 `sourceType: 'wevu-sfc'` 与可解析的源码 ID。不要自行假设所有 `wd-*` 标签都能通过目录名拼接得到入口。
+`WotUiResolver()` 使用 Wot UI 2.3.2 的真实公开 SFC 清单建立标签映射，并返回 `sourceType: 'wevu-sfc'` 与可解析的源码 ID。不要自行假设所有 `wd-*` 标签都能通过目录名拼接得到入口。
 
 ### 微信开发者工具回归命令
 
@@ -81,7 +81,7 @@ pnpm build:web
 
 ## 兼容矩阵
 
-矩阵以 `@wot-ui/ui@2.2.0/global.d.ts` 实际公开的 99 个 Vue SFC 为准。每个组件都有独立页面；依赖父容器的组件会在自己的页面内使用最小父组件承载。
+矩阵以 `@wot-ui/ui@2.3.2/global.d.ts` 实际公开的 100 个 Vue SFC 为准。2.3.2 新增 `wd-qr-code`，每个组件都有独立页面；依赖父容器的组件会在自己的页面内使用最小父组件承载。
 
 ```text
 组件 | 独立页 | Web | 微信小程序 | Headless
@@ -144,6 +144,7 @@ wd-picker-view | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
 wd-popover | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
 wd-popup | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
 wd-progress | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
+wd-qr-code | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
 wd-radio | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
 wd-radio-group | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
 wd-rate | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为

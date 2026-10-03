@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../../runtime/runtimeState'
-import { flushIndependentOutputs } from './independent'
+import { collectIndependentOutputFileNames, flushIndependentOutputs } from './independent'
 
 function createContext() {
   return {
@@ -9,6 +9,18 @@ function createContext() {
 }
 
 describe('output finalizer independent outputs', () => {
+  it('collects the current child output set for replacement ownership', () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.independent.outputs.set('pkg', {
+      output: [
+        { type: 'asset', fileName: 'pkg/pages/index.json', names: [], originalFileNames: [], source: '{}' },
+        { type: 'asset', fileName: 'stats0.html', names: [], originalFileNames: [], source: '<title>Rollup Visualizer</title>' },
+      ],
+    })
+
+    expect(collectIndependentOutputFileNames(ctx)).toEqual(['pkg/pages/index.json'])
+  })
+
   it('emits completed child chunks and assets once with available provenance', async () => {
     const ctx = createContext()
     const emitAsset = vi.fn()
@@ -38,6 +50,13 @@ describe('output finalizer independent outputs', () => {
             names: [],
             originalFileNames: [],
             source: '<view />',
+          },
+          {
+            type: 'asset',
+            fileName: 'stats0.html',
+            names: [],
+            originalFileNames: [],
+            source: '<title>Rollup Visualizer</title>',
           },
         ],
       }),

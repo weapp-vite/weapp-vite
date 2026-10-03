@@ -481,6 +481,7 @@ class StatefulHmrSession {
           : undefined,
         snapshotBatch?.traceBatchId,
         fullBuild ? this.snapshotAssets.ownedNames().filter(file => !currentOutputFiles.has(file)) : [],
+        fullBuild && Boolean(this.initialSnapshot),
       )
       if (buildId) {
         this.delivery.reset()
@@ -767,11 +768,12 @@ class StatefulHmrSession {
     initialPublicAssets?: StatefulHmrInitialPublicAssets,
     batchId?: number,
     removedAssets: string[] = [],
+    replaceOwnership = false,
   ): Promise<void> {
     const outDir = this.ctx.configService!.outDir
-    // DevEngine 的 full 回调是本轮原生批次输出，不是完整目录清单；
-    // 始终合并所有权，只有显式 removedAssets 才允许删除旧产物。
-    const commitOwnership = prepareOutputOwnership(this.ctx, outDir, output.map(item => item.fileName), true, removedAssets, 'stateful-hmr')
+    // DevEngine 的 full 回调仍可能省略未变化的原生模块（例如 app.prelude.js）；
+    // stateful scope 必须保留这些已有文件，只有显式 removedAssets 才允许删除旧产物。
+    const commitOwnership = prepareOutputOwnership(this.ctx, outDir, output.map(item => item.fileName), !replaceOwnership, removedAssets, 'stateful-hmr')
     const write = async () => {
       await writeStatefulHmrOutput(outDir, output, initialPublicAssets, removedAssets)
       await commitOwnership()

@@ -12,7 +12,7 @@ import { commitWxmlDependencies, failWxmlDependencies } from '../../wxml/process
 import { validateWxmlBundle } from '../../wxml/validate'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from '../core/helpers/bundle'
 import { resolveRootEntryBasename } from '../core/lifecycle/load/weapi'
-import { flushIndependentOutputs } from './independent'
+import { collectIndependentOutputFileNames, flushIndependentOutputs } from './independent'
 import { prepareOutputOwnership } from './ownership'
 
 function outputSourceToString(output: OutputBundle[string]) {
@@ -157,10 +157,13 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           }
           checkpoint('publicationIndependentMs')
           if ((ctx.configService.isDev || this.meta.watchMode) && !preserveCompleteBundle && outDir) {
-            commitOwnership = prepareOutputOwnership(ctx, outDir, [
-              ...Object.keys(outputBundle),
-              ...independentAssets.flatMap(asset => asset.fileName ? [asset.fileName] : []),
-            ], partial)
+            // 在后续裁剪与 emitFile 改写 bundle 前冻结本轮主包输出集合；所有权提交只应延迟到 writeBundle。
+            const outputNames = Object.keys(outputBundle)
+            const independentOutputNames = collectIndependentOutputFileNames(ctx)
+            commitOwnership = async () => {
+              await prepareOutputOwnership(ctx, outDir!, outputNames, partial)()
+              await prepareOutputOwnership(ctx, outDir!, independentOutputNames, false, [], 'independent')()
+            }
           }
           pruneUnchangedDevHmrOutputs(ctx, outputBundle, undefined, {
             runtimeRewriteDone: true,

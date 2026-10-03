@@ -7,7 +7,7 @@ defineComponentLibraryRuntimeSuite({
   baselineRoot: 'e2e/ide/baselines/wot-ui-compat/wechat',
   componentFilterEnv: 'WOT_UI_COMPONENT_FILTER',
   runtimeModeEnv: 'WEAPP_VITE_COMPONENT_LIBRARY_MODE',
-  expectedCount: 99,
+  expectedCount: 100,
   outputRoot: '.tmp/wot-ui-compat/wechat',
   progressLabel: 'wot-ui',
   sessionReadyRoute: '/pages/bootstrap/index',
@@ -27,7 +27,7 @@ defineComponentLibraryRuntimeSuite({
       }
     }), { timeout: 5_000 }).toEqual({ selected: [], values: ['option-a', 'option-b'] })
   },
-  suiteName: 'Wot UI 2.2.0 全组件运行时兼容',
+  suiteName: 'Wot UI 2.3.2 全组件运行时兼容',
   updateBaselinesEnv: 'WOT_UI_UPDATE_WECHAT_BASELINES',
   visualComponents: [
     'wd-avatar',

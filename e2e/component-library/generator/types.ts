@@ -38,9 +38,17 @@ export interface ComponentLibraryGeneratorOptions {
   checkOnly: boolean
   components: string[]
   getComponentMarkup: (component: string) => ComponentMarkup
+  initialPages?: readonly ComponentLibraryPage[]
   logPrefix: string
   projectDescription: string
   projectName: string
   title: string
   versionLabel: string
+}
+
+export interface ComponentLibraryPage {
+  name: string
+  pathName: string
+  query: string
+  scene: null
 }

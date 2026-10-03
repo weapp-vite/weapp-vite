@@ -17,7 +17,7 @@ import { buildStatefulHmrSnapshot } from './snapshotBuild'
 
 const temporaryRoots: string[] = []
 
-async function createProject(autoImport = false) {
+async function createProject(autoImport = false, withWorker = false) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-snapshot-component-'))
   temporaryRoots.push(root)
   const files = {
@@ -25,10 +25,10 @@ async function createProject(autoImport = false) {
     'project.config.json': JSON.stringify({ appid: 'wx1234567890abcd', compileType: 'miniprogram', miniprogramRoot: 'dist/', srcMiniprogramRoot: 'src/' }),
     'vite.config.ts': [
       `import { defineConfig } from ${JSON.stringify(path.resolve(import.meta.dirname, '../../config.ts'))}`,
-      `export default defineConfig({ weapp: { srcRoot: "src", react: { renderMode: "auto", compiler: false }, ${autoImport ? 'autoImportComponents: { globs: ["components/**/*"], output: true, typedComponents: true, htmlCustomData: true, vueComponents: true }' : ''} } })`,
+      `export default defineConfig({ weapp: { srcRoot: "src", react: { renderMode: "auto", compiler: false }, ${autoImport ? 'autoImportComponents: { globs: ["components/**/*"], output: true, typedComponents: true, htmlCustomData: true, vueComponents: true }, ' : ''}${withWorker ? 'worker: { entry: ["index"] }' : ''} }, ${withWorker ? 'plugins: [{ name: "diagnostic-asset", generateBundle() { this.emitFile({ type: "asset", fileName: "stats0.html", source: "<title>Rollup Visualizer</title>" }) } }]' : ''} })`,
     ].join('\n'),
     'src/app.ts': 'App({})',
-    'src/app.json': JSON.stringify({ pages: ['pages/index/index'] }),
+    'src/app.json': JSON.stringify({ pages: ['pages/index/index'], ...(withWorker ? { workers: 'workers' } : {}) }),
     'src/pages/index/index.ts': 'Page({})',
     'src/pages/index/index.json': JSON.stringify(autoImport ? {} : { usingComponents: { 'wevu-leaf': '/components/wevu-leaf/index' } }),
     'src/pages/index/index.wxml': '<view><wevu-leaf /></view>',
@@ -40,6 +40,7 @@ async function createProject(autoImport = false) {
       '</script>',
       '<template><view><text>{{ label }}</text><slot /></view></template>',
     ].join('\n'),
+    ...(withWorker ? { 'src/workers/index.ts': 'export default 1' } : {}),
   }
   for (const [relative, content] of Object.entries(files)) {
     const filename = path.join(root, relative)
@@ -279,6 +280,13 @@ describe('stateful snapshot component metadata', () => {
     await fs.rm(path.join(publicDir, 'extra.data'))
     expect(publicOutput(await readSnapshot(), 'extra.data')).toBeUndefined()
     await expect(fs.stat(path.join(root, 'dist/extra.data'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('does not replay worker diagnostic assets into the main snapshot', async () => {
+    const root = await createProject(false, true)
+    const snapshot = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' })
+    const outputs = Array.isArray(snapshot.output) ? snapshot.output.flatMap(item => item.output) : 'output' in snapshot.output ? snapshot.output.output : []
+    expect(outputs.filter(item => item.fileName === 'stats0.html')).toHaveLength(1)
   })
 
   it.each(['publicDir', 'copyPublicDir'] as const)('keeps disabled %s public assets out of snapshots', async (disabled) => {

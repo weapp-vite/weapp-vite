@@ -91,6 +91,7 @@ export const componentScenarios = [
   { component: 'wd-popover', route: '/pages/components/wd-popover/index', parent: null, capability: 'command', action: { type: 'command', method: 'open', event: 'open' }, expectedState: 'pass:command:open' },
   { component: 'wd-popup', route: '/pages/components/wd-popup/index', parent: null, capability: 'command', action: { type: 'command', method: 'close', event: 'close' }, expectedState: 'pass:command:close' },
   { component: 'wd-progress', route: '/pages/components/wd-progress/index', parent: null, capability: 'render', action: null, expectedState: 'pass:render' },
+  { component: 'wd-qr-code', route: '/pages/components/wd-qr-code/index', parent: null, capability: 'render', action: null, expectedState: 'pass:render' },
   { component: 'wd-radio', route: '/pages/components/wd-radio/index', parent: 'wd-radio-group', capability: 'command', action: { type: 'command', method: 'handleClick', expect: { binding: 'modelValue', value: 'option-a' } }, expectedState: 'pass:command:handleClick' },
   { component: 'wd-radio-group', route: '/pages/components/wd-radio-group/index', parent: 'wd-radio-group', capability: 'command', action: { type: 'command', method: 'updateValue', args: ['option-b'], event: 'change' }, expectedState: 'pass:command:updateValue' },
   { component: 'wd-rate', route: '/pages/components/wd-rate/index', parent: null, capability: 'command', action: { type: 'command', method: 'updateValue', args: [3], event: 'change' }, expectedState: 'pass:command:updateValue' },

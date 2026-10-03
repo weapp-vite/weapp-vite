@@ -892,6 +892,21 @@ describe('stateful snapshot output transactions', () => {
     expect(retired).not.toContain('package/app.prelude.js')
   })
 
+  it('does not retire native-owned preludes omitted from a later full output', async () => {
+    harness.nativeOutput = [{ type: 'asset', fileName: 'app.prelude.js', source: 'native prelude' }]
+    const session = await start(snapshot('red'))
+    session.full()
+    await vi.advanceTimersByTimeAsync(50)
+
+    harness.nativeOutput = []
+    harness.writeOutput.mockClear()
+    session.full()
+    await vi.advanceTimersByTimeAsync(50)
+
+    const retired = harness.writeOutput.mock.calls.flatMap(call => call[3] ?? [])
+    expect(retired).not.toContain('app.prelude.js')
+  })
+
   it('retires copied assets and republishes identical bytes after restoration', async () => {
     const copied = { type: 'asset' as const, fileName: 'resources/copied.txt', source: 'original' }
     const initial = snapshot('red', [])

@@ -25,7 +25,7 @@ async function main() {
   ])
   const components = parseGlobalComponents(globalTypes)
   const resolverComponents = (JSON.parse(resolverSource) as string[]).toSorted()
-  if (components.length !== 99 || JSON.stringify(components) !== JSON.stringify(resolverComponents)) {
+  if (components.length !== 100 || JSON.stringify(components) !== JSON.stringify(resolverComponents)) {
     throw new Error(`Wot UI 声明与 resolver 不一致: global=${components.length}, resolver=${resolverComponents.length}`)
   }
 
@@ -34,11 +34,12 @@ async function main() {
     checkOnly,
     components,
     getComponentMarkup,
+    initialPages: [{ name: '启动页', pathName: 'pages/bootstrap/index', query: '', scene: null }],
     logPrefix: 'wot-ui',
     projectDescription: 'Wot UI 全组件启动条件',
     projectName: 'wot-ui-compat',
     title: 'Wot UI',
-    versionLabel: 'Wot UI 2.2.0',
+    versionLabel: 'Wot UI 2.3.2',
   })
 }
 

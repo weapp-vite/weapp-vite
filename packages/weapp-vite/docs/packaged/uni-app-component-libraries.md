@@ -1,12 +1,12 @@
 # uni-app 组件库兼容（实验性）
 
 > [!WARNING]
-> 这是实验性能力，当前兼容基线固定为 `@wot-ui/ui@2.2.0` 与 `uview-plus@3.8.112`。默认完全关闭；只有项目源码和 `weapp.uniApp.include` 明确列出的 npm 包会进入 uni-app 方言转换。
+> 这是实验性能力，当前兼容基线固定为 `@wot-ui/ui@2.3.2` 与 `uview-plus@3.8.127`。默认完全关闭；只有项目源码和 `weapp.uniApp.include` 明确列出的 npm 包会进入 uni-app 方言转换。
 
 ## uview-plus
 
 ```bash
-pnpm add weapp-vite wevu uview-plus@3.8.112
+pnpm add weapp-vite wevu uview-plus@3.8.127
 ```
 
 ```ts
@@ -36,9 +36,9 @@ export default defineConfig({
 
 应用启动时调用 `mount$u()`，再把 `uni.$u` 同步到 `app.config.globalProperties.$u`；全局样式引入 `uview-plus/index.scss`。不要使用会在 Web 调用 `Vue.component` 的默认插件注册流程。
 
-仓库兼容矩阵通过 `patches/uview-plus@3.8.112.patch` 保留 9 项小程序选择器与微信组件主题变量兼容调整。3.8.86 基线中的 `u-slider` 和 `u-tabbar-item` 补丁已经由上游修复，新版不再重复应用。
+仓库测试基线同时应用 `patches/uview-plus@3.8.127.patch`，仅保留 `u-barcode` 获取 canvas 引用前等待组件实例 `this.$nextTick()` 的兼容调整。旧版的选择器、主题变量及其他组件兼容补丁已由上游修复，不再重复应用。
 
-`UviewPlusResolver()` 同时解析 `u-*` 与 `up-*` 标签。静态清单以 3.8.112 npm 发布包中的 139 个顶层 SFC 为准，双前缀共 278 个标签；137 个具名组件各有独立测试页。`u-action-sheet-data` 与 `u-column-notice` 没有组件名，分别由 action-sheet 和 notice-bar 页面覆盖。
+`UviewPlusResolver()` 同时解析 `u-*` 与 `up-*` 标签。静态清单以 3.8.127 npm 发布包中的 140 个源码入口为准，138 个具名组件各有独立测试页。`u-action-sheet-data` 与 `u-column-notice` 没有组件名，分别由 action-sheet 和 notice-bar 页面覆盖。
 
 `supportFilesStrategy` 默认为 `'used'`；需要生成全量组件辅助文件时可传入 `UviewPlusResolver({ supportFilesStrategy: 'full' })`。
 
@@ -59,7 +59,7 @@ pnpm e2e:ide:component-libraries:visual:full
 ## 安装
 
 ```bash
-pnpm add weapp-vite wevu @wot-ui/ui@2.2.0
+pnpm add weapp-vite wevu @wot-ui/ui@2.3.2
 ```
 
 ## 配置
@@ -82,7 +82,7 @@ export default defineConfig({
 })
 ```
 
-`WotUiResolver()` 使用 Wot UI 2.2.0 的真实公开 SFC 清单建立标签映射，并返回 `sourceType: 'wevu-sfc'` 与可解析的源码 ID。不要自行假设所有 `wd-*` 标签都能通过目录名拼接得到入口。
+`WotUiResolver()` 使用 Wot UI 2.3.2 的真实公开 SFC 清单建立标签映射，并返回 `sourceType: 'wevu-sfc'` 与可解析的源码 ID。不要自行假设所有 `wd-*` 标签都能通过目录名拼接得到入口。
 
 `weapp.uniApp` 的行为：
 
@@ -109,7 +109,7 @@ pnpm build:web
 
 ## 兼容矩阵
 
-矩阵以 `@wot-ui/ui@2.2.0/global.d.ts` 实际公开的 99 个 Vue SFC 为准。每个组件都有独立页面；依赖父容器的组件会在自己的页面内使用最小父组件承载。
+矩阵以 `@wot-ui/ui@2.3.2/global.d.ts` 实际公开的 100 个 Vue SFC 为准。2.3.2 新增 `wd-qr-code`，每个组件都有独立页面；依赖父容器的组件会在自己的页面内使用最小父组件承载。
 
 ```text
 组件 | 独立页 | Web | 微信小程序 | Headless
@@ -172,6 +172,7 @@ wd-picker-view | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
 wd-popover | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
 wd-popup | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
 wd-progress | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
+wd-qr-code | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
 wd-radio | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
 wd-radio-group | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为
 wd-rate | 是 | 行为+移动/桌面视觉 | 行为+视觉 | 行为

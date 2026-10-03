@@ -6,6 +6,7 @@ import { createCompilerContextInstance } from '../../context/createCompilerConte
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { getAppBuilder } from './appBuilder'
 import { collectIndependentWatchFiles } from './independentWatch'
+import { isBundlerDiagnosticAsset } from './outputBoundary'
 import { checkWorkersOptions } from './workers'
 
 interface WorkerPlan {
@@ -87,11 +88,13 @@ export async function buildWorkerAssets(ctx: CompilerContext): Promise<Array<Emi
       builder.environments.weapp_workers = environment
       const result = await builder.build(environment) as RolldownOutput | RolldownOutput[]
       watch.commit()
-      return (Array.isArray(result) ? result : [result]).flatMap(bundle => bundle.output.map(output => ({
-        type: 'asset' as const,
-        fileName: output.fileName,
-        source: output.type === 'chunk' ? output.code : output.source,
-      })))
+      return (Array.isArray(result) ? result : [result]).flatMap(bundle => bundle.output
+        .filter(output => !isBundlerDiagnosticAsset(output))
+        .map(output => ({
+          type: 'asset' as const,
+          fileName: output.fileName,
+          source: output.type === 'chunk' ? output.code : output.source,
+        })))
     })
   }
   finally {

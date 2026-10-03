@@ -2067,13 +2067,28 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           scheduleSnapshotBuild({ event: event === 'unlink' ? 'delete' : 'update', file: id, forceFullRescan: true }, performance.now())
           return
         }
-        const independentRoots: string[] = []
+        const independentRoots = new Set<string>()
         for (const [root, files] of independentWatch.watchFiles) {
           if (files.has(normalizedId)) {
-            independentRoots.push(root)
+            independentRoots.add(root)
           }
         }
-        const independentSource = independentRoots.length > 0 && !ctx.moduleGraphService.hasModule(id)
+        // Independent child builds own their sidecars even when the main graph
+        // has also registered the same physical file. The independent watch
+        // registry is the source of truth for routing these updates; requiring
+        // a missing main graph node would skip update events for JSON sidecars
+        // and leave stale child output published.
+        // Native sidecars such as a subpackage's index.json are not always
+        // returned by the child bundle module graph. Resolve their package
+        // root from the source path as well, otherwise topology changes can
+        // be ignored before the child output is rebuilt.
+        const relativeSource = configService.relativeAbsoluteSrcRoot(normalizedId)
+        for (const root of scanService.independentSubPackageMap?.keys?.() ?? []) {
+          if (relativeSource === root || relativeSource.startsWith(`${root}/`)) {
+            independentRoots.add(root)
+          }
+        }
+        const independentSource = independentRoots.size > 0
         if (!independentSource && !shouldHandleSnapshotSidecarFile(id, ctx)) {
           return
         }
@@ -2100,6 +2115,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           }
           requestedConfigRestartBuilds.add(target)
         }
+        const independentConfigDependency = independentSource && configSuffixes.some(suffix => normalizedId.endsWith(suffix))
+        if (independentConfigDependency) {
+          // Independent child metadata is not part of the main entry map, so
+          // topology changes there must invalidate the scan snapshot before
+          // the child bundle is rebuilt.
+          scanService.markDirty()
+        }
         for (const root of independentRoots) {
           invalidateIndependentOutput(root)
           scanService.markIndependentDirty(root)
@@ -2113,7 +2135,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         scheduleSnapshotBuild({
           event: normalizedEvent,
           file: id,
-          independentOutput: independentRoots.length > 0,
+          independentOutput: independentRoots.size > 0,
           forceFullRescan: !independentSource || isConfigDependency,
         }, sidecarStartedAt)
       })

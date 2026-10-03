@@ -144,7 +144,7 @@ describe('WotUiResolver', () => {
   const resolver = WotUiResolver()
 
   it('maps all public Wot UI Vue SFC components', () => {
-    expect(Object.keys(resolver.components ?? {})).toHaveLength(99)
+    expect(Object.keys(resolver.components ?? {})).toHaveLength(100)
     expect(Object.keys(resolver.components ?? {}).sort()).toEqual([...wotUiComponents].sort())
     expect(resolveWithResolver(resolver, 'wd-button')).toEqual({
       name: 'wd-button',
@@ -157,6 +157,13 @@ describe('WotUiResolver', () => {
       name: 'wd-swiper-nav',
       from: '@wot-ui/ui/components/wd-swiper-nav/wd-swiper-nav.vue',
       resolvedId: '@wot-ui/ui/components/wd-swiper-nav/wd-swiper-nav.vue',
+      sourceType: 'wevu-sfc',
+      typeImport: false,
+    })
+    expect(resolveWithResolver(resolver, 'wd-qr-code')).toEqual({
+      name: 'wd-qr-code',
+      from: '@wot-ui/ui/components/wd-qr-code/wd-qr-code.vue',
+      resolvedId: '@wot-ui/ui/components/wd-qr-code/wd-qr-code.vue',
       sourceType: 'wevu-sfc',
       typeImport: false,
     })

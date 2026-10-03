@@ -93,10 +93,10 @@ export default defineConfig({
 ```json
 {
   "peerDependencies": {
-    "wevu": "^6.10.2"
+    "wevu": "^7.4.0"
   },
   "devDependencies": {
-    "wevu": "^6.10.2"
+    "wevu": "^7.4.0"
   }
 }
 ```

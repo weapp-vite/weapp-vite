@@ -90,7 +90,7 @@ const docEntries = [
     source: path.join(packagedDocsDir, 'uni-app-component-libraries.md'),
     output: 'uni-app-component-libraries.md',
     title: 'uni-app Component Libraries',
-    summary: '实验性的 uni-app 组件库转换、Wot UI 配置、99 组件矩阵与双端边界。',
+    summary: '实验性的 uni-app 组件库转换、Wot UI 配置、100 组件矩阵与双端边界。',
   },
   {
     source: path.join(packagedDocsDir, 'wevu-authoring.md'),

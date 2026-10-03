@@ -315,8 +315,10 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
     scanService: {
       subPackageMap: new Map(),
       workersDir: undefined,
+      markDirty: vi.fn(),
       loadAppEntry: vi.fn(async () => {}),
       loadSubPackages: vi.fn(() => []),
+      drainIndependentDirtyRoots: vi.fn(() => []),
     },
     moduleGraphService: {
       bindBuildContext: vi.fn(),
@@ -1417,16 +1419,22 @@ describe('runtime buildPlugin service', () => {
     expect(touchMock).not.toHaveBeenCalled()
   })
 
-  it.each([false, true])('publishes independent updates without invalidating unrelated main entries (shared=%s)', async (shared) => {
+  it.each([
+    [false, false],
+    [false, true],
+    [true, false],
+    [true, true],
+  ])('publishes independent updates without invalidating unrelated main entries (shared=%s, mainGraphModule=%s)', async (shared, mainGraphModule) => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
     const ctx = createMockContext()
-    const file = '/project/src/independent/index.wxml'
+    const file = '/project/src/independent/index.json'
     const entry = '/project/src/pages/main/index.ts'
     const unrelated = '/project/src/pages/other/index.ts'
     ctx.scanService.markIndependentDirty = vi.fn()
+    ctx.scanService.independentSubPackageMap = new Map([['independent', {}]])
     ctx.runtimeState.build.independent.watchFiles.set('independent', new Set([file]))
-    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    ctx.moduleGraphService.hasModule.mockReturnValue(mainGraphModule)
     ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set(shared ? [entry] : []))
     for (const id of [entry, unrelated]) {
       ctx.runtimeState.build.hmr.resolvedEntryMap.set(id, { id })
@@ -1445,6 +1453,7 @@ describe('runtime buildPlugin service', () => {
     await waitForMockCalls(buildMock, 2)
     expect(independentInvalidateMock).toHaveBeenCalledWith('independent')
     expect(ctx.scanService.markIndependentDirty).toHaveBeenCalledWith('independent')
+    expect(ctx.scanService.markDirty).toHaveBeenCalled()
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set(shared ? [entry] : []))
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.has(unrelated)).toBe(true)
     expect(ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh).not.toBe(true)

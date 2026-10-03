@@ -48,7 +48,7 @@ export async function generateComponentLibraryPages(options: ComponentLibraryGen
     ),
     assertOrWrite(
       resolve(options.appRoot, 'project.private.config.json'),
-      renderPrivateConfig(options.components, options.projectDescription, options.projectName),
+      renderPrivateConfig(options.components, options.projectDescription, options.projectName, options.initialPages),
       options.checkOnly,
     ),
   ])
