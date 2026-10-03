@@ -26,6 +26,7 @@ export async function refreshVueFileJsonConfig(
     hasScriptSetup: parsed.meta.hasScriptSetup,
     hasSetupOption: parsed.meta.hasSetupOption,
     sfcSrcDeps: parsed.meta.sfcSrcDeps,
+    sfcSrcCompilationDeps: parsed.meta.sfcSrcCompilationDeps,
   }
   const result: VueTransformResult = {
     ...cachedResult,

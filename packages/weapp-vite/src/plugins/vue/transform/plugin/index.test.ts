@@ -156,6 +156,33 @@ describe('createVueTransformPlugin lifecycle', () => {
     expect(cache.has('D:/project/src/components/other.vue')).toBe(true)
   })
 
+  it.each(['snapshot', 'watch'] as const)('invalidates external compilation input through %s lifecycle', async (lifecycle) => {
+    const { createVueTransformPlugin } = await import('./index')
+    const cached = {
+      source: '<template src="./external.html"/>',
+      styleIndependentSignature: 'previous',
+      isPage: false,
+      result: { meta: { sfcSrcCompilationDeps: ['/project/src/external.html'] } },
+    }
+    transformVueLikeFileMock.mockImplementationOnce(async (options: any) => {
+      options.compilationCache.set('/project/src/card.vue', cached)
+      return { code: 'transformed', map: null }
+    })
+    const plugin = createVueTransformPlugin({
+      configService: { cwd: '/project', weappLibConfig: { enabled: true } },
+      moduleGraphService: { getPendingChanges: () => [{ file: '/project/src/external.html', event: 'update' }] },
+    } as any)
+    await getHookHandler(plugin.transform as any).call({}, cached.source, '/project/src/card.vue')
+    if (lifecycle === 'snapshot') {
+      await plugin.buildStart!.call({} as any)
+    }
+    else {
+      plugin.watchChange!('/project/src/external.html', { event: 'update' })
+    }
+    expect(cached.source).toBeUndefined()
+    expect(cached.styleIndependentSignature).toBeUndefined()
+  })
+
   it('preloads native layout entries during buildStart', async () => {
     const { createVueTransformPlugin } = await import('./index')
     const scanService = {

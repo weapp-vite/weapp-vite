@@ -6,7 +6,7 @@ import type { CompileVueFileOptions } from './types'
 import { createHash } from 'node:crypto'
 import * as t from '@weapp-vite/ast/babelTypes'
 import MagicString from 'magic-string'
-import { mayContainPageDeclaration, mayContainPageMeta, stripPageCompileTimeMacrosFromSfcDescriptor } from '../../../../pageDeclaration'
+import { mayContainPageDeclaration, mayContainPageMeta, prepareSfcScriptCompile } from '../../../../pageDeclaration'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 import { composeSourceMapForSource, composeSourceMaps } from '../../../../utils/sourcemap'
 import { normalizeLineEndings } from '../../../../utils/text'
@@ -47,6 +47,7 @@ export interface ParsedVueFile {
     hasScriptSetup: boolean
     hasSetupOption: boolean
     sfcSrcDeps?: string[]
+    sfcSrcCompilationDeps?: string[]
   }
   scriptSetupMacroConfig?: Record<string, any>
   scriptSetupMacroHash?: string
@@ -287,18 +288,19 @@ export async function parseVueFile(
   let pageMeta: JsonMergeContext['pageMeta']
   let descriptorForCompile = resolvedDescriptor
   let usesExternalScriptCompileSource = false
-  if (options?.isPage === true && (
-    scriptResolvedId
+  if (scriptResolvedId
     || scriptSetupResolvedId
-    || mayContainPageDeclaration(normalizedSource)
-    || mayContainPageMeta(normalizedSource)
-  )) {
-    const stripped = stripPageCompileTimeMacrosFromSfcDescriptor(
+    || (options?.isPage === true && (
+      mayContainPageDeclaration(normalizedSource)
+      || mayContainPageMeta(normalizedSource)
+    ))) {
+    const stripped = prepareSfcScriptCompile(
       normalizedSource,
       filename,
       resolvedDescriptor,
       options?.sourceMap !== false,
       { scriptResolvedId, scriptSetupResolvedId },
+      options?.isPage === true,
     )
     if (stripped) {
       routeConfig = stripped.routeConfig
@@ -334,6 +336,7 @@ export async function parseVueFile(
     hasScriptSetup: !!resolvedDescriptor.scriptSetup,
     hasSetupOption: !!resolvedDescriptor.script && SETUP_CALL_RE.test(resolvedDescriptor.script.content),
     sfcSrcDeps,
+    sfcSrcCompilationDeps: [templateResolvedId, scriptResolvedId, scriptSetupResolvedId].filter((id): id is string => Boolean(id)),
   }
 
   let scriptSetupMacroConfig: Record<string, any> | undefined

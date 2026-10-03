@@ -33,6 +33,7 @@ import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectAppEntries } from './app'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
 import { createEntryResolver } from './resolve'
+import { createScriptSetupAnalyzer } from './scriptSetupAnalysis'
 import { applyScriptSetupUsingComponents, scanTemplateEntry } from './template'
 import { addPredictedWatchTargets } from './watch'
 
@@ -156,6 +157,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const existsCache = new Map<string, boolean>()
   const pathExistsTtlMs = getPathExistsTtlMs(configService)
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
+  const scriptSetupAnalyzer = createScriptSetupAnalyzer()
   const entryResolver = createEntryResolver(configService, base => path.extname(base) ? undefined : getSelectedAutoRouteSource(ctx, base))
   const appEntriesCache: { current?: AppEntriesCache } = {}
   const appEntryOutputCache: {
@@ -620,6 +622,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
             configService,
             wxmlService,
             reExportResolutionCache,
+            scriptSetupAnalyzer,
             externalComponentEntryMap: ctx.runtimeState.build.hmr.externalComponentEntryMap,
           })
         }
@@ -852,6 +855,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   return Object.assign(loadEntry, {
     invalidateResolveCache() {
       entryResolver.invalidate()
+      scriptSetupAnalyzer.clear()
       scriptlessVueLayoutDecisionCache.clear()
       entrySidecarResolutionCache.clear()
       entryJsonCache.clear()

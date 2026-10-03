@@ -20,6 +20,7 @@ import { findFirstResolvedVueLikeEntry } from '../shared'
 import { parseWeappVueStyleRequest } from '../styleRequest'
 import { handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, invalidatePageLayoutCaches, isVueLikeId, loadTransformStyleBlock, preloadNativeLayoutEntries } from './shared'
 import { transformVueLikeFile } from './transformFile'
+import { invalidateExternalSfcCompilation } from './transformFile/externalDependencies'
 
 const VUE_TRANSFORM_FILTER_RE = /\.(?:vue|tsx|jsx)(?:\?.*)?$/
 const VUE_LOAD_FILTER_RE = /^(?:\0weapp-vite:scoped-slot:|.*[?&]weapp-vite-vue(?:[=&]|$))/
@@ -93,6 +94,10 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     },
 
     async buildStart() {
+      // module-graph snapshot 不经过 watchChange；消费同一批次来源，不能只看宿主 SFC 文本。
+      for (const { file } of ctx.moduleGraphService?.getPendingChanges?.() ?? []) {
+        invalidateExternalSfcCompilation(file, compilationCache)
+      }
       scopedSlotModules.clear()
       emittedScopedSlotChunks.clear()
       compileOptionsCache.clear()
@@ -208,6 +213,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
       const startedAt = performance.now()
       const normalizedId = normalizeFsResolvedId(id)
       invalidateComponentMetaCache(componentMetaCache, normalizedId)
+      invalidateExternalSfcCompilation(normalizedId, compilationCache)
       handleTransformLayoutInvalidation(normalizedId, {
         configService: ctx.configService,
         compilationCache,
@@ -234,6 +240,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
 
     async handleHotUpdate({ file }) {
       invalidateComponentMetaCache(componentMetaCache, file)
+      invalidateExternalSfcCompilation(file, compilationCache)
       if (handleTransformLayoutInvalidation(file, {
         configService: ctx.configService,
         compilationCache,
