@@ -1,5 +1,34 @@
 # @wevu/compiler
 
+## 7.5.0
+
+### Minor Changes
+
+- 将框架及编译依赖链的 Node.js 支持范围对齐为 `^22.18.0 || ^24.11.0 || >=26.0.0`，不再承诺 Node 20、23、25 或低于最低补丁版本的环境。CLI 在加载构建依赖前读取发布包声明并明确拒绝不支持的运行时；发布消费检查覆盖三系统最低版本和当前支持的 LTS 补丁版本。已有项目请先升级 Node.js；脚手架自身仍要求 Node 22.22.2、24.15.0 或 26 及以上版本，不降低其依赖所需版本。
+
+- JSON 自定义合并回调现在可读取当前 SFC 页面的静态路由声明和完整静态页面元信息，覆盖编译、产物合并及 JSON-only 热更新阶段。
+
+### Patch Changes
+
+- 修复 Vue CSS Modules 更新被误判为纯样式变更的问题，使类名映射脚本与样式同批交付，避免后续脚本热更新或编译错误恢复时缺失样式模块并中断状态保持更新。
+
+- 升级 Vite、Oxc、Devframe、Sass、环境变量展开、脚手架 npm 配置与 AI SDK 等生产依赖及构建工具链，并同步工作区锁文件。
+
+  - 迁移 Rust Oxc 至 0.152 与 N-API 依赖，适配新版解析结果和箭头函数 AST，保持批量分析、嵌套函数边界与可选 native 回退契约。
+  - 对齐 React reconciler 0.34 的宿主接口，补齐异步提交所需的 hook，修复 `startTransition` 提交时因缺失宿主方法而失败的问题。
+  - 升级 uview-plus 至 3.8.127，新增 `u-flex` / `up-flex` 自动导入及组件交互场景，将兼容矩阵扩展至 138 个具名组件，并保留条码组件读取 canvas 引用前等待实例 `$nextTick()` 的补丁。
+  - 同步 `create-weapp-vite` 模板 catalog、React 模板的 SWC 依赖与生成的 AI 指引，使新建项目和 React 19.3 / reconciler 0.34 验证基线保持一致。
+
+- 修复 setup 局部状态与声明 prop 同名时模板读取到宿主属性的问题。编译器通过独立计算字段交付可能冲突的模板绑定，保留父级属性与局部响应式状态各自的更新归属，覆盖导入和展开的 props 声明及循环、插槽局部作用域。
+
+- 修复持续编辑 Vue SFC 时签名缓存永久保留历史源码与载荷的问题，使缓存随 Vue 解析结果释放，同时保持 HMR、JSON 宏和样式变化的签名语义。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.3.1
+  - @weapp-core/shared@3.2.8
+  - @weapp-vite/ast@7.5.0
+  - rolldown-require@2.0.35
+
 ## 7.4.0
 
 ### Minor Changes

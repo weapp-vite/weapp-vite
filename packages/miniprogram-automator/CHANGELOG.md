@@ -1,5 +1,27 @@
 # @weapp-vite/miniprogram-automator
 
+## 1.3.0
+
+### Minor Changes
+
+- 为微信 IDE 启动、连接、版本与 App ready、登录提示和有限重试共享总截止时间，传递取消信号并保留原始原因与阶段诊断。仅释放本次持有的连接、CLI 子进程和端口租约，隔离迟到结果，移除就绪后的固定等待。Doctor 运行时探针共用总预算并记录脱敏清理证据；默认静态检查继续只读。
+
+### Patch Changes
+
+- 新增 AppService JS 堆内存能力探测，返回已用与已分配字节或明确的不支持原因；连接超时和无效响应继续报错，避免性能比较将未知宿主内存误记为零。
+
+- 升级 Vite、Oxc、Devframe、Sass、环境变量展开、脚手架 npm 配置与 AI SDK 等生产依赖及构建工具链，并同步工作区锁文件。
+
+  - 迁移 Rust Oxc 至 0.152 与 N-API 依赖，适配新版解析结果和箭头函数 AST，保持批量分析、嵌套函数边界与可选 native 回退契约。
+  - 对齐 React reconciler 0.34 的宿主接口，补齐异步提交所需的 hook，修复 `startTransition` 提交时因缺失宿主方法而失败的问题。
+  - 升级 uview-plus 至 3.8.127，新增 `u-flex` / `up-flex` 自动导入及组件交互场景，将兼容矩阵扩展至 138 个具名组件，并保留条码组件读取 canvas 引用前等待实例 `$nextTick()` 的补丁。
+  - 同步 `create-weapp-vite` 模板 catalog、React 模板的 SWC 依赖与生成的 AI 指引，使新建项目和 React 19.3 / reconciler 0.34 验证基线保持一致。
+
+- 将 MCP 默认配置统一到共享常量，并延迟加载 MCP 服务与开发者工具自动化运行时，避免普通构建和禁用 MCP 的配置解析提前加载可选功能；保留现有公开导出及同步配置 API，自动化操作的总超时预算仍包含延迟初始化。
+
+- Updated dependencies:
+  - @weapp-vite/qr@1.1.9
+
 ## 1.2.23
 
 ### Patch Changes

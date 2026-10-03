@@ -1,5 +1,37 @@
 # @weapp-vite/mcp
 
+## 2.0.0
+
+### Major Changes
+
+- 升级验收命令执行至 Execa 10，取消或超时时同时清理本次启动的后代进程；超时后即使命令返回零退出码，也会正确记录为失败。验收包和 MCP 的最低 Node.js 版本同步调整为 22.12.0。
+
+  上传与预览迁移至 dotenv-expand 1000：环境文件支持命令替换，以及提供 DOTENV_PRIVATE_KEY 时解密 encrypted: 值；空值与未设置变量按新版默认值、替代值规则区分。解析和跨文件覆盖保留有效声明顺序，使后续引用复用命令输出和解密结果。已有进程变量（包括空字符串）优先，不执行被其覆盖的文件值，也不修改全局进程环境。
+
+  多级引用请先声明基础变量；需要原样传入包含命令文本的凭据时，直接使用 CI Secrets 或进程变量，不经文件变量二次引用。同步上传指南、随包文档及脚手架联动发布。
+
+### Minor Changes
+
+- 整合小程序确定性验收，复用现有 MCP 与运行会话，提供无模型检查、任务管理和当前代码证据报告
+
+### Patch Changes
+
+- 升级 Vite、Oxc、Devframe、Sass、环境变量展开、脚手架 npm 配置与 AI SDK 等生产依赖及构建工具链，并同步工作区锁文件。
+
+  - 迁移 Rust Oxc 至 0.152 与 N-API 依赖，适配新版解析结果和箭头函数 AST，保持批量分析、嵌套函数边界与可选 native 回退契约。
+  - 对齐 React reconciler 0.34 的宿主接口，补齐异步提交所需的 hook，修复 `startTransition` 提交时因缺失宿主方法而失败的问题。
+  - 升级 uview-plus 至 3.8.127，新增 `u-flex` / `up-flex` 自动导入及组件交互场景，将兼容矩阵扩展至 138 个具名组件，并保留条码组件读取 canvas 引用前等待实例 `$nextTick()` 的补丁。
+  - 同步 `create-weapp-vite` 模板 catalog、React 模板的 SWC 依赖与生成的 AI 指引，使新建项目和 React 19.3 / reconciler 0.34 验证基线保持一致。
+
+- 将 MCP 默认配置统一到共享常量，并延迟加载 MCP 服务与开发者工具自动化运行时，避免普通构建和禁用 MCP 的配置解析提前加载可选功能；保留现有公开导出及同步配置 API，自动化操作的总超时预算仍包含延迟初始化。
+
+- 修复验收任务在项目锁释放前发布完成状态导致连续验收被错误拒绝的问题，并在 Windows 报告原子替换遇到短暂文件占用时限时重试，保留清理与持久化失败的诊断。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.3.1
+  - @weapp-vite/acceptance@0.1.0
+  - @weapp-vite/devtools-runtime@0.5.0
+
 ## 1.5.8
 
 ### Patch Changes

@@ -1,7 +1,7 @@
 {
   "name": "@wevu/json-render",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "json-render 的 Wevu 小程序渲染与交互适配层",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",

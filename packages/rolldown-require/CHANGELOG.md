@@ -1,5 +1,22 @@
 # rolldown-require
 
+## 2.0.35
+
+### Patch Changes
+
+- 升级 Vite、Oxc、Devframe、Sass、环境变量展开、脚手架 npm 配置与 AI SDK 等生产依赖及构建工具链，并同步工作区锁文件。
+
+  - 迁移 Rust Oxc 至 0.152 与 N-API 依赖，适配新版解析结果和箭头函数 AST，保持批量分析、嵌套函数边界与可选 native 回退契约。
+  - 对齐 React reconciler 0.34 的宿主接口，补齐异步提交所需的 hook，修复 `startTransition` 提交时因缺失宿主方法而失败的问题。
+  - 升级 uview-plus 至 3.8.127，新增 `u-flex` / `up-flex` 自动导入及组件交互场景，将兼容矩阵扩展至 138 个具名组件，并保留条码组件读取 canvas 引用前等待实例 `$nextTick()` 的补丁。
+  - 同步 `create-weapp-vite` 模板 catalog、React 模板的 SWC 依赖与生成的 AI 指引，使新建项目和 React 19.3 / reconciler 0.34 验证基线保持一致。
+
+- 更新 Rolldown 至 1.2.12，接入上游 macOS 原生监听修复，避免监听路径未变化时重启事件流造成保存事件丢失，改善连续保存和路由拓扑更新的构建可靠性。
+
+  同步适配上游状态保持 HMR 的 ESM 图协议及内联辅助函数布局，在原生输出钩子中保留宿主 CommonJS 格式与 sourcemap，继续校验完整运行时契约。
+
+- 联动发布 rolldown-require，将发布包的 Rolldown peer 约束同步到工作区已验证的 1.2.11，避免消费者严格安装当前 weapp-vite 时仍解析到要求旧版引擎的适配包。标准插件在真实构建开始后生成受管 TypeScript 支持文件，支持未执行 prepare 的干净项目直接构建。
+
 ## 2.0.34
 
 ### Patch Changes
