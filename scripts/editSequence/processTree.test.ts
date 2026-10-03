@@ -19,6 +19,17 @@ it('keeps Windows RSS in bytes and handles one row and CRLF output', () => {
   expect(() => summarizeProcessTree([{ pid: 10, parentPid: 1, rssBytes: Number.NaN }], 10)).toThrow('Invalid')
 })
 
+it('preserves Windows working sets above the 32-bit boundary through JSON and tree aggregation', () => {
+  const rows = parseProcessMemory(JSON.stringify([
+    { ProcessId: 10, ParentProcessId: 1, WorkingSetSize: 5_368_709_121 },
+    { ProcessId: 11, ParentProcessId: 10, WorkingSetSize: '4294967297' },
+    { ProcessId: 90, ParentProcessId: 1, WorkingSetSize: 8_589_934_593 },
+  ]), 'win32')
+  expect(rows[0]?.rssBytes).toBe(5_368_709_121)
+  expect(rows[1]?.rssBytes).toBe(4_294_967_297)
+  expect(summarizeProcessTree(rows, 10)).toMatchObject({ processCount: 2, rssBytes: 9_663_676_418 })
+})
+
 it('queries the registered Windows process tree without starting the CIM provider', async () => {
   vi.mocked(exec).mockResolvedValue({ stdout: JSON.stringify([
     { ProcessId: 10, ParentProcessId: 1, WorkingSetSize: '2048' },

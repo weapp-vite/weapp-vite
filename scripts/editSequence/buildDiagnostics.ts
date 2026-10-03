@@ -31,7 +31,7 @@ export class SequenceBuildDiagnostics {
     this.append({ id: ++this.sequence, phase, status: 'observed', atMs: performance.now() - this.origin, details })
   }
 
-  async wait<T>(phase: string, operation: () => Promise<T>): Promise<T> {
+  begin(phase: string) {
     const event: DiagnosticEvent = { id: ++this.sequence, phase, status: 'started', atMs: performance.now() - this.origin }
     this.pending.set(event.id, event)
     if (this.pending.size > EVENT_LIMIT) {
@@ -39,18 +39,12 @@ export class SequenceBuildDiagnostics {
       this.droppedPending++
     }
     this.append(event)
-    try {
-      const value = await operation()
-      this.append({ ...event, status: 'completed', atMs: performance.now() - this.origin })
-      return value
-    }
-    catch (error) {
-      this.append({ ...event, status: 'failed', atMs: performance.now() - this.origin })
-      throw error
-    }
-    finally {
-      this.pending.delete(event.id)
-    }
+    return event
+  }
+
+  end(event: DiagnosticEvent, status: 'completed' | 'failed') {
+    this.append({ ...event, status, atMs: performance.now() - this.origin })
+    this.pending.delete(event.id)
   }
 
   snapshot() {

@@ -170,6 +170,14 @@ Windows Node 22 的另一处失败发生在进程内存采样阶段：PowerShell
 
 Windows 采样进一步改用 Toolhelp32Snapshot 一次枚举 PID/父 PID，再仅对登记根进程及全部后代读取新的 .NET Process.WorkingSet64 字节值；不读取无关进程的内存，不设固定进程数或树深度上限，查询句柄按所有权释放，仍保留原 10 秒期限且不重试。PowerShell 固定脚本与校验后的 PID 通过 UTF-16LE 编码传参，避免终端编码与路径空格影响调用。新增真实 Windows 父/子/孙进程与工作集字节断言；本地 12 项辅助回归及类型检查通过，Windows 原生集成尚待新 CI 执行，不能提前宣称冷采样超时已经消除。
 
+后续 `c7fd1c6eec9867c8fae15994455803ab0de024c4` 的 lifecycle run `37131066291` 六组全部通过，每组完成 47 项机制测试与 15 项编辑序列 E2E。Windows Node 22/24 的真实父/子/孙进程冷采样分别为 4,489.06 / 5,812.15 ms，均在原 10 秒期限内完成。`ce661a0` 的 Release 也已通过。`2812f` 全量 CI 的 Windows Node 22/24 已通过，macOS Node 24 尚在执行；这些结果分别绑定其提交，不能代替最终源码的完整矩阵。
+
+生命周期诊断进一步改为同步 `begin/end`，保留原来的 Promise 身份、await 和返回边界，避免诊断包装本身改变快速保存的微任务调度。原始异步边界数量与引入诊断前一致；29 项定向测试、类型、lint 和原始 classic/stateful 两条 rapid-save E2E 通过。Windows JSON 的数值和字符串工作集同时覆盖超过 4 GiB 的解析与汇总。该变更减少观察对调度的干扰，不把六组通过解释成旧 rapid-save 超时根因已经修复。
+
+v8 发布候选绑定干净 `c7fd1c6`，32 个 runtime 归档中 30 个沿用 v7 的相同哈希，`weapp-vite` 与 `@wevu/compiler` 重新打包。Vite 独立严格消费者全部通过，包括三种开发入口、插件共享导入及页面删除/恢复、两条 ES6 关闭 profile 的 headless runtime 用例。Vite+ 的严格安装、归档来源、exports、负控、单引擎和普通应用三入口通过，但插件首次共享文件更新未在原 20 秒内发布，整体验证失败；当次没有进入插件 runtime 验收。两份临时消费者均已清理，保留原始失败日志，不将以前 v7 的通过覆盖本轮失败。
+
+依赖生命周期的三份隔离草案已分别覆盖 normalized options、Vite hook 包装和 callable builtin callback 的引用所有权；独立回收与公开调用语义对照通过，官方依赖文件及 native binding 未修改。实际 classic 两页、14 次连续编辑仍有 15 个等价观察通过且退出后子进程为 0，但 RSS 窗口增长 45.91 MiB，超过既定 32 MiB。heap 增长约 3.06 MiB、监听器和构建数量稳定不能替代 RSS 归因；该草案尚未成为可交付的资源修复。
+
 ## Stable IDE 环境记录
 
 2026-10-03 05:20 UTC 核对官方渠道数据，最新 Stable 为 `2.02.2608080`，发布日期 2026-09-30。两份该版本安装均尝试了原生 Computer Use 启动，未得到可用宿主；CLI 登录查询超时或缺失该安装的 CLI 端口文件。已运行的 `2.02.2609231` 属于 RC 和其他项目，未关闭或用它替代 Stable。

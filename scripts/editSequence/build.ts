@@ -94,8 +94,14 @@ export class BuildSequenceSession {
     this.completion = Promise.withResolvers<void>()
     void this.completion.promise.catch(() => {})
     this.writing = true
+    const sourceWrite = this.trace.begin('write-sources')
     try {
-      await this.trace.wait('write-sources', () => this.writeSources(input, options))
+      await this.writeSources(input, options)
+      this.trace.end(sourceWrite, 'completed')
+    }
+    catch (error) {
+      this.trace.end(sourceWrite, 'failed')
+      throw error
     }
     finally {
       this.writing = false
@@ -133,12 +139,24 @@ export class BuildSequenceSession {
       // 没有改写引擎监听的输入时复用已发布状态，包括上一轮的诊断。
       this.finishPublication(this.capturePublication())
     }
-    await this.trace.wait('final-publication', () => bounded(() => this.completion.promise, input.signal))
-    if (this.engine) {
-      await this.trace.wait('native-build-finish', () => bounded(() => this.engine!.ensureCurrentBuildFinish(), input.signal))
-      if (this.failure === undefined) {
-        await this.trace.wait('native-bundle-state', () => this.engine!.getBundleState())
+    let publicationWait = this.trace.begin('final-publication')
+    try {
+      await bounded(() => this.completion.promise, input.signal)
+      this.trace.end(publicationWait, 'completed')
+      if (this.engine) {
+        publicationWait = this.trace.begin('native-build-finish')
+        await bounded(() => this.engine!.ensureCurrentBuildFinish(), input.signal)
+        this.trace.end(publicationWait, 'completed')
+        if (this.failure === undefined) {
+          publicationWait = this.trace.begin('native-bundle-state')
+          await this.engine.getBundleState()
+          this.trace.end(publicationWait, 'completed')
+        }
       }
+    }
+    catch (error) {
+      this.trace.end(publicationWait, 'failed')
+      throw error
     }
     await this.outputTask
     const userFile = await readFile(path.join(this.outDir, 'user-owned.txt'), 'utf8')
@@ -452,9 +470,17 @@ export class BuildSequenceSession {
               this.runtime.apply(update)
               this.trace.record('patch-consumed', { filename: update.filename })
               this.measurements.patch(update.code)
-              const delivered = this.trace.wait('patch-delivery', () => this.engine!.notifyPayloadDelivered(update.filename))
-              this.consumed.consume(() => this.runtime.observe(true), delivered)
-              await delivered
+              const patchDelivery = this.trace.begin('patch-delivery')
+              try {
+                const delivered = this.engine!.notifyPayloadDelivered(update.filename)
+                this.consumed.consume(() => this.runtime.observe(true), delivered)
+                await delivered
+                this.trace.end(patchDelivery, 'completed')
+              }
+              catch (error) {
+                this.trace.end(patchDelivery, 'failed')
+                throw error
+              }
             }
             else if (update.type === 'FullReload') {
               // 与生产 adapter 相同，只在引擎要求 reload 时请求完整发布。
@@ -496,7 +522,15 @@ export class BuildSequenceSession {
         const delivered = async () => {
           for (const output of result.output) {
             if (output.type === 'chunk') {
-              await this.trace.wait('full-output-delivery', async () => this.engine?.notifyPayloadDelivered(output.fileName))
+              const fullDelivery = this.trace.begin('full-output-delivery')
+              try {
+                await this.engine?.notifyPayloadDelivered(output.fileName)
+                this.trace.end(fullDelivery, 'completed')
+              }
+              catch (error) {
+                this.trace.end(fullDelivery, 'failed')
+                throw error
+              }
             }
           }
         }
@@ -520,13 +554,26 @@ export class BuildSequenceSession {
   }
 
   waitForPublication(predicate: (observation: ReturnType<PublishedRuntime['observe']>) => boolean, signal: AbortSignal) {
-    return this.trace.wait('intermediate-publication', () => this.consumed.waitFor(predicate, async () => {
-      if (this.engine) {
-        await this.trace.wait('native-build-finish', () => this.engine!.ensureCurrentBuildFinish())
-        await this.trace.wait('native-bundle-state', () => this.engine!.getBundleState())
+    this.trace.record('intermediate-publication')
+    return this.consumed.waitFor(predicate, async () => {
+      let publicationWait = this.trace.begin(this.engine ? 'native-build-finish' : 'output-persistence')
+      try {
+        if (this.engine) {
+          await this.engine.ensureCurrentBuildFinish()
+          this.trace.end(publicationWait, 'completed')
+          publicationWait = this.trace.begin('native-bundle-state')
+          await this.engine.getBundleState()
+          this.trace.end(publicationWait, 'completed')
+          publicationWait = this.trace.begin('output-persistence')
+        }
+        await this.outputTask
+        this.trace.end(publicationWait, 'completed')
       }
-      await this.trace.wait('output-persistence', () => this.outputTask)
-    }, signal, phase => this.trace.record('intermediate-wait', { phase })))
+      catch (error) {
+        this.trace.end(publicationWait, 'failed')
+        throw error
+      }
+    }, signal, phase => this.trace.record('intermediate-wait', { phase }))
   }
 
   async close() {
