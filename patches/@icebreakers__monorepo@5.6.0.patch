@@ -1,8 +1,14 @@
 diff --git a/dist/commands-D4xZQ5t-.mjs b/dist/commands-D4xZQ5t-.mjs
-index 154d99547dd613ce4f046e572ac71c1ab9a663e2..e575c708b0e9664c4134e6409b55cd003a96920c 100644
+index 154d99547dd613ce4f046e572ac71c1ab9a663e2..15e2bd12de8540552c4074070441dbd8a7e94836 100644
 --- a/dist/commands-D4xZQ5t-.mjs
 +++ b/dist/commands-D4xZQ5t-.mjs
-@@ -2930,2 +2930,5 @@
+@@ -2731 +2731,4 @@ async function readPendingIntents(cwd) {
+-	const workspace = await getWorkspacePackages(cwd, { ignorePrivatePackage: false });
++	const workspace = await getWorkspacePackages(cwd, {
++		ignoreRootPackage: false,
++		ignorePrivatePackage: false
++	});
+@@ -2930,2 +2933,5 @@
  async function readWorkspaceVersions(cwd) {
 -	const packages = await getWorkspacePackages(cwd);
 +	const packages = await getWorkspacePackages(cwd, {

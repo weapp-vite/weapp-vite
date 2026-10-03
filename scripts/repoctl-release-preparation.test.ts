@@ -1,6 +1,6 @@
 import type { spawnSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { prepareStable } from 'repoctl'
@@ -30,7 +30,8 @@ afterEach(async () => {
 })
 
 async function createPreparationFixture() {
-  const cwd = await mkdtemp(path.join(tmpdir(), 'repoctl-prepare-'))
+  // 使用真实路径，避免 macOS 的临时目录别名让根包过滤行为与 Linux 不一致。
+  const cwd = await realpath(await mkdtemp(path.join(tmpdir(), 'repoctl-prepare-')))
   roots.push(cwd)
   const manifests: Record<string, Manifest> = {
     'package.json': { name: rootName, private: true, version: '1.0.0' },
@@ -116,6 +117,10 @@ describe('repoctl release preparation workspace boundary', () => {
     expect(await fixture.manifest('packages/tool/package.json')).not.toHaveProperty('version')
     expect(fixture.hooks).toEqual(['after-version'])
     expect(fixture.versionCalls).toEqual([['version', '-r', '--no-git-checks', '--json']])
+
+    await expect(fixture.run()).resolves.toBe(false)
+    expect(fixture.hooks).toEqual(['after-version'])
+    expect(fixture.versionCalls).toHaveLength(1)
   }, 30_000)
 
   it('accepts public dependency propagation together with a private dependent', async () => {
