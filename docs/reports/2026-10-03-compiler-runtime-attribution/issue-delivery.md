@@ -334,6 +334,10 @@ fixture 始终不修改宿主 `.vue`，连续验证初始、外部模板文本�
 
 正式 run `37153581572` 的 stateful 资源与 profile 开销验收最终通过。四个独立 worker 按 off/on/on/off 顺序完成 60/60 个步骤，同一步的产物/runtime 观察摘要跨四轮一致；两个开启 profile 的序列各 14 次编辑均有完整且唯一的源事件。资源趋势按原始样本重新计算均为 stable，四次关闭后子进程为 0。正向与反向开销分别为 +0.5408% 和 -0.4065%，聚合 +0.0671%，低于原 5% 门槛；每轮采用 12 个暖样本。这里的耗时包含 headless 观察与产物扫描，不是纯 HMR 延迟，也不代表 Stable IDE 通过。classic 的原资源增长失败仍未解决。
 
+消费验收调度器此前没有为发布包 runtime 入口启用严格 DOM 门禁；未选择的 case、未分类宿主错误或缺失诊断 journal 可能只写报告而不使进程失败。`e1d0c3131` 将 provider、compiler host、消费者项目路径和 `WEAPP_VITE_E2E_DOM_ACCEPTANCE=1` 收敛到同一环境构造器，并同步 stateful 直接 workflow 命令。一次真实 `vite-plus` headless 消费运行的 3 个 stateful case、19 个 checkpoint 严格通过；远端 `37158424136` 在 `e1d0c3131` 上的 63/63 个 consumer jobs 全部成功，报告均为严格模式。该门禁修复不增加产品 changeset，也不替代 issue 所需的官方 Stable IDE。
+
+同一轮完整 CI 的 Windows Node 22 暴露出进程树观测器的启动层问题：PowerShell 每次调用都重新编译内嵌 Toolhelp C# helper，冷启动超过既有 10 秒查询期限，唯一失败为 `processTree.windows.integration.test.ts` 的超时；其余 13,332 个测试通过。`6cf1acd02` 在系统临时目录缓存带版本名的 assembly，并在模块加载阶段预热，观测时继续使用原 Toolhelp 快照、原 10 秒期限和同一资源断言；并发编译以临时 assembly 与原子移动处理，失败仍原样传播。Linux 定向进程树/观察器/driver 回归共 38 项通过；Windows 全 CI 与 runtime-publication 的新提交复验分别为 `37162797601`、`37162797602`，结果仍需远端完成后记录。
+
 原生通知的 Ubuntu 诊断 run `37154582015` 已按正式采集的前置 app-json 顺序复现：重复脚本恢复相对编辑增加约 57.39–58.60 ms，发生在首个 native→JS 回调之前；core invalidation 仅增加约 0.125 ms。35 个文件的四个窗口以及 transport 观察等价，artifact 摘要和源码身份已核对。原 app-json 的 500 ms 超限完整保留，诊断成功不代表正式性能门禁通过。静态对照确认两个 Rolldown 版本使用同一 notify：1.2.10 的空注册批次会唤醒额外扫描，1.2.12 跳过空批次；该差异可能改变轮询相位，尚不能据此认定全部回退根因或修改冻结基线。
 
 完整 CI 的 Windows Node 22 还暴露外部 SFC 单测的路径键不一致：夹具用 `path.join` 的本机分隔符写入 Map，生产读取按 `compilerSourceId` 规范路径后查询。其他平台同 SHA 用例通过。夹具现统一使用既有规范化函数生成宿主、脚本和模板 ID，保留所有缓存命中、重分析、依赖查找及缺失告警断言；没有修改生产快照协议。两个定向测试文件共 7 项、`weapp-vite` 包级 typecheck 与 ESLint 通过，最终 Windows 结果仍以新提交的远端检查为准。
