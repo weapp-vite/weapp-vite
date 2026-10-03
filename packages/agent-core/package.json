@@ -44,6 +44,7 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:types": "tsd",
     "lint": "eslint ."
   },
   "dependencies": {
