@@ -152,4 +152,5 @@ allowBuilds:
 
 shamefullyHoist: true
 patchedDependencies:
+  '@icebreakers/monorepo@5.6.0': patches/@icebreakers__monorepo@5.6.0.patch
   uview-plus@3.8.127: patches/uview-plus@3.8.127.patch
