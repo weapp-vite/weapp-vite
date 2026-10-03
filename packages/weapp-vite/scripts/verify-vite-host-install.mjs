@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import { readPackedPackageJsonFromTarball } from '../../../scripts/print-rolldown-versions.mjs'
 import { inspectConsumerInstallation, profileConsumerStartup, verifyConsumerExports, verifyConsumerNegativeControls } from './consumerEvidence.mjs'
+import { createConsumerRuntimeEnvironment } from './consumerRuntimeEnvironment.mjs'
 import { createConsumerTemporaryRoot, packConsumerTarballs, readConsumerTarballs, verifyConsumerTarballProvenance } from './consumerTarballs.mjs'
 import { resolveConsumerToolchain } from './consumerToolchains.mjs'
 import { verifyDependencySemantics } from './verify-dependency-semantics.mjs'
@@ -203,11 +204,12 @@ export default defineConfig({
       ], {
         cwd: repoRoot,
         stdio: 'inherit',
-        env: {
-          WEAPP_VITE_E2E_RUNTIME_PROVIDER: provider,
-          WEAPP_VITE_E2E_COMPILER_HOST: toolchain,
-          [runtimeSuite === 'lib' ? 'WEAPP_VITE_E2E_LIB_PROJECT' : runtimeSuite === 'plugin' ? 'WEAPP_VITE_E2E_PLUGIN_PROJECT' : runtimeSuite === 'react' ? 'WEAPP_VITE_E2E_REACT_PROJECT' : runtimeSuite === 'independent' ? 'WEAPP_VITE_E2E_INDEPENDENT_PROJECT' : runtimeSuite === 'worker' ? 'WEAPP_VITE_E2E_WORKER_PROJECT' : 'WEAPP_VITE_E2E_STATEFUL_PROJECT']: consumerRoot,
-        },
+        env: createConsumerRuntimeEnvironment(
+          provider,
+          toolchain,
+          runtimeSuite === 'lib' ? 'WEAPP_VITE_E2E_LIB_PROJECT' : runtimeSuite === 'plugin' ? 'WEAPP_VITE_E2E_PLUGIN_PROJECT' : runtimeSuite === 'react' ? 'WEAPP_VITE_E2E_REACT_PROJECT' : runtimeSuite === 'independent' ? 'WEAPP_VITE_E2E_INDEPENDENT_PROJECT' : runtimeSuite === 'worker' ? 'WEAPP_VITE_E2E_WORKER_PROJECT' : 'WEAPP_VITE_E2E_STATEFUL_PROJECT',
+          consumerRoot,
+        ),
       })
     }
   }
