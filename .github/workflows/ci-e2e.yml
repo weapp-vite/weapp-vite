@@ -16,6 +16,7 @@ on:
           - full
           - shared-layout-windows
           - lifecycle
+          - runtime-publication
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.hmr-diagnostic || 'full' }}
@@ -25,6 +26,29 @@ permissions:
   contents: read
 
 jobs:
+  runtime-publication-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'runtime-publication'
+    name: Runtime Publication Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [22, 24]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...
+      main_command: |
+        pnpm vitest run e2e/utils/devBuildCompletion.test.ts
+        pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/issue-1134-native-topology.runtime.test.ts
+      e2e_platform: weapp
+      artifact_name: runtime-publication-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ github.sha }}
+      artifact_path: docs/reports/dom-acceptance/**
+    secrets: inherit
+
   lifecycle-diagnostic:
     if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'lifecycle'
     name: HMR Lifecycle Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})
