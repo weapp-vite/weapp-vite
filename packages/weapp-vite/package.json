@@ -44,6 +44,10 @@
       "types": "./dist/dashboard.d.mts",
       "import": "./dist/dashboard.mjs"
     },
+    "./dashboard/analyze": {
+      "types": "./dist/dashboard/analyze.d.mts",
+      "import": "./dist/dashboard/analyze.mjs"
+    },
     "./dashboard/vite": {
       "types": "./dist/dashboard/vite.d.mts",
       "import": "./dist/dashboard/vite.mjs"

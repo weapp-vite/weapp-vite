@@ -68,7 +68,9 @@ weapp-vite dev --analyze
 
 ### AI 读取当前 Dashboard
 
-独立 Dashboard 的三个只读查询同时提供 DevFrame MCP schema 与 `structuredContent`：`weapp-vite_get-dashboard-state`、`weapp-vite_get-analyze-page`、`weapp-vite_read-dashboard-file`。页面与工具共用报告 revision、事件与文件读取边界，不启动另一份分析服务或 IDE 会话。
+独立 Dashboard 提供九个只读 DevFrame MCP 工具与对象型 `structuredContent`：状态、摘要／预算、包查询、产物查询、模块／重复查询、构建比较、事件筛选、文件读取及全量报告分页。推荐先取状态和摘要，再定位目标并读取有界文件片段；常规诊断不必下载整份报告。页面、MCP 与 Markdown 报告复用 `weapp-vite/dashboard/analyze` 的纯预算、重复与比较计算，不启动另一份分析服务或 IDE 会话。
+
+分析查询按 revision／hash 固定快照，列表最多 100 项；没有上次报告时比较明确不可用。模块归属包含资源源码，但不等于完整源码引用链；重复节省量是估算，保留独立分包提示。事件只保留最近 24 条，并返回丢弃计数。文件片段按 UTF-16 码元取范围，最多 16384，仍受完整文件大小与读取边界限制；源码是实时受限读取，产物仅来自当前快照。
 
 在项目中安装 `devframe@1.1.0` 与 `@devframes/agentic@1.1.0` 后，可使用 `pnpm exec devframe connect` 发现正在监听的实例，无需配置认证环境变量。直接 HTTP 地址为 `/__weapp-vite/__mcp`；浏览器仍使用 OTP 授权。关闭 / 重启清理旧实例记录。本机模式信任同机进程，不区分本机用户；不要通过代理、隧道或端口转发对外发布 Dashboard。
 

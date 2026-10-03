@@ -7,11 +7,13 @@ import type {
   DashboardFileKind,
   ResolvedDashboardContentPath,
 } from './paths'
+import type { DashboardFileRange } from './schema'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs'
 import process from 'node:process'
 import path from 'pathe'
 import { MAX_DASHBOARD_FILE_CONTENT_BYTES } from './artifacts'
+import { createDashboardFileExcerpt } from './excerpt'
 import {
   createDashboardContentAllowlist,
   resolveDashboardArtifactPath,
@@ -25,6 +27,7 @@ export interface DashboardFileContent {
   language: string
   path: string
   size: number
+  range?: DashboardFileRange
 }
 
 export interface DashboardFileReader {
@@ -175,7 +178,7 @@ async function readAllowedDashboardFile(
       path: filePath,
       language: resolveDashboardFileLanguage(filePath),
       size: file.size,
-      content: file.content,
+      ...createDashboardFileExcerpt(file.content, request.range),
     }
   }
   const resolvedCandidates = resolveDashboardSourceContentPaths(roots, request.path, allowlist.sourcePaths)
@@ -210,12 +213,13 @@ async function readAllowedDashboardFile(
       path: resolved.relativePath,
       language: resolveDashboardFileLanguage(resolved.relativePath),
       size: file.size,
-      content: file.content,
+      ...createDashboardFileExcerpt(file.content, request.range),
     }
   }
   catch (error) {
     if (error instanceof Error && (
       error.message === '文件不存在。'
+      || error instanceof RangeError
       || error.message === '源码路径存在多个候选文件，已拒绝读取。'
       || error.message === '目标路径不是文件。'
       || error.message.startsWith('文件超过 ')

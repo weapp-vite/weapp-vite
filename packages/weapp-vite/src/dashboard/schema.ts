@@ -27,19 +27,37 @@ export const dashboardAnalyzePageSchema = z.object({
   target: analyzeTargetSchema,
 }) satisfies z.ZodType<DashboardAnalyzePage>
 
+export const dashboardFileRangeRequestSchema = z.object({
+  offset: nonnegativeInteger.describe('Zero-based UTF-16 code-unit offset; the content length is a valid EOF offset.'),
+  limit: z.number().int().min(1).max(16384).describe('Maximum number of UTF-16 code units to return.'),
+})
+
+export const dashboardFileRangeSchema = z.object({
+  offset: nonnegativeInteger,
+  totalCharacters: nonnegativeInteger,
+  nextOffset: nonnegativeInteger.nullable(),
+})
+
+export type DashboardFileRangeRequest = z.infer<typeof dashboardFileRangeRequestSchema>
+export type DashboardFileRange = z.infer<typeof dashboardFileRangeSchema>
+
 export const dashboardFileRequestSchema = z.object({
   kind: z.enum(['source', 'artifact']),
   path: z.string().describe('Report-listed relative path; source uses configured roots and artifact uses captured build content.'),
+  range: dashboardFileRangeRequestSchema.optional(),
 })
 
 export const dashboardFileReadRequestSchema = dashboardFileRequestSchema.extend({
   revision: revisionSchema,
 })
 
+export type DashboardFileReadRequest = z.infer<typeof dashboardFileReadRequestSchema>
+
 export const dashboardFileContentSchema = dashboardFileRequestSchema.extend({
   content: z.string(),
   language: z.string(),
   size: nonnegativeInteger,
+  range: dashboardFileRangeSchema.optional(),
 }) satisfies z.ZodType<DashboardFileContent>
 
 const runtimeEventProfileSchema = z.object({
@@ -68,9 +86,10 @@ const runtimeEventProfileSchema = z.object({
   pendingReasonSummary: z.array(z.string()).optional(),
 }) satisfies z.ZodType<DashboardRuntimeEventProfile>
 
-const runtimeEventSchema = z.object({
+export const dashboardRuntimeEventSchema = z.object({
   id: z.string(),
   timestamp: z.string(),
+  occurredAt: z.string().datetime(),
   source: z.string(),
   kind: z.enum(['command', 'build', 'diagnostic', 'hmr', 'system']),
   level: z.enum(['info', 'success', 'warning', 'error']),
@@ -87,5 +106,5 @@ export const dashboardStateSchema = z.object({
     previous: analyzeDescriptorSchema.nullable(),
   }),
   revision: revisionSchema,
-  runtimeEvents: z.array(runtimeEventSchema),
+  runtimeEvents: z.array(dashboardRuntimeEventSchema),
 })

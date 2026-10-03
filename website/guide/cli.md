@@ -124,7 +124,7 @@ wv [root]
 
 运行 `wv dev --ui` / `wv build --ui` 后，Dashboard 自动在同一端口开放本机只读 MCP，并在实际监听后发布实例记录，无需配置令牌或认证环境变量。
 
-页面与工具共用当前 revision、分页报告、运行事件及受限文件读取；不提供通用 shared-state 工具或命令执行。MCP 校验真实 loopback 连接对端与规范 loopback Origin，浏览器仍使用 OTP magic link。本机模式信任同机进程，不区分本机用户，请勿通过代理、隧道或端口转发对外发布。连接器配置与三个工具的用法见 [Dashboard 实时只读接入](/packages/mcp#dashboard-实时只读接入独立入口)。现有 `wv mcp`、REST 与微信 IDE 自动化入口保持不变。
+页面与工具共用当前 revision、运行事件和受限文件读取；提供摘要／预算、包与产物／模块检索、重复分析、前后构建比较及文件片段，常规诊断无需先拼接全量报告。事件窗口保留 24 条并报告丢弃数，不是持久历史。不提供通用 shared-state 工具或命令执行。MCP 校验真实 loopback 连接对端与规范 loopback Origin，浏览器仍使用 OTP magic link。本机模式信任同机进程，不区分本机用户，请勿通过代理、隧道或端口转发对外发布。连接器配置与查询用法见 [Dashboard 实时只读接入](/packages/mcp#dashboard-实时只读接入独立入口)。现有 `wv mcp`、REST 与微信 IDE 自动化入口保持不变。
 
 
 #### Dashboard 嵌入 Vite DevTools

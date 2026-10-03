@@ -682,8 +682,14 @@ describe('dashboard MCP capabilities', () => {
       expect(keys).not.toContain('weapp-vite:dashboard')
       const { tools } = await mcp.client.listTools()
       expect(tools.map(tool => tool.name).sort()).toEqual([
+        'weapp-vite_compare-analyze-builds',
         'weapp-vite_get-analyze-page',
+        'weapp-vite_get-analyze-summary',
         'weapp-vite_get-dashboard-state',
+        'weapp-vite_query-analyze-artifacts',
+        'weapp-vite_query-analyze-modules',
+        'weapp-vite_query-analyze-packages',
+        'weapp-vite_query-runtime-events',
         'weapp-vite_read-dashboard-file',
       ])
       for (const tool of tools) {
@@ -692,18 +698,6 @@ describe('dashboard MCP capabilities', () => {
       }
       expect(tools.find(tool => tool.name === 'weapp-vite_get-dashboard-state')?.inputSchema)
         .toMatchObject({ type: 'object', properties: {} })
-      expect(tools.find(tool => tool.name === 'weapp-vite_get-dashboard-state')?.outputSchema)
-        .toMatchObject({
-          required: ['analyze', 'revision', 'runtimeEvents'],
-          properties: {
-            runtimeEvents: {
-              items: {
-                required: ['id', 'timestamp', 'source', 'kind', 'level', 'title', 'detail'],
-                properties: { profile: { properties: { pendingReasonSummary: { type: 'array', items: { type: 'string' } } } } },
-              },
-            },
-          },
-        })
       expect(tools.find(tool => tool.name === 'weapp-vite_get-analyze-page')?.inputSchema)
         .toMatchObject({
           required: ['arg0'],

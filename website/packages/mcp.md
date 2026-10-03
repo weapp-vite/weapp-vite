@@ -116,11 +116,35 @@ MCP 客户端在项目目录通过 stdio 执行 `pnpm exec devframe connect`。�
 
 | 工具 | 用途 |
 | --- | --- |
-| `weapp-vite_get-dashboard-state` | 无参数；返回 revision、当前 / 上次报告的分页描述符和最近事件 |
-| `weapp-vite_get-analyze-page` | 传入 `{ "arg0": { "target": "current", "index": 0, "revision": 0 } }`，按序拼接所有页后解析报告 |
-| `weapp-vite_read-dashboard-file` | 传入 `{ "arg0": { "kind": "artifact", "path": "app.js", "revision": 0 } }`，读取报告内源码或该次构建的产物 |
+| `weapp-vite_get-dashboard-state` | 无参数；取得后续查询所需的 revision |
+| `weapp-vite_get-analyze-summary` | 包体总量、预算与缺失体积数据的汇总 |
+| `weapp-vite_query-analyze-packages` | 按包类型、名称、预算状态查询和排序 |
+| `weapp-vite_query-analyze-artifacts` | 最大产物、包内文件、指定模块的产物位置 |
+| `weapp-vite_query-analyze-modules` | 按来源、包、产物筛选模块，检查跨包重复与隔离边界 |
+| `weapp-vite_compare-analyze-builds` | 包／文件／模块的新增、删除、增长和缩小 |
+| `weapp-vite_query-runtime-events` | 最近事件的类型、级别、来源、文本和 ISO 时间筛选 |
+| `weapp-vite_read-dashboard-file` | 受限源码或当前产物的文本片段，也保留全文读取 |
+| `weapp-vite_get-analyze-page` | 仅在需要全量导出时拼接报告 JSON 文本页 |
 
-示例中的 revision、路径必须替换为当前状态与报告中的值；`target` 还支持 `previous`，`kind` 还支持 `source`。工具提供对象型 `structuredContent`，与页面共用同一组处理函数。报告更新会拒绝旧 revision 及过期异步读取，不应混拼不同版本的分页。源码保留 allowlist、根目录、符号链接和大小限制，产物不回退到实时 `dist`。事件是构建 / HMR / 诊断信息，不是应用 console/network。
+常规诊断按“状态 → 摘要 → 定位 → 比较／文件片段”进行，不需要先取完整报告。输入统一使用 `arg0`，例如：
+
+```json
+{ "arg0": { "revision": 0, "duplicateOnly": true, "sortBy": "estimatedSavingBytes", "limit": 10 } }
+```
+
+这是模块查询示例；revision 必须替换成当前值。摘要和目录查询支持 `target: "previous"`；列表默认 20 项、最多 100 项，以 `offset`／`nextOffset` 分页，返回匹配总数和报告 hash。旧 revision 及过期异步读取会被拒绝，不能拼接不同版本的结果。
+
+比较请求使用 `scope: "package" | "file" | "module"`，可按包和变更类型筛选。包筛选在模块归并前生效，`totals` 仍是整个构建的产物总量。没有上次快照时返回 `available: false`、`totals: null`。模块差异按已记录的贡献和来源身份计算，不能与文件差异相加。
+
+缺失体积不是零：比较行对应的 `currentBytes`／`previousBytes`／`deltaBytes` 为 `null`，无法判断增减的现存成员标为 `change: "unmeasured"`；新增／删除仍保留成员变化，包括零字节。`totals` 包含 `currentUnmeasuredFiles`／`previousUnmeasuredFiles`；测量不完整的一侧总量及总增量为 `null`。已知变化先按绝对增量排序，未测量行排在其后。
+
+重复模块的节省量是估算；`hasIndependentPackage` 表示可能必须保留独立分包隔离。模块归属包含资源源码；构建位置不是完整源码引用因果链。未记录产物体积时 `size` 为 `null`，摘要／包行通过 `unmeasuredFiles` 标明缺失数据。
+
+文件示例：`{ "arg0": { "kind": "artifact", "path": "app.js", "revision": 0, "range": { "offset": 0, "limit": 4096 } } }`。范围使用零起始 UTF-16 码元，最多 16384，返回 `totalCharacters` 和 `nextOffset`；`size` 保持完整文件 UTF-8 字节数。省略范围可读全文，但不会绕过 2 MiB、allowlist、根目录与符号链接限制。源码来自受限实时读取，产物来自当前快照，不回退到实时 `dist`，不提供上一快照文件内容。
+
+事件按 ISO `occurredAt` 筛选，`since`／`until` 包含边界且需携带时区；它独立于构建 revision，只保留最近 24 条。`retention` 明确返回实际丢弃数和最早保留时间，不能把它当作持久历史或小程序 console/network。
+
+结果提供对象型 `structuredContent`。页面、MCP 和 Markdown 报告复用 `weapp-vite/dashboard/analyze` 的预算、重复分析与构建比较计算；该浏览器安全入口不启动服务。
 
 独立端点为 `http://127.0.0.1:<port>/__weapp-vite/__mcp`。直接 HTTP 客户端不需要 `Authorization`，但必须提供规范 loopback `Origin`。MCP 协议请求（POST / GET / DELETE）的 Origin 缺失 / 不合法，或实际 socket 对端非 loopback / 无法识别时返回 403；不信任转发头提供的地址。OPTIONS 预检由 Vite 原生 CORS 处理，可能返回空的 204，不执行 MCP 工具或放宽后续请求的门禁。浏览器仍通过 OTP 授权，独立 MCP 不开放通用 shared-state 工具、命令或写入能力。
 

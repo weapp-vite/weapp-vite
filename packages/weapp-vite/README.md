@@ -115,7 +115,7 @@ DevTools `0.7.6` 自身存在程序化重启边界：重复使用同一个 `DevT
 
 ### Dashboard MCP
 
-CLI 独立 Dashboard 可复用上述只读 RPC 向 AI 提供当前状态、分页分析报告和受限文件内容。运行 `wv dev --ui` / `wv build --ui` 后即可通过 `devframe connect` 发现实例，无需配置令牌。MCP 校验真实 loopback 连接对端与规范 loopback Origin，不开放通用 shared-state 工具；浏览器仍使用 OTP。本机模式信任同机进程，不区分本机用户，请勿通过代理、隧道或端口转发对外发布。
+CLI 独立 Dashboard 可复用只读 RPC 向 AI 提供摘要／预算、包与产物／模块检索、重复分析、前后构建比较、最近事件筛选及受限文件片段；分页报告仅作为全量导出选项。页面与工具共享 `weapp-vite/dashboard/analyze` 纯计算入口，缺失基线或体积测量不会假造增减。运行 `wv dev --ui` / `wv build --ui` 后即可通过 `devframe connect` 发现实例，无需配置令牌。MCP 校验真实 loopback 连接对端与规范 loopback Origin，不开放通用 shared-state 工具；浏览器仍使用 OTP。本机模式信任同机进程，不区分本机用户，请勿通过代理、隧道或端口转发对外发布。
 
 工具与页面共享 revision 和内存产物，旧 revision 请求会被拒绝。嵌入 Vite DevTools 时仍由宿主决定是否开放 MCP；现有 `wv mcp`、REST 与微信 IDE 自动化入口保持不变。客户端配置与工具参数见 [随包 MCP 指南](docs/mcp.md#dashboard-实时只读工具devframe)。
 

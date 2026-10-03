@@ -173,7 +173,8 @@ it('requires a canonical loopback Origin without a bearer credential', async () 
     expect(response.status).toBe(403)
   }
   const client = await connectClient(server)
-  expect((await client.listTools()).tools.map(tool => tool.name).sort()).toEqual([stateTool, pageTool, fileTool].sort())
+  expect(await client.callTool({ name: 'weapp-vite_get-analyze-summary', arguments: { arg0: { revision: 0 } } }))
+    .toMatchObject({ structuredContent: { totals: { packages: 1, files: 1 }, previousAvailable: false } })
 })
 
 it.each(['192.0.2.1', '::ffff:192.0.2.1', '2001:db8::1', undefined])('rejects an untrusted socket peer (%s) despite forged locality headers', async (peerAddress) => {
@@ -197,7 +198,8 @@ it.each(['::1', '::ffff:127.0.0.1'])('accepts a loopback socket peer (%s) withou
   const { server } = await createHost({ peerAddress })
   await server.listen()
   const client = await connectClient(server)
-  expect((await client.listTools()).tools.map(tool => tool.name).sort()).toEqual([stateTool, pageTool, fileTool].sort())
+  expect(await client.callTool({ name: 'weapp-vite_get-analyze-summary', arguments: { arg0: { revision: 0 } } }))
+    .toMatchObject({ structuredContent: { totals: { packages: 1, files: 1 }, previousAvailable: false } })
 })
 
 it.each([false, true])('uses the live RPC authority through initialized MCP (legacy=%s)', async (legacy) => {
@@ -207,7 +209,17 @@ it.each([false, true])('uses the live RPC authority through initialized MCP (leg
   const { dashboard } = host
   const client = await connectClient(server, legacy)
   const { tools } = await client.listTools()
-  expect(tools.map(tool => tool.name).sort()).toEqual([stateTool, pageTool, fileTool].sort())
+  expect(tools.map(tool => tool.name).sort()).toEqual([
+    stateTool,
+    pageTool,
+    fileTool,
+    'weapp-vite_get-analyze-summary',
+    'weapp-vite_query-analyze-packages',
+    'weapp-vite_query-analyze-artifacts',
+    'weapp-vite_query-analyze-modules',
+    'weapp-vite_compare-analyze-builds',
+    'weapp-vite_query-runtime-events',
+  ].sort())
   for (const tool of tools) {
     expect(tool.annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false })
     expect(tool.inputSchema).toMatchObject({ type: 'object' })
@@ -237,6 +249,96 @@ it.each([false, true])('uses the live RPC authority through initialized MCP (leg
   })
   expect(await client.callTool({ name: pageTool, arguments: { arg0: pageInput } })).toMatchObject({ isError: true })
   expect(await client.callTool({ name: fileTool, arguments: { arg0: { kind: 'artifact', path: 'app.js', revision: 0 } } })).toMatchObject({ isError: true })
+})
+
+it('diagnoses growth and duplicates through bounded domain queries without report-page downloads', async () => {
+  const { server, controller } = await createHost()
+  const previous = analyzeResult('main')
+  previous.packages[0]!.files = [
+    { file: 'app.js', type: 'chunk', from: 'main', size: 80, modules: [{ id: 'shared', source: 'app.ts', sourceType: 'src', bytes: 20 }] },
+    { file: 'removed.js', type: 'asset', from: 'main', size: 5 },
+  ]
+  const current = analyzeResult('main')
+  current.packages[0]!.files = [
+    { file: 'app.js', type: 'chunk', from: 'main', size: 100, modules: [{ id: 'shared', source: 'app.ts', sourceType: 'src', bytes: 40 }] },
+    { file: 'empty.js', type: 'asset', from: 'main', size: 0 },
+  ]
+  current.packages.push({
+    id: 'independent',
+    label: 'independent',
+    type: 'independent',
+    files: [{ file: 'independent/view.js', type: 'chunk', from: 'independent', size: 60, modules: [{ id: 'shared', source: 'app.ts', sourceType: 'src', bytes: 30 }] }],
+  })
+  current.modules = [{
+    id: 'shared',
+    source: 'app.ts',
+    sourceType: 'src',
+    packages: [{ packageId: 'main', files: ['app.js'] }, { packageId: 'independent', files: ['independent/view.js'] }],
+  }]
+  const artifacts = createDashboardArtifactSnapshot()
+  artifacts.capture('app.js', '0123456789'.repeat(10))
+  artifacts.capture('independent/view.js', 'x'.repeat(60))
+  artifacts.capture('empty.js', '')
+  await controller.update(current, artifacts.files, previous)
+  await server.listen()
+  const client = await connectClient(server)
+  const call = (name: string, arg0: Record<string, unknown>) => client.callTool({ name: `weapp-vite_${name}`, arguments: { arg0 } })
+  expect(await call('get-analyze-summary', { revision: 1 })).toMatchObject({
+    structuredContent: { totals: { packages: 2, files: 3, modules: 1, bytes: 160, unmeasuredFiles: 0 }, previousAvailable: true },
+  })
+  expect(await call('query-analyze-packages', { revision: 1, type: 'independent' })).toMatchObject({
+    structuredContent: { total: 1, items: [{ id: 'independent', bytes: 60 }] },
+  })
+  expect(await call('query-analyze-modules', { revision: 1, duplicateOnly: true })).toMatchObject({
+    structuredContent: { total: 1, items: [{ id: 'shared', bytes: 40, estimatedSavingBytes: 40, hasIndependentPackage: true }] },
+  })
+  expect(await call('query-analyze-artifacts', { revision: 1, moduleId: 'shared', limit: 1 })).toMatchObject({
+    structuredContent: { total: 2, nextOffset: 1, items: [{ packageId: 'main', file: 'app.js', size: 100 }] },
+  })
+  expect(await call('query-analyze-artifacts', { revision: 1, moduleId: 'shared', limit: 1, offset: 1 })).toMatchObject({
+    structuredContent: { total: 2, nextOffset: null, items: [{ packageId: 'independent', file: 'independent/view.js' }] },
+  })
+  expect(await call('read-dashboard-file', { revision: 1, kind: 'artifact', path: 'app.js', range: { offset: 2, limit: 4 } })).toMatchObject({
+    structuredContent: { content: '2345', size: 100, range: { offset: 2, totalCharacters: 100, nextOffset: 6 } },
+  })
+  expect(await call('compare-analyze-builds', { revision: 1, scope: 'file' })).toMatchObject({
+    structuredContent: {
+      available: true,
+      totals: { currentBytes: 160, previousBytes: 85, deltaBytes: 75 },
+      total: 4,
+      items: [
+        { file: 'independent/view.js', change: 'added', deltaBytes: 60 },
+        { file: 'app.js', change: 'increased', deltaBytes: 20 },
+        { file: 'removed.js', change: 'removed', deltaBytes: -5 },
+        { file: 'empty.js', change: 'added', deltaBytes: 0 },
+      ],
+    },
+  })
+  expect(await call('get-analyze-summary', { revision: 1, target: 'previous' })).toMatchObject({
+    structuredContent: { target: 'previous', totals: { bytes: 85 } },
+  })
+  controller.emitRuntimeEvents(Array.from({ length: 30 }, (_, index) => ({
+    kind: index === 0 ? 'hmr' : 'system',
+    level: index === 0 ? 'warning' : 'info',
+    title: `event-${index}`,
+    detail: 'bounded feed',
+    profile: index === 0 ? { totalMs: 42, transformMs: 31 } : undefined,
+  })))
+  expect(await call('query-runtime-events', { kind: 'hmr', level: 'warning', since: '1970-01-01T00:00:00Z' })).toMatchObject({
+    structuredContent: {
+      total: 1,
+      items: [{ title: 'event-0', profile: { totalMs: 42, transformMs: 31 } }],
+      retention: { capacity: 24, retained: 24, dropped: 7 },
+    },
+  })
+  for (const [name, arg0] of [
+    ['get-analyze-summary', { revision: 0 }],
+    ['query-analyze-packages', { revision: 1, limit: 101 }],
+    ['query-analyze-modules', { revision: 1, sourceType: 'invalid' }],
+    ['read-dashboard-file', { revision: 1, kind: 'source', path: '../secret', range: { offset: 0, limit: 10 } }],
+  ] as const) {
+    expect(await call(name, arg0)).toMatchObject({ isError: true })
+  }
 })
 
 it('advertises only the listening native endpoint and preserves Vite pages, assets and history', async () => {

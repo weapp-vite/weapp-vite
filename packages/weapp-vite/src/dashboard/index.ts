@@ -1,23 +1,39 @@
 import type { DevframeDefinition } from 'devframe'
 import type { AnalyzeSubpackagesResult } from '../analyze/subpackages'
 import type { DashboardArtifactFiles } from './artifacts'
-import type { DashboardContentRoots, DashboardFileContent, DashboardFileKind } from './content'
+import type { DashboardContentRoots, DashboardFileContent } from './content'
 import type { DashboardRuntimeEvent, DashboardRuntimeEventInput } from './events'
+import type { DashboardRuntimeEventsPage, DashboardRuntimeEventsQueryRequest } from './eventsQuery'
 import type {
   DashboardAnalyzePage,
   DashboardAnalyzePageRequest,
   DashboardAnalyzePayloadsDescriptor,
   SerializedDashboardAnalyzeSnapshot,
 } from './payload'
+import type {
+  DashboardAnalyzeQuery,
+  DashboardAnalyzeSummary,
+  DashboardArtifactsPage,
+  DashboardArtifactsQuery,
+  DashboardComparisonPage,
+  DashboardComparisonQuery,
+  DashboardModulesPage,
+  DashboardModulesQuery,
+  DashboardPackagesPage,
+  DashboardPackagesQuery,
+} from './queries/schema'
+import type { DashboardFileReadRequest } from './schema'
 import { defineDevframe, defineRpcFunction } from 'devframe'
 import { VERSION } from '../constants'
 import { createDashboardFileReader } from './content'
-import { createDashboardRuntimeEvent, prependDashboardRuntimeEvents } from './events'
+import { createDashboardRuntimeEventStore } from './events'
+import { dashboardRuntimeEventsPageSchema, dashboardRuntimeEventsQueryRequestSchema } from './eventsQuery'
 import {
   readDashboardAnalyzePage,
   serializeDashboardAnalyzeSnapshot,
   STALE_DASHBOARD_ANALYZE_REVISION_MESSAGE,
 } from './payload'
+import { createDashboardAnalyzeQueries } from './queries'
 import {
   dashboardAnalyzePageRequestSchema,
   dashboardAnalyzePageSchema,
@@ -65,7 +81,13 @@ declare module 'devframe' {
   interface DevframeRpcServerFunctions {
     'weapp-vite:get-dashboard-state': () => DashboardDevframeState
     'weapp-vite:get-analyze-page': (input: DashboardAnalyzePageRequest) => DashboardAnalyzePage
-    'weapp-vite:read-dashboard-file': (input: { kind: DashboardFileKind, path: string, revision: number }) => Promise<DashboardFileContent>
+    'weapp-vite:read-dashboard-file': (input: DashboardFileReadRequest) => Promise<DashboardFileContent>
+    'weapp-vite:query-runtime-events': (input: DashboardRuntimeEventsQueryRequest) => DashboardRuntimeEventsPage
+    'weapp-vite:get-analyze-summary': (input: DashboardAnalyzeQuery) => DashboardAnalyzeSummary
+    'weapp-vite:query-analyze-packages': (input: DashboardPackagesQuery) => DashboardPackagesPage
+    'weapp-vite:query-analyze-artifacts': (input: DashboardArtifactsQuery) => DashboardArtifactsPage
+    'weapp-vite:query-analyze-modules': (input: DashboardModulesQuery) => DashboardModulesPage
+    'weapp-vite:compare-analyze-builds': (input: DashboardComparisonQuery) => DashboardComparisonPage
   }
 }
 
@@ -79,9 +101,15 @@ export function createAnalyzeDashboardDevframe({
   let revision = 0
   let snapshot: DashboardAnalyzeSnapshot | undefined = initialSnapshot
   let serializedSnapshot: SerializedDashboardAnalyzeSnapshot | undefined = serializeDashboardAnalyzeSnapshot(initialSnapshot)
-  let runtimeEvents = initialEvents.map(createDashboardRuntimeEvent)
+  const eventStore = createDashboardRuntimeEventStore(initialEvents)
   let broadcastDashboardState: (() => Promise<void>) | undefined
   const fileReader = createDashboardFileReader(roots, initialSnapshot.current, initialSnapshot.artifacts)
+  const queries = createDashboardAnalyzeQueries((requestedRevision) => {
+    if (!serializedSnapshot || requestedRevision !== revision) {
+      throw new Error(STALE_DASHBOARD_ANALYZE_REVISION_MESSAGE)
+    }
+    return serializedSnapshot
+  })
 
   function getState(): DashboardDevframeState {
     if (!serializedSnapshot) {
@@ -93,7 +121,7 @@ export function createAnalyzeDashboardDevframe({
         previous: serializedSnapshot.previous?.descriptor ?? null,
       },
       revision,
-      runtimeEvents: [...runtimeEvents],
+      runtimeEvents: eventStore.read(),
     }
   }
 
@@ -105,7 +133,7 @@ export function createAnalyzeDashboardDevframe({
     returns: dashboardStateSchema,
     agent: {
       title: 'Dashboard state',
-      description: 'Read the live Dashboard revision, current and previous report page descriptors, and recent runtime events. Use this revision for subsequent report-page and file reads.',
+      description: 'Read the live Dashboard revision, report descriptors and recent runtime events. Use this revision with domain queries; start with get-analyze-summary instead of downloading whole report pages.',
       safety: 'read',
     },
     handler: getState,
@@ -118,7 +146,7 @@ export function createAnalyzeDashboardDevframe({
     returns: dashboardAnalyzePageSchema,
     agent: {
       title: 'Analyze report page',
-      description: 'Read one bounded JSON-text page from the current or previous analyze report. Concatenate pages in index order to reconstruct the report; refresh Dashboard state when the revision changes.',
+      description: 'Export one bounded JSON-text page of the current or previous report. Concatenate pages in index order; prefer domain summary, catalog and comparison queries for diagnostics.',
       safety: 'read',
     },
     handler: (input: unknown) => {
@@ -136,7 +164,7 @@ export function createAnalyzeDashboardDevframe({
     returns: dashboardFileContentSchema,
     agent: {
       title: 'Dashboard file content',
-      description: 'Read a report-listed source file or captured build artifact at the current Dashboard revision. Source roots, report allowlists, symlink checks and file-size limits apply; artifacts come only from the analysis snapshot.',
+      description: 'Read a report-listed source or captured artifact at the current revision. Prefer range:{offset,limit} for bounded UTF-16 excerpts (limit <=16384); omit range only when full content is needed. Size is full UTF-8 bytes. Source files are live disk reads; artifacts come from the snapshot. Allowlist, symlink and file-size protections apply.',
       safety: 'read',
     },
     handler: async (input) => {
@@ -150,6 +178,19 @@ export function createAnalyzeDashboardDevframe({
       }
       return content
     },
+  })
+  const queryRuntimeEvents = defineRpcFunction({
+    name: 'query-runtime-events',
+    type: 'query',
+    jsonSerializable: true,
+    args: [dashboardRuntimeEventsQueryRequestSchema],
+    returns: dashboardRuntimeEventsPageSchema,
+    agent: {
+      title: 'Recent runtime events',
+      description: 'Filter the retained 24-event window by kind, level, source, text or inclusive ISO time bounds, including HMR profiles. Retention reports discarded events; this is not durable history and is independent of build revisions.',
+      safety: 'read',
+    },
+    handler: input => eventStore.query(input),
   })
 
   const definition = defineDevframe({
@@ -171,6 +212,12 @@ export function createAnalyzeDashboardDevframe({
       dashboard.rpc.register(getDashboardState)
       dashboard.rpc.register(getAnalyzePage)
       dashboard.rpc.register(readDashboardFile)
+      dashboard.rpc.register(queries.summary)
+      dashboard.rpc.register(queries.packages)
+      dashboard.rpc.register(queries.artifacts)
+      dashboard.rpc.register(queries.modules)
+      dashboard.rpc.register(queries.comparison)
+      dashboard.rpc.register(queryRuntimeEvents)
       broadcastDashboardState = async () => {
         await dashboard.rpc.broadcast({
           method: 'dashboard-state-updated',
@@ -193,7 +240,7 @@ export function createAnalyzeDashboardDevframe({
       snapshot = nextSnapshot
       serializedSnapshot = nextSerialized
       revision += 1
-      runtimeEvents = prependDashboardRuntimeEvents(runtimeEvents, [{
+      eventStore.prepend([{
         kind: 'build',
         level: 'info',
         title: 'analyze payload refreshed',
@@ -206,7 +253,7 @@ export function createAnalyzeDashboardDevframe({
       if (!snapshot || events.length === 0) {
         return
       }
-      runtimeEvents = prependDashboardRuntimeEvents(runtimeEvents, events)
+      eventStore.prepend(events)
       void broadcastDashboardState?.()
     },
     dispose() {
@@ -215,7 +262,7 @@ export function createAnalyzeDashboardDevframe({
       }
       snapshot = undefined
       serializedSnapshot = undefined
-      runtimeEvents = []
+      eventStore.dispose()
       broadcastDashboardState = undefined
       fileReader.dispose()
     },
@@ -226,5 +273,19 @@ export type { AnalyzeSubpackagesResult } from '../analyze/subpackages'
 export type { DashboardArtifactFile, DashboardArtifactFiles } from './artifacts'
 export { createDashboardArtifactSnapshot } from './artifacts'
 export { resolveDashboardClientAssets } from './assets'
-export type { DashboardContentRoots } from './content'
-export type { DashboardRuntimeEventInput, DashboardRuntimeEventProfile } from './events'
+export type { DashboardContentRoots, DashboardFileContent } from './content'
+export type { DashboardRuntimeEvent, DashboardRuntimeEventInput, DashboardRuntimeEventProfile } from './events'
+export type { DashboardRuntimeEventsPage, DashboardRuntimeEventsQueryRequest } from './eventsQuery'
+export type {
+  DashboardAnalyzeQuery,
+  DashboardAnalyzeSummary,
+  DashboardArtifactsPage,
+  DashboardArtifactsQuery,
+  DashboardComparisonPage,
+  DashboardComparisonQuery,
+  DashboardModulesPage,
+  DashboardModulesQuery,
+  DashboardPackagesPage,
+  DashboardPackagesQuery,
+} from './queries/schema'
+export type { DashboardFileReadRequest } from './schema'

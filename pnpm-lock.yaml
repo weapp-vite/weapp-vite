@@ -3212,6 +3212,9 @@ importers:
       weapp-tailwindcss:
         specifier: 'catalog:'
         version: 5.5.11(@oxc-project/types@0.149.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.11)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.1)
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../weapp-vite
 
   packages/devtools-runtime:
     dependencies:
