@@ -70,6 +70,20 @@ pnpm create weapp-vite my-app wevu --dependency-versions=bundled
 
 第二个参数是模板名，内部对应 `TemplateName` 枚举。
 
+### 选择构建工具链
+
+`--toolchain=wv|vite|vite-plus` 与模板独立，默认 `wv`。原生、Wevu、React、多平台、插件和 lib 模板复用同一套源码：
+
+```bash
+pnpm create weapp-vite my-app wevu --toolchain=vite
+pnpm create weapp-vite my-app react --toolchain=vite-plus
+vp create create-weapp-vite my-app wevu -- --toolchain=vite-plus
+```
+
+Vite / Vite+ 项目的 `dev`、`build` 脚本分别使用 `vite` / `vp`，`vite*.config.ts` 显式导入共享的 `weapp-vite.config.ts`；多平台和 lib 脚本使用各自的配置文件，不传递 `wv` 专属参数。`prepare`、打开 IDE、Dashboard、上传、MCP 等小程序命令继续由 `wv` 提供。ESLint、stylelint、hooks 和受管 TypeScript 配置保留。
+
+Vite+ 模板使用配套的 `vite-plus@1.0.0` 与 `vite` → `@voidzero-dev/vite-plus-core@1.0.0` alias，并在 npm `overrides` 和独立项目的 pnpm workspace 中同步覆盖传递依赖，同时固定配套的 `vitest@5.0.1`，避免 `vp test` 和测试包加载不同 runner。独立 pnpm 项目仅为该版 Vitest 与 `@vitest/mocker` 的 Vite peer 声明 `1.0.0` alias 兼容，保留严格 peer 检查。Node 要求为 `^24.15.0 || >=26.0.0`。在已有 pnpm workspace 中创建成员时，须先由维护者将根 `overrides.vite` 配成同一 alias，并配置 `overrides.vitest: 5.0.1`；严格 peer 工作区还需将 `peerDependencyRules.allowedVersions` 中的 `vitest@5.0.1>vite` 与 `@vitest/mocker@5.0.1>vite` 设为 `1.0.0`；脚手架不会改动上级工作区或其他成员的引擎。
+
 > **注意**：非交互模式下，如果你没有显式传 `--install-skills`，默认不会自动安装 AI skills；交互模式下默认值也是“否”。
 
 ## CLI 参数
@@ -77,7 +91,7 @@ pnpm create weapp-vite my-app wevu --dependency-versions=bundled
 命令格式：
 
 ```bash
-create-weapp-vite [targetDir] [templateName] [--dependency-versions=compatible|bundled] [--registry=<url>] [--install-skills] [--no-install-skills]
+create-weapp-vite [targetDir] [templateName] [--toolchain=wv|vite|vite-plus] [--dependency-versions=compatible|bundled] [--registry=<url>] [--install-skills] [--no-install-skills]
 ```
 
 参数说明：
@@ -86,6 +100,7 @@ create-weapp-vite [targetDir] [templateName] [--dependency-versions=compatible|b
 | --------------------- | -------------------------------------- |
 | `targetDir`           | 目标目录；交互模式默认 `my-app`        |
 | `templateName`        | 模板名；非交互模式缺省时默认 `default` |
+| `--toolchain=wv\|vite\|vite-plus` | 构建工具链，默认 `wv`；与模板名独立 |
 | `--install-skills`    | 非交互模式下显式安装推荐的 AI skills   |
 | `--no-install-skills` | 非交互模式下显式跳过 AI skills 安装    |
 | `--dependency-versions=compatible\|bundled` | 依赖版本策略，默认 `bundled`；`compatible` 显式联网查询 |
@@ -105,6 +120,7 @@ import { createProject, TemplateName } from 'create-weapp-vite'
 
 await createProject('my-app', TemplateName.wevu)
 await createProject('my-app', TemplateName.wevu, { installSkills: true })
+await createProject('my-app', TemplateName.react, { toolchain: 'vite-plus' })
 await createProject('my-app', TemplateName.wevu, {
   dependencyVersionStrategy: 'compatible',
   registry: 'https://registry.npmmirror.com/',
