@@ -8,13 +8,14 @@ on:
   workflow_dispatch:
     inputs:
       hmr-diagnostic:
-        description: 限定 Windows shared-layout 诊断；默认保留完整矩阵
+        description: 选择 HMR 定向回归；默认保留完整矩阵
         type: choice
         required: false
         default: full
         options:
           - full
           - shared-layout-windows
+          - lifecycle
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.hmr-diagnostic || 'full' }}
@@ -24,6 +25,29 @@ permissions:
   contents: read
 
 jobs:
+  lifecycle-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'lifecycle'
+    name: HMR Lifecycle Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [22, 24]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...
+      main_command: |
+        pnpm vitest run packages/weapp-vite/src/utils/watchDependencies.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotInputs.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotBuild.integration.test.ts scripts/editSequence/processTree.test.ts
+        pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/edit-sequence.test.ts --reporter=default --reporter=json --outputFile=.tmp/hmr-lifecycle-report.json
+      e2e_platform: weapp
+      artifact_name: hmr-lifecycle-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ github.sha }}
+      artifact_path: .tmp/hmr-lifecycle-report.json
+    secrets: inherit
+
   shared-layout-windows-diagnostic:
     if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'shared-layout-windows'
     name: Shared Layout HMR Diagnostic (Windows / Node ${{ matrix.node-version }})
@@ -85,7 +109,7 @@ jobs:
     secrets: inherit
 
   shared-compiler-hosts:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
     name: Shared Compiler Hosts (${{ matrix.os }} / Node 24)
     strategy:
       fail-fast: false
@@ -226,7 +250,7 @@ jobs:
     secrets: inherit
 
   miniapp-e2e-build-full:
-    if: github.event_name != 'pull_request' && inputs.hmr-diagnostic != 'shared-layout-windows'
+    if: github.event_name != 'pull_request' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
     name: Miniapp Nightly Build Artifact (${{ matrix.os }} / Node ${{ matrix.node-version }} / weapp)
     strategy:
       fail-fast: false
@@ -267,7 +291,7 @@ jobs:
     secrets: inherit
 
   miniapp-e2e-ci-full:
-    if: github.event_name != 'pull_request' && inputs.hmr-diagnostic != 'shared-layout-windows'
+    if: github.event_name != 'pull_request' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
     needs: miniapp-e2e-build-full
     name: Miniapp E2E Nightly (${{ matrix.os }} / Node ${{ matrix.node-version }} / shard ${{ matrix.shard }})
     strategy:
@@ -291,7 +315,7 @@ jobs:
     secrets: inherit
 
   miniapp-hmr-ci-full:
-    if: github.event_name != 'pull_request' && inputs.hmr-diagnostic != 'shared-layout-windows'
+    if: github.event_name != 'pull_request' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
     needs: miniapp-e2e-build-full
     name: Miniapp HMR Guard (${{ matrix.os }} / Node ${{ matrix.node-version }} / weapp)
     strategy:
@@ -354,7 +378,7 @@ jobs:
     secrets: inherit
 
   web-project-builds:
-    if: inputs.hmr-diagnostic != 'shared-layout-windows'
+    if: (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
     name: Web Project Builds (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -366,7 +390,7 @@ jobs:
     secrets: inherit
 
   web-browser-smoke:
-    if: inputs.hmr-diagnostic != 'shared-layout-windows'
+    if: (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
     name: Web Browser Smoke (Firefox / WebKit / Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -396,7 +420,7 @@ jobs:
     secrets: inherit
 
   workspace-hmr-nightly:
-    if: github.event_name != 'pull_request' && inputs.hmr-diagnostic != 'shared-layout-windows'
+    if: github.event_name != 'pull_request' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
     name: Workspace HMR Nightly Full (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -412,7 +436,7 @@ jobs:
     secrets: inherit
 
   web-e2e-baseline-full:
-    if: github.event_name != 'pull_request' && inputs.hmr-diagnostic != 'shared-layout-windows'
+    if: github.event_name != 'pull_request' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
     name: Web E2E Baseline (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false

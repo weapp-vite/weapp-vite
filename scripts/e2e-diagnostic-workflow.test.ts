@@ -17,10 +17,10 @@ async function workflow() {
   }
 }
 
-describe('bounded Windows HMR workflow diagnosis', () => {
+describe('bounded HMR workflow diagnosis', () => {
   it('requires an explicit manual selection and uses a separate concurrency group', async () => {
     const config = await workflow()
-    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows'] })
+    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle'] })
     expect(config.concurrency.group).toContain('inputs.hmr-diagnostic || \'full\'')
     const job = config.jobs['shared-layout-windows-diagnostic']!
     expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'shared-layout-windows\'')
@@ -33,6 +33,21 @@ describe('bounded Windows HMR workflow diagnosis', () => {
     })
   })
 
+  it('runs lifecycle regressions serially on each OS and retains failure diagnostics', async () => {
+    const { jobs } = await workflow()
+    const job = jobs['lifecycle-diagnostic']!
+    expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'lifecycle\'')
+    expect(job.strategy?.matrix).toEqual({ 'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'], 'node-version': [22, 24] })
+    const commands = String(job.with?.main_command).trim().split('\n')
+    expect(commands).toHaveLength(2)
+    expect(commands[0]).toContain('snapshotBuild.integration.test.ts')
+    expect(commands[0]).toContain('processTree.test.ts')
+    expect(commands[1]).toContain('-c e2e/vitest.e2e.ci.config.ts e2e/ci/edit-sequence.test.ts')
+    expect(commands[1]).toContain('--outputFile=.tmp/hmr-lifecycle-report.json')
+    expect(job.with?.artifact_path).toBe('.tmp/hmr-lifecycle-report.json')
+    expect(jobs['shared-compiler-hosts']?.if).toContain('(!inputs.hmr-diagnostic || inputs.hmr-diagnostic == \'full\')')
+  })
+
   it('keeps every full OS/Node/shard combination and excludes unrelated manual work', async () => {
     const { jobs } = await workflow()
     expect(jobs['miniapp-e2e-ci-full']?.strategy?.matrix).toEqual({ 'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'], 'node-version': [22, 24], 'shard': [1, 2, 3, 4] })
@@ -41,11 +56,11 @@ describe('bounded Windows HMR workflow diagnosis', () => {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)
     }
     for (const [name, job] of Object.entries(jobs)) {
-      if (name === 'shared-layout-windows-diagnostic') {
+      if (['shared-layout-windows-diagnostic', 'lifecycle-diagnostic'].includes(name)) {
         continue
       }
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>
-        condition.includes('inputs.hmr-diagnostic != \'shared-layout-windows\'')
+        condition.includes('!inputs.hmr-diagnostic || inputs.hmr-diagnostic == \'full\'')
         || condition.includes('github.event_name == \'pull_request\'')
         || condition.includes('needs.miniapp-e2e-build-full.result == \'success\''),
       )

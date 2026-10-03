@@ -45,8 +45,14 @@ export function summarizeProcessTree(rows: ProcessMemory[], rootPid: number) {
 export async function observeProcessTree(rootPid: number) {
   const started = performance.now()
   const windows = process.platform === 'win32'
-  const result = await exec(windows ? 'powershell.exe' : 'ps', windows
-    ? ['-NoProfile', '-NonInteractive', '-Command', 'Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,WorkingSetSize | ConvertTo-Json -Compress']
-    : ['-axo', 'pid=,ppid=,rss='], { timeout: 10_000, throwOnError: true })
-  return { ...summarizeProcessTree(parseProcessMemory(result.stdout, process.platform), rootPid), observationMs: performance.now() - started }
+  try {
+    // 在 CIM 查询阶段就投影所需字段，避免先读取所有进程的完整属性再丢弃。
+    const result = await exec(windows ? 'powershell.exe' : 'ps', windows
+      ? ['-NoProfile', '-NonInteractive', '-Command', 'Get-CimInstance -Query "SELECT ProcessId, ParentProcessId, WorkingSetSize FROM Win32_Process" | Select-Object ProcessId,ParentProcessId,WorkingSetSize | ConvertTo-Json -Compress']
+      : ['-axo', 'pid=,ppid=,rss='], { timeout: 10_000, throwOnError: true })
+    return { ...summarizeProcessTree(parseProcessMemory(result.stdout, process.platform), rootPid), observationMs: performance.now() - started }
+  }
+  catch (cause) {
+    throw new Error(`Process-tree memory observation failed on ${process.platform} after ${Math.round(performance.now() - started)}ms`, { cause })
+  }
 }

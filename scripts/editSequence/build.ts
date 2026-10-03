@@ -12,6 +12,7 @@ import { toStableModuleId } from '../../packages/weapp-vite/src/runtime/stateful
 import { StatefulHmrOutputPublication } from '../../packages/weapp-vite/src/runtime/statefulHmr/outputPublication'
 import { writeStatefulHmrOutput } from '../../packages/weapp-vite/src/runtime/statefulHmr/outputWriter'
 import { createViteDevEngine } from '../../packages/weapp-vite/src/runtime/statefulHmr/viteDevEngine'
+import { SequenceBuildDiagnostics } from './buildDiagnostics'
 import { createSequenceFixturePlugin } from './buildFixture'
 import { applyAction, bounded } from './driver'
 import { observeError } from './editor'
@@ -59,6 +60,13 @@ export class BuildSequenceSession {
   private inputRevision = 0
   private publishedRevision = -1
   private writing = false
+  private readonly trace = new SequenceBuildDiagnostics(() => ({
+    writing: this.writing,
+    inputRevision: this.inputRevision,
+    publishedRevision: this.publishedRevision,
+    pendingChanges: [...this.pendingChanges].map(([file, revision]) => ({ file, revision, watched: this.watchedFiles.has(file) })),
+  }))
+
   readonly measurements: SequenceMeasurements
 
   constructor(mode: 'classic' | 'stateful-experimental', private readonly root: string, private readonly outDir: string) {
@@ -67,6 +75,7 @@ export class BuildSequenceSession {
   }
 
   async observe(input: SequenceInput, options: SequenceSaveOptions = {}) {
+    this.trace.record('observe', { step: input.step })
     this.measurements.reset()
     const topologyChange = this.started && (
       Object.keys(input.files).some(file => !Object.hasOwn(this.sourceFiles, file))
@@ -86,7 +95,7 @@ export class BuildSequenceSession {
     void this.completion.promise.catch(() => {})
     this.writing = true
     try {
-      await this.writeSources(input, options)
+      await this.trace.wait('write-sources', () => this.writeSources(input, options))
     }
     finally {
       this.writing = false
@@ -124,11 +133,11 @@ export class BuildSequenceSession {
       // 没有改写引擎监听的输入时复用已发布状态，包括上一轮的诊断。
       this.finishPublication(this.capturePublication())
     }
-    await bounded(() => this.completion.promise, input.signal)
+    await this.trace.wait('final-publication', () => bounded(() => this.completion.promise, input.signal))
     if (this.engine) {
-      await bounded(() => this.engine!.ensureCurrentBuildFinish(), input.signal)
+      await this.trace.wait('native-build-finish', () => bounded(() => this.engine!.ensureCurrentBuildFinish(), input.signal))
       if (this.failure === undefined) {
-        await this.engine.getBundleState()
+        await this.trace.wait('native-bundle-state', () => this.engine!.getBundleState())
       }
     }
     await this.outputTask
@@ -168,6 +177,7 @@ export class BuildSequenceSession {
       if (this.watchedFiles.has(file)) {
         this.inputRevision = this.writeRevision
       }
+      this.trace.record('source-write', { file, revision: this.writeRevision })
     }
   }
 
@@ -194,6 +204,9 @@ export class BuildSequenceSession {
       throw error
     }
     finally {
+      if (revision !== undefined) {
+        this.trace.record('source-read', { file, revision, acknowledged, matchesTarget: source === this.targetFiles[file] })
+      }
       // 只确认引擎实际请求的输入；旧读取不能确认后续保存或后续步骤。
       if (acknowledged && completion === this.completion && this.pendingChanges.get(file) === revision && source === this.targetFiles[file]) {
         this.pendingChanges.delete(file)
@@ -229,6 +242,7 @@ export class BuildSequenceSession {
   }
 
   private finishPublication(receipt: PublicationReceipt) {
+    this.trace.record('publication-receipt', { revision: receipt.revision, ready: receipt.ready, current: receipt.completion === this.completion })
     if (receipt.completion === this.completion && receipt.ready) {
       this.publishedRevision = Math.max(this.publishedRevision, receipt.revision)
       this.completeIfPublished()
@@ -436,8 +450,9 @@ export class BuildSequenceSession {
             const update = item.update as StatefulHmrDevEngineUpdate
             if (update.type === 'Patch') {
               this.runtime.apply(update)
+              this.trace.record('patch-consumed', { filename: update.filename })
               this.measurements.patch(update.code)
-              const delivered = this.engine!.notifyPayloadDelivered(update.filename)
+              const delivered = this.trace.wait('patch-delivery', () => this.engine!.notifyPayloadDelivered(update.filename))
               this.consumed.consume(() => this.runtime.observe(true), delivered)
               await delivered
             }
@@ -481,7 +496,7 @@ export class BuildSequenceSession {
         const delivered = async () => {
           for (const output of result.output) {
             if (output.type === 'chunk') {
-              await this.engine?.notifyPayloadDelivered(output.fileName)
+              await this.trace.wait('full-output-delivery', async () => this.engine?.notifyPayloadDelivered(output.fileName))
             }
           }
         }
@@ -500,14 +515,18 @@ export class BuildSequenceSession {
     return { watchers: this.watcher ? 1 : 0, engines: this.engine ? 1 : 0 }
   }
 
+  diagnostics() {
+    return this.trace.snapshot()
+  }
+
   waitForPublication(predicate: (observation: ReturnType<PublishedRuntime['observe']>) => boolean, signal: AbortSignal) {
-    return this.consumed.waitFor(predicate, async () => {
+    return this.trace.wait('intermediate-publication', () => this.consumed.waitFor(predicate, async () => {
       if (this.engine) {
-        await this.engine.ensureCurrentBuildFinish()
-        await this.engine.getBundleState()
+        await this.trace.wait('native-build-finish', () => this.engine!.ensureCurrentBuildFinish())
+        await this.trace.wait('native-bundle-state', () => this.engine!.getBundleState())
       }
-      await this.outputTask
-    }, signal)
+      await this.trace.wait('output-persistence', () => this.outputTask)
+    }, signal, phase => this.trace.record('intermediate-wait', { phase })))
   }
 
   async close() {

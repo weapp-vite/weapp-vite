@@ -42,6 +42,7 @@ it('holds the next save until consumed code is delivered and the native transact
   const consumed = Promise.withResolvers<void>()
   const settling = Promise.withResolvers<void>()
   const events: string[] = []
+  const phases: string[] = []
   const settle = vi.fn(async () => {
     events.push('coordinator entered')
     settling.resolve()
@@ -49,7 +50,7 @@ it('holds the next save until consumed code is delivered and the native transact
     events.push('coordinator committed')
   })
   barrier.consume(() => ({ value: 'initial' }), Promise.resolve())
-  const nextSave = barrier.waitFor(value => value.value === 'intermediate', settle, new AbortController().signal).then((value) => {
+  const nextSave = barrier.waitFor(value => value.value === 'intermediate', settle, new AbortController().signal, phase => phases.push(phase)).then((value) => {
     events.push('second save')
     return value
   })
@@ -61,6 +62,7 @@ it('holds the next save until consumed code is delivered and the native transact
   await consumed.promise
   expect(events).toEqual(['intermediate executed'])
   expect(settle).not.toHaveBeenCalled()
+  expect(phases).toEqual(['consumption', 'delivery'])
 
   events.push('delivery acknowledged')
   delivered.resolve()
@@ -70,6 +72,7 @@ it('holds the next save until consumed code is delivered and the native transact
   coordinator.resolve()
   expect(await nextSave).toEqual({ value: 'intermediate' })
   expect(events).toEqual(['intermediate executed', 'delivery acknowledged', 'coordinator entered', 'coordinator committed', 'second save'])
+  expect(phases).toEqual(['consumption', 'delivery', 'settlement'])
 })
 
 it('retains a consumed publication before subscription without eagerly executing observation reads', async () => {

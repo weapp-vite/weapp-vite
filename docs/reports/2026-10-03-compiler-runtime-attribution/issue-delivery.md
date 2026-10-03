@@ -152,6 +152,14 @@ WeakMap 修复后的 classic 两页诊断仍有 15/15 个产物和 runtime 观�
 
 Rolldown 1.2.10 与 1.2.12 的五类隔离控制各执行 16 次，共 160 次构建均关闭成功且产物哈希相同。无钩子及空 `buildEnd` 均为 0/16 对象存活，空 `buildStart`、`generateBundle`、`renderStart` 均为 16/16。堆快照显示原生回调经插件上下文、缓存的 normalized options 和其原生对象回到持有回调的 options，支持跨 JS/native 引用环的判断。当前释放逻辑未清除这些 options；仅复用 Vite builder 或 Rolldown build 仍会重复创建相应上下文，不能作为根治。该依赖生命周期问题尚未形成可发布的修复，classic 资源门禁保持失败。
 
+后续 `2812f021b5b44ef7efe7589faa8c4ad4a2fbf7cf` 的 Website 已通过；Release 发现 CLI 测试把实时递减的 deadline 预算断言成固定 10,000 ms，实际正常消耗 1 ms 后得到 9,999 ms。测试改用受控时钟，并补充登录等待 250 ms 后只向下一次命令转交 9,750 ms 的回归；相关 9 项测试、所属包类型和 lint 通过，产品的总 deadline 未放宽。
+
+旧候选的 rapid-save stateful 用例在 Ubuntu、Windows 和 macOS 均出现过 60 秒等待超时，本地相同 classic/stateful 两项仍通过。测试会话新增 32 条有界事件与等待记录，在外层共享 AbortSignal 超时胜出时、清理之前捕获输入 revision、实际读取、patch delivery、coordinator 和最终 publication 状态；不记录源码。诊断失败不能覆盖原始 cause，14 项机制测试、两项原始 rapid-save 回归及定向 TypeScript 检查通过。原有 `build.ts` 保留会话编排，有界记录单独放入 `buildDiagnostics.ts`，避免继续在超过 300 行的编排文件中堆积实现。这些结果仅证明诊断可用，尚未证明远端超时根因已经修复。
+
+Windows Node 22 的另一处失败发生在进程内存采样阶段：PowerShell 全属性 CIM 查询超过既有 10 秒期限，后续 stateful 采样却成功。查询现在在 provider 层仅投影 PID、父 PID 和 working set，保留全进程树统计、原期限和单次执行；错误补充采样阶段、平台及耗时，并保留 cause。相关 workflow/采样 7 项测试与定向类型检查通过，实际 Windows 耗时仍待远端验证。新增显式 `lifecycle` 手动诊断运行原有三 OS、Node 22/24 的编辑序列与快照回归，保留完整默认矩阵、原始期限和资源门禁，并上传失败报告。
+
+旧候选 Windows 自动组件 HMR 分片已完成原始与唯一确认轮，各 20 对且没有执行错误：32 项中 8 项首次编辑通过（改善 13.50%–26.70%），22 项确认回退（5.23%–32.09%），另 2 项不稳定。回退集中于恢复和重复轮次，手动组件模式同样出现；自动相对手动的增量成本未超预算。因此当前证据支持 warm HMR 总成本退步，不能把回退直接归咎自动导入机制。该分片没有阶段 profile，进一步归因需要新的精确候选诊断。
+
 ## Stable IDE 环境记录
 
 2026-10-03 05:20 UTC 核对官方渠道数据，最新 Stable 为 `2.02.2608080`，发布日期 2026-09-30。两份该版本安装均尝试了原生 Computer Use 启动，未得到可用宿主；CLI 登录查询超时或缺失该安装的 CLI 端口文件。已运行的 `2.02.2609231` 属于 RC 和其他项目，未关闭或用它替代 Stable。

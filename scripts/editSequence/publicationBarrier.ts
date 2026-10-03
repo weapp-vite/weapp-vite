@@ -25,7 +25,7 @@ export class SequencePublicationBarrier<T> {
     this.next = Promise.withResolvers<ConsumedPublication<T>>()
   }
 
-  async waitFor(predicate: (observation: T) => boolean, settle: () => Promise<void>, signal: AbortSignal): Promise<T> {
+  async waitFor(predicate: (observation: T) => boolean, settle: () => Promise<void>, signal: AbortSignal, onWait?: (phase: 'consumption' | 'delivery' | 'settlement') => void): Promise<T> {
     let publication = this.current
     while (true) {
       if (publication) {
@@ -34,11 +34,14 @@ export class SequencePublicationBarrier<T> {
           const delivered = publication.delivered
           // 只由保存方等待 coordinator；原生发布回调不能等待自己的事务结束。
           return observeSettledSequencePublication(async () => {
+            onWait?.('delivery')
             await delivered
+            onWait?.('settlement')
             await settle()
           }, () => observation, signal)
         }
       }
+      onWait?.('consumption')
       publication = await bounded(() => this.next.promise, signal)
     }
   }

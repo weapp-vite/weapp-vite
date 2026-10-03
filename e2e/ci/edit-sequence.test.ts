@@ -99,6 +99,7 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
           }],
         }, {
           name: engine,
+          diagnostics: () => session.diagnostics(),
           incremental: async (input) => {
             if (input.step === 0) {
               return session.observe(input, { fileTimestamp })
