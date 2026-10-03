@@ -176,13 +176,30 @@ describe('automator commands', () => {
 
     it('currentPage reports a helpful protocol timeout when DevTools does not respond', async () => {
       const { currentPage } = await loadCommands()
-      mockMiniProgram.currentPage.mockReturnValue(new Promise(() => {}))
-
-      await expect(currentPage({ projectPath: mockCwd, timeout: 10 })).rejects.toMatchObject({
-        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
-        message: expect.stringMatching(/当前页面请求在 10ms 内未收到 DevTools 回包.+请确认当前打开的是目标项目/),
-      })
-      expect(mockMiniProgram.disconnect).toHaveBeenCalled()
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
+      try {
+        const requested = Promise.withResolvers<void>()
+        mockMiniProgram.currentPage.mockImplementation(() => {
+          requested.resolve()
+          return new Promise(() => {})
+        })
+        const result = currentPage({ projectPath: mockCwd, timeout: 10 })
+        const assertion = expect(result).rejects.toMatchObject({
+          code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+          message: expect.stringMatching(/当前页面请求在 10ms 内未收到 DevTools 回包.+请确认当前打开的是目标项目/),
+        })
+        // 先确认连接完成，再推进页面请求的时钟，避免 CI 调度延迟耗尽连接预算。
+        await requested.promise
+        await vi.advanceTimersByTimeAsync(9)
+        expect(mockMiniProgram.disconnect).not.toHaveBeenCalled()
+        await vi.advanceTimersByTimeAsync(1)
+        await assertion
+        expect(mockMiniProgram.disconnect).toHaveBeenCalledExactlyOnceWith()
+        expect(vi.getTimerCount()).toBe(0)
+      }
+      finally {
+        vi.useRealTimers()
+      }
     })
 
     it('systemInfo returns system info', async () => {
