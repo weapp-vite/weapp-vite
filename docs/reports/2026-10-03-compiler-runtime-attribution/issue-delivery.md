@@ -178,6 +178,12 @@ v8 发布候选绑定干净 `c7fd1c6`，32 个 runtime 归档中 30 个沿用 v7
 
 依赖生命周期的三份隔离草案已分别覆盖 normalized options、Vite hook 包装和 callable builtin callback 的引用所有权；独立回收与公开调用语义对照通过，官方依赖文件及 native binding 未修改。实际 classic 两页、14 次连续编辑仍有 15 个等价观察通过且退出后子进程为 0，但 RSS 窗口增长 45.91 MiB，超过既定 32 MiB。heap 增长约 3.06 MiB、监听器和构建数量稳定不能替代 RSS 归因；该草案尚未成为可交付的资源修复。
 
+`2812f` 全量 CI run `37127105760` 最终六组构建/测试及两组 Weapi 检查全部通过。后续 `c7fd1c6` 的 Release run `37131050014` 则有一条新的失败：`compilerBatch.native.test.ts` 在 `extra dependency: true` 分支首次原子保存后没有收到 Patch，`batches.length` 预期 1、实际 0，后面的来源内容断言未执行；其余 5,387 项通过。该失败继续按原生 watcher 与首轮发布顺序定位，不以先前 Release 或完整 CI 的通过覆盖。
+
+Nightly 的历史 stateful 基线没有 profile producer，但旧采集器默认等待每个阶段的 profile，四场景、两轮编辑/恢复共空等 240 秒；20 对首批及唯一 20 对确认最多因此空等 160 分钟。采集器现仅对精确 `e7862e61dd83e3b9e356ac1e176267b31ab298af` 的 baseline/stateful 组合记录 `unavailable` 并关闭可选等待，候选、classic 和其他 SHA 仍启用采集。启动前落盘能力身份，每轮和可信汇总再次校验；真实 Patch 超时、候选禁用采集和伪造能力例外继续失败。
+
+上述调整使用新的 `paired-v3-profile-capability` 采样契约，保留旧尝试；九逻辑分片、20 对首批及唯一等量确认、全部 deadline 和原会话内场景顺序不变。56 项采集/汇总测试、追加确认轮负控、定向 ESLint 和 strict 类型检查通过；全 scripts 类型检查仍有未改文件的既有错误，未据此宣称整个目录类型通过。真实一对诊断在基线与候选分别保留 16 个编辑/恢复样本、错误为零：基线全部明确不可归因，候选全部有 profile，CLI 分发哈希前后未变，测试工程和进程均已清理。这只验证采集契约，不作为正式性能结论。
+
 ## Stable IDE 环境记录
 
 2026-10-03 05:20 UTC 核对官方渠道数据，最新 Stable 为 `2.02.2608080`，发布日期 2026-09-30。两份该版本安装均尝试了原生 Computer Use 启动，未得到可用宿主；CLI 登录查询超时或缺失该安装的 CLI 端口文件。已运行的 `2.02.2609231` 属于 RC 和其他项目，未关闭或用它替代 Stable。

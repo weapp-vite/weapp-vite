@@ -1,4 +1,4 @@
-import type { AuditSample, Checkout } from './collect'
+import type { AuditSample, Checkout, HmrProfileCapability } from './collect'
 import type { GateScenario, GateSummary } from './evaluate'
 import os from 'node:os'
 import process from 'node:process'
@@ -6,7 +6,7 @@ import { evaluateGate, percentile } from './evaluate'
 import { isOutputEvidence } from './outputEvidence'
 
 export interface AuditBatch {
-  samples: Array<{ round: number, side: 'baseline' | 'optimized', values: AuditSample[] }>
+  samples: Array<{ round: number, side: 'baseline' | 'optimized', values: AuditSample[], profileCapability?: HmrProfileCapability }>
   errors: string[]
 }
 

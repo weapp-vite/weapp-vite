@@ -7,6 +7,7 @@ import { benchmarkModeSelected } from '../../packages/weapp-vite/scripts/utils/b
 import { collectShardBatch, collectSide } from './batch'
 import { policy } from './contract.mjs'
 import { runCollector } from './process'
+import { hmrProfileCapability } from './profileCapability.mjs'
 
 vi.mock('./process', () => ({ runCollector: vi.fn() }))
 afterEach(() => {
@@ -22,7 +23,8 @@ it.each(['hmr:classic:weapp-vite-template', 'build'])('selects a template before
       const input = JSON.parse(await readFile(path.join(options.env!.PERFORMANCE_SAMPLE_DIR!, 'input.json'), 'utf8'))
       expect(input.checkout.templates.map((t: { id: string }) => t.id)).toEqual(['weapp-vite-template'])
       expect(input).not.toHaveProperty('scenarios')
-      await writeFile(path.join(options.env!.PERFORMANCE_SAMPLE_DIR!, 'values.json'), JSON.stringify({ values: [], errors: [] }))
+      expect(input.profileCapability).toEqual(shard.startsWith('hmr:') ? hmrProfileCapability(checkout.id, checkout.commit, 'classic') : undefined)
+      await writeFile(path.join(options.env!.PERFORMANCE_SAMPLE_DIR!, 'values.json'), JSON.stringify({ values: [], errors: [], profileCapability: input.profileCapability }))
       return {} as never
     })
     await collectSide(checkout, shard, root, [shard === 'build' ? 'build:weapp-vite-template:first' : 'hmr:classic:weapp-vite-template:native-page-style:repeat:restore'])
@@ -51,6 +53,28 @@ it('filters auto import modes before execution but keeps both edits and restores
     expect(result.errors).toEqual([])
     vi.stubEnv('BENCH_CONFIGURATIONS', '["69:invalid"]')
     expect(() => benchmarkModeSelected(69, 'automatic')).toThrow('Invalid')
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('rejects collector capability drift and preserves its patch timeout diagnostic', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'collector-capability-'))
+  const checkout: Checkout = { id: 'baseline', cwd: root, commit: policy.baselineSha, templates: [{ id: 'weapp-vite-template', root, packageName: 'weapp-vite-template' }] }
+  try {
+    vi.mocked(runCollector).mockImplementation(async () => {
+      await writeFile(path.join(root, 'values.json'), JSON.stringify({
+        values: [{ id: 'hmr:stateful-experimental:weapp-vite-template:app-json:first:edit', ms: 100 }],
+        errors: ['Timed out waiting for a stateful HMR patch batch'],
+        profileCapability: hmrProfileCapability('optimized', checkout.commit, 'stateful-experimental'),
+      }))
+      return {} as never
+    })
+    const result = await collectSide(checkout, 'hmr:stateful-experimental:weapp-vite-template', root)
+    expect(result.values).toEqual([])
+    expect(result.errors).toEqual(['Timed out waiting for a stateful HMR patch batch', 'Collector HMR profile capability identity mismatch'])
+    expect(result.profileCapability).toEqual(hmrProfileCapability('baseline', checkout.commit, 'stateful-experimental'))
   }
   finally {
     await rm(root, { recursive: true, force: true })

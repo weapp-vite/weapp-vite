@@ -5,6 +5,7 @@ import process from 'node:process'
 import { collectAutoImport } from './autoImport'
 import { collectBuilds, collectHmr } from './collect'
 import { PartialHmrCollectionError } from './hmrSamples'
+import { hmrProfileCapability } from './profileCapability.mjs'
 
 const directory = path.resolve(process.env.PERFORMANCE_SAMPLE_DIR!)
 const input = JSON.parse(await readFile(path.join(directory, 'input.json'), 'utf8')) as {
@@ -14,6 +15,7 @@ const input = JSON.parse(await readFile(path.join(directory, 'input.json'), 'utf
 }
 let values: Awaited<ReturnType<typeof collectBuilds>> = []
 const errors: string[] = []
+const profileCapability = input.shard.startsWith('hmr:') ? hmrProfileCapability(input.checkout.id, input.checkout.commit, input.shard.split(':')[1]!) : undefined
 try {
   if (input.shard === 'build') {
     values = await collectBuilds(input.checkout, directory)
@@ -34,7 +36,7 @@ catch (error) {
   }
   errors.push(String(error).replaceAll(input.checkout.cwd, '<checkout>').replaceAll(process.cwd(), '<driver>'))
 }
-await writeFile(path.join(directory, 'values.json'), JSON.stringify({ values, errors }))
+await writeFile(path.join(directory, 'values.json'), JSON.stringify({ values, errors, profileCapability }))
 if (errors.length) {
   process.exitCode = 1
 }

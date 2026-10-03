@@ -10,6 +10,10 @@ PR 的 `Performance Smoke` 仅验证当前 HEAD 的正确性，目标 10 分钟�
 
 可信 planner 一次性解析完整的 driver、baseline、HEAD SHA，按驱动版本中的固定场景清单生成 `performance-plan`。采集只 checkout 已冻结的 SHA，并核验实际 git HEAD 与 OS。驱动变更如果影响初始化方式、计时、样本或场景语义，必须更新 `samplingContract`，不能用版本号不变的驱动变更偷偷重新采样。
 
+`paired-v3-profile-capability` 对已核验的历史基线 `e7862e61dd83e3b9e356ac1e176267b31ab298af` 的 stateful 管线显式记录 `unavailable / historical-stateful-producer-absent`，因为该提交没有 stateful profile producer。只对这个 SHA 的 baseline 侧关闭可选 profile 等待；候选、classic 和其他 SHA 仍启用采集。启动前写入能力身份，每轮样本保留相同元数据，可信汇总按冻结 SHA/runtime 重算并拒绝伪造的能力例外。不可用阶段不伪造编译耗时，产物/patch 超时仍作为采集失败。
+
+旧契约每个基线会话的 16 个编辑/恢复阶段各空等 15 秒，20 对首批加唯一 20 对确认合计空等 160 分钟。取消这些不存在的 profile 等待会改变阶段间隔，因此使用新采样契约创建新尝试，保留旧尝试及不完整结果，禁止混合旧样本。模板内仍使用同一个 dev 会话及原场景顺序，九个逻辑分片、20 对采样及唯一等量确认、各级 deadline 均不变。
+
 持久去重键包含 HEAD、baseline、采样契约、模板场景、OS 和配置。planner 先在被测提交上登记 `Performance Nightly / <key>` 状态，再启动只读采集。成功、失败和未完成的旧尝试均复用原运行链接，不依赖会过期的 artifact；取消任务也不会自动重新采样。重新贴标签、下一次 schedule 或手动指定同一版本不重置确认次数，GitHub 的原运行 rerun 也不启动采集。只有提交、批准基线或采样契约改变才创建新尝试。旧 artifact 到期后保留运行记录，但不能把已丢失证据重新宣称为完整验收。
 
 ## 分片与 deadline

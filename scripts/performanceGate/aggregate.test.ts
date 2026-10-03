@@ -7,6 +7,7 @@ import { promisify } from 'node:util'
 import { expect, it } from 'vitest'
 import { aggregatePlan, verifyShard } from './aggregate.mjs'
 import { createMatrix, frozenManifest, metricsForShard, policy, targetKey } from './contract.mjs'
+import { hmrProfileCapability } from './profileCapability.mjs'
 import { publishComment, validatePlan } from './publish.mjs'
 
 const target = { id: 'pr-7', prNumber: 7, headSha: 'a'.repeat(40), headRepository: 'owner/repo', baselineSha: policy.baselineSha }
@@ -15,7 +16,10 @@ function fixture(shard = 'hmr:classic:weapp-vite-template', os = 'ubuntu-latest'
   const identity = { schemaVersion: 2, purpose: 'full', samplingContract: policy.samplingContract, driverSha: plan.driverSha, headSha: target.headSha, baselineSha: target.baselineSha, targetId: target.id, prNumber: 7, runId: '10', os, shard }
   const metrics: string[] = metricsForShard(shard)
   const count = shard === 'build' || shard === 'auto-build' ? 7 : 20
-  const samples = Array.from({ length: count }, (_, round) => (round % 2 ? ['optimized', 'baseline'] : ['baseline', 'optimized']).map(side => ({ round, side, values: metrics.map(id => ({ id, ms: side === 'baseline' ? 100 : 102, output: { pageCount: 1, templateDigest: 'a'.repeat(64), configDigest: 'b'.repeat(64) } })) }))).flat()
+  const samples = Array.from({ length: count }, (_, round) => (round % 2 ? ['optimized', 'baseline'] : ['baseline', 'optimized']).map((side) => {
+    const profileCapability = shard.startsWith('hmr:') ? hmrProfileCapability(side, side === 'baseline' ? target.baselineSha : target.headSha, shard.split(':')[1]!) : undefined
+    return { round, side, profileCapability, values: metrics.map(id => ({ id, ms: side === 'baseline' ? 100 : 102, profileStatus: profileCapability?.status === 'unavailable' ? 'unavailable' : 'missing', output: { pageCount: 1, templateDigest: 'a'.repeat(64), configDigest: 'b'.repeat(64) } })) }
+  })).flat()
   return { identity, report: { ...identity, baseline: { commit: target.baselineSha }, optimized: { commit: target.headSha }, manifest: { metrics }, executionPlan: { metrics, confirmation: [] as string[] }, primary: { errors: [] as string[], samples }, gate: { status: 'passed' } } }
 }
 
@@ -30,7 +34,7 @@ it('recomputes performance from raw samples, rejects duplicate rounds, bad SHA a
 })
 
 it('keeps equal-sized confirmation regression and conflicting conclusions distinct', () => {
-  const { identity, report } = fixture()
+  const { identity, report } = fixture('hmr:stateful-experimental:weapp-vite-template')
   const id = report.manifest.metrics[0]!
   for (const row of report.primary.samples) {
     if (row.side === 'optimized') {
@@ -46,6 +50,11 @@ it('keeps equal-sized confirmation regression and conflicting conclusions distin
     }
   }
   expect(verifyShard({ ...report, confirmation, gate: { status: 'unstable' } }, identity).gate.status).toBe('unstable')
+  const baselineConfirmation = confirmation.samples.find(row => row.side === 'baseline')!
+  const capability = baselineConfirmation.profileCapability
+  baselineConfirmation.profileCapability = { ...capability!, runtime: 'classic' }
+  expect(() => verifyShard({ ...report, confirmation, gate: { status: 'unstable' } }, identity)).toThrow('capability identity')
+  baselineConfirmation.profileCapability = capability
   confirmation.samples.pop()
   expect(verifyShard({ ...report, confirmation, gate: { status: 'incomplete' } }, identity).gate.status).toBe('incomplete')
 })
@@ -55,6 +64,40 @@ it('does not allow build output mismatches or missing lifecycle phases to pass',
   report.primary.samples[1]!.values[0]!.output.templateDigest = 'c'.repeat(64)
   expect(() => verifyShard(report, identity)).toThrow('Stored gate')
   expect(verifyShard({ ...report, gate: { status: 'incomplete' } }, identity).gate.status).toBe('incomplete')
+})
+
+it('recomputes profile capability from frozen checkout identity without accepting forged exceptions', () => {
+  const { identity, report } = fixture('hmr:stateful-experimental:weapp-vite-template')
+  expect(verifyShard(report, identity).gate.status).toBe('passed')
+  const baseline = report.primary.samples[0]!
+  const candidate = report.primary.samples[1]!
+  const original = baseline.profileCapability!
+  for (const change of [{ commit: target.headSha }, { runtime: 'classic' }, { status: 'enabled' }, { reason: 'missing' }]) {
+    baseline.profileCapability = { ...original, ...change }
+    expect(() => verifyShard(report, identity)).toThrow('capability identity')
+  }
+  baseline.profileCapability = original
+  for (const status of ['disabled', 'missing', 'available']) {
+    baseline.values[0]!.profileStatus = status
+    expect(() => verifyShard(report, identity)).toThrow('capability differs')
+  }
+  baseline.values[0]!.profileStatus = 'unavailable'
+  Object.assign(baseline.values[0]!, { profile: { totalMs: 1 } })
+  expect(() => verifyShard(report, identity)).toThrow('capability differs')
+  Object.assign(baseline.values[0]!, { profile: undefined })
+  candidate.values[0]!.profileStatus = 'unavailable'
+  expect(() => verifyShard(report, identity)).toThrow('capability differs')
+  candidate.values[0]!.profileStatus = 'disabled'
+  expect(() => verifyShard(report, identity)).toThrow('capability differs')
+})
+
+it('does not convert baseline patch failures into passes or accept evidence from the old sampling contract', () => {
+  const { identity, report } = fixture('hmr:stateful-experimental:weapp-vite-template')
+  report.primary.errors.push('baseline: Timed out waiting for a stateful HMR patch batch')
+  report.primary.samples[0]!.values = []
+  expect(verifyShard({ ...report, gate: { status: 'incomplete' } }, identity).gate.status).toBe('incomplete')
+  expect(() => verifyShard(report, identity)).toThrow('Stored gate')
+  expect(() => verifyShard({ ...report, samplingContract: 'paired-v2-template-shards' }, identity)).toThrow('samplingContract')
 })
 
 it('requires all 27 shards and does not average away a missing platform', async () => {

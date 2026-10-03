@@ -4,13 +4,14 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { frozenManifest, metricsForShard, policy, shards } from './contract.mjs'
 import { evaluateGate } from './evaluate.ts'
+import { hmrProfileCapability } from './profileCapability.mjs'
 
 function evidence(value) {
   return value && Number.isInteger(value.pageCount) && value.pageCount > 0
     && /^[a-f0-9]{64}$/.test(value.templateDigest) && /^[a-f0-9]{64}$/.test(value.configDigest)
 }
 
-function pair(batch, ids, requiredPairs) {
+function pair(batch, ids, requiredPairs, expected) {
   if (!batch || !Array.isArray(batch.samples) || !Array.isArray(batch.errors) || batch.errors.some(e => typeof e !== 'string')) {
     throw new Error('Invalid raw batch')
   }
@@ -31,6 +32,10 @@ function pair(batch, ids, requiredPairs) {
     }
     ownership.add(rowKey)
     previousOrder = order
+    const capability = expected.shard.startsWith('hmr:') ? hmrProfileCapability(row.side, row.side === 'baseline' ? expected.baselineSha : expected.headSha, expected.shard.split(':')[1]) : undefined
+    if (JSON.stringify(row.profileCapability) !== JSON.stringify(capability)) {
+      throw new Error('HMR profile capability identity mismatch')
+    }
     for (const value of row.values) {
       if (!ids.includes(value.id) || !Number.isFinite(value.ms) || value.ms <= 0) {
         throw new Error('Unexpected or invalid raw metric')
@@ -38,6 +43,9 @@ function pair(batch, ids, requiredPairs) {
       const key = `${row.side}:${row.round}:${value.id}`
       if (samples.has(key)) {
         throw new Error('Duplicate raw metric round')
+      }
+      if (capability && (capability.status === 'unavailable' ? value.profileStatus !== 'unavailable' || value.profile !== undefined : value.profileStatus === 'unavailable' || value.profileStatus === 'disabled')) {
+        throw new Error('HMR profile capability differs from raw evidence')
       }
       samples.set(key, value)
     }
@@ -75,7 +83,7 @@ export function verifyShard(report, expected) {
     throw new Error('Shard manifest mismatch')
   }
   const count = expected.shard === 'build' || expected.shard === 'auto-build' ? 7 : 20
-  const primary = pair(report.primary, ids, count)
+  const primary = pair(report.primary, ids, count, expected)
   const initial = evaluateGate(primary)
   const requested = initial.scenarios.filter(r => r.primary.changePercent > 5 && !primary.find(s => s.id === r.id).error && r.primary.count === count).map(r => r.id)
   if (JSON.stringify(report.executionPlan.confirmation) !== JSON.stringify(requested)) {
@@ -84,7 +92,7 @@ export function verifyShard(report, expected) {
   if (!requested.length && report.confirmation) {
     throw new Error('Unexpected confirmation batch')
   }
-  const confirmation = report.confirmation ? pair(report.confirmation, requested, count) : []
+  const confirmation = report.confirmation ? pair(report.confirmation, requested, count, expected) : []
   const gate = evaluateGate(primary, confirmation)
   const errors = [...report.primary.errors, ...report.confirmation?.errors ?? []]
   if (errors.length && gate.status !== 'regression') {

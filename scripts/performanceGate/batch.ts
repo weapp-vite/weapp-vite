@@ -1,10 +1,11 @@
-import type { AuditSample, Checkout } from './collect'
+import type { AuditSample, Checkout, HmrProfileCapability } from './collect'
 import type { AuditBatch } from './report'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { confirmationConfigurations } from './contract.mjs'
 import { runCollector } from './process'
+import { hmrProfileCapability } from './profileCapability.mjs'
 
 export function pairsForShard(shard: string) {
   return shard === 'build' || shard === 'auto-build' ? 7 : 20
@@ -20,7 +21,8 @@ export async function collectSide(checkout: Checkout, shard: string, directory: 
     return shard !== 'build' || !selected || selected.some(id => id.split(':')[1] === template.id)
   })
   const configurations = selected && shard.startsWith('auto-') ? confirmationConfigurations(selected).map((id: string) => id.split(':').slice(1).join(':')) : undefined
-  await writeFile(path.join(directory, 'input.json'), JSON.stringify({ checkout: { ...checkout, templates }, shard, configurations }))
+  const profileCapability = shard.startsWith('hmr:') ? hmrProfileCapability(checkout.id, checkout.commit, shard.split(':')[1]!) : undefined
+  await writeFile(path.join(directory, 'input.json'), JSON.stringify({ checkout: { ...checkout, templates }, shard, configurations, profileCapability }))
   const errors: string[] = []
   try {
     await runCollector(process.execPath, ['--import', 'tsx', 'scripts/performanceGate/worker.ts'], {
@@ -35,11 +37,14 @@ export async function collectSide(checkout: Checkout, shard: string, directory: 
     errors.push(String(error))
   }
   try {
-    const data = JSON.parse(await readFile(path.join(directory, 'values.json'), 'utf8')) as { values: AuditSample[], errors: string[] }
-    return { values: selected ? data.values.filter(v => selected.includes(v.id)) : data.values, errors: [...errors, ...data.errors] }
+    const data = JSON.parse(await readFile(path.join(directory, 'values.json'), 'utf8')) as { values: AuditSample[], errors: string[], profileCapability?: HmrProfileCapability }
+    if (JSON.stringify(data.profileCapability) !== JSON.stringify(profileCapability)) {
+      return { values: [], errors: [...errors, ...data.errors, 'Collector HMR profile capability identity mismatch'], profileCapability }
+    }
+    return { values: selected ? data.values.filter(v => selected.includes(v.id)) : data.values, errors: [...errors, ...data.errors], profileCapability }
   }
   catch {
-    return { values: [], errors: [...errors, 'Missing completed collector evidence'] }
+    return { values: [], errors: [...errors, 'Missing completed collector evidence'], profileCapability }
   }
 }
 
@@ -57,7 +62,7 @@ export async function collectShardBatch(checkouts: { baseline: Checkout, optimiz
       }
       console.log(`[paired-perf] ${process.env.PERFORMANCE_TARGET ?? 'local'} ${name} ${shard} ${round + 1}/${count} ${side} @ ${checkouts[side].commit} elapsed=${Math.round((Date.now() - started) / 1000)}s; remaining=${Math.round((deadline - Date.now()) / 1000)}s`)
       const collected = await collectSide(checkouts[side], shard, path.join(output, name, String(round), side), selected, Math.min(15 * 60_000, deadline - Date.now()))
-      batch.samples.push({ round, side, values: collected.values })
+      batch.samples.push({ round, side, values: collected.values, profileCapability: collected.profileCapability })
       batch.errors.push(...collected.errors.map(error => `${name} pair ${round + 1} ${side}: ${error}`))
       await checkpoint()
       if (!collected.values.length && collected.errors.length) {

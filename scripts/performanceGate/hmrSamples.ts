@@ -1,4 +1,4 @@
-import type { AuditSample } from './collect'
+import type { AuditSample, HmrProfileCapability } from './collect'
 
 interface HmrSample { wallMs: number, phase: string, rssBytes?: number, heapUsedBytes?: number, timingSource?: string, profileStatus?: string }
 export interface HmrReport {
@@ -14,7 +14,7 @@ export class PartialHmrCollectionError extends Error {
 }
 
 /** 按场景核验，局部失败不能吞掉同一会话内已完成的其他采集。 */
-export function readHmrSamples(report: HmrReport, runtime: string): AuditSample[] {
+export function readHmrSamples(report: HmrReport, runtime: string, capability?: HmrProfileCapability): AuditSample[] {
   const samples: AuditSample[] = []
   const failures: string[] = []
   for (const template of report.templates) {
@@ -38,7 +38,12 @@ export function readHmrSamples(report: HmrReport, runtime: string): AuditSample[
           const profile = sample.timingSource === 'compiler-profile'
             ? Object.fromEntries(Object.entries(sample).filter(([key, value]) => key !== 'wallMs' && key.endsWith('Ms') && typeof value === 'number')) as Record<string, number>
             : undefined
-          samples.push({ id: `hmr:${runtime}:${template.id}:${scenario.id}:${phase}:${action}`, template: template.id, phase: `${phase}:${action}`, ms: sample.wallMs, rssBytes: sample.rssBytes, heapBytes: sample.heapUsedBytes, profile, profileStatus: sample.profileStatus })
+          const unavailable = capability?.status === 'unavailable'
+          if (capability && (unavailable ? sample.profileStatus !== 'disabled' || profile !== undefined : sample.profileStatus === 'disabled' || sample.profileStatus === 'unavailable')) {
+            failures.push(`${template.id}/${scenario.id}: HMR profile capability differs from collection evidence`)
+            continue
+          }
+          samples.push({ id: `hmr:${runtime}:${template.id}:${scenario.id}:${phase}:${action}`, template: template.id, phase: `${phase}:${action}`, ms: sample.wallMs, rssBytes: sample.rssBytes, heapBytes: sample.heapUsedBytes, profile, profileStatus: unavailable ? 'unavailable' : sample.profileStatus })
         }
       }
     }
