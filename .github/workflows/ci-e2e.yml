@@ -41,7 +41,7 @@ jobs:
       timeout_minutes: 30
       build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...
       main_command: |
-        pnpm vitest run packages/weapp-vite/src/utils/watchDependencies.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotInputs.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotBuild.integration.test.ts scripts/editSequence/processTree.test.ts scripts/editSequence/processTree.windows.integration.test.ts
+        pnpm vitest run packages/weapp-vite/src/utils/watchDependencies.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotInputs.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotBuild.integration.test.ts scripts/editSequence/processTree.test.ts scripts/editSequence/processTree.windows.integration.test.ts scripts/editSequence/processObserver.test.ts scripts/editSequence/processObserverClose.test.ts scripts/editSequence/worker.test.ts
         pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/edit-sequence.test.ts --reporter=default --reporter=json --outputFile=.tmp/hmr-lifecycle-report.json
       e2e_platform: weapp
       artifact_name: hmr-lifecycle-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ github.sha }}
