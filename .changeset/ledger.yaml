@@ -33,6 +33,10 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@mpcore/core@0.0.7":
+  dir: mpcore/packages/core
+  intents:
+    - dependency-upgrade-20261003
 "@mpcore/simulator@0.3.3":
   dir: mpcore/packages/simulator
   intents:
@@ -135,6 +139,14 @@
     - unified-wxml-remove
     - wevu-json-render-adapter
     - wevu-scroll-restoration
+"@mpcore/simulator@1.0.0":
+  dir: mpcore/packages/simulator
+  intents:
+    - dependency-upgrade-20261003
+    - fair-app-style-roots
+    - formatted-template-indentation
+    - node-support-dependency-closure
+    - worker-vite-host
 "@mpcore/test@0.1.10":
   dir: mpcore/packages/test
   intents:
@@ -174,6 +186,11 @@
   dir: mpcore/packages/test
   intents:
     - test-component-scope-interactions
+"@mpcore/test@1.0.0":
+  dir: mpcore/packages/test
+  intents:
+    - dependency-upgrade-20261003
+    - node-support-dependency-closure
 "@mpcore/vitest@0.1.3":
   dir: mpcore/packages/vitest
   intents:
@@ -218,6 +235,12 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@mpcore/vitest@1.0.0":
+  dir: mpcore/packages/vitest
+  intents:
+    - dependency-upgrade-20261003
+    - mpcore-runner-artifacts
+    - node-support-dependency-closure
 "@mpcore/weapp-vite@0.1.10":
   dir: mpcore/packages/weapp-vite
   intents:
@@ -257,6 +280,17 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@mpcore/weapp-vite@1.0.0":
+  dir: mpcore/packages/weapp-vite
+  intents:
+    - dependency-upgrade-20261003
+    - node-support-dependency-closure
+    - test-artifact-generations
+"@weapp-agent/cli@0.1.0-preview.1":
+  dir: packages/agent-cli
+  intents:
+    - cool-snakes-care
+    - dependency-upgrade-20261003
 "@weapp-core/api@0.2.0":
   dir: "@weapp-core/api"
   intents:
@@ -305,6 +339,10 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@weapp-core/api@0.3.8":
+  dir: "@weapp-core/api"
+  intents:
+    - dependency-upgrade-20261003
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
@@ -361,6 +399,13 @@
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
     - wevu-scroll-restoration
+"@weapp-core/constants@0.3.1":
+  dir: "@weapp-core/constants"
+  intents:
+    - dependency-upgrade-20261003
+    - fair-app-style-roots
+    - good-rats-flow
+    - lazy-optional-node-runtimes
 "@weapp-core/init@6.0.16":
   dir: "@weapp-core/init"
   intents:
@@ -404,6 +449,10 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@weapp-core/init@6.0.25":
+  dir: "@weapp-core/init"
+  intents:
+    - dependency-upgrade-20261003
 "@weapp-core/logger@3.1.2":
   dir: "@weapp-core/logger"
   intents:
@@ -444,6 +493,10 @@
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
     - six-platform-build-upload
+"@weapp-core/logger@3.1.9":
+  dir: "@weapp-core/logger"
+  intents:
+    - dependency-upgrade-20261003
 "@weapp-core/schematics@6.2.0":
   dir: "@weapp-core/schematics"
   intents:
@@ -492,6 +545,10 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@weapp-core/schematics@6.2.9":
+  dir: "@weapp-core/schematics"
+  intents:
+    - dependency-upgrade-20261003
 "@weapp-core/shared@3.2.0":
   dir: "@weapp-core/shared"
   intents:
@@ -537,6 +594,10 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@weapp-core/shared@3.2.8":
+  dir: "@weapp-core/shared"
+  intents:
+    - dependency-upgrade-20261003
 "@weapp-core/types@1.1.0":
   dir: "@weapp-core/types"
   intents:
@@ -573,6 +634,17 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@weapp-core/types@1.1.6":
+  dir: "@weapp-core/types"
+  intents:
+    - dependency-upgrade-20261003
+"@weapp-vite/acceptance@0.1.0":
+  dir: packages/acceptance
+  intents:
+    - dependency-upgrade-20261003
+    - modern-process-env-expansion
+    - quiet-horses-stare
+    - steady-acceptance-ownership
 "@weapp-vite/ast-native@0.0.6":
   dir: packages/ast-native
   intents:
@@ -633,6 +705,10 @@
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260928-163203
     - dependency-upgrade-20260929-092420
+"@weapp-vite/ast-native@0.1.9":
+  dir: packages/ast-native
+  intents:
+    - dependency-upgrade-20261003
 "@weapp-vite/ast@6.20.5":
   dir: packages/ast
   intents:
@@ -683,6 +759,11 @@
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260928-163203
     - dependency-upgrade-20260929-092420
+"@weapp-vite/ast@7.5.0":
+  dir: packages/ast
+  intents:
+    - dependency-upgrade-20261003
+    - node-support-dependency-closure
 "@weapp-vite/dashboard@6.20.5":
   dir: packages/dashboard
   intents:
@@ -734,6 +815,10 @@
     - quiet-devframe-upgrade
     - steady-treemap-inspector
     - thick-cups-hide
+"@weapp-vite/dashboard@7.5.0":
+  dir: packages/dashboard
+  intents:
+    - dependency-upgrade-20261003
 "@weapp-vite/devtools-runtime@0.4.19":
   dir: packages/devtools-runtime
   intents:
@@ -769,6 +854,11 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@weapp-vite/devtools-runtime@0.5.0":
+  dir: packages/devtools-runtime
+  intents:
+    - dependency-upgrade-20261003
+    - quiet-horses-stare
 "@weapp-vite/eslint@0.2.0":
   dir: packages/eslint
   intents:
@@ -777,6 +867,11 @@
   dir: packages/eslint
   intents:
     - dependency-upgrade-auto-generated
+"@weapp-vite/eslint@0.2.10":
+  dir: packages/eslint
+  intents:
+    - dependency-upgrade-20261003
+    - doctor-evidence-layers
 "@weapp-vite/eslint@0.2.2":
   dir: packages/eslint
   intents:
@@ -854,12 +949,21 @@
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260928-163203
     - dependency-upgrade-20260929-092420
+"@weapp-vite/glass-easel-web-adapter@0.1.6":
+  dir: packages-runtime/glass-easel-web-adapter
+  intents:
+    - dependency-upgrade-20261003
 "@weapp-vite/hmr@0.2.0":
   dir: packages/hmr
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
     - shared-hmr-tailwind-hosts
+"@weapp-vite/hmr@0.2.1":
+  dir: packages/hmr
+  intents:
+    - dependency-upgrade-20261003
+    - hmr-publication-settlement
 "@weapp-vite/i18n@0.2.0":
   dir: packages-runtime/i18n
   intents:
@@ -905,6 +1009,10 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@weapp-vite/i18n@0.2.9":
+  dir: packages-runtime/i18n
+  intents:
+    - dependency-upgrade-20261003
 "@weapp-vite/mcp@1.5.0":
   dir: packages/mcp
   intents:
@@ -949,6 +1057,14 @@
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260928-163203
     - dependency-upgrade-20260929-092420
+"@weapp-vite/mcp@2.0.0":
+  dir: packages/mcp
+  intents:
+    - dependency-upgrade-20261003
+    - lazy-optional-node-runtimes
+    - modern-process-env-expansion
+    - quiet-horses-stare
+    - steady-acceptance-ownership
 "@weapp-vite/miniprogram-automator@1.2.14":
   dir: packages/miniprogram-automator
   intents:
@@ -1013,6 +1129,13 @@
     - devtools-native-page-method
     - modern-devtools-page-protocol
     - tidy-queries-recover
+"@weapp-vite/miniprogram-automator@1.3.0":
+  dir: packages/miniprogram-automator
+  intents:
+    - appservice-heap-capability
+    - dependency-upgrade-20261003
+    - lazy-optional-node-runtimes
+    - quiet-ide-deadlines
 "@weapp-vite/qr@1.1.2":
   dir: packages/qr
   intents:
@@ -1053,6 +1176,10 @@
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260928-163203
     - dependency-upgrade-20260929-092420
+"@weapp-vite/qr@1.1.9":
+  dir: packages/qr
+  intents:
+    - dependency-upgrade-20261003
 "@weapp-vite/react@0.2.1":
   dir: packages-runtime/react
   intents:
@@ -1068,6 +1195,10 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@weapp-vite/react@0.2.12":
+  dir: packages-runtime/react
+  intents:
+    - dependency-upgrade-20261003
 "@weapp-vite/react@0.2.2":
   dir: packages-runtime/react
   intents:
@@ -1114,6 +1245,12 @@
     - dependency-upgrade-20260928-163203
     - dependency-upgrade-20260929-092420
     - shared-hmr-tailwind-hosts
+"@weapp-vite/tailwindcss@1.0.0":
+  dir: packages/tailwindcss
+  intents:
+    - dependency-upgrade-20261003
+    - lazy-consumer-adapters
+    - node-support-dependency-closure
 "@weapp-vite/volar@2.1.10":
   dir: packages/volar
   intents:
@@ -1134,6 +1271,10 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@weapp-vite/volar@2.1.13":
+  dir: packages/volar
+  intents:
+    - dependency-upgrade-20261003
 "@weapp-vite/volar@2.1.5":
   dir: packages/volar
   intents:
@@ -1241,6 +1382,17 @@
     - dependency-upgrade-20260928-163203
     - dependency-upgrade-20260929-092420
     - wevu-scroll-restoration
+"@weapp-vite/web@2.0.0":
+  dir: packages-runtime/web
+  intents:
+    - cross-platform-component-snapshots
+    - dependency-upgrade-20261003
+    - fair-app-style-roots
+    - good-rats-flow
+    - native-watch-upstream-fix
+    - node-support-dependency-closure
+    - tidy-web-style-boundaries
+    - web-canvas-bitmap-ownership
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
@@ -1293,6 +1445,10 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@wevu/api@0.3.8":
+  dir: packages-runtime/weapi
+  intents:
+    - dependency-upgrade-20261003
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -1400,18 +1556,35 @@
     - dependency-upgrade-20260929-092420
     - unified-wxml-remove
     - wevu-scroll-restoration
+"@wevu/compiler@7.5.0":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - css-modules-batch-delivery
+    - dependency-upgrade-20261003
+    - node-support-dependency-closure
+    - page-json-merge-metadata
+    - setup-prop-template-projection
+    - weak-sfc-signature-ownership
 "@wevu/json-render-components@0.1.0":
   dir: packages-runtime/json-render-components
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
     - wevu-json-render-adapter
+"@wevu/json-render-components@0.1.1":
+  dir: packages-runtime/json-render-components
+  intents:
+    - dependency-upgrade-20261003
 "@wevu/json-render@0.1.0":
   dir: packages-runtime/json-render
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
     - wevu-json-render-adapter
+"@wevu/json-render@0.1.1":
+  dir: packages-runtime/json-render
+  intents:
+    - dependency-upgrade-20261003
 "@wevu/query@0.0.0":
   dir: packages-runtime/wevu-query
   intents:
@@ -1451,6 +1624,10 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@wevu/query@0.0.8":
+  dir: packages-runtime/wevu-query
+  intents:
+    - dependency-upgrade-20261003
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -1506,6 +1683,11 @@
   intents:
     - curly-apis-remember
     - first-party-i18n
+"@wevu/test-utils@1.0.0":
+  dir: packages-runtime/wevu-test-utils
+  intents:
+    - dependency-upgrade-20261003
+    - node-support-dependency-closure
 "@wevu/web-apis@1.2.35":
   dir: packages-runtime/web-apis
   intents:
@@ -1560,6 +1742,10 @@
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+"@wevu/web-apis@1.3.5":
+  dir: packages-runtime/web-apis
+  intents:
+    - dependency-upgrade-20261003
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -1861,6 +2047,92 @@ create-weapp-vite@3.0.1:
     - unified-wxml-remove
     - wevu-json-render-adapter
     - wevu-scroll-restoration
+create-weapp-vite@3.1.0:
+  dir: packages/create-weapp-vite
+  intents:
+    - analyze-artifact-accounting
+    - classic-publication-ownership
+    - compiler-provider-watch-lifetime
+    - cool-snakes-care
+    - cross-platform-component-snapshots
+    - css-modules-batch-delivery
+    - dependency-upgrade-20261003
+    - dimina-generic-default-dependencies
+    - doctor-evidence-layers
+    - fair-app-style-roots
+    - fix-hmr-output-ownership-20261003
+    - fresh-wxml-host-owner
+    - good-rats-flow
+    - hmr-profile-provenance
+    - hmr-publication-settlement
+    - independent-style-ownership
+    - independent-vite-host
+    - lazy-consumer-adapters
+    - lazy-optional-node-runtimes
+    - lib-declaration-watch-inputs
+    - lib-three-entrypoints
+    - logical-entry-declaration-ownership
+    - managed-tsconfig-bootstrap-order
+    - modern-process-env-expansion
+    - native-batch-publication
+    - native-incremental-publication
+    - native-npm-publication
+    - native-platform-npm-root
+    - native-snapshot-plugin-identity
+    - native-toolchain-scaffold
+    - native-watch-upstream-fix
+    - node-support-dependency-closure
+    - normalized-snapshot-watch-inputs
+    - page-json-merge-metadata
+    - platform-three-entrypoints
+    - plugin-project-three-entrypoints
+    - private-config-merge-priority
+    - quiet-doctor-session
+    - quiet-ide-deadlines
+    - quiet-ide-protocol-output
+    - quiet-package-directory-resolution
+    - quiet-project-recovery
+    - quiet-route-loader-cache
+    - quiet-styles-start
+    - quiet-watch-validation-snapshot
+    - react-native-initial-bindings
+    - react-vite-host
+    - rolldown-require-compatible-peer
+    - route-source-extensions
+    - serve-ipc-lifecycle
+    - setup-prop-template-projection
+    - shared-compiler-session
+    - smooth-asset-path-reads
+    - smooth-topology-profile-handoff
+    - snapshot-resolver-lifetime
+    - stable-artifact-profile-events
+    - stable-ide-owned-cleanup-guidance
+    - standard-vite-plugin-alpha
+    - stateful-asset-session-owner
+    - stateful-full-output-ownership
+    - stateful-host-restart-handoff
+    - stateful-native-script-restoration
+    - stateful-profile-attribution
+    - stateful-publication-confirmation
+    - stateful-style-identity
+    - stateful-topology-handoff
+    - stateful-vite-host
+    - steady-acceptance-ownership
+    - steady-config-package-resolution
+    - steady-workers-reload
+    - test-artifact-generations
+    - tidy-platform-rewrite-analysis
+    - tidy-plugin-watch-output
+    - tidy-windows-library-paths
+    - typescript-six-path-inheritance
+    - unchanged-vue-watch-notifications
+    - upload-config-version-order
+    - upload-reports-local-timeout
+    - vite-build-watch
+    - vite-classic-dev
+    - web-three-entrypoints
+    - wevu-setdata-phase-observation
+    - worker-vite-host
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -1909,6 +2181,12 @@ rolldown-require@2.0.34:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260928-163203
     - dependency-upgrade-20260929-092420
+rolldown-require@2.0.35:
+  dir: packages/rolldown-require
+  intents:
+    - dependency-upgrade-20261003
+    - native-watch-upstream-fix
+    - rolldown-require-compatible-peer
 vite-plugin-performance@2.0.2:
   dir: packages/vite-plugin-performance
   intents:
@@ -1944,6 +2222,10 @@ vite-plugin-performance@2.0.7:
   intents:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260929-092420
+vite-plugin-performance@2.0.8:
+  dir: packages/vite-plugin-performance
+  intents:
+    - dependency-upgrade-20261003
 weapp-ide-cli@6.0.8:
   dir: packages/weapp-ide-cli
   intents:
@@ -2001,6 +2283,16 @@ weapp-ide-cli@6.1.9:
     - catalog-upgrade-20260929-092421
     - dependency-upgrade-20260928-163203
     - dependency-upgrade-20260929-092420
+weapp-ide-cli@6.2.0:
+  dir: packages/weapp-ide-cli
+  intents:
+    - chilly-horses-shine
+    - dependency-upgrade-20261003
+    - lazy-optional-node-runtimes
+    - quiet-doctor-session
+    - quiet-ide-deadlines
+    - quiet-ide-protocol-output
+    - quiet-project-recovery
 weapp-vite-plugin-template@1.0.0:
   dir: templates/weapp-vite-plugin-template
   intents:
@@ -2262,6 +2554,85 @@ weapp-vite@7.4.0:
     - tidy-component-watch-owner
     - unified-wxml-remove
     - wevu-json-render-adapter
+weapp-vite@7.5.0:
+  dir: packages/weapp-vite
+  intents:
+    - analyze-artifact-accounting
+    - classic-publication-ownership
+    - compiler-provider-watch-lifetime
+    - cross-platform-component-snapshots
+    - css-modules-batch-delivery
+    - dependency-upgrade-20261003
+    - dimina-generic-default-dependencies
+    - doctor-evidence-layers
+    - fix-hmr-output-ownership-20261003
+    - fresh-wxml-host-owner
+    - hmr-profile-provenance
+    - hmr-publication-settlement
+    - independent-style-ownership
+    - independent-vite-host
+    - lazy-consumer-adapters
+    - lazy-optional-node-runtimes
+    - lib-declaration-watch-inputs
+    - lib-three-entrypoints
+    - logical-entry-declaration-ownership
+    - managed-tsconfig-bootstrap-order
+    - modern-process-env-expansion
+    - native-batch-publication
+    - native-incremental-publication
+    - native-npm-publication
+    - native-platform-npm-root
+    - native-snapshot-plugin-identity
+    - native-watch-upstream-fix
+    - node-support-dependency-closure
+    - normalized-snapshot-watch-inputs
+    - page-json-merge-metadata
+    - platform-three-entrypoints
+    - plugin-project-three-entrypoints
+    - private-config-merge-priority
+    - quiet-doctor-session
+    - quiet-horses-stare
+    - quiet-ide-deadlines
+    - quiet-ide-protocol-output
+    - quiet-package-directory-resolution
+    - quiet-project-recovery
+    - quiet-route-loader-cache
+    - quiet-watch-validation-snapshot
+    - react-native-initial-bindings
+    - react-vite-host
+    - rolldown-require-compatible-peer
+    - route-source-extensions
+    - serve-ipc-lifecycle
+    - shared-compiler-session
+    - smooth-asset-path-reads
+    - smooth-topology-profile-handoff
+    - snapshot-resolver-lifetime
+    - stable-artifact-profile-events
+    - standard-vite-plugin-alpha
+    - stateful-asset-session-owner
+    - stateful-full-output-ownership
+    - stateful-host-restart-handoff
+    - stateful-native-script-restoration
+    - stateful-profile-attribution
+    - stateful-publication-confirmation
+    - stateful-style-identity
+    - stateful-topology-handoff
+    - stateful-vite-host
+    - steady-acceptance-ownership
+    - steady-config-package-resolution
+    - steady-workers-reload
+    - test-artifact-generations
+    - tidy-platform-rewrite-analysis
+    - tidy-plugin-watch-output
+    - tidy-windows-library-paths
+    - typescript-six-path-inheritance
+    - unchanged-vue-watch-notifications
+    - upload-config-version-order
+    - upload-reports-local-timeout
+    - vite-build-watch
+    - vite-classic-dev
+    - web-three-entrypoints
+    - worker-vite-host
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -2389,3 +2760,15 @@ wevu@7.4.0:
     - dependency-upgrade-20260929-092420
     - stable-exposed-lifecycle
     - wevu-scroll-restoration
+wevu@7.5.0:
+  dir: packages-runtime/wevu
+  intents:
+    - css-modules-batch-delivery
+    - dependency-upgrade-20261003
+    - fair-app-style-roots
+    - good-rats-flow
+    - node-support-dependency-closure
+    - page-json-merge-metadata
+    - quiet-styles-start
+    - setup-prop-template-projection
+    - wevu-setdata-phase-observation
