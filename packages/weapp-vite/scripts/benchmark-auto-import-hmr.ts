@@ -10,8 +10,8 @@ import { sampleHeapAfterGc, waitForInspectorUrl } from '../../../e2e/utils/dev-m
 import { startDevProcess } from '../../../e2e/utils/dev-process'
 import { createBenchmarkDevEnv } from '../../../scripts/benchmarkTemplatesHmr/environment'
 import { parseStatefulHmrControlSource } from '../../../scripts/workspace-hmr/scenarios'
+import { measureStatefulTemplateArtifact } from '../../../scripts/workspace-hmr/statefulArtifactMeasurement'
 import { StatefulHmrAuditClient } from '../../../scripts/workspace-hmr/statefulAuditClient'
-import { acknowledgeStatefulTemplateArtifact } from '../../../scripts/workspace-hmr/statefulAuditUpdate'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
 import { benchmarkModeSelected, benchmarkReportResults } from './utils/benchmarkSelection'
@@ -208,39 +208,32 @@ async function measureHmr(options: {
       if (client && controlSource !== undefined) {
         await client.ensureRegistered(parseStatefulHmrControlSource(controlSource), DEV_TIMEOUT_MS)
       }
-      const acknowledgeArtifact = async (marker: string, absent = false) => {
-        if (client) {
-          await acknowledgeStatefulTemplateArtifact({
-            client,
-            readControl: async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8')),
-            isCurrentUpdate: async () => (await readFile(outputPath, 'utf8')).includes(marker) !== absent,
-            timeoutMs: DEV_TIMEOUT_MS,
-          })
-        }
-      }
+      const measureArtifact = (marker: string, source: string, signal: AbortSignal, absent = false) => measureStatefulTemplateArtifact({
+        client,
+        readControl: async signal => parseStatefulHmrControlSource(await readFile(controlPath, { encoding: 'utf8', signal })),
+        isCurrentUpdate: async (signal) => {
+          const output = await readFile(outputPath, { encoding: 'utf8', signal })
+          return absent ? output === originalOutput : output.includes(marker)
+        },
+        timeoutMs: DEV_TIMEOUT_MS,
+        signal,
+        measure: signal => dev.waitFor(measureFileMarkerUpdate({
+          outputPath,
+          marker,
+          expectedOutput: absent ? originalOutput : undefined,
+          update: () => writeFile(pagePath, source, 'utf8'),
+          timeoutMs: DEV_TIMEOUT_MS,
+          signal,
+        }), `${mode} ${absent ? 'restored hmr output' : 'emitted hmr marker'}`),
+      })
       const cycles: Array<{ editMs: number, restoreMs: number }> = []
       for (let cycle = 0; cycle < (process.env.AUTO_IMPORT_BENCH_PAIRED === '1' ? 2 : 1); cycle++) {
         const marker = `auto-import-hmr-${mode}-${usedTags.length}-${iteration}-${cycle}`
         const updatedSource = insertMarkerBeforeClosingView(seededSource, marker)
         const measurementAbort = new AbortController()
         try {
-          const editMs = await dev.waitFor(measureFileMarkerUpdate({
-            outputPath,
-            marker,
-            update: () => writeFile(pagePath, updatedSource, 'utf8'),
-            timeoutMs: DEV_TIMEOUT_MS,
-            signal: measurementAbort.signal,
-          }), `${mode} emitted hmr marker`)
-          await acknowledgeArtifact(marker)
-          const restoreMs = await dev.waitFor(measureFileMarkerUpdate({
-            outputPath,
-            marker,
-            expectedOutput: originalOutput,
-            update: () => writeFile(pagePath, seededSource, 'utf8'),
-            timeoutMs: DEV_TIMEOUT_MS,
-            signal: measurementAbort.signal,
-          }), `${mode} restored hmr output`)
-          await acknowledgeArtifact(marker, true)
+          const editMs = await measureArtifact(marker, updatedSource, measurementAbort.signal)
+          const restoreMs = await measureArtifact(marker, seededSource, measurementAbort.signal, true)
           cycles.push({ editMs, restoreMs })
         }
         finally {

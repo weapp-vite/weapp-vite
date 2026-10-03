@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
-import { frozenManifest, metricsForShard, policy, shards } from './contract.mjs'
+import { frozenManifest, isReportSamplingContract, metricsForShard, policy, shards } from './contract.mjs'
 import { evaluateGate } from './evaluate.ts'
 import { hmrProfileCapability } from './profileCapability.mjs'
 
@@ -127,7 +127,7 @@ export function summarizeStatus(rows) {
 }
 
 export async function aggregatePlan(plan, root) {
-  if (plan.schemaVersion !== 2 || plan.purpose !== 'full' || plan.samplingContract !== policy.samplingContract || JSON.stringify(plan.manifest) !== JSON.stringify(frozenManifest())) {
+  if (plan.schemaVersion !== 2 || plan.purpose !== 'full' || !isReportSamplingContract(plan.samplingContract) || JSON.stringify(plan.manifest) !== JSON.stringify(frozenManifest())) {
     throw new Error('Invalid full audit plan')
   }
   const targets = []
@@ -146,7 +146,7 @@ export async function aggregatePlan(plan, root) {
             throw new Error('Oversized shard report')
           }
           const report = JSON.parse(content)
-          parts.push({ shard, ...verifyShard(report, { schemaVersion: 2, purpose: 'full', samplingContract: policy.samplingContract, driverSha: plan.driverSha, headSha: target.headSha, baselineSha: target.baselineSha, targetId: target.id, prNumber: target.prNumber, runId: plan.runId, os, shard }) })
+          parts.push({ shard, ...verifyShard(report, { schemaVersion: 2, purpose: 'full', samplingContract: plan.samplingContract, driverSha: plan.driverSha, headSha: target.headSha, baselineSha: target.baselineSha, targetId: target.id, prNumber: target.prNumber, runId: plan.runId, os, shard }) })
         }
         catch (error) {
           parts.push({ shard, gate: { status: 'incomplete', scenarios: [] }, featureCosts: [], errors: [String(error).replaceAll(root, '<artifacts>')] })

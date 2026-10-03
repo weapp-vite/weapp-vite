@@ -86,6 +86,7 @@ describe('CI artifact coverage', () => {
       .filter(job => job.with?.artifact_path)
       .flatMap(job => splitPatterns(job.with?.artifact_path))
     expect([...new Set(reportPatterns)].sort()).toEqual([
+      '.tmp/hmr-lifecycle-report.json',
       '.tmp/shared-hosts/artifacts.json',
       '.tmp/uview-plus-compat/web/**',
       '.tmp/web-runtime-visual/**',

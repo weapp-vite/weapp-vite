@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "samplingContract": "paired-v3-profile-capability",
+  "samplingContract": "paired-v4-template-consumption",
   "baselineSha": "e7862e61dd83e3b9e356ac1e176267b31ab298af",
   "label": "performance:nightly",
   "operatingSystems": ["ubuntu-latest", "windows-latest", "macos-latest"],

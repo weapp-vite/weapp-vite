@@ -37,18 +37,19 @@ export class StatefulHmrAuditClient {
     return this.explicitAcknowledgement
   }
 
-  async ensureRegistered(control: StatefulHmrAuditControl, timeoutMs: number) {
+  async ensureRegistered(control: StatefulHmrAuditControl, timeoutMs: number, signal?: AbortSignal) {
+    signal?.throwIfAborted()
     this.syncControl(control)
     if (this.registered) {
       return
     }
-    const response = await this.report('register', timeoutMs)
+    const response = await this.report('register', timeoutMs, signal)
     this.explicitAcknowledgement = response.acknowledgement === 'explicit-v1'
     this.registered = true
   }
 
-  async poll(timeoutMs: number) {
-    const response = await this.report('poll', timeoutMs)
+  async poll(timeoutMs: number, signal?: AbortSignal) {
+    const response = await this.report('poll', timeoutMs, signal)
     if (response.type === 'batch-published') {
       const { targetVersion } = response
       if (typeof targetVersion !== 'number' || !Number.isInteger(targetVersion) || targetVersion < this.version) {
@@ -63,21 +64,24 @@ export class StatefulHmrAuditClient {
   }
 
   /** 产物验收完成后确认消费；不作为真实宿主执行证明，也不改变轮询节奏。 */
-  async acknowledgePublished(timeoutMs: number) {
+  async acknowledgePublished(timeoutMs: number, signal?: AbortSignal) {
+    signal?.throwIfAborted()
     if (!this.explicitAcknowledgement || this.version === 0) {
       return
     }
     const version = this.version
-    const response = await this.report('ack', timeoutMs)
+    const response = await this.report('ack', timeoutMs, signal)
     if (response.type !== 'acknowledged' || response.version !== version) {
       throw new Error('Stateful HMR audit acknowledgement did not confirm the consumed version.')
     }
   }
 
-  private async report(action: 'ack' | 'poll' | 'register', timeoutMs: number) {
+  private async report(action: 'ack' | 'poll' | 'register', timeoutMs: number, signal?: AbortSignal) {
     if (!this.control) {
       throw new Error('Stateful HMR audit client has no active control.')
     }
+    signal?.throwIfAborted()
+    const timeout = AbortSignal.timeout(Math.max(1, Math.ceil(timeoutMs)))
     const response = await this.request(this.control.url, {
       body: JSON.stringify({
         action,
@@ -88,12 +92,15 @@ export class StatefulHmrAuditClient {
       }),
       headers: { 'content-type': 'application/json' },
       method: 'POST',
-      signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
+      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     })
+    signal?.throwIfAborted()
     if (!response.ok) {
       throw new Error(`Stateful HMR audit client ${action} failed with HTTP ${response.status}.`)
     }
-    return await response.json() as StatefulHmrAuditResponse
+    const body = await response.json() as StatefulHmrAuditResponse
+    signal?.throwIfAborted()
+    return body
   }
 
   private syncControl(control: StatefulHmrAuditControl) {

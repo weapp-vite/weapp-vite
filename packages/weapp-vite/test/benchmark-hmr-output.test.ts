@@ -3,6 +3,9 @@ import os from 'node:os'
 import path from 'node:path'
 import { setTimeout } from 'node:timers/promises'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { measureStatefulTemplateArtifact } from '../../../scripts/workspace-hmr/statefulArtifactMeasurement'
+import { StatefulHmrAuditClient } from '../../../scripts/workspace-hmr/statefulAuditClient'
+import { HmrDeliveryCoordinator } from '../../hmr/src/deliveryCoordinator'
 import { measureFileMarkerUpdate } from '../scripts/utils/hmrOutput'
 
 describe('benchmark emitted HMR completion', () => {
@@ -49,6 +52,72 @@ describe('benchmark emitted HMR completion', () => {
     }
     finally {
       await pendingWrite
+    }
+  })
+
+  it('consumes an older pending batch while waiting for the next template marker', async () => {
+    const previousPublished = Promise.withResolvers<void>()
+    const executions = [Promise.withResolvers<void>(), Promise.withResolvers<void>()]
+    const errors = vi.fn()
+    const requests: string[] = []
+    let nextPublished = Promise.withResolvers<void>()
+    let publishedVersion = 0
+    const queue = new HmrDeliveryCoordinator(errors)
+    const enqueue = (version: number, output: string) => {
+      queue.enqueue({ prepare: async () => ({
+        commit: () => writeFile(outputPath, output),
+        publish: async () => {
+          publishedVersion = version
+          nextPublished.resolve()
+          nextPublished = Promise.withResolvers<void>()
+          if (version === 1) {
+            previousPublished.resolve()
+          }
+          await executions[version - 1]!.promise
+        },
+      }) })
+    }
+    const client = new StatefulHmrAuditClient(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as { action: string, version: number }
+      requests.push(`${body.action}:${body.version}`)
+      if (body.action === 'register') {
+        return new Response(JSON.stringify({ type: 'registered', acknowledgement: 'explicit-v1' }))
+      }
+      if (body.action === 'ack') {
+        executions[body.version - 1]!.resolve()
+        return new Response(JSON.stringify({ type: 'acknowledged', version: body.version }))
+      }
+      if (body.version >= publishedVersion) {
+        await nextPublished.promise
+      }
+      return new Response(JSON.stringify({ type: 'batch-published', targetVersion: publishedVersion }))
+    })
+    const readControl = async () => ({ buildId: 'build', token: 'test-token', url: 'http://localhost/control' })
+    await client.ensureRegistered(await readControl(), 200)
+    enqueue(1, '<view>previous-template-marker</view>')
+    await previousPublished.promise
+    try {
+      const measured = measureStatefulTemplateArtifact({
+        client,
+        readControl,
+        isCurrentUpdate: async () => (await readFile(outputPath, 'utf8')).includes(marker),
+        timeoutMs: 200,
+        measure: signal => measureFileMarkerUpdate({
+          outputPath,
+          marker,
+          timeoutMs: 200,
+          signal,
+          update: async () => { enqueue(2, `<view>${marker}</view>`) },
+        }),
+      })
+      await expect(measured).resolves.toBeGreaterThan(0)
+      expect(requests).toContain('ack:1')
+      expect(requests).toContain('ack:2')
+      expect(errors).not.toHaveBeenCalled()
+    }
+    finally {
+      executions.forEach(execution => execution.resolve())
+      await queue.close()
     }
   })
 

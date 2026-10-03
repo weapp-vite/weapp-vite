@@ -1,12 +1,14 @@
+import { Buffer } from 'node:buffer'
 import { execFile } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { createServer } from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
 import { expect, it } from 'vitest'
 import { aggregatePlan, verifyShard } from './aggregate.mjs'
-import { createMatrix, frozenManifest, metricsForShard, policy, targetKey } from './contract.mjs'
+import { createMatrix, frozenManifest, metricsForShard, policy, statusContext, targetKey } from './contract.mjs'
 import { hmrProfileCapability } from './profileCapability.mjs'
 import { publishComment, validatePlan } from './publish.mjs'
 
@@ -97,7 +99,9 @@ it('does not convert baseline patch failures into passes or accept evidence from
   report.primary.samples[0]!.values = []
   expect(verifyShard({ ...report, gate: { status: 'incomplete' } }, identity).gate.status).toBe('incomplete')
   expect(() => verifyShard(report, identity)).toThrow('Stored gate')
-  expect(() => verifyShard({ ...report, samplingContract: 'paired-v2-template-shards' }, identity)).toThrow('samplingContract')
+  for (const samplingContract of ['paired-v2-template-shards', 'paired-v3-profile-capability']) {
+    expect(() => verifyShard({ ...report, samplingContract }, identity)).toThrow('samplingContract')
+  }
 })
 
 it('requires all 27 shards and does not average away a missing platform', async () => {
@@ -132,6 +136,82 @@ it('rejects forged planner metadata and refuses to overwrite a newer PR HEAD', a
   }
   expect(await publishComment(target, 'do not publish', get)).toBe(false)
   expect(calls).toEqual(['/pulls/7'])
+})
+
+it('finishes a registered v3 attempt after migration without mixing v4 shards or replacing its comment', async () => {
+  const samplingContract = 'paired-v3-profile-capability'
+  const historicalPlan = { ...plan, samplingContract, targets: [{ ...target, key: targetKey(target, samplingContract) }] }
+  const run = { id: 10, name: 'Nightly Performance', event: 'workflow_dispatch', path: '.github/workflows/nightly-performance.yml', head_sha: plan.driverSha, head_branch: 'main', head_repository: { full_name: plan.repository }, html_url: 'https://github.com/owner/repo/actions/runs/10' }
+  const context = statusContext(target, samplingContract)
+  const writes: Array<{ context: string, state: string, target_url: string }> = []
+  const unexpected: string[] = []
+  const server = createServer(async (req, res) => {
+    const endpoint = req.url?.replace(`/repos/${plan.repository}`, '').split('?')[0]
+    let response: unknown = {}
+    if (endpoint === '/actions/runs/10') {
+      response = run
+    }
+    else if (endpoint === '') {
+      response = { default_branch: 'main' }
+    }
+    else if (endpoint === `/commits/${target.headSha}/statuses`) {
+      response = [{ context, target_url: run.html_url, creator: { type: 'Bot' } }]
+    }
+    else if (endpoint === `/statuses/${target.headSha}` && req.method === 'POST') {
+      const chunks: Buffer[] = []
+      for await (const chunk of req) {
+        chunks.push(chunk)
+      }
+      writes.push(JSON.parse(Buffer.concat(chunks).toString()) as typeof writes[number])
+    }
+    else {
+      unexpected.push(`${req.method} ${endpoint}`)
+      res.statusCode = 404
+    }
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify(response))
+  })
+  const root = await mkdtemp(path.join(os.tmpdir(), 'performance-contract-migration-'))
+  try {
+    expect(context).not.toBe(statusContext(target))
+    expect(() => validatePlan(historicalPlan, run, plan.repository)).not.toThrow()
+    expect(() => validatePlan({ ...historicalPlan, targets: plan.targets }, run, plan.repository)).toThrow('Invalid planned target')
+    expect(() => validatePlan({ ...historicalPlan, samplingContract: 'untrusted-contract' }, run, plan.repository)).toThrow('provenance')
+    for (const row of plan.matrix) {
+      const directory = path.join(root, row.artifact)
+      await mkdir(directory)
+      await writeFile(path.join(directory, 'report.json'), JSON.stringify({ ...fixture(row.shard, row.os).report, samplingContract }))
+    }
+    expect((await aggregatePlan(historicalPlan, root)).targets[0].status).toBe('passed')
+    const planDirectory = path.join(root, 'performance-plan')
+    await mkdir(planDirectory)
+    await writeFile(path.join(planDirectory, 'plan.json'), JSON.stringify(historicalPlan))
+    const eventFile = path.join(root, 'event.json')
+    await writeFile(eventFile, JSON.stringify({ workflow_run: { id: run.id } }))
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (!address || typeof address === 'string') {
+      throw new Error('Missing test server address')
+    }
+    await promisify(execFile)(process.execPath, [path.join(import.meta.dirname, 'publish.mjs')], {
+      cwd: root,
+      env: { ...process.env, GITHUB_EVENT_PATH: eventFile, GITHUB_REPOSITORY: plan.repository, GITHUB_TOKEN: 'test-only', GITHUB_API_URL: `http://127.0.0.1:${address.port}`, PERFORMANCE_ARTIFACTS: root },
+      timeout: 10_000,
+    })
+    expect(writes).toMatchObject([{ context, state: 'success', target_url: run.html_url }])
+    expect(unexpected).toEqual([])
+    const mixed = plan.matrix[0]!
+    await writeFile(path.join(root, mixed.artifact, 'report.json'), JSON.stringify(fixture(mixed.shard, mixed.os).report))
+    const report = await aggregatePlan(historicalPlan, root)
+    expect(report.targets[0].status).toBe('incomplete')
+    expect(report.targets[0].systems[0].parts[0].errors).toContain('Error: Shard identity mismatch: samplingContract')
+  }
+  finally {
+    if (server.listening) {
+      await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+    }
+    await rm(root, { recursive: true, force: true })
+  }
 })
 
 it('updates late smoke status without replacing completed full evidence', async () => {
