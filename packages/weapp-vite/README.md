@@ -14,6 +14,16 @@
 
 <p>&nbsp;</p>
 
+## Node.js 支持范围
+
+框架及编译依赖链要求 `^22.18.0 || ^24.11.0 || >=26.0.0`：Node 22 至少 22.18.0、Node 24 至少 24.11.0，或 Node 26 及以上版本；不支持 Node 20、23、25。这是 Babel 8 与必需构建依赖支持范围的交集，不能通过关闭 engines 校验恢复旧版本支持。
+
+升级已有项目时先升级 Node.js，再重新安装依赖。CLI 会在加载编译依赖前检查实际 Node 版本；`prepare` 也会明确拒绝不支持的环境。直接通过 Vite 或程序 API 消费时同样需要遵守包的 `engines.node`。
+
+`create-weapp-vite` 自身依赖要求更高：Node 22 至少 22.22.2、Node 24 至少 24.15.0，或 Node 26 及以上版本。新建项目按脚手架要求选择 Node，不要将框架最低版本误认为脚手架最低版本。
+
+发布候选在构建环境中打包，再在独立临时消费者中以严格 engines/peer 校验安装；CI 覆盖 Linux、Windows、macOS 的 Node 22.18.0、24.11.0、26.0.0 及 22/24 当前补丁版本，验证原生和 SFC 构建、prepare 与公开类型。
+
 ## 普通 Vite 与 Vite+
 
 独立项目继续使用 `wv dev/build`，不需要注册插件或安装 Vite+。采用普通 Vite / Vite+ 时，在顶层 `weapp` 配置旁注册 `weapp-vite/vite` 的 `weapp()`，使用原生 `vite dev/build` / `vp dev/build`。当前插件开放微信 TS/Vue/React 生产构建、原生 `build --watch` 与实验性 classic/stateful 开发；通过 `weapp.hmr.runtime` 选择模式，已支持普通分包、独立分包与 worker，其他高级目标仍在分阶段对齐。Vite+ 需要配套 core alias 与依赖覆盖，详见[标准插件指南](https://vite.weapp.dev/guide/vite-plugin.html)。

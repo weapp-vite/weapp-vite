@@ -819,6 +819,7 @@ const launchResult = launch({
   },
 })
 launchResult.then((session) => {
+  expectType<Promise<unknown>>(session.systemInfo())
   expectType<Promise<unknown>>(session.callWxMethod('getStorageSync', 'probe'))
   expectType<Promise<unknown>>(session.callWxMethodWithOptions('getStorageSync', {
     timeout: 1_000,

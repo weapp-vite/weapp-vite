@@ -58,6 +58,7 @@ describe.each(['graph-only', 'preprocessor'] as const)('output finalizer %s styl
       }
     }
     const beginUpdate = () => {
+      runtimeState.build.hmr.isRebuild = true
       runtimeState.build.hmr.profile = { event: 'update', file: path.join(srcRoot, 'pages/index/index.wxml'), dirtyReasonSummary: ['sidecar-direct:1'] }
     }
     return { build, beginUpdate, runtimeState }

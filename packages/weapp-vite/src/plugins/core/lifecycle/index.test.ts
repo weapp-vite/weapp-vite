@@ -106,8 +106,9 @@ describe('createCoreLifecyclePlugin', () => {
     moduleGraphService.bindPluginContext(state, buildContext)
     expect(moduleGraphService.hasModule('/src/finished.ts')).toBe(true)
     const closeBundle = plugin.closeBundle as (this: { meta: { watchMode: boolean } }) => void
-    closeBundle.call(buildContext)
-    closeBundle.call(buildContext)
+    // Rolldown 不保证 closeBundle 与 load/buildEnd 复用同一个 JS context 包装对象。
+    closeBundle.call({ meta: { watchMode: false } })
+    closeBundle.call({ meta: { watchMode: false } })
     expect(moduleGraphService.hasModule('/src/finished.ts')).toBe(false)
     await expect(moduleGraphService.resolve('value')).rejects.toThrow(TypeError)
   })

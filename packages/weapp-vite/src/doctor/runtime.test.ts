@@ -182,4 +182,27 @@ describe('Doctor runtime facts', () => {
     expect(evidence.facts).toContainEqual({ stage: 'current-page', status: 'failed', code: 'invalid-response' })
     expect(evidence.complete).toBe(false)
   })
+  it('uses one total deadline across login, connection and RPC and preserves partial facts', async () => {
+    const cliPath = await cliFixture()
+    vi.useFakeTimers()
+    mocks.login.mockImplementation(async () => {
+      await new Promise(resolve => setTimeout(resolve, 40))
+      return { status: 'success', login: true }
+    })
+    mocks.connect.mockImplementation(async () => {
+      await new Promise(resolve => setTimeout(resolve, 40))
+      return { disconnect, toolInfo: () => new Promise(() => {}), currentPage: async () => ({ path: 'pages/home' }) }
+    })
+    const result = probeDoctorRuntime('fixture', 'weapp', undefined, { cliPath, login: true, timeout: 100 })
+    // 文件预检使用真实 fs；等待其进入 login 后再推进单调计时器。
+    await vi.waitFor(() => expect(mocks.login).toHaveBeenCalled(), { interval: 1 })
+    await vi.advanceTimersByTimeAsync(100)
+    const evidence = await result
+    expect(evidence.complete).toBe(false)
+    expect(evidence.facts).toContainEqual({ stage: 'login-state', status: 'passed', code: 'logged-in' })
+    expect(evidence.bundle?.operation).toMatchObject({ remainingMs: 0, cleanup: [{ resource: 'doctor-websocket', status: 'released' }] })
+    expect(disconnect).toHaveBeenCalledOnce()
+    expect(JSON.stringify(evidence)).not.toContain(cliPath)
+    expect(vi.getTimerCount()).toBe(0)
+  })
 })

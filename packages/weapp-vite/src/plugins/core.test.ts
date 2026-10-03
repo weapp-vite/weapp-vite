@@ -429,6 +429,7 @@ describe('weapp-vite:pre load', () => {
     const runtimeState = {
       build: {
         hmr: {
+          isRebuild: true,
           profile: {
             event: 'update',
           },

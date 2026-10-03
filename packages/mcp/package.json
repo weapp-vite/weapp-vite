@@ -37,7 +37,7 @@
     "dist"
   ],
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "unbuild --stub",
@@ -60,6 +60,7 @@
   "dependencies": {
     "@modelcontextprotocol/node": "^2.1.0",
     "@modelcontextprotocol/server": "^2.2.0",
+    "@weapp-core/constants": "workspace:*",
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/devtools-runtime": "workspace:*",
     "zod": "catalog:"

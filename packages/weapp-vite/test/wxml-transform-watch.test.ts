@@ -1,28 +1,43 @@
 import type { WatcherInstance } from '../src/runtime/watcherPlugin'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
+import { getWxmlWatchFiles } from '../src/wxml/processing/dependencies'
 import { createTempFixtureProject, createTestCompilerContext, getFixture } from './utils'
 
 const outputs = ['pages/native/index.wxml', 'pages/vue/index.wxml', 'sub/index.wxml', 'independent/index.wxml']
 
 async function waitForOutputs(root: string, label: string) {
+  let contents: string[] = []
   await expect.poll(async () => {
     // 原生写出期间文件可能暂时不完整；标签与转换次数必须检查同一次读取。
-    return Promise.all(outputs.map(async (file) => {
-      const code = await fs.readFile(path.join(root, 'dist', file), 'utf8').catch(() => '')
+    contents = await Promise.all(outputs.map(file => fs.readFile(path.join(root, 'dist', file), 'utf8').catch(() => '')))
+    return contents.map((code, index) => {
+      const file = outputs[index]
       return { file, label: code.includes(`data-rule="${label}"`), transforms: code.match(/<!-- transform-once -->/g)?.length ?? 0 }
-    }))
+    })
   }, { timeout: 45_000, interval: 100 }).toEqual(outputs.map(file => ({ file, label: true, transforms: 1 })))
+  return contents
 }
 
 describe('WXML transform external dependencies', { concurrent: false }, () => {
   it.each(['classic', 'stateful-experimental'] as const)('rebuilds all templates and recovers from missing dependencies with %s', async (runtime) => {
     const project = await createTempFixtureProject(getFixture('wxml-remove'), 'wxml-transform-watch')
+    const dependencyEvents: string[] = []
     const compiler = await createTestCompilerContext({
       cwd: project.tempDir,
       mode: 'transform',
       isDev: true,
       inlineConfig: {
+        plugins: [{
+          name: 'test:wxml-dependency-watch-diagnostics',
+          configureServer(server) {
+            server.watcher.on('all', (event, file) => {
+              if (path.basename(file) === 'transform-rules.json') {
+                dependencyEvents.push(event)
+              }
+            })
+          },
+        }],
         weapp: { hmr: { runtime } },
         build: { watch: { chokidar: { usePolling: true, interval: 100 } } },
       },
@@ -57,7 +72,8 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
       }
       const rules = path.join(project.tempDir, 'transform-rules.json')
       const independentInput = await fs.readFile(independentSource, 'utf8')
-      const previousOutputs = await Promise.all(outputs.map(file => fs.readFile(path.join(project.tempDir, 'dist', file), 'utf8')))
+      // 直接保存已验证的读取结果，避免再次读盘命中原生写出的 truncate 窗口。
+      const previousOutputs = await waitForOutputs(project.tempDir, 'initial')
       await fs.appendFile(independentSource, '<view data-subtree-visited />')
       await expect.poll(() => failures.length, { timeout: 45_000 }).toBeGreaterThan(0)
       expect(await Promise.all(outputs.map(file => fs.readFile(path.join(project.tempDir, 'dist', file), 'utf8')))).toEqual(previousOutputs)
@@ -67,7 +83,20 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
       await waitForOutputs(project.tempDir, 'changed')
       const previousFailures = failures.length
       await fs.remove(rules)
-      await expect.poll(() => failures.length, { timeout: 45_000 }).toBeGreaterThan(previousFailures)
+      // 超时时保留宿主事件与依赖登记状态，区分漏报事件、依赖丢失与构建未报错。
+      const removalState = () => ({
+        newFailure: failures.length > previousFailures,
+        failureCount: failures.length,
+        dependencyRegistered: getWxmlWatchFiles(compiler.ctx).includes(rules),
+        hostEvents: [...dependencyEvents],
+      })
+      try {
+        await expect.poll(() => removalState().newFailure, { timeout: 45_000 }).toBe(true)
+      }
+      catch (cause) {
+        // 匹配器会省略未参与比较的属性，错误正文必须显式保留完整诊断。
+        throw new Error(`WXML dependency removal: ${JSON.stringify(removalState())}`, { cause })
+      }
       const previous = await fs.readFile(path.join(project.tempDir, 'dist/pages/native/index.wxml'), 'utf8')
       expect(previous).toContain('data-rule="changed"')
       await fs.writeJSON(rules, { label: 'restored' })

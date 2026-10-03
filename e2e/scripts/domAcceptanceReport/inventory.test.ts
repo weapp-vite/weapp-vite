@@ -110,6 +110,46 @@ describe('static DOM plan inventory', () => {
     expect(cases[0]?.notes.every(note => !note.startsWith('Dynamic'))).toBe(true)
   })
 
+  it('expands boolean parameterized suites with per-row bindings and options', () => {
+    const cases = analyzeCaseSource(`
+      describe.each([false, true])('outside project: %s', { concurrent: false }, external => {
+        it('recovers', ctx => {
+          createDomAcceptance(ctx, 'fixture', [])
+          page.callMethod(\`outside-\${external}\`)
+        })
+      })
+    `, 'e2e/ide/parameterized.test.ts')
+    expect(cases.map(item => item.name)).toEqual(['outside project: false > recovers', 'outside project: true > recovers'])
+    expect(cases.map(item => item.operations)).toEqual([['callMethod(outside-false)'], ['callMethod(outside-true)']])
+    expect(cases.every(item => item.plans.length === 1 && item.notes.length === 0)).toBe(true)
+  })
+
+  it('expands tuple suites but rejects unsupported title substitutions', () => {
+    const cases = analyzeCaseSource(`
+      describe.skip.each([['native', false], ['vue', true]])('%# %s/%s', (kind, external) => {
+        it('renders', ctx => createDomAcceptance(ctx, kind, []))
+      })
+    `, 'e2e/ide/tuples.test.ts')
+    expect(cases.map(item => item.name)).toEqual(['0 native/false > renders', '1 vue/true > renders'])
+    expect(cases.map(item => item.plans[0]?.fixture)).toEqual(['native', 'vue'])
+    expect(cases.every(item => item.notes.includes('Skipped describe'))).toBe(true)
+    const [unsupported] = analyzeCaseSource(`
+      describe.each([false, true])('%j', () => {
+        it('renders', ctx => createDomAcceptance(ctx, 'fixture', []))
+      })
+    `, 'e2e/ide/unsupported.test.ts')
+    expect(unsupported?.notes.some(note => note.startsWith('Dynamic each table:'))).toBe(true)
+  })
+
+  it('marks unresolved parameterized suites instead of accepting their format string', () => {
+    const [item] = analyzeCaseSource(`
+      describe.each(loadCases())('runtime %s', value => {
+        it('renders', ctx => createDomAcceptance(ctx, 'fixture', []))
+      })
+    `, 'e2e/ide/dynamic.test.ts')
+    expect(item?.notes).toContain('Dynamic each table: describe.each(loadCases())')
+  })
+
   it('retains individual route operations within a single case', () => {
     const [item] = analyzeCaseSource(`
       it('navigates', async () => { await app.reLaunch('/pages/a/index'); await app.redirectTo('/pages/b/index') })

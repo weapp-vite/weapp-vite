@@ -50,9 +50,7 @@ export function useAnalyzePageInteractions(options: {
     }
 
     if (item.warning) {
-      options.activeTab.value = 'files'
       options.handleSelectBudgetWarning(item.warning)
-      options.treemapFilterMode.value = 'selected-package'
       return
     }
 
@@ -80,9 +78,7 @@ export function useAnalyzePageInteractions(options: {
     }
 
     if (item.warning) {
-      options.activeTab.value = 'files'
       options.handleSelectBudgetWarning(item.warning)
-      options.treemapFilterMode.value = 'selected-package'
       return
     }
 

@@ -155,6 +155,7 @@ export function emitDuplicatedChunkAsset(args: {
     fileName: args.targetFileName,
     source: duplicatedChunk.code,
   })
+  args.runtimeContext.onEmitChunk?.(args.targetFileName, duplicatedChunk)
 
   const sourceMapKeys = collectSourceMapKeys(args.sourceFileName, args.chunk)
   const sourceMapAssetInfo = findSourceMapAsset(args.runtimeContext.bundle, sourceMapKeys)

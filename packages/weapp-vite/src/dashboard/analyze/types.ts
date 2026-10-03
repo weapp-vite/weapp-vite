@@ -1,14 +1,4 @@
-import type { ModuleSourceType, PackageType } from '../../analyze/subpackages/types'
-
-export interface AnalyzeBudgetCheckItem {
-  id: string
-  label: string
-  scope: 'total' | PackageType
-  currentBytes: number
-  limitBytes: number
-  ratio: number
-  status: 'ok' | 'warning' | 'exceeded'
-}
+import type { ModuleSourceType } from '../../analyze/subpackages/types'
 
 export interface DuplicateModuleInsight {
   id: string

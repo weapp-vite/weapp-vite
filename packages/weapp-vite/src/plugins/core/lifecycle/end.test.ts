@@ -48,6 +48,17 @@ function createState(file: string, entryId: string) {
 }
 
 describe('core lifecycle buildEnd hook', () => {
+  it.each([false, true])('records publication lifecycle independently of profile fields (rebuilt=%s)', async (hasBuiltOnce) => {
+    const { moduleGraphService, pluginContext, state } = createState('/project/src/pages/home/index.json', '/project/src/pages/home/index.ts')
+    state.hmrState.hasBuiltOnce = hasBuiltOnce
+    moduleGraphService.recordChangedFile('/project/src/pages/home/index.json', 'update')
+    moduleGraphService.recordChangedFile('/project/src/pages/home/index.wxss', 'update')
+    await createBuildEndHook(state).call(pluginContext)
+    expect(state.ctx.runtimeState.build.hmr.isRebuild).toBe(hasBuiltOnce)
+    expect(state.ctx.runtimeState.build.hmr.profile.event).toBeUndefined()
+    expect(state.ctx.runtimeState.build.hmr.profile.file).toBeUndefined()
+  })
+
   it.each([
     { isDev: false, watch: undefined, full: true },
     { isDev: false, watch: {}, full: true },

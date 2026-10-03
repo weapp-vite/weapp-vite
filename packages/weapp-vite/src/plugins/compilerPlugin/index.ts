@@ -13,12 +13,14 @@ import type {
 import type { PluginContextRef } from './helpers'
 import { fs } from '@weapp-core/shared/fs'
 import { createLogger } from 'vite'
+import { deferWatcherResourceCleanup } from '../../runtime/watcherPlugin'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import {
   addManagedCompilerEntry,
   createManagedCompilerEntryMarker,
   stripManagedCompilerMarkers,
 } from '../compilerPluginRegistry'
+import { createCompilerDependencyTracker } from './dependencies'
 import {
   inferCompilerOutputKind,
   inferCompilerResourceKind,
@@ -47,7 +49,7 @@ interface SourceState {
   state?: unknown
 }
 
-function createContext(ctx: CompilerContext, resolvedConfigRef: { value?: ResolvedConfig }, pluginContextRef: { value?: PluginContextRef }, owners: Map<string, string>): WeappCompilerPluginContext {
+function createContext(ctx: CompilerContext, resolvedConfigRef: { value?: ResolvedConfig }, pluginContextRef: { value?: PluginContextRef }, owners: Map<string, string>, rememberDependency: (id: string) => void): WeappCompilerPluginContext {
   const logger = createLogger('warn')
   const normalizeOwnerId = (id: string) => normalizeFsResolvedId(id, { stripLeadingNullByte: true })
   return {
@@ -68,7 +70,10 @@ function createContext(ctx: CompilerContext, resolvedConfigRef: { value?: Resolv
       const resolved = await resolver.call(pluginContextRef.value, source, importer, options)
       return resolved && !resolved.external ? { id: resolved.id } : null
     },
-    addWatchFile: id => pluginContextRef.value?.addWatchFile?.(id),
+    addWatchFile(id) {
+      rememberDependency(id)
+      pluginContextRef.value?.addWatchFile?.(id)
+    },
     invalidate: (id) => {
       const moduleGraph = pluginContextRef.value?.environment?.moduleGraph
       const module = moduleGraph?.getModuleById?.(id)
@@ -114,7 +119,8 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
   let disposed = false
   let closeWatcherCalled = false
   let closeBundleCalled = false
-  const context = createContext(ctx, resolvedConfigRef, pluginContextRef, owners)
+  const dependencyTracker = createCompilerDependencyTracker(ctx)
+  const context = createContext(ctx, resolvedConfigRef, pluginContextRef, owners, dependencyTracker.remember)
 
   const sourceStateKey = (provider: string, id: string) => `${provider}:${normalizeFsResolvedId(id, { stripLeadingNullByte: true })}`
 
@@ -164,7 +170,12 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
       return
     }
     disposed = true
-    await callControllers('dispose')
+    try {
+      await callControllers('dispose')
+    }
+    finally {
+      dependencyTracker.dispose()
+    }
   }
 
   function setSourceState(provider: string, ids: string[], state: SourceState) {
@@ -261,6 +272,7 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
   const sourcePlugin = markWeappCompilerPlugin({
     name: 'weapp-vite:compiler:source',
     enforce: 'pre',
+    configureServer: dependencyTracker.configureServer,
     configResolved(config) {
       resolvedConfigRef.value = config
       pluginContextRef.value = this as unknown as PluginContextRef
@@ -268,11 +280,16 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
     async buildStart() {
       pluginContextRef.value = this as unknown as PluginContextRef
       sourceStates.clear()
+      if (ctx.configService.isDev && resolvedConfigRef.value?.command === 'build' && !resolvedConfigRef.value.build.watch) {
+        for (const change of ctx.moduleGraphService?.getPendingChanges?.() ?? []) {
+          await callControllers('watchChange', change.file, { event: change.event })
+        }
+      }
       await callControllers('buildStart')
     },
     async transform(code, id) {
       pluginContextRef.value = this as unknown as PluginContextRef
-      return transformSource(code, id)
+      return dependencyTracker.trackSource(id, () => transformSource(code, id))
     },
     async watchChange(id, change) {
       await callControllers('watchChange', id, change)
@@ -301,6 +318,19 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
       }
     },
   }, 'source', 'source')
+
+  async function closeControllers() {
+    if (closeBundleCalled) {
+      return
+    }
+    closeBundleCalled = true
+    try {
+      await callControllers('closeBundle')
+    }
+    finally {
+      await disposeControllers()
+    }
+  }
 
   const outputPlugin = markWeappCompilerPlugin({
     name: 'weapp-vite:compiler:output',
@@ -338,15 +368,8 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
       },
     },
     async closeBundle() {
-      if (closeBundleCalled) {
-        return
-      }
-      closeBundleCalled = true
-      try {
-        await callControllers('closeBundle')
-      }
-      finally {
-        await disposeControllers()
+      if (!deferWatcherResourceCleanup(ctx.watcherService, closeControllers)) {
+        await closeControllers()
       }
     },
   }, 'output', 'output')

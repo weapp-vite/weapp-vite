@@ -1,0 +1,197 @@
+name: Compiler and Resource Acceptance
+run-name: Compiler and resource acceptance @ ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate-sha:
+        description: Full committed candidate SHA; must match the selected workflow ref
+        type: string
+        required: true
+      profile-overhead-percent:
+        description: Maximum overhead for the paired profile on/off worker observations
+        type: number
+        required: false
+        default: 5
+
+concurrency:
+  group: compiler-resource-acceptance-${{ github.sha }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  accept:
+    name: ${{ matrix.scenario }} / frozen candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - scenario: template-analysis
+            timeout: 45
+            # collector 直接打包 @wevu/compiler 源码，外部 workspace 依赖由此闭包重建。
+            build: pnpm exec turbo run build --filter=@wevu/compiler...
+          - scenario: weapp-classic
+            timeout: 90
+            build: pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...
+          - scenario: weapp-stateful
+            timeout: 90
+            build: pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...
+          - scenario: weapp-modes
+            timeout: 60
+            build: pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...
+    env:
+      EXPECTED_SHA: ${{ inputs.candidate-sha }}
+      FROZEN_SHA: ${{ github.sha }}
+      SCENARIO: ${{ matrix.scenario }}
+      PROFILE_OVERHEAD_PERCENT: ${{ inputs.profile-overhead-percent }}
+      WEAPP_VITE_HMR_PROFILE_JSON: 'false'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the immutable candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Record candidate and measurement boundaries
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process'
+          import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
+          import os from 'node:os'
+          import path from 'node:path'
+          const actual = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+          const reportDir = path.join(process.env.RUNNER_TEMP, 'compiler-resource-acceptance')
+          mkdirSync(reportDir, { recursive: true })
+          appendFileSync(process.env.GITHUB_ENV, `REPORT_DIR=${reportDir}\n`)
+          writeFileSync(path.join(reportDir, 'candidate.json'), JSON.stringify({
+            expected: process.env.EXPECTED_SHA,
+            revision: actual,
+            frozenRevision: process.env.FROZEN_SHA,
+            scenario: process.env.SCENARIO,
+            platform: process.platform,
+            architecture: process.arch,
+            cpu: os.cpus()[0]?.model,
+            cpuCount: os.availableParallelism(),
+            runnerImage: process.env.ImageOS,
+            runnerImageVersion: process.env.ImageVersion,
+            scope: {
+              compiler: 'seven paired trials; complete compile time, sampled allocation, retained heap and process peak RSS',
+              resources: '512 SFCs, 14 cycles; forced-GC worker heap, process-tree RSS and exact resource counts',
+              profiling: 'same-runner serial off/on/on/off; two independent pairs; edit-to-observation includes headless runtime and output scans, not pure HMR latency',
+              sequenceTimeoutMs: 600000,
+              workerRequestTimeoutMs: 180000,
+              profileOverheadBudgetPercent: Number(process.env.PROFILE_OVERHEAD_PERCENT),
+              runtime: 'mpcore headless JavaScript semantics only',
+              ideHostMemory: 'not measured',
+              weChatStableRuntime: 'not exercised',
+            },
+          }, null, 2) + '\n')
+          if (!/^[a-f0-9]{40}$/.test(process.env.EXPECTED_SHA ?? '')
+            || actual !== process.env.EXPECTED_SHA || actual !== process.env.FROZEN_SHA) {
+            throw new Error('Dispatch must target the exact committed candidate SHA')
+          }
+          NODE
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: 24.18.0
+      - uses: ./.github/actions/refresh-workspace-deps
+        with:
+          build-command: ${{ matrix.build }}
+      - name: Require a clean candidate after dependency preparation
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process'
+          import { writeFileSync } from 'node:fs'
+          import path from 'node:path'
+          const status = execFileSync('git', ['status', '--porcelain', '--untracked-files=normal'], { encoding: 'utf8' })
+          writeFileSync(path.join(process.env.REPORT_DIR, 'preflight.json'), JSON.stringify({
+            node: process.version,
+            pnpm: execFileSync('pnpm', ['--version'], { encoding: 'utf8' }).trim(),
+            clean: status.trim().length === 0,
+            status,
+          }, null, 2) + '\n')
+          if (status.trim()) throw new Error('Prepared candidate contains uncommitted or untracked source changes')
+          NODE
+      - name: Collect seven paired compiler trials
+        if: matrix.scenario == 'template-analysis'
+        run: >-
+          pnpm exec tsx scripts/benchmarkTemplateAnalysis/index.ts
+          --trials=7 --formal --output="$REPORT_DIR/report.json"
+          2>&1 | tee "$REPORT_DIR/collector.log"
+      - name: Enforce full-framework resource gates with profiling disabled
+        if: matrix.scenario == 'weapp-classic' || matrix.scenario == 'weapp-stateful'
+        run: >-
+          pnpm exec tsx scripts/editSequence/run.ts --engine "$SCENARIO"
+          --resource-cycles 14 --framework-pages 512 --require-clean
+          --report "$REPORT_DIR/profile-off.json"
+          2>&1 | tee "$REPORT_DIR/profile-off.log"
+      - name: Repeat the same resource sequence with profiling enabled
+        if: matrix.scenario == 'weapp-classic' || matrix.scenario == 'weapp-stateful'
+        env:
+          WEAPP_VITE_HMR_PROFILE_JSON: 'true'
+        run: >-
+          pnpm exec tsx scripts/editSequence/run.ts --engine "$SCENARIO"
+          --resource-cycles 14 --framework-pages 512 --require-clean
+          --report "$REPORT_DIR/profile-on.json"
+          2>&1 | tee "$REPORT_DIR/profile-on.log"
+      - name: Begin the reverse-order pair with profiling enabled
+        if: matrix.scenario == 'weapp-classic' || matrix.scenario == 'weapp-stateful'
+        env:
+          WEAPP_VITE_HMR_PROFILE_JSON: 'true'
+        run: >-
+          pnpm exec tsx scripts/editSequence/run.ts --engine "$SCENARIO"
+          --resource-cycles 14 --framework-pages 512 --require-clean
+          --report "$REPORT_DIR/profile-on-second.json"
+          2>&1 | tee "$REPORT_DIR/profile-on-second.log"
+      - name: Finish the reverse-order pair with profiling disabled
+        if: matrix.scenario == 'weapp-classic' || matrix.scenario == 'weapp-stateful'
+        run: >-
+          pnpm exec tsx scripts/editSequence/run.ts --engine "$SCENARIO"
+          --resource-cycles 14 --framework-pages 512 --require-clean
+          --report "$REPORT_DIR/profile-off-second.json"
+          2>&1 | tee "$REPORT_DIR/profile-off-second.log"
+      - name: Compare all source events, runtime semantics and paired overhead
+        if: matrix.scenario == 'weapp-classic' || matrix.scenario == 'weapp-stateful'
+        run: >-
+          pnpm exec tsx scripts/editSequence/compareProfiles.ts "$PROFILE_OVERHEAD_PERCENT"
+          "$REPORT_DIR/profile-off.json" "$REPORT_DIR/profile-on.json"
+          "$REPORT_DIR/profile-off-second.json" "$REPORT_DIR/profile-on-second.json"
+          | tee "$REPORT_DIR/profile-comparison.json"
+      - name: Enforce mode and cache equivalence
+        if: matrix.scenario == 'weapp-modes'
+        run: >-
+          pnpm exec tsx scripts/editSequence/run.ts --engine weapp-modes --require-clean
+          --report "$REPORT_DIR/report.json"
+          2>&1 | tee "$REPORT_DIR/collector.log"
+      - name: Record acceptance scope in the job summary
+        if: always()
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs'
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, [
+            `Candidate: ${process.env.FROZEN_SHA}`,
+            `Scenario: ${process.env.SCENARIO}`,
+            'Compiler trials report complete compilation time and Node process allocation/heap/RSS.',
+            'Framework resource gates retain 512 SFCs and use 14 cycles with independent fresh-build comparisons.',
+            `Two profile off/on pairs execute serially in off/on/on/off order with a ${process.env.PROFILE_OVERHEAD_PERCENT}% overhead budget. Every edit requires a successful JSONL source event and identical build/runtime observations.`,
+            'The profile comparison includes runtime verification and output scanning; it does not replace the HMR performance gate.',
+            'Runtime observations use mpcore headless. WeChat Stable runtime and IDE-host memory are not measured.',
+            'Existing resource thresholds remain mandatory; collector failures and incomplete evidence fail this job.',
+            '',
+          ].join('\n\n'))
+          NODE
+      - name: Upload raw reports and diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compiler-resource-${{ matrix.scenario }}-${{ github.sha }}
+          path: ${{ runner.temp }}/compiler-resource-acceptance
+          if-no-files-found: error
+          retention-days: 90

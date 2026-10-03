@@ -4,6 +4,8 @@ export interface BaseEntry {
   path: string
   jsonPath?: string
   json?: object
+  /** 自动导入增强前的入口声明，供逻辑入口建立稳定的配置依赖。 */
+  declaredJson?: object
   type: 'app' | 'page' | 'component' | (string & {})
 }
 

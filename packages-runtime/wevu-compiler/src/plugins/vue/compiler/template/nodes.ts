@@ -52,7 +52,7 @@ function transformInterpolation(node: any, context: TransformContext): string {
   const { content } = node
   if (content.type === NodeTypes.SIMPLE_EXPRESSION) {
     const rawExpValue = content.content
-    const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue, context.templateSafeCallNames)
+    const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue, context.templateSafeCallNames, context)
       ? registerRuntimeBindingExpression(rawExpValue, context, { hint: '插值表达式' })
       : null
     recordBindingExpression(context, {

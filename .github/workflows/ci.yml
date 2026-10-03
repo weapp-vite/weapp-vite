@@ -123,25 +123,27 @@ jobs:
             lint_script: lint
           - os: windows-latest
             node-version: 22
-            timeout_minutes: 60
+            # Windows 安装与串行 lint/build 约 25 分钟，coverage 还需 35 分钟以上；总预算包含收尾。
+            timeout_minutes: 90
             build_pkgs_script: build:pkgs:ci:windows
             build_script: build:ci:windows
             lint_script: lint:ci:windows
           - os: windows-latest
             node-version: 24
-            timeout_minutes: 60
+            timeout_minutes: 90
             build_pkgs_script: build:pkgs:ci:windows
             build_script: build:ci:windows
             lint_script: lint:ci:windows
+          # 完整质量命令之外还包含依赖安装及 pnpm 缓存压缩上传，job 预算需覆盖收尾。
           - os: macos-latest
             node-version: 22
-            timeout_minutes: 40
+            timeout_minutes: 60
             build_pkgs_script: build:pkgs:ci:macos
             build_script: build:ci:macos
             lint_script: lint
           - os: macos-latest
             node-version: 24
-            timeout_minutes: 40
+            timeout_minutes: 60
             build_pkgs_script: build:pkgs:ci:macos
             build_script: build:ci:macos
             lint_script: lint

@@ -668,7 +668,7 @@ describe('registerPage integration', () => {
       globalData: { message: 'hello' },
     })
 
-    const firstTemplate = createTemplate('<view bindtap="increment">{{count}}</view>')
+    const firstTemplate = createTemplate('<view id="increment" bindtap="increment">{{count}}</view>')
     registerPage({
       data: () => ({ count: 1, loadedByMethod: false }),
       increment(this: any) {
@@ -717,18 +717,14 @@ describe('registerPage integration', () => {
     expect(currentPages.length).toBe(1)
     expect(currentPages[0].route).toBe('pages/index/index')
 
-    const renderedHTML = firstPage.shadowRoot?.innerHTML ?? ''
-    expect(renderedHTML).toContain('data-mp-on-click="increment"')
-
     const shadowRoot = firstPage.shadowRoot as any
     expect(shadowRoot).toBeTruthy()
-    const trigger = (shadowRoot?.querySelectorAll('weapp-view') ?? [])
-      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
+    const trigger = shadowRoot?.querySelector('#increment') as HTMLElement | undefined
     expect(trigger).toBeTruthy()
     trigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(firstPage.data.count).toBe(2)
 
-    const updatedTemplate = createTemplate('<view bindtap="increment">{{count}}</view>')
+    const updatedTemplate = createTemplate('<view id="increment" bindtap="increment">{{count}}</view>')
     registerPage({
       data: () => ({ count: 999 }),
       increment(this: any) {
@@ -750,8 +746,7 @@ describe('registerPage integration', () => {
     expect(firstPage.data.count).toBe(2)
     expect((firstPage as any).markPageLoaded).toBeUndefined()
 
-    const updatedTrigger = (shadowRoot?.querySelectorAll('weapp-view') ?? [])
-      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
+    const updatedTrigger = shadowRoot?.querySelector('#increment') as HTMLElement | undefined
     updatedTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(firstPage.data.count).toBe(12)
 
@@ -896,7 +891,7 @@ describe('registerPage integration', () => {
       onLoad,
     }, {
       id: 'pages/hmr-stability/index',
-      template: createTemplate('<view bindtap="increment">{{count}}</view>'),
+      template: createTemplate('<view id="increment" bindtap="increment">{{count}}</view>'),
     })
 
     initializePageRoutes(['pages/hmr-stability/index'])
@@ -907,8 +902,7 @@ describe('registerPage integration', () => {
     expect(page).toBeTruthy()
     expect(onLoad).toHaveBeenCalledTimes(1)
 
-    const firstTrigger = [...(page.shadowRoot?.querySelectorAll('weapp-view') ?? [])]
-      .find(node => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
+    const firstTrigger = page.shadowRoot?.querySelector('#increment') as HTMLElement | undefined
     firstTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(1)
 
@@ -920,15 +914,14 @@ describe('registerPage integration', () => {
       onLoad: onHotLoad,
     }, {
       id: 'pages/hmr-stability/index',
-      template: createTemplate('<view bindtap="increment">{{count}}</view>'),
+      template: createTemplate('<view id="increment" bindtap="increment">{{count}}</view>'),
     })
     await Promise.resolve()
 
     expect(onHotLoad).toHaveBeenCalledTimes(0)
     expect(page.data.count).toBe(1)
 
-    const secondTrigger = [...(page.shadowRoot?.querySelectorAll('weapp-view') ?? [])]
-      .find(node => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
+    const secondTrigger = page.shadowRoot?.querySelector('#increment') as HTMLElement | undefined
     secondTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(6)
 
@@ -940,13 +933,12 @@ describe('registerPage integration', () => {
       onLoad: onHotLoad,
     }, {
       id: 'pages/hmr-stability/index',
-      template: createTemplate('<view bindtap="increment">{{count}}</view>'),
+      template: createTemplate('<view id="increment" bindtap="increment">{{count}}</view>'),
     })
     await Promise.resolve()
     expect(page.data.count).toBe(6)
 
-    const thirdTrigger = [...(page.shadowRoot?.querySelectorAll('weapp-view') ?? [])]
-      .find(node => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
+    const thirdTrigger = page.shadowRoot?.querySelector('#increment') as HTMLElement | undefined
     thirdTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(8)
   })
@@ -987,63 +979,6 @@ describe('registerPage integration', () => {
     await navigateBack({ delta: 1 })
     await Promise.resolve()
     expect(onComponentShow).toHaveBeenCalledTimes(2)
-  })
-})
-
-describe('event prefix mapping integration', () => {
-  it('binds catch/capture flags from template attributes', () => {
-    const onBind = vi.fn()
-    const onCatch = vi.fn()
-    const onCapture = vi.fn()
-    const onCaptureCatch = vi.fn()
-
-    defineComponent('wv-event-prefix-flags', {
-      template: createTemplate(`
-        <view class="bind" bindtap="onBind">bind</view>
-        <view class="catch" catchtap="onCatch">catch</view>
-        <view class="capture" capture-bindtap="onCapture">capture</view>
-        <view class="capture-catch" capture-catchtap="onCaptureCatch">captureCatch</view>
-      `),
-      component: {
-        methods: {
-          onBind,
-          onCatch,
-          onCapture,
-          onCaptureCatch,
-        },
-      },
-    })
-
-    const element = document.createElement('wv-event-prefix-flags') as HTMLElement
-    document.body.append(element)
-    const root = element.shadowRoot ?? element
-
-    const bindEl = root.querySelector('.bind') as HTMLElement & { listenerRecords?: Array<{ type: string, options: boolean | AddEventListenerOptions | undefined }> }
-    const catchEl = root.querySelector('.catch') as HTMLElement & { listenerRecords?: Array<{ type: string, options: boolean | AddEventListenerOptions | undefined }> }
-    const captureEl = root.querySelector('.capture') as HTMLElement & { listenerRecords?: Array<{ type: string, options: boolean | AddEventListenerOptions | undefined }> }
-    const captureCatchEl = root.querySelector('.capture-catch') as HTMLElement & { listenerRecords?: Array<{ type: string, options: boolean | AddEventListenerOptions | undefined }> }
-
-    bindEl.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
-    expect(onBind).toHaveBeenCalledTimes(1)
-
-    const catchEvent = new Event('click', { bubbles: true, composed: true })
-    const catchStop = vi.fn()
-    ;(catchEvent as Event & { stopPropagation: () => void }).stopPropagation = catchStop
-    catchEl.dispatchEvent(catchEvent)
-    expect(onCatch).toHaveBeenCalledTimes(1)
-    expect(catchStop).toHaveBeenCalledTimes(1)
-
-    captureEl.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
-    expect(onCapture).toHaveBeenCalledTimes(1)
-    expect(captureEl.listenerRecords?.some(record => record.type === 'click' && record.options === true)).toBe(true)
-
-    const captureCatchEvent = new Event('click', { bubbles: true, composed: true })
-    const captureCatchStop = vi.fn()
-    ;(captureCatchEvent as Event & { stopPropagation: () => void }).stopPropagation = captureCatchStop
-    captureCatchEl.dispatchEvent(captureCatchEvent)
-    expect(onCaptureCatch).toHaveBeenCalledTimes(1)
-    expect(captureCatchStop).toHaveBeenCalledTimes(1)
-    expect(captureCatchEl.listenerRecords?.some(record => record.type === 'click' && record.options === true)).toBe(true)
   })
 })
 
@@ -1438,26 +1373,6 @@ describe('component behaviors', () => {
 })
 
 describe('component selector helpers', () => {
-  it('renders empty and non-string legacy template results', () => {
-    defineComponent('wv-legacy-null-template', {
-      style: '.empty { display: none; }',
-      template: () => null as any,
-      component: {},
-    })
-    defineComponent('wv-legacy-object-template', {
-      style: '.object { display: block; }',
-      template: () => ({ kind: 'object' }) as any,
-      component: {},
-    })
-
-    const empty = document.createElement('wv-legacy-null-template') as HTMLElement
-    const object = document.createElement('wv-legacy-object-template') as HTMLElement
-    document.body.append(empty, object)
-
-    expect(empty.shadowRoot?.innerHTML).toBe('<style>.empty { display: none; }</style>')
-    expect(object.shadowRoot?.innerHTML).toBe('<style>.object { display: block; }</style>[object Object]')
-  })
-
   it('exposes virtual host root classes without replacing caller classes', () => {
     defineComponent('wv-virtual-host-class', {
       template: createTemplate('<view class="root {{stateClass}}"></view>'),

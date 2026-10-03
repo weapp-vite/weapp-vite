@@ -81,6 +81,12 @@ export function prepareNormalizedEntries(options: NormalizedEntryOptions) {
   if (!skipOwnEntries) {
     for (const normalizedEntry of normalizedEntries) {
       const resolvedEntryType = explicitEntryTypes?.get(normalizedEntry) ?? entryType ?? (json.component ? 'component' : 'page')
+      const existing = entriesMap.get(normalizedEntry)
+      // 父入口只声明子入口身份，不能覆盖子入口已读取的配置和附属文件。
+      if (existing?.declaredJson !== undefined) {
+        entriesMap.set(normalizedEntry, { ...existing, type: resolvedEntryType } as Entry)
+        continue
+      }
       entriesMap.set(normalizedEntry, {
         type: resolvedEntryType,
         templatePath,

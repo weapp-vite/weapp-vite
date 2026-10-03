@@ -284,39 +284,6 @@ function resolveOutputStyleFileName(
   )
 }
 
-function isUnchangedDevHmrStyleAsset(
-  ctx: CompilerContext,
-  normalizedFileName: string,
-  current: string,
-  source: string,
-) {
-  // 待生成入口的文本相同不代表最终 CSS 相同，须交给 Tailwind 输出阶段完成内容生成。
-  if (hasManagedCompilerOutputMarker(source)) {
-    return false
-  }
-  const hmrState = ctx.runtimeState?.build?.hmr
-  const currentHmrFile = hmrState?.profile.file
-  if (typeof currentHmrFile === 'string') {
-    const currentOutputFile = resolveOutputStyleFileName(ctx.configService, currentHmrFile)
-    if (currentOutputFile && toPosixPath(currentOutputFile) === normalizedFileName) {
-      return false
-    }
-  }
-  const isDevHmr = ctx.configService?.isDev === true
-    && (
-      hmrState?.didEmitAllEntries === true
-      || (hmrState?.lastHmrEntryIds?.size ?? 0) > 0
-      || (hmrState?.lastEmittedEntryIds?.size ?? 0) > 0
-      || hmrState?.profile.event !== undefined
-    )
-  const canonicalCurrent = hasCompilerContentDirtyReason(ctx)
-    ? current
-    : stripCompilerContentHmrNonce(current)
-  return isDevHmr
-    && canonicalCurrent === source
-    && ctx.runtimeState?.css?.emittedSource.get(normalizedFileName) === source
-}
-
 function resolveCurrentHmrStyleSourcePath(
   ctx: CompilerContext,
   normalizedFileName: string,
@@ -344,7 +311,8 @@ function resolveFreshHmrStyleSourcePath(
   return currentHmrFile
 }
 
-function emitCssAssetIfChanged(
+// 样式缓存只保存准备内容；最终内容去重必须在发布阶段登记所有权之后执行。
+function emitPreparedCssAsset(
   ctx: CompilerContext,
   pluginCtx: CssEmitPluginContext,
   bundle: OutputBundle,
@@ -357,26 +325,17 @@ function emitCssAssetIfChanged(
   const normalizedFileName = toPosixPath(fileName)
   const cache = ctx.runtimeState?.css?.emittedSource
   const existing = bundle[fileName]
-  const forceEmit = hasCompilerContentDirtyReason(ctx) || hasManagedCompilerOutputMarker(source)
   const resolvedSource = resolveViteStyleAssetPlaceholders(source, fileName, pluginCtx)
   const emittedSource = hasManagedCompilerOutputMarker(resolvedSource)
     ? resolvedSource
     : appendCompilerContentHmrNonce(ctx, resolvedSource)
   if (existing?.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
-    if (!forceEmit && isUnchangedDevHmrStyleAsset(ctx, normalizedFileName, current, emittedSource)) {
-      delete bundle[fileName]
-      return false
-    }
     if (current !== emittedSource) {
       existing.source = emittedSource
     }
     cache?.set(normalizedFileName, resolvedSource)
     return true
-  }
-
-  if (!forceEmit && cache?.get(normalizedFileName) === resolvedSource) {
-    return false
   }
 
   pluginCtx.emitFile({
@@ -438,7 +397,7 @@ function emitMissingManagedStyleAssets(ctx: CompilerContext, pluginCtx: CssEmitP
     }
     if (pluginCtx.getModuleInfo?.(output.facadeModuleId) && !collectRenderedStyleSources(pluginCtx, output.facadeModuleId).size) {
       // 移除最后一个样式导入后 Vite 不再生成 CSS；由当前模块图撤销归属，清空已发布内容。
-      emitCssAssetIfChanged(ctx, pluginCtx, bundle, fileName, '')
+      emitPreparedCssAsset(ctx, pluginCtx, bundle, fileName, '')
     }
   }
   for (const [fileName, source] of emittedSource) {
@@ -447,7 +406,7 @@ function emitMissingManagedStyleAssets(ctx: CompilerContext, pluginCtx: CssEmitP
     }
     // 内容变化可能只产出页面 chunk；使用 owner 已合并的完整待生成内容，
     // 保留作者规则、共享导入及入口位置，最终仍由编译器 output hook 替换标记。
-    emitCssAssetIfChanged(ctx, pluginCtx, bundle, fileName, source)
+    emitPreparedCssAsset(ctx, pluginCtx, bundle, fileName, source)
   }
 }
 
@@ -534,7 +493,7 @@ export async function emitStyleSidecarAsset(
 ) {
   const prepared = await prepareStyleSidecarAsset(ctx, pluginCtx, stylePath, resolvedConfig)
   return prepared
-    ? emitCssAssetIfChanged(ctx, pluginCtx, bundle, prepared.fileName, prepared.css, { originalFileName: stylePath })
+    ? emitPreparedCssAsset(ctx, pluginCtx, bundle, prepared.fileName, prepared.css, { originalFileName: stylePath })
     : false
 }
 
@@ -632,7 +591,7 @@ async function handleBundleEntry(
       configService,
       sharedStyleImportCache,
     )
-    emitCssAssetIfChanged(ctx, this, bundle, prepared.fileName, cssWithImports)
+    emitPreparedCssAsset(ctx, this, bundle, prepared.fileName, cssWithImports)
     emitted.add(prepared.normalizedFileName)
     return prepared.normalizedFileName
   }
@@ -690,10 +649,7 @@ async function handleBundleEntry(
       )
       if (fileName !== bundleKey) {
         delete bundle[bundleKey]
-        emitCssAssetIfChanged(ctx, this, bundle, fileName, processedCss)
-      }
-      else if (isUnchangedDevHmrStyleAsset(ctx, normalizedFileName, source, processedCss)) {
-        delete bundle[bundleKey]
+        emitPreparedCssAsset(ctx, this, bundle, fileName, processedCss)
       }
       else if (processedCss !== source) {
         asset.source = processedCss
@@ -813,7 +769,7 @@ async function emitSharedStyleEntries(
     }
 
     emitted.add(result.fileName)
-    emitCssAssetIfChanged(ctx, this, bundle, result.fileName, result.css)
+    emitPreparedCssAsset(ctx, this, bundle, result.fileName, result.css)
   }
 }
 
@@ -891,7 +847,7 @@ async function emitSharedStyleImportsForChunks(
     if (!asset || emitted.has(asset.normalizedFileName)) {
       continue
     }
-    emitCssAssetIfChanged(ctx, this, bundle, asset.fileName, asset.css)
+    emitPreparedCssAsset(ctx, this, bundle, asset.fileName, asset.css)
     emitted.add(asset.normalizedFileName)
   }
 
@@ -920,7 +876,7 @@ async function emitSharedStyleImportsForChunks(
     if (!asset || emitted.has(asset.normalizedFileName)) {
       continue
     }
-    emitCssAssetIfChanged(ctx, this, bundle, asset.fileName, asset.css)
+    emitPreparedCssAsset(ctx, this, bundle, asset.fileName, asset.css)
     emitted.add(asset.normalizedFileName)
   }
 }
@@ -1011,7 +967,7 @@ async function generateBundleSharedCss(
       )
       recordPendingOwnerStyleSource(ctx, group.fileName, ownerCssWithImports)
     }
-    emitCssAssetIfChanged(ctx, this, bundle, group.fileName, cssWithImports)
+    emitPreparedCssAsset(ctx, this, bundle, group.fileName, cssWithImports)
     emitted.add(normalizedFileName)
     renderedOwners.add(normalizedFileName)
   }
@@ -1060,7 +1016,7 @@ async function emitCollectedStyleSidecars(
     const fragments = sidecars.flatMap(sidecar => sidecar ? [sidecar.css] : [])
     if (fragments.length) {
       // 同一输出合并后只发布一次，避免并发 sidecar 覆盖彼此及完整内容缓存。
-      emitCssAssetIfChanged(ctx, this, bundle, group.fileName, fragments.join('\n'), {
+      emitPreparedCssAsset(ctx, this, bundle, group.fileName, fragments.join('\n'), {
         originalFileName: group.originalFileName,
       })
     }

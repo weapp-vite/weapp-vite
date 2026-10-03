@@ -1,0 +1,1 @@
+<view class="profile-root tailwind">{{value}}</view>

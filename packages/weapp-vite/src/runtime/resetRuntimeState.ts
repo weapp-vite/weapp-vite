@@ -36,6 +36,7 @@ export function resetRuntimeStateForFreshBuild(runtimeState: RuntimeState): void
   css.dependencyToImporters.clear()
   css.transformedSidecarSource.clear()
   css.emittedSource.clear()
+  css.sidecarImports.clear()
 
   const wxml = runtimeState.wxml
   wxml.depsMap.clear()

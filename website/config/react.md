@@ -36,7 +36,7 @@ export default defineConfig({
 | `renderMode` | `'auto' | 'dynamic' | 'static'` | `'auto'` | 静态 slots、完整 reconciler tree，或静态模式强校验。 |
 | `devWarnings` | `boolean` | `true` | 是否输出 dynamic island 与 Compiler fallback 诊断。 |
 
-运行时包为 `@weapp-vite/react`，固定验证组合为 React `19.2.x` 与 `react-reconciler` `0.33.x`，不依赖 `react-dom`。首版仅支持微信小程序。
+运行时包为 `@weapp-vite/react`，当前工作区验证组合为 React `19.3.x` 与 `react-reconciler` `0.34.x`，不依赖 `react-dom`。首版仅支持微信小程序。
 
 `renderMode: 'auto'` 会将稳定的 host shape、静态属性和可绑定字段生成原生 WXML；不含 bridge 的动态条件、列表、render prop 与动态组件进入 reconciler dynamic island。`renderMode: 'static'` 无法证明结构时会直接失败，避免静默丢失语义。
 

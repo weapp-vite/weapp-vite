@@ -1,83 +1,20 @@
 import type { RecoverableSession } from './runtimeBench'
+import type { BenchScenarioSummary, WorkerResult } from './runtimeBench/types'
 import fs from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
+import { assertDevtoolsLoggedIn } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import { collectFiles, verifyRuntimeBenchConsumer } from './runtimeBench/consumer'
+import { median, observedNumber } from './runtimeBench/metrics'
+import { measureUpdate as measureUpdateSample } from './runtimeBench/update'
 import { createRuntimeBenchSession } from './runtimeBenchSession'
-
-process.env.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK = '1'
-process.env.WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP = '1'
 
 const runtimeProvider = resolveRuntimeProviderName()
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const SAMPLE_COUNT = 3
-
-interface BenchScenarioSummary {
-  wallMsMedian: number
-  readyMsMedian: number
-  firstCommitMsMedian: number
-  samples: Array<{
-    wallMs: number
-    readyMs: number
-    firstCommitMs: number
-  }>
-}
-
-interface BenchUpdateSummary {
-  wallMsMedian: number
-  metricMsMedian: number
-  computeMsMedian: number
-  commitMsMedian: number
-  dispatchMsMedian: number
-  flushMsMedian: number
-  setDataCallsMedian: number
-  setDataDiagnosticsMedian: {
-    flushes: number
-    patchFlushes: number
-    diffFlushes: number
-    fallbackFlushes: number
-    avgPayloadKeys: number
-    maxPayloadKeys: number
-    avgPendingPatchKeys: number
-    maxPendingPatchKeys: number
-    avgBytes: number
-    maxBytes: number
-  }
-  fallbackReasons: Record<string, number>
-  samples: Array<{
-    wallMs: number
-    metricMs: number
-    computeMs: number
-    commitMs: number
-    dispatchMs: number
-    flushMs: number
-    setDataCalls: number
-    setDataDiagnostics: {
-      flushes: number
-      patchFlushes: number
-      diffFlushes: number
-      fallbackFlushes: number
-      avgPayloadKeys: number
-      maxPayloadKeys: number
-      avgPendingPatchKeys: number
-      maxPendingPatchKeys: number
-      avgBytes: number
-      maxBytes: number
-      fallbackReasons?: Record<string, number>
-    }
-  }>
-}
-
-function median(values: number[]) {
-  const sorted = [...values].sort((left, right) => left - right)
-  const middle = Math.floor(sorted.length / 2)
-  if (sorted.length % 2 === 0) {
-    return Math.round((sorted[middle - 1] + sorted[middle]) / 2)
-  }
-  return sorted[middle] ?? 0
-}
 
 function logStep(projectRoot: string, step: string) {
   process.stdout.write(`[runtime-bench:${path.basename(projectRoot)}] ${step}\n`)
@@ -87,7 +24,8 @@ async function runBuild(projectRoot: string) {
   const distRoot = path.join(projectRoot, 'dist')
   await fs.rm(distRoot, { recursive: true, force: true })
   await runWeappViteBuildWithLogCapture({
-    cliPath: CLI_PATH,
+    cliPath: process.env.WEVU_BENCH_CONSUMER === '1' ? await verifyRuntimeBenchConsumer(projectRoot) : CLI_PATH,
+    cwd: projectRoot,
     projectRoot,
     platform: 'weapp',
     skipNpm: true,
@@ -106,7 +44,7 @@ async function createBenchSession(projectRoot: string): Promise<MiniProgramSessi
 }
 
 async function measureFirstScreen(session: MiniProgramSession, projectRoot: string): Promise<BenchScenarioSummary> {
-  const samples: BenchScenarioSummary['samples'] = []
+  const samples: NonNullable<BenchScenarioSummary['samples']> = []
 
   for (let index = 0; index < SAMPLE_COUNT; index += 1) {
     const label = `first screen sample ${index + 1}/${SAMPLE_COUNT}`
@@ -119,8 +57,8 @@ async function measureFirstScreen(session: MiniProgramSession, projectRoot: stri
       const state = await page.callMethod('readBenchState')
       return {
         wallMs: Date.now() - startedAt,
-        readyMs: Number(state?.metrics?.loadToReadyMs ?? 0),
-        firstCommitMs: Number(state?.metrics?.firstCommitMs ?? 0),
+        readyMs: observedNumber(state?.metrics?.loadToReadyMs),
+        firstCommitMs: null,
       }
     }))
   }
@@ -133,26 +71,8 @@ async function measureFirstScreen(session: MiniProgramSession, projectRoot: stri
   }
 }
 
-interface WorkerResult {
-  project: string
-  firstScreen: BenchScenarioSummary
-  detailNavigation: BenchScenarioSummary
-  updateSingleCommit: {
-    diff: BenchUpdateSummary
-    patch?: BenchUpdateSummary
-  }
-  updateMicroCommit: {
-    diff: BenchUpdateSummary
-    patch?: BenchUpdateSummary
-  }
-  staticBinding?: {
-    updateSingleCommit: BenchUpdateSummary
-    updateMicroCommit: BenchUpdateSummary
-  }
-}
-
 async function measureDetailNavigation(session: MiniProgramSession, projectRoot: string): Promise<BenchScenarioSummary> {
-  const samples: BenchScenarioSummary['samples'] = []
+  const samples: NonNullable<BenchScenarioSummary['samples']> = []
 
   for (let index = 0; index < SAMPLE_COUNT; index += 1) {
     const label = `detail navigation sample ${index + 1}/${SAMPLE_COUNT}`
@@ -168,8 +88,8 @@ async function measureDetailNavigation(session: MiniProgramSession, projectRoot:
       const state = await page.callMethod('readBenchState')
       return {
         wallMs: Date.now() - startedAt,
-        readyMs: Number(state?.metrics?.loadToReadyMs ?? 0),
-        firstCommitMs: Number(state?.metrics?.firstCommitMs ?? 0),
+        readyMs: observedNumber(state?.metrics?.loadToReadyMs),
+        firstCommitMs: null,
       }
     }))
   }
@@ -182,74 +102,17 @@ async function measureDetailNavigation(session: MiniProgramSession, projectRoot:
   }
 }
 
-async function measureUpdate(session: MiniProgramSession, projectRoot: string, route: string, method: 'runSingleCommitBench' | 'runMicroCommitBench', metricKey: 'singleCommitMs' | 'microCommitMs', callKey: 'singleCommitSetDataCalls' | 'microCommitSetDataCalls', rounds: number): Promise<BenchUpdateSummary> {
-  const samples: BenchUpdateSummary['samples'] = []
-
-  for (let index = 0; index < SAMPLE_COUNT; index += 1) {
-    const label = `${method} route=${route} sample ${index + 1}/${SAMPLE_COUNT}`
-    logStep(projectRoot, label)
-    samples.push(await session.run(label, async (miniProgram) => {
-      const page = await miniProgram.reLaunch(route)
-      await page.waitFor('#bench-ready-marker')
-      await page.waitFor(100)
-      const startedAt = Date.now()
-      const state = await page.callMethod(method, rounds)
-      const diagnostics = state?.setDataDiagnostics?.[metricKey === 'singleCommitMs' ? 'singleCommit' : 'microCommit'] ?? {}
-      return {
-        wallMs: Date.now() - startedAt,
-        metricMs: Number(state?.metrics?.[metricKey] ?? 0),
-        computeMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitComputeMs' : 'microCommitComputeMs'] ?? 0),
-        commitMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitCommitMs' : 'microCommitCommitMs'] ?? 0),
-        dispatchMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitDispatchMs' : 'microCommitDispatchMs'] ?? 0),
-        flushMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitFlushMs' : 'microCommitFlushMs'] ?? 0),
-        setDataCalls: Number(state?.metrics?.[callKey] ?? 0),
-        setDataDiagnostics: {
-          flushes: Number(diagnostics.flushes ?? 0),
-          patchFlushes: Number(diagnostics.patchFlushes ?? 0),
-          diffFlushes: Number(diagnostics.diffFlushes ?? 0),
-          fallbackFlushes: Number(diagnostics.fallbackFlushes ?? 0),
-          avgPayloadKeys: Number(diagnostics.avgPayloadKeys ?? 0),
-          maxPayloadKeys: Number(diagnostics.maxPayloadKeys ?? 0),
-          avgPendingPatchKeys: Number(diagnostics.avgPendingPatchKeys ?? 0),
-          maxPendingPatchKeys: Number(diagnostics.maxPendingPatchKeys ?? 0),
-          avgBytes: Number(diagnostics.avgBytes ?? 0),
-          maxBytes: Number(diagnostics.maxBytes ?? 0),
-          fallbackReasons: diagnostics.fallbackReasons ?? {},
-        },
-      }
-    }))
-  }
-
-  const fallbackReasons = samples.reduce<Record<string, number>>((result, sample) => {
-    for (const [reason, count] of Object.entries(sample.setDataDiagnostics.fallbackReasons ?? {})) {
-      result[reason] = Math.max(result[reason] ?? 0, Number(count ?? 0))
-    }
-    return result
-  }, {})
-
-  return {
-    wallMsMedian: median(samples.map(sample => sample.wallMs)),
-    metricMsMedian: median(samples.map(sample => sample.metricMs)),
-    computeMsMedian: median(samples.map(sample => sample.computeMs)),
-    commitMsMedian: median(samples.map(sample => sample.commitMs)),
-    dispatchMsMedian: median(samples.map(sample => sample.dispatchMs)),
-    flushMsMedian: median(samples.map(sample => sample.flushMs)),
-    setDataCallsMedian: median(samples.map(sample => sample.setDataCalls)),
-    setDataDiagnosticsMedian: {
-      flushes: median(samples.map(sample => sample.setDataDiagnostics.flushes)),
-      patchFlushes: median(samples.map(sample => sample.setDataDiagnostics.patchFlushes)),
-      diffFlushes: median(samples.map(sample => sample.setDataDiagnostics.diffFlushes)),
-      fallbackFlushes: median(samples.map(sample => sample.setDataDiagnostics.fallbackFlushes)),
-      avgPayloadKeys: median(samples.map(sample => sample.setDataDiagnostics.avgPayloadKeys)),
-      maxPayloadKeys: median(samples.map(sample => sample.setDataDiagnostics.maxPayloadKeys)),
-      avgPendingPatchKeys: median(samples.map(sample => sample.setDataDiagnostics.avgPendingPatchKeys)),
-      maxPendingPatchKeys: median(samples.map(sample => sample.setDataDiagnostics.maxPendingPatchKeys)),
-      avgBytes: median(samples.map(sample => sample.setDataDiagnostics.avgBytes)),
-      maxBytes: median(samples.map(sample => sample.setDataDiagnostics.maxBytes)),
-    },
-    fallbackReasons,
-    samples,
-  }
+async function measureUpdate(session: MiniProgramSession, projectRoot: string, route: string, method: 'runSingleCommitBench' | 'runMicroCommitBench', _metricKey: string, _callKey: string, rounds: number) {
+  return measureUpdateSample({
+    session,
+    route,
+    method,
+    rounds,
+    sampleCount: SAMPLE_COUNT,
+    provider: runtimeProvider,
+    requirePhases: (process.env.WEVU_BENCH_PROJECT ?? path.basename(projectRoot)) === 'runtime-bench-vue',
+    log: message => logStep(projectRoot, message),
+  })
 }
 
 async function main() {
@@ -260,13 +123,25 @@ async function main() {
 
   logStep(projectRoot, `build start provider=${runtimeProvider}`)
   await runBuild(projectRoot)
+  if (runtimeProvider === 'devtools') {
+    await assertDevtoolsLoggedIn(projectRoot)
+  }
   logStep(projectRoot, 'launch automator')
+  const launchStartedAt = Date.now()
   const session = await createBenchSession(projectRoot)
+  const launchMs = Date.now() - launchStartedAt
 
   try {
+    const project = process.env.WEVU_BENCH_PROJECT ?? path.basename(projectRoot)
+    const systemInfo = await session.run('runtime metadata', async miniProgram => miniProgram.systemInfo())
+    const files = await collectFiles(path.join(projectRoot, 'dist'))
     logStep(projectRoot, 'measure first screen')
     const result: WorkerResult = {
-      project: path.basename(projectRoot),
+      schemaVersion: 2,
+      project,
+      preset: process.env.WEVU_BENCH_PRESET ?? 'normal',
+      runtime: { provider: runtimeProvider, systemInfo, launchMs },
+      artifact: { files, totalBytes: files.reduce((sum, file) => sum + file.bytes, 0) },
       firstScreen: await measureFirstScreen(session, projectRoot),
       detailNavigation: (logStep(projectRoot, 'measure detail navigation'), await measureDetailNavigation(session, projectRoot)),
       updateSingleCommit: {
@@ -277,12 +152,26 @@ async function main() {
       },
     }
 
-    if (path.basename(projectRoot) === 'runtime-bench-vue') {
+    if (project === 'runtime-bench-vue') {
+      result.workloads = {}
+      for (const workload of ['small-field', 'batch', 'append', 'reorder']) {
+        result.workloads[workload] = await measureUpdateSample({
+          session,
+          route: '/pages/update/index',
+          method: 'runSingleCommitBench',
+          rounds: 1,
+          sampleCount: SAMPLE_COUNT,
+          requirePhases: true,
+          provider: runtimeProvider,
+          workload,
+          log: message => logStep(projectRoot, message),
+        })
+      }
       result.updateSingleCommit.patch = (logStep(projectRoot, 'measure single commit update patch'), await measureUpdate(session, projectRoot, '/pages/update-patch/index', 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180))
       result.updateMicroCommit.patch = (logStep(projectRoot, 'measure micro commit update patch'), await measureUpdate(session, projectRoot, '/pages/update-patch/index', 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40))
     }
 
-    if (path.basename(projectRoot) === 'runtime-bench-react') {
+    if (project === 'runtime-bench-react') {
       result.staticBinding = {
         updateSingleCommit: (logStep(projectRoot, 'measure single commit static binding'), await measureUpdate(session, projectRoot, '/pages/static-update/index', 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180)),
         updateMicroCommit: (logStep(projectRoot, 'measure micro commit static binding'), await measureUpdate(session, projectRoot, '/pages/static-update/index', 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40)),

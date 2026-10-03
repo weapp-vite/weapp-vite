@@ -7,7 +7,8 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies
-import { execa, getCancelSignal } from 'execa'
+import { getCancelSignal } from 'execa'
+import { terminateOwnedCliProcess } from './automatorCliProcess'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
 import { resolveWechatCliPath } from './devtoolsCli'
 
@@ -24,7 +25,6 @@ interface AutomatorCliBridgePayload {
 interface AutomatorCliBridgeResult {
   servicePort?: number
   wsEndpoint: string
-  cliPid?: number
 }
 
 interface WaitForSocketReadyResult {
@@ -141,10 +141,6 @@ export function extractWechatDevtoolsServicePort(output: string) {
   return Number.isInteger(port) && port > 0 && port <= 65535 ? port : undefined
 }
 
-function sleep(ms: number) {
-  return new Promise<void>(resolve => setTimeout(resolve, ms))
-}
-
 function readCliArgument(args: string[] | undefined, names: string[]) {
   if (!args?.length) {
     return undefined
@@ -230,66 +226,6 @@ export function resolveBootstrapCliArgs(args: string[]) {
   }
   bootstrapArgs.push('islogin')
   return bootstrapArgs
-}
-
-function isMissingProcessError(error: unknown) {
-  return error instanceof Error && 'code' in error && error.code === 'ESRCH'
-}
-
-export function resolveLiveCliPid(child: Pick<ChildProcessWithoutNullStreams, 'pid' | 'exitCode' | 'signalCode'>) {
-  return child.exitCode === null && child.signalCode === null ? child.pid : undefined
-}
-
-export async function terminateCliProcessTree(cliPid?: number) {
-  if (!cliPid || cliPid <= 0) {
-    return
-  }
-
-  if (process.platform === 'win32') {
-    // Windows 没有 Unix 进程组，终止 cmd.exe 时必须连同它启动的 CLI 子树一起清理。
-    const result = await execa('taskkill', ['/PID', String(cliPid), '/T', '/F'], {
-      reject: false,
-      timeout: 5_000,
-      windowsHide: true,
-    })
-    if (result.exitCode !== 0 && result.exitCode !== 128) {
-      throw new Error(`Failed to terminate automator CLI process tree: exit=${result.exitCode}`)
-    }
-    return
-  }
-  const signalTarget = -cliPid
-  try {
-    process.kill(signalTarget, 'SIGTERM')
-  }
-  catch (error) {
-    if (isMissingProcessError(error)) {
-      return
-    }
-    throw error
-  }
-
-  const startedAt = Date.now()
-  while (Date.now() - startedAt <= 1_500) {
-    try {
-      process.kill(cliPid, 0)
-      await sleep(120)
-    }
-    catch (error) {
-      if (isMissingProcessError(error)) {
-        return
-      }
-      throw error
-    }
-  }
-
-  try {
-    process.kill(signalTarget, 'SIGKILL')
-  }
-  catch (error) {
-    if (!isMissingProcessError(error)) {
-      throw error
-    }
-  }
 }
 
 function mergeProjectConfig(base: Record<string, any>, patch: Record<string, any>) {
@@ -616,7 +552,8 @@ async function main() {
   const child = spawn(spawnOptions.command, spawnOptions.args, spawnOptions.options)
   child.unref()
 
-  let socketReadyResult: WaitForSocketReadyResult
+  let socketReadyResult!: WaitForSocketReadyResult
+  let launchFailure: unknown
   try {
     socketReadyResult = await waitForSocketReady({
       child,
@@ -635,19 +572,29 @@ async function main() {
     cancellation.signal.throwIfAborted()
   }
   catch (error) {
-    await terminateCliProcessTree(resolveLiveCliPid(child)).catch(() => {})
-    throw error
+    launchFailure = error
+  }
+  // CLI 句柄始终留在创建它的进程中；清理失败也保留启动的原始原因。
+  try {
+    await terminateOwnedCliProcess(child)
+  }
+  catch (cleanupError) {
+    launchFailure = launchFailure === undefined
+      ? cleanupError
+      : new AggregateError([launchFailure, cleanupError], 'CLI bootstrap and resource cleanup failed', { cause: launchFailure })
   }
   finally {
     cancelSignal?.removeEventListener('abort', onCancel)
     process.removeListener('SIGTERM', onCancel)
     process.removeListener('SIGINT', onCancel)
   }
+  if (launchFailure !== undefined) {
+    throw launchFailure
+  }
 
   const result: AutomatorCliBridgeResult = {
     ...(socketReadyResult.servicePort ? { servicePort: socketReadyResult.servicePort } : {}),
     wsEndpoint: `ws://127.0.0.1:${socketReadyResult.port}`,
-    cliPid: resolveLiveCliPid(child),
   }
   process.stdout.write(JSON.stringify(result))
 }

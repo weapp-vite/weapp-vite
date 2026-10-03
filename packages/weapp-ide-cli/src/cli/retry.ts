@@ -4,6 +4,7 @@ import { colors } from '../logger'
 import { waitForExclusiveKeypress } from './inputCoordinator'
 
 export interface RetryKeypressOptions {
+  signal?: AbortSignal
   timeoutMs?: number
 }
 
@@ -20,6 +21,7 @@ export interface RetryLogger {
 }
 
 export interface WechatIdeLoginRetryOptions {
+  signal?: AbortSignal
   allowRetry?: boolean
   cancelLevel?: 'info' | 'warn'
   error: unknown
@@ -135,7 +137,7 @@ export function formatWechatIdeLoginRequiredError(error: unknown) {
 export function createWechatIdeLoginRequiredExitError(error: unknown, reason?: string) {
   const summary = formatWechatIdeLoginRequiredError(error)
   const message = reason ? `${reason}\n${summary}` : summary
-  const loginError = new Error(message) as Error & {
+  const loginError = new Error(message, { cause: error }) as Error & {
     code: number
     exitCode: number
   }
@@ -177,6 +179,7 @@ export async function waitForRetryKeypress(options: RetryKeypressOptions = {}) {
   }
 
   return await waitForExclusiveKeypress<RetryPromptResult>({
+    signal: options.signal,
     ignoreInitialMs: RETRY_PROMPT_INITIAL_IGNORE_MS,
     onKeypress: (_str, key) => {
       if (!key) {
@@ -223,7 +226,7 @@ export function formatRetryHotkeyPrompt(timeoutMs = 30_000) {
 export async function promptRetryKeypress(options: RetryPromptOptions) {
   const { logger, timeoutMs = 30_000 } = options
   logger.info(formatRetryHotkeyPrompt(timeoutMs))
-  return await waitForRetryKeypress({ timeoutMs })
+  return await waitForRetryKeypress({ timeoutMs, signal: options.signal })
 }
 
 /**
@@ -260,6 +263,7 @@ export async function promptWechatIdeLoginRetry(options: WechatIdeLoginRetryOpti
   const action = await promptRetryKeypress({
     logger,
     timeoutMs: retryTimeoutMs,
+    signal: options.signal,
   })
 
   if (action === 'timeout') {

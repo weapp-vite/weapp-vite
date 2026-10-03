@@ -1,4 +1,6 @@
-export { createAnalyzeBudgetCheck } from './budgets'
+export { createAnalyzeBudgetCheck } from '../../analyze/subpackages/budget'
+export type { AnalyzeBudgetCheckInput, AnalyzeBudgetCheckItem } from '../../analyze/subpackages/budget'
+export type { AnalyzeSubpackagesResult } from '../../analyze/subpackages/types'
 export { createAnalyzeComparison } from './comparison'
 export { createDuplicateModuleInsights } from './duplicates'
-export type { AnalyzeBudgetCheckItem, AnalyzeComparison, AnalyzeSizeChange, DuplicateModuleInsight } from './types'
+export type { AnalyzeComparison, AnalyzeSizeChange, DuplicateModuleInsight } from './types'

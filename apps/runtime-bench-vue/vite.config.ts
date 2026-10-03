@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig(() => ({
@@ -7,5 +8,8 @@ export default defineConfig(() => ({
       profileJson: true,
     },
     srcRoot: 'src',
+    ...(process.env.WEVU_BENCH_PRESET === 'performance'
+      ? { wevu: { preset: 'performance' as const } }
+      : {}),
   },
 }))

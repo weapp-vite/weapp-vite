@@ -142,7 +142,7 @@
     "volar.cjs"
   ],
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || ^24.11.0 || >=26.0.0"
   },
   "scripts": {
     "stub": "unbuild --stub",
@@ -175,9 +175,10 @@
     }
   },
   "dependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^8.0.1",
     "@babel/preset-env": "^8.0.6",
     "@babel/preset-typescript": "^8.0.1",
-    "@devframes/agentic": "1.1.0",
+    "@devframes/agentic": "1.2.0",
     "@jridgewell/remapping": "^2.3.5",
     "@modelcontextprotocol/node": "^2.1.0",
     "@typescript-eslint/parser": "^8.71.0",
@@ -206,9 +207,11 @@
     "chokidar": "^5.0.0",
     "comment-json": "catalog:",
     "devframe": "catalog:",
-    "dotenv-expand": "^12.0.3",
+    "dotenv": "^18.0.5",
+    "dotenv-expand": "^1000.0.0",
     "eslint": "catalog:",
     "fdir": "catalog:",
+    "get-tsconfig": "^4.14.3",
     "htmlparser2": "catalog:",
     "local-pkg": "^1.2.1",
     "lru-cache": "catalog:",
@@ -230,7 +233,7 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-performance": "workspace:*",
-    "vite-tsconfig-paths": "^6.1.1",
+    "vite-tsconfig-paths": "^7.0.0-alpha.3",
     "vue": "catalog:",
     "vue-eslint-parser": "^10.4.1",
     "vue-tsc": "catalog:",
@@ -240,7 +243,7 @@
     "zod": "catalog:"
   },
   "optionalDependencies": {
-    "@swc/core": "^1.16.2"
+    "@swc/core": "^1.16.13"
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "^2.2.0",

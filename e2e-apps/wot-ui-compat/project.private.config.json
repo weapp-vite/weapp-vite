@@ -375,6 +375,12 @@
           "scene": null
         },
         {
+          "name": "wd-qr-code",
+          "pathName": "pages/components/wd-qr-code/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "wd-radio",
           "pathName": "pages/components/wd-radio/index",
           "query": "",

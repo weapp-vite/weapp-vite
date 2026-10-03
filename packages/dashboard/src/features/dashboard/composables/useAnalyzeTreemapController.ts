@@ -168,15 +168,17 @@ export function useAnalyzeTreemapController(options: {
   }
 
   function handleSelectBudgetWarning(warning: PackageBudgetWarning) {
+    const globalBudget = warning.scope === 'total' || warning.scope === 'runtime'
+    void setTreemapFilterMode(globalBudget ? 'all' : 'selected-package', 'files')
     selectedBudgetWarning.value = warning
     selectedLargestFile.value = filterLargestFilesByTreemapState({
       files: options.largestFiles.value,
-      filterState: treemapFilterState.value,
+      filterState: { ...treemapFilterState.value, mode: 'all', selectedPackageId: null },
       meta: null,
       warning,
     })[0] ?? null
 
-    if (!selectedLargestFile.value || warning.scope === 'total') {
+    if (!selectedLargestFile.value || globalBudget) {
       selectedTreemapMeta.value = null
       return
     }

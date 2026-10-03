@@ -3,7 +3,7 @@
 import type { dev, DevEngine, DevOptions } from 'rolldown/experimental'
 import type { ResolvedConfig, ViteDevServer } from 'vite'
 import type { GlassEaselNativeScriptUpdate } from '../../analyze/glassEasel/types'
-import type { StatefulHmrOutputSource } from './outputPublication'
+import type { StatefulHmrOutputPublicationHooks, StatefulHmrOutputSource } from './outputPublication'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
@@ -121,6 +121,7 @@ export class StatefulHmrViteAdapter {
   private engine?: StatefulHmrDevEngine
   private initialOutputError?: Error
   private initialRuntimeValidated = false
+  private expectingFullOutput = false
   private readonly publication = new StatefulHmrOutputPublication()
   private readonly chunkModulesByFile = new Map<string, TrackedChunkModules>()
   private readonly outputFilesByModuleId = new Map<string, Set<string>>()
@@ -217,7 +218,19 @@ export class StatefulHmrViteAdapter {
     if (!engine) {
       throw new Error('Vite DevEngine 未初始化，无法执行 stateful HMR 完整刷新。')
     }
-    await this.publication.rebuild(engine, this.initialBuildTimeout, prepare)
+    try {
+      await this.publication.rebuild(engine, this.initialBuildTimeout, prepare, {
+        onFullBuildRequested: () => {
+          this.expectingFullOutput = true
+        },
+        onFullOutputReceived: () => {
+          this.expectingFullOutput = false
+        },
+      } satisfies StatefulHmrOutputPublicationHooks)
+    }
+    finally {
+      this.expectingFullOutput = false
+    }
   }
 
   async registerBundleModules(output: StatefulHmrOutputFile[]): Promise<number> {
@@ -249,7 +262,20 @@ export class StatefulHmrViteAdapter {
   }
 
   async waitForNativeUpdates(): Promise<void> {
-    await this.bundledDev?._devEngine?.ensureCurrentBuildFinish()
+    const engine = this.bundledDev?._devEngine
+    await engine?.ensureCurrentBuildFinish()
+    if (engine && (await engine.getBundleState()).lastBuildErrored) {
+      throw new Error('微信状态保持 HMR 当前原生构建失败。')
+    }
+  }
+
+  /** 外部验收还必须等待原生回调异步发布；内部编译回调只等待引擎，避免自等待。 */
+  async whenSettled(): Promise<void> {
+    await this.waitForNativeUpdates()
+    await this.publication.whenSettled()
+    if (this.closed) {
+      throw new Error('Stateful HMR adapter closed before settlement')
+    }
   }
 
   async collectGlassEaselScriptUpdates(
@@ -458,7 +484,8 @@ export class StatefulHmrViteAdapter {
       Object.assign(output, desiredOutput)
       const userBanner = output.banner
       const userFooter = output.footer
-      output.format = 'cjs'
+      // DevEngine 以 ESM 生成依赖图；宿主格式由 renderChunk 转换，仍由原生 bundler 写出。
+      output.format = 'esm'
       output.minify = false
       output.sourcemap = Boolean(this.config.build.sourcemap)
       output.banner = async (chunk: { fileName: string, isEntry?: boolean }) => {
@@ -493,8 +520,11 @@ export class StatefulHmrViteAdapter {
           this.initialRuntimeValidated = true
         }
         original(output)
+        const publicationSource = source === 'partial' && this.expectingFullOutput ? 'full' : source
+        // partial 输出只在显式完整重建请求的首个回调中升级为 publication full；
+        // chunk 追踪仍保留原生 source，避免不完整批次清空既有完整映射。
         this.rememberChunkModules(output, source)
-        void this.publication.publish(source, () => this.callbacks.onOutput(output, source)).catch((error) => {
+        void this.publication.publish(publicationSource, () => this.callbacks.onOutput(output, publicationSource)).catch((error) => {
           this.initialOutputError = error instanceof Error ? error : new Error(String(error))
           this.callbacks.onError(this.initialOutputError.message)
         })

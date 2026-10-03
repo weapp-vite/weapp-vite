@@ -1,0 +1,43 @@
+diff --git a/dist/commands-D4xZQ5t-.mjs b/dist/commands-D4xZQ5t-.mjs
+--- a/dist/commands-D4xZQ5t-.mjs
++++ b/dist/commands-D4xZQ5t-.mjs
+@@ -2728,7 +2728,10 @@
+ 	const root = await realpath(cwd);
+ 	const ledger = await readLedger(cwd);
+ 	const config = YAML.parse(await readFile(path.join(cwd, "pnpm-workspace.yaml"), "utf8"));
+-	const workspace = await getWorkspacePackages(cwd, { ignorePrivatePackage: false });
++	const workspace = await getWorkspacePackages(cwd, {
++		ignoreRootPackage: false,
++		ignorePrivatePackage: false
++	});
+ 	const pending = [];
+ 	for (const file of files.sort((a, b) => a.name.localeCompare(b.name))) {
+ 		if (!file.isFile() || !file.name.endsWith(".md") || file.name.toLowerCase() === "readme.md") continue;
+@@ -2928,7 +2931,10 @@
+ 	return uniqueCommits(commits);
+ }
+ async function readWorkspaceVersions(cwd) {
+-	const packages = await getWorkspacePackages(cwd);
++	const packages = await getWorkspacePackages(cwd, {
++		ignoreRootPackage: false,
++		ignorePrivatePackage: false
++	});
+ 	const versions = /* @__PURE__ */ new Map();
+ 	for (const pkg of packages) try {
+ 		const manifest = JSON.parse(await readFile(pkg.pkgJsonPath, "utf8"));
+@@ -4625,10 +4631,12 @@
+ 		...releaseEnv["GITHUB_REPOSITORY"] ? { repository: releaseEnv["GITHUB_REPOSITORY"] } : {},
+ 		...releaseEnv["GITHUB_SERVER_URL"] ? { serverUrl: releaseEnv["GITHUB_SERVER_URL"] } : {}
+ 	};
+-	const names = new Set(releases.map((release) => release.name));
+-	const previousVersions = new Map(releases.filter((release) => release.currentVersion !== release.newVersion).map((release) => [release.name, release.currentVersion]));
++	const notePackages = new Set((await getWorkspacePackages(options.cwd)).map((pkg) => pkg.manifest.name));
++	const noteReleases = releases.filter((release) => notePackages.has(release.name));
++	const names = new Set(noteReleases.map((release) => release.name));
++	const previousVersions = new Map(noteReleases.filter((release) => release.currentVersion !== release.newVersion).map((release) => [release.name, release.currentVersion]));
+ 	let noteDocument = await buildReleaseNoteDocument(options.cwd, previousVersions, metadata, names);
+-	for (const release of releases) {
++	for (const release of noteReleases) {
+ 		const pkg = noteDocument.packages.find((pkg) => pkg.name === release.name && pkg.version === release.newVersion);
+ 		if (!pkg || !noteDocument.entries.some((entry) => entry.packageName === pkg.name)) throw new ReleaseCommandError(`Missing release notes for ${release.name}@${release.newVersion}; no PR pushed`);
+ 		if (release.currentVersion === release.newVersion) {

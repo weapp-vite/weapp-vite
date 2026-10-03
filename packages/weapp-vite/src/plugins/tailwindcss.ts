@@ -41,7 +41,7 @@ import {
 } from './tailwindcssMarker'
 import { parseWeappVueStyleRequest } from './vue/transform/styleRequest'
 
-const CORE_NODE_RANGE = '^22.18.0 || >=24.11.0'
+const CORE_NODE_RANGE = '^22.18.0 || ^24.11.0 || >=26.0.0'
 const MANAGED_PLUGIN_NAME = 'weapp-vite:tailwindcss'
 const TAILWIND_IMPORT_RE = /@import\s+(?:url\(\s*)?['"]tailwindcss['"]\s*\)?(?:\s|;|$)/
 const TAILWIND_SOURCE_DIRECTIVE_RE = /@(?:config|custom-variant|layer|plugin|reference|source|tailwind|theme|utility|variant)\b/

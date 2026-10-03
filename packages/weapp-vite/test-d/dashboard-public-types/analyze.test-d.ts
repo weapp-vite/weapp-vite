@@ -1,5 +1,4 @@
-import type { AnalyzeSubpackagesResult } from 'weapp-vite/dashboard'
-import type { AnalyzeBudgetCheckItem, AnalyzeComparison, AnalyzeSizeChange, DuplicateModuleInsight } from 'weapp-vite/dashboard/analyze'
+import type { AnalyzeBudgetCheckItem, AnalyzeComparison, AnalyzeSizeChange, AnalyzeSubpackagesResult, DuplicateModuleInsight } from 'weapp-vite/dashboard/analyze'
 import { expectError, expectType } from 'tsd'
 import { createAnalyzeBudgetCheck, createAnalyzeComparison, createDuplicateModuleInsights } from 'weapp-vite/dashboard/analyze'
 
@@ -23,6 +22,18 @@ const browserReport = {
 }
 
 expectType<AnalyzeBudgetCheckItem[]>(createAnalyzeBudgetCheck(browserReport))
+expectType<AnalyzeBudgetCheckItem[]>(createAnalyzeBudgetCheck({
+  packages: fullReport.packages,
+  metadata: { budgets: fullReport.metadata!.budgets },
+}))
+expectType<AnalyzeBudgetCheckItem[]>(createAnalyzeBudgetCheck({
+  packages: fullReport.packages,
+  metadata: {
+    budgets: fullReport.metadata!.budgets,
+    generatedAt: '',
+    history: { enabled: false, dir: '', limit: 0 },
+  },
+}))
 expectType<DuplicateModuleInsight[]>(createDuplicateModuleInsights(browserReport))
 expectType<AnalyzeComparison>(createAnalyzeComparison(browserReport, fullReport))
 expectType<AnalyzeComparison>(createAnalyzeComparison(fullReport, browserReport))

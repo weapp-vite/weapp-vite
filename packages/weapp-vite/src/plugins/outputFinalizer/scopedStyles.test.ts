@@ -64,7 +64,7 @@ describe('Class-based platform scoped styles', () => {
       expect((bundle[filename] as any).source).toBe(platform !== 'weapp'
         ? `.panel.data-v-owner{color:${color}}`
         : `.panel[data-v-owner]{color:${color}}`)
-      runtimeState.build.hmr.profile.event = 'update'
+      runtimeState.build.hmr.isRebuild = true
     }
   })
 })

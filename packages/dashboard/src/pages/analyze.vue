@@ -74,7 +74,6 @@ const {
   setComparisonMode,
   sourceLayoutItems,
   statusPills,
-  summary,
   toggleWorkQueueItem,
   topCards,
   treemapColorMode,
@@ -122,7 +121,6 @@ const {
       :active-work-queue-item-id="activeWorkQueueItemId"
       :baseline-snapshot-id="baselineSnapshotId"
       :bind-chart-ref="bindChartRef"
-      :budget-config="resultRef.metadata?.budgets"
       :budget-warnings="budgetWarnings"
       :can-use-selected-package-filter="canUseSelectedPackageFilter"
       :comparison-mode="comparisonMode"
@@ -151,7 +149,6 @@ const {
       :source-layout-items="sourceLayoutItems"
       :theme="resolvedTheme"
       :top-cards="topCards"
-      :total-bytes="summary.totalBytes"
       :treemap-color-mode="treemapColorMode"
       :treemap-color-description="treemapColorDescription"
       :treemap-comparison-label="treemapComparisonLabel"

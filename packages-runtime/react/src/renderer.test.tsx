@@ -1,5 +1,5 @@
 import type { HostProps, SerializedHostNode } from './types'
-import { createElement, useState } from 'react'
+import { createElement, startTransition, useState } from 'react'
 import { describe, expect, it } from 'vitest'
 import { Button, createNativeComponent, Slot, Text, View } from './components'
 import { createReactMiniProgramRoot } from './renderer'
@@ -119,6 +119,30 @@ describe('react runtime spike renderer', () => {
 
     root.unmount()
     expect(calls.at(-1)).toEqual({ 'root.cn': [] })
+  })
+
+  it('commits transition updates without requiring a host view transition', async () => {
+    function Counter() {
+      const [count, setCount] = useState(0)
+      return (
+        <View>
+          <Text>{`count:${count}`}</Text>
+          <Button id="transition" onTap={() => startTransition(() => setCount(value => value + 1))}>increment</Button>
+        </View>
+      )
+    }
+
+    const root = createReactMiniProgramRoot({ setData() {} })
+    try {
+      root.render(<Counter />)
+      const button = findNode(root.getSnapshot().cn, node => node.p?.id === 'transition')
+      root.dispatchEvent({ currentTarget: { dataset: { sid: button!.sid } }, type: 'tap' })
+
+      await expect.poll(() => findNode(root.getSnapshot().cn, node => node.v === 'count:1')).toBeDefined()
+    }
+    finally {
+      root.unmount()
+    }
   })
 
   it('supports keyed insertion before an existing host child', () => {

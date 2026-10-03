@@ -304,7 +304,8 @@ export default await defineEslintConfig({
         'no-self-assign': 'off',
       },
     }, {
-      files: ['skills/*/agents/openai.yaml'],
+      // 打包副本沿用源码元数据规则，保证先构建再 lint 与直接 lint 的结果一致。
+      files: ['skills/*/agents/openai.yaml', 'packages/agent-cli/skills/*/agents/openai.yaml'],
       rules: {
         'yaml/plain-scalar': 'off',
       },

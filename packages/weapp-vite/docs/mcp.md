@@ -31,7 +31,7 @@
 在项目中安装面板及可选的 stdio 连接器：
 
 ```bash
-pnpm add -D @weapp-vite/dashboard devframe@1.1.0 @devframes/agentic@1.1.0
+pnpm add -D @weapp-vite/dashboard devframe@1.2.0 @devframes/agentic@1.2.0
 ```
 
 启动 `wv dev --ui` / `wv build --ui` 后，独立 Dashboard 自动开放本机只读 MCP，无需生成令牌或配置认证环境变量。浏览器仍使用终端提供的 OTP magic link；MCP 不需要先完成浏览器授权。
@@ -74,6 +74,7 @@ pnpm exec devframe connect
 - 摘要和目录查询的 `target` 默认为 `current`，也可读 `previous` 的报告元数据；结果携带 `revision` 与 `reportHash`。列表默认 `offset: 0`、`limit: 20`，最多 100 项，返回匹配 `total` 和 `nextOffset`，末页为 `null`。报告更新后旧 revision 与过期异步读取会被拒绝，须重新取状态，不能混用跨版本页面。
 - 包与产物的模块归属来自报告的模块使用记录，包含没有 chunk 贡献列表的资源源码。模块查询支持 `packageId`、`artifact`、`sourceType`、`query`，包与产物条件必须命中同一处归属。用返回的模块 `id` 查询产物可定位构建位置，不代表已经取得源码 importer 因果链。
 - 模块 `bytes` 沿用共享分析的最大已知单份体积口径；缺失贡献时可使用原始体积估算。`estimatedSavingBytes` 不是保证可删除的字节，`hasIndependentPackage` 提示可能必须保留隔离。未记录大小的产物返回 `size: null`，摘要与包行的 `unmeasuredFiles` 标明未计入字节总量的文件。
+- 预算复用构建侧的文件去重、分包 `packageBytes` 覆盖与 `runtimeBytes` 限额。摘要分别返回 `totalBudget`、`runtimeBudget`（未配置时为 `null`）和仅统计包的 `packageBudgets`；缺失体积或运行时归因时状态为 `unknown`，包查询支持 `budgetStatus: "unknown"`。`measurement` 区分 `file-bytes`、`upper-bound` 与 `unavailable`；运行时混合 chunk 的文件上界不是精确运行时代码量。摘要及包行的预算对象不附带全量 `files` 数组，须通过产物查询继续定位。
 - 比较的 `scope` 为 `package`、`file` 或 `module`，可筛选 `packageId`、`change`、`query`。包筛选在模块归并前生效，`totals` 始终表示整个构建的产物总量。模块差异基于已记录的模块体积贡献并按来源身份归并；资源文件变化可用 `file` 查询。模块与文件增量不能相加。没有上次报告时返回 `available: false`、`totals: null`，不假造零基线。
 - 比较中的缺失测量不视为零：对应 `currentBytes`／`previousBytes` 与 `deltaBytes` 返回 `null`，仍存在但不可判断增减的行标为 `change: "unmeasured"`（两边都缺失时也返回）。新增／删除保留成员变化，哪怕字节为零或未知。`totals.currentUnmeasuredFiles`／`previousUnmeasuredFiles` 标明完整性；任一文件未测量时，该侧总量和总增量为 `null`。列表先按已知增量绝对值排序，再列出未测量行。
 - 事件支持 `kind`、`level`、精确 `source`、文本 `query` 和含时区的 ISO `since`／`until`（包含边界），按 ISO `occurredAt` 记录时间筛选，不比较本地化显示时间。事件独立于构建 revision；最多保留 24 条，`total` 是当前窗口的匹配数，`retention` 返回容量、保留数、实际丢弃数和最早保留时间。它不是持久历史，也不是小程序 console/network。
@@ -366,7 +367,7 @@ MCP 服务端做了以下约束：
 
 1. `wv mcp init <client>` 写入失败：先确认目标配置文件可写。
 2. `wv mcp doctor <client>` 失败：优先看配置文件里是否已经生成 `weapp-vite-*` server 条目。
-3. `weapp-vite mcp` 启动失败：确认 Node 版本符合 `^20.19.0 || >=22.12.0`。
+3. `weapp-vite mcp` 启动失败：确认 Node 版本符合 `^22.18.0 || ^24.11.0 || >=26.0.0`。
 4. AI 看不到包内容：检查 `--workspace-root` 是否指向正确仓库根目录。
 5. 命令执行失败：确认命令在白名单中，并检查子目录权限与脚本名是否存在。
 

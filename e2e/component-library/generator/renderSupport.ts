@@ -1,4 +1,4 @@
-import type { ComponentMarkup } from './types'
+import type { ComponentLibraryPage, ComponentMarkup } from './types'
 import { renderInteractionValue } from './renderValue'
 
 export function renderScenarios(components: string[], getComponentMarkup: (component: string) => ComponentMarkup) {
@@ -120,8 +120,10 @@ export function renderPrivateConfig(
   components: string[],
   projectDescription: string,
   projectName: string,
+  initialPages: readonly ComponentLibraryPage[] = [],
 ) {
   const list = [
+    ...initialPages,
     { name: '组件索引', pathName: 'pages/index/index', query: '', scene: null },
     ...components.map(component => ({
       name: component,

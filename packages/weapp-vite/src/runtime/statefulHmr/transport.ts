@@ -297,7 +297,7 @@ export class StatefulHmrTransport {
       return
     }
     if (commands.some(command => command.type === 'ignore-client')) {
-      respond(response, 409, { type: 'rebuilding' })
+      respond(response, 409, { type: 'rebuilding', buildId: this.state.buildId })
       return
     }
     this.holdPoll(body.sessionId, response)

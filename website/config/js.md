@@ -1,7 +1,6 @@
 ---
 title: JS 配置
-description: Weapp-vite 默认使用 Vite 8 原生的 resolve.tsconfigPaths
-  读取 tsconfig.json/jsconfig.json 的 paths/baseUrl，并在需要高级选项时兼容 vite-tsconfig-paths。
+description: Weapp-vite 读取 tsconfig.json/jsconfig.json 的继承配置和路径别名，并支持 Vite 原生解析及高级项目发现选项。
 keywords:
   - 配置
   - config
@@ -14,7 +13,7 @@ keywords:
 
 # JS 配置 {#js-config}
 
-`weapp-vite` 默认使用 Vite 8 原生的 `resolve.tsconfigPaths` 读取 `tsconfig.json/jsconfig.json` 的 `paths/baseUrl`，把别名映射到 Vite / Rolldown 流程中。JSON / JSONC 的 `usingComponents` 不会默认继承 `paths`，需要别名时请显式配置 `weapp.jsonAlias`。只有在你传入高级选项对象时，才会回退到 `vite-tsconfig-paths` 插件。
+`weapp-vite` 默认读取 `tsconfig.json/jsconfig.json` 的 `paths/baseUrl` 并生成 Vite / Rolldown 别名。传入 `true` 可启用 Vite 8 原生的 `resolve.tsconfigPaths`；传入高级选项对象时启用 `vite-tsconfig-paths` 插件。JSON / JSONC 的 `usingComponents` 不会默认继承 `paths`，需要别名时请显式配置 `weapp.jsonAlias`。
 
 [[toc]]
 
@@ -23,12 +22,16 @@ keywords:
 - **默认值**：`undefined`（按需自动启用）
 
 启用规则：
-- 当 `tsconfig.json` 或 `jsconfig.json` **存在 `paths` 或 `baseUrl`** 时，会自动启用 Vite 原生 `resolve.tsconfigPaths`；
+- 默认自动检查根配置、继承配置和项目引用，将可表示为前缀的路径映射加入别名；
 - 传入 `true` 时，会强制启用原生 `resolve.tsconfigPaths`；
-- 传入对象时，会启用 `vite-tsconfig-paths` 插件以支持 `projects`、`exclude` 等高级选项；
-- 传入 `false` 可完全禁用（适合没有别名需求、追求更快启动的项目）。
+- 传入对象时，会启用 `vite-tsconfig-paths` 插件以支持 `projects`、`skip`、`importerFilter` 等高级选项；
+- 传入 `false` 禁用原生解析和高级插件；已提取的简单别名及显式 `resolve.alias` 仍保留。
 
 推荐优先使用默认行为或 `true`，这样不会触发 Vite 8 对 `vite-tsconfig-paths` 的提示信息。
+
+继承支持相对路径、包配置及 `extends` 数组，数组后项覆盖前项。子配置的 `compilerOptions.paths` 替换父配置的整个映射，不逐项合并；继承路径按其配置来源和有效 `baseUrl` 解析。更复杂的通配映射请使用 `true` 或高级选项对象。
+
+高级适配精确固定为 `vite-tsconfig-paths@7.0.0-alpha.3`（预发行版），移除了只声明支持 TypeScript 5 的 `tsconfck` 依赖。旧 `parseNative` 配置仍可通过框架类型检查，但已弃用：统一解析器处理继承与路径，该选项不再切换为 TypeScript 编译器解析。消费端不需要忽略 peer 校验或自行覆盖间接依赖。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -42,12 +45,12 @@ export default defineConfig({
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
-import type { PluginOptions } from 'vite-tsconfig-paths'
+import type { WeappViteConfig } from 'weapp-vite/config'
 
-const tsconfigOptions: PluginOptions = {
+const tsconfigOptions: Exclude<WeappViteConfig['tsconfigPaths'], boolean | undefined> = {
   projects: ['./tsconfig.base.json'],
-  extensions: ['.ts', '.js', '.vue'],
-  exclude: ['**/__tests__/**'],
+  loose: true,
+  projectDiscovery: 'lazy',
 }
 
 export default defineConfig({

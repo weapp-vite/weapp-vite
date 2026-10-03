@@ -1,8 +1,13 @@
 import type { CompilerContext } from '../context'
-import { mkdir, stat, writeFile } from 'node:fs/promises'
+import type { PackageBuildOutput } from '../runtime/npmPlugin/builder/output'
+import { mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { expect, it, vi } from 'vitest'
 import { prepareNpmAssets } from './npm'
+
+const factory = vi.hoisted(() => vi.fn())
+vi.mock('../runtime/npmPlugin/builder', () => ({ createPackageBuilder: factory }))
 
 it('waits for every dependency after a failure before deleting the owned staging directory', async () => {
   const failure = new Error('broken dependency')
@@ -12,23 +17,35 @@ it('waits for every dependency after a failure before deleting the owned staging
   })
   let staging = ''
   let secondFinished = false
+  let output!: PackageBuildOutput
   const builder = vi.fn(async ({ dep, outDir }: { dep: string, outDir: string }) => {
-    staging = outDir
+    staging = output.directory(outDir)
     if (dep === 'broken') {
       throw failure
     }
     await pending
-    await mkdir(outDir, { recursive: true })
-    await writeFile(path.join(outDir, 'output.js'), 'module.exports = {}')
+    await mkdir(staging, { recursive: true })
+    await writeFile(path.join(staging, 'output.js'), 'module.exports = {}')
     secondFinished = true
   })
+  factory.mockImplementation((_ctx, _plugin, capture) => {
+    output = capture
+    return { buildPackage: builder }
+  })
+  const root = await mkdtemp(path.join(os.tmpdir(), 'npm-cleanup-test-'))
+  await writeFile(path.join(root, 'package.json'), JSON.stringify({ dependencies: { broken: '*', delayed: '*' } }))
   const ctx = {
     configService: {
+      cwd: root,
+      platform: 'weapp',
+      outDir: path.join(root, 'dist'),
+      multiPlatform: { enabled: false },
+      projectConfig: {},
+      inlineConfig: {},
       weappViteConfig: { npm: { enable: true, strategy: 'legacy' } },
       packageJson: { dependencies: { broken: '*', delayed: '*' } },
     },
     scanService: { loadSubPackages() {}, subPackageMap: new Map() },
-    npmService: { buildPackage: builder },
   } as unknown as CompilerContext
   let settled = false
   const result = prepareNpmAssets(ctx).finally(() => {
@@ -45,4 +62,5 @@ it('waits for every dependency after a failure before deleting the owned staging
   await rejected
   expect(secondFinished).toBe(true)
   await expect(stat(path.dirname(staging))).rejects.toMatchObject({ code: 'ENOENT' })
+  await rm(root, { recursive: true, force: true })
 })

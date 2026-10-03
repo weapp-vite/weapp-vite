@@ -41,6 +41,8 @@ export interface ModuleGraphService {
     options?: { skipSelf?: boolean },
   ) => Promise<{ id: string } | null>
   syncDevGraph: (context: BuildGraphContext) => Promise<void>
+  getTransformDependencies: (sourceId: string) => readonly string[]
+  replaceTransformDependencies: (sourceId: string, dependencies: Iterable<string>) => void
   getEntryDependencies: (ownerId: string) => Array<{ kind: SidecarModuleKind, sourceId: string }>
 }
 
@@ -55,6 +57,7 @@ export function createModuleGraphService(): ModuleGraphService {
   let topologyRescan: TopologyRescanRequest | undefined
   const entryDependencies = new Map<string, Map<SidecarModuleKind, Set<string>>>()
   const pendingChanges = new Map<string, string>()
+  const transformDependencies = new Map<string, Set<string>>()
   const usesUnbundledDevGraph = () => Boolean(devServer && !devServer.environments?.client?.bundledDev)
 
   const releaseBuildContext = (scope: object, token: object) => {
@@ -79,11 +82,8 @@ export function createModuleGraphService(): ModuleGraphService {
     if (context && currentContext !== context) {
       return
     }
-    const token = buildContextTokens.get(scope)
-    if (token) {
-      releaseBuildContext(scope, token)
-      return
-    }
+    // 显式关闭整个 scope 时，所有 hook 包装对象都随其释放。
+    buildContextTokens.delete(scope)
     buildContexts.delete(scope)
     if (pluginContexts.delete(scope)) {
       pluginContextTokens.delete(scope)
@@ -262,8 +262,8 @@ export function createModuleGraphService(): ModuleGraphService {
       }
     },
     bindPluginContext(scope, context) {
-      const buildToken = buildContextTokens.get(scope)
-      const token = buildContexts.get(scope) === context && buildToken ? buildToken : {}
+      // 同一构建的各 hook 可提供不同包装对象，能力仍归当前 scope 的构建租约。
+      const token = buildContextTokens.get(scope) ?? {}
       pluginContexts.delete(scope)
       pluginContextTokens.set(scope, token)
       pluginContexts.set(scope, context)
@@ -278,6 +278,7 @@ export function createModuleGraphService(): ModuleGraphService {
       devServer = undefined
       devServerBinding = undefined
       entryDependencies.clear()
+      transformDependencies.clear()
       pendingChanges.clear()
       topologyRescan = undefined
     },
@@ -367,10 +368,15 @@ export function createModuleGraphService(): ModuleGraphService {
       topologyRescan.reasons.add(reason)
     },
     async resolve(source, importer, options) {
-      if (typeof pluginContext?.resolve !== 'function') {
-        throw new TypeError('ModuleGraphService 尚未绑定支持 resolve 的 PluginContext。')
+      if (typeof pluginContext?.resolve === 'function') {
+        return await pluginContext.resolve(source, importer, options)
       }
-      return await pluginContext.resolve(source, importer, options)
+      // snapshot 之间没有活动构建，源码预分析由仍存活的 dev 宿主解析。
+      const container = devServer?.environments?.client?.pluginContainer ?? devServer?.pluginContainer
+      if (container) {
+        return await container.resolveId(source, importer)
+      }
+      throw new TypeError('ModuleGraphService 尚未绑定支持 resolve 的 PluginContext 或 dev 宿主。')
     },
     async syncDevGraph(context) {
       // bundledDev 的模块图由 DevEngine 编译维护，不能在 buildEnd 再执行 unbundled transform。
@@ -381,6 +387,27 @@ export function createModuleGraphService(): ModuleGraphService {
       }
       const logicalEntryIds = Array.from(context.getModuleIds()).filter(id => parseLogicalEntryId(id))
       await Promise.all(logicalEntryIds.map(id => warmDevModule(id, server, binding)))
+    },
+    getTransformDependencies(sourceId) {
+      return [...transformDependencies.get(normalizeSourceId(sourceId)) ?? []]
+    },
+    replaceTransformDependencies(sourceId, dependencies) {
+      const id = normalizeSourceId(sourceId)
+      const next = new Set(Array.from(dependencies, normalizeSourceId))
+      const previous = transformDependencies.get(id)
+      if ((!previous && !next.size) || (previous?.size === next.size && [...next].every(file => previous.has(file)))) {
+        return
+      }
+      if (next.size) {
+        transformDependencies.set(id, next)
+      }
+      else {
+        transformDependencies.delete(id)
+      }
+      // 让 Vite 在下次图预热时重新收集声明的转换依赖，反向边仍由 Vite 持有。
+      for (const module of devServer ? collectDevStartNodes(devServer, id) : []) {
+        devServer?.moduleGraph.invalidateModule?.(module)
+      }
     },
     getEntryDependencies(rawOwnerId) {
       const ownerId = normalizeSourceId(rawOwnerId)

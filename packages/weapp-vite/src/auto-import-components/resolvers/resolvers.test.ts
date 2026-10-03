@@ -144,7 +144,7 @@ describe('WotUiResolver', () => {
   const resolver = WotUiResolver()
 
   it('maps all public Wot UI Vue SFC components', () => {
-    expect(Object.keys(resolver.components ?? {})).toHaveLength(99)
+    expect(Object.keys(resolver.components ?? {})).toHaveLength(100)
     expect(Object.keys(resolver.components ?? {}).sort()).toEqual([...wotUiComponents].sort())
     expect(resolveWithResolver(resolver, 'wd-button')).toEqual({
       name: 'wd-button',
@@ -157,6 +157,13 @@ describe('WotUiResolver', () => {
       name: 'wd-swiper-nav',
       from: '@wot-ui/ui/components/wd-swiper-nav/wd-swiper-nav.vue',
       resolvedId: '@wot-ui/ui/components/wd-swiper-nav/wd-swiper-nav.vue',
+      sourceType: 'wevu-sfc',
+      typeImport: false,
+    })
+    expect(resolveWithResolver(resolver, 'wd-qr-code')).toEqual({
+      name: 'wd-qr-code',
+      from: '@wot-ui/ui/components/wd-qr-code/wd-qr-code.vue',
+      resolvedId: '@wot-ui/ui/components/wd-qr-code/wd-qr-code.vue',
       sourceType: 'wevu-sfc',
       typeImport: false,
     })
@@ -187,8 +194,8 @@ describe('UviewPlusResolver', () => {
   const resolver = UviewPlusResolver()
 
   it('maps all published Vue SFC entries under both supported prefixes', () => {
-    expect(Object.keys(resolver.components ?? {})).toHaveLength(278)
-    expect(uviewPlusComponents).toHaveLength(139)
+    expect(Object.keys(resolver.components ?? {})).toHaveLength(280)
+    expect(uviewPlusComponents).toHaveLength(140)
     expect(resolveWithResolver(resolver, 'u-button')).toEqual({
       name: 'u-button',
       from: 'uview-plus/components/u-button/u-button.vue',
@@ -210,6 +217,16 @@ describe('UviewPlusResolver', () => {
     expect(resolveWithResolver(resolver, 'up-tabs-pro')?.from)
       .toBe('uview-plus/components/u-tabs-pro/u-tabs-pro.vue')
     expect(resolveWithResolver(resolver, 'up-unknown')).toBeUndefined()
+  })
+
+  it.each(['u-flex', 'up-flex'])('resolves the flex layout component as %s', (name) => {
+    expect(resolveWithResolver(resolver, name)).toEqual({
+      name,
+      from: 'uview-plus/components/u-flex/u-flex.vue',
+      resolvedId: expect.stringMatching(/uview-plus[\\/]components[\\/]u-flex[\\/]u-flex\.vue$/),
+      sourceType: 'wevu-sfc',
+      typeImport: false,
+    })
   })
 
   it('supports full support-file generation', () => {

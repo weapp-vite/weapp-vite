@@ -1,0 +1,18 @@
+{
+  "projectname": "issues-1126-1128",
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "Web contracts",
+          "pathName": "pages/index/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  },
+  "setting": {
+    "urlCheck": false
+  }
+}

@@ -123,7 +123,7 @@ export function recordHmrProfileDuration(
   key: HmrProfileDurationKey,
   durationMs: number,
 ) {
-  if (!profile || !Number.isFinite(durationMs) || durationMs <= 0) {
+  if (!profile || !Number.isFinite(durationMs) || durationMs < 0) {
     return
   }
   profile[key] = (profile[key] ?? 0) + durationMs

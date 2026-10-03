@@ -5,12 +5,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { prepareDynamicReactMutation } from './dynamicReactDelivery'
 import { StatefulHmrAuditClient } from './statefulAuditClient'
 
+const clock = vi.hoisted(() => ({ now: 0 }))
+vi.mock('node:timers/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:timers/promises')>()
+  return {
+    ...actual,
+    async setTimeout(delay = 1) {
+      clock.now += delay
+    },
+  }
+})
+
 const marker = 'current-mutation'
+const timeoutMs = 120
 const stamp = (id: string) => `// weapp-vite-stateful-build:${id}\n`
 
 describe('explicit dynamic React audit delivery', () => {
   let root: string
   let batch: number | undefined
+  let requestElapsedMs: number
   let client: StatefulHmrAuditClient
 
   async function write(relative: string, source: string) {
@@ -32,15 +45,19 @@ describe('explicit dynamic React audit delivery', () => {
       client,
       distRoot: root,
       entryFile: path.join(root, 'pages/index.js'),
-      timeoutMs: 120,
+      timeoutMs,
       intervalMs: 5,
     })
   }
 
   beforeEach(async () => {
+    clock.now = 0
+    requestElapsedMs = 0
+    vi.spyOn(Date, 'now').mockImplementation(() => clock.now)
     root = await mkdtemp(path.join(os.tmpdir(), 'dynamic-react-delivery-'))
     batch = undefined
     client = new StatefulHmrAuditClient(vi.fn(async (_input, init) => {
+      clock.now += requestElapsedMs
       const { action } = JSON.parse(String(init?.body)) as { action: string }
       return new Response(JSON.stringify(action === 'register'
         ? { type: 'registered' }
@@ -50,6 +67,7 @@ describe('explicit dynamic React audit delivery', () => {
   })
 
   afterEach(async () => {
+    vi.restoreAllMocks()
     await rm(root, { recursive: true, force: true })
   })
 
@@ -64,6 +82,19 @@ describe('explicit dynamic React audit delivery', () => {
       output: 'pages/index.js',
       containsMarker: true,
     })
+  })
+
+  it.each(['full-reload', 'patch'])('rejects %s delivery when transport exhausts the deadline', async (delivery) => {
+    const mutation = await prepare()
+    if (delivery === 'full-reload') {
+      await emitBuild('updated', marker)
+    }
+    else {
+      await write('__weapp_vite_hmr/update.js', `console.log('${marker}')`)
+      batch = 1
+    }
+    requestElapsedMs = timeoutMs
+    await expect(mutation.waitForDelivery(marker, true)).rejects.toThrow('Timed out')
   })
 
   it('binds restore to a new pre-mutation identity and accepts only current reachable marker absence', async () => {

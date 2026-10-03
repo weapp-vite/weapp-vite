@@ -14,6 +14,10 @@ import 'weapp-vite/dashboard'
 declare const rpc: DevframeRpcServerFunctions
 expectType<DashboardAnalyzeSummary>(rpc['weapp-vite:get-analyze-summary']({ revision: 0 }))
 expectType<DashboardPackagesPage>(rpc['weapp-vite:query-analyze-packages']({ revision: 0, budgetStatus: 'exceeded', limit: 10 }))
+expectType<DashboardPackagesPage>(rpc['weapp-vite:query-analyze-packages']({ revision: 0, budgetStatus: 'unknown' }))
+const summary = rpc['weapp-vite:get-analyze-summary']({ revision: 0 })
+expectType<'file-bytes' | 'upper-bound' | 'unavailable' | undefined>(summary.runtimeBudget?.measurement)
+expectType<number>(summary.packageBudgets.unknown)
 expectType<DashboardArtifactsPage>(rpc['weapp-vite:query-analyze-artifacts']({ revision: 0, target: 'previous', moduleId: 'shared' }))
 expectType<DashboardModulesPage>(rpc['weapp-vite:query-analyze-modules']({ revision: 0, duplicateOnly: true, sortBy: 'estimatedSavingBytes' }))
 const comparison = rpc['weapp-vite:compare-analyze-builds']({ revision: 0, scope: 'module', change: 'removed' })

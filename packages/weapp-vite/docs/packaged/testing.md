@@ -20,7 +20,7 @@ export default defineConfig({
 ## 接入
 
 ```ts
-import { mpcoreTest } from '@mpcore/vitest'
+import { mpcoreTest } from '@mpcore/vitest/config'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -37,7 +37,34 @@ const project = await createWeappViteTestProject({ cwd: process.cwd() })
 const result = await project.renderPage('/pages/index/index?source=test')
 ```
 
-默认产物目录为 `.weapp-vite/test-artifacts/`。构建调用 `weapp-vite/test` 程序化入口，最终文件仍由 Vite/Rolldown emit；不会启动 CLI 或由测试适配器手写 bundle。
+默认在 `.weapp-vite/test-artifacts/` 下按进程、配置和构建批次创建独立产物。缓存同时检查源码、配置、编译依赖和产物内容；新构建不会覆盖正在运行的测试所用批次。显式 `outDir` 由调用方负责避免并发共享。所有测试关闭后，可以清理这个生成目录。
+
+构建调用 `weapp-vite/test` 程序化入口，最终文件仍由 Vite/Rolldown emit；不会启动 CLI 或由测试适配器手写 bundle。`isTestArtifactCurrent(artifact)` 可检查当前进程生成的产物是否仍然有效。
+
+## Vitest watch 联动
+
+在配置中显式接入产物构建和监听：
+
+```ts
+import { mpcoreTest } from '@mpcore/vitest/config'
+import { buildWeappViteTestArtifact, watchWeappViteTestArtifact } from '@mpcore/weapp-vite'
+import { defineConfig } from 'vitest/config'
+
+const options = { cwd: import.meta.dirname }
+
+export default defineConfig({
+  plugins: [mpcoreTest({
+    artifact: {
+      build: () => buildWeappViteTestArtifact(options),
+      watch: callbacks => watchWeappViteTestArtifact({ ...options, ...callbacks }),
+    },
+  })],
+})
+```
+
+测试文件从 `@mpcore/vitest` 导入 `createMpcoreTest()`，无参调用会使用当前 runner 提供的完整产物，每个测试创建独立运行时。一次性执行只构建一次；watch 在源码、配置及编译依赖重建完成后重新运行所属测试项目。退出会等待进行中的构建并关闭监听。不要从测试配置导入包含 fixture 的根入口，配置入口使用 `/config`。
+
+Vitest 的源码覆盖率、生成的小程序 JS 覆盖率和模拟器自身覆盖率属于不同观察面；此适配不会把它们自动合并成业务源码覆盖率。
 
 ## 组件
 

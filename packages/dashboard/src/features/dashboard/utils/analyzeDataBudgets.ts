@@ -1,3 +1,4 @@
+import type { AnalyzeBudgetCheckInput } from 'weapp-vite/dashboard/analyze'
 import type { AnalyzeSubpackagesResult, PackageBudgetLimitItem, PackageBudgetWarning } from '../types'
 import { createAnalyzeBudgetCheck } from 'weapp-vite/dashboard/analyze'
 import { singlePackageBudgetBytes, totalPackageBudgetBytes } from './analyzeDataShared'
@@ -12,7 +13,7 @@ function getFileBudgetLabel(bytes: number) {
   return `${bytes} B`
 }
 
-export function createBudgetWarnings(result: AnalyzeSubpackagesResult | null): PackageBudgetWarning[] {
+export function createBudgetWarnings(result: AnalyzeBudgetCheckInput | null): PackageBudgetWarning[] {
   if (!result) {
     return []
   }
@@ -21,7 +22,7 @@ export function createBudgetWarnings(result: AnalyzeSubpackagesResult | null): P
     .filter(item => item.status !== 'ok')
     .map((item): PackageBudgetWarning => ({
       ...item,
-      status: item.status === 'exceeded' ? 'critical' : 'warning',
+      status: item.status === 'unknown' ? 'unknown' : item.status === 'exceeded' ? 'critical' : 'warning',
     }))
 }
 

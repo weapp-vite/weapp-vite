@@ -3,6 +3,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
 import { findMissingWevuVendorExports, waitForWevuSharedRuntimeChunkContaining } from './wevu-vendor'
+import { collectCommonJsExportNames } from './wevu-vendor-exports'
 
 const tempRoots: string[] = []
 
@@ -11,6 +12,14 @@ afterEach(async () => {
 })
 
 describe('wevu vendor helpers', () => {
+  it.each([
+    'exports.createApp = a; exports.setWevuDefaults = b;',
+    'Object.defineProperty(exports, "createApp", { get: () => a }); Object.defineProperty(exports, "setWevuDefaults", { get: () => b });',
+  ])('accepts public runtime exports independently of their emitted form: %s', (source) => {
+    expect([...collectCommonJsExportNames(source)].sort()).toEqual(['createApp', 'setWevuDefaults'])
+    expect(collectCommonJsExportNames('runtime.createApp(); const setWevuDefaults = 1').size).toBe(0)
+  })
+
   it('checks runtime vendor member references against emitted exports', async () => {
     const distRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wevu-vendor-'))
     tempRoots.push(distRoot)

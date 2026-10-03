@@ -85,6 +85,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - Wot UI / uview-plus / uni-app 组件库异常：同时检查 `weapp.uniApp.include`、resolver 的真实 `resolvedId` / `sourceType: 'wevu-sfc'`，以及目标端条件分支
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
    - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`
+   - 外部体积消费使用小程序 analyze schema v2 的 `artifacts.files`，按模块所属包识别 runtime，不能猜测 chunk 文件名；实际字节与模块估算分开，runtime 预算采用含混合 chunk 的文件上界，unknown 不能作为通过
    - `preloadRule` 或跨分包跳转：先跑 `wv analyze --preload`，只把宿主导航 API 和可证明路由 binding 作为证据；结合按触发包聚合的实际体积与 2 MB 额度后，再显式配置 `weapp.routeRules.<pattern>.preload`
    - glass-easel 迁移：WebView glass-easel 默认不启用；开发者工具与真机基础库均不低于 `3.8.12` 时，才由用户在宿主 JSON 成对配置 `componentFramework: 'glass-easel'` 与 `glassEaselWebview: true`，再跑 `wv analyze --glass-easel-check`；低版本保持回退，不要新增重复的 `weapp.glassEasel` 配置
    - 状态保持 HMR 不生效：先确认生成的应用/页面 JSON 未使用 Skyline；WebView 项目再确认平台为微信、DevTools 开启服务端口与热重载、`compileHotReLoad: true`，并区分安全 JS/Vue 补丁与 CSS/资源/配置的完整重载回退
@@ -105,8 +106,9 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - Wevu 平台分支使用编译期常量 `import.meta.env.PLATFORM`（`weapp/alipay/tt/swan/jd/xhs/web`），由现有 `--platform` / `weapp.platform` 自动注入。发布包保留表达式供消费构建替换并删除非目标分支；独立工具链未提供目标时保留动态宿主探测。
 - 平台分支裁剪与能力裁剪分开判断：具名导入支持移除未使用模块，没有创建 router 时不引入首航 guard 状态机；SFC/JSX 根据 Binding Manifest 安装 JSX island 等所需能力，无需额外开关。公开动态工厂保留兼容安装，已使用的 API/fetch 保留动态跨平台 adapter。
 - 小程序单测不使用 jsdom；`@mpcore/test` 只暴露逻辑 WXML 树。测试产物必须通过 `weapp-vite/test` 交给 Vite/Rolldown emit，不能由适配器手写 bundle。
-- uni-app 兼容层默认关闭，只转换项目源码与 `include` 白名单依赖；Wot UI 与 uview-plus 分别以 `@wot-ui/ui@2.2.0`、`uview-plus@3.8.86` 的 npm 发布包 SFC 清单为兼容基线，不把它们泛化成完整 uni-app runtime。
+- uni-app 兼容层默认关闭，只转换项目源码与 `include` 白名单依赖；Wot UI 与 uview-plus 分别以 `@wot-ui/ui@2.3.2`、`uview-plus@3.8.127` 的 npm 发布包 SFC 清单为兼容基线，不把它们泛化成完整 uni-app runtime。
 - 分包、插件、worker 和 lib mode 的性能判断都先看产物结构与 `wv analyze`，再改 chunk/shared 策略。
+- 第三方 `compilerPlugins` 的源码依赖通过转换结果的 `dependencies` 或该次异步转换内的 `context.addWatchFile` 声明；开发快照结束不代表 controller 会话结束。状态保持批次读取 `request.sources` 冻结视图，产物仍由 Vite/Rolldown 写出。完整验收要区分产物、JS 补丁和真实 IDE 计算样式。
 - 主包共享样式优先使用 `weapp.styles` 保持独立产物；默认排除 app，只有显式 `include: 'app.vue'` 等应用入口时才注入 `app.wxss`；`inject: false` 只 emit，独立分包必须通过自己的 `subPackages.<root>.styles` 持有副本。
 - 内置 i18n v1 只支持 `{name}` / `{user.name}` 插值，不提供 ICU、复数、日期/数字格式化或自动 storage 持久化；非微信平台不要启用。
 
@@ -161,5 +163,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 配置可导入 `weapp` from `weapp-vite/vite`，以 `plugins: [weapp()]` 激活；继续读取顶层 `weapp`。
 - 当前插件支持单目标微信生产构建与实验性 classic/stateful 开发（`vite dev` / `vp dev`，通过顶层 `weapp.hmr.runtime` 选择），以及原生 `vite build --watch` / `vp build --watch`（生产完整产物，修改宿主配置后需重启命令）；支持微信原生 TS、Wevu Vue 与 React；React 静态 TSX 的 stateful 更新会重建会话，不承诺 hooks 状态保持。已支持独立分包及其宿主监听、子构建配置复用；worker 已进入共享子目标与宿主监听；stateful worker 更新使用完整批次，不承诺线程状态保持。微信插件双产物已接入独立会话与原生 app builder；插件更新不承诺状态保持，双产物暂不支持 `build.write: false`。lib mode 已共用原生声明发布、classic 开发与生产 watch；六平台原生 TS/Vue 支持顶层 `weapp.platform` 单目标选择、classic 与生产 watch；多平台目录式项目配置走原生写出，stateful 仍仅限微信，其他平台真实 IDE 和高级组合单独验收。纯 Web 使用顶层 `weapp.platform: 'web'`，复用同一插件与浏览器宿主；需要既有 Web HTML 入口，不要求小程序项目配置。Web/小程序混合宿主仍待对齐。独立 `wv dev/build` 保留完整能力。
 - 宿主配置是唯一隐式来源；插件不会再次发现 `weapp-vite.config.*`。Vite+ 要按官方 alias 规则统一 `vite` 与 core，不能只看版本号相等。
+- 脚手架的 `--toolchain=wv|vite|vite-plus` 与业务模板独立。生成的 `vite*.config.ts` 显式导入共享配置，按目标单独启用 Web；`prepare/open/upload/mcp` 仍由 `wv` 提供，不能把 `wv --platform` 传给普通宿主。已有 pnpm workspace 必须先统一 Vite+ core 与配套 Vitest override；严格 peer 检查只为固定 core 的 Vite alias 声明版本兼容，脚手架不修改上级工作区。
+- `npm.buildOptions` 的回调接收最终路径，可返回 `false` 跳过包；手工 npm 映射共用 CLI 的主 manifest/镜像语义。产物仍交给原生 emit/write，外部映射保存精确文件归属；`build.write: false` 仅支持宿主输出目录内的 npm 产物。
 - Vitest 配置加载不启动小程序编译。`vp preview`、`vp pack` 不能分别解释为微信预览或小程序组件库构建。
 - 使用前优先读取当前包 `dist/docs/vite-plugin.md` 的支持矩阵，不把后续路线图当成已发布能力。

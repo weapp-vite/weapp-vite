@@ -50,8 +50,10 @@ export function resolveVueSfcHmrSignatures(source: string, filename: string): Vu
     return cached
   }
 
+  // CSS Modules 会生成脚本中的类名映射；其变化必须与样式一起交付，不能仅刷新资产。
+  const cssModules = payload.style.styles.filter(style => Boolean(style.attrs.module))
   const blockSignatures = {
-    script: hashPayload(payload.script),
+    script: hashPayload(cssModules.length ? [payload.script, cssModules] : payload.script),
     template: hashPayload(payload.template),
     style: hashPayload(payload.style),
     config: hashPayload(payload.config),

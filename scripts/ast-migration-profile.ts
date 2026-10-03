@@ -2,6 +2,7 @@ import type { TransformScriptOptions, TransformState } from '../packages-runtime
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import { compileScript } from 'vue/compiler-sfc'
 import { WE_VU_RUNTIME_APIS } from '../packages-runtime/wevu-compiler/src/constants'
 import { collectComponentSourceInfo } from '../packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/componentSources'
@@ -32,6 +33,13 @@ const WARMUP = 20
 const AST_FULL_CHAIN_SPEEDUP = 2.43
 const repoRoot = path.resolve(import.meta.dirname, '..')
 const nativeAstModulePath = path.join(repoRoot, 'packages/ast-native/index.js')
+const wevuDefaults: NonNullable<TransformScriptOptions['wevuDefaults']> = {
+  component: {
+    options: {
+      virtualHost: false,
+    },
+  },
+}
 
 function createVueSfcFixture() {
   const imports: string[] = []
@@ -206,11 +214,7 @@ async function createTransformScriptCase() {
   const source = createVueSfcFixture()
   const parsed = await parseVueFile(source, filename, {
     isPage: true,
-    wevuDefaults: {
-      page: {
-        virtualHost: false,
-      },
-    },
+    wevuDefaults,
   })
   const templateResult = compileTemplatePhase(
     parsed.descriptor,
@@ -239,16 +243,12 @@ async function createTransformScriptCase() {
     templateRefs: templateResult?.templateRefs,
     inlineExpressions: templateResult?.inlineExpressions,
     templateComponentMeta: Object.fromEntries(Array.from({ length: 24 }, (_, index) => [`TCard${index}`, `components/t-card-${index}/index`])),
-    wevuDefaults: {
-      page: {
-        virtualHost: false,
-      },
-    },
+    wevuDefaults,
   }
   return { scriptCode, options }
 }
 
-function profileTransformScriptPhases(source: string, options: TransformScriptOptions) {
+export function profileTransformScriptPhases(source: string, options: TransformScriptOptions) {
   const timings = {
     parse: 0,
     pageFlags: 0,
@@ -274,7 +274,7 @@ function profileTransformScriptPhases(source: string, options: TransformScriptOp
   }
 
   const pageFlagStart = performance.now()
-  const enabledPageFeatures = options.isPage ? collectWevuPageFeatureFlags(ast as any) : new Set()
+  const enabledPageFeatures = options.isPage ? collectWevuPageFeatureFlags(ast) : new Set()
   const serializedWevuDefaults = options.wevuDefaults && Object.keys(options.wevuDefaults).length > 0
     ? serializeWevuDefaults(options.wevuDefaults, warn)
     : undefined
@@ -283,14 +283,18 @@ function profileTransformScriptPhases(source: string, options: TransformScriptOp
 
   const mergedTraverseStart = performance.now()
   const vueSfcVisitors = vueSfcTransformPlugin().visitor as Record<string, any>
-  const macroVisitors = createMacroVisitors((ast as any).program, state)
-  const importVisitors = createImportVisitors((ast as any).program, state)
-  traverse(ast as any, {
+  const macroVisitors = createMacroVisitors(ast, state)
+  const importVisitors = createImportVisitors(ast.program, state)
+  traverse(ast, {
     ...vueSfcVisitors,
     ...macroVisitors,
     ...importVisitors,
     ...createCollectVisitors(state),
     ImportDeclaration(path: any) {
+      macroVisitors.ImportDeclaration?.(path)
+      if (path.removed) {
+        return
+      }
       vueSfcVisitors.ImportDeclaration?.(path)
       if (!path.removed) {
         importVisitors.ImportDeclaration?.(path)
@@ -307,13 +311,13 @@ function profileTransformScriptPhases(source: string, options: TransformScriptOp
 
   const metaStart = performance.now()
   if (options.templateComponentMeta) {
-    state.transformed = pruneTemplateComponentMeta(ast as any, options.templateComponentMeta) || state.transformed
+    state.transformed = pruneTemplateComponentMeta(ast, options.templateComponentMeta) || state.transformed
   }
   timings.templateMeta += performance.now() - metaStart
 
   const rewriteStart = performance.now()
   state.transformed = rewriteDefaultExport(
-    ast as any,
+    ast,
     state,
     options,
     enabledPageFeatures as any,
@@ -323,10 +327,11 @@ function profileTransformScriptPhases(source: string, options: TransformScriptOp
   timings.rewriteDefaultExport += performance.now() - rewriteStart
 
   const generateStart = performance.now()
-  generate(ast as any, { retainLines: true })
+  const generated = generate(ast, { retainLines: true })
   timings.generate += performance.now() - generateStart
 
   return {
+    code: generated.code,
     total: performance.now() - startTotal,
     timings,
   }
@@ -348,11 +353,7 @@ async function profileCompileVueFilePhases(source: string, filename: string) {
   const parseStart = performance.now()
   const options = {
     isPage: true,
-    wevuDefaults: {
-      page: {
-        virtualHost: false,
-      },
-    },
+    wevuDefaults,
     autoUsingComponents: {
       enabled: true,
       resolveUsingComponentPath: async (importSource: string) => importSource.startsWith('@/components/')
@@ -503,6 +504,8 @@ async function main() {
       },
     },
   } as any)
+  // 独立 profile 不注入 bundler parser，沿默认 AST 路径执行。
+  const lifecycleContext = {} as ThisParameterType<typeof lifecycleTransform>
 
   const transformScriptAvg = measureSync(() => {
     transformScript(transformCase.scriptCode, transformCase.options)
@@ -546,7 +549,7 @@ async function main() {
   }
 
   const lifecycleAvg = await measureAsync(async () => {
-    await lifecycleTransform(lifecycleCode, '/project/src/pages/profile/index.ts')
+    await lifecycleTransform.call(lifecycleContext, lifecycleCode, '/project/src/pages/profile/index.ts')
   })
 
   const analysisFeatureOptions = {
@@ -709,7 +712,9 @@ async function main() {
   })
 }
 
-main().catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main().catch((error) => {
+    console.error(error)
+    process.exitCode = 1
+  })
+}

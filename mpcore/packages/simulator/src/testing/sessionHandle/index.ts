@@ -103,6 +103,11 @@ export class HeadlessTestingSessionHandle {
     )
   }
 
+  /** 返回与 DevTools automator 兼容的运行时系统信息。 */
+  async systemInfo<T = unknown>(): Promise<T> {
+    return await this.callWxMethod<T>('getSystemInfoSync')
+  }
+
   async scopeSnapshot(scopeId: string) {
     const normalizedScopeId = normalizeNonEmptyInput(scopeId, 'Scope id')
     return this.session.getScopeSnapshot(normalizedScopeId)

@@ -138,4 +138,44 @@ describe('dev process cleanup ownership', () => {
     expect(execaMock.mock.calls.some(([command]) => command === 'ps')).toBe(false)
     expect(kill.mock.calls.every(([, signal]) => signal === 0)).toBe(true)
   })
+
+  it('waits for an IPC child to clean up on Windows before considering force kill', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const owned = createChild()
+    const disconnect = vi.fn(() => owned.exit())
+    Object.assign(owned.child.nodeChildProcess, { connected: true, disconnect })
+    execaMock.mockReturnValue(owned.child)
+    const kill = vi.spyOn(process, 'kill')
+    const dev = startDevProcess('node', ['dev.js'], { ipc: true })
+    await Promise.all([dev.stop(100), dev.stop(100)])
+    expect(disconnect).toHaveBeenCalledOnce()
+    expect(execaMock).toHaveBeenCalledOnce()
+    expect(kill).not.toHaveBeenCalled()
+  })
+
+  it('force kills only its held Windows child when IPC cleanup does not finish', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const owned = createChild()
+    const disconnect = vi.fn()
+    Object.assign(owned.child.nodeChildProcess, { connected: true, disconnect })
+    execaMock.mockImplementation((command) => {
+      if (command === 'taskkill') {
+        owned.exit()
+        return Promise.resolve({ exitCode: 0 })
+      }
+      return owned.child
+    })
+    vi.spyOn(process, 'kill').mockReturnValue(true)
+    const dev = startDevProcess('node', ['dev.js'], { ipc: true })
+    const stopping = dev.stop(100)
+    expect(disconnect).toHaveBeenCalledOnce()
+    expect(execaMock).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(100)
+    await vi.runAllTimersAsync()
+    await stopping
+    expect(execaMock.mock.calls.filter(([command]) => command === 'taskkill')).toEqual([
+      ['taskkill', ['/PID', '61', '/T', '/F'], expect.objectContaining({ reject: false })],
+    ])
+  })
 })

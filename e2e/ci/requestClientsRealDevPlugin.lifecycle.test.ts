@@ -7,7 +7,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
-import { createServer, loadConfigFromFile } from 'vite'
+import { build, createServer, loadConfigFromFile } from 'vite'
 import { afterEach, describe, expect, it } from 'vitest'
 import { requestClientsRealDevPlugin } from '../utils/requestClientsRealDevPlugin'
 import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
@@ -101,7 +101,7 @@ describe('request client dev server ownership across config runners', () => {
     await expectOriginalFiles(projectRoot)
   })
 
-  it('restores fixture files when the owning Vite server closes', async () => {
+  it.each([true, false])('retains fixture files through snapshot builds until the owning Vite server closes (middlewareMode=%s)', async (middlewareMode) => {
     const projectRoot = await createProject()
     const runtime = await requestClientsRealDevPlugin({ projectRoot, serverPort: 0 })
     cleanups.push(runtime.stop)
@@ -109,9 +109,21 @@ describe('request client dev server ownership across config runners', () => {
       root: projectRoot,
       configFile: false,
       plugins: [runtime.plugin],
-      server: { middlewareMode: true },
+      server: { middlewareMode },
     })
     cleanups.push(() => server.close())
+    expect(await requestCount(runtime.baseUrl)).toBe(1)
+    await build({
+      root: projectRoot,
+      configFile: false,
+      plugins: [runtime.plugin],
+      build: {
+        write: false,
+        lib: { entry: path.join(projectRoot, 'src/shared/requestClientsRealDevBaseUrl.ts'), formats: ['es'] },
+      },
+    })
+    expect(await requestCount(runtime.baseUrl)).toBe(2)
+    expect(await readFile(path.join(projectRoot, 'src/shared/requestClientsRealDevBaseUrl.ts'), 'utf8')).toContain(runtime.baseUrl)
     await server.close()
     await expectOriginalFiles(projectRoot)
   })

@@ -91,6 +91,22 @@ export default defineConfig({
 - `navigateTo` / `navigateBack` / `getCurrentPages`
 - `request` / `showToast` 等 polyfill API
 
+## 应用样式与组件边界
+
+`app.vue` 的内联 `<style>`、`<style src="./app.css">` 和原生 `App` 入口样式共用注册与 HMR 链路。页面接收应用样式；自定义组件默认保持 `isolated`，可通过 `options.styleIsolation: 'apply-shared' | 'shared'` 或 `addGlobalClass` 接收应用样式，显式 `isolated` 优先于 `addGlobalClass`。Shadow DOM 保持独立；`shared` 仅支持接收应用样式，不会将组件样式反向传播到页面或其他组件。
+
+- 应用样式与局部样式保留独立的 stylesheet，局部样式在后，合法的局部 `@import` 不会因应用规则前置而失效。
+- `page` 只匹配页面宿主，不增加原有 `:host` 转换的选择器权重。主题 CSS 变量可沿宿主继承到隔离组件，局部主题仍可覆盖。
+- 应用样式可以修改、移除和重新添加，不重新执行一次性的 App 生命周期。legacy 字符串模板保留节点时，样式更新不叠加事件监听器，也不丢失输入值与选区。
+
+组件上的 `@click` / `bind:click` 只接收组件 `emit('click', payload)` / `triggerEvent('click', detail)`，不会再同时收到内部物理点击冒泡造成的重复回调。原生元素的 `@tap` / `bindtap` 仍映射浏览器点击；自定义事件的名称、`detail` 与显式 `bubbles` / `composed` 选项保持原样。Vue SFC 处理函数接收 emit payload，原生 WXML 处理函数接收含 `detail` 的事件对象。
+
+同名 Boolean、String、Number、Object、Array 和 Function props 与组件方法分别保存；需要读取输入时使用 props/data。setup 方法按完整快照替换或移除，且优先于同名静态方法；清空 setup 快照后恢复最新静态定义。普通实例方法的显式赋值、访问器和不可配置属性不被框架热更新覆盖。
+
+父级 `setData` 更新嵌套 Object / Array 路径时，只复制变更路径上的容器；显式提交整个对象或数组时，为该子树创建输入快照。同引用整值提交、复用旧嵌套值的新外层对象也能更新深层投影。函数保持可调用，未提交分支不复制；大对象增量更新优先使用具体路径。
+
+现有限制：`<script setup>` 和 legacy 字符串模板的同节点同名捕获/冒泡处理器存在独立的处理器键冲突，暂需使用不同层级的节点；这不属于原生事件与组件事件的来源隔离。
+
 ## 视觉与组件适配
 
 - 默认提供 375px 宽的居中小程序设备视口；移动宽度下自动铺满

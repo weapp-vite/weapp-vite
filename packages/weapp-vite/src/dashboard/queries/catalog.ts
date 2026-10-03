@@ -3,16 +3,16 @@ import type { ReadDashboardQuerySnapshot } from './shared'
 import { createAnalyzeBudgetCheck, createDuplicateModuleInsights } from '../analyze'
 import { createModuleByteMap } from '../analyze/moduleBytes'
 import { artifactsQuerySchema, modulesQuerySchema, packagesQuerySchema } from './schema'
-import { compareText, createModulePlacementIndex, matchesQuery, ordered, paginate, selectAnalyzeReport } from './shared'
+import { compareText, createModulePlacementIndex, matchesQuery, ordered, paginate, selectAnalyzeReport, summarizeBudget } from './shared'
 
 export function queryAnalyzePackages(read: ReadDashboardQuerySnapshot, input: unknown): DashboardPackagesPage {
   const request = packagesQuerySchema.parse(input)
   const { result, context } = selectAnalyzeReport(read, request)
-  const budgets = new Map(createAnalyzeBudgetCheck(result).filter(item => item.scope !== 'total').map(item => [item.id, item]))
+  const budgets = new Map(createAnalyzeBudgetCheck(result).filter(item => item.scope !== 'total' && item.scope !== 'runtime').map(item => [item.id, item]))
   const placements = createModulePlacementIndex(result)
   const items: DashboardPackagesPage['items'] = []
   for (const pkg of result.packages) {
-    const budget = budgets.get(pkg.id) ?? null
+    const budget = summarizeBudget(budgets.get(pkg.id))
     if ((request.type !== undefined && pkg.type !== request.type)
       || (request.budgetStatus !== undefined && budget?.status !== request.budgetStatus)
       || !matchesQuery(request.query, pkg.id, pkg.label)) {

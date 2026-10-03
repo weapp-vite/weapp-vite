@@ -22,6 +22,13 @@
     "miniprogram": {
       "list": [
         {
+          "name": "customized/pages/npm-options/index",
+          "pathName": "customized/pages/npm-options/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/index/index",
           "pathName": "pages/index/index",
           "query": "",

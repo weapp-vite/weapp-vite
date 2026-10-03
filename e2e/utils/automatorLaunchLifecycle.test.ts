@@ -108,7 +108,8 @@ describe('automator launch lifecycle', () => {
         }, 25)
       }, { once: true })
     }), { waitForExit: true })).catch(() => events.push('recovery'))
-    await vi.advanceTimersByTimeAsync(50)
+    lifecycle.controller.abort(new Error('canceled before deadline'))
+    await vi.advanceTimersByTimeAsync(0)
     expect(events).toEqual(['cancel'])
     await vi.advanceTimersByTimeAsync(25)
     await result

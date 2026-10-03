@@ -19,6 +19,7 @@ export interface RuntimeChunkDuplicatePayload {
 }
 
 export interface ApplyRuntimeChunkLocalizationOptions {
+  onEmitChunk?: (fileName: string, chunk: OutputChunk) => void
   subPackageRoots: Iterable<string>
   forceRoots?: Iterable<string>
   runtimeFileName?: string
@@ -100,6 +101,9 @@ export function applyRuntimeChunkLocalization(
       fileName: uniqueFileName,
       source: cloneSourceLike(runtimeSource),
     })
+    if (runtimeOutput.type === 'chunk') {
+      options.onEmitChunk?.(uniqueFileName, runtimeOutput)
+    }
 
     for (const importerFile of importerFiles) {
       importerToRuntime.set(importerFile, uniqueFileName)

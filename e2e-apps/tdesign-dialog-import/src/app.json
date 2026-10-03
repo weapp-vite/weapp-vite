@@ -4,6 +4,12 @@
     "pages/dialog-bare/index",
     "pages/dialog-index/index"
   ],
+  "subPackages": [
+    {
+      "root": "customized",
+      "pages": ["pages/npm-options/index"]
+    }
+  ],
   "window": {
     "navigationBarTitleText": "tdesign-dialog-import",
     "navigationBarBackgroundColor": "#0f172a",

@@ -1,6 +1,7 @@
 import type { HeadlessComponentDefinition } from '../../host'
 import type { HeadlessProjectDescriptor } from '../../project/createProjectDescriptor'
 import type { HeadlessComponentInstance } from '../../runtime/componentInstance'
+import type { MiniProgramEventBinding } from '../../view/eventBinding'
 import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { WxsModuleBindings } from '../../view/wxs'
 import type { BrowserModuleLoader } from '../moduleLoader'
@@ -23,11 +24,13 @@ export interface BrowserRenderScope {
   classList?: string[]
   data: Record<string, any>
   dataset?: Record<string, unknown>
-  eventBindings?: Map<string, { method: string, stopAfter: boolean }>
+  eventBindings?: Map<string, MiniProgramEventBinding>
+  captureEventBindings?: Map<string, MiniProgramEventBinding>
   getMethod: (methodName: string) => ((...args: any[]) => any) | undefined
   getScopeId: () => string
   genericComponents?: Map<string, string>
   hostId?: string
+  hostNode?: DomNodeLike
   listenerScopeId?: string
   id?: string
   ownerScopeId?: string

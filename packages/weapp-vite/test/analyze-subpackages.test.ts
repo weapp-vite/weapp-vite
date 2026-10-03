@@ -57,6 +57,11 @@ describe('analyzeSubpackages', () => {
 
       const barModule = result.modules.find(module => module.source.endsWith('pages/bar.ts'))
       expect(barModule?.packages.map(ref => ref.packageId)).toEqual(['packageB'])
+      const copies = result.artifacts?.files.filter(file => file.file.includes('/weapp-shared/')) ?? []
+      expect(copies).toHaveLength(2)
+      expect(copies.every(file => file.modules.some(module => module.package?.name === 'dayjs'))).toBe(true)
+      expect(result.artifacts?.runtime.unknownFiles).toEqual([])
+      expect(result.artifacts?.duplicateEstimatedBytes).toBeGreaterThan(0)
     })
   })
 

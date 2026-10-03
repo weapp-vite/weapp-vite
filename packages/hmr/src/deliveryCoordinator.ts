@@ -15,7 +15,7 @@ interface QueuedDelivery {
   task: HmrDeliveryTask
   generation: number
   preparation?: Promise<HmrDeliveryPreparation>
-  disposed?: boolean
+  disposal?: Promise<void>
   committed?: boolean
 }
 
@@ -26,7 +26,10 @@ export class HmrDeliveryCoordinator {
   private pending: QueuedDelivery[] = []
   private running?: Promise<void>
   private failed = false
+  private failure: unknown
+  private revision = 0
   private pendingBytes = 0
+  private readonly disposals = new Set<Promise<void>>()
 
   constructor(
     private readonly onError: (error: unknown) => void,
@@ -48,6 +51,7 @@ export class HmrDeliveryCoordinator {
       return
     }
     const item: QueuedDelivery = { task, generation: this.generation }
+    this.revision += 1
     this.prepare(item)
     this.pending.push(item)
     this.pendingBytes += task.bytes ?? 0
@@ -56,6 +60,8 @@ export class HmrDeliveryCoordinator {
 
   retry(): void {
     this.failed = false
+    this.failure = undefined
+    this.revision += 1
     if (!this.running && !this.closed) {
       this.running = this.drain().finally(() => {
         this.running = undefined
@@ -67,6 +73,7 @@ export class HmrDeliveryCoordinator {
   }
 
   reset(): void {
+    this.revision += 1
     this.generation += 1
     for (const item of this.pending) {
       void this.dispose(item)
@@ -74,12 +81,37 @@ export class HmrDeliveryCoordinator {
     this.pending = []
     this.pendingBytes = 0
     this.failed = false
+    this.failure = undefined
+  }
+
+  /** 等待已入队交付及等待期间的新代次；失败向调用方传播，不重试或改变队列。 */
+  async whenSettled(): Promise<void> {
+    for (;;) {
+      const revision = this.revision
+      try {
+        await this.running
+        await Promise.all(this.disposals)
+      }
+      catch (error) {
+        throw this.failed ? this.failure : error
+      }
+      if (this.closed) {
+        throw new Error('HMR delivery coordinator closed before settlement')
+      }
+      if (this.failed) {
+        throw this.failure
+      }
+      if (revision === this.revision && !this.running && this.pending.length === 0 && this.disposals.size === 0) {
+        return
+      }
+    }
   }
 
   async close(): Promise<void> {
     this.closed = true
     this.reset()
     await this.running
+    await Promise.all(this.disposals)
   }
 
   private prepare(item: QueuedDelivery): Promise<HmrDeliveryPreparation> {
@@ -92,17 +124,21 @@ export class HmrDeliveryCoordinator {
     return item.preparation
   }
 
-  private async dispose(item: QueuedDelivery): Promise<void> {
-    if (item.disposed) {
-      return
+  private dispose(item: QueuedDelivery): Promise<void> {
+    if (item.disposal) {
+      return item.disposal
     }
-    item.disposed = true
-    try {
-      await (await item.preparation)?.dispose?.()
-    }
-    catch {
-      // 编译失败由交付循环报告；资源释放不能制造未处理拒绝。
-    }
+    item.disposal = (async () => {
+      try {
+        await (await item.preparation)?.dispose?.()
+      }
+      catch {
+        // 编译失败由交付循环报告；资源释放不能制造未处理拒绝。
+      }
+    })()
+    this.disposals.add(item.disposal)
+    void item.disposal.then(() => this.disposals.delete(item.disposal!))
+    return item.disposal
   }
 
   private async drain(): Promise<void> {
@@ -130,6 +166,7 @@ export class HmrDeliveryCoordinator {
       catch (error) {
         if (item.generation === this.generation && !this.closed) {
           this.failed = true
+          this.failure = error
           this.onError(error)
           if (item.generation === this.generation && this.pending.length > 1) {
             this.requestResynchronization?.()

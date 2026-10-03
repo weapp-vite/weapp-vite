@@ -32,12 +32,15 @@ import {
   Session,
   trustProject,
 } from '../src/index.js'
+import { createTaskScope } from './taskScope'
 
 let root: string
 
 let ctx: ToolContext
+let tasks: ReturnType<typeof createTaskScope>
 
-beforeEach(async () => {
+beforeEach(async ({ signal }) => {
+  tasks = createTaskScope(signal)
   root = await mkdtemp(path.join(tmpdir(), 'weapp-security-'))
 
   process.env.WEAPP_AGENT_STATE_DIR = path.join(root, 'state')
@@ -46,11 +49,12 @@ beforeEach(async () => {
     root,
     trusted: true,
     approve: async () => false,
-    signal: new AbortController().signal,
+    signal: tasks.signal,
   }
 })
 
 afterEach(async () => {
+  await tasks.close()
   delete process.env.WEAPP_AGENT_STATE_DIR
 
   await rm(root, { recursive: true, force: true })
@@ -179,8 +183,10 @@ it('invalidates the current in-memory authorization when disk configuration chan
   expect(await projectFingerprint(root, config)).not.toBe(before)
 })
 
-it('does not execute repository textconv or clean filter commands while reading a Git diff', async () => {
-  await execa('git', ['init'], { cwd: root })
+// 真实 Git 子进程在 Windows coverage 下曾超过 5 秒；超时时需先取消并等待进程退出再清理仓库。
+it('does not execute repository textconv or clean filter commands while reading a Git diff', { timeout: 30_000 }, () => tasks.run(async () => {
+  const git = (args: string[]) => tasks.run(() => execa('git', args, { cwd: root, cancelSignal: tasks.signal }))
+  await git(['init'])
 
   await writeFile(path.join(root, '.gitattributes'), '*.txt diff=probe filter=probe\n')
 
@@ -188,19 +194,16 @@ it('does not execute repository textconv or clean filter commands while reading 
 
   await writeFile(path.join(root, 'page.txt'), 'before')
 
-  await execa('git', ['add', '.gitattributes', 'page.txt'], { cwd: root })
+  await git(['add', '.gitattributes', 'page.txt'])
 
-  await execa('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', 'commit', '-m', 'fixture'], { cwd: root })
-
-  await execa('git', ['config', 'diff.probe.textconv', 'node probe.cjs'], { cwd: root })
-
-  await execa('git', ['config', 'filter.probe.clean', 'node probe.cjs'], { cwd: root })
+  // git_diff 比较工作区与索引，无需提交；在暂存后安装危险配置，避免夹具准备执行探针。
+  await appendFile(path.join(root, '.git/config'), '\n[diff "probe"]\n\ttextconv = node probe.cjs\n[filter "probe"]\n\tclean = node probe.cjs\n')
 
   await writeFile(path.join(root, 'page.txt'), 'after')
 
-  const diff = await fileTools().find(t => t.name === 'git_diff')!.execute({}, { ...ctx, trusted: false })
+  const diff = await tasks.run(() => fileTools().find(t => t.name === 'git_diff')!.execute({}, { ...ctx, trusted: false }))
 
   expect(diff.text).toContain('+after')
 
   await expect(readFile(path.join(root, 'unexpected-execution'))).rejects.toThrow()
-})
+}))

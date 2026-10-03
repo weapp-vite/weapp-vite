@@ -9,7 +9,16 @@ const projectConfigs = {
 const compiler: WeappCompilerPlugin = {
   name: 'public-hmr-contract',
   capabilities: { hmr: true },
-  create: () => ({
+  create: context => ({
+    async claimSource(request) {
+      expectType<string>(request.id)
+      context.addWatchFile('tokens.json')
+      return { dependencies: ['tokens.json'] }
+    },
+    async transformSource(request) {
+      return { code: request.code, dependencies: ['tokens.json'] }
+    },
+    dispose() {},
     prepareHmr(request) {
       expectType<WeappCompilerHmrRequest>(request)
       expectType<ReadonlyMap<string, string | null>>(request.sources)

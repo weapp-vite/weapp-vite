@@ -2,6 +2,7 @@ import type { Ref, ShallowRef } from 'vue'
 import type {
   AnalyzeTreemapColorMode,
   AnalyzeTreemapFilterMode,
+  DashboardTab,
   DuplicateModuleEntry,
   IncrementAttributionEntry,
   LargestFileEntry,
@@ -23,8 +24,11 @@ export function useAnalyzeTreemapFilters(options: {
   const route = useRoute()
   const router = useRouter()
 
-  function setTreemapFilterMode(mode: AnalyzeTreemapFilterMode) {
+  function setTreemapFilterMode(mode: AnalyzeTreemapFilterMode, tab?: DashboardTab) {
     const query = { ...route.query }
+    if (tab) {
+      query.tab = tab
+    }
     if (mode === 'all') {
       delete query.filter
     }
@@ -92,7 +96,7 @@ export function useAnalyzeTreemapFilters(options: {
     if (options.selectedLargestFile.value?.packageId) {
       return options.selectedLargestFile.value.packageId
     }
-    if (options.selectedBudgetWarning.value && options.selectedBudgetWarning.value.scope !== 'total') {
+    if (options.selectedBudgetWarning.value && options.selectedBudgetWarning.value.scope !== 'total' && options.selectedBudgetWarning.value.scope !== 'runtime') {
       return options.selectedBudgetWarning.value.id
     }
     return null

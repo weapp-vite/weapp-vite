@@ -13,6 +13,7 @@ export interface SharedInputSession {
 }
 
 export interface ExclusiveKeypressOptions<T> {
+  signal?: AbortSignal
   ignoreInitialMs?: number
   timeoutMs?: number
   onKeypress: (
@@ -188,33 +189,49 @@ export function createSharedInputSession(options: SharedInputSessionOptions): Sh
 export async function waitForExclusiveKeypress<T>(
   options: ExclusiveKeypressOptions<T>,
 ): Promise<T | 'timeout'> {
+  options.signal?.throwIfAborted()
   if (!hasInteractiveStdin()) {
     return 'timeout'
   }
 
   ensureCoordinatorInitialized()
 
-  return await new Promise<T | 'timeout'>((resolve) => {
+  return await new Promise<T | 'timeout'>((resolve, reject) => {
     const normalizedTimeoutMs = Number.isFinite(options.timeoutMs) && options.timeoutMs && options.timeoutMs > 0
       ? options.timeoutMs
       : 30_000
     const normalizedIgnoreInitialMs = Number.isFinite(options.ignoreInitialMs) && options.ignoreInitialMs && options.ignoreInitialMs > 0
       ? options.ignoreInitialMs
       : 0
+    let onAbort: () => void
     const record: ExclusiveKeypressRecord<T> = {
       ignoreUntil: Date.now() + normalizedIgnoreInitialMs,
       onKeypress: options.onKeypress,
-      resolve,
+      resolve: (value) => {
+        options.signal?.removeEventListener('abort', onAbort)
+        resolve(value)
+      },
       timeout: setTimeout(() => {
         const index = exclusiveKeypressStack.lastIndexOf(record as ExclusiveKeypressRecord<unknown>)
         if (index >= 0) {
           exclusiveKeypressStack.splice(index, 1)
         }
         updateTerminalState()
-        resolve('timeout')
+        record.resolve('timeout')
       }, normalizedTimeoutMs),
     }
 
+    onAbort = () => {
+      clearTimeout(record.timeout)
+      options.signal?.removeEventListener('abort', onAbort)
+      const index = exclusiveKeypressStack.indexOf(record as ExclusiveKeypressRecord<unknown>)
+      if (index >= 0) {
+        exclusiveKeypressStack.splice(index, 1)
+      }
+      updateTerminalState()
+      reject(options.signal?.reason)
+    }
+    options.signal?.addEventListener('abort', onAbort, { once: true })
     exclusiveKeypressStack.push(record as ExclusiveKeypressRecord<unknown>)
     updateTerminalState()
   })

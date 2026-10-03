@@ -1,5 +1,6 @@
 import type { StatefulHmrOutputFile } from './outputWriter'
 import { APP_PRELUDE_REQUIRE_FILE_BASENAME } from '../../plugins/core/lifecycle/emit/constants'
+import { isBundlerDiagnosticAsset } from '../buildPlugin/outputBoundary'
 
 const preludeSuffix = `/${APP_PRELUDE_REQUIRE_FILE_BASENAME}`
 
@@ -9,6 +10,7 @@ export function isStatefulHmrSnapshotAsset(
 ): output is Extract<StatefulHmrOutputFile, { type: 'asset' }> {
   return output.type === 'asset'
     && !/\.js\.map$/.test(output.fileName)
+    && !isBundlerDiagnosticAsset(output)
     && output.fileName !== APP_PRELUDE_REQUIRE_FILE_BASENAME
     && !output.fileName.endsWith(preludeSuffix)
 }

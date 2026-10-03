@@ -1,6 +1,7 @@
 import type { StatefulHmrOutputFile } from './outputWriter'
 import { describe, expect, it } from 'vitest'
-import { selectStatefulHmrAdditionalOutput } from './outputOwnership'
+import { isBundlerDiagnosticAsset } from '../buildPlugin/outputBoundary'
+import { isStatefulHmrSnapshotAsset, selectStatefulHmrAdditionalOutput } from './outputOwnership'
 
 describe('stateful additional output ownership', () => {
   it('protects transformed assets while preserving executable modules and new assets', () => {
@@ -25,5 +26,20 @@ describe('stateful additional output ownership', () => {
     const output: StatefulHmrOutputFile[] = [{ type: 'asset', fileName: 'worker.js', source: 'worker.onMessage(() => {});' }]
     const snapshot: StatefulHmrOutputFile[] = [{ type: 'chunk', fileName: 'worker.js', code: '' }]
     expect(selectStatefulHmrAdditionalOutput(output, snapshot)).toEqual(output)
+  })
+
+  it('keeps bundler analysis reports out of runtime snapshot ownership', () => {
+    const report = {
+      type: 'asset' as const,
+      fileName: 'stats0.html',
+      source: '<title>Rollup Visualizer</title>',
+    }
+    expect(isBundlerDiagnosticAsset(report)).toBe(true)
+    expect(isStatefulHmrSnapshotAsset(report)).toBe(false)
+    expect(isStatefulHmrSnapshotAsset({
+      type: 'asset',
+      fileName: 'assets/help.html',
+      source: '<title>Help</title>',
+    })).toBe(true)
   })
 })

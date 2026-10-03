@@ -15,6 +15,8 @@ import {
 
   writeRuntimeBenchCheckpoint,
 } from './runtimeBench'
+import { difference } from './runtimeBench/metrics'
+import { runPublishedPresetBench } from './runtimeBench/presets'
 
 const WORKER_PATH = path.resolve(import.meta.dirname, './runtime-bench.worker.ts')
 const NATIVE_ROOT = path.resolve(import.meta.dirname, '../../apps/runtime-bench-native')
@@ -44,13 +46,13 @@ function compareUpdateSummary(native: BenchUpdateSummary, candidate: BenchUpdate
   return {
     native,
     [label]: candidate,
-    deltaWallMs: candidate.wallMsMedian - native.wallMsMedian,
-    deltaMetricMs: candidate.metricMsMedian - native.metricMsMedian,
-    deltaComputeMs: candidate.computeMsMedian - native.computeMsMedian,
-    deltaCommitMs: candidate.commitMsMedian - native.commitMsMedian,
-    deltaDispatchMs: candidate.dispatchMsMedian - native.dispatchMsMedian,
-    deltaFlushMs: candidate.flushMsMedian - native.flushMsMedian,
-    deltaSetDataCalls: candidate.setDataCallsMedian - native.setDataCallsMedian,
+    deltaWallMs: difference(candidate.wallMsMedian, native.wallMsMedian),
+    deltaMetricMs: difference(candidate.metricMsMedian, native.metricMsMedian),
+    deltaComputeMs: difference(candidate.computeMsMedian, native.computeMsMedian),
+    deltaCommitMs: difference(candidate.commitMsMedian, native.commitMsMedian),
+    deltaDispatchMs: difference(candidate.dispatchMsMedian, native.dispatchMsMedian),
+    deltaFlushMs: difference(candidate.flushMsMedian, native.flushMsMedian),
+    deltaSetDataCalls: difference(candidate.setDataCallsMedian, native.setDataCallsMedian),
     [`${label}SetDataDiagnostics`]: candidate.setDataDiagnosticsMedian,
     [`${label}FallbackReasons`]: candidate.fallbackReasons,
   }
@@ -60,13 +62,13 @@ function compareVuePatchVsDiff(diff: BenchUpdateSummary, patch: BenchUpdateSumma
   return {
     diff,
     patch,
-    deltaWallMs: patch.wallMsMedian - diff.wallMsMedian,
-    deltaMetricMs: patch.metricMsMedian - diff.metricMsMedian,
-    deltaComputeMs: patch.computeMsMedian - diff.computeMsMedian,
-    deltaCommitMs: patch.commitMsMedian - diff.commitMsMedian,
-    deltaDispatchMs: patch.dispatchMsMedian - diff.dispatchMsMedian,
-    deltaFlushMs: patch.flushMsMedian - diff.flushMsMedian,
-    deltaSetDataCalls: patch.setDataCallsMedian - diff.setDataCallsMedian,
+    deltaWallMs: difference(patch.wallMsMedian, diff.wallMsMedian),
+    deltaMetricMs: difference(patch.metricMsMedian, diff.metricMsMedian),
+    deltaComputeMs: difference(patch.computeMsMedian, diff.computeMsMedian),
+    deltaCommitMs: difference(patch.commitMsMedian, diff.commitMsMedian),
+    deltaDispatchMs: difference(patch.dispatchMsMedian, diff.dispatchMsMedian),
+    deltaFlushMs: difference(patch.flushMsMedian, diff.flushMsMedian),
+    deltaSetDataCalls: difference(patch.setDataCallsMedian, diff.setDataCallsMedian),
   }
 }
 
@@ -90,8 +92,6 @@ async function runWorker(projectRoot: string): Promise<WorkerResult> {
     cwd: path.resolve(import.meta.dirname, '../..'),
     env: {
       WEAPP_VITE_E2E_RUNTIME_PROVIDER: runtimeProvider,
-      WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK: '1',
-      WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP: '1',
     },
   })
 
@@ -150,6 +150,18 @@ async function runProjects(commit: string) {
 }
 
 async function main() {
+  if (process.argv.includes('--published-presets')) {
+    const option = (name: string) => process.argv.find(value => value.startsWith(`${name}=`))?.slice(name.length + 1)
+    const repoRoot = path.resolve(import.meta.dirname, '../..')
+    const report = await runPublishedPresetBench({
+      repoRoot,
+      provider: runtimeProvider,
+      tarballDirectory: option('--tarballs') ?? process.env.WEAPP_VITE_CONSUMER_TARBALLS,
+      output: path.resolve(option('--output') ?? path.join(repoRoot, '.tmp/runtime-bench/published-presets.json')),
+    })
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    return
+  }
   process.stdout.write(`[runtime-bench] provider=${runtimeProvider}\n`)
   const commit = await resolveGitCommit()
   if (!RESUME) {
@@ -183,23 +195,23 @@ async function main() {
       vue,
       react,
       solid,
-      deltaWallMs: vue.firstScreen.wallMsMedian - native.firstScreen.wallMsMedian,
-      deltaReadyMs: vue.firstScreen.readyMsMedian - native.firstScreen.readyMsMedian,
-      deltaFirstCommitMs: vue.firstScreen.firstCommitMsMedian - native.firstScreen.firstCommitMsMedian,
+      deltaWallMs: difference(vue.firstScreen.wallMsMedian, native.firstScreen.wallMsMedian),
+      deltaReadyMs: difference(vue.firstScreen.readyMsMedian, native.firstScreen.readyMsMedian),
+      deltaFirstCommitMs: difference(vue.firstScreen.firstCommitMsMedian, native.firstScreen.firstCommitMsMedian),
       vueDelta: {
-        wallMs: vue.firstScreen.wallMsMedian - native.firstScreen.wallMsMedian,
-        readyMs: vue.firstScreen.readyMsMedian - native.firstScreen.readyMsMedian,
-        firstCommitMs: vue.firstScreen.firstCommitMsMedian - native.firstScreen.firstCommitMsMedian,
+        wallMs: difference(vue.firstScreen.wallMsMedian, native.firstScreen.wallMsMedian),
+        readyMs: difference(vue.firstScreen.readyMsMedian, native.firstScreen.readyMsMedian),
+        firstCommitMs: difference(vue.firstScreen.firstCommitMsMedian, native.firstScreen.firstCommitMsMedian),
       },
       reactDelta: {
-        wallMs: react.firstScreen.wallMsMedian - native.firstScreen.wallMsMedian,
-        readyMs: react.firstScreen.readyMsMedian - native.firstScreen.readyMsMedian,
-        firstCommitMs: react.firstScreen.firstCommitMsMedian - native.firstScreen.firstCommitMsMedian,
+        wallMs: difference(react.firstScreen.wallMsMedian, native.firstScreen.wallMsMedian),
+        readyMs: difference(react.firstScreen.readyMsMedian, native.firstScreen.readyMsMedian),
+        firstCommitMs: difference(react.firstScreen.firstCommitMsMedian, native.firstScreen.firstCommitMsMedian),
       },
       solidDelta: {
-        wallMs: solid.firstScreen.wallMsMedian - native.firstScreen.wallMsMedian,
-        readyMs: solid.firstScreen.readyMsMedian - native.firstScreen.readyMsMedian,
-        firstCommitMs: solid.firstScreen.firstCommitMsMedian - native.firstScreen.firstCommitMsMedian,
+        wallMs: difference(solid.firstScreen.wallMsMedian, native.firstScreen.wallMsMedian),
+        readyMs: difference(solid.firstScreen.readyMsMedian, native.firstScreen.readyMsMedian),
+        firstCommitMs: difference(solid.firstScreen.firstCommitMsMedian, native.firstScreen.firstCommitMsMedian),
       },
     },
     detailNavigation: {
@@ -207,23 +219,23 @@ async function main() {
       vue,
       react,
       solid,
-      deltaWallMs: vue.detailNavigation.wallMsMedian - native.detailNavigation.wallMsMedian,
-      deltaReadyMs: vue.detailNavigation.readyMsMedian - native.detailNavigation.readyMsMedian,
-      deltaFirstCommitMs: vue.detailNavigation.firstCommitMsMedian - native.detailNavigation.firstCommitMsMedian,
+      deltaWallMs: difference(vue.detailNavigation.wallMsMedian, native.detailNavigation.wallMsMedian),
+      deltaReadyMs: difference(vue.detailNavigation.readyMsMedian, native.detailNavigation.readyMsMedian),
+      deltaFirstCommitMs: difference(vue.detailNavigation.firstCommitMsMedian, native.detailNavigation.firstCommitMsMedian),
       vueDelta: {
-        wallMs: vue.detailNavigation.wallMsMedian - native.detailNavigation.wallMsMedian,
-        readyMs: vue.detailNavigation.readyMsMedian - native.detailNavigation.readyMsMedian,
-        firstCommitMs: vue.detailNavigation.firstCommitMsMedian - native.detailNavigation.firstCommitMsMedian,
+        wallMs: difference(vue.detailNavigation.wallMsMedian, native.detailNavigation.wallMsMedian),
+        readyMs: difference(vue.detailNavigation.readyMsMedian, native.detailNavigation.readyMsMedian),
+        firstCommitMs: difference(vue.detailNavigation.firstCommitMsMedian, native.detailNavigation.firstCommitMsMedian),
       },
       reactDelta: {
-        wallMs: react.detailNavigation.wallMsMedian - native.detailNavigation.wallMsMedian,
-        readyMs: react.detailNavigation.readyMsMedian - native.detailNavigation.readyMsMedian,
-        firstCommitMs: react.detailNavigation.firstCommitMsMedian - native.detailNavigation.firstCommitMsMedian,
+        wallMs: difference(react.detailNavigation.wallMsMedian, native.detailNavigation.wallMsMedian),
+        readyMs: difference(react.detailNavigation.readyMsMedian, native.detailNavigation.readyMsMedian),
+        firstCommitMs: difference(react.detailNavigation.firstCommitMsMedian, native.detailNavigation.firstCommitMsMedian),
       },
       solidDelta: {
-        wallMs: solid.detailNavigation.wallMsMedian - native.detailNavigation.wallMsMedian,
-        readyMs: solid.detailNavigation.readyMsMedian - native.detailNavigation.readyMsMedian,
-        firstCommitMs: solid.detailNavigation.firstCommitMsMedian - native.detailNavigation.firstCommitMsMedian,
+        wallMs: difference(solid.detailNavigation.wallMsMedian, native.detailNavigation.wallMsMedian),
+        readyMs: difference(solid.detailNavigation.readyMsMedian, native.detailNavigation.readyMsMedian),
+        firstCommitMs: difference(solid.detailNavigation.firstCommitMsMedian, native.detailNavigation.firstCommitMsMedian),
       },
     },
     updateSingleCommit: {

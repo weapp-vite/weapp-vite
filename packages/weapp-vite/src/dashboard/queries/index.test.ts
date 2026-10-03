@@ -1,6 +1,7 @@
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
 import { initDevframe } from 'devframe/initiate'
 import { describe, expect, it } from 'vitest'
+import { createArtifactAnalysis } from '../../analyze/subpackages/artifacts'
 import { createAnalyzeDashboardDevframe } from '../index'
 
 function report(): AnalyzeSubpackagesResult {
@@ -40,7 +41,9 @@ describe('Dashboard domain queries', () => {
       expect(await rpc.call('get-analyze-summary', { revision: 0 })).toMatchObject({
         reportHash: state.analyze.current.hash,
         totals: { bytes: 280, files: 4, unmeasuredFiles: 1 },
-        packageBudgets: { exceeded: 1, warning: 1, ok: 0 },
+        totalBudget: { status: 'unknown' },
+        runtimeBudget: null,
+        packageBudgets: { exceeded: 1, warning: 0, ok: 0, unknown: 1 },
       })
       const first = await rpc.call('query-analyze-artifacts', { revision: 0, limit: 1 })
       const second = await rpc.call('query-analyze-artifacts', { revision: 0, limit: 1, offset: first.nextOffset! })
@@ -51,6 +54,10 @@ describe('Dashboard domain queries', () => {
       expect(await rpc.call('query-analyze-packages', { revision: 0, budgetStatus: 'exceeded' })).toMatchObject({
         total: 1,
         items: [{ id: 'main', moduleCount: 2, budget: { ratio: 1, status: 'exceeded' } }],
+      })
+      expect(await rpc.call('query-analyze-packages', { revision: 0, budgetStatus: 'unknown' })).toMatchObject({
+        total: 1,
+        items: [{ id: 'feature', budget: { status: 'unknown', measurement: 'file-bytes' } }],
       })
       expect(await rpc.call('query-analyze-modules', { revision: 0, packageId: 'main', artifact: 'feature/a.js' })).toMatchObject({ total: 0, items: [] })
       expect(await rpc.call('query-analyze-modules', { revision: 0, packageId: 'feature', artifact: 'feature/a.js', query: 'SRC/A' })).toMatchObject({
@@ -132,6 +139,41 @@ describe('Dashboard domain queries', () => {
       expect(await rpc.call('query-analyze-artifacts', { revision: 0, moduleId: 'style' })).toMatchObject({
         total: 1,
         items: [{ packageId: 'feature', file: 'feature/unknown.js', moduleCount: 1 }],
+      })
+    }
+    finally {
+      controller.dispose()
+      await instance.close()
+    }
+  })
+
+  it('retains runtime budget completeness and package overrides without unbounded file lists', async () => {
+    const current = report()
+    current.metadata!.budgets.runtimeBytes = 10
+    current.metadata!.budgets.packageBytes = { main: 50 }
+    const controller = createAnalyzeDashboardDevframe({ snapshot: { current, previous: null, artifacts: new Map() }, roots: {} })
+    const instance = initDevframe(controller.definition, { auth: false, base: '/', sse: false, ws: false, mcp: false })
+    try {
+      await instance.ready
+      const rpc = (await instance.context).scope('weapp-vite').rpc
+      const summary = await rpc.call('get-analyze-summary', { revision: 0 })
+      expect(summary).toMatchObject({
+        runtimeBudget: { status: 'unknown', measurement: 'unavailable' },
+        packageBudgets: { exceeded: 1, unknown: 1, ok: 0, warning: 0 },
+      })
+      expect(summary.totalBudget).not.toHaveProperty('files')
+      expect(summary.runtimeBudget).not.toHaveProperty('files')
+      expect(await rpc.call('query-analyze-packages', { revision: 0, query: 'main' })).toMatchObject({
+        items: [{ budget: { limitBytes: 50, ratio: 4, status: 'exceeded' } }],
+      })
+
+      current.packages[1]!.files.pop()
+      current.packages[0]!.files[0]!.modules![0]!.sourceType = 'node_modules'
+      current.artifacts = createArtifactAnalysis(current.packages, id => id === 'a' ? { name: 'wevu' } : undefined)
+      await controller.update(current, new Map())
+      expect(await rpc.call('get-analyze-summary', { revision: 1 })).toMatchObject({
+        runtimeBudget: { currentBytes: 100, limitBytes: 10, status: 'exceeded', measurement: 'upper-bound' },
+        packageBudgets: { exceeded: 1, warning: 1, unknown: 0, ok: 0 },
       })
     }
     finally {

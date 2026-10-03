@@ -141,6 +141,22 @@ await miniProgram.flushConsole()
 
 先用 `addListener` 被动注册，再显式等待 `enableLog`，可以记录初始化期间的日志。`flushConsole()` 等待调用时已收到的错误属性检查完成；每次查询最多等待 1 秒，失败会在原参数上保留 `inspectionError`。断开连接时尚未完成的日志也会携带该诊断发布。只有宿主明确返回 CDP 命令不支持时才回退 SDK 格式；其他初始化错误仍然抛出。重复调用 `enableLog` 会刷新 Runtime 订阅，并保留已选择的格式。
 
+### 4.7 AppService 堆内存探测
+
+`getAppServiceHeapUsage({ timeout })` 通过现有 `App.CDPCommand` 调用 `Runtime.getHeapUsage`，默认超时 2500ms。支持时返回 `{ status: 'available', source: 'appservice-cdp-runtime', usedSize, totalSize }`，两个值均为字节。仅当宿主明确不支持该协议或方法时，返回 `status: 'unsupported'` 及 `protocol-unimplemented` / `method-not-found` 原因。
+
+```ts
+const heap = await miniProgram.getAppServiceHeapUsage({ timeout: 2_500 })
+if (heap.status === 'available') {
+  console.log({ usedBytes: heap.usedSize, allocatedBytes: heap.totalSize })
+}
+else {
+  console.log({ unsupported: heap.reason })
+}
+```
+
+空结果、缺失字段、字符串、负数、非有限数值或已用量超过分配量都会报错；连接超时与其他协议错误原样传播，不会转换为不支持或零内存。每次调用重新探测，不缓存旧会话的能力结果，也不主动触发 GC。该指标仅覆盖 AppService JS 堆，不是 renderer/native 内存、进程 RSS、峰值或可归因的组件独占内存。实际可用性取决于连接的 DevTools/基础库，仍须在目标宿主确认；headless 不提供真实 IDE 堆证据。
+
 ## 5. 主要导出
 
 | 导出                      | 说明                                     |
@@ -164,3 +180,9 @@ pnpm --filter @weapp-vite/miniprogram-automator typecheck
 
 - 仓库：https://github.com/weapp-vite/weapp-vite
 - `weapp-ide-cli`：[../weapp-ide-cli/README.md](../weapp-ide-cli/README.md)
+
+## 启动预算与取消
+
+微信 DevTools 的 `launch` / `connect` 使用一次总 `timeout`（默认 30 秒）。路径准备、端口租约、HTTP 适配、WebSocket、版本与 App ready 均消耗剩余预算，自动重试不重置 deadline。可传 `signal` 取消；成功后连接归调用方管理。
+
+失败保留 `cause`，`error.operation` 包含阶段、最后成功阶段、耗时、剩余预算、尝试次数、未退出操作数量及本次资源清理状态。清理 `pending` 表示在预算内未确认退出，不能当作资源已释放。迟到连接只断开自身 WebSocket；启动器只终止持有句柄的 CLI 子进程，不据此认领 IDE 宿主或清理其他项目。无需在 App ready 后再固定等待五秒。

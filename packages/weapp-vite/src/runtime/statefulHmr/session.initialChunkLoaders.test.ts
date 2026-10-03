@@ -66,6 +66,7 @@ describe('stateful session initial chunk package boundaries', () => {
     harness.createServer.mockImplementation(async (options: InlineConfig) => {
       const server = {
         config: {
+          inlineConfig: options,
           root: options.root,
           publicDir: path.join(options.root!, 'static-assets'),
           build: { copyPublicDir: true },
@@ -75,7 +76,8 @@ describe('stateful session initial chunk package boundaries', () => {
         watcher: Object.assign(new EventEmitter(), { add: vi.fn() }),
         middlewares: { use: vi.fn() },
         httpServer: { address: () => undefined },
-        close: vi.fn(),
+        close: vi.fn(async () => {}),
+        restart: vi.fn(async () => {}),
         async listen() {
           // 该 fixture 是包含 app 的初始完整输出；沿用正式 adapter 的必填来源与异步完成契约。
           await harness.callbacks!.onOutput(harness.output, 'full')

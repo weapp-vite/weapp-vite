@@ -5,6 +5,7 @@ import {
   createHmrProfileEventId,
   DEFAULT_HMR_PROFILE_JSONL_RELATIVE_PATH,
   HMR_PROFILE_JSON_ENV,
+  recordHmrProfileDuration,
   resolveHmrProfileJsonEnvOption,
   resolveHmrProfileJsonPath,
 } from './hmrProfile'
@@ -97,4 +98,11 @@ describe('createHmrProfileCheckpoint', () => {
       clock.mockRestore()
     }
   })
+})
+
+it('distinguishes a measured zero duration from an unobserved stage', () => {
+  const profile: Partial<Record<HmrProfileDurationKey, number>> = {}
+  recordHmrProfileDuration(profile, 'writeMs', 0)
+  recordHmrProfileDuration(profile, 'transformMs', -1)
+  expect(profile).toEqual({ writeMs: 0 })
 })

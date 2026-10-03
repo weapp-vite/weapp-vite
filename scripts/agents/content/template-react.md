@@ -54,7 +54,7 @@
 ## React Mini-program Authoring
 
 - Keep `weapp.react` as the project-level owner for all `.jsx` and `.tsx` modules; do not mix Wevu JSX in the same build.
-- Use React 19.2.x, `react-reconciler` 0.33.x, and `@weapp-vite/react` without `react-dom`.
+- Use the current workspace baseline of React 19.3.x, `react-reconciler` 0.34.x, and `@weapp-vite/react` without `react-dom`.
 - Start with `renderMode: 'auto'`; use `dynamic` only for reconciler-tree diagnostics and `static` for strict static-shape validation.
 - Create and unmount `createReactMiniProgramRoot` in the native page/component lifecycle, and forward host events through the root.
 - Register native or Wevu custom components in `usingComponents` before declaring a top-level `createNativeComponent()` bridge in the current TSX file.

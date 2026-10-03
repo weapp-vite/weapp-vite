@@ -1,6 +1,7 @@
 /* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI 构建。 */
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
+import { DomUtils, parseDocument } from 'htmlparser2'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { readJavaScriptOutput } from '../utils/runtimeProviderOutput'
@@ -139,7 +140,14 @@ describe('e2e app: wevu-features (build)', { concurrent: false }, () => {
     expect(useAttrsPageJs).toContain('runE2E')
     expect(useAttrsPageJs).toContain('_runE2E')
 
-    expect(useAttrsFeatureWxml).toContain('wx:if="{{visible}}"')
+    const useAttrsTemplate = parseDocument(useAttrsFeatureWxml, { xmlMode: true, decodeEntities: false })
+    const conditionalAttrsContent = DomUtils.findAll(node => node.attribs.id === 'attrs-extra', useAttrsTemplate.children)
+    expect(conditionalAttrsContent).toHaveLength(1)
+    // 同名 prop 与 setup computed 会生成独立绑定；校验真实条件边界，不绑定临时字段名。
+    expect(conditionalAttrsContent[0]?.parent).toMatchObject({
+      name: 'block',
+      attribs: { 'wx:if': expect.stringMatching(/^\{\{\s*[\w$]+\s*\}\}$/) },
+    })
     expect(useAttrsFeatureWxml).toContain('wx:for="{{attrRows}}"')
     expect(useAttrsFeatureWxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
 

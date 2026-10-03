@@ -7,6 +7,7 @@ import { fs } from '@weapp-core/shared/fs'
 import { validateDependencyVersionStrategy } from './dependencyVersions'
 import { createProject, TemplateName } from './index'
 import { RECOMMENDED_SKILLS_INSTALL_COMMAND } from './skills'
+import { validateToolchain } from './toolchain'
 
 const cwd = process.cwd()
 
@@ -62,8 +63,19 @@ function parseCliArgs(argv: string[]) {
   let installSkills: boolean | undefined
   let dependencyVersionStrategy = 'bundled'
   let registry: string | undefined
+  let toolchain = 'wv'
 
   for (const arg of argv) {
+    if (arg === '--') {
+      continue
+    }
+    if (arg.startsWith('--toolchain=')) {
+      toolchain = arg.slice('--toolchain='.length)
+      continue
+    }
+    if (arg === '--toolchain') {
+      throw new Error('请使用 --toolchain=wv、--toolchain=vite 或 --toolchain=vite-plus')
+    }
     if (arg.startsWith('--registry=')) {
       registry = arg.slice('--registry='.length)
       if (!registry) {
@@ -93,6 +105,7 @@ function parseCliArgs(argv: string[]) {
   }
 
   validateDependencyVersionStrategy(dependencyVersionStrategy)
+  validateToolchain(toolchain)
 
   return {
     command: positionals[0],
@@ -101,6 +114,7 @@ function parseCliArgs(argv: string[]) {
     installSkills,
     dependencyVersionStrategy,
     registry,
+    toolchain,
   }
 }
 
@@ -148,6 +162,7 @@ export async function run() {
     installSkills,
     dependencyVersionStrategy: parsedArgs.dependencyVersionStrategy,
     registry: parsedArgs.registry,
+    toolchain: parsedArgs.toolchain,
   })
 }
 

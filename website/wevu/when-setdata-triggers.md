@@ -81,6 +81,16 @@ Wevu 不是盲目整包下发，而是优先只发变化路径。
 `setData` 支持 debug 信息回调与采样，可以看到当前是 patch 还是 diff、为何回退、payload 键数与估算体积。
 这让性能调优从“猜”变成“看数据”。
 
+## 观测 prepare、dispatch 与 commit
+
+设置 `setData: { debugPhases: true, debugWhen: 'always', debug: onDebug }` 后，现有回调会额外收到带 `phase` 的版本化记录。按 `(phase.observerId, revision)` 关联一轮更新，按 `phase.dispatch.id` 去重统计物理调用；后台缓冲的多个 revision 可以共享一次 `setData`。`payloadBytes` 采用 JSON UTF-8 字节数，未观测值为 `null`。
+
+`prepareDurationMs` 记录依赖刷新到载荷就绪，`dispatch.durationMs` 记录同步调用时间，`commitDurationMs` 记录调用开始到结算。时间来自毫秒级 `Date.now()`，缺少边界或时钟倒退时为 `null`。采样按 revision 执行一次，不会独立丢弃同轮的中间阶段；部分采样不能代表全部物理调用量。
+
+`completion` 明确区分 `callback`、`promise`、`return`、`throw` 和 `unknown`，`result` 区分失败、恢复、废弃与乱序。所有记录的 `visibleAt` 都是 `null`：框架未测量 paint 或真实可见完成。全局 `nextTick()` 仍只等待 JS 队列；现有实例 `$nextTick` 语义不变，不新增等待 API。
+
+默认关闭阶段观测，不增加载荷复制、计时、随机采样或序列化。开启后会增加 JSON 字节测量与回调成本，性能比较应交错采集关闭/开启两组原始样本，并独立断言真实页面 marker。完整字段口径、去重示例与延迟提交 fixture 见仓库 [setData 阶段观测](https://github.com/weapp-vite/weapp-vite/blob/main/docs/wevu/setdata-observation.md)。
+
 ## 常见误解
 
 ### 误解 1：响应式等于即时 setData

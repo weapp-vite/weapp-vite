@@ -11,18 +11,18 @@ const tracker = createUpdateBenchTracker()
 
 export default defineComponent({
   setData: {
-    strategy: 'diff',
     debugWhen: 'always',
+    debugPhases: true,
     debug: createUpdateBenchDebug({ tracker }),
   },
   setup: createUpdateBenchSetup({
-    strategyLabel: 'diff',
+    strategyLabel: 'default',
     tracker,
   }),
   data() {
     return createUpdateBenchData({
-      strategyLabel: 'diff',
-      title: 'Vue Update Benchmark (diff)',
+      strategyLabel: 'default',
+      title: 'Vue Update Benchmark (default)',
     })()
   },
 })
@@ -34,7 +34,7 @@ export default defineComponent({
       <view class="hero__title">
         {{ title }}
       </view>
-      <view class="hero__summary">
+      <view id="bench-visible-marker" class="hero__summary">
         strategy: {{ strategyLabel }} / {{ summary }}
       </view>
       <view class="hero__metric">

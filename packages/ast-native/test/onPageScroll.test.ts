@@ -127,6 +127,51 @@ const count = 1
     })
   })
 
+  it.each([
+    {
+      source: 'onPageScroll(() => wx.getStorageSync("k"))',
+      kinds: ['syncApi'],
+    },
+    {
+      source: 'onPageScroll(() => this.setData({ top: 1 }))',
+      kinds: ['setData'],
+    },
+    {
+      source: 'const page = { onPageScroll: () => wx.getStorageSync("k") }',
+      kinds: ['syncApi'],
+    },
+    {
+      source: 'onPageScroll(() => {})',
+      kinds: ['empty'],
+    },
+    {
+      source: 'onPageScroll(() => () => wx.getStorageSync("nested"))',
+      kinds: [],
+    },
+    {
+      source: 'onPageScroll(() => function nested() { wx.getStorageSync("nested") })',
+      kinds: [],
+    },
+    {
+      source: 'onPageScroll(() => { const nested = () => wx.getStorageSync("nested"); return nested })',
+      kinds: [],
+    },
+    {
+      source: 'onPageScroll(() => ({ nested: () => wx.getStorageSync("nested") }))',
+      kinds: [],
+    },
+  ])('preserves callback body boundaries for $source', ({ source, kinds }) => {
+    const diagnostics = collectOnPageScrollDiagnosticsNative(source)
+
+    expect(diagnostics.map(diagnostic => diagnostic.kind)).toEqual(kinds)
+    for (const diagnostic of diagnostics) {
+      expect(diagnostic.line).toBe(1)
+      if (diagnostic.kind === 'syncApi') {
+        expect(diagnostic.syncApi).toBe('wx.getStorageSync')
+      }
+    }
+  })
+
   it('collects native analysis-only hot paths', () => {
     expect(mayContainStaticRequireLiteralNative(`const dep = require('./dep')`)).toBe(true)
     expect(mayContainStaticRequireLiteralNative('const dep = require(name)')).toBe(false)

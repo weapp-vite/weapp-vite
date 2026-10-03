@@ -1,11 +1,11 @@
-import fs from 'node:fs/promises'
-import { syncBuiltinESMExports } from 'node:module'
+import type { SequenceStepResult } from '../../scripts/editSequence/measurement'
 import path from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { BuildSequenceSession } from '../../scripts/editSequence/build'
-import { bounded, verifyEditSequence } from '../../scripts/editSequence/driver'
+import { verifyEditSequence } from '../../scripts/editSequence/driver'
 import { createProcessObserver } from '../../scripts/editSequence/processObserver'
 import { createSequenceProject } from '../../scripts/editSequence/project'
+import { assertResourceSequence, createResourceSequence, summarizeResourceSequence } from '../../scripts/editSequence/resourceSequence'
 import { buildSequences, compilerSequences } from '../../scripts/editSequence/scenarios'
 
 interface BuildSnapshot {
@@ -43,7 +43,15 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
               }
               return snapshot
             },
+          }, {
+            onStep: (step) => {
+              expect(step.measurement?.build).toBeDefined()
+              if (step.label === 'unreferenced dependency edit') {
+                expect(step.measurement?.build).toMatchObject({ loadCalls: 0, transformCalls: 0, publications: 0 })
+              }
+            },
           })
+          expect(observer.resources?.()).toEqual({ children: 0 })
         }
         finally {
           await project.close()
@@ -51,13 +59,33 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
       }, 65_000)
     }
 
+    it(`${engine}: observes warm resource windows without restarting the incremental session`, async () => {
+      const project = await createSequenceProject()
+      const observer = createProcessObserver<BuildSnapshot>(engine, project.root, { resources: true })
+      const steps: SequenceStepResult[] = []
+      try {
+        await verifyEditSequence(createResourceSequence(), observer, { timeoutMs: 90_000, onStep: step => steps.push(step) })
+        expect(steps).toHaveLength(15)
+        expect(steps.every(step => step.status === 'passed')).toBe(true)
+        for (const step of steps) {
+          expect(step.measurement?.session).toEqual(engine === 'classic' ? { watchers: 1, engines: 0 } : { watchers: 0, engines: 1 })
+        }
+        assertResourceSequence(summarizeResourceSequence(steps))
+        expect(observer.resources?.()).toEqual({ children: 0 })
+      }
+      finally {
+        await project.close()
+      }
+    }, 95_000)
+
     it(`${engine}: waits for the final rapid save after an intermediate publication`, async () => {
       const project = await createSequenceProject()
       const session = new BuildSequenceSession(engine, project.root, path.join(project.root, '.sequence-output', 'incremental'))
       const baseline = createProcessObserver<unknown>(engine, project.root)
-      const marker = 'sequence-consumed-value'
-      const intermediate = `export const value = "intermediate"; console.log("${marker}", value);`
-      const final = `export const value = "final"; console.log("${marker}", value);`
+      const intermediate = 'export const value = "two";'
+      const final = 'export const value = "end";'
+      // 保存同长度内容并固定 mtime，确保轮询依据内容发现每一版，而非依赖平台时间戳精度。
+      const fileTimestamp = new Date('2020-01-01T00:00:00.000Z')
       try {
         await verifyEditSequence({
           name: 'rapid-publication-boundary',
@@ -73,33 +101,23 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
           name: engine,
           incremental: async (input) => {
             if (input.step === 0) {
-              return session.observe(input)
+              return session.observe(input, { fileTimestamp })
             }
-            const consumed = Promise.withResolvers<void>()
-            const rename = fs.rename
-            const logSpy = vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-              if (args[0] === marker && args[1] === 'intermediate') {
-                consumed.resolve()
-              }
+            const observed: unknown[] = []
+            const snapshot = await session.observe(input, {
+              fileTimestamp,
+              afterSave: async (files) => {
+                if (files['value.js'] !== intermediate) {
+                  return
+                }
+                // 中间版本须真实执行、确认 delivery 并完成 coordinator，才开始第二次保存。
+                const publication = await session.waitForPublication(value => (value.semantics as { value: string }).value === 'two', input.signal)
+                observed.push(publication.semantics)
+              },
             })
-            const renameSpy = vi.spyOn(fs, 'rename').mockImplementation(async (from, to) => {
-              await rename(from, to)
-              if (to === path.join(project.root, 'value.js') && await fs.readFile(to, 'utf8') === intermediate) {
-                // 等待真实已发布代码执行；不靠 sleep 猜测 watcher 是否跨过 debounce。
-                await bounded(() => consumed.promise, input.signal)
-              }
-            })
-            syncBuiltinESMExports()
-            try {
-              const snapshot = await session.observe(input)
-              expect(snapshot.published?.semantics).toMatchObject({ value: 'final' })
-              return snapshot
-            }
-            finally {
-              renameSpy.mockRestore()
-              logSpy.mockRestore()
-              syncBuiltinESMExports()
-            }
+            expect(observed).toEqual([expect.objectContaining({ value: 'two' })])
+            expect(snapshot.published?.semantics).toMatchObject({ value: 'end' })
+            return snapshot
           },
           fresh: input => baseline.fresh(input),
           close: async () => {

@@ -1,6 +1,7 @@
 import type { HeadlessComponentDefinition } from '../../host'
 import type { ArtifactSource } from '../../kernel'
 import type { HeadlessProjectDescriptor } from '../../project'
+import type { MiniProgramEventBinding } from '../../view/eventBinding'
 import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { WxsModuleBindings } from '../../view/wxs'
 import type { HeadlessComponentInstance } from '../componentInstance'
@@ -22,11 +23,13 @@ export interface RuntimeRenderScope {
   classList?: string[]
   data: Record<string, any>
   dataset?: Record<string, unknown>
-  eventBindings?: Map<string, { method: string, stopAfter: boolean }>
+  eventBindings?: Map<string, MiniProgramEventBinding>
+  captureEventBindings?: Map<string, MiniProgramEventBinding>
   getMethod: (methodName: string) => ((...args: any[]) => any) | undefined
   getScopeId: () => string
   genericComponents?: Map<string, string>
   hostId?: string
+  hostNode?: DomNodeLike
   listenerScopeId?: string
   id?: string
   ownerScopeId?: string

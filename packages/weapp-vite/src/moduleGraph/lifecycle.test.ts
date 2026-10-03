@@ -79,6 +79,50 @@ describe('module graph scope and session lifetime', () => {
     await expect(service.load({ id: 'value' })).rejects.toThrow(TypeError)
   })
 
+  it('releases plugin capabilities after the graph is rebound at build end', async () => {
+    const service = createModuleGraphService()
+    const scope = {}
+    const context = buildContext('/src/page.ts', '/src/dep.ts')
+    service.bindBuildContext(scope, context)
+    service.bindPluginContext(scope, context)
+    // buildEnd/generateBundle 更新同一构建的图，不能让 resolver 脱离清理令牌。
+    service.bindBuildContext(scope, context)
+    service.bindPluginContext(scope, { ...context })
+    service.unbindBuildContext(scope, context)
+    await expect(service.resolve('value')).rejects.toThrow(TypeError)
+    await expect(service.load({ id: 'value' })).rejects.toThrow(TypeError)
+  })
+
+  it('resolves between snapshots through the live dev host and releases it with its owner', async () => {
+    const service = createModuleGraphService()
+    const host = {
+      ...devServer('/src/page.ts', '/src/dep.ts'),
+      pluginContainer: { resolveId: async (source: string) => ({ id: `/src/${source}` }) },
+    }
+    const releaseHost = service.bindDevServer(host)
+    const scope = {}
+    const context = buildContext('/src/build.ts', '/src/dep.ts')
+    service.bindBuildContext(scope, context)
+    service.bindPluginContext(scope, context)
+    await expect(service.resolve('value')).resolves.toEqual({ id: '/src/build.ts/value' })
+    service.unbindBuildContext(scope, context)
+    await expect(service.resolve('value')).resolves.toEqual({ id: '/src/value' })
+    releaseHost()
+    await expect(service.resolve('value')).rejects.toThrow(TypeError)
+  })
+
+  it('releases per-hook plugin wrappers with the owning build lease', async () => {
+    const service = createModuleGraphService()
+    const scope = {}
+    const context = buildContext('/src/page.ts', '/src/dep.ts')
+    const release = service.bindBuildContext(scope, context)
+    service.bindPluginContext(scope, { ...context })
+    release()
+    release()
+    await expect(service.resolve('value')).rejects.toThrow(TypeError)
+    await expect(service.load({ id: 'value' })).rejects.toThrow(TypeError)
+  })
+
   it('releases renamed owner dependencies while preserving shared dependencies of surviving owners', () => {
     const service = createModuleGraphService()
     service.replaceEntryDependencies('/src/old.vue', 'style', ['/src/old.css', '/src/shared.css'])

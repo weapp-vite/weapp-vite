@@ -14,11 +14,14 @@ it.each([
   const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-watch-'))
   let watcher: RolldownWatcher | undefined
   const errors: unknown[] = []
+  const nativeEvents: string[] = []
+  let lastWrite = 'fixture setup'
   const writeStarted = Promise.withResolvers<void>()
   const writeRelease = Promise.withResolvers<void>()
   let holdWrite = false
   const write = async (file: string, content: string) => {
     await mkdir(path.dirname(path.join(root, file)), { recursive: true })
+    lastWrite = file
     await writeFile(path.join(root, file), content)
   }
   const output = (file: string) => readFile(path.join(root, 'dist', file), 'utf8')
@@ -63,6 +66,9 @@ it.each([
       configFile: false,
       plugins: [weapp(), {
         name: 'hold-native-write',
+        watchChange(id, change) {
+          nativeEvents.push(`${change.event}:${path.relative(root, id).replaceAll('\\', '/')}`)
+        },
         async writeBundle() {
           if (holdWrite) {
             writeStarted.resolve()
@@ -75,6 +81,7 @@ it.each([
       build: { watch: {}, emptyOutDir, minify: false, sourcemap: true },
     }) as RolldownWatcher
     watcher.on('event', (event) => {
+      nativeEvents.push(event.code)
       if (event.code === 'ERROR') {
         errors.push(event.error)
       }
@@ -149,6 +156,9 @@ it.each([
     await closing
     expect(settled).toHaveBeenCalledOnce()
     await watcher.close()
+  }
+  catch (cause) {
+    throw new Error(`Native watch state: ${JSON.stringify({ lastWrite, nativeEvents, failures: errors.length })}`, { cause })
   }
   finally {
     writeRelease.resolve()

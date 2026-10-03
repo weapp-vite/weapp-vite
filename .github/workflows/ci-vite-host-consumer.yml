@@ -18,6 +18,9 @@ on:
       - 'templates/weapp-vite-plugin-template/**'
       - 'e2e-apps/chunk-modes/**'
       - 'mpcore/packages/simulator/**'
+      - 'mpcore/packages/test/**'
+      - 'mpcore/packages/vitest/**'
+      - 'mpcore/packages/weapp-vite/**'
       - 'e2e/ide/subpackagePlacementDom/**'
       - 'e2e-apps/wevu-subpackage-placement/**'
       - 'e2e/ide/reactRuntimeDom/**'
@@ -42,6 +45,61 @@ permissions:
   contents: read
 
 jobs:
+  node-support:
+    name: Published Node support (${{ matrix.os }} / Node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [22.18.0, 24.11.0, 26.0.0, '22', '24']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '24'
+      - uses: ./.github/actions/refresh-workspace-deps
+        with:
+          build-command: pnpm exec turbo run build --filter=weapp-vite... --filter=rolldown-require...
+      - name: Pack candidates before switching to the consumer runtime
+        run: node packages/weapp-vite/scripts/consumerTarballs.mjs .cache/node-support-tarballs
+      - name: Install browser for published Web consumption
+        run: pnpm exec playwright install --with-deps chromium
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install and verify published native, SFC, Tailwind and Web consumers
+        run: node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv
+        env:
+          WEAPP_VITE_CONSUMER_TARBALLS: .cache/node-support-tarballs
+          WEAPP_VITE_CONSUMER_WEB: '1'
+          WEAPP_VITE_CONSUMER_EVIDENCE: .cache/consumer-evidence.json
+          WEAPP_VITE_CONSUMER_DEPENDENCIES: '1'
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: consumer-evidence-${{ matrix.os }}-${{ matrix.node }}
+          path: .cache/consumer-evidence.json
+
+  dependency-compatibility:
+    name: Strict dependency consumer (${{ matrix.os }} / ${{ matrix.manager }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        manager: [pnpm, npm]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=rolldown-require...
+      main_command: pnpm exec cross-env WEAPP_VITE_DEPENDENCY_EVIDENCE=.cache/dependency-compatibility.json node packages/weapp-vite/scripts/verify-dependency-install.mjs ${{ matrix.manager }}
+      artifact_name: dependency-compatibility-${{ matrix.os }}-${{ matrix.manager }}
+      artifact_path: .cache/dependency-compatibility.json
+    secrets: inherit
+
   react-host-paths:
     name: React host paths (${{ matrix.os }})
     strategy:
@@ -55,6 +113,43 @@ jobs:
       timeout_minutes: 30
       build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react...
       main_command: pnpm vitest run packages/weapp-vite/test/vite-react.test.ts
+    secrets: inherit
+
+  watch-validation:
+    name: Watch validation (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=weapp-vite...
+      main_command: >-
+        pnpm --filter weapp-vite exec vitest run
+        test/vite-watch-validation.test.ts test/vite-watch.test.ts test/vite-worker.test.ts
+        test/wxml-transform-watch.test.ts
+        src/vite/session.test.ts src/runtime/buildPlugin/workers.test.ts
+    secrets: inherit
+
+  route-topology:
+    name: Route topology (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=weapp-vite...
+      main_command: >-
+        pnpm vitest run packages/weapp-vite/src/plugins/core/lifecycle/autoRoutesTopology.test.ts
+        packages/weapp-vite/src/plugins/core/lifecycle/watch.test.ts
+        packages/weapp-vite/test/vite-watch.test.ts
     secrets: inherit
 
   host-paths:
@@ -87,7 +182,9 @@ jobs:
       node_version: 24.18.0
       timeout_minutes: 30
       build_command: pnpm exec turbo run build --filter=@weapp-vite/react...
-      main_command: pnpm --filter weapp-vite exec vitest run test/vite-native-path-controls.test.ts
+      main_command: >-
+        pnpm --filter weapp-vite exec vitest run test/vite-native-path-controls.test.ts
+        test/vite-native-watch-topology.test.ts
     secrets: inherit
 
   consumer:

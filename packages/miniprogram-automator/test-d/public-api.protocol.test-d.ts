@@ -1,4 +1,4 @@
-import type { Connection } from '..'
+import type { Connection } from '@weapp-vite/miniprogram-automator'
 import { expectError, expectType } from 'tsd'
 
 declare const connection: Connection

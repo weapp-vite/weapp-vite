@@ -1,119 +1,11 @@
 import type { VueVirtualCode } from '@vue/language-core'
 import { forEachEmbeddedCode } from '@volar/language-core'
 import * as compilerDom from '@vue/compiler-dom'
-import { createVueLanguagePlugin } from '@vue/language-core'
 import ts from 'typescript'
 import plugin from '../src/index'
 import { resolveEmbeddedJsonBlock } from '../src/jsonBlock'
 import { getSchemaForType } from '../src/schema'
-
-interface ServiceScriptSnapshot {
-  getText: (start: number, end: number) => string
-  getLength: () => number
-}
-
-interface ServiceScript {
-  code: {
-    snapshot: ServiceScriptSnapshot
-  }
-}
-
-interface VueLanguagePluginWithTs {
-  createVirtualCode?: (
-    scriptId: string,
-    languageId: string,
-    snapshot: {
-      getText: (start: number, end: number) => string
-      getLength: () => number
-      getChangeRange: (oldSnapshot: { getText: (start: number, end: number) => string, getLength: () => number }) => undefined
-    },
-    ctx: {
-      getAssociatedScript: (scriptId: string) => undefined
-    },
-  ) => VueVirtualCode | undefined
-  typescript?: {
-    getServiceScript: (virtualCode: VueVirtualCode) => ServiceScript | undefined
-  }
-}
-
-function createLanguagePlugin(skipTemplateCodegen = false) {
-  return createVueLanguagePlugin<string>(
-    ts,
-    {},
-    {
-      target: 3.5,
-      lib: 'wevu',
-      typesRoot: '',
-      extensions: ['.vue'],
-      vitePressExtensions: [],
-      petiteVueExtensions: [],
-      vapor: false,
-      jsxSlots: false,
-      strictVModel: false,
-      strictCssModules: false,
-      checkUnknownProps: false,
-      checkUnknownEvents: false,
-      checkUnknownDirectives: false,
-      checkUnknownComponents: false,
-      inferComponentDollarEl: false,
-      inferComponentDollarRefs: false,
-      inferTemplateDollarAttrs: false,
-      inferTemplateDollarEl: false,
-      inferTemplateDollarRefs: false,
-      inferTemplateDollarSlots: false,
-      skipTemplateCodegen,
-      fallthroughAttributes: false,
-      checkRequiredFallthroughAttributes: false,
-      resolveStyleImports: false,
-      resolveStyleClassNames: false,
-      fallthroughComponentNames: [],
-      dataAttributes: [],
-      htmlAttributes: [],
-      optionsWrapper: [],
-      macros: {
-        defineProps: ['defineProps'],
-        defineSlots: ['defineSlots'],
-        defineEmits: ['defineEmits'],
-        defineExpose: ['defineExpose'],
-        defineModel: ['defineModel'],
-        defineOptions: ['defineOptions'],
-        withDefaults: ['withDefaults'],
-      },
-      composables: {
-        useAttrs: ['useAttrs'],
-        useCssModule: ['useCssModule'],
-        useSlots: ['useSlots'],
-        useTemplateRef: ['useTemplateRef'],
-      },
-      plugins: [plugin],
-      experimentalModelPropName: {},
-    },
-    id => id,
-  ) as VueLanguagePluginWithTs
-}
-
-function getGeneratedServiceScript(source: string, skipTemplateCodegen = false) {
-  const languagePlugin = createLanguagePlugin(skipTemplateCodegen)
-  const snapshot = {
-    getText: (start: number, end: number) => source.slice(start, end),
-    getLength: () => source.length,
-    getChangeRange: () => undefined,
-  }
-
-  const root = languagePlugin.createVirtualCode?.('fixture.vue', 'vue', snapshot, {
-    getAssociatedScript: () => undefined,
-  })
-  expect(root).toBeTruthy()
-
-  const serviceScript = languagePlugin.typescript?.getServiceScript(root!)
-  expect(serviceScript).toBeTruthy()
-
-  return {
-    languagePlugin,
-    root: root!,
-    generated: serviceScript!.code.snapshot.getText(0, serviceScript!.code.snapshot.getLength()),
-  }
-}
+import { getGeneratedServiceScript } from './serviceScript'
 
 function getPluginParser(
   tsModule: typeof ts = ts,
@@ -172,12 +64,12 @@ function onTap() {}
     expect(parsed).toBeTruthy()
     expect(sourceFileCount).toBe(0)
 
-    const { generated, root } = getGeneratedServiceScript(`<script setup lang="ts">
+    const { generated, root, templateReferences } = getGeneratedServiceScript(`<script setup lang="ts">
 const props = defineProps<{ title: string }>()
 function onTap() {}
 </script>
 <template><view :title="props.title" @tap="onTap" /></template>`)
-    expect(generated).toContain('__VLS_ctx.onTap')
+    expect(templateReferences).toContain('onTap')
     expect(generated).toContain('props.title')
     const serviceCode = Array.from(forEachEmbeddedCode(root), code => code)
       .find(code => code.id === 'script_ts')
@@ -254,15 +146,15 @@ const title = 'demo'
   <wxs src="./phoneReg.wxs" module="phoneReg" />
   <view>{{ phoneReg.toHide(title) }}</view>
 </template>`
-    const { generated, root } = getGeneratedServiceScript(source)
+    const { generated, root, templateReferences } = getGeneratedServiceScript(source)
     expect(generated).toContain(`const phoneReg = {} as Record<string, (...args: any[]) => any>`)
-    expect(generated).toContain(`__VLS_ctx.phoneReg`)
+    expect(templateReferences).toContain('phoneReg')
 
     const embeddedIds = Array.from(forEachEmbeddedCode(root!), code => code.id)
     expect(embeddedIds).toContain('script_ts')
   })
 
-  it('still injects wxs declarations when template codegen is skipped, but template ctx bindings depend on Vue template codegen', () => {
+  it('omits template mappings when template codegen is skipped, while retaining wxs declarations', () => {
     const source = `<script setup lang="ts">
 const title = 'demo'
 </script>
@@ -271,9 +163,9 @@ const title = 'demo'
   <view>{{ phoneReg.toHide(title) }}</view>
 </template>`
 
-    const { generated } = getGeneratedServiceScript(source, true)
+    const { generated, templateReferences } = getGeneratedServiceScript(source, true)
     expect(generated).toContain(`const phoneReg = {} as Record<string, (...args: any[]) => any>`)
-    expect(generated).not.toContain(`__VLS_ctx.phoneReg`)
+    expect(templateReferences).not.toContain('phoneReg')
   })
 
   it('creates a synthetic script setup block for wxs modules when no script exists', () => {
@@ -421,13 +313,11 @@ defineOptions({
   <view @tap="onOrderBtnTap" />
 </template>`
 
-    const { generated } = getGeneratedServiceScript(source)
+    const { generated, templateReferences } = getGeneratedServiceScript(source)
     expect(generated).toContain('const buttons: { left: any[]; right: any[] } = null as any')
     expect(generated).toContain('const isBtnMax: boolean = null as any')
     expect(generated).toContain('const onOrderBtnTap: (...args: any[]) => any = null as any')
-    expect(generated).toContain('__VLS_ctx.buttons')
-    expect(generated).toContain('__VLS_ctx.isBtnMax')
-    expect(generated).toContain('__VLS_ctx.onOrderBtnTap')
+    expect(templateReferences).toEqual(expect.arrayContaining(['buttons', 'isBtnMax', 'onOrderBtnTap']))
   })
 
   it('supports defineOptions factory bindings for template type checking', () => {
@@ -454,10 +344,8 @@ defineOptions(() => ({
   <view @tap="onSubmit" />
 </template>`
 
-    const { generated } = getGeneratedServiceScript(source)
-    expect(generated).toContain('__VLS_ctx.total')
-    expect(generated).toContain('__VLS_ctx.summary')
-    expect(generated).toContain('__VLS_ctx.onSubmit')
+    const { templateReferences } = getGeneratedServiceScript(source)
+    expect(templateReferences).toEqual(expect.arrayContaining(['total', 'summary', 'onSubmit']))
   })
 
   it('supports defineOptions object data bindings for template type checking', () => {
@@ -478,12 +366,10 @@ defineOptions({
   <view @tap="onSubmit" />
 </template>`
 
-    const { generated } = getGeneratedServiceScript(source)
+    const { generated, templateReferences } = getGeneratedServiceScript(source)
     expect(generated).toContain('const total: number = null as any')
     expect(generated).toContain('const loading: boolean = null as any')
-    expect(generated).toContain('__VLS_ctx.total')
-    expect(generated).toContain('__VLS_ctx.loading')
-    expect(generated).toContain('__VLS_ctx.onSubmit')
+    expect(templateReferences).toEqual(expect.arrayContaining(['total', 'loading', 'onSubmit']))
   })
 
   it('infers defineOptions property unions and nested data object types', () => {
@@ -506,11 +392,10 @@ defineOptions({
   <view>{{ profile.tags.length }}</view>
 </template>`
 
-    const { generated } = getGeneratedServiceScript(source)
+    const { generated, templateReferences } = getGeneratedServiceScript(source)
     expect(generated).toContain('const mixedValue: string | number = null as any')
     expect(generated).toContain('const profile: { name: string; tags: string[] } = null as any')
-    expect(generated).toContain('__VLS_ctx.mixedValue')
-    expect(generated).toContain('__VLS_ctx.profile')
+    expect(templateReferences).toEqual(expect.arrayContaining(['mixedValue', 'profile']))
   })
 
   it('infers defineOptions computed return types from getters and functions', () => {
@@ -533,13 +418,11 @@ defineOptions({
   <view>{{ ready ? 'yes' : 'no' }}</view>
 </template>`
 
-    const { generated } = getGeneratedServiceScript(source)
+    const { generated, templateReferences } = getGeneratedServiceScript(source)
     expect(generated).toContain('const total: number = null as any')
     expect(generated).toContain('const title: string = null as any')
     expect(generated).toContain('const ready: boolean = null as any')
-    expect(generated).toContain('__VLS_ctx.total')
-    expect(generated).toContain('__VLS_ctx.title')
-    expect(generated).toContain('__VLS_ctx.ready')
+    expect(templateReferences).toEqual(expect.arrayContaining(['total', 'title', 'ready']))
   })
 
   it('preserves typed defineOptions method signatures in template bindings', () => {
@@ -558,12 +441,10 @@ defineOptions({
   <view @tap="onReset" />
 </template>`
 
-    const { generated } = getGeneratedServiceScript(source)
+    const { generated, templateReferences } = getGeneratedServiceScript(source)
     expect(generated).toContain('const onSubmit: (event: CustomEvent<{ id: number }>) => void = null as any')
     expect(generated).toContain('const formatLabel: (count: number) => string = null as any')
     expect(generated).toContain('const onReset: (...args: any[]) => any = null as any')
-    expect(generated).toContain('__VLS_ctx.onSubmit')
-    expect(generated).toContain('__VLS_ctx.formatLabel')
-    expect(generated).toContain('__VLS_ctx.onReset')
+    expect(templateReferences).toEqual(expect.arrayContaining(['onSubmit', 'formatLabel', 'onReset']))
   })
 })

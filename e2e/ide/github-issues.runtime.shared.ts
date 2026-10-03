@@ -3,6 +3,7 @@ import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect } from 'vitest'
+import { rebaseTempConfigExtends } from '../../scripts/testFixtures/configExtends'
 import {
   isDevtoolsHttpPortError,
   isDevtoolsLoginRequiredError,
@@ -263,6 +264,8 @@ async function prepareIsolatedProjectRoot() {
       dereference: false,
     })
   }))
+
+  await rebaseTempConfigExtends(SOURCE_APP_ROOT, APP_ROOT)
 
   if (await fs.pathExists(SOURCE_NODE_MODULES)) {
     await fs.symlink(SOURCE_NODE_MODULES, path.join(APP_ROOT, 'node_modules'), 'junction')

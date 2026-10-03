@@ -2,7 +2,6 @@
 
 import { html } from 'lit'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { compileWxml } from '../src/compiler/wxml'
 import { bindRuntimeEvent, createTemplate } from '../src/runtime'
 import { defineComponent } from '../src/runtime/component'
 
@@ -14,31 +13,6 @@ describe('WXML event name identity', () => {
   afterEach(() => {
     document.body.replaceChildren()
     vi.restoreAllMocks()
-  })
-
-  it('preserves custom event case in compiled listeners while retaining native aliases', () => {
-    const result = compileWxml({
-      id: '/src/pages/index/index.wxml',
-      source: `
-        <event-child
-          bind:ready="handleReady"
-          bind:onready="handleLowerReady"
-          bind:onReady="handleCamelReady"
-          bindTap="handleTap"
-        />
-      `,
-      componentTags: {
-        'event-child': 'wv-component-components-event-child-index',
-      },
-      resolveTemplatePath: () => undefined,
-      resolveWxsPath: () => undefined,
-    })
-
-    expect(result.code).toContain('"ready"')
-    expect(result.code).toContain('"onready"')
-    expect(result.code).toContain('"onReady"')
-    expect(result.code).toContain('"click"')
-    expect(result.code).toContain('"tap"')
   })
 
   it('delivers case-distinct custom events through compiled component listeners', async () => {

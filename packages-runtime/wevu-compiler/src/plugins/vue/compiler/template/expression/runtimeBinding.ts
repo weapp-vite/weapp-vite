@@ -33,6 +33,7 @@ export function hasWxmlParenthesizedMemberAccess(exp: string): boolean {
 export function shouldFallbackToRuntimeBinding(
   exp: string,
   templateSafeCallNames: ReadonlySet<string> = new Set(),
+  context?: TransformContext,
 ): boolean {
   const trimmed = exp.trim()
   if (!trimmed) {
@@ -48,7 +49,7 @@ export function shouldFallbackToRuntimeBinding(
   }
 
   let shouldFallback = false
-  traverse(parsed.ast, {
+  const visitor: Parameters<typeof traverse>[1] = {
     CallExpression(path) {
       if (
         path.node.callee.type === 'Identifier'
@@ -74,7 +75,20 @@ export function shouldFallbackToRuntimeBinding(
       shouldFallback = true
       path.stop()
     },
-  })
+  }
+  if (context?.scriptSetupPropConflicts?.length) {
+    visitor.Identifier = (path) => {
+      const name = path.node.name
+      if (context.scriptSetupPropConflicts!.includes(name) && path.isReferencedIdentifier()
+        && !context.scopeStack.some(scope => scope.has(name))
+        && !context.slotPropStack.some(scope => Object.hasOwn(scope, name))
+        && !path.scope.hasBinding(name)) {
+        shouldFallback = true
+        path.stop()
+      }
+    }
+  }
+  traverse(parsed.ast, visitor)
   return shouldFallback
 }
 

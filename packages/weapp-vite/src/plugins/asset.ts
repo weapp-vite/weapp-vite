@@ -17,7 +17,6 @@ import { applyOutputChunkTransform, replaceOutputChunkCode, resolveOutputChunkTr
 import { normalizePath, toPosixPath } from '../utils/path'
 import { normalizeEncodedSourceMapLike } from '../utils/sourcemap'
 import { pruneOwnedAssetFiles } from './asset/prune'
-import { createPublicAssetSourcePlan } from './asset/publicSources'
 import { createAssetSourcePlan } from './asset/sources'
 import { emitAlipayGenericPlaceholderAssetsByBase, resolveWeappScopedSlotGenericPlaceholderBase } from './vue/transform/bundle/platform'
 import { injectNativeScopedSlotHostPropertiesInJs } from './vue/transform/injectNativeScopedSlotHostProperties'
@@ -27,7 +26,6 @@ interface AssetPluginState {
   buildTarget: BuildTarget
   resolvedConfig?: ResolvedConfig
   pendingAssets?: Promise<string[]>
-  pendingPublicAssetNames?: Promise<string[]>
 }
 
 function stripQueryAndHash(value: string) {
@@ -391,15 +389,6 @@ function createAssetCollector(state: AssetPluginState): Plugin {
         return
       }
 
-      const publicAssets = createPublicAssetSourcePlan(state.buildTarget === 'app'
-        ? {
-            publicDir: state.resolvedConfig.publicDir,
-            copyPublicDir: state.resolvedConfig.build.copyPublicDir,
-          }
-        : undefined, path.resolve(state.resolvedConfig.root, state.resolvedConfig.build.outDir))
-      state.pendingPublicAssetNames = configService.isDev && state.resolvedConfig.build.write !== false
-        ? publicAssets.scan().then(files => files.map(publicAssets.outputName))
-        : Promise.resolve([])
       state.pendingAssets = createAssetSourcePlan(configService, state.resolvedConfig.build.outDir, state.buildTarget).scan()
     },
 
@@ -408,10 +397,7 @@ function createAssetCollector(state: AssetPluginState): Plugin {
       const files = await state.pendingAssets
       const pending = resolvePendingAssetFiles(files, bundle as OutputBundle, () => this.getModuleIds())
       await emitAssets(ctx, this, bundle as Record<string, any>, pending, 8)
-      nextOwnedFiles = new Set([
-        ...pending.map(file => configService.relativeOutputPath(file)),
-        ...(await state.pendingPublicAssetNames ?? []).filter(file => !bundle[file]),
-      ])
+      nextOwnedFiles = new Set(pending.map(file => configService.relativeOutputPath(file)))
       removedFiles = [...committedOwnedFiles].filter(file => !nextOwnedFiles.has(file) && !bundle[file])
     },
 

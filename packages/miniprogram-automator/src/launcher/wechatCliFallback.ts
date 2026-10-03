@@ -6,6 +6,7 @@ export function extractWechatDevtoolsServicePort(output: string) {
 }
 
 export async function enableAutomatorViaHttp(options: {
+  signal?: AbortSignal
   account?: string
   autoPort: number
   projectPath: string
@@ -27,7 +28,7 @@ export async function enableAutomatorViaHttp(options: {
     endpoint.searchParams.set('trustProject', 'true')
   }
 
-  const response = await fetch(endpoint, { redirect: 'follow' })
+  const response = await fetch(endpoint, { redirect: 'follow', signal: options.signal })
   const body = await response.text()
   if (!response.ok) {
     throw new Error(`WeChat DevTools HTTP automator fallback failed with status ${response.status}`)
@@ -39,6 +40,9 @@ export async function enableAutomatorViaHttp(options: {
   }
   catch {
     throw new Error('WeChat DevTools HTTP automator fallback returned invalid JSON')
+  }
+  if (result && typeof result === 'object' && 'code' in result && Number(result.code) === 10) {
+    throw Object.assign(new Error('DEVTOOLS_LOGIN_REQUIRED: need re-login'), { code: 10 })
   }
   if (result && typeof result === 'object' && 'autoPort' in result) {
     const autoPort = Number(result.autoPort)

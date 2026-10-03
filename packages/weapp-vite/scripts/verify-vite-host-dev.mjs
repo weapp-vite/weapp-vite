@@ -6,12 +6,13 @@ import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { promisify } from 'node:util'
+import { readEmittedStylesheet } from '../../../e2e/utils/emittedStylesheet.ts'
 
 const root = path.resolve(process.argv[2])
 const toolchain = process.argv[3]
 const operation = process.argv[4] ?? 'dev'
 const profile = process.argv[5] ?? 'basic'
-assert(['basic', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform'].includes(profile))
+assert(['basic', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform', 'tailwind'].includes(profile))
 assert(['dev', 'build-watch', 'stateful-dev'].includes(operation))
 const platform = process.argv[6] ?? 'weapp'
 const templateExt = { weapp: 'wxml', alipay: 'axml', tt: 'ttml', swan: 'swan', jd: 'jxml', xhs: 'xhsml' }[platform]
@@ -59,7 +60,8 @@ async function waitForOutput(file, text) {
     if (exited) {
       break
     }
-    const output = await readFile(path.join(root, 'dist', file), 'utf8').catch(() => '')
+    const filename = path.join(root, 'dist', file)
+    const output = await (file.endsWith('.wxss') ? readEmittedStylesheet(filename) : readFile(filename, 'utf8')).catch(() => '')
     if (typeof text === 'string' ? output.includes(text) : text.test(output)) {
       return output
     }
@@ -127,7 +129,17 @@ try {
   }
   await waitForWatchRound(1)
   await waitForDevReady()
-  if (profile === 'platform') {
+  if (profile === 'tailwind') {
+    await waitForOutput('app.wxss', /width:\s*37px/)
+    const file = 'src/pages/native/index.wxml'
+    await writeFile(path.join(root, file), originals.get(file).replace('37px', '53px'))
+    await waitForOutput('app.wxss', /width:\s*53px/)
+    await writeFile(path.join(root, file), originals.get(file))
+    await waitForOutput('pages/native/index.wxml', '37px')
+    await waitForOutput('app.wxss', /width:\s*37px/)
+    assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
+  }
+  else if (profile === 'platform') {
     const file = 'src/pages/index/index.vue'
     await writeFile(path.join(root, file), originals.get(file).replace('SFC 响应式交互检查', 'Updated platform interaction'))
     await waitForOutput(`${platform}/dist/pages/index/index.${templateExt}`, 'Updated platform interaction')

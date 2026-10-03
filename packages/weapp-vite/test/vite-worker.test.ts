@@ -1,6 +1,6 @@
 import type { RolldownWatcher } from 'rolldown'
 import type { InlineConfig } from 'vite'
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { build, createBuilder, createServer } from 'vite'
@@ -61,12 +61,44 @@ it('builds the main application and worker through the native app builder withou
   expect(Object.keys(builder.environments)).toContain('weapp_workers')
 }, 30_000)
 
-it('watches worker imports and recovers from a syntax error without a second worker watcher', async () => {
+it.each([false, true])('watches worker imports and recovers from a syntax error without a second worker watcher (edit during publication: %s)', async (duringPublication) => {
   const { root, config, read, edit } = await fixture()
+  const timeline: unknown[] = []
+  const canonicalRoot = await realpath(root)
+  const relative = (file: string) => path.relative(canonicalRoot, file).replaceAll('\\', '/')
+  let publishing = false
+  const resumePublishing = Promise.withResolvers<void>()
+  config.plugins!.push({
+    name: 'fixture:worker-watch-diagnostics',
+    configResolved(resolved) {
+      timeline.push({ watch: resolved.build.watch })
+    },
+    watchChange(file, change) {
+      timeline.push({ event: change.event, file: relative(file) })
+    },
+    generateBundle(_options, bundle) {
+      const app = bundle['app.json']
+      timeline.push({
+        workers: Object.keys(bundle).filter(file => file.startsWith('workers/')),
+        app: app?.type === 'asset' ? String(app.source) : undefined,
+      })
+    },
+    async writeBundle(_options, bundle) {
+      const worker = bundle['workers/index.js']
+      if (duringPublication && worker?.type === 'asset' && String(worker.source).includes('worker new import')) {
+        publishing = true
+        await resumePublishing.promise
+      }
+    },
+  })
   const watcher = await build({ ...config, build: { ...config.build, watch: {} } }) as RolldownWatcher
   const errors: unknown[] = []
   let rounds = 0
+  watcher.on('change', (file, change) => {
+    timeline.push({ nativeEvent: change.event, file: relative(file) })
+  })
   watcher.on('event', (event) => {
+    timeline.push({ code: event.code, error: event.code === 'ERROR' ? String(event.error) : undefined })
     if (event.code === 'BUNDLE_END') {
       rounds++
     }
@@ -84,10 +116,20 @@ it('watches worker imports and recovers from a syntax error without a second wor
     await writeFile(path.join(root, 'src/workers/new.ts'), 'export const message = \"worker new import\"')
     await edit('export { message } from \"./new\"')
     await expect.poll(read, { timeout: 15_000 }).toContain('worker new import')
+    if (duringPublication) {
+      await expect.poll(() => publishing, { timeout: 15_000 }).toBe(true)
+    }
     await writeFile(path.join(root, 'src/app.json'), '{\"pages\":[\"pages/home/index\"]}')
+    resumePublishing.resolve()
     await expect.poll(() => access(path.join(root, 'dist/workers/index.js')).then(() => true, () => false), { timeout: 15_000 }).toBe(false)
   }
-  finally { await watcher.close() }
+  catch (error) {
+    throw new Error(`Worker watch did not finish: ${JSON.stringify(timeline)}`, { cause: error })
+  }
+  finally {
+    resumePublishing.resolve()
+    await watcher.close()
+  }
 }, 30_000)
 
 it.each(['classic', 'stateful-experimental'] as const)('updates worker dependencies in %s and awaits shutdown', async (runtime) => {

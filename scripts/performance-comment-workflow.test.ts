@@ -22,6 +22,8 @@ describe('performance reporting workflows', () => {
     const workflow = parse(await readFile(path.join(root, '.github/workflows/nightly-performance.yml'), 'utf8'))
     expect(Object.keys(workflow.on).sort()).toEqual(['schedule', 'workflow_dispatch'])
     expect(workflow.on.schedule[0].cron).toBe('35 19 * * *')
+    expect(workflow.on.workflow_dispatch.inputs['main-only']).toMatchObject({ type: 'boolean', default: false })
+    expect(workflow.jobs.plan.steps.find((step: { id?: string }) => step.id === 'plan').env.MAIN_ONLY).toContain('inputs.main-only')
     expect(workflow.jobs.plan.if).toContain('github.event.repository.default_branch')
     expect(workflow.jobs.collect.strategy).toMatchObject({ 'fail-fast': false, 'max-parallel': 27 })
     expect(workflow.jobs.collect['timeout-minutes']).toBe(180)

@@ -43,6 +43,14 @@ export default defineConfig({
 
 `weapp.tailwindcss` 仍然是内置 Tailwind adapter 的兼容门面。UnoCSS 等实现可以作为独立包消费同一协议；首期不内置 UnoCSS adapter。
 
+## 依赖与会话生命周期
+
+源码转换依赖可由 `claimSource` / `transformSource` 的 `dependencies` 声明，也可在该次异步调用内通过 `context.addWatchFile(id)` 登记。每次成功转换会替换该源码的依赖集合，移除的依赖不再保留旧的模块图关联；普通开发重建使用 Vite 的模块图传播失效。
+
+依赖内容进入状态保持 HMR 的冻结输入账本，新增、修改和删除事件按批次处理。`prepareHmr` 必须读取 `request.sources`，不能读取下一次保存后的文件来生成当前批次。
+
+开发快照的单次写出结束不代表开发会话关闭；provider 的 controller 在所属会话结束后执行一次 `dispose`。普通生产构建仍在结束时释放资源，批次准备结果的 `dispose` 则属于该批次，不应混淆两者。
+
 
 ## 状态保持 HMR 批次
 

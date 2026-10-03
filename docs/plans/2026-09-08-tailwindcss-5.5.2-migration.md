@@ -9,7 +9,7 @@
 - `weapp-tailwindcss/core` 的编译器公开签名未变，现有 `createCompiler`、`generate`、snapshot 与失效生命周期继续适用。
 - 底层生成器使用 CSS tokenizer 解析导入和 `source()`，修复转义路径、Windows 路径序列化、删除文件时的符号链接身份处理，并补充 qxml 扫描。
 - `@weapp-tailwindcss/postcss` 升级到 3.3.3，`weapp-style-injector` 升级到 1.0.5。
-- Node 要求保持 `^22.18.0 || >=24.11.0`，Tailwind CSS 继续使用 4.x。
+- Node 要求保持 `^22.18.0 || ^24.11.0 || >=26.0.0`，Tailwind CSS 继续使用 4.x。
 
 转义路径的验证范围须区分：真实 Core 回归覆盖了 `source("./source\20 pages")` 扫描空格目录；升级审计中，`@import "./styles\20 with\20 spaces/tailwind.css"` 仍被 enhanced-resolve 按含转义的原字符串解析并失败。后者是当前 fixture 未使用的上游探索边界，未计入通过用例，也未由本次 adapter 迁移修复。不能据 tokenizer 变更宣称所有 CSS import 转义均已支持。
 

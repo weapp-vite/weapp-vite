@@ -100,6 +100,7 @@ describe('warm graph style ownership', () => {
       expect(styles(await render())).toMatchObject([{ fileName: 'pages/index/index.wxss', source: `${prefix}.transformed-page { color: red; }\n` }])
       // 首轮编译补全样式依赖后，snapshot 复用相同图服务与输出缓存。
       moduleGraphService.replaceEntryDependencies(owner, 'style', [style])
+      runtimeState.build.hmr.isRebuild = true
       runtimeState.build.hmr.profile = { event: 'update', file: path.join(src, 'pages/index/index.wxml'), dirtyReasonSummary: ['sidecar-direct:1'] }
       expect(styles(await render())).toEqual([])
       expect(moduleGraphService.collectAffectedEntries(style)).toContain(normalizeFsResolvedId(owner))

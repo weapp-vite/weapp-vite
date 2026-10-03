@@ -1,0 +1,14 @@
+{
+  "libVersion": "3.17.2",
+  "projectname": "issue-1126",
+  "condition": {
+    "miniprogram": {
+      "list": [
+        { "name": "App styles", "pathName": "pages/index/index", "query": "", "launchMode": "default" }
+      ]
+    }
+  },
+  "setting": {
+    "urlCheck": false
+  }
+}

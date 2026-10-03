@@ -22,12 +22,12 @@ describe('shared analyze budgets', () => {
       },
     }
 
-    expect(createAnalyzeBudgetCheck(result)).toEqual([
-      { id: '__total__', label: '总包', scope: 'total', currentBytes: 300, limitBytes: 300, ratio: 1, status: 'exceeded' },
-      { id: 'limit', label: 'limit', scope: 'main', currentBytes: 100, limitBytes: 100, ratio: 1, status: 'exceeded' },
-      { id: 'warning', label: 'warning', scope: 'independent', currentBytes: 85, limitBytes: 100, ratio: 0.85, status: 'warning' },
-      { id: 'below', label: 'below', scope: 'subPackage', currentBytes: 84, limitBytes: 100, ratio: 0.84, status: 'ok' },
-    ].sort((a, b) => b.ratio - a.ratio || a.label.localeCompare(b.label)))
+    expect(createAnalyzeBudgetCheck(result).map(({ id, scope, currentBytes, limitBytes, ratio, status }) => ({ id, scope, currentBytes, limitBytes, ratio, status })).sort((a, b) => a.id.localeCompare(b.id))).toEqual([
+      { id: '__total__', scope: 'total', currentBytes: 300, limitBytes: 300, ratio: 1, status: 'exceeded' },
+      { id: 'limit', scope: 'main', currentBytes: 100, limitBytes: 100, ratio: 1, status: 'exceeded' },
+      { id: 'warning', scope: 'independent', currentBytes: 85, limitBytes: 100, ratio: 0.85, status: 'warning' },
+      { id: 'below', scope: 'subPackage', currentBytes: 84, limitBytes: 100, ratio: 0.84, status: 'ok' },
+    ].sort((a, b) => a.id.localeCompare(b.id)))
   })
 
   it('retains Dashboard warning behavior for reports without metadata', () => {

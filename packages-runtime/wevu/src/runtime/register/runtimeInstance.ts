@@ -1,4 +1,5 @@
 import type { SetDataAdapterSettlement, SetDataAdapterSettler, SetDataPayload } from '../app/setData/commitTracker'
+import type { PhysicalSetDataObserver } from '../app/setData/observation'
 import type {
   ComponentPropsOptions,
   ComputedDefinitions,
@@ -28,6 +29,7 @@ import {
 } from '@weapp-core/constants'
 import { effectScope as createEffectScope, isReactive, isRef } from '../../reactivity'
 import { observeSetDataCompletion } from '../app/setData/commitTracker'
+import { observePhysicalDispatch } from '../app/setData/observation'
 import { applySnapshotUpdate, isDeepEqualValue } from '../app/setData/snapshot'
 import {
   isSetDataHighFrequencyWarningRequested,
@@ -227,6 +229,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   let pendingPayload: SetDataPayload | undefined
   let pendingSettlementHead: BufferedSetDataSettlement | undefined
   let pendingSettlementTail: BufferedSetDataSettlement | undefined
+  let pendingObservers: PhysicalSetDataObserver[] | undefined
   let pendingRawCallbacks: Array<() => void> = []
   const ownsHostCommit = !(WEVU_HOST_COMMIT_PROMISE_KEY in target)
   let pendingHostCommits = 0
@@ -322,7 +325,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       scopedSlotHooks?.syncNativeOwnerId(target, scopedSlotState)
     }
   }
-  const appendPendingSettlement = (settle: SetDataAdapterSettler) => {
+  const appendPendingSettlement = (settle: SetDataAdapterSettler, observer?: PhysicalSetDataObserver) => {
     const record: BufferedSetDataSettlement = {
       settle,
       next: undefined,
@@ -334,6 +337,9 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       pendingSettlementHead = record
     }
     pendingSettlementTail = record
+    if (observer) {
+      (pendingObservers ??= []).push(observer)
+    }
   }
   const settlePendingRecords = (
     first: BufferedSetDataSettlement | undefined,
@@ -358,16 +364,21 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const dispatchPhysicalSetData = (
     payload: SetDataPayload,
     settle: SetDataAdapterSettler,
+    observer?: PhysicalSetDataObserver,
   ) => {
     const generation = dispatchGeneration
     beginHostCommit()
     refreshOwnerSnapshot()
     observeSetDataCompletion({
+      observer,
       invoke: (callback) => {
         const setData = resolveNativeSetData(target)
         if (!setData) {
           callback()
           return undefined
+        }
+        if (observer) {
+          observePhysicalDispatch(observer, payload)
         }
         return callNativeSetData(target, setData, payload, callback)
       },
@@ -404,6 +415,13 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     pendingSettlementHead = undefined
     pendingSettlementTail = undefined
     pendingRawCallbacks = []
+    const observers = pendingObservers
+    pendingObservers = undefined
+    const observer: PhysicalSetDataObserver | undefined = observers && {
+      dispatch: info => observers.forEach(item => item.dispatch(info)),
+      returned: returnedAt => observers.forEach(item => item.returned(returnedAt)),
+      complete: boundary => observers.forEach(item => item.complete(boundary)),
+    }
     dispatchPhysicalSetData(payload, (settlement, cause) => {
       if (settlement === 'committed') {
         try {
@@ -417,9 +435,10 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         return
       }
       settlePendingRecords(settlements, settlement, cause)
-    })
+    }, observer)
   }
   const abandonPendingSetData = () => {
+    pendingObservers = undefined
     const settlements = pendingSettlementHead
     pendingPayload = undefined
     pendingSettlementHead = undefined
@@ -521,7 +540,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       }
       return result
     },
-    __wevu_dispatchSetData(payload, settle) {
+    __wevu_dispatchSetData(payload, settle, observer) {
       highFrequencyWarning?.()
       if (disposed) {
         settle('abandoned')
@@ -529,12 +548,12 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       }
       if (!enabled || (suspendWhenHidden && !visible)) {
         bufferPayload(payload)
-        appendPendingSettlement(settle)
+        appendPendingSettlement(settle, observer)
         refreshOwnerSnapshot()
         return
       }
       resetHostCommitFailure()
-      dispatchPhysicalSetData(payload, settle)
+      dispatchPhysicalSetData(payload, settle, observer)
     },
     __wevu_enableSetData(discardPending = false) {
       enabled = true

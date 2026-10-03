@@ -3,6 +3,7 @@ import type { InputOption } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../../../context'
 import type { NpmBuildOptions } from '../../../types'
+import type { PackageBuildOutput } from './output'
 import { existsSync } from 'node:fs'
 import { isBuiltin } from 'node:module'
 import process from 'node:process'
@@ -19,6 +20,7 @@ import {
   shouldNormalizeMiniprogramPackage,
   shouldRebuildCachedMiniprogramPackage,
 } from '../../../platform'
+import { packageSearchOptions } from '../packageResolution'
 import {
   copyEsModuleDirectoryForAlipay,
   hoistNestedMiniprogramDependenciesForAlipay,
@@ -26,6 +28,7 @@ import {
   shouldRebuildCachedAlipayMiniprogramPackage,
 } from './alipay'
 import { normalizeMiniprogramPackageJsModules } from './jsModule'
+import { settlePackageBuilds } from './output'
 import { createNpmPackageCopyFilter } from './packageFiles'
 import { resolvePreferredPackageEntry } from './shared'
 
@@ -34,12 +37,13 @@ export interface PackageBuilder {
   shouldSkipBuild: (outDir: string, isOutdated: boolean) => Promise<boolean>
   bundleBuild: (args: { entry: InputOption, name: string, options?: NpmBuildOptions, outDir: string }) => Promise<void>
   copyBuild: (args: { from: string, to: string, name: string }) => Promise<void>
-  buildPackage: (args: { dep: string, outDir: string, options?: NpmBuildOptions, isDependenciesCacheOutdate: boolean }) => Promise<void>
+  buildPackage: (args: BuildPackageArgs) => Promise<void>
 }
 
-interface BuildPackageArgs {
+export interface BuildPackageArgs {
   dep: string
   outDir: string
+  resolveFrom?: string
   options?: NpmBuildOptions
   isDependenciesCacheOutdate: boolean
 }
@@ -93,6 +97,7 @@ function resolveDefaultNpmBuildTsconfig(cwd: string) {
 export function createPackageBuilder(
   ctx: MutableCompilerContext,
   oxcVitePlugin?: Plugin,
+  output?: PackageBuildOutput,
 ): PackageBuilder {
   const npmLogger = typeof logger.withTag === 'function' ? logger.withTag('npm') : logger
   const packageBuildInFlight = new Map<string, Promise<void>>()
@@ -180,7 +185,7 @@ export function createPackageBuilder(
     }
   }
 
-  async function runResolvedBundleBuild(finalOptions: NpmBuildOptions | undefined) {
+  async function runResolvedBundleBuild(finalOptions: NpmBuildOptions | undefined, outDir: string) {
     if (!finalOptions) {
       return
     }
@@ -191,7 +196,12 @@ export function createPackageBuilder(
       finalOptions.plugins = hasPlugin ? existing : [oxcVitePlugin, ...existing]
     }
 
-    await viteBuild(finalOptions)
+    if (output) {
+      await output.bundle(finalOptions, outDir)
+    }
+    else {
+      await viteBuild(finalOptions)
+    }
   }
 
   async function bundleBuild({ entry, name, options, outDir }: { entry: InputOption, name: string, options?: NpmBuildOptions, outDir: string }) {
@@ -202,7 +212,7 @@ export function createPackageBuilder(
       outDir,
     })
 
-    await runResolvedBundleBuild(resolvedTarget.options)
+    await runResolvedBundleBuild(resolvedTarget.options, resolvedTarget.outDir)
   }
 
   async function copyBuild({ from, to, name }: { from: string, to: string, name: string }) {
@@ -213,6 +223,8 @@ export function createPackageBuilder(
         ctx.configService?.weappViteConfig?.npm?.packageFiles?.[name],
       ),
       overwrite: true,
+      // 宿主 staging 保存独立内容，后续 normalize 不能经符号链接改写依赖源文件。
+      dereference: Boolean(output),
     })
   }
 
@@ -221,16 +233,18 @@ export function createPackageBuilder(
   async function runBuildPackage(
     { dep, outDir, options, isDependenciesCacheOutdate }:
     BuildPackageArgs,
+    packageInfo: NonNullable<Awaited<ReturnType<typeof getPackageInfo>>>,
   ) {
-    const packageInfo = await getPackageInfo(dep, ctx.configService?.cwd ? { paths: [ctx.configService.cwd] } : undefined)
-    if (!packageInfo || !ctx.configService) {
+    if (!ctx.configService) {
       return
     }
     const { packageJson: targetJson, rootPath } = packageInfo
+    output?.watchFile?.(path.join(rootPath, 'package.json'))
     const dependencies = targetJson.dependencies ?? {}
     const keys = Object.keys(dependencies)
     if (isMiniprogramPackage(targetJson)) {
       const sourceDir = path.resolve(rootPath, targetJson.miniprogram)
+      output?.watchFile?.(sourceDir)
       const resolvedTarget = resolvePackageBuildTarget({
         entry: {
           index: sourceDir,
@@ -239,7 +253,8 @@ export function createPackageBuilder(
         options,
         outDir: path.resolve(outDir, dep),
       })
-      const destOutDir = resolvedTarget.outDir
+      const destOutDir = output?.directory(resolvedTarget.outDir) ?? resolvedTarget.outDir
+      const packageOutDir = output?.directory(outDir) ?? outDir
 
       if (!resolvedTarget.options) {
         npmLogger.info(`[npm] 依赖 \`${dep}\` 被 npm.buildOptions 跳过处理!`)
@@ -254,7 +269,7 @@ export function createPackageBuilder(
           alipayNpmMode: ctx.configService.weappViteConfig?.npm?.alipayNpmMode,
         }) as 'miniprogram_npm' | 'node_modules'
         const shouldRebuildPackage = shouldRebuildCachedMiniprogramPackage(ctx.configService.platform)
-          ? await shouldRebuildCachedAlipayMiniprogramPackage(destOutDir, outDir, rootPath, platformNpmDistDirName)
+          ? await shouldRebuildCachedAlipayMiniprogramPackage(destOutDir, packageOutDir, rootPath, platformNpmDistDirName)
           : false
         if (!shouldRebuildPackage) {
           npmLogger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
@@ -275,19 +290,20 @@ export function createPackageBuilder(
           alipayNpmMode: ctx.configService.weappViteConfig?.npm?.alipayNpmMode,
         })
         if (shouldCopyEsModuleDirectory(ctx.configService.platform) && platformNpmDistDirName === 'node_modules') {
-          await copyEsModuleDirectoryForAlipay(rootPath, destOutDir)
+          await copyEsModuleDirectoryForAlipay(rootPath, destOutDir, { dereference: Boolean(output) })
         }
         await normalizeMiniprogramPackageForAlipay(destOutDir)
         if (shouldHoistNestedMiniprogramDependencies(ctx.configService.platform)) {
-          await hoistNestedMiniprogramDependenciesForAlipay(destOutDir, outDir)
+          await hoistNestedMiniprogramDependenciesForAlipay(destOutDir, packageOutDir)
         }
       }
 
       if (keys.length > 0) {
-        await Promise.all(
+        await settlePackageBuilds(
           keys.map((x) => {
             return buildPackage({
               dep: x,
+              resolveFrom: rootPath,
               outDir,
               options,
               isDependenciesCacheOutdate,
@@ -297,7 +313,7 @@ export function createPackageBuilder(
       }
     }
     else {
-      const index = await resolvePreferredPackageEntry(rootPath, targetJson) ?? resolveModule(dep, { paths: [rootPath] })
+      const index = await resolvePreferredPackageEntry(rootPath, targetJson) ?? resolveModule(dep, packageSearchOptions(rootPath))
       if (!index) {
         npmLogger.warn(`[npm] 无法解析模块 \`${dep}\`，跳过处理!`)
         return
@@ -327,12 +343,13 @@ export function createPackageBuilder(
           }
         }
       }
-      await runResolvedBundleBuild(resolvedTarget.options)
+      await runResolvedBundleBuild(resolvedTarget.options, destOutDir)
       if (keys.length > 0) {
-        await Promise.all(
+        await settlePackageBuilds(
           keys.filter(x => isBuiltin(x)).map((x) => {
             return buildPackage({
               dep: `${x}/`,
+              resolveFrom: rootPath,
               outDir,
               options,
               isDependenciesCacheOutdate,
@@ -346,9 +363,14 @@ export function createPackageBuilder(
   }
 
   buildPackage = async (
-    { dep, outDir, options, isDependenciesCacheOutdate }: BuildPackageArgs,
+    { dep, outDir, resolveFrom = ctx.configService?.cwd, options, isDependenciesCacheOutdate }: BuildPackageArgs,
   ) => {
-    const taskKey = `${path.resolve(outDir)}::${dep}`
+    const packageInfo = await getPackageInfo(dep, packageSearchOptions(resolveFrom))
+    if (!packageInfo) {
+      return
+    }
+    // 解析根与输出根独立；不同父包解析到同一实体时仍复用同一次发布任务。
+    const taskKey = `${path.resolve(outDir)}::${packageInfo.rootPath}::${dep}`
     const pending = packageBuildInFlight.get(taskKey)
     if (pending) {
       return pending
@@ -359,7 +381,7 @@ export function createPackageBuilder(
       outDir,
       options,
       isDependenciesCacheOutdate,
-    }).finally(() => {
+    }, packageInfo).finally(() => {
       if (packageBuildInFlight.get(taskKey) === task) {
         packageBuildInFlight.delete(taskKey)
       }

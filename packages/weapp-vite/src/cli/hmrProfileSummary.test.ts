@@ -60,6 +60,28 @@ describe('hmrProfileSummary', () => {
     expect(result?.line).toContain('load/resolve/chunk/skip 2/4/3/1')
   })
 
+  it('ignores failed and incompatible tails and keeps unobserved counts unknown', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-hmr-summary-'))
+    try {
+      const profilePath = path.join(root, 'profile.jsonl')
+      await fs.writeFile(profilePath, [
+        { schemaVersion: 1, status: 'complete', totalMs: 12, loadCount: 0 },
+        { schemaVersion: 1, status: 'failed', totalMs: 99 },
+        { schemaVersion: 2, status: 'complete', totalMs: 200 },
+      ].map(value => JSON.stringify(value)).join('\n'))
+      const result = await readLatestHmrProfileSummary({
+        cwd: root,
+        weappViteConfig: { hmr: { profileJson: 'profile.jsonl' } },
+      })
+      expect(result?.line).toContain('12.00 ms')
+      expect(result?.line).toContain('load/resolve/chunk/skip 0/unknown/unknown/unknown')
+      expect(result?.line).toContain('忽略 2 条不兼容、未完成或无效记录')
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
   it('returns undefined when profile output is disabled', async () => {
     const result = await readLatestHmrProfileSummary({
       cwd: '/project',

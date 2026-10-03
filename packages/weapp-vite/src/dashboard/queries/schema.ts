@@ -24,11 +24,12 @@ export const analyzeQuerySchema = z.object({ revision, target: target.default('c
 export const budgetCheckSchema = z.object({
   id: z.string(),
   label: z.string(),
-  scope: z.enum(['total', 'main', 'subPackage', 'independent', 'virtual']),
+  scope: z.enum(['total', 'runtime', 'main', 'subPackage', 'independent', 'virtual']),
   currentBytes: count,
   limitBytes: count,
   ratio: z.number(),
-  status: z.enum(['ok', 'warning', 'exceeded']),
+  status: z.enum(['ok', 'warning', 'exceeded', 'unknown']),
+  measurement: z.enum(['file-bytes', 'upper-bound', 'unavailable']),
 })
 
 export const analyzeSummarySchema = z.object({
@@ -36,14 +37,15 @@ export const analyzeSummarySchema = z.object({
   previousAvailable: z.boolean(),
   totals: z.object({ packages: count, files: count, modules: count, bytes: count, unmeasuredFiles: count }),
   totalBudget: budgetCheckSchema.nullable(),
-  packageBudgets: z.object({ ok: count, warning: count, exceeded: count }),
+  runtimeBudget: budgetCheckSchema.nullable(),
+  packageBudgets: z.object({ ok: count, warning: count, exceeded: count, unknown: count }),
 })
 
 export const packagesQuerySchema = analyzeQuerySchema.extend({
   ...pagination,
   type: packageType.optional(),
   query,
-  budgetStatus: z.enum(['ok', 'warning', 'exceeded']).optional(),
+  budgetStatus: z.enum(['ok', 'warning', 'exceeded', 'unknown']).optional(),
   sortBy: z.enum(['bytes', 'name', 'budgetRatio']).default('bytes'),
   order,
 })

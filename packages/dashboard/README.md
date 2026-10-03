@@ -51,7 +51,7 @@ weapp-vite dev --analyze
 
 `weapp-vite` 会在运行时检查当前项目中是否安装了 `@weapp-vite/dashboard`。如果存在，就读取本包 `dist/` 中的静态资源并启动本地 DevTools 页面。
 
-独立 Dashboard 的页面与 Devframe 1.1 bridge 共同挂载在 `/__weapp-vite/` 下（[上游更新日志](https://github.com/devframes/devframe/releases/tag/v1.1.0)、[1.0 迁移说明](https://github.com/devframes/devframe/blob/v1.1.0/docs/content/7.migrations/0.migration-1.0.md)）：
+独立 Dashboard 的页面与 Devframe 1.2 bridge 共同挂载在 `/__weapp-vite/` 下（[上游更新日志](https://github.com/devframes/devframe/releases)、[1.0 迁移说明](https://github.com/devframes/devframe/blob/v1.1.0/docs/content/7.migrations/0.migration-1.0.md)）：
 
 - Analyze 数据通过带 revision、SHA-256 描述符和固定页上限的只读 RPC 分页获取
 - revision 与最近运行事件通过服务端单向通知同步；WebSocket 断开后会重连并重新查询权威状态
@@ -72,7 +72,9 @@ weapp-vite dev --analyze
 
 分析查询按 revision／hash 固定快照，列表最多 100 项；没有上次报告时比较明确不可用。模块归属包含资源源码，但不等于完整源码引用链；重复节省量是估算，保留独立分包提示。事件只保留最近 24 条，并返回丢弃计数。文件片段按 UTF-16 码元取范围，最多 16384，仍受完整文件大小与读取边界限制；源码是实时受限读取，产物仅来自当前快照。
 
-在项目中安装 `devframe@1.1.0` 与 `@devframes/agentic@1.1.0` 后，可使用 `pnpm exec devframe connect` 发现正在监听的实例，无需配置认证环境变量。直接 HTTP 地址为 `/__weapp-vite/__mcp`；浏览器仍使用 OTP 授权。关闭 / 重启清理旧实例记录。本机模式信任同机进程，不区分本机用户；不要通过代理、隧道或端口转发对外发布 Dashboard。
+预算与构建侧保持一致：缺失体积或运行时归因标记为 `unknown`，运行时预算单独返回 `runtimeBudget`，包统计不混入总包或运行时。预算摘要不附带全量文件列表；运行时告警在页面中可跨包定位贡献文件。预算沙盘同样使用共享计算，修改总包／包类型阈值时保留已有 `runtimeBytes` 与 `packageBytes`（包括零限额），不会将缺失测量误判为已解除告警，复制配置也保留这些约束。
+
+在项目中安装 `devframe@1.2.0` 与 `@devframes/agentic@1.2.0` 后，可使用 `pnpm exec devframe connect` 发现正在监听的实例，无需配置认证环境变量。直接 HTTP 地址为 `/__weapp-vite/__mcp`；浏览器仍使用 OTP 授权。关闭 / 重启清理旧实例记录。本机模式信任同机进程，不区分本机用户；不要通过代理、隧道或端口转发对外发布 Dashboard。
 
 完整客户端配置、`arg0` 参数与分页顺序见 [MCP 使用指南](../weapp-vite/docs/mcp.md#dashboard-实时只读工具devframe)。既有 `wv mcp` / REST / 微信 IDE 自动化不受影响。嵌入 Vite DevTools 时仍由宿主决定 MCP、认证和发现策略，不能把共享宿主视为只读沙箱。
 
@@ -158,7 +160,7 @@ packages/dashboard
 
 ## 开发
 
-源码构建使用的 `weapp-tailwindcss` 需要 Node.js `^22.18.0 || >=24.11.0`。发布包只包含预构建的静态资源，不会把该开发依赖带入用户运行时。
+源码构建使用的 `weapp-tailwindcss` 需要 Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`。发布包只包含预构建的静态资源，不会把该开发依赖带入用户运行时。
 
 在仓库根目录执行：
 

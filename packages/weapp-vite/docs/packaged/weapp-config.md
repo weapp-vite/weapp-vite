@@ -238,6 +238,8 @@ export default defineConfig({
 
 provider 的状态由 provider 自己维护，host 负责插件顺序、源码所有权冲突、依赖监听和产物生命周期。`weapp.tailwindcss` 仍然是内置 Tailwind adapter 的兼容门面；UnoCSS 等实现可以独立包的形式提供同一协议。
 
+源码转换的 `dependencies` 与该次转换内的 `context.addWatchFile(id)` 共同声明依赖；成功转换后替换该源码的依赖集合，由 Vite 的模块图传播失效。开发快照写出结束不会提前释放 controller，所属开发会话结束时只调用一次 `dispose`。状态保持 HMR 将已声明依赖的新增、修改、删除纳入冻结输入，provider 应读取 `request.sources`，不能读取后续保存的可变文件。
+
 微信状态保持 HMR 使用可选的 `controller.prepareHmr(request)` 协作：输入提供 `revision`、`changedFiles` 与固定的 `sources` 内容视图，返回本批次的 `assets`、`transformJavaScript`、依赖信息和资源释放方法。资产路径相对于输出目录；所有 Patch 共用该批次的编译状态。宿主通过 Vite/Rolldown 提交资产后才发布补丁，并在客户端执行回报后通知 DevEngine。开启 sourcemap 时，修改代码的转换必须同时返回映射。没有批次接口的内容 provider 使用完整构建回退。
 
 共享协议由实验包 `@weapp-vite/hmr` 提供，Tailwind 控制器委托 `@weapp-vite/tailwindcss` 和 `weapp-tailwindcss/core`。两个包均不创建 DevEngine、watcher 或直接写出产物，框架与宿主运行时仍由适配器拥有；现有配置和 `prepareHmr` 类型兼容。Taro 的实验适配保留其持久发布与应用确认两阶段，不改变 weapp-vite 在应用确认后通知 DevEngine 的语义。
@@ -540,6 +542,10 @@ export default defineConfig({
 
 安全的 JavaScript/Vue 更新会保留当前 Page/Component 实例、route/query、输入和可序列化 data/setup ref，并替换原生 Page、原生 Component 与 wevu 方法。CSS、资源、JSON/配置、不兼容模块图或补丁失败会回退完整构建与当前路由重载。
 
+入口拓扑更新先验证完整快照，再把仍符合源目录和声明依赖内容版本的快照一次性交给新宿主，避免重复编译。输入变化、依赖覆盖不足或固定输入批次无法验证时重新构建；快照失败时保留旧宿主，修复尚未进入旧图的新文件也能触发重试。会话关闭会取消未交接的候选。
+
+Vue `<style module>` 会生成脚本中的类名映射，因此其内容、模块名称、`src` 及块增删都按脚本与样式共同更新处理，避免后续补丁引用未交付的样式模块。独立的普通 `<style>` 变化仍按纯样式处理；产物更新和真实 DevTools 已应用计算样式需要分别验收。
+
 样式合并按真实文件身份判断所有权：已由模块图处理的样式，即使又通过符号链接、目录连接或 Windows 路径别名被发现，也不会作为独立原生样式重复读取并合并。固定输入批次保持该批次的样式内容，不混入同一文件较新的磁盘保存；真正独立的原生同名样式仍参与输出，移除显式样式导入后仍保留原生样式回退。
 
 回退时，同一输出当前收集到的多个 sidecar 按收集顺序合并后一次发布，不会相互覆盖；指向同一真实文件的重复路径只保留一份。常规 HMR 更新按完整合并内容去重，而不是分别缓存每个片段。
@@ -573,6 +579,10 @@ export default defineConfig({
 
 - `logLevel: 'default' | 'concise' | 'verbose'` 控制终端诊断详细程度。
 - `profileJson: boolean | string` 控制是否输出 JSONL profile，字符串表示自定义输出路径。
+- JSONL v1 保留旧字段，增加 `sessionId` / `buildId` / `batchId` / `sourceEvents` 与时钟来源；按来源精确匹配编辑。失败记录只有 `elapsedMs`；无受影响入口的批次以 `incomplete` / `reason: no-affected-entries` 结束观测，不污染后续构建。未知版本、未完成或缺失阶段不能按零耗时统计。`buildCoreMs` 是残差估算，阶段可能重叠。
+- `analyze --hmr-profile --json` 的 `inputCoverage` 提供输入覆盖计数；旧版无版本记录仍兼容，未关联样本不归给当前编辑。
+- stateful JSONL 以 `pipeline: 'stateful'` 区分，记录源通知到批次接收、准备、提交等待、提交及发布阶段。`completionBoundary` 区分客户端交付确认与产物发布；缺失来源、失败或取消不能计为成功耗时。`timelines` 只累加互不重叠的外层时段，未知阶段及负残差保持 `null`，不把嵌套 hook 重复累加。
+- 模板 benchmark 的预算使用外部 `wallMs`，缺失 profile 不再填充 `totalMs`。仓库 `verify:edit-sequence --engine weapp-classic|weapp-stateful` 默认以 512 个真实 SFC 页面比较长期编译宿主和逐步新进程基线，同时记录进程树 RSS、强制 GC 后 heap、GC 开销及资源/转换范围。完整页面 JS 由 mpcore 执行，此结果不能替代真实 IDE 验收；profile 开关语义与开销比较入口为 `scripts/editSequence/compareProfiles.ts`。
 
 ### `mcp`
 
@@ -891,3 +901,19 @@ export default defineConfig({
 `wxml-policy.json` 例如 `["debug-panel"]`。同一文件跨模板或阶段登记会去重；修改、删除、恢复触发完整模板重建与校验。局部构建保留未触及模板的依赖，成功完整构建清理失效登记。不要监听输出目录，也不要把一次读取的结果永久缓存而忽略规则更新。
 
 “最终”指框架管理的输出链完成后的模板，不保证覆盖任意排在该阶段之后的第三方 Vite 插件修改。不保证跨文件／分包回调顺序，不追踪任意文件读取、环境变量或网络响应；第一版不提供内置业务规则、跨文件全局校验、独立 CLI 或报告文件，也不能替代宿主完整语法和运行时检查。
+
+## Analyze 产物消费与预算
+
+小程序 `wv analyze --json --budget-check` 输出 schema v2 的 `artifacts.files`、`build` 与 `budgetChecks`，日志进入 stderr。每个物理文件保留路径、包归属、字节和 SHA-256；runtime 依据模块所属包分类，不依赖 chunk 名称。分包复制的 JS asset 仍保留原模块来源。
+
+`weapp.analyze.budgets.runtimeBytes` 限制包含 runtime 模块的文件字节上界（包含混合 chunk 的业务部分）；`packageBytes` 按分包 root 覆盖单包预算，主包键为 `__main__`。超限或缺少归因时 `--budget-check` 返回非零。
+
+`estimatedBytes` 是按打包器长度分摊的模块估算，`unattributedBytes` 显式保留未知部分。单份共享文件计一次，真正的分包副本分别计入总包；runtime 和重复模块估算不能再加到总包上。旧的无版本报告仍保留兼容读取，但不能作为新 runtime 预算通过证据。
+
+## 构建目录与外部缓存
+
+默认清理策略适合构建器独占的输出目录。共享目录使用 `build.emptyOutDir: false` 时，构建上下文只清理它已登记的旧产物，不能删除新进程开始前由其他工具或外部缓存写入的未知文件。
+
+推荐 dev 输出到独立目录，Turbo 只缓存生产目录，dev 任务设置 `cache: false`、`persistent: true`。必须共用目录时，由缓存集成持久记录成功构建的 emitted 文件清单与内容摘要，恢复及清理仅针对该任务拥有的文件；用户改写或同名冲突必须保留并报告。不要把无条件清空输出目录加入 HMR 兜底逻辑。最终构建产物仍由 Vite/Rolldown emit/write 持久化。
+
+仓库组合回归入口为 `pnpm verify:edit-sequence --engine weapp-modes --require-clean --report .tmp/output-mode-sequence.json`，运行前重建 weapp-vite。它逐步比较模式切换、组件/页面/分包拓扑变化和旧缓存恢复后的完整生产文件，与独立进程基线按字节核对；共享目录额外检查用户文件保护。此项不是真实 IDE runtime 验收。

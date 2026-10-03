@@ -54,6 +54,7 @@ export function createHmrRuntimeDiagnostics(session: DiagnosticSession, project:
           clientVersion: typeof client?.getVersion === 'function' ? client.getVersion() : null,
           transportPhase: typeof transport?.phase === 'string' ? transport.phase : null,
           lastResponseType: typeof transport?.lastResponse?.type === 'string' ? transport.lastResponse.type : null,
+          lastResponseStatus: typeof transport?.lastResponse?.statusCode === 'number' ? transport.lastResponse.statusCode : null,
           lastApplyCounts: lastApply
             ? {
                 changed: lastApply.changedIds?.length ?? 0,

@@ -1,4 +1,5 @@
 import type { OutputAsset, OutputChunk } from 'rolldown'
+import type { InlineConfig } from 'vite'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -10,24 +11,26 @@ import { createCompilerContextInstance } from '../../context/createCompilerConte
 import { createLogicalEntryId } from '../../moduleGraph/protocol'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
+import { createRuntimeState } from '../runtimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { buildStatefulHmrSnapshot } from './snapshotBuild'
+import { validateSnapshotInputs } from './snapshotInputs'
 
 const temporaryRoots: string[] = []
 
-async function createProject(autoImport = false) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-snapshot-component-'))
+async function createProject(autoImport = false, withWorker = false) {
+  const root = path.normalize(await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-snapshot-component-'))))
   temporaryRoots.push(root)
   const files = {
     'package.json': JSON.stringify({ name: 'snapshot-component-regression', private: true, dependencies: { wevu: '*' } }),
     'project.config.json': JSON.stringify({ appid: 'wx1234567890abcd', compileType: 'miniprogram', miniprogramRoot: 'dist/', srcMiniprogramRoot: 'src/' }),
     'vite.config.ts': [
       `import { defineConfig } from ${JSON.stringify(path.resolve(import.meta.dirname, '../../config.ts'))}`,
-      `export default defineConfig({ weapp: { srcRoot: "src", react: { renderMode: "auto", compiler: false }, ${autoImport ? 'autoImportComponents: { globs: ["components/**/*"], output: true, typedComponents: true, htmlCustomData: true, vueComponents: true }' : ''} } })`,
+      `export default defineConfig({ weapp: { srcRoot: "src", react: { renderMode: "auto", compiler: false }, ${autoImport ? 'autoImportComponents: { globs: ["components/**/*"], output: true, typedComponents: true, htmlCustomData: true, vueComponents: true }, ' : ''}${withWorker ? 'worker: { entry: ["index"] }' : ''} }, ${withWorker ? 'plugins: [{ name: "diagnostic-asset", generateBundle() { this.emitFile({ type: "asset", fileName: "stats0.html", source: "<title>Rollup Visualizer</title>" }) } }]' : ''} })`,
     ].join('\n'),
     'src/app.ts': 'App({})',
-    'src/app.json': JSON.stringify({ pages: ['pages/index/index'] }),
+    'src/app.json': JSON.stringify({ pages: ['pages/index/index'], ...(withWorker ? { workers: 'workers' } : {}) }),
     'src/pages/index/index.ts': 'Page({})',
     'src/pages/index/index.json': JSON.stringify(autoImport ? {} : { usingComponents: { 'wevu-leaf': '/components/wevu-leaf/index' } }),
     'src/pages/index/index.wxml': '<view><wevu-leaf /></view>',
@@ -39,6 +42,7 @@ async function createProject(autoImport = false) {
       '</script>',
       '<template><view><text>{{ label }}</text><slot /></view></template>',
     ].join('\n'),
+    ...(withWorker ? { 'src/workers/index.ts': 'export default 1' } : {}),
   }
   for (const [relative, content] of Object.entries(files)) {
     const filename = path.join(root, relative)
@@ -58,6 +62,87 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 }
 
 describe('stateful snapshot component metadata', () => {
+  it('reuses only complete input versions and rejects an edit made while the snapshot is compiling', async () => {
+    const root = await createProject()
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const initial = await buildStatefulHmrSnapshot(options)
+    const candidate = await buildStatefulHmrSnapshot(options, undefined, undefined, undefined, initial.getInputFiles())
+    expect(candidate.getInputs()).toBeDefined()
+    expect(await validateSnapshotInputs(candidate.getInputs()!)).toBe(true)
+    const style = path.join(root, 'src/pages/index/index.wxss')
+    const changedDuringBuild = await buildStatefulHmrSnapshot(options, config => ({
+      ...config,
+      plugins: [...(config.plugins ?? []), {
+        name: 'snapshot-edit-during-build',
+        async generateBundle() {
+          await fs.writeFile(style, '.page { color: blue; }')
+        },
+      }],
+    }), undefined, undefined, candidate.getInputFiles())
+    expect(changedDuringBuild.getInputs()).toBeUndefined()
+    expect(await validateSnapshotInputs(candidate.getInputs()!)).toBe(false)
+  })
+
+  it('captures declared external inputs and refuses a newly discovered unversioned dependency', async () => {
+    const root = await createProject()
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const first = path.join(root, 'external-one.txt')
+    const second = path.join(root, 'external-two.txt')
+    await fs.writeFile(first, 'first')
+    await fs.writeFile(second, 'second')
+    let external = first
+    const configure = (config: InlineConfig): InlineConfig => ({
+      ...config,
+      plugins: [...(config.plugins ?? []), {
+        name: 'snapshot-external-input',
+        buildStart(this: { addWatchFile: (file: string) => void }) {
+          this.addWatchFile(external)
+        },
+      }],
+    })
+    const initial = await buildStatefulHmrSnapshot(options, configure)
+    expect(initial.getInputFiles()).toContain(first)
+    external = second
+    const unknown = await buildStatefulHmrSnapshot(options, configure, undefined, undefined, initial.getInputFiles())
+    expect(unknown.getInputFiles()).toContain(second)
+    expect(unknown.getInputs()).toBeUndefined()
+    const known = await buildStatefulHmrSnapshot(options, configure, undefined, undefined, unknown.getInputFiles())
+    expect(known.getInputs()).toBeDefined()
+    await fs.writeFile(second, 'changed')
+    expect(await validateSnapshotInputs(known.getInputs()!)).toBe(false)
+  })
+
+  it('builds from load options when an optional owner has no config service yet', async () => {
+    const root = await createProject()
+    const runtimeState = createRuntimeState()
+    const source = path.join(root, 'src/components/wevu-leaf/index.vue')
+    runtimeState.build.hmr.resolvedEntryMap.set(source, { id: source })
+    const snapshot = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' }, undefined, { runtimeState })
+    expect([...snapshot.getDelegatedComponentEntryIds()]).toContain((await fs.realpath(source)).replaceAll('\\', '/'))
+    const outputs = Array.isArray(snapshot.output) ? snapshot.output.flatMap(item => item.output) : 'output' in snapshot.output ? snapshot.output.output : []
+    expect(readComponentJson(outputs)).toEqual({ component: true, options: { multipleSlots: true } })
+  })
+
+  it('reloads app topology metadata between snapshots', async () => {
+    const root = await createProject()
+    const options = { cwd: root, isDev: true, mode: 'development' as const }
+    const readApp = async () => {
+      const snapshot = await buildStatefulHmrSnapshot(options)
+      const outputs = Array.isArray(snapshot.output) ? snapshot.output.flatMap(item => item.output) : 'output' in snapshot.output ? snapshot.output.output : []
+      const app = outputs.find(item => item.fileName === 'app.json') as OutputAsset
+      return JSON.parse(String(app.source)) as { pages?: string[] }
+    }
+
+    expect(await readApp()).toMatchObject({ pages: ['pages/index/index'] })
+    await fs.mkdir(path.join(root, 'src/pages/next'), { recursive: true })
+    await fs.writeFile(path.join(root, 'src/pages/next/index.ts'), 'Page({})')
+    await fs.writeFile(path.join(root, 'src/pages/next/index.json'), '{}')
+    await fs.writeFile(path.join(root, 'src/pages/next/index.wxml'), '<view />')
+    await fs.writeFile(path.join(root, 'src/app.json'), JSON.stringify({ pages: ['pages/index/index', 'pages/next/index'] }))
+
+    expect(await readApp()).toMatchObject({ pages: ['pages/index/index', 'pages/next/index'] })
+  })
+
   it('reuses the CLI dual config source across snapshots without evaluating either file again', async () => {
     const root = await createProject()
     const configFile = path.join(root, 'vite.config.ts')
@@ -127,6 +212,32 @@ describe('stateful snapshot component metadata', () => {
     const style = outputs.find(item => item.fileName === 'components/native-leaf/index.wxss') as OutputAsset
     expect(String(style.source)).toMatch(/width:\s*19px/)
     expect(String(style.source)).not.toContain('71px')
+  })
+
+  it('reports native component entry additions and removals from successive metadata snapshots', async () => {
+    const root = await fs.realpath(await createProject())
+    const pageJson = path.join(root, 'src/pages/index/index.json')
+    const original = await fs.readFile(pageJson, 'utf8')
+    const component = path.join(root, 'src/components/native-leaf/index.js')
+    await fs.mkdir(path.dirname(component), { recursive: true })
+    await fs.writeFile(component, 'Component({})')
+    await fs.writeFile(component.replace('.js', '.json'), '{"component":true}')
+    await fs.writeFile(component.replace('.js', '.wxml'), '<view>native leaf</view>')
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const owner = createCompilerContextInstance()
+    await owner.configService.load(options)
+    try {
+      for (const enabled of [false, true, false]) {
+        await fs.writeFile(pageJson, enabled
+          ? JSON.stringify({ usingComponents: { 'native-leaf': '/components/native-leaf/index' } })
+          : original)
+        const result = await buildStatefulHmrSnapshot(options, undefined, owner)
+        expect([...result.getEntryIds()].includes(component)).toBe(enabled)
+      }
+    }
+    finally {
+      owner.moduleGraphService.resetSession()
+    }
   })
 
   it.each(['directory', 'junction'])('preserves native entry lifecycle while compiling fixed script, JSON, template and style inputs (%s root)', async (rootKind) => {
@@ -221,6 +332,13 @@ describe('stateful snapshot component metadata', () => {
     await fs.rm(path.join(publicDir, 'extra.data'))
     expect(publicOutput(await readSnapshot(), 'extra.data')).toBeUndefined()
     await expect(fs.stat(path.join(root, 'dist/extra.data'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('does not replay worker diagnostic assets into the main snapshot', async () => {
+    const root = await createProject(false, true)
+    const snapshot = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' })
+    const outputs = Array.isArray(snapshot.output) ? snapshot.output.flatMap(item => item.output) : 'output' in snapshot.output ? snapshot.output.output : []
+    expect(outputs.filter(item => item.fileName === 'stats0.html')).toHaveLength(1)
   })
 
   it.each(['publicDir', 'copyPublicDir'] as const)('keeps disabled %s public assets out of snapshots', async (disabled) => {

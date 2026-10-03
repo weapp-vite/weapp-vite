@@ -3,6 +3,7 @@ import type { InlineConfig } from 'vite'
 import { cp, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 import { build, createServer, resolveConfig } from 'vite'
 import { afterEach, expect, it } from 'vitest'
 import { weapp } from '../src/vite'
@@ -75,12 +76,38 @@ it('keeps declarations in memory for build.write=false and honors entry renaming
   await expect(read('widgets/button.js')).rejects.toMatchObject({ code: 'ENOENT' })
 }, 30_000)
 
-it('rebuilds declarations when a type-only dependency changes in production watch', async () => {
+it('keeps type-only edits during the first publication and recovers declarations in production watch', async () => {
   const { root, config, read } = await fixture()
   config.weapp!.lib = { entry: { utils: 'utils/index.ts' }, root: 'src' }
   const types = path.join(root, 'src/utils/types.ts')
   await writeFile(types, 'export interface PublicValue { initial: string }')
   await writeFile(path.join(root, 'src/utils/index.ts'), 'export type { PublicValue } from "./types"; export const value = 1')
+  const publication = Promise.withResolvers<void>()
+  const publishing = Promise.withResolvers<void>()
+  let firstPublication = true
+  const started = performance.now()
+  const timeline: { phase: string, elapsed: number, watchesTypes?: boolean }[] = []
+  const record = (phase: string, watchesTypes?: boolean) => {
+    timeline.push({ phase, elapsed: Math.round(performance.now() - started), watchesTypes })
+  }
+  const canonicalTypes = await realpath(types)
+  config.plugins!.push({
+    name: 'test:lib-dts-watch-timeline',
+    buildStart() { record('buildStart') },
+    watchChange(id) { record('watchChange', id === canonicalTypes || id === types) },
+    generateBundle: {
+      order: 'post',
+      handler() { record('generateBundle') },
+    },
+    async writeBundle() {
+      record('writeBundle')
+      if (firstPublication) {
+        firstPublication = false
+        publishing.resolve()
+        await publication.promise
+      }
+    },
+  })
   const watcher = await build({ ...config, build: { ...config.build, watch: {} } }) as RolldownWatcher
   let initialBuildFinished = false
   watcher.on('event', (event) => {
@@ -89,18 +116,32 @@ it('rebuilds declarations when a type-only dependency changes in production watc
     }
   })
   const errors: unknown[] = []
-  watcher.on('event', event => event.code === 'ERROR' && errors.push(event.error))
+  watcher.on('event', (event) => {
+    record(event.code)
+    if (event.code === 'ERROR') {
+      errors.push(event.error)
+    }
+  })
   try {
     // 声明产物写出早于纯类型依赖的原生监听注册，首轮必须等待完整构建结束。
     await expect.poll(() => initialBuildFinished, { timeout: 20_000 }).toBe(true)
     await expect.poll(() => read('utils.d.ts'), { timeout: 20_000 }).toContain('initial: string')
+    record('initial declaration observed')
+    await publishing.promise
     await writeFile(types, 'export interface PublicValue { updated: number }')
+    record('type dependency edited')
+    publication.resolve()
     await expect.poll(() => read('utils.d.ts'), { timeout: 20_000 }).toContain('updated: number')
     expect(errors).toEqual([])
     await writeFile(types, 'export interface PublicValue { broken: }')
     await expect.poll(() => errors.length, { timeout: 20_000 }).toBeGreaterThan(0)
     await writeFile(types, 'export interface PublicValue { recovered: boolean }')
     await expect.poll(() => read('utils.d.ts'), { timeout: 20_000 }).toContain('recovered: boolean')
+  }
+  catch (error) {
+    // 仅在失败时输出生命周期，不增加等待、重试或改变原始保存与断言顺序。
+    process.stderr.write(`[lib-dts-watch-timeline] ${JSON.stringify({ timeline, errors: errors.map(error => String(error).replaceAll(root, '<fixture>').replaceAll(path.resolve('.'), '<workspace>')) })}\n`)
+    throw error
   }
   finally { await watcher.close() }
 }, 80_000)

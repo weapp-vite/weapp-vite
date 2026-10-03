@@ -542,6 +542,8 @@ describe('suiteRunner', () => {
     expect(ideFullLabels).toContain('ide/github-issues.runtime.issue1010.test.ts')
     expect(ideFullLabels).toContain('ide/stateful-hmr.runtime.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/issue-1081-tailwind-batch.runtime.test.ts')
+    expect(ideGithubIssuesLabels).toContain('ide/issue-1081-transaction.runtime.test.ts')
+    expect((await getSuiteTasks('ide-dom-headless')).find(task => task.label === 'ide/issue-1081-transaction.runtime.test.ts')?.env).toMatchObject({ WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless' })
     const batchHeadlessTask = (await getSuiteTasks('ide-dom-headless'))
       .find(task => task.label === 'ide/issue-1081-tailwind-batch.runtime.test.ts')
     expect(batchHeadlessTask?.env).toMatchObject({

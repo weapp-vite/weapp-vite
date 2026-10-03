@@ -33,6 +33,8 @@ export default defineConfig({
         mainBytes: 2 * 1024 * 1024,
         subPackageBytes: 2 * 1024 * 1024,
         independentBytes: 2 * 1024 * 1024,
+        runtimeBytes: 256 * 1024,
+        packageBytes: { 'subpackages/detail': 1024 * 1024 },
         warningRatio: 0.85,
       },
     },
@@ -48,6 +50,8 @@ export default defineConfig({
 | `mainBytes` | 主包预算 |
 | `subPackageBytes` | 普通分包预算 |
 | `independentBytes` | 独立分包预算 |
+| `runtimeBytes` | 可选，包含已识别 runtime 模块的物理文件字节上界；混合 chunk 的业务部分也计入 |
+| `packageBytes` | 可选，按分包 root 覆盖单包预算；主包键为 `__main__` |
 | `warningRatio` | 预警比例，达到该比例但未超限时标记为接近预算 |
 
 运行预算检查：
@@ -57,6 +61,40 @@ wv analyze --budget-check
 ```
 
 当任一预算超限时，命令会设置非 0 退出码，适合放进 CI。
+
+配置 runtime 预算后，JavaScript 文件缺少模块归属时会返回 `unknown` 和非零退出码，不能当作零字节通过。`runtimeBytes` 和 `packageBytes` 支持零预算；总包与各类包的默认预算保持兼容。
+
+## 版本化产物清单 {#artifact-schema}
+
+小程序 `wv analyze --json --budget-check` 输出 `schemaVersion: 2`，配置、构建插件和清理日志进入 stderr。旧的 `packages`、`modules`、`metadata` 字段保留；没有版本字段的旧报告仍可查看，但不能用于新的 runtime 预算。Web 静态分析、preload 和 HMR profile 不使用这套产物 schema。
+
+新增字段：
+
+| 字段 | 口径 |
+| --- | --- |
+| `build.id` | 平台、mode 与排序后文件路径及内容 SHA-256 的摘要，相同输入产物可关联 |
+| `artifacts.files` | 每个最终物理文件恰好一项，包含 `file`、`packageId`、`origin`、`type`、实际 UTF-8 `bytes` 和 `sha256` |
+| `role` / `classification` | 由模块所属包判断 runtime / application / dependency / mixed；缺少依据为 unknown，不根据 chunk 名推断 |
+| `modules` | 模块来源、包名/版本、类别、打包器 `renderedLength` 与分摊 `estimatedBytes` |
+| `unattributedBytes` | 包装代码、未归属虚拟模块及缺少长度的部分，不伪造模块归因 |
+| `runtime.estimatedBytes` | 已知 runtime 模块的比例估算；不是每模块独立压缩体积 |
+| `runtime.upperBoundBytes` | 包含 runtime 模块的文件实际字节总和，混合文件只计一次；有 `unknownFiles` 时不能声称全局上界完整 |
+| `duplicateEstimatedBytes` | 同一模块在多个物理文件中的估算总量减去最大单份，不能直接当作优化可节省量 |
+| `budgetChecks` | total / main / subPackage / independent / runtime 的状态、计量方式、限制和关联文件 |
+
+模块估算采用 `文件字节 × 模块长度 / max(文件字节, 全部模块长度)`。分母包含无法映射的虚拟模块；没有长度的模块不伪造权重。压缩、编码和跨模块优化会影响精度，`estimatedBytes` 与实际文件大小必须分开使用。runtime、重复模块估算都是总包内的观察维度，不能再次加到总包上。单份共享文件计一次，分包中真正复制的文件分别计入其包及总包。
+
+普通构建不会收集这些附加元数据；分析构建仍由 Vite/Rolldown 生成产物且不写出 bundle。分析过程中保存 chunk 转为分包 asset 的来源，不改变分包持久化方式。
+
+外部消费者应首先校验版本和非空清单，再逐项按 `file` 读取构建目录、核对 `bytes` 与 `sha256`；文件缺失或不同版本产物必须失败。仓库提供可直接复制的示例：
+
+```bash
+wv build
+wv analyze --json --output reports/analyze.json
+node packages/weapp-vite/scripts/verify-analyze-artifacts.mjs reports/analyze.json dist/weapp
+```
+
+示例脚本路径位于源码仓库，构建目录应按项目配置填写。不要用 `wevu-*.js` 正则替代产物清单。当前类别按已保留模块的包边界划分，打包在单个发布模块内的 router/store/layout 不能据此单独定价，需要进一步引用链与能力阶梯实验。
 
 ## `weapp.analyze.history` {#weapp-analyze-history}
 
@@ -118,6 +156,8 @@ wv analyze --report pr --output reports/analyze-pr.md
 Markdown 和 PR 报告会结合预算、重复模块、Top 增量和历史快照生成建议动作。第一次运行没有历史快照时，增量列会显示为无变化；从第二次开始会基于上一份快照对比。
 
 ## HMR profile 分析 {#hmr-profile}
+
+JSONL v1 的会话、构建、批次来源与计时边界见 [HMR 消费契约](./hmr.md#jsonl-消费契约)。分析结果的 `inputCoverage` 区分旧版、兼容、不兼容、未完成和损坏记录；缺失阶段保持未知，不能从阶段缺失推断零开销。
 
 如果开启了 [开发态 HMR 配置](./hmr.md) 中的 `weapp.hmr.profileJson`，可以直接聚合 JSONL profile：
 

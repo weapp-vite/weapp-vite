@@ -502,7 +502,17 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
         } else if (type === 'ready') { initialReady = true; send('poll'); }
         else if (type === 'idle' || type === 'changed') send('poll');
         else if (type === 'batch-published') schedule(2000);
-        else if (type === 'rebuilding') schedule(1000);
+        else if (type === 'rebuilding') {
+          const nextBuildId = result?.data?.buildId;
+          if (typeof nextBuildId === 'string' && nextBuildId) control.buildId = nextBuildId;
+          // 完整构建会清空服务端版本和 session；沿用当前页面实例重新注册，
+          // 避免旧 buildId/session 持续 poll 触发 409 rebuilding。
+          phase = 'registering';
+          version = 0;
+          initialReady = false;
+          pendingBatch = undefined;
+          schedule(0);
+        }
         else schedule(500);
       },
       fail(error) {

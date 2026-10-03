@@ -1,5 +1,6 @@
 import type { BuildOptions } from 'esbuild'
 import type { RuntimeSizeEntryKind, RuntimeSizeTarget, RuntimeSizeTier } from './runtime-size-config'
+import type { RuntimeTierAttribution } from './runtime-size/attribution'
 
 import { gzipSync } from 'node:zlib'
 import { build } from 'esbuild'
@@ -8,6 +9,7 @@ import {
   runtimeSizeTargets,
   runtimeSizeTiers,
 } from './runtime-size-config'
+import { createRuntimeTierAttribution } from './runtime-size/attribution'
 import { createRuntimeSizeRetainedModules } from './runtime-size/modules'
 
 export type {
@@ -65,6 +67,7 @@ export interface RuntimeSizeTierReport {
   label: string
   dev: RuntimeSizeMeasurement
   production: RuntimeSizeProductionMeasurement
+  capabilityAttribution?: RuntimeTierAttribution
 }
 
 export interface RuntimeSizeReport {
@@ -120,7 +123,7 @@ export interface RuntimeSizeRetainedModuleViolation {
 
 export type RuntimeSizeGuardViolation = RuntimeSizeBudgetViolation | RuntimeSizeRetainedModuleViolation
 
-function createProviderEntry(target: RuntimeSizeTarget, tier: RuntimeSizeTier) {
+export function createProviderEntry(target: RuntimeSizeTarget, tier: RuntimeSizeTier) {
   if (!tier.imports) {
     const entries = Object.values(target.entries)
     return entries
@@ -227,6 +230,9 @@ export async function collectRuntimeSizeReport(options: CollectRuntimeSizeOption
           retainedModules: productionBundle.retainedModules,
         },
       })
+    }
+    for (const tier of tiers) {
+      tier.capabilityAttribution = createRuntimeTierAttribution(options.root, target, tier, tiers, createProviderEntry(target, runtimeSizeTiers.find(candidate => candidate.id === tier.id)!))
     }
     targets.push({
       id: target.id,

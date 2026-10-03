@@ -158,6 +158,29 @@ describe('ModuleGraphService', () => {
     expect(invalidateModule).toHaveBeenCalledWith(dependencyNode)
   })
 
+  it('does not invalidate unchanged or absent transform dependencies', () => {
+    const id = '/project/src/page.css'
+    const node = { id, file: id, importers: new Set() }
+    const invalidateModule = vi.fn()
+    const service = createModuleGraphService()
+    service.bindDevServer({ moduleGraph: {
+      getModulesByFile: () => new Set([node]),
+      getModuleById: () => node,
+      idToModuleMap: new Map([[id, node]]),
+      invalidateModule,
+    } })
+    service.replaceTransformDependencies(id, [])
+    expect(invalidateModule).not.toHaveBeenCalled()
+    service.replaceTransformDependencies(id, ['/project/tokens.json'])
+    expect(invalidateModule).toHaveBeenCalledTimes(1)
+    service.replaceTransformDependencies(id, ['/project/tokens.json'])
+    expect(invalidateModule).toHaveBeenCalledTimes(1)
+    service.replaceTransformDependencies(id, [])
+    expect(invalidateModule).toHaveBeenCalledTimes(2)
+    service.replaceTransformDependencies(id, [])
+    expect(invalidateModule).toHaveBeenCalledTimes(2)
+  })
+
   it('uses the bound dev graph instead of merging stale build importers', () => {
     const file = '/project/src/shared/value.ts'
     const staleEntry = '/project/src/pages/stale/index.ts'

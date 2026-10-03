@@ -158,7 +158,7 @@ export async function transformWebVueSfcScript(options: {
   })
   const s = new MagicString(code)
   const templateIdent = meta.kind === 'app' ? undefined : '__weapp_sfc_template__'
-  const styleIdent = meta.kind === 'app' ? undefined : '__weapp_sfc_style__'
+  const styleIdent = '__weapp_sfc_style__'
   const registerName = getSfcRegisterName(meta.kind)
   const factoryName = getSfcFactoryName(meta.kind)
   const registerMetaCode = createRegisterMetaCode(meta, templateIdent, styleIdent)
@@ -184,10 +184,8 @@ export async function transformWebVueSfcScript(options: {
   if (templateIdent) {
     imports.push(`import ${templateIdent} from '${toRelativeImport(filename, filename)}?weapp-web-sfc-template'`)
   }
-  if (styleIdent) {
-    const styleFilename = `${filename}.${styleLanguage}`
-    imports.push(`import ${styleIdent} from '${appendInlineQuery(`${toRelativeImport(filename, styleFilename)}?weapp-web-sfc-style`)}'`)
-  }
+  const styleFilename = `${filename}.${styleLanguage}`
+  imports.push(`import ${styleIdent} from '${appendInlineQuery(`${toRelativeImport(filename, styleFilename)}?weapp-web-sfc-style`)}'`)
   s.prepend(`${imports.join('\n')}\n`)
   if (enableHmr && hmrAcceptCode) {
     s.append(`\n${hmrAcceptCode}\n`)

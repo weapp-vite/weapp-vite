@@ -15,6 +15,60 @@ afterEach(() => {
 })
 
 describe('stateful hmr snapshot scheduler', () => {
+  it('settles only after debounce, execution, and a newer queued refresh finish', async () => {
+    vi.useFakeTimers()
+    const first = createDeferred()
+    const second = createDeferred()
+    const execute = vi.fn().mockImplementationOnce(() => first.promise).mockImplementationOnce(() => second.promise)
+    const scheduler = new StatefulHmrSnapshotScheduler({ execute })
+    scheduler.request('refresh', ['pages/first.vue'])
+    let settled = false
+    const waiting = scheduler.whenSettled().then(() => {
+      settled = true
+    })
+    await flushPromises()
+    expect(settled).toBe(false)
+    expect(execute).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(40)
+    scheduler.request('refresh', ['pages/second.vue'])
+    first.resolve()
+    await vi.advanceTimersByTimeAsync(40)
+    expect(execute).toHaveBeenCalledTimes(2)
+    expect(settled).toBe(false)
+    second.resolve()
+    await waiting
+    expect(settled).toBe(true)
+    await scheduler.close()
+  })
+
+  it('rejects failed settlement and recovers after a later successful request', async () => {
+    vi.useFakeTimers()
+    const error = new Error('snapshot publication failed')
+    const execute = vi.fn().mockRejectedValueOnce(error).mockResolvedValue(undefined)
+    const scheduler = new StatefulHmrSnapshotScheduler({ execute })
+    scheduler.request('refresh', ['pages/first.vue'])
+    const rejected = expect(scheduler.whenSettled()).rejects.toBe(error)
+    await vi.advanceTimersByTimeAsync(40)
+    await rejected
+    await expect(scheduler.whenSettled()).rejects.toBe(error)
+    scheduler.request('refresh', ['pages/first.vue'])
+    const recovered = scheduler.whenSettled()
+    await vi.advanceTimersByTimeAsync(40)
+    await expect(recovered).resolves.toBeUndefined()
+    await scheduler.close()
+  })
+
+  it('releases a pending debounce waiter when the scheduler closes', async () => {
+    vi.useFakeTimers()
+    const execute = vi.fn()
+    const scheduler = new StatefulHmrSnapshotScheduler({ execute })
+    scheduler.request('refresh', ['pages/first.vue'])
+    const rejected = expect(scheduler.whenSettled()).rejects.toThrow('closed before settlement')
+    await scheduler.close()
+    await rejected
+    expect(execute).not.toHaveBeenCalled()
+  })
+
   it('debounces files into one refresh batch', async () => {
     vi.useFakeTimers()
     const batches: Array<{ files: string[], mode: string }> = []

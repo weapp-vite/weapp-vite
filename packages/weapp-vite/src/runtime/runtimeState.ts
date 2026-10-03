@@ -1,11 +1,12 @@
 import type { Plugin as PluginJson } from '@weapp-core/schematics'
 import type { Buffer } from 'node:buffer'
 import type { DetectResult } from 'package-manager-detector'
-import type { ResolvedId, RolldownOutput } from 'rolldown'
+import type { OutputChunk, ResolvedId, RolldownOutput } from 'rolldown'
 import type { ComponentStyleOptions, VueSfcBlockSignatures } from 'wevu/compiler'
 import type { GlassEaselAnalysisFact } from '../analyze/glassEasel/types'
 import type { AppEntry, ChangeEvent, ComponentsMap, Entry, StyleEntry, SubPackageMetaValue } from '../types'
 import type { AutoRoutes } from '../types/routes'
+import type { HmrProfileProvenance } from '../utils/hmrProfile/provenance'
 import type { ScanWxmlResult } from '../wxml'
 import type { WxmlDependencyRegistry } from '../wxml/processing/registry'
 import type { LocalAutoImportMatch } from './autoImport/types'
@@ -142,6 +143,8 @@ export interface RuntimeState {
     }
     output: {
       emittedSource: Map<string, string>
+      /** 仅 analyze 启用，保留转为 asset 的 chunk 模块来源。 */
+      analysisChunks?: Map<string, OutputChunk>
       wevuInternalRuntimeFileName?: string
       wevuInternalRuntimeFileNames?: Map<string, string>
     }
@@ -165,6 +168,10 @@ export interface RuntimeState {
       vueEntryTailwindScriptContentSignatures: Map<string, string>
       appEntryAutoRoutesSignature?: string
       dirtyVueEntryIds: Set<string>
+      /** 当前构建是否为已有输出的后续发布，不依赖单文件诊断事件。 */
+      isRebuild: boolean
+      /** 当前快照从根入口重建可达图；完整发布后才撤销旧产物。 */
+      fullEntryScan?: boolean
       didEmitAllEntries: boolean
       lastHmrEntryIds: Set<string>
       lastEmittedEntryIds: Set<string>
@@ -240,7 +247,7 @@ export interface RuntimeState {
         dirtyReasonSummary?: string[]
         pendingReasonSummary?: string[]
       }>
-      profile: {
+      profile: HmrProfileProvenance & {
         eventId?: string
         event?: ChangeEvent
         file?: string
@@ -435,6 +442,7 @@ export function createRuntimeState(): RuntimeState {
         vueEntryTailwindScriptContentSignatures: new Map<string, string>(),
         appEntryAutoRoutesSignature: undefined,
         dirtyVueEntryIds: new Set<string>(),
+        isRebuild: false,
         didEmitAllEntries: false,
         lastHmrEntryIds: new Set<string>(),
         lastEmittedEntryIds: new Set<string>(),

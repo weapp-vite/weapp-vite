@@ -1,7 +1,16 @@
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
+import type { AnalyzeBudgetCheckItem } from '../analyze'
 import type { SerializedDashboardAnalyzeSnapshot } from '../payload'
 
 export type ReadDashboardQuerySnapshot = (revision: number) => SerializedDashboardAnalyzeSnapshot
+
+export function summarizeBudget(item: AnalyzeBudgetCheckItem | undefined) {
+  if (!item) {
+    return null
+  }
+  const { id, label, scope, currentBytes, limitBytes, ratio, status, measurement } = item
+  return { id, label, scope, currentBytes, limitBytes, ratio, status, measurement }
+}
 
 export function selectAnalyzeReport(read: ReadDashboardQuerySnapshot, request: { revision: number, target: 'current' | 'previous' }) {
   const snapshot = read(request.revision)

@@ -35,7 +35,7 @@ export interface VueSfcSignaturePayload extends Omit<RawVueSfcPayload, 'config'>
   tailwindContent: TailwindContentPayload
 }
 
-const signaturePayloadCache = new Map<string, VueSfcSignaturePayload | undefined>()
+const signaturePayloadCache = new WeakMap<SFCDescriptor, VueSfcSignaturePayload>()
 
 function serializeAttrs(attrs: SFCBlock['attrs']) {
   return Object.fromEntries(
@@ -140,21 +140,18 @@ function normalizeVueSfcPayload(raw: RawVueSfcPayload, filename: string): VueSfc
   }
 }
 
-function buildVueSfcSignaturePayloadWithTs(source: string, filename: string) {
+export function resolveVueSfcSignaturePayload(source: string, filename: string) {
   const { descriptor, errors } = parse(source, { filename })
   if (errors.length) {
     return undefined
   }
-  return normalizeVueSfcPayload(buildRawVueSfcPayload(descriptor), filename)
-}
-
-export function resolveVueSfcSignaturePayload(source: string, filename: string) {
-  const cacheKey = `${filename}\0${source}`
-  if (signaturePayloadCache.has(cacheKey)) {
-    return signaturePayloadCache.get(cacheKey)
+  const cached = signaturePayloadCache.get(descriptor)
+  if (cached) {
+    return cached
   }
 
-  const payload = buildVueSfcSignaturePayloadWithTs(source, filename)
-  signaturePayloadCache.set(cacheKey, payload)
+  // 载荷只跟随 Vue 解析结果存活，不能在解析缓存淘汰后继续强持有每次编辑的源码。
+  const payload = normalizeVueSfcPayload(buildRawVueSfcPayload(descriptor), filename)
+  signaturePayloadCache.set(descriptor, payload)
   return payload
 }

@@ -12,7 +12,9 @@ export function createDiagnosticsLogger(mode: 'off' | 'fallback' | 'always') {
     if (mode === 'fallback' && !isFallbackReason(info.reason)) {
       return
     }
-    const bytes = typeof info.bytes === 'number' ? info.bytes : info.estimatedBytes
+    const bytes = info.phase
+      ? info.phase.dispatch?.payloadBytes
+      : typeof info.bytes === 'number' ? info.bytes : info.estimatedBytes
     const bytesText = typeof bytes === 'number' ? `${bytes}B` : 'unknown'
     const parts = [
       `mode=${info.mode}`,
@@ -26,6 +28,20 @@ export function createDiagnosticsLogger(mode: 'off' | 'fallback' | 'always') {
     }
     if (typeof info.committedRevision === 'number') {
       parts.push(`committedRevision=${info.committedRevision}`)
+    }
+    if (info.phase) {
+      const phase = info.phase
+      parts.push(
+        `phase=${phase.name}`,
+        `observer=${phase.observerId}`,
+        `result=${phase.result}`,
+        `completion=${phase.completion}`,
+        `dispatch=${phase.dispatch?.id ?? 'unknown'}`,
+        `prepareMs=${phase.prepareDurationMs ?? 'unknown'}`,
+        `dispatchMs=${phase.dispatch?.durationMs ?? 'unknown'}`,
+        `commitMs=${phase.commitDurationMs ?? 'unknown'}`,
+        'visibleAt=unknown',
+      )
     }
     if (typeof info.mergedSiblingParents === 'number') {
       parts.push(`mergedParents=${info.mergedSiblingParents}`)

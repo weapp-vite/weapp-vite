@@ -87,6 +87,18 @@ async function createFixture() {
 }
 
 describe('incremental native layout template outputs', () => {
+  it('includes newly emitted component templates alongside the changed parent entry', async () => {
+    const fixture = await createFixture()
+    const component = fixture.absolute('components/new/index.js')
+    const template = fixture.absolute('components/new/index.wxml')
+    await mkdir(path.dirname(template), { recursive: true })
+    await fixture.save('components/new/index.wxml', '<view>new component</view>')
+    fixture.ctx.moduleGraphService.replaceEntryDependencies(component, 'template', [template])
+    fixture.state.hmrState.lastEmittedEntryIds = new Set([component])
+    await fixture.save('pages/unrelated/index.wxml', '<view>unrelated queued</view>')
+    expect(await fixture.emit()).toEqual({ 'components/new/index.wxml': '<view>new component</view>' })
+  })
+
   it('emits sequential shared import and nested include edits through the page layout owner', async () => {
     const fixture = await createFixture()
     await fixture.save('shared/card.wxml', '<template name="card"><view>card updated</view></template>')

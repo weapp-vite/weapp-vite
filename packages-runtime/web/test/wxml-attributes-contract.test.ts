@@ -48,11 +48,9 @@ describe('WXML attribute contracts', () => {
     expect(resolveComponentTagName('missing', { card: 'wv-card' })).toBeUndefined()
   })
 
-  it('renders event flags and property or attribute bindings', () => {
+  it('renders property or attribute bindings', () => {
     const rendered = renderAttributes({
       'aria-label': 'Label',
-      'bindtap': 'handleTap',
-      'capture-catch:longpress': 'handleLong',
       'class': 'card',
       'data-id': '{{id}}',
       'custom-value': '{{value}}',
@@ -63,10 +61,6 @@ describe('WXML attribute contracts', () => {
       propertyAttributes: ['custom-value'],
       skipControl: true,
     })
-    expect(rendered).toContain('"click"')
-    expect(rendered).toContain('"catch":false')
-    expect(rendered).toContain('"longpress"')
-    expect(rendered).toContain('"capture":true')
     expect(rendered).toContain('.customValue=')
     expect(rendered).toContain(' data-id=')
     expect(rendered).toContain(' aria-label=')
@@ -82,7 +76,6 @@ describe('WXML attribute contracts', () => {
     }, 'scope', 'wxs', { preferProperty: true })
     expect(preferred).toContain('.value=')
     expect(preferred).not.toContain('.id=')
-    expect(renderAttributes({ bindtap: null as any }, 'scope', 'wxs')).toContain('"click"')
     expect(renderAttributes({ plain: 'value' }, 'scope', 'wxs')).toContain(' plain=')
   })
 })

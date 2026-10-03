@@ -2,15 +2,15 @@ import type { DashboardAnalyzeSummary, DashboardComparisonPage } from './schema'
 import type { ReadDashboardQuerySnapshot } from './shared'
 import { createAnalyzeBudgetCheck, createAnalyzeComparison } from '../analyze'
 import { analyzeQuerySchema, comparisonQuerySchema } from './schema'
-import { compareText, matchesQuery, paginate, reportTotals, selectAnalyzeReport } from './shared'
+import { compareText, matchesQuery, paginate, reportTotals, selectAnalyzeReport, summarizeBudget } from './shared'
 
 export function getAnalyzeSummary(read: ReadDashboardQuerySnapshot, input: unknown): DashboardAnalyzeSummary {
   const request = analyzeQuerySchema.parse(input)
   const { result, context, previousAvailable } = selectAnalyzeReport(read, request)
   const budgets = createAnalyzeBudgetCheck(result)
-  const packageBudgets = { ok: 0, warning: 0, exceeded: 0 }
+  const packageBudgets = { ok: 0, warning: 0, exceeded: 0, unknown: 0 }
   for (const budget of budgets) {
-    if (budget.scope !== 'total') {
+    if (budget.scope !== 'total' && budget.scope !== 'runtime') {
       packageBudgets[budget.status] += 1
     }
   }
@@ -18,7 +18,8 @@ export function getAnalyzeSummary(read: ReadDashboardQuerySnapshot, input: unkno
     ...context,
     previousAvailable,
     totals: reportTotals(result),
-    totalBudget: budgets.find(item => item.scope === 'total') ?? null,
+    totalBudget: summarizeBudget(budgets.find(item => item.scope === 'total')),
+    runtimeBudget: summarizeBudget(budgets.find(item => item.scope === 'runtime')),
     packageBudgets,
   }
 }

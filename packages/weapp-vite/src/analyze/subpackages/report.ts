@@ -42,6 +42,9 @@ function getCompressedSize(file: AnalyzeSubpackagesResult['packages'][number]['f
 }
 
 function formatBudgetStatus(item: AnalyzeBudgetCheckItem) {
+  if (item.status === 'unknown') {
+    return '归因或产物字节不足，无法验收'
+  }
   if (item.status === 'ok') {
     return '正常'
   }

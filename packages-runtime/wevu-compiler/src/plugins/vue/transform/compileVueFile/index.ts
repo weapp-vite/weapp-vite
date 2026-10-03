@@ -3,6 +3,7 @@ import type { CompileVueFileOptions, VueTransformResult } from './types'
 import { compileScript } from 'vue/compiler-sfc'
 import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../../runtimeCapabilities'
 import { CompilerDiagnosticError } from '../../../../types/diagnostics'
+import { parseJsLike } from '../../../../utils/babel'
 import { getMiniProgramTemplatePlatform } from '../../compiler/template'
 import { generateScopedId } from '../scopedId'
 import { collectComponentSourceInfo } from './componentSources'
@@ -10,6 +11,7 @@ import { compileConfigPhase } from './config'
 import { finalizeResult } from './finalize'
 import { applyCompilerTemplateWrappers, mergeCompilerLayoutUsingComponents } from './pageLayout'
 import { parseVueFile } from './parse'
+import { resolveSetupPropConflicts } from './propsProjection'
 import { compileScriptPhase, resolveEffectivePropsDerivedKeys, resolveScriptSetupPropsAliases } from './script'
 import { compileStylePhase } from './style'
 import { compileTemplatePhase } from './template'
@@ -72,11 +74,16 @@ export async function compileVueFile(
         isProd: false,
       })
     : undefined
+  let compiledScriptAst: ReturnType<typeof parseJsLike> | undefined
+  const getCompiledScriptAst = () => compiledScriptAst ??= parseJsLike(scriptCompiled!.content)
   const propsAliases = scriptCompiled
     ? resolveScriptSetupPropsAliases(scriptCompiled.bindings as Record<string, any> | undefined)
     : undefined
   const propsDerivedKeys = scriptCompiled
-    ? resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCompiled.content)
+    ? resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCompiled.content, getCompiledScriptAst)
+    : undefined
+  const scriptSetupPropConflicts = scriptCompiled
+    ? resolveSetupPropConflicts(scriptCompiled.content, scriptCompiled.bindings, getCompiledScriptAst)
     : undefined
 
   const styleCompiled = await compileStylePhase(parsed.descriptor, filename, result, options?.style)
@@ -93,6 +100,7 @@ export async function compileVueFile(
         propsAliases,
         propsDerivedKeys,
         scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,
+        scriptSetupPropConflicts,
         scopedSlotsRequireProps: true,
         scopeId: scopedId,
         slottedScopeId: scopedId && styleCompiled.usesSlotted ? `${scopedId}-s` : undefined,
@@ -105,6 +113,7 @@ export async function compileVueFile(
         propsAliases,
         propsDerivedKeys,
         scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,
+        scriptSetupPropConflicts,
         scopeId: scopedId,
         slottedScopeId: scopedId && styleCompiled.usesSlotted ? `${scopedId}-s` : undefined,
         cssVars: hasCssVarsRuntime,

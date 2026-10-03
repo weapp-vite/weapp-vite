@@ -230,6 +230,54 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.buildStartMs).toBeTypeOf('number')
   })
 
+  it.each([
+    ['/project/src/plugin', 'update'],
+    ['/project/src/plugin', 'create'],
+    ['/project/src/plugin', 'delete'],
+    ['/shared/plugin', 'update'],
+    ['/shared/plugin', 'create'],
+    ['/shared/plugin', 'delete'],
+  ] as const)('restarts the plugin manifest at %s after %s', async (pluginRoot, event) => {
+    const state = createState({ buildTarget: 'plugin' })
+    state.ctx.configService.pluginOnly = true
+    state.ctx.configService.absolutePluginRoot = pluginRoot
+    state.ctx.scanService.pluginJsonPath = event === 'create' ? undefined : `${pluginRoot}/plugin.json`
+    const entry = `${pluginRoot}/main.ts`
+    state.resolvedEntryMap.set(entry, {})
+
+    await createWatchChangeHook(state)(`${pluginRoot}/plugin.json`, { event })
+
+    expect(state.ctx.scanService.markDirty).toHaveBeenCalled()
+    expect(state.ctx.buildService.requestConfigRestart).toHaveBeenCalledExactlyOnceWith('plugin')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entry, 'direct')
+  })
+
+  it('restarts when a plugin manifest switches to another supported config extension', async () => {
+    const state = createState({ buildTarget: 'plugin' })
+    state.ctx.configService.pluginOnly = true
+    state.ctx.configService.absolutePluginRoot = '/shared/plugin'
+    state.ctx.scanService.pluginJsonPath = '/shared/plugin/plugin.json'
+
+    await createWatchChangeHook(state)('/shared/plugin/plugin.json.ts', { event: 'create' })
+
+    expect(state.ctx.buildService.requestConfigRestart).toHaveBeenCalledExactlyOnceWith('plugin')
+  })
+
+  it.each([
+    [true, '/project/src/plugin.json'],
+    [true, '/shared/plugin/config.json'],
+    [false, '/shared/plugin/plugin.json'],
+  ] as const)('does not restart another manifest owner (pluginOnly=%s, %s)', async (pluginOnly, file) => {
+    const state = createState({ buildTarget: 'plugin' })
+    state.ctx.configService.pluginOnly = pluginOnly
+    state.ctx.configService.absolutePluginRoot = '/shared/plugin'
+    state.ctx.scanService.pluginJsonPath = '/shared/plugin/plugin.json'
+
+    await createWatchChangeHook(state)(file, { event: 'create' })
+
+    expect(state.ctx.buildService.requestConfigRestart).not.toHaveBeenCalled()
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -948,6 +996,73 @@ const count = 1
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
   })
 
+  it.each(['pages/logs/index.vue', 'app.vue', 'layouts/default.vue'])('does not invalidate an unchanged %s after its script update was compiled', async (relativeEntry) => {
+    const state = createState()
+    const entryId = `${state.ctx.configService.absoluteSrcRoot}/${relativeEntry}`
+    const otherEntry = `${state.ctx.configService.absoluteSrcRoot}/pages/other/index.vue`
+    const source = '<script setup>const count = 1</script><template><view>{{ count }}</view></template><style>view { color: red }</style>'
+    const next = source.replace('count = 1', 'count = 2')
+    state.loadedEntrySet.add(entryId)
+    state.resolvedEntryMap.set(entryId, { id: entryId })
+    state.resolvedEntryMap.set(otherEntry, { id: otherEntry })
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    state.ctx.moduleGraphService.recordChangedFile = vi.fn()
+    collectAffectedEntriesMock.mockReturnValue(new Set([entryId, otherEntry]))
+    setVueEntrySfcSignatures(state, entryId, source)
+    vi.spyOn(fs, 'readFile').mockResolvedValue(next)
+    const hook = createWatchChangeHook(state)
+    await hook(entryId, { event: 'update' })
+    expect(state.markEntryDirty).toHaveBeenCalled()
+
+    setVueEntrySfcSignatures(state, entryId, next)
+    vi.clearAllMocks()
+    const profileBefore = structuredClone(state.ctx.runtimeState.build.hmr.profile)
+    await hook(entryId, { event: 'update' })
+    await hook(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).not.toHaveBeenCalled()
+    expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+    expect(collectAffectedEntriesMock).not.toHaveBeenCalled()
+    expect(invalidateFileCacheMock).not.toHaveBeenCalled()
+    expect(state.ctx.moduleGraphService.recordChangedFile).not.toHaveBeenCalled()
+    expect(state.ctx.onStatefulHmrSourceChange).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile).toEqual(profileBefore)
+  })
+
+  it.each(['style-sidecar', 'json-sidecar', 'sidecar-direct'])('preserves explicit %s invalidation when Vue source blocks are unchanged', async (cause) => {
+    const state = createState()
+    const entryId = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/index.vue`
+    const source = '<template><view /></template><style src="./external.scss" />'
+    state.loadedEntrySet.add(entryId)
+    state.ctx.runtimeState.watcher = { sidecarDirtyFiles: new Map([[entryId, cause]]) }
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    setVueEntrySfcSignatures(state, entryId, source)
+    vi.spyOn(fs, 'readFile').mockResolvedValue(source)
+
+    await createWatchChangeHook(state)(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledExactlyOnceWith(entryId, 'metadata')
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledExactlyOnceWith(entryId, [`${cause}:1`])
+    expect(state.ctx.runtimeState.watcher.sidecarDirtyFiles.size).toBe(0)
+  })
+
+  it('preserves external stylesheet changes when the owning Vue source is unchanged', async () => {
+    const state = createState()
+    const entryId = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/index.vue`
+    const stylesheet = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/external.scss`
+    const source = '<template><view /></template><style src="./external.scss" />'
+    state.loadedEntrySet.add(entryId)
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    setVueEntrySfcSignatures(state, entryId, source)
+    collectAffectedEntriesMock.mockReturnValue(new Set([entryId]))
+    vi.spyOn(fs, 'readFile').mockResolvedValue(source)
+
+    await createWatchChangeHook(state)(stylesheet, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledWith(stylesheet, ['style-sidecar:1'])
+  })
+
   it('marks vue entry updates as metadata when only json macro content changed', async () => {
     const entryId = '/project/src/pages/logs/index.vue'
     const previousSource = `<script setup lang="ts">
@@ -1452,8 +1567,15 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['auto-routes-topology:1'])
   })
 
-  it('marks app entry dirty when a created auto-routes page was already synced by sidecar watcher', async () => {
-    vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+  it.each([
+    { event: 'create' as const, routeFile: false, stale: true },
+    { event: 'create' as const, routeFile: true, stale: true },
+    { event: 'delete' as const, routeFile: false, stale: true },
+    { event: 'delete' as const, routeFile: true, stale: true },
+    { event: 'create' as const, routeFile: true, stale: false },
+    { event: 'delete' as const, routeFile: true, stale: false },
+  ])('marks app entry dirty after a prior route observer synced $event (routeFile=$routeFile, stale=$stale)', async ({ event, routeFile, stale }) => {
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(event !== 'delete')
     const entryId = '/project/src/pages/logs/hmr-added.vue'
     const appEntry = '/project/src/app.vue'
     const baseState = createState()
@@ -1469,18 +1591,23 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
           },
         },
         autoRoutesService: {
-          isRouteFile: vi.fn(() => false),
+          isRouteFile: vi.fn(() => routeFile),
           handleFileChange: vi.fn(async () => false),
           getSignature: vi.fn(() => 'synced-routes'),
         },
       },
     }
-    state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = 'old-routes'
+    state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = stale ? 'old-routes' : 'synced-routes'
     const hook = createWatchChangeHook(state)
 
-    await hook(entryId, { event: 'create' })
+    await hook(entryId, { event })
 
-    expect(state.ctx.autoRoutesService.handleFileChange).toHaveBeenCalledWith(entryId, 'create')
+    expect(state.ctx.autoRoutesService.handleFileChange).toHaveBeenCalledWith(entryId, event)
+    if (!stale) {
+      expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntry, 'direct')
+      expect(state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature).toBe('synced-routes')
+      return
+    }
     expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'direct')
     expect(invalidateFileCacheMock).toHaveBeenCalledWith(appEntry)
     expect(invalidateFileCacheMock).toHaveBeenCalledWith('weapp-vite/auto-routes')

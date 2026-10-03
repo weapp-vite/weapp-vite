@@ -1,12 +1,12 @@
 # uview-plus 兼容矩阵
 
-该应用固定使用 `uview-plus@3.8.112`，以 npm 发布包的 `components/u-*/*.vue` 为事实来源。生成器会把 139 个 resolver 源码入口与组件目录互相校验，并为 137 个具名组件生成独立页面。
+该应用固定使用 `uview-plus@3.8.127`，以 npm 发布包的 `components/u-*/*.vue` 为事实来源。生成器会把 140 个 resolver 源码入口与组件目录互相校验，并为 138 个具名组件生成独立页面。
 
-仓库对该版本保留 9 项 pnpm patch 兼容调整，收窄小程序选择器并为微信组件作用域补齐主题变量。旧版的 `u-slider` 和 `u-tabbar-item` 补丁已由上游修复，不再重复应用。
+仓库对该版本保留 1 项 pnpm patch 兼容调整：`u-barcode` 获取 canvas 引用前使用组件实例的 `this.$nextTick()` 等待视图更新。旧版的选择器、主题变量及其他组件兼容补丁已由上游修复，不再重复应用。
 
 - `u-action-sheet-data` 没有组件名，由 `up-action-sheet` 场景覆盖。
 - `u-column-notice` 没有组件名，由 `up-notice-bar` 场景覆盖。
-- Web 移动端、Web 桌面端、微信开发者工具和 headless 都逐页执行 137 个场景，不使用 skip。
+- Web 移动端、Web 桌面端、微信开发者工具和 headless 都逐页执行 138 个场景，不使用 skip。
 - Web 提交移动端与桌面端视觉基线；微信开发者工具提交独立视觉基线。
 - 上传、图片、视频、时钟等场景只使用本地固定资源和确定性状态。
 

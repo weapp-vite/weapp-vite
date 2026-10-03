@@ -1,12 +1,13 @@
 import path from 'node:path'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ readFile: vi.fn(), rm: vi.fn(), connect: vi.fn() }))
 vi.mock('node:fs/promises', async (original) => {
   const actual = await original<typeof import('node:fs/promises')>()
   return { ...actual, default: { ...actual, readFile: mocks.readFile, rm: mocks.rm } }
 })
-vi.mock('@weapp-vite/miniprogram-automator', () => ({
+vi.mock('@weapp-vite/miniprogram-automator', async importOriginal => ({
+  ...await importOriginal<typeof import('@weapp-vite/miniprogram-automator')>(),
   Launcher: class { connect = mocks.connect },
 }))
 
@@ -19,16 +20,26 @@ describe('read-only automator connections', () => {
     mocks.readFile.mockResolvedValue(persisted)
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('preserves session metadata on failure and permits a later successful read-only connection', async () => {
     const { connectOpenedAutomator } = await import('../src/cli/automator')
+    let now = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    mocks.readFile.mockImplementation(async () => {
+      now += 25
+      return persisted
+    })
     const failure = new Error('temporary connection timeout')
     const session = { disconnect: vi.fn() }
     mocks.connect.mockRejectedValueOnce(failure).mockResolvedValueOnce(session)
-    const options = { projectPath, port: 19620, timeout: 20 }
+    const options = { projectPath, port: 19620, timeout: 1_000 }
     await expect(connectOpenedAutomator(options)).rejects.toBe(failure)
     expect(mocks.rm).not.toHaveBeenCalled()
     await expect(connectOpenedAutomator(options)).resolves.toBe(session)
-    expect(mocks.connect).toHaveBeenLastCalledWith({ timeout: 20, wsEndpoint: 'ws://127.0.0.1:19620' })
+    expect(mocks.connect).toHaveBeenLastCalledWith({ signal: expect.any(AbortSignal), timeout: 975, wsEndpoint: 'ws://127.0.0.1:19620' })
   })
 
   it('does not delete another operation replacement when a previous connection fails', async () => {
@@ -40,7 +51,7 @@ describe('read-only automator connections', () => {
     await expect(connectOpenedAutomator({ projectPath, port: 19620 })).rejects.toThrow('old connection failed')
     expect(mocks.rm).not.toHaveBeenCalled()
     await connectOpenedAutomator({ projectPath, port: 19620 })
-    expect(mocks.connect).toHaveBeenLastCalledWith({ timeout: undefined, wsEndpoint: 'ws://127.0.0.1:19621' })
+    expect(mocks.connect).toHaveBeenLastCalledWith({ signal: expect.any(AbortSignal), timeout: expect.any(Number), wsEndpoint: 'ws://127.0.0.1:19621' })
   })
 
   it('leaves malformed or unrelated metadata untouched', async () => {
@@ -48,7 +59,7 @@ describe('read-only automator connections', () => {
     mocks.readFile.mockResolvedValue('{ malformed')
     mocks.connect.mockResolvedValue({ disconnect: vi.fn() })
     await connectOpenedAutomator({ projectPath, port: 19620 })
-    expect(mocks.connect).toHaveBeenCalledWith({ timeout: undefined, wsEndpoint: 'ws://127.0.0.1:19620' })
+    expect(mocks.connect).toHaveBeenCalledWith({ signal: expect.any(AbortSignal), timeout: expect.any(Number), wsEndpoint: 'ws://127.0.0.1:19620' })
     expect(mocks.rm).not.toHaveBeenCalled()
   })
 })

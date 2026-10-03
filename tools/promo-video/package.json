@@ -1,0 +1,32 @@
+{
+  "name": "@weapp-vite/promo-video",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "studio": "tsx scripts/runner.ts studio",
+    "render": "tsx scripts/runner.ts render",
+    "render:landscape": "tsx scripts/runner.ts render:landscape",
+    "render:portrait": "tsx scripts/runner.ts render:portrait",
+    "render:stills": "tsx scripts/runner.ts render:stills",
+    "typecheck": "tsc --noEmit",
+    "verify": "tsx scripts/runner.ts verify",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.532",
+    "@remotion/cli": "4.0.532",
+    "@remotion/renderer": "4.0.532",
+    "react": "catalog:",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.532",
+    "sharp": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "^19.3.0",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

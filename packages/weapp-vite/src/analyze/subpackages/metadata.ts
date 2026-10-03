@@ -24,12 +24,17 @@ export function resolveAnalyzeBudgets(configService: ConfigService): AnalyzeBudg
   const budgets = configService.weappViteConfig.analyze?.budgets
   const legacyPackageBudget = configService.weappViteConfig.packageSizeWarningBytes
   const packageFallback = resolveBudgetValue(legacyPackageBudget, defaultPackageBudgetBytes)
+  const optionalBudget = (value: number | undefined) => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined
 
   return {
     totalBytes: resolveBudgetValue(budgets?.totalBytes, defaultTotalBudgetBytes),
     mainBytes: resolveBudgetValue(budgets?.mainBytes, packageFallback),
     subPackageBytes: resolveBudgetValue(budgets?.subPackageBytes, packageFallback),
     independentBytes: resolveBudgetValue(budgets?.independentBytes, packageFallback),
+    runtimeBytes: optionalBudget(budgets?.runtimeBytes),
+    packageBytes: budgets?.packageBytes
+      ? Object.fromEntries(Object.entries(budgets.packageBytes).filter(([, value]) => optionalBudget(value) !== undefined))
+      : undefined,
     warningRatio: resolveBudgetValue(budgets?.warningRatio, defaultWarningRatio),
     source: budgets ? 'config' : 'default',
   }

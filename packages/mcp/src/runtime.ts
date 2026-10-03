@@ -11,14 +11,11 @@ import {
 } from '@modelcontextprotocol/node'
 import { createMcpHandler } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
+import { DEFAULT_MCP_ENDPOINT, DEFAULT_MCP_HOST, DEFAULT_MCP_PORT } from '@weapp-core/constants'
 import { createWeappViteMcpServerFactory } from './server'
 import { DEFAULT_RUNTIME_REST_ENDPOINT, handleRuntimeRestRequest, normalizeRuntimeRestEndpoint } from './server/runtime/rest'
 
-export { DEFAULT_RUNTIME_REST_ENDPOINT }
-
-export const DEFAULT_MCP_HOST = '127.0.0.1'
-export const DEFAULT_MCP_PORT = 3088
-export const DEFAULT_MCP_ENDPOINT = '/mcp'
+export { DEFAULT_MCP_ENDPOINT, DEFAULT_MCP_HOST, DEFAULT_MCP_PORT, DEFAULT_RUNTIME_REST_ENDPOINT }
 
 export interface StartMcpServerOptions extends CreateServerOptions {
   transport?: 'stdio' | 'streamable-http'

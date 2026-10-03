@@ -1,3 +1,4 @@
+import type { AppServiceHeapUsageOptions } from './appServiceHeap'
 /**
  * @file 小程序实例控制能力。
  */
@@ -7,6 +8,7 @@ import { EventEmitter } from 'node:events'
 import fs from 'node:fs/promises'
 import process from 'node:process'
 import pkg from '../package.json'
+import { readAppServiceHeapUsage } from './appServiceHeap'
 import { cmpVersion, isFn, isStr, startWith, trim } from './internal/compat'
 import Native from './Native'
 import Page from './Page'
@@ -420,6 +422,11 @@ export default class MiniProgram extends EventEmitter {
       args,
     }, sendOptions)
     return result
+  }
+
+  /** 探测并读取 AppService JS 堆；明确不支持时返回原因，连接故障与无效响应继续抛出。 */
+  async getAppServiceHeapUsage(options: AppServiceHeapUsageOptions = {}) {
+    return await readAppServiceHeapUsage((method, params, sendOptions) => this.send(method, params, sendOptions), options)
   }
 
   async pageScrollTo(scrollTop: number) {

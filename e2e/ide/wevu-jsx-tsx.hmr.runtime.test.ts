@@ -8,7 +8,7 @@ import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
-import { waitForFileContains, waitForStatefulHmrControl } from '../utils/hmr-helpers'
+import { parseStatefulHmrControlSource, waitForFileContains, waitForStatefulHmrControl } from '../utils/hmr-helpers'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import {
@@ -16,6 +16,7 @@ import {
   WEVU_JSX_CLI_PATH,
   WEVU_JSX_DIST_ROOT,
 } from '../utils/wevu-jsx-tsx'
+import { installStatefulHmrTransport } from './statefulHmrDom/transport'
 
 const ROUTE = '/pages/tsx-basic/index'
 const PAGE_SOURCE = path.join(WEVU_JSX_APP_ROOT, 'src/pages/tsx-basic/index.tsx')
@@ -30,8 +31,10 @@ let originalPageSource = ''
 let originalSharedSource = ''
 let originalAppSource = ''
 let diagnostics: ReturnType<typeof createHmrRuntimeDiagnostics> | undefined
+let headlessTransport: ReturnType<typeof installStatefulHmrTransport> | undefined
 
 async function readClientVersion() {
+  headlessTransport?.assertHealthy()
   return await miniProgram!.evaluate(() => {
     const client = (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__
     return typeof client?.getVersion === 'function' ? Number(client.getVersion()) : -1
@@ -85,6 +88,13 @@ describe('wevu JSX/TSX stateful HMR in real WeChat DevTools', { concurrent: fals
     )
 
     miniProgram = await launchAutomator({
+      async configureHeadlessSession(session) {
+        const control = parseStatefulHmrControlSource(await fs.readFile(CONTROL_OUTPUT, 'utf8'))
+        if (!control?.url) {
+          throw new Error('Missing current CLI HMR endpoint')
+        }
+        headlessTransport = installStatefulHmrTransport(session, control.url, path.join(WEVU_JSX_DIST_ROOT, '__weapp_vite_hmr/update.js'))
+      },
       bridgeProjectMode: 'direct',
       launchMode: 'bridge',
       maxLaunchRetries: 1,
@@ -100,6 +110,8 @@ describe('wevu JSX/TSX stateful HMR in real WeChat DevTools', { concurrent: fals
 
   afterAll(async () => {
     await diagnostics?.capture('finally')
+    await headlessTransport?.close()
+    headlessTransport = undefined
     try {
       await miniProgram?.disconnect?.()
     }
@@ -117,6 +129,7 @@ describe('wevu JSX/TSX stateful HMR in real WeChat DevTools', { concurrent: fals
   }, 60_000)
 
   it('preserves instance state while replacing shared TSX and island handlers', async (context) => {
+    context.onTestFailed(() => process.stdout.write(devProcess?.getOutput().slice(-16_000) ?? ''))
     const sharedMarker = 'HMR-SHARED-FRAGMENT-UPDATED'
     const dom = createDomAcceptance(context, 'apps/wevu-jsx-tsx-demo', [
       { id: 'tsx:initial', route: ROUTE, action: '检查初始模板和动态岛计数', nodes: [
@@ -160,6 +173,9 @@ describe('wevu JSX/TSX stateful HMR in real WeChat DevTools', { concurrent: fals
       runtime: { appMarkerRetained: true, pageMarkerRetained: true },
     }
     expect(await diagnostics.initialize()).toMatchObject(expectedIdentity)
+    await expect.poll(() => miniProgram!.evaluate(() => {
+      return (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__?.getTransportState?.().initialReady
+    }), { timeout: 30_000 }).toBe(true)
 
     const initialVersion = await readClientVersion()
     const updatedShared = originalSharedSource.replace('跨文件静态 JSX fragment', sharedMarker)

@@ -37,7 +37,7 @@
     "dist"
   ],
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || ^24.11.0 || >=26.0.0"
   },
   "scripts": {
     "build": "tsdown",
@@ -56,8 +56,8 @@
   },
   "tsd": {
     "compilerOptions": {
-      "module": "ESNext",
-      "moduleResolution": "Bundler"
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
     }
   }
 }

@@ -3,6 +3,7 @@ import type { RuntimeConnectionInput, RuntimeSessionManager } from './shared'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { DEFAULT_RUNTIME_REST_ENDPOINT } from '@weapp-core/constants'
 import { z } from 'zod'
 import {
   buildUrl,
@@ -13,7 +14,7 @@ import {
   toSerializableValue,
 } from './shared'
 
-export const DEFAULT_RUNTIME_REST_ENDPOINT = '/api/weapp/devtools'
+export { DEFAULT_RUNTIME_REST_ENDPOINT }
 
 const connectionSchema = z.object({
   projectPath: z.string().trim().min(1),

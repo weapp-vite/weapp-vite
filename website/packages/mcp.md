@@ -69,6 +69,8 @@ wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 
 ## 安装
 
+直接使用 `@weapp-vite/mcp` 或 `@weapp-vite/acceptance` 需要 **Node.js >=22.12.0**，不再支持 Node 20。使用集成入口 `wv mcp` 时，仍须满足 `weapp-vite` 的 Node 范围 `^22.18.0 || ^24.11.0 || >=26.0.0`。
+
 ```bash
 pnpm add @weapp-vite/mcp
 ```
@@ -94,7 +96,7 @@ pnpm --filter @weapp-vite/mcp start
 `wv dev --ui` / `wv build --ui` 可通过 DevFrame MCP 读取当前 Dashboard。它不替换 `wv mcp`，不改变本页其余工具、Resources、Prompts、REST 或微信 IDE 会话；`wv mcp init` 仍连接原有服务。
 
 ```bash
-pnpm add -D @weapp-vite/dashboard devframe@1.1.0 @devframes/agentic@1.1.0
+pnpm add -D @weapp-vite/dashboard devframe@1.2.0 @devframes/agentic@1.2.0
 ```
 
 启动 `wv dev --ui` / `wv build --ui` 后，Dashboard 自动在同一端口开放本机只读 MCP，无需生成令牌或配置认证环境变量。
@@ -139,6 +141,8 @@ MCP 客户端在项目目录通过 stdio 执行 `pnpm exec devframe connect`。�
 缺失体积不是零：比较行对应的 `currentBytes`／`previousBytes`／`deltaBytes` 为 `null`，无法判断增减的现存成员标为 `change: "unmeasured"`；新增／删除仍保留成员变化，包括零字节。`totals` 包含 `currentUnmeasuredFiles`／`previousUnmeasuredFiles`；测量不完整的一侧总量及总增量为 `null`。已知变化先按绝对增量排序，未测量行排在其后。
 
 重复模块的节省量是估算；`hasIndependentPackage` 表示可能必须保留独立分包隔离。模块归属包含资源源码；构建位置不是完整源码引用因果链。未记录产物体积时 `size` 为 `null`，摘要／包行通过 `unmeasuredFiles` 标明缺失数据。
+
+预算沿用构建侧的文件去重、`packageBytes` 分包覆盖与 `runtimeBytes` 限额。摘要包含 `totalBudget`、`runtimeBudget`（未配置为 `null`）及只统计包的 `packageBudgets`。体积或运行时归因缺失时为 `unknown`，包查询可用 `budgetStatus: "unknown"`；`measurement` 区分 `file-bytes`、`upper-bound`、`unavailable`，混合 chunk 的文件上界不是精确运行时代码量。摘要和包行的预算对象不包含全量 `files` 数组，后续定位使用产物查询。
 
 文件示例：`{ "arg0": { "kind": "artifact", "path": "app.js", "revision": 0, "range": { "offset": 0, "limit": 4096 } } }`。范围使用零起始 UTF-16 码元，最多 16384，返回 `totalCharacters` 和 `nextOffset`；`size` 保持完整文件 UTF-8 字节数。省略范围可读全文，但不会绕过 2 MiB、allowlist、根目录与符号链接限制。源码来自受限实时读取，产物来自当前快照，不回退到实时 `dist`，不提供上一快照文件内容。
 

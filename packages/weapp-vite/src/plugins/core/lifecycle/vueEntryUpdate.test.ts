@@ -50,6 +50,22 @@ function createProviderNeutralState(filename: string, source: string) {
 }
 
 describe('createVueEntryUpdateInspector', () => {
+  it('keeps generated CSS Modules mappings in the script update path', async () => {
+    const filename = 'src/pages/index.vue'
+    const source = '<template><view :class="$style.panel" /></template><style module>.panel { color: red; }</style>'
+    const next = source.replace('.panel {', '.card {')
+    const before = await compileVueFile(source, filename)
+    const after = await compileVueFile(next, filename)
+    expect(after.cssModules).not.toEqual(before.cssModules)
+    expect(after.script).not.toBe(before.script)
+    const inspector = createVueEntryUpdateInspector(createState(filename, source), filename, {
+      readFile: async () => next,
+    })
+    await expect(inspector.getChangedBlocks()).resolves.toEqual(['script', 'style'])
+    await expect(inspector.isLocalAssetOnlyUpdate()).resolves.toBe(false)
+    await expect(inspector.isStyleOnlyUpdate()).resolves.toBe(false)
+  })
+
   it.each([
     ['static node with stable CSS runtime', '<view class="new-node">new</view>', true],
     ['computed template expression', '<view>{{ count + 1 }}</view>', false],
@@ -97,7 +113,7 @@ const title = 'same'
 
     await expect(inspector.getChangedBlocks()).resolves.toEqual([])
     await expect(inspector.isJsonOnlyUpdate()).resolves.toBe(false)
-    await expect(inspector.isLocalAssetOnlyUpdate()).resolves.toBe(true)
+    await expect(inspector.isLocalAssetOnlyUpdate()).resolves.toBe(false)
     await expect(inspector.isStyleOnlyUpdate()).resolves.toBe(false)
     await expect(inspector.isTailwindContentUpdate()).resolves.toBe(false)
     await expect(inspector.isAppShellTopologyUpdate()).resolves.toBe(false)

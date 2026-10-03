@@ -25,20 +25,8 @@ import { handlePrepareLifecycleError } from './cli/prepareGuard'
 import { outputUploadReport } from './cli/upload/report'
 import { VERSION } from './constants'
 import { syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
-import { checkRuntime } from './utils'
 
 const cli = cac('weapp-vite')
-
-try {
-  checkRuntime({
-    bun: '0.0.0',
-    deno: '0.0.0',
-    node: '^20.19.0 || >=22.12.0',
-  })
-}
-catch {
-
-}
 
 cli
   .option('-c, --config <file>', `[string] use specified config file`)

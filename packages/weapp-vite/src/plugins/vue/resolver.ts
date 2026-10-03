@@ -65,12 +65,17 @@ function ensureWevuInstalled(ctx: CompilerContext) {
 }
 
 export function createVueResolverPlugin(ctx: CompilerContext, options: { react?: boolean } = {}): Plugin {
+  let isBundledDev = false
   const isWeappVueStyleVirtualId = (id: string) => {
     return id.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX) || id.startsWith(LEGACY_WEAPP_VUE_STYLE_VIRTUAL_PREFIX)
   }
 
   return {
     name: `${VUE_PLUGIN_NAME}:resolver`,
+
+    configResolved(config) {
+      isBundledDev = config.command === 'serve' && Boolean(config.experimental.bundledDev)
+    },
 
     async resolveId(id, importer) {
       const configService = ctx.configService
@@ -82,7 +87,9 @@ export function createVueResolverPlugin(ctx: CompilerContext, options: { react?:
       if (styleRequest) {
         ensureWevuInstalled(ctx)
         const queryIndex = id.indexOf('?')
-        const query = queryIndex === -1 ? '' : id.slice(queryIndex + 1)
+        const rawQuery = queryIndex === -1 ? '' : id.slice(queryIndex + 1)
+        // 原生图按源文件失效；缓存令牌不能创建新 factory 身份，否则取消批次后依赖会引用客户端从未收到的模块。
+        const query = isBundledDev ? rawQuery.split('&').filter(part => !part.startsWith('hmr=')).join('&') : rawQuery
         const absoluteId = toAbsoluteId(styleRequest.filename, configService, importer, { base: 'srcRoot' })
         if (!absoluteId) {
           return isWeappVueStyleVirtualId(id) ? id : null

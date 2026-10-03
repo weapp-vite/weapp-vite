@@ -32,8 +32,13 @@ export interface DevModuleGraph {
   invalidateModule(module: DevModuleNode): void
 }
 
+interface DevResolverContainer {
+  resolveId: (source: string, importer?: string) => Promise<{ id: string } | null>
+}
+
 export interface DevServerGraphHost {
-  environments?: { client?: { bundledDev?: unknown } }
+  environments?: { client?: { bundledDev?: unknown, pluginContainer?: DevResolverContainer } }
+  pluginContainer?: DevResolverContainer
   moduleGraph: DevModuleGraph
   transformRequest?: (url: string) => Promise<unknown>
 }

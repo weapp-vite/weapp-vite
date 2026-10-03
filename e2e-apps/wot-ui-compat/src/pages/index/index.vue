@@ -10,7 +10,7 @@ function open(route: string) {
 
 <template>
   <view class="index-page">
-    <view class="index-title">Wot UI 2.2.0</view>
+    <view class="index-title">Wot UI 2.3.2</view>
     <view class="index-summary">{{ componentScenarios.length }} component scenarios</view>
     <view
       v-for="scenario in componentScenarios"

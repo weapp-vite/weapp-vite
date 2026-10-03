@@ -2,12 +2,22 @@ import type { DevEngine } from 'rolldown/experimental'
 
 export type StatefulHmrOutputSource = 'full' | 'partial' | 'additional'
 
+export interface StatefulHmrOutputPublicationHooks {
+  /** 在触发原生完整构建前调用。 */
+  onFullBuildRequested?: () => void
+  /** 原生输出回调被完整输出确认接收后调用。 */
+  onFullOutputReceived?: () => void
+}
+
 /** 完整输出确认独立于增量资产，只有原生完整回调及持久化都结束才可提交重建。 */
 export class StatefulHmrOutputPublication {
   private readonly fullOutputs = new Set<(task: Promise<void>) => void>()
   private readonly pendingOutputs = new Set<Promise<void>>()
+  private revision = 0
+  private failure?: { error: unknown, revision: number }
 
   publish(source: StatefulHmrOutputSource, publish: () => void | Promise<void>): Promise<void> {
+    const revision = ++this.revision
     let task: Promise<void>
     try {
       task = Promise.resolve(publish())
@@ -18,7 +28,20 @@ export class StatefulHmrOutputPublication {
     // 原生回调不等待 Promise；拒绝由重建调用和日志层分别观察。
     void task.catch(() => {})
     this.pendingOutputs.add(task)
-    void task.then(() => this.pendingOutputs.delete(task), () => this.pendingOutputs.delete(task))
+    void task.then(() => {
+      this.pendingOutputs.delete(task)
+      if (source === 'full') {
+        // 增量资产成功不能证明其他失败产物已恢复，只有后续完整基线可清除失败。
+        if (this.failure && this.failure.revision <= revision) {
+          this.failure = undefined
+        }
+      }
+    }, (error) => {
+      this.pendingOutputs.delete(task)
+      if (revision >= (this.failure?.revision ?? 0)) {
+        this.failure = { error, revision }
+      }
+    })
     if (source === 'full') {
       for (const receive of this.fullOutputs) {
         receive(task)
@@ -27,10 +50,26 @@ export class StatefulHmrOutputPublication {
     return task
   }
 
+  /** 仅供事务外的观察者等待；发布回调不得等待包含自身的交付集合。 */
+  async whenSettled(): Promise<void> {
+    for (;;) {
+      const revision = this.revision
+      await Promise.allSettled(this.pendingOutputs)
+      if (revision !== this.revision || this.pendingOutputs.size) {
+        continue
+      }
+      if (this.failure) {
+        throw this.failure.error
+      }
+      return
+    }
+  }
+
   async rebuild(
     engine: Pick<DevEngine, 'ensureCurrentBuildFinish' | 'triggerFullBuild' | 'ensureLatestBuildOutput'>,
     timeoutMs: number,
     prepare?: () => void | Promise<void>,
+    hooks: StatefulHmrOutputPublicationHooks = {},
   ): Promise<void> {
     let expired = false
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -54,10 +93,12 @@ export class StatefulHmrOutputPublication {
       const fullOutput = new Promise<void>((resolve, reject) => {
         receiveFullOutput = (task) => {
           this.fullOutputs.delete(receiveFullOutput!)
+          hooks.onFullOutputReceived?.()
           task.then(resolve, reject)
         }
         this.fullOutputs.add(receiveFullOutput)
       })
+      hooks.onFullBuildRequested?.()
       engine.triggerFullBuild()
       await Promise.all([engine.ensureLatestBuildOutput(), fullOutput])
     }

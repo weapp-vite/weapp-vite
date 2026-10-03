@@ -19,6 +19,8 @@
 
 > 需要 Node.js 22（至少 `22.22.2`）、24（至少 `24.15.0`）或 26 及以上版本，再执行 `pnpm create weapp-vite`、`yarn create weapp-vite` 或 `npm create weapp-vite@latest`。不再支持 Node.js 20。
 
+框架包 `weapp-vite` 的最低版本为 Node 22.18.0、24.11.0 或 26 及以上；脚手架要求以本页较高的版本为准。
+
 ```bash
 pnpm create weapp-vite
 # 或

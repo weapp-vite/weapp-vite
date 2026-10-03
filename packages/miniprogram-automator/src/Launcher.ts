@@ -3,16 +3,17 @@ import type { MiniprogramAutomatorPlatform } from './platform'
 /**
  * @file 开发者工具启动与连接流程。
  */
-import { spawn } from 'node:child_process'
 import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
 import Connection from './Connection'
 import { launchHeadlessAutomator } from './headless'
-import { endWith, extendDeep, isEmpty, isRelative, isWindows, sleep, waitUntil } from './internal/compat'
+import { endWith, extendDeep, isEmpty, isRelative, isWindows, waitUntil } from './internal/compat'
 import { acquireAutomatorPortLease } from './launcher/portLease'
-import { enableAutomatorViaHttp, extractWechatDevtoolsServicePort, resolveWechatDevtoolsBootstrapArgs } from './launcher/wechatCliFallback'
+import { spawnWechatCli } from './launcher/process'
+import { enableAutomatorViaHttp, extractWechatDevtoolsServicePort } from './launcher/wechatCliFallback'
 import MiniProgram from './MiniProgram'
+import { isRecoverableOperationError, OperationLifecycle, readWechatLoginState } from './operation'
 import { normalizePlatform } from './platform'
 import SwanLauncher from './SwanLauncher'
 
@@ -21,18 +22,7 @@ const VERSION_CHECK_TIMEOUT = 30_000
 const AUTOMATOR_LAUNCH_RETRIES = 3
 const DEFAULT_RUNTIME_PROVIDER_ENV = 'WEAPP_VITE_AUTOMATOR_RUNTIME_PROVIDER'
 const LEGACY_RUNTIME_PROVIDER_ENV = 'WEAPP_VITE_E2E_RUNTIME_PROVIDER'
-const EXTENSION_CONTEXT_INVALIDATED_RE = /Extension context invalidated/i
-const RETRYABLE_LAUNCH_PORT_RE = /Wait timed out after \d+ ms|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Failed connecting to devtools websocket endpoint|Failed to launch wechat web devTools, please make sure cliPath is correctly specified/i
-const WINDOWS_BATCH_CLI_RE = /\.(?:bat|cmd)$/i
 let localhostListenPatched = false
-
-function isExtensionContextInvalidatedError(error: unknown) {
-  return error instanceof Error && EXTENSION_CONTEXT_INVALIDATED_RE.test(error.message)
-}
-
-function isRetryableAutomatorPortLaunchError(error: unknown) {
-  return error instanceof Error && RETRYABLE_LAUNCH_PORT_RE.test(error.message)
-}
 
 function retainPortLeaseUntilSessionClose(miniProgram: MiniProgram, portLease: AutomatorPortLease) {
   let released = false
@@ -102,37 +92,15 @@ function patchNetListenToLoopback() {
     return rawListen.apply(this, args as any)
   } as typeof net.Server.prototype.listen
 }
-/** IConnectOptions 的类型定义。 */
-function shouldUseWindowsCommandShell(cliPath: string) {
-  return isWindows && WINDOWS_BATCH_CLI_RE.test(cliPath)
-}
-
-function escapeWindowsCmdArg(arg: string) {
-  const escaped = arg
-    .replace(/"/g, '""')
-    .replace(/%/g, '%%')
-  return /[\s"&<>^|()]/.test(arg) ? `"${escaped}"` : escaped
-}
-
-function resolveWindowsBatchSpawn(cliPath: string, args: string[]) {
-  const comspec = process.env.ComSpec || 'cmd.exe'
-  const commandLine = [cliPath, ...args]
-    .map(escapeWindowsCmdArg)
-    .join(' ')
-
-  return {
-    file: comspec,
-    args: ['/d', '/s', '/c', `"${commandLine}"`],
-  }
-}
-
 export interface IConnectOptions {
   wsEndpoint: string
+  signal?: AbortSignal
   timeout?: number
   platform?: MiniprogramAutomatorPlatform
 }
 /** ILaunchOptions 的类型定义。 */
 export interface ILaunchOptions {
+  signal?: AbortSignal
   platform?: MiniprogramAutomatorPlatform
   cliPath?: string
   connectType?: string
@@ -189,31 +157,35 @@ export default class Launcher {
       })
     }
     patchNetListenToLoopback()
-    if (options.port) {
-      return await this.launchWechatDevtools(options)
-    }
-
-    let lastError: unknown = null
-    for (let attempt = 1; attempt <= AUTOMATOR_LAUNCH_RETRIES; attempt += 1) {
-      try {
-        return await this.launchWechatDevtools(options)
-      }
-      catch (error) {
-        lastError = error
-        if (!isRetryableAutomatorPortLaunchError(error) || attempt === AUTOMATOR_LAUNCH_RETRIES) {
-          throw error
+    const lifecycle = new OperationLifecycle(options.timeout ?? DEFAULT_TIMEOUT, 'automator launch', options.signal)
+    return await lifecycle.run(async (scope) => {
+      const attempts = options.port ? 1 : AUTOMATOR_LAUNCH_RETRIES
+      for (let attempt = 1; ; attempt += 1) {
+        scope.attempt()
+        try {
+          return await scope.step(() => this.launchWechatDevtools(options, scope))
+        }
+        catch (error) {
+          scope.recordFailure(error)
+          scope.throwIfAborted()
+          if (!isRecoverableOperationError(error) || attempt >= attempts) {
+            throw error
+          }
         }
       }
-    }
-
-    throw lastError instanceof Error ? lastError : new Error(String(lastError))
+    })
   }
 
-  private async launchWechatDevtools(options: ILaunchOptions): Promise<any> {
-    const { cliPath = await this.resolveCliPath(), timeout = DEFAULT_TIMEOUT, projectConfig = {}, ticket = '', cwd = '', account = '', trustProject = false } = options
-    let { args = [], projectPath } = options
-    const portLease = await acquireAutomatorPortLease(options.port)
+  private async launchWechatDevtools(options: ILaunchOptions, scope: OperationLifecycle): Promise<any> {
+    const { cliPath = await scope.step(() => this.resolveCliPath(), { stage: 'resolve-cli' }), projectConfig = {}, ticket = '', cwd = '', account = '', trustProject = false } = options
+    const { args = [], projectPath } = options
+    const portLease = await scope.step(() => acquireAutomatorPortLease(options.port), { stage: 'port-lease', disposeLate: lease => lease.release() })
+    const rawReleaseLease = portLease.release.bind(portLease)
+    let releasedLease: Promise<void> | undefined
+    portLease.release = () => releasedLease ??= rawReleaseLease()
+    const disownLease = scope.own(() => portLease.release(), 'port-lease')
     let releasePortLeaseOnExit = true
+    let releaseChild = async () => {}
     try {
       const port = portLease.port
       if (!cliPath) {
@@ -226,78 +198,38 @@ export default class Launcher {
         throw new Error('projectPath is not provided')
       }
       const resolvedProjectPath = isRelative(projectPath) ? path.resolve(projectPath) : projectPath
-      if (isRelative(projectPath)) {
-        projectPath = resolvedProjectPath
-      }
-      const projectExists = await import('node:fs/promises').then(fs => fs.access(resolvedProjectPath).then(() => true).catch(() => false))
+      const projectExists = await scope.step(() => import('node:fs/promises').then(fs => fs.access(resolvedProjectPath).then(() => true).catch(() => false)), { stage: 'project' })
       if (!projectExists) {
         throw new Error(`Project path ${resolvedProjectPath} doesn't exist`)
       }
       if (!isEmpty(projectConfig)) {
-        await this.extendProjectConfig(projectConfig, resolvedProjectPath)
+        await scope.step(() => this.extendProjectConfig(projectConfig, resolvedProjectPath), { stage: 'project-config' })
       }
-      let processError: unknown = null
-      let processExitCode: number | null = null
-      let processSignal: NodeJS.Signals | null = null
-      let successfulCliExitSettled = false
+      scope.throwIfAborted()
       let httpFallbackAttempted = false
       let httpFallbackError: unknown = null
       let targetPort = port
-      const cliOutput: string[] = []
-      args = resolveWechatDevtoolsBootstrapArgs(args)
-      try {
-        const spawnTarget = shouldUseWindowsCommandShell(cliPath)
-          ? resolveWindowsBatchSpawn(cliPath, args)
-          : { file: cliPath, args }
-        const child = spawn(spawnTarget.file, spawnTarget.args, {
-          stdio: ['ignore', 'pipe', 'pipe'],
-          cwd: cwd || undefined,
-          ...(shouldUseWindowsCommandShell(cliPath)
-            ? {
-                windowsHide: true,
-                windowsVerbatimArguments: true,
-              }
-            : {}),
-        })
-        child.on('error', (error) => {
-          processError = error
-        })
-        child.stdout?.on('data', (chunk) => {
-          cliOutput.push(String(chunk))
-        })
-        child.stderr?.on('data', (chunk) => {
-          cliOutput.push(String(chunk))
-        })
-        child.on('exit', (code, signal) => {
-          processExitCode = code
-          processSignal = signal
-          if (code !== 0 || signal) {
-            processError = new Error(`DevTools cli exited unexpectedly with code ${code ?? 'null'}${signal ? ` and signal ${signal}` : ''}`)
-          }
-          else {
-            successfulCliExitSettled = true
-          }
-        })
-        child.unref()
-      }
-      catch (error) {
-        processError = error
-      }
+      const cli = spawnWechatCli(cliPath, args, cwd, scope)
+      releaseChild = cli.release
       let miniProgram: MiniProgram | null = null
       let lastConnectError: unknown = null
-      const readinessStartedAt = Date.now()
-      const resolveRemainingTimeout = () => Math.max(0, timeout - (Date.now() - readinessStartedAt))
-      await waitUntil(async () => {
+      const resolveRemainingTimeout = () => scope.remainingMs()
+      await scope.step(() => waitUntil(async () => {
+        scope.throwIfAborted()
         try {
-          if (processError) {
+          if (cli.error) {
             return true
           }
-          if (successfulCliExitSettled && !httpFallbackAttempted) {
-            const servicePort = extractWechatDevtoolsServicePort(cliOutput.join('\n'))
+          if (cli.success && readWechatLoginState(cli.output) === false) {
+            throw Object.assign(new Error('DEVTOOLS_LOGIN_REQUIRED: need re-login'), { code: 10 })
+          }
+          if (cli.success && !httpFallbackAttempted) {
+            const servicePort = extractWechatDevtoolsServicePort(cli.output)
             if (servicePort) {
               httpFallbackAttempted = true
               try {
                 targetPort = await enableAutomatorViaHttp({
+                  signal: scope.signal,
                   account,
                   autoPort: port,
                   projectPath: resolvedProjectPath,
@@ -316,30 +248,40 @@ export default class Launcher {
           if (connectTimeout <= 0) {
             return false
           }
-          const candidate = await this.connectTool({
+          const candidate = await scope.step(() => this.connectTool({
+            signal: scope.signal,
             timeout: Math.min(3_000, connectTimeout),
             wsEndpoint: `ws://127.0.0.1:${targetPort}`,
-          })
+          }), { stage: 'websocket', disposeLate: program => program.disconnect() })
+          let releasedCandidate = false
+          const releaseCandidate = () => {
+            if (!releasedCandidate) {
+              releasedCandidate = true
+              candidate.disconnect()
+            }
+          }
+          const disownCandidate = scope.own(releaseCandidate, 'websocket')
           try {
             const checkVersionTimeout = resolveRemainingTimeout()
             if (checkVersionTimeout <= 0) {
-              candidate.disconnect()
+              releaseCandidate()
               return false
             }
-            await candidate.checkVersion(Math.min(VERSION_CHECK_TIMEOUT, checkVersionTimeout))
+            await scope.step(() => candidate.checkVersion(Math.min(VERSION_CHECK_TIMEOUT, checkVersionTimeout)), { stage: 'version' })
             if (typeof candidate.waitForAppReady === 'function') {
               const appReadyTimeout = resolveRemainingTimeout()
               if (appReadyTimeout <= 0) {
-                candidate.disconnect()
+                releaseCandidate()
                 return false
               }
-              await candidate.waitForAppReady(appReadyTimeout)
+              await scope.step(() => candidate.waitForAppReady(appReadyTimeout), { stage: 'app-ready' })
             }
           }
           catch (error) {
-            candidate.disconnect()
+            disownCandidate()
+            releaseCandidate()
             lastConnectError = error
-            if (isExtensionContextInvalidatedError(error)) {
+            if (isRecoverableOperationError(error)) {
               return false
             }
             throw error
@@ -349,20 +291,25 @@ export default class Launcher {
         }
         catch (error) {
           lastConnectError = error
+          scope.recordFailure(error)
+          scope.throwIfAborted()
+          if (!isRecoverableOperationError(error)) {
+            throw error
+          }
           return false
         }
-      }, timeout, 1000)
+      }, scope.remainingMs(), 1000, scope.signal), { stage: 'readiness' })
       if (!miniProgram) {
         if (httpFallbackError) {
           throw httpFallbackError
         }
-        if (processError) {
-          throw new Error('Failed to launch wechat web devTools, please make sure cliPath is correctly specified')
+        if (cli.error) {
+          throw new Error('Failed to launch wechat web devTools, please make sure cliPath is correctly specified', { cause: cli.error })
         }
         if (lastConnectError) {
           throw lastConnectError
         }
-        if (processExitCode !== null || processSignal) {
+        if (cli.exited) {
           throw new Error('Failed to launch wechat web devTools, please make sure http port is open')
         }
         throw new Error('Failed connecting to devtools websocket endpoint')
@@ -374,11 +321,13 @@ export default class Launcher {
         wsEndpoint: `ws://127.0.0.1:${targetPort}`,
       } satisfies ILauncherSessionMetadata)
       releasePortLeaseOnExit = !retainPortLeaseUntilSessionClose(resolvedMiniProgram, portLease)
-      await sleep(5000)
+      disownLease()
       return resolvedMiniProgram
     }
     finally {
+      await releaseChild()
       if (releasePortLeaseOnExit) {
+        disownLease()
         await portLease.release()
       }
     }
@@ -389,27 +338,17 @@ export default class Launcher {
     if (platform === 'swan') {
       return await new SwanLauncher().connect(options)
     }
-    const timeout = options.timeout ?? DEFAULT_TIMEOUT
-    const deadlineAt = performance.now() + timeout
-    const miniProgram = await this.connectTool({ ...options, timeout })
-    try {
-      const remaining = Math.ceil(deadlineAt - performance.now())
-      if (remaining <= 0) {
-        throw new Error(`Timed out connecting to automator after ${timeout}ms`)
-      }
-      await miniProgram.checkVersion(remaining)
+    const lifecycle = new OperationLifecycle(options.timeout ?? DEFAULT_TIMEOUT, 'automator connect', options.signal)
+    return await lifecycle.run(async (scope) => {
+      scope.attempt()
+      const miniProgram = await scope.step(() => this.connectTool({ ...options, signal: scope.signal, timeout: scope.remainingMs() }), {
+        stage: 'websocket',
+        disposeLate: program => program.disconnect(),
+      })
+      scope.own(() => miniProgram.disconnect(), 'websocket')
+      await scope.step(() => miniProgram.checkVersion(scope.remainingMs()), { stage: 'version' })
       return miniProgram
-    }
-    catch (error) {
-      // 尚未交给调用方的连接由启动器释放，不关闭用户的 IDE 项目。
-      try {
-        miniProgram.disconnect()
-      }
-      catch (cleanupError) {
-        throw new AggregateError([error, cleanupError], 'Automator connection and cleanup both failed', { cause: error })
-      }
-      throw error
-    }
+    })
   }
 
   private async extendProjectConfig(projectConfig: any, projectPath: string) {
@@ -423,11 +362,11 @@ export default class Launcher {
 
   private async connectTool(options: IConnectOptions) {
     try {
-      const connection = await Connection.create(options.wsEndpoint, options.timeout)
+      const connection = await Connection.create(options.wsEndpoint, options.timeout, options.signal)
       return new MiniProgram(connection)
     }
-    catch {
-      throw new Error(`Failed connecting to ${options.wsEndpoint}, check if target project window is opened with automation enabled`)
+    catch (cause) {
+      throw new Error(`Failed connecting to ${options.wsEndpoint}, check if target project window is opened with automation enabled`, { cause })
     }
   }
 

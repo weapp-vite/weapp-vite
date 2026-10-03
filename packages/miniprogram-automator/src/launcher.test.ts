@@ -130,7 +130,7 @@ describe('Launcher', () => {
 
   it('passes the connect timeout to the version probe', async () => {
     const { default: Launcher } = await loadLauncherModule()
-    const checkVersion = vi.fn(async () => {})
+    const checkVersion = vi.fn(async (_timeout: number) => {})
     const launcher = new Launcher()
     vi.spyOn(launcher as any, 'connectTool').mockResolvedValueOnce({ checkVersion })
 
@@ -139,7 +139,10 @@ describe('Launcher', () => {
       wsEndpoint: 'ws://127.0.0.1:1234',
     })
 
-    expect(checkVersion).toHaveBeenCalledWith(1_234)
+    expect(checkVersion).toHaveBeenCalledWith(expect.any(Number))
+    const [remainingTimeout] = checkVersion.mock.calls[0] ?? []
+    expect(remainingTimeout).toBeGreaterThan(0)
+    expect(remainingTimeout).toBeLessThanOrEqual(1_234)
   })
 
   it('passes explicit connect timeout to websocket creation', async () => {
@@ -152,7 +155,7 @@ describe('Launcher', () => {
       wsEndpoint: 'ws://127.0.0.1:1234',
     }).catch(() => {})
 
-    expect(connectCreateMock).toHaveBeenCalledWith('ws://127.0.0.1:1234', 1_234)
+    expect(connectCreateMock).toHaveBeenCalledWith('ws://127.0.0.1:1234', 1_234, undefined)
   })
 
   it('rejects occupied custom ports before spawning', async () => {
@@ -190,6 +193,7 @@ describe('Launcher', () => {
 
     expect(acquirePortLeaseMock).toHaveBeenCalledTimes(2)
     expect(connectToolSpy).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       timeout: 3_000,
       wsEndpoint: 'ws://127.0.0.1:9421',
     })
@@ -219,10 +223,11 @@ describe('Launcher', () => {
     })
     expect(checkVersion).toHaveBeenCalledTimes(1)
     expect((launcher as any).connectTool).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       timeout: 3_000,
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
-    expect(sleepMock).toHaveBeenCalledWith(5000)
+    expect(sleepMock).not.toHaveBeenCalled()
     expect(result).toEqual({
       checkVersion,
       __WEAPP_VITE_SESSION_METADATA: {
@@ -241,7 +246,7 @@ describe('Launcher', () => {
     child.unref = vi.fn()
     spawnMock.mockReturnValue(child)
     const checkVersion = vi.fn(async () => {
-      vi.setSystemTime(4_000)
+      vi.advanceTimersByTime(4_000)
     })
     const waitForAppReady = vi.fn(async () => {})
     const launcher = new Launcher()
@@ -259,6 +264,43 @@ describe('Launcher', () => {
 
       expect(checkVersion).toHaveBeenCalledWith(10_000)
       expect(waitForAppReady).toHaveBeenCalledWith(6_000)
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not renew the deadline on retry and bounds a hanging App ready phase', async () => {
+    vi.useFakeTimers()
+    try {
+      const { default: Launcher } = await loadLauncherModule()
+      const child = Object.assign(new EventEmitter(), { unref: vi.fn() })
+      spawnMock.mockReturnValue(child)
+      const release = vi.fn(async () => {})
+      acquirePortLeaseMock.mockImplementation(async () => ({ port: 9420, release }))
+      const originalWait = waitUntilMock.getMockImplementation()!
+      waitUntilMock.mockImplementationOnce(async () => {
+        vi.advanceTimersByTime(80)
+        throw new Error('Wait timed out after 80 ms')
+      }).mockImplementationOnce(originalWait)
+      const launcher = new Launcher()
+      const checkVersion = vi.fn(async () => {})
+      const disconnect = vi.fn()
+      vi.spyOn(launcher as any, 'connectTool').mockResolvedValueOnce({
+        checkVersion,
+        disconnect,
+        waitForAppReady: () => new Promise(() => {}),
+      })
+      const result = launcher.launch({ cliPath: 'cli', projectPath: '.', timeout: 100 }).catch(error => error)
+      await vi.advanceTimersByTimeAsync(100)
+      await expect(result).resolves.toMatchObject({
+        code: 'DEVTOOLS_OPERATION_TIMEOUT',
+        operation: { attempts: 2, elapsedMs: 100, remainingMs: 0, stage: 'app-ready' },
+      })
+      expect(checkVersion).toHaveBeenCalledWith(20)
+      expect(disconnect).toHaveBeenCalledOnce()
+      expect(release).toHaveBeenCalledTimes(2)
+      expect(vi.getTimerCount()).toBe(0)
     }
     finally {
       vi.useRealTimers()
@@ -513,6 +555,7 @@ describe('Launcher', () => {
       trustProject: 'true',
     })
     expect(connectToolSpy).toHaveBeenNthCalledWith(2, {
+      signal: expect.any(AbortSignal),
       timeout: 3_000,
       wsEndpoint: `ws://127.0.0.1:${expectedPort}`,
     })
@@ -575,42 +618,22 @@ describe('Launcher', () => {
     }
   })
 
-  it('retries automatic launch when cli exits before the automator socket is ready', async () => {
+  it('does not retry an unclassified CLI exit and preserves its original cause', async () => {
     const { default: Launcher } = await loadLauncherModule()
-    const firstChild = new EventEmitter() as EventEmitter & { unref: () => void }
-    const secondChild = new EventEmitter() as EventEmitter & { unref: () => void }
-    firstChild.unref = vi.fn()
-    secondChild.unref = vi.fn()
-    spawnMock
-      .mockReturnValueOnce(firstChild)
-      .mockReturnValueOnce(secondChild)
-    acquirePortLeaseMock
-      .mockResolvedValueOnce({ port: 9420, release: vi.fn(async () => {}) })
-      .mockResolvedValueOnce({ port: 9421, release: vi.fn(async () => {}) })
-
+    const child = new EventEmitter() as EventEmitter & { unref: () => void }
+    child.unref = vi.fn()
+    spawnMock.mockReturnValue(child)
     const launcher = new Launcher()
-    const connectToolSpy = vi.spyOn(launcher as any, 'connectTool')
-    connectToolSpy
-      .mockImplementationOnce(async () => {
-        firstChild.emit('exit', 1, null)
-        throw new Error('Failed connecting to ws://127.0.0.1:9420, check if target project window is opened with automation enabled')
-      })
-      .mockResolvedValueOnce({ checkVersion: vi.fn(async () => {}) })
-
-    await launcher.launch({
-      cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
-      projectPath: '/tmp/project',
+    vi.spyOn(launcher as any, 'connectTool').mockImplementationOnce(async () => {
+      child.emit('exit', 1, null)
+      throw new Error('Failed connecting to ws://127.0.0.1:9420')
     })
-
-    expect(acquirePortLeaseMock).toHaveBeenCalledTimes(2)
-    expect(connectToolSpy).toHaveBeenNthCalledWith(1, {
-      timeout: 3_000,
-      wsEndpoint: 'ws://127.0.0.1:9420',
-    })
-    expect(connectToolSpy).toHaveBeenNthCalledWith(2, {
-      timeout: 3_000,
-      wsEndpoint: 'ws://127.0.0.1:9421',
-    })
+    await expect(launcher.launch({
+      cliPath: 'cli',
+      projectPath: '.',
+    })).rejects.toMatchObject({ cause: { message: 'DevTools cli exited unexpectedly with code 1' } })
+    expect(acquirePortLeaseMock).toHaveBeenCalledOnce()
+    expect(spawnMock).toHaveBeenCalledOnce()
   })
 
   it('fails fast when a custom port launch cli exits with a non-zero code', async () => {

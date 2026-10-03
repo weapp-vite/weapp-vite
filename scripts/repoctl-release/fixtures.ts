@@ -47,12 +47,16 @@ export async function createReleaseFixture() {
   const sleep = vi.fn(async (_milliseconds: number) => {})
   const github = { ensurePullRequest: vi.fn(), ensureTag: vi.fn(), ensureRelease: vi.fn() }
   let onPublish = (_args: string[], _attempt: number) => ({ status: 0, stdout: '', stderr: '' })
+  let onRegistry = (pkg: PublishedPackage | undefined) => {
+    const published = pkg != null && visible.has(pkg.name)
+    return { status: published ? 0 : 1, stdout: published ? `${pkg.version}\n` : '', stderr: published ? '' : 'npm error code E404\nnpm error 404 No match found for version' }
+  }
   // 记录每个 hook 调用时可观察到的 registry 状态。
   const hookVisibility: string[][] = []
   const spawn = ((command: string, args: string[]) => {
     if (command === 'npm' && args[0] === 'view') {
       const pkg = packages.find(pkg => `${pkg.name}@${pkg.version}` === args[1])
-      return { status: pkg && visible.has(pkg.name) ? 0 : 1, stdout: pkg && visible.has(pkg.name) ? `${pkg.version}\n` : '', stderr: '' }
+      return onRegistry(pkg)
     }
     if (command === 'pnpm' && args[0] === 'publish') {
       publishes.push(args)
@@ -85,6 +89,7 @@ export async function createReleaseFixture() {
     hookVisibility,
     github,
     setPublish(handler: typeof onPublish) { onPublish = handler },
+    setRegistry(handler: typeof onRegistry) { onRegistry = handler },
     summary(entries = packages) {
       writeFileSync(path.join(cwd, 'pnpm-publish-summary.json'), JSON.stringify({ publishedPackages: entries }))
     },

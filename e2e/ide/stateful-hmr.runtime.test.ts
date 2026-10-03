@@ -199,17 +199,6 @@ async function readClientVersion(): Promise<number> {
   })
 }
 
-async function relaunchStatefulRoute(route: string, timeoutMs = 30_000): Promise<any> {
-  const page = await relaunchPage(miniProgram, route, undefined, timeoutMs, {
-    forceRelaunch: true,
-    readiness: 'route',
-  })
-  if (!page) {
-    throw new Error(`Timed out waiting stateful HMR route ${route}`)
-  }
-  return page
-}
-
 async function waitForClientReady(timeoutMs = 30_000): Promise<void> {
   const start = Date.now()
   let latest: unknown
@@ -218,7 +207,8 @@ async function waitForClientReady(timeoutMs = 30_000): Promise<void> {
       const client = (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__
       return typeof client?.getTransportState === 'function' ? client.getTransportState() : null
     }).catch(() => null)
-    if ((latest as { phase?: unknown } | null)?.phase === 'polling') {
+    if ((latest as { phase?: unknown, lastResponse?: { type?: unknown } } | null)?.phase === 'polling'
+      && (latest as { lastResponse?: { type?: unknown } } | null)?.lastResponse?.type !== 'rebuilding') {
       return
     }
     const requestError = (latest as { lastRequestError?: { errMsg?: unknown } } | null)?.lastRequestError
@@ -230,7 +220,21 @@ async function waitForClientReady(timeoutMs = 30_000): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 250))
   }
   const publishedControl = await fs.readFile(CONTROL_FILE, 'utf8').then(parseStatefulHmrControlSource).catch(() => undefined)
-  throw new Error(`Timed out waiting for stateful HMR transport; expectedEndpoint=${headlessTransport?.endpoint}; publishedEndpoint=${publishedControl?.url}; latest=${JSON.stringify(latest)}`)
+  throw new Error(`Timed out waiting for stateful HMR transport; expectedEndpoint=${headlessTransport?.endpoint}; publishedEndpoint=${publishedControl?.url}; latest=${JSON.stringify(latest)}; devOutput=${devProcess?.getOutput().slice(-8_000) ?? ''}`)
+}
+
+async function relaunchStatefulRoute(route: string, timeoutMs = 30_000): Promise<any> {
+  const page = await relaunchPage(miniProgram, route, undefined, timeoutMs, {
+    forceRelaunch: true,
+    readiness: 'route',
+  })
+  if (!page) {
+    throw new Error(`Timed out waiting stateful HMR route ${route}`)
+  }
+  // 上一个完整快照可能已经写盘但仍在提交 transport；下一场景必须等宿主离开 rebuilding，
+  // 否则首个脚本事件会被旧批次拒绝并永久停留在旧 revision。
+  await waitForClientReady(timeoutMs)
+  return page
 }
 
 function skipIfStatefulHmrTransportUnavailable(ctx: { skip: (message?: string) => void }): boolean {
@@ -789,7 +793,12 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       finally {
         // 成功路径已恢复并验收；再次原子替换会把无变化的 WXML 带入下一场景的补丁批次。
         if (await fs.readFile(source, 'utf8') !== original) {
+          const restoreVersion = runtime === 'wevu' ? await readClientVersion() : undefined
           await replaceFileByRename(source, original)
+          await devProcess!.waitFor(expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 90_000 }).not.toContain('TEMPLATE-CYCLE-'), 'failed template case source restored')
+          if (restoreVersion !== undefined) {
+            await waitForClientVersion(restoreVersion + 1)
+          }
         }
       }
     })

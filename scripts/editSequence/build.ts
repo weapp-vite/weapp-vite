@@ -3,10 +3,11 @@ import type { DevEngine } from 'rolldown/experimental'
 import type { Plugin } from 'vite'
 import type { StatefulHmrDevEngineUpdate } from '../../packages/weapp-vite/src/runtime/statefulHmr/viteAdapter'
 import type { SequenceInput } from './driver'
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, utimes, writeFile } from 'node:fs/promises'
 import path from 'pathe'
 import { build } from 'vite'
 import { createStatefulHmrRolldownRuntimeSource } from '../../packages/weapp-vite/src/runtime/statefulHmr/commonRuntime'
+import { createStatefulHmrHostFormatPlugin } from '../../packages/weapp-vite/src/runtime/statefulHmr/hostFormat'
 import { toStableModuleId } from '../../packages/weapp-vite/src/runtime/statefulHmr/initialModuleGraph'
 import { StatefulHmrOutputPublication } from '../../packages/weapp-vite/src/runtime/statefulHmr/outputPublication'
 import { writeStatefulHmrOutput } from '../../packages/weapp-vite/src/runtime/statefulHmr/outputWriter'
@@ -14,6 +15,8 @@ import { createViteDevEngine } from '../../packages/weapp-vite/src/runtime/state
 import { createSequenceFixturePlugin } from './buildFixture'
 import { applyAction, bounded } from './driver'
 import { observeError } from './editor'
+import { SequenceMeasurements } from './measurement'
+import { SequencePublicationBarrier } from './publicationBarrier'
 import { observePublishedFiles, PublishedRuntime } from './published'
 
 interface ModuleObservation {
@@ -28,8 +31,14 @@ interface PublicationReceipt {
   ready: boolean
 }
 
+interface SequenceSaveOptions {
+  afterSave?: (files: Readonly<Record<string, string>>) => Promise<void>
+  fileTimestamp?: Date
+}
+
 export class BuildSequenceSession {
   private engine?: DevEngine
+  private engineRun?: Promise<void>
   private watcher?: RolldownWatcher
   private sourceFiles: Record<string, string> = {}
   private completion = Promise.withResolvers<void>()
@@ -37,6 +46,7 @@ export class BuildSequenceSession {
   private outputTask: Promise<void> = Promise.resolve()
   private readonly publication = new StatefulHmrOutputPublication()
   private readonly runtime = new PublishedRuntime()
+  private readonly consumed = new SequencePublicationBarrier<ReturnType<PublishedRuntime['observe']>>()
   private modules: Record<string, ModuleObservation> = {}
   private entries: Record<string, string | null> = {}
   private readonly stateful: boolean
@@ -49,12 +59,15 @@ export class BuildSequenceSession {
   private inputRevision = 0
   private publishedRevision = -1
   private writing = false
+  readonly measurements: SequenceMeasurements
 
   constructor(mode: 'classic' | 'stateful-experimental', private readonly root: string, private readonly outDir: string) {
     this.stateful = mode === 'stateful-experimental'
+    this.measurements = new SequenceMeasurements(root)
   }
 
-  async observe(input: SequenceInput) {
+  async observe(input: SequenceInput, options: SequenceSaveOptions = {}) {
+    this.measurements.reset()
     const topologyChange = this.started && (
       Object.keys(input.files).some(file => !Object.hasOwn(this.sourceFiles, file))
       || Object.keys(this.sourceFiles).some(file => !Object.hasOwn(input.files, file))
@@ -73,7 +86,7 @@ export class BuildSequenceSession {
     void this.completion.promise.catch(() => {})
     this.writing = true
     try {
-      await this.writeSources(input)
+      await this.writeSources(input, options)
     }
     finally {
       this.writing = false
@@ -228,7 +241,7 @@ export class BuildSequenceSession {
     }
   }
 
-  private async writeSources(input: SequenceInput) {
+  private async writeSources(input: SequenceInput, options: SequenceSaveOptions) {
     const save = async (files: Readonly<Record<string, string>>) => {
       for (const file of Object.keys(this.sourceFiles)) {
         if (!Object.hasOwn(files, file)) {
@@ -255,6 +268,9 @@ export class BuildSequenceSession {
           this.noteSourceWrite(file)
           await mkdir(path.dirname(target), { recursive: true })
           await writeFile(`${target}.pending`, content)
+          if (options.fileTimestamp) {
+            await utimes(`${target}.pending`, options.fileTimestamp, options.fileTimestamp)
+          }
           await rename(`${target}.pending`, target)
         }
       }
@@ -280,6 +296,7 @@ export class BuildSequenceSession {
         }
         applyAction(intermediate, action)
         await save(intermediate)
+        await options.afterSave?.({ ...intermediate })
       }
     }
     await save(input.files)
@@ -323,9 +340,16 @@ export class BuildSequenceSession {
     const observer: Plugin = {
       name: 'edit-sequence-read-only-observer',
       load: async (id) => {
+        this.measurements.load(id)
         this.recordSourceInput(id)
         await this.acknowledgeSourceChange(id)
         return null
+      },
+      transform: (_code, id) => {
+        this.measurements.transform(id)
+      },
+      writeBundle: (_options, bundle) => {
+        this.measurements.publish(Object.values(bundle))
       },
       watchChange: id => this.acknowledgeSourceChange(id),
       buildStart: async () => {
@@ -346,8 +370,12 @@ export class BuildSequenceSession {
         recordBundle(bundle, this)
       },
     }
-    const plugins = [createSequenceFixturePlugin(this.root, this.stateful, id => this.readSource(id)), observer]
-    const output = { dir: this.outDir, format: 'cjs' as const, entryFileNames: '[name].js', chunkFileNames: '[name].js', sourcemap: false as const }
+    const plugins: Plugin[] = [createSequenceFixturePlugin(this.root, id => this.readSource(id)), observer]
+    // 原生 ESM DevEngine 持有依赖图，宿主格式与生产路径在 bundler 写出前统一转换。
+    if (this.stateful) {
+      plugins.push(createStatefulHmrHostFormatPlugin())
+    }
+    const output = { dir: this.outDir, format: this.stateful ? 'esm' as const : 'cjs' as const, entryFileNames: '[name].js', chunkFileNames: '[name].js', sourcemap: false as const }
     if (!this.stateful) {
       const result = await build({
         root: this.root,
@@ -375,6 +403,7 @@ export class BuildSequenceSession {
         else if (event.code === 'END' && !buildFailed) {
           const receipt = this.capturePublication()
           this.outputTask = this.runtime.load(this.outDir).then(() => {
+            this.consumed.consume(() => this.runtime.observe(false), Promise.resolve())
             this.failure = undefined
             this.finishPublication(receipt)
           })
@@ -391,7 +420,7 @@ export class BuildSequenceSession {
       plugins,
       experimental: { devMode: { lazy: false, implement: createStatefulHmrRolldownRuntimeSource() } },
     }, output, {
-      watch: { skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: false },
+      watch: { skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: true },
       onOutput: result => this.publish(result),
       onAdditionalAssets: result => this.publish(result, true),
       onHmrUpdates: (result) => {
@@ -407,7 +436,10 @@ export class BuildSequenceSession {
             const update = item.update as StatefulHmrDevEngineUpdate
             if (update.type === 'Patch') {
               this.runtime.apply(update)
-              await this.engine!.notifyPayloadDelivered(update.filename)
+              this.measurements.patch(update.code)
+              const delivered = this.engine!.notifyPayloadDelivered(update.filename)
+              this.consumed.consume(() => this.runtime.observe(true), delivered)
+              await delivered
             }
             else if (update.type === 'FullReload') {
               // 与生产 adapter 相同，只在引擎要求 reload 时请求完整发布。
@@ -421,8 +453,10 @@ export class BuildSequenceSession {
         void updates().catch(error => receipt.completion.reject(error))
       },
     })
+    // run 的生命周期持续到 close；先启动引擎，再由发布回调确认当前输入已经可观察。
+    this.engineRun = this.engine.run()
+    void this.engineRun.catch(error => this.completion.reject(error))
     await this.engine.registerClient('edit-sequence')
-    await this.engine.run()
   }
 
   private publish(result: Error | RolldownOutput, additional = false) {
@@ -438,16 +472,22 @@ export class BuildSequenceSession {
     this.outputTask = this.publication.publish(additional ? 'additional' : 'full', async () => {
       await previous
       await writeStatefulHmrOutput(this.outDir, result.output)
+      this.measurements.publish(result.output)
       if (!additional) {
         this.entries = Object.fromEntries(result.output.flatMap(item => item.type === 'chunk' && item.isEntry
           ? [[item.fileName, item.facadeModuleId && toStableModuleId(item.facadeModuleId, this.root)]]
           : []))
         await this.runtime.load(this.outDir)
-        for (const output of result.output) {
-          if (output.type === 'chunk') {
-            await this.engine?.notifyPayloadDelivered(output.fileName)
+        const delivered = async () => {
+          for (const output of result.output) {
+            if (output.type === 'chunk') {
+              await this.engine?.notifyPayloadDelivered(output.fileName)
+            }
           }
         }
+        const delivery = delivered()
+        this.consumed.consume(() => this.runtime.observe(true), delivery)
+        await delivery
         this.failure = undefined
         this.finishPublication(receipt)
       }
@@ -456,12 +496,28 @@ export class BuildSequenceSession {
     return this.outputTask
   }
 
+  observeSession() {
+    return { watchers: this.watcher ? 1 : 0, engines: this.engine ? 1 : 0 }
+  }
+
+  waitForPublication(predicate: (observation: ReturnType<PublishedRuntime['observe']>) => boolean, signal: AbortSignal) {
+    return this.consumed.waitFor(predicate, async () => {
+      if (this.engine) {
+        await this.engine.ensureCurrentBuildFinish()
+        await this.engine.getBundleState()
+      }
+      await this.outputTask
+    }, signal)
+  }
+
   async close() {
     await this.watcher?.close()
     await this.engine?.close()
+    await this.engineRun
     await this.outputTask
     this.watcher = undefined
     this.engine = undefined
+    this.engineRun = undefined
     this.started = false
   }
 }

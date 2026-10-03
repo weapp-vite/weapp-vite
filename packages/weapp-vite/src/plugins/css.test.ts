@@ -316,7 +316,7 @@ describe('css plugin shared style injection', () => {
 
     await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
 
-    expect(bundle['app.wxss']).toBeUndefined()
+    expect(bundle['app.wxss']?.source).toBe(placeholder)
     expect(emitted).toEqual([])
   })
 
@@ -987,6 +987,7 @@ describe('css plugin shared style injection', () => {
       scanService: {
         subPackageMap: new Map([
           ['pages', {
+            subPackage: { root: 'pages' },
             styleEntries: [{
               ...subPackageStyleEntry,
               outputRelativePath: 'pages/shared/styles/index.wxss',
@@ -1045,6 +1046,7 @@ describe('css plugin shared style injection', () => {
       scanService: {
         subPackageMap: new Map([
           ['pages', {
+            subPackage: { root: 'pages' },
             styleEntries: [{
               ...subPackageStyleEntry,
               outputRelativePath: 'pages/shared/styles/index.wxss',
@@ -1394,7 +1396,7 @@ describe('css plugin shared style injection', () => {
     expect(runtimeState.css.emittedSource.get('pages/index/index.wxss')).toBe('.page .title{color:green}')
   })
 
-  it('drops unchanged existing style assets during dev hmr writes', async () => {
+  it('preserves prepared style assets for final publication ownership and deduplication', async () => {
     const plugin = css({
       configService: {
         ...configService,
@@ -1431,7 +1433,7 @@ describe('css plugin shared style injection', () => {
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
     await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, true)
 
-    expect(bundle['pages/index/index.wxss']).toBeUndefined()
+    expect(bundle['pages/index/index.wxss']?.source).toBe('.page .title{color:red}')
     expect(emitted.find(asset => asset.fileName === 'pages/index/index.wxss')).toBeUndefined()
   })
 

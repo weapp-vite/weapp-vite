@@ -2,6 +2,7 @@ import type { PackageJson } from 'pkg-types'
 import type { MutableCompilerContext } from '../../../context'
 import { getPackageInfoSync } from 'local-pkg'
 import { getPlatformNpmDistDirName, resolveMiniPlatformWithDefault } from '../../../platform'
+import { packageSearchOptions } from '../packageResolution'
 
 const DEFAULT_NPM_STRATEGY = 'explicit'
 
@@ -76,7 +77,7 @@ function resolveMiniprogramCandidateDependenciesSync(
   return allDependencies.filter((dep) => {
     let packageInfo: ReturnType<typeof getPackageInfoSync> | null = null
     try {
-      packageInfo = getPackageInfoSync(dep, cwd ? { paths: [cwd] } : undefined)
+      packageInfo = getPackageInfoSync(dep, packageSearchOptions(cwd))
     }
     catch {
       packageInfo = null
@@ -124,6 +125,7 @@ export function resolveTargetDependencies(
 export function resolveNpmBuildCandidateDependenciesSync(
   ctx: MutableCompilerContext,
   pkgJson: PackageJson,
+  resolveFrom = ctx.configService?.cwd,
 ) {
   if (resolveNpmStrategy(ctx) === 'legacy') {
     return Object.keys(pkgJson.dependencies ?? {})
@@ -134,7 +136,7 @@ export function resolveNpmBuildCandidateDependenciesSync(
   const explicitlyIncludedDependencies = resolveTargetDependencies(declaredDependencies, configuredPatterns)
   const miniprogramDependencies = resolveMiniprogramCandidateDependenciesSync(
     declaredDependencies,
-    ctx.configService?.cwd,
+    resolveFrom,
   )
 
   return dedupeDependencies([

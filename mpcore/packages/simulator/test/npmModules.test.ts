@@ -4,8 +4,9 @@ import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserProject, createBrowserVirtualFiles } from '../src/browser'
 import { createHeadlessSession } from '../src/runtime'
+import { querySelectorAll } from '../src/view/selectors'
 import { cleanupTempDirs } from './helpers'
-import { npmComponentFiles, npmModuleFiles } from './helpers/npmModules'
+import { npmComponentFiles, npmMappedComponentFiles, npmModuleFiles } from './helpers/npmModules'
 
 describe.each(['node', 'browser'] as const)('%s mini-program npm dependency resolution', (provider) => {
   const directories: string[] = []
@@ -57,6 +58,30 @@ describe.each(['node', 'browser'] as const)('%s mini-program npm dependency reso
         expect(markup).toContain(`>${label}<`)
       }
       expect(markup).not.toContain('root dialog')
+    }
+    finally {
+      session.close()
+    }
+  })
+
+  it('loads explicitly mapped npm components and dispatches their enabled button events', () => {
+    const session = createSessionFromFiles(npmMappedComponentFiles())
+    try {
+      const page = session.reLaunch('/customized/pages/npm-options/index')
+      const markup = session.renderCurrentPage().wxml
+      expect(markup).toContain('>subpackage helper<')
+      expect(markup).toContain('>mapped helper<')
+      for (const [kind, callbackCount, mappedCount] of [
+        ['callback', 1, 0],
+        ['mapped', 1, 1],
+        ['disabled', 1, 1],
+      ] as const) {
+        const buttons = querySelectorAll(session.renderCurrentPage().root, `#npm-${kind}-button`)
+        expect(buttons).toHaveLength(1)
+        session.dispatchNativeNodeEvent(buttons[0]!, 'tap', {})
+        expect(page.data).toMatchObject({ callbackCount, mappedCount, disabledCount: 0 })
+        expect(session.renderCurrentPage().wxml).toContain(`>${callbackCount}/${mappedCount}/0<`)
+      }
     }
     finally {
       session.close()

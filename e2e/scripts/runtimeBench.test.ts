@@ -35,6 +35,7 @@ function createWorkerResult(project = 'runtime-bench-react'): WorkerResult {
     fallbackReasons: {},
   }
   return {
+    schemaVersion: 2,
     project,
     firstScreen: { wallMsMedian: 1, readyMsMedian: 1, firstCommitMsMedian: 1 },
     detailNavigation: { wallMsMedian: 1, readyMsMedian: 1, firstCommitMsMedian: 1 },

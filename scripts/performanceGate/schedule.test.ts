@@ -1,5 +1,5 @@
-import { expect, it } from 'vitest'
-import { policy, statusContext } from './contract.mjs'
+import { expect, it, vi } from 'vitest'
+import { createMatrix, policy, statusContext, targetKey } from './contract.mjs'
 import { selectTargets } from './schedule.mjs'
 
 it('selects main and the oldest unevaluated labelled PR, preserving failures and cancellations', async () => {
@@ -56,4 +56,40 @@ it('freezes main and a manual PR once, reusing an existing pending attempt witho
   const result = await selectTargets({ prNumber: 7, get })
   expect(result.targets.map((t: { id: string }) => t.id)).toEqual(['main'])
   expect(result.reused).toMatchObject([{ id: 'pr-7', previous: { state: 'pending' } }])
+})
+
+it.each([undefined, 'pending', 'failure', 'success'])('selects only immutable main with an existing %s attempt without querying the PR queue', async (state) => {
+  const mainSha = 'a'.repeat(40)
+  const main = { id: 'main', prNumber: null, headSha: mainSha, baselineSha: policy.baselineSha }
+  const get = vi.fn(async (endpoint: string) => {
+    if (endpoint === '') {
+      return { default_branch: 'main' }
+    }
+    if (endpoint === '/git/ref/heads/main') {
+      return { object: { sha: mainSha } }
+    }
+    if (endpoint === `/commits/${mainSha}/statuses?per_page=100&page=1`) {
+      return state ? [{ context: statusContext(main), state, target_url: 'https://example.test/run/1' }] : []
+    }
+    throw new Error(`Unexpected main-only query: ${endpoint}`)
+  })
+  const result = await selectTargets({ mainOnly: true, get })
+  if (state) {
+    expect(result.targets).toEqual([])
+    expect(result.reused).toMatchObject([{ ...main, previous: { state } }])
+  }
+  else {
+    expect(result.targets).toMatchObject([{ ...main, key: targetKey(main) }])
+    const matrix = createMatrix(result.targets)
+    expect(matrix).toHaveLength(27)
+    expect(matrix.every(row => row.target === 'main' && row.headSha === mainSha && row.baselineSha === policy.baselineSha)).toBe(true)
+    expect(result.reused).toEqual([])
+  }
+  expect(get).toHaveBeenCalledTimes(3)
+})
+
+it('rejects main-only with an explicit PR before any GitHub request', async () => {
+  const get = vi.fn()
+  await expect(selectTargets({ mainOnly: true, prNumber: 7, get })).rejects.toThrow('main-only cannot be combined with pr-number')
+  expect(get).not.toHaveBeenCalled()
 })

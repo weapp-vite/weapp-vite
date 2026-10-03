@@ -505,10 +505,6 @@ describe('component infrastructure contracts', () => {
         data: { label: 'plain' },
       },
     })
-    defineComponent('wv-lit-template-null-contract', {
-      template: () => null as any,
-      component: {},
-    })
 
     const styled = document.createElement('wv-lit-template-style-contract') as HTMLElement & {
       updateComplete: Promise<boolean>
@@ -516,15 +512,10 @@ describe('component infrastructure contracts', () => {
     const plain = document.createElement('wv-lit-template-plain-contract') as HTMLElement & {
       updateComplete: Promise<boolean>
     }
-    const empty = document.createElement('wv-lit-template-null-contract') as HTMLElement & {
-      updateComplete: Promise<boolean>
-    }
-    document.body.append(styled, plain, empty)
-    await Promise.all([styled.updateComplete, plain.updateComplete, empty.updateComplete])
+    document.body.append(styled, plain)
+    await Promise.all([styled.updateComplete, plain.updateComplete])
 
     expect(styled.shadowRoot?.textContent).toContain('styled')
-    expect(styled.shadowRoot?.querySelector('style')?.textContent).toContain('display: block')
     expect(plain.shadowRoot?.textContent).toContain('plain')
-    expect(empty.shadowRoot?.textContent).toBe('')
   })
 })

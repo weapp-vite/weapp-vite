@@ -145,6 +145,7 @@ export function compileVueTemplateToWxml(
       propsAliases: options?.propsAliases,
       propsDerivedKeys: options?.propsDerivedKeys,
       scriptSetupBindings: options?.scriptSetupBindings,
+      scriptSetupPropConflicts: options?.scriptSetupPropConflicts,
       htmlTagToWxmlMap,
       htmlTagToWxmlTagClass: options?.htmlTagToWxmlTagClass ?? true,
       scopedSlotsCompiler: options?.scopedSlotsCompiler ?? 'auto',

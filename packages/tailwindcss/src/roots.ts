@@ -2,7 +2,6 @@ import type { HmrCompilerRequest } from '@weapp-vite/hmr'
 import type { Compiler, CompilerGenerateRequest, CompilerGenerateResult } from 'weapp-tailwindcss/core'
 import { createHash } from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
-import { createTailwindV4CompiledSourceEntries, createTailwindV4SourceEntryMatcher } from '@weapp-tailwindcss/engine'
 import { CompilerHmrResyncError } from '@weapp-vite/hmr'
 import path from 'pathe'
 
@@ -33,6 +32,10 @@ export async function prepareTailwindRoots<K>(
   const capturedRoots = new Map(roots)
   request = { ...request, changedFiles: [...request.changedFiles], sources: new Map(request.sources) }
   const entries = new Map<K, CompilerGenerateResult>()
+  if (!capturedRoots.size) {
+    return entries
+  }
+  const { createTailwindV4CompiledSourceEntries, createTailwindV4SourceEntryMatcher } = await import('@weapp-tailwindcss/engine')
   for (const [index, root] of capturedRoots) {
     const base = root.request.sourceOptions?.projectRoot ?? root.request.source?.base ?? options.cwd
     const matches = createTailwindV4SourceEntryMatcher(createTailwindV4CompiledSourceEntries(
