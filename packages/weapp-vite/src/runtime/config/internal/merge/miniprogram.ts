@@ -296,9 +296,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
               : {}),
             exclude: [
               ...defaultExcluded,
-              mpDistRoot
-                ? path.join(cwd, mpDistRoot, '**')
-                : path.join(cwd, 'dist', '**'),
+              path.join(path.resolve(cwd, mpDistRoot || 'dist'), '**'),
             ],
             include: watchInclude,
           },
