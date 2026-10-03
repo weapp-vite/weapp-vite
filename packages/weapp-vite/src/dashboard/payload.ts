@@ -1,6 +1,7 @@
 import type { AnalyzeSubpackagesResult } from '../analyze/subpackages'
 import type { DashboardAnalyzeSnapshot } from './index'
 import { createHash } from 'node:crypto'
+import { dashboardAnalyzePageRequestSchema } from './schema'
 
 export const MAX_DASHBOARD_ANALYZE_PAGE_CHARACTERS = 64 * 1024
 export const STALE_DASHBOARD_ANALYZE_REVISION_MESSAGE = 'Analyze revision 已变化，请重新获取 Dashboard 状态。'
@@ -73,36 +74,12 @@ export function serializeDashboardAnalyzeSnapshot(
   }
 }
 
-function normalizeAnalyzePageRequest(input: unknown): DashboardAnalyzePageRequest {
-  if (!input || typeof input !== 'object') {
-    throw new Error('必须传入合法的 Analyze 分页请求。')
-  }
-  if (!('revision' in input) || !('target' in input) || !('index' in input)) {
-    throw new Error('必须传入合法的 Analyze 分页请求。')
-  }
-  const revision = input.revision
-  const target = input.target
-  const index = input.index
-  if (
-    typeof revision !== 'number'
-    || !Number.isSafeInteger(revision)
-    || revision < 0
-    || (target !== 'current' && target !== 'previous')
-    || typeof index !== 'number'
-    || !Number.isSafeInteger(index)
-    || index < 0
-  ) {
-    throw new Error('必须传入合法的 Analyze 分页请求。')
-  }
-  return { revision, target, index }
-}
-
 export function readDashboardAnalyzePage(
   input: unknown,
   revision: number,
   snapshot: SerializedDashboardAnalyzeSnapshot,
 ): DashboardAnalyzePage {
-  const request = normalizeAnalyzePageRequest(input)
+  const request = dashboardAnalyzePageRequestSchema.parse(input)
   if (request.revision !== revision) {
     throw new Error(STALE_DASHBOARD_ANALYZE_REVISION_MESSAGE)
   }

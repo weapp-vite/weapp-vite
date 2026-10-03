@@ -15,17 +15,12 @@ export function useAnalyzeDashboardData(
   const packageLabelMap = computed(() =>
     new Map((resultRef.value?.packages ?? []).map(pkg => [pkg.id, pkg.label])),
   )
-  const packageTypeMap = computed(() =>
-    new Map((resultRef.value?.packages ?? []).map(pkg => [pkg.id, pkg.type])),
-  )
   const moduleInfoMap = computed(() => createModuleInfoMap(resultRef.value))
   const budgetWarnings = computed(() => createBudgetWarnings(resultRef.value))
   const budgetLimitItems = computed(() => createBudgetLimitItems(resultRef.value))
   const incrementAttribution = computed(() => createIncrementAttribution({
     result: resultRef.value,
     previousResult: previousResultRef?.value,
-    previousMaps: previousMaps.value,
-    moduleInfoMap: moduleInfoMap.value,
   }))
   const incrementSummary = computed(() => createIncrementSummary(incrementAttribution.value))
   const summary = computed(() => createAnalyzeSummary({
@@ -39,9 +34,7 @@ export function useAnalyzeDashboardData(
   const largestFiles = computed(() => artifactFiles.value.slice(0, 18))
   const duplicateModules = computed(() => createDuplicateModules({
     result: resultRef.value,
-    moduleInfoMap: moduleInfoMap.value,
     packageLabelMap: packageLabelMap.value,
-    packageTypeMap: packageTypeMap.value,
   }))
   const moduleSourceSummary = computed(() => createModuleSourceSummaries(resultRef.value, moduleInfoMap.value))
 

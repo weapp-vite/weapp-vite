@@ -2,7 +2,7 @@ import type { SubPackageMetaValue } from '../../types'
 import type { AnalyzeComponentUsage } from '../components'
 import type { GlassEaselAnalyzeResult } from '../glassEasel/types'
 import type { AnalyzeArtifactAnalysis } from './artifacts'
-import type { AnalyzeBudgetCheckItem } from './report'
+import type { AnalyzeBudgetCheckItem } from './budget'
 
 export type PackageType = 'main' | 'subPackage' | 'independent' | 'virtual'
 export type ModuleSourceType = 'src' | 'plugin' | 'node_modules' | 'workspace'

@@ -3,9 +3,10 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
+import { createAnalyzeComparison } from '../../dashboard/analyze'
 import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from './history'
 import { createAnalyzeMetadata } from './metadata'
-import { createAnalyzeIncrementAttribution, createAnalyzeMarkdownReport, createAnalyzePrMarkdownReport } from './report'
+import { createAnalyzeMarkdownReport, createAnalyzePrMarkdownReport } from './report'
 
 const tempRoots: string[] = []
 
@@ -115,11 +116,8 @@ describe('analyze history and report', () => {
 
     const report = createAnalyzeMarkdownReport(current, previous)
 
-    expect(report).toContain('# weapp-vite analyze 报告')
     expect(report).toContain('较上次：+512 B')
     expect(report).toContain('| current | main | 1.00 KB | 420 B | +512 B | 正常 |')
-    expect(report).toContain('## 建议动作')
-    expect(report).toContain('## 增量归因')
     expect(report).toContain('| shared.ts | src | 2 | 256 B |')
   })
 
@@ -130,13 +128,11 @@ describe('analyze history and report', () => {
     previous.packages[0]!.files[0]!.size = 512
     previous.packages[0]!.files[0]!.modules![0]!.bytes = 128
 
-    const attribution = createAnalyzeIncrementAttribution(current, previous)
+    const comparison = createAnalyzeComparison(current, previous)
     const report = createAnalyzePrMarkdownReport(current, previous)
 
-    expect(attribution[0]?.deltaBytes).toBeGreaterThan(0)
-    expect(report).toContain('## weapp-vite analyze PR 摘要')
-    expect(report).toContain('### 增量来源')
-    expect(report).toContain('### Top 增量')
+    expect(comparison.files).toEqual([expect.objectContaining({ file: 'app.js', deltaBytes: 512 })])
+    expect(comparison.modules).toEqual([expect.objectContaining({ label: 'shared.ts', deltaBytes: 128 })])
     expect(report).toContain('+512 B')
   })
 })

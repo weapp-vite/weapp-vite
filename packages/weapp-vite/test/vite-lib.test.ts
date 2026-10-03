@@ -109,6 +109,12 @@ it('keeps type-only edits during the first publication and recovers declarations
     },
   })
   const watcher = await build({ ...config, build: { ...config.build, watch: {} } }) as RolldownWatcher
+  let initialBuildFinished = false
+  watcher.on('event', (event) => {
+    if (event.code === 'END') {
+      initialBuildFinished = true
+    }
+  })
   const errors: unknown[] = []
   watcher.on('event', (event) => {
     record(event.code)
@@ -117,6 +123,8 @@ it('keeps type-only edits during the first publication and recovers declarations
     }
   })
   try {
+    // 声明产物写出早于纯类型依赖的原生监听注册，首轮必须等待完整构建结束。
+    await expect.poll(() => initialBuildFinished, { timeout: 20_000 }).toBe(true)
     await expect.poll(() => read('utils.d.ts'), { timeout: 20_000 }).toContain('initial: string')
     record('initial declaration observed')
     await publishing.promise
