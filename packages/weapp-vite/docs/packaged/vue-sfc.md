@@ -124,6 +124,18 @@ defineOptions({ behaviors: [i18n.behavior] })
 <view class="br" />
 ```
 
+## 原生插槽与 `provide` / `inject`
+
+`weapp.vue.template.scopedSlotsRequireProps` 默认 `false`，普通插槽仍使用增强方案。设为 `true` 时，无 scoped props 的内容保留原生 `<slot>`。
+
+微信目标下，编译后的 Wevu Provider 和 Leaf 使用默认 `setupLifecycle: 'attached'` 时，`<Provider><Leaf /></Provider>` 中的 Leaf 会在 setup 前同步关联最近的插槽承载者。Leaf 的 `inject()` 能取得 Provider 提供的原始对象、ref 和方法；点击调用 action 会更新双方共享状态。具名、普通节点包裹、嵌套和多实例场景遵循同一规则，卸载重建不会沿用旧上下文。
+
+这条协议不新增包装节点，不复制注入值，不修改原生 `Component.export` / `selectOwnerComponent()`。显式 `setupLifecycle: 'created'` 或 attached 前的公开实例恢复仍按原时机执行 setup，不提供该保证；未经 Wevu 编译的原生/第三方组件也不自动成为注入承载者。
+
+内层 Wevu Provider 即使使用过滤后的 `export()` / `expose()`，其普通模板子组件（含 Options API 局部注册别名）和原生插槽子组件仍共享内层上下文；外部选择器只看到该 Provider 的公开导出，内部父链不依赖公开导出对象。
+
+已验证环境：微信 DevTools Stable `2.02.2608080`、基础库 `3.17.2`，并保留 mpcore 回归。其他小程序平台及 Web 目标不启用此协议，不能由微信或 headless 结果推断支持。`false` / augmented 和实际 scoped props 继续使用既有增强插槽路径。
+
 ## 具名插槽透传 wrapper
 
 当你把当前组件的 `<slot />` 转发到子组件的具名插槽时：

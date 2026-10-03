@@ -301,12 +301,17 @@ async function resolveScriptComponentRegistrations(options: {
       }
       result.autoComponentMeta[localName] = resolved.from
     }
-    if (isVueSfcSource(importSource) || isWevuSfcComponent(resolved)) {
+    const isWevuComponent = isVueSfcSource(importSource) || isWevuSfcComponent(resolved)
+    if (isWevuComponent) {
       result.wevuComponentTags.add(localName)
       result.wevuComponentTags.add(normalizeTemplateTagName(localName))
     }
     registerComponentName(result, localName, componentMeta.componentName)
     for (const tag of templateTags) {
+      if (isWevuComponent) {
+        result.wevuComponentTags.add(tag)
+        result.wevuComponentTags.add(normalizeTemplateTagName(tag))
+      }
       registerComponentName(result, tag, componentMeta.componentName)
     }
     registerMiniProgramComponentTag(

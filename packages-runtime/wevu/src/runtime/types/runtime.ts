@@ -53,6 +53,7 @@ export interface InternalRuntimeStateFields {
   __wevuAppProvides?: Record<PropertyKey, any>
   __wevuProvides?: Record<PropertyKey, any>
   __wevuParentInstance?: InternalRuntimeState
+  __wevuNativeSlotContext?: boolean
   __wevuSetPageLayout?: (layout: string | false, props?: Record<string, any>) => void
   __wevuWatchStops?: WatchStopHandle[]
   __wevuLayoutHostBridge?: Record<string, any>

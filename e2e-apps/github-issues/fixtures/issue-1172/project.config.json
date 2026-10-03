@@ -1,0 +1,29 @@
+{
+  "appid": "wxb3d842a4a7e3440d",
+  "projectname": "issue-1172-native-slot-context",
+  "libVersion": "3.17.2",
+  "miniprogramRoot": "dist/",
+  "srcMiniprogramRoot": "dist/",
+  "compileType": "miniprogram",
+  "setting": {
+    "es6": false,
+    "enhance": false,
+    "minified": false,
+    "compileHotReLoad": false,
+    "urlCheck": false,
+    "useCompilerPlugins": false,
+    "swc": false,
+    "disableSWC": true
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        { "name": "Plain slot context", "pathName": "pages/index/index", "query": "", "launchMode": "default" },
+        { "name": "Provider isolation", "pathName": "pages/isolation/index", "query": "", "launchMode": "default" },
+        { "name": "Nearest named and wrapped slots", "pathName": "pages/nesting/index", "query": "", "launchMode": "default" },
+        { "name": "Detach and recreate", "pathName": "pages/lifecycle/index", "query": "", "launchMode": "default" },
+        { "name": "Native export and projection", "pathName": "pages/native-export/index", "query": "", "launchMode": "default" }
+      ]
+    }
+  }
+}

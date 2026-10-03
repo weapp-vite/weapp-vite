@@ -3,7 +3,7 @@ import type { HeadlessPageInstance } from '../pageInstance'
 import type { DomNodeLike, RuntimeRenderedPageTree, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
 import path from 'node:path'
 import { attachComponentPage, isComponentPageAttaching } from '../../host/componentPageAttachment'
-import { mergeComponentEventRoot, registerComponentEventNode } from '../../view/componentEvent'
+import { bindComponentEventHost, mergeComponentEventRoot, registerComponentEventNode } from '../../view/componentEvent'
 import { selectConditionalChildren } from '../../view/conditionalChildren'
 import { customTabBarHostScope, customTabBarScopeId, hasCustomTabBar } from '../../view/customTabBar'
 import { resolveLoopEntries } from '../../view/loopEntries'
@@ -223,6 +223,7 @@ function renderNodeTree(
     const slotName = clonedNode.attribs?.name?.trim() || 'default'
     const projected = scope.slots?.get(slotName) ?? []
     const fallbackChildren = clonedNode.children ?? []
+    bindComponentEventHost(clonedNode)
     clonedNode.name = 'block'
     clonedNode.attribs = {
       'data-sim-node': instancePath,

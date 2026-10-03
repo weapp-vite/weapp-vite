@@ -264,7 +264,7 @@ export function createBrowserComponentInstance(
   componentInstance.selectComponent = (selector: string) => resolveNativeComponentSelection(context.session.selectComponentWithin(componentScopeId, selector))
   componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector).map(resolveNativeComponentSelection)
   componentInstance.selectOwnerComponent = () => ownerScopeId
-    ? context.componentCache.get(ownerScopeId) ?? null
+    ? resolveNativeComponentSelection(context.componentCache.get(ownerScopeId))
     : null
   context.componentCache.set(componentScopeId, componentInstance)
   beforeCreated?.(componentInstance)

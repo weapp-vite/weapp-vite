@@ -7,6 +7,8 @@ import {
   WEVU_CSS_VARS_STYLE_KEY,
   WEVU_LAYOUT_HOST_ID_PREFIX,
   WEVU_LAYOUT_HOST_REF_PREFIX,
+  WEVU_NATIVE_SLOT_PARENT_EVENT,
+  WEVU_NATIVE_SLOT_PARENT_METHOD,
   WEVU_SLOT_OWNER_ID_ATTR,
   WEVU_TEMPLATE_REF_CLASS_PREFIX,
 } from '@weapp-core/constants'
@@ -92,6 +94,15 @@ export function collectElementAttributes(
   const resolvedTag = options?.resolvedTag ?? resolveTemplateTagName(node.tag, context)
   const isComponentElement = options?.isComponent ?? !isBuiltinTag(resolvedTag)
   const attrs: string[] = options?.extraAttrs ? [...options.extraAttrs] : []
+  if (
+    isComponentElement
+    && context.wevuComponentTags?.has(node.tag)
+    && context.platform.name === 'wechat'
+    && context.platform.nativeSlotContext !== false
+    && context.scopedSlotsRequireProps
+  ) {
+    attrs.push(`bind:${WEVU_NATIVE_SLOT_PARENT_EVENT}="${WEVU_NATIVE_SLOT_PARENT_METHOD}"`)
+  }
   if (context.scopeId) {
     attrs.push(`${context.scopeId}=""`)
   }

@@ -21,8 +21,11 @@ import {
   WEVU_HOST_COMMIT_PROMISE_KEY,
   WEVU_ON_BEFORE_UNMOUNT_HOOK,
   WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY,
+  WEVU_PARENT_INSTANCE_KEY,
   WEVU_PROPS_DERIVED_KEYS_KEY,
+  WEVU_PROVIDES_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_RUNTIME_APP_KEY,
   WEVU_SETUP_CONTEXT_INSTANCE_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_WATCH_STOPS_KEY,
@@ -37,6 +40,7 @@ import {
   runtimeCapabilityRegistry,
 } from '../capabilities'
 import { callHookList } from '../hooks'
+import { isRuntimeLayoutComponentTarget } from '../layoutComponentMatcher'
 import { getMiniProgramRuntimeGlobalObject } from '../platform'
 import { runTeardownSteps } from '../teardown'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
@@ -186,7 +190,12 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   runtimeApp: RuntimeApp<D, C, M>,
   watchMap: WatchMap | undefined,
   setup?: RuntimeSetupFunction<D, C, M>,
-  options?: { deferSetData?: boolean, snapshotOmitKeys?: string[] },
+  options?: {
+    deferSetData?: boolean
+    snapshotOmitKeys?: string[]
+    attached?: boolean
+    layoutParent?: InternalRuntimeState
+  },
 ) {
   if (target.__wevu) {
     return target.__wevu as RuntimeInstance<D, C, M>
@@ -209,7 +218,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const highFrequencyWarningHooks = highFrequencyWarningRequested
     ? requireRuntimeCapability('setDataHighFrequencyWarning', 'mountRuntimeInstance(setData.highFrequencyWarning)')
     : undefined
-  attachRuntimeProvideParentContext(target, runtimeApp as RuntimeApp<any, any, any>)
+  attachRuntimeProvideParentContext(target, runtimeApp, options?.attached, options?.layoutParent)
   safeMarkNoSetData(target)
   const suspendWhenHidden = Boolean(runtimeSetDataOptions?.suspendWhenHidden)
   const targetLabel = typeof (target as any).route === 'string' && (target as any).route
@@ -1020,6 +1029,16 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
         delete (target as any)[WEVU_PUBLIC_RUNTIME_KEY]
       }
     },
+    () => {
+      // 只解除宿主引用，不清空 provides 或撤销用户已持有的注入对象。
+      delete target[WEVU_PARENT_INSTANCE_KEY]
+    },
+    () => {
+      delete target[WEVU_PROVIDES_KEY]
+    },
+    () => {
+      delete target[WEVU_RUNTIME_APP_KEY]
+    },
   ])
 }
 
@@ -1032,17 +1051,22 @@ export function refreshRuntimeInstance<D extends object, C extends ComputedDefin
   runtimeApp: RuntimeApp<D, C, M>,
   watchMap: WatchMap | undefined,
   setup?: RuntimeSetupFunction<D, C, M>,
-  options?: { snapshotOmitKeys?: string[], stateSnapshot?: Record<string, any> },
+  options?: { snapshotOmitKeys?: string[], stateSnapshot?: Record<string, any>, attached?: boolean },
 ) {
   const previousRuntime = target.__wevu as RuntimeInstance<D, C, M> | undefined
   const initialSetupState = previousRuntime ? initialReactiveSetupSnapshots.get(previousRuntime) : undefined
   const previousRuntimeState = previousRuntime
     ? createRuntimeStateSnapshot(previousRuntime, (target as any).data, options?.stateSnapshot)
     : undefined
+  // 页面上方的 layout 由独立挂载插入；HMR 仅在本次重建期间保留仍存活的 layout。
+  const parent = target[WEVU_PARENT_INSTANCE_KEY]
+  const layoutParent = parent && isRuntimeLayoutComponentTarget(parent) ? parent : undefined
   teardownRuntimeInstance(target, { skipHooks: true })
   const nextRuntime = mountRuntimeInstance(target, runtimeApp, watchMap, setup, {
     deferSetData: true,
     snapshotOmitKeys: options?.snapshotOmitKeys,
+    attached: options?.attached,
+    layoutParent,
   })
   const stateSnapshot = previousRuntimeState ?? (options?.stateSnapshot
     ? createRuntimeStateSnapshot(nextRuntime, options.stateSnapshot, options.stateSnapshot)

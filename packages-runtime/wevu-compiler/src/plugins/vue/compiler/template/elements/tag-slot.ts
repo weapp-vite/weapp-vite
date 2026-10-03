@@ -10,6 +10,8 @@ import type {
 } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import {
+  WEVU_NATIVE_SLOT_PARENT_EVENT,
+  WEVU_NATIVE_SLOT_PARENT_METHOD,
   WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_ATTR,
   WEVU_SLOT_OWNER_ID_KEY,
@@ -560,6 +562,9 @@ function renderPlainSlotOutlet(node: ElementNode, context: TransformContext, tra
   if (nameAttr) {
     slotAttrs.push(nameAttr)
   }
+  if (context.platform.name === 'wechat' && context.platform.nativeSlotContext !== false && context.scopedSlotsRequireProps) {
+    slotAttrs.push(`bind:${WEVU_NATIVE_SLOT_PARENT_EVENT}="${WEVU_NATIVE_SLOT_PARENT_METHOD}"`)
+  }
   const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
   if (context.preserveComments && fallbackContent && !compatibleNode.children.some(isRenderableFallbackChild)) {
     return `${fallbackContent}<slot${slotAttrString} />`
@@ -737,6 +742,9 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   const nameAttr = renderSlotNameAttribute(slotNameInfo, context, 'name')
   if (nameAttr) {
     slotAttrs.push(nameAttr)
+  }
+  if (!slotPropsExp && context.platform.name === 'wechat' && context.platform.nativeSlotContext !== false && context.scopedSlotsRequireProps) {
+    slotAttrs.push(`bind:${WEVU_NATIVE_SLOT_PARENT_EVENT}="${WEVU_NATIVE_SLOT_PARENT_METHOD}"`)
   }
 
   const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''

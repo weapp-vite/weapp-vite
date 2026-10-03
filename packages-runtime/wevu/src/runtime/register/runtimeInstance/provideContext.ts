@@ -1,23 +1,34 @@
 import type { InternalRuntimeState, RuntimeApp } from '../../types'
 import {
+  WEVU_NATIVE_SLOT_CONTEXT_KEY,
+  WEVU_NATIVE_SLOT_PARENT_EVENT,
   WEVU_PARENT_INSTANCE_KEY,
+  WEVU_PROVIDES_KEY,
   WEVU_RUNTIME_APP_KEY,
 } from '@weapp-core/constants'
 import { isRuntimeLayoutComponentTarget } from '../../layoutComponentMatcher'
 import { getCurrentMiniProgramPages } from '../../platform'
 import { attachRuntimeLayoutProvideContext, attachRuntimeProvideContext } from '../../provideContext'
 
-function resolveRuntimeParentInstance(target: InternalRuntimeState): InternalRuntimeState | undefined {
-  if (isRuntimeLayoutComponentTarget(target)) {
-    return undefined
-  }
+interface NativeSlotParentDetail {
+  resolve: (parent: InternalRuntimeState) => void
+}
 
-  const cached = target[WEVU_PARENT_INSTANCE_KEY]
-  if (cached && typeof cached === 'object') {
-    return cached
-  }
+function isLiveProvideHost(target: InternalRuntimeState | undefined): target is InternalRuntimeState {
+  return Boolean(target && typeof target === 'object' && target.__wevu && target[WEVU_PROVIDES_KEY])
+}
 
-  const selectOwnerComponent = (target as any).selectOwnerComponent
+/**
+ * 编译后的组件节点与 slot 监听器必须保留原始 this，不能经过 setup 方法代理。
+ */
+export function receiveNativeSlotParent(this: InternalRuntimeState, event: { detail?: NativeSlotParentDetail }) {
+  if (isLiveProvideHost(this) && typeof event.detail?.resolve === 'function') {
+    event.detail.resolve(this)
+  }
+}
+
+function resolveNativeOwner(target: InternalRuntimeState): InternalRuntimeState | undefined {
+  const selectOwnerComponent = target.selectOwnerComponent
   if (typeof selectOwnerComponent === 'function') {
     try {
       const owner = selectOwnerComponent.call(target) as InternalRuntimeState | undefined
@@ -28,6 +39,65 @@ function resolveRuntimeParentInstance(target: InternalRuntimeState): InternalRun
     catch {
       // 部分宿主或生命周期阶段可能暂不支持 owner 查询，继续使用页面兜底。
     }
+  }
+  return undefined
+}
+
+function resolveNativeSlotParent(target: InternalRuntimeState): InternalRuntimeState | undefined {
+  if (target[WEVU_NATIVE_SLOT_CONTEXT_KEY] !== true || typeof target.triggerEvent !== 'function') {
+    return undefined
+  }
+
+  let parent: InternalRuntimeState | undefined
+  target.triggerEvent(WEVU_NATIVE_SLOT_PARENT_EVENT, {
+    resolve(candidate: InternalRuntimeState) {
+      if (candidate === target || !isLiveProvideHost(candidate) || candidate === parent) {
+        return
+      }
+      if (!parent) {
+        parent = candidate
+        return
+      }
+      // 声明节点与 slot 都提供原始宿主；只向既有父链中更近的实例收敛。
+      for (let ancestor = candidate[WEVU_PARENT_INSTANCE_KEY]; ancestor; ancestor = ancestor[WEVU_PARENT_INSTANCE_KEY]) {
+        if (ancestor === parent) {
+          parent = candidate
+          return
+        }
+      }
+    },
+  } satisfies NativeSlotParentDetail, { bubbles: true, composed: true })
+  return parent
+}
+
+function resolveRuntimeParentInstance(
+  target: InternalRuntimeState,
+  attached: boolean,
+  layoutParent?: InternalRuntimeState,
+): InternalRuntimeState | undefined {
+  if (isRuntimeLayoutComponentTarget(target)) {
+    return undefined
+  }
+
+  // 生命周期由注册入口显式传入；created 和提前恢复不能假定原生投影已就绪。
+  if (attached) {
+    const slotParent = resolveNativeSlotParent(target)
+    if (slotParent) {
+      return slotParent
+    }
+  }
+
+  const cached = target[WEVU_PARENT_INSTANCE_KEY]
+  if (cached && typeof cached === 'object') {
+    return cached
+  }
+  if (layoutParent !== target && isLiveProvideHost(layoutParent)) {
+    return layoutParent
+  }
+
+  const owner = resolveNativeOwner(target)
+  if (owner) {
+    return owner
   }
 
   const pages = getCurrentMiniProgramPages()
@@ -63,8 +133,11 @@ function attachRuntimeLayoutParentContext(target: InternalRuntimeState) {
 export function attachRuntimeProvideParentContext(
   target: InternalRuntimeState,
   runtimeApp: RuntimeApp<any, any, any>,
+  attached = false,
+  layoutParent?: InternalRuntimeState,
 ) {
+  const parent = resolveRuntimeParentInstance(target, attached, layoutParent)
   target[WEVU_RUNTIME_APP_KEY] = runtimeApp
-  attachRuntimeProvideContext(target, runtimeApp, resolveRuntimeParentInstance(target))
+  attachRuntimeProvideContext(target, runtimeApp, parent)
   attachRuntimeLayoutParentContext(target)
 }

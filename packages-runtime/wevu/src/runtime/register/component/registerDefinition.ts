@@ -10,6 +10,7 @@ import type {
 import type { WatchMap } from '../watch'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
+  WEVU_NATIVE_SLOT_PARENT_METHOD,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_READY_CALLED_KEY,
   WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD,
@@ -21,6 +22,7 @@ import { ensureInitialNavigation } from '../../navigationLifecycle'
 import { getMiniProgramRuntimeGlobalObject } from '../../platform'
 import { runTeardownSteps } from '../../teardown'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
+import { receiveNativeSlotParent } from '../runtimeInstance/provideContext'
 import { registerNativeComponentDefinition } from './registerNativeDefinition'
 
 export function registerComponentDefinition<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
@@ -122,6 +124,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     mountRuntimeInstance(instance, runtimeApp, watch, setup, {
       deferSetData: true,
       snapshotOmitKeys: directPropsDerivedKeys,
+      attached: !pendingAttachment.has(instance),
     })
     syncWevuPropsFromInstance(instance)
     enableDeferredSetData(instance)
@@ -246,6 +249,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
               mountRuntimeInstance(this, runtimeApp, watch, setup, {
                 deferSetData: true,
                 snapshotOmitKeys: directPropsDerivedKeys,
+                attached: true,
               })
             }
             catch (error) {
@@ -430,6 +434,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     methods: {
       ...pageMethodBridges,
       ...finalMethods,
+      [WEVU_NATIVE_SLOT_PARENT_METHOD]: receiveNativeSlotParent,
       [WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD]: function resolvePublicInstance(this: InternalRuntimeState) {
         const result = mountMissingRuntime(this)
         if (result.mounted) {
@@ -454,6 +459,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
       refreshRuntimeInstance(instance, runtimeApp, watch, setup, {
         snapshotOmitKeys: directPropsDerivedKeys,
         stateSnapshot,
+        attached: !pendingAttachment.has(instance),
       })
       syncWevuPropsFromInstance(instance)
       attachPageLayoutSetter(instance)

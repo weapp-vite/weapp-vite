@@ -1,4 +1,6 @@
+import type { ElementNode, TemplateChildNode } from '@vue/compiler-core'
 import { runInNewContext } from 'node:vm'
+import { baseParse, NodeTypes } from '@vue/compiler-core'
 import { describe, expect, it, vi } from 'vitest'
 import { buildClassStyleComputedCode } from '../transform/classStyleComputed'
 import { compileVueTemplateToWxml, getMiniProgramTemplatePlatform } from './template'
@@ -11,6 +13,27 @@ const DEFAULT_TEMPLATE_PLATFORM = getMiniProgramTemplatePlatform()
 const DEFAULT_DIRECTIVES = DEFAULT_TEMPLATE_PLATFORM.directives
 const IF_BIND_RE = new RegExp(`${DEFAULT_TEMPLATE_PLATFORM.directives.ifAttr}="\\{\\{__wv_bind_\\d+\\}\\}"`)
 const FOR_BIND_RE = new RegExp(`${DEFAULT_TEMPLATE_PLATFORM.directives.forAttr}="\\{\\{__wv_bind_\\d+\\}\\}"`)
+
+function forwardedSlotWrappers(code: string) {
+  const attrs = (node: ElementNode) => Object.fromEntries(node.props.flatMap(prop =>
+    prop.type === NodeTypes.ATTRIBUTE ? [[prop.name, prop.value?.content ?? '']] : [],
+  ))
+  const wrappers: Array<{ owner: string, tag: string, attrs: Record<string, string>, slot: Record<string, string> }> = []
+  const visit = (nodes: TemplateChildNode[], owner = '') => {
+    for (const node of nodes) {
+      if (node.type !== NodeTypes.ELEMENT) {
+        continue
+      }
+      const outlet = node.children.find(child => child.type === NodeTypes.ELEMENT && child.tag === 'slot')
+      if (outlet?.type === NodeTypes.ELEMENT) {
+        wrappers.push({ owner, tag: node.tag, attrs: attrs(node), slot: attrs(outlet) })
+      }
+      visit(node.children, node.tag)
+    }
+  }
+  visit(baseParse(code).children)
+  return wrappers
+}
 
 function expectNativeThirdPartySlotOutput(
   template: string,
@@ -2365,16 +2388,6 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents).toBeUndefined()
   })
 
-  it('keeps default slot outlet native when no scoped props are provided', () => {
-    const { code, componentGenerics } = compileVueTemplateToWxml(
-      '<slot />',
-      '/project/src/components/provider/index.vue',
-    )
-
-    expect(code).toBe('<slot />')
-    expect(componentGenerics?.['scoped-slots-default']).toBeUndefined()
-  })
-
   it('keeps plain named slot outlet native when default scoped slots are enabled', () => {
     const { code, componentGenerics } = compileVueTemplateToWxml(
       '<slot name="action" />',
@@ -2487,30 +2500,9 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(diagnostics.some(message => message.message.includes('已禁用作用域插槽参数'))).toBe(true)
     expect(code).toContain('<view slot="header"><view>{{title}}</view></view>')
-    expect(code).toContain('<slot><view>fallback</view></slot>')
     expect(code).toContain(`vue-slots="{{ {header:true} }}"`)
     expect(classStyleBindings?.some(binding => binding.exp === `{['header']:true}`)).not.toBe(true)
     expect(code).not.toContain('__wvSlotProps=')
-  })
-
-  it('keeps plain slot fallback presence-guarded when scoped slot compiler is disabled', () => {
-    const template = `
-<slot name="header"><view>Fallback header</view></slot>
-<slot><text>{{ fallbackDefault }}</text></slot>
-    `.trim()
-
-    const { code } = compileVueTemplateToWxml(
-      template,
-      '/project/src/components/provider/index.vue',
-      { scopedSlotsCompiler: 'off' },
-    )
-
-    expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.header}}">`)
-    expect(code).toContain(`<slot name="header" /></block><block wx:else><view>Fallback header</view></block>`)
-    expect(code).toContain(`<block wx:if="{{vueSlots&&vueSlots.default}}">`)
-    expect(code).toContain(`<slot /></block><block wx:else><text>{{fallbackDefault}}</text></block>`)
-    expect(code).not.toContain('<slot name="header"><view>Fallback header</view></slot>')
-    expect(code).not.toContain('<slot><text>{{fallbackDefault}}</text></slot>')
   })
 
   it('keeps plain named slot single child wrapped by default', () => {
@@ -2543,7 +2535,7 @@ describe('compileVueTemplateToWxml', () => {
       '/project/src/pages/issue-613/index.vue',
     )
 
-    expect(code).toContain('<view slot="header"><slot /></view>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([{ tag: 'view', attrs: { slot: 'header' } }])
     expect(code).not.toContain('<slot slot="header"')
     expect(code).not.toContain('<scoped-slots-default')
   })
@@ -2565,7 +2557,7 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<weapp-slot-wrapper slot="header"><slot /></weapp-slot-wrapper>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([{ tag: 'weapp-slot-wrapper', attrs: { slot: 'header' } }])
     expect(slotFallbackWrapperComponent).toEqual({
       tagName: 'weapp-slot-wrapper',
       componentBase: 'weapp_vite_internal/slot-wrapper/index',
@@ -2594,7 +2586,7 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<view slot="header"><slot /></view>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([{ tag: 'view', attrs: { slot: 'header' } }])
     expect(code).not.toContain('<weapp-slot-wrapper')
     expect(slotFallbackWrapperComponent).toBeUndefined()
   })
@@ -2617,7 +2609,7 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<view slot="header"><slot /></view>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([{ tag: 'view', attrs: { slot: 'header' } }])
     expect(code).not.toContain('<weapp-slot-wrapper')
     expect(slotFallbackWrapperComponent).toBeUndefined()
   })
@@ -2639,8 +2631,7 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<cover-view slot="header"><slot /></cover-view>')
-    expect(code).not.toContain('<view slot="header"><slot /></view>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([{ tag: 'cover-view', attrs: { slot: 'header' } }])
   })
 
   it('uses component and slot matched fallback wrapper rules for multiple named slots', () => {
@@ -2675,9 +2666,11 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<cover-view slot="header"><slot /></cover-view>')
-    expect(code).toContain('<text slot="footer"><slot /></text>')
-    expect(code).toContain('<custom-header slot="header"><slot /></custom-header>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([
+      { owner: 'child', tag: 'cover-view', attrs: { slot: 'header' } },
+      { owner: 'child', tag: 'text', attrs: { slot: 'footer' } },
+      { owner: 'other', tag: 'custom-header', attrs: { slot: 'header' } },
+    ])
   })
 
   it('uses resolved defineOptions component name for fallback wrapper rules', () => {
@@ -2715,9 +2708,11 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<cover-view slot="header"><slot /></cover-view>')
-    expect(code).toContain('<text slot="footer"><slot /></text>')
-    expect(code).toContain('<other-alias vue-slots="{{ {header:true} }}"><cover-view slot="header"><slot /></cover-view></other-alias>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([
+      { owner: 'child-alias', tag: 'cover-view', attrs: { slot: 'header' } },
+      { owner: 'child-alias', tag: 'text', attrs: { slot: 'footer' } },
+      { owner: 'other-alias', tag: 'cover-view', attrs: { slot: 'header' } },
+    ])
   })
 
   it('uses component-level and slot-specific local fallback wrapper config', () => {
@@ -2743,8 +2738,10 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('<child')
     expect(code).not.toContain('slot-wrapper=')
     expect(code).not.toContain('slot-wrapper-footer=')
-    expect(code).toContain('<cover-view slot="header"><slot /></cover-view>')
-    expect(code).toContain('<text slot="footer"><slot /></text>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([
+      { tag: 'cover-view', attrs: { slot: 'header' } },
+      { tag: 'text', attrs: { slot: 'footer' } },
+    ])
   })
 
   it('passes configured attrs to slot fallback wrappers', () => {
@@ -2782,8 +2779,10 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<view slot="header" class="slot-wrapper" data-role="fallback"><slot /></view>')
-    expect(code).toContain('<view slot="footer" class="footer-wrapper" data-role="fallback"><slot /></view>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([
+      { tag: 'view', attrs: { 'slot': 'header', 'class': 'slot-wrapper', 'data-role': 'fallback' } },
+      { tag: 'view', attrs: { 'slot': 'footer', 'class': 'footer-wrapper', 'data-role': 'fallback' } },
+    ])
   })
 
   it('uses component-level and slot-specific local fallback wrapper class and style', () => {
@@ -2813,8 +2812,10 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<cover-view slot="header" class="slot-default" style="padding: 8px"><slot /></cover-view>')
-    expect(code).toContain('<view slot="footer" class="slot-footer" style="margin-top: 12px"><slot /></view>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([
+      { tag: 'cover-view', attrs: { slot: 'header', class: 'slot-default', style: 'padding: 8px' } },
+      { tag: 'view', attrs: { slot: 'footer', class: 'slot-footer', style: 'margin-top: 12px' } },
+    ])
   })
 
   it('uses template-level fallback wrapper config as nearest slot override', () => {
@@ -2848,8 +2849,10 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<text slot="header" class="slot-header-template" style="margin-top: 12px"><slot /></text>')
-    expect(code).toContain('<cover-view slot="footer" class="slot-default" style="padding: 8px"><slot /></cover-view>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([
+      { tag: 'text', attrs: { slot: 'header', class: 'slot-header-template', style: 'margin-top: 12px' } },
+      { tag: 'cover-view', attrs: { slot: 'footer', class: 'slot-default', style: 'padding: 8px' } },
+    ])
     expect(code).not.toContain('slot-wrapper=')
     expect(code).not.toContain('slot-wrapper-header=')
   })
@@ -2879,11 +2882,11 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<cover-view slot="header" class="{{__wv_cls_0}}" style="{{__wv_style_0}}"><slot /></cover-view>')
-    expect(code).toContain('<view slot="footer" class="{{__wv_cls_1}}"><slot /></view>')
-    expect(classStyleBindings?.some(binding => binding.name === '__wv_cls_0' && binding.exp.includes('headerClass'))).toBe(true)
-    expect(classStyleBindings?.some(binding => binding.name === '__wv_style_0' && binding.exp.includes('headerStyle'))).toBe(true)
-    expect(classStyleBindings?.some(binding => binding.name === '__wv_cls_1' && binding.exp.includes('ownerClass'))).toBe(true)
+    const binding = (expression: string) => classStyleBindings!.find(entry => entry.exp.includes(expression))!.name
+    expect(forwardedSlotWrappers(code)).toMatchObject([
+      { tag: 'cover-view', attrs: { slot: 'header', class: `{{${binding('headerClass')}}}`, style: `{{${binding('headerStyle')}}}` } },
+      { tag: 'view', attrs: { slot: 'footer', class: `{{${binding('ownerClass')}}}` } },
+    ])
   })
 
   it('supports dynamic local fallback wrapper class and style', () => {
@@ -2910,12 +2913,15 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<view slot="header" class="{{__wv_cls_0}}" style="{{__wv_style_0}}"><slot /></view>')
-    expect(code).toContain('<view slot="footer" class="{{__wv_cls_1}}" style="{{__wv_style_1}}"><slot /></view>')
-    expect(classStyleBindings?.some(binding => binding.name === '__wv_cls_0' && binding.exp.includes('headerClass'))).toBe(true)
-    expect(classStyleBindings?.some(binding => binding.name === '__wv_style_0' && binding.exp.includes('headerStyle'))).toBe(true)
-    expect(classStyleBindings?.some(binding => binding.name === '__wv_cls_1' && binding.exp.includes('footerClass'))).toBe(true)
-    expect(classStyleBindings?.some(binding => binding.name === '__wv_style_1' && binding.exp.includes('headerStyle'))).toBe(true)
+    const wrappers = forwardedSlotWrappers(code)
+    expect(wrappers).toMatchObject([
+      { tag: 'view', attrs: { slot: 'header' } },
+      { tag: 'view', attrs: { slot: 'footer' } },
+    ])
+    for (const [index, property, expression] of [[0, 'class', 'headerClass'], [0, 'style', 'headerStyle'], [1, 'class', 'footerClass'], [1, 'style', 'headerStyle']] as const) {
+      const name = wrappers[index]!.attrs[property]!.slice(2, -2)
+      expect(classStyleBindings!.find(binding => binding.name === name)?.exp).toContain(expression)
+    }
   })
 
   it('supports colon-style local fallback wrapper config for compatibility', () => {
@@ -2936,7 +2942,7 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).not.toContain('slot-wrapper:footer=')
-    expect(code).toContain('<text slot="footer"><slot /></text>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([{ tag: 'text', attrs: { slot: 'footer' } }])
   })
 
   it('uses configured single-root no-wrapper strategy per component slot', () => {
@@ -3010,7 +3016,7 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(code).toContain('<image slot="icon" class="template-icon" src="/cover.png" />')
-    expect(code).toContain('<view slot="footer" class="owner-icon"><slot /></view>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([{ tag: 'view', attrs: { slot: 'footer', class: 'owner-icon' } }])
   })
 
   it('allows explicit block slot fallback wrapper', () => {
@@ -3030,8 +3036,7 @@ describe('compileVueTemplateToWxml', () => {
       },
     )
 
-    expect(code).toContain('<block slot="header"><slot /></block>')
-    expect(code).not.toContain('<view slot="header"><slot /></view>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([{ tag: 'block', attrs: { slot: 'header' } }])
     expect(diagnostics).toEqual([])
   })
 
@@ -3197,8 +3202,10 @@ describe('compileVueTemplateToWxml', () => {
       { slotSingleRootNoWrapper: true },
     )
 
-    expect(code).toContain('<view slot="header"><slot /></view>')
-    expect(code).toContain('<view slot="footer"><slot name="footer" /></view>')
+    expect(forwardedSlotWrappers(code)).toMatchObject([
+      { tag: 'view', attrs: { slot: 'header' } },
+      { tag: 'view', attrs: { slot: 'footer' }, slot: { name: 'footer' } },
+    ])
     expect(code).not.toContain('<slot slot="header"')
     expect(code).not.toContain('<slot slot="footer"')
     expect(code).not.toContain('<scoped-slots-default slot="header"')

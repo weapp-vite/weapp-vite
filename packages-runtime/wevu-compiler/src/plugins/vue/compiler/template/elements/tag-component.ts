@@ -169,7 +169,8 @@ function shouldAugmentPlainSlot(
     return context.scopedSlotsCompiler === 'augmented'
       ? hasMiniProgramComponentSlotDescendant(decl.children, context)
       || hasExplicitWevuComponentSlotDescendant(decl.children, context)
-      : hasScopedSlotPropsSibling && hasDirectComponentSlotChild(decl.children, context)
+      : hasExplicitWevuComponentSlotDescendant(decl.children, context)
+        || (hasScopedSlotPropsSibling && hasDirectComponentSlotChild(decl.children, context))
   }
   if (context.scopedSlotsCompiler === 'augmented') {
     if (!decl.implicitDefault) {
@@ -182,7 +183,9 @@ function shouldAugmentPlainSlot(
   if (!isWevuComponentTag(ownerNode, context)) {
     return false
   }
-  return hasScopedSlotPropsSibling || hasDirectWevuComponentSlotChild(decl.children, context)
+  return hasScopedSlotPropsSibling
+    || hasDirectWevuComponentSlotChild(decl.children, context)
+    || hasExplicitWevuComponentSlotDescendant(decl.children, context)
 }
 
 function resolveTemplateSlotCondition(node: ElementNode, context: TransformContext): {

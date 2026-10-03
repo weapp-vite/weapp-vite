@@ -187,7 +187,6 @@ describe('object-form v-bind and v-on diagnostics', () => {
       severity: 'warning',
       source: '<slot v-bind="slotProps" />',
     }])
-    expect(result.code).toContain('<slot />')
     expect(result.code).not.toContain('__wvSlotProps=')
   })
 

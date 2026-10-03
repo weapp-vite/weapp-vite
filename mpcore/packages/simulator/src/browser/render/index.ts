@@ -8,7 +8,7 @@ import { flushComponentAttachments, flushComponentReady, hasPendingComponentAtta
 import { flushDiscardedComponentReady, scheduleDiscardedComponentReady } from '../../runtime/componentInstance/discardedReady'
 import { syncComponentRelations } from '../../runtime/componentInstance/relations'
 import { isPageBeforeReady } from '../../runtime/pageLifecycle'
-import { mergeComponentEventRoot, registerComponentEventNode } from '../../view/componentEvent'
+import { bindComponentEventHost, mergeComponentEventRoot, registerComponentEventNode } from '../../view/componentEvent'
 import { selectConditionalChildren } from '../../view/conditionalChildren'
 import { customTabBarHostScope, customTabBarScopeId, hasCustomTabBar } from '../../view/customTabBar'
 import { resolveLoopEntries } from '../../view/loopEntries'
@@ -225,6 +225,7 @@ function renderNodeTree(
     const slotName = clonedNode.attribs?.name?.trim() || 'default'
     const projected = scope.slots?.get(slotName) ?? []
     const fallbackChildren = clonedNode.children ?? []
+    bindComponentEventHost(clonedNode)
     clonedNode.name = 'block'
     clonedNode.attribs = {
       'data-sim-scope': scope.getScopeId(),
