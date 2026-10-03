@@ -1,36 +1,11 @@
 import type { CreateTestProjectOptions, MiniProgramTestProject } from '@mpcore/test'
-import fs from 'node:fs/promises'
+import type { BuildTestArtifactOptions, WatchTestArtifactOptions, WeappViteTestArtifact, WeappViteTestArtifactWatcher } from 'weapp-vite/test'
 import path from 'node:path'
 import process from 'node:process'
 import { createTestProject } from '@mpcore/test'
-import { buildTestArtifact, watchTestArtifact } from 'weapp-vite/test'
+import { buildTestArtifact, isTestArtifactCurrent, watchTestArtifact } from 'weapp-vite/test'
 
-export interface BuildTestArtifactOptions {
-  configFile?: string
-  cwd?: string
-  mode?: string
-  outDir?: string
-  projectConfigPath?: string
-  skipNpm?: boolean
-}
-
-export interface WeappViteTestArtifact {
-  appConfigPath: string
-  miniprogramRootPath: string
-  projectPath: string
-  sourceRootPath: string
-}
-
-export interface WatchTestArtifactOptions extends BuildTestArtifactOptions {
-  onError?: (error: unknown) => void
-  onRebuilt?: (artifact: WeappViteTestArtifact) => void | Promise<void>
-}
-
-export interface WeappViteTestArtifactWatcher {
-  artifact: WeappViteTestArtifact
-  close: () => Promise<void>
-  rebuild: () => Promise<WeappViteTestArtifact>
-}
+export type { BuildTestArtifactOptions, WatchTestArtifactOptions, WeappViteTestArtifact, WeappViteTestArtifactWatcher } from 'weapp-vite/test'
 
 export interface CreateWeappViteTestProjectOptions extends BuildTestArtifactOptions {
   test?: Omit<CreateTestProjectOptions, 'artifact'>
@@ -39,24 +14,15 @@ export interface CreateWeappViteTestProjectOptions extends BuildTestArtifactOpti
 const artifactCache = new Map<string, Promise<WeappViteTestArtifact>>()
 
 function cacheKey(options: BuildTestArtifactOptions) {
+  const cwd = path.resolve(options.cwd ?? process.cwd())
   return JSON.stringify({
-    configFile: options.configFile,
-    cwd: path.resolve(options.cwd ?? process.cwd()),
+    configFile: options.configFile && path.resolve(cwd, options.configFile),
+    cwd,
     mode: options.mode ?? 'test',
-    outDir: options.outDir,
-    projectConfigPath: options.projectConfigPath,
-    skipNpm: options.skipNpm,
+    outDir: options.outDir && path.resolve(cwd, options.outDir),
+    projectConfigPath: options.projectConfigPath && path.resolve(cwd, options.projectConfigPath),
+    skipNpm: options.skipNpm ?? false,
   })
-}
-
-async function artifactExists(artifact: WeappViteTestArtifact) {
-  try {
-    await fs.access(artifact.appConfigPath)
-    return true
-  }
-  catch {
-    return false
-  }
 }
 
 export async function buildWeappViteTestArtifact(
@@ -64,20 +30,23 @@ export async function buildWeappViteTestArtifact(
 ): Promise<WeappViteTestArtifact> {
   const key = cacheKey(options)
   const cached = artifactCache.get(key)
-  if (cached) {
-    const artifact = await cached
-    if (await artifactExists(artifact)) {
-      return artifact
+  const pending = (async () => {
+    if (cached) {
+      const artifact = await cached.catch(() => undefined)
+      if (artifact && await isTestArtifactCurrent(artifact)) {
+        return artifact
+      }
     }
-    artifactCache.delete(key)
-  }
-  const pending = buildTestArtifact(options)
+    return await buildTestArtifact(options)
+  })()
   artifactCache.set(key, pending)
   try {
     return await pending
   }
   catch (error) {
-    artifactCache.delete(key)
+    if (artifactCache.get(key) === pending) {
+      artifactCache.delete(key)
+    }
     throw error
   }
 }
@@ -105,11 +74,13 @@ export async function watchWeappViteTestArtifact(
   options: WatchTestArtifactOptions = {},
 ): Promise<WeappViteTestArtifactWatcher> {
   clearWeappViteTestArtifactCache(options)
-  return await watchTestArtifact({
+  const watcher = await watchTestArtifact({
     ...options,
     async onRebuilt(artifact) {
       artifactCache.set(cacheKey(options), Promise.resolve(artifact))
       await options.onRebuilt?.(artifact)
     },
   })
+  artifactCache.set(cacheKey(options), Promise.resolve(watcher.artifact))
+  return watcher
 }
