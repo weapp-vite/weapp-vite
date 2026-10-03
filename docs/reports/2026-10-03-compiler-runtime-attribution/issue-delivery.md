@@ -160,6 +160,16 @@ Windows Node 22 的另一处失败发生在进程内存采样阶段：PowerShell
 
 旧候选 Windows 自动组件 HMR 分片已完成原始与唯一确认轮，各 20 对且没有执行错误：32 项中 8 项首次编辑通过（改善 13.50%–26.70%），22 项确认回退（5.23%–32.09%），另 2 项不稳定。回退集中于恢复和重复轮次，手动组件模式同样出现；自动相对手动的增量成本未超预算。因此当前证据支持 warm HMR 总成本退步，不能把回退直接归咎自动导入机制。该分片没有阶段 profile，进一步归因需要新的精确候选诊断。
 
+`2812f021b5b44ef7efe7589faa8c4ad4a2fbf7cf` 的全量 Ubuntu Node 22 与 24 CI 已通过；Node 22 日志包含 1,449 个通过文件、13,266 项通过测试，真实嵌套 Vitest host 的 3 项隔离回归通过。macOS Node 22 也已通过；Windows 和 macOS Node 24 尚在执行，不能据此推广为全矩阵完成。
+
+`ce661a005aede6a8536b50446384338db2d490a3` 将内置别名解析限定到一次配置加载周期：构造时不做多余查找，加载与合并复用同一结果，重新加载、显式替换 options 或切换解析键后重新查找；同一 compiler context 的配置和 npm 服务共享 Oxc 支持。真实临时项目覆盖依赖从缺失到安装、删除、切换工程及自定义 alias 优先级。88 项定向测试、类型、类型契约、lint 与构建通过。配置服务与 miniprogram 合并文件超过 300 行，但本次保留既有编排边界，仅注入解析所有者；新缓存状态独立到 21 行的 `packageResolution.ts`，没有夹带无关拆分。
+
+上述干净候选与 `2812f` 的三个 SFC 场景各 4 次更新逐步比较，12 条 raw 完整，phase、mode、boundary、status、correlation 和文件变化（包括 changedBytes）一致。style/JSON 边界为 `output-published`，template 为 `delivery-acknowledged`。CPU 中重复构造及合并解析栈消失：每 4 次更新的 safe package lookup inclusive 采样合计，style 为 179.501→82.791 ms，template 为 174.709→79.751 ms。原 JSON profile 的时钟误差 ±3.0205 ms 超过既定 3 ms 限制，保留为不可归因；唯一一次补采的误差 ±0.386708 ms，4 条 raw 全部有效、输出一致，lookup 为 183.543→76.249 ms，并保留其中 553.342 ms 的慢恢复样本。以上是包含等待、且不包含 native 线程的局部采样，总 wall 没有一致改善，不能当作正式性能门禁通过。
+
+`79024df8d2f1b996ff3c15399423a956568d3c75` 的 Release 已通过，CLI 时钟回归已完成远端复验。该提交的定向 lifecycle 六组均已结束。Ubuntu/macOS 的 Node 22/24 四组通过，rapid-save 六组均通过；Windows Node 22 仍在 classic 首轮进程采样超过 10 秒，说明仅投影 CIM 字段不足。Windows Node 24 的一次 incremental 失败被 `finally` 中的报告断言覆盖，无法恢复原始 worker 异常。driver 现在将观察错误、诊断及报告错误按顺序保留为聚合错误；报告独自失败仍然失败并停止后续步骤。相关 19 项测试、lint 和类型检查通过，没有弱化原始断言。
+
+Windows 采样进一步改用 Toolhelp32Snapshot 一次枚举 PID/父 PID，再仅对登记根进程及全部后代读取新的 .NET Process.WorkingSet64 字节值；不读取无关进程的内存，不设固定进程数或树深度上限，查询句柄按所有权释放，仍保留原 10 秒期限且不重试。PowerShell 固定脚本与校验后的 PID 通过 UTF-16LE 编码传参，避免终端编码与路径空格影响调用。新增真实 Windows 父/子/孙进程与工作集字节断言；本地 12 项辅助回归及类型检查通过，Windows 原生集成尚待新 CI 执行，不能提前宣称冷采样超时已经消除。
+
 ## Stable IDE 环境记录
 
 2026-10-03 05:20 UTC 核对官方渠道数据，最新 Stable 为 `2.02.2608080`，发布日期 2026-09-30。两份该版本安装均尝试了原生 Computer Use 启动，未得到可用宿主；CLI 登录查询超时或缺失该安装的 CLI 端口文件。已运行的 `2.02.2609231` 属于 RC 和其他项目，未关闭或用它替代 Stable。

@@ -42,6 +42,7 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(commands).toHaveLength(2)
     expect(commands[0]).toContain('snapshotBuild.integration.test.ts')
     expect(commands[0]).toContain('processTree.test.ts')
+    expect(commands[0]).toContain('processTree.windows.integration.test.ts')
     expect(commands[1]).toContain('-c e2e/vitest.e2e.ci.config.ts e2e/ci/edit-sequence.test.ts')
     expect(commands[1]).toContain('--outputFile=.tmp/hmr-lifecycle-report.json')
     expect(job.with?.artifact_path).toBe('.tmp/hmr-lifecycle-report.json')

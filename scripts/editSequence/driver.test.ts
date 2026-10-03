@@ -17,6 +17,47 @@ it('retains the failing stage without inventing zero timing for unobserved work'
   expect(close).toHaveBeenCalledOnce()
 })
 
+it('retains the observation cause and diagnostics when step reporting also fails', async () => {
+  const primary = new Error('worker stopped before measurement')
+  const reportFailure = new Error('measurement missing')
+  const close = vi.fn(async () => {})
+  const fresh = vi.fn(async () => ({}))
+  const result = verifyEditSequence({ name: 'reporting-failure', files: {}, steps: [] }, {
+    name: 'worker',
+    incremental: async () => { throw primary },
+    diagnostics: () => ({ phase: 'source-read' }),
+    fresh,
+    close,
+  }, { onStep: () => { throw reportFailure } })
+
+  await expect(result).rejects.toMatchObject({
+    errors: [expect.objectContaining({
+      message: expect.stringContaining('"phase": "source-read"'),
+      cause: primary,
+    }), reportFailure],
+  })
+  expect(fresh).not.toHaveBeenCalled()
+  expect(close).toHaveBeenCalledOnce()
+})
+
+it('fails and closes the observer when only step reporting fails', async () => {
+  const reportFailure = new Error('measurement missing')
+  const close = vi.fn(async () => {})
+  const incremental = vi.fn(async () => ({}))
+  const result = verifyEditSequence({ name: 'reporting-failure', files: {}, steps: [
+    { name: 'next save', action: { kind: 'write', file: 'value.js', content: 'changed' } },
+  ] }, {
+    name: 'worker',
+    incremental,
+    fresh: async () => ({}),
+    close,
+  }, { onStep: () => { throw reportFailure } })
+
+  await expect(result).rejects.toBe(reportFailure)
+  expect(incremental).toHaveBeenCalledOnce()
+  expect(close).toHaveBeenCalledOnce()
+})
+
 it('compares profile on/off evidence without erasing array order or runtime values', () => {
   expect(hashSequenceObservation({ files: { b: 2, a: 1 }, pages: ['a', 'b'] })).toBe(hashSequenceObservation({ pages: ['a', 'b'], files: { a: 1, b: 2 } }))
   expect(hashSequenceObservation({ pages: ['a', 'b'] })).not.toBe(hashSequenceObservation({ pages: ['b', 'a'] }))

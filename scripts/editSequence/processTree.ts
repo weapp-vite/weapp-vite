@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer'
+import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 import { exec } from 'tinyexec'
 
@@ -43,12 +45,17 @@ export function summarizeProcessTree(rows: ProcessMemory[], rootPid: number) {
 }
 
 export async function observeProcessTree(rootPid: number) {
+  if (!Number.isSafeInteger(rootPid) || rootPid <= 0 || rootPid > 0xFFFFFFFF) {
+    throw new Error('Invalid process-tree root PID')
+  }
   const started = performance.now()
   const windows = process.platform === 'win32'
   try {
-    // 在 CIM 查询阶段就投影所需字段，避免先读取所有进程的完整属性再丢弃。
+    const script = windows ? await readFile(new URL('./windowsProcessTree.ps1', import.meta.url), 'utf8') : undefined
+    // 编码整个固定脚本与已校验的 PID，避免路径空格、引号或终端编码参与命令解析。
+    const encoded = script ? Buffer.from(`& {\n${script}\n} -RootProcessId ${rootPid}`, 'utf16le').toString('base64') : undefined
     const result = await exec(windows ? 'powershell.exe' : 'ps', windows
-      ? ['-NoProfile', '-NonInteractive', '-Command', 'Get-CimInstance -Query "SELECT ProcessId, ParentProcessId, WorkingSetSize FROM Win32_Process" | Select-Object ProcessId,ParentProcessId,WorkingSetSize | ConvertTo-Json -Compress']
+      ? ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded!]
       : ['-axo', 'pid=,ppid=,rss='], { timeout: 10_000, throwOnError: true })
     return { ...summarizeProcessTree(parseProcessMemory(result.stdout, process.platform), rootPid), observationMs: performance.now() - started }
   }
