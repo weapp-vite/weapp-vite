@@ -2,6 +2,7 @@ import type { SequenceStepResult } from '../../scripts/editSequence/measurement'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { BuildSequenceSession } from '../../scripts/editSequence/build'
+import { assertSuccessfulSequenceBuild } from '../../scripts/editSequence/buildObservation'
 import { verifyEditSequence } from '../../scripts/editSequence/driver'
 import { createProcessObserver } from '../../scripts/editSequence/processObserver'
 import { createSequenceProject } from '../../scripts/editSequence/project'
@@ -38,6 +39,9 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
             ...observer,
             incremental: async (input) => {
               const snapshot = await observer.incremental(input)
+              if (input.step === 0) {
+                assertSuccessfulSequenceBuild(snapshot)
+              }
               if (input.files['sequence.config.json'] && snapshot.diagnostics.length === 0) {
                 expect(snapshot.published?.semantics.configured).toBe('configured')
               }
@@ -64,7 +68,14 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
       const observer = createProcessObserver<BuildSnapshot>(engine, project.root, { resources: true })
       const steps: SequenceStepResult[] = []
       try {
-        await verifyEditSequence(createResourceSequence(), observer, { timeoutMs: 90_000, onStep: step => steps.push(step) })
+        await verifyEditSequence(createResourceSequence(), {
+          ...observer,
+          incremental: async (input) => {
+            const snapshot = await observer.incremental(input)
+            assertSuccessfulSequenceBuild(snapshot)
+            return snapshot
+          },
+        }, { timeoutMs: 90_000, onStep: step => steps.push(step) })
         expect(steps).toHaveLength(15)
         expect(steps.every(step => step.status === 'passed')).toBe(true)
         for (const step of steps) {
@@ -102,7 +113,11 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
           diagnostics: () => session.diagnostics(),
           incremental: async (input) => {
             if (input.step === 0) {
-              return session.observe(input, { fileTimestamp })
+              const snapshot = await session.observe(input, { fileTimestamp })
+              // 两侧同样失败也可能结构相等；此场景必须先有可执行的成功首构。
+              assertSuccessfulSequenceBuild(snapshot)
+              expect(snapshot.published?.semantics).toMatchObject({ value: 'one' })
+              return snapshot
             }
             const observed: unknown[] = []
             const snapshot = await session.observe(input, {
