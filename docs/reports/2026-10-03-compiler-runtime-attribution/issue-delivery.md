@@ -625,4 +625,8 @@ Vite+ React 的第三轮独立复核通过，前两次有外部 E2E 重叠的观
 
 `vite-plus/worker` 随后通过两 provider 各 1 用例、3 检查点与独立审计，正式矩阵达到 9/29。启动阶段一次 simulator boot 失败经现有流程恢复，保留全部诊断；业务运行时告警、错误、异常为零。冻结归档与安装文件一致、干净 harness 前后不变、无外部 E2E 重叠；60 个登记子进程与两个项目端点全部清理。详见 [Vite+ worker 验收](issue-1097-vite-plus-worker-consumer-acceptance.json)。前述 Vite 行仍保持 [功能通过但串行验收失败](issue-1097-vite-worker-consumer-observation.json)，未以其他入口结果替代。
 
+`wv/plugin` 的独立审计使冻结 `c3c643d40` 矩阵达到 10/29。两 provider 各完成选中的 2 用例、3 检查点；ES6 enabled 组的两个 filtered skip 不属于所选集合。原控制器因汇总 skip 计数拒绝该行，拒绝结果和缺失的运行结束归档快照均保留；独立审计时重新核对全部归档、安装文件和清理结果，明确该时点差异。实际 SDK 探针产生一条废弃 API 警告，错误与异常为零。详见 [插件行审计](issue-1097-wv-plugin-consumer-acceptance.json)。随后 `wv/lib` 和 `vite/plugin` 均功能通过但与外部 Playwright 执行重叠，不计入正式验收。
+
+这些消费记录只覆盖各自记录的编译器和测试提交。`c3c643d40` 之后，主线已修改 App 可执行入口、Vue 失效、路由 watcher、profile 输出过滤及 IDE 会话归属，不能把旧矩阵写成新主线完整通过。后续消费验证为新干净提交重新构建并冻结独立归档，优先验证三入口 stateful、classic 和两个宿主的 build watch，再完成其余目标；旧归档与结果保持原身份，不替换、重命名或回填。
+
 Issue #1137 的独立原生 AppService 探针观察到 Memory 面板数值及 `performance.memory` 字段，但未取得带 target/isolate 身份的 `Runtime.getHeapUsage` 原始响应。两种读数不作替换、不回填历史样本；临时启用 Protocol Monitor 的请求仍待授权，探针项目已关闭。详见 [能力边界](issue-1137-native-memory-capability.md)。
