@@ -33,6 +33,7 @@ describe('e2e suite manifest', () => {
 
   it.each([
     'ide/script-setup-external-src.runtime.test.ts',
+    'ide/issue-1058-template-tags.runtime.test.ts',
     'ide/issue-1065-provider.runtime.test.ts',
     'ide/vite-plugin.runtime.test.ts',
     'ide/vite-plugin-npm.runtime.test.ts',

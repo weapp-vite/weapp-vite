@@ -110,6 +110,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-997-rebuild.runtime.test.ts',
   'ide/issue-998-tailwind.runtime.test.ts',
   'ide/issue-1081-tailwind-batch.runtime.test.ts',
+  'ide/issue-1058-template-tags.runtime.test.ts',
   'ide/issue-1065-provider.runtime.test.ts',
   'ide/issue-1081-transaction.runtime.test.ts',
   'ide/issue-1082-confirmation.runtime.test.ts',
@@ -257,6 +258,7 @@ const IDE_GATE_TESTS = [
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/script-setup-external-src.runtime.test.ts',
+  'ide/issue-1058-template-tags.runtime.test.ts',
   'ide/issue-1065-provider.runtime.test.ts',
   'ide/github-issues.runtime.issue1138.test.ts',
   'ide/vite-plugin.runtime.test.ts',

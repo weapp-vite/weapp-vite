@@ -65,7 +65,7 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'runtime-publication\'')
     expect(job.strategy?.matrix).toEqual({ 'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'], 'node-version': [22, 24] })
     const commands = String(job.with?.main_command)
-    for (const file of ['scripts/utils/atomicRename.test.ts', 'scripts/editSequence/buildSources.test.ts', 'scripts/editSequence/frameworkSources.test.ts', 'devBuildCompletion.test.ts', 'hmrOutputDiagnostics.test.ts', 'statefulArtifactMeasurement.deadline.test.ts', 'auto-import-vue-sfc.test.ts', 'external-linked-vue-component.hmr.test.ts', 'issue-1134-native-topology.runtime.test.ts', 'script-setup-external-src.runtime.test.ts', 'issue-1015-css-hmr.runtime.test.ts', 'issue-1140-mode-cache.runtime.test.ts']) {
+    for (const file of ['scripts/utils/atomicRename.test.ts', 'scripts/editSequence/buildSources.test.ts', 'scripts/editSequence/frameworkSources.test.ts', 'devBuildCompletion.test.ts', 'hmrOutputDiagnostics.test.ts', 'statefulArtifactMeasurement.deadline.test.ts', 'auto-import-vue-sfc.test.ts', 'external-linked-vue-component.hmr.test.ts', 'issue-1134-native-topology.runtime.test.ts', 'script-setup-external-src.runtime.test.ts', 'issue-1015-css-hmr.runtime.test.ts', 'issue-1140-mode-cache.runtime.test.ts', 'issue-1058-template-tags.runtime.test.ts']) {
       expect(commands).toContain(file)
     }
     expect(commands).toContain('WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1')
