@@ -86,12 +86,12 @@ watch(
     <article
       v-for="item in orderedItems"
       :key="item.id"
-      class="relative grid min-h-0 min-w-0 max-w-full rounded-lg border border-dashed border-transparent pt-2 transition"
-      :class="[item.className, draggingId === item.id ? 'border-(--dashboard-accent) opacity-70' : '']"
+      class="relative grid min-h-0 min-w-0 max-w-full rounded-lg border border-dashed border-transparent transition"
+      :class="[item.className, orderedItems.length > 1 ? 'pt-2' : '', draggingId === item.id ? 'border-(--dashboard-accent) opacity-70' : '']"
       @dragover.prevent
       @drop="handleDrop(item)"
     >
-      <div class="absolute inset-x-0 top-0 z-10 flex -translate-y-1/2 items-center justify-center gap-2 px-2">
+      <div v-if="orderedItems.length > 1" class="absolute inset-x-0 top-0 z-10 flex -translate-y-1/2 items-center justify-center gap-2 px-2">
         <button
           class="inline-flex h-7 w-7 shrink-0 cursor-grab items-center justify-center rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-strong) text-(--dashboard-text-soft) shadow-(--dashboard-shadow) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
           draggable="true"

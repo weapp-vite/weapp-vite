@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AnalyzeActionCenterItem } from '../types'
+import { computed } from 'vue'
 import { useActionCenterPanel } from '../composables/useActionCenterPanel'
 import { surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
@@ -33,10 +34,16 @@ const {
   kindFilterOptions,
   toneFilterOptions,
 } = useActionCenterPanel(props)
+
+const advancedFilterSummary = computed(() => [
+  actionToneFilter.value !== 'all' ? getToneLabel(actionToneFilter.value) : '',
+  actionKindFilter.value !== 'all' ? getKindLabel(actionKindFilter.value) : '',
+  actionSortMode.value !== 'priority' ? actionSortOptions.find(option => option.value === actionSortMode.value)?.label : '',
+].filter(Boolean).join(' · '))
 </script>
 
 <template>
-  <section :class="surfaceStyles({ padding: 'md' })" class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_auto_minmax(0,1fr)] xl:overflow-hidden">
+  <section :class="surfaceStyles({ padding: 'md' })" class="grid min-h-0 min-w-0 content-start gap-3">
     <AppPanelHeader icon-name="metric-health" title="问题中心">
       <template #meta>
         <button
@@ -47,12 +54,12 @@ const {
           <span class="h-3.5 w-3.5">
             <DashboardIcon name="metric-copy" />
           </span>
-          复制 PR
+          复制 PR 报告
         </button>
       </template>
     </AppPanelHeader>
 
-    <div class="mt-3 grid gap-2">
+    <div class="grid gap-2">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <p class="text-xs text-(--dashboard-text-soft)">
           匹配 {{ filteredActions.length }} / {{ actions.length }} 个处理项
@@ -62,41 +69,49 @@ const {
           class="h-9 w-full rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text) outline-none transition placeholder:text-(--dashboard-text-soft) focus:border-(--dashboard-accent) md:w-64"
           placeholder="搜索问题、建议或目标页"
           type="search"
+          aria-label="搜索问题与建议"
         >
       </div>
-      <div class="grid gap-2 md:grid-cols-3">
-        <AppSelect
-          v-model="actionToneFilter"
-          label="按严重度筛选"
-          :options="toneFilterOptions"
-        />
-        <AppSelect
-          v-model="actionKindFilter"
-          label="按问题类型筛选"
-          :options="kindFilterOptions"
-        />
-        <AppSelect
-          v-model="actionSortMode"
-          label="排序处理项"
-          :options="actionSortOptions"
-        />
-      </div>
+      <details class="group" :open="Boolean(advancedFilterSummary)">
+        <summary class="flex min-h-11 cursor-pointer list-none flex-wrap items-center gap-2 rounded-md px-1 text-sm text-(--dashboard-text-muted) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent)">
+          <span class="iconify mdi--chevron-right size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
+          筛选与排序
+          <span v-if="advancedFilterSummary" class="text-(--dashboard-accent)">{{ advancedFilterSummary }}</span>
+        </summary>
+        <div class="grid gap-2 pb-2 md:grid-cols-3">
+          <AppSelect
+            v-model="actionToneFilter"
+            label="按严重度筛选"
+            :options="toneFilterOptions"
+          />
+          <AppSelect
+            v-model="actionKindFilter"
+            label="按问题类型筛选"
+            :options="kindFilterOptions"
+          />
+          <AppSelect
+            v-model="actionSortMode"
+            label="排序处理项"
+            :options="actionSortOptions"
+          />
+        </div>
+      </details>
     </div>
 
-    <div class="mt-3 max-h-[36rem] min-h-0 overflow-y-auto xl:max-h-none xl:overflow-hidden">
+    <div class="min-h-0 min-w-0">
       <AppEmptyState v-if="filteredActions.length === 0" compact>
         暂无匹配当前筛选条件的事项。
       </AppEmptyState>
 
-      <ol v-else class="grid h-full min-h-0 content-start gap-2 overflow-y-auto pr-1">
+      <ol v-else class="divide-y divide-(--dashboard-border)">
         <li
           v-for="item in filteredActions"
           :key="item.key"
-          class="list-none"
+          class="list-none py-2"
         >
           <article
-            class="rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2.5 transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
-            :class="activeKey === item.key ? 'border-(--dashboard-accent) bg-(--dashboard-accent-soft)' : undefined"
+            class="rounded-md px-2 py-2 transition hover:bg-(--dashboard-panel-muted)"
+            :class="activeKey === item.key ? 'bg-(--dashboard-accent-soft)' : undefined"
           >
             <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
               <button
@@ -112,10 +127,10 @@ const {
                     {{ getKindLabel(item.kind) }}
                   </span>
                 </div>
-                <p class="mt-2 line-clamp-2 break-words text-sm font-medium leading-5 text-(--dashboard-text)">
+                <p class="mt-2 text-sm font-medium leading-6 text-(--dashboard-text) [overflow-wrap:anywhere]">
                   {{ item.title }}
                 </p>
-                <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-(--dashboard-text-soft)">
+                <p class="mt-1 break-words text-sm leading-6 text-(--dashboard-text-muted)">
                   {{ item.meta }}
                 </p>
               </button>
@@ -126,10 +141,10 @@ const {
                 {{ item.value }}
               </span>
             </div>
-            <div class="mt-2 flex items-center justify-end border-t border-(--dashboard-border) pt-2">
+            <div class="mt-2 flex flex-wrap items-center justify-end gap-2">
               <button
                 type="button"
-                class="rounded-full border border-(--dashboard-border) px-2.5 py-1 text-[11px] text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text) disabled:cursor-not-allowed disabled:opacity-55"
+                class="min-h-9 rounded-md border border-(--dashboard-border) px-3 py-1.5 text-sm text-(--dashboard-text-muted) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text) disabled:cursor-not-allowed disabled:opacity-55"
                 :disabled="isQueued(item)"
                 @click="emit('addToQueue', item)"
               >

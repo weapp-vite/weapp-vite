@@ -5,6 +5,7 @@ import DevtoolsMetricStrip from '../features/dashboard/components/DevtoolsMetric
 import DevtoolsPackageList from '../features/dashboard/components/DevtoolsPackageList.vue'
 import DevtoolsRuntimeFeed from '../features/dashboard/components/DevtoolsRuntimeFeed.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
+import { dashboardConnectionLabels } from '../features/dashboard/constants/shell'
 import {
   dashboardConnectionError,
   dashboardConnectionStatus,
@@ -24,24 +25,24 @@ const totalBytes = computed(() =>
 )
 const metricItems = computed(() => [
   {
-    label: 'Session',
-    value: dashboardConnectionStatus.value === 'connected' ? 'Connected' : dashboardConnectionStatus.value,
-    detail: resultRef.value ? 'Analyze payload 已同步' : '等待 Devframe 数据',
+    label: '连接状态',
+    value: dashboardConnectionLabels[dashboardConnectionStatus.value],
+    detail: resultRef.value ? '已收到构建报告' : '尚未收到构建报告',
   },
   {
-    label: 'Output',
-    value: formatBytes(totalBytes.value),
-    detail: `${resultRef.value?.packages.length ?? 0} packages`,
+    label: '产物体积',
+    value: resultRef.value ? formatBytes(totalBytes.value) : '—',
+    detail: resultRef.value ? `${resultRef.value.packages.length} 个包体` : '等待构建报告',
   },
   {
-    label: 'Modules',
-    value: String(resultRef.value?.modules.length ?? 0),
-    detail: `${resultRef.value?.subPackages.length ?? 0} subpackages`,
+    label: '源码模块',
+    value: resultRef.value ? String(resultRef.value.modules.length) : '—',
+    detail: resultRef.value ? `${resultRef.value.subPackages.length} 个分包配置` : '等待构建报告',
   },
   {
-    label: 'Last update',
+    label: '最近同步',
     value: lastUpdatedAt.value,
-    detail: `${updateCount.value} syncs`,
+    detail: `${updateCount.value} 次报告更新`,
   },
 ])
 const packageRows = computed(() =>
@@ -62,6 +63,31 @@ const packageRows = computed(() =>
 const blockingEvents = computed(() =>
   runtimeEvents.value.filter(event => event.level === 'error' || event.level === 'warning').slice(0, 5),
 )
+const sessionNotice = computed(() => {
+  if (!resultRef.value) {
+    return {
+      title: '等待构建报告',
+      description: dashboardConnectionStatus.value === 'connected'
+        ? '连接已建立，收到报告后即可查看构建分析。'
+        : '尚未收到构建报告，暂时无法判断构建情况。',
+    }
+  }
+  if (dashboardConnectionStatus.value !== 'connected') {
+    return {
+      title: '构建报告已保留',
+      description: '当前未连接，显示最近一次收到的报告。',
+    }
+  }
+  return runtimeEvents.value.length
+    ? {
+        title: '暂未收到错误或警告',
+        description: '仅依据已收到的运行事件；构建问题请查看「问题与建议」。',
+      }
+    : {
+        title: '构建报告已收到',
+        description: '尚未收到运行事件，暂时无法判断运行情况。',
+      }
+})
 </script>
 
 <template>
@@ -70,28 +96,26 @@ const blockingEvents = computed(() =>
 
     <div class="grid min-h-0 gap-3 xl:grid-cols-[minmax(0,1.15fr)_minmax(21rem,0.85fr)]">
       <div class="grid min-h-0 gap-3">
-        <DevtoolsPackageList :rows="packageRows" />
-
         <section class="overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel)">
-          <header class="flex min-h-11 min-w-0 items-center justify-between gap-2 border-b border-(--dashboard-border) px-3.5 py-2">
+          <header class="flex min-h-11 min-w-0 flex-wrap items-center justify-between gap-2 border-b border-(--dashboard-border) px-3.5 py-2">
             <div class="min-w-0">
               <h2 class="text-sm font-semibold text-(--dashboard-text)">
-                Diagnostics
+                会话提醒
               </h2>
-              <p class="truncate text-[11px] text-(--dashboard-text-soft)">
-                当前会话的阻塞项和恢复入口
+              <p class="text-[13px] leading-5 text-(--dashboard-text-soft)">
+                最近 5 条错误或警告
               </p>
             </div>
-            <RouterLink class="shrink-0 text-xs font-medium text-(--dashboard-accent) hover:underline" to="/analyze?tab=diagnostics">
-              打开诊断
+            <RouterLink class="shrink-0 text-[13px] font-medium text-(--dashboard-accent) hover:underline" to="/analyze?tab=diagnostics">
+              查看构建问题
             </RouterLink>
           </header>
 
           <div v-if="dashboardConnectionError" class="border-b border-(--dashboard-border) bg-red-500/8 px-3.5 py-3">
-            <p class="text-xs font-semibold text-red-600 dark:text-red-300">
-              Devframe connection error
+            <p class="text-sm font-semibold text-red-600 dark:text-red-300">
+              连接异常
             </p>
-            <p class="mt-1 break-words font-mono text-[11px] leading-5 text-(--dashboard-text-muted)">
+            <p class="mt-1 break-words font-mono text-[13px] leading-5 text-(--dashboard-text-muted)">
               {{ dashboardConnectionError.message }}
             </p>
           </div>
@@ -99,25 +123,28 @@ const blockingEvents = computed(() =>
           <ul v-if="blockingEvents.length" class="divide-y divide-(--dashboard-border)">
             <li v-for="event in blockingEvents" :key="event.id" class="px-3.5 py-2.5">
               <div class="flex items-center justify-between gap-3">
-                <p class="truncate text-xs font-medium text-(--dashboard-text)">
+                <p class="min-w-0 text-sm font-medium text-(--dashboard-text)">
                   {{ event.title }}
                 </p>
-                <span class="font-mono text-[10px] uppercase text-(--dashboard-text-soft)">{{ event.level }}</span>
+                <span class="shrink-0 text-xs text-(--dashboard-text-soft)">{{ event.level === 'error' ? '错误' : '警告' }}</span>
               </div>
-              <p class="mt-1 line-clamp-2 text-[11px] leading-5 text-(--dashboard-text-muted)">
+              <p class="mt-1 text-[13px] leading-5 text-(--dashboard-text-muted)">
                 {{ event.detail }}
               </p>
             </li>
           </ul>
 
-          <div v-else-if="!dashboardConnectionError" class="flex items-center gap-2.5 px-3.5 py-5">
-            <span class="h-2 w-2 rounded-full bg-emerald-500" />
-            <span>
-              <span class="block text-xs font-medium text-(--dashboard-text)">No blocking diagnostics</span>
-              <span class="mt-0.5 block text-[11px] text-(--dashboard-text-soft)">当前连接、构建和运行事件没有错误或警告。</span>
-            </span>
+          <div v-else-if="!dashboardConnectionError" class="px-3.5 py-4">
+            <p class="text-sm font-medium text-(--dashboard-text)">
+              {{ sessionNotice.title }}
+            </p>
+            <p class="mt-1 text-[13px] leading-5 text-(--dashboard-text-muted)">
+              {{ sessionNotice.description }}
+            </p>
           </div>
         </section>
+
+        <DevtoolsPackageList :rows="packageRows" />
       </div>
 
       <DevtoolsRuntimeFeed :events="runtimeEvents" />

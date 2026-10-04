@@ -30,7 +30,7 @@ const emit = defineEmits<{
 
 <template>
   <section class="relative z-20 flex min-w-0 flex-wrap items-center gap-2 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 shadow-(--dashboard-shadow)">
-    <div class="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
+    <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-none">
       <button
         v-if="canSearch"
         class="shrink-0"
@@ -52,6 +52,7 @@ const emit = defineEmits<{
         <span class="h-4.5 w-4.5">
           <DashboardIcon name="metric-link" />
         </span>
+        <span class="sm:hidden" aria-hidden="true">复制</span>
         <span class="sr-only sm:not-sr-only">复制视图</span>
       </button>
       <button
@@ -65,6 +66,7 @@ const emit = defineEmits<{
         <span class="h-4.5 w-4.5">
           <DashboardIcon name="metric-reset" />
         </span>
+        <span class="sm:hidden" aria-hidden="true">重置</span>
         <span class="sr-only sm:not-sr-only">重置视图</span>
       </button>
     </div>

@@ -92,6 +92,7 @@ const emit = defineEmits<{
   copyReviewChecklist: []
   copyWorkQueue: []
   inspectTreemapProblem: [problem: 'duplicates' | 'growth']
+  openFile: [item: LargestFileEntry]
   openTreemapSource: [meta: TreemapNodeMeta]
   removeWorkQueueItem: [id: string]
   resetTreemapFocus: []
@@ -115,7 +116,7 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
 <template>
   <section v-if="activeTab === 'overview'" class="min-h-0">
     <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 min-w-0 gap-2 overflow-x-hidden overflow-y-auto xl:overflow-hidden"
+      grid-class="grid min-h-0 min-w-0 content-start gap-2"
       :items="overviewLayoutItems"
       storage-key="weapp-vite:dashboard:analyze-layout:overview"
     >
@@ -128,7 +129,7 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
           :package-type-summary="metricPackageTypeSummary"
           @copy-report="emit('copyPr')"
           @select-action="emit('selectAction', $event)"
-          @select-file="emit('selectFile', $event)"
+          @select-file="emit('openFile', $event)"
           @select-package="emit('selectPackage', $event)"
         />
       </template>

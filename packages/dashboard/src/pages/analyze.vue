@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import AnalyzeCommandPalette from '../features/dashboard/components/AnalyzeCommandPalette.vue'
 import AnalyzeEmptyPayloadPanel from '../features/dashboard/components/AnalyzeEmptyPayloadPanel.vue'
 import AnalyzeResultSections from '../features/dashboard/components/AnalyzeResultSections.vue'
@@ -34,6 +35,7 @@ const {
   filteredLargestFiles,
   handleAddActionToWorkQueue,
   handleInspectTreemapProblem,
+  handleOpenFile,
   handleOpenTreemapSource,
   handleResetTreemapFocus,
   handleSelectAction,
@@ -88,10 +90,20 @@ const {
   visibleLargestFiles,
   workQueueItems,
 } = useAnalyzePageController()
+
+const pageClassName = computed(() => {
+  if (activeTab.value === 'treemap' && resultRef.value) {
+    return 'flex h-full min-h-0 flex-col gap-2'
+  }
+  if (!resultRef.value || activeTab.value === 'overview' || activeTab.value === 'diagnostics') {
+    return 'grid min-w-0 content-start gap-4'
+  }
+  return 'grid min-h-[calc(100dvh-8rem)] grid-rows-[auto_minmax(44rem,1fr)] gap-4'
+})
 </script>
 
 <template>
-  <div :class="activeTab === 'treemap' ? 'flex h-full min-h-0 flex-col gap-2' : 'grid min-h-[calc(100dvh-8rem)] grid-rows-[auto_minmax(44rem,1fr)] gap-4'">
+  <div :class="pageClassName">
     <AnalyzeEmptyPayloadPanel v-if="!resultRef" />
 
     <AnalyzeToolbar
@@ -166,6 +178,7 @@ const {
       @copy-review-checklist="copyPrReviewChecklist"
       @copy-work-queue="copyWorkQueueReport"
       @inspect-treemap-problem="handleInspectTreemapProblem"
+      @open-file="handleOpenFile"
       @open-treemap-source="handleOpenTreemapSource"
       @remove-work-queue-item="removeWorkQueueItem"
       @reset-treemap-focus="handleResetTreemapFocus"

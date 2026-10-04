@@ -75,8 +75,7 @@ onBeforeUnmount(() => {
 
 <template>
   <AppSurfaceCard
-    eyebrow="Incident"
-    title="事故摘要"
+    title="异常摘要"
     icon-name="metric-quality"
   >
     <template #header>
