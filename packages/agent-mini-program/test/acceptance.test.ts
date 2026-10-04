@@ -10,6 +10,7 @@ import { afterEach, beforeEach, expect, it } from 'vitest'
 import { z } from 'zod'
 import { AcceptanceService } from '../src/acceptance.js'
 import { createAcceptanceMcpServer } from '../src/server.js'
+import { acceptanceDiagnostics } from './helpers/acceptanceDiagnostics.js'
 
 let temporary: string
 let root: string
@@ -135,7 +136,10 @@ it.each(['native', 'wevu'].flatMap(kind => matrix.map(task => ({ kind, task })))
   }
 })
 
-async function runtimeFixture(options: { wrongText?: boolean, disconnect?: boolean, noConsole?: boolean, mutate?: boolean } = {}) {
+async function runtimeFixture(
+  options: { wrongText?: boolean, disconnect?: boolean, noConsole?: boolean, mutate?: boolean } = {},
+  record?: ReturnType<typeof acceptanceDiagnostics>['record'],
+) {
   await fixture('wevu', { acceptance: { scenarios: ['acceptance.json'] } })
   await writeFile(path.join(root, 'acceptance.json'), JSON.stringify({
     version: 1,
@@ -156,15 +160,20 @@ async function runtimeFixture(options: { wrongText?: boolean, disconnect?: boole
   let connections = 0
   let closed = 0
   const connect: AcceptanceOptions['connect'] = async () => {
+    record?.('runtime:connect', 'completed')
     connections++
     return {
-      close: async () => { closed++ },
+      close: async () => {
+        closed++
+        record?.('runtime:close', 'completed')
+      },
       tools: ['devtools_connect', 'devtools_route', 'runtime_find_node', 'runtime_wait_node', 'runtime_input_node', 'runtime_tap_node', 'devtools_capture', 'devtools_console'].map(name => ({
         name: `weapp__weapp_${name}`,
         description: name,
         mutates: true,
         schema: z.record(z.string(), z.unknown()),
         async execute(input) {
+          record?.(`runtime:${name}`, 'started')
           calls.push(name)
           const args = input as Record<string, any>
           if (options.disconnect && name === 'runtime_tap_node') {
@@ -174,7 +183,9 @@ async function runtimeFixture(options: { wrongText?: boolean, disconnect?: boole
             throw new Error('console disconnected')
           }
           if (options.mutate && name === 'runtime_tap_node') {
+            record?.('runtime:source-write', 'started')
             await writeFile(path.join(root, 'src/changed.ts'), 'changed')
+            record?.('runtime:source-write', 'completed')
           }
           if (name === 'devtools_capture') {
             await writeFile(path.join(root, args.outputPath), Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aL1sAAAAASUVORK5CYII=', 'base64'))
@@ -184,6 +195,7 @@ async function runtimeFixture(options: { wrongText?: boolean, disconnect?: boole
             : name === 'runtime_find_node'
               ? { text: options.wrongText ? '0' : '1' }
               : name === 'devtools_console' ? { logs: [{ message: 'counter changed' }] } : { found: true }
+          record?.(`runtime:${name}`, 'completed')
           return { text: JSON.stringify({ result }), data: { result } }
         },
       })),
@@ -206,8 +218,11 @@ it('executes deterministic scenarios with one connection and exposes screenshots
   await expect(s.artifact(report.jobId, '../report.json')).rejects.toThrow('Unknown')
 })
 it.each(['wrongText', 'disconnect', 'noConsole', 'mutate'] as const)('never passes runtime %s failures', async (failure) => {
-  const runtime = await runtimeFixture({ [failure]: true })
-  const report = await complete(await service({ trust: true, connect: runtime.connect }))
+  const diagnostics = acceptanceDiagnostics(`runtime-${failure}`)
+  const runtime = await diagnostics.run('fixture', () => runtimeFixture({ [failure]: true }, diagnostics.record))
+  const s = await diagnostics.run('service:create', () => service({ trust: true, connect: runtime.connect }))
+  const started = await diagnostics.run('service:start', () => s.start())
+  const report = await diagnostics.run('service:wait', () => s.wait(started.jobId))
   expect(report.passed).toBe(false)
   expect(report.status).toBe(failure === 'noConsole' || failure === 'mutate' ? 'unverified' : 'failed')
   expect(runtime.calls.filter(c => c === 'runtime_tap_node')).toHaveLength(1)
