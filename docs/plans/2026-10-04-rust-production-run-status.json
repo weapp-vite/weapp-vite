@@ -1,0 +1,1524 @@
+{
+  "schemaVersion": 1,
+  "purpose": "固定生产链路性能运行的终态归档；保留原始失败结果，不重跑、不取消、不以复测替换。",
+  "run": {
+    "databaseId": 37192496301,
+    "headSha": "a822fb7ff5eeb341a6b95bafa4f9eaef24fbd412",
+    "headBranch": "codex/rust-batch-profile",
+    "event": "workflow_dispatch",
+    "status": "completed",
+    "conclusion": "failure",
+    "createdAt": "2026-10-04T09:32:39Z",
+    "updatedAt": "2026-10-04T11:41:57Z",
+    "url": "https://github.com/weapp-vite/weapp-vite/actions/runs/37192496301"
+  },
+  "protocol": {
+    "contract": "native-analysis-paired-v1",
+    "mode": "full",
+    "runtime": "classic",
+    "buildPairsPerInput": 7,
+    "hmrPairsPerInput": 20,
+    "requiredTargetChangePercent": -10,
+    "regressionThresholdPercent": 5,
+    "confirmation": "首次 P50 或 P95 回退超过 5% 时，对整个 kind:input 仅执行一次等量确认；两批均越线为 regression，结论冲突为 unstable。",
+    "metricUnits": "wall 为毫秒；build RSS 为采样进程树峰值，HMR RSS 为 GC 后快照，两者不可混用。",
+    "p95CountSemantics": "以 :p95 结尾的 gate 行中 pairs=1 是两侧完整样本 P95 组成的一对派生值；底层仍为每输入 7 对 build 或 20 对 HMR。"
+  },
+  "sourceHashes": {
+    ".github/workflows/ci-native-analysis.yml": {
+      "sha256": "5c93325c12c65c0bccf5ff0ab481009a3796de03e964c4413c4634db616ea477",
+      "bytes": 5277
+    },
+    "scripts/benchmarkNativeAnalysis/index.ts": {
+      "sha256": "ebeecea2892f1c194eb44b568b0f196e43e2dc0872a0487400dd21c48c2d22e3",
+      "bytes": 6031
+    },
+    "scripts/benchmarkNativeAnalysis/evaluate.ts": {
+      "sha256": "db302942666f0d1ec8e787f7e2158a1e90974d336fdefe69119f533bc763dceb",
+      "bytes": 8789
+    },
+    "scripts/benchmarkNativeAnalysis/contract.ts": {
+      "sha256": "ebc8008dc965562716a0dcb757416b631edba4b41fec7f739c8cf4d511f74e97",
+      "bytes": 4791
+    },
+    "scripts/benchmarkNativeAnalysis/artifacts.ts": {
+      "sha256": "0e1761dfdc816044bce4ab3e385e140bc188a9010868139051bb22e1b19eab7e",
+      "bytes": 4820
+    },
+    "scripts/performanceGate/evaluate.ts": {
+      "sha256": "ad364376952b115ba845a4b96694607fc57a961e8e91e8bf5905cba0b94053a2",
+      "bytes": 4207
+    }
+  },
+  "metadataSources": {
+    "run": {
+      "file": "run.json",
+      "bytes": 11586,
+      "sha256": "392e51e1d28536ec0321b90eac44ef91fcea5e49b8390445564e5bb9600569b8"
+    },
+    "artifacts": {
+      "file": "artifacts.json",
+      "bytes": 2190,
+      "sha256": "eec93ab0f81e822c673a965d88c7db7f8b8ba7c1a3a8842594dbe78afb879584"
+    }
+  },
+  "platforms": [
+    {
+      "runner": "ubuntu-latest",
+      "jobId": 111407457014,
+      "jobUrl": "https://github.com/weapp-vite/weapp-vite/actions/runs/37192496301/job/111407457014",
+      "jobConclusion": "failure",
+      "firstFailedStep": {
+        "number": 15,
+        "name": "Run fixed native off/on performance acceptance",
+        "startedAt": "2026-10-04T09:55:26Z",
+        "completedAt": "2026-10-04T11:41:38Z",
+        "elapsedSeconds": 6372
+      },
+      "timedOut": false,
+      "failureClass": "performance-gate",
+      "reportStatus": "unstable",
+      "samplingFinishedAt": "2026-10-04T11:41:35.449Z",
+      "environment": {
+        "platform": "linux",
+        "architecture": "x64",
+        "node": "v24.21.0",
+        "osRelease": "6.17.0-1022-azure",
+        "logicalCpuCount": 4,
+        "totalMemoryBytes": 16766414848,
+        "loadavgStart": [
+          2.56,
+          2.42,
+          1.18
+        ],
+        "loadavgEnd": [
+          1.11,
+          1.34,
+          1.48
+        ]
+      },
+      "artifact": {
+        "id": 11302532521,
+        "name": "native-analysis-ubuntu-latest",
+        "sizeInBytes": 170985635,
+        "githubReportedDigest": "sha256:7fc8f1eceb421a3c4ae98f5d479293d8851d9fb6c3564d29c4f70c3a3d4fdaf7",
+        "fullArchiveHashVerifiedLocally": false,
+        "url": "https://github.com/weapp-vite/weapp-vite/actions/runs/37192496301/artifacts/11302532521"
+      },
+      "rawReport": {
+        "entry": "report.json",
+        "bytes": 181743754,
+        "sha256": "401ddb0cc88c07684c992ff0fdfef57072465393d51e52a288971590ca0b7cfc",
+        "zipCrc32Verified": true
+      },
+      "readme": {
+        "entry": "README.md",
+        "bytes": 16211,
+        "sha256": "c2bfc280eae39bc7c7775e46243504e647a7f491becd43b5f5668f7565343ad1"
+      },
+      "frozenIdentity": {
+        "packages/ast": "7e59a7df79cc1c39df689c10de7d3cebf83db4d0f10a5a18d3dc8559bea08091",
+        "packages/ast/dist": "b6c7d0fbf402c1afcbcd5aab720031d9f44d8f60680f2103a58d6d6e7772aadb",
+        "packages/ast-native": "7ba07f2d3568fe3d6b6487d90ef431281784cc31c9a830893b752267d1f54e0f",
+        "packages/weapp-vite": "10d956a41b0de940a30bb73c481689bf33ea0f8989ee442fec783d362330b643",
+        "packages/weapp-vite/dist": "ed6595c766901263183128314ab9544f96f81760aba68d94f5b730fa0361ecf7",
+        "packages-runtime/wevu-compiler": "81aa6102f9881358c9c96a49408b34ba07eabff30d1019e5394e32cf927801d5",
+        "packages-runtime/wevu-compiler/dist": "8638834a9624acbf12e552b561d8ec0e2a785a9088eb22fe0071d4087273cd3a",
+        "packages-runtime/wevu": "53bd233e02cdf4607b26da8c72377c944667cc12133d11a4fde927615bc768fd",
+        "packages-runtime/wevu/dist": "c977712fc323c4aa303944b6a68099fd6d34cd84aa2331b79cef21b6eaa1605a",
+        "@weapp-core/constants": "30b146deedd391b43a6004dbad02edbd78aeed5ef388b7e206c5eebebca820cd",
+        "@weapp-core/constants/dist": "8cf94657e0fd232a605367dc8b54bb444befc9a40cf0da7ea74430a0dfb494ad",
+        "pnpm-lock.yaml": "c3470f724491ebdd5176c23b1ee61761c858a44f48a20a813721f1ee71276145",
+        "pnpm-workspace.yaml": "92ed41dfb9f9992e80bad748a07812568f0c66425bc4c60a1cadd74ef339e865",
+        "package.json": "22e56b09c9238eb999e870adfbc1f8883e1d830950a1a89662e9277ae2f72e91",
+        "driver": "a3c513d0e1256d6ccb741c11e2ae175ba73ca394f72f4e6c42eb7b5a156919fa",
+        "devUtilities": "d2e9c8147fd36cb6ff20effd1a62189c24a94c56b313a4b54ef964e52892cf29",
+        "templates/weapp-vite-template": "5ee84cbbd23d89411688b50bfe17ab4a8c65ce637f36cf0c75ae98595876b252",
+        "templates/weapp-vite-wevu-template": "eca68a0c2efe60e2c647fd3188fbdf5cff695bab52edb0d42ce89279c9bdaa68",
+        "templates/weapp-vite-tailwindcss-tdesign-template": "1fa1202dcab0abbecf63d8a5a63181d4cc0844737f799b19985b23276da42e74",
+        "e2e-apps/github-issues/fixtures/issue-1134-profile": "24719147489fbfcb49a7ae7abca419af2e3100feea5b6f46395cb2f4b35bc81b"
+      },
+      "nativeBinding": {
+        "identity": {
+          "index.js": "cb750236bf548c633e84116e6dc030b3bf30f7d9427f303fd54118c639a8f167",
+          "weapp_vite_ast_native.linux-x64-gnu.node": "483543ed6ec30769726d711d053336512b8e8b03a70085889a0c494b88ff5971"
+        },
+        "digest": "9200546a1a0400a506c5b59bd99894ddad62e8ddcc16c896cd8d678518eb1e7b",
+        "probe": "passed"
+      },
+      "sampleCounts": {
+        "primarySideRuns": 202,
+        "confirmationSideRuns": 120,
+        "primarySamplePairs": 922,
+        "confirmationSamplePairs": 640,
+        "diagnosticRuns": 3
+      },
+      "confirmations": [
+        "hmr:weapp-vite-template",
+        "hmr:weapp-vite-tailwindcss-tdesign-template",
+        "hmr:issue-1134-profile"
+      ],
+      "target": {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat:wall",
+        "requiredChangePercent": -10,
+        "met": false,
+        "primary": {
+          "pairs": 7,
+          "offP50": 4486.079126999999,
+          "onP50": 4408.4239370000005,
+          "offP95": 4562.404314000001,
+          "onP95": 4472.5537939999995,
+          "pairedDeltaP50": -100.50283500000114,
+          "changePercent": -1.731025864716064
+        }
+      },
+      "nativeDiagnostics": [
+        {
+          "input": "weapp-vite-template",
+          "calls": 0,
+          "failures": 0,
+          "coverage": "not-exercised",
+          "observation": {
+            "processes": 2,
+            "completedProcesses": 2,
+            "bindingCalls": 0,
+            "batchCalls": 0,
+            "inputScripts": 0,
+            "inputBytes": 0,
+            "cacheHits": 0,
+            "fallbacks": 0,
+            "loadFailures": 0
+          }
+        },
+        {
+          "input": "weapp-vite-wevu-template",
+          "calls": 0,
+          "failures": 0,
+          "coverage": "not-exercised",
+          "observation": {
+            "processes": 2,
+            "completedProcesses": 2,
+            "bindingCalls": 0,
+            "batchCalls": 0,
+            "inputScripts": 0,
+            "inputBytes": 0,
+            "cacheHits": 0,
+            "fallbacks": 0,
+            "loadFailures": 0
+          }
+        },
+        {
+          "input": "weapp-vite-tailwindcss-tdesign-template",
+          "calls": 2,
+          "failures": 0,
+          "coverage": "exercised",
+          "observation": {
+            "processes": 2,
+            "completedProcesses": 2,
+            "bindingCalls": 2,
+            "batchCalls": 2,
+            "inputScripts": 12,
+            "inputBytes": 208850,
+            "cacheHits": 0,
+            "fallbacks": 0,
+            "loadFailures": 0
+          }
+        }
+      ],
+      "runtimeValidation": {
+        "headless": "not-run",
+        "stableIde": "not-run",
+        "physicalDevices": "not-run"
+      },
+      "failedStepLog": {
+        "file": "ubuntu-failed.log",
+        "bytes": 686392,
+        "sha256": "6efa43cc75a407c5222741e6f53437a914a491ba70042356703131ec094e778e"
+      },
+      "collectorFailure": null,
+      "reportedEvidenceStatusCounts": {
+        "complete": 100
+      },
+      "gateStatusCounts": {
+        "passed": 197,
+        "unstable": 3
+      },
+      "nonPassingGateMetrics": [
+        {
+          "id": "hmr:weapp-vite-template:native-page-style:repeat:restore:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 722.5640989999993,
+            "onP50": 804.4975759999998,
+            "offP95": 722.5640989999993,
+            "onP95": 804.4975759999998,
+            "pairedDeltaP50": 81.9334770000005,
+            "changePercent": 11.339267632227127
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 772.2651369999985,
+            "onP50": 764.6095659999992,
+            "offP95": 772.2651369999985,
+            "onP95": 764.6095659999992,
+            "pairedDeltaP50": -7.655570999999327,
+            "changePercent": -0.99131381609932
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-tailwindcss-tdesign-template:native-page-template:repeat:edit:wall",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 20,
+            "offP50": 1229.4457680000005,
+            "onP50": 1291.2333535000007,
+            "offP95": 1321.6607139999996,
+            "onP95": 1320.945474,
+            "pairedDeltaP50": 47.13740699999926,
+            "changePercent": 5.025645466291132
+          },
+          "confirmation": {
+            "pairs": 20,
+            "offP50": 1273.2870549999998,
+            "onP50": 1285.7490355,
+            "offP95": 1374.5702450000008,
+            "onP95": 1323.32683,
+            "pairedDeltaP50": -9.770933499999956,
+            "changePercent": 0.9787251390850127
+          }
+        },
+        {
+          "id": "hmr:issue-1134-profile:component-topology-json:first:edit:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 690.2311019999997,
+            "onP50": 727.3760790000006,
+            "offP95": 690.2311019999997,
+            "onP95": 727.3760790000006,
+            "pairedDeltaP50": 37.144977000000836,
+            "changePercent": 5.381527562633775
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 721.3704980000002,
+            "onP50": 717.6132470000002,
+            "offP95": 721.3704980000002,
+            "onP95": 717.6132470000002,
+            "pairedDeltaP50": -3.7572509999999966,
+            "changePercent": -0.5208489965166271
+          }
+        }
+      ],
+      "dataUsability": "完整首批与预定一次等量确认可用于本次 off/on 整链门禁和后续归因；未达到扩大生产覆盖的条件。",
+      "independentVerification": {
+        "fixedMetadataMatches": true,
+        "finished": true,
+        "failurePresent": false,
+        "runCounts": {
+          "primary": 202,
+          "confirmation": 120
+        },
+        "metricCounts": {
+          "primary": 100,
+          "confirmation": 64,
+          "primaryWithP95": 200
+        },
+        "pairEvidenceComplete": true,
+        "checks": {
+          "pairOwnershipAndOrder": true,
+          "sourceAndInputFrozen": true,
+          "sampleManifestComplete": true,
+          "inputEquivalent": true,
+          "artifactValid": true,
+          "outputEquivalent": true,
+          "warningsEquivalent": true,
+          "runSuccess": true,
+          "positiveMetrics": true,
+          "rssSampling": true
+        },
+        "failureCodes": [],
+        "artifactManifestsChecked": 3130,
+        "distinctArtifactManifests": 688,
+        "allArtifactDigestsRecomputed": true,
+        "confirmationPlanMatches": true,
+        "diagnosticsValid": true,
+        "recomputedStatus": "unstable",
+        "recomputedRegressionStatus": "unstable",
+        "gateStatusCounts": {
+          "passed": 197,
+          "regression": 0,
+          "unstable": 3,
+          "incomplete": 0
+        },
+        "allStoredVerdictFieldsMatch": true,
+        "storedVerdictFieldMatches": {
+          "status": true,
+          "regressionGate": true,
+          "fullAcceptance": true,
+          "target": true,
+          "nativeCalls": true,
+          "metrics": true,
+          "regression": true
+        }
+      }
+    },
+    {
+      "runner": "macos-latest",
+      "jobId": 111407457111,
+      "jobUrl": "https://github.com/weapp-vite/weapp-vite/actions/runs/37192496301/job/111407457111",
+      "jobConclusion": "failure",
+      "firstFailedStep": {
+        "number": 15,
+        "name": "Run fixed native off/on performance acceptance",
+        "startedAt": "2026-10-04T09:58:51Z",
+        "completedAt": "2026-10-04T11:41:09Z",
+        "elapsedSeconds": 6138
+      },
+      "timedOut": false,
+      "failureClass": "performance-gate",
+      "reportStatus": "regression",
+      "samplingFinishedAt": "2026-10-04T11:41:06.776Z",
+      "environment": {
+        "platform": "darwin",
+        "architecture": "arm64",
+        "node": "v24.20.0",
+        "osRelease": "25.6.0",
+        "logicalCpuCount": 3,
+        "totalMemoryBytes": 7516192768,
+        "loadavgStart": [
+          10.28564453125,
+          14.802734375,
+          14.0107421875
+        ],
+        "loadavgEnd": [
+          1.9970703125,
+          2.15576171875,
+          2.38818359375
+        ]
+      },
+      "artifact": {
+        "id": 11301968324,
+        "name": "native-analysis-macos-latest",
+        "sizeInBytes": 175691166,
+        "githubReportedDigest": "sha256:c0737632ddc2a7a4222bb94f7ada73dca8b1b593938d8c4e194c94701efdfa32",
+        "fullArchiveHashVerifiedLocally": false,
+        "url": "https://github.com/weapp-vite/weapp-vite/actions/runs/37192496301/artifacts/11301968324"
+      },
+      "rawReport": {
+        "entry": "report.json",
+        "bytes": 183958248,
+        "sha256": "d46c99cb3ad18f908fe40a135d0b7e8cd260c3d12e92bca52e980f3501989bcb",
+        "zipCrc32Verified": true
+      },
+      "readme": {
+        "entry": "README.md",
+        "bytes": 16247,
+        "sha256": "8c8b512d3d8d73a4cb8f06e1c09768959a0a2b7a031ff78ca9099ffb722cec75"
+      },
+      "frozenIdentity": {
+        "packages/ast": "7e59a7df79cc1c39df689c10de7d3cebf83db4d0f10a5a18d3dc8559bea08091",
+        "packages/ast/dist": "ca361b87b3484227f99b598f4049cf8330f91a5c5caf14e8fff5a983904632b7",
+        "packages/ast-native": "7ba07f2d3568fe3d6b6487d90ef431281784cc31c9a830893b752267d1f54e0f",
+        "packages/weapp-vite": "10d956a41b0de940a30bb73c481689bf33ea0f8989ee442fec783d362330b643",
+        "packages/weapp-vite/dist": "ed6595c766901263183128314ab9544f96f81760aba68d94f5b730fa0361ecf7",
+        "packages-runtime/wevu-compiler": "81aa6102f9881358c9c96a49408b34ba07eabff30d1019e5394e32cf927801d5",
+        "packages-runtime/wevu-compiler/dist": "8638834a9624acbf12e552b561d8ec0e2a785a9088eb22fe0071d4087273cd3a",
+        "packages-runtime/wevu": "53bd233e02cdf4607b26da8c72377c944667cc12133d11a4fde927615bc768fd",
+        "packages-runtime/wevu/dist": "c977712fc323c4aa303944b6a68099fd6d34cd84aa2331b79cef21b6eaa1605a",
+        "@weapp-core/constants": "30b146deedd391b43a6004dbad02edbd78aeed5ef388b7e206c5eebebca820cd",
+        "@weapp-core/constants/dist": "8cf94657e0fd232a605367dc8b54bb444befc9a40cf0da7ea74430a0dfb494ad",
+        "pnpm-lock.yaml": "c3470f724491ebdd5176c23b1ee61761c858a44f48a20a813721f1ee71276145",
+        "pnpm-workspace.yaml": "92ed41dfb9f9992e80bad748a07812568f0c66425bc4c60a1cadd74ef339e865",
+        "package.json": "22e56b09c9238eb999e870adfbc1f8883e1d830950a1a89662e9277ae2f72e91",
+        "driver": "a3c513d0e1256d6ccb741c11e2ae175ba73ca394f72f4e6c42eb7b5a156919fa",
+        "devUtilities": "d2e9c8147fd36cb6ff20effd1a62189c24a94c56b313a4b54ef964e52892cf29",
+        "templates/weapp-vite-template": "5ee84cbbd23d89411688b50bfe17ab4a8c65ce637f36cf0c75ae98595876b252",
+        "templates/weapp-vite-wevu-template": "eca68a0c2efe60e2c647fd3188fbdf5cff695bab52edb0d42ce89279c9bdaa68",
+        "templates/weapp-vite-tailwindcss-tdesign-template": "1fa1202dcab0abbecf63d8a5a63181d4cc0844737f799b19985b23276da42e74",
+        "e2e-apps/github-issues/fixtures/issue-1134-profile": "24719147489fbfcb49a7ae7abca419af2e3100feea5b6f46395cb2f4b35bc81b"
+      },
+      "nativeBinding": {
+        "identity": {
+          "index.js": "cb750236bf548c633e84116e6dc030b3bf30f7d9427f303fd54118c639a8f167",
+          "weapp_vite_ast_native.darwin-arm64.node": "46cade48e59d2f25e368f0c0d895bc32c1f2d8b40a0f5fea84fb6811d22cb368"
+        },
+        "digest": "2d587e393e32e3eb3fef912d56f605bd2d6ff59024f383ef45bc39d2506487e3",
+        "probe": "passed"
+      },
+      "sampleCounts": {
+        "primarySideRuns": 202,
+        "confirmationSideRuns": 188,
+        "primarySamplePairs": 922,
+        "confirmationSamplePairs": 908,
+        "diagnosticRuns": 3
+      },
+      "confirmations": [
+        "build:weapp-vite-template",
+        "hmr:weapp-vite-template",
+        "build:weapp-vite-wevu-template",
+        "hmr:weapp-vite-wevu-template",
+        "hmr:weapp-vite-tailwindcss-tdesign-template",
+        "hmr:issue-1134-profile"
+      ],
+      "target": {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat:wall",
+        "requiredChangePercent": -10,
+        "met": false,
+        "primary": {
+          "pairs": 7,
+          "offP50": 3770.948875000001,
+          "onP50": 3564.220708,
+          "offP95": 4784.421042,
+          "onP95": 4228.532625,
+          "pairedDeltaP50": -343.08979200000067,
+          "changePercent": -5.482125954306423
+        }
+      },
+      "nativeDiagnostics": [
+        {
+          "input": "weapp-vite-template",
+          "calls": 0,
+          "failures": 0,
+          "coverage": "not-exercised",
+          "observation": {
+            "processes": 2,
+            "completedProcesses": 2,
+            "bindingCalls": 0,
+            "batchCalls": 0,
+            "inputScripts": 0,
+            "inputBytes": 0,
+            "cacheHits": 0,
+            "fallbacks": 0,
+            "loadFailures": 0
+          }
+        },
+        {
+          "input": "weapp-vite-wevu-template",
+          "calls": 0,
+          "failures": 0,
+          "coverage": "not-exercised",
+          "observation": {
+            "processes": 2,
+            "completedProcesses": 2,
+            "bindingCalls": 0,
+            "batchCalls": 0,
+            "inputScripts": 0,
+            "inputBytes": 0,
+            "cacheHits": 0,
+            "fallbacks": 0,
+            "loadFailures": 0
+          }
+        },
+        {
+          "input": "weapp-vite-tailwindcss-tdesign-template",
+          "calls": 2,
+          "failures": 0,
+          "coverage": "exercised",
+          "observation": {
+            "processes": 2,
+            "completedProcesses": 2,
+            "bindingCalls": 2,
+            "batchCalls": 2,
+            "inputScripts": 12,
+            "inputBytes": 208850,
+            "cacheHits": 0,
+            "fallbacks": 0,
+            "loadFailures": 0
+          }
+        }
+      ],
+      "runtimeValidation": {
+        "headless": "not-run",
+        "stableIde": "not-run",
+        "physicalDevices": "not-run"
+      },
+      "failedStepLog": {
+        "file": "macos-failed.log",
+        "bytes": 782166,
+        "sha256": "de17cc72c5ddf033b2c17c24f38dd0209bd64c354cac7bc9b0d6a9480295fe0a"
+      },
+      "collectorFailure": null,
+      "reportedEvidenceStatusCounts": {
+        "complete": 100
+      },
+      "gateStatusCounts": {
+        "unstable": 26,
+        "passed": 167,
+        "regression": 7
+      },
+      "nonPassingGateMetrics": [
+        {
+          "id": "build:weapp-vite-template:first:wall",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 7,
+            "offP50": 1234.71225,
+            "onP50": 1303.2698329999998,
+            "offP95": 1357.753,
+            "onP95": 1383.009,
+            "pairedDeltaP50": 60.51379299999985,
+            "changePercent": 5.552515009063836
+          },
+          "confirmation": {
+            "pairs": 7,
+            "offP50": 1600.571833,
+            "onP50": 1565.3332090000001,
+            "offP95": 1948.758792,
+            "onP95": 1790.220042,
+            "pairedDeltaP50": -191.18337499999984,
+            "changePercent": -2.201627148089382
+          }
+        },
+        {
+          "id": "build:weapp-vite-template:repeat:wall",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 7,
+            "offP50": 1204.819833,
+            "onP50": 1292.791667,
+            "offP95": 1345.5507089999999,
+            "onP95": 1801.583541,
+            "pairedDeltaP50": 62.62895899999967,
+            "changePercent": 7.301658853087617
+          },
+          "confirmation": {
+            "pairs": 7,
+            "offP50": 1431.0519160000001,
+            "onP50": 1435.336333,
+            "offP95": 1606.4235410000001,
+            "onP95": 1704.2705419999998,
+            "pairedDeltaP50": 38.81749999999988,
+            "changePercent": 0.29938934794031946
+          }
+        },
+        {
+          "id": "build:weapp-vite-template:repeat:wall:p95",
+          "status": "regression",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 1345.5507089999999,
+            "onP50": 1801.583541,
+            "offP95": 1345.5507089999999,
+            "onP95": 1801.583541,
+            "pairedDeltaP50": 456.0328320000001,
+            "changePercent": 33.89190975484821
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 1606.4235410000001,
+            "onP50": 1704.2705419999998,
+            "offP95": 1606.4235410000001,
+            "onP95": 1704.2705419999998,
+            "pairedDeltaP50": 97.84700099999964,
+            "changePercent": 6.09098400905466
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-template:native-page-script:first:edit:wall:p95",
+          "status": "regression",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 625.1222500000003,
+            "onP50": 750.5555829999994,
+            "offP95": 625.1222500000003,
+            "onP95": 750.5555829999994,
+            "pairedDeltaP50": 125.43333299999904,
+            "changePercent": 20.065408486099955
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 645.5938750000005,
+            "onP50": 830.8095000000003,
+            "offP95": 645.5938750000005,
+            "onP95": 830.8095000000003,
+            "pairedDeltaP50": 185.21562499999982,
+            "changePercent": 28.689185596749923
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-template:native-page-script:repeat:edit:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 663.1589589999985,
+            "onP50": 820.0410419999989,
+            "offP95": 663.1589589999985,
+            "onP95": 820.0410419999989,
+            "pairedDeltaP50": 156.88208300000042,
+            "changePercent": 23.65678407429926
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 893.9274999999998,
+            "onP50": 810.4616249999999,
+            "offP95": 893.9274999999998,
+            "onP95": 810.4616249999999,
+            "pairedDeltaP50": -83.46587499999987,
+            "changePercent": -9.336984822594662
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-template:native-page-script:repeat:restore:wall:p95",
+          "status": "regression",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 646.6422909999992,
+            "onP50": 689.8927919999987,
+            "offP95": 646.6422909999992,
+            "onP95": 689.8927919999987,
+            "pairedDeltaP50": 43.25050099999953,
+            "changePercent": 6.688473921666158
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 763.1675830000004,
+            "onP50": 852.6290829999998,
+            "offP95": 763.1675830000004,
+            "onP95": 852.6290829999998,
+            "pairedDeltaP50": 89.46149999999943,
+            "changePercent": 11.722392563940884
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-template:native-page-template:repeat:edit:wall",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 20,
+            "offP50": 477.1291460000002,
+            "onP50": 504.0128744999995,
+            "offP95": 596.2907500000001,
+            "onP95": 758.3945409999997,
+            "pairedDeltaP50": -17.10181199999988,
+            "changePercent": 5.634476268192442
+          },
+          "confirmation": {
+            "pairs": 20,
+            "offP50": 514.0437295000002,
+            "onP50": 528.811729,
+            "offP95": 661.311541,
+            "onP95": 655.4313750000001,
+            "pairedDeltaP50": -2.29999950000024,
+            "changePercent": 2.872907235803536
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-template:native-page-template:repeat:edit:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 596.2907500000001,
+            "onP50": 758.3945409999997,
+            "offP95": 596.2907500000001,
+            "onP95": 758.3945409999997,
+            "pairedDeltaP50": 162.10379099999955,
+            "changePercent": 27.185360665078157
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 661.311541,
+            "onP50": 655.4313750000001,
+            "offP95": 661.311541,
+            "onP95": 655.4313750000001,
+            "pairedDeltaP50": -5.880165999999917,
+            "changePercent": -0.8891673039772214
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-template:native-page-template:repeat:restore:wall:p95",
+          "status": "regression",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 654.5869999999995,
+            "onP50": 746.6185830000004,
+            "offP95": 654.5869999999995,
+            "onP95": 746.6185830000004,
+            "pairedDeltaP50": 92.03158300000086,
+            "changePercent": 14.059488349142427
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 624.2939159999996,
+            "onP50": 767.0940410000003,
+            "offP95": 624.2939159999996,
+            "onP95": 767.0940410000003,
+            "pairedDeltaP50": 142.80012500000066,
+            "changePercent": 22.873861388071052
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-template:native-page-style:first:restore:wall",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 20,
+            "offP50": 542.1550205000003,
+            "onP50": 581.6796459999987,
+            "offP95": 676.7145409999994,
+            "onP95": 812.0741669999989,
+            "pairedDeltaP50": 24.067416499999126,
+            "changePercent": 7.290281193660614
+          },
+          "confirmation": {
+            "pairs": 20,
+            "offP50": 614.7128750000011,
+            "onP50": 639.9502085000004,
+            "offP95": 774.223082999999,
+            "onP95": 880.9418339999993,
+            "pairedDeltaP50": 20.085958500001652,
+            "changePercent": 4.105548220378376
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-template:native-page-style:first:restore:wall:p95",
+          "status": "regression",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 676.7145409999994,
+            "onP50": 812.0741669999989,
+            "offP95": 676.7145409999994,
+            "onP95": 812.0741669999989,
+            "pairedDeltaP50": 135.35962599999948,
+            "changePercent": 20.00247043605342
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 774.223082999999,
+            "onP50": 880.9418339999993,
+            "offP95": 774.223082999999,
+            "onP95": 880.9418339999993,
+            "pairedDeltaP50": 106.71875100000034,
+            "changePercent": 13.783979494189335
+          }
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first:wall",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 7,
+            "offP50": 1192.886333,
+            "onP50": 1321.9535,
+            "offP95": 1590.574,
+            "onP95": 1407.030042,
+            "pairedDeltaP50": 79.14608299999986,
+            "changePercent": 10.819737256558891
+          },
+          "confirmation": {
+            "pairs": 7,
+            "offP50": 2177.709125,
+            "onP50": 1984.296541,
+            "offP95": 2592.649625,
+            "onP95": 2342.231792,
+            "pairedDeltaP50": -148.7470000000003,
+            "changePercent": -8.881470063179348
+          }
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 1255.2876250000002,
+            "onP50": 1386.4373329999999,
+            "offP95": 1255.2876250000002,
+            "onP95": 1386.4373329999999,
+            "pairedDeltaP50": 131.1497079999997,
+            "changePercent": 10.447781479563274
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 2953.246125,
+            "onP50": 2626.9414580000002,
+            "offP95": 2953.246125,
+            "onP95": 2626.9414580000002,
+            "pairedDeltaP50": -326.3046669999999,
+            "changePercent": -11.04901702021195
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-script:first:edit:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 561.7529590000004,
+            "onP50": 678.9208749999998,
+            "offP95": 561.7529590000004,
+            "onP95": 678.9208749999998,
+            "pairedDeltaP50": 117.16791599999942,
+            "changePercent": 20.85755208278295
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 558.7535409999991,
+            "onP50": 491.81333300000006,
+            "offP95": 558.7535409999991,
+            "onP95": 491.81333300000006,
+            "pairedDeltaP50": -66.94020799999907,
+            "changePercent": -11.98027450174122
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-script:repeat:edit:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 487.2972920000002,
+            "onP50": 535.133417,
+            "offP95": 487.2972920000002,
+            "onP95": 535.133417,
+            "pairedDeltaP50": 47.83612499999981,
+            "changePercent": 9.816620323020345
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 532.5782080000008,
+            "onP50": 523.0046249999996,
+            "offP95": 532.5782080000008,
+            "onP95": 523.0046249999996,
+            "pairedDeltaP50": -9.573583000001236,
+            "changePercent": -1.7975919510400284
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-script:repeat:restore:wall:p95",
+          "status": "regression",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 518.6486659999991,
+            "onP50": 587.6805839999997,
+            "offP95": 518.6486659999991,
+            "onP95": 587.6805839999997,
+            "pairedDeltaP50": 69.03191800000059,
+            "changePercent": 13.30995768916153
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 466.6712919999991,
+            "onP50": 514.2662090000013,
+            "offP95": 466.6712919999991,
+            "onP95": 514.2662090000013,
+            "pairedDeltaP50": 47.59491700000217,
+            "changePercent": 10.198809700940906
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-template:first:edit:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 546.2790420000001,
+            "onP50": 613.7995420000002,
+            "offP95": 546.2790420000001,
+            "onP95": 613.7995420000002,
+            "pairedDeltaP50": 67.52050000000008,
+            "changePercent": 12.36007512805151
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 546.5430830000005,
+            "onP50": 539.7588329999999,
+            "offP95": 546.5430830000005,
+            "onP95": 539.7588329999999,
+            "pairedDeltaP50": -6.784250000000611,
+            "changePercent": -1.2413019597213721
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-template:repeat:edit:wall",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 20,
+            "offP50": 388.9955829999999,
+            "onP50": 414.3744579999993,
+            "offP95": 520.1623749999999,
+            "onP95": 551.5482499999998,
+            "pairedDeltaP50": 26.17185449999988,
+            "changePercent": 6.524206471516523
+          },
+          "confirmation": {
+            "pairs": 20,
+            "offP50": 438.20616599999994,
+            "onP50": 414.0627085000001,
+            "offP95": 591.4271249999993,
+            "onP95": 524.1391249999997,
+            "pairedDeltaP50": -7.601479000000381,
+            "changePercent": -5.509611542070323
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-template:repeat:edit:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 520.1623749999999,
+            "onP50": 551.5482499999998,
+            "offP95": 520.1623749999999,
+            "onP95": 551.5482499999998,
+            "pairedDeltaP50": 31.385874999999942,
+            "changePercent": 6.033861061173437
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 591.4271249999993,
+            "onP50": 524.1391249999997,
+            "offP95": 591.4271249999993,
+            "onP95": 524.1391249999997,
+            "pairedDeltaP50": -67.28799999999956,
+            "changePercent": -11.377225892370028
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-template:repeat:restore:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 511.7243749999998,
+            "onP50": 580.2870000000003,
+            "offP95": 511.7243749999998,
+            "onP95": 580.2870000000003,
+            "pairedDeltaP50": 68.56262500000048,
+            "changePercent": 13.398350430346515
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 587.7983750000003,
+            "onP50": 463.4257499999994,
+            "offP95": 587.7983750000003,
+            "onP95": 463.4257499999994,
+            "pairedDeltaP50": -124.37262500000088,
+            "changePercent": -21.15906240809203
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-style:first:edit:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 429.74566699999923,
+            "onP50": 572.5498750000006,
+            "offP95": 429.74566699999923,
+            "onP95": 572.5498750000006,
+            "pairedDeltaP50": 142.80420800000138,
+            "changePercent": 33.22993550973991
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 493.5351660000015,
+            "onP50": 517.1934170000004,
+            "offP95": 493.5351660000015,
+            "onP95": 517.1934170000004,
+            "pairedDeltaP50": 23.658250999998927,
+            "changePercent": 4.793630247616207
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-style:first:restore:wall",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 20,
+            "offP50": 321.3896250000007,
+            "onP50": 340.25847950000025,
+            "offP95": 500.4148330000007,
+            "onP95": 522.5329160000001,
+            "pairedDeltaP50": 33.3317505,
+            "changePercent": 5.871021661013327
+          },
+          "confirmation": {
+            "pairs": 20,
+            "offP50": 413.99797899999976,
+            "onP50": 419.6433959999995,
+            "offP95": 571.9314580000009,
+            "onP95": 480.3863339999989,
+            "pairedDeltaP50": -0.8495834999994258,
+            "changePercent": 1.3636339514593931
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-style:repeat:edit:wall",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 20,
+            "offP50": 388.26233349999984,
+            "onP50": 413.1992915000001,
+            "offP95": 495.1127919999999,
+            "onP95": 569.4314579999991,
+            "pairedDeltaP50": 46.69983299999876,
+            "changePercent": 6.4227085267853425
+          },
+          "confirmation": {
+            "pairs": 20,
+            "offP50": 402.4396665000004,
+            "onP50": 406.72231250000004,
+            "offP95": 480.0620830000007,
+            "onP95": 546.0593750000007,
+            "pairedDeltaP50": -10.600666499998624,
+            "changePercent": 1.0641709444910432
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-style:repeat:edit:wall:p95",
+          "status": "regression",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 495.1127919999999,
+            "onP50": 569.4314579999991,
+            "offP95": 495.1127919999999,
+            "onP95": 569.4314579999991,
+            "pairedDeltaP50": 74.31866599999921,
+            "changePercent": 15.010451598269192
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 480.0620830000007,
+            "onP50": 546.0593750000007,
+            "offP95": 480.0620830000007,
+            "onP95": 546.0593750000007,
+            "pairedDeltaP50": 65.99729200000002,
+            "changePercent": 13.747657717012387
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-style:repeat:restore:wall",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 20,
+            "offP50": 359.0945835000002,
+            "onP50": 379.55608349999966,
+            "offP95": 453.6095829999995,
+            "onP95": 497.4791669999995,
+            "pairedDeltaP50": 39.814354000000094,
+            "changePercent": 5.698080934712684
+          },
+          "confirmation": {
+            "pairs": 20,
+            "offP50": 377.9783749999997,
+            "onP50": 381.512583499999,
+            "offP95": 555.1963329999999,
+            "onP95": 499.81254199999967,
+            "pairedDeltaP50": 4.849458500000765,
+            "changePercent": 0.9350292857360684
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-wevu-template:vue-page-style:repeat:restore:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 453.6095829999995,
+            "onP50": 497.4791669999995,
+            "offP95": 453.6095829999995,
+            "onP95": 497.4791669999995,
+            "pairedDeltaP50": 43.86958400000003,
+            "changePercent": 9.671220724629197
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 555.1963329999999,
+            "onP50": 499.81254199999967,
+            "offP95": 555.1963329999999,
+            "onP95": 499.81254199999967,
+            "pairedDeltaP50": -55.3837910000002,
+            "changePercent": -9.975532565342109
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-tailwindcss-tdesign-template:native-page-script:first:restore:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 1295.0045420000024,
+            "onP50": 1421.6136670000014,
+            "offP95": 1295.0045420000024,
+            "onP95": 1421.6136670000014,
+            "pairedDeltaP50": 126.60912499999904,
+            "changePercent": 9.776732118982698
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 1460.6346660000017,
+            "onP50": 1486.5906670000004,
+            "offP95": 1460.6346660000017,
+            "onP95": 1486.5906670000004,
+            "pairedDeltaP50": 25.95600099999865,
+            "changePercent": 1.7770358053379665
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-tailwindcss-tdesign-template:native-page-template:first:edit:wall",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 20,
+            "offP50": 920.888062,
+            "onP50": 1000.6435620000002,
+            "offP95": 1152.2323750000005,
+            "onP95": 1538.9398330000004,
+            "pairedDeltaP50": 40.79935399999977,
+            "changePercent": 8.660716029566709
+          },
+          "confirmation": {
+            "pairs": 20,
+            "offP50": 1064.7254795,
+            "onP50": 1072.9249375000004,
+            "offP95": 1404.1430419999997,
+            "onP95": 1333.3703750000004,
+            "pairedDeltaP50": 55.60672900000009,
+            "changePercent": 0.7701006651828234
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-tailwindcss-tdesign-template:native-page-template:first:edit:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 1152.2323750000005,
+            "onP50": 1538.9398330000004,
+            "offP95": 1152.2323750000005,
+            "onP95": 1538.9398330000004,
+            "pairedDeltaP50": 386.70745799999986,
+            "changePercent": 33.56158587368279
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 1404.1430419999997,
+            "onP50": 1333.3703750000004,
+            "offP95": 1404.1430419999997,
+            "onP95": 1333.3703750000004,
+            "pairedDeltaP50": -70.77266699999927,
+            "changePercent": -5.040274735770067
+          }
+        },
+        {
+          "id": "hmr:weapp-vite-tailwindcss-tdesign-template:native-page-style:repeat:restore:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 936.9456659999996,
+            "onP50": 1053.9856250000012,
+            "offP95": 936.9456659999996,
+            "onP95": 1053.9856250000012,
+            "pairedDeltaP50": 117.03995900000155,
+            "changePercent": 12.491648475163723
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 990.0247090000048,
+            "onP50": 971.6846659999974,
+            "offP95": 990.0247090000048,
+            "onP95": 971.6846659999974,
+            "pairedDeltaP50": -18.340043000007427,
+            "changePercent": -1.8524833605953301
+          }
+        },
+        {
+          "id": "hmr:issue-1134-profile:component-topology-json:first:edit:wall",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 20,
+            "offP50": 645.2694584999999,
+            "onP50": 680.2959375,
+            "offP95": 841.1277909999999,
+            "onP95": 969.5301249999993,
+            "pairedDeltaP50": 51.701688000000104,
+            "changePercent": 5.428194150304747
+          },
+          "confirmation": {
+            "pairs": 20,
+            "offP50": 460.7527500000001,
+            "onP50": 466.1931045000001,
+            "offP95": 587.351416,
+            "onP95": 540.8197499999997,
+            "pairedDeltaP50": 6.3168960000000425,
+            "changePercent": 1.18075356034229
+          }
+        },
+        {
+          "id": "hmr:issue-1134-profile:component-topology-json:first:edit:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 841.1277909999999,
+            "onP50": 969.5301249999993,
+            "offP95": 841.1277909999999,
+            "onP95": 969.5301249999993,
+            "pairedDeltaP50": 128.40233399999943,
+            "changePercent": 15.265496559963198
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 587.351416,
+            "onP50": 540.8197499999997,
+            "offP95": 587.351416,
+            "onP95": 540.8197499999997,
+            "pairedDeltaP50": -46.531666000000314,
+            "changePercent": -7.922287191693825
+          }
+        },
+        {
+          "id": "hmr:issue-1134-profile:component-topology-json:repeat:restore:wall:p95",
+          "status": "unstable",
+          "unit": "ms",
+          "primary": {
+            "pairs": 1,
+            "offP50": 797.7114160000001,
+            "onP50": 850.1032500000001,
+            "offP95": 797.7114160000001,
+            "onP95": 850.1032500000001,
+            "pairedDeltaP50": 52.39183400000002,
+            "changePercent": 6.567767860551718
+          },
+          "confirmation": {
+            "pairs": 1,
+            "offP50": 556.8700410000001,
+            "onP50": 527.1405839999998,
+            "offP95": 556.8700410000001,
+            "onP95": 527.1405839999998,
+            "pairedDeltaP50": -29.729457000000366,
+            "changePercent": -5.338670571434164
+          }
+        }
+      ],
+      "dataUsability": "完整首批与预定一次等量确认可用于本次 off/on 整链门禁和后续归因；未达到扩大生产覆盖的条件。",
+      "independentVerification": {
+        "fixedMetadataMatches": true,
+        "finished": true,
+        "failurePresent": false,
+        "runCounts": {
+          "primary": 202,
+          "confirmation": 188
+        },
+        "metricCounts": {
+          "primary": 100,
+          "confirmation": 96,
+          "primaryWithP95": 200
+        },
+        "pairEvidenceComplete": true,
+        "checks": {
+          "pairOwnershipAndOrder": true,
+          "sourceAndInputFrozen": true,
+          "sampleManifestComplete": true,
+          "inputEquivalent": true,
+          "artifactValid": true,
+          "outputEquivalent": true,
+          "warningsEquivalent": true,
+          "runSuccess": true,
+          "positiveMetrics": true,
+          "rssSampling": true
+        },
+        "failureCodes": [],
+        "artifactManifestsChecked": 3666,
+        "distinctArtifactManifests": 808,
+        "allArtifactDigestsRecomputed": true,
+        "confirmationPlanMatches": true,
+        "diagnosticsValid": true,
+        "recomputedStatus": "regression",
+        "recomputedRegressionStatus": "regression",
+        "gateStatusCounts": {
+          "passed": 167,
+          "regression": 7,
+          "unstable": 26,
+          "incomplete": 0
+        },
+        "allStoredVerdictFieldsMatch": true,
+        "storedVerdictFieldMatches": {
+          "status": true,
+          "regressionGate": true,
+          "fullAcceptance": true,
+          "target": true,
+          "nativeCalls": true,
+          "metrics": true,
+          "regression": true
+        }
+      }
+    },
+    {
+      "runner": "windows-latest",
+      "jobId": 111407457190,
+      "jobUrl": "https://github.com/weapp-vite/weapp-vite/actions/runs/37192496301/job/111407457190",
+      "jobConclusion": "failure",
+      "firstFailedStep": {
+        "number": 15,
+        "name": "Run fixed native off/on performance acceptance",
+        "startedAt": "2026-10-04T10:01:29Z",
+        "completedAt": "2026-10-04T10:01:38Z",
+        "elapsedSeconds": 9
+      },
+      "timedOut": false,
+      "failureClass": "collector-setup",
+      "reportStatus": "incomplete",
+      "samplingFinishedAt": "2026-10-04T10:01:37.903Z",
+      "environment": {
+        "platform": "win32",
+        "architecture": "x64",
+        "node": "v24.21.0",
+        "osRelease": "10.0.26100",
+        "logicalCpuCount": 4,
+        "totalMemoryBytes": 17174360064,
+        "loadavgStart": [
+          0,
+          0,
+          0
+        ],
+        "loadavgEnd": [
+          0,
+          0,
+          0
+        ]
+      },
+      "artifact": {
+        "id": 11299873155,
+        "name": "native-analysis-windows-latest",
+        "sizeInBytes": 10951,
+        "githubReportedDigest": "sha256:bf9d52fc2f08034ac8c46017d6eba175ddc9214ee9edc80a113df2abf94ed0d3",
+        "fullArchiveHashVerifiedLocally": true,
+        "url": "https://github.com/weapp-vite/weapp-vite/actions/runs/37192496301/artifacts/11299873155"
+      },
+      "rawReport": {
+        "entry": "report.json",
+        "bytes": 160683,
+        "sha256": "2ebd89149c7dd00ee5b79b8f1188b5a53f3d6f1c1ca81d85625e5d1d0b48a8d6",
+        "zipCrc32Verified": true
+      },
+      "readme": {
+        "entry": "README.md",
+        "bytes": 13989,
+        "sha256": "726e9bb563522b9ba688518f6b8aa4b59a248c2608b1353b99e66ba367415c0a"
+      },
+      "frozenIdentity": {
+        "packages/ast": "7e59a7df79cc1c39df689c10de7d3cebf83db4d0f10a5a18d3dc8559bea08091",
+        "packages/ast/dist": "b6c7d0fbf402c1afcbcd5aab720031d9f44d8f60680f2103a58d6d6e7772aadb",
+        "packages/ast-native": "8f967945a799aade92805a7426e777b76dd34c0ad26d33b4cac12561675bd6e5",
+        "packages/weapp-vite": "10d956a41b0de940a30bb73c481689bf33ea0f8989ee442fec783d362330b643",
+        "packages/weapp-vite/dist": "ed6595c766901263183128314ab9544f96f81760aba68d94f5b730fa0361ecf7",
+        "packages-runtime/wevu-compiler": "81aa6102f9881358c9c96a49408b34ba07eabff30d1019e5394e32cf927801d5",
+        "packages-runtime/wevu-compiler/dist": "8638834a9624acbf12e552b561d8ec0e2a785a9088eb22fe0071d4087273cd3a",
+        "packages-runtime/wevu": "53bd233e02cdf4607b26da8c72377c944667cc12133d11a4fde927615bc768fd",
+        "packages-runtime/wevu/dist": "c977712fc323c4aa303944b6a68099fd6d34cd84aa2331b79cef21b6eaa1605a",
+        "@weapp-core/constants": "30b146deedd391b43a6004dbad02edbd78aeed5ef388b7e206c5eebebca820cd",
+        "@weapp-core/constants/dist": "8cf94657e0fd232a605367dc8b54bb444befc9a40cf0da7ea74430a0dfb494ad",
+        "pnpm-lock.yaml": "c3470f724491ebdd5176c23b1ee61761c858a44f48a20a813721f1ee71276145",
+        "pnpm-workspace.yaml": "9045da15cb0afc3560dd2354d12c1452e2657898dfb79c7e30507ed0ccacf3f7",
+        "package.json": "22e56b09c9238eb999e870adfbc1f8883e1d830950a1a89662e9277ae2f72e91",
+        "driver": "dac71d26d3eaf26396e789ff493e19136c8d124d46225f1d35532adae1fea473",
+        "devUtilities": "d2e9c8147fd36cb6ff20effd1a62189c24a94c56b313a4b54ef964e52892cf29",
+        "templates/weapp-vite-template": "0d464b35d54d43c38de85976d5d18ecdb138e954371806ce585236ba420bbcf6",
+        "templates/weapp-vite-wevu-template": "9871e5b5f1ba91b6c3bdccf5c9f0b36e2340b21b0a5976077e36d706aaf0e55f",
+        "templates/weapp-vite-tailwindcss-tdesign-template": "7382debc7b0aa961fd4f66d60abc9dd832fdd98b840c8a8feefd2309de20ad4d",
+        "e2e-apps/github-issues/fixtures/issue-1134-profile": "24719147489fbfcb49a7ae7abca419af2e3100feea5b6f46395cb2f4b35bc81b"
+      },
+      "nativeBinding": {
+        "identity": {
+          "index.js": "cb750236bf548c633e84116e6dc030b3bf30f7d9427f303fd54118c639a8f167",
+          "weapp_vite_ast_native.win32-x64-msvc.node": "9907da40f300998ca236d4dc9ba469d7dbcb52a4c95f4b8f28ef4de8702d30b0"
+        },
+        "digest": "702c3464b98dfcd155e8773cc4426ea50d3619ca9825a9e3064e14ffbcbdc1c7",
+        "probe": "passed"
+      },
+      "sampleCounts": {
+        "primarySideRuns": 0,
+        "confirmationSideRuns": 0,
+        "primarySamplePairs": 0,
+        "confirmationSamplePairs": 0,
+        "diagnosticRuns": 1
+      },
+      "confirmations": [],
+      "target": {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat:wall",
+        "requiredChangePercent": -10,
+        "met": false,
+        "primary": {
+          "pairs": 0,
+          "offP50": null,
+          "onP50": null,
+          "offP95": null,
+          "onP95": null,
+          "pairedDeltaP50": null,
+          "changePercent": null
+        }
+      },
+      "nativeDiagnostics": [
+        {
+          "input": "weapp-vite-template",
+          "calls": 0,
+          "failures": 0,
+          "coverage": null,
+          "observation": null
+        }
+      ],
+      "runtimeValidation": {
+        "headless": "not-run",
+        "stableIde": "not-run",
+        "physicalDevices": "not-run"
+      },
+      "collectorFailure": "首次原生模板诊断构建在依赖缓存目录创建时报 ENOTDIR；配对采样尚未开始。",
+      "firstBuildLog": {
+        "entry": "diagnostic/build/weapp-vite-template/0/on/first.log",
+        "bytes": 1243,
+        "sha256": "01283ebf1a9ebbdbef6896d559e5c911fa574d340cc5ee83f3325aab19268eee"
+      },
+      "dataUsability": "仅可定位 staged 依赖链接的 Windows 文件系统兼容问题；0 个性能配对，不可用于性能结论。"
+    }
+  ],
+  "conclusion": "不扩大生产 native 覆盖。Linux 完整运行判为 unstable，macOS 完整运行判为 regression；TDesign repeat build P50 分别仅减少 1.73% 与 5.48%，均未达到固定 10% 目标。Windows 在诊断构建失败，未得到配对样本。",
+  "limitations": [
+    "Linux/macOS 的退出码 1 来自门禁主动失败，没有采样超时；Windows 的退出码 1 来自 collector 构建失败，必须区分。",
+    "普通原生模板与 Wevu 的独立诊断为 0 native call；这不排除 binding 加载或路径成本，不能证明越线只是噪声，也不能把回退直接归因于 Rust 计算。",
+    "HMR 使用 120 ms polling watcher，并在定时区间之后强制 GC、读取产物；观测值不是默认 watcher 的未插桩延迟。",
+    "off/on 对比覆盖现有 native 分析整体，不能将差值全部归因于新增 scroll-diagnostic 复用。",
+    "此运行固定于 a822，不代表后续 PR head；三平台环境和 Node 版本不同，不合并跨平台样本。",
+    "ZIP 通过范围读取提取 README 与完整 report 原始字节；report 长度与 CRC32 已校验。Linux/macOS 整包 SHA 仅引用 GitHub 元数据，未下载整包重新计算。",
+    "独立复核基于原始 report 内的全部样本、输出文件 hash/manifest 与告警；没有重新下载并 hash 所有 emitted 文件。",
+    "构建产物/告警/sourcemap 的配对一致性不替代小程序运行时验证；headless、真实稳定版 IDE 和真机均未运行。",
+    "report 未单独保存结束时再次采集的 source/native 摘要快照；独立复核核对各样本与开场冻结身份，结束时一致性依赖采集器正常 finished 且无 failure 的记录。"
+  ],
+  "smallestFollowUpDiagnostic": [
+    "先基于本次原始配对记录检查 macOS 7 项持续 P95 回退的先后顺序、进程启动与 native 加载路径，以及 HMR polling/GC/产物读取的影响。",
+    "保留 Linux 3 项 unstable 结果，不挑选较快批次，不调整固定目标或据此宣称通过。",
+    "Windows 先核对 staged 依赖链接修复后的最小 correctness/冒烟证据；未获得固定正式样本前，不作 Windows 性能判断。",
+    "本文件仅记录既有运行；未启动新性能采样、运行时 E2E 或重跑该 GitHub Actions run。"
+  ],
+  "verificationSources": {
+    "verify_reports.py": {
+      "sha256": "fcfbbe961adfdf20ece2dc54ffa06e42ea0f67c5f173d03c5fb50397936b826c",
+      "bytes": 20163
+    },
+    "verification.json": {
+      "sha256": "964d38576fb8e327990f3e204243d2d78f0c8ed7cdc759d821ae2cbf42e1b9d6",
+      "bytes": 14945
+    }
+  }
+}

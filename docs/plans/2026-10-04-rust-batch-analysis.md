@@ -332,3 +332,9 @@ page-meta/props 查询已经使用 Babel AST，拆成单独 native API 会增加
 同时新增[脚本 JS 基线工具](../../scripts/scriptAnalysisBaseline/README.md)，仅通过诊断 source loader 实施四项独立实验：同次编译的 AST 单次所有权移交、props-return visitor 的 `noScope`、page-meta 和 reserved-props 保守负向检查。AST 只在已有值、最终源码逐字相同、fast path 未命中时复用；源码变化仍重新 parse，异常和未消费 token 在 finally 释放。没有生产源码改动，也没有新增 NAPI 调用。
 
 原始编译器、相同 loader 控制组、四项单独优化及组合版，七个独立进程各执行 32 场景两次，共 448 次编译检查通过。重复调用也与首次原始结果比较，完整保留输出、map、告警和公开错误诊断字段；每次实际源码/配置输入摘要与父进程一致。覆盖 AST 复用/源码变化/不可用、两类 guard 的正负分支、宏转义/别名/类型与值遮蔽、TSX、Unicode/CRLF 和失败清理。17 项单测、脚本 typecheck 和定向 ESLint 通过，已接入三平台 correctness CI；当前本地记录见[JS 基线证据](./2026-10-04-script-baseline-evidence.json)。此工具尚未采集性能，不能从省去解析/遍历的次数推导提速。
+
+固定提交 `a822fb7ff5eeb341a6b95bafa4f9eaef24fbd412` 的[生产 native off/on 正式运行](https://github.com/weapp-vite/weapp-vite/actions/runs/37192496301)现已结束。Linux/macOS 均完成采样并由门禁主动退出，分别判为 `unstable`、`regression`，不是超时；Windows 在旧暂存链接问题处失败，没有配对性能样本。预先固定的 TDesign 重复构建目标，Linux P50 为 4486.08→4408.42 ms（减少 1.73%），macOS 为 3770.95→3564.22 ms（减少 5.48%），均未达到 10% 门槛。
+
+该正式运行测量已有生产 native 路径，不包含本轮 binding 或脚本 JS 基线实验。诊断构建中原生/Wevu 两个模板各零 native 调用，TDesign 各有两次调用，零失败/回退。零调用只表示没有覆盖 native 计算，不能排除加载或路径开销，也不能将越线直接解释为纯噪声。HMR 使用已有 120 ms polling watcher 协议，强制 GC 和产物读取发生在计时外并影响下一样本，不能视为默认 watcher 的无观测延迟；build RSS 为进程树采样峰值，HMR RSS 为 GC 后快照，不能混为同一内存指标。正式失败结果进一步约束生产接入，不替代 Stable DevTools runtime 最终验收。
+
+Linux/macOS 的 100 项基础指标均完整；分别有 322/390 个 side-run 和 3124/3660 条 samples。Linux 的 P50/P95 门禁有 197 项通过、3 项不稳定；macOS 有 167 项通过、26 项不稳定、7 项在确认批次仍回退。持续回退均是 wall P95，涉及普通模板的 repeat build、script first edit / repeat restore、template repeat restore、style first restore，以及 Wevu script repeat restore / style repeat edit；确认批次回退约 6.09%–28.69%。原始报告 hash、完整性、全部未通过指标的首批/确认数值、失败阶段和限制见[正式运行证据](./2026-10-04-rust-production-run-status.json)。后续优先定位这些整链尾延迟及 native 加载成本，再决定是否修改生产接入；本轮没有降低阈值或重新派发固定运行。
