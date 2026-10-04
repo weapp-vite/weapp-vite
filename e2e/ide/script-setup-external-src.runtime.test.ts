@@ -75,12 +75,16 @@ describe('script setup external blocks component analysis runtime', { concurrent
 
     for (const step of SCRIPT_SETUP_EXTERNAL_STEPS) {
       if (step.id !== 'initial') {
-        const completion = createDevBuildCompletion(dev!, { completed: '小程序已重新构建' })
+        const editedFile = path.join(project, 'src/pages/index', step.id.includes('script') ? 'setup.ts' : 'template.html')
+        const completion = createDevBuildCompletion(dev!, {
+          completed: '小程序已重新构建',
+          source: { file: editedFile, profilePath: path.join(project, '.weapp-vite/hmr-profile.jsonl') },
+        })
         if (step.id.includes('script')) {
-          await writeFile(path.join(project, 'src/pages/index/setup.ts'), externalComponentScript(step.imported))
+          await writeFile(editedFile, externalComponentScript(step.imported))
         }
         else {
-          await writeFile(path.join(project, 'src/pages/index/template.html'), externalComponentTemplate(step.marker, step.component !== null))
+          await writeFile(editedFile, externalComponentTemplate(step.marker, step.component !== null))
         }
         await completion.wait()
         if (resolveRuntimeProviderName() === 'headless') {
