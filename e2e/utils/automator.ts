@@ -267,6 +267,8 @@ export interface RelaunchRecoveryOptions {
   projectPath?: string
   retryDelayMs?: number
   rootSelectors?: string[]
+  /** 限定显式根节点所属路由；未提供时保持直接调用方的全路由配置。 */
+  rootSelectorsRoute?: string
   skipPageRootCheck?: boolean
 }
 
@@ -2444,6 +2446,10 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
   const disableRelaunchCurrentReady = shouldDisableAutomatorRelaunchCurrentReady()
   miniProgram.reLaunch = async (...args: any[]) => {
     const route = typeof args[0] === 'string' ? args[0] : '<unknown-route>'
+    const rootSelectors = options.rootSelectorsRoute === undefined
+      || normalizeRouteForCompare(options.rootSelectorsRoute) === normalizeRouteForCompare(route)
+      ? options.rootSelectors
+      : undefined
     const maxAttempts = 2
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -2453,7 +2459,7 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
         if (attempt === 1 && !options.skipPageRootCheck && !disableRelaunchCurrentReady && !routeHasQuery(route)) {
           const currentPage = await waitForCurrentRouteReady(miniProgram, route, Math.min(QUICK_CURRENT_ROUTE_READY_TIMEOUT, RELAUNCH_READY_TIMEOUT), {
             checkDevtoolsLog: options.checkDevtoolsLog,
-            rootSelectors: options.rootSelectors,
+            rootSelectors,
           })
           if (currentPage) {
             process.stdout.write(`[info] [runtime:relaunch-current-ready] route=${route} attempt=${attempt}\n`)
@@ -2482,11 +2488,11 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
         }
 
         if (!options.skipPageRootCheck) {
-          const pageRoot = await waitForRelaunchPageRoot(page, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, options.rootSelectors)
+          const pageRoot = await waitForRelaunchPageRoot(page, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, rootSelectors)
           if (!pageRoot) {
             const currentPage = await waitForCurrentRouteReady(miniProgram, route, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, {
               checkDevtoolsLog: options.checkDevtoolsLog,
-              rootSelectors: options.rootSelectors,
+              rootSelectors,
             })
             if (currentPage) {
               return currentPage
@@ -2525,7 +2531,7 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
               return currentPage ?? page
             }
 
-            const pageRoot = await waitForRelaunchPageRoot(currentPage, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, options.rootSelectors)
+            const pageRoot = await waitForRelaunchPageRoot(currentPage, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, rootSelectors)
             if (pageRoot) {
               process.stdout.write(`[info] [runtime:relaunch-fallback] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
               return currentPage ?? page
@@ -2891,7 +2897,8 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               disableSessionRecovery: disableRelaunchSessionRecovery,
               project,
               projectPath: launchProjectPath,
-              rootSelectors: warmupRootSelectors,
+              rootSelectors: resolvedWarmupRoute ? warmupRootSelectors : undefined,
+              rootSelectorsRoute: resolvedWarmupRoute,
               skipPageRootCheck: skipRelaunchPageRootCheck,
             })
             return attachBridgeWrapperSyncCleanup(withRelaunch, bridgeWrapperProject)
