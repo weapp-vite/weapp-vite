@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AnalyzeBudgetConfig, PackageBudgetWarning, PackageInsight } from '../types'
+import type { AnalyzeSubpackagesResult, PackageBudgetWarning } from '../types'
 import { computed, onBeforeUnmount, reactive, watch } from 'vue'
 import {
   budgetSandboxPresets,
@@ -16,10 +16,8 @@ import AppEmptyState from './AppEmptyState.vue'
 
 const props = defineProps<{
   activeBudgetWarningId: string | null
-  budgetConfig?: AnalyzeBudgetConfig
   currentWarnings: PackageBudgetWarning[]
-  packageInsights: PackageInsight[]
-  totalBytes: number
+  result: AnalyzeSubpackagesResult
 }>()
 
 const emit = defineEmits<{
@@ -36,7 +34,7 @@ const draft = reactive({
 const actionStatus = reactive({ text: '', timer: null as ReturnType<typeof setTimeout> | null })
 
 function bytesToMiB(bytes: number) {
-  return Number((bytes / 1024 / 1024).toFixed(2))
+  return bytes / (1024 * 1024)
 }
 
 function mibToBytes(value: number) {
@@ -44,7 +42,7 @@ function mibToBytes(value: number) {
 }
 
 function getInitialConfig() {
-  return normalizeBudgetSandboxConfig(props.budgetConfig ?? defaultAnalyzeBudgetConfig)
+  return normalizeBudgetSandboxConfig(props.result.metadata?.budgets ?? defaultAnalyzeBudgetConfig)
 }
 
 function resetDraft() {
@@ -57,6 +55,7 @@ function resetDraft() {
 }
 
 const sandboxConfig = computed(() => normalizeBudgetSandboxConfig({
+  ...props.result.metadata?.budgets,
   totalBytes: mibToBytes(draft.totalMiB),
   mainBytes: mibToBytes(draft.mainMiB),
   subPackageBytes: mibToBytes(draft.subPackageMiB),
@@ -65,8 +64,7 @@ const sandboxConfig = computed(() => normalizeBudgetSandboxConfig({
 }))
 
 const projectedWarnings = computed(() => createBudgetSandboxWarnings({
-  totalBytes: props.totalBytes,
-  packages: props.packageInsights,
+  result: props.result,
   config: sandboxConfig.value,
 }))
 const activePresetId = computed(() => findMatchingBudgetPreset(sandboxConfig.value)?.id ?? null)
@@ -80,7 +78,7 @@ const projectedWarningItems = computed(() => projectedWarnings.value.slice(0, 6)
   warning: item,
   active: props.activeBudgetWarningId === item.id,
   title: item.label,
-  meta: `${item.status === 'critical' ? '超预算' : '接近预算'} · ${(item.ratio * 100).toFixed(1)}%`,
+  meta: item.status === 'unknown' ? '体积或归因不完整，无法验收' : `${item.status === 'critical' ? '超预算' : '接近预算'} · ${(item.ratio * 100).toFixed(1)}%`,
   value: `${formatBytes(item.currentBytes)} / ${formatBytes(item.limitBytes)}`,
 })))
 
@@ -121,7 +119,7 @@ async function copyBudgetSnippet() {
 }
 
 watch(
-  () => props.budgetConfig,
+  () => props.result.metadata?.budgets,
   resetDraft,
   { immediate: true },
 )

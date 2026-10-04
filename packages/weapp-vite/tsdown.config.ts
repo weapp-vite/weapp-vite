@@ -10,6 +10,7 @@ export default defineConfig({
     'upload-worker': './src/cli/upload/worker.ts',
     'config': './src/config.ts',
     'dashboard': './src/dashboard/index.ts',
+    'dashboard/analyze': './src/dashboard/analyze/index.ts',
     'dashboard/vite': './src/dashboard/vite.ts',
     'json': './src/json.ts',
     'volar': './src/volar.ts',

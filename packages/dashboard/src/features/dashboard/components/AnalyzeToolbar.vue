@@ -29,8 +29,8 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <section class="relative z-20 flex min-w-0 items-center gap-2 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 shadow-(--dashboard-shadow)">
-    <div class="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto pb-0.5">
+  <section class="relative z-20 flex min-w-0 flex-wrap items-center gap-2 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 shadow-(--dashboard-shadow)">
+    <div class="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
       <button
         v-if="canSearch"
         class="shrink-0"
@@ -44,27 +44,31 @@ const emit = defineEmits<{
       </button>
       <button
         v-if="canSearch"
-        class="shrink-0"
+        class="shrink-0 max-sm:px-2"
         :class="pillButtonStyles({ kind: 'nav', active: false })"
+        title="复制视图"
         @click="emit('copyViewLink')"
       >
         <span class="h-4.5 w-4.5">
           <DashboardIcon name="metric-link" />
         </span>
-        复制视图
+        <span class="sr-only sm:not-sr-only">复制视图</span>
       </button>
       <button
         v-if="canSearch"
-        class="shrink-0 disabled:cursor-not-allowed disabled:opacity-55"
+        class="shrink-0 disabled:cursor-not-allowed disabled:opacity-55 max-sm:px-2"
         :class="pillButtonStyles({ kind: 'nav', active: false })"
         :disabled="!canResetView"
+        title="重置视图"
         @click="emit('resetView')"
       >
         <span class="h-4.5 w-4.5">
           <DashboardIcon name="metric-reset" />
         </span>
-        重置视图
+        <span class="sr-only sm:not-sr-only">重置视图</span>
       </button>
+    </div>
+    <div class="order-last flex min-w-0 w-full flex-wrap items-center gap-2 empty:hidden sm:order-none sm:w-auto sm:flex-1">
       <AppInfoPill
         v-if="exportStatus"
         class="shrink-0"

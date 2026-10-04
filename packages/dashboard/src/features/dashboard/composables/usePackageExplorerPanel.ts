@@ -132,7 +132,7 @@ export function usePackageExplorerPanel(props: PackageExplorerPanelProps) {
       compressedBytesLabel: `${pkg.compressedSizeSource === 'real' ? 'Brotli' : '估算'} ${formatBytes(pkg.compressedBytes)}`,
       deltaText: formatDelta(pkg.sizeDeltaBytes),
       budgetText: budgetWarning
-        ? `${budgetWarning.status === 'critical' ? '超预算' : '接近预算'} ${(budgetWarning.ratio * 100).toFixed(1)}%`
+        ? budgetWarning.status === 'unknown' ? '预算待确认：体积测量不完整' : `${budgetWarning.status === 'critical' ? '超预算' : '接近预算'} ${(budgetWarning.ratio * 100).toFixed(1)}%`
         : '预算正常',
       selected,
       entryCountText: `${pkg.entryFileCount} 个 entry`,

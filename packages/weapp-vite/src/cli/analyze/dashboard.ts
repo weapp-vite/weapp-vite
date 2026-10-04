@@ -70,6 +70,7 @@ export async function startAnalyzeDashboard(
   })
 
   let server: ViteDevServer | undefined
+  let onHostClose: (() => void) | undefined
   try {
     server = await createServer({
       root,
@@ -85,8 +86,13 @@ export async function startAnalyzeDashboard(
           configureServer(createdServer) {
             server = createdServer
           },
+          closeServer({ reason }) {
+            if (reason === 'close') {
+              onHostClose?.()
+            }
+          },
         },
-        createAnalyzeDashboardViteBridge(devframe),
+        createAnalyzeDashboardViteBridge(devframe, { projectRoot: options.cwd ?? process.cwd() }),
       ],
       server: {
         host: '127.0.0.1',
@@ -117,16 +123,16 @@ export async function startAnalyzeDashboard(
   })
   const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM']
   let onExit: () => Promise<void>
+  onHostClose = () => {
+    for (const signal of signals) {
+      process.removeListener(signal, onExit)
+    }
+    resolveExit()
+  }
   const close = () => {
     if (!closing) {
       devframe.dispose()
-      closing = Promise.resolve().then(() => activeServer.close()).finally(() => {
-        for (const signal of signals) {
-          process.removeListener(signal, onExit)
-        }
-        activeServer.httpServer?.removeListener('close', onExit)
-        resolveExit()
-      })
+      closing = Promise.resolve().then(() => activeServer.close()).finally(onHostClose)
     }
     return closing
   }
@@ -136,7 +142,6 @@ export async function startAnalyzeDashboard(
   for (const signal of signals) {
     process.once(signal, onExit)
   }
-  activeServer.httpServer?.once('close', onExit)
 
   const handle: AnalyzeDashboardHandle = {
     update: devframe.update,

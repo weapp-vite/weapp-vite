@@ -15,6 +15,9 @@
         ],
         "weapp-vite/dashboard/vite": [
           "../../dist/dashboard/vite.d.mts"
+        ],
+        "weapp-vite/dashboard/analyze": [
+          "../../dist/dashboard/analyze.d.mts"
         ]
       },
       "types": [

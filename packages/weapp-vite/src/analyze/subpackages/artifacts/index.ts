@@ -1,6 +1,7 @@
 import type { PackageReport } from '../types'
 import type { AnalyzeArtifact, AnalyzeArtifactAnalysis, AnalyzeModuleOwner } from './types'
-import { classifyOwnedModule, createModuleOwnerResolver, isRuntimeCategory } from './owner'
+import { isRuntimeCategory } from './category'
+import { classifyOwnedModule, createModuleOwnerResolver } from './owner'
 
 export type * from './types'
 

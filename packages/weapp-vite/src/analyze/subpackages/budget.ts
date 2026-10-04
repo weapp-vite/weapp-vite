@@ -1,5 +1,14 @@
-import type { AnalyzeSubpackagesResult, PackageType } from './types'
-import { isRuntimeCategory } from './artifacts/owner'
+import type { AnalyzeBudgetConfig, AnalyzeSubpackagesMetadata, AnalyzeSubpackagesResult, PackageType } from './types'
+import { isRuntimeCategory } from './artifacts/category'
+
+const defaultBudgets: AnalyzeBudgetConfig = {
+  totalBytes: 20 * 1024 * 1024,
+  mainBytes: 2 * 1024 * 1024,
+  subPackageBytes: 2 * 1024 * 1024,
+  independentBytes: 2 * 1024 * 1024,
+  warningRatio: 0.85,
+  source: 'default',
+}
 
 export interface AnalyzeBudgetCheckItem {
   id: string
@@ -13,11 +22,14 @@ export interface AnalyzeBudgetCheckItem {
   files: string[]
 }
 
-export function createAnalyzeBudgetCheck(result: Pick<AnalyzeSubpackagesResult, 'packages' | 'metadata' | 'artifacts'>): AnalyzeBudgetCheckItem[] {
-  const budgets = result.metadata?.budgets
-  if (!budgets) {
-    return []
-  }
+export interface AnalyzeBudgetCheckInput {
+  packages: AnalyzeSubpackagesResult['packages']
+  artifacts?: AnalyzeSubpackagesResult['artifacts']
+  metadata?: Partial<AnalyzeSubpackagesMetadata> & { budgets: AnalyzeBudgetConfig }
+}
+
+export function createAnalyzeBudgetCheck(result: AnalyzeBudgetCheckInput): AnalyzeBudgetCheckItem[] {
+  const budgets = result.metadata?.budgets ?? defaultBudgets
   const createItem = (options: Omit<AnalyzeBudgetCheckItem, 'ratio' | 'status'>, unknown = false): AnalyzeBudgetCheckItem => {
     const ratio = options.limitBytes > 0 ? options.currentBytes / options.limitBytes : options.currentBytes > 0 ? 1 : 0
     return {

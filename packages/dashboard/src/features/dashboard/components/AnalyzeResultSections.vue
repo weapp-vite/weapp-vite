@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type {
   AnalyzeActionCenterItem,
-  AnalyzeBudgetConfig,
   AnalyzeComparisonMode,
   AnalyzeHistorySnapshot,
   AnalyzeSubpackagesResult,
@@ -44,7 +43,6 @@ defineProps<{
   activeTab: DashboardTab
   activeWorkQueueItemId: string | null
   baselineSnapshotId: string | null
-  budgetConfig?: AnalyzeBudgetConfig
   budgetWarnings: PackageBudgetWarning[]
   canUseSelectedPackageFilter: boolean
   hasTreemapComparison: boolean
@@ -73,7 +71,6 @@ defineProps<{
   sourceLayoutItems: Array<{ id: string, label: string }>
   theme: ResolvedTheme
   topCards: DashboardMetricCard[]
-  totalBytes: number
   treemapColorMode: AnalyzeTreemapColorMode
   treemapColorDescription: string
   treemapComparisonLabel: string
@@ -212,9 +209,7 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
       :largest-files="filteredLargestFiles"
       :selected-file-modules="selectedFileModules"
       :budget-warnings="budgetWarnings"
-      :budget-config="budgetConfig"
-      :package-insights="packageInsights"
-      :total-bytes="totalBytes"
+      :result="result"
       :active-budget-warning-id="activeBudgetWarningId"
       :active-largest-file-key="activeLargestFileKey"
       :selected-treemap-meta="selectedTreemapMeta"

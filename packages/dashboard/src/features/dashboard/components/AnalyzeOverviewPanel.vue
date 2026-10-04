@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AnalyzeActionCenterItem, DashboardMetricCard, LargestFileEntry, PackageInsight, SummaryMetric } from '../types'
 import { useAnalyzeOverviewPanel } from '../composables/useAnalyzeOverviewPanel'
-import { formatBytes, formatPackageType } from '../utils/format'
+import { formatBytes } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
@@ -37,7 +37,7 @@ const {
 </script>
 
 <template>
-  <section class="grid min-h-0 min-w-0 gap-2 overflow-visible xl:h-full xl:grid-rows-[auto_auto_minmax(0,1fr)] xl:overflow-hidden">
+  <section class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_auto_minmax(0,1fr)] xl:overflow-hidden">
     <DashboardMetricGrid compact :cards="cards" :package-type-summary="packageTypeSummary" />
 
     <ReleaseGatePanel
@@ -46,13 +46,13 @@ const {
       @copy="copyReleaseGateReport"
     />
 
-    <div class="grid min-h-0 min-w-0 gap-2 overflow-visible xl:grid-cols-[minmax(0,0.95fr)_minmax(0,0.85fr)_minmax(0,0.9fr)] xl:overflow-hidden">
+    <div class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:grid-cols-[minmax(0,0.95fr)_minmax(0,0.85fr)_minmax(0,0.9fr)] xl:overflow-hidden">
       <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
         <AppPanelHeader icon-name="metric-health" title="处理队列">
           <template #meta>
             <button
               type="button"
-              class="inline-flex items-center gap-1.5 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 py-1 text-[11px] text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
+              class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 py-1 text-xs text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
               @click="emit('copyReport')"
             >
               <span class="h-3.5 w-3.5">
@@ -90,7 +90,7 @@ const {
                       {{ item.meta }}
                     </p>
                   </div>
-                  <span v-if="item.value" class="max-w-28 shrink-0 truncate text-sm font-semibold text-(--dashboard-accent)">
+                  <span v-if="item.value" class="max-w-28 shrink-0 truncate text-sm font-semibold tabular-nums text-(--dashboard-accent)">
                     {{ item.value }}
                   </span>
                 </div>
@@ -115,19 +115,19 @@ const {
             >
               <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                 <div class="min-w-0">
-                  <p class="truncate font-mono text-xs font-semibold text-(--dashboard-text)">
+                  <p class="line-clamp-2 break-words font-mono text-xs font-semibold leading-5 text-(--dashboard-text)" :title="file.file">
                     {{ file.file }}
                   </p>
                   <p class="mt-1 truncate text-xs text-(--dashboard-text-soft)">
-                    {{ file.packageLabel }} · {{ formatPackageType(file.packageType) }} · {{ file.type }} · {{ file.moduleCount }} 模块
+                    {{ file.packageLabel }} · {{ file.type }} · {{ file.moduleCount }} 模块
                   </p>
                 </div>
                 <div class="shrink-0 text-right">
-                  <p class="text-sm font-semibold leading-5 text-(--dashboard-accent)">
+                  <p class="text-sm font-semibold leading-5 tabular-nums text-(--dashboard-accent)">
                     {{ formatBytes(file.size) }}
                   </p>
-                  <p class="text-[11px] leading-4 text-(--dashboard-text-soft)">
-                    {{ formatBytes(file.compressedSize) }}
+                  <p class="text-xs leading-5 tabular-nums text-(--dashboard-text-soft)">
+                    压缩 {{ formatBytes(file.compressedSize) }}
                   </p>
                 </div>
               </div>
@@ -151,7 +151,7 @@ const {
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                  <p class="truncate text-sm font-medium text-(--dashboard-text)">
+                  <p class="line-clamp-2 break-words text-sm font-medium leading-5 text-(--dashboard-text)" :title="item.label">
                     {{ item.label }}
                   </p>
                   <p class="mt-1 text-xs text-(--dashboard-text-soft)">
@@ -159,10 +159,10 @@ const {
                   </p>
                 </div>
                 <div class="shrink-0 text-right">
-                  <p class="text-sm font-semibold text-(--dashboard-text)">
+                  <p class="text-sm font-semibold tabular-nums text-(--dashboard-text)">
                     {{ item.sizeLabel }}
                   </p>
-                  <p class="text-[11px] text-(--dashboard-text-soft)">
+                  <p class="text-xs tabular-nums text-(--dashboard-text-soft)">
                     {{ item.compressedLabel }}
                   </p>
                 </div>

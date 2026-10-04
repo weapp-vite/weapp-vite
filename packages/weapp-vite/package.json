@@ -44,6 +44,10 @@
       "types": "./dist/dashboard.d.mts",
       "import": "./dist/dashboard.mjs"
     },
+    "./dashboard/analyze": {
+      "types": "./dist/dashboard/analyze.d.mts",
+      "import": "./dist/dashboard/analyze.mjs"
+    },
     "./dashboard/vite": {
       "types": "./dist/dashboard/vite.d.mts",
       "import": "./dist/dashboard/vite.mjs"
@@ -174,7 +178,9 @@
     "@babel/plugin-transform-modules-commonjs": "^8.0.1",
     "@babel/preset-env": "^8.0.6",
     "@babel/preset-typescript": "^8.0.1",
+    "@devframes/agentic": "1.2.0",
     "@jridgewell/remapping": "^2.3.5",
+    "@modelcontextprotocol/node": "^2.1.0",
     "@typescript-eslint/parser": "^8.71.0",
     "@vercel/detect-agent": "^1.2.5",
     "@volar/typescript": "^2.4.28",
@@ -233,12 +239,14 @@
     "vue-tsc": "catalog:",
     "weapp-ide-cli": "workspace:*",
     "weapp-tailwindcss": "catalog:",
-    "wevu": "workspace:*"
+    "wevu": "workspace:*",
+    "zod": "catalog:"
   },
   "optionalDependencies": {
     "@swc/core": "^1.16.13"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "^2.2.0",
     "@vitejs/devtools-kit": "catalog:",
     "oxc-parser": "catalog:",
     "oxc-walker": "catalog:",

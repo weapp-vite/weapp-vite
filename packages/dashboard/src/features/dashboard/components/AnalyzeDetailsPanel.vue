@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AnalyzeBudgetConfig, LargestFileEntry, PackageBudgetWarning, PackageInsight, SelectedFileModuleDetail, TreemapNodeMeta } from '../types'
+import type { AnalyzeSubpackagesResult, LargestFileEntry, PackageBudgetWarning, SelectedFileModuleDetail, TreemapNodeMeta } from '../types'
 import AnalyzeDraggableGrid from './AnalyzeDraggableGrid.vue'
 import AnalyzeFileExplorerPanel from './AnalyzeFileExplorerPanel.vue'
 import AnalyzeFileModulesPanel from './AnalyzeFileModulesPanel.vue'
@@ -9,9 +9,7 @@ defineProps<{
   largestFiles: LargestFileEntry[]
   selectedFileModules: SelectedFileModuleDetail[]
   budgetWarnings: PackageBudgetWarning[]
-  budgetConfig?: AnalyzeBudgetConfig
-  packageInsights: PackageInsight[]
-  totalBytes: number
+  result: AnalyzeSubpackagesResult
   activeBudgetWarningId: string | null
   activeLargestFileKey: string | null
   selectedTreemapMeta: TreemapNodeMeta | null
@@ -51,10 +49,8 @@ const detailLayoutItems = [
     <template #budget>
       <BudgetSandboxPanel
         :active-budget-warning-id="activeBudgetWarningId"
-        :budget-config="budgetConfig"
         :current-warnings="budgetWarnings"
-        :package-insights="packageInsights"
-        :total-bytes="totalBytes"
+        :result="result"
         @select-budget-warning="emit('selectBudgetWarning', $event)"
       />
     </template>
