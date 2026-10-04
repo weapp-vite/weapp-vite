@@ -4,6 +4,14 @@ import { describe, expect, it } from 'vitest'
 import { getCiFullTasks, getCiPrTasks, getCiTasks, getDiminaTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
+  it('lets both mode/cache cases finish draining owned resources before the task deadline', async () => {
+    const label = 'ide/issue-1140-mode-cache.runtime.test.ts'
+    for (const name of ['ide-full:github-issues', 'ide-dom-headless', 'ide-headless-full']) {
+      const task = (await getSuiteTasks(name)).find(task => task.label === label)
+      expect(Number(task?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS)).toBeGreaterThan(2 * 600_000)
+    }
+  })
+
   it('runs the prepared benchmark CLI entrypoint in PR and full CI suites', async () => {
     const label = 'ci/benchmark-hmr-entrypoint.test.ts'
     expect((await getCiPrTasks()).filter(task => task.label === label)).toHaveLength(1)
@@ -46,6 +54,7 @@ describe('e2e suite manifest', () => {
     'ide/issue-1082-confirmation.runtime.test.ts',
     'ide/issue-1134-native-batch.runtime.test.ts',
     'ide/issue-1134-native-topology.runtime.test.ts',
+    'ide/issue-1140-mode-cache.runtime.test.ts',
     'ide/issue-1034-auto-routes.runtime.test.ts',
     'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
     'ide/issue-1072-json-context.runtime.test.ts',
@@ -116,7 +125,8 @@ describe('e2e suite manifest', () => {
 
   it('runs the github issue aggregate once with a bridge wrapper', () => {
     const tasks = getIdeExhaustiveTasks()
-    const aggregateTasks = tasks.filter(task => IDE_GITHUB_ISSUES_AGGREGATE_LABELS.includes(task.label))
+    const aggregateLabels: readonly string[] = IDE_GITHUB_ISSUES_AGGREGATE_LABELS
+    const aggregateTasks = tasks.filter(task => aggregateLabels.includes(task.label))
     const labels = new Set(tasks.map(task => task.label))
 
     expect(aggregateTasks).toHaveLength(1)
