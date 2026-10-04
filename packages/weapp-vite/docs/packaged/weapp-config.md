@@ -14,6 +14,12 @@ export default defineConfig({
 })
 ```
 
+## 构建语法目标
+
+顶层 `build.target` 沿用 Vite 标准语义。若关闭 IDE 的 ES6 转 ES5 和增强编译后，真机调试上传在可选链（`?.`）处报 `Unexpected token .`，可设置 `build: { target: 'es2019' }` 并重新构建，由 Vite 降级语法。IDE 模拟器可运行不代表上传解析器支持相同语法；生成二维码也不代替目标设备上的功能验证。
+
+`build.target` 不补齐运行时 API。完整配置边界见[构建与产物配置](https://vite.weapp.dev/config/build-and-output.html)。
+
 ## 高频配置项
 
 ### `srcRoot`
