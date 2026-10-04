@@ -9,6 +9,7 @@ import { WeappModeSequenceSession } from '../../scripts/editSequence/weappModes'
 import { createWeappModeSequence } from '../../scripts/editSequence/weappModeScenarios'
 import { launchAutomator } from '../utils/automator'
 import { createDomAcceptance } from '../utils/domAcceptance'
+import { createProductionRuntime } from '../utils/productionRuntime'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 
 const homeRoute = '/pages/home/index'
@@ -56,7 +57,7 @@ function checkpoints(): DomCheckpoint[] {
 describe.each([true, false])('issue #1140 production runtime after mode/cache transitions (emptyOutDir=%s)', (emptyOutDir) => {
   let suiteFixture: Awaited<ReturnType<typeof createSequenceProject>> | undefined
   let suiteSession: WeappModeSequenceSession | undefined
-  let host: Awaited<ReturnType<typeof launchAutomator>> | undefined
+  let runtime: ReturnType<typeof createProductionRuntime<Awaited<ReturnType<typeof launchAutomator>>>> | undefined
   let closing = false
   let cleanup: Promise<void> | undefined
   const pending = new Set<Promise<unknown>>()
@@ -81,9 +82,7 @@ describe.each([true, false])('issue #1140 production runtime after mode/cache tr
   }
 
   async function closeHost() {
-    const owned = host
-    host = undefined
-    await owned?.close()
+    await runtime?.close()
   }
 
   function closeResources() {
@@ -97,20 +96,21 @@ describe.each([true, false])('issue #1140 production runtime after mode/cache tr
     return cleanup
   }
 
-  async function getRuntime(project: string, input: SequenceInput) {
+  async function getRuntime(input: SequenceInput) {
     assertActive(input)
-    if (host && resolveRuntimeProviderName() === 'headless') {
-      // 每步是全量 production 输出；headless 无 IDE 磁盘重编译，必须清除旧 VM 的模块缓存。
-      await closeHost()
-    }
-    assertActive(input)
-    host ??= await launchAutomator({ projectPath: project, bridgeProjectMode: 'direct', warmupRoute: homeRoute, warmupRootSelectors: ['#mode-value'] })
+    const host = await runtime!.open()
     // 超时期间返回的 host 仍先登记，cleanup 等待本任务结束后统一关闭。
     assertActive(input)
     return host
   }
 
-  // 每个 emptyOutDir suite 持有唯一 DevTools 宿主；driver 与 Vitest 兜底共用幂等清理。
+  function launchProductionRuntime(options: { projectPath: string, cliPath?: string }) {
+    return launchAutomator({ ...options, bridgeProjectMode: 'direct', warmupRoute: homeRoute, warmupRootSelectors: ['#mode-value'] })
+  }
+
+  // 本场景每步是全量 production，允许重新装载独占项目；不是保存状态的 HMR，也不重启共享宿主。
+  // DevTools 的 reLaunch/普通编译仍可能读取旧代模块，必须和 headless 清除 VM 缓存保持同一边界。
+  // 同一代的页面/分包导航复用一个连接；driver 与 Vitest 兜底共用幂等清理。
   afterAll(closeResources, 300_000)
 
   it('renders every production result and matches a fresh build in a separate directory', async (context) => {
@@ -119,13 +119,14 @@ describe.each([true, false])('issue #1140 production runtime after mode/cache tr
     const project = path.join(fixture.root, 'incremental')
     const session = new WeappModeSequenceSession(project, false)
     suiteSession = session
+    runtime = createProductionRuntime({ projectPath: project, provider: resolveRuntimeProviderName(), launch: launchProductionRuntime })
 
     try {
       const sequence = createWeappModeSequence(emptyOutDir)
       const dom = createDomAcceptance(context, 'scripts/editSequence/weappModeScenarios.ts', checkpoints())
 
       async function observeRuntime(input: SequenceInput) {
-        const host = await getRuntime(project, input)
+        const host = await getRuntime(input)
         assertActive(input)
         const page = await host.reLaunch(homeRoute)
         assertActive(input)
@@ -148,9 +149,10 @@ describe.each([true, false])('issue #1140 production runtime after mode/cache tr
       await verifyEditSequence(sequence, {
         name: `production-runtime-${resolveRuntimeProviderName()}`,
         incremental: input => track(input, async () => {
-          const outputs = await session.observe(input)
-          await observeRuntime(input)
-          return outputs
+          // 先关闭上一代拥有的项目，再修改磁盘，避免 IDE 同时热加载中间的 dev/prod 输出。
+          await closeHost()
+          assertActive(input)
+          return session.observe(input)
         }),
         fresh: input => track(input, async () => {
           const root = path.join(fixture.root, `fresh-${input.step}`)
@@ -179,6 +181,7 @@ describe.each([true, false])('issue #1140 production runtime after mode/cache tr
           }
           return outputs!
         }),
+        afterCompare: input => track(input, () => observeRuntime(input)),
         close: closeResources,
       }, { timeoutMs: 300_000 })
     }
