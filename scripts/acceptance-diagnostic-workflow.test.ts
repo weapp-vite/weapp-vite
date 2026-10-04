@@ -41,6 +41,6 @@ it('rebuilds dependencies and retains coverage and the original test timeout on 
   })
   expect(String(job.with.main_command).trim().split('\n')).toEqual([
     'pnpm --filter @weapp-agent/mini-program typecheck',
-    'pnpm exec vitest run --configLoader bundle --coverage.enabled packages/agent-mini-program/test/acceptance.test.ts --reporter=default --reporter=json --outputFile=.tmp/acceptance-runtime-report.json',
+    'pnpm --filter @weapp-agent/mini-program exec vitest run --configLoader bundle --coverage.enabled --maxWorkers=50% test/acceptance.test.ts --reporter=default --reporter=json --outputFile=../../.tmp/acceptance-runtime-report.json',
   ])
 })

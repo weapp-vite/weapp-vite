@@ -72,7 +72,7 @@ jobs:
       build_command: pnpm exec turbo run build --filter=@weapp-agent/mini-program...
       main_command: |
         pnpm --filter @weapp-agent/mini-program typecheck
-        pnpm exec vitest run --configLoader bundle --coverage.enabled packages/agent-mini-program/test/acceptance.test.ts --reporter=default --reporter=json --outputFile=.tmp/acceptance-runtime-report.json
+        pnpm --filter @weapp-agent/mini-program exec vitest run --configLoader bundle --coverage.enabled --maxWorkers=50% test/acceptance.test.ts --reporter=default --reporter=json --outputFile=../../.tmp/acceptance-runtime-report.json
       artifact_name: acceptance-runtime-windows-node-${{ matrix.node-version }}-${{ github.sha }}
       artifact_path: .tmp/acceptance-runtime-report.json
     secrets: inherit
