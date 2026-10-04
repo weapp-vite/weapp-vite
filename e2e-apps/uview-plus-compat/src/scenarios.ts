@@ -167,6 +167,7 @@ export const componentScenarios = [
   { component: 'up-transition', route: '/pages/components/up-transition/index', parent: null, capability: 'render', action: null, expectedState: 'pass:render' },
   { component: 'up-tree', route: '/pages/components/up-tree/index', parent: null, capability: 'render', action: null, expectedState: 'pass:render' },
   { component: 'up-upload', route: '/pages/components/up-upload/index', parent: null, capability: 'render', action: null, expectedState: 'pass:render' },
+  { component: 'up-video', route: '/pages/components/up-video/index', parent: null, capability: 'render', action: null, expectedState: 'pass:render' },
   { component: 'up-view', route: '/pages/components/up-view/index', parent: null, capability: 'render', action: null, expectedState: 'pass:render' },
   { component: 'up-virtual-list', route: '/pages/components/up-virtual-list/index', parent: null, capability: 'render', action: null, expectedState: 'pass:render' },
   { component: 'up-waterfall', route: '/pages/components/up-waterfall/index', parent: null, capability: 'render', action: null, expectedState: 'pass:render' },

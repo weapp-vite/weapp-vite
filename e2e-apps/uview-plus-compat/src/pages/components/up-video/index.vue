@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'wevu'
+import sampleVideo from '../../../assets/sample.mp4'
 
-definePageJson({ navigationBarTitleText: 'up-qrcode' })
+definePageJson({ navigationBarTitleText: 'up-video' })
 
 const interactionCount = ref(0)
 const scenarioState = ref('pending')
@@ -22,14 +23,13 @@ async function runE2E() {
   const slotOwner = parent?.selectComponent?.('scoped-slots-default') as SelectorOwner | null | undefined
   const parentProxy = (parent as any)?.__wevu?.proxy
   const registeredChild = Array.isArray(parentProxy?.children)
-    ? parentProxy.children.find((child: any) => ['up-qrcode', 'u-qrcode'].includes(child?.$options?.name))
+    ? parentProxy.children.find((child: any) => ['up-video', 'u-video'].includes(child?.$options?.name))
     : null
   const target = e2eComponent.value
     ?? page?.selectComponent?.('#e2e-component')
     ?? parent?.selectComponent?.('#e2e-component')
     ?? slotOwner?.selectComponent?.('#e2e-component')
-    ?? page?.selectComponent?.('up-qrcode')
-    ?? page?.selectComponent?.('up-qrcode')
+    ?? page?.selectComponent?.('up-video')
     ?? registeredChild
     ?? null
   const rendered = target !== null
@@ -37,7 +37,7 @@ async function runE2E() {
   await nextTick()
   return {
     ok: rendered,
-    component: 'up-qrcode',
+    component: 'up-video',
     rendered,
     capability: 'render' as const,
     state: scenarioState.value,
@@ -47,13 +47,13 @@ async function runE2E() {
 </script>
 
 <template>
-  <view id="e2e-root" class="scenario-page" data-component="up-qrcode">
+  <view id="e2e-root" class="scenario-page" data-component="up-video">
     <view class="scenario-header">
-      <view class="scenario-title">up-qrcode</view>
+      <view class="scenario-title">up-video</view>
       <view class="scenario-status">rendered / interactive</view>
     </view>
     <view id="e2e-target" class="scenario-subject">
-      <up-qrcode id="e2e-component" ref="e2eComponent" value="uview-plus-3.8.128" :size="128" />
+      <up-video id="e2e-component" ref="e2eComponent" :src="sampleVideo" :autoplay="false" :controls="false" />
     </view>
     <button id="e2e-action" class="scenario-action" @click="runE2E">
       Exercise interaction

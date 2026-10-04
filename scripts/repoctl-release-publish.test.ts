@@ -78,7 +78,7 @@ it('fails explicitly if acknowledged uploads never become visible', async () => 
 
   await expect(fixture.run()).rejects.toThrow(/visibility confirmation timed out.*pending versions:/)
   expect(fixture.publishes).toHaveLength(1)
-  expect(fixture.sleep.mock.calls.reduce((total, [milliseconds]) => total + milliseconds, 0)).toBe(300_000)
+  expect(fixture.sleep.mock.calls.reduce((total, [milliseconds]) => total + milliseconds, 0)).toBe(900_000)
   expect(await fixture.readSummary()).toEqual({ publishedPackages: packages })
   expect(await fixture.progress()).toMatchObject({
     status: 'failed',

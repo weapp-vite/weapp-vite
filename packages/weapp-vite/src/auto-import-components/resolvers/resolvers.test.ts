@@ -194,8 +194,8 @@ describe('UviewPlusResolver', () => {
   const resolver = UviewPlusResolver()
 
   it('maps all published Vue SFC entries under both supported prefixes', () => {
-    expect(Object.keys(resolver.components ?? {})).toHaveLength(280)
-    expect(uviewPlusComponents).toHaveLength(140)
+    expect(Object.keys(resolver.components ?? {})).toHaveLength(282)
+    expect(uviewPlusComponents).toHaveLength(141)
     expect(resolveWithResolver(resolver, 'u-button')).toEqual({
       name: 'u-button',
       from: 'uview-plus/components/u-button/u-button.vue',

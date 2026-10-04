@@ -71,7 +71,7 @@ catalog:
   devframe: 1.2.0
   echarts: ^6.1.0
   esbuild: ^0.28.2
-  eslint: ^10.11.0
+  eslint: ^10.12.0
   estree-walker: ^3.0.3
   fdir: ^6.5.0
   gm-crypto: ^0.1.12
@@ -107,7 +107,7 @@ catalog:
   tslib: ^2.8.1
   tsx: ^4.23.15
   typescript: ^6.0.3
-  uview-plus: 3.8.127
+  uview-plus: 3.8.128
   vite: 8.3.2
   vite-plugin-inspect: ^12.0.2
   vue: ^3.5.43
@@ -152,5 +152,4 @@ allowBuilds:
 
 shamefullyHoist: true
 patchedDependencies:
-  '@icebreakers/monorepo@5.6.0': patches/@icebreakers__monorepo@5.6.0.patch
-  uview-plus@3.8.127: patches/uview-plus@3.8.127.patch
+  uview-plus@3.8.128: patches/uview-plus@3.8.128.patch

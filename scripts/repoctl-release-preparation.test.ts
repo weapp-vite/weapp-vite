@@ -11,6 +11,7 @@ interface Manifest {
   name: string
   version?: string
   private?: boolean
+  packageManager?: string
   dependencies?: Record<string, string>
 }
 
@@ -34,7 +35,7 @@ async function createPreparationFixture() {
   const cwd = await realpath(await mkdtemp(path.join(tmpdir(), 'repoctl-prepare-')))
   roots.push(cwd)
   const manifests: Record<string, Manifest> = {
-    'package.json': { name: rootName, private: true, version: '1.0.0' },
+    'package.json': { name: rootName, private: true, version: '1.0.0', packageManager: 'pnpm@12.9.1' },
     'packages/library/package.json': { name: publicName, version: '1.0.0' },
     'packages/demo/package.json': {
       name: privateName,
@@ -142,7 +143,7 @@ describe('repoctl release preparation workspace boundary', () => {
     expect(fixture.github.ensurePullRequest).toHaveBeenCalledTimes(1)
   })
 
-  it.each(['missing', 'empty', 'wrong-version'] as const)('still refuses to push when public release notes are %s', async (kind) => {
+  it.each(['missing', 'wrong-version'] as const)('still refuses to push when public release notes are %s', async (kind) => {
     const fixture = await createPreparationFixture()
     const entries = [bump(publicName), bump(privateName)]
     fixture.setVersion(() => {
@@ -156,6 +157,21 @@ describe('repoctl release preparation workspace boundary', () => {
     await expect(fixture.runPullRequest()).rejects.toThrow(`Missing release notes for ${publicName}@1.0.1`)
     expect(fixture.github.ensurePullRequest).not.toHaveBeenCalled()
     expect(fixture.gitCommands.some(args => ['commit', 'push'].includes(args[0]!))).toBe(false)
+  })
+
+  it('creates a maintenance release note when the public changelog section is empty', async () => {
+    const fixture = await createPreparationFixture()
+    const entries = [bump(publicName), bump(privateName)]
+    fixture.setVersion(() => {
+      fixture.apply(entries)
+      writeFileSync(path.join(fixture.cwd, 'packages/library/CHANGELOG.md'), '# Changelog\n\n## 1.0.1\n')
+      return { status: 0, stdout: JSON.stringify(entries), stderr: '' }
+    })
+
+    await expect(fixture.runPullRequest()).resolves.toBe(true)
+    const pullRequest = fixture.github.ensurePullRequest.mock.calls[0]![0] as { body: string }
+    expect(pullRequest.body).toContain('Maintenance')
+    expect(pullRequest.body).toContain(publicName)
   })
 
   it('validates actual pnpm version output for private packages and the versioned root', async () => {

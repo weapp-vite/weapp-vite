@@ -825,6 +825,12 @@
           "scene": null
         },
         {
+          "name": "up-video",
+          "pathName": "pages/components/up-video/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "up-view",
           "pathName": "pages/components/up-view/index",
           "query": "",
