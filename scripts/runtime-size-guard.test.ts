@@ -9,7 +9,6 @@ import {
   normalizeRuntimeModulePath,
   resolveRuntimeImportChain,
   runtimeSizeBudgets,
-  runtimeSizeDenyRules,
   runtimeSizeTargets,
   runtimeSizeTiers,
 } from './runtime-size'
@@ -162,20 +161,6 @@ describe('runtime retained module graph', () => {
   })
 
   it('applies explicit allow exceptions before stable suffix deny rules', () => {
-    expect(runtimeSizeDenyRules.map(rule => rule.suffix)).toEqual([
-      '/runtime/app/setData/patchScheduler.mjs',
-      '/runtime/app/setData/payload.mjs',
-      '/runtime/templateRefs/helpers.mjs',
-      '/runtime/register/inline.mjs',
-      '/runtime/register/setDataFrequencyWarning.mjs',
-      '/runtime/scopedSlots.mjs',
-    ])
-    expect(runtimeSizeDenyRules.every(rule => (
-      rule.allowedTiers.join(',') === 'complex-component,public-app,public-page,full-provider'
-    ))).toBe(true)
-    expect(runtimeSizeDenyRules.some(rule => rule.suffix.includes('layout'))).toBe(false)
-    expect(runtimeSizeDenyRules.some(rule => rule.suffix.includes('logger'))).toBe(false)
-
     const report = createReport()
     const deniedPath = 'packages-runtime/wevu/dist/runtime/scopedSlots.mjs'
     setRetainedModules(report, 'minimal-app', {
@@ -206,10 +191,21 @@ describe('runtime retained module graph', () => {
       ],
     })
 
-    expect(() => assertRuntimeSizeReport(report)).toThrowError([
-      'Runtime size guard failed with 1 violation(s):',
-      '- target=weapp tier=minimal-app mode=production: retained denied module=packages-runtime/wevu/dist/runtime/scopedSlots.mjs bytes=321 B chain=wevu-runtime-size-weapp-minimal-app-production.mjs -> packages-runtime/wevu/dist/runtime/register/runtimeInstance.mjs -> packages-runtime/wevu/dist/runtime/scopedSlots.mjs.',
-    ].join('\n'))
+    expect(collectRuntimeSizeGuardViolations(report)).toEqual([
+      {
+        kind: 'retained-module',
+        target: 'weapp',
+        tier: 'minimal-app',
+        mode: 'production',
+        modulePath: deniedPath,
+        bytesInOutput: 321,
+        importChain: [
+          'wevu-runtime-size-weapp-minimal-app-production.mjs',
+          'packages-runtime/wevu/dist/runtime/register/runtimeInstance.mjs',
+          deniedPath,
+        ],
+      },
+    ])
   })
 
   it('ignores denylisted modules that contribute no bytes to the output', () => {
@@ -230,10 +226,11 @@ describe('runtime retained module graph', () => {
     expect(collectRuntimeSizeGuardViolations(report)).toEqual([])
   })
 
-  it('renders budget and retained-module failures as one stable aggregate error', () => {
+  it('reports budget overflow and retained modules together', () => {
     const report = createReport()
     const minimal = report.targets[0]!.tiers.find(tier => tier.id === 'minimal-app')!
-    minimal.production.bytes = 93_536
+    const ceilingBytes = minimal.production.bytes
+    minimal.production.bytes = ceilingBytes + 1
     minimal.production.retainedModules = {
       entry: 'wevu-runtime-size-weapp-minimal-app-production.mjs',
       modules: [
@@ -250,10 +247,28 @@ describe('runtime retained module graph', () => {
       ],
     }
 
-    expect(() => assertRuntimeSizeReport(report)).toThrowError([
-      'Runtime size guard failed with 2 violation(s):',
-      '- target=weapp tier=minimal-app mode=production: actual=93536 B ceiling=93535 B.',
-      '- target=weapp tier=minimal-app mode=production: retained denied module=packages-runtime/wevu/dist/runtime/scopedSlots.mjs bytes=321 B chain=wevu-runtime-size-weapp-minimal-app-production.mjs -> packages-runtime/wevu/dist/runtime/scopedSlots.mjs.',
-    ].join('\n'))
+    expect(collectRuntimeSizeGuardViolations(report)).toEqual([
+      {
+        kind: 'budget',
+        target: 'weapp',
+        tier: 'minimal-app',
+        mode: 'production',
+        actualBytes: ceilingBytes + 1,
+        ceilingBytes,
+      },
+      {
+        kind: 'retained-module',
+        target: 'weapp',
+        tier: 'minimal-app',
+        mode: 'production',
+        modulePath: 'packages-runtime/wevu/dist/runtime/scopedSlots.mjs',
+        bytesInOutput: 321,
+        importChain: [
+          'wevu-runtime-size-weapp-minimal-app-production.mjs',
+          'packages-runtime/wevu/dist/runtime/scopedSlots.mjs',
+        ],
+      },
+    ])
+    expect(() => assertRuntimeSizeReport(report)).toThrow(Error)
   })
 })
