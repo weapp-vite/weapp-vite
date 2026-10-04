@@ -623,4 +623,6 @@ Vite+ React 的第三轮独立复核通过，前两次有外部 E2E 重叠的观
 
 随后 `wv/worker` 独立审计通过，正式矩阵达到 8/29。原控制器保留 `serial: false` 与九条告警；独立审计逐项确认五条仅写报告的 Python 进程、四条 Playwright `--list` 枚举均未启动 E2E。两 provider 各 1 用例、3 检查点通过，归档和安装文件一致，36 个登记子进程及项目端口均已释放。Stable 启动时六次协议重试最终恢复，业务运行时告警、错误、异常为零；不将本机描述为完全空闲。审计范围与原始结果摘要见 [worker 验收](issue-1097-wv-worker-consumer-acceptance.json)。后续 `vite/worker` 虽通过功能检查，但与另一项目实际执行的 Playwright 测试重叠，不计入正式通过。
 
+`vite-plus/worker` 随后通过两 provider 各 1 用例、3 检查点与独立审计，正式矩阵达到 9/29。启动阶段一次 simulator boot 失败经现有流程恢复，保留全部诊断；业务运行时告警、错误、异常为零。冻结归档与安装文件一致、干净 harness 前后不变、无外部 E2E 重叠；60 个登记子进程与两个项目端点全部清理。详见 [Vite+ worker 验收](issue-1097-vite-plus-worker-consumer-acceptance.json)。前述 Vite 行仍保持 [功能通过但串行验收失败](issue-1097-vite-worker-consumer-observation.json)，未以其他入口结果替代。
+
 Issue #1137 的独立原生 AppService 探针观察到 Memory 面板数值及 `performance.memory` 字段，但未取得带 target/isolate 身份的 `Runtime.getHeapUsage` 原始响应。两种读数不作替换、不回填历史样本；临时启用 Protocol Monitor 的请求仍待授权，探针项目已关闭。详见 [能力边界](issue-1137-native-memory-capability.md)。

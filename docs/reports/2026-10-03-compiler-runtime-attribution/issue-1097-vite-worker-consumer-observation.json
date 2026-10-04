@@ -1,0 +1,269 @@
+{
+  "schemaVersion": 1,
+  "issue": 1097,
+  "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+  "archiveCount": 28,
+  "cohortManifestHashes": {
+    "candidate-evidence.json": "832be6d367c4102d8a83d875d902ff1d985d8175106323d22f6eeec97883272e",
+    "consumer-tarballs.json": "785c6ed10371af7dd389a4c4a0b1f1d3505383ff11ce470b31f27a56fb9c7c3c"
+  },
+  "rows": [
+    {
+      "host": "vite",
+      "profile": "worker",
+      "functionalAssertionsPassed": true,
+      "plannedCheckpointAssertionsPassed": true,
+      "finalRowAccepted": false,
+      "cohortAfterSnapshotRecorded": true,
+      "cohortMatchesFrozenManifestAtAudit": true,
+      "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+      "harness": {
+        "commit": "cb412175d243970fa603612ecfa1b3021af3e374",
+        "dirty": false,
+        "before": {
+          "commit": "cb412175d243970fa603612ecfa1b3021af3e374",
+          "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "untracked": {},
+          "capturedAt": "2026-10-04T16:58:43.102524+00:00",
+          "trackedPatchIncludesIndex": true,
+          "controllerSha256": "001593055cf91898658c6613943a6ed1e595ff6b6f8315364fd4a1d46cedc8ea"
+        },
+        "after": {
+          "commit": "cb412175d243970fa603612ecfa1b3021af3e374",
+          "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "untracked": {},
+          "capturedAt": "2026-10-04T17:00:58.267900+00:00",
+          "trackedPatchIncludesIndex": true,
+          "controllerSha256": "001593055cf91898658c6613943a6ed1e595ff6b6f8315364fd4a1d46cedc8ea"
+        },
+        "snapshotsEqual": true,
+        "snapshotCoversIndex": true
+      },
+      "installation": {
+        "candidatePackages": 28,
+        "comparedArchiveFiles": 1735,
+        "mismatches": 0,
+        "fixtureLinks": [
+          {
+            "package": "fake-pkg",
+            "target": "worker-vendor",
+            "scope": "consumer-contained fixture only",
+            "recordedHarnessBlobFiles": 2,
+            "candidatePackage": false
+          }
+        ],
+        "symlinksAudited": 40,
+        "externalSymlinks": 0,
+        "lockSha256": "198127eaf49e720c4f697575d705c6e14ca06d43c7c0fd080d7d8210a3eb5441",
+        "reportSha256": "969a81070b2361b9b875569dc6ec462995914e8e070e083b2ffbddd549c9fdba",
+        "exportPackagesVerified": 28,
+        "negativeControls": {
+          "brokenExportsRejected": true,
+          "missingCliRejected": true
+        }
+      },
+      "officialDevtools": {
+        "queriedAt": "2026-10-04T16:58:42.290244+00:00",
+        "channel": "stable",
+        "selectedAndInstalledVersion": "2.02.2608080",
+        "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+        "evidenceSha256": "6b64e04652b1e7c578db0545f9b3f4966861236bbf0cb6934f6fce603340846a"
+      },
+      "providers": [
+        {
+          "provider": "devtools",
+          "runId": "issue1097-vite-worker-c3-01",
+          "reportSha256": "70b4ad2707329f7c595d3dc058851b5bb94cde34d3783389e0636fc725762270",
+          "startedAt": "2026-10-04T17:00:00.737Z",
+          "finishedAt": "2026-10-04T17:00:55.727Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.17.3"
+          },
+          "strict": true,
+          "status": "passed",
+          "runtimeErrors": [],
+          "summary": {
+            "plannedCount": 1,
+            "executedCount": 1,
+            "passedCount": 1,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 3,
+            "capturedCheckpointCount": 3
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 5,
+            "error": 0,
+            "informationalCount": 10
+          },
+          "nativeSlotGeometryAssertions": 0,
+          "recoveredStartupProtocolDiagnostics": [
+            {
+              "method": "App.getCurrentPage",
+              "route": "/pages/worker/index",
+              "failedAttempts": 5,
+              "firstFailureAt": "2026-10-04T17:00:19.923Z",
+              "lastFailureAt": "2026-10-04T17:00:20.860Z",
+              "recoveredAt": "2026-10-04T17:00:51.334Z",
+              "state": "recovered"
+            }
+          ]
+        },
+        {
+          "provider": "headless",
+          "runId": "issue1097-vite-worker-c3-01",
+          "reportSha256": "ff930ba8336d51ed4ed9c6c0f76f97bac9c42202b6310ee619905da9b7f52853",
+          "startedAt": "2026-10-04T16:59:57.035Z",
+          "finishedAt": "2026-10-04T16:59:59.686Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": null,
+            "baseLibraryVersion": null
+          },
+          "strict": true,
+          "status": "passed",
+          "runtimeErrors": [],
+          "summary": {
+            "plannedCount": 1,
+            "executedCount": 1,
+            "passedCount": 1,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 3,
+            "capturedCheckpointCount": 3
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "informationalCount": 6
+          },
+          "nativeSlotGeometryAssertions": 0,
+          "recoveredStartupProtocolDiagnostics": []
+        }
+      ],
+      "commonCases": [
+        {
+          "name": "e2e app: worker host > exchanges worker messages and resets worker state after page reentry",
+          "checkpoints": [
+            {
+              "id": "worker-initial",
+              "action": "等待首条 worker 消息",
+              "route": "/pages/worker/index"
+            },
+            {
+              "id": "worker-echo",
+              "action": "点击发送并确认消息复制及计数",
+              "route": "/pages/worker/index"
+            },
+            {
+              "id": "worker-reentry",
+              "action": "重新进入页面并确认 worker 状态重置",
+              "route": "/pages/worker/index"
+            }
+          ],
+          "observationSha256": "bb3e201e90139ea079815d90066be7ce6c066a7f2be27b578f7e5065c79ecfb1"
+        }
+      ],
+      "parity": {
+        "commonCases": 1,
+        "commonCheckpoints": 3,
+        "commonObservationsMatch": true,
+        "webUsesBrowserAssertions": false
+      },
+      "serialization": {
+        "rawReportedProcessCount": 10,
+        "knownOwnedFalsePositives": 0,
+        "additionalOwnedProcessesByRecordedAncestry": 0,
+        "ancestryInferenceIsNotSimultaneousSnapshot": false,
+        "explicitPackageUnitProcesses": 0,
+        "nonRuntimeToolFalsePositives": 0,
+        "externalRuntimeProcesses": 6,
+        "observedExternalRuntimeOverlap": true,
+        "finalSerialAcceptance": false,
+        "overlapKinds": [
+          "playwright-test-execution"
+        ],
+        "controllerSerialAcceptance": false,
+        "controllerFinalRowAccepted": false,
+        "testDiscoveryProcesses": 4,
+        "observedCommands": [
+          {
+            "kind": "Playwright test execution",
+            "config": "playwright-observer-diagnostic.config.ts",
+            "processRecords": 4,
+            "firstObservedAt": "2026-10-04T16:59:33.044024+00:00",
+            "phase": "consumer installation before providers"
+          },
+          {
+            "kind": "Playwright test discovery",
+            "test": "iconify-upload.spec.ts",
+            "listOnly": true,
+            "processRecords": 4,
+            "firstObservedAt": "2026-10-04T16:59:43.765919+00:00",
+            "phase": "consumer installation before providers"
+          },
+          {
+            "kind": "Playwright test execution",
+            "config": "playwright-notes.config.ts",
+            "processRecords": 2,
+            "firstObservedAt": "2026-10-04T17:00:27.021112+00:00",
+            "phase": "DevTools provider runtime"
+          }
+        ],
+        "evidence": {
+          "pollCount": 138,
+          "changedRelevantSnapshots": 56,
+          "snapshotHashes": {
+            "preflight-processes.json": "d1c4a5fc212c493b8c72e3595d40ae5302fd8c2b0934fedd28c3e427a5453fb1",
+            "process-snapshots.jsonl": "cb4917ac0d3d5b6863ebcc278cb8dd8297b3a01a4dae7e12b7c549a698bc17af",
+            "runtime-ended-processes.json": "1e775893944d865b82caeb65ebb8ba983424950b4c19f66ecfbaaf1311a53dc8",
+            "postflight-processes.json": "e7dad3260a41f668c2eec6837ba139ec37d8b29b73ce35920c187454c83bd8a9"
+          },
+          "claim": "Two external Playwright test entry commands overlapped this row; the second overlapped the recorded DevTools runtime window. Process completion before the final boundary snapshots does not erase the retained mid-run overlap."
+        }
+      },
+      "cleanup": {
+        "resourcesSha256": "913fe563249d2c09fd9ba63d30ff0fdad41dae1011fd6b521a960875ee311ffb",
+        "completedAt": "2026-10-04T17:00:57.240392+00:00",
+        "registeredChildren": 43,
+        "sameIdentityStillRunning": 0,
+        "ownedEndpoints": 1,
+        "ownedListeningPortsStillOpen": 0,
+        "errors": 0
+      },
+      "evidence": {
+        "runLogSha256": "052796410e8a01c87d6e983bc3f4b0c828f0a8d5180a0cc3c03ef069c15e66e3",
+        "rowSummarySha256": "5fc7b93e1f8de0a87c7590630197c4e6a0ae1a5c45495f3c95877f31884a872f"
+      }
+    }
+  ],
+  "limitations": [
+    "This audit only reads retained evidence and verifies installations and owned-resource closure. It does not run E2E or modify the source repository.",
+    "Functional assertions, observed serialization and source provenance are separate gates. A row with a true external runtime overlap or incomplete modern process/source snapshots is not final acceptance.",
+    "The compiler cohort remains c3c643d40 even when the harness commit changes. Dirty harness identity is explicitly recorded; no compiler upgrade is inferred.",
+    "Headless common observations do not establish CSS geometry parity. React Stable rows separately prove 42 native slot geometry observations.",
+    "Process polling cannot exclude a process whose complete lifetime lies between snapshots. No exclusive-machine or performance claim is made.",
+    "Web rows use their public browser assertions and recorded successful command completion rather than mini-program provider DOM reports.",
+    "Both worker providers passed their exact one case and three checkpoints, but this row is not final acceptance because external Playwright tests overlapped it. No compiler, runtime or performance acceptance is inferred from this provisional observation.",
+    "Four Playwright --list process records are distinguished from the six actual test-execution records; correcting these discovery classifications does not clear serialization.",
+    "The worker fixture has one consumer-contained fake-pkg symlink whose two files byte-match the recorded harness Git blobs. All 28 compiler cohort packages remain physical tarball installs."
+  ]
+}
