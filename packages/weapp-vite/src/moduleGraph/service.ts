@@ -9,7 +9,7 @@ import type {
 import { createDebugger } from '../debugger'
 import { withRealpathScope } from '../utils/realpathScope'
 import { parseLogicalEntryId, parseSidecarModuleId, parseSidecarSourceRequest } from './protocol'
-import { collectBuildStartIds, collectDevStartNodes, normalizeSourceId } from './traversal'
+import { collectBuildStartIds, collectDevStartNodes, hasBuildModule, hasDevModule, normalizeSourceId } from './traversal'
 
 const debug = createDebugger('weapp-vite:module-graph')
 
@@ -293,19 +293,21 @@ export function createModuleGraphService(): ModuleGraphService {
       return request
     },
     hasModule(rawFile) {
-      const file = normalizeSourceId(rawFile)
-      if (hasRegisteredEntryDependency(file)) {
-        return true
-      }
-      if (devServer && usesUnbundledDevGraph()) {
-        return collectDevStartNodes(devServer, file).size > 0
-      }
-      for (const context of buildContexts.values()) {
-        if (collectBuildStartIds(context, file).size > 0) {
+      return withRealpathScope(() => {
+        const file = normalizeSourceId(rawFile)
+        if (hasRegisteredEntryDependency(file)) {
           return true
         }
-      }
-      return false
+        if (devServer && usesUnbundledDevGraph()) {
+          return hasDevModule(devServer, file)
+        }
+        for (const context of buildContexts.values()) {
+          if (hasBuildModule(context, file)) {
+            return true
+          }
+        }
+        return false
+      })
     },
     invalidate(rawFile) {
       return withRealpathScope(() => {
