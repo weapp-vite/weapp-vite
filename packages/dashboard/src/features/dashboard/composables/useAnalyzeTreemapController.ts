@@ -198,7 +198,6 @@ export function useAnalyzeTreemapController(options: {
   }
 
   function handleSelectPackageInsight(item: PackageInsight) {
-    options.activeTab.value = 'packages'
     selectedTreemapMeta.value = {
       kind: 'package',
       nodeId: createTreemapPackageNodeId(item.id),
@@ -210,7 +209,7 @@ export function useAnalyzeTreemapController(options: {
     }
     selectedLargestFile.value = null
     selectedBudgetWarning.value = null
-    treemapFilterMode.value = 'selected-package'
+    void setTreemapFilterMode('selected-package', 'packages')
   }
 
   function resetTreemapSelection() {
@@ -242,6 +241,7 @@ export function useAnalyzeTreemapController(options: {
     selectedFileModules,
     selectedLargestFile,
     selectedTreemapMeta,
+    setTreemapFilterMode,
     treemapColorMode,
     treemapColorDescription,
     treemapLegend,

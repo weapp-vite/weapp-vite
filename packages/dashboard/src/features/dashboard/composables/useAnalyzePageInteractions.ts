@@ -19,7 +19,7 @@ export function useAnalyzePageInteractions(options: {
   workQueueItems: Ref<AnalyzeWorkQueueItem[]>
   addWorkQueueItem: (item: AnalyzeWorkQueueItem) => void
   exportStatus: Ref<string>
-  treemapFilterMode: Ref<AnalyzeTreemapFilterMode>
+  setTreemapFilterMode: (mode: AnalyzeTreemapFilterMode, tab?: DashboardTab) => Promise<unknown>
   selectedTreemapMeta: ShallowRef<TreemapNodeMeta | null>
   selectedLargestFile: ShallowRef<LargestFileEntry | null>
   selectedBudgetWarning: ShallowRef<PackageBudgetWarning | null>
@@ -42,33 +42,28 @@ export function useAnalyzePageInteractions(options: {
 
   function handleSelectAction(item: AnalyzeActionCenterItem) {
     selectedActionKey.value = item.key
-    if (item.kind === 'increment') {
-      options.treemapFilterMode.value = 'growth'
-    }
-    else if (item.kind === 'duplicate') {
-      options.treemapFilterMode.value = 'duplicates'
-    }
-
     if (item.warning) {
       options.handleSelectBudgetWarning(item.warning)
       return
     }
 
     if (item.file) {
-      options.activeTab.value = 'files'
       options.handleSelectLargestFile(item.file)
-      options.treemapFilterMode.value = 'selected-package'
+      void options.setTreemapFilterMode('selected-package', 'files')
       return
     }
 
     if (item.moduleMeta) {
-      options.activeTab.value = item.tab
       options.selectedTreemapMeta.value = item.moduleMeta
       resetTreemapLinkedSelection()
-      return
     }
 
-    options.activeTab.value = item.tab
+    if (item.kind === 'increment' || item.kind === 'duplicate') {
+      void options.setTreemapFilterMode(item.kind === 'increment' ? 'growth' : 'duplicates', item.tab)
+    }
+    else {
+      options.activeTab.value = item.tab
+    }
   }
 
   function handleSelectCommand(item: AnalyzeCommandPaletteItem) {
@@ -83,25 +78,22 @@ export function useAnalyzePageInteractions(options: {
     }
 
     if (item.file) {
-      options.activeTab.value = 'files'
       options.handleSelectLargestFile(item.file)
-      options.treemapFilterMode.value = 'selected-package'
+      void options.setTreemapFilterMode('selected-package', 'files')
       return
     }
 
     if (item.moduleMeta) {
-      options.activeTab.value = item.tab
       options.selectedTreemapMeta.value = item.moduleMeta
       resetTreemapLinkedSelection()
-      options.treemapFilterMode.value = item.kind === 'increment' ? 'growth' : 'duplicates'
+      void options.setTreemapFilterMode(item.kind === 'increment' ? 'growth' : 'duplicates', item.tab)
       return
     }
 
     if (item.packageMeta) {
-      options.activeTab.value = item.tab
       options.selectedTreemapMeta.value = item.packageMeta
       resetTreemapLinkedSelection()
-      options.treemapFilterMode.value = 'selected-package'
+      void options.setTreemapFilterMode('selected-package', item.tab)
       return
     }
 
