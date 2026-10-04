@@ -133,6 +133,8 @@ Oxc 0.152 API 使用 AST 类型上的构造方法，例如 `Statement::new_impor
 
 构建期语义 oracle 可在受控 Node module harness 中分别运行旧、新完整输出，使用一致的确定性 import stubs，记录 installer、组件注册、setup、expose、lifecycle 顺序；比较初始 data、manifest、flags、functionPropPaths；调用 computed 和所有 inline handler 检查结果、参数、scope resolver、异常日志与异步行为。特别覆盖数组/对象/数字循环、关闭条件不求值、投影保留字段冲突、props/state 同名与局部 shadowing。
 
+以上受控 harness 现由 `semanticCheck.ts` 与 `semantic/` 实现，原样执行完整编译返回的 ESM，并通过真实 helper 与有限宿主桩验证这两页的确定性行为。每个 handler 的实际调用次数、computed/lifecycle 调用账本、独立断言和异步结算顺序均需通过；相同的失败或空观察不能成为成功。对受控宿主 Promise 的观测不等于追踪所有脱离调用链的 continuation。
+
 该 harness 不是小程序生产代码，也不能替代后续真实 runtime E2E。扩大 native 覆盖前仍需真实编译入口的配对采样、包重建后的串行下游验证和跨平台证据。性能判断沿用既定门槛，不能由 printer micro benchmark 推断整链收益。
 
 

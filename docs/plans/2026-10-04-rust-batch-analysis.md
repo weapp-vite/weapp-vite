@@ -523,3 +523,31 @@ map 对照查询两份实际 stage map 从各自产物回到同一真实源脚�
 78 项 Rust、24 项受影响工具测试、局部 TypeScript／ESLint／rustfmt、默认及三实验 feature 合并 cargo check 通过。独立审计复核 347 份源码、52 份构建输入、139 份正式证据与二进制身份，并重放全部 90 个完整及 36 个阶段 oracle。新增实现文件均低于 300 行；实验无新增依赖、生产入口或用户配置变化，不另加 changeset／脚手架 bump。构建仍有已记录的非致命 stripping 与 unused 警告。
 
 本轮没有性能、RSS、构建／HMR 或真实 Stable 微信开发者工具 runtime 采样，未完成最终 runtime 验收。实验继续默认关闭，不承诺整链提速。公开摘要与可复核 hash 见[生成映射点证据](./2026-10-05-script-transform-provenance-evidence.json)。
+
+
+## 第二十四轮：完整脚本的受控 Node 行为对照
+
+新增 `semanticCheck.ts`：先重新执行严格完整编译诊断，父进程重放控制组、完整返回值和阶段 oracle，再将两页各两次编译的 JS/native 最终 script 原样交给八个独立 Node worker。每份执行请求均核对实际阶段所有者、native 成功交付、零 fallback、最终 script 与阶段 code 相同及完整源码 hash。没有删除 import、截取 AST 或再次编译脚本；未知 import/export、动态 import、无结果、错误退出和进程超时均会失败。
+
+场景复用真实 Wevu reactivity、template helper 和 inline dispatcher，注册、平台 API、业务数据、网络与导航使用显式有限桩。独立断言检查 default export 与注册对象的引用身份、安装/注册/setup/expose 顺序、初始 data 的独立性、manifest/flags/function prop paths、生成 computed 及全部 inline handler。还覆盖数组/对象/数字循环、状态与 props 优先级、关闭条件不求值、受控异常，以及零售页加载中间态、服务结算、返回 Promise 的等待和错误后的状态。
+
+| 每个独立 worker 的观察 | Wevu 首页 | 零售详情 |
+| --- | ---: | ---: |
+| 独立断言 | 29 | 59 |
+| 实际 inline 调用／不同 handler | 9／7 | 16／14 |
+| 实际 computed 调用／不同 computed | 7／1 | 9／2 |
+| 实际 lifecycle 调用／不同 hook | 0／0 | 3／2 |
+| 受跟踪异步任务 | 0 | 13 |
+| 未结算任务／未处理错误 | 0／0 | 0／0 |
+
+本机 macOS arm64、Node 24.18.0 的正式结果为 **4/4 组受控行为对比通过，8/8 worker 成功**。每组的 imports、exports、独立断言、实际调用账本、带类型观察、顺序 trace、异步账本和 cleanup 均相同；effect scope 全部释放。两次编译是重复轮次，仍只有两个真实页面，不是四个独立功能场景。
+
+父进程不会只相信 `passed`：成功必须具有合法非空观察与一次 module evaluation，快照内断言值及调用顺序必须对应原始账本，各 handler/computed/lifecycle 每条调用必须实际执行一次，异步状态必须与最终 pending 一致。快照保留 undefined、负零、NaN、空洞、引用与错误 cause；函数仅记录形状，行为由实际调用和独立断言补证。新增负例覆盖空观察、伪造调用、缺失/未知事件、未知 import/export、动态 import、空 handler、错误、未结算任务、超时及清理失败。
+
+新运行同时保留 360 次 JS 完整输出逐字控制；native 的 90 次完整调用仍为 36 次实际 native、36 次实际单次 JS fallback、18 次无 stage。严格编译兼容仍失败，**总命令实际 exit 1，`completed=true`、`semanticComparisonPassed=true`、`compilerComparisonPassed=false`、联合 `comparisonPassed=false`**。行为观察通过不消除 map 差异和未覆盖能力，不扩大生产 native 入口。
+
+正式采集前后 369 份源码身份、原 v7 addon 及声明 helper 四个包的 842 份 src/dist/manifest 身份一致；原始请求、报告和编译证据也复核了字节 hash。helper 清单覆盖本轮已知入口，不是自动解析的全部 node_modules/Node 工具链字节闭包。本轮未修改 Rust，复用上一轮已构建并固定身份的 addon，没有以新构建冒充旧二进制。
+
+59 项新增工具测试、定向 ESLint 与脚本 TypeScript 检查通过，新增实现文件均低于 300 行。工具、场景与报告按职责拆分；无生产接口或行为变更，不新增 changeset／脚手架 bump。详细计数与独立审计见[受控行为证据](./2026-10-05-script-transform-semantic-evidence.json)。
+
+这些结果只覆盖有限 Node 宿主和受跟踪 Promise／已观察状态，不能证明所有脱离调用链的 continuation，也不能替代完整 Wevu Component 宿主或真实 Stable 微信开发者工具。未完成最终 runtime 验收，本轮没有性能、RSS、Vite 构建／HMR 或跨平台采样；整链提速门槛仍未满足。

@@ -1,6 +1,6 @@
 # 实际 transformScript 捕获、Rust 阶段转换与打印探针
 
-本目录包含默认关闭的兼容性实验：`check.ts` 将现有转换器已经生成的 JS 交给 Oxc 打印；`transformCheck.ts` 独立检查 Rust 对真实阶段输入的转换；`integratedCheck.ts` 在隔离进程里将 Rust 返回值实际交给完整编译器后续阶段。Rust 包含类型清理、导入和 expose 改写、默认值、初始 data、manifest、class/key/inline 元数据与注册。这些工具均未接入生产入口，不产生性能结论；sourcemap 与未覆盖能力仍是迁移门槛。边界见 [BOUNDARY.md](./BOUNDARY.md)。
+本目录包含默认关闭的兼容性实验：`check.ts` 将现有转换器已经生成的 JS 交给 Oxc 打印；`transformCheck.ts` 独立检查 Rust 对真实阶段输入的转换；`integratedCheck.ts` 在隔离进程里将 Rust 返回值实际交给完整编译器后续阶段；`semanticCheck.ts` 重跑并复核完整编译证据，再原样执行两页的 JS/native 完整脚本。Rust 包含类型清理、导入和 expose 改写、默认值、初始 data、manifest、class/key/inline 元数据与注册。这些工具均未接入生产入口，不产生性能结论；sourcemap 与未覆盖能力仍是迁移门槛。边界见 [BOUNDARY.md](./BOUNDARY.md)。
 
 ## 运行
 
@@ -9,6 +9,7 @@ pnpm --filter @weapp-vite/ast-native exec napi build --platform --release --feat
 node --import tsx scripts/nativeScriptTransform/check.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-probe
 node --import tsx scripts/nativeScriptTransform/transformCheck.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-stage
 node --import tsx scripts/nativeScriptTransform/integratedCheck.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-integrated
+node --import tsx scripts/nativeScriptTransform/semanticCheck.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-semantic
 ```
 
 输出目录必须不存在。默认任何打印结构、注释或位置检查差异都会返回失败；已知差异调查可显式传 `--allow-differences`。该参数只允许完成诊断，摘要仍保留 `comparisonPassed: false`；CI 的诊断步骤成功不表示打印器可替换现有 generator。捕获、完整产物对照、运行、清理或来源校验失败在两种模式下均失败。
@@ -66,6 +67,16 @@ native 对移动的 import 保留原 imported/local 位置。`expose` 合并为�
 打印结果的 exact code 差异、去位置 AST 结构、注释及 annotation 归属、token/identifier 映射检查分别报告。实际组合新 map 与既有 stage map，再从生成坐标查询原来源。覆盖的是探针定义的锚点，不是所有 token 末尾、断点策略或小程序 runtime。metadata 新合成表达式的来源仍需完整转换器另行解决。
 
 `report.json`（各 worker）与 `printer-report.json` 保留私有原始源码、完整结果和 maps。公共 `summary.json` 只保留源哈希、输出摘要、检查差异和限制，不上传完整捕获源码；CI 只上传该摘要。源文件与 binary hash 在运行前后复核，不能单凭这些 hash 证明 binary 的构建来源或每个安装依赖文件。
+
+## 完整脚本的受控行为对照
+
+`semanticCheck.ts` 必须使用新的输出目录，并自行执行严格 `integratedCheck.ts`。父进程重放三个阶段控制组、完整 JS/native worker、全部完整与阶段 oracle，核对每页的 native 阶段结果确实进入最终 script，然后为两页各两次编译的 JS/native 分别启动新进程，共八个 worker。每个 worker 通过 `vm.SourceTextModule` 原样加载完整脚本，不删除 import、不裁剪 AST、不再次编译；未知 import/export 和动态 import 都会失败。
+
+场景使用真实 Wevu reactivity、template helper 和 inline dispatcher，注册、平台、网络、导航与业务数据则由显式有限桩提供。检查实际 default export 身份、安装/注册/setup/expose 顺序、独立 data、manifest、flags、function prop paths、全部 7/14 个 inline handler、生成 computed 和生命周期。异步断言覆盖受控服务开始/结算、返回 Promise 的等待、加载中间态及错误保留。函数快照仅记录类型，不能替代这些实际调用与独立断言。
+
+父进程校验原始代码 hash、实际调用账本、非空观察、断言、异步状态和进程退出码，并对原始请求/报告、编译证据、探针源码、二进制及声明 workspace helper 的 src/dist/manifest 做前后身份复核。进程级 watchdog 覆盖 VM 外的阻塞；当前 effect scope 在 dispose 中释放。完整请求、脚本、观察和子进程日志保留在私有目录；`summary.json` 为脱敏摘要。
+
+摘要分别报告 `completed`、`semanticComparisonPassed`、`compilerComparisonPassed` 和联合 `comparisonPassed`。语义观察一致不会消除 sourcemap 失败，严格退出码仍为 1；本工具不提供 `--allow-differences`。它只覆盖这两个页面及明确的宿主 Promise/状态，不证明所有异步 continuation、完整 Wevu Component 宿主、真实微信开发者工具或性能。workspace 依赖清单也不等于所有 node_modules/Node 工具链的完整字节闭包。
 
 ## 局部检查
 

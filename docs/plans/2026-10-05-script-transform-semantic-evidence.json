@@ -1,0 +1,303 @@
+{
+  "schemaVersion": 1,
+  "round": 24,
+  "date": "2026-10-05",
+  "scope": "原样执行完整编译器 JS/native 脚本的受控 Node 行为诊断；不扩大生产覆盖。",
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "outcome": {
+    "completed": true,
+    "semanticComparisonPassed": true,
+    "compilerComparisonPassed": false,
+    "comparisonPassed": false,
+    "compilerExitCode": 1
+  },
+  "processExitCode": 1,
+  "strictExitObserved": true,
+  "distinctPages": 2,
+  "iterationsPerPage": 2,
+  "semanticComparisons": 4,
+  "workers": 8,
+  "successfulWorkers": 8,
+  "compiler": {
+    "completeControlByteChecks": 360,
+    "fullCalls": 90,
+    "nativeStageCalls": 72,
+    "deliveredNative": 36,
+    "actualJsFallbacks": 36,
+    "noStage": 18,
+    "completeComparisonsPassed": 32,
+    "nativeCompleteComparisonsPassed": 0,
+    "exactCompleteOutputs": 54,
+    "stageComparisons": 36,
+    "stageComparisonsPassed": 0
+  },
+  "identity": {
+    "sourcesUnchanged": true,
+    "sourceFiles": 369,
+    "bindingUnchanged": true,
+    "bindingSha256": "81452921467655ad418848e15ecb2de74add660c017ec6c3d390248dbb94e3bf",
+    "nativeRebuiltThisRound": false,
+    "dependenciesUnchanged": true,
+    "declaredDependencyEntries": 11,
+    "dependencyFiles": 842,
+    "workspacePackageRoots": [
+      "@weapp-core/constants",
+      "@weapp-core/shared",
+      "packages-runtime/web-apis",
+      "packages-runtime/wevu"
+    ],
+    "compilerArtifacts": 134,
+    "semanticArtifacts": 31,
+    "summarySha256": "c9b25ee629dfeb17a57e6acb28a843895fa8e0b8bb1588795ce0c4c745d9340e",
+    "compilerSummarySha256": "bc289d2152ebe0f4e84f1c6b17217c115132a299373f21ece97e976851c13666",
+    "identityBeforeSha256": "89f292c2dcaeb892797641b98360df92f700881f39e879cfebe229513d011dfa",
+    "identityAfterSha256": "5d46a7249a8dfe3adc75bec652d893ff8b632e54c27df38bcdf67e0ed983af0a"
+  },
+  "records": [
+    {
+      "scenarioId": "sfc-wevu",
+      "iteration": 0,
+      "comparisonPassed": true,
+      "differentFields": [],
+      "inputSha256": "5e9c6f995a70301ccfb9924702386cac4c030753336e335bb2407c89d5fcfe0e",
+      "stageSourceSha256": "fd6cad8f85b12ff37db23434f8d03b7bdf019864cb9d400048878cd6a8f88992",
+      "requestSha256": "c7f75490339b97ed49f0994590c30d6632d5af2df80ab2d9eb8766cab9c435f2",
+      "callIndex": 2,
+      "expectedCodeSha256": "cce462c23842abdd5f5a27ef2a74a3ef9ebf6607c18cdf92095f8cff6302d56b",
+      "nativeCodeSha256": "9cbdc39025e66f4105ee47f6a1da1a7a99521e66a6497125130b53740c26b29b",
+      "compilerEvidence": {
+        "filename": "compiler-0002.json",
+        "sha256": "f70515a8f26709455809f324ddf942857e08f52f4b1472503756dcd1857e23d3"
+      },
+      "comparisonArtifactSha256": "644f23b0082790f5d389d5b4d3327f70b0c71d0f89f175e73a96a81ccb6089cd",
+      "workerReports": {
+        "expected": {
+          "sha256": "ffd4241321eabf76ae1de66175254f886a2bc7d2f98e61e6f957eaec4bb4b370",
+          "requestSha256": "7e8b912216dd6f1960e73e2e0808d046460b13ab9894e5c5ddb4cd6bf9db7189",
+          "exitCode": 0
+        },
+        "actual": {
+          "sha256": "89dd2b4e4be50fde891bdfd3104137f0509f17aed4377abb84a508e81042cd6e",
+          "requestSha256": "583343b8b5c23427d13456a7b2f33e19737003b1d451e98b6c664bd9bfe0a697",
+          "exitCode": 0
+        }
+      },
+      "perWorker": {
+        "assertions": 29,
+        "inlineCalls": 9,
+        "distinctInlineHandlers": 7,
+        "computedCalls": 7,
+        "distinctComputed": 1,
+        "lifecycleCalls": 0,
+        "distinctLifecycles": 0,
+        "traceEntries": 31,
+        "trackedAsync": 0,
+        "asyncStatuses": {
+          "fulfilled": 0,
+          "rejected": 0,
+          "pending": 0
+        },
+        "pending": 0,
+        "unhandledErrors": 0,
+        "cleanup": {
+          "attempted": true,
+          "completed": true,
+          "errors": []
+        }
+      }
+    },
+    {
+      "scenarioId": "sfc-wevu",
+      "iteration": 1,
+      "comparisonPassed": true,
+      "differentFields": [],
+      "inputSha256": "5e9c6f995a70301ccfb9924702386cac4c030753336e335bb2407c89d5fcfe0e",
+      "stageSourceSha256": "fd6cad8f85b12ff37db23434f8d03b7bdf019864cb9d400048878cd6a8f88992",
+      "requestSha256": "c7f75490339b97ed49f0994590c30d6632d5af2df80ab2d9eb8766cab9c435f2",
+      "callIndex": 3,
+      "expectedCodeSha256": "cce462c23842abdd5f5a27ef2a74a3ef9ebf6607c18cdf92095f8cff6302d56b",
+      "nativeCodeSha256": "9cbdc39025e66f4105ee47f6a1da1a7a99521e66a6497125130b53740c26b29b",
+      "compilerEvidence": {
+        "filename": "compiler-0003.json",
+        "sha256": "8384f0b52fcd573c2f2fc7ef8f60a6d10c7f96faa66b4e7eb434bb97a098860d"
+      },
+      "comparisonArtifactSha256": "5b68b418d2114aad51050b11ea4996a479b5ce0217fdaa538018b318f75e906a",
+      "workerReports": {
+        "expected": {
+          "sha256": "ffd4241321eabf76ae1de66175254f886a2bc7d2f98e61e6f957eaec4bb4b370",
+          "requestSha256": "7e8b912216dd6f1960e73e2e0808d046460b13ab9894e5c5ddb4cd6bf9db7189",
+          "exitCode": 0
+        },
+        "actual": {
+          "sha256": "89dd2b4e4be50fde891bdfd3104137f0509f17aed4377abb84a508e81042cd6e",
+          "requestSha256": "583343b8b5c23427d13456a7b2f33e19737003b1d451e98b6c664bd9bfe0a697",
+          "exitCode": 0
+        }
+      },
+      "perWorker": {
+        "assertions": 29,
+        "inlineCalls": 9,
+        "distinctInlineHandlers": 7,
+        "computedCalls": 7,
+        "distinctComputed": 1,
+        "lifecycleCalls": 0,
+        "distinctLifecycles": 0,
+        "traceEntries": 31,
+        "trackedAsync": 0,
+        "asyncStatuses": {
+          "fulfilled": 0,
+          "rejected": 0,
+          "pending": 0
+        },
+        "pending": 0,
+        "unhandledErrors": 0,
+        "cleanup": {
+          "attempted": true,
+          "completed": true,
+          "errors": []
+        }
+      }
+    },
+    {
+      "scenarioId": "sfc-retail",
+      "iteration": 0,
+      "comparisonPassed": true,
+      "differentFields": [],
+      "inputSha256": "275145dcde39fc1189fcfcb26945a3f45ed3bf16671642ba0bc731fe85722b93",
+      "stageSourceSha256": "1d648f503bac47e4f20aabc708c561abaf77ef3b5188626be1107248ba0a4d5d",
+      "requestSha256": "2d67d3862de242296e8b2834a06d63d1f3926eee584c7fae26f5f39ff09fd886",
+      "callIndex": 4,
+      "expectedCodeSha256": "a9fecfb0cea759a7ee3a044e120f123222df86bc8676c547f86918a01cdecfe2",
+      "nativeCodeSha256": "bc670611179a375d8472bfe12307a0855882b8179c75d06df374a3b23751ba81",
+      "compilerEvidence": {
+        "filename": "compiler-0004.json",
+        "sha256": "670818ea99c25335ef7a13b66f3a58ba616319ea68d702af8823c0444e2e479e"
+      },
+      "comparisonArtifactSha256": "6906c0a6824d21bf38a0e72cbe4168ffc9460df628b602e8661e94a25ab51d97",
+      "workerReports": {
+        "expected": {
+          "sha256": "9180b15ed83f03b415e1b7ac308b917ca908fbbca7adbdb07e85eccdf8cddfcb",
+          "requestSha256": "84632f00f31a936ba8c12bc81ba16c69dda329bd86dfe4fa3818a54941a72eff",
+          "exitCode": 0
+        },
+        "actual": {
+          "sha256": "078a4997b7a2cb89b37a31421a38d478fc125fb0cf37614348b5d4165cda058c",
+          "requestSha256": "13751a58d04bf5b6199bbf442d09dfd3bb58c060dc1725489f34e7e1721192b3",
+          "exitCode": 0
+        }
+      },
+      "perWorker": {
+        "assertions": 59,
+        "inlineCalls": 16,
+        "distinctInlineHandlers": 14,
+        "computedCalls": 9,
+        "distinctComputed": 2,
+        "lifecycleCalls": 3,
+        "distinctLifecycles": 2,
+        "traceEntries": 104,
+        "trackedAsync": 13,
+        "asyncStatuses": {
+          "fulfilled": 10,
+          "rejected": 3,
+          "pending": 0
+        },
+        "pending": 0,
+        "unhandledErrors": 0,
+        "cleanup": {
+          "attempted": true,
+          "completed": true,
+          "errors": []
+        }
+      }
+    },
+    {
+      "scenarioId": "sfc-retail",
+      "iteration": 1,
+      "comparisonPassed": true,
+      "differentFields": [],
+      "inputSha256": "275145dcde39fc1189fcfcb26945a3f45ed3bf16671642ba0bc731fe85722b93",
+      "stageSourceSha256": "1d648f503bac47e4f20aabc708c561abaf77ef3b5188626be1107248ba0a4d5d",
+      "requestSha256": "2d67d3862de242296e8b2834a06d63d1f3926eee584c7fae26f5f39ff09fd886",
+      "callIndex": 5,
+      "expectedCodeSha256": "a9fecfb0cea759a7ee3a044e120f123222df86bc8676c547f86918a01cdecfe2",
+      "nativeCodeSha256": "bc670611179a375d8472bfe12307a0855882b8179c75d06df374a3b23751ba81",
+      "compilerEvidence": {
+        "filename": "compiler-0005.json",
+        "sha256": "55d92b7aef435adf5720aab071627e01b99223aafd3d14fee9741096a2fec5b0"
+      },
+      "comparisonArtifactSha256": "29c883c3848022e9b7900390eae83b9e0c5ef0543ee9da6303f9de5026d2f851",
+      "workerReports": {
+        "expected": {
+          "sha256": "9180b15ed83f03b415e1b7ac308b917ca908fbbca7adbdb07e85eccdf8cddfcb",
+          "requestSha256": "84632f00f31a936ba8c12bc81ba16c69dda329bd86dfe4fa3818a54941a72eff",
+          "exitCode": 0
+        },
+        "actual": {
+          "sha256": "078a4997b7a2cb89b37a31421a38d478fc125fb0cf37614348b5d4165cda058c",
+          "requestSha256": "13751a58d04bf5b6199bbf442d09dfd3bb58c060dc1725489f34e7e1721192b3",
+          "exitCode": 0
+        }
+      },
+      "perWorker": {
+        "assertions": 59,
+        "inlineCalls": 16,
+        "distinctInlineHandlers": 14,
+        "computedCalls": 9,
+        "distinctComputed": 2,
+        "lifecycleCalls": 3,
+        "distinctLifecycles": 2,
+        "traceEntries": 104,
+        "trackedAsync": 13,
+        "asyncStatuses": {
+          "fulfilled": 10,
+          "rejected": 3,
+          "pending": 0
+        },
+        "pending": 0,
+        "unhandledErrors": 0,
+        "cleanup": {
+          "attempted": true,
+          "completed": true,
+          "errors": []
+        }
+      }
+    }
+  ],
+  "verification": {
+    "toolTestsPassed": 59,
+    "scopedEslintPassed": true,
+    "scriptTypecheckPassed": true,
+    "nativeTestsRerun": false,
+    "reason": "仅新增内部诊断工具和场景，Rust 源码及 binary 未变化。"
+  },
+  "limitations": [
+    "Registration, platform, network, navigation and business imports are controlled fixture substitutes. Full Wevu Component host, Stable WeChat DevTools and browser runtimes are not executed.",
+    "Two real source pages, each compiled twice and executed in separate JS/native worker processes; repeated iterations are not distinct scenarios.",
+    "Independent assertions plus actual inline/computed/lifecycle invocation evidence supplement equality of snapshots and traces. Function snapshots alone do not prove behavior.",
+    "Async evidence covers tracked host promises and observed state/return ordering, not all possible detached JavaScript continuations.",
+    "Workspace helper source/dist/manifests are hashed before and after; installed dependencies and the Node toolchain are not a full byte closure.",
+    "Strict compiler source-map differences remain failures even if controlled semantic observations agree. No production coverage expansion, performance or end-to-end acceptance.",
+    "Full requests, output scripts, observations and child logs stay in the local evidence directory; only the sanitized summary is suitable for publication."
+  ],
+  "processExitEvidence": "顶层 exit 1 由调用方实际工具结果观测；独立文件审计可核对 compiler 与八个 worker 的 process.json，但不能仅从 summary 独立证明顶层进程退出状态。",
+  "independentAudit": {
+    "passed": true,
+    "reportSha256": "a9dd55af74e046d0f2fce1efb2b8109c975c50b015d07f497f46345774b9de0d",
+    "scriptSha256": "d211e6c7150c3b74f4b2632c57c73033482d6027bb4d804d927383fa72cfebe6",
+    "readFiles": 1393,
+    "evidenceFiles": 180,
+    "sourceIdentities": 369,
+    "helperIdentities": 842,
+    "filesUnchangedAfterAudit": true,
+    "scope": "独立 Python 只读核对原始字节、源码/helper/binary 身份、完整编译来源链和受控行为观察；未执行项目源码、编译器、native 或输出模块，也未重新计算 AST/sourcemap oracle。",
+    "topLevelExitIndependentlyVerifiedFromFile": false,
+    "limitations": [
+      "顶层退出码取自调用方工具的实际观察，compiler 和八个 worker 则有落盘进程证据。",
+      "不证明完整宿主语义、性能、所有安装依赖的字节闭包或二进制密码学构建来源。"
+    ]
+  }
+}
