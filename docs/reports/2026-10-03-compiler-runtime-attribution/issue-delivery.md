@@ -602,3 +602,13 @@ Stable `2.02.2608080`、基础库 `3.17.3` 的两轮同场景诊断确认：修�
 ### #1097：独立 CLI 与 Vite 的 React 发布消费者
 
 冻结 `c3c643d40` 的两行 React 消费者通过：`wv`、`vite` 各自在 headless 与 Stable 完成 3 个场景、14 个检查点，涵盖 hooks、原生 WXML 和六向互操作。共同的结构、文本、属性与作用域一致；Stable 另有每行 42 次 slot 可见性/尺寸断言，不将 headless 未观测的几何字段写成一致。每行 28 个归档、lock integrity 及 1,735 个安装文件逐字节核对通过，无越界软链接或候选包嵌套副本。运行时错误和异常均为 0，owned 项目与端口已关闭，消费者目录保留为只读审计证据。编译器归档与 `89daaa93b` harness 身份分开记录，详见 `issue-1097-two-react-consumer-acceptance.json`。累计完成 6/29 行，其余 23 行和相关 CI 尚需完成。
+
+### 路由拓扑、Vue 缓存与自定义 profile 输出修复
+
+classic 路由目录 watcher 现在保留长期宿主的订阅与释放所有权，完成路由扫描后把原始源事件交回构建调度。失效的异步扫描不能向替换后的宿主发布。路由签名变化触发完整入口扫描；Vue snapshot 同时失效源 SFC 缓存，避免删除页面后旧 WXML/JSON 被再次发射。原生与模板 Vue 页面仅通过增删恢复即可更新路由及六个产物文件，无须再次编辑 App。整合单测 10 文件、200 项通过，CI 路由回归 2/2，headless 与 Stable 各 2 用例、4 检查点一致；增删发生于 runtime 启动前，不声称运行中路由全阶段已验证。原失败、启动恢复、候选身份及等值 route 字面量调整见 [路由验收](auto-routes-topology-acceptance.md)。
+
+自定义 profile 输出曾在初次构建失败时重新进入源码 watcher，形成失败记录自反馈。writer 与输入过滤共用当前输出路径，只排除启用的精确文件。真实 Vite watcher 对照中，旧版本静置阶段记录持续增加，新版本两阶段保持 2→2、3→3，profile 源事件从 8 次降为 0；源码修复和后续修改仍正常。默认输出路径的旧版对照未复现，不扩张结论，详见 [失败恢复回归](profile-output-recovery-e2e.md)。
+
+Stable 纯原生 WXSS 对照仍在一次保存后保持旧颜色，App/Page 状态不变。宿主日志显示外层 WXSS 转换先于内部缓存清理约 397ms，但未直接取得旧缓存值或热更新 payload，不能据此断言唯一根因；见 [缓存顺序证据](native-wxss-cache-ordering.md)。未修改安装的 IDE，也未增加重复保存或延时绕过。
+
+#1097 的 Vite+ React 两次观察均完成功能检查，但分别与外部 E2E 重叠，不计入正式通过。随后 `wv/independent` 的 headless 1/1 用例、10/10 检查点通过；Stable 同样捕获全部 10 个检查点，却因两条未分类的 `routeDone`/`SystemError` runtime 错误使严格报告失败，且另有外部 Playwright 重叠。资源清理均无错误。正式矩阵保持 6/29；其他行继续验收，不更改完成标签。

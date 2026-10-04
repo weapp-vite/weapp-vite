@@ -1,0 +1,584 @@
+{
+  "schemaVersion": 1,
+  "issue": 1097,
+  "status": "vite-plus-react-functional-observation-serial-rerun-required",
+  "compilerCandidate": {
+    "commit": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+    "nodeAtPacking": "v22.22.3",
+    "archiveCount": 28,
+    "manifestHashes": {
+      "candidate-evidence.json": "832be6d367c4102d8a83d875d902ff1d985d8175106323d22f6eeec97883272e",
+      "consumer-tarballs.json": "785c6ed10371af7dd389a4c4a0b1f1d3505383ff11ce470b31f27a56fb9c7c3c"
+    },
+    "archives": [
+      {
+        "name": "@weapp-vite/react",
+        "file": "@weapp-vite-react.tgz",
+        "bytes": 24806,
+        "sha256": "9764253c28bed9845b1b90057440894b03ff3e32820b72573ea2d77b6e95c7da"
+      },
+      {
+        "name": "@weapp-core/constants",
+        "file": "@weapp-core-constants.tgz",
+        "bytes": 8010,
+        "sha256": "0de111b2a0ee36b85e52aa4ecde74a7f396f13a7020e030c46b2431fa79d6f2a"
+      },
+      {
+        "name": "wevu",
+        "file": "wevu.tgz",
+        "bytes": 593579,
+        "sha256": "7d3eb6fdb97aeb2fdcf4ded353150aa5ce1ae1c4aef860baff6e451c703d0ba1"
+      },
+      {
+        "name": "@wevu/web-apis",
+        "file": "@wevu-web-apis.tgz",
+        "bytes": 29360,
+        "sha256": "8d16bbcac7ed993709c00818e1ae84b1aaebb6392e34cb5a5aed2f3d3bc57284"
+      },
+      {
+        "name": "@wevu/api",
+        "file": "@wevu-api.tgz",
+        "bytes": 2800,
+        "sha256": "4233a7f92c2590dd31329260c9b4a112ed158ceef471f48b9f0ae7aa14e75510"
+      },
+      {
+        "name": "@weapp-core/api",
+        "file": "@weapp-core-api.tgz",
+        "bytes": 84466,
+        "sha256": "5acda8cbff870909e307621de2e91b2ab4a31b431c118284f6262112e663dc48"
+      },
+      {
+        "name": "@wevu/compiler",
+        "file": "@wevu-compiler.tgz",
+        "bytes": 157270,
+        "sha256": "31902dec3ddc93bb5f6dbcee67391823f27e282683cdc0c793a2bc8739534936"
+      },
+      {
+        "name": "rolldown-require",
+        "file": "rolldown-require.tgz",
+        "bytes": 15663,
+        "sha256": "3d8fbec8784d2bf7d132f9c1a44a7b81730197b735bd416571d3e559c6302a3c"
+      },
+      {
+        "name": "@weapp-vite/ast",
+        "file": "@weapp-vite-ast.tgz",
+        "bytes": 25644,
+        "sha256": "687c466215144e131116aa81baf2ae25d4b5e6a14d26a1cdbb3ccc376e6c0d37"
+      },
+      {
+        "name": "@weapp-core/shared",
+        "file": "@weapp-core-shared.tgz",
+        "bytes": 21327,
+        "sha256": "34f3a28a041e62e97be534890ea4a332816ebfdad4b66cf76fe8b0f8f3abe869"
+      },
+      {
+        "name": "@weapp-core/types",
+        "file": "@weapp-core-types.tgz",
+        "bytes": 25948,
+        "sha256": "8831f218b22b57fbe1bfd4757f50d1c26c368ff5329378513490e88d00ec2115"
+      },
+      {
+        "name": "weapp-vite",
+        "file": "weapp-vite.tgz",
+        "bytes": 733025,
+        "sha256": "9d5c8002482cabd48837e752af604fdb84b8ce062f899fd9ddf6c9a5ec6f7350"
+      },
+      {
+        "name": "weapp-ide-cli",
+        "file": "weapp-ide-cli.tgz",
+        "bytes": 66958,
+        "sha256": "43115c24d56d33ccc7b7be7dc39986162e43811cee49a8a1b0329a58bd401c7e"
+      },
+      {
+        "name": "@weapp-vite/miniprogram-automator",
+        "file": "@weapp-vite-miniprogram-automator.tgz",
+        "bytes": 378045,
+        "sha256": "e7c27ab7a87541e9db6f0f11c3f5224ac3d77dadef101e7af8cce1c1f80313ce"
+      },
+      {
+        "name": "@weapp-vite/qr",
+        "file": "@weapp-vite-qr.tgz",
+        "bytes": 29268,
+        "sha256": "d47f09e0f7f97b50677d3daf6000f02dfd2862429c1c34f0be9fe3b29e059f32"
+      },
+      {
+        "name": "@weapp-vite/devtools-runtime",
+        "file": "@weapp-vite-devtools-runtime.tgz",
+        "bytes": 6039,
+        "sha256": "4ecb45fac05aec9204540094be49891e9e4ea360f42d40bade4e42a8a13040ef"
+      },
+      {
+        "name": "@weapp-core/logger",
+        "file": "@weapp-core-logger.tgz",
+        "bytes": 3046,
+        "sha256": "01eae26a9833555c22d227aab4617cc3d2a8339472d0e9f834925416813b7c07"
+      },
+      {
+        "name": "vite-plugin-performance",
+        "file": "vite-plugin-performance.tgz",
+        "bytes": 5794,
+        "sha256": "55b64313a6bafbb9a0e28b22d8cef2cefb2616951fe300b37a97eb58174ad85b"
+      },
+      {
+        "name": "@weapp-vite/web",
+        "file": "@weapp-vite-web.tgz",
+        "bytes": 430867,
+        "sha256": "c9343a257c08f25af14d4a7426ee2e80a40f5f4537103b993ca791b8461ba2af"
+      },
+      {
+        "name": "@weapp-vite/volar",
+        "file": "@weapp-vite-volar.tgz",
+        "bytes": 19026,
+        "sha256": "ed0bf86e8b2a2629818fde859114098c98765faf1783bb23e690244809fa8a83"
+      },
+      {
+        "name": "@weapp-core/schematics",
+        "file": "@weapp-core-schematics.tgz",
+        "bytes": 20882,
+        "sha256": "b6305729be5541f2a25ee45748cc6c7bc596d2cd437614df44bc17e3f36d0018"
+      },
+      {
+        "name": "@weapp-vite/tailwindcss",
+        "file": "@weapp-vite-tailwindcss.tgz",
+        "bytes": 5672,
+        "sha256": "8a40bff99f543971c7d85b4021044c1497f5477a793bf9f501271b9eeecd4438"
+      },
+      {
+        "name": "@weapp-vite/hmr",
+        "file": "@weapp-vite-hmr.tgz",
+        "bytes": 9025,
+        "sha256": "cd50a74e08e0ca59f307b2ba74c2748a7cedbfd2159f5cfd4dbe881e68c97a72"
+      },
+      {
+        "name": "@weapp-vite/mcp",
+        "file": "@weapp-vite-mcp.tgz",
+        "bytes": 27374,
+        "sha256": "f6c0a48af348520d6788d48188e8f9c6707622ccae1a7fc258c9f88737c2837e"
+      },
+      {
+        "name": "@weapp-vite/acceptance",
+        "file": "@weapp-vite-acceptance.tgz",
+        "bytes": 14679,
+        "sha256": "1e937596dc0b5f8a1d5222e5d455c8998950e224f2861e6a0956eab95034a338"
+      },
+      {
+        "name": "@weapp-vite/i18n",
+        "file": "@weapp-vite-i18n.tgz",
+        "bytes": 11649,
+        "sha256": "9c808a767bf32c4f5984c547545425ca5b07e6eb687888596f8bd7abe39635e1"
+      },
+      {
+        "name": "@weapp-vite/eslint",
+        "file": "@weapp-vite-eslint.tgz",
+        "bytes": 10279,
+        "sha256": "32b63758ad9bdaf98986ca16f2cf49361a29c498ea7d42fd9767971c38d32785"
+      },
+      {
+        "name": "@weapp-core/init",
+        "file": "@weapp-core-init.tgz",
+        "bytes": 13459,
+        "sha256": "50a2fb263267d2c8e1a90770acc55f3c14503c08243943a7adc248dd7db4a30d"
+      }
+    ]
+  },
+  "harness": {
+    "commit": "bed518b2b57d5853a1ab8c0e73c52dd9ab424aa3",
+    "workingTreeDirtyAtRuntime": true,
+    "compilerTarballsBuiltFromHarnessCommit": false,
+    "trackedDirtyFilesAtStartup": [
+      "e2e/ci/auto-routes-hmr.test.ts",
+      "e2e/ide/auto-routes-define-app-json.runtime.test.ts",
+      "e2e/scripts/e2e-suite-manifest.test.ts",
+      "mpcore/packages/test/src/project.test.ts",
+      "packages/weapp-vite/src/moduleGraph/devProvider.test.ts",
+      "packages/weapp-vite/src/moduleGraph/devProvider.ts",
+      "packages/weapp-vite/src/plugins/autoRoutes.ts",
+      "packages/weapp-vite/src/runtime/buildPlugin/entryTopology.test.ts",
+      "packages/weapp-vite/src/runtime/buildPlugin/entryTopology.ts",
+      "packages/weapp-vite/src/runtime/buildPlugin/service.test.ts",
+      "packages/weapp-vite/src/runtime/buildPlugin/service.ts",
+      "packages/weapp-vite/src/runtime/buildPlugin/snapshotSources.test.ts",
+      "packages/weapp-vite/src/runtime/buildPlugin/snapshotSources.ts",
+      "packages/weapp-vite/src/utils/hmrProfile.test.ts",
+      "packages/weapp-vite/src/utils/hmrProfile.ts"
+    ],
+    "postRunAudit": {
+      "recordedAt": "2026-10-04T15:07:16.063825+00:00",
+      "sourceSha256": "ec4184d81e74a8c33159be288ce3a9ef731165219bc12c0dbff968723ad9ef46",
+      "trackedPatchSha256": "b778a24c5059dd22f2a5172fd1b1ddf57711b90096f449bbbc854a1af4c95982",
+      "trackedFileNamesMatchStartupStatus": true,
+      "trackedFilesReconstructedFromSavedPatch": [
+        {
+          "file": "e2e/ci/auto-routes-hmr.test.ts",
+          "sha256": "50d6723bc3b17a456e8fb7b66d1e3713a2dbf8063d9f2922694fdb240d635775",
+          "gitBlobSha1": "458d9b7032b5cf265efe4eb42561f0b24068accf"
+        },
+        {
+          "file": "e2e/ide/auto-routes-define-app-json.runtime.test.ts",
+          "sha256": "53177cc06014cff240c9ab7bd13c5db68db969fb75e18aadcd21fc975bca6eb5",
+          "gitBlobSha1": "1aa1c51dd654e35de0f7dea37010b1910a434485"
+        },
+        {
+          "file": "e2e/scripts/e2e-suite-manifest.test.ts",
+          "sha256": "d12719be1fcc30194835839f253da27416cb0f363fb69da9a516bc87a97d1770",
+          "gitBlobSha1": "4f5a52a2a9ea4616d9334866bb9ff23bd0e3e938"
+        },
+        {
+          "file": "mpcore/packages/test/src/project.test.ts",
+          "sha256": "e8e7c6ef18743ebc5150d381e07f60a2b5df1bdff3454c3a151e41b5583a5d7b",
+          "gitBlobSha1": "307f65b17b8be433b53aa047e37f358a435ca71f"
+        },
+        {
+          "file": "packages/weapp-vite/src/moduleGraph/devProvider.test.ts",
+          "sha256": "39a3aad69dba76fd57cca8e42d0accd0b3e7759b52ca7d55ec3cd418b7680515",
+          "gitBlobSha1": "db8cf4b80948d366c0b9a1dc8f5eaf08ce5be170"
+        },
+        {
+          "file": "packages/weapp-vite/src/moduleGraph/devProvider.ts",
+          "sha256": "aa9f92b6985728de9b1fae74971d535f25f941ad56c2eba93df5e23e084268ad",
+          "gitBlobSha1": "c56ce86a2a999f54c18aea9a592e9fdc3df609d2"
+        },
+        {
+          "file": "packages/weapp-vite/src/plugins/autoRoutes.ts",
+          "sha256": "6d3d74cd83d44de4a964b3d2c5d2bf81c76110088f14c9f3415b7408474abcf9",
+          "gitBlobSha1": "1876c04b6e6ebd13ab2f22b185f60bf9a7770c8f"
+        },
+        {
+          "file": "packages/weapp-vite/src/runtime/buildPlugin/entryTopology.test.ts",
+          "sha256": "d985d5e868bf3ca01f4e8f943bc973a698548171b8f07b7520b9a20d8476fc33",
+          "gitBlobSha1": "04f8d4219b6fa449521a4bed58bbb8313e04ba22"
+        },
+        {
+          "file": "packages/weapp-vite/src/runtime/buildPlugin/entryTopology.ts",
+          "sha256": "0d296bce5422086c1e1a3fbd78667362b4af73bbc53569362a88efcb6c0f3e76",
+          "gitBlobSha1": "211ce90d8118145adc6264b120252d6d6ab2c005"
+        },
+        {
+          "file": "packages/weapp-vite/src/runtime/buildPlugin/service.test.ts",
+          "sha256": "e5cf2084b5f7ad0fb89ba30d27afdbafa5c2fee4560a97b2786e4f6118ca3aac",
+          "gitBlobSha1": "e7e27c54cc05b1729b9defbe28d1b8c74449cef9"
+        },
+        {
+          "file": "packages/weapp-vite/src/runtime/buildPlugin/service.ts",
+          "sha256": "c5ee8bcc316d32ea57eb4fc78b1392577c638221171611fe476e18dc19ad2501",
+          "gitBlobSha1": "b9c279de4fbdace4e3b91fd5a09aad71e11c1a2b"
+        },
+        {
+          "file": "packages/weapp-vite/src/runtime/buildPlugin/snapshotSources.test.ts",
+          "sha256": "c28d707e69d7446b45614ea76a767414e850a49912f7bff9e6e56a9accffa69d",
+          "gitBlobSha1": "df4b7fa7248b5d33d5e60f924c1017a625410ff2"
+        },
+        {
+          "file": "packages/weapp-vite/src/runtime/buildPlugin/snapshotSources.ts",
+          "sha256": "84e945d2883d059f89f884f3cac290d5ce45f0d92f061e0988221f6665ef4057",
+          "gitBlobSha1": "5a5e22367aa55059b6a191f3537051a19cfecd5b"
+        },
+        {
+          "file": "packages/weapp-vite/src/utils/hmrProfile.test.ts",
+          "sha256": "27479423e3c76baf0945689f74d13058cec45888412677347be3c8a4653a374b",
+          "gitBlobSha1": "94ff5eccdad6261cac1c3fc01f8ae1ebde0e5924"
+        },
+        {
+          "file": "packages/weapp-vite/src/utils/hmrProfile.ts",
+          "sha256": "01d30b374d1974ac296172f76a19660f4d5429eeba9055841807bb2f8c75be82",
+          "gitBlobSha1": "4ffcbd279a3b407f4f3aab2a2a5293b1e99c8712"
+        }
+      ],
+      "savedPatchAppliesExactlyToHarnessCommit": true,
+      "untrackedFileSha256": {
+        ".changeset/classic-auto-route-topology.md": "07b615e4936fbfbedaec806cad882471c42c0b1741f20513f923b5a8adf95263",
+        ".changeset/profile-output-watch-ownership.md": "ddcecd3e4793908c9ff7f6fe3606380ec9db2d28294ee69becb2519e29d080ac",
+        "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-ownership-audit.json": "adee932db6bc01ad8f3d88d0a862ee589606f3bf06edf4a508b8363aa3f57373",
+        "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-ownership-audit.md": "f5be129d126d7e7dab8c7bf6120143b2e3d997496b3d3ebce1795ea2aa478e19",
+        "packages/weapp-vite/src/moduleGraph/profileOutput.test.ts": "ad19acc46afb085f60efa0d06d486857527929200c3e50f791fdd2560fbb1bf5",
+        "packages/weapp-vite/src/moduleGraph/profileOutput.ts": "6e4cf90e2808b3117f1c7473622d428863f26935976b0a35f202e993cce6aca9",
+        "packages/weapp-vite/src/plugins/autoRoutes.topology.test.ts": "2fdd10e108cf55a02d60b6b910bbba67c28f062a87592220d9d268c14f568cac",
+        "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.test.ts": "ceec4f869ca748e191026cdffa17a1312aee3efefb9da39bd4a5283e87df6608",
+        "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.ts": "80ff99fa169ebffde138e2d08734e4ad9348625b65cf5c4d1936d7cdfd4cdee4"
+      },
+      "relevantRuntimeHarnessSources": [
+        {
+          "file": "e2e/ide/react-runtime-spike.runtime.test.ts",
+          "sha256": "f900d3e6599db231c53b0cef357f489f25f94cfdaa2d8ab4541c6f8642008aef",
+          "matchesHarnessCommitAtAudit": true
+        },
+        {
+          "file": "packages/weapp-vite/scripts/verify-vite-host-install.mjs",
+          "sha256": "09b8fb35544085d8e40fd7cdb71d441d9957e7985f594b28ecb91c4e1c02ca4f",
+          "matchesHarnessCommitAtAudit": true
+        },
+        {
+          "file": "packages/weapp-vite/scripts/consumerRuntimeEnvironment.mjs",
+          "sha256": "dddab973d8f99abc17a1b0a570252df08b7718419121b0e208f83df2539ce6c9",
+          "matchesHarnessCommitAtAudit": true
+        },
+        {
+          "file": "packages/weapp-vite/scripts/consumerRuntimeHost.mjs",
+          "sha256": "82ed7b142534d2cd8040da73b9a67c8ef15d95bce5313cc43503378ed3c86cdd",
+          "matchesHarnessCommitAtAudit": true
+        },
+        {
+          "file": "packages/weapp-vite/scripts/consumerRuntimeProfile.mjs",
+          "sha256": "477a1e4efaa9cdb0346aa8ae4d010838cfce012b363e75ba2dbe87092f37ce59",
+          "matchesHarnessCommitAtAudit": true
+        }
+      ],
+      "byteSnapshotCapturedBeforeRuntime": false
+    },
+    "sourceBoundary": "Uncommitted tracked changes concern profile/output ownership, auto-route topology and their tests; the recorded untracked files add their helpers, tests, changesets and audit reports. The React suite and consumer compiler selection scripts match the committed harness at the post-run audit. The isolated compiler and all 28 candidate package installs remain byte-identical to the c3c643d40 tarballs.",
+    "provenanceLimitation": "Only tracked dirty names were captured at startup. The patch, untracked hashes and matching harness source hashes were captured afterward. The coordinator reports no source edits during the run, based on task history; startup byte identity was not independently recorded."
+  },
+  "rows": [
+    {
+      "host": "vite-plus",
+      "profile": "react",
+      "status": "functional-assertions-passed-serial-rerun-required",
+      "independentConsumer": {
+        "outsideRepository": true,
+        "candidatePackageCount": 28,
+        "allArchiveSha256AndBytesMatchManifest": true,
+        "allPackageLockSha512IntegrityAndResolvedSourcesMatchArchives": true,
+        "allInstalledVersionsMatchCandidateManifest": true,
+        "allCandidateDirectoriesArePhysicalWithinConsumer": true,
+        "nestedCandidatePackageCopies": 0,
+        "workspaceProtocolReferences": 0,
+        "packageLockLinkEntries": 0,
+        "nodeModulesSymlinksAudited": 44,
+        "externalNodeModulesSymlinks": 0,
+        "installedArchiveFilesCompared": 1735,
+        "installedArchiveFileMismatches": 0,
+        "exportPackagesVerified": 28,
+        "negativeControls": {
+          "brokenExportsRejected": true,
+          "missingCliRejected": true
+        },
+        "consumerReportSha256": "762b0fb5ef44532e5c9ac2fe9ac2b26eb77802dca0ccdd3427f04df77da00850",
+        "packageLockSha256": "c9a5c3454f415e9d6352fd7f9b155bdd8ffd30f46cd89af3f229566f1f7b9b9b",
+        "runtimeNode": "v24.18.0",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "officialDevtools": {
+        "queriedAt": "2026-10-04T15:01:13.655619+00:00",
+        "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+        "channel": "stable",
+        "version": "2.02.2608080",
+        "sourceSha256": "830f051ee589ff4bdc3a26291f17ad0a3a2cda39c1074e6299fec4b97478c5b2"
+      },
+      "providers": [
+        {
+          "provider": "devtools",
+          "runId": "issue1097-vite-plus-react-c3-01",
+          "reportSha256": "c6ff761e9638cf2f81ab734a69f22ad056b0c4b21eb7e69cb1b7a11b097ad1c9",
+          "startedAt": "2026-10-04T15:03:24.543Z",
+          "finishedAt": "2026-10-04T15:04:09.609Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.17.3"
+          },
+          "strict": true,
+          "status": "passed",
+          "summary": {
+            "plannedCount": 3,
+            "executedCount": 3,
+            "passedCount": 3,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 14,
+            "capturedCheckpointCount": 14
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "informationalCount": 3
+          },
+          "nativeSlotGeometryAssertions": 42
+        },
+        {
+          "provider": "headless",
+          "runId": "issue1097-vite-plus-react-c3-01",
+          "reportSha256": "3789791c5e467a5122a54850f238bb0982b4e7b15b0886b24b20f27749a6a4a8",
+          "startedAt": "2026-10-04T15:03:18.795Z",
+          "finishedAt": "2026-10-04T15:03:23.696Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": null,
+            "baseLibraryVersion": null
+          },
+          "strict": true,
+          "status": "passed",
+          "summary": {
+            "plannedCount": 3,
+            "executedCount": 3,
+            "passedCount": 3,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 14,
+            "capturedCheckpointCount": 14
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "informationalCount": 0
+          },
+          "nativeSlotGeometryAssertions": 0
+        }
+      ],
+      "parity": {
+        "commonCases": 3,
+        "commonCheckpoints": 14,
+        "allCommonObservationsMatch": true,
+        "headlessFinishedBeforeDevtoolsStarted": true
+      },
+      "cleanup": {
+        "resourcesSha256": "96dcbd27778e5b8e84eac79247f907c87f86b76a38c16945da2bbe9cd20953c3",
+        "completedAt": "2026-10-04T15:04:11.201562+00:00",
+        "exitCode": 0,
+        "registeredChildrenAudited": 63,
+        "sameProcessIdentityStillRunning": 0,
+        "ownedEndpointsObserved": 1,
+        "ownedEndpointsConfirmedClosed": 1,
+        "ownedListeningPortsStillOpen": 0,
+        "projectClosedViaSelectedCli": true,
+        "consumerRetainedForArchiveReview": true,
+        "cleanupErrors": 0
+      },
+      "runLogSha256": "be0cf547924660ea1a690290af840b0fad4c6dabdc8700f4b8bbde5e26833aa0"
+    }
+  ],
+  "commonCases": [
+    {
+      "name": "react runtime spike (weapp e2e) > renders React hooks and dispatches host events through generic WXML",
+      "checkpoints": [
+        {
+          "id": "initial",
+          "action": "首屏显示初始 hooks、context、输入和 keyed 列表",
+          "route": "/pages/index/index"
+        },
+        {
+          "id": "incremented",
+          "action": "点击 increment 更新 count 和 memo doubled",
+          "route": "/pages/index/index"
+        },
+        {
+          "id": "appended",
+          "action": "点击 append 保留已有 keyed 项并新增 item-2",
+          "route": "/pages/index/index"
+        },
+        {
+          "id": "input-updated",
+          "action": "输入 Ada 并渲染受控问候文本",
+          "route": "/pages/index/index"
+        }
+      ],
+      "observationSha256": "ba2519104b3b0682f97615f5ac85f7e9f901bb3b387ad1e8dfc83e807a6af427"
+    },
+    {
+      "name": "react runtime spike (weapp e2e) > renders the compiled native WXML page with binding-only payloads",
+      "checkpoints": [
+        {
+          "id": "initial",
+          "action": "首屏显示静态绑定的 counter 和问候",
+          "route": "/pages/static/index"
+        },
+        {
+          "id": "incremented",
+          "action": "点击 increment 通过最小 setData payload 更新文本",
+          "route": "/pages/static/index"
+        },
+        {
+          "id": "input-updated",
+          "action": "输入 Ada 更新静态 input binding 和问候",
+          "route": "/pages/static/index"
+        }
+      ],
+      "observationSha256": "330e9ca1801d8e5e460d997e62fc1556d07dc4c5b976e8965573ed1c69b9cc82"
+    },
+    {
+      "name": "react runtime spike (weapp e2e) > passes props, change events and default slots across all six interop edges",
+      "checkpoints": [
+        {
+          "id": "initial",
+          "action": "首屏检查六条互操作边的 props 文本、默认插槽和 idle 结果",
+          "route": "/pages/interop/index"
+        },
+        {
+          "id": "react-to-native",
+          "action": "点击 react-to-native 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+          "route": "/pages/interop/index"
+        },
+        {
+          "id": "react-to-wevu",
+          "action": "点击 react-to-wevu 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+          "route": "/pages/interop/index"
+        },
+        {
+          "id": "native-to-wevu",
+          "action": "点击 native-to-wevu 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+          "route": "/pages/interop/index"
+        },
+        {
+          "id": "native-to-react",
+          "action": "点击 native-to-react 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+          "route": "/pages/interop/index"
+        },
+        {
+          "id": "wevu-to-native",
+          "action": "点击 wevu-to-native 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+          "route": "/pages/interop/index"
+        },
+        {
+          "id": "wevu-to-react",
+          "action": "点击 wevu-to-react 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+          "route": "/pages/interop/index"
+        }
+      ],
+      "observationSha256": "6507cec1d69282646694757059d967da7c4933f6b5337508705a5d5339f475f2"
+    }
+  ],
+  "comparisonWithPriorRows": {
+    "evidence": "issue-1097-two-react-consumer-acceptance.json",
+    "allCommonObservationHashesMatch": true,
+    "compilerCandidateUnchanged": true,
+    "harnessCommitChanged": true
+  },
+  "externalConcurrency": {
+    "machineGlobalE2eSerializationSatisfied": false,
+    "externalProcessKind": "another project Playwright test",
+    "externalProcessStartedAtUtc": "2026-10-04T15:03:38+00:00",
+    "stableStartedAt": "2026-10-04T15:03:24.543Z",
+    "stableFinishedAt": "2026-10-04T15:04:09.609Z",
+    "timingOverlap": true,
+    "observedAfterRun": true,
+    "evidenceSha256": "95a0647469070b6209b3ab8f6de159e60d0078bcd3e504ab2925e5e22cb3023e",
+    "processSnapshotSha256": "bfbb264a009539a17e03a9f94ca9e1300489f27835e31f38390f5ec7720fe208",
+    "exclusiveMachineClaim": false,
+    "performanceClaim": false,
+    "finalSerialAcceptancePending": true
+  },
+  "limitations": [
+    "This evidence covers only the vite-plus/react row. Both providers passed three cases and 14 checkpoints, but another project started Playwright during the Stable interval. The repository-wide serial E2E requirement was not satisfied; a serial rerun remains required before final row acceptance.",
+    "Compiler tarballs remain c3c643d40. Runtime harness bed518b2b had tracked and untracked changes; this is not evidence that the compiler candidate was upgraded to bed518b2b or a later commit.",
+    "All common observations match the prior wv/react and vite/react rows. Stable additionally proves 42 slot visibility and 160px by 24px geometry assertions; the headless logical tree does not provide equivalent CSS geometry.",
+    "The post-run source snapshot is not a startup byte snapshot. The saved patch applies exactly to the committed harness; reconstructed blobs match its recorded Git hashes. The file-name correspondence is checked, but no startup/post-run byte-identity claim is made. The current working tree continued evolving after the saved post-run snapshot.",
+    "AppService warn/error/exception counters and runtime-report diagnostic warning/error messages are zero. Informational launch/system messages remain recorded. The selected-CLI close command retained its Node DEP0040 warning, returned zero and closed the owned endpoint.",
+    "The independent audit only read retained artifacts, process identities and owned ports. It did not run E2E or alter the shared IDE. Candidate consumer files remain for archive review. Whole-matrix completion and required CI remain separate gates."
+  ]
+}
