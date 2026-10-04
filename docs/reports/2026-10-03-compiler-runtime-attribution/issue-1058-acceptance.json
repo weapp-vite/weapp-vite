@@ -3,12 +3,9 @@
   "issue": 1058,
   "conclusion": {
     "productOrAcceptanceGapFound": false,
-    "completionLabelReady": false,
-    "remaining": [
-      "Full CI run 37189458593 and required final-delivery checks must finish.",
-      "Release run 37192095286 must finish; no completed label is asserted by this evidence update."
-    ],
-    "scope": "Selected #1058 cases passed. The interrupted mixed Stable batch did not pass; its unfinished top-level report does not certify suite teardown."
+    "completionLabelReady": true,
+    "remaining": [],
+    "scope": "Issue #1058 is complete: its formal template-analysis comparison and selected Stable runtime cases passed, with full CI and Release checks now successful at their recorded commits. The interrupted mixed Stable batch did not pass; its unfinished top-level report does not certify suite teardown. Separate HMR and resource-performance failures remain outside this issue conclusion."
   },
   "formalCompiler": {
     "commit": "a88e9e260ccc684f4cf3501a38fc919d3a63cc42",
@@ -144,6 +141,17 @@
         }
       ],
       "limit": "Do not claim the complete install graph is identical; compiler importer and resolved dependency snapshots are unchanged."
+    },
+    "fullCiToDelivery": {
+      "from": "977bc90dd20dc996e5982bc2f6446e12b60a7fe2",
+      "to": "f044775502b5701c09f1cbeb02b043982c0184ef",
+      "compilerBenchmarkAndIssueFixtureSourcesUnchanged": true,
+      "changedScope": [
+        "e2e automator helper and regression test",
+        "runtime benchmark tooling and tests",
+        "acceptance documentation"
+      ],
+      "limit": "The full CI result belongs to 977bc90dd; it does not claim to execute the newer helper changes. Stable runtime belongs to 6d599a482; no f044 runtime or formal timing rerun is claimed."
     }
   },
   "stable": {
@@ -387,12 +395,38 @@
   },
   "publication": {
     "rawRuntimeArtifactsTracked": false,
-    "externalWritesOrTestsPerformed": false,
     "updatedDocs": [
       "docs/reports/2026-10-03-compiler-runtime-attribution/README.md",
       "docs/reports/2026-10-03-compiler-runtime-attribution/issue-delivery.md"
     ],
-    "sanitizedSummaryArchived": true
+    "sanitizedSummaryArchived": true,
+    "testsPerformedByEvidenceUpdate": false,
+    "issueLabel": {
+      "name": "已完成",
+      "applied": true,
+      "readBackVerified": true,
+      "verification": "The coordinating agent applied the label and verified it with gh issue view."
+    },
+    "rangeStatus": {
+      "range": "1015-1142",
+      "issueCount": 41,
+      "completedLabelCount": 29,
+      "remainingCount": 12,
+      "remainingIssues": [
+        1015,
+        1065,
+        1081,
+        1082,
+        1097,
+        1133,
+        1134,
+        1135,
+        1136,
+        1137,
+        1140,
+        1142
+      ]
+    }
   },
   "ciEvidence": {
     "runtimePublication": {
@@ -507,7 +541,78 @@
     },
     "fullCi": {
       "runId": 37189458593,
-      "statusAtReview": "not-completed"
+      "url": "https://github.com/weapp-vite/weapp-vite/actions/runs/37189458593",
+      "sourceSha": "977bc90dd20dc996e5982bc2f6446e12b60a7fe2",
+      "statusAtReview": "success",
+      "allSixMatricesPassed": true,
+      "matrices": [
+        {
+          "matrix": "ubuntu22",
+          "jobId": 111398427646,
+          "status": "success",
+          "passedFiles": 1502,
+          "skippedFiles": 26,
+          "passedTests": 13694,
+          "skippedTests": 32
+        },
+        {
+          "matrix": "ubuntu24",
+          "jobId": 111398427653,
+          "status": "success",
+          "passedFiles": 1502,
+          "skippedFiles": 26,
+          "passedTests": 13694,
+          "skippedTests": 32
+        },
+        {
+          "matrix": "windows22",
+          "jobId": 111398427677,
+          "status": "success",
+          "passedFiles": 1496,
+          "skippedFiles": 25,
+          "passedTests": 13587,
+          "skippedTests": 36
+        },
+        {
+          "matrix": "windows24",
+          "jobId": 111404749412,
+          "status": "success",
+          "passedFiles": 1496,
+          "skippedFiles": 25,
+          "passedTests": 13587,
+          "skippedTests": 36
+        },
+        {
+          "matrix": "macos22",
+          "jobId": 111406975418,
+          "status": "success",
+          "passedFiles": 1502,
+          "skippedFiles": 26,
+          "passedTests": 13694,
+          "skippedTests": 32
+        },
+        {
+          "matrix": "macos24",
+          "jobId": 111409072125,
+          "status": "success",
+          "passedFiles": 1502,
+          "skippedFiles": 26,
+          "passedTests": 13694,
+          "skippedTests": 32
+        }
+      ],
+      "weapiGuards": [
+        {
+          "jobId": 111398427542,
+          "name": "Weapi Compatibility Guard (Node 22) / run",
+          "status": "success"
+        },
+        {
+          "jobId": 111398427642,
+          "name": "Weapi Compatibility Guard (Node 24) / run",
+          "status": "success"
+        }
+      ]
     },
     "website": {
       "runId": 37192095346,
@@ -517,9 +622,31 @@
     "release": {
       "runId": 37192095286,
       "sourceSha": "6d599a48285a50effc84ba2744fc61ed260c5fd0",
-      "statusAtReview": "not-completed"
+      "statusAtReview": "success",
+      "jobId": 111406262413
     },
-    "boundary": "Each result applies to its stated source commit and scope. Pending checks and other issue failures are not converted into passes."
+    "boundary": "Each result applies only to its stated source commit and scope. Full CI six-matrix success is recorded at 977bc90dd; Release success is recorded separately at 6d599a482 and f04477550. Other issue failures and the interrupted mixed Stable batch are not converted into passes.",
+    "reviewedAt": "2026-10-04T10:43:18.688549+00:00",
+    "latestRelease": {
+      "runId": 37194327931,
+      "sourceSha": "f044775502b5701c09f1cbeb02b043982c0184ef",
+      "jobId": 111414246620,
+      "statusAtReview": "success"
+    },
+    "latestWebsite": {
+      "runId": 37194328019,
+      "sourceSha": "f044775502b5701c09f1cbeb02b043982c0184ef",
+      "statusAtReview": "success"
+    },
+    "separatePerformanceFailures": {
+      "runId": 37183338392,
+      "sourceSha": "8cd8b9ccf897ce7d40ada65681356093416d6fbd",
+      "baselineSha": "73b76f4acde84a4ac8c25f4b816119b19704ac28",
+      "classic": "47 passed, 2 regression, 3 unstable",
+      "stateful": "48 passed, 3 regression, 1 unstable",
+      "outsideIssue1058": true,
+      "boundary": "The HMR performance regressions and the classic resource-job failure in formalCompiler.wholeRunFailureScope remain recorded failures. Completing the shared template-analysis issue does not pass those separate gates."
+    }
   },
   "separateIssue1015Boundary": {
     "issue": 1015,

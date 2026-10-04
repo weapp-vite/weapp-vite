@@ -76,12 +76,12 @@ v5/v6 四类消费者均独立严格安装，并各完成五次普通构建和�
 
 同目录 `provider-cost-before.json`、`provider-cost-after.json` 和 `provider-cost-comparison.json` 保存归档 SHA-256、SHA-512、输入/输出身份及观测摘要。原始报告的通用路径脱敏曾误伤部分 SHA-512 base64 斜杠；摘要只在验证归档 SHA-256 相同后重新计算完整 integrity，原报告保持不变，脱敏实现另加回归。两代均为有未提交修改的本地诊断，不冒充干净提交的正式验收。
 
-## 尚未满足的完成条件
+## 完成条件与当前判定
 
-| Issue | 剩余实现与最终证据 |
+| Issue | 当前判定或剩余实现与最终证据 |
 | --- | --- |
 | #1015 | `6d599a482` 的 Stable 实测两例均失败，仅捕获 3/14 检查点；仍需修复并完成 classic/stateful 的 CSS 变量连续替换、删除、恢复及交互 |
-| #1058 | 正式 template-analysis job 已完成七组配对、56 个样本及 28 次产物等价比较；`6d599a482` 的 Stable 两例、5/5 检查点通过且与 headless 一致，专项六矩阵已收敛，完整 CI 与发布检查待收尾；见精简验收证据 |
+| #1058 | 已完成并核对标签：正式 template-analysis 七组配对、56 个样本和 28 次产物等价比较通过；`6d599a482` 的 Stable 两例、5/5 检查点与 headless 一致；`977bc90dd` 完整 CI 六矩阵和 `6d599a482`、`f04477550` Release 均成功；各自 SHA 与范围见精简验收证据 |
 | #1065 | Stable IDE 的第三方 compiler 脚本、资产和依赖连续更新，以及内置 Tailwind adapter 的既有运行语义；安装体积不是本议题的验收条件 |
 | #1081 | Stable IDE 的 Tailwind 样式、JS patch 与批次一致性 |
 | #1082 | 固定批准基线的三 OS、九分片完整性能验收；历史基线缺陷必须单列 |
@@ -128,7 +128,7 @@ v5/v6 四类消费者均独立严格安装，并各完成五次普通构建和�
 
 该候选的 Release 已通过；正式 compiler 分析已完成 56 个样本，mode/cache 等价性完成两组各 8 步，stateful 资源与 profile 对照子任务通过。stateful HMR 的 20 组配对及唯一确认后，仍有五个 style/template/JSON macro 场景超过 5%，另有原生输入的 raw profile 缺失或不完整；不能据此通过 #1133 / #1134。其余性能分片和新代码的精确提交验收仍需继续，不使用这些旧候选结果替代下一次提交。
 
-后续候选 `b51e55f6ea2d82b8054aeaf86792c85be63b9481` 的 Release 已通过。当前 41 个范围内 issue 中，28 个已有「已完成」标签，其余 13 个仍等待各自完成条件；没有因工作流调度或局部通过而新增完成标签。
+后续候选 `b51e55f6ea2d82b8054aeaf86792c85be63b9481` 的 Release 已通过。当时 41 个范围内 issue 中，28 个已有「已完成」标签，其余 13 个仍等待各自完成条件；该阶段没有因工作流调度或局部通过而新增完成标签。
 
 旧候选的 Ubuntu Node 22 与 Node 24 全量 CI 均定位到同一嵌套测试宿主隔离问题：目标源码只重建一次且所属项目正常重跑，随后外层测试修改仓库根 `package.json`，命中 Vitest 默认全量重跑规则，导致无关项目也再运行。该证据区分了默认宿主监听与 artifact 发布，不再把 `rebuilt=1 / runs=3` 全部归因于 artifact 的重复通知。
 
@@ -346,7 +346,7 @@ fixture 始终不修改宿主 `.vue`，连续验证初始、外部模板文本�
 
 ## 最新验收状态
 
-2026-10-04 复核时，#1015–#1142 的 41 个 issue 中有 28 个带「已完成」标签，仍有 13 个未标记：#1015、#1058、#1065、#1081、#1082、#1097、#1133、#1134、#1135、#1136、#1137、#1140、#1142。不能把这些项目一概归为「代码已经完成，只缺 IDE」：classic 长期资源门禁和冻结基线的部分性能对照仍失败。
+2026-10-04 较早复核时，#1015–#1142 的 41 个 issue 中有 28 个带「已完成」标签，仍有 13 个未标记：#1015、#1058、#1065、#1081、#1082、#1097、#1133、#1134、#1135、#1136、#1137、#1140、#1142。不能把这些项目一概归为「代码已经完成，只缺 IDE」：classic 长期资源门禁和冻结基线的部分性能对照仍失败。
 
 完整 E2E run `37157253042` 的 Workspace HMR job 已执行 229/229 个场景，功能失败及未执行均为 0，但保留性能失败：TDesign Wevu 模板和脚本的 compiler `totalMs` 分别为 1,661.079 和 1,631.371 ms，超过原 1,500 ms 门槛。报告的阶段有嵌套与异步重叠，不能相加或由 `entryAutoImportMs` 单独推断 resolver 是根因。
 
@@ -519,4 +519,6 @@ Rolldown 1.2.12 的临时 callable owner 草案在 Node 24.18.0 完成 10 例真
 
 同一候选的独立 #1015 Stable 实测实际为 2/2 失败，仅捕获 3/14 检查点。该结果保留为待修复问题，不能用 headless 通过或 #1058 的通过结果替代。
 
-`691c405e4` 的 [runtime publication 六矩阵](https://github.com/weapp-vite/weapp-vite/actions/runs/37188267405) 已全部通过，每组严格 9/9 cases、66/66 checkpoints，无失败或跳过；`977bc90dd` 的 [plugin-watch 六矩阵](https://github.com/weapp-vite/weapp-vite/actions/runs/37189048511) 也全部通过，每组 13/13、无失败或跳过。完整 CI [37189458593](https://github.com/weapp-vite/weapp-vite/actions/runs/37189458593) 尚未完成；`6d599a482` 的 Website [37192095346](https://github.com/weapp-vite/weapp-vite/actions/runs/37192095346) 已成功，Release [37192095286](https://github.com/weapp-vite/weapp-vite/actions/runs/37192095286) 仍待结束。各项按自身提交与范围判断，#1058 的最终完成标记仍等待剩余必需检查。
+`691c405e4` 的 [runtime publication 六矩阵](https://github.com/weapp-vite/weapp-vite/actions/runs/37188267405) 已全部通过，每组严格 9/9 cases、66/66 checkpoints，无失败或跳过；`977bc90dd` 的 [plugin-watch 六矩阵](https://github.com/weapp-vite/weapp-vite/actions/runs/37189048511) 也全部通过，每组 13/13、无失败或跳过。`977bc90dd` 的完整 CI [37189458593](https://github.com/weapp-vite/weapp-vite/actions/runs/37189458593) 六组构建/测试矩阵及两项 Weapi guard 均已成功：Linux/macOS 每组 1,502 文件、13,694 测试通过，保留 26 文件、32 测试跳过；Windows 每组 1,496 文件、13,587 测试通过，保留 25 文件、36 测试跳过。`6d599a482` 的 Website [37192095346](https://github.com/weapp-vite/weapp-vite/actions/runs/37192095346) 与 Release [37192095286](https://github.com/weapp-vite/weapp-vite/actions/runs/37192095286)、`f04477550` 的 Website [37194328019](https://github.com/weapp-vite/weapp-vite/actions/runs/37194328019) 与 Release [37194327931](https://github.com/weapp-vite/weapp-vite/actions/runs/37194327931) 均已成功。各项保留自身提交与范围；`977bc90dd` 的完整 CI 不声称执行后续 automator/runtimeBench helper 改动，`6d599a482` 的 Stable 结果也不冒充 `f04477550` 的重新运行。
+
+议题 #1058 已满足该议题的实现、正式模板分析、真实 Stable 与 CI 交付条件，已添加「已完成」标签并用 `gh issue view` 读回确认。当前范围内 41 个 issue 中，29 个带完成标签，剩余 12 个仍未完成：#1015、#1065、#1081、#1082、#1097、#1133、#1134、#1135、#1136、#1137、#1140、#1142。正式 HMR [37183338392](https://github.com/weapp-vite/weapp-vite/actions/runs/37183338392) 在 `8cd8b9ccf` 上仍为 classic 47 passed / 2 regression / 3 unstable、stateful 48 passed / 3 regression / 1 unstable；旧 compiler/resource workflow 的 classic 资源失败也保持原结论。这些是其他议题的性能门禁，不因 #1058 完成而改写为通过。
