@@ -10,6 +10,10 @@ crate-type = [ "cdylib" ]
 [features]
 default = []
 experimental-chunk-analysis = [ "dep:oxc_semantic" ]
+experimental-binding-analysis = [
+  "dep:oxc_semantic",
+  "oxc_syntax/to_js_string"
+]
 
 [dependencies]
 napi = { version = "3.14.0", default-features = false, features = [ "napi4" ] }

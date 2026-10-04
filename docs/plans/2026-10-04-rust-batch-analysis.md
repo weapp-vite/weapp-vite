@@ -143,7 +143,7 @@ PR 的原生正确性检查已在 macOS、Linux、Windows 通过。Web E2E 则�
 - JS 适配器 10 项测试通过，覆盖原始代码/maps 一致、单次批量调用、无效结果原子回退，以及无法无损转成 UTF-8 的孤立代理字符。
 - 26 个语义样本的外置/内联 map 共 52 项检查通过；新构建的 TDesign 工程 415 份 JS、873,624 字节，共 830 项检查通过，均没有 fallback。命中计数按原始语料记录，不因两种 map 模式重复累计；415 份输入中，218 份进入 native，197 份沿用生产文本预筛选跳过。该语料有 405 份 JS 位于复制的 npm 资源目录，不能用它代表真实 chunk 工作量。
 - 这些 map 是为每份已构建 JS 新建的 identity map，用来严格对照两阶段映射组合。没有读取工程原来的 map，不能将此结果写成原工程的 sourcemap 端到端验收。
-- 已添加三操作系统的独立 feature 构建与正确性步骤；本机结果为 macOS，远程 feature 矩阵尚待执行。
+- 已添加三操作系统的独立 feature 构建与正确性步骤；提交 `5e880d3c5` 的 macOS/Linux/Windows 矩阵均已通过（Native AST Analysis run `37188974109`）。
 
 等待同机 E2E 退出后，使用 release 绑定完成 8 对预热与 30 对交替顺序采样。首次全目录语料的 JS/native P50 为 144.703/18.767 ms，但这包含复制资源，仅保留作大语料重放证据。
 
@@ -174,3 +174,25 @@ P50 的绝对差约 7.14 ms。这是 macOS arm64、Node 24.18.0 共享机器上�
 | 脚本与宏 | 7 |
 
 模板阶段合计 967 次 parse，manifest 路径占 724 次。这是调用次数归因，不是耗时占比；采集调用栈本身较昂贵，工具刻意不计时。重复循环来源的去重机会值得先验证 JS 缓存边界，再评估整模板 Rust 批量分析。最终结果依赖作用域、for/slot 别名与 safe-call 配置，不能只按表达式字符串缓存完整结果；scoped slot 当前在遍历过程中立即消费子 manifest，批处理必须先处理这个生命周期边界。
+
+## 模板表达式批量 Rust 实验
+
+新增默认关闭的 `experimental-binding-analysis` Cargo feature，不导出到生产 JS，也不替换现有 compiler。Rust 一次接收一批 normalized 表达式、locals、safe-call 配置与 JS 提供的全局名称集合，返回有序依赖路径和 snapshot fallback 事实。JS 保留循环、slot、JSX scope 合并以及 manifest 生成。
+
+诊断工具通过 Node 内存加载钩子，在真实 `collectDependencies` 中完成 normalization 后捕获请求，并在循环依赖合并前保存 Babel oracle。源码和 dist 不改变，捕获不计时。重放复用相同生产分析主体，只在进程内绕过已经完成的 normalization，以确保 JS 与 Rust 的测量边界一致。压力 fixture 的输入和最终编译结果 hash 与原归因运行一致。
+
+| 语料 | 原始请求 | 不同表达式 | 不同完整请求 | release 差分失败/回退 |
+| --- | ---: | ---: | ---: | ---: |
+| 原 SFC 压力 fixture | 724 | 148 | 197 | 0 / 0 |
+| 零售模板商品详情页 | 64 | 53 | 53 | 0 / 0 |
+| Wevu 示例首页 | 34 | 19 | 19 | 0 / 0 |
+
+两个真实页面使用工具固定的 `compileVueFile` 页面选项，报告记录具体选项；不是读取原工程全部 Vite 配置的完整构建。每项严格比较捕获 oracle、JS 重放、JS 去重和 Rust；不同实现任一不一致或 native 发生回退时，禁止计时。
+
+debug/release 绑定各通过 82 项语义与边界测试，适配器 8 项测试、TypeScript 和 ESLint 检查通过。覆盖内部词法绑定、静态与动态成员、JS 数字路径格式、调用/可选调用、解构赋值、有限 TypeScript 去除及保留的类型节点行为。原始 UTF-16 和字面量中的孤立代理项显式拒绝，不做有损转换。默认绑定没有新增实验导出。
+
+性能工具同时保留原始 JS、按完整请求去重的 JS、按相同键去重后一次调用的 Rust。缓存限于当前批次；六轮预热后轮转三实现的六种执行顺序，计时包括去重、NAPI、结果验证与恢复顺序。本轮 release 正确性完成时，同机另一个任务已开始 E2E 预检，因此尚未采样。不能把 724→197 的重复工作减少直接归因于 Rust。
+
+生产接入仍有生命周期前提：scoped-slot 子脚本在模板遍历期间立即消费 manifest，之后还有 owner 依赖保留、位置重映射和 layout 追加绑定。当前离线批处理未解决这些边界，不宜直接延迟所有分析至模板结束。三操作系统 CI 已增加 feature 构建、真实捕获与无计时重放，本轮远程结果等待提交后验证。
+
+复现步骤见 [表达式实验工具](../../scripts/nativeBindingAnalysis/README.md)，可审阅的计数和报告 hash 见 [证据摘要](./2026-10-04-rust-binding-analysis-evidence.json)。

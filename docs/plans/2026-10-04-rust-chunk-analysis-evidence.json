@@ -65,7 +65,6 @@
   "performanceAcceptance": "not-run; local paired replay is not end-to-end acceptance",
   "limitations": [
     "Rewrite samples compare actual stage functions, not complete builds.",
-    "Native release built and checked on local macOS only; new feature matrix not yet run.",
     "Manifest call counts do not establish CPU attribution or Rust speedup.",
     "415-file corpus includes 405 copied npm JavaScript files, not natural OutputChunk workload.",
     "Captured weapp chunks replay alipay+wpi rewrites; capture and replay feature settings differ.",
@@ -548,6 +547,16 @@
       "platform": "weapp",
       "astEngine": "babel",
       "injectWeapi": false
+    }
+  },
+  "remoteCorrectness": {
+    "commit": "5e880d3c5a6845466795c679d653257506954a67",
+    "workflow": "Native AST Analysis",
+    "runId": 37188974109,
+    "platforms": {
+      "macos": "success",
+      "linux": "success",
+      "windows": "success"
     }
   }
 }

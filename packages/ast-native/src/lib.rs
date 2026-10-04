@@ -21,6 +21,9 @@ pub use vue_sfc_signature::get_vue_sfc_signature_payload_native;
 #[cfg(feature = "experimental-chunk-analysis")]
 mod chunk_analysis;
 
+#[cfg(feature = "experimental-binding-analysis")]
+mod binding_analysis;
+
 #[napi(object)]
 pub struct NativeOnPageScrollDiagnostic {
     pub kind: String,

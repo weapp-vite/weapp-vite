@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "scope": "Default-off Cargo feature; no production compiler integration",
+  "correctness": [
+    {
+      "label": "profile",
+      "fixture": "scripts/astMigrationProfile/fixtures.ts:createVueSfcFixture",
+      "compileOptions": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "captureSha256": "50693e82d67a1c631a3a9c07761d16a6f761720829cbeb0fed62290146ae20a7",
+      "reportSha256": "bbec264061564c642d88f69054accd1fcab1ea99f4f0f6be20bfb7fbd1f7d919",
+      "sourceSha256": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+      "inputSha256": "9e5ddb3ca118abc9891b194a7e02c4a06797e0243fdfb7d1863e640e4d4b54c4",
+      "outputSha256": "e4ff5c11548624bf72705adf327bb847635f803426dd13bafe8c2400520f9d70",
+      "counts": {
+        "calls": 724,
+        "uniqueExpressions": 148,
+        "uniqueRequests": 197
+      },
+      "nativeCallsPerBatch": 1,
+      "failures": 0,
+      "fallback": null,
+      "bindingSha256": "42897b07327ac65a6f489d692d0eb90a33c76b416bed984d442473a1f926f42c"
+    },
+    {
+      "label": "retail",
+      "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/index.vue",
+      "compileOptions": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "captureSha256": "8a75bcc58068405f89d83b6023b9eeef32688258eba0832dfa0ab936dce9931c",
+      "reportSha256": "f271f637cacd8ac1aca87444766f642874d57c61c43e5c393b289ecf7f45c2d5",
+      "sourceSha256": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+      "inputSha256": "28a8c41959d94da732fc97a045bf901e0cde52b7a3c63beb327a705586ec2ecb",
+      "outputSha256": "e43977f472b7011f5a5e31660c249a25d6ed034daac3171bdc4c0f4b5af13c78",
+      "counts": {
+        "calls": 64,
+        "uniqueExpressions": 53,
+        "uniqueRequests": 53
+      },
+      "nativeCallsPerBatch": 1,
+      "failures": 0,
+      "fallback": null,
+      "bindingSha256": "42897b07327ac65a6f489d692d0eb90a33c76b416bed984d442473a1f926f42c"
+    },
+    {
+      "label": "wevu",
+      "fixture": "apps/wevu-vue-demo/src/pages/index/index.vue",
+      "compileOptions": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "captureSha256": "ec82fad4af8e9ad0f20bd6de9480de96203a3a9fec177570abd03d5221ff4cd7",
+      "reportSha256": "35442a5af4efbe1b4662fc46a13be9bdede4761148930c2d9b90a0ab454bfbc0",
+      "sourceSha256": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+      "inputSha256": "6c234bbfbeb8467af821f43724f4bd01dc546356126fe144f91d6cb368c1a085",
+      "outputSha256": "eaa7fc289bc65650784ad67749939df2dcc69edce5f79891f4586caecbd6ea7e",
+      "counts": {
+        "calls": 34,
+        "uniqueExpressions": 19,
+        "uniqueRequests": 19
+      },
+      "nativeCallsPerBatch": 1,
+      "failures": 0,
+      "fallback": null,
+      "bindingSha256": "42897b07327ac65a6f489d692d0eb90a33c76b416bed984d442473a1f926f42c"
+    }
+  ],
+  "semanticTests": {
+    "debug": 82,
+    "release": 82
+  },
+  "adapterTests": 8,
+  "performanceAcceptance": "not-run; another task is running IDE E2E on the shared machine",
+  "limitations": [
+    "Correctness compares normalized expression results before loop dependency merging.",
+    "Real page sources use fixed isolated compileVueFile options, not full project Vite configurations.",
+    "No complete build/HMR, original sourcemap, RSS or host-runtime performance claim.",
+    "Current feature release verified locally on macOS arm64; new three-OS matrix awaits PR update."
+  ]
+}
