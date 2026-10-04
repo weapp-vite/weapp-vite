@@ -3,7 +3,7 @@ import type { TransformScriptOptions } from '../../packages-runtime/wevu-compile
 import type { CompilerObservation } from '../../packages-runtime/wevu-compiler/src/profiling/types'
 import { compileVueFile } from '../../packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile'
 import { transformScript } from '../../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript'
-import { observeCompiler, observeCompilerAsync } from '../../packages-runtime/wevu-compiler/src/profiling/internal'
+import { observeCompiler, observeCompilerAsync } from '../../packages-runtime/wevu-compiler/src/profiling/node'
 
 function stageTimings(observation: CompilerObservation) {
   const timings: Record<string, number> = {}

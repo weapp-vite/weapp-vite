@@ -1,6 +1,6 @@
 import * as upstream from '@weapp-vite/ast/babel'
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { observeCompiler } from '../profiling/internal'
+import { observeCompiler } from '../profiling/node'
 import * as observed from './babel'
 
 describe('compiler Babel observation wrappers', () => {

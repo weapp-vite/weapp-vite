@@ -1,7 +1,8 @@
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { describe, expect, it, vi } from 'vitest'
-import { countCompilerOperation, measureCompilerStage, measureCompilerStageAsync, observeCompiler, observeCompilerAsync } from './internal'
+import { countCompilerOperation, installCompilerProfiler, measureCompilerStage, measureCompilerStageAsync } from './internal'
+import { observeCompiler, observeCompilerAsync } from './node'
 
 describe('internal compiler observation', () => {
   it('does not read clocks or CPU when observation is disabled', async () => {
@@ -38,6 +39,13 @@ describe('internal compiler observation', () => {
     expect(next.value).toBe(1)
     expect(next.observation.spans.map(span => [span.name, span.status])).toEqual([['failed-child', 'failed']])
     expect(next.observation.counters).toEqual({})
+    const dispose = installCompilerProfiler({
+      measure: (_name, run) => run(),
+      measureAsync: (_name, run) => run(),
+      count: () => {},
+    })
+    dispose()
+    dispose()
   })
 
   it('isolates concurrent async calls and nested observations', async () => {
@@ -66,6 +74,28 @@ describe('internal compiler observation', () => {
     expect(second.observation.spans.map(span => span.name)).toEqual(['second'])
     expect(second.observation.counters).toEqual({ babelTraverseCalls: 1 })
     expect(firstResult.observation.cpu.scope).toBe('process')
+    const after = observeCompiler(() => measureCompilerStage('after', () => 1))
+    expect(after.observation.spans.map(span => span.name)).toEqual(['after'])
+  })
+
+  it('detaches the Node adapter after asynchronous observation fails', async () => {
+    const failure = new Error('async compile failed')
+    await expect(observeCompilerAsync(() => measureCompilerStageAsync('failed', async () => {
+      await Promise.resolve()
+      throw failure
+    }))).rejects.toBe(failure)
+
+    const clock = vi.spyOn(performance, 'now')
+    const cpu = vi.spyOn(process, 'cpuUsage')
+    const pending = Promise.resolve('unobserved')
+    try {
+      expect(measureCompilerStageAsync('next', () => pending)).toBe(pending)
+      expect(clock).not.toHaveBeenCalled()
+      expect(cpu).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.restoreAllMocks()
+    }
   })
 
   it('keeps nested inclusive wall time separate from unexplained time', async () => {

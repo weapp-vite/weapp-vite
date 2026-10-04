@@ -69,7 +69,7 @@ jobs:
           pnpm --filter @wevu/compiler test:types
       - name: Check compiler profiling and benchmark evidence contracts
         run: |
-          pnpm --filter @wevu/compiler test src/profiling/internal.test.ts src/utils/babel.test.ts
+          pnpm --filter @wevu/compiler test src/profiling/internal.test.ts src/profiling/internal.browser.test.ts src/utils/babel.test.ts
           pnpm exec tsc -p scripts/astMigrationProfile/tsconfig.json
           pnpm exec tsc -p scripts/benchmarkNativeAnalysis/tsconfig.json
           pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile/gc.test.ts scripts/benchmarkNativeAnalysis
