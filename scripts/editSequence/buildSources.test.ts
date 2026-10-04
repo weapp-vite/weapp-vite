@@ -1,8 +1,8 @@
 import type { EditAction } from './driver'
 import fs from 'node:fs/promises'
 import os from 'node:os'
-import path from 'node:path'
 import timers from 'node:timers/promises'
+import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SequenceSourceWriter } from './buildSources'
 
