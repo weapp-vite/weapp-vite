@@ -196,6 +196,14 @@ pnpm --filter dashboard-ui-lab dev:ui
 pnpm --filter @weapp-vite/dashboard build
 ```
 
+Devframe 浏览器回归（先完成上述构建，在沙箱外与其他 E2E、dev-watch 互斥运行）：
+
+```bash
+pnpm vitest run -c e2e/vitest.e2e.dashboard.config.ts
+```
+
+覆盖 OTP 鉴权、报告推送、断线重连后的新报告刷新、深链接 RPC、同路径 revision 产物更新，以及未授权页面和外部 WebSocket Origin 拒绝。连接恢复以真实报告数据更新为依据，不依赖状态栏的展示文案。
+
 Tailwind 配置矩阵与构建性能对照：
 
 ```bash

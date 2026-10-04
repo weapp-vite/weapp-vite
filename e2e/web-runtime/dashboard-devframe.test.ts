@@ -161,13 +161,11 @@ describe('Dashboard Devframe browser regression', () => {
     const activeDashboard = dashboard
     await activePage.goto(dashboardUrl, { waitUntil: 'domcontentloaded' })
     await expect.poll(
-      () => activePage.getByText('weapp-vite DevTools connected').first().isVisible(),
+      () => activePage.getByText('128 B').first().isVisible(),
       { timeout: 30_000 },
     ).toBe(true)
-    await expect.poll(() => activePage.getByText('1 packages').first().isVisible()).toBe(true)
     expect(new URL(activePage.url()).hash).toBe('')
 
-    await expect.poll(() => activePage.getByText('128 B').first().isVisible()).toBe(true)
     await activeDashboard.update(createAnalyzeResult(256), createArtifactFiles('updatedSnapshotMarker'), createAnalyzeResult(128))
     await expect.poll(
       () => activePage.getByText('256 B').first().isVisible(),
@@ -183,13 +181,13 @@ describe('Dashboard Devframe browser regression', () => {
       () => activePage.evaluate(() => (window as DashboardWindow).__dashboardSockets.length),
       { timeout: 30_000 },
     ).toBeGreaterThan(initialSocketCount)
-    await expect.poll(() => activePage.getByText('weapp-vite DevTools connected').first().isVisible()).toBe(true)
-
-    await activePage.goto(new URL('analyze?tab=graph', dashboardUrl).href, { waitUntil: 'domcontentloaded' })
+    await activeDashboard.update(createAnalyzeResult(384), createArtifactFiles('updatedSnapshotMarker'), createAnalyzeResult(256))
     await expect.poll(
-      () => activePage.getByText('weapp-vite DevTools connected').first().isVisible(),
+      () => activePage.getByText('384 B').first().isVisible(),
       { timeout: 30_000 },
     ).toBe(true)
+
+    await activePage.goto(new URL('analyze?tab=graph', dashboardUrl).href, { waitUntil: 'domcontentloaded' })
     await expect.poll(
       () => activePage.locator('svg circle').count(),
       { timeout: 30_000 },
@@ -217,7 +215,7 @@ describe('Dashboard Devframe browser regression', () => {
     }
 
     // 路径和分析字节数均不变，只有 revision 的产物内容改变，面板也必须重新读取。
-    await activeDashboard.update(createAnalyzeResult(256), createArtifactFiles('samePathNextRevisionMarker'), createAnalyzeResult(256))
+    await activeDashboard.update(createAnalyzeResult(384), createArtifactFiles('samePathNextRevisionMarker'), createAnalyzeResult(384))
     await expect.poll(() => diffEditor.textContent()).toContain('samePathNextRevisionMarker')
     expect(await diffEditor.textContent()).not.toContain('updatedSnapshotMarker')
   })
