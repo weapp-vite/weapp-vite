@@ -7,6 +7,43 @@ import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/
 import { querySelectorAll } from '../src/view/selectors'
 import { routeEventFiles } from '../test/helpers/routeEvents'
 
+it('settles browser navigateTo callbacks after target page ready and route render commit', async () => {
+  const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(routeEventFiles) })
+  try {
+    const home = session.reLaunch('/pages/home/index')
+    const wx = session.getApp()!.getWx() as HeadlessWx
+    await vi.waitFor(() => expect(home.data.ready).toBe(true))
+    const order: string[] = []
+    const routeDone = new Promise<void>((resolve) => {
+      wx.onAppRouteDone((event) => {
+        if (event.path === 'pages/detail/index') {
+          order.push('routeDone')
+          resolve()
+        }
+      })
+    })
+    await new Promise<void>((resolve, reject) => {
+      wx.navigateTo({
+        url: '/pages/detail/index?from=navigateTo',
+        success: () => {
+          order.push('success')
+          expect(session.getCurrentPages().at(-1)?.data.ready).toBe(true)
+        },
+        fail: reject,
+        complete: () => {
+          order.push('complete')
+          resolve()
+        },
+      })
+    })
+    await routeDone
+    expect(order).toEqual(['routeDone', 'success', 'complete'])
+  }
+  finally {
+    session.close()
+  }
+})
+
 it('publishes route completion after the browser render commit and captures before redirect teardown', async () => {
   const preview = document.createElement('div')
   document.body.append(preview)
