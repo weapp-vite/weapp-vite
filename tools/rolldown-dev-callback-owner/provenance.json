@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Portable upstream source draft and installed-package diagnostic reproducer",
+  "upstream": {
+    "repository": "https://github.com/rolldown/rolldown",
+    "version": "1.2.12",
+    "commit": "45e407b177f5885d04a9795f37f8be71d91f6f17"
+  },
+  "sourceFiles": {
+    "crates/rolldown_dev/src/bundling_task.rs": {
+      "baseSha256": "4c0eff409e7381c4064bb6fe8db5593d595107e3c67f0d875ba713c1b9ac2aca",
+      "patchedSha256": "f7fd52522e23c2ca1cb90575cab1c04b6bfa42c861c021f12bfc590aae41aa4b"
+    },
+    "crates/rolldown_dev/src/dev_callbacks.rs": {
+      "baseSha256": null,
+      "patchedSha256": "d0f7a8fc843773b93eb97de70e8db2bfb67f27b21471c3c259ba9be7678777a4"
+    },
+    "crates/rolldown_dev/src/dev_context.rs": {
+      "baseSha256": "e002642a9100f89ebe266a0c491a43e0b8877a0ac8e3c5017d26764f6ce34dd9",
+      "patchedSha256": "ef2f82719d1f885eafb5348516ee86d090317a145afade541e43d51e17bde8dd"
+    },
+    "crates/rolldown_dev/src/dev_engine.rs": {
+      "baseSha256": "0c87f5ddc2d150dcc033e6b7ebc6bb263eebf2c469b1680a2966752c0d8d9e10",
+      "patchedSha256": "281abd6b7e6af6121ebda4acbb78a872de0ceae65e737527108aaa1545a8c0d5",
+      "candidateCompiledSha256": "4c51c53292d004ddc111a428d05876bdf06a963657cee6b688311aba74d88595",
+      "normalization": "Remove extra blank line at EOF from portable patch; no Rust statement changes"
+    },
+    "crates/rolldown_dev/src/lib.rs": {
+      "baseSha256": "bb4d5c673589236aa792f5660a530e1a29d562f0b3a9a75e15b8306eb2b2b9df",
+      "patchedSha256": "944c8a9f00e99bf677d2c756d1265ae1baa81f9b4a25c4b58f6d537502aefaf9"
+    },
+    "internal-docs/dev-engine/implementation.md": {
+      "baseSha256": "4b4621cf774d7a16739b0fae66c677bd9aabaab7f360d116826dc7c4ec18c16f",
+      "patchedSha256": "d67f7d550b8777e36aecfaec8ae7497dcb482388064b115840781b384638a118"
+    }
+  },
+  "artifacts": {
+    "upstream.patch": {
+      "sha256": "a621b295b3905fb8251a374dee072cbb12f0583250dcccc3ae76a39e332b3a0a"
+    },
+    "callbackCycle.mjs": {
+      "sha256": "de449a01ca7dd6fd9211ee2719f3bb74db413476c026806c5fb5a7b3d3699bd6"
+    }
+  },
+  "validation": {
+    "sourcePatchApplyCheck": true,
+    "rustCallbackStoreUnitTest": {
+      "passed": 1,
+      "skipped": 0
+    },
+    "candidateNativeBuild": true,
+    "candidateCallbackOwnership": true,
+    "callbackAwaitClosePublicReads": true,
+    "closeBeforeRunAdmission": true,
+    "officialInstalledPackageCaptureCycle": true,
+    "officialReproducerExecutedSha256": "10713c112fa89424584da230733c821bf911b2d1116c4ed04dd90c02584d0a31",
+    "portableReproducerRuntimeExecuted": true,
+    "portableReproducerPreparation": "ESLint formatting, explicit Node process/stdout, main error handler, equivalent GC deadline expression",
+    "portableReproducerRuntimeResult": {
+      "packageVersion": "1.2.12",
+      "status": "observed",
+      "mechanism": "capture-cycle-supported",
+      "sameVersion": true,
+      "sameOutputHash": true,
+      "sameChunks": true,
+      "bothChildrenExitZero": true,
+      "fixtureRemoved": true
+    },
+    "privateInstalledCandidateRuntimeResult": {
+      "diagnosticOnly": true,
+      "formalNpmDistributionAcceptance": false,
+      "packageVersion": "1.2.12",
+      "nodeVersion": "24.18.0",
+      "platform": "darwin-arm64",
+      "supervisorStatus": "verified",
+      "mechanism": "no-retention-observed",
+      "scriptSha256": "de449a01ca7dd6fd9211ee2719f3bb74db413476c026806c5fb5a7b3d3699bd6",
+      "candidateBinarySha256": "3486f36339e50efcd8e92bcf8a1561360fecee484a6c3434a28ee0768e5a70e6",
+      "officialJsAndMetadataIdentical": true,
+      "sharedSourceAndDependenciesUnchanged": true,
+      "noLoaderOrBindingEnvironmentOverride": true,
+      "normalizedOptionsAdapterUsed": false,
+      "privateEntrypointsResolved": true,
+      "beforeAndAfterHashesIdentical": true,
+      "sameVersion": true,
+      "sameOutputHash": true,
+      "sameChunks": true,
+      "outputHash": "0f8b110229fef216438c279b19df6e57a08e5fe9152e2ccd9ef4c08bd39c3ba4",
+      "bothChildrenExitZero": true,
+      "fixtureRemoved": true,
+      "samples": {
+        "intact": {
+          "phase": "released-external-roots",
+          "rounds": 3,
+          "elapsedMs": 157.01820800000007,
+          "strongRoots": {
+            "holder": false,
+            "engine": false,
+            "graph": false
+          },
+          "weakReachable": {
+            "holder": false,
+            "engine": false,
+            "graph": false
+          },
+          "finalized": {
+            "holder": true,
+            "engine": true,
+            "graph": true
+          }
+        },
+        "severed": {
+          "phase": "released-external-roots",
+          "rounds": 3,
+          "elapsedMs": 155.936625,
+          "strongRoots": {
+            "holder": false,
+            "engine": false,
+            "graph": false
+          },
+          "weakReachable": {
+            "holder": false,
+            "engine": false,
+            "graph": false
+          },
+          "finalized": {
+            "holder": true,
+            "engine": true,
+            "graph": true
+          }
+        }
+      },
+      "limitations": [
+        "Private copy of published JS and metadata with a diagnostic candidate native binary; no published package acceptance",
+        "Two non-binding dependencies are read-only links to the existing installation",
+        "Watch disabled; no full resource, queued delivery, watcher or lazy concurrency acceptance"
+      ]
+    }
+  },
+  "scope": {
+    "diagnosticOnly": true,
+    "officialDependencyFixed": false,
+    "published": false,
+    "resourceAcceptance": false,
+    "queuedButNotDispatchedDeliveryVerified": false,
+    "watcherAndLazyConcurrencyVerified": false,
+    "crossPlatformVerified": false,
+    "formalNpmDistributionAcceptance": false
+  }
+}

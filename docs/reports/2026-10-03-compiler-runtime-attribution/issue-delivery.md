@@ -372,6 +372,24 @@ TDesign 新增无磁盘改写的入口解析诊断，普通与插桩两轮在模
 
 DevOptions 引用环的两个独立无 watch 最小构建进一步确认了回收边界：三个回调捕获持有 engine 的宿主对象，close 后移除全部外部强根；保留宿主到 engine 的内部引用时，96 轮跨 job 诊断 GC、约 5 秒内三个 JS 对象仍可达，三类原生 owner 各为创建一次、析构零次。唯一改变为 close 后断开该内部引用的反事实进程，三轮 GC 后三个 JS finalizer 全部执行，三类原生 owner 各为创建一次、析构一次。两进程使用相同 native/adapter，输出哈希相同，deferred pending 均为 0，所有登记 fixture 与进程均清理。该结果支持真实 Vite DevOptions 回调闭环的根因，但断开私有字段不是产品修复；仍需在引擎终止后释放回调所有权、保留已排队通知和公开读取契约，并解决正式依赖分发与跨平台验证。诊断 GC 不进入产品释放路径，也不替代 #1135 的原资源验收。
 
+## 后续回收与恢复路径诊断
+
+官方 `rolldown@1.2.12` 的公开 API 复现器现在使用同一物理 fixture，串行执行完整引用环与断边对照，并在比较前保存两侧未经修改的输出。最终可移植脚本再次实际执行：完整环去除外部根后经过 96 轮、约 5 秒诊断 GC，三个对象仍可达；断开诊断宿主自身的 engine 引用后，三轮 GC 全部回收。两侧版本和 chunk 全文一致，正常退出且清理完成。该断边只用来验证因果关系，不进入产品释放路径。此前使用不同路径且未保存 chunk 的失败仍保留，不能据后续结果补造其差异原因。
+
+独立 native 候选把三类长期通知回调的所有权从 immutable options 移至 terminal-close 管理的 store，并在停止和等待生产者后释放；通知在短锁中取得 Arc 快照，在锁外调用。Rust store 单测、独立 native 编译及回收对照通过：保留完整内部引用环也能在移除外部根后回收，三个 native owner 均创建一次、析构一次，pending 为零。回调自身 await close、关闭后公开 output getter 读取与 close-before-run 两类边界也通过。尚未覆盖已入 TSFN 队列但未派发的通知、watch/lazy 并发、跨平台和完整资源门禁；上游源码补丁与公开复现器保存在 `tools/rolldown-dev-callback-owner/`。正式安装树和 lockfile 未替换，本次 registry 查询的最新版本仍是 Rolldown 1.2.12 / Vite 8.3.2，后者要求 `rolldown: ~1.2.11`，因此不能把此候选写成普通消费者已获得修复。
+
+TDesign 的组件来源传递对照已在相同物理 fixture、compiler 和安装依赖下串行完成。模板和脚本两检查点各有 2,059 个输出文件，全部逐字节一致；源码、分发文件、旧基线、共享 compiler 与 lockfile 前后摘要不变，登记进程和 fixture 已清理。两轮请求的模板分析数均为 16，脚本导入分析请求为 66 / 74；不能据单次整场计数宣称所有分析量下降。局部耗时也不替代远端 TDesign 的原 1,500 ms 门禁。
+
+恢复诊断原 run `37170240128` 保留失败：采集已完成，但完整输出比较包含随机 session metadata。生成器真实契约显示，除 control JSON 外，完整 JS chunk 的首行包含注册 buildId，`update.js` 包含请求 nonce 和批次 buildId。证据工具现在只在精确生成位置、合法结构且 buildId 匹配已注册会话时比较规范后的完整哈希；其他正文、批次版本、changedIds 和 source map 仍逐字参与比较，原始哈希另存。未知 metadata、正文变化、缺失 canonical hash 或快照采集期间的文件变化均不能通过。没有固定 token、重写产物或改变性能口径。
+
+修正后的 `b27a53bc7` run `37171532862` 已成功，50/69 手动配置的初始、两次编辑和两次恢复共 10 个检查点全部规范等价，control 契约也一致；原始完整文件字节相等的检查点为 0，不能称为原始 dist 完全相同。八条 profile 的准备阶段为 293–381 ms，交付排队约 0.02–0.21 ms。固定批准基线的首次/重复恢复分别为 50 组件 445.9/396.9 ms、69 组件 437.3/395.2 ms；候选无 profile 对照为 499.8/460.2 ms、507.0/491.8 ms。这些是同一 runner 的一次诊断，仍显示待调查成本，不是 20 对正式验收，不改写原 Nightly 失败。
+
+完整 CI `37167479509` 已终态失败，唯一测试失败是 Windows Node 22 的 `never passes runtime mutate failures` 超过 Vitest 默认 5 秒（记录约 6.4 秒），没有断言将错误状态判为通过的证据。Windows Node 24 为 13,387 项通过、36 项跳过；Linux/macOS 四组各为 13,494 项通过、32 项跳过，两组 Weapi guard 均通过。该负例使用内存 runtime mock，但真实执行文件快照、报告持久化及 Node 验证进程；本地 35 项通过不解释远端超时。新增失败阶段记录保留原断言和期限，日志只输出阶段名与相对耗时。
+
+首轮 Windows 窄工作流 `37171533434` 在测试启动前失败，运行用例为零：从根目录启动 Vitest 即使指定单文件，仍加载全部 workspace 项目配置，读取了未构建的无关 compiler。所属包 typecheck 已完成；此失败与原 runtime mutate 超时分开记录，后续将命令的工作目录收敛到所属包并保持覆盖率、35 个用例和原期限。
+
+进一步的私有安装树保留官方 Rolldown 发布 JS 与 metadata，仅在自己拥有的 platform package 中放入候选 native，公开复现器从自身位置解析该安装树。两侧都在三轮诊断 GC 后回收，输出全文一致，所有登记 child 正常退出，fixture 已清理；安装来源、脚本、官方 JS、共享依赖与候选 binary 的前后 hash 已核验。这个结果去掉了早期自定义 adapter 的限制，但仍不是正式 npm/pnpm 发行或完整框架资源验收。
+
 ## Stable IDE 环境记录
 
 本轮原生 Computer Use 检查返回 Mac 已锁屏且无法自动解锁，未进行 IDE 操作。后续再次按 Stable 安装路径读取时返回无可用窗口，应用列表也再次确认锁屏仍未解除。需要维护者手动解锁；现有其他项目 RC 宿主仍不能擅自关闭。远端 CI 与只读证据检查继续独立执行。
