@@ -38,6 +38,17 @@ function callDefinitionMethod(
   }
 }
 
+function composeDefinitionMethods(primary: unknown, secondary: unknown) {
+  if (typeof primary !== 'function' || typeof secondary !== 'function' || primary === secondary) {
+    return primary ?? secondary
+  }
+  return function composedDefinitionMethod(this: Record<string, any>, ...args: any[]) {
+    const result = primary.apply(this, args)
+    secondary.apply(this, args)
+    return result
+  }
+}
+
 export function normalizeComponentPageDefinition(definition: HeadlessComponentDefinition): HeadlessPageDefinition {
   const {
     lifetimes = {},
@@ -47,11 +58,11 @@ export function normalizeComponentPageDefinition(definition: HeadlessComponentDe
   } = definition
   const created = lifetimes.created ?? rest.created
   const attached = lifetimes.attached ?? rest.attached
-  const ready = lifetimes.ready ?? rest.ready ?? methods.onReady ?? rest.onReady
+  const ready = composeDefinitionMethods(lifetimes.ready ?? rest.ready, methods.onReady ?? rest.onReady)
   const detached = lifetimes.detached ?? rest.detached ?? methods.onUnload ?? rest.onUnload
   const load = methods.onLoad ?? rest.onLoad
-  const show = pageLifetimes.show ?? methods.onShow ?? rest.onShow
-  const hide = pageLifetimes.hide ?? methods.onHide ?? rest.onHide
+  const show = composeDefinitionMethods(pageLifetimes.show, methods.onShow ?? rest.onShow)
+  const hide = composeDefinitionMethods(pageLifetimes.hide, methods.onHide ?? rest.onHide)
   const resize = pageLifetimes.resize ?? methods.onResize ?? rest.onResize
   const routeDone = pageLifetimes.routeDone ?? methods.onRouteDone ?? rest.onRouteDone
 
