@@ -4,7 +4,6 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createNativeLoadDiagnostic } from './observation'
@@ -62,7 +61,7 @@ function assertLifetime(events: TraceRow[], mode: NativeLoadMode) {
 describe('native lazy loading diagnostic', () => {
   it.each(['off', 'on-no-load', 'load-only', 'actual'] as const)('does not load a binding when production module is merely imported (%s)', async (mode) => {
     const setup = await fixture(mode)
-    const nativeSource = fileURLToPath(new URL('../../packages/ast/src/native.ts', import.meta.url))
+    const nativeSource = new URL('../../packages/ast/src/native.ts', import.meta.url).href
     const child = await execa(process.execPath, ['--import', 'tsx', '--require', setup.preload, '--input-type=module', '-e', `await import(${JSON.stringify(nativeSource)});`], {
       env: { ...setup.environment, NODE_OPTIONS: '' },
       reject: false,
