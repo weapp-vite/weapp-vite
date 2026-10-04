@@ -21,4 +21,6 @@ export interface SessionJournal {
   diagnostics: string[]
   completeBytes: number
   incompleteTail: boolean
+  /** 最后一条完整记录没有换行；恢复写入前需要补分隔符。 */
+  needsSeparator: boolean
 }

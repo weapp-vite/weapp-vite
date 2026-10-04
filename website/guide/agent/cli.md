@@ -40,6 +40,8 @@ weapp-agent -C ./my-miniapp run "修复首页错误并验证" --json
 
 `run` 和 `resume` 的 stdout 输出 JSONL 事件，包含 `version`、`sessionId`、`sequence`、`timestamp`、`type`、`data`。主要事件为 `run.started`、`text.delta`、`tool.started`、`tool.completed`、`usage`、`context.compacted`、`run.completed`。
 
+`run.started` 使用稳定的 `projectId` 标识项目，不把绝对工作区路径写入会话事件。中断恢复提示会显示经过截断和脱敏的工具参数摘要。
+
 启动前错误使用 `{ "version": 1, "type": "error", "data": { "message": "..." } }`；此时尚未创建会话。`doctor`、`verify`、`init` 和 `sessions` 的 JSON 模式各输出一个结果对象。
 
 `sessions --json` 保持 ID 数组格式；`sessions --details --json` 输出摘要数组，`session <id> --json` 输出单个详情对象。详情读取无需模型凭据或项目授权，不修改会话日志。损坏项以 `invalid` 和诊断信息展示，单独查询损坏会话退出码为 1。

@@ -126,3 +126,16 @@ it('can omit the summary when only the protected instructions fit', () => {
   const result = compactMessages([request, ...readGroup('old')], budget)
   expect(result).toMatchObject({ messages: [request], compacted: true, budgetExceeded: false, requiredCharacters: budget })
 })
+
+it('never returns a compacted context above budget after exact JSON accounting', () => {
+  const messages: Message[] = [
+    { role: 'user', text: 'Keep the request.' },
+  ]
+  for (let index = 0; index < 20; index++) {
+    messages.push(...readGroup(`history-${index}`, 'result '.repeat(80)))
+  }
+  for (const budget of [500, 900, 1500, 2400]) {
+    const result = compactMessages(messages, budget)
+    expect(JSON.stringify(result.messages).length).toBeLessThanOrEqual(budget)
+  }
+})

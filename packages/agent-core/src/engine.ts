@@ -10,6 +10,7 @@ import type {
   ToolCall,
 } from './types.js'
 import { z } from 'zod'
+import { hash } from './config.js'
 import { compactMessages } from './context.js'
 import { ApprovalRequired, redactor } from './security.js'
 import { Session } from './session.js'
@@ -32,6 +33,12 @@ export interface RunOptions {
 export { compactMessages } from './context.js'
 export type { CompactResult } from './context.js'
 
+const FALLBACK_MUTATING_TOOLS = new Set(['edit_file', 'create_file', 'shell'])
+
+function mutatesProject(name: string, mutates: unknown): boolean {
+  return name !== 'verify_project' && (mutates === true || FALLBACK_MUTATING_TOOLS.has(name))
+}
+
 export async function runAgent(options: RunOptions): Promise<RunResult> {
   const session = new Session(options.root, options.sessionId)
   await session.open(Boolean(options.sessionId))
@@ -42,10 +49,7 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
   }
   let needsVerification = false
   for (const event of session.events) {
-    if (
-      event.type === 'tool.started'
-      && ['edit_file', 'create_file', 'shell'].includes(String(event.data.name))
-    ) {
+    if (event.type === 'tool.started' && mutatesProject(String(event.data.name), event.data.mutates)) {
       needsVerification = true
     }
     if (
@@ -77,7 +81,7 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
   }
   try {
     await emit('run.started', {
-      root: options.root,
+      projectId: hash(options.root),
       model: options.model.id,
       resumed: Boolean(options.sessionId),
     })
@@ -212,10 +216,10 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
             input: args,
             mutates: tool.mutates,
           })
-          result = await tool.execute(args, ctx)
-          if (['edit_file', 'create_file', 'shell'].includes(call.name)) {
+          if (mutatesProject(call.name, tool.mutates)) {
             needsVerification = true
           }
+          result = await tool.execute(args, ctx)
           if (call.name === 'verify_project') {
             needsVerification = false
           }

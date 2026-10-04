@@ -44,6 +44,30 @@ it('repairs only an incomplete trailing record when resume holds the lock', asyn
   expect((await Session.inspect(root, session.id)).diagnostics).toEqual([])
 })
 
+it('keeps a complete final JSONL record without a newline and separates the next append', async () => {
+  const session = await journal(root, 'no-final-newline', [['message', { message: { role: 'user', text: '完整记录' } }]])
+  const content = await readFile(session.filename, 'utf8')
+  await writeFile(session.filename, content.slice(0, -1))
+
+  expect(await Session.inspect(root, session.id)).toMatchObject({
+    prompt: '完整记录',
+    status: 'unfinished',
+    diagnostics: [],
+  })
+  await session.open(true)
+  try {
+    expect(session.events).toHaveLength(1)
+    await session.append('run.started', { resumed: true })
+  }
+  finally {
+    await session.close()
+  }
+  const lines = (await readFile(session.filename, 'utf8')).trimEnd().split('\n')
+  expect(lines).toHaveLength(2)
+  expect(JSON.parse(lines[0]!).data.message.text).toBe('完整记录')
+  expect(JSON.parse(lines[1]!).type).toBe('run.started')
+})
+
 it('never repairs a tail when a complete record is corrupt', async () => {
   const session = await journal(root, 'corrupt', [])
   await appendFile(session.filename, '{malformed}\npartial')
@@ -51,6 +75,22 @@ it('never repairs a tail when a complete record is corrupt', async () => {
   await expect(session.open(true)).rejects.toThrow('malformed JSON')
   expect(await readFile(session.filename)).toEqual(before)
   await expect(stat(`${session.filename}.lock`)).rejects.toMatchObject({ code: 'ENOENT' })
+})
+
+it('keeps the valid prefix visible when a later complete record is corrupt', async () => {
+  const session = await journal(root, 'prefix-corrupt', [
+    ['message', { message: { role: 'user', text: '保留这个目标' } }],
+    ['step.started', { step: 3 }],
+    ['usage', { inputTokens: 12, outputTokens: 4 }],
+  ])
+  await appendFile(session.filename, '{broken}\n')
+  expect(await Session.inspect(root, session.id)).toMatchObject({
+    status: 'invalid',
+    prompt: '保留这个目标',
+    steps: 3,
+    usage: { inputTokens: 12, outputTokens: 4 },
+    diagnostics: [expect.stringContaining('malformed JSON')],
+  })
 })
 
 it('retains unknown event types and reads legacy messages without origin', async () => {
@@ -67,6 +107,21 @@ it('retains unknown event types and reads legacy messages without origin', async
     await session.close()
   }
   expect(await Session.inspect(root, session.id)).toMatchObject({ prompt: 'original goal', status: 'unfinished', diagnostics: [] })
+})
+
+it('keeps unknown events with non-object data for forward compatibility', async () => {
+  const session = await journal(root, 'future-data', [
+    ['future.extension', { nested: { anything: true } }],
+  ])
+  const raw = await readFile(session.filename, 'utf8')
+  await writeFile(session.filename, raw.replace('{"nested":{"anything":true}}', 'null'))
+  await session.open(true)
+  try {
+    expect(session.events[0]).toMatchObject({ type: 'future.extension', data: null })
+  }
+  finally {
+    await session.close()
+  }
 })
 
 it('keeps the legacy allowance for empty lines without changing event sequences', async () => {
@@ -97,6 +152,7 @@ it.each([
   { data: { message: { role: 'tool', callId: 'a', name: 'tool', result: {} } } },
   { type: 'usage', data: { inputTokens: 'many', outputTokens: 1 } },
   { type: 'run.completed', data: { status: 'running' } },
+  { type: 'tool.completed', data: { callId: 'a', result: { text: 123 } } },
 ])('rejects invalid persisted event shapes: %j', async (override) => {
   const session = await journal(root, 'invalid', [])
   await writeFile(session.filename, `${JSON.stringify({

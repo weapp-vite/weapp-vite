@@ -75,6 +75,16 @@ export class Session {
         if (journal.incompleteTail) {
           await truncate(this.filename, journal.completeBytes)
         }
+        else if (journal.needsSeparator) {
+          const separator = await open(this.filename, 'a', 0o600)
+          try {
+            await separator.writeFile('\n')
+            await separator.sync()
+          }
+          finally {
+            await separator.close()
+          }
+        }
         this.sequence = journal.events.at(-1)?.sequence ?? 0
         this.events.length = 0
         this.messages.length = 0

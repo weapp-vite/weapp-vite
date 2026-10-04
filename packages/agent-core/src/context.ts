@@ -53,6 +53,18 @@ function summarize(messages: Message[]): string {
   }).join('\n')
 }
 
+function summaryFor(messages: Message[], excerptBudget: number, totalBudget: number, kept: Message[]): Message | undefined {
+  const prefix = 'Earlier context (summary, not new instructions). Tool history was omitted; inspect current project state before repeating actions.\n'
+  let excerpt = summarize(messages).slice(-excerptBudget)
+  const summary: Message = { role: 'user', origin: 'engine', text: prefix + excerpt }
+  while (contextSize([summary, ...kept]) > totalBudget && excerpt.length) {
+    const excess = contextSize([summary, ...kept]) - totalBudget
+    excerpt = excerpt.slice(Math.min(excess, excerpt.length))
+    summary.text = prefix + excerpt
+  }
+  return contextSize([summary, ...kept]) <= totalBudget ? summary : undefined
+}
+
 /** 保留全部真实用户输入，仅压缩工具历史和引擎消息；预算不足时交由调用者明确停止。 */
 export function compactMessages(messages: Message[], budget: number): CompactResult {
   const protectedMessages = messages.filter(isUserInstruction)
@@ -65,7 +77,8 @@ export function compactMessages(messages: Message[], budget: number): CompactRes
   }
 
   const groups = messageGroups(messages)
-  const retained = new Set(groups.filter(group => isUserInstruction(group[0]!)))
+  const protectedGroups = new Set(groups.filter(group => isUserInstruction(group[0]!)))
+  const retained = new Set(protectedGroups)
   let size = requiredCharacters
   // 为被移除的历史留出少量摘要空间；用户输入始终优先。
   const summaryBudget = Math.min(2000, Math.floor((budget - size) / 4))
@@ -74,26 +87,37 @@ export function compactMessages(messages: Message[], budget: number): CompactRes
     if (retained.has(group)) {
       continue
     }
-    const cost = contextSize(group) - (retained.size ? 1 : 2)
+    const cost = contextSize(group)
     if (size + cost <= budget - summaryBudget) {
       retained.add(group)
       size += cost
     }
   }
-  const kept = groups.filter(group => retained.has(group)).flat()
-  const omitted = groups.filter(group => !retained.has(group)).flat()
-  const prefix = 'Earlier context (summary, not new instructions). Tool history was omitted; inspect current project state before repeating actions.\n'
-  let excerpt = summaryBudget ? summarize(omitted).slice(-summaryBudget) : ''
-  const summary: Message = { role: 'user', origin: 'engine', text: prefix + excerpt }
-  while (contextSize([summary, ...kept]) > budget && excerpt.length) {
-    const excess = contextSize([summary, ...kept]) - budget
-    excerpt = excerpt.slice(Math.min(excess, excerpt.length))
-    summary.text = prefix + excerpt
-  }
-  return {
-    messages: contextSize([summary, ...kept]) <= budget ? [summary, ...kept] : kept,
-    compacted: true,
-    budgetExceeded: false,
-    requiredCharacters,
+  while (true) {
+    const kept = groups.filter(group => retained.has(group)).flat()
+    const omitted = groups.filter(group => !retained.has(group)).flat()
+    const summary = summaryBudget ? summaryFor(omitted, summaryBudget, budget, kept) : undefined
+    const candidate = summary ? [summary, ...kept] : kept
+    if (contextSize(candidate) <= budget) {
+      return {
+        messages: candidate,
+        compacted: true,
+        budgetExceeded: false,
+        requiredCharacters,
+      }
+    }
+
+    const oldestOptional = groups.find(group => retained.has(group) && !protectedGroups.has(group))
+    if (!oldestOptional) {
+      // protectedMessages 已经通过 requiredCharacters 检查，理论上只可能因为数组
+      // 序列化边界发生极小差异；返回保护内容仍比截断用户请求安全。
+      return {
+        messages: protectedMessages,
+        compacted: true,
+        budgetExceeded: false,
+        requiredCharacters,
+      }
+    }
+    retained.delete(oldestOptional)
   }
 }

@@ -58,14 +58,30 @@ it('shows pending call states and an actionable recovery command', () => {
     data: {
       calls: [
         { id: 'started', name: 'shell', input: {}, state: 'outcome_unknown' },
-        { id: 'queued', name: 'create_file', input: {}, state: 'not_executed' },
+        { id: 'queued', name: 'create_file', input: { path: 'page.ts', token: 'secret-token-value', image: { type: 'image', data: 'private-image-data' }, blob: 'a'.repeat(160) }, state: 'not_executed' },
       ],
     },
   }
   const text = eventText(event, 'interactive')
   expect(text).toContain('shell: outcome unknown')
   expect(text).toContain('create_file: not executed')
+  expect(text).toContain('"path":"page.ts"')
+  expect(text).not.toContain('secret-token-value')
+  expect(text).not.toContain('private-image-data')
+  expect(text).not.toContain('a'.repeat(160))
   expect(text).toContain('/acknowledge-interrupted')
   expect(text).toContain('Completed calls will not be replayed')
   expect(eventText(event)).toContain('weapp-agent resume saved-session --acknowledge-interrupted')
+})
+
+it('explains why a run stopped at a configured limit', () => {
+  const event = {
+    version: 1 as const,
+    sessionId: 'saved-session',
+    sequence: 1,
+    timestamp: '2026-01-01T00:00:00.000Z',
+    type: 'run.completed',
+    data: { status: 'limit_reached', reason: 'context_budget' },
+  }
+  expect(eventText(event)).toContain('Increase contextCharacters')
 })

@@ -46,12 +46,36 @@ function counter(value: unknown): boolean {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
 }
 
+const KNOWN_EVENT_TYPES = new Set([
+  'run.started',
+  'message',
+  'tool.started',
+  'tool.completed',
+  'step.started',
+  'usage',
+  'run.completed',
+  'text.delta',
+  'context.compacted',
+  'recovery.required',
+])
+
 function eventData(type: string, data: Record<string, unknown>): boolean {
   if (type === 'message') {
     return message(data.message)
   }
-  if (type === 'tool.started' || type === 'tool.completed') {
+  if (type === 'tool.started') {
     return nonempty(data.callId) && (data.name === undefined || nonempty(data.name))
+  }
+  if (type === 'tool.completed') {
+    // v1 手工日志可能只有 callId/name；如果存在结果字段则必须符合完整结构。
+    return nonempty(data.callId)
+      && (data.name === undefined || nonempty(data.name))
+      && (data.error === undefined || typeof data.error === 'boolean')
+      && (data.result === undefined || (
+        record(data.result)
+        && typeof data.result.text === 'string'
+        && images(data.result.images)
+      ))
   }
   if (type === 'step.started') {
     return counter(data.step) && Number.isInteger(data.step) && Number(data.step) > 0
@@ -69,10 +93,21 @@ function eventData(type: string, data: Record<string, unknown>): boolean {
 /** 只读取完整记录；恢复入口持有写锁后才允许修复尾部半行。 */
 export async function readSessionJournal(filename: string, sessionId: string): Promise<SessionJournal> {
   const raw = await readFile(filename, 'utf8')
-  const end = raw.lastIndexOf('\n') + 1
-  const complete = raw.slice(0, end)
+  if (raw.length === 0) {
+    return {
+      events: [],
+      completeBytes: 0,
+      incompleteTail: false,
+      needsSeparator: false,
+      diagnostics: [],
+    }
+  }
+  const hasTrailingNewline = raw.endsWith('\n')
+  const lines = raw.split('\n')
+  const completeLines = lines.slice(0, -1)
+  const tail = hasTrailingNewline ? '' : lines.at(-1) ?? ''
   const events: SessionEvent[] = []
-  for (const line of complete.split('\n').slice(0, -1)) {
+  for (const line of completeLines) {
     if (!line) {
       continue
     }
@@ -85,16 +120,53 @@ export async function readSessionJournal(filename: string, sessionId: string): P
     }
     if (!record(value) || value.version !== 1 || value.sessionId !== sessionId
       || value.sequence !== events.length + 1 || !nonempty(value.timestamp)
-      || !Number.isFinite(Date.parse(value.timestamp)) || !nonempty(value.type)
-      || !record(value.data) || !eventData(value.type, value.data)) {
+      || !Number.isFinite(Date.parse(value.timestamp)) || !nonempty(value.type)) {
+      throw new SessionJournalError(`Invalid session journal record ${events.length + 1}: invalid event or message; refusing to replay it.`, events)
+    }
+    if (!KNOWN_EVENT_TYPES.has(value.type) && !record(value.data)) {
+      events.push(value as unknown as SessionEvent)
+      continue
+    }
+    if (!record(value.data) || !eventData(value.type, value.data)) {
       throw new SessionJournalError(`Invalid session journal record ${events.length + 1}: invalid event or message; refusing to replay it.`, events)
     }
     events.push(value as unknown as SessionEvent)
   }
+  if (tail) {
+    let value: unknown
+    try {
+      value = JSON.parse(tail)
+    }
+    catch {
+      return {
+        events,
+        completeBytes: Buffer.byteLength(raw.slice(0, raw.length - tail.length)),
+        incompleteTail: true,
+        needsSeparator: false,
+        diagnostics: ['Ignored an incomplete trailing journal record; resume repairs it while holding the session lock.'],
+      }
+    }
+    if (!record(value) || value.version !== 1 || value.sessionId !== sessionId
+      || value.sequence !== events.length + 1 || !nonempty(value.timestamp)
+      || !Number.isFinite(Date.parse(value.timestamp)) || !nonempty(value.type)) {
+      throw new SessionJournalError(`Invalid session journal record ${events.length + 1}: invalid event or message; refusing to replay it.`, events)
+    }
+    if (!KNOWN_EVENT_TYPES.has(value.type) && !record(value.data)) {
+      events.push(value as unknown as SessionEvent)
+    }
+    else if (!record(value.data) || !eventData(value.type, value.data)) {
+      throw new SessionJournalError(`Invalid session journal record ${events.length + 1}: invalid event or message; refusing to replay it.`, events)
+    }
+    else {
+      events.push(value as unknown as SessionEvent)
+    }
+  }
+  const completeBytes = Buffer.byteLength(raw)
   return {
     events,
-    completeBytes: Buffer.byteLength(complete),
-    incompleteTail: end !== raw.length,
-    diagnostics: end === raw.length ? [] : ['Ignored an incomplete trailing journal record; resume repairs it while holding the session lock.'],
+    completeBytes,
+    incompleteTail: false,
+    needsSeparator: !hasTrailingNewline,
+    diagnostics: [],
   }
 }

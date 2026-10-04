@@ -153,6 +153,47 @@ it('requires verification after edits even if the model tries to finish early', 
     text: 'Files changed since the last verification. Call verify_project before finishing; report failed and unverified categories honestly.',
   })
 })
+it('requires verification after a custom mutating tool', async () => {
+  const model = scripted([
+    [call('custom', 'update_manifest', {})],
+    [{ type: 'text', text: 'Done' }],
+    [call('verify', 'verify_project', {})],
+    [{ type: 'text', text: 'Verified' }],
+  ])
+  const custom: Tool = {
+    name: 'update_manifest',
+    description: 'update project metadata',
+    schema: z.object({}),
+    mutates: true,
+    async execute() {
+      return { text: 'updated' }
+    },
+  }
+  const verification: Tool = {
+    name: 'verify_project',
+    description: 'verify project',
+    schema: z.object({}),
+    mutates: true,
+    async execute() {
+      return { text: 'passed' }
+    },
+  }
+  const result = await runAgent({
+    root,
+    config,
+    model,
+    tools: [custom, verification],
+    prompt: 'update metadata',
+    trusted: true,
+  })
+  expect(result.status).toBe('completed')
+  expect(model.requests).toHaveLength(4)
+  expect(model.requests[2]!.messages).toContainEqual(expect.objectContaining({
+    role: 'user',
+    origin: 'engine',
+    text: expect.stringContaining('Call verify_project'),
+  }))
+})
 it.each([undefined, { path: 3 }])('rejects invalid tool arguments %j and resumes after the model repairs the call', { timeout: 30_000 }, async (input) => {
   const model = scripted([
     [call('bad', 'read_file', input)],
@@ -349,6 +390,20 @@ it('redacts secrets even when model output splits them across chunks', async () 
   expect(JSON.stringify(events)).not.toContain('secret-value-for-test')
   expect(JSON.stringify(events)).not.toContain('secret-val')
   expect(result.text).toContain('[REDACTED]')
+})
+it('stores a stable project identifier instead of an absolute workspace path', async () => {
+  const events: SessionEvent[] = []
+  await runAgent({
+    root,
+    config,
+    model: scripted([[{ type: 'text', text: 'Done' }]]),
+    tools: [],
+    prompt: 'inspect',
+    onEvent: (event) => { events.push(event) },
+  })
+  const started = events.find(event => event.type === 'run.started')
+  expect(started?.data).not.toHaveProperty('root')
+  expect(started?.data.projectId).toBe(hash(root))
 })
 it('requires outstanding verification after resuming a completed edit', async () => {
   const first = await runAgent({

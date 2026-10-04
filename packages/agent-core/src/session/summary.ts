@@ -62,7 +62,7 @@ export async function inspectSession(filename: string, sessionId: string): Promi
     if (!(error instanceof SessionJournalError)) {
       throw error
     }
-    return {
+    let prefix: SessionSummary = {
       sessionId,
       updatedAt: error.events.at(-1)?.timestamp ?? null,
       prompt: '',
@@ -70,6 +70,29 @@ export async function inspectSession(filename: string, sessionId: string): Promi
       steps: 0,
       usage: { inputTokens: 0, outputTokens: 0 },
       pendingCalls: [],
+      diagnostics: [],
+    }
+    try {
+      const { messages: _, ...state } = reduceSession(error.events)
+      prefix = {
+        sessionId,
+        ...state,
+        prompt: displayText(state.prompt, clean),
+        pendingCalls: state.pendingCalls.map(call => ({
+          id: displayText(call.id, clean, 100),
+          name: displayText(call.name, clean, 100),
+          input: preview(call.input, clean),
+          state: call.state,
+        })),
+        diagnostics: [],
+        status: 'invalid',
+      }
+    }
+    catch {
+      // A reducer failure may itself be the corruption; retain the safe empty fallback.
+    }
+    return {
+      ...prefix,
       diagnostics: [displayText(error.message, clean)],
     }
   }
