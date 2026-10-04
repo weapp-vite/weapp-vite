@@ -1,5 +1,5 @@
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 import { isSafeJavaScriptPatch } from './session'
 import { createStatefulHmrBanner, createStatefulHmrFooter, StatefulHmrViteAdapter, toStableModuleId } from './viteAdapter'
@@ -228,6 +228,34 @@ describe('stateful HMR Vite adapter', () => {
     })).rejects.toThrow('完整输出')
 
     expect(calls).toEqual(['current-finished', 'prepare', 'trigger-full', 'latest-output'])
+  })
+
+  it('stops a retired DevEngine once before topology handoff', async () => {
+    const close = vi.fn(async () => {})
+    const engine = { close }
+    const bundledDev = { _devEngine: engine }
+    const adapter = new StatefulHmrViteAdapter({ root: '/project' } as any, {} as any, {
+      onError: () => {},
+      onOutput: () => {},
+      onPatch: () => true,
+      waitForInitialBundle: async () => {},
+    })
+    Reflect.set(adapter as object, 'bundledDev', bundledDev)
+    Reflect.set(adapter as object, 'engine', engine)
+
+    await Promise.all([adapter.stopEngineForRestart(), adapter.stopEngineForRestart()])
+
+    expect(close).toHaveBeenCalledOnce()
+    expect(bundledDev._devEngine).toBeUndefined()
+
+    const replacementClose = vi.fn(async () => {})
+    const replacement = { close: replacementClose }
+    bundledDev._devEngine = replacement
+    Reflect.set(adapter as object, 'engine', replacement)
+    await adapter.stopEngineForRestart()
+
+    expect(replacementClose).toHaveBeenCalledOnce()
+    expect(bundledDev._devEngine).toBeUndefined()
   })
 
   it('routes DevEngine no-op updates through the stateful fallback', async () => {

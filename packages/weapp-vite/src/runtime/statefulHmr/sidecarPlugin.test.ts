@@ -88,6 +88,28 @@ describe('stateful HMR sidecar plugin', () => {
     }
   })
 
+  it('ignores a sidecar reload after its source was deleted', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'weapp-vite-stateful-deleted-sidecar-'))
+    const sourceId = path.join(root, 'index.wxml')
+    const ownerId = path.join(root, 'index.ts')
+    const addWatchFile = vi.fn()
+    try {
+      await writeFile(sourceId, '<view />')
+      const plugin = createStatefulHmrSidecarPlugin()
+      const load = plugin.load as (...args: any[]) => any
+      await rm(sourceId)
+
+      await expect(load.call(
+        { addWatchFile },
+        `${sourceId}?raw&weapp-vite-sidecar-owner=${encodeURIComponent(ownerId)}&weapp-vite-sidecar=template&lang.js`,
+      )).resolves.toEqual({ code: 'export default undefined;\n', moduleSideEffects: 'no-treeshake' })
+      expect(addWatchFile).toHaveBeenCalledWith(sourceId)
+    }
+    finally {
+      await rm(root, { force: true, recursive: true })
+    }
+  })
+
   it('leaves internal virtual sidecar ids to their owning plugin', async () => {
     const addWatchFile = vi.fn()
     const plugin = createStatefulHmrSidecarPlugin()

@@ -445,6 +445,7 @@ class StatefulHmrSession {
     }
     if (dirtyReasonSummary.includes(ENTRY_GRAPH_CHANGE_REASON)) {
       this.entryGraphRevision += 1
+      this.stopAdapterForRestart()
       this.requestFullBuild([normalizedFile])
       return
     }
@@ -824,6 +825,15 @@ class StatefulHmrSession {
     this.snapshotScheduler.request('full', files)
   }
 
+  private stopAdapterForRestart(): void {
+    const adapter = this.adapter as StatefulHmrViteAdapter & {
+      stopEngineForRestart?: () => Promise<void>
+    }
+    void adapter.stopEngineForRestart?.().catch((error) => {
+      this.server.config.logger.error('[weapp-vite] stateful HMR 旧引擎停止失败', { error })
+    })
+  }
+
   private clearRestoredNativeScripts(changes: ReadonlyMap<string, object>, sources: ReadonlyMap<string, string | null | undefined>): void {
     for (const [file, change] of changes) {
       if (this.unpersistedNativeScripts.get(file) === change && this.nativeScriptInputs.matches(file, sources)) {
@@ -854,6 +864,7 @@ class StatefulHmrSession {
       this.entryGraphRevision += 1
     }
     // DevEngine 的入口图固定；所有快照交付路径必须先撤销旧引擎批次，再交给新引擎完整发布。
+    this.stopAdapterForRestart()
     const continuation = profile && this.profile?.transfer(profile)
     this.delivery.reset()
     this.transport.cancelPendingDeliveries()

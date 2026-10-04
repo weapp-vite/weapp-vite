@@ -35,7 +35,20 @@ export function createStatefulHmrSidecarPlugin(): Plugin {
         return
       }
       this.addWatchFile(request.sourceId)
-      const source = await readFile(request.sourceId, 'utf8')
+      let source: string
+      try {
+        source = await readFile(request.sourceId, 'utf8')
+      }
+      catch (error) {
+        // 入口图交接时旧 DevEngine 可能晚于 unlink 事件重载侧车；该源已由
+        // 新快照移出图，不应让一次过期读取失败污染后续完整重建。
+        if (error && typeof error === 'object' && 'code' in error && (error.code === 'ENOENT' || error.code === 'ENOTDIR')) {
+          return request.kind === 'style' && !request.dependencyOnly
+            ? ''
+            : { code: 'export default undefined;\n', moduleSideEffects: 'no-treeshake' }
+        }
+        throw error
+      }
       if (request.kind === 'style' && !request.dependencyOnly) {
         return source
       }
