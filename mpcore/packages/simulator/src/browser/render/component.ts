@@ -1,5 +1,6 @@
 import type { HeadlessComponentDefinition } from '../../host'
-import type { HeadlessComponentInstance } from '../../runtime/componentInstance'
+import type { CreateComponentInstanceOptions, HeadlessComponentInstance } from '../../runtime/componentInstance'
+import type { RenderPass } from '../../view/renderPass'
 import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { BrowserVirtualFiles } from '../virtualFiles'
 import type { BrowserComponentRegistryEntry, BrowserRendererContext, BrowserRenderScope, BrowserSlotContent, DomNodeLike } from './types'
@@ -13,6 +14,7 @@ import {
   runComponentLifecycle,
   runComponentObservers,
 } from '../../runtime/componentInstance'
+import { beginComponentConstruction, discardComponentConstruction, finishComponentConstruction } from '../../runtime/componentInstance/construction'
 import { resolveNativeComponentSelection } from '../../runtime/componentInstance/selection'
 import { resolveMiniProgramComponent } from '../../runtime/componentResolution'
 import { bindComponentEventHost, buildComponentTrigger } from '../../view/componentEvent'
@@ -146,6 +148,7 @@ export function syncComponentProperties(
   nextProperties: Record<string, any>,
   bindingExpressions: Record<string, string | undefined>,
   changedPageKeys: string[],
+  beforeObservers?: (instance: HeadlessComponentInstance, phase: 'properties') => void,
 ) {
   const changedRootKeys: string[] = []
   const previousProperties: Record<string, any> = {}
@@ -176,6 +179,7 @@ export function syncComponentProperties(
     return
   }
 
+  beforeObservers?.(instance, 'properties')
   runComponentObservers(definition, instance, changedRootKeys, previousProperties)
 }
 
@@ -242,7 +246,8 @@ export function createBrowserComponentInstance(
   componentEntry: NonNullable<ReturnType<typeof resolveComponentRegistryEntry>>,
   nextProperties: Record<string, any>,
   ownerScopeId: string | undefined,
-  beforeCreated?: (instance: HeadlessComponentInstance) => void,
+  renderTemplate?: (instance: HeadlessComponentInstance, phase: 'defaults' | 'properties') => void,
+  bindEventsBeforeProperties = false,
 ) {
   const isWevuNativeDefinition = Object.keys(componentEntry.definition.methods ?? {}).some(key => key.startsWith('__weapp_vite_'))
     || Object.hasOwn(componentEntry.definition.properties ?? {}, '__wvSlotOwnerId')
@@ -251,11 +256,11 @@ export function createBrowserComponentInstance(
         .filter(key => Object.hasOwn(nextProperties, key))
         .map(key => [key, nextProperties[key]]))
     : nextProperties
-  const componentInstance = createComponentInstance({
+  const instanceOptions: CreateComponentInstanceOptions = {
     definition: componentEntry.definition,
     requestRender: callback => context.session.requestRender(callback),
-    triggerEvent: buildComponentTrigger(componentScopeId, context),
-  })
+  }
+  const componentInstance = createComponentInstance(instanceOptions)
   setSelectorQueryScopeId(componentInstance, componentScopeId)
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')
   componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)
@@ -266,14 +271,31 @@ export function createBrowserComponentInstance(
   componentInstance.selectOwnerComponent = () => ownerScopeId
     ? resolveNativeComponentSelection(context.componentCache.get(ownerScopeId))
     : null
+  beginComponentConstruction(context.componentCache, componentScopeId, componentInstance)
   context.componentCache.set(componentScopeId, componentInstance)
-  beforeCreated?.(componentInstance)
-  runComponentLifecycle(componentInstance, 'created')
-  componentInstance.__propertySnapshots = Object.fromEntries(
-    Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),
-  )
-  syncComponentProperties(componentInstance, componentInstance.__definition__ ?? componentEntry.definition, componentProperties, {}, [])
-  return componentInstance
+  try {
+    renderTemplate?.(componentInstance, 'defaults')
+    runComponentLifecycle(componentInstance, 'created')
+    // created 尚未连接声明事件；属性更新中新建的节点先连接，再派发初始属性 observer。
+    if (bindEventsBeforeProperties) {
+      instanceOptions.triggerEvent = buildComponentTrigger(componentScopeId, context)
+    }
+    componentInstance.__propertySnapshots = Object.fromEntries(
+      Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),
+    )
+    syncComponentProperties(componentInstance, componentInstance.__definition__ ?? componentEntry.definition, componentProperties, {}, [], renderTemplate)
+    if (!bindEventsBeforeProperties) {
+      instanceOptions.triggerEvent = buildComponentTrigger(componentScopeId, context)
+    }
+    return componentInstance
+  }
+  catch (error) {
+    discardComponentConstruction(context.componentCache, context.componentScopes, componentScopeId)
+    throw error
+  }
+  finally {
+    finishComponentConstruction(context.componentCache, componentInstance)
+  }
 }
 
 export function renderBrowserComponentTemplate(
@@ -286,13 +308,13 @@ export function renderBrowserComponentTemplate(
     ownerJsonPath: string,
     ownerFilePath: string,
     instancePath: string,
-    seenComponentScopes: Set<string>,
+    renderPass: RenderPass,
     templateRenderState: TemplateRenderState<DomNodeLike>,
     parent?: DomNodeLike,
   ) => DomNodeLike,
   componentScope: BrowserRenderScope,
   componentScopeId: string,
-  seenComponentScopes: Set<string>,
+  renderPass: RenderPass,
 ) {
   const templatePath = join(context.project.miniprogramRootPath, componentEntry.templatePath)
   const componentTemplate = readTemplateSource(context.files, templatePath)
@@ -306,7 +328,7 @@ export function renderBrowserComponentTemplate(
     `${componentEntry.filePath.replace(JS_FILE_RE, '')}.json`,
     componentEntry.filePath,
     componentScopeId,
-    seenComponentScopes,
+    renderPass,
     templateRenderState,
     componentScope.hostNode,
   )

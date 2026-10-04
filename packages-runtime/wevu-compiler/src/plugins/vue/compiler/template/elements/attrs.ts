@@ -14,13 +14,14 @@ import {
 } from '@weapp-core/constants'
 import { components as builtinComponents } from '../../../../../auto-import-components/builtin.auto'
 import { normalizeComponentHostName } from '../../../../../utils/text'
-import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
+import { normalizeNativeAttributeValue, renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { recordBindingExpression } from '../bindingManifest'
 import { warn } from '../diagnostics'
 import { transformDirective } from '../directives'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { resolveMappedHtmlTagClassName, resolveTemplateTagName } from '../htmlTagMapping'
+import { appendNativeDeclarationAttributes, createNativeDeclaration } from '../nativeDeclaration'
 import { getBindDirectiveExpression } from './helpers'
 
 const builtinTagSet = new Set(builtinComponents.map(tag => tag.toLowerCase()))
@@ -94,13 +95,9 @@ export function collectElementAttributes(
   const resolvedTag = options?.resolvedTag ?? resolveTemplateTagName(node.tag, context)
   const isComponentElement = options?.isComponent ?? !isBuiltinTag(resolvedTag)
   const attrs: string[] = options?.extraAttrs ? [...options.extraAttrs] : []
-  if (
-    isComponentElement
-    && context.wevuComponentTags?.has(node.tag)
-    && context.platform.name === 'wechat'
-    && context.platform.nativeSlotContext !== false
-    && context.scopedSlotsRequireProps
-  ) {
+  const declaration = isComponentElement ? createNativeDeclaration(node, context) : undefined
+  if (declaration) {
+    appendNativeDeclarationAttributes(attrs, declaration, context)
     attrs.push(`bind:${WEVU_NATIVE_SLOT_PARENT_EVENT}="${WEVU_NATIVE_SLOT_PARENT_METHOD}"`)
   }
   if (context.scopeId) {
@@ -158,15 +155,15 @@ export function collectElementAttributes(
         continue
       }
       if (prop.name === 'class' && prop.value?.type === NodeTypes.TEXT) {
-        staticClass = prop.value.content
+        staticClass = normalizeNativeAttributeValue(prop.value.content, context)
         continue
       }
       if (prop.name === 'id' && prop.value?.type === NodeTypes.TEXT) {
-        staticId = prop.value.content.trim()
+        staticId = normalizeNativeAttributeValue(prop.value.content.trim(), context)
         continue
       }
       if (prop.name === 'style' && prop.value?.type === NodeTypes.TEXT) {
-        staticStyle = prop.value.content
+        staticStyle = normalizeNativeAttributeValue(prop.value.content, context)
         continue
       }
       const attr = transformAttribute(prop, context, isComponentElement ? normalizeComponentHostName(prop.name) : undefined)
@@ -409,5 +406,5 @@ export function collectElementAttributes(
     attrs.unshift(styleAttr)
   }
 
-  return { attrs, vTextExp }
+  return { attrs, vTextExp, declaration }
 }

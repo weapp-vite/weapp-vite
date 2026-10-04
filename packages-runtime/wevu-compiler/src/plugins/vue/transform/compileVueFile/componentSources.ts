@@ -5,11 +5,14 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
+import { isWevuRuntimeModuleId, WE_VU_RUNTIME_APIS } from '../../../../constants'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 import * as fs from '../../../../utils/fs'
 import { analyzeVueTemplateTags, isAutoImportCandidateTag, warnVueTemplateTagAnalysis } from '../../../../utils/vueTemplateTags'
 import { resolveWarnHandler } from '../../../../utils/warn'
 import { normalizeTemplateTagName } from '../../compiler/template/htmlTagMapping'
+import { resolveComponentExpression, unwrapDefineComponent, unwrapTypeLikeExpression } from '../scriptComponent'
+import { resolveStaticObjectProperty } from '../transformScript/componentStyleOptions'
 
 type SfcDescriptorForCompile = Pick<SFCDescriptor, 'scriptSetup' | 'script'>
 
@@ -407,36 +410,33 @@ async function collectScriptSetupUsingComponents(options: {
   }
 }
 
-function getExportDefaultObject(scriptAst: BabelFile) {
-  let options: ObjectExpression | undefined
+function getExportDefaultExpression(scriptAst: BabelFile, aliases: Set<string>) {
+  const declarations = new Map<string, ObjectExpression>()
+  let declaration: t.ExportDefaultDeclaration['declaration'] | null = null
   traverse(scriptAst, {
+    VariableDeclarator(path) {
+      const { id, init } = path.node
+      if (!t.isIdentifier(id) || !init) {
+        return
+      }
+      const options = t.isObjectExpression(init) ? init : unwrapDefineComponent(init, aliases)
+      if (options) {
+        declarations.set(id.name, options)
+      }
+    },
     ExportDefaultDeclaration(path) {
-      const declaration = path.node.declaration
-      if (t.isObjectExpression(declaration)) {
-        options = declaration
+      declaration = t.isExpression(path.node.declaration)
+        ? unwrapTypeLikeExpression(path.node.declaration)
+        : path.node.declaration
+      if (t.isCallExpression(declaration) && t.isIdentifier(declaration.callee) && aliases.has(declaration.callee.name)) {
+        const argument = declaration.arguments[0]
+        if (t.isExpression(argument)) {
+          declaration.arguments[0] = unwrapTypeLikeExpression(argument)
+        }
       }
-      else if (t.isCallExpression(declaration) && t.isObjectExpression(declaration.arguments[0])) {
-        options = declaration.arguments[0]
-      }
-      path.stop()
     },
   })
-  return options
-}
-
-function getObjectProperty(node: ObjectExpression, keyName: string) {
-  for (const property of node.properties) {
-    if (!t.isObjectProperty(property) || property.computed) {
-      continue
-    }
-    const matched = t.isIdentifier(property.key)
-      ? property.key.name === keyName
-      : t.isStringLiteral(property.key) && property.key.value === keyName
-    if (matched) {
-      return property
-    }
-  }
-  return undefined
+  return resolveComponentExpression(declaration, declarations, aliases)
 }
 
 function getComponentRegistrationName(property: t.ObjectProperty) {
@@ -490,14 +490,24 @@ async function collectOptionsApiUsingComponents(options: {
       },
     })
 
-    const componentOptions = getExportDefaultObject(ast)
-    const componentsProperty = componentOptions && getObjectProperty(componentOptions, 'components')
-    if (!componentsProperty || !t.isObjectExpression(componentsProperty.value)) {
+    const aliases = new Set<string>([WE_VU_RUNTIME_APIS.defineComponent, '_defineComponent'])
+    for (const [localName, imported] of imports) {
+      if (
+        imported.kind === 'named'
+        && imported.importedName === WE_VU_RUNTIME_APIS.defineComponent
+        && (imported.importSource === 'vue' || isWevuRuntimeModuleId(imported.importSource))
+      ) {
+        aliases.add(localName)
+      }
+    }
+    const componentExpression = getExportDefaultExpression(ast, aliases)
+    const componentsProperty = componentExpression && resolveStaticObjectProperty(componentExpression, 'components', undefined)
+    if (componentsProperty?.kind !== 'expression' || !t.isObjectExpression(componentsProperty.node)) {
       return
     }
 
     const pending: ScriptComponentRegistration[] = []
-    for (const property of componentsProperty.value.properties) {
+    for (const property of componentsProperty.node.properties) {
       if (!t.isObjectProperty(property) || !t.isIdentifier(property.value)) {
         continue
       }

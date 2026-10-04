@@ -7,6 +7,8 @@ defineAppJson({
     'pages/lifecycle/index',
     'pages/native-export/index',
     'pages/exported-owner/index',
+    'pages/unprojected/index',
+    'pages/keyed/index',
   ],
   window: { navigationStyle: 'custom' },
 })

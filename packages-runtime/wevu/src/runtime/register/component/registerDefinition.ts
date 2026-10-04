@@ -10,6 +10,7 @@ import type {
 import type { WatchMap } from '../watch'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
+  WEVU_NATIVE_DECLARATION_METHOD,
   WEVU_NATIVE_SLOT_PARENT_METHOD,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_READY_CALLED_KEY,
@@ -22,6 +23,7 @@ import { ensureInitialNavigation } from '../../navigationLifecycle'
 import { getMiniProgramRuntimeGlobalObject } from '../../platform'
 import { runTeardownSteps } from '../../teardown'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
+import { receiveNativeDeclaration } from '../runtimeInstance/nativeDeclaration'
 import { receiveNativeSlotParent } from '../runtimeInstance/provideContext'
 import { registerNativeComponentDefinition } from './registerNativeDefinition'
 
@@ -45,6 +47,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
   syncWevuPropsFromValues: (instance: InternalRuntimeState, values: Record<string, unknown> | undefined) => void
   directPropsDerivedKeys: string[]
   isPage: boolean
+  nativeSlotContext: boolean
   vueLifecycles: Record<string, unknown>
   getRuntimeOwnerLabel: (instance: InternalRuntimeState) => string
   registerNative?: boolean
@@ -68,6 +71,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     syncWevuPropsFromInstance,
     directPropsDerivedKeys,
     isPage,
+    nativeSlotContext,
     vueLifecycles,
     getRuntimeOwnerLabel,
     registerNative = true,
@@ -435,6 +439,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
       ...pageMethodBridges,
       ...finalMethods,
       [WEVU_NATIVE_SLOT_PARENT_METHOD]: receiveNativeSlotParent,
+      ...(nativeSlotContext ? { [WEVU_NATIVE_DECLARATION_METHOD]: receiveNativeDeclaration } : {}),
       [WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD]: function resolvePublicInstance(this: InternalRuntimeState) {
         const result = mountMissingRuntime(this)
         if (result.mounted) {

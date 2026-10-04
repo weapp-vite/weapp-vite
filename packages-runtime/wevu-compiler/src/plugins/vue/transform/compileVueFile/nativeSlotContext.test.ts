@@ -3,7 +3,9 @@ import type { TemplateCompileOptions } from '../../compiler/template'
 import { runInNewContext } from 'node:vm'
 import { baseParse, NodeTypes } from '@vue/compiler-core'
 import {
+  WEVU_NATIVE_DECLARATION_ADDRESS_PROP,
   WEVU_NATIVE_SLOT_CONTEXT_KEY,
+  WEVU_NATIVE_SLOT_PARENT_DATASET_ATTR,
   WEVU_NATIVE_SLOT_PARENT_EVENT,
   WEVU_NATIVE_SLOT_PARENT_METHOD,
   WEVU_SLOT_NAMES_PROP,
@@ -15,10 +17,12 @@ import {
 import * as t from '@weapp-vite/ast/babelTypes'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as runtime from '../../../../../../wevu/src/internal-runtime'
+import * as templateRuntime from '../../../../../../wevu/src/internal-template'
 import * as reactivity from '../../../../../../wevu/src/reactivity'
 import {
   WE_VU_COMPILER_REACTIVITY_MODULE_ID,
   WE_VU_COMPILER_RUNTIME_MODULE_ID,
+  WE_VU_COMPILER_TEMPLATE_MODULE_ID,
 } from '../../../../constants'
 import { generate, parseJsLike } from '../../../../utils/babel'
 import { compileVueTemplateToWxml, getMiniProgramTemplatePlatform } from '../../compiler/template'
@@ -37,6 +41,7 @@ function evaluateOptions(script: string): Record<string, any> {
   const modules: Record<string, object> = {
     [WE_VU_COMPILER_RUNTIME_MODULE_ID]: runtime,
     [WE_VU_COMPILER_REACTIVITY_MODULE_ID]: reactivity,
+    [WE_VU_COMPILER_TEMPLATE_MODULE_ID]: templateRuntime,
   }
   ast.program.body = ast.program.body.flatMap<t.Statement>((statement) => {
     if (t.isExportDefaultDeclaration(statement) && t.isExpression(statement.declaration)) {
@@ -152,7 +157,7 @@ describe('native slot context compilation', () => {
     expect(evaluateOptions(result.script!)[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBe(enabled ? true : undefined)
     expect(readElements(result.template!)).toEqual([{
       tag: 'slot',
-      attrs: { name: 'body', ...(enabled ? { [listener]: WEVU_NATIVE_SLOT_PARENT_METHOD } : {}) },
+      attrs: { name: 'body', ...(enabled ? { [listener]: WEVU_NATIVE_SLOT_PARENT_METHOD, [WEVU_NATIVE_SLOT_PARENT_DATASET_ATTR]: '' } : {}) },
       children: [],
     }])
   })
@@ -170,7 +175,7 @@ describe('native slot context compilation', () => {
         attrs: { 'wx:if': `{{${WEVU_SLOT_NAMES_PROP}&&${WEVU_SLOT_NAMES_PROP}.${name}}}` },
         children: [{
           tag: 'slot',
-          attrs: { 'data-v-native-s': '', ...(name === 'header' ? { name } : {}), [listener]: WEVU_NATIVE_SLOT_PARENT_METHOD },
+          attrs: { 'data-v-native-s': '', ...(name === 'header' ? { name } : {}), [listener]: WEVU_NATIVE_SLOT_PARENT_METHOD, [WEVU_NATIVE_SLOT_PARENT_DATASET_ATTR]: '' },
           children: [],
         }],
       },
@@ -190,7 +195,7 @@ describe('native slot context compilation', () => {
     })
     expect(readElements(result.code)).toEqual([{
       tag: 'slot',
-      attrs: { [listener]: WEVU_NATIVE_SLOT_PARENT_METHOD },
+      attrs: { [listener]: WEVU_NATIVE_SLOT_PARENT_METHOD, [WEVU_NATIVE_SLOT_PARENT_DATASET_ATTR]: '' },
       children: [{ tag: 'text', attrs: {}, children: ['Fallback'] }],
     }])
     expect(result.componentGenerics).toBeUndefined()
@@ -227,7 +232,7 @@ describe('native slot context compilation', () => {
     }
     expect(readElements(asset.template)[0]).toEqual({
       tag: 'slot',
-      attrs: { name: 'body', [listener]: WEVU_NATIVE_SLOT_PARENT_METHOD },
+      attrs: { name: 'body', [listener]: WEVU_NATIVE_SLOT_PARENT_METHOD, [WEVU_NATIVE_SLOT_PARENT_DATASET_ATTR]: '' },
       children: [],
     })
   })
@@ -243,5 +248,111 @@ describe('native slot context compilation', () => {
     expect(fallback?.children).toEqual([{ tag: 'slot', attrs: {}, children: [] }])
     expect(scoped?.attrs[listener]).toBeUndefined()
     expect(result.componentGenerics?.[scoped!.tag]).toBe(true)
+  })
+
+  it.each([
+    ...[
+      'export default { components: { Renamed: Original, ThirdParty: Native } }',
+      'export default define({ components: { Renamed: Original, ThirdParty: Native } })',
+      'const options = { components: { Renamed: Original, ThirdParty: Native } }; export default options',
+      'const options = { components: { Renamed: Original, ThirdParty: Native } }; export default define(options)',
+      'const options = define({ components: { Renamed: Original, ThirdParty: Native } }); export default options',
+      'import { defineComponent as defineVue } from "vue"; const options = { components: { Renamed: Original, ThirdParty: Native } }; export default defineVue(options)',
+      'export default Object.assign({ components: { Renamed: Original, ThirdParty: Native } }, { name: "Host" })',
+      'export default Object.assign({ components: { Renamed: Native, ThirdParty: Original } }, { components: { Renamed: Original, ThirdParty: Native } })',
+      'export default define(Object.assign({}, { components: { Renamed: Original, ThirdParty: Native } }))',
+    ].map(declaration => ({ declaration, lang: 'js' })),
+    ...[
+      'export default ({ components: { Renamed: Original, ThirdParty: Native } } as const)',
+      'const options = { components: { Renamed: Original, ThirdParty: Native } }; export default (options satisfies object)',
+      'const options = { components: { Renamed: Original, ThirdParty: Native } }; export default define(options as object)',
+      'export default (define({ components: { Renamed: Original, ThirdParty: Native } }) satisfies object)!',
+    ].map(declaration => ({ declaration, lang: 'ts' })),
+  ])('addresses Options API registration aliases without marking third-party native declarations: $declaration', async ({ declaration, lang }) => {
+    const result = await compileVueFile(`
+<script lang="${lang}">
+import { defineComponent as define } from 'wevu'
+import Original from './provider.vue'
+import Native from './native'
+${declaration}
+</script>
+<template><Renamed><ThirdParty /><Renamed /></Renamed></template>`, filename, {
+      sourceMap: false,
+      template: { platform, scopedSlotsRequireProps: true },
+      autoUsingComponents: {
+        enabled: true,
+        resolveUsingComponentPath: async source => source === './provider.vue' ? '/components/provider' : '/components/native',
+      },
+    })
+    const [host] = readElements(result.template!)
+    const children = host.children.filter((child): child is TemplateElement => typeof child === 'object')
+    const evaluateAddress = (element: TemplateElement) => runInNewContext(element.attrs[WEVU_NATIVE_DECLARATION_ADDRESS_PROP].slice(2, -2)) as [string, string]
+    expect(JSON.parse(result.config!).usingComponents).toEqual({
+      'renamed': '/components/provider',
+      'third-party': '/components/native',
+    })
+    const parent = evaluateAddress(host)
+    expect(parent[1]).toBe('')
+    expect(evaluateAddress(children[1])[1]).toBe(parent[0])
+    expect(evaluateAddress(children[1])[0]).not.toBe(parent[0])
+    expect(children[0].attrs[WEVU_NATIVE_DECLARATION_ADDRESS_PROP]).toBeUndefined()
+  })
+
+  it('keeps native declaration identity separate from a shadowed prop alias', async () => {
+    const result = await compileVueFile(`
+<script setup lang="ts">
+import Provider from './provider.vue'
+import Leaf from './leaf.vue'
+const { fallback: row } = defineProps<{ fallback: { id: string } }>()
+const rows = [{ id: 'a', show: false }, { id: 'b', show: false }]
+</script>
+<template>
+  <Provider v-for="row in rows" :key="row.id"><Leaf v-if="row.show" /></Provider>
+  <text :title="row.id.toUpperCase()" />
+</template>`, filename, {
+      sourceMap: false,
+      template: { platform, scopedSlotsRequireProps: true },
+      autoUsingComponents: {
+        enabled: true,
+        resolveUsingComponentPath: async source => `/components/${source === './provider.vue' ? 'provider' : 'leaf'}`,
+      },
+    })
+    const options = evaluateOptions(result.script!)
+    const rows = [{ id: 'a', show: false }, { id: 'b', show: false }]
+    const state = { rows, __wevuProps: { fallback: { id: 'shared' } } }
+    const [provider, label] = readElements(result.template!)
+    const findLeaf = (element: TemplateElement): TemplateElement | undefined => {
+      if (element.tag === 'leaf') {
+        return element
+      }
+      for (const child of element.children) {
+        const found = typeof child === 'object' ? findLeaf(child) : undefined
+        if (found) {
+          return found
+        }
+      }
+    }
+    const child = findLeaf(provider)!
+    const indexName = provider.attrs['wx:for-index'] ?? 'index'
+    const evaluateBindings = () => Object.fromEntries(Object.entries(options.computed).map(([name, computed]) => [
+      name,
+      (computed as (this: typeof state) => unknown).call(state),
+    ]))
+    const address = (element: TemplateElement, index: number, bindings: Record<string, unknown>) =>
+      runInNewContext(element.attrs[WEVU_NATIVE_DECLARATION_ADDRESS_PROP].slice(2, -2), { ...bindings, [indexName]: index }) as [string, string]
+    const initial = evaluateBindings()
+    const first = address(provider, 0, initial)
+    const second = address(provider, 1, initial)
+    expect(first[0]).not.toBe(second[0])
+    expect([first[1], second[1]]).toEqual(['', ''])
+    expect(runInNewContext(label.attrs.title.slice(2, -2), initial)).toBe('SHARED')
+    rows[0].show = true
+    const attached = evaluateBindings()
+    expect(address(child, 0, attached)[1]).toBe(first[0])
+    rows.reverse()
+    const reordered = evaluateBindings()
+    expect(address(provider, 0, reordered)).toEqual(second)
+    expect(address(provider, 1, reordered)).toEqual(first)
+    expect(address(child, 1, reordered)[1]).toBe(first[0])
   })
 })

@@ -7,6 +7,7 @@ import { createComponentMethods } from './component/methods'
 import { getRuntimeOwnerLabel, prepareComponentOptions } from './component/options'
 import { createPropsSync } from './component/props'
 import { registerComponentDefinition } from './component/registerDefinition'
+import { usesNativeSlotContext } from './runtimeInstance/nativeDeclaration'
 
 /**
  * 注册组件入口（框架内部使用）。
@@ -201,6 +202,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     syncWevuPropsFromInstance,
     syncWevuPropsFromValues,
     directPropsDerivedKeys,
+    nativeSlotContext: usesNativeSlotContext(mpOptions),
     isPage,
     vueLifecycles,
     getRuntimeOwnerLabel,

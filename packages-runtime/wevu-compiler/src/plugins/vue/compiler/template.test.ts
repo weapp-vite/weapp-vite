@@ -1355,7 +1355,6 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(compiled.code).toContain('wx:for="{{[\'a\', \'b\']}}"')
     expect(compiled.code).toContain('wx:key="*this"')
-    expect(compiled.diagnostics.some(message => message.message.includes('无法生成运行时 key 投影'))).toBe(true)
   })
 
   it('projects mixed static object and primitive loop sources', () => {

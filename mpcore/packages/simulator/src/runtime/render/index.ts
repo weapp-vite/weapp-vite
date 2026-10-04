@@ -1,17 +1,21 @@
+import type { RenderPass } from '../../view/renderPass'
 import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { HeadlessPageInstance } from '../pageInstance'
 import type { DomNodeLike, RuntimeRenderedPageTree, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
 import path from 'node:path'
 import { attachComponentPage, isComponentPageAttaching } from '../../host/componentPageAttachment'
-import { bindComponentEventHost, mergeComponentEventRoot, registerComponentEventNode } from '../../view/componentEvent'
+import { bindComponentEventHost, mergeComponentEventRoot, orderComponentAttachmentScopes, registerComponentEventNode } from '../../view/componentEvent'
 import { selectConditionalChildren } from '../../view/conditionalChildren'
 import { customTabBarHostScope, customTabBarScopeId, hasCustomTabBar } from '../../view/customTabBar'
-import { resolveLoopEntries } from '../../view/loopEntries'
+import { registerInspectionTrees } from '../../view/inspectionTree'
+import { resolveLoopEntries, resolveLoopInstanceSuffix } from '../../view/loopEntries'
 import { linkRenderedParents } from '../../view/renderedTree'
+import { createPageRenderPass, createRenderPass, markPageTreeConstructed, registerSlotDeclarations } from '../../view/renderPass'
 import { isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
 import { wxsScopeData } from '../../view/wxs'
 import { runComponentLifecycle } from '../componentInstance'
 import { flushComponentAttachments, flushComponentReady, hasPendingComponentAttachments, isComponentAttached } from '../componentInstance/attachment'
+import { isComponentConstructing } from '../componentInstance/construction'
 import { flushDiscardedComponentReady, scheduleDiscardedComponentReady } from '../componentInstance/discardedReady'
 import { syncComponentRelations } from '../componentInstance/relations'
 import { isPageBeforeReady } from '../pageLifecycle'
@@ -49,11 +53,13 @@ function expandNodeByFor(node: DomNodeLike, scope: RuntimeRenderScope) {
   const items = resolveLoopEntries(list)
   const itemName = node.attribs?.['wx:for-item']?.trim() || 'item'
   const indexName = node.attribs?.['wx:for-index']?.trim() || 'index'
+  const key = node.attribs?.['wx:key']?.trim()
+  const keyOccurrences = key ? new Map<string, number>() : undefined
 
   return items.map(([index, item]) => ({
     node: cloneNode(node),
     scope: createLoopScope(scope, itemName, indexName, item, index),
-    instanceSuffix: `:for-${index}`,
+    instanceSuffix: resolveLoopInstanceSuffix(item, index, key, keyOccurrences),
   }))
 }
 
@@ -64,7 +70,7 @@ function renderNodeVariants(
   ownerJsonPath: string,
   ownerFilePath: string,
   instancePath: string,
-  seenComponentScopes: Set<string>,
+  renderPass: RenderPass,
   templateRenderState: TemplateRenderState<DomNodeLike>,
   parent: DomNodeLike,
 ) {
@@ -76,7 +82,7 @@ function renderNodeVariants(
     ownerJsonPath,
     ownerFilePath,
     `${instancePath}${instanceSuffix}`,
-    seenComponentScopes,
+    renderPass,
     templateRenderState,
     parent,
   ))
@@ -89,7 +95,7 @@ function renderChildren(
   ownerJsonPath: string,
   ownerFilePath: string,
   instancePath: string,
-  seenComponentScopes: Set<string>,
+  renderPass: RenderPass,
   templateRenderState: TemplateRenderState<DomNodeLike>,
   parent: DomNodeLike,
 ) {
@@ -97,7 +103,7 @@ function renderChildren(
 
   for (const { node: child, index } of selectConditionalChildren(children, node => evaluateConditionalBranch(node, scope))) {
     if (!isTagNode(child)) {
-      renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes, templateRenderState, parent))
+      renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, renderPass, templateRenderState, parent))
       continue
     }
 
@@ -105,7 +111,7 @@ function renderChildren(
       continue
     }
 
-    renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes, templateRenderState, parent))
+    renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, renderPass, templateRenderState, parent))
   }
 
   return renderedChildren
@@ -156,6 +162,27 @@ function collectComponentSlots(
   return slots
 }
 
+function reconcileSlotDeclarations(context: RuntimeRendererContext, renderPass: RenderPass) {
+  // 实际投影优先建立事件路径；未投影的声明仍参与实例生命周期，但不加入可见树。
+  for (const [entries, { parent, scopeId }] of renderPass.slotDeclarations) {
+    if (isComponentConstructing(context.componentCache.get(scopeId))) {
+      continue
+    }
+    for (const { index } of selectConditionalChildren(
+      entries.map(entry => entry.node),
+      (node, index) => evaluateConditionalBranch(node, entries[index]!.scope),
+    )) {
+      const entry = entries[index]!
+      if (renderPass.renderedSlots.has(entry)) {
+        continue
+      }
+      const nodes = renderNodeVariants(entry.node, entry.scope, context, entry.ownerJsonPath, entry.ownerFilePath, entry.instancePath, renderPass, entry.templateRenderState, parent)
+      renderPass.renderedSlots.set(entry, nodes)
+      renderPass.hasUnprojectedSlots ||= nodes.length > 0
+    }
+  }
+}
+
 function renderNodeTree(
   node: DomNodeLike,
   scope: RuntimeRenderScope,
@@ -163,7 +190,7 @@ function renderNodeTree(
   ownerJsonPath: string,
   ownerFilePath: string,
   instancePath: string,
-  seenComponentScopes: Set<string>,
+  renderPass: RenderPass,
   templateRenderState: TemplateRenderState<DomNodeLike>,
   parent?: DomNodeLike,
 ): DomNodeLike {
@@ -205,7 +232,7 @@ function renderNodeTree(
           ownerJsonPath,
           ownerFilePath,
           `${instancePath}/template-${templateName}`,
-          seenComponentScopes,
+          renderPass,
           {
             definitions: templateRenderState.definitionScopes?.get(definition) ?? templateRenderState.definitions,
             definitionScopes: templateRenderState.definitionScopes,
@@ -229,23 +256,30 @@ function renderNodeTree(
       'data-sim-node': instancePath,
       'data-sim-scope': scope.getScopeId(),
     }
+    const slotOwner = scope.getScopeId()
+    if (projected.length && slotOwner && isComponentConstructing(context.componentCache.get(slotOwner))) {
+      clonedNode.children = []
+      return clonedNode
+    }
     clonedNode.children = projected.length
       ? selectConditionalChildren(
           projected.map(entry => entry.node),
           (node, index) => evaluateConditionalBranch(node, projected[index]!.scope),
         ).flatMap(({ index }) => {
           const entry = projected[index]!
-          return renderNodeVariants(
+          const nodes = renderNodeVariants(
             entry.node,
             entry.scope,
             context,
             entry.ownerJsonPath,
             entry.ownerFilePath,
             entry.instancePath,
-            seenComponentScopes,
+            renderPass,
             entry.templateRenderState,
             clonedNode,
           )
+          renderPass.renderedSlots.set(entry, nodes)
+          return nodes
         })
       : renderChildren(
           fallbackChildren,
@@ -254,7 +288,7 @@ function renderNodeTree(
           ownerJsonPath,
           ownerFilePath,
           `${instancePath}/slot-fallback-${slotName}`,
-          seenComponentScopes,
+          renderPass,
           templateRenderState,
           clonedNode,
         )
@@ -289,6 +323,7 @@ function renderNodeTree(
       componentScopeId,
       templateRenderState,
     )
+    registerSlotDeclarations(renderPass, slots, clonedNode, componentScopeId)
     applyNodeBindings(clonedNode, scope)
 
     let componentInstance = context.componentCache.get(componentScopeId)
@@ -299,12 +334,15 @@ function renderNodeTree(
         componentEntry,
         nextProperties,
         ownerScopeId,
-        (instance) => {
-          // 宿主先按默认数据创建子树，再调用父 created 并应用父级传入的 props。
+        (instance, phase) => {
+          // 默认私有模板先于 created；传入 props 更新模板后才派发 observer，light 声明等待宿主构造完成。
           const initialScope = createComponentScope(clonedNode, scope, componentScopeId, instance, genericComponents, slots)
           context.componentScopes.set(componentScopeId, initialScope)
-          renderRuntimeComponentTemplate(context, componentEntry, renderNodeTree, initialScope, componentScopeId, new Set())
+          const initialPass = createRenderPass(phase === 'properties')
+          renderRuntimeComponentTemplate(context, componentEntry, renderNodeTree, initialScope, componentScopeId, initialPass)
+          reconcileSlotDeclarations(context, initialPass)
         },
+        renderPass.propertyUpdate,
       )
     }
     else {
@@ -322,10 +360,17 @@ function renderNodeTree(
         nextProperties,
         bindingExpressions,
         context.changedPageKeys,
+        (instance) => {
+          const updatedScope = createComponentScope(clonedNode, scope, componentScopeId, instance, genericComponents, slots)
+          context.componentScopes.set(componentScopeId, updatedScope)
+          const updatePass = createRenderPass(true)
+          renderRuntimeComponentTemplate(context, componentEntry, renderNodeTree, updatedScope, componentScopeId, updatePass)
+          reconcileSlotDeclarations(context, updatePass)
+        },
       )
     }
 
-    seenComponentScopes.add(componentScopeId)
+    renderPass.seenComponentScopes.add(componentScopeId)
 
     const componentScope = createComponentScope(
       clonedNode,
@@ -343,7 +388,7 @@ function renderNodeTree(
       renderNodeTree,
       componentScope,
       componentScopeId,
-      seenComponentScopes,
+      renderPass,
     )
     mergeComponentEventRoot(renderedComponentRoot, clonedNode)
     if (renderedComponentRoot.attribs) {
@@ -355,6 +400,7 @@ function renderNodeTree(
       renderedComponentRoot.attribs['data-sim-node'] = instancePath
       renderedComponentRoot.attribs['data-sim-scope'] = componentScopeId
     }
+    renderPass.componentRoots.set(componentScopeId, renderedComponentRoot)
     return renderedComponentRoot
   }
 
@@ -367,7 +413,7 @@ function renderNodeTree(
     ownerJsonPath,
     ownerFilePath,
     `${instancePath}/${clonedNode.name}`,
-    seenComponentScopes,
+    renderPass,
     templateRenderState,
     clonedNode,
   )
@@ -400,7 +446,7 @@ export function renderRuntimePageTree(
     }
   }
   context.componentScopes.set(pageScopeId, pageScope)
-  const seenComponentScopes = new Set<string>()
+  const renderPass = createPageRenderPass(page, context.componentCache)
   const root = (document.children ?? [])[0] ?? document
   const templateRenderState = prepareTemplateRenderState(context.artifactSource, root, templatePath, context.project.miniprogramRootPath, getRuntimeWxsLoader(context.moduleLoader, context.artifactSource))
   const renderedRoot = renderNodeTree(
@@ -410,7 +456,7 @@ export function renderRuntimePageTree(
     path.resolve(context.project.miniprogramRootPath, `${resourcePath}.json`),
     `${resourcePath}.js`,
     pageScopeId,
-    seenComponentScopes,
+    renderPass,
     templateRenderState,
   )
 
@@ -423,20 +469,24 @@ export function renderRuntimePageTree(
       path.resolve(context.project.miniprogramRootPath, 'app.json'),
       'app.js',
       pageScopeId,
-      seenComponentScopes,
+      renderPass,
       templateRenderState,
     ))
   }
+  reconcileSlotDeclarations(context, renderPass)
+  markPageTreeConstructed(page, context.componentCache)
+  const instances = orderComponentAttachmentScopes(renderPass.seenComponentScopes, context.componentScopes)
+    .map(scopeId => context.componentCache.get(scopeId)!)
 
   // Component 页面先创建子树，再执行页面 created/attached，最后统一挂载后代。
   const pageAttached = attachComponentPage(page)
   const pageAttaching = isComponentPageAttaching(page)
   const attached = !pageAttaching && flushComponentAttachments(
-    [...seenComponentScopes].map(scopeId => context.componentCache.get(scopeId)!),
+    instances,
     instance => runComponentLifecycle(instance, 'attached'),
   )
   // detached 仍能读取旧关系；真实宿主随后解除双方关系并调用 unlinked。
-  const removed = [...context.componentCache].filter(([scopeId]) => scopeId.startsWith(`${pageScopeId}/`) && !seenComponentScopes.has(scopeId))
+  const removed = [...context.componentCache].filter(([scopeId]) => scopeId.startsWith(`${pageScopeId}/`) && !renderPass.seenComponentScopes.has(scopeId))
   for (const [scopeId, instance] of removed) {
     if (isComponentAttached(instance)) {
       runComponentLifecycle(instance, 'detached')
@@ -445,8 +495,7 @@ export function renderRuntimePageTree(
       scheduleDiscardedComponentReady(context.componentCache, scopeId, instance)
     }
   }
-  const instances = [...seenComponentScopes].map(scopeId => context.componentCache.get(scopeId)!)
-  const relationsChanged = !pageAttaching && !hasPendingComponentAttachments(instances) && syncComponentRelations(context.componentCache, seenComponentScopes, pageScopeId)
+  const relationsChanged = !pageAttaching && !hasPendingComponentAttachments(instances) && syncComponentRelations(context.componentCache, renderPass.seenComponentScopes, pageScopeId)
   for (const [scopeId] of removed) {
     context.componentCache.delete(scopeId)
     context.componentScopes.delete(scopeId)
@@ -471,6 +520,7 @@ export function renderRuntimePageTree(
 
   const treeRoot: DomNodeLike = roots.length > 1 ? { type: 'root', children: roots } : renderedRoot
   linkRenderedParents(treeRoot)
+  registerInspectionTrees(treeRoot, renderPass, context.componentScopes)
   return {
     root: treeRoot,
     wxml: roots.map(serializeDomNode).join(''),

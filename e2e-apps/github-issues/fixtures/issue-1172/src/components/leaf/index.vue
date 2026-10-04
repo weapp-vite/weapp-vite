@@ -3,7 +3,8 @@ import type { SlotContext } from '../../context'
 import { inject } from 'wevu'
 import { SLOT_CONTEXT } from '../../context'
 
-defineProps<{ probe: string }>()
+const props = defineProps<{ probe: string, report?: boolean }>()
+const emit = defineEmits<{ ready: [report: { probe: string, owner: string, identity: string }] }>()
 const context = inject<SlotContext | undefined>(SLOT_CONTEXT, undefined)
 const count = context?.count
 const action = context?.increment
@@ -11,6 +12,10 @@ const owner = context?.label ?? 'missing'
 const identity = context
   ? context.isSame(context, count, action) ? 'same' : 'different'
   : 'missing'
+
+if (props.report) {
+  emit('ready', { probe: props.probe, owner, identity })
+}
 
 function increment() {
   if (!action) {

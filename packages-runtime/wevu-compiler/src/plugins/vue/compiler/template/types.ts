@@ -133,6 +133,7 @@ export interface TransformContext {
   classStyleWxsExtension?: string
   classStyleWxsSrc?: string
   forStack: ForParseResult[]
+  nativeDeclarationStack: NativeDeclarationScope[]
   forIndexSeed: number
   templateRefs: TemplateRefBinding[]
   templateRefIndexSeed: number
@@ -147,6 +148,13 @@ export interface TransformContext {
   scopeId?: string
   slottedScopeId?: string
   cssVars?: boolean
+}
+
+/** 当前原生模板内的声明地址；引用保留声明自身的循环深度。 */
+export interface NativeDeclarationScope {
+  site: string
+  loopDepth: number
+  keyExpression: string
 }
 
 /**
@@ -167,6 +175,10 @@ export interface ForParseResult {
   index?: string
   key?: string
   itemAliases?: Record<string, string>
+  /** 原生声明寻址使用实际 wx:key，不重新计算用户 key 表达式。 */
+  effectiveNativeKey?: { kind: 'field', field: string } | { kind: 'self' } | { kind: 'position' }
+  /** 源码循环别名与避开祖先及编译器内建标识符的原生别名。 */
+  nativeAliases?: Record<string, string>
   /** 需要在逻辑层完整执行的原始循环项模式。 */
   itemPattern?: string
   /** 当前循环项模式是否需要投影，避免模板层近似执行。 */

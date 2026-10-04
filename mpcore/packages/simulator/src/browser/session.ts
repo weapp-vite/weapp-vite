@@ -35,6 +35,7 @@ import { resolvePluginRequest } from '../project/plugins'
 import { createAppInstance } from '../runtime/appInstance'
 import { HeadlessAppLifecycle } from '../runtime/appLifecycle'
 import { runComponentLifecycle, runComponentPageLifetime } from '../runtime/componentInstance'
+import { hasPendingComponentConstruction } from '../runtime/componentInstance/construction'
 import { detachComponentRelations } from '../runtime/componentInstance/relations'
 import { resolveNativeComponentSelection } from '../runtime/componentInstance/selection'
 import { createPackageAssetReader } from '../runtime/packageAsset'
@@ -835,22 +836,30 @@ export class BrowserHeadlessSession {
   }
 
   selectComponent(selector: string) {
-    this.renderCurrentPage()
+    if (!hasPendingComponentConstruction(this.componentCache)) {
+      this.renderCurrentPage()
+    }
     return this.selectComponentsWithin(null, selector)[0] ?? null
   }
 
   selectAllComponents(selector: string) {
-    this.renderCurrentPage()
+    if (!hasPendingComponentConstruction(this.componentCache)) {
+      this.renderCurrentPage()
+    }
     return this.selectComponentsWithin(null, selector)
   }
 
   selectComponentWithin(scopeId: string, selector: string) {
-    this.renderCurrentPage()
+    if (!hasPendingComponentConstruction(this.componentCache)) {
+      this.renderCurrentPage()
+    }
     return this.selectComponentsWithin(scopeId, selector)[0] ?? null
   }
 
   selectAllComponentsWithin(scopeId: string, selector: string) {
-    this.renderCurrentPage()
+    if (!hasPendingComponentConstruction(this.componentCache)) {
+      this.renderCurrentPage()
+    }
     return this.selectComponentsWithin(scopeId, selector)
   }
 

@@ -5,10 +5,12 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { buildIssueRegressionProject, createIssueRegressionProject } from '../utils/issueRegressionProject'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { assertIssue1172Artifacts, ROUTES } from './issue1172/artifacts'
-import { absentNode, exportedOwnerNodes, isolationNodes, lifecycleNodes, nativeNodes, nestingNodes, primaryNodes, tapButton, textNode } from './issue1172/dom'
+import { absentNode, exportedOwnerNodes, isolationNodes, keyedNodes, lifecycleNodes, nativeNodes, nestingNodes, primaryNodes, tapButton, textNode, unprojectedNodes } from './issue1172/dom'
 
 const FIXTURE = 'e2e-apps/github-issues/fixtures/issue-1172'
+const layout = resolveRuntimeProviderName() === 'devtools'
 
 // 两份构建顺序运行；每份只启动一次宿主，并通过 reLaunch 隔离页面状态。
 describe.each([
@@ -148,6 +150,88 @@ describe.each([
       await dom.check('projected-action', miniProgram!, page)
       await tapButton(page, 'native-increment')
       await dom.check('public-action', miniProgram!, page)
+    })
+
+    it('1172.unprojected', async (context) => {
+      const dom = createDomAcceptance(context, FIXTURE, [
+        { id: 'closed', route: ROUTES.unprojected, action: '出口不存在时，普通和转发具名消费者已在首次 setup 注入最近宿主并确认身份', nodes: unprojectedNodes(false, { layout }) },
+        { id: 'opened', route: ROUTES.unprojected, action: '打开出口后显示此前建立的注入，不重新执行 setup', nodes: unprojectedNodes(true, { layout }) },
+        { id: 'updated', route: ROUTES.unprojected, action: '普通和转发消费者分别调用真实 Provider action，保持隔离', nodes: unprojectedNodes(true, { closed: 8, forwarded: 21, layout }) },
+        { id: 'closed-again', route: ROUTES.unprojected, action: '关闭出口只移除投影，不重建消费者或修补上下文', nodes: unprojectedNodes(false, { closed: 8, forwarded: 21, layout }) },
+        { id: 'reopened', route: ROUTES.unprojected, action: '再次打开仍使用原对象、ref 和 action，setup 次数不变', nodes: unprojectedNodes(true, { closed: 8, forwarded: 21, layout }) },
+      ])
+      const page = await miniProgram!.reLaunch(ROUTES.unprojected)
+      await dom.check('closed', miniProgram!, page)
+      await tapButton(page, 'toggle-outlet')
+      await dom.check('opened', miniProgram!, page)
+      await tapButton(page, 'increment-closed')
+      await tapButton(page, 'increment-forwarded-named')
+      await dom.check('updated', miniProgram!, page)
+      await tapButton(page, 'toggle-outlet')
+      await dom.check('closed-again', miniProgram!, page)
+      await tapButton(page, 'toggle-outlet')
+      await dom.check('reopened', miniProgram!, page)
+    })
+
+    it('1172.keyed-unprojected', async (context) => {
+      const initial = { 'a-x': 10, 'a-y': 20, 'b-x': 30, 'b-y': 40, 'native-a': 60, 'native-b': 70 }
+      const changed = { ...initial, 'a-x': 11 }
+      const lateChanged = { ...changed, 'b-y': 41 }
+      const { 'a-x': _removed, ...remaining } = lateChanged
+      const recreated = { ...lateChanged, 'a-x': 90 }
+      const dom = createDomAcceptance(context, FIXTURE, [
+        {
+          id: 'closed',
+          route: ROUTES.keyed,
+          action: '同名嵌套循环变量和重复内层 key 不混淆不同外层分支，原生 wx:for 同步注入',
+          nodes: [...keyedNodes(false, false, initial, { layout }), textNode('keyed-order', 'a:x,y|b:x,y'), textNode('native-order', '1,2')],
+        },
+        { id: 'opened', route: ROUTES.keyed, action: '打开后显示六个独立 Provider 和既有消费者', nodes: keyedNodes(true, false, initial, { layout }) },
+        { id: 'updated', route: ROUTES.keyed, action: '更新 a-x，后续重排必须保留其原 ref 状态', nodes: keyedNodes(true, false, changed, { layout }) },
+        { id: 'closed-again', route: ROUTES.keyed, action: '隐藏出口但保留已挂载实例', nodes: keyedNodes(false, false, changed, { layout }) },
+        {
+          id: 'moved',
+          route: ROUTES.keyed,
+          action: '同时反转外层、内层和原生循环，既有消费者不重新 setup',
+          nodes: [...keyedNodes(false, false, changed, { layout }), textNode('keyed-order', 'b:y,x|a:y,x'), textNode('native-order', '2,1')],
+        },
+        { id: 'normalized-keys', route: ROUTES.keyed, action: '原生数字 key 变为等价字符串时不重建 Provider 或消费者', nodes: keyedNodes(false, false, changed, { layout }) },
+        { id: 'late', route: ROUTES.keyed, action: '重排后在关闭出口中新增消费者，同步找到本分支原 Provider', nodes: keyedNodes(false, true, changed, { layout }) },
+        { id: 'opened-late', route: ROUTES.keyed, action: '新增和原有消费者持有同一个已更新 ref', nodes: keyedNodes(true, true, changed, { layout }) },
+        { id: 'late-action', route: ROUTES.keyed, action: '新增 b-y 消费者只更新 b-y Provider 及原消费者', nodes: keyedNodes(true, true, lateChanged, { layout }) },
+        {
+          id: 'detached',
+          route: ROUTES.keyed,
+          action: '移除 a-x 分支，不破坏其他循环实例',
+          nodes: [...keyedNodes(true, true, remaining, { layout }), absentNode('provider-a-x'), absentNode('count-a-x-main'), absentNode('count-a-x-late')],
+        },
+        { id: 'recreated', route: ROUTES.keyed, action: '相同声明地址重建时使用新 Provider，不读取旧注册', nodes: keyedNodes(true, true, recreated, { setups: { 'a-x': 2 }, layout }) },
+        { id: 'fresh-action', route: ROUTES.keyed, action: '新消费者 action 更新新 ref，其他分支不变', nodes: keyedNodes(true, true, { ...recreated, 'a-x': 91 }, { setups: { 'a-x': 2 }, layout }) },
+      ])
+      const page = await miniProgram!.reLaunch(ROUTES.keyed)
+      await dom.check('closed', miniProgram!, page)
+      await tapButton(page, 'toggle-outlet')
+      await dom.check('opened', miniProgram!, page)
+      await tapButton(page, 'increment-a-x-main')
+      await dom.check('updated', miniProgram!, page)
+      await tapButton(page, 'toggle-outlet')
+      await dom.check('closed-again', miniProgram!, page)
+      await tapButton(page, 'reverse')
+      await dom.check('moved', miniProgram!, page)
+      await tapButton(page, 'normalize-keys')
+      await dom.check('normalized-keys', miniProgram!, page)
+      await tapButton(page, 'add-late')
+      await dom.check('late', miniProgram!, page)
+      await tapButton(page, 'toggle-outlet')
+      await dom.check('opened-late', miniProgram!, page)
+      await tapButton(page, 'increment-b-y-late')
+      await dom.check('late-action', miniProgram!, page)
+      await tapButton(page, 'detach')
+      await dom.check('detached', miniProgram!, page)
+      await tapButton(page, 'recreate')
+      await dom.check('recreated', miniProgram!, page)
+      await tapButton(page, 'increment-a-x-late')
+      await dom.check('fresh-action', miniProgram!, page)
     })
   }
 })

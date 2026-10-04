@@ -1,6 +1,7 @@
 import type { InternalRuntimeState } from '../../types'
 import {
   WEVU_ATTRS_KEY,
+  WEVU_NATIVE_DECLARATION_ADDRESS_PROP,
   WEVU_PENDING_PROP_VALUES_KEY,
   WEVU_PROP_KEYS_KEY,
   WEVU_PROPS_DERIVED_KEYS_KEY,
@@ -11,6 +12,7 @@ import {
 } from '@weapp-core/constants'
 import { hasOwn } from '../../../utils'
 import { isDeepEqualValue } from '../../app/setData/snapshot'
+import { updateNativeDeclarationAddress } from '../runtimeInstance/nativeDeclaration'
 import { refreshOwnerSnapshotFromInstance } from '../snapshot'
 
 export function createPropsSync(options: {
@@ -328,6 +330,9 @@ export function createPropsSync(options: {
   if (propKeys.length) {
     for (const key of propKeys) {
       injectedObservers[key] = function __wevu_prop_observer(this: InternalRuntimeState, newValue: unknown) {
+        if (key === WEVU_NATIVE_DECLARATION_ADDRESS_PROP) {
+          updateNativeDeclarationAddress(this, newValue)
+        }
         // 注意：在部分小程序运行时中，observer 回调触发时 `this.properties` 可能尚未更新，
         // 因此这里以 observer 的 newValue 为准写入 propsProxy，避免出现 props 仍为旧值/undefined。
         syncWevuPropValue(this, key, newValue)
@@ -336,14 +341,24 @@ export function createPropsSync(options: {
   }
 
   const finalObservers: Record<string, any> = {
+    // 地址 observer 必须先于通配/组合用户 observer，避免同步创建的后代看到旧索引。
+    ...(propKeySet.has(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)
+      ? { [WEVU_NATIVE_DECLARATION_ADDRESS_PROP]: undefined }
+      : {}),
     ...(userObservers ?? {}),
   }
   for (const [key, injected] of Object.entries(injectedObservers)) {
     const existing = finalObservers[key]
     if (typeof existing === 'function') {
       finalObservers[key] = function chainedObserver(this: InternalRuntimeState, ...args: any[]) {
-        existing.apply(this, args)
-        injected.apply(this, args)
+        if (key === WEVU_NATIVE_DECLARATION_ADDRESS_PROP) {
+          injected.apply(this, args)
+          existing.apply(this, args)
+        }
+        else {
+          existing.apply(this, args)
+          injected.apply(this, args)
+        }
       }
     }
     else {

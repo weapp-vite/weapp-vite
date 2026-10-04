@@ -260,10 +260,7 @@ export function normalizeJsExpressionWithContext(
         return
       }
       const name = path.node.name
-      if (JS_RUNTIME_GLOBALS.has(name)) {
-        return
-      }
-      if (path.scope.hasBinding(name)) {
+      if (path.scope.getBinding(name)) {
         return
       }
       if (hasOwn(forAliases, name)) {
@@ -281,6 +278,9 @@ export function normalizeJsExpressionWithContext(
         }
       }
       if (locals.has(name)) {
+        return
+      }
+      if (JS_RUNTIME_GLOBALS.has(name)) {
         return
       }
       if (options?.preserveForItems && context.forStack.some((forInfo) => {

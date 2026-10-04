@@ -4,11 +4,13 @@ import type {
   MiniProgramComponentShortProperty,
 } from '../types'
 import {
+  WEVU_NATIVE_DECLARATION_ADDRESS_PROP,
   WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { hasOwn } from '../../utils'
+import { usesNativeSlotContext } from '../register/runtimeInstance/nativeDeclaration'
 
 const ALLOW_NULL_PROP_INPUT_KEY = '__wevu_allowNullPropInput'
 const PUBLIC_ALLOW_NULL_PROP_INPUT_KEY = 'allowNullPropInput'
@@ -234,6 +236,9 @@ export function normalizeProps(
   const shouldAttachInternalProps = Boolean(props || resolvedExplicit)
   const attachInternalProps = (source?: Record<string, any>) => {
     const next = { ...(source ?? {}) }
+    if (usesNativeSlotContext(baseOptions)) {
+      next[WEVU_NATIVE_DECLARATION_ADDRESS_PROP] = { type: Array, value: [] }
+    }
     if (!shouldAttachInternalProps) {
       return next
     }

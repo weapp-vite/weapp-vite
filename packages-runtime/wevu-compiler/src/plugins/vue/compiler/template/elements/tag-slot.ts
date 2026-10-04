@@ -22,7 +22,7 @@ import {
 } from '@weapp-core/constants'
 import { createWevuRuntimeCapabilityMetadata } from '../../../../../runtimeCapabilities'
 
-import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
+import { normalizeNativeAttributeValue, renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { createBindingManifest, recordBindingExpression } from '../bindingManifest'
 import { buildClassStyleWxsTag } from '../classStyleRuntime'
 import { withBindingCondition } from '../conditions'
@@ -32,6 +32,7 @@ import { transformBindDirective } from '../directives/bind'
 import { transformOnDirective } from '../directives/on'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
+import { nativeSlotParentAttribute, usesNativeDeclarationContext } from '../nativeDeclaration'
 import { buildScopedSlotComponentScript } from '../scopedSlotScript'
 import {
   collectScopePropMapping,
@@ -62,7 +63,7 @@ export function renderSlotNameAttribute(
   attrName: 'name' | 'slot',
 ): string | undefined {
   if (info.type === 'static' && info.value !== 'default') {
-    return `${attrName}="${info.value}"`
+    return `${attrName}="${normalizeNativeAttributeValue(info.value, context)}"`
   }
   if (info.type === 'dynamic') {
     const expValue = normalizeWxmlExpressionWithContext(info.exp, context)
@@ -238,6 +239,7 @@ export function createScopedSlotComponent(
     bindingConditions: undefined,
     classStyleWxs: false,
     forStack: [],
+    nativeDeclarationStack: [],
     forIndexSeed: 0,
     inlineExpressions: [],
     inlineExpressionSeed: 0,
@@ -287,6 +289,7 @@ export function createScopedSlotComponent(
     bindingManifest,
     runtimeBindingManifest: scopedContext.runtimeBindingManifest,
     runtimeCapabilities,
+    nativeSlotContext: usesNativeDeclarationContext(scopedContext),
   })
   return { componentName, slotKey }
 }
@@ -564,6 +567,7 @@ function renderPlainSlotOutlet(node: ElementNode, context: TransformContext, tra
   }
   if (context.platform.name === 'wechat' && context.platform.nativeSlotContext !== false && context.scopedSlotsRequireProps) {
     slotAttrs.push(`bind:${WEVU_NATIVE_SLOT_PARENT_EVENT}="${WEVU_NATIVE_SLOT_PARENT_METHOD}"`)
+    slotAttrs.push(nativeSlotParentAttribute(context))
   }
   const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
   if (context.preserveComments && fallbackContent && !compatibleNode.children.some(isRenderableFallbackChild)) {
@@ -745,6 +749,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   }
   if (!slotPropsExp && context.platform.name === 'wechat' && context.platform.nativeSlotContext !== false && context.scopedSlotsRequireProps) {
     slotAttrs.push(`bind:${WEVU_NATIVE_SLOT_PARENT_EVENT}="${WEVU_NATIVE_SLOT_PARENT_METHOD}"`)
+    slotAttrs.push(nativeSlotParentAttribute(context))
   }
 
   const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
