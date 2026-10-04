@@ -121,9 +121,10 @@ describe('runtime retained module graph', () => {
     }
 
     const retainedModules = createRuntimeSizeRetainedModules('C:\\repo', metafile)
+    const { importGraph, ...outputModules } = retainedModules
 
     expect(normalizeRuntimeModulePath('C:\\repo', deniedModule)).toBe('packages-runtime/wevu/dist/runtime/scopedSlots.mjs')
-    expect(retainedModules).toEqual({
+    expect(outputModules).toEqual({
       entry: 'wevu-runtime-size-weapp-minimal-app-production.mjs',
       modules: [
         {
@@ -151,6 +152,7 @@ describe('runtime retained module graph', () => {
         },
       ],
     })
+    expect(importGraph).toEqual(outputModules.modules.map(({ path, imports }) => ({ path, imports })))
     expect(resolveRuntimeImportChain(
       retainedModules,
       'packages-runtime/wevu/dist/runtime/scopedSlots.mjs',
@@ -215,6 +217,7 @@ describe('runtime retained module graph', () => {
   it('ignores denylisted modules that contribute no bytes to the output', () => {
     const report = createReport()
     const deniedPath = 'packages-runtime/wevu/dist/runtime/scopedSlots.mjs'
+    const absentDeniedPath = 'packages-runtime/wevu/dist/runtime/register/inline.mjs'
     setRetainedModules(report, 'minimal-app', {
       entry: 'wevu-runtime-size-weapp-minimal-app-production.mjs',
       modules: [
@@ -224,6 +227,14 @@ describe('runtime retained module graph', () => {
           imports: [deniedPath],
         },
         { path: deniedPath, bytesInOutput: 0, imports: [] },
+      ],
+      importGraph: [
+        {
+          path: 'wevu-runtime-size-weapp-minimal-app-production.mjs',
+          imports: [deniedPath, absentDeniedPath],
+        },
+        { path: deniedPath, imports: [] },
+        { path: absentDeniedPath, imports: [] },
       ],
     })
 

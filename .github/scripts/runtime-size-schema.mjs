@@ -62,6 +62,35 @@ function assertBytes(value, label) {
   }
 }
 
+function validateImportGraph(value, retained, label) {
+  if (!Array.isArray(value)) {
+    throw new TypeError(`${label} must be an array.`)
+  }
+  const paths = new Set()
+  for (const node of value) {
+    assertObject(node, `${label}.node`)
+    assertString(node.path, `${label}.node.path`)
+    if (paths.has(node.path)) {
+      throw new Error(`${label} must contain unique paths.`)
+    }
+    if (!Array.isArray(node.imports) || node.imports.some(imported => typeof imported !== 'string' || imported.length === 0)) {
+      throw new Error(`${label}.node.imports must contain non-empty strings.`)
+    }
+    paths.add(node.path)
+  }
+  if (!paths.has(retained.entry)) {
+    throw new Error(`${label} must contain its entry.`)
+  }
+  if (retained.modules.some(module => !paths.has(module.path))) {
+    throw new Error(`${label} must contain every retained module.`)
+  }
+  for (const node of value) {
+    if (node.imports.some(imported => !paths.has(imported))) {
+      throw new Error(`${label}.node.imports must reference graph nodes.`)
+    }
+  }
+}
+
 function validateRetainedModules(value, label) {
   const retained = assertObject(value, label)
   assertString(retained.entry, `${label}.entry`)
@@ -80,6 +109,9 @@ function validateRetainedModules(value, label) {
   }
   if (!paths.has(retained.entry)) {
     throw new Error(`${label}.modules must contain its entry.`)
+  }
+  if (retained.importGraph !== undefined) {
+    validateImportGraph(retained.importGraph, retained, `${label}.importGraph`)
   }
 }
 
