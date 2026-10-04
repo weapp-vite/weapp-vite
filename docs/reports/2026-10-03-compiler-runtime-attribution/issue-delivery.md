@@ -570,3 +570,13 @@ Stable `2.02.2608080`、基础库 `3.17.3` 的两轮同场景诊断确认：修�
 第一次功能运行可能与另一任务的共享 Stable 预检重叠，因此不作为独占最终验收。复核时另一任务已 idle/blocked，进程快照仅观察到本次 Vitest；JSON 同时保留两次原报告的 SHA-256 与该限制。复核 harness 为 `8eb6b145758949df9de0f53a183f99cbeccb3c53` 加未提交的 #1097 selected-case 改动；编译器仍来自上述 `c3c643d40` tarball。此证据只完成这一矩阵行，完整 #1097 矩阵与目标提交 CI 仍需汇总后才能标记 issue 已完成。
 
 本轮源码与验收工具分别提交为 `8eb6b1457`（Stable 异步方法）、`2a12f6d0a`（消费者用例清单）和 `86b60ed1a`（生产代际边界）。以上原始报告保留执行时的 commit 与 dirty 标识；对应实现随后提交，不改写历史报告身份。
+
+### 后续消费者、原生样式与内存能力复验
+
+三个宿主 `wv`、`vite`、`vite-plus` 的 stateful 独立消费者现均完成验收：每行 headless 3 个选定场景、19 个检查点，Stable 4 个选定场景、26 个检查点。公共 19 个检查点跨 provider、跨宿主一致，Stable 额外 7 个原生页面样式检查点单独记录。28 个候选归档、锁文件来源及 1,735 个安装文件已核对，无 workspace 软链接或候选包嵌套副本；精简证据见 `issue-1097-three-stateful-consumer-acceptance.json`。此时加上既有 classic-watch，共完成 4/29 行，不能据此标记整个 #1097 完成。
+
+纯原生 class-only WXSS 对照在 Stable `2.02.2608080`、基础库 `3.17.3` 上也未应用首次保存。该项目不经过 weapp-vite 或 automator；初始模拟器失败后，在修改源码前手动编译一次恢复。随后仅保存一次，将 `.probe` 的红色改为蓝色；4 分 47 秒后仍显示红色，计数、输入及 App/Page 实例保持。未在修改后再次保存、编译、刷新或重启页面。零 debugger 错误、4 个资源预加载警告，没有 selector 警告。原项目已精确关闭，共享宿主保留。`native-wxss-class-first-save.json` 与裁剪截图保留宿主边界证据，不将其写成 #1015/#1065/#1081 已通过。
+
+议题 #1137 使用冻结的 32 个候选归档完成一次新的正式运行，normal 首屏与导航各留下 3 个有效样本，更新 warmup 的 heap 请求返回 `Method not implemented.`，performance 预设未执行。失败原样保存于 `issue-1137-stable-performance-attempt.json`。SDK 的 Runtime 适配器确实将 `getHeapUsage` 指向未实现占位方法；automator 现在只在 heap 请求边界识别这个精确错误，返回带原因的 unsupported，其他异常仍抛出。重建后的 Stable 复验中，页面更新和最终状态读取通过，更新前后 heap 均明确为 `protocol-unimplemented`。26 项单测、所属包 typecheck、构建和 ESLint 通过。没有可验证的替代 AppService heap 通道，最终内存门槛保持未完成，详见 `issue-1137-stable-heap-capability.json`。
+
+以上已交付实现推送至 main。完整 CI `37199641080` 的 Windows Node 22 出现 IPC 断开后等待 ChildProcess close 超时，其他已完成矩阵通过。最小复现证明子进程已退出且输出流已结束，却没有 close 事件；`113410335` 改为等待 exit 与输出流 finished，并增加延迟输出回归，32 项定向测试通过。新提交仍须远端矩阵复验。因此 #1136/#1140 的本地验收结果保留，但完成标签继续等待相关 CI，不提前改变 29/41 的计数。
