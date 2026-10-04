@@ -146,6 +146,17 @@ Oxc 0.152 API 使用 AST 类型上的构造方法，例如 `Statement::new_impor
 
 新增 `integratedCheck.ts` 在隔离的完整编译调用中返回 native 的 code/map/metadata，让后续阶段实际组合 map；同时验证真实 JS fallback 一次执行和告警交付。四个 JS 控制组仍完整逐字对照，所有 native 完整返回值与实际阶段返回值分别保存并严格检查。生产入口仍未安装该 loader，没有运行时 E2E 或性能样本。strict 模式不接受 fallback 或 map 差异，诊断完成与语义门禁分别记录；通过 AST 或完整控制组对照不能替代来源契约。
 
-原主源码的 import 位置和改名前名称现在随变换保留；空模板片段在真实边界上补映射。`expose` 简写用原绑定位置，非空 quasi 用真实内容起点，仍可能不同于 Babel。生成区间的 unmapped fence 尚未实现，minify 下可观察到错误的 GLB 继承。模板 metadata 的根 span 与字符串不能证明逐 token 来源，上游需要保留表达式归一化／改写前后的来源关系，不能事后用文本搜索或常量偏移拼凑。
+原主源码的 import 位置和改名前名称现在随变换保留；空模板片段在真实边界上补映射。`expose` 简写用原绑定位置，非空 quasi 用真实内容起点，仍可能不同于 Babel。完整转换的 provenance 包装器利用 Oxc 自己的打印位置，在无主脚本来源的映射点发出 unmapped segment，覆盖辅助 token、注册／导出及部分容器关闭点。Oxc 不发映射的部分标点及 import 的 `from` 关键字仍可能继承前一真实节点的位置；不能将 token 起点覆盖描述成完整字符区间隔离。
+
+模板 metadata 的根 span 与字符串不能证明逐 token 来源。上游模板 AST 尚有真实 Vue loc，但字符串进入表达式工具后会 trim、规范化，再独立解析 `(${exp})`。内联表达式还经过 stringify 和重新解析；按表达式文本缓存的 AST 可被多个出现位置共享。当前 native 请求只保留角色及生成源码，片段解析后的 span 清空是避免混用坐标所必需的保护，不能直接恢复根 span 来绕过它。
+
+下一步的来源契约应从仍持有 Vue loc 的上游开始：
+
+1. 每次编译建立不可变 source owner，保留来源标识、精确内容 hash、UTF-16 长度；每个表达式出现位置有独立 occurrence ID 与原始 slice。共享缓存只能保存局部、无 owner 的解析结果。
+2. trim、实体解码、换行、wrapper 与 AST 改写各自保留可组合的坐标关系；clone/replace 保留真实子节点来源，新增辅助节点明确记录 generated，无法证明的节点保留 unknown。
+3. inline asset、class/style、条件与循环元数据用稳定 fragment 引用关联 sidecar，一次批量传递去重后的 source/fragment；Rust 将独立片段坐标绑定到各自来源，不能全部当作主脚本或纯生成片段。
+4. 从节点构造和打印过程取得独立输出位置证据，再核验最终 map。只有该证据证明精确 anchor 为 generated，双侧 unmapped 才可按明确策略接受；AST 相似、源码文字搜索和被测 map 自身都不能替代所有权证据。
+
+以上是未实现的上游路线，不是本轮 native 已覆盖的能力。第一步应覆盖未经复杂规范化的真实表达式及明确的辅助片段，其他变换继续 fail closed；不改变当前严格 oracle 以追求通过率。
 
 后续需要先完成主源码与合成区间的来源策略、保留必要注释，并通过完整编译/真实宿主验证，再决定是否进行正式配对计时。不能通过丢掉 maps、只比较裁剪页面、仅跑返回成功或弱化 AST oracle 来扩大实验覆盖。

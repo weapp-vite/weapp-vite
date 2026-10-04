@@ -1,0 +1,259 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-05",
+  "experiment": "experimental-script-transform: explicit unmapped codegen anchors and duplicate-coordinate ownership",
+  "result": {
+    "completed": true,
+    "comparisonPassed": false,
+    "expectedStrictExitCode": 1,
+    "processExitEvidence": "The actual strict integratedCheck command returned exit code 1 through the execution tool. The separate read-only audit replayed saved comparisons; it did not execute the compiler.",
+    "completeControlByteChecks": 360,
+    "fullCompilerCalls": 90,
+    "nativeCalls": 72,
+    "nativeSucceeded": 36,
+    "fallbackCalls": 36,
+    "fullCompilerPassed": 32,
+    "exactCompleteOutputs": 54,
+    "nativeFullCompilerPassed": 0,
+    "nativeExactCompleteOutputs": 0,
+    "nativeFullCompilerCalls": 36,
+    "fallbackCompilerCalls": 36,
+    "noStageCompilerCalls": 18,
+    "fallbackFullCompilerPassed": 14,
+    "noStageFullCompilerPassed": 18,
+    "fallbackExactCompleteOutputs": 36,
+    "noStageExactCompleteOutputs": 18,
+    "fullCompilerStructureCompared": 72,
+    "allComparedStructuresEqual": true,
+    "allMetadataWarningsErrorsEqual": true,
+    "fullCompilerWithMapFindings": 58,
+    "fullCompilerMapFindings": 57388,
+    "stageComparisons": 36,
+    "stagesPassed": 0,
+    "stageMapFindings": 8844,
+    "actualStrictExitCode": 1
+  },
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "command": "node --import tsx scripts/nativeScriptTransform/integratedCheck.ts --binding-dir=<experimental-script-transform release directory> --output=<new directory>",
+  "identity": {
+    "sourceFiles": 347,
+    "buildFiles": 52,
+    "declaredSourceClosuresRecomputed": true,
+    "currentFilesMatch": true,
+    "beforeAfterEqual": true,
+    "bindingSha256": "81452921467655ad418848e15ecb2de74add660c017ec6c3d390248dbb94e3bf",
+    "binaryBytes": 3547968,
+    "sourceAndBinaryFilesUnchangedThroughoutAudit": true,
+    "identityBeforeSha256": "53103ad8ae3c66d346e939766e68eae1e83cf338ecf7f1cca9497b98836fd4b1",
+    "identityAfterSha256": "05693116ae1f38944a58e05fa4ce177dfbab54e23757d5f838dbaec245b5dceb"
+  },
+  "build": {
+    "exitCode": 0,
+    "beforeSha256": "bd0760cecd99e56eada61fb42180c9761576cac5ae051a47cb0d87e4d919c73c",
+    "afterSha256": "d1746134084230082f5b1a8134b406c9e9ee8f9f71dd22c7c2d3e5e77eddf284",
+    "logSha256": "b03578fda308c03d13fafa2af5780bc2bd3d867e6396fec59a61d9f9ccb0398c",
+    "nonfatalDebugInfoStrippingWarning": true,
+    "feature": "experimental-script-transform",
+    "configuredToolchain": "1.99.0-aarch64-apple-darwin"
+  },
+  "audit": {
+    "passed": true,
+    "meaning": "Saved evidence and calculations reproduced, not compiler compatibility acceptance.",
+    "auditSha256": "12bbb1dc5058aa221f258af17fb16bb7d2f78401b3a064e91ceb1c062d46bd03",
+    "auditScriptSha256": "f0fc0c4d5e44e87910ea9eea1fc3e9ac46657eec1731fd247ed0381a5f25205e",
+    "summarySha256": "e317d6e97a99ff27fe8bef98c2c05c86053b7cdb8f3b584a0a7fdf35e2b6463a",
+    "rawFilesVerified": 139,
+    "compilerOraclesReplayed": 90,
+    "stageOraclesReplayed": 36,
+    "compilerInvocations": 0,
+    "nativeInvocations": 0
+  },
+  "inputDesign": {
+    "compilerScenarioIds": 45,
+    "compilerChecksPerWorker": 90,
+    "stageScenarioIds": 36,
+    "stageRecords": 72,
+    "distinctSources": 22,
+    "distinctRequests": 16,
+    "distinctSourceRequestPairs": 24,
+    "successfulSourceRequestPairs": 10
+  },
+  "representativePages": [
+    {
+      "scenarioId": "sfc-wevu",
+      "nativeDelivery": [
+        {
+          "iteration": 0,
+          "callIndex": 2,
+          "stageCodeEqualsFinalScript": true,
+          "codeSha256": "9cbdc39025e66f4105ee47f6a1da1a7a99521e66a6497125130b53740c26b29b",
+          "codeUtf8Bytes": 7838
+        },
+        {
+          "iteration": 1,
+          "callIndex": 3,
+          "stageCodeEqualsFinalScript": true,
+          "codeSha256": "9cbdc39025e66f4105ee47f6a1da1a7a99521e66a6497125130b53740c26b29b",
+          "codeUtf8Bytes": 7838
+        }
+      ],
+      "finalMap": {
+        "mapCounts": {
+          "expected": 737,
+          "actual": 737,
+          "matchedMapped": 314,
+          "bothUnmapped": 402,
+          "oneSidedUnmapped": 19
+        },
+        "mapFindingCount": 423,
+        "mapReasons": {
+          "Both final maps omit this anchor; generated-region ownership is unverified": 402,
+          "Independent final origins differ": 21
+        }
+      },
+      "stageMap": {
+        "counts": {
+          "expected": 737,
+          "actual": 737,
+          "matchedMapped": 347,
+          "bothUnmapped": 18,
+          "sourceCandidateUnmapped": 0
+        },
+        "mapFindingCount": 379,
+        "mapReasons": {
+          "Independent stage origins differ": 372,
+          "Origin is outside the shared input source": 7
+        },
+        "outOfBoundsBySide": {
+          "expected": 7
+        }
+      }
+    },
+    {
+      "scenarioId": "sfc-retail",
+      "nativeDelivery": [
+        {
+          "iteration": 0,
+          "callIndex": 4,
+          "stageCodeEqualsFinalScript": true,
+          "codeSha256": "bc670611179a375d8472bfe12307a0855882b8179c75d06df374a3b23751ba81",
+          "codeUtf8Bytes": 23954
+        },
+        {
+          "iteration": 1,
+          "callIndex": 5,
+          "stageCodeEqualsFinalScript": true,
+          "codeSha256": "bc670611179a375d8472bfe12307a0855882b8179c75d06df374a3b23751ba81",
+          "codeUtf8Bytes": 23954
+        }
+      ],
+      "finalMap": {
+        "mapCounts": {
+          "expected": 2043,
+          "actual": 2043,
+          "matchedMapped": 1059,
+          "bothUnmapped": 907,
+          "oneSidedUnmapped": 57
+        },
+        "mapFindingCount": 984,
+        "mapReasons": {
+          "Both final maps omit this anchor; generated-region ownership is unverified": 907,
+          "Independent final origins differ": 77
+        }
+      },
+      "stageMap": {
+        "counts": {
+          "expected": 2043,
+          "actual": 2043,
+          "matchedMapped": 1208,
+          "bothUnmapped": 18,
+          "sourceCandidateUnmapped": 0
+        },
+        "mapFindingCount": 817,
+        "mapReasons": {
+          "Independent stage origins differ": 817
+        },
+        "outOfBoundsBySide": {}
+      }
+    }
+  ],
+  "implementation": [
+    "Use a private reserved source line only while Oxc prints; shift original spans and comments, then restore the AST and returned legal comments.",
+    "Convert reserved-line mapping tokens to one-field unmapped segments; restore original source rows and exact sourcesContent.",
+    "Validate all original tokens, retain the last printed owner at each generated coordinate, and rebuild the remaining names.",
+    "No new parse or N-API call; source allocation, AST traversal, map reconstruction and serialized map size remain unmeasured costs.",
+    "Fix only the stage oracle Unicode line splitting to include U+2028/U+2029; true out-of-bounds coordinates remain rejected."
+  ],
+  "verification": {
+    "rustScriptTransformTests": 78,
+    "newProvenanceTests": 16,
+    "newFullTransformRegressionTests": 1,
+    "targetedToolTestsThisRound": 24,
+    "newToolTests": 3,
+    "toolFullSuiteRerun": false,
+    "scopeTypecheck": true,
+    "scopeEslint": true,
+    "rustfmt": true,
+    "defaultCargoCheck": true,
+    "combinedExperimentalCargoCheck": true
+  },
+  "limitations": [
+    "Both stage and final native sourcemap gates still fail. Native full compiler strict successes remain zero; completed=true means diagnostic completion only.",
+    "The 32 full comparisons that pass are 14 fallback and 18 no-stage calls. The 54 exact outputs are 36 fallback and 18 no-stage calls.",
+    "Oxc emits source anchors at selected print locations, not every generated byte. Opening punctuation, commas, semicolons, member separators and the import from keyword may still inherit GLB origins.",
+    "Unmapped template-derived fragments do not prove generated ownership. Upstream source occurrences and normalization/rewrite provenance remain unimplemented.",
+    "Matching AST, comments and source positions is not independent runtime acceptance. No performance, RSS, build/HMR or real Stable WeChat DevTools runtime was run this round.",
+    "Evidence is local macOS arm64 only. CI checks are tracked separately. Source identities omit the full installed dependency/toolchain byte closure; this is not a reproducible build claim.",
+    "The successful native corpus has empty warning lists and does not establish JS fastSetup hit behavior. Synthetic warning/failure coverage is not real-host validation.",
+    "Map finding counts include pre-existing baseline defects and unverified ownership; they are not performance, quality or regression metrics."
+  ],
+  "sameInputComparison": {
+    "previousExperiment": "round 22 integrated-v7",
+    "passed": true,
+    "meaning": "Old and new native generations are compared at identical AST paths and generated locations; this is separate from Babel-versus-native compatibility.",
+    "fullInputsAndExpectedEqual": 90,
+    "stageSourceRequestEqual": 72,
+    "nativeCodeEqual": 36,
+    "parseableFinalScriptCodeEqual": 72,
+    "stageAnchors": 16002,
+    "stageTransitions": {
+      "both-unmapped": 9006,
+      "mapped-unchanged": 6910,
+      "mapped-to-unmapped": 86
+    },
+    "finalAnchors": 66342,
+    "finalTransitions": {
+      "both-unmapped": 57574,
+      "mapped-unchanged": 8682,
+      "mapped-to-unmapped": 86
+    },
+    "changedAnchorKind": "All 86 stage changes belong to import specifier/source anchors; their AST paths and generated locations agree with all 86 final changes. Counts include repeated iterations.",
+    "filesRehashed": 260,
+    "reportSha256": "c1401d34fc87de93c9a12c0ea607dc9ffad6dfb826d385f8e18c8ce1f19a9807",
+    "scriptSha256": "305e472c6ec763e8ce496657e9dc595b310918a3103b3c0b3aee37cfaa7ef5cd",
+    "compilerInvocations": 0,
+    "nativeInvocations": 0
+  },
+  "mapShapeAudit": {
+    "passed": true,
+    "nativeStageMaps": 36,
+    "segments": 8570,
+    "mappedSegments": 7976,
+    "unmappedSegments": 594,
+    "allGeneratedCoordinatesUnique": true,
+    "allSourceContentExact": true,
+    "referencedNames": 22,
+    "allNamesReferenced": true,
+    "noSentinelNamesInCorpus": true,
+    "sentinelCheckPrecondition": "All 36 original input sources contain no NUL; original literal NUL preservation is separately covered by Rust tests.",
+    "filesRehashed": 40,
+    "reportSha256": "ba3de8fda19a82d9160b47aa456c790bc08b7f2e03cf48bb25937becb4889449",
+    "scriptSha256": "b041a471e937e4a474e89527d8fc924d05617afe9950e670c433901eea972803",
+    "compilerInvocations": 0,
+    "nativeInvocations": 0
+  }
+}

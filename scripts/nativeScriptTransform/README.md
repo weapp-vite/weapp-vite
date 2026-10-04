@@ -51,7 +51,11 @@ native 的成功结果经完整校验后直接返回给 `compileVueFile` 或直�
 
 native 对移动的 import 保留原 imported/local 位置。`expose` 合并为一个简写 token 时保留绑定位置与原名称，不挪到对象 key 的位置来模拟 Babel。空模板片段只在原文边界可验证时补 codegen 映射点；该准备不改变生成代码，不增加 parse/N-API 调用，但增加一次 AST 遍历与 map token 名称修复。
 
-合成表达式没有可追溯的原 SFC token map，因此仍是未验证来源。清空 span 也不能隔离压缩后同一行的 GLB 继承：生成注册／导出可能继承上一用户 token 的映射。此已知缺陷有诊断用例，仍需按 AST 所有权发出明确的 unmapped 区间，不能以 helper 名猜测或复制 Babel 的无效坐标。模板表达式的根 span 不足以解决此问题，后续需由上游 owner 提供可组合的 token 来源。
+完整转换在 codegen 前为无主脚本来源的节点使用内部保留行，真实 span 与注释位置整体平移；Oxc 一次打印后，将保留行映射变为明确的 unmapped segment，恢复真实源行、原 sourcesContent 与有效 names。同一输出位置只保留最后一次打印标记，避免父语句与子 token 的重复映射遮蔽真实所有者。AST 坐标在退出时恢复，错误结果不交付。该路径没有新增 parse 或 N-API 调用，但有源字符串分配、AST 遍历和 map 重建成本，尚未测量净收益。
+
+这隔离了 Oxc 实际写映射的辅助 token、注册／导出及部分容器边界；它不是每个字符的区间证明。Oxc 不写映射的逗号、分号、部分括号和 import 的 `from` 关键字仍可能 GLB 继承。没有使用 helper 名搜索生成范围，也没有把保留行作为用户源码发布。
+
+模板合成表达式仍没有可追溯的原 SFC token map，因此 unmapped 只表示没有主脚本来源，不能证明每个 token 都是纯生成代码。模板表达式的根 span 不足以恢复更早的改写；后续需由上游 owner 提供可组合的 token 来源。严格 oracle 继续拒绝没有独立所有权证据的双侧 unmapped，来源与 runtime 门槛尚未通过。
 
 ## 打印与 map
 

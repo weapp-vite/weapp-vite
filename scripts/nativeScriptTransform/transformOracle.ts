@@ -142,7 +142,7 @@ function inspectMaps(expected: CapturedStageResult, actual: CapturedStageResult,
     input = parse(source, { sourceType: 'module', plugins: ['typescript', 'jsx'] })
   }
   const inputSignatures = new Set(anchors(input).map(anchor => anchor.signature))
-  const sourceLines = source.split(/\r\n|\r|\n/)
+  const sourceLines = source.split(/\r\n|[\r\n\u2028\u2029]/)
   const left = new Map(original.map(anchor => [anchor.path, anchor]))
   const right = new Map(generated.map(anchor => [anchor.path, anchor]))
   for (const path of new Set([...left.keys(), ...right.keys()])) {

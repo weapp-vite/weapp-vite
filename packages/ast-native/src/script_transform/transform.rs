@@ -1,6 +1,6 @@
 use super::{
     capabilities, component_manifest, component_options, component_seed, diagnostics, fragments,
-    metadata,
+    metadata, provenance,
     request::{Request, string},
     rewrite,
 };
@@ -8,7 +8,7 @@ use napi::bindgen_prelude::Utf16String;
 use napi_derive::napi;
 use oxc_allocator::Allocator;
 use oxc_ast::ast::*;
-use oxc_codegen::{Codegen, CodegenOptions};
+use oxc_codegen::CodegenOptions;
 use oxc_parser::Parser;
 use oxc_semantic::SemanticBuilder;
 use oxc_span::SourceType;
@@ -174,13 +174,15 @@ fn run(source: &str, request: Request) -> Result<NativeScriptTransform, String> 
     }
     let source_map = request.options["sourceMap"] != false;
     let source_mappings = source_map.then(|| rewrite::source_mapping::prepare(&mut parsed.program));
-    let generated = Codegen::new()
-        .with_options(CodegenOptions {
+    let generated = provenance::generate(
+        &mut parsed.program,
+        &allocator,
+        CodegenOptions {
             minify: request.options["minify"] == true,
             source_map_path: source_map.then(|| PathBuf::from("inline.ts")),
             ..CodegenOptions::default()
-        })
-        .build(&parsed.program);
+        },
+    )?;
     let map = if source_map {
         let map = source_mappings
             .as_ref()

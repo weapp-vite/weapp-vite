@@ -499,3 +499,27 @@ map 对照查询两份实际 stage map 从各自产物回到同一真实源脚�
 61 项 Rust、212 项工具测试、局部 TypeScript／ESLint、默认及三实验 feature 并存的 cargo check 通过。Rust 仍有已记录的非致命未使用项警告；release 构建保留工具链 stripping 警告。实现文件保持 300 行以内；涉及的 Rust 文件格式同步，pre-commit／lint-staged 保留。实验及工具没有扩展生产行为，不新增 changeset 或脚手架 bump。
 
 本轮没有运行性能采样、Vite 构建／HMR 或真实 Stable 微信开发者工具 runtime，不能宣称整链收益或 runtime 最终验收完成。后续先处理生成区间和表达式来源，再扩展运行时语义对照与正式计时。原始完整证据保留在独立目录，摘要与审计边界见[完整编译接入证据](./2026-10-05-script-transform-integration-evidence.json)。
+
+
+## 第二十三轮：生成映射点隔离与真实编译复核
+
+本轮在默认关闭的 Rust 完整脚本实验中，为没有主脚本来源的节点增加明确的 unmapped 映射点。打印前暂时使用独立保留行并平移真实 span／注释，Oxc 一次打印后恢复原 source 行、sourcesContent、有效 names 和 AST；保留行不会进入最终代码或 map。没有新增 parse 或 N-API 调用，但增加源码分配、AST 遍历及 map 重建，尚未测量净性能收益。
+
+审查复现了同一输出坐标的所有权冲突：父语句和子 token 都写映射时，消费者可能读到较早的错误来源。finalizer 先校验每个原映射，再按打印次序保留最后的所有者并重建 names，最终 JSON 通过实际 JavaScript sourcemap 库的双向回归。注释、PURE／NO_SIDE_EFFECTS、raw literal、返回的 legal comments、真实 NUL、UTF-16／CRLF／Unicode 换行、空 span 及异常恢复也有对照。另修复阶段 oracle 漏算 U+2028／U+2029 的行数问题，三个真实 Babel map 反例由失败转为通过，真正越界的相同双侧 map 仍被拒绝。
+
+重建 release addon 后，正式严格实验再次得到 360 次 JS 完整控制输出逐字一致。native worker 的 90 次完整调用仍为 36 次实际 native、36 次实际单次 JS fallback、18 次无 stage；72 条阶段调用对应 24 个不同源码／请求组合，36 条 native 成功对应 10 个组合。两真实页面各两轮的 native stage 代码实际进入最终 script。36 份 native 的 AST、注释与 annotation 一致，90 次调用其余返回字段、告警和错误一致。
+
+与上一轮在相同输入下逐条复核，90 份控制输入／预期、72 条阶段源码／请求均相同；36 份 native 代码及 72 份可解析最终脚本逐字相同。旧、新 native stage 共 16002 个 anchor 中，86 个导入 specifier／source 锚点由有映射变为 unmapped，其余来源不变；完整脚本 map 也观察到同一批 86 个变化。该计数包含重复轮次，不能把两个层次相加当作独立修复数。
+
+| 代表页面（每次重复） | native 旧→新 stage 锚点变化 | 最终 map 旧→新锚点变化 | 当前最终来源检查 |
+| --- | ---: | ---: | --- |
+| Wevu 首页 | 3 个 mapped→unmapped | 3 个 mapped→unmapped | 737 个锚点；402 个双侧 unmapped，21 个来源差异 |
+| 零售详情 | 8 个 mapped→unmapped | 8 个 mapped→unmapped | 2043 个锚点；907 个双侧 unmapped，77 个来源差异 |
+
+**严格命令仍 exit 1，`completed=true`、`comparisonPassed=false`，native 完整来源通过数仍为 0。** 32 项完整比较通过来自 14 次 fallback 和 18 次无 stage；54 份完整逐字一致来自全部 fallback／无 stage。stage findings 从 8930 变为 8844，完整 findings 仍为 57388；这些计数包含基线缺陷和来源未核验，不能用作质量、回归或性能指标。
+
+本方案只覆盖 Oxc 实际写映射的位置。逗号、分号、部分开括号、member 分隔符及 import 的 `from` 关键字仍可能 GLB 继承，已有明确诊断用例；不能宣称所有字符区间都隔离。模板表达式早期的解析、归一化、改写和 stringify 仍丢失逐 token 来源，unmapped 也不证明它们全是生成代码。后续需从 Vue loc 建立独立 occurrence 和不可变 source owner，贯穿各转换的 copy／derived／generated／unknown 关系；全局文本缓存 AST 不能绑定某个文件的位置。这条上游路线尚未实现，严格 oracle 不因此放宽。
+
+78 项 Rust、24 项受影响工具测试、局部 TypeScript／ESLint／rustfmt、默认及三实验 feature 合并 cargo check 通过。独立审计复核 347 份源码、52 份构建输入、139 份正式证据与二进制身份，并重放全部 90 个完整及 36 个阶段 oracle。新增实现文件均低于 300 行；实验无新增依赖、生产入口或用户配置变化，不另加 changeset／脚手架 bump。构建仍有已记录的非致命 stripping 与 unused 警告。
+
+本轮没有性能、RSS、构建／HMR 或真实 Stable 微信开发者工具 runtime 采样，未完成最终 runtime 验收。实验继续默认关闭，不承诺整链提速。公开摘要与可复核 hash 见[生成映射点证据](./2026-10-05-script-transform-provenance-evidence.json)。

@@ -279,10 +279,10 @@ fn diagnostic_minified_synthetic_tokens_still_inherit_source_mapping_without_fen
         .build(&parsed.program);
     let map = provenance.repair_names(output.map.unwrap());
     let table = map.generate_lookup_table();
-    // 这是尚未修复的来源隔离缺陷的诊断，不能当作正确 provenance 的断言：
+    // 这是直接调用 Oxc 的来源隔离缺陷诊断，不能当作正确 provenance 的断言：
     // 清空 synthetic span 只让 codegen 跳过它，不会产生 source=None fence；
     // minify 后同一行的注册和导出因此通过 GLB 继承前面的真实源码位置。
-    // 将来统一 finalizer 发出 fence 后，应把此断言替换为这些位置明确 unmapped。
+    // 完整转换经 provenance 包装器产生 fence；此用例保留原始 codegen 对照。
     for needle in ["register", "export default"] {
         let position = point(&output.code, needle, 0);
         let token = map

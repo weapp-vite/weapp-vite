@@ -15,6 +15,7 @@ mod component_seed;
 mod diagnostics;
 mod fragments;
 mod metadata;
+mod provenance;
 mod request;
 mod rewrite;
 mod transform;

@@ -1,4 +1,7 @@
 import type { CapturedStageResult, CapturedWarning } from './captureTypes'
+import { encode } from '@jridgewell/sourcemap-codec'
+import { decodedMappings, originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
+import { generate, parse } from '@weapp-vite/ast/babel'
 import MagicString from 'magic-string'
 import { describe, expect, it } from 'vitest'
 import { serializeCaptureValue } from './captureSerialize'
@@ -16,6 +19,45 @@ function compare(source: string, actual: string) {
 }
 
 describe('complete native transform stage oracle', () => {
+  it.each(['\u2028', '\u2029'])('accepts identical real Babel maps across Unicode separator %j', (separator) => {
+    const source = `const first = 1;${separator}const second = 2;`
+    const generated = generate(parse(source, { sourceType: 'module' }), { sourceMaps: true, sourceFileName: filename }, source)
+    const stage = { code: generated.code, map: generated.map, transformed: true }
+    const comparison = inspectTransform(stage, stage, source, [], [])
+    expect(comparison).toMatchObject({ exactCode: true, exactMap: true, mapCoverageVerified: true, comparisonPassed: true })
+    expect(comparison.mapMismatches).toEqual([])
+  })
+
+  it('preserves UTF-16 columns after both Unicode separators and CRLF and still rejects actual out-of-bounds origins', () => {
+    const lastLine = '"😀"; target();'
+    const source = `const first = 1;\u2028const second = 2;\u2029const third = 3;\r\n${lastLine}`
+    const generated = generate(parse(source, { sourceType: 'module' }), { sourceMaps: true, sourceFileName: filename }, source)
+    const stage = { code: generated.code, map: generated.map, transformed: true }
+    const lastStatement = parse(generated.code, { sourceType: 'module' }).program.body.at(-1)
+    if (!generated.map || lastStatement?.type !== 'ExpressionStatement' || lastStatement.expression.type !== 'CallExpression') {
+      throw new Error('Expected the actual Babel map and final call expression')
+    }
+    const position = lastStatement.expression.callee.loc!.start
+    const map = new TraceMap(generated.map)
+    expect(originalPositionFor(map, position)).toEqual({ source: filename, line: 4, column: 6, name: null })
+    expect(inspectTransform(stage, stage, source, [], [])).toMatchObject({ mapCoverageVerified: true, comparisonPassed: true })
+    const mappings = structuredClone(decodedMappings(map))
+    let changed = 0
+    for (const line of mappings) {
+      for (const segment of line) {
+        if (segment.length >= 4 && segment[2] === 3 && segment[3] === 6) {
+          segment[3] = lastLine.length + 1
+          changed++
+        }
+      }
+    }
+    expect(changed).toBeGreaterThan(0)
+    const outside = { ...stage, map: { ...generated.map, mappings: encode(mappings) } }
+    const comparison = inspectTransform(outside, outside, source, [], [])
+    expect(comparison).toMatchObject({ exactCode: true, exactMap: true, mapCoverageVerified: false, comparisonPassed: false })
+    expect(comparison.mapMismatches).toContainEqual(expect.objectContaining({ reason: 'Origin is outside the shared input source', origin: { source: filename, line: 4, column: lastLine.length + 1, name: null } }))
+  })
+
   it('uses the two independent output maps at matching paths, including Unicode and CRLF', () => {
     const source = 'const 标签=\"😀\";\r\nexport { 标签 };'
     const expected = result(source, new MagicString(source).prepend('generated();\n'))
