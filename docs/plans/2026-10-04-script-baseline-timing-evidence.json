@@ -1,12 +1,14 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-10-04T13:08:02.374766+00:00",
+  "recordedAt": "2026-10-04T13:34:02.649376+00:00",
   "run": {
     "id": 37202918268,
     "url": "https://github.com/weapp-vite/weapp-vite/actions/runs/37202918268",
-    "head": "2d53ed9c4c6ab0f2d0b3dae23326c94ad78213c0"
+    "head": "2d53ed9c4c6ab0f2d0b3dae23326c94ad78213c0",
+    "status": "completed",
+    "conclusion": "success"
   },
-  "coverage": "Linux and Windows complete; macOS pending. This is not complete three-platform evidence.",
+  "coverage": "Linux, Windows and macOS complete and independently audited at the same fixed HEAD; the macOS Wevu batch 2 counterexample prevents a uniform improvement claim.",
   "productionAcceptance": "not-evaluated",
   "sourceHashes": {
     "packages-runtime/wevu-compiler/src/ast/operations/jsxAutoComponents.ts": "8c6db39550fecb0ef74b3e67a9943b99f86d8c560e2448e26e27eb934d5ae011",
@@ -3144,22 +3146,1480 @@
         "correctness/optimized.json": "8a8b640c4106c12809f979249e0e7f28f722db9e033bafc0a467eb56eff3d991"
       },
       "independentAuditSha256": "767c30b9ae8f740dc52075b6f09ae58d647d07dfc9574bcfa7e6b42054b9ec49"
+    },
+    {
+      "passed": true,
+      "run": 37202918268,
+      "head": "2d53ed9c4c6ab0f2d0b3dae23326c94ad78213c0",
+      "artifact": "script-baseline-timings-macos-latest",
+      "artifactId": 11304288647,
+      "summarySha256": "9a79870796cd521dffb500069c590f6727c0cf58eec4a36c0f9aee04d0befa33",
+      "checks": {
+        "sourceHashes": 230,
+        "reportHashes": 14,
+        "correctnessChecks": 448,
+        "timingCorrectnessObservations": 42,
+        "timedObservations": 1764,
+        "verifiedAggregateNumbers": 4932,
+        "distributionQuantiles": 396,
+        "pairedRecords": 1512
+      },
+      "environment": {
+        "node": "v24.20.0",
+        "platform": "darwin",
+        "arch": "arm64",
+        "cpus": 3
+      },
+      "fullCorrectnessCoverage": {
+        "baseline": {},
+        "control": {},
+        "ast-reuse": {
+          "astReuse": 20,
+          "astSourceMismatch": 4,
+          "astUnavailable": 24,
+          "astOffered": 30
+        },
+        "props-no-scope": {
+          "propsNoScopeVisits": 22
+        },
+        "page-meta-gate": {
+          "pageMetaSkipped": 32,
+          "pageMetaAnalyzed": 16
+        },
+        "reserved-props-gate": {
+          "reservedSkipped": 20,
+          "reservedAnalyzed": 18
+        },
+        "optimized": {
+          "astReuse": 20,
+          "astSourceMismatch": 4,
+          "astUnavailable": 24,
+          "astOffered": 30,
+          "pageMetaSkipped": 32,
+          "pageMetaAnalyzed": 16,
+          "reservedSkipped": 20,
+          "reservedAnalyzed": 18,
+          "propsNoScopeVisits": 22
+        }
+      },
+      "groups": [
+        {
+          "id": "batch-1-sfc-pressure",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 177.39087500001187,
+                "p95": 316.23487499999464
+              },
+              "cpuMicroseconds": {
+                "p50": 213696,
+                "p95": 395910
+              },
+              "rssAfterBytes": {
+                "p50": 445218816,
+                "p95": 464011264
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 154.23516599999857,
+                "p95": 289.1271660000057
+              },
+              "cpuMicroseconds": {
+                "p50": 191915,
+                "p95": 350858
+              },
+              "rssAfterBytes": {
+                "p50": 433553408,
+                "p95": 468811776
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 169.8801250000106,
+                "p95": 268.63058399999863
+              },
+              "cpuMicroseconds": {
+                "p50": 219267,
+                "p95": 327239
+              },
+              "rssAfterBytes": {
+                "p50": 443678720,
+                "p95": 490274816
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 170.56754200000432,
+                "p95": 292.5875420000084
+              },
+              "cpuMicroseconds": {
+                "p50": 214565,
+                "p95": 328125
+              },
+              "rssAfterBytes": {
+                "p50": 457080832,
+                "p95": 487833600
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 151.70279200001096,
+                "p95": 279.7595419999998
+              },
+              "cpuMicroseconds": {
+                "p50": 204764,
+                "p95": 367901
+              },
+              "rssAfterBytes": {
+                "p50": 459833344,
+                "p95": 489226240
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 170.08775000000605,
+                "p95": 271.4762499999997
+              },
+              "cpuMicroseconds": {
+                "p50": 219846,
+                "p95": 358865
+              },
+              "rssAfterBytes": {
+                "p50": 459292672,
+                "p95": 479920128
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 161.29654200000368,
+                "p95": 287.22987499999726
+              },
+              "cpuMicroseconds": {
+                "p50": 203846,
+                "p95": 360601
+              },
+              "rssAfterBytes": {
+                "p50": 444448768,
+                "p95": 488865792
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": 10.593124999999418,
+                "p95": 110.82487499999115
+              },
+              "savedPercent": {
+                "p50": 8.639169947758232,
+                "p95": 47.53157396387917
+              },
+              "wallP95ChangePercent": -8.572017554986445,
+              "wallP50ChangePercent": -13.053495000806414,
+              "rssP50ChangePercent": -2.620151615514832
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": -4.914791000002879,
+                "p95": 67.88083200000256
+              },
+              "savedPercent": {
+                "p50": -3.876435925660007,
+                "p95": 28.338531587368553
+              },
+              "wallP95ChangePercent": -7.089123545037834,
+              "wallP50ChangePercent": 10.14357452049046,
+              "rssP50ChangePercent": 2.335424382132878
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": -1.923251000000164,
+                "p95": 103.32212500000605
+              },
+              "savedPercent": {
+                "p50": -1.4087562131739162,
+                "p95": 37.30577041891646
+              },
+              "wallP95ChangePercent": 1.1968353053350533,
+              "wallP50ChangePercent": 10.589268597802072,
+              "rssP50ChangePercent": 5.426649535182526
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 4.0694579999981215,
+                "p95": 136.68241699998907
+              },
+              "savedPercent": {
+                "p50": 3.4559736075170218,
+                "p95": 53.43865160653907
+              },
+              "wallP95ChangePercent": -3.239966734916122,
+              "wallP50ChangePercent": -1.6418914477568824,
+              "rssP50ChangePercent": 6.061522182752621
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": -19.771000000007916,
+                "p95": 88.23745900000358
+              },
+              "savedPercent": {
+                "p50": -13.097812612374632,
+                "p95": 39.90922751089309
+              },
+              "wallP95ChangePercent": -6.104897109531937,
+              "wallP50ChangePercent": 10.278190383642883,
+              "rssP50ChangePercent": 5.936815055551348
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": -1.780083999998169,
+                "p95": 93.72933299999568
+              },
+              "savedPercent": {
+                "p50": -1.154136275250085,
+                "p95": 37.90483908880803
+              },
+              "wallP95ChangePercent": -0.6562133286390548,
+              "wallP50ChangePercent": 4.578317761855399,
+              "rssP50ChangePercent": 2.5130375632983037
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedAnalyzed": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedAnalyzed": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-1-sfc-retail",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 66.60320900000079,
+                "p95": 105.27091700000165
+              },
+              "cpuMicroseconds": {
+                "p50": 93804,
+                "p95": 144772
+              },
+              "rssAfterBytes": {
+                "p50": 461488128,
+                "p95": 480870400
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 64.25362499999756,
+                "p95": 105.45820900000035
+              },
+              "cpuMicroseconds": {
+                "p50": 98570,
+                "p95": 164381
+              },
+              "rssAfterBytes": {
+                "p50": 474578944,
+                "p95": 502366208
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 57.852374999998574,
+                "p95": 108.51945899999919
+              },
+              "cpuMicroseconds": {
+                "p50": 91001,
+                "p95": 144982
+              },
+              "rssAfterBytes": {
+                "p50": 435306496,
+                "p95": 488620032
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 66.544458999997,
+                "p95": 97.07145799999853
+              },
+              "cpuMicroseconds": {
+                "p50": 96019,
+                "p95": 136733
+              },
+              "rssAfterBytes": {
+                "p50": 466812928,
+                "p95": 501563392
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 63.34270800000013,
+                "p95": 98.65687500000058
+              },
+              "cpuMicroseconds": {
+                "p50": 91041,
+                "p95": 141379
+              },
+              "rssAfterBytes": {
+                "p50": 470073344,
+                "p95": 497729536
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 65.18270800000028,
+                "p95": 102.36966700000266
+              },
+              "cpuMicroseconds": {
+                "p50": 98740,
+                "p95": 141493
+              },
+              "rssAfterBytes": {
+                "p50": 435421184,
+                "p95": 474038272
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 50.686250000002474,
+                "p95": 97.90279100000043
+              },
+              "cpuMicroseconds": {
+                "p50": 72895,
+                "p95": 122580
+              },
+              "rssAfterBytes": {
+                "p50": 422625280,
+                "p95": 462454784
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": -3.2234170000010636,
+                "p95": 32.0627500000046
+              },
+              "savedPercent": {
+                "p50": -5.354583734724818,
+                "p95": 36.60264017973446
+              },
+              "wallP95ChangePercent": 0.17791428566988898,
+              "wallP50ChangePercent": -3.5277339264587204,
+              "rssP50ChangePercent": 2.8366528206766883
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 5.927834000001894,
+                "p95": 38.73387499999808
+              },
+              "savedPercent": {
+                "p50": 9.669314926766013,
+                "p95": 42.38964407417558
+              },
+              "wallP95ChangePercent": 2.9028086376839735,
+              "wallP50ChangePercent": -9.96247293440522,
+              "rssP50ChangePercent": -8.275219222536768
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 1.6479590000017197,
+                "p95": 26.887249000006705
+              },
+              "savedPercent": {
+                "p50": 2.6466021298549487,
+                "p95": 33.66936990039858
+              },
+              "wallP95ChangePercent": -7.952677254363194,
+              "wallP50ChangePercent": 3.565299234089192,
+              "rssP50ChangePercent": -1.6364012980736087
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 2.9092920000039157,
+                "p95": 36.61316699999952
+              },
+              "savedPercent": {
+                "p50": 3.0113650243732115,
+                "p95": 36.62932969172613
+              },
+              "wallP95ChangePercent": -6.449316809466909,
+              "wallP50ChangePercent": -1.4176896634197078,
+              "rssP50ChangePercent": -0.9493889387557797
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": -0.8092910000050324,
+                "p95": 46.779334000002564
+              },
+              "savedPercent": {
+                "p50": -1.0667593911596422,
+                "p95": 53.14146886137772
+              },
+              "wallP95ChangePercent": -2.928688083445141,
+              "wallP50ChangePercent": 1.4459619982573058,
+              "rssP50ChangePercent": -8.25105295864117
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 10.315459000001283,
+                "p95": 46.74904199999946
+              },
+              "savedPercent": {
+                "p50": 19.48648153317757,
+                "p95": 53.120986554416675
+              },
+              "wallP95ChangePercent": -7.164371623265375,
+              "wallP50ChangePercent": -21.115345632243464,
+              "rssP50ChangePercent": -10.947317544707591
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedSkipped": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedSkipped": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-1-sfc-wevu",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 34.34504199999719,
+                "p95": 65.42083300000013
+              },
+              "cpuMicroseconds": {
+                "p50": 49000,
+                "p95": 76787
+              },
+              "rssAfterBytes": {
+                "p50": 348946432,
+                "p95": 405454848
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 37.18645800000013,
+                "p95": 76.61054100000183
+              },
+              "cpuMicroseconds": {
+                "p50": 47726,
+                "p95": 81933
+              },
+              "rssAfterBytes": {
+                "p50": 406765568,
+                "p95": 440762368
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 39.640957999999955,
+                "p95": 59.3886670000029
+              },
+              "cpuMicroseconds": {
+                "p50": 47637,
+                "p95": 75888
+              },
+              "rssAfterBytes": {
+                "p50": 354484224,
+                "p95": 404865024
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 38.71050000000105,
+                "p95": 73.50658300000214
+              },
+              "cpuMicroseconds": {
+                "p50": 45165,
+                "p95": 107578
+              },
+              "rssAfterBytes": {
+                "p50": 364544000,
+                "p95": 428179456
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 36.91370800000004,
+                "p95": 70.7036250000001
+              },
+              "cpuMicroseconds": {
+                "p50": 45094,
+                "p95": 84511
+              },
+              "rssAfterBytes": {
+                "p50": 367886336,
+                "p95": 431915008
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 36.69462500000009,
+                "p95": 55.83625000000029
+              },
+              "cpuMicroseconds": {
+                "p50": 45739,
+                "p95": 73051
+              },
+              "rssAfterBytes": {
+                "p50": 366985216,
+                "p95": 414154752
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 30.906707999998616,
+                "p95": 44.75916700000016
+              },
+              "cpuMicroseconds": {
+                "p50": 39849,
+                "p95": 63275
+              },
+              "rssAfterBytes": {
+                "p50": 338247680,
+                "p95": 343703552
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": -3.576415999999881,
+                "p95": 21.437916000002588
+              },
+              "savedPercent": {
+                "p50": -8.160621040471487,
+                "p95": 37.19202349238064
+              },
+              "wallP95ChangePercent": 17.10419676252315,
+              "wallP50ChangePercent": 8.273147547768822,
+              "rssP50ChangePercent": 16.569630951263026
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": -0.30025000000023283,
+                "p95": 27.844583000001876
+              },
+              "savedPercent": {
+                "p50": -0.7340612205352389,
+                "p95": 50.80251712260543
+              },
+              "wallP95ChangePercent": -22.47977076679112,
+              "wallP50ChangePercent": 6.600521082163335,
+              "rssP50ChangePercent": -12.852942361139085
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": -0.8083330000008573,
+                "p95": 30.455417000001034
+              },
+              "savedPercent": {
+                "p50": -3.5053153033177042,
+                "p95": 53.300826726398206
+              },
+              "wallP95ChangePercent": -4.051606945315289,
+              "wallP50ChangePercent": 4.098379038952604,
+              "rssP50ChangePercent": -10.3798284126153
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 0.48341699999946286,
+                "p95": 36.00316600000224
+              },
+              "savedPercent": {
+                "p50": 1.8149302565076086,
+                "p95": 54.426461537161906
+              },
+              "wallP95ChangePercent": -7.710317565831559,
+              "wallP50ChangePercent": -0.7334659299901181,
+              "rssP50ChangePercent": -9.558142345027587
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 2.619750000001659,
+                "p95": 38.395291000002544
+              },
+              "savedPercent": {
+                "p50": 5.589734066925018,
+                "p95": 50.11750406514115
+              },
+              "wallP95ChangePercent": -27.11675277165977,
+              "wallP50ChangePercent": -1.3226131942978836,
+              "rssP50ChangePercent": -9.77967535344585
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 7.5159569999996165,
+                "p95": 32.585916
+              },
+              "savedPercent": {
+                "p50": 20.909286705831864,
+                "p95": 60.411711691986014
+              },
+              "wallP95ChangePercent": -41.575706925240105,
+              "wallP50ChangePercent": -16.887195871146133,
+              "rssP50ChangePercent": -16.84456438554799
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedSkipped": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedSkipped": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-2-sfc-pressure",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 169.1148749999993,
+                "p95": 241.46841700000368
+              },
+              "cpuMicroseconds": {
+                "p50": 212705,
+                "p95": 295501
+              },
+              "rssAfterBytes": {
+                "p50": 436895744,
+                "p95": 456949760
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 188.47262499999488,
+                "p95": 267.7085420000003
+              },
+              "cpuMicroseconds": {
+                "p50": 220205,
+                "p95": 311125
+              },
+              "rssAfterBytes": {
+                "p50": 449019904,
+                "p95": 470777856
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 171.11183399999572,
+                "p95": 254.00216600000567
+              },
+              "cpuMicroseconds": {
+                "p50": 213011,
+                "p95": 283343
+              },
+              "rssAfterBytes": {
+                "p50": 445054976,
+                "p95": 475004928
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 165.4638330000016,
+                "p95": 282.2814169999983
+              },
+              "cpuMicroseconds": {
+                "p50": 212243,
+                "p95": 324168
+              },
+              "rssAfterBytes": {
+                "p50": 451362816,
+                "p95": 469958656
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 157.16020800000115,
+                "p95": 256.8914999999979
+              },
+              "cpuMicroseconds": {
+                "p50": 213007,
+                "p95": 322292
+              },
+              "rssAfterBytes": {
+                "p50": 447234048,
+                "p95": 470482944
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 178.12183299999742,
+                "p95": 267.85620900000504
+              },
+              "cpuMicroseconds": {
+                "p50": 212941,
+                "p95": 358626
+              },
+              "rssAfterBytes": {
+                "p50": 451690496,
+                "p95": 484605952
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 154.953125,
+                "p95": 276.1698749999996
+              },
+              "cpuMicroseconds": {
+                "p50": 189117,
+                "p95": 338054
+              },
+              "rssAfterBytes": {
+                "p50": 447479808,
+                "p95": 477102080
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": -8.784249999982421,
+                "p95": 51.79674999999406
+              },
+              "savedPercent": {
+                "p50": -5.47832751190522,
+                "p95": 27.085432213087028
+              },
+              "wallP95ChangePercent": 10.866897346660554,
+              "wallP50ChangePercent": 11.446509362346546,
+              "rssP50ChangePercent": 2.775069376734418
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 6.203875999999582,
+                "p95": 101.61079199999949
+              },
+              "savedPercent": {
+                "p50": 3.8933401895834407,
+                "p95": 42.47813987692832
+              },
+              "wallP95ChangePercent": -5.1198874333993505,
+              "wallP50ChangePercent": -9.211306416515196,
+              "rssP50ChangePercent": -0.8830183171568251
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": -5.202833000003011,
+                "p95": 92.40208300000086
+              },
+              "savedPercent": {
+                "p50": -2.5456009421868795,
+                "p95": 42.50896324646148
+              },
+              "wallP95ChangePercent": 5.443559959322486,
+              "wallP50ChangePercent": -12.208028619537659,
+              "rssP50ChangePercent": 0.5217835510472169
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 13.517917000004672,
+                "p95": 122.55958300000202
+              },
+              "savedPercent": {
+                "p50": 8.219415925810202,
+                "p95": 50.748036179216406
+              },
+              "wallP95ChangePercent": -4.0406039789355646,
+              "wallP50ChangePercent": -16.613774546831184,
+              "rssP50ChangePercent": -0.3977231263227021
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 2.078957999998238,
+                "p95": 127.36995900001784
+              },
+              "savedPercent": {
+                "p50": 1.0796512522009374,
+                "p95": 50.55351400798429
+              },
+              "wallP95ChangePercent": 0.05515961459485741,
+              "wallP50ChangePercent": -5.491933908172464,
+              "rssP50ChangePercent": 0.5947602714734046
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 6.261666999998852,
+                "p95": 116.69479100000171
+              },
+              "savedPercent": {
+                "p50": 4.708529211333027,
+                "p95": 43.63885569385273
+              },
+              "wallP95ChangePercent": 3.1606511083980493,
+              "wallP50ChangePercent": -17.784810924130646,
+              "rssP50ChangePercent": -0.34299058600306687
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedAnalyzed": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedAnalyzed": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-2-sfc-retail",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 73.68674999999348,
+                "p95": 118.7625420000004
+              },
+              "cpuMicroseconds": {
+                "p50": 100640,
+                "p95": 172203
+              },
+              "rssAfterBytes": {
+                "p50": 466337792,
+                "p95": 476151808
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 78.22670899999503,
+                "p95": 107.89770799999678
+              },
+              "cpuMicroseconds": {
+                "p50": 110413,
+                "p95": 155783
+              },
+              "rssAfterBytes": {
+                "p50": 511049728,
+                "p95": 525844480
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 71.82695899999817,
+                "p95": 122.9073329999992
+              },
+              "cpuMicroseconds": {
+                "p50": 101979,
+                "p95": 162204
+              },
+              "rssAfterBytes": {
+                "p50": 511983616,
+                "p95": 516210688
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 76.13204100000439,
+                "p95": 105.3735409999972
+              },
+              "cpuMicroseconds": {
+                "p50": 109775,
+                "p95": 158357
+              },
+              "rssAfterBytes": {
+                "p50": 504233984,
+                "p95": 517439488
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 69.19516699999804,
+                "p95": 119.95937500000218
+              },
+              "cpuMicroseconds": {
+                "p50": 106183,
+                "p95": 161745
+              },
+              "rssAfterBytes": {
+                "p50": 511049728,
+                "p95": 521781248
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 66.65720800000418,
+                "p95": 131.30574999999953
+              },
+              "cpuMicroseconds": {
+                "p50": 99753,
+                "p95": 184152
+              },
+              "rssAfterBytes": {
+                "p50": 502972416,
+                "p95": 515014656
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 64.57291600000099,
+                "p95": 95.29983299999913
+              },
+              "cpuMicroseconds": {
+                "p50": 84065,
+                "p95": 129731
+              },
+              "rssAfterBytes": {
+                "p50": 431800320,
+                "p95": 469991424
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": -5.725875000003725,
+                "p95": 39.9776660000025
+              },
+              "savedPercent": {
+                "p50": -7.770562550260708,
+                "p95": 37.78497879615816
+              },
+              "wallP95ChangePercent": -9.148367673035807,
+              "wallP50ChangePercent": 6.16116058857521,
+              "rssP50ChangePercent": 9.58788602747427
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 3.9139999999970314,
+                "p95": 32.66991699999198
+              },
+              "savedPercent": {
+                "p50": 4.868478316251026,
+                "p95": 39.80954653271082
+              },
+              "wallP95ChangePercent": 13.9109766817316,
+              "wallP50ChangePercent": -8.18102932081326,
+              "rssP50ChangePercent": 0.18273916388817923
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": -1.7611250000045402,
+                "p95": 38.42491599999994
+              },
+              "savedPercent": {
+                "p50": -2.6231825993734454,
+                "p95": 36.15454608538581
+              },
+              "wallP95ChangePercent": -2.339407432083407,
+              "wallP50ChangePercent": -2.6776890230557515,
+              "rssP50ChangePercent": -1.3336753013593272
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 8.096249999995052,
+                "p95": 35.01204199999847
+              },
+              "savedPercent": {
+                "p50": 10.349725948455236,
+                "p95": 38.29342642031132
+              },
+              "wallP95ChangePercent": 11.17879816316929,
+              "wallP50ChangePercent": -11.54534316405611,
+              "rssP50ChangePercent": 0.0
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 5.486875000002328,
+                "p95": 37.49129100000209
+              },
+              "savedPercent": {
+                "p50": 9.031477927800239,
+                "p95": 37.07092231078437
+              },
+              "wallP95ChangePercent": 21.69466102097688,
+              "wallP50ChangePercent": -14.789706927325275,
+              "rssP50ChangePercent": -1.5805334701205487
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 14.249459000002389,
+                "p95": 41.057707999993
+              },
+              "savedPercent": {
+                "p50": 18.407018225415758,
+                "p95": 42.97577035044727
+              },
+              "wallP95ChangePercent": -11.675757746399984,
+              "wallP50ChangePercent": -17.45413193848524,
+              "rssP50ChangePercent": -15.507181328545784
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedSkipped": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedSkipped": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-2-sfc-wevu",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 25.45666699999856,
+                "p95": 45.64341699999932
+              },
+              "cpuMicroseconds": {
+                "p50": 34880,
+                "p95": 66844
+              },
+              "rssAfterBytes": {
+                "p50": 349306880,
+                "p95": 405749760
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 25.23425000000134,
+                "p95": 36.47945900000013
+              },
+              "cpuMicroseconds": {
+                "p50": 34900,
+                "p95": 54732
+              },
+              "rssAfterBytes": {
+                "p50": 374145024,
+                "p95": 430768128
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 21.854041999999026,
+                "p95": 45.273042000000714
+              },
+              "cpuMicroseconds": {
+                "p50": 31471,
+                "p95": 66895
+              },
+              "rssAfterBytes": {
+                "p50": 343572480,
+                "p95": 376864768
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 22.872000000001208,
+                "p95": 45.73116700000173
+              },
+              "cpuMicroseconds": {
+                "p50": 31663,
+                "p95": 63160
+              },
+              "rssAfterBytes": {
+                "p50": 374407168,
+                "p95": 438206464
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 21.687415999998848,
+                "p95": 53.97720799999843
+              },
+              "cpuMicroseconds": {
+                "p50": 29562,
+                "p95": 73649
+              },
+              "rssAfterBytes": {
+                "p50": 369459200,
+                "p95": 425836544
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 21.551292000000103,
+                "p95": 39.38262500000019
+              },
+              "cpuMicroseconds": {
+                "p50": 30010,
+                "p95": 51479
+              },
+              "rssAfterBytes": {
+                "p50": 383827968,
+                "p95": 436961280
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 19.097124999998414,
+                "p95": 40.45524999999907
+              },
+              "cpuMicroseconds": {
+                "p50": 27057,
+                "p95": 50847
+              },
+              "rssAfterBytes": {
+                "p50": 353746944,
+                "p95": 366018560
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": 2.1339589999988675,
+                "p95": 12.302041999995708
+              },
+              "savedPercent": {
+                "p50": 7.386319095593851,
+                "p95": 33.38075996572064
+              },
+              "wallP95ChangePercent": -20.077282995704117,
+              "wallP50ChangePercent": -0.873708250955374,
+              "rssP50ChangePercent": 7.1106941838649185
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": -0.9113760000000184,
+                "p95": 15.468667999999525
+              },
+              "savedPercent": {
+                "p50": -4.769754374760526,
+                "p95": 42.40377577967773
+              },
+              "wallP95ChangePercent": 24.105574043739388,
+              "wallP50ChangePercent": -13.395317871552093,
+              "rssP50ChangePercent": -8.171308460325799
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 0.23029099999985192,
+                "p95": 10.993125000000873
+              },
+              "savedPercent": {
+                "p50": 1.6918441476608508,
+                "p95": 38.92181117312168
+              },
+              "wallP95ChangePercent": 25.361417777608942,
+              "wallP50ChangePercent": -9.36128476178213,
+              "rssP50ChangePercent": 0.07006480994919961
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": -0.8556250000001455,
+                "p95": 14.577541999999085
+              },
+              "savedPercent": {
+                "p50": -5.7476143579902,
+                "p95": 44.100828233243774
+              },
+              "wallP95ChangePercent": 47.96603206203862,
+              "wallP50ChangePercent": -14.055634702843566,
+              "rssP50ChangePercent": -1.2524084778420042
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 0.6860409999990225,
+                "p95": 14.182458999999653
+              },
+              "savedPercent": {
+                "p50": 4.278675296511461,
+                "p95": 48.0933913603255
+              },
+              "wallP95ChangePercent": 7.958358154379552,
+              "wallP50ChangePercent": -14.59507613660418,
+              "rssP50ChangePercent": 2.588018917498691
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": -0.41191600000092876,
+                "p95": 17.641625000000204
+              },
+              "savedPercent": {
+                "p50": -2.0539230850438543,
+                "p95": 51.40254441960194
+              },
+              "wallP95ChangePercent": 10.898711518717752,
+              "wallP50ChangePercent": -24.320615829686233,
+              "rssP50ChangePercent": -5.451918024172365
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedSkipped": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedSkipped": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        }
+      ],
+      "limitations": [
+        "macos evidence only; do not infer other OS results.",
+        "Warm complete compiler JS diagnostic; not Rust, cold build, Vite/HMR or runtime acceptance.",
+        "Warmup count is recorded as 14; individual warmup observations were not persisted and cannot be independently recounted.",
+        "Predecessor balance applies within seven-treatment rounds, not every boundary between consecutive rounds.",
+        "Source hashing covers the declared 230 files plus real corpus blobs, not every installed dependency file.",
+        "Timed artifacts persist output digests; full output byte comparisons can be independently checked in the 448 correctness worker records."
+      ],
+      "rawManifest": {
+        "summary.json": "9a79870796cd521dffb500069c590f6727c0cf58eec4a36c0f9aee04d0befa33",
+        "correctness/report.json": "94a40833ff314951615361a10e7d933ee15e51efdf49d9ab78909ac7b82780c2",
+        "batch-1-sfc-pressure/report.json": "218a0851de982603daa8fd29f828c87fde4680c41f216395df9ffdfe72d46ddf",
+        "batch-1-sfc-retail/report.json": "421fb970b839fcfe721c7003608c06430ebfa0d7570c593e87005e64270bf914",
+        "batch-1-sfc-wevu/report.json": "7433ccf9cfb58f00b46360cde617915bf787a4644779a06d72bab9b309abd25c",
+        "batch-2-sfc-pressure/report.json": "ed01b6616ba37bff240a59d0908bd4eafe49ce0737ae641f2630fdb74c9a86e6",
+        "batch-2-sfc-retail/report.json": "abb5a020fc8ea8d0f4e3fb47d364b6a887a81130563edb807fb5c4f9b3e714cd",
+        "batch-2-sfc-wevu/report.json": "dfae9b0692150971a851b7e898da171cc14e050ead273a2d88b8de992fb10e36",
+        "correctness/baseline.json": "2dcfe3e1c2e4ec4a48a881448253791668d606e7c5cb931652c65c4a30d4b25b",
+        "correctness/control.json": "865122ae6939abedc99cd7115b225dcac05972ebfe1d1dc8bf39a1d43dc040e0",
+        "correctness/ast-reuse.json": "c3b3d900f04342d32c56ae0ac068162b8d11d6e5ebe7f2e49fd1304c8f9364b2",
+        "correctness/props-no-scope.json": "64f9efb0df495f5a93f34a1dceca4e176a4b75e293425157fff6956d6d47b803",
+        "correctness/page-meta-gate.json": "fb23593f9ef478c8ab807c9a527938d61dfd9512c4c24286772e4c78710bcea4",
+        "correctness/reserved-props-gate.json": "5282223c0bdc80b56e8270c8bea4465e3fe7fdb8174db31f651c856ac0554a62",
+        "correctness/optimized.json": "8a8b640c4106c12809f979249e0e7f28f722db9e033bafc0a467eb56eff3d991"
+      },
+      "independentAuditSha256": "6dc12e29ad84ab8db30d817cff56d032b48348cc4a2be5263e04bd60879b3fb7"
     }
   ],
   "interpretation": [
     "This measures seven JS compiler variants, not additional Rust speedup.",
-    "Combined paired P50 savings versus same-loader control are 19.23–26.02% on retail and 18.76–20.37% on Wevu across these four OS/batch observations. Pressure savings are 1.45–5.56%.",
-    "Every combined wall P95 improves versus control in the twelve observed groups; single-feature counterexamples remain and must not be hidden.",
+    "Linux/Windows combined paired P50 savings versus same-loader control are 19.23–26.02% on retail and 18.76–20.37% on Wevu across their four OS/batch observations. Their pressure savings are 1.45–5.56%; these ranges do not include macOS.",
+    "macOS combined paired P50 savings are -1.154% / 4.709% on pressure, 19.486% / 18.407% on retail and 20.909% / -2.054% on Wevu in batches 1 / 2. macOS Wevu batch 2 is a counterexample to uniform real-page gains.",
+    "Paired savings quantiles summarize per-pair ratios, not a ratio of separately computed wall quantiles. macOS Wevu batch 2 control/optimized wall P50 values are 25.23425 / 19.097125 ms (24.321% lower), while paired savings P50 is -2.054%; 21 of its 42 pairs improve and 21 regress. Keep both statistics without substituting one for the other.",
+    "Combined wall P95 improves versus control in all twelve Linux/Windows groups and four of six macOS groups. macOS pressure batch 2 and Wevu batch 2 wall P95 increase 3.161% and 10.899%; Wevu values are 36.479459 / 40.45525 ms. Shared-runner variability does not justify discarding these counterexamples.",
     "Linux props-no-scope Wevu batch 2 wall P95 is 8.21% worse; Windows pressure batch 2 ast-reuse and props-no-scope wall P95 are 7.45% and 14.12% worse.",
-    "Baseline/control loader effects exist: Linux pressure/retail wall P95 increases 5.64–7.03%; Windows loader RSS P50 increases 4.35–19.72%. Use the same-loader control, and do not promise production memory savings.",
+    "macOS retail batch 2 ast-reuse, page-meta-gate and reserved-props-gate wall P95 increase 13.911%, 11.179% and 21.695%; Wevu batch 2 ast-reuse, props-no-scope, page-meta-gate and reserved-props-gate increase 24.106%, 25.361%, 47.966% and 7.958%. Single-feature results must remain visible.",
+    "Baseline/control loader effects exist: Linux pressure/retail wall P95 increases 5.64–7.03%; Windows loader RSS P50 increases 4.35–19.72%. macOS Wevu baseline/control wall P95 changes by +17.104% / -20.077% in batches 1 / 2. Use the same-loader control, and do not promise production memory savings or dismiss regressions as loader noise.",
+    "macOS combined pressure batch 1 RSS P50 increases 2.513%; other macOS combined RSS P50 values decrease. Pressure batch 1 props-no-scope, page-meta-gate and reserved-props-gate RSS P50 increase 5.427%, 6.062% and 5.937%. These are worker snapshots, not production memory acceptance.",
+    "Each platform independently verifies 230 source hashes, 14 report hashes (one correctness summary, seven correctness workers and six timing reports), 448 correctness checks, 42 initial timing checks and 1764 timed observations; 396 quantiles and 1512 per-pair records are recomputed per platform, totalling 1188 quantiles and 4536 pairs. The top-level summary digest is additionally retained in rawManifest.",
     "Reserved-props gate does not skip work on pressure; apparent single-feature gains there cannot be attributed to eliminating analysis.",
     "No cross-corpus/batch pooling, no summing independent feature percentages, no adding these gains to prior Rust experiment percentages.",
     "Warm compileVueFile with diagnostic hooks and fixed options; not cold builds, Vite/HMR, runtime or the production 10%/5% gate.",
     "RSS is post-compile worker snapshot, not peak or process-tree memory. CPU includes all process threads; Windows CPU accounting is coarse.",
+    "macOS uses Node 24.20.0/arm64/3 CPUs; Linux and Windows use Node 24.21.0/x64/4 CPUs. Absolute timings across platforms are not directly comparable.",
     "Shared runner contention is not independently measured. The two batches are repeated observations, not a statistical significance claim.",
     "Per-round positions and within-round predecessor pairs are balanced; boundaries between rounds are not uniformly balanced.",
     "Raw warmup observations are not persisted; 14 warmup rounds are recorded and enforced by the source protocol, not independently recounted from artifacts.",
     "Correctness worker artifacts contain full serialized outputs; timed reports only retain output digests after in-process full comparisons.",
-    "Source identity does not verify every installed dependency file."
+    "Source identity covers the declared 230 files and real corpus blobs, not every installed dependency file."
   ]
 }

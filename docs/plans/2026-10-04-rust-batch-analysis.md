@@ -378,9 +378,9 @@ actual 的三个异常全部来自同一个故意无效的源码阶段，分别�
 七路 JS 基线的固定提交 `2d53ed9c4` [采样运行](https://github.com/weapp-vite/weapp-vite/actions/runs/37202918268)已发起；本轮加载诊断不改变该运行的源码或采样目标。三平台数据完成并独立复核前，仍不扩大生产 Rust 覆盖。
 
 
-## 第十八轮：Linux / Windows 更强 JS 基线的实际采样
+## 第十八轮：三平台更强 JS 基线的实际采样
 
-固定提交 `2d53ed9c4` 的[七路采样](https://github.com/weapp-vite/weapp-vite/actions/runs/37202918268)已完成 Linux 与 Windows，macOS 此检查点仍在排队。每个平台均独立核对 230 份 Git 源码身份、14 份子报告/worker hash、448 次完整正确性输出、42 次初始计时对照与 1764 次正式观测；共重算 792 个分位数和 3024 条配对记录，全部一致，无未释放 AST 所有权或清理错误。原始报告另保留逐轮值，未合并不同语料或批次。
+固定提交 `2d53ed9c4` 的[七路采样](https://github.com/weapp-vite/weapp-vite/actions/runs/37202918268)现已在 Linux、Windows、macOS 全部成功。本轮初始检查点仅 Linux/Windows 完成、macOS 排队；以下补入相同提交的 macOS 完整证据。每个平台均独立核对 230 份 Git 源码身份、14 份报告 hash（1 份 correctness 汇总、7 份 correctness worker、6 份 timing report）、448 次完整正确性输出、42 次初始计时对照与 1764 次正式观测；每平台重算 396 个分位数和 1512 条配对记录，三平台共 1188 个分位数、4536 条记录，全部一致，无未释放 AST 所有权或清理错误。顶层 summary 的 digest 另外保留在原始清单中。原始报告另保留逐轮值，未合并不同语料或批次。
 
 以下是同 loader 原逻辑控制组→四项 JS 组合优化的逐对节省百分比 P50；正值表示耗时减少：
 
@@ -388,13 +388,16 @@ actual 的三个异常全部来自同一个故意无效的源码阶段，分别�
 | --- | --- | --- | --- |
 | Linux | 4.18% / 1.45% | 19.93% / 19.23% | 20.37% / 18.84% |
 | Windows | 5.56% / 1.78% | 22.03% / 26.02% | 18.93% / 18.76% |
+| macOS | −1.15% / 4.71% | 19.49% / 18.41% | 20.91% / −2.05% |
 
-组合版在这十二组的 wall P95 均低于控制组。单项优化仍有回退：Linux Wevu 第二批 `props-no-scope` 的 wall P95 增加 8.21%；Windows 压力第二批 `ast-reuse` 与 `props-no-scope` 分别增加 7.45%、14.12%。不能把各项百分比相加，也不能将 JS 组合收益与此前 Rust 实验收益相加。
+macOS Wevu 第二批是组合优化未获得一致收益的反例。两组 wall P50 分别为 25.234→19.097 ms，分别取分位数后的比值减少 24.32%，但逐对节省百分比的 P50 为 −2.05%；42 对中各有 21 对正收益、负收益。这是不同统计量，不能用两组 wall P50 的比值替代逐对结果，更不能把 Linux/Windows 的约 19%–26% 收益推广到三平台。
+
+组合版在 Linux/Windows 十二组的 wall P95 均低于控制组；macOS 六组中有两组回退：压力第二批增加 3.16%，Wevu 第二批从 36.479→40.455 ms，增加 10.90%。macOS 组合版 RSS P50 仅压力第一批增加 2.51%，其余五组降低。单项优化仍有回退：Linux Wevu 第二批 `props-no-scope` 的 wall P95 增加 8.21%；Windows 压力第二批 `ast-reuse` 与 `props-no-scope` 分别增加 7.45%、14.12%。macOS 零售第二批 `ast-reuse`、`page-meta-gate`、`reserved-props-gate` 的 wall P95 分别增加 13.91%、11.18%、21.70%；Wevu 第二批四项单独优化均有 wall P95 回退，其中 `page-meta-gate` 为 47.97%。macOS 压力第一批 `props-no-scope`、`page-meta-gate`、`reserved-props-gate` 的 RSS P50 分别增加 5.43%、6.06%、5.94%。不能把各项百分比相加，也不能将 JS 组合收益与此前 Rust 实验收益相加。
 
 实际计数表明三个语料每次都复用一次 AST、执行一次无 scope props visitor、跳过一次 page-meta 分析；reserved-props 只在两份真实页面跳过，压力模板仍执行分析，因此压力语料中 reserved-only 的表观变化不能归因于省去工作。完整正确性另覆盖源码变化、不提供 AST、宏和保守 guard 的正负分支。
 
-loader 本身存在干扰。Linux 压力与零售两批的 baseline→control wall P95 增加 5.64%–7.03%；Windows control RSS P50 相对原始编译器增加 4.35%–19.72%。组合版相对同 loader control 的结果可比较，但不能据此保证生产 RSS 降低。RSS 是编译后 worker 快照，CPU 包括进程所有线程，Windows CPU 计数有较粗粒度；共享 runner 负载未被独立测量。
+loader 本身存在干扰。Linux 压力与零售两批的 baseline→control wall P95 增加 5.64%–7.03%；Windows control RSS P50 相对原始编译器增加 4.35%–19.72%。macOS Wevu 两批 baseline→control wall P95 分别变化 +17.10%、−20.08%。应使用同 loader control，同时不能据此保证生产 RSS 降低，或把已观察的回退直接归为 loader 噪声。RSS 是编译后 worker 快照，CPU 包括进程所有线程，Windows CPU 计数有较粗粒度；共享 runner 负载未被独立测量。macOS 使用 Node 24.20.0/arm64/3 CPU，Linux/Windows 使用 Node 24.21.0/x64/4 CPU，跨平台绝对耗时不可直接比较。
 
-该结果加强“先消除重复工作，再选 Rust 完整计算阶段”的优先级，但只是固定选项、温热 `compileVueFile` 的 JS 诊断，不是 Vite 构建/HMR，也不是生产 10%/5% 门禁通过。宏转换、AST 所有权等优化仍只通过诊断 source loader 启用，生产源码未改。接下来应在更强 JS 基线上重新采 CPU，再决定整体 `transformScript` Rust POC 是否有足够剩余收益。
+结果支持优先消除重复工作，并在更强 JS 基线上选择 Rust 完整计算阶段；macOS 反例意味着尚不能声称这组 JS 优化在三平台稳定获得真实页面收益。它仍只是固定选项、温热 `compileVueFile` 的 JS 诊断，不是 Vite 构建/HMR，也不是生产 10%/5% 门禁通过。宏转换、AST 所有权等优化仍只通过诊断 source loader 启用，生产源码未改。接下来应在更强 JS 基线上重新采 CPU，再决定整体 `transformScript` Rust POC 是否有足够剩余收益。
 
-预热 14 轮由源码协议和报告字段确认，未保存每轮预热原始观测；独立复核不能声称重新计数。14 轮顺序设计平衡每个实现的位置及单轮内前序，跨轮边界并非均匀。完整正确性保留原始序列化输出，计时报告保留完整比较后的摘要；这些证据层次与各平台全部单项结果、反例、来源 hash 见[JS 基线采样证据](./2026-10-04-script-baseline-timing-evidence.json)。三平台最终结论仍待 macOS 完成。
+预热 14 轮由源码协议和报告字段确认，未保存每轮预热原始观测；独立复核不能声称重新计数。14 轮顺序设计平衡每个实现的位置及单轮内前序，跨轮边界并非均匀。完整正确性保留原始序列化输出，计时报告保留完整比较后的摘要；源码身份覆盖声明的 230 文件和真实语料，不覆盖所有已安装依赖文件。三平台全部单项结果、反例、来源 hash 见[JS 基线采样证据](./2026-10-04-script-baseline-timing-evidence.json)。
