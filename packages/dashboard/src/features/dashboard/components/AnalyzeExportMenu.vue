@@ -79,7 +79,7 @@ const exportActions: ExportAction[] = [
 <template>
   <div class="relative shrink-0" @click.stop>
     <button
-      :class="pillButtonStyles({ kind: 'nav', active: open })"
+      :class="pillButtonStyles({ kind: 'nav', active: open, class: 'h-8 py-0' })"
       type="button"
       :aria-expanded="open"
       :aria-controls="open ? menuId : undefined"
