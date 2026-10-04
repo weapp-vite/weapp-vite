@@ -1,9 +1,9 @@
-import type { MiniProgramElement, MiniProgramLike, MiniProgramPage } from '../cli/automator-session'
+import type { McpServer } from '@modelcontextprotocol/server'
+import type { AutomatorSessionOptions, MiniProgramElement, MiniProgramLike, MiniProgramPage } from '../cli/automator-session'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import { readElementSnapshot, toSerializableValue } from './shared'
 
@@ -12,14 +12,7 @@ interface ToolRegistrar {
 }
 
 export interface WeappIdeMcpRuntimeHooks {
-  withMiniProgram: <T>(options: {
-    preferOpenedSession?: boolean
-    port?: number
-    projectPath: string
-    sharedSession?: boolean
-    sessionId?: string
-    timeout?: number
-  }, runner: (miniProgram: MiniProgramLike) => Promise<T>) => Promise<T>
+  withMiniProgram: <T>(options: AutomatorSessionOptions, runner: (miniProgram: MiniProgramLike) => Promise<T>) => Promise<T>
 }
 
 export interface WeappIdeMcpServerOptions {
@@ -32,6 +25,7 @@ export interface WeappIdeMcpServerHandle {
 }
 
 interface ConnectionInput {
+  cliPath?: string
   projectPath: string
   timeout?: number
   port?: number
@@ -58,6 +52,7 @@ async function withConnectedMiniProgram(
   runner: (miniProgram: MiniProgramLike) => Promise<unknown>,
 ) {
   return await runtimeHooks.withMiniProgram({
+    cliPath: input.cliPath,
     preferOpenedSession: input.preferOpenedSession,
     port: input.port,
     projectPath: createResolvedProjectPath(workspaceRoot, input.projectPath),
@@ -81,9 +76,10 @@ async function withConnectedPage(
 
 function defineConnectionSchema() {
   return {
+    cliPath: z.string().trim().min(1).optional().describe('指定微信开发者工具 CLI 安装路径'),
     projectPath: z.string().trim().min(1).describe('小程序项目路径，支持 workspaceRoot 相对路径'),
     timeout: z.number().int().positive().optional(),
-    port: z.number().int().positive().optional(),
+    port: z.number().int().positive().max(65535).optional(),
     preferOpenedSession: z.boolean().optional(),
     sessionId: z.string().trim().min(1).optional(),
   }
@@ -392,6 +388,7 @@ export function registerWeappIdeMcpTools(server: ToolRegistrar, options: WeappId
 }
 
 export async function createWeappIdeMcpServer(options: WeappIdeMcpServerOptions) {
+  const { McpServer } = await import('@modelcontextprotocol/server')
   const server = new McpServer({
     name: 'weapp-ide-cli',
     version: '1.0.0',

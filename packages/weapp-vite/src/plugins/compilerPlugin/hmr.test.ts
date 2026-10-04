@@ -1,5 +1,65 @@
-import { expect, it, vi } from 'vitest'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { afterEach, expect, it, vi } from 'vitest'
+import { resolveRealpath, withRealpathScope } from '../../utils/realpathScope'
 import { CompilerHmrHost, compilerSourceId } from './hmr'
+
+const roots: string[] = []
+
+function sourceFixture() {
+  const root = mkdtempSync(path.join(tmpdir(), 'compiler-source-identity-'))
+  roots.push(root)
+  return root
+}
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  for (const root of roots.splice(0)) {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+it('shares physical source identity with entry resolution only within a synchronous operation', () => {
+  const file = path.join(sourceFixture(), 'page.ts')
+  writeFileSync(file, 'Page({})')
+  const native = vi.spyOn(realpathSync, 'native')
+  withRealpathScope(() => {
+    const entrySource = resolveRealpath(file).replaceAll('\\', '/')
+    expect(compilerSourceId(file)).toBe(entrySource)
+    expect(native).toHaveBeenCalledTimes(1)
+  })
+  compilerSourceId(file)
+  expect(native).toHaveBeenCalledTimes(2)
+})
+
+it('observes junction retargeting between source identity operations', () => {
+  const root = sourceFixture()
+  const first = path.join(root, 'first')
+  const second = path.join(root, 'second')
+  const alias = path.join(root, 'alias')
+  for (const directory of [first, second]) {
+    mkdirSync(directory)
+    writeFileSync(path.join(directory, 'page.ts'), 'Page({})')
+  }
+  symlinkSync(first, alias, 'junction')
+  const read = () => withRealpathScope(() => compilerSourceId(path.join(alias, 'page.ts')))
+  expect(read()).toBe(compilerSourceId(path.join(first, 'page.ts')))
+  unlinkSync(alias)
+  symlinkSync(second, alias, 'junction')
+  expect(read()).toBe(compilerSourceId(path.join(second, 'page.ts')))
+})
+
+it('resolves deleted sources through their parent without caching the missing file', () => {
+  const root = sourceFixture()
+  const file = path.join(root, 'page.ts')
+  const parent = realpathSync.native(root)
+  withRealpathScope(() => {
+    expect(compilerSourceId(file)).toBe(path.join(parent, 'page.ts').replaceAll('\\', '/'))
+    writeFileSync(file, 'Page({})')
+    expect(compilerSourceId(file)).toBe(realpathSync.native(file).replaceAll('\\', '/'))
+  })
+})
 
 it('isolates input revisions and retains deleted sources for providers', async () => {
   const host = new CompilerHmrHost()

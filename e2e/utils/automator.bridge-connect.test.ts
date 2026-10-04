@@ -31,6 +31,17 @@ describe('automator bridge handshake readiness', () => {
     return lifecycle.run(scope => launchAutomatorViaCliBridge({ projectPath: 'fixture' }, 'fixture', scope))
   }
 
+  it('reports the actual bridge endpoint before a failed handshake can lose it', async () => {
+    execaMock.mockResolvedValue({ exitCode: 0, stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9415' }) })
+    const onSessionMetadata = vi.fn(async () => {})
+    vi.spyOn(Automator.prototype, 'connect').mockImplementation(async () => {
+      expect(onSessionMetadata).toHaveBeenCalledExactlyOnceWith({ projectPath: 'owned-snapshot', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415 })
+      throw new Error('unsupported protocol version')
+    })
+    const lifecycle = new AutomatorLaunchLifecycle(10_000, 'bridge launch')
+    await expect(lifecycle.run(scope => launchAutomatorViaCliBridge({ projectPath: 'owned-snapshot' }, 'fixture', scope, undefined, onSessionMetadata))).rejects.toThrow('unsupported protocol version')
+  })
+
   it('reconnects after a cold Tool.getInfo timeout within the original launch budget', async () => {
     const session = { close: vi.fn(), disconnect: vi.fn() }
     const connect = vi.spyOn(Automator.prototype, 'connect')

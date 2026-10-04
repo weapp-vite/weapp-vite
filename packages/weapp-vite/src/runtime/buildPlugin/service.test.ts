@@ -13,6 +13,7 @@ import { getSupportedMiniProgramPlatforms } from '../../platform'
 import { createGenerateBundleHook } from '../../plugins/core/lifecycle/emit/generate'
 import { registerManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
 
+import { publishAutoRoutesTopology, registerAutoRoutesTopologySource } from '../autoRoutesPlugin/topology'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createRuntimeState } from '../runtimeState'
 import { StatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
@@ -23,6 +24,7 @@ import { createBuildService } from './service'
 const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
 
 const buildMock = vi.hoisted(() => vi.fn())
+const vueStyleSnapshotMock = vi.hoisted(() => vi.fn<typeof import('./vueStyleSnapshot').withVueStyleDependencySnapshot>())
 const cleanOutputsMock = vi.hoisted(() => vi.fn(async () => {}))
 const resetEmittedOutputCachesMock = vi.hoisted(() => vi.fn())
 const isOutputRootInsideOutDirMock = vi.hoisted(() => vi.fn((outDir: string, pluginOutputRoot: string) => {
@@ -106,6 +108,8 @@ vi.mock('node:fs/promises', () => ({
   appendFile: appendFileMock,
   mkdir: mkdirMock,
 }))
+
+vi.mock('./vueStyleSnapshot', () => ({ withVueStyleDependencySnapshot: vueStyleSnapshotMock }))
 
 vi.mock('vite', () => ({
   build: buildMock,
@@ -488,6 +492,7 @@ describe('runtime buildPlugin service', () => {
     devBuildWatcherQueue.length = 0
     vi.clearAllMocks()
     buildMock.mockReset()
+    vueStyleSnapshotMock.mockReset().mockImplementation(async (_ctx, _entries, _files, run) => await run())
     disableProjectPrivateConfigHotReloadMock.mockReset()
     disableProjectPrivateConfigHotReloadMock.mockResolvedValue(true)
     runStatefulHmrDevMock.mockReset()
@@ -1433,6 +1438,87 @@ describe('runtime buildPlugin service', () => {
     expect(sequence).toEqual(['initial-start', 'initial-write-complete', 'snapshot-write'])
   })
 
+  it('rescans entry topology when external input capture fails after source refresh', async () => {
+    const { ctx, watcher, onChange } = await startClassicSnapshotContext()
+    ctx.scanService.markDirty = vi.fn()
+    const rebuilt = Promise.withResolvers<void>()
+    vueStyleSnapshotMock.mockImplementationOnce(async (_ctx, _entries, _files, run) => {
+      // 入口可在源刷新结束后消失；capture失败必须撤销入口扫描快照。
+      expect(ctx.scanService.markDirty).not.toHaveBeenCalled()
+      return await run({ forceFullRescan: true })
+    })
+    buildMock.mockImplementation(async () => {
+      expect(ctx.scanService.markDirty).toHaveBeenCalled()
+      expect(ctx.runtimeState.build.hmr.fullEntryScan).toBe(true)
+      expect(ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh).toBe(true)
+      rebuilt.resolve()
+      return { output: [] }
+    })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      onChange({ event: 'update', file: '/project/src/pages/logs/external.css' })
+      await vi.runOnlyPendingTimersAsync()
+      await rebuilt.promise
+    }
+    finally {
+      await watcher.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it('upgrades an already chained watcher batch for source drift without another publication', async () => {
+    const { ctx, watcher, onChange } = await startClassicSnapshotContext()
+    const file = '/project/src/pages/logs/external.css'
+    const started = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    const successor = Promise.withResolvers<void>()
+    const publications: Array<{ full: boolean, events: unknown }> = []
+    vueStyleSnapshotMock.mockImplementationOnce(async (_ctx, _entries, _files, run, onDrift) => {
+      const result = await run()
+      onDrift([{ file, event: 'delete' }])
+      return result
+    })
+    buildMock.mockImplementation(async () => {
+      publications.push({
+        full: ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh === true,
+        events: ctx.runtimeState.build.hmr.profile.sourceEvents,
+      })
+      if (publications.length === 1) {
+        started.resolve()
+        await release.promise
+      }
+      else {
+        successor.resolve()
+      }
+      return { output: [] }
+    })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      onChange({ file, event: 'update' })
+      await vi.runOnlyPendingTimersAsync()
+      await started.promise
+      onChange({ file, event: 'update' })
+      // 定时器先把后继批次放入串行链，旧构建此时仍被显式屏障阻塞。
+      await vi.runOnlyPendingTimersAsync()
+      expect(publications).toHaveLength(1)
+      release.resolve()
+      await successor.promise
+      await vi.runOnlyPendingTimersAsync()
+      await flushAsyncTasks()
+      expect(publications).toEqual([
+        { full: false, events: [expect.objectContaining({ file, event: 'update' })] },
+        { full: true, events: [expect.objectContaining({ file, event: 'update' })] },
+      ])
+      expect(buildMock).toHaveBeenCalledTimes(3)
+      expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenLastCalledWith(file, 'delete')
+    }
+    finally {
+      release.resolve()
+      await watcher.close()
+      vi.useRealTimers()
+    }
+  })
+
   it('discards queued source changes after an unrecoverable initial publication failure', async () => {
     const ctx = createMockContext()
     const initialRelease = Promise.withResolvers<void>()
@@ -1887,6 +1973,106 @@ describe('runtime buildPlugin service', () => {
     finally {
       await ctx.watcherService.closeAll()
       detachHost()
+    }
+  })
+
+  it.each([true, false])('accepts route topology outside the module graph once per source event (attached host: %s)', async (host) => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const ctx = createMockContext()
+    const file = '/project/src/pages/new/index.vue'
+    ctx.configService.weappViteConfig.autoRoutes = true
+    ctx.autoRoutesService = {
+      ensureFresh: vi.fn(async () => {}),
+      getSignature: () => 'routes',
+      handleFileChange: vi.fn(async () => false),
+      isRouteFile: (source: string) => source === file,
+      isPageDeclarationSource: () => false,
+    }
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    const releaseSource = registerAutoRoutesTopologySource(ctx, source => source === file)
+    const detachHost = host ? attachDevModuleGraphHost(ctx, {} as ViteDevServer) : () => {}
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock.mockResolvedValue({ output: [] })
+    try {
+      const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+      await watcher.subscribed
+      watcher.emit('START')
+      watcher.emit('END')
+      await firstBuild
+      let count = 1
+      for (const event of ['create', 'delete', 'create'] as const) {
+        moduleGraphProviderChange.handler?.({ event, file })
+        await waitForTimers()
+        expect(buildMock).toHaveBeenCalledTimes(count)
+        expect(publishAutoRoutesTopology(ctx, { event, file, topologyChanged: true })).toBe(true)
+        count += 1
+        await waitForMockCalls(buildMock, count)
+        expect(buildMock).toHaveBeenCalledTimes(count)
+      }
+      await watcher.close()
+      await watcher.close()
+      expect(publishAutoRoutesTopology(ctx, { event: 'create', file, topologyChanged: true })).toBe(false)
+      await waitForTimers()
+      expect(buildMock).toHaveBeenCalledTimes(count)
+    }
+    finally {
+      await watcher.close()
+      releaseSource()
+      detachHost()
+    }
+  })
+
+  it('replaces entry metadata when a sidecar observes changed routes before the route watcher', async () => {
+    const { ctx, watcher, onChange } = await startClassicSnapshotContext()
+    const file = '/project/src/pages/logs/index.json'
+    ctx.autoRoutesService = {
+      handleFileChange: vi.fn(async () => true),
+      getSignature: () => 'changed-routes',
+    }
+    ctx.moduleGraphService.invalidate = vi.fn(() => new Set<string>())
+    const fullScans: boolean[] = []
+    buildMock.mockImplementation(async () => {
+      fullScans.push(ctx.runtimeState.build.hmr.fullEntryScan === true)
+      return { output: [] }
+    })
+    try {
+      onChange({ event: 'delete', file })
+      await waitForMockCalls(buildMock, 2)
+      expect(fullScans).toEqual([true])
+      expect(ctx.scanService.markDirty).toHaveBeenCalled()
+    }
+    finally {
+      await watcher.close()
+    }
+  })
+
+  it('preserves ordinary source work when route parsing finds no topology change', async () => {
+    const { ctx, watcher, onChange } = await startClassicSnapshotContext()
+    const file = '/project/src/pages/logs/helpers.ts'
+    ctx.configService.weappViteConfig.autoRoutes = true
+    ctx.autoRoutesService = {
+      handleFileChange: vi.fn(async () => false),
+      getSignature: () => undefined,
+      isRouteFile: (source: string) => source === file,
+      isPageDeclarationSource: () => false,
+    }
+    buildMock.mockResolvedValue({ output: [] })
+    const releaseSource = registerAutoRoutesTopologySource(ctx, source => source === file)
+    try {
+      onChange({ event: 'create', file })
+      await waitForTimers()
+      expect(buildMock).toHaveBeenCalledTimes(1)
+      publishAutoRoutesTopology(ctx, { event: 'create', file, topologyChanged: false })
+      await waitForMockCalls(buildMock, 2)
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      onChange({ event: 'update', file })
+      await waitForMockCalls(buildMock, 3)
+      expect(buildMock).toHaveBeenCalledTimes(3)
+    }
+    finally {
+      await watcher.close()
+      releaseSource()
     }
   })
 
@@ -2407,6 +2593,98 @@ describe('runtime buildPlugin service', () => {
     expect(sample.snapshotBuildMs).toBeGreaterThanOrEqual(0)
     expect(sample.clock).toMatchObject({ durations: 'performance.now', timestamp: 'UTC' })
     await watcher.close()
+  })
+
+  it.each([
+    { option: true, file: '/project/.weapp-vite/hmr-profile.jsonl' },
+    { option: '.reports/hmr.jsonl', file: '/project/.reports/hmr.jsonl' },
+  ])('does not schedule snapshots for generated profile events at $file', async ({ option, file }) => {
+    const { ctx, watcher, onChange } = await startClassicSnapshotContext()
+    const { createDevModuleGraphPlugin } = await vi.importActual<typeof import('../../moduleGraph/devProvider')>('../../moduleGraph/devProvider')
+    ctx.configService.weappViteConfig.hmr = { profileJson: option }
+    ctx.moduleGraphService.hasModule.mockImplementation((id: string) => id === HMR_PAGE_ID)
+    const observed = vi.fn(onChange)
+    const plugin = createDevModuleGraphPlugin(ctx, {}, observed)
+    const hotUpdate = plugin.hotUpdate as (this: unknown, options: { type: string, file: string, read: () => Promise<string> }) => Promise<void>
+    const environment = { environment: { name: 'client' } }
+    const read = vi.fn(async () => '{"status":"complete"}\n')
+    buildMock.mockResolvedValue({ output: [] })
+    const buildsBefore = buildMock.mock.calls.length
+    vi.useFakeTimers()
+    try {
+      await hotUpdate.call(environment, { type: 'update', file, read })
+      expect(read).not.toHaveBeenCalled()
+      expect(observed).not.toHaveBeenCalled()
+      expect(vi.getTimerCount()).toBe(0)
+
+      await hotUpdate.call(environment, { type: 'update', file: HMR_PAGE_ID, read: async () => 'Page({})' })
+      expect(observed).toHaveBeenCalledExactlyOnceWith({ event: 'update', file: HMR_PAGE_ID })
+      expect(vi.getTimerCount()).toBe(1)
+      await hotUpdate.call(environment, { type: 'update', file, read })
+      expect(observed).toHaveBeenCalledOnce()
+      expect(vi.getTimerCount()).toBe(1)
+      await vi.advanceTimersByTimeAsync(20)
+      expect(buildMock).toHaveBeenCalledTimes(buildsBefore + 1)
+      expect(appendFileMock).toHaveBeenCalledOnce()
+      const sample = JSON.parse(appendFileMock.mock.calls[0][1]) as HmrProfileJsonSample
+      expect(sample.sourceEvents?.map(event => event.file)).toEqual([HMR_PAGE_ID])
+
+      for (const type of ['create', 'update', 'delete']) {
+        await hotUpdate.call(environment, { type, file, read: async () => '{"status":"complete"}\n' })
+      }
+      expect(vi.getTimerCount()).toBe(0)
+      await vi.advanceTimersByTimeAsync(20)
+      expect(buildMock).toHaveBeenCalledTimes(buildsBefore + 1)
+      expect(appendFileMock).toHaveBeenCalledOnce()
+      expect(ctx.runtimeState.build.hmr.profile).toEqual({})
+    }
+    finally {
+      await watcher.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it.each([
+    { option: true, env: undefined },
+    { option: '.reports/hmr.jsonl', env: undefined },
+    { option: true, env: '.observations/hmr.jsonl' },
+  ])('does not retry a failed initial snapshot when its own failure profile changes: $option / $env', async ({ option, env }) => {
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { profileJson: option }
+    if (env) {
+      process.env.WEAPP_VITE_HMR_PROFILE_JSON = env
+    }
+    ctx.moduleGraphService.hasModule.mockImplementation((id: string) => id === HMR_PAGE_ID)
+    const watcher = createManualWatcher()
+    chokidarWatchMock.mockReturnValue(createManualSidecarWatcher())
+    const detach = attachDevModuleGraphHost(ctx, {} as ViteDevServer)
+    buildMock.mockRejectedValue(new Error('source still invalid'))
+    const { createDevModuleGraphPlugin } = await vi.importActual<typeof import('../../moduleGraph/devProvider')>('../../moduleGraph/devProvider')
+    try {
+      await createBuildService(ctx).build({ skipNpm: true })
+      await watcher.subscribed
+      const plugin = createDevModuleGraphPlugin(ctx, {}, moduleGraphProviderChange.handler!)
+      const hotUpdate = plugin.hotUpdate as (this: unknown, options: { type: string, file: string, read: () => Promise<string> }) => Promise<void>
+      const environment = { environment: { name: 'client' } }
+      vi.useFakeTimers()
+      await hotUpdate.call(environment, { type: 'update', file: HMR_PAGE_ID, read: async () => 'invalid source' })
+      await vi.advanceTimersByTimeAsync(20)
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      expect(appendFileMock).toHaveBeenCalledOnce()
+      const failedProfile = JSON.parse(appendFileMock.mock.calls[0][1]) as HmrProfileJsonSample
+      expect(failedProfile.status).toBe('failed')
+      const profileFile = appendFileMock.mock.calls[0][0]
+      await hotUpdate.call(environment, { type: 'update', file: profileFile, read: async () => appendFileMock.mock.calls[0][1] })
+      await vi.advanceTimersByTimeAsync(20)
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      expect(appendFileMock).toHaveBeenCalledOnce()
+      expect(vi.getTimerCount()).toBe(0)
+    }
+    finally {
+      await watcher.close()
+      detach()
+      vi.useRealTimers()
+    }
   })
 
   it('records an unaffected source batch without carrying its profile into a later build', async () => {
@@ -3080,6 +3358,7 @@ describe('runtime buildPlugin service', () => {
   it('runs isolated plugin watcher in dev mode and registers it on main watcher service', async () => {
     const pluginWatcher = createWatcher(['START', 'END'])
     buildMock.mockReset()
+    vueStyleSnapshotMock.mockReset().mockImplementation(async (_ctx, _entries, _files, run) => await run())
     buildMock
       .mockResolvedValueOnce(createWatcher(['START', 'END']))
       .mockResolvedValueOnce({ output: [] })

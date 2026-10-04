@@ -45,6 +45,8 @@ export interface RuntimeSizeRetainedModule {
 export interface RuntimeSizeRetainedModules {
   entry: string
   modules: RuntimeSizeRetainedModule[]
+  /** 完整源码导入图；可达路径不代表中间模块或符号在产物中保留。旧报告可能未采集此字段。 */
+  importGraph?: Array<{ path: string, imports: string[] }>
 }
 
 export interface RuntimeSizeBundleResult {

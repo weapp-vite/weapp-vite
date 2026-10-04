@@ -10,6 +10,7 @@ import {
 } from '../config/custom'
 import { defaultCustomConfigFilePath } from '../config/paths'
 import { resolveDevtoolsAutomationDefaults } from '../config/resolver'
+import { resolveWechatDevtoolsTarget } from '../devtoolsTarget'
 import { i18nText } from '../i18n'
 import logger, { colors } from '../logger'
 import { promptForCliPath } from './prompt'
@@ -180,10 +181,21 @@ export async function handleConfigCommand(argv: string[]) {
     const locale = rawConfig.locale ?? 'zh'
     const effectiveDevtoolsDefaults = resolveDevtoolsAutomationDefaults(rawConfig)
 
+    const installation = resolvedCli.cliPath
+      ? await resolveWechatDevtoolsTarget({ cliPath: resolvedCli.cliPath }).then(target => ({
+          status: 'identified',
+          installationId: target.installationId,
+          version: target.version ?? null,
+          channel: target.channel ?? 'unknown',
+          profileDir: target.profileDir,
+        }), () => ({ status: 'unavailable' }))
+      : { status: 'unavailable' }
     const report = {
       configFile: defaultCustomConfigFilePath,
       configFileExists: hasConfigFile,
       cliPath: rawConfig.cliPath ?? null,
+      effectiveCliPath: resolvedCli.cliPath,
+      installation,
       cliPathValid: hasValidCli,
       locale,
       autoBootstrapDevtools: rawConfig.autoBootstrapDevtools ?? null,

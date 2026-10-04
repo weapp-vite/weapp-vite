@@ -4,8 +4,8 @@ import { resolveAppShellForCompilation } from '../appShell'
 
 const preloadNativeLayoutEntriesMock = vi.hoisted(() => vi.fn(async () => {}))
 const loadTransformStyleBlockMock = vi.hoisted(() => vi.fn(async () => null))
-const handleTransformLayoutInvalidationMock = vi.hoisted(() => vi.fn(() => false))
-const handleTransformVueFileInvalidationMock = vi.hoisted(() => vi.fn(() => false))
+const handleTransformLayoutInvalidationMock = vi.hoisted(() => vi.fn((_file: string) => false))
+const handleTransformVueFileInvalidationMock = vi.hoisted(() => vi.fn((_file: string) => false))
 const isVueLikeIdMock = vi.hoisted(() => vi.fn(() => true))
 const transformVueLikeFileMock = vi.hoisted(() => vi.fn(async () => ({ code: 'transformed', map: null })))
 const emitVueBundleAssetsMock = vi.hoisted(() => vi.fn(async () => {}))
@@ -95,6 +95,30 @@ describe('createVueTransformPlugin lifecycle', () => {
     emitVueBundleAssetsMock.mockResolvedValue(undefined)
     resolveScopedSlotVirtualIdMock.mockImplementation((id: string) => `resolved:${id}`)
     normalizeFsResolvedIdMock.mockImplementation((id: string) => id)
+  })
+
+  it.each(['closeBundle', 'closeWatcher'] as const)('releases hook-bound compile options on %s and accepts the next build', async (closeHook) => {
+    const { createVueTransformPlugin } = await import('./index')
+    const plugin = createVueTransformPlugin({ configService: {} } as any)
+    let cache: Map<string, unknown> | undefined
+    const scopes: unknown[] = []
+    transformVueLikeFileMock.mockImplementation(async (options: any) => {
+      cache = options.compileOptionsCache
+      scopes.push(options.pluginCtx)
+      cache!.set('current', { warn: () => options.pluginCtx.warn('compile warning') })
+      return { code: 'transformed', map: null }
+    })
+    const first = { warn: vi.fn() }
+    await getHookHandler(plugin.transform as any).call(first, '<template/>', 'component.vue')
+    expect(cache?.size).toBe(1)
+    await getHookHandler(plugin[closeHook] as any).call({})
+    expect(cache?.size).toBe(0)
+    const next = { warn: vi.fn() }
+    await getHookHandler(plugin.transform as any).call(next, '<template/>', 'component.vue')
+    expect(scopes).toEqual([first, next])
+    expect(cache?.size).toBe(1)
+    await getHookHandler(plugin[closeHook] as any).call({})
+    expect(cache?.size).toBe(0)
   })
 
   it('invalidates cached compiled vue entries marked dirty by HMR', async () => {
@@ -322,8 +346,8 @@ describe('createVueTransformPlugin lifecycle', () => {
   })
 
   it('handles hot updates for layout files, vue files, and ignored files', async () => {
-    handleTransformLayoutInvalidationMock.mockReturnValueOnce(true)
-    handleTransformVueFileInvalidationMock.mockReturnValueOnce(true).mockReturnValueOnce(false)
+    handleTransformLayoutInvalidationMock.mockImplementation(file => file.includes('/layouts/'))
+    handleTransformVueFileInvalidationMock.mockImplementation(file => file.endsWith('.vue'))
 
     const { createVueTransformPlugin } = await import('./index')
     const plugin = createVueTransformPlugin({

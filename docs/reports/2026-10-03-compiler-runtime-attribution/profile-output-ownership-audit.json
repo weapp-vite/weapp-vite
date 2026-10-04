@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "kind": "profile-output-ownership-regression",
+  "formalPerformanceVerdict": "not-evaluated",
+  "runtimeAcceptance": "compiler-filesystem-recovery-verified; issue-mini-program-gate-not-complete",
+  "rootCause": "After an initial borrowed-host build failure, recovery allows unregistered files. Appending the failed profile can therefore schedule another failed snapshot and append another profile.",
+  "redAssertion": {
+    "scenario": "does not retry a failed initial snapshot when its own failure profile changes",
+    "expectedBuilds": 2,
+    "actualBuilds": 3
+  },
+  "normalStateFinding": "A profile callback without a graph module is discarded before scheduling; a pending profile read does not serialize an independent source hotUpdate at the provider boundary.",
+  "fix": {
+    "sameResolverForWriterAndMatcher": true,
+    "exactEnabledOutputOnly": true,
+    "watcherIgnoredAndPreReadEventGuard": true,
+    "preservesDisabledAndNeighboringUserFiles": true,
+    "windowsSeparatorsAndHostCasePolicyCovered": true
+  },
+  "verification": {
+    "reports": {
+      "red": {
+        "sha256": "6a3a0d7fe7572b250e1f407a11cdc0855788701804a465a52cb41ca5383544cc",
+        "passed": 2,
+        "failed": 1,
+        "skipped": 101,
+        "success": false
+      },
+      "green": {
+        "sha256": "11ca0398a65c26d0e4331a0c672fabfe1a8fb159ba7a4d58a4e98eec93f73120",
+        "passed": 13,
+        "failed": 0,
+        "skipped": 121,
+        "success": true
+      },
+      "regression": {
+        "sha256": "199e78de7e4503ca26e05bb15c7117a244ed08d94e7b8e8e86ef04ecf9445d32",
+        "passed": 134,
+        "failed": 0,
+        "skipped": 0,
+        "success": true
+      }
+    },
+    "packageTypecheck": "passed",
+    "sourceEslint": "passed",
+    "changesetEslint": "passed",
+    "changesetLinkedPackages": [
+      "weapp-vite",
+      "create-weapp-vite"
+    ],
+    "diffCheck": "passed",
+    "devWatchOrE2ERun": false,
+    "performanceResampled": false
+  },
+  "sourceSha256": {
+    "packages/weapp-vite/src/moduleGraph/devProvider.ts": "aa9f92b6985728de9b1fae74971d535f25f941ad56c2eba93df5e23e084268ad",
+    "packages/weapp-vite/src/moduleGraph/devProvider.test.ts": "39a3aad69dba76fd57cca8e42d0accd0b3e7759b52ca7d55ec3cd418b7680515",
+    "packages/weapp-vite/src/moduleGraph/profileOutput.ts": "6e4cf90e2808b3117f1c7473622d428863f26935976b0a35f202e993cce6aca9",
+    "packages/weapp-vite/src/moduleGraph/profileOutput.test.ts": "ad19acc46afb085f60efa0d06d486857527929200c3e50f791fdd2560fbb1bf5",
+    "packages/weapp-vite/src/utils/hmrProfile.ts": "01d30b374d1974ac296172f76a19660f4d5429eeba9055841807bb2f8c75be82",
+    "packages/weapp-vite/src/utils/hmrProfile.test.ts": "27479423e3c76baf0945689f74d13058cec45888412677347be3c8a4653a374b",
+    "packages/weapp-vite/src/runtime/buildPlugin/service.ts": "1ff7d30c6ab966fbe865d2adbb101e82127b216e681bf64dd97518a0a5e778bf",
+    "packages/weapp-vite/src/runtime/buildPlugin/service.test.ts": "567c1a25c4865006d5ac1657531ba36596d4885934c0b13cf4b39e29392abf4d",
+    ".changeset/profile-output-watch-ownership.md": "ddcecd3e4793908c9ff7f6fe3606380ec9db2d28294ee69becb2519e29d080ac"
+  },
+  "limitations": [
+    "Unit tests use the actual provider hook and service scheduler with mocked Vite build and filesystem operations; no real watcher, DevTools or filesystem timing claim follows.",
+    "Build and downstream dev/runtime acceptance remain with the coordinating task.",
+    "This failure-path bug does not establish that the five normal-state premeasurement callbacks in HMR v2 run02 caused extra builds; the original audit verdict remains insufficient-evidence.",
+    "Current Windows path behavior is covered by representative path fixtures and conditional host policy assertions; no Windows runner was launched here."
+  ],
+  "sourceSnapshotBoundary": "Source hashes in this record describe the isolated profile patch before integration with automatic-route topology changes.",
+  "integration": {
+    "baseCommit": "bed518b2b57d5853a1ab8c0e73c52dd9ab424aa3",
+    "workingTreeDirty": true,
+    "profileFocusedTests": 134,
+    "combinedProfileAndTopologyTests": 200,
+    "subsequentRouteLeaseTests": 45,
+    "mpcoreProjectTests": 9,
+    "packageTypecheck": "passed",
+    "mpcoreTestTypecheck": "passed",
+    "publicTypeGroups": 13,
+    "publicTypeGroupsBoundary": "profile patch before topology integration",
+    "sourceLint": "passed",
+    "packageBuild": "passed",
+    "domInventory": {
+      "expandedCaseDeclarations": 352,
+      "casesWithPlan": 352,
+      "casesMissingPlan": 0
+    },
+    "runtimeAcceptance": "route-scope-provider-parity-passed; profile-recovery-real-vite-passed",
+    "downstreamEvidence": [
+      "profile-output-recovery-e2e.json",
+      "auto-routes-topology-acceptance.json"
+    ],
+    "combinedProfileAndTopologyTestsBoundary": "Final integration including Vue snapshot source invalidation: 10 files, 200 passed."
+  }
+}

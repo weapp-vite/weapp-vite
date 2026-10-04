@@ -13,6 +13,7 @@ import { getTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import { configSuffixes } from '../../plugins/utils/invalidateEntry/shared'
 import { setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
+import { withRealpathScope } from '../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { captureWatchDependencies } from '../../utils/watchDependencies'
 import { getWxmlWatchFiles, shareWxmlDependencies } from '../../wxml/processing/dependencies'
@@ -131,18 +132,21 @@ export async function buildStatefulHmrSnapshot(
             if (id.startsWith('\0') || id.includes('?')) {
               return null
             }
-            const sourceId = normalizeFsResolvedId(id)
-            const nativeEntry = ctx.runtimeState.build.hmr.entriesMap.get(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(sourceId)))
-            // 发现的组件记录暂时指向引用它的入口；按注册身份保留原生加载及其伴随资产输出。
-            if (sourceId.endsWith('.vue') || nativeEntry
-              || (ctx.scanService.appEntry?.path && normalizeFsResolvedId(ctx.scanService.appEntry.path) === sourceId)) {
-              return null
-            }
-            const source = sources.get(compilerSourceId(id))
-            if (source === null) {
-              throw new Error(`Source removed from snapshot: ${id}`)
-            }
-            return source === undefined ? null : { code: source }
+            // 入口归属与固定源码身份共用本次同步解析，下一次加载重新读取真实路径。
+            return withRealpathScope(() => {
+              const sourceId = normalizeFsResolvedId(id)
+              const nativeEntry = ctx.runtimeState.build.hmr.entriesMap.get(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(sourceId)))
+              // 发现的组件记录暂时指向引用它的入口；按注册身份保留原生加载及其伴随资产输出。
+              if (sourceId.endsWith('.vue') || nativeEntry
+                || (ctx.scanService.appEntry?.path && normalizeFsResolvedId(ctx.scanService.appEntry.path) === sourceId)) {
+                return null
+              }
+              const source = sources.get(compilerSourceId(id))
+              if (source === null) {
+                throw new Error(`Source removed from snapshot: ${id}`)
+              }
+              return source === undefined ? null : { code: source }
+            })
           },
         },
       }, ...(options.plugins ?? [])]

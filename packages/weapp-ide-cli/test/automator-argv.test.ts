@@ -13,6 +13,17 @@ describe('automator argv helpers', () => {
     cwdSpy.mockRestore()
   })
 
+  it.each(['0', '-1', 'NaN', 'Infinity', '1.5', '22001junk', '65536', '', '1e3', '0x50'])('rejects invalid --port %j instead of changing the target', (value) => {
+    expect(() => parseAutomatorArgs(['--port', value])).toThrow(/port[^\n\r1\u2028\u2029]*1.*65535/i)
+    expect(() => parseAutomatorArgs([`--port=${value}`])).toThrow(/port[^\n\r1\u2028\u2029]*1.*65535/i)
+  })
+
+  it('rejects a missing port value and accepts both port boundaries', () => {
+    expect(() => parseAutomatorArgs(['--port'])).toThrow(/port/i)
+    expect(parseAutomatorArgs(['--port=1']).port).toBe(1)
+    expect(parseAutomatorArgs(['--port', '65535']).port).toBe(65535)
+  })
+
   it('parses common automator options and positionals', () => {
     const parsed = parseAutomatorArgs([
       '--project',
@@ -97,4 +108,9 @@ describe('automator argv helpers', () => {
   it('keeps next positional when removing boolean flags', () => {
     expect(removeOption(['remote', '--disable', 'pages/a'], '--disable')).toEqual(['remote', 'pages/a'])
   })
+})
+
+it('retains the selected CLI path without treating it as a navigation argument', () => {
+  expect(parseAutomatorArgs(['--cli-path', 'stable-cli', '/pages/home'])).toMatchObject({ cliPath: 'stable-cli', positionals: ['/pages/home'] })
+  expect(parseAutomatorArgs(['--cli-path=rc-cli', '/pages/home'])).toMatchObject({ cliPath: 'rc-cli', positionals: ['/pages/home'] })
 })

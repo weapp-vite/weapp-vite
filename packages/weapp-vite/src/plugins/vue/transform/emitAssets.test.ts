@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   emitClassStyleWxsAssetIfMissing,
   emitSfcJsonAsset,
-  emitSfcScriptAssetReplacingBundleEntry,
   emitSfcTemplateIfMissing,
   resetEmittedAssetSourceCacheForTest,
 } from './emitAssets'
@@ -115,82 +114,5 @@ describe('emitAssets', () => {
       fromVue: true,
     })
     expect(emitter.emitFile).not.toHaveBeenCalled()
-  })
-
-  it('replaces an existing script chunk code without emitting a duplicate file', () => {
-    const emitter = createEmitter()
-    const existingChunk = {
-      type: 'chunk',
-      fileName: 'app.js',
-      code: 'App({ old: true })',
-      imports: ['common.js'],
-    }
-    const bundle: Record<string, any> = {
-      'app.js': existingChunk,
-    }
-
-    emitSfcScriptAssetReplacingBundleEntry(
-      emitter.ctx,
-      bundle,
-      'app',
-      'App({ fresh: true })',
-      'js',
-    )
-
-    expect(bundle['app.js']).toBe(existingChunk)
-    expect(bundle['app.js']).toEqual({
-      type: 'chunk',
-      fileName: 'app.js',
-      code: 'App({ fresh: true })',
-      imports: ['common.js'],
-    })
-    expect(emitter.emitFile).not.toHaveBeenCalled()
-  })
-
-  it('replaces an existing script asset source without emitting a duplicate file', () => {
-    const emitter = createEmitter()
-    const existingAsset = {
-      type: 'asset',
-      fileName: 'app.js',
-      source: 'App({ old: true })',
-    }
-    const bundle: Record<string, any> = {
-      'app.js': existingAsset,
-    }
-
-    emitSfcScriptAssetReplacingBundleEntry(
-      emitter.ctx,
-      bundle,
-      'app',
-      'App({ fresh: true })',
-      'js',
-    )
-
-    expect(bundle['app.js']).toBe(existingAsset)
-    expect(bundle['app.js']).toEqual({
-      type: 'asset',
-      fileName: 'app.js',
-      source: 'App({ fresh: true })',
-    })
-    expect(emitter.emitFile).not.toHaveBeenCalled()
-  })
-
-  it('emits script assets when the bundle has no existing script output', () => {
-    const emitter = createEmitter()
-    const bundle: Record<string, any> = {}
-
-    emitSfcScriptAssetReplacingBundleEntry(
-      emitter.ctx,
-      bundle,
-      'app',
-      'App({ fresh: true })',
-      'js',
-    )
-
-    expect(emitter.emitFile).toHaveBeenCalledWith({
-      type: 'asset',
-      fileName: 'app.js',
-      source: 'App({ fresh: true })',
-    })
   })
 })

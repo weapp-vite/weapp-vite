@@ -1,4 +1,5 @@
-import type { AnalyzeSubpackagesResult, DuplicateModuleEntry, ModuleSourceSummary, ModuleSourceType, PackageType } from '../types'
+import type { AnalyzeSubpackagesResult, DuplicateModuleEntry, ModuleSourceSummary, ModuleSourceType } from '../types'
+import { createDuplicateModuleInsights } from 'weapp-vite/dashboard/analyze'
 import { formatModuleIdentifier } from './format'
 
 function createDuplicateModulePackageEntry(
@@ -46,65 +47,23 @@ function createModuleSourceSummary(sourceType: ModuleSourceType, sourceCategory:
   }
 }
 
-function createDuplicateAdvice(
-  sourceType: ModuleSourceType,
-  packages: DuplicateModuleEntry['packages'],
-  packageTypeMap: Map<string, PackageType>,
-  estimatedSavingBytes: number,
-) {
-  const hasIndependentPackage = packages.some(pkg => packageTypeMap.get(pkg.packageId) === 'independent')
-  if (hasIndependentPackage) {
-    return estimatedSavingBytes > 0
-      ? '含独立分包，先确认隔离要求，再评估公共入口。'
-      : '含独立分包，重复可能来自隔离边界。'
-  }
-  if (sourceType === 'node_modules') {
-    return '依赖被多个包带入，检查引用边界或考虑主包公共入口。'
-  }
-  if (sourceType === 'src' || sourceType === 'workspace') {
-    return '共享源码跨包重复，优先抽公共模块或调整分包归属。'
-  }
-  if (sourceType === 'plugin') {
-    return '插件生成内容跨包重复，检查插件产物输出策略。'
-  }
-  return '检查该模块是否需要在多个包内重复存在。'
-}
-
 export function createDuplicateModules(options: {
   result: AnalyzeSubpackagesResult | null
-  moduleInfoMap: Map<string, { bytes: number, originalBytes: number, sourceType: ModuleSourceType }>
   packageLabelMap: Map<string, string>
-  packageTypeMap: Map<string, PackageType>
 }): DuplicateModuleEntry[] {
   if (!options.result) {
     return []
   }
 
-  return options.result.modules
-    .filter(mod => mod.packages.length > 1)
-    .map((mod) => {
-      const info = options.moduleInfoMap.get(mod.id)
-      const source = formatModuleIdentifier(mod.source)
-      const packages = mod.packages.map(pkg => createDuplicateModulePackageEntry(options.packageLabelMap, pkg))
-      const bytes = info?.bytes ?? info?.originalBytes ?? 0
-      const estimatedSavingBytes = bytes * Math.max(mod.packages.length - 1, 0)
-      return {
-        id: mod.id,
-        source,
-        sourceType: mod.sourceType,
-        packageCount: mod.packages.length,
-        bytes,
-        estimatedSavingBytes,
-        advice: createDuplicateAdvice(mod.sourceType, packages, options.packageTypeMap, estimatedSavingBytes),
-        packages,
-      }
-    })
-    .sort((a, b) =>
-      b.estimatedSavingBytes - a.estimatedSavingBytes
-      || b.packageCount - a.packageCount
-      || b.bytes - a.bytes
-      || a.source.localeCompare(b.source),
-    )
+  const moduleUsages = new Map(options.result.modules.map(module => [module.id, module]))
+  return createDuplicateModuleInsights(options.result).map((insight) => {
+    const module = moduleUsages.get(insight.id)!
+    return {
+      ...insight,
+      source: formatModuleIdentifier(insight.source),
+      packages: module.packages.map(pkg => createDuplicateModulePackageEntry(options.packageLabelMap, pkg)),
+    }
+  })
 }
 
 export function createModuleSourceSummaries(

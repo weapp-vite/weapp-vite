@@ -29,6 +29,8 @@ export const IDE_GITHUB_ISSUES_AGGREGATE_LABELS = [
 ] as const
 const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/issue-1015-css-hmr.runtime.test.ts', '900000'],
+  // 两个模式各保留 300 秒运行与 300 秒清理预算，额外预留 worker 启停。
+  ['ide/issue-1140-mode-cache.runtime.test.ts', '1260000'],
   ['ide/devtools-cli-workflow.runtime.test.ts', '900000'],
   ['ide/github-issues.runtime.aggregate.test.ts', '3600000'],
   ['ide/github-issues.runtime.lifecycle.test.ts', '600000'],
@@ -108,11 +110,13 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-997-rebuild.runtime.test.ts',
   'ide/issue-998-tailwind.runtime.test.ts',
   'ide/issue-1081-tailwind-batch.runtime.test.ts',
+  'ide/issue-1058-template-tags.runtime.test.ts',
   'ide/issue-1065-provider.runtime.test.ts',
   'ide/issue-1081-transaction.runtime.test.ts',
   'ide/issue-1082-confirmation.runtime.test.ts',
   'ide/issue-1134-native-batch.runtime.test.ts',
   'ide/issue-1134-native-topology.runtime.test.ts',
+  'ide/issue-1140-mode-cache.runtime.test.ts',
   'ide/issue-1074-doctor.runtime.test.ts',
   'ide/wevu-initial-style.runtime.test.ts',
   'ide/issue-1015-css-hmr.runtime.test.ts',
@@ -254,6 +258,7 @@ const IDE_GATE_TESTS = [
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/script-setup-external-src.runtime.test.ts',
+  'ide/issue-1058-template-tags.runtime.test.ts',
   'ide/issue-1065-provider.runtime.test.ts',
   'ide/github-issues.runtime.issue1138.test.ts',
   'ide/vite-plugin.runtime.test.ts',
@@ -269,6 +274,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/issue-1082-confirmation.runtime.test.ts',
   'ide/issue-1134-native-batch.runtime.test.ts',
   'ide/issue-1134-native-topology.runtime.test.ts',
+  'ide/issue-1140-mode-cache.runtime.test.ts',
   'ide/issue-1074-doctor.runtime.test.ts',
   'ide/wevu-initial-style.runtime.test.ts',
   'ide/body-blob.runtime.test.ts',
@@ -488,6 +494,7 @@ function isIdeHelperTest(label: string) {
 
 function createHeadlessVitestTask(configPath: string, filePath: string, label = toRelativeLabel(filePath)): SuiteTask {
   const targetFile = toRelativeLabel(filePath)
+  const taskTimeoutMs = IDE_TASK_TIMEOUT_MS_BY_LABEL.get(label)
   return {
     label,
     command: 'pnpm',
@@ -495,6 +502,7 @@ function createHeadlessVitestTask(configPath: string, filePath: string, label = 
     env: {
       [E2E_TARGET_FILE_ENV]: targetFile,
       WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
+      ...(taskTimeoutMs ? { [TASK_TIMEOUT_ENV]: taskTimeoutMs } : {}),
     },
   }
 }

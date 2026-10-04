@@ -1,9 +1,16 @@
+import type { RuntimeSizeReport } from './runtime-size'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { collectPerformanceReports } from '../.github/scripts/performance-comment-report.mjs'
+import { validateReport } from '../.github/scripts/runtime-size-schema.mjs'
 import {
   collectRuntimeSizeReport,
   createRuntimeSizeBuildOptions,
   createRuntimeSizePrArtifact,
   formatBytes,
+  readRuntimeSizeReport,
   renderRuntimeSizeMarkdown,
   runtimeSizeTargets,
   runtimeSizeTiers,
@@ -12,7 +19,7 @@ import {
 function createReport(options: {
   commit: string
   offset?: number
-}) {
+}): RuntimeSizeReport {
   const createTiers = (targetId: string, platformOffset: number, gzip: boolean) => runtimeSizeTiers.map((tier, index) => {
     const entry = `wevu-runtime-size-${targetId}-${tier.id}-production.mjs`
     return {
@@ -33,18 +40,11 @@ function createReport(options: {
     version: 4 as const,
     generatedAt: '2026-07-30T00:00:00.000Z',
     commit: options.commit,
-    targets: [
-      {
-        id: 'weapp' as const,
-        label: '微信小程序',
-        tiers: createTiers('weapp', 0, false),
-      },
-      {
-        id: 'web' as const,
-        label: 'Web',
-        tiers: createTiers('web', 1024, true),
-      },
-    ],
+    targets: runtimeSizeTargets.map(target => ({
+      id: target.id,
+      label: target.label,
+      tiers: createTiers(target.id, target.gzip ? 1024 : 0, target.gzip),
+    })),
   }
 }
 
@@ -124,6 +124,76 @@ describe('runtime size targets', () => {
     }).stdin!.contents as string
     expect(webTreeShaken).toContain('registerWebWevuApp as')
     expect(webTreeShaken).toContain('registerWebWevuComponent as')
+  })
+})
+
+describe('runtime size import graph compatibility', () => {
+  it('reads legacy v4 and preserves complete input graphs through report collection', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'runtime-size-graph-'))
+    try {
+      const baseline = createReport({ commit: 'abc1234' })
+      const baselineFile = path.join(root, 'baseline.json')
+      await writeFile(baselineFile, JSON.stringify(baseline))
+      const legacy = await readRuntimeSizeReport(baselineFile)
+      expect(legacy).toEqual(baseline)
+      expect(legacy.targets[0]!.tiers[0]!.production.retainedModules.importGraph).toBeUndefined()
+
+      const current = createReport({ commit: 'def5678' })
+      const retained = current.targets[0]!.tiers[0]!.production.retainedModules
+      retained.modules.push({ path: 'runtime.mjs', bytesInOutput: 10, imports: [] })
+      retained.importGraph = [
+        { path: retained.entry, imports: ['barrel.mjs'] },
+        { path: 'barrel.mjs', imports: ['runtime.mjs'] },
+        { path: 'runtime.mjs', imports: ['barrel.mjs'] },
+      ]
+      const currentFile = path.join(root, 'current.json')
+      await writeFile(currentFile, JSON.stringify(current))
+      expect(await readRuntimeSizeReport(currentFile)).toEqual(current)
+      await writeFile(path.join(root, 'report-full.json'), JSON.stringify(createRuntimeSizePrArtifact({
+        repository: 'owner/repo',
+        prNumber: 42,
+        headSha: current.commit,
+        baseSha: baseline.commit,
+        current,
+        baseline,
+      })))
+      const result = await collectPerformanceReports({ runtimeRoot: root, performanceRoot: undefined, runtimeExpected: {} }) as {
+        errors: string[]
+        runtimeSize?: { current: RuntimeSizeReport, baseline: RuntimeSizeReport }
+      }
+      expect(result.errors).toEqual([])
+      expect(result.runtimeSize).toEqual({ current, baseline })
+      expect(result.runtimeSize?.current.targets[0]!.tiers[0]!.production.retainedModules.importGraph).toEqual(retained.importGraph)
+    }
+    finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it.each([
+    { name: 'null', graph: null, error: 'must be an array' },
+    { name: 'object', graph: {}, error: 'must be an array' },
+    { name: 'empty', graph: [], error: 'must contain its entry' },
+    { name: 'missing entry', graph: [{ path: 'other.mjs', imports: [] }], error: 'must contain its entry' },
+    { name: 'duplicate paths', graph: [{ path: 'entry', imports: [] }, { path: 'entry', imports: [] }], error: 'unique paths' },
+    { name: 'empty path', graph: [{ path: '', imports: [] }], error: 'non-empty string' },
+    { name: 'missing imports', graph: [{ path: 'entry' }], error: 'non-empty strings' },
+    { name: 'non-string import', graph: [{ path: 'entry', imports: [1] }], error: 'non-empty strings' },
+    { name: 'empty import', graph: [{ path: 'entry', imports: [''] }], error: 'non-empty strings' },
+    { name: 'dangling edge', graph: [{ path: 'entry', imports: ['missing.mjs'] }], error: 'reference graph nodes' },
+  ])('rejects $name graphs', ({ graph, error }) => {
+    const report = createReport({ commit: 'abc1234' })
+    const retained = report.targets[0]!.tiers[0]!.production.retainedModules
+    Object.assign(retained, { entry: 'entry', modules: [{ path: 'entry', bytesInOutput: 1, imports: [] }], importGraph: graph })
+    expect(() => validateReport(report, 'report', report.version)).toThrow(error)
+  })
+
+  it('rejects complete graphs that omit a retained module', () => {
+    const report = createReport({ commit: 'abc1234' })
+    const retained = report.targets[0]!.tiers[0]!.production.retainedModules
+    retained.modules.push({ path: 'runtime.mjs', bytesInOutput: 10, imports: [] })
+    retained.importGraph = [{ path: retained.entry, imports: [] }]
+    expect(() => validateReport(report, 'report', report.version)).toThrow('must contain every retained module')
   })
 })
 

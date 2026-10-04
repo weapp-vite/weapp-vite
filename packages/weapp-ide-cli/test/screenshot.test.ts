@@ -2,6 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseScreenshotArgs } from '../src/cli/screenshot'
 
 describe('screenshot helpers', () => {
+  it.each(['0', 'NaN', '1.5', '22001junk', '65536'])('rejects invalid screenshot port %s before connecting', (value) => {
+    expect(() => parseScreenshotArgs(['--port', value])).toThrow(/port/i)
+  })
+
   describe('parseScreenshotArgs', () => {
     let cwdSpy: ReturnType<typeof vi.spyOn>
     const mockCwd = '/workspace/project'

@@ -10,6 +10,7 @@ interface StatefulArtifactMeasurementOptions<T> {
   timeoutMs: number
   signal?: AbortSignal
   onEvent?: (event: StatefulHmrAuditEvent) => void
+  onAcknowledgement?: (event: { phase: 'start' | 'complete', buildId: string, targetVersion: number }) => void
 }
 
 function abortable<T>(task: Promise<T>, signal: AbortSignal): Promise<T> {
@@ -84,7 +85,9 @@ export async function measureStatefulTemplateArtifact<T>(options: StatefulArtifa
           if (current.buildId !== control.buildId || current.token !== control.token || current.url !== control.url) {
             continue
           }
+          options.onAcknowledgement?.({ phase: 'start', buildId: control.buildId, targetVersion: response.targetVersion })
           await consumeUntilCancelled(client.acknowledgePublished(options.timeoutMs, consumerSignal))
+          options.onAcknowledgement?.({ phase: 'complete', buildId: control.buildId, targetVersion: response.targetVersion })
           if (matches) {
             return
           }

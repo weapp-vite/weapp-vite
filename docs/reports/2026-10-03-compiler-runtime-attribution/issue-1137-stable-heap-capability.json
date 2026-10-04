@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "issue": 1137,
+  "status": "heap-capability-unavailable-through-current-automator-cdp",
+  "scope": "Capability diagnosis only; no performance acceptance or memory-benefit conclusion.",
+  "runtimeProbe": {
+    "startedAt": "2026-10-04T12:58:08.316Z",
+    "finishedAt": "2026-10-04T12:58:19.106Z",
+    "sha256": "ca317ccafa8dfd25c8ac3b2a6b609071fb64c8d5d6e332ad1fcfa2677a96ecc1",
+    "toolInfo": {
+      "version": "2.02.2608080",
+      "SDKVersion": "3.17.3"
+    },
+    "successfulOperations": [
+      "toolInfo",
+      "reLaunch-update",
+      "ready-selector",
+      "one-update-round",
+      "final-observation"
+    ],
+    "failedOperations": [
+      {
+        "label": "heap-before",
+        "message": "Method not implemented."
+      },
+      {
+        "label": "heap-after",
+        "message": "Method not implemented."
+      }
+    ],
+    "ownedResourcesClosed": true
+  },
+  "installedOfficialHost": {
+    "bundleVersion": "36.6.0",
+    "asarSha256": "994006be8aec1954a7be9c3d196b2239d23a7c145d5c8ba6cf6e125f0e675672",
+    "sourceModules": [
+      {
+        "member": "js/vendor/WARemoteDebugForLib3.js",
+        "bytes": 366040,
+        "sha256": "824420bfebe0fde18273d61592e8f43fd7933c6031adb9b62887ffa66ac08ee0"
+      },
+      {
+        "member": "js/1f543778895179c15185b3a3abf97d9f.js",
+        "bytes": 5514,
+        "sha256": "9e41e74cfafcf8b2ce13256c0f1ba21e745e7009b0edb15ab4c79996ec44c71d"
+      },
+      {
+        "member": "js/fa74583bdd5636c7399965b2d43d2c88.js",
+        "bytes": 8800,
+        "sha256": "85643ea85c0fab744aea8f82782ef702cc8af7c74f2fe45845dd0fa6bfe509d0"
+      }
+    ],
+    "readOnlyInspection": true
+  },
+  "sdkSourceInspection": {
+    "uniqueCachedSdkArchives": 2,
+    "archives": [
+      {
+        "sdkVersion": "3.17.3",
+        "archiveSha256": "452242a04cdfd416e7f693252414fb2ba76dafc8e52ff4946e5e94b3fab4e021",
+        "bytes": 40667716,
+        "members": [
+          {
+            "member": "WAGlobalConsole.js",
+            "sha256": "3c563510edbcdd16ab08d567b310232797a45319baeabe9de6014a8c2e73c263",
+            "bytes": 679880,
+            "runtimeGetHeapUsageIsUnimplementedStub": true,
+            "heapProfilerDomainFound": false,
+            "performanceGetMetricsFound": false
+          },
+          {
+            "member": "WARemoteDebug.js",
+            "sha256": "5f88fa6ff791f951aa6c86d9c8d7f019a1bda0f3b7541b18e084f4cce7a64ce7",
+            "bytes": 745198,
+            "runtimeGetHeapUsageIsUnimplementedStub": true,
+            "heapProfilerDomainFound": false,
+            "performanceGetMetricsFound": false
+          }
+        ]
+      },
+      {
+        "sdkVersion": "3.17.3",
+        "archiveSha256": "33a789683382706d1b826159cf0f5727092fb59d2bc34ef13c1df7f24907da29",
+        "bytes": 40639716,
+        "members": [
+          {
+            "member": "WAGlobalConsole.js",
+            "sha256": "1950195d3bf9f084702df0ff6661f6d8ac376f729afd2aabe2bd9aa5c12c46ea",
+            "bytes": 679880,
+            "runtimeGetHeapUsageIsUnimplementedStub": true,
+            "heapProfilerDomainFound": false,
+            "performanceGetMetricsFound": false
+          },
+          {
+            "member": "WARemoteDebug.js",
+            "sha256": "2938814210ec2ff71a2d94586cb3ee28a2da6e6ce82c4a129c7f81c8e5f3f096",
+            "bytes": 745198,
+            "runtimeGetHeapUsageIsUnimplementedStub": true,
+            "heapProfilerDomainFound": false,
+            "performanceGetMetricsFound": false
+          }
+        ]
+      }
+    ],
+    "exactCacheCopyUsedByProbeNotTraced": true,
+    "bothInspectedSdkVariantsAgree": true
+  },
+  "rootCause": {
+    "entry": "App.CDPCommand(domain=Runtime, method=getHeapUsage)",
+    "dispatch": "WARemoteDebug.js forwards App.CDPCommand to __inspectee__.handleCommand(domain, method, params).",
+    "implementation": "SDK 3.17.3 Runtime adapters assign getHeapUsage to the shared methodNotImplemented function, which throws the exact message Method not implemented.",
+    "officialAutomator": "The installed official automator CDP().sendCommand uses the same App.CDPCommand entry.",
+    "targetRouting": "The optional detailPage/miniProgram target routing applies to agent-compile page contexts and does not identify a separate AppService heap target."
+  },
+  "alternatives": {
+    "existingAutomatorRouteWithAvailableHeapFound": false,
+    "heapProfilerOrPerformanceMetricsInInspectedSdkAdaptersFound": false,
+    "rawInspectorTarget": "No verified raw AppService inspector target is exposed by the current automator session metadata. A separate native debugger route would need explicit AppService/isolate identity and real-runtime validation.",
+    "rejectedSubstitutes": [
+      "Worker process RSS/heap: different process and measurement boundary.",
+      "Renderer or agent detailPage heap: different target; not AppService evidence.",
+      "Heap snapshot, forced GC, or allocation profiling: changes measurement semantics and cannot replace the frozen current-heap sample definition."
+    ]
+  },
+  "minimalFix": {
+    "classification": "Recognize only the exact Method not implemented. error in the getAppServiceHeapUsage request boundary as protocol-unimplemented.",
+    "preservedFailures": [
+      "connection closure",
+      "timeouts",
+      "other error messages",
+      "invalid or empty successful responses"
+    ],
+    "acceptanceBoundary": "Unsupported samples preserve the reason and keep memoryEvidence.complete and final complete false; required heap evidence is not relaxed.",
+    "runtimeTimingAndSampleCountChanged": false
+  },
+  "validation": {
+    "node": "v24.18.0",
+    "targetedAppServiceHeapUnitTests": 26,
+    "targetedAppServiceHeapUnitTestsPassed": 26,
+    "owningPackageTypecheck": "passed",
+    "sourceEslint": "passed",
+    "e2eExecutedByThisAudit": false,
+    "buildExecutedByThisAudit": false
+  },
+  "limitations": [
+    "Static source inspection establishes the unsupported adapter implementation and matches the runtime probe; it is not proof that every possible IDE debugging transport lacks heap metrics.",
+    "No usable alternative AppService heap route was established. Issue1137 memory acceptance remains incomplete on this approved host/SDK configuration."
+  ],
+  "classificationFixVerification": {
+    "startedAt": "2026-10-04T13:21:46.003Z",
+    "finishedAt": "2026-10-04T13:21:58.414Z",
+    "node": "v22.22.3",
+    "harnessBaseCommit": "113410335",
+    "workingTreePatch": "exact heap capability classification, rebuilt automator",
+    "rawSha256": "f8c2336e07cb4ea53251f1a6bdd6bff81ec3e46e90e9cda4758fd5c81d5a417d",
+    "events": [
+      {
+        "label": "toolInfo",
+        "error": null,
+        "result": {
+          "version": "2.02.2608080",
+          "SDKVersion": "3.17.3"
+        }
+      },
+      {
+        "label": "reLaunch-update",
+        "error": null,
+        "result": {
+          "succeeded": true
+        }
+      },
+      {
+        "label": "ready-selector",
+        "error": null,
+        "result": true
+      },
+      {
+        "label": "heap-before",
+        "error": null,
+        "result": {
+          "status": "unsupported",
+          "source": "appservice-cdp-runtime",
+          "reason": "protocol-unimplemented"
+        }
+      },
+      {
+        "label": "one-update-round",
+        "error": null,
+        "result": {
+          "succeeded": true
+        }
+      },
+      {
+        "label": "final-observation",
+        "error": null,
+        "result": {
+          "succeeded": true
+        }
+      },
+      {
+        "label": "heap-after",
+        "error": null,
+        "result": {
+          "status": "unsupported",
+          "source": "appservice-cdp-runtime",
+          "reason": "protocol-unimplemented"
+        }
+      }
+    ],
+    "resources": [
+      {
+        "status": "closed",
+        "projectClosed": true,
+        "portClosed": true
+      }
+    ],
+    "errors": []
+  }
+}

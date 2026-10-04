@@ -105,6 +105,17 @@ export function resolveHmrProfileJsonEnvOption(env: NodeJS.ProcessEnv = process.
   return raw
 }
 
+/** 统一写入方与监听边界的 profile 输出选择，保持环境变量优先级一致。 */
+export function resolveActiveHmrProfileJsonPath(
+  options: Pick<ResolveHmrProfileJsonPathOptions, 'cwd' | 'option'>,
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  return resolveHmrProfileJsonPath({
+    ...options,
+    option: resolveHmrProfileJsonEnvOption(env) ?? options.option,
+  })
+}
+
 let hmrProfileEventSequence = 0
 
 /**

@@ -1,5 +1,6 @@
 import path from 'node:path'
 import process from 'node:process'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import {
@@ -106,7 +107,7 @@ if (command === 'list') {
   printList()
 }
 else if (command in SUITES) {
-  await runSuite(command as SuiteName)
+  await withMachineE2ELease(() => runSuite(command as SuiteName))
 }
 else {
   console.error(`Unknown HMR guard suite: ${command}`)

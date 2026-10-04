@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import { readDashboardFileContent } from '../../dashboard/content'
+import { createDevShutdownScope } from '../../devLifecycle/shutdown'
 import { createDevBuildWatcher } from '../../runtime/buildPlugin/devBuildWatcher'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { registerServeCommand } from './serve'
@@ -229,6 +230,7 @@ function createServeActionHandler() {
 describe('serve cli command', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    isUiEnabledMock.mockReset().mockReturnValue(true)
     devHotkeysCloseMock.mockReset()
     devHotkeysRestoreMock.mockReset()
     devHotkeysSuspendMock.mockReset()
@@ -306,6 +308,77 @@ describe('serve cli command', () => {
     fakeProcess.removeAllListeners()
   })
 
+  it('cancels before the initial build and releases the acquired context backend', async () => {
+    const action = createServeActionHandler()('/project', { ui: true, open: true })
+    fakeProcess.emit('SIGINT')
+    await action
+    expect(buildServiceBuildMock).not.toHaveBeenCalled()
+    expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+    expect(openIdeMock).not.toHaveBeenCalled()
+    expect(watcherCloseAllMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('cancels during the initial build without starting dashboard or opening IDE', async () => {
+    const startup = Promise.withResolvers<void>()
+    buildServiceBuildMock.mockReturnValueOnce(startup.promise)
+    const action = createServeActionHandler()('/project', { ui: true, open: true })
+    await vi.waitFor(() => expect(buildServiceBuildMock).toHaveBeenCalledTimes(1))
+    fakeProcess.emit('SIGINT')
+    startup.resolve()
+    await action
+    expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+    expect(openIdeMock).not.toHaveBeenCalled()
+    expect(watcherCloseAllMock).toHaveBeenCalledTimes(1)
+    expect(devHotkeysCloseMock).toHaveBeenCalledTimes(1)
+    expect(fakeProcess.listenerCount('SIGINT')).toBe(0)
+  })
+
+  it('cancels during analysis without starting the dashboard or opening IDE', async () => {
+    const analyzed = Promise.withResolvers<any>()
+    analyzeSubpackagesMock.mockReset().mockReturnValueOnce(analyzed.promise)
+    const action = createServeActionHandler()('/project', { ui: true, open: true })
+    await vi.waitFor(() => expect(analyzeSubpackagesMock).toHaveBeenCalledTimes(1))
+    fakeProcess.emit('SIGINT')
+    analyzed.resolve({ packages: [{ id: 'main', files: [] }], modules: [], subPackages: [] })
+    await action
+    expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+    expect(openIdeMock).not.toHaveBeenCalled()
+    expect(watcherCloseAllMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits for the close of a dashboard acquired after the shutdown request', async () => {
+    const startup = Promise.withResolvers<any>()
+    const cleanup = Promise.withResolvers<void>()
+    const close = vi.fn(() => cleanup.promise)
+    startAnalyzeDashboardMock.mockReturnValueOnce(startup.promise)
+    const action = createServeActionHandler()('/project', { ui: true, open: true })
+    await vi.waitFor(() => expect(startAnalyzeDashboardMock).toHaveBeenCalledTimes(1))
+    fakeProcess.emit('SIGTERM')
+    startup.resolve({ close, emitRuntimeEvents: vi.fn(), waitForExit: vi.fn(), urls: [] })
+    await vi.waitFor(() => expect(close).toHaveBeenCalledTimes(1))
+    expect(watcherCloseAllMock).not.toHaveBeenCalled()
+    expect(fakeProcess.listenerCount('SIGINT')).toBe(1)
+    fakeProcess.emit('SIGINT')
+    cleanup.resolve()
+    await action
+    expect(openIdeMock).not.toHaveBeenCalled()
+    expect(watcherCloseAllMock).toHaveBeenCalledTimes(1)
+    expect(fakeProcess.listenerCount('SIGINT')).toBe(0)
+  })
+
+  it('keeps cleaning remaining owners after startup and forward-console failures', async () => {
+    const startupError = new Error('initial build failed')
+    const cleanupError = new Error('forward console close failed')
+    buildServiceBuildMock.mockRejectedValueOnce(startupError)
+    closeActiveForwardConsoleMock.mockRejectedValueOnce(cleanupError)
+    await expect(createServeActionHandler()('/project', {})).rejects.toMatchObject({
+      errors: [startupError, cleanupError],
+    })
+    expect(devHotkeysCloseMock).toHaveBeenCalledTimes(1)
+    expect(watcherCloseAllMock).toHaveBeenCalledTimes(1)
+    expect(loggerErrorMock).toHaveBeenCalledWith(expect.objectContaining({ errors: [startupError, cleanupError] }))
+  })
+
   it('emits initial analyze lifecycle events when ui mode is enabled in serve', async () => {
     const action = createServeActionHandler()
 
@@ -371,6 +444,35 @@ describe('serve cli command', () => {
       syncAutoImportSupportFiles: false,
     }))
     expect(syncSupportFileResolverComponentsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits for an active analyze refresh and ignores build events after shutdown', async () => {
+    const shutdown = createDevShutdownScope()
+    const analyzed = Promise.withResolvers<any>()
+    analyzeSubpackagesMock.mockReturnValueOnce(analyzed.promise)
+    const controller = createAnalyzeController({
+      configFile: undefined,
+      ctx: createAnalyzeTestContext(),
+      options: {},
+      targets: resolveRuntimeTargetsMock() as unknown as RuntimeTargets,
+      shutdown,
+    })
+    await controller.startDashboard(startAnalyzeDashboard)
+    const handle = controller.getHandle()!
+    shutdown.own(handle.close)
+    const watcher = new MockWatcher()
+    await controller.bindWatcher(watcher).runInitialUpdate()
+    watcher.emit('event', { code: 'END' })
+    await vi.waitFor(() => expect(analyzeSubpackagesMock).toHaveBeenCalledTimes(3))
+    shutdown.request('SIGTERM')
+    watcher.emit('event', { code: 'END' })
+    await Promise.resolve()
+    expect(handle.close).not.toHaveBeenCalled()
+    analyzed.resolve({ packages: [{ id: 'main', files: [] }], modules: [], subPackages: [] })
+    await shutdown.close()
+    expect(analyzeSubpackagesMock).toHaveBeenCalledTimes(3)
+    expect(handle.update).toHaveBeenCalledTimes(1)
+    expect(handle.close).toHaveBeenCalledTimes(1)
   })
 
   it('shares one initial analyze update between a queued build END and the explicit startup update', async () => {
@@ -664,7 +766,6 @@ describe('serve cli command', () => {
       nonInteractive: true,
       trustProject: false,
     })
-    fakeProcess.emit('SIGINT')
     await actionPromise
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
@@ -702,7 +803,6 @@ describe('serve cli command', () => {
       open: true,
       trustProject: true,
     })
-    fakeProcess.emit('SIGINT')
     await actionPromise
 
     expect(order).toEqual([
@@ -722,7 +822,6 @@ describe('serve cli command', () => {
       open: true,
       trustProject: true,
     })
-    fakeProcess.emit('SIGINT')
     await actionPromise
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
@@ -760,7 +859,6 @@ describe('serve cli command', () => {
       open: true,
       trustProject: true,
     })
-    fakeProcess.emit('SIGINT')
     await actionPromise
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
@@ -815,13 +913,14 @@ describe('serve cli command', () => {
   })
 
   it('keeps dev hotkeys session alive until serve shutdown signal arrives', async () => {
+    isUiEnabledMock.mockReturnValueOnce(false)
     const action = createServeActionHandler()
 
     const actionPromise = action('/project', {
       platform: 'weapp',
     })
 
-    await Promise.resolve()
+    await vi.waitFor(() => expect(logBuildAppFinishMock).toHaveBeenCalled())
 
     expect(devHotkeysCloseMock).not.toHaveBeenCalled()
 
@@ -895,9 +994,7 @@ describe('serve cli command', () => {
     const action = createServeActionHandler()
 
     const actionPromise = action('/project', { platform: 'web' })
-    for (let index = 0; index < 20 && fakeProcess.listenerCount('SIGINT') === 0; index++) {
-      await Promise.resolve()
-    }
+    await vi.waitFor(() => expect(logBuildAppFinishMock).toHaveBeenCalled())
     expect(webDev).toHaveBeenCalledTimes(1)
     expect(fakeProcess.listenerCount('SIGINT')).toBeGreaterThan(0)
     fakeProcess.emit('SIGINT')
@@ -1010,9 +1107,7 @@ describe('serve cli command', () => {
     const action = createServeActionHandler()
 
     const actionPromise = action('/project', { platform: 'weapp' })
-    for (let index = 0; index < 20 && fakeProcess.listenerCount('SIGINT') === 0; index++) {
-      await Promise.resolve()
-    }
+    await vi.waitFor(() => expect(logBuildAppFinishMock).toHaveBeenCalled())
     fakeProcess.emit('SIGINT')
     await actionPromise
     await Promise.resolve()
@@ -1028,9 +1123,7 @@ describe('serve cli command', () => {
     const action = createServeActionHandler()
 
     const actionPromise = action('/project', { platform: 'weapp' })
-    for (let index = 0; index < 20 && fakeProcess.listenerCount('SIGINT') === 0; index++) {
-      await Promise.resolve()
-    }
+    await vi.waitFor(() => expect(logBuildAppFinishMock).toHaveBeenCalled())
     fakeProcess.emit('SIGINT')
     await actionPromise
     await Promise.resolve()

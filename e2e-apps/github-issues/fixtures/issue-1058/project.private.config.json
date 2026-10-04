@@ -1,0 +1,24 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "pages/home/index",
+          "pathName": "pages/home/index",
+          "query": "",
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/boundary/index",
+          "pathName": "pages/boundary/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  },
+  "setting": {
+    "compileHotReLoad": false,
+    "urlCheck": false
+  }
+}

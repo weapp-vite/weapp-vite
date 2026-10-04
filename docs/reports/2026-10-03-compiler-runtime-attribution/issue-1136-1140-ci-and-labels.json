@@ -1,0 +1,699 @@
+{
+  "schemaVersion": 1,
+  "scope": "Completion of issues 1136 and 1140 against their recorded implementation and runtime candidates; not validation of later main changes.",
+  "ci": {
+    "verifiedAt": "2026-10-04T16:47:50.359513+00:00",
+    "runs": [
+      {
+        "id": 37205840346,
+        "head_sha": "6e6f45f836d699ea80c7fe7a12eaf8483fa6f570",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/weapp-vite/weapp-vite/actions/runs/37205840346",
+        "updated_at": "2026-10-04T16:45:40Z",
+        "jobs": [
+          {
+            "id": 111446733274,
+            "name": "Build and Test (ubuntu-latest / Node 22) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:20:44Z",
+            "completed_at": "2026-10-04T15:54:16Z"
+          },
+          {
+            "id": 111446733456,
+            "name": "Weapi Compatibility Guard (Node 24) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:22:36Z",
+            "completed_at": "2026-10-04T15:24:48Z"
+          },
+          {
+            "id": 111446733487,
+            "name": "Weapi Compatibility Guard (Node 22) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:27:54Z",
+            "completed_at": "2026-10-04T15:29:34Z"
+          },
+          {
+            "id": 111446733514,
+            "name": "Build and Test (ubuntu-latest / Node 24) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:29:49Z",
+            "completed_at": "2026-10-04T16:01:31Z"
+          },
+          {
+            "id": 111446733548,
+            "name": "Build and Test (windows-latest / Node 22) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:21:06Z",
+            "completed_at": "2026-10-04T15:24:28Z"
+          },
+          {
+            "id": 111446733817,
+            "name": "Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+            "status": "completed",
+            "conclusion": "skipped",
+            "started_at": "2026-10-04T13:30:12Z",
+            "completed_at": "2026-10-04T13:30:12Z"
+          },
+          {
+            "id": 111446762874,
+            "name": "Weapi Compatibility Guard (Node 24)",
+            "status": "completed",
+            "conclusion": "skipped",
+            "started_at": "2026-10-04T13:30:22Z",
+            "completed_at": "2026-10-04T13:30:12Z"
+          },
+          {
+            "id": 111446762938,
+            "name": "Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+            "status": "completed",
+            "conclusion": "skipped",
+            "started_at": "2026-10-04T13:30:22Z",
+            "completed_at": "2026-10-04T13:30:12Z"
+          },
+          {
+            "id": 111467425779,
+            "name": "Build and Test (windows-latest / Node 24) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:29:55Z",
+            "completed_at": "2026-10-04T16:09:50Z"
+          },
+          {
+            "id": 111472882513,
+            "name": "Build and Test (macos-latest / Node 22) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:59:12Z",
+            "completed_at": "2026-10-04T16:25:38Z"
+          },
+          {
+            "id": 111474228242,
+            "name": "Build and Test (macos-latest / Node 24) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T16:13:22Z",
+            "completed_at": "2026-10-04T16:45:39Z"
+          }
+        ]
+      },
+      {
+        "id": 37205633333,
+        "head_sha": "6e6f45f836d699ea80c7fe7a12eaf8483fa6f570",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/weapp-vite/weapp-vite/actions/runs/37205633333",
+        "updated_at": "2026-10-04T15:21:21Z",
+        "jobs": [
+          {
+            "id": 111446124834,
+            "name": "Published Node support (macos-latest / Node 26.0.0)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:51:16Z",
+            "completed_at": "2026-10-04T13:55:29Z"
+          },
+          {
+            "id": 111446124965,
+            "name": "Published Node support (ubuntu-latest / Node 24)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:51:10Z",
+            "completed_at": "2026-10-04T13:54:33Z"
+          },
+          {
+            "id": 111446124986,
+            "name": "Published Node support (macos-latest / Node 24.11.0)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:52:27Z",
+            "completed_at": "2026-10-04T13:58:52Z"
+          },
+          {
+            "id": 111446124988,
+            "name": "Published Node support (windows-latest / Node 22)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:52:09Z",
+            "completed_at": "2026-10-04T14:05:01Z"
+          },
+          {
+            "id": 111446125027,
+            "name": "Published Node support (windows-latest / Node 24.11.0)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:52:18Z",
+            "completed_at": "2026-10-04T14:07:58Z"
+          },
+          {
+            "id": 111446125031,
+            "name": "Published Node support (macos-latest / Node 22)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:55:41Z",
+            "completed_at": "2026-10-04T14:01:05Z"
+          },
+          {
+            "id": 111446125036,
+            "name": "Published Node support (macos-latest / Node 22.18.0)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:58:09Z",
+            "completed_at": "2026-10-04T14:02:27Z"
+          },
+          {
+            "id": 111446125046,
+            "name": "Published Node support (ubuntu-latest / Node 22.18.0)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:55:12Z",
+            "completed_at": "2026-10-04T13:59:05Z"
+          },
+          {
+            "id": 111446125047,
+            "name": "Published Node support (windows-latest / Node 24)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:00:27Z",
+            "completed_at": "2026-10-04T14:12:02Z"
+          },
+          {
+            "id": 111446125050,
+            "name": "Published Node support (ubuntu-latest / Node 26.0.0)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:54:13Z",
+            "completed_at": "2026-10-04T13:57:18Z"
+          },
+          {
+            "id": 111446125063,
+            "name": "Published Node support (ubuntu-latest / Node 22)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:00:34Z",
+            "completed_at": "2026-10-04T14:03:51Z"
+          },
+          {
+            "id": 111446125065,
+            "name": "Published Node support (windows-latest / Node 22.18.0)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:56:45Z",
+            "completed_at": "2026-10-04T14:10:13Z"
+          },
+          {
+            "id": 111446125095,
+            "name": "Published Node support (macos-latest / Node 24)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:10:00Z",
+            "completed_at": "2026-10-04T14:16:06Z"
+          },
+          {
+            "id": 111446125102,
+            "name": "Published Node support (ubuntu-latest / Node 24.11.0)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:04:50Z",
+            "completed_at": "2026-10-04T14:08:36Z"
+          },
+          {
+            "id": 111446125106,
+            "name": "Published Node support (windows-latest / Node 26.0.0)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:05:16Z",
+            "completed_at": "2026-10-04T14:16:54Z"
+          },
+          {
+            "id": 111446125277,
+            "name": "Host paths (macos-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:55:34Z",
+            "completed_at": "2026-10-04T13:59:23Z"
+          },
+          {
+            "id": 111446125303,
+            "name": "Host paths (ubuntu-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:54:17Z",
+            "completed_at": "2026-10-04T13:56:43Z"
+          },
+          {
+            "id": 111446125311,
+            "name": "Watch validation (windows-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:51:45Z",
+            "completed_at": "2026-10-04T13:57:01Z"
+          },
+          {
+            "id": 111446125317,
+            "name": "Strict dependency consumer (macos-latest / npm) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:16:16Z",
+            "completed_at": "2026-10-04T14:21:04Z"
+          },
+          {
+            "id": 111446125330,
+            "name": "React host paths (macos-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:02:57Z",
+            "completed_at": "2026-10-04T14:08:14Z"
+          },
+          {
+            "id": 111446125332,
+            "name": "Strict dependency consumer (windows-latest / npm) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:04:21Z",
+            "completed_at": "2026-10-04T14:11:13Z"
+          },
+          {
+            "id": 111446125341,
+            "name": "Strict dependency consumer (ubuntu-latest / npm) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:52:07Z",
+            "completed_at": "2026-10-04T13:54:43Z"
+          },
+          {
+            "id": 111446125361,
+            "name": "Strict dependency consumer (macos-latest / pnpm) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:06:51Z",
+            "completed_at": "2026-10-04T14:09:50Z"
+          },
+          {
+            "id": 111446125363,
+            "name": "React host paths (windows-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:01:42Z",
+            "completed_at": "2026-10-04T14:05:58Z"
+          },
+          {
+            "id": 111446125389,
+            "name": "Host paths (windows-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:11:10Z",
+            "completed_at": "2026-10-04T14:15:19Z"
+          },
+          {
+            "id": 111446125416,
+            "name": "Strict dependency consumer (ubuntu-latest / pnpm) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:05:05Z",
+            "completed_at": "2026-10-04T14:07:26Z"
+          },
+          {
+            "id": 111446125426,
+            "name": "Watch validation (macos-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:21:22Z",
+            "completed_at": "2026-10-04T14:26:32Z"
+          },
+          {
+            "id": 111446125429,
+            "name": "Route topology (windows-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:08:54Z",
+            "completed_at": "2026-10-04T14:11:35Z"
+          },
+          {
+            "id": 111446125434,
+            "name": "Watch validation (ubuntu-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:19:00Z",
+            "completed_at": "2026-10-04T14:21:58Z"
+          },
+          {
+            "id": 111446125435,
+            "name": "Strict dependency consumer (windows-latest / pnpm) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:15:21Z",
+            "completed_at": "2026-10-04T14:19:54Z"
+          },
+          {
+            "id": 111446125446,
+            "name": "Web browser runtime (wv) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:55:00Z",
+            "completed_at": "2026-10-04T13:58:03Z"
+          },
+          {
+            "id": 111446125451,
+            "name": "Web browser runtime (vite) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:12:05Z",
+            "completed_at": "2026-10-04T14:16:21Z"
+          },
+          {
+            "id": 111446125475,
+            "name": "React runtime (wv) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:01:03Z",
+            "completed_at": "2026-10-04T14:04:46Z"
+          },
+          {
+            "id": 111446125478,
+            "name": "React runtime (vite-plus) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T13:55:15Z",
+            "completed_at": "2026-10-04T13:58:08Z"
+          },
+          {
+            "id": 111446125487,
+            "name": "React runtime (vite) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:11:38Z",
+            "completed_at": "2026-10-04T14:15:28Z"
+          },
+          {
+            "id": 111446125506,
+            "name": "Web browser runtime (vite-plus) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:07:17Z",
+            "completed_at": "2026-10-04T14:11:37Z"
+          },
+          {
+            "id": 111446125508,
+            "name": "React host paths (ubuntu-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:00:05Z",
+            "completed_at": "2026-10-04T15:02:36Z"
+          },
+          {
+            "id": 111446125527,
+            "name": "Route topology (ubuntu-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:18:52Z",
+            "completed_at": "2026-10-04T15:21:20Z"
+          },
+          {
+            "id": 111446125575,
+            "name": "Route topology (macos-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:27:46Z",
+            "completed_at": "2026-10-04T14:32:33Z"
+          },
+          {
+            "id": 111446125578,
+            "name": "Stateful runtime (wv) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:39:18Z",
+            "completed_at": "2026-10-04T14:42:32Z"
+          },
+          {
+            "id": 111446125579,
+            "name": "Classic runtime (vite / classic) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:12:05Z",
+            "completed_at": "2026-10-04T14:15:46Z"
+          },
+          {
+            "id": 111446125588,
+            "name": "Stateful runtime (vite) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:41:10Z",
+            "completed_at": "2026-10-04T14:44:52Z"
+          },
+          {
+            "id": 111446125605,
+            "name": "Classic runtime (vite-plus / classic) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:33:11Z",
+            "completed_at": "2026-10-04T14:36:49Z"
+          },
+          {
+            "id": 111446125606,
+            "name": "Classic runtime (vite / classic-watch) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:27:33Z",
+            "completed_at": "2026-10-04T14:31:12Z"
+          },
+          {
+            "id": 111446125611,
+            "name": "Classic runtime (vite-plus / classic-watch) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:46:31Z",
+            "completed_at": "2026-10-04T14:50:04Z"
+          },
+          {
+            "id": 111446125639,
+            "name": "Plugin runtime (vite) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:27:39Z",
+            "completed_at": "2026-10-04T14:31:23Z"
+          },
+          {
+            "id": 111446125641,
+            "name": "Independent runtime (wv) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:52:00Z",
+            "completed_at": "2026-10-04T14:55:51Z"
+          },
+          {
+            "id": 111446125663,
+            "name": "Stateful runtime (vite-plus) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:00:04Z",
+            "completed_at": "2026-10-04T15:03:19Z"
+          },
+          {
+            "id": 111446125693,
+            "name": "Platform builds and runtime (vite) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:46:55Z",
+            "completed_at": "2026-10-04T14:50:56Z"
+          },
+          {
+            "id": 111446125694,
+            "name": "Classic runtime (wv / classic) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:02:58Z",
+            "completed_at": "2026-10-04T15:05:34Z"
+          },
+          {
+            "id": 111446125699,
+            "name": "Platform builds and runtime (wv) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:55:15Z",
+            "completed_at": "2026-10-04T14:59:12Z"
+          },
+          {
+            "id": 111446125708,
+            "name": "Plugin runtime (wv) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:45:14Z",
+            "completed_at": "2026-10-04T14:49:03Z"
+          },
+          {
+            "id": 111446125711,
+            "name": "Independent runtime (vite-plus) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:40:05Z",
+            "completed_at": "2026-10-04T14:42:56Z"
+          },
+          {
+            "id": 111446125717,
+            "name": "Library runtime (vite-plus) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:42:35Z",
+            "completed_at": "2026-10-04T14:46:21Z"
+          },
+          {
+            "id": 111446125725,
+            "name": "Plugin runtime (vite-plus) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:00:52Z",
+            "completed_at": "2026-10-04T15:04:46Z"
+          },
+          {
+            "id": 111446125744,
+            "name": "Native path controls (macos-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:28:02Z",
+            "completed_at": "2026-10-04T14:30:11Z"
+          },
+          {
+            "id": 111446125752,
+            "name": "Library runtime (vite) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:13:58Z",
+            "completed_at": "2026-10-04T15:17:40Z"
+          },
+          {
+            "id": 111446125754,
+            "name": "Platform builds and runtime (vite-plus) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:50:59Z",
+            "completed_at": "2026-10-04T14:55:12Z"
+          },
+          {
+            "id": 111446125773,
+            "name": "Worker runtime (vite) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:48:25Z",
+            "completed_at": "2026-10-04T14:51:57Z"
+          },
+          {
+            "id": 111446125777,
+            "name": "Library runtime (wv) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:55:33Z",
+            "completed_at": "2026-10-04T14:59:01Z"
+          },
+          {
+            "id": 111446125782,
+            "name": "Worker runtime (vite-plus) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:59:04Z",
+            "completed_at": "2026-10-04T15:02:54Z"
+          },
+          {
+            "id": 111446125790,
+            "name": "Native path controls (ubuntu-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:52:41Z",
+            "completed_at": "2026-10-04T14:53:29Z"
+          },
+          {
+            "id": 111446125792,
+            "name": "Independent runtime (vite) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:06:19Z",
+            "completed_at": "2026-10-04T15:09:58Z"
+          },
+          {
+            "id": 111446125798,
+            "name": "Packed consumer (wv) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:31:12Z",
+            "completed_at": "2026-10-04T14:33:41Z"
+          },
+          {
+            "id": 111446125811,
+            "name": "Packed consumer (vite-plus) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:44:55Z",
+            "completed_at": "2026-10-04T14:48:19Z"
+          },
+          {
+            "id": 111446125855,
+            "name": "Packed consumer (vite) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:57:08Z",
+            "completed_at": "2026-10-04T14:59:26Z"
+          },
+          {
+            "id": 111446125865,
+            "name": "Worker runtime (wv) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T15:17:55Z",
+            "completed_at": "2026-10-04T15:21:03Z"
+          },
+          {
+            "id": 111446125934,
+            "name": "Native path controls (windows-latest) / run",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-04T14:19:57Z",
+            "completed_at": "2026-10-04T14:21:49Z"
+          }
+        ]
+      }
+    ]
+  },
+  "labels": {
+    "appliedByThisTask": [
+      1136,
+      1140
+    ],
+    "label": "已完成",
+    "readBackVerified": true,
+    "verifiedAt": "2026-10-04T16:53:21.131826+00:00",
+    "range": [
+      1015,
+      1142
+    ],
+    "actualIssueCount": 41,
+    "completedCount": 31,
+    "remaining": [
+      1015,
+      1065,
+      1081,
+      1082,
+      1097,
+      1133,
+      1134,
+      1135,
+      1137,
+      1142
+    ]
+  },
+  "runtimeEvidence": [
+    "issue-1136-acceptance.json",
+    "issue-1140-final-acceptance.json"
+  ],
+  "laterCandidate": {
+    "sha": "4678a84ee45c2c561b716b9250cad599a3818947",
+    "pushedToMain": true,
+    "ciRun": 37218252591,
+    "hmrAttributionRun": 37218258010,
+    "statusAtRecording": "queued; no pass claim"
+  }
+}

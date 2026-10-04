@@ -1,7 +1,7 @@
 import type { AutomatorSessionOptions, MiniProgramEventMap, MiniProgramLike } from './automator-session'
 import { inspect } from 'node:util'
 import logger, { colors } from '../logger'
-import { acquireConsoleMiniProgram as acquireSharedMiniProgram, closeSharedMiniProgram, connectConsoleMiniProgram as connectMiniProgram, releaseSharedMiniProgram } from './automator-session'
+import { acquireConsoleMiniProgram as acquireSharedMiniProgram, closeSharedMiniProgram, connectConsoleMiniProgram as connectMiniProgram, releaseSharedMiniProgram, resolveAutomatorSessionOptions } from './automator-session'
 
 export type ForwardConsoleLogLevel = 'debug' | 'log' | 'info' | 'warn' | 'error'
 
@@ -230,9 +230,9 @@ async function acquireForwardConsoleMiniProgram(options: ForwardConsoleOptions) 
     catch (error) {
       lastError = error
       if (miniProgram) {
-        releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port)
+        releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
       }
-      await closeSharedMiniProgram(options.projectPath, options.sessionId || options.port)
+      await closeSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
       if (attempt < ENABLE_LOG_RETRY_TIMES) {
         await sleep(ENABLE_LOG_RETRY_DELAY_MS)
       }
@@ -280,6 +280,7 @@ function startEnableLogRefresh(
  * @description 启动小程序控制台日志转发，并保持 automator 会话常驻。
  */
 export async function startForwardConsole(options: ForwardConsoleOptions): Promise<ForwardConsoleSession> {
+  options = options.miniProgram ? options : await resolveAutomatorSessionOptions(options)
   const usesSharedSession = !options.miniProgram
   const miniProgram = await acquireForwardConsoleMiniProgram(options)
   const logLevels = new Set(options.logLevels?.length ? options.logLevels : DEFAULT_FORWARD_CONSOLE_LEVELS)
@@ -332,7 +333,7 @@ export async function startForwardConsole(options: ForwardConsoleOptions): Promi
       auxiliaryMiniProgram = undefined
     }
     if (usesSharedSession) {
-      releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port)
+      releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
     }
   }
 

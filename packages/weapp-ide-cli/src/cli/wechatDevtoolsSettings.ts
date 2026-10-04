@@ -1,8 +1,9 @@
+import type { ResolvedWechatDevtoolsTarget, ResolveWechatDevtoolsTargetOptions } from '../devtoolsTarget'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
-import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { resolveWechatDevtoolsTarget } from '../devtoolsTarget'
 
 export interface WechatDevtoolsSecuritySettings {
   enableServicePort: boolean
@@ -16,10 +17,8 @@ export interface DetectedWechatDevtoolsServicePortSettings {
   port?: number
 }
 
-export interface DetectWechatDevtoolsServicePortOptions {
-  homeDir?: string
-  localAppDataDir?: string
-  platform?: NodeJS.Platform
+export interface DetectWechatDevtoolsServicePortOptions extends ResolveWechatDevtoolsTargetOptions {
+  target?: ResolvedWechatDevtoolsTarget
 }
 
 export interface DetectWechatDevtoolsServicePortResult {
@@ -39,13 +38,6 @@ export interface BootstrapWechatDevtoolsSettingsResult extends DetectWechatDevto
   trustedProjectCount: number
 }
 
-interface ResolvedWechatDevtoolsContext {
-  baseDir: string
-  homeDir: string
-  localAppDataDir: string
-  platform: NodeJS.Platform
-}
-
 interface PartialWechatDevtoolsSecuritySettings {
   enableServicePort?: boolean
   port?: number
@@ -63,22 +55,6 @@ const SETTINGS_STORAGE_FILE_NAMES = [
   `localstorage_${SETTINGS_STORAGE_HASH}.json`,
   `ls_${SETTINGS_STORAGE_HASH}.json`,
 ]
-
-function resolveWechatDevtoolsBaseDir(
-  homeDir: string,
-  platform: NodeJS.Platform,
-  localAppDataDir: string,
-) {
-  if (platform === 'darwin') {
-    return path.join(homeDir, 'Library', 'Application Support', '微信开发者工具')
-  }
-
-  if (platform === 'win32') {
-    return path.join(localAppDataDir, '微信开发者工具', 'User Data')
-  }
-
-  return undefined
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -123,52 +99,12 @@ function normalizeWechatDevtoolsSecuritySettings(value: unknown) {
   return Object.keys(normalized).length > 0 ? normalized : undefined
 }
 
-function shouldPreferServicePortCandidate(
-  current: DetectedWechatDevtoolsServicePortSettings,
-  next: DetectedWechatDevtoolsServicePortSettings,
-  currentUpdatedAt: number,
-  nextUpdatedAt: number,
-) {
-  if (current.enabled === undefined && current.port === undefined) {
-    return true
-  }
-
-  if (next.enabled === true && current.enabled !== true) {
-    return true
-  }
-
-  if (next.enabled === current.enabled && next.port !== undefined && current.port === undefined) {
-    return true
-  }
-
-  return next.enabled === current.enabled
-    && (next.port !== undefined) === (current.port !== undefined)
-    && nextUpdatedAt > currentUpdatedAt
-}
-
-function createResolvedWechatDevtoolsContext(
-  options: DetectWechatDevtoolsServicePortOptions = {},
-): ResolvedWechatDevtoolsContext | undefined {
+async function resolveSelectedProfile(options: DetectWechatDevtoolsServicePortOptions) {
   const platform = options.platform ?? process.platform
-  const homeDir = options.homeDir ?? process.env.USERPROFILE ?? process.env.HOME ?? os.homedir()
-  if (!homeDir) {
+  if (!options.target && platform !== 'darwin' && platform !== 'win32') {
     return undefined
   }
-
-  const localAppDataDir = options.localAppDataDir
-    ?? process.env.LOCALAPPDATA
-    ?? path.join(homeDir, 'AppData', 'Local')
-  const baseDir = resolveWechatDevtoolsBaseDir(homeDir, platform, localAppDataDir)
-  if (!baseDir) {
-    return undefined
-  }
-
-  return {
-    baseDir,
-    homeDir,
-    localAppDataDir,
-    platform,
-  }
+  return (await resolveWechatDevtoolsTarget(options)).profileDir
 }
 
 async function readJsonObject(filePath: string) {
@@ -197,56 +133,13 @@ async function writeJsonObject(filePath: string, value: Record<string, unknown>)
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
 }
 
-async function resolveWechatDevtoolsInstanceDirs(baseDir: string) {
-  try {
-    const entries = await fs.readdir(baseDir, { withFileTypes: true })
-    const instanceDirs: string[] = []
-    const seenDirs = new Set<string>()
-
-    const appendInstanceDir = async (instanceDir: string) => {
-      if (seenDirs.has(instanceDir)) {
-        return
-      }
-
-      try {
-        const stats = await fs.stat(path.join(instanceDir, 'WeappLocalData'))
-        if (stats.isDirectory()) {
-          instanceDirs.push(instanceDir)
-          seenDirs.add(instanceDir)
-        }
-      }
-      catch {
-      }
-    }
-
-    await appendInstanceDir(baseDir)
-
-    for (const entry of entries) {
-      if (!entry.isDirectory()) {
-        continue
-      }
-
-      await appendInstanceDir(path.join(baseDir, entry.name))
-    }
-
-    return instanceDirs
-  }
-  catch (error) {
-    const typedError = error as NodeJS.ErrnoException
-    if (typedError.code === 'ENOENT') {
-      return []
-    }
-    throw error
-  }
-}
-
 async function detectWechatDevtoolsSecuritySettings(localDataDir: string) {
   for (const fileName of SETTINGS_STORAGE_FILE_NAMES) {
     const filePath = path.join(localDataDir, fileName)
     const current = await readJsonObject(filePath)
     const security = normalizeWechatDevtoolsSecuritySettings(current.security)
     if (security) {
-      return { ...security, updatedAt: (await fs.stat(filePath)).mtimeMs }
+      return security
     }
   }
 
@@ -286,40 +179,20 @@ async function trustWechatDevtoolsProject(localDataDir: string, projectPath: str
   return trusted
 }
 
-async function scanWechatDevtoolsServicePort(
-  context: ResolvedWechatDevtoolsContext,
-): Promise<DetectWechatDevtoolsServicePortResult & { instanceDirs: string[] }> {
-  const instanceDirs = await resolveWechatDevtoolsInstanceDirs(context.baseDir)
-  let detectedSecurityCount = 0
-  let detectedServicePort: DetectedWechatDevtoolsServicePortSettings = {}
-  let detectedUpdatedAt = -Infinity
-
-  for (const instanceDir of instanceDirs) {
-    const localDataDir = path.join(instanceDir, 'WeappLocalData')
-    const security = await detectWechatDevtoolsSecuritySettings(localDataDir)
-    if (!security) {
-      continue
+async function scanWechatDevtoolsServicePort(profileDir: string | undefined): Promise<DetectWechatDevtoolsServicePortResult> {
+  const localDataDir = profileDir && path.join(profileDir, 'WeappLocalData')
+  const exists = localDataDir && await fs.stat(localDataDir).then(stat => stat.isDirectory(), (error: NodeJS.ErrnoException) => {
+    if (error.code !== 'ENOENT') {
+      throw error
     }
-
-    detectedSecurityCount += 1
-
-    const candidate: DetectedWechatDevtoolsServicePortSettings = {
-      enabled: security.enableServicePort,
-      port: security.port,
-    }
-    // 多版本安装会保留旧实例；同等有效的配置以最近写入者为准，不能依赖目录排序。
-    if (shouldPreferServicePortCandidate(detectedServicePort, candidate, detectedUpdatedAt, security.updatedAt)) {
-      detectedServicePort = candidate
-      detectedUpdatedAt = security.updatedAt
-    }
-  }
-
+    return false
+  })
+  const security = exists && localDataDir ? await detectWechatDevtoolsSecuritySettings(localDataDir) : undefined
   return {
-    instanceDirs,
-    touchedInstanceCount: instanceDirs.length,
-    detectedSecurityCount,
-    servicePort: detectedServicePort.port,
-    servicePortEnabled: detectedServicePort.enabled,
+    touchedInstanceCount: exists ? 1 : 0,
+    detectedSecurityCount: security ? 1 : 0,
+    servicePort: security?.port,
+    servicePortEnabled: security?.enableServicePort,
   }
 }
 
@@ -329,23 +202,7 @@ async function scanWechatDevtoolsServicePort(
 export async function detectWechatDevtoolsServicePort(
   options: DetectWechatDevtoolsServicePortOptions = {},
 ): Promise<DetectWechatDevtoolsServicePortResult> {
-  const context = createResolvedWechatDevtoolsContext(options)
-  if (!context) {
-    return {
-      touchedInstanceCount: 0,
-      detectedSecurityCount: 0,
-      servicePort: undefined,
-      servicePortEnabled: undefined,
-    }
-  }
-
-  const result = await scanWechatDevtoolsServicePort(context)
-  return {
-    touchedInstanceCount: result.touchedInstanceCount,
-    detectedSecurityCount: result.detectedSecurityCount,
-    servicePort: result.servicePort,
-    servicePortEnabled: result.servicePortEnabled,
-  }
+  return await scanWechatDevtoolsServicePort(await resolveSelectedProfile(options))
 }
 
 /**
@@ -354,37 +211,14 @@ export async function detectWechatDevtoolsServicePort(
 export async function bootstrapWechatDevtoolsSettings(
   options: BootstrapWechatDevtoolsSettingsOptions = {},
 ): Promise<BootstrapWechatDevtoolsSettingsResult> {
-  const context = createResolvedWechatDevtoolsContext(options)
-  if (!context) {
-    return {
-      touchedInstanceCount: 0,
-      detectedSecurityCount: 0,
-      updatedSecurityCount: 0,
-      trustedProjectCount: 0,
-      servicePort: undefined,
-      servicePortEnabled: undefined,
-    }
-  }
-
-  const scanResult = await scanWechatDevtoolsServicePort(context)
-  let trustedProjectCount = 0
-
-  for (const instanceDir of scanResult.instanceDirs) {
-    const localDataDir = path.join(instanceDir, 'WeappLocalData')
-
-    if (options.projectPath && options.trustProject !== false) {
-      if (await trustWechatDevtoolsProject(localDataDir, options.projectPath)) {
-        trustedProjectCount += 1
-      }
-    }
-  }
-
+  const profileDir = await resolveSelectedProfile(options)
+  const result = await scanWechatDevtoolsServicePort(profileDir)
+  const trusted = profileDir && result.touchedInstanceCount && options.projectPath && options.trustProject === true
+    ? await trustWechatDevtoolsProject(path.join(profileDir, 'WeappLocalData'), options.projectPath)
+    : false
   return {
-    touchedInstanceCount: scanResult.touchedInstanceCount,
-    detectedSecurityCount: scanResult.detectedSecurityCount,
+    ...result,
     updatedSecurityCount: 0,
-    trustedProjectCount,
-    servicePort: scanResult.servicePort,
-    servicePortEnabled: scanResult.servicePortEnabled,
+    trustedProjectCount: trusted ? 1 : 0,
   }
 }

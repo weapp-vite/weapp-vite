@@ -16,6 +16,7 @@ import { launchHeadlessAutomator } from './automator.headless'
 import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './automatorBridgeFiles'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
 import { resolveWechatCliPath } from './devtoolsCli'
+import { assertSelectedWechatDevtoolsRuntime, resolveSelectedWechatDevtools } from './devtoolsSelection'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 import { captureDevtoolsLogBaseline, scanRecentDevtoolsSimulatorBootIssues } from './ide-devtools-logs'
 import {
@@ -267,6 +268,8 @@ export interface RelaunchRecoveryOptions {
   projectPath?: string
   retryDelayMs?: number
   rootSelectors?: string[]
+  /** 限定显式根节点所属路由；未提供时保持直接调用方的全路由配置。 */
+  rootSelectorsRoute?: string
   skipPageRootCheck?: boolean
 }
 
@@ -318,6 +321,10 @@ type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 export type AutomatorBridgeProjectMode = 'direct' | 'snapshot'
 
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
+  /** 仅通知本次实际创建的独立快照，允许调用者登记失败启动的资源。 */
+  onOwnedSnapshot?: (project: { projectPath: string, cliPath: string }) => Promise<void>
+  /** 在桥接握手前暴露已获得的端点，不转移共享 IDE 宿主所有权。 */
+  onSessionMetadata?: (metadata: { projectPath: string, wsEndpoint: string, port: number }) => Promise<void>
   configureHeadlessSession?: HeadlessAutomatorLaunchOptions['configureSession']
   /** HMR 验收直连构建器输出；snapshot 仅用于需要独立项目快照的验收。 */
   bridgeProjectMode?: AutomatorBridgeProjectMode
@@ -2245,16 +2252,17 @@ function isMissingEngineBuildEndpointError(error: unknown) {
   return DEVTOOLS_ENGINE_BUILD_ENDPOINT_MISSING_PATTERNS.some(pattern => pattern.test(error.message))
 }
 
-function rememberWechatDevtoolsServicePort(output: string) {
+async function rememberWechatDevtoolsServicePort(output: string, cliPath: string) {
   const servicePort = extractWechatDevtoolsServicePort(output)
   if (servicePort) {
-    setRuntimeWechatDevtoolsServicePort(servicePort)
+    setRuntimeWechatDevtoolsServicePort(servicePort, await resolveSelectedWechatDevtools(cliPath))
   }
   return servicePort
 }
 
-async function runWechatIdeEngineBuildByRuntimeHttp(projectPath: string, project: string, lifecycle?: AutomatorLaunchLifecycle) {
+async function runWechatIdeEngineBuildByRuntimeHttp(projectPath: string, project: string, lifecycle?: AutomatorLaunchLifecycle, cliPath?: string) {
   const build = (phase?: AutomatorLaunchLifecycle) => runWechatIdeEngineBuildByHttp(projectPath, {
+    cliPath: resolveWechatCliPath(cliPath),
     overallTimeoutMs: phase?.remainingMs(60_000) ?? 60_000,
     timeoutMs: phase?.remainingMs(10_000) ?? 10_000,
     pollIntervalMs: 1_000,
@@ -2287,6 +2295,7 @@ async function refreshMiniProgramProjectIndex(
   if (options.refreshProject) {
     process.stdout.write(`[info] [runtime:launch-step] project-refresh-start project=${project}\n`)
     const open = (phase?: AutomatorLaunchLifecycle) => openWechatIdeProjectByHttp(projectPath, {
+      cliPath: resolveWechatCliPath(options.cliPath),
       timeoutMs: phase?.remainingMs(PROJECT_REFRESH_TIMEOUT) ?? PROJECT_REFRESH_TIMEOUT,
       signal: phase?.signal,
     })
@@ -2303,6 +2312,7 @@ async function refreshMiniProgramProjectIndex(
   lifecycle?.throwIfAborted()
   process.stdout.write(`[info] [runtime:launch-step] fileutils-reset-start project=${project}\n`)
   const resetFileUtils = (phase?: AutomatorLaunchLifecycle) => resetWechatIdeFileUtilsByHttp(projectPath, {
+    cliPath: resolveWechatCliPath(options.cliPath),
     timeoutMs: phase?.remainingMs(10_000) ?? 10_000,
     signal: phase?.signal,
   })
@@ -2317,7 +2327,7 @@ async function refreshMiniProgramProjectIndex(
   lifecycle?.throwIfAborted()
   process.stdout.write(`[info] [runtime:launch-step] engine-build-start project=${project}\n`)
   try {
-    await runWechatIdeEngineBuildByRuntimeHttp(projectPath, project, lifecycle)
+    await runWechatIdeEngineBuildByRuntimeHttp(projectPath, project, lifecycle, options.cliPath)
   }
   catch (error) {
     lifecycle?.throwIfAborted()
@@ -2339,14 +2349,14 @@ async function refreshMiniProgramProjectIndex(
       const result = lifecycle ? await lifecycle.step(build, { waitForExit: true }) : await build()
       lifecycle?.throwIfAborted()
       const combinedOutput = `${typeof result.stderr === 'string' ? result.stderr : ''}\n${typeof result.stdout === 'string' ? result.stdout : ''}`
-      rememberWechatDevtoolsServicePort(combinedOutput)
+      await rememberWechatDevtoolsServicePort(combinedOutput, cliPath)
       if ((result.exitCode ?? 1) !== 0) {
         const stderr = typeof result.stderr === 'string' ? result.stderr.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
         const stdout = typeof result.stdout === 'string' ? result.stdout.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
         const details = (stderr || stdout || `exit=${result.exitCode ?? 1}`).slice(0, 240)
         if (DEVTOOLS_CLI_ENGINE_BUILD_OPENED_PATTERN.test(`${stderr}\n${stdout}`)) {
           try {
-            await runWechatIdeEngineBuildByRuntimeHttp(projectPath, project, lifecycle)
+            await runWechatIdeEngineBuildByRuntimeHttp(projectPath, project, lifecycle, options.cliPath)
             process.stdout.write(`[info] [runtime:launch-step] engine-build-ready source=http-after-cli-open project=${project}\n`)
             return
           }
@@ -2444,6 +2454,10 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
   const disableRelaunchCurrentReady = shouldDisableAutomatorRelaunchCurrentReady()
   miniProgram.reLaunch = async (...args: any[]) => {
     const route = typeof args[0] === 'string' ? args[0] : '<unknown-route>'
+    const rootSelectors = options.rootSelectorsRoute === undefined
+      || normalizeRouteForCompare(options.rootSelectorsRoute) === normalizeRouteForCompare(route)
+      ? options.rootSelectors
+      : undefined
     const maxAttempts = 2
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -2453,7 +2467,7 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
         if (attempt === 1 && !options.skipPageRootCheck && !disableRelaunchCurrentReady && !routeHasQuery(route)) {
           const currentPage = await waitForCurrentRouteReady(miniProgram, route, Math.min(QUICK_CURRENT_ROUTE_READY_TIMEOUT, RELAUNCH_READY_TIMEOUT), {
             checkDevtoolsLog: options.checkDevtoolsLog,
-            rootSelectors: options.rootSelectors,
+            rootSelectors,
           })
           if (currentPage) {
             process.stdout.write(`[info] [runtime:relaunch-current-ready] route=${route} attempt=${attempt}\n`)
@@ -2482,11 +2496,11 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
         }
 
         if (!options.skipPageRootCheck) {
-          const pageRoot = await waitForRelaunchPageRoot(page, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, options.rootSelectors)
+          const pageRoot = await waitForRelaunchPageRoot(page, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, rootSelectors)
           if (!pageRoot) {
             const currentPage = await waitForCurrentRouteReady(miniProgram, route, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, {
               checkDevtoolsLog: options.checkDevtoolsLog,
-              rootSelectors: options.rootSelectors,
+              rootSelectors,
             })
             if (currentPage) {
               return currentPage
@@ -2525,7 +2539,7 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
               return currentPage ?? page
             }
 
-            const pageRoot = await waitForRelaunchPageRoot(currentPage, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, options.rootSelectors)
+            const pageRoot = await waitForRelaunchPageRoot(currentPage, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, rootSelectors)
             if (pageRoot) {
               process.stdout.write(`[info] [runtime:relaunch-fallback] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
               return currentPage ?? page
@@ -2570,6 +2584,7 @@ export async function launchAutomatorViaCliBridge(
   project: string,
   lifecycle: AutomatorLaunchLifecycle,
   monitor?: ReturnType<typeof createDevtoolsSimulatorBootLogMonitor>,
+  onSessionMetadata?: LaunchAutomatorOptions['onSessionMetadata'],
 ) {
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-start project=${project}\n`)
   const result = await lifecycle.step(() => execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify({ ...options, timeout: lifecycle.remainingMs(options.timeout) })], {
@@ -2609,9 +2624,14 @@ export async function launchAutomatorViaCliBridge(
   if (!bridgeResult.wsEndpoint || typeof bridgeResult.wsEndpoint !== 'string') {
     throw new Error(`Invalid automator cli bridge output: ${rawStdout}`)
   }
+  await onSessionMetadata?.({
+    projectPath: options.projectPath!,
+    wsEndpoint: bridgeResult.wsEndpoint,
+    port: Number(new URL(bridgeResult.wsEndpoint).port),
+  })
   lifecycle.throwIfAborted()
   if (typeof bridgeResult.servicePort === 'number') {
-    setRuntimeWechatDevtoolsServicePort(bridgeResult.servicePort)
+    setRuntimeWechatDevtoolsServicePort(bridgeResult.servicePort, await resolveSelectedWechatDevtools(resolveWechatCliPath(options.cliPath)))
   }
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-ready endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
 
@@ -2735,7 +2755,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   }
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
-  const { configureHeadlessSession: _configureHeadlessSession, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { configureHeadlessSession: _configureHeadlessSession, onOwnedSnapshot, onSessionMetadata, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   rest.cliPath = resolveWechatCliPath(rest.cliPath)
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
@@ -2747,6 +2767,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   let forceProjectRefreshAfterRetry = false
   const operation = new AutomatorLaunchLifecycle(launchTimeout, 'launch automator')
   return (async () => {
+    const selectedTarget = await resolveSelectedWechatDevtools(rest.cliPath)
     for (let attempt = 1; attempt <= launchRetries; attempt += 1) {
       let miniProgram: any = null
       let bridgeWrapperProject: BridgeWrapperProject | undefined
@@ -2778,6 +2799,9 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               const runtimeRoot = resolveReportProjectPath(bridgeWrapperProject.runtimeRoot)
               process.stdout.write(`[info] [runtime:launch-step] bridge-project-ready mode=${mode} runtimeRoot=${runtimeRoot} project=${project}\n`)
             }
+            if (bridgeWrapperProject?.stopSync) {
+              await onOwnedSnapshot?.({ projectPath: bridgeWrapperProject.path, cliPath: rest.cliPath! })
+            }
             await lifecycle.step(() => waitForBridgeWrapperWarmupAsset(bridgeWrapperProject, resolvedWarmupRoute, project))
             const launchProjectPath = bridgeWrapperProject?.path ?? rest.projectPath
             const launchRest = {
@@ -2803,7 +2827,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             lifecycle.throwIfAborted()
             process.stdout.write(`[info] [runtime:launch-step] connect-start mode=${launchMode || 'direct'} project=${project}\n`)
             miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
-              ? await launchAutomatorViaCliBridge(launchOptions, project, lifecycle, devtoolsLogMonitor)
+              ? await launchAutomatorViaCliBridge(launchOptions, project, lifecycle, devtoolsLogMonitor, onSessionMetadata)
               : await lifecycle.step(() => runWithDevtoolsLogMonitor(
                   () => automator.launch({ ...launchOptions, signal: lifecycle.signal, timeout: lifecycle.remainingMs(launchTimeout) }),
                   lifecycle.remainingMs(launchTimeout),
@@ -2818,6 +2842,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                   },
                 ), { disposeLate: disconnectLaunchSession })
             lifecycle.own(() => disconnectLaunchSession(miniProgram), 'automator-session')
+            await lifecycle.step(() => assertSelectedWechatDevtoolsRuntime(selectedTarget, miniProgram))
             lifecycle.throwIfAborted()
             devtoolsLogMonitor.assertClean(`connect ${launchMode || 'direct'}`)
             process.stdout.write(`[info] [runtime:launch-step] connect-ready mode=${launchMode || 'direct'} project=${project}\n`)
@@ -2891,7 +2916,8 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               disableSessionRecovery: disableRelaunchSessionRecovery,
               project,
               projectPath: launchProjectPath,
-              rootSelectors: warmupRootSelectors,
+              rootSelectors: resolvedWarmupRoute ? warmupRootSelectors : undefined,
+              rootSelectorsRoute: resolvedWarmupRoute,
               skipPageRootCheck: skipRelaunchPageRootCheck,
             })
             return attachBridgeWrapperSyncCleanup(withRelaunch, bridgeWrapperProject)

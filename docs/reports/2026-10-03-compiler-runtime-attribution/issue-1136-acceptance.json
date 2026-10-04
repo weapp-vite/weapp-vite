@@ -1,0 +1,498 @@
+{
+  "schemaVersion": 1,
+  "issue": 1136,
+  "conclusion": {
+    "completionLabelReady": true,
+    "labelAppliedByThisReview": false,
+    "remaining": [],
+    "scope": "Historical 170668-byte attribution, candidate-tarball consumption, official Stable minimal/typical runtime and recollected complete source graphs satisfy this issue. The completion label is pending synchronization; no performance gain or seven-platform real-IDE runtime claim is made."
+  },
+  "historicalAttribution": {
+    "source": "historical-runtime-comparison.json.gz",
+    "sourceSha256": "55a3ad2c5d1aed45daa0ea538c23bbe2ea6f4fadc16a7e5a6307b03d22933fbd",
+    "benchmarkSourceCommit": "ae0ba52baa5db501d8e202b3cec9c4a888a555ff",
+    "recoveredBytes": 170668,
+    "recoveredSha256": "38b55d82531819afd34e9daf56a935c22f0615138def7fe1b53802510cc1b243",
+    "installedBytes": 170164,
+    "installedSha256": "eb23081003bb140d793104b8c8a9fab1e7a6bc33651a6dda2771f2f6b02be589",
+    "regionCommentCount": 84,
+    "commentLayoutBytes": 504,
+    "normalizedFilesByteIdentical": true,
+    "categoryByteEstimates": {
+      "runtime": 164487.67737695767,
+      "dependency": 2122.683407675353,
+      "helper": 3553.63921536699
+    },
+    "unattributedBytes": 0,
+    "method": "rendered-length-proportional; category estimates are not independently minified module byte sizes",
+    "limitation": "The historical report recorded raw/gzip/brotli sizes, not an artifact hash. The recovered file matches all three original metrics; its hash is recorded here for future reproducibility.",
+    "sourceGraphBoundary": "Historical registry archives retain the older output-only graph and its missing intermediate nodes. Their byte attribution remains preserved; the newly complete source graphs belong to the 434899347 candidate and are not a reconstruction of the historical registry graph."
+  },
+  "candidateConsumer": {
+    "sourceSha": "434899347450e6c4ca4a4b0ca505156576ee3d7c",
+    "sourceState": "clean",
+    "node": "v22.22.3",
+    "candidatePackages": 32,
+    "verifiedInstallOccurrences": 32,
+    "tarballManifestSha256": "478d6130feb445bca204dc8a2236c3e75570f8465a972439bad7648d539ffefd",
+    "consumerLockSha256": "e2867f5d034e3d2af888f5104301e5af1efea0adaf363b1aed4f7f6736bad2b4",
+    "packageVersions": {
+      "weapp-vite": "7.4.0",
+      "wevu": "7.4.0",
+      "@mpcore/test": "0.1.15"
+    },
+    "packageVersionBoundary": "These are candidate tarballs built from the recorded source SHA; unchanged package version strings do not identify registry artifacts.",
+    "instrumentationPreservesEveryArtifact": true,
+    "benchmarkOutputFiles": 16,
+    "sourceConfigurationAndLockRestored": true,
+    "restoredFileCount": 8,
+    "runtimeArtifactsMatchHeadless": true
+  },
+  "stable": {
+    "generatedAt": "2026-10-04T10:54:32.648Z",
+    "status": "passed",
+    "runtimeValidation": "devtools-passed",
+    "officialChannel": {
+      "queriedAt": "2026-10-04T10:47:07.012399+00:00",
+      "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+      "channel": "stable",
+      "version": "2.02.2608080"
+    },
+    "selectedAndObservedIdeVersion": "2.02.2608080",
+    "baseLibraryVersion": "3.17.2",
+    "scenarioCount": 2,
+    "domCheckpointCount": 3,
+    "runtimeWarningsErrorsExceptions": 0,
+    "observations": [
+      {
+        "scenario": "minimal",
+        "route": "/pages/index/index",
+        "initial": {
+          "text": "minimal published consumer"
+        },
+        "host": {
+          "ideVersion": "2.02.2608080",
+          "baseLibraryVersion": "3.17.2"
+        },
+        "domEvidence": [
+          {
+            "id": "initial",
+            "route": "pages/index/index",
+            "source": "devtools-page-frame",
+            "capturedAt": "2026-10-04T10:54:49.689Z",
+            "nodes": [
+              {
+                "selector": "view",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "minimal published consumer"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCounts": {
+          "info": 3
+        },
+        "closed": true,
+        "cleanup": "owned-connection-disconnected"
+      },
+      {
+        "scenario": "typical",
+        "route": "/pages/index/index",
+        "initial": {
+          "text": "1 / 2",
+          "count": 1,
+          "computed": 2
+        },
+        "host": {
+          "ideVersion": "2.02.2608080",
+          "baseLibraryVersion": "3.17.2"
+        },
+        "domEvidence": [
+          {
+            "id": "initial",
+            "route": "pages/index/index",
+            "source": "devtools-page-frame",
+            "capturedAt": "2026-10-04T10:55:05.243Z",
+            "nodes": [
+              {
+                "selector": "button",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "1 / 2"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "after-tap",
+            "route": "pages/index/index",
+            "source": "devtools-page-frame",
+            "capturedAt": "2026-10-04T10:55:05.365Z",
+            "nodes": [
+              {
+                "selector": "button",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "2 / 4"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "diagnosticCounts": {
+          "info": 3
+        },
+        "closed": true,
+        "cleanup": "owned-connection-disconnected",
+        "afterTap": {
+          "text": "2 / 4",
+          "count": 2,
+          "computed": 4
+        }
+      }
+    ],
+    "startupDiagnostics": {
+      "scope": "Outside the scenario runtime diagnostic stream",
+      "warnings": [
+        "engine build HTTP endpoint missing",
+        "CLI open returned nonzero after IDE server start with punycode deprecation warning",
+        "compile tool unimplemented"
+      ],
+      "runtimeCasesStillPassed": true
+    },
+    "cleanup": {
+      "scenarioConnectionsClosed": true,
+      "ownedProjectExplicitCliClose": "success confirmed by coordinating agent after verification",
+      "sharedIdeProcessWasNotTerminated": true
+    },
+    "verificationArchive": "candidate-434899347-stable-verification.json.gz"
+  },
+  "headless": {
+    "generatedAt": "2026-10-04T08:24:50.215Z",
+    "status": "passed",
+    "runtimeValidation": "headless-passed",
+    "runtimePackage": {
+      "name": "@mpcore/test",
+      "version": "0.1.15",
+      "entry": "node_modules/@mpcore/test/dist/index.mjs",
+      "entrySha256": "f50dcebf5e83ac6661f477e55c18f3b6dcf06e12aae5d42e467262c688c712bb"
+    },
+    "observationsEqualToStable": true,
+    "scenarioSourcesEqualToStable": true
+  },
+  "sevenTargetCapabilities": {
+    "reportCommit": "49446adad1ae",
+    "generatedAt": "2026-10-04T11:22:48.493Z",
+    "command": "node --import tsx scripts/report-wevu-runtime-size.ts --check --output-json=.tmp/issue1136-complete-import-graph-seven-target.json",
+    "exitCode": 0,
+    "archive": "seven-target-capabilities-complete-graph.json.gz",
+    "archiveSha256": "73702b48d1e647ed32369025560e90309e49d4131bb2c94cdc3b6d7227bc4d14",
+    "decompressedReportSha256": "e45d3ba96c0f6dd094cd2b4ab20f3c3016b584711890da7ce6d16f5d478f046e",
+    "targets": [
+      "weapp",
+      "alipay",
+      "tt",
+      "swan",
+      "jd",
+      "xhs",
+      "web"
+    ],
+    "tierCount": 49,
+    "budgetsAndDenyRulesUnchanged": true,
+    "allGuardsPassed": true,
+    "allAttributionSumsAndDeltasChecked": true,
+    "previousArchive": "seven-target-capabilities.json.gz",
+    "previousReportCommit": "6bd9f6989b92",
+    "comparison": "45 production byte counts are unchanged; Web typical-page, complex-component, public-page and full-provider each increase by 158 bytes and remain inside unchanged budgets.",
+    "productionBytesByTarget": {
+      "weapp": {
+        "reactivity-core": 6560,
+        "minimal-app": 79236,
+        "typical-page": 122683,
+        "complex-component": 137265,
+        "public-app": 158101,
+        "public-page": 160017,
+        "full-provider": 256541
+      },
+      "alipay": {
+        "reactivity-core": 6560,
+        "minimal-app": 79257,
+        "typical-page": 124713,
+        "complex-component": 139295,
+        "public-app": 160131,
+        "public-page": 162047,
+        "full-provider": 258571
+      },
+      "tt": {
+        "reactivity-core": 6560,
+        "minimal-app": 79396,
+        "typical-page": 122843,
+        "complex-component": 137425,
+        "public-app": 158261,
+        "public-page": 160177,
+        "full-provider": 256701
+      },
+      "swan": {
+        "reactivity-core": 6560,
+        "minimal-app": 79242,
+        "typical-page": 122689,
+        "complex-component": 137271,
+        "public-app": 158107,
+        "public-page": 160023,
+        "full-provider": 256547
+      },
+      "jd": {
+        "reactivity-core": 6560,
+        "minimal-app": 79236,
+        "typical-page": 122683,
+        "complex-component": 137265,
+        "public-app": 158101,
+        "public-page": 160017,
+        "full-provider": 256541
+      },
+      "xhs": {
+        "reactivity-core": 6560,
+        "minimal-app": 79239,
+        "typical-page": 122686,
+        "complex-component": 137268,
+        "public-app": 158104,
+        "public-page": 160020,
+        "full-provider": 256544
+      },
+      "web": {
+        "reactivity-core": 6560,
+        "minimal-app": 184606,
+        "typical-page": 444936,
+        "complex-component": 455130,
+        "public-app": 263503,
+        "public-page": 482213,
+        "full-provider": 604475
+      }
+    },
+    "changedTiers": [
+      {
+        "target": "web",
+        "tier": "typical-page",
+        "productionDeltaBytes": 158
+      },
+      {
+        "target": "web",
+        "tier": "complex-component",
+        "productionDeltaBytes": 158
+      },
+      {
+        "target": "web",
+        "tier": "public-page",
+        "productionDeltaBytes": 158
+      },
+      {
+        "target": "web",
+        "tier": "full-provider",
+        "productionDeltaBytes": 158
+      }
+    ],
+    "baseSourceSha": "49446adad1ae8f94e9f69d3c36da460ddeebc688",
+    "collectorSourceCommit": "a962001239155af97978b6cc9c617e58c7dbe7c0",
+    "collectorPatchSha256": "abd77261116f703bc67c26c0ae18ccb72192a846a94dd856836a918f5e1f4af5",
+    "collectionSourceState": "49446adad base plus the collector-only patch later committed as a96200123; original report commit field is preserved.",
+    "previousCollectorArchive": "seven-target-capabilities-49446adad.json.gz",
+    "previousCollectorBuildCommand": "node --import tsx scripts/report-wevu-runtime-size.ts --build --check --output-json=.tmp/issue1136-final-seven-target-capabilities.json",
+    "previousCollectorBuildExitCode": 0,
+    "recollectionUsedSamePreviouslyRebuiltDist": true,
+    "devProductionBytesAndRetainedRecordsUnchanged": true,
+    "sourceImportChainCoverage": {
+      "retainedPositiveByteModules": 5422,
+      "resolvedChains": 5422,
+      "previousUnresolved": 2227,
+      "currentUnresolved": 0,
+      "allGraphEdgesClosedAndChainsVerified": true,
+      "meaning": "Static source import paths can traverse zero-output modules; they do not establish symbol-level retention causality."
+    },
+    "reconciliationArchive": "import-graph-reconciliation.json.gz"
+  },
+  "sourceBoundary": {
+    "consumerFrom": "434899347450e6c4ca4a4b0ca505156576ee3d7c",
+    "reviewedMain": "49446adad1ae8f94e9f69d3c36da460ddeebc688",
+    "runtimeAndBuildProductSourcesUnchanged": true,
+    "interveningChanges": "Relevant package changes are tests; later main changes are E2E/CI helpers and documentation. Consumer runtime remains evidence for its recorded tarball SHA; seven-target size guards were freshly rebuilt at 49446adad.",
+    "collectorSourceCommit": "a962001239155af97978b6cc9c617e58c7dbe7c0",
+    "collectionBoundary": "Both recollections ran on 49446adad plus collector patches, subsequently committed as a96200123. No package source or candidate tarball was rewritten; no new Stable runtime run is claimed.",
+    "remoteCheckBoundary": "The recorded Release/Website successes cover 49446adad. They do not claim remote execution of the subsequent a96200123 collector-only fix."
+  },
+  "rawEvidence": [
+    {
+      "id": "final-candidate-evidence.json",
+      "sha256": "ab92ec9686cd921d41e09116d8193dea8a87085f5383592ce3063d5a125f5db1"
+    },
+    {
+      "id": "consumer-tarballs.json",
+      "sha256": "478d6130feb445bca204dc8a2236c3e75570f8465a972439bad7648d539ffefd"
+    },
+    {
+      "id": "1136-install.json",
+      "sha256": "3ef4d983f20e9cbad7587848a6149677cbf27534bf9a364fdc962ea8e79d5131"
+    },
+    {
+      "id": "1136-build/verification.json",
+      "sha256": "a2c29829317390fc61341244c22a2e7d31e4a9d428d339cd33c4b5bf89957acf"
+    },
+    {
+      "id": "1136-headless/verification.json",
+      "sha256": "2363d928aa6c8f41a655fd86b7284f1e660ebfe705e71cbe03de48e1057dac2b"
+    },
+    {
+      "id": "1136-stable/verification.json",
+      "sha256": "761abb6bc973403e68f04b39bb72b73cbd07e00ad71906331708c2eeace54be4"
+    },
+    {
+      "id": "1136-stable/source-restoration.json",
+      "sha256": "0332e400f2fc25ff1f34a44df17a5a7bd1f329d7e584e1fbb2752f1ecb6e4454"
+    },
+    {
+      "id": "1136-stable/official-stable.json",
+      "sha256": "e50a8ded913cae1a5dd5e5eb5b9dd25239e2a852df26eaa7c728ba557197676a"
+    },
+    {
+      "id": "1136-stable/runtime.log",
+      "sha256": "3acac4085fc85403bdad43edd32ca27ba19f66eba67604fd06ab661ad7197f3d"
+    }
+  ],
+  "limits": [
+    "The original historical benchmark had no artifact hash; recovered bytes match its raw/gzip/Brotli metrics and the new hash is preserved.",
+    "Seven-target capability tiers are bundle/retained-module guards; only WeChat official Stable minimal/typical consumer runtime was observed in this run.",
+    "No current preset-performance, HMR latency or long-lived resource acceptance is inferred; issues 1082, 1133, 1134, 1135 and 1137 retain separate gates.",
+    "The complete graph proves source import reachability, not symbol-level retention causality. Historical archives are left unchanged, including their original unresolved paths.",
+    "Consumer main-bundle attribution covers 13/6/6 files for benchmark/minimal/typical. Each full 16/9/9-file inventory also includes three separate npm outputs, all hash-matched to the prior Stable evidence."
+  ],
+  "consumerRecollection": {
+    "generatedAt": "2026-10-04T11:28:25.099Z",
+    "finishedAt": "2026-10-04T11:28:28.445Z",
+    "status": "passed",
+    "candidateCommit": "434899347450e6c4ca4a4b0ca505156576ee3d7c",
+    "collectorBaseCommit": "49446adad1ae8f94e9f69d3c36da460ddeebc688",
+    "collectorSourceCommit": "a962001239155af97978b6cc9c617e58c7dbe7c0",
+    "collectorSha256": "7bd623ab284f25b0276ab6222b0e2a8cd025f4259786ba2f5dad97af43b53081",
+    "referenceStableVerificationSha256": "761abb6bc973403e68f04b39bb72b73cbd07e00ad71906331708c2eeace54be4",
+    "runtimeRerun": false,
+    "runtimeObservationReuseBasis": "All emitted file paths, sizes and hashes match the prior official Stable verification. Scenarios use the same exact native-button source; candidate tarballs and lock remain unchanged.",
+    "sourceConfigAndLockRestored": true,
+    "graphKind": "source-imports",
+    "scenarioSummary": {
+      "benchmark": {
+        "graphNodes": 163,
+        "positiveByteModules": 100,
+        "danglingEdges": 0,
+        "unreachableRetainedModules": 0,
+        "fullEmittedFileInventoryMatchesPriorStable": true,
+        "emittedFiles": 16,
+        "attributionFiles": 13,
+        "separateNpmOutputFilesInFullInventory": 3,
+        "categoriesAndFacetsUnchanged": true,
+        "compilerOutputEqualBySource": true
+      },
+      "minimal": {
+        "graphNodes": 145,
+        "positiveByteModules": 91,
+        "danglingEdges": 0,
+        "unreachableRetainedModules": 0,
+        "fullEmittedFileInventoryMatchesPriorStable": true,
+        "emittedFiles": 9,
+        "attributionFiles": 6,
+        "separateNpmOutputFilesInFullInventory": 3,
+        "categoriesAndFacetsUnchanged": true,
+        "compilerOutputEqualBySource": true
+      },
+      "typical": {
+        "graphNodes": 155,
+        "positiveByteModules": 96,
+        "danglingEdges": 0,
+        "unreachableRetainedModules": 0,
+        "fullEmittedFileInventoryMatchesPriorStable": true,
+        "emittedFiles": 9,
+        "attributionFiles": 6,
+        "separateNpmOutputFilesInFullInventory": 3,
+        "categoriesAndFacetsUnchanged": true,
+        "compilerOutputEqualBySource": true
+      }
+    },
+    "previousDanglingEdges": {
+      "benchmark": 9,
+      "minimal": 7,
+      "typical": 8
+    },
+    "compilerOutputBoundary": "Compiler code is identical by source ID; benchmark transform visitation order differs.",
+    "recollectionArchive": "candidate-434899347-complete-graph-recollection.json.gz",
+    "scenarioArchives": {
+      "benchmark": "candidate-434899347-complete-graph-benchmark.json.gz",
+      "minimal": "candidate-434899347-complete-graph-minimal.json.gz",
+      "typical": "candidate-434899347-complete-graph-typical.json.gz"
+    }
+  },
+  "archives": {
+    "seven-target-capabilities-complete-graph.json.gz": {
+      "sha256": "73702b48d1e647ed32369025560e90309e49d4131bb2c94cdc3b6d7227bc4d14",
+      "decompressedSha256": "e45d3ba96c0f6dd094cd2b4ab20f3c3016b584711890da7ce6d16f5d478f046e",
+      "bytes": 458723
+    },
+    "import-graph-reconciliation.json.gz": {
+      "sha256": "97a2b2165527499322444b5f008a405a7e68d536bbb883f346a3efe8e7c41ba0",
+      "decompressedSha256": "6acd4d4fdf5995f618dbe6174076e531ba6e60d44b596bad6d689b4e0f70598a",
+      "bytes": 737
+    },
+    "candidate-434899347-stable-verification.json.gz": {
+      "sha256": "ac44e12c4006b8db729f6fa9d150dfa2cce43daa8cd1496a06a1b8528ba0e300",
+      "decompressedSha256": "761abb6bc973403e68f04b39bb72b73cbd07e00ad71906331708c2eeace54be4",
+      "bytes": 2516
+    },
+    "candidate-434899347-complete-graph-benchmark.json.gz": {
+      "sha256": "76991590ea83610d5256c309f576f1a6eea38b43cb2d9d30ce8b4ed7c2173515",
+      "decompressedSha256": "ff51ce4c78691a43c6c1e8b2c28da6247b5db11fd1641e5206ab86191c68527b",
+      "bytes": 11176
+    },
+    "candidate-434899347-complete-graph-minimal.json.gz": {
+      "sha256": "ab5c9ee1fda51c9c186cc789fd89cb274dbde22d62ed598699e6fc51255be09b",
+      "decompressedSha256": "5d6b8eb9be9f7f06486b70142fe8811031ce6557da1f7e3b61e4622bccc38dda",
+      "bytes": 6533
+    },
+    "candidate-434899347-complete-graph-typical.json.gz": {
+      "sha256": "42fd40762db0df2fa49132755e1fb003fa9456b21fdb4fddb5279a17796c9cac",
+      "decompressedSha256": "8a1c8143b7ba8424b6ac4308732d25041077586bd3c833435fac0084aba99958",
+      "bytes": 7299
+    },
+    "candidate-434899347-complete-graph-recollection.json.gz": {
+      "sha256": "8a79a6d7e74906b3f726ace6bd6d4969e87a22dd3d48152d1faaf63a08ae540a",
+      "decompressedSha256": "0824f465fcae13a7b6b6c87bbd4c46d3a90b8dad07c613d575be17708fe3018b",
+      "bytes": 1911
+    },
+    "seven-target-capabilities-49446adad.json.gz": {
+      "sha256": "d6407f8f45119ff4607345848aee756cf992efd7a1077d4533453ea0a1952ffd",
+      "decompressedSha256": "2524a2f1263af9cb4f980f79fe6947586beae2404476e275800736f87471b8cc",
+      "bytes": 257682
+    }
+  },
+  "remoteChecks": [
+    {
+      "sourceSha": "49446adad1ae8f94e9f69d3c36da460ddeebc688",
+      "workflow": "Release",
+      "runId": 37197051772,
+      "conclusion": "success"
+    },
+    {
+      "sourceSha": "49446adad1ae8f94e9f69d3c36da460ddeebc688",
+      "workflow": "Website",
+      "runId": 37197051750,
+      "conclusion": "success"
+    }
+  ]
+}

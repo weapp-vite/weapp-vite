@@ -1,0 +1,354 @@
+{
+  "schemaVersion": 1,
+  "issue": 1140,
+  "status": "local-runtime-accepted-pending-commit-and-ci",
+  "date": "2026-10-04",
+  "candidate": {
+    "baseCommit": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+    "workingTreeDirty": true,
+    "harness": "c3c643d40 plus uncommitted issue1137 automator, issue1097 selected-case, and issue1140 production-generation boundary changes",
+    "issue1140PatchSha256": "5bee6aac5a012efb0bb810c82cad3b374d028efd4a149a69ddaea6349095aefa",
+    "testedCommitIsFinalCommit": false
+  },
+  "officialDevtools": {
+    "queriedAt": "2026-10-04T12:26:25.041514+00:00",
+    "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+    "channel": "stable",
+    "version": "2.02.2608080",
+    "releaseDate": "2026-09-30",
+    "sourceSha256": "41d7b3f73dde8adff415deb48accfe3696d3db00866f1aadcfe265ae7d6c2a91",
+    "cliSelection": "explicit fixed CLI for the selected official Stable installation"
+  },
+  "suite": {
+    "file": "e2e/ide/issue-1140-mode-cache.runtime.test.ts",
+    "fixture": "scripts/editSequence/weappModeScenarios.ts",
+    "emptyOutDir": [
+      true,
+      false
+    ],
+    "generationsPerCase": 8,
+    "checkpointsPerCase": 14,
+    "generationSteps": [
+      "initial production",
+      "production → dev → production",
+      "changed shared chunk: dev → production",
+      "move used component",
+      "remove moved component",
+      "move subpackage and page",
+      "remove subpackage and shared dependency",
+      "restore initial production cache before rebuilding changed topology"
+    ]
+  },
+  "providers": [
+    {
+      "provider": "headless",
+      "runId": "issue1140-production-boundary-c3-01",
+      "reportSha256": "1c14a470972f9f29ffb5fdb0c308c83a01760f78bba1738959dec57f5501d62f",
+      "logSha256": "87133c8d06a63f782a250240de0d95b1a0258cb7a1e67ae99ee37ed34cede4bd",
+      "startedAt": "2026-10-04T12:25:17.778Z",
+      "finishedAt": "2026-10-04T12:25:34.329Z",
+      "environment": {
+        "nodeVersion": "v22.22.3",
+        "ideVersion": null,
+        "baseLibraryVersion": null
+      },
+      "strict": true,
+      "status": "passed",
+      "summary": {
+        "plannedCount": 2,
+        "executedCount": 2,
+        "passedCount": 2,
+        "failedCount": 0,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "plannedCheckpointCount": 28,
+        "capturedCheckpointCount": 28
+      },
+      "runtimeDiagnostics": {
+        "generations": 16,
+        "warn": 0,
+        "error": 0,
+        "exception": 0
+      },
+      "observedCaseIdentities": [
+        {
+          "file": "e2e/ide/issue-1140-mode-cache.runtime.test.ts",
+          "name": "issue #1140 production runtime after mode/cache transitions (emptyOutDir=true) > renders every production result and matches a fresh build in a separate directory"
+        },
+        {
+          "file": "e2e/ide/issue-1140-mode-cache.runtime.test.ts",
+          "name": "issue #1140 production runtime after mode/cache transitions (emptyOutDir=false) > renders every production result and matches a fresh build in a separate directory"
+        }
+      ]
+    },
+    {
+      "provider": "devtools",
+      "runId": "issue1140-production-boundary-c3-01",
+      "reportSha256": "6873b6f8a2cc0c8e4f7f8e0c3fc1c9b9798fa4fbe56298d8099180a3c3870422",
+      "logSha256": "d12d308971e912be37d0cad09a69eb17dac398548560f5874d8588b628bc2515",
+      "startedAt": "2026-10-04T12:26:26.116Z",
+      "finishedAt": "2026-10-04T12:29:55.131Z",
+      "environment": {
+        "nodeVersion": "v22.22.3",
+        "ideVersion": "2.02.2608080",
+        "baseLibraryVersion": "3.17.2"
+      },
+      "strict": true,
+      "status": "passed",
+      "summary": {
+        "plannedCount": 2,
+        "executedCount": 2,
+        "passedCount": 2,
+        "failedCount": 0,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "plannedCheckpointCount": 28,
+        "capturedCheckpointCount": 28
+      },
+      "runtimeDiagnostics": {
+        "generations": 16,
+        "warn": 0,
+        "error": 0,
+        "exception": 0
+      },
+      "observedCaseIdentities": [
+        {
+          "file": "e2e/ide/issue-1140-mode-cache.runtime.test.ts",
+          "name": "issue #1140 production runtime after mode/cache transitions (emptyOutDir=true) > renders every production result and matches a fresh build in a separate directory"
+        },
+        {
+          "file": "e2e/ide/issue-1140-mode-cache.runtime.test.ts",
+          "name": "issue #1140 production runtime after mode/cache transitions (emptyOutDir=false) > renders every production result and matches a fresh build in a separate directory"
+        }
+      ]
+    }
+  ],
+  "parity": {
+    "caseIdentitiesMatch": true,
+    "all28CheckpointRoutesAndNodeObservationsMatch": true,
+    "headlessFinishedBeforeDevtoolsStarted": true,
+    "observationsPerEmptyOutDirSetting": [
+      {
+        "id": "home-0",
+        "route": "/pages/home/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "main-shared"
+          },
+          {
+            "selector": "#mode-card",
+            "count": 1,
+            "text": "shared-card"
+          }
+        ]
+      },
+      {
+        "id": "subpackage-0",
+        "route": "/package-a/pages/detail/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "subpackage-shared"
+          }
+        ]
+      },
+      {
+        "id": "home-1",
+        "route": "/pages/home/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "main-shared"
+          },
+          {
+            "selector": "#mode-card",
+            "count": 1,
+            "text": "shared-card"
+          }
+        ]
+      },
+      {
+        "id": "subpackage-1",
+        "route": "/package-a/pages/detail/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "subpackage-shared"
+          }
+        ]
+      },
+      {
+        "id": "home-2",
+        "route": "/pages/home/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "changed-main"
+          },
+          {
+            "selector": "#mode-card",
+            "count": 1,
+            "text": "shared-card"
+          }
+        ]
+      },
+      {
+        "id": "subpackage-2",
+        "route": "/package-a/pages/detail/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "subpackage-shared"
+          }
+        ]
+      },
+      {
+        "id": "home-3",
+        "route": "/pages/home/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "changed-main"
+          },
+          {
+            "selector": "#mode-card",
+            "count": 1,
+            "text": "shared-card"
+          }
+        ]
+      },
+      {
+        "id": "subpackage-3",
+        "route": "/package-a/pages/detail/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "subpackage-shared"
+          }
+        ]
+      },
+      {
+        "id": "home-4",
+        "route": "/pages/home/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "changed-main"
+          },
+          {
+            "selector": "#mode-card",
+            "count": 0
+          }
+        ]
+      },
+      {
+        "id": "subpackage-4",
+        "route": "/package-a/pages/detail/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "subpackage-shared"
+          }
+        ]
+      },
+      {
+        "id": "home-5",
+        "route": "/pages/home/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "changed-main"
+          },
+          {
+            "selector": "#mode-card",
+            "count": 0
+          }
+        ]
+      },
+      {
+        "id": "subpackage-5",
+        "route": "/package-b/pages/detail/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "subpackage-shared"
+          }
+        ]
+      },
+      {
+        "id": "home-6",
+        "route": "/pages/home/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "inline-after-removal"
+          },
+          {
+            "selector": "#mode-card",
+            "count": 0
+          }
+        ]
+      },
+      {
+        "id": "home-7",
+        "route": "/pages/home/index",
+        "nodes": [
+          {
+            "selector": "#mode-value",
+            "count": 1,
+            "text": "inline-after-removal"
+          },
+          {
+            "selector": "#mode-card",
+            "count": 0
+          }
+        ]
+      }
+    ]
+  },
+  "outputComparison": {
+    "coverage": "Every generation compares the complete final output path set and file bytes against a fresh production build in a separate directory; no manifest filter hides stale chunks.",
+    "comparisonsPerProvider": 16,
+    "freshBaselineIsolation": "new session and separate directory in the same test process",
+    "ownedOutputAssertions": [
+      "Every app.json page has generated .js, .wxml and .json files.",
+      "All emitted static and dynamic chunk references exist.",
+      "emptyOutDir=false preserves unrelated user-owned content.",
+      "Runtime app.json assertions verify subpackage moves and removal."
+    ],
+    "runtimeBoundary": "Close the owned previous production project before changing files; compare outputs before opening the next generation; reuse one runtime connection for routes within the generation.",
+    "proof": "Both strict cases pass; afterCompare performs runtime observations only after equality succeeds.",
+    "perStepOutputHashesPersisted": false
+  },
+  "cleanup": {
+    "resourcesSha256": "07c9456560a1d3f9d3f074a8c738dea50e2c5c5c4a97fd35a502e7643fcdd2f9",
+    "completedAt": "2026-10-04T12:30:43.745613+00:00",
+    "exitCode": 0,
+    "ownedDevtoolsEndpointsObserved": 16,
+    "ownedDevtoolsEndpointsConfirmedClosed": 16,
+    "ownedProjectDirectoriesConfirmedRemoved": 2,
+    "sharedStableHostPreserved": true,
+    "scope": "Only the owned project is closed through the fixed CLI; no global quit or cross-project cleanup."
+  },
+  "limitations": [
+    "The report records a dirty harness based on c3c643d40; it is not evidence for a later commit until source correspondence and required CI are checked.",
+    "Output equality is asserted by the passing suite; this run did not persist per-step output snapshot hashes.",
+    "This production-generation test permits fresh project loading between full builds and does not prove state-preserving HMR."
+  ]
+}

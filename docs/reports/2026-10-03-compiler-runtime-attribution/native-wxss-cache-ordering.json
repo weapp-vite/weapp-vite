@@ -1,0 +1,495 @@
+{
+  "schema": 1,
+  "status": "live ordering confirmed; nested stale-content reuse remains an inference",
+  "issueAcceptance": {
+    "1015": "not complete",
+    "1065": "not complete",
+    "1081": "not complete"
+  },
+  "recordedAt": "2026-10-04T16:06:59.961170+00:00",
+  "scope": "Read-only audit of a pure-native single-save diagnostic and installed IDE scripts. No new runtime execution, tests, IDE actions, or product edits by this auditor.",
+  "environment": {
+    "officialSource": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+    "sourceRecordCreatedAt": "2026-10-04T15:47:52.365204+00:00",
+    "sourceQueryTimestampIndependentlyArchived": false,
+    "channel": "stable",
+    "officialVersion": "2.02.2608080",
+    "officialReleaseDate": "2026-09-30",
+    "connectedIDE": "Stable 2.02.2608080",
+    "observedSDK": "3.17.3",
+    "sdkStableStatusVerified": false,
+    "selectedCLIAndConnectedHostMatch": true,
+    "selectionEvidence": "resources.json selectedCli and before/after/final AX host version"
+  },
+  "fixture": {
+    "type": "pure native mini-program",
+    "framework": null,
+    "automator": false,
+    "bridge": false,
+    "page": "pages/style-probe/index",
+    "selector": ".probe",
+    "wxssHotReloadEnabledInPublicAndPrivateConfig": true,
+    "fileCount": 8,
+    "files": [
+      {
+        "file": "project/app.js",
+        "bytes": 120,
+        "sha256": "df6155414acd9b2b6f5beeef8a7d0da86ae88f942150dbd8893e9fb57cae038d"
+      },
+      {
+        "file": "project/app.json",
+        "bytes": 248,
+        "sha256": "a76c73bcb7b0ab5ee5348ba85710638f4e9cb16bc882fecd7000951f419bdad9"
+      },
+      {
+        "file": "project/pages/style-probe/index.js",
+        "bytes": 466,
+        "sha256": "16001af8c6b680d29d7adbd48630d595b4fdfc39276c5260bbf3b7ff779038ed"
+      },
+      {
+        "file": "project/pages/style-probe/index.json",
+        "bytes": 3,
+        "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+      },
+      {
+        "file": "project/pages/style-probe/index.wxml",
+        "bytes": 719,
+        "sha256": "8ae4150b78f633a33d1c6d148e7d8d1daa427aee9007429886d6ac5fabf15e9d"
+      },
+      {
+        "file": "project/pages/style-probe/index.wxss",
+        "bytes": 569,
+        "sha256": "60f9b7ba10d3cab570557d71e3ef0e58422fe1a8c8f18043423990f137c536ba"
+      },
+      {
+        "file": "project/project.config.json",
+        "bytes": 303,
+        "sha256": "61efd2ffa576c80d4f5c2446095aab92e9e4ff591e30036c29f25890c28f3de4"
+      },
+      {
+        "file": "project/project.private.config.json",
+        "bytes": 347,
+        "sha256": "86fdfcdf15bc6cdc5548b5d17adefcfaf84fdf35b0bab7c1ce5ae72536b9d6f5"
+      }
+    ]
+  },
+  "singleSave": {
+    "savedAt": "2026-10-04T15:55:30.705305+00:00",
+    "beforeSha256": "519cd097e09652b04decf28222e63409be8810d67600f5c2f367e5e63f74a214",
+    "afterSha256": "60f9b7ba10d3cab570557d71e3ef0e58422fe1a8c8f18043423990f137c536ba",
+    "writes": 1,
+    "route": "pages/style-probe/index",
+    "runtimeId": 7,
+    "windowId": "s65",
+    "appKey": "1791128892479",
+    "pageKey": "1791128892495",
+    "count": 2,
+    "input": "native-held",
+    "beforeCssColor": "#ff0000",
+    "afterCssColor": "#0000ff",
+    "afterDiskShaMatchesRecordedSave": true,
+    "beforeShaMatchesSingleColorReversal": true,
+    "postSaveActionRecord": {
+      "source": "operator report",
+      "secondSave": false,
+      "compile": false,
+      "refresh": false,
+      "reLaunch": false
+    }
+  },
+  "observations": [
+    {
+      "phase": "before",
+      "route": "pages/style-probe/index",
+      "count": 2,
+      "input": "native-held",
+      "appKey": "1791128892479",
+      "pageKey": "1791128892495",
+      "runtimeId": 7,
+      "windowId": "s65",
+      "visualProbeColor": "red",
+      "visualMethod": "human review of archived simulator-only screenshot",
+      "screenshot": "native-wxss-before.png",
+      "screenshotSha256": "b481e78ffa1836ecac41a72fb4a6895d5bca353bd99f70a1267e00e5ba654534",
+      "sourceAx": "before.ax.txt"
+    },
+    {
+      "phase": "after",
+      "route": "pages/style-probe/index",
+      "count": 2,
+      "input": "native-held",
+      "appKey": "1791128892479",
+      "pageKey": "1791128892495",
+      "runtimeId": 7,
+      "windowId": "s65",
+      "visualProbeColor": "red",
+      "visualMethod": "human review of archived simulator-only screenshot",
+      "screenshot": "native-wxss-after.png",
+      "screenshotSha256": "b481e78ffa1836ecac41a72fb4a6895d5bca353bd99f70a1267e00e5ba654534",
+      "sourceAx": "after.ax.txt"
+    },
+    {
+      "phase": "final",
+      "route": "pages/style-probe/index",
+      "count": 2,
+      "input": "native-held",
+      "appKey": "1791128892479",
+      "pageKey": "1791128892495",
+      "runtimeId": 7,
+      "windowId": "s65",
+      "visualProbeColor": "red",
+      "visualMethod": "human review of archived simulator-only screenshot",
+      "screenshot": "native-wxss-final.png",
+      "screenshotSha256": "e94ae8e9669d214dd5d0ab7db107c894c2338c0ad583b446651b35b1fcb9cf8b",
+      "sourceAx": "final.ax.txt"
+    }
+  ],
+  "finalObservationAt": "2026-10-04T15:57:27.855Z",
+  "secondsAfterSaveAtFinalObservation": 117.149695,
+  "liveLog": {
+    "beforeLines": 447,
+    "afterLines": 460,
+    "afterHasExactBeforePrefix": true,
+    "deltaLines": 13,
+    "allDeltaEventsSameRuntimeAndWindow": true,
+    "baselineCacheExecutions": [
+      {
+        "line": 392,
+        "text": "[2026-10-04 23:48:11.852+08:00][INFO][2.02.2608080][BACKEND][y (bbc40b04beebca136d5e82128424ed3f.js:2:3477)][rt:7,win:s65] [CompileCache] call executor { cacheKey: 'miniProgramWxss', cacheSubKey: '__APP__', reason: 'missing', lastKeyInfo: undefined, previousLastKeyInfo: undefined }"
+      },
+      {
+        "line": 396,
+        "text": "[2026-10-04 23:48:11.853+08:00][INFO][2.02.2608080][BACKEND][y (bbc40b04beebca136d5e82128424ed3f.js:2:3477)][rt:7,win:s65] [CompileCache] call executor { cacheKey: 'miniProgramWxssFilesForTrans', cacheSubKey: '__APP__', reason: 'missing', lastKeyInfo: undefined, previousLastKeyInfo: undefined }"
+      }
+    ],
+    "delta": [
+      {
+        "line": 448,
+        "text": "[2026-10-04 23:55:30.815+08:00][INFO][2.02.2608080][BACKEND][A.r.value (7c66513682f6ccfc774b45d4c2c3849f.js:2:1998)][rt:7,win:s65] [CompileBackendManager] isCodeFile)"
+      },
+      {
+        "line": 449,
+        "text": "[2026-10-04 23:55:30.815+08:00][INFO][2.02.2608080][BACKEND][A.r.value (7c66513682f6ccfc774b45d4c2c3849f.js:2:1998)][rt:7,win:s65] [CompileBackendManager] getRelatedExts)"
+      },
+      {
+        "line": 450,
+        "text": "[2026-10-04 23:55:30.816+08:00][INFO][2.02.2608080][BACKEND][A.r.value (7c66513682f6ccfc774b45d4c2c3849f.js:2:1998)][rt:7,win:s65] [CompileBackendManager] getRelatedExts)"
+      },
+      {
+        "line": 451,
+        "text": "[2026-10-04 23:55:30.818+08:00][INFO][2.02.2608080][BACKEND][A.r.value (7c66513682f6ccfc774b45d4c2c3849f.js:2:1998)][rt:7,win:s65] [CompileBackendManager] transWXSSToJS)"
+      },
+      {
+        "line": 452,
+        "text": "[2026-10-04 23:55:30.818+08:00][INFO][2.02.2608080][BACKEND][y (bbc40b04beebca136d5e82128424ed3f.js:2:3477)][rt:7,win:s65] [CompileCache] call executor { cacheKey: 'miniProgramWxss', cacheSubKey: '__APP__', reason: 'force', lastKeyInfo: undefined, previousLastKeyInfo: undefined }"
+      },
+      {
+        "line": 453,
+        "text": "[2026-10-04 23:55:30.818+08:00][INFO][2.02.2608080][BACKEND][S.getBuilder (c90052149a3f0e520af4a0dcf9f35c04.js:2:1875)][rt:7,win:s65] [BuilderFactory] getBuilder enter requestId=27 type=simulator platform=mini-weixin barrier=false hasBuilder=true hasProject=true"
+      },
+      {
+        "line": 454,
+        "text": "[2026-10-04 23:55:30.818+08:00][INFO][2.02.2608080][BACKEND][S.getBuilder (c90052149a3f0e520af4a0dcf9f35c04.js:2:2109)][rt:7,win:s65] [BuilderFactory] getBuilder promiseState requestId=27 hasPromise=false promiseRejected=undefined generation=3"
+      },
+      {
+        "line": 455,
+        "text": "[2026-10-04 23:55:30.818+08:00][INFO][2.02.2608080][BACKEND][S.getBuilder (c90052149a3f0e520af4a0dcf9f35c04.js:2:2622)][rt:7,win:s65] [BuilderFactory] shouldCreate=false requestId=27 type=simulator"
+      },
+      {
+        "line": 456,
+        "text": "[2026-10-04 23:55:30.819+08:00][INFO][2.02.2608080][BACKEND][S.getBuilder (c90052149a3f0e520af4a0dcf9f35c04.js:2:1875)][rt:7,win:s65] [BuilderFactory] getBuilder enter requestId=28 type=simulator platform=mini-weixin barrier=false hasBuilder=true hasProject=true"
+      },
+      {
+        "line": 457,
+        "text": "[2026-10-04 23:55:30.819+08:00][INFO][2.02.2608080][BACKEND][S.getBuilder (c90052149a3f0e520af4a0dcf9f35c04.js:2:2109)][rt:7,win:s65] [BuilderFactory] getBuilder promiseState requestId=28 hasPromise=false promiseRejected=undefined generation=3"
+      },
+      {
+        "line": 458,
+        "text": "[2026-10-04 23:55:30.819+08:00][INFO][2.02.2608080][BACKEND][S.getBuilder (c90052149a3f0e520af4a0dcf9f35c04.js:2:2622)][rt:7,win:s65] [BuilderFactory] shouldCreate=false requestId=28 type=simulator"
+      },
+      {
+        "line": 459,
+        "text": "[2026-10-04 23:55:31.215+08:00][INFO][2.02.2608080][BACKEND][Object.onFlush (a9f50426039750b626634aa3647c583b.js:2:10138)][rt:7,win:s65] [hybirdLog] flush coalesced weapp file changes 1"
+      },
+      {
+        "line": 460,
+        "text": "[2026-10-04 23:55:31.217+08:00][INFO][2.02.2608080][BACKEND][N (a9f50426039750b626634aa3647c583b.js:2:4370)][rt:7,win:s65] [hybirdLog] compile onFileChange change pages/style-probe/index.wxss"
+      }
+    ],
+    "topLevelForceAt": "2026-10-04T23:55:30.818+08:00",
+    "coalescedFlushAt": "2026-10-04T23:55:31.215+08:00",
+    "fileChangeProcessingAt": "2026-10-04T23:55:31.217+08:00",
+    "forceBeforeFlushMs": 397,
+    "forceBeforeFileChangeProcessingMs": 399,
+    "nestedCacheExecutorInDelta": false
+  },
+  "staticEvidence": {
+    "sourceBase": "wechatwebdevtools.app/Contents/Resources/app.asar",
+    "priorStatus": "candidate cause pending live ordering",
+    "candidateReportSha256": "6ac48c17f73de055a78b1b2260282f85c54d4214754b64d9e3a35e668c298121",
+    "scriptEvidenceSha256": "c133e0e63e5ff9c528f3f1a041a83a81fffaef1347a6feb136f486e41f392422",
+    "installedResourcesVerified": 18,
+    "recordedFragmentsVerified": 20,
+    "allResourceHashesAndFragmentHashesAndOffsetsMatch": true,
+    "records": [
+      {
+        "resource": "js/common/fileutils/core/config.js",
+        "purpose": "default exclusions",
+        "resourceSha256": "276046ebccf205d4873e59b2c32da2586aa8fd75baf1cc399ca270dc9b0c1103",
+        "fragmentCharOffset": 127,
+        "fragmentSha256": "8a74642c24e6f9ea33e8f747003079db97bdeb5551b6b235b58a1b3c51fc02fd"
+      },
+      {
+        "resource": "js/common/fileutils/core/fileutils.js",
+        "purpose": "project-root watch exclusions",
+        "resourceSha256": "0cf3cd6f641a5dc1ea22ea17bec855f72557050eb8c50da513aca87817b9b95f",
+        "fragmentCharOffset": 5159,
+        "fragmentSha256": "ea49c25f13a3fcb72da33126feba14e006d85544011b508a1aea3aa9ebd4d6a5"
+      },
+      {
+        "resource": "js/270057f3cce2ab2fa6fdb3ba0b6e36d9.js",
+        "purpose": "shared project FileUtils",
+        "resourceSha256": "d183dc286e00018a5a6de4ab5ae7a7c2098cbbd738fae17df6d665bf3fa3cfd8",
+        "fragmentCharOffset": 1999,
+        "fragmentSha256": "147294c5d867dc0fcf8d075f59ee0ec55b3f71481130b0cb77087859e2a60818"
+      },
+      {
+        "resource": "js/9e98186e0eb2612f7d4d95a22d380472.js",
+        "purpose": "compiler subscribes raw watcher",
+        "resourceSha256": "f394b528a9a9c63814df8b29b95242cd652526561eb543053da67be8aab0e797",
+        "fragmentCharOffset": 1493,
+        "fragmentSha256": "45499627507b947fbb4afd61a0de3794b33b93edb44002a296976f6cac9bf24c"
+      },
+      {
+        "resource": "js/common/miniprogram-builder/modules/corecompiler/baseCompiler.js",
+        "purpose": "compiler fileChange subscription",
+        "resourceSha256": "e1e626dfcbbd9af7aac146f4ac961623fb2fd4b834a94fa44a875e83320dfed2",
+        "fragmentCharOffset": 1125,
+        "fragmentSha256": "c5f31d582b6ee2877cb14aa24210115682a03a77501801e54e753ece11948408"
+      },
+      {
+        "resource": "js/9e7129f05f15966551ed9ba73162d198.js",
+        "purpose": "UI subscribes same project FileUtils via backend channel",
+        "resourceSha256": "b9368f06d283dd658c32a75d80a74b8374f1440a579f3f304e011376031d2f69",
+        "fragmentCharOffset": 1063,
+        "fragmentSha256": "551fdfb6f0520b337a81c576a5eebba58a09bd2a6be323be7c8c9f2f2e5a9110"
+      },
+      {
+        "resource": "js/247bd999b9436d6ce5e8f2714e00644f.js",
+        "purpose": "UI contentChange triggers build",
+        "resourceSha256": "583a7037ada47d891452969a73c2e93407273599c123ede312c32bb2d661f8fc",
+        "fragmentCharOffset": 2303,
+        "fragmentSha256": "fb70f19f574566be53ecd392df2ff6fc6a4e8192d1de5caf75ebe1a0da2cc9a3"
+      },
+      {
+        "resource": "js/2e25e06871afc639684c12271e42ba7a.js",
+        "purpose": "trailing invalidation timer",
+        "resourceSha256": "37f8aa2ba0c16f6c831488d6f08c936169e8f7bcd9d37749939fad34f7e2f3a5",
+        "fragmentCharOffset": 164,
+        "fragmentSha256": "66113c589f8af343fb37ecf6b4e73dfa6902a71deb2350783348b36df64e7419"
+      },
+      {
+        "resource": "js/a9f50426039750b626634aa3647c583b.js",
+        "purpose": "cache invalidation coalescer",
+        "resourceSha256": "cd7597a59961a7dd73c5d08a28706db46aa1fde6cb13ce4009c278eec052cfd0",
+        "fragmentCharOffset": 10040,
+        "fragmentSha256": "97296e661efdba8e8964ab61247d5f70533b3a1331b0085c24107dcfb3505f95"
+      },
+      {
+        "resource": "js/d9456d78bca59f40a85f1293c91e163d.js",
+        "purpose": "400ms timer",
+        "resourceSha256": "24bed33bbd8cb90301d9d7158c164cba7bc47e82084e03cefdf48798e73515d2",
+        "fragmentCharOffset": 4325,
+        "fragmentSha256": "c9f4ed6fe8a6160290f73991dcf4848b870fde92478df16bbb953b08f0cf84cd"
+      },
+      {
+        "resource": "js/87a62805083e81d34d4b0351d6739eac.js",
+        "purpose": "top-level hotReload force",
+        "resourceSha256": "a3f9d03918dffb6d277232285e10631568ded14bca9960c259cc9e152a39d5a6",
+        "fragmentCharOffset": 1203,
+        "fragmentSha256": "cff142ab4deb96f82258cfe349c901280fcf17c910684229804735d099cf9b35"
+      },
+      {
+        "resource": "js/87a62805083e81d34d4b0351d6739eac.js",
+        "purpose": "nested content read",
+        "resourceSha256": "a3f9d03918dffb6d277232285e10631568ded14bca9960c259cc9e152a39d5a6",
+        "fragmentCharOffset": 1729,
+        "fragmentSha256": "93fc3408acb07b645815a3d2f981a4191a37416b11fb2ac7f1be82ffde56e771"
+      },
+      {
+        "resource": "js/f16fd5d206b9ac2dd0dc2c1a559b8c6b.js",
+        "purpose": "nested WXSS content cache lacks hotReload force",
+        "resourceSha256": "205a21d323ecfc3def0fa749bc76adb67af869830cc0878098622df21347e29b",
+        "fragmentCharOffset": 138,
+        "fragmentSha256": "a6cb987c4c839a72ab90cc7fa6bf67e64d9b30d16dfec64bde5f04e2924aa390"
+      },
+      {
+        "resource": "js/bbc40b04beebca136d5e82128424ed3f.js",
+        "purpose": "existing CompileCache execution log",
+        "resourceSha256": "d5707945803499e8122dca094bef4b509595b806b224db66feb95aafebd8e407",
+        "fragmentCharOffset": 3509,
+        "fragmentSha256": "70a8479847e9171a9b27148b5fb5083f46ec153fb28d357de04202e2cd528857"
+      },
+      {
+        "resource": "js/f2eafacaeda922d0edc9b0c5c2626e06.js",
+        "purpose": "dependency query refreshes analyzer",
+        "resourceSha256": "5d3fe626a1fce38e1282a0867f6d5cc7d4dc15baf6af9a3bd91efb5953fd4f9d",
+        "fragmentCharOffset": 155,
+        "fragmentSha256": "317a5fd60ca419684344617e10c5d860224b9f6f0da7d1ed39eb32617dce7525"
+      },
+      {
+        "resource": "js/2ba9cb912cbf90b66cf7bea2c1c47f0b.js",
+        "purpose": "native IDE inspector menu",
+        "resourceSha256": "a2467677cd30cf6d5ff5af5423d0d736312cb5b25d54023b54df59b11e227219",
+        "fragmentCharOffset": 4642,
+        "fragmentSha256": "e2d133a0e578b40be62877ca92622f73d89e12aaeb3122bfbe3ea8e233f35a69"
+      },
+      {
+        "resource": "js/common/miniprogram-builder/modules/corecompiler/summerCompiler.js",
+        "purpose": "native WXSS content is cached as code map",
+        "resourceSha256": "b661faea76b47cc755f170815f85886ad98dbbaff1c7098e960bae61a222480b",
+        "fragmentCharOffset": 15022,
+        "fragmentSha256": "d0852a67d46eae7e26aec5d4a3bb68109b0ad3b83cdebe3d5540e0640b9bf5df"
+      },
+      {
+        "resource": "js/bb18958f512b7e13ceee0dd6d1fc1aad.js",
+        "purpose": "IFileUtilsManager backend registration",
+        "resourceSha256": "28a814b4c1d480d8512795a934524bf441a61b56d6582186100770dd62ba1669",
+        "fragmentCharOffset": 13548,
+        "fragmentSha256": "2476fab38013de8d2f78131feba6c722df00cd3874be8fa2eaa750625116e334"
+      },
+      {
+        "resource": "js/1bbe9564a92680eb17efffc3a3edc90b.js",
+        "purpose": "backend service channel",
+        "resourceSha256": "c9f8473a062ac246e6a5d9a5aa75e514494d85cac933dcc1e8c6f40a1bf43032",
+        "fragmentCharOffset": 100,
+        "fragmentSha256": "c6b2a3a6cc1a7d45eb0814b15c308aa40ad0704379fe4df65a180449d5a1b3c2"
+      },
+      {
+        "resource": "js/247bd999b9436d6ce5e8f2714e00644f.js",
+        "purpose": "UI shared watcher subscription",
+        "resourceSha256": "583a7037ada47d891452969a73c2e93407273599c123ede312c32bb2d661f8fc",
+        "fragmentCharOffset": 12081,
+        "fragmentSha256": "55c0a7ca7bddbd6fe9a70b87cd8dffb4037a1f7d929f87cc563fc3f02ee6b98d"
+      }
+    ],
+    "publication": "Only source locations and hashes are published; extracted vendor source remains in private diagnostic evidence."
+  },
+  "assessment": {
+    "confirmed": [
+      "The native fixture reproduces first-save red-to-blue non-application without weapp-vite, automator, or an injected bridge.",
+      "The top-level miniProgramWxss cache executor is forced 397 ms before the same-window coalesced file-change flush.",
+      "A miniProgramWxssFilesForTrans executor occurs at startup, but none occurs in the captured 13-line save delta.",
+      "The disk CSS hash matches blue while all three inspected simulator screenshots show red, with count, input, App/Page keys and route preserved."
+    ],
+    "supportedInference": "The immediate UI hot-compile path can precede the 400 ms backend invalidation. A forced top-level WXSS compile may reuse the non-forced nested content cache, whose cached content map is passed to the native WXSS compiler.",
+    "unobserved": [
+      "The value of the nested cached content map at the exact compile call.",
+      "The compiled CSS payload returned for this update.",
+      "Whether the runtime received and applied that payload."
+    ],
+    "notConcluded": [
+      "No direct proof that the cached content was the old red value.",
+      "No claim that cache ordering is the sole cause.",
+      "No exclusion of an additional runtime style-application defect.",
+      "No final acceptance of the affected framework issues."
+    ]
+  },
+  "inspectorAttempt": {
+    "source": "operator report, no separate archived menu screenshots",
+    "result": "Native command palette did not match inspectApp; inspected Help/Tools menus exposed no such action. No inspector was created.",
+    "cacheContentRead": false
+  },
+  "cleanup": {
+    "ownerProjectStatus": "closed",
+    "command": "close --project <owned-native-fixture>",
+    "sameSelectedCLI": true,
+    "exitCode": 0,
+    "ownedProjectPortRefused": true,
+    "sharedHostPreserved": true,
+    "unrelatedProjectPreserved": true,
+    "closedAt": "2026-10-04T15:58:29.543735+00:00",
+    "sourceEvidence": [
+      "resources.json",
+      "after-close.ax.txt"
+    ],
+    "fixtureDirectoryRetainedForEvidence": true
+  },
+  "privacy": {
+    "rawCaptureFilesContainLocalMetadata": true,
+    "rawCaptureFilesNotSuitableForPublicUpload": true,
+    "publishedScreenshots": "simulator-only crop",
+    "cropPixels": {
+      "left": 1715,
+      "top": 175,
+      "right": 2450,
+      "bottom": 1767,
+      "width": 735,
+      "height": 1592
+    },
+    "noAvatarOrFilesystemPathsInCrops": true,
+    "hostPathsAndOtherTaskIdentityOmitted": true
+  },
+  "rawEvidenceManifest": [
+    {
+      "file": "before.ax.txt",
+      "bytes": 11546,
+      "sha256": "0b357bc94e3f65b0f3070d470c5b34df353e895019d66f9f77ac22da32b2ee45"
+    },
+    {
+      "file": "before.png",
+      "bytes": 324474,
+      "sha256": "1b90bec71d644117a5c9d74fe715b65c87c34ff44fbfd1c163c5bdb91726745d"
+    },
+    {
+      "file": "after.ax.txt",
+      "bytes": 11546,
+      "sha256": "06cd8adc7a2f0479ff52433e766df26ca186757ce9d36cc3fc293a8954c4324b"
+    },
+    {
+      "file": "after.png",
+      "bytes": 324461,
+      "sha256": "815e97846f6281b50ff98f3f0cbdb470a5bef47f86d0c935aa5be43c33774ce2"
+    },
+    {
+      "file": "final.ax.txt",
+      "bytes": 11546,
+      "sha256": "e6b3ed190f652fdcd778ad1ebfa0659f5516df56dee199e3c7bb4377686a33bd"
+    },
+    {
+      "file": "final.png",
+      "bytes": 324986,
+      "sha256": "988a7ca4a4d0455946cccf9589190545787348e6135961174133328664f63163"
+    },
+    {
+      "file": "after-close.ax.txt",
+      "bytes": 13037,
+      "sha256": "0e28be5d40227a2a237fba2d1e5cc4dc352d7b8cab78d05def7c8620cf7151aa"
+    },
+    {
+      "file": "backend-before.log",
+      "bytes": 110054,
+      "sha256": "707428d1e0e68bd7cf675d0e70297cdfe096d00ab060d7cddd1db19a8d584841"
+    },
+    {
+      "file": "backend-after.log",
+      "bytes": 112802,
+      "sha256": "ebe49d5fb391a5483d3f727cf06f806a8faf81ed99da8cdb066fe25dcc5a76f7"
+    },
+    {
+      "file": "single-save.json",
+      "bytes": 413,
+      "sha256": "19ba3b6f4269be5b2c8ceadb319be8d950e5e65d8f6b2025edb68cb730e2ea33"
+    },
+    {
+      "file": "observation-time.txt",
+      "bytes": 24,
+      "sha256": "f478003f8a9f00d2f10cf8eb03230f15d9154cbb4855ea3f583263feaf4564b5"
+    },
+    {
+      "file": "resources.json",
+      "bytes": 2263,
+      "sha256": "46303db296e4427708a8c87a1eb3d5e148eabbc44a2f29c37935a6357d09ac1f"
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 import process from 'node:process'
+import { parseAutomatorPort } from './automator/port'
 
 export interface ParsedAutomatorArgs {
+  cliPath?: string
   projectPath: string
   timeout?: number
   port?: number
@@ -23,6 +25,7 @@ function takesValue(optionName: string) {
     || optionName === '--project'
     || optionName === '-t'
     || optionName === '--timeout'
+    || optionName === '--cli-path'
     || optionName === '--port'
     || optionName === '--session-id'
     || optionName === '-o'
@@ -46,6 +49,7 @@ function takesValue(optionName: string) {
 export function parseAutomatorArgs(argv: readonly string[]): ParsedAutomatorArgs {
   const positionals: string[] = []
   let projectPath = process.cwd()
+  let cliPath: string | undefined
   let timeout: number | undefined
   let port: number | undefined
   let sessionId: string | undefined
@@ -75,6 +79,19 @@ export function parseAutomatorArgs(argv: readonly string[]): ParsedAutomatorArgs
       continue
     }
 
+    if (token === '--cli-path') {
+      const value = argv[index + 1]
+      if (value && !value.startsWith('-')) {
+        cliPath = value
+        index += 1
+      }
+      continue
+    }
+    if (token.startsWith('--cli-path=')) {
+      cliPath = token.slice('--cli-path='.length) || undefined
+      continue
+    }
+
     if (token === '-t' || token === '--timeout') {
       const value = argv[index + 1]
       if (typeof value === 'string') {
@@ -90,16 +107,13 @@ export function parseAutomatorArgs(argv: readonly string[]): ParsedAutomatorArgs
     }
 
     if (token === '--port') {
-      const value = argv[index + 1]
-      if (typeof value === 'string') {
-        port = parsePositiveInt(value)
-        index += 1
-      }
+      port = parseAutomatorPort(argv[index + 1])
+      index += 1
       continue
     }
 
     if (token.startsWith('--port=')) {
-      port = parsePositiveInt(token.slice('--port='.length))
+      port = parseAutomatorPort(token.slice('--port='.length))
       continue
     }
 
@@ -142,6 +156,7 @@ export function parseAutomatorArgs(argv: readonly string[]): ParsedAutomatorArgs
   }
 
   return {
+    ...(cliPath ? { cliPath } : {}),
     projectPath,
     ...(timeout ? { timeout } : {}),
     ...(port ? { port } : {}),

@@ -6,7 +6,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { createArtifactAnalysis } from '../../packages/weapp-vite/src/analyze/subpackages/artifacts'
 import { runtimeModuleFacet } from './facets'
-import { normalizeRuntimeModulePath } from './modules'
+import { compareStrings, normalizeRuntimeModulePath } from './modules'
 
 /** 虚拟模块查询和编译代码也可能包含编码路径，统一去除消费者的机器目录。 */
 export function normalizeConsumerDiagnostic(value: string, root: string) {
@@ -35,7 +35,7 @@ export function captureConsumerAttribution(root = process.cwd()): Plugin {
     },
     async writeBundle(_options, bundle) {
       const files: PackageFileEntry[] = []
-      const graph = new Map<string, { source: string, isEntry: boolean, imports: string[], dynamicImports: string[] }>()
+      const moduleIds = new Set(this.getModuleIds())
       for (const output of Object.values(bundle)) {
         const contents = await readFile(path.join(outputDirectory, output.fileName))
         const modules = output.type === 'chunk'
@@ -43,8 +43,7 @@ export function captureConsumerAttribution(root = process.cwd()): Plugin {
               if (path.isAbsolute(id) && !id.startsWith(`${root}${path.sep}`)) {
                 throw new Error('Rendered module escapes the installed consumer tree.')
               }
-              const info = this.getModuleInfo(id)
-              graph.set(normalize(id), { source: normalize(id), isEntry: Boolean(info?.isEntry), imports: (info?.importedIds ?? []).map(normalize), dynamicImports: (info?.dynamicallyImportedIds ?? []).map(normalize) })
+              moduleIds.add(id)
               return {
                 id,
                 source: normalize(id),
@@ -55,6 +54,28 @@ export function captureConsumerAttribution(root = process.cwd()): Plugin {
           : undefined
         files.push({ file: output.fileName, type: output.type, from: 'main', size: contents.byteLength, sha256: createHash('sha256').update(contents).digest('hex'), modules, moduleRenderedLength: modules?.reduce((sum, module) => sum + (module.bytes ?? 0), 0) })
       }
+      // 源码图必须包含零输出中间节点；模块字节仍仅由上面的实际输出清单决定。
+      const graph = []
+      for (const id of moduleIds) {
+        if (path.isAbsolute(id) && !id.startsWith(`${root}${path.sep}`)) {
+          throw new Error('Source module escapes the installed consumer tree.')
+        }
+        const info = this.getModuleInfo(id)
+        if (!info) {
+          throw new Error('Cannot capture consumer source import graph: module metadata is missing.')
+        }
+        for (const imported of [...info.importedIds, ...info.dynamicallyImportedIds]) {
+          moduleIds.add(imported)
+        }
+        graph.push({
+          source: normalize(id),
+          isEntry: info.isEntry,
+          isExternal: info.isExternal,
+          imports: [...new Set(info.importedIds.map(normalize))].sort(compareStrings),
+          dynamicImports: [...new Set(info.dynamicallyImportedIds.map(normalize))].sort(compareStrings),
+        })
+      }
+      graph.sort((left, right) => compareStrings(left.source, right.source))
       const analysis = createArtifactAnalysis([{ id: 'main', label: 'main', type: 'main', files }])
       const categories: Record<string, number> = {}
       const facets: Record<string, number> = {}
@@ -89,7 +110,8 @@ export function captureConsumerAttribution(root = process.cwd()): Plugin {
         categories,
         facets,
         artifacts: analysis,
-        graph: [...graph.values()],
+        graphKind: 'source-imports',
+        graph,
         compilerOutput: [...transformed].map(([source, code]) => ({ source, code })),
       }, null, 2)}\n`)
     },

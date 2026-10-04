@@ -44,6 +44,10 @@ export function filterLargestFilesByTreemapState(options: {
 }) {
   const modeFilteredFiles = options.files.filter(file => matchesTreemapFilter(file, options.filterState))
   const { meta, warning } = options
+  if (warning?.scope === 'runtime') {
+    const files = new Set(warning.files)
+    return modeFilteredFiles.filter(file => files.has(file.file))
+  }
   if (warning && warning.scope !== 'total') {
     return modeFilteredFiles.filter(file => file.packageId === warning.id)
   }

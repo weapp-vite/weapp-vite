@@ -1,0 +1,290 @@
+{
+  "schemaVersion": 1,
+  "issue": 1097,
+  "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+  "archiveCount": 28,
+  "cohortManifestHashes": {
+    "candidate-evidence.json": "832be6d367c4102d8a83d875d902ff1d985d8175106323d22f6eeec97883272e",
+    "consumer-tarballs.json": "785c6ed10371af7dd389a4c4a0b1f1d3505383ff11ce470b31f27a56fb9c7c3c"
+  },
+  "rows": [
+    {
+      "host": "wv",
+      "profile": "independent",
+      "functionalAssertionsPassed": false,
+      "plannedCheckpointAssertionsPassed": true,
+      "finalRowAccepted": false,
+      "cohortAfterSnapshotRecorded": false,
+      "cohortMatchesFrozenManifestAtAudit": true,
+      "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+      "harness": {
+        "commit": "bed518b2b57d5853a1ab8c0e73c52dd9ab424aa3",
+        "dirty": true,
+        "before": {
+          "commit": "bed518b2b57d5853a1ab8c0e73c52dd9ab424aa3",
+          "patchSha256": "03e46412d6ffd87866cbcb20b6547e60207ec63e5cd92a3247b974a96e43a60a",
+          "untracked": {
+            ".changeset/classic-auto-route-topology.md": "07b615e4936fbfbedaec806cad882471c42c0b1741f20513f923b5a8adf95263",
+            ".changeset/profile-output-watch-ownership.md": "ddcecd3e4793908c9ff7f6fe3606380ec9db2d28294ee69becb2519e29d080ac",
+            ".changeset/vue-snapshot-source-invalidation.md": "16d3c9b21f0715ef7670f8b38b38e516b9a5c5e60efb0fbb528271817b24eb28",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/issue-1097-vite-plus-react-consumer-observation.json": "aa211170494b1c540408cfa4a9f7416e96546ebf67ffad3bff7701651fe5877e",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/issue-1097-vite-plus-react-repeat-observation.json": "486a1fe4daf0f92560abd966cd75d145cdb8b7969bc322e6e89807669e50fa42",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/native-wxss-after.png": "b481e78ffa1836ecac41a72fb4a6895d5bca353bd99f70a1267e00e5ba654534",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/native-wxss-before.png": "b481e78ffa1836ecac41a72fb4a6895d5bca353bd99f70a1267e00e5ba654534",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/native-wxss-cache-ordering.json": "81a41aa11646422337f17f362b7a21996c263823952ea95a4fa91e6d9bd14d54",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/native-wxss-cache-ordering.md": "7deaa43ed4bec2afc3a7fca4288552d54da0697198a26e75cf59d4069623e611",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/native-wxss-final.png": "e94ae8e9669d214dd5d0ab7db107c894c2338c0ad583b446651b35b1fcb9cf8b",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-ownership-audit.json": "3e6e4d705d429f93eac7de135fd8719c070881b08c80695bf21f913ec59d45ea",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-ownership-audit.md": "f5be129d126d7e7dab8c7bf6120143b2e3d997496b3d3ebce1795ea2aa478e19",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-recovery-e2e.json": "e92101e1f2582c32af4a890c01c38132bbc649cbeae5d9e81797712fef488f65",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-recovery-e2e.md": "b50ffffa4d7a3c72a55e0b6580adcb1e3336d05842dda0cfb164570c783ea3d7",
+            "e2e/ci/hmr-profile-failed-recovery.test.ts": "004a032e637c9e99e7cc8704c0521c80b15dc1cd0a9924ee7401ecead6c68009",
+            "packages/weapp-vite/src/moduleGraph/profileOutput.test.ts": "ad19acc46afb085f60efa0d06d486857527929200c3e50f791fdd2560fbb1bf5",
+            "packages/weapp-vite/src/moduleGraph/profileOutput.ts": "6e4cf90e2808b3117f1c7473622d428863f26935976b0a35f202e993cce6aca9",
+            "packages/weapp-vite/src/plugins/autoRoutes.topology.test.ts": "f794cbee3efdd7e940f21d303cb7dd9c2c893e9fb0cd1bf91ed3f4af9b0a5607",
+            "packages/weapp-vite/src/plugins/vue/transform/plugin/snapshotInvalidation.test.ts": "dc73664fe10ed46780cbf726f4a5f0939d0d3dd843b73697e47e54e13bfc129b",
+            "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.test.ts": "ceec4f869ca748e191026cdffa17a1312aee3efefb9da39bd4a5283e87df6608",
+            "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.ts": "80ff99fa169ebffde138e2d08734e4ad9348625b65cf5c4d1936d7cdfd4cdee4"
+          },
+          "capturedAt": "2026-10-04T16:13:34.265843+00:00",
+          "trackedPatchIncludesIndex": true,
+          "controllerSha256": "c425aeb66203c1ece7f12e2b484a1ec40a78ed4dea3f57264279c1ab5fb43815"
+        },
+        "after": {
+          "commit": "bed518b2b57d5853a1ab8c0e73c52dd9ab424aa3",
+          "patchSha256": "03e46412d6ffd87866cbcb20b6547e60207ec63e5cd92a3247b974a96e43a60a",
+          "untracked": {
+            ".changeset/classic-auto-route-topology.md": "07b615e4936fbfbedaec806cad882471c42c0b1741f20513f923b5a8adf95263",
+            ".changeset/profile-output-watch-ownership.md": "ddcecd3e4793908c9ff7f6fe3606380ec9db2d28294ee69becb2519e29d080ac",
+            ".changeset/vue-snapshot-source-invalidation.md": "16d3c9b21f0715ef7670f8b38b38e516b9a5c5e60efb0fbb528271817b24eb28",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/issue-1097-vite-plus-react-consumer-observation.json": "aa211170494b1c540408cfa4a9f7416e96546ebf67ffad3bff7701651fe5877e",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/issue-1097-vite-plus-react-repeat-observation.json": "486a1fe4daf0f92560abd966cd75d145cdb8b7969bc322e6e89807669e50fa42",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/native-wxss-after.png": "b481e78ffa1836ecac41a72fb4a6895d5bca353bd99f70a1267e00e5ba654534",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/native-wxss-before.png": "b481e78ffa1836ecac41a72fb4a6895d5bca353bd99f70a1267e00e5ba654534",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/native-wxss-cache-ordering.json": "81a41aa11646422337f17f362b7a21996c263823952ea95a4fa91e6d9bd14d54",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/native-wxss-cache-ordering.md": "7deaa43ed4bec2afc3a7fca4288552d54da0697198a26e75cf59d4069623e611",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/native-wxss-final.png": "e94ae8e9669d214dd5d0ab7db107c894c2338c0ad583b446651b35b1fcb9cf8b",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-ownership-audit.json": "3e6e4d705d429f93eac7de135fd8719c070881b08c80695bf21f913ec59d45ea",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-ownership-audit.md": "f5be129d126d7e7dab8c7bf6120143b2e3d997496b3d3ebce1795ea2aa478e19",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-recovery-e2e.json": "e92101e1f2582c32af4a890c01c38132bbc649cbeae5d9e81797712fef488f65",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-recovery-e2e.md": "b50ffffa4d7a3c72a55e0b6580adcb1e3336d05842dda0cfb164570c783ea3d7",
+            "e2e/ci/hmr-profile-failed-recovery.test.ts": "004a032e637c9e99e7cc8704c0521c80b15dc1cd0a9924ee7401ecead6c68009",
+            "packages/weapp-vite/src/moduleGraph/profileOutput.test.ts": "ad19acc46afb085f60efa0d06d486857527929200c3e50f791fdd2560fbb1bf5",
+            "packages/weapp-vite/src/moduleGraph/profileOutput.ts": "6e4cf90e2808b3117f1c7473622d428863f26935976b0a35f202e993cce6aca9",
+            "packages/weapp-vite/src/plugins/autoRoutes.topology.test.ts": "f794cbee3efdd7e940f21d303cb7dd9c2c893e9fb0cd1bf91ed3f4af9b0a5607",
+            "packages/weapp-vite/src/plugins/vue/transform/plugin/snapshotInvalidation.test.ts": "dc73664fe10ed46780cbf726f4a5f0939d0d3dd843b73697e47e54e13bfc129b",
+            "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.test.ts": "ceec4f869ca748e191026cdffa17a1312aee3efefb9da39bd4a5283e87df6608",
+            "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.ts": "80ff99fa169ebffde138e2d08734e4ad9348625b65cf5c4d1936d7cdfd4cdee4"
+          },
+          "capturedAt": "2026-10-04T16:16:20.290901+00:00",
+          "trackedPatchIncludesIndex": true,
+          "controllerSha256": "c425aeb66203c1ece7f12e2b484a1ec40a78ed4dea3f57264279c1ab5fb43815"
+        },
+        "snapshotsEqual": true,
+        "snapshotCoversIndex": true
+      },
+      "installation": {
+        "candidatePackages": 28,
+        "comparedArchiveFiles": 1735,
+        "mismatches": 0,
+        "symlinksAudited": 37,
+        "externalSymlinks": 0,
+        "lockSha256": "3667be04254283fdec3adfe04f4fbf64288820c26aca1bd6f1534de07a1bddc4",
+        "reportSha256": "01e40a8fb7f5ad681f6bfec3dd774333d76ba7c38ad3206c93accf0fe34cfbe9",
+        "exportPackagesVerified": 28,
+        "negativeControls": {
+          "brokenExportsRejected": true,
+          "missingCliRejected": true
+        }
+      },
+      "officialDevtools": {
+        "queriedAt": "2026-10-04T16:13:33.720133+00:00",
+        "channel": "stable",
+        "selectedAndInstalledVersion": "2.02.2608080",
+        "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+        "evidenceSha256": "c67649f3565270627d8914e4abde50d5cea13c6d9cab79abf8e3f5b1d632e70c"
+      },
+      "providers": [
+        {
+          "provider": "headless",
+          "runId": "issue1097-wv-independent-c3-01",
+          "reportSha256": "0b13e31bd811964876ce8d29b506ebe256a18633bb227d51c0d2f794f592c052",
+          "startedAt": "2026-10-04T16:15:36.061Z",
+          "finishedAt": "2026-10-04T16:15:42.880Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": null,
+            "baseLibraryVersion": null
+          },
+          "strict": true,
+          "status": "passed",
+          "runtimeErrors": [],
+          "summary": {
+            "plannedCount": 1,
+            "executedCount": 1,
+            "passedCount": 1,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 10,
+            "capturedCheckpointCount": 10
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "informationalCount": 0
+          },
+          "nativeSlotGeometryAssertions": 0
+        },
+        {
+          "provider": "devtools",
+          "runId": "issue1097-wv-independent-c3-01",
+          "reportSha256": "91869cc45cdb0eaa62c74ba9d73f7cec9a971e693de7397ce563a60b23e90348",
+          "startedAt": "2026-10-04T16:15:43.811Z",
+          "finishedAt": "2026-10-04T16:16:16.812Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.17.3"
+          },
+          "strict": true,
+          "status": "failed",
+          "runtimeErrors": [
+            "Unclassified IDE runtime error in -1707016249_0_0: routeDone with a webviewId 8 is not found",
+            "Unclassified IDE runtime error in -1707016249_0_0: Error: SystemError (appServiceSDKScriptError) | \"[Page route 错误(system error)] routeDone with a webviewId 8 is not found\""
+          ],
+          "summary": {
+            "plannedCount": 1,
+            "executedCount": 1,
+            "passedCount": 1,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 10,
+            "capturedCheckpointCount": 10
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 2,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 11,
+            "error": 2,
+            "informationalCount": 4
+          },
+          "nativeSlotGeometryAssertions": 0
+        }
+      ],
+      "commonCases": [
+        {
+          "name": "e2e app: wevu-subpackage-placement > visits main, normal subpackage, and independent subpackage vue routes",
+          "checkpoints": [
+            {
+              "id": "main:initial",
+              "action": "打开页面，检查所属分包、共享计数和派生值",
+              "route": "/pages/index/index"
+            },
+            {
+              "id": "main:result",
+              "action": "执行页面场景，检查计数结果及后续详情页共享状态",
+              "route": "/pages/index/index"
+            },
+            {
+              "id": "normal:initial",
+              "action": "打开页面，检查所属分包、共享计数和派生值",
+              "route": "/subpackages/normal-wevu/pages/entry/index"
+            },
+            {
+              "id": "normal:result",
+              "action": "执行页面场景，检查计数结果及后续详情页共享状态",
+              "route": "/subpackages/normal-wevu/pages/entry/index"
+            },
+            {
+              "id": "normal-detail:initial",
+              "action": "打开页面，检查所属分包、共享计数和派生值",
+              "route": "/subpackages/normal-wevu/pages/detail/index"
+            },
+            {
+              "id": "normal-detail:result",
+              "action": "执行页面场景，检查计数结果及后续详情页共享状态",
+              "route": "/subpackages/normal-wevu/pages/detail/index"
+            },
+            {
+              "id": "independent:initial",
+              "action": "打开页面，检查所属分包、共享计数和派生值",
+              "route": "/subpackages/independent-wevu/pages/entry/index"
+            },
+            {
+              "id": "independent:result",
+              "action": "执行页面场景，检查计数结果及后续详情页共享状态",
+              "route": "/subpackages/independent-wevu/pages/entry/index"
+            },
+            {
+              "id": "independent-detail:initial",
+              "action": "打开页面，检查所属分包、共享计数和派生值",
+              "route": "/subpackages/independent-wevu/pages/detail/index"
+            },
+            {
+              "id": "independent-detail:result",
+              "action": "执行页面场景，检查计数结果及后续详情页共享状态",
+              "route": "/subpackages/independent-wevu/pages/detail/index"
+            }
+          ],
+          "observationSha256": "cec9bc476af4126112cf854f64b878571e22d20f134b4e653283d88a0066e7e7"
+        }
+      ],
+      "parity": {
+        "commonCases": 1,
+        "commonCheckpoints": 10,
+        "commonObservationsMatch": true,
+        "webUsesBrowserAssertions": false
+      },
+      "serialization": {
+        "rawReportedProcessCount": 49,
+        "knownOwnedFalsePositives": 0,
+        "additionalOwnedProcessesByRecordedAncestry": 0,
+        "ancestryInferenceIsNotSimultaneousSnapshot": false,
+        "explicitPackageUnitProcesses": 0,
+        "nonRuntimeToolFalsePositives": 19,
+        "externalRuntimeProcesses": 30,
+        "observedExternalRuntimeOverlap": true,
+        "finalSerialAcceptance": false,
+        "overlapKinds": [
+          "e2e",
+          "runtime-or-unclassified-test"
+        ]
+      },
+      "cleanup": {
+        "resourcesSha256": "3f085096a7c50f25e7cee64aa9b7c9959bf00159d3d78eb892dd23489f908316",
+        "completedAt": "2026-10-04T16:16:19.571195+00:00",
+        "registeredChildren": 41,
+        "sameIdentityStillRunning": 0,
+        "ownedEndpoints": 1,
+        "ownedListeningPortsStillOpen": 0,
+        "errors": 0
+      },
+      "evidence": {
+        "runLogSha256": "20711b7ed163cb6dafe0c3b5edd720a53d3e9ff70ffa9cd3cd8b412b392ab5ed",
+        "rowSummarySha256": null
+      }
+    }
+  ],
+  "limitations": [
+    "This audit only reads retained evidence and verifies installations and owned-resource closure. It does not run E2E or modify the source repository.",
+    "Functional assertions, observed serialization and source provenance are separate gates. A row with a true external runtime overlap or incomplete modern process/source snapshots is not final acceptance.",
+    "The compiler cohort remains c3c643d40 even when the harness commit changes. Dirty harness identity is explicitly recorded; no compiler upgrade is inferred.",
+    "Headless common observations do not establish CSS geometry parity. React Stable rows separately prove 42 native slot geometry observations.",
+    "Process polling cannot exclude a process whose complete lifetime lies between snapshots. No exclusive-machine or performance claim is made.",
+    "Web rows use their public browser assertions and recorded successful command completion rather than mini-program provider DOM reports."
+  ]
+}

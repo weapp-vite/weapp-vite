@@ -89,6 +89,49 @@ async function createFixture() {
 }
 
 describe('snapshot source diagnostics', () => {
+  it.each(['create', 'delete'] as const)('refreshes route topology before resolving entries when a sidecar arrives first (%s)', async (event) => {
+    let signature = 'before'
+    const markDirty = vi.fn()
+    const handleFileChange = vi.fn(async () => {
+      signature = 'after'
+      return true
+    })
+    const ctx = {
+      runtimeState: createRuntimeState(),
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        relativeAbsoluteSrcRoot: (file: string) => file.replace('/project/src/', ''),
+      },
+      scanService: { markDirty },
+      moduleGraphService: { recordChangedFile: vi.fn(), invalidate: () => [] },
+      autoRoutesService: { handleFileChange, getSignature: () => signature },
+    } as unknown as CompilerContext
+    const file = '/project/src/pages/added/index.json'
+
+    const refreshed = await refreshSnapshotSources(ctx, [{ file, event }], 'before')
+
+    expect(handleFileChange).toHaveBeenCalledWith(file, 'rename')
+    expect(refreshed.routeTopologyChanged).toBe(true)
+    expect(markDirty).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps a sidecar content update incremental when the published route topology is unchanged', async () => {
+    const markDirty = vi.fn()
+    const handleFileChange = vi.fn(async () => false)
+    const ctx = {
+      configService: { absoluteSrcRoot: '/project/src' },
+      scanService: { markDirty },
+      autoRoutesService: { handleFileChange, getSignature: () => 'same' },
+    } as unknown as CompilerContext
+    const file = '/project/src/pages/retained/index.json'
+
+    const refreshed = await refreshSnapshotSources(ctx, [{ file, event: 'update' }], 'same')
+
+    expect(handleFileChange).toHaveBeenCalledWith(file, 'update')
+    expect(refreshed.routeTopologyChanged).toBe(false)
+    expect(markDirty).not.toHaveBeenCalled()
+  })
+
   it('invalidates the cached app entry when the app config changes', async () => {
     const markDirty = vi.fn()
     const ctx = {
@@ -120,5 +163,19 @@ describe('snapshot source diagnostics', () => {
     await notify('create')
     await notify('create', 'ssr')
     expect(createGlassEaselAnalyzeResult(ctx)).toEqual(before)
+  })
+
+  it('still reads an existing malformed config after a delete notification', async () => {
+    const { ctx, sourceFile } = await createFixture()
+    const file = sourceFile.replace(/\.vue$/, '.json')
+    await writeFile(file, '{ invalid JSON')
+    const error = new Error('malformed existing config')
+    const read = vi.fn(async () => {
+      throw error
+    })
+    ctx.jsonService = { cache: new Map([[file, {}]]), read } as unknown as CompilerContext['jsonService']
+
+    await expect(refreshSnapshotSources(ctx, [{ file, event: 'delete' }], undefined)).rejects.toThrow(error)
+    expect(read).toHaveBeenCalledWith(file)
   })
 })

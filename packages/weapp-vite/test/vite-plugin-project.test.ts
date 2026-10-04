@@ -69,19 +69,73 @@ it.each([false, true])('builds app and plugin with one config and isolated outpu
   expect(await readFile(path.join(root, pluginOutput, 'pages/hello/index.wxml'), 'utf8')).toContain('plugin page')
 }, 30_000)
 
+it('keeps the host build pending while visible plugin output is still publishing', async () => {
+  const { config, read } = await fixture()
+  const publication = Promise.withResolvers<void>()
+  let publishing = false
+  let outcome: { error?: unknown } | undefined
+  config.plugins!.push({
+    name: 'fixture:hold-plugin-publication',
+    async writeBundle(_options, bundle) {
+      if (bundle['plugin.json']) {
+        publishing = true
+        await publication.promise
+      }
+    },
+  })
+  const building = build(config).then(() => {
+    outcome = {}
+  }, (error: unknown) => {
+    outcome = { error }
+  })
+  try {
+    await expect.poll(() => publishing || Boolean(outcome), { timeout: 15_000 }).toBe(true)
+    expect(await read()).toContain('plugin original')
+    // 子目标已经落盘，父目标仍在等待 writeBundle 及后续依赖登记。
+    expect(publishing).toBe(true)
+    expect(outcome).toBeUndefined()
+    publication.resolve()
+    await building
+    expect(outcome).toEqual({})
+  }
+  finally {
+    publication.resolve()
+    await building
+  }
+}, 30_000)
+
 it('watches plugin dependencies and recovers without reloading user config', async () => {
   const { root, config, read, edit, pluginOutput } = await fixture()
   const watcher = await build({ ...config, build: { ...config.build, watch: {} } }) as RolldownWatcher
   const errors: unknown[] = []
-  watcher.on('event', event => event.code === 'ERROR' && errors.push(event.error))
+  const timeline: string[] = []
+  let initialBuild: 'END' | 'ERROR' | undefined
+  watcher.on('event', (event) => {
+    timeline.push(event.code)
+    if (event.code === 'ERROR') {
+      errors.push(event.error)
+    }
+    if (event.code === 'END' || event.code === 'ERROR') {
+      initialBuild ??= event.code
+    }
+  })
   try {
+    // 普通依赖恢复在首轮监听就绪后验证；产物可读时 writeBundle 仍可能未完成。
+    await expect.poll(() => initialBuild, { timeout: 15_000 }).toBeDefined()
+    expect(errors).toEqual([])
+    expect(initialBuild).toBe('END')
     await expect.poll(read, { timeout: 15_000 }).toContain('plugin original')
     await edit('export const message = ;')
+    timeline.push('syntax error written')
     await expect.poll(() => errors.length, { timeout: 15_000 }).toBeGreaterThan(0)
     await edit('export const message = "plugin recovered"')
+    timeline.push('recovery written')
     await expect.poll(read, { timeout: 15_000 }).toContain('plugin recovered')
     await writeFile(path.join(root, 'plugin/plugin.json'), '{"main":"index.js"}')
     await expect.poll(() => readFile(path.join(root, pluginOutput, 'pages/hello/index.js')).then(() => true, () => false), { timeout: 15_000 }).toBe(false)
+  }
+  catch (error) {
+    throw new Error(`Plugin watch did not finish: ${timeline.join(' -> ')}`, { cause: error })
   }
   finally { await watcher.close() }
 }, 30_000)

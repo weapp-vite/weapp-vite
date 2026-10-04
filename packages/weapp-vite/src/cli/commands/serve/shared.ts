@@ -1,5 +1,4 @@
 import type { GlobalCLIOptions } from '../../types'
-import process from 'node:process'
 import logger from '../../../logger'
 
 export interface ServeMiniProgramDevActions {
@@ -86,29 +85,4 @@ export function createServeMiniProgramDevActions(
       return '已手动重新构建当前小程序产物'
     },
   }
-}
-
-export function waitForServeShutdownSignal() {
-  // IPC 可能在首构完成前断开；无 IPC 的普通 CLI 中该字段为 undefined。
-  if (process.connected === false) {
-    return Promise.resolve()
-  }
-  return new Promise<void>((resolve) => {
-    const onSignal = () => {
-      process.off('SIGINT', onSignal)
-      process.off('SIGTERM', onSignal)
-      process.off('disconnect', onSignal)
-      if (process.connected) {
-        process.disconnect?.()
-      }
-      resolve()
-    }
-
-    process.on('SIGINT', onSignal)
-    process.on('SIGTERM', onSignal)
-    // Node IPC 的父进程断开是跨平台的正常退出请求，Windows 强杀不会触发信号清理。
-    if (process.connected) {
-      process.on('disconnect', onSignal)
-    }
-  })
 }

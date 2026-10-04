@@ -17,6 +17,7 @@ describe('AppService heap capability', () => {
 
   it.each([
     ['appservice App.CDPCommand unimplemented', 'protocol-unimplemented'],
+    ['Method not implemented.', 'protocol-unimplemented'],
     ['\'Runtime.getHeapUsage\' wasn\'t found', 'method-not-found'],
   ])('recognizes only the explicit unsupported response %s and probes again next time', async (message, reason) => {
     const { connection, miniProgram } = fixture()
@@ -37,7 +38,7 @@ describe('AppService heap capability', () => {
     await expect(miniProgram.getAppServiceHeapUsage()).rejects.toThrow('Invalid AppService')
   })
 
-  it.each(['Connection closed', 'DevTools did not respond to protocol method App.CDPCommand within 2500ms', 'appservice App.otherCommand unimplemented', 'Unknown runtime failure'])('preserves the actual failure %s', async (message) => {
+  it.each(['Connection closed', 'DevTools did not respond to protocol method App.CDPCommand within 2500ms', 'appservice App.otherCommand unimplemented', 'Method not implemented', 'Method not implemented. unexpected protocol failure', 'Unknown runtime failure'])('preserves the actual failure %s', async (message) => {
     const { connection, miniProgram } = fixture()
     const failure = new Error(message)
     connection.send.mockRejectedValueOnce(failure)

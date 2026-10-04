@@ -1,9 +1,5 @@
 import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleState } from './shared'
-import { WEAPP_VITE_RUNTIME_VIRTUAL_IDS } from '@weapp-core/constants'
-import { parseJsLike, traverse } from '../../../../utils/babel'
-import { rewriteWevuInternalRuntimeImportCode } from '../../../core/helpers'
 import { hasAppShellTemplate, isAppVueFile, resolveAppShellRelativeBase } from '../appShell'
-import { emitSfcScriptAssetReplacingBundleEntry } from '../emitAssets'
 import { assertTemplateHasDefaultSlot, isLayoutFile } from '../pageLayout'
 import {
   emitAppShellAssetsIfNeeded,
@@ -11,67 +7,6 @@ import {
   emitScriptlessComponentJsFallbackIfMissing,
 } from './layoutAssets'
 import { emitCompiledEntryBundleAssets, handleCompiledEntryPageLayouts, resolveCompiledEntryEmitState, resolveVueBundleAssetContext } from './shared'
-
-function shouldReplaceAppScriptBundleEntry(options: {
-  filename: string
-  isDev: boolean
-  hasDevHmrEvent: boolean
-  isBundledDev?: boolean
-}) {
-  // DevEngine 独占可执行入口；编译器脚本替换会丢失注册桥、模块图和 HMR 上下文。
-  if (options.isBundledDev || !isAppVueFile(options.filename) || !options.isDev || !options.hasDevHmrEvent) {
-    return false
-  }
-  return true
-}
-
-function hasUnresolvedModuleImportDeclaration(script: string | undefined) {
-  if (!script?.includes('import')) {
-    return false
-  }
-
-  try {
-    let hasUnresolvedImport = false
-    const ast = parseJsLike(script)
-    traverse(ast, {
-      ImportDeclaration(path) {
-        const source = path.node.source.value
-        if (
-          typeof source === 'string'
-          && !(
-            source === 'wevu'
-            || source === 'wevu/router'
-            || source === 'wevu/store'
-            || source === 'wevu/api'
-            || source === 'wevu/fetch'
-            || source === 'wevu/web-apis'
-            || source === 'wevu/internal-runtime'
-            || source === 'wevu/internal-reactivity'
-            || source === 'wevu/internal-template'
-            || Object.values(WEAPP_VITE_RUNTIME_VIRTUAL_IDS).includes(source as any)
-          )
-        ) {
-          hasUnresolvedImport = true
-          path.stop()
-        }
-      },
-    })
-    return hasUnresolvedImport
-  }
-  catch {
-    return true
-  }
-}
-
-function retainReplacedDevHmrScriptChunk(state: VueBundleState, fileName: string) {
-  const hmrState = state.ctx.runtimeState?.build?.hmr
-  if (!state.ctx.configService?.isDev || hmrState?.profile?.event === undefined) {
-    return
-  }
-
-  hmrState.lastEmittedChunkFileNames ??= new Set<string>()
-  hmrState.lastEmittedChunkFileNames.add(fileName)
-}
 
 export async function emitResolvedCompiledVueEntryAssets(options: {
   bundle: Record<string, any>
@@ -100,13 +35,6 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
   if (!configService) {
     return
   }
-  const hmrState = ctx.runtimeState?.build?.hmr
-  const shouldReplaceAppScript = shouldReplaceAppScriptBundleEntry({
-    filename,
-    isDev: configService.isDev,
-    hasDevHmrEvent: hmrState?.profile?.event !== undefined,
-    isBundledDev: state.isBundledDev,
-  })
 
   if (isAppVueFile(filename) && hasAppShellTemplate(result)) {
     emitAppShellAssetsIfNeeded({
@@ -170,29 +98,8 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
     platformAssetOptions: options.platformAssetOptions,
   })
 
-  if (shouldReplaceAppScript && result.script?.trim()) {
-    const scriptFileName = `${relativeBase}.${options.scriptExtension}`
-    const script = rewriteWevuInternalRuntimeImportCode(
-      scriptFileName,
-      result.script,
-      {
-        runtimeFileName: ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName,
-        runtimeFileNames: ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileNames,
-      },
-    )
-    if (hasUnresolvedModuleImportDeclaration(script)) {
-      return
-    }
-    emitSfcScriptAssetReplacingBundleEntry(
-      pluginCtx,
-      bundle,
-      relativeBase,
-      script,
-      options.scriptExtension,
-    )
-    retainReplacedDevHmrScriptChunk(state, scriptFileName)
-  }
-
+  // 可执行入口由 bundler 的 load/transform 生成；资产阶段不能用 compiler 原始脚本覆盖入口。
+  // App 源码与路由变化沿入口失效链重建，模板、样式、JSON 继续由本阶段发布。
   if (shouldEmitComponentJson && !result.script?.trim()) {
     emitScriptlessComponentJsFallbackIfMissing({
       pluginCtx,

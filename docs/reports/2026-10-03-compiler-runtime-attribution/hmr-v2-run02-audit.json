@@ -1,0 +1,1164 @@
+{
+  "schemaVersion": 1,
+  "kind": "hmr-v2-run02-static-audit",
+  "diagnosticComplete": true,
+  "formalPerformanceVerdict": "not-evaluated",
+  "hypothesisVerdict": "insufficient-evidence",
+  "fixedPhaseToleranceMs": 15,
+  "candidateSha": "8cd8b9ccf897ce7d40ada65681356093416d6fbd",
+  "collectorSha": "8cd8b9ccf897ce7d40ada65681356093416d6fbd",
+  "formalAcceptance": {
+    "baselineSha": "73b76f4acde84a4ac8c25f4b816119b19704ac28",
+    "pairs": 20,
+    "thresholdPercent": 5,
+    "existingRegressionCount": 2,
+    "existingUnstableCount": 3,
+    "changedByThisDiagnostic": false,
+    "issueCompletionLabelsAllowed": false
+  },
+  "frozen": {
+    "runtime": "classic",
+    "pollingMs": 120,
+    "cycles": 2,
+    "fixture": "issue-1134-profile",
+    "scenarios": 9,
+    "samplesPerSession": 36,
+    "totalSamples": 324,
+    "outputTimeoutMs": 30000,
+    "profileTimeoutMs": 15000,
+    "budgetMs": 500,
+    "settleMs": 300,
+    "markerSeed": "hmr-attribution-primary-0",
+    "maxSessionMs": 900000
+  },
+  "sessionOffsetOrderMs": [
+    0,
+    60,
+    120,
+    60,
+    120,
+    0,
+    120,
+    0,
+    60
+  ],
+  "input": {
+    "sha256": "24719147489fbfcb49a7ae7abca419af2e3100feea5b6f46395cb2f4b35bc81b",
+    "files": 37,
+    "bytes": 3696,
+    "allSessionInputGuardsPassed": true
+  },
+  "identity": {
+    "currentlyVerifiedFiles": 797,
+    "distMembershipVerified": true,
+    "sourceDistPatching": false,
+    "perSessionPrePostGuardsEnforcedByHarness": true,
+    "separateGuardSnapshotsPersisted": false,
+    "lockfileSha256": "c3470f724491ebdd5176c23b1ee61761c858a44f48a20a813721f1ee71276145",
+    "loadedModules": {
+      "scripts/benchmark-templates-hmr.ts": {
+        "originalSha256": "affd39143d29b43d05cc934a16da09f4deb92215409de8605be35d2e90077565",
+        "instrumentedSha256": "409980d55e0c0065a0fbe33a82b71a42f6f68fa762a9ab7cb963cb22d9c02d9c"
+      },
+      "e2e/utils/hmr-helpers.ts": {
+        "originalSha256": "17bcdddbc5789635c9d8d93516a79443485a7a77b249aff7ec10bd1337ede076",
+        "instrumentedSha256": "2c7c103b91d5c7f57ee6d675fd448200a300b11f9237aa5bee2f98a3fb64922c"
+      },
+      "packages/weapp-vite/dist/devProvider-CGrpC299.mjs": {
+        "originalSha256": "de6b2c621643916e06daba64adcc27c33c9f732a7a8f79443bfff4239b48512e",
+        "instrumentedSha256": "1bc7d3fb5cb717815c54a36537a6107a7538c2ea682cd0e52d4be1d7b5d6744c"
+      },
+      "vite@8.3.2/dist/node/chunks/node.js": {
+        "originalSha256": "21d5c6b4fb1013b98b1436e9e2a3bb416c8932343ad42ec293bbf760f51a0131",
+        "instrumentedSha256": "2915ad3b71fc07d0384705c4f5221f914158fbf61935c4050eb69cddd06d04a8"
+      }
+    },
+    "harnessHashes": {
+      "identity.mjs": "546e4b899650876c72bc76a89a3f1f9e7721014abcb76dec884b52aacf89f1ef",
+      "preload.mjs": "026c2a05dbb94b1540c0d9381be061bfb1def2383f099785fbba0062be7bfef4",
+      "lowLevel.mjs": "6d472624c74414faa098245c6d2d9461d1b5082d222bd5cfa7f617d7c982eaff",
+      "plan.mjs": "a34f0064d8e1ed5ca80f2f1fc25a273502adbc8ab89acf644ef61da5e90401f5",
+      "synthetic.test.mjs": "ffe950a91ab63f8c04e4f563b87fd6702d3fdc00e7b1555cfd554739f32d5957",
+      "runtime.mjs": "bf377faa39aa12d44fac36e28dc5aca2624c1b7d1994d63a2fff5ab7084e075b",
+      "lifecycle.test.mjs": "89abbffd0c560e410521f722c7460a8f36a6a0d429fd1cdbc8730e057970bb99",
+      "analyze.mjs": "43270c17826ad58fc575b75060f32a42c6748892092417276ec68cd6f3780892",
+      "execute.mjs": "7a36a8f7f2671002d11fe61b5c219488318b8692fe293e0fc54bd80fb718a644",
+      "transform.mjs": "436e091c07aae30041e51481805627ea85e85f9092e8bd721f44d09804eb4741",
+      "driver.mjs": "614c4c2016d0b1212f869ff106396c0025327bde9f822412ab286ec5c44a9bb8"
+    }
+  },
+  "provenance": {
+    "priorRun01Samples": 0,
+    "loaderCorrection": "Register diagnostic preload before tsx; strict original-byte checks and frozen sample parameters were retained. Run02 is separately numbered; no failed sample was replaced.",
+    "unrelatedUnitProcess": "Recorded exited before session 1; it was observed during build preparation only."
+  },
+  "integrity": {
+    "sessions": [
+      {
+        "id": "block-1-position-1-offset-0",
+        "samples": 36,
+        "rawCompleteProfiles": 36,
+        "saves": 36,
+        "hotUpdates": 36,
+        "uniqueDetections": 36,
+        "traceRows": [
+          291,
+          738
+        ],
+        "finalDistFiles": 21,
+        "firstReadyEpochMs": 1791122115179.2432,
+        "lastSaveEpochMs": 1791122136425.6467
+      },
+      {
+        "id": "block-1-position-2-offset-60",
+        "samples": 36,
+        "rawCompleteProfiles": 36,
+        "saves": 36,
+        "hotUpdates": 36,
+        "uniqueDetections": 36,
+        "traceRows": [
+          291,
+          736
+        ],
+        "finalDistFiles": 21,
+        "firstReadyEpochMs": 1791122142050.2197,
+        "lastSaveEpochMs": 1791122162992.5852
+      },
+      {
+        "id": "block-1-position-3-offset-120",
+        "samples": 36,
+        "rawCompleteProfiles": 36,
+        "saves": 36,
+        "hotUpdates": 36,
+        "uniqueDetections": 36,
+        "traceRows": [
+          291,
+          736
+        ],
+        "finalDistFiles": 21,
+        "firstReadyEpochMs": 1791122168925.68,
+        "lastSaveEpochMs": 1791122187889.096
+      },
+      {
+        "id": "block-2-position-1-offset-60",
+        "samples": 36,
+        "rawCompleteProfiles": 36,
+        "saves": 36,
+        "hotUpdates": 36,
+        "uniqueDetections": 36,
+        "traceRows": [
+          291,
+          736
+        ],
+        "finalDistFiles": 21,
+        "firstReadyEpochMs": 1791122193030.2896,
+        "lastSaveEpochMs": 1791122212247.5488
+      },
+      {
+        "id": "block-2-position-2-offset-120",
+        "samples": 36,
+        "rawCompleteProfiles": 36,
+        "saves": 36,
+        "hotUpdates": 36,
+        "uniqueDetections": 36,
+        "traceRows": [
+          291,
+          736
+        ],
+        "finalDistFiles": 21,
+        "firstReadyEpochMs": 1791122217198.634,
+        "lastSaveEpochMs": 1791122235415.1038
+      },
+      {
+        "id": "block-2-position-3-offset-0",
+        "samples": 36,
+        "rawCompleteProfiles": 36,
+        "saves": 36,
+        "hotUpdates": 36,
+        "uniqueDetections": 36,
+        "traceRows": [
+          291,
+          736
+        ],
+        "finalDistFiles": 21,
+        "firstReadyEpochMs": 1791122239981.7314,
+        "lastSaveEpochMs": 1791122260092.1772
+      },
+      {
+        "id": "block-3-position-1-offset-120",
+        "samples": 36,
+        "rawCompleteProfiles": 36,
+        "saves": 36,
+        "hotUpdates": 36,
+        "uniqueDetections": 36,
+        "traceRows": [
+          291,
+          736
+        ],
+        "finalDistFiles": 21,
+        "firstReadyEpochMs": 1791122267604.9426,
+        "lastSaveEpochMs": 1791122285943.096
+      },
+      {
+        "id": "block-3-position-2-offset-0",
+        "samples": 36,
+        "rawCompleteProfiles": 36,
+        "saves": 36,
+        "hotUpdates": 36,
+        "uniqueDetections": 36,
+        "traceRows": [
+          291,
+          736
+        ],
+        "finalDistFiles": 21,
+        "firstReadyEpochMs": 1791122290721.9624,
+        "lastSaveEpochMs": 1791122308482.9707
+      },
+      {
+        "id": "block-3-position-3-offset-60",
+        "samples": 36,
+        "rawCompleteProfiles": 36,
+        "saves": 36,
+        "hotUpdates": 36,
+        "uniqueDetections": 36,
+        "traceRows": [
+          291,
+          736
+        ],
+        "finalDistFiles": 21,
+        "firstReadyEpochMs": 1791122312836.844,
+        "lastSaveEpochMs": 1791122331086.0854
+      }
+    ],
+    "totalSamples": 324,
+    "targetSamples": 18,
+    "uniqueRawCompleteProfiles": 324,
+    "unmatchedSaves": 0,
+    "overflowTraces": 0,
+    "rebindings": 0,
+    "modelInapplicableSamples": 72,
+    "modelInapplicableByKey": {
+      "native-script:first:edit": 9,
+      "native-template:first:edit": 9,
+      "plain-wxss:first:edit": 9,
+      "import-chain-wxss:first:edit": 9,
+      "scss:first:edit": 9,
+      "tailwind-content:first:edit": 9,
+      "local-json:first:edit": 9,
+      "route-topology-json:first:edit": 9
+    },
+    "negativeDetectionWaitSamples": 0,
+    "perturbedSamples": 5,
+    "negativeDelayErrors": 1,
+    "sourceEvidenceSha256": {
+      "block-1-position-1-offset-0": {
+        "report.json": "6828361577650ecb2ec68bd9b81e99971c076f52154d64ba1cf9d11b6c5b4d48",
+        "boundaries.json": "cc15f0b7dc69fe114b7ed9104db3a5e1769d225e6cb7f7564702eb30aba466d7",
+        "profile.raw.jsonl": "65d221fe7a997da2d87869cc53ef3671345532e94f1be691674f16abc44f19f4",
+        "final-dist-manifest.json": "b4544cba350d990c473659c4828182f8db8a30bacd08ff4c6d68e1cb0bedd0b0"
+      },
+      "block-1-position-2-offset-60": {
+        "report.json": "947b625fb13ee5a3925964fc071256c785a065a0d33079f2e38efe4417ce3568",
+        "boundaries.json": "59eaec4954538acae47f49a1a43472d3f0d4be0691ffaba89e399d6cde8a3a87",
+        "profile.raw.jsonl": "e1ae43122eed13eb7c617cf1ccee3580e11e63bf6feb3bbeef8b4cf7aef6d5c4",
+        "final-dist-manifest.json": "b20faa560cc5f4633b75e6aea4862cc4de9f682675018ae624020fed16073fc8"
+      },
+      "block-1-position-3-offset-120": {
+        "report.json": "bf63d6b6643672aea1221b92c7a4080dbb6e6551a15d7d67ea6663af590a837b",
+        "boundaries.json": "9c57ea6e7d815cdc271dbc75be6e1671beef692e73f11afc1c7022c8e7854d38",
+        "profile.raw.jsonl": "5f494a12ab1fd136b9617bdcc59267249006bbcba41ca450061b9ac035a01aa6",
+        "final-dist-manifest.json": "d33c5cfc920a889b7618c555d36148c2f3a0d66a67451f411140555b34ce3443"
+      },
+      "block-2-position-1-offset-60": {
+        "report.json": "8950524f52dca72a0b143c65e6dd1632a31261662aee9ba0373558c0c57a7e14",
+        "boundaries.json": "be19eb78c6ce867dc770944a87242a9a2753bcbb2fb56a9dbbdee9214c9b9c39",
+        "profile.raw.jsonl": "97d769ec57e9747f2b3d334b6a6f92c5496f2791eb1a10d8be2839c4ac9ca62f",
+        "final-dist-manifest.json": "6b028b0041afd8b557c29deba8f1865062d4b41b461b749ca09bcc9666cc4c27"
+      },
+      "block-2-position-2-offset-120": {
+        "report.json": "22eee3ee7ecc8b264f24db779d6614e00bf8f95ec301712cca8934c0f3492e11",
+        "boundaries.json": "110f8a8e2d86dff8572f65ca5bb12e295f51ea9eef7d39fb22339a206aeb191b",
+        "profile.raw.jsonl": "e095fe8cb7d1bae3cbd6605a239d9f6c9da6075b791913443c143ce1ad4ab726",
+        "final-dist-manifest.json": "304755b56e8ff2c6c79705e9a3aa8a3c34199538eb17c9aec0280cbc6fc298cf"
+      },
+      "block-2-position-3-offset-0": {
+        "report.json": "496450d2e172e78eb8fe7eb9e97e418b71b16514f884afd429f94bbc94e576f2",
+        "boundaries.json": "ed86c1af11ee65e9e943d3f48f0a466e793a273288f3d310c8d9e83a0e5500ca",
+        "profile.raw.jsonl": "9e06dfa13009add2acf7761957f0eded75a839f49c4757e0591389f68a618c36",
+        "final-dist-manifest.json": "1d66ea8ebd101a37a0f194111155ec266a1d3e75a8583923db6d4cee84b11eb9"
+      },
+      "block-3-position-1-offset-120": {
+        "report.json": "01f9c4be473ef88fd078ec61e9c0557e7783f682bbecb3cc9625df3e1b9727d9",
+        "boundaries.json": "bdfc2752276824321ca9e51299dc6d7adc73c054531673cd71084dd5b4fa1a46",
+        "profile.raw.jsonl": "31733119029356d2b6f94f0105f43655d96049dd37f997af992cce8aadb596a5",
+        "final-dist-manifest.json": "174ac67f7e592133ec0b31622508360703307cecffc025d825818749d785ecde"
+      },
+      "block-3-position-2-offset-0": {
+        "report.json": "8763678a5a7ede3cdc6bbba7705acd42f39aebc6040e9f4962f60b248ec34e2b",
+        "boundaries.json": "ea489ea5496911165c2b5f19becd4ce5b557bcd99f2d7777a11abcb3a24c922e",
+        "profile.raw.jsonl": "d026e930f1ab5fac4bf6271df681044830510f18e03a2546333be990094b873f",
+        "final-dist-manifest.json": "2725431fa5f581b44b524926bf437cb52265e57ad9944005edbe2e543ea6485b"
+      },
+      "block-3-position-3-offset-60": {
+        "report.json": "aa8f3aa35e7b135bd1f1126d09f416cebe0825b3719d848b9454c30118edf2ef",
+        "boundaries.json": "705329a718a774e81b43552d8f354a495c08bb59d2a3fc8f281f7ab22369dfe1",
+        "profile.raw.jsonl": "0fc7d74be77e2284eb5df376bd13be36af93bbdb6cf895502de53b90a04b963e",
+        "final-dist-manifest.json": "2c83bdcaa54f13a6cf5351577ac8f5808b108ab2484c9ca2df2e2b77c6794863"
+      }
+    }
+  },
+  "resources": {
+    "checkedAtUtc": "2026-10-04T14:14:56.564533+00:00",
+    "closedProcessGroups": 10,
+    "matchingPidOrProcessGroupAtAudit": 0,
+    "removedFixtureDirectories": 9,
+    "fixtureDirectoriesStillPresent": 0,
+    "evidenceDirectoryRetained": true,
+    "action": "Read-only ps and filesystem check; no process termination or cleanup performed."
+  },
+  "finalDistArchives": {
+    "eachArchiveMatchesItsOwnManifest": true,
+    "sameFileMembership": true,
+    "crossSessionDifferences": [
+      {
+        "session": "block-1-position-2-offset-60",
+        "differentBytesFromFirstSession": [
+          "app.js",
+          "isolated/pages/home/index.js",
+          "pages/imported/index.js",
+          "pages/plain/index.js",
+          "pages/sass/index.js",
+          "pages/tailwind/index.js"
+        ],
+        "differencesOnlyInOwnedFixtureSourceRegionComments": true
+      },
+      {
+        "session": "block-1-position-3-offset-120",
+        "differentBytesFromFirstSession": [
+          "app.js",
+          "isolated/pages/home/index.js",
+          "pages/imported/index.js",
+          "pages/plain/index.js",
+          "pages/sass/index.js",
+          "pages/tailwind/index.js"
+        ],
+        "differencesOnlyInOwnedFixtureSourceRegionComments": true
+      },
+      {
+        "session": "block-2-position-1-offset-60",
+        "differentBytesFromFirstSession": [
+          "app.js",
+          "isolated/pages/home/index.js",
+          "pages/imported/index.js",
+          "pages/plain/index.js",
+          "pages/sass/index.js",
+          "pages/tailwind/index.js"
+        ],
+        "differencesOnlyInOwnedFixtureSourceRegionComments": true
+      },
+      {
+        "session": "block-2-position-2-offset-120",
+        "differentBytesFromFirstSession": [
+          "app.js",
+          "isolated/pages/home/index.js",
+          "pages/imported/index.js",
+          "pages/plain/index.js",
+          "pages/sass/index.js",
+          "pages/tailwind/index.js"
+        ],
+        "differencesOnlyInOwnedFixtureSourceRegionComments": true
+      },
+      {
+        "session": "block-2-position-3-offset-0",
+        "differentBytesFromFirstSession": [
+          "app.js",
+          "isolated/pages/home/index.js",
+          "pages/imported/index.js",
+          "pages/plain/index.js",
+          "pages/sass/index.js",
+          "pages/tailwind/index.js"
+        ],
+        "differencesOnlyInOwnedFixtureSourceRegionComments": true
+      },
+      {
+        "session": "block-3-position-1-offset-120",
+        "differentBytesFromFirstSession": [
+          "app.js",
+          "isolated/pages/home/index.js",
+          "pages/imported/index.js",
+          "pages/plain/index.js",
+          "pages/sass/index.js",
+          "pages/tailwind/index.js"
+        ],
+        "differencesOnlyInOwnedFixtureSourceRegionComments": true
+      },
+      {
+        "session": "block-3-position-2-offset-0",
+        "differentBytesFromFirstSession": [
+          "app.js",
+          "isolated/pages/home/index.js",
+          "pages/imported/index.js",
+          "pages/plain/index.js",
+          "pages/sass/index.js",
+          "pages/tailwind/index.js"
+        ],
+        "differencesOnlyInOwnedFixtureSourceRegionComments": true
+      },
+      {
+        "session": "block-3-position-3-offset-60",
+        "differentBytesFromFirstSession": [
+          "app.js",
+          "isolated/pages/home/index.js",
+          "pages/imported/index.js",
+          "pages/plain/index.js",
+          "pages/sass/index.js",
+          "pages/tailwind/index.js"
+        ],
+        "differencesOnlyInOwnedFixtureSourceRegionComments": true
+      }
+    ],
+    "rawBytesAndManifestsPreserved": true
+  },
+  "targetGroups": [
+    {
+      "target": "plain-wxss:first:restore",
+      "offsetMs": 0,
+      "count": 3,
+      "phaseResidualWithin15Ms": 3,
+      "unperturbed": 3,
+      "metrics": {
+        "delayErrorMs": {
+          "min": 0.007375000000138243,
+          "median": 0.008334000000104425,
+          "max": 0.009332999999969616
+        },
+        "modelResidualMs": {
+          "min": 0.599853515625,
+          "median": 2.57275390625,
+          "max": 3.14990234375
+        },
+        "renameToDetectionMs": {
+          "min": 24.546142578125,
+          "median": 33.52001953125,
+          "max": 46.63330078125
+        },
+        "detectionToChokidarMs": {
+          "min": 0.012451171875,
+          "median": 0.02001953125,
+          "max": 0.0205078125
+        },
+        "chokidarToHotMs": {
+          "min": 0.255615234375,
+          "median": 0.31982421875,
+          "max": 0.79833984375
+        },
+        "bundlerMs": {
+          "min": 148.65983400000005,
+          "median": 178.97941699999956,
+          "max": 180.6553329999997
+        },
+        "wallMs": {
+          "min": 208.59904199999983,
+          "median": 234.87091600000076,
+          "max": 261.7587089999997
+        }
+      }
+    },
+    {
+      "target": "plain-wxss:first:restore",
+      "offsetMs": 60,
+      "count": 3,
+      "phaseResidualWithin15Ms": 3,
+      "unperturbed": 0,
+      "metrics": {
+        "delayErrorMs": {
+          "min": -0.3368749999999636,
+          "median": 0.6354999999994106,
+          "max": 1.1246249999994689
+        },
+        "modelResidualMs": {
+          "min": 0.876953125,
+          "median": 4.344970703125,
+          "max": 4.60791015625
+        },
+        "renameToDetectionMs": {
+          "min": 70.5712890625,
+          "median": 103.225830078125,
+          "max": 105.287841796875
+        },
+        "detectionToChokidarMs": {
+          "min": 0.01806640625,
+          "median": 0.021728515625,
+          "max": 0.03955078125
+        },
+        "chokidarToHotMs": {
+          "min": 0.31201171875,
+          "median": 0.411376953125,
+          "max": 0.6796875
+        },
+        "bundlerMs": {
+          "min": 155.29091699999935,
+          "median": 155.85683299999982,
+          "max": 157.0132909999993
+        },
+        "wallMs": {
+          "min": 263.2364579999994,
+          "median": 286.38845800000036,
+          "max": 288.6384170000001
+        }
+      }
+    },
+    {
+      "target": "plain-wxss:first:restore",
+      "offsetMs": 120,
+      "count": 3,
+      "phaseResidualWithin15Ms": 3,
+      "unperturbed": 1,
+      "metrics": {
+        "delayErrorMs": {
+          "min": 0.14333299999998417,
+          "median": 1.1301659999999174,
+          "max": 1.1343749999996362
+        },
+        "modelResidualMs": {
+          "min": 0.732666015625,
+          "median": 2.9521484375,
+          "max": 3.50537109375
+        },
+        "renameToDetectionMs": {
+          "min": 35.3115234375,
+          "median": 56.56884765625,
+          "max": 95.962646484375
+        },
+        "detectionToChokidarMs": {
+          "min": 0.0185546875,
+          "median": 0.01953125,
+          "max": 0.03076171875
+        },
+        "chokidarToHotMs": {
+          "min": 0.593505859375,
+          "median": 0.599853515625,
+          "max": 0.6708984375
+        },
+        "bundlerMs": {
+          "min": 146.87387500000023,
+          "median": 151.31133300000056,
+          "max": 163.45550000000003
+        },
+        "wallMs": {
+          "min": 233.83087500000056,
+          "median": 235.01949999999943,
+          "max": 262.2145840000003
+        }
+      }
+    },
+    {
+      "target": "scss:repeat:edit",
+      "offsetMs": 0,
+      "count": 3,
+      "phaseResidualWithin15Ms": 3,
+      "unperturbed": 3,
+      "metrics": {
+        "delayErrorMs": {
+          "min": 0.003582999999707681,
+          "median": 0.0044589999997697305,
+          "max": 0.004666999999244581
+        },
+        "modelResidualMs": {
+          "min": 2.64013671875,
+          "median": 4.306884765625,
+          "max": 6.203369140625
+        },
+        "renameToDetectionMs": {
+          "min": 26.781494140625,
+          "median": 27.107177734375,
+          "max": 93.900634765625
+        },
+        "detectionToChokidarMs": {
+          "min": 0.03125,
+          "median": 0.03466796875,
+          "max": 0.300048828125
+        },
+        "chokidarToHotMs": {
+          "min": 0.245361328125,
+          "median": 0.406005859375,
+          "max": 0.583984375
+        },
+        "bundlerMs": {
+          "min": 224.15254099999947,
+          "median": 234.93137500000012,
+          "max": 265.23804200000086
+        },
+        "wallMs": {
+          "min": 263.5997499999994,
+          "median": 289.3605000000007,
+          "max": 397.34662500000013
+        }
+      }
+    },
+    {
+      "target": "scss:repeat:edit",
+      "offsetMs": 60,
+      "count": 3,
+      "phaseResidualWithin15Ms": 3,
+      "unperturbed": 3,
+      "metrics": {
+        "delayErrorMs": {
+          "min": 0.22408399999949324,
+          "median": 1.1040409999986878,
+          "max": 1.1066670000000158
+        },
+        "modelResidualMs": {
+          "min": 4.47216796875,
+          "median": 5.778564453125,
+          "max": 5.8798828125
+        },
+        "renameToDetectionMs": {
+          "min": 58.205810546875,
+          "median": 95.504638671875,
+          "max": 101.52001953125
+        },
+        "detectionToChokidarMs": {
+          "min": 0.03369140625,
+          "median": 0.035400390625,
+          "max": 0.044921875
+        },
+        "chokidarToHotMs": {
+          "min": 0.2431640625,
+          "median": 0.611572265625,
+          "max": 0.75634765625
+        },
+        "bundlerMs": {
+          "min": 244.26574999999866,
+          "median": 251.57699999999932,
+          "max": 252.02454100000068
+        },
+        "wallMs": {
+          "min": 343.1345419999998,
+          "median": 362.4446250000001,
+          "max": 370.9351659999993
+        }
+      }
+    },
+    {
+      "target": "scss:repeat:edit",
+      "offsetMs": 120,
+      "count": 3,
+      "phaseResidualWithin15Ms": 3,
+      "unperturbed": 3,
+      "metrics": {
+        "delayErrorMs": {
+          "min": 0.11529200000040873,
+          "median": 0.41570900000078836,
+          "max": 1.1268340000005992
+        },
+        "modelResidualMs": {
+          "min": 2.947021484375,
+          "median": 4.557861328125,
+          "max": 6.526123046875
+        },
+        "renameToDetectionMs": {
+          "min": 24.6025390625,
+          "median": 42.774169921875,
+          "max": 58.976806640625
+        },
+        "detectionToChokidarMs": {
+          "min": 0.033203125,
+          "median": 0.033935546875,
+          "max": 0.048095703125
+        },
+        "chokidarToHotMs": {
+          "min": 0.22705078125,
+          "median": 0.241455078125,
+          "max": 0.526611328125
+        },
+        "bundlerMs": {
+          "min": 212.60216700000092,
+          "median": 214.7697500000013,
+          "max": 237.27291700000023
+        },
+        "wallMs": {
+          "min": 258.88995799999975,
+          "median": 286.4400830000013,
+          "max": 315.0907500000012
+        }
+      }
+    }
+  ],
+  "sameBlockFullPeriodPairs": [
+    {
+      "target": "plain-wxss:first:restore",
+      "block": 1,
+      "circularReadyPhaseGapMs": 10.8125,
+      "phaseEligible": true,
+      "bothUnperturbed": false,
+      "fullMinusZeroDetectionWaitMs": -11.32177734375,
+      "fullMinusZeroBundlerMs": -17.19983299999967,
+      "fullMinusZeroWallMs": -27.927833999999166
+    },
+    {
+      "target": "plain-wxss:first:restore",
+      "block": 2,
+      "circularReadyPhaseGapMs": 59.19580078125,
+      "phaseEligible": false,
+      "bothUnperturbed": true,
+      "fullMinusZeroDetectionWaitMs": 62.442626953125,
+      "fullMinusZeroBundlerMs": -27.668083999999,
+      "fullMinusZeroWallMs": 27.343667999999525
+    },
+    {
+      "target": "plain-wxss:first:restore",
+      "block": 3,
+      "circularReadyPhaseGapMs": 35.06689453125,
+      "phaseEligible": false,
+      "bothUnperturbed": false,
+      "fullMinusZeroDetectionWaitMs": 32.022705078125,
+      "fullMinusZeroBundlerMs": -1.7859589999998207,
+      "fullMinusZeroWallMs": 26.4204579999996
+    },
+    {
+      "target": "scss:repeat:edit",
+      "block": 1,
+      "circularReadyPhaseGapMs": 53.314453125,
+      "phaseEligible": false,
+      "bothUnperturbed": true,
+      "fullMinusZeroDetectionWaitMs": -51.12646484375,
+      "fullMinusZeroBundlerMs": -50.468291999999565,
+      "fullMinusZeroWallMs": -110.90654199999881
+    },
+    {
+      "target": "scss:repeat:edit",
+      "block": 2,
+      "circularReadyPhaseGapMs": 36.34521484375,
+      "phaseEligible": false,
+      "bothUnperturbed": true,
+      "fullMinusZeroDetectionWaitMs": 31.86962890625,
+      "fullMinusZeroBundlerMs": 2.3415420000001177,
+      "fullMinusZeroWallMs": 25.730250000000524
+    },
+    {
+      "target": "scss:repeat:edit",
+      "block": 3,
+      "circularReadyPhaseGapMs": 3.062744140625,
+      "phaseEligible": true,
+      "bothUnperturbed": true,
+      "fullMinusZeroDetectionWaitMs": -2.178955078125,
+      "fullMinusZeroBundlerMs": -11.550373999998556,
+      "fullMinusZeroWallMs": -4.709791999999652
+    }
+  ],
+  "targetSamples": [
+    {
+      "session": "block-1-position-1-offset-0",
+      "block": 1,
+      "offsetMs": 0,
+      "key": "plain-wxss:first:restore",
+      "target": true,
+      "delayErrorMs": 0.008334000000104425,
+      "readyPhaseMs": 75.951171875,
+      "renamePhaseMs": 76.5166015625,
+      "expectedDetectionWaitMs": 43.4833984375,
+      "modelResidualMs": 3.14990234375,
+      "renameToDetectionMs": 46.63330078125,
+      "detectionToChokidarMs": 0.0205078125,
+      "chokidarToHotMs": 0.255615234375,
+      "bundlerMs": 180.6553329999997,
+      "wallMs": 261.7587089999997,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    },
+    {
+      "session": "block-1-position-1-offset-0",
+      "block": 1,
+      "offsetMs": 0,
+      "key": "scss:repeat:edit",
+      "target": true,
+      "delayErrorMs": 0.0044589999997697305,
+      "readyPhaseMs": 29.72021484375,
+      "renamePhaseMs": 30.40625,
+      "expectedDetectionWaitMs": 89.59375,
+      "modelResidualMs": 4.306884765625,
+      "renameToDetectionMs": 93.900634765625,
+      "detectionToChokidarMs": 0.300048828125,
+      "chokidarToHotMs": 0.583984375,
+      "bundlerMs": 265.23804200000086,
+      "wallMs": 397.34662500000013,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    },
+    {
+      "session": "block-1-position-2-offset-60",
+      "block": 1,
+      "offsetMs": 60,
+      "key": "plain-wxss:first:restore",
+      "target": true,
+      "delayErrorMs": -0.3368749999999636,
+      "readyPhaseMs": 109.95947265625,
+      "renamePhaseMs": 50.3056640625,
+      "expectedDetectionWaitMs": 69.6943359375,
+      "modelResidualMs": 0.876953125,
+      "renameToDetectionMs": 70.5712890625,
+      "detectionToChokidarMs": 0.03955078125,
+      "chokidarToHotMs": 0.6796875,
+      "bundlerMs": 157.0132909999993,
+      "wallMs": 263.2364579999994,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": [
+        {
+          "stage": "unmatched-provider-onChange",
+          "file": "../.weapp-vite/hmr-profile.jsonl",
+          "afterReadyMs": 11.29443359375
+        }
+      ]
+    },
+    {
+      "session": "block-1-position-2-offset-60",
+      "block": 1,
+      "offsetMs": 60,
+      "key": "scss:repeat:edit",
+      "target": true,
+      "delayErrorMs": 0.22408399999949324,
+      "readyPhaseMs": 3.0107421875,
+      "renamePhaseMs": 66.266357421875,
+      "expectedDetectionWaitMs": 53.733642578125,
+      "modelResidualMs": 4.47216796875,
+      "renameToDetectionMs": 58.205810546875,
+      "detectionToChokidarMs": 0.044921875,
+      "chokidarToHotMs": 0.2431640625,
+      "bundlerMs": 252.02454100000068,
+      "wallMs": 343.1345419999998,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    },
+    {
+      "session": "block-1-position-3-offset-120",
+      "block": 1,
+      "offsetMs": 120,
+      "key": "plain-wxss:first:restore",
+      "target": true,
+      "delayErrorMs": 0.14333299999998417,
+      "readyPhaseMs": 86.763671875,
+      "renamePhaseMs": 87.640625,
+      "expectedDetectionWaitMs": 32.359375,
+      "modelResidualMs": 2.9521484375,
+      "renameToDetectionMs": 35.3115234375,
+      "detectionToChokidarMs": 0.01953125,
+      "chokidarToHotMs": 0.593505859375,
+      "bundlerMs": 163.45550000000003,
+      "wallMs": 233.83087500000056,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": [
+        {
+          "stage": "unmatched-provider-onChange",
+          "file": "../.weapp-vite/hmr-profile.jsonl",
+          "afterReadyMs": 37.147216796875
+        }
+      ]
+    },
+    {
+      "session": "block-1-position-3-offset-120",
+      "block": 1,
+      "offsetMs": 120,
+      "key": "scss:repeat:edit",
+      "target": true,
+      "delayErrorMs": 0.11529200000040873,
+      "readyPhaseMs": 83.03466796875,
+      "renamePhaseMs": 83.751953125,
+      "expectedDetectionWaitMs": 36.248046875,
+      "modelResidualMs": 6.526123046875,
+      "renameToDetectionMs": 42.774169921875,
+      "detectionToChokidarMs": 0.033203125,
+      "chokidarToHotMs": 0.22705078125,
+      "bundlerMs": 214.7697500000013,
+      "wallMs": 286.4400830000013,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    },
+    {
+      "session": "block-2-position-1-offset-60",
+      "block": 2,
+      "offsetMs": 60,
+      "key": "plain-wxss:first:restore",
+      "target": true,
+      "delayErrorMs": 0.6354999999994106,
+      "readyPhaseMs": 79.861328125,
+      "renamePhaseMs": 21.119140625,
+      "expectedDetectionWaitMs": 98.880859375,
+      "modelResidualMs": 4.344970703125,
+      "renameToDetectionMs": 103.225830078125,
+      "detectionToChokidarMs": 0.01806640625,
+      "chokidarToHotMs": 0.31201171875,
+      "bundlerMs": 155.85683299999982,
+      "wallMs": 286.38845800000036,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": [
+        {
+          "stage": "unmatched-provider-onChange",
+          "file": "../.weapp-vite/hmr-profile.jsonl",
+          "afterReadyMs": 43.78857421875
+        }
+      ]
+    },
+    {
+      "session": "block-2-position-1-offset-60",
+      "block": 2,
+      "offsetMs": 60,
+      "key": "scss:repeat:edit",
+      "target": true,
+      "delayErrorMs": 1.1066670000000158,
+      "readyPhaseMs": 88.383544921875,
+      "renamePhaseMs": 30.27392578125,
+      "expectedDetectionWaitMs": 89.72607421875,
+      "modelResidualMs": 5.778564453125,
+      "renameToDetectionMs": 95.504638671875,
+      "detectionToChokidarMs": 0.035400390625,
+      "chokidarToHotMs": 0.75634765625,
+      "bundlerMs": 251.57699999999932,
+      "wallMs": 370.9351659999993,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    },
+    {
+      "session": "block-2-position-2-offset-120",
+      "block": 2,
+      "offsetMs": 120,
+      "key": "plain-wxss:first:restore",
+      "target": true,
+      "delayErrorMs": 1.1301659999999174,
+      "readyPhaseMs": 25.714599609375,
+      "renamePhaseMs": 27.542724609375,
+      "expectedDetectionWaitMs": 92.457275390625,
+      "modelResidualMs": 3.50537109375,
+      "renameToDetectionMs": 95.962646484375,
+      "detectionToChokidarMs": 0.0185546875,
+      "chokidarToHotMs": 0.6708984375,
+      "bundlerMs": 151.31133300000056,
+      "wallMs": 262.2145840000003,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    },
+    {
+      "session": "block-2-position-2-offset-120",
+      "block": 2,
+      "offsetMs": 120,
+      "key": "scss:repeat:edit",
+      "target": true,
+      "delayErrorMs": 0.41570900000078836,
+      "readyPhaseMs": 62.2880859375,
+      "renamePhaseMs": 63.97021484375,
+      "expectedDetectionWaitMs": 56.02978515625,
+      "modelResidualMs": 2.947021484375,
+      "renameToDetectionMs": 58.976806640625,
+      "detectionToChokidarMs": 0.048095703125,
+      "chokidarToHotMs": 0.526611328125,
+      "bundlerMs": 237.27291700000023,
+      "wallMs": 315.0907500000012,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    },
+    {
+      "session": "block-2-position-3-offset-0",
+      "block": 2,
+      "offsetMs": 0,
+      "key": "plain-wxss:first:restore",
+      "target": true,
+      "delayErrorMs": 0.009332999999969616,
+      "readyPhaseMs": 86.518798828125,
+      "renamePhaseMs": 87.079833984375,
+      "expectedDetectionWaitMs": 32.920166015625,
+      "modelResidualMs": 0.599853515625,
+      "renameToDetectionMs": 33.52001953125,
+      "detectionToChokidarMs": 0.02001953125,
+      "chokidarToHotMs": 0.79833984375,
+      "bundlerMs": 178.97941699999956,
+      "wallMs": 234.87091600000076,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    },
+    {
+      "session": "block-2-position-3-offset-0",
+      "block": 2,
+      "offsetMs": 0,
+      "key": "scss:repeat:edit",
+      "target": true,
+      "delayErrorMs": 0.004666999999244581,
+      "readyPhaseMs": 98.63330078125,
+      "renamePhaseMs": 99.09619140625,
+      "expectedDetectionWaitMs": 20.90380859375,
+      "modelResidualMs": 6.203369140625,
+      "renameToDetectionMs": 27.107177734375,
+      "detectionToChokidarMs": 0.03466796875,
+      "chokidarToHotMs": 0.245361328125,
+      "bundlerMs": 234.93137500000012,
+      "wallMs": 289.3605000000007,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    },
+    {
+      "session": "block-3-position-1-offset-120",
+      "block": 3,
+      "offsetMs": 120,
+      "key": "plain-wxss:first:restore",
+      "target": true,
+      "delayErrorMs": 1.1343749999996362,
+      "readyPhaseMs": 62.468994140625,
+      "renamePhaseMs": 64.163818359375,
+      "expectedDetectionWaitMs": 55.836181640625,
+      "modelResidualMs": 0.732666015625,
+      "renameToDetectionMs": 56.56884765625,
+      "detectionToChokidarMs": 0.03076171875,
+      "chokidarToHotMs": 0.599853515625,
+      "bundlerMs": 146.87387500000023,
+      "wallMs": 235.01949999999943,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": [
+        {
+          "stage": "unmatched-provider-onChange",
+          "file": "../.weapp-vite/hmr-profile.jsonl",
+          "afterReadyMs": 58.46240234375
+        }
+      ]
+    },
+    {
+      "session": "block-3-position-1-offset-120",
+      "block": 3,
+      "offsetMs": 120,
+      "key": "scss:repeat:edit",
+      "target": true,
+      "delayErrorMs": 1.1268340000005992,
+      "readyPhaseMs": 98.23388671875,
+      "renamePhaseMs": 99.955322265625,
+      "expectedDetectionWaitMs": 20.044677734375,
+      "modelResidualMs": 4.557861328125,
+      "renameToDetectionMs": 24.6025390625,
+      "detectionToChokidarMs": 0.033935546875,
+      "chokidarToHotMs": 0.241455078125,
+      "bundlerMs": 212.60216700000092,
+      "wallMs": 258.88995799999975,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    },
+    {
+      "session": "block-3-position-2-offset-0",
+      "block": 3,
+      "offsetMs": 0,
+      "key": "plain-wxss:first:restore",
+      "target": true,
+      "delayErrorMs": 0.007375000000138243,
+      "readyPhaseMs": 97.535888671875,
+      "renamePhaseMs": 98.026611328125,
+      "expectedDetectionWaitMs": 21.973388671875,
+      "modelResidualMs": 2.57275390625,
+      "renameToDetectionMs": 24.546142578125,
+      "detectionToChokidarMs": 0.012451171875,
+      "chokidarToHotMs": 0.31982421875,
+      "bundlerMs": 148.65983400000005,
+      "wallMs": 208.59904199999983,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    },
+    {
+      "session": "block-3-position-2-offset-0",
+      "block": 3,
+      "offsetMs": 0,
+      "key": "scss:repeat:edit",
+      "target": true,
+      "delayErrorMs": 0.003582999999707681,
+      "readyPhaseMs": 95.171142578125,
+      "renamePhaseMs": 95.858642578125,
+      "expectedDetectionWaitMs": 24.141357421875,
+      "modelResidualMs": 2.64013671875,
+      "renameToDetectionMs": 26.781494140625,
+      "detectionToChokidarMs": 0.03125,
+      "chokidarToHotMs": 0.406005859375,
+      "bundlerMs": 224.15254099999947,
+      "wallMs": 263.5997499999994,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    },
+    {
+      "session": "block-3-position-3-offset-60",
+      "block": 3,
+      "offsetMs": 60,
+      "key": "plain-wxss:first:restore",
+      "target": true,
+      "delayErrorMs": 1.1246249999994689,
+      "readyPhaseMs": 77.622314453125,
+      "renamePhaseMs": 19.320068359375,
+      "expectedDetectionWaitMs": 100.679931640625,
+      "modelResidualMs": 4.60791015625,
+      "renameToDetectionMs": 105.287841796875,
+      "detectionToChokidarMs": 0.021728515625,
+      "chokidarToHotMs": 0.411376953125,
+      "bundlerMs": 155.29091699999935,
+      "wallMs": 288.6384170000001,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": [
+        {
+          "stage": "unmatched-provider-onChange",
+          "file": "../.weapp-vite/hmr-profile.jsonl",
+          "afterReadyMs": 46.10693359375
+        }
+      ]
+    },
+    {
+      "session": "block-3-position-3-offset-60",
+      "block": 3,
+      "offsetMs": 60,
+      "key": "scss:repeat:edit",
+      "target": true,
+      "delayErrorMs": 1.1040409999986878,
+      "readyPhaseMs": 82.617431640625,
+      "renamePhaseMs": 24.35986328125,
+      "expectedDetectionWaitMs": 95.64013671875,
+      "modelResidualMs": 5.8798828125,
+      "renameToDetectionMs": 101.52001953125,
+      "detectionToChokidarMs": 0.03369140625,
+      "chokidarToHotMs": 0.611572265625,
+      "bundlerMs": 244.26574999999866,
+      "wallMs": 362.4446250000001,
+      "sameGeneration": true,
+      "hadPreviousDetection": true,
+      "perturbations": []
+    }
+  ],
+  "premeasurementPerturbation": {
+    "observedStage": "unmatched-provider-onChange",
+    "observedFileRelativeToProject": ".weapp-vite/hmr-profile.jsonl",
+    "count": 5,
+    "afterReadyRangeMs": [
+      11.29443359375,
+      58.46240234375
+    ],
+    "supportedExplanation": "The profile writer appends after publication; Vite forwards file changes to the provider hotUpdate hook, which reads and calls onChange. The trace scopes source correlation to src, so the sibling profile file has no active diagnostic ALS source event and is recorded as unmatched.",
+    "notEstablished": "The trace does not capture profile append completion, low-level detection or onChange return for this out-of-source-root file, so it cannot uniquely identify the append or measure the callback cost. No extra raw build profile was observed.",
+    "nextMinimalFalsifiableCheck": "Add a focused non-performance regression for the profile-output event boundary: an event for the configured profile file must not schedule a snapshot or produce a new source profile. Separately instrument exact append/receive/return boundaries only if diagnosing callback cost is later authorized. Do not rerun or amend this matrix."
+  },
+  "limitations": [
+    "watchFile change callbacks do not expose unchanged poll ticks. Same-file, same-generation previous detection is only an approximate phase anchor.",
+    "All 18 target residuals meet 15ms, but five plain-wxss positive-offset samples contain a premeasurement hmr-profile.jsonl provider callback. The preregistered no-perturbation requirement is unmet; these observations are retained.",
+    "Across all 324 samples, 72 have no previous same-file detection and therefore no eligible phase model. None has a mismatched previous generation.",
+    "Only two same-block 0/120 pairs meet the ready-phase tolerance; one also has a premeasurement perturbation. Cross-block post-hoc pairing is not used.",
+    "Detection-to-dispatch costs are small, but bundler timings vary across arms and ready phases are not synchronized. Arm wall means cannot establish a causal half-period benefit.",
+    "Runtime identity has loader evidence and enforced pre/post guards, plus a current byte/membership check; separate timestamped identity snapshots for every guard were not persisted.",
+    "Input copies were deleted after archival. Per-session equality relies on successful frozen-input guards and source-event hashes; the canonical 37-file manifest is independently verified.",
+    "Instrumentation, cross-process epoch alignment and a three-repeat diagnostic are not the uninstrumented formal comparator. No benchmark resampling or runtime validation was performed by this audit."
+  ]
+}

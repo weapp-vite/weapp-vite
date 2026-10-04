@@ -24,6 +24,71 @@
 5. 仓库级受限命令执行（`pnpm/node/git/rg`）
 6. 面向改造和排障的标准 Prompt 模板
 
+### Dashboard 实时只读工具（DevFrame）
+
+`wv dev --ui` / `wv build --ui` 可通过 DevFrame MCP 读取**当前运行中的 Dashboard**。这与下文的 `wv mcp` 是两个入口：现有工具、Resources、Prompts、REST 和微信 IDE 会话保持不变，`wv mcp init` 不会改为连接 Dashboard。
+
+在项目中安装面板及可选的 stdio 连接器：
+
+```bash
+pnpm add -D @weapp-vite/dashboard devframe@1.2.0 @devframes/agentic@1.2.0
+```
+
+启动 `wv dev --ui` / `wv build --ui` 后，独立 Dashboard 自动开放本机只读 MCP，无需生成令牌或配置认证环境变量。浏览器仍使用终端提供的 OTP magic link；MCP 不需要先完成浏览器授权。
+
+在项目目录启动 stdio 连接器：
+
+```bash
+pnpm exec devframe connect
+```
+
+支持 `mcpServers` 配置的客户端可使用：
+
+```json
+{
+  "mcpServers": {
+    "weapp-dashboard": {
+      "command": "pnpm",
+      "args": ["exec", "devframe", "connect"]
+    }
+  }
+}
+```
+
+先调用 `devframe_connect_list-instances`，按项目与端口选择实例，再用 `devframe_connect_call-tool` 调用工具。实例只在真实监听后注册；关闭或重启时移除本实例的旧记录。若注册目录不可写，上游会输出诊断，可改用 `devframe connect --port <port> --base /__weapp-vite/` 显式探测终端 UI 地址中的端口。
+
+| 工具 | 输入 | 结果 |
+| --- | --- | --- |
+| `weapp-vite_get-dashboard-state` | `{}` | 当前 revision、报告描述符与最近事件 |
+| `weapp-vite_get-analyze-summary` | `{ "arg0": { "revision": 0 } }` | 包、文件、模块、已知字节总量及预算状态汇总 |
+| `weapp-vite_query-analyze-packages` | `{ "arg0": { "revision": 0, "budgetStatus": "exceeded" } }` | 按包类型、名称、预算状态筛选，按体积、名称或预算比例排序 |
+| `weapp-vite_query-analyze-artifacts` | `{ "arg0": { "revision": 0, "limit": 10 } }` | 最大产物；也可按 `packageId`、`moduleId`、类型和路径定位 |
+| `weapp-vite_query-analyze-modules` | `{ "arg0": { "revision": 0, "duplicateOnly": true, "sortBy": "estimatedSavingBytes" } }` | 模块体积、跨包重复估算及独立分包边界提示 |
+| `weapp-vite_compare-analyze-builds` | `{ "arg0": { "revision": 0, "scope": "file" } }` | 包、文件或模块的新增、删除、增长、缩小及构建总量差异 |
+| `weapp-vite_query-runtime-events` | `{ "arg0": { "kind": "hmr", "limit": 10 } }` | 最近事件、HMR profile 和窗口保留／丢弃计数 |
+| `weapp-vite_read-dashboard-file` | `{ "arg0": { "kind": "artifact", "path": "app.js", "revision": 0, "range": { "offset": 0, "limit": 4096 } } }` | 报告内源码或当前构建产物的有界文本片段 |
+| `weapp-vite_get-analyze-page` | `{ "arg0": { "target": "current", "index": 0, "revision": 0 } }` | 全量导出用的 JSON 文本页，不是常规诊断的必经步骤 |
+
+示例 revision、路径和 ID 必须来自当前状态与查询结果。参数使用 DevFrame 原生的位置参数包装 `arg0`，结果提供对象型 `structuredContent`。推荐先取状态和摘要，再查询包／产物／模块，最后按需读取文件片段；无需下载整份报告自行排序或比较。
+
+- 摘要和目录查询的 `target` 默认为 `current`，也可读 `previous` 的报告元数据；结果携带 `revision` 与 `reportHash`。列表默认 `offset: 0`、`limit: 20`，最多 100 项，返回匹配 `total` 和 `nextOffset`，末页为 `null`。报告更新后旧 revision 与过期异步读取会被拒绝，须重新取状态，不能混用跨版本页面。
+- 包与产物的模块归属来自报告的模块使用记录，包含没有 chunk 贡献列表的资源源码。模块查询支持 `packageId`、`artifact`、`sourceType`、`query`，包与产物条件必须命中同一处归属。用返回的模块 `id` 查询产物可定位构建位置，不代表已经取得源码 importer 因果链。
+- 模块 `bytes` 沿用共享分析的最大已知单份体积口径；缺失贡献时可使用原始体积估算。`estimatedSavingBytes` 不是保证可删除的字节，`hasIndependentPackage` 提示可能必须保留隔离。未记录大小的产物返回 `size: null`，摘要与包行的 `unmeasuredFiles` 标明未计入字节总量的文件。
+- 预算复用构建侧的文件去重、分包 `packageBytes` 覆盖与 `runtimeBytes` 限额。摘要分别返回 `totalBudget`、`runtimeBudget`（未配置时为 `null`）和仅统计包的 `packageBudgets`；缺失体积或运行时归因时状态为 `unknown`，包查询支持 `budgetStatus: "unknown"`。`measurement` 区分 `file-bytes`、`upper-bound` 与 `unavailable`；运行时混合 chunk 的文件上界不是精确运行时代码量。摘要及包行的预算对象不附带全量 `files` 数组，须通过产物查询继续定位。
+- 比较的 `scope` 为 `package`、`file` 或 `module`，可筛选 `packageId`、`change`、`query`。包筛选在模块归并前生效，`totals` 始终表示整个构建的产物总量。模块差异基于已记录的模块体积贡献并按来源身份归并；资源文件变化可用 `file` 查询。模块与文件增量不能相加。没有上次报告时返回 `available: false`、`totals: null`，不假造零基线。
+- 比较中的缺失测量不视为零：对应 `currentBytes`／`previousBytes` 与 `deltaBytes` 返回 `null`，仍存在但不可判断增减的行标为 `change: "unmeasured"`（两边都缺失时也返回）。新增／删除保留成员变化，哪怕字节为零或未知。`totals.currentUnmeasuredFiles`／`previousUnmeasuredFiles` 标明完整性；任一文件未测量时，该侧总量和总增量为 `null`。列表先按已知增量绝对值排序，再列出未测量行。
+- 事件支持 `kind`、`level`、精确 `source`、文本 `query` 和含时区的 ISO `since`／`until`（包含边界），按 ISO `occurredAt` 记录时间筛选，不比较本地化显示时间。事件独立于构建 revision；最多保留 24 条，`total` 是当前窗口的匹配数，`retention` 返回容量、保留数、实际丢弃数和最早保留时间。它不是持久历史，也不是小程序 console/network。
+- 文件 `range` 使用零起始 UTF-16 码元偏移，`limit` 为 1–16384；返回 `totalCharacters` 与可继续读取的 `nextOffset`。`size` 仍是完整文件的 UTF-8 字节数。EOF 偏移返回空片段，超出 EOF 拒绝；省略 `range` 保留页面所需的全文读取。片段读取不会绕过单文件 2 MiB、报告 allowlist、根目录和符号链接限制。
+- 源码是受限的实时磁盘读取；产物只来自当前分析快照，不回退到实时 `dist`，也不提供上一快照的文件内容。只有确需导出完整报告时才按描述符 `pages` 依次拼接 JSON 文本页。
+
+所有工具复用同一份报告与读取边界；预算、重复分析和比较由浏览器安全的 `weapp-vite/dashboard/analyze` 纯计算入口统一提供，UI、MCP 与 Markdown 报告不另建分析服务。该入口导出 `createAnalyzeBudgetCheck`、`createDuplicateModuleInsights`、`createAnalyzeComparison` 及对应类型。MCP 不提供通用 shared-state 工具或写入／命令操作。
+
+直接使用 Streamable HTTP 时，地址为 `http://127.0.0.1:<port>/__weapp-vite/__mcp`，不需要 `Authorization`，但必须发送规范 loopback `Origin`，例如 `http://127.0.0.1:<port>`。MCP 协议请求（POST / GET / DELETE）缺少或携带不合法的 Origin，或 socket 对端非 loopback / 无法识别时返回 403；`Forwarded` / `X-Forwarded-For` 等请求头不能替代真实连接对端。OPTIONS 预检由 Vite 原生 CORS 处理，可能返回空的 204；它不执行 MCP 工具，也不放宽后续协议请求的门禁。
+
+该模式信任同机进程，不区分本机用户。不要通过代理、隧道或端口转发对外发布 Dashboard：本机代理会使远端请求表现为本机连接。共享机器上需要身份隔离时，应使用具有相应认证策略的宿主，而不是将独立 Dashboard 当作用户级权限边界。
+
+嵌入 Vite DevTools 时，同一份定义可由宿主的 MCP 暴露，但认证、Origin、共享状态和发现策略仍由宿主配置持有；独立 Dashboard 的本机策略不会打开或收窄共享宿主的 MCP。
+
 ## 2. 快速接入客户端
 
 如果你的目标不是“研究 MCP 地址”，而是尽快让 AI 工具开始可用，推荐直接使用下面这组命令：

@@ -7,6 +7,7 @@ import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
+import { createHmrOutputDiagnostics } from '../utils/hmrOutputDiagnostics'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { createIssue1015Project, ISSUE_1015_CLI } from '../utils/issue1015Project'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
@@ -102,7 +103,10 @@ for (const runtime of ['classic', 'stateful-experimental']) {
       const css = await readFile(cssPath, 'utf8')
       const emittedCss = path.join(project, 'dist/pages/issue-1015/index.wxss')
       const emittedScript = path.join(project, 'dist/pages/issue-1015/index.js')
+      const emittedAppScript = path.join(project, 'dist/app.js')
+      const initialAppScript = await readFile(emittedAppScript, 'utf8')
       let loadedScript = await readFile(emittedScript, 'utf8')
+      const outputDiagnostics = createHmrOutputDiagnostics(path.join(project, 'dist'), 'e2e-apps/github-issues/fixtures/issue-1015')
       await host.reLaunch(ROUTE)
       await diagnostics.initialize()
 
@@ -112,6 +116,7 @@ for (const runtime of ['classic', 'stateful-experimental']) {
         }
         const script = await readFile(emittedScript, 'utf8')
         if (script !== loadedScript) {
+          await outputDiagnostics.capture('before-headless-reload', loadedScript)
           // headless 没有 IDE 的磁盘重编译监听；仅完整启动脚本变化时换 VM。
           // update.js 的增量交付继续复用当前 VM，不能靠重连掩盖 patch 失败。
           disposeTransport?.()
@@ -121,11 +126,16 @@ for (const runtime of ['classic', 'stateful-experimental']) {
           diagnostics = createHmrRuntimeDiagnostics(host as any, 'e2e-apps/github-issues/fixtures/issue-1015')
           await host.reLaunch(ROUTE)
           await diagnostics.initialize()
+          await outputDiagnostics.capture('after-headless-reload', loadedScript)
         }
       }
 
       async function check(id: string) {
         const expected = checkpoints.find(checkpoint => checkpoint.id === id)!
+        await outputDiagnostics.capture(`${id}-before-runtime`, loadedScript)
+        if (id === 'style-only') {
+          expect(await readFile(emittedAppScript, 'utf8')).toBe(initialAppScript)
+        }
         if (runtime === 'stateful-experimental') {
           await expect.poll(async () => {
             await syncHeadlessFullBuild()
@@ -160,12 +170,18 @@ for (const runtime of ['classic', 'stateful-experimental']) {
           ...(computedStyles ? { color: expected.color, ...(expected.background ? { background: expected.background } : {}) } : {}),
           variable: true,
         }).catch(async (error) => {
+          await outputDiagnostics.capture(`${id}-failed`, loadedScript)
           await diagnostics.capture(`${id}-failed`)
           process.stdout.write(`[issue-1015-build] ${dev!.getOutput()}\n`)
           throw error
         })
         await dom.check(id, host, await host.currentPage())
-        await diagnostics.capture(id)
+        const runtimeState = await diagnostics.capture(id)
+        if (id === 'style-only') {
+          expect(await readFile(emittedAppScript, 'utf8')).toBe(initialAppScript)
+          expect(runtimeState.runtime).toMatchObject({ appMarkerRetained: true, pageMarkerRetained: true })
+        }
+        await outputDiagnostics.capture(`${id}-passed`, loadedScript)
         process.stdout.write(`[issue-1015] ${runtime} ${id} passed\n`)
       }
 

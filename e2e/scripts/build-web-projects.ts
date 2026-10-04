@@ -2,6 +2,7 @@
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { discoverWebProjects } from '../../scripts/web-project-matrix'
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url))
@@ -68,4 +69,4 @@ async function main() {
   throw new Error(`Web project build matrix failed (${failures.length}/${projects.length}).${details}`)
 }
 
-await main()
+await withMachineE2ELease(main)

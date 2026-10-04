@@ -115,6 +115,7 @@ export class StatefulHmrViteAdapter {
   private readonly stopping = Promise.withResolvers<void>()
   private startTask?: Promise<void>
   private closeTask?: Promise<void>
+  private engineCloseTask?: { engine: StatefulHmrDevEngine, task: Promise<void> }
   private restore?: () => void
   private closed = false
   private bundledDev?: BundledDevInternal
@@ -200,17 +201,38 @@ export class StatefulHmrViteAdapter {
       this.closed = true
       this.stopping.reject(new Error('stateful HMR 适配器已关闭。'))
       await this.startTask?.catch(() => {})
-      const engine = this.engine
       try {
-        await engine?.close()
+        await this.stopEngine()
       }
       finally {
-        if (this.bundledDev?._devEngine === engine && this.bundledDev) {
-          this.bundledDev._devEngine = undefined
-        }
         this.restore?.()
       }
     })()
+  }
+
+  /**
+   * 在入口图交接开始时先停掉旧 DevEngine，避免它在源文件删除后继续构建旧入口图。
+   * 适配器本身仍由会话 close() 负责收尾，新的宿主可以安全接管 bundledDev。
+   */
+  async stopEngineForRestart(): Promise<void> {
+    await this.stopEngine()
+  }
+
+  private stopEngine(): Promise<void> {
+    const engine = this.engine
+    if (!engine) {
+      return Promise.resolve()
+    }
+    if (this.engineCloseTask?.engine === engine) {
+      return this.engineCloseTask.task
+    }
+    const task = Promise.resolve(engine.close()).finally(() => {
+      if (this.bundledDev?._devEngine === engine && this.bundledDev) {
+        this.bundledDev._devEngine = undefined
+      }
+    })
+    this.engineCloseTask = { engine, task }
+    return task
   }
 
   async rebuild(prepare?: () => void | Promise<void>): Promise<void> {

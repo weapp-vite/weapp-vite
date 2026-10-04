@@ -2,6 +2,7 @@
 import process from 'node:process'
 import { execa } from 'execa'
 import path from 'pathe'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { diagnosePlatformRuntime } from './platform-runtime-doctor'
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..')
@@ -32,7 +33,7 @@ async function main() {
   })}\n`)
 }
 
-main().catch((error) => {
+withMachineE2ELease(main).catch((error) => {
   const detail = error instanceof Error ? error.message : String(error)
   process.stderr.write(`[douyin-devtools-open] failed: ${detail}\n`)
   process.exitCode = 1

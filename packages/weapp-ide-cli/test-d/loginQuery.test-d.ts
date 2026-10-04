@@ -9,7 +9,7 @@ if (result.status === 'success') {
   expectType<boolean>(result.login)
 }
 else {
-  expectType<'timeout' | 'command-failed' | 'invalid-response'>(result.reason)
+  expectType<'timeout' | 'command-failed' | 'invalid-response' | 'installation-mismatch' | 'runtime-busy'>(result.reason)
   expectError(result.login)
 }
 expectError(queryWechatIdeLogin('selected-cli', { timeout: '500' }))

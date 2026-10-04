@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { formatModuleIdentifier } from './format'
+import { formatBytes, formatModuleIdentifier } from './format'
+
+describe('formatBytes', () => {
+  it('distinguishes a measured zero from an unavailable size', () => {
+    const measuredZero = formatBytes(0)
+    expect(measuredZero).toBe('0 B')
+    expect(formatBytes()).not.toBe(measuredZero)
+  })
+})
 
 describe('formatModuleIdentifier', () => {
   it('removes internal sidecar query metadata from display labels', () => {

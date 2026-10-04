@@ -2,7 +2,7 @@ import type { ReadAndParseSfcOptions, ResolveSfcBlockSrcOptions } from 'wevu/com
 import type { CompilerContext } from '../../context'
 import { getSfcCheckMtime, readFile, readAndParseSfc as readSfc } from 'wevu/compiler'
 import { getCompilerHmrHostByConfig } from '../compilerPlugin/hmr'
-import { getCompilerSourceSnapshot, readCompilerInput, readCompilerSourceSnapshot } from './sourceSnapshot'
+import { compilerSourceResolutionKey, getCompilerSourceResolutions, getCompilerSourceSnapshot, readCompilerInput, readCompilerSourceSnapshot } from './sourceSnapshot'
 
 export {
   preprocessScriptSetupSrc,
@@ -45,6 +45,11 @@ export function createSfcResolveSrcOptions(
         }
       : {}),
     resolveId: async (source, importer) => {
+      const resolutions = getCompilerSourceResolutions(configService)
+      const key = importer && compilerSourceResolutionKey(source, importer)
+      if (key && resolutions?.has(key)) {
+        return resolutions.get(key)
+      }
       if (typeof pluginCtx.resolve !== 'function') {
         return undefined
       }

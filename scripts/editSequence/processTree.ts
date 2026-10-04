@@ -44,12 +44,26 @@ export function summarizeProcessTree(rows: ProcessMemory[], rootPid: number) {
   return { rssBytes: members.reduce((sum, row) => sum + row.rssBytes, 0), processCount: members.length, members }
 }
 
+// Windows PowerShell 每次启动都会重新编译内嵌的 Toolhelp helper；在模块加载阶段预热并
+// 缓存临时 assembly，避免首次真实采样把编译冷启动计入既有 10 秒查询期限。
+// eslint-disable-next-line node/prefer-global/process -- 使用真实宿主平台，避免平台模拟测试触发 PowerShell 预热。
+const windowsRuntimeReady = globalThis.process.platform === 'win32'
+  ? (async () => {
+      const script = await readFile(new URL('./windowsProcessTree.ps1', import.meta.url), 'utf8')
+      const encoded = Buffer.from(`& {\n${script}\n} -Warm`, 'utf16le').toString('base64')
+      await exec('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], { timeout: 30_000, throwOnError: true })
+    })()
+  : Promise.resolve()
+
 export async function observeProcessTree(rootPid: number) {
   if (!Number.isSafeInteger(rootPid) || rootPid <= 0 || rootPid > 0xFFFFFFFF) {
     throw new Error('Invalid process-tree root PID')
   }
-  const started = performance.now()
   const windows = process.platform === 'win32'
+  if (windows) {
+    await windowsRuntimeReady
+  }
+  const started = performance.now()
   try {
     const script = windows ? await readFile(new URL('./windowsProcessTree.ps1', import.meta.url), 'utf8') : undefined
     // 编码整个固定脚本与已校验的 PID，避免路径空格、引号或终端编码参与命令解析。

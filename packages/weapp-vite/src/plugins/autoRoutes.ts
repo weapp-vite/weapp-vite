@@ -15,6 +15,7 @@ import {
   resolveAutoRoutesAliasTargets,
   resolveAutoRoutesMatcherContext,
 } from '../runtime/autoRoutesPlugin/shared'
+import { publishAutoRoutesTopology, registerAutoRoutesTopologySource } from '../runtime/autoRoutesPlugin/topology'
 import { createSidecarWatchOptions } from '../runtime/watch/options'
 import { recordHmrProfileDuration, recordHmrProfileOperation } from '../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
@@ -52,6 +53,7 @@ interface AutoRoutesWatcherSubscriber {
 interface AutoRoutesWatcherController {
   addWatchTargets: (paths: string[]) => void
   readonly subscribers: Map<WeappViteRuntime, AutoRoutesWatcherSubscriber>
+  readonly servingSubscribers: Map<WeappViteRuntime, AutoRoutesWatcherSubscriber>
   close: () => void | Promise<void>
 }
 
@@ -64,7 +66,9 @@ function isAutoRoutesWatcherController(watcher: unknown): watcher is AutoRoutesW
     && 'close' in watcher
     && typeof watcher.close === 'function'
     && 'subscribers' in watcher
-    && watcher.subscribers instanceof Map,
+    && watcher.subscribers instanceof Map
+    && 'servingSubscribers' in watcher
+    && watcher.servingSubscribers instanceof Map,
   )
 }
 
@@ -130,12 +134,13 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     const appEntry = ctx.scanService?.appEntry?.path
     if (appEntry) {
       controller.subscribers.get('web')?.topologyDirtyEntries.add(normalizeFsResolvedId(appEntry))
+      controller.servingSubscribers.get('web')?.topologyDirtyEntries.add(normalizeFsResolvedId(appEntry))
     }
     return markAppEntryForAutoRoutesTopology(ctx, {
       resolvedEntryMap: ctx.runtimeState.build.hmr.resolvedEntryMap as Map<string, unknown>,
       markEntryDirty(entryId) {
         const hmr = ctx.runtimeState.build.hmr
-        for (const subscriber of controller.subscribers.values()) {
+        for (const subscriber of new Set([...controller.subscribers.values(), ...controller.servingSubscribers.values()])) {
           subscriber.topologyDirtyEntries.add(entryId)
         }
         hmr.dirtyEntrySet.add(entryId)
@@ -147,19 +152,26 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     })
   }
 
+  function isCurrentRouteWatcher(controller: AutoRoutesWatcherController) {
+    return ctx.runtimeState.watcher.sidecarWatcherMap.get(ROUTE_WATCHER_KEY) === controller
+  }
+
   function reportRouteStructureChangeError(
     filePath: string,
     event: 'create' | 'delete',
     error: unknown,
     controller: AutoRoutesWatcherController,
   ) {
+    if (!isCurrentRouteWatcher(controller)) {
+      return
+    }
     const action = event === 'create' ? '新增' : '删除'
     const reason = error instanceof Error ? error.message : String(error)
     const routeError = new Error(
       `[auto-routes:watch] ${action}路由文件 ${ctx.configService?.relativeCwd(filePath) ?? filePath} 处理失败：${reason}`,
     )
     const servers = new Set<ViteDevServer>()
-    for (const subscriber of controller.subscribers.values()) {
+    for (const subscriber of controller.servingSubscribers.values()) {
       if (subscriber.devServer) {
         servers.add(subscriber.devServer)
       }
@@ -186,18 +198,31 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     event: 'create' | 'delete',
     controller: AutoRoutesWatcherController,
   ) {
+    const receivedAtMs = performance.now()
     const changedSource = normalizeFsResolvedId(filePath)
     const declarationOwners = new Set(service.getPageDeclarationOwners(changedSource))
+    const previousSignature = service.getSignature()
     const didChangeRoutes = await service.handleFileChange(filePath, resolveAutoRoutesWatchChangeEvent(event))
+    // 关闭或替换期间完成的扫描不再拥有 watcher、构建图和错误通知。
+    if (!isCurrentRouteWatcher(controller)) {
+      return
+    }
     controller.addWatchTargets([...service.getWatchDirectories()])
+    const change = {
+      file: filePath,
+      event,
+      topologyChanged: previousSignature !== service.getSignature(),
+      receivedAtMs,
+    }
     if (!didChangeRoutes) {
+      publishAutoRoutesTopology(ctx, change)
       return
     }
     for (const owner of service.getPageDeclarationOwners(changedSource)) {
       declarationOwners.add(owner)
     }
     const servers = new Set<ViteDevServer>()
-    for (const subscriber of controller.subscribers.values()) {
+    for (const subscriber of controller.servingSubscribers.values()) {
       if (subscriber.devServer) {
         servers.add(subscriber.devServer)
       }
@@ -208,6 +233,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     const appEntryPath = ctx.scanService?.appEntry?.path
     markAutoRoutesTopologyDirty(controller)
     ctx.scanService?.markDirty()
+    const nativeNotified = publishAutoRoutesTopology(ctx, change)
     const notificationFiles = new Set<string>()
     for (const owner of declarationOwners) {
       if (owner !== changedSource) {
@@ -217,7 +243,13 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     if (appEntryPath) {
       notificationFiles.add(appEntryPath)
     }
-    for (const server of servers) {
+    const notificationServers = new Set<ViteDevServer>()
+    for (const [runtime, subscriber] of controller.servingSubscribers) {
+      if (subscriber.devServer && !(runtime === 'miniprogram' && nativeNotified)) {
+        notificationServers.add(subscriber.devServer)
+      }
+    }
+    for (const server of notificationServers) {
       for (const file of notificationFiles) {
         server.watcher.emit('change', file)
       }
@@ -262,11 +294,16 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     }
 
     const subscriberId = resolvedConfig?.weappVite?.runtime ?? 'miniprogram'
+    const isServingSubscriber = resolvedConfig?.command === 'serve' || Boolean(devServer)
     const { sidecarWatcherMap } = ctx.runtimeState.watcher
     const activeWatcher = sidecarWatcherMap.get(ROUTE_WATCHER_KEY)
     if (isAutoRoutesWatcherController(activeWatcher)) {
       activeWatcher.addWatchTargets(watchDirs)
       activeWatcher.subscribers.set(subscriberId, watcherSubscriber)
+      // snapshot 只替换本轮缓存失效接收者，不能夺走长期宿主的通知与清理所有权。
+      if (isServingSubscriber) {
+        activeWatcher.servingSubscribers.set(subscriberId, watcherSubscriber)
+      }
       return
     }
     if (activeWatcher) {
@@ -275,6 +312,10 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     const subscribers = new Map<WeappViteRuntime, AutoRoutesWatcherSubscriber>([
       [subscriberId, watcherSubscriber],
     ])
+    const servingSubscribers = new Map<WeappViteRuntime, AutoRoutesWatcherSubscriber>()
+    if (isServingSubscriber) {
+      servingSubscribers.set(subscriberId, watcherSubscriber)
+    }
 
     const watcher = chokidar.watch(watchDirs, createSidecarWatchOptions(configService, {
       ignoreInitial: true,
@@ -285,27 +326,35 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       },
     }))
     const sidecarWatcher = createAutoRoutesSidecarWatcher(watcher)
+    const ownsTopologyFile = (filePath: string) => {
+      const currentConfig = resolveAutoRoutesMatcherContext(ctx).autoRoutesConfig
+      return currentConfig.enabled && currentConfig.watch && service.isEnabled() && isAutoRoutesWatchFile(
+        filePath,
+        allowedExtensions,
+        isPagesRelatedPath,
+        service.isPageDeclarationSource,
+      )
+    }
+    const releaseTopologySource = registerAutoRoutesTopologySource(ctx, ownsTopologyFile)
     const controller: AutoRoutesWatcherController = {
       addWatchTargets(paths) {
         watcher.add(paths)
       },
       subscribers,
+      servingSubscribers,
       async close() {
+        releaseTopologySource()
         if (sidecarWatcherMap.get(ROUTE_WATCHER_KEY) === controller) {
           sidecarWatcherMap.delete(ROUTE_WATCHER_KEY)
         }
         controller.subscribers.clear()
+        controller.servingSubscribers.clear()
         await sidecarWatcher.close()
       },
     }
 
     watcher.on('add', (filePath) => {
-      if (!isAutoRoutesWatchFile(
-        filePath,
-        allowedExtensions,
-        isPagesRelatedPath,
-        service.isPageDeclarationSource,
-      )) {
+      if (!isCurrentRouteWatcher(controller) || !ownsTopologyFile(filePath)) {
         return
       }
       logger.info(`[auto-routes:watch] 新增路由文件 ${configService.relativeCwd(filePath)}`)
@@ -315,12 +364,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     })
 
     watcher.on('unlink', (filePath) => {
-      if (!isAutoRoutesWatchFile(
-        filePath,
-        allowedExtensions,
-        isPagesRelatedPath,
-        service.isPageDeclarationSource,
-      )) {
+      if (!isCurrentRouteWatcher(controller) || !ownsTopologyFile(filePath)) {
         return
       }
       logger.info(`[auto-routes:watch] 删除路由文件 ${configService.relativeCwd(filePath)}`)
@@ -539,12 +583,14 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       const subscriberId = resolvedConfig.weappVite?.runtime ?? 'miniprogram'
       if (
         !isAutoRoutesWatcherController(watcher)
-        || watcher.subscribers.get(subscriberId) !== watcherSubscriber
+        || watcher.servingSubscribers.get(subscriberId) !== watcherSubscriber
       ) {
         return
       }
+      watcher.servingSubscribers.delete(subscriberId)
+      // 已确认当前宿主仍持有租约；同 runtime 的 snapshot 缓存不能独立延长 watcher 生命周期。
       watcher.subscribers.delete(subscriberId)
-      if (watcher.subscribers.size === 0) {
+      if (watcher.subscribers.size === 0 && watcher.servingSubscribers.size === 0) {
         await watcher.close()
       }
     },

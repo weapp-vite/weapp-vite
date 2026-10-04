@@ -505,8 +505,6 @@ Page({
       'home:onHide',
       'detail:onLoad:{"from":"home-callback"}',
       'detail:onShow',
-      'home:navigateTo:success:pages/detail/index',
-      'home:navigateTo:complete',
       'detail:onReady',
     ])
     expect(homePage.data.logs).toEqual([
@@ -516,6 +514,7 @@ Page({
       'home:onHide',
       'detail:onLoad:{"from":"home-callback"}',
       'detail:onShow',
+      'detail:onReady',
       'home:navigateTo:success:pages/detail/index',
       'home:navigateTo:complete',
     ])
@@ -531,9 +530,9 @@ Page({
       'home:onHide',
       'detail:onLoad:{"from":"home-callback"}',
       'detail:onShow',
+      'detail:onReady',
       'home:navigateTo:success:pages/detail/index',
       'home:navigateTo:complete',
-      'detail:onReady',
       'detail:onUnload',
       'home:onShow',
       'home:navigateTo:fail:Unknown route for headless runtime navigation: ../missing/index',

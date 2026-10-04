@@ -31,6 +31,8 @@ export interface SequenceObserver<T> {
   diagnostics?: () => unknown
   incremental: (input: SequenceInput) => Promise<T>
   fresh: (input: SequenceInput) => Promise<T>
+  /** 完整观察结果比较成功后，再执行真实运行时等独立验收；失败仍终止本步。 */
+  afterCompare?: (input: SequenceInput) => Promise<void>
   close: () => Promise<void>
 }
 
@@ -199,6 +201,7 @@ export async function verifyEditSequence<T>(
       const stepResult: SequenceStepResult = { step, label: current?.name ?? 'initial', status: 'failed' }
       const startedAt = performance.now()
       let stepFailure: { error: unknown } | undefined
+      let compared = false
       try {
         const incremental = await bounded(() => observer.incremental(input), signal)
         stepResult.incrementalMs = performance.now() - startedAt
@@ -211,6 +214,10 @@ export async function verifyEditSequence<T>(
           throw new EditSequenceDivergence(sequence.name, observer.name, step, current?.name ?? 'initial', difference, replay)
         }
         stepResult.observationSha256 = hashSequenceObservation(incremental)
+        compared = true
+        if (observer.afterCompare) {
+          await bounded(() => observer.afterCompare!(input), signal)
+        }
         stepResult.status = 'passed'
       }
       catch (error) {
@@ -227,7 +234,7 @@ export async function verifyEditSequence<T>(
           catch (diagnosticError) {
             diagnostics = { status: 'unavailable', error: serializeSequenceError(diagnosticError) }
           }
-          stepFailure = { error: new Error(`${sequence.name}: ${observer.name}: step ${step} (${current?.name ?? 'initial'}) failed before comparison\\n${JSON.stringify({ replay, diagnostics }, null, 2)}`, { cause: error }) }
+          stepFailure = { error: new Error(`${sequence.name}: ${observer.name}: step ${step} (${current?.name ?? 'initial'}) failed ${compared ? 'after' : 'before'} comparison\\n${JSON.stringify({ replay, diagnostics }, null, 2)}`, { cause: error }) }
         }
       }
       finally {

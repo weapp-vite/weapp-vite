@@ -7,8 +7,9 @@ import type {
   TopologyRescanRequest,
 } from './types'
 import { createDebugger } from '../debugger'
+import { withRealpathScope } from '../utils/realpathScope'
 import { parseLogicalEntryId, parseSidecarModuleId, parseSidecarSourceRequest } from './protocol'
-import { collectBuildStartIds, collectDevStartNodes, normalizeSourceId } from './traversal'
+import { collectBuildStartIds, collectDevStartNodes, hasBuildModule, hasDevModule, normalizeSourceId } from './traversal'
 
 const debug = createDebugger('weapp-vite:module-graph')
 
@@ -183,7 +184,7 @@ export function createModuleGraphService(): ModuleGraphService {
     }
   }
 
-  const collectAffectedEntries = (rawFile: string) => {
+  const collectAffectedEntries = (rawFile: string) => withRealpathScope(() => {
     const file = normalizeSourceId(rawFile)
     const affected = new Set<string>()
     for (const [ownerId, dependenciesByKind] of entryDependencies) {
@@ -201,7 +202,7 @@ export function createModuleGraphService(): ModuleGraphService {
       collectFromBuildGraph(file, affected)
     }
     return affected
-  }
+  })
 
   const warmDevModule = async (id: string, server: DevServerGraphHost, binding: object | undefined) => {
     if (!server.transformRequest) {
@@ -292,29 +293,33 @@ export function createModuleGraphService(): ModuleGraphService {
       return request
     },
     hasModule(rawFile) {
-      const file = normalizeSourceId(rawFile)
-      if (hasRegisteredEntryDependency(file)) {
-        return true
-      }
-      if (devServer && usesUnbundledDevGraph()) {
-        return collectDevStartNodes(devServer, file).size > 0
-      }
-      for (const context of buildContexts.values()) {
-        if (collectBuildStartIds(context, file).size > 0) {
+      return withRealpathScope(() => {
+        const file = normalizeSourceId(rawFile)
+        if (hasRegisteredEntryDependency(file)) {
           return true
         }
-      }
-      return false
+        if (devServer && usesUnbundledDevGraph()) {
+          return hasDevModule(devServer, file)
+        }
+        for (const context of buildContexts.values()) {
+          if (hasBuildModule(context, file)) {
+            return true
+          }
+        }
+        return false
+      })
     },
     invalidate(rawFile) {
-      const file = normalizeSourceId(rawFile)
-      const affected = collectAffectedEntries(file)
-      if (devServer && usesUnbundledDevGraph()) {
-        for (const module of collectDevStartNodes(devServer, file)) {
-          devServer.moduleGraph.invalidateModule(module)
+      return withRealpathScope(() => {
+        const file = normalizeSourceId(rawFile)
+        const affected = collectAffectedEntries(file)
+        if (devServer && usesUnbundledDevGraph()) {
+          for (const module of collectDevStartNodes(devServer, file)) {
+            devServer.moduleGraph.invalidateModule(module)
+          }
         }
-      }
-      return affected
+        return affected
+      })
     },
     isLogicalLayoutEntry(rawFile) {
       const file = normalizeSourceId(rawFile)

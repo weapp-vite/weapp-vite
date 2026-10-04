@@ -5,11 +5,12 @@ import process from 'node:process'
 import { buildOtpAuthUrl, refreshTempAuthCode } from 'devframe/node/auth'
 import { resolveCommand } from 'package-manager-detector/commands'
 import path from 'pathe'
-import { createServer } from 'vite'
 import { createAnalyzeDashboardDevframe } from '../../dashboard'
 import { ANALYZE_DASHBOARD_PACKAGE_NAME, resolveDashboardRoot } from '../../dashboard/assets'
+import { getDevServerCloseRecord, replaceDevServerClose } from '../../devLifecycle/server'
+import { getDevShutdownScope } from '../../devLifecycle/shutdown'
+import { createDevViteServer } from '../../devLifecycle/vite'
 import logger, { colors } from '../../logger'
-import { ANALYZE_DASHBOARD_DEVFRAME_BASE, createAnalyzeDashboardViteBridge } from './dashboardViteBridge'
 
 type PackageManagerAgent = Parameters<typeof resolveCommand>[0]
 
@@ -41,6 +42,7 @@ export async function startAnalyzeDashboard(
     previousResult?: AnalyzeSubpackagesResult | null
   },
 ): Promise<AnalyzeDashboardHandle | void> {
+  const shutdown = getDevShutdownScope()
   const resolved = resolveDashboardRoot(options)
   if (!resolved) {
     logger.warn(`[weapp-vite ui] 未安装可选仪表盘包 ${colors.bold(colors.green(ANALYZE_DASHBOARD_PACKAGE_NAME))}，已自动降级关闭 dashboard 能力。`)
@@ -48,6 +50,7 @@ export async function startAnalyzeDashboard(
     return
   }
   const { root, configFile } = resolved
+  const { ANALYZE_DASHBOARD_DEVFRAME_BASE, createAnalyzeDashboardViteBridge } = await import('./dashboardViteBridge')
   const devframe = createAnalyzeDashboardDevframe({
     snapshot: { current: result, previous: options.previousResult ?? null, artifacts: options.artifacts },
     initialEvents: [
@@ -68,10 +71,22 @@ export async function startAnalyzeDashboard(
       srcRoot: options.srcRoot ?? (options.cwd ? path.resolve(options.cwd, 'src') : undefined),
     },
   })
+  const bridge = createAnalyzeDashboardViteBridge(devframe, { projectRoot: options.cwd ?? process.cwd() })
 
   let server: ViteDevServer | undefined
+  let onHostClose: (() => void) | undefined
+  const closeResources = async () => {
+    const results = await Promise.allSettled([
+      Promise.resolve().then(() => devframe.dispose()),
+      Promise.resolve().then(() => bridge.close()),
+      Promise.resolve().then(() => shutdown
+        ? shutdown.run('cleanup', () => server?.close())
+        : server?.close()),
+    ])
+    return results.filter(result => result.status === 'rejected').map(result => result.reason)
+  }
   try {
-    server = await createServer({
+    server = await createDevViteServer({
       root,
       base: ANALYZE_DASHBOARD_DEVFRAME_BASE,
       configFile: configFile ?? false,
@@ -83,10 +98,23 @@ export async function startAnalyzeDashboard(
           name: 'weapp-vite:dashboard-lifetime',
           enforce: 'pre',
           configureServer(createdServer) {
-            server = createdServer
+            // Vite 原生重启更新稳定宿主；失败候选不能覆盖它的关闭入口或结束等待。
+            server ??= createdServer
+            const record = getDevServerCloseRecord(createdServer)
+            const close = record.close
+            replaceDevServerClose(createdServer, async () => {
+              try {
+                await close()
+              }
+              finally {
+                if (server && getDevServerCloseRecord(server) === record) {
+                  onHostClose?.()
+                }
+              }
+            })
           },
         },
-        createAnalyzeDashboardViteBridge(devframe),
+        bridge,
       ],
       server: {
         host: '127.0.0.1',
@@ -95,11 +123,15 @@ export async function startAnalyzeDashboard(
       },
       logLevel: 'error',
     })
-    await server.listen(0)
+    if (!shutdown?.stopping) {
+      await server.listen(0)
+    }
   }
   catch (error) {
-    devframe.dispose()
-    await server?.close().catch(closeError => logger.error(closeError))
+    const cleanupErrors = await closeResources()
+    if (cleanupErrors.length) {
+      throw new AggregateError([error, ...cleanupErrors], 'Dashboard 启动及资源清理失败', { cause: error })
+    }
     throw error
   }
 
@@ -117,26 +149,41 @@ export async function startAnalyzeDashboard(
   })
   const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM']
   let onExit: () => Promise<void>
+  let releaseOwnership: (() => void) | undefined
+  const finish = () => {
+    for (const signal of signals) {
+      process.removeListener(signal, onExit)
+    }
+    releaseOwnership?.()
+    resolveExit()
+  }
+  onHostClose = () => {
+    // 主动关闭仍需等待 controller 清理；原生重启不会触发此通知。
+    if (!closing) {
+      finish()
+    }
+  }
   const close = () => {
     if (!closing) {
-      devframe.dispose()
-      closing = Promise.resolve().then(() => activeServer.close()).finally(() => {
-        for (const signal of signals) {
-          process.removeListener(signal, onExit)
+      closing = closeResources().then((errors) => {
+        if (errors.length === 1) {
+          throw errors[0]
         }
-        activeServer.httpServer?.removeListener('close', onExit)
-        resolveExit()
-      })
+        if (errors.length > 1) {
+          throw new AggregateError(errors, 'Dashboard 资源清理失败')
+        }
+      }).finally(finish)
     }
     return closing
   }
   onExit = async () => {
     await close().catch(error => logger.error(error))
   }
-  for (const signal of signals) {
-    process.once(signal, onExit)
+  if (!shutdown) {
+    for (const signal of signals) {
+      process.once(signal, onExit)
+    }
   }
-  activeServer.httpServer?.once('close', onExit)
 
   const handle: AnalyzeDashboardHandle = {
     update: devframe.update,
@@ -144,6 +191,11 @@ export async function startAnalyzeDashboard(
     waitForExit: () => waitPromise,
     close,
     urls: authenticatedUrls,
+  }
+  releaseOwnership = shutdown?.own(close)
+  if (shutdown?.stopping) {
+    await close()
+    return
   }
 
   if (options.watch) {

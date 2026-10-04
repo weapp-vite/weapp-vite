@@ -325,7 +325,7 @@ export class BrowserHeadlessSession {
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
         getNetworkType: () => this.wxState.getNetworkType(),
         navigateBack: option => this.navigateBack(option?.delta),
-        navigateTo: option => this.navigateTo(option.url),
+        navigateTo: option => this.routeEvents.navigateTo(() => this.navigateTo(option.url), option),
         pageScrollTo: option => this.pageScrollTo(option),
         openDocument: option => this.wxState.openDocument(option),
         clearStorageSync: () => this.wxState.clearStorageSync(),

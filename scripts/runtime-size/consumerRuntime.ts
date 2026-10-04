@@ -1,3 +1,4 @@
+import type { DomCheckpointEvidence } from '../../e2e/utils/domAcceptance/types'
 import type { createTestProject } from '../../mpcore/packages/test/src/project'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -23,12 +24,23 @@ export interface LoadedConsumerRuntime {
 
 export interface ConsumerRuntimeObservation {
   scenario: 'minimal' | 'typical'
-  provider: 'headless'
+  provider: 'headless' | 'devtools'
   route: string
   initial: { text: string, count?: number, computed?: number }
   afterTap?: { text: string, count: number, computed: number }
   diagnosticCounts: Record<string, number>
+  host?: { ideVersion: string, baseLibraryVersion: string }
+  domEvidence?: DomCheckpointEvidence[]
+  cleanup?: 'owned-connection-disconnected'
   closed: true
+}
+
+export function parseConsumerRuntimeOption(args: string[]): ConsumerRuntimeObservation['provider'] | undefined {
+  const options = args.filter(argument => argument.startsWith('--runtime'))
+  if (options.length > 1 || options.some(argument => !['--runtime=headless', '--runtime=devtools'].includes(argument))) {
+    throw new Error('Supported runtime options are --runtime=headless or --runtime=devtools; omit the option for historical build-only verification.')
+  }
+  return options[0]?.slice('--runtime='.length) as ConsumerRuntimeObservation['provider'] | undefined
 }
 
 function assertInstalledPath(root: string, filename: string) {
@@ -74,7 +86,7 @@ export async function loadConsumerRuntime(root: string): Promise<LoadedConsumerR
   }
 }
 
-function readCounter(text: string) {
+export function readConsumerCounter(text: string) {
   const normalized = text.trim().replace(/\s+/g, ' ')
   const match = /^(\d+)\s*\/\s*(\d+)$/.exec(normalized)
   assert.ok(match, `Unexpected published-consumer counter text: ${normalized}`)
@@ -108,10 +120,10 @@ export async function verifyConsumerRuntime(
     }
     else {
       const button = await result.screen.findByRole('button', { name: /^1\s*\/\s*2$/ })
-      initial = readCounter(button.textContent)
+      initial = readConsumerCounter(button.textContent)
       assert.deepEqual(initial, { text: '1 / 2', count: 1, computed: 2 })
       await result.user.tap(button)
-      afterTap = readCounter((await result.screen.findByRole('button', { name: /^2\s*\/\s*4$/ })).textContent)
+      afterTap = readConsumerCounter((await result.screen.findByRole('button', { name: /^2\s*\/\s*4$/ })).textContent)
       assert.deepEqual(afterTap, { text: '2 / 4', count: 2, computed: 4 })
     }
     const diagnosticCounts: Record<string, number> = {}

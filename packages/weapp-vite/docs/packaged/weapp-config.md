@@ -296,6 +296,12 @@ export default defineConfig({
 
 微信构建会把 `preload` 合成为 `app.json.preloadRule`；手写的同一路由规则优先，其他平台不会生成微信专属字段。多条 glob 命中时选择具体程度最高的一条。需要检查静态跨分包跳转时，运行 `wv analyze --preload`；它只输出建议，不修改源码，并按触发页所属包汇总实际分包体积与共享的 2 MB 额度。
 
+### `wevu.preset`
+
+`weapp.wevu.preset: 'performance'` 默认开启 patch、隐藏时暂停、`setData.diagnostics: 'fallback'`、开发态高频告警和自动 `setData.pick`。`weapp.wevu.defaults` 的同名字段优先；内建诊断没有 `devOnly` 限制，可显式设为 `'off'`。
+
+首次快照收集也可能记录 `needsFullSnapshot`；阶段日志不等于独立回退或物理调用。配置覆盖与计数边界见 [`wevu-authoring.md`](./wevu-authoring.md)。
+
 ### `vue.template.htmlTagToWxml`
 
 适合从 Web/Vue 模板迁移到小程序 `.vue` 的项目。开启后，会把常见 HTML 标签映射成小程序内置标签，例如 `div -> view`、`span -> text`、`img -> image`、`a -> navigator`，也包含 `br/hr` 这类容易在迁移时“消失”的标签。

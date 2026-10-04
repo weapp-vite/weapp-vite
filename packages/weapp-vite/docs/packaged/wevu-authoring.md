@@ -37,6 +37,16 @@ else if (import.meta.env.PLATFORM === 'web') {
 
 这类写法通常会导致时序错误或生命周期不触发。
 
+## performance 预设与 setData 诊断
+
+`weapp.wevu.preset: 'performance'` 为 app/component 注入 `setData.strategy: 'patch'`、`suspendWhenHidden: true`、`diagnostics: 'fallback'` 和开发态 `highFrequencyWarning`，并默认启用 `autoSetDataPick`。`weapp.wevu.defaults` 的同名字段覆盖预设；`autoSetDataPick` 的显式布尔值也优先。
+
+内建 `diagnostics` 默认关闭，预设开启后没有 `devOnly` 限制，生产构建也可能输出日志。将 app/component 的 `setData.diagnostics` 设为 `'off'` 只关闭内建日志，自定义 `debug` 回调仍有效。
+
+`needsFullSnapshot` 可能来自 patch 首次收集快照、变更路径无法定位，或此前提交失败后的恢复。首次收集仍可只下发差异，单条 reason 不证明失败或完整 payload；恢复须结合 `commitFailure`、revision 和成功结算判断。
+
+显式开启 `debugPhases: true` 后，同一 revision 会增加 prepare、dispatch、commit 记录，内建日志也会打印这些记录。按同一会话内的 `(phase.observerId, revision)` 关联更新，按 `phase.dispatch.id` 去重调用；将初始化与计时区间分开，不能从 warning 条数推导回退率或预设收益。宿主 heap 缺失时保留未完成的内存验收，不用 Node worker RSS 替代。
+
 ## 事件与双向绑定
 
 复杂表单或可复用字段组件优先使用 `bindModel` / `useBindModel`，不要让事件细节分散在大量不一致的自定义协议里。

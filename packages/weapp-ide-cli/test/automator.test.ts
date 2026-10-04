@@ -11,9 +11,10 @@ import {
   launchAutomator,
 } from '../src/cli/automator'
 
+const machineLeaseMock = vi.hoisted(() => vi.fn(async (run: () => Promise<unknown>) => await run()))
 const launchMock = vi.hoisted(() => vi.fn())
 const connectMock = vi.hoisted(() => vi.fn())
-const resolveCliPathMock = vi.hoisted(() => vi.fn())
+const resolveTargetMock = vi.hoisted(() => vi.fn())
 const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
 const readCustomConfigMock = vi.hoisted(() => vi.fn())
 const mkdirMock = vi.hoisted(() => vi.fn())
@@ -29,8 +30,10 @@ vi.mock('@weapp-vite/miniprogram-automator', async importOriginal => ({
   },
 }))
 
-vi.mock('../src/cli/resolver', () => ({
-  resolveCliPath: resolveCliPathMock,
+vi.mock('../src/devtoolsTarget', () => ({
+  resolveWechatDevtoolsTarget: resolveTargetMock,
+  assertWechatDevtoolsHost: vi.fn(),
+  assertWechatDevtoolsPort: vi.fn(),
 }))
 
 vi.mock('../src/config/custom', () => ({
@@ -54,16 +57,17 @@ describe('automator helpers', () => {
   const mockProjectPath = path.resolve('/workspace/project')
 
   beforeEach(() => {
+    machineLeaseMock.mockClear()
     launchMock.mockReset()
     connectMock.mockReset()
-    resolveCliPathMock.mockReset()
+    resolveTargetMock.mockReset()
     bootstrapWechatDevtoolsSettingsMock.mockReset()
     readCustomConfigMock.mockReset()
     mkdirMock.mockReset()
     writeFileMock.mockReset()
     readFileMock.mockReset()
     rmMock.mockReset()
-    resolveCliPathMock.mockResolvedValue({ cliPath: '/Applications/wechat-cli', source: 'custom' })
+    resolveTargetMock.mockImplementation(async ({ cliPath }: { cliPath?: string }) => ({ cliPath: cliPath ?? '/Applications/wechat-cli', installationId: 'test-installation', appPath: 'app', profileDir: 'profile' }))
     readCustomConfigMock.mockResolvedValue({})
     bootstrapWechatDevtoolsSettingsMock.mockResolvedValue({
       touchedInstanceCount: 1,
@@ -202,6 +206,16 @@ describe('automator helpers', () => {
   })
 
   describe('launchAutomator', () => {
+    it('keeps headless launches outside IDE configuration and machine host operations', async () => {
+      await launchAutomator({ projectPath: 'headless-project', runtimeProvider: 'headless' })
+      expect(launchMock).toHaveBeenCalledWith(expect.objectContaining({ projectPath: 'headless-project', runtimeProvider: 'headless' }))
+      expect(machineLeaseMock).not.toHaveBeenCalled()
+      expect(resolveTargetMock).not.toHaveBeenCalled()
+      expect(readCustomConfigMock).not.toHaveBeenCalled()
+      expect(bootstrapWechatDevtoolsSettingsMock).not.toHaveBeenCalled()
+      expect(writeFileMock).not.toHaveBeenCalled()
+    })
+
     it('uses resolved cliPath when caller does not provide one', async () => {
       await launchAutomator({
         projectPath: '/workspace/project',
@@ -211,10 +225,11 @@ describe('automator helpers', () => {
       })
 
       expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+        target: expect.objectContaining({ installationId: 'test-installation' }),
         projectPath: mockProjectPath,
         trustProject: false,
       })
-      expect(resolveCliPathMock).toHaveBeenCalledTimes(1)
+      expect(resolveTargetMock).toHaveBeenCalledTimes(1)
       expect(launchMock).toHaveBeenCalledWith({
         signal: expect.any(AbortSignal),
         timeout: expect.any(Number),
@@ -232,10 +247,11 @@ describe('automator helpers', () => {
       })
 
       expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+        target: expect.objectContaining({ installationId: 'test-installation' }),
         projectPath: mockProjectPath,
         trustProject: false,
       })
-      expect(resolveCliPathMock).not.toHaveBeenCalled()
+      expect(resolveTargetMock).toHaveBeenCalledExactlyOnceWith({ cliPath: '/custom/cli', projectPath: mockProjectPath })
       expect(launchMock).toHaveBeenCalledWith({
         signal: expect.any(AbortSignal),
         timeout: expect.any(Number),
@@ -253,6 +269,7 @@ describe('automator helpers', () => {
 
       expect(readFileMock).not.toHaveBeenCalled()
       expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+        target: expect.objectContaining({ installationId: 'test-installation' }),
         projectPath: mockProjectPath,
         trustProject: false,
       })
@@ -271,6 +288,7 @@ describe('automator helpers', () => {
       })
 
       expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+        target: expect.objectContaining({ installationId: 'test-installation' }),
         projectPath: mockProjectPath,
         trustProject: true,
       })
@@ -398,6 +416,7 @@ describe('automator helpers', () => {
   describe('connectOpenedAutomator', () => {
     it('prefers persisted websocket endpoint for current project', async () => {
       readFileMock.mockResolvedValueOnce(JSON.stringify({
+        installationId: 'test-installation',
         projectPath: path.resolve('/workspace/project'),
         updatedAt: '2026-04-06T00:00:00.000Z',
         wsEndpoint: 'ws://127.0.0.1:19510',
@@ -416,21 +435,14 @@ describe('automator helpers', () => {
       expect(rmMock).not.toHaveBeenCalled()
     })
 
-    it('uses explicit port endpoint when no persisted session exists', async () => {
-      await connectOpenedAutomator({
-        port: 19_510,
-        projectPath: '/workspace/project',
-      })
-
-      expect(connectMock).toHaveBeenCalledWith({
-        signal: expect.any(AbortSignal),
-        timeout: expect.any(Number),
-        wsEndpoint: 'ws://127.0.0.1:19510',
-      })
+    it('rejects an explicit port without installation-bound project metadata', async () => {
+      await expect(connectOpenedAutomator({ port: 19_510, projectPath: '/workspace/project' })).rejects.toThrow('DEVTOOLS_SESSION_IDENTITY_UNVERIFIED')
+      expect(connectMock).not.toHaveBeenCalled()
     })
 
     it('matches persisted endpoint by session id and port', async () => {
       readFileMock.mockResolvedValueOnce(JSON.stringify({
+        installationId: 'test-installation',
         port: 19_510,
         projectPath: path.resolve('/workspace/project'),
         sessionId: 'worker-a',
@@ -454,11 +466,13 @@ describe('automator helpers', () => {
     it('uses project-specific persisted endpoints for concurrent opened projects', async () => {
       readFileMock
         .mockResolvedValueOnce(JSON.stringify({
+          installationId: 'test-installation',
           projectPath: path.resolve('/workspace/template-a'),
           updatedAt: '2026-04-06T00:00:00.000Z',
           wsEndpoint: 'ws://127.0.0.1:19510',
         }))
         .mockResolvedValueOnce(JSON.stringify({
+          installationId: 'test-installation',
           projectPath: path.resolve('/workspace/template-b'),
           updatedAt: '2026-04-06T00:00:00.000Z',
           wsEndpoint: 'ws://127.0.0.1:19511',
@@ -486,6 +500,7 @@ describe('automator helpers', () => {
     it('preserves persisted endpoint when a read-only connection fails', async () => {
       const error = new Error('connect failed')
       readFileMock.mockResolvedValueOnce(JSON.stringify({
+        installationId: 'test-installation',
         projectPath: path.resolve('/workspace/project'),
         updatedAt: '2026-04-06T00:00:00.000Z',
         wsEndpoint: 'ws://127.0.0.1:19510',
@@ -500,3 +515,8 @@ describe('automator helpers', () => {
     })
   })
 })
+
+vi.mock('@weapp-vite/devtools-runtime', async importOriginal => ({
+  ...await importOriginal<typeof import('@weapp-vite/devtools-runtime')>(),
+  withMachineE2ELease: machineLeaseMock,
+}))

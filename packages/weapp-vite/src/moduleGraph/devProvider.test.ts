@@ -1,4 +1,5 @@
 import type { Plugin } from 'vite'
+import { mergeConfig } from 'vite'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtime/runtimeState'
 import { createDevModuleGraphProvider } from './devProvider'
@@ -90,6 +91,50 @@ describe('dev module graph provider', () => {
     await provider.close()
     expect(watcher.off).not.toHaveBeenCalled()
     expect(close).toHaveBeenCalled()
+  })
+
+  it('merges exact profile ownership with user ignores and rejects late profile events before reading', async () => {
+    const ctx = {
+      runtimeState: createRuntimeState(),
+      configService: {
+        cwd: '/project',
+        outDir: '/project/dist',
+        inlineConfig: {},
+        weappViteConfig: { hmr: { profileJson: true } },
+      },
+      moduleGraphService: createModuleGraphService(),
+    } as any
+    const onChange = vi.fn()
+    const userIgnored = (file: string) => file.endsWith('.user-ignored')
+    const provider = await createDevModuleGraphProvider(ctx, { server: { watch: { ignored: userIgnored } } }, onChange)
+    try {
+      const options = createServerMock.mock.calls[0]![0]
+      const plugin = options.plugins[0] as Plugin
+      const merged = mergeConfig(options, await (plugin.config as any)())
+      const ignored = merged.server.watch.ignored as Array<(file: string) => boolean>
+      expect(ignored).toContain(userIgnored)
+      const isIgnored = (file: string) => ignored.some(match => match(file))
+      const file = '/project/.weapp-vite/hmr-profile.jsonl'
+      expect(isIgnored(file)).toBe(true)
+      expect(isIgnored('/project/dist/app.js')).toBe(true)
+      expect(isIgnored('/project/src/input.user-ignored')).toBe(true)
+      expect(isIgnored('/project/.weapp-vite/user-config.json')).toBe(false)
+      const read = vi.fn(async () => '{}')
+      for (const type of ['create', 'update', 'delete']) {
+        await (plugin.hotUpdate as any).call({ environment: { name: 'client' } }, { type, file, read })
+      }
+      expect(read).not.toHaveBeenCalled()
+      expect(onChange).not.toHaveBeenCalled()
+
+      ctx.configService.weappViteConfig.hmr.profileJson = false
+      expect(isIgnored(file)).toBe(false)
+      await (plugin.hotUpdate as any).call({ environment: { name: 'client' } }, { type: 'update', file, read })
+      expect(read).toHaveBeenCalledOnce()
+      expect(onChange).toHaveBeenCalledExactlyOnceWith({ event: 'update', file })
+    }
+    finally {
+      await provider.close()
+    }
   })
 
   it('subscribes external WXML inputs to the provider and releases only its listener', async () => {

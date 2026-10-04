@@ -8,6 +8,7 @@ const CI_TEST_GLOB = path.resolve(import.meta.dirname, './ci/**/*.test.ts').repl
 
 export default defineConfig({
   test: {
+    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
     exclude: [...configDefaults.exclude, ...excludedE2ETestPatterns()],
     include: resolveVitestIncludePatterns(import.meta.dirname, [CI_TEST_GLOB]),
     testTimeout: 36_000_000,

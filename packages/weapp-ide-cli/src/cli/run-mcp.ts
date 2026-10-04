@@ -2,6 +2,7 @@ import process from 'node:process'
 import { startWeappIdeMcpServer } from '../mcp'
 
 export interface McpCommandOptions {
+  cliPath?: string
   workspaceRoot?: string
 }
 
@@ -34,6 +35,7 @@ function printMcpHelp() {
 Start the weapp-ide-cli MCP server over stdio.
 
 Options:
+  --cli-path <path>        Select the WeChat DevTools installation
   --workspace-root <path>  Resolve relative project/output paths from this root
   -h, --help              Show this help
 
@@ -56,6 +58,7 @@ export async function runMcpCommand(argv: string[]) {
   }
 
   await startWeappIdeMcpServer({
+    cliPath: readOptionValue(argv, '--cli-path'),
     workspaceRoot: readOptionValue(argv, '--workspace-root'),
   })
 }

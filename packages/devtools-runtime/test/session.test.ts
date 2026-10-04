@@ -32,6 +32,55 @@ beforeEach(async () => {
 })
 
 describe('devtools runtime shared sessions', () => {
+  it('keeps the same project isolated by installation and refuses ambiguous legacy cleanup', async () => {
+    const stable = createMiniProgram()
+    const rc = createMiniProgram()
+    const hooks = { connectMiniProgram: vi.fn().mockResolvedValueOnce(stable).mockResolvedValueOnce(rc) }
+    const projectPath = 'installation-fixture'
+    await acquireSharedMiniProgram(hooks, { projectPath, installationId: 'stable', cliPath: 'stable-cli' })
+    await acquireSharedMiniProgram(hooks, { projectPath, installationId: 'rc' })
+    expect(hooks.connectMiniProgram).toHaveBeenCalledTimes(2)
+    await closeSharedMiniProgram(projectPath)
+    expect(stable.disconnect).not.toHaveBeenCalled()
+    expect(rc.disconnect).not.toHaveBeenCalled()
+    await closeSharedMiniProgram(projectPath, undefined, { cliPath: 'stable-cli' })
+    expect(stable.disconnect).toHaveBeenCalledExactlyOnceWith()
+    expect(rc.disconnect).not.toHaveBeenCalled()
+    await closeSharedMiniProgram(projectPath)
+    expect(rc.disconnect).toHaveBeenCalledExactlyOnceWith()
+  })
+
+  it('does not ignore an explicitly changed port for the same named session', async () => {
+    const first = createMiniProgram()
+    const second = createMiniProgram()
+    const hooks = { connectMiniProgram: vi.fn().mockResolvedValueOnce(first).mockResolvedValueOnce(second) }
+    const input = { projectPath: 'named-fixture', installationId: 'stable', sessionId: 'worker' }
+    await acquireSharedMiniProgram(hooks, { ...input, port: 19510 })
+    await acquireSharedMiniProgram(hooks, { ...input, port: 19511 })
+    expect(hooks.connectMiniProgram).toHaveBeenCalledTimes(2)
+    const firstInput = { ...input, port: 19510 }
+    await closeSharedMiniProgram(input.projectPath, 'worker', firstInput)
+    expect(first.disconnect).toHaveBeenCalledOnce()
+    expect(second.disconnect).not.toHaveBeenCalled()
+    await closeSharedMiniProgram(input.projectPath, 'worker', input)
+  })
+
+  it('resolves the installation before reading the shared cache', async () => {
+    const stable = createMiniProgram()
+    const rc = createMiniProgram()
+    const hooks = {
+      resolveSessionOptions: vi.fn(async (input: { projectPath: string }) => ({ ...input, installationId: 'stable' })),
+      connectMiniProgram: vi.fn().mockResolvedValueOnce(stable).mockResolvedValueOnce(rc),
+    }
+    const options = { projectPath: 'resolved-fixture' }
+    await acquireSharedMiniProgram(hooks, options)
+    hooks.resolveSessionOptions.mockImplementation(async input => ({ ...input, installationId: 'rc' }))
+    await acquireSharedMiniProgram(hooks, options)
+    expect(hooks.connectMiniProgram).toHaveBeenCalledTimes(2)
+    await closeSharedMiniProgram(options.projectPath, undefined, { installationId: 'stable' })
+    await closeSharedMiniProgram(options.projectPath, undefined, { installationId: 'rc' })
+  })
+
   it('reuses shared mini program sessions per project', async () => {
     const miniProgram = createMiniProgram()
     const hooks = {

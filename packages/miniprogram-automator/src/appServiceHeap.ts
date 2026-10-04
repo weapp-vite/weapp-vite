@@ -35,7 +35,8 @@ export async function readAppServiceHeapUsage(send: Send, options: AppServiceHea
     response = await send('App.CDPCommand', { domain: 'Runtime', method: 'getHeapUsage', params: {} }, { timeout })
   }
   catch (error) {
-    if (error instanceof Error && error.message === 'appservice App.CDPCommand unimplemented') {
+    // SDK 的 Runtime 适配器以此精确错误表示方法占位；仅在本次 heap 请求边界分类。
+    if (error instanceof Error && (error.message === 'appservice App.CDPCommand unimplemented' || error.message === 'Method not implemented.')) {
       return unsupported('protocol-unimplemented')
     }
     if (error instanceof Error && error.message === '\'Runtime.getHeapUsage\' wasn\'t found') {

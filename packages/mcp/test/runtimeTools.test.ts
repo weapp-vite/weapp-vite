@@ -12,7 +12,7 @@ import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { registerRuntimeTools } from '@/server/runtime'
+import { registerRuntimeTools, RuntimeSessionManager } from '@/server/runtime'
 
 type ToolHandler = (input: Record<string, unknown>) => Promise<unknown>
 
@@ -533,4 +533,27 @@ describe('runtime MCP tools', () => {
       },
     })
   })
+})
+
+it('keeps MCP manager ownership and page state separate for installations of one project', async () => {
+  const stable = createMiniProgram()
+  const rc = createMiniProgram()
+  const manager = new RuntimeSessionManager(workspaceRoot, {
+    resolveSessionOptions: async input => ({ ...input, installationId: input.cliPath }),
+    connectMiniProgram: vi.fn().mockImplementation(async input => input.cliPath === 'stable-cli' ? stable.miniProgram : rc.miniProgram),
+  })
+  const stableInput = { projectPath: demoProjectPath, cliPath: 'stable-cli' }
+  const rcInput = { projectPath: demoProjectPath, cliPath: 'rc-cli' }
+  try {
+    await manager.withPage(stableInput, async page => expect(page).toBe(stable.page))
+    await manager.withPage(rcInput, async page => expect(page).toBe(rc.page))
+    await manager.close(stableInput)
+    expect(stable.miniProgram.disconnect).toHaveBeenCalledExactlyOnceWith()
+    expect(rc.miniProgram.disconnect).not.toHaveBeenCalled()
+    await manager.withPage(rcInput, async page => expect(page).toBe(rc.page))
+  }
+  finally {
+    await manager.dispose()
+  }
+  expect(rc.miniProgram.disconnect).toHaveBeenCalledExactlyOnceWith()
 })

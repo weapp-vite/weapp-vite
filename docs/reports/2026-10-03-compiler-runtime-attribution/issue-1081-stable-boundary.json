@@ -1,0 +1,478 @@
+{
+  "schemaVersion": 1,
+  "commitSha": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+  "workingTreeDirty": false,
+  "provider": "devtools",
+  "environment": {
+    "nodeVersion": "v22.22.3",
+    "ideVersion": "2.02.2608080",
+    "baseLibraryVersion": "3.17.3"
+  },
+  "strict": true,
+  "startedAt": "2026-10-04T11:55:59.051Z",
+  "finishedAt": "2026-10-04T11:57:23.187Z",
+  "status": "failed",
+  "errors": [
+    "Vitest run ended: failed",
+    "Expected errors require exactly one action scope: -255098768_0_0/failed"
+  ],
+  "summary": {
+    "plannedCount": 2,
+    "executedCount": 2,
+    "passedCount": 0,
+    "failedCount": 2,
+    "blockedCount": 0,
+    "skippedCount": 0,
+    "notExecutedCount": 0,
+    "plannedCheckpointCount": 9,
+    "capturedCheckpointCount": 3
+  },
+  "originalReportSha256": "1438b50ff7020b0cbdea739c5dabd61b0adb787e4db18c5891452fe0ce32236a",
+  "officialStableQuery": {
+    "queriedAt": "2026-10-04T11:55:27.142257+00:00",
+    "url": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+    "version": "2.02.2608080",
+    "channel": "stable"
+  },
+  "cases": [
+    {
+      "file": "e2e/ide/issue-1081-transaction.runtime.test.ts",
+      "name": "issue #1081: delayed compiler transaction > keeps the committed DOM while compilation is held and applies the newest source with CSS Modules",
+      "status": "failed",
+      "errors": [
+        "DOM checkpoint latest failed: #issue-1081-utility style background-color: expected \"rgb(220, 252, 231)\", received \"rgba(0, 0, 0, 0)\"",
+        "DOM checkpoint execution order: expected [\"initial\",\"held\",\"latest\",\"modules\",\"failed\",\"recovered\"], received [\"initial\",\"held\"]"
+      ],
+      "violations": [
+        "DOM checkpoint execution order: expected [\"initial\",\"held\",\"latest\",\"modules\",\"failed\",\"recovered\"], received [\"initial\",\"held\"]"
+      ],
+      "checkpoints": [
+        {
+          "id": "initial",
+          "route": "/pages/index/index",
+          "action": "检查 initial 批次的样式、文本与保留状态",
+          "expectedErrors": [],
+          "nodes": [
+            {
+              "selector": "#batch-label",
+              "text": "initial"
+            },
+            {
+              "selector": "#increment",
+              "text": "1"
+            },
+            {
+              "selector": "#issue-1081-utility",
+              "text": "batch utility",
+              "styles": {
+                "background-color": "rgb(252, 231, 243)"
+              }
+            },
+            {
+              "selector": "#module-panel",
+              "text": "module panel",
+              "styles": {
+                "color": "rgb(17, 34, 51)"
+              }
+            }
+          ]
+        },
+        {
+          "id": "held",
+          "route": "/pages/index/index",
+          "action": "检查 held 批次的样式、文本与保留状态",
+          "expectedErrors": [],
+          "nodes": [
+            {
+              "selector": "#batch-label",
+              "text": "initial"
+            },
+            {
+              "selector": "#increment",
+              "text": "1"
+            },
+            {
+              "selector": "#issue-1081-utility",
+              "text": "batch utility",
+              "styles": {
+                "background-color": "rgb(252, 231, 243)"
+              }
+            },
+            {
+              "selector": "#module-panel",
+              "text": "module panel",
+              "styles": {
+                "color": "rgb(17, 34, 51)"
+              }
+            }
+          ]
+        },
+        {
+          "id": "latest",
+          "route": "/pages/index/index",
+          "action": "检查 latest 批次的样式、文本与保留状态",
+          "expectedErrors": [],
+          "nodes": [
+            {
+              "selector": "#batch-label",
+              "text": "latest"
+            },
+            {
+              "selector": "#increment",
+              "text": "1"
+            },
+            {
+              "selector": "#issue-1081-utility",
+              "text": "batch utility",
+              "styles": {
+                "background-color": "rgb(220, 252, 231)"
+              }
+            },
+            {
+              "selector": "#module-panel",
+              "text": "module panel",
+              "styles": {
+                "color": "rgb(17, 34, 51)"
+              }
+            }
+          ]
+        },
+        {
+          "id": "modules",
+          "route": "/pages/index/index",
+          "action": "检查 modules 批次的样式、文本与保留状态",
+          "expectedErrors": [],
+          "nodes": [
+            {
+              "selector": "#batch-label",
+              "text": "latest"
+            },
+            {
+              "selector": "#increment",
+              "text": "1"
+            },
+            {
+              "selector": "#issue-1081-utility",
+              "text": "batch utility",
+              "styles": {
+                "background-color": "rgb(220, 252, 231)"
+              }
+            },
+            {
+              "selector": "#module-panel",
+              "text": "module panel",
+              "styles": {
+                "color": "rgb(68, 85, 102)"
+              }
+            }
+          ]
+        },
+        {
+          "id": "failed",
+          "route": "/pages/index/index",
+          "action": "检查 failed 批次的样式、文本与保留状态",
+          "expectedErrors": [
+            {
+              "source": "build",
+              "level": "error",
+              "channel": "dev-process",
+              "text": "[weapp-vite] stateful HMR: Build failed with 1 error:",
+              "count": 1
+            }
+          ],
+          "nodes": [
+            {
+              "selector": "#batch-label",
+              "text": "latest"
+            },
+            {
+              "selector": "#increment",
+              "text": "1"
+            },
+            {
+              "selector": "#issue-1081-utility",
+              "text": "batch utility",
+              "styles": {
+                "background-color": "rgb(220, 252, 231)"
+              }
+            },
+            {
+              "selector": "#module-panel",
+              "text": "module panel",
+              "styles": {
+                "color": "rgb(68, 85, 102)"
+              }
+            }
+          ]
+        },
+        {
+          "id": "recovered",
+          "route": "/pages/index/index",
+          "action": "检查 recovered 批次的样式、文本与保留状态",
+          "expectedErrors": [],
+          "nodes": [
+            {
+              "selector": "#batch-label",
+              "text": "recovered"
+            },
+            {
+              "selector": "#increment",
+              "text": "1"
+            },
+            {
+              "selector": "#issue-1081-utility",
+              "text": "batch utility",
+              "styles": {
+                "background-color": "rgb(219, 234, 254)"
+              }
+            },
+            {
+              "selector": "#module-panel",
+              "text": "module panel",
+              "styles": {
+                "color": "rgb(68, 85, 102)"
+              }
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "initial",
+          "route": "pages/index/index",
+          "source": "devtools-page-frame",
+          "capturedAt": "2026-10-04T11:56:25.777Z",
+          "nodes": [
+            {
+              "selector": "#batch-label",
+              "query": "css",
+              "count": 1,
+              "nodes": [
+                {
+                  "text": "initial"
+                }
+              ]
+            },
+            {
+              "selector": "#increment",
+              "query": "css",
+              "count": 1,
+              "nodes": [
+                {
+                  "text": "1"
+                }
+              ]
+            },
+            {
+              "selector": "#issue-1081-utility",
+              "query": "css",
+              "count": 1,
+              "nodes": [
+                {
+                  "text": "batch utility",
+                  "styles": {
+                    "background-color": "rgb(252, 231, 243)"
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#module-panel",
+              "query": "css",
+              "count": 1,
+              "nodes": [
+                {
+                  "text": "module panel",
+                  "styles": {
+                    "color": "rgb(17, 34, 51)"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "held",
+          "route": "pages/index/index",
+          "source": "devtools-page-frame",
+          "capturedAt": "2026-10-04T11:56:25.923Z",
+          "nodes": [
+            {
+              "selector": "#batch-label",
+              "query": "css",
+              "count": 1,
+              "nodes": [
+                {
+                  "text": "initial"
+                }
+              ]
+            },
+            {
+              "selector": "#increment",
+              "query": "css",
+              "count": 1,
+              "nodes": [
+                {
+                  "text": "1"
+                }
+              ]
+            },
+            {
+              "selector": "#issue-1081-utility",
+              "query": "css",
+              "count": 1,
+              "nodes": [
+                {
+                  "text": "batch utility",
+                  "styles": {
+                    "background-color": "rgb(252, 231, 243)"
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#module-panel",
+              "query": "css",
+              "count": 1,
+              "nodes": [
+                {
+                  "text": "module panel",
+                  "styles": {
+                    "color": "rgb(17, 34, 51)"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "failedCheckpoints": [
+        {
+          "id": "latest",
+          "screenshot": "issue-1081-stable-transaction.png",
+          "sha256": "417d0efbc70b3d6682b0733f7c2810fbcdedf7dc7990a6fd1b24abb68b3216b2"
+        }
+      ]
+    },
+    {
+      "file": "e2e/ide/issue-1081-tailwind-batch.runtime.test.ts",
+      "name": "issue #1081: Tailwind batch delivery > replaces and removes utilities while retaining the page and click state",
+      "status": "failed",
+      "errors": [
+        "DOM checkpoint #dbeafe failed: #issue-1081-utility style background-color: expected \"rgb(219, 234, 254)\", received \"rgba(0, 0, 0, 0)\"",
+        "DOM checkpoint execution order: expected [\"#fce7f3\",\"#dbeafe\",\"#dcfce7\"], received [\"#fce7f3\"]"
+      ],
+      "violations": [
+        "DOM checkpoint execution order: expected [\"#fce7f3\",\"#dbeafe\",\"#dcfce7\"], received [\"#fce7f3\"]"
+      ],
+      "checkpoints": [
+        {
+          "id": "#fce7f3",
+          "route": "/pages/index/index",
+          "action": "确认批次样式和保留的交互状态",
+          "nodes": [
+            {
+              "selector": "#issue-1081-utility",
+              "text": "batch utility",
+              "styles": {
+                "background-color": "rgb(252, 231, 243)"
+              }
+            },
+            {
+              "selector": "#increment",
+              "text": "1"
+            }
+          ]
+        },
+        {
+          "id": "#dbeafe",
+          "route": "/pages/index/index",
+          "action": "确认批次样式和保留的交互状态",
+          "nodes": [
+            {
+              "selector": "#issue-1081-utility",
+              "text": "batch utility",
+              "styles": {
+                "background-color": "rgb(219, 234, 254)"
+              }
+            },
+            {
+              "selector": "#increment",
+              "text": "1"
+            }
+          ]
+        },
+        {
+          "id": "#dcfce7",
+          "route": "/pages/index/index",
+          "action": "确认批次样式和保留的交互状态",
+          "nodes": [
+            {
+              "selector": "#issue-1081-utility",
+              "text": "batch utility",
+              "styles": {
+                "background-color": "rgb(220, 252, 231)"
+              }
+            },
+            {
+              "selector": "#increment",
+              "text": "1"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "#fce7f3",
+          "route": "pages/index/index",
+          "source": "devtools-page-frame",
+          "capturedAt": "2026-10-04T11:57:05.759Z",
+          "nodes": [
+            {
+              "selector": "#issue-1081-utility",
+              "query": "css",
+              "count": 1,
+              "nodes": [
+                {
+                  "text": "batch utility",
+                  "styles": {
+                    "background-color": "rgb(252, 231, 243)"
+                  }
+                }
+              ]
+            },
+            {
+              "selector": "#increment",
+              "query": "css",
+              "count": 1,
+              "nodes": [
+                {
+                  "text": "1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "failedCheckpoints": [
+        {
+          "id": "#dbeafe",
+          "screenshot": "issue-1081-stable-batch.png",
+          "sha256": "a922546670595b42105e60cc451e575f04515ce44c8b5e5a7cdaa25f023e1ff8"
+        }
+      ]
+    }
+  ],
+  "resourceCleanup": {
+    "fixtureWindowsClosed": 2,
+    "ownedPortsClosed": true,
+    "ownedProcessesExited": true,
+    "sharedHostPreserved": true
+  },
+  "conclusion": "未完成最终验收。两例初始样式正确；事务 held 状态正确；首次更新后的规则均未呈现，计算背景色为透明，截图确认。尚未到达的检查点不计为通过。",
+  "scopeNotes": [
+    "启动阶段包含未声明 wevu 的 fixture 警告；不宣称全日志零告警。",
+    "编译失败预期动作尚未执行，reporter 另报该预期作用域缺失；保留原报告失败原因。",
+    "本轮未观察到外部 E2E 重叠。"
+  ]
+}

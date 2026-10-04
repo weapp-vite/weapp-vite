@@ -255,7 +255,21 @@ console.log(WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES)
 
 截图发生协议、导航或截图请求超时时，默认最多重试一次，失败连接由原会话生命周期释放，不在重试层按项目键再次关闭共享连接；不调用无项目定位的 `close` 或退出共享宿主。重试仍失败时保留原始错误，手动打开的窗口和其他项目保持不变。
 
-登录诊断可使用 `queryWechatIdeLogin(cliPath, { timeout: 3000 })`，显式指定本轮选择的 CLI。只有原生 JSON 中的 `login` 布尔值才返回 `{ status: 'success', login }`；超时、命令失败、空输出或矛盾响应均返回 `{ status: 'unknown', reason }`。`unknown` 不等于未登录。该方法不提示、不重试、不回退安装路径；原生 `islogin` 可能启动 IDE，不属于静态探针。旧的 `isWechatIdeLoggedIn()` 保留 CLI 透传行为，其 Promise 完成不能作为登录事实。
+登录诊断可使用 `queryWechatIdeLogin(cliPath, { timeout: 3000 })`，显式指定本轮选择的 CLI。只有原生 JSON 中的 `login` 布尔值才返回 `{ status: 'success', login }`；超时、命令失败、空输出或矛盾响应均返回 `{ status: 'unknown', reason }`。`unknown` 不等于未登录。机器租约冲突返回 `reason: 'runtime-busy'`，应等待持有者结束后再查询。该方法不提示、不重试、不回退安装路径；原生 `islogin` 可能启动 IDE，不属于静态探针。旧的 `isWechatIdeLoggedIn()` 保留 CLI 透传行为，其 Promise 完成不能作为登录事实。
+
+### 安装选择与共享登录
+
+日常开发和本仓库 E2E 推荐使用固定位置的一份官方 Stable。多个项目复用同一个已登录宿主，无需为测试另外准备微信账号；登录正常过期时仍需通过 IDE 完成登录。不要复制 ticket、Cookie 或账号配置来同步两个安装。
+
+未提供固定 `target` 时，程序化调用的显式 `cliPath` 优先；未指定时依次使用进程环境变量 `WEAPP_IDE_CLI_PATH`、全局 `cliPath` 配置和平台默认路径。提供 `target` 后，额外的 `cliPath` 必须指向同一个真实 CLI 文件，符号链接别名可用；不同安装会抛出 `WECHAT_DEVTOOLS_INSTALLATION_SELECTION_CONFLICT`，不会覆盖既定选择。环境变量只作用于当前进程及其子进程，不写回配置文件。`weapp config doctor` 显示持久配置与实际生效路径、产品版本和安装身份。
+
+HTTP 服务端口和 automator 会话都绑定选定安装。另一安装的配置较新、端口可连或版本号相同，均不代表可以复用。未知旧会话不会直接连接；宿主或监听端口归属不一致时停止操作，保留原有 IDE 和账号状态。`port` 仍表示对应接口原有的端口类型，不将 automator WebSocket 端口当作 HTTP 服务端口。
+
+显式 HTTP 或 automator 端口必须是 `1` 到 `65535` 的整数；CLI、MCP 和 REST 同样拒绝无效端口，不会将 `0`、小数、混合文本或超范围值当作默认端口。打开项目的 HTTP 请求与官方 CLI 回退共用一次安装选择和机器租约，安装冲突不会触发回退。
+
+`openWechatIdeProjectByHttp()` 使用 `/v2/open` 的 `project` 参数并保留原始响应正文；空正文或空 JSON 对象会抛出 `WECHAT_DEVTOOLS_HTTP_OPEN_UNCONFIRMED`，不能把 HTTP 200 当作项目已打开的证据。目标项目及 runtime 是否就绪仍需通过会话或 IDE 界面确认。
+
+本仓库真实 IDE E2E 显式设置 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH`，预检把它传入本轮公共 CLI，核对执行时官方 Stable 与实际宿主；不会自动安装或切换版本。不同 worktree 的 E2E 使用同机同用户的排他租约，冲突报告 `Runtime busy`，应等待持有者结束。普通 CLI 的宿主变更同样参与协调，已建立的多项目连接不长期占用此租约。自动恢复不清共享缓存、不退出账号；只释放本任务登记的资源。
 
 ### 6. 程序化 opened-session helper
 

@@ -117,13 +117,14 @@ export function resolveWeappMcpConfig(
 }
 
 export async function startWeappViteMcpServer(options?: WeappViteMcpServerOptions): Promise<WeappViteMcpServerHandle> {
-  const [{ startWeappViteMcpServer: startMcpServer }, { connectMiniProgram, prepareAcceptanceProject }] = await Promise.all([
+  const [{ startWeappViteMcpServer: startMcpServer }, { connectMiniProgram, prepareAcceptanceProject, resolveAutomatorSessionOptions }] = await Promise.all([
     import('@weapp-vite/mcp'),
     import('weapp-ide-cli'),
   ])
   return startMcpServer({
     runtimeHooks: {
       connectMiniProgram,
+      resolveSessionOptions: resolveAutomatorSessionOptions,
       prepareProject: prepareAcceptanceProject,
     },
     ...options,

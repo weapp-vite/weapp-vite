@@ -45,6 +45,33 @@ function moduleIdMatchesFile(id: string, file: string) {
   return normalizeSourceId(id) === file
 }
 
+/** 存在性查询首次命中即返回，不为布尔结果收集全部模块。 */
+export function hasBuildModule(context: BuildGraphContext, file: string) {
+  return withRealpathScope(() => {
+    for (const id of context.getModuleIds?.() ?? []) {
+      if (moduleIdMatchesFile(id, file)) {
+        return true
+      }
+    }
+    return false
+  })
+}
+
+/** 优先查询当前文件索引；未命中时仍按完整协议与真实路径查找别名。 */
+export function hasDevModule(server: DevServerGraphHost, file: string) {
+  return withRealpathScope(() => {
+    if (server.moduleGraph.getModulesByFile(file)?.size) {
+      return true
+    }
+    for (const [id] of server.moduleGraph.idToModuleMap ?? []) {
+      if (moduleIdMatchesFile(id, file)) {
+        return true
+      }
+    }
+    return false
+  })
+}
+
 export function collectBuildStartIds(context: BuildGraphContext, file: string) {
   return withRealpathScope(() => {
     const ids = new Set<string>()

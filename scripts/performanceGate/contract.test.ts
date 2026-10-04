@@ -30,7 +30,31 @@ describe('smoke path routing', () => {
   })
 })
 
-it('rejects a smoke report with a statistical verdict, missing restore or mismatched output evidence', async () => {
+it('accepts frozen historical smoke contracts without mixing them into full performance reports', async () => {
+  const { smokeMetrics } = await import('./contract.mjs')
+  const { verifySmoke } = await import('./smokeReport.mjs')
+  const headSha = 'a'.repeat(40)
+  const report = {
+    schemaVersion: 2,
+    purpose: 'smoke',
+    headSha,
+    driverSha: headSha,
+    baselineSha: policy.baselineSha,
+    samplingContract: policy.samplingContract,
+    status: 'passed',
+    fullAcceptance: 'not-run',
+    errors: [],
+    executionPlan: { headOnly: true, metrics: shards.flatMap(smokeMetrics), confirmation: [] },
+    stages: shards.map(shard => ({ shard, values: smokeMetrics(shard).map((id: string) => ({ id, ms: 100, output: { pageCount: 1, configDigest: 'a'.repeat(64), templateDigest: 'b'.repeat(64) } })) })),
+  }
+  expect(() => verifySmoke(report, headSha)).not.toThrow()
+  for (const samplingContract of ['paired-v2-template-shards', 'paired-v3-profile-capability']) {
+    expect(() => verifySmoke({ ...report, samplingContract }, headSha)).not.toThrow()
+  }
+  expect(() => verifySmoke({ ...report, samplingContract: 'untrusted-contract' }, headSha)).toThrow('conclusion')
+})
+
+it('rejects a smoke report with a statistical verdict, missing lifecycle evidence or mismatched output evidence', async () => {
   const { smokeMetrics } = await import('./contract.mjs')
   const { verifySmoke } = await import('./smokeReport.mjs')
   const headSha = 'a'.repeat(40)

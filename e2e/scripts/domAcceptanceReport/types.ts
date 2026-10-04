@@ -1,5 +1,6 @@
 import type { DomAcceptance } from '../../utils/domAcceptance/types'
 import type { RuntimeDiagnostic } from './runtimeDiagnostics'
+import type { SelectedAcceptanceCase } from './selectedCases'
 
 export interface AcceptanceIdentity {
   runId: string
@@ -42,6 +43,7 @@ export interface AcceptanceReport extends AcceptanceIdentity {
   status: AcceptanceStatus
   errors: string[]
   runtimeDiagnostics?: RuntimeDiagnostic[]
+  selectedCases?: SelectedAcceptanceCase[]
   cases: AcceptanceCaseReport[]
   summary: {
     plannedCount: number

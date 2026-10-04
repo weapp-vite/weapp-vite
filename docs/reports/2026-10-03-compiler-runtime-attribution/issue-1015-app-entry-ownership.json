@@ -1,0 +1,272 @@
+{
+  "schemaVersion": 1,
+  "issue": 1015,
+  "conclusion": "app-entry-ownership-corrected-css-runtime-still-failing",
+  "harnessCommit": "89daaa93b18ba93be2f694343fcdb2873a35e9ad",
+  "workingTreeDirty": true,
+  "sourcePatchSha256": "48677131235a034e81d367882108ef103aa80ec7a67385009f6090e263744332",
+  "providers": [
+    {
+      "provider": "headless",
+      "reportSha256": "12edc2c2b478985c5530bfe1669528e708e05dc8fb7b8530544212f8c79fc98b",
+      "runId": "issue1015-app-ownership-headless-01",
+      "startedAt": "2026-10-04T14:22:07.214Z",
+      "finishedAt": "2026-10-04T14:22:33.660Z",
+      "environment": {
+        "nodeVersion": "v22.22.3",
+        "ideVersion": null,
+        "baseLibraryVersion": null
+      },
+      "status": "passed",
+      "summary": {
+        "plannedCount": 2,
+        "executedCount": 2,
+        "passedCount": 2,
+        "failedCount": 0,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "plannedCheckpointCount": 14,
+        "capturedCheckpointCount": 14
+      },
+      "runtimeStats": [
+        {
+          "warn": 0,
+          "error": 0,
+          "exception": 0
+        },
+        {
+          "warn": 0,
+          "error": 0,
+          "exception": 0
+        },
+        {
+          "warn": 0,
+          "error": 0,
+          "exception": 0
+        },
+        {
+          "warn": 0,
+          "error": 0,
+          "exception": 0
+        },
+        {
+          "warn": 0,
+          "error": 0,
+          "exception": 0
+        },
+        {
+          "warn": 0,
+          "error": 0,
+          "exception": 0
+        },
+        {
+          "warn": 0,
+          "error": 0,
+          "exception": 0
+        },
+        {
+          "warn": 0,
+          "error": 0,
+          "exception": 0
+        }
+      ],
+      "observations": [
+        {
+          "runtime": "classic",
+          "appScripts": {
+            "initial-before-runtime": {
+              "bytes": 406,
+              "hash": "32d87a7e40dc4eaf7eeefeaed894c029a9db92806503c12fd71f5837f4058d5c"
+            },
+            "style-only-before-runtime": {
+              "bytes": 406,
+              "hash": "32d87a7e40dc4eaf7eeefeaed894c029a9db92806503c12fd71f5837f4058d5c"
+            },
+            "style-only-passed": {
+              "bytes": 406,
+              "hash": "32d87a7e40dc4eaf7eeefeaed894c029a9db92806503c12fd71f5837f4058d5c"
+            }
+          },
+          "instanceRetention": {
+            "initial": {
+              "appMarkerRetained": true,
+              "pageMarkerRetained": true
+            },
+            "style-only": {
+              "appMarkerRetained": true,
+              "pageMarkerRetained": true
+            }
+          },
+          "appScriptStableAtStyleSave": true
+        },
+        {
+          "runtime": "stateful-experimental",
+          "appScripts": {
+            "initial-before-runtime": {
+              "bytes": 7855,
+              "hash": "7b0163fa8dedb2d9026449340715ce15bb9fe61271d9e30f8e2e94b8bd916a99"
+            },
+            "style-only-before-runtime": {
+              "bytes": 7855,
+              "hash": "7b0163fa8dedb2d9026449340715ce15bb9fe61271d9e30f8e2e94b8bd916a99"
+            },
+            "style-only-passed": {
+              "bytes": 7855,
+              "hash": "7b0163fa8dedb2d9026449340715ce15bb9fe61271d9e30f8e2e94b8bd916a99"
+            }
+          },
+          "instanceRetention": {
+            "initial": {
+              "appMarkerRetained": true,
+              "pageMarkerRetained": true
+            },
+            "style-only": {
+              "appMarkerRetained": true,
+              "pageMarkerRetained": true
+            }
+          },
+          "appScriptStableAtStyleSave": true
+        }
+      ]
+    },
+    {
+      "provider": "devtools",
+      "reportSha256": "66cd137dd0804f11908f016a2a9600b2be333d5ee52dc4e6582cb7ecb839f84a",
+      "runId": "issue1015-app-ownership-stable-01",
+      "startedAt": "2026-10-04T14:23:11.460Z",
+      "finishedAt": "2026-10-04T14:25:18.655Z",
+      "environment": {
+        "nodeVersion": "v22.22.3",
+        "ideVersion": "2.02.2608080",
+        "baseLibraryVersion": "3.17.3"
+      },
+      "status": "failed",
+      "summary": {
+        "plannedCount": 2,
+        "executedCount": 2,
+        "passedCount": 0,
+        "failedCount": 2,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "plannedCheckpointCount": 14,
+        "capturedCheckpointCount": 2
+      },
+      "runtimeStats": [
+        {
+          "warn": 0,
+          "error": 0,
+          "exception": 0
+        },
+        {
+          "warn": 0,
+          "error": 0,
+          "exception": 0
+        }
+      ],
+      "observations": [
+        {
+          "runtime": "classic",
+          "appScripts": {
+            "initial-before-runtime": {
+              "bytes": 406,
+              "hash": "32d87a7e40dc4eaf7eeefeaed894c029a9db92806503c12fd71f5837f4058d5c"
+            },
+            "style-only-before-runtime": {
+              "bytes": 406,
+              "hash": "32d87a7e40dc4eaf7eeefeaed894c029a9db92806503c12fd71f5837f4058d5c"
+            },
+            "style-only-failed": {
+              "bytes": 406,
+              "hash": "32d87a7e40dc4eaf7eeefeaed894c029a9db92806503c12fd71f5837f4058d5c"
+            }
+          },
+          "instanceRetention": {
+            "initial": {
+              "appMarkerRetained": true,
+              "pageMarkerRetained": true
+            },
+            "style-only-failed": {
+              "appMarkerRetained": true,
+              "pageMarkerRetained": true
+            }
+          },
+          "appScriptStableAtStyleSave": true,
+          "cssFailure": {
+            "checkpoint": "style-only",
+            "expectedBackground": "rgb(255, 255, 0)",
+            "actualBackground": "rgba(0, 0, 0, 0)",
+            "color": "rgb(255, 0, 0)",
+            "variablePresent": true
+          }
+        },
+        {
+          "runtime": "stateful-experimental",
+          "appScripts": {
+            "initial-before-runtime": {
+              "bytes": 7855,
+              "hash": "af2b25fddd7c587940894a85ef92b607db2c4de9aab8743fafe2b99c3e40160d"
+            },
+            "style-only-before-runtime": {
+              "bytes": 7855,
+              "hash": "af2b25fddd7c587940894a85ef92b607db2c4de9aab8743fafe2b99c3e40160d"
+            },
+            "style-only-failed": {
+              "bytes": 7855,
+              "hash": "af2b25fddd7c587940894a85ef92b607db2c4de9aab8743fafe2b99c3e40160d"
+            }
+          },
+          "instanceRetention": {
+            "initial": {
+              "appMarkerRetained": true,
+              "pageMarkerRetained": true
+            },
+            "style-only-failed": {
+              "appMarkerRetained": true,
+              "pageMarkerRetained": true
+            }
+          },
+          "appScriptStableAtStyleSave": true,
+          "cssFailure": {
+            "checkpoint": "style-only",
+            "expectedBackground": "rgb(255, 255, 0)",
+            "actualBackground": "rgba(0, 0, 0, 0)",
+            "color": "rgb(255, 0, 0)",
+            "variablePresent": true
+          }
+        }
+      ]
+    }
+  ],
+  "checks": {
+    "focusedTests": 23,
+    "owningTypecheck": "passed",
+    "publicTypeSuites": 13,
+    "build": "passed",
+    "lint": "passed"
+  },
+  "limitations": [
+    "Headless does not observe WeChat computed CSS.",
+    "Real Stable reached only initial checkpoints; later CSS variable transitions were not executed.",
+    "App script hashes are compared within each session, not across fixture paths.",
+    "An unrelated browser E2E was discovered active shortly after this run; no exclusive-machine timing or performance claim is made.",
+    "No complete label is justified by this partial correction."
+  ],
+  "cleanup": {
+    "projects": 2,
+    "ports": 2,
+    "cliClosePassed": true,
+    "allPortsClosed": true,
+    "fixtureDirectoriesRemoved": true,
+    "errors": [],
+    "independentRecheck": true,
+    "sharedHostPreserved": true,
+    "resourceLedgerSha256": "c4059d68bef90558bdb578c1176f89b95cb077efa69a3b41500cdd701de4118f"
+  },
+  "officialStable": {
+    "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+    "queriedAt": "2026-10-04T14:23:10.923911+00:00",
+    "installedVersion": "2.02.2608080"
+  }
+}

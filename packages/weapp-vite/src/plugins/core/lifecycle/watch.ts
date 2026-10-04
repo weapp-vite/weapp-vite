@@ -6,6 +6,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { invalidateGlassEaselSource } from '../../../analyze/glassEasel'
 import logger from '../../../logger'
+import { hasDevModuleGraphHost } from '../../../moduleGraph/host'
 import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '../../../runtime/autoRoutesPlugin/generatedPaths'
@@ -132,6 +133,10 @@ function isConfigFileDependencyChange(state: CorePluginState, normalizedId: stri
     .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
 }
 
+function isHostOwnedConfigFileDependency(state: CorePluginState, normalizedId: string) {
+  return hasDevModuleGraphHost(state.ctx) && isConfigFileDependencyChange(state, normalizedId)
+}
+
 async function isTailwindAppStyleSource(stylePath: string) {
   try {
     const source = await fs.readFile(stylePath, 'utf8')
@@ -245,7 +250,10 @@ export function createBuildStartHook(state: CorePluginState) {
             `shared-chunk-source:${sharedChunkAffectedEntryCount}`,
           ]
         }
-        addNormalizedWatchFiles(this, [...configService.configFileDependencies, ...getWxmlWatchFiles(ctx)])
+        // Vite 宿主统一重载配置，原生引擎不再注册同一依赖触发第二次重启。
+        const watchFiles = [...configService.configFileDependencies, ...getWxmlWatchFiles(ctx)]
+          .filter(file => !isHostOwnedConfigFileDependency(state, normalizeFsResolvedId(file)))
+        addNormalizedWatchFiles(this, watchFiles)
         if (isPluginBuild) {
           if (ctx.scanService.pluginJsonPath) {
             addNormalizedWatchFiles(this, [resolveRealpath(ctx.scanService.pluginJsonPath)])
@@ -777,6 +785,9 @@ export function createWatchChangeHook(state: CorePluginState) {
       return
     }
     if (isAutoRoutesGeneratedFileChange(state, normalizedId)) {
+      return
+    }
+    if (isHostOwnedConfigFileDependency(state, normalizedId)) {
       return
     }
     const emittedJsonPaths = change.event === 'create'

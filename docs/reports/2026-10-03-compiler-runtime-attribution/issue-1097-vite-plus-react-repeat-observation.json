@@ -1,0 +1,292 @@
+{
+  "schemaVersion": 1,
+  "issue": 1097,
+  "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+  "archiveCount": 28,
+  "cohortManifestHashes": {
+    "candidate-evidence.json": "832be6d367c4102d8a83d875d902ff1d985d8175106323d22f6eeec97883272e",
+    "consumer-tarballs.json": "785c6ed10371af7dd389a4c4a0b1f1d3505383ff11ce470b31f27a56fb9c7c3c"
+  },
+  "rows": [
+    {
+      "host": "vite-plus",
+      "profile": "react",
+      "functionalAssertionsPassed": true,
+      "finalRowAccepted": false,
+      "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+      "harness": {
+        "commit": "bed518b2b57d5853a1ab8c0e73c52dd9ab424aa3",
+        "dirty": true,
+        "before": {
+          "commit": "bed518b2b57d5853a1ab8c0e73c52dd9ab424aa3",
+          "patchSha256": "e633eecd7c904a990bfdbca67ce7d11b44b1da3dad65e09f8e0ee3f53a48df6e",
+          "untracked": {
+            ".changeset/classic-auto-route-topology.md": "07b615e4936fbfbedaec806cad882471c42c0b1741f20513f923b5a8adf95263",
+            ".changeset/profile-output-watch-ownership.md": "ddcecd3e4793908c9ff7f6fe3606380ec9db2d28294ee69becb2519e29d080ac",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/issue-1097-vite-plus-react-consumer-observation.json": "aa211170494b1c540408cfa4a9f7416e96546ebf67ffad3bff7701651fe5877e",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-ownership-audit.json": "3e6e4d705d429f93eac7de135fd8719c070881b08c80695bf21f913ec59d45ea",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-ownership-audit.md": "f5be129d126d7e7dab8c7bf6120143b2e3d997496b3d3ebce1795ea2aa478e19",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-recovery-e2e.json": "e92101e1f2582c32af4a890c01c38132bbc649cbeae5d9e81797712fef488f65",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-recovery-e2e.md": "b50ffffa4d7a3c72a55e0b6580adcb1e3336d05842dda0cfb164570c783ea3d7",
+            "e2e/ci/hmr-profile-failed-recovery.test.ts": "004a032e637c9e99e7cc8704c0521c80b15dc1cd0a9924ee7401ecead6c68009",
+            "packages/weapp-vite/src/moduleGraph/profileOutput.test.ts": "ad19acc46afb085f60efa0d06d486857527929200c3e50f791fdd2560fbb1bf5",
+            "packages/weapp-vite/src/moduleGraph/profileOutput.ts": "6e4cf90e2808b3117f1c7473622d428863f26935976b0a35f202e993cce6aca9",
+            "packages/weapp-vite/src/plugins/autoRoutes.topology.test.ts": "f794cbee3efdd7e940f21d303cb7dd9c2c893e9fb0cd1bf91ed3f4af9b0a5607",
+            "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.test.ts": "ceec4f869ca748e191026cdffa17a1312aee3efefb9da39bd4a5283e87df6608",
+            "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.ts": "80ff99fa169ebffde138e2d08734e4ad9348625b65cf5c4d1936d7cdfd4cdee4"
+          },
+          "capturedAt": "2026-10-04T15:39:20.695023+00:00"
+        },
+        "after": {
+          "commit": "bed518b2b57d5853a1ab8c0e73c52dd9ab424aa3",
+          "patchSha256": "e633eecd7c904a990bfdbca67ce7d11b44b1da3dad65e09f8e0ee3f53a48df6e",
+          "untracked": {
+            ".changeset/classic-auto-route-topology.md": "07b615e4936fbfbedaec806cad882471c42c0b1741f20513f923b5a8adf95263",
+            ".changeset/profile-output-watch-ownership.md": "ddcecd3e4793908c9ff7f6fe3606380ec9db2d28294ee69becb2519e29d080ac",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/issue-1097-vite-plus-react-consumer-observation.json": "aa211170494b1c540408cfa4a9f7416e96546ebf67ffad3bff7701651fe5877e",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-ownership-audit.json": "3e6e4d705d429f93eac7de135fd8719c070881b08c80695bf21f913ec59d45ea",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-ownership-audit.md": "f5be129d126d7e7dab8c7bf6120143b2e3d997496b3d3ebce1795ea2aa478e19",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-recovery-e2e.json": "e92101e1f2582c32af4a890c01c38132bbc649cbeae5d9e81797712fef488f65",
+            "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-recovery-e2e.md": "b50ffffa4d7a3c72a55e0b6580adcb1e3336d05842dda0cfb164570c783ea3d7",
+            "e2e/ci/hmr-profile-failed-recovery.test.ts": "004a032e637c9e99e7cc8704c0521c80b15dc1cd0a9924ee7401ecead6c68009",
+            "packages/weapp-vite/src/moduleGraph/profileOutput.test.ts": "ad19acc46afb085f60efa0d06d486857527929200c3e50f791fdd2560fbb1bf5",
+            "packages/weapp-vite/src/moduleGraph/profileOutput.ts": "6e4cf90e2808b3117f1c7473622d428863f26935976b0a35f202e993cce6aca9",
+            "packages/weapp-vite/src/plugins/autoRoutes.topology.test.ts": "f794cbee3efdd7e940f21d303cb7dd9c2c893e9fb0cd1bf91ed3f4af9b0a5607",
+            "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.test.ts": "ceec4f869ca748e191026cdffa17a1312aee3efefb9da39bd4a5283e87df6608",
+            "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.ts": "80ff99fa169ebffde138e2d08734e4ad9348625b65cf5c4d1936d7cdfd4cdee4"
+          },
+          "capturedAt": "2026-10-04T15:41:20.204036+00:00"
+        },
+        "snapshotsEqual": true,
+        "snapshotCoversIndex": false
+      },
+      "installation": {
+        "candidatePackages": 28,
+        "comparedArchiveFiles": 1735,
+        "mismatches": 0,
+        "symlinksAudited": 44,
+        "externalSymlinks": 0,
+        "lockSha256": "c9a5c3454f415e9d6352fd7f9b155bdd8ffd30f46cd89af3f229566f1f7b9b9b",
+        "reportSha256": "a627efba46c144f54638e8a1b8abf8c0dbe362a3782ec5b2a47bf625cc2cc59e",
+        "exportPackagesVerified": 28,
+        "negativeControls": {
+          "brokenExportsRejected": true,
+          "missingCliRejected": true
+        }
+      },
+      "officialDevtools": {
+        "queriedAt": "2026-10-04T15:39:20.219856+00:00",
+        "channel": "stable",
+        "selectedAndInstalledVersion": "2.02.2608080",
+        "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+        "evidenceSha256": "f82d52f5ec72d2342aef39e8ba56fd6eef4e83dbd8228cc444386be67ad7bafd"
+      },
+      "providers": [
+        {
+          "provider": "devtools",
+          "runId": "issue1097-vite-plus-react-c3-02",
+          "reportSha256": "0536e795da84719d47c6ee21890f195a573ba8c2bb84b904b389a7c14f6cbe20",
+          "startedAt": "2026-10-04T15:40:34.406Z",
+          "finishedAt": "2026-10-04T15:41:18.082Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.17.3"
+          },
+          "strict": true,
+          "status": "passed",
+          "summary": {
+            "plannedCount": 3,
+            "executedCount": 3,
+            "passedCount": 3,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 14,
+            "capturedCheckpointCount": 14
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "informationalCount": 3
+          },
+          "nativeSlotGeometryAssertions": 42
+        },
+        {
+          "provider": "headless",
+          "runId": "issue1097-vite-plus-react-c3-02",
+          "reportSha256": "078fa1c5e8328135088633bd83908f48228bda4ee6c8cc81f59be0c4674d4e52",
+          "startedAt": "2026-10-04T15:40:20.940Z",
+          "finishedAt": "2026-10-04T15:40:33.057Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": null,
+            "baseLibraryVersion": null
+          },
+          "strict": true,
+          "status": "passed",
+          "summary": {
+            "plannedCount": 3,
+            "executedCount": 3,
+            "passedCount": 3,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 14,
+            "capturedCheckpointCount": 14
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "informationalCount": 0
+          },
+          "nativeSlotGeometryAssertions": 0
+        }
+      ],
+      "commonCases": [
+        {
+          "name": "react runtime spike (weapp e2e) > renders React hooks and dispatches host events through generic WXML",
+          "checkpoints": [
+            {
+              "id": "initial",
+              "action": "首屏显示初始 hooks、context、输入和 keyed 列表",
+              "route": "/pages/index/index"
+            },
+            {
+              "id": "incremented",
+              "action": "点击 increment 更新 count 和 memo doubled",
+              "route": "/pages/index/index"
+            },
+            {
+              "id": "appended",
+              "action": "点击 append 保留已有 keyed 项并新增 item-2",
+              "route": "/pages/index/index"
+            },
+            {
+              "id": "input-updated",
+              "action": "输入 Ada 并渲染受控问候文本",
+              "route": "/pages/index/index"
+            }
+          ],
+          "observationSha256": "ba2519104b3b0682f97615f5ac85f7e9f901bb3b387ad1e8dfc83e807a6af427"
+        },
+        {
+          "name": "react runtime spike (weapp e2e) > renders the compiled native WXML page with binding-only payloads",
+          "checkpoints": [
+            {
+              "id": "initial",
+              "action": "首屏显示静态绑定的 counter 和问候",
+              "route": "/pages/static/index"
+            },
+            {
+              "id": "incremented",
+              "action": "点击 increment 通过最小 setData payload 更新文本",
+              "route": "/pages/static/index"
+            },
+            {
+              "id": "input-updated",
+              "action": "输入 Ada 更新静态 input binding 和问候",
+              "route": "/pages/static/index"
+            }
+          ],
+          "observationSha256": "330e9ca1801d8e5e460d997e62fc1556d07dc4c5b976e8965573ed1c69b9cc82"
+        },
+        {
+          "name": "react runtime spike (weapp e2e) > passes props, change events and default slots across all six interop edges",
+          "checkpoints": [
+            {
+              "id": "initial",
+              "action": "首屏检查六条互操作边的 props 文本、默认插槽和 idle 结果",
+              "route": "/pages/interop/index"
+            },
+            {
+              "id": "react-to-native",
+              "action": "点击 react-to-native 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+              "route": "/pages/interop/index"
+            },
+            {
+              "id": "react-to-wevu",
+              "action": "点击 react-to-wevu 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+              "route": "/pages/interop/index"
+            },
+            {
+              "id": "native-to-wevu",
+              "action": "点击 native-to-wevu 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+              "route": "/pages/interop/index"
+            },
+            {
+              "id": "native-to-react",
+              "action": "点击 native-to-react 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+              "route": "/pages/interop/index"
+            },
+            {
+              "id": "wevu-to-native",
+              "action": "点击 wevu-to-native 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+              "route": "/pages/interop/index"
+            },
+            {
+              "id": "wevu-to-react",
+              "action": "点击 wevu-to-react 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+              "route": "/pages/interop/index"
+            }
+          ],
+          "observationSha256": "6507cec1d69282646694757059d967da7c4933f6b5337508705a5d5339f475f2"
+        }
+      ],
+      "parity": {
+        "commonCases": 3,
+        "commonCheckpoints": 14,
+        "commonObservationsMatch": true,
+        "webUsesBrowserAssertions": false
+      },
+      "serialization": {
+        "rawReportedProcessCount": 54,
+        "knownOwnedFalsePositives": 6,
+        "additionalOwnedProcessesByRecordedAncestry": 1,
+        "ancestryInferenceIsNotSimultaneousSnapshot": true,
+        "explicitPackageUnitProcesses": 29,
+        "externalRuntimeProcesses": 18,
+        "observedExternalRuntimeOverlap": true,
+        "finalSerialAcceptance": false,
+        "overlapKinds": [
+          "e2e"
+        ]
+      },
+      "cleanup": {
+        "resourcesSha256": "4ab977da40369048918c313b08cc054e61700537592f8aa97d54f660fc295037",
+        "completedAt": "2026-10-04T15:41:19.655323+00:00",
+        "registeredChildren": 65,
+        "sameIdentityStillRunning": 0,
+        "ownedEndpoints": 1,
+        "ownedListeningPortsStillOpen": 0,
+        "errors": 0
+      },
+      "evidence": {
+        "runLogSha256": "db3f3b7c56303350d01568400a4b58503403077e7b8b3aa37f5c12f0fec911c7",
+        "rowSummarySha256": "61b007ea3f81c84bf2daa9f091d9d88ab87f1ee6c98cc7629639b27b175a85d0"
+      }
+    }
+  ],
+  "limitations": [
+    "This audit only reads retained evidence and verifies installations and owned-resource closure. It does not run E2E or modify the source repository.",
+    "Functional assertions, observed serialization and source provenance are separate gates. A row with a true external runtime overlap or incomplete modern process/source snapshots is not final acceptance.",
+    "The compiler cohort remains c3c643d40 even when the harness commit changes. Dirty harness identity is explicitly recorded; no compiler upgrade is inferred.",
+    "Headless common observations do not establish CSS geometry parity. React Stable rows separately prove 42 native slot geometry observations.",
+    "Process polling cannot exclude a process whose complete lifetime lies between snapshots. No exclusive-machine or performance claim is made.",
+    "Web rows use their public browser assertions and recorded successful command completion rather than mini-program provider DOM reports."
+  ]
+}

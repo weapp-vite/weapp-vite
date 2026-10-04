@@ -7,29 +7,12 @@ import { estimateCompressedBytes } from './format'
 
 export const totalPackageBudgetBytes = 20 * 1024 * 1024
 export const singlePackageBudgetBytes = 2 * 1024 * 1024
-export const budgetWarningRatio = 0.85
 
 export interface FileComparisonMaps {
   packageBytes: Map<string, number>
   fileBytes: Map<string, number>
-  moduleBytes: Map<string, {
-    source: string
-    sourceType: ModuleSourceType
-    bytes: number
-    packageId: string
-    packageLabel: string
-    file: string
-  }>
   totalBytes: number
   compressedBytes: number
-}
-
-export interface ModulePlacement {
-  source: string
-  sourceType: ModuleSourceType
-  packageId: string
-  packageLabel: string
-  file: string
 }
 
 export function getFileSize(file: PackageFileEntry) {
@@ -53,7 +36,6 @@ export function createFileKey(packageId: string, fileName: string) {
 export function createComparisonMaps(result: AnalyzeSubpackagesResult | null): FileComparisonMaps {
   const packageBytes = new Map<string, number>()
   const fileBytes = new Map<string, number>()
-  const moduleBytes = new Map<string, FileComparisonMaps['moduleBytes'] extends Map<string, infer Value> ? Value : never>()
   let totalBytes = 0
   let compressedBytes = 0
 
@@ -65,20 +47,6 @@ export function createComparisonMaps(result: AnalyzeSubpackagesResult | null): F
       totalBytes += size
       compressedBytes += getFileCompressedSize(file)
       fileBytes.set(createFileKey(pkg.id, file.file), size)
-      for (const mod of file.modules ?? []) {
-        const bytes = mod.bytes ?? mod.originalBytes ?? 0
-        const existing = moduleBytes.get(mod.id)
-        if (!existing || existing.bytes < bytes) {
-          moduleBytes.set(mod.id, {
-            source: mod.source,
-            sourceType: mod.sourceType,
-            bytes,
-            packageId: pkg.id,
-            packageLabel: pkg.label,
-            file: file.file,
-          })
-        }
-      }
     }
     packageBytes.set(pkg.id, packageTotal)
   }
@@ -86,30 +54,9 @@ export function createComparisonMaps(result: AnalyzeSubpackagesResult | null): F
   return {
     packageBytes,
     fileBytes,
-    moduleBytes,
     totalBytes,
     compressedBytes,
   }
-}
-
-export function createModulePlacementMap(result: AnalyzeSubpackagesResult): Map<string, ModulePlacement> {
-  const map = new Map<string, ModulePlacement>()
-  for (const pkg of result.packages) {
-    for (const file of pkg.files) {
-      for (const mod of file.modules ?? []) {
-        if (!map.has(mod.id)) {
-          map.set(mod.id, {
-            source: mod.source,
-            sourceType: mod.sourceType,
-            packageId: pkg.id,
-            packageLabel: pkg.label,
-            file: file.file,
-          })
-        }
-      }
-    }
-  }
-  return map
 }
 
 export function createModuleInfoMap(result: AnalyzeSubpackagesResult | null) {

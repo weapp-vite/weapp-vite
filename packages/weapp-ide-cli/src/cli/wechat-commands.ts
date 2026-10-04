@@ -1,8 +1,10 @@
+import type { ResolvedWechatDevtoolsTarget } from '../devtoolsTarget'
 import path from 'node:path'
 import process from 'node:process'
+import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
 import { withMiniProgram } from './automator-session'
 import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from './http'
-import { runWechatCliCommand } from './run-wechat-cli'
+import { resolveWechatCliCommandTarget, runWechatCliCommand } from './run-wechat-cli'
 
 export interface LoginWechatIdeOptions {
   qrFormat?: 'base64' | 'image' | 'terminal'
@@ -162,7 +164,7 @@ function appendProjectLocatorArgv(argv: string[], options: {
 /**
  * @description 调用微信开发者工具 open 命令。
  */
-export async function openWechatIde(options: OpenWechatIdeOptions = {}) {
+async function openSelectedWechatIde(options: OpenWechatIdeOptions, target: ResolvedWechatDevtoolsTarget) {
   const argv = ['open']
 
   appendProjectLocatorArgv(argv, options)
@@ -176,15 +178,29 @@ export async function openWechatIde(options: OpenWechatIdeOptions = {}) {
 
   if (options.projectPath) {
     try {
-      await openWechatIdeProjectByHttp(options.projectPath)
+      await openWechatIdeProjectByHttp(options.projectPath, { target })
       return
     }
-    catch {
+    catch (error) {
+      if (error instanceof Error && (error.message.startsWith('Runtime busy:')
+        || ('code' in error && (error.code === 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' || error.code === 'WECHAT_DEVTOOLS_INSTALLATION_SELECTION_CONFLICT')))) {
+        throw error
+      }
       // HTTP 服务不可用时回退官方 CLI，以兼容开发者工具冷启动和旧版本。
     }
   }
 
-  await runWechatCliCommand(argv)
+  await runWechatCliCommand(argv, { target })
+}
+
+/** 打开与兼容回退在同一机器租约内沿用固定安装，禁止重新选择宿主。 */
+export async function openWechatIde(options: OpenWechatIdeOptions = {}) {
+  return await withMachineE2ELease(async () => {
+    const target = await resolveWechatCliCommandTarget()
+    if (target) {
+      return await openSelectedWechatIde(options, target)
+    }
+  })
 }
 
 /**

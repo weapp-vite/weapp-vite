@@ -8,10 +8,24 @@
 
 有效宿主结果是 AppService JS 堆当前已用/已分配字节；没有强制 GC，不代表峰值或 renderer/native 总内存。已知不支持保留明确原因；headless 直接记录 `not-devtools`，不调用真实 IDE 内存接口。接口缺失、无效数据、连接超时和其他协议故障导致本轮失败，不制造零值或沿用上一份样本。IDE/SDK 元数据缺失保留 null，不能用 Node 或浏览器版本替代。
 
-测量入口仍是 `e2e/scripts/runtime-bench.ts` 的发布消费者预设对照。真实运行前由执行者记录官方 Stable 查询时间、所选 CLI、实际 IDE/基础库版本；本目录单元测试不启动 IDE、浏览器或 headless runtime。
+测量入口为 `pnpm e2e:runtime-bench --published-presets --tarballs=<目录> --output=<报告>`（`e2e/scripts/run-runtime-bench.ts`）。真实运行前由执行者记录官方 Stable 查询时间、所选 CLI、实际 IDE/基础库版本；本目录单元测试不启动 IDE、浏览器或 headless runtime。
+
+两套消费者必须具有相同的源码、候选 tarball 和完整安装依赖闭包；第二套安装完成后先核对闭包，再开始其采样。`collectionComplete` 仅表示两套数据采集结束，`memoryEvidence` 单列每个更新样本前后的宿主堆证据及缺失原因。宿主返回 unsupported 时保留原始 reason，并令 `complete: false`；worker RSS 不能补齐该证据。
+
+每个正式样本结束后在计时之外原子保存 `runtime-bench-evidence.json`，预热不进入正式样本。中途失败的已完成样本、完整输出清单、采集错误和宿主清理错误随最终报告归档。采样、内存或清理不完整时保留本次消费者目录，并在本机诊断输出打印位置；归档失败也保留目录。只有完整报告先成功归档且所有验收证据齐全后才删除本次消费者，成功关闭宿主之后才发布 worker 结果。
+
+每个 worker 的 stdout/stderr 从启动起直接写入报告旁的 `<报告>.workers/`，包括内部启动重试和最终失败的日志；成功后删除消费者目录也保留日志。原始日志与 worker checkpoint 含本机诊断信息，公开 issue 前须单独脱敏，不能直接上传。报告中的 `logs` 是相对报告目录的文件位置。
+
+真实 IDE worker 通过启动器的独立快照创建事件登记所有权，并从实际 session metadata 校核项目、端点和端口。收尾先刷新日志并断开连接，再用启动时选定的同一 CLI 执行精确 `close --project`，随后核验已知 automator 端口关闭。每个快照只释放一次，失败启动也进入收尾；手动项目、其他项目、其他安装和共享宿主不在释放范围。`resources` 逐项记录关闭状态；缺失 metadata、CLI 关闭失败或端口仍开放均不能发布通过结果。`cleanup.consumers` 仅描述临时安装目录，不能替代项目和端口清理证据。
+
+会话恢复前将失败的样本名称、attempt 和原因写入 `attemptFailures` 与 `failures`。恢复后的样本可以继续留作诊断，但存在失败尝试的整轮结果仍为 failed，不能用替代样本生成通过的性能结论。
+
+首屏与详情导航的 `firstCommitMs` / `firstCommitMsMedian` 保持 null；ready marker 和包含固定等待的 wall time 不代表首个 host commit。更新场景继续独立保存宿主提交阶段与 DOM 可见观测，不改变工作负载、预热次数、正式采样次数或计时边界。
+
+首屏与详情导航同时核对实际路由、可见节点、页面专属 `readyMarker` 和有限非负的 `loadToReadyMs`。两页共用的 DOM id 不能单独证明导航成功；页面方法返回空对象或缺失 ready 指标时本轮失败，不将缺失值记录成通过的样本。
 
 ```sh
 pnpm vitest run -c e2e/scripts/runtimeBench/vitest.config.ts
 ```
 
-原始样本、产物字节、phase、可见结果及内存能力共同决定最终结论。`complete` 表示当前配置的采集流程完成；若宿主不支持 heap 或未完成 Stable runtime，#1137 的内存/目标宿主验收仍未完成，不发布收益结论。
+原始样本、产物字节、phase、可见结果及内存能力共同决定最终结论。`complete` 要求两套采样完成、输入与安装闭包等价、宿主 heap 证据齐全、报告归档及资源清理成功；只有采集结束时使用 `collectionComplete`。官方 Stable 渠道身份仍由附带的官方查询时间、所选 CLI 与实际宿主版本证据判定，不能仅凭 `complete` 推导。heap 不支持或 Stable 身份证据缺失时，#1137 对应验收仍未完成，不发布收益结论。

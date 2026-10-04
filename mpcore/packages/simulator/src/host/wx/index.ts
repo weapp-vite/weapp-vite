@@ -293,9 +293,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
     navigateBack: option => runNavigationApi(driver, option, deferred => invokeWxApi(() => {
       driver.navigateBack(deferred)
     }, deferred)),
-    navigateTo: option => runNavigationApi(driver, option, deferred => invokeWxApi(() => {
-      driver.navigateTo(deferred!)
-    }, deferred)),
+    navigateTo: option => runNavigationApi(driver, option, deferred => driver.navigateTo(deferred!)),
     nextTick: callback => driver.nextTick(callback),
     offBeforeAppRoute: listener => driver.offBeforeAppRoute(listener),
     offBeforePageUnload: listener => driver.offBeforePageUnload(listener),

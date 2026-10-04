@@ -1,4 +1,6 @@
 import type { InlineConfig, ViteDevServer } from 'vite'
+import { getDevServerCloseRecord, replaceDevServerClose } from '../devLifecycle/server'
+import { getDevShutdownScope } from '../devLifecycle/shutdown'
 
 const hostLifecycleKey = Symbol.for('weapp-vite:host-lifecycle')
 
@@ -51,7 +53,9 @@ export function takeHostRestartData<T>(server: ViteDevServer, key: symbol): T | 
 /** 关闭等待正在替换服务器的重启，避免旧入口返回后新会话继续写出。 */
 export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Promise<void>) {
   const nativeRestart = server.restart.bind(server)
-  const nativeClose = server.close.bind(server)
+  const generation = getDevServerCloseRecord(server)
+  const nativeClose = generation.close
+  const scope = getDevShutdownScope()
   // Vite 在赋值 _restartPromise 前已创建替换宿主，不能用其私有字段识别父重启。
   // 只接收本次原生重启传入的私有配置，新的插件实例也能接续同一条宿主链。
   const inlineConfig = server.config.inlineConfig as HostInlineConfig
@@ -70,40 +74,45 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
     },
   }
 
-  const close = (): Promise<void> => closeTask ??= (async () => {
+  const closeResources = async () => {
     stopping.resolve()
-    try {
-      await settleHostCleanup([Promise.resolve().then(closeSession), discardRestartData(data, 'incomplete'), discardRestartData(inherited?.data, 'incomplete')])
-    }
-    finally {
+    const sessionCleanup = settleHostCleanup([Promise.resolve().then(closeSession), discardRestartData(data, 'incomplete'), discardRestartData(inherited?.data, 'incomplete')])
+    const hostCleanup = (async () => {
+      // 资源与宿主的错误分别保留；后续关闭失败不能覆盖前面的恢复错误。
+      await sessionCleanup.catch(() => {})
       await restartTask?.catch(() => {})
-      // Vite 重启会把新服务器的方法复制回原对象；继续关闭替换后的会话。
-      if (server.close !== close) {
-        await server.close()
+      // 以原生交接的代际记录识别替换宿主，不能把公共退出 gate 当成新资源入口。
+      const current = getDevServerCloseRecord(server)
+      if (current !== generation) {
+        await current.close()
       }
       else {
         await nativeClose()
       }
-    }
-  })()
+    })()
+    await settleHostCleanup([sessionCleanup, hostCleanup])
+  }
+  const close = (): Promise<void> => closeTask ??= scope
+    ? scope.run('cleanup', closeResources)
+    : closeResources()
 
-  server.close = close
+  replaceDevServerClose(server, close)
   server.restart = (force) => {
-    if (closeTask) {
-      return closeTask
+    if (closeTask || scope?.stopping) {
+      return close()
     }
-    return restartTask ??= (async () => {
+    const restart = async () => {
       if (inheritedRestart) {
         // 新一代源码变化必须等父重启交接后再重启，不能先关闭新会话再丢掉请求。
         // 初始化失败会进入 close；取消等待避免父重启与 configureServer 相互等待。
         await Promise.race([inheritedRestart, stopping.promise])
-        if (closeTask) {
+        if (closeTask || scope?.stopping) {
           return
         }
       }
       try {
         await closeSession()
-        if (closeTask) {
+        if (closeTask || scope?.stopping) {
           return
         }
         const config = server.config
@@ -134,7 +143,8 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
       finally {
         await discardRestartData(data, 'incomplete')
       }
-    })().finally(() => {
+    }
+    return restartTask ??= (scope ? scope.run('restart', restart) : restart()).finally(() => {
       restartTask = undefined
     })
   }

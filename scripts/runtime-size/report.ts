@@ -91,7 +91,7 @@ export function renderRuntimeSizeMarkdown(current: RuntimeSizeReport, baseline?:
     `- 当前 commit：\`${current.commit}\``,
     ...(baseline ? [`- 对比基线：\`${baseline.commit}\``] : []),
     '- 阶梯使用具名导入模拟正常 tree-shaking；完整 Provider 行表示全部能力上限。',
-    '- JSON 保存每阶梯的生成入口、模块归属、引用链、保留/移除模块和明确比较基线；公共入口与内部入口的差值不是新增业务能力的成本。',
+    '- JSON 保存每阶梯的生成入口、模块归属、源码导入路径、保留/移除模块和明确比较基线；导入路径不证明中间模块或符号被保留，公共入口与内部入口的差值不是新增业务能力的成本。',
     '- Web 最小应用包含 app 注册桥；典型页面及以上同时包含组件/页面注册桥。',
     '- 小程序仅统计产物字节；Web gzip 使用 level 9。',
     '',

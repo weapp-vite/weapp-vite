@@ -207,27 +207,6 @@ export function emitSfcJsonAsset(
   emittedAssetSourceCache.set(cacheKey, nextSource)
 }
 
-export function emitSfcScriptAssetReplacingBundleEntry(
-  ctx: Emitter,
-  bundle: Record<string, any>,
-  relativeBase: string,
-  code: string,
-  extension = 'js',
-) {
-  const jsFileName = resolveSfcAssetFileName(relativeBase, extension)
-  const existing = bundle[jsFileName]
-  if (existing) {
-    if (existing.type === 'chunk') {
-      existing.code = code
-    }
-    else {
-      existing.source = code
-    }
-    return
-  }
-  ctx.emitFile({ type: 'asset', fileName: jsFileName, source: code })
-}
-
 export function emitClassStyleWxsAssetIfMissing(
   ctx: Emitter,
   bundle: Record<string, any>,
