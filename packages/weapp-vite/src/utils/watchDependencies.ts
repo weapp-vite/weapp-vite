@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite'
-import path from 'node:path'
+import path from 'pathe'
 
 const hooks = new Set([
   'buildStart',

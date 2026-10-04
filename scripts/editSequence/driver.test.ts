@@ -1,6 +1,6 @@
 import type { SequenceStepResult } from './measurement'
 import { expect, it, vi } from 'vitest'
-import { hashSequenceObservation, verifyEditSequence } from './driver'
+import { bounded, hashSequenceObservation, verifyEditSequence } from './driver'
 
 it('retains the failing stage without inventing zero timing for unobserved work', async () => {
   const samples: SequenceStepResult[] = []
@@ -14,6 +14,47 @@ it('retains the failing stage without inventing zero timing for unobserved work'
   }, { onStep: sample => samples.push(sample) })).rejects.toThrow('failed before comparison')
   expect(samples).toEqual([{ step: 0, label: 'initial', status: 'failed', elapsedMs: expect.any(Number) }])
   expect(fresh).not.toHaveBeenCalled()
+  expect(close).toHaveBeenCalledOnce()
+})
+
+it('retains the observation cause and diagnostics when step reporting also fails', async () => {
+  const primary = new Error('worker stopped before measurement')
+  const reportFailure = new Error('measurement missing')
+  const close = vi.fn(async () => {})
+  const fresh = vi.fn(async () => ({}))
+  const result = verifyEditSequence({ name: 'reporting-failure', files: {}, steps: [] }, {
+    name: 'worker',
+    incremental: async () => { throw primary },
+    diagnostics: () => ({ phase: 'source-read' }),
+    fresh,
+    close,
+  }, { onStep: () => { throw reportFailure } })
+
+  await expect(result).rejects.toMatchObject({
+    errors: [expect.objectContaining({
+      message: expect.stringContaining('"phase": "source-read"'),
+      cause: primary,
+    }), reportFailure],
+  })
+  expect(fresh).not.toHaveBeenCalled()
+  expect(close).toHaveBeenCalledOnce()
+})
+
+it('fails and closes the observer when only step reporting fails', async () => {
+  const reportFailure = new Error('measurement missing')
+  const close = vi.fn(async () => {})
+  const incremental = vi.fn(async () => ({}))
+  const result = verifyEditSequence({ name: 'reporting-failure', files: {}, steps: [
+    { name: 'next save', action: { kind: 'write', file: 'value.js', content: 'changed' } },
+  ] }, {
+    name: 'worker',
+    incremental,
+    fresh: async () => ({}),
+    close,
+  }, { onStep: () => { throw reportFailure } })
+
+  await expect(result).rejects.toBe(reportFailure)
+  expect(incremental).toHaveBeenCalledOnce()
   expect(close).toHaveBeenCalledOnce()
 })
 
@@ -32,5 +73,44 @@ it('preserves a semantic divergence when cleanup also fails', async () => {
   })
   await expect(result).rejects.toMatchObject({
     errors: [expect.objectContaining({ name: 'EditSequenceDivergence' }), expect.objectContaining({ message: 'cleanup failed' })],
+  })
+})
+
+it('captures the pending boundary before cleanup when the outer shared abort wins', async () => {
+  const diagnostics = { phase: 'intermediate-consumption' }
+  const fresh = vi.fn(async () => ({}))
+  const result = verifyEditSequence({ name: 'shared-abort', files: {}, steps: [] }, {
+    name: 'worker',
+    incremental: async ({ signal }) => bounded(() => new Promise(() => {}), signal),
+    diagnostics: () => diagnostics,
+    fresh,
+    close: async () => { diagnostics.phase = 'closed' },
+  }, { timeoutMs: 10 })
+  await expect(result).rejects.toMatchObject({
+    message: expect.stringContaining('"phase": "intermediate-consumption"'),
+    cause: expect.objectContaining({ name: 'TimeoutError' }),
+  })
+  expect(diagnostics.phase).toBe('closed')
+  expect(fresh).not.toHaveBeenCalled()
+})
+
+it.each(['throw', 'circular'] as const)('keeps the primary error when diagnostics are unavailable: %s', async (mode) => {
+  const primary = new Error('original failure')
+  const circular: Record<string, unknown> = {}
+  circular.self = circular
+  await expect(verifyEditSequence({ name: 'diagnostic-failure', files: {}, steps: [] }, {
+    name: 'worker',
+    incremental: async () => { throw primary },
+    diagnostics: () => {
+      if (mode === 'throw') {
+        throw new Error('diagnostic read failed')
+      }
+      return circular
+    },
+    fresh: async () => ({}),
+    close: async () => {},
+  })).rejects.toMatchObject({
+    message: expect.stringContaining('"status": "unavailable"'),
+    cause: primary,
   })
 })

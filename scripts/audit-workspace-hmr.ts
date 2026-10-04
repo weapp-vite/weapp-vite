@@ -1,14 +1,16 @@
 /* eslint-disable ts/no-use-before-define */
 import type { WorkspaceHmrBaseline, WorkspaceHmrThresholds } from './workspace-hmr/baseline'
 import type { DynamicReactDeliveryEvidence, DynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
+import type { DistFileSnapshot } from './workspace-hmr/output'
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
 import { execFile as execFileCallback } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
-import { access, appendFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { access, appendFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { sanitizeAcceptanceText, sanitizeAcceptanceValue } from '../e2e/scripts/domAcceptanceReport/helpers'
@@ -26,6 +28,7 @@ import {
 } from './workspace-hmr/baseline'
 import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable } from './workspace-hmr/cleanup'
 import { prepareDynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
+import { listFiles, snapshotDist, waitForInitialDistSnapshot, waitForStableDistSnapshot } from './workspace-hmr/output'
 import { isDynamicReactTemplateOutput } from './workspace-hmr/reactTemplate'
 import { renderWorkspaceHmrExecution, summarizeWorkspaceHmrExecution } from './workspace-hmr/report'
 import {
@@ -38,8 +41,9 @@ import {
   resolveWorkspaceHmrRuntime,
 } from './workspace-hmr/scenarios'
 import { assertWorkspaceHmrSelection, resolveWorkspaceHmrSelection } from './workspace-hmr/selection'
+import { measureStatefulTemplateArtifact } from './workspace-hmr/statefulArtifactMeasurement'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
-import { acknowledgeStatefulTemplateArtifact, waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
+import { waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
 
 const execFile = promisify(execFileCallback)
 
@@ -116,11 +120,6 @@ interface HmrProfileSample {
   emittedCount?: number
   dirtyReasonSummary?: string[]
   pendingReasonSummary?: string[]
-}
-
-interface DistFileSnapshot {
-  hash: string
-  size: number
 }
 
 interface ImpactFile {
@@ -597,8 +596,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
 
   try {
     const startupStart = performance.now()
-    await dev.waitFor(waitForFile(path.join(distRoot, 'app.json'), startupTimeoutMs), `${project.id} app.json`)
-    await waitForStableDistSnapshot(distRoot, startupDistStableMs, startupTimeoutMs)
+    await waitForInitialDistSnapshot(dev, distRoot, startupDistStableMs, startupTimeoutMs)
     await sleep(settleMs)
     project.hmrRuntime = resolveWorkspaceHmrRuntime(await pathExists(path.join(
       distRoot,
@@ -691,7 +689,7 @@ async function warmupProjectHmr(
   try {
     await writeScenarioSource(scenario.sourcePath, updated)
     delivery = await waitForScenarioMutation(project, scenario, mutation, expectedMarker, true)
-    await acknowledgeScenarioArtifact(project, scenario, expectedMarker, true)
+    await acknowledgeScenarioArtifact(project, scenario)
     if (project.hmrRuntime === 'standard') {
       await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
     }
@@ -758,14 +756,15 @@ async function auditScenario(
       if (transport.length > 32) {
         transport.shift()
       }
+    }, () => {
+      result.observedMs = performance.now() - startedAt
     })
     if (delivery) {
       result.delivery = delivery.delivery
       result.deliveryEvidence = delivery
       result.output = formatProjectPath(path.join(project.distRoot, delivery.output))
     }
-    result.observedMs = performance.now() - startedAt
-    await acknowledgeScenarioArtifact(project, scenario, expectedMarker, true)
+    await acknowledgeScenarioArtifact(project, scenario)
     await sleep(settleMs)
     const after = await snapshotDist(distRoot)
     if (project.hmrRuntime === 'standard') {
@@ -1003,35 +1002,42 @@ async function waitForScenarioMutation(
   marker: string,
   contains: boolean,
   onEvent?: (event: StatefulHmrAuditEvent) => void,
+  onObserved?: () => void,
 ) {
   if (scenario.dynamicReactEntry) {
     if (!mutation) {
       throw new Error('Dynamic React mutation is missing its pre-mutation build identity.')
     }
-    return await mutation.waitForDelivery(marker, contains, onEvent)
+    const delivery = await mutation.waitForDelivery(marker, contains, onEvent)
+    onObserved?.()
+    return delivery
   }
   if (scenario.statefulClient) {
     await publishStatefulHmrUpdate(project, scenario.outputPath, marker, contains, onEvent)
   }
-  if (contains) {
-    await waitForFileContains(scenario.outputPath, marker, scenarioTimeoutMs)
-  }
-  else {
-    await waitForFileNotContains(scenario.outputPath, marker, scenarioTimeoutMs)
-  }
+  await measureStatefulTemplateArtifact({
+    client: scenario.statefulTemplate ? await prepareStatefulHmrAuditClient(project) : undefined,
+    readControl: async signal => parseStatefulHmrControlSource(await readFile(path.join(project.distRoot, '__weapp_vite_hmr/control.js'), { encoding: 'utf8', signal })),
+    isCurrentUpdate: async (signal) => {
+      const output = await readFile(scenario.outputPath, { encoding: 'utf8', signal })
+      return output.length > 0 && output.includes(marker) === contains
+    },
+    timeoutMs: scenarioTimeoutMs,
+    onEvent,
+    measure: async (signal) => {
+      if (contains) {
+        await waitForFileContains(scenario.outputPath, marker, scenarioTimeoutMs, signal)
+      }
+      else {
+        await waitForFileNotContains(scenario.outputPath, marker, scenarioTimeoutMs, signal, scenario.statefulTemplate)
+      }
+      onObserved?.()
+    },
+  })
 }
 
-async function acknowledgeScenarioArtifact(project: ProjectCase, scenario: ScenarioCase, marker: string, contains: boolean) {
-  if (scenario.statefulTemplate) {
-    const client = await prepareStatefulHmrAuditClient(project)
-    await acknowledgeStatefulTemplateArtifact({
-      client,
-      readControl: async () => parseStatefulHmrControlSource(await readFile(path.join(project.distRoot, '__weapp_vite_hmr/control.js'), 'utf8')),
-      isCurrentUpdate: async () => (await readFile(scenario.outputPath, 'utf8')).includes(marker) === contains,
-      timeoutMs: scenarioTimeoutMs,
-    })
-  }
-  else if (scenario.statefulClient) {
+async function acknowledgeScenarioArtifact(project: ProjectCase, scenario: ScenarioCase) {
+  if (scenario.statefulClient && !scenario.statefulTemplate) {
     await statefulHmrAuditClients.get(project.root)!.acknowledgePublished(scenarioTimeoutMs)
   }
 }
@@ -1048,7 +1054,7 @@ async function restoreScenarioMutation(project: ProjectCase, scenario: ScenarioC
     throw preparationError
   }
   const delivery = await waitForScenarioMutation(project, scenario, mutation, marker, false)
-  await acknowledgeScenarioArtifact(project, scenario, marker, false)
+  await acknowledgeScenarioArtifact(project, scenario)
   return delivery
 }
 
@@ -1204,57 +1210,6 @@ function isLowSignalAuditSource(filePath: string) {
   return normalizePath(filePath).split('/').includes('blank')
 }
 
-async function snapshotDist(distRoot: string) {
-  const snapshot = new Map<string, DistFileSnapshot>()
-  for (const filePath of await listFiles(distRoot)) {
-    const fileStat = await stat(filePath)
-    if (!fileStat.isFile()) {
-      continue
-    }
-    const content = await readFile(filePath)
-    snapshot.set(normalizePath(path.relative(distRoot, filePath)), {
-      hash: createHash('sha256').update(content).digest('hex'),
-      size: fileStat.size,
-    })
-  }
-  return snapshot
-}
-
-async function waitForStableDistSnapshot(
-  distRoot: string,
-  stableMs: number,
-  timeoutMs: number,
-) {
-  const startedAt = Date.now()
-  let previousSignature: string | undefined
-  let stableStartedAt = Date.now()
-
-  while (Date.now() - startedAt < timeoutMs) {
-    const snapshot = await snapshotDist(distRoot)
-    const signature = createDistSnapshotSignature(snapshot)
-
-    if (signature === previousSignature) {
-      if (Date.now() - stableStartedAt >= stableMs) {
-        return snapshot
-      }
-    }
-    else {
-      previousSignature = signature
-      stableStartedAt = Date.now()
-    }
-
-    await sleep(Math.min(250, stableMs))
-  }
-
-  throw new Error(`Timed out waiting for ${formatReportPath(distRoot)} to stabilize`)
-}
-
-function createDistSnapshotSignature(snapshot: Map<string, DistFileSnapshot>) {
-  return [...snapshot.entries()]
-    .map(([filePath, value]) => `${filePath}:${value.hash}:${value.size}`)
-    .join('\n')
-}
-
 function diffDistSnapshots(before: Map<string, DistFileSnapshot>, after: Map<string, DistFileSnapshot>) {
   const result: ImpactFile[] = []
   const paths = new Set([...before.keys(), ...after.keys()])
@@ -1372,20 +1327,21 @@ async function readJsonlLines(filePath: string) {
   return content.split(/\r?\n/).filter(Boolean)
 }
 
-async function waitForFile(filePath: string, timeoutMs: number) {
+async function waitForFile(filePath: string, timeoutMs: number, signal?: AbortSignal) {
   const startedAt = Date.now()
   while (Date.now() - startedAt < timeoutMs) {
+    signal?.throwIfAborted()
     if (await pathExists(filePath)) {
       return
     }
-    await sleep(250)
+    await sleep(250, undefined, { signal })
   }
   throw new Error(`Timed out waiting for file: ${formatReportPath(filePath)}`)
 }
 
-async function waitForFileContains(filePath: string, marker: string, timeoutMs: number) {
+async function waitForFileContains(filePath: string, marker: string, timeoutMs: number, signal?: AbortSignal) {
   if (!marker) {
-    await waitForFile(filePath, timeoutMs)
+    await waitForFile(filePath, timeoutMs, signal)
     return
   }
   if (isStylesheetOutput(filePath)) {
@@ -1394,20 +1350,22 @@ async function waitForFileContains(filePath: string, marker: string, timeoutMs: 
   }
   const startedAt = Date.now()
   while (Date.now() - startedAt < timeoutMs) {
+    signal?.throwIfAborted()
     if (await pathExists(filePath)) {
       const content = await readFile(filePath, 'utf8')
+      signal?.throwIfAborted()
       if (content.includes(marker)) {
         return
       }
     }
-    await sleep(250)
+    await sleep(250, undefined, { signal })
   }
   throw new Error(`Timed out waiting for ${formatReportPath(filePath)} to contain marker: ${marker}`)
 }
 
-async function waitForFileNotContains(filePath: string, marker: string, timeoutMs: number) {
+async function waitForFileNotContains(filePath: string, marker: string, timeoutMs: number, signal?: AbortSignal, requireContent = false) {
   if (!marker) {
-    await waitForFile(filePath, timeoutMs)
+    await waitForFile(filePath, timeoutMs, signal)
     return
   }
   if (isStylesheetOutput(filePath)) {
@@ -1416,48 +1374,21 @@ async function waitForFileNotContains(filePath: string, marker: string, timeoutM
   }
   const startedAt = Date.now()
   while (Date.now() - startedAt < timeoutMs) {
+    signal?.throwIfAborted()
     if (await pathExists(filePath)) {
       const content = await readFile(filePath, 'utf8')
-      if (!content.includes(marker)) {
+      signal?.throwIfAborted()
+      if ((!requireContent || content.length > 0) && !content.includes(marker)) {
         return
       }
     }
-    await sleep(250)
+    await sleep(250, undefined, { signal })
   }
   throw new Error(`Timed out waiting for ${formatReportPath(filePath)} to remove marker: ${marker}`)
 }
 
 function isStylesheetOutput(filename: string) {
   return ['.wxss', '.acss'].includes(path.extname(filename))
-}
-
-async function listFiles(root: string) {
-  if (!(await pathExists(root))) {
-    return []
-  }
-  const result: string[] = []
-  const entries = await readdir(root, { withFileTypes: true })
-  for (const entry of entries) {
-    const filePath = path.join(root, entry.name)
-    if (entry.isDirectory()) {
-      if (shouldSkipDir(entry.name)) {
-        continue
-      }
-      result.push(...await listFiles(filePath))
-    }
-    else if (entry.isFile()) {
-      result.push(filePath)
-    }
-  }
-  return result.sort((left, right) => left.localeCompare(right))
-}
-
-function shouldSkipDir(name: string) {
-  return name === 'node_modules'
-    || name === 'dist'
-    || name === '.weapp-vite'
-    || name === '.turbo'
-    || name === '.tmp'
 }
 
 async function pathExists(filePath: string) {
@@ -1493,10 +1424,6 @@ function formatProjectPath(filePath: string) {
 function formatReportPath(filePath: string) {
   const relative = path.relative(repoRoot, filePath)
   return relative.startsWith('..') ? normalizePath(filePath) : normalizePath(relative)
-}
-
-function sleep(ms: number) {
-  return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
 async function writeScenarioSource(filePath: string, content: string) {

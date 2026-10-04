@@ -5,6 +5,7 @@ import type { SequenceEntryFailure } from './reportLifecycle'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { assertSuccessfulSequenceBuild } from './buildObservation'
 import { observeSequenceCandidate } from './candidate'
 import { hashSequenceObservation, verifyEditSequence } from './driver'
 import { EditorSequenceSession } from './editor'
@@ -71,7 +72,16 @@ await preserveSequenceReport(async () => {
           const resourceSequence = fullFramework || sequence.name === 'build-warm-resource-trend'
           const observer = createProcessObserver(engine as SequenceProcessMode, project.root, { resources: resourceSequence })
           try {
-            await verifyEditSequence(sequence, observer, {
+            await verifyEditSequence(sequence, {
+              ...observer,
+              incremental: async (input) => {
+                const observation = await observer.incremental(input)
+                if ((engine === 'classic' || engine === 'stateful-experimental') && (input.step === 0 || resourceSequence)) {
+                  assertSuccessfulSequenceBuild(observation)
+                }
+                return observation
+              },
+            }, {
               maxSteps: 120,
               maxFiles: fullFramework ? 1024 : undefined,
               timeoutMs: resourceSequence ? 600_000 : 60_000,

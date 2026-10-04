@@ -1,8 +1,8 @@
 import type { CompilerContext } from '../../context'
-import { realpathSync } from 'node:fs'
 import path from 'node:path'
 import { HmrCompilerHost } from '@weapp-vite/hmr'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
+import { resolveRealpath } from '../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 
 export { CompilerHmrResyncError } from '@weapp-vite/hmr'
@@ -16,11 +16,11 @@ export function compilerSourceId(id: string): string {
     return normalizeFsResolvedId(id)
   }
   try {
-    return normalizeFsResolvedId(realpathSync.native(id))
+    return normalizeFsResolvedId(resolveRealpath(id))
   }
   catch {
     try {
-      return normalizeFsResolvedId(path.join(realpathSync.native(path.dirname(id)), path.basename(id)))
+      return normalizeFsResolvedId(path.join(resolveRealpath(path.dirname(id)), path.basename(id)))
     }
     catch {
       return normalizeFsResolvedId(id)

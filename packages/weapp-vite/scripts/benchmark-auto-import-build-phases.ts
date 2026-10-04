@@ -1,5 +1,5 @@
 /* eslint-disable ts/no-use-before-define */
-import { cp, lstat, mkdir, mkdtemp, readdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
@@ -8,6 +8,7 @@ import vantComponents from '../src/auto-import-components/resolvers/json/vant.js
 import { createCompilerContext } from '../src/createContext'
 import { resolveWorkspaceNodeModulesDir } from '../src/utils/workspace'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
+import { linkBenchmarkDependencies } from './utils/benchmarkDependencies'
 import { patchProjectConfigFile } from './utils/config-file'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '1', 10)
@@ -271,7 +272,7 @@ async function createTempFixtureProject(sourceRoot: string, prefix: string) {
     },
   })
 
-  await linkWorkspaceNodeModules(tempDir)
+  await linkBenchmarkDependencies(tempDir, workspaceRootNodeModulesDir, workspaceWeappViteDir)
 
   return {
     tempDir,
@@ -284,28 +285,6 @@ async function createTempFixtureProject(sourceRoot: string, prefix: string) {
       }
     },
   }
-}
-
-async function linkWorkspaceNodeModules(projectRoot: string) {
-  const projectNodeModulesDir = path.join(projectRoot, 'node_modules')
-  const existingNodeModules = await lstat(projectNodeModulesDir).catch(() => null)
-  if (existingNodeModules) {
-    await rm(projectNodeModulesDir, { recursive: true, force: true })
-  }
-  await symlink(path.relative(projectRoot, workspaceRootNodeModulesDir), projectNodeModulesDir, 'junction')
-
-  const packageRoot = path.join(projectNodeModulesDir, 'weapp-vite')
-  const existingPackage = await lstat(packageRoot).catch(() => null)
-  if (existingPackage?.isSymbolicLink()) {
-    const currentTarget = await readlink(packageRoot).catch(() => '')
-    if (path.resolve(projectNodeModulesDir, currentTarget) === workspaceWeappViteDir) {
-      return
-    }
-  }
-  if (existingPackage) {
-    await rm(packageRoot, { recursive: true, force: true })
-  }
-  await symlink(path.relative(projectNodeModulesDir, workspaceWeappViteDir), packageRoot, 'junction')
 }
 
 function createVantResolverComponents() {

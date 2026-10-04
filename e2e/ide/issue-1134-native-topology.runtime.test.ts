@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDevBuildCompletion } from '../utils/devBuildCompletion'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { NATIVE_BATCH_CLI } from '../utils/nativeBatchProject'
 import { createNativeProfileProject, hasNativeProfileEntry, NATIVE_PROFILE_FIXTURE, saveNativeProfileSource } from '../utils/nativeProfileProject'
@@ -19,6 +20,12 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
   let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
   let disposeTransport: (() => void) | undefined
   const read = (file: string) => readFile(path.join(project, file), 'utf8')
+
+  function captureTopologyPublication() {
+    return createDevBuildCompletion(dev!, runtime === 'stateful-experimental'
+      ? { started: '正在重启微信状态保持 HMR 构建', completed: '微信状态保持 HMR 构建已完成完整重载。' }
+      : { completed: '小程序已重新构建' })
+  }
 
   async function connect() {
     return await launchAutomator({
@@ -85,22 +92,29 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     const pageConfig = await read('src/pages/plain/index.json')
     const template = await read('src/pages/plain/index.wxml')
     const appConfig = await read('src/app.json')
+    const componentPublication = captureTopologyPublication()
     await saveNativeProfileSource(project, 'pages/plain/index.wxml', `${template}<optional-card id="optional-component" />`)
     await saveNativeProfileSource(project, 'pages/plain/index.json', JSON.stringify({ usingComponents: { 'optional-card': '/components/optional/index' } }))
     await expect.poll(() => hasNativeProfileEntry(project, 'components/optional/index'), { timeout: 30_000 }).toEqual([true, true, true])
     await expect.poll(() => read('dist/pages/plain/index.wxml'), { timeout: 30_000 }).toContain('optional-card')
+    // 原生写出没有文件集合原子性；新页面可见时 runtime 文件仍可能在重写。
+    await componentPublication.wait()
     await reconnect()
     await dom.check('component-added', miniProgram!, await miniProgram!.reLaunch(route))
     const app = JSON.parse(appConfig) as { pages: string[] }
+    const routePublication = captureTopologyPublication()
     await saveNativeProfileSource(project, 'app.json', JSON.stringify({ ...app, pages: [...app.pages, optionalRoute.slice(1)] }))
     await expect.poll(() => hasNativeProfileEntry(project, optionalRoute.slice(1)), { timeout: 30_000 }).toEqual([true, true, true])
+    await routePublication.wait()
     await reconnect()
     await dom.check('route-added', miniProgram!, await miniProgram!.reLaunch(optionalRoute))
+    const restoredPublication = captureTopologyPublication()
     await saveNativeProfileSource(project, 'pages/plain/index.wxml', template)
     await saveNativeProfileSource(project, 'pages/plain/index.json', pageConfig)
     await saveNativeProfileSource(project, 'app.json', appConfig)
     await expect.poll(() => hasNativeProfileEntry(project, 'components/optional/index'), { timeout: 30_000 }).toEqual([false, false, false])
     await expect.poll(() => hasNativeProfileEntry(project, optionalRoute.slice(1)), { timeout: 30_000 }).toEqual([false, false, false])
+    await restoredPublication.wait()
     await reconnect()
     const restored = await miniProgram!.reLaunch(route)
     await dom.check('restored', miniProgram!, restored)

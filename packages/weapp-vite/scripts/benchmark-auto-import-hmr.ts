@@ -1,6 +1,8 @@
 /* eslint-disable ts/no-use-before-define */
 import type { DevHeapUsage } from '../../../e2e/utils/dev-memory'
-import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
+import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
+import { cp, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
@@ -10,19 +12,35 @@ import { sampleHeapAfterGc, waitForInspectorUrl } from '../../../e2e/utils/dev-m
 import { startDevProcess } from '../../../e2e/utils/dev-process'
 import { createBenchmarkDevEnv } from '../../../scripts/benchmarkTemplatesHmr/environment'
 import { parseStatefulHmrControlSource } from '../../../scripts/workspace-hmr/scenarios'
+import { measureStatefulTemplateArtifact } from '../../../scripts/workspace-hmr/statefulArtifactMeasurement'
 import { StatefulHmrAuditClient } from '../../../scripts/workspace-hmr/statefulAuditClient'
-import { acknowledgeStatefulTemplateArtifact } from '../../../scripts/workspace-hmr/statefulAuditUpdate'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
+import { linkBenchmarkDependencies } from './utils/benchmarkDependencies'
 import { benchmarkModeSelected, benchmarkReportResults } from './utils/benchmarkSelection'
 import { createBenchmarkPath, resolveBenchmarkTarget } from './utils/benchmarkTarget'
 import { patchProjectConfigFile } from './utils/config-file'
+import {
+  AUTO_IMPORT_HMR_DIAGNOSTIC_OWNER_ENV,
+  AUTO_IMPORT_HMR_DIAGNOSTIC_PHASE_ENV,
+  AUTO_IMPORT_HMR_DIAGNOSTIC_ROOT_ENV,
+  isAutoImportHmrDiagnosticEnabled,
+  isAutoImportHmrDiagnosticPairEnabled,
+  isAutoImportHmrDiagnosticProfileEnabled,
+} from './utils/hmrDiagnostic'
+import { readDiagnosticProfile, snapshotOutputCheckpoint, snapshotPublishedOutputs } from './utils/hmrDiagnosticEvidence'
 import { HMR_OUTPUT_POLL_INTERVAL_MS, measureFileMarkerUpdate } from './utils/hmrOutput'
 import { formatMemoryMiB, summarizeOptionalMemory } from './utils/process-memory'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '3', 10)
 const scenarioValues = parseScenarioValues(process.env.BENCH_SCENARIOS)
 const disableCurrentSupportOutputs = process.env.BENCH_DISABLE_CURRENT_SUPPORT_OUTPUTS === '1'
+const diagnosticEnabled = isAutoImportHmrDiagnosticEnabled()
+const diagnosticProfileEnabled = isAutoImportHmrDiagnosticProfileEnabled()
+const diagnosticPairEnabled = isAutoImportHmrDiagnosticPairEnabled()
+const diagnosticPairPhase = process.env[AUTO_IMPORT_HMR_DIAGNOSTIC_PHASE_ENV]
+const diagnosticPairRoot = process.env[AUTO_IMPORT_HMR_DIAGNOSTIC_ROOT_ENV]
+const diagnosticPairOwner = process.env[AUTO_IMPORT_HMR_DIAGNOSTIC_OWNER_ENV]
 const fixtureSource = path.resolve(import.meta.dirname, '../../../test/fixture-projects/weapp-vite/auto-import')
 const { workspaceRootDir, workspaceRootNodeModulesDir, workspaceWeappViteDir } = resolveBenchmarkTarget(import.meta.dirname)
 const reportDir = resolveReportDir('auto-import-hmr')
@@ -52,6 +70,18 @@ if (!Number.isFinite(iterations) || iterations <= 0) {
 
 if (!Number.isFinite(DEV_TIMEOUT_MS) || DEV_TIMEOUT_MS <= 0) {
   throw new Error(`Invalid AUTO_IMPORT_HMR_TIMEOUT_MS value: ${DEV_TIMEOUT_MS}`)
+}
+
+if (diagnosticPairEnabled && (!diagnosticPairRoot || !['control', 'probe'].includes(diagnosticPairPhase ?? ''))) {
+  throw new Error('Output equivalence diagnostic requires an explicit fixture root and control/probe phase')
+}
+
+if (diagnosticPairEnabled && diagnosticPairPhase === 'control' && (diagnosticEnabled || diagnosticProfileEnabled)) {
+  throw new Error('Diagnostic control must run with timing and profile probes disabled')
+}
+
+if (diagnosticPairEnabled && diagnosticPairPhase === 'probe' && (!diagnosticEnabled || !diagnosticProfileEnabled)) {
+  throw new Error('Diagnostic probe requires timing and candidate profile probes enabled')
 }
 
 async function main() {
@@ -168,10 +198,25 @@ async function measureHmr(options: {
   const project = await createTempFixtureProject(
     fixtureSource,
     `auto-import-hmr-${mode}-${usedTags.length}-${iteration}`,
+    diagnosticPairEnabled ? path.join(diagnosticPairRoot!, String(usedTags.length)) : undefined,
+    diagnosticPairEnabled ? diagnosticPairRoot : undefined,
+    diagnosticPairOwner,
   )
   const pagePath = path.join(project.tempDir, 'src/pages/bench-hmr-auto-import/index.vue')
+  const profilePath = path.join(project.tempDir, '.diagnostics/hmr-profile.jsonl')
+  let measured: {
+    startupMs: number
+    cycles: Array<{ editMs: number, restoreMs: number }>
+    startupMemory?: DevHeapUsage
+    updateMs: number
+    updateMemory?: DevHeapUsage
+    diagnostic?: Record<string, unknown>
+    pairEvidence?: Record<string, unknown>
+  } | undefined
 
   try {
+    const acknowledgementObservations: Array<{ phase: 'start' | 'complete', targetVersion: number, buildIdFingerprint: string, observedAt: number, clock: string }> = []
+    const pairCycles: Array<{ cycle: number, edit: Record<string, unknown>, restore: Record<string, unknown> }> = []
     const seededSource = await seedFixture(project.tempDir, usedTags, mode)
     await rm(path.join(project.tempDir, 'dist'), { recursive: true, force: true })
     await rm(path.join(project.tempDir, '.weapp-vite'), { recursive: true, force: true })
@@ -181,6 +226,7 @@ async function measureHmr(options: {
       cwd: workspaceRootDir,
       env: {
         ...createBenchmarkDevEnv(memoryNodeOptions),
+        ...(diagnosticProfileEnabled ? { WEAPP_VITE_HMR_PROFILE_JSON: profilePath } : {}),
         DEBUG: 'weapp-vite:load-entry',
         PATH: createBenchmarkPath(path.join(workspaceRootNodeModulesDir, '.bin')),
       },
@@ -196,8 +242,10 @@ async function measureHmr(options: {
       const startupMemory = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
 
       const outputPath = path.join(project.tempDir, 'dist/pages/bench-hmr-auto-import/index.wxml')
+      const distDir = path.join(project.tempDir, 'dist')
       const originalOutput = await readFile(outputPath, 'utf8')
-      const controlPath = path.join(project.tempDir, 'dist', WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)
+      const originalOutputSha256 = diagnosticEnabled ? hashWxmlOutput(originalOutput) : undefined
+      const controlPath = path.join(distDir, WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)
       const controlSource = await readFile(controlPath, 'utf8').catch((error: NodeJS.ErrnoException) => {
         if (error.code === 'ENOENT') {
           return undefined
@@ -208,40 +256,107 @@ async function measureHmr(options: {
       if (client && controlSource !== undefined) {
         await client.ensureRegistered(parseStatefulHmrControlSource(controlSource), DEV_TIMEOUT_MS)
       }
-      const acknowledgeArtifact = async (marker: string, absent = false) => {
-        if (client) {
-          await acknowledgeStatefulTemplateArtifact({
-            client,
-            readControl: async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8')),
-            isCurrentUpdate: async () => (await readFile(outputPath, 'utf8')).includes(marker) !== absent,
+      const initialOutputSnapshot = diagnosticPairEnabled
+        ? await snapshotOutputCheckpoint(distDir, { type: 'initial-build-ready' }, controlSource)
+        : undefined
+      const measureArtifact = async (marker: string, source: string, signal: AbortSignal, absent = false) => {
+        let observation: { sourceWriteStartedAt: number, wxmlObservedAt: number, elapsedMs: number, output: string } | undefined
+        const acknowledgementOffset = acknowledgementObservations.length
+        const publishSignals: Array<{ type: string, targetVersion?: number, observedAt: number, clock: string }> = []
+        const helperResult = await measureStatefulTemplateArtifact({
+          client,
+          readControl: async signal => parseStatefulHmrControlSource(await readFile(controlPath, { encoding: 'utf8', signal })),
+          isCurrentUpdate: async (signal) => {
+            const output = await readFile(outputPath, { encoding: 'utf8', signal })
+            signal?.throwIfAborted()
+            return absent ? output === originalOutput : output.includes(marker)
+          },
+          timeoutMs: DEV_TIMEOUT_MS,
+          signal,
+          onEvent: diagnosticEnabled || diagnosticPairEnabled
+            ? (event) => {
+                publishSignals.push({ type: event.type, targetVersion: event.targetVersion, observedAt: performance.now(), clock: 'benchmark-process-performance.now' })
+              }
+            : undefined,
+          onAcknowledgement: diagnosticEnabled || diagnosticPairEnabled
+            ? (event) => {
+                acknowledgementObservations.push({
+                  phase: event.phase,
+                  targetVersion: event.targetVersion,
+                  buildIdFingerprint: hashWxmlOutput(event.buildId),
+                  observedAt: performance.now(),
+                  clock: 'benchmark-process-performance.now',
+                })
+              }
+            : undefined,
+          measure: signal => dev.waitFor(measureFileMarkerUpdate({
+            outputPath,
+            marker,
+            expectedOutput: absent ? originalOutput : undefined,
+            update: () => writeFile(pagePath, source, 'utf8'),
             timeoutMs: DEV_TIMEOUT_MS,
-          })
+            signal,
+            onObserved: diagnosticEnabled ? (value) => { observation = value } : undefined,
+          }), `${mode} ${absent ? 'restored hmr output' : 'emitted hmr marker'}`),
+        })
+        if (!diagnosticEnabled) {
+          if (!diagnosticPairEnabled) {
+            return { ms: helperResult, diagnostic: undefined, pairEvidence: undefined }
+          }
+          return { ms: helperResult, diagnostic: undefined, pairEvidence: await snapshotPublishedOutputs(distDir, publishSignals, client?.supportsExplicitAcknowledgement ?? false, controlSource) }
+        }
+        const helperCompletedAt = performance.now()
+        if (!observation) {
+          throw new Error('HMR diagnostic did not capture the complete WXML observation')
+        }
+        const outputMatchesOriginal = observation.output === originalOutput
+        const outputContainsMarker = observation.output.includes(marker)
+        if (absent && !outputMatchesOriginal) {
+          throw new Error('HMR diagnostic restore output differs from the initial WXML')
+        }
+        if (!absent && !outputContainsMarker) {
+          throw new Error('HMR diagnostic edit output is missing its marker')
+        }
+        const diagnostic = {
+          clock: { source: 'benchmark-process-performance.now', timeOrigin: performance.timeOrigin },
+          sourceWriteStartedAt: observation.sourceWriteStartedAt,
+          wxmlObservedAt: observation.wxmlObservedAt,
+          helperCompletedAt,
+          helperTailMs: helperCompletedAt - observation.wxmlObservedAt,
+          observedElapsedMs: observation.elapsedMs,
+          outputSha256: hashWxmlOutput(observation.output),
+          outputBytes: Buffer.byteLength(observation.output, 'utf8'),
+          outputMatchesInitial: outputMatchesOriginal,
+          outputContainsMarker,
+          completionBoundary: 'artifact-consumer-helper-resolved',
+          publicationObservations: publishSignals,
+          acknowledgementObservations: acknowledgementObservations.slice(acknowledgementOffset),
+        }
+        const pairEvidence = diagnosticPairEnabled
+          ? await snapshotPublishedOutputs(distDir, publishSignals, client?.supportsExplicitAcknowledgement ?? false, controlSource)
+          : undefined
+        return {
+          ms: helperResult,
+          diagnostic,
+          pairEvidence,
         }
       }
       const cycles: Array<{ editMs: number, restoreMs: number }> = []
+      const diagnosticCycles: Array<{ cycle: number, edit: Record<string, unknown>, restore: Record<string, unknown> }> = []
       for (let cycle = 0; cycle < (process.env.AUTO_IMPORT_BENCH_PAIRED === '1' ? 2 : 1); cycle++) {
         const marker = `auto-import-hmr-${mode}-${usedTags.length}-${iteration}-${cycle}`
         const updatedSource = insertMarkerBeforeClosingView(seededSource, marker)
         const measurementAbort = new AbortController()
         try {
-          const editMs = await dev.waitFor(measureFileMarkerUpdate({
-            outputPath,
-            marker,
-            update: () => writeFile(pagePath, updatedSource, 'utf8'),
-            timeoutMs: DEV_TIMEOUT_MS,
-            signal: measurementAbort.signal,
-          }), `${mode} emitted hmr marker`)
-          await acknowledgeArtifact(marker)
-          const restoreMs = await dev.waitFor(measureFileMarkerUpdate({
-            outputPath,
-            marker,
-            expectedOutput: originalOutput,
-            update: () => writeFile(pagePath, seededSource, 'utf8'),
-            timeoutMs: DEV_TIMEOUT_MS,
-            signal: measurementAbort.signal,
-          }), `${mode} restored hmr output`)
-          await acknowledgeArtifact(marker, true)
-          cycles.push({ editMs, restoreMs })
+          const edit = await measureArtifact(marker, updatedSource, measurementAbort.signal)
+          const restore = await measureArtifact(marker, seededSource, measurementAbort.signal, true)
+          cycles.push({ editMs: edit.ms, restoreMs: restore.ms })
+          if (diagnosticEnabled) {
+            diagnosticCycles.push({ cycle, edit: edit.diagnostic!, restore: restore.diagnostic! })
+          }
+          if (diagnosticPairEnabled) {
+            pairCycles.push({ cycle, edit: edit.pairEvidence!, restore: restore.pairEvidence! })
+          }
         }
         finally {
           measurementAbort.abort()
@@ -250,17 +365,54 @@ async function measureHmr(options: {
       const updateMs = cycles[0]!.editMs
       const updateMemory = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
 
-      return {
+      measured = {
         startupMs,
         cycles,
         startupMemory,
         updateMs,
         updateMemory,
       }
+      if (diagnosticEnabled) {
+        measured.diagnostic = {
+          schemaVersion: 1,
+          initialArtifact: { sha256: originalOutputSha256, bytes: Buffer.byteLength(originalOutput, 'utf8') },
+          cycles: diagnosticCycles,
+          ...(diagnosticProfileEnabled ? {} : { profileCapture: 'not-requested' }),
+          profileInterpretation: 'candidate attribution only; not performance gate evidence',
+        }
+      }
+      if (diagnosticPairEnabled) {
+        measured.pairEvidence = {
+          schemaVersion: 1,
+          phase: diagnosticPairPhase,
+          fixtureKey: usedTags.length,
+          outputCompletion: 'stateful batch-published event observed; helper then resolves, including its existing acknowledgement behavior',
+          initial: initialOutputSnapshot,
+          cycles: pairCycles,
+          acknowledgementObservations,
+          snapshotsOutsideMeasuredIntervals: true,
+          postObservationSnapshotCanAffectNextCyclePollPhase: true,
+        }
+      }
     }
     finally {
       await dev.stop()
     }
+    if (!measured) {
+      throw new Error('Auto-import HMR benchmark completed without a measurement')
+    }
+    if (diagnosticProfileEnabled) {
+      const targetVersions = pairCycles.flatMap(cycle => [cycle.edit, cycle.restore])
+        .map(checkpoint => (checkpoint as { completionSignal?: { targetVersion?: number } }).completionSignal?.targetVersion)
+        .filter((version): version is number => typeof version === 'number')
+      const profile = await readDiagnosticProfile(profilePath, pagePath, project.tempDir, targetVersions, acknowledgementObservations)
+      if (profile.status !== 'available' || profile.invalidLineCount > 0 || profile.matchingSourceEventCount === 0 || profile.sessionMatchedSampleCount === 0) {
+        throw new Error('Candidate HMR profile is missing, invalid, or has no matching page source events')
+      }
+      measured.diagnostic!.profileCapture = profile.status
+      measured.diagnostic!.profile = profile
+    }
+    return measured
   }
   finally {
     await project.cleanup()
@@ -402,11 +554,25 @@ async function ensureBenchmarkResolverPackage(projectRoot: string, usedTags: str
   }
 }
 
-async function createTempFixtureProject(sourceRoot: string, prefix: string) {
+async function createTempFixtureProject(sourceRoot: string, prefix: string, stableRoot?: string, ownedRoot?: string, owner?: string) {
   const base = path.join(workspaceRootDir, '.tmp/auto-import-workspaces')
-  await mkdir(base, { recursive: true })
-  const tempRoot = await mkdtemp(path.join(base, `${prefix}-`))
+  const tempRoot = stableRoot ? path.resolve(stableRoot) : await createTemporaryRoot(base, prefix)
   const tempDir = path.join(tempRoot, 'project')
+  if (stableRoot) {
+    const resolvedOwnedRoot = path.resolve(ownedRoot ?? '')
+    const sentinelPath = path.join(resolvedOwnedRoot, '.auto-import-hmr-diagnostic-owner')
+    const ownedRootStat = ownedRoot ? await lstat(resolvedOwnedRoot).catch(() => undefined) : undefined
+    const sentinelStat = await lstat(sentinelPath).catch(() => undefined)
+    const sentinel = sentinelStat?.isFile() && !sentinelStat.isSymbolicLink() ? await readFile(sentinelPath, 'utf8') : undefined
+    const fixtureRootStat = await lstat(tempRoot).catch(() => undefined)
+    if (!ownedRoot || !owner || !ownedRootStat?.isDirectory() || ownedRootStat.isSymbolicLink()
+      || path.dirname(tempRoot) !== resolvedOwnedRoot || sentinel !== `${owner}\n`
+      || (fixtureRootStat && (!fixtureRootStat.isDirectory() || fixtureRootStat.isSymbolicLink()))) {
+      throw new Error('Refusing to reset a diagnostic fixture without this workflow run ownership sentinel')
+    }
+    await mkdir(tempRoot, { recursive: true })
+    await rm(tempDir, { recursive: true, force: true })
+  }
   const ignored = new Set(['.weapp-vite', 'dist', 'node_modules'])
 
   await cp(sourceRoot, tempDir, {
@@ -422,40 +588,29 @@ async function createTempFixtureProject(sourceRoot: string, prefix: string) {
     },
   })
 
-  await linkWorkspaceNodeModules(tempDir)
+  await linkBenchmarkDependencies(tempDir, workspaceRootNodeModulesDir, workspaceWeappViteDir)
 
   return {
     tempDir,
     cleanup: async () => {
-      await rm(tempRoot, { recursive: true, force: true })
+      if (!stableRoot) {
+        await rm(tempRoot, { recursive: true, force: true })
+      }
     },
   }
 }
 
-async function linkWorkspaceNodeModules(projectRoot: string) {
-  const projectNodeModulesDir = path.join(projectRoot, 'node_modules')
-  const existingNodeModules = await lstat(projectNodeModulesDir).catch(() => null)
-  if (existingNodeModules) {
-    await rm(projectNodeModulesDir, { recursive: true, force: true })
-  }
-  await symlink(path.relative(projectRoot, workspaceRootNodeModulesDir), projectNodeModulesDir, 'junction')
-
-  const packageRoot = path.join(projectNodeModulesDir, 'weapp-vite')
-  const existingPackage = await lstat(packageRoot).catch(() => null)
-  if (existingPackage?.isSymbolicLink()) {
-    const currentTarget = await readlink(packageRoot).catch(() => '')
-    if (path.resolve(projectNodeModulesDir, currentTarget) === workspaceWeappViteDir) {
-      return
-    }
-  }
-  if (existingPackage) {
-    await rm(packageRoot, { recursive: true, force: true })
-  }
-  await symlink(path.relative(projectNodeModulesDir, workspaceWeappViteDir), packageRoot, 'junction')
+async function createTemporaryRoot(base: string, prefix: string) {
+  await mkdir(base, { recursive: true })
+  return mkdtemp(path.join(base, `${prefix}-`))
 }
 
 function createVantResolverComponents() {
   return Object.fromEntries(vantComponents.map(component => [toVantTag(component), `@vant/weapp/${component}`]))
+}
+
+function hashWxmlOutput(output: string) {
+  return createHash('sha256').update(Buffer.from(output, 'utf8')).digest('hex')
 }
 
 function toVantTag(component: string) {

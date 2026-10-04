@@ -34,14 +34,19 @@ export function metricsForShard(shard) {
   return template.scenarios.flatMap(s => ['first', 'repeat'].flatMap(p => ['edit', 'restore'].map(a => `${shard}:${s}:${p}:${a}`)))
 }
 
-export function targetKey(target) {
-  assertSha(target.headSha)
-  assertSha(target.baselineSha)
-  return createHash('sha256').update(JSON.stringify([target.headSha, target.baselineSha, policy.samplingContract, policy.templates, policy.operatingSystems, counts, runtimes])).digest('hex')
+/** 旧 v3 仅用于完成已登记运行的报告；场景、基线与原始证据仍须完整核验。 */
+export function isReportSamplingContract(contract) {
+  return contract === policy.samplingContract || contract === 'paired-v3-profile-capability'
 }
 
-export function statusContext(target) {
-  return `Performance Nightly / ${targetKey(target).slice(0, 32)}`
+export function targetKey(target, samplingContract = policy.samplingContract) {
+  assertSha(target.headSha)
+  assertSha(target.baselineSha)
+  return createHash('sha256').update(JSON.stringify([target.headSha, target.baselineSha, samplingContract, policy.templates, policy.operatingSystems, counts, runtimes])).digest('hex')
+}
+
+export function statusContext(target, samplingContract = policy.samplingContract) {
+  return `Performance Nightly / ${targetKey(target, samplingContract).slice(0, 32)}`
 }
 
 export function createMatrix(targets) {

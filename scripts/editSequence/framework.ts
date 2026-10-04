@@ -1,13 +1,14 @@
 import type { DevEngine } from 'rolldown/experimental'
 import type { ViteDevServer } from 'vite'
-import type { EditAction, SequenceInput } from './driver'
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import type { SequenceInput } from './driver'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createServer } from 'vite'
 import { weapp } from 'weapp-vite/vite'
 import { compareBenchmarkOutputs, snapshotBenchmarkOutputs } from '../benchmarkTemplatesHmr/outputScope'
-import { applyAction, bounded } from './driver'
+import { bounded } from './driver'
 import { FrameworkSequenceRuntime } from './frameworkRuntime'
+import { writeFrameworkSequenceSources } from './frameworkSources'
 import { SequenceMeasurements } from './measurement'
 import { observeSettledSequencePublication } from './publicationBarrier'
 import { observePublishedFiles } from './published'
@@ -40,7 +41,8 @@ export class FrameworkSequenceSession {
     this.measurements.reset()
     const before = this.server ? await snapshotBenchmarkOutputs(this.outDir) : {}
     const first = !this.server
-    await this.writeSources(input)
+    await writeFrameworkSequenceSources(this.root, this.files, input)
+    this.files = input.files
     if (first) {
       this.server = await createServer({
         root: this.root,
@@ -115,39 +117,6 @@ export class FrameworkSequenceSession {
     catch (error) {
       throw new Error(`Framework observation failed while waiting for ${stage}`, { cause: error })
     }
-  }
-
-  private async writeSources(input: SequenceInput) {
-    const write = async (file: string, content: string) => {
-      const target = path.join(this.root, file)
-      await mkdir(path.dirname(target), { recursive: true })
-      await writeFile(target, content)
-    }
-    const mutate = async (action: Exclude<EditAction, { kind: 'rapid' }>, files: Record<string, string>) => {
-      applyAction(files, action)
-      if (action.kind === 'delete') {
-        await rm(path.join(this.root, action.file), { force: true })
-      }
-      else if (action.kind === 'rename') {
-        await mkdir(path.dirname(path.join(this.root, action.to)), { recursive: true })
-        await rename(path.join(this.root, action.file), path.join(this.root, action.to))
-      }
-      else {
-        await write(action.file, files[action.file]!)
-      }
-    }
-    if (input.action) {
-      const files = { ...this.files }
-      for (const action of input.action.kind === 'rapid' ? input.action.saves : [input.action]) {
-        await mutate(action, files)
-      }
-    }
-    else {
-      for (const [file, content] of Object.entries(input.files)) {
-        await write(file, content)
-      }
-    }
-    this.files = input.files
   }
 
   async close() {

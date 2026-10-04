@@ -21,6 +21,7 @@ void compileVueFile(
   'src/components/card.vue',
 ).then((compiled) => {
   expectType<string[] | undefined>(compiled.meta?.cssVars)
+  expectType<string[] | undefined>(compiled.meta?.sfcSrcCompilationDeps)
 })
 
 const previous: VueSfcBlockSignatures = {

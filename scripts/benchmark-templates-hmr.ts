@@ -29,8 +29,9 @@ import { compareBenchmarkOutputs, snapshotBenchmarkOutputs } from './benchmarkTe
 import { collectBenchmarkHmrProfile, matchesHmrProfileSource } from './benchmarkTemplatesHmr/profile'
 import { restoreBenchmarkSource } from './benchmarkTemplatesHmr/sourceRestore'
 import { injectVueStyleRule, parseStatefulHmrControlSource } from './workspace-hmr/scenarios'
+import { measureStatefulTemplateArtifact } from './workspace-hmr/statefulArtifactMeasurement'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
-import { acknowledgeStatefulTemplateArtifact, waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
+import { waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
 
 type ScenarioGroup
   = | 'app-json'
@@ -634,8 +635,8 @@ async function benchmarkScenario(
   // 脚本含随 HMR 变化的版本/载荷；模板、样式和 JSON 则必须完整恢复原产物，
   // 不能把 bundler 截断文件后暂时没有标记的空窗口当作更新完成。
   const originalOutput = isScript ? undefined : await readOutput()
-  const readControl = async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8'))
-  const waitForOutput = async (marker: string, absent = false) => {
+  const readControl = async (signal?: AbortSignal) => parseStatefulHmrControlSource(await readFile(controlPath, { encoding: 'utf8', signal }))
+  const waitForOutput = async (marker: string, absent = false, signal?: AbortSignal) => {
     if (usesStatefulScript) {
       // 与真实宿主相同地注册和消费更新；服务端只有在 poll 后才发布载荷。
       await waitForStatefulHmrAuditUpdate({
@@ -651,28 +652,34 @@ async function benchmarkScenario(
         },
       })
     }
-    await waitForBenchmarkOutput(readOutput, marker, { absent, timeoutMs, expectedContent: absent ? originalOutput : undefined })
+    await waitForBenchmarkOutput(readOutput, marker, { absent, timeoutMs, expectedContent: absent ? originalOutput : undefined, signal })
   }
 
-  const acknowledgeArtifact = async (marker: string, absent = false) => {
+  const acknowledgeArtifact = async () => {
     if (usesStatefulScript) {
       await statefulClient.acknowledgePublished(timeoutMs)
     }
-    else if (runtime === 'stateful' && scenario.group === 'vue-template') {
-      await acknowledgeStatefulTemplateArtifact({
-        client: statefulClient,
-        readControl,
-        isCurrentUpdate: async () => (await readOutput()).includes(marker) !== absent,
-        timeoutMs,
-        onEvent(event) {
-          transport.push({ ...event, phase })
-          if (transport.length > 32) {
-            transport.shift()
-          }
-        },
-      })
-    }
   }
+  const measureArtifact = (marker: string, absent: boolean, update: () => Promise<unknown>, startedAt = performance.now()) => measureStatefulTemplateArtifact({
+    client: runtime === 'stateful' && scenario.group === 'vue-template' ? statefulClient : undefined,
+    readControl,
+    isCurrentUpdate: async () => {
+      const output = await readOutput()
+      return absent ? output === originalOutput : output.includes(marker)
+    },
+    timeoutMs,
+    onEvent(event) {
+      transport.push({ ...event, phase })
+      if (transport.length > 32) {
+        transport.shift()
+      }
+    },
+    measure: async (signal) => {
+      await update()
+      await waitForOutput(marker, absent, signal)
+      return performance.now() - startedAt
+    },
+  })
 
   try {
     for (let index = 0; index < iterations; index += 1) {
@@ -693,10 +700,8 @@ async function benchmarkScenario(
       const lineCount = await countJsonlLines(profilePath)
       phase = 'edit'
       const startedAt = performance.now()
-      await replaceFileByRename(scenario.sourceFile, updated)
-      await waitForOutput(expectedMarker)
-      const wallMs = performance.now() - startedAt
-      await acknowledgeArtifact(expectedMarker)
+      const wallMs = await measureArtifact(expectedMarker, false, () => replaceFileByRename(scenario.sourceFile, updated), startedAt)
+      await acknowledgeArtifact()
       const profileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs, runtime), profileEnabled)
       const editMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample, performance.timeOrigin + startedAt)
@@ -709,10 +714,8 @@ async function benchmarkScenario(
       const restoreLineCount = await countJsonlLines(profilePath)
       phase = 'restore'
       const restoreStartedAt = performance.now()
-      await replaceFileByRename(scenario.sourceFile, original)
-      await waitForOutput(expectedMarker, true)
-      const restoreWallMs = performance.now() - restoreStartedAt
-      await acknowledgeArtifact(expectedMarker, true)
+      const restoreWallMs = await measureArtifact(expectedMarker, true, () => replaceFileByRename(scenario.sourceFile, original), restoreStartedAt)
+      await acknowledgeArtifact()
       const restoreProfileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs, runtime), profileEnabled)
       const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample, performance.timeOrigin + restoreStartedAt)
@@ -756,8 +759,8 @@ async function benchmarkScenario(
     try {
       phase = 'cleanup'
       if (await restoreBenchmarkSource(scenario.sourceFile, original) && expectedMarker) {
-        await waitForOutput(expectedMarker, true)
-        await acknowledgeArtifact(expectedMarker, true)
+        await measureArtifact(expectedMarker, true, async () => {})
+        await acknowledgeArtifact()
       }
     }
     catch (error) {

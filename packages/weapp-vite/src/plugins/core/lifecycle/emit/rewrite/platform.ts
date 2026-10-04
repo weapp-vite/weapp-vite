@@ -160,6 +160,7 @@ function createPlatformNpmImportRewrite(
   dependencies: Record<string, string> | undefined,
   mode?: string,
   options?: {
+    collectPlatformApiAccess?: boolean
     analysis?: Pick<ChunkScriptAnalysis, 'hasStaticRequireLiteral'>
     astEngine?: 'babel' | 'oxc'
   },
@@ -172,10 +173,12 @@ function createPlatformNpmImportRewrite(
     const ast = parseJsLike(code)
     const magicString = new MagicString(code)
     let mutated = false
-    const platformApiAccess = createPlatformApiAccessCollector()
+    const platformApiAccess = options?.collectPlatformApiAccess === false
+      ? undefined
+      : createPlatformApiAccessCollector()
 
     traverse(ast as any, {
-      ...platformApiAccess.visitor,
+      ...platformApiAccess?.visitor,
       CallExpression(path: any) {
         const callee = path.node?.callee
         if (!callee || callee.type !== 'Identifier' || callee.name !== 'require') {
@@ -217,7 +220,7 @@ function createPlatformNpmImportRewrite(
 
     return {
       magicString: mutated ? magicString : undefined,
-      hasPlatformApiAccess: platformApiAccess.hasPlatformApiAccess(),
+      hasPlatformApiAccess: platformApiAccess?.hasPlatformApiAccess(),
     }
   }
   catch {
@@ -243,6 +246,7 @@ export function rewriteBundleNpmImportsByPlatform(
   dependencies: Record<string, string> | undefined,
   mode?: string,
   options?: {
+    collectPlatformApiAccess?: boolean
     analysisCache?: ChunkScriptAnalysisCache
     astEngine?: 'babel' | 'oxc'
   },
@@ -263,8 +267,9 @@ export function rewriteBundleNpmImportsByPlatform(
       cache: options?.analysisCache,
     })
     const rewrite = createPlatformNpmImportRewrite(platform, chunk.code, dependencies, mode, {
-      ...options,
       analysis,
+      astEngine: options?.astEngine,
+      collectPlatformApiAccess: options?.collectPlatformApiAccess,
     })
     if (!rewrite) {
       continue
@@ -274,7 +279,7 @@ export function rewriteBundleNpmImportsByPlatform(
     }
     rememberChunkScriptAnalysis(chunk, {
       ...analysis,
-      hasPlatformApiAccess: rewrite.hasPlatformApiAccess,
+      hasPlatformApiAccess: rewrite.hasPlatformApiAccess ?? analysis.hasPlatformApiAccess,
     }, { cache: options?.analysisCache })
   }
 }

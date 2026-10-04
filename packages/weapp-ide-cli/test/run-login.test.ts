@@ -69,6 +69,7 @@ describe('runWechatCliWithRetry', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     if (originalStdinIsTTY) {
       Object.defineProperty(process.stdin, 'isTTY', originalStdinIsTTY)
     }
@@ -116,6 +117,7 @@ describe('runWechatCliWithRetry', () => {
   })
 
   it('forwards the command timeout to the process runner', async () => {
+    vi.useFakeTimers()
     const { runWechatCliWithRetry } = await import('../src/cli/run-login')
 
     await runWechatCliWithRetry('/Applications/wechat-cli', ['quit'], {
@@ -128,5 +130,19 @@ describe('runWechatCliWithRetry', () => {
       pipeStdout: false,
       timeout: 10_000,
     })
+  })
+
+  it('forwards the remaining deadline after waiting for login input', async () => {
+    vi.useFakeTimers()
+    executeMock.mockRejectedValueOnce(new Error('需要重新登录')).mockResolvedValueOnce({ stdout: '', stderr: '' })
+    promptWechatIdeLoginRetryMock.mockImplementation(async () => {
+      await vi.advanceTimersByTimeAsync(250)
+      return 'retry'
+    })
+    const { runWechatCliWithRetry } = await import('../src/cli/run-login')
+    await runWechatCliWithRetry('fixture-cli', ['quit'], { timeout: 10_000 })
+    expect(executeMock).toHaveBeenCalledTimes(2)
+    expect(executeMock.mock.calls.map(([, , options]) => options.timeout)).toEqual([10_000, 9750])
+    expect(vi.getTimerCount()).toBe(0)
   })
 })

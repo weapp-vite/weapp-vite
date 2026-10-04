@@ -479,6 +479,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           for (const output of Object.values(rolldownBundle)) {
             if (output?.type === 'chunk') {
               rewriteChunkNpmImportsToLocalRoot(output as OutputChunk, '', undefined, npmBuildCandidateDependencies, {
+                collectPlatformApiAccess: false,
                 analysisCache: scriptAnalysisCache,
                 astEngine,
                 basedir: configService.cwd,
@@ -736,7 +737,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           rewriteBundle,
           npmBuildCandidateDependencies,
           configService.weappViteConfig?.npm?.alipayNpmMode,
-          { astEngine, analysisCache: scriptAnalysisCache },
+          {
+            astEngine,
+            analysisCache: scriptAnalysisCache,
+            collectPlatformApiAccess: Boolean(injectWeapiGlobalName),
+          },
         )
       }
       else if (hasNpmBuildCandidateDependencies || hasLocalRootNpmRewriteTargets) {
@@ -748,6 +753,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
             dependencies: meta.subPackage.dependencies,
           })),
           {
+            collectPlatformApiAccess: Boolean(injectWeapiGlobalName),
             analysisCache: scriptAnalysisCache,
             astEngine,
             basedir: configService.cwd,

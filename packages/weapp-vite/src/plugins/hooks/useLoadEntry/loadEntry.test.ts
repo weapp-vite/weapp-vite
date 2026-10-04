@@ -279,7 +279,7 @@ function createLoader(options?: CreateLoaderOptions) {
 
   const registerJsonAsset = vi.fn()
   const scanTemplateEntry = vi.fn()
-  const applyAutoImports = vi.fn<(baseName: string, json: Record<string, unknown>) => string[] | Promise<string[]>>(() => [])
+  const applyAutoImports = vi.fn<ReturnType<typeof createAutoImportAugmenter>>(() => [])
   const normalizeEntry = vi.fn(options?.normalizeEntry ?? ((entry: string) => entry))
   const runtimeState = createRuntimeState()
   const scanService: { pluginJsonPath?: string, pluginJson?: any } | undefined = options?.plugin
@@ -1941,7 +1941,7 @@ describe('createEntryLoader', () => {
       json.usingComponents = {
         HotCard: '/components/HotCard/index',
       }
-      return ['/components/HotCard/index']
+      return [{ kind: 'resolver', from: '/components/HotCard/index' }]
     })
     loadedEntrySet.add('/project/src/components/HotCard/index')
 
@@ -1954,39 +1954,50 @@ describe('createEntryLoader', () => {
     expect(emittedResolvedIds).toContain('/project/src/components/HotCard/index')
   })
 
-  it('force emits auto-import entries through resolvedId mappings for newly registered Vue SFCs', async () => {
+  it.each([
+    { from: '/components/HotCard/index', resolvedId: '/project/src/components/HotCard/index.vue' },
+    { from: '/custom/HotCard', resolvedId: '/project/src/components/HotCard/index.vue', sourceType: 'wevu-sfc' },
+    { from: '/components/HotCard/index', resolvedId: '/project/src/components/HotCard/index.js', sourceType: 'native' },
+    { from: '/components/HotCard/index', resolvedId: '/project/src/components/HotCard/index.js' },
+  ])('reuses current auto-import source $resolvedId without probing $from', async (component) => {
     const pageScript = '/project/src/pages/home.js'
     mockFindJsonEntry.mockResolvedValue({
       path: '/project/src/pages/home.json',
       predictions: [],
     })
 
-    const { loader, jsonService, emitEntriesChunks, applyAutoImports, runtimeState } = createLoader({
+    const { loader, jsonService, registerJsonAsset, emitEntriesChunks, applyAutoImports, runtimeState } = createLoader({
       normalizeEntry: entry => entry.replace(/^\//, ''),
     })
 
     jsonService.read.mockResolvedValue({})
-    applyAutoImports.mockImplementation((_baseName, json) => {
-      json.usingComponents = {
-        HotCard: '/components/HotCard/index',
+    applyAutoImports.mockImplementation(createAutoImportAugmenter(
+      { resolve: () => ({ kind: 'local', value: { name: 'HotCard', ...component } }), getVersion: () => 0 } as any,
+      { getAggregatedAutoImportComponents: () => ({ HotCard: [] }) } as any,
+      runtimeState.build.hmr.externalComponentEntryMap,
+    ))
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (source: string) => {
+      if (source === component.from) {
+        throw new Error('A proven runtime output must not be resolved as a source request')
       }
-      runtimeState.build.hmr.externalComponentEntryMap.set(
-        'components/HotCard/index',
-        '/project/src/components/HotCard/index.vue',
-      )
-      return ['/components/HotCard/index']
-    })
+      return { id: source }
+    }) as any
 
-    await loader.call(createPluginContext(), pageScript, 'page')
+    await loader.call(pluginCtx, pageScript, 'page')
 
     const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
       ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
     )
 
-    expect(emittedResolvedIds).toContain('/project/src/components/HotCard/index.vue')
+    expect(emittedResolvedIds).toContain(component.resolvedId)
+    expect(pluginCtx.resolve).not.toHaveBeenCalledWith(component.from, pageScript)
+    expect(pluginCtx.resolve).toHaveBeenCalledWith(component.resolvedId)
+    const pageJson = registerJsonAsset.mock.calls.find(([payload]) => payload.type === 'page')?.[0].json
+    expect(pageJson.usingComponents.HotCard).toBe(component.from)
   })
 
-  it('materializes bare external Vue auto imports through the bundler resolver', async () => {
+  it.each([false, true])('materializes bare external Vue auto imports with known source=%s', async (knownSource) => {
     const pageScript = '/project/src/pages/home.js'
     const externalComponent = '/project/node_modules/@wot-ui/ui/components/wd-button/wd-button.vue'
     mockFindJsonEntry.mockResolvedValue({
@@ -2005,12 +2016,19 @@ describe('createEntryLoader', () => {
       json.usingComponents = {
         'wd-button': '@wot-ui/ui/components/wd-button/wd-button.vue',
       }
-      return ['@wot-ui/ui/components/wd-button/wd-button.vue']
+      return [{
+        kind: 'resolver',
+        from: '@wot-ui/ui/components/wd-button/wd-button.vue',
+        resolvedId: knownSource ? externalComponent : undefined,
+      }]
     })
     const pluginCtx = createPluginContext()
-    pluginCtx.resolve = vi.fn(async (source: string) => source.startsWith('@wot-ui/ui/')
-      ? { id: externalComponent }
-      : { id: source }) as any
+    pluginCtx.resolve = vi.fn(async (source: string) => {
+      if (source.startsWith('@wot-ui/ui/')) {
+        return { id: externalComponent }
+      }
+      return { id: source }
+    }) as any
 
     await loader.call(pluginCtx, pageScript, 'page')
 
@@ -2021,6 +2039,57 @@ describe('createEntryLoader', () => {
       ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
     )
     expect(emittedResolvedIds).toContain(externalComponent)
+  })
+
+  it.each([undefined, 'relative/HotCard.vue', '\0virtual:HotCard.vue'])('resolves extensionless aliases without trusting nonphysical source=%s or an older global mapping', async (resolvedId) => {
+    const request = 'custom-ui/HotCard'
+    const component = '/project/src/components/HotCard/index.vue'
+    const pageScript = '/project/src/pages/home.js'
+    mockFindJsonEntry.mockResolvedValue({ path: '/project/src/pages/home.json', predictions: [] })
+    const { loader, jsonService, applyAutoImports, runtimeState, registerJsonAsset, emitEntriesChunks } = createLoader({
+      normalizeEntry: entry => entry.replace(/^\//, ''),
+    })
+    jsonService.read.mockResolvedValue({})
+    runtimeState.build.hmr.externalComponentEntryMap.set(request, '/project/src/components/OldCard/index.js')
+    applyAutoImports.mockImplementation(createAutoImportAugmenter(
+      { resolve: () => ({ kind: 'resolver', value: { name: 'HotCard', from: request, resolvedId } }), getVersion: () => 0 } as any,
+      { getAggregatedAutoImportComponents: () => ({ HotCard: [] }) } as any,
+      runtimeState.build.hmr.externalComponentEntryMap,
+    ))
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (source: string) => ({ id: source === request ? component : source })) as any
+
+    await loader.call(pluginCtx, pageScript, 'page')
+
+    expect(pluginCtx.resolve).toHaveBeenCalledWith(request, pageScript)
+    const pageJson = registerJsonAsset.mock.calls.find(([payload]) => payload.type === 'page')?.[0].json
+    expect(pageJson.usingComponents.HotCard).toBe('/components/HotCard/index')
+    expect(emitEntriesChunks.mock.calls.flatMap(([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id))).toContain(component)
+  })
+
+  it('keeps explicitly native resolver requests on the existing bundler resolution path', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    const from = '/components/native-card/index'
+    mockFindJsonEntry.mockResolvedValue({ path: '/project/src/pages/home.json', predictions: [] })
+    const { loader, jsonService, applyAutoImports, emitEntriesChunks, registerJsonAsset } = createLoader({
+      normalizeEntry: entry => entry.replace(/^\//, ''),
+    })
+    jsonService.read.mockResolvedValue({})
+    applyAutoImports.mockImplementation(createAutoImportAugmenter(
+      { resolve: () => ({ kind: 'resolver', value: { name: 'NativeCard', from, sourceType: 'native' } }), getVersion: () => 0 } as any,
+      { getAggregatedAutoImportComponents: () => ({ NativeCard: [] }) } as any,
+    ))
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (source: string) => {
+      return { id: source }
+    }) as any
+
+    await loader.call(pluginCtx, pageScript, 'page')
+
+    expect(pluginCtx.resolve).toHaveBeenCalledWith(from, pageScript)
+    expect(emitEntriesChunks.mock.calls.flatMap(([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id))).toContain(`/project/src${from}`)
+    const pageJson = registerJsonAsset.mock.calls.find(([payload]) => payload.type === 'page')?.[0].json
+    expect(pageJson.usingComponents.NativeCard).toBe(from)
   })
 
   it('materializes external Vue registrations already produced by SFC compilation', async () => {

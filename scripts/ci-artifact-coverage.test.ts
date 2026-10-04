@@ -86,6 +86,7 @@ describe('CI artifact coverage', () => {
       .filter(job => job.with?.artifact_path)
       .flatMap(job => splitPatterns(job.with?.artifact_path))
     const reports = [
+      '.tmp/hmr-lifecycle-report.json',
       '.tmp/shared-hosts/artifacts.json',
       '.tmp/workspace-hmr/.session/report.json',
       'docs/reports/dom-acceptance/summary.json',

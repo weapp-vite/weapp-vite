@@ -4,6 +4,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import { isTemplate } from '../../../utils'
 import { recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { normalizeWatchPath } from '../../../utils/path'
+import { withRealpathScope } from '../../../utils/realpathScope'
 import { emitWxmlAssetsWithCache } from '../../utils/wxmlEmit'
 import { emitJsonAssets } from '../helpers'
 import { createGenerateBundleHook } from './emit/generate'
@@ -69,20 +70,22 @@ export function createRenderStartHook(state: CorePluginState) {
   return async function renderStart(this: any) {
     const startedAt = performance.now()
     try {
-      const runtime: WxmlEmitRuntime = {
-        emitFile: (asset) => {
-          this.emitFile(asset)
-        },
-      }
-      emitJsonAssets.call(this, state)
-      const targetIds = resolveIncrementalHmrWxmlTargetIds(state)
-      state.watchFilesSnapshot = emitWxmlAssetsWithCache({
-        runtime,
-        compiler: ctx,
-        subPackageMeta,
-        emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
-        buildTarget,
-        targetIds,
+      withRealpathScope(() => {
+        const runtime: WxmlEmitRuntime = {
+          emitFile: (asset) => {
+            this.emitFile(asset)
+          },
+        }
+        emitJsonAssets.call(this, state)
+        const targetIds = resolveIncrementalHmrWxmlTargetIds(state)
+        state.watchFilesSnapshot = emitWxmlAssetsWithCache({
+          runtime,
+          compiler: ctx,
+          subPackageMeta,
+          emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+          buildTarget,
+          targetIds,
+        })
       })
     }
     finally {

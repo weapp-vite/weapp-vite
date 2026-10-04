@@ -1,13 +1,15 @@
-import type { SFCDescriptor, SFCScriptBlock } from 'vue/compiler-sfc'
+import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { ResolveSfcBlockSrcOptions } from '../plugins/utils/vueSfc'
 import type { EncodedSourceMapLike } from '../utils/sourcemap'
 import type { StaticPageDeclaration, StaticPageMeta } from './public'
-import type { PageDeclarationAnalysis, PageDeclarationScriptBlock, PageDeclarationScriptBlockKind } from './types'
+import type { ResolvedScriptSourceIds } from './sfc'
+import type { PageDeclarationAnalysis, PageDeclarationScriptBlock } from './types'
 import { WEVU_DEFINE_PAGE_MACRO, WEVU_DEFINE_PAGE_META_MACRO } from '@weapp-core/constants'
-import MagicString, { Bundle } from 'magic-string'
 import { createSfcParseError, parseVueSfc, resolveSfcBlockSrc } from '../plugins/utils/vueSfc'
 import { analyzePageCompileTimeMacroBlocks, analyzePageDeclarationBlocks } from './analyze'
+import { parsePageDeclarationBlock } from './program'
 import { rebaseExternalScriptImports } from './rewrite'
+import { collectSfcScriptBlocks, createDescriptorForExternalScriptCompile, createSourceTransforms, updateScriptBlockSource } from './sfc'
 
 const PAGE_DECLARATION_MACRO_HINT_RE = new RegExp(
   `(?:^|[^\\p{ID_Continue}$\\u200C\\u200D])${WEVU_DEFINE_PAGE_MACRO}(?![\\p{ID_Continue}$\\u200C\\u200D])`,
@@ -16,16 +18,6 @@ const PAGE_DECLARATION_MACRO_HINT_RE = new RegExp(
 
 export { collectPageMetaCallsFromPrograms } from './analyze'
 export type { StaticPageDeclaration, StaticPageMeta, StaticRouteValue } from './public'
-
-interface ResolvedScriptSourceIds {
-  scriptResolvedId?: string
-  scriptSetupResolvedId?: string
-}
-
-interface SourceTransform {
-  code: MagicString
-  source: string
-}
 
 interface StripPageDeclarationResult {
   code: string
@@ -61,191 +53,6 @@ function parsePageDeclarationSfc(source: string, filename: string, ignoreEmpty =
     })
   }
   return parsed.descriptor
-}
-
-function collectSfcScriptBlocks(
-  source: string,
-  filename: string,
-  descriptor: SFCDescriptor,
-  resolvedIds: ResolvedScriptSourceIds = {},
-) {
-  const blocks: PageDeclarationScriptBlock[] = []
-  const appendBlock = (
-    block: SFCScriptBlock | null,
-    kind: PageDeclarationScriptBlockKind,
-    resolvedId: string | undefined,
-  ) => {
-    if (!block) {
-      return
-    }
-    const external = Boolean(block.src && resolvedId)
-    blocks.push({
-      content: block.content,
-      filename: external ? resolvedId! : filename,
-      kind,
-      offset: external ? 0 : block.loc.start.offset,
-      order: block.loc.start.offset,
-      source: external ? block.content : source,
-    })
-  }
-
-  appendBlock(descriptor.script, 'script', resolvedIds.scriptResolvedId)
-  appendBlock(descriptor.scriptSetup, 'scriptSetup', resolvedIds.scriptSetupResolvedId)
-  blocks.sort((left, right) => left.order - right.order)
-  return blocks
-}
-
-function createSourceTransforms(
-  filename: string,
-  source: string,
-  blocks: PageDeclarationScriptBlock[],
-  analysis: PageDeclarationAnalysis,
-) {
-  const transforms = new Map<string, SourceTransform>()
-  for (const block of blocks) {
-    const current = transforms.get(block.filename)
-    if (current && current.source !== block.source) {
-      throw new Error(`${block.filename}:1:1 页面声明源文件内容不一致。`)
-    }
-    if (!current) {
-      transforms.set(block.filename, {
-        code: new MagicString(block.source),
-        source: block.source,
-      })
-    }
-  }
-
-  for (const [sourceFile, transform] of transforms) {
-    const edits = analysis.edits
-      .filter(edit => edit.block.filename === sourceFile)
-      .map(edit => ({
-        end: edit.block.offset + edit.end,
-        start: edit.block.offset + edit.start,
-      }))
-      .sort((left, right) => left.start - right.start)
-    for (let index = 0; index < edits.length; index += 1) {
-      const edit = edits[index]!
-      if (edit.start < 0 || edit.end > transform.source.length || edit.start > edit.end) {
-        throw new Error(`${sourceFile}:1:1 页面声明擦除范围无效。`)
-      }
-      if (index > 0 && edit.start < edits[index - 1]!.end) {
-        throw new Error(`${sourceFile}:1:1 页面声明擦除范围发生重叠。`)
-      }
-      const replacement = transform.source.slice(edit.start, edit.end).replace(/[^\r\n\u2028\u2029]/g, ' ')
-      transform.code.overwrite(edit.start, edit.end, replacement)
-    }
-  }
-
-  if (!transforms.has(filename)) {
-    transforms.set(filename, { code: new MagicString(source), source })
-  }
-  return transforms
-}
-
-function updateScriptBlockSource(
-  block: SFCScriptBlock | null,
-  info: PageDeclarationScriptBlock | undefined,
-  transform: SourceTransform | undefined,
-  sourceMap: boolean,
-): SFCScriptBlock | null {
-  if (!block || !info || !transform) {
-    return block
-  }
-  const content = transform.code.slice(info.offset, info.offset + info.content.length)
-  return {
-    ...block,
-    content,
-    // 两库使用相同的 source map 格式，仅 version 字段的类型声明不同。
-    map: block.src && sourceMap
-      ? transform.code.generateMap({
-        hires: true,
-        includeContent: true,
-        source: info.filename,
-      }) as unknown as SFCScriptBlock['map']
-      : block.map,
-  }
-}
-
-function resolveSourcePosition(source: string, offset: number) {
-  let line = 1
-  let lineStart = 0
-  for (let index = 0; index < offset; index += 1) {
-    const char = source.charCodeAt(index)
-    if (char === 10 || char === 0x2028 || char === 0x2029) {
-      line += 1
-      lineStart = index + 1
-    }
-    else if (char === 13) {
-      line += 1
-      if (source.charCodeAt(index + 1) === 10) {
-        index += 1
-      }
-      lineStart = index + 1
-    }
-  }
-  return { column: offset - lineStart + 1, line, offset }
-}
-
-function createDescriptorForExternalScriptCompile(
-  descriptor: SFCDescriptor,
-  blocks: PageDeclarationScriptBlock[],
-  transforms: Map<string, SourceTransform>,
-  sourceMap: boolean,
-) {
-  if (!descriptor.scriptSetup || !blocks.some(block => block.filename !== descriptor.filename)) {
-    return undefined
-  }
-
-  const bundle = new Bundle({ separator: '' })
-  let source = ''
-  let script: SFCScriptBlock | null = null
-  let scriptSetup: SFCScriptBlock | null = null
-  for (const block of blocks) {
-    const original = block.kind === 'script' ? descriptor.script : descriptor.scriptSetup
-    const transform = transforms.get(block.filename)!
-    const chunk = transform.code.clone().snip(block.offset, block.offset + block.content.length)
-    const content = chunk.toString()
-    // compileScript 会把 import 提升到 SFC 起点，外部脚本也必须保留真实的块边界。
-    const openingTag = `<script${block.kind === 'scriptSetup' ? ' setup' : ''}${original?.lang ? ` lang=${JSON.stringify(original.lang)}` : ''}>\n`
-    bundle.append(openingTag)
-    bundle.addSource({ content: chunk, filename: block.filename })
-    bundle.append('\n</script>\n')
-    source += openingTag
-    const startOffset = source.length
-    source += `${content}\n</script>\n`
-    const attrs = { ...original!.attrs }
-    delete attrs.src
-    const nextBlock = {
-      ...original!,
-      // 编译副本已内联脚本；移除 src 让 Vue 保留普通脚本 AST，原描述符仍保留来源。
-      attrs,
-      src: undefined,
-      content,
-      loc: {
-        source: content,
-        start: resolveSourcePosition(source, startOffset),
-        end: resolveSourcePosition(source, startOffset + content.length),
-      },
-    }
-    if (block.kind === 'script') {
-      script = nextBlock
-    }
-    else {
-      scriptSetup = nextBlock
-    }
-  }
-
-  return {
-    descriptor: {
-      ...descriptor,
-      source,
-      script,
-      scriptSetup,
-    },
-    map: sourceMap
-      ? bundle.generateMap({ hires: true, includeContent: true }) as EncodedSourceMapLike
-      : undefined,
-  }
 }
 
 /**
@@ -349,18 +156,19 @@ export function stripPageDeclarationFromSfcDescriptor(
 }
 
 /**
- * 在 Vue 收集 setup 暴露绑定前移除页面编译宏，避免已擦除的导入残留在返回对象中。
+ * 统一准备外部脚本源码、位置与映射；仅页面在 Vue 收集 setup 绑定前擦除页面编译宏。
  *
- * 该入口只服务 SFC 编译；公开的页面路由擦除入口仍仅处理 `definePage`。
+ * 公开的页面路由擦除入口仍仅处理 `definePage`。
  *
  * @internal
  */
-export function stripPageCompileTimeMacrosFromSfcDescriptor(
+export function prepareSfcScriptCompile(
   source: string,
   filename: string,
   descriptor: SFCDescriptor,
   sourceMap = true,
   resolvedIds: ResolvedScriptSourceIds = {},
+  isPage = true,
 ) {
   const blocks = collectSfcScriptBlocks(source, filename, descriptor, resolvedIds)
   return stripAnalyzedPageMacrosFromSfcDescriptor(
@@ -369,7 +177,9 @@ export function stripPageCompileTimeMacrosFromSfcDescriptor(
     descriptor,
     sourceMap,
     blocks,
-    analyzePageCompileTimeMacroBlocks(blocks),
+    isPage
+      ? analyzePageCompileTimeMacroBlocks(blocks)
+      : { edits: [], parsedBlocks: blocks.map(parsePageDeclarationBlock) },
   )
 }
 

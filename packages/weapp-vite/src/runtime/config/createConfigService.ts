@@ -1,5 +1,6 @@
 import type { MutableCompilerContext } from '../../context'
 import type { OutputExtensions } from '../../platforms/types'
+import type { OxcRuntimeSupport } from '../oxcRuntime'
 import type { WevuRuntimeAliasMode } from '../packageAliases'
 import type { ConfigService, LoadConfigOptions, LoadConfigResult } from './types'
 import { createHash } from 'node:crypto'
@@ -18,12 +19,12 @@ import { resolveRealpath } from '../../utils/realpathScope'
 import { SUB_PACKAGE_SHARED_DIR } from '../chunkStrategy/constants'
 import { safeGetPackageInfoSync } from '../localPkg'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
-import { resolveBuiltinPackageAliases } from '../packageAliases'
 import { createAliasManager } from './internal/alias'
 import { createLoadConfig } from './internal/loadConfig'
 import { createMergeFactories } from './internal/merge'
+import { createBuiltinAliasResolver } from './internal/packageResolution'
 
-function createConfigService(ctx: MutableCompilerContext): ConfigService {
+function createConfigService(ctx: MutableCompilerContext, oxcRuntimeSupport: OxcRuntimeSupport = createOxcRuntimeSupport()): ConfigService {
   const configState = ctx.runtimeState.config
   configState.packageInfo = safeGetPackageInfoSync('weapp-vite') ?? configState.packageInfo
 
@@ -32,11 +33,11 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   let options = configState.options
   let loadingOptions: LoadConfigOptions | undefined
 
-  const oxcRuntimeSupport = createOxcRuntimeSupport()
-  const aliasManager = createAliasManager(oxcRuntimeSupport.alias, resolveBuiltinPackageAliases({ cwd: options.cwd }))
+  const builtinAliases = createBuiltinAliasResolver()
+  const aliasManager = createAliasManager(oxcRuntimeSupport.alias, [])
 
   function injectBuiltinAliases(config: LoadConfigResult['config'], wevuRuntime?: WevuRuntimeAliasMode) {
-    aliasManager.injectBuiltinAliases(config, resolveBuiltinPackageAliases({
+    aliasManager.injectBuiltinAliases(config, builtinAliases.resolve({
       cwd: loadingOptions?.cwd ?? options.cwd,
       isDev: loadingOptions?.isDev ?? options.isDev,
       wevuRuntime: wevuRuntime ?? config.weapp?.wevu?.runtime,
@@ -240,6 +241,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   }
 
   async function load(optionsInput?: Partial<LoadConfigOptions>) {
+    builtinAliases.clear()
     const defaultCwd = process.cwd()
     const input = defu<LoadConfigOptions, LoadConfigOptions[]>(optionsInput, {
       cwd: defaultCwd,
@@ -297,6 +299,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     getOptions,
     setOptions,
     injectBuiltinAliases,
+    resolveBuiltinAliases: builtinAliases.resolve,
     getDefineImportMetaEnv,
     applyRuntimePlatform,
     oxcRolldownPlugin: oxcRuntimeSupport.rolldownPlugin,
@@ -307,6 +310,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       return options
     },
     set options(value: LoadConfigResult) {
+      builtinAliases.clear()
       setOptions(value)
     },
     get outputExtensions() {

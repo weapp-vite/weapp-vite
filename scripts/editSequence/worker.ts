@@ -1,18 +1,11 @@
-import type { EditAction } from './driver'
+import type { SequenceWorkerMessage } from './processProtocol'
 import { rm } from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
 import { BuildSequenceSession } from './build'
 import { observeCompiler } from './compiler'
-import { serializeSequenceError } from './errorEvidence'
+import { restoreSequenceError, serializeSequenceError } from './errorEvidence'
 import { observeProcessResources, SequenceGcObserver } from './measurement'
-
-interface Request {
-  id: number
-  files: Record<string, string>
-  action?: EditAction
-  step: number
-}
 
 const [mode, root, role = 'incremental'] = process.argv.slice(2)
 if (!root || !mode || !['compiler', 'classic', 'stateful-experimental', 'weapp-modes', 'weapp-classic', 'weapp-stateful'].includes(mode)) {
@@ -27,6 +20,7 @@ const fullFramework = mode === 'weapp-classic' || mode === 'weapp-stateful'
   ? new (await import('./framework')).FrameworkSequenceSession(mode, path.join(root, role))
   : undefined
 let active = Promise.resolve()
+const requests = new Map<number, AbortController>()
 const gc = new SequenceGcObserver()
 let stopping: Promise<void> | undefined
 function close() {
@@ -49,7 +43,12 @@ function close() {
     process.exit(1)
   })
 }
-process.on('message', (request: Request | { type: 'close' }) => {
+process.on('message', (request: SequenceWorkerMessage) => {
+  // close 等待当前任务时仍允许取消该任务；未知或已完成的 id 不影响其他请求。
+  if ('type' in request && request.type === 'cancel') {
+    requests.get(request.id)?.abort(restoreSequenceError(request.reason))
+    return
+  }
   if ('type' in request && request.type === 'close') {
     void close()
     return
@@ -57,13 +56,20 @@ process.on('message', (request: Request | { type: 'close' }) => {
   if (stopping || 'type' in request) {
     return
   }
+  // 在入队时登记，取消消息不必等待前一个请求完成。
+  const controller = new AbortController()
+  requests.set(request.id, controller)
   active = active.then(async () => {
     try {
-      const input = { ...request, signal: AbortSignal.timeout(fullFramework ? 180_000 : 60_000) }
+      const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(fullFramework ? 180_000 : 60_000)])
+      signal.throwIfAborted()
+      const input = { ...request, signal }
       const startedAt = performance.now()
       const value = fullFramework ? await fullFramework.observe(input) : framework ? await framework.observe(input) : build ? await build.observe(input) : await observeCompiler(input, root)
+      signal.throwIfAborted()
       const elapsedMs = performance.now() - startedAt
       const gcSample = await gc.sample(process.env.EDIT_SEQUENCE_RESOURCE_GC === '1')
+      signal.throwIfAborted()
       process.send?.({ id: request.id, value, measurement: {
         elapsedMs,
         clock: { timeOrigin: performance.timeOrigin, startedAtMs: startedAt, endedAtMs: startedAt + elapsedMs },
@@ -76,6 +82,9 @@ process.on('message', (request: Request | { type: 'close' }) => {
     }
     catch (error) {
       process.send?.({ id: request.id, error: serializeSequenceError(error) })
+    }
+    finally {
+      requests.delete(request.id)
     }
   })
 })

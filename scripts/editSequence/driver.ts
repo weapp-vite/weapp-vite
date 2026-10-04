@@ -1,6 +1,7 @@
 import type { SequenceMeasurement, SequenceStepResult } from './measurement'
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
+import { serializeSequenceError } from './errorEvidence'
 
 export type EditAction
   = | { kind: 'write', file: string, content: string }
@@ -27,6 +28,7 @@ export interface SequenceObserver<T> {
   name: string
   measure?: () => SequenceMeasurement | undefined
   resources?: () => { children: number }
+  diagnostics?: () => unknown
   incremental: (input: SequenceInput) => Promise<T>
   fresh: (input: SequenceInput) => Promise<T>
   close: () => Promise<void>
@@ -196,6 +198,7 @@ export async function verifyEditSequence<T>(
       const replay = { ...sequence, steps: sequence.steps.slice(0, step) }
       const stepResult: SequenceStepResult = { step, label: current?.name ?? 'initial', status: 'failed' }
       const startedAt = performance.now()
+      let stepFailure: { error: unknown } | undefined
       try {
         const incremental = await bounded(() => observer.incremental(input), signal)
         stepResult.incrementalMs = performance.now() - startedAt
@@ -212,13 +215,35 @@ export async function verifyEditSequence<T>(
       }
       catch (error) {
         if (error instanceof EditSequenceDivergence) {
-          throw error
+          stepFailure = { error }
         }
-        throw new Error(`${sequence.name}: ${observer.name}: step ${step} (${current?.name ?? 'initial'}) failed before comparison\\n${JSON.stringify({ replay }, null, 2)}`, { cause: error })
+        else {
+          let diagnostics: unknown
+          try {
+            const value = observer.diagnostics?.()
+            // 在清理前固定证据；不可序列化的诊断不能覆盖最初故障。
+            diagnostics = value === undefined ? undefined : JSON.parse(JSON.stringify(value))
+          }
+          catch (diagnosticError) {
+            diagnostics = { status: 'unavailable', error: serializeSequenceError(diagnosticError) }
+          }
+          stepFailure = { error: new Error(`${sequence.name}: ${observer.name}: step ${step} (${current?.name ?? 'initial'}) failed before comparison\\n${JSON.stringify({ replay, diagnostics }, null, 2)}`, { cause: error }) }
+        }
       }
       finally {
         stepResult.elapsedMs = performance.now() - startedAt
-        options.onStep?.(stepResult)
+        try {
+          options.onStep?.(stepResult)
+        }
+        catch (error) {
+          // 报告断言也必须失败，但不能覆盖观察阶段的原始异常和诊断。
+          stepFailure = { error: stepFailure
+            ? new AggregateError([stepFailure.error, error], 'Edit sequence observation and step reporting both failed')
+            : error }
+        }
+      }
+      if (stepFailure) {
+        throw stepFailure.error
       }
     }
   }

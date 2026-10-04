@@ -73,6 +73,30 @@ describe('bundle index helpers', () => {
     })
   })
 
+  it.each([true, false])('includes newly emitted component dependencies in the HMR asset publication set (hasPreviousEntry=%s)', (hasPreviousEntry) => {
+    const owner = '/project/src/pages/index.vue'
+    const added = '/project/src/components/alternate.vue'
+    const unrelated = '/project/src/components/unrelated.vue'
+    const state = resolveVueBundleEmitState({
+      ctx: {
+        configService: { isDev: true },
+        scanService: {},
+        runtimeState: { build: { hmr: {
+          didEmitAllEntries: false,
+          lastHmrEntryIds: new Set(hasPreviousEntry ? [owner] : []),
+          lastEmittedEntryIds: new Set(hasPreviousEntry ? [added, owner] : [added]),
+        } } },
+      },
+      compilationCache: new Map([
+        [owner, { result: {}, isPage: true }],
+        [added, { result: {}, isPage: false }],
+        [unrelated, { result: {}, isPage: false }],
+      ]),
+    } as any)
+    expect(state?.compilationEntries.map(([id]) => id)).toEqual(hasPreviousEntry ? [owner, added] : [added])
+    expect(state?.emittedEntryIds).toEqual(new Set(hasPreviousEntry ? [owner, added] : [added]))
+  })
+
   it('includes dirty vue entries while filtering partial dev HMR bundle assets', () => {
     expect(resolveVueBundleEmitState({
       ctx: {

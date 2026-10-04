@@ -1,0 +1,348 @@
+--- a/crates/rolldown_dev/src/bundling_task.rs
++++ b/crates/rolldown_dev/src/bundling_task.rs
+@@ -132,7 +132,7 @@
+             // Classified as Hmr stage: the next Hmr task re-runs watch_change,
+             // which is sufficient to retry the hook.
+             self.hmr_errored = true;
+-            if let Some(on_output) = self.dev_context.options.on_output.as_ref() {
++            if let Some(on_output) = self.dev_context.callbacks.on_output() {
+               on_output(Err(err.into()));
+             }
+             return;
+@@ -167,7 +167,7 @@
+       changed_tsconfig
+     };
+     if changed_tsconfig {
+-      if let Some(on_hmr_updates) = self.dev_context.options.on_hmr_updates.as_ref() {
++      if let Some(on_hmr_updates) = self.dev_context.callbacks.on_hmr_updates() {
+         let changed_files = self
+           .input
+           .changed_files()
+@@ -297,7 +297,7 @@
+     }
+ 
+     let succeeded = hmr_result.is_ok();
+-    let has_callback = self.dev_context.options.on_hmr_updates.is_some();
++    let has_callback = self.dev_context.callbacks.has_on_hmr_updates();
+     if let Err(err) = &hmr_result {
+       tracing::error!("[BundlingTask] failed to generate HMR updates: {:?}", err);
+       self.hmr_errored = true;
+@@ -308,7 +308,7 @@
+     // consumer can register/serve them before the client requests them. A pure
+     // HMR patch never triggers `on_output`, so this is their only delivery path.
+     if succeeded {
+-      if let Some(on_additional_assets) = self.dev_context.options.on_additional_assets.as_ref() {
++      if let Some(on_additional_assets) = self.dev_context.callbacks.on_additional_assets() {
+         let mut output = BundleOutput::default();
+         bundler.file_emitter.add_additional_files(&mut output.assets, &mut output.warnings);
+         if !output.assets.is_empty() {
+@@ -318,7 +318,7 @@
+     }
+ 
+     // Call on_hmr_updates callback if provided
+-    if let Some(on_hmr_updates) = self.dev_context.options.on_hmr_updates.as_ref() {
++    if let Some(on_hmr_updates) = self.dev_context.callbacks.on_hmr_updates() {
+       on_hmr_updates(hmr_result.map(|client_updates| {
+         (client_updates, changed_files.iter().map(|(p, _)| p.clone()).collect())
+       }));
+@@ -367,7 +367,7 @@
+     }
+ 
+     // Call on_output callback if provided
+-    if let Some(on_output) = self.dev_context.options.on_output.as_ref() {
++    if let Some(on_output) = self.dev_context.callbacks.on_output() {
+       on_output(build_result);
+     }
+   }
+--- /dev/null
++++ b/crates/rolldown_dev/src/dev_callbacks.rs
+@@ -0,0 +1,103 @@
++use std::sync::Mutex;
++
++use crate::{
++  NormalizedDevOptions, OnAdditionalAssetsCallback, OnHmrUpdatesCallback, OnOutputCallback,
++};
++
++#[derive(Default)]
++struct Callbacks {
++  on_output: Option<OnOutputCallback>,
++  on_hmr_updates: Option<OnHmrUpdatesCallback>,
++  on_additional_assets: Option<OnAdditionalAssetsCallback>,
++}
++
++/// 终止关闭时释放通知所有权，已取得的调用快照仍可完成交付。
++#[derive(Default)]
++pub(crate) struct DevCallbacks {
++  callbacks: Mutex<Callbacks>,
++}
++
++impl DevCallbacks {
++  pub fn take_from(options: &mut NormalizedDevOptions) -> Self {
++    Self {
++      callbacks: Mutex::new(Callbacks {
++        on_output: options.on_output.take(),
++        on_hmr_updates: options.on_hmr_updates.take(),
++        on_additional_assets: options.on_additional_assets.take(),
++      }),
++    }
++  }
++
++  pub fn on_output(&self) -> Option<OnOutputCallback> {
++    self.callbacks.lock().expect("Dev callbacks lock poisoned").on_output.clone()
++  }
++
++  pub fn on_hmr_updates(&self) -> Option<OnHmrUpdatesCallback> {
++    self.callbacks.lock().expect("Dev callbacks lock poisoned").on_hmr_updates.clone()
++  }
++
++  pub fn on_additional_assets(&self) -> Option<OnAdditionalAssetsCallback> {
++    self.callbacks.lock().expect("Dev callbacks lock poisoned").on_additional_assets.clone()
++  }
++
++  pub fn has_on_hmr_updates(&self) -> bool {
++    self.callbacks.lock().expect("Dev callbacks lock poisoned").on_hmr_updates.is_some()
++  }
++
++  /// 必须先停止并等待全部通知生产者，再在锁外析构回调；NAPI使用正常release排空队列。
++  pub fn release(&self) {
++    let callbacks = {
++      let mut callbacks = self.callbacks.lock().expect("Dev callbacks lock poisoned");
++      std::mem::take(&mut *callbacks)
++    };
++    drop(callbacks);
++  }
++}
++
++#[cfg(test)]
++mod tests {
++  use std::sync::Arc;
++
++  use super::DevCallbacks;
++  use crate::{BundleOutput, DevOptions, normalize_dev_options};
++
++  #[test]
++  fn release_keeps_only_the_inflight_callback_snapshot_alive() {
++    let output_owner = Arc::new(());
++    let hmr_owner = Arc::new(());
++    let assets_owner = Arc::new(());
++    let output_weak = Arc::downgrade(&output_owner);
++    let hmr_weak = Arc::downgrade(&hmr_owner);
++    let assets_weak = Arc::downgrade(&assets_owner);
++    let mut options = normalize_dev_options(DevOptions {
++      on_output: Some(Arc::new(move |_| {
++        assert_eq!(Arc::strong_count(&output_owner), 1);
++      })),
++      on_hmr_updates: Some(Arc::new(move |_| {
++        assert_eq!(Arc::strong_count(&hmr_owner), 1);
++      })),
++      on_additional_assets: Some(Arc::new(move |_| {
++        assert_eq!(Arc::strong_count(&assets_owner), 1);
++      })),
++      ..DevOptions::default()
++    });
++    let callbacks = DevCallbacks::take_from(&mut options);
++    let in_flight = callbacks.on_output().expect("output callback");
++    assert!(callbacks.has_on_hmr_updates());
++    callbacks.release();
++    callbacks.release();
++    assert!(options.on_output.is_none());
++    assert!(options.on_hmr_updates.is_none());
++    assert!(options.on_additional_assets.is_none());
++    assert!(callbacks.on_output().is_none());
++    assert!(callbacks.on_hmr_updates().is_none());
++    assert!(callbacks.on_additional_assets().is_none());
++    assert!(!callbacks.has_on_hmr_updates());
++    assert!(output_weak.upgrade().is_some());
++    assert!(hmr_weak.upgrade().is_none());
++    assert!(assets_weak.upgrade().is_none());
++    in_flight(Ok(BundleOutput::default()));
++    drop(in_flight);
++    assert!(output_weak.upgrade().is_none());
++  }
++}
+--- a/crates/rolldown_dev/src/dev_context.rs
++++ b/crates/rolldown_dev/src/dev_context.rs
+@@ -11,7 +11,7 @@
+ use tokio::sync::Mutex;
+ 
+ use crate::{
+-  NormalizedDevOptions, SharedClients, type_aliases::CoordinatorSender,
++  NormalizedDevOptions, SharedClients, dev_callbacks::DevCallbacks, type_aliases::CoordinatorSender,
+   types::pending_payload::PendingPayload,
+ };
+ 
+@@ -29,6 +29,7 @@
+ 
+ pub struct DevContext {
+   pub options: NormalizedDevOptions,
++  pub callbacks: DevCallbacks,
+   pub coordinator_tx: CoordinatorSender,
+   pub clients: SharedClients,
+   /// Dev-engine-wide rebuild-stamp ship map of the versioned delivery protocol.
+--- a/crates/rolldown_dev/src/dev_engine.rs
++++ b/crates/rolldown_dev/src/dev_engine.rs
+@@ -20,6 +20,7 @@
+ use crate::{
+   BundleOutput, DevOptions, SharedClients,
+   bundle_coordinator::BundleCoordinator,
++  dev_callbacks::DevCallbacks,
+   dev_context::{DevContext, PinBoxSendStaticFuture},
+   normalize_dev_options,
+   type_aliases::CoordinatorSender,
+@@ -44,7 +45,7 @@
+   coordinator_sender: CoordinatorSender,
+   bundler: Arc<Mutex<Bundler>>,
+   /// Shared dev context, kept so out-of-coordinator entry points (e.g.
+-  /// `compile_lazy_entry`) can reach `options.on_additional_assets`.
++  /// `compile_lazy_entry`) can reach the additional-assets callback.
+   dev_context: Arc<DevContext>,
+   coordinator_state: Mutex<CoordinatorState>,
+   pub clients: SharedClients,
+@@ -78,7 +79,8 @@
+     let module_infos = bundler.module_infos();
+     let bundler = Arc::new(Mutex::new(bundler));
+ 
+-    let normalized_options = normalize_dev_options(options);
++    let mut normalized_options = normalize_dev_options(options);
++    let callbacks = DevCallbacks::take_from(&mut normalized_options);
+ 
+     let (coordinator_tx, coordinator_rx) = unbounded_channel::<CoordinatorMsg>();
+ 
+@@ -90,6 +92,7 @@
+ 
+     let ctx = Arc::new(DevContext {
+       options: normalized_options,
++      callbacks,
+       coordinator_tx: coordinator_tx.clone(),
+       clients: Arc::clone(&clients),
+       stamp_table: Arc::new(Mutex::new(HmrStampTable::default())),
+@@ -146,6 +149,8 @@
+ 
+   pub async fn run(&self) -> BuildResult<()> {
+     let mut coordinator_state = self.coordinator_state.lock().await;
++    // 与close使用同一coordinator锁，关闭开始后不得重新启动通知生产者。
++    self.create_error_if_closed()?;
+ 
+     if coordinator_state.coordinator.is_none() {
+       // The coordinator is already running.
+@@ -372,6 +377,8 @@
+   ) -> BuildResult<HmrLazyChunkOutput> {
+     self.create_error_if_closed()?;
+     let mut bundler = self.bundler.lock().await;
++    // 排队等待bundler期间可能已开始关闭；取得锁后再次确认执行资格。
++    self.create_error_if_closed()?;
+ 
+     // Snapshot the ship map `shipped[C]` and the top-level-evaluated map for this client so
+     // the compile runs without the clients lock. `ArcStr` keys make the ship-map copy
+@@ -425,7 +432,7 @@
+       // Deliver assets emitted while compiling the lazy entry (e.g. an image
+       // imported by the lazy module) before returning the code, so the consumer
+       // can register/serve them before the client requests them.
+-      if let Some(on_additional_assets) = self.dev_context.options.on_additional_assets.as_ref() {
++      if let Some(on_additional_assets) = self.dev_context.callbacks.on_additional_assets() {
+         let mut output = BundleOutput::default();
+         bundler.file_emitter.add_additional_files(&mut output.assets, &mut output.warnings);
+         if !output.assets.is_empty() {
+@@ -452,26 +459,40 @@
+       return Ok(());
+     }
+ 
+-    // Send close message to coordinator
+-    self.coordinator_sender.send(CoordinatorMsg::Close)
++    // 发送失败也必须完成已拥有的 bundler 和 coordinator 清理。
++    let send_result = self.coordinator_sender.send(CoordinatorMsg::Close)
+       .map_err_to_unhandleable()
+-      .context("DevEngine: failed to send Close message to coordinator - coordinator may have already terminated")?;
++      .context("DevEngine: failed to send Close message to coordinator - coordinator may have already terminated");
++
++    // 尚未run的coordinator也拥有watcher和DevContext；取走它，防止关闭后再启动。
++    let (not_started_coordinator, coordinator_handle) = {
++      let mut coordinator_state = self.coordinator_state.lock().await;
++      (coordinator_state.coordinator.take(), coordinator_state.handle.clone())
++    };
++    drop(not_started_coordinator);
+ 
+     // Close the bundler (calls `closeBundle` plugin hook).
+     // The bundler lock MUST be released before waiting for the coordinator below.
+     // Otherwise we'd deadlock: the coordinator's Close handler waits for any running
+     // bundling task to finish, and that task may need to acquire the bundler lock.
+-    {
++    let close_result = {
+       let mut bundler = self.bundler.lock().await;
+-      bundler.close().await?;
+-    }
+-
+-    // Wait for coordinator to close (coordinator handles watcher cleanup)
+-    let coordinator_state = self.coordinator_state.lock().await;
+-    if let Some(coordinator_handle) = coordinator_state.handle.clone() {
++      bundler.close().await
++    };
++
++    // 等待完成时不持有 bundler 或 coordinator_state 的锁。
++    if let Some(coordinator_handle) = coordinator_handle {
+       coordinator_handle.await;
+     }
+-    Ok(())
++
++    // 所有coordinator任务和已取得bundler锁的lazy compile都已完成通知入队。
++    // 正常Drop释放TSFN，Node仍会交付已经排队的通知；不等待用户回调Promise。
++    // See internal-docs/dev-engine/implementation.md, "Terminal callback ownership".
++    self.dev_context.callbacks.release();
++
++    // 保留原始错误优先级，清理失败不会覆盖先前的发送错误。
++    send_result?;
++    close_result
+   }
+ 
+   pub fn is_closed(&self) -> bool {
+--- a/crates/rolldown_dev/src/lib.rs
++++ b/crates/rolldown_dev/src/lib.rs
+@@ -1,5 +1,6 @@
+ mod bundle_coordinator;
+ mod bundling_task;
++mod dev_callbacks;
+ mod dev_context;
+ mod dev_engine;
+ mod type_aliases;
+--- a/internal-docs/dev-engine/implementation.md
++++ b/internal-docs/dev-engine/implementation.md
+@@ -1631,3 +1631,39 @@
+   test harness for the dev server
+ - `crates/rolldown_dev/` — dev engine implementation
+ - `crates/rolldown_dev_common/` — `RebuildStrategy`, dev options
++
++## Terminal callback ownership
++
++`DevContext.callbacks` owns the three notification closures separately from the
++immutable watch/build options. Construction moves the callback fields out of
++`NormalizedDevOptions`; notification sites take a short-lived `Arc` snapshot and
++invoke it after releasing the callback-store lock. The immutable options do not
++keep a duplicate callback owner.
++
++Only the first, terminal `DevEngine::close` releases that store. It first marks
++the engine closed, sends `Close`, takes any not-yet-started coordinator, closes
++the bundler, and waits for the running coordinator without holding either mutex.
++Ordinary close errors are propagated only after cleanup and callback release.
++A concurrent repeated close keeps its existing no-op behavior and must not
++release callbacks while the first close is still pending.
++
++`run` checks the closed flag while holding the coordinator-state lock, so it
++cannot start a producer after terminal close captured its join handle. Lazy
++compilation rechecks the closed flag after acquiring the bundler lock. An
++already-admitted lazy compile holds that lock through its additional-assets
++notification; a queued late compile rejects instead of emitting after release.
++These are the producer barriers that make callback release safe.
++
++In the N-API binding, dropping the last `JsCallback` normally releases its TSFN.
++Normal release preserves already-enqueued JS calls until the queue is empty; it
++does not abort them. Native close waits for producers to finish enqueueing, not
++for user callback promises. Waiting for those promises could deadlock when a
++callback awaits `close()` itself. A queued callback can therefore still run after
++the close promise resolves; its output payload and JS callback remain owned by
++the queue until delivery. Environment teardown has the separate Node-API
++shutdown semantics.
++
++Callback release does not destroy `DevEngine`, clear its public `moduleGraph`
++handle, or change the existing graph/read results. Public handles may still own
++the closed native engine; they no longer keep user notification callbacks alive.
++Existing plugin/options ownership is governed by its own lifecycle.

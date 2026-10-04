@@ -290,11 +290,23 @@ describe('stateful snapshot component metadata', () => {
     const root = await createProject()
     const file = path.join(root, 'src/components/wevu-leaf/index.vue')
     const original = await fs.readFile(file, 'utf8')
-    const pinned = `${original.replace('<view>', '<view>PINNED-BATCH')}\n<style src="./pinned.css" />`
+    const pinned = `${original.replace('<view>', '<view>PINNED-BATCH').replace('<script setup lang="ts">', '<script setup lang="ts">\nimport "./message"\nimport "./empty"\nimport "./untouched"')}\n<style src="./pinned.css" />`
     const style = path.join(root, 'src/components/wevu-leaf/pinned.css')
+    const message = path.join(root, 'src/components/wevu-leaf/message.ts')
+    const empty = path.join(root, 'src/components/wevu-leaf/empty.ts')
+    await fs.writeFile(message, 'console.log("FUTURE-MODULE")')
+    await fs.writeFile(empty, 'console.log("FUTURE-EMPTY")')
+    await fs.writeFile(path.join(root, 'src/components/wevu-leaf/untouched.ts'), 'console.log("LIVE-UNPINNED")')
     await fs.writeFile(style, '.frozen { width: 71px; }')
     await fs.writeFile(file, original.replace('<view>', '<view>FUTURE-BATCH'))
-    const result = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' }, undefined, undefined, new Map([[compilerSourceId(file), pinned], [compilerSourceId(style), '.frozen { width: 19px; }']]))
+    const sources = new Map([
+      [compilerSourceId(file), pinned],
+      [compilerSourceId(style), '.frozen { width: 19px; }'],
+      [compilerSourceId(message), 'console.log("PINNED-MODULE")'],
+      [compilerSourceId(empty), ''],
+    ])
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const result = await buildStatefulHmrSnapshot(options, undefined, undefined, sources)
     const outputs = Array.isArray(result.output) ? result.output.flatMap(item => item.output) : 'output' in result.output ? result.output.output : []
     const template = outputs.find(item => item.fileName === 'components/wevu-leaf/index.wxml') as OutputAsset
     expect(String(template.source)).toContain('PINNED-BATCH')
@@ -302,6 +314,15 @@ describe('stateful snapshot component metadata', () => {
     const stylesheet = outputs.find(item => item.fileName === 'components/wevu-leaf/index.wxss') as OutputAsset
     expect(String(stylesheet.source)).toMatch(/width:\s*19px/)
     expect(String(stylesheet.source)).not.toContain('71px')
+    const script = outputs.flatMap(item => item.type === 'chunk' ? [item.code] : []).join('\n')
+    expect(script).toContain('PINNED-MODULE')
+    expect(script).toContain('LIVE-UNPINNED')
+    expect(script).not.toContain('FUTURE-MODULE')
+    expect(script).not.toContain('FUTURE-EMPTY')
+    await expect(buildStatefulHmrSnapshot(options, undefined, undefined, new Map<string, string | null>([
+      ...sources,
+      [compilerSourceId(message), null],
+    ]))).rejects.toThrow('Source removed from snapshot:')
   })
 
   afterEach(async () => {

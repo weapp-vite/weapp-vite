@@ -12,6 +12,9 @@ import { createPeakRssSampler } from '../benchmarkTemplatesPerformance/peakRssSa
 import { sampleProcessTreeRssBytes } from '../benchmarkTemplatesPerformance/processTreeRss'
 import { readHmrSamples } from './hmrSamples'
 import { captureOutputEvidence } from './outputEvidence'
+import { hmrProfileCapability } from './profileCapability.mjs'
+
+export type HmrProfileCapability = ReturnType<typeof hmrProfileCapability>
 
 export interface Checkout {
   id: 'baseline' | 'optimized'
@@ -88,6 +91,8 @@ export async function collectBuilds(checkout: Checkout, logDir: string): Promise
 /** 每对使用独立 dev 会话，分别记录首次编辑、连续编辑和恢复，禁止取较快阶段。 */
 export async function collectHmr(checkout: Checkout, driverRoot: string, logDir: string, runtime: string): Promise<AuditSample[]> {
   await mkdir(logDir, { recursive: true })
+  const profileCapability = hmrProfileCapability(checkout.id, checkout.commit, runtime)
+  await writeFile(path.join(logDir, 'profile-capability.json'), JSON.stringify(profileCapability))
   const child = execa(process.execPath, ['--import', 'tsx', 'scripts/benchmark-templates-hmr.ts'], {
     cwd: driverRoot,
     reject: false,
@@ -98,6 +103,7 @@ export async function collectHmr(checkout: Checkout, driverRoot: string, logDir:
       TEMPLATES_HMR_REPORT_DIR: logDir,
       TEMPLATES_HMR_ITERATIONS: '2',
       TEMPLATES_HMR_RUNTIME: runtime,
+      TEMPLATES_HMR_PROFILE: profileCapability.status === 'unavailable' ? '0' : '1',
       TEMPLATES_HMR_SAMPLE_MODE: 'edit-only',
       TEMPLATES_HMR_FILTER: checkout.templates.map(item => item.id).join(','),
       TEMPLATES_HMR_MAX_SCENARIOS_PER_TEMPLATE: process.env.TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE ?? '4',
@@ -117,5 +123,5 @@ export async function collectHmr(checkout: Checkout, driverRoot: string, logDir:
   if (report.templates.length !== checkout.templates.length) {
     throw new Error('Missing HMR templates')
   }
-  return readHmrSamples(report, runtime)
+  return readHmrSamples(report, runtime, profileCapability)
 }

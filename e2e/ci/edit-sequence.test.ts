@@ -1,7 +1,9 @@
 import type { SequenceStepResult } from '../../scripts/editSequence/measurement'
+import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { BuildSequenceSession } from '../../scripts/editSequence/build'
+import { assertSuccessfulSequenceBuild } from '../../scripts/editSequence/buildObservation'
 import { verifyEditSequence } from '../../scripts/editSequence/driver'
 import { createProcessObserver } from '../../scripts/editSequence/processObserver'
 import { createSequenceProject } from '../../scripts/editSequence/project'
@@ -16,6 +18,28 @@ interface BuildSnapshot {
 // 单个序列首次分歧即失败；独立测试保证该失败不遮蔽其他动作族。
 // 这是 compiler/真实 engine 集成校验，不替代 DevTools 的宿主、页面及热更新最终验收。
 describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, () => {
+  it('isolates the native fixture from an unrelated parent TypeScript project', async () => {
+    const project = await createSequenceProject()
+    const root = path.join(project.root, 'native-fixture')
+    const session = new BuildSequenceSession('stateful-experimental', root, path.join(root, 'dist'))
+    try {
+      await mkdir(path.join(project.root, 'unrelated'))
+      await writeFile(path.join(project.root, 'tsconfig.json'), JSON.stringify({ references: [{ path: './unrelated' }], files: [] }))
+      await writeFile(path.join(project.root, 'unrelated/tsconfig.json'), JSON.stringify({ extends: './generated/tsconfig.json' }))
+      const snapshot = await session.observe({ files: buildSequences[0]!.files, step: 0, signal: AbortSignal.timeout(10_000) })
+      assertSuccessfulSequenceBuild(snapshot)
+      expect(snapshot.published?.semantics).toMatchObject({ value: 'one' })
+    }
+    finally {
+      try {
+        await session.close()
+      }
+      finally {
+        await project.close()
+      }
+    }
+  }, 15_000)
+
   for (const sequence of compilerSequences) {
     it(sequence.name, async () => {
       const project = await createSequenceProject()
@@ -38,6 +62,9 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
             ...observer,
             incremental: async (input) => {
               const snapshot = await observer.incremental(input)
+              if (input.step === 0) {
+                assertSuccessfulSequenceBuild(snapshot)
+              }
               if (input.files['sequence.config.json'] && snapshot.diagnostics.length === 0) {
                 expect(snapshot.published?.semantics.configured).toBe('configured')
               }
@@ -64,7 +91,14 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
       const observer = createProcessObserver<BuildSnapshot>(engine, project.root, { resources: true })
       const steps: SequenceStepResult[] = []
       try {
-        await verifyEditSequence(createResourceSequence(), observer, { timeoutMs: 90_000, onStep: step => steps.push(step) })
+        await verifyEditSequence(createResourceSequence(), {
+          ...observer,
+          incremental: async (input) => {
+            const snapshot = await observer.incremental(input)
+            assertSuccessfulSequenceBuild(snapshot)
+            return snapshot
+          },
+        }, { timeoutMs: 90_000, onStep: step => steps.push(step) })
         expect(steps).toHaveLength(15)
         expect(steps.every(step => step.status === 'passed')).toBe(true)
         for (const step of steps) {
@@ -99,9 +133,14 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
           }],
         }, {
           name: engine,
+          diagnostics: () => session.diagnostics(),
           incremental: async (input) => {
             if (input.step === 0) {
-              return session.observe(input, { fileTimestamp })
+              const snapshot = await session.observe(input, { fileTimestamp })
+              // 两侧同样失败也可能结构相等；此场景必须先有可执行的成功首构。
+              assertSuccessfulSequenceBuild(snapshot)
+              expect(snapshot.published?.semantics).toMatchObject({ value: 'one' })
+              return snapshot
             }
             const observed: unknown[] = []
             const snapshot = await session.observe(input, {

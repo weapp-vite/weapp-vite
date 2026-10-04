@@ -38,10 +38,11 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
     && hmrState
     && !isAppVueHmrUpdate
     && !hmrState.didEmitAllEntries
-    && (hmrState.lastHmrEntryIds?.size ?? hmrState.lastEmittedEntryIds?.size ?? 0) > 0,
+    && ((hmrState.lastHmrEntryIds?.size ?? 0) > 0 || (hmrState.lastEmittedEntryIds?.size ?? 0) > 0),
   )
   const emittedEntryIds = shouldFilterHmrEntries && hmrState
-    ? (hmrState.lastHmrEntryIds?.size ? hmrState.lastHmrEntryIds : hmrState.lastEmittedEntryIds)
+    // 入口闭包可能在 load/transform 期间扩大，新组件已发射 JS 时也必须发布其模板与 JSON。
+    ? new Set([...(hmrState.lastHmrEntryIds ?? []), ...(hmrState.lastEmittedEntryIds ?? [])])
     : undefined
   const dirtyVueEntryIds = hmrState?.dirtyVueEntryIds
   const currentAutoRoutesSignature = ctx.autoRoutesService?.getSignature?.()

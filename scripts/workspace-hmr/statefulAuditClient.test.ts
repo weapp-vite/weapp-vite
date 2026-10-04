@@ -85,4 +85,21 @@ describe('StatefulHmrAuditClient', () => {
       expect.objectContaining({ action: 'poll', buildId: 'build-b', version: 0 }),
     ])
   })
+
+  it('does not advance the version when a cancelled request responds late', async () => {
+    const response = Promise.withResolvers<Response>()
+    const request = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ type: 'registered', acknowledgement: 'explicit-v1' })))
+      .mockImplementationOnce(() => response.promise)
+    const client = new StatefulHmrAuditClient(request)
+    await client.ensureRegistered({ buildId: 'build', token: 'token', url: 'http://localhost/control' }, 1_000)
+    const cancellation = new AbortController()
+    const failure = new Error('cancelled measurement')
+    const pending = client.poll(1_000, cancellation.signal)
+    const rejection = expect(pending).rejects.toBe(failure)
+    cancellation.abort(failure)
+    response.resolve(new Response(JSON.stringify({ type: 'batch-published', targetVersion: 9 })))
+    await rejection
+    expect(client.acknowledgedVersion).toBe(0)
+  })
 })

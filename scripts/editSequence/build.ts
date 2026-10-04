@@ -2,8 +2,9 @@ import type { OutputBundle, PluginContext, RolldownOutput, RolldownWatcher } fro
 import type { DevEngine } from 'rolldown/experimental'
 import type { Plugin } from 'vite'
 import type { StatefulHmrDevEngineUpdate } from '../../packages/weapp-vite/src/runtime/statefulHmr/viteAdapter'
+import type { SequenceSaveOptions } from './buildSources'
 import type { SequenceInput } from './driver'
-import { mkdir, readFile, rename, rm, utimes, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'pathe'
 import { build } from 'vite'
 import { createStatefulHmrRolldownRuntimeSource } from '../../packages/weapp-vite/src/runtime/statefulHmr/commonRuntime'
@@ -12,8 +13,10 @@ import { toStableModuleId } from '../../packages/weapp-vite/src/runtime/stateful
 import { StatefulHmrOutputPublication } from '../../packages/weapp-vite/src/runtime/statefulHmr/outputPublication'
 import { writeStatefulHmrOutput } from '../../packages/weapp-vite/src/runtime/statefulHmr/outputWriter'
 import { createViteDevEngine } from '../../packages/weapp-vite/src/runtime/statefulHmr/viteDevEngine'
+import { SequenceBuildDiagnostics } from './buildDiagnostics'
 import { createSequenceFixturePlugin } from './buildFixture'
-import { applyAction, bounded } from './driver'
+import { SequenceSourceWriter } from './buildSources'
+import { bounded } from './driver'
 import { observeError } from './editor'
 import { SequenceMeasurements } from './measurement'
 import { SequencePublicationBarrier } from './publicationBarrier'
@@ -31,16 +34,11 @@ interface PublicationReceipt {
   ready: boolean
 }
 
-interface SequenceSaveOptions {
-  afterSave?: (files: Readonly<Record<string, string>>) => Promise<void>
-  fileTimestamp?: Date
-}
-
 export class BuildSequenceSession {
   private engine?: DevEngine
   private engineRun?: Promise<void>
   private watcher?: RolldownWatcher
-  private sourceFiles: Record<string, string> = {}
+  private readonly sources: SequenceSourceWriter
   private completion = Promise.withResolvers<void>()
   private failure: unknown
   private outputTask: Promise<void> = Promise.resolve()
@@ -59,18 +57,28 @@ export class BuildSequenceSession {
   private inputRevision = 0
   private publishedRevision = -1
   private writing = false
+  private readonly trace = new SequenceBuildDiagnostics(() => ({
+    writing: this.writing,
+    inputRevision: this.inputRevision,
+    publishedRevision: this.publishedRevision,
+    pendingChanges: [...this.pendingChanges].map(([file, revision]) => ({ file, revision, watched: this.watchedFiles.has(file) })),
+  }))
+
   readonly measurements: SequenceMeasurements
 
   constructor(mode: 'classic' | 'stateful-experimental', private readonly root: string, private readonly outDir: string) {
+    this.sources = new SequenceSourceWriter(root, file => this.noteSourceWrite(file))
     this.stateful = mode === 'stateful-experimental'
     this.measurements = new SequenceMeasurements(root)
   }
 
   async observe(input: SequenceInput, options: SequenceSaveOptions = {}) {
+    input.signal.throwIfAborted()
+    this.trace.record('observe', { step: input.step })
     this.measurements.reset()
     const topologyChange = this.started && (
-      Object.keys(input.files).some(file => !Object.hasOwn(this.sourceFiles, file))
-      || Object.keys(this.sourceFiles).some(file => !Object.hasOwn(input.files, file))
+      Object.keys(input.files).some(file => !Object.hasOwn(this.sources.files, file))
+      || Object.keys(this.sources.files).some(file => !Object.hasOwn(input.files, file))
     )
     const configChange = input.action?.kind === 'config' || (input.action?.kind === 'rapid' && input.action.saves.some(action => action.kind === 'config'))
     // classic 的新增/删除走完整构建边界；同一进程及输出目录仍保留缓存和历史产物供校验。
@@ -85,13 +93,20 @@ export class BuildSequenceSession {
     this.completion = Promise.withResolvers<void>()
     void this.completion.promise.catch(() => {})
     this.writing = true
+    const sourceWrite = this.trace.begin('write-sources')
     try {
-      await this.writeSources(input, options)
+      await this.sources.write(input, { ...options, started: this.started })
+      this.trace.end(sourceWrite, 'completed')
+    }
+    catch (error) {
+      this.trace.end(sourceWrite, 'failed')
+      throw error
     }
     finally {
       this.writing = false
       this.completeIfPublished()
     }
+    input.signal.throwIfAborted()
     if (!this.started) {
       await mkdir(this.outDir, { recursive: true })
       // emptyOutDir:false 的用户边界；只在最初创建，后续绝不重写或清理。
@@ -124,12 +139,24 @@ export class BuildSequenceSession {
       // 没有改写引擎监听的输入时复用已发布状态，包括上一轮的诊断。
       this.finishPublication(this.capturePublication())
     }
-    await bounded(() => this.completion.promise, input.signal)
-    if (this.engine) {
-      await bounded(() => this.engine!.ensureCurrentBuildFinish(), input.signal)
-      if (this.failure === undefined) {
-        await this.engine.getBundleState()
+    let publicationWait = this.trace.begin('final-publication')
+    try {
+      await bounded(() => this.completion.promise, input.signal)
+      this.trace.end(publicationWait, 'completed')
+      if (this.engine) {
+        publicationWait = this.trace.begin('native-build-finish')
+        await bounded(() => this.engine!.ensureCurrentBuildFinish(), input.signal)
+        this.trace.end(publicationWait, 'completed')
+        if (this.failure === undefined) {
+          publicationWait = this.trace.begin('native-bundle-state')
+          await this.engine.getBundleState()
+          this.trace.end(publicationWait, 'completed')
+        }
       }
+    }
+    catch (error) {
+      this.trace.end(publicationWait, 'failed')
+      throw error
     }
     await this.outputTask
     const userFile = await readFile(path.join(this.outDir, 'user-owned.txt'), 'utf8')
@@ -168,6 +195,7 @@ export class BuildSequenceSession {
       if (this.watchedFiles.has(file)) {
         this.inputRevision = this.writeRevision
       }
+      this.trace.record('source-write', { file, revision: this.writeRevision })
     }
   }
 
@@ -194,6 +222,9 @@ export class BuildSequenceSession {
       throw error
     }
     finally {
+      if (revision !== undefined) {
+        this.trace.record('source-read', { file, revision, acknowledged, matchesTarget: source === this.targetFiles[file] })
+      }
       // 只确认引擎实际请求的输入；旧读取不能确认后续保存或后续步骤。
       if (acknowledged && completion === this.completion && this.pendingChanges.get(file) === revision && source === this.targetFiles[file]) {
         this.pendingChanges.delete(file)
@@ -229,6 +260,7 @@ export class BuildSequenceSession {
   }
 
   private finishPublication(receipt: PublicationReceipt) {
+    this.trace.record('publication-receipt', { revision: receipt.revision, ready: receipt.ready, current: receipt.completion === this.completion })
     if (receipt.completion === this.completion && receipt.ready) {
       this.publishedRevision = Math.max(this.publishedRevision, receipt.revision)
       this.completeIfPublished()
@@ -241,71 +273,10 @@ export class BuildSequenceSession {
     }
   }
 
-  private async writeSources(input: SequenceInput, options: SequenceSaveOptions) {
-    const save = async (files: Readonly<Record<string, string>>) => {
-      for (const file of Object.keys(this.sourceFiles)) {
-        if (!Object.hasOwn(files, file)) {
-          this.noteSourceWrite(file)
-          await rm(path.join(this.root, file), { force: true })
-        }
-      }
-      for (const [file, content] of Object.entries(files)) {
-        if (this.sourceFiles[file] === content) {
-          continue
-        }
-        const target = path.join(this.root, file)
-        // fresh baseline 和活动 watcher 共享源码路径；相同字节不能再次触发活动构建。
-        let current: string | undefined
-        try {
-          current = await readFile(target, 'utf8')
-        }
-        catch (error) {
-          if (!(error instanceof Error) || !('code' in error) || error.code !== 'ENOENT') {
-            throw error
-          }
-        }
-        if (current !== content) {
-          this.noteSourceWrite(file)
-          await mkdir(path.dirname(target), { recursive: true })
-          await writeFile(`${target}.pending`, content)
-          if (options.fileTimestamp) {
-            await utimes(`${target}.pending`, options.fileTimestamp, options.fileTimestamp)
-          }
-          await rename(`${target}.pending`, target)
-        }
-      }
-      this.sourceFiles = { ...files }
-    }
-    if (input.action?.kind === 'rename' && this.started) {
-      const { file, to } = input.action
-      this.noteSourceWrite(file)
-      this.noteSourceWrite(to)
-      await mkdir(path.dirname(path.join(this.root, to)), { recursive: true })
-      await rename(path.join(this.root, file), path.join(this.root, to))
-      applyAction(this.sourceFiles, input.action)
-    }
-    if (input.action?.kind === 'rapid' && this.started) {
-      const intermediate = { ...this.sourceFiles }
-      for (const action of input.action.saves) {
-        if (action.kind === 'rename') {
-          this.noteSourceWrite(action.file)
-          this.noteSourceWrite(action.to)
-          await mkdir(path.dirname(path.join(this.root, action.to)), { recursive: true })
-          await rename(path.join(this.root, action.file), path.join(this.root, action.to))
-          applyAction(this.sourceFiles, action)
-        }
-        applyAction(intermediate, action)
-        await save(intermediate)
-        await options.afterSave?.({ ...intermediate })
-      }
-    }
-    await save(input.files)
-  }
-
   private async start() {
     this.started = true
     this.watchedFiles.clear()
-    const config = this.sourceFiles['sequence.config.json'] ? JSON.parse(this.sourceFiles['sequence.config.json']) as { define?: Record<string, string> } : {}
+    const config = this.sources.files['sequence.config.json'] ? JSON.parse(this.sources.files['sequence.config.json']) as { define?: Record<string, string> } : {}
     const recordBundle = (bundle: OutputBundle, context: PluginContext) => {
       if (this.stateful) {
         return
@@ -415,6 +386,8 @@ export class BuildSequenceSession {
     }
     this.engine = await createViteDevEngine({
       cwd: this.root,
+      // 此 JS/compiler fixture 显式提供全部编译选项，不读取外围工作区的 TS 项目引用。
+      tsconfig: false,
       input: { main: path.join(this.root, 'main.js') },
       transform: { define: config.define },
       plugins,
@@ -436,10 +409,19 @@ export class BuildSequenceSession {
             const update = item.update as StatefulHmrDevEngineUpdate
             if (update.type === 'Patch') {
               this.runtime.apply(update)
+              this.trace.record('patch-consumed', { filename: update.filename })
               this.measurements.patch(update.code)
-              const delivered = this.engine!.notifyPayloadDelivered(update.filename)
-              this.consumed.consume(() => this.runtime.observe(true), delivered)
-              await delivered
+              const patchDelivery = this.trace.begin('patch-delivery')
+              try {
+                const delivered = this.engine!.notifyPayloadDelivered(update.filename)
+                this.consumed.consume(() => this.runtime.observe(true), delivered)
+                await delivered
+                this.trace.end(patchDelivery, 'completed')
+              }
+              catch (error) {
+                this.trace.end(patchDelivery, 'failed')
+                throw error
+              }
             }
             else if (update.type === 'FullReload') {
               // 与生产 adapter 相同，只在引擎要求 reload 时请求完整发布。
@@ -481,7 +463,15 @@ export class BuildSequenceSession {
         const delivered = async () => {
           for (const output of result.output) {
             if (output.type === 'chunk') {
-              await this.engine?.notifyPayloadDelivered(output.fileName)
+              const fullDelivery = this.trace.begin('full-output-delivery')
+              try {
+                await this.engine?.notifyPayloadDelivered(output.fileName)
+                this.trace.end(fullDelivery, 'completed')
+              }
+              catch (error) {
+                this.trace.end(fullDelivery, 'failed')
+                throw error
+              }
             }
           }
         }
@@ -500,14 +490,31 @@ export class BuildSequenceSession {
     return { watchers: this.watcher ? 1 : 0, engines: this.engine ? 1 : 0 }
   }
 
+  diagnostics() {
+    return this.trace.snapshot()
+  }
+
   waitForPublication(predicate: (observation: ReturnType<PublishedRuntime['observe']>) => boolean, signal: AbortSignal) {
+    this.trace.record('intermediate-publication')
     return this.consumed.waitFor(predicate, async () => {
-      if (this.engine) {
-        await this.engine.ensureCurrentBuildFinish()
-        await this.engine.getBundleState()
+      let publicationWait = this.trace.begin(this.engine ? 'native-build-finish' : 'output-persistence')
+      try {
+        if (this.engine) {
+          await this.engine.ensureCurrentBuildFinish()
+          this.trace.end(publicationWait, 'completed')
+          publicationWait = this.trace.begin('native-bundle-state')
+          await this.engine.getBundleState()
+          this.trace.end(publicationWait, 'completed')
+          publicationWait = this.trace.begin('output-persistence')
+        }
+        await this.outputTask
+        this.trace.end(publicationWait, 'completed')
       }
-      await this.outputTask
-    }, signal)
+      catch (error) {
+        this.trace.end(publicationWait, 'failed')
+        throw error
+      }
+    }, signal, phase => this.trace.record('intermediate-wait', { phase }))
   }
 
   async close() {

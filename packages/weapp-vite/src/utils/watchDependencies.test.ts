@@ -1,10 +1,28 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import fs from 'node:fs/promises'
 import os from 'node:os'
-import path from 'node:path'
+import path from 'pathe'
 import { build } from 'vite'
 import { expect, it, vi } from 'vitest'
 import { captureWatchDependencies } from './watchDependencies'
+
+it.each([
+  ['C:\\project\\app', '..\\shared\\external.json', 'C:/project/shared/external.json'],
+  ['C:/project/app', 'D:\\shared\\external.json', 'D:/shared/external.json'],
+  ['C:\\project\\app', 'C:/project/app/external.json', 'C:/project/app/external.json'],
+])('records normalized watch identities for root %s and input %s', (root, file, expected) => {
+  const register = vi.fn()
+  const addWatchFile = vi.fn()
+  const config = {
+    root,
+    plugins: [{ name: 'windows-input', buildStart(this: { addWatchFile: (file: string) => void }) { this.addWatchFile(file) } }],
+  } as unknown as ResolvedConfig
+  const capture = captureWatchDependencies(register)
+  ;(capture.configResolved as { handler: (config: ResolvedConfig) => void }).handler(config)
+  ;(config.plugins[0]!.buildStart as (this: unknown) => void).call({ addWatchFile })
+  expect(addWatchFile).toHaveBeenCalledExactlyOnceWith(file)
+  expect(register).toHaveBeenCalledExactlyOnceWith(expected)
+})
 
 it('preserves object hook metadata and native receivers without modifying the user plugin', async () => {
   const root = path.resolve('fixture')
