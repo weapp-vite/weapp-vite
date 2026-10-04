@@ -88,9 +88,9 @@ v5/v6 四类消费者均独立严格安装，并各完成五次普通构建和�
 | #1097 | 已验证实际 Vite+ runner/create；仍需最终候选运行时及跨平台矩阵收敛。缓存和 Dashboard/MCP 为 issue 明确的非阻塞增强 |
 | #1133 / #1134 | 真实输入类别的阶段归因、profile 关闭/开启产物一致性及正式样本 |
 | #1135 | 干净候选、512 SFC、14 次连续编辑的正式资源门禁与动作族回归 |
-| #1136 | 验收条件已满足，待同步标签：`434899347` 的官方 Stable 两场景、三个 page-frame 检查点与 headless 一致；七端 49 项通过原门禁，完整源码图的 5,422 个正字节模块缺链为 0；新 collector 重采的三个消费者全部产物 hash 与原 Stable 相等，未重复 runtime，身份边界见精简证据 |
-| #1137 | 已实现宿主 heap 协议探测与前后快照；仍缺普通/预设同输入的真实 Stable host commit、内存与工作负载样本，现有 headless 数据不支持收益结论 |
-| #1140 | 两种 `emptyOutDir` 策略已通过 headless 与 Stable 各 2 个场景、28 个检查点；生产代际边界修正已提交为 `86b60ed1a`，待推送及对应 CI |
+| #1136 | 本地验收条件已满足，完成标签等待相关 CI：`434899347` 的官方 Stable 两场景、三个 page-frame 检查点与 headless 一致；七端 49 项通过原门禁，完整源码图的 5,422 个正字节模块缺链为 0；新 collector 重采的三个消费者全部产物 hash 与原 Stable 相等，未重复 runtime，身份边界见精简证据 |
+| #1137 | 普通/预设同输入的真实 Stable 60 个样本已完整采集；96 次 AppService heap 探测均明确 unsupported，内存验收仍未完成，不宣称整体收益 |
+| #1140 | 两种 `emptyOutDir` 策略已通过 headless 与 Stable 各 2 个场景、28 个检查点；生产代际边界修正已提交并推送为 `86b60ed1a`，等待相关 CI |
 | #1142 | 所依赖的子议题完成上述验收后再完成总跟踪项 |
 
 `Compiler and Resource Acceptance` 手动工作流要求输入完整提交 SHA，并核对实际 checkout 与 `github.sha`；分别采集七组 compiler 对照、classic/stateful 的 512 SFC 资源门禁及 mode/cache 等价性。profile 按 off/on/on/off 顺序执行两组独立对照，逐次核对真实源事件、输入、产物、runtime 语义和资源清理，默认开销门槛为 5%。原始日志与报告随工作流归档，失败和缺失证据会使 job 失败。
@@ -588,3 +588,17 @@ Stable `2.02.2608080`、基础库 `3.17.3` 的两轮同场景诊断确认：修�
 官方 Stable 版本于 2026-10-04 13:32 UTC 重新核对，实际连接为 `2.02.2608080`、基础库 `3.17.3`。全部 96 次 AppService heap 探测明确返回 `protocol-unimplemented`；`collectionComplete=true`、`equivalentInputs=true`，但总 `complete=false`，#1137 仍不标记完成。首屏/导航的 firstCommit 和 phase visible 时间仍为空，callback commit 与独立 DOM 观察分开解释。normal 有 1 个弃用警告，performance 有 140 个警告。其中 139 条 `needsFullSnapshot` 由 43 条普通初始化诊断和 32 个首次 revision 的 96 条阶段记录组成；这 32 个 revision 均成功 callback commit，不能把警告条数当作更新回退次数。两端正式计时的各 24 个更新样本均无 fallback，runtime error/exception 均为 0；仍不据此概括预设整体更快。
 
 两套会话的精确项目与端口均已关闭，父进程退出后再次连接登记端口均被拒绝；没有失败重采或样本替换。另一个单测的配置初始化只与安装阶段重叠，在首个 worker 启动前已结束。完整身份、样本、计时边界、归档对账及限制见 `issue-1137-published-stable-run03.json`。此前失败运行保持原结论与原始证据。
+
+### App 入口归属与未通过的真实样式验收
+
+仅保存页面 CSS 时，旧产物的 `app.js` 从 406 B 变成 282 B；原因是 Vue 资产发布阶段用 compiler 的中间脚本覆盖了 bundler 入口。修复删除该覆盖路径，可执行 App 入口由 bundler 的 load/transform 与最终 write 负责。配置、模板和样式仍正常发布，没有手写最终产物。23 项定向测试、所属包 typecheck、13 组公共类型测试、ESLint 与包构建通过。
+
+重建后的同一 provider-compatible suite 在 headless 中为 2/2 场景、14/14 检查点通过。官方 Stable `2.02.2608080`、基础库 `3.17.3` 中，classic 与 stateful 的 App 字节均保持不变，App/Page marker 均保留；但两例都在 `style-only` 等待背景色从透明变为黄色时失败，仅完成 2/14 检查点。后续变量替换、删除、恢复与交互没有执行，不能以这次入口修正标记 #1015 完成。另一个浏览器 E2E 在本轮结束后被发现活动，不将本轮作为独占时序或性能数据。两套 owned 项目已精确关闭，端口关闭、fixture 删除，无清理错误；见 `issue-1015-app-entry-ownership.json`。
+
+### HMR 相位诊断收尾
+
+冻结的 v2 run02 已完成 9×36 次保存和 18 个目标观察，加载哈希、原始 profile、产物与资源归属均已核对。目标相位残差全部落在原定 15ms 范围内，但存在 5 次生成的 profile 文件回调扰动，且只有一对 0/120ms 对照同时满足起始相位与无扰动条件。因此 H1 证据不足，正式性能结论与门槛不变，不能新增完成标签。完整范围、统计和限制见 `hmr-v2-run02-audit.md` 与对应 JSON；未继续采样以求通过。
+
+### #1097：独立 CLI 与 Vite 的 React 发布消费者
+
+冻结 `c3c643d40` 的两行 React 消费者通过：`wv`、`vite` 各自在 headless 与 Stable 完成 3 个场景、14 个检查点，涵盖 hooks、原生 WXML 和六向互操作。共同的结构、文本、属性与作用域一致；Stable 另有每行 42 次 slot 可见性/尺寸断言，不将 headless 未观测的几何字段写成一致。每行 28 个归档、lock integrity 及 1,735 个安装文件逐字节核对通过，无越界软链接或候选包嵌套副本。运行时错误和异常均为 0，owned 项目与端口已关闭，消费者目录保留为只读审计证据。编译器归档与 `89daaa93b` harness 身份分开记录，详见 `issue-1097-two-react-consumer-acceptance.json`。累计完成 6/29 行，其余 23 行和相关 CI 尚需完成。

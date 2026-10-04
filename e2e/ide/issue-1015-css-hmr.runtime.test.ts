@@ -103,6 +103,8 @@ for (const runtime of ['classic', 'stateful-experimental']) {
       const css = await readFile(cssPath, 'utf8')
       const emittedCss = path.join(project, 'dist/pages/issue-1015/index.wxss')
       const emittedScript = path.join(project, 'dist/pages/issue-1015/index.js')
+      const emittedAppScript = path.join(project, 'dist/app.js')
+      const initialAppScript = await readFile(emittedAppScript, 'utf8')
       let loadedScript = await readFile(emittedScript, 'utf8')
       const outputDiagnostics = createHmrOutputDiagnostics(path.join(project, 'dist'), 'e2e-apps/github-issues/fixtures/issue-1015')
       await host.reLaunch(ROUTE)
@@ -131,6 +133,9 @@ for (const runtime of ['classic', 'stateful-experimental']) {
       async function check(id: string) {
         const expected = checkpoints.find(checkpoint => checkpoint.id === id)!
         await outputDiagnostics.capture(`${id}-before-runtime`, loadedScript)
+        if (id === 'style-only') {
+          expect(await readFile(emittedAppScript, 'utf8')).toBe(initialAppScript)
+        }
         if (runtime === 'stateful-experimental') {
           await expect.poll(async () => {
             await syncHeadlessFullBuild()
@@ -171,7 +176,11 @@ for (const runtime of ['classic', 'stateful-experimental']) {
           throw error
         })
         await dom.check(id, host, await host.currentPage())
-        await diagnostics.capture(id)
+        const runtimeState = await diagnostics.capture(id)
+        if (id === 'style-only') {
+          expect(await readFile(emittedAppScript, 'utf8')).toBe(initialAppScript)
+          expect(runtimeState.runtime).toMatchObject({ appMarkerRetained: true, pageMarkerRetained: true })
+        }
         await outputDiagnostics.capture(`${id}-passed`, loadedScript)
         process.stdout.write(`[issue-1015] ${runtime} ${id} passed\n`)
       }
