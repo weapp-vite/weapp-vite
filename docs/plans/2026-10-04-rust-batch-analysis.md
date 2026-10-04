@@ -401,3 +401,27 @@ loader 本身存在干扰。Linux 压力与零售两批的 baseline→control wa
 结果支持优先消除重复工作，并在更强 JS 基线上选择 Rust 完整计算阶段；macOS 反例意味着尚不能声称这组 JS 优化在三平台稳定获得真实页面收益。它仍只是固定选项、温热 `compileVueFile` 的 JS 诊断，不是 Vite 构建/HMR，也不是生产 10%/5% 门禁通过。宏转换、AST 所有权等优化仍只通过诊断 source loader 启用，生产源码未改。接下来应在更强 JS 基线上重新采 CPU，再决定整体 `transformScript` Rust POC 是否有足够剩余收益。
 
 预热 14 轮由源码协议和报告字段确认，未保存每轮预热原始观测；独立复核不能声称重新计数。14 轮顺序设计平衡每个实现的位置及单轮内前序，跨轮边界并非均匀。完整正确性保留原始序列化输出，计时报告保留完整比较后的摘要；源码身份覆盖声明的 230 文件和真实语料，不覆盖所有已安装依赖文件。三平台全部单项结果、反例、来源 hash 见[JS 基线采样证据](./2026-10-04-script-baseline-timing-evidence.json)。
+
+## 第十九轮：更强 JS 与 Rust 批处理组合、逐次完整编译采样
+
+新增 `scripts/optimizedCompilerAnalysis`，先安装 binding loader，再安装脚本 loader，组合原始编译器、双 loader 原逻辑控制、优化 JS、优化 JS 摘要缓存、优化 JS＋Rust 五路。生产源码、公开接口及 Rust 实现不变。复用既有 32 个脚本场景和 13 个模板场景的原始选项，五路各执行两次，共 450 次完整返回值、sourcemap、告警和公开错误对照通过。额外要求脚本正负分支、模板结果消费、独立 scoped-slot flush、JSX 同步分析和两个故障注入回退实际发生，避免未命中优化也被当作有效实验。
+
+随后在三份既有代表 SFC 上，每组独占新进程，初始编译一次、预热 14 次、采样 20 次。15 组全部通过，共 525 次完整输出校验、300 份独立原始 profile、7672 个主线程样本。各组都与原始编译器 oracle 相同；native 三语料每次仅一次调用，分别消费 724、64、34 项输入，无意外 fallback 或所有权残留。最终记录覆盖 269 份源码/配置身份，前后相同。 独立 Python 审计重算全部 7672 个原始样本，核对逐模块/函数归因、300 个窗口和 15 个 worker 生命周期均不重叠；315 次优化模式调用确实执行脚本优化，105 次 native 编译调用均命中批处理。与之前计时工具不同，本次预热逐次保留摘要；它仍不是计时实验。
+
+采样仅包围实际 `compileVueFile` 回调；输入哈希、输出序列化/对照、指标快照、原始图写盘在窗口外。每次图在该轮结束后释放，完成所有编译才读回合并。父进程重新核验 15 份 worker 报告、300 份图的 hash、顺序及不重叠区间，再从原始图重算摘要。合并结果只提供计数，没有拼接连续时间轴；原始图和完整输出保留本地，CI 只上传脱敏摘要。
+
+本地组合 Rust 路径的初步样本如下，各列均以该组所有 V8 主线程样本为分母：
+
+| 语料 | 样本数 | Babel traverse self | Babel parser self | Babel generator self | Inspector self | transformScript inclusive |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 压力模板 | 692 | 20.38% | 8.24% | 17.05% | 2.89% | 36.85% |
+| 零售详情 | 461 | 34.06% | 12.80% | 5.21% | 4.56% | 24.51% |
+| Wevu 首页 | 156 | 17.95% | 21.15% | 5.77% | 12.82% | 22.44% |
+
+`transformScript` 与 Babel 列存在栈包含关系，不能相加。V8 不能给出 Rust 内部栈、其他线程 CPU 或整个进程耗时。固定执行顺序、较高系统负载、调用间报告分配及可见 Inspector 开销限制了本轮归因，尤其 Wevu 只有 156 个样本。它仅支持继续检查脚本阶段，不提供附加 Rust 提速结论；不能将样本数减少写成耗时减少。独立 CI 三平台归因由新的可选 `optimized-compiler-cpu` 输入触发，使用独立 concurrency group，不重跑或替换已完成的固定性能验收。
+
+下一项有意义的 Rust 边界仍是整个 `transformScript`：parse、scope、改写和 generate 共享 AST。单独搬一个 visitor 或 generator 通常仍需保留 Babel 解析/生成及跨界 AST 搬运。完整阶段 POC 还必须解决已改写模板表达式的源码契约（包含原始/投影循环与条件）、Vue/Babel 宏语义、自定义 TypeScript 删除规则、注释和 sourcemap。标准 Oxc lowering 不能直接替代现有行为。应保留既有 JS fastSetup，native 一次请求完成完整阶段，unsupported/error 整段回退，并记录真实页面命中率；本轮没有实现或宣称这项完整阶段迁移。
+
+新增工具共 89 项测试、局部 TypeScript 和定向 ESLint 通过，代码按执行、正确性、采样窗口、工作负载、父进程复核分文件，均未超过 300 行。原始来源 hash、逐组计数、采样区间、环境与完整限制见[组合编译证据](./2026-10-04-optimized-compiler-evidence.json)，复现命令见[工具说明](../../scripts/optimizedCompilerAnalysis/README.md)。真实 Stable 微信开发者工具 runtime 仍未完成最终验收。
+
+同轮修复 PR CI 暴露的 `snapshotTemplates.test.ts` fixture 缺失依赖：owner 校验进入真实声明读取时需要 JSON service，现与 WXML service 一样初始化真实服务，不给生产逻辑增加可选回退。原 8 项断言、`weapp-vite` typecheck 和定向 ESLint 通过；此前 Ubuntu/Node 22 作业独跑 coverage，其他矩阵命令不同，因此不把这个失败误归为 OS 兼容性差异。
