@@ -212,3 +212,15 @@ debug/release 绑定各通过 82 项语义与边界测试，适配器 8 项测�
 本轮只有一次共享机器采样，16 个逻辑 CPU 下的 1 分钟 loadavg 为 27.1–35.0，JS 尾延迟波动明显。结果只支持继续验证该计算边界，不证明稳定倍率、整链达到 10% 门槛、RSS 降低或运行时改善。原始 90 对样本、环境、捕获/源码/二进制 hash 保存在 `2026-10-04-rust-binding-analysis-evidence.json`。
 
 提交 `f26ac58c1` 的 Native AST Analysis（run `37190452333`）在 macOS/Linux/Windows 全部通过，包括新增的 binding feature。默认导出和生产编译调用路径仍未启用这两个实验 API。
+
+## 第十轮：修复整链产物对照的 layout 归属问题
+
+原生模板的 layout sourcemap 差异已用最小测试复现。父页面通过 `prepareNormalizedEntries()` 登记共享 child 时，尚未加载的 child 临时记录携带父页面 path、JSON、模板和组件声明；production logical wrapper 在物理 child 加载前读取该记录，导致父页登记顺序决定侧车来源。4 个初始用例中，两种父登记顺序和 child 无侧车场景失败，已加载 child 场景通过。
+
+修复限定在逻辑入口的读取边界：用源码规范化身份确认 entry.path 属于 owner，相对 key 是父占位时继续查绝对 key；未加载 owner 时按现有 JSON service / Vue 配置优先级读取自己的声明。Vue 配置沿用 compilerContext、源码快照和 autoRoutes 选择规则，并登记配置源 watch。此处不写回注册表，也不递归完整 loadEntry，避免重新引入发射与自动导入生命周期。
+
+验证覆盖父顺序、缺失侧车、已加载 child、读取期间完成 child 加载、自有 usingComponents/componentGenerics、绝对 key、JSON/JSON.ts 优先级、Vue 快照和 autoRoutes。新增 13 项、现有 logical entry 8 项及邻近入口/layout 126 项测试通过；包级 typecheck、build、test:types 通过。
+
+重建 weapp-vite 后，用原生模板的真实 Vite/Rolldown 输出串行验证 4 次独立构建，native 顺序为 off→on→on→off。每次 38 个文件、9 份 map、告警完全一致；admin/default layout 的 sources 均包含自身 JSON/WXML，不再包含父 pages 文件。保留原 map 全部字段，仅规范工作目录和 JSON 键序；未删 sources/sourceContent，也不是 identity map 重放。第一次检查脚本错把虚拟 sidecar 的 `:module.js` 后缀当作物理扩展名，修正检查后重新运行到新目录，旧失败记录保留。摘要和完整文件 hash 见 `2026-10-04-rust-sidecar-ownership-evidence.json`。
+
+此轮只验证静态输出正确性，不作性能结论。原生模板历史上没有适用 native 调用，开关两侧一致也不等于 Rust 热路径覆盖。另一任务重新启动了 DevTools E2E，完整 build/HMR 配对门禁仍未重跑；此前的历史 incomplete 报告保留。此次源码行为修复添加 weapp-vite 与 create-weapp-vite 的中文 patch changeset。

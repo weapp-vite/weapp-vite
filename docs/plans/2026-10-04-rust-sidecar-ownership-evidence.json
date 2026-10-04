@@ -1,0 +1,300 @@
+{
+  "schemaVersion": 1,
+  "scope": "Static output correctness only; not performance or runtime validation",
+  "fixture": "templates/weapp-vite-template",
+  "sourceDigest": "5ee84cbbd23d89411688b50bfe17ab4a8c65ce637f36cf0c75ae98595876b252",
+  "inputDigest": "a1b70e9dff13a7311beafbe5558a82cfc6d8ce50ddbadb3944cfffd9e87fe354",
+  "binding": {
+    "identity": {
+      "index.js": "cb750236bf548c633e84116e6dc030b3bf30f7d9427f303fd54118c639a8f167",
+      "weapp_vite_ast_native.darwin-arm64.node": "ba5b8c49ec03b72e164702c37af127d96eda2ad3d8880f59489786b1937387f0"
+    },
+    "digest": "938f0c1048a8df9b49d1b8ddbbd323c0ebc5e2a683c69af2fd30022d5b3180a2",
+    "probe": "passed"
+  },
+  "reportSha256": "ddb337bc51df2d9e0450684ff5e305a525c13541810f474abd5839fb7dbb9a6e",
+  "reproduction": {
+    "tests": 4,
+    "before": {
+      "failed": 3,
+      "passed": 1
+    }
+  },
+  "verification": {
+    "ownershipTests": 8,
+    "declarationTests": 5,
+    "existingLogicalEntryTests": 8,
+    "neighboringTests": 126,
+    "packageTypecheck": "passed",
+    "packageBuild": "passed",
+    "packageTypeTests": "passed"
+  },
+  "runs": [
+    {
+      "index": 0,
+      "native": false,
+      "artifacts": {
+        "files": {
+          "app.js": "25c253cace6a0cc3089dad048e3a251483e29c8ff1b99c1162c5fb3ac4818b68",
+          "app.js.map": "e89c69bfced8c3ab2fee3da15063887de4e055d37624dc2fb804cd4f433a422a",
+          "app.json": "293ba8f004ca49c2114554278ad389f37902e8c6136bbb2f663763fbdbd3d69f",
+          "app.wxss": "f4e94d3b40cd11e695cc72f8459c022ec04703c58143cb68069ff81795d5da77",
+          "common.js": "e34245573d0511573fbfaf911cec606dacd2981358969ccff63e9a0d4e1128ed",
+          "common.js.map": "d18be34cb1cb84f4aa42cb1fea859630e418bc2299783f57d0b1f484eac77f32",
+          "components/HelloWorld/HelloWorld.js": "de25ec7dedf647d9ed4758dbe3c2701291d967bab686c349f4a58d69bbfaa5bc",
+          "components/HelloWorld/HelloWorld.js.map": "53107c1abafd9ecfb55a71c20c8a5db4d32288f19014e426975c6b8fdb169343",
+          "components/HelloWorld/HelloWorld.json": "287242f38e4987ef8f97dc020e05cce4bad0b5ccc60fef216139ec88f15825b4",
+          "components/HelloWorld/HelloWorld.wxml": "8a73c0155443271d130a14d8ebfbe6ebbf1fd03f6be0e97621be16c8af92d520",
+          "components/HelloWorld/HelloWorld.wxss": "423dab27c29b897c69911f3c51ef2442db79353ede92f56ce4dd43b5d9499e3d",
+          "layouts/admin/index.js": "261b1bf902971802c4e0f94ea3a40a46bc31fb1695fa382154974425f3380be6",
+          "layouts/admin/index.js.map": "2eb8f7a147e3f54317abeab6624a006f335281a36008d8708cbff60ab072535b",
+          "layouts/admin/index.json": "9f421750a1d3b328fdfd44ccf6528797fe5f99a088954d50e97f43bcb3da26db",
+          "layouts/admin/index.wxml": "184862c485b71ab107eea944b2274c901df65296f037d18b6a92e3a413bfcf2c",
+          "layouts/admin/index.wxss": "315f3b0c1f39d86500d9056e66e8a1ef92555e60c33f8d624c13e11b8582e092",
+          "layouts/default/index.js": "972379f00878eeedbed0a14e4cf690e6bb92d89889c7d2dd59fca72c622b23d1",
+          "layouts/default/index.js.map": "6d3c8fc6a2725d9b992dce8c352a407d5bb7d1bf371307ac8dd0216e03694b7b",
+          "layouts/default/index.json": "9f421750a1d3b328fdfd44ccf6528797fe5f99a088954d50e97f43bcb3da26db",
+          "layouts/default/index.wxml": "85b583e5488dbd54f05e6e5bfd9fee2d3942abd25048d07d8420cf4518b1f6ac",
+          "layouts/default/index.wxss": "8bcb2ef59a1f06606b2a7fa0b45d9a7822c18f5b3df9f5c047266ababecc0355",
+          "logo.png": "80a2b3ee5e2f173c56df9f242e4fcf9fb86952c1f5e5d1a14416e53d1d914ff2",
+          "pages/index/index.js": "b41c95faa22b963a3dec9660e9d8b263f33db8813bb527553eff4cbcdfa1ea2f",
+          "pages/index/index.js.map": "29d37fcd3b7232783801cdb99c95ea2e00a14b2ce6e8d08eeff7f2dc54f7e59e",
+          "pages/index/index.json": "3f8da92958ca4c5087211edbe1894d94df366fb342363e3757deb4f933f09c95",
+          "pages/index/index.wxml": "d190111ab84ba7f4c05b35f39d37349b5cd0b2c05f25c838f9345108f5a10230",
+          "pages/index/index.wxss": "f4e94d3b40cd11e695cc72f8459c022ec04703c58143cb68069ff81795d5da77",
+          "pages/layouts/index.js": "31dd95ebc6812a04957a568a7ae2110131f4ff8a859c6e552308662888136b7e",
+          "pages/layouts/index.js.map": "8298ce716707fef008571faa0d2597264c2d361ef6a0028e154fa292f6ab1de3",
+          "pages/layouts/index.json": "bee43ae14fb9f86f9913caa07a0c9d7df668dd2b7725255cdf52b2af805af2ad",
+          "pages/layouts/index.wxml": "d4c57b27426b22ff2e8596816e43a3cb6ce59d1a553ed53ea62e3b8ccce323bf",
+          "pages/layouts/index.wxss": "0a055a59c1e8c96d1876d06403287e5a3b3f7f6be86625bcea2c2836bfa196f3",
+          "sitemap.json": "333c6aa35ca29f0e9994dd599fee8cc283fca3567a2ae760909923c457e0a36d",
+          "theme.json": "cb652fb24341ed64963481131477ac7093ce5dcf68aa43205c3a705166ecd20a",
+          "weapp-vendors/api-apiCatalog.js": "151a6126477d4cc413de61eec7afd5f7a2f62dfe921225d0ba6c67e7b3290cb7",
+          "weapp-vendors/api-apiCatalog.js.map": "eb15445e485f1bd37f17531cbddf2aba56e9725427dc057422e6dcc90075138f",
+          "weapp-vendors/weapp-vite-runtime.js": "6fc75d5b610fd45b396dd8319e4ea823d678940df272322ce5b2b845889726e0",
+          "weapp-vendors/weapp-vite-runtime.js.map": "57c9958df7491c8dc220999a4edbc3aaf41ebb089818fcd330e95b6092f207a6"
+        },
+        "digest": "630fc447696a389b29d837893d7023c023695ee8be62ff1e264f0ac6ee527067",
+        "maps": 9
+      },
+      "warnings": [],
+      "layoutSources": {
+        "admin": [
+          "../../../src/layouts/admin/index.ts",
+          "../../../../../../../../../weapp-vite:sidecar:json:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.json:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:script:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.ts:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:style:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.scss:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:template:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.wxml:module.js"
+        ],
+        "default": [
+          "../../../src/layouts/default/index.ts",
+          "../../../../../../../../../weapp-vite:sidecar:json:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.json:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:script:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.ts:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:style:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.scss:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:template:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.wxml:module.js"
+        ]
+      }
+    },
+    {
+      "index": 1,
+      "native": true,
+      "artifacts": {
+        "files": {
+          "app.js": "25c253cace6a0cc3089dad048e3a251483e29c8ff1b99c1162c5fb3ac4818b68",
+          "app.js.map": "e89c69bfced8c3ab2fee3da15063887de4e055d37624dc2fb804cd4f433a422a",
+          "app.json": "293ba8f004ca49c2114554278ad389f37902e8c6136bbb2f663763fbdbd3d69f",
+          "app.wxss": "f4e94d3b40cd11e695cc72f8459c022ec04703c58143cb68069ff81795d5da77",
+          "common.js": "e34245573d0511573fbfaf911cec606dacd2981358969ccff63e9a0d4e1128ed",
+          "common.js.map": "d18be34cb1cb84f4aa42cb1fea859630e418bc2299783f57d0b1f484eac77f32",
+          "components/HelloWorld/HelloWorld.js": "de25ec7dedf647d9ed4758dbe3c2701291d967bab686c349f4a58d69bbfaa5bc",
+          "components/HelloWorld/HelloWorld.js.map": "53107c1abafd9ecfb55a71c20c8a5db4d32288f19014e426975c6b8fdb169343",
+          "components/HelloWorld/HelloWorld.json": "287242f38e4987ef8f97dc020e05cce4bad0b5ccc60fef216139ec88f15825b4",
+          "components/HelloWorld/HelloWorld.wxml": "8a73c0155443271d130a14d8ebfbe6ebbf1fd03f6be0e97621be16c8af92d520",
+          "components/HelloWorld/HelloWorld.wxss": "423dab27c29b897c69911f3c51ef2442db79353ede92f56ce4dd43b5d9499e3d",
+          "layouts/admin/index.js": "261b1bf902971802c4e0f94ea3a40a46bc31fb1695fa382154974425f3380be6",
+          "layouts/admin/index.js.map": "2eb8f7a147e3f54317abeab6624a006f335281a36008d8708cbff60ab072535b",
+          "layouts/admin/index.json": "9f421750a1d3b328fdfd44ccf6528797fe5f99a088954d50e97f43bcb3da26db",
+          "layouts/admin/index.wxml": "184862c485b71ab107eea944b2274c901df65296f037d18b6a92e3a413bfcf2c",
+          "layouts/admin/index.wxss": "315f3b0c1f39d86500d9056e66e8a1ef92555e60c33f8d624c13e11b8582e092",
+          "layouts/default/index.js": "972379f00878eeedbed0a14e4cf690e6bb92d89889c7d2dd59fca72c622b23d1",
+          "layouts/default/index.js.map": "6d3c8fc6a2725d9b992dce8c352a407d5bb7d1bf371307ac8dd0216e03694b7b",
+          "layouts/default/index.json": "9f421750a1d3b328fdfd44ccf6528797fe5f99a088954d50e97f43bcb3da26db",
+          "layouts/default/index.wxml": "85b583e5488dbd54f05e6e5bfd9fee2d3942abd25048d07d8420cf4518b1f6ac",
+          "layouts/default/index.wxss": "8bcb2ef59a1f06606b2a7fa0b45d9a7822c18f5b3df9f5c047266ababecc0355",
+          "logo.png": "80a2b3ee5e2f173c56df9f242e4fcf9fb86952c1f5e5d1a14416e53d1d914ff2",
+          "pages/index/index.js": "b41c95faa22b963a3dec9660e9d8b263f33db8813bb527553eff4cbcdfa1ea2f",
+          "pages/index/index.js.map": "29d37fcd3b7232783801cdb99c95ea2e00a14b2ce6e8d08eeff7f2dc54f7e59e",
+          "pages/index/index.json": "3f8da92958ca4c5087211edbe1894d94df366fb342363e3757deb4f933f09c95",
+          "pages/index/index.wxml": "d190111ab84ba7f4c05b35f39d37349b5cd0b2c05f25c838f9345108f5a10230",
+          "pages/index/index.wxss": "f4e94d3b40cd11e695cc72f8459c022ec04703c58143cb68069ff81795d5da77",
+          "pages/layouts/index.js": "31dd95ebc6812a04957a568a7ae2110131f4ff8a859c6e552308662888136b7e",
+          "pages/layouts/index.js.map": "8298ce716707fef008571faa0d2597264c2d361ef6a0028e154fa292f6ab1de3",
+          "pages/layouts/index.json": "bee43ae14fb9f86f9913caa07a0c9d7df668dd2b7725255cdf52b2af805af2ad",
+          "pages/layouts/index.wxml": "d4c57b27426b22ff2e8596816e43a3cb6ce59d1a553ed53ea62e3b8ccce323bf",
+          "pages/layouts/index.wxss": "0a055a59c1e8c96d1876d06403287e5a3b3f7f6be86625bcea2c2836bfa196f3",
+          "sitemap.json": "333c6aa35ca29f0e9994dd599fee8cc283fca3567a2ae760909923c457e0a36d",
+          "theme.json": "cb652fb24341ed64963481131477ac7093ce5dcf68aa43205c3a705166ecd20a",
+          "weapp-vendors/api-apiCatalog.js": "151a6126477d4cc413de61eec7afd5f7a2f62dfe921225d0ba6c67e7b3290cb7",
+          "weapp-vendors/api-apiCatalog.js.map": "eb15445e485f1bd37f17531cbddf2aba56e9725427dc057422e6dcc90075138f",
+          "weapp-vendors/weapp-vite-runtime.js": "6fc75d5b610fd45b396dd8319e4ea823d678940df272322ce5b2b845889726e0",
+          "weapp-vendors/weapp-vite-runtime.js.map": "57c9958df7491c8dc220999a4edbc3aaf41ebb089818fcd330e95b6092f207a6"
+        },
+        "digest": "630fc447696a389b29d837893d7023c023695ee8be62ff1e264f0ac6ee527067",
+        "maps": 9
+      },
+      "warnings": [],
+      "layoutSources": {
+        "admin": [
+          "../../../src/layouts/admin/index.ts",
+          "../../../../../../../../../weapp-vite:sidecar:json:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.json:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:script:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.ts:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:style:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.scss:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:template:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.wxml:module.js"
+        ],
+        "default": [
+          "../../../src/layouts/default/index.ts",
+          "../../../../../../../../../weapp-vite:sidecar:json:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.json:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:script:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.ts:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:style:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.scss:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:template:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.wxml:module.js"
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "native": true,
+      "artifacts": {
+        "files": {
+          "app.js": "25c253cace6a0cc3089dad048e3a251483e29c8ff1b99c1162c5fb3ac4818b68",
+          "app.js.map": "e89c69bfced8c3ab2fee3da15063887de4e055d37624dc2fb804cd4f433a422a",
+          "app.json": "293ba8f004ca49c2114554278ad389f37902e8c6136bbb2f663763fbdbd3d69f",
+          "app.wxss": "f4e94d3b40cd11e695cc72f8459c022ec04703c58143cb68069ff81795d5da77",
+          "common.js": "e34245573d0511573fbfaf911cec606dacd2981358969ccff63e9a0d4e1128ed",
+          "common.js.map": "d18be34cb1cb84f4aa42cb1fea859630e418bc2299783f57d0b1f484eac77f32",
+          "components/HelloWorld/HelloWorld.js": "de25ec7dedf647d9ed4758dbe3c2701291d967bab686c349f4a58d69bbfaa5bc",
+          "components/HelloWorld/HelloWorld.js.map": "53107c1abafd9ecfb55a71c20c8a5db4d32288f19014e426975c6b8fdb169343",
+          "components/HelloWorld/HelloWorld.json": "287242f38e4987ef8f97dc020e05cce4bad0b5ccc60fef216139ec88f15825b4",
+          "components/HelloWorld/HelloWorld.wxml": "8a73c0155443271d130a14d8ebfbe6ebbf1fd03f6be0e97621be16c8af92d520",
+          "components/HelloWorld/HelloWorld.wxss": "423dab27c29b897c69911f3c51ef2442db79353ede92f56ce4dd43b5d9499e3d",
+          "layouts/admin/index.js": "261b1bf902971802c4e0f94ea3a40a46bc31fb1695fa382154974425f3380be6",
+          "layouts/admin/index.js.map": "2eb8f7a147e3f54317abeab6624a006f335281a36008d8708cbff60ab072535b",
+          "layouts/admin/index.json": "9f421750a1d3b328fdfd44ccf6528797fe5f99a088954d50e97f43bcb3da26db",
+          "layouts/admin/index.wxml": "184862c485b71ab107eea944b2274c901df65296f037d18b6a92e3a413bfcf2c",
+          "layouts/admin/index.wxss": "315f3b0c1f39d86500d9056e66e8a1ef92555e60c33f8d624c13e11b8582e092",
+          "layouts/default/index.js": "972379f00878eeedbed0a14e4cf690e6bb92d89889c7d2dd59fca72c622b23d1",
+          "layouts/default/index.js.map": "6d3c8fc6a2725d9b992dce8c352a407d5bb7d1bf371307ac8dd0216e03694b7b",
+          "layouts/default/index.json": "9f421750a1d3b328fdfd44ccf6528797fe5f99a088954d50e97f43bcb3da26db",
+          "layouts/default/index.wxml": "85b583e5488dbd54f05e6e5bfd9fee2d3942abd25048d07d8420cf4518b1f6ac",
+          "layouts/default/index.wxss": "8bcb2ef59a1f06606b2a7fa0b45d9a7822c18f5b3df9f5c047266ababecc0355",
+          "logo.png": "80a2b3ee5e2f173c56df9f242e4fcf9fb86952c1f5e5d1a14416e53d1d914ff2",
+          "pages/index/index.js": "b41c95faa22b963a3dec9660e9d8b263f33db8813bb527553eff4cbcdfa1ea2f",
+          "pages/index/index.js.map": "29d37fcd3b7232783801cdb99c95ea2e00a14b2ce6e8d08eeff7f2dc54f7e59e",
+          "pages/index/index.json": "3f8da92958ca4c5087211edbe1894d94df366fb342363e3757deb4f933f09c95",
+          "pages/index/index.wxml": "d190111ab84ba7f4c05b35f39d37349b5cd0b2c05f25c838f9345108f5a10230",
+          "pages/index/index.wxss": "f4e94d3b40cd11e695cc72f8459c022ec04703c58143cb68069ff81795d5da77",
+          "pages/layouts/index.js": "31dd95ebc6812a04957a568a7ae2110131f4ff8a859c6e552308662888136b7e",
+          "pages/layouts/index.js.map": "8298ce716707fef008571faa0d2597264c2d361ef6a0028e154fa292f6ab1de3",
+          "pages/layouts/index.json": "bee43ae14fb9f86f9913caa07a0c9d7df668dd2b7725255cdf52b2af805af2ad",
+          "pages/layouts/index.wxml": "d4c57b27426b22ff2e8596816e43a3cb6ce59d1a553ed53ea62e3b8ccce323bf",
+          "pages/layouts/index.wxss": "0a055a59c1e8c96d1876d06403287e5a3b3f7f6be86625bcea2c2836bfa196f3",
+          "sitemap.json": "333c6aa35ca29f0e9994dd599fee8cc283fca3567a2ae760909923c457e0a36d",
+          "theme.json": "cb652fb24341ed64963481131477ac7093ce5dcf68aa43205c3a705166ecd20a",
+          "weapp-vendors/api-apiCatalog.js": "151a6126477d4cc413de61eec7afd5f7a2f62dfe921225d0ba6c67e7b3290cb7",
+          "weapp-vendors/api-apiCatalog.js.map": "eb15445e485f1bd37f17531cbddf2aba56e9725427dc057422e6dcc90075138f",
+          "weapp-vendors/weapp-vite-runtime.js": "6fc75d5b610fd45b396dd8319e4ea823d678940df272322ce5b2b845889726e0",
+          "weapp-vendors/weapp-vite-runtime.js.map": "57c9958df7491c8dc220999a4edbc3aaf41ebb089818fcd330e95b6092f207a6"
+        },
+        "digest": "630fc447696a389b29d837893d7023c023695ee8be62ff1e264f0ac6ee527067",
+        "maps": 9
+      },
+      "warnings": [],
+      "layoutSources": {
+        "admin": [
+          "../../../src/layouts/admin/index.ts",
+          "../../../../../../../../../weapp-vite:sidecar:json:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.json:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:script:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.ts:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:style:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.scss:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:template:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.wxml:module.js"
+        ],
+        "default": [
+          "../../../src/layouts/default/index.ts",
+          "../../../../../../../../../weapp-vite:sidecar:json:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.json:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:script:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.ts:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:style:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.scss:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:template:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.wxml:module.js"
+        ]
+      }
+    },
+    {
+      "index": 3,
+      "native": false,
+      "artifacts": {
+        "files": {
+          "app.js": "25c253cace6a0cc3089dad048e3a251483e29c8ff1b99c1162c5fb3ac4818b68",
+          "app.js.map": "e89c69bfced8c3ab2fee3da15063887de4e055d37624dc2fb804cd4f433a422a",
+          "app.json": "293ba8f004ca49c2114554278ad389f37902e8c6136bbb2f663763fbdbd3d69f",
+          "app.wxss": "f4e94d3b40cd11e695cc72f8459c022ec04703c58143cb68069ff81795d5da77",
+          "common.js": "e34245573d0511573fbfaf911cec606dacd2981358969ccff63e9a0d4e1128ed",
+          "common.js.map": "d18be34cb1cb84f4aa42cb1fea859630e418bc2299783f57d0b1f484eac77f32",
+          "components/HelloWorld/HelloWorld.js": "de25ec7dedf647d9ed4758dbe3c2701291d967bab686c349f4a58d69bbfaa5bc",
+          "components/HelloWorld/HelloWorld.js.map": "53107c1abafd9ecfb55a71c20c8a5db4d32288f19014e426975c6b8fdb169343",
+          "components/HelloWorld/HelloWorld.json": "287242f38e4987ef8f97dc020e05cce4bad0b5ccc60fef216139ec88f15825b4",
+          "components/HelloWorld/HelloWorld.wxml": "8a73c0155443271d130a14d8ebfbe6ebbf1fd03f6be0e97621be16c8af92d520",
+          "components/HelloWorld/HelloWorld.wxss": "423dab27c29b897c69911f3c51ef2442db79353ede92f56ce4dd43b5d9499e3d",
+          "layouts/admin/index.js": "261b1bf902971802c4e0f94ea3a40a46bc31fb1695fa382154974425f3380be6",
+          "layouts/admin/index.js.map": "2eb8f7a147e3f54317abeab6624a006f335281a36008d8708cbff60ab072535b",
+          "layouts/admin/index.json": "9f421750a1d3b328fdfd44ccf6528797fe5f99a088954d50e97f43bcb3da26db",
+          "layouts/admin/index.wxml": "184862c485b71ab107eea944b2274c901df65296f037d18b6a92e3a413bfcf2c",
+          "layouts/admin/index.wxss": "315f3b0c1f39d86500d9056e66e8a1ef92555e60c33f8d624c13e11b8582e092",
+          "layouts/default/index.js": "972379f00878eeedbed0a14e4cf690e6bb92d89889c7d2dd59fca72c622b23d1",
+          "layouts/default/index.js.map": "6d3c8fc6a2725d9b992dce8c352a407d5bb7d1bf371307ac8dd0216e03694b7b",
+          "layouts/default/index.json": "9f421750a1d3b328fdfd44ccf6528797fe5f99a088954d50e97f43bcb3da26db",
+          "layouts/default/index.wxml": "85b583e5488dbd54f05e6e5bfd9fee2d3942abd25048d07d8420cf4518b1f6ac",
+          "layouts/default/index.wxss": "8bcb2ef59a1f06606b2a7fa0b45d9a7822c18f5b3df9f5c047266ababecc0355",
+          "logo.png": "80a2b3ee5e2f173c56df9f242e4fcf9fb86952c1f5e5d1a14416e53d1d914ff2",
+          "pages/index/index.js": "b41c95faa22b963a3dec9660e9d8b263f33db8813bb527553eff4cbcdfa1ea2f",
+          "pages/index/index.js.map": "29d37fcd3b7232783801cdb99c95ea2e00a14b2ce6e8d08eeff7f2dc54f7e59e",
+          "pages/index/index.json": "3f8da92958ca4c5087211edbe1894d94df366fb342363e3757deb4f933f09c95",
+          "pages/index/index.wxml": "d190111ab84ba7f4c05b35f39d37349b5cd0b2c05f25c838f9345108f5a10230",
+          "pages/index/index.wxss": "f4e94d3b40cd11e695cc72f8459c022ec04703c58143cb68069ff81795d5da77",
+          "pages/layouts/index.js": "31dd95ebc6812a04957a568a7ae2110131f4ff8a859c6e552308662888136b7e",
+          "pages/layouts/index.js.map": "8298ce716707fef008571faa0d2597264c2d361ef6a0028e154fa292f6ab1de3",
+          "pages/layouts/index.json": "bee43ae14fb9f86f9913caa07a0c9d7df668dd2b7725255cdf52b2af805af2ad",
+          "pages/layouts/index.wxml": "d4c57b27426b22ff2e8596816e43a3cb6ce59d1a553ed53ea62e3b8ccce323bf",
+          "pages/layouts/index.wxss": "0a055a59c1e8c96d1876d06403287e5a3b3f7f6be86625bcea2c2836bfa196f3",
+          "sitemap.json": "333c6aa35ca29f0e9994dd599fee8cc283fca3567a2ae760909923c457e0a36d",
+          "theme.json": "cb652fb24341ed64963481131477ac7093ce5dcf68aa43205c3a705166ecd20a",
+          "weapp-vendors/api-apiCatalog.js": "151a6126477d4cc413de61eec7afd5f7a2f62dfe921225d0ba6c67e7b3290cb7",
+          "weapp-vendors/api-apiCatalog.js.map": "eb15445e485f1bd37f17531cbddf2aba56e9725427dc057422e6dcc90075138f",
+          "weapp-vendors/weapp-vite-runtime.js": "6fc75d5b610fd45b396dd8319e4ea823d678940df272322ce5b2b845889726e0",
+          "weapp-vendors/weapp-vite-runtime.js.map": "57c9958df7491c8dc220999a4edbc3aaf41ebb089818fcd330e95b6092f207a6"
+        },
+        "digest": "630fc447696a389b29d837893d7023c023695ee8be62ff1e264f0ac6ee527067",
+        "maps": 9
+      },
+      "warnings": [],
+      "layoutSources": {
+        "admin": [
+          "../../../src/layouts/admin/index.ts",
+          "../../../../../../../../../weapp-vite:sidecar:json:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.json:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:script:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.ts:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:style:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.scss:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:template:<workspace>/src/layouts/admin/index.ts:<workspace>/src/layouts/admin/index.wxml:module.js"
+        ],
+        "default": [
+          "../../../src/layouts/default/index.ts",
+          "../../../../../../../../../weapp-vite:sidecar:json:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.json:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:script:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.ts:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:style:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.scss:module.js",
+          "../../../../../../../../../weapp-vite:sidecar:template:<workspace>/src/layouts/default/index.ts:<workspace>/src/layouts/default/index.wxml:module.js"
+        ]
+      }
+    }
+  ],
+  "limitations": [
+    "These are output-correctness builds only, with no performance or runtime conclusion.",
+    "The native fixture has historically not exercised native analysis; switches are controls, not proof of native coverage.",
+    "Complete build/HMR paired acceptance awaits exclusive access while another task runs DevTools E2E.",
+    "Original generated maps are compared without deleting sources, sourcesContent or mappings; only workspace roots and JSON key order are normalized."
+  ]
+}

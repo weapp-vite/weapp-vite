@@ -13,15 +13,40 @@ import {
   resolveVirtualModuleId,
 } from '../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../moduleGraph/traversal'
-import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry, isTemplate } from '../../../utils'
+import { getSelectedAutoRouteSource } from '../../../runtime/autoRoutesPlugin/selection'
+import { extractConfigFromVue, findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry, isTemplate } from '../../../utils'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { collectComponentEntries } from '../../utils/analyze'
 import { pathExists as pathExistsCached } from '../../utils/cache'
+import { readCompilerInput } from '../../utils/sourceSnapshot'
 
 function resolveEntryRecord(state: CorePluginState, sourceId: string) {
   const relativeBase = removeExtensionDeep(state.ctx.configService.relativeAbsoluteSrcRoot(sourceId))
-  return state.entriesMap.get(relativeBase)
-    ?? state.entriesMap.get(removeExtensionDeep(sourceId))
+  const ownerId = normalizeSourceId(sourceId)
+  for (const key of [relativeBase, removeExtensionDeep(sourceId)]) {
+    const entry = state.entriesMap.get(key)
+    // 尚未加载的子入口记录可能携带父入口信息；注册身份不代表元数据归属。
+    if (entry?.path && normalizeSourceId(entry.path) === ownerId) {
+      return entry
+    }
+  }
+}
+
+async function readEntryDeclaration(state: CorePluginState, pluginContext: PluginContext, ownerId: string, jsonPath?: string) {
+  if (jsonPath) {
+    return state.ctx.jsonService.read(jsonPath)
+  }
+  const baseName = removeExtensionDeep(ownerId)
+  const vuePath = ownerId.endsWith('.vue')
+    ? ownerId
+    : getSelectedAutoRouteSource(state.ctx, baseName) ? undefined : await findVueEntry(baseName)
+  if (vuePath) {
+    pluginContext.addWatchFile(vuePath)
+    return extractConfigFromVue(vuePath, {
+      compilerContext: state.ctx,
+      readSource: () => readCompilerInput(state.ctx.configService, vuePath),
+    })
+  }
 }
 
 async function resolveLocalModule(
@@ -139,7 +164,10 @@ async function collectLogicalEntryDependencies(
     await state.ctx.wxmlService?.scan(templatePath)
   }
   dependencies.push(...collectTemplateDependencies(state, templatePath))
-  dependencies.push(...await collectComponentDependencies(state, pluginContext, ownerId, entry?.declaredJson ?? entry?.json))
+  const declaredJson = entry
+    ? entry.declaredJson ?? entry.json
+    : await readEntryDeclaration(state, pluginContext, ownerId, jsonEntry.path)
+  dependencies.push(...await collectComponentDependencies(state, pluginContext, ownerId, declaredJson))
   for (const kind of ['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
     state.ctx.moduleGraphService.replaceEntryDependencies(
       ownerId,
