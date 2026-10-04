@@ -1,0 +1,189 @@
+{
+  "kind": "read-only-hmr-production-candidate-eligibility-audit",
+  "auditedAt": "2026-10-04T16:52:17.011596+00:00",
+  "productionFixCommit": "5ece96d8bc2ff99a804b0c3acaa99de26f79fac6",
+  "previousHmrCandidateAndCollector": "8cd8b9ccf897ce7d40ada65681356093416d6fbd",
+  "remoteMainObserved": "4678a84ee45c2c561b716b9250cad599a3818947",
+  "decision": "Eligible for one fresh formal acceptance of the changed production cohort; not evidence of a performance improvement or completed issue.",
+  "cohortBoundary": "5ece96d and the observed main differ only in docs/reports. Choose one immutable candidate for this cohort; do not sample both merely because commit SHAs differ.",
+  "changedProductionBehavior": [
+    "Vite watcher ignores the exact active profile output and provider hotUpdate rejects it before read/onChange; writer and exclusion share env/config output resolution.",
+    "Auto-route watcher serving ownership survives snapshot subscribers; structural events are published once by the owning watcher, with stale-owner teardown guarded.",
+    "Snapshot routing invalidates topology/entry scan coherently; Vue snapshot buildStart now performs the same complete source/cache invalidation as watch/HMR, including deleted and recreated source."
+  ],
+  "newCommitProductFilesMatchAcceptedFunctionalEvidence": {
+    "packages/weapp-vite/src/moduleGraph/devProvider.ts": {
+      "recorded": "aa9f92b6985728de9b1fae74971d535f25f941ad56c2eba93df5e23e084268ad",
+      "committed": "aa9f92b6985728de9b1fae74971d535f25f941ad56c2eba93df5e23e084268ad",
+      "match": true
+    },
+    "packages/weapp-vite/src/moduleGraph/profileOutput.ts": {
+      "recorded": "6e4cf90e2808b3117f1c7473622d428863f26935976b0a35f202e993cce6aca9",
+      "committed": "6e4cf90e2808b3117f1c7473622d428863f26935976b0a35f202e993cce6aca9",
+      "match": true
+    },
+    "packages/weapp-vite/src/plugins/autoRoutes.ts": {
+      "recorded": "5f90fa3380545e1506e35e42c8e3ad2d09379f6f67e46ad0d2d5b65c6e6f7f7b",
+      "committed": "5f90fa3380545e1506e35e42c8e3ad2d09379f6f67e46ad0d2d5b65c6e6f7f7b",
+      "match": true
+    },
+    "packages/weapp-vite/src/plugins/vue/transform/plugin/index.ts": {
+      "recorded": "3f7ccaaa7d65c6b4d8df78ac4e9b80d8a02e766af3542a78329d735442cedb86",
+      "committed": "3f7ccaaa7d65c6b4d8df78ac4e9b80d8a02e766af3542a78329d735442cedb86",
+      "match": true
+    },
+    "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.ts": {
+      "recorded": "80ff99fa169ebffde138e2d08734e4ad9348625b65cf5c4d1936d7cdfd4cdee4",
+      "committed": "80ff99fa169ebffde138e2d08734e4ad9348625b65cf5c4d1936d7cdfd4cdee4",
+      "match": true
+    },
+    "packages/weapp-vite/src/runtime/buildPlugin/entryTopology.ts": {
+      "recorded": "0d296bce5422086c1e1a3fbd78667362b4af73bbc53569362a88efcb6c0f3e76",
+      "committed": "0d296bce5422086c1e1a3fbd78667362b4af73bbc53569362a88efcb6c0f3e76",
+      "match": true
+    },
+    "packages/weapp-vite/src/runtime/buildPlugin/service.ts": {
+      "recorded": "c5ee8bcc316d32ea57eb4fc78b1392577c638221171611fe476e18dc19ad2501",
+      "committed": "c5ee8bcc316d32ea57eb4fc78b1392577c638221171611fe476e18dc19ad2501",
+      "match": true
+    },
+    "packages/weapp-vite/src/runtime/buildPlugin/snapshotSources.ts": {
+      "recorded": "84e945d2883d059f89f884f3cac290d5ce45f0d92f061e0988221f6665ef4057",
+      "committed": "84e945d2883d059f89f884f3cac290d5ce45f0d92f061e0988221f6665ef4057",
+      "match": true
+    },
+    "packages/weapp-vite/src/utils/hmrProfile.ts": {
+      "recorded": "01d30b374d1974ac296172f76a19660f4d5429eeba9055841807bb2f8c75be82",
+      "committed": "01d30b374d1974ac296172f76a19660f4d5429eeba9055841807bb2f8c75be82",
+      "match": true
+    }
+  },
+  "formalControlDiffOldToNew": {
+    ".github/workflows/hmr-attribution-acceptance.yml": [],
+    "scripts/benchmarkTemplatesHmr": [],
+    "scripts/benchmark-templates-hmr.ts": [],
+    "scripts/performanceGate/evaluate.ts": [],
+    "scripts/performanceGate/policy.json": [],
+    "scripts/editSequence/sourceMutation.ts": [],
+    "e2e/utils/dev-process-env.ts": [],
+    "templates/weapp-vite-wevu-template": [],
+    "e2e-apps/github-issues/fixtures/issue-1134-profile": []
+  },
+  "lockfile": {
+    "oldSha256": "c3470f724491ebdd5176c23b1ee61761c858a44f48a20a813721f1ee71276145",
+    "candidateSha256": "d6ac4d79f5554cb1c02942bae5c32168717290c2497f88f5da40e5a0bafe668d",
+    "yamlDocumentCount": {
+      "old": 2,
+      "candidate": 2
+    },
+    "documents": [
+      {
+        "document": 0,
+        "changedImporters": [],
+        "packagesEqual": true,
+        "snapshotsEqual": true
+      },
+      {
+        "document": 1,
+        "changedImporters": [
+          "packages/dashboard",
+          "packages/weapp-vite"
+        ],
+        "packagesEqual": true,
+        "snapshotsEqual": true
+      }
+    ]
+  },
+  "previousFormalEvidence": {
+    "runId": 37183338392,
+    "status": "completed",
+    "conclusion": "failure",
+    "url": "https://github.com/weapp-vite/weapp-vite/actions/runs/37183338392",
+    "classic": {
+      "passed": 47,
+      "regression": 2,
+      "unstable": 3
+    },
+    "statefulExperimental": {
+      "passed": 48,
+      "regression": 3,
+      "unstable": 1
+    },
+    "preservePrimaryAndUniqueConfirmation": true,
+    "runListAudit": "HMR workflow returned only 37183338392 and 37119277774; neither targets the new production cohort. No action was dispatched by this audit."
+  },
+  "profileEvidenceLimit": {
+    "nativeViteFailedRecovery": "Custom reports/hmr-profile.jsonl reproduced feedback before fix; corrected fixture preserves 2->2 and 3->3 records, profile source events 8->0.",
+    "defaultProfile": "Old-version control using default .weapp-vite/hmr-profile.jsonl did not reproduce failed-build feedback. Existing v2 phase evidence recorded five callbacks but no extra complete builds.",
+    "causalConclusion": "Do not infer old plain-wxss/scss latency regressions were caused by self-feedback or are fixed. H1 remains insufficient; no timings were recollected."
+  },
+  "minimal1133And1134Workflow": {
+    "file": ".github/workflows/hmr-attribution-acceptance.yml",
+    "requiredInputs": {
+      "candidate-sha": "full committed SHA equal to workflow github.sha"
+    },
+    "validExampleAtObservedMain": "gh workflow run hmr-attribution-acceptance.yml --repo weapp-vite/weapp-vite --ref main -f candidate-sha=4678a84ee45c2c561b716b9250cad599a3818947",
+    "preflight": "Re-read main and existing workflow runs before dispatch; if main moves, freeze the intended cohort/ref and exact input. Do not claim --ref main can select historical 5ece96d.",
+    "baseline": "73b76f4acde84a4ac8c25f4b816119b19704ac28",
+    "runtimeMatrix": [
+      "classic",
+      "stateful-experimental"
+    ],
+    "runner": "ubuntu-24.04; Node 24.18.0; each runtime owns a separate runner; each pair runs serially on one runner",
+    "sampling": {
+      "pairs": 20,
+      "cycles": 2,
+      "thresholdPercent": 5,
+      "maxConfirmationBatches": 1,
+      "scenarioCountPerRuntime": 13,
+      "metricsPerRuntime": 52,
+      "scenarioFilterOverride": false
+    },
+    "inputs": [
+      "templates/weapp-vite-wevu-template (4 SFC scenarios)",
+      "e2e-apps/github-issues/fixtures/issue-1134-profile (9 native scenarios)"
+    ],
+    "mustRetain": [
+      "dispatch identities and clean SHAs",
+      "each checkout own install/lock hash/build logs",
+      "input files and edited source hashes",
+      "primary checkpoint samples",
+      "predeclared unique confirmation inputs and all confirmation samples",
+      "raw producer JSONL and phase matching",
+      "output scopes",
+      "errors and missing records",
+      "terminal verdict and both runtime artifacts"
+    ],
+    "scope": "HMR performance/profile only; no build/auto-import 27-shard gate, no real Stable final-runtime claim; historical stateful stages remain unknown."
+  },
+  "issue1082SeparateWorkflow": {
+    "file": ".github/workflows/nightly-performance.yml",
+    "baseline": "e7862e61dd83e3b9e356ac1e176267b31ab298af",
+    "inputsForMainOnly": {
+      "main-only": true,
+      "pr-number": "omit"
+    },
+    "command": "gh workflow run nightly-performance.yml --repo weapp-vite/weapp-vite --ref main -f main-only=true",
+    "selection": "No candidate-sha input. Planner runs only from default branch and freezes current remote main at plan time. Read plan.json to know measured SHA; github.sha is trusted driver, not a guarantee that planner-selected head is identical.",
+    "noDuplicate": "Planner reuses existing target status regardless of success/failure; collect also requires github.run_attempt==1. Never clear status or rerun jobs to bypass policy.",
+    "requiredScope": "Three OS x nine shards; build 7 pairs / HMR 20 pairs; >5% only one equal confirmation; complete identity, shard, lifecycle and sample validation required.",
+    "decision": "The production cohort is eligible as a new main target if not already sampled. A new docs-only SHA within this cohort does not establish another product change; do not repeatedly dispatch equivalent cohorts."
+  },
+  "untouched": [
+    "all baseline constants",
+    "all thresholds/sample counts/waits",
+    "issue1137 fixed samples",
+    "all frozen consumers/tarballs",
+    "root source and worktree",
+    "all runtime/E2E/IDE processes",
+    "GitHub state"
+  ],
+  "performed": "Read-only source/history/workflow/GitHub status audit plus one local JSON report; no test, build, runtime, dispatch, label or commit.",
+  "dispatchFollowupFromRoot": {
+    "candidateSha": "4678a84ee45c2c561b716b9250cad599a3818947",
+    "workflowRunId": 37218258010,
+    "ref": "main",
+    "status": "root reports dispatched and SHA verified; not yet independently read by this auditor",
+    "priorShaRefFailure": "Full SHA as workflow ref returned GitHub 422; parent retained failure. Use existing branch/tag ref and exact candidate-sha input."
+  }
+}

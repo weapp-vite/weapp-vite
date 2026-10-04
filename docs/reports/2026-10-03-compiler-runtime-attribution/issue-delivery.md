@@ -88,9 +88,9 @@ v5/v6 四类消费者均独立严格安装，并各完成五次普通构建和�
 | #1097 | 已验证实际 Vite+ runner/create；仍需最终候选运行时及跨平台矩阵收敛。缓存和 Dashboard/MCP 为 issue 明确的非阻塞增强 |
 | #1133 / #1134 | 真实输入类别的阶段归因、profile 关闭/开启产物一致性及正式样本 |
 | #1135 | 干净候选、512 SFC、14 次连续编辑的正式资源门禁与动作族回归 |
-| #1136 | 本地验收条件已满足，完成标签等待相关 CI：`434899347` 的官方 Stable 两场景、三个 page-frame 检查点与 headless 一致；七端 49 项通过原门禁，完整源码图的 5,422 个正字节模块缺链为 0；新 collector 重采的三个消费者全部产物 hash 与原 Stable 相等，未重复 runtime，身份边界见精简证据 |
+| #1136 | 已完成并核对标签；`6e6f45f83` 完整 CI 六矩阵、两组 Weapi 与消费者 68/68 通过：`434899347` 的官方 Stable 两场景、三个 page-frame 检查点与 headless 一致；七端 49 项通过原门禁，完整源码图的 5,422 个正字节模块缺链为 0；新 collector 重采的三个消费者全部产物 hash 与原 Stable 相等，未重复 runtime，身份边界见精简证据 |
 | #1137 | 普通/预设同输入的真实 Stable 60 个样本已完整采集；96 次 AppService heap 探测均明确 unsupported，内存验收仍未完成，不宣称整体收益 |
-| #1140 | 两种 `emptyOutDir` 策略已通过 headless 与 Stable 各 2 个场景、28 个检查点；生产代际边界修正已提交并推送为 `86b60ed1a`，等待相关 CI |
+| #1140 | 已完成并核对标签；两种 `emptyOutDir` 策略已通过 headless 与 Stable 各 2 个场景、28 个检查点；生产代际边界修正为 `86b60ed1a`，后续 `6e6f45f83` 完整 CI 与消费者矩阵全部通过 |
 | #1142 | 所依赖的子议题完成上述验收后再完成总跟踪项 |
 
 `Compiler and Resource Acceptance` 手动工作流要求输入完整提交 SHA，并核对实际 checkout 与 `github.sha`；分别采集七组 compiler 对照、classic/stateful 的 512 SFC 资源门禁及 mode/cache 等价性。profile 按 off/on/on/off 顺序执行两组独立对照，逐次核对真实源事件、输入、产物、runtime 语义和资源清理，默认开销门槛为 5%。原始日志与报告随工作流归档，失败和缺失证据会使 job 失败。
@@ -612,3 +612,13 @@ classic 路由目录 watcher 现在保留长期宿主的订阅与释放所有权
 Stable 纯原生 WXSS 对照仍在一次保存后保持旧颜色，App/Page 状态不变。宿主日志显示外层 WXSS 转换先于内部缓存清理约 397ms，但未直接取得旧缓存值或热更新 payload，不能据此断言唯一根因；见 [缓存顺序证据](native-wxss-cache-ordering.md)。未修改安装的 IDE，也未增加重复保存或延时绕过。
 
 #1097 的 Vite+ React 两次观察均完成功能检查，但分别与外部 E2E 重叠，不计入正式通过。随后 `wv/independent` 的 headless 1/1 用例、10/10 检查点通过；Stable 同样捕获全部 10 个检查点，却因两条未分类的 `routeDone`/`SystemError` runtime 错误使严格报告失败，且另有外部 Playwright 重叠。资源清理均无错误。正式矩阵保持 6/29；其他行继续验收，不更改完成标签。
+
+### 完成标签与最终候选的继续验证
+
+`6e6f45f836d699ea80c7fe7a12eaf8483fa6f570` 的完整 CI `37205840346` 已成功：Linux/Windows/macOS × Node 22/24 六组构建测试和两组 Weapi 均通过，另外三个 skipped 项只是工作流条件占位。相同提交的消费者 `37205633333` 为 68/68 成功。结合各自已归档的真实 Stable 证据，#1136 和 #1140 已添加并回读「已完成」标签；范围内共 41 个实际 issue，现为 31 个已完成、10 个待完成。精确 run/job 身份见 [CI 与标签记录](issue-1136-1140-ci-and-labels.json)。
+
+三项后续源码修复 `5ece96d8b` 与证据提交 `4678a84ee` 已推送 main。新提交另行启动完整 CI `37218252591` 与固定基线的 HMR 归因 `37218258010`；调度成功不等于通过。新候选包含真实生产差异，原性能基线、输入、样本数和阈值不变；不以本次修复回填旧性能结果。
+
+Vite+ React 的第三轮独立复核通过，前两次有外部 E2E 重叠的观察仍保留原结论。第三轮两 provider 各 3 用例、14 检查点通过；Stable 额外 42 次 slot 几何检查通过，运行时错误和外部重叠均为零，冻结归档及 1,735 个安装文件逐字节核对、资源清理与干净 harness 前后身份均通过。#1097 正式矩阵达到 7/29，详见 [该行验收](issue-1097-vite-plus-react-consumer-acceptance.json)。
+
+#1137 的独立原生 AppService 探针观察到 Memory 面板数值及 `performance.memory` 字段，但未取得带 target/isolate 身份的 `Runtime.getHeapUsage` 原始响应。两种读数不作替换、不回填历史样本；临时启用 Protocol Monitor 的请求仍待授权，探针项目已关闭。详见 [能力边界](issue-1137-native-memory-capability.md)。

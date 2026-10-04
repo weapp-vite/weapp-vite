@@ -1,0 +1,289 @@
+{
+  "schemaVersion": 1,
+  "issue": 1137,
+  "attempt": "native-memory-capability-01",
+  "auditedAt": "2026-10-04T16:47:03.016120+00:00",
+  "status": "native-memory-observed-formal-protocol-unverified",
+  "complete": false,
+  "scope": "Offline audit of an already completed native UI capability probe. No UI, endpoint connection, build, test, resampling, or host-setting mutation was performed by this audit.",
+  "officialStable": {
+    "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+    "queriedAt": "2026-10-04T16:29:20.725869+00:00",
+    "channel": "stable",
+    "officialVersion": "2.02.2608080",
+    "publishedDate": "2026-09-30",
+    "installedVersion": "2.02.2608080",
+    "actualIdeVersion": "2.02.2608080",
+    "actualIdeVersionBasis": "Both archived screenshots show the Stable version in the window title.",
+    "sdkVersion": "3.17.3",
+    "sdkVersionBasis": "Operator resource record; the archived screenshots and AX diffs do not independently show this field.",
+    "sdkStableChannelVerified": false
+  },
+  "frozenInput": {
+    "preset": "normal",
+    "originalAttempt": "published-stable-20261004-03",
+    "originalReportSha256": "0ca8b7273702a588a9c398eb85e1fda3452512b67c9f8b07ad1383c5e98e50ef",
+    "originalManifestExactlyMatchesProbeManifest": true,
+    "fileCount": 22,
+    "totalBytes": 212040,
+    "allCurrentProbeFilesMatchRecordedSizeAndSha256": true,
+    "manifest": [
+      {
+        "path": "app.js",
+        "bytes": 323,
+        "sha256": "245bad2aeefd456c70b194aea8d5dbe222bd687c7f1fc38a65557cd2aecb98ca"
+      },
+      {
+        "path": "app.json",
+        "bytes": 397,
+        "sha256": "c2a2925a3faa11f70959b130c670cab8d1a7e96d5df998629ae86f9ffb8c4caf"
+      },
+      {
+        "path": "app.wxss",
+        "bytes": 70,
+        "sha256": "16b58fa58e97dd279907943584436a349cd5fab38fd81ce5c586be675b5de3ca"
+      },
+      {
+        "path": "pages/detail/index.js",
+        "bytes": 3965,
+        "sha256": "1bdb76861e766e1f81dec6c671035db46b3579857acb76078cb70eb62eee93a6"
+      },
+      {
+        "path": "pages/detail/index.json",
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      {
+        "path": "pages/detail/index.wxml",
+        "bytes": 968,
+        "sha256": "e0d85af1c3b01399a2ae9bc9c159a6c02753f41b62b3dc960a2c160af0de5bb2"
+      },
+      {
+        "path": "pages/detail/index.wxss",
+        "bytes": 980,
+        "sha256": "eff37ba36a6a099cc10ce666d25645ad12c074bd1ffc6d9f638155b0b9e1fff8"
+      },
+      {
+        "path": "pages/index/index.js",
+        "bytes": 5206,
+        "sha256": "fdbe7babe55f5e76401d7a802b192c10b87b99cbb8f0eb2e07e4210d23be3d3c"
+      },
+      {
+        "path": "pages/index/index.json",
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      {
+        "path": "pages/index/index.wxml",
+        "bytes": 1877,
+        "sha256": "a4aeec031606191aca6055ce136043d503f5e81a9fb549e10f00df7fabe2ea65"
+      },
+      {
+        "path": "pages/index/index.wxss",
+        "bytes": 1564,
+        "sha256": "498e19510fe324b10b68a2070044c07949ab5e265f61746905921f286672a94c"
+      },
+      {
+        "path": "pages/update/index.js",
+        "bytes": 3357,
+        "sha256": "f28ad5f0bb892b35613b0d6df823bb26917c4f206358439d1cc5a700e0fb469a"
+      },
+      {
+        "path": "pages/update/index.json",
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      {
+        "path": "pages/update/index.wxml",
+        "bytes": 1492,
+        "sha256": "8bedf5a5e638cf7440a81a03eac163a6425f519f4bb3b9e69ed3dca825b1d827"
+      },
+      {
+        "path": "pages/update/index.wxss",
+        "bytes": 1078,
+        "sha256": "0c7e79eaf3db65798eb8a8fe9abc0415fb427ab55d2b8dc7ab19073aeec9cb1c"
+      },
+      {
+        "path": "pages/update-patch/index.js",
+        "bytes": 3404,
+        "sha256": "a69d975557fc0b848dbcca03651d326848c79804cac8c554ce5759241689a053"
+      },
+      {
+        "path": "pages/update-patch/index.json",
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      {
+        "path": "pages/update-patch/index.wxml",
+        "bytes": 1510,
+        "sha256": "f3933553d70cd70fa9dedbef4a10b4620592b9d05e02df7e0649da2846a575c4"
+      },
+      {
+        "path": "pages/update-patch/index.wxss",
+        "bytes": 1094,
+        "sha256": "51da58aee5cbb09288e33dc8ca60e44572e3102c601bb64f7143bcc622f2ac55"
+      },
+      {
+        "path": "sitemap.json",
+        "bytes": 209,
+        "sha256": "a75a85e1c797e504ce715e6db089b93b05c6476cd64a592dbb3c0745e52dd8cc"
+      },
+      {
+        "path": "theme.json",
+        "bytes": 31,
+        "sha256": "c0f5f6d289a48dff5953e0db414937529f15746da256bc8f108ec74fbdcc71d2"
+      },
+      {
+        "path": "weapp-vendors/wevu-runtime.js",
+        "bytes": 184507,
+        "sha256": "9ffce99c12e10aecc603adabd36ddd7291d33207e7de5f061a85fe3c3d064081"
+      }
+    ],
+    "excludedFromFrozenManifest": [
+      "project.config.json",
+      "project.private.config.json"
+    ],
+    "exclusionMeaning": "The 22-file equivalence covers frozen application outputs, not the separate IDE project configuration."
+  },
+  "targetIdentity": {
+    "source": "console-heap.png",
+    "checkedBy": "Visual inspection of the archived Console response.",
+    "urlHostClass": "loopback",
+    "urlPathPattern": "/appservice/<session>/<session-context>/mainframe",
+    "pathPatternIsRedacted": true,
+    "exactMachinePortAndSessionNotPublished": true,
+    "routeExpression": "getCurrentPages().map(p => p.route)",
+    "routes": [
+      "pages/index/index"
+    ],
+    "nativeProtocolTargetId": null,
+    "nativeProtocolIsolateId": null,
+    "boundary": "The Console is in the benchmark AppService mainframe. This alone does not bind the Memory row to a captured native protocol target or isolate."
+  },
+  "memoryPanel": {
+    "archivedAxSelectedVmRow": {
+      "displayedHeap": "30.2 MB",
+      "displayedRate": "increasing by 2.4 kB per second",
+      "endpointMatchesConsoleOrigin": true,
+      "basis": "memory.ax.txt contains the selected VM row and its local origin."
+    },
+    "archivedAxAggregate": {
+      "label": "Total JS heap size",
+      "displayedValue": "30.2 MB",
+      "usedAsTargetHeap": false
+    },
+    "operatorRecordedRange": "30.1–30.6 MB",
+    "operatorRecordedVmCount": 1,
+    "fullRangeAndVmCountIndependentlyArchived": false,
+    "screenshotContainsNumericalVmRow": false,
+    "screenshotBoundary": "memory.png shows the Memory tab and profiling type controls; the VM selector and numerical row are outside its captured visible area.",
+    "growthOrLeakConclusion": null
+  },
+  "nativeConsoleMemory": {
+    "source": "performance.memory in the visually verified AppService mainframe",
+    "usedJSHeapSize": 52304782,
+    "totalJSHeapSize": 54255190,
+    "units": "bytes",
+    "finiteNonnegativeUsedNotGreaterThanTotal": true,
+    "screenshotValuesMatchResourceRecord": true,
+    "formalRuntimeGetHeapUsageResponse": false,
+    "sampleTimestampCapturedWithValues": false,
+    "workloadBeforeAfterPair": false
+  },
+  "protocolMonitor": {
+    "operatorRecordedInitiallyEnabled": false,
+    "archivedSettingAxContainsCheckboxValue": false,
+    "archivedSettingAxShows": "Experiments tab focus only; the file is an AX diff.",
+    "operatorRecordedSettingChanged": false,
+    "authorizationStatusAtProbeClose": "pending",
+    "nativeRuntimeGetHeapUsageRawResponseCaptured": false
+  },
+  "cleanup": {
+    "basis": "Operator resources.json; this offline audit did not reconnect to ports or inspect live windows.",
+    "startedAt": "2026-10-04T16:29:20.758590+00:00",
+    "closedAt": "2026-10-04T16:38:02.365875+00:00",
+    "selectedCliCloseExitCode": 0,
+    "ownedProjectEndpointRecordedClosed": true,
+    "sharedHostRecordedPreserved": true,
+    "sharedProxyRecordedPreserved": true,
+    "errors": []
+  },
+  "capabilityAssessment": {
+    "targetAppServicePerformanceMemoryNumbersObserved": true,
+    "nativeMemoryPanelSelectedVmDisplayObserved": true,
+    "nativeRuntimeGetHeapUsageCapabilityVerified": false,
+    "nativeExternalProtocolEndpointVerified": false,
+    "memoryPanelAndPerformanceMemoryEquivalent": null,
+    "differenceComputed": false,
+    "gcOrAllocationSamplingRecorded": false,
+    "hostWideHeapImpossibilityEstablished": false,
+    "benchmarkMemoryAcceptanceComplete": false,
+    "issueMayBeMarkedComplete": false
+  },
+  "unchangedHistoricalEvidence": {
+    "attempt": "published-stable-20261004-03",
+    "normalSamples": 30,
+    "performanceSamples": 30,
+    "unsupportedAutomatorHeapProbes": 96,
+    "automatorReason": "protocol-unimplemented",
+    "samplesBackfilledOrRelabeled": false,
+    "firstScreenAndNavigationFirstCommitRemainNull": true,
+    "visiblePhaseRemainsNull": true,
+    "workerRssSubstituted": false
+  },
+  "limitations": [
+    "Memory panel and performance.memory were observed at different times and may have different measurement semantics. Neither equality nor a numerical delta is claimed.",
+    "Rounded panel values and an unsynchronized Console expression are capability observations, not the benchmark collector contract Runtime.getHeapUsage usedSize/totalSize.",
+    "Console context identity does not prove app-only heap attribution; SDK, runtime, and other code in the same V8 isolate may contribute.",
+    "AX captures are diffs. The archived selected row is independently readable, while the full value range, VM count, SDK version, experiment state, and cleanup depend on the operator resource record.",
+    "Opening debugger panels and evaluating the diagnostic expression can change the observed process. This run supplies no synchronized before/after workload samples or preset benefit estimate.",
+    "No raw screenshots are included in the public report because they include unrelated host UI and an avatar; numerical evidence is transcribed with source digests and the absent Memory numerical screenshot is explicitly recorded."
+  ],
+  "nextEvidenceNeeded": [
+    "If the already requested temporary experiment change is authorized, capture the full accessibility tree and original setting before changing it; restore the exact setting and close only the owned probe project afterward.",
+    "Capture native Memory polling Runtime.getHeapUsage request/response with native target, isolate identity, and timestamps bound to the verified AppService; retain raw usedSize/totalSize or the actual protocol error.",
+    "Record a successful native response as a separate capability result. Do not backfill frozen timing runs or change historical unsupported probes."
+  ],
+  "privateEvidenceDigests": {
+    "before.ax.txt": {
+      "bytes": 83,
+      "sha256": "d0d86506617282051be052cdd99be79285c78e77d42ac6ba61ea54861dac2972"
+    },
+    "console-heap.ax.txt": {
+      "bytes": 350,
+      "sha256": "af069863aafd185c967acd95ab9651aae77e9e022757ff62e901752f5300bff7"
+    },
+    "console-heap.png": {
+      "bytes": 557619,
+      "sha256": "8a7954f2102e9209d01d17f1f2e31cd7729a4b6c42ddf1f042a9556b7c766e1d"
+    },
+    "memory.ax.txt": {
+      "bytes": 1069,
+      "sha256": "72407ca388784ed86f56a30f52f6a0a726fc05759c47c482500c8b4e5bc7d468"
+    },
+    "memory.png": {
+      "bytes": 518784,
+      "sha256": "e8e8878f8ce95558ab482d2777abe3635a62aa261e73e89c89b2f012e779b82a"
+    },
+    "official-stable.json": {
+      "bytes": 1770,
+      "sha256": "4dba9bae537bb7a2897082e6527ccfa961a34c64631d3217a638c6275222499b"
+    },
+    "preflight-processes.json": {
+      "bytes": 820666,
+      "sha256": "9638d8e012224955b8489256b27ab1bba38e9b1dba062ee8bf23293692dfb45c"
+    },
+    "protocol-command.ax.txt": {
+      "bytes": 393,
+      "sha256": "0b85c7544f26fc72149e458f58b3e1f1cfe847a4dddc062156e3ea721683ebec"
+    },
+    "protocol-setting.ax.txt": {
+      "bytes": 430,
+      "sha256": "b8bf6ea02d384eed82c8279f73da2ef66ef5afac091afb11ef6c84ed38d5715a"
+    },
+    "resources.json": {
+      "bytes": 6710,
+      "sha256": "d19d822e588947644fd356a8af03834dc68f8244a68307e1e78c84a6812bc32a"
+    }
+  }
+}
