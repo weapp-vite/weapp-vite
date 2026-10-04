@@ -6,7 +6,7 @@ import AppEmptyState from './AppEmptyState.vue'
 import AppMetricTile from './AppMetricTile.vue'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
 import AppSurfaceCard from './AppSurfaceCard.vue'
-import DashboardIcon from './DashboardIcon.vue'
+import AppToolButton from './AppToolButton.vue'
 
 const props = defineProps<{
   digest: RuntimeIncidentDigest
@@ -79,20 +79,16 @@ onBeforeUnmount(() => {
     icon-name="metric-quality"
   >
     <template #header>
-      <div class="flex shrink-0 items-center gap-2">
+      <div class="flex min-w-0 flex-wrap items-center justify-end gap-2">
         <span v-if="copyStatus" class="text-xs font-medium text-(--dashboard-accent)">
           {{ copyStatus }}
         </span>
-        <button
-          type="button"
-          class="inline-flex h-8 items-center gap-1.5 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-xs text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none"
+        <AppToolButton
+          label="复制运行时异常摘要"
+          icon-name="metric-copy"
+          touch-label="复制"
           @click="copyDigestReport"
-        >
-          <span class="h-3.5 w-3.5">
-            <DashboardIcon name="metric-copy" />
-          </span>
-          复制
-        </button>
+        />
       </div>
     </template>
 

@@ -3,7 +3,7 @@ import type { AnalyzeActionCenterItem, DashboardMetricCard, LargestFileEntry, Pa
 import { computed, shallowRef, useId } from 'vue'
 import { useAnalyzeOverviewPanel } from '../composables/useAnalyzeOverviewPanel'
 import { formatBytes } from '../utils/format'
-import DashboardIcon from './DashboardIcon.vue'
+import AppToolButton from './AppToolButton.vue'
 import DashboardMetricGrid from './DashboardMetricGrid.vue'
 import ReleaseGatePanel from './ReleaseGatePanel.vue'
 
@@ -66,16 +66,12 @@ function handleSizeDetailsToggle(event: Event) {
         <h2 class="text-base font-semibold text-(--dashboard-text)">
           优先处理
         </h2>
-        <button
-          type="button"
-          class="inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm text-(--dashboard-text-soft) hover:bg-(--dashboard-panel-muted) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+        <AppToolButton
+          label="复制评审摘要"
+          icon-name="metric-copy"
+          touch-label="复制"
           @click="emit('copyReport')"
-        >
-          <span class="h-4 w-4" aria-hidden="true">
-            <DashboardIcon name="metric-copy" />
-          </span>
-          复制评审摘要
-        </button>
+        />
       </div>
 
       <p v-if="visibleActions.length === 0" class="py-3 text-sm leading-6 text-(--dashboard-text-soft)">
@@ -114,13 +110,14 @@ function handleSizeDetailsToggle(event: Event) {
         @click="showAllActions = !showAllActions"
       >
         {{ showAllActions ? '收起为前 3 项' : `查看全部 ${actionItems.length} 项` }}
-        <span class="iconify mdi--chevron-down size-4" :class="{ 'rotate-180': showAllActions }" aria-hidden="true" />
+        <span class="icon-[mdi--chevron-down] size-4" :class="{ 'rotate-180': showAllActions }" aria-hidden="true" />
       </button>
     </section>
 
     <div class="min-w-0 divide-y divide-(--dashboard-border) border-t border-(--dashboard-border)">
-      <details class="min-w-0">
-        <summary class="min-h-11 cursor-pointer rounded-sm px-1 py-3 text-sm font-medium text-(--dashboard-text-muted) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)">
+      <details class="group min-w-0">
+        <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-sm px-1 py-3 text-sm font-medium text-(--dashboard-text-muted) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)">
+          <span class="icon-[mdi--chevron-right] size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
           全部指标
         </summary>
         <div class="px-1 pt-1 pb-5">
@@ -128,8 +125,9 @@ function handleSizeDetailsToggle(event: Event) {
         </div>
       </details>
 
-      <details class="min-w-0" @toggle="handleSizeDetailsToggle">
-        <summary class="min-h-11 cursor-pointer rounded-sm px-1 py-3 text-sm font-medium text-(--dashboard-text-muted) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)">
+      <details class="group min-w-0" @toggle="handleSizeDetailsToggle">
+        <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-sm px-1 py-3 text-sm font-medium text-(--dashboard-text-muted) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)">
+          <span class="icon-[mdi--chevron-right] size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
           体积明细
         </summary>
         <div v-if="sizeDetailsOpen" class="grid min-w-0 items-start gap-6 px-1 pt-1 pb-5 lg:grid-cols-2">

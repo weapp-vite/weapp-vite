@@ -64,12 +64,15 @@ const activeFilterSummary = computed(() => [
     </p>
 
     <details class="group" :open="Boolean(activeFilterSummary)">
-      <summary class="flex min-h-11 cursor-pointer list-none flex-wrap items-center gap-2 rounded-md px-1 text-sm text-(--dashboard-text-muted) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent)">
-        <span class="iconify mdi--chevron-right size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
-        更多筛选
-        <span v-if="activeFilterSummary" class="text-(--dashboard-accent)">{{ activeFilterSummary }}</span>
+      <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2 text-sm text-(--dashboard-text-muted) hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)">
+        <span class="icon-[mdi--filter-outline] size-4 shrink-0" aria-hidden="true" />
+        <span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+          <span>更多筛选</span>
+          <span v-if="activeFilterSummary" class="text-(--dashboard-accent) [overflow-wrap:anywhere]">{{ activeFilterSummary }}</span>
+        </span>
+        <span class="icon-[mdi--chevron-right] size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
       </summary>
-      <div class="grid gap-3 pb-2 md:grid-cols-3">
+      <div class="grid gap-3 pt-2 pb-2 md:grid-cols-3">
         <AppSelect
           :model-value="eventKindFilter"
           :options="eventKindOptions"

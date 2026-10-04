@@ -6,6 +6,7 @@ import { formatBytes } from '../utils/format'
 import AppCompactListItem from './AppCompactListItem.vue'
 import AppEmptyState from './AppEmptyState.vue'
 import AppSelect from './AppSelect.vue'
+import AppToolButton from './AppToolButton.vue'
 
 type ModuleSourceFilter = 'all' | ModuleSourceType
 type ModuleSortMode = 'saving' | 'size' | 'duplicates' | 'source'
@@ -147,7 +148,7 @@ onBeforeUnmount(() => {
 <template>
   <section class="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-3 shadow-(--dashboard-shadow)">
     <div class="mb-2 flex items-center justify-between gap-3">
-      <div>
+      <div class="min-w-0">
         <h3 class="text-sm font-semibold text-(--dashboard-text)">
           文件详情
         </h3>
@@ -162,22 +163,22 @@ onBeforeUnmount(() => {
         <span v-if="actionStatus" class="text-xs font-medium text-(--dashboard-accent)">
           {{ actionStatus }}
         </span>
-        <button
-          type="button"
-          class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
-          :disabled="selectedFileModuleItems.length === 0"
-          @click="copyModuleReport"
-        >
-          复制模块
-        </button>
-        <button
-          type="button"
-          class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
-          :disabled="selectedFileModuleItems.length === 0"
-          @click="exportModuleJson"
-        >
-          导出 JSON
-        </button>
+        <div class="flex shrink-0 flex-nowrap items-center gap-2">
+          <AppToolButton
+            label="复制文件模块明细"
+            icon-name="metric-copy"
+            touch-label="复制"
+            :disabled="selectedFileModuleItems.length === 0"
+            @click="copyModuleReport"
+          />
+          <AppToolButton
+            label="导出文件模块 JSON"
+            icon-name="metric-entries"
+            touch-label="导出"
+            :disabled="selectedFileModuleItems.length === 0"
+            @click="exportModuleJson"
+          />
+        </div>
       </div>
       <input
         v-model="moduleQuery"

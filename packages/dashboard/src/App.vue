@@ -36,6 +36,12 @@ const pageMeta = computed<DashboardTitleBlock>(() => {
       description: currentAnalyzeView.value.description,
     }
   }
+  if (route.path === '/tokens') {
+    return {
+      title: '界面样式预览',
+      description: '仅供 Dashboard 开发调试，检查主题颜色、界面样式和组件状态。',
+    }
+  }
   const navigationItem = workspaceNavigation.find(item => item.to === route.path) ?? workspaceNavigation[0]!
   return {
     title: navigationItem.label,

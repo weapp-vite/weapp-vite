@@ -88,7 +88,7 @@ function handleSideTabKeydown(event: KeyboardEvent) {
         :aria-controls="toolsId"
         @click="toolsOpen = !toolsOpen"
       >
-        <span class="iconify mdi--chevron-right size-4 shrink-0" :class="{ 'rotate-90': toolsOpen }" aria-hidden="true" />
+        <span class="icon-[mdi--chevron-right] size-4 shrink-0" :class="{ 'rotate-90': toolsOpen }" aria-hidden="true" />
         处理清单与历史对比
         <span v-if="workQueueItems.length" class="tabular-nums">（{{ workQueueItems.length }} 项）</span>
       </button>

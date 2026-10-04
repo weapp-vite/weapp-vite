@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, shallowRef, watch } from 'vue'
+import AppToolButton from './AppToolButton.vue'
 import DashboardIcon from './DashboardIcon.vue'
 
 interface AnalyzeDraggableGridItem {
@@ -105,18 +106,14 @@ watch(
             <DashboardIcon name="metric-drag" />
           </span>
         </button>
-        <button
+        <AppToolButton
           v-if="orderedItems.length > 1 && item.id === orderedItems[0]?.id"
-          class="absolute right-2 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-strong) text-(--dashboard-text-soft) shadow-(--dashboard-shadow) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
-          type="button"
-          aria-label="重置模块布局"
-          title="重置模块布局"
+          class="absolute right-2 shadow-(--dashboard-shadow)"
+          label="重置模块布局"
+          icon-name="metric-reset"
+          touch-label="重置"
           @click="resetOrder"
-        >
-          <span class="h-4 w-4" aria-hidden="true">
-            <DashboardIcon name="metric-reset" />
-          </span>
-        </button>
+        />
       </div>
       <div class="min-h-0 min-w-0 max-w-full">
         <slot :name="item.id" :item="item" />

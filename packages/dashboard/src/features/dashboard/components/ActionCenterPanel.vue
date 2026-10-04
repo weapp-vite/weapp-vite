@@ -6,7 +6,7 @@ import { surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 import AppSelect from './AppSelect.vue'
-import DashboardIcon from './DashboardIcon.vue'
+import AppToolButton from './AppToolButton.vue'
 
 const props = defineProps<{
   actions: AnalyzeActionCenterItem[]
@@ -46,16 +46,12 @@ const advancedFilterSummary = computed(() => [
   <section :class="surfaceStyles({ padding: 'md' })" class="grid min-h-0 min-w-0 content-start gap-3">
     <AppPanelHeader icon-name="metric-health" title="问题中心">
       <template #meta>
-        <button
-          type="button"
-          class="inline-flex items-center gap-1.5 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 py-1 text-[11px] text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
+        <AppToolButton
+          label="复制 PR 报告"
+          icon-name="metric-copy"
+          touch-label="复制"
           @click="emit('copyReport')"
-        >
-          <span class="h-3.5 w-3.5">
-            <DashboardIcon name="metric-copy" />
-          </span>
-          复制 PR 报告
-        </button>
+        />
       </template>
     </AppPanelHeader>
 
@@ -73,12 +69,15 @@ const advancedFilterSummary = computed(() => [
         >
       </div>
       <details class="group" :open="Boolean(advancedFilterSummary)">
-        <summary class="flex min-h-11 cursor-pointer list-none flex-wrap items-center gap-2 rounded-md px-1 text-sm text-(--dashboard-text-muted) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent)">
-          <span class="iconify mdi--chevron-right size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
-          筛选与排序
-          <span v-if="advancedFilterSummary" class="text-(--dashboard-accent)">{{ advancedFilterSummary }}</span>
+        <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2 text-sm text-(--dashboard-text-muted) hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)">
+          <span class="icon-[mdi--filter-outline] size-4 shrink-0" aria-hidden="true" />
+          <span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+            <span>筛选与排序</span>
+            <span v-if="advancedFilterSummary" class="text-(--dashboard-accent) [overflow-wrap:anywhere]">{{ advancedFilterSummary }}</span>
+          </span>
+          <span class="icon-[mdi--chevron-right] size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
         </summary>
-        <div class="grid gap-2 pb-2 md:grid-cols-3">
+        <div class="grid gap-2 pt-2 pb-2 md:grid-cols-3">
           <AppSelect
             v-model="actionToneFilter"
             label="按严重度筛选"

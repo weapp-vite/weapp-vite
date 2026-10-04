@@ -2,7 +2,7 @@
 import type { ReleaseGateSummary } from '../utils/releaseGate'
 import { computed } from 'vue'
 import { surfaceStyles } from '../utils/styles'
-import DashboardIcon from './DashboardIcon.vue'
+import AppToolButton from './AppToolButton.vue'
 
 const props = defineProps<{
   gate: ReleaseGateSummary
@@ -54,16 +54,12 @@ function getStatusClassName(status: ReleaseGateSummary['status']) {
         <span role="status" class="text-sm text-(--dashboard-accent)">
           {{ copyStatus }}
         </span>
-        <button
-          type="button"
-          class="inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm text-(--dashboard-text-soft) hover:bg-(--dashboard-panel-muted) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+        <AppToolButton
+          label="复制构建结论"
+          icon-name="metric-copy"
+          touch-label="复制"
           @click="emit('copy')"
-        >
-          <span class="h-4 w-4" aria-hidden="true">
-            <DashboardIcon name="metric-copy" />
-          </span>
-          复制结论
-        </button>
+        />
       </div>
     </div>
 

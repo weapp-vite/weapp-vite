@@ -35,7 +35,6 @@ export const workspaceNavigation: DashboardNavItem[] = [
     })),
   },
   { to: '/activity', label: '运行事件', caption: '查看构建、热更新、命令和错误记录。', iconName: 'nav-activity' },
-  { to: '/tokens', label: '界面调试', caption: '检查主题颜色、界面样式和组件状态。', iconName: 'nav-tokens' },
 ]
 
 export const workspaceHighlights: DashboardIconFeatureItem[] = [

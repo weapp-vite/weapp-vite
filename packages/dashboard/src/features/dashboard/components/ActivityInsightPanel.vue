@@ -29,7 +29,7 @@ defineProps<{
 
     <details class="group min-w-0" :open="incidentDigest.status === 'critical' || incidentDigest.status === 'warning'">
       <summary class="flex min-h-11 cursor-pointer list-none flex-wrap items-center gap-2 rounded-md px-2 text-sm text-(--dashboard-text-muted) hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent)">
-        <span class="iconify mdi--chevron-right size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
+        <span class="icon-[mdi--chevron-right] size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
         当前筛选的运行异常
         <span class="text-(--dashboard-text)">{{ selectedEvent ? incidentDigest.statusLabel : '暂无可判断的事件' }}</span>
       </summary>
@@ -38,7 +38,7 @@ defineProps<{
 
     <details class="group min-w-0">
       <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md px-2 text-sm text-(--dashboard-text-muted) hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent)">
-        <span class="iconify mdi--chevron-right size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
+        <span class="icon-[mdi--chevron-right] size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
         事件统计与诊断
       </summary>
       <div class="grid min-w-0 gap-3 pt-2">

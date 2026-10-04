@@ -6,6 +6,7 @@ import { copyText } from '../utils/clipboard'
 import AppCompactListItem from './AppCompactListItem.vue'
 import AppEmptyState from './AppEmptyState.vue'
 import AppSelect from './AppSelect.vue'
+import AppToolButton from './AppToolButton.vue'
 
 type FileTypeFilter = 'all' | LargestFileEntry['type']
 type FileSortMode = 'size' | 'compressed' | 'delta' | 'modules' | 'name'
@@ -141,7 +142,7 @@ onBeforeUnmount(() => {
 <template>
   <section class="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-3 shadow-(--dashboard-shadow)">
     <div class="mb-2 flex items-center justify-between gap-3">
-      <div>
+      <div class="min-w-0">
         <h3 class="text-sm font-semibold text-(--dashboard-text)">
           Top Files
         </h3>
@@ -156,22 +157,22 @@ onBeforeUnmount(() => {
         <span v-if="actionStatus" class="text-xs font-medium text-(--dashboard-accent)">
           {{ actionStatus }}
         </span>
-        <button
-          type="button"
-          class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
-          :disabled="largestFileItems.length === 0"
-          @click="copyFileReport"
-        >
-          复制文件
-        </button>
-        <button
-          type="button"
-          class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
-          :disabled="largestFileItems.length === 0"
-          @click="exportFileJson"
-        >
-          导出 JSON
-        </button>
+        <div class="flex shrink-0 flex-nowrap items-center gap-2">
+          <AppToolButton
+            label="复制文件数据"
+            icon-name="metric-copy"
+            touch-label="复制"
+            :disabled="largestFileItems.length === 0"
+            @click="copyFileReport"
+          />
+          <AppToolButton
+            label="导出文件 JSON"
+            icon-name="metric-entries"
+            touch-label="导出"
+            :disabled="largestFileItems.length === 0"
+            @click="exportFileJson"
+          />
+        </div>
       </div>
       <input
         v-model="fileQuery"

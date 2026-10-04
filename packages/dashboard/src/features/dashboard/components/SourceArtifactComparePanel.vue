@@ -9,6 +9,7 @@ import { createSourceCompareInsights, createSourceCompareReport, formatSignedByt
 import AppEmptyState from './AppEmptyState.vue'
 import AppMetricTile from './AppMetricTile.vue'
 import AppSelect from './AppSelect.vue'
+import AppToolButton from './AppToolButton.vue'
 
 const props = defineProps<{
   activeFileKey: string | null
@@ -120,7 +121,7 @@ onBeforeUnmount(() => {
   <section class="grid min-h-0 min-w-0 gap-3 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-3 shadow-(--dashboard-shadow) xl:h-full xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
     <div class="grid gap-3">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div class="min-w-0">
           <h2 class="text-lg font-semibold text-(--dashboard-text)">
             源码对比
           </h2>
@@ -128,26 +129,26 @@ onBeforeUnmount(() => {
             {{ statusText }}
           </p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex min-w-0 flex-wrap items-center gap-2">
           <span v-if="copyStatus" class="text-xs font-medium text-(--dashboard-accent)">
             {{ copyStatus }}
           </span>
-          <button
-            type="button"
-            class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
-            :disabled="!compareStats"
-            @click="copyCompareReport"
-          >
-            复制摘要
-          </button>
-          <button
-            type="button"
-            class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
-            :disabled="loading || !selectedArtifactKey || !selectedSourcePath"
-            @click="loadComparison"
-          >
-            刷新
-          </button>
+          <div class="flex shrink-0 flex-nowrap items-center gap-2">
+            <AppToolButton
+              label="复制源码对比摘要"
+              icon-name="metric-copy"
+              touch-label="复制"
+              :disabled="!compareStats"
+              @click="copyCompareReport"
+            />
+            <AppToolButton
+              label="刷新源码对比"
+              icon-name="metric-reset"
+              touch-label="刷新"
+              :disabled="loading || !selectedArtifactKey || !selectedSourcePath"
+              @click="loadComparison"
+            />
+          </div>
         </div>
       </div>
       <div class="grid gap-2 lg:grid-cols-2">
