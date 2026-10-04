@@ -14,7 +14,11 @@
 
 每个正式样本结束后在计时之外原子保存 `runtime-bench-evidence.json`，预热不进入正式样本。中途失败的已完成样本、完整输出清单、采集错误和宿主清理错误随最终报告归档。采样、内存或清理不完整时保留本次消费者目录，并在本机诊断输出打印位置；归档失败也保留目录。只有完整报告先成功归档且所有验收证据齐全后才删除本次消费者，成功关闭宿主之后才发布 worker 结果。
 
+会话恢复前将失败的样本名称、attempt 和原因写入 `attemptFailures` 与 `failures`。恢复后的样本可以继续留作诊断，但存在失败尝试的整轮结果仍为 failed，不能用替代样本生成通过的性能结论。
+
 首屏与详情导航的 `firstCommitMs` / `firstCommitMsMedian` 保持 null；ready marker 和包含固定等待的 wall time 不代表首个 host commit。更新场景继续独立保存宿主提交阶段与 DOM 可见观测，不改变工作负载、预热次数、正式采样次数或计时边界。
+
+首屏与详情导航同时核对实际路由、可见节点、页面专属 `readyMarker` 和有限非负的 `loadToReadyMs`。两页共用的 DOM id 不能单独证明导航成功；页面方法返回空对象或缺失 ready 指标时本轮失败，不将缺失值记录成通过的样本。
 
 ```sh
 pnpm vitest run -c e2e/scripts/runtimeBench/vitest.config.ts

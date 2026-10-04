@@ -11,6 +11,7 @@ export interface BenchWorkerEvidence {
     sample: BenchUpdateSample | NonNullable<BenchScenarioSummary['samples']>[number]
   }>
   failures: string[]
+  attemptFailures: Array<{ attempt: number, label: string, error: string }>
   cleanupErrors: string[]
   metadata?: Pick<WorkerResult, 'runtime' | 'artifact'>
   result?: WorkerResult
@@ -25,7 +26,7 @@ export function describeBenchError(error: unknown): string {
 
 /** 每次完成样本后原子落盘；后续场景失败不会丢失先前原始观测。 */
 export function createBenchEvidence(filePath: string) {
-  const evidence: BenchWorkerEvidence = { schemaVersion: 1, status: 'running', samples: [], failures: [], cleanupErrors: [] }
+  const evidence: BenchWorkerEvidence = { schemaVersion: 1, status: 'running', samples: [], failures: [], attemptFailures: [], cleanupErrors: [] }
   const save = async () => {
     await fs.mkdir(path.dirname(filePath), { recursive: true })
     const temporaryPath = `${filePath}.tmp`
@@ -44,6 +45,12 @@ export function createBenchEvidence(filePath: string) {
       if (!evidence.cleanupErrors.includes(message)) {
         evidence.cleanupErrors.push(message)
       }
+      await save()
+    },
+    async onRetry({ attempt, error, label }: { attempt: number, error: unknown, label: string }) {
+      const message = describeBenchError(error)
+      evidence.attemptFailures.push({ attempt, label, error: message })
+      evidence.failures.push(`${label}, attempt ${attempt}: ${message}`)
       await save()
     },
   }
@@ -72,11 +79,14 @@ export async function finishBenchEvidence(
       errors.push(error)
       await journal.onCleanupError(error)
     }
-    journal.evidence.status = errors.length || journal.evidence.cleanupErrors.length ? 'failed' : 'passed'
+    journal.evidence.status = errors.length || journal.evidence.failures.length || journal.evidence.cleanupErrors.length ? 'failed' : 'passed'
     await journal.save()
   }
   if (!errors.length && journal.evidence.cleanupErrors.length) {
     errors.push(new Error(`Benchmark resource cleanup failed: ${journal.evidence.cleanupErrors.join('; ')}`))
+  }
+  if (!errors.length && journal.evidence.failures.length) {
+    errors.push(new Error(`Benchmark contains failed attempts: ${journal.evidence.failures.join('; ')}`))
   }
   if (errors.length) {
     throw new AggregateError(errors, 'Runtime benchmark failed; inspect worker evidence')

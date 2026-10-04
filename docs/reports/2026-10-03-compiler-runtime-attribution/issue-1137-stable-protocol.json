@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "issue": 1137,
+  "scope": "Stable Page.callMethod asynchronous-result compatibility; diagnostic regression only",
+  "officialChannelEvidence": {
+    "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+    "queriedAt": "2026-10-04T12:18:27.916667+00:00",
+    "channel": "stable",
+    "version": "2.02.2608080",
+    "releaseDate": "2026-09-30"
+  },
+  "sourceIdentity": {
+    "baseCommit": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+    "beforeConnectionSourceSha256": "f96d71b80029f6e3c3a9b132ba118ce1357486e9b350e1ce03ef9c885c8506c7",
+    "afterConnectionSourceSha256": "9b1d0183a0b7ddca2793452fabbf44ad4f314a79be020e4f3f0d1150500efef1",
+    "compatibilityPatchSha256": "63b907036181751ff95f79350beaf0a6955bb500788463b5ee8541bffa5951e2",
+    "solidFollowupPatchSha256": "0c39a7ae55e6c5bac7662fc7c96d66bf0ed769ce69040b9509e4c6f173b790b3",
+    "state": "after run used rebuilt working-tree changes on the base commit; not a clean committed revision"
+  },
+  "harnessIdentity": {
+    "node": "v22.22.3",
+    "probeScriptSha256AtArchival": "66c132333ef4207bf03c196e0fc6cdb080bf97e7c75070c97a8e3d676254944e",
+    "automatorHarnessSourceSha256AtArchival": "fef8c60c3bc97c4ac15de7c6b1f5977f998f0702f4d276bc0e7d2c861e2b1aee",
+    "afterAutomatorDistSha256AtArchival": "b9e6d0ee3b9ac08b2c7e4a3c90861cf2151efc735f73ac9c8c4af7c45973c225",
+    "beforeAutomatorDistSha256": null,
+    "beforeDistHashLimitation": "not independently recorded before the first probe; do not infer from candidate archives"
+  },
+  "consumerIdentity": {
+    "candidateCommit": "434899347450e6c4ca4a4b0ca505156576ee3d7c",
+    "preset": "normal",
+    "archives": 32,
+    "archiveHash": "2e3bbe3c689d1f64cc05a9d9950fdd3b21a4dfc4957121e972283a2bca0740f0",
+    "sourceHash": "d3bcc13b56b033f9397813d3c4f331b967ba1abb5b803eaf67d985ba706d1c59",
+    "retainedArtifactFiles": 22,
+    "retainedArtifactBytes": 212040,
+    "retainedArtifactMatchesOriginalJournalAtArchival": true,
+    "buildDuringProbe": false
+  },
+  "runs": {
+    "before": {
+      "startedAt": "2026-10-04T12:03:13.008Z",
+      "rawEvidenceSha256": "482c9a645112a119f81dd40c6d6e83fcd709c6063fe22253c8685e1f5a87cfe9",
+      "rawResourceLedgerSha256": "84da80d8a082e450e03cbd701ccde4106d8f994e22937f40e0e5f53c25b629ae",
+      "status": "diagnostic-complete",
+      "host": {
+        "version": "2.02.2608080",
+        "SDKVersion": "3.17.3"
+      },
+      "methods": {
+        "default": {
+          "observations": 4,
+          "emptyObjects": 4,
+          "readyMs": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "readyMarkers": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "protocol-only": {
+          "observations": 4,
+          "emptyObjects": 4,
+          "readyMs": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "readyMarkers": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "appservice-only": {
+          "observations": 4,
+          "emptyObjects": 0,
+          "readyMs": [
+            14,
+            10,
+            12,
+            13
+          ],
+          "readyMarkers": [
+            "vue-index-ready",
+            "vue-index-ready",
+            "vue-detail-ready",
+            "vue-index-ready"
+          ]
+        }
+      },
+      "rawRelaunchRoutes": [
+        "pages/index/index",
+        "pages/detail/index",
+        "pages/index/index"
+      ],
+      "protocolAndAppServiceRoutesAgree": true,
+      "freshPageIdentityForEachRelaunch": true,
+      "cleanup": {
+        "status": "closed",
+        "endpointStillListening": false,
+        "exactOwnedProjectCliClose": "confirmed by operator",
+        "processExitCode": null,
+        "processExitEvidence": "not independently recorded in the raw probe journal"
+      }
+    },
+    "after": {
+      "startedAt": "2026-10-04T12:18:56.844Z",
+      "rawEvidenceSha256": "356ee997f5b71adff7404e8fd96583f188d6f24319f96eafc5d3f282043af2a8",
+      "rawResourceLedgerSha256": "e31fda8bc7c529a0169b5ac25dfc6a6bf67b28cb52363946e933bc3c24af0763",
+      "status": "diagnostic-complete",
+      "host": {
+        "version": "2.02.2608080",
+        "SDKVersion": "3.17.3"
+      },
+      "methods": {
+        "default": {
+          "observations": 4,
+          "emptyObjects": 0,
+          "readyMs": [
+            14,
+            9,
+            11,
+            12
+          ],
+          "readyMarkers": [
+            "vue-index-ready",
+            "vue-index-ready",
+            "vue-detail-ready",
+            "vue-index-ready"
+          ]
+        },
+        "protocol-only": {
+          "observations": 4,
+          "emptyObjects": 4,
+          "readyMs": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "readyMarkers": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "appservice-only": {
+          "observations": 4,
+          "emptyObjects": 0,
+          "readyMs": [
+            14,
+            9,
+            11,
+            12
+          ],
+          "readyMarkers": [
+            "vue-index-ready",
+            "vue-index-ready",
+            "vue-detail-ready",
+            "vue-index-ready"
+          ]
+        }
+      },
+      "rawRelaunchRoutes": [
+        "pages/index/index",
+        "pages/detail/index",
+        "pages/index/index"
+      ],
+      "protocolAndAppServiceRoutesAgree": true,
+      "freshPageIdentityForEachRelaunch": true,
+      "cleanup": {
+        "status": "closed",
+        "endpointStillListening": false,
+        "exactOwnedProjectCliClose": "confirmed by operator",
+        "processExitCode": 0,
+        "processExitEvidence": "confirmed by operator"
+      }
+    }
+  },
+  "uiObservation": {
+    "afterDebuggerBadge": {
+      "error": 1,
+      "warning": 7
+    },
+    "consoleDetailsInspected": false,
+    "limitation": "operator could not switch to console details; badge contents are unclassified, no zero-error claim"
+  },
+  "acceptanceBoundary": {
+    "pageMethodCompatibility": "verified for four observations before and after on this Stable host and SDK",
+    "formalPresetAB": "not run by these probes",
+    "originalNavigateToDetailSampleSequence": "not run by these probes; raw reLaunch was used",
+    "performanceOrMemoryConclusion": false,
+    "issueCompleted": false,
+    "limitation": "readyMs here describes return-value availability only; these diagnostic observations are not benchmark samples or evidence of a performance gain"
+  }
+}

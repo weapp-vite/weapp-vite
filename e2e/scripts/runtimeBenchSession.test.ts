@@ -8,6 +8,25 @@ vi.mock('../utils/ide-devtools-cleanup', () => ({ cleanupResidualDevtoolsProcess
 beforeEach(() => vi.clearAllMocks())
 
 describe('runtime benchmark host ownership', () => {
+  it('journals the failed attempt before launching its replacement session', async () => {
+    const order: string[] = []
+    mocks.launch.mockImplementation(async () => {
+      order.push('launch')
+      return { close: async () => {
+        order.push('close')
+      } }
+    })
+    const onRetry = vi.fn(async () => {
+      order.push('journal')
+    })
+    const session = await createRuntimeBenchSession({ log: () => {}, projectRoot: 'mock-project', runtimeProvider: 'devtools', onRetry })
+    const operation = vi.fn().mockRejectedValueOnce(new Error('sample timeout')).mockResolvedValueOnce('ready')
+    await expect(session.run('detail navigation sample 2/3', operation)).resolves.toBe('ready')
+    expect(onRetry).toHaveBeenCalledWith({ attempt: 1, error: expect.objectContaining({ message: 'sample timeout' }), label: 'detail navigation sample 2/3' })
+    expect(order).toEqual(['launch', 'close', 'journal', 'launch'])
+    await session.close()
+  })
+
   it('propagates and records host close errors exactly once', async () => {
     const close = vi.fn(async () => {
       throw new Error('owned host did not close')

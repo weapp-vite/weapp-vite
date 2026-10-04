@@ -3,6 +3,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createRecoverableSession } from './runtimeBench'
 import { createBenchEvidence, finishBenchEvidence, readBenchEvidence } from './runtimeBench/evidence'
 
 const roots: string[] = []
@@ -19,6 +20,31 @@ afterEach(async () => {
 })
 
 describe('runtime benchmark incremental evidence', () => {
+  it('retains a recovered attempt and rejects a complete result containing replacement samples', async () => {
+    const { file, journal } = await fixture()
+    const session = await createRecoverableSession({
+      launch: async () => ({}),
+      safeClose: async () => {},
+      isRetryable: () => true,
+      onRetry: journal.onRetry,
+    })
+    const sample = { wallMs: 12, readyMs: 4, firstCommitMs: null }
+    const operation = vi.fn().mockRejectedValueOnce(new Error('route timeout')).mockResolvedValueOnce(sample)
+    const result = { schemaVersion: 2, project: 'mock' } as WorkerResult
+    await expect(finishBenchEvidence(journal, async () => {
+      const recovered = await session.run('detail navigation sample 2/3', operation)
+      await journal.onSample('detailNavigation')(recovered, 1)
+      return result
+    }, session.close)).rejects.toThrow('Runtime benchmark failed')
+    expect(await readBenchEvidence(file)).toMatchObject({
+      status: 'failed',
+      result,
+      failures: ['detail navigation sample 2/3, attempt 1: route timeout'],
+      attemptFailures: [{ attempt: 1, label: 'detail navigation sample 2/3', error: 'route timeout' }],
+      samples: [{ scenario: 'detailNavigation', index: 1, sample }],
+    })
+  })
+
   it('persists earlier raw samples and both collection and cleanup failures', async () => {
     const { file, journal } = await fixture()
     const raw = { wallMs: 15, readyMs: 5, firstCommitMs: null }

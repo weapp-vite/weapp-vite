@@ -8,7 +8,8 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { collectFiles, verifyRuntimeBenchConsumer } from './runtimeBench/consumer'
 import { createBenchEvidence, finishBenchEvidence } from './runtimeBench/evidence'
-import { median, observedNumber } from './runtimeBench/metrics'
+import { median } from './runtimeBench/metrics'
+import { readReadyBenchPage } from './runtimeBench/navigation'
 import { measureUpdate as measureUpdateSample } from './runtimeBench/update'
 import { createRuntimeBenchSession } from './runtimeBenchSession'
 
@@ -44,6 +45,7 @@ async function createBenchSession(projectRoot: string, journal: EvidenceJournal)
     projectRoot,
     runtimeProvider,
     onCleanupError: journal.onCleanupError,
+    onRetry: journal.onRetry,
   })
 }
 
@@ -55,13 +57,11 @@ async function measureFirstScreen(session: MiniProgramSession, projectRoot: stri
     logStep(projectRoot, label)
     const sample = await session.run(label, async (miniProgram) => {
       const startedAt = Date.now()
-      const page = await miniProgram.reLaunch('/pages/index/index')
-      await page.waitFor('#bench-ready-marker')
-      await page.waitFor(120)
-      const state = await page.callMethod('readBenchState')
+      await miniProgram.reLaunch('/pages/index/index')
+      const { readyMs } = await readReadyBenchPage(miniProgram, '/pages/index/index', process.env.WEVU_BENCH_PROJECT ?? path.basename(projectRoot))
       return {
         wallMs: Date.now() - startedAt,
-        readyMs: observedNumber(state?.metrics?.loadToReadyMs),
+        readyMs,
         firstCommitMs: null,
       }
     })
@@ -84,17 +84,15 @@ async function measureDetailNavigation(session: MiniProgramSession, projectRoot:
     const label = `detail navigation sample ${index + 1}/${SAMPLE_COUNT}`
     logStep(projectRoot, label)
     const sample = await session.run(label, async (miniProgram) => {
-      const indexPage = await miniProgram.reLaunch('/pages/index/index')
-      await indexPage.waitFor('#bench-ready-marker')
+      const project = process.env.WEVU_BENCH_PROJECT ?? path.basename(projectRoot)
+      await miniProgram.reLaunch('/pages/index/index')
+      const { page: indexPage } = await readReadyBenchPage(miniProgram, '/pages/index/index', project, { settleMs: 0 })
       const startedAt = Date.now()
       await indexPage.callMethod('navigateToDetail')
-      const page = await miniProgram.currentPage()
-      await page.waitFor('#bench-ready-marker')
-      await page.waitFor(120)
-      const state = await page.callMethod('readBenchState')
+      const { readyMs } = await readReadyBenchPage(miniProgram, '/pages/detail/index', project)
       return {
         wallMs: Date.now() - startedAt,
-        readyMs: observedNumber(state?.metrics?.loadToReadyMs),
+        readyMs,
         firstCommitMs: null,
       }
     })

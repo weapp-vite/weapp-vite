@@ -12,6 +12,7 @@ export async function createRuntimeBenchSession(options: {
   projectRoot: string
   runtimeProvider: ReturnType<typeof import('../utils/runtimeProvider').resolveRuntimeProviderName>
   onCleanupError?: (error: unknown) => Promise<void>
+  onRetry?: (context: { attempt: number, error: unknown, label: string }) => Promise<void>
 }): Promise<RecoverableSession<any>> {
   const launch = () => launchAutomator({
     projectPath: options.projectRoot,
@@ -32,6 +33,7 @@ export async function createRuntimeBenchSession(options: {
     },
     isRetryable: isLikelyRelaunchRetryableError,
     onRetry: async ({ attempt, error, label }) => {
+      await options.onRetry?.({ attempt, error, label })
       options.log(`session retry sample=${label} attempt=${attempt}/2 reason=${compactError(error)}`)
       if (options.runtimeProvider === 'devtools') {
         await cleanupResidualDevtoolsProcesses()
