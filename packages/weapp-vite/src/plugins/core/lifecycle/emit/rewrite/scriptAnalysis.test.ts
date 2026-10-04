@@ -6,12 +6,18 @@ import { WEAPP_VITE_INJECTED_API_IDENTIFIER } from '@weapp-core/constants'
 import MagicString from 'magic-string'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseJsLike } from '../../../../../utils/babel'
+import { createPlatformApiAccessCollector } from '../../platformApiRewrite'
 import { rewriteBundleNpmImportsToLocalRoots } from './localRoot'
 import { getChunkScriptAnalysis, rewriteBundleNpmImportsByPlatform, rewriteBundlePlatformApi } from './platform'
 
 vi.mock('../../../../../utils/babel', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../../utils/babel')>()
   return { ...actual, parseJsLike: vi.fn(actual.parseJsLike) }
+})
+
+vi.mock('../../platformApiRewrite', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../platformApiRewrite')>()
+  return { ...actual, createPlatformApiAccessCollector: vi.fn(actual.createPlatformApiAccessCollector) }
 })
 
 function createChunk(code: string): OutputChunk {
@@ -24,17 +30,18 @@ function createChunk(code: string): OutputChunk {
 }
 
 const npmRewriters = {
-  localRoot(bundle: OutputBundle, analysisCache: ChunkScriptAnalysisCache) {
-    rewriteBundleNpmImportsToLocalRoots(bundle, { 'ui-lib': '1.0.0' }, [], { analysisCache })
+  localRoot(bundle: OutputBundle, analysisCache: ChunkScriptAnalysisCache, collectPlatformApiAccess?: boolean) {
+    rewriteBundleNpmImportsToLocalRoots(bundle, { 'ui-lib': '1.0.0' }, [], { analysisCache, collectPlatformApiAccess })
   },
-  platform(bundle: OutputBundle, analysisCache: ChunkScriptAnalysisCache) {
-    rewriteBundleNpmImportsByPlatform('alipay', bundle, { 'ui-lib': '1.0.0' }, undefined, { analysisCache })
+  platform(bundle: OutputBundle, analysisCache: ChunkScriptAnalysisCache, collectPlatformApiAccess?: boolean) {
+    rewriteBundleNpmImportsByPlatform('alipay', bundle, { 'ui-lib': '1.0.0' }, undefined, { analysisCache, collectPlatformApiAccess })
   },
 }
 
 describe.each(Object.entries(npmRewriters))('%s npm rewrite analysis', (_name, rewriteNpm) => {
   beforeEach(() => {
     vi.mocked(parseJsLike).mockClear()
+    vi.mocked(createPlatformApiAccessCollector).mockClear()
     vi.stubEnv('WEAPP_VITE_NATIVE', '0')
   })
 
@@ -80,6 +87,56 @@ describe.each(Object.entries(npmRewriters))('%s npm rewrite analysis', (_name, r
 
     expect(chunk.code).toContain(`var ${WEAPP_VITE_INJECTED_API_IDENTIFIER} = `)
     expect(chunk.code).toContain('getStorageSync')
+  })
+
+  it.each(['none', 'external', 'inline'])('keeps %s npm output equivalent without an analysis consumer', (mode) => {
+    const code = [
+      `const dep = require('ui-lib/button')`,
+      `const wrapped = __toESM(dep, 1)`,
+      String.raw`const escaped = \u0072equire('ui-lib/button')`,
+      'const template = require(`ui-lib/button`)',
+      `function local(require) { return require('ui-lib/button') }`,
+      `const text = 'wx.getStorageSync()'; /* my.alert() */`,
+      `wx?.getStorageSync('key')`,
+      `const rewriteMarker = wrapped.default`,
+    ].join('\n')
+    const makeChunk = () => {
+      const chunk = createChunk(code)
+      const map = new MagicString(code).generateMap({ hires: true, includeContent: true, source: 'src/pages/index.ts' })
+      if (mode === 'inline') {
+        chunk.code += `\n//# sourceMappingURL=data:application/json;base64,${Buffer.from(map.toString()).toString('base64')}`
+      }
+      else if (mode === 'external') {
+        chunk.map = map as any
+      }
+      return chunk
+    }
+    const expected = makeChunk()
+    rewriteNpm({ [expected.fileName]: expected }, new WeakMap())
+    expect(createPlatformApiAccessCollector).toHaveBeenCalledTimes(1)
+
+    for (const collectPlatformApiAccess of [true, false]) {
+      const actual = makeChunk()
+      vi.mocked(createPlatformApiAccessCollector).mockClear()
+      rewriteNpm({ [actual.fileName]: actual }, new WeakMap(), collectPlatformApiAccess)
+
+      expect(createPlatformApiAccessCollector).toHaveBeenCalledTimes(collectPlatformApiAccess ? 1 : 0)
+      expect(actual).toEqual(expected)
+    }
+  })
+
+  it('keeps conservative facts usable if a later caller adds a platform consumer', () => {
+    const chunk = createChunk(`const dep = require('ui-lib/button')`)
+    const bundle = { [chunk.fileName]: chunk }
+    const cache: ChunkScriptAnalysisCache = new WeakMap()
+    rewriteNpm(bundle, cache, false)
+
+    expect(createPlatformApiAccessCollector).not.toHaveBeenCalled()
+    expect(getChunkScriptAnalysis(chunk, { cache }).hasPlatformApiAccess).toBe(true)
+    chunk.code += `\nwx.getStorageSync('key')`
+    rewriteBundlePlatformApi(bundle, 'wpi', { analysisCache: cache })
+
+    expect(chunk.code).toContain(`${WEAPP_VITE_INJECTED_API_IDENTIFIER}.getStorageSync`)
   })
 
   it('invalidates precise facts after a later code change', () => {
