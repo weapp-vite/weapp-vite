@@ -1,0 +1,84 @@
+name: Native AST Analysis
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/ci-native-analysis.yml
+      - 'packages/ast/**'
+      - 'packages/ast-native/**'
+      - 'packages-runtime/wevu-compiler/**'
+      - scripts/ast-migration-profile.ts
+      - scripts/ast-migration-profile.test.ts
+      - 'scripts/astMigrationProfile/**'
+      - 'scripts/benchmarkNativeAnalysis/**'
+      - 'scripts/benchmarkTemplatesHmr/**'
+      - 'scripts/benchmarkTemplatesPerformance/**'
+      - 'scripts/performanceGate/**'
+      - scripts/benchmark-templates-hmr.ts
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+  workflow_dispatch:
+    inputs:
+      full-performance:
+        description: Run the fixed native off/on paired benchmark after correctness checks
+        type: boolean
+        default: false
+
+concurrency:
+  group: native-analysis-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Native correctness (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 150
+    env:
+      RUSTUP_TOOLCHAIN: 1.99.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '24'
+      - name: Install the isolated Rust toolchain
+        run: rustup toolchain install 1.99.0 --profile minimal
+      - name: Build workspace dependencies
+        run: pnpm exec turbo run build --filter=weapp-vite...
+      - name: Check native debug correctness and fallback
+        run: pnpm --filter @weapp-vite/ast-native native:test
+      - name: Build the release binding
+        run: pnpm --filter @weapp-vite/ast-native native:build
+      - name: Check native release correctness and fallback
+        run: pnpm --filter @weapp-vite/ast-native exec vitest run --config native.vitest.config.ts
+      - name: Check AST types and contracts
+        run: |
+          pnpm --filter @weapp-vite/ast typecheck
+          pnpm --filter @weapp-vite/ast test
+          pnpm --filter @weapp-vite/ast test:types
+          pnpm --filter @wevu/compiler typecheck
+          pnpm --filter @wevu/compiler test:types
+      - name: Check compiler profiling and benchmark evidence contracts
+        run: |
+          pnpm --filter @wevu/compiler test src/profiling/internal.test.ts src/utils/babel.test.ts
+          pnpm exec tsc -p scripts/astMigrationProfile/tsconfig.json
+          pnpm exec tsc -p scripts/benchmarkNativeAnalysis/tsconfig.json
+          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile/gc.test.ts scripts/benchmarkNativeAnalysis
+      - name: Run fixed native off/on performance acceptance
+        if: github.event_name == 'workflow_dispatch' && inputs.full-performance
+        run: pnpm benchmark:native-analysis --mode=full --output=.codex-tmp/native-analysis --native-path=packages/ast-native/index.js
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.full-performance
+        with:
+          name: native-analysis-${{ matrix.os }}
+          path: .codex-tmp/native-analysis/**
+          include-hidden-files: true

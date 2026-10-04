@@ -1,5 +1,6 @@
 /* eslint-disable ts/no-use-before-define */
 import type { HmrProfileJsonSample } from '../packages/weapp-vite/src/analyze/hmr'
+import type { Evidence as NativeArtifactEvidence } from './benchmarkNativeAnalysis/contract'
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
 import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
@@ -17,6 +18,7 @@ import { readEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 import { attributeHmrProfile } from '../packages/weapp-vite/src/analyze/hmr/attribution'
 import { readHmrProfileLines } from '../packages/weapp-vite/src/analyze/hmr/reader'
+import { captureArtifacts } from './benchmarkNativeAnalysis/artifacts'
 import { readDeclaredScenarios } from './benchmarkTemplatesHmr/declaredScenarios'
 import { sanitizeBenchmarkDevLog } from './benchmarkTemplatesHmr/diagnostics'
 import { createEmittedScriptReader, waitForBenchmarkOutput } from './benchmarkTemplatesHmr/emittedOutput'
@@ -66,6 +68,7 @@ export interface ScenarioCase {
 }
 
 interface ScenarioSample extends HmrProfileJsonSample {
+  artifactEvidence?: NativeArtifactEvidence
   attribution: ReturnType<typeof attributeHmrProfile>
   outputChanges?: ReturnType<typeof compareBenchmarkOutputs>
   inputSha256?: string
@@ -154,6 +157,7 @@ const timeoutMs = readPositiveIntegerEnv('TEMPLATES_HMR_TIMEOUT_MS', 30_000)
 const profileTimeoutMs = readPositiveIntegerEnv('TEMPLATES_HMR_PROFILE_TIMEOUT_MS', 15_000)
 const profileEnabled = process.env.TEMPLATES_HMR_PROFILE !== '0'
 const observeOutputScope = process.env.TEMPLATES_HMR_OUTPUT_SCOPE === '1'
+const captureArtifactEvidence = process.env.TEMPLATES_HMR_ARTIFACT_EVIDENCE === '1'
 const markerSeed = process.env.TEMPLATES_HMR_MARKER_SEED ?? Date.now().toString(36)
 if (!/^[\w-]+$/.test(markerSeed)) {
   throw new Error('TEMPLATES_HMR_MARKER_SEED must contain only letters, digits, underscores or hyphens')
@@ -356,7 +360,11 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
     result.error = formatError(error)
   }
   finally {
-    await dev.stop(5_000).catch(() => {})
+    await dev.stop(5_000).catch((error) => {
+      if (captureArtifactEvidence) {
+        result.error = `Dev process cleanup failed: ${formatError(error)}`
+      }
+    })
     try {
       const devLog = path.join('logs', `${template.id}.dev.log`)
       await mkdir(path.join(reportRoot, 'logs'), { recursive: true })
@@ -706,6 +714,9 @@ async function benchmarkScenario(
       const editMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample, performance.timeOrigin + startedAt)
       editSample.inputSha256 = createHash('sha256').update(updated).digest('hex')
+      if (captureArtifactEvidence) {
+        editSample.artifactEvidence = await captureArtifacts(path.join(template.workspaceRoot, 'dist'), [template.workspaceRoot, repoRoot])
+      }
       const editedOutputs = observeOutputScope ? await snapshotBenchmarkOutputs(path.join(template.workspaceRoot, 'dist')) : undefined
       if (beforeOutputs && editedOutputs) {
         editSample.outputChanges = compareBenchmarkOutputs(beforeOutputs, editedOutputs)
@@ -720,6 +731,9 @@ async function benchmarkScenario(
       const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample, performance.timeOrigin + restoreStartedAt)
       restoreSample.inputSha256 = createHash('sha256').update(original).digest('hex')
+      if (captureArtifactEvidence) {
+        restoreSample.artifactEvidence = await captureArtifacts(path.join(template.workspaceRoot, 'dist'), [template.workspaceRoot, repoRoot])
+      }
       if (editedOutputs) {
         restoreSample.outputChanges = compareBenchmarkOutputs(editedOutputs, await snapshotBenchmarkOutputs(path.join(template.workspaceRoot, 'dist')))
       }

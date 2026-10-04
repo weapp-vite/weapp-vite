@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module'
 import process from 'node:process'
+import { invokeNativeCall, recordNativeEvent } from './native/observation'
 
 const require = createRequire(import.meta.url)
 
@@ -15,6 +16,7 @@ export interface NativeScriptAnalysis {
   hasStaticRequireLiteral: boolean
   hasPlatformApiAccess: boolean
   featureFlags: string[]
+  onPageScrollDiagnostics?: NativeOnPageScrollDiagnostic[]
 }
 
 export interface NativeScriptAnalysisInput {
@@ -63,6 +65,8 @@ let binding: NativeAstBinding | false | undefined
 let lastScriptAnalysis:
   | {
     key: string
+    code: string
+    filename: string
     result: NativeScriptAnalysis
   }
   | undefined
@@ -70,6 +74,10 @@ let lastScriptAnalysis:
 function resolveNativeAstModulePath() {
   const modulePath = process.env.WEAPP_VITE_NATIVE_AST_PATH?.trim()
   return modulePath || undefined
+}
+
+function createScriptAnalysisKey(code: string, filename: string, moduleId?: string, hookToFeatureJson?: string) {
+  return [code, filename, moduleId ?? '', hookToFeatureJson ?? ''].join('\0')
 }
 
 export function shouldUseNativeAst() {
@@ -88,6 +96,7 @@ export function loadNativeAstBindingSync() {
     binding = require(resolveNativeAstModulePath()!) as NativeAstBinding
   }
   catch {
+    recordNativeEvent('loadFailures')
     binding = false
   }
 
@@ -104,33 +113,53 @@ export function analyzeScriptWithNative(
 ) {
   const analyzeNative = loadNativeAstBindingSync()?.analyzeScriptNative
   if (!analyzeNative) {
+    if (shouldUseNativeAst()) {
+      recordNativeEvent('fallbacks')
+    }
     return undefined
   }
 
   const hookToFeatureJson = options?.hookToFeature
     ? JSON.stringify(options.hookToFeature)
     : undefined
-  const key = [
-    code,
-    options?.filename ?? '',
-    options?.moduleId ?? '',
-    hookToFeatureJson ?? '',
-  ].join('\0')
+  const filename = options?.filename ?? 'inline.ts'
+  const key = createScriptAnalysisKey(code, filename, options?.moduleId, hookToFeatureJson)
   if (lastScriptAnalysis?.key === key) {
+    recordNativeEvent('cacheHits')
     return lastScriptAnalysis.result
   }
 
-  const result = analyzeNative(code, options?.moduleId, hookToFeatureJson, options?.filename ?? 'inline.ts')
+  const result = invokeNativeCall(code, () => analyzeNative(code, options?.moduleId, hookToFeatureJson, filename))
   lastScriptAnalysis = {
     key,
+    code,
+    filename,
     result,
   }
   return result
 }
 
+/**
+ * 滚动诊断与特性映射无关，但必须匹配相同源码和解析文件名才能复用。
+ */
+export function getCachedNativeOnPageScrollDiagnostics(code: string, filename: string) {
+  if (
+    lastScriptAnalysis?.code === code
+    && lastScriptAnalysis.filename === filename
+    && lastScriptAnalysis.result.onPageScrollDiagnostics !== undefined
+  ) {
+    recordNativeEvent('cacheHits')
+    return lastScriptAnalysis.result.onPageScrollDiagnostics
+  }
+  return undefined
+}
+
 export function analyzeScriptsWithNative(inputs: NativeScriptAnalysisInput[]) {
   const analyzeNative = loadNativeAstBindingSync()?.analyzeScriptsNative
   if (!analyzeNative) {
+    if (shouldUseNativeAst()) {
+      recordNativeEvent('fallbacks')
+    }
     return undefined
   }
 
@@ -144,5 +173,17 @@ export function analyzeScriptsWithNative(inputs: NativeScriptAnalysisInput[]) {
       moduleId: input.moduleId,
     }
   })
-  return analyzeNative(nativeInputs)
+  const results = invokeNativeCall(nativeInputs, () => analyzeNative(nativeInputs))
+  const lastInput = nativeInputs.at(-1)
+  const lastResult = results.at(-1)
+  if (lastInput && lastResult && results.length === nativeInputs.length) {
+    // 仅保留批次末项，与单文件分析共享已有的单条缓存边界。
+    lastScriptAnalysis = {
+      code: lastInput.code,
+      filename: lastInput.filename,
+      key: createScriptAnalysisKey(lastInput.code, lastInput.filename, lastInput.moduleId, lastInput.hookToFeatureJson),
+      result: lastResult,
+    }
+  }
+  return results
 }

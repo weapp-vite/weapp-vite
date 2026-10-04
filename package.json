@@ -124,6 +124,8 @@
     "e2e:web:build-projects": "node --import tsx ./e2e/scripts/build-web-projects.ts",
     "e2e:web:update-baselines": "node --import tsx ./e2e/scripts/update-web-runtime-visual-baselines.ts",
     "e2e:runtime-bench": "node --import tsx ./e2e/scripts/run-runtime-bench.ts",
+    "benchmark:native-analysis": "node --import tsx scripts/benchmarkNativeAnalysis/index.ts",
+    "profile:compiler": "node --import tsx scripts/ast-migration-profile.ts",
     "benchmark:hmr": "tsx ./scripts/compare-template-hmr.ts",
     "benchmark:hmr:lab": "tsx ./scripts/benchmark-hmr-lab.ts",
     "benchmark:hmr:single": "tsx ./scripts/benchmark-template-hmr.ts",

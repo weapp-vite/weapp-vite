@@ -10,6 +10,7 @@ export interface NativeScriptAnalysis {
   hasStaticRequireLiteral: boolean
   hasPlatformApiAccess: boolean
   featureFlags: string[]
+  onPageScrollDiagnostics?: NativeOnPageScrollDiagnostic[]
 }
 
 export interface NativeScriptAnalysisInput {

@@ -101,6 +101,12 @@ const result = collectJsxAutoComponentsFromCode(code, {
 - 业务侧优先使用根入口
 - 只有在需要低层 helper 或做更细粒度 tree-shaking 时，再使用子路径导入
 
+## 可选 Rust 分析
+
+构建侧可以同时设置 `WEAPP_VITE_NATIVE=1` 和 `WEAPP_VITE_NATIVE_AST_PATH`，显式使用可加载的 Rust/Oxc binding。默认仍使用现有 JS 后端；native 加载、解析或执行失败时回退。批量分析合并同一源码上的检查与适用诊断，公共参数及结果保持兼容，不向 JS 搬运完整 AST。
+
+启用前使用仓库的 `pnpm profile:compiler` 和 `pnpm benchmark:native-analysis` 核对真实编译入口及端到端结果。微基准提速不能替代构建、HMR、产物和运行时验证。详见 [native 原型说明](../ast-native/README.md)。
+
 ## 发布校验
 
 包内可直接运行以下命令做独立校验：

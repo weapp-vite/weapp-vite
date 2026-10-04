@@ -4,6 +4,7 @@ import { walk } from 'oxc-walker'
 import { parseJsLike, traverse } from '../babel'
 import { parseJsLikeWithEngine } from '../engine'
 import { analyzeScriptWithNative, loadNativeAstBindingSync, shouldUseNativeAst } from '../native'
+import { invokeNativeCall } from '../native/observation'
 
 const CALL_EXPRESSION_TEXT_RE = /\b[a-z_$][\w$]*(?:\s*<[^(){};]+>)?\s*(?:\?\.\s*)?\(/i
 
@@ -207,7 +208,8 @@ export function collectFeatureFlagsWithNative<TFeature extends string>(
   }
   const validFeatures = new Set(Object.values(hookToFeature))
   const enabled = new Set<TFeature>()
-  for (const feature of collectNative(code, moduleId, JSON.stringify(hookToFeature), 'inline.ts')) {
+  const features = invokeNativeCall(code, () => collectNative(code, moduleId, JSON.stringify(hookToFeature), 'inline.ts'))
+  for (const feature of features) {
     if (validFeatures.has(feature as TFeature)) {
       enabled.add(feature as TFeature)
     }

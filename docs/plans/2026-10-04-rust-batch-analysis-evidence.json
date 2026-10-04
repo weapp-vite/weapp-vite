@@ -1,0 +1,187 @@
+{
+  "provenance": {
+    "source": ".codex-tmp/rust-analysis/native-smoke-v3/report.json",
+    "sha256": "e68fda4971c5be133bb45e0705ea538ced01f8748d471044d27d06660bec63a5",
+    "purpose": "Offline smoke presentation correction only; original measurements unchanged.",
+    "limitation": "Measurements precede the later native/Babel diagnostic parity fix; not performance evidence for the final binding.",
+    "baseCommit": "e1d0c313137e5deb69b48c04ea298dc65c0b2eb1",
+    "checkoutState": "Uncommitted implementation snapshot; use frozen identities, not the base commit alone.",
+    "nativeBinding": {
+      "identity": {
+        "index.js": "cb750236bf548c633e84116e6dc030b3bf30f7d9427f303fd54118c639a8f167",
+        "weapp_vite_ast_native.darwin-arm64.node": "572d8a7464acbeae1e1814dded97343e74f483d3f5e9ff40b95d11a8987cc196"
+      },
+      "digest": "504e2a4f65c555b2c2abcf27922467deda188d5230ec81591487091564f7c9b7",
+      "probe": "passed"
+    },
+    "frozenIdentities": {
+      "packages/ast": "7e59a7df79cc1c39df689c10de7d3cebf83db4d0f10a5a18d3dc8559bea08091",
+      "packages/ast/dist": "b6c7d0fbf402c1afcbcd5aab720031d9f44d8f60680f2103a58d6d6e7772aadb",
+      "packages/ast-native": "078ea36ca0137e0724e79b844882f417877c37094949b4e8360f80c280e9b99c",
+      "packages/weapp-vite": "d282a3dab4c9049a8d7ec1879201958c73d5634327565b3b313e85c149fbb9f6",
+      "packages/weapp-vite/dist": "daa5c7dca79acac0d5e80a7a7e21c423e974ed952dacbae0c948b7e5da7ac437",
+      "packages-runtime/wevu-compiler": "c01296d51f371899e394d1a7b837767b2998808fa29f343a95be71cdc39d28d7",
+      "packages-runtime/wevu-compiler/dist": "f74808f995db4e74aef54ae2d4b0de1cfc5d3b220dfb1f1f8fe044bf10bc9f8a",
+      "packages-runtime/wevu": "53bd233e02cdf4607b26da8c72377c944667cc12133d11a4fde927615bc768fd",
+      "packages-runtime/wevu/dist": "c977712fc323c4aa303944b6a68099fd6d34cd84aa2331b79cef21b6eaa1605a",
+      "@weapp-core/constants": "30b146deedd391b43a6004dbad02edbd78aeed5ef388b7e206c5eebebca820cd",
+      "@weapp-core/constants/dist": "8cf94657e0fd232a605367dc8b54bb444befc9a40cf0da7ea74430a0dfb494ad",
+      "pnpm-lock.yaml": "c3470f724491ebdd5176c23b1ee61761c858a44f48a20a813721f1ee71276145",
+      "pnpm-workspace.yaml": "92ed41dfb9f9992e80bad748a07812568f0c66425bc4c60a1cadd74ef339e865",
+      "package.json": "22e56b09c9238eb999e870adfbc1f8883e1d830950a1a89662e9277ae2f72e91",
+      "driver": "318fad1b557d79518f94ab72ccfca68324b1ecc202ee1485ae39524bec156717",
+      "devUtilities": "d2e9c8147fd36cb6ff20effd1a62189c24a94c56b313a4b54ef964e52892cf29",
+      "templates/weapp-vite-template": "5ee84cbbd23d89411688b50bfe17ab4a8c65ce637f36cf0c75ae98595876b252",
+      "templates/weapp-vite-wevu-template": "eca68a0c2efe60e2c647fd3188fbdf5cff695bab52edb0d42ce89279c9bdaa68",
+      "templates/weapp-vite-tailwindcss-tdesign-template": "1fa1202dcab0abbecf63d8a5a63181d4cc0844737f799b19985b23276da42e74",
+      "e2e-apps/github-issues/fixtures/issue-1134-profile": "24719147489fbfcb49a7ae7abca419af2e3100feea5b6f46395cb2f4b35bc81b"
+    }
+  },
+  "status": "incomplete",
+  "formalAcceptance": "not-run",
+  "regressionGate": "not-run",
+  "runs": 28,
+  "samples": 200,
+  "buildSamples": 24,
+  "hmrSamples": 176,
+  "runErrors": 0,
+  "metricEvidence": {
+    "complete": 96,
+    "incomplete": 4
+  },
+  "target": {
+    "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat:wall",
+    "requiredChangePercent": -10,
+    "met": false,
+    "observed": {
+      "count": 2,
+      "baselineMedianMs": 2398.8928745000003,
+      "currentMedianMs": 2189.002396,
+      "baselineP95Ms": 2535.7250410000006,
+      "currentP95Ms": 2248.410292,
+      "pairedDeltaMedianMs": -209.89047850000065,
+      "changePercent": -8.749472755999902
+    }
+  },
+  "environment": {
+    "startedAt": "2026-10-03T23:30:24.825Z",
+    "finishedAt": "2026-10-03T23:34:39.161Z",
+    "osRelease": "27.0.0",
+    "cpuModels": [
+      "Apple M4 Max"
+    ],
+    "logicalCpuCount": 16,
+    "totalMemoryBytes": 137438953472,
+    "loadavgStart": [
+      57.9248046875,
+      36.9697265625,
+      29.603515625
+    ],
+    "loadavgEnd": [
+      15.14013671875,
+      27.2724609375,
+      27.54345703125
+    ],
+    "node": "v24.18.0",
+    "platform": "darwin",
+    "architecture": "arm64",
+    "runtime": "classic"
+  },
+  "rssSampling": {
+    "available": 21,
+    "partial": 3,
+    "missing": 0
+  },
+  "differences": [
+    {
+      "input": "weapp-vite-template",
+      "kind": "build",
+      "pair": 0,
+      "id": "build:weapp-vite-template:first",
+      "files": [
+        "layouts/admin/index.js.map",
+        "layouts/default/index.js.map"
+      ],
+      "warningsEqual": true
+    },
+    {
+      "input": "weapp-vite-template",
+      "kind": "build",
+      "pair": 1,
+      "id": "build:weapp-vite-template:repeat",
+      "files": [
+        "layouts/admin/index.js.map",
+        "layouts/default/index.js.map"
+      ],
+      "warningsEqual": true
+    }
+  ],
+  "diagnostics": [
+    {
+      "input": "weapp-vite-template",
+      "native": {
+        "calls": 0,
+        "failures": 0,
+        "inputs": 0,
+        "inputBytes": 0,
+        "processes": 0,
+        "observation": {
+          "processes": 2,
+          "completedProcesses": 2,
+          "bindingCalls": 0,
+          "batchCalls": 0,
+          "inputScripts": 0,
+          "inputBytes": 0,
+          "cacheHits": 0,
+          "fallbacks": 0,
+          "loadFailures": 0
+        },
+        "coverage": "not-exercised"
+      }
+    },
+    {
+      "input": "weapp-vite-wevu-template",
+      "native": {
+        "calls": 0,
+        "failures": 0,
+        "inputs": 0,
+        "inputBytes": 0,
+        "processes": 0,
+        "observation": {
+          "processes": 2,
+          "completedProcesses": 2,
+          "bindingCalls": 0,
+          "batchCalls": 0,
+          "inputScripts": 0,
+          "inputBytes": 0,
+          "cacheHits": 0,
+          "fallbacks": 0,
+          "loadFailures": 0
+        },
+        "coverage": "not-exercised"
+      }
+    },
+    {
+      "input": "weapp-vite-tailwindcss-tdesign-template",
+      "native": {
+        "calls": 2,
+        "failures": 0,
+        "inputs": 12,
+        "inputBytes": 208962,
+        "processes": 2,
+        "observation": {
+          "processes": 2,
+          "completedProcesses": 2,
+          "bindingCalls": 2,
+          "batchCalls": 2,
+          "inputScripts": 12,
+          "inputBytes": 208962,
+          "cacheHits": 0,
+          "fallbacks": 0,
+          "loadFailures": 0
+        },
+        "coverage": "exercised"
+      }
+    }
+  ]
+}

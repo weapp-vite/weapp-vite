@@ -34,22 +34,22 @@ wevu.onPageScroll?.(() => {})`
 
     expect(collectOnPageScrollDiagnosticsNative(source)).toEqual([
       {
-        column: 5,
+        column: 3,
         kind: 'setData',
-        line: 6,
+        line: 5,
         sourceLabel: 'onPageScroll',
-      },
-      {
-        column: 5,
-        kind: 'syncApi',
-        line: 7,
-        sourceLabel: 'onPageScroll',
-        syncApi: 'wx.getStorageSync',
       },
       {
         column: 3,
         kind: 'syncApi',
-        line: 17,
+        line: 5,
+        sourceLabel: 'onPageScroll',
+        syncApi: 'wx.getStorageSync',
+      },
+      {
+        column: 10,
+        kind: 'syncApi',
+        line: 11,
         sourceLabel: 'onPageScroll(...)',
         syncApi: 'wx.getSystemInfoSync',
       },

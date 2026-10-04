@@ -1,6 +1,7 @@
 import type { NativeOnPageScrollDiagnostic } from '../../native'
 import type { AstEngineName } from '../../types'
-import { loadNativeAstBindingSync, shouldUseNativeAst } from '../../native'
+import { getCachedNativeOnPageScrollDiagnostics, loadNativeAstBindingSync, shouldUseNativeAst } from '../../native'
+import { invokeNativeCall } from '../../native/observation'
 import { collectOnPageScrollWarningsWithBabel } from './babel'
 import { collectOnPageScrollWarningsWithOxc } from './oxc'
 import { createWarningPrefix } from './shared'
@@ -47,14 +48,20 @@ export function collectOnPageScrollWarningsWithNative(
   code: string,
   filename: string,
 ) {
-  const binding = loadNativeAstBindingSync()
-  const collectNative = binding?.collectOnPageScrollDiagnosticsNative
-  if (!collectNative) {
+  if (!shouldUseNativeAst()) {
     return undefined
+  }
+  let diagnostics = getCachedNativeOnPageScrollDiagnostics(code, filename)
+  if (!diagnostics) {
+    const collectNative = loadNativeAstBindingSync()?.collectOnPageScrollDiagnosticsNative
+    if (!collectNative) {
+      return undefined
+    }
+    diagnostics = invokeNativeCall(code, () => collectNative(code, filename))
   }
   const warnings: string[] = []
   const warningSet = new Set<string>()
-  for (const diagnostic of collectNative(code, filename)) {
+  for (const diagnostic of diagnostics) {
     const warning = formatNativeOnPageScrollWarning(diagnostic, filename)
     if (warningSet.has(warning)) {
       continue
