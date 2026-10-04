@@ -263,16 +263,40 @@ arena 版本 P50 分别变化约 +1.48%、−0.95%、+4.54%，没有明确净收
 
 为避免把大量 parse 次数误认为最大 CPU 热点，增加 [V8 主线程采样工具](../../scripts/astMigrationProfile/README.md)。每份语料预热 5 次后采样 60 次真实 `compileVueFile`，不启用阶段观测或源码加载钩子；1 ms 间隔，分别得到 2,471、1,529、635 个样本。最后一次编译的完整返回值、maps 和告警与预热结果一致。15 项摘要归因测试、2 项既有 GC 测试、脚本类型检查通过，另用一次真实入口 smoke 核对 Inspector、哈希、脱敏和样本总数；该 smoke 不用于热点结论。
 
-| 语料 | Babel traverse self | Babel parser self | Babel generator self | GC | 脚本阶段 inclusive | 模板阶段 inclusive | binding manifest inclusive |
+| 语料 | Babel traverse self | Babel parser self | Babel generator self | GC | 脚本模块 inclusive | 模板模块 inclusive | binding manifest 模块 inclusive |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 压力模板 | 30.7% | 11.7% | 13.5% | 9.2% | 37.0% | 36.8% | 22.8% |
 | 零售详情 | 39.0% | 17.5% | 5.7% | 10.5% | 50.0% | 15.4% | 4.8% |
 | Wevu 首页 | 29.9% | 16.2% | 6.8% | 8.5% | 47.4% | 19.4% | 7.1% |
 
-以上均为 V8 主线程样本占比；GC/idle/unattributed 保留在分母中，inclusive 行相互重叠，不可相加，也不是进程总 CPU 时间。系统 1 分钟 loadavg 约为 16.8–17.2，仍有系统负载。两个真实页面的脚本阶段样本多于模板阶段，而 manifest 在压力 fixture 更突出：下一步优先调查脚本的重复遍历、宏转换与生成边界。若继续验证 manifest Rust 接入，应在每个 manifest 完成时批处理，分别在 scoped-slot script 生成前和根 owner-binding 保留前 flush，保留同步消费和有序 binding ID；不能用计时外预填结果替代真实完整编译。
+以上均为 V8 主线程样本占比；GC/idle/unattributed 保留在分母中，inclusive 行相互重叠，不可相加，也不是进程总 CPU 时间。系统 1 分钟 loadavg 约为 16.8–17.2，仍有系统负载。这里的 script.ts 模块还包含模板前 props 分析，不等同单个阶段。按 compileScriptPhase 函数栈统计，三组分别为 34.52%、42.45%、39.37%；模板前 resolveEffectivePropsDerivedKeys 分别为 2.51%、7.52%、7.72%，其内部函数不可再相加。两个真实页面的脚本相关样本多于模板，而 manifest 在压力 fixture 更突出：下一步优先调查脚本的重复遍历、宏转换与生成边界。若继续验证 manifest Rust 接入，应在每个 manifest 完成时批处理，分别在 scoped-slot script 生成前和根 owner-binding 保留前 flush，保留同步消费和有序 binding ID；不能用计时外预填结果替代真实完整编译。
 
 可审阅的完整配对样本、CPU 摘要、原 profile hash、环境和排除记录见 [本轮证据](./2026-10-04-rust-arena-cpu-evidence.json)。原始 `.cpuprofile` 只保留在本地，三平台 CI 只上传脱敏摘要。
 
 正式性能 run `37192496301` 的 Linux/macOS 已进入固定配对采集；Windows 全部 native 与脚本正确性检查通过，但在首个诊断构建写 npm 缓存时遭遇 `ENOTDIR`，尚无配对性能样本。检查点位于隔离工程的 `node_modules/weapp-vite/.cache` 目录创建，当前调查 junction 和文件系统路径边界，尚未证明属于 Rust 回归，也未修改性能阈值。阶段测试新增对隔离目录依赖链接下缓存写入的回归，远程复核结果待更新。
 
 新增真实隔离工程诊断入口，在 prepare 前分别记录源工程、暂存工程和仓库直接依赖路径的 lstat/stat/readlink/realpath/package.json；不能用可向祖先回退的模块解析替代直接路径检查。macOS 实际 prepare、首次/重复构建及清理通过，两次均为 38 个文件、9 份 map，产物相同且无告警；native 观测有效但该模板没有调用命中。此时其他项目有测试运行，因此这些构建只作正确性验证，不使用耗时。归因及 benchmark 脚本共 65 项测试、两组脚本类型检查与定向 lint 通过。Windows 复核仍待新提交 CI，未宣称 ENOTDIR 根因修复。
+
+## 第十三轮：完整编译中的 manifest 批处理与 Windows 暂存修复
+
+本轮把 binding 实验放回真实 `compileVueFile` 调用。诊断进程在遍历时冻结已规范化表达式、循环外层依赖、locals、safe-call、scope 及源码位置；每个 scoped-slot 子清单在脚本生成前 flush，根清单在 owner-binding 保留前 flush。直接 owner 绑定进入同一有序队列，保留 binding ID；JSX/layout 后续合成绑定仍用同步 JS。生产源码、公开 API 和默认 native 开关均未修改。
+
+五个独立进程分别运行原始编译器、相同 strip loader 的原逻辑控制组、完整请求缓存 JS、语法摘要缓存 JS 和批量 Rust。控制组对相同三文件使用同样的加载/转译方式，但不增加全局对象、collector 导出或队列。它将加载器差异与批处理收益分开；Rust 的附加收益还须与相同计划上的两种 JS 缓存比较。计时只包含完整编译，含本次规范化、计划、分析与清单消费；IPC、结果序列化和严格对照在窗口外。计划与批缓存每次重建，生产编译缓存经过预热，不把它称为冷编译或完整 Vite 构建。
+
+五路通过全部 13 个场景，每次严格对比完整返回值、sourcemap、告警和预期错误。三个代表语料及主要边界的 native 计数如下：
+
+| 语料 | 请求 / 唯一请求 | NAPI 调用 | 关键覆盖 |
+| --- | ---: | ---: | --- |
+| 压力模板 | 724 / 197 | 1 | 266 条绑定 |
+| Wevu 首页 | 34 / 19 | 1 | 16 条绑定 |
+| 零售详情 | 64 / 53 | 1 | 52 条绑定 |
+| scoped slot | 19 / 14 | 2 | 根/子清单分别消费，1 条直接 owner 绑定 |
+| JSX | 0 / 0 | 0 | 4 次同步 JS 分析 |
+
+额外覆盖嵌套循环、事件与重复表达式、slot outlet、Unicode/CRLF、静态模板、native 抛错、返回长度错误和无效模板。两个注入故障各发生一次整批 JS fallback，结果仍与原编译器完全一致；其余正常场景零 fallback。所有场景结束后均无 pending 工作或 active template，进程清理错误为零。批处理/加载器/进程生命周期及既有相关工具共 38 项测试、两组脚本类型检查和定向 ESLint 通过；生命周期测试确认发送错误不等同子进程退出，且清理不影响另一个进程。
+
+性能证据尚不足。第一轮四路完整编译采样因进程监控错误地排除了祖先进程的其他子任务，全部耗时作废。第二轮修正监控后只完成压力样本；零售样本与其他 E2E 重叠，排除后停止。两轮均缺少相同 loader 控制组，因此不得把原始编译器到批处理版本的差值归因 Rust。补齐第五组后，采样前仍检测到其他任务，未启动新计时。后续按 10 轮预热、每组 40 轮平衡顺序，串行重复三份语料两批；RSS 只记录编译后 worker 快照，不能解释为峰值或进程树 RSS。原始排除记录和最新正确性证据见 [完整编译实验记录](./2026-10-04-rust-complete-compiler-evidence.json)。
+
+Windows run `37195472616` 的诊断表明，源工程和仓库直接依赖均能解析，但暂存工程的相对 pnpm 链接在外层 junction 下 `stat`、`realpath` 和直接 `package.json` 全部返回 `ENOENT`。此前测试在 Windows 内层也使用绝对 junction，未覆盖实际相对 symlink。修复仅落在 benchmark 暂存工具：Windows 使用真实 `node_modules`/scope 目录，每个依赖链接到已解析的绝对目标，保留 `.pnpm` 的绝对 junction；普通元数据文件复制，源目录只读。暂存完成时先核对直接 package 路径，再检查模块解析，避免祖先回退掩盖断链。
+
+回归测试在所有平台创建实际相对 symlink，并在 macOS 上额外执行 Windows 布局策略，覆盖 scope、首次/重复缓存写入、HMR 的额外 junction、相对插件路径、缺失直接依赖和清理后的源目录完整性。修复后本地实际 staged prepare、两次构建和清理通过，均为 38 文件/9 份 map、零告警；原生模板仍无 native 命中。真实 Windows 复核等待该修改的 CI；已有固定提交正式性能运行保持原目标，不因这次修复重新派发。整链 10% 收益门槛、跨平台结果和真实 Stable DevTools runtime 最终验收仍未完成。

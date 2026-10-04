@@ -57,5 +57,22 @@ cargo test --locked --manifest-path packages/ast-native/Cargo.toml --features ex
 - 表达式内部词法绑定、静态/动态成员路径、访问顺序、去重、safe-call 与 snapshot fallback 必须对齐。JS 把现有 INLINE_GLOBALS、Babel globals 和普通对象原型名称传给 Rust，保留当前过滤行为。
 - 原始及转义后的孤立 UTF-16 代理字符不能有损传输；无法分析的 native 输入或无效批量结果整批回退。解析失败的 `null` 与成功但无依赖的结果保持区分。
 - 外部作用域规范化、循环来源依赖合并、JSX `scopeDependencies`、manifest ID/位置/输出路径及同步 slot script 消费仍由现有 JS 流程负责，未迁移。
-- 当前离线重放先收集完整语料；生产流水线尚不能直接把所有分析延迟到模板结束。scoped-slot 子脚本会在遍历中立即使用 manifest，必须解决生命周期后才能接入完整批次。
+- `run.ts` 离线重放先收集完整语料，不能直接把所有分析延迟到模板结束。下述 `compile.ts` 诊断实验按每个 manifest 的消费边界 flush；生产流水线仍未接入。
 - 本实验的局部 P50/P95 不证明完整编译、构建或 HMR 收益，也不覆盖 RSS、原工程 sourcemap 和运行时验收。JS 去重对照用于分清减少重复工作与换语言的贡献。
+
+## 完整编译对照
+
+`compile.ts` 把默认关闭的批量分析放回真实 `compileVueFile`。五个独立进程分别执行未修改的编译器、只替换 TypeScript 加载方式的控制组、同一请求计划上的 JS 请求缓存、JS 语法摘要缓存，以及 Rust 批量分析。每次编译都重新规范化、收集并分析请求，不从计时外的编译预填结果。
+
+```sh
+node --import tsx scripts/nativeBindingAnalysis/compile.ts --binding=<feature-built.node> --output=.codex-tmp/compile-binding-correctness
+node --import tsx scripts/nativeBindingAnalysis/compile.ts --binding=<feature-built.node> --output=.codex-tmp/compile-binding-pressure --scenario=pressure --iterations=40
+```
+
+默认只作正确性对照，包含三个代表语料和循环、scoped slot、JSX、Unicode/CRLF、native 失败回退等场景；native 三平台 CI 的 `check.ts` 也执行这项检查。完整 JSON 返回值包含产物、map、告警和预期错误，每次调用均严格比较。native 计数必须证明实际命中，scoped-slot 用例必须覆盖直接 owner 插入和子清单消费，JSX 合成绑定保持原有同步 JS 路径。
+
+计时只支持 `pressure`、`wevu`、`retail`，须在同机其他构建、E2E 和性能任务退出后串行进行。五实现的平衡周期为 10 轮；预热 10 轮后，采样轮数须是 10 的倍数。计时包含完整编译及其请求冻结、NAPI、fallback 检查和清单消费；IPC、JSON 序列化和输出对照在窗口外。每个实现使用独立的长期子进程，生产编译缓存保持温热，批分析缓存在每次 flush 重建；这不是冷构建或 Vite/HMR 验收。
+
+`baseline → control-js` 显示加载/转译方式的影响；`control-js → planned-js/planned-summary` 显示规划及 JS 缓存影响；`planned-summary → planned-native` 才能观察相同规划和加载方式下 Rust 的附加收益。不能把整个实验相对 baseline 的差值都归因 Rust。RSS 仅是本次编译后的根 worker 快照，不是峰值或进程树总内存。
+
+报告记录完整采样顺序、逐轮耗时/CPU/RSS/计数，诊断脚本、编译器 TypeScript 源码树、锁文件与 native 二进制的前后 hash。该检查不覆盖已安装依赖的全部文件。子进程的发送错误不代表已退出；运行器只清理自己创建的进程并确认退出，未完成清理时报告失败。实现边界见 [compileBatch](./compileBatch/README.md)。

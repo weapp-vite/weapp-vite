@@ -80,6 +80,13 @@ jobs:
         run: pnpm --filter @weapp-vite/ast-native exec napi build --platform --release --features experimental-binding-analysis --no-js --dts target/binding-experiment.d.ts --output-dir ../../.codex-tmp/binding-native-release
       - name: Check binding expression parity and captured compiler requests
         run: node --import tsx scripts/nativeBindingAnalysis/check.ts --binding-dir=.codex-tmp/binding-native-release --output-dir=.codex-tmp/binding-correctness
+      - name: Upload complete compiler comparison
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: binding-complete-compiler-${{ matrix.os }}
+          path: .codex-tmp/binding-correctness/complete-compiler/report.json
+          include-hidden-files: true
       - name: Check AST types and contracts
         run: |
           pnpm --filter @weapp-vite/ast typecheck

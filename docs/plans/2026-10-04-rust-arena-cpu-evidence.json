@@ -274,7 +274,7 @@
   },
   "cpuSelectedShares": {
     "denominator": "每份报告的全部 V8 主线程 samples；不是全进程 CPU 时间。",
-    "inclusiveRule": "script、template 与 bindingManifest 的 inclusive 行可能嵌套，不能相加；保留两个不同 template.ts 的完整路径以免混淆。",
+    "inclusiveRule": "所有 inclusive 行可能嵌套，不能相加；这里按模块计数，不等同单一编译阶段。script.ts 还包含模板前 props-return 分析，具体函数归因见 scriptFunctionAttribution。",
     "selfRule": "Babel traverse/parser/generator 与 GC 使用 self samples；这些模块 self 可按统一分母理解，但不代表完整阶段成本。",
     "corpora": [
       {
@@ -282,25 +282,25 @@
         "totalSamples": 2471,
         "inclusive": [
           {
-            "label": "compileVueFileScript",
+            "label": "compileVueFileScriptModule",
             "module": "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/script.ts",
             "samples": 915,
             "percentOfAllSamples": 37.02954269526508
           },
           {
-            "label": "compileVueFileTemplate",
+            "label": "compileVueFileTemplateModule",
             "module": "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/template.ts",
             "samples": 910,
             "percentOfAllSamples": 36.827195467422094
           },
           {
-            "label": "compilerTemplate",
+            "label": "compilerTemplateModule",
             "module": "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template.ts",
             "samples": 903,
             "percentOfAllSamples": 36.54390934844193
           },
           {
-            "label": "templateBindingManifest",
+            "label": "templateBindingManifestModule",
             "module": "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/bindingManifest.ts",
             "samples": 563,
             "percentOfAllSamples": 22.784297855119384
@@ -338,25 +338,25 @@
         "totalSamples": 1529,
         "inclusive": [
           {
-            "label": "compileVueFileScript",
+            "label": "compileVueFileScriptModule",
             "module": "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/script.ts",
             "samples": 764,
             "percentOfAllSamples": 49.9672988881622
           },
           {
-            "label": "compileVueFileTemplate",
+            "label": "compileVueFileTemplateModule",
             "module": "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/template.ts",
             "samples": 236,
             "percentOfAllSamples": 15.434924787442771
           },
           {
-            "label": "compilerTemplate",
+            "label": "compilerTemplateModule",
             "module": "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template.ts",
             "samples": 227,
             "percentOfAllSamples": 14.846304774362329
           },
           {
-            "label": "templateBindingManifest",
+            "label": "templateBindingManifestModule",
             "module": "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/bindingManifest.ts",
             "samples": 74,
             "percentOfAllSamples": 4.839764551994768
@@ -394,25 +394,25 @@
         "totalSamples": 635,
         "inclusive": [
           {
-            "label": "compileVueFileScript",
+            "label": "compileVueFileScriptModule",
             "module": "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/script.ts",
             "samples": 301,
             "percentOfAllSamples": 47.40157480314961
           },
           {
-            "label": "compileVueFileTemplate",
+            "label": "compileVueFileTemplateModule",
             "module": "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/template.ts",
             "samples": 123,
             "percentOfAllSamples": 19.37007874015748
           },
           {
-            "label": "compilerTemplate",
+            "label": "compilerTemplateModule",
             "module": "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template.ts",
             "samples": 122,
             "percentOfAllSamples": 19.212598425196852
           },
           {
-            "label": "templateBindingManifest",
+            "label": "templateBindingManifestModule",
             "module": "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/bindingManifest.ts",
             "samples": 45,
             "percentOfAllSamples": 7.086614173228346
@@ -6926,6 +6926,147 @@
     "limitations": [
       "Windows ENOTDIR remains unproven locally; cross-platform CI is required.",
       "No paired timing or end-to-end speedup claim."
+    ]
+  },
+  "scriptFunctionAttribution": {
+    "schemaVersion": 1,
+    "scope": "Reclassification of existing V8 main-thread samples; no new profiling or timing.",
+    "module": "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/script.ts",
+    "denominator": "All samples in each original report, including GC/idle/unattributed.",
+    "interpretation": [
+      "The script.ts module inclusive count is not identical to the compileVueFile.script measured phase: helpers in that module also run before template compilation.",
+      "compileScriptPhase inclusive samples identify that function frame and its sampled callees, not exact elapsed or process-wide CPU time.",
+      "resolveEffectivePropsDerivedKeys includes collectScriptSetupReturnInfo; these two function rows overlap and must not be summed.",
+      "Existing CPU reports provide generated-code V8 locations; source evidence below is independently read from TypeScript source, not source-map attribution."
+    ],
+    "sourceEvidence": [
+      {
+        "file": "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/index.ts",
+        "sha256": "e99a4199cea83b73e6b79b6545d9706c2555450a60ac885149919c3982faf700",
+        "cachedCompiledAstLines": [
+          72
+        ],
+        "propsDerivedCallLines": [
+          77
+        ],
+        "templatePhaseCallLines": [
+          130
+        ],
+        "scriptPhaseCallLines": [
+          165
+        ]
+      },
+      {
+        "file": "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/script.ts",
+        "sha256": "3208528fa23a1c70f894b1056cdfa882603bd187b566a46ec4cfa1596e3f6473",
+        "compileScriptPhaseDeclarationLines": [
+          265
+        ],
+        "propsDerivedDeclarationLines": [
+          223
+        ],
+        "returnInfoDeclarationLines": [
+          125
+        ],
+        "precomputedPropsReuseLines": [
+          306
+        ]
+      }
+    ],
+    "corpora": [
+      {
+        "corpus": "profile",
+        "summarySource": ".codex-tmp/rust-analysis/arena-sampling-v2/cpu-profile.json",
+        "summarySha256": "0b98beee27916138dcf2a905b082efe2e55fd1992bec26af7e98edebcc730dda",
+        "fixture": "scripts/astMigrationProfile/fixtures.ts:createVueSfcFixture",
+        "fixtureSha256": "9e5ddb3ca118abc9891b194a7e02c4a06797e0243fdfb7d1863e640e4d4b54c4",
+        "rawProfileSha256": "6220b4f2f5fd46269e40238a13311a092821bc8c47d4df7fe07dfe985af6b453",
+        "totalSamples": 2471,
+        "moduleInclusiveSamples": 915,
+        "moduleInclusivePercentOfAllSamples": 37.02954269526508,
+        "functions": [
+          {
+            "functionName": "compileScriptPhase",
+            "selfSamples": 0,
+            "inclusiveSamples": 853,
+            "inclusivePercentOfAllSamples": 34.520437070012136
+          },
+          {
+            "functionName": "resolveEffectivePropsDerivedKeys",
+            "selfSamples": 0,
+            "inclusiveSamples": 62,
+            "inclusivePercentOfAllSamples": 2.5091056252529342
+          },
+          {
+            "functionName": "collectScriptSetupReturnInfo",
+            "selfSamples": 0,
+            "inclusiveSamples": 61,
+            "inclusivePercentOfAllSamples": 2.468636179684338
+          }
+        ]
+      },
+      {
+        "corpus": "retail",
+        "summarySource": ".codex-tmp/rust-analysis/arena-sampling-v2/cpu-retail.json",
+        "summarySha256": "c247792f28ed398ea00e3123453ec50ea4972bd4bcebd3b6b4e88558fd3140b0",
+        "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/index.vue",
+        "fixtureSha256": "28a8c41959d94da732fc97a045bf901e0cde52b7a3c63beb327a705586ec2ecb",
+        "rawProfileSha256": "d185c60b03b84d2ca445d5a6cb0aeec9d0eb2d9cc1a8c7e32696dc94addc7274",
+        "totalSamples": 1529,
+        "moduleInclusiveSamples": 764,
+        "moduleInclusivePercentOfAllSamples": 49.9672988881622,
+        "functions": [
+          {
+            "functionName": "compileScriptPhase",
+            "selfSamples": 0,
+            "inclusiveSamples": 649,
+            "inclusivePercentOfAllSamples": 42.44604316546763
+          },
+          {
+            "functionName": "resolveEffectivePropsDerivedKeys",
+            "selfSamples": 0,
+            "inclusiveSamples": 115,
+            "inclusivePercentOfAllSamples": 7.521255722694571
+          },
+          {
+            "functionName": "collectScriptSetupReturnInfo",
+            "selfSamples": 0,
+            "inclusiveSamples": 114,
+            "inclusivePercentOfAllSamples": 7.455853499018966
+          }
+        ]
+      },
+      {
+        "corpus": "wevu",
+        "summarySource": ".codex-tmp/rust-analysis/arena-sampling-v2/cpu-wevu.json",
+        "summarySha256": "ae1c2589a346b2861e2a80e6ba5f7d099929150dcc7df6eadb048a9db76aeaef",
+        "fixture": "apps/wevu-vue-demo/src/pages/index/index.vue",
+        "fixtureSha256": "6c234bbfbeb8467af821f43724f4bd01dc546356126fe144f91d6cb368c1a085",
+        "rawProfileSha256": "613d4268493821ae883f1a69fb615d66007264e33f7700710de9b97ff48e6511",
+        "totalSamples": 635,
+        "moduleInclusiveSamples": 301,
+        "moduleInclusivePercentOfAllSamples": 47.40157480314961,
+        "functions": [
+          {
+            "functionName": "compileScriptPhase",
+            "selfSamples": 2,
+            "inclusiveSamples": 250,
+            "inclusivePercentOfAllSamples": 39.37007874015748
+          },
+          {
+            "functionName": "resolveEffectivePropsDerivedKeys",
+            "selfSamples": 0,
+            "inclusiveSamples": 49,
+            "inclusivePercentOfAllSamples": 7.716535433070866
+          },
+          {
+            "functionName": "collectScriptSetupReturnInfo",
+            "selfSamples": 0,
+            "inclusiveSamples": 49,
+            "inclusivePercentOfAllSamples": 7.716535433070866
+          }
+        ]
+      }
     ]
   }
 }

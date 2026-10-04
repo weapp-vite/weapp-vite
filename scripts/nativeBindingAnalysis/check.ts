@@ -26,6 +26,7 @@ async function main() {
   for (const args of [
     ['scripts/nativeBindingAnalysis/capture.ts', `--output=${capture}`],
     ['scripts/nativeBindingAnalysis/run.ts', `--input=${capture}`, `--binding=${binding}`, `--output=${path.join(output, 'correctness.json')}`],
+    ['scripts/nativeBindingAnalysis/compile.ts', `--binding=${binding}`, `--output=${path.join(output, 'complete-compiler')}`],
   ]) {
     await execa(process.execPath, ['--import', 'tsx', ...args], { env: { WEAPP_VITE_NATIVE: '0' }, stdio: 'inherit' })
   }
