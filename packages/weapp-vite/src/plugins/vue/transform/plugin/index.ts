@@ -71,6 +71,14 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
   const emittedScopedSlotChunks = new Set<string>()
   const classStyleRuntimeWarned = { value: false }
 
+  function releaseHookContexts() {
+    // 编译选项包含 warn/resolve/emitFile，生命周期只能到当前 bundle 结束。
+    compileOptionsCache.clear()
+    componentMetaCache.clear()
+    pageMatcher = null
+    scanDirtySynced = false
+  }
+
   function updateAppShell(nextAppShell: ResolvedAppShell | undefined) {
     if (createCompilerAppShellSignature(appShell) === createCompilerAppShellSignature(nextAppShell)) {
       return
@@ -88,6 +96,9 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
 
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
+
+    closeBundle: releaseHookContexts,
+    closeWatcher: releaseHookContexts,
 
     configResolved(config) {
       isBundledDev = config.command === 'serve' && Boolean(config.experimental.bundledDev)
