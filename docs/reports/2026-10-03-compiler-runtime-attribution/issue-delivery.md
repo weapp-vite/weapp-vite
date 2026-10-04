@@ -88,7 +88,7 @@ v5/v6 四类消费者均独立严格安装，并各完成五次普通构建和�
 | #1097 | 已验证实际 Vite+ runner/create；仍需最终候选运行时及跨平台矩阵收敛。缓存和 Dashboard/MCP 为 issue 明确的非阻塞增强 |
 | #1133 / #1134 | 真实输入类别的阶段归因、profile 关闭/开启产物一致性及正式样本 |
 | #1135 | 干净候选、512 SFC、14 次连续编辑的正式资源门禁与动作族回归 |
-| #1136 | 最终候选消费证据归档及真实 Stable runtime；历史 170,668 B 归因见同目录 README |
+| #1136 | 验收条件已满足，待同步标签：`434899347` 的官方 Stable 两场景、三个 page-frame 检查点与 headless 一致；七端 49 项通过原门禁，完整源码图的 5,422 个正字节模块缺链为 0；新 collector 重采的三个消费者全部产物 hash 与原 Stable 相等，未重复 runtime，身份边界见精简证据 |
 | #1137 | 已实现宿主 heap 协议探测与前后快照；仍缺普通/预设同输入的真实 Stable host commit、内存与工作负载样本，现有 headless 数据不支持收益结论 |
 | #1140 | `0b54186a3` 干净候选的两组模式/缓存恢复等价性已通过；仍缺目标 Stable runtime |
 | #1142 | 所依赖的子议题完成上述验收后再完成总跟踪项 |
@@ -522,3 +522,17 @@ Rolldown 1.2.12 的临时 callable owner 草案在 Node 24.18.0 完成 10 例真
 `691c405e4` 的 [runtime publication 六矩阵](https://github.com/weapp-vite/weapp-vite/actions/runs/37188267405) 已全部通过，每组严格 9/9 cases、66/66 checkpoints，无失败或跳过；`977bc90dd` 的 [plugin-watch 六矩阵](https://github.com/weapp-vite/weapp-vite/actions/runs/37189048511) 也全部通过，每组 13/13、无失败或跳过。`977bc90dd` 的完整 CI [37189458593](https://github.com/weapp-vite/weapp-vite/actions/runs/37189458593) 六组构建/测试矩阵及两项 Weapi guard 均已成功：Linux/macOS 每组 1,502 文件、13,694 测试通过，保留 26 文件、32 测试跳过；Windows 每组 1,496 文件、13,587 测试通过，保留 25 文件、36 测试跳过。`6d599a482` 的 Website [37192095346](https://github.com/weapp-vite/weapp-vite/actions/runs/37192095346) 与 Release [37192095286](https://github.com/weapp-vite/weapp-vite/actions/runs/37192095286)、`f04477550` 的 Website [37194328019](https://github.com/weapp-vite/weapp-vite/actions/runs/37194328019) 与 Release [37194327931](https://github.com/weapp-vite/weapp-vite/actions/runs/37194327931) 均已成功。各项保留自身提交与范围；`977bc90dd` 的完整 CI 不声称执行后续 automator/runtimeBench helper 改动，`6d599a482` 的 Stable 结果也不冒充 `f04477550` 的重新运行。
 
 议题 #1058 已满足该议题的实现、正式模板分析、真实 Stable 与 CI 交付条件，已添加「已完成」标签并用 `gh issue view` 读回确认。当前范围内 41 个 issue 中，29 个带完成标签，剩余 12 个仍未完成：#1015、#1065、#1081、#1082、#1097、#1133、#1134、#1135、#1136、#1137、#1140、#1142。正式 HMR [37183338392](https://github.com/weapp-vite/weapp-vite/actions/runs/37183338392) 在 `8cd8b9ccf` 上仍为 classic 47 passed / 2 regression / 3 unstable、stateful 48 passed / 3 regression / 1 unstable；旧 compiler/resource workflow 的 classic 资源失败也保持原结论。这些是其他议题的性能门禁，不因 #1058 完成而改写为通过。
+
+## #1136 最新候选消费、完整源码图与七端门禁
+
+干净候选 `434899347450e6c4ca4a4b0ca505156576ee3d7c` 的 32 个 tarball 在独立消费者中严格安装并核对来源。官方 Stable 查询于 2026-10-04 10:47 UTC，所选及实际 IDE 均为 `2.02.2608080`、基础库为 `3.17.2`；最小文本、典型首屏 `1 / 2` 与点击后 `2 / 4` 三个 page-frame 检查点通过，和 headless 观察及产物一致。场景内无 runtime 警告、错误或异常；启动时缺少 HTTP/compile 能力、CLI open 的非零返回及 punycode 告警单独记录，不将整个启动日志称为无告警。两个场景的所属连接已断开，自有项目显式 CLI close 成功，未终止共享宿主。
+
+`49446adad1ae8f94e9f69d3c36da460ddeebc688` 的七端 `--build --check` 共 49 项通过原预算与禁入规则；六小程序端相对旧档案不变，Web 四个阶梯的 canvas 各增加 158 B，仍在原预算内。随后发现采集器用输出模块清单代替完整输入图，截断被 tree-shake 移除的 barrel/re-export 节点。源码修复 `a962001239155af97978b6cc9c617e58c7dbe7c0` 将两者分开，并保留旧报告兼容、图闭合和实际字节门禁。重采使用同一份已重建 dist，5,422 个正字节模块的缺链由 2,227 降至 0；所有 dev/production 字节和保留模块记录不变，类别、阶梯差值及未归因份额逐项对齐。
+
+独立消费者也用完整输入图重采，benchmark/minimal/typical 分别有 163/145/155 个图节点和 100/91/96 个正字节模块，缺失导入边及不可达保留模块均为 0。三个场景全部 16/9/9 个 emitted 文件的路径、字节及 SHA-256 与已通过的 Stable 档案完全相等，包含独立 npm 子构建的三个文件；主 bundle 归因、类别和按源码标识比较的编译代码保持一致。源码、配置及锁文件已恢复。此次只重采构建归因，未重复 runtime，继续引用原 Stable 观察。
+
+两轮重采发生在 `49446adad1ae` 加 collector 补丁的工作树，补丁后来提交为 `a96200123`；原始报告的 commit 字段不改写。消费者 tarball 仍属于 `434899347`，与历史 registry 7.4.0 分开记录。完整源码图证明静态导入可达关系，不证明符号保留因果；历史归因档案连同原图局限保持原样。所有压缩档案、对账及来源 hash 见 [#1136 精简验收证据](./issue-1136-acceptance.json)。
+
+基线 `49446adad` 的 [Release 37197051772](https://github.com/weapp-vite/weapp-vite/actions/runs/37197051772) 与 [Website 37197051750](https://github.com/weapp-vite/weapp-vite/actions/runs/37197051750) 已成功；它们不冒充后续 `a96200123` collector 修复的远端 CI 结果。
+
+议题 #1136 已满足本议题验收条件，待维护流程同步完成标签。此时范围内仍为 29/41 个 issue 带标签；没有预先把尚未执行的标签操作计入结果，也不改变其他议题的实际样式更新失败、HMR 性能或长期资源门禁。

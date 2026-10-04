@@ -37,7 +37,7 @@ node --import tsx scripts/benchmarkTemplateAnalysis/index.ts --trials=7 --formal
 
 找回文件的原始字节数 170,668、Node gzip 42,012、Brotli 35,344 均与历史报告一致。历史报告未记录文件 hash，因而仍保留这一来源限制；本轮已将找回文件、独立消费者文件以及完整比较结果分别保存为 `recovered-170668-runtime.js.gz`、`published-7.4.0-benchmark-runtime.js.gz` 和 `historical-runtime-comparison.json.gz`，供后续逐字节复核。找回文件 hash 为 `38b55d82531819afd34e9daf56a935c22f0615138def7fe1b53802510cc1b243`。
 
-170,668 B 的来源可以据此拆为：运行时模块估算 164,487.68 B、其他依赖估算 2,122.68 B、共享 helper 估算 3,553.64 B，以及精确的目录路径注释差额 504 B。前面三项来自 87 个实际保留模块的比例估算，合计 170,164 B，另列未归因份额为 0 B；比例估算并不证明不存在 wrapper 成本。完整模块、引用链和类别见消费者 JSON，不能将估算误称为模块独立压缩字节。
+170,668 B 的来源可以据此拆为：运行时模块估算 164,487.68 B、其他依赖估算 2,122.68 B、共享 helper 估算 3,553.64 B，以及精确的目录路径注释差额 504 B。前面三项来自 87 个实际保留模块的比例估算，合计 170,164 B，另列未归因份额为 0 B；比例估算并不证明不存在 wrapper 成本。模块、类别和旧采集器的输出模块图见历史消费者 JSON；该图仍有被裁剪的中间节点缺失，未用新候选图补造历史证据。不能将比例估算误称为模块独立压缩字节。
 
 体积分配复用现有 analyze 的 `rendered-length-proportional` 方法：最终文件字节按 bundler 模块长度占比分配，提供未归因份额；它不是每个模块的独立压缩字节。`facets` 进一步分出 wevu 内部响应式、宿主适配及可选能力。保留 `routeSync` 或 `bindModel` 的事实不能推导为完整 router/store/layout 均被引入，必须查看实际模块和引用链。
 
@@ -48,13 +48,17 @@ node --import tsx scripts/runtime-size/preparePublishedConsumer.ts --install
 node --import tsx scripts/runtime-size/verifyConsumer.ts <上一步输出的独立消费者目录> --disposable-consumer
 ```
 
-需要网络代理时按 Node 的环境代理配置运行准备命令。准备器固定公开源提交、锁文件和 repoctl tsconfig 的 SHA-256；验证器保留源码备份，并在成功或失败后恢复源码及配置。它校验 benchmark、最小页面和典型页面构建，不启动 IDE，也不宣称页面运行时行为通过。
+需要网络代理时按 Node 的环境代理配置运行准备命令。准备器固定公开源提交、锁文件和 repoctl tsconfig 的 SHA-256；验证器保留源码备份，并在成功或失败后恢复源码及配置。默认执行 benchmark、最小页面和典型页面构建及归因；显式传入 runtime 选项后追加对应宿主验收。
 
-已安装候选 `@mpcore/test` tarball 的独立消费者可额外传入 `--runtime=headless`。验证器通过消费者内部的 ESM 解析加载自身 `node_modules` 下的测试包，记录版本、入口相对路径与 SHA-256；每次最小/典型场景构建后显式指定 `dist/app.json` 和产物根创建测试项目。最小场景验证文本，典型场景将原来的 `view` 改为可按角色查询的 `button`，验证 `onLoad` 后 `1 / 2`、点击后 `2 / 4`，并在 `finally` 关闭会话。本次场景源码及适配说明、逐场景观察值和关闭结果写入 `verification.json`；失败会保留已有观察值并标记未完成，不沿用上次通过结果。未传入此选项时维持原场景，不要求安装测试包。此入口只提供 headless 辅助证据，报告始终明确真实 Stable 微信开发者工具尚未运行、最终 runtime 验收未完成。
+独立消费者支持 `--runtime=headless` 和 `--runtime=devtools`。headless 从消费者自己的安装树解析候选 `@mpcore/test`，记录版本、入口相对路径与 SHA-256，并在每次最小/典型场景构建后用 `dist/app.json` 和产物根创建测试项目。DevTools 使用显式选择的 CLI 连接真实宿主，保存实际 IDE/基础库版本及 page-frame DOM 证据；官方 Stable 渠道、查询时间与所选安装需另行核对。两种 provider 共用最小文本和原生 `button` 场景，验证 `onLoad` 后 `1 / 2`、点击后 `2 / 4`，并在 `finally` 关闭所属连接或会话。源码适配、逐场景观察、诊断与关闭结果写入 `verification.json`；失败保留已有证据，headless 单独运行仍标记真实 Stable 未验收。下文的最新两 provider 通过结果属于 `434899347` 候选 tarball，历史 registry 7.4.0 归档继续只作为构建与体积归因证据。
 
 ## 当前七端能力阶梯
 
-`seven-target-capabilities.json.gz` 保存当前工作树已有 dist 的七端 × 七阶梯数据。原预算及禁入模块门禁全部通过，未提高预算。JSON 新增每阶梯实际生成入口、明确比较基线、整体与模块字节差、保留/移除模块、模块引用链、类别与未归因字节。公共入口和内部入口的差值是入口兼容成本比较，不是新增业务能力成本。
+`seven-target-capabilities.json.gz` 保留 `6bd9f6989b92` 时已有 dist 的七端 × 七阶梯数据。`49446adad1ae` 随后执行 `--build --check`，结果保存为 `seven-target-capabilities-49446adad.json.gz`。与旧档案相比，六个小程序端字节全部不变，Web 的 typical-page、complex-component、public-page、full-provider 各增加 158 B，来源为 canvas 模块，仍在原预算内。
+
+复核发现旧采集器只用输出模块建图，会丢失被 tree-shake 移除的 barrel/re-export 中间节点。修复将完整源码导入图与输出字节清单分开保存；沿用刚重建的同一份 dist 重采后，49 项仍通过原预算和禁入规则，5,422 个正字节模块的缺链由 2,227 降至 0。dev/production 字节、实际保留模块记录、类别与未归因份额均未改变。完整档案为 `seven-target-capabilities-complete-graph.json.gz`，逐阶梯对账为 `import-graph-reconciliation.json.gz`。
+
+重采时的身份是 `49446adad1ae` 加 collector 补丁；补丁随后提交为 `a96200123`，原报告的 `commit` 字段仍保留 `49446adad1ae`。源码导入路径可以穿过零输出节点，只证明静态可达关系，不证明中间模块或符号保留的原因。公共入口和内部入口的阶梯差值是入口兼容成本比较，不是新增业务能力成本。
 
 | 微信阶梯 | Production | 比较基线 | 增量 |
 | --- | ---: | --- | ---: |
@@ -70,4 +74,10 @@ node --import tsx scripts/runtime-size/verifyConsumer.ts <上一步输出的独�
 node --import tsx scripts/report-wevu-runtime-size.ts --check --output-json=.codex-tmp/runtime-capability-attribution.json
 ```
 
-最终候选 tarball 的独立消费者验证和真实 Stable runtime 验收仍需在各自前置条件满足后补齐；既有 compiler 正式采样不能替代这些验收，也不能据此把 issue 标为完成。
+2026-10-04，干净 `434899347` 的 32 个候选 tarball 已在独立消费者中严格安装并核对来源。最小页面及典型页面在官方 Stable `2.02.2608080`、基础库 `3.17.2` 下通过三个 page-frame 检查点：最小文本正确，典型页面由 `1 / 2` 点击更新为 `2 / 4`；观察及完整 runtime 产物与此前 headless 相同。场景内无 runtime 警告、错误或异常；启动阶段的能力回退告警单独保留。插桩与普通构建产物逐字节一致，八份源码/配置/锁文件已恢复，所属连接和项目正常关闭。
+
+消费者采集器也按完整输入图修复并重采：benchmark/minimal/typical 的源码图分别有 163/145/155 个节点、100/91/96 个正字节模块，缺失导入边和不可达保留模块均为 0。三个场景的完整 16/9/9 文件清单全部与上述 Stable 证据逐项 hash 相等，类别、归因字节及按源码标识比较的编译输出也相同；因此沿用原 runtime 观察，没有重新执行或宣称新的 Stable 验收。三个独立 npm 输出同样包含在完整文件核对中，未冒充主 bundle 的模块归因。
+
+`candidate-434899347-complete-graph-*.json.gz` 保存新消费者归因与重采记录，`candidate-434899347-stable-verification.json.gz` 保存原始 Stable 观察。重采记录独立保存 `49446adad1ae` collector 基线和文件 hash，collector 源码现对应 `a96200123`；候选包仍属于 `434899347`，不把新 collector 写成旧候选源码。
+
+结合历史 170,668 B 归因、完整源码图、最新七端门禁和真实 Stable 场景，#1136 已满足验收条件，待同步「已完成」标签。[精简验收证据](./issue-1136-acceptance.json) 区分历史 registry 7.4.0、`434899347` 候选 tarball runtime、`49446adad1ae` 构建和后续 collector 修复身份。本轮真实宿主范围为微信最小/典型消费者，不扩大为七端真实 IDE 或性能收益结论。
