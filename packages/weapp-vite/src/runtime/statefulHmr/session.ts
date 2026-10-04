@@ -369,6 +369,8 @@ class StatefulHmrSession {
       }
     }
     this.closed = true
+    // 先同步封闭交付代次，再取消传输；等待必须留到传输解除未确认交付之后。
+    const closeDelivery = release(() => this.delivery.close())
     // 保持释放顺序，但某个资源失败不能跳过后续监听器、引擎或诊断的关闭。
     await release(() => this.initialProfile?.finish(status))
     this.initialProfile = undefined
@@ -389,7 +391,7 @@ class StatefulHmrSession {
       this.ctx.onStatefulHmrSourceChange = undefined
     }
     await release(() => this.transport.close())
-    await release(() => this.delivery.close())
+    await closeDelivery
     await release(() => this.snapshotScheduler.close())
     await release(() => this.adapter.close())
     this.sourceDirtyReasons.clear()
@@ -604,6 +606,9 @@ class StatefulHmrSession {
   }
 
   private handleBatch(batch: StatefulHmrDevEngineBatch): boolean {
+    if (this.closed) {
+      return false
+    }
     this.settlementRevision += 1
     this.diagnostics?.delivery('received', 0, batch.changedFiles)
     let files = batch.changedFiles.map(file => normalizeFsResolvedId(path.isAbsolute(file) ? file : path.resolve(this.server.config.root, file)))
