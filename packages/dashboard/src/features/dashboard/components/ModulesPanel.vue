@@ -16,10 +16,15 @@ import ModuleInsightsSidebar from './ModuleInsightsSidebar.vue'
 
 const props = defineProps<{
   duplicateModules: DuplicateModuleEntry[]
+  duplicateModuleScopeLabel: string | null
   moduleSourceSummary: ModuleSourceSummary[]
   incrementAttribution: IncrementAttributionEntry[]
   incrementSummary: IncrementAttributionSummary[]
   visibleLargestFiles: LargestFileEntry[]
+}>()
+
+const emit = defineEmits<{
+  resetScope: []
 }>()
 
 const {
@@ -37,6 +42,12 @@ const {
   moduleOptimizationPlan,
   moduleSourceItems,
 } = useDuplicateModulesPanel(props)
+
+function resetDuplicateScope() {
+  duplicateQuery.value = ''
+  duplicateSourceFilter.value = 'all'
+  emit('resetScope')
+}
 </script>
 
 <template>
@@ -67,6 +78,20 @@ const {
         />
       </div>
 
+      <div v-if="duplicateModuleScopeLabel" class="mt-3 flex min-w-0 flex-wrap items-center gap-2 text-xs">
+        <span class="min-w-0 [overflow-wrap:anywhere] text-(--dashboard-text-muted)">{{ duplicateModuleScopeLabel }}</span>
+        <button
+          type="button"
+          class="rounded-md px-2 py-1 text-(--dashboard-accent) hover:bg-(--dashboard-accent-soft) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+          @click="resetDuplicateScope"
+        >
+          查看全部重复模块
+        </button>
+        <p class="w-full text-(--dashboard-text-soft)">
+          仅筛选重复模块条目，保留每个模块涉及的全部包体信息。
+        </p>
+      </div>
+
       <div v-if="duplicateModuleItems.length" class="mt-4 max-h-96 space-y-2.5 overflow-y-auto pr-1 xl:max-h-[calc(100%-5.75rem)]">
         <AppSummaryValueCard
           v-for="item in duplicateModuleItems"
@@ -86,7 +111,9 @@ const {
         </AppSummaryValueCard>
       </div>
       <AppEmptyState v-else class="mt-4">
-        当前构建未检测到跨包重复模块。
+        {{ duplicateModuleScopeLabel || duplicateQuery.trim() || duplicateSourceFilter !== 'all'
+          ? '当前范围及筛选条件下没有匹配的重复模块。'
+          : '当前构建未检测到跨包重复模块。' }}
       </AppEmptyState>
     </div>
 

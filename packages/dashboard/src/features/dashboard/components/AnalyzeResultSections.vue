@@ -48,6 +48,7 @@ defineProps<{
   hasTreemapComparison: boolean
   comparisonMode: AnalyzeComparisonMode
   copyStatus: string
+  duplicateModuleScopeLabel: string | null
   filteredDuplicateModules: DuplicateModuleEntry[]
   filteredLargestFiles: LargestFileEntry[]
   historySnapshots: AnalyzeHistorySnapshot[]
@@ -91,6 +92,7 @@ const emit = defineEmits<{
   copyPr: []
   copyReviewChecklist: []
   copyWorkQueue: []
+  inspectDuplicates: [packageId: string]
   inspectTreemapProblem: [problem: 'duplicates' | 'growth']
   openFile: [item: LargestFileEntry]
   openTreemapSource: [meta: TreemapNodeMeta]
@@ -248,6 +250,7 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
           :package-insights="packageInsights"
           :budget-warnings="budgetWarnings"
           :selected-treemap-meta="selectedTreemapMeta"
+          @inspect-duplicates="emit('inspectDuplicates', $event)"
         />
       </template>
     </AnalyzeDraggableGrid>
@@ -262,10 +265,12 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
       <template #modules>
         <ModulesPanel
           :duplicate-modules="filteredDuplicateModules"
+          :duplicate-module-scope-label="duplicateModuleScopeLabel"
           :module-source-summary="moduleSourceSummary"
           :increment-attribution="incrementAttribution"
           :increment-summary="incrementSummary"
           :visible-largest-files="visibleLargestFiles"
+          @reset-scope="emit('resetTreemapFocus')"
         />
       </template>
     </AnalyzeDraggableGrid>

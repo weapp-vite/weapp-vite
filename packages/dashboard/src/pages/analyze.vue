@@ -27,6 +27,7 @@ const {
   copySummary,
   copyViewLink,
   copyWorkQueueReport,
+  duplicateModuleScopeLabel,
   exportCsv,
   exportJson,
   exportMarkdown,
@@ -34,6 +35,7 @@ const {
   filteredDuplicateModules,
   filteredLargestFiles,
   handleAddActionToWorkQueue,
+  handleInspectPackageDuplicates,
   handleInspectTreemapProblem,
   handleOpenFile,
   handleOpenTreemapSource,
@@ -138,6 +140,7 @@ const pageClassName = computed(() => {
       :comparison-mode="comparisonMode"
       :has-treemap-comparison="hasTreemapComparison"
       :copy-status="exportStatus"
+      :duplicate-module-scope-label="duplicateModuleScopeLabel"
       :filtered-duplicate-modules="filteredDuplicateModules"
       :filtered-largest-files="filteredLargestFiles"
       :history-snapshots="historySnapshots"
@@ -177,6 +180,7 @@ const pageClassName = computed(() => {
       @copy-pr="copyPrReport"
       @copy-review-checklist="copyPrReviewChecklist"
       @copy-work-queue="copyWorkQueueReport"
+      @inspect-duplicates="handleInspectPackageDuplicates"
       @inspect-treemap-problem="handleInspectTreemapProblem"
       @open-file="handleOpenFile"
       @open-treemap-source="handleOpenTreemapSource"
