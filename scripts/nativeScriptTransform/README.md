@@ -1,6 +1,6 @@
 # 实际 transformScript 捕获、Rust 阶段转换与打印探针
 
-本目录包含两个默认关闭的兼容性实验：`check.ts` 将现有转换器已经生成的 JS 交给 Oxc 打印；`transformCheck.ts` 将实际阶段输入交给 Rust 执行受支持的 Wevu 脚本改写。后者包含类型清理、导入和 expose 改写、默认值、初始 data、manifest、class/key/inline 元数据与注册。两者均未接入生产入口，不产生性能结论；sourcemap 与未覆盖能力仍是迁移门槛。边界见 [BOUNDARY.md](./BOUNDARY.md)。
+本目录包含默认关闭的兼容性实验：`check.ts` 将现有转换器已经生成的 JS 交给 Oxc 打印；`transformCheck.ts` 独立检查 Rust 对真实阶段输入的转换；`integratedCheck.ts` 在隔离进程里将 Rust 返回值实际交给完整编译器后续阶段。Rust 包含类型清理、导入和 expose 改写、默认值、初始 data、manifest、class/key/inline 元数据与注册。这些工具均未接入生产入口，不产生性能结论；sourcemap 与未覆盖能力仍是迁移门槛。边界见 [BOUNDARY.md](./BOUNDARY.md)。
 
 ## 运行
 
@@ -8,6 +8,7 @@
 pnpm --filter @weapp-vite/ast-native exec napi build --platform --release --features experimental-script-transform --no-js --dts target/script-transform-experiment.d.ts --output-dir ../../.codex-tmp/script-transform-native
 node --import tsx scripts/nativeScriptTransform/check.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-probe
 node --import tsx scripts/nativeScriptTransform/transformCheck.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-stage
+node --import tsx scripts/nativeScriptTransform/integratedCheck.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-integrated
 ```
 
 输出目录必须不存在。默认任何打印结构、注释或位置检查差异都会返回失败；已知差异调查可显式传 `--allow-differences`。该参数只允许完成诊断，摘要仍保留 `comparisonPassed: false`；CI 的诊断步骤成功不表示打印器可替换现有 generator。捕获、完整产物对照、运行、清理或来源校验失败在两种模式下均失败。
@@ -35,6 +36,22 @@ Rust 在内部有序 JSON 上只省略允许位置的 optional undefined，并�
 严格模式要求每条候选都通过；任何 unsupported 或差异都返回失败。诊断模式只允许 `completed=true` 的采集成功退出，两真实页面每轮必须 native 成功；摘要中 `nativeCompared`、`nativePassed`、fallback 与最终 `comparisonPassed` 分别保留。两份 map 各自从生成代码回查同一真实脚本来源；对称缺失映射不会自动被当作来源覆盖通过。
 
 `record-XXXX.json` 保存逐条完整私有证据，三组 worker 报告与前后 source/binary 身份一并保留。CI 仅上传脱敏 summary。AST 相同不能替代 runtime 验收，生成的片段清空 span 也不证明来源映射等价。
+
+## 完整编译入口实验
+
+`integratedCheck.ts` 先运行上述三个 JS 控制组，再依次运行只透传原 JS 的入口包装器和实际 native 包装器。四组 JS 共 360 次完整输出必须逐字相同，native 组另外保存 90 次完整返回值。每条阶段记录必须与控制组的实际源码、options 描述和表达式 bridge 一致；两真实页面各两轮必须由 Rust 成功生成，所有权及前后源码、二进制身份必须一致。
+
+native 的成功结果经完整校验后直接返回给 `compileVueFile` 或直接脚本调用者，后续 sourcemap 组合由原编译器执行。unsupported 等失败只调用一次原阶段闭包，失败分支的完整产物与告警必须逐字等于 JS 控制组。loader 的加载失败、native 异常、解析错误和坏 payload 回退另有合成测试，不能把该测试覆盖称为真实宿主验证。成功路径只校验一次原始 payload，不加载完整 AST，也不调用 JS 节点回调；请求构造和告警交付成本仍属于实验链路。
+
+`compiler-XXXX.json` 保存原输入、原始 JS 和 native 完整结果及所有差异；`stage-XXXX.json` 另查每份实际交付的 native 结果，原阶段严格 map 门槛保持不变。完整 SFC 比较独立查询两份最终 scriptMap 到原 SFC，核对 UTF-16 范围、来源内容和名称，同时保持 template、style、config、manifest、metadata、告警和错误完整对照。多来源无法绑定到本次输入、两份空映射或单侧缺失映射都不能当作来源已验证。
+
+`completed` 仅表示诊断完整执行，`comparisonPassed` 仍要求没有回退且全部阶段及完整产物检查通过。没有丢弃 maps，也没有把去位置 AST 相等当作来源策略、运行时语义或性能通过。此实验没有运行真实微信 DevTools、构建/HMR 计时或 RSS 采样。
+
+## 原源码位置与生成区域
+
+native 对移动的 import 保留原 imported/local 位置。`expose` 合并为一个简写 token 时保留绑定位置与原名称，不挪到对象 key 的位置来模拟 Babel。空模板片段只在原文边界可验证时补 codegen 映射点；该准备不改变生成代码，不增加 parse/N-API 调用，但增加一次 AST 遍历与 map token 名称修复。
+
+合成表达式没有可追溯的原 SFC token map，因此仍是未验证来源。清空 span 也不能隔离压缩后同一行的 GLB 继承：生成注册／导出可能继承上一用户 token 的映射。此已知缺陷有诊断用例，仍需按 AST 所有权发出明确的 unmapped 区间，不能以 helper 名猜测或复制 Babel 的无效坐标。模板表达式的根 span 不足以解决此问题，后续需由上游 owner 提供可组合的 token 来源。
 
 ## 打印与 map
 

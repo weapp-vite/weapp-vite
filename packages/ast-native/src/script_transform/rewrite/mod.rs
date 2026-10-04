@@ -7,6 +7,7 @@ use oxc_semantic::Scoping;
 mod component;
 mod expose;
 mod imports;
+pub mod source_mapping;
 mod strip_types;
 
 #[cfg(test)]
@@ -50,7 +51,9 @@ pub fn prepare_program<'a>(
     scoping: &Scoping,
 ) -> Result<PreparedComponent<'a>, String> {
     if !contract.template_component_names.is_empty() {
-        return Err("Template-only component pruning is not implemented in this experiment".to_string());
+        return Err(
+            "Template-only component pruning is not implemented in this experiment".to_string(),
+        );
     }
     // Babel 在进入 setup 方法时重命名 expose，随后才访问方法体中的空调用。
     let exposed = expose::rename_setup_expose(program, allocator, scoping);
@@ -60,8 +63,12 @@ pub fn prepare_program<'a>(
         return Err(reason);
     }
     let imports = imports::rewrite_imports(program, allocator, contract)?;
-    let component = component::take_component(program, allocator, contract,
-        exposed || cleanup.transformed || cleanup.vue_cleanup)?;
+    let component = component::take_component(
+        program,
+        allocator,
+        contract,
+        exposed || cleanup.transformed || cleanup.vue_cleanup,
+    )?;
     Ok(PreparedComponent {
         expression: component.expression,
         default_export_index: component.default_export_index,

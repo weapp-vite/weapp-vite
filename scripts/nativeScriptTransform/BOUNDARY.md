@@ -142,6 +142,10 @@ Oxc 0.152 API 使用 AST 类型上的构造方法，例如 `Statement::new_impor
 
 已有显式拒绝覆盖 app、未实现的 Vue/Wevu 宏、非空 propsAliases/propsDerivedKeys、scoped slots、template refs/layout/CSS、复杂 component/capability shape 等。自定义 TS 删除、expose 的 visitor 顺序、显式 this 参数和类型/值命名空间分别有当前 TypeScript 实现的直接 oracle 回归。请求层保持字段顺序与 undefined 描述，private helper/routes 从现有源码提取，避免 Rust 静默维护另一套常量。
 
-最新独立检查仍先比较原始、优化 JS、附加 capture 的完整编译返回值，再把完整真实阶段输入交给 Rust。native 输出尚未回灌 `compileVueFile`，没有运行时 E2E 或性能样本。strict 模式不接受 fallback 或 map 差异，诊断完成与语义门禁分别记录。完整证据与当前计数见 [`2026-10-04-script-transform-stage-evidence.json`](../../docs/plans/2026-10-04-script-transform-stage-evidence.json)。
+独立阶段检查先比较原始、优化 JS、附加 capture 的完整编译返回值，再把完整真实阶段输入交给 Rust。[10 月 4 日阶段证据](../../docs/plans/2026-10-04-script-transform-stage-evidence.json) 仅覆盖这一边界，当时没有回灌完整编译器。
+
+新增 `integratedCheck.ts` 在隔离的完整编译调用中返回 native 的 code/map/metadata，让后续阶段实际组合 map；同时验证真实 JS fallback 一次执行和告警交付。四个 JS 控制组仍完整逐字对照，所有 native 完整返回值与实际阶段返回值分别保存并严格检查。生产入口仍未安装该 loader，没有运行时 E2E 或性能样本。strict 模式不接受 fallback 或 map 差异，诊断完成与语义门禁分别记录；通过 AST 或完整控制组对照不能替代来源契约。
+
+原主源码的 import 位置和改名前名称现在随变换保留；空模板片段在真实边界上补映射。`expose` 简写用原绑定位置，非空 quasi 用真实内容起点，仍可能不同于 Babel。生成区间的 unmapped fence 尚未实现，minify 下可观察到错误的 GLB 继承。模板 metadata 的根 span 与字符串不能证明逐 token 来源，上游需要保留表达式归一化／改写前后的来源关系，不能事后用文本搜索或常量偏移拼凑。
 
 后续需要先完成主源码与合成区间的来源策略、保留必要注释，并通过完整编译/真实宿主验证，再决定是否进行正式配对计时。不能通过丢掉 maps、只比较裁剪页面、仅跑返回成功或弱化 AST oracle 来扩大实验覆盖。

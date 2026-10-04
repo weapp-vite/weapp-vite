@@ -480,3 +480,22 @@ map 对照查询两份实际 stage map 从各自产物回到同一真实源脚�
 同轮完成固定[独立 CPU 运行 37207342592](https://github.com/weapp-vite/weapp-vite/actions/runs/37207342592)的摘要审计：Linux/macOS 成功，Windows 在采样前的测试 ESM import 边界失败，未产生 Windows 样本。已将测试的绝对路径改成 file URL，13 项定向测试和 lint 通过；未重跑该固定 benchmark。两平台 269 项 Git 源码身份、30 组运行、1050 条摘要观测和 600 个采样窗口一致；只有 sanitized summary 可供复核，原始 profile/worker 输出没有下载，不宣称已重算原始栈。optimized-js Babel self 的占比仍较高，但不能据 CPU 样本比例推导提速，详见[固定 CPU 证据](./2026-10-04-optimized-cpu-ci-evidence.json)。
 
 完整阶段输出尚未回灌 `compileVueFile`，没有新增性能采样、Vite/HMR 或真实 Stable 微信开发者工具 runtime 结果。实验继续默认关闭，没有扩大生产路径。下一步应处理真实源码与合成区间的 map 契约，再做完整编译/宿主对照和正式配对计时；当前不能承诺额外 Rust 收益，更不能承诺全项目两倍提速。本轮仅为内部实验和测试工具，不新增 changeset 或脚手架 bump。
+
+
+## 第二十二轮：完整编译入口接入与原源码映射修复
+
+本轮将 Rust 成功结果实际返回到隔离的 `compileVueFile`／直接脚本调用入口，原编译器继续组合 sourcemap。新增 loader 只用于显式诊断，生产入口和用户配置不变。unsupported、加载失败、解析错误、native 异常及坏 payload 仍由整段 JS fallback 接管；成功路径完整校验一次后才发布告警，告警回调异常不重做编译。实际编译语料验证 unsupported 回退，其他故障与告警所有权由合成测试覆盖，不能合称真实宿主验收。
+
+同时修复原源码位置丢失：移动的 import 保留 imported/local 原 span，expose 改名保留绑定来源与原名称，空模板片段仅在原文分隔符可验证时补映射点。没有挪动 expose 到 Babel 的对象 key 坐标，也没有将 quasi 内容起点伪造成前一分隔符。codegen 准备不改变生成文本、没有额外 parse 或 N-API 调用，但增加一次 AST 遍历、源码位置索引及 map token 名称修复，其实际性能成本尚未测量。
+
+正式严格实验在本机 macOS arm64 串行运行五个新进程。原始 JS、优化 JS、附加捕获器 JS、附加完整入口包装器 JS 四组各执行 45 场景两轮，共 360 次完整返回值、maps、告警和错误逐字相同。native 组另外执行 90 次完整调用：36 次实际交付 Rust 结果（34 次 SFC、2 次直接脚本），36 次 unsupported 后实际执行原 JS 阶段一次，18 次未经过该阶段。后两类共 54 次完整输出逐字保持一致，没有将回退候选数冒充实际回退证据。
+
+72 条 native 阶段调用含重复轮次与共享 fixture，对应 24 个不同的源码／请求组合；36 条成功记录对应 10 个组合。Wevu 与零售两真实页面各两轮均成功使用完整 Rust 返回值，未裁掉 class、条件 key 投影和 inline events。90 次调用的非脚本／map 字段、公开告警、错误全部一致；36 份 native 脚本的去位置 AST、注释顺序和 PURE／NO_SIDE_EFFECTS 归属全部一致。每份实际交付的阶段结果也另作严格对照，而不只检查 native 曾返回成功。
+
+**阶段及完整 native 结果均仍未通过 sourcemap 门槛，严格命令 exit 1，`completed=true`、`comparisonPassed=false`。** 完整结果 oracle 独立查询最终 map 到真实 SFC 来源，保留所有原始 maps，并核对全部编码分段的 UTF-16 范围和名称。两边都未映射的节点只说明所有权未核验，不能当作来源一致；不同于场景 filename/content 的 map（包括部分既有 inline.ts map）明确留为未核验，不构造虚拟来源。32/90 个完整检查满足当前比较规则，全部来自 JS 路径；这不是 native 通过率，也不把其余既有 JS 来源缺口算作 Rust 新回归。
+
+生成区域来源仍有根因未解决：Oxc 跳过空 span，不主动产生 unmapped fence，压缩后注册／导出可 GLB 继承上一用户节点的位置；该缺陷已补诊断用例，但尚未修复。模板表达式更早经过独立解析、改写和 stringify，只有根 span 与结果字符串无法恢复逐 token 来源。后续需在上游 owner 保留真实 source identity、片段及变换映射，并按 AST 所有权隔离合成区间，不能按 helper 名猜范围或复制 Babel 越界位置。
+
+61 项 Rust、212 项工具测试、局部 TypeScript／ESLint、默认及三实验 feature 并存的 cargo check 通过。Rust 仍有已记录的非致命未使用项警告；release 构建保留工具链 stripping 警告。实现文件保持 300 行以内；涉及的 Rust 文件格式同步，pre-commit／lint-staged 保留。实验及工具没有扩展生产行为，不新增 changeset 或脚手架 bump。
+
+本轮没有运行性能采样、Vite 构建／HMR 或真实 Stable 微信开发者工具 runtime，不能宣称整链收益或 runtime 最终验收完成。后续先处理生成区间和表达式来源，再扩展运行时语义对照与正式计时。原始完整证据保留在独立目录，摘要与审计边界见[完整编译接入证据](./2026-10-05-script-transform-integration-evidence.json)。

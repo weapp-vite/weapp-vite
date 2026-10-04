@@ -173,6 +173,7 @@ fn run(source: &str, request: Request) -> Result<NativeScriptTransform, String> 
         )?;
     }
     let source_map = request.options["sourceMap"] != false;
+    let source_mappings = source_map.then(|| rewrite::source_mapping::prepare(&mut parsed.program));
     let generated = Codegen::new()
         .with_options(CodegenOptions {
             minify: request.options["minify"] == true,
@@ -181,13 +182,11 @@ fn run(source: &str, request: Request) -> Result<NativeScriptTransform, String> 
         })
         .build(&parsed.program);
     let map = if source_map {
-        serde_json::from_str(
-            &generated
-                .map
-                .ok_or("Missing generated map")?
-                .to_json_string(),
-        )
-        .map_err(|e| e.to_string())?
+        let map = source_mappings
+            .as_ref()
+            .unwrap()
+            .repair_names(generated.map.ok_or("Missing generated map")?);
+        serde_json::from_str(&map.to_json_string()).map_err(|e| e.to_string())?
     } else {
         Value::Null
     };

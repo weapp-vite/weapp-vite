@@ -192,6 +192,15 @@ jobs:
           name: script-transform-stage-${{ matrix.os }}
           path: .codex-tmp/script-transform-stage/summary.json
           include-hidden-files: true
+      - name: Record complete compiler native integration (diagnostic only)
+        run: node --import tsx scripts/nativeScriptTransform/integratedCheck.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-integrated --allow-differences
+      - name: Upload sanitized complete compiler native integration
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: script-transform-integrated-${{ matrix.os }}
+          path: .codex-tmp/script-transform-integrated/summary.json
+          include-hidden-files: true
       - name: Collect optimized compiler main-thread samples serially
         if: github.event_name == 'workflow_dispatch' && inputs.optimized-compiler-cpu
         run: node --import tsx scripts/optimizedCompilerAnalysis/profile.ts --binding-dir=.codex-tmp/binding-native-release --output=.codex-tmp/optimized-compiler-cpu

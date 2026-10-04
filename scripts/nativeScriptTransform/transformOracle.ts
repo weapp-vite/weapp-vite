@@ -26,7 +26,7 @@ function strip(value: unknown): unknown {
 }
 
 /** 记录每个原始差异，不截断、不把缺失属性与显式 undefined 混为一谈。 */
-function differences(expected: unknown, actual: unknown, path = '$', expectedPresent = true, actualPresent = true): Difference[] {
+export function differences(expected: unknown, actual: unknown, path = '$', expectedPresent = true, actualPresent = true): Difference[] {
   if (expectedPresent === actualPresent && isDeepStrictEqual(expected, actual)) {
     return []
   }
@@ -57,7 +57,7 @@ function visit(value: unknown, callback: (node: Record<string, unknown>, path: s
   }
 }
 
-function anchors(ast: unknown) {
+export function anchors(ast: unknown) {
   const result: Anchor[] = []
   visit(ast, (node, path) => {
     if (typeof node.type === 'string' && (tokens.has(node.type) || /(?:Statement|Declaration)$/.test(node.type))
@@ -190,15 +190,31 @@ function inspectMaps(expected: CapturedStageResult, actual: CapturedStageResult,
   return { status, counts, mismatches, unmappedAnchors, coverageVerified, anchorsEqual: mismatches.length === 0 }
 }
 
-/** 对真实阶段产物作严格静态对照；不运行生成代码，也不把结构一致称为 runtime 语义等价。 */
-export function inspectTransform(expected: CapturedStageResult, actual: CapturedStageResult, source: string, warningsExpected: CapturedWarning[], warnings: string[]) {
-  const before = parse(expected.code, { sourceType: 'module', attachComment: true })
-  const after = parse(actual.code, { sourceType: 'module', attachComment: true })
+/** 共享严格结构检查和解析结果；调用者仅在私有诊断内部使用 AST。 */
+export function inspectScriptStructure(expectedCode: string, actualCode: string) {
+  const before = parse(expectedCode, { sourceType: 'module', attachComment: true })
+  const after = parse(actualCode, { sourceType: 'module', attachComment: true })
   const astDifferences = differences(strip(before), strip(after))
   const beforeComments = commentEvidence(before)
   const afterComments = commentEvidence(after)
   const commentDifferences = differences(beforeComments.comments, afterComments.comments)
   const annotationDifferences = differences(beforeComments.annotations, afterComments.annotations)
+  return {
+    before,
+    after,
+    astEqual: astDifferences.length === 0,
+    astDifferences,
+    commentsEqual: commentDifferences.length === 0,
+    commentDifferences,
+    annotationsEqual: annotationDifferences.length === 0,
+    annotationDifferences,
+  }
+}
+
+/** 对真实阶段产物作严格静态对照；不运行生成代码，也不把结构一致称为 runtime 语义等价。 */
+export function inspectTransform(expected: CapturedStageResult, actual: CapturedStageResult, source: string, warningsExpected: CapturedWarning[], warnings: string[]) {
+  const { before, after, ...structure } = inspectScriptStructure(expected.code, actual.code)
+  const { astDifferences, commentDifferences, annotationDifferences } = structure
   const metadata = (result: CapturedStageResult) => Object.fromEntries(Object.entries(result).filter(([key]) => key !== 'code' && key !== 'map'))
   const metadataDifferences = differences(metadata(expected), metadata(actual))
   const warningDifferences = differences(

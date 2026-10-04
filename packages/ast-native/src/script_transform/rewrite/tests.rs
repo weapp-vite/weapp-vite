@@ -8,7 +8,7 @@ use oxc_span::{SPAN, SourceType};
 
 use super::{RewriteContract, prepare_program};
 
-fn contract() -> RewriteContract {
+pub(super) fn contract() -> RewriteContract {
     RewriteContract {
         define_component: "defineComponent".to_string(),
         public_module: "wevu".to_string(),
