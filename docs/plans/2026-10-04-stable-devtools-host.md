@@ -37,6 +37,6 @@ HTTP 端口发现只访问所选 profile，运行时端口、持久会话、共�
 
 固定安装经原账号正常微信快捷登录后，原生登录查询为 `true`，所选 HTTP 端口的进程身份通过核验。原 SQLite 项目在 Stable 自动恢复；原生预检项目通过修正后的 HTTP 入口恢复，并在原生界面确认页面和探针初始状态。第三个旧诊断项目配置为 `touristappid`，Stable 返回 AppID 不存在，未修改该项目配置或绕过登录。保留所有登录数据，未进行票据搬迁。
 
-真实验收结束后原固定宿主进程仍存活，连接和机器租约已释放。最后一轮原生窗口复核遇到 Mac 锁屏，已请求解锁；两个本任务 fixture 项目窗口的定向关闭暂待完成，原窗口仍按原归属保留。
+真实验收结束后原固定宿主进程仍存活，连接和机器租约已释放。用户解锁后完成收尾：通过安装与项目身份均已核验的既有会话，定向关闭两个本任务 fixture 项目，确认两者监听端口关闭；宿主进程保持不变，登录状态仍为 `true`。原 SQLite 与原生预检项目经官方打开接口复核，仍返回原窗口身份。保留另一任务的 WXSS 探针、基准和后续预检窗口，并已完成任务交接。
 
 官方来源：<https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html>、<https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json>。
