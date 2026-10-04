@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "issue": 1097,
+  "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+  "status": "historical-functional-observations-final-acceptance-invalid",
+  "archiveCount": 28,
+  "cohortManifestHashes": {
+    "candidate-evidence.json": "832be6d367c4102d8a83d875d902ff1d985d8175106323d22f6eeec97883272e",
+    "consumer-tarballs.json": "785c6ed10371af7dd389a4c4a0b1f1d3505383ff11ce470b31f27a56fb9c7c3c"
+  },
+  "rows": [
+    {
+      "host": "wv",
+      "profile": "lib",
+      "historicalOnly": true,
+      "finalRowAccepted": false,
+      "functionalAssertionsPassed": true,
+      "harnessCommit": "ceccca166232bab2f2c7be943b70bd470d5f4244",
+      "harnessCleanAndStable": true,
+      "providers": [
+        {
+          "provider": "headless",
+          "strict": true,
+          "status": "passed",
+          "reportSha256": "3bd25c259560849030ad82fa2d8b4a93fcd39d882fd26bd0c161b48ba9bd1e30",
+          "startedAt": "2026-10-04T17:20:26.790Z",
+          "finishedAt": "2026-10-04T17:20:34.686Z",
+          "cases": 1,
+          "checkpoints": 3,
+          "excludedSkippedCases": 0,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticWarningCount": 0,
+          "recoveredStartupProtocolDiagnostics": [],
+          "harnessDeprecationWarningCount": 0
+        },
+        {
+          "provider": "devtools",
+          "strict": true,
+          "status": "passed",
+          "reportSha256": "4a3bd6e6734626d3b80f1150f476d451a0f19a46f59b5e0a48559aa667059101",
+          "startedAt": "2026-10-04T17:20:35.797Z",
+          "finishedAt": "2026-10-04T17:21:01.621Z",
+          "cases": 1,
+          "checkpoints": 3,
+          "excludedSkippedCases": 0,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticWarningCount": 6,
+          "recoveredStartupProtocolDiagnostics": [
+            {
+              "method": "App.getCurrentPage",
+              "route": "/pages/library/index",
+              "failedAttempts": 6,
+              "firstFailureAt": "2026-10-04T17:20:56.348Z",
+              "lastFailureAt": "2026-10-04T17:20:57.531Z",
+              "recoveredAt": "2026-10-04T17:20:57.786Z",
+              "state": "recovered"
+            }
+          ],
+          "harnessDeprecationWarningCount": 0
+        }
+      ],
+      "commonObservationsMatch": true,
+      "serialization": {
+        "passed": false,
+        "realExternalRuntimeProcessRecords": 4,
+        "firstObservedAt": "2026-10-04T17:18:49.694809+00:00",
+        "commandSemantics": "Playwright test execution with --project=chromium; not discovery --list",
+        "effect": "The full installation/build/runtime row overlaps another runtime test and is not final acceptance."
+      },
+      "installation": {
+        "candidatePackages": 28,
+        "comparedArchiveFiles": 1735,
+        "mismatches": 0,
+        "lockSha256": "3667be04254283fdec3adfe04f4fbf64288820c26aca1bd6f1534de07a1bddc4"
+      },
+      "cleanup": {
+        "resourcesSha256": "109ccbfca162661f1a6d9343af63002525a15942fa6bff6aeb75f1eba8e78a62",
+        "completedAt": "2026-10-04T17:21:04.125132+00:00",
+        "registeredChildren": 38,
+        "sameIdentityStillRunning": 0,
+        "ownedEndpoints": 1,
+        "ownedListeningPortsStillOpen": 0,
+        "errors": 0
+      },
+      "evidence": {
+        "runLogSha256": "5e1df366c393d744d325c434f6dec3c98a279e9148a8a3fe52f46b93d969c4d3",
+        "rowSummarySha256": "af3938b5ebcb1f91559760ee45cb57b70a64501a66c6b55d432f78a057c3f841",
+        "fullIndependentAuditSha256": "95e93bc8c916497a3580b07bccc8789eded85b207133b04b2a592ad32213c51e"
+      }
+    },
+    {
+      "host": "vite",
+      "profile": "plugin",
+      "historicalOnly": true,
+      "finalRowAccepted": false,
+      "functionalAssertionsPassed": true,
+      "harnessCommit": "ceccca166232bab2f2c7be943b70bd470d5f4244",
+      "harnessCleanAndStable": true,
+      "providers": [
+        {
+          "provider": "devtools",
+          "strict": true,
+          "status": "passed",
+          "reportSha256": "391a5fee22a0f659138657b92b761d363bc3f0c071e76994798d768cd0a0ae88",
+          "startedAt": "2026-10-04T17:24:26.174Z",
+          "finishedAt": "2026-10-04T17:24:46.725Z",
+          "cases": 2,
+          "checkpoints": 3,
+          "excludedSkippedCases": 2,
+          "runtimeConsoleSummary": {
+            "warn": 2,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticWarningCount": 2,
+          "recoveredStartupProtocolDiagnostics": [],
+          "harnessDeprecationWarningCount": 2
+        },
+        {
+          "provider": "headless",
+          "strict": true,
+          "status": "passed",
+          "reportSha256": "b60affdae78c3a4571c1a66e7814b598fefcad3990e16258c8340ac0af126388",
+          "startedAt": "2026-10-04T17:24:21.541Z",
+          "finishedAt": "2026-10-04T17:24:25.486Z",
+          "cases": 2,
+          "checkpoints": 3,
+          "excludedSkippedCases": 2,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticWarningCount": 0,
+          "recoveredStartupProtocolDiagnostics": [],
+          "harnessDeprecationWarningCount": 0
+        }
+      ],
+      "commonObservationsMatch": true,
+      "serialization": {
+        "passed": false,
+        "realExternalRuntimeProcessRecords": 4,
+        "firstObservedAt": "2026-10-04T17:23:56.571044+00:00",
+        "commandSemantics": "Playwright test execution with --project=chromium; not discovery --list",
+        "effect": "The full installation/build/runtime row overlaps another runtime test and is not final acceptance."
+      },
+      "installation": {
+        "candidatePackages": 28,
+        "comparedArchiveFiles": 1735,
+        "mismatches": 0,
+        "lockSha256": "52273aef4bcbaa333a56217b6491f30aca7ff6790d764a3e2f11ef18a37cdc36"
+      },
+      "cleanup": {
+        "resourcesSha256": "706c6e78faafa236d083815689e5e8e1f0374a74d30a45fc9a6683aafd1502c2",
+        "completedAt": "2026-10-04T17:24:48.246100+00:00",
+        "registeredChildren": 40,
+        "sameIdentityStillRunning": 0,
+        "ownedEndpoints": 1,
+        "ownedListeningPortsStillOpen": 0,
+        "errors": 0
+      },
+      "evidence": {
+        "runLogSha256": "e5944ff5682fca1434c82c5a36f91b16f2275b0cbda51d01c0d0fb4508397385",
+        "rowSummarySha256": "661f63442b69ff5995da05a4adc0252f90a4adbbbd4acc8971272df227324392",
+        "fullIndependentAuditSha256": "5a59d871b3718a5a6ec8c510e9fe20ffb1f48ac294e2c1cae912c1d3017e7709"
+      }
+    }
+  ],
+  "notStartedAfterBatchStopped": [
+    "vite/lib",
+    "vite-plus/lib",
+    "vite-plus/plugin"
+  ],
+  "limitations": [
+    "Neither row increments final accepted coverage. The frozen compiler is historical and does not validate production changes at ceccca166.",
+    "Plugin runtime retains two wx.getSystemInfoSync deprecation warnings during setup. The recorded harness probes SDKVersion with this deprecated API; error and exception counts are zero.",
+    "All selected cases passed; plugin ES6-enabled cases were deliberately excluded and remain skipped. They are not claimed as executed.",
+    "Observed serialization is based on retained process snapshots; no exclusive-machine or performance claim is made."
+  ]
+}
