@@ -36,6 +36,8 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
 
   let closed = false
   let running = false
+  let closing: Promise<void> | undefined
+  let actionPromise: Promise<void> | undefined
   let mcpHandle: WeappViteMcpServerHandle | undefined
   let onData: ((chunk: string | Uint8Array) => void) | undefined
   let onKeypress: ((str: string, key: { name?: string, ctrl?: boolean } | undefined) => void) | undefined
@@ -72,23 +74,36 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     },
   })
   const close = () => {
-    if (closed) {
-      return
+    if (closing) {
+      return closing
     }
     closed = true
     if (onSigcont) {
       process.off('SIGCONT', onSigcont)
     }
-    inputSession?.close()
-    inputSession = undefined
-    if (mcpHandle?.close) {
-      void mcpHandle.close().catch((error) => {
-        logger.warn(`[dev action] MCP 服务关闭失败：${error instanceof Error ? error.message : String(error)}`)
-      })
+    const inputErrors: unknown[] = []
+    try {
+      inputSession?.close()
     }
-    void closeSharedMiniProgram(options.projectPath).catch((error) => {
-      logger.warn(`[dev action] DevTools 会话关闭失败：${error instanceof Error ? error.message : String(error)}`)
-    })
+    catch (error) {
+      inputErrors.push(error)
+    }
+    inputSession = undefined
+    return closing = (async () => {
+      // 等待正在启动的资源交付句柄后再关闭，避免 MCP 或 IDE 会话晚到后泄漏。
+      await actionPromise
+      const handle = mcpHandle
+      const closeHandle = handle?.close?.bind(handle)
+      mcpHandle = undefined
+      const results = await Promise.allSettled([
+        Promise.resolve().then(() => closeHandle?.()),
+        Promise.resolve().then(() => closeSharedMiniProgram(options.projectPath)),
+      ])
+      const failures = [...inputErrors, ...results.filter(result => result.status === 'rejected').map(result => result.reason)]
+      if (failures.length) {
+        throw new AggregateError(failures, '开发快捷键资源关闭失败')
+      }
+    })()
   }
 
   const printPanel = (message: string, force = false) => {
@@ -145,8 +160,12 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     label: string,
     pendingLabel: string,
     action: () => Promise<string | undefined>,
+    quiet = false,
   ) => {
     if (running) {
+      if (quiet) {
+        return
+      }
       const current = currentAction ?? '已有命令'
       const elapsed = actionStartedAt === undefined ? '' : `（已运行 ${Math.max(0, Date.now() - actionStartedAt)} ms）`
       logger.warn(`[dev action] 当前正在${current.replace(REG_PENDING_PREFIX, '')}${elapsed}，已忽略重复请求。`)
@@ -156,8 +175,10 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     running = true
     actionStartedAt = Date.now()
     currentAction = pendingLabel
-    printHint()
-    void action()
+    if (!quiet) {
+      printHint()
+    }
+    actionPromise = action()
       .then((summary) => {
         if (summary) {
           lastAction = summary
@@ -170,37 +191,9 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
         running = false
         actionStartedAt = undefined
         currentAction = undefined
-        if (!closed) {
+        if (!closed && !quiet) {
           printHint()
         }
-      })
-  }
-
-  const runBackgroundAction = (
-    label: string,
-    pendingLabel: string,
-    action: () => Promise<string | undefined>,
-  ) => {
-    if (running) {
-      return
-    }
-
-    running = true
-    actionStartedAt = Date.now()
-    currentAction = pendingLabel
-    void action()
-      .then((summary) => {
-        if (summary) {
-          lastAction = summary
-        }
-      })
-      .catch((error) => {
-        logger.error(`[dev action] ${label}失败：${error instanceof Error ? error.message : String(error)}`)
-      })
-      .finally(() => {
-        running = false
-        actionStartedAt = undefined
-        currentAction = undefined
       })
   }
 
@@ -210,7 +203,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
     const normalizedInput = normalizeInputChar(input)
     if (normalizedInput === '\u0003') {
-      close()
+      void close().catch(error => logger.error(error))
       forwardSigint()
       return
     }
@@ -220,7 +213,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
     const normalized = normalizedInput.toLowerCase()
     if (normalized === 'q') {
-      close()
+      void close().catch(error => logger.error(error))
       forwardSigint()
       return
     }
@@ -295,9 +288,9 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     printHint()
   }
   if (resolvedMcp.enabled && resolvedMcp.autoStart) {
-    runBackgroundAction('MCP 自动启动', '正在启动 MCP 服务', async () => {
+    runAction('MCP 自动启动', '正在启动 MCP 服务', async () => {
       await toggleMcp({ silent: true })
-    })
+    }, true)
   }
 
   return {

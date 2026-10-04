@@ -1,6 +1,7 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../context'
-import { build, createServer } from 'vite'
+import { build } from 'vite'
+import { createDevViteServer } from '../devLifecycle/vite'
 import { requireConfigService } from './utils/requireConfigService'
 
 export interface WebService {
@@ -33,7 +34,7 @@ function createWebService(ctx: MutableCompilerContext): WebService {
     if (!inlineConfig) {
       return undefined
     }
-    const server = await createServer(inlineConfig)
+    const server = await createDevViteServer(inlineConfig)
     const requestedPort = typeof inlineConfig.server?.port === 'number'
       ? inlineConfig.server.port
       : undefined

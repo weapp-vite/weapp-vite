@@ -1,6 +1,7 @@
 import type { ViteDevServer } from 'vite'
 import { mergeConfig } from 'vite'
 import { expect, it, vi } from 'vitest'
+import { getDevServerCloseRecord } from '../devLifecycle/server'
 import { bindHostLifecycle, setHostRestartData, takeHostRestartData } from './lifecycle'
 
 it('waits for replacement startup and closes the replacement session before returning', async () => {
@@ -14,7 +15,10 @@ it('waits for replacement startup and closes the replacement session before retu
     restart: async () => {
       entered.resolve()
       await ready.promise
-      server.close = closeReplacement
+      const replacement = { close: closeReplacement } as unknown as ViteDevServer
+      getDevServerCloseRecord(replacement)
+      // 原生交接同时复制服务器的方法和本代资源记录。
+      Object.assign(server, replacement)
     },
   } as unknown as ViteDevServer
   bindHostLifecycle(server, async () => {})

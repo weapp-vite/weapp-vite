@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 const emitKeypressEventsMock = vi.hoisted(() => vi.fn())
 const takeScreenshotMock = vi.hoisted(() => vi.fn())
@@ -238,7 +238,7 @@ describe('devHotkeys', () => {
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
     expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('状态        等待操作'))
 
-    session?.close()
+    await session?.close()
   })
 
   it('can skip startup hint until restore is called', async () => {
@@ -259,7 +259,7 @@ describe('devHotkeys', () => {
     session?.restore()
 
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
-    session?.close()
+    await session?.close()
   })
 
   it('does not print duplicate hint panels when restore is called repeatedly without state changes', async () => {
@@ -279,7 +279,7 @@ describe('devHotkeys', () => {
     session?.restore()
 
     expect(loggerMock.info).toHaveBeenCalledTimes(1)
-    session?.close()
+    await session?.close()
   })
 
   it('prints full help on h hotkey', async () => {
@@ -446,7 +446,98 @@ describe('devHotkeys', () => {
 
     expect(closeMcpMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('开发快捷键已就绪'))
-    session?.close()
+    await session?.close()
+  })
+
+  it.each([false, true])('waits for an MCP start already in flight before closing (autoStart: %s)', async (autoStart) => {
+    vi.doMock('node:process', () => ({ default: fakeProcess }))
+    const startup = Promise.withResolvers<{ close: typeof closeMcpMock, transport: string }>()
+    const mcpClosed = Promise.withResolvers<void>()
+    const ideClosed = Promise.withResolvers<void>()
+    startWeappViteMcpServerMock.mockReturnValueOnce(startup.promise)
+    closeMcpMock.mockReturnValueOnce(mcpClosed.promise)
+    closeSharedMiniProgramMock.mockReturnValueOnce(ideClosed.promise)
+    const { startDevHotkeys } = await import('./devHotkeys')
+    const session = startDevHotkeys({
+      cwd: '/project',
+      projectPath: '/project/dist',
+      platform: 'weapp',
+      mcpConfig: { autoStart },
+    })!
+    expectTypeOf(session.close).returns.toEqualTypeOf<Promise<void>>()
+    if (!autoStart) {
+      stdin.emit('data', 'm')
+    }
+    const closing = session.close()
+    expect(session.close()).toBe(closing)
+    expect(stdin.listenerCount('data')).toBe(0)
+    expect(fakeProcess.listenerCount('SIGCONT')).toBe(0)
+    let finished = false
+    void closing.then(() => {
+      finished = true
+    })
+    await flushMicrotasks()
+    expect(finished).toBe(false)
+    expect(closeMcpMock).not.toHaveBeenCalled()
+
+    startup.resolve({ close: closeMcpMock, transport: 'streamable-http' })
+    await flushMicrotasks(15)
+    expect(closeMcpMock).toHaveBeenCalledTimes(1)
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledExactlyOnceWith('/project/dist')
+    mcpClosed.resolve()
+    await flushMicrotasks()
+    expect(finished).toBe(false)
+    ideClosed.resolve()
+    await closing
+    expect(finished).toBe(true)
+    expect(session.close()).toBe(closing)
+  })
+
+  it('waits for an in-flight MCP stop without closing its handle twice', async () => {
+    vi.doMock('node:process', () => ({ default: fakeProcess }))
+    const { startDevHotkeys } = await import('./devHotkeys')
+    const session = startDevHotkeys({ cwd: '/project', projectPath: '/project/dist', platform: 'weapp', mcpConfig: { autoStart: true } })!
+    await flushMicrotasks(10)
+    const stopped = Promise.withResolvers<void>()
+    closeMcpMock.mockReturnValueOnce(stopped.promise)
+    stdin.emit('data', 'm')
+    const closing = session.close()
+    stopped.resolve()
+    await closing
+    expect(closeMcpMock).toHaveBeenCalledTimes(1)
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledExactlyOnceWith('/project/dist')
+  })
+
+  it('attempts every owned cleanup and reports failures through its close promise', async () => {
+    vi.doMock('node:process', () => ({ default: fakeProcess }))
+    const { startDevHotkeys } = await import('./devHotkeys')
+    const session = startDevHotkeys({ cwd: '/project', projectPath: '/project/dist', platform: 'weapp', mcpConfig: { autoStart: true } })!
+    await flushMicrotasks(10)
+    const mcpFailure = new Error('MCP close failed')
+    const ideFailure = new Error('IDE close failed')
+    closeMcpMock.mockRejectedValueOnce(mcpFailure)
+    closeSharedMiniProgramMock.mockRejectedValueOnce(ideFailure)
+    await expect(session.close()).rejects.toMatchObject({ errors: [mcpFailure, ideFailure] })
+    expect(closeMcpMock).toHaveBeenCalledTimes(1)
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledExactlyOnceWith('/project/dist')
+  })
+
+  it('still releases MCP and IDE resources when terminal input cleanup throws synchronously', async () => {
+    vi.doMock('node:process', () => ({ default: fakeProcess }))
+    const failure = new Error('terminal cleanup failed')
+    const closeInput = vi.fn(() => {
+      throw failure
+    })
+    createSharedInputSessionMock.mockReturnValueOnce({ close: closeInput, resume: vi.fn(), suspend: vi.fn() })
+    const { startDevHotkeys } = await import('./devHotkeys')
+    const session = startDevHotkeys({ cwd: '/project', projectPath: '/project/dist', platform: 'weapp', mcpConfig: { autoStart: true } })!
+    await flushMicrotasks(10)
+    const closing = session.close()
+    expect(session.close()).toBe(closing)
+    await expect(closing).rejects.toMatchObject({ errors: [failure] })
+    expect(closeInput).toHaveBeenCalledTimes(1)
+    expect(closeMcpMock).toHaveBeenCalledTimes(1)
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledExactlyOnceWith('/project/dist')
   })
 
   it('auto starts mcp service without startup onboarding logs', async () => {
@@ -479,7 +570,7 @@ describe('devHotkeys', () => {
     expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('在 AI 工具中接入 weapp-vite MCP'))
     expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('最近操作：MCP'))
     expect(loggerMock.success).not.toHaveBeenCalledWith(expect.stringContaining('MCP 服务已启动'))
-    session?.close()
+    await session?.close()
   })
 
   it('auto reuses existing mcp service without startup logs', async () => {
@@ -502,7 +593,7 @@ describe('devHotkeys', () => {
     expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('正在启动 MCP 服务'))
     expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('MCP 服务已存在，继续复用'))
     expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('最近操作：MCP'))
-    session?.close()
+    await session?.close()
   })
 
   it('reuses existing mcp service when hotkey start hits occupied port', async () => {
@@ -528,7 +619,7 @@ describe('devHotkeys', () => {
     stdin.emit('data', 'm')
     await flushMicrotasks(10)
     expect(closeMcpMock).not.toHaveBeenCalled()
-    session?.close()
+    await session?.close()
   })
 
   it('resets devtools session with c hotkey', async () => {
@@ -756,7 +847,7 @@ describe('devHotkeys', () => {
       projectPath: '/project/dist',
     }))
 
-    session?.close()
+    await session?.close()
     expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/project/dist')
   })
 
