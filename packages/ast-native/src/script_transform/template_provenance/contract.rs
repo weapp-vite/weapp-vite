@@ -5,6 +5,9 @@ use oxc_span::{SourceType, Span};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
+use super::fragments;
+pub(super) use super::fragments::{Fragment, FragmentOrigin};
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SourceContract {
@@ -29,6 +32,7 @@ pub struct Occurrence {
     pub inline_id: String,
     pub expression: ExpressionRange,
     pub callee: CalleeRange,
+    pub fragments: Option<Vec<Fragment>>,
 }
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -51,9 +55,10 @@ pub struct CalleeOrigin {
     pub source_index: usize,
     pub original: Span,
     pub handle: Span,
+    pub fragments: Vec<FragmentOrigin>,
 }
 
-fn byte_offsets(source: &str) -> HashMap<u32, u32> {
+pub(super) fn byte_offsets(source: &str) -> HashMap<u32, u32> {
     let mut offsets = HashMap::new();
     let mut utf16 = 0;
     for (byte, character) in source.char_indices() {
@@ -63,7 +68,7 @@ fn byte_offsets(source: &str) -> HashMap<u32, u32> {
     offsets.insert(utf16, source.len() as u32);
     offsets
 }
-fn range(offsets: &HashMap<u32, u32>, start: u32, end: u32) -> Result<Span, String> {
+pub(super) fn range(offsets: &HashMap<u32, u32>, start: u32, end: u32) -> Result<Span, String> {
     if start >= end {
         return Err("Empty/reversed provenance range".to_owned());
     }
@@ -74,26 +79,21 @@ fn range(offsets: &HashMap<u32, u32>, start: u32, end: u32) -> Result<Span, Stri
         *offsets.get(&end).ok_or("Invalid UTF-16 provenance end")?,
     ))
 }
+
 fn unparen<'b, 'a>(mut expression: &'b Expression<'a>) -> &'b Expression<'a> {
     while let Expression::ParenthesizedExpression(parenthesized) = expression {
         expression = &parenthesized.expression;
     }
     expression
 }
+
 fn validate_callee(
     occurrence: &Occurrence,
     expression_span: Span,
     callee_span: Span,
+    expression: &Expression<'_>,
 ) -> Result<(), String> {
-    let allocator = Allocator::default();
-    let expression = Parser::new(&allocator, &occurrence.expression.text, SourceType::mjs())
-        .with_options(ParseOptions {
-            preserve_parens: true,
-            ..ParseOptions::default()
-        })
-        .parse_expression()
-        .map_err(|_| "Invalid original handler expression")?;
-    let callee = match unparen(&expression) {
+    let callee = match unparen(expression) {
         Expression::Identifier(identifier) => identifier,
         Expression::CallExpression(call) if !call.optional && call.type_arguments.is_none() => {
             let Expression::Identifier(identifier) = unparen(&call.callee) else {
@@ -182,18 +182,36 @@ pub fn validate(main: &str, contract: &SourceContract) -> Result<Vec<CalleeOrigi
         {
             return Err("Provenance occurrence source slice differs".to_owned());
         }
-        validate_callee(occurrence, expression, callee)?;
+        let allocator = Allocator::default();
+        let parsed = Parser::new(&allocator, &occurrence.expression.text, SourceType::mjs())
+            .with_options(ParseOptions {
+                preserve_parens: true,
+                ..ParseOptions::default()
+            })
+            .parse_expression()
+            .map_err(|_| "Invalid original handler expression")?;
+        validate_callee(occurrence, expression, callee, &parsed)?;
+        let mut fragments = fragments::validate(occurrence, expression, &parsed, content, offsets)?;
         let end = handle
             .checked_add(callee.size())
             .ok_or("Provenance handle overflow")?;
+        let callee_handle = Span::new(handle, end);
+        handle = end.checked_add(1).ok_or("Provenance handle overflow")?;
+        for fragment in &mut fragments {
+            let end = handle
+                .checked_add(fragment.generated_text.len() as u32)
+                .ok_or("Provenance handle overflow")?;
+            fragment.handle = Span::new(handle, end);
+            handle = end.checked_add(1).ok_or("Provenance handle overflow")?;
+        }
         origins.push(CalleeOrigin {
             inline_id: occurrence.inline_id.clone(),
             name: occurrence.callee.name.clone(),
             source_index,
             original: callee,
-            handle: Span::new(handle, end),
+            handle: callee_handle,
+            fragments,
         });
-        handle = end.checked_add(1).ok_or("Provenance handle overflow")?;
     }
     if source_ids.len()
         != origins

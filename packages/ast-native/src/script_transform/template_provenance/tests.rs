@@ -66,6 +66,13 @@ fn validates_original_ast_token_instead_of_matching_same_text_elsewhere() {
 }
 
 #[test]
+fn keeps_root_callee_validation_when_fragment_contract_is_present() {
+    let mut c = contract("other(jump)", "other(jump)", 0, 11, 6, 10);
+    c.occurrences[0].fragments = Some(Vec::new());
+    assert!(InlineOrigins::new("export default {}", &c).is_err());
+}
+
+#[test]
 fn rejects_malformed_identity_range_and_unowned_sources() {
     let baseline = serde_json::to_value(json!({"schemaVersion":1,"coordinateEncoding":"utf16",
         "sources":[{"id":"template","filename":"test.vue","content":"😀jump()"}],

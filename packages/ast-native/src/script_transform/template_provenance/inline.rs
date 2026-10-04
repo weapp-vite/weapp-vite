@@ -1,4 +1,4 @@
-use super::contract::CalleeOrigin;
+use super::{contract::CalleeOrigin, fragments};
 use oxc_ast::ast::*;
 use oxc_span::SPAN;
 use serde_json::Value;
@@ -87,6 +87,15 @@ pub fn apply(
             return Err("Inline callee differs from provenance occurrence".to_owned());
         }
         member.property.span = origin.handle;
+        if !origin.fragments.is_empty() {
+            fragments::apply(
+                call,
+                asset["expression"]
+                    .as_str()
+                    .ok_or("Missing inline expression")?,
+                &origin.fragments,
+            )?;
+        }
     }
     Ok(())
 }

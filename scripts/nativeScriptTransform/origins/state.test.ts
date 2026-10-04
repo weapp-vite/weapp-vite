@@ -68,6 +68,75 @@ describe('immutable inline handler origin sidecar', () => {
     expect(occurrence.callee).toEqual({ start: occurrence.expression.start, end: occurrence.expression.end, name: 'showPopup' })
   })
 
+  it('records copied primitive argument fragments only when generated tokens retain exact source text', () => {
+    const state = new InlineOriginState()
+    const fixture = originFixture([`jump('/one', 2, true, null)`])
+    const directive = fixture.directives[0]!
+    const input = directive.exp!.content!
+    const asset = { ...originAsset('i0', 'jump'), expression: `_ctx.jump('/one',2,true,null)` }
+    const parsed = parseBabelExpressionFile(input)!
+    withFixture(state, fixture, () => state.directive(directive, fixture.context, input, () => {
+      state.parsed(input, fixture.context, parsed)
+      const generated = parsed.expression
+      if (generated.type !== 'CallExpression' || generated.callee.type !== 'Identifier') {
+        throw new Error('test fixture must parse as a direct call')
+      }
+      generated.callee = {
+        type: 'MemberExpression',
+        computed: false,
+        object: { type: 'Identifier', name: '_ctx' },
+        property: generated.callee,
+      }
+      // 同一 AST 原地改写后 start/end 不能改写已经观察到的来源摘要；loc 仍供实际生成器读取。
+      for (const argument of generated.arguments) {
+        argument.start = 0
+        argument.end = 1
+      }
+      state.registered(asset, fixture.context, generated)
+    }))
+
+    const occurrence = state.requestFor({ inlineExpressions: [asset] })!.occurrences[0]!
+    expect(occurrence.fragments?.map(fragment => ({
+      kind: fragment.kind,
+      role: fragment.role,
+      generated: fragment.generated.text,
+      source: fragment.source.text,
+    }))).toEqual([
+      { kind: 'inline-handler-argument-literal', role: 'copied', generated: `'/one'`, source: `'/one'` },
+      { kind: 'inline-handler-argument-literal', role: 'copied', generated: '2', source: '2' },
+      { kind: 'inline-handler-argument-literal', role: 'copied', generated: 'true', source: 'true' },
+      { kind: 'inline-handler-argument-literal', role: 'copied', generated: 'null', source: 'null' },
+    ])
+    for (const fragment of occurrence.fragments ?? []) {
+      expect(asset.expression.slice(fragment.generated.start, fragment.generated.end)).toBe(fragment.generated.text)
+      expect(fixture.source.slice(fragment.source.start, fragment.source.end)).toBe(fragment.source.text)
+    }
+  })
+
+  it.each([
+    { label: 'changed literal spelling', original: `jump('/one')`, generated: `_ctx.jump('/two')` },
+    { label: 'changed quote spelling', original: `jump("/one")`, generated: `_ctx.jump('/one')` },
+    { label: 'unicode escape rewrite', original: `jump('\\u{1F600}')`, generated: `_ctx.jump('😀')` },
+    { label: 'member property outside Phase A', original: 'jump(options.path)', generated: '_ctx.jump(_scope.options.path)' },
+    { label: 'mixed primitive and complex arguments', original: 'jump(1, options.path)', generated: '_ctx.jump(1,_scope.options.path)' },
+    { label: 'spread argument', original: 'jump(...values)', generated: '_ctx.jump(...values)' },
+    { label: 'typescript wrapper', original: 'jump(value as string)', generated: '_ctx.jump(value)' },
+    { label: 'literal wrapped in a type assertion', original: 'jump(1 as number)', generated: '_ctx.jump(1)' },
+  ])('omits fragments and keeps the asset usable for $label', ({ original, generated: generatedSource }) => {
+    const state = new InlineOriginState()
+    const fixture = originFixture([original])
+    const directive = fixture.directives[0]!
+    const asset = { ...originAsset('i0', 'jump'), expression: generatedSource }
+    const generated = parseBabelExpressionFile(generatedSource)!.expression
+    withFixture(state, fixture, () => state.directive(directive, fixture.context, original, () => {
+      state.parsed(original, fixture.context, parseBabelExpressionFile(original))
+      state.registered(asset, fixture.context, generated)
+    }))
+
+    const occurrence = state.requestFor({ inlineExpressions: [asset] })!.occurrences[0]!
+    expect(occurrence.fragments).toBeUndefined()
+  })
+
   it.each(['obj.jump()', 'jump?.()', '(jump())', 'jump() as unknown', '(() => jump())()'])('records unsupported original callee syntax without changing the result: %s', (input) => {
     const state = new InlineOriginState()
     const fixture = originFixture([input])

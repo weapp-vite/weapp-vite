@@ -56,11 +56,13 @@ native 对移动的 import 保留原 imported/local 位置。`expose` 合并为�
 
 这隔离了 Oxc 实际写映射的辅助 token、注册／导出及部分容器边界；它不是每个字符的区间证明。Oxc 不写映射的逗号、分号、部分括号和 import 的 `from` 关键字仍可能 GLB 继承。没有使用 helper 名搜索生成范围，也没有把保留行作为用户源码发布。
 
-`origins/` 现仅覆盖 `v-on` 内联表达式的直接 handler 名称：从实际 Vue 指令及原始完整 SFC 建立 occurrence，通过原 asset 的 WeakMap 保留关系，在唯一请求顶层附加 UTF-16 `provenance`。不增写生产 AST、options 或 metadata，不按相同文本搜索位置，不把生成的 `_ctx`、`_event`、参数或整个表达式标为来自该名称。只有精确原文切片、原 parser callee 与改写后根调用均可证明时才传入。
+`origins/` 覆盖 `v-on` 内联表达式的直接 handler 名称，并为全部参数均为 string／number／boolean／null 的直接调用尝试追加参数来源：从实际 Vue 指令及原始完整 SFC 建立 occurrence，通过原 asset 的 WeakMap 保留关系，在唯一请求顶层附加 UTF-16 `provenance`。不增写生产 AST、options 或 metadata，不按相同文本搜索位置，不把生成的 `_ctx`、`_event` 或整个表达式标为来自该名称。只有精确原文切片、原 parser callee 与改写后根调用均可证明时才传入。
 
-Rust 校验来源、范围和原始直接 callee AST，再沿实际 metadata 结构只给生成成员名分配位置；单次 codegen 支持主脚本与完整模板来源。`originChecks` 另从完整 SFC 解析真实 on 指令，对照实际 asset 注册顺序，并在阶段和最终产物的 callee token 上要求明确 segment 与实际 map consumer 查询同时正确。未知来源、实体解码差异、范围错误、重复或换绑均不能通过；含候选 handler 的 slot 子树目前拒绝，无事件的展示 slot 不影响当前检查。
+基本字面量的原始类型、值和 UTF-16 范围在 parse hook 当场复制为不可变摘要，避免后续 AST 原地改写污染证据。注册时要求参数个数、同序值和 token 原文一致，再从 Babel 明确的 map 起点取得资产位置；不搜索输出文字。复杂参数、member property、spread、类型包装或无法精确证明的改写不附加 fragments，保留已有 callee-only 证据；这不等于强制 native fallback。
 
-这只是 callee token 起点的来源切片。class/key、inline 参数、包装代码和其他模板 token 仍缺乏完整来源关系，部分标点仍可 GLB 继承。严格旧 oracle 继续拒绝未核验的双侧 unmapped，独立 callee 校验通过也不消除严格编译失败。完整源码传输、上游观察、额外局部解析及多来源 map 重建的成本尚未测量。
+Rust 校验来源、范围和原始直接 callee AST，再沿实际 metadata 结构给生成成员名和已证明的同序基本参数分配位置；单次 codegen 支持主脚本与完整模板来源。`originChecks` 另从完整 SFC 解析真实 on 指令，对照实际 asset 注册顺序，并在阶段和最终产物的 callee 与参数 token 上要求明确 segment 与实际 map consumer 查询同时正确。参数按输出 AST 次序定位，允许打印器改变引号和空白，不按资产偏移猜最终位置；callee 与参数计数分别报告。未知来源、实体解码差异、范围错误、重复或换绑均不能通过；含候选 handler 的 slot 子树目前拒绝，无事件的展示 slot 不影响当前检查。
+
+这只证明 callee 与选定基本参数 token 的起点。class/key、复杂 inline 参数、包装代码和其他模板 token 仍缺乏完整来源关系，部分标点仍可 GLB 继承。严格旧 oracle 继续拒绝未核验的双侧 unmapped，独立 callee 校验通过也不消除严格编译失败。完整源码传输、上游观察、额外局部解析及多来源 map 重建的成本尚未测量。
 
 ## 打印与 map
 

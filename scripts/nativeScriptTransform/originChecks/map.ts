@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { parse } from '@babel/parser'
 import { decodedMappings, originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import { WEVU_INLINE_MAP_KEY } from '@weapp-core/constants'
+import { primitiveArguments, validateFragments } from './fragments'
 import { assets, ensure, object, semantics } from './shared'
 
 function field(node: t.Node, name: string): t.Expression {
@@ -37,8 +38,39 @@ function position(content: string, offset: number) {
   return { line: lines.length - 1, column: lines.at(-1)!.length }
 }
 
+function verifyFragmentMap(
+  occurrence: InlineProvenance['occurrences'][number],
+  asset: ReturnType<typeof assets>[number],
+  fn: t.ArrowFunctionExpression,
+  map: TraceMap,
+  mappings: ReturnType<typeof decodedMappings>,
+  owner: { filename: string, content: string },
+) {
+  if (occurrence.fragments === undefined) {
+    return 0
+  }
+  const checked = validateFragments(occurrence.fragments, occurrence.expression, asset, owner.content)
+  const emitted = primitiveArguments(fn.body)
+  ensure(emitted.length === checked.length, 'emitted fragment argument coverage differs')
+  for (const { fragment, index } of checked) {
+    const token = emitted[index]!
+    ensure(token.loc, 'generated fragment token has no location')
+    const generated = token.loc.start
+    const segments = (mappings[generated.line - 1] ?? []).filter(segment => segment[0] === generated.column)
+    ensure(segments.length === 1 && segments[0]!.length >= 4, 'fragment needs one explicit mapped anchor')
+    const segment = segments[0]!
+    ensure(map.sources[segment[1]!] === owner.filename && map.resolvedSources[segment[1]!] === owner.filename
+      && map.sourcesContent?.[segment[1]!] === owner.content, 'fragment map source owner differs')
+    const original = position(owner.content, fragment.source.start)
+    ensure(segment[2] === original.line && segment[3] === original.column, 'fragment exact source anchor differs')
+    const consumed = originalPositionFor(map, { line: generated.line, column: generated.column })
+    ensure(consumed.source === owner.filename && consumed.line === original.line + 1 && consumed.column === original.column, 'fragment consumer lookup differs from exact anchor')
+  }
+  return checked.length
+}
+
 /** 沿实际 metadata AST 路径取输出 token，要求同列显式映射，不接受 GLB 继承作为来源证据。 */
-export function verifyInlineOriginMap(provenance: InlineProvenance, actualOptionsDecoded: unknown, code: string, rawMap: unknown): { checked: number } {
+export function verifyInlineOriginMap(provenance: InlineProvenance, actualOptionsDecoded: unknown, code: string, rawMap: unknown) {
   const mapValue = typeof rawMap === 'string' ? JSON.parse(rawMap) as unknown : rawMap
   const raw = object(mapValue)
   ensure(raw.version === 3 && Array.isArray(raw.sources) && Array.isArray(raw.sourcesContent)
@@ -47,6 +79,7 @@ export function verifyInlineOriginMap(provenance: InlineProvenance, actualOption
   const mappings = decodedMappings(map)
   const inlineMap = metadata(code)
   const actualAssets = assets(actualOptionsDecoded)
+  let fragmentsChecked = 0
   for (const occurrence of provenance.occurrences) {
     const asset = actualAssets.find(item => item.id === occurrence.inlineId)
     ensure(asset?.callee?.name === occurrence.callee.name, 'map asset does not own the requested callee')
@@ -73,6 +106,7 @@ export function verifyInlineOriginMap(provenance: InlineProvenance, actualOption
     const consumed = originalPositionFor(map, { line: generated.line, column: generated.column })
     ensure(consumed.source === owner.filename && consumed.line === original.line + 1 && consumed.column === original.column
       && consumed.name === (segment.length < 5 ? null : occurrence.callee.name), 'consumer lookup differs from exact callee anchor')
+    fragmentsChecked += verifyFragmentMap(occurrence, asset, fn, map, mappings, owner)
   }
-  return { checked: provenance.occurrences.length }
+  return { checked: provenance.occurrences.length, fragmentsChecked }
 }

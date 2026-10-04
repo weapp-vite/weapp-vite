@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 1,
+  "phase": "primitive-inline-argument-origins",
+  "date": "2026-10-05",
+  "scope": "Explicit diagnostic loader and Cargo experiment only; production defaults and public configuration unchanged.",
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "rustc": "rustc 1.99.0 (b940084d7 2026-09-28) (Homebrew)"
+  },
+  "verification": {
+    "toolTests": 394,
+    "rustScriptTransformTests": 91,
+    "typescript": true,
+    "eslint": true,
+    "combinedExperimentalCargoCheck": true,
+    "strictSemanticCommandExitCode": 1,
+    "completed": true,
+    "semanticComparisonPassed": true,
+    "compilerComparisonPassed": false,
+    "comparisonPassed": false,
+    "semanticComparisons": 4,
+    "semanticWorkers": 8
+  },
+  "compiler": {
+    "completeControlByteChecks": 360,
+    "completeNativeCalls": 90,
+    "nativeStageCalls": 72,
+    "nativeSucceeded": 36,
+    "actualSingleFallbacks": 36,
+    "noStage": 18,
+    "exactCompleteOutputs": 54,
+    "strictCompleteComparisonsPassed": 32,
+    "strictNativeStageComparisonsPassed": 0
+  },
+  "origins": {
+    "independentNativeCallees": 22,
+    "independentNativePrimitiveArguments": 4,
+    "wevuPrimitiveArguments": 4,
+    "retailPrimitiveArguments": 0,
+    "checks": [
+      {
+        "scenarioId": "sfc-wevu",
+        "iteration": 0,
+        "callIndex": 2,
+        "occurrenceCount": 7,
+        "mapDisabled": false,
+        "stageChecked": 7,
+        "finalChecked": 7,
+        "stageFragmentsChecked": 4,
+        "finalFragmentsChecked": 4
+      },
+      {
+        "scenarioId": "sfc-wevu",
+        "iteration": 1,
+        "callIndex": 3,
+        "occurrenceCount": 7,
+        "mapDisabled": false,
+        "stageChecked": 7,
+        "finalChecked": 7,
+        "stageFragmentsChecked": 4,
+        "finalFragmentsChecked": 4
+      },
+      {
+        "scenarioId": "sfc-retail",
+        "iteration": 0,
+        "callIndex": 4,
+        "occurrenceCount": 14,
+        "mapDisabled": false,
+        "stageChecked": 14,
+        "finalChecked": 14,
+        "stageFragmentsChecked": 0,
+        "finalFragmentsChecked": 0
+      },
+      {
+        "scenarioId": "sfc-retail",
+        "iteration": 1,
+        "callIndex": 5,
+        "occurrenceCount": 14,
+        "mapDisabled": false,
+        "stageChecked": 14,
+        "finalChecked": 14,
+        "stageFragmentsChecked": 0,
+        "finalFragmentsChecked": 0
+      },
+      {
+        "scenarioId": "sfc-events-and-repeats",
+        "iteration": 0,
+        "callIndex": 10,
+        "occurrenceCount": 1,
+        "mapDisabled": false,
+        "stageChecked": 1,
+        "finalChecked": 1,
+        "stageFragmentsChecked": 0,
+        "finalFragmentsChecked": 0
+      },
+      {
+        "scenarioId": "sfc-events-and-repeats",
+        "iteration": 1,
+        "callIndex": 11,
+        "occurrenceCount": 1,
+        "mapDisabled": false,
+        "stageChecked": 1,
+        "finalChecked": 1,
+        "stageFragmentsChecked": 0,
+        "finalFragmentsChecked": 0
+      },
+      {
+        "scenarioId": "binding-wevu",
+        "iteration": 0,
+        "callIndex": 50,
+        "occurrenceCount": 7,
+        "mapDisabled": false,
+        "stageChecked": 7,
+        "finalChecked": 7,
+        "stageFragmentsChecked": 4,
+        "finalFragmentsChecked": 4
+      },
+      {
+        "scenarioId": "binding-wevu",
+        "iteration": 1,
+        "callIndex": 51,
+        "occurrenceCount": 7,
+        "mapDisabled": false,
+        "stageChecked": 7,
+        "finalChecked": 7,
+        "stageFragmentsChecked": 4,
+        "finalFragmentsChecked": 4
+      },
+      {
+        "scenarioId": "binding-retail",
+        "iteration": 0,
+        "callIndex": 52,
+        "occurrenceCount": 14,
+        "mapDisabled": false,
+        "stageChecked": 14,
+        "finalChecked": 14,
+        "stageFragmentsChecked": 0,
+        "finalFragmentsChecked": 0
+      },
+      {
+        "scenarioId": "binding-retail",
+        "iteration": 1,
+        "callIndex": 53,
+        "occurrenceCount": 14,
+        "mapDisabled": false,
+        "stageChecked": 14,
+        "finalChecked": 14,
+        "stageFragmentsChecked": 0,
+        "finalFragmentsChecked": 0
+      },
+      {
+        "scenarioId": "binding-events-and-repeats",
+        "iteration": 0,
+        "callIndex": 58,
+        "occurrenceCount": 1,
+        "mapDisabled": false,
+        "stageChecked": 1,
+        "finalChecked": 1,
+        "stageFragmentsChecked": 0,
+        "finalFragmentsChecked": 0
+      },
+      {
+        "scenarioId": "binding-events-and-repeats",
+        "iteration": 1,
+        "callIndex": 59,
+        "occurrenceCount": 1,
+        "mapDisabled": false,
+        "stageChecked": 1,
+        "finalChecked": 1,
+        "stageFragmentsChecked": 0,
+        "finalFragmentsChecked": 0
+      }
+    ],
+    "stageCalleeChecks": 88,
+    "finalCalleeChecks": 88,
+    "stageFragmentChecks": 16,
+    "finalFragmentChecks": 16
+  },
+  "identity": {
+    "buildInputCount": 60,
+    "buildInputsUnchanged": true,
+    "sourceCount": 394,
+    "sourcesUnchanged": true,
+    "bindingUnchanged": true,
+    "dependenciesUnchanged": true,
+    "bindingSha256": "b19a2e17eab6bf023c706ceaa2688ffed09d70a3bc35b63308e3a64df080d98f",
+    "compilerSummarySha256": "02a6c42f247397ff2437d1a7a345873f43deeabc94c70c29052f11ae83a2dda7",
+    "semanticSummarySha256": "a742cd7954ef49e52aad8516137f55c248db6bf154ebfad84e604f8cf8ff49c1"
+  },
+  "limitations": [
+    "The 16 per-map-layer fragment checks repeat four independent Wevu argument tokens across two corpus entrances and two iterations. Retail adds no argument coverage.",
+    "Primitive argument fragments require full ordered literal coverage; unsupported parameters retain callee-only evidence and do not force native fallback.",
+    "Copied evidence binds source and asset tokens; emitted tokens are located by actual AST argument order, allowing printer whitespace and quote changes. Only token starts are verified.",
+    "Strict source-map/compiler oracles are unchanged and still fail; 32 strict complete passes are JS fallback/no-stage cases, not native acceptance.",
+    "No new performance, RSS, Vite build/HMR, cross-platform acceptance or Stable WeChat DevTools runtime measurement.",
+    "The semantic harness uses real helpers and finite controlled host/business substitutes; it does not prove full host behavior or all async continuations.",
+    "Local raw evidence is retained; summary hashes are not the raw evidence itself."
+  ],
+  "audit": {
+    "sha256": "8493ec5f81172167d1be65ae13d801c11c4e1e41b5323caf7d56801aa3ecd269",
+    "buildInputsRehashed": 60,
+    "buildOutputsRehashed": 2,
+    "sourcesRehashed": 394,
+    "helperDependencyFilesRehashed": 842,
+    "compilerArtifactsRehashed": 134,
+    "semanticArtifactsRehashed": 31,
+    "mismatches": 0,
+    "method": "Separate reviewer rehashed saved evidence, checked compiler/worker exits and counters, and replayed existing validators. This is not an independently rewritten oracle or a new sample."
+  }
+}

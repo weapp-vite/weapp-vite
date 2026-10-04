@@ -1,9 +1,11 @@
-import type { DirectiveOwner, InlineOriginOccurrence, InlineOriginSnapshot, InlineOriginSource, InlineOriginUnsupported, InlineProvenance, OriginAsset, OriginCheck, OriginContext, OriginDirective, OriginNode, OriginTemplate, TemplateOwner } from './types'
+import type { DirectiveOwner, InlineOriginArgumentToken, InlineOriginOccurrence, InlineOriginSnapshot, InlineOriginSource, InlineOriginUnsupported, InlineProvenance, OriginAsset, OriginCheck, OriginContext, OriginDirective, OriginNode, OriginTemplate, TemplateOwner } from './types'
+import { argumentFragments, argumentTokens } from './fragments'
 import { assetIdentity, directiveOwner, generatedCallee, occurrence, parsedCallee, templateOwner } from './owners'
 
 interface Draft {
   owner?: DirectiveOwner
   callee?: InlineOriginOccurrence['callee']
+  argumentTokens?: readonly InlineOriginArgumentToken[]
   reason?: string
 }
 
@@ -91,7 +93,9 @@ export class InlineOriginState {
       return
     }
     const callee = parsedCallee(owner.value, source, parsed.expression)
-    this.drafts.set(context, 'value' in callee ? { owner: owner.value, callee: callee.value } : { owner: owner.value, reason: callee.reason })
+    this.drafts.set(context, 'value' in callee
+      ? { owner: owner.value, callee: callee.value, argumentTokens: argumentTokens(owner.value, parsed.expression) }
+      : { owner: owner.value, reason: callee.reason })
   }
 
   registered(asset: OriginAsset, context: OriginContext, generated: OriginNode | null | undefined) {
@@ -108,7 +112,10 @@ export class InlineOriginState {
       this.unknown('asset', 'generated-root-callee-not-owned-context-member', context, asset, draft.owner.expression.start)
       return
     }
-    const entry = occurrence(draft.owner, draft.callee, asset.id)
+    const fragments = draft.argumentTokens && generated
+      ? argumentFragments(draft.owner, draft.argumentTokens, generated, asset.expression)
+      : undefined
+    const entry = occurrence(draft.owner, draft.callee, asset.id, fragments)
     const source = draft.owner.template.source
     this.assets.set(asset, { source, occurrence: entry, identity })
     this.sources.set(source.id, source)

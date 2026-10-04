@@ -240,3 +240,7 @@ mod tests;
 #[cfg(test)]
 #[path = "template_provenance/transform_tests.rs"]
 mod template_provenance_tests;
+
+#[cfg(test)]
+#[path = "template_provenance/fragment_tests.rs"]
+mod template_fragment_tests;

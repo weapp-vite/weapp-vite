@@ -13,6 +13,24 @@ export interface InlineOriginOccurrence {
   inlineId: string
   expression: { start: number, end: number, text: string }
   callee: { start: number, end: number, name: string }
+  /** 本轮仅为全部直接 primitive 参数出具额外证据；缺省时仍保留 callee 来源，不表示 native 回退。 */
+  fragments?: InlineOriginFragment[]
+}
+
+export interface InlineOriginFragment {
+  kind: 'inline-handler-argument-literal'
+  role: 'copied'
+  generated: { start: number, end: number, text: string }
+  source: { start: number, end: number, text: string }
+}
+
+/** 解析阶段复制的 primitive token 摘要；不持有 Babel AST 引用。 */
+export interface InlineOriginArgumentToken {
+  readonly start: number
+  readonly end: number
+  readonly text: string
+  readonly type: 'StringLiteral' | 'NumericLiteral' | 'BooleanLiteral' | 'NullLiteral'
+  readonly value: string | number | boolean | null
 }
 
 export interface InlineProvenance {

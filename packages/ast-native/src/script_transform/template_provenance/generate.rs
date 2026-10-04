@@ -84,19 +84,25 @@ impl InlineOrigins<'_> {
         });
         arena.push_str(main);
         let arena = allocator.alloc_str(&arena);
-        let external: HashMap<_, _> = self
-            .origins
-            .iter()
-            .map(|origin| {
-                (
-                    (origin.handle.start, origin.handle.end),
+        let mut external = HashMap::new();
+        for origin in &self.origins {
+            external.insert(
+                (origin.handle.start, origin.handle.end),
+                Span::new(
+                    starts[origin.source_index] + origin.original.start,
+                    starts[origin.source_index] + origin.original.end,
+                ),
+            );
+            for fragment in &origin.fragments {
+                external.insert(
+                    (fragment.handle.start, fragment.handle.end),
                     Span::new(
-                        starts[origin.source_index] + origin.original.start,
-                        starts[origin.source_index] + origin.original.end,
+                        starts[origin.source_index] + fragment.original.start,
+                        starts[origin.source_index] + fragment.original.end,
                     ),
-                )
-            })
-            .collect();
+                );
+            }
+        }
         let mut collected = Collect::default();
         collected.visit_program(program);
         let shifted = collected

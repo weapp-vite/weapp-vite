@@ -582,3 +582,22 @@ Rust 先核对精确原文切片、字符边界、原直接 callee AST、inlineI
 342 项工具测试、脚本 TypeScript、ESLint 通过。Rust 先通过 84 项阶段测试，新增两项测试后通过 8 项来源测试；组合实验 feature 的 cargo check 与 rustfmt 通过。新增及修改实现均小于 300 行。无生产入口、公开配置或运行时行为变化，不新增 changeset／脚手架 bump；保留 pre-commit 和 lint-staged。
 
 这只解决直接 callee 的 token 起点；参数、class/key、包装代码、其他模板 token 及完整字符区间仍需真实来源关系，标点仍可能 GLB 继承。完整 SFC 传输、额外原表达式解析及 map 重建都有成本，本轮未测性能、RSS、Vite 构建／HMR或真实 Stable 微信开发者工具，未完成最终 runtime 验收。独立审计和具体身份见[模板 callee 来源证据](./2026-10-05-template-callee-origin-evidence.json)。
+
+
+## 第二十六轮：基本字面量参数来源补证
+
+本轮仍只修改显式诊断路径。在 parse hook 当场复制原始参数的类型、值、UTF-16 范围和原文，不持有可被后续改写的 AST 引用；注册后对所有参数的数量、次序、值和 token 边界做核验，并从 Babel 明确的 map 起点取得资产位置。只支持全部参数为 string／number／boolean／null 的直接调用。复杂参数、member property、类型包装或无法精确证明的改写保留 callee-only，不产生部分 fragments，也不等于强制整段 native fallback。
+
+Rust 对 callee 与参数共用一次原表达式解析，校验来源切片和同序覆盖；生成侧解析真实资产并与现有 metadata AST 比较，只附加已证明的参数 span。合成 metadata 默认仍保持 synthetic，无 provenance 或未覆盖的资产不借用独立解析坐标。独立检查器沿实际输出 AST 的同序参数定位 token，再检查明确 map segment 与 consumer；打印器改变引号或空白不会靠猜偏移处理。重复字面量不能交换，缺失、重复、错序、半个 surrogate、坏范围与复杂参数均有负例。
+
+本机 macOS arm64、Node 24.18.0、Rust 1.99.0 已重新构建 release addon 并复跑严格完整编译及受控行为对照。360 次 JS 完整控制逐字相同；native 的 90 次完整调用为 36 次实际 native、36 次单次 JS fallback、18 次无 stage，54 份 fallback／无 stage 输出逐字一致。受控 Node 对照仍为 4/4 通过、8/8 worker 成功。
+
+Wevu 首页新增 4 个独立字面量参数的来源起点，阶段与最终 map 均通过；零售详情本轮新增参数数为 0，仍只覆盖其 14 个 callee。两个语料入口各重复两轮，得到每个 map 层 16 次参数检查及原有 88 次 callee 检查，不能相加当作独立覆盖。数字、布尔和 null 另有合成及 Rust 回归，不将其写为真实页面覆盖。
+
+**严格命令实际 exit 1：`completed=true`、`semanticComparisonPassed=true`、`compilerComparisonPassed=false`、联合 `comparisonPassed=false`。** 32 项严格完整比较通过仍来自 JS fallback／无 stage；native 的 36 项严格 stage 比较全部未通过。参数来源只是额外证据，没有放宽旧 oracle、扩大生产启用范围或证明完整字符区间。
+
+394 项工具测试、91 项 Rust 阶段测试、脚本 TypeScript／ESLint、定向 rustfmt 和三个实验 feature 的组合 cargo check 通过。60 份构建输入在构建后保持一致；正式运行前后 394 份源码、二进制和声明 helper 身份保持一致。既有三项 unused 警告仍保留。新增实现按来源摘要、Rust 校验／附加与独立 checker 拆分，所有修改实现均低于 300 行。内部诊断改动不新增 changeset 或 create-weapp-vite bump。
+
+本轮没有性能、RSS、Vite 构建／HMR 或真实 Stable 微信开发者工具采样，仍未完成最终 runtime 验收，也没有证明整体提速门槛。新证据单独保存，不覆盖第二十五轮的固定产物和审计；摘要见[参数来源证据](./2026-10-05-template-argument-origin-evidence.json)。
+
+独立复核重算 60 份构建输入、2 份输出、394 份源码、842 份 helper、134 份编译产物和 31 份语义产物，未见身份差异；并复核 compiler 退出 1、8 个 worker 退出 0 及各层来源计数。既有校验器在保存证据上重放，仅用于核对一致性，并非独立重写 oracle 或再次采样。审计 hash 记录在本轮参数来源摘要中。

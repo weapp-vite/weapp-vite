@@ -3,6 +3,7 @@ import type { InlineOriginOccurrence, InlineProvenance } from '../origins/types'
 import { createHash } from 'node:crypto'
 import { NodeTypes, parse as parseTemplate } from '@vue/compiler-dom'
 import { parse as parseSfc } from 'vue/compiler-sfc'
+import { validateFragments } from './fragments'
 import { assets, directCallee, ensure, expression, object } from './shared'
 
 interface ScenarioSource { kind: string, filename: string, source: string }
@@ -115,6 +116,9 @@ export function validateInlineProvenance(raw: unknown, scenario: ScenarioSource,
     ensure(sameName.length === sameAssets.length, 'directive/asset ownership count is ambiguous')
     const ordinal = sameName.indexOf(found)
     ensure(sameAssets[ordinal]?.id === item.inlineId, 'directive/asset registration order differs')
+    if (item.fragments !== undefined) {
+      validateFragments(item.fragments, exp as InlineOriginOccurrence['expression'], sameAssets[ordinal]!, scenario.source)
+    }
     return item as unknown as InlineOriginOccurrence
   })
   for (const name of new Set(occurrences.map(item => item.callee.name))) {

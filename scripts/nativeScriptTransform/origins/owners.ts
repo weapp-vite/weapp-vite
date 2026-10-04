@@ -1,4 +1,4 @@
-import type { DirectiveOwner, InlineOriginOccurrence, OriginAsset, OriginCheck, OriginContext, OriginDirective, OriginNode, OriginTemplate, TemplateOwner } from './types'
+import type { DirectiveOwner, InlineOriginFragment, InlineOriginOccurrence, OriginAsset, OriginCheck, OriginContext, OriginDirective, OriginNode, OriginTemplate, TemplateOwner } from './types'
 import { createHash } from 'node:crypto'
 
 function identity(value: unknown) {
@@ -89,7 +89,7 @@ export function generatedCallee(asset: OriginAsset, expression: OriginNode | nul
     && callee.property?.type === 'Identifier' && callee.property.name === name
 }
 
-export function occurrence(owner: DirectiveOwner, callee: InlineOriginOccurrence['callee'], inlineId: string): InlineOriginOccurrence {
+export function occurrence(owner: DirectiveOwner, callee: InlineOriginOccurrence['callee'], inlineId: string, fragments?: InlineOriginFragment[]): InlineOriginOccurrence {
   const sourceId = owner.template.source.id
   const expression = owner.expression
   return Object.freeze({
@@ -99,6 +99,7 @@ export function occurrence(owner: DirectiveOwner, callee: InlineOriginOccurrence
     inlineId,
     expression,
     callee,
+    ...(fragments?.length ? { fragments: fragments.map(fragment => Object.freeze(fragment) as InlineOriginFragment) } : {}),
   })
 }
 

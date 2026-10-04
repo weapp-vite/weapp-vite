@@ -2,6 +2,7 @@ use oxc_ast::ast::ObjectExpression;
 use serde_json::Value;
 
 mod contract;
+mod fragments;
 mod generate;
 mod inline;
 mod map;

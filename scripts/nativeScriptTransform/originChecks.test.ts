@@ -227,7 +227,7 @@ function mappedFixture() {
 describe('independent inline output anchors', () => {
   it('follows metadata ownership and checks an exact mapped token', () => {
     const { provenance, options, code, map } = mappedFixture()
-    expect(verifyInlineOriginMap(provenance, options, code, map)).toEqual({ checked: 1 })
+    expect(verifyInlineOriginMap(provenance, options, code, map)).toEqual({ checked: 1, fragmentsChecked: 0 })
   })
 
   it('consumes independent generated CRLF lines and UTF-16 columns', () => {
@@ -235,7 +235,7 @@ describe('independent inline output anchors', () => {
     const prefix = 'const label = "😀"; '
     segment[0] += prefix.length
     map.mappings = encode([[], [segment]])
-    expect(verifyInlineOriginMap(provenance, options, `// header\r\n${prefix}${code}`, map)).toEqual({ checked: 1 })
+    expect(verifyInlineOriginMap(provenance, options, `// header\r\n${prefix}${code}`, map)).toEqual({ checked: 1, fragmentsChecked: 0 })
   })
 
   it.each(['glb-only', 'unmapped', 'duplicate', 'source', 'content', 'line', 'column', 'name'])('rejects %s map evidence', (change) => {

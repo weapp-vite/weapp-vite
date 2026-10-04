@@ -51,7 +51,7 @@ export function verifyInlineOriginSnapshot(raw: unknown, records: IntegratedReco
   return Object.fromEntries(Object.entries(snapshot).filter(([key]) => key !== 'sources' && key !== 'occurrences'))
 }
 
-/** 在阶段和最终产物的实际 callee token 上分别消费来源；严格旧 map 比较另行保留。 */
+/** 在阶段和最终产物的实际 callee 与参数 token 上分别消费来源；严格旧 map 比较另行保留。 */
 export function inspectIntegratedOrigins(scenario: ScriptScenario, output: string, records: IntegratedRecord[]) {
   const delivered = records.filter(record => record.used === 'native' && record.provenance)
   if (!delivered.length) {
@@ -62,12 +62,12 @@ export function inspectIntegratedOrigins(scenario: ScriptScenario, output: strin
   return delivered.map((record) => {
     const options = inlineOriginOptions(record.options)
     if (options.sourceMap === false) {
-      return { callIndex: record.callIndex, occurrenceCount: record.provenance!.occurrences.length, mapDisabled: true, stageChecked: 0, finalChecked: 0 }
+      return { callIndex: record.callIndex, occurrenceCount: record.provenance!.occurrences.length, mapDisabled: true, stageChecked: 0, finalChecked: 0, stageFragmentsChecked: 0, finalFragmentsChecked: 0 }
     }
     const stage = object(decodeCapturedData(record.result!))
     ensure(typeof stage.code === 'string' && typeof value.script === 'string', 'Origin check requires the actual complete script')
     const first = verifyInlineOriginMap(record.provenance!, options, stage.code, stage.map)
     const final = verifyInlineOriginMap(record.provenance!, options, value.script, value.scriptMap)
-    return { callIndex: record.callIndex, occurrenceCount: record.provenance!.occurrences.length, mapDisabled: false, stageChecked: first.checked, finalChecked: final.checked }
+    return { callIndex: record.callIndex, occurrenceCount: record.provenance!.occurrences.length, mapDisabled: false, stageChecked: first.checked, finalChecked: final.checked, stageFragmentsChecked: first.fragmentsChecked, finalFragmentsChecked: final.fragmentsChecked }
   })
 }
