@@ -81,7 +81,7 @@ v5/v6 四类消费者均独立严格安装，并各完成五次普通构建和�
 | Issue | 剩余实现与最终证据 |
 | --- | --- |
 | #1015 | Stable IDE 中 classic/stateful 的 CSS 变量连续替换、删除、恢复及交互 |
-| #1058 | `0b54186a3` 的七组正式完整编译对照、56 个样本已通过；仍缺对应真实 Stable runtime |
+| #1058 | `a88e9e260ccc684f4cf3501a38fc919d3a63cc42` 的正式 run `37153581572` 已通过七组配对、56 个样本及 28 次产物等价比较；仍缺对应真实 Stable runtime |
 | #1065 | Stable IDE 的第三方 compiler 脚本、资产和依赖连续更新，以及内置 Tailwind adapter 的既有运行语义；安装体积不是本议题的验收条件 |
 | #1081 | Stable IDE 的 Tailwind 样式、JS patch 与批次一致性 |
 | #1082 | 固定批准基线的三 OS、九分片完整性能验收；历史基线缺陷必须单列 |
@@ -434,6 +434,20 @@ Windows 窄矩阵 `37172276999` 绑定 `0af75a05e`，两个 Node 版本各实际
 
 官方新 heap 中 BindingPluginContext / BindingTransformPluginContext 实例已由旧诊断的 9 / 6 降至 0，先前仓库缓存到 hook 上下文的返回边消失；其中一条余留链为 native Global handles 经 bound_this 到 PluginContextData，再经 normalized options 的 inner 回到原生 options；另有 Vite resolveSubpathImports 和跨轮旧配置/插件链，不能声称剩余只涉及一项。新旧序列化产物差异经精确已知 fixture 路径表示重基准后为零，原始 supervisor 的比较失败仍保留；这不等于跨运行原始字节相同，也不证明 #1135 的完整引用环已消除。
 
+## 外部 SFC 输入版本与模板标签回归
+
+`f88e41f06` 修复外部样式失效分类与实际编译读取不同输入版本的竞态。无 watcher 的受控复现先让分类器读取已移除变量的样式，再在显式屏障处恢复 `v-bind(themeColor)`；旧实现发布新模板/样式与旧脚本，实际 simulator 的内联变量为空。顺序对照显示 red。这证明产品存在输入版本竞态，但不能据此断言它是历史 macOS runtime 失败的唯一原因。
+
+同一编译批次现在固定受影响 SFC 及全部外部块的内容与解析目标，共享文件只采集一次；分类与 Vite 原生编译消费同一快照。作用域成功或失败后均恢复，输入缺失仍保留原生构建错误；释放后发现内容或 symlink 目标漂移时，将尚未开始的下一批升级为完整重分类，避免重复发布并保留真实源事件。产物继续由 Vite/Rolldown 写出。捕获/漂移逻辑拆为独立 helper；已有大型 service 文件仅保留队列、定时器与关闭的生命周期接线，避免拆散同一状态所有者。
+
+109 项源码/helper/service 回归、3 项真实 Vite 原生发布回归、所属包 typecheck/public type tests、ESLint、changeset 联动检查及包构建通过。最终源码重建后的严格 headless 八个 suite 为 13/13 cases、87/87 checkpoints，覆盖 #1015、#1065、#1081、#1134、external script 和 #1140，无告警、错误或异常。
+
+`ec4c813c6` 为 #1058 增加 provider-compatible fixture：内置标签、PascalCase/kebab-case 自动组件、重复标签去重、显式导入的大小写边界、条件分支删除/恢复与真实点击更新。预检验证 AppID、页面条件、usingComponents 去重及完整页面/组件文件。headless 为 2/2 cases、5/5 checkpoints；manifest 50 项、workflow 4 项和共享启动检查通过。与上一组共 15 个用例、92 个检查点。提交钩子仅统一两份微信项目 JSON 的结尾换行，运行语义与源码未变。
+
+这些是提交前工作树的功能证据，不是干净 SHA 的正式性能样本或 Stable 验收。#1015/#1058 及其相关 issue 仍未完成最终验收，未添加完成标签。
+
+候选 `d034de14634394737f54ab328d57449dd8d359c2` 的 Release `37180376231` 与 Website `37180376158` 已成功。runtime publication `37180404027` 的 Linux/Windows、Node 22/24 四份严格 artifact 均为 7/7 cases、61/61 checkpoints；两份 macOS job 尚未分配 runner，不能记作通过。完整 CI `37180394615` 的 Linux 两项和 Weapi 两项通过，其余尚未收敛；新提交须保留自己的矩阵证据。
+
 ## Stable IDE 环境记录
 
 2026-10-04 04:22 UTC 再查官方渠道仍为 Stable `2.02.2608080`。维护者明确允许暂退共享 RC、验收后恢复 SQLite、Taro 和预检项目。原生 Computer Use 已退出 RC，启动所选 Stable，显示 `appVersionType=0`，使用已有账号完成快捷登录；随后 CLI 在 `127.0.0.1` 确认 `login: true`、服务端口可用。没有复制、刷新或替换登录票据。
@@ -441,7 +455,7 @@ Windows 窄矩阵 `37172276999` 绑定 `0af75a05e`，两个 Node 版本各实际
 重建后的 `12868aa`（main 对应 `7a9546fa8`）先完成四文件 headless：6/6 cases、39/39 checkpoints，严格模式、零告警/错误/异常，启动时工作树干净。随后相同四文件选择显式 Stable CLI 开始实测，但在 bridge bootstrap 前后所选 Stable 宿主消失，观察到默认 RC 的 SQLite 项目重新出现。该轮未执行任何 runtime case，主动停止并保留日志；登记 Vitest 与遗留 dev 进程均已退出，没有终止共享 RC。尚未确定是人工/其他任务操作还是宿主启动链改变了版本，不能将此轮算成真实 Stable 验收通过。维护者的统一切换许可仍有效，当前等待操作归属澄清后继续。
 
 
-早期原生 Computer Use 检查返回 Mac 已锁屏且无法自动解锁，按 Stable 安装路径读取也没有可用窗口。2026-10-04 后续读取已恢复，现有窗口仍是其他项目使用的 `2.02.2609231 RC`，显示基础库 `3.16.2`。本次仅只读核对，未操作该项目或关闭宿主；Stable 的单实例启动冲突仍在，切换现有手动宿主需要维护者确认。远端 CI 与本地只读诊断继续独立执行。
+早期原生 Computer Use 检查返回 Mac 已锁屏且无法自动解锁，按 Stable 安装路径读取也没有可用窗口。2026-10-04 后续读取已恢复，现有窗口仍是其他项目使用的 `2.02.2609231 RC`，显示基础库 `3.16.2`。本次仅只读核对，未操作该项目或关闭宿主；该记录发生于维护者后续授权统一切换之前；统一切换许可现已有效。远端 CI 与本地只读诊断继续独立执行。
 
 2026-10-03 05:20 UTC 核对官方渠道数据，最新 Stable 为 `2.02.2608080`，发布日期 2026-09-30。两份该版本安装均尝试了原生 Computer Use 启动，未得到可用宿主；CLI 登录查询超时或缺失该安装的 CLI 端口文件。已运行的 `2.02.2609231` 属于 RC 和其他项目，未关闭或用它替代 Stable。
 

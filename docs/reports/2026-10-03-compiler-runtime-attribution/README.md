@@ -1,6 +1,6 @@
 # #1058 / #1136 验证记录
 
-这份记录区分编译器机制、正式性能采样、发布包构建和真实运行时验收。当前已完成工具完整性验证、发布包构建与体积归因；未将这些结果解释为真实 DevTools runtime 验收。
+这份记录区分编译器机制、正式性能采样、发布包构建和真实运行时验收。已完成工具完整性验证、模板分析正式采样、发布包构建与体积归因；未将这些结果解释为真实 DevTools runtime 验收。后续候选状态见 [issue 交付记录](./issue-delivery.md)。
 
 ## #1058：共享模板标签分析
 
@@ -8,7 +8,11 @@
 
 完整性测试覆盖输出不同、缺失配对、重复 trial、解析次数错误和无效内存指标。`template-analysis-exploratory.json.gz` 中单轮输出 hash 完全一致，共享路径解析 3 次，历史对照解析 6 次；分配采样有效。
 
-本轮机器有其他项目并发构建和测试，未满足正式采样的空闲窗口，因此当前样本仅证明采集流程可用，不报告提速或内存改善结论。正式采样入口：
+上述本地探索样本存在其他项目并发构建和测试，仅证明采集流程可用，不报告提速或内存改善结论。
+
+后续独立正式运行 [37153581572](https://github.com/weapp-vite/weapp-vite/actions/runs/37153581572) 绑定干净候选 `a88e9e260ccc684f4cf3501a38fc919d3a63cc42`：七组配对、56 个样本、28 组完整产物等价检查通过；每轮三种输入的模板解析次数由 6 降至 3。冷构建中位数为 302.333 → 296.938 ms，热构建为 158.144 → 145.779 ms；热构建峰值 RSS 增加 1.08%、保留 heap 增加 0.86%。这是同一 compiler 内重复分析与共享分析的对照，不能解释为所有资源指标改善，也不替代 #1082 的冻结基线门禁。真实 Stable runtime 仍未完成最终验收。
+
+正式采样入口：
 
 ```sh
 node --import tsx scripts/benchmarkTemplateAnalysis/index.ts --trials=7 --formal --output=.codex-tmp/template-analysis-formal.json
@@ -64,4 +68,4 @@ node --import tsx scripts/runtime-size/verifyConsumer.ts <上一步输出的独�
 node --import tsx scripts/report-wevu-runtime-size.ts --check --output-json=.codex-tmp/runtime-capability-attribution.json
 ```
 
-当前候选 tarball 的独立消费者验证、#1058 正式采样和真实 runtime 验收仍需在各自前置条件满足后补齐；本记录不把它们标为完成。
+最终候选 tarball 的独立消费者验证和真实 Stable runtime 验收仍需在各自前置条件满足后补齐；既有 compiler 正式采样不能替代这些验收，也不能据此把 issue 标为完成。
