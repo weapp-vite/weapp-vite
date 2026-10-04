@@ -6,6 +6,7 @@ import type {
 } from 'rolldown'
 import type { InlineConfig } from 'vite'
 import type { BuildTarget, CompilerContext, MutableCompilerContext } from '../../context'
+import type { DevModuleGraphChange } from '../../moduleGraph/devProvider'
 import type { PublicAssetOptions } from '../../plugins/asset/publicSources'
 import type { ChangeEvent, SubPackageMetaValue } from '../../types'
 import type { HmrProfileRecordMetadata, HmrProfileSourceEvent } from '../../utils/hmrProfile/provenance'
@@ -40,11 +41,12 @@ import {
   watchedTemplateSuffixes,
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
-import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJsonEnvOption, resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
+import { createHmrProfileEventId, recordHmrProfileDuration, resolveActiveHmrProfileJsonPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
+import { ownsAutoRoutesTopologyChange, subscribeAutoRoutesTopology } from '../autoRoutesPlugin/topology'
 import { waitForBuildTasks } from '../compilerSession/tasks'
 import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
@@ -602,10 +604,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   function resolveHmrProfileJsonPath() {
-    const envOption = resolveHmrProfileJsonEnvOption()
-    return resolveHmrProfileJsonOutputPath({
+    return resolveActiveHmrProfileJsonPath({
       cwd: ctx.configService?.cwd ?? process.cwd(),
-      option: envOption ?? ctx.configService?.weappViteConfig.hmr?.profileJson,
+      option: ctx.configService?.weappViteConfig.hmr?.profileJson,
     })
   }
 
@@ -1699,13 +1700,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           || batchReason.event === 'create'
           || batchReason.event === 'delete',
         )
-        const { routeSignature, routeDependentEntries, entryTopologyChanged } = await refreshSnapshotSources(
+        const { routeSignature, routeTopologyChanged, routeDependentEntries, entryTopologyChanged } = await refreshSnapshotSources(
           ctx,
           batchReasons.filter((batchReason): batchReason is SnapshotBuildReason & { file: string } => Boolean(batchReason.file)),
           emittedAutoRoutesSignature,
           emittedEntryTopology,
         )
-        let fullEntryScan = entryTopologyChanged || failedEntryTopologyChange
+        // 路由增删必须重建入口元数据所有权，否则旧页面 JSON 会在完整输出中再次发射。
+        let fullEntryScan = routeTopologyChanged || entryTopologyChanged || failedEntryTopologyChange
         requiresFullRescan ||= fullEntryScan
         if (fullEntryScan) {
           scanService.markDirty()
@@ -1900,27 +1902,44 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }, SNAPSHOT_BUILD_BATCH_DELAY_MS)
     }
 
-    // 附着宿主与独立 Vite provider 共用同一事件入口，WXML 外部依赖不再交给第二个 watcher。
+    function onModuleGraphChange({ event, file: id }: DevModuleGraphChange, receivedAtMs = performance.now()) {
+      if (isDevOutputFile(id)) {
+        return
+      }
+      const hasModule = ctx.moduleGraphService.hasModule(id)
+      debug?.(`[module-graph-provider] event=${event} change=${configService.relativeAbsoluteSrcRoot(id)} module=${hasModule}`)
+      if (isWxmlDependency(ctx, id)) {
+        for (const root of scanService.independentSubPackageMap.keys()) {
+          invalidateIndependentOutput(root)
+          scanService.markIndependentDirty(root)
+        }
+        scheduleSnapshotBuild({ event, file: id, forceFullRescan: true }, receivedAtMs)
+        return
+      }
+      if (!hasModule && !initialBuildFailed) {
+        return
+      }
+      scheduleSnapshotBuild({ event, file: id }, receivedAtMs)
+    }
+
+    // 附着宿主与独立 Vite provider 共用同一事件入口；路由结构由目录 watcher 完成解析后交回。
     const moduleGraphProvider = target === 'app'
-      ? await createDevModuleGraphProvider(ctx, buildOptions, ({ event, file: id }) => {
-          if (isDevOutputFile(id)) {
+      ? await createDevModuleGraphProvider(ctx, buildOptions, (change) => {
+          if (ownsAutoRoutesTopologyChange(ctx, change)) {
             return
           }
-          const hasModule = ctx.moduleGraphService.hasModule(id)
-          debug?.(`[module-graph-provider] event=${event} change=${configService.relativeAbsoluteSrcRoot(id)} module=${hasModule}`)
-          if (isWxmlDependency(ctx, id)) {
-            for (const root of scanService.independentSubPackageMap.keys()) {
-              invalidateIndependentOutput(root)
-              scanService.markIndependentDirty(root)
-            }
-            scheduleSnapshotBuild({ event, file: id, forceFullRescan: true }, performance.now())
-            return
+          onModuleGraphChange(change)
+        })
+      : undefined
+    const releaseAutoRoutesTopology = target === 'app'
+      ? subscribeAutoRoutesTopology(ctx, ({ file, event, topologyChanged, receivedAtMs = performance.now() }) => {
+          if (topologyChanged) {
+            scheduleSnapshotBuild({ event, file, forceFullRescan: true }, receivedAtMs)
           }
-          if (!hasModule && !initialBuildFailed) {
-            return
+          else {
+            // 非页面脚本或原子恢复可能不改变路由，但已有依赖仍须处理原始源事件。
+            onModuleGraphChange({ file, event }, receivedAtMs)
           }
-          const startedAt = performance.now()
-          scheduleSnapshotBuild({ event, file: id }, startedAt)
         })
       : undefined
 
@@ -1964,6 +1983,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (startupErrors.length > 0) {
       // worker 属于初次发布事务；一个关闭失败不能遗留控制器租约。
       const cleanup = await Promise.allSettled([
+        async () => releaseAutoRoutesTopology?.(),
         async () => await moduleGraphProvider?.close(),
         async () => await devBuildWatcher?.watcher.close(),
         async () => await releaseWatcherResources?.(),
@@ -2199,6 +2219,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
         close: async () => {
           try {
+            releaseAutoRoutesTopology?.()
             unobserveWorkers()
             independentWatch.watchListeners.delete(observeIndependent)
             await Promise.all([snapshotWatcher.close(), assetWatcher.close()])
@@ -2215,6 +2236,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         waitForPendingSnapshotBuilds: () => snapshotBuildChain,
         markClosed: () => {
           devWatcherClosed = true
+          releaseAutoRoutesTopology?.()
           if (snapshotBatchTimer) {
             clearTimeout(snapshotBatchTimer)
             snapshotBatchTimer = undefined

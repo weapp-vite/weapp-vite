@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from 'node:timers/promises'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
-import { describe, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -74,7 +74,7 @@ async function waitForAppJsonPagesToContain(route: string, timeoutMs = 90_000) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await fs.pathExists(APP_JSON_DIST)) {
-      const appJson = await fs.readJson(APP_JSON_DIST)
+      const appJson = await fs.readJson(APP_JSON_DIST) as { pages?: unknown }
       if (Array.isArray(appJson?.pages) && appJson.pages.includes(route)) {
         return appJson
       }
@@ -88,7 +88,7 @@ async function waitForAppJsonWindowTitle(title: string, timeoutMs = 90_000) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await fs.pathExists(APP_JSON_DIST)) {
-      const appJson = await fs.readJson(APP_JSON_DIST)
+      const appJson = await fs.readJson(APP_JSON_DIST) as { window?: { navigationBarTitleText?: unknown } }
       if (appJson?.window?.navigationBarTitleText === title) {
         return appJson
       }
@@ -192,16 +192,24 @@ describe('auto-routes HMR (dev watch)', { concurrent: false }, () => {
       await sleep(1_000)
       await replaceFileByRename(ADDED_ROUTE_VUE_PATH, `<template><view>${addMarker}</view></template>\n`)
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router includes added route')
+      await dev.waitFor(waitForAppJsonPagesToContain(ADDED_ROUTE), 'app.json includes added route without touching App')
+      await dev.waitFor(waitForFileContains(ADDED_ROUTE_WXML_DIST, addMarker), 'new route is emitted without touching App')
 
       // delete route
       await sleep(1_000)
       await fs.remove(ADDED_ROUTE_VUE_PATH)
       await dev.waitFor(waitForFileNotContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router removes added route')
+      await dev.waitFor(waitForFileNotContains(APP_JSON_DIST, `"${ADDED_ROUTE}"`), 'app.json removes deleted route')
+      for (const extension of ['js', 'json', 'wxml']) {
+        await expect.poll(() => fs.pathExists(path.join(DIST_ROOT, `${ADDED_ROUTE}.${extension}`))).toBe(false)
+      }
 
       // recreate route
       await sleep(1_000)
       await replaceFileByRename(ADDED_ROUTE_VUE_PATH, `<template><view>${recreateMarker}</view></template>\n`)
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router restores recreated route')
+      await dev.waitFor(waitForAppJsonPagesToContain(ADDED_ROUTE), 'app.json restores recreated route')
+      await dev.waitFor(waitForFileContains(ADDED_ROUTE_WXML_DIST, recreateMarker), 'restored route is emitted')
     }
     finally {
       await dev.stop(5_000)
@@ -255,6 +263,9 @@ describe('auto-routes HMR (dev watch)', { concurrent: false }, () => {
         ),
         'auto-routes watcher observed added route',
       )
+      await dev.waitFor(waitForAppJsonPagesToContain(ADDED_ROUTE), 'app.json includes added route before App macro update')
+      await dev.waitFor(waitForFileContains(APP_JS_DIST, ADDED_ROUTE), 'App globalData includes added route before App macro update')
+      await dev.waitFor(waitForFileContains(ADDED_ROUTE_WXML_DIST, addMarker), 'new page exists before App macro update')
 
       const appAfterAddSource = originalAppSource.replace('auto-routes-define-app-json', appTitleAddMarker)
       await replaceFileByRename(APP_VUE_PATH, appAfterAddSource)

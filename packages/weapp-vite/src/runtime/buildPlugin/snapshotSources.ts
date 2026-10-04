@@ -3,7 +3,7 @@ import type { ChangeEvent } from '../../types'
 import { WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import { invalidateGlassEaselSource } from '../../analyze/glassEasel'
-import { RESOLVED_VIRTUAL_ID } from '../../plugins/autoRoutes.shared'
+import { resolveAutoRoutesWatchChangeEvent, RESOLVED_VIRTUAL_ID } from '../../plugins/autoRoutes.shared'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import { configSuffixes } from '../../plugins/utils/invalidateEntry/shared'
 import { isTemplate } from '../../utils'
@@ -28,10 +28,14 @@ export async function refreshSnapshotSources(
   for (const change of changes) {
     changedFiles.set(normalizeFsResolvedId(change.file), change.event)
   }
-  for (const file of changedFiles.keys()) {
+  const deletedFiles = new Set<string>()
+  for (const [file, event] of changedFiles) {
     invalidateFileCache(file)
+    if (event === 'delete' && !await fs.pathExists(file)) {
+      deletedFiles.add(file)
+    }
   }
-  const entryTopologyChanged = await hasEntryTopologyChange(ctx, changedFiles.keys(), emittedEntryTopology)
+  const entryTopologyChanged = await hasEntryTopologyChange(ctx, changedFiles.keys(), emittedEntryTopology, deletedFiles)
   if (entryTopologyChanged) {
     // options 钩子先于 buildStart 读取页面 input，必须先撤销扫描快照。
     ctx.scanService?.markDirty()
@@ -43,8 +47,8 @@ export async function refreshSnapshotSources(
     if (isAppConfigSource(ctx, file)) {
       ctx.scanService?.markDirty()
     }
-    await ctx.autoRoutesService?.handleFileChange(file)
-    if (event === 'delete' && !await fs.pathExists(file)) {
+    await ctx.autoRoutesService?.handleFileChange(file, resolveAutoRoutesWatchChangeEvent(event) ?? event)
+    if (deletedFiles.has(file)) {
       // 完整 snapshot 不再从入口缓存重新发射已经删除的源文件。
       ctx.runtimeState.build.hmr.resolvedEntryMap.delete(file)
       ctx.runtimeState.build.hmr.loadedEntrySet.delete(file)
@@ -59,8 +63,11 @@ export async function refreshSnapshotSources(
     }
   }
   const routeSignature = ctx.autoRoutesService?.getSignature()
+  const routeTopologyChanged = emittedRouteSignature !== routeSignature
   const routeDependentEntries = new Set<string>()
-  if (emittedRouteSignature !== routeSignature) {
+  if (routeTopologyChanged) {
+    // JSON/WXML 的结构事件可能先于脚本目录 watcher 抵达；options 必须读取同一份新路由。
+    ctx.scanService?.markDirty()
     for (const id of [RESOLVED_VIRTUAL_ID, WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID]) {
       invalidateFileCache(id)
       ctx.moduleGraphService.recordChangedFile(id, 'update')
@@ -69,5 +76,5 @@ export async function refreshSnapshotSources(
       }
     }
   }
-  return { routeSignature, routeDependentEntries, entryTopologyChanged }
+  return { routeSignature, routeTopologyChanged, routeDependentEntries, entryTopologyChanged }
 }

@@ -4,8 +4,8 @@ import { resolveAppShellForCompilation } from '../appShell'
 
 const preloadNativeLayoutEntriesMock = vi.hoisted(() => vi.fn(async () => {}))
 const loadTransformStyleBlockMock = vi.hoisted(() => vi.fn(async () => null))
-const handleTransformLayoutInvalidationMock = vi.hoisted(() => vi.fn(() => false))
-const handleTransformVueFileInvalidationMock = vi.hoisted(() => vi.fn(() => false))
+const handleTransformLayoutInvalidationMock = vi.hoisted(() => vi.fn((_file: string) => false))
+const handleTransformVueFileInvalidationMock = vi.hoisted(() => vi.fn((_file: string) => false))
 const isVueLikeIdMock = vi.hoisted(() => vi.fn(() => true))
 const transformVueLikeFileMock = vi.hoisted(() => vi.fn(async () => ({ code: 'transformed', map: null })))
 const emitVueBundleAssetsMock = vi.hoisted(() => vi.fn(async () => {}))
@@ -346,8 +346,8 @@ describe('createVueTransformPlugin lifecycle', () => {
   })
 
   it('handles hot updates for layout files, vue files, and ignored files', async () => {
-    handleTransformLayoutInvalidationMock.mockReturnValueOnce(true)
-    handleTransformVueFileInvalidationMock.mockReturnValueOnce(true).mockReturnValueOnce(false)
+    handleTransformLayoutInvalidationMock.mockImplementation(file => file.includes('/layouts/'))
+    handleTransformVueFileInvalidationMock.mockImplementation(file => file.endsWith('.vue'))
 
     const { createVueTransformPlugin } = await import('./index')
     const plugin = createVueTransformPlugin({

@@ -6,6 +6,7 @@ import {
   DEFAULT_HMR_PROFILE_JSONL_RELATIVE_PATH,
   HMR_PROFILE_JSON_ENV,
   recordHmrProfileDuration,
+  resolveActiveHmrProfileJsonPath,
   resolveHmrProfileJsonEnvOption,
   resolveHmrProfileJsonPath,
 } from './hmrProfile'
@@ -61,6 +62,17 @@ describe('resolveHmrProfileJsonEnvOption', () => {
     expect(resolveHmrProfileJsonEnvOption({
       [HMR_PROFILE_JSON_ENV]: '0',
     })).toBeUndefined()
+  })
+})
+
+describe('resolveActiveHmrProfileJsonPath', () => {
+  it('shares enabled output selection between the writer and watcher', () => {
+    const options = { cwd: '/project', option: '.reports/config.jsonl' }
+    expect(resolveActiveHmrProfileJsonPath(options, {})).toBe('/project/.reports/config.jsonl')
+    expect(resolveActiveHmrProfileJsonPath(options, { WEAPP_VITE_HMR_PROFILE_JSON: '.reports/env.jsonl' })).toBe('/project/.reports/env.jsonl')
+    expect(resolveActiveHmrProfileJsonPath(options, { WEAPP_VITE_HMR_PROFILE_JSON: '1' })).toBe('/project/.weapp-vite/hmr-profile.jsonl')
+    expect(resolveActiveHmrProfileJsonPath(options, { WEAPP_VITE_HMR_PROFILE_JSON: '0' })).toBe('/project/.reports/config.jsonl')
+    expect(resolveActiveHmrProfileJsonPath({ cwd: '/project', option: false }, {})).toBeUndefined()
   })
 })
 

@@ -32,6 +32,14 @@ it('does not parse external JSON dependencies as mini-program entry configuratio
   expect(read).not.toHaveBeenCalled()
 })
 
+it('compares a confirmed config deletion without reading it as malformed JSON', async () => {
+  const file = '/project/pages/home.json'
+  const read = vi.fn()
+  const ctx = { jsonService: { cache: new Map([[file, { usingComponents: { card: '/card' } }]]), read } } as any
+  expect(await hasEntryTopologyChange(ctx, [file], undefined, new Set([file]))).toBe(true)
+  expect(read).not.toHaveBeenCalled()
+})
+
 it('detects the first configuration added to a previously compiled native entry', async () => {
   const read = vi.fn(async () => ({ usingComponents: { card: '/card' } }))
   const ctx = {

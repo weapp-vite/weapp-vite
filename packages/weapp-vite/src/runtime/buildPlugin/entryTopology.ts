@@ -48,6 +48,7 @@ export async function hasEntryTopologyChange(
   ctx: MutableCompilerContext,
   files: Iterable<string>,
   committed?: ReadonlyMap<string, string>,
+  deletedFiles?: ReadonlySet<string>,
 ) {
   if (!ctx.jsonService) {
     return false
@@ -65,7 +66,8 @@ export async function hasEntryTopologyChange(
     if (before === undefined && !entryConfigs.has(normalizedFile) && !committed?.has(normalizedFile)) {
       continue
     }
-    const after = await ctx.jsonService.read(file) as unknown
+    // 结构删除表示配置不存在，不应交给 JSON 解析器报告语法错误。
+    const after = deletedFiles?.has(normalizedFile) ? undefined : await ctx.jsonService.read(file) as unknown
     if ((committed?.get(normalizedFile) ?? entryTopologySignature(before)) !== entryTopologySignature(after)) {
       changed = true
     }

@@ -94,6 +94,27 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     }
   }
 
+  function invalidateSourceFile(file: string) {
+    const normalizedId = normalizeFsResolvedId(file)
+    invalidateComponentMetaCache(componentMetaCache, normalizedId)
+    invalidateExternalSfcCompilation(normalizedId, compilationCache)
+    const isLayout = handleTransformLayoutInvalidation(normalizedId, {
+      configService: ctx.configService,
+      compilationCache,
+      styleBlocksCache,
+      styleRefreshTokens,
+      isLayoutFile,
+      invalidateResolvedPageLayoutsCache,
+    })
+    const isVue = handleTransformVueFileInvalidation(normalizedId, {
+      compilationCache,
+      styleBlocksCache,
+      styleRefreshTokens,
+      existsSync: fs.existsSync,
+    })
+    return isLayout || isVue
+  }
+
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
 
@@ -105,9 +126,9 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     },
 
     async buildStart() {
-      // module-graph snapshot 不经过 watchChange；消费同一批次来源，不能只看宿主 SFC 文本。
+      // snapshot 不经过 watchChange；同批源变更必须撤销相同缓存，避免重发已删除 SFC 的产物。
       for (const { file } of ctx.moduleGraphService?.getPendingChanges?.() ?? []) {
-        invalidateExternalSfcCompilation(file, compilationCache)
+        invalidateSourceFile(file)
       }
       scopedSlotModules.clear()
       emittedScopedSlotChunks.clear()
@@ -223,22 +244,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     watchChange(id, change) {
       const startedAt = performance.now()
       const normalizedId = normalizeFsResolvedId(id)
-      invalidateComponentMetaCache(componentMetaCache, normalizedId)
-      invalidateExternalSfcCompilation(normalizedId, compilationCache)
-      handleTransformLayoutInvalidation(normalizedId, {
-        configService: ctx.configService,
-        compilationCache,
-        styleBlocksCache,
-        styleRefreshTokens,
-        isLayoutFile,
-        invalidateResolvedPageLayoutsCache,
-      })
-      handleTransformVueFileInvalidation(normalizedId, {
-        compilationCache,
-        styleBlocksCache,
-        styleRefreshTokens,
-        existsSync: fs.existsSync,
-      })
+      invalidateSourceFile(normalizedId)
       invalidateDirtyVueEntryCaches(ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds, compilationCache)
       const profile = ctx.runtimeState?.build?.hmr?.profile
       if (profile && !profile.file) {
@@ -250,29 +256,9 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     },
 
     async handleHotUpdate({ file }) {
-      invalidateComponentMetaCache(componentMetaCache, file)
-      invalidateExternalSfcCompilation(file, compilationCache)
-      if (handleTransformLayoutInvalidation(file, {
-        configService: ctx.configService,
-        compilationCache,
-        styleBlocksCache,
-        styleRefreshTokens,
-        isLayoutFile,
-        invalidateResolvedPageLayoutsCache,
-      })) {
+      if (invalidateSourceFile(file)) {
         return []
       }
-
-      if (!handleTransformVueFileInvalidation(file, {
-        compilationCache,
-        styleBlocksCache,
-        styleRefreshTokens,
-        existsSync: fs.existsSync,
-      })) {
-        return
-      }
-
-      return []
     },
   }
 }
