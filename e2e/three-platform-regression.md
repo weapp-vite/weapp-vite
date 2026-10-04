@@ -37,6 +37,12 @@
 
 ## 真实 IDE 复验
 
+微信默认采用 `official-stable` 版本策略：每轮查询官方 Stable 渠道，所选安装必须属于 Stable 且版本与查询结果一致。通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 显式选择安装，预检、启动、构建和恢复共用同一 CLI；连接后核对实际宿主版本和基础库版本。官方查询失败或宿主与所选安装不符时停止验收，不能静默换版。
+
+仅当用户明确接受固定版本时，才设置 `WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION=2.02.2608070`（示例为本轮接受的版本）。这会采用 `selected-version-opt-in` 策略，要求所选 Stable 安装精确匹配该值；仍查询官方 Stable 并记录差异，不开放 RC/nightly，不跳过登录、宿主身份和运行断言。未设置该变量时，默认官方 Stable 门禁不变；不得为求绿自行设置或改动接受版本。
+
+报告保存版本策略 `mode`、`officialVersion`、`selectedVersion`、`acceptedVersion`、`officialVersionMatches`、官方来源 `officialSource` 与查询时间 `officialQueriedAt`，并保留实际连接的 IDE/基础库版本。`selected-version-opt-in` 下的通过只证明用户接受版本上的结果，不能表述为已通过执行时官方最新 Stable。
+
 微信使用 provider-compatible suite，共享 automator 会话，通过 `reLaunch` 切页；新增场景同步 fixture 页面条件、真实 AppID 和产物存在性断言。支付宝与抖音使用官方 IDE，缺少稳定自动化协议时通过 Computer Use 逐步操作并记录前后状态。
 
 | 项目 | 必验行为 |

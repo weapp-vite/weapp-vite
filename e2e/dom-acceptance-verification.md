@@ -34,6 +34,26 @@
 
 本机 E2E 全局串行，启动前检查残留进程，长任务保持系统唤醒。修改源码后重建受影响包；CLI 下游验证固定先运行 `pnpm --filter weapp-vite build`，确认 dist 同步后再执行 headless 和真实 IDE。任何最终 bundle 都由 Vite/Rolldown 输出，不手写 dist 修补。
 
+### 微信开发者工具版本策略
+
+默认 `official-stable` 门禁保持不变：每轮查询官方 Stable 渠道，所选安装的渠道和版本必须匹配。`WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 显式指定本轮安装，预检、启动、构建、恢复使用同一 CLI；连接后再核对宿主身份与 Tool 协议返回的版本。不能以默认路径、已登录或较大版本号代替官方渠道核验。
+
+用户明确接受固定版本时，可设置 `WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION=2.02.2608070`。此时策略为 `selected-version-opt-in`，所选安装仍须属于 Stable，且必须与接受版本完全一致。官方 Stable 查询仍执行，差异作为报告证据保留；查询失败、版本不符、宿主不符或登录失败仍阻塞，不自动改用其他安装，也不放宽 DOM、HMR 或严格报告断言。该变量不能由测试工具根据失败结果自行设置。
+
+DOM 报告的 `environment.devtoolsVersionPolicy` 记录以下字段；suite 汇总应保留同一轮策略证据，不能只写“Stable”或一个版本号：
+
+| 字段 | 含义 |
+| --- | --- |
+| `mode` | `official-stable` 或 `selected-version-opt-in` |
+| `officialVersion` | 本轮官方 Stable 查询结果 |
+| `selectedVersion` | 显式选中的安装版本 |
+| `acceptedVersion` | 用户接受的固定版本；默认策略为 `null` |
+| `officialVersionMatches` | 所选版本是否与官方查询结果一致 |
+| `officialSource` | 官方版本查询来源 |
+| `officialQueriedAt` | 本轮官方版本查询时间 |
+
+实际连接的 IDE 与基础库版本继续单独记录。固定版本验收只能证明该版本上的可观察结果，不能改写为执行时官方最新 Stable 验收通过；历史记录也不能代替本轮查询和运行证据。
+
 产品 HMR 场景调用 `launchAutomator` 时必须在参数对象中显式指定 `bridgeProjectMode: 'direct'`，让 IDE 直接观察 Vite 写出的原项目。仅 `automator-bridge-wrapper-hmr.runtime.test.ts` 使用 `'snapshot'`，专门验证桥接快照。`layout-power-demo.runtime-vendor-hmr.test.ts` 经 CLI `dev -o` 和 `waitForOpenedAutomator` 连接原项目，是已审查的独立入口。内部 AST 守卫 `e2e/scripts/hmr-launch-mode.test.ts` 检查所有 `e2e/ide/**/*hmr*.test.ts` 及另列的 `forward-console-demo.runtime.test.ts` 调用，拒绝缺失、动态值和被后置展开覆盖的模式；新间接入口须单独审查，不从任意 dev 进程推断模式。
 
 本仓库 fixture 已获授权运行时，在启动测试进程前将 `WEAPP_VITE_E2E_TRUST_PROJECTS` 设为当前仓库路径，或仅列出已授权的 fixture 根目录。该选项匹配原始 fixture 路径，再把明确的 `trustProject=true` 传给 IDE `/auto`；不修改全局安全设置。snapshot 每次生成新项目目录，旧目录的信任状态不会继承；未准备信任时，自动化端口可已连接而模拟器仍停在信任提示，不能将首屏超时记为业务通过。
