@@ -1941,7 +1941,7 @@ describe('createEntryLoader', () => {
       json.usingComponents = {
         HotCard: '/components/HotCard/index',
       }
-      return [{ from: '/components/HotCard/index' }]
+      return [{ kind: 'resolver', from: '/components/HotCard/index' }]
     })
     loadedEntrySet.add('/project/src/components/HotCard/index')
 
@@ -1972,7 +1972,7 @@ describe('createEntryLoader', () => {
 
     jsonService.read.mockResolvedValue({})
     applyAutoImports.mockImplementation(createAutoImportAugmenter(
-      { resolve: () => ({ value: { name: 'HotCard', ...component } }), getVersion: () => 0 } as any,
+      { resolve: () => ({ kind: 'local', value: { name: 'HotCard', ...component } }), getVersion: () => 0 } as any,
       { getAggregatedAutoImportComponents: () => ({ HotCard: [] }) } as any,
       runtimeState.build.hmr.externalComponentEntryMap,
     ))
@@ -2017,6 +2017,7 @@ describe('createEntryLoader', () => {
         'wd-button': '@wot-ui/ui/components/wd-button/wd-button.vue',
       }
       return [{
+        kind: 'resolver',
         from: '@wot-ui/ui/components/wd-button/wd-button.vue',
         resolvedId: knownSource ? externalComponent : undefined,
       }]
@@ -2024,9 +2025,6 @@ describe('createEntryLoader', () => {
     const pluginCtx = createPluginContext()
     pluginCtx.resolve = vi.fn(async (source: string) => {
       if (source.startsWith('@wot-ui/ui/')) {
-        if (knownSource) {
-          throw new Error('The current auto-import result already carries this source')
-        }
         return { id: externalComponent }
       }
       return { id: source }
@@ -2054,7 +2052,7 @@ describe('createEntryLoader', () => {
     jsonService.read.mockResolvedValue({})
     runtimeState.build.hmr.externalComponentEntryMap.set(request, '/project/src/components/OldCard/index.js')
     applyAutoImports.mockImplementation(createAutoImportAugmenter(
-      { resolve: () => ({ value: { name: 'HotCard', from: request, resolvedId } }), getVersion: () => 0 } as any,
+      { resolve: () => ({ kind: 'resolver', value: { name: 'HotCard', from: request, resolvedId } }), getVersion: () => 0 } as any,
       { getAggregatedAutoImportComponents: () => ({ HotCard: [] }) } as any,
       runtimeState.build.hmr.externalComponentEntryMap,
     ))
@@ -2069,7 +2067,7 @@ describe('createEntryLoader', () => {
     expect(emitEntriesChunks.mock.calls.flatMap(([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id))).toContain(component)
   })
 
-  it('keeps explicitly native auto imports on the native entry path without probing them as Vue', async () => {
+  it('keeps explicitly native resolver requests on the existing bundler resolution path', async () => {
     const pageScript = '/project/src/pages/home.js'
     const from = '/components/native-card/index'
     mockFindJsonEntry.mockResolvedValue({ path: '/project/src/pages/home.json', predictions: [] })
@@ -2078,20 +2076,17 @@ describe('createEntryLoader', () => {
     })
     jsonService.read.mockResolvedValue({})
     applyAutoImports.mockImplementation(createAutoImportAugmenter(
-      { resolve: () => ({ value: { name: 'NativeCard', from, sourceType: 'native' } }), getVersion: () => 0 } as any,
+      { resolve: () => ({ kind: 'resolver', value: { name: 'NativeCard', from, sourceType: 'native' } }), getVersion: () => 0 } as any,
       { getAggregatedAutoImportComponents: () => ({ NativeCard: [] }) } as any,
     ))
     const pluginCtx = createPluginContext()
     pluginCtx.resolve = vi.fn(async (source: string) => {
-      if (source === from) {
-        throw new Error('Explicit native sources do not require Vue materialization')
-      }
       return { id: source }
     }) as any
 
     await loader.call(pluginCtx, pageScript, 'page')
 
-    expect(pluginCtx.resolve).not.toHaveBeenCalledWith(from, pageScript)
+    expect(pluginCtx.resolve).toHaveBeenCalledWith(from, pageScript)
     expect(emitEntriesChunks.mock.calls.flatMap(([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id))).toContain(`/project/src${from}`)
     const pageJson = registerJsonAsset.mock.calls.find(([payload]) => payload.type === 'page')?.[0].json
     expect(pageJson.usingComponents.NativeCard).toBe(from)

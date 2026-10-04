@@ -11,14 +11,16 @@ function collectCandidates(injectedComponents: ResolvedAutoImportComponent[], us
     const existing = candidates.get(component.from)
     // 同一请求的来源有歧义时，仍交给 bundler 解析，不把任一组件的来源推广为共同事实。
     candidates.set(component.from, existing && (
-      existing.resolvedId !== component.resolvedId || existing.sourceType !== component.sourceType
+      existing.kind !== component.kind
+      || existing.resolvedId !== component.resolvedId
+      || existing.sourceType !== component.sourceType
     )
-      ? { from: component.from }
+      ? { kind: 'resolver', from: component.from }
       : component)
   }
   for (const entry of Object.values(usingComponents)) {
     if (typeof entry === 'string' && entry.endsWith('.vue') && !candidates.has(entry)) {
-      candidates.set(entry, { from: entry })
+      candidates.set(entry, { kind: 'resolver', from: entry })
     }
   }
   return candidates
@@ -43,23 +45,27 @@ export async function materializeVueAutoImportEntries(
   const candidates = collectCandidates(injectedComponents, usingComponents)
   const rewritten = new Map<string, string>()
   for (const [entry, component] of candidates) {
-    const normalizedSource = component.resolvedId ? normalizeFsResolvedId(component.resolvedId) : undefined
+    const normalizedSource = component.kind === 'local' && component.resolvedId
+      ? normalizeFsResolvedId(component.resolvedId)
+      : undefined
     const knownSource = shouldResolveUsingComponentFrom(normalizedSource) ? normalizedSource : undefined
-    if (component.sourceType === 'native' || (knownSource && !knownSource.endsWith('.vue'))) {
+    if (knownSource) {
+      // 只有本地 registry 已证明 from 是生成的运行时路径；resolver 的别名语义仍由 bundler 决定。
+      ctx.runtimeState.build.hmr.externalComponentEntryMap.set(
+        entry.replace(/^\/+/, ''),
+        knownSource,
+      )
       continue
     }
-    const resolved = knownSource ? undefined : await pluginCtx.resolve(entry, importer)
-    const resolvedId = knownSource ?? (resolved?.id ? normalizeFsResolvedId(resolved.id) : undefined)
+    const resolved = await pluginCtx.resolve(entry, importer)
+    const resolvedId = resolved?.id ? normalizeFsResolvedId(resolved.id) : undefined
     if (!resolvedId?.endsWith('.vue')) {
       if (configService.weappViteConfig?.uniApp && entry.endsWith('.vue')) {
         throw new Error(`[uni-app] 无法解析外部 Vue 组件: importer=${importer} request=${entry}`)
       }
       continue
     }
-    // 本轮自动导入已给出的运行时输出路径必须保留，裸请求及 .vue 请求才需要物化。
-    const outputPath = knownSource && entry.startsWith('/') && !entry.endsWith('.vue')
-      ? entry
-      : usingComponentFromResolvedFile(resolvedId, configService)
+    const outputPath = usingComponentFromResolvedFile(resolvedId, configService)
     if (!outputPath) {
       throw new Error(`[uni-app] 无法生成外部 Vue 组件输出路径: importer=${importer} resolvedId=${resolvedId}`)
     }

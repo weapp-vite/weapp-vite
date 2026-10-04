@@ -8,6 +8,7 @@ describe('createAutoImportAugmenter', () => {
     const resolve = vi.fn((name: string) => {
       if (name === 'Navbar') {
         return {
+          kind: 'resolver',
           value: {
             name: 'Navbar',
             from: '/components/Navbar/index',
@@ -32,13 +33,14 @@ describe('createAutoImportAugmenter', () => {
     expect(json.usingComponents).toEqual({
       Navbar: '/components/Navbar/index',
     })
-    expect(injectedEntries).toEqual([{ from: '/components/Navbar/index' }])
+    expect(injectedEntries).toEqual([{ kind: 'resolver', from: '/components/Navbar/index' }])
   })
 
   it('does not inject usingComponents when tag name case mismatches', () => {
     const resolve = vi.fn((name: string) => {
       if (name === 'navbar') {
         return {
+          kind: 'resolver',
           value: {
             name: 'navbar',
             from: '/components/navbar/index',
@@ -68,6 +70,7 @@ describe('createAutoImportAugmenter', () => {
     const resolve = vi.fn((name: string) => {
       if (name === 'van-button') {
         return {
+          kind: 'resolver',
           value: {
             name: 'van-button',
             from: '/miniprogram_npm/@vant/weapp/button/index',
@@ -98,6 +101,7 @@ describe('createAutoImportAugmenter', () => {
     const resolve = vi.fn((name: string) => {
       if (name === 'HotCard') {
         return {
+          kind: 'resolver',
           value: {
             name: 'HotCard',
             from: '/components/HotCard/index',
@@ -126,13 +130,14 @@ describe('createAutoImportAugmenter', () => {
     expect(json.usingComponents).toEqual({
       HotCard: '/components/HotCard/index',
     })
-    expect(injectedEntries).toEqual([{ from: '/components/HotCard/index' }])
+    expect(injectedEntries).toEqual([{ kind: 'resolver', from: '/components/HotCard/index' }])
   })
 
   it('does not return entries when explicit usingComponents points elsewhere', () => {
     const resolve = vi.fn((name: string) => {
       if (name === 'HotCard') {
         return {
+          kind: 'resolver',
           value: {
             name: 'HotCard',
             from: '/components/HotCard/index',
@@ -168,6 +173,7 @@ describe('createAutoImportAugmenter', () => {
     const resolve = vi.fn((name: string) => {
       if (name === 'ResolverBadge') {
         return {
+          kind: 'resolver',
           value: {
             name: 'ResolverBadge',
             from: '/weapp_vite_external/resolver-ui/ResolverBadge',
@@ -195,6 +201,7 @@ describe('createAutoImportAugmenter', () => {
       ResolverBadge: '/weapp_vite_external/resolver-ui/ResolverBadge',
     })
     expect(injectedEntries).toEqual([{
+      kind: 'resolver',
       from: '/weapp_vite_external/resolver-ui/ResolverBadge',
       resolvedId: '/workspace/packages/resolver-ui/ResolverBadge.vue',
     }])
@@ -207,6 +214,7 @@ describe('createAutoImportAugmenter', () => {
     const resolve = vi.fn((name: string) => {
       if (name === 'HotCard') {
         return {
+          kind: 'local',
           value: {
             name: 'HotCard',
             from: '/components/HotCard/index',
@@ -234,6 +242,7 @@ describe('createAutoImportAugmenter', () => {
       HotCard: '/components/HotCard/index',
     })
     expect(injectedEntries).toEqual([{
+      kind: 'local',
       from: '/components/HotCard/index',
       resolvedId: '/project/src/components/HotCard/index.vue',
     }])
@@ -246,6 +255,7 @@ describe('createAutoImportAugmenter', () => {
     const resolve = vi.fn((name: string) => {
       if (name === 'HotCard') {
         return {
+          kind: 'local',
           value: {
             name: 'HotCard',
             from: '/components/HotCard/index',
@@ -277,6 +287,7 @@ describe('createAutoImportAugmenter', () => {
       HotCard: '/components/HotCard/index',
     })
     expect(injectedEntries).toEqual([{
+      kind: 'local',
       from: '/components/HotCard/index',
       resolvedId: '/project/src/components/HotCard/index.vue',
     }])
@@ -298,6 +309,7 @@ describe('createAutoImportAugmenter', () => {
     const resolve = vi.fn((name: string) => {
       if (registered && name === 'HotCard') {
         return {
+          kind: 'local',
           value: {
             name: 'hot-card',
             from: '/components/hot-card',
@@ -344,6 +356,7 @@ describe('createAutoImportAugmenter', () => {
         'hot-card': '/components/hot-card',
       })
       expect(injectedEntries).toEqual([{
+        kind: 'local',
         from: '/components/hot-card',
         resolvedId: hotCardPath,
       }])
@@ -364,6 +377,7 @@ describe('createAutoImportAugmenter', () => {
     const hit = { 'van-button': [{ start: 0, end: 0 }] }
     const resolve = vi.fn(() => {
       return {
+        kind: 'resolver',
         value: {
           name: 'van-button',
           from: '/miniprogram_npm/@vant/weapp/button/index',
@@ -394,11 +408,12 @@ describe('createAutoImportAugmenter', () => {
   it.each(['wevu-sfc', 'native'] as const)('publishes current %s source on cache hits without exposing cached records', async (sourceType) => {
     const hit = { HotCard: [{ start: 0, end: 0 }] }
     const component = {
+      kind: 'local' as const,
       from: '/components/HotCard/index',
       resolvedId: `/project/src/components/HotCard/index.${sourceType === 'native' ? 'js' : 'vue'}`,
       sourceType,
     }
-    const resolve = vi.fn(() => ({ value: { name: 'HotCard', ...component } }))
+    const resolve = vi.fn(() => ({ kind: component.kind, value: { name: 'HotCard', ...component } }))
     const componentEntryMap = new Map<string, string>()
     const applyAutoImports = createAutoImportAugmenter(
       { resolve, getVersion: () => 0 } as any,
@@ -426,6 +441,7 @@ describe('createAutoImportAugmenter', () => {
     const hit = { HotCard: [{ start: 0, end: 0 }] }
     let version = 0
     const resolve = vi.fn(() => ({
+      kind: version === 0 ? 'local' : 'resolver',
       value: {
         name: 'HotCard',
         from: '/components/HotCard/index',
@@ -441,6 +457,7 @@ describe('createAutoImportAugmenter', () => {
     await applyAutoImports('/project/src/pages/home', {})
     version += 1
     expect(await applyAutoImports('/project/src/pages/home', {})).toEqual([{
+      kind: 'resolver',
       from: '/components/HotCard/index',
       resolvedId: '/project/src/components/HotCard/index.js',
       sourceType: 'native',
@@ -452,6 +469,7 @@ describe('createAutoImportAugmenter', () => {
     const resolve = vi.fn((name: string) => {
       if (name === 'list-view') {
         return {
+          kind: 'resolver',
           value: {
             name,
             from: '/components/list-view/index',

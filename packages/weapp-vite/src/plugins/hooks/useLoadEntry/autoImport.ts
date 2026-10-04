@@ -1,5 +1,6 @@
 import type { ResolvedValue } from '../../../auto-import-components/resolvers/types'
 import type { CompilerContext } from '../../../context'
+import type { AutoImportMatch } from '../../../runtime/autoImport/service/types'
 import { get, isObject, set } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
@@ -9,7 +10,9 @@ import { toKebabCaseComponentName } from '../../../utils/json'
 const GLOB_WILDCARD_RE = /[*?[{]/
 const AUTO_IMPORT_LOCAL_EXTENSIONS = ['vue', 'wxml', 'js', 'ts', 'json'] as const
 
-export type ResolvedAutoImportComponent = Pick<ResolvedValue, 'from' | 'resolvedId' | 'sourceType'>
+export interface ResolvedAutoImportComponent extends Pick<ResolvedValue, 'from' | 'resolvedId' | 'sourceType'> {
+  kind: AutoImportMatch['kind']
+}
 type ResolvedAutoImportComponents = Record<string, ResolvedAutoImportComponent>
 
 function toPascalTagName(name: string) {
@@ -160,6 +163,7 @@ export function createAutoImportAugmenter(
       }
 
       resolvedComponents[match.value.name] = {
+        kind: match.kind,
         from: match.value.from,
         resolvedId: match.value.resolvedId,
         sourceType: match.value.sourceType,
