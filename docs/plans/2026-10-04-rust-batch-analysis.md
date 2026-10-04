@@ -352,3 +352,27 @@ Linux/macOS 的 100 项基础指标均完整；分别有 322/390 个 side-run �
 七项确认回退中六项发生在 dev 初始构建之后，一次启动加载不能直接解释持续 HMR 延迟。强制 GC 和完整产物读取在计时后发生，可能影响下一样本，但会话首次 edit 不能归因于前一次强制 GC；也不能直接减去 120 ms polling 来取消回退。下一步可在同一首次请求边界对照 off、阻止加载并真实 JS fallback、只加载但 JS fallback、实际 native 四种诊断模式，并将事件关联到启动/edit/restore；没有 loader 请求的工程不能被强制预加载后冒充生产路径。
 
 完整 `transformScript` 的 Rust 边界还有一项必要前提：class/style、template-ref 等元数据携带 Babel Expression，需先定义紧凑表达式输入契约，不能直接跨边界复制整棵 AST。当前 native Cargo 只有 Oxc parser/AST/visitor/可选 semantic，没有 codegen/transformer/sourcemap 集成；现有 TS visitor 对 enum、namespace、parameter property 的行为也不能被通用 TS 转换器直接替代。待更强 JS 基线采样后，再按剩余热点决定阶段迁移，而非增加细粒度 props/page-meta NAPI。
+
+
+## 第十七轮：四模式懒加载源码探针
+
+新增独立的 `scripts/nativeLoadDiagnostic` 工具，为后续 HMR 加载归因先验证观察边界。四个全新进程分别关闭 native、禁止加载并走 JS、仅加载后走 JS、实际 native。preload 只订阅事件，wrapper 仅在生产代码真实首次 require 时初始化；不修改生产源码、不提前加载 addon、不新增逐节点或细粒度 NAPI。
+
+本机真实 release 绑定的最终探针四路输出完全一致：
+
+| 模式 | wrapper 初始化 | addon 加载 | native 调用 | 分析结果缓存命中 | 已观测 fallback 事件 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| off | 0 | 0 | 0 | 0 | 0 |
+| on-no-load | 1 | 0 | 0 | 0 | 22 |
+| load-only | 1 | 1 | 0 | 0 | 22 |
+| actual | 1 | 1 | 5 | 2 | 3 |
+
+actual 的三个异常全部来自同一个故意无效的源码阶段，分别经过现有批量分析及其 fallback 路径；有效 batch、缓存告警、末项复用和 recovery 无异常或 fallback。此结果也说明一次坏输入可能经过多次既有 native 尝试，不能把事件数当成唯一源码数或 Rust parse 数。缓存命中分别属于滚动告警和末项分析复用。模块 import 与无 hint 阶段均未触发 wrapper。
+
+最初使用默认 Babel 配置的探针未通过完整输出比较，记录已保留。原因是 `mayContain` helpers 在未提供 parser 时保守返回 true，native 返回精确值；最终仅把此诊断的脚本分析与 feature flags 固定为现有 Oxc fallback，以比较精确结果，滚动告警仍保留原路径来验证缓存。没有修改生产契约或归一化掉差异，不能据此声称默认 Babel/native 的所有中间结果完全相同。
+
+31 项工具测试、局部 typecheck 和定向 ESLint 通过；独立复核最终报告的源码、逐模式输出及原始轨迹 hash。验证器要求完整进程起止、事件阶段及调用顺序，分别锁定缓存、故意解析失败与恢复，并禁止有效阶段发生 native fallback。CI 接入三平台源码探针，只上传公开报告；私有轨迹、生成 wrapper 和 owner 文件不上传。来源、首轮排除记录及最终结构化输出见[加载探针证据](./2026-10-04-native-load-source-evidence.json)。
+
+这里仍没有构建、HMR 或性能样本。wrapper 初始化只观察首次未缓存 require，不等于每次 loader request；已有 fallback channel 不覆盖所有缺失方法分支，零事件不证明没有 JS fallback；`.node` 增量也不代表整个进程所有 native 加载。后续真实 HMR 需要驱动阶段标记、正常退出和产物对照，不能用本轮结果解释已有尾延迟回退。
+
+七路 JS 基线的固定提交 `2d53ed9c4` [采样运行](https://github.com/weapp-vite/weapp-vite/actions/runs/37202918268)已发起；本轮加载诊断不改变该运行的源码或采样目标。三平台数据完成并独立复核前，仍不扩大生产 Rust 覆盖。

@@ -20,6 +20,7 @@ on:
       - 'scripts/nativeChunkAnalysis/**'
       - 'scripts/nativeBindingAnalysis/**'
       - 'scripts/scriptAnalysisBaseline/**'
+      - 'scripts/nativeLoadDiagnostic/**'
       - 'scripts/benchmarkNativeAnalysis/**'
       - 'scripts/benchmarkTemplatesHmr/**'
       - 'scripts/benchmarkTemplatesPerformance/**'
@@ -111,7 +112,17 @@ jobs:
           pnpm exec tsc -p scripts/nativeChunkAnalysis/tsconfig.json
           pnpm exec tsc -p scripts/nativeBindingAnalysis/tsconfig.json
           pnpm exec tsc -p scripts/scriptAnalysisBaseline/tsconfig.json
-          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile scripts/benchmarkNativeAnalysis scripts/nativeChunkAnalysis/rewrite.test.ts scripts/nativeBindingAnalysis scripts/scriptAnalysisBaseline
+          pnpm exec tsc -p scripts/nativeLoadDiagnostic/tsconfig.json
+          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile scripts/benchmarkNativeAnalysis scripts/nativeChunkAnalysis/rewrite.test.ts scripts/nativeBindingAnalysis scripts/scriptAnalysisBaseline scripts/nativeLoadDiagnostic
+      - name: Check native lazy loading source diagnostics
+        run: node --import tsx scripts/nativeLoadDiagnostic/check.ts --output=.codex-tmp/native-load-source
+      - name: Upload native lazy loading source diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-load-source-${{ matrix.os }}
+          path: .codex-tmp/native-load-source/report.json
+          include-hidden-files: true
       - name: Compare script analysis baselines
         run: node --import tsx scripts/scriptAnalysisBaseline/check.ts --output=.codex-tmp/script-baseline-correctness
       - name: Upload script analysis comparison
