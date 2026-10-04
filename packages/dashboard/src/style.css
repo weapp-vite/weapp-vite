@@ -50,6 +50,14 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  button:enabled {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
   .font-mono {
     font-family: var(--dashboard-code);
   }
