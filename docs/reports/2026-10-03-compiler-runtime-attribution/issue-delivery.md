@@ -448,7 +448,29 @@ Windows 窄矩阵 `37172276999` 绑定 `0af75a05e`，两个 Node 版本各实际
 
 候选 `d034de14634394737f54ab328d57449dd8d359c2` 的 Release `37180376231` 与 Website `37180376158` 已成功。runtime publication `37180404027` 的 Linux/Windows、Node 22/24 四份严格 artifact 均为 7/7 cases、61/61 checkpoints；两份 macOS job 尚未分配 runner，不能记作通过。完整 CI `37180394615` 的 Linux 两项和 Weapi 两项通过，其余尚未收敛；新提交须保留自己的矩阵证据。
 
+## 后续 Windows 路径与独立消费者验证
+
+`d034de146` 的完整 CI Windows Node 22 在新工作流替换前真实失败：4 failed、13,445 passed。四项均来自新增的 `publicationLifecycle.test.ts` 和 `wevu.test.ts`，生产插件向 ownership/matcher 传递规范化路径，测试却以 `node:path` 生成 Windows 反斜杠预期。`a4c4ddf58` 将这两处测试输入/预期统一为 `pathe`；10 项定向测试与 ESLint 通过，生产路径契约保持。完整 CI 以同 SHA 的定时 run `37184015892` 继续验证；此前手动 run `37183995114` 在无 job 时被同组定时任务取消，不能记为失败修复或通过。
+
+维护者最初给出的两项 Actions 已逐类对应后续验证：Release `37085970630` 的版本结果/工作区 manifest 不一致已有 release-preparation 回归，`37180376231` 整体成功；CI `37086391076` 的 WXML 快照与删页拓扑分别在后续真实构建回归通过；Windows 安全/引擎测试超时也有后续完整六矩阵成功记录。新候选仍以自己的 CI 为准，不用历史绿色结果覆盖新增失败。
+
+干净 `8cd8b9ccf897ce7d40ada65681356093416d6fbd` 的 32 包完整 runtime 闭包重新打包，归档与各包 dist 逐文件逐字节相同。固定 benchmark 源码的原始文件域名遇到连接重置；下载改走同一提交的 GitHub Contents/Blob API，并核对 Git blob 与 SHA-256，不修改源码。新消费者严格安装通过，32 个候选包均核对到本代归档。四次构建和最小/典型页面 headless 交互通过，典型页面实际点击由 `1 / 2` 变为 `2 / 4`，会话正常关闭。
+
+同批归档的 Vite+ 独立消费者通过严格安装、导出/负控、单宿主/配置、实际测试 runner、dev/build-watch 的 TS/Vue 更新和 stateful 宿主传输/模板恢复；选定的三项 headless 场景通过，其他 13 项未被该入口选择，不能称为完整 suite 通过。临时消费者由所属入口清理。该证据没有真实 Stable runtime，也没有候选之间的性能比较。
+
+`8cd8b9ccf` 的 runtime publication `37183362308` 已取得 Linux/Windows、Node 22/24 四份严格 artifact，每份 9/9 cases、66/66 checkpoints，新增 #1058 为两例/5 点、#1140 为两例/28 点，零违规/运行时错误。macOS 两项继续运行；HMR 归因 `37183338392` 绑定相同候选，正式结果尚未形成。
+
+## 同步图查询与剩余原生引用
+
+`58c4c3286` 扩大既有 realpath 同步作用域，使起点筛选、importer 遍历及失效共同复用成功读取。两个 build scope 的 collect/invalidate 从 19/20 次降到各 1 次，dev collect/invalidate 从 10/12 次降到各 1 次；下次操作重新读取。真实文件、junction 改指向、缺失/创建/删除/恢复与异常退出覆盖通过。已有大型 service 闭包继续拥有图/context/失效状态，本次只调整同步边界。该确定性计数不是 #1082 正式性能通过证据。独立 worktree 28 项及 main 定向 26 项回归通过；main 的依赖产物首次偏旧，完整重建相关依赖后，包 typecheck、全部公共类型套件与 ESLint 通过。
+
+同一物理 fixture、官方 native 和未修改 Vite 的三轮 normalized-options v2 草案比较完成，只有三个临时 Rolldown JS 文件不同。完整产物/metadata 与 47 个公开 getter/回调身份一致，登记子进程退出且 fixture 删除。草案让 input/output options、其 native inner、PluginContextData 各 3/3 回收；environment 仍保留 3/3，owner/sourceConfig 各 1/1。离线 heap 将剩余实际强根指向独立的 callable builtin plugin owner；没有发现诊断脚本 closure 对目标的强祖先路径。Node 22 模板缓存中的未包装 Binding 对象不算实际 native 实例，原始计数与派生审阅均保留。
+
+草案只在临时副本中验证，没有修改正式依赖或 lockfile；不能据此宣称 #1135 修复或 512 SFC 资源门禁通过。后续需锁定 callable owner 的独立生命周期与发布消费者的实际依赖交付，不能仅靠仓库私有补丁获得绿色结果。
+
 ## Stable IDE 环境记录
+
+2026-10-04 后续官方查询仍为 Stable `2.02.2608080`。本轮 Computer Use 返回 Mac 已锁屏且无法自动解锁，已请维护者手动解锁；统一切换及恢复原项目的授权保持有效，本轮未退出或重启任何用户 IDE。
 
 2026-10-04 04:22 UTC 再查官方渠道仍为 Stable `2.02.2608080`。维护者明确允许暂退共享 RC、验收后恢复 SQLite、Taro 和预检项目。原生 Computer Use 已退出 RC，启动所选 Stable，显示 `appVersionType=0`，使用已有账号完成快捷登录；随后 CLI 在 `127.0.0.1` 确认 `login: true`、服务端口可用。没有复制、刷新或替换登录票据。
 
