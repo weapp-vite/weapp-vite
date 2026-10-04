@@ -106,12 +106,16 @@ export default async function setupIdeE2E() {
     }
   }
 
-  if (process.env.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK === '1') {
+  if (!shouldRunDevtoolsLoginPreflight()) {
     return async () => {
       writeIdeWarningReport(reportPaths)
     }
   }
-  if (!shouldRunDevtoolsLoginPreflight()) {
+
+  const { preflightSelectedWechatDevtools } = await import('./utils/devtoolsSelection')
+  await preflightSelectedWechatDevtools()
+
+  if (process.env.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK === '1') {
     return async () => {
       writeIdeWarningReport(reportPaths)
     }

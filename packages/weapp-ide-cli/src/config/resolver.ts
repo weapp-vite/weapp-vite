@@ -1,4 +1,5 @@
 import type { ResolvedConfig } from '../types'
+import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
 import logger, { colors } from '../logger'
 import { getDefaultCliPath } from '../runtime/platform'
@@ -30,9 +31,10 @@ export function resolveDevtoolsAutomationDefaults(config: {
 }
 
 /**
- * @description 读取并解析 CLI 配置（自定义优先）
+ * @description 读取并解析 CLI 配置（进程选择优先，其次用户配置与平台默认）
  */
 export async function getConfig(): Promise<ResolvedConfig> {
+  const selectedCliPath = process.env.WEAPP_IDE_CLI_PATH?.trim()
   if (await fs.pathExists(defaultCustomConfigFilePath)) {
     try {
       const rawConfig = await fs.readJSON(defaultCustomConfigFilePath)
@@ -46,15 +48,15 @@ export async function getConfig(): Promise<ResolvedConfig> {
         ? config.autoTrustProject
         : undefined
 
-      if (cliPath) {
+      if (selectedCliPath || cliPath) {
         logger.info(`全局配置文件路径：${colors.green(defaultCustomConfigFilePath)}`)
-        logger.info(`自定义 CLI 路径：${colors.green(cliPath)}`)
+        logger.info(`${selectedCliPath ? '进程指定' : '自定义'} CLI 路径：${colors.green(selectedCliPath || cliPath)}`)
         return {
-          cliPath,
+          cliPath: selectedCliPath || cliPath,
           locale,
           autoBootstrapDevtools,
           autoTrustProject,
-          source: 'custom',
+          source: selectedCliPath ? 'environment' : 'custom',
         }
       }
 
@@ -62,8 +64,12 @@ export async function getConfig(): Promise<ResolvedConfig> {
     }
     catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
-      logger.warn(`解析自定义配置失败，将尝试使用默认路径。原因：${reason}`)
+      logger.warn(`解析自定义配置失败，${selectedCliPath ? '继续使用进程指定路径' : '将尝试使用默认路径'}。原因：${reason}`)
     }
+  }
+
+  if (selectedCliPath) {
+    return { cliPath: selectedCliPath, source: 'environment' }
   }
 
   const fallbackPath = await getDefaultCliPath()

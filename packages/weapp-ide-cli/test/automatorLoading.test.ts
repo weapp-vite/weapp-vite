@@ -56,3 +56,8 @@ it.each([
   }
   expect(launcher).not.toHaveBeenCalled()
 })
+
+vi.mock('@weapp-vite/devtools-runtime', async importOriginal => ({
+  ...await importOriginal<typeof import('@weapp-vite/devtools-runtime')>(),
+  withMachineE2ELease: async (run: () => Promise<unknown>) => await run(),
+}))

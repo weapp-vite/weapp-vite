@@ -5,15 +5,16 @@ import type {
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
 // eslint-disable-next-line e18e/ban-dependencies -- DevTools CLI fallback 需要跨平台进程执行与超时控制。
 import { execa } from 'execa'
+import { assertWechatDevtoolsHost, resolveWechatDevtoolsTarget } from '../devtoolsTarget'
 import {
   openWechatIdeProjectByHttp,
   pollWechatIdeEngineBuildResultByHttp,
   resetWechatIdeFileUtilsByHttp,
   startWechatIdeEngineBuildByHttp,
 } from './http'
-import { resolveCliPath } from './resolver'
 
 export interface RunWechatIdeEngineBuildByHttpOptions extends WechatDevtoolsHttpCommandOptions {
   onProgress?: (result: PollWechatIdeEngineBuildResult) => void
@@ -23,7 +24,7 @@ export interface RunWechatIdeEngineBuildByHttpOptions extends WechatDevtoolsHttp
 
 export interface RunWechatIdeEngineBuildOptions extends RunWechatIdeEngineBuildByHttpOptions {
   fallbackToCli?: boolean
-  /** Keep protocol stdout free of CLI diagnostics. */
+  /** 避免 CLI 诊断污染协议标准输出。 */
   quiet?: boolean
   logPath?: string
 }
@@ -124,16 +125,15 @@ function compactOutput(value: string | undefined) {
 
 async function runWechatIdeEngineBuildByCli(projectPath: string, options: RunWechatIdeEngineBuildOptions = {}) {
   options.signal?.throwIfAborted()
-  const { cliPath } = await resolveCliPath().catch((error: unknown) => {
+  const target = await resolveWechatDevtoolsTarget(options).catch((error: unknown) => {
     options.signal?.throwIfAborted()
     throw error
   })
   options.signal?.throwIfAborted()
-  if (!cliPath) {
-    throw createEngineBuildError('WECHAT_DEVTOOLS_CLI_NOT_FOUND', 'WECHAT_DEVTOOLS_CLI_NOT_FOUND')
-  }
+  await assertWechatDevtoolsHost(target, { signal: options.signal })
+  options.signal?.throwIfAborted()
 
-  const result = await execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
+  const result = await execa(target.cliPath, ['engine', 'build', path.resolve(projectPath)], {
     ...(options.signal ? { cancelSignal: options.signal } : {}),
     killDescendants: true,
     reject: false,
@@ -183,7 +183,7 @@ async function runWechatIdeEngineBuildByCli(projectPath: string, options: RunWec
 /**
  * @description 通过开发者工具 HTTP 服务端口执行 engine build，并轮询直到构建结束。
  */
-export async function runWechatIdeEngineBuildByHttp(
+async function runSelectedWechatIdeEngineBuildByHttp(
   projectPath: string,
   options: RunWechatIdeEngineBuildByHttpOptions = {},
 ) {
@@ -221,7 +221,7 @@ export async function runWechatIdeEngineBuildByHttp(
 /**
  * @description 以更接近官方 CLI 的方式执行 engine build，并支持将构建日志写入文件。
  */
-export async function runWechatIdeEngineBuild(
+async function runSelectedWechatIdeEngineBuild(
   projectPath: string,
   options: RunWechatIdeEngineBuildOptions = {},
 ) {
@@ -229,7 +229,7 @@ export async function runWechatIdeEngineBuild(
   let lastLoggedMessage: string | undefined
 
   try {
-    const result = await runWechatIdeEngineBuildByHttp(projectPath, {
+    const result = await runSelectedWechatIdeEngineBuildByHttp(projectPath, {
       ...options,
       onProgress: (progress) => {
         if (progress.msg && progress.msg !== lastLoggedMessage) {
@@ -264,15 +264,47 @@ export async function runWechatIdeEngineBuild(
   }
 }
 
-/** Wait for the IDE to consume a build before deterministic acceptance interactions. */
-export async function prepareAcceptanceProject(projectPath: string, signal: AbortSignal) {
-  await openWechatIdeProjectByHttp(projectPath, { signal, timeoutMs: 10_000 })
+/** 固定安装上下文后完整持有 HTTP 构建与轮询期间的租约。 */
+export async function runWechatIdeEngineBuildByHttp(projectPath: string, options: RunWechatIdeEngineBuildByHttpOptions = {}) {
+  options.signal?.throwIfAborted()
+  return await withMachineE2ELease(async () => {
+    const target = await resolveWechatDevtoolsTarget(options)
+    options.signal?.throwIfAborted()
+    return await runSelectedWechatIdeEngineBuildByHttp(projectPath, { ...options, target })
+  })
+}
+
+/** HTTP、轮询与 CLI 回退沿用同一次解析的安装。 */
+export async function runWechatIdeEngineBuild(projectPath: string, options: RunWechatIdeEngineBuildOptions = {}) {
+  options.signal?.throwIfAborted()
+  return await withMachineE2ELease(async () => {
+    const target = await resolveWechatDevtoolsTarget(options)
+    options.signal?.throwIfAborted()
+    return await runSelectedWechatIdeEngineBuild(projectPath, { ...options, target })
+  })
+}
+
+async function prepareSelectedAcceptanceProject(projectPath: string, signal: AbortSignal, options: WechatDevtoolsHttpCommandOptions) {
+  await openWechatIdeProjectByHttp(projectPath, { ...options, signal, timeoutMs: 10_000 })
   await sleep(1000, signal)
-  await resetWechatIdeFileUtilsByHttp(projectPath, { signal, timeoutMs: 10_000 })
-  const result = await runWechatIdeEngineBuild(projectPath, { signal, overallTimeoutMs: 60_000, timeoutMs: 10_000, quiet: true })
-  // CLI fallback acknowledges opening before its simulator reload completes.
+  await resetWechatIdeFileUtilsByHttp(projectPath, { ...options, signal, timeoutMs: 10_000 })
+  const result = await runWechatIdeEngineBuild(projectPath, { ...options, signal, overallTimeoutMs: 60_000, timeoutMs: 10_000, quiet: true })
+  // CLI 回退确认打开时，模拟器可能尚未完成重载。
   if (!result) {
     await sleep(1500, signal)
   }
   return result
+}
+
+/** 在验收交互前等待 IDE 消费产物，并沿用该会话选择的安装。 */
+export async function prepareAcceptanceProject(projectPath: string, signal: AbortSignal, options: WechatDevtoolsHttpCommandOptions & { runtimeProvider?: 'headless' | 'devtools' } = {}) {
+  signal.throwIfAborted()
+  if (options.runtimeProvider === 'headless') {
+    return
+  }
+  return await withMachineE2ELease(async () => {
+    const target = await resolveWechatDevtoolsTarget(options)
+    signal.throwIfAborted()
+    return await prepareSelectedAcceptanceProject(projectPath, signal, { ...options, target })
+  })
 }

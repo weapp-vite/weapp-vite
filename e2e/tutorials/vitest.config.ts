@@ -3,6 +3,7 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
+    globalSetup: [path.resolve(import.meta.dirname, '../vitest.e2e.machine.global-setup.ts')],
     include: [path.resolve(import.meta.dirname, './*.test.ts')],
     globals: true,
   },

@@ -9,6 +9,7 @@ export default defineConfig({
     tsconfig: false,
   },
   test: {
+    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
     include: [
       path.resolve(import.meta.dirname, './utils/webDevServer.test.ts'),
       path.resolve(import.meta.dirname, './utils/httpReadiness.test.ts'),

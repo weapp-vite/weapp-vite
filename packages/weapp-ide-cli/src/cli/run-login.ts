@@ -1,6 +1,9 @@
 import type { OperationLifecycle } from '@weapp-vite/miniprogram-automator/operation'
+import type { ResolvedWechatDevtoolsTarget } from '../devtoolsTarget'
 import type { LoginRetryConfig } from './run-login-config'
 import process from 'node:process'
+import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
+import { assertWechatDevtoolsHost, resolveWechatDevtoolsTarget } from '../devtoolsTarget'
 import { i18nText } from '../i18n'
 import logger from '../logger'
 import { execute } from '../utils'
@@ -19,6 +22,7 @@ type WechatCliExecutionResult
     | { error: unknown, kind: 'retryable' }
 
 export interface RunWechatCliWithRetryOptions {
+  target?: ResolvedWechatDevtoolsTarget
   silent?: boolean
   timeout?: number
   signal?: AbortSignal
@@ -79,7 +83,7 @@ function flushExecutionOutput(result: unknown) {
   }
 }
 
-function captureWechatDevtoolsServicePort(result: unknown) {
+function captureWechatDevtoolsServicePort(result: unknown, target: ResolvedWechatDevtoolsTarget) {
   if (!result || typeof result !== 'object') {
     return
   }
@@ -95,13 +99,15 @@ function captureWechatDevtoolsServicePort(result: unknown) {
   }
 
   const port = Number.parseInt(match[1], 10)
-  setRuntimeWechatDevtoolsServicePort(port)
+  setRuntimeWechatDevtoolsServicePort(port, target)
 }
 
 /**
  * @description 运行微信开发者工具 CLI，并在登录失效时允许按键重试。
  */
-export async function runWechatCliWithRetry(cliPath: string, argv: string[], options: RunWechatCliWithRetryOptions = {}) {
+async function executeWechatCliWithRetry(cliPath: string, argv: string[], options: RunWechatCliWithRetryOptions) {
+  options.signal?.throwIfAborted()
+  const target = await resolveWechatDevtoolsTarget({ target: options.target, cliPath })
   const loginRetryOptions = resolveLoginRetryConfig(argv)
   const result = await runWithSuspendedSharedInput(async () => {
     return await runRetryableCommand<WechatCliExecutionResult, 'retry' | 'cancel' | 'timeout'>({
@@ -109,10 +115,12 @@ export async function runWechatCliWithRetry(cliPath: string, argv: string[], opt
       signal: options.signal,
       createCancelError: result => createWechatIdeLoginRequiredExitError(unwrapWechatCliExecutionError(result)),
       execute: async (operation) => {
+        await assertWechatDevtoolsHost(target, { signal: operation.signal, timeout: operation.remainingMs() })
+        operation.signal.throwIfAborted()
         try {
           return {
             kind: 'result',
-            value: await execute(cliPath, loginRetryOptions.runtimeArgv, {
+            value: await execute(target.cliPath, loginRetryOptions.runtimeArgv, {
               pipeStdout: false,
               pipeStderr: false,
               timeout: operation.remainingMs(),
@@ -149,8 +157,13 @@ export async function runWechatCliWithRetry(cliPath: string, argv: string[], opt
     throw createWechatIdeLoginRequiredExitError(result.value)
   }
 
-  captureWechatDevtoolsServicePort(result.value)
+  captureWechatDevtoolsServicePort(result.value, target)
   if (!options.silent) {
     flushExecutionOutput(result.value)
   }
+}
+
+/** 原生 CLI 可能启动或改变共享宿主，完整命令与有限重试共用机器租约。 */
+export async function runWechatCliWithRetry(cliPath: string, argv: string[], options: RunWechatCliWithRetryOptions = {}) {
+  return await withMachineE2ELease(() => executeWechatCliWithRetry(cliPath, argv, options))
 }

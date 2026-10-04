@@ -3,6 +3,7 @@ import { withMiniProgram } from '../cli/automator-session'
 import { createWeappIdeMcpServer } from './server'
 
 export interface StartWeappIdeMcpServerOptions {
+  cliPath?: string
   workspaceRoot?: string
 }
 
@@ -10,7 +11,7 @@ export async function startWeappIdeMcpServer(options: StartWeappIdeMcpServerOpti
   const { serveStdio } = await import('@modelcontextprotocol/server/stdio')
   const serverOptions: WeappIdeMcpServerOptions = {
     runtimeHooks: {
-      withMiniProgram,
+      withMiniProgram: (input, runner) => withMiniProgram({ ...input, cliPath: input.cliPath ?? options.cliPath }, runner),
     },
     workspaceRoot: options.workspaceRoot,
   }

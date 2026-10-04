@@ -1,8 +1,17 @@
 import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: async (run: () => Promise<unknown>) => await run() }))
+
 const detectWechatDevtoolsServicePortMock = vi.hoisted(() => vi.fn())
 const getRuntimeWechatDevtoolsServicePortMock = vi.hoisted(() => vi.fn())
+const assertPort = vi.hoisted(() => vi.fn())
+const selectedTarget = vi.hoisted(() => ({ cliPath: 'selected-cli', appPath: 'selected-app', profileDir: 'selected-profile', installationId: 'selected' }))
+
+vi.mock('../src/devtoolsTarget', () => ({
+  resolveWechatDevtoolsTarget: async () => selectedTarget,
+  assertWechatDevtoolsPort: assertPort,
+}))
 
 vi.mock('../src/cli/wechatDevtoolsSettings', () => ({
   detectWechatDevtoolsServicePort: detectWechatDevtoolsServicePortMock,
@@ -25,6 +34,7 @@ describe('wechat devtools http helpers', () => {
     vi.resetModules()
     detectWechatDevtoolsServicePortMock.mockReset()
     getRuntimeWechatDevtoolsServicePortMock.mockReset()
+    assertPort.mockReset().mockResolvedValue(undefined)
     detectWechatDevtoolsServicePortMock.mockResolvedValue({
       detectedSecurityCount: 1,
       servicePort: 9527,
@@ -44,7 +54,31 @@ describe('wechat devtools http helpers', () => {
 
     await openWechatIdeProjectByHttp('/workspace/demo-app')
 
-    expectFetchRequest(0, `http://127.0.0.1:9527/open?projectpath=${encodeURIComponent(projectPath)}`)
+    expectFetchRequest(0, `http://127.0.0.1:9527/v2/open?project=${encodeURIComponent(projectPath)}`)
+    expect(detectWechatDevtoolsServicePortMock).toHaveBeenCalledWith({ target: selectedTarget })
+    expect(assertPort).toHaveBeenCalledWith(selectedTarget, 9527, expect.any(Object))
+  })
+
+  it.each(['fixtures/demo app', 'fixtures/中文应用', 'fixtures/中文 应用 100% & #'])('sends only the declared project parameter with one encoding: %s', async (fixturePath) => {
+    const { openWechatIdeProjectByHttp } = await import('../src/cli/http')
+    await openWechatIdeProjectByHttp(fixturePath)
+    const request = new URL(String(vi.mocked(fetch).mock.calls[0]![0]))
+    expect(request.pathname).toBe('/v2/open')
+    expect([...request.searchParams.keys()]).toEqual(['project'])
+    expect(request.searchParams.get('project')).toBe(path.resolve(fixturePath))
+  })
+
+  it.each(['"project-window"', '42', 'OK'])('preserves the public response body without assuming a window id type: %s', async (body) => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(body))
+    const { openWechatIdeProjectByHttp } = await import('../src/cli/http')
+    await expect(openWechatIdeProjectByHttp('fixtures/demo-app')).resolves.toBe(body)
+  })
+
+  it.each(['', ' \r\n ', '{}', '{ \n }'])('does not confirm project opening from an empty successful response: %j', async (body) => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(body))
+    const { openWechatIdeProjectByHttp } = await import('../src/cli/http')
+    await expect(openWechatIdeProjectByHttp('fixtures/demo-app')).rejects.toMatchObject({ code: 'WECHAT_DEVTOOLS_HTTP_OPEN_UNCONFIRMED' })
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('prefers runtime service port captured from current cli open output', async () => {
@@ -55,6 +89,7 @@ describe('wechat devtools http helpers', () => {
     await resetWechatIdeFileUtilsByHttp('/workspace/demo-app')
 
     expect(detectWechatDevtoolsServicePortMock).not.toHaveBeenCalled()
+    expect(getRuntimeWechatDevtoolsServicePortMock).toHaveBeenCalledWith(selectedTarget)
     expectFetchRequest(0, `http://127.0.0.1:44650/v2/resetfileutils?project=${encodeURIComponent(projectPath)}`)
   })
 
@@ -97,5 +132,30 @@ describe('wechat devtools http helpers', () => {
       status: 'END',
     })
     expectFetchRequest(0, 'http://127.0.0.1:9527/engine/buildResult/')
+  })
+
+  it('rejects an explicit port owned by another installation without sending a request', async () => {
+    const error = Object.assign(new Error('wrong installation'), { code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' })
+    assertPort.mockRejectedValueOnce(error)
+    const { openWechatIdeProjectByHttp } = await import('../src/cli/http')
+    await expect(openWechatIdeProjectByHttp('fixture', { port: 22002, target: selectedTarget })).rejects.toBe(error)
+    expect(assertPort).toHaveBeenCalledWith(selectedTarget, 22002, expect.any(Object))
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('does not guess a default port when the selected installation has no port', async () => {
+    detectWechatDevtoolsServicePortMock.mockResolvedValueOnce({ touchedInstanceCount: 0, detectedSecurityCount: 0 })
+    const { openWechatIdeProjectByHttp } = await import('../src/cli/http')
+    await expect(openWechatIdeProjectByHttp('fixture')).rejects.toMatchObject({ code: 'WECHAT_DEVTOOLS_SERVICE_PORT_UNKNOWN' })
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 65536])('rejects an explicit invalid port without falling back: %s', async (port) => {
+    const { openWechatIdeProjectByHttp } = await import('../src/cli/http')
+    await expect(openWechatIdeProjectByHttp('fixture', { port, target: selectedTarget })).rejects.toMatchObject({ code: 'WECHAT_DEVTOOLS_INVALID_PORT' })
+    expect(getRuntimeWechatDevtoolsServicePortMock).not.toHaveBeenCalled()
+    expect(detectWechatDevtoolsServicePortMock).not.toHaveBeenCalled()
+    expect(assertPort).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 })

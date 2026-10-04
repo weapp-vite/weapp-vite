@@ -5,6 +5,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { E2E_RUNTIME_PROVIDER_ENV, resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_REPORT_DIR_ENV, ACCEPTANCE_ROOT, ACCEPTANCE_RUN_ID_ENV, ACCEPTANCE_SHA_ENV, ACCEPTANCE_TASK_ENV, createAcceptanceIdentity, DOM_ACCEPTANCE_ENV, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { validateTaskAcceptance } from './domAcceptanceReport/task'
@@ -482,10 +483,10 @@ async function defaultRunTask(task: SuiteTask) {
   })
 }
 
-export async function runTaskSuite(
+async function runOwnedTaskSuite(
   suiteName: string,
   tasks: SuiteTask[],
-  options: RunSuiteOptions = {},
+  options: RunSuiteOptions,
 ) {
   const failOnTaskFailure = options.failOnTaskFailure ?? true
   const runTask = options.runTask ?? defaultRunTask
@@ -631,4 +632,12 @@ export async function runTaskSuite(
   }
 
   return results.some(result => result.exitCode !== 0) ? 1 : 0
+}
+
+export async function runTaskSuite(
+  suiteName: string,
+  tasks: SuiteTask[],
+  options: RunSuiteOptions = {},
+) {
+  return withMachineE2ELease(() => runOwnedTaskSuite(suiteName, tasks, options))
 }

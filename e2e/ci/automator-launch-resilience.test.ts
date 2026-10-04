@@ -4,6 +4,11 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('../utils/devtoolsSelection', () => ({
+  resolveSelectedWechatDevtools: vi.fn(async (cliPath: string) => ({ cliPath, installationId: cliPath })),
+  assertSelectedWechatDevtoolsRuntime: vi.fn(async () => {}),
+}))
+
 const DEFAULT_WECHAT_CLI_PATH = process.platform === 'win32'
   ? 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
   : '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
@@ -855,6 +860,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledTimes(2)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenNthCalledWith(1, sandboxRoot, {
+      cliPath: DEFAULT_WECHAT_CLI_PATH,
       timeoutMs: 20,
       signal: expect.any(AbortSignal),
     })
@@ -1285,6 +1291,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledTimes(1)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith(sandboxRoot, {
+      cliPath: DEFAULT_WECHAT_CLI_PATH,
       timeoutMs: expectTimeoutWithinBudget(openWechatIdeProjectByHttpMock.mock.calls[0]?.[1]?.timeoutMs, 24_000),
       signal: expect.any(AbortSignal),
     })
@@ -1621,6 +1628,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     })
 
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith(sandboxRoot, {
+      cliPath: DEFAULT_WECHAT_CLI_PATH,
       timeoutMs: 60_000,
       signal: expect.any(AbortSignal),
     })
@@ -2384,6 +2392,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(connectMock).toHaveBeenCalledTimes(2)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledTimes(2)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenNthCalledWith(1, firstWrapperProjectPath, {
+      cliPath: DEFAULT_WECHAT_CLI_PATH,
       timeoutMs: expectTimeoutWithinBudget(openWechatIdeProjectByHttpMock.mock.calls[0]?.[1]?.timeoutMs, 24_000),
       signal: expect.any(AbortSignal),
     })
@@ -2391,6 +2400,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
       2,
       expect.stringContaining(path.join('.tmp', 'e2e-ide-bridge-projects')),
       {
+        cliPath: DEFAULT_WECHAT_CLI_PATH,
         timeoutMs: expectTimeoutWithinBudget(openWechatIdeProjectByHttpMock.mock.calls[1]?.[1]?.timeoutMs, 24_000),
         signal: expect.any(AbortSignal),
       },

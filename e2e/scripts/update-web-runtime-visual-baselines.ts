@@ -7,6 +7,7 @@ import process from 'node:process'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { execa } from 'execa'
 import { PNG } from 'pngjs'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { launchAutomator } from '../utils/automator'
 import { cleanupResidualDevtoolsProcesses } from '../utils/ide-devtools-cleanup'
 
@@ -253,4 +254,4 @@ async function main() {
   }
 }
 
-await main()
+await withMachineE2ELease(main)

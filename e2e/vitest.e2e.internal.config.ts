@@ -7,6 +7,7 @@ function toPosixPath(filePath: string) {
 
 export default defineConfig({
   test: {
+    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
     taskTitleValueFormatTruncate: Number.POSITIVE_INFINITY,
     include: [
       toPosixPath(path.resolve(import.meta.dirname, './ide/runtimeErrors.test.ts')),

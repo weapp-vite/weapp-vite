@@ -19,6 +19,8 @@ vi.mock('../src/cli/automator', async () => {
   }
 })
 
+vi.mock('../src/cli/automator/context', () => ({ resolveAutomatorSessionOptions: async (options: unknown) => options }))
+
 vi.mock('../src/logger', () => ({
   default: loggerMock,
 }))
@@ -189,6 +191,13 @@ describe('automator session diagnostics', () => {
       port: 19510,
       projectPath: '/workspace/project',
     })
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
+  })
+
+  it('does not relaunch when a selected port belongs to another installation', async () => {
+    connectOpenedAutomatorMock.mockRejectedValueOnce(Object.assign(new Error('wrong installation'), { code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' }))
+    const { connectMiniProgram } = await import('../src/cli/automator-session')
+    await expect(connectMiniProgram({ projectPath: 'project' })).rejects.toThrow('wrong installation')
     expect(launchAutomatorMock).not.toHaveBeenCalled()
   })
 

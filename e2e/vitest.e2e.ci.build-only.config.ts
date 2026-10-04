@@ -13,6 +13,7 @@ const DEV_WATCH_EXCLUDE = [
 
 export default defineConfig({
   test: {
+    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
     include: [CI_TEST_GLOB],
     exclude: DEV_WATCH_EXCLUDE,
     testTimeout: 36_000_000,

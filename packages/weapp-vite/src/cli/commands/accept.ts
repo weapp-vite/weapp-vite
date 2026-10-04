@@ -34,9 +34,9 @@ export function registerAcceptCommand(cli: CAC) {
 
         const { createRuntimeAcceptanceService } = await import('@weapp-vite/mcp')
 
-        const { connectMiniProgram, prepareAcceptanceProject } = await import('weapp-ide-cli')
+        const { connectMiniProgram, prepareAcceptanceProject, resolveAutomatorSessionOptions } = await import('weapp-ide-cli')
 
-        const service = await createRuntimeAcceptanceService(directory, { trust: Boolean(options.trust && !options.inspect && !options.report), configFile: options.acceptanceConfig }, { connectMiniProgram, prepareProject: prepareAcceptanceProject })
+        const service = await createRuntimeAcceptanceService(directory, { trust: Boolean(options.trust && !options.inspect && !options.report), configFile: options.acceptanceConfig }, { connectMiniProgram, resolveSessionOptions: resolveAutomatorSessionOptions, prepareProject: prepareAcceptanceProject })
 
         let jobId: string | undefined
         let cancelRequested = false

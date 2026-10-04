@@ -16,6 +16,7 @@ import { launchHeadlessAutomator } from './automator.headless'
 import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './automatorBridgeFiles'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
 import { resolveWechatCliPath } from './devtoolsCli'
+import { assertSelectedWechatDevtoolsRuntime, resolveSelectedWechatDevtools } from './devtoolsSelection'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 import { captureDevtoolsLogBaseline, scanRecentDevtoolsSimulatorBootIssues } from './ide-devtools-logs'
 import {
@@ -2251,16 +2252,17 @@ function isMissingEngineBuildEndpointError(error: unknown) {
   return DEVTOOLS_ENGINE_BUILD_ENDPOINT_MISSING_PATTERNS.some(pattern => pattern.test(error.message))
 }
 
-function rememberWechatDevtoolsServicePort(output: string) {
+async function rememberWechatDevtoolsServicePort(output: string, cliPath: string) {
   const servicePort = extractWechatDevtoolsServicePort(output)
   if (servicePort) {
-    setRuntimeWechatDevtoolsServicePort(servicePort)
+    setRuntimeWechatDevtoolsServicePort(servicePort, await resolveSelectedWechatDevtools(cliPath))
   }
   return servicePort
 }
 
-async function runWechatIdeEngineBuildByRuntimeHttp(projectPath: string, project: string, lifecycle?: AutomatorLaunchLifecycle) {
+async function runWechatIdeEngineBuildByRuntimeHttp(projectPath: string, project: string, lifecycle?: AutomatorLaunchLifecycle, cliPath?: string) {
   const build = (phase?: AutomatorLaunchLifecycle) => runWechatIdeEngineBuildByHttp(projectPath, {
+    cliPath: resolveWechatCliPath(cliPath),
     overallTimeoutMs: phase?.remainingMs(60_000) ?? 60_000,
     timeoutMs: phase?.remainingMs(10_000) ?? 10_000,
     pollIntervalMs: 1_000,
@@ -2293,6 +2295,7 @@ async function refreshMiniProgramProjectIndex(
   if (options.refreshProject) {
     process.stdout.write(`[info] [runtime:launch-step] project-refresh-start project=${project}\n`)
     const open = (phase?: AutomatorLaunchLifecycle) => openWechatIdeProjectByHttp(projectPath, {
+      cliPath: resolveWechatCliPath(options.cliPath),
       timeoutMs: phase?.remainingMs(PROJECT_REFRESH_TIMEOUT) ?? PROJECT_REFRESH_TIMEOUT,
       signal: phase?.signal,
     })
@@ -2309,6 +2312,7 @@ async function refreshMiniProgramProjectIndex(
   lifecycle?.throwIfAborted()
   process.stdout.write(`[info] [runtime:launch-step] fileutils-reset-start project=${project}\n`)
   const resetFileUtils = (phase?: AutomatorLaunchLifecycle) => resetWechatIdeFileUtilsByHttp(projectPath, {
+    cliPath: resolveWechatCliPath(options.cliPath),
     timeoutMs: phase?.remainingMs(10_000) ?? 10_000,
     signal: phase?.signal,
   })
@@ -2323,7 +2327,7 @@ async function refreshMiniProgramProjectIndex(
   lifecycle?.throwIfAborted()
   process.stdout.write(`[info] [runtime:launch-step] engine-build-start project=${project}\n`)
   try {
-    await runWechatIdeEngineBuildByRuntimeHttp(projectPath, project, lifecycle)
+    await runWechatIdeEngineBuildByRuntimeHttp(projectPath, project, lifecycle, options.cliPath)
   }
   catch (error) {
     lifecycle?.throwIfAborted()
@@ -2345,14 +2349,14 @@ async function refreshMiniProgramProjectIndex(
       const result = lifecycle ? await lifecycle.step(build, { waitForExit: true }) : await build()
       lifecycle?.throwIfAborted()
       const combinedOutput = `${typeof result.stderr === 'string' ? result.stderr : ''}\n${typeof result.stdout === 'string' ? result.stdout : ''}`
-      rememberWechatDevtoolsServicePort(combinedOutput)
+      await rememberWechatDevtoolsServicePort(combinedOutput, cliPath)
       if ((result.exitCode ?? 1) !== 0) {
         const stderr = typeof result.stderr === 'string' ? result.stderr.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
         const stdout = typeof result.stdout === 'string' ? result.stdout.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
         const details = (stderr || stdout || `exit=${result.exitCode ?? 1}`).slice(0, 240)
         if (DEVTOOLS_CLI_ENGINE_BUILD_OPENED_PATTERN.test(`${stderr}\n${stdout}`)) {
           try {
-            await runWechatIdeEngineBuildByRuntimeHttp(projectPath, project, lifecycle)
+            await runWechatIdeEngineBuildByRuntimeHttp(projectPath, project, lifecycle, options.cliPath)
             process.stdout.write(`[info] [runtime:launch-step] engine-build-ready source=http-after-cli-open project=${project}\n`)
             return
           }
@@ -2627,7 +2631,7 @@ export async function launchAutomatorViaCliBridge(
   })
   lifecycle.throwIfAborted()
   if (typeof bridgeResult.servicePort === 'number') {
-    setRuntimeWechatDevtoolsServicePort(bridgeResult.servicePort)
+    setRuntimeWechatDevtoolsServicePort(bridgeResult.servicePort, await resolveSelectedWechatDevtools(resolveWechatCliPath(options.cliPath)))
   }
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-ready endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
 
@@ -2763,6 +2767,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   let forceProjectRefreshAfterRetry = false
   const operation = new AutomatorLaunchLifecycle(launchTimeout, 'launch automator')
   return (async () => {
+    const selectedTarget = await resolveSelectedWechatDevtools(rest.cliPath)
     for (let attempt = 1; attempt <= launchRetries; attempt += 1) {
       let miniProgram: any = null
       let bridgeWrapperProject: BridgeWrapperProject | undefined
@@ -2837,6 +2842,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                   },
                 ), { disposeLate: disconnectLaunchSession })
             lifecycle.own(() => disconnectLaunchSession(miniProgram), 'automator-session')
+            await lifecycle.step(() => assertSelectedWechatDevtoolsRuntime(selectedTarget, miniProgram))
             lifecycle.throwIfAborted()
             devtoolsLogMonitor.assertClean(`connect ${launchMode || 'direct'}`)
             process.stdout.write(`[info] [runtime:launch-step] connect-ready mode=${launchMode || 'direct'} project=${project}\n`)

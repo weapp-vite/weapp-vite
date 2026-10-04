@@ -9,6 +9,7 @@ ensureIdeWarningReportEnv()
 
 export default defineConfig({
   test: {
+    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
     exclude: [...configDefaults.exclude, ...excludedE2ETestPatterns()],
     // 与真实 IDE 使用相同的完整 case 名称，避免验收清单身份漂移。
     taskTitleValueFormatTruncate: Number.POSITIVE_INFINITY,
