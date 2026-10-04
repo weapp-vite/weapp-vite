@@ -76,3 +76,16 @@ node --import tsx scripts/nativeBindingAnalysis/compile.ts --binding=<feature-bu
 `baseline → control-js` 显示加载/转译方式的影响；`control-js → planned-js/planned-summary` 显示规划及 JS 缓存影响；`planned-summary → planned-native` 才能观察相同规划和加载方式下 Rust 的附加收益。不能把整个实验相对 baseline 的差值都归因 Rust。RSS 仅是本次编译后的根 worker 快照，不是峰值或进程树总内存。
 
 报告记录完整采样顺序、逐轮耗时/CPU/RSS/计数，诊断脚本、编译器 TypeScript 源码树、锁文件与 native 二进制的前后 hash。该检查不覆盖已安装依赖的全部文件。子进程的发送错误不代表已退出；运行器只清理自己创建的进程并确认退出，未完成清理时报告失败。实现边界见 [compileBatch](./compileBatch/README.md)。
+
+## 两批完整编译采集
+
+`compileTimings.ts` 先运行全部 13 个正确性场景，再串行运行两批压力模板、零售详情和 Wevu 首页。每份语料默认 40 轮、预热 10 轮；每次运行都创建独立的五组 worker。输出目录必须全新，任一步失败即停止，保留已有报告，不覆盖或自动重采样。
+
+```sh
+node --import tsx scripts/nativeBindingAnalysis/compileTimings.ts --binding-dir=.codex-tmp/binding-native-release --output=.codex-tmp/complete-compiler-sampling --iterations=40
+gh workflow run ci-native-analysis.yml --ref <branch> -f compiler-performance=true -f full-performance=false
+```
+
+手动 CI 的 `compiler-performance` 默认关闭，并使用独立 concurrency group，不取消已有固定提交的生产 native 性能运行。各平台作业内串行完成采集；共享 CI runner 的资源争用没有独立测量，因此仍需比较批次和平台，不把单次 CI 数字当作稳定承诺。
+
+`summary.json` 核对七份来源报告的完成状态、完整轮数、平衡顺序、语料、选项、输出和源码/绑定身份，保存报告 hash；失败或漂移的来源不参与统计。每批单独报告 wall/CPU/RSS 的 P50/P95，以及控制组、两种 JS 缓存相对 Rust 的逐对差值，不混合不同语料或批次。该报告不判定生产构建/HMR 的 10%/5% 门槛，也不改变默认 native 开关。

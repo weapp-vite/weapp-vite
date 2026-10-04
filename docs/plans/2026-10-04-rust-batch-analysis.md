@@ -300,3 +300,15 @@ arena 版本 P50 分别变化约 +1.48%、−0.95%、+4.54%，没有明确净收
 Windows run `37195472616` 的诊断表明，源工程和仓库直接依赖均能解析，但暂存工程的相对 pnpm 链接在外层 junction 下 `stat`、`realpath` 和直接 `package.json` 全部返回 `ENOENT`。此前测试在 Windows 内层也使用绝对 junction，未覆盖实际相对 symlink。修复仅落在 benchmark 暂存工具：Windows 使用真实 `node_modules`/scope 目录，每个依赖链接到已解析的绝对目标，保留 `.pnpm` 的绝对 junction；普通元数据文件复制，源目录只读。暂存完成时先核对直接 package 路径，再检查模块解析，避免祖先回退掩盖断链。
 
 回归测试在所有平台创建实际相对 symlink，并在 macOS 上额外执行 Windows 布局策略，覆盖 scope、首次/重复缓存写入、HMR 的额外 junction、相对插件路径、缺失直接依赖和清理后的源目录完整性。修复后本地实际 staged prepare、两次构建和清理通过，均为 38 文件/9 份 map、零告警；原生模板仍无 native 命中。真实 Windows 复核等待该修改的 CI；已有固定提交正式性能运行保持原目标，不因这次修复重新派发。整链 10% 收益门槛、跨平台结果和真实 Stable DevTools runtime 最终验收仍未完成。
+
+## 第十四轮：三平台正确性与独立完整编译采集
+
+提交 `977178c792487942dee181d83e3995d77c00224a` 的 [三平台 native correctness](https://github.com/weapp-vite/weapp-vite/actions/runs/37198027593) 已全部通过。各平台的五路完整编译对照均覆盖 13 个场景。Windows 暂存修复在实际 runner 通过：源工程、隔离工程和仓库直接依赖均能解析到同一包，prepare、首次/重复构建及清理成功，两次均为 38 个文件、9 份 map、零告警；该原生模板没有 native 命中，不从此次修复推导 Rust 性能收益。对应产物及 hash 已补入 [完整编译证据](./2026-10-04-rust-complete-compiler-evidence.json)。
+
+本机预检再次发现其他项目的活动 E2E、构建和 dev 服务，未启动新性能样本。新增串行采集入口 `compileTimings.ts`：先运行全部正确性场景，再执行两批三份语料，每组 10 轮预热、40 轮五实现平衡采样。聚合时拒绝失败、缺样、执行顺序不完整、来源身份漂移或产物不一致的报告；每个批次单独保留 P50/P95 和逐对差值，不混池。手动 CI 使用独立 concurrency group，已有固定提交正式性能运行不受影响。共享 runner 仍可能存在资源争用，采集结果不直接判定生产构建/HMR 的 10%/5% 门槛。 新增 15 项聚合/串行失败契约测试，binding 脚本当前 9 文件共 43 项测试通过，局部类型和 ESLint 检查通过；另用刚下载的三平台真实报告核对来源 schema。
+
+同时核对了下一处脚本边界。`compileVueFile/index.ts` 的 props 分析通过 `getCompiledScriptAst` 解析编译后脚本，最终 `transformScript` 又对相同源码解析；既有“一次解析”测试只 spy `parseJsLike`，未统计最终转换的 parser wrapper。可以验证同次编译内的 AST 所有权移交，但最终源码必须逐字相同；JSON 宏剥离、补默认导出或 JSX/island 转换改变源码时必须重新解析，不能跨编译缓存已改写 AST，也不能为复用强制触发原本可跳过的 parse。
+
+另有三个值得先验证的 JS 基线：props-return visitor 不查询 scope，可尝试 `noScope`；page-meta 在已存在 AST 上固定遍历两次，可用现有 `mayContainPageMeta` 作保守负向检查；reserved-props 对没有 `defineProps` 的 setup 也会解析和遍历，可增加保留反斜杠兜底的负向检查。这些只是源码审计得出的候选，本轮未实施，也未把理论节省写成实测收益。
+
+page-meta/props 查询已经使用 Babel AST，拆成单独 native API 会增加 Oxc parse，却保留最终 JS 改写与生成。下一项完整阶段 Rust POC 应在优化 JS 后重新归因，再决定是否迁移整个 `transformScript`：一次输入最终源码、可序列化模板元数据与选项，返回 code/map/能力/告警；Babel `expAst` 转成自有数据的成本也必须计入，失败只能整阶段回退。继续遵守粗粒度边界，不根据局部倍率扩大生产覆盖。
