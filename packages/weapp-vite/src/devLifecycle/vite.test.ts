@@ -4,6 +4,7 @@ import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { finished } from 'node:stream/promises'
 import { expect, it } from 'vitest'
 
 const factoryUrl = new URL('./vite.ts', import.meta.url).href
@@ -20,12 +21,12 @@ async function runChild(source: string, stop?: (child: ReturnType<typeof spawn>)
   child.stdout!.on('data', chunk => stdout += String(chunk))
   child.stderr!.on('data', chunk => stderr += String(chunk))
   const exited = once(child, 'exit')
-  const closed = once(child, 'close')
+  // 父端主动 disconnect 后 Node 可能不再触发 ChildProcess.close；直接等待退出与输出流排空。
+  const completed = Promise.all([exited, finished(child.stdout!), finished(child.stderr!)])
   const timer = setTimeout(() => child.kill('SIGKILL'), 10_000)
   child.once('message', () => stop?.(child))
   try {
-    const [code, signal] = await exited
-    await closed
+    const [[code, signal]] = await completed
     return { code, signal, stdout, stderr }
   }
   finally {
@@ -37,7 +38,26 @@ async function runChild(source: string, stop?: (child: ReturnType<typeof spawn>)
   }
 }
 
-const modes = ['ready', 'sigint', 'closing', 'startup', 'startup-config', 'startup-error', 'restart', 'restart-config', 'restart-error', 'restart-error-signal', 'multiple', 'restore-error', 'wrapper-error', 'stdin'] as const
+it('collects complete child output after the parent disconnects IPC', async () => {
+  const result = await runChild(`
+    import { setTimeout } from 'node:timers/promises'
+    process.on('disconnect', async () => {
+      process.stdout.write('CLEANUP_START\\n')
+      await setTimeout(20)
+      process.stdout.write('CLEANUP_DONE\\n')
+      process.stderr.write('DIAGNOSTIC_DONE\\n')
+    })
+    process.send('ready')
+  `, child => child.disconnect())
+  expect(result).toEqual({
+    code: 0,
+    signal: null,
+    stdout: 'CLEANUP_START\nCLEANUP_DONE\n',
+    stderr: 'DIAGNOSTIC_DONE\n',
+  })
+}, 15_000)
+
+const modes = ['ready', 'sigint', 'closing', 'startup', 'startup-config', 'startup-error', 'restart', 'restart-config', 'restart-error', 'restart-error-signal', 'multiple', 'restore-error', 'wrapper-error', 'disconnect', 'stdin'] as const
 
 it.each(modes)('waits for the full owned shutdown with real Vite during %s', async (mode) => {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-owned-vite-')))
@@ -142,7 +162,7 @@ it.each(modes)('waits for the full owned shutdown with real Vite during %s', asy
       if (mode === 'stdin') {
         child.stdin!.end()
       }
-      else if (process.platform === 'win32') {
+      else if (mode === 'disconnect' || process.platform === 'win32') {
         child.disconnect()
       }
       else {
@@ -150,7 +170,7 @@ it.each(modes)('waits for the full owned shutdown with real Vite during %s', asy
       }
     })
     expect(result.signal, result.stderr).toBeNull()
-    expect(result.code, result.stderr).toBe(['restore-error', 'startup-error', 'wrapper-error', 'restart-error-signal'].includes(mode) ? 1 : mode === 'stdin' || process.platform === 'win32' ? 0 : mode === 'sigint' ? 130 : 143)
+    expect(result.code, result.stderr).toBe(['restore-error', 'startup-error', 'wrapper-error', 'restart-error-signal'].includes(mode) ? 1 : mode === 'stdin' || mode === 'disconnect' || process.platform === 'win32' ? 0 : mode === 'sigint' ? 130 : 143)
     expect(result.stdout).toContain('RESTORE_DONE\n')
     expect(result.stdout).toContain('FINAL_CLEANUP_DONE\n')
     expect(result.stdout.match(/USER_CLOSE_DONE/g)).toHaveLength(['multiple', 'restart-error', 'restart-error-signal'].includes(mode) ? 2 : 1)
