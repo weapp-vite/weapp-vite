@@ -214,6 +214,8 @@ setWevuDefaults({
 
 ### `setData.diagnostics` 与 binding 归因
 
+`diagnostics` 默认是 `'off'`；`weapp.wevu.preset: 'performance'` 会为 app/component 默认开启 `'fallback'`，显式配置可覆盖。该日志开关没有 `devOnly` 限制，生产构建也可能输出；设为 `'off'` 只关闭内建日志，不影响自定义 `debug` 回调。
+
 编译后的 Vue/JSX 组件会携带版本化的精简 Binding Manifest。开启 `setData.diagnostics` 或 `setData.debug` 后，运行时会在已有的 patch、diff 和 fallback 诊断中附带命中 binding 的 `id`、输出路径、更新策略和源文件；开发构建额外携带源码行列，生产构建默认移除行列信息。关闭诊断时不会执行 payload 到 binding 的匹配。
 
 ```ts
@@ -230,6 +232,10 @@ defineComponent({
 ```
 
 Binding Manifest 只用于归因，不替换现有 snapshot/diff 正确性 fallback。编译器完整 IR 会为同一输出的每个 dependency 分别记录 `exact-path`、`top-level` 或 `snapshot-fallback`；注入运行时的精简记录只保留调度和诊断实际读取的字段。
+
+`reason: 'needsFullSnapshot'` 有两类需要区分的来源：patch 策略首次调度或无法定位变更路径时，需要重新收集快照再做 diff；宿主提交失败后，则需要完整恢复快照。前者仍可只下发差异，单条 reason 不表示提交失败或完整 payload。判断恢复是否成功，应结合此前的 `commitFailure`、revision 和成功结算记录。
+
+`debugPhases: true` 默认关闭。开启后，同一更新既有普通诊断，又有 prepare、dispatch、commit 阶段记录；内建 logger 也会收到这些阶段记录。应按同一会话内的 `(phase.observerId, revision)` 关联更新，按 `phase.dispatch.id` 去重物理调用，不能用 warning 条数统计回退次数。测量后续更新时，将页面初始化与计时区间分开，保留每次实际 payload、提交结果和视图观测；诊断日志不能单独证明预设的性能或内存收益。
 
 ### 收到内存告警时的清理建议
 

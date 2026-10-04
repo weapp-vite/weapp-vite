@@ -1,0 +1,371 @@
+{
+  "schemaVersion": 1,
+  "issue": 1137,
+  "attempt": "published-stable-20261004-03",
+  "status": "runtime-samples-collected-memory-acceptance-incomplete",
+  "complete": false,
+  "collectionComplete": true,
+  "equivalentInputs": true,
+  "report": {
+    "sha256": "0ca8b7273702a588a9c398eb85e1fda3452512b67c9f8b07ad1383c5e98e50ef",
+    "schemaVersion": 2,
+    "harnessCommit": "6e6f45f836d699ea80c7fe7a12eaf8483fa6f570",
+    "generatedAt": "2026-10-04T13:32:36.022Z",
+    "provider": "devtools",
+    "node": "v22.22.3",
+    "platform": "darwin",
+    "architecture": "arm64"
+  },
+  "inputEquivalence": {
+    "sourceHash": "d3bcc13b56b033f9397813d3c4f331b967ba1abb5b803eaf67d985ba706d1c59",
+    "archiveHash": "2e3bbe3c689d1f64cc05a9d9950fdd3b21a4dfc4957121e972283a2bca0740f0",
+    "sourceAndConfigBytesCompared": true,
+    "sourceAndConfigFiles": 13,
+    "candidateArchiveCount": 32,
+    "archiveListsEqual": true,
+    "installedClosureEntries": 836,
+    "installedClosuresEqual": true,
+    "samePublishedCliEntry": "node_modules/weapp-vite/bin/weapp-vite.js"
+  },
+  "officialStable": {
+    "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+    "queriedAt": "2026-10-04T13:32:15.935480+00:00",
+    "channel": "stable",
+    "officialVersion": "2.02.2608080",
+    "installedVersion": "2.02.2608080",
+    "actualRuntimeVersion": "2.02.2608080",
+    "sdkVersion": "3.17.3"
+  },
+  "concurrencyAudit": {
+    "reportedOtherActivity": "Configuration initialization unit tests only",
+    "reportedActivityStartedAt": "2026-10-04T13:32:13.660Z",
+    "reportedActivityEndedAt": "2026-10-04T13:32:43.000Z",
+    "activityWindowSource": "Root agent task coordination record",
+    "overlapWithSetup": true,
+    "overlapWithWorkerOrRecordedUpdatePhases": false,
+    "basis": "Both worker stdout files were created after the other unit activity ended; every absolute update phase timestamp is later still. Navigation samples do not carry absolute timestamps."
+  },
+  "presets": {
+    "normal": {
+      "consumerVerification": {
+        "outsideRepository": true,
+        "candidateArchivesVerified": 32,
+        "archiveBytesAndSha256Verified": true,
+        "lockSha512IntegrityVerified": true,
+        "installedArchiveFilesByteCompared": 1743,
+        "installedClosureEntriesVerified": 836,
+        "workspaceLinks": 0,
+        "consumerInternalSymlinksVerified": 44,
+        "cliResolvedInsideConsumer": true
+      },
+      "samples": {
+        "total": 30,
+        "firstScreen": 3,
+        "detailNavigation": 3,
+        "updates": 24,
+        "perScenario": {
+          "firstScreen": 3,
+          "detailNavigation": 3,
+          "updateSingleCommit.diff": 3,
+          "updateSingleCommit.patch": 3,
+          "updateMicroCommit.diff": 3,
+          "updateMicroCommit.patch": 3,
+          "workloads.small-field": 3,
+          "workloads.batch": 3,
+          "workloads.append": 3,
+          "workloads.reorder": 3
+        },
+        "journalMatchesResult": true,
+        "workerStdoutMatchesResult": true,
+        "failedAttempts": 0
+      },
+      "timing": {
+        "allUpdateMetricsPresentAndNonnegative": true,
+        "updatePhaseCounts": {
+          "prepare": 258,
+          "dispatch": 258,
+          "commit": 258
+        },
+        "hostCommitCompletions": {
+          "callback": 258
+        },
+        "pendingOrFailedUpdates": 0,
+        "hostTimestampOrderAndDurationVerified": true,
+        "visibleStateObservedForAllUpdates": true,
+        "firstScreenAndNavigationFirstCommitNullSamples": 6,
+        "visiblePhaseMsRemainsNull": true,
+        "workerLogCreatedAt": "2026-10-04T13:33:58.479Z",
+        "firstUpdatePhaseAt": "2026-10-04T13:34:28.849Z",
+        "lastUpdatePhaseAt": "2026-10-04T13:35:22.146Z",
+        "configuredUnitActivityOverlapsWorkerOrUpdateSamples": false
+      },
+      "heap": {
+        "complete": false,
+        "updateSamples": 24,
+        "probes": 48,
+        "unsupported": 48,
+        "reason": "protocol-unimplemented",
+        "source": "appservice-cdp-runtime",
+        "toolVersion": "2.02.2608080",
+        "sdkVersion": "3.17.3",
+        "workerRssKeptSeparate": true
+      },
+      "resources": {
+        "registeredSessions": 1,
+        "allProjectsClosedViaSelectedCli": true,
+        "allOwnedEndpointsRecordedClosed": true,
+        "cleanupErrors": 0,
+        "consumerRetainedForMissingHeapEvidence": true,
+        "verificationBasis": "Worker journal and parent report agree; this read-only audit did not reopen or reconnect to IDE."
+      },
+      "runtimeConsole": {
+        "warnings": 1,
+        "errors": 0,
+        "exceptions": 0,
+        "needsFullSnapshotWarnings": 0,
+        "getSystemInfoSyncDeprecations": 1
+      },
+      "artifact": {
+        "files": 22,
+        "bytes": 212040,
+        "allFilesByteAndSha256Verified": true
+      },
+      "evidenceHashes": {
+        "workerStdoutSha256": "203d2c1cb82bdd07e0ef258d5bb63e22aacac0b8e60c28c27b61dbd6b2e683df",
+        "workerStderrSha256": "9784603992613593a415e8bb80443efdc1b06a8d774675a086e29f2216463d6d"
+      }
+    },
+    "performance": {
+      "consumerVerification": {
+        "outsideRepository": true,
+        "candidateArchivesVerified": 32,
+        "archiveBytesAndSha256Verified": true,
+        "lockSha512IntegrityVerified": true,
+        "installedArchiveFilesByteCompared": 1743,
+        "installedClosureEntriesVerified": 836,
+        "workspaceLinks": 0,
+        "consumerInternalSymlinksVerified": 44,
+        "cliResolvedInsideConsumer": true
+      },
+      "samples": {
+        "total": 30,
+        "firstScreen": 3,
+        "detailNavigation": 3,
+        "updates": 24,
+        "perScenario": {
+          "firstScreen": 3,
+          "detailNavigation": 3,
+          "updateSingleCommit.diff": 3,
+          "updateSingleCommit.patch": 3,
+          "updateMicroCommit.diff": 3,
+          "updateMicroCommit.patch": 3,
+          "workloads.small-field": 3,
+          "workloads.batch": 3,
+          "workloads.append": 3,
+          "workloads.reorder": 3
+        },
+        "journalMatchesResult": true,
+        "workerStdoutMatchesResult": true,
+        "failedAttempts": 0
+      },
+      "timing": {
+        "allUpdateMetricsPresentAndNonnegative": true,
+        "updatePhaseCounts": {
+          "prepare": 258,
+          "dispatch": 258,
+          "commit": 258
+        },
+        "hostCommitCompletions": {
+          "callback": 258
+        },
+        "pendingOrFailedUpdates": 0,
+        "hostTimestampOrderAndDurationVerified": true,
+        "visibleStateObservedForAllUpdates": true,
+        "firstScreenAndNavigationFirstCommitNullSamples": 6,
+        "visiblePhaseMsRemainsNull": true,
+        "workerLogCreatedAt": "2026-10-04T13:36:05.741Z",
+        "firstUpdatePhaseAt": "2026-10-04T13:36:34.592Z",
+        "lastUpdatePhaseAt": "2026-10-04T13:37:26.827Z",
+        "configuredUnitActivityOverlapsWorkerOrUpdateSamples": false
+      },
+      "heap": {
+        "complete": false,
+        "updateSamples": 24,
+        "probes": 48,
+        "unsupported": 48,
+        "reason": "protocol-unimplemented",
+        "source": "appservice-cdp-runtime",
+        "toolVersion": "2.02.2608080",
+        "sdkVersion": "3.17.3",
+        "workerRssKeptSeparate": true
+      },
+      "resources": {
+        "registeredSessions": 1,
+        "allProjectsClosedViaSelectedCli": true,
+        "allOwnedEndpointsRecordedClosed": true,
+        "cleanupErrors": 0,
+        "consumerRetainedForMissingHeapEvidence": true,
+        "verificationBasis": "Worker journal and parent report agree; this read-only audit did not reopen or reconnect to IDE."
+      },
+      "runtimeConsole": {
+        "warnings": 140,
+        "errors": 0,
+        "exceptions": 0,
+        "needsFullSnapshotWarnings": 139,
+        "getSystemInfoSyncDeprecations": 1
+      },
+      "artifact": {
+        "files": 22,
+        "bytes": 216803,
+        "allFilesByteAndSha256Verified": true
+      },
+      "evidenceHashes": {
+        "workerStdoutSha256": "dcf2ecc696c61be66fa6235b40bb78b1f46bf568735d455c12a479c685eddceb",
+        "workerStderrSha256": "e9aaee0946228f4b79a2486f4382f8f2173ceb63491e9b47f59c3efc8723ddc1"
+      }
+    }
+  },
+  "totals": {
+    "samples": 60,
+    "updateSamples": 48,
+    "unsupportedHeapProbes": 96,
+    "hostCallbackCommits": 516,
+    "closedOwnedSessions": 2,
+    "runtimeErrors": 0,
+    "runtimeExceptions": 0
+  },
+  "limitations": [
+    "The current official Stable host reports protocol-unimplemented for every before/after AppService heap probe; memory acceptance and issue completion remain false.",
+    "No aggregate preset benefit is claimed. Performance preset emits 139 needsFullSnapshot warnings, while normal emits none; this difference remains visible.",
+    "First-screen/navigation firstCommitMs and phase visibleMs remain null. Readiness, wall time, adapter callback completion, and separately observed DOM state are distinct measurements.",
+    "Worker RSS is retained as a worker-process diagnostic and is not substituted for AppService heap or renderer/native memory.",
+    "This audit reads the completed run, retained consumers, archives, logs, and cleanup journals. It performs no build, tests, resampling, IDE launch, or live endpoint connection."
+  ],
+  "warningAttribution": {
+    "classification": "Expected first patch-scheduler collection, amplified by repeated page setup and phase diagnostics; no measured-update fallback or failed commit is established.",
+    "performanceNeedsFullSnapshotLogRecords": 139,
+    "ordinaryInitialDiagnosticRecords": {
+      "count": 43,
+      "bySourcePage": {
+        "src/pages/index/index.vue": 8,
+        "src/pages/detail/index.vue": 3,
+        "src/pages/update/index.vue": 24,
+        "src/pages/update-patch/index.vue": 8
+      }
+    },
+    "phaseDiagnosticRecords": {
+      "count": 96,
+      "identityKey": "observerId + revision + targetLabel",
+      "distinctInitialRevisions": 32,
+      "initialRevision": 1,
+      "byTarget": {
+        "page:pages/update/index": 24,
+        "page:pages/update-patch/index": 8
+      },
+      "eachHasExactlyOnePrepareDispatchCommit": true,
+      "allCommitResults": "committed",
+      "allCompletions": "callback",
+      "eachMatchedPriorOrdinaryUpdateRecord": true,
+      "payloadKeysPerInitialDispatch": 1,
+      "payloadBytesPerInitialDispatch": 17
+    },
+    "countingBoundary": "32 initial update revisions are counted directly by observer/revision identity and matched to 32 ordinary update diagnostics; 96 is their three phase records. The other 11 ordinary index/detail diagnostics have no observer phase identifiers and are not claimed as independently identified revisions.",
+    "timedUpdates": {
+      "normal": {
+        "samples": 24,
+        "fallbackFlushes": 0,
+        "fallbackReasons": {},
+        "minimumMeasuredRevision": 5,
+        "physicalDispatches": 258,
+        "physicalDispatchModes": {
+          "diff": 135,
+          "patch": 123
+        }
+      },
+      "performance": {
+        "samples": 24,
+        "fallbackFlushes": 0,
+        "fallbackReasons": {},
+        "minimumMeasuredRevision": 5,
+        "physicalDispatches": 258,
+        "physicalDispatchModes": {
+          "patch": 258
+        }
+      }
+    },
+    "causeChain": [
+      "The performance preset enables strategy='patch' and diagnostics='fallback'; normal keeps built-in diagnostics off.",
+      "A new patch scheduler starts with requiresDiffCollection=true and labels its first diff collection needsFullSnapshot. Actual commit-recovery state is separate; this reason does not by itself mean a failed commit or a full outgoing payload.",
+      "The fixture reLaunches the update page for one warmup plus three retained samples in each of eight update scenarios: 32 page setups, each with debugPhases enabled.",
+      "The existing debug callback and built-in diagnostics logger both receive phase events; one initial update therefore emits its ordinary diagnostic plus prepare, dispatch, and commit warnings.",
+      "The fixture waits for page setup, then resets its diagnostic tracker immediately before the measured workload. All retained update samples begin at revision 5 or later and contain no fallback reason."
+    ],
+    "sourceReferences": [
+      {
+        "file": "packages/weapp-vite/src/plugins/vue/transform/wevuPreset.ts",
+        "line": 6,
+        "contract": "performance patch + fallback diagnostic defaults"
+      },
+      {
+        "file": "packages-runtime/wevu/src/runtime/features/patchStrategy.ts",
+        "line": 17,
+        "contract": "initial requiresDiffCollection=true"
+      },
+      {
+        "file": "packages-runtime/wevu/src/runtime/features/patchStrategy.ts",
+        "line": 86,
+        "contract": "initial collection and commit recovery share the needsFullSnapshot diagnostic reason"
+      },
+      {
+        "file": "packages-runtime/wevu/src/runtime/app/setData/scheduler.ts",
+        "line": 476,
+        "contract": "actual recovery controls full payload; ordinary initial collection can still emit a delta"
+      },
+      {
+        "file": "packages-runtime/wevu/src/runtime/app/mount.ts",
+        "line": 185,
+        "contract": "user debug and built-in diagnostic logger are combined"
+      },
+      {
+        "file": "packages-runtime/wevu/src/runtime/app/diagnostics.ts",
+        "line": 3,
+        "contract": "non-patch/non-diff reasons log as warnings, including every observed phase"
+      },
+      {
+        "file": "packages-runtime/wevu/src/runtime/app/setData/observation.ts",
+        "line": 71,
+        "contract": "one selected revision retains prepare, dispatch, and commit events"
+      },
+      {
+        "file": "e2e/scripts/runtimeBench/update.ts",
+        "line": 54,
+        "contract": "one warmup and three retained samples, each reLaunches before the timer"
+      },
+      {
+        "file": "apps/runtime-bench-vue/src/pages/update/shared.ts",
+        "line": 115,
+        "contract": "reset tracker before measured workload"
+      },
+      {
+        "file": "packages-runtime/wevu/test/runtime-setdata-bench.test.ts",
+        "line": 209,
+        "contract": "existing unit explicitly expects initial patch flush to use diff/needsFullSnapshot without increasing call count"
+      },
+      {
+        "file": "docs/wevu/setdata-observation.md",
+        "line": 3,
+        "contract": "phase events are additional records; consumers must distinguish them"
+      },
+      {
+        "file": "website/config/wevu.md",
+        "line": 299,
+        "contract": "preset documentation lists patch/visibility/pick but currently omits the built-in fallback diagnostic default"
+      }
+    ],
+    "documentationAssessment": "Runtime initialization and phase emission match existing tests and observation docs. Preset docs should explicitly list diagnostics=fallback and distinguish initial collection from commit-failure recovery; current warning text alone is ambiguous.",
+    "issueTargetAssessment": "The repository delivery record keeps issue 1137 gated on same-input published normal/performance runtime evidence and real heap observations. This warning attribution does not relax that gate. Live GitHub issue text could not be refreshed because both GraphQL and REST reads timed out; no new issue-body claims are made.",
+    "minimalFollowupValidation": "Reuse the existing initial-flush unit with debugPhases to assert one initial observer/revision, three phase records, successful callback, and no fallback on a second small mutation. If later runtime confirmation is needed, use one page entry plus two mutations and compare provider observations without changing or resampling the frozen performance benchmark.",
+    "runtimeDefectEstablished": false,
+    "performanceImpactConclusion": "None: warning counts are diagnostic records, not dispatch counts or measured fallback frequency. The frozen memory gate remains incomplete."
+  }
+}

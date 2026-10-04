@@ -580,3 +580,11 @@ Stable `2.02.2608080`、基础库 `3.17.3` 的两轮同场景诊断确认：修�
 议题 #1137 使用冻结的 32 个候选归档完成一次新的正式运行，normal 首屏与导航各留下 3 个有效样本，更新 warmup 的 heap 请求返回 `Method not implemented.`，performance 预设未执行。失败原样保存于 `issue-1137-stable-performance-attempt.json`。SDK 的 Runtime 适配器确实将 `getHeapUsage` 指向未实现占位方法；automator 现在只在 heap 请求边界识别这个精确错误，返回带原因的 unsupported，其他异常仍抛出。重建后的 Stable 复验中，页面更新和最终状态读取通过，更新前后 heap 均明确为 `protocol-unimplemented`。26 项单测、所属包 typecheck、构建和 ESLint 通过。没有可验证的替代 AppService heap 通道，最终内存门槛保持未完成，详见 `issue-1137-stable-heap-capability.json`。
 
 以上已交付实现推送至 main。完整 CI `37199641080` 的 Windows Node 22 出现 IPC 断开后等待 ChildProcess close 超时，其他已完成矩阵通过。最小复现证明子进程已退出且输出流已结束，却没有 close 事件；`113410335` 改为等待 exit 与输出流 finished，并增加延迟输出回归，32 项定向测试通过。新提交仍须远端矩阵复验。因此 #1136/#1140 的本地验收结果保留，但完成标签继续等待相关 CI，不提前改变 29/41 的计数。
+
+### #1137：完整采集与明确的内存缺口
+
+`6e6f45f83` 重建 automator 后使用相同冻结归档重新完成 normal/performance 两个预设：各 30 个正式样本，合计 60 个；其中 48 个更新样本保存了 516 次 prepare、dispatch 与 callback commit 的完整对应关系，并观察到最终页面状态。两套源码和配置逐字节相等，32 个候选归档与 836 条安装闭包相同，每套 1,743 个归档文件均与实际安装文件一致。两个消费者均位于仓库之外。全量产物分别为 22 个文件、212,040 B 与 216,803 B；这是该 fixture 的完整输出体积，不是单个 runtime 文件的归因数值。
+
+官方 Stable 版本于 2026-10-04 13:32 UTC 重新核对，实际连接为 `2.02.2608080`、基础库 `3.17.3`。全部 96 次 AppService heap 探测明确返回 `protocol-unimplemented`；`collectionComplete=true`、`equivalentInputs=true`，但总 `complete=false`，#1137 仍不标记完成。首屏/导航的 firstCommit 和 phase visible 时间仍为空，callback commit 与独立 DOM 观察分开解释。normal 有 1 个弃用警告，performance 有 140 个警告。其中 139 条 `needsFullSnapshot` 由 43 条普通初始化诊断和 32 个首次 revision 的 96 条阶段记录组成；这 32 个 revision 均成功 callback commit，不能把警告条数当作更新回退次数。两端正式计时的各 24 个更新样本均无 fallback，runtime error/exception 均为 0；仍不据此概括预设整体更快。
+
+两套会话的精确项目与端口均已关闭，父进程退出后再次连接登记端口均被拒绝；没有失败重采或样本替换。另一个单测的配置初始化只与安装阶段重叠，在首个 worker 启动前已结束。完整身份、样本、计时边界、归档对账及限制见 `issue-1137-published-stable-run03.json`。此前失败运行保持原结论与原始证据。

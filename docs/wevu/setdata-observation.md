@@ -45,11 +45,15 @@ defineComponent({
 
 时间来自 `Date.now()`，分辨率为毫秒，并非单调时钟。持续时间只在起止均存在且未倒退时计算；否则为 `null`。零毫秒代表同一时钟刻度内完成，不能解释为没有开销。`prepareDurationMs` 包含依赖刷新、序列化和 diff/patch；`commitDurationMs` 从物理调用开始到本次结算记录，包含同步调用、异步等待及观测开销。后台缓冲等待可由 `dispatch.startedAt - preparedAt` 单独计算，缺少边界时保持未知。
 
-`result` 区分 `prepared`、`pending`、`committed`、`failed`、`abandoned`、`disposed`、`late-committed`、`late-failed` 和 `out-of-order`。`committedRevision` 是该记录发出时账本已确认的 revision；单次物理调用成功并不保证所有前序 delta 都已确认。旧 revision 的完成不能当作新 revision 的成功。连续失败后的 `needsFullSnapshot` 记录表示恢复尝试，只有对应成功结算才能作为恢复证据。
+`result` 区分 `prepared`、`pending`、`committed`、`failed`、`abandoned`、`disposed`、`late-committed`、`late-failed` 和 `out-of-order`。`committedRevision` 是该记录发出时账本已确认的 revision；单次物理调用成功并不保证所有前序 delta 都已确认。旧 revision 的完成不能当作新 revision 的成功。
+
+`needsFullSnapshot` 既用于 patch 策略的首次快照收集、无法定位变更路径后的重新收集，也用于提交失败后的恢复。首次收集仍可只下发 diff，不能从 reason 推断失败或完整 payload。失败恢复应结合此前的 `commitFailure`、revision 和对应成功结算判断；一条恢复尝试日志不能证明已恢复。
 
 ## 次数、字节与采样
 
 后台或首屏缓冲可将多个逻辑 revision 合并为一次物理调用。各 revision 会共享同一 `dispatch.id` 与合并后的载荷字节数，**按 ID 去重后统计调用次数和字节**，不能累加阶段记录条数。`payloadBytes` 是 `JSON.stringify` 结果的 UTF-8 字节数，不含宿主协议封装；无法序列化时为 `null`。没有 `dispatch` 时不能将次数或字节记为零。
+
+`performance` 预设默认开启 `diagnostics: 'fallback'`，独立使用 Wevu 时默认关闭内建日志。开启 `debugPhases` 后，同一 revision 的普通诊断与 prepare、dispatch、commit 记录都会进入已开启的内建 logger；一轮首次收集因此可能出现多条同 reason 的 warning。统计时先筛选 `info.phase`，再按 observer/revision 和 dispatch ID 关联、去重。对比初始化与后续更新应分别保留样本，不能从 warning 条数推导回退率。
 
 ```ts
 const calls = new Map<number, number | null>()
@@ -74,3 +78,5 @@ const observedBytes = [...calls.values()].includes(null)
 仓库示例 `e2e-apps/github-issues/src/pages/issue-1138` 同时覆盖原生 callback 与延迟 Promise，配套同一 provider-compatible suite 在 headless 和 DevTools 下检查文本。延迟案例先让原生 callback 完成，再由测试显式释放适配器 Promise，证明三个边界互不等价。
 
 关闭 `debugPhases` 时不会新增 payload 复制、计时、随机采样或 JSON 序列化。开启后会增加按物理调用的 JSON 序列化、计时和回调成本；不能将开启观测的数字视为无观测生产开销。比较时保持输入、构建和适配器相同，交错运行关闭/开启两组，保存原始样本；不预设性能收益。
+
+普通配置与 `performance` 预设的比较还应记录实际 IDE、基础库、诊断配置及初始化边界。宿主 heap 不可观测时保留缺失原因，内存验收仍未完成；Node worker RSS、已完成的时序采样或零回退记录均不能替代 AppService heap，也不证明预设整体收益。
