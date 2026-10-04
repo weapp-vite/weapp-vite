@@ -3,12 +3,21 @@ import { mkdir, mkdtemp, readdir, realpath, rm, symlink, writeFile } from 'node:
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { loadConsumerRuntime, verifyConsumerRuntime } from './consumerRuntime'
+import { loadConsumerRuntime, parseConsumerRuntimeOption, verifyConsumerRuntime } from './consumerRuntime'
 
 describe('installed consumer runtime verification', () => {
   const directories: string[] = []
   afterEach(async () => {
     await Promise.all(directories.splice(0).map(directory => rm(directory, { recursive: true, force: true })))
+  })
+
+  it('keeps historical build-only mode and requires one explicit supported runtime', () => {
+    expect(parseConsumerRuntimeOption(['--disposable-consumer'])).toBeUndefined()
+    expect(parseConsumerRuntimeOption(['--runtime=headless'])).toBe('headless')
+    expect(parseConsumerRuntimeOption(['--runtime=devtools'])).toBe('devtools')
+    for (const args of [['--runtime'], ['--runtime=browser'], ['--runtime=headless', '--runtime=devtools']]) {
+      expect(() => parseConsumerRuntimeOption(args)).toThrow('Supported runtime options')
+    }
   })
 
   async function temporaryRoot() {
