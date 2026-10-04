@@ -21,6 +21,7 @@ on:
       - 'scripts/nativeBindingAnalysis/**'
       - 'scripts/scriptAnalysisBaseline/**'
       - 'scripts/optimizedCompilerAnalysis/**'
+      - 'scripts/nativeScriptTransform/**'
       - 'scripts/nativeLoadDiagnostic/**'
       - 'scripts/benchmarkNativeAnalysis/**'
       - 'scripts/benchmarkTemplatesHmr/**'
@@ -118,8 +119,9 @@ jobs:
           pnpm exec tsc -p scripts/nativeBindingAnalysis/tsconfig.json
           pnpm exec tsc -p scripts/scriptAnalysisBaseline/tsconfig.json
           pnpm exec tsc -p scripts/optimizedCompilerAnalysis/tsconfig.json
+          pnpm exec tsc -p scripts/nativeScriptTransform/tsconfig.json
           pnpm exec tsc -p scripts/nativeLoadDiagnostic/tsconfig.json
-          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile scripts/benchmarkNativeAnalysis scripts/nativeChunkAnalysis/rewrite.test.ts scripts/nativeBindingAnalysis scripts/scriptAnalysisBaseline scripts/optimizedCompilerAnalysis scripts/nativeLoadDiagnostic
+          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile scripts/benchmarkNativeAnalysis scripts/nativeChunkAnalysis/rewrite.test.ts scripts/nativeBindingAnalysis scripts/scriptAnalysisBaseline scripts/optimizedCompilerAnalysis scripts/nativeScriptTransform scripts/nativeLoadDiagnostic
       - name: Check native lazy loading source diagnostics
         run: node --import tsx scripts/nativeLoadDiagnostic/check.ts --output=.codex-tmp/native-load-source
       - name: Upload native lazy loading source diagnostics
@@ -166,6 +168,20 @@ jobs:
             .codex-tmp/optimized-compiler-correctness/report.json
             .codex-tmp/optimized-compiler-correctness/*.log
             .codex-tmp/optimized-compiler-correctness/*-mismatch.json
+          include-hidden-files: true
+      - name: Check experimental JS printer contracts
+        working-directory: packages/ast-native
+        run: cargo test --locked --features experimental-script-transform,napi/noop,napi-derive/noop script_transform::tests
+      - name: Build the optional JS printer probe
+        run: pnpm --filter @weapp-vite/ast-native exec napi build --platform --release --features experimental-script-transform --no-js --dts target/script-transform-experiment.d.ts --output-dir ../../.codex-tmp/script-transform-native
+      - name: Record JS printer compatibility differences (diagnostic only)
+        run: node --import tsx scripts/nativeScriptTransform/check.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-probe --allow-differences
+      - name: Upload sanitized JS printer probe
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: script-transform-probe-${{ matrix.os }}
+          path: .codex-tmp/script-transform-probe/summary.json
           include-hidden-files: true
       - name: Collect optimized compiler main-thread samples serially
         if: github.event_name == 'workflow_dispatch' && inputs.optimized-compiler-cpu

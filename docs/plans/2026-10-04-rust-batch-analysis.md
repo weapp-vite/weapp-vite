@@ -425,3 +425,39 @@ loader 本身存在干扰。Linux 压力与零售两批的 baseline→control wa
 新增工具共 89 项测试、局部 TypeScript 和定向 ESLint 通过，代码按执行、正确性、采样窗口、工作负载、父进程复核分文件，均未超过 300 行。原始来源 hash、逐组计数、采样区间、环境与完整限制见[组合编译证据](./2026-10-04-optimized-compiler-evidence.json)，复现命令见[工具说明](../../scripts/optimizedCompilerAnalysis/README.md)。真实 Stable 微信开发者工具 runtime 仍未完成最终验收。
 
 同轮修复 PR CI 暴露的 `snapshotTemplates.test.ts` fixture 缺失依赖：owner 校验进入真实声明读取时需要 JSON service，现与 WXML service 一样初始化真实服务，不给生产逻辑增加可选回退。原 8 项断言、`weapp-vite` typecheck 和定向 ESLint 通过；此前 Ubuntu/Node 22 作业独跑 coverage，其他矩阵命令不同，因此不把这个失败误归为 OS 兼容性差异。
+
+
+## 第二十轮：真实脚本阶段捕获与 Oxc 打印兼容性
+
+本轮新增默认关闭的 `experimental-script-transform` Cargo feature 与独立 `scripts/nativeScriptTransform` 工具。一次 N-API 请求对**现有转换器已经生成的 JS** 完成 Oxc 0.152 parse、语义校验和 codegen/map，既不回传 AST，也不逐节点回调 JS。这是完整脚本迁移的输出基础设施实验，尚未实现 `transformScript` 的 Vue/Wevu 改写，也未接入生产路径或测量性能。
+
+先用三个全新 Node 进程比较原始编译器、优化后的 JS、优化后附加捕获器的 JS。45 个场景各重复两轮，共 270 次完整返回值、map、warnings 和错误诊断逐字一致。捕获器通过既有 loader 返回的真实优化源码包住入口，保存每个调用所属 record，原 options、warn callback 和隐藏 AST transfer 均原样流转；失败捕获不能被编译器错误序列化隐藏。72 条实际 stage 记录全部成功且 fastSetup 均 miss，两轮请求、完整结果和分渠道告警相同，没有所有权残留。剩余 18 次是保留的无该阶段路径，不能把 90 次调用都称为脚本转换；本轮没有 fastSetup 实际 hit 证据。
+
+其中 Wevu 主源码输入 3662 个 UTF-16 单元，三个表达式字段生成 745 字符；零售主源码 13054 单元，三个字段生成 4870 字符。全部 72 次捕获的表达式 JS generator 共调用 644 次、生成 181252 字符，这不是零成本 bridge，也不是 native parse 数。表达式保留独立 role、原始/投影条件与循环字段、顶层 span 和身份，不能由显示用 `exp` 重建，且根 span 不足以恢复各子 token 的来源。真实两页的 class、key 投影和 7/14 个 inline events 均保留在请求中。
+
+72 份成功 stage 输出各测两种 minify，另有八份独立语法样本各测两种模式，共 160 次 Rust 打印，全部返回合法成功状态。另验证六个 unsupported/parse/semantic 负例及一个 raw lone-surrogate 拒绝。打印对照结果如下；每列覆盖独立的门禁，不可互相替代：
+
+| 检查 | 非压缩（80 次） | 压缩（80 次） |
+| --- | ---: | ---: |
+| 与输入 JS 字节完全相同 | 0 | 0 |
+| 去位置 AST 结构相同 | 80 | 22 |
+| 注释文本/顺序相同 | 79 | 79 |
+| PURE/NO_SIDE_EFFECTS parser 归属相同 | 80 | 80 |
+| 全部选定 map 锚点对齐 | 70 | 20 |
+| 结构、注释、归属、map 联合检查通过 | 69 | 19 |
+
+整体 `completed=true`，但 `comparisonPassed=false`，72 次联合检查未通过；88 次通过也不表示完整产物字节一致。诊断模式可显式 `--allow-differences` 保存所有差异并成功结束采集，严格默认模式仍返回失败。CI 明确将此步骤标为诊断，只上传脱敏摘要；步骤成功不能被当作生产兼容门禁通过。
+
+58 次结构差异全部来自 minify 将 `StringLiteral` 打印成无插值 `TemplateLiteral`，每处 cooked value 与原字符串相同；独立审计未发现其他 AST 变化。这是当前严格结构契约未满足，不是这些样本已证实的值语义错误，不能为了通过而删除差异。格式与 `Function.prototype.toString` 的可观察变化仍然存在。
+
+真实 Wevu 与零售的非压缩 AST、注释以及每次全部 485/1277 个标识符起点和实际组合映射对齐，但模板字面量的 quasi 起点分别仍有 2/35 处差异，故两页均未通过完整探针。首 quasi 的查询会落在开反引号，空尾 quasi 会继承前一个表达式的映射；这不是已证实的 UTF-16 计数错误。独立 private class 样本也存在 `#value` 整个 token 与 Babel 子 Identifier 起点相差一列的粒度差异，未证明 private 运行时行为损坏。普通注释样本则确实由四条减少为三条，丢失 `// ordinary comment`。现有 PURE/NO_SIDE_EFFECTS 样本归属保持，并不证明所有第三方 annotation 策略都已覆盖。
+
+oracle 特别补了三个反例：不含标识符的源码配空 map 不得通过；同一 PURE 注释移动到另一调用即使文本/顺序和所有位置仍对齐也必须失败；组合检查必须真正组合两张 map，再从输出坐标查询来源。仅对已经相同的坐标查询同一 upstream map 两次是恒等式，不能作为 composition 证据。打印的原始结果在私有报告保留，单个坏 map/代码的对照异常也会单独记录，后续观察继续完成。
+
+独立 Python 审计确认 298 份源码、16 份构建输入、270 份完整输出、72 条有归属记录及 160 份打印结果与摘要一致；它不重新解析 AST，也不证明 runtime 或密码学构建来源。最终严格运行的源码、binary 身份前后相同。
+
+10 项 Rust 测试、默认/实验/功能并存的 cargo check、78 项工具测试、局部 TypeScript 与 ESLint 通过。默认 Cargo 依赖树不含 codegen、semantic 或 sourcemap；没有生产 JS 导出和用户配置变化，无新增 changeset 或脚手架 bump。新增实现按职责拆分，全部低于 300 行，既有 lib 仅注册隔离模块。
+
+本轮证据只来自本机 macOS arm64，三平台检查随 PR CI 验证；第十九轮固定提交的独立 CPU 作业仍需完成和复核，不重复触发。真实 Stable 微信开发者工具 runtime 仍未完成最终验收。下一阶段应先确定完整转换的注释/map 契约，再在一次 native 请求中实现有序改写，保留 fastSetup 与整段 fallback；不将本打印器单独接入热路径，也不声称已经获得额外 Rust 提速。
+
+来源 hash、独立审计、逐项计数与限制见[脚本打印探针证据](./2026-10-04-script-transform-printer-evidence.json)；命令见[工具说明](../../scripts/nativeScriptTransform/README.md)，完整语义审计见[阶段边界](../../scripts/nativeScriptTransform/BOUNDARY.md)。

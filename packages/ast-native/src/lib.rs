@@ -24,6 +24,9 @@ mod chunk_analysis;
 #[cfg(feature = "experimental-binding-analysis")]
 mod binding_analysis;
 
+#[cfg(feature = "experimental-script-transform")]
+mod script_transform;
+
 #[napi(object)]
 pub struct NativeOnPageScrollDiagnostic {
     pub kind: String,
