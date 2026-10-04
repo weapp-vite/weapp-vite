@@ -1,5 +1,5 @@
 import type { CompilerContext } from '../../context'
-import path from 'node:path'
+import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../../runtime/runtimeState'
 import { createOutputPublicationPlugin } from './publication'

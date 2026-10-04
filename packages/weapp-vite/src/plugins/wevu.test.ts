@@ -1,4 +1,4 @@
-import path from 'node:path'
+import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('wevu/compiler', () => ({
