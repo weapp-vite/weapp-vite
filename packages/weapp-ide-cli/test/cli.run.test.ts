@@ -1,7 +1,18 @@
+import type { ResolveWechatDevtoolsTargetOptions } from '../src/devtoolsTarget'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: async (run: () => Promise<unknown>) => run() }))
 
 const runMinidevMock = vi.hoisted(() => vi.fn())
 const resolveCliPathMock = vi.hoisted(() => vi.fn())
+const resolveTargetMock = vi.hoisted(() => vi.fn())
+const hostGuardMock = vi.hoisted(() => vi.fn())
+const selectedTarget = vi.hoisted(() => ({
+  cliPath: 'fixture-wechat-cli',
+  installationId: 'selected',
+  appPath: 'fixture-application',
+  profileDir: 'fixture-profile',
+}))
 const promptForCliPathMock = vi.hoisted(() => vi.fn())
 const isOperatingSystemSupportedMock = vi.hoisted(() => vi.fn())
 const executeMock = vi.hoisted(() => vi.fn())
@@ -40,6 +51,11 @@ vi.mock('../src/cli/minidev', () => ({
 
 vi.mock('../src/cli/resolver', () => ({
   resolveCliPath: resolveCliPathMock,
+}))
+
+vi.mock('../src/devtoolsTarget', () => ({
+  resolveWechatDevtoolsTarget: resolveTargetMock,
+  assertWechatDevtoolsHost: hostGuardMock,
 }))
 
 vi.mock('../src/config/resolver', () => ({
@@ -149,6 +165,8 @@ describe('cli parsing', () => {
     })
     runMinidevMock.mockReset()
     resolveCliPathMock.mockReset()
+    resolveTargetMock.mockReset().mockImplementation(async (options: ResolveWechatDevtoolsTargetOptions = {}) => options.target ?? { ...selectedTarget, cliPath: options.cliPath ?? selectedTarget.cliPath })
+    hostGuardMock.mockReset().mockResolvedValue(undefined)
     promptForCliPathMock.mockReset()
     loggerMock.log.mockReset()
     loggerMock.warn.mockReset()
@@ -198,7 +216,7 @@ describe('cli parsing', () => {
       },
     )
     resolveCliPathMock.mockResolvedValue({
-      cliPath: '/Applications/wechat-cli',
+      cliPath: selectedTarget.cliPath,
       source: 'default',
     })
     getConfiguredLocaleMock.mockResolvedValue(undefined)
@@ -294,11 +312,12 @@ describe('cli parsing', () => {
     await parse(['open', '--project', './dist/dev/mp-weixin', '--trust-project'])
 
     expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      target: selectedTarget,
       projectPath: `${mockCwd}/dist/dev/mp-weixin`,
       trustProject: true,
     })
     expect(executeMock).toHaveBeenCalledWith(
-      '/Applications/wechat-cli',
+      selectedTarget.cliPath,
       ['open', '--project', `${mockCwd}/dist/dev/mp-weixin`, '--trust-project'],
       {
         pipeStdout: false,
@@ -329,6 +348,7 @@ describe('cli parsing', () => {
     await parse(['open', '--appid', 'wx123'])
 
     expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      target: selectedTarget,
       projectPath: undefined,
       trustProject: false,
     })
@@ -343,6 +363,7 @@ describe('cli parsing', () => {
     await parse(['open', '--project', './dist/dev/mp-weixin'])
 
     expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      target: selectedTarget,
       projectPath: `${mockCwd}/dist/dev/mp-weixin`,
       trustProject: true,
     })
@@ -712,7 +733,7 @@ describe('cli parsing', () => {
     await parse(['open', '-p', './mini-app'])
 
     expect(executeMock).toHaveBeenCalledWith(
-      '/Applications/wechat-cli',
+      selectedTarget.cliPath,
       ['open', '--project', `${mockCwd}/mini-app`],
       {
         pipeStdout: false,
