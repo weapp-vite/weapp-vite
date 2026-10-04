@@ -41,6 +41,7 @@ const DEFAULT_FORWARD_CONSOLE_LEVELS: WeappForwardConsoleLogLevel[] = ['log', 'i
 let activeForwardConsoleSession: Awaited<ReturnType<typeof startWechatForwardConsole>> | undefined
 let activeForwardConsoleBridgeOptions: StartForwardConsoleBridgeOptions | undefined
 let activeForwardConsoleStart: Promise<boolean> | undefined
+let activeForwardConsoleClose: Promise<void> | undefined
 let forwardConsoleLifecycle = 0
 const FORWARD_CONSOLE_RETRY_DELAY_MS = 1000
 const FORWARD_CONSOLE_RETRY_TIMES = 5
@@ -268,15 +269,9 @@ export async function pauseActiveForwardConsole() {
       return true
     }
     const startTask = (async () => {
+      let resumedSession: Awaited<ReturnType<typeof startForwardConsoleBridge>>
       try {
-        const resumedSession = await startForwardConsoleBridge(bridgeOptions)
-        if (lifecycle !== forwardConsoleLifecycle) {
-          await resumedSession.close()
-          return false
-        }
-        activeForwardConsoleSession = resumedSession
-        activeForwardConsoleBridgeOptions = bridgeOptions
-        return true
+        resumedSession = await startForwardConsoleBridge(bridgeOptions)
       }
       catch (error) {
         if (lifecycle === forwardConsoleLifecycle) {
@@ -285,6 +280,13 @@ export async function pauseActiveForwardConsole() {
         }
         return false
       }
+      if (lifecycle !== forwardConsoleLifecycle) {
+        await resumedSession.close()
+        return false
+      }
+      activeForwardConsoleSession = resumedSession
+      activeForwardConsoleBridgeOptions = bridgeOptions
+      return true
     })()
     activeForwardConsoleStart = startTask
     try {
@@ -301,21 +303,42 @@ export async function pauseActiveForwardConsole() {
 /**
  * @description 关闭当前 DevTools 日志桥并释放共享 automator 会话。
  */
-export async function closeActiveForwardConsole() {
+export function closeActiveForwardConsole(): Promise<void> {
+  if (activeForwardConsoleClose) {
+    return activeForwardConsoleClose
+  }
   forwardConsoleLifecycle += 1
   const session = activeForwardConsoleSession
   const pendingStart = activeForwardConsoleStart
   activeForwardConsoleSession = undefined
   activeForwardConsoleBridgeOptions = undefined
-  await session?.close()
-  await pendingStart?.catch(() => {})
+  const closing = (async () => {
+    const results = await Promise.allSettled([
+      Promise.resolve().then(() => session?.close()),
+      pendingStart,
+    ])
+    const errors = results.filter(result => result.status === 'rejected').map(result => result.reason)
+    if (errors.length === 1) {
+      throw errors[0]
+    }
+    if (errors.length > 1) {
+      throw new AggregateError(errors, 'DevTools 日志桥关闭失败')
+    }
+  })()
+  activeForwardConsoleClose = closing
+  void closing.finally(() => {
+    if (activeForwardConsoleClose === closing) {
+      activeForwardConsoleClose = undefined
+    }
+  }).catch(() => {})
+  return closing
 }
 
 /**
  * @description 在 weapp 开发态按需启动控制台转发。
  */
 export async function maybeStartForwardConsole(options: MaybeStartForwardConsoleOptions) {
-  if (options.platform !== 'weapp') {
+  if (options.platform !== 'weapp' || activeForwardConsoleClose) {
     return false
   }
 
@@ -360,6 +383,7 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
       onReadyMessage: '[forwardConsole] 已连接微信开发者工具日志',
     }
 
+    // 激活 Promise 直接交给调用方，避免退出清理失败进入启动重试和降级分支。
     const activateSession = async (
       session: Awaited<ReturnType<typeof startForwardConsoleBridge>>,
       activeOptions: StartForwardConsoleBridgeOptions,
@@ -384,7 +408,7 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
           openedOnly: true,
           preferOpenedSession: true,
         }
-        return await activateSession(
+        return activateSession(
           await startForwardConsoleBridge(recoveredOptions),
           recoveredOptions,
         )
@@ -400,7 +424,7 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
     }
 
     try {
-      return await activateSession(
+      return activateSession(
         await startForwardConsoleBridge(bridgeOptions),
         bridgeOptions,
       )
@@ -428,7 +452,7 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
         preferOpenedSession: true,
       }
       try {
-        return await activateSession(
+        return activateSession(
           await startForwardConsoleBridge(fallbackOptions),
           fallbackOptions,
         )

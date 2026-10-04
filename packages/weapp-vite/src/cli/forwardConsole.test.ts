@@ -75,6 +75,7 @@ describe('forwardConsole', () => {
 
   afterEach(() => {
     stdoutWriteSpy.mockRestore()
+    vi.useRealTimers()
   })
 
   it('enables auto mode when running in an AI terminal', async () => {
@@ -178,6 +179,67 @@ describe('forwardConsole', () => {
     await closeActiveForwardConsole()
 
     expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('shares in-flight shutdown and prevents a new bridge until active cleanup settles', async () => {
+    const released = Promise.withResolvers<void>()
+    const close = vi.fn(() => released.promise)
+    startForwardConsoleMock.mockResolvedValueOnce({ close })
+    const { closeActiveForwardConsole, maybeStartForwardConsole } = await import('./forwardConsole')
+    const options = { platform: 'weapp', cwd: 'project', weappViteConfig: { forwardConsole: true } }
+    await maybeStartForwardConsole(options)
+    const closing = closeActiveForwardConsole()
+    expect(closeActiveForwardConsole()).toBe(closing)
+    await expect(maybeStartForwardConsole(options)).resolves.toBe(false)
+    expect(startForwardConsoleMock).toHaveBeenCalledTimes(1)
+    const failure = new Error('active bridge close failed')
+    const rejected = expect(closing).rejects.toBe(failure)
+    released.reject(failure)
+    await rejected
+    expect(close).toHaveBeenCalledTimes(1)
+    await expect(maybeStartForwardConsole(options)).resolves.toBe(true)
+  })
+
+  it.each(['initial', 'recovery', 'fallback', 'resume'] as const)('reports a late bridge cleanup failure instead of swallowing it as %s startup failure', async (phase) => {
+    const { closeActiveForwardConsole, maybeStartForwardConsole, pauseActiveForwardConsole } = await import('./forwardConsole')
+    const options = { platform: 'weapp', cwd: 'project', weappViteConfig: { forwardConsole: true } }
+    let resume: Awaited<ReturnType<typeof pauseActiveForwardConsole>>
+    if (phase === 'resume') {
+      await maybeStartForwardConsole(options)
+      resume = await pauseActiveForwardConsole()
+    }
+    if (phase === 'recovery') {
+      startForwardConsoleMock.mockRejectedValueOnce(new Error('DEVTOOLS_PROTOCOL_TIMEOUT'))
+    }
+    if (phase === 'fallback') {
+      vi.useFakeTimers()
+      for (let attempt = 0; attempt < 6; attempt++) {
+        startForwardConsoleMock.mockRejectedValueOnce(new Error('DEVTOOLS_WS_CONNECT_ERROR'))
+      }
+    }
+    const pending = pendingSession()
+    startForwardConsoleMock.mockReturnValueOnce(pending.promise)
+    const starting = phase === 'resume'
+      ? resume!()
+      : maybeStartForwardConsole({
+          ...options,
+          recoverAutomatorSession: phase === 'recovery' ? vi.fn(async () => {}) : undefined,
+        })
+    if (phase === 'fallback') {
+      await vi.runAllTimersAsync()
+    }
+    else {
+      await vi.waitFor(() => expect(startForwardConsoleMock).toHaveBeenCalledTimes(phase === 'initial' ? 1 : 2))
+    }
+    const closing = closeActiveForwardConsole()
+    const failure = new Error('late bridge close failed')
+    const rejectedStart = expect(starting).rejects.toBe(failure)
+    const rejectedClose = expect(closing).rejects.toBe(failure)
+    const close = vi.fn().mockRejectedValue(failure)
+    pending.resolve({ close })
+    await Promise.all([rejectedStart, rejectedClose])
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(loggerMock.warn).not.toHaveBeenCalled()
   })
 
   it('waits for a pending bridge before pausing it for a screenshot', async () => {

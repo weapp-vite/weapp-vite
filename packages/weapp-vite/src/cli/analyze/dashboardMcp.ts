@@ -90,8 +90,20 @@ export async function createDashboardMcp(
     close() {
       if (!closing) {
         closed = true
-        registration?.unregister()
-        closing = handler.dispose()
+        closing = Promise.resolve().then(async () => {
+          const errors: unknown[] = []
+          for (const release of [() => registration?.unregister(), () => handler.dispose()]) {
+            try {
+              await release()
+            }
+            catch (error) {
+              errors.push(error)
+            }
+          }
+          if (errors.length) {
+            throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Dashboard MCP cleanup failed')
+          }
+        })
       }
       return closing
     },
