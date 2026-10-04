@@ -39,6 +39,54 @@ it('rejects an exports mapping that leaves the installed package', async () => {
   await expect(verifyConsumerExports(root, { probe: 'candidate.tgz' })).rejects.toThrow('Invalid published target')
 })
 
+it('excludes installed private dependencies and npm bin links from wildcard publication checks', async () => {
+  const { root, packageRoot } = await fixture()
+  const dependencyRoot = path.join(packageRoot, 'node_modules/private-tool')
+  const binRoot = path.join(packageRoot, 'node_modules/.bin')
+  await mkdir(dependencyRoot, { recursive: true })
+  await mkdir(binRoot, { recursive: true })
+  await writeFile(path.join(dependencyRoot, 'package.json'), JSON.stringify({ name: 'private-tool', version: '2.0.0', bin: './cli.mjs' }))
+  await writeFile(path.join(dependencyRoot, 'cli.mjs'), 'console.log("private-tool")')
+  await symlink(path.join(dependencyRoot, 'cli.mjs'), path.join(binRoot, 'private-tool'), 'file')
+  await writeFile(path.join(packageRoot, 'package.json'), JSON.stringify({ name: 'probe', version: '1.0.0', exports: { './*': './*' } }))
+
+  await expect(verifyConsumerExports(root, { probe: 'candidate.tgz' })).resolves.toEqual([
+    { name: 'probe', version: '1.0.0', targets: ['./*'] },
+  ])
+})
+
+it('checks packaged vendor files under dist/node_modules and rejects links escaping the candidate', async () => {
+  const { root, packageRoot } = await fixture()
+  const vendorRoot = path.join(packageRoot, 'dist/node_modules/vendor')
+  await mkdir(vendorRoot, { recursive: true })
+  await writeFile(path.join(vendorRoot, 'index.mjs'), 'export const bundled = true')
+  await writeFile(path.join(packageRoot, 'package.json'), JSON.stringify({
+    name: 'probe',
+    version: '1.0.0',
+    exports: { './*': './*', './vendor/*': './dist/node_modules/vendor/*' },
+  }))
+  await verifyConsumerExports(root, { probe: 'candidate.tgz' })
+
+  const externalFile = path.join(root, 'unpacked.mjs')
+  await writeFile(externalFile, 'export const unpacked = true')
+  await symlink(externalFile, path.join(vendorRoot, 'escape.mjs'), 'file')
+  await expect(verifyConsumerExports(root, { probe: 'candidate.tgz' })).rejects.toThrow('Published target escapes candidate: probe')
+})
+
+it('validates explicit targets even inside the excluded installation directory', async () => {
+  const { root, packageRoot } = await fixture()
+  await writeFile(path.join(packageRoot, 'package.json'), JSON.stringify({ name: 'probe', version: '1.0.0', exports: './node_modules/private-tool/cli.mjs' }))
+  await expect(verifyConsumerExports(root, { probe: 'candidate.tgz' })).rejects.toThrow('Missing published target: probe@1.0.0 -> ./node_modules/private-tool/cli.mjs')
+})
+
+it('does not accept a missing published wildcard when only installed dependencies match it', async () => {
+  const { root, packageRoot } = await fixture()
+  await mkdir(path.join(packageRoot, 'node_modules/private-tool'), { recursive: true })
+  await writeFile(path.join(packageRoot, 'node_modules/private-tool/private.cjs'), 'module.exports = true')
+  await writeFile(path.join(packageRoot, 'package.json'), JSON.stringify({ name: 'probe', version: '1.0.0', exports: { './*': './*.cjs' } }))
+  await expect(verifyConsumerExports(root, { probe: 'candidate.tgz' })).rejects.toThrow('Missing published target: probe@1.0.0 -> ./*.cjs')
+})
+
 it('rejects loading an unpacked dependency through a workspace directory link', async () => {
   const { root, packageRoot } = await fixture()
   const external = await mkdtemp(path.join(tmpdir(), 'unpacked-source-'))

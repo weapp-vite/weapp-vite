@@ -1,5 +1,4 @@
 import type { GlobalCLIOptions } from '../../types'
-import process from 'node:process'
 import logger from '../../../logger'
 
 export interface ServeMiniProgramDevActions {
@@ -86,17 +85,4 @@ export function createServeMiniProgramDevActions(
       return '已手动重新构建当前小程序产物'
     },
   }
-}
-
-export function waitForServeShutdownSignal() {
-  return new Promise<void>((resolve) => {
-    const onSignal = () => {
-      process.off('SIGINT', onSignal)
-      process.off('SIGTERM', onSignal)
-      resolve()
-    }
-
-    process.on('SIGINT', onSignal)
-    process.on('SIGTERM', onSignal)
-  })
 }

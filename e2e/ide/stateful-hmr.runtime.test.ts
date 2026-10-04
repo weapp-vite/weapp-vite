@@ -1,9 +1,9 @@
-import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { resolveRuntimeCompilerCli } from '../../packages/weapp-vite/scripts/consumerRuntimeHost.mjs'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
@@ -38,10 +38,7 @@ const HOST = process.env.WEAPP_VITE_E2E_COMPILER_HOST ?? 'wv'
 if (HOST !== 'wv' && HOST !== 'vite' && HOST !== 'vite-plus') {
   throw new Error(`Unsupported stateful fixture host: ${HOST}`)
 }
-const VITE_CLI = HOST === 'vite-plus'
-  ? path.join(path.dirname(createRequire(path.join(APP_ROOT, 'package.json')).resolve('vite-plus/package.json')), 'bin/vp')
-  : path.join(path.dirname(createRequire(import.meta.url).resolve('vite/package.json')), 'bin/vite.js')
-const CLI_PATH = path.join(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
+const COMPILER_CLI = resolveRuntimeCompilerCli(HOST, APP_ROOT, { repositoryRoot: ROOT, isolated: Boolean(process.env.WEAPP_VITE_E2E_STATEFUL_PROJECT) })
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const CONTROL_FILE = path.join(DIST_ROOT, '__weapp_vite_hmr/control.js')
 const UPDATE_FILE = path.join(DIST_ROOT, '__weapp_vite_hmr/update.js')
@@ -270,8 +267,8 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await fs.remove(DIST_ROOT)
 
     devProcess = startDevProcess(process.execPath, HOST === 'wv'
-      ? [CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm']
-      : [VITE_CLI, 'dev', '--config', 'vite.stateful.config.mts', '--host', '127.0.0.1', '--port', '0'], {
+      ? [COMPILER_CLI, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm']
+      : [COMPILER_CLI, 'dev', '--config', 'vite.stateful.config.mts', '--host', '127.0.0.1', '--port', '0'], {
       all: true,
       cwd: APP_ROOT,
       env: createDevProcessEnv(),

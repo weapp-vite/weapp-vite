@@ -28,13 +28,13 @@ function getStatusClassName(status: ReleaseGateSummary['status']) {
   <section class="rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-4 shadow-(--dashboard-shadow)">
     <AppPanelHeader icon-name="metric-quality" title="发布门禁">
       <template #meta>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center justify-end gap-2">
           <span v-if="copyStatus" class="text-xs font-medium text-(--dashboard-accent)">
             {{ copyStatus }}
           </span>
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 py-1 text-[11px] text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 py-1 text-xs text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
             @click="emit('copy')"
           >
             <span class="h-3.5 w-3.5">
@@ -47,7 +47,7 @@ function getStatusClassName(status: ReleaseGateSummary['status']) {
     </AppPanelHeader>
 
     <div class="mt-3 grid gap-3 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)]">
-      <div class="rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-3">
+      <div class="rounded-md bg-(--dashboard-panel-muted) p-3">
         <div class="flex items-start justify-between gap-3">
           <div>
             <span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em]" :class="getStatusClassName(gate.status)">
@@ -64,7 +64,7 @@ function getStatusClassName(status: ReleaseGateSummary['status']) {
             <p class="text-[11px] uppercase tracking-[0.18em] text-(--dashboard-text-soft)">
               score
             </p>
-            <p class="mt-1 text-3xl font-semibold text-(--dashboard-accent)">
+            <p class="mt-1 text-3xl font-semibold tabular-nums text-(--dashboard-accent)">
               {{ gate.score }}
             </p>
           </div>
@@ -79,11 +79,15 @@ function getStatusClassName(status: ReleaseGateSummary['status']) {
             v-bind="metric"
           />
         </div>
-        <ol class="grid content-start gap-1.5 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-3 text-xs text-(--dashboard-text-muted)">
+        <ol
+          class="grid content-start gap-2 p-3 text-xs leading-5 text-(--dashboard-text-muted) xl:max-h-40 xl:overflow-y-auto"
+          aria-label="发布建议"
+          tabindex="0"
+        >
           <li
             v-for="item in gate.recommendations"
             :key="item"
-            class="line-clamp-2"
+            class="break-words"
           >
             {{ item }}
           </li>

@@ -5,6 +5,7 @@ import path from 'pathe'
 import { toPosixPath } from '../../../../../utils'
 import { parseJsLike, traverse } from '../../../../../utils/babel'
 import { applyMagicStringChunkRewrite } from '../../../../../utils/outputChunk'
+import { createPlatformApiAccessCollector } from '../../platformApiRewrite'
 import {
   getRequireImportLiteral,
   normalizeWeappLocalNpmImport,
@@ -17,6 +18,7 @@ export interface LocalRootNpmRewriteSubPackageMeta {
 }
 
 export interface LocalRootNpmRewriteOptions {
+  collectPlatformApiAccess?: boolean
   analysisCache?: ChunkScriptAnalysisCache
   astEngine?: 'babel' | 'oxc'
   basedir?: string
@@ -102,6 +104,7 @@ export function rewriteChunkNpmImportsToLocalRoot(
   dependencyPatterns: (string | RegExp)[] | undefined,
   dependencies: Record<string, string> | undefined,
   options?: {
+    collectPlatformApiAccess?: boolean
     analysisCache?: ChunkScriptAnalysisCache
     basedir?: string
     astEngine?: 'babel' | 'oxc'
@@ -120,8 +123,12 @@ export function rewriteChunkNpmImportsToLocalRoot(
     const magicString = new MagicString(chunk.code)
     let mutated = false
     const localizedRequireBindings = new Set<string>()
+    const platformApiAccess = options?.collectPlatformApiAccess === false
+      ? undefined
+      : createPlatformApiAccessCollector()
 
     traverse(ast as any, {
+      ...platformApiAccess?.visitor,
       VariableDeclarator(path: any) {
         const id = path.node?.id
         const init = path.node?.init
@@ -225,10 +232,11 @@ export function rewriteChunkNpmImportsToLocalRoot(
 
     if (mutated) {
       applyMagicStringChunkRewrite(chunk, magicString)
-      rememberChunkScriptAnalysis(chunk, analysis, {
-        cache: options?.analysisCache,
-      })
     }
+    rememberChunkScriptAnalysis(chunk, {
+      ...analysis,
+      hasPlatformApiAccess: platformApiAccess?.hasPlatformApiAccess() ?? analysis.hasPlatformApiAccess,
+    }, { cache: options?.analysisCache })
   }
   catch {
   }

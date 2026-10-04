@@ -56,8 +56,8 @@
   },
   "tsd": {
     "compilerOptions": {
-      "module": "ESNext",
-      "moduleResolution": "Bundler"
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
     }
   }
 }

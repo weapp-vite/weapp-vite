@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "scope": "真实 Vite borrowed host 的自定义 profile 输出文件监听隔离；不是小程序 IDE runtime 或性能验收。",
+  "test": "e2e/ci/hmr-profile-failed-recovery.test.ts",
+  "testSha256": "004a032e637c9e99e7cc8704c0521c80b15dc1cd0a9924ee7401ecead6c68009",
+  "profilePath": "reports/hmr-profile.jsonl",
+  "actualWatchRoot": ".",
+  "quietWindowMs": 5000,
+  "negative": {
+    "gitHead": "8cd8b9ccf897ce7d40ada65681356093416d6fbd",
+    "distFiles": 114,
+    "result": "expected-failure",
+    "observation": {
+      "scenario": "profile-failed-recovery",
+      "quiet": false,
+      "beforeEdit": 1,
+      "failedCount": 3,
+      "beforeRecovery": 5,
+      "recovered": 7,
+      "final": 8,
+      "profileSourceEvents": 8,
+      "records": [
+        {
+          "status": "failed",
+          "inputs": []
+        },
+        {
+          "status": "failed",
+          "inputs": [
+            "reports/hmr-profile.jsonl"
+          ]
+        },
+        {
+          "status": "failed",
+          "inputs": [
+            "reports/hmr-profile.jsonl",
+            "src/pages/plain/index.js"
+          ]
+        },
+        {
+          "status": "failed",
+          "inputs": [
+            "reports/hmr-profile.jsonl",
+            "src/pages/plain/index.js",
+            "reports/hmr-profile.jsonl"
+          ]
+        },
+        {
+          "status": "failed",
+          "inputs": [
+            "reports/hmr-profile.jsonl",
+            "src/pages/plain/index.js",
+            "reports/hmr-profile.jsonl",
+            "reports/hmr-profile.jsonl"
+          ]
+        },
+        {
+          "status": "complete",
+          "inputs": [
+            "src/pages/plain/index.js"
+          ]
+        },
+        {
+          "status": "incomplete",
+          "inputs": [
+            "reports/hmr-profile.jsonl"
+          ]
+        },
+        {
+          "status": "complete",
+          "inputs": [
+            "src/pages/plain/index.js"
+          ]
+        }
+      ],
+      "statuses": {
+        "failed": 5,
+        "complete": 2,
+        "incomplete": 1
+      }
+    },
+    "cleanup": {
+      "scenario": "profile-failed-recovery-cleanup",
+      "hostClosed": true,
+      "processReleased": true,
+      "fixtureRemoved": true,
+      "repeatedStop": true
+    }
+  },
+  "positive": {
+    "gitHead": "bed518b2b57d5853a1ab8c0e73c52dd9ab424aa3",
+    "dirtySourceBuild": true,
+    "distFiles": 118,
+    "result": "passed",
+    "observation": {
+      "scenario": "profile-failed-recovery",
+      "quiet": true,
+      "beforeEdit": 1,
+      "failedCount": 2,
+      "beforeRecovery": 2,
+      "recovered": 3,
+      "final": 3,
+      "profileSourceEvents": 0,
+      "records": [
+        {
+          "status": "failed",
+          "inputs": []
+        },
+        {
+          "status": "failed",
+          "inputs": [
+            "src/pages/plain/index.js"
+          ]
+        },
+        {
+          "status": "complete",
+          "inputs": [
+            "src/pages/plain/index.js"
+          ]
+        }
+      ],
+      "statuses": {
+        "failed": 2,
+        "complete": 1
+      }
+    },
+    "cleanup": {
+      "scenario": "profile-failed-recovery-cleanup",
+      "hostClosed": true,
+      "processReleased": true,
+      "fixtureRemoved": true,
+      "repeatedStop": true
+    }
+  },
+  "preliminaryDefaultPathControl": {
+    "path": ".weapp-vite/hmr-profile.jsonl",
+    "result": "passed-on-unpatched-dist",
+    "limitation": "默认输出路径本轮没有复现反馈；不把自定义路径结果推广为默认路径必然失败。"
+  },
+  "identityAndResources": {
+    "positiveChanged": [],
+    "negativeChanged": [],
+    "remainingFixtures": [],
+    "active": [],
+    "negativeSourceChanged": [],
+    "negativeAddedOrRemovedDistFiles": [],
+    "positiveAddedOrRemovedDistFiles": []
+  },
+  "privateEvidence": [
+    {
+      "name": "profile-recovery-final-negative-exact.log",
+      "sha256": "3325310eb5831bf2418ea412f6cfa163945be73d0f41270257052c823788cd87"
+    },
+    {
+      "name": "profile-recovery-final-negative-exact.json",
+      "sha256": "b0bf8114f2ebf4630399ada3ec04df4b5adf1add2441c7f3b0547d378b41cfbd"
+    },
+    {
+      "name": "profile-recovery-final-positive.log",
+      "sha256": "2f879bc81d10b49af4df84534e29f444be1e9c5cf127ab2830a2ab7cb0aa1408"
+    },
+    {
+      "name": "profile-recovery-final-positive.json",
+      "sha256": "bd0b51dc8c32bff96195236c4853a29f6f98dfd68f0c591ae80e735caacd7ea9"
+    },
+    {
+      "name": "profile-recovery-negative-identity.json",
+      "sha256": "395c010a8d4aa5eaf0a7a2adba7231f584d9b798bc2d5f01bca17c7e973efd76"
+    },
+    {
+      "name": "profile-recovery-positive-before.json",
+      "sha256": "4ea1720fb7499701e81c3a8b77e7b0a0354319a86ad5f5468f37e781388f3836"
+    },
+    {
+      "name": "profile-recovery-final-resource-audit.json",
+      "sha256": "65b666cae5baebab6d706ca8d616596243a6facd77552c76e78ba0627440bd1c"
+    },
+    {
+      "name": "profile-recovery-negative.log",
+      "sha256": "b4a23933cd96f0ce6f69a16f984cc146c25eb040a2be322b0bc9f179432fbb05"
+    },
+    {
+      "name": "profile-recovery-negative.json",
+      "sha256": "328de81bb9959fec7f6f75efdbc22110140ceab4bf364dd9d16040cd26965423"
+    }
+  ],
+  "limitations": [
+    "没有运行真实 WeChat DevTools；不能替代 issue 的最终 runtime 验收。",
+    "没有性能重新采样；不变更历史 HMR v2 的性能结论。",
+    "启动生成的 TypeScript 支持文件可能触发独立失败记录；静置基线仅在本次源码事件的 failed 记录出现后建立。"
+  ]
+}

@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest'
-import { entryTopologySignature, hasEntryTopologyChange } from './entryTopology'
+import { captureEntryTopology, entryTopologySignature, hasEntryTopologyChange } from './entryTopology'
 
 it('compares entry references independently from presentation fields and key ordering', () => {
   const before = { usingComponents: { a: '/a', b: '/b' }, navigationBarTitleText: 'before' }
@@ -32,6 +32,14 @@ it('does not parse external JSON dependencies as mini-program entry configuratio
   expect(read).not.toHaveBeenCalled()
 })
 
+it('compares a confirmed config deletion without reading it as malformed JSON', async () => {
+  const file = '/project/pages/home.json'
+  const read = vi.fn()
+  const ctx = { jsonService: { cache: new Map([[file, { usingComponents: { card: '/card' } }]]), read } } as any
+  expect(await hasEntryTopologyChange(ctx, [file], undefined, new Set([file]))).toBe(true)
+  expect(read).not.toHaveBeenCalled()
+})
+
 it('detects the first configuration added to a previously compiled native entry', async () => {
   const read = vi.fn(async () => ({ usingComponents: { card: '/card' } }))
   const ctx = {
@@ -57,4 +65,24 @@ it('retains the compiled topology baseline after its JSON cache entry is evicted
     ]) } } },
   } as any
   expect(await hasEntryTopologyChange(ctx, ['/project/pages/home.json'])).toBe(true)
+})
+
+it('compares against the committed complete scan when an earlier metadata build reads newer JSON', async () => {
+  const file = '/project/pages/home.json'
+  const entry = {
+    path: '/project/pages/home.ts',
+    jsonPath: file,
+    declaredJson: { usingComponents: { card: '/card' } },
+  }
+  const cache = new Map<string, unknown>([[file, entry.declaredJson]])
+  const ctx = {
+    jsonService: { cache, read: async () => ({}) },
+    runtimeState: { build: { hmr: { entriesMap: new Map([['pages/home', entry]]) } } },
+  } as any
+  const committed = captureEntryTopology(ctx)
+  // WXML 的局部快照可先更新入口 JSON 与共享解析缓存，但还没有重新扫描可达组件。
+  entry.declaredJson = {} as typeof entry.declaredJson
+  cache.set(file, {})
+  expect(await hasEntryTopologyChange(ctx, [file], committed)).toBe(true)
+  expect(await hasEntryTopologyChange(ctx, [file], captureEntryTopology(ctx))).toBe(false)
 })

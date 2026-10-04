@@ -25,7 +25,7 @@ export default defineConfig({
     pool: 'threads',
     maxWorkers: resolveE2EMaxWorkers(),
     fileParallelism: false,
-    globalSetup: [DEVTOOLS_GLOBAL_SETUP],
+    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts'), DEVTOOLS_GLOBAL_SETUP],
     setupFiles: [DOM_SETUP_FILE, DEVTOOLS_SETUP_FILE],
     reporters: ['default', DOM_REPORTER],
   },

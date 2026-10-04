@@ -46,7 +46,7 @@ export function createAnalyzeMarkdownReport(options: {
     .map(module => `| ${module.source} | ${module.sourceType} | ${module.packageCount} | ${formatBytes(module.estimatedSavingBytes)} | ${module.advice} |`)
     .join('\n')
   const budgetRows = options.budgetWarnings
-    .map(item => `| ${item.label} | ${item.scope} | ${formatBytes(item.currentBytes)} | ${formatBytes(item.limitBytes)} | ${item.status === 'critical' ? '超预算' : '接近预算'} ${(item.ratio * 100).toFixed(1)}% |`)
+    .map(item => `| ${item.label} | ${item.scope} | ${formatBytes(item.currentBytes)} | ${formatBytes(item.limitBytes)} | ${item.status === 'unknown' ? '体积或归因不完整，无法验收' : `${item.status === 'critical' ? '超预算' : '接近预算'} ${(item.ratio * 100).toFixed(1)}%`} |`)
     .join('\n')
   const topDuplicate = options.duplicateModules.find(module => module.estimatedSavingBytes > 0)
 
@@ -114,7 +114,7 @@ export function createAnalyzePrMarkdownReport(options: {
     .map(item => `| ${item.category} | ${item.count} | +${formatBytes(item.deltaBytes)} |`)
     .join('\n')
   const budgetRows = options.budgetWarnings.slice(0, 5)
-    .map(item => `| ${item.label} | ${formatBytes(item.currentBytes)} | ${formatBytes(item.limitBytes)} | ${item.status === 'critical' ? '超预算' : '接近预算'} ${(item.ratio * 100).toFixed(1)}% |`)
+    .map(item => `| ${item.label} | ${formatBytes(item.currentBytes)} | ${formatBytes(item.limitBytes)} | ${item.status === 'unknown' ? '体积或归因不完整，无法验收' : `${item.status === 'critical' ? '超预算' : '接近预算'} ${(item.ratio * 100).toFixed(1)}%`} |`)
     .join('\n')
   const duplicateRows = options.duplicateModules.slice(0, 5)
     .map(module => `| ${module.source} | ${module.packageCount} | ${formatBytes(module.estimatedSavingBytes)} | ${module.advice} |`)

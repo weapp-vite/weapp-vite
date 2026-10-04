@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { mkdir, mkdtemp, readlink, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readlink, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import process from 'node:process'
 import { diff } from 'just-diff'
@@ -68,7 +68,9 @@ describe('utils', () => {
 
     try {
       expect(existsSync(path.join(tempProject.tempDir, 'tsconfig.json'))).toBe(true)
-      expect(existsSync(path.resolve(tempProject.tempDir, '../tsconfig.json'))).toBe(true)
+      const config = JSON.parse(await readFile(path.join(tempProject.tempDir, 'tsconfig.json'), 'utf8')) as { extends: string }
+      expect(path.resolve(tempProject.tempDir, config.extends)).toBe(path.join(fixtureParent, 'tsconfig.json'))
+      expect(existsSync(path.resolve(tempProject.tempDir, '../tsconfig.json'))).toBe(false)
     }
     finally {
       await tempProject.cleanup()

@@ -12,6 +12,7 @@ const loggerMock = vi.hoisted(() => ({
 }))
 
 vi.mock('../src/cli/automator-session', () => ({
+  resolveAutomatorSessionOptions: async (options: unknown) => options,
   acquireConsoleMiniProgram: acquireSharedMiniProgramMock,
   closeSharedMiniProgram: closeSharedMiniProgramMock,
   connectConsoleMiniProgram: connectMiniProgramMock,
@@ -125,7 +126,7 @@ describe('forwardConsole', () => {
     expect(acquireSharedMiniProgramMock).toHaveBeenCalledTimes(6)
     expect(releaseSharedMiniProgramMock).toHaveBeenCalledTimes(6)
     expect(closeSharedMiniProgramMock).toHaveBeenCalledTimes(6)
-    expect(closeSharedMiniProgramMock).toHaveBeenLastCalledWith('/tmp/demo', 9420)
+    expect(closeSharedMiniProgramMock).toHaveBeenLastCalledWith('/tmp/demo', 9420, expect.objectContaining({ projectPath: '/tmp/demo' }))
     vi.useRealTimers()
   })
 
@@ -149,7 +150,7 @@ describe('forwardConsole', () => {
     expect(acquireSharedMiniProgramMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
       timeout: 3_000,
     }))
-    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/tmp/demo', 9420)
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/tmp/demo', 9420, expect.objectContaining({ projectPath: '/tmp/demo' }))
     await session.close()
     vi.useRealTimers()
   })
@@ -260,7 +261,7 @@ describe('forwardConsole', () => {
     await session.close()
 
     expect(miniProgram.off).toHaveBeenCalledTimes(2)
-    expect(releaseSharedMiniProgramMock).toHaveBeenCalledWith('/tmp/demo', undefined)
+    expect(releaseSharedMiniProgramMock).toHaveBeenCalledWith('/tmp/demo', undefined, expect.objectContaining({ projectPath: '/tmp/demo' }))
     expect(miniProgram.close).not.toHaveBeenCalled()
   })
 
@@ -349,7 +350,7 @@ describe('forwardConsole', () => {
     expect(miniProgram.off).not.toHaveBeenCalled()
     expect(releaseSharedMiniProgramMock).toHaveBeenCalledTimes(6)
     expect(closeSharedMiniProgramMock).toHaveBeenCalledTimes(6)
-    expect(closeSharedMiniProgramMock).toHaveBeenLastCalledWith('/tmp/demo', undefined)
+    expect(closeSharedMiniProgramMock).toHaveBeenLastCalledWith('/tmp/demo', undefined, expect.objectContaining({ projectPath: '/tmp/demo' }))
     expect(miniProgram.close).not.toHaveBeenCalled()
     vi.useRealTimers()
   })

@@ -10,6 +10,7 @@ import { parseGraphOutputModuleId, resolveGraphOutputOwner } from '../moduleGrap
 import { parseSidecarModuleId } from '../moduleGraph/protocol'
 import { changeFileExtension } from '../utils'
 import { createHmrProfileCheckpoint } from '../utils/hmrProfile'
+import { withRealpathScope } from '../utils/realpathScope'
 import { deferWxmlDependencyCommit } from '../wxml/processing/dependencies'
 import { bindWxmlDependencyWatch } from '../wxml/processing/watch'
 import { hasManagedCompilerOutputMarker, isManagedCompilerEntry } from './compilerPluginRegistry'
@@ -33,46 +34,48 @@ export function normalizeGraphOnlyAssets(
   bundle: OutputBundle,
   emitAsset: EmitAsset,
 ) {
-  for (const [bundleFileName, output] of Object.entries(bundle)) {
-    if (output?.type !== 'asset') {
-      continue
-    }
-    const fileName = output.fileName || bundleFileName
-    const moduleId = parseGraphOutputModuleId(fileName)
-    const sidecar = moduleId ? parseSidecarModuleId(moduleId) : undefined
-    if (
-      sidecar?.kind === 'style'
-      && isManagedCompilerEntry(ctx, sidecar.sourceId)
-      && !hasManagedCompilerOutputMarker(output.source.toString())
-    ) {
+  withRealpathScope(() => {
+    for (const [bundleFileName, output] of Object.entries(bundle)) {
+      if (output?.type !== 'asset') {
+        continue
+      }
+      const fileName = output.fileName || bundleFileName
+      const moduleId = parseGraphOutputModuleId(fileName)
+      const sidecar = moduleId ? parseSidecarModuleId(moduleId) : undefined
+      if (
+        sidecar?.kind === 'style'
+        && isManagedCompilerEntry(ctx, sidecar.sourceId)
+        && !hasManagedCompilerOutputMarker(output.source.toString())
+      ) {
+        delete bundle[bundleFileName]
+        continue
+      }
+      const ownerId = resolveGraphOutputOwner(fileName)
+      if (!ownerId) {
+        continue
+      }
       delete bundle[bundleFileName]
-      continue
+      const outputFileName = ctx.configService.relativeOutputPath(
+        changeFileExtension(ownerId, ctx.configService.outputExtensions.wxss),
+      )
+      if (!outputFileName) {
+        continue
+      }
+      const existingOutput = bundle[outputFileName]
+      if (existingOutput?.type === 'asset') {
+        existingOutput.source = output.source
+        existingOutput.fileName = outputFileName
+        continue
+      }
+      if (!existingOutput) {
+        emitAsset({
+          type: 'asset',
+          fileName: outputFileName,
+          source: output.source,
+        })
+      }
     }
-    const ownerId = resolveGraphOutputOwner(fileName)
-    if (!ownerId) {
-      continue
-    }
-    delete bundle[bundleFileName]
-    const outputFileName = ctx.configService.relativeOutputPath(
-      changeFileExtension(ownerId, ctx.configService.outputExtensions.wxss),
-    )
-    if (!outputFileName) {
-      continue
-    }
-    const existingOutput = bundle[outputFileName]
-    if (existingOutput?.type === 'asset') {
-      existingOutput.source = output.source
-      existingOutput.fileName = outputFileName
-      continue
-    }
-    if (!existingOutput) {
-      emitAsset({
-        type: 'asset',
-        fileName: outputFileName,
-        source: output.source,
-      })
-    }
-  }
+  })
 }
 
 function collectOutputFinalizerAssetEntries(bundle: OutputBundle) {

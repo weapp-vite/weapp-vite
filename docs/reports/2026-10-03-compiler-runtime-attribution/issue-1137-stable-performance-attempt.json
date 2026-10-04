@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "issue": 1137,
+  "status": "failed-final-performance-acceptance",
+  "date": "2026-10-04",
+  "harness": {
+    "baseCommit": "540f4d0202815b00cf60956e9b1dbde4ece407de",
+    "workingTreeDirty": true,
+    "additionalPatch": "benchmark resource ownership and streaming log evidence",
+    "subsequentlyCommittedAs": "e3faabf31"
+  },
+  "compilerCandidate": {
+    "archiveCount": 32,
+    "archiveHash": "2e3bbe3c689d1f64cc05a9d9950fdd3b21a4dfc4957121e972283a2bca0740f0",
+    "sourceHash": "d3bcc13b56b033f9397813d3c4f331b967ba1abb5b803eaf67d985ba706d1c59",
+    "newInstallation": true
+  },
+  "officialDevtools": {
+    "queriedAt": "2026-10-04T12:54:06.873929+00:00",
+    "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+    "channel": "stable",
+    "version": "2.02.2608080",
+    "actualSdkVersion": "3.17.3"
+  },
+  "execution": {
+    "node": "v22.22.3",
+    "collectionComplete": false,
+    "complete": false,
+    "equivalentInputs": false,
+    "preservedSamples": [
+      {
+        "scenario": "firstScreen",
+        "index": 0,
+        "sample": {
+          "wallMs": 1942,
+          "readyMs": 12,
+          "firstCommitMs": null
+        }
+      },
+      {
+        "scenario": "firstScreen",
+        "index": 1,
+        "sample": {
+          "wallMs": 1854,
+          "readyMs": 16,
+          "firstCommitMs": null
+        }
+      },
+      {
+        "scenario": "firstScreen",
+        "index": 2,
+        "sample": {
+          "wallMs": 1843,
+          "readyMs": 15,
+          "firstCommitMs": null
+        }
+      },
+      {
+        "scenario": "detailNavigation",
+        "index": 0,
+        "sample": {
+          "wallMs": 1781,
+          "readyMs": 15,
+          "firstCommitMs": null
+        }
+      },
+      {
+        "scenario": "detailNavigation",
+        "index": 1,
+        "sample": {
+          "wallMs": 1756,
+          "readyMs": 14,
+          "firstCommitMs": null
+        }
+      },
+      {
+        "scenario": "detailNavigation",
+        "index": 2,
+        "sample": {
+          "wallMs": 1725,
+          "readyMs": 17,
+          "firstCommitMs": null
+        }
+      }
+    ],
+    "failure": [
+      "Method not implemented."
+    ],
+    "memoryEvidence": {
+      "normal": {
+        "complete": false,
+        "samples": 0,
+        "missing": [
+          {
+            "scenario": "updateSingleCommit.diff",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "updateMicroCommit.diff",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "updateSingleCommit.patch",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "updateMicroCommit.patch",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "workloads.small-field",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "workloads.batch",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "workloads.append",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "workloads.reorder",
+            "reason": "missing-samples"
+          }
+        ]
+      },
+      "performance": {
+        "complete": false,
+        "samples": 0,
+        "missing": [
+          {
+            "scenario": "updateSingleCommit.diff",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "updateMicroCommit.diff",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "updateSingleCommit.patch",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "updateMicroCommit.patch",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "workloads.small-field",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "workloads.batch",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "workloads.append",
+            "reason": "missing-samples"
+          },
+          {
+            "scenario": "workloads.reorder",
+            "reason": "missing-samples"
+          }
+        ]
+      }
+    },
+    "resourceCount": 1,
+    "allOwnedProjectsAndPortsClosed": true,
+    "cleanupErrors": []
+  },
+  "isolatedProtocolDiagnosis": {
+    "sameBuiltConsumer": true,
+    "node": "v22.22.3",
+    "events": [
+      {
+        "label": "toolInfo",
+        "error": null,
+        "succeeded": true
+      },
+      {
+        "label": "reLaunch-update",
+        "error": null,
+        "succeeded": true
+      },
+      {
+        "label": "ready-selector",
+        "error": null,
+        "succeeded": true
+      },
+      {
+        "label": "heap-before",
+        "error": "Method not implemented.",
+        "succeeded": false
+      },
+      {
+        "label": "one-update-round",
+        "error": null,
+        "succeeded": true
+      },
+      {
+        "label": "final-observation",
+        "error": null,
+        "succeeded": true
+      },
+      {
+        "label": "heap-after",
+        "error": "Method not implemented.",
+        "succeeded": false
+      }
+    ],
+    "allOwnedProjectsAndPortsClosed": true
+  },
+  "rawEvidenceSha256": {
+    "report": "419668773a6bf591f60a6e9778d50f22f67e966dfd36cf7cccb7526e802c1bf6",
+    "workerStdout": "05e55aba6e2efef5467857b5a247eb99e8b3cbe29c9908f8c2b5c713481217d7",
+    "workerStderr": "8d809c722be37449dab6a9b09aabf76f9859d72aac79387e8f09aff1586875fe",
+    "isolatedProbe": "ca317ccafa8dfd25c8ac3b2a6b609071fb64c8d5d6e332ad1fcfa2677a96ecc1"
+  },
+  "limits": [
+    "The six saved first-screen/navigation samples do not establish update or memory performance acceptance.",
+    "The performance preset did not run after the normal preset failure.",
+    "The failure remains in this run; no samples were replaced or reused as a successful run.",
+    "Heap probing before and after a successful one-round update both returned Method not implemented.; no heap usage is inferred from worker RSS."
+  ]
+}

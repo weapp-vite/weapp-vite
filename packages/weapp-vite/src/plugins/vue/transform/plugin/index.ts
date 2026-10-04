@@ -20,6 +20,7 @@ import { findFirstResolvedVueLikeEntry } from '../shared'
 import { parseWeappVueStyleRequest } from '../styleRequest'
 import { handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, invalidatePageLayoutCaches, isVueLikeId, loadTransformStyleBlock, preloadNativeLayoutEntries } from './shared'
 import { transformVueLikeFile } from './transformFile'
+import { invalidateExternalSfcCompilation } from './transformFile/externalDependencies'
 
 const VUE_TRANSFORM_FILTER_RE = /\.(?:vue|tsx|jsx)(?:\?.*)?$/
 const VUE_LOAD_FILTER_RE = /^(?:\0weapp-vite:scoped-slot:|.*[?&]weapp-vite-vue(?:[=&]|$))/
@@ -70,6 +71,14 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
   const emittedScopedSlotChunks = new Set<string>()
   const classStyleRuntimeWarned = { value: false }
 
+  function releaseHookContexts() {
+    // 编译选项包含 warn/resolve/emitFile，生命周期只能到当前 bundle 结束。
+    compileOptionsCache.clear()
+    componentMetaCache.clear()
+    pageMatcher = null
+    scanDirtySynced = false
+  }
+
   function updateAppShell(nextAppShell: ResolvedAppShell | undefined) {
     if (createCompilerAppShellSignature(appShell) === createCompilerAppShellSignature(nextAppShell)) {
       return
@@ -85,14 +94,42 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     }
   }
 
+  function invalidateSourceFile(file: string) {
+    const normalizedId = normalizeFsResolvedId(file)
+    invalidateComponentMetaCache(componentMetaCache, normalizedId)
+    invalidateExternalSfcCompilation(normalizedId, compilationCache)
+    const isLayout = handleTransformLayoutInvalidation(normalizedId, {
+      configService: ctx.configService,
+      compilationCache,
+      styleBlocksCache,
+      styleRefreshTokens,
+      isLayoutFile,
+      invalidateResolvedPageLayoutsCache,
+    })
+    const isVue = handleTransformVueFileInvalidation(normalizedId, {
+      compilationCache,
+      styleBlocksCache,
+      styleRefreshTokens,
+      existsSync: fs.existsSync,
+    })
+    return isLayout || isVue
+  }
+
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
+
+    closeBundle: releaseHookContexts,
+    closeWatcher: releaseHookContexts,
 
     configResolved(config) {
       isBundledDev = config.command === 'serve' && Boolean(config.experimental.bundledDev)
     },
 
     async buildStart() {
+      // snapshot 不经过 watchChange；同批源变更必须撤销相同缓存，避免重发已删除 SFC 的产物。
+      for (const { file } of ctx.moduleGraphService?.getPendingChanges?.() ?? []) {
+        invalidateSourceFile(file)
+      }
       scopedSlotModules.clear()
       emittedScopedSlotChunks.clear()
       compileOptionsCache.clear()
@@ -207,21 +244,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     watchChange(id, change) {
       const startedAt = performance.now()
       const normalizedId = normalizeFsResolvedId(id)
-      invalidateComponentMetaCache(componentMetaCache, normalizedId)
-      handleTransformLayoutInvalidation(normalizedId, {
-        configService: ctx.configService,
-        compilationCache,
-        styleBlocksCache,
-        styleRefreshTokens,
-        isLayoutFile,
-        invalidateResolvedPageLayoutsCache,
-      })
-      handleTransformVueFileInvalidation(normalizedId, {
-        compilationCache,
-        styleBlocksCache,
-        styleRefreshTokens,
-        existsSync: fs.existsSync,
-      })
+      invalidateSourceFile(normalizedId)
       invalidateDirtyVueEntryCaches(ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds, compilationCache)
       const profile = ctx.runtimeState?.build?.hmr?.profile
       if (profile && !profile.file) {
@@ -233,28 +256,9 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     },
 
     async handleHotUpdate({ file }) {
-      invalidateComponentMetaCache(componentMetaCache, file)
-      if (handleTransformLayoutInvalidation(file, {
-        configService: ctx.configService,
-        compilationCache,
-        styleBlocksCache,
-        styleRefreshTokens,
-        isLayoutFile,
-        invalidateResolvedPageLayoutsCache,
-      })) {
+      if (invalidateSourceFile(file)) {
         return []
       }
-
-      if (!handleTransformVueFileInvalidation(file, {
-        compilationCache,
-        styleBlocksCache,
-        styleRefreshTokens,
-        existsSync: fs.existsSync,
-      })) {
-        return
-      }
-
-      return []
     },
   }
 }

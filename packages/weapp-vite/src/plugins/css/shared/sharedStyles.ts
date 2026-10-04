@@ -34,6 +34,10 @@ export function collectSharedStyleEntries(
     if (currentRoot && root !== currentRoot) {
       continue
     }
+    // 独立分包样式由子构建编译并统一发布，主构建不能再次产出同名资产。
+    if (!currentRoot && meta.subPackage.independent) {
+      continue
+    }
     map.set(root, meta.styleEntries)
   }
   return map

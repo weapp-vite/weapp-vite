@@ -6,8 +6,13 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 消费安装需在各平台正确解析 npm/pnpm 启动器。
 import { execa } from 'execa'
+import { readPackedPackageJsonFromTarball } from '../../../scripts/print-rolldown-versions.mjs'
 import { inspectConsumerInstallation, profileConsumerStartup, verifyConsumerExports, verifyConsumerNegativeControls } from './consumerEvidence.mjs'
+import { createConsumerRuntimeEnvironment } from './consumerRuntimeEnvironment.mjs'
+import { createConsumerHmrConfig, selectClassicRuntimeHost } from './consumerRuntimeHost.mjs'
+import { createConsumerRuntimeProfile } from './consumerRuntimeProfile.mjs'
 import { createConsumerTemporaryRoot, packConsumerTarballs, readConsumerTarballs, verifyConsumerTarballProvenance } from './consumerTarballs.mjs'
+import { resolveConsumerToolchain } from './consumerToolchains.mjs'
 import { verifyDependencySemantics } from './verify-dependency-semantics.mjs'
 import { verifyPlatformConsumer } from './verify-vite-host-platform.mjs'
 import { verifyTailwindConsumer } from './verify-vite-host-tailwind.mjs'
@@ -16,8 +21,13 @@ const toolchain = process.argv[2]
 assert(['wv', 'vite', 'vite-plus'].includes(toolchain), 'Usage: node verify-vite-host-install.mjs <wv|vite|vite-plus>')
 const runtime = process.argv[3]
 const runtimeSuite = process.argv[4] ?? 'stateful'
-assert(['stateful', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform', 'web'].includes(runtimeSuite))
+assert(['stateful', 'classic', 'classic-watch', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform', 'web'].includes(runtimeSuite))
 assert(runtime === undefined || ['headless', 'devtools', 'both'].includes(runtime))
+const classicRuntime = runtimeSuite === 'classic' || runtimeSuite === 'classic-watch'
+const hmrRuntime = runtimeSuite === 'stateful' || classicRuntime
+if (classicRuntime) {
+  selectClassicRuntimeHost(toolchain, runtimeSuite === 'classic-watch' ? 'build-watch' : 'dev')
+}
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const temporaryRoot = await createConsumerTemporaryRoot()
 const consumerRoot = path.join(temporaryRoot, 'consumer')
@@ -31,21 +41,12 @@ try {
     : await packConsumerTarballs(repoRoot, temporaryRoot, entryPackages)
   const candidates = { ...dependencies }
   // 所有候选已是直接 tarball 依赖；额外覆盖整个闭包会触发 npm 11.6 的 override-set 冲突。
-  const overrides = {}
+  const toolchainSelection = resolveConsumerToolchain(toolchain, readPackedPackageJsonFromTarball(dependencies['weapp-vite'].slice(5)))
+  const { overrides } = toolchainSelection
+  Object.assign(dependencies, toolchainSelection.dependencies)
   dependencies.typescript = '6.0.3'
   if (!runtime || runtimeSuite === 'web') {
     dependencies.tailwindcss = '4.3.3'
-  }
-  if (toolchain !== 'wv') {
-    Object.assign(dependencies, { vite: '8.3.1', vitest: '5.0.2' })
-  }
-  if (toolchain === 'vite-plus') {
-    Object.assign(dependencies, {
-      'vite': 'npm:@voidzero-dev/vite-plus-core@1.0.0',
-      'vite-plus': '1.0.0',
-      'vitest': '5.0.1',
-    })
-    overrides.vite = 'npm:@voidzero-dev/vite-plus-core@1.0.0'
   }
   if (runtimeSuite === 'plugin') {
     // 消费用例固定公开版本，不依赖维护仓库 node_modules 的安装状态。
@@ -84,7 +85,7 @@ try {
     startup: await profileConsumerStartup(consumerRoot),
   }
   const loadedPackages = new Set(evidence.startup.trace.modules.map(module => module.package))
-  for (const adapter of ['@weapp-vite/web', '@weapp-tailwindcss/engine', 'vite-tsconfig-paths', 'tsconfck']) {
+  for (const adapter of ['@weapp-vite/web', '@weapp-tailwindcss/engine', 'vite-tsconfig-paths', 'tsconfck', '@devframes/agentic', '@modelcontextprotocol/node', '@modelcontextprotocol/server', '@modelcontextprotocol/core']) {
     assert(!loadedPackages.has(adapter), `Inactive adapter loaded by CLI help: ${adapter}`)
   }
   if (process.env.WEAPP_VITE_CONSUMER_EVIDENCE) {
@@ -119,13 +120,12 @@ try {
     await verifyPlatformConsumer(consumerRoot, toolchain, repoRoot, runtime)
   }
   else if (runtime) {
-    assert(runtimeSuite !== 'stateful' || toolchain === 'vite-plus', 'stateful 独立 runtime 消费验证当前用于 Vite+；wv/vite 直接运行共享 fixture')
     const fixtureRoot = runtimeSuite === 'plugin' ? path.join(repoRoot, 'templates/weapp-vite-plugin-template') : path.join(repoRoot, 'e2e-apps', runtimeSuite === 'react' ? 'react-runtime-spike' : runtimeSuite === 'independent' ? 'wevu-subpackage-placement' : runtimeSuite === 'worker' ? 'chunk-modes' : runtimeSuite === 'lib' ? 'lib-mode' : 'stateful-hmr')
     await rm(path.join(consumerRoot, 'src'), { recursive: true, force: true })
     for (const entry of ['src', 'project.config.json', 'project.private.config.json', ...runtimeSuite === 'plugin' ? ['plugin', 'shared', 'tsconfig.json'] : runtimeSuite === 'lib' ? ['runtime', 'tsconfig.json'] : []]) {
       await cp(path.join(fixtureRoot, entry), path.join(consumerRoot, entry), { recursive: true })
     }
-    if (runtimeSuite === 'stateful') {
+    if (hmrRuntime) {
       await cp(path.join(fixtureRoot, 'public'), path.join(consumerRoot, 'public'), { recursive: true })
     }
     if (runtimeSuite === 'plugin') {
@@ -153,7 +153,7 @@ try {
         await execa(process.execPath, [fileURLToPath(new URL('./verify-vite-host-dev.mjs', import.meta.url)), consumerRoot, toolchain, operation, 'lib'], { cwd: repoRoot, stdio: 'inherit' })
       }
     }
-    else if (runtimeSuite !== 'stateful') {
+    else if (!hmrRuntime) {
       const config = `import { appendFileSync } from 'node:fs'
 import { defineConfig } from '${toolchain === 'wv' ? 'weapp-vite' : toolchain}'
 ${toolchain === 'wv' ? '' : 'import { weapp } from \'weapp-vite/vite\''}
@@ -178,42 +178,32 @@ export default defineConfig({
       }
     }
     else {
-      await writeFile(path.join(consumerRoot, 'vite.stateful.config.mts'), `import { defineConfig } from 'vite-plus'
-import { weapp } from 'weapp-vite/vite'
-export default defineConfig({
-  plugins: [weapp()],
-  weapp: { srcRoot: 'src', appPrelude: { webRuntime: true }, hmr: { runtime: 'stateful-experimental', logLevel: 'verbose' } },
-})
-`)
+      const config = createConsumerHmrConfig(toolchain, classicRuntime ? 'classic' : 'stateful-experimental')
+      await writeFile(path.join(consumerRoot, classicRuntime ? 'vite.plugin.config.mts' : 'vite.stateful.config.mts'), config)
+      await writeFile(path.join(consumerRoot, 'vite.config.mts'), config)
     }
     for (const provider of runtime === 'both' ? ['headless', 'devtools'] : [runtime]) {
+      const profile = createConsumerRuntimeProfile(runtimeSuite, toolchain, provider)
       await execa('pnpm', [
         'vitest',
         'run',
         '-c',
         'e2e/vitest.e2e.devtools.config.ts',
-        runtimeSuite === 'lib' ? 'e2e/ide/lib-host.runtime.test.ts' : runtimeSuite === 'plugin' ? 'e2e/ide/issue-963-plugin-es6.runtime.test.ts' : runtimeSuite === 'react' ? 'e2e/ide/react-runtime-spike.runtime.test.ts' : runtimeSuite === 'independent' ? 'e2e/ide/wevu-subpackage-placement.runtime.test.ts' : runtimeSuite === 'worker' ? 'e2e/ide/worker-host.runtime.test.ts' : 'e2e/ide/stateful-hmr.runtime.test.ts',
+        profile.file,
         '-t',
-        runtimeSuite === 'lib'
-          ? 'renders compiled native and Vue libraries'
-          : runtimeSuite === 'plugin'
-            ? 'ES6: disabled'
-            : runtimeSuite === 'react'
-              ? 'renders React hooks|renders the compiled native WXML|all six interop edges'
-              : runtimeSuite === 'worker'
-                ? 'exchanges worker messages'
-                : runtimeSuite === 'independent'
-                  ? 'visits main, normal subpackage, and independent subpackage vue routes'
-                  : provider === 'devtools'
-                    ? 'preserves native Page|preserves native Component|preserves Wevu local and store|preserves native page state across two template'
-                    : 'preserves native Component|preserves Wevu local and store|preserves native page state across two template',
+        profile.testNamePattern,
       ], {
         cwd: repoRoot,
         stdio: 'inherit',
         env: {
-          WEAPP_VITE_E2E_RUNTIME_PROVIDER: provider,
-          WEAPP_VITE_E2E_COMPILER_HOST: toolchain,
-          [runtimeSuite === 'lib' ? 'WEAPP_VITE_E2E_LIB_PROJECT' : runtimeSuite === 'plugin' ? 'WEAPP_VITE_E2E_PLUGIN_PROJECT' : runtimeSuite === 'react' ? 'WEAPP_VITE_E2E_REACT_PROJECT' : runtimeSuite === 'independent' ? 'WEAPP_VITE_E2E_INDEPENDENT_PROJECT' : runtimeSuite === 'worker' ? 'WEAPP_VITE_E2E_WORKER_PROJECT' : 'WEAPP_VITE_E2E_STATEFUL_PROJECT']: consumerRoot,
+          ...createConsumerRuntimeEnvironment(
+            provider,
+            toolchain,
+            profile.projectVariable,
+            consumerRoot,
+            profile.cases,
+          ),
+          ...profile.env,
         },
       })
     }

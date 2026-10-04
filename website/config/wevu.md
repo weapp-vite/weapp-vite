@@ -300,8 +300,13 @@ export default defineConfig({
 
 - 为 `app/component` 注入 `setData.strategy: 'patch'`。
 - 为 `app/component` 注入 `setData.suspendWhenHidden: true`。
+- 为 `app/component` 注入 `setData.diagnostics: 'fallback'`，输出初始化、回退和提交失败相关诊断。
 - 为 `app/component` 注入开发态高频告警：`setData.highFrequencyWarning = { enabled: true, devOnly: true }`。
 - 默认启用 `autoSetDataPick`；若你显式设置 `autoSetDataPick: false`，则以显式配置为准。
+
+`diagnostics` 没有 `devOnly` 限制，生产构建也可能输出日志。需要关闭内建日志时，可将 `weapp.wevu.defaults.app.setData.diagnostics` 和 `component.setData.diagnostics` 显式设为 `'off'`；这不关闭自定义 `debug` 回调。
+
+`needsFullSnapshot` 也会出现在 patch 策略的首次快照收集，不单独证明提交失败或发送了完整 payload。若另行开启 `debugPhases`，同一 revision 还会产生 prepare、dispatch、commit 记录，不能把日志条数当作回退次数或性能收益。参见 [运行时诊断说明](/wevu/runtime#wevu-defaults)。
 
 ### 覆盖规则
 

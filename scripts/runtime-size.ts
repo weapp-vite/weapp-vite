@@ -1,5 +1,6 @@
 import type { BuildOptions } from 'esbuild'
 import type { RuntimeSizeEntryKind, RuntimeSizeTarget, RuntimeSizeTier } from './runtime-size-config'
+import type { RuntimeTierAttribution } from './runtime-size/attribution'
 
 import { gzipSync } from 'node:zlib'
 import { build } from 'esbuild'
@@ -8,6 +9,7 @@ import {
   runtimeSizeTargets,
   runtimeSizeTiers,
 } from './runtime-size-config'
+import { createRuntimeTierAttribution } from './runtime-size/attribution'
 import { createRuntimeSizeRetainedModules } from './runtime-size/modules'
 
 export type {
@@ -43,6 +45,8 @@ export interface RuntimeSizeRetainedModule {
 export interface RuntimeSizeRetainedModules {
   entry: string
   modules: RuntimeSizeRetainedModule[]
+  /** 完整源码导入图；可达路径不代表中间模块或符号在产物中保留。旧报告可能未采集此字段。 */
+  importGraph?: Array<{ path: string, imports: string[] }>
 }
 
 export interface RuntimeSizeBundleResult {
@@ -65,6 +69,7 @@ export interface RuntimeSizeTierReport {
   label: string
   dev: RuntimeSizeMeasurement
   production: RuntimeSizeProductionMeasurement
+  capabilityAttribution?: RuntimeTierAttribution
 }
 
 export interface RuntimeSizeReport {
@@ -120,7 +125,7 @@ export interface RuntimeSizeRetainedModuleViolation {
 
 export type RuntimeSizeGuardViolation = RuntimeSizeBudgetViolation | RuntimeSizeRetainedModuleViolation
 
-function createProviderEntry(target: RuntimeSizeTarget, tier: RuntimeSizeTier) {
+export function createProviderEntry(target: RuntimeSizeTarget, tier: RuntimeSizeTier) {
   if (!tier.imports) {
     const entries = Object.values(target.entries)
     return entries
@@ -227,6 +232,9 @@ export async function collectRuntimeSizeReport(options: CollectRuntimeSizeOption
           retainedModules: productionBundle.retainedModules,
         },
       })
+    }
+    for (const tier of tiers) {
+      tier.capabilityAttribution = createRuntimeTierAttribution(options.root, target, tier, tiers, createProviderEntry(target, runtimeSizeTiers.find(candidate => candidate.id === tier.id)!))
     }
     targets.push({
       id: target.id,

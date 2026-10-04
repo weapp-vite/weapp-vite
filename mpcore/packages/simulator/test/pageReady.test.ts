@@ -36,16 +36,14 @@ describe.each(['node', 'browser'] as const)('%s page readiness task boundary', (
     return session
   }
 
-  it('renders completed load microtasks at ready, after navigation success and complete', async () => {
+  it('renders completed load microtasks at ready before navigation success and complete', async () => {
     const session = createSession()
     const firstPage = session.reLaunch('/pages/destination/index')
     await vi.waitFor(() => expect(firstPage.data.ready).toBe(true))
     await firstPage.openIndex()
     const page = session.getCurrentPages().at(-1)!
-    expect(page.data.label).toBe('pending')
-    expect(session.getApp()?.globalData.events).toEqual(['load', 'show', 'success', 'complete'])
-    await vi.waitFor(() => expect(page.data.label).toBe('async-loaded'))
-    expect(session.getApp()?.globalData.events).toEqual(['load', 'show', 'success', 'complete', 'loaded', 'ready', 'routeDone'])
+    expect(page.data.label).toBe('async-loaded')
+    expect(session.getApp()?.globalData.events).toEqual(['load', 'show', 'loaded', 'ready', 'routeDone', 'success', 'complete'])
     expect(session.renderCurrentPage().wxml).toContain('>async-loaded<')
   })
 

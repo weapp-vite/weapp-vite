@@ -100,13 +100,15 @@ export function createEmittedScriptReader(entryFile: string, outputRoot: string)
 export async function waitForBenchmarkOutput(
   read: () => Promise<string>,
   marker: string,
-  options: { absent?: boolean, timeoutMs: number, intervalMs?: number, expectedContent?: string },
+  options: { absent?: boolean, timeoutMs: number, intervalMs?: number, expectedContent?: string, signal?: AbortSignal },
 ) {
   const startedAt = performance.now()
   let latestError = ''
   while (performance.now() - startedAt < options.timeoutMs) {
+    options.signal?.throwIfAborted()
     try {
       const content = await read()
+      options.signal?.throwIfAborted()
       latestError = ''
       const matchesContent = options.expectedContent === undefined || content === options.expectedContent
       if (matchesContent && content.includes(marker) !== Boolean(options.absent) && performance.now() - startedAt < options.timeoutMs) {
@@ -114,9 +116,10 @@ export async function waitForBenchmarkOutput(
       }
     }
     catch (error) {
+      options.signal?.throwIfAborted()
       latestError = error instanceof Error ? error.message : String(error)
     }
-    await setTimeout(options.intervalMs ?? 25)
+    await setTimeout(options.intervalMs ?? 25, undefined, { signal: options.signal })
   }
   throw new Error(`Timed out waiting for reachable emitted output to ${options.absent ? 'omit' : 'contain'} marker: ${marker}${latestError ? `. ${latestError}` : ''}`)
 }

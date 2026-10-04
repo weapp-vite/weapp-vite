@@ -5,6 +5,7 @@ import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
 import path from 'pathe'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { assertDevtoolsLoggedIn } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
@@ -160,6 +161,9 @@ async function main() {
       output: path.resolve(option('--output') ?? path.join(repoRoot, '.tmp/runtime-bench/published-presets.json')),
     })
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    if (!report.complete) {
+      process.exitCode = 1
+    }
     return
   }
   process.stdout.write(`[runtime-bench] provider=${runtimeProvider}\n`)
@@ -266,4 +270,4 @@ async function main() {
   process.stdout.write(`${JSON.stringify(comparison, null, 2)}\n`)
 }
 
-void main()
+void withMachineE2ELease(main)

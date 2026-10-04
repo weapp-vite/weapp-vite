@@ -18,14 +18,43 @@ import { mayNeedWevuPageFeatureAnalysis } from './wevuPageFeatureHints'
 
 const JS_LIKE_SOURCE_RE = /\.[cm]?[jt]sx?$/
 const JS_LIKE_SOURCE_FILTER_RE = /\.[cm]?[jt]sx?(?:\?.*)?$/
+
+/** 页面缓存只持有扫描服务，避免与 transform 中的解析回调共享 hook 上下文。 */
+function createCompilerPageMatcher(configService: NonNullable<CompilerContext['configService']>, scanService: NonNullable<CompilerContext['scanService']>) {
+  return createPageEntryMatcher({
+    srcRoot: configService.absoluteSrcRoot,
+    loadEntries: async () => {
+      const appEntry = await scanService.loadAppEntry()
+      const subPackages = scanService.loadSubPackages().map(meta => ({
+        root: meta.subPackage.root,
+        pages: meta.subPackage.pages,
+      }))
+      const pluginPages = scanService.pluginJson
+        ? Object.values((scanService.pluginJson as { pages?: Record<string, string> }).pages ?? {}).map(page => String(page))
+        : []
+      return { pages: appEntry.json?.pages ?? [], subPackages, pluginPages }
+    },
+    warn: (message: string) => logger.warn(message),
+  })
+}
+
 export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
   let matcher: ReturnType<typeof createPageEntryMatcher> | null = null
   let scanDirtySynced = false
   const pageFileCache = new Map<string, boolean>()
 
+  function releaseBuildState() {
+    matcher = null
+    scanDirtySynced = false
+    pageFileCache.clear()
+  }
+
   return {
     name: 'weapp-vite:wevu:page-features',
     enforce: 'pre',
+    buildStart: releaseBuildState,
+    closeBundle: releaseBuildState,
+    closeWatcher: releaseBuildState,
     transform: {
       filter: {
         id: JS_LIKE_SOURCE_FILTER_RE,
@@ -37,25 +66,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
           return null
         }
 
-        const pageMatcher = matcher ?? (matcher = createPageEntryMatcher({
-          srcRoot: configService.absoluteSrcRoot,
-          loadEntries: async () => {
-            const appEntry = await scanService.loadAppEntry()
-            const subPackages = scanService.loadSubPackages().map(meta => ({
-              root: meta.subPackage.root,
-              pages: meta.subPackage.pages,
-            }))
-            const pluginPages = scanService.pluginJson
-              ? Object.values((scanService.pluginJson as { pages?: Record<string, string> }).pages ?? {}).map(page => String(page))
-              : []
-            return {
-              pages: appEntry.json?.pages ?? [],
-              subPackages,
-              pluginPages,
-            }
-          },
-          warn: (message: string) => logger.warn(message),
-        }))
+        const pageMatcher = matcher ?? (matcher = createCompilerPageMatcher(configService, scanService))
 
         // 注意：app.json 变更会影响 pages 列表，这里直接跟随 scanService 的 dirty 标记。
         if (ctx.runtimeState.scan.isDirty && !scanDirtySynced) {

@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: async (run: () => Promise<unknown>) => await run() }))
+
 const detectPort = vi.hoisted(() => vi.fn())
+vi.mock('../src/devtoolsTarget', () => ({
+  resolveWechatDevtoolsTarget: async () => ({ cliPath: 'selected-cli', appPath: 'selected-app', profileDir: 'selected-profile', installationId: 'selected' }),
+  assertWechatDevtoolsPort: async () => undefined,
+}))
 vi.mock('../src/cli/wechatDevtoolsSettings', () => ({ detectWechatDevtoolsServicePort: detectPort }))
 vi.mock('../src/cli/wechatDevtoolsRuntimePort', () => ({ getRuntimeWechatDevtoolsServicePort: () => undefined }))
 
@@ -32,6 +38,7 @@ describe('HTTP cancellation', () => {
     const reason = new Error('port detection cancelled')
     const pending = openWechatIdeProjectByHttp('fixture', { signal: controller.signal })
     const assertion = expect(pending).rejects.toBe(reason)
+    await vi.advanceTimersByTimeAsync(0)
     controller.abort(reason)
     if (outcome === 'resolve') {
       detection.resolve({ servicePort: 9420 })

@@ -1,8 +1,10 @@
 import type { OutputBundle } from 'rolldown'
 import type { InlineConfig } from 'vite'
+import type { HmrProfileJsonSample } from '../../analyze/hmr'
 import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
+import type { StatefulHmrProfileHandoff } from './profile'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { EventEmitter } from 'node:events'
 import { realpathSync } from 'node:fs'
@@ -18,6 +20,8 @@ import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
 import { getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
 import { createRuntimeState } from '../runtimeState'
+import { createStatefulHmrHostPlugins } from './hostPlugins'
+import { StatefulHmrProfile } from './profile'
 import { runStatefulHmrDev } from './session'
 import { StatefulHmrTransport } from './transport'
 
@@ -30,11 +34,14 @@ interface AdapterCallbacks {
 const harness = vi.hoisted(() => ({
   callbacks: undefined as AdapterCallbacks | undefined,
   nativeOutput: [] as StatefulHmrOutputFile[],
+  initialOutput: true,
+  nativeSettlement: vi.fn<() => Promise<void>>(),
   createServer: vi.fn(),
   writeOutput: vi.fn<(outDir: string, output: StatefulHmrOutputFile[], initialPublicAssets?: StatefulHmrInitialPublicAssets, removedAssets?: string[]) => Promise<void>>(),
   fullBuild: vi.fn<() => Promise<void>>(),
   beforeInitialReady: vi.fn<() => Promise<void>>(),
   beforeFullPrepare: vi.fn<() => Promise<void>>(),
+  registerBundleModules: vi.fn<() => Promise<number>>(),
 }))
 
 vi.mock('vite', async importOriginal => ({
@@ -52,11 +59,16 @@ vi.mock('./viteAdapter', () => ({
     install() {}
     async close() {}
     async registerBundleModules() {
-      return 1
+      return harness.registerBundleModules()
     }
 
     async registerPatchModules() {}
     async markPayloadDelivered() {}
+    async waitForNativeUpdates() {}
+    async whenSettled() {
+      await harness.nativeSettlement()
+    }
+
     async rebuild(prepare?: () => void | Promise<void>) {
       await harness.beforeFullPrepare()
       await prepare?.()
@@ -115,7 +127,7 @@ function analyzedSnapshot(paired: boolean, selector = '.valid'): StatefulHmrSnap
   }
 }
 
-async function start(initial = snapshot('red'), entryIds: string[] = [], inlineConfig: InlineConfig = {}) {
+async function start(initial = snapshot('red'), entryIds: string[] = [], inlineConfig: InlineConfig = {}, nativeSources = new Map<string, string>(), profile?: StatefulHmrProfileHandoff, onContext?: (ctx: MutableCompilerContext) => void) {
   const rebuild = vi.fn(async (_files: string[]) => snapshot('blue'))
   const changes = new Map<string, string>()
   const ctx = {
@@ -125,7 +137,7 @@ async function start(initial = snapshot('red'), entryIds: string[] = [], inlineC
       cwd: root,
       absoluteSrcRoot: path.join(root, 'src'),
       outDir: path.join(root, 'dist'),
-      weappViteConfig: {},
+      weappViteConfig: { hmr: { profileJson: profile ? true : undefined } },
       inlineConfig,
     },
     scanService: { subPackageMap: new Map() },
@@ -135,13 +147,23 @@ async function start(initial = snapshot('red'), entryIds: string[] = [], inlineC
       getPendingChanges: () => Array.from(changes, ([file, event]) => ({ file, event })),
     },
   } as unknown as MutableCompilerContext
+  for (const [file, source] of nativeSources) {
+    getCompilerHmrHost(ctx).captureNative(file, source)
+  }
+  onContext?.(ctx)
   const events = createDevBuildWatcher()
-  const watcher = await runStatefulHmrDev(ctx, { root }, vi.fn(async () => {}), { initial, entryIds, rebuild }, events)
+  const restart = vi.fn(async () => {})
+  const watcher = await runStatefulHmrDev(ctx, { root }, restart, { initial, entryIds, rebuild, profile }, events)
   watchers.push(watcher)
+  const plugins = harness.createServer.mock.calls.at(-1)![0].plugins as Array<{ name: string, api?: { whenSettled: () => Promise<void> } }>
+  const whenSettled = plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-session')!.api!.whenSettled
   return {
     rebuild,
+    restart,
+    close: () => watcher.close(),
     ctx,
     events,
+    whenSettled,
     changeProfile(reasons: string[]) {
       ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = reasons
     },
@@ -164,6 +186,144 @@ function writtenAssets() {
 }
 
 describe('stateful snapshot output transactions', () => {
+  it('keeps settlement pending through a debounced refresh and its final output write', async () => {
+    const session = await start()
+    const rebuilt = Promise.withResolvers<StatefulHmrSnapshot>()
+    const published = Promise.withResolvers<void>()
+    session.rebuild.mockImplementationOnce(() => rebuilt.promise)
+    harness.writeOutput.mockClear().mockImplementationOnce(() => published.promise)
+    session.refresh()
+    let settled = false
+    const waiting = session.whenSettled().then(() => {
+      settled = true
+    })
+    await vi.advanceTimersByTimeAsync(40)
+    expect(session.rebuild).toHaveBeenCalledOnce()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(settled).toBe(false)
+    rebuilt.resolve(snapshot('blue'))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(harness.writeOutput).toHaveBeenCalledOnce()
+    expect(settled).toBe(false)
+    published.resolve()
+    await waiting
+    expect(settled).toBe(true)
+  })
+
+  it('rejects failed publication settlement and accepts a later successful refresh', async () => {
+    const session = await start()
+    const error = new Error('snapshot output publication failed')
+    harness.writeOutput.mockRejectedValueOnce(error)
+    session.refresh()
+    const rejected = expect(session.whenSettled()).rejects.toBe(error)
+    await vi.advanceTimersByTimeAsync(40)
+    await rejected
+    session.refresh()
+    const recovered = session.whenSettled()
+    await vi.advanceTimersByTimeAsync(40)
+    await expect(recovered).resolves.toBeUndefined()
+  })
+
+  it('rejects a pending settlement on close and releases the host API binding', async () => {
+    const session = await start()
+    session.refresh()
+    const rejected = expect(session.whenSettled()).rejects.toThrow(/closed|not active/)
+    await session.close()
+    await rejected
+    await expect(session.whenSettled()).rejects.toThrow('not active')
+  })
+
+  it('rejects settlement when a topology change requires a host handoff', async () => {
+    const page = path.join(root, 'src/page.js')
+    const session = await start(snapshot('red'), [page])
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, path.join(root, 'src/child.js')] })
+    session.refresh()
+    const rejected = expect(session.whenSettled()).rejects.toThrow('closed or restarted before settlement')
+    await vi.advanceTimersByTimeAsync(40)
+    await rejected
+    expect(session.restart).not.toHaveBeenCalled()
+  })
+
+  it('does not let an old session release a newer host settlement binding', async () => {
+    const controller = createStatefulHmrHostPlugins({} as CompilerContext)
+    const plugin = controller.plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-session')!
+    const settle = plugin.api.whenSettled as () => Promise<void>
+    const old = vi.fn(async () => {})
+    const replacement = vi.fn(async () => {})
+    const releaseOld = controller.bindSettlement(old)
+    const releaseReplacement = controller.bindSettlement(replacement)
+    releaseOld()
+    await settle()
+    expect(old).not.toHaveBeenCalled()
+    expect(replacement).toHaveBeenCalledOnce()
+    releaseReplacement()
+    await expect(settle()).rejects.toThrow('not active')
+  })
+
+  it('keeps the old host unsettled while its asynchronous restart is in progress', async () => {
+    const page = path.join(root, 'src/page.js')
+    const session = await start(snapshot('red'), [page])
+    const restarted = Promise.withResolvers<void>()
+    session.restart.mockImplementationOnce(() => restarted.promise)
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, path.join(root, 'src/child.js')] })
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(140)
+    expect(session.restart).toHaveBeenCalledOnce()
+    await expect(session.whenSettled()).rejects.toThrow('closed or restarted before settlement')
+    restarted.resolve()
+    await session.close()
+  })
+
+  it.each(['initial', 'native'] as const)('interrupts settlement on close while %s engine work remains pending', async (pending) => {
+    harness.initialOutput = pending !== 'initial'
+    const session = await start()
+    const native = Promise.withResolvers<void>()
+    if (pending === 'native') {
+      harness.nativeSettlement.mockImplementationOnce(() => native.promise)
+    }
+    const rejected = expect(session.whenSettled()).rejects.toThrow('closed or restarted before settlement')
+    await vi.advanceTimersByTimeAsync(0)
+    await session.close()
+    await rejected
+    native.resolve()
+  })
+
+  it('validates edits arriving before topology handoff and keeps the old host after a failed replacement snapshot', async () => {
+    const page = path.join(root, 'src/page.js')
+    const child = path.join(root, 'src/child.js')
+    const session = await start(snapshot('red'), [page])
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, child] })
+      .mockRejectedValueOnce(new Error('invalid new component'))
+      .mockResolvedValue({ ...snapshot('green'), entryIds: [page, child] })
+    harness.writeOutput.mockClear()
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(session.rebuild).toHaveBeenCalledOnce()
+    expect(session.restart).not.toHaveBeenCalled()
+    session.sourceChange(path.join(root, 'src/child.js'))
+    await vi.advanceTimersByTimeAsync(200)
+    expect(session.rebuild).toHaveBeenCalledTimes(2)
+    expect(session.restart).not.toHaveBeenCalled()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    session.sourceChange(path.join(root, 'src/child.js'))
+    await vi.advanceTimersByTimeAsync(200)
+    expect(session.restart).toHaveBeenCalledOnce()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+  })
+
+  it('cancels an unconsumed topology handoff when the owning session closes', async () => {
+    const page = path.join(root, 'src/page.js')
+    const session = await start(snapshot('red'), [page])
+    session.rebuild.mockResolvedValue({ ...snapshot('blue'), entryIds: [page, path.join(root, 'src/child.js')] })
+    harness.writeOutput.mockClear()
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    await Promise.all([session.close(), session.close()])
+    await vi.advanceTimersByTimeAsync(200)
+    expect(session.restart).not.toHaveBeenCalled()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+  })
+
   it.each([
     ['app.json', '{"window":{"navigationBarTitleText":"updated"}}'],
     ['pages/shared/index.wxml', '<view>updated</view>'],
@@ -280,9 +440,12 @@ describe('stateful snapshot output transactions', () => {
     vi.useFakeTimers()
     vi.clearAllMocks()
     harness.nativeOutput = []
+    harness.initialOutput = true
+    harness.nativeSettlement.mockReset().mockResolvedValue()
     harness.writeOutput.mockReset().mockResolvedValue()
     harness.beforeInitialReady.mockReset().mockResolvedValue()
     harness.beforeFullPrepare.mockReset().mockResolvedValue()
+    harness.registerBundleModules.mockReset().mockResolvedValue(1)
     harness.fullBuild.mockReset().mockImplementation(async () => {
       harness.callbacks!.onOutput(appOutput())
     })
@@ -303,6 +466,9 @@ describe('stateful snapshot output transactions', () => {
         close: vi.fn().mockResolvedValue(undefined),
         restart: vi.fn().mockResolvedValue(undefined),
         async listen() {
+          if (!harness.initialOutput) {
+            return
+          }
           harness.callbacks!.onOutput(appOutput())
           await harness.beforeInitialReady()
           await harness.callbacks!.waitForInitialBundle()
@@ -315,6 +481,79 @@ describe('stateful snapshot output transactions', () => {
   it('applies configured build polling to the Vite source watcher', async () => {
     await start(snapshot('red'), [], { build: { watch: { chokidar: { usePolling: true, interval: 50 } } } })
     expect(harness.createServer.mock.calls.at(-1)?.[0].server.watch).toMatchObject({ usePolling: true, interval: 50 })
+  })
+
+  it.each(['write', 'register'] as const)('keeps a transferred profile pending until replacement %s succeeds', async (stage) => {
+    const samples: HmrProfileJsonSample[] = []
+    vi.spyOn(StatefulHmrProfile.prototype, 'record').mockImplementation(sample => samples.push(sample))
+    const original = new StatefulHmrProfile({ root })
+    original.source('app.json')
+    const profile = original.transfer(original.begin(['app.json'], 'delivery'))!
+    await original.close()
+    const gate = Promise.withResolvers<void>()
+    if (stage === 'write') {
+      harness.writeOutput.mockImplementationOnce(() => gate.promise)
+    }
+    else {
+      harness.registerBundleModules.mockImplementationOnce(async () => {
+        await gate.promise
+        return 1
+      })
+    }
+    const starting = start(snapshot('blue'), [], {}, new Map(), profile)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(harness.writeOutput).toHaveBeenCalledOnce()
+    expect(samples).toEqual([])
+    gate.resolve()
+    const replacement = await starting
+    expect(samples).toHaveLength(1)
+    expect(samples[0]).toMatchObject({ status: 'complete', completionBoundary: 'output-published', profileMode: 'full' })
+    await replacement.close()
+    expect(samples).toHaveLength(1)
+  })
+
+  it('ends the original profile when a newer source event arrives before replacement publication', async () => {
+    const samples: HmrProfileJsonSample[] = []
+    vi.spyOn(StatefulHmrProfile.prototype, 'record').mockImplementation(sample => samples.push(sample))
+    const original = new StatefulHmrProfile({ root })
+    original.source('app.json')
+    const profile = original.transfer(original.begin(['app.json'], 'delivery'))!
+    await original.close()
+    const gate = Promise.withResolvers<void>()
+    harness.writeOutput.mockImplementationOnce(() => gate.promise)
+    let context: MutableCompilerContext | undefined
+    const starting = start(snapshot('blue'), [], {}, new Map(), profile, (ctx) => {
+      context = ctx
+    })
+    await vi.advanceTimersByTimeAsync(1)
+    context!.onStatefulHmrSourceChange!(path.join(root, 'src/app.json'), [])
+    expect(samples).toHaveLength(1)
+    expect(samples[0]).toMatchObject({ status: 'incomplete', file: 'app.json' })
+    gate.resolve()
+    const replacement = await starting
+    await replacement.close()
+    expect(samples).toHaveLength(1)
+    expect(samples[0]!.totalMs).toBeUndefined()
+  })
+
+  it.each(['write', 'register'] as const)('preserves failed replacement %s in the transferred profile', async (stage) => {
+    const samples: HmrProfileJsonSample[] = []
+    vi.spyOn(StatefulHmrProfile.prototype, 'record').mockImplementation(sample => samples.push(sample))
+    const original = new StatefulHmrProfile({ root })
+    original.source('app.json')
+    const profile = original.transfer(original.begin(['app.json'], 'delivery'))!
+    await original.close()
+    const failure = new Error('replacement publication failed')
+    if (stage === 'write') {
+      harness.writeOutput.mockRejectedValueOnce(failure)
+    }
+    else {
+      harness.registerBundleModules.mockRejectedValueOnce(failure)
+    }
+    await expect(start(snapshot('blue'), [], {}, new Map(), profile)).rejects.toBe(failure)
+    expect(samples).toHaveLength(1)
+    expect(samples[0]).toMatchObject({ status: 'failed', completionBoundary: 'output-published' })
+    expect(samples[0]!.totalMs).toBeUndefined()
   })
 
   it('rejects old-engine patches and retains successful assets until a metadata topology change replaces the engine', async () => {
@@ -458,6 +697,94 @@ describe('stateful snapshot output transactions', () => {
     }))
     expect(delta).toHaveBeenCalledTimes(1)
     expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it.each(['Patch', 'Noop'] as const)('keeps a style edit local after a native script is restored to its persisted input (%s)', async (restoreType) => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const style = path.join(root, 'src/pages/index/index.wxss')
+    const original = 'Page({ data: { marker: "before" } })'
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    expect(getCompilerHmrHost(session.ctx).enabled).toBe(false)
+    const patch = async (source: string, type: 'Patch' | 'Noop' = 'Patch') => {
+      session.sourceChange(script, 'update', ['entry-direct:1'])
+      getCompilerHmrHost(session.ctx).captureNative(script, source)
+      harness.callbacks!.onPatch([script], type === 'Noop' ? { type } : { type, code: 'void 0', filename: 'native-update.js', changedIds: [script] })
+      await vi.advanceTimersByTimeAsync(100)
+    }
+    await patch('Page({ data: { marker: "after" } })')
+    await patch(original, restoreType)
+    session.sourceChange(style, 'update', ['style-sidecar:1'])
+    harness.callbacks!.onPatch([style], { type: 'Noop' })
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(session.rebuild).toHaveBeenCalledOnce()
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ source: expect.stringContaining('color: blue') }))
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it.each(['success', 'failure'] as const)('tracks the input captured before a full native publication (%s)', async (outcome) => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const style = path.join(root, 'src/pages/index/index.wxss')
+    const original = 'Page({ data: { marker: "original" } })'
+    const persisted = 'Page({ data: { marker: "persisted" } })'
+    const later = 'Page({ data: { marker: "later" } })'
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    const host = getCompilerHmrHost(session.ctx)
+    vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    host.captureNative(script, persisted)
+    const write = Promise.withResolvers<void>()
+    harness.writeOutput.mockImplementationOnce(() => write.promise)
+    const publication = harness.callbacks!.onOutput(appOutput())
+    const settled = publication.catch(error => error)
+    await vi.advanceTimersByTimeAsync(1)
+    // 原生输出已经封存；异步写盘期间的新编译输入不能被记成该产物的源码。
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    host.captureNative(script, later)
+    if (outcome === 'failure') {
+      write.reject(new Error('partial native write'))
+      expect(await settled).toBeInstanceOf(Error)
+    }
+    else {
+      write.resolve()
+      await settled
+    }
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    host.captureNative(script, outcome === 'success' ? persisted : original)
+    harness.callbacks!.onPatch([script], { type: 'Patch', code: 'void 0', filename: 'restore.js', changedIds: [script] })
+    await vi.advanceTimersByTimeAsync(100)
+    session.sourceChange(style, 'update', ['style-sidecar:1'])
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(harness.fullBuild).toHaveBeenCalledTimes(outcome === 'success' ? 0 : 1)
+  })
+
+  it('keeps a newer script edit dirty while an older restoration patch is being delivered', async () => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const style = path.join(root, 'src/pages/index/index.wxss')
+    const original = 'Page({ data: { marker: "before" } })'
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    const host = getCompilerHmrHost(session.ctx)
+    const delivered = Promise.withResolvers<void>()
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async () => delivered.promise)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    host.captureNative(script, original)
+    harness.callbacks!.onPatch([script], { type: 'Patch', code: 'void 0', filename: 'restore.js', changedIds: [script] })
+    await vi.advanceTimersByTimeAsync(1)
+    expect(delta).toHaveBeenCalledOnce()
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    host.captureNative(script, 'Page({ data: { marker: "newer" } })')
+    delivered.resolve()
+    await vi.advanceTimersByTimeAsync(1)
+    session.sourceChange(style, 'update', ['style-sidecar:1'])
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(harness.fullBuild).toHaveBeenCalledOnce()
   })
 
   it.each(['script-first', 'asset-first', 'asset-running'] as const)('persists native scripts when watcher batches split a mixed update (%s)', async (order) => {

@@ -1,4 +1,5 @@
 import type { SubPackageStyleEntry } from '../../../types'
+import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import {
   collectSharedStyleEntries,
@@ -35,7 +36,7 @@ describe('sharedStyles helpers', () => {
     expect(collected.size).toBe(0)
   })
 
-  it('collects style entries from scan service and filters by current subpackage root', () => {
+  it('assigns independent styles only to the matching child build', () => {
     const mainEntry = createStyleEntry({
       outputRelativePath: 'styles/main.wxss',
     })
@@ -48,9 +49,9 @@ describe('sharedStyles helpers', () => {
       scanService: {
         mainPackageStyleEntries: [mainEntry],
         subPackageMap: new Map([
-          ['pkgA', { styleEntries: [entryA] }],
-          ['pkgB', { styleEntries: [entryB] }],
-          ['pkgC', { styleEntries: [] }],
+          ['pkgA', { subPackage: { root: 'pkgA' }, styleEntries: [entryA] }],
+          ['pkgB', { subPackage: { root: 'pkgB', independent: true }, styleEntries: [entryB] }],
+          ['pkgC', { subPackage: { root: 'pkgC' }, styleEntries: [] }],
         ]),
       },
     } as any
@@ -62,7 +63,7 @@ describe('sharedStyles helpers', () => {
       currentSubPackageRoot: 'pkgB',
     } as any)
 
-    expect(Array.from(all.keys())).toEqual(['', 'pkgA', 'pkgB'])
+    expect(Array.from(all.keys())).toEqual(['', 'pkgA'])
     expect(Array.from(onlyPkgB.keys())).toEqual(['pkgB'])
   })
 
@@ -90,6 +91,41 @@ describe('sharedStyles helpers', () => {
       sharedStyles,
       configService,
     )).toBe('.app{}')
+  })
+
+  it('retains each explicit owner when main, ordinary and independent packages share one source', () => {
+    const projectRoot = path.resolve('shared-style-owner-fixture')
+    const shared = createStyleEntry({
+      absolutePath: path.join(projectRoot, 'shared/styles/components.scss'),
+      outputRelativePath: 'shared/styles/components.wxss',
+    })
+    const independent = { ...shared, outputRelativePath: 'pkgB/weapp-shared/shared/styles/components.wxss' }
+    const ctx = {
+      scanService: {
+        mainPackageStyleEntries: [shared],
+        subPackageMap: new Map([
+          ['pkgA', { subPackage: { root: 'pkgA' }, styleEntries: [shared] }],
+          ['pkgB', { subPackage: { root: 'pkgB', independent: true }, styleEntries: [independent] }],
+        ]),
+      },
+    } as any
+
+    const main = collectSharedStyleEntries(ctx, { currentSubPackageRoot: undefined } as any)
+    const child = collectSharedStyleEntries(ctx, { currentSubPackageRoot: 'pkgB' } as any)
+    expect([...main.entries()]).toEqual([['', [shared]], ['pkgA', [shared]]])
+    expect([...child.entries()]).toEqual([['pkgB', [independent]]])
+    expect(resolveSharedStyleImportStatements(
+      path.join(projectRoot, 'pkgA/components/Card.ts'),
+      'pkgA/components/Card.wxss',
+      main,
+      createConfigService(() => 'pkgA/components/Card.ts'),
+    )).toEqual(['@import \'../../shared/styles/components.wxss\';'])
+    expect(resolveSharedStyleImportStatements(
+      path.join(projectRoot, 'pkgB/components/Card.ts'),
+      'pkgB/components/Card.wxss',
+      child,
+      createConfigService(() => 'pkgB/components/Card.ts'),
+    )).toEqual(['@import \'../weapp-shared/shared/styles/components.wxss\';'])
   })
 
   it('injects main-package styles explicitly included for app.vue', () => {

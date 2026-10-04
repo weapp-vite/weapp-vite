@@ -1,7 +1,7 @@
 import type { AnalyzeSubpackagesResult } from './types'
 import { describe, expect, it } from 'vitest'
 import { createArtifactAnalysis } from './artifacts'
-import { createAnalyzeBudgetCheck } from './report'
+import { createAnalyzeBudgetCheck } from './budget'
 
 function result(): AnalyzeSubpackagesResult {
   const value: AnalyzeSubpackagesResult = {

@@ -1,0 +1,263 @@
+{
+  "schemaVersion": 1,
+  "issue": 1097,
+  "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+  "archiveCount": 28,
+  "cohortManifestHashes": {
+    "candidate-evidence.json": "832be6d367c4102d8a83d875d902ff1d985d8175106323d22f6eeec97883272e",
+    "consumer-tarballs.json": "785c6ed10371af7dd389a4c4a0b1f1d3505383ff11ce470b31f27a56fb9c7c3c"
+  },
+  "rows": [
+    {
+      "host": "vite-plus",
+      "profile": "worker",
+      "functionalAssertionsPassed": true,
+      "plannedCheckpointAssertionsPassed": true,
+      "finalRowAccepted": true,
+      "cohortAfterSnapshotRecorded": true,
+      "cohortMatchesFrozenManifestAtAudit": true,
+      "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+      "harness": {
+        "commit": "5f11197bcbbe0e730461c7f870c9b81c2e72e6dd",
+        "dirty": false,
+        "before": {
+          "commit": "5f11197bcbbe0e730461c7f870c9b81c2e72e6dd",
+          "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "untracked": {},
+          "capturedAt": "2026-10-04T17:06:39.964498+00:00",
+          "trackedPatchIncludesIndex": true,
+          "controllerSha256": "001593055cf91898658c6613943a6ed1e595ff6b6f8315364fd4a1d46cedc8ea"
+        },
+        "after": {
+          "commit": "5f11197bcbbe0e730461c7f870c9b81c2e72e6dd",
+          "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "untracked": {},
+          "capturedAt": "2026-10-04T17:09:08.348067+00:00",
+          "trackedPatchIncludesIndex": true,
+          "controllerSha256": "001593055cf91898658c6613943a6ed1e595ff6b6f8315364fd4a1d46cedc8ea"
+        },
+        "snapshotsEqual": true,
+        "snapshotCoversIndex": true
+      },
+      "installation": {
+        "candidatePackages": 28,
+        "comparedArchiveFiles": 1735,
+        "mismatches": 0,
+        "fixtureLinks": [
+          {
+            "package": "fake-pkg",
+            "target": "worker-vendor",
+            "scope": "consumer-contained fixture only",
+            "recordedHarnessBlobFiles": 2,
+            "candidatePackage": false
+          }
+        ],
+        "symlinksAudited": 45,
+        "externalSymlinks": 0,
+        "lockSha256": "e5c26e05549218a78f34b4b73e69dd24f9509d3357f2505bf85e88c4e962cbe4",
+        "reportSha256": "48923d9d06ace8072f8637dab0f17f789024a7a7395d6bd4633a96a2bfd72450",
+        "exportPackagesVerified": 28,
+        "negativeControls": {
+          "brokenExportsRejected": true,
+          "missingCliRejected": true
+        }
+      },
+      "officialDevtools": {
+        "queriedAt": "2026-10-04T17:06:39.174829+00:00",
+        "channel": "stable",
+        "selectedAndInstalledVersion": "2.02.2608080",
+        "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+        "evidenceSha256": "952d0fbad28c5749137b1c4446174c361ba8d85a8b6d03083564db5f8878816c"
+      },
+      "providers": [
+        {
+          "provider": "devtools",
+          "runId": "issue1097-vite-plus-worker-c3-01",
+          "reportSha256": "0f10475792032e48bfc5c717b79171d7bc4826865731322b267fd43db222f821",
+          "startedAt": "2026-10-04T17:07:52.268Z",
+          "finishedAt": "2026-10-04T17:09:04.603Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.17.3"
+          },
+          "strict": true,
+          "status": "passed",
+          "runtimeErrors": [],
+          "summary": {
+            "plannedCount": 1,
+            "executedCount": 1,
+            "passedCount": 1,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 3,
+            "capturedCheckpointCount": 3
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 3,
+            "error": 0,
+            "informationalCount": 10
+          },
+          "nativeSlotGeometryAssertions": 0,
+          "recoveredStartupProtocolDiagnostics": [],
+          "recoveredLaunchDiagnostics": [
+            {
+              "reason": "simulator boot error during connect bridge",
+              "failedLaunchAttempts": 1,
+              "warningDiagnostics": [
+                {
+                  "recordedAt": "2026-10-04T17:08:10.454Z",
+                  "level": "warn",
+                  "channel": "devtools-log",
+                  "text": "connect bridge: WeChat DevTools simulator boot error detected in IDE log"
+                },
+                {
+                  "recordedAt": "2026-10-04T17:08:10.457Z",
+                  "level": "warn",
+                  "channel": "launch-retry",
+                  "text": "attempt=1/5 delay=1200ms reason=WeChat DevTools simulator boot error detected in IDE log during connect bridge"
+                },
+                {
+                  "recordedAt": "2026-10-04T17:08:10.458Z",
+                  "level": "warn",
+                  "channel": "launch-recover",
+                  "text": "cleanup-devtools"
+                }
+              ],
+              "firstBridgeConnectedAt": "2026-10-04T17:08:05.418Z",
+              "replacementBridgeConnectedAt": "2026-10-04T17:08:17.122Z",
+              "allCheckpointsAfterReplacementBridge": true,
+              "state": "recovered"
+            }
+          ]
+        },
+        {
+          "provider": "headless",
+          "runId": "issue1097-vite-plus-worker-c3-01",
+          "reportSha256": "60ffc072d21be1184302e502644a2746f33e53934fe3f620dca63b2eaf4056a0",
+          "startedAt": "2026-10-04T17:07:46.070Z",
+          "finishedAt": "2026-10-04T17:07:51.062Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": null,
+            "baseLibraryVersion": null
+          },
+          "strict": true,
+          "status": "passed",
+          "runtimeErrors": [],
+          "summary": {
+            "plannedCount": 1,
+            "executedCount": 1,
+            "passedCount": 1,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 3,
+            "capturedCheckpointCount": 3
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "informationalCount": 6
+          },
+          "nativeSlotGeometryAssertions": 0,
+          "recoveredStartupProtocolDiagnostics": [],
+          "recoveredLaunchDiagnostics": []
+        }
+      ],
+      "commonCases": [
+        {
+          "name": "e2e app: worker host > exchanges worker messages and resets worker state after page reentry",
+          "checkpoints": [
+            {
+              "id": "worker-initial",
+              "action": "等待首条 worker 消息",
+              "route": "/pages/worker/index"
+            },
+            {
+              "id": "worker-echo",
+              "action": "点击发送并确认消息复制及计数",
+              "route": "/pages/worker/index"
+            },
+            {
+              "id": "worker-reentry",
+              "action": "重新进入页面并确认 worker 状态重置",
+              "route": "/pages/worker/index"
+            }
+          ],
+          "observationSha256": "bb3e201e90139ea079815d90066be7ce6c066a7f2be27b578f7e5065c79ecfb1"
+        }
+      ],
+      "parity": {
+        "commonCases": 1,
+        "commonCheckpoints": 3,
+        "commonObservationsMatch": true,
+        "webUsesBrowserAssertions": false
+      },
+      "serialization": {
+        "rawReportedProcessCount": 0,
+        "knownOwnedFalsePositives": 0,
+        "additionalOwnedProcessesByRecordedAncestry": 0,
+        "ancestryInferenceIsNotSimultaneousSnapshot": false,
+        "explicitPackageUnitProcesses": 0,
+        "nonRuntimeToolFalsePositives": 0,
+        "externalRuntimeProcesses": 0,
+        "observedExternalRuntimeOverlap": false,
+        "finalSerialAcceptance": true,
+        "overlapKinds": []
+      },
+      "cleanup": {
+        "resourcesSha256": "5df006541c1848dfe4ddfcc42e2082e96c6d3782e2daf3b1234c4d119c0c497f",
+        "completedAt": "2026-10-04T17:09:07.300016+00:00",
+        "registeredChildren": 60,
+        "sameIdentityStillRunning": 0,
+        "ownedEndpoints": 2,
+        "ownedListeningPortsStillOpen": 0,
+        "errors": 0
+      },
+      "evidence": {
+        "runLogSha256": "5ffc646998312c74e6bd00af350fcb139a6452b512a0d351f7429f701f50dfd0",
+        "rowSummarySha256": "c22ec4c17acd1f938c58327f81d9fe8ccc0d1761e29e1c5709a6894239ed3cbb"
+      },
+      "launchLogObservations": {
+        "simulatorBootRecovery": true,
+        "engineBuildHttpEndpointMissing": true,
+        "engineBuildCliOpenedWithNonzeroExit": true,
+        "compileToolUnimplemented": true,
+        "runtimeEvidenceAfterRecovery": {
+          "caseCount": 1,
+          "checkpointCount": 3,
+          "allPassed": true
+        },
+        "rawRunLogSha256": "5ffc646998312c74e6bd00af350fcb139a6452b512a0d351f7429f701f50dfd0",
+        "cliOutputObserved": "IDE server reported started and output included a Node punycode deprecation warning; the nonzero exit cause is not established by this evidence."
+      }
+    }
+  ],
+  "limitations": [
+    "This audit only reads retained evidence and verifies installations and owned-resource closure. It does not run E2E or modify the source repository.",
+    "Functional assertions, observed serialization and source provenance are separate gates. A row with a true external runtime overlap or incomplete modern process/source snapshots is not final acceptance.",
+    "The compiler cohort remains c3c643d40 even when the harness commit changes. Dirty harness identity is explicitly recorded; no compiler upgrade is inferred.",
+    "Headless common observations do not establish CSS geometry parity. React Stable rows separately prove 42 native slot geometry observations.",
+    "Process polling cannot exclude a process whose complete lifetime lies between snapshots. No exclusive-machine or performance claim is made.",
+    "Web rows use their public browser assertions and recorded successful command completion rather than mini-program provider DOM reports.",
+    "Stable first reported one simulator boot failure, then connected a replacement bridge and passed all three worker checkpoints. The three boot/retry/cleanup diagnostic warnings remain in this report; business runtime warn/error/exception counts are zero.",
+    "The launch log also records an unavailable HTTP engine-build endpoint, a CLI opened-with-nonzero result and an unimplemented compile tool. Final acceptance comes from the later rendered worker initial/echo/reentry observations, not from treating those infrastructure operations as successful.",
+    "Both registered bridge projects and endpoints were closed, including the failed launch attempt. The shared IDE host was preserved."
+  ]
+}

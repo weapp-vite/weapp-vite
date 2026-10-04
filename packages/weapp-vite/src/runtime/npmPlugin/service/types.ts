@@ -2,6 +2,7 @@ import type { PackageJson } from 'pkg-types'
 import type { InputOption } from 'rolldown'
 import type { MutableCompilerContext } from '../../../context'
 import type { NpmBuildOptions } from '../../../types'
+import type { PackageBuilder } from '../builder'
 
 export interface NpmService {
   getDependenciesCacheFilePath: (key?: string) => string
@@ -13,7 +14,7 @@ export interface NpmService {
   checkDependenciesCacheOutdate: (root?: string) => Promise<boolean>
   bundleBuild: (args: { entry: InputOption, name: string, options?: NpmBuildOptions, outDir: string }) => Promise<void>
   copyBuild: (args: { from: string, to: string, name: string }) => Promise<void>
-  buildPackage: (args: { dep: string, outDir: string, options?: NpmBuildOptions, isDependenciesCacheOutdate: boolean }) => Promise<void>
+  buildPackage: PackageBuilder['buildPackage']
   getPackNpmRelationList: () => { packageJsonPath: string, miniprogramNpmDistDir: string }[]
   build: (options?: NpmBuildOptions) => Promise<void>
 }
@@ -22,7 +23,7 @@ export interface NpmBuildServiceOptions {
   ctx: MutableCompilerContext
   builder: {
     isMiniprogramPackage: (pkg: PackageJson) => boolean
-    buildPackage: (args: { dep: string, outDir: string, options?: NpmBuildOptions, isDependenciesCacheOutdate: boolean }) => Promise<void>
+    buildPackage: PackageBuilder['buildPackage']
   }
   cache: {
     checkDependenciesCacheOutdate: (root?: string) => Promise<boolean>

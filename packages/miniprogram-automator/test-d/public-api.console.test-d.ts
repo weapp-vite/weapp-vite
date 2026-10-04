@@ -1,4 +1,4 @@
-import type { ConsoleLogOptions, ConsoleRemoteObject, MiniProgram, StructuredConsoleEntry } from '..'
+import type { ConsoleLogOptions, ConsoleRemoteObject, MiniProgram, StructuredConsoleEntry } from '@weapp-vite/miniprogram-automator'
 import { expectError, expectType } from 'tsd'
 
 declare const miniProgram: MiniProgram

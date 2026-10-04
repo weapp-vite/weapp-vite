@@ -1,3 +1,4 @@
+import type { z } from 'zod'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { registerWeappIdeMcpTools } from '../src/mcp/server'
@@ -19,6 +20,14 @@ function createMockServer() {
 }
 
 describe('weapp-ide-cli mcp server', () => {
+  it('rejects ports outside the TCP range in its published tool schema', () => {
+    const server = createMockServer()
+    registerWeappIdeMcpTools(server as any, { runtimeHooks: { withMiniProgram: vi.fn() }, workspaceRoot: '/workspace' })
+    const schema = server.tools.get('weapp_devtools_connect')!.options.inputSchema as z.ZodType
+    expect(schema.safeParse({ projectPath: 'project', port: 65536 }).success).toBe(false)
+    expect(schema.safeParse({ projectPath: 'project', port: 65535 }).success).toBe(true)
+  })
+
   it('registers DevTools runtime tools for AI clients', () => {
     const server = createMockServer()
 

@@ -30,7 +30,7 @@ export interface DevHotkeyDefinition {
 }
 
 export interface DevHotkeysSession {
-  close: () => void
+  close: () => Promise<void>
   restore: () => void
   suspend: () => void
 }

@@ -1,5 +1,6 @@
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../../../context'
+import type { OxcRuntimeSupport } from '../../oxcRuntime'
 import type { NpmService } from './types'
 import { createOxcRuntimeSupport } from '../../oxcRuntime'
 import { createPackageBuilder } from '../builder'
@@ -22,8 +23,7 @@ export {
 
 export type { NpmService } from './types'
 
-export function createNpmService(ctx: MutableCompilerContext): NpmService {
-  const oxcRuntimeSupport = createOxcRuntimeSupport()
+export function createNpmService(ctx: MutableCompilerContext, oxcRuntimeSupport: OxcRuntimeSupport = createOxcRuntimeSupport()): NpmService {
   const oxcVitePlugin = oxcRuntimeSupport.vitePlugin
   const cache = createDependenciesCache(ctx)
   const builder = createPackageBuilder(ctx, oxcVitePlugin as Plugin | undefined)

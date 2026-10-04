@@ -16,6 +16,7 @@ import { isCSSRequest } from '../utils/regexp'
 import { bindWxmlDependencyWatch, ownsExternalWxmlWatch } from '../wxml/processing/watch'
 import { connectDevModuleGraphHost } from './host'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
+import { createProfileOutputMatcher } from './profileOutput'
 import {
   createSidecarSourceSpecifier,
   parseLogicalEntryId,
@@ -104,6 +105,7 @@ export function createDevModuleGraphPlugin(
   config: InlineConfig,
   onChange: (change: DevModuleGraphChange) => void,
 ): Plugin {
+  const isProfileOutput = createProfileOutputMatcher(ctx.configService)
   const npmExternalPackages = new Set(
     ctx.configService?.packageJson
       ? resolveNpmBuildCandidateDependenciesSync(ctx, ctx.configService.packageJson)
@@ -114,6 +116,7 @@ export function createDevModuleGraphPlugin(
     enforce: 'pre',
     config() {
       return {
+        server: { watch: { ignored: [isProfileOutput] } },
         resolve: {
           alias: [
             { find: WEVU_AUTO_ROUTES_MODULE_ID, replacement: WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID },
@@ -205,7 +208,7 @@ export function createDevModuleGraphPlugin(
       return await transformVueSource(code, id, this?.environment?.config)
     },
     async hotUpdate({ type, file, read }) {
-      if (this.environment.name !== 'client' || ownsExternalWxmlWatch(ctx, file)) {
+      if (this.environment.name !== 'client' || isProfileOutput(file) || ownsExternalWxmlWatch(ctx, file)) {
         return
       }
       if (type === 'delete') {

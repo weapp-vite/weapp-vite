@@ -140,6 +140,7 @@ interface MergeMiniprogramOptions {
   isDev: boolean
   applyRuntimePlatform: (runtime: 'miniprogram' | 'web') => void
   injectBuiltinAliases: (config: InlineConfig) => void
+  resolveBuiltinAliases?: typeof resolveBuiltinPackageAliases
   getDefineImportMetaEnv: () => Record<string, any>
   setOptions: (current: { currentSubPackageRoot?: string }) => void
   oxcRolldownPlugin: RolldownPluginOption<any> | undefined
@@ -219,6 +220,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     isDev,
     applyRuntimePlatform,
     injectBuiltinAliases,
+    resolveBuiltinAliases = resolveBuiltinPackageAliases,
     getDefineImportMetaEnv,
     setOptions,
     oxcRolldownPlugin,
@@ -236,7 +238,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     ? resolveNpmBuildCandidateDependenciesSync(ctx, packageJson)
     : []
   if (npmBuildCandidates.length > 0) {
-    const builtinAliases = resolveBuiltinPackageAliases({
+    const builtinAliases = resolveBuiltinAliases({
       cwd,
       isDev,
       wevuRuntime: config.weapp?.wevu?.runtime,
@@ -294,9 +296,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
               : {}),
             exclude: [
               ...defaultExcluded,
-              mpDistRoot
-                ? path.join(cwd, mpDistRoot, '**')
-                : path.join(cwd, 'dist', '**'),
+              path.join(path.resolve(cwd, mpDistRoot || 'dist'), '**'),
             ],
             include: watchInclude,
           },

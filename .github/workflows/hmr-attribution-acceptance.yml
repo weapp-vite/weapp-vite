@@ -1,0 +1,145 @@
+name: HMR Attribution Acceptance
+run-name: HMR attribution acceptance @ ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate-sha:
+        description: Full committed candidate SHA; must match the selected workflow ref
+        type: string
+        required: true
+
+concurrency:
+  group: hmr-attribution-acceptance-${{ github.sha }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  accept:
+    name: ${{ matrix.runtime }} / 20 paired trials
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        runtime: [classic, stateful-experimental]
+    env:
+      EXPECTED_SHA: ${{ inputs.candidate-sha }}
+      CANDIDATE_SHA: ${{ github.sha }}
+      BASELINE_SHA: 73b76f4acde84a4ac8c25f4b816119b19704ac28
+      HMR_RUNTIME: ${{ matrix.runtime }}
+      CANDIDATE_ROOT: ${{ github.workspace }}/candidate
+      BASELINE_ROOT: ${{ github.workspace }}/baseline
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the immutable candidate and collector
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: candidate
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check out the fixed HMR attribution baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: baseline
+          ref: 73b76f4acde84a4ac8c25f4b816119b19704ac28
+          persist-credentials: false
+      - name: Record and verify frozen identities
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process'
+          import { createHash } from 'node:crypto'
+          import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+          import os from 'node:os'
+          import path from 'node:path'
+          const identities = Object.fromEntries(['BASELINE', 'CANDIDATE'].map(side => {
+            const cwd = process.env[`${side}_ROOT`]
+            const revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' }).trim()
+            const clean = !execFileSync('git', ['status', '--porcelain', '--untracked-files=normal'], { cwd, encoding: 'utf8' }).trim()
+            return [side.toLowerCase(), {
+              revision,
+              expected: process.env[`${side}_SHA`],
+              clean,
+              lockfileSha256: createHash('sha256').update(readFileSync(path.join(cwd, 'pnpm-lock.yaml'))).digest('hex'),
+            }]
+          }))
+          const reportRoot = path.join(process.env.RUNNER_TEMP, 'hmr-attribution-acceptance')
+          appendFileSync(process.env.GITHUB_ENV, `REPORT_ROOT=${reportRoot}\n`)
+          mkdirSync(reportRoot, { recursive: true })
+          writeFileSync(path.join(reportRoot, 'dispatch.json'), JSON.stringify({
+            identities,
+            runtime: process.env.HMR_RUNTIME,
+            cpu: os.cpus()[0]?.model,
+            cpuCount: os.availableParallelism(),
+            platform: process.platform,
+            architecture: process.arch,
+            runnerImage: process.env.ImageOS,
+            runnerImageVersion: process.env.ImageVersion,
+            sampling: '20 pairs per scenario; alternate baseline/candidate order on this runner; at most one equal-size confirmation',
+            scope: 'Issues 1133/1134 HMR latency and producer attribution only; issue 1082 approved baseline and policy remain separate',
+            stableDevtoolsValidation: 'not-run-final-runtime-acceptance-incomplete',
+          }, null, 2) + '\n')
+          if (!/^[a-f0-9]{40}$/.test(process.env.EXPECTED_SHA ?? '')
+            || process.env.EXPECTED_SHA !== process.env.CANDIDATE_SHA
+            || Object.values(identities).some(value => value.revision !== value.expected || !value.clean)) {
+            throw new Error('Dispatch requires exact clean baseline and candidate commits')
+          }
+          NODE
+      - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+        with:
+          package_json_file: candidate/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: |
+            candidate/pnpm-lock.yaml
+            baseline/pnpm-lock.yaml
+      - name: Install candidate dependencies in its own checkout
+        working-directory: candidate
+        run: pnpm install --frozen-lockfile
+      - name: Install baseline dependencies in its own checkout
+        working-directory: baseline
+        run: pnpm install --frozen-lockfile
+      - name: Collect and enforce same-runner paired HMR acceptance
+        working-directory: candidate
+        run: >-
+          node --import tsx scripts/benchmarkTemplatesHmr/acceptance.ts
+          --baseline "$BASELINE_ROOT" --candidate "$CANDIDATE_ROOT"
+          --candidate-sha "$CANDIDATE_SHA" --runtime "$HMR_RUNTIME"
+          --output "$REPORT_ROOT/results"
+          2>&1 | tee "$REPORT_ROOT/driver.log"
+      - name: Record acceptance boundaries and verdict
+        if: always()
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, existsSync, readFileSync } from 'node:fs'
+          import path from 'node:path'
+          const reportRoot = process.env.REPORT_ROOT ?? path.join(process.env.RUNNER_TEMP, 'hmr-attribution-acceptance')
+          const reportFile = path.join(reportRoot, 'results/report.json')
+          const report = existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : undefined
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, [
+            `Candidate and collector: ${process.env.CANDIDATE_SHA}`,
+            `HMR attribution baseline: ${process.env.BASELINE_SHA}`,
+            `Runtime: ${process.env.HMR_RUNTIME}; verdict: ${report?.status ?? 'incomplete'}`,
+            'Each checkout installs and builds its own dependencies; every pair runs serially on this runner with alternating order.',
+            'Each scenario requires 20 pairs and two edit/restore cycles. The existing 5% median policy allows only one equal-size confirmation.',
+            'Raw producer JSONL, input manifests, output scopes, collector logs and checkpointed pair records are retained in the artifact.',
+            'Historical stateful attribution is unavailable and remains unknown; baseline source is not instrumented.',
+            'This workflow does not replace Stable WeChat DevTools runtime acceptance and does not alter the issue 1082 approved baseline.',
+            '',
+          ].join('\n\n'))
+          NODE
+      - name: Upload raw reports and partial diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hmr-attribution-${{ matrix.runtime }}-${{ github.sha }}
+          path: ${{ runner.temp }}/hmr-attribution-acceptance
+          if-no-files-found: error
+          retention-days: 90

@@ -41,7 +41,7 @@ it('rejects two providers claiming the same CSS source through CLI', async () =>
 it('watches provider dependencies across consecutive CLI updates', async () => {
   const project = await createIssue1065Project()
   const root = path.resolve(import.meta.dirname, '../..')
-  const dev = startDevProcess(process.execPath, [path.join(root, 'packages/weapp-vite/bin/weapp-vite.js'), 'dev', project, '--skipNpm'], { cwd: root, env: createDevProcessEnv(), all: true })
+  const dev = startDevProcess(process.execPath, [path.join(root, 'packages/weapp-vite/bin/weapp-vite.js'), 'dev', project, '--skipNpm'], { cwd: root, env: createDevProcessEnv(), all: true, ipc: true })
   try {
     await dev.waitForInitialBuild()
     await dev.waitForOutput('开发服务已就绪', 'watcher is ready')

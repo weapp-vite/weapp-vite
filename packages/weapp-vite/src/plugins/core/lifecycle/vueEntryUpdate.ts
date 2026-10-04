@@ -81,7 +81,7 @@ export function createVueEntryUpdateInspector(
     async isLocalAssetOnlyUpdate() {
       const blocks = await resolveChangedBlocks()
       // 模板也会生成 computed、事件表和绑定清单；是否产生 JS patch 交给原生模块图判断。
-      return Boolean(blocks && !blocks.includes('script') && !blocks.includes('template'))
+      return Boolean(blocks?.length && !blocks.includes('script') && !blocks.includes('template'))
     },
 
     async isStyleOnlyUpdate() {

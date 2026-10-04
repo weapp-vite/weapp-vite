@@ -1,4 +1,5 @@
 import type { HeadlessWxBeforePageUnloadEvent, HeadlessWxRouteEvent } from '../host/wx/api'
+import type { HeadlessWxCallbackOption } from '../host/wx/core'
 import type { HeadlessPageInstance } from './pageInstance'
 import { createHeadlessUniEventBus } from '../host/wx/eventBus'
 
@@ -14,6 +15,9 @@ interface PageRouteState {
   ready: boolean
   event: HeadlessWxRouteEvent
   committed: boolean
+  completed: boolean
+  canceled?: Error
+  callbacks?: HeadlessWxCallbackOption
 }
 
 /** 两种模拟器共用路由身份与监听状态，完成事件由页面就绪和宿主提交驱动。 */
@@ -23,6 +27,7 @@ export class HeadlessRouteEvents {
   private nextRouteId = 0
   private nextWebviewId = 0
   private activeEvent: HeadlessWxRouteEvent | undefined
+  private activeState: PageRouteState | undefined
 
   constructor(
     private readonly requestRender: (callback: () => void) => void,
@@ -44,6 +49,7 @@ export class HeadlessRouteEvents {
     renderer: unknown,
     page?: HeadlessPageInstance,
   ): HeadlessWxRouteEvent {
+    this.cancel(this.activeState, new Error('navigateTo:fail navigation was superseded'))
     const previous = page ? this.pages.get(page)! : undefined
     const event: HeadlessWxRouteEvent = {
       path,
@@ -61,7 +67,32 @@ export class HeadlessRouteEvents {
 
   attach(page: HeadlessPageInstance, event: HeadlessWxRouteEvent) {
     const state = this.pages.get(page)
-    this.pages.set(page, { webviewId: event.webviewId, ready: state?.ready ?? false, event, committed: false })
+    const next = { webviewId: event.webviewId, ready: state?.ready ?? false, event, committed: false, completed: false }
+    this.pages.set(page, next)
+    if (this.activeEvent === event) {
+      this.activeState = next
+    }
+  }
+
+  /** 原生 navigateTo 的回调属于本次路由记录，不能以当前页面或提交栈代替完成。 */
+  navigateTo(operation: () => HeadlessPageInstance, callbacks?: HeadlessWxCallbackOption) {
+    let state: PageRouteState | undefined
+    try {
+      state = this.pages.get(operation())
+    }
+    catch (error) {
+      this.settle(callbacks, error as Error)
+      return
+    }
+    if (!state || state.canceled) {
+      this.settle(callbacks, state?.canceled ?? new Error('navigateTo:fail target page was unloaded'))
+    }
+    else if (state.completed) {
+      this.settle(callbacks)
+    }
+    else {
+      state.callbacks = callbacks
+    }
   }
 
   commit(page: HeadlessPageInstance, event: HeadlessWxRouteEvent) {
@@ -89,11 +120,43 @@ export class HeadlessRouteEvents {
 
   private complete(page: HeadlessPageInstance, state: PageRouteState) {
     this.requestRender(() => {
-      if (this.pages.get(page) !== state || this.activeEvent !== state.event || !this.isCurrentPage(page)) {
+      if (state.completed || state.canceled || this.pages.get(page) !== state || this.activeEvent !== state.event || !this.isCurrentPage(page)) {
         return
       }
-      this.bus.$emit('appRouteDone', state.event)
+      state.completed = true
+      const callbacks = state.callbacks
+      state.callbacks = undefined
+      try {
+        this.bus.$emit('appRouteDone', state.event)
+      }
+      finally {
+        this.settle(callbacks)
+      }
     })
+  }
+
+  private settle(callbacks?: HeadlessWxCallbackOption, error?: Error) {
+    try {
+      if (error) {
+        callbacks?.fail?.(error)
+      }
+      else {
+        callbacks?.success?.()
+      }
+    }
+    finally {
+      callbacks?.complete?.()
+    }
+  }
+
+  private cancel(state: PageRouteState | undefined, error: Error) {
+    if (!state || state.completed || state.canceled) {
+      return
+    }
+    state.canceled = error
+    const callbacks = state.callbacks
+    state.callbacks = undefined
+    this.settle(callbacks, error)
   }
 
   beforeUnload(page: HeadlessPageInstance, event?: HeadlessWxRouteEvent) {
@@ -108,10 +171,13 @@ export class HeadlessRouteEvents {
         page,
       } satisfies HeadlessWxBeforePageUnloadEvent)
     }
+    this.cancel(state, new Error('navigateTo:fail target page was unloaded'))
     this.pages.delete(page)
   }
 
   close() {
+    this.cancel(this.activeState, new Error('navigateTo:fail runtime session closed'))
+    this.activeState = undefined
     this.activeEvent = undefined
     this.bus.$off()
   }

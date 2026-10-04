@@ -14,13 +14,22 @@ on:
       - pnpm-lock.yaml
       - .github/workflows/ci-acceptance.yml
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Acceptance validation scope
+        type: choice
+        default: full
+        options:
+          - full
+          - windows-runtime-diagnostic
 permissions:
   contents: read
 concurrency:
-  group: acceptance-${{ github.ref }}
+  group: acceptance-${{ inputs.scope || 'full' }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   compatibility:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'full'
     strategy:
       fail-fast: false
       matrix:
@@ -48,3 +57,23 @@ jobs:
         with:
           node-version: 24.11.0
       - run: node scripts/weapp-agent/smoke-baseline.mjs
+
+  windows-runtime-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'windows-runtime-diagnostic'
+    name: Windows acceptance runtime (Node ${{ matrix.node-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: windows-latest
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 25
+      build_command: pnpm exec turbo run build --filter=@weapp-agent/mini-program...
+      main_command: |
+        pnpm --filter @weapp-agent/mini-program typecheck
+        pnpm --filter @weapp-agent/mini-program exec vitest run --configLoader bundle --coverage.enabled --maxWorkers=50% test/acceptance.test.ts --reporter=default --reporter=json --outputFile=../../.tmp/acceptance-runtime-report.json
+      artifact_name: acceptance-runtime-windows-node-${{ matrix.node-version }}-${{ github.sha }}
+      artifact_path: .tmp/acceptance-runtime-report.json
+    secrets: inherit

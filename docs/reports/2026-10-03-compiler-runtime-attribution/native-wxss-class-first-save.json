@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "relatedIssues": [
+    1015,
+    1065,
+    1081
+  ],
+  "status": "native-host-first-save-not-applied",
+  "scope": "Native WXSS control only; not final issue acceptance.",
+  "officialStable": {
+    "version": "2.02.2608080",
+    "sdk": "3.17.3",
+    "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json"
+  },
+  "entry": "Selected official CLI open, followed by native Computer Use. No automator or bridge.",
+  "startupRecovery": "One native Compile before any source edit after initial simulator launch failure.",
+  "control": {
+    "fixtureUsesOnlyClassSelectors": true,
+    "sourceFile": "pages/style-probe/index.wxss",
+    "mutation": {
+      "selector": ".probe",
+      "property": "color",
+      "before": "#ff0000",
+      "after": "#0000ff",
+      "saveCount": 1,
+      "savedAt": "2026-10-04T13:14:46.160597Z"
+    },
+    "observedAt": "2026-10-04T13:19:33.685Z",
+    "sourceAfterSaveContainsBlue": true,
+    "renderedColor": "red",
+    "counterBefore": 2,
+    "counterAfter": 2,
+    "inputBefore": "native-held",
+    "inputAfter": "native-held",
+    "appIdentityPreserved": true,
+    "pageIdentityPreserved": true,
+    "debuggerErrorCount": 0,
+    "debuggerWarningCount": 4,
+    "selectorWarningObserved": false,
+    "postMutationActionsExcluded": [
+      "save again",
+      "compile",
+      "refresh",
+      "reLaunch",
+      "source restore"
+    ]
+  },
+  "cleanup": {
+    "ownedProjectClosed": true,
+    "selectedCliCloseExitCode": 0,
+    "sharedHostPreserved": true
+  },
+  "evidenceSha256": {
+    "before.png": "dec344e2feccd47f6f90491a3a57cbefc12a983c75b2dfec4a32ba9bc41325d0",
+    "after-save.png": "4529851edd529eba579dfa3c2826b1ac98a6ffd6a3b47f9cb0b99b8a34495dbe",
+    "later.png": "5b595ec1eae103e597b64fd75b8b60728b47df3e0858575fa390e0e9e0961a8f",
+    "final.png": "376e80eedf9032e72bb09f61c851e283de5c4cf5f9d2846757458ce652ab3a11",
+    "final.ax.txt": "6d91994931fec95ad92a504e4a6eb0765ec1ac306f6edd2c22cd7b038a47c9f5"
+  },
+  "limitations": [
+    "Initial simulator boot needed native Compile before mutation.",
+    "Observed host/SDK behavior does not prove every style failure has the same root cause.",
+    "Separate classic app entry drift requires its own reproduction."
+  ]
+}

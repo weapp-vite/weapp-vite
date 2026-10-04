@@ -1,0 +1,272 @@
+{
+  "schemaVersion": 1,
+  "issue": 1097,
+  "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+  "archiveCount": 28,
+  "cohortManifestHashes": {
+    "candidate-evidence.json": "832be6d367c4102d8a83d875d902ff1d985d8175106323d22f6eeec97883272e",
+    "consumer-tarballs.json": "785c6ed10371af7dd389a4c4a0b1f1d3505383ff11ce470b31f27a56fb9c7c3c"
+  },
+  "rows": [
+    {
+      "host": "vite-plus",
+      "profile": "react",
+      "functionalAssertionsPassed": true,
+      "plannedCheckpointAssertionsPassed": true,
+      "finalRowAccepted": true,
+      "cohortAfterSnapshotRecorded": true,
+      "cohortMatchesFrozenManifestAtAudit": true,
+      "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+      "harness": {
+        "commit": "4678a84ee45c2c561b716b9250cad599a3818947",
+        "dirty": false,
+        "before": {
+          "commit": "4678a84ee45c2c561b716b9250cad599a3818947",
+          "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "untracked": {},
+          "capturedAt": "2026-10-04T16:40:38.077580+00:00",
+          "trackedPatchIncludesIndex": true,
+          "controllerSha256": "18c083b5fc9152a4e79384a0a007cae960b864de41e1b6db115ffe9ac76a1db2"
+        },
+        "after": {
+          "commit": "4678a84ee45c2c561b716b9250cad599a3818947",
+          "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "untracked": {},
+          "capturedAt": "2026-10-04T16:42:54.650419+00:00",
+          "trackedPatchIncludesIndex": true,
+          "controllerSha256": "18c083b5fc9152a4e79384a0a007cae960b864de41e1b6db115ffe9ac76a1db2"
+        },
+        "snapshotsEqual": true,
+        "snapshotCoversIndex": true
+      },
+      "installation": {
+        "candidatePackages": 28,
+        "comparedArchiveFiles": 1735,
+        "mismatches": 0,
+        "symlinksAudited": 44,
+        "externalSymlinks": 0,
+        "lockSha256": "c9a5c3454f415e9d6352fd7f9b155bdd8ffd30f46cd89af3f229566f1f7b9b9b",
+        "reportSha256": "345a8f06a87c8e206f8b832db0e95eafdcf9fc29579318a3322f4c986b09aa82",
+        "exportPackagesVerified": 28,
+        "negativeControls": {
+          "brokenExportsRejected": true,
+          "missingCliRejected": true
+        }
+      },
+      "officialDevtools": {
+        "queriedAt": "2026-10-04T16:40:37.494231+00:00",
+        "channel": "stable",
+        "selectedAndInstalledVersion": "2.02.2608080",
+        "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+        "evidenceSha256": "f39fd9ee363dc2775b0d4db54583c287b6f67f0647c0e84b6093953407d29021"
+      },
+      "providers": [
+        {
+          "provider": "headless",
+          "runId": "issue1097-vite-plus-react-c3-03",
+          "reportSha256": "4d07cc59ce648850296357727848545dff0c002b61a29c777d82e116f407819a",
+          "startedAt": "2026-10-04T16:41:54.454Z",
+          "finishedAt": "2026-10-04T16:42:02.334Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": null,
+            "baseLibraryVersion": null
+          },
+          "strict": true,
+          "status": "passed",
+          "runtimeErrors": [],
+          "summary": {
+            "plannedCount": 3,
+            "executedCount": 3,
+            "passedCount": 3,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 14,
+            "capturedCheckpointCount": 14
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "informationalCount": 0
+          },
+          "nativeSlotGeometryAssertions": 0
+        },
+        {
+          "provider": "devtools",
+          "runId": "issue1097-vite-plus-react-c3-03",
+          "reportSha256": "b5f1af17d8e2d958f92fbc2041ac7439e4fa9b55d1c0bead5aff5cec59a39424",
+          "startedAt": "2026-10-04T16:42:04.656Z",
+          "finishedAt": "2026-10-04T16:42:50.090Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.17.3"
+          },
+          "strict": true,
+          "status": "passed",
+          "runtimeErrors": [],
+          "summary": {
+            "plannedCount": 3,
+            "executedCount": 3,
+            "passedCount": 3,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 14,
+            "capturedCheckpointCount": 14
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "informationalCount": 3
+          },
+          "nativeSlotGeometryAssertions": 42
+        }
+      ],
+      "commonCases": [
+        {
+          "name": "react runtime spike (weapp e2e) > renders React hooks and dispatches host events through generic WXML",
+          "checkpoints": [
+            {
+              "id": "initial",
+              "action": "首屏显示初始 hooks、context、输入和 keyed 列表",
+              "route": "/pages/index/index"
+            },
+            {
+              "id": "incremented",
+              "action": "点击 increment 更新 count 和 memo doubled",
+              "route": "/pages/index/index"
+            },
+            {
+              "id": "appended",
+              "action": "点击 append 保留已有 keyed 项并新增 item-2",
+              "route": "/pages/index/index"
+            },
+            {
+              "id": "input-updated",
+              "action": "输入 Ada 并渲染受控问候文本",
+              "route": "/pages/index/index"
+            }
+          ],
+          "observationSha256": "ba2519104b3b0682f97615f5ac85f7e9f901bb3b387ad1e8dfc83e807a6af427"
+        },
+        {
+          "name": "react runtime spike (weapp e2e) > renders the compiled native WXML page with binding-only payloads",
+          "checkpoints": [
+            {
+              "id": "initial",
+              "action": "首屏显示静态绑定的 counter 和问候",
+              "route": "/pages/static/index"
+            },
+            {
+              "id": "incremented",
+              "action": "点击 increment 通过最小 setData payload 更新文本",
+              "route": "/pages/static/index"
+            },
+            {
+              "id": "input-updated",
+              "action": "输入 Ada 更新静态 input binding 和问候",
+              "route": "/pages/static/index"
+            }
+          ],
+          "observationSha256": "330e9ca1801d8e5e460d997e62fc1556d07dc4c5b976e8965573ed1c69b9cc82"
+        },
+        {
+          "name": "react runtime spike (weapp e2e) > passes props, change events and default slots across all six interop edges",
+          "checkpoints": [
+            {
+              "id": "initial",
+              "action": "首屏检查六条互操作边的 props 文本、默认插槽和 idle 结果",
+              "route": "/pages/interop/index"
+            },
+            {
+              "id": "react-to-native",
+              "action": "点击 react-to-native 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+              "route": "/pages/interop/index"
+            },
+            {
+              "id": "react-to-wevu",
+              "action": "点击 react-to-wevu 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+              "route": "/pages/interop/index"
+            },
+            {
+              "id": "native-to-wevu",
+              "action": "点击 native-to-wevu 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+              "route": "/pages/interop/index"
+            },
+            {
+              "id": "native-to-react",
+              "action": "点击 native-to-react 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+              "route": "/pages/interop/index"
+            },
+            {
+              "id": "wevu-to-native",
+              "action": "点击 wevu-to-native 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+              "route": "/pages/interop/index"
+            },
+            {
+              "id": "wevu-to-react",
+              "action": "点击 wevu-to-react 子组件按钮并检查父组件结果，其余互操作结果保持不变",
+              "route": "/pages/interop/index"
+            }
+          ],
+          "observationSha256": "6507cec1d69282646694757059d967da7c4933f6b5337508705a5d5339f475f2"
+        }
+      ],
+      "parity": {
+        "commonCases": 3,
+        "commonCheckpoints": 14,
+        "commonObservationsMatch": true,
+        "webUsesBrowserAssertions": false
+      },
+      "serialization": {
+        "rawReportedProcessCount": 0,
+        "knownOwnedFalsePositives": 0,
+        "additionalOwnedProcessesByRecordedAncestry": 0,
+        "ancestryInferenceIsNotSimultaneousSnapshot": false,
+        "explicitPackageUnitProcesses": 0,
+        "nonRuntimeToolFalsePositives": 0,
+        "externalRuntimeProcesses": 0,
+        "observedExternalRuntimeOverlap": false,
+        "finalSerialAcceptance": true,
+        "overlapKinds": []
+      },
+      "cleanup": {
+        "resourcesSha256": "ab7586ed67ac23f3cc7d526efb8a98352d61da03d5ff7207fc62645dd4ba0f17",
+        "completedAt": "2026-10-04T16:42:53.561884+00:00",
+        "registeredChildren": 64,
+        "sameIdentityStillRunning": 0,
+        "ownedEndpoints": 1,
+        "ownedListeningPortsStillOpen": 0,
+        "errors": 0
+      },
+      "evidence": {
+        "runLogSha256": "8d21da041fddd3d5bb7569f1daa564444693a73d6660bd43c302ea19fe5bbb88",
+        "rowSummarySha256": "4f45c9d698b1c52933d1e4ed21433b9b3574e5a7c9d7d7a7ee0b12b67cdf56d9"
+      }
+    }
+  ],
+  "limitations": [
+    "This audit only reads retained evidence and verifies installations and owned-resource closure. It does not run E2E or modify the source repository.",
+    "Functional assertions, observed serialization and source provenance are separate gates. A row with a true external runtime overlap or incomplete modern process/source snapshots is not final acceptance.",
+    "The compiler cohort remains c3c643d40 even when the harness commit changes. Dirty harness identity is explicitly recorded; no compiler upgrade is inferred.",
+    "Headless common observations do not establish CSS geometry parity. React Stable rows separately prove 42 native slot geometry observations.",
+    "Process polling cannot exclude a process whose complete lifetime lies between snapshots. No exclusive-machine or performance claim is made.",
+    "Web rows use their public browser assertions and recorded successful command completion rather than mini-program provider DOM reports."
+  ]
+}

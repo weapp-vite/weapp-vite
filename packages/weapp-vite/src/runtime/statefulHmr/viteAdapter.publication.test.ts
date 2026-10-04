@@ -18,8 +18,9 @@ async function setup(publish: (output: StatefulHmrOutputFile[], source: string) 
   const engine = {
     ensureCurrentBuildFinish: vi.fn(async () => { calls.push('current-finished') }),
     ensureLatestBuildOutput: vi.fn(async () => { callbacks.onOutput!(full() as any) }),
-    getBundleState: async () => ({ lastBuildErrored: false }),
+    getBundleState: vi.fn(async () => ({ lastBuildErrored: false })),
     registerClient: async () => {},
+    close: async () => {},
     run: async () => {},
     triggerFullBuild: vi.fn(() => { calls.push('trigger') }),
   }
@@ -43,6 +44,39 @@ async function setup(publish: (output: StatefulHmrOutputFile[], source: string) 
 }
 
 describe('stateful adapter output publication', () => {
+  it('includes additional output persistence, retains failure, and recovers on a later full baseline', async () => {
+    const published = Promise.withResolvers<void>()
+    const failure = new Error('additional output write failed')
+    const publish = vi.fn().mockImplementationOnce(() => published.promise).mockResolvedValue(undefined)
+    const state = await setup(publish)
+    state.callbacks.onAdditionalAssets!(additional() as any)
+    let settled = false
+    const rejected = expect(state.adapter.whenSettled().finally(() => {
+      settled = true
+    })).rejects.toBe(failure)
+    await Promise.resolve()
+    expect(settled).toBe(false)
+    published.reject(failure)
+    await rejected
+    await expect(state.adapter.whenSettled()).rejects.toBe(failure)
+    state.callbacks.onAdditionalAssets!(additional() as any)
+    await expect(state.adapter.whenSettled()).rejects.toBe(failure)
+    state.callbacks.onOutput!(full() as any)
+    await expect(state.adapter.whenSettled()).resolves.toBeUndefined()
+    expect(publish).toHaveBeenCalledTimes(3)
+    await state.adapter.close()
+  })
+
+  it('rejects a failed native build and recovers from the current successful bundle state', async () => {
+    const state = await setup()
+    state.engine.getBundleState.mockResolvedValue({ lastBuildErrored: true })
+    state.callbacks.onHmrUpdates!(new Error('invalid native source'))
+    await expect(state.adapter.waitForNativeUpdates()).rejects.toThrow('当前原生构建失败')
+    state.engine.getBundleState.mockResolvedValue({ lastBuildErrored: false })
+    await expect(state.adapter.waitForNativeUpdates()).resolves.toBeUndefined()
+    await state.adapter.close()
+  })
+
   it('preserves the native full/additional distinction and waits for current work before triggering', async () => {
     const received: string[] = []
     const state = await setup((_output, source) => {

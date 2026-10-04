@@ -1,4 +1,5 @@
 import type { BenchPhaseSummary } from '../../../apps/runtime-bench-vue/src/utils/diagnostics'
+import type { BenchHostHeapSnapshot } from './heap'
 
 export interface BenchDiagnostics {
   flushes: number | null
@@ -27,8 +28,10 @@ export interface BenchUpdateSample {
   memory?: {
     workerRssBefore: number
     workerRssAfter: number
-    hostHeapBytes: null
-    hostHeapCapability: 'unavailable'
+    hostHeapBytes: number | null
+    hostHeapCapability: 'available' | 'unavailable'
+    hostHeapBefore: BenchHostHeapSnapshot
+    hostHeapAfter: BenchHostHeapSnapshot
   }
 }
 

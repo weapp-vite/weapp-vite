@@ -86,6 +86,19 @@ describe('template benchmark emitted ownership', () => {
       .toThrow('Timed out')
   })
 
+  it('stops observing output when its consumer is cancelled during a read', async () => {
+    const cancellation = new AbortController()
+    const failure = new Error('template consumer failed')
+    const read = vi.fn(async () => {
+      cancellation.abort(failure)
+      return '<view>target-marker</view>'
+    })
+    await expect(waitForBenchmarkOutput(read, 'target-marker', { timeoutMs: 1_000, signal: cancellation.signal }))
+      .rejects
+      .toBe(failure)
+    expect(read).toHaveBeenCalledOnce()
+  })
+
   it('rejects imports that escape the output root', async () => {
     const entry = await write('index.js', 'require("../outside.js");')
     await expect(createEmittedScriptReader(entry, root)()).rejects.toThrow('escapes the output root')

@@ -10,6 +10,7 @@ import { createHmrProfileCheckpoint } from '../../utils/hmrProfile'
 import { syncOutputChunkSourceMapAssets } from '../../utils/outputChunk'
 import { commitWxmlDependencies, failWxmlDependencies } from '../../wxml/processing/dependencies'
 import { validateWxmlBundle } from '../../wxml/validate'
+import { createPublicAssetPublication } from '../asset/publication'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from '../core/helpers/bundle'
 import { resolveRootEntryBasename } from '../core/lifecycle/load/weapi'
 import { collectIndependentOutputFileNames, flushIndependentOutputs } from './independent'
@@ -103,9 +104,14 @@ export function pruneUnchangedDevHmrOutputs(
 
 /** 编译器完成所有输出转换后，按最终内容裁剪本轮写入。 */
 export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
+  const publicAssets = subPackageMeta ? undefined : createPublicAssetPublication(ctx)
   let preserveCompleteBundle = false
   let outDir: string | undefined
-  let commitOwnership: (() => Promise<void>) | undefined
+  let pendingOwnership: { outDir: string, outputNames: string[], independentOutputNames: string[], partial: boolean } | undefined
+
+  function releasePendingOwnership() {
+    pendingOwnership = undefined
+  }
   return {
     name: 'weapp-vite:output-publication',
     enforce: 'post',
@@ -113,19 +119,31 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
       // 原生引擎仍发布完整注册图，静态资源去重由 stateful 快照归属处理。
       preserveCompleteBundle = config.experimental?.bundledDev === true
       outDir = path.resolve(config.root, config.build.outDir)
+      publicAssets?.configure(config)
     },
+    buildStart() {
+      releasePendingOwnership()
+      publicAssets?.start(this.environment?.config)
+    },
+    closeBundle: releasePendingOwnership,
+    closeWatcher: releasePendingOwnership,
     writeBundle: {
       order: 'post',
       sequential: true,
       async handler() {
-        await commitOwnership?.()
-        commitOwnership = undefined
+        const pending = pendingOwnership
+        releasePendingOwnership()
+        if (pending) {
+          await prepareOutputOwnership(ctx, pending.outDir, pending.outputNames, pending.partial)()
+          await prepareOutputOwnership(ctx, pending.outDir, pending.independentOutputNames, false, [], 'independent')()
+        }
+        await publicAssets?.commit()
       },
     },
     generateBundle: {
       order: 'post',
-      async handler(_options, bundle) {
-        commitOwnership = undefined
+      async handler(_options, bundle, isWrite) {
+        releasePendingOwnership()
         const checkpoint = createHmrProfileCheckpoint(ctx.configService.isDev ? ctx.runtimeState?.build?.hmr?.profile : undefined)
         const outputBundle = bundle as unknown as OutputBundle
         const partial = ctx.configService.isDev && !preserveCompleteBundle
@@ -156,14 +174,12 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
             }
           }
           checkpoint('publicationIndependentMs')
-          if ((ctx.configService.isDev || this.meta.watchMode) && !preserveCompleteBundle && outDir) {
-            // 在后续裁剪与 emitFile 改写 bundle 前冻结本轮主包输出集合；所有权提交只应延迟到 writeBundle。
-            const outputNames = Object.keys(outputBundle)
-            const independentOutputNames = collectIndependentOutputFileNames(ctx)
-            commitOwnership = async () => {
-              await prepareOutputOwnership(ctx, outDir!, outputNames, partial)()
-              await prepareOutputOwnership(ctx, outDir!, independentOutputNames, false, [], 'independent')()
-            }
+          // 在后续裁剪与 emitFile 改写 bundle 前冻结编译输出集合，public 使用同一份归属排除碰撞。
+          const outputNames = Object.keys(outputBundle)
+          const independentOutputNames = collectIndependentOutputFileNames(ctx)
+          if (isWrite && (ctx.configService.isDev || this.meta.watchMode) && !preserveCompleteBundle && outDir) {
+            // 写入意图只保存数据；不能让长寿命状态引用 generateBundle 的词法上下文。
+            pendingOwnership = { outDir, outputNames, independentOutputNames, partial }
           }
           pruneUnchangedDevHmrOutputs(ctx, outputBundle, undefined, {
             runtimeRewriteDone: true,
@@ -173,11 +189,13 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           for (const asset of independentAssets) {
             this.emitFile(asset)
           }
+          await publicAssets?.emit([...outputNames, ...independentOutputNames], partial, asset => this.emitFile(asset))
           commitWxmlDependencies(ctx)
           commitValidation?.()
           checkpoint('publicationPruneMs')
         }
         catch (error) {
+          releasePendingOwnership()
           failWxmlDependencies(ctx)
           commitValidation?.fail()
           throw error

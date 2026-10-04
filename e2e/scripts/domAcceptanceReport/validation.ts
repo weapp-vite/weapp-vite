@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { z } from 'zod'
 import { assertResponsiveCalcStyle, assertResponsiveStyle } from '../../utils/domAcceptance/styles'
 import { runtimeDiagnosticSchema } from './runtimeDiagnostics'
+import { selectedAcceptanceCases } from './selectedCases'
 
 const strings = z.record(z.string(), z.string())
 const query = z.enum(['css', 'xpath'])
@@ -135,6 +136,7 @@ export const serializedReport = z.object({
   status: z.enum(['passed', 'failed', 'blocked', 'skipped', 'not-executed']),
   errors: z.array(z.string()),
   runtimeDiagnostics: z.array(runtimeDiagnosticSchema).optional(),
+  selectedCases: selectedAcceptanceCases.optional(),
   summary,
   cases: z.array(z.union([
     z.object({

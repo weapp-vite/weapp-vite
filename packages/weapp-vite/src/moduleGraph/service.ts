@@ -7,6 +7,7 @@ import type {
   TopologyRescanRequest,
 } from './types'
 import { createDebugger } from '../debugger'
+import { withRealpathScope } from '../utils/realpathScope'
 import { parseLogicalEntryId, parseSidecarModuleId, parseSidecarSourceRequest } from './protocol'
 import { collectBuildStartIds, collectDevStartNodes, normalizeSourceId } from './traversal'
 
@@ -183,7 +184,7 @@ export function createModuleGraphService(): ModuleGraphService {
     }
   }
 
-  const collectAffectedEntries = (rawFile: string) => {
+  const collectAffectedEntries = (rawFile: string) => withRealpathScope(() => {
     const file = normalizeSourceId(rawFile)
     const affected = new Set<string>()
     for (const [ownerId, dependenciesByKind] of entryDependencies) {
@@ -201,7 +202,7 @@ export function createModuleGraphService(): ModuleGraphService {
       collectFromBuildGraph(file, affected)
     }
     return affected
-  }
+  })
 
   const warmDevModule = async (id: string, server: DevServerGraphHost, binding: object | undefined) => {
     if (!server.transformRequest) {
@@ -307,14 +308,16 @@ export function createModuleGraphService(): ModuleGraphService {
       return false
     },
     invalidate(rawFile) {
-      const file = normalizeSourceId(rawFile)
-      const affected = collectAffectedEntries(file)
-      if (devServer && usesUnbundledDevGraph()) {
-        for (const module of collectDevStartNodes(devServer, file)) {
-          devServer.moduleGraph.invalidateModule(module)
+      return withRealpathScope(() => {
+        const file = normalizeSourceId(rawFile)
+        const affected = collectAffectedEntries(file)
+        if (devServer && usesUnbundledDevGraph()) {
+          for (const module of collectDevStartNodes(devServer, file)) {
+            devServer.moduleGraph.invalidateModule(module)
+          }
         }
-      }
-      return affected
+        return affected
+      })
     },
     isLogicalLayoutEntry(rawFile) {
       const file = normalizeSourceId(rawFile)

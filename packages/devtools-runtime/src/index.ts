@@ -5,6 +5,7 @@ import type {
 } from './mcp'
 
 export * from './lease'
+export * from './lease/machine'
 export {
   readDevtoolsElementSnapshot,
   resolveDevtoolsProjectPath,
@@ -19,6 +20,7 @@ export interface MiniProgramEventMap {
 
 interface SharedMiniProgramSessionEntry {
   refs: number
+  options: SharedMiniProgramSessionOptions
   closeWhenUnused?: boolean
   session: Promise<AutomatorMiniProgram>
 }
@@ -30,9 +32,27 @@ function normalizeError(hooks: DevtoolsRuntimeHooks, error: unknown) {
   return normalized instanceof Error ? normalized : new Error(String(normalized))
 }
 
-export function resolveSharedMiniProgramSessionKey(options: Pick<DevtoolsRuntimeSessionOptions, 'port' | 'projectPath' | 'sessionId'>) {
-  const sessionSuffix = options.sessionId || (options.port ? `port:${options.port}` : 'default')
-  return `${options.projectPath}#${sessionSuffix}`
+export type SharedMiniProgramSessionOptions = Pick<DevtoolsRuntimeSessionOptions, 'port' | 'projectPath' | 'sessionId' | 'cliPath' | 'installationId' | 'runtimeProvider'>
+
+export function resolveSharedMiniProgramSessionKey(options: SharedMiniProgramSessionOptions) {
+  const installation = options.installationId || options.cliPath || options.runtimeProvider || 'unresolved'
+  return JSON.stringify([installation, options.projectPath, options.sessionId || null, options.port || null])
+}
+
+function resolveExistingSessionKey(options: SharedMiniProgramSessionOptions) {
+  // 旧清理入口只能处理唯一的已持有连接，不能在多个安装或命名会话端口间猜测归属。
+  const matching = [...sharedMiniProgramSessions].filter(([, entry]) => {
+    const current = entry.options
+    const sessionMatches = options.sessionId
+      ? current.sessionId === options.sessionId && (!options.port || current.port === options.port)
+      : !current.sessionId && current.port === options.port
+    return (!options.installationId || current.installationId === options.installationId)
+      && (!options.cliPath || current.cliPath === options.cliPath)
+      && (!options.runtimeProvider || current.runtimeProvider === options.runtimeProvider)
+      && current.projectPath === options.projectPath
+      && sessionMatches
+  })
+  return matching.length === 1 ? matching[0]![0] : undefined
 }
 
 /**
@@ -42,6 +62,7 @@ export async function acquireSharedMiniProgram(
   hooks: DevtoolsRuntimeHooks,
   options: DevtoolsRuntimeSessionOptions,
 ): Promise<AutomatorMiniProgram> {
+  options = await hooks.resolveSessionOptions?.(options) ?? options
   const sessionKey = resolveSharedMiniProgramSessionKey(options)
   const existing = sharedMiniProgramSessions.get(sessionKey)
   if (existing) {
@@ -52,6 +73,7 @@ export async function acquireSharedMiniProgram(
   const session = hooks.connectMiniProgram(options)
   const entry: SharedMiniProgramSessionEntry = {
     refs: 1,
+    options,
     session,
   }
   sharedMiniProgramSessions.set(sessionKey, entry)
@@ -60,12 +82,14 @@ export async function acquireSharedMiniProgram(
     return await session
   }
   catch (error) {
-    sharedMiniProgramSessions.delete(sessionKey)
+    if (sharedMiniProgramSessions.get(sessionKey) === entry) {
+      sharedMiniProgramSessions.delete(sessionKey)
+    }
     throw normalizeError(hooks, error)
   }
 }
 
-/** Release a subscription using the exact key returned by resolveSharedMiniProgramSessionKey. */
+/** 使用创建连接时的精确键释放订阅。 */
 export function releaseSharedMiniProgramByKey(sessionKey: string) {
   const entry = sharedMiniProgramSessions.get(sessionKey)
   if (entry) {
@@ -80,25 +104,30 @@ export function releaseSharedMiniProgramByKey(sessionKey: string) {
 /**
  * @description 释放指定项目的共享会话引用；会话对象会继续缓存，直到显式关闭或重置。
  */
-export function releaseSharedMiniProgram(projectPath: string, sessionIdOrPort?: string | number) {
-  releaseSharedMiniProgramByKey(resolveSharedMiniProgramSessionKey({
+export function releaseSharedMiniProgram(projectPath: string, sessionIdOrPort?: string | number, installation: Omit<SharedMiniProgramSessionOptions, 'projectPath'> = {}) {
+  const key = resolveExistingSessionKey({
+    ...installation,
     projectPath,
     ...(typeof sessionIdOrPort === 'number' ? { port: sessionIdOrPort } : {}),
     ...(typeof sessionIdOrPort === 'string' ? { sessionId: sessionIdOrPort } : {}),
-  }))
+  })
+  if (key) {
+    releaseSharedMiniProgramByKey(key)
+  }
 }
 
 /**
  * @description 关闭并移除指定项目的共享 automator 会话。
  */
-export async function closeSharedMiniProgram(projectPath: string, sessionIdOrPort?: string | number) {
-  const sessionKey = resolveSharedMiniProgramSessionKey({
+export async function closeSharedMiniProgram(projectPath: string, sessionIdOrPort?: string | number, installation: Omit<SharedMiniProgramSessionOptions, 'projectPath'> = {}) {
+  const sessionKey = resolveExistingSessionKey({
+    ...installation,
     projectPath,
     ...(typeof sessionIdOrPort === 'number' ? { port: sessionIdOrPort } : {}),
     ...(typeof sessionIdOrPort === 'string' ? { sessionId: sessionIdOrPort } : {}),
   })
-  const entry = sharedMiniProgramSessions.get(sessionKey)
-  if (!entry) {
+  const entry = sessionKey ? sharedMiniProgramSessions.get(sessionKey) : undefined
+  if (!entry || !sessionKey) {
     return
   }
   sharedMiniProgramSessions.delete(sessionKey)
@@ -125,6 +154,8 @@ export async function withMiniProgram<T>(
     return await runner(options.miniProgram)
   }
 
+  options = await hooks.resolveSessionOptions?.(options) ?? options
+
   if (options.sharedSession) {
     const miniProgram = await acquireSharedMiniProgram(hooks, options)
 
@@ -132,11 +163,11 @@ export async function withMiniProgram<T>(
       return await runner(miniProgram)
     }
     catch (error) {
-      await closeSharedMiniProgram(options.projectPath, options.sessionId || options.port)
+      await closeSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
       throw normalizeError(hooks, error)
     }
     finally {
-      releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port)
+      releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
     }
   }
 
@@ -163,6 +194,7 @@ export type {
   DevtoolsConnectionInput,
   DevtoolsContext,
   DevtoolsElementSnapshot,
+  DevtoolsInstallationContext,
   DevtoolsPageSnapshot,
   DevtoolsRuntimeHooks,
   DevtoolsRuntimeSessionOptions,
@@ -171,12 +203,12 @@ export type {
 } from './mcp'
 
 /** 检查缓存，供调用方记录其实际创建的连接。 */
-export function hasSharedMiniProgram(options: Pick<DevtoolsRuntimeSessionOptions, 'projectPath' | 'port' | 'sessionId'>) {
+export function hasSharedMiniProgram(options: SharedMiniProgramSessionOptions) {
   return sharedMiniProgramSessions.has(resolveSharedMiniProgramSessionKey(options))
 }
 
 /** 只清理仍由调用方创建、且已无活动引用的连接。 */
-export async function closeOwnedSharedMiniProgram(options: Pick<DevtoolsRuntimeSessionOptions, 'projectPath' | 'port' | 'sessionId'>, owned: unknown) {
+export async function closeOwnedSharedMiniProgram(options: SharedMiniProgramSessionOptions, owned: unknown) {
   const key = resolveSharedMiniProgramSessionKey(options)
   const entry = sharedMiniProgramSessions.get(key)
   if (!entry) {
@@ -194,7 +226,7 @@ export async function closeOwnedSharedMiniProgram(options: Pick<DevtoolsRuntimeS
   program?.disconnect()
 }
 
-/** Retain a manager subscription independently of an in-flight operation. */
+/** 单独保留管理器订阅，避免与正在执行的操作共享引用计数。 */
 export function retainSharedMiniProgram(sessionKey: string) {
   const entry = sharedMiniProgramSessions.get(sessionKey)
   if (entry) {

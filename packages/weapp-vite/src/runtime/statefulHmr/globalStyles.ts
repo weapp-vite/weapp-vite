@@ -1,6 +1,7 @@
 import type { GlassEaselAnalysisFact } from '../../analyze/glassEasel/types'
 import type { ChildSources } from './childSources'
 import type { StatefulHmrOutputFile } from './outputWriter'
+import type { SnapshotInputs } from './snapshotInputs'
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
@@ -16,6 +17,8 @@ export interface StatefulHmrSnapshot {
   tailwindStyleOwners?: ReadonlyMap<string, string>
   entryIds?: string[]
   delegatedComponentEntryIds?: string[]
+  inputFiles?: string[]
+  inputs?: SnapshotInputs
 }
 
 function normalizeRoute(route: string): string {

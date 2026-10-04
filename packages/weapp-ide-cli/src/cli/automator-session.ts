@@ -5,6 +5,7 @@ import type {
   DevtoolsRuntimeSessionOptions,
   MiniProgramEventMap,
 } from '@weapp-vite/devtools-runtime'
+import type { ResolvedWechatDevtoolsTarget } from '../devtoolsTarget'
 import {
   acquireSharedMiniProgram as acquireRuntimeSharedMiniProgram,
   closeSharedMiniProgram,
@@ -27,6 +28,7 @@ import {
   launchAutomator,
   resolveProjectAutomatorPort,
 } from './automator'
+import { resolveAutomatorSessionOptions } from './automator/context'
 import { createWechatIdeLoginRequiredExitError, promptWechatIdeLoginRetry } from './retry'
 import { runRetryableCommand } from './run-login-executor'
 
@@ -40,6 +42,7 @@ export type MiniProgramElement = AutomatorElement
 
 export interface AutomatorSessionOptions extends DevtoolsRuntimeSessionOptions {
   signal?: AbortSignal
+  target?: ResolvedWechatDevtoolsTarget
 }
 
 type AutomatorConnectionResult
@@ -133,6 +136,7 @@ function normalizeMiniProgramConnectionError(error: unknown, background = false)
  * @description 建立 automator 会话，并统一处理常见连接错误提示。
  */
 async function connectMiniProgramWithDiagnostics(options: AutomatorSessionOptions, background: boolean): Promise<MiniProgramLike> {
+  options = await resolveAutomatorSessionOptions(options)
   const result = await runRetryableCommand<AutomatorConnectionResult, 'retry' | 'cancel' | 'timeout'>({
     timeout: options.timeout,
     signal: options.signal,
@@ -147,7 +151,7 @@ async function connectMiniProgramWithDiagnostics(options: AutomatorSessionOption
     ),
     execute: async (operation) => {
       const operationOptions = () => ({ ...options, timeout: operation.remainingMs(), signal: operation.signal })
-      if (options.preferOpenedSession === false && options.openedOnly !== true) {
+      if (options.runtimeProvider === 'headless' || (options.preferOpenedSession === false && options.openedOnly !== true)) {
         try {
           return {
             kind: 'result',
@@ -178,7 +182,7 @@ async function connectMiniProgramWithDiagnostics(options: AutomatorSessionOption
         if (requiresOpenedSession) {
           throw normalizedOpenSessionError
         }
-        if (normalizedOpenSessionError instanceof Error && normalizedOpenSessionError.message === 'DEVTOOLS_PROTOCOL_TIMEOUT') {
+        if (normalizedOpenSessionError instanceof Error && (('code' in normalizedOpenSessionError && normalizedOpenSessionError.code === 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH') || normalizedOpenSessionError.message === 'DEVTOOLS_PROTOCOL_TIMEOUT' || normalizedOpenSessionError.message.startsWith('DEVTOOLS_INSTALLATION_MISMATCH') || normalizedOpenSessionError.message.startsWith('DEVTOOLS_PORT_IDENTITY'))) {
           throw normalizedOpenSessionError
         }
 
@@ -233,12 +237,14 @@ export async function connectConsoleMiniProgram(options: AutomatorSessionOptions
 /** 为后台日志桥接保留共享会话所有权和诊断级别。 */
 export async function acquireConsoleMiniProgram(options: AutomatorSessionOptions): Promise<MiniProgramLike> {
   return await acquireRuntimeSharedMiniProgram({
+    resolveSessionOptions: resolveAutomatorSessionOptions,
     connectMiniProgram: connectConsoleMiniProgram,
     normalizeConnectionError: error => normalizeMiniProgramConnectionError(error, true),
   }, options)
 }
 
 const runtimeHooks = {
+  resolveSessionOptions: resolveAutomatorSessionOptions,
   connectMiniProgram,
   normalizeConnectionError: normalizeMiniProgramConnectionError,
 }
@@ -254,6 +260,7 @@ export {
   closeSharedMiniProgram,
   getSharedMiniProgramSessionCount,
   releaseSharedMiniProgram,
+  resolveAutomatorSessionOptions,
 }
 
 /**

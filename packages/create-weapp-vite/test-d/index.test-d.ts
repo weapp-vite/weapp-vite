@@ -1,4 +1,4 @@
-import type { CreateProjectOptions, DependencyVersionStrategy } from 'create-weapp-vite'
+import type { CreateProjectOptions, DependencyVersionStrategy, Toolchain } from 'create-weapp-vite'
 import { createProject, TemplateName } from 'create-weapp-vite'
 import { expectAssignable, expectError, expectType } from 'tsd'
 
@@ -17,6 +17,12 @@ const options: CreateProjectOptions = {
   installSkills: true,
 }
 expectType<boolean | undefined>(options.installSkills)
+expectType<Toolchain | undefined>(options.toolchain)
+expectAssignable<Toolchain>('wv')
+expectAssignable<Toolchain>('vite')
+expectAssignable<Toolchain>('vite-plus')
+expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.react, { toolchain: 'vite-plus' }))
+expectError(createProject('/tmp/demo', TemplateName.default, { toolchain: 'unknown' }))
 expectType<string | undefined>(options.registry)
 expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.default, { registry: 'https://registry.npmmirror.com/' }))
 expectError(createProject('/tmp/demo', TemplateName.default, { registry: 123 }))

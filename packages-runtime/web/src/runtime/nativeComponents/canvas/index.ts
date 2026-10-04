@@ -31,7 +31,13 @@ export class WeappCanvas extends BaseElement {
     }
   }
 
-  attributeChangedCallback() {
+  attributeChangedCallback(name: string, previous: string | null, current: string | null) {
+    if (previous === current) {
+      return
+    }
+    if (name === 'width' || name === 'height') {
+      this.#syncSize(name)
+    }
     this.#syncAttributes()
   }
 
@@ -48,6 +54,21 @@ export class WeappCanvas extends BaseElement {
     const canvas = document.createElement('canvas')
     root.append(style, canvas)
     this.#canvas = canvas
+    this.#syncSize()
+  }
+
+  #syncSize(dimension?: 'width' | 'height') {
+    const canvas = this.#canvas
+    if (!canvas) {
+      return
+    }
+    // 相同尺寸赋值也会清空位图和绘图状态；尺寸只归对应宿主属性的实际变化所有。
+    for (const name of dimension ? [dimension] : ['width', 'height'] as const) {
+      const size = resolveCanvasSize(this.getAttribute(name), name === 'width' ? 300 : 150)
+      if (canvas[name] !== size) {
+        canvas[name] = size
+      }
+    }
   }
 
   #syncAttributes() {
@@ -55,8 +76,6 @@ export class WeappCanvas extends BaseElement {
     if (!canvas) {
       return
     }
-    canvas.width = resolveCanvasSize(this.getAttribute('width'), 300)
-    canvas.height = resolveCanvasSize(this.getAttribute('height'), 150)
     canvas.style.touchAction = readBooleanAttribute(this, 'disable-scroll') ? 'none' : ''
     registerNativeMediaElement('canvas', [
       this.getAttribute('canvas-id'),

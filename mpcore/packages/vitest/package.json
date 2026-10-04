@@ -31,6 +31,10 @@
     "./setup": {
       "types": "./dist/setup.d.mts",
       "import": "./dist/setup.mjs"
+    },
+    "./config": {
+      "types": "./dist/config.d.mts",
+      "import": "./dist/config.mjs"
     }
   },
   "main": "./dist/index.mjs",

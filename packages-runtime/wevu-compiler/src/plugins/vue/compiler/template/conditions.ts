@@ -82,7 +82,7 @@ export function resolveConditionalBranch(directive: DirectiveNode, context: Tran
   }
   const rawExpression = directive.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? directive.exp.content : ''
   const runtimeExpression = withBindingCondition(context, preceding, () => {
-    return context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExpression, context.templateSafeCallNames)
+    return context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExpression, context.templateSafeCallNames, context)
       ? registerRuntimeBindingExpression(rawExpression, context, { hint: `v-${conditionKind}` })
       : null
   })

@@ -1,8 +1,10 @@
 import type { HmrAsset, HmrAssetChanges, HmrCompilerPreparation, HmrCompilerRequest } from '@weapp-vite/hmr'
-import { captureHmrBatch, HmrAssetStore, HmrCompilerHost, HmrTransaction, transformHmrBatch } from '@weapp-vite/hmr'
+import { captureHmrBatch, HmrAssetStore, HmrCompilerHost, HmrDeliveryCoordinator, HmrTransaction, transformHmrBatch } from '@weapp-vite/hmr'
 import { expectAssignable, expectType } from 'tsd'
 
 export async function verifyPublicTypes() {
+  const delivery = new HmrDeliveryCoordinator(() => {})
+  expectType<Promise<void>>(delivery.whenSettled())
   const input: HmrCompilerRequest = { revision: 1, changedFiles: ['page.tsx'], sources: new Map([['page.tsx', 'source']]) }
   expectType<ReadonlyMap<string, string | null>>(input.sources)
   const host = new HmrCompilerHost({ sourceId: id => id, hasVisualChange: (_id, previous, current) => previous !== current })

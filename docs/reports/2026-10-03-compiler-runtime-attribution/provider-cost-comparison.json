@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "scope": "Local diagnostic of optional main-process loads; not cold-network installation or formal performance acceptance. Each candidate is identified by archive hashes, not a clean commit.",
+  "consumers": [
+    {
+      "kind": "native",
+      "identicalFixtureSourceAndConfig": true,
+      "instrumentationPreservesEveryArtifactWithinBothCandidates": true,
+      "identicalOutputFileSetAndSizes": true,
+      "byteDifferentFilesBetweenCandidates": [],
+      "fullInputIdentityEqual": false,
+      "inputIdentityNote": "Manifests and lock identities change to select different candidate tarballs. Cross-candidate byte identity is not asserted.",
+      "beforeLoadedFileBytes": 17167743,
+      "afterLoadedFileBytes": 16301056,
+      "loadedFileByteReduction": 866687,
+      "installedFileByteChange": 6223
+    },
+    {
+      "kind": "wevu",
+      "identicalFixtureSourceAndConfig": true,
+      "instrumentationPreservesEveryArtifactWithinBothCandidates": true,
+      "identicalOutputFileSetAndSizes": true,
+      "byteDifferentFilesBetweenCandidates": [
+        "weapp-vendors/wevu-runtime.js"
+      ],
+      "fullInputIdentityEqual": false,
+      "inputIdentityNote": "Manifests and lock identities change to select different candidate tarballs. Cross-candidate byte identity is not asserted.",
+      "beforeLoadedFileBytes": 17167841,
+      "afterLoadedFileBytes": 16301154,
+      "loadedFileByteReduction": 866687,
+      "installedFileByteChange": 6223
+    },
+    {
+      "kind": "tailwind",
+      "identicalFixtureSourceAndConfig": true,
+      "instrumentationPreservesEveryArtifactWithinBothCandidates": true,
+      "identicalOutputFileSetAndSizes": true,
+      "byteDifferentFilesBetweenCandidates": [],
+      "fullInputIdentityEqual": false,
+      "inputIdentityNote": "Manifests and lock identities change to select different candidate tarballs. Cross-candidate byte identity is not asserted.",
+      "beforeLoadedFileBytes": 20639052,
+      "afterLoadedFileBytes": 19772365,
+      "loadedFileByteReduction": 866687,
+      "installedFileByteChange": 6223
+    },
+    {
+      "kind": "web",
+      "identicalFixtureSourceAndConfig": true,
+      "instrumentationPreservesEveryArtifactWithinBothCandidates": true,
+      "identicalOutputFileSetAndSizes": true,
+      "byteDifferentFilesBetweenCandidates": [
+        "web/index.js"
+      ],
+      "fullInputIdentityEqual": false,
+      "inputIdentityNote": "Manifests and lock identities change to select different candidate tarballs. Cross-candidate byte identity is not asserted.",
+      "beforeLoadedFileBytes": 17646672,
+      "afterLoadedFileBytes": 16779985,
+      "loadedFileByteReduction": 866687,
+      "installedFileByteChange": 6223
+    }
+  ]
+}

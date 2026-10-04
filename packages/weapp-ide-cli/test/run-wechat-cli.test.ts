@@ -1,5 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: async (run: () => Promise<unknown>) => run() }))
+
+const selectedTarget = vi.hoisted(() => ({ cliPath: '/Applications/wechat-cli', installationId: 'selected', appPath: '/Applications/app.asar', profileDir: '/tmp/selected-profile' }))
+const hostGuard = vi.hoisted(() => vi.fn())
+vi.mock('../src/devtoolsTarget', () => ({
+  resolveWechatDevtoolsTarget: vi.fn(async () => selectedTarget),
+  assertWechatDevtoolsHost: hostGuard,
+}))
+
 const resolveCliPathMock = vi.hoisted(() => vi.fn())
 const promptForCliPathMock = vi.hoisted(() => vi.fn())
 const isOperatingSystemSupportedMock = vi.hoisted(() => vi.fn())
@@ -47,6 +56,7 @@ vi.mock('../src/logger', () => ({
 
 describe('runWechatCliCommand', () => {
   beforeEach(() => {
+    hostGuard.mockReset().mockResolvedValue(undefined)
     resolveCliPathMock.mockReset()
     promptForCliPathMock.mockReset()
     isOperatingSystemSupportedMock.mockReset()
@@ -73,6 +83,7 @@ describe('runWechatCliCommand', () => {
     await runWechatCliCommand(['open', '--project', '/tmp/demo', '--trust-project'])
 
     expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      target: selectedTarget,
       projectPath: '/tmp/demo',
       trustProject: true,
     })
@@ -81,7 +92,7 @@ describe('runWechatCliCommand', () => {
       '--project',
       '/tmp/demo',
       '--trust-project',
-    ], {})
+    ], { target: selectedTarget })
   })
 
   it('opens the target project before auto-preview so devtools is foregrounded', async () => {
@@ -96,6 +107,7 @@ describe('runWechatCliCommand', () => {
     ])
 
     expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      target: selectedTarget,
       projectPath: '/tmp/demo',
       trustProject: false,
     })
@@ -103,14 +115,14 @@ describe('runWechatCliCommand', () => {
       'open',
       '--project',
       '/tmp/demo',
-    ], {})
+    ], { target: selectedTarget })
     expect(runWechatCliWithRetryMock).toHaveBeenNthCalledWith(2, '/Applications/wechat-cli', [
       'auto-preview',
       '--project',
       '/tmp/demo',
       '--info-output',
       '/tmp/auto-preview.json',
-    ], {})
+    ], { target: selectedTarget })
   })
 
   it('passes configured project trust to the auto-preview foreground open command', async () => {
@@ -128,14 +140,32 @@ describe('runWechatCliCommand', () => {
       '--ext-appid',
       'wx456',
       '--trust-project',
-    ], {})
+    ], { target: selectedTarget })
     expect(runWechatCliWithRetryMock).toHaveBeenNthCalledWith(2, '/Applications/wechat-cli', [
       'auto-preview',
       '--appid',
       'wx123',
       '--ext-appid',
       'wx456',
-    ], {})
+    ], { target: selectedTarget })
+  })
+
+  it('stops before bootstrap or execution when another installation owns the host', async () => {
+    hostGuard.mockRejectedValue(new Error('DEVTOOLS_INSTALLATION_MISMATCH'))
+    const { runWechatCliCommand } = await import('../src/cli/run-wechat-cli')
+    await expect(runWechatCliCommand(['open'])).rejects.toThrow('DEVTOOLS_INSTALLATION_MISMATCH')
+    expect(bootstrapWechatDevtoolsSettingsMock).not.toHaveBeenCalled()
+    expect(runWechatCliWithRetryMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps the resolved target even when the global selection is unavailable', async () => {
+    resolveCliPathMock.mockRejectedValue(new Error('global selection is unavailable'))
+    const { runWechatCliCommand } = await import('../src/cli/run-wechat-cli')
+    await runWechatCliCommand(['open'], { target: selectedTarget })
+    expect(resolveCliPathMock).not.toHaveBeenCalled()
+    expect(promptForCliPathMock).not.toHaveBeenCalled()
+    expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith(expect.objectContaining({ target: selectedTarget }))
+    expect(runWechatCliWithRetryMock).toHaveBeenCalledWith(selectedTarget.cliPath, ['open'], { target: selectedTarget })
   })
 
   it('prompts for cli path when resolver returns missing', async () => {

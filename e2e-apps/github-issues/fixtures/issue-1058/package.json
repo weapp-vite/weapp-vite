@@ -1,0 +1,8 @@
+{
+  "name": "issue-1058-template-tags",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "wevu": "workspace:*"
+  }
+}

@@ -51,7 +51,7 @@ weapp-vite dev --analyze
 
 `weapp-vite` 会在运行时检查当前项目中是否安装了 `@weapp-vite/dashboard`。如果存在，就读取本包 `dist/` 中的静态资源并启动本地 DevTools 页面。
 
-独立 Dashboard 的页面与 Devframe 1.1 bridge 共同挂载在 `/__weapp-vite/` 下（[上游更新日志](https://github.com/devframes/devframe/releases/tag/v1.1.0)、[1.0 迁移说明](https://github.com/devframes/devframe/blob/v1.1.0/docs/content/7.migrations/0.migration-1.0.md)）：
+独立 Dashboard 的页面与 Devframe 1.2 bridge 共同挂载在 `/__weapp-vite/` 下（[上游更新日志](https://github.com/devframes/devframe/releases)、[1.0 迁移说明](https://github.com/devframes/devframe/blob/v1.1.0/docs/content/7.migrations/0.migration-1.0.md)）：
 
 - Analyze 数据通过带 revision、SHA-256 描述符和固定页上限的只读 RPC 分页获取
 - revision 与最近运行事件通过服务端单向通知同步；WebSocket 断开后会重连并重新查询权威状态
@@ -60,11 +60,31 @@ weapp-vite dev --analyze
 - 单文件上限为 2 MiB，当前 revision 的产物保留预算按原始字节计为 32 MiB；超限明确报错，不读取其他 revision 或磁盘上的替代内容
 - 独立宿主显式启用 OTP 与 loopback Origin 门禁；终端会输出可直接打开的 magic link
 - 页面不再依赖 HTML 全局变量、业务 SSE 或 Vite HMR 作为业务数据通道
-- 独立 bridge 保持 `mcp: false`；Vite DevTools 的认证、Origin 与 MCP 策略由其宿主配置持有，不能把共享宿主视为只读沙箱
+- 独立宿主自动在同一端口开放本机只读 MCP，无需配置令牌；校验真实 loopback 连接对端与规范 loopback Origin，不暴露通用 shared-state 工具
 
 前端使用 Devframe 的已有连接继承与相对元数据发现，不再写死独立 bridge 地址。路由和复制视图链接保留实际挂载前缀；复制链接仅包含页面路径与查询参数，不携带认证 fragment。`devframe connect --base` 是 MCP connector 的探测选项，不是 Dashboard 的挂载配置。
 
 微信开发者工具继续负责模拟器、原生调试和真机能力；Dashboard 是构建、HMR、包体、诊断和自动化状态的伴随 DevTools。
+
+### AI 读取当前 Dashboard
+
+独立 Dashboard 提供九个只读 DevFrame MCP 工具与对象型 `structuredContent`：状态、摘要／预算、包查询、产物查询、模块／重复查询、构建比较、事件筛选、文件读取及全量报告分页。推荐先取状态和摘要，再定位目标并读取有界文件片段；常规诊断不必下载整份报告。页面、MCP 与 Markdown 报告复用 `weapp-vite/dashboard/analyze` 的纯预算、重复与比较计算，不启动另一份分析服务或 IDE 会话。
+
+分析查询按 revision／hash 固定快照，列表最多 100 项；没有上次报告时比较明确不可用。模块归属包含资源源码，但不等于完整源码引用链；重复节省量是估算，保留独立分包提示。事件只保留最近 24 条，并返回丢弃计数。文件片段按 UTF-16 码元取范围，最多 16384，仍受完整文件大小与读取边界限制；源码是实时受限读取，产物仅来自当前快照。
+
+预算与构建侧保持一致：缺失体积或运行时归因标记为 `unknown`，运行时预算单独返回 `runtimeBudget`，包统计不混入总包或运行时。预算摘要不附带全量文件列表；运行时告警在页面中可跨包定位贡献文件。预算沙盘同样使用共享计算，修改总包／包类型阈值时保留已有 `runtimeBytes` 与 `packageBytes`（包括零限额），不会将缺失测量误判为已解除告警，复制配置也保留这些约束。
+
+在项目中安装 `devframe@1.2.0` 与 `@devframes/agentic@1.2.0` 后，可使用 `pnpm exec devframe connect` 发现正在监听的实例，无需配置认证环境变量。直接 HTTP 地址为 `/__weapp-vite/__mcp`；浏览器仍使用 OTP 授权。关闭 / 重启清理旧实例记录。本机模式信任同机进程，不区分本机用户；不要通过代理、隧道或端口转发对外发布 Dashboard。
+
+完整客户端配置、`arg0` 参数与分页顺序见 [MCP 使用指南](../weapp-vite/docs/mcp.md#dashboard-实时只读工具devframe)。既有 `wv mcp` / REST / 微信 IDE 自动化不受影响。嵌入 Vite DevTools 时仍由宿主决定 MCP、认证和发现策略，不能把共享宿主视为只读沙箱。
+
+
+## 总览阅读与键盘操作
+
+- 保留桌面的指标栏、发布门禁与三列工作区；窄屏指标采用两列，总产物体积独占一行，工具栏状态可换行。
+- 窄屏的复制视图、重置视图使用完整图标按钮，保留可访问名称；文件路径优先按词换行，悬停可查看完整路径。
+- 发布建议完整保留正文。桌面长建议在有高度上限的区域内滚动，Tab 聚焦后可使用 PageDown 翻页；窄屏保持自然展开。
+- 包体分布、处理队列和搜索定位会在同一次导航中更新目标页签与筛选，保留当前着色等无关查询参数；连续选择不同包或文件时，即使页签和筛选不变，选中对象仍会更新。
 
 ## 体积地图工作台
 

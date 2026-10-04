@@ -18,6 +18,7 @@ import {
 } from './helpers'
 import { RuntimeDiagnosticJournal } from './runtimeDiagnostics'
 import { evaluateRuntimeVersions } from './runtimeVersions'
+import { evaluateSelectedAcceptanceCases, readSelectedAcceptanceCases } from './selectedCases'
 
 function formatStrictAcceptanceFailure(report: AcceptanceReport) {
   const summary = report.summary
@@ -40,6 +41,7 @@ export default class DomAcceptanceReporter implements Reporter {
   private readonly invocationId = randomUUID()
   private readonly startedAt = new Date().toISOString()
   private readonly strict = isStrictDomAcceptance()
+  private readonly selectedCases = readSelectedAcceptanceCases()
   private readonly cases = new Map<string, AcceptanceCaseInput>()
   private readonly startedCases = new Map<string, number>()
   private readonly diagnostics = new RuntimeDiagnosticJournal(process.env.WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE, this.strict)
@@ -119,6 +121,7 @@ export default class DomAcceptanceReporter implements Reporter {
     const cases = [...this.cases.values()].map(evaluateAcceptanceCase)
     if (finishedAt && this.strict) {
       errors.push(...evaluateRuntimeVersions(cases, process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER === 'headless' ? 'headless' : 'devtools'))
+      errors.push(...evaluateSelectedAcceptanceCases(this.selectedCases, cases))
     }
     const summary = summarizeAcceptanceCases(cases)
     const report: AcceptanceReport = {
@@ -140,9 +143,10 @@ export default class DomAcceptanceReporter implements Reporter {
         ? 'not-executed'
         : errors.length || summary.failedCount
           ? 'failed'
-          : !cases.length || summary.passedCount !== summary.plannedCount ? 'blocked' : 'passed',
+          : !summary.plannedCount || summary.passedCount !== summary.plannedCount ? 'blocked' : 'passed',
       errors,
       runtimeDiagnostics: this.diagnostics.entries,
+      ...(this.selectedCases ? { selectedCases: this.selectedCases } : {}),
       cases,
       summary,
     }

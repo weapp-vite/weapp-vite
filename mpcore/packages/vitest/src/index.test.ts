@@ -1,16 +1,20 @@
 import type { MiniProgramEmissionSource, MiniProgramNode } from '@mpcore/test'
+import { mergeConfig } from 'vite'
 import { describe, expect, it } from 'vitest'
 import { mpcoreTest, registerMpcoreMatchers } from './index'
 
 describe('@mpcore/vitest', () => {
   it('appends its setup module without replacing user setup files', () => {
     const plugin = mpcoreTest()
-    const config = plugin.config({
+    const initial = {
       test: { setupFiles: ['./existing.ts'] },
-    })
+    }
+    const config = mergeConfig(initial, plugin.config(initial))
 
     expect(config.test.setupFiles[0]).toBe('./existing.ts')
     expect(config.test.setupFiles[1]).toMatch(/setup\.mjs$/)
+    expect(config.test.setupFiles).toHaveLength(2)
+    expect(mergeConfig(config, plugin.config(config)).test.setupFiles).toEqual(config.test.setupFiles)
   })
 
   it('registers mini-program matchers explicitly', () => {

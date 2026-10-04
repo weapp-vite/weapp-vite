@@ -73,7 +73,7 @@ WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools pnpm vitest run -c e2e/vitest.e2e.devto
 - P1/P2/P3：生产构建路径已落地；旧 CLI 仍保留旧执行器，尚未完成全路径统一。
 - P4/P5：classic 和 stateful 宿主开发会话尚未实现，不能移除 dev/watch 拒绝分支。
 - P6：完成真实测试宿主无副作用检查；mpcore artifact、matcher 同实例和 test watch 尚未集成验证。
-- P7：文档和发布入口已同步；脚手架 `--toolchain` 尚未实现。
+- P7：文档和发布入口已同步；脚手架 `--toolchain=wv|vite|vite-plus` 已实现正交生成与定向测试；独立安装、构建、dev 与真实 runtime 矩阵继续作为交付验收。
 - P8：本地 macOS 和运行时定向验证；Windows/Linux、性能基线和完整发布矩阵仍待执行。
 - 缓存协作、Dashboard/MCP 会话订阅、其他高级目标和 Web 多环境仍未实现。
 
@@ -93,3 +93,9 @@ WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools pnpm vitest run -c e2e/vitest.e2e.devto
 - 更新 5 个旧宏解析断言，显式核验调用携带所属编译上下文，不移除会话隔离。
 - 更新后的插件/会话 18 个测试、宏调用相关 101 个测试、包级 typecheck 和 scoped ESLint 通过。两个 runtime suite 的 3 个用例在 headless 与真实微信开发者工具再次通过。
 - 全新 npm 严格安装暴露发布版 `rolldown-require@2.0.33` 的精确 peer 要求为 Rolldown 1.2.10，与当前编译器 1.2.11 不符。保持仓库单引擎 catalog 约束，通过联动发布 changeset 将适配包的发布 peer 同步为已经验证的 1.2.11。独立消费验证需要同时安装本 PR 的 `rolldown-require` tarball，不能继续使用旧发布包来代表修复后依赖图。
+
+## npm 回调与脚手架补齐
+
+标准宿主复用 package builder 的输出接口：回调看到最终路径，JS 返回内存产物，原生组件复制进入临时目录，主 bundle 和外部 npm 映射均由原生 emit/write 发布。外部输出保存精确归属，后续独立构建可清理旧依赖并保留其他文件；手工镜像同时重定位 sourcemap。新增测试覆盖 callback 的配置修改、返回 false、自定义路径、主 manifest、外部映射、跨构建清理和 write:false。真实 IDE 与三入口严格消费验收仍由交付流程完成。
+
+脚手架增加独立 toolchain 适配模块，不复制业务模板；Vite+ 的 alias 与 overrides 固定为同一配套引擎。既有超过 300 行的 createProject 和 packageBuilder 保留原职责，本次只接入适配接口，新逻辑分别拆入 toolchain 和 npm 输出模块，避免顺带重排无关代码。

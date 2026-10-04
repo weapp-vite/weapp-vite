@@ -141,6 +141,22 @@ await miniProgram.flushConsole()
 
 先用 `addListener` 被动注册，再显式等待 `enableLog`，可以记录初始化期间的日志。`flushConsole()` 等待调用时已收到的错误属性检查完成；每次查询最多等待 1 秒，失败会在原参数上保留 `inspectionError`。断开连接时尚未完成的日志也会携带该诊断发布。只有宿主明确返回 CDP 命令不支持时才回退 SDK 格式；其他初始化错误仍然抛出。重复调用 `enableLog` 会刷新 Runtime 订阅，并保留已选择的格式。
 
+### 4.7 AppService 堆内存探测
+
+`getAppServiceHeapUsage({ timeout })` 通过现有 `App.CDPCommand` 调用 `Runtime.getHeapUsage`，默认超时 2500ms。支持时返回 `{ status: 'available', source: 'appservice-cdp-runtime', usedSize, totalSize }`，两个值均为字节。仅当宿主明确不支持该协议或方法时，返回 `status: 'unsupported'` 及 `protocol-unimplemented` / `method-not-found` 原因。
+
+```ts
+const heap = await miniProgram.getAppServiceHeapUsage({ timeout: 2_500 })
+if (heap.status === 'available') {
+  console.log({ usedBytes: heap.usedSize, allocatedBytes: heap.totalSize })
+}
+else {
+  console.log({ unsupported: heap.reason })
+}
+```
+
+空结果、缺失字段、字符串、负数、非有限数值或已用量超过分配量都会报错；连接超时与其他协议错误原样传播，不会转换为不支持或零内存。每次调用重新探测，不缓存旧会话的能力结果，也不主动触发 GC。该指标仅覆盖 AppService JS 堆，不是 renderer/native 内存、进程 RSS、峰值或可归因的组件独占内存。实际可用性取决于连接的 DevTools/基础库，仍须在目标宿主确认；headless 不提供真实 IDE 堆证据。
+
 ## 5. 主要导出
 
 | 导出                      | 说明                                     |

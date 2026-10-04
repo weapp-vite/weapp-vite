@@ -50,9 +50,14 @@ function resolveOutputPath(outputPath: string | undefined) {
   return outputPath ? path.resolve(outputPath) : undefined
 }
 
-function createConnectionPayload(args: ParsedAutomatorArgs): RuntimeServicePayload {
+function createConnectionPayload(args: Pick<ParsedAutomatorArgs, 'projectPath' | 'cliPath' | 'timeout' | 'port' | 'sessionId' | 'preferOpenedSession'>): RuntimeServicePayload {
+  const cliPath = args.cliPath ?? process.env.WEAPP_IDE_CLI_PATH
   return {
     projectPath: resolveProjectPath(args.projectPath),
+    ...(cliPath ? { cliPath } : {}),
+    ...(args.port ? { port: args.port } : {}),
+    ...(args.sessionId ? { sessionId: args.sessionId } : {}),
+    ...(args.preferOpenedSession !== undefined ? { preferOpenedSession: args.preferOpenedSession } : {}),
     ...(args.timeout ? { timeout: args.timeout } : {}),
   }
 }
@@ -179,8 +184,7 @@ async function runScreenshotCommand(argv: string[], baseUrl: string) {
 
   if (options.page) {
     const routeResult = await tryRequestRuntimeService(baseUrl, '/route', {
-      projectPath: resolveProjectPath(options.projectPath),
-      ...(options.timeout ? { timeout: options.timeout } : {}),
+      ...createConnectionPayload(options),
       path: options.page,
       transition: 'reLaunch',
     }, (options.timeout ?? 30_000) + 5_000)
@@ -190,8 +194,7 @@ async function runScreenshotCommand(argv: string[], baseUrl: string) {
   }
 
   const result = await tryRequestRuntimeService(baseUrl, '/capture', {
-    projectPath: resolveProjectPath(options.projectPath),
-    ...(options.timeout ? { timeout: options.timeout } : {}),
+    ...createConnectionPayload(options),
     ...(options.outputPath ? { outputPath: resolveOutputPath(options.outputPath) } : {}),
   }, (options.timeout ?? 30_000) + 5_000) as { base64?: string, bytes?: number, path?: string } | undefined
   if (result === undefined) {

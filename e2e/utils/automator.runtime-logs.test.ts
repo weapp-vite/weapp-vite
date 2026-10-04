@@ -5,10 +5,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import MiniProgram from '../../packages/miniprogram-automator/src/MiniProgram'
 import { enhanceMiniProgramWithRuntimeLogs, launchAutomator, resetAutomatorRuntimeLogs } from './automator'
 import { launchHeadlessAutomator } from './automator.headless'
+import { resolveSelectedWechatDevtools } from './devtoolsSelection'
 import { appendIdeReportEvent } from './ideWarningReport'
 import { flushRuntimeConsoleSessions } from './runtimeConsoleSessions'
 
 vi.mock('./automator.headless', () => ({ launchHeadlessAutomator: vi.fn() }))
+vi.mock('./devtoolsSelection', () => ({
+  resolveSelectedWechatDevtools: vi.fn(),
+  assertSelectedWechatDevtoolsRuntime: vi.fn(),
+}))
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'e2e-apps/base' }))
 
 afterEach(() => {
@@ -145,6 +150,7 @@ describe('automator runtime diagnostic lifecycle', () => {
       onSessionCreated: expect.any(Function),
     })
     expect(launchDevtools).not.toHaveBeenCalled()
+    expect(resolveSelectedWechatDevtools).not.toHaveBeenCalled()
     session.emit('console', { type: 'error', args: ['headless failure'] })
     session.emit('exception', { exceptionDetails: { text: 'headless exception' } })
     await launched.close()

@@ -4,47 +4,32 @@ import type {
   MiniProgramNode,
   MiniProgramTestProject,
 } from '@mpcore/test'
-import { fileURLToPath } from 'node:url'
 import { createTestProject, mpcoreMatchers } from '@mpcore/test'
-import { expect, onTestFinished, test } from 'vitest'
+import { expect, inject, onTestFinished, test } from 'vitest'
+import { MPCORE_ARTIFACT_KEY } from './artifact'
+
+export { mpcoreTest } from './config'
+export type { MpcoreArtifactFactory, MpcoreArtifactWatchCallbacks, MpcoreArtifactWatcher, MpcoreVitestOptions, MpcoreVitestPlugin } from './config'
 
 export interface MpcoreVitestFixture {
   mpcore: MiniProgramTestProject
 }
 
-export interface MpcoreVitestPlugin {
-  config: (config: { test?: { setupFiles?: string | string[] } }) => {
-    test: { setupFiles: string[] }
+export type MpcoreTestProjectOptions = Omit<CreateTestProjectOptions, 'artifact'> & Partial<Pick<CreateTestProjectOptions, 'artifact'>>
+
+function projectOptions(options: MpcoreTestProjectOptions = {}): CreateTestProjectOptions {
+  const artifact = options.artifact ?? inject(MPCORE_ARTIFACT_KEY)
+  if (!artifact) {
+    throw new Error('No mpcore artifact was provided. Configure mpcoreTest({ artifact }) from @mpcore/vitest/config or pass an explicit artifact.')
   }
-  name: string
+  return { ...options, artifact }
 }
 
-function toList(value: string | string[] | undefined) {
-  if (!value) {
-    return []
-  }
-  return Array.isArray(value) ? value : [value]
-}
-
-export function mpcoreTest(): MpcoreVitestPlugin {
-  const setupFile = fileURLToPath(new URL('./setup.mjs', import.meta.url))
-  return {
-    name: 'mpcore:vitest',
-    config(config) {
-      return {
-        test: {
-          setupFiles: [...toList(config.test?.setupFiles), setupFile],
-        },
-      }
-    },
-  }
-}
-
-export function createMpcoreTest(options: CreateTestProjectOptions) {
+export function createMpcoreTest(options?: MpcoreTestProjectOptions) {
   return test.extend<MpcoreVitestFixture>({
     // eslint-disable-next-line no-empty-pattern -- Vitest 要求 fixture 的首个参数使用对象解构语法。
     mpcore: async ({}, use) => {
-      const project = createTestProject(options)
+      const project = createTestProject(projectOptions(options))
       try {
         await use(project)
       }
@@ -55,8 +40,8 @@ export function createMpcoreTest(options: CreateTestProjectOptions) {
   })
 }
 
-export function createVitestProject(options: CreateTestProjectOptions) {
-  const project = createTestProject(options)
+export function createVitestProject(options?: MpcoreTestProjectOptions) {
+  const project = createTestProject(projectOptions(options))
   onTestFinished(async () => {
     await project.close()
   })

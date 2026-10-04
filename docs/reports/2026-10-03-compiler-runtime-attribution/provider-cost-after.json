@@ -1,0 +1,851 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "node": "v24.18.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "provenance": {
+    "@mpcore/weapp-vite": {
+      "version": "0.1.29",
+      "archive": "@mpcore-weapp-vite.tgz",
+      "bytes": 2888,
+      "sha256": "2355ac80c726a0a7e087ce03226ed6c46b8ea8f23889cc26eced175f5c29937e",
+      "integrity": "sha512-jzsYU6uy4OIeLx985gpo6gZu6WaI7kLIteMFP/lKUUhyHbojRdFNRGy+TV0VADesdHKNQl/GJmT9H3K+45gUsg=="
+    },
+    "weapp-vite": {
+      "version": "7.4.0",
+      "archive": "weapp-vite.tgz",
+      "bytes": 705244,
+      "sha256": "7ec0de868d17f130ebdcfd3a1f02143e87402c8dbe75024f64ee7a1f46e4b186",
+      "integrity": "sha512-veDoNZRY8C6dPqnzw2Gd2eXGbp/5mq7/8MNXtT0i7Ww1Zt+7oBfqZQCplFpkMyPjgkvQBVgXs6APWL+4VTg3AQ=="
+    },
+    "wevu": {
+      "version": "7.4.0",
+      "archive": "wevu.tgz",
+      "bytes": 593579,
+      "sha256": "7d3eb6fdb97aeb2fdcf4ded353150aa5ce1ae1c4aef860baff6e451c703d0ba1",
+      "integrity": "sha512-A9SHCWOsUuAs0kZMNAunzrvwhhCz+2UB5x2i7aewWAWaUQKI8G6pO26q9ZGXq6essirSIFo/GFgcQLVrWVKnyQ=="
+    },
+    "@wevu/web-apis": {
+      "version": "1.3.4",
+      "archive": "@wevu-web-apis.tgz",
+      "bytes": 29360,
+      "sha256": "8d16bbcac7ed993709c00818e1ae84b1aaebb6392e34cb5a5aed2f3d3bc57284",
+      "integrity": "sha512-We5GJuAzrzz/4fgii4GE2dxeAxfrJFW+FwPAyGOX8wbaHOZKeqT+UCBJLyxrfXL1OXkWI1L3rdVlOTUlqQwTdg=="
+    },
+    "@wevu/api": {
+      "version": "0.3.7",
+      "archive": "@wevu-api.tgz",
+      "bytes": 2800,
+      "sha256": "4233a7f92c2590dd31329260c9b4a112ed158ceef471f48b9f0ae7aa14e75510",
+      "integrity": "sha512-678rMIvxSvPxs9hfmxF0+XufAfih9SlfWBjDTpo0kDoVnM1NNcVC6q0//thB4KTIbA1N/Egrqmo2lvh4mUbH0w=="
+    },
+    "@weapp-core/api": {
+      "version": "0.3.7",
+      "archive": "@weapp-core-api.tgz",
+      "bytes": 84466,
+      "sha256": "5acda8cbff870909e307621de2e91b2ab4a31b431c118284f6262112e663dc48",
+      "integrity": "sha512-kbeY7fMeekiCext4FocXHJecodJRN2/I1g8L3ksLWn1vhs/TMZRrVk5ktPBPkzbPdVSdVV5qfyFtqKnGTDCtTg=="
+    },
+    "@weapp-core/constants": {
+      "version": "0.3.0",
+      "archive": "@weapp-core-constants.tgz",
+      "bytes": 8010,
+      "sha256": "0de111b2a0ee36b85e52aa4ecde74a7f396f13a7020e030c46b2431fa79d6f2a",
+      "integrity": "sha512-yB3m5tGn5Kw2QIWsrLlHVOsvzgrcCn22w/6M6S86KdaUTGNewsIdiyFvpd5gdVyfPe66sK35UEvXoMSEZjmglA=="
+    },
+    "@wevu/compiler": {
+      "version": "7.4.0",
+      "archive": "@wevu-compiler.tgz",
+      "bytes": 157193,
+      "sha256": "e6bbaa8e26a47bd0521345723531af5d1d5b523fb569a0b57a06a30d9ef6e66f",
+      "integrity": "sha512-1m5AVbau/HHizkljq7DrgjWeNs11KcW8trziKjNr2sTdEysLXncAui2YQPW3chAqzFmiBF0iT3adeX9qmqblhQ=="
+    },
+    "rolldown-require": {
+      "version": "2.0.34",
+      "archive": "rolldown-require.tgz",
+      "bytes": 15663,
+      "sha256": "3d8fbec8784d2bf7d132f9c1a44a7b81730197b735bd416571d3e559c6302a3c",
+      "integrity": "sha512-pfEHIIQWe8qRdFsSKU/HYVLb61TtAdw5EdqvZhfj/crKwmNxu1/QuA+oQlIRqRQ7kYpHIiSyLxd80/Y2SECUYw=="
+    },
+    "@weapp-vite/ast": {
+      "version": "7.4.0",
+      "archive": "@weapp-vite-ast.tgz",
+      "bytes": 25638,
+      "sha256": "ef091dc6e879ef1879d20d72acbafef2477310ea0c8a83a358e9fbb46e7fd523",
+      "integrity": "sha512-86YXGGcY/qTDGjgxoVitSw/4zwW58dQ09cAm5v6ljSEWD+NFlgm1Z4/uLgI+pnNFtkNfztRP7AuiaiOeXAAzwA=="
+    },
+    "@weapp-core/shared": {
+      "version": "3.2.7",
+      "archive": "@weapp-core-shared.tgz",
+      "bytes": 21327,
+      "sha256": "34f3a28a041e62e97be534890ea4a332816ebfdad4b66cf76fe8b0f8f3abe869",
+      "integrity": "sha512-K0Fad5s5Up/eDDjNsGzieaA3slPV2z/prV/UL7UG3DiEazH/fd/UBBV630wncFirxK3qESHtFtms2R/KA+ZTNg=="
+    },
+    "@weapp-core/types": {
+      "version": "1.1.5",
+      "archive": "@weapp-core-types.tgz",
+      "bytes": 25948,
+      "sha256": "8831f218b22b57fbe1bfd4757f50d1c26c368ff5329378513490e88d00ec2115",
+      "integrity": "sha512-y1Rp5pIsu3tcPfTCkzeZSgspj6yiNhO69Q7EDIe5mKk5iJmXrlRkjwQYeA9uPjwYBNpLxGyxYty9o5DCyk6Bag=="
+    },
+    "weapp-ide-cli": {
+      "version": "6.1.9",
+      "archive": "weapp-ide-cli.tgz",
+      "bytes": 66961,
+      "sha256": "4a92aad3a28303f2f080ad31dda2b34e3ce70c7485add972c754d054876d5def",
+      "integrity": "sha512-8QRjqYPCHMdl7eIS+5MYdV83rsidOnE06CyMHb5RNF56OWn/U8/6OAK+LOtsuNUxGvzRJ42axn7g/YG56U3q1A=="
+    },
+    "@weapp-vite/miniprogram-automator": {
+      "version": "1.2.23",
+      "archive": "@weapp-vite-miniprogram-automator.tgz",
+      "bytes": 378045,
+      "sha256": "e7c27ab7a87541e9db6f0f11c3f5224ac3d77dadef101e7af8cce1c1f80313ce",
+      "integrity": "sha512-EtKquzBGsr+6prS/3s/sj2rwva68hzBFt85mfuWZR/Enba825Jm6758RdaaRy2BrtmRjZ9Vu4hFQt6x97kgLQw=="
+    },
+    "@weapp-vite/qr": {
+      "version": "1.1.8",
+      "archive": "@weapp-vite-qr.tgz",
+      "bytes": 29268,
+      "sha256": "d47f09e0f7f97b50677d3daf6000f02dfd2862429c1c34f0be9fe3b29e059f32",
+      "integrity": "sha512-aHOAmx+/NG9E1Lo0LDm9TvTCrjWJx4kzsiBykoaqSj3XBv41LcnK12YCnj2R0zgjbZ6l/Ncyy90zaL3qUWeQqw=="
+    },
+    "@weapp-vite/devtools-runtime": {
+      "version": "0.4.24",
+      "archive": "@weapp-vite-devtools-runtime.tgz",
+      "bytes": 6039,
+      "sha256": "4ecb45fac05aec9204540094be49891e9e4ea360f42d40bade4e42a8a13040ef",
+      "integrity": "sha512-8R//302fRHJBPO4fATQGKCKWXIx/Mvs3r+IbKkue66mUXHgftmugitmTVKkNlcSQN43jlXo6D40JYdIyIiOMXA=="
+    },
+    "@weapp-core/logger": {
+      "version": "3.1.8",
+      "archive": "@weapp-core-logger.tgz",
+      "bytes": 3046,
+      "sha256": "01eae26a9833555c22d227aab4617cc3d2a8339472d0e9f834925416813b7c07",
+      "integrity": "sha512-sfsyEv6FBtmuqJWBUh8g6BRVvZA+kBudAe61vJdPHqq+q3t5tq8/C1+rXzMSjzDB8NidpXcLD97qbD3f7vLVTw=="
+    },
+    "vite-plugin-performance": {
+      "version": "2.0.7",
+      "archive": "vite-plugin-performance.tgz",
+      "bytes": 5794,
+      "sha256": "55b64313a6bafbb9a0e28b22d8cef2cefb2616951fe300b37a97eb58174ad85b",
+      "integrity": "sha512-xDPxSIgH4UhVBGwjht4UtdUxWQuFyBZIRuKwgL84Iqi0GwCLavrqtklvq1gMaw0fRzPC5WTTFQ2IGoDIKn4lZA=="
+    },
+    "@weapp-vite/web": {
+      "version": "1.6.0",
+      "archive": "@weapp-vite-web.tgz",
+      "bytes": 430867,
+      "sha256": "c9343a257c08f25af14d4a7426ee2e80a40f5f4537103b993ca791b8461ba2af",
+      "integrity": "sha512-JuqQr6Jpf1+uFeY01CAepjvqH7e/fdAlcSA24o058ICtpAOrwJutgUOQtM186aovWLpf4X5QNQEn4Utc1/gKzg=="
+    },
+    "@weapp-vite/volar": {
+      "version": "2.1.12",
+      "archive": "@weapp-vite-volar.tgz",
+      "bytes": 19026,
+      "sha256": "ed0bf86e8b2a2629818fde859114098c98765faf1783bb23e690244809fa8a83",
+      "integrity": "sha512-vcrjIdyxoRuGN2bqvls4hkliLSUq+NWwGHc3Dm3PbupDnNYArsmQsplR8cjG08B94LHpLkyOH3pvefCV7KNeug=="
+    },
+    "@weapp-core/schematics": {
+      "version": "6.2.8",
+      "archive": "@weapp-core-schematics.tgz",
+      "bytes": 20882,
+      "sha256": "b6305729be5541f2a25ee45748cc6c7bc596d2cd437614df44bc17e3f36d0018",
+      "integrity": "sha512-TpSOUak+77nlFqgdpDwE7qcxRj90UPRUFClU+S5hPyks83tJ6enkEszT4QUWaHJitAa1WzoF4LyjjGnHhVRDrA=="
+    },
+    "@weapp-vite/tailwindcss": {
+      "version": "0.2.0",
+      "archive": "@weapp-vite-tailwindcss.tgz",
+      "bytes": 5672,
+      "sha256": "8a40bff99f543971c7d85b4021044c1497f5477a793bf9f501271b9eeecd4438",
+      "integrity": "sha512-2yBJJF+bhrArIBFxhQhje//3LAk68yiqoF21kG82KU12erx4YOvg6vQNFPXbY6NrKzalwCxa6JTjvmlqGaL47Q=="
+    },
+    "@weapp-vite/hmr": {
+      "version": "0.2.0",
+      "archive": "@weapp-vite-hmr.tgz",
+      "bytes": 9025,
+      "sha256": "cd50a74e08e0ca59f307b2ba74c2748a7cedbfd2159f5cfd4dbe881e68c97a72",
+      "integrity": "sha512-XfW2WjoIBFCdwL0sv+VMe/0dK23Bf6sjYvct9uhPZ6dGrot/RFTQnXtJkIUbJ4WoEgQNF1RrBvRItFEsZovilQ=="
+    },
+    "@weapp-vite/mcp": {
+      "version": "1.5.8",
+      "archive": "@weapp-vite-mcp.tgz",
+      "bytes": 27374,
+      "sha256": "f6c0a48af348520d6788d48188e8f9c6707622ccae1a7fc258c9f88737c2837e",
+      "integrity": "sha512-f5geyduSvDtlpKQDisTFz4F8WvVgo27HqvSgzVkum3Mk9RljM2PbdScpq5QU9dGVrvVx9sd6+5uNPqDq1UHYRQ=="
+    },
+    "@weapp-vite/acceptance": {
+      "version": "0.0.0",
+      "archive": "@weapp-vite-acceptance.tgz",
+      "bytes": 14679,
+      "sha256": "1e937596dc0b5f8a1d5222e5d455c8998950e224f2861e6a0956eab95034a338",
+      "integrity": "sha512-sX3/vgiHRKlPX5WzgydN20ftxeIjJZyibZ2s/9kd54F/5/5z9agP5KeAzi6KO7O8yUt7S3gDsUERfRN0txGVLA=="
+    },
+    "@weapp-vite/i18n": {
+      "version": "0.2.8",
+      "archive": "@weapp-vite-i18n.tgz",
+      "bytes": 11649,
+      "sha256": "9c808a767bf32c4f5984c547545425ca5b07e6eb687888596f8bd7abe39635e1",
+      "integrity": "sha512-IT+2W3R1U7qESgVtOngs86CXxSLODvICceR+BUfzfxdbVr/YsG/cMyKeoQBVbX0ogNc6KzBdfq1D86FQAUf3+A=="
+    },
+    "@weapp-vite/eslint": {
+      "version": "0.2.9",
+      "archive": "@weapp-vite-eslint.tgz",
+      "bytes": 10279,
+      "sha256": "32b63758ad9bdaf98986ca16f2cf49361a29c498ea7d42fd9767971c38d32785",
+      "integrity": "sha512-+plF3KYD5CVhG+xAm0KazfLFlD/mY4Bg+DQMORP4ynlkxVDh7EZa/y3Djyxxvntp5UVKG2SMdiImaXEkEjU//Q=="
+    },
+    "@weapp-core/init": {
+      "version": "6.0.24",
+      "archive": "@weapp-core-init.tgz",
+      "bytes": 13459,
+      "sha256": "50a2fb263267d2c8e1a90770acc55f3c14503c08243943a7adc248dd7db4a30d",
+      "integrity": "sha512-ErGjOYSuppAK3Jzz9UcDXcfWmhKbN6h2CnPE4cJvTuDl7n2G42ZGDZdSjsyeXpOy6vHP9WKm+ztA+0FjY6WjFA=="
+    },
+    "@mpcore/test": {
+      "version": "0.1.15",
+      "archive": "@mpcore-test.tgz",
+      "bytes": 8343,
+      "sha256": "11493a48c1c64d698428b0c8daea9887fba531c20792f70dcaafe9d15b3821f3",
+      "integrity": "sha512-TKEmqPwU4vEnIctMZzjjSz3CQ6Pj/L+50fr0bOZuf9ZaNTNSb2kGWQAzgFmBlVO8UcT/uM69MvIAnfysYHI3Jw=="
+    },
+    "@mpcore/simulator": {
+      "version": "0.7.0",
+      "archive": "@mpcore-simulator.tgz",
+      "bytes": 117306,
+      "sha256": "7ff911042a7ed425a52dc265326043b2d1b2d60ee96f86b437d784ac39166a22",
+      "integrity": "sha512-ASMXhnWCwbvM7GX9Bym7EbNcHeH86lyfXssXV8/oJJxO8RZ9TY/XZyyttBiedx47y3dM98ylrkR3YzM80Gyv7g=="
+    },
+    "@mpcore/vitest": {
+      "version": "0.2.7",
+      "archive": "@mpcore-vitest.tgz",
+      "bytes": 4830,
+      "sha256": "37b4070163811c687921725e74bdd86ed620519bb826092808c4e32c684df306",
+      "integrity": "sha512-iQVI45vVxpsl2/Cpwe19xfFHsUzkP1FJcRLLjs9+4Wwe4e3997zXPmgfgj05DBnmVa6y1/E9ETRTSbjHOmG6Bg=="
+    },
+    "@weapp-vite/dashboard": {
+      "version": "7.4.0",
+      "archive": "@weapp-vite-dashboard.tgz",
+      "bytes": 7330,
+      "sha256": "618bd44ff78e4e539f45041c91b0ed47c1fea2febf76cec2ed6ea300127c741f",
+      "integrity": "sha512-G44Wifv2V2w6SJSrjSgPWGwbFwh8EZ/0SEVPBphqghR2OSFBAmI4pERlQchKfbvJblUrBFYhVIaaSbWkZ7gLwQ=="
+    }
+  },
+  "candidateGeneration": "v6",
+  "sourceBase": "1806b6df43efede85520ef3a2a6c188ec6cf11dd",
+  "cleanCandidate": false,
+  "rawReportSha256": "98ecc38f1b4241f750a8e8ca2753d3ded37ca23bde627a99ca15debc99ab9cee",
+  "integrityNote": "Archive SHA-512 is recomputed below from the same SHA-256-verified tarball because the original generic path sanitizer corrupted some base64 slash sequences; the raw report is preserved unchanged.",
+  "consumers": [
+    {
+      "kind": "native",
+      "status": "passed",
+      "inputSha256": "2e6f4511c141431f09add1526e3fc457cddf73e6ba16b65179feb109017d654a",
+      "lockSha256": "5494d852619797344bf5bec0648ddbab3412a6dfd7f7028256b010020e604f04",
+      "installation": {
+        "metric": "logical-file-bytes-excluding-symlinks; not download bytes, disk blocks or memory",
+        "fileBytes": 234617979,
+        "files": 18294,
+        "links": 1847
+      },
+      "uninstrumentedSamples": [
+        {
+          "sample": 0,
+          "wallMs": 7539.597416,
+          "exitCode": 0
+        },
+        {
+          "sample": 1,
+          "wallMs": 3163.6776249999984,
+          "exitCode": 0
+        },
+        {
+          "sample": 2,
+          "wallMs": 1964.424417000002,
+          "exitCode": 0
+        },
+        {
+          "sample": 3,
+          "wallMs": 1290.412042,
+          "exitCode": 0
+        },
+        {
+          "sample": 4,
+          "wallMs": 5252.1731660000005,
+          "exitCode": 0
+        }
+      ],
+      "output": [
+        {
+          "file": "app.js",
+          "bytes": 43,
+          "sha256": "855ae6aadaabe7b1a4cb40c4b3a691255951a62232657373121a07ac3ba42b51"
+        },
+        {
+          "file": "app.json",
+          "bytes": 65,
+          "sha256": "c4cbcb4495824f5a82c8a4153c47f153f8aa92c576fcff4aa3f63741d18e7b44"
+        },
+        {
+          "file": "pages/index/index.js",
+          "bytes": 99,
+          "sha256": "047fcba08506c0423dc42f8ff540436253a51973617ef7cb5b49f818a66128f6"
+        },
+        {
+          "file": "pages/index/index.json",
+          "bytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        },
+        {
+          "file": "pages/index/index.wxml",
+          "bytes": 23,
+          "sha256": "489fb875c5b4bd3fc14d95fa6d039db2fedc9c40ee72cbc47a177b25961854b7"
+        }
+      ],
+      "measurement": "five separate production build processes; first sample listed separately; filesystem and package-manager caches not flushed; trace collected in an additional process",
+      "fixtureFiles": {
+        "project.config.json": "067a3451346280b15a3e61827e10750f7a9eaebe05f3f4ae9016384dbdeb8bd9",
+        "src/app.js": "d814a0466bd6df377180ec1f110be48b59761ea41cbc5aba0b27dea0034e0043",
+        "src/app.json": "3f397cc4e7520422a8f60e61ac7fa8dcacd291907cf2a210b9ae30a174440297",
+        "src/pages/index/index.js": "ff183dbc0e34b6f644d7e9ce4df762edc0b01e640f3996cd25c114fa625b972c",
+        "src/pages/index/index.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "src/pages/index/index.wxml": "489fb875c5b4bd3fc14d95fa6d039db2fedc9c40ee72cbc47a177b25961854b7",
+        "weapp-vite.config.mjs": "df86ce92c98c17d68c95524d5fad086dbecc5801d6f4b86f66fc6f97835ae59f"
+      },
+      "loadedFileBytes": 16301056,
+      "watchedPackages": [
+        {
+          "name": "weapp-tailwindcss",
+          "installedVersions": [
+            "5.5.11"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-tailwindcss/engine",
+          "installedVersions": [
+            "0.1.3"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-vite/web",
+          "installedVersions": [
+            "1.6.0"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-vite/mcp",
+          "installedVersions": [
+            "1.5.8"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-vite/miniprogram-automator",
+          "installedVersions": [
+            "1.2.23"
+          ],
+          "loadedModules": 1,
+          "loadedFileBytes": 8356
+        },
+        {
+          "name": "@mpxjs/webpack-plugin",
+          "installedVersions": [],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@mpxjs/api-proxy",
+          "installedVersions": [],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "axios",
+          "installedVersions": [],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        }
+      ],
+      "historicalAuditPath": {
+        "names": [
+          "weapp-vite",
+          "weapp-tailwindcss",
+          "@mpxjs/webpack-plugin",
+          "@mpxjs/utils",
+          "@mpxjs/core",
+          "@mpxjs/api-proxy",
+          "axios"
+        ],
+        "installedPaths": []
+      },
+      "limitations": [
+        "Installed dependency paths and successful main-process module loads are separate observations.",
+        "A resolved module need not be loaded; a loaded module does not prove a particular function or vulnerable code executed.",
+        "Bundled internals, Rolldown native reads and child-process module loads are outside the Node hook trace.",
+        "No dependency topology optimization, exploitability or installation-size reduction is asserted."
+      ]
+    },
+    {
+      "kind": "wevu",
+      "status": "passed",
+      "inputSha256": "c0de03fe335b3484e04a267944b544ef1bdfc1dc96bab262ee63e250e0b86d73",
+      "lockSha256": "3808cef7c105803f67e8def9e38ce5f91300728de47f07c2e5d46848d8aaa6ea",
+      "installation": {
+        "metric": "logical-file-bytes-excluding-symlinks; not download bytes, disk blocks or memory",
+        "fileBytes": 234618110,
+        "files": 18294,
+        "links": 1847
+      },
+      "uninstrumentedSamples": [
+        {
+          "sample": 0,
+          "wallMs": 5807.821917000001,
+          "exitCode": 0
+        },
+        {
+          "sample": 1,
+          "wallMs": 2611.1748750000042,
+          "exitCode": 0
+        },
+        {
+          "sample": 2,
+          "wallMs": 3269.698209000002,
+          "exitCode": 0
+        },
+        {
+          "sample": 3,
+          "wallMs": 1536.8219580000004,
+          "exitCode": 0
+        },
+        {
+          "sample": 4,
+          "wallMs": 1439.0019170000014,
+          "exitCode": 0
+        }
+      ],
+      "output": [
+        {
+          "file": "app.js",
+          "bytes": 242,
+          "sha256": "f72636bf0f9617e198aee99df356dbdb2c68a6f374cabdba93b7fa7e078513aa"
+        },
+        {
+          "file": "app.json",
+          "bytes": 65,
+          "sha256": "c4cbcb4495824f5a82c8a4153c47f153f8aa92c576fcff4aa3f63741d18e7b44"
+        },
+        {
+          "file": "pages/index/index.js",
+          "bytes": 635,
+          "sha256": "305ed55cc2d35acc679f5c63b26e8ef923ca84adf955b903efc742ccd494aeb4"
+        },
+        {
+          "file": "pages/index/index.json",
+          "bytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        },
+        {
+          "file": "pages/index/index.wxml",
+          "bytes": 22,
+          "sha256": "a59436e107712217b416eda36e8f32dd09ec012f51028dcf2c6afb2a8dc3d677"
+        },
+        {
+          "file": "weapp-vendors/wevu-runtime.js",
+          "bytes": 170953,
+          "sha256": "21bd51ef6c06ff448c307e585771f5dbc4f73057918edd9daa2400182654cf23"
+        }
+      ],
+      "measurement": "five separate production build processes; first sample listed separately; filesystem and package-manager caches not flushed; trace collected in an additional process",
+      "fixtureFiles": {
+        "project.config.json": "067a3451346280b15a3e61827e10750f7a9eaebe05f3f4ae9016384dbdeb8bd9",
+        "src/app.vue": "1f61e80b564ef047117e03b04f7888718db3eab36f3ea74aeec88e574470be3a",
+        "src/pages/index/index.vue": "9df87ac12f1edc3cc9699f002e207e09d919c220fd97f0f5a6e41a5e3a9e73f5",
+        "weapp-vite.config.mjs": "048c146027de94b2ddb724eeb148516e23590df403f3096dd13fe5b47b90955d"
+      },
+      "loadedFileBytes": 16301154,
+      "watchedPackages": [
+        {
+          "name": "weapp-tailwindcss",
+          "installedVersions": [
+            "5.5.11"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-tailwindcss/engine",
+          "installedVersions": [
+            "0.1.3"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-vite/web",
+          "installedVersions": [
+            "1.6.0"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-vite/mcp",
+          "installedVersions": [
+            "1.5.8"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-vite/miniprogram-automator",
+          "installedVersions": [
+            "1.2.23"
+          ],
+          "loadedModules": 1,
+          "loadedFileBytes": 8356
+        },
+        {
+          "name": "@mpxjs/webpack-plugin",
+          "installedVersions": [],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@mpxjs/api-proxy",
+          "installedVersions": [],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "axios",
+          "installedVersions": [],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        }
+      ],
+      "historicalAuditPath": {
+        "names": [
+          "weapp-vite",
+          "weapp-tailwindcss",
+          "@mpxjs/webpack-plugin",
+          "@mpxjs/utils",
+          "@mpxjs/core",
+          "@mpxjs/api-proxy",
+          "axios"
+        ],
+        "installedPaths": []
+      },
+      "limitations": [
+        "Installed dependency paths and successful main-process module loads are separate observations.",
+        "A resolved module need not be loaded; a loaded module does not prove a particular function or vulnerable code executed.",
+        "Bundled internals, Rolldown native reads and child-process module loads are outside the Node hook trace.",
+        "No dependency topology optimization, exploitability or installation-size reduction is asserted."
+      ]
+    },
+    {
+      "kind": "tailwind",
+      "status": "passed",
+      "inputSha256": "d5cf3ef98112269d53c1d718a863ee7832223848d59d521c817f649e74a97843",
+      "lockSha256": "83da042ade9284ce7338b08f5acd8f561dd85ff17ca76c8a4e4545755ed2a7b2",
+      "installation": {
+        "metric": "logical-file-bytes-excluding-symlinks; not download bytes, disk blocks or memory",
+        "fileBytes": 234617985,
+        "files": 18294,
+        "links": 1847
+      },
+      "uninstrumentedSamples": [
+        {
+          "sample": 0,
+          "wallMs": 4715.187166999996,
+          "exitCode": 0
+        },
+        {
+          "sample": 1,
+          "wallMs": 1575.7694999999949,
+          "exitCode": 0
+        },
+        {
+          "sample": 2,
+          "wallMs": 2133.88900000001,
+          "exitCode": 0
+        },
+        {
+          "sample": 3,
+          "wallMs": 2120.37270800001,
+          "exitCode": 0
+        },
+        {
+          "sample": 4,
+          "wallMs": 1719.008541999996,
+          "exitCode": 0
+        }
+      ],
+      "output": [
+        {
+          "file": "app.js",
+          "bytes": 43,
+          "sha256": "855ae6aadaabe7b1a4cb40c4b3a691255951a62232657373121a07ac3ba42b51"
+        },
+        {
+          "file": "app.json",
+          "bytes": 65,
+          "sha256": "c4cbcb4495824f5a82c8a4153c47f153f8aa92c576fcff4aa3f63741d18e7b44"
+        },
+        {
+          "file": "app.wxss",
+          "bytes": 2243,
+          "sha256": "03a7d2f12d224b65560ff4a9c4a4415c8603772059ce24fb988ebc18ac31cf84"
+        },
+        {
+          "file": "pages/index/index.js",
+          "bytes": 101,
+          "sha256": "a5adbce6f966b243f158aa0caeecbc4af9eafb6c74134f59c9fb3dfab55b1acd"
+        },
+        {
+          "file": "pages/index/index.json",
+          "bytes": 2,
+          "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        },
+        {
+          "file": "pages/index/index.wxml",
+          "bytes": 42,
+          "sha256": "1c753da1e877d62e4a50d19d4a3fbe8f96bd996e265cef8205a0121166c2463b"
+        }
+      ],
+      "measurement": "five separate production build processes; first sample listed separately; filesystem and package-manager caches not flushed; trace collected in an additional process",
+      "fixtureFiles": {
+        "project.config.json": "067a3451346280b15a3e61827e10750f7a9eaebe05f3f4ae9016384dbdeb8bd9",
+        "src/app.css": "80dff10cb5b6cf3fe7a14660c5b0e700c765143511fe9776f28ad31b791e354a",
+        "src/app.js": "a9cca34a6a875afddee8295755bc1c77e73379815b21a61cf6287b4a5087aa1a",
+        "src/app.json": "3f397cc4e7520422a8f60e61ac7fa8dcacd291907cf2a210b9ae30a174440297",
+        "src/pages/index/index.js": "2af14b70c7805c23b6c7e553b9d6db5fa45eb5a5e1492aa5de9040f61bb68feb",
+        "src/pages/index/index.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+        "src/pages/index/index.wxml": "ea83c0ad0d8d59d950c3ad78645c5f2f5cae02b54979c5b275e9542d0aeedfc9",
+        "weapp-vite.config.mjs": "8b570720958f6f8ea3daca4a0c2e0237d4ece1149ba24d41a2f69247afc6bf9d"
+      },
+      "loadedFileBytes": 19772365,
+      "watchedPackages": [
+        {
+          "name": "weapp-tailwindcss",
+          "installedVersions": [
+            "5.5.11"
+          ],
+          "loadedModules": 8,
+          "loadedFileBytes": 333373
+        },
+        {
+          "name": "@weapp-tailwindcss/engine",
+          "installedVersions": [
+            "0.1.3"
+          ],
+          "loadedModules": 2,
+          "loadedFileBytes": 183453
+        },
+        {
+          "name": "@weapp-vite/web",
+          "installedVersions": [
+            "1.6.0"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-vite/mcp",
+          "installedVersions": [
+            "1.5.8"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-vite/miniprogram-automator",
+          "installedVersions": [
+            "1.2.23"
+          ],
+          "loadedModules": 1,
+          "loadedFileBytes": 8356
+        },
+        {
+          "name": "@mpxjs/webpack-plugin",
+          "installedVersions": [],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@mpxjs/api-proxy",
+          "installedVersions": [],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "axios",
+          "installedVersions": [],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        }
+      ],
+      "historicalAuditPath": {
+        "names": [
+          "weapp-vite",
+          "weapp-tailwindcss",
+          "@mpxjs/webpack-plugin",
+          "@mpxjs/utils",
+          "@mpxjs/core",
+          "@mpxjs/api-proxy",
+          "axios"
+        ],
+        "installedPaths": []
+      },
+      "limitations": [
+        "Installed dependency paths and successful main-process module loads are separate observations.",
+        "A resolved module need not be loaded; a loaded module does not prove a particular function or vulnerable code executed.",
+        "Bundled internals, Rolldown native reads and child-process module loads are outside the Node hook trace.",
+        "No dependency topology optimization, exploitability or installation-size reduction is asserted."
+      ]
+    },
+    {
+      "kind": "web",
+      "status": "passed",
+      "inputSha256": "a12916c98ca97f25112218ff04662d18337a1b89ead26cddd2bd858e2a9d05a0",
+      "lockSha256": "3808cef7c105803f67e8def9e38ce5f91300728de47f07c2e5d46848d8aaa6ea",
+      "installation": {
+        "metric": "logical-file-bytes-excluding-symlinks; not download bytes, disk blocks or memory",
+        "fileBytes": 234618108,
+        "files": 18294,
+        "links": 1847
+      },
+      "uninstrumentedSamples": [
+        {
+          "sample": 0,
+          "wallMs": 3962.4200839999976,
+          "exitCode": 0
+        },
+        {
+          "sample": 1,
+          "wallMs": 1071.601708000002,
+          "exitCode": 0
+        },
+        {
+          "sample": 2,
+          "wallMs": 948.5953750000044,
+          "exitCode": 0
+        },
+        {
+          "sample": 3,
+          "wallMs": 977.7327910000022,
+          "exitCode": 0
+        },
+        {
+          "sample": 4,
+          "wallMs": 973.2964579999971,
+          "exitCode": 0
+        }
+      ],
+      "output": [
+        {
+          "file": "web/index.html",
+          "bytes": 159,
+          "sha256": "b5c040c009582557bc786d172ad41bbbc9bb2447cb180539da5015527186f520"
+        },
+        {
+          "file": "web/index.js",
+          "bytes": 416348,
+          "sha256": "5cd84a9aec84c8431ba86c2f660a2f129b526126d52a69a8a7cb47e448816c73"
+        }
+      ],
+      "measurement": "five separate production build processes; first sample listed separately; filesystem and package-manager caches not flushed; trace collected in an additional process",
+      "fixtureFiles": {
+        "index.html": "20518db7e7bd6394f14ff680f6bb2d621b16cd2225e86f4cb201da1a027b2502",
+        "project.config.json": "067a3451346280b15a3e61827e10750f7a9eaebe05f3f4ae9016384dbdeb8bd9",
+        "src/app.vue": "1f61e80b564ef047117e03b04f7888718db3eab36f3ea74aeec88e574470be3a",
+        "src/pages/index/index.vue": "113c05b07aae182ea1505b872c3715fe5a982f8e0922165aca6d85402b7856a0",
+        "weapp-vite.config.mjs": "4985b5e3e1b5e032c86f9a44794154abe51bd11f31b66711c527cd15811a795a"
+      },
+      "loadedFileBytes": 16779985,
+      "watchedPackages": [
+        {
+          "name": "weapp-tailwindcss",
+          "installedVersions": [
+            "5.5.11"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-tailwindcss/engine",
+          "installedVersions": [
+            "0.1.3"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-vite/web",
+          "installedVersions": [
+            "1.6.0"
+          ],
+          "loadedModules": 33,
+          "loadedFileBytes": 119878
+        },
+        {
+          "name": "@weapp-vite/mcp",
+          "installedVersions": [
+            "1.5.8"
+          ],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@weapp-vite/miniprogram-automator",
+          "installedVersions": [
+            "1.2.23"
+          ],
+          "loadedModules": 1,
+          "loadedFileBytes": 8356
+        },
+        {
+          "name": "@mpxjs/webpack-plugin",
+          "installedVersions": [],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "@mpxjs/api-proxy",
+          "installedVersions": [],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        },
+        {
+          "name": "axios",
+          "installedVersions": [],
+          "loadedModules": 0,
+          "loadedFileBytes": 0
+        }
+      ],
+      "historicalAuditPath": {
+        "names": [
+          "weapp-vite",
+          "weapp-tailwindcss",
+          "@mpxjs/webpack-plugin",
+          "@mpxjs/utils",
+          "@mpxjs/core",
+          "@mpxjs/api-proxy",
+          "axios"
+        ],
+        "installedPaths": []
+      },
+      "limitations": [
+        "Installed dependency paths and successful main-process module loads are separate observations.",
+        "A resolved module need not be loaded; a loaded module does not prove a particular function or vulnerable code executed.",
+        "Bundled internals, Rolldown native reads and child-process module loads are outside the Node hook trace.",
+        "No dependency topology optimization, exploitability or installation-size reduction is asserted."
+      ]
+    }
+  ]
+}

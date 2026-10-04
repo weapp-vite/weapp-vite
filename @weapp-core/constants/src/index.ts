@@ -25,6 +25,11 @@ export const REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME = '__wvRGI__'
 export const WEAPP_VITE_IMPORT_META_ENV_KEY = '__weappViteImportMetaEnv'
 export const WEAPP_VITE_EXTERNAL_OUTPUT_DIRECTORY = 'weapp_vite_external'
 
+export const DEFAULT_MCP_HOST = '127.0.0.1'
+export const DEFAULT_MCP_PORT = 3088
+export const DEFAULT_MCP_ENDPOINT = '/mcp'
+export const DEFAULT_RUNTIME_REST_ENDPOINT = '/api/weapp/devtools'
+
 export const WEAPP_VITE_LOGICAL_ENTRY_VIRTUAL_PREFIX = 'virtual:weapp-vite-logical-entry:'
 export const WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX = 'weapp-vite:logical-entry:'
 export const WEAPP_VITE_SIDECAR_VIRTUAL_PREFIX = 'virtual:weapp-vite-sidecar:'

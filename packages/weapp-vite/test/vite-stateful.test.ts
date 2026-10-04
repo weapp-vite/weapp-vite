@@ -5,11 +5,72 @@ import path from 'node:path'
 import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 import { createServer } from 'vite'
 import { expect, it } from 'vitest'
+import { attributeHmrProfile } from '../src/analyze/hmr/attribution'
+import { readHmrProfileLines } from '../src/analyze/hmr/reader'
 import { weapp } from '../src/vite'
 
 interface TestDevEngine {
   close: () => Promise<void>
 }
+
+it('hands the validated topology snapshot to the replacement native host without compiling it twice', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-topology-handoff-'))
+  let server: ViteDevServer | undefined
+  let snapshots = 0
+  try {
+    for (const [file, content] of Object.entries({
+      'package.json': '{"name":"topology-handoff-fixture","type":"module"}',
+      'project.config.json': '{"miniprogramRoot":"dist"}',
+      'project.private.config.json': '{"setting":{"compileHotReLoad":true}}',
+      'src/app.js': 'App({})',
+      'src/app.json': '{"pages":["pages/home/index"]}',
+      'src/pages/home/index.js': 'Page({})',
+      'src/pages/home/index.json': '{}',
+      'src/pages/home/index.wxml': '<view>home</view>',
+      'src/pages/extra/index.js': 'Page({ data: { message: "handoff-added-page" } })',
+      'src/pages/extra/index.json': '{}',
+      'src/pages/extra/index.wxml': '<view>extra</view>',
+    })) {
+      await mkdir(path.dirname(path.join(root, file)), { recursive: true })
+      await writeFile(path.join(root, file), content)
+    }
+    server = await createServer({
+      root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [weapp(), {
+        name: 'test:snapshot-build-count',
+        buildStart() {
+          if (this.environment.mode === 'build') {
+            snapshots++
+          }
+        },
+      }],
+      server: { middlewareMode: true, port: 0, host: '127.0.0.1' },
+      weapp: { srcRoot: 'src', autoRoutes: false, vue: { enable: false }, hmr: { runtime: 'stateful-experimental', profileJson: path.join(root, 'profile.jsonl') } },
+    })
+    expect(snapshots).toBe(1)
+    await writeFile(path.join(root, 'src/app.json'), '{"pages":["pages/home/index","pages/extra/index"]}')
+    await expect.poll(() => readFile(path.join(root, 'dist/pages/extra/index.js'), 'utf8'), { timeout: 15_000 }).toContain('handoff-added-page')
+    expect(JSON.parse(await readFile(path.join(root, 'dist/pages/extra/index.json'), 'utf8')) as unknown).toEqual({})
+    expect(await readFile(path.join(root, 'dist/pages/extra/index.wxml'), 'utf8')).toContain('extra')
+    await server.close()
+    expect(JSON.parse(await readFile(path.join(root, 'project.private.config.json'), 'utf8')) as unknown).toEqual({ setting: { compileHotReLoad: true } })
+    expect(snapshots).toBe(2)
+    const profile = readHmrProfileLines(await readFile(path.join(root, 'profile.jsonl'), 'utf8'))
+    expect(profile.skippedLineCount).toBe(0)
+    expect(profile.samples).toHaveLength(1)
+    expect(profile.samples[0]).toMatchObject({ pipeline: 'stateful', profileMode: 'full', status: 'complete', completionBoundary: 'output-published', correlation: 'known' })
+    expect(profile.samples[0]!.buildId).toEqual(expect.any(String))
+    expect(await readFile(path.join(root, 'dist/app.js'), 'utf8')).toContain(profile.samples[0]!.buildId!)
+    expect(profile.samples[0]!.sourceEvents?.map(event => event.file?.replaceAll('\\', '/').split('/src/')[1])).toEqual(['app.json'])
+    expect(attributeHmrProfile(profile.samples[0]!)).toMatchObject({ status: 'complete' })
+  }
+  finally {
+    await server?.close()
+    await rm(root, { recursive: true, force: true })
+  }
+}, 90_000)
 
 it.each([
   { middlewareMode: true, holdReplacement: false },

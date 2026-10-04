@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: async (run: () => Promise<unknown>) => await run() }))
+
 const start = vi.hoisted(() => vi.fn())
 const poll = vi.hoisted(() => vi.fn())
 const resolveCli = vi.hoisted(() => vi.fn())
 const execa = vi.hoisted(() => vi.fn())
 vi.mock('../src/cli/http', () => ({ startWechatIdeEngineBuildByHttp: start, pollWechatIdeEngineBuildResultByHttp: poll }))
-vi.mock('../src/cli/resolver', () => ({ resolveCliPath: resolveCli }))
+vi.mock('../src/devtoolsTarget', () => ({ resolveWechatDevtoolsTarget: resolveCli, assertWechatDevtoolsHost: async () => undefined }))
 vi.mock('execa', () => ({ execa }))
 
 describe('engine cancellation', () => {
@@ -13,7 +15,7 @@ describe('engine cancellation', () => {
     vi.useFakeTimers()
     start.mockReset().mockResolvedValue({ body: 'OK' })
     poll.mockReset().mockResolvedValue({ body: 'END', done: true, failed: false })
-    resolveCli.mockReset().mockResolvedValue({ cliPath: 'wechat-cli' })
+    resolveCli.mockReset().mockResolvedValue({ cliPath: 'wechat-cli', installationId: 'selected', appPath: 'selected-app', profileDir: 'selected-profile' })
     execa.mockReset().mockResolvedValue({ exitCode: 0 })
   })
   afterEach(() => vi.useRealTimers())
@@ -63,11 +65,11 @@ describe('engine cancellation', () => {
       throw reason
     })
     await expect(runWechatIdeEngineBuild('fixture', { signal: controller.signal })).rejects.toBe(reason)
-    expect(resolveCli).not.toHaveBeenCalled()
+    expect(resolveCli).toHaveBeenCalledOnce()
     expect(execa).not.toHaveBeenCalled()
   })
 
-  it('does not launch fallback after cancellation during CLI resolution', async () => {
+  it('does not launch fallback after cancellation during installation resolution', async () => {
     const { runWechatIdeEngineBuild } = await import('../src/cli/engine')
     const controller = new AbortController()
     const reason = new Error('CLI cancelled')

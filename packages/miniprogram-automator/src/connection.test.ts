@@ -69,6 +69,7 @@ describe('Connection', () => {
   it.each([
     ['2.01.2510290', true, true],
     ['2.02.2608070', false, true],
+    ['2.02.2608080', false, true],
     ['2.02.2609231', false, true],
     ['2.01.2601010', false, false],
   ] as const)('selects only affected Page protocols for DevTools %s', async (version, pageProtocol, methodProtocol) => {
@@ -100,6 +101,26 @@ describe('Connection', () => {
     const pending = connection.send('Tool.close')
     transport.emit('close')
     await expect(pending).rejects.toThrow('Connection closed')
+  })
+
+  it('reads Stable async method results through AppService while keeping element queries native', async () => {
+    const { default: Connection } = await import('./Connection')
+    const { default: Page } = await import('./Page')
+    const transport = new FakeTransport()
+    const connection = new Connection(transport as any)
+    connection.configureToolInfo({ version: '2.02.2608080' })
+    const page = new Page(connection, { id: 1, path: 'pages/index/index', query: {} })
+    const state = { readyMarker: 'vue-index-ready', metrics: { loadToReadyMs: 12 } }
+    const result = page.callMethod('readBenchState')
+    expect(JSON.parse(transport.send.mock.calls.at(-1)![0]).method).toBe('App.callFunction')
+    transport.emit('message', JSON.stringify({ id: 'fixed-id', result: { result: { __weappVitePageMethodFound: true, status: 'fulfilled', value: state } } }))
+    await expect(result).resolves.toEqual(state)
+
+    const elements = page.$$('.inside-component')
+    expect(JSON.parse(transport.send.mock.calls.at(-1)![0])).toMatchObject({ method: 'Page.getElements', params: { pageId: 1, selector: '.inside-component' } })
+    transport.emit('message', JSON.stringify({ id: 'fixed-id', result: { elements: [] } }))
+    await expect(elements).resolves.toEqual([])
+    connection.dispose()
   })
 
   it('rejects requests that never receive a protocol response', async () => {

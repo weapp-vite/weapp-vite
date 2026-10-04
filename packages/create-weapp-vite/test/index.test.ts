@@ -222,6 +222,7 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
       installSkills: false,
       dependencyVersionStrategy: 'bundled',
       registry: undefined,
+      toolchain: 'wv',
     })
   })
 
@@ -234,11 +235,12 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
       installSkills: false,
       dependencyVersionStrategy: strategy,
       registry: undefined,
+      toolchain: 'wv',
     })
     expect(await fs.pathExists(path.join(tmpRoot, 'app', 'package.json'))).toBe(true)
   })
 
-  it.each(['--dependency-versions=latest', '--dependency-versions=', '--dependency-versions', '--registry=', '--registry'])(
+  it.each(['--dependency-versions=latest', '--dependency-versions=', '--dependency-versions', '--registry=', '--registry', '--toolchain=unknown', '--toolchain=', '--toolchain'])(
     'fails before writing project files for %s',
     async (arg) => {
       process.chdir(tmpRoot)
@@ -260,7 +262,18 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
       installSkills: false,
       dependencyVersionStrategy: 'bundled',
       registry: 'https://registry.npmmirror.com/',
+      toolchain: 'wv',
     })
+  })
+
+  it('passes vp create arguments after the separator without changing the template', async () => {
+    process.chdir(tmpRoot)
+    process.argv = [...process.argv.slice(0, 2), '--', 'app', 'react', '--toolchain=vite-plus', '--no-install-skills']
+    const cli = await import('../src/cli')
+    await cli.runPromise
+    expect(createProjectMock).toHaveBeenCalledWith('app', 'react', expect.objectContaining({ toolchain: 'vite-plus' }))
+    const pkg = await fs.readJSON(path.join(tmpRoot, 'app/package.json')) as { scripts: Record<string, string> }
+    expect(pkg.scripts.build).toBe('vp build')
   })
 
   it('defaults to skipping skills in interactive mode', async () => {

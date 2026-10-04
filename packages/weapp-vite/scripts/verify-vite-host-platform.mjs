@@ -5,6 +5,8 @@ import path from 'node:path'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 三入口平台消费使用跨平台命令执行。
 import { execa } from 'execa'
+import { createConsumerRuntimeEnvironment } from './consumerRuntimeEnvironment.mjs'
+import { createConsumerRuntimeProfile } from './consumerRuntimeProfile.mjs'
 
 /** 独立发布包中的六平台原生命令矩阵，配置仅使用顶层目标选择。 */
 export async function verifyPlatformConsumer(root, host, repoRoot, runtime) {
@@ -59,10 +61,11 @@ export default defineConfig({
     console.log(`${host}: ${platform} production and development passed`)
   }
   for (const provider of runtime === 'both' ? ['headless', 'devtools'] : [runtime]) {
-    await execa('pnpm', ['vitest', 'run', '-c', 'e2e/vitest.e2e.devtools.config.ts', 'e2e/ide/platform-host.runtime.test.ts'], {
+    const profile = createConsumerRuntimeProfile('platform', host, provider)
+    await execa('pnpm', ['vitest', 'run', '-c', 'e2e/vitest.e2e.devtools.config.ts', profile.file, '-t', profile.testNamePattern], {
       cwd: repoRoot,
       stdio: 'inherit',
-      env: { WEAPP_VITE_E2E_RUNTIME_PROVIDER: provider, WEAPP_VITE_E2E_COMPILER_HOST: host, WEAPP_VITE_E2E_PLATFORM_PROJECT: root },
+      env: createConsumerRuntimeEnvironment(provider, host, profile.projectVariable, root, profile.cases),
     })
   }
 }

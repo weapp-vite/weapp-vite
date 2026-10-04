@@ -2,6 +2,7 @@ import path from 'node:path'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- e2e runner 需要跨平台启动 Vitest 子任务
 import { execa } from 'execa'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { createTemplateDevOpenArgs, resolveTemplateDevOpenProjectRoot, TEMPLATE_DEV_OPEN_CASES } from '../ide/template-dev-open-cases'
 import { assertDevtoolsLoggedIn } from '../utils/automator'
 import { cleanupTrackedDevProcesses, startDevProcess } from '../utils/dev-process'
@@ -111,4 +112,4 @@ async function main() {
   }
 }
 
-await main()
+await withMachineE2ELease(main)

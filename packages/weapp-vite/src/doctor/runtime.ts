@@ -82,7 +82,7 @@ export async function probeDoctorRuntime(cwd: string, target: MpPlatform, port?:
       }
       let session: DoctorSession
       try {
-        session = await probeStep(scope, 'project-connection', 3_000, async (signal, timeout) => await connectOpenedAutomator({ projectPath: cwd, port: port ?? resolveProjectAutomatorPort(cwd), timeout, signal }) as DoctorSession, session => session.disconnect())
+        session = await probeStep(scope, 'project-connection', 3_000, async (signal, timeout) => await connectOpenedAutomator({ projectPath: cwd, cliPath: options.cliPath, port: port ?? resolveProjectAutomatorPort(cwd), timeout, signal }) as DoctorSession, session => session.disconnect())
         record('project-connection', 'passed', 'connected')
       }
       catch (error) {

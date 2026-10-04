@@ -1,0 +1,888 @@
+{
+  "schemaVersion": 1,
+  "issue": 1097,
+  "status": "three-stateful-rows-runtime-accepted-pending-full-matrix-and-ci",
+  "compilerCandidate": {
+    "commit": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+    "packedAt": "2026-10-04T11:49:08.951Z",
+    "packingNode": "v22.22.3",
+    "candidateManifestSha256": "832be6d367c4102d8a83d875d902ff1d985d8175106323d22f6eeec97883272e",
+    "tarballManifestSha256": "785c6ed10371af7dd389a4c4a0b1f1d3505383ff11ce470b31f27a56fb9c7c3c",
+    "entryPackages": [
+      "weapp-vite",
+      "wevu",
+      "@weapp-vite/react"
+    ],
+    "sameArchivesAsClassicWatch": true,
+    "archives": [
+      {
+        "name": "@weapp-vite/react",
+        "version": "0.2.11",
+        "bytes": 24806,
+        "sha256": "9764253c28bed9845b1b90057440894b03ff3e32820b72573ea2d77b6e95c7da",
+        "lockIntegrity": "sha512-yfsdo21CsuFKE5Qiel1CUYr5xkaJ66X94hmSU/p4MSA5Z5mfGtVfhJMRAF9qu3T+YzL15QEhg0/TroMCk39zUg==",
+        "installedArchiveFilesCompared": 46
+      },
+      {
+        "name": "@weapp-core/constants",
+        "version": "0.3.0",
+        "bytes": 8010,
+        "sha256": "0de111b2a0ee36b85e52aa4ecde74a7f396f13a7020e030c46b2431fa79d6f2a",
+        "lockIntegrity": "sha512-yB3m5tGn5Kw2QIWsrLlHVOsvzgrcCn22w/6M6S86KdaUTGNewsIdiyFvpd5gdVyfPe66sK35UEvXoMSEZjmglA==",
+        "installedArchiveFilesCompared": 5
+      },
+      {
+        "name": "wevu",
+        "version": "7.4.0",
+        "bytes": 593579,
+        "sha256": "7d3eb6fdb97aeb2fdcf4ded353150aa5ce1ae1c4aef860baff6e451c703d0ba1",
+        "lockIntegrity": "sha512-A9SHCWOsUuAs0kZMNAunzrvwhhCz+2UB5x2i7aewWAWaUQKI8G6pO26q9ZGXq6essirSIFo/GFgcQLVrWVKnyQ==",
+        "installedArchiveFilesCompared": 662
+      },
+      {
+        "name": "@wevu/web-apis",
+        "version": "1.3.4",
+        "bytes": 29360,
+        "sha256": "8d16bbcac7ed993709c00818e1ae84b1aaebb6392e34cb5a5aed2f3d3bc57284",
+        "lockIntegrity": "sha512-We5GJuAzrzz/4fgii4GE2dxeAxfrJFW+FwPAyGOX8wbaHOZKeqT+UCBJLyxrfXL1OXkWI1L3rdVlOTUlqQwTdg==",
+        "installedArchiveFilesCompared": 30
+      },
+      {
+        "name": "@wevu/api",
+        "version": "0.3.7",
+        "bytes": 2800,
+        "sha256": "4233a7f92c2590dd31329260c9b4a112ed158ceef471f48b9f0ae7aa14e75510",
+        "lockIntegrity": "sha512-678rMIvxSvPxs9hfmxF0+XufAfih9SlfWBjDTpo0kDoVnM1NNcVC6q0//thB4KTIbA1N/Egrqmo2lvh4mUbH0w==",
+        "installedArchiveFilesCompared": 10
+      },
+      {
+        "name": "@weapp-core/api",
+        "version": "0.3.7",
+        "bytes": 84466,
+        "sha256": "5acda8cbff870909e307621de2e91b2ab4a31b431c118284f6262112e663dc48",
+        "lockIntegrity": "sha512-kbeY7fMeekiCext4FocXHJecodJRN2/I1g8L3ksLWn1vhs/TMZRrVk5ktPBPkzbPdVSdVV5qfyFtqKnGTDCtTg==",
+        "installedArchiveFilesCompared": 12
+      },
+      {
+        "name": "@wevu/compiler",
+        "version": "7.4.0",
+        "bytes": 157270,
+        "sha256": "31902dec3ddc93bb5f6dbcee67391823f27e282683cdc0c793a2bc8739534936",
+        "lockIntegrity": "sha512-kLK+AGULnEqxMT4KQGd29XkSSrz8/a0hKQrGf0ryelr8tO20cSVySnPyuWbjHwt+ihimyu1ijY0NWIHLmQsDSg==",
+        "installedArchiveFilesCompared": 8
+      },
+      {
+        "name": "rolldown-require",
+        "version": "2.0.34",
+        "bytes": 15663,
+        "sha256": "3d8fbec8784d2bf7d132f9c1a44a7b81730197b735bd416571d3e559c6302a3c",
+        "lockIntegrity": "sha512-pfEHIIQWe8qRdFsSKU/HYVLb61TtAdw5EdqvZhfj/crKwmNxu1/QuA+oQlIRqRQ7kYpHIiSyLxd80/Y2SECUYw==",
+        "installedArchiveFilesCompared": 10
+      },
+      {
+        "name": "@weapp-vite/ast",
+        "version": "7.4.0",
+        "bytes": 25644,
+        "sha256": "687c466215144e131116aa81baf2ae25d4b5e6a14d26a1cdbb3ccc376e6c0d37",
+        "lockIntegrity": "sha512-bWIkqej753EPLTSMEhSBNa+ChmAgrsZk9VZtUQgMG0Usl14G7ezuj+ajRUEhbZpDHNYpyG8BEn7/U15CjODtQA==",
+        "installedArchiveFilesCompared": 40
+      },
+      {
+        "name": "@weapp-core/shared",
+        "version": "3.2.7",
+        "bytes": 21327,
+        "sha256": "34f3a28a041e62e97be534890ea4a332816ebfdad4b66cf76fe8b0f8f3abe869",
+        "lockIntegrity": "sha512-K0Fad5s5Up/eDDjNsGzieaA3slPV2z/prV/UL7UG3DiEazH/fd/UBBV630wncFirxK3qESHtFtms2R/KA+ZTNg==",
+        "installedArchiveFilesCompared": 37
+      },
+      {
+        "name": "@weapp-core/types",
+        "version": "1.1.5",
+        "bytes": 25948,
+        "sha256": "8831f218b22b57fbe1bfd4757f50d1c26c368ff5329378513490e88d00ec2115",
+        "lockIntegrity": "sha512-y1Rp5pIsu3tcPfTCkzeZSgspj6yiNhO69Q7EDIe5mKk5iJmXrlRkjwQYeA9uPjwYBNpLxGyxYty9o5DCyk6Bag==",
+        "installedArchiveFilesCompared": 188
+      },
+      {
+        "name": "weapp-vite",
+        "version": "7.4.0",
+        "bytes": 733025,
+        "sha256": "9d5c8002482cabd48837e752af604fdb84b8ce062f899fd9ddf6c9a5ec6f7350",
+        "lockIntegrity": "sha512-V9AM8c4no1GNB4OXUOtPPl14EgUZbuaFCuC9QHA4NiVlK3i6AjAYrhBYoB+6RHzPSTfTHpczZ6XQuNAf2d2HNA==",
+        "installedArchiveFilesCompared": 127
+      },
+      {
+        "name": "weapp-ide-cli",
+        "version": "6.1.9",
+        "bytes": 66958,
+        "sha256": "43115c24d56d33ccc7b7be7dc39986162e43811cee49a8a1b0329a58bd401c7e",
+        "lockIntegrity": "sha512-D/E/8m9oE0un6ke3My7vpRKH9ZLx4yzTAF55tlXecOgCmvQAsYJHw94YlMNGh5v7bQRhXl4zznhXPNW3W7RIBA==",
+        "installedArchiveFilesCompared": 14
+      },
+      {
+        "name": "@weapp-vite/miniprogram-automator",
+        "version": "1.2.23",
+        "bytes": 378045,
+        "sha256": "e7c27ab7a87541e9db6f0f11c3f5224ac3d77dadef101e7af8cce1c1f80313ce",
+        "lockIntegrity": "sha512-EtKquzBGsr+6prS/3s/sj2rwva68hzBFt85mfuWZR/Enba825Jm6758RdaaRy2BrtmRjZ9Vu4hFQt6x97kgLQw==",
+        "installedArchiveFilesCompared": 8
+      },
+      {
+        "name": "@weapp-vite/qr",
+        "version": "1.1.8",
+        "bytes": 29268,
+        "sha256": "d47f09e0f7f97b50677d3daf6000f02dfd2862429c1c34f0be9fe3b29e059f32",
+        "lockIntegrity": "sha512-aHOAmx+/NG9E1Lo0LDm9TvTCrjWJx4kzsiBykoaqSj3XBv41LcnK12YCnj2R0zgjbZ6l/Ncyy90zaL3qUWeQqw==",
+        "installedArchiveFilesCompared": 5
+      },
+      {
+        "name": "@weapp-vite/devtools-runtime",
+        "version": "0.4.24",
+        "bytes": 6039,
+        "sha256": "4ecb45fac05aec9204540094be49891e9e4ea360f42d40bade4e42a8a13040ef",
+        "lockIntegrity": "sha512-8R//302fRHJBPO4fATQGKCKWXIx/Mvs3r+IbKkue66mUXHgftmugitmTVKkNlcSQN43jlXo6D40JYdIyIiOMXA==",
+        "installedArchiveFilesCompared": 7
+      },
+      {
+        "name": "@weapp-core/logger",
+        "version": "3.1.8",
+        "bytes": 3046,
+        "sha256": "01eae26a9833555c22d227aab4617cc3d2a8339472d0e9f834925416813b7c07",
+        "lockIntegrity": "sha512-sfsyEv6FBtmuqJWBUh8g6BRVvZA+kBudAe61vJdPHqq+q3t5tq8/C1+rXzMSjzDB8NidpXcLD97qbD3f7vLVTw==",
+        "installedArchiveFilesCompared": 5
+      },
+      {
+        "name": "vite-plugin-performance",
+        "version": "2.0.7",
+        "bytes": 5794,
+        "sha256": "55b64313a6bafbb9a0e28b22d8cef2cefb2616951fe300b37a97eb58174ad85b",
+        "lockIntegrity": "sha512-xDPxSIgH4UhVBGwjht4UtdUxWQuFyBZIRuKwgL84Iqi0GwCLavrqtklvq1gMaw0fRzPC5WTTFQ2IGoDIKn4lZA==",
+        "installedArchiveFilesCompared": 7
+      },
+      {
+        "name": "@weapp-vite/web",
+        "version": "1.6.0",
+        "bytes": 430867,
+        "sha256": "c9343a257c08f25af14d4a7426ee2e80a40f5f4537103b993ca791b8461ba2af",
+        "lockIntegrity": "sha512-JuqQr6Jpf1+uFeY01CAepjvqH7e/fdAlcSA24o058ICtpAOrwJutgUOQtM186aovWLpf4X5QNQEn4Utc1/gKzg==",
+        "installedArchiveFilesCompared": 439
+      },
+      {
+        "name": "@weapp-vite/volar",
+        "version": "2.1.12",
+        "bytes": 19026,
+        "sha256": "ed0bf86e8b2a2629818fde859114098c98765faf1783bb23e690244809fa8a83",
+        "lockIntegrity": "sha512-vcrjIdyxoRuGN2bqvls4hkliLSUq+NWwGHc3Dm3PbupDnNYArsmQsplR8cjG08B94LHpLkyOH3pvefCV7KNeug==",
+        "installedArchiveFilesCompared": 12
+      },
+      {
+        "name": "@weapp-core/schematics",
+        "version": "6.2.8",
+        "bytes": 20882,
+        "sha256": "b6305729be5541f2a25ee45748cc6c7bc596d2cd437614df44bc17e3f36d0018",
+        "lockIntegrity": "sha512-TpSOUak+77nlFqgdpDwE7qcxRj90UPRUFClU+S5hPyks83tJ6enkEszT4QUWaHJitAa1WzoF4LyjjGnHhVRDrA==",
+        "installedArchiveFilesCompared": 13
+      },
+      {
+        "name": "@weapp-vite/tailwindcss",
+        "version": "0.2.0",
+        "bytes": 5672,
+        "sha256": "8a40bff99f543971c7d85b4021044c1497f5477a793bf9f501271b9eeecd4438",
+        "lockIntegrity": "sha512-2yBJJF+bhrArIBFxhQhje//3LAk68yiqoF21kG82KU12erx4YOvg6vQNFPXbY6NrKzalwCxa6JTjvmlqGaL47Q==",
+        "installedArchiveFilesCompared": 5
+      },
+      {
+        "name": "@weapp-vite/hmr",
+        "version": "0.2.0",
+        "bytes": 9025,
+        "sha256": "cd50a74e08e0ca59f307b2ba74c2748a7cedbfd2159f5cfd4dbe881e68c97a72",
+        "lockIntegrity": "sha512-XfW2WjoIBFCdwL0sv+VMe/0dK23Bf6sjYvct9uhPZ6dGrot/RFTQnXtJkIUbJ4WoEgQNF1RrBvRItFEsZovilQ==",
+        "installedArchiveFilesCompared": 5
+      },
+      {
+        "name": "@weapp-vite/mcp",
+        "version": "1.5.8",
+        "bytes": 27374,
+        "sha256": "f6c0a48af348520d6788d48188e8f9c6707622ccae1a7fc258c9f88737c2837e",
+        "lockIntegrity": "sha512-f5geyduSvDtlpKQDisTFz4F8WvVgo27HqvSgzVkum3Mk9RljM2PbdScpq5QU9dGVrvVx9sd6+5uNPqDq1UHYRQ==",
+        "installedArchiveFilesCompared": 6
+      },
+      {
+        "name": "@weapp-vite/acceptance",
+        "version": "0.0.0",
+        "bytes": 14679,
+        "sha256": "1e937596dc0b5f8a1d5222e5d455c8998950e224f2861e6a0956eab95034a338",
+        "lockIntegrity": "sha512-sX3/vgiHRKlPX5WzgydN20ftxeIjJZyibZ2s/9kd54F/5/5z9agP5KeAzi6KO7O8yUt7S3gDsUERfRN0txGVLA==",
+        "installedArchiveFilesCompared": 4
+      },
+      {
+        "name": "@weapp-vite/i18n",
+        "version": "0.2.8",
+        "bytes": 11649,
+        "sha256": "9c808a767bf32c4f5984c547545425ca5b07e6eb687888596f8bd7abe39635e1",
+        "lockIntegrity": "sha512-IT+2W3R1U7qESgVtOngs86CXxSLODvICceR+BUfzfxdbVr/YsG/cMyKeoQBVbX0ogNc6KzBdfq1D86FQAUf3+A==",
+        "installedArchiveFilesCompared": 20
+      },
+      {
+        "name": "@weapp-vite/eslint",
+        "version": "0.2.9",
+        "bytes": 10279,
+        "sha256": "32b63758ad9bdaf98986ca16f2cf49361a29c498ea7d42fd9767971c38d32785",
+        "lockIntegrity": "sha512-+plF3KYD5CVhG+xAm0KazfLFlD/mY4Bg+DQMORP4ynlkxVDh7EZa/y3Djyxxvntp5UVKG2SMdiImaXEkEjU//Q==",
+        "installedArchiveFilesCompared": 5
+      },
+      {
+        "name": "@weapp-core/init",
+        "version": "6.0.24",
+        "bytes": 13459,
+        "sha256": "50a2fb263267d2c8e1a90770acc55f3c14503c08243943a7adc248dd7db4a30d",
+        "lockIntegrity": "sha512-ErGjOYSuppAK3Jzz9UcDXcfWmhKbN6h2CnPE4cJvTuDl7n2G42ZGDZdSjsyeXpOy6vHP9WKm+ztA+0FjY6WjFA==",
+        "installedArchiveFilesCompared": 5
+      }
+    ]
+  },
+  "harness": {
+    "commit": "540f4d0202815b00cf60956e9b1dbde4ece407de",
+    "workingTreeDirtyAtRuntime": false,
+    "compilerTarballsBuiltFromHarnessCommit": false
+  },
+  "rows": [
+    {
+      "host": "wv",
+      "profile": "stateful",
+      "status": "selected-runtime-cases-accepted-pending-full-matrix-and-ci",
+      "independentConsumer": {
+        "outsideRepository": true,
+        "candidatePackageCount": 28,
+        "allArchiveSha256AndBytesMatchManifest": true,
+        "allPackageLockSha512IntegrityAndResolvedSourcesMatchArchives": true,
+        "allInstalledVersionsMatchCandidateManifest": true,
+        "allCandidateDirectoriesArePhysicalWithinConsumer": true,
+        "nestedCandidatePackageCopies": 0,
+        "workspaceProtocolReferences": 0,
+        "packageLockLinkEntries": 0,
+        "nodeModulesSymlinksAudited": 37,
+        "externalNodeModulesSymlinks": 0,
+        "installedArchiveFilesCompared": 1735,
+        "installedArchiveFileMismatches": 0,
+        "exportPackagesVerified": 28,
+        "negativeControls": {
+          "brokenExportsRejected": true,
+          "missingCliRejected": true
+        },
+        "consumerReportSha256": "b2c82b9ef3351cff386a936f474fa2ed379e1d7095d6c4052d2349354ff60b00",
+        "packageLockSha256": "9c7c5eeff40b9b2ef401ca2a6a104be36338ff73632dcf94ac15f471ccdd9e5d",
+        "host": {
+          "vite": {
+            "name": "vite",
+            "version": "8.3.2"
+          },
+          "typescript": {
+            "name": "typescript",
+            "version": "6.0.3"
+          }
+        },
+        "runtimeNode": "v24.18.0",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "officialDevtools": {
+        "queriedAt": "2026-10-04T12:36:26.729808+00:00",
+        "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+        "channel": "stable",
+        "version": "2.02.2608080",
+        "sourceSha256": "3a71f3624cb7068f9cffd7dfcbf1ad5a455adc2339a42366d55e0ceba7ae7d0a"
+      },
+      "providers": [
+        {
+          "provider": "headless",
+          "runId": "issue1097-wv-stateful-c3-01",
+          "reportSha256": "e438d84f355ba6ff6ad3551a28b1d68166a3d342eda2f9968b006194b168771e",
+          "startedAt": "2026-10-04T12:39:15.207Z",
+          "finishedAt": "2026-10-04T12:39:25.769Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": null,
+            "baseLibraryVersion": null
+          },
+          "strict": true,
+          "status": "passed",
+          "summary": {
+            "plannedCount": 3,
+            "executedCount": 3,
+            "passedCount": 3,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 13,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 19,
+            "capturedCheckpointCount": 19
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "sessions": 1,
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "startupProtocolEvents": 0,
+            "startupProtocolStates": []
+          }
+        },
+        {
+          "provider": "devtools",
+          "runId": "issue1097-wv-stateful-c3-01",
+          "reportSha256": "72f8f94ced837e53af5eef6d6a9142356d626605083a943da93308d5b8b48871",
+          "startedAt": "2026-10-04T12:39:26.353Z",
+          "finishedAt": "2026-10-04T12:40:37.901Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.16.3"
+          },
+          "strict": true,
+          "status": "passed",
+          "summary": {
+            "plannedCount": 4,
+            "executedCount": 4,
+            "passedCount": 4,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 12,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 26,
+            "capturedCheckpointCount": 26
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "sessions": 1,
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 105,
+            "error": 0,
+            "startupProtocolEvents": 106,
+            "startupProtocolStates": [
+              "recovered",
+              "retrying"
+            ]
+          }
+        }
+      ],
+      "parity": {
+        "commonCases": 3,
+        "commonCheckpoints": 19,
+        "allCommonObservationsMatch": true,
+        "headlessFinishedBeforeDevtoolsStarted": true,
+        "nativePageStyleAndScriptCase": "devtools-only: seven additional checkpoints; headless CSS has no equivalent measurement"
+      },
+      "nativePageObservations": [
+        {
+          "id": "initial",
+          "count": "0",
+          "marker": "STATEFUL-NATIVE-BASE",
+          "input": "",
+          "backgroundColor": "rgb(255, 255, 255)"
+        },
+        {
+          "id": "prepared",
+          "count": "1",
+          "marker": "STATEFUL-NATIVE-BASE",
+          "input": "held-input",
+          "backgroundColor": "rgb(255, 255, 255)"
+        },
+        {
+          "id": "style-updated",
+          "count": "1",
+          "input": "held-input",
+          "backgroundColor": "rgb(219, 234, 254)"
+        },
+        {
+          "id": "patched",
+          "count": "1",
+          "marker": "STATEFUL-NATIVE-BASE",
+          "input": "held-input",
+          "backgroundColor": "rgb(219, 234, 254)"
+        },
+        {
+          "id": "updated",
+          "count": "3",
+          "marker": "STATEFUL-NATIVE-BASE",
+          "input": "held-input",
+          "backgroundColor": "rgb(219, 234, 254)"
+        },
+        {
+          "id": "restored",
+          "count": "3",
+          "input": "held-input",
+          "backgroundColor": "rgb(255, 255, 255)"
+        },
+        {
+          "id": "restored-updated",
+          "count": "4",
+          "input": "held-input",
+          "backgroundColor": "rgb(255, 255, 255)"
+        }
+      ],
+      "cleanup": {
+        "resourcesSha256": "bd44a95123e0a0008e7c496c9ed3a795bdd667b04aaec530c058df09d6ae0045",
+        "completedAt": "2026-10-04T12:41:05.897420+00:00",
+        "exitCode": 0,
+        "ownedEndpointsObserved": 1,
+        "ownedEndpointsConfirmedClosed": 1,
+        "projectClosedViaSelectedCli": true,
+        "consumerRetainedForArchiveReview": true
+      },
+      "runLogSha256": "91af1fcd2b2c280491280a8057b3b4cbea753848c5e0c36c275d55bde3a94c89"
+    },
+    {
+      "host": "vite",
+      "profile": "stateful",
+      "status": "selected-runtime-cases-accepted-pending-full-matrix-and-ci",
+      "independentConsumer": {
+        "outsideRepository": true,
+        "candidatePackageCount": 28,
+        "allArchiveSha256AndBytesMatchManifest": true,
+        "allPackageLockSha512IntegrityAndResolvedSourcesMatchArchives": true,
+        "allInstalledVersionsMatchCandidateManifest": true,
+        "allCandidateDirectoriesArePhysicalWithinConsumer": true,
+        "nestedCandidatePackageCopies": 0,
+        "workspaceProtocolReferences": 0,
+        "packageLockLinkEntries": 0,
+        "nodeModulesSymlinksAudited": 39,
+        "externalNodeModulesSymlinks": 0,
+        "installedArchiveFilesCompared": 1735,
+        "installedArchiveFileMismatches": 0,
+        "exportPackagesVerified": 28,
+        "negativeControls": {
+          "brokenExportsRejected": true,
+          "missingCliRejected": true
+        },
+        "consumerReportSha256": "261b9229c15ff3e5706eee07b7be6e3883415f29359129c8d9cec900fe3bdbea",
+        "packageLockSha256": "a2f172d8680d8cf7ebbc0f9fa8e1db690625ff27ae6a5a388075615ab23e8a80",
+        "host": {
+          "vite": {
+            "name": "vite",
+            "version": "8.3.2"
+          },
+          "vitest": {
+            "name": "vitest",
+            "version": "5.0.2"
+          },
+          "typescript": {
+            "name": "typescript",
+            "version": "6.0.3"
+          }
+        },
+        "runtimeNode": "v24.18.0",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "officialDevtools": {
+        "queriedAt": "2026-10-04T12:41:48.243492+00:00",
+        "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+        "channel": "stable",
+        "version": "2.02.2608080",
+        "sourceSha256": "4c6ce076d0b37b947c83215e4b9915928fadf257ce9dab8f702950d221f34b9e"
+      },
+      "providers": [
+        {
+          "provider": "headless",
+          "runId": "issue1097-vite-stateful-c3-01",
+          "reportSha256": "89bcf626b531cc432e974f13bbcd029a1f9aac9ed9f4314c4008760872273b8c",
+          "startedAt": "2026-10-04T12:43:08.512Z",
+          "finishedAt": "2026-10-04T12:43:18.666Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": null,
+            "baseLibraryVersion": null
+          },
+          "strict": true,
+          "status": "passed",
+          "summary": {
+            "plannedCount": 3,
+            "executedCount": 3,
+            "passedCount": 3,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 13,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 19,
+            "capturedCheckpointCount": 19
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "sessions": 1,
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "startupProtocolEvents": 0,
+            "startupProtocolStates": []
+          }
+        },
+        {
+          "provider": "devtools",
+          "runId": "issue1097-vite-stateful-c3-01",
+          "reportSha256": "eda44c1f99d6287e15190f27c7a9566d73842feb235e53f5ea55e6e9d6cdf48a",
+          "startedAt": "2026-10-04T12:43:19.429Z",
+          "finishedAt": "2026-10-04T12:44:29.508Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.16.3"
+          },
+          "strict": true,
+          "status": "passed",
+          "summary": {
+            "plannedCount": 4,
+            "executedCount": 4,
+            "passedCount": 4,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 12,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 26,
+            "capturedCheckpointCount": 26
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "sessions": 1,
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 108,
+            "error": 0,
+            "startupProtocolEvents": 109,
+            "startupProtocolStates": [
+              "recovered",
+              "retrying"
+            ]
+          }
+        }
+      ],
+      "parity": {
+        "commonCases": 3,
+        "commonCheckpoints": 19,
+        "allCommonObservationsMatch": true,
+        "headlessFinishedBeforeDevtoolsStarted": true,
+        "nativePageStyleAndScriptCase": "devtools-only: seven additional checkpoints; headless CSS has no equivalent measurement"
+      },
+      "nativePageObservations": [
+        {
+          "id": "initial",
+          "count": "0",
+          "marker": "STATEFUL-NATIVE-BASE",
+          "input": "",
+          "backgroundColor": "rgb(255, 255, 255)"
+        },
+        {
+          "id": "prepared",
+          "count": "1",
+          "marker": "STATEFUL-NATIVE-BASE",
+          "input": "held-input",
+          "backgroundColor": "rgb(255, 255, 255)"
+        },
+        {
+          "id": "style-updated",
+          "count": "1",
+          "input": "held-input",
+          "backgroundColor": "rgb(219, 234, 254)"
+        },
+        {
+          "id": "patched",
+          "count": "1",
+          "marker": "STATEFUL-NATIVE-BASE",
+          "input": "held-input",
+          "backgroundColor": "rgb(219, 234, 254)"
+        },
+        {
+          "id": "updated",
+          "count": "3",
+          "marker": "STATEFUL-NATIVE-BASE",
+          "input": "held-input",
+          "backgroundColor": "rgb(219, 234, 254)"
+        },
+        {
+          "id": "restored",
+          "count": "3",
+          "input": "held-input",
+          "backgroundColor": "rgb(255, 255, 255)"
+        },
+        {
+          "id": "restored-updated",
+          "count": "4",
+          "input": "held-input",
+          "backgroundColor": "rgb(255, 255, 255)"
+        }
+      ],
+      "cleanup": {
+        "resourcesSha256": "0568a8a284a054d741b7c14e2ce5239a577e3028a5c6b4c726ed150858c4ee9a",
+        "completedAt": "2026-10-04T12:45:09.069615+00:00",
+        "exitCode": 0,
+        "ownedEndpointsObserved": 1,
+        "ownedEndpointsConfirmedClosed": 1,
+        "projectClosedViaSelectedCli": true,
+        "consumerRetainedForArchiveReview": true
+      },
+      "runLogSha256": "2fd6e5d8e57765d045484e02a256a14e5677e0c1e609402d8f891e19c25565e2"
+    },
+    {
+      "host": "vite-plus",
+      "profile": "stateful",
+      "status": "selected-runtime-cases-accepted-pending-full-matrix-and-ci",
+      "independentConsumer": {
+        "outsideRepository": true,
+        "candidatePackageCount": 28,
+        "allArchiveSha256AndBytesMatchManifest": true,
+        "allPackageLockSha512IntegrityAndResolvedSourcesMatchArchives": true,
+        "allInstalledVersionsMatchCandidateManifest": true,
+        "allCandidateDirectoriesArePhysicalWithinConsumer": true,
+        "nestedCandidatePackageCopies": 0,
+        "workspaceProtocolReferences": 0,
+        "packageLockLinkEntries": 0,
+        "nodeModulesSymlinksAudited": 44,
+        "externalNodeModulesSymlinks": 0,
+        "installedArchiveFilesCompared": 1735,
+        "installedArchiveFileMismatches": 0,
+        "exportPackagesVerified": 28,
+        "negativeControls": {
+          "brokenExportsRejected": true,
+          "missingCliRejected": true
+        },
+        "consumerReportSha256": "79686490dfd005a01e28240dd016148107e1a2be100af5f7708c1a06066f6598",
+        "packageLockSha256": "032d84e5c4eafc6ac41a57ce802879d54a01cc903e3118e97da53615d8080b4f",
+        "host": {
+          "vite": {
+            "name": "@voidzero-dev/vite-plus-core",
+            "version": "1.0.0"
+          },
+          "vite-plus": {
+            "name": "vite-plus",
+            "version": "1.0.0"
+          },
+          "vitest": {
+            "name": "vitest",
+            "version": "5.0.1"
+          },
+          "typescript": {
+            "name": "typescript",
+            "version": "6.0.3"
+          }
+        },
+        "runtimeNode": "v24.18.0",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "officialDevtools": {
+        "queriedAt": "2026-10-04T12:46:04.894258+00:00",
+        "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+        "channel": "stable",
+        "version": "2.02.2608080",
+        "sourceSha256": "b457f3f3ff6da7cf3eb8512cd0155507289f33215ace1504b02d6cfd151a30c8"
+      },
+      "providers": [
+        {
+          "provider": "headless",
+          "runId": "issue1097-vp-stateful-c3-01",
+          "reportSha256": "74b3ff78c713d501c179321c88a025e8ee4108132b03267000ecea207b443ee9",
+          "startedAt": "2026-10-04T12:46:42.493Z",
+          "finishedAt": "2026-10-04T12:46:52.923Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": null,
+            "baseLibraryVersion": null
+          },
+          "strict": true,
+          "status": "passed",
+          "summary": {
+            "plannedCount": 3,
+            "executedCount": 3,
+            "passedCount": 3,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 13,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 19,
+            "capturedCheckpointCount": 19
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "sessions": 1,
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "startupProtocolEvents": 0,
+            "startupProtocolStates": []
+          }
+        },
+        {
+          "provider": "devtools",
+          "runId": "issue1097-vp-stateful-c3-01",
+          "reportSha256": "5d7bcc615178c376945c36d50a219760eb0070cfda7d96b5bc85bb1a89a310af",
+          "startedAt": "2026-10-04T12:46:53.910Z",
+          "finishedAt": "2026-10-04T12:48:05.780Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.16.3"
+          },
+          "strict": true,
+          "status": "passed",
+          "summary": {
+            "plannedCount": 4,
+            "executedCount": 4,
+            "passedCount": 4,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 12,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 26,
+            "capturedCheckpointCount": 26
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "sessions": 1,
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 103,
+            "error": 0,
+            "startupProtocolEvents": 104,
+            "startupProtocolStates": [
+              "recovered",
+              "retrying"
+            ]
+          }
+        }
+      ],
+      "parity": {
+        "commonCases": 3,
+        "commonCheckpoints": 19,
+        "allCommonObservationsMatch": true,
+        "headlessFinishedBeforeDevtoolsStarted": true,
+        "nativePageStyleAndScriptCase": "devtools-only: seven additional checkpoints; headless CSS has no equivalent measurement"
+      },
+      "nativePageObservations": [
+        {
+          "id": "initial",
+          "count": "0",
+          "marker": "STATEFUL-NATIVE-BASE",
+          "input": "",
+          "backgroundColor": "rgb(255, 255, 255)"
+        },
+        {
+          "id": "prepared",
+          "count": "1",
+          "marker": "STATEFUL-NATIVE-BASE",
+          "input": "held-input",
+          "backgroundColor": "rgb(255, 255, 255)"
+        },
+        {
+          "id": "style-updated",
+          "count": "1",
+          "input": "held-input",
+          "backgroundColor": "rgb(219, 234, 254)"
+        },
+        {
+          "id": "patched",
+          "count": "1",
+          "marker": "STATEFUL-NATIVE-BASE",
+          "input": "held-input",
+          "backgroundColor": "rgb(219, 234, 254)"
+        },
+        {
+          "id": "updated",
+          "count": "3",
+          "marker": "STATEFUL-NATIVE-BASE",
+          "input": "held-input",
+          "backgroundColor": "rgb(219, 234, 254)"
+        },
+        {
+          "id": "restored",
+          "count": "3",
+          "input": "held-input",
+          "backgroundColor": "rgb(255, 255, 255)"
+        },
+        {
+          "id": "restored-updated",
+          "count": "4",
+          "input": "held-input",
+          "backgroundColor": "rgb(255, 255, 255)"
+        }
+      ],
+      "cleanup": {
+        "resourcesSha256": "b8327ce9da8320afaa9f168228c7614b4b827fd90704f752cc3525dbcc054b47",
+        "completedAt": "2026-10-04T12:52:29.183879+00:00",
+        "exitCode": 0,
+        "ownedEndpointsObserved": 1,
+        "ownedEndpointsConfirmedClosed": 1,
+        "projectClosedViaSelectedCli": true,
+        "consumerRetainedForArchiveReview": true
+      },
+      "runLogSha256": "20be82b8296d3882b65d560a018c7c3f8478f6bd8290a698f6f94d701395ceb6"
+    }
+  ],
+  "commonCases": [
+    {
+      "name": "stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch",
+      "checkpointIds": [
+        "initial",
+        "prepared",
+        "patched",
+        "updated"
+      ],
+      "observationSha256": "06e8fbea34056d27a0cf36f924ddf797daf39d7b3fda8d2f721a3c85b34d73a4"
+    },
+    {
+      "name": "stateful HMR in real WeChat DevTools > preserves native page state across two template edit and restore cycles",
+      "checkpointIds": [
+        "initial",
+        "prepared",
+        "edit-0",
+        "restore-0",
+        "edit-1",
+        "restore-1"
+      ],
+      "observationSha256": "d040b66c9ac33d9eba81f130296b823440c4c426626d37e159c7eb511122cc59"
+    },
+    {
+      "name": "stateful HMR in real WeChat DevTools > preserves Wevu local and store state across isolated script updates and restoration",
+      "checkpointIds": [
+        "initial",
+        "prepared",
+        "patched",
+        "clicked",
+        "restored",
+        "restored-clicked",
+        "navigated",
+        "navigated-clicked",
+        "navigated-restored"
+      ],
+      "observationSha256": "3ebb77d6624161a4483fba3ce8adf65ff7d202c8d70b9900e24bfe57f2c2f114"
+    }
+  ],
+  "limitations": [
+    "Only the three selected stateful matrix rows are covered; classic, classic-watch, shared-fragment, subpackage and required CI gates need the separate matrix evidence.",
+    "The compiler candidate is c3c643d40; the runtime harness is clean 540f4d020. Packing used Node22.22.3, while all recorded runtime invocations used Node24.18.0.",
+    "The native Page CSS/script case has seven DevTools-only checkpoints; parity is asserted for the other three cases and 19 common checkpoints.",
+    "Zero warn/error/exception values refer to AppService console session summaries. Startup protocol warning/recovery messages are retained separately and are not presented as zero diagnostics.",
+    "The resource ledger records precise project/endpoint cleanup. This audit reads retained artifacts and does not re-run UI, runtime, or a continuous process trace."
+  ]
+}

@@ -63,7 +63,7 @@ pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias
 
 每次调用选择一个目标。纯 Web 使用 `weapp.platform: 'web'`；Web/小程序同宿主混合开发仍未开放。
 
-生产构建、build watch、classic 与实验性 stateful dev 已接入。任务缓存、Dashboard/MCP 会话复用、脚手架工具链选项和完整跨平台发布矩阵仍属于后续阶段。完整编译能力对齐继续由 #1097 追踪；高级目标限制是阶段边界。
+生产构建、build watch、classic 与实验性 stateful dev 已接入。脚手架支持与业务模板独立的 `--toolchain=wv|vite|vite-plus`，生成对应宿主脚本、显式配置入口和 Vite+ core alias；小程序专属命令继续使用 `wv`。任务缓存、Dashboard/MCP 会话复用和完整跨平台发布矩阵仍属于后续阶段。完整编译能力对齐继续由 #1097 追踪；高级目标限制是阶段边界。
 
 ## classic 开发
 
@@ -125,7 +125,9 @@ classic、stateful 和生产 watch 不为 worker 额外启动构建 watcher。�
 
 插件输出可放在主应用输出内部或同级目录，但不能等于或包含主应用输出目录。classic 与 stateful 宿主都保留独立的插件编译会话，由父会话负责关闭；插件 watcher 负责增量更新与入口拓扑重建，不承诺插件 JS 状态保持。生产 watch 支持共享依赖、编译失败恢复和插件页面移除。
 
-当前阶段不支持双产物的 `build.write: false`，会提前报错。标准插件的 npm 自定义 builder、手工 npm 输出映射等既有限制仍适用；这些组合继续进入后续能力对齐验收。
+当前阶段不支持双产物的 `build.write: false`，会提前报错。npm 自定义回调和手工映射共用上述输出归属规则；真实插件 runtime 仍需按目标平台验收。
+
+手工 npm 关联从主 `packageJsonPath` 所在目录解析依赖，再按 Node 规则向上查找；递归依赖从所属父包解析。CLI 缓存跟踪所选 manifest 的依赖变化，回调的工程 `root` 和相对输出基准保持不变。外部父子映射迁移时，按整轮绝对文件归属差集删除旧文件，不会误删当前产物或用户文件。
 
 ## 小程序组件库
 

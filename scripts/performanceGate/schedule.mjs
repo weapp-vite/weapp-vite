@@ -24,9 +24,12 @@ export async function previousAttempt(target, get = request) {
 
 /**
  * 根据固定提交记录选择待验收目标。
- * @param {{ prNumber?: number, get?: typeof request }} options 调度输入与可替换的只读查询。
+ * @param {{ prNumber?: number, mainOnly?: boolean, get?: typeof request }} options 调度输入与可替换的只读查询。
  */
-export async function selectTargets({ prNumber = undefined, get = request }) {
+export async function selectTargets({ prNumber = undefined, mainOnly = false, get = request }) {
+  if (mainOnly && prNumber !== undefined) {
+    throw new Error('main-only cannot be combined with pr-number')
+  }
   const candidates = []
   const reused = []
   const consider = async (target) => {
@@ -44,6 +47,9 @@ export async function selectTargets({ prNumber = undefined, get = request }) {
     return true
   }
   await consider(await resolveTarget(undefined, get))
+  if (mainOnly) {
+    return { targets: candidates, reused }
+  }
   if (prNumber) {
     await consider(await resolveTarget(prNumber, get))
   }
@@ -74,7 +80,7 @@ async function main() {
   if (input && !/^[1-9]\d*$/.test(input)) {
     throw new Error('Invalid PR number')
   }
-  const selection = await selectTargets({ prNumber: input ? Number(input) : undefined })
+  const selection = await selectTargets({ prNumber: input ? Number(input) : undefined, mainOnly: process.env.MAIN_ONLY === 'true' })
   const plan = { manifest: frozenManifest(), schemaVersion: 2, purpose: 'full', samplingContract: policy.samplingContract, driverSha, repository: process.env.GITHUB_REPOSITORY, runId: process.env.GITHUB_RUN_ID, ...selection }
   plan.matrix = createMatrix(plan.targets)
   const url = `${process.env.GITHUB_SERVER_URL}/${plan.repository}/actions/runs/${plan.runId}`

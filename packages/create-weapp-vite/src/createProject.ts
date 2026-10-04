@@ -1,5 +1,6 @@
 import type { PackageJson } from 'pkg-types'
 import type { DependencyVersionStrategy } from './dependencyVersions'
+import type { Toolchain } from './toolchain'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import logger from '@weapp-core/logger'
@@ -13,6 +14,7 @@ import { displayRegistry, registryEnvironment, resolveRegistryOptions } from './
 import { ensurePnpmBuildPolicy } from './pnpmBuildPolicy'
 import { installRecommendedSkills, RECOMMENDED_SKILLS_INSTALL_COMMAND } from './skills'
 import { ensureManagedTypeScriptDevDependencies, normalizeTemplateDependencySpecs } from './templateDependencies'
+import { applyToolchain, validateToolchain, validateToolchainWorkspace } from './toolchain'
 import { updateGitIgnore } from './updateGitignore'
 import { writeJsonFile } from './utils/fs'
 
@@ -193,6 +195,8 @@ function createEmptyPackageJson(): PackageJson {
 }
 
 export interface CreateProjectOptions {
+  /** 选择构建宿主，业务模板与工具链独立。 */
+  toolchain?: Toolchain
   installSkills?: boolean
   dependencyVersionStrategy?: DependencyVersionStrategy
   /** 本次依赖查询与建议安装命令使用的 registry，不写入用户配置。 */
@@ -209,6 +213,9 @@ export async function createProject(
 ) {
   const dependencyVersionStrategy = options.dependencyVersionStrategy ?? 'bundled'
   validateDependencyVersionStrategy(dependencyVersionStrategy)
+  const toolchain = options.toolchain ?? 'wv'
+  validateToolchain(toolchain)
+  await validateToolchainWorkspace(targetDir || '.', toolchain)
   const network = await resolveRegistryOptions({ registry: options.registry, projectRoot: path.resolve(targetDir || '.') })
 
   const {
@@ -243,10 +250,11 @@ export async function createProject(
 
   const resolution = await resolveDependencyVersions(pkgJson, dependencyVersionStrategy, network)
 
-  await writeJsonFile(packageJsonPath, pkgJson)
   await ensurePnpmBuildPolicy(targetDir)
+  await applyToolchain(targetDir, pkgJson, toolchain)
+  await writeJsonFile(packageJsonPath, pkgJson)
   // eslint-disable-next-line ts/no-use-before-define
-  await writeAgentsGuidelines(targetDir, templateName)
+  await writeAgentsGuidelines(targetDir, templateName, toolchain)
   await updateGitIgnore({ root: targetDir, write: true })
 
   if (options.installSkills) {
@@ -274,7 +282,7 @@ export async function createProject(
   logger.info(installationCommand(temporaryRegistry !== undefined ? network.registry : undefined))
 }
 
-async function writeAgentsGuidelines(targetDir: string, templateName: TemplateName) {
+async function writeAgentsGuidelines(targetDir: string, templateName: TemplateName, toolchain: Toolchain = 'wv') {
   const agentsPath = path.resolve(targetDir, 'AGENTS.md')
   if (await fs.pathExists(agentsPath)) {
     const current = await fs.readFile(agentsPath, 'utf8')
@@ -283,7 +291,7 @@ async function writeAgentsGuidelines(targetDir: string, templateName: TemplateNa
       return
     }
   }
-  await fs.writeFile(agentsPath, createAgentsGuidelines(templateName))
+  await fs.writeFile(agentsPath, createAgentsGuidelines(templateName, toolchain))
 }
 
 export const __internal = {

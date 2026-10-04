@@ -20,6 +20,10 @@ function createStorageHash(key: string) {
   return createHash('md5').update(key).digest('hex')
 }
 
+function targetForProfile(profileDir: string) {
+  return { cliPath: path.join(profileDir, 'cli'), appPath: path.join(profileDir, 'app.asar'), installationId: profileDir, profileDir }
+}
+
 describe('bootstrapWechatDevtoolsSettings', () => {
   const tempDirs: string[] = []
 
@@ -58,6 +62,7 @@ describe('bootstrapWechatDevtoolsSettings', () => {
     const result = await bootstrapWechatDevtoolsSettings({
       homeDir,
       platform: 'darwin',
+      target: targetForProfile(path.join(homeDir, 'Library', 'Application Support', '微信开发者工具', 'instance-a')),
     })
 
     expect(result).toEqual({
@@ -110,6 +115,7 @@ describe('bootstrapWechatDevtoolsSettings', () => {
     const result = await bootstrapWechatDevtoolsSettings({
       homeDir,
       platform: 'darwin',
+      target: targetForProfile(path.join(homeDir, 'Library', 'Application Support', '微信开发者工具', 'instance-a')),
       projectPath,
       trustProject: true,
     })
@@ -174,6 +180,7 @@ describe('bootstrapWechatDevtoolsSettings', () => {
       homeDir,
       localAppDataDir,
       platform: 'win32',
+      target: targetForProfile(path.join(localAppDataDir, '微信开发者工具', 'User Data')),
       projectPath,
       trustProject: true,
     })
@@ -230,7 +237,7 @@ describe('detectWechatDevtoolsServicePort', () => {
     await Promise.all(tempDirs.splice(0).map(async tempDir => fs.rm(tempDir, { recursive: true, force: true })))
   })
 
-  it.each(['darwin', 'win32'] as const)('prefers recent enabled settings over an obsolete instance on %s', async (platform) => {
+  it.each(['darwin', 'win32'] as const)('keeps the selected installation regardless of another profile modification time on %s', async (platform) => {
     const homeDir = await createTempHomeDir()
     tempDirs.push(homeDir)
     const localAppDataDir = path.join(homeDir, 'AppData', 'Local')
@@ -248,21 +255,21 @@ describe('detectWechatDevtoolsServicePort', () => {
       await fs.utimes(file, updatedAt, updatedAt)
     }
 
-    expect(await detectWechatDevtoolsServicePort({ homeDir, localAppDataDir, platform })).toMatchObject({
-      touchedInstanceCount: 2,
-      detectedSecurityCount: 2,
-      servicePort: 21002,
+    expect(await detectWechatDevtoolsServicePort({ homeDir, localAppDataDir, platform, target: targetForProfile(path.join(baseDir, 'instance-a')) })).toMatchObject({
+      touchedInstanceCount: 1,
+      detectedSecurityCount: 1,
+      servicePort: 21001,
       servicePortEnabled: true,
     })
     const firstInstanceSettings = path.join(baseDir, 'instance-a', 'WeappLocalData', 'localstorage_b72da75d79277d2f5f9c30c9177be57e.json')
     await fs.utimes(firstInstanceSettings, 3000, 3000)
-    expect(await detectWechatDevtoolsServicePort({ homeDir, localAppDataDir, platform })).toMatchObject({
+    expect(await detectWechatDevtoolsServicePort({ homeDir, localAppDataDir, platform, target: targetForProfile(path.join(baseDir, 'instance-a')) })).toMatchObject({
       servicePort: 21001,
       servicePortEnabled: true,
     })
   })
 
-  it('prefers an enabled service-port instance when multiple instances exist', async () => {
+  it('does not borrow enabled settings when the selected installation is disabled', async () => {
     const homeDir = await createTempHomeDir()
     tempDirs.push(homeDir)
     const baseDir = path.join(homeDir, 'Library', 'Application Support', '微信开发者工具')
@@ -294,13 +301,14 @@ describe('detectWechatDevtoolsServicePort', () => {
     const result = await detectWechatDevtoolsServicePort({
       homeDir,
       platform: 'darwin',
+      target: targetForProfile(path.join(homeDir, 'Library', 'Application Support', '微信开发者工具', 'instance-a')),
     })
 
     expect(result).toEqual({
-      touchedInstanceCount: 2,
-      detectedSecurityCount: 2,
-      servicePort: 21992,
-      servicePortEnabled: true,
+      touchedInstanceCount: 1,
+      detectedSecurityCount: 1,
+      servicePort: 3000,
+      servicePortEnabled: false,
     })
   })
 })

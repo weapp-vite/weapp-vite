@@ -36,7 +36,8 @@ const APP_SERVICE_PAGE_PROTOCOL_VERSIONS = new Set([
   '2.01.2510290',
 ])
 /** 仅页面方法调用失效的版本，元素查询仍保留原生组件作用域。 */
-const APP_SERVICE_PAGE_METHOD_VERSIONS = new Set(['2.02.2608070', '2.02.2609231'])
+// Stable 2.02.2608080 / SDK 3.17.3 的 Page.callMethod 将 Promise 结果序列化为 {}。
+const APP_SERVICE_PAGE_METHOD_VERSIONS = new Set(['2.02.2608070', '2.02.2608080', '2.02.2609231'])
 /** Connection 的实现。 */
 export default class Connection extends EventEmitter {
   private disposed = false

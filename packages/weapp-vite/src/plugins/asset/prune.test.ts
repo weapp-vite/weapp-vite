@@ -26,6 +26,14 @@ it('accepts normalized asset names and tolerates already absent outputs', async 
   await expect(readFile(path.join(outDir, 'nested/copied.txt'))).rejects.toMatchObject({ code: 'ENOENT' })
 })
 
+it('tolerates an output root that was already removed', async () => {
+  const { root, outDir } = await fixture()
+  await rm(outDir, { recursive: true })
+  await expect(pruneOwnedAssetFiles(outDir, ['nested/copied.txt'])).resolves.toBeUndefined()
+  await expect(pruneOwnedAssetFiles(outDir, ['../outside.txt'])).rejects.toThrow('Invalid owned output')
+  await expect(readFile(path.join(root, 'outside.txt'), 'utf8')).resolves.toBe('outside')
+})
+
 it.each(['../outside.txt', '..\\outside.txt', '.', '/outside.txt', 'C:\\outside.txt'])('rejects escaping or non-file names before deletion: %s', async (file) => {
   const { root, outDir } = await fixture()
   await expect(pruneOwnedAssetFiles(outDir, ['nested/copied.txt', file])).rejects.toThrow('Invalid owned output')

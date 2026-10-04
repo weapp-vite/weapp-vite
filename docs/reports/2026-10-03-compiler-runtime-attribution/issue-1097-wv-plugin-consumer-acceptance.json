@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "issue": 1097,
+  "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+  "archiveCount": 28,
+  "cohortManifestHashes": {
+    "candidate-evidence.json": "832be6d367c4102d8a83d875d902ff1d985d8175106323d22f6eeec97883272e",
+    "consumer-tarballs.json": "785c6ed10371af7dd389a4c4a0b1f1d3505383ff11ce470b31f27a56fb9c7c3c"
+  },
+  "rows": [
+    {
+      "host": "wv",
+      "profile": "plugin",
+      "functionalAssertionsPassed": true,
+      "plannedCheckpointAssertionsPassed": true,
+      "finalRowAccepted": true,
+      "cohortAfterSnapshotRecorded": false,
+      "cohortMatchesFrozenManifestAtAudit": true,
+      "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+      "harness": {
+        "commit": "ceccca166232bab2f2c7be943b70bd470d5f4244",
+        "dirty": false,
+        "before": {
+          "commit": "ceccca166232bab2f2c7be943b70bd470d5f4244",
+          "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "untracked": {},
+          "capturedAt": "2026-10-04T17:16:40.572418+00:00",
+          "trackedPatchIncludesIndex": true,
+          "controllerSha256": "215ef377bd1369201224e27770257ce489f24420e39bbcf01a377bf535b5ae81"
+        },
+        "after": {
+          "commit": "ceccca166232bab2f2c7be943b70bd470d5f4244",
+          "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "untracked": {},
+          "capturedAt": "2026-10-04T17:17:43.250577+00:00",
+          "trackedPatchIncludesIndex": true,
+          "controllerSha256": "215ef377bd1369201224e27770257ce489f24420e39bbcf01a377bf535b5ae81"
+        },
+        "snapshotsEqual": true,
+        "snapshotCoversIndex": true
+      },
+      "installation": {
+        "candidatePackages": 28,
+        "comparedArchiveFiles": 1735,
+        "mismatches": 0,
+        "fixtureLinks": [],
+        "symlinksAudited": 38,
+        "externalSymlinks": 0,
+        "lockSha256": "2938be4b8b1b485bcba4f31f4d10313b82552046dc8373f4cc674bc3c1e16b13",
+        "reportSha256": "77ce8c928aadaa4751dacc8440bfe11a9b0982cec014915872fddd4d7c508612",
+        "exportPackagesVerified": 28,
+        "negativeControls": {
+          "brokenExportsRejected": true,
+          "missingCliRejected": true
+        }
+      },
+      "officialDevtools": {
+        "queriedAt": "2026-10-04T17:16:40.270740+00:00",
+        "channel": "stable",
+        "selectedAndInstalledVersion": "2.02.2608080",
+        "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+        "evidenceSha256": "45ec395bc04124e8b29dc1df266a6214832cfd91d50f0f52fb59e5e255275f80"
+      },
+      "providers": [
+        {
+          "provider": "devtools",
+          "runId": "issue1097-wv-plugin-c3-01",
+          "reportSha256": "e1caef138298f62073c9be9fba80b1d1793b1ad271a62447be6c36b5879e33d0",
+          "startedAt": "2026-10-04T17:17:18.635Z",
+          "finishedAt": "2026-10-04T17:17:40.100Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.17.3"
+          },
+          "strict": true,
+          "status": "passed",
+          "runtimeErrors": [],
+          "summary": {
+            "plannedCount": 2,
+            "executedCount": 2,
+            "passedCount": 2,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 2,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 3,
+            "capturedCheckpointCount": 3
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 1,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 2,
+            "error": 0,
+            "informationalCount": 4
+          },
+          "nativeSlotGeometryAssertions": 0,
+          "recoveredStartupProtocolDiagnostics": [
+            {
+              "method": "App.getCurrentPage",
+              "route": "/pages/index/index",
+              "failedAttempts": 1,
+              "firstFailureAt": "2026-10-04T17:17:35.085Z",
+              "lastFailureAt": "2026-10-04T17:17:35.085Z",
+              "recoveredAt": "2026-10-04T17:17:35.320Z",
+              "state": "recovered"
+            }
+          ],
+          "recoveredLaunchDiagnostics": [],
+          "excludedSkippedCases": [
+            {
+              "file": "e2e/ide/issue-963-plugin-es6.runtime.test.ts",
+              "name": "issue #963 plugin template with IDE ES6: enabled > loads plugin exports, renders public components and retains host interaction"
+            },
+            {
+              "file": "e2e/ide/issue-963-plugin-es6.runtime.test.ts",
+              "name": "issue #963 plugin template with IDE ES6: enabled > navigates from the host to the public plugin Vue page"
+            }
+          ],
+          "harnessDeprecationWarnings": [
+            {
+              "recordedAt": "2026-10-04T17:17:35.328Z",
+              "level": "warn",
+              "channel": "runtime",
+              "text": "wx.getSystemInfoSync is deprecated.Please use wx.getSystemSetting/wx.getAppAuthorizeSetting/wx.getDeviceInfo/wx.getWindowInfo/wx.getAppBaseInfo instead."
+            }
+          ]
+        },
+        {
+          "provider": "headless",
+          "runId": "issue1097-wv-plugin-c3-01",
+          "reportSha256": "f7fa1ca679577a302a87f95ea0da64f52287e648115c8b118a4e2c8da922dc33",
+          "startedAt": "2026-10-04T17:17:14.338Z",
+          "finishedAt": "2026-10-04T17:17:17.852Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": null,
+            "baseLibraryVersion": null
+          },
+          "strict": true,
+          "status": "passed",
+          "runtimeErrors": [],
+          "summary": {
+            "plannedCount": 2,
+            "executedCount": 2,
+            "passedCount": 2,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 2,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 3,
+            "capturedCheckpointCount": 3
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "informationalCount": 0
+          },
+          "nativeSlotGeometryAssertions": 0,
+          "recoveredStartupProtocolDiagnostics": [],
+          "recoveredLaunchDiagnostics": [],
+          "excludedSkippedCases": [
+            {
+              "file": "e2e/ide/issue-963-plugin-es6.runtime.test.ts",
+              "name": "issue #963 plugin template with IDE ES6: enabled > loads plugin exports, renders public components and retains host interaction"
+            },
+            {
+              "file": "e2e/ide/issue-963-plugin-es6.runtime.test.ts",
+              "name": "issue #963 plugin template with IDE ES6: enabled > navigates from the host to the public plugin Vue page"
+            }
+          ],
+          "harnessDeprecationWarnings": []
+        }
+      ],
+      "commonCases": [
+        {
+          "name": "issue #963 plugin template with IDE ES6: disabled > loads plugin exports, renders public components and retains host interaction",
+          "checkpoints": [
+            {
+              "id": "host:78",
+              "action": "读取插件公开 API 与组件 DOM",
+              "route": "/pages/index/index"
+            },
+            {
+              "id": "host:84",
+              "action": "点击后读取插件原生组件更新",
+              "route": "/pages/index/index"
+            }
+          ],
+          "observationSha256": "769e47fd35094cf55b5cb16abd58c3f9d68bfdd1a94a981f862a34722d3553ae"
+        },
+        {
+          "name": "issue #963 plugin template with IDE ES6: disabled > navigates from the host to the public plugin Vue page",
+          "checkpoints": [
+            {
+              "id": "plugin-page",
+              "action": "打开已校验 provider 与目标路径的插件 Vue 页面",
+              "route": "__plugin__/wxb3d842a4a7e3440d/pages/hello-page/index"
+            }
+          ],
+          "observationSha256": "09d2864d272d4bdc6b8a8a034793bbc6c3bb3574b9fccc8200a215044b550415"
+        }
+      ],
+      "parity": {
+        "commonCases": 2,
+        "commonCheckpoints": 3,
+        "commonObservationsMatch": true,
+        "webUsesBrowserAssertions": false
+      },
+      "serialization": {
+        "rawReportedProcessCount": 0,
+        "knownOwnedFalsePositives": 0,
+        "additionalOwnedProcessesByRecordedAncestry": 0,
+        "ancestryInferenceIsNotSimultaneousSnapshot": false,
+        "explicitPackageUnitProcesses": 0,
+        "nonRuntimeToolFalsePositives": 0,
+        "externalRuntimeProcesses": 0,
+        "observedExternalRuntimeOverlap": false,
+        "finalSerialAcceptance": true,
+        "overlapKinds": []
+      },
+      "cleanup": {
+        "resourcesSha256": "829fc7873962d00986ecbcdd0200081d17b8e7d14f5f6207d2c39966c7577b9d",
+        "completedAt": "2026-10-04T17:17:42.353561+00:00",
+        "registeredChildren": 39,
+        "sameIdentityStillRunning": 0,
+        "ownedEndpoints": 1,
+        "ownedListeningPortsStillOpen": 0,
+        "errors": 0
+      },
+      "evidence": {
+        "runLogSha256": "da0ee92b68f5d50ec87073493ec82ce47623c33f6127d8ffd8bf06e05614e2ac",
+        "rowSummarySha256": null,
+        "resourceEventsSha256": "5652adf5ffc7b8bc9ef8b5526d48184b10c3b6b751e518f1e35b2c1f526621f2",
+        "processSnapshotsSha256": "2342e9da057a7d944f0a61c4304659dee7b4b74011240e154cffccef82a65c0b",
+        "selectionGateRegressionTests": "two recorded provider reports accepted; ten selected-scope failure mutations rejected",
+        "fixtureSourceSha256": "f78ef216dbad077b8efdadd4b295e8eb146799dfbcf22cca6a1261884cdf94ff"
+      },
+      "controllerReview": {
+        "originalStatus": "failed-cleaned",
+        "installerExitCode": 0,
+        "originalFailure": "RuntimeError('Uncompleted case')",
+        "rowSummaryRecorded": false,
+        "reason": "The two skipped ES6-enabled records are outside the exact ES6-disabled selectedCases; each selected case passed once and all three selected checkpoints were captured.",
+        "selectedCasesPassedPerProvider": 2,
+        "selectedCheckpointsCapturedPerProvider": 3,
+        "excludedSkippedCasesPerProvider": 2,
+        "independentAcceptanceSupersedesControllerMetadataCheckOnly": true,
+        "originalEvidencePreserved": true
+      },
+      "cohortIndependentRecheck": {
+        "auditedAt": "2026-10-04T17:23:54.830102+00:00",
+        "cohortAfterSnapshotRecorded": false,
+        "frozenManifestFilesVerified": 2,
+        "archivesVerified": 28,
+        "installedArchiveFilesCompared": 1735,
+        "comparison": "Current archives and installed candidate files match the recorded pre-run frozen hashes and archive bytes. This is an independent post-run audit, not a reconstruction of the missing controller-end snapshot."
+      }
+    }
+  ],
+  "limitations": [
+    "This audit only reads retained evidence and verifies installations and owned-resource closure. It does not run E2E or modify the source repository.",
+    "Functional assertions, observed serialization and source provenance are separate gates. A row with a true external runtime overlap or incomplete modern process/source snapshots is not final acceptance.",
+    "The compiler cohort remains c3c643d40 even when the harness commit changes. Dirty harness identity is explicitly recorded; no compiler upgrade is inferred.",
+    "Headless common observations do not establish CSS geometry parity. React Stable rows separately prove 42 native slot geometry observations.",
+    "Process polling cannot exclude a process whose complete lifetime lies between snapshots. No exclusive-machine or performance claim is made.",
+    "Web rows use their public browser assertions and recorded successful command completion rather than mini-program provider DOM reports.",
+    "The original controller stopped after the runtime returned zero because it treated two filtered ES6-enabled cases as incomplete selected cases. No original report or resource ledger was changed.",
+    "The controller did not reach cohort-after.json or row-summary.json. The independent audit rechecked all frozen tarballs and installed files later and explicitly records that different observation time; it does not invent a missing end-of-controller snapshot.",
+    "Stable emitted one wx.getSystemInfoSync deprecation from the fixture SDK-version probe and one recovered startup-protocol retry. Runtime warn is 1, error and exception are 0; diagnostic warn is 2. The warnings remain recorded.",
+    "This row covers only the explicit IDE ES6-disabled consumer profile. The two ES6-enabled suite cases were excluded by the test-name pattern and are not accepted by this row."
+  ]
+}

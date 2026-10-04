@@ -43,6 +43,7 @@ export function redirectNativeComponentRegistration(code: string): string {
 export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
   let entryIds = new Set<string>()
   let delegatedEntryIds = new Set<string>()
+  let settlement: (() => Promise<void>) | undefined
   const plugins: Plugin[] = [{
     name: 'weapp-vite:hmr-input',
     enforce: 'pre',
@@ -59,6 +60,9 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
   }, createStatefulHmrSidecarPlugin(), {
     name: 'weapp-vite:stateful-hmr-session',
     enforce: 'post',
+    api: {
+      whenSettled: () => settlement?.() ?? Promise.reject(new Error('Stateful HMR session is not active')),
+    },
     transform(code, id) {
       if (!isStatefulHmrBoundary(id, ctx.configService.absoluteSrcRoot, entryIds, delegatedEntryIds)
         || code.includes('import.meta.hot.accept')) {
@@ -71,6 +75,14 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
   }]
   return {
     plugins,
+    bindSettlement(wait: () => Promise<void>) {
+      settlement = wait
+      return () => {
+        if (settlement === wait) {
+          settlement = undefined
+        }
+      }
+    },
     setInputs(entries: Set<string>, delegated: Set<string>) {
       entryIds = entries
       delegatedEntryIds = delegated

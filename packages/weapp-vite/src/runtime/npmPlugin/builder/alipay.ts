@@ -175,7 +175,7 @@ export async function hoistNestedMiniprogramDependenciesForAlipay(pkgRoot: strin
   }))
 }
 
-export async function copyEsModuleDirectoryForAlipay(sourceRoot: string, targetRoot: string) {
+export async function copyEsModuleDirectoryForAlipay(sourceRoot: string, targetRoot: string, options: { dereference?: boolean } = {}) {
   const sourceDir = path.resolve(sourceRoot, 'es')
   if (!(await fs.pathExists(sourceDir))) {
     return false
@@ -183,6 +183,7 @@ export async function copyEsModuleDirectoryForAlipay(sourceRoot: string, targetR
 
   await fs.copy(sourceDir, path.resolve(targetRoot, 'es'), {
     overwrite: true,
+    dereference: options.dereference,
   })
   return true
 }

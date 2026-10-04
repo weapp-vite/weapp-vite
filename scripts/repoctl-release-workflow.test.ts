@@ -45,6 +45,7 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   const workflow = parse(content) as ReleaseWorkflow
   const releaseJob = workflow.jobs?.release
   const steps = releaseJob?.steps ?? []
+  const checkoutStep = steps.find(step => step.uses?.startsWith('actions/checkout@'))
   const pnpmSetupStep = steps.find(step => step.uses?.startsWith('pnpm/action-setup@'))
   // The generated workflow keeps release arguments in a multiline shell
   // block, so identify the step by its stable name/command rather than an
@@ -66,6 +67,9 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
     releaseStep?.env?.GITHUB_TOKEN,
     githubExpression('secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token'),
   )
+  // Git 推送使用 checkout 持久化的凭据，必须与发布 API 使用同一令牌来源。
+  assert.equal(checkoutStep?.with?.token, releaseStep?.env?.GITHUB_TOKEN)
+  assert.notEqual(checkoutStep?.with?.['persist-credentials'], false)
   assert.equal(releaseStep?.env?.VSCE_PAT, githubExpression('secrets.VSCE_PAT'))
 
   const summaryStep = steps.find(step => step.name === 'Preserve npm publish summary')

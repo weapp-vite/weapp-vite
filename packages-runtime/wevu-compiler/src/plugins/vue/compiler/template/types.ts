@@ -105,6 +105,7 @@ export interface TransformContext {
   propsAliases?: Record<string, string>
   propsDerivedKeys?: string[]
   scriptSetupBindings?: Record<string, unknown>
+  scriptSetupPropConflicts?: readonly string[]
   htmlTagToWxmlMap?: Record<string, string>
   htmlTagToWxmlTagClass: boolean
   scopedSlotsCompiler: ScopedSlotsCompilerMode
@@ -191,6 +192,8 @@ export interface TemplateCompileOptions {
   propsAliases?: Record<string, string>
   propsDerivedKeys?: string[]
   scriptSetupBindings?: Record<string, unknown>
+  /** 可能与宿主属性同名的 setup 绑定，通过独立计算字段交付模板。 */
+  scriptSetupPropConflicts?: readonly string[]
   htmlTagToWxml?: boolean | Record<string, string>
   htmlTagToWxmlTagClass?: boolean
   scopedSlotsCompiler?: ScopedSlotsCompilerMode

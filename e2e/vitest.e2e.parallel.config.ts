@@ -21,6 +21,6 @@ export default defineConfig({
     pool: 'threads',
     maxWorkers,
     fileParallelism: maxWorkers > 1,
-    globalSetup: [DEVTOOLS_GLOBAL_SETUP],
+    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts'), DEVTOOLS_GLOBAL_SETUP],
   },
 })

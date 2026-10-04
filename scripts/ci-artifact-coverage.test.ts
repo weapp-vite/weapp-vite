@@ -1,5 +1,7 @@
-import { readFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
+import { glob } from 'tinyglobby'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
@@ -75,29 +77,43 @@ describe('CI artifact coverage', () => {
     ])
   })
 
-  it('includes hidden report directories without uploading unrelated temporary files', async () => {
+  it('selects hidden reports without uploading unrelated temporary files', async () => {
     const reusable = await readWorkflow('reusable-node-command.yml')
     const steps = Object.values(reusable.jobs).flatMap(job => job.steps ?? [])
     const upload = steps.find(step => step.name === 'Upload artifact')
-    expect(upload?.with?.['include-hidden-files']).toBe(true)
-    expect(upload?.with?.path).toBe('$' + '{{ inputs.artifact_path }}')
     const workflow = await readWorkflow('ci-e2e.yml')
     const reportPatterns = Object.values(workflow.jobs)
       .filter(job => job.with?.artifact_path)
       .flatMap(job => splitPatterns(job.with?.artifact_path))
-    expect([...new Set(reportPatterns)].sort()).toEqual([
+    const reports = [
+      '.tmp/hmr-lifecycle-report.json',
       '.tmp/shared-hosts/artifacts.json',
-      '.tmp/uview-plus-compat/web/**',
-      '.tmp/web-runtime-visual/**',
-      '.tmp/workspace-hmr/**',
-      '.tmp/wot-ui-compat/web/**',
-      'docs/reports/*-e2e-ci-full-*-suite-report/**',
-      'docs/reports/*-e2e-ci-pr-*-suite-report/**',
-      'docs/reports/*-e2e-ide-dom-headless-*-suite-report/**',
-      'docs/reports/dom-acceptance/**',
-      'docs/reports/simulator-browser/**',
-      'e2e/dom-acceptance-inventory.json',
-      'e2e/dom-acceptance-inventory.md',
-    ])
+      '.tmp/workspace-hmr/.session/report.json',
+      'docs/reports/dom-acceptance/summary.json',
+    ]
+    const unrelated = [
+      '.env',
+      '.tmp/.env',
+      '.tmp/unrelated/report.json',
+      '.tmp/shared-hosts/secrets.json',
+      'src/index.ts',
+      'node_modules/example/index.js',
+    ]
+    const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), 'ci-artifact-coverage-'))
+    try {
+      for (const file of [...reports, ...unrelated]) {
+        const target = path.join(fixtureRoot, file)
+        await mkdir(path.dirname(target), { recursive: true })
+        await writeFile(target, '')
+      }
+      const selected = await glob(reportPatterns, {
+        cwd: fixtureRoot,
+        dot: upload?.with?.['include-hidden-files'] === true,
+      })
+      expect(selected.sort()).toEqual(reports.sort())
+    }
+    finally {
+      await rm(fixtureRoot, { recursive: true, force: true })
+    }
   })
 })

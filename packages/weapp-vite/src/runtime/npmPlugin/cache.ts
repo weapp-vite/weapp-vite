@@ -1,3 +1,4 @@
+import type { PackageJson } from 'pkg-types'
 import type { MutableCompilerContext } from '../../context'
 import { isObject } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
@@ -60,8 +61,21 @@ export function createDependenciesCache(ctx: MutableCompilerContext): Dependenci
 
   function dependenciesCacheHash(root?: string) {
     const configService = requireConfigService(ctx, '读取依赖缓存哈希前必须初始化 configService。')
+    const setting = configService.projectConfig?.setting
+    const selectedManifest = setting?.packNpmManually && setting.packNpmRelationList?.[0]?.packageJsonPath
+    const dependencyInput = selectedManifest
+      ? (() => {
+          const manifestPath = path.resolve(configService.cwd, selectedManifest)
+          const manifest = fs.readJsonSync(manifestPath) as PackageJson
+          return {
+            manifest: path.relative(configService.cwd, manifestPath),
+            dependencies: manifest.dependencies ?? {},
+            devDependencies: manifest.devDependencies ?? {},
+          }
+        })()
+      : { dependencies: configService.packageJson.dependencies ?? {} }
     return objectHash({
-      dependencies: configService.packageJson.dependencies ?? {},
+      ...dependencyInput,
       packageFiles: configService.weappViteConfig?.npm?.packageFiles ?? {},
       scope: serializeDependencyScope(resolveDependencyScope(root)),
     })

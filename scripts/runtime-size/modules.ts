@@ -55,18 +55,24 @@ export function createRuntimeSizeRetainedModules(root: string, metafile: Metafil
     Object.keys(retainedInputs).map(input => [input, normalizeRuntimeModulePath(root, input)]),
   )
   const retainedPaths = new Set(normalizedPaths.values())
+  const inputPaths = new Set(Object.keys(metafile.inputs).map(input => normalizeRuntimeModulePath(root, input)))
+  const importGraph = Object.entries(metafile.inputs)
+    .map(([input, details]) => ({
+      path: normalizeRuntimeModulePath(root, input),
+      imports: [...new Set(details.imports
+        .filter(dependency => !dependency.external)
+        .map(dependency => normalizeRuntimeModulePath(root, dependency.path))
+        .filter(dependency => inputPaths.has(dependency)))].sort(compareStrings),
+    }))
+    .sort((left, right) => compareStrings(left.path, right.path))
+  const sourceImports = new Map(importGraph.map(module => [module.path, module.imports]))
   const modules = Object.entries(retainedInputs)
     .map(([input, details]) => {
-      const imports = [...new Set(
-        (metafile.inputs[input]?.imports ?? [])
-          .filter(dependency => !dependency.external)
-          .map(dependency => normalizeRuntimeModulePath(root, dependency.path))
-          .filter(dependency => retainedPaths.has(dependency)),
-      )].sort(compareStrings)
+      const modulePath = normalizedPaths.get(input)!
       return {
-        path: normalizedPaths.get(input)!,
+        path: modulePath,
         bytesInOutput: details.bytesInOutput,
-        imports,
+        imports: (sourceImports.get(modulePath) ?? []).filter(dependency => retainedPaths.has(dependency)),
       }
     })
     .sort((left, right) => compareStrings(left.path, right.path))
@@ -74,6 +80,7 @@ export function createRuntimeSizeRetainedModules(root: string, metafile: Metafil
   return {
     entry: normalizeRuntimeModulePath(root, output.entryPoint),
     modules,
+    importGraph,
   }
 }
 
@@ -83,6 +90,7 @@ function findShortestRuntimeImportChain(
   includeZeroByteImporters: boolean,
 ) {
   const modulesByPath = new Map(retainedModules.modules.map(module => [module.path, module]))
+  const graph = new Map((retainedModules.importGraph ?? retainedModules.modules).map(module => [module.path, module.imports]))
   const previous = new Map<string, string | undefined>([[retainedModules.entry, undefined]])
   const queue = [retainedModules.entry]
 
@@ -98,14 +106,14 @@ function findShortestRuntimeImportChain(
       return chain.reverse()
     }
 
-    const imports = [...(modulesByPath.get(importer)?.imports ?? [])].sort(compareStrings)
+    const imports = [...(graph.get(importer) ?? [])].sort(compareStrings)
     for (const imported of imports) {
       const importedModule = modulesByPath.get(imported)
-      const isDeadImporter = imported !== modulePath && importedModule?.bytesInOutput === 0
+      const contributesNoBytes = imported !== modulePath && (importedModule?.bytesInOutput ?? 0) === 0
       if (
-        !importedModule
+        !graph.has(imported)
         || previous.has(imported)
-        || (!includeZeroByteImporters && isDeadImporter)
+        || (!includeZeroByteImporters && contributesNoBytes)
       ) {
         continue
       }

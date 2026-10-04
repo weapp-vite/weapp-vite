@@ -294,7 +294,7 @@ export interface WeappNpmConfig {
   subPackages?: Record<string, NpmSubPackageConfig>
   /** 按包名限制原生小程序 npm 包复制到产物中的文件 */
   packageFiles?: Record<string, NpmPackageFilesConfig>
-  buildOptions?: (options: NpmBuildOptions, pkgMeta: BuildNpmPackageMeta) => NpmBuildOptions | undefined
+  buildOptions?: (options: NpmBuildOptions, pkgMeta: BuildNpmPackageMeta) => NpmBuildOptions | false | undefined
   alipayNpmMode?: AlipayNpmMode
 }
 

@@ -103,7 +103,7 @@ export function useAnalyzePageController() {
     workQueueItems: workQueue.workQueueItems,
     addWorkQueueItem: workQueue.addWorkQueueItem,
     exportStatus: reportActions.exportStatus,
-    treemapFilterMode: treemapController.treemapFilterMode,
+    setTreemapFilterMode: treemapController.setTreemapFilterMode,
     selectedTreemapMeta: treemapController.selectedTreemapMeta,
     selectedLargestFile: treemapController.selectedLargestFile,
     selectedBudgetWarning: treemapController.selectedBudgetWarning,

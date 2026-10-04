@@ -6,6 +6,7 @@ import { createBuildServicePlugin } from '../runtime/buildPlugin'
 import { createConfigServicePlugin } from '../runtime/configPlugin'
 import { createJsonServicePlugin } from '../runtime/jsonPlugin'
 import { createNpmServicePlugin } from '../runtime/npmPlugin'
+import { createOxcRuntimeSupport } from '../runtime/oxcRuntime'
 import { createRuntimeState } from '../runtime/runtimeState'
 import { createScanServicePlugin } from '../runtime/scanPlugin'
 import { createWatcherServicePlugin } from '../runtime/watcherPlugin'
@@ -17,16 +18,17 @@ export function createCompilerContextInstance(): CompilerContext {
     moduleGraphService: createModuleGraphService(),
     runtimeState: createRuntimeState(),
   } as MutableCompilerContext
+  const oxcRuntimeSupport = createOxcRuntimeSupport()
 
   const runtimePlugins = [
-    createConfigServicePlugin(context),
+    createConfigServicePlugin(context, oxcRuntimeSupport),
     createWatcherServicePlugin(context),
     createWxmlServicePlugin(context),
     createJsonServicePlugin(context),
     createScanServicePlugin(context),
     createAutoRoutesServicePlugin(context),
     createAutoImportServicePlugin(context),
-    createNpmServicePlugin(context),
+    createNpmServicePlugin(context, oxcRuntimeSupport),
     createBuildServicePlugin(context),
     createWebServicePlugin(context),
   ]

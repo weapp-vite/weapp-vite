@@ -129,6 +129,17 @@ describe('runtime npmPlugin relations', () => {
     ])
   })
 
+  it('uses the host output root instead of reinterpreting emitted project metadata', () => {
+    const ctx = createContext({
+      platform: 'alipay',
+      multiPlatform: true,
+      projectConfig: { miniprogramRoot: '.' },
+    })
+    expect(getPackNpmRelationList(ctx, { defaultOutputRoot: '/project/custom/application' })).toEqual([
+      { packageJsonPath: './package.json', miniprogramNpmDistDir: '/project/custom/application' },
+    ])
+  })
+
   it('falls back to dist project root for alipay when project root is missing', () => {
     const ctx = createContext({
       platform: 'alipay',
@@ -350,7 +361,7 @@ describe('runtime npmPlugin relations', () => {
       },
     })
 
-    expect(getPackNpmRelationList(ctx)).toEqual([
+    expect(getPackNpmRelationList(ctx, { defaultOutputRoot: '/project/custom/application' })).toEqual([
       {
         packageJsonPath: './package.json',
         miniprogramNpmDistDir: '/already/absolute',

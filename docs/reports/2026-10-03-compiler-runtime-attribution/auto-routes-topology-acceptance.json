@@ -1,0 +1,965 @@
+{
+  "schemaVersion": 1,
+  "kind": "classic-native-and-vue-auto-route-topology-acceptance",
+  "auditedAt": "2026-10-04T16:16:18.037887+00:00",
+  "auditMode": "read-only-existing-evidence",
+  "status": "captured-product-and-executed-harness-passed",
+  "scopeComplete": true,
+  "blanketIssueCompletionSupported": false,
+  "candidate": {
+    "baseCommit": "bed518b2b57d5853a1ab8c0e73c52dd9ab424aa3",
+    "workingTreeDirty": true,
+    "capturedAt": "2026-10-04T16:04:47.719188+00:00",
+    "runtime": "classic",
+    "executedTrackedPatchSha256": "74646b0fadbe9dff7780a9bdf5d33ee16af9ed98d8eecd1ec8446b9227e4bc4a",
+    "capturedFileHashes": {
+      ".changeset/classic-auto-route-topology.md": "07b615e4936fbfbedaec806cad882471c42c0b1741f20513f923b5a8adf95263",
+      ".changeset/profile-output-watch-ownership.md": "ddcecd3e4793908c9ff7f6fe3606380ec9db2d28294ee69becb2519e29d080ac",
+      ".changeset/vue-snapshot-source-invalidation.md": "16d3c9b21f0715ef7670f8b38b38e516b9a5c5e60efb0fbb528271817b24eb28",
+      "docs/reports/2026-10-03-compiler-runtime-attribution/issue-1097-vite-plus-react-consumer-observation.json": "aa211170494b1c540408cfa4a9f7416e96546ebf67ffad3bff7701651fe5877e",
+      "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-ownership-audit.json": "3e6e4d705d429f93eac7de135fd8719c070881b08c80695bf21f913ec59d45ea",
+      "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-ownership-audit.md": "f5be129d126d7e7dab8c7bf6120143b2e3d997496b3d3ebce1795ea2aa478e19",
+      "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-recovery-e2e.json": "e92101e1f2582c32af4a890c01c38132bbc649cbeae5d9e81797712fef488f65",
+      "docs/reports/2026-10-03-compiler-runtime-attribution/profile-output-recovery-e2e.md": "b50ffffa4d7a3c72a55e0b6580adcb1e3336d05842dda0cfb164570c783ea3d7",
+      "e2e/ci/auto-routes-hmr.test.ts": "50d6723bc3b17a456e8fb7b66d1e3713a2dbf8063d9f2922694fdb240d635775",
+      "e2e/ci/hmr-profile-failed-recovery.test.ts": "004a032e637c9e99e7cc8704c0521c80b15dc1cd0a9924ee7401ecead6c68009",
+      "e2e/ide/auto-routes-define-app-json.runtime.test.ts": "ccdec9f0c188a77e98ee8ba0d6193a9d43379fd2470a9067b781d4ea4e216406",
+      "e2e/scripts/e2e-suite-manifest.test.ts": "d2c0666f4a83939e6c50488b3f4088084c2f87c07fb3e59e5923b94240e1f81c",
+      "mpcore/packages/test/src/project.test.ts": "e8e7c6ef18743ebc5150d381e07f60a2b5df1bdff3454c3a151e41b5583a5d7b",
+      "packages/weapp-vite/src/moduleGraph/devProvider.test.ts": "39a3aad69dba76fd57cca8e42d0accd0b3e7759b52ca7d55ec3cd418b7680515",
+      "packages/weapp-vite/src/moduleGraph/devProvider.ts": "aa9f92b6985728de9b1fae74971d535f25f941ad56c2eba93df5e23e084268ad",
+      "packages/weapp-vite/src/moduleGraph/profileOutput.test.ts": "ad19acc46afb085f60efa0d06d486857527929200c3e50f791fdd2560fbb1bf5",
+      "packages/weapp-vite/src/moduleGraph/profileOutput.ts": "6e4cf90e2808b3117f1c7473622d428863f26935976b0a35f202e993cce6aca9",
+      "packages/weapp-vite/src/plugins/autoRoutes.topology.test.ts": "f794cbee3efdd7e940f21d303cb7dd9c2c893e9fb0cd1bf91ed3f4af9b0a5607",
+      "packages/weapp-vite/src/plugins/autoRoutes.ts": "5f90fa3380545e1506e35e42c8e3ad2d09379f6f67e46ad0d2d5b65c6e6f7f7b",
+      "packages/weapp-vite/src/plugins/vue/transform/plugin/index.test.ts": "9b040eb0d6cedcd1effb8d11d246ac8eee60d090ddfa46cdbf025506daa7e23b",
+      "packages/weapp-vite/src/plugins/vue/transform/plugin/index.ts": "3f7ccaaa7d65c6b4d8df78ac4e9b80d8a02e766af3542a78329d735442cedb86",
+      "packages/weapp-vite/src/plugins/vue/transform/plugin/snapshotInvalidation.test.ts": "dc73664fe10ed46780cbf726f4a5f0939d0d3dd843b73697e47e54e13bfc129b",
+      "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.test.ts": "ceec4f869ca748e191026cdffa17a1312aee3efefb9da39bd4a5283e87df6608",
+      "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.ts": "80ff99fa169ebffde138e2d08734e4ad9348625b65cf5c4d1936d7cdfd4cdee4",
+      "packages/weapp-vite/src/runtime/buildPlugin/entryTopology.test.ts": "d985d5e868bf3ca01f4e8f943bc973a698548171b8f07b7520b9a20d8476fc33",
+      "packages/weapp-vite/src/runtime/buildPlugin/entryTopology.ts": "0d296bce5422086c1e1a3fbd78667362b4af73bbc53569362a88efcb6c0f3e76",
+      "packages/weapp-vite/src/runtime/buildPlugin/service.test.ts": "e5cf2084b5f7ad0fb89ba30d27afdbafa5c2fee4560a97b2786e4f6118ca3aac",
+      "packages/weapp-vite/src/runtime/buildPlugin/service.ts": "c5ee8bcc316d32ea57eb4fc78b1392577c638221171611fe476e18dc19ad2501",
+      "packages/weapp-vite/src/runtime/buildPlugin/snapshotSources.test.ts": "c28d707e69d7446b45614ea76a767414e850a49912f7bff9e6e56a9accffa69d",
+      "packages/weapp-vite/src/runtime/buildPlugin/snapshotSources.ts": "84e945d2883d059f89f884f3cac290d5ce45f0d92f061e0988221f6665ef4057",
+      "packages/weapp-vite/src/utils/hmrProfile.test.ts": "27479423e3c76baf0945689f74d13058cec45888412677347be3c8a4653a374b",
+      "packages/weapp-vite/src/utils/hmrProfile.ts": "01d30b374d1974ac296172f76a19660f4d5429eeba9055841807bb2f8c75be82"
+    },
+    "productSourceHashes": {
+      "packages/weapp-vite/src/moduleGraph/devProvider.ts": "aa9f92b6985728de9b1fae74971d535f25f941ad56c2eba93df5e23e084268ad",
+      "packages/weapp-vite/src/moduleGraph/profileOutput.ts": "6e4cf90e2808b3117f1c7473622d428863f26935976b0a35f202e993cce6aca9",
+      "packages/weapp-vite/src/plugins/autoRoutes.ts": "5f90fa3380545e1506e35e42c8e3ad2d09379f6f67e46ad0d2d5b65c6e6f7f7b",
+      "packages/weapp-vite/src/plugins/vue/transform/plugin/index.ts": "3f7ccaaa7d65c6b4d8df78ac4e9b80d8a02e766af3542a78329d735442cedb86",
+      "packages/weapp-vite/src/runtime/autoRoutesPlugin/topology.ts": "80ff99fa169ebffde138e2d08734e4ad9348625b65cf5c4d1936d7cdfd4cdee4",
+      "packages/weapp-vite/src/runtime/buildPlugin/entryTopology.ts": "0d296bce5422086c1e1a3fbd78667362b4af73bbc53569362a88efcb6c0f3e76",
+      "packages/weapp-vite/src/runtime/buildPlugin/service.ts": "c5ee8bcc316d32ea57eb4fc78b1392577c638221171611fe476e18dc19ad2501",
+      "packages/weapp-vite/src/runtime/buildPlugin/snapshotSources.ts": "84e945d2883d059f89f884f3cac290d5ce45f0d92f061e0988221f6665ef4057",
+      "packages/weapp-vite/src/utils/hmrProfile.ts": "01d30b374d1974ac296172f76a19660f4d5429eeba9055841807bb2f8c75be82"
+    },
+    "capturedProductSourceHashesAllMatchAtAudit": true,
+    "distFileCount": 118,
+    "distFileMembershipAndBytesMatchAtAudit": true,
+    "distHashes": {
+      "packages/weapp-vite/dist/json.d.mts": "2a3e1a6bca5435ec93ec327ecd520ddb326da8a9bdeb6b05e414f41f20ba917f",
+      "packages/weapp-vite/dist/getInstance-8d_v3jt8.mjs": "5a029efaac791d5889734e4c404066054525864e2968084510696d952ee13c34",
+      "packages/weapp-vite/dist/cli-acceptance.d.mts": "f4c5cf9bb78e85f15dc27180260637cf24b2a24bc39e0788783a3accc4dde614",
+      "packages/weapp-vite/dist/routes-C7fCmf92.d.mts": "4c0f3eefe551aba4ac453a34094e9f5f4d9815f1caeee968eb54ea241d80beb2",
+      "packages/weapp-vite/dist/createCompilerContextInstance-ii3j_XIH.mjs": "110d9892a673e0e29991e1259fc9d96ae943ae5cc8569d908049c77267a7e580",
+      "packages/weapp-vite/dist/test.mjs": "dfddb66b3e4e157152af90f86097788af3f597bb6ea55de830fd907c3c838f5f",
+      "packages/weapp-vite/dist/upload-worker.d.mts": "f4c5cf9bb78e85f15dc27180260637cf24b2a24bc39e0788783a3accc4dde614",
+      "packages/weapp-vite/dist/getInstance-dfo4-dIf.mjs": "7b1b82f1dd67caf36fe7e43e02fa36344efc4e502396d6ec977f3dadf73697dc",
+      "packages/weapp-vite/dist/wevu-router-Cg2sIkIE.d.mts": "0bd3c5e3c9d7d8a2d7dec703009eaf18721f62fa313c2b1736df3ccf90b2841c",
+      "packages/weapp-vite/dist/vite.d.mts": "240c061fb14a1ad89fdd771d61cee0d87c073ce809428eb1de8ccee806524c2f",
+      "packages/weapp-vite/dist/mcp.mjs": "14758527bde36a9a3e1126052c007278d74b0bc64e0d55bb9db2db5185864185",
+      "packages/weapp-vite/dist/dashboard-CnbB6f8-.mjs": "427c7c28e1c9b9fa3b9280e389a68ed7b32552674df18887bf2b642bb61fa8c5",
+      "packages/weapp-vite/dist/config.d.mts": "5c0a05eba3804d29f597b48f5f69e372579335fb249663076c317172e1ebdb61",
+      "packages/weapp-vite/dist/cli-acceptance.mjs": "592f1a1d07c8b11ca6f2950756265336516274e80c45199f8e369ba8a41c5084",
+      "packages/weapp-vite/dist/dashboard.d.mts": "eb6d784f5edaad979024acd7ef87dc56bc77256dcafcb211a4e6873b00954e35",
+      "packages/weapp-vite/dist/upload-C1w-cD65.mjs": "ab9e8357155576618b6382819a02c0e03c8b728d0613bcbb809670431cca7c07",
+      "packages/weapp-vite/dist/config-V0L-IAJf.d.mts": "69ff3640d149ad6f97fe9e6db4b633cb286a94fdeb35016d7d6c6e8b8a7e9a33",
+      "packages/weapp-vite/dist/wevu-C4KEC5kO.d.mts": "9d47709fc805e35fd1e9984612194b7a665837cbe9fe3f8b5f6e64032da75b78",
+      "packages/weapp-vite/dist/platform-DTWs5QRi.mjs": "62258ade40cfdc33fb60cbc17caa0ff94db60fe2667e1594100c0b704244aa33",
+      "packages/weapp-vite/dist/config-DRGcCi3h.mjs": "f1e83422a67c2f4c56fe48e0b67b8ab3f648a4316f0ebff22fd0aacbb0682faf",
+      "packages/weapp-vite/dist/i18n.mjs": "44f56f570516a0ab52cb704888ac5bc7ed3024d6ea9181f26489d389d2674fe5",
+      "packages/weapp-vite/dist/budget-BD7VqLCl.d.mts": "1ab7c6663d03098d5c81f6975e69f672d17f1793151e84db985ad332d28bb079",
+      "packages/weapp-vite/dist/resolvers.d.mts": "c28c4c0f14b866e3dcbbb184514f78a78772d0d127f577f5ee83ec1aae231ac1",
+      "packages/weapp-vite/dist/index-sFXtV2w9.d.mts": "c0d27b92b570a59b678d8010d968c3ed16906c56f82ed22eb65cf250a84d5423",
+      "packages/weapp-vite/dist/doctor.d.mts": "522bd85f0473e45f4322a6cb3d1eb6ee7654969768c8a4680f053d88a88e515f",
+      "packages/weapp-vite/dist/web-apis.d.mts": "38149f03a6b594a5c1865e68b5473dfc011e8c60baff7b7042478a5f6076d327",
+      "packages/weapp-vite/dist/runtime.d.mts": "4a88b39e512bfb647ffdf23e730da87ada62513d68fcd79848b22aac21f5e276",
+      "packages/weapp-vite/dist/compatibility.d.mts": "496e0327bc04588413213491f52a65149ef052574126147b26a70f2ffef9cf80",
+      "packages/weapp-vite/dist/files-BqxFIPRp.mjs": "9e8c2a9ece4e0fa60c1b2cd50c3f772a3ed58a45b8b238d5e439fa22a54688d6",
+      "packages/weapp-vite/dist/eslint.mjs": "004691ead0708fb098e872fd7709a6b035c4cee6ff109d7b2f81ce7554ddc885",
+      "packages/weapp-vite/dist/index.d.mts": "fc4455b45b9264f8ca02dcd726201703bd1d1ca8e123afaa04f16dcb8e034699",
+      "packages/weapp-vite/dist/session-DaVnfZmZ.mjs": "f63014ab020f30dbae73d9d0b53f5b3b795a0108c06f72600f7b5816ae1f4198",
+      "packages/weapp-vite/dist/loadConfig-DW_saFUT.mjs": "7046daf191d773f4acdaaa0c06afcc4356507462206b699e2445590b4710e804",
+      "packages/weapp-vite/dist/resolvers.mjs": "f1dcad3ae1b534bbdad0468b7c11d3f675293e893691d38df4296f4dffb46bc1",
+      "packages/weapp-vite/dist/doctor-worker.mjs": "850f2b7513d1f6aa4858f0fd94de2f08ebd371decb03cdc44c0d85ae57a81188",
+      "packages/weapp-vite/dist/types.mjs": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "packages/weapp-vite/dist/auto-routes.mjs": "fdeef54950d0140a5846afd72143e62928ce051f24c238dc480e93d77b0308ed",
+      "packages/weapp-vite/dist/test.d.mts": "e601eeb045ac1eb788ef4df12522e04ca18aff40d607426c236a7ee94a2e2570",
+      "packages/weapp-vite/dist/adapters-BwnMMIZR.mjs": "16b02db24502903259b2690bfaf56daf2788cfe8827c694f4ed04d4acc3dfe21",
+      "packages/weapp-vite/dist/processCleanup-B6KA30Zc.mjs": "a66f906b387273b3198a5b63fed09a302ca6f4afd0241c99b8821612466d634d",
+      "packages/weapp-vite/dist/mcp-zg_VlvSU.mjs": "a17697aa828e4ca5538aebd35339d14939dfa5922603e510132251692b173ca3",
+      "packages/weapp-vite/dist/compatibility.mjs": "2bb23b59a502743bb0e90c696d7c448741fed9bea3372cc98158d6c985ad8264",
+      "packages/weapp-vite/dist/eslint.d.mts": "0063e16b7a2e7ec22123a0a715779076e0939b59026d0beeb4ac6c1e3084d05d",
+      "packages/weapp-vite/dist/auto-import-presets.mjs": "19c1375137fb527be6e5b1ea71bcb4a88c7634b24a2130a86c2af51ec1033998",
+      "packages/weapp-vite/dist/web-apis.mjs": "e9702965393ba9b7b8b6246a5e88b2e330f0ae5367b7a2435a23cbe0b1a7a413",
+      "packages/weapp-vite/dist/runtime-Ee2HY6gR.d.mts": "b2cb47cd2d4f1c72bc59c2cb9d45de88dae4f24c2baa114417667fa7bfe5e73e",
+      "packages/weapp-vite/dist/dashboard.mjs": "cc505156ff40ac31c9cb469670ce16e4d4c3155229b7531e2828a2143ef8b3df",
+      "packages/weapp-vite/dist/pluginHost--CaeyWpA.mjs": "15417af5cc6515d0bb4cdc7717f42cf7cf2f93f1129c6bde1c1acb9d82bd569a",
+      "packages/weapp-vite/dist/mcp.d.mts": "233a4ae926fbc210d61036cd2234781015b2a970a4123d7ee05ec01adf62d790",
+      "packages/weapp-vite/dist/createContext-DKCWObP6.mjs": "b4e53a1ace01446c2223d76327033cfd41e6f6767896e127efc9151353659e7e",
+      "packages/weapp-vite/dist/analyze-ZJUvEdaY.mjs": "606662996c6b24061d9085505f6936532cba6d710a294a86cb1453a77afa6c63",
+      "packages/weapp-vite/dist/mcp-ClEOlAEO.mjs": "41b3b300c5c6202b9f1c03c63120ccbcd3f5d71c20e642385fbf7b8cb0255583",
+      "packages/weapp-vite/dist/types.d.mts": "2c1f32489866cfce783a9f62de0c7e9302dc253cfd55bc830bc333a88bd4a74a",
+      "packages/weapp-vite/dist/wevu-router-Dg1LnBlg.mjs": "fbcdf3c9da7673be8015763e0a7e87c67420766996da3a9f2ad20a26ce382685",
+      "packages/weapp-vite/dist/vite.mjs": "591aaa1876691540d53dcdc13e19f309c3f06eefe0588f65dda0d649ffb9bacd",
+      "packages/weapp-vite/dist/devProvider-Ds1HI8bQ.mjs": "dd5ec5b6f88e20e724fd2bc3c5e168112406917109415bad021a2e21085b54f1",
+      "packages/weapp-vite/dist/resolvers-CcJ6xmoT.mjs": "cea16b515159de627f633a8237d78b9c721064501bdf3d6edc6858c9bb8920d7",
+      "packages/weapp-vite/dist/path-doV773b7.mjs": "3eaf1d938b644768c28bafd47c3725f40ca7808c4f1b76488d01b084f379bec4",
+      "packages/weapp-vite/dist/runtime.mjs": "2c1415e45cd5cfd0e76d4f5de0288f705160b44072487708ad3ffedabf668d92",
+      "packages/weapp-vite/dist/utils-DQ4aRNmh.mjs": "5f6e4bbea849853544f99a22ab2408ca9590b850807f75da4b6c230fae4d5018",
+      "packages/weapp-vite/dist/package-B_9LemZq.mjs": "29c3596786311a97bf6fb4345c62a96714bc5e3a466d05586eac75b6df72bece",
+      "packages/weapp-vite/dist/chunkStrategy-DRA5WpB-.mjs": "c9b264cf2943d6f93d1e177f3e6d1d0ccfeb9e8523b6e65bff49031a77cbd23d",
+      "packages/weapp-vite/dist/volar.d.mts": "2cacbf5ed90a53d352db85755dca6e9a05f085b1541398415b7c5338de6d6ba1",
+      "packages/weapp-vite/dist/json.mjs": "f7c3016a2b1ea1f4fee2380e963030e1dd2952f2a27a99776ca03821ba9248b9",
+      "packages/weapp-vite/dist/doctor-worker.d.mts": "f4c5cf9bb78e85f15dc27180260637cf24b2a24bc39e0788783a3accc4dde614",
+      "packages/weapp-vite/dist/index.mjs": "de1ee7a232438e777857542b568c356cbe3a281bc61646ac5d832cae7823bdbc",
+      "packages/weapp-vite/dist/json-BL8Dhhk6.mjs": "1288a3e7ca74380654651647debc2e00ea3cd6d9c42a6cab17d9853a96f6e0db",
+      "packages/weapp-vite/dist/auto-import-presets.d.mts": "baa1d6cde04e72ce8731367e776027dce8b9d713333ab997cb86b6ed6ce40bfd",
+      "packages/weapp-vite/dist/cli.d.mts": "f4c5cf9bb78e85f15dc27180260637cf24b2a24bc39e0788783a3accc4dde614",
+      "packages/weapp-vite/dist/auto-routes.d.mts": "99eddef423172179b2df7a1a92cbc81ef174912e0141e2160ad5bd15d12ba58e",
+      "packages/weapp-vite/dist/runtime-D6VCNhNY.mjs": "16612bb8e22b2f53e33d1f58edfce091f7d624a658a030d8ebd519b91468bac2",
+      "packages/weapp-vite/dist/logger-mt4mSTqV.mjs": "dd82736732e7dc22400b82f42e4ab76d57a4ed989d07b769ccb28aaee3f14f1f",
+      "packages/weapp-vite/dist/doctor.mjs": "b27fcd4b693d3ad0d3fa0ff0cd0628e1ddadae57cfbbe9b4c675960a4436053f",
+      "packages/weapp-vite/dist/i18n.d.mts": "d01f1746124765df41f3cd06114b65ee0e7cb562fb120a9736406ac3cdb6ef66",
+      "packages/weapp-vite/dist/constants-WOsG3Eqd.mjs": "8301a058b222122192ff4ab1cb8f6dd8c023bf418a55fe1382a89147aa7368ea",
+      "packages/weapp-vite/dist/index-CaXAtb9e.d.mts": "b07224f847738eeb2bccafa3055d01d1a66b03722ed1fbe73e3af4ea44ce422d",
+      "packages/weapp-vite/dist/wevu-BQWUU7br.mjs": "bbc9b949758fbfbb9b0cb6a200d818959abb7d5744da9a7ac6f38383af3dc600",
+      "packages/weapp-vite/dist/file-Dx_lSJvY.mjs": "bd3eacfb7630a9e3b1a7cd9b8a237bf51f10712ca20d35e786c0da8eeaacd830",
+      "packages/weapp-vite/dist/protocol-vg8HGJ4n.mjs": "c48613512db69aa408ca0283eb623b6d77debc9ee402c7421a3931b7d8460f24",
+      "packages/weapp-vite/dist/config.mjs": "fc301237748104ad785ccddbbef52cfa9d77d061d9c0ee701fb100e1bc1a1a4c",
+      "packages/weapp-vite/dist/volar.mjs": "80e3968b9a0088bcc94b89588ecaf1cb019c9f9bbb6302efc1b01d34cb19830b",
+      "packages/weapp-vite/dist/loadConfig-kkC2YuIq.mjs": "f8e91a98ce886be7d0b0af5373d9f27177ea0402047b6c6720a3fa93decc23c8",
+      "packages/weapp-vite/dist/lifecycle-BROTlwSL.mjs": "716cc6f353966e503f423d2200413a194b2c1d3ba46bea3c95bc482f9de1ec6f",
+      "packages/weapp-vite/dist/cli.mjs": "b6d94ab5b7330e085876ca0c87c2a4bfa354029b65916306537fd363652d957d",
+      "packages/weapp-vite/dist/file-BFBPXzkD.mjs": "ee85ecaa6b6cd9542c9caa699aae8d96b6e9c32a7fc8cd366e7e30394a9944ef",
+      "packages/weapp-vite/dist/types-CgZn5X6j.d.mts": "14469bf2756223f341c7e362d40db2062bcc63cfcd2c5c1971206183360699a1",
+      "packages/weapp-vite/dist/dev-CwuUBuUl.mjs": "45d1c03296515bc9cb9b9988cc41ef862566350b253694fccc46c649a173073d",
+      "packages/weapp-vite/dist/dashboardViteBridge-WKtrgeOO.mjs": "b2ae4724625d14960b0985960469b070ff1a632be7ecf4db47df14508968bbb6",
+      "packages/weapp-vite/dist/upload-worker.mjs": "7569a8b3dac6db4dff249b0e883cfe4da3e8346cbf06a6426cc1bd008df8a6ac",
+      "packages/weapp-vite/dist/docs/weapp-config.md": "2447ba4e9f9596f8d347aa0a22c6952ca56ac7b4c350cb21356fed58ddb79a19",
+      "packages/weapp-vite/dist/docs/i18n.md": "a5c9c62b171a947a3adbe30f9c83c9ec10a993cdb68ba35c7f037ee2170ab3bf",
+      "packages/weapp-vite/dist/docs/vue-sfc.md": "fa9ec1f73b7e1390eebcd6222815fe2247d9f032a955167f6de50a4659c3f36b",
+      "packages/weapp-vite/dist/docs/wevu-authoring.md": "0a01d34affb89285a48903c4a351a8f5e6dd39b25ef75f3e74f1d0160d983ff5",
+      "packages/weapp-vite/dist/docs/uni-app-component-libraries.md": "93962618776cdc8fe9e12fe40d9dd17ca2d6e5679d07296ae54970a1e5cdaa98",
+      "packages/weapp-vite/dist/docs/mcp.md": "1e127fa3c3b78b86be403d3fbb18a7f1d26808696f993437e21ccb7f0f4246d7",
+      "packages/weapp-vite/dist/docs/troubleshooting.md": "3afa436b61f13aed195208103c3b7117e72c12c16d05cd7195026ee79e882ce1",
+      "packages/weapp-vite/dist/docs/doctor.md": "bea8aa7321124e31b0d8605ef65d7cdd8e3c8f8f96eb6f764ba6d5d627b8f612",
+      "packages/weapp-vite/dist/docs/testing.md": "9ae3dd6c9fef64b0f8265ca3b85e35b134dea25b2cee578efccc89a45493ca66",
+      "packages/weapp-vite/dist/docs/define-config-overloads.md": "a668c044f9469e413ae0cf8c3a074bca5025eda584b065e8dfdf839b4bc7d1b3",
+      "packages/weapp-vite/dist/docs/getting-started.md": "6e1ba202767fe73dc7263dcc272acb120e548a6c38dedc5fe88f791e472addf4",
+      "packages/weapp-vite/dist/docs/README.md": "8b730f37d37d9de815615b227da441398dfedb27ea7162d458c53a95fe8b18d7",
+      "packages/weapp-vite/dist/docs/ai-workflows.md": "ea051b6bf49d770d664dfed3b89c684d968ae7c423b4b03255e0c4e29fba51ff",
+      "packages/weapp-vite/dist/docs/upload.md": "fcf6cfc1a69b47b1f1fb8b0db78d3b92e0e7bf603bcecd14d949458bfeccde96",
+      "packages/weapp-vite/dist/docs/index.md": "4d398a7f1faa8fb3c316ede807a3bac111fdae9a6fcda34cfaa7bba0d1c316bb",
+      "packages/weapp-vite/dist/docs/glass-easel.md": "60915f8708ce932b56204eb1c3a99af63080eceb813f1015216b80fbbd255988",
+      "packages/weapp-vite/dist/docs/vite-plugin.md": "9d8f55662238d6b0b53c18e6059cea006d569ac585532edd8a96e80e8cdb5ece",
+      "packages/weapp-vite/dist/docs/project-structure.md": "fb2306c892b7803cbcb740854436f456cd425dc4b82eeca27eedd870d76e603d",
+      "packages/weapp-vite/dist/docs/volar.md": "a13f8e8a7c2e820a77424243dd40c41a9e0ed151a8f0850d89a62b7c19a692d4",
+      "packages/weapp-vite/dist/dashboard/vite.d.mts": "102820a6183d4c845a267402b989aa76cbe934f4af48476b3ea281255ac89d65",
+      "packages/weapp-vite/dist/dashboard/vite.mjs": "85df40ab3bf4201c00c572e67c9924772f4bafc1245a5accb780f7db6eb4e3aa",
+      "packages/weapp-vite/dist/dashboard/analyze.mjs": "e4117bbe7f825ff841fa37e56b568aea6051268e1e15fa9dcfe579513358c5aa",
+      "packages/weapp-vite/dist/dashboard/analyze.d.mts": "862818977d64cd6c857ffc42f9a9629aa6f5fd00614a260214fcace0f902389c",
+      "packages/weapp-vite/dist/auto-import-components/resolvers.d.mts": "3907e0596269c45bc84d24e0ef1d4668db2448774b028eb01f3d2f7ad1293a73",
+      "packages/weapp-vite/dist/auto-import-components/resolvers.mjs": "bb3efd1318f248a8a5e27bfbf8d5051bdcd07fdffe9a083b49ede604ec6ddf23",
+      "packages/weapp-vite/dist/auto-import-presets/wevu.mjs": "9d01bc7a7fb5e25901255de027a3a126233260a79f6146bd335c241e1f905b09",
+      "packages/weapp-vite/dist/auto-import-presets/wevu.d.mts": "ff380d3e9f98bcb03e305a23c2a61d3c3572e259fb7060e3edf8cd854ba436c5",
+      "packages/weapp-vite/dist/auto-import-presets/wevu-router.mjs": "5e9c8a3b772ddaea65d9a23eb83a6f954666fb70342460112d64be1e2be3900e",
+      "packages/weapp-vite/dist/auto-import-presets/wevu-router.d.mts": "8da4bf14ebf2f002de08e7434a7eb76ad7033554437fb934bf9944af49bb142d"
+    },
+    "changesSinceCapture": [
+      "e2e/ide/auto-routes-define-app-json.runtime.test.ts",
+      "e2e/scripts/e2e-suite-manifest.test.ts"
+    ],
+    "identityNote": "验收对应含未提交修改的候选；tracked patch 与逐文件源码/dist 摘要共同标识，不等于干净基线提交。"
+  },
+  "harnessLiteralChange": {
+    "changes": [
+      {
+        "file": "e2e/ide/auto-routes-define-app-json.runtime.test.ts",
+        "executedSha256": "ccdec9f0c188a77e98ee8ba0d6193a9d43379fd2470a9067b781d4ea4e216406",
+        "auditedSha256": "e17e273d3a15f5d1a5d083fa372d483e4f661d82fbbbc808186ec023d0476e88",
+        "beforeReconstructedFromArchivedPatchAndHashVerified": true,
+        "diff": "--- e2e/ide/auto-routes-define-app-json.runtime.test.ts\n+++ e2e/ide/auto-routes-define-app-json.runtime.test.ts\n@@ -144,7 +144,7 @@\n   it('renders the restored page and keeps the original page reachable', async (context) => {\n     const acceptance = createDomAcceptance(context, 'e2e-apps/github-issues/fixtures/issue-1015', [\n       { id: 'topology-restored', route: `/${route}`, action: '打开仅由自动路由恢复的原生页面', nodes: [{ selector: '#topology-result', text: 'restored' }] },\n-      { id: 'topology-vue-restored', route: `/${vueRoute}`, action: '打开删除缓存后重新恢复的 Vue 页面', nodes: [{ selector: '#topology-vue-result', text: 'restored' }] },\n+      { id: 'topology-vue-restored', route: '/pages/topology-vue/index', action: '打开删除缓存后重新恢复的 Vue 页面', nodes: [{ selector: '#topology-vue-result', text: 'restored' }] },\n       { id: 'topology-original', route: '/pages/issue-1015/index', action: '返回原有页面验证路由共存', nodes: [{ selector: '#issue-1015-state', text: 'external css vars initial' }] },\n     ])\n     await prepareTopologyProject()\n"
+      },
+      {
+        "file": "e2e/scripts/e2e-suite-manifest.test.ts",
+        "executedSha256": "d2c0666f4a83939e6c50488b3f4088084c2f87c07fb3e59e5923b94240e1f81c",
+        "auditedSha256": "639cc9a94aa83499d1f424194496795e57ad51d3bcbf369ab9201b993722f0ed",
+        "beforeReconstructedFromArchivedPatchAndHashVerified": true,
+        "diff": "--- e2e/scripts/e2e-suite-manifest.test.ts\n+++ e2e/scripts/e2e-suite-manifest.test.ts\n@@ -10,7 +10,7 @@\n     expect(cases).toHaveLength(2)\n     expect(cases.every(item => item.plans.length === 1 && item.notes.length === 0)).toBe(true)\n     const topology = cases.find(item => item.name.startsWith('classic automatic route topology output runtime >'))\n-    expect(topology?.routes).toEqual(['/pages/issue-1015/index', '/pages/topology-added/index'])\n+    expect(topology?.routes.toSorted()).toEqual(['/pages/issue-1015/index', '/pages/topology-added/index', '/pages/topology-vue/index'])\n     expect(topology?.operations.filter(operation => operation.startsWith('check('))).toEqual([\n       'check(topology-restored)',\n       'check(topology-vue-restored)',\n"
+      }
+    ],
+    "runtimeRerunAfterLiteralChange": false,
+    "semanticEquivalenceVerified": true,
+    "basis": [
+      "执行时 const vueRoute 为 pages/topology-vue/index；模板字符串与新字面量均求值为 /pages/topology-vue/index。",
+      "归档 patch 可重建执行时测试和 manifest，文件摘要完全匹配；runtime 测试唯一差异为 checkpoint route 表示。",
+      "reLaunch、页面操作、选择器、文本断言和超时均未变化；两端已执行报告实际记录同一 Vue 路由。",
+      "inventoryAnalyzer 直接读取 StringLiteral 类型的 route 属性；字面量使静态清单可识别该 checkpoint。manifest 更新为排序比较三条 route。"
+    ],
+    "inventoryAnalyzer": {
+      "file": "e2e/scripts/domAcceptanceReport/inventoryAnalyzer.ts",
+      "line": 230,
+      "sha256": "0a4e9be7d105cf7e0d32bba50141e3a1d506cdf17c03854cdd3dff3dbaeacb17"
+    },
+    "postChangeVerification": "本离线审计只确认源码等值及hash；不将原两轮runtime结果写成最新字面量版本的重新执行。"
+  },
+  "reportDigestReconciliation": {
+    "headless-03": {
+      "rawFileSha256": "30121204622bdeb8cd22ceb0e8a0da797f3b730f93d1a766a35a666e2e5134c8",
+      "resourceRecordSha256": "6c4b25edcc6d5750d931ac9aada93ed3e4aa5a925fe93324375cd664a3ff921c",
+      "normalizedHashVerified": true,
+      "resourceHashEncoding": "Python json.dumps(report, sort_keys=True), default ASCII escaping and separators; no final newline"
+    },
+    "devtools-03": {
+      "rawFileSha256": "6081c33c5eff77820d5fdc3c575907baa267e10a8c07001c9aaa77e544db107f",
+      "resourceRecordSha256": "23c21b4ffd113050d4a1d3354af67e15f752ec2cfd8419ba16308cc18bbcc3f6",
+      "normalizedHashVerified": true,
+      "resourceHashEncoding": "Python json.dumps(report, sort_keys=True), default ASCII escaping and separators; no final newline"
+    }
+  },
+  "officialStable": {
+    "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+    "queriedAt": "2026-10-04T16:05:40.619694+00:00",
+    "launcherSelectionQueriedAt": "2026-10-04T16:05:43.053Z",
+    "channel": "stable",
+    "officialVersion": "2.02.2608080",
+    "installedVersion": "2.02.2608080",
+    "actualVersion": "2.02.2608080",
+    "baseLibraryVersion": "3.17.3"
+  },
+  "runs": {
+    "headless-03": {
+      "provider": "headless",
+      "status": "passed",
+      "strict": true,
+      "startedAt": "2026-10-04T16:04:49.017Z",
+      "finishedAt": "2026-10-04T16:04:58.874Z",
+      "environment": {
+        "nodeVersion": "v22.22.3",
+        "ideVersion": null,
+        "baseLibraryVersion": null
+      },
+      "summary": {
+        "plannedCount": 2,
+        "executedCount": 2,
+        "passedCount": 2,
+        "failedCount": 0,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "plannedCheckpointCount": 4,
+        "capturedCheckpointCount": 4
+      },
+      "errors": [],
+      "caseViolationCount": 0,
+      "scenarioRuntimeStats": [
+        {
+          "caseOrdinal": 1,
+          "log": 0,
+          "info": 0,
+          "warn": 0,
+          "error": 0,
+          "exception": 0,
+          "total": 0
+        },
+        {
+          "caseOrdinal": 2,
+          "log": 1,
+          "info": 0,
+          "warn": 0,
+          "error": 0,
+          "exception": 0,
+          "total": 0
+        }
+      ],
+      "cases": [
+        {
+          "name": "auto-routes define app json runtime (weapp e2e) > renders routeLinks for home page with main package and subpackage routes",
+          "status": "passed",
+          "fixture": "e2e-apps/auto-routes-define-app-json"
+        },
+        {
+          "name": "classic automatic route topology output runtime > renders the restored page and keeps the original page reachable",
+          "status": "passed",
+          "fixture": "e2e-apps/github-issues/fixtures/issue-1015"
+        }
+      ]
+    },
+    "devtools-03": {
+      "provider": "devtools",
+      "status": "passed",
+      "strict": true,
+      "startedAt": "2026-10-04T16:05:41.884Z",
+      "finishedAt": "2026-10-04T16:07:45.196Z",
+      "environment": {
+        "nodeVersion": "v22.22.3",
+        "ideVersion": "2.02.2608080",
+        "baseLibraryVersion": "3.17.3"
+      },
+      "summary": {
+        "plannedCount": 2,
+        "executedCount": 2,
+        "passedCount": 2,
+        "failedCount": 0,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "plannedCheckpointCount": 4,
+        "capturedCheckpointCount": 4
+      },
+      "errors": [],
+      "caseViolationCount": 0,
+      "scenarioRuntimeStats": [
+        {
+          "caseOrdinal": 1,
+          "log": 0,
+          "info": 2,
+          "warn": 0,
+          "error": 0,
+          "exception": 0,
+          "total": 0
+        },
+        {
+          "caseOrdinal": 2,
+          "log": 1,
+          "info": 2,
+          "warn": 0,
+          "error": 0,
+          "exception": 0,
+          "total": 0
+        }
+      ],
+      "cases": [
+        {
+          "name": "auto-routes define app json runtime (weapp e2e) > renders routeLinks for home page with main package and subpackage routes",
+          "status": "passed",
+          "fixture": "e2e-apps/auto-routes-define-app-json"
+        },
+        {
+          "name": "classic automatic route topology output runtime > renders the restored page and keeps the original page reachable",
+          "status": "passed",
+          "fixture": "e2e-apps/github-issues/fixtures/issue-1015"
+        }
+      ]
+    }
+  },
+  "scope": {
+    "suite": "e2e/ide/auto-routes-define-app-json.runtime.test.ts",
+    "fixtures": [
+      "e2e-apps/auto-routes-define-app-json",
+      "e2e-apps/github-issues/fixtures/issue-1015"
+    ],
+    "buildSequence": [
+      "初始构建",
+      "更新 App script marker",
+      "仅通过源文件新增原生页面与 Vue 页面",
+      "删除两类页面",
+      "恢复两类页面"
+    ],
+    "buildAssertions": [
+      "各阶段 app.json 注册与页面 JS/JSON/WXML 六个文件存在性一致",
+      "删除阶段同时移除 route 和六个输出文件",
+      "每阶段 App script marker 保留",
+      "增删恢复不触碰 App 触发补偿构建"
+    ],
+    "runtimeBoundary": "页面增删恢复与输出断言先于 runtime 启动；每个 provider 用最终恢复产物，通过 reLaunch 验证原生恢复页、Vue 恢复页和原有页，不声称运行中的 IDE 逐阶段动态注册/删除路由已验收。",
+    "baselineRouteLinks": "另一个用例验证首页主包/分包共六个导航链接。"
+  },
+  "parity": {
+    "plansRoutesSelectorsCountsAndTextEqual": true,
+    "sources": {
+      "headless": "headless-logical-tree",
+      "devtools": "devtools-page-frame"
+    },
+    "cases": [
+      {
+        "case": "auto-routes define app json runtime (weapp e2e) > renders routeLinks for home page with main package and subpackage routes",
+        "checkpoints": [
+          {
+            "id": "route-links",
+            "route": "/pages/home/index",
+            "action": "reLaunch home and inspect all generated navigation links",
+            "nodes": [
+              {
+                "selector": ".title",
+                "text": "auto-routes 导航中心"
+              },
+              {
+                "selector": ".meta",
+                "text": "主包页面：4，总入口：6"
+              },
+              {
+                "selector": "navigator",
+                "count": 6
+              },
+              {
+                "selector": "navigator[url=\"/pages/dashboard/index\"] .link-path",
+                "text": "pages/dashboard/index"
+              },
+              {
+                "selector": "navigator[url=\"/pages/detail/index?id=42&from=home\"] .link-path",
+                "text": "pages/detail/index"
+              },
+              {
+                "selector": "navigator[url=\"/pages/home/index\"] .link-path",
+                "text": "pages/home/index"
+              },
+              {
+                "selector": "navigator[url=\"/pages/logs/index\"] .link-path",
+                "text": "pages/logs/index"
+              },
+              {
+                "selector": "navigator[url=\"/subpackages/lab/pages/state-playground/index\"] .link-path",
+                "text": "subpackages/lab/pages/state-playground/index"
+              },
+              {
+                "selector": "navigator[url=\"/subpackages/marketing/pages/campaign/index\"] .link-path",
+                "text": "subpackages/marketing/pages/campaign/index"
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "route-links",
+            "route": "pages/home/index",
+            "nodes": [
+              {
+                "selector": ".title",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "auto-routes 导航中心"
+                  }
+                ]
+              },
+              {
+                "selector": ".meta",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "主包页面：4，总入口：6"
+                  }
+                ]
+              },
+              {
+                "selector": "navigator",
+                "query": "css",
+                "count": 6,
+                "nodes": [
+                  {},
+                  {},
+                  {},
+                  {},
+                  {},
+                  {}
+                ]
+              },
+              {
+                "selector": "navigator[url=\"/pages/dashboard/index\"] .link-path",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "pages/dashboard/index"
+                  }
+                ]
+              },
+              {
+                "selector": "navigator[url=\"/pages/detail/index?id=42&from=home\"] .link-path",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "pages/detail/index"
+                  }
+                ]
+              },
+              {
+                "selector": "navigator[url=\"/pages/home/index\"] .link-path",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "pages/home/index"
+                  }
+                ]
+              },
+              {
+                "selector": "navigator[url=\"/pages/logs/index\"] .link-path",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "pages/logs/index"
+                  }
+                ]
+              },
+              {
+                "selector": "navigator[url=\"/subpackages/lab/pages/state-playground/index\"] .link-path",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "subpackages/lab/pages/state-playground/index"
+                  }
+                ]
+              },
+              {
+                "selector": "navigator[url=\"/subpackages/marketing/pages/campaign/index\"] .link-path",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "subpackages/marketing/pages/campaign/index"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "case": "classic automatic route topology output runtime > renders the restored page and keeps the original page reachable",
+        "checkpoints": [
+          {
+            "id": "topology-restored",
+            "route": "/pages/topology-added/index",
+            "action": "打开仅由自动路由恢复的原生页面",
+            "nodes": [
+              {
+                "selector": "#topology-result",
+                "text": "restored"
+              }
+            ]
+          },
+          {
+            "id": "topology-vue-restored",
+            "route": "/pages/topology-vue/index",
+            "action": "打开删除缓存后重新恢复的 Vue 页面",
+            "nodes": [
+              {
+                "selector": "#topology-vue-result",
+                "text": "restored"
+              }
+            ]
+          },
+          {
+            "id": "topology-original",
+            "route": "/pages/issue-1015/index",
+            "action": "返回原有页面验证路由共存",
+            "nodes": [
+              {
+                "selector": "#issue-1015-state",
+                "text": "external css vars initial"
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "topology-restored",
+            "route": "pages/topology-added/index",
+            "nodes": [
+              {
+                "selector": "#topology-result",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "restored"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "topology-vue-restored",
+            "route": "pages/topology-vue/index",
+            "nodes": [
+              {
+                "selector": "#topology-vue-result",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "restored"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "topology-original",
+            "route": "pages/issue-1015/index",
+            "nodes": [
+              {
+                "selector": "#issue-1015-state",
+                "query": "css",
+                "count": 1,
+                "nodes": [
+                  {
+                    "text": "external css vars initial"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "diagnostics": {
+    "caseViolationCount": 0,
+    "reportErrorCount": 0,
+    "scenarioRuntimeStatsWarnErrorExceptionAllZero": true,
+    "entireRunWarningFree": false,
+    "startupProtocolWarningCount": 8,
+    "startupProtocolRecovered": [
+      {
+        "method": "App.getCurrentPage",
+        "state": "recovered",
+        "attempts": 7,
+        "firstFailureAt": "2026-10-04T16:06:03.073Z",
+        "lastFailureAt": "2026-10-04T16:06:04.573Z"
+      },
+      {
+        "method": "App.getCurrentPage",
+        "state": "recovered",
+        "attempts": 1,
+        "firstFailureAt": "2026-10-04T16:07:16.375Z",
+        "lastFailureAt": "2026-10-04T16:07:16.375Z"
+      }
+    ],
+    "simulatorBootFailureCount": 1,
+    "launchRecoveryCount": 1,
+    "recoveryUiEvidence": {
+      "source": "recovery.ax.txt",
+      "sourceSha256": "348a630d773dc30e99f30cb3304415f41a63d919f8c87a89065afd821a8e64a4",
+      "stableHostAndOwnedRecoveredRouteConfirmed": true,
+      "route": "pages/topology-added/index",
+      "registeredRecoveredEndpointMatchesAx": true,
+      "visibleRenderedTextClaimed": false,
+      "note": "AX确认恢复后的所属项目、宿主和目标pageframe；最终文本由后续runtime checkpoint证明。"
+    },
+    "otherInfrastructureWarnings": [
+      "恢复时 engine-build HTTP endpoint 缺失、CLI open 非零但宿主已开、compile tool 未实现，后续 warmup 与严格断言通过。",
+      "CLI open/close 中 punycode 弃用提示。",
+      "构建日志中 codeSplitting group 缺少 debugName 的提示。"
+    ]
+  },
+  "resources": {
+    "auditedAt": "2026-10-04T16:16:18.038982+00:00",
+    "providers": {
+      "headless-03": {
+        "status": "closed",
+        "exitCode": 0,
+        "finishedAt": "2026-10-04T16:04:59.646192+00:00",
+        "cleanupErrors": [],
+        "registeredUniqueProcessCountIncludingBridgeEvents": 3,
+        "originalRegisteredProcessIdentitiesAbsentAtAudit": true,
+        "pidNumbersReusedByLaterUnrelatedProcesses": 0,
+        "reusedProcessesPreserved": true,
+        "registeredProjectCount": 0,
+        "successfulCliProjectCloseCount": 0,
+        "recordedSuccessfulEndpointCloseCount": 0,
+        "recordedAllOwnedEndpointsClosed": true,
+        "auditEndpointProbePerformed": false,
+        "endpointEvidence": "recorded exact owned endpoint close results, no new network probe by auditor"
+      },
+      "devtools-03": {
+        "status": "closed",
+        "exitCode": 0,
+        "finishedAt": "2026-10-04T16:07:46.594789+00:00",
+        "cleanupErrors": [],
+        "registeredUniqueProcessCountIncludingBridgeEvents": 19,
+        "originalRegisteredProcessIdentitiesAbsentAtAudit": true,
+        "pidNumbersReusedByLaterUnrelatedProcesses": 0,
+        "reusedProcessesPreserved": true,
+        "registeredProjectCount": 2,
+        "successfulCliProjectCloseCount": 2,
+        "recordedSuccessfulEndpointCloseCount": 3,
+        "recordedAllOwnedEndpointsClosed": true,
+        "auditEndpointProbePerformed": false,
+        "endpointEvidence": "recorded exact owned endpoint close results, no new network probe by auditor"
+      }
+    },
+    "registeredUniqueProcessesAcrossRuns": 22,
+    "allOriginalRegisteredProcessIdentitiesAbsentAtAudit": true,
+    "processIdentityMethod": "对精确登记 PID 做只读存活检查；仍占用同一数值时比较 ps 启动时间与登记时间。发现后起无关进程复用 PID，保留该进程。",
+    "ephemeralTopologyFixtureRemoved": true,
+    "managedBridgeDirectoryRetained": true,
+    "ownedProjectsClosedViaSelectedCLI": true,
+    "recordedOwnedEndpointCount": 3,
+    "recordedOwnedEndpointsClosed": true,
+    "sharedHostAndUserProjects": "本审计未操作共享宿主或用户项目；原项目恢复由主任务负责。",
+    "priorPidReuseObservation": {
+      "observedDuringEarlierAudit": true,
+      "count": 1,
+      "registeredProcessStartLocal": "2026-10-05T00:06:41+08:00",
+      "laterUnrelatedProcessStartLocal": "2026-10-05T00:11:18+08:00",
+      "parentAndCommandAlsoDifferent": true,
+      "unrelatedProcessPreserved": true,
+      "samePidNumberAbsentAtFinalAudit": true,
+      "privacy": "PID numeric value and unrelated project identity omitted."
+    }
+  },
+  "history": {
+    "initialHarnessFailure": {
+      "file": "e2e/ide/auto-routes-define-app-json.runtime.test.ts",
+      "beforeSha256": "53177cc06014cff240c9ab7bd13c5db68db969fb75e18aadcd21fc975bca6eb5",
+      "acceptedSha256": "c09a24ba72f1c19a19c505edca27d1165dc5380b801910c627ee5fbd04ba2cfb",
+      "beforeSourceReconstructedFromArchivedPatchAndHashVerified": true,
+      "reason": "expect.poll 不能在 beforeAll 中调用；相同准备步骤移入测试体内的 prepareTopologyProject，保留页面操作、断言及 180 秒预算。",
+      "initialFailureRetained": {
+        "provider": "headless",
+        "status": "failed",
+        "summary": {
+          "plannedCount": 1,
+          "executedCount": 1,
+          "passedCount": 1,
+          "failedCount": 0,
+          "blockedCount": 0,
+          "skippedCount": 1,
+          "notExecutedCount": 0,
+          "plannedCheckpointCount": 1,
+          "capturedCheckpointCount": 1
+        },
+        "errors": [
+          "expect.poll() must be called inside a test",
+          "Vitest run ended: failed"
+        ]
+      }
+    },
+    "nativeOnlyStage": {
+      "status": "passed-with-vue-still-failing",
+      "providers": [
+        "headless-02",
+        "devtools"
+      ],
+      "casesPerProvider": 2,
+      "checkpointsPerProvider": 3,
+      "runtimeBoundary": "产物增删恢复检查在 runtime 启动前完成。新增用例只启动一次 runtime，再以 reLaunch 检查恢复页和原有页，不宣称运行中的动态路由注册和删除逐阶段验收。",
+      "vueWasNotYetCovered": true,
+      "candidateTrackedPatchSha256": "e633eecd7c904a990bfdbca67ce7d11b44b1da3dad65e09f8e0ee3f53a48df6e",
+      "reportDigests": {
+        "headless-02": {
+          "rawFileSha256": "5b12472443dc0c2a631cdc81a4b441421dbfab6962b64e0abc1637ff341d58d3",
+          "resourceRecordSha256": "b8035dca08dc47ae3a63dd5f67497e15caf9686966289df2a3a1e81610d567d9",
+          "resourceHashEncoding": "Python json.dumps(report, sort_keys=True), default ASCII escaping and separators; no final newline",
+          "normalizedHashVerified": true
+        },
+        "devtools": {
+          "rawFileSha256": "0ae5e5f71e75e1dd7c121fa72181b3370e6b3ea4b03e3467ddd2b5b0a8b6446b",
+          "resourceRecordSha256": "9dd7afde530c7ade7462e5c26244abc246c62e8e5b7eedde547fb70257c13814",
+          "resourceHashEncoding": "Python json.dumps(report, sort_keys=True), default ASCII escaping and separators; no final newline",
+          "normalizedHashVerified": true
+        }
+      }
+    },
+    "vueDeletionCiRed": {
+      "source": "route-ci.log",
+      "passed": 1,
+      "failed": 1,
+      "test": "e2e/ci/auto-routes-hmr.test.ts",
+      "line": 204,
+      "failure": "删除 Vue 页面后 app.json 路由已移除，旧输出仍存在，文件缺失断言超时；结果为 1 passed / 1 failed。",
+      "rootCause": "snapshot buildStart 只消费外部 SFC 依赖失效，遗漏自身 SFC 删除；full bundle 遍历 compilationCache，读取缺失源码失败时返回 cached.result，重新发射旧页面。"
+    },
+    "vueSnapshotUnitRedGreen": {
+      "source": "vue-snapshot-source-invalidation-validation.json",
+      "sourceSha256": "7e7db8021d4e2cbb44ac4e913a3cdc47904d85f1c35d95783d21a3ffddae9d66",
+      "scope": "Package unit validation only; no downstream build, E2E or DevTools run by this agent.",
+      "negative": {
+        "source": "Unchanged plugin/index.ts from worktree HEAD",
+        "sourceSha256": "429dee8dd4edabe09d179ba6a48085c638d4312e57bcef89a4a686d2abfbf48a",
+        "suite": "packages/weapp-vite/src/plugins/vue/transform/plugin/snapshotInvalidation.test.ts",
+        "testCount": 2,
+        "failed": 2,
+        "timeLocal": "2026-10-04T23:45:33+08:00",
+        "observed": [
+          "Deleted SFC remains selected for complete bundle publication.",
+          "An atomically recreated SFC does not invalidate the cached style snapshot."
+        ]
+      },
+      "positive": {
+        "testFiles": 5,
+        "passed": 76,
+        "failed": 0,
+        "timeLocal": "2026-10-04T23:47:26+08:00"
+      },
+      "sameFixedProductSourceIntegrated": true,
+      "fix": "统一 snapshot buildStart、watch 与 HMR 的源文件失效入口，同时清理自身 SFC 编译/样式缓存与外部依赖，覆盖删除和同路径原子重建。"
+    },
+    "finalIntegratedValidation": {
+      "routeCi": {
+        "source": "route-ci-02.log",
+        "testFiles": 1,
+        "passed": 2,
+        "failed": 0
+      },
+      "packageUnits": {
+        "source": "combined-units-final.log",
+        "testFiles": 10,
+        "passed": 200,
+        "failed": 0
+      },
+      "realRuntime": "headless-03 / devtools-03 both strict, 2 cases and 4 checkpoints passed"
+    }
+  },
+  "evidenceBundle": "auto-routes-topology-bed518b2b",
+  "evidenceFiles": {
+    "headless-03/dom/7db0a0eb-e5a1-4a97-a270-6c4e36116b5e.json": {
+      "sha256": "30121204622bdeb8cd22ceb0e8a0da797f3b730f93d1a766a35a666e2e5134c8",
+      "bytes": 11370
+    },
+    "headless-03/official-stable.json": {
+      "sha256": "90f4b1287b87da0201be2aff56f850c8cb01ac59f234e65b1c18ab04ebfb1894",
+      "bytes": 1770
+    },
+    "headless-03/resource-observer.mjs": {
+      "sha256": "2d9abfccc2ae30de0deb7d6841465c0a57458e5eb15cdcf6be5bd33776aa7ada",
+      "bytes": 1177
+    },
+    "headless-03/resources.json": {
+      "sha256": "eef032a7ebda6666799ad8478b886139b8e585fc41b3ba634cbfc1314e0fabad",
+      "bytes": 1617
+    },
+    "headless-03/run.log": {
+      "sha256": "3ab6426a1a94b63dc8967093b56e3d3e91b82c10435569fa5c6eaf7016c60276",
+      "bytes": 1802
+    },
+    "devtools-03/dom/306e53a9-0ea5-48a5-acda-5b7ef7b1ffe6.json": {
+      "sha256": "6081c33c5eff77820d5fdc3c575907baa267e10a8c07001c9aaa77e544db107f",
+      "bytes": 25955
+    },
+    "devtools-03/official-stable.json": {
+      "sha256": "64a1f3be8c9de2a3a7d80daf8c41a44a1272f5d74b30b699dcc15e77735c75f2",
+      "bytes": 1770
+    },
+    "devtools-03/recovery.ax.txt": {
+      "sha256": "348a630d773dc30e99f30cb3304415f41a63d919f8c87a89065afd821a8e64a4",
+      "bytes": 2993
+    },
+    "devtools-03/resource-events.jsonl": {
+      "sha256": "fbe530e3af808e11271320beb76074cf91ca208a5f5d7b370f04824d5fc65882",
+      "bytes": 1583
+    },
+    "devtools-03/resource-observer.mjs": {
+      "sha256": "2d9abfccc2ae30de0deb7d6841465c0a57458e5eb15cdcf6be5bd33776aa7ada",
+      "bytes": 1177
+    },
+    "devtools-03/resources.json": {
+      "sha256": "c6813a62ba7405a7304dfd64cbdca5c0d5d7cb897447432a8123b3172a6ebecc",
+      "bytes": 7459
+    },
+    "devtools-03/run.log": {
+      "sha256": "f63e45d0c419f4ee61d992535ce9d401e2ada3e8212701ab01c1079cc1fa8800",
+      "bytes": 8485
+    },
+    "candidate-before.json": {
+      "sha256": "77f2dd20ff19f9664ebf3506058eb64fc4ad28c1c398e8ca4da438f5fa9c62db",
+      "bytes": 17467
+    },
+    "candidate.patch": {
+      "sha256": "36b18f5ab66cfe8b22c8657a3806d56f7868419cd90e8bb10c44c384445c04d6",
+      "bytes": 59973
+    },
+    "vue-candidate-before.json": {
+      "sha256": "f4854eb7e18ae36880ca5e8409f8c619e7f07a6123494601253b240adef02c2e",
+      "bytes": 18570
+    },
+    "vue-candidate.patch": {
+      "sha256": "74646b0fadbe9dff7780a9bdf5d33ee16af9ed98d8eecd1ec8446b9227e4bc4a",
+      "bytes": 66407
+    },
+    "route-ci.log": {
+      "sha256": "33470a6bf9c541feb8f16627b531c9e03e668b407053eb4adc1cff59116a958e",
+      "bytes": 1292
+    },
+    "route-ci-02.log": {
+      "sha256": "70ffe21c537fcee814184070395e8f3b55b980dfa507f9eee3d1e53036255d23",
+      "bytes": 179
+    },
+    "combined-units-final.log": {
+      "sha256": "3bc4c0372d8e87f89b26d24f6076ff6651d444ec482370430d20c3c09f17ed3f",
+      "bytes": 769
+    },
+    "headless/dom/0c1a78e0-3f92-4d4f-81f1-e5aae426b7ab.json": {
+      "sha256": "6698e146f9850fabfdf9230a1cbc4a7064ab18994cde208b393fbd0dd3d58b5f",
+      "bytes": 7560
+    },
+    "headless/resources.json": {
+      "sha256": "b8b163e6fd1af86bd525f99648a48f6570af0dd8b921cb953d58565aaf235e4b",
+      "bytes": 1443
+    },
+    "headless/run.log": {
+      "sha256": "99ac22421df31dcf4615cd6dc1cc5a8156e7fb13495360ce26e63b444c16a11a",
+      "bytes": 4652
+    },
+    "headless/official-stable.json": {
+      "sha256": "5cbb54f8a36e4704a42257465e39e3799d8d07e1509a3b6a3f660d681cc8f076",
+      "bytes": 1770
+    },
+    "headless-02/dom/15b2adec-f003-47ef-9399-77811621c7d8.json": {
+      "sha256": "5b12472443dc0c2a631cdc81a4b441421dbfab6962b64e0abc1637ff341d58d3",
+      "bytes": 10500
+    },
+    "headless-02/resources.json": {
+      "sha256": "681d02e6aa362110a67ae9163d5862920684b8e618060b1193b0916c30cade11",
+      "bytes": 1738
+    },
+    "headless-02/run.log": {
+      "sha256": "9e58b25f51478d5c2a0ad4a09c08aee3406af6ad5dad5af5f5a779b089be1e37",
+      "bytes": 1804
+    },
+    "headless-02/official-stable.json": {
+      "sha256": "a6d665e1348c841ca5aa6ae1d58410c858be387b8ce2172875e057816c57e23f",
+      "bytes": 1770
+    },
+    "devtools/dom/872b6753-4cf9-4ec5-97f5-64782b3b7b74.json": {
+      "sha256": "0ae5e5f71e75e1dd7c121fa72181b3370e6b3ea4b03e3467ddd2b5b0a8b6446b",
+      "bytes": 21909
+    },
+    "devtools/resources.json": {
+      "sha256": "bd1c20abeac2d92b71a40e22e2a4a00e1431e2aee9e18357fc9dc80f26dabe39",
+      "bytes": 5535
+    },
+    "devtools/run.log": {
+      "sha256": "77113b89bae49caacd8ef3b4f94a5cdc36f0f3f922b98848fc64ce5e428a52b6",
+      "bytes": 5700
+    },
+    "devtools/official-stable.json": {
+      "sha256": "023d5967e575346f571e004f544c237a97c919fac9ef37e2ad166f014a0d368c",
+      "bytes": 1770
+    },
+    "devtools/resource-events.jsonl": {
+      "sha256": "caefb36abda0dbc80eaf3a82fcf78e0520dd69d6145027b89ca980abe45ddcf7",
+      "bytes": 1062
+    }
+  },
+  "limitations": [
+    "仅完成本报告定义的 classic 原生/Vue 自动路由拓扑范围，不推导为所有路由、样式HMR、固定性能或整个 issue 的完成。",
+    "增删阶段通过同hash测试中的输出断言支撑，未归档每个阶段的完整dist快照。",
+    "字面量版本未重跑runtime；等值依据、执行前后字节摘要和差异已独立记录。",
+    "本审计未运行构建、单测、E2E、性能采样或修改issue标签。",
+    "原始日志/AX/resources含本机路径和进程端口信息；公开报告只保留必要提取和摘要，不直接发布原始内容。"
+  ]
+}

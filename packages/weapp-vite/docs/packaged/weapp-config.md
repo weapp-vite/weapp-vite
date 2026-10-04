@@ -296,6 +296,12 @@ export default defineConfig({
 
 微信构建会把 `preload` 合成为 `app.json.preloadRule`；手写的同一路由规则优先，其他平台不会生成微信专属字段。多条 glob 命中时选择具体程度最高的一条。需要检查静态跨分包跳转时，运行 `wv analyze --preload`；它只输出建议，不修改源码，并按触发页所属包汇总实际分包体积与共享的 2 MB 额度。
 
+### `wevu.preset`
+
+`weapp.wevu.preset: 'performance'` 默认开启 patch、隐藏时暂停、`setData.diagnostics: 'fallback'`、开发态高频告警和自动 `setData.pick`。`weapp.wevu.defaults` 的同名字段优先；内建诊断没有 `devOnly` 限制，可显式设为 `'off'`。
+
+首次快照收集也可能记录 `needsFullSnapshot`；阶段日志不等于独立回退或物理调用。配置覆盖与计数边界见 [`wevu-authoring.md`](./wevu-authoring.md)。
+
 ### `vue.template.htmlTagToWxml`
 
 适合从 Web/Vue 模板迁移到小程序 `.vue` 的项目。开启后，会把常见 HTML 标签映射成小程序内置标签，例如 `div -> view`、`span -> text`、`img -> image`、`a -> navigator`，也包含 `br/hr` 这类容易在迁移时“消失”的标签。
@@ -542,6 +548,8 @@ export default defineConfig({
 
 安全的 JavaScript/Vue 更新会保留当前 Page/Component 实例、route/query、输入和可序列化 data/setup ref，并替换原生 Page、原生 Component 与 wevu 方法。CSS、资源、JSON/配置、不兼容模块图或补丁失败会回退完整构建与当前路由重载。
 
+入口拓扑更新先验证完整快照，再把仍符合源目录和声明依赖内容版本的快照一次性交给新宿主，避免重复编译。输入变化、依赖覆盖不足或固定输入批次无法验证时重新构建；快照失败时保留旧宿主，修复尚未进入旧图的新文件也能触发重试。会话关闭会取消未交接的候选。
+
 Vue `<style module>` 会生成脚本中的类名映射，因此其内容、模块名称、`src` 及块增删都按脚本与样式共同更新处理，避免后续补丁引用未交付的样式模块。独立的普通 `<style>` 变化仍按纯样式处理；产物更新和真实 DevTools 已应用计算样式需要分别验收。
 
 样式合并按真实文件身份判断所有权：已由模块图处理的样式，即使又通过符号链接、目录连接或 Windows 路径别名被发现，也不会作为独立原生样式重复读取并合并。固定输入批次保持该批次的样式内容，不混入同一文件较新的磁盘保存；真正独立的原生同名样式仍参与输出，移除显式样式导入后仍保留原生样式回退。
@@ -579,6 +587,8 @@ export default defineConfig({
 - `profileJson: boolean | string` 控制是否输出 JSONL profile，字符串表示自定义输出路径。
 - JSONL v1 保留旧字段，增加 `sessionId` / `buildId` / `batchId` / `sourceEvents` 与时钟来源；按来源精确匹配编辑。失败记录只有 `elapsedMs`；无受影响入口的批次以 `incomplete` / `reason: no-affected-entries` 结束观测，不污染后续构建。未知版本、未完成或缺失阶段不能按零耗时统计。`buildCoreMs` 是残差估算，阶段可能重叠。
 - `analyze --hmr-profile --json` 的 `inputCoverage` 提供输入覆盖计数；旧版无版本记录仍兼容，未关联样本不归给当前编辑。
+- stateful JSONL 以 `pipeline: 'stateful'` 区分，记录源通知到批次接收、准备、提交等待、提交及发布阶段。`completionBoundary` 区分客户端交付确认与产物发布；缺失来源、失败或取消不能计为成功耗时。`timelines` 只累加互不重叠的外层时段，未知阶段及负残差保持 `null`，不把嵌套 hook 重复累加。
+- 模板 benchmark 的预算使用外部 `wallMs`，缺失 profile 不再填充 `totalMs`。仓库 `verify:edit-sequence --engine weapp-classic|weapp-stateful` 默认以 512 个真实 SFC 页面比较长期编译宿主和逐步新进程基线，同时记录进程树 RSS、强制 GC 后 heap、GC 开销及资源/转换范围。完整页面 JS 由 mpcore 执行，此结果不能替代真实 IDE 验收；profile 开关语义与开销比较入口为 `scripts/editSequence/compareProfiles.ts`。
 
 ### `mcp`
 
@@ -912,4 +922,4 @@ export default defineConfig({
 
 推荐 dev 输出到独立目录，Turbo 只缓存生产目录，dev 任务设置 `cache: false`、`persistent: true`。必须共用目录时，由缓存集成持久记录成功构建的 emitted 文件清单与内容摘要，恢复及清理仅针对该任务拥有的文件；用户改写或同名冲突必须保留并报告。不要把无条件清空输出目录加入 HMR 兜底逻辑。最终构建产物仍由 Vite/Rolldown emit/write 持久化。
 
-仓库组合回归入口为 `pnpm verify:edit-sequence --engine weapp-modes --report .tmp/output-mode-sequence.json`，运行前重建 weapp-vite。它逐步比较模式切换、组件/页面/分包拓扑变化和旧缓存恢复后的完整生产文件，与独立进程基线按字节核对；共享目录额外检查用户文件保护。此项不是真实 IDE runtime 验收。
+仓库组合回归入口为 `pnpm verify:edit-sequence --engine weapp-modes --require-clean --report .tmp/output-mode-sequence.json`，运行前重建 weapp-vite。它逐步比较模式切换、组件/页面/分包拓扑变化和旧缓存恢复后的完整生产文件，与独立进程基线按字节核对；共享目录额外检查用户文件保护。此项不是真实 IDE runtime 验收。

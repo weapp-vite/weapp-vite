@@ -47,6 +47,8 @@ export interface VueTransformResult {
     jsonMacroHash?: string
     defineOptionsHash?: string
     sfcSrcDeps?: string[]
+    /** 模板和脚本外部块的编译输入，变化时必须失效完整编译结果。@internal */
+    sfcSrcCompilationDeps?: string[]
     /** 已解析样式中的 CSS 变量表达式快照。@internal */
     cssVars?: string[]
     styleBlocks?: SFCStyleBlock[]

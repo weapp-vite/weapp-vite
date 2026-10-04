@@ -24,6 +24,9 @@ export class StatefulHmrSnapshotScheduler {
   private revision = 0
   private runningPromise?: Promise<void>
   private timer?: ReturnType<typeof setTimeout>
+  private changed = Promise.withResolvers<void>()
+  private failed = false
+  private failure: unknown
 
   constructor(options: StatefulHmrSnapshotSchedulerOptions) {
     this.debounceMs = options.debounceMs ?? DEFAULT_SNAPSHOT_DEBOUNCE_MS
@@ -39,6 +42,8 @@ export class StatefulHmrSnapshotScheduler {
       this.pendingFiles.add(file)
     }
     this.pendingMode = this.pendingMode === 'full' || mode === 'full' ? 'full' : 'refresh'
+    this.failed = false
+    this.failure = undefined
     this.revision += 1
     if (!this.runningPromise) {
       this.schedule()
@@ -50,6 +55,24 @@ export class StatefulHmrSnapshotScheduler {
     return Boolean(this.timer || this.runningPromise)
   }
 
+  /** 等待真实定时批次和执行链，不提前触发任务，也不把暂停的失败视为稳定。 */
+  async whenSettled(): Promise<void> {
+    while (this.isPending() && !this.closed) {
+      await this.changed.promise
+    }
+    if (this.closed) {
+      throw new Error('HMR snapshot scheduler closed before settlement')
+    }
+    if (this.failed) {
+      throw this.failure
+    }
+  }
+
+  private notifyChanged(): void {
+    this.changed.resolve()
+    this.changed = Promise.withResolvers<void>()
+  }
+
   async close(): Promise<void> {
     this.closed = true
     if (this.timer) {
@@ -58,6 +81,7 @@ export class StatefulHmrSnapshotScheduler {
     }
     this.pendingFiles.clear()
     this.pendingMode = undefined
+    this.notifyChanged()
     await this.runningPromise
   }
 
@@ -93,6 +117,8 @@ export class StatefulHmrSnapshotScheduler {
     })
       .catch((error) => {
         failed = true
+        this.failed = true
+        this.failure = error
         try {
           this.onError?.(error)
         }
@@ -113,8 +139,11 @@ export class StatefulHmrSnapshotScheduler {
         this.runningPromise = undefined
         // 普通失败等待下一次请求，已有新请求则合并重试，避免永久错误形成忙循环。
         if (this.pendingMode && (!failed || superseded)) {
+          this.failed = false
+          this.failure = undefined
           this.schedule()
         }
+        this.notifyChanged()
       })
   }
 }

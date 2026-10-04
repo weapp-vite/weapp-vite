@@ -1,8 +1,7 @@
 import process from 'node:process'
 
 /** 确认批次仅选择配置，配置内部的首次/重复及编辑/恢复顺序不变。 */
-export function benchmarkModeSelected(count: number, mode: 'manual' | 'automatic') {
-  const input = process.env.BENCH_CONFIGURATIONS
+export function benchmarkModeSelected(count: number, mode: 'manual' | 'automatic', input = process.env.BENCH_CONFIGURATIONS) {
   if (!input) {
     return true
   }

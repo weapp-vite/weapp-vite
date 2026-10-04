@@ -34,6 +34,11 @@ export class HeadlessTestingSessionHandle {
   }
 
   async close() {
+    this.disconnect()
+  }
+
+  /** 无头会话独占本地 runtime；同步释放与 automator 的连接清理契约一致。 */
+  disconnect(): void {
     this.session.close()
   }
 

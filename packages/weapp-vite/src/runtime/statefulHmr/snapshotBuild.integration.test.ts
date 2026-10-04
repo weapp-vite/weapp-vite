@@ -1,4 +1,5 @@
 import type { OutputAsset, OutputChunk } from 'rolldown'
+import type { InlineConfig } from 'vite'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -14,11 +15,12 @@ import { createRuntimeState } from '../runtimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { buildStatefulHmrSnapshot } from './snapshotBuild'
+import { validateSnapshotInputs } from './snapshotInputs'
 
 const temporaryRoots: string[] = []
 
 async function createProject(autoImport = false, withWorker = false) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-snapshot-component-'))
+  const root = path.normalize(await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-snapshot-component-'))))
   temporaryRoots.push(root)
   const files = {
     'package.json': JSON.stringify({ name: 'snapshot-component-regression', private: true, dependencies: { wevu: '*' } }),
@@ -60,6 +62,56 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 }
 
 describe('stateful snapshot component metadata', () => {
+  it('reuses only complete input versions and rejects an edit made while the snapshot is compiling', async () => {
+    const root = await createProject()
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const initial = await buildStatefulHmrSnapshot(options)
+    const candidate = await buildStatefulHmrSnapshot(options, undefined, undefined, undefined, initial.getInputFiles())
+    expect(candidate.getInputs()).toBeDefined()
+    expect(await validateSnapshotInputs(candidate.getInputs()!)).toBe(true)
+    const style = path.join(root, 'src/pages/index/index.wxss')
+    const changedDuringBuild = await buildStatefulHmrSnapshot(options, config => ({
+      ...config,
+      plugins: [...(config.plugins ?? []), {
+        name: 'snapshot-edit-during-build',
+        async generateBundle() {
+          await fs.writeFile(style, '.page { color: blue; }')
+        },
+      }],
+    }), undefined, undefined, candidate.getInputFiles())
+    expect(changedDuringBuild.getInputs()).toBeUndefined()
+    expect(await validateSnapshotInputs(candidate.getInputs()!)).toBe(false)
+  })
+
+  it('captures declared external inputs and refuses a newly discovered unversioned dependency', async () => {
+    const root = await createProject()
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const first = path.join(root, 'external-one.txt')
+    const second = path.join(root, 'external-two.txt')
+    await fs.writeFile(first, 'first')
+    await fs.writeFile(second, 'second')
+    let external = first
+    const configure = (config: InlineConfig): InlineConfig => ({
+      ...config,
+      plugins: [...(config.plugins ?? []), {
+        name: 'snapshot-external-input',
+        buildStart(this: { addWatchFile: (file: string) => void }) {
+          this.addWatchFile(external)
+        },
+      }],
+    })
+    const initial = await buildStatefulHmrSnapshot(options, configure)
+    expect(initial.getInputFiles()).toContain(first)
+    external = second
+    const unknown = await buildStatefulHmrSnapshot(options, configure, undefined, undefined, initial.getInputFiles())
+    expect(unknown.getInputFiles()).toContain(second)
+    expect(unknown.getInputs()).toBeUndefined()
+    const known = await buildStatefulHmrSnapshot(options, configure, undefined, undefined, unknown.getInputFiles())
+    expect(known.getInputs()).toBeDefined()
+    await fs.writeFile(second, 'changed')
+    expect(await validateSnapshotInputs(known.getInputs()!)).toBe(false)
+  })
+
   it('builds from load options when an optional owner has no config service yet', async () => {
     const root = await createProject()
     const runtimeState = createRuntimeState()
@@ -238,11 +290,23 @@ describe('stateful snapshot component metadata', () => {
     const root = await createProject()
     const file = path.join(root, 'src/components/wevu-leaf/index.vue')
     const original = await fs.readFile(file, 'utf8')
-    const pinned = `${original.replace('<view>', '<view>PINNED-BATCH')}\n<style src="./pinned.css" />`
+    const pinned = `${original.replace('<view>', '<view>PINNED-BATCH').replace('<script setup lang="ts">', '<script setup lang="ts">\nimport "./message"\nimport "./empty"\nimport "./untouched"')}\n<style src="./pinned.css" />`
     const style = path.join(root, 'src/components/wevu-leaf/pinned.css')
+    const message = path.join(root, 'src/components/wevu-leaf/message.ts')
+    const empty = path.join(root, 'src/components/wevu-leaf/empty.ts')
+    await fs.writeFile(message, 'console.log("FUTURE-MODULE")')
+    await fs.writeFile(empty, 'console.log("FUTURE-EMPTY")')
+    await fs.writeFile(path.join(root, 'src/components/wevu-leaf/untouched.ts'), 'console.log("LIVE-UNPINNED")')
     await fs.writeFile(style, '.frozen { width: 71px; }')
     await fs.writeFile(file, original.replace('<view>', '<view>FUTURE-BATCH'))
-    const result = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' }, undefined, undefined, new Map([[compilerSourceId(file), pinned], [compilerSourceId(style), '.frozen { width: 19px; }']]))
+    const sources = new Map([
+      [compilerSourceId(file), pinned],
+      [compilerSourceId(style), '.frozen { width: 19px; }'],
+      [compilerSourceId(message), 'console.log("PINNED-MODULE")'],
+      [compilerSourceId(empty), ''],
+    ])
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const result = await buildStatefulHmrSnapshot(options, undefined, undefined, sources)
     const outputs = Array.isArray(result.output) ? result.output.flatMap(item => item.output) : 'output' in result.output ? result.output.output : []
     const template = outputs.find(item => item.fileName === 'components/wevu-leaf/index.wxml') as OutputAsset
     expect(String(template.source)).toContain('PINNED-BATCH')
@@ -250,6 +314,15 @@ describe('stateful snapshot component metadata', () => {
     const stylesheet = outputs.find(item => item.fileName === 'components/wevu-leaf/index.wxss') as OutputAsset
     expect(String(stylesheet.source)).toMatch(/width:\s*19px/)
     expect(String(stylesheet.source)).not.toContain('71px')
+    const script = outputs.flatMap(item => item.type === 'chunk' ? [item.code] : []).join('\n')
+    expect(script).toContain('PINNED-MODULE')
+    expect(script).toContain('LIVE-UNPINNED')
+    expect(script).not.toContain('FUTURE-MODULE')
+    expect(script).not.toContain('FUTURE-EMPTY')
+    await expect(buildStatefulHmrSnapshot(options, undefined, undefined, new Map<string, string | null>([
+      ...sources,
+      [compilerSourceId(message), null],
+    ]))).rejects.toThrow('Source removed from snapshot:')
   })
 
   afterEach(async () => {

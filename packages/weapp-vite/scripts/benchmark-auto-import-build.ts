@@ -1,7 +1,7 @@
 /* eslint-disable ts/no-use-before-define */
 import type { PeakRssSamplingStats } from '../../../scripts/benchmarkTemplatesPerformance/peakRssSampler'
 import type { OutputEvidence } from '../../../scripts/performanceGate/outputEvidence'
-import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import path from 'pathe'
@@ -9,6 +9,7 @@ import { runMeasuredBuild } from '../../../scripts/benchmarkTemplatesPerformance
 import { captureOutputEvidence } from '../../../scripts/performanceGate/outputEvidence'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
+import { linkBenchmarkDependencies } from './utils/benchmarkDependencies'
 import { benchmarkModeSelected, benchmarkReportResults } from './utils/benchmarkSelection'
 import { createBenchmarkPath, resolveBenchmarkTarget } from './utils/benchmarkTarget'
 import { patchProjectConfigFile } from './utils/config-file'
@@ -303,7 +304,7 @@ async function createTempFixtureProject(sourceRoot: string, prefix: string) {
     },
   })
 
-  await linkWorkspaceNodeModules(tempDir)
+  await linkBenchmarkDependencies(tempDir, workspaceRootNodeModulesDir, workspaceWeappViteDir)
 
   return {
     tempDir,
@@ -311,28 +312,6 @@ async function createTempFixtureProject(sourceRoot: string, prefix: string) {
       await rm(tempRoot, { recursive: true, force: true })
     },
   }
-}
-
-async function linkWorkspaceNodeModules(projectRoot: string) {
-  const projectNodeModulesDir = path.join(projectRoot, 'node_modules')
-  const existingNodeModules = await lstat(projectNodeModulesDir).catch(() => null)
-  if (existingNodeModules) {
-    await rm(projectNodeModulesDir, { recursive: true, force: true })
-  }
-  await symlink(path.relative(projectRoot, workspaceRootNodeModulesDir), projectNodeModulesDir, 'junction')
-
-  const packageRoot = path.join(projectNodeModulesDir, 'weapp-vite')
-  const existingPackage = await lstat(packageRoot).catch(() => null)
-  if (existingPackage?.isSymbolicLink()) {
-    const currentTarget = await readlink(packageRoot).catch(() => '')
-    if (path.resolve(projectNodeModulesDir, currentTarget) === workspaceWeappViteDir) {
-      return
-    }
-  }
-  if (existingPackage) {
-    await rm(packageRoot, { recursive: true, force: true })
-  }
-  await symlink(path.relative(projectNodeModulesDir, workspaceWeappViteDir), packageRoot, 'junction')
 }
 
 async function runBuild(cwd: string) {

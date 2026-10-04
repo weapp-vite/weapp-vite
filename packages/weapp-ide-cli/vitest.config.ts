@@ -8,6 +8,10 @@ export default defineProject({
   test: {
     alias: [
       {
+        find: '@weapp-vite/miniprogram-automator/operation',
+        replacement: path.resolve(packageDir, '../miniprogram-automator/src/operation/index.ts'),
+      },
+      {
         find: '@',
         replacement: path.resolve(packageDir, './src'),
       },

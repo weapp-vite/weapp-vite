@@ -6,11 +6,14 @@ import type {
 } from 'rolldown'
 import type { InlineConfig } from 'vite'
 import type { BuildTarget, CompilerContext, MutableCompilerContext } from '../../context'
+import type { DevModuleGraphChange } from '../../moduleGraph/devProvider'
 import type { PublicAssetOptions } from '../../plugins/asset/publicSources'
 import type { ChangeEvent, SubPackageMetaValue } from '../../types'
 import type { HmrProfileRecordMetadata, HmrProfileSourceEvent } from '../../utils/hmrProfile/provenance'
 import type { HmrRuntimeDecision } from '../hmrRuntime'
+import type { StatefulHmrSnapshot } from '../statefulHmr/globalStyles'
 import type { StatefulHmrOutputFile } from '../statefulHmr/outputWriter'
+import type { StatefulHmrProfileHandoff } from '../statefulHmr/profile'
 import type { DevBuildWatcherController } from './devBuildWatcher'
 import { randomUUID } from 'node:crypto'
 import { appendFile, mkdir } from 'node:fs/promises'
@@ -23,6 +26,7 @@ import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createDevModuleGraphProvider } from '../../moduleGraph/devProvider'
 import { hasDevModuleGraphHost, reportDevModuleGraphBuild } from '../../moduleGraph/host'
+import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { hasManagedCompilerEntries } from '../../plugins/compilerPluginRegistry'
 import { collectVueStyleScriptChanges } from '../../plugins/core/lifecycle/vueStyleDependency'
 import { invalidateFileCache } from '../../plugins/utils/cache'
@@ -37,11 +41,12 @@ import {
   watchedTemplateSuffixes,
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
-import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJsonEnvOption, resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
+import { createHmrProfileEventId, recordHmrProfileDuration, resolveActiveHmrProfileJsonPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
+import { ownsAutoRoutesTopologyChange, subscribeAutoRoutesTopology } from '../autoRoutesPlugin/topology'
 import { waitForBuildTasks } from '../compilerSession/tasks'
 import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
@@ -50,17 +55,20 @@ import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRun
 import { getStatefulHmrHost } from '../statefulHmr/hostPlugins'
 import { runStatefulHmrDev } from '../statefulHmr/session'
 import { buildStatefulHmrSnapshot } from '../statefulHmr/snapshotBuild'
+import { clearStatefulHmrSnapshot, takeStatefulHmrSnapshot } from '../statefulHmr/snapshotHandoff'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { watchAssetSources } from '../watch/assets'
 import { createSidecarWatchOptions } from '../watch/options'
 import { retainWatcherService } from '../watcherPlugin'
 import { createDevBuildWatcher } from './devBuildWatcher'
+import { captureEntryTopology } from './entryTopology'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
 import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shouldCleanOutputs } from './outputs'
 import { assertPluginProjectOutput, createPluginProjectSession, isPluginProjectClosing, runPluginProjectRestart, setPluginProjectBuildOptions } from './pluginProject'
 import { refreshSnapshotSources } from './snapshotSources'
 import { resolveTouchAppWxssEnabled, touchExistingAppStyle } from './touchAppWxss'
+import { withVueStyleDependencySnapshot } from './vueStyleSnapshot'
 import { observeWorkerSources, ownsWorkerSource } from './workerPlan'
 import { checkWorkersOptions } from './workers'
 
@@ -78,6 +86,7 @@ export interface BuildService {
 }
 
 interface HmrProfileJsonSample extends HmrProfileRecordMetadata {
+  pipeline: 'standard'
   timestamp: string
   totalMs: number
   eventId?: string
@@ -228,6 +237,20 @@ function collectStatefulHmrEntryIds(
   // Modules discovered inside emitted chunks are dependencies and must not be
   // promoted to entries, otherwise dependency changes bypass full rebuilds.
   return new Set(Array.from(initialEntryIds, id => normalizeFsResolvedId(id)))
+}
+
+function prepareStatefulHmrSnapshot(snapshot: Awaited<ReturnType<typeof buildStatefulHmrSnapshot>>): StatefulHmrSnapshot {
+  return {
+    output: toStatefulHmrOutput(snapshot.output),
+    childSources: snapshot.getChildSources(),
+    tailwindStyleOwners: snapshot.getTailwindStyleOwners(),
+    entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
+    delegatedComponentEntryIds: [...snapshot.getDelegatedComponentEntryIds()],
+    componentPageGlobalStyleRoutes: snapshot.getGlobalStyleRoutes(),
+    glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
+    inputFiles: snapshot.getInputFiles?.(),
+    inputs: snapshot.getInputs?.(),
+  }
 }
 
 function resolveSnapshotSidecarDirtySummary(
@@ -488,6 +511,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : undefined
     return {
       schemaVersion: 1,
+      pipeline: 'standard',
       sessionId: profileSessionId,
       buildId: profile.buildId,
       batchId: profile.batchId,
@@ -580,10 +604,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   function resolveHmrProfileJsonPath() {
-    const envOption = resolveHmrProfileJsonEnvOption()
-    return resolveHmrProfileJsonOutputPath({
+    return resolveActiveHmrProfileJsonPath({
       cwd: ctx.configService?.cwd ?? process.cwd(),
-      option: envOption ?? ctx.configService?.weappViteConfig.hmr?.profileJson,
+      option: ctx.configService?.weappViteConfig.hmr?.profileJson,
     })
   }
 
@@ -1332,6 +1355,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let closePromise: Promise<void> | undefined
     buildEvents.watcher.close = () => closePromise ??= (async () => {
       try {
+        await clearStatefulHmrSnapshot(ctx)
         await stopStatefulWatcher!()
       }
       finally {
@@ -1409,17 +1433,21 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (target === 'app' && hmrDecision.runtime === 'stateful-experimental') {
       const nativeBuildEvents = getStatefulBuildEvents()
       nativeBuildEvents.emitEvent({ code: 'START' })
+      let profile: StatefulHmrProfileHandoff | undefined
       try {
         await syncProjectConfigToOutput({
           outDir: configService.outDir,
           projectConfigPath: configService.projectConfigPath,
           enabled: configService.multiPlatform.enabled,
         })
-        const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin, ctx)
-        const initialSnapshot = toStatefulHmrOutput(snapshot.output)
-        const initialGlobalStyleRoutes = snapshot.getGlobalStyleRoutes()
+        const handoff = await takeStatefulHmrSnapshot(ctx)
+        profile = handoff?.profile
+        const snapshot = handoff?.snapshot
+          ?? prepareStatefulHmrSnapshot(await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin, ctx))
+        let inputFiles = snapshot.inputFiles ?? []
+        const initialSnapshot = snapshot.output
         const initialEntryIds = collectStatefulHmrEntryIds(
-          snapshot.getEntryIds(),
+          snapshot.entryIds ?? [],
         )
         const skylineFiles = findSkylineRendererFiles(initialSnapshot)
         if (skylineFiles.length > 0) {
@@ -1476,47 +1504,20 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           }
         }), {
           entryIds: initialEntryIds,
-          delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
-          initial: {
-            output: initialSnapshot,
-            childSources: snapshot.getChildSources(),
-            tailwindStyleOwners: snapshot.getTailwindStyleOwners(),
-            componentPageGlobalStyleRoutes: initialGlobalStyleRoutes,
-            glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
-          },
+          delegatedComponentEntryIds: snapshot.delegatedComponentEntryIds,
+          initial: snapshot,
+          profile,
           rebuild: async (files, sources) => {
             for (const file of files) {
               invalidateFileCache(file)
             }
-            const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, (options) => {
+            const snapshot = prepareStatefulHmrSnapshot(await buildStatefulHmrSnapshot(configService.loadOptions, (options) => {
               const snapshotOptions = appendHmrMetricsPlugin(options)
               snapshotOptions.build = { ...(snapshotOptions.build ?? {}), emptyOutDir: false }
-              snapshotOptions.plugins = [
-                ...(snapshotOptions.plugins ?? []),
-                {
-                  name: 'weapp-vite:stateful-hmr-snapshot-assets',
-                  enforce: 'post',
-                  generateBundle(_options, bundle) {
-                    for (const [fileName, item] of Object.entries(bundle)) {
-                      if (item.type === 'chunk') {
-                        delete bundle[fileName]
-                      }
-                    }
-                  },
-                },
-              ]
               return snapshotOptions
-            }, ctx, sources)
-            const output = toStatefulHmrOutput(snapshot.output)
-            return {
-              output,
-              childSources: snapshot.getChildSources(),
-              tailwindStyleOwners: snapshot.getTailwindStyleOwners(),
-              entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
-              delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
-              componentPageGlobalStyleRoutes: snapshot.getGlobalStyleRoutes(),
-              glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
-            }
+            }, ctx, sources, files.length && files.every(file => watchedCssExts.has(path.extname(file))) ? undefined : inputFiles))
+            inputFiles = snapshot.inputFiles ?? inputFiles
+            return snapshot
           },
         }, nativeBuildEvents)
         if (statefulWatcherClosed) {
@@ -1531,6 +1532,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         return facade
       }
       catch (error) {
+        await profile?.cancel('failed')
         if (statefulWatcherClosed) {
           return nativeBuildEvents.watcher
         }
@@ -1560,6 +1562,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         scanService.loadSubPackages()
         return await restartDev(target)
       }
+      finally {
+        await profile?.cancel()
+      }
     }
     const snapshotBuildOptions: InlineConfig = {
       ...buildOptions,
@@ -1570,15 +1575,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     delete snapshotBuildOptions.build?.watch
     const snapshotWatcherRoot = `${configService.absoluteSrcRoot}::dev-snapshot`
-    let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = Promise.resolve(undefined)
+    // provider 在首构期间也会收集事件；首构写入结束前不得并发推进共享缓存与输出目录。
+    const initialSnapshot = Promise.withResolvers<undefined>()
+    let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = target === 'app' ? initialSnapshot.promise : Promise.resolve(undefined)
     let devWatcherClosed = false
     let pendingSnapshotBatch: SnapshotBuildBatch | undefined
+    const queuedSnapshotReasons = new Set<SnapshotBuildReason>()
     let failedSnapshotReasons: SnapshotBuildReason[] = []
     let failedEntryTopologyChange = false
     let initialBuildFailed = false
     let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
     // Web 可能先刷新共享服务，native 快照必须比较自身已成功写出的路由版本。
     let emittedAutoRoutesSignature: string | undefined
+    let emittedEntryTopology: ReadonlyMap<string, string> | undefined
     const devBuildWatcher = target === 'app' ? (statefulBuildEvents ?? createDevBuildWatcher()) : undefined
 
     function markSnapshotEntriesFullDirty() {
@@ -1637,6 +1646,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }
       const queuedAt = performance.now()
       const currentSnapshotBuild = snapshotBuildChain.then(async () => {
+        for (const queued of batchReasons) {
+          queuedSnapshotReasons.delete(queued)
+        }
         if (devWatcherClosed) {
           return
         }
@@ -1688,12 +1700,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           || batchReason.event === 'create'
           || batchReason.event === 'delete',
         )
-        const { routeSignature, routeDependentEntries, entryTopologyChanged } = await refreshSnapshotSources(
+        const { routeSignature, routeTopologyChanged, routeDependentEntries, entryTopologyChanged } = await refreshSnapshotSources(
           ctx,
           batchReasons.filter((batchReason): batchReason is SnapshotBuildReason & { file: string } => Boolean(batchReason.file)),
           emittedAutoRoutesSignature,
+          emittedEntryTopology,
         )
-        const fullEntryScan = entryTopologyChanged || failedEntryTopologyChange
+        // 路由增删必须重建入口元数据所有权，否则旧页面 JSON 会在完整输出中再次发射。
+        let fullEntryScan = routeTopologyChanged || entryTopologyChanged || failedEntryTopologyChange
         requiresFullRescan ||= fullEntryScan
         if (fullEntryScan) {
           scanService.markDirty()
@@ -1704,104 +1718,134 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         for (const entryId of routeDependentEntries) {
           graphAffectedEntries.add(entryId)
         }
-        const styleScriptChanges = new Set<string>()
-        for (const batchReason of batchReasons) {
-          if (!batchReason.file) {
-            continue
-          }
-          for (const entryId of await collectVueStyleScriptChanges(ctx, batchReason.file, configService)) {
-            styleScriptChanges.add(entryId)
-            graphAffectedEntries.add(entryId)
-          }
-        }
-        // 独立包失效也需要主 bundler 发布，但不因此重新编译未受影响的主包入口。
-        const hasIndependentOutput = batchReasons.some(batchReason => batchReason.independentOutput)
-        if (!requiresFullRescan && (graphAffectedEntries.size || hasIndependentOutput)) {
-          const dirtyReasons = batchReasons.map(resolveSnapshotDirtyReason)
-          const dirtyReason = dirtyReasons.includes('direct')
-            ? 'direct'
-            : dirtyReasons.includes('dependency') ? 'dependency' : 'metadata'
-          for (const entryId of graphAffectedEntries) {
-            if (ctx.runtimeState.build.hmr.resolvedEntryMap.has(entryId)) {
-              markSnapshotEntryDirty(entryId, reason, styleScriptChanges.has(entryId) ? 'direct' : routeDependentEntries.has(entryId) ? 'dependency' : dirtyReason)
+        return await withVueStyleDependencySnapshot(
+          { runtimeState: ctx.runtimeState, moduleGraphService: ctx.moduleGraphService, configService },
+          graphAffectedEntries,
+          batchReasons.flatMap(item => item.file ? [item.file] : []),
+          async (snapshot) => {
+            if (snapshot?.forceFullRescan) {
+              requiresFullRescan = true
+              fullEntryScan = true
+              scanService.markDirty()
             }
-          }
-          const summaryCounts = new Map<string, number>()
-          for (const batchReason of batchReasons) {
-            if (!batchReason.file) {
-              continue
+            const styleScriptChanges = new Set<string>()
+            for (const batchReason of requiresFullRescan ? [] : batchReasons) {
+              if (!batchReason.file) {
+                continue
+              }
+              for (const entryId of await collectVueStyleScriptChanges(ctx, batchReason.file, configService)) {
+                styleScriptChanges.add(entryId)
+                graphAffectedEntries.add(entryId)
+              }
             }
-            const summary = resolveSnapshotSidecarDirtySummary(
-              batchReason.file,
-              graphAffectedEntriesByFile.get(normalizeFsResolvedId(batchReason.file)),
-            ).replace(/:\d+$/, '')
-            summaryCounts.set(summary, (summaryCounts.get(summary) ?? 0) + 1)
-          }
-          if (styleScriptChanges.size) {
-            summaryCounts.set('entry-mixed-asset', styleScriptChanges.size)
-          }
-          ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = Array.from(
-            summaryCounts,
-            ([summary, count]) => `${summary}:${count}`,
-          )
-          try {
-            devBuildWatcher?.emitEvent({ code: 'START' })
-            await build(snapshotBuildOptions)
-            emittedAutoRoutesSignature = routeSignature
-            recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
-            devBuildWatcher?.emitEvent({ code: 'END' })
-          }
-          catch (error) {
-            devBuildWatcher?.emitEvent({
-              code: 'ERROR',
-              error: error instanceof Error ? error : new Error(String(error)),
-              result: undefined as never,
-            })
-            throw error
-          }
-          return 'snapshot'
-        }
-        if (!requiresFullRescan && batchReasons.length && batchReasons.every(batchReason => batchReason.event === 'update')) {
-          // 未触发构建的批次也要结束观测所有权；不能污染下一轮或混入成功耗时。
-          const recorded = writeHmrProfileJsonSample(performance.now() - queuedAt, 'incomplete', 'no-affected-entries')
-          resetHmrProfile()
-          await recorded
-          return
-        }
-        markSnapshotEntriesFullDirty()
-        // 完整 snapshot 必须重新输出所有资源；是否清空目录仍服从用户配置。
-        resetEmittedOutputCaches(ctx.runtimeState)
-        const hmr = ctx.runtimeState.build.hmr
-        hmr.forceFullSharedChunkRefresh = true
-        hmr.fullEntryScan = fullEntryScan
-        try {
-          devBuildWatcher?.emitEvent({ code: 'START' })
-          await build({
-            ...snapshotBuildOptions,
-            build: {
-              ...(snapshotBuildOptions.build ?? {}),
-              emptyOutDir: shouldCleanOutputs(configService, 'rebuild'),
-            },
-          })
-          emittedAutoRoutesSignature = routeSignature
-          recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
-          failedEntryTopologyChange = false
-          devBuildWatcher?.emitEvent({ code: 'END' })
-          return 'snapshot'
-        }
-        catch (error) {
-          failedEntryTopologyChange ||= fullEntryScan
-          devBuildWatcher?.emitEvent({
-            code: 'ERROR',
-            error: error instanceof Error ? error : new Error(String(error)),
-            result: undefined as never,
-          })
-          throw error
-        }
-        finally {
-          hmr.forceFullSharedChunkRefresh = false
-          hmr.fullEntryScan = false
-        }
+            // 独立包失效也需要主 bundler 发布，但不因此重新编译未受影响的主包入口。
+            const hasIndependentOutput = batchReasons.some(batchReason => batchReason.independentOutput)
+            if (!requiresFullRescan && (graphAffectedEntries.size || hasIndependentOutput)) {
+              const dirtyReasons = batchReasons.map(resolveSnapshotDirtyReason)
+              const dirtyReason = dirtyReasons.includes('direct')
+                ? 'direct'
+                : dirtyReasons.includes('dependency') ? 'dependency' : 'metadata'
+              for (const entryId of graphAffectedEntries) {
+                if (ctx.runtimeState.build.hmr.resolvedEntryMap.has(entryId)) {
+                  markSnapshotEntryDirty(entryId, reason, styleScriptChanges.has(entryId) ? 'direct' : routeDependentEntries.has(entryId) ? 'dependency' : dirtyReason)
+                }
+              }
+              const summaryCounts = new Map<string, number>()
+              for (const batchReason of batchReasons) {
+                if (!batchReason.file) {
+                  continue
+                }
+                const summary = resolveSnapshotSidecarDirtySummary(
+                  batchReason.file,
+                  graphAffectedEntriesByFile.get(normalizeFsResolvedId(batchReason.file)),
+                ).replace(/:\d+$/, '')
+                summaryCounts.set(summary, (summaryCounts.get(summary) ?? 0) + 1)
+              }
+              if (styleScriptChanges.size) {
+                summaryCounts.set('entry-mixed-asset', styleScriptChanges.size)
+              }
+              ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = Array.from(
+                summaryCounts,
+                ([summary, count]) => `${summary}:${count}`,
+              )
+              try {
+                devBuildWatcher?.emitEvent({ code: 'START' })
+                await build(snapshotBuildOptions)
+                emittedAutoRoutesSignature = routeSignature
+                recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
+                devBuildWatcher?.emitEvent({ code: 'END' })
+              }
+              catch (error) {
+                devBuildWatcher?.emitEvent({
+                  code: 'ERROR',
+                  error: error instanceof Error ? error : new Error(String(error)),
+                  result: undefined as never,
+                })
+                throw error
+              }
+              return 'snapshot'
+            }
+            if (!requiresFullRescan && batchReasons.length && batchReasons.every(batchReason => batchReason.event === 'update')) {
+              // 未触发构建的批次也要结束观测所有权；不能污染下一轮或混入成功耗时。
+              const recorded = writeHmrProfileJsonSample(performance.now() - queuedAt, 'incomplete', 'no-affected-entries')
+              resetHmrProfile()
+              await recorded
+              return
+            }
+            markSnapshotEntriesFullDirty()
+            // 完整 snapshot 必须重新输出所有资源；是否清空目录仍服从用户配置。
+            resetEmittedOutputCaches(ctx.runtimeState)
+            const hmr = ctx.runtimeState.build.hmr
+            hmr.forceFullSharedChunkRefresh = true
+            hmr.fullEntryScan = fullEntryScan
+            try {
+              devBuildWatcher?.emitEvent({ code: 'START' })
+              await build({
+                ...snapshotBuildOptions,
+                build: {
+                  ...(snapshotBuildOptions.build ?? {}),
+                  emptyOutDir: shouldCleanOutputs(configService, 'rebuild'),
+                },
+              })
+              emittedAutoRoutesSignature = routeSignature
+              recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
+              failedEntryTopologyChange = false
+              if (fullEntryScan) {
+                emittedEntryTopology = captureEntryTopology(ctx)
+              }
+              devBuildWatcher?.emitEvent({ code: 'END' })
+              return 'snapshot'
+            }
+            catch (error) {
+              failedEntryTopologyChange ||= fullEntryScan
+              devBuildWatcher?.emitEvent({
+                code: 'ERROR',
+                error: error instanceof Error ? error : new Error(String(error)),
+                result: undefined as never,
+              })
+              throw error
+            }
+            finally {
+              hmr.forceFullSharedChunkRefresh = false
+              hmr.fullEntryScan = false
+            }
+          },
+          (changes) => {
+            for (const change of changes) {
+              const queued = [...queuedSnapshotReasons].filter(reason => reason.file
+                && compilerSourceId(reason.file) === compilerSourceId(change.file))
+              if (queued.length) {
+                for (const reason of queued) {
+                  reason.forceFullRescan = true
+                  reason.event = change.event
+                }
+                continue
+              }
+              // eslint-disable-next-line ts/no-use-before-define -- 漂移回调执行时批次调度函数已完成初始化。
+              scheduleSnapshotBuild({ ...change, forceFullRescan: true }, performance.now())
+            }
+          },
+        )
       })
       snapshotBuildChain = currentSnapshotBuild.catch(() => {
         failedSnapshotReasons.push(...batchReasons)
@@ -1829,6 +1873,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         return
       }
       reason.sourceEvent ??= { eventId: createHmrProfileEventId(), event: reason.event, file: reason.file, receivedAtMs: startedAt }
+      queuedSnapshotReasons.add(reason)
       if (pendingSnapshotBatch) {
         pendingSnapshotBatch.reasons.push(reason)
         pendingSnapshotBatch.startedAt = Math.min(pendingSnapshotBatch.startedAt, startedAt)
@@ -1857,27 +1902,44 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }, SNAPSHOT_BUILD_BATCH_DELAY_MS)
     }
 
-    // 附着宿主与独立 Vite provider 共用同一事件入口，WXML 外部依赖不再交给第二个 watcher。
+    function onModuleGraphChange({ event, file: id }: DevModuleGraphChange, receivedAtMs = performance.now()) {
+      if (isDevOutputFile(id)) {
+        return
+      }
+      const hasModule = ctx.moduleGraphService.hasModule(id)
+      debug?.(`[module-graph-provider] event=${event} change=${configService.relativeAbsoluteSrcRoot(id)} module=${hasModule}`)
+      if (isWxmlDependency(ctx, id)) {
+        for (const root of scanService.independentSubPackageMap.keys()) {
+          invalidateIndependentOutput(root)
+          scanService.markIndependentDirty(root)
+        }
+        scheduleSnapshotBuild({ event, file: id, forceFullRescan: true }, receivedAtMs)
+        return
+      }
+      if (!hasModule && !initialBuildFailed) {
+        return
+      }
+      scheduleSnapshotBuild({ event, file: id }, receivedAtMs)
+    }
+
+    // 附着宿主与独立 Vite provider 共用同一事件入口；路由结构由目录 watcher 完成解析后交回。
     const moduleGraphProvider = target === 'app'
-      ? await createDevModuleGraphProvider(ctx, buildOptions, ({ event, file: id }) => {
-          if (isDevOutputFile(id)) {
+      ? await createDevModuleGraphProvider(ctx, buildOptions, (change) => {
+          if (ownsAutoRoutesTopologyChange(ctx, change)) {
             return
           }
-          const hasModule = ctx.moduleGraphService.hasModule(id)
-          debug?.(`[module-graph-provider] event=${event} change=${configService.relativeAbsoluteSrcRoot(id)} module=${hasModule}`)
-          if (isWxmlDependency(ctx, id)) {
-            for (const root of scanService.independentSubPackageMap.keys()) {
-              invalidateIndependentOutput(root)
-              scanService.markIndependentDirty(root)
-            }
-            scheduleSnapshotBuild({ event, file: id, forceFullRescan: true }, performance.now())
-            return
+          onModuleGraphChange(change)
+        })
+      : undefined
+    const releaseAutoRoutesTopology = target === 'app'
+      ? subscribeAutoRoutesTopology(ctx, ({ file, event, topologyChanged, receivedAtMs = performance.now() }) => {
+          if (topologyChanged) {
+            scheduleSnapshotBuild({ event, file, forceFullRescan: true }, receivedAtMs)
           }
-          if (!hasModule && !initialBuildFailed) {
-            return
+          else {
+            // 非页面脚本或原子恢复可能不改变路由，但已有依赖仍须处理原始源事件。
+            onModuleGraphChange({ file, event }, receivedAtMs)
           }
-          const startedAt = performance.now()
-          scheduleSnapshotBuild({ event, file: id }, startedAt)
         })
       : undefined
 
@@ -1891,6 +1953,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             const routeSignature = ctx.autoRoutesService?.getSignature()
             await build(snapshotBuildOptions)
             emittedAutoRoutesSignature = routeSignature
+            emittedEntryTopology = captureEntryTopology(ctx)
             devBuildWatcher!.emitEvent({ code: 'END' })
             return devBuildWatcher!.watcher
           }
@@ -1901,6 +1964,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               result: undefined as never,
             })
             if (!hasDevModuleGraphHost(ctx)) {
+              devWatcherClosed = true
               throw error
             }
             // 借用宿主时保留恢复调度，首构建失败后下次输入变更执行完整快照。
@@ -1909,6 +1973,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             logger.error(error)
             return devBuildWatcher!.watcher
           }
+          finally {
+            initialSnapshot.resolve(undefined)
+          }
         })()
       : build(buildOptions) as unknown as Promise<RolldownWatcher>
     const startup = await Promise.allSettled([watcherPromise])
@@ -1916,6 +1983,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (startupErrors.length > 0) {
       // worker 属于初次发布事务；一个关闭失败不能遗留控制器租约。
       const cleanup = await Promise.allSettled([
+        async () => releaseAutoRoutesTopology?.(),
         async () => await moduleGraphProvider?.close(),
         async () => await devBuildWatcher?.watcher.close(),
         async () => await releaseWatcherResources?.(),
@@ -2151,6 +2219,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
         close: async () => {
           try {
+            releaseAutoRoutesTopology?.()
             unobserveWorkers()
             independentWatch.watchListeners.delete(observeIndependent)
             await Promise.all([snapshotWatcher.close(), assetWatcher.close()])
@@ -2167,6 +2236,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         waitForPendingSnapshotBuilds: () => snapshotBuildChain,
         markClosed: () => {
           devWatcherClosed = true
+          releaseAutoRoutesTopology?.()
+          if (snapshotBatchTimer) {
+            clearTimeout(snapshotBatchTimer)
+            snapshotBatchTimer = undefined
+          }
+          pendingSnapshotBatch = undefined
+          queuedSnapshotReasons.clear()
         },
         releaseResources: releaseWatcherResources,
       })

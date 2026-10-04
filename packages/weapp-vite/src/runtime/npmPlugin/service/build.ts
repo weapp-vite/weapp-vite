@@ -6,6 +6,7 @@ import { fs } from '@weapp-core/shared/fs'
 import { getPackageInfo } from 'local-pkg'
 import path from 'pathe'
 import { debug } from '../../../context/shared'
+import { packageSearchOptions } from '../packageResolution'
 import { getPackNpmRelationList } from '../relations'
 import {
   dedupeNpmDependencies,
@@ -30,7 +31,7 @@ function hasSameDependencySet(source: string[], target: string[]) {
 
 async function loadPackageInfo(dep: string, cwd?: string) {
   try {
-    return await getPackageInfo(dep, cwd ? { paths: [cwd] } : undefined)
+    return await getPackageInfo(dep, packageSearchOptions(cwd))
   }
   catch {
     return null
@@ -43,20 +44,23 @@ async function resolvePackageDependencyClosure(
   resolvePackageInfo: (dep: string, cwd?: string) => Promise<Awaited<ReturnType<typeof getPackageInfo>> | null> = loadPackageInfo,
 ) {
   const visited = new Set<string>()
+  const names = new Set<string>()
 
-  async function visit(dep: string) {
-    if (visited.has(dep)) {
+  async function visit(dep: string, resolveFrom?: string) {
+    const packageInfo = await resolvePackageInfo(dep, resolveFrom)
+    const identity = `${packageInfo?.rootPath ?? resolveFrom ?? ''}\0${dep}`
+    if (visited.has(identity)) {
       return
     }
-    visited.add(dep)
+    visited.add(identity)
+    names.add(dep)
 
-    const packageInfo = await resolvePackageInfo(dep, cwd)
     const transitiveDependencies = Object.keys(packageInfo?.packageJson.dependencies ?? {})
-    await Promise.all(transitiveDependencies.map(childDep => visit(childDep)))
+    await Promise.all(transitiveDependencies.map(childDep => visit(childDep, packageInfo?.rootPath ?? resolveFrom)))
   }
 
-  await Promise.all(dependencies.map(dep => visit(dep)))
-  return [...visited]
+  await Promise.all(dependencies.map(dep => visit(dep, cwd)))
+  return [...names]
 }
 
 async function copyDirectoryWithFilter(
@@ -112,14 +116,14 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
     return miniprogramDependencies.filter((dep): dep is string => typeof dep === 'string')
   }
 
-  async function resolveBuildCandidateDependencies(pkgJson: PackageJson) {
-    const syncCandidates = resolveNpmBuildCandidateDependenciesSync(ctx, pkgJson)
+  async function resolveBuildCandidateDependencies(pkgJson: PackageJson, resolveFrom: string) {
+    const syncCandidates = resolveNpmBuildCandidateDependenciesSync(ctx, pkgJson, resolveFrom)
     if (resolveNpmStrategyMode(ctx) === 'legacy') {
       return syncCandidates
     }
 
     const declaredDependencies = resolveDeclaredNpmDependencies(pkgJson)
-    const miniprogramDependencies = await resolveMiniprogramCandidateDependencies(declaredDependencies, ctx.configService?.cwd)
+    const miniprogramDependencies = await resolveMiniprogramCandidateDependencies(declaredDependencies, resolveFrom)
     const configuredPatterns = resolveConfiguredNpmDependencyPatterns(ctx)
     const explicitlyIncludedDependencies = resolveTargetDependencies(declaredDependencies, configuredPatterns)
 
@@ -134,6 +138,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
     npmDistDir: string
     options?: NpmBuildOptions
     cacheKey?: string
+    resolveFrom: string
   }) {
     const isNpmDistMissing = !(await fs.pathExists(args.npmDistDir))
     const isDependenciesCacheOutdate = isNpmDistMissing || await cache.checkDependenciesCacheOutdate(args.cacheKey)
@@ -151,6 +156,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
       args.dependencies.map((dep) => {
         return builder.buildPackage({
           dep,
+          resolveFrom: args.resolveFrom,
           outDir: args.npmDistDir,
           options: args.options,
           isDependenciesCacheOutdate,
@@ -179,13 +185,14 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
     const packNpmRelationList = getPackNpmRelationList(ctx)
     const [mainRelation, ...subRelations] = packNpmRelationList
     const packageJsonPath = path.resolve(configService.cwd, mainRelation.packageJsonPath)
+    const resolveFrom = path.dirname(packageJsonPath)
     if (await fs.pathExists(packageJsonPath)) {
       const pkgJson = ((await fs.readJson(packageJsonPath)) ?? {}) as PackageJson
       const npmDistDirName = resolveNpmDistDirName(configService)
       const outDir = path.resolve(configService.cwd, mainRelation.miniprogramNpmDistDir, npmDistDirName)
       const cachedSourceOutDir = resolveNpmSourceCacheOutDir(configService.cwd, npmDistDirName)
       const localSubPackageOutRoot = configService.outDir || path.resolve(configService.cwd, mainRelation.miniprogramNpmDistDir)
-      const allDependencies = await resolveBuildCandidateDependencies(pkgJson)
+      const allDependencies = await resolveBuildCandidateDependencies(pkgJson, resolveFrom)
       const mainDependencies = resolveTargetDependencies(allDependencies, resolveMainBuildDependencyPatterns(ctx))
       const sourceOutDir = hasSameDependencySet(allDependencies, mainDependencies) ? outDir : cachedSourceOutDir
       const localSubPackageMetas = [...ctx.scanService?.subPackageMap.values() ?? []]
@@ -196,6 +203,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
             cacheKey: '__all__',
             dependencies: allDependencies,
             npmDistDir: sourceOutDir,
+            resolveFrom,
             options,
           })
         : Promise.resolve()
@@ -204,6 +212,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
         cacheKey: configService.pluginOnly ? '__plugin__' : undefined,
         dependencies: mainDependencies,
         npmDistDir: outDir,
+        resolveFrom,
         options,
       })
 
@@ -235,7 +244,7 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
           const subPackageDependencies = Array.isArray(meta.subPackage.dependencies)
             ? await resolvePackageDependencyClosure(
                 resolveTargetDependencies(allDependencies, meta.subPackage.dependencies),
-                configService.cwd,
+                resolveFrom,
                 getPackageInfoCached,
               )
             : []

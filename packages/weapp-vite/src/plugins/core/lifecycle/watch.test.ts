@@ -1,7 +1,9 @@
+import type { ViteDevServer } from 'vite'
 import type { CorePluginState } from '../helpers'
 import { fs } from '@weapp-core/shared/fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
+import { attachDevModuleGraphHost } from '../../../moduleGraph/host'
 import { createModuleGraphService } from '../../../moduleGraph/service'
 import { storeVueSfcHmrSignatures } from '../../../runtime/storeVueSfcHmrSignatures'
 import { createBuildStartHook, createWatchChangeHook } from './watch'
@@ -228,6 +230,56 @@ describe('core lifecycle watch hook', () => {
     expect(addWatchFile).toHaveBeenCalledWith('/project/vite.config.mts')
     expect(addWatchFile).toHaveBeenCalledWith('/project/config/shared.ts')
     expect(state.ctx.runtimeState.build.hmr.profile.buildStartMs).toBeTypeOf('number')
+  })
+
+  it('leaves config dependency watching to the attached host while retaining WXML dependencies', async () => {
+    const state = createState()
+    state.ctx.configService.configFileDependencies = [
+      '/project/vite.config.mts',
+      '/project/config/shared.ts',
+    ]
+    state.ctx.runtimeState.wxmlProcessing = {
+      references: new Map([
+        ['/project/template-rules.json', 1],
+        ['/project/config/shared.ts', 1],
+      ]),
+    }
+    const addWatchFile = vi.fn()
+    const buildStart = createBuildStartHook(state)
+    const detachHost = attachDevModuleGraphHost(state.ctx, {} as ViteDevServer)
+    try {
+      await buildStart.call({ addWatchFile })
+
+      expect(addWatchFile.mock.calls).toEqual([['/project/template-rules.json']])
+      expect(state.emitDirtyEntries).toHaveBeenCalledOnce()
+    }
+    finally {
+      detachHost()
+    }
+
+    addWatchFile.mockClear()
+    await buildStart.call({ addWatchFile })
+    expect(addWatchFile).toHaveBeenCalledWith('/project/vite.config.mts')
+    expect(addWatchFile).toHaveBeenCalledWith('/project/config/shared.ts')
+  })
+
+  it.each(['create', 'update', 'delete'] as const)('leaves config dependency %s to the attached host', async (event) => {
+    const state = createState()
+    state.ctx.configService.configFileDependencies = ['/project/config/shared.ts']
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    const detachHost = attachDevModuleGraphHost(state.ctx, {} as ViteDevServer)
+    try {
+      await createWatchChangeHook(state)('/project/config/shared.ts', { event })
+
+      expect(state.ctx.buildService.requestConfigRestart).not.toHaveBeenCalled()
+      expect(state.ctx.scanService.markDirty).not.toHaveBeenCalled()
+      expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+      expect(state.ctx.onStatefulHmrSourceChange).not.toHaveBeenCalled()
+      expect(state.ctx.runtimeState.build.hmr.profile).toEqual({})
+    }
+    finally {
+      detachHost()
+    }
   })
 
   it.each([
@@ -994,6 +1046,73 @@ const count = 1
     await hook(entryId, { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
+  })
+
+  it.each(['pages/logs/index.vue', 'app.vue', 'layouts/default.vue'])('does not invalidate an unchanged %s after its script update was compiled', async (relativeEntry) => {
+    const state = createState()
+    const entryId = `${state.ctx.configService.absoluteSrcRoot}/${relativeEntry}`
+    const otherEntry = `${state.ctx.configService.absoluteSrcRoot}/pages/other/index.vue`
+    const source = '<script setup>const count = 1</script><template><view>{{ count }}</view></template><style>view { color: red }</style>'
+    const next = source.replace('count = 1', 'count = 2')
+    state.loadedEntrySet.add(entryId)
+    state.resolvedEntryMap.set(entryId, { id: entryId })
+    state.resolvedEntryMap.set(otherEntry, { id: otherEntry })
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    state.ctx.moduleGraphService.recordChangedFile = vi.fn()
+    collectAffectedEntriesMock.mockReturnValue(new Set([entryId, otherEntry]))
+    setVueEntrySfcSignatures(state, entryId, source)
+    vi.spyOn(fs, 'readFile').mockResolvedValue(next)
+    const hook = createWatchChangeHook(state)
+    await hook(entryId, { event: 'update' })
+    expect(state.markEntryDirty).toHaveBeenCalled()
+
+    setVueEntrySfcSignatures(state, entryId, next)
+    vi.clearAllMocks()
+    const profileBefore = structuredClone(state.ctx.runtimeState.build.hmr.profile)
+    await hook(entryId, { event: 'update' })
+    await hook(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).not.toHaveBeenCalled()
+    expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+    expect(collectAffectedEntriesMock).not.toHaveBeenCalled()
+    expect(invalidateFileCacheMock).not.toHaveBeenCalled()
+    expect(state.ctx.moduleGraphService.recordChangedFile).not.toHaveBeenCalled()
+    expect(state.ctx.onStatefulHmrSourceChange).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile).toEqual(profileBefore)
+  })
+
+  it.each(['style-sidecar', 'json-sidecar', 'sidecar-direct'])('preserves explicit %s invalidation when Vue source blocks are unchanged', async (cause) => {
+    const state = createState()
+    const entryId = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/index.vue`
+    const source = '<template><view /></template><style src="./external.scss" />'
+    state.loadedEntrySet.add(entryId)
+    state.ctx.runtimeState.watcher = { sidecarDirtyFiles: new Map([[entryId, cause]]) }
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    setVueEntrySfcSignatures(state, entryId, source)
+    vi.spyOn(fs, 'readFile').mockResolvedValue(source)
+
+    await createWatchChangeHook(state)(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledExactlyOnceWith(entryId, 'metadata')
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledExactlyOnceWith(entryId, [`${cause}:1`])
+    expect(state.ctx.runtimeState.watcher.sidecarDirtyFiles.size).toBe(0)
+  })
+
+  it('preserves external stylesheet changes when the owning Vue source is unchanged', async () => {
+    const state = createState()
+    const entryId = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/index.vue`
+    const stylesheet = `${state.ctx.configService.absoluteSrcRoot}/pages/logs/external.scss`
+    const source = '<template><view /></template><style src="./external.scss" />'
+    state.loadedEntrySet.add(entryId)
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    setVueEntrySfcSignatures(state, entryId, source)
+    collectAffectedEntriesMock.mockReturnValue(new Set([entryId]))
+    vi.spyOn(fs, 'readFile').mockResolvedValue(source)
+
+    await createWatchChangeHook(state)(stylesheet, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledWith(stylesheet, ['style-sidecar:1'])
   })
 
   it('marks vue entry updates as metadata when only json macro content changed', async () => {

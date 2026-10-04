@@ -3,6 +3,7 @@ import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import path from 'pathe'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 
 interface MinidevBuildResult {
   result?: {
@@ -28,7 +29,7 @@ function parseMachineOutput(stdout: string) {
   return JSON.parse(jsonLine) as MinidevBuildResult
 }
 
-export async function runAlipayTemplateBuildSmoke(options: AlipayTemplateBuildSmokeOptions) {
+async function runOwnedAlipayTemplateBuildSmoke(options: AlipayTemplateBuildSmokeOptions) {
   const templateRoot = path.join(REPO_ROOT, 'templates', options.templateDirectory)
   const projectRoot = path.join(templateRoot, 'dist/alipay')
 
@@ -71,4 +72,8 @@ export async function runAlipayTemplateBuildSmoke(options: AlipayTemplateBuildSm
   finally {
     await fs.remove(outputRoot)
   }
+}
+
+export async function runAlipayTemplateBuildSmoke(options: Parameters<typeof runOwnedAlipayTemplateBuildSmoke>[0]) {
+  return withMachineE2ELease(() => runOwnedAlipayTemplateBuildSmoke(options))
 }

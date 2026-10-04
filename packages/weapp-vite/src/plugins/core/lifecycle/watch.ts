@@ -6,6 +6,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { invalidateGlassEaselSource } from '../../../analyze/glassEasel'
 import logger from '../../../logger'
+import { hasDevModuleGraphHost } from '../../../moduleGraph/host'
 import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '../../../runtime/autoRoutesPlugin/generatedPaths'
@@ -132,6 +133,10 @@ function isConfigFileDependencyChange(state: CorePluginState, normalizedId: stri
     .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
 }
 
+function isHostOwnedConfigFileDependency(state: CorePluginState, normalizedId: string) {
+  return hasDevModuleGraphHost(state.ctx) && isConfigFileDependencyChange(state, normalizedId)
+}
+
 async function isTailwindAppStyleSource(stylePath: string) {
   try {
     const source = await fs.readFile(stylePath, 'utf8')
@@ -245,7 +250,10 @@ export function createBuildStartHook(state: CorePluginState) {
             `shared-chunk-source:${sharedChunkAffectedEntryCount}`,
           ]
         }
-        addNormalizedWatchFiles(this, [...configService.configFileDependencies, ...getWxmlWatchFiles(ctx)])
+        // Vite 宿主统一重载配置，原生引擎不再注册同一依赖触发第二次重启。
+        const watchFiles = [...configService.configFileDependencies, ...getWxmlWatchFiles(ctx)]
+          .filter(file => !isHostOwnedConfigFileDependency(state, normalizeFsResolvedId(file)))
+        addNormalizedWatchFiles(this, watchFiles)
         if (isPluginBuild) {
           if (ctx.scanService.pluginJsonPath) {
             addNormalizedWatchFiles(this, [resolveRealpath(ctx.scanService.pluginJsonPath)])
@@ -290,6 +298,7 @@ async function processChangedFile(
   state: CorePluginState,
   id: string,
   event: ChangeEvent,
+  vueEntryUpdateInspector?: ReturnType<typeof createVueEntryUpdateInspector>,
 ) {
   const { ctx, subPackageMeta, loadEntry, loadedEntrySet, resolvedEntryMap } = state
   const { scanService, configService, buildService } = ctx
@@ -345,9 +354,6 @@ async function processChangedFile(
   const concreteChangedEntryId = isAppVueFile(normalizedId) && scanService.appEntry?.path
     ? normalizeFsResolvedId(scanService.appEntry.path)
     : normalizedId
-  const vueEntryUpdateInspector = normalizedId.endsWith('.vue')
-    ? createVueEntryUpdateInspector(state, normalizedId)
-    : undefined
   let isAppShellTopologyChanged = false
   let handledSidecarMetadataUpdate = false
 
@@ -772,7 +778,6 @@ export function createWatchChangeHook(state: CorePluginState) {
     const eventId = createHmrProfileEventId()
     const normalizedId = normalizeFsResolvedId(id)
     state.ctx.moduleGraphService?.bindPluginContext(state, this)
-    state.ctx.moduleGraphService?.recordChangedFile?.(normalizedId, change.event)
     if (isSkippableResolvedId(normalizedId)) {
       return
     }
@@ -780,6 +785,9 @@ export function createWatchChangeHook(state: CorePluginState) {
       return
     }
     if (isAutoRoutesGeneratedFileChange(state, normalizedId)) {
+      return
+    }
+    if (isHostOwnedConfigFileDependency(state, normalizedId)) {
       return
     }
     const emittedJsonPaths = change.event === 'create'
@@ -792,12 +800,26 @@ export function createWatchChangeHook(state: CorePluginState) {
       resolvedEntryMap: state.resolvedEntryMap,
       sharedChunkSourceModuleIds: state.ctx.runtimeState.build.hmr.sharedChunkSourceModuleIds,
     })
+    const vueEntryUpdateInspector = normalizedId.endsWith('.vue')
+      ? createVueEntryUpdateInspector(state, normalizedId)
+      : undefined
+    // 已编译内容的重复通知不生成新失效；显式依赖与路由变化仍由各自所有者处理。
+    if (event === 'update'
+      && vueEntryUpdateInspector
+      && !state.ctx.runtimeState.watcher?.sidecarDirtyFiles?.has(normalizedId)
+      && !isAppEntryAutoRoutesSignatureStale(state, normalizedId)
+      && !isConfigFileDependencyChange(state, normalizedId)
+      && !isWxmlDependency(state.ctx, normalizedId)
+      && (await vueEntryUpdateInspector.getChangedBlocks())?.length === 0) {
+      return
+    }
+    state.ctx.moduleGraphService?.recordChangedFile?.(normalizedId, event)
     const profile = state.ctx.runtimeState.build.hmr.profile
     profile.sourceEvents ??= []
     profile.sourceEvents.push({ eventId, event, file: normalizedId, receivedAtMs: startedAt })
     // 旧字段继续指向最后一个事件；完整来源通过 sourceEvents 保留。
     Object.assign(profile, { eventId, event, file: normalizedId })
-    const dirtyReasonSummary = await processChangedFile(state, normalizedId, event)
+    const dirtyReasonSummary = await processChangedFile(state, normalizedId, event, vueEntryUpdateInspector)
     profile.watchToDirtyMs = performance.now() - Math.min(...profile.sourceEvents.map(source => source.receivedAtMs))
     profile.dirtyReasonSummary = [...new Set([...(profile.dirtyReasonSummary ?? []), ...(dirtyReasonSummary ?? [])])]
     state.ctx.onStatefulHmrSourceChange?.(normalizedId, dirtyReasonSummary ?? [])

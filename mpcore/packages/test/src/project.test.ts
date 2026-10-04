@@ -116,6 +116,40 @@ describe('@mpcore/test', () => {
     await project.close()
   })
 
+  it('loads native route artifacts after page addition, removal and restoration', async () => {
+    const projectPath = createFixture()
+    tempDirs.push(projectPath)
+    const route = 'pages/topology-added/index'
+    for (const stage of ['added', 'removed', 'restored']) {
+      const present = stage !== 'removed'
+      writeFile(projectPath, 'dist/app.json', JSON.stringify({ pages: ['pages/index/index', ...(present ? [route] : [])] }))
+      if (present) {
+        writeFile(projectPath, `dist/${route}.json`, '{}')
+        writeFile(projectPath, `dist/${route}.js`, `Page({ data: { message: '${stage}' } })`)
+        writeFile(projectPath, `dist/${route}.wxml`, '<view>{{message}}</view>')
+      }
+      else {
+        fs.rmSync(path.join(projectPath, 'dist/pages/topology-added'), { recursive: true })
+      }
+      // 完整 AppService 重装读取新的 app.json 与页面文件，不借旧实例缓存补出已删除页面。
+      const project = createTestProject({ artifact: { projectPath } })
+      try {
+        if (present) {
+          const result = await project.renderPage(`/${route}`)
+          expect(result.screen.getByText(stage)).toBeDefined()
+        }
+        else {
+          await expect(project.renderPage(`/${route}`)).rejects.toThrow()
+        }
+        const original = await project.renderPage('/pages/index/index')
+        expect(original.screen.getByText('count: 1')).toBeDefined()
+      }
+      finally {
+        await project.close()
+      }
+    }
+  })
+
   it('renders components from an in-memory host overlay and records events', async () => {
     const projectPath = createFixture()
     tempDirs.push(projectPath)

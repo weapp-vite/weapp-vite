@@ -3,19 +3,19 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { aggregatePlan } from './aggregate.mjs'
-import { assertSha, createMatrix, frozenManifest, needsSmoke, policy, statusContext, targetKey } from './contract.mjs'
+import { assertSha, createMatrix, frozenManifest, isReportSamplingContract, needsSmoke, policy, statusContext, targetKey } from './contract.mjs'
 import { pages, request } from './github.mjs'
 import { verifySmoke } from './smokeReport.mjs'
 
 const marker = '<!-- performance-v2 -->'
 
 export function validatePlan(plan, run, repository) {
-  if (plan.schemaVersion !== 2 || plan.purpose !== 'full' || plan.repository !== repository || String(plan.runId) !== String(run.id) || plan.driverSha !== run.head_sha || plan.samplingContract !== policy.samplingContract || !Array.isArray(plan.targets) || plan.targets.length > 2 || JSON.stringify(plan.manifest) !== JSON.stringify(frozenManifest())) {
+  if (plan.schemaVersion !== 2 || plan.purpose !== 'full' || plan.repository !== repository || String(plan.runId) !== String(run.id) || plan.driverSha !== run.head_sha || !isReportSamplingContract(plan.samplingContract) || !Array.isArray(plan.targets) || plan.targets.length > 2 || JSON.stringify(plan.manifest) !== JSON.stringify(frozenManifest())) {
     throw new Error('Untrusted performance plan provenance')
   }
   for (const target of plan.targets) {
     assertSha(target.headSha)
-    if (target.baselineSha !== policy.baselineSha || target.key !== targetKey(target) || target.id !== (target.prNumber ? `pr-${target.prNumber}` : 'main') || (target.prNumber !== null && (!Number.isSafeInteger(target.prNumber) || target.prNumber < 1))) {
+    if (target.baselineSha !== policy.baselineSha || target.key !== targetKey(target, plan.samplingContract) || target.id !== (target.prNumber ? `pr-${target.prNumber}` : 'main') || (target.prNumber !== null && (!Number.isSafeInteger(target.prNumber) || target.prNumber < 1))) {
       throw new Error('Invalid planned target')
     }
   }
@@ -76,11 +76,16 @@ async function main() {
     validatePlan(plan, run, repository)
     const report = await aggregatePlan(plan, root)
     for (const target of report.targets) {
+      const context = statusContext(target, plan.samplingContract)
       const statuses = await pages(`/commits/${target.headSha}/statuses`)
-      if (!statuses.some(s => s.context === statusContext(target) && s.target_url === run.html_url && s.creator?.type === 'Bot')) {
+      if (!statuses.some(s => s.context === context && s.target_url === run.html_url && s.creator?.type === 'Bot')) {
         throw new Error('Missing trusted attempt registration')
       }
-      await request(`/statuses/${target.headSha}`, { context: statusContext(target), state: target.status === 'passed' ? 'success' : 'failure', target_url: run.html_url, description: target.status === 'passed' ? '完整三平台性能通过' : `完整性能未通过：${target.status}` })
+      await request(`/statuses/${target.headSha}`, { context, state: target.status === 'passed' ? 'success' : 'failure', target_url: run.html_url, description: target.status === 'passed' ? '完整三平台性能通过' : `完整性能未通过：${target.status}` })
+      // 旧契约完成自己的状态登记，但不得覆盖同一 HEAD 的新契约评论。
+      if (plan.samplingContract !== policy.samplingContract) {
+        continue
+      }
       const lines = ['## 性能检查', '', `HEAD: \`${target.headSha}\``, '', `PR 正确性冒烟：${await smokeStatus(target.headSha)}。`, '', `完整性能：已完成，${target.status === 'passed' ? '✅ passed' : `🔴 ${target.status}`}。`, '', '| 平台 | 通过 | 回退 | 不稳定 | 不完整 |', '| --- | ---: | ---: | ---: | ---: |']
       for (const system of target.systems) {
         const counts = { passed: 0, regression: 0, unstable: 0, incomplete: 0 }
