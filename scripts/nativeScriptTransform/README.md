@@ -1,12 +1,13 @@
-# 实际 transformScript 捕获与 Rust 打印探针
+# 实际 transformScript 捕获、Rust 阶段转换与打印探针
 
-这是完整脚本阶段迁移前的兼容性实验。它捕获生产源码中的真实 `transformScript` 请求，再将**现有 JS 转换器已生成的 JavaScript** 交给 Oxc 0.152 做 parse、语义校验、打印和 sourcemap。它尚未实现 Vue/Wevu 改写，没有接入生产入口，也不产生性能结论。下一阶段的语义与 map 边界见 [BOUNDARY.md](./BOUNDARY.md)。
+本目录包含两个默认关闭的兼容性实验：`check.ts` 将现有转换器已经生成的 JS 交给 Oxc 打印；`transformCheck.ts` 将实际阶段输入交给 Rust 执行受支持的 Wevu 脚本改写。后者包含类型清理、导入和 expose 改写、默认值、初始 data、manifest、class/key/inline 元数据与注册。两者均未接入生产入口，不产生性能结论；sourcemap 与未覆盖能力仍是迁移门槛。边界见 [BOUNDARY.md](./BOUNDARY.md)。
 
 ## 运行
 
 ```sh
 pnpm --filter @weapp-vite/ast-native exec napi build --platform --release --features experimental-script-transform --no-js --dts target/script-transform-experiment.d.ts --output-dir ../../.codex-tmp/script-transform-native
 node --import tsx scripts/nativeScriptTransform/check.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-probe
+node --import tsx scripts/nativeScriptTransform/transformCheck.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-stage
 ```
 
 输出目录必须不存在。默认任何打印结构、注释或位置检查差异都会返回失败；已知差异调查可显式传 `--allow-differences`。该参数只允许完成诊断，摘要仍保留 `comparisonPassed: false`；CI 的诊断步骤成功不表示打印器可替换现有 generator。捕获、完整产物对照、运行、清理或来源校验失败在两种模式下均失败。
@@ -21,6 +22,20 @@ node --import tsx scripts/nativeScriptTransform/check.ts --binding-dir=.codex-tm
 
 warning 记录区分 handler 与 console 两个观察通道；默认 handler 可能继续调用 console，因此通道数不能相加作为公开告警条数。编译器公开 warnings 仍以完整对照输出为准。
 
+## 完整阶段实验
+
+`transformScriptNative(source, requestJson)` 在一次 N-API 调用内解析主脚本、检查作用域并改写、生成 JS/map。主源码解析一次；模板表达式与合成片段在 Rust 内还会单独解析，不把一次跨界调用宣称为所有输入只解析一次。外层仍需 JS 表达式生成、请求编码和结果解码，当前严格适配器的重复校验也属于待计入的真实成本。
+
+version 1 请求保留全部 26 个 options 字段的 tagged tree，表达式以 role/source/identity/root span 传入，不传 AST、callback 或 transfer token。runtime 路由和 marker 取自已有常量；私有 allowlist、installer 名称、class/style helper 与 options 标识符通过带源码 hash 的静态形状检查提取。每进程首次提取读取四份源码并解析五次，随后复用静态契约，初始化开销单独记录。
+
+Rust 在内部有序 JSON 上只省略允许位置的 optional undefined，并返回其路径；负零、数组空洞、不可枚举 defaults 或未知字段不会被悄悄转换。app、未实现的宏、props/scoped-slot/ref/layout/CSS 注入、动态组件选项及复杂 capability 分析明确返回 unsupported。真实 Wevu 与零售页面的 class 计算、条件 key 投影、7/14 个内联事件必须全部生成，不能以回退冒充页面覆盖。
+
+`transformNative.ts` 验证整个结果后才交付有序 warnings；unsupported、native 异常或坏 payload 可通过同阶段 JS fallback 恢复，warning callback 自身异常不会触发第二次执行。它是诊断适配器，生产编译器没有使用它。`transformCheck.ts` 在完整控制组对照后，逐条保存原始 request、native payload、预期结果、AST/注释/metadata/warnings/map 差异。回退计数表示被拒绝的独立候选，runner 并未据此证明真实编译器回退。
+
+严格模式要求每条候选都通过；任何 unsupported 或差异都返回失败。诊断模式只允许 `completed=true` 的采集成功退出，两真实页面每轮必须 native 成功；摘要中 `nativeCompared`、`nativePassed`、fallback 与最终 `comparisonPassed` 分别保留。两份 map 各自从生成代码回查同一真实脚本来源；对称缺失映射不会自动被当作来源覆盖通过。
+
+`record-XXXX.json` 保存逐条完整私有证据，三组 worker 报告与前后 source/binary 身份一并保留。CI 仅上传脱敏 summary。AST 相同不能替代 runtime 验收，生成的片段清空 span 也不证明来源映射等价。
+
 ## 打印与 map
 
 每个成功 stage 返回的 JS 和独立语法样本都使用两种 minify 配置调用 `roundTripScriptNative`。单次 N-API 请求完成 JS parse、语义校验、codegen，返回紧凑 code/map/diagnostics，不返回 AST，也不逐节点回调。
@@ -34,7 +49,7 @@ warning 记录区分 handler 与 console 两个观察通道；默认 handler 可
 ## 局部检查
 
 ```sh
-cargo test --locked --manifest-path packages/ast-native/Cargo.toml --features experimental-script-transform,napi/noop,napi-derive/noop script_transform::tests
+cargo test --locked --manifest-path packages/ast-native/Cargo.toml --features experimental-script-transform,napi/noop,napi-derive/noop script_transform
 pnpm exec tsc -p scripts/nativeScriptTransform/tsconfig.json
 pnpm exec vitest run --config scripts/vitest.config.mjs scripts/nativeScriptTransform
 pnpm exec eslint scripts/nativeScriptTransform .github/workflows/ci-native-analysis.yml

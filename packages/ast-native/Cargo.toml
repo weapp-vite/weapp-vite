@@ -18,7 +18,8 @@ experimental-script-transform = [
   "dep:oxc_codegen",
   "dep:oxc_diagnostics",
   "dep:oxc_semantic",
-  "dep:oxc_sourcemap"
+  "dep:oxc_sourcemap",
+  "serde_json/preserve_order"
 ]
 
 [dependencies]

@@ -1,0 +1,1816 @@
+{
+  "schemaVersion": 1,
+  "experiment": "完整 transformScript Rust POC v5 静态兼容性诊断",
+  "audit": {
+    "passed": true,
+    "privateAuditSha256": "53767a8a2ac1931c24f63cdeb8baf21f95d1e98ee2fd25cf46e88f1d98f236e1",
+    "summarySha256": "0b74caba17dbca8a722c2dd5a8d2c5138dd5140097e7fd6040b83cd4a043548a",
+    "identityBeforeSha256": "918cbd460316402d059b150643e01a0cd788733de6535360a51d9f7df3152688",
+    "identityAfterSha256": "94c7669b226ea10c832c570c1551f8c5248607dfaeab4fb58bfd624fdd76a83b",
+    "buildBeforeSha256": "fca99c718e60a780274bbdb2caf0ea7696f4fdab94191f880113bfea7fc89852",
+    "buildAfterSha256": "56b47d45254b09e6233e3523179525fd7d816646cff826e68256cbe605a822b5",
+    "buildLogSha256": "4f91b83e77c86aaadb143aef0eac9f6d7f30db82b5f008a43cd47e6432e90fb2",
+    "auditScriptSha256": "bcb7a06df100591ee75ef18273e3e98545b06990f303e9388c20e87da35aeedd",
+    "sourceFileCount": 328,
+    "buildSourceFileCount": 42,
+    "allCurrentFilesMatchRecordedHashes": true,
+    "beforeAfterStageIdentityEqual": true,
+    "beforeAfterBuildIdentityEqual": true,
+    "declaredSourceClosuresComplete": true,
+    "all72RecordDigestsRechecked": true,
+    "all72RequestsReserializedExactly": true,
+    "all72RawNativeOutcomesRevalidated": true,
+    "all36OracleResultsRecomputedExactly": true,
+    "all270FullCompilerOutputsRecompared": true,
+    "originalEvidenceUnmodified": true,
+    "compilationRerun": false,
+    "nativeInvocationRerun": false
+  },
+  "result": {
+    "completed": true,
+    "comparisonPassed": false,
+    "allowDifferences": false,
+    "expectedStrictExitCode": 1,
+    "processExitEvidence": "原始目录未单独保存操作系统退出码；1 根据已保存摘要与冻结门禁源码推导，执行者另报告实际退出码为 1。",
+    "completeCompilerChecks": 270,
+    "capturedRecords": 72,
+    "nativeCompared": 36,
+    "nativePassed": 0,
+    "fallbackCount": 36,
+    "fallbackCounts": {
+      "Unsupported script option: propsDerivedKeys": 8,
+      "Unsupported undefined position: $.bindingManifest.bindings.3.sourceLocation": 4,
+      "Unsupported script option: scopedSlotHostProperties": 4,
+      "Unsupported undefined position: $.bindingManifest.bindings.0.sourceFile": 4,
+      "Compiler macro imports and aliases are not implemented in this experiment": 4,
+      "Compiler macro definePageMeta is not implemented in this experiment": 10,
+      "String-named runtime imports are deferred": 2
+    },
+    "realPages": [
+      {
+        "scenarioId": "sfc-wevu",
+        "requiredRecords": 2,
+        "nativeSucceeded": 2,
+        "passed": true
+      },
+      {
+        "scenarioId": "sfc-retail",
+        "requiredRecords": 2,
+        "nativeSucceeded": 2,
+        "passed": true
+      }
+    ],
+    "realPagePassedMeaning": "仅指 required capture 均返回 native status=ok；不代表完整对照或 sourcemap 通过。"
+  },
+  "build": {
+    "exitCode": 0,
+    "configuredToolchain": "1.99.0-aarch64-apple-darwin",
+    "command": "pnpm --filter @weapp-vite/ast-native exec napi build --platform --release --features experimental-script-transform --no-js --dts script-transform.d.ts --output-dir <isolated-output> --target-dir <isolated-target> -- --offline --locked",
+    "sourceHashes": {
+      "packages/ast-native/Cargo.lock": "16fd87202b980c963fc375b154aa90a8bfbd21ae0b716f3125cda80b55d50344",
+      "packages/ast-native/Cargo.toml": "e92df0232fc3ab1ca2606d1673687baa7602acf914ca7c61018ba0f2e526b613",
+      "packages/ast-native/build.rs": "fcbd1ff3f627a7553fa1704dc6f558998daff8bc256015c37aace62cc49ce584",
+      "packages/ast-native/package.json": "1033a8b001db3fa863febd4bfa82d51ac2fd11dc63c94a38bbd329f88e9dc1c9",
+      "packages/ast-native/rust-toolchain.toml": "515c80a149c1e927d497dbebc399e241822aa0197e8f778c21bf5c136c90afd2",
+      "packages/ast-native/src/binding_analysis/mod.rs": "f4ab7e6c1d2e263fe242ad486df3c1f317c53e7634f105c735997d8fb511c274",
+      "packages/ast-native/src/binding_analysis/normalize.rs": "b2b504890d150ad08b6c254b5e47f437b63540e743956b0f62057c115a6c5635",
+      "packages/ast-native/src/binding_analysis/references.rs": "aaa397b48b085bea2224263b09a4edbc16d33e5762f3fc8987998731536e8869",
+      "packages/ast-native/src/binding_analysis/summary.rs": "dd388e2ed0f8a1cfc0969b4923426e2fb2413c146ce15c085bee33397182278c",
+      "packages/ast-native/src/binding_analysis/tests.rs": "1eb6d2c51514213ec135e43f915fbb805e82912ce1ef1206e6351328550272e7",
+      "packages/ast-native/src/chunk_analysis.rs": "3b77aa589664aaf589fb9994eced1c785bf215d903c32581dc7be8bfc118a365",
+      "packages/ast-native/src/lib.rs": "0131c41557df8ff58516aa306ea2e01fa39ea5a494cf282d443abeb037d46bd5",
+      "packages/ast-native/src/script_transform/capabilities.rs": "dbe478245da8d0bf7759fd616240595f15a1a1b287240d6141e4770d754f6ca6",
+      "packages/ast-native/src/script_transform/capability_guard_tests.rs": "6b91869483c3f10f6c8899e8bfbc16d40d2a4671e58da7175c6194684c480365",
+      "packages/ast-native/src/script_transform/component_manifest.rs": "7b21f93763f9dc8aeb30c742d8f72813282a4dca3d4ff72aa4165d1c0cb3498d",
+      "packages/ast-native/src/script_transform/component_options.rs": "c5ccbbd9564fcbc5d53cb85759c3d073a9590587ba40d78f687d891645b1d58c",
+      "packages/ast-native/src/script_transform/component_options_guard_tests.rs": "1ec1f8fd0cc1d6978c48e139f41c6cafa0ac4f316710c9b8ff004befb51520ae",
+      "packages/ast-native/src/script_transform/component_seed.rs": "1ba6134c6d9899ab12387dd19b3a17a965ac49b5d10a46e51ccc366fe5a50926",
+      "packages/ast-native/src/script_transform/diagnostics.rs": "f8c36e0eb92d9c6291257a347b145254fa6ac3e14ab105a00c64b3272635f355",
+      "packages/ast-native/src/script_transform/fragments.rs": "ae000a4db89bab6474146e0e5ff303ed718a6f0c49eaaefe00fa17907adf3d3f",
+      "packages/ast-native/src/script_transform/metadata/apply.rs": "f98634a67bcb7f11ef03b3624c77cfeb08d1b46a71c5203a8766a058fbd77feb",
+      "packages/ast-native/src/script_transform/metadata/baseline_tests.rs": "70e358f0fbaf11f3213de60c1ba47ce7b1e6014af94ec21939eaa5e7367d66c9",
+      "packages/ast-native/src/script_transform/metadata/computed.rs": "a64be047b773d84c308e53e7ef8aeda4fd306d016ca616e88da014382906aaf2",
+      "packages/ast-native/src/script_transform/metadata/contract.rs": "6a5d08a07af3b9f90576668fb4538ee33f1afb28d942df11526a77a54616de02",
+      "packages/ast-native/src/script_transform/metadata/expression.rs": "60cef250d0cc71854f583a6d292c890c0978c560e9169eb7c3b201c52fbdabec",
+      "packages/ast-native/src/script_transform/metadata/inline.rs": "d0fd8e3fe62e32ad29ed3b2218fa6bd5bc3403a2f5ac9191f6c7d1743e5c0b03",
+      "packages/ast-native/src/script_transform/metadata/mod.rs": "5c5402ff23c37093e85dcc37c42759747464e8c4c01d5715f61d5922580b95ce",
+      "packages/ast-native/src/script_transform/metadata/tests.rs": "7aef27990445705d6627d0e3a57d7c017761e0b580d76dd1d761e7cca110e430",
+      "packages/ast-native/src/script_transform/mod.rs": "afb3e46c36a3d97af2e2a00d1e4ababe7cd72c6b9a9cde1709ce32fd50d78e61",
+      "packages/ast-native/src/script_transform/request.rs": "41415d759e8f97b31e064e05b869240a4fb230a49e5935c532fa3ccdfc93b390",
+      "packages/ast-native/src/script_transform/request_decode.rs": "3d2a58826aca2eabff487bae96dbfb81d9dcb073b1dd581da76433f8f2ffa7f8",
+      "packages/ast-native/src/script_transform/rewrite/component.rs": "f05290ac3ea6ef3b7736529a8ff75df6d5baf9294b83ff0b3b53b6ece63743fb",
+      "packages/ast-native/src/script_transform/rewrite/expose.rs": "77a579639ff7210f81f551946530e72c91995dde7c229efea8f9939d5531a3f5",
+      "packages/ast-native/src/script_transform/rewrite/expose_baseline_tests.rs": "90a6ba564c6fb382042134a39c8fff497e703c5faa49e184e5216c38c5efc769",
+      "packages/ast-native/src/script_transform/rewrite/imports.rs": "252beb7496bcf2a79008cf2858f864b29f9ed74c0230441e64e03d629408a743",
+      "packages/ast-native/src/script_transform/rewrite/mod.rs": "dda69e976bb26c081e3267edc10e642fd597546fdbde25ce8ebe92e4eecc6752",
+      "packages/ast-native/src/script_transform/rewrite/strip_types.rs": "723657f935f282c7dcb8c6836b5cde0534201e33928b008fed04d019f07b89f4",
+      "packages/ast-native/src/script_transform/rewrite/tests.rs": "158aafa2a8f3423581207da92ae63763ada3d33f2a9e73361ce25559ba060e73",
+      "packages/ast-native/src/script_transform/tests.rs": "8da4c8c755b231e7e075d51371232bd2e82fdda767bd84607897d4d891704722",
+      "packages/ast-native/src/script_transform/transform.rs": "5e0ba0cc773794f81d4ff5ab28fdedb8f05267aa20d7e78fa18921de00fb4d2f",
+      "packages/ast-native/src/script_transform/transform_tests.rs": "129ee53154b59d7b05c13b4ebf4a57ac9dd4b2c5f9669fd62cfcb27483e8311c",
+      "packages/ast-native/src/vue_sfc_signature.rs": "e345f821b4b845d3ee7d22d6e62c1c50405c5213f025ab99fa1f0e69a18b4859"
+    },
+    "binary": {
+      "filename": "weapp_vite_ast_native.darwin-arm64.node",
+      "sha256": "f2ecb30000f9b76c15fc03e253239963d6ab54086fe330ab596dd563e5bf9b35",
+      "bytes": 3342096,
+      "equalsStageBeforeAndAfterIdentity": true
+    },
+    "declarations": [
+      {
+        "filename": "script-transform.d.ts",
+        "sha256": "ab633c91d6fb0f59075d3eb06c2a8d6177f0a26790b262da318d4299a8f43d38"
+      }
+    ],
+    "nonfatalDebugInfoStrippingWarning": true,
+    "provenanceLimit": "源码与产物摘要、命令及构建退出码相互绑定；未做干净机器可复现构建，也未穷尽已安装依赖和 Rust 工具链字节身份。"
+  },
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "sourceHashes": {
+    "package.json": "22e56b09c9238eb999e870adfbc1f8883e1d830950a1a89662e9277ae2f72e91",
+    "packages-runtime/wevu-compiler/src/ast/operations/jsxAutoComponents.ts": "8c6db39550fecb0ef74b3e67a9943b99f86d8c560e2448e26e27eb934d5ae011",
+    "packages-runtime/wevu-compiler/src/ast/operations/pageFeatures.ts": "6cffc877a352850db16de1f91838699cc5658200bc9c5a6a90818cc38353da5a",
+    "packages-runtime/wevu-compiler/src/ast/types.ts": "d335f24586e6af2ad83307129a6e2eb257346bcd206ed146bc0f123babf51f4a",
+    "packages-runtime/wevu-compiler/src/auto-import-components/builtin.auto.ts": "80cf7c3c1524f1433e0bc32009cfcc112cf7de586cc62b937e9867b2e162a03b",
+    "packages-runtime/wevu-compiler/src/auto-import-components/builtin.ts": "a776892c0c6d5e55942b33e8dc62cb7074c9724876d1d80402dba995ece7562e",
+    "packages-runtime/wevu-compiler/src/bindingManifest.ts": "1d584e2e9c4144566ef7b1d828d6257e52bfeaaa906496f7001854c6bfa4fd29",
+    "packages-runtime/wevu-compiler/src/constants.ts": "6465248bb01cff727a6e1b6e4230d59be2d5c40ac3d8fd16619abacf1289cbe8",
+    "packages-runtime/wevu-compiler/src/index.ts": "f918877b83ff80854df9c6022ee03a60776d5819768123e7e9b711ac88942c5c",
+    "packages-runtime/wevu-compiler/src/inlineDataset.ts": "4caf79e3021d4badfd36f14a2c725f6ef7c93dc64f4050899a38729a00a82afd",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/analyze.ts": "b8685dff6ff5a7ee883d74ea36b25a860c1538e80e15f561e2f7086a653ee137",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/diagnostics.ts": "dc0cdd47892da158e607acf1a18cfbd4c71db2ea103f6e393c3cdecfdb89fc62",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/index.ts": "6f0e8567f4610196e675e8fb41c9cf44853887c73e429e5e8cd6fc17bcc6e9f6",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/macroBindings.ts": "11e5f2360ea743f8fb7d354bfb2d61dd32bf8796cb12eaba19907ac6f7b4dece",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/program.ts": "dbf9bcfab21c21db6b5012983f225b97a8387cef4e32b1da3defa5652159a388",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/public.ts": "b0451ada949f88bea6bddcd018ddb799ba51d8cd7be9039cd8bd31648f36be95",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/rewrite.ts": "8c18b98383a2583c498bb6830dad83748e93e7ef96c78051744485c6d1952e12",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/sfc.ts": "79f946a47928d425d18c24d15aa9ea5d713a7fa1912aee286590c3595381200e",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/static.ts": "1a7c1dea6d10001060fa77d3e8de381640567eabbd566c33edd2f52ae152ec52",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/types.ts": "0c26ce1c5274be7e8ab9876570d177dc4129c4f585f39ec91a2afa601d7c59df",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts": "b8df4152150746ceb601ea9f0aa6bd1382ff84fbb2e80bd2552cccfc653fdceb",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/ast.ts": "e4baeb23e3977b8755196af530aab30429957f09932b8530b30a7a49d46bad79",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/attributes.ts": "0548e25c128c9743bd24a79532319243dee29c22b6a893c61c5dc2ec0f8deab4",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/bindingManifest.ts": "87f263a150a26b070ee834d8d60368895b49f260517f021f54bdec68ed4f71f7",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/diagnostics.ts": "b1ff83968c315755d30f22aa7ad61e5265f5bde0d8c82ad0fa01129f5402aa3f",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/islandScript.ts": "811894a1bb28283d1ba1643ae09bf0904e1eeb88efe5b90f6ffbe2434df7579b",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/moduleResolver.ts": "6a42f864557fabaf2f304a82721952c2488f8fda788771068f42f01c88c6ef4c",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/render.ts": "eb241829b9c75b91504695b41f27a70a22b18ea1c2d35b5910dae0f38d69c472",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/script.ts": "f3a71fef2b6c86317e87ad1cb9227adcbe0ad9bc89ff7d8c8fa061286ee7db1e",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/setupBindings.ts": "e278a2aada2f790eb65cbd04f76f18f77706ae8f43ae4425741c95464aa18d1a",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/template.ts": "a0360a64a89aa6c42de9915e4bacc90bf7faac53da8fc3968bdf9f79d587b46a",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/types.ts": "126ada82c980ffe7759251b3f0119801a30c36ecd45508bed9dbe2bf8c0ef8f0",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsxFile.ts": "e065c2aa447d2d14d515bab2c2a48bcb767876cd559b565d3b744a3a85ebbe66",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/upstreamCompatibility.ts": "74d08f3719bfbeeedb2dd87cc118732da25ec35487bd4c1215375cbbfdbbf988",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/vueJsxTransform.ts": "91449734a8d20d79dfe9313ed5b364655b10dd55fb85dd50874a7fa9ace5c5ac",
+    "packages-runtime/wevu-compiler/src/plugins/uniApp/index.ts": "7748c0134baf57c28e8781cbc0992dc67a7321342ac9fdd02d64906cd5402276",
+    "packages-runtime/wevu-compiler/src/plugins/utils/cache.ts": "e31eb40c60c2bac77bda73feef8c5b0d3df28b02c2f8a277a6b73598dd23da01",
+    "packages-runtime/wevu-compiler/src/plugins/utils/vueSfc.ts": "efe1531e4d78c6cb9bac74a91efc46ee38d208777cf0be91204b4983ec641378",
+    "packages-runtime/wevu-compiler/src/plugins/utils/vueSfcBlockSrc.ts": "5cf8d9c38ce59758ae833a75244feecc06dad2a187acb09d3c8f075ea86c445f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/style.ts": "1ba42356f00313e4c231156c4147f5790a8ca235d60c4c7a476eaaacb24f9f89",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template.ts": "b581bdc66464b5a2a27232b67dbbb6a544f4e87ca9d72e7f1a9edc0342aa5346",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/attributes.ts": "f95664a2a95ac7a3e27c33213889bec381f8c681b36a0824525afd66f41f2c06",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/bindingManifest.ts": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/classStyleRuntime.ts": "8cf49c18675cdcee1afc0821f79f35e17b1b6820c4c8c2c6c6974dd21fd3b621",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/conditions.ts": "587e8a18ea00ca74a3d430d5268c55fc55249e853eaea93c95be1c0f051671b0",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/diagnostics.ts": "6519dfbac33943bb013da8e7b4132eac341a02149c2a190929f4ee9cffbd7042",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/bind.ts": "f23f506cec94cf40bb43388bef9b80f9dc46965d7a0872afe8f69e8b9ed65141",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/custom.ts": "19bb76ee930ab178e23005f6e9f4ba994497dcebbcf0c83d738ee419ef429920",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/forKey/index.ts": "fe5f14091b0cd3510930a3277b8ded76f1dfde489547e88b4cd06fe3e0d7ab04",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/forKey/projection.ts": "1ccb707185c72aa511235951b7c4574401af1ebe449321b6d940e5113ff2811d",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/index.ts": "8da462cd033d699b299f7eb888a02ec619863f3422c0b026bd17315e39599eb8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/model.ts": "f62abbd43e879b977fd41f2cac15e93784fbf2716457351b96b0f6cc9a96efaa",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/on.ts": "5d33ada09b6f2c63a4c3da3cecdbab88a07bc577390cdde99e34d299a40667ed",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/show.ts": "59dace7cd7270b8bee1d6f3b053cee7872cfd0d8d716d3a044ea7304289cf5e8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/attrs.ts": "819a2739128728548b1634aa93b57af5e6d9646444a271538ab3d57095df82f1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/forExpression.ts": "5db330db73c7c22b1ce1cebec4945ab69002c35996ec1a350219b590eb3c9739",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/forPatternProjection.ts": "c25d6201ebb1cd2acf132bf50e156049275d2a1a70888d1f23c35339383f0d3f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/helpers.ts": "da3ac6b531af474a76321abe29a91428e8f165f707b3ef7d415346e0ff5961b0",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/index.ts": "b1555231ce3640f3ab7e81c0e3874fbd984bd1bdc3522bfbdf221c25e0939122",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/slotProps.ts": "03698058bc7be5e0499faa0c00f52f8dcf9f8efcf9155b956e1ad53bbd5daa31",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-builtin.ts": "ac2fbef0d21ccb6edde5cda35c0ade0b7ded447cceee3ce82fc83d73b53a039c",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-component.ts": "f1e58a1549e7aad506fa455801e22c175eb0fbfcb38b83a131b21627b7442f4b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-normal.ts": "8034b403e57fd8479576f73d9c014f81e25d00c15b1965c5d5888e6a89b01aeb",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-slot.ts": "3e684b7b521382698b551e9c18ab85ca49c2e3e302af982a7fafbd912d3f7e22",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-structural.ts": "053c7e5d816d2af956d7c2004c4ce32c47a1f00a62a88396669a0166803fc61a",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/bindings.ts": "742fb5a493f04c79f8558cb2edd794138e38fc6bef660205e8893fc47b4d2692",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/forItemAccess.ts": "e12c61770891faff688fdcd2c0f246447e423c3d9417795e02e23d4ae3f51411",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/forItemResolver.ts": "e8c470af09ea16d062a0210b21bba4aa318ee793378809deffbf50828e91e90b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/index.ts": "d4a8f562c6b83a224750f6af4ad8b21ef70216ca88c62116ab69fdb52ca2b7f6",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/inline.ts": "de17b271547d63ccb96b5c418569935b02c6a7dc556513e6ae48e9eb768db6b0",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/inlineShared.ts": "85ed6c84c60b76f88b4fa8f0bd99029787b5790d3eb1f3db1a175813c96ba8f2",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/js.ts": "de5e3c7c81896503ba8b7f01da02b5abe84689acf72366490c32e9c920f99ca6",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/numeric.ts": "8a4bb4a9498e3ec4ff4ca43904a66c029d466b3f076a3ea6a9941389b6736c21",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/parse.ts": "99a537ff6a8796816ceadfe6e624f715d30f2ff71b22f7f0dca112b1dcdb71d3",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/runtimeBinding.ts": "07438f2a2e5a6121964dbb19d27b4b53ba2c895eba4729adae8df739bb00ff99",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/scopedSlot.ts": "b4e8ec169858badaa30a16d9d7f142c2d095daa11ee6aa7693e81acf34239ef4",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/wxml.ts": "c93e9f9f7cb7959f43736980be34349b6a38d2e84dd5288d33ad3a9cf4da4670",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/format.ts": "7a8d04661fb7c7ad8f0e4435c53850dc157088a035fa6d98fbddc452c297d8e3",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/htmlTagMapping.ts": "8d01bee3ad35851bcdd96b88ea2883897f0daffa3ab35be14d036ec6c712bcb9",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/mustache.ts": "68c8245dd05ed02ce24e53bbcf2911ef4495a8efe65945d40ce43c523ec1f5a8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/nodes.ts": "d55aa3027f24121a755872c23758c8fd49409214886b6c71766d98cf1fdde307",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platform.ts": "fec6db299106aa46734fa3df988b5770dd9867c6e38768c601e6c9acbd1f9cb6",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/alipay.ts": "c9a6dc421492c4a6770b2cfdd3bbdc234c692ee334b30d9949914e2eeee7a846",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/default.ts": "38f25d9cb6b673261a1f964e198167b609392261cbd958cfb02d5627de293666",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/generatedEventAliases.ts": "6f670f31a032aa8469817d263e9d97d1c7b9d3e9d16ccb2f580f999cfeaf4745",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/index.ts": "46d8e0972d600e76c959deb8b836ab52a7c3ab7aeff245b7422787be74cd3a86",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/swan.ts": "57872f2f665f9273a328b65eb4694c5251dd11e3a9be898bf24957f75a737afc",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/tt.ts": "96c4a71c3ae65f92eff32744dce07f28411ac57afbfb60fad4cd9228ac6d66cb",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/wechat.ts": "bf4fd52cf0b89747e8c13118fbcee97257f8c15e2e1fd99bc4913eead611bf5c",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/scopedSlotOwnerBindings.ts": "e653868a40aea9a119978165a42f7405210122e1140d2c37ffeba405d4ccf7e1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/scopedSlotScript.ts": "f9edc8dc95b9e9c15b9690845b7648a53b17ddabb9045bcc7237cd20eef9b595",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/types.ts": "c4a4177a6aad1ea4f1d6402bfbd02c328e221a38bdc3a527ac4b5eb077445827",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/upstreamCompatibility.ts": "773b0c4e20c18612e382f9cb350d9d9762379d97369a068887268b00707d02cb",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/wxss.ts": "8ea19ce4196d79df5d86637962ee27ee22d43151a23c32775d797788b633736e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/hmr/sfcPayload.ts": "f6f6261c27696b9cbfdbf5fcea1681b4fbdeef4f38316bd04d19989c1e638b4d",
+    "packages-runtime/wevu-compiler/src/plugins/vue/hmr/sfcSignature.ts": "b453ce03e2cf8eeee5fdddca48d43cc7bb6e821b1952f45c6d12e615c82b0b9e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/hmr/tailwindContent.ts": "c560194c9c2c55e9126455703ce972ae74f206d029ae3a738cbe6dbceb187c84",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform.ts": "8663876f3231d87de93e20adc7398d2a73fd2499ca40b001945e82083cb83d4e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/classStyleComputed.ts": "9cac0dc878905155b9c679056b29c64143e18607e65b0ad31ef97f81aa27f3a4",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/classStyleComputedBuilders.ts": "38b72317948de2e8717af9664890c99c989dc6e28c2ba5d0e56da8f5cd109b29",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/bindingManifestLocations.ts": "01f3e95ea3795e387c5433a01251c10f6dfd94e9bf701855dfe25a495bbbd0f8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/componentSources.ts": "0152ea24da3d23749e7875ab30eaf69b6197a40bfa0a926b951a871b5a7fad3b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/config.ts": "c6b0037e81a6a314074c17d28c64e9763c0857f7ea987f3b06982287644f290c",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/finalize.ts": "eca7978d676f34b7e89851f3d5399a916f84fa4c6062b79ee2a0e0387ffda56f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/index.ts": "e99a4199cea83b73e6b79b6545d9706c2555450a60ac885149919c3982faf700",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/jsonOnly.ts": "ad252b2851fac8362e791fcd271640278e26af822987363bfaa17fda12855737",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/pageLayout.ts": "a594eb4e2e3c7020b8ab1bf151b6509bc13dee62851a5b7bc22cb273e5f8a123",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/parse.ts": "d2fc8d0e8b5becf68a6f596e184d329251b74b7d55542ac71a3ba39f27fa56ee",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/propsProjection.ts": "ad372ffc1d1927950a4084b19194d1e956c85a37a75b6658241d4b9f23d343d8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/reservedProps.ts": "1fe7544438995e2b2947269c7c4ea56ac8d04a42b0848043c1178274d5339c7e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/script.ts": "3208528fa23a1c70f894b1056cdfa882603bd187b566a46ec4cfa1596e3f6473",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/style.ts": "afbf88b2c828605eb79f5f82601180d2942cbe35e657f176eea4368317835aeb",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/template.ts": "74a6842cb86e2268c6db083abe31b9e3196154c825744606aa61ce03d64f5cc1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/types.ts": "8f9ebbc010e3ca2b88cf141014731e3a7f2cabe5756c4ee0abaaf16e5f4b724c",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/config.ts": "bd5615fa257b010035361084a6aed32227a410de95bebca5f7bc32812be09578",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/constants.ts": "c385876a94a14a1e60666330ff91ac3207e633a3e80e1a3a2c01ff21976d8b04",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/defineOptions/inline.ts": "bc0d309d1a5e9c3faaf31454e5bd6c8422b4156ab05c634d3f9a521addaee9bc",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/defineOptions/serialize.ts": "5af4bd9367549626a07b0c411cb05a0b24ca483acadf0bf706f26bcf715a83e1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/defineOptions/static.ts": "eee5a236a7896abca4a87f2ca08cbd0a830e254ba54fcff6f94f220a082b7328",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/analyze.ts": "e95de7d95c328ff7adad49c9df09985f400b184afab3d0c0938c34f7a1b911bd",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/execute.ts": "1a0f7e10da05a16e302c74fe56ec3ed0415c4e2586fd4c911c033704b5b464a3",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/index.ts": "25dff5bdff80b05aaa6780083cc5befdaedfcc69ba3b018f53cb63c7b665974f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/parse.ts": "e8645b75d11c4308367bbaec4e9a0de0de167a3239b19b88e99fbbf4e099204d",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/rewrite.ts": "62cde048ee3a4b63542cfc82396db323de8d1d33f5a8f96504fa11b45629a372",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/static.ts": "4e8292df1bc9ce961ff2955d0609d1e2554b591bd55769bf39bc36fcc662094d",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMerge.ts": "566f7d6ea1e765fcc5469928e48eb94c0ae77677693666535b351aa8bc4e3ca9",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scopedId.ts": "fbc1cdf61a4399000c5e54f52bc9e8798b68c069b48671230dd477c0ffb99d04",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/script.ts": "c4a19fc2fdfe07e8b1f1177587f350a41b380e782f1ee818634cf42883b46c40",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptComponent.ts": "e51f5263b5d619029e12d1a1a35e9c0ef6ee81afe198332656a0855e90e87801",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptRuntimeImport.ts": "6fd6fa22c2fb0ba171448c4ea7278535b3251aeaba3207cb6de0006c77af7c06",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptTemplateMeta.ts": "8c407fa9967755b73d3221daa3110b978dcfe86dd16034a49a898c4bbaa1f009",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptVueSfcTransform.ts": "822b9cb0f73d8cdebe6e70e02d7465675a14288aa72653a1243fa309622913c3",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/tempDirLock.ts": "51b2df5259daf61768d1d864c4f3a4f661574e1db88b4bac597e8d3f1c6c4e68",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/tempImportRewrite.ts": "7a4a9a1905dcbf8859931cc4fcb9f2afe13239da59135c6ad484197f754881b6",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/collect.ts": "1993801a918603d3708aa252fd3611bcd09774a536719d9ee048b7975c191775",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/componentStyleOptions.ts": "edacfccff8b0a994ec612e1b81729d4628df32518a1f4557eb08196861556988",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/fastSetup.ts": "cf6cd5fde4c2f3683e599022f1c2a0a17524697faa1e461761e44faebd95ca57",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/imports.ts": "14a2ea7abbeb9895966a183448a5d70bb0357cf59b1116b962084276c5b927c0",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/index.ts": "452b2ba785216d64c54b9bcf85772fefb9607dc91cdc38250d9695e09fb8a273",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/appSetup.ts": "635afb9d4f32a1446a32be331deb6e03bcc6374f030c1b7233556ebe9ac6c592",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/index.ts": "fe805ba9ba6862fe18c04e11cce31d89a1bf62c947d597daa073466db7161e7e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/optional.ts": "9677079d57a14fbd82681a47453941a8ece38b31a9a4a13dc08c5dbe600f3782",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/pageMeta.ts": "b7775023ee379797ed6171e7aa048a559257fc9c52d4ae93b5405db2f926c918",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/setupExpose.ts": "92ce327fcf6aba75ee694702a1679f22ebfd97b6f99374bceb39386de746bc38",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/stripTypes.ts": "7e83480b20cb0aa4784904ff22da6d144da0d6038cca7dcb5f6b61d6a75e093a",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/bindingManifest.ts": "a5e26b299886ea6884ecb2e850817f0f43a0194afff8b96cd94509d0bf7073ca",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/classStyle.ts": "69e274b1a71a533d649c53a1831d77818d528bd15cdb2fe365f9613a107eedb1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/cssVarsRuntime.ts": "e8b80f036e590e3b6444d5dd70ae419e8f3c906a29d283723d6818e7e1fe2edf",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/defaults.ts": "3aa3327135cdd089952f398f23a8d28ca7ca3dc33a9ad1134cfec8bb17f33333",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/defaultsExpression.ts": "b8780eb8b9c0dad15743fe8b97d4c25c4b71c2c54ae82d4a4a0a0f13a6ca82f1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/export.ts": "2560b3e59697c6971512e3385aeb77494584f2f47ff47a950903994c44255bd5",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/index.ts": "b2520bd677b07de8775eed17935a50492aa839ef6639741c0d54e095d548f726",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/inlineExpressions.ts": "669d928f4f75094ef10aabd73f9ce393200e5a0d367c1e4d0f769e920faeace4",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/layoutHosts.ts": "f64473ee25dbcd31d2764a0c7846f7dbcc44b1badb4052af3af7ef0a2e5eded8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/propsAliases.ts": "95b28c3ae4ff6546ee227f20f2e5b78b8ce4bf9a668f46932aa1caa96c45fce5",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/setupInitialData.ts": "afcf4947053a985dcd0254c4552970ea1f1bc559e47ac0c757e91ecf8f06c35b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/templateRefs.ts": "a2f57a5133a052683d5d840b5e5bed85ca63d366f7419815c3729de283e7270b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/runtimeCapabilities.ts": "dd0f973e058c3960c907468d740e7919b37c5512657a87bf4e2f29e84acb21f8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/runtimeCapabilityInjection.ts": "f264c93df6e7f5475ff3d74780e4656a8ad9e908ac00ca389e8051334015a034",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/runtimeCapabilityOptions.ts": "b6230eb22c416e5aaeb34f58c0e5a3e42cc20977c234dd3277260cbd198e153f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/utils.ts": "1042d82268434f5320484af0744378538c25b481eafbd7790d6b17d7fd35946e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/wevuTempDir.ts": "8a8ea2dc1729c50dfa0a3672e9a3dac008e1cc5949f6d4a80f5ca5bb3c3e2ae6",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures.ts": "ba719d0a56d805263f2ccd4c7d524fcf911c2fef08fc722775d003ee92eed71d",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/analysis.ts": "f9d7b903f7265b13e4b656056678aa2a2323602b3a6e2381a137d64e19eafc2b",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/astUtils.ts": "624ee4c9b100b5d66c98bd00e1ea373bf87b11cd65e39a92500bacc1cdac81de",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/flags.ts": "63106464a9238b8dd26df16a5c6b9e50fb72af61f1261f4bb2a1ec5b6679d09a",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts": "c2e1510a38b879d11969ad63ba665d6fc65e248fe6b38e83d8e93a1434cd3674",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/matcher.ts": "b1ff5281c74c46f7b52d4ece901caf260ca45d3056f3679b5bb794586388fb80",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/babel.ts": "392ab760e8e197010c604cdaeb82968952a396481a220ac168927ff13b0735b2",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/index.ts": "5a4c38330057fd886be4883fff5ba9e913e594108fdece970550db33a89bc5f6",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/oxc.ts": "a9463d854838658e1bb56e9c7d013efdea5ef39854ded1d2b041d0dd52e5cdac",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/shared.ts": "d7cd6ea833e9682d494f2f9e54ce3cbdf4b0c5a652648ccb655e3a3500a3b51d",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/types.ts": "cfa0f1ea6acfdc1029dd92951d6f2211acd698451968547091d331732c6bf26c",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts": "c64c796795bdbf44df99076f8c8bc4d7fadd1d2f4bbe1f6f6e8442d638687779",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/calls.ts": "f82cb2f20064ee3de56f2c53f15997771ae2ef45856717dc9c1c06d20ab5b56c",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/hooks.ts": "8d8a34fcbad0197b7c278fa0a062878389c42289cf386a275f1e0fb0f2c42904",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/index.ts": "a2decd8d5c3ca5dc97c6ea3821485b0b113f5b7bfd74d771e7753abb8017cc29",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/resolve.ts": "078e20e3f2437ac5d259aa75552219ea4a342b369062b16126d7b5e469cb1f24",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/walk.ts": "56f0aa9f50016dcc64c673c3be43338a32e4825a88e28e35794bc2aa268a761b",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/types.ts": "e11fe269c8530046ba37890f6c127765411160ebf4440aea79e093a31079cc0f",
+    "packages-runtime/wevu-compiler/src/profiling/internal.ts": "a25ac02aa783458deac6213c3977d0c23323a65867dd8dfc90b7ed29e0119c33",
+    "packages-runtime/wevu-compiler/src/profiling/node.ts": "3bf91a3bb6d1cf1d353b359c35341a953e15dfb9a00b2a53c62250de6b52e983",
+    "packages-runtime/wevu-compiler/src/profiling/types.ts": "a6d7d7d1de19970de45c65eecf2ac7bc984d490c6f3a4ff49451f8c7f5745be1",
+    "packages-runtime/wevu-compiler/src/runtimeCapabilities.ts": "a69a7c696b49f2fbfb792ef57a948d1ced1486096f2c1aa9f33b3f1145527d70",
+    "packages-runtime/wevu-compiler/src/types/bindingManifest.ts": "f5a36a058f85dc790d913978ca36ba76fdb4b8d60834e18810dbbefbcde7ebe0",
+    "packages-runtime/wevu-compiler/src/types/componentStyleOptions.ts": "9426e9ffe32188534b44c2bad8fb24058175f4f76e7d4d705e27e334ae85175d",
+    "packages-runtime/wevu-compiler/src/types/diagnostics.ts": "029e702ade9923c9733c9b36c08eb6d448620396a9af777195872904afa87f5d",
+    "packages-runtime/wevu-compiler/src/types/json.ts": "1718253fa17d5913047feea226e4fad05a8c994d892e8a8b02a3069c4f0215d9",
+    "packages-runtime/wevu-compiler/src/types/pageLayout.ts": "8fd9a7861f2879bbcc1412b010294030ea5a102282d5c7fd9ee34e9b26cdf1cd",
+    "packages-runtime/wevu-compiler/src/types/platform.ts": "f00d95ad1556e37544d7e319a395c241c90efa37bd7f65fde71e68d30677c682",
+    "packages-runtime/wevu-compiler/src/types/wevu.ts": "03fb4bca554b63849f70f861b3eab1d2acb8b7711f7d50a62af85185740b2adb",
+    "packages-runtime/wevu-compiler/src/utils/babel.ts": "3aace418d870795d53aa53cc25458687a48940b7f52ef6fdbdba2ea8ae6e3686",
+    "packages-runtime/wevu-compiler/src/utils/cachePolicy.ts": "d7de5846153e606a5891ae34f868b65b40332dd97fcaa4d07ee1b2eb5073b5b1",
+    "packages-runtime/wevu-compiler/src/utils/fs.ts": "1092d341ee3f85504f49c806f548bca18d4e95f577848fbc2496ce4b04ac2aa6",
+    "packages-runtime/wevu-compiler/src/utils/object.ts": "caec001338d607c61af3be7c0cbe2eabc7f0c7f5d6a75ae1d7cc8d7e2515f290",
+    "packages-runtime/wevu-compiler/src/utils/path.ts": "e233a6d11599b492a5f4deb709d14a24f56cb8ac036217ec20ea962f2ae74b15",
+    "packages-runtime/wevu-compiler/src/utils/resolvedId.ts": "1cefc3f80149646d1e27b9d4c4383315f1a592e1f489bfbeee0368ad9ab21d47",
+    "packages-runtime/wevu-compiler/src/utils/sourcemap.ts": "9fb177900fb05cb5c34a35d4d4a96d8c6c5a63593c03a449ae0d4fada4e457e3",
+    "packages-runtime/wevu-compiler/src/utils/text.ts": "91c89ffc81d34175f388611a4ce943e5c8918697d57d0bdbf650eba9779e0bed",
+    "packages-runtime/wevu-compiler/src/utils/viteId.ts": "de65f470961d39d83189d24d45c102c93f8ba9c1aafaa30d58a58259c350a500",
+    "packages-runtime/wevu-compiler/src/utils/vueTemplateTags.ts": "79b573138cb2b64be9ddabbd991b4ed121686c4317b699295eb021399bd773a2",
+    "packages-runtime/wevu-compiler/src/utils/warn.ts": "e0d9a80c2764d1063b9abe73e860409209dd656c146e3072984a6a52caf4cf67",
+    "packages/ast-native/Cargo.lock": "16fd87202b980c963fc375b154aa90a8bfbd21ae0b716f3125cda80b55d50344",
+    "packages/ast-native/Cargo.toml": "e92df0232fc3ab1ca2606d1673687baa7602acf914ca7c61018ba0f2e526b613",
+    "packages/ast-native/src/binding_analysis/mod.rs": "f4ab7e6c1d2e263fe242ad486df3c1f317c53e7634f105c735997d8fb511c274",
+    "packages/ast-native/src/binding_analysis/normalize.rs": "b2b504890d150ad08b6c254b5e47f437b63540e743956b0f62057c115a6c5635",
+    "packages/ast-native/src/binding_analysis/references.rs": "aaa397b48b085bea2224263b09a4edbc16d33e5762f3fc8987998731536e8869",
+    "packages/ast-native/src/binding_analysis/summary.rs": "dd388e2ed0f8a1cfc0969b4923426e2fb2413c146ce15c085bee33397182278c",
+    "packages/ast-native/src/binding_analysis/tests.rs": "1eb6d2c51514213ec135e43f915fbb805e82912ce1ef1206e6351328550272e7",
+    "packages/ast-native/src/chunk_analysis.rs": "3b77aa589664aaf589fb9994eced1c785bf215d903c32581dc7be8bfc118a365",
+    "packages/ast-native/src/lib.rs": "0131c41557df8ff58516aa306ea2e01fa39ea5a494cf282d443abeb037d46bd5",
+    "packages/ast-native/src/script_transform/capabilities.rs": "dbe478245da8d0bf7759fd616240595f15a1a1b287240d6141e4770d754f6ca6",
+    "packages/ast-native/src/script_transform/capability_guard_tests.rs": "6b91869483c3f10f6c8899e8bfbc16d40d2a4671e58da7175c6194684c480365",
+    "packages/ast-native/src/script_transform/component_manifest.rs": "7b21f93763f9dc8aeb30c742d8f72813282a4dca3d4ff72aa4165d1c0cb3498d",
+    "packages/ast-native/src/script_transform/component_options_guard_tests.rs": "1ec1f8fd0cc1d6978c48e139f41c6cafa0ac4f316710c9b8ff004befb51520ae",
+    "packages/ast-native/src/script_transform/component_options.rs": "c5ccbbd9564fcbc5d53cb85759c3d073a9590587ba40d78f687d891645b1d58c",
+    "packages/ast-native/src/script_transform/component_seed.rs": "1ba6134c6d9899ab12387dd19b3a17a965ac49b5d10a46e51ccc366fe5a50926",
+    "packages/ast-native/src/script_transform/diagnostics.rs": "f8c36e0eb92d9c6291257a347b145254fa6ac3e14ab105a00c64b3272635f355",
+    "packages/ast-native/src/script_transform/fragments.rs": "ae000a4db89bab6474146e0e5ff303ed718a6f0c49eaaefe00fa17907adf3d3f",
+    "packages/ast-native/src/script_transform/metadata/apply.rs": "f98634a67bcb7f11ef03b3624c77cfeb08d1b46a71c5203a8766a058fbd77feb",
+    "packages/ast-native/src/script_transform/metadata/baseline_tests.rs": "70e358f0fbaf11f3213de60c1ba47ce7b1e6014af94ec21939eaa5e7367d66c9",
+    "packages/ast-native/src/script_transform/metadata/computed.rs": "a64be047b773d84c308e53e7ef8aeda4fd306d016ca616e88da014382906aaf2",
+    "packages/ast-native/src/script_transform/metadata/contract.rs": "6a5d08a07af3b9f90576668fb4538ee33f1afb28d942df11526a77a54616de02",
+    "packages/ast-native/src/script_transform/metadata/expression.rs": "60cef250d0cc71854f583a6d292c890c0978c560e9169eb7c3b201c52fbdabec",
+    "packages/ast-native/src/script_transform/metadata/inline.rs": "d0fd8e3fe62e32ad29ed3b2218fa6bd5bc3403a2f5ac9191f6c7d1743e5c0b03",
+    "packages/ast-native/src/script_transform/metadata/mod.rs": "5c5402ff23c37093e85dcc37c42759747464e8c4c01d5715f61d5922580b95ce",
+    "packages/ast-native/src/script_transform/metadata/tests.rs": "7aef27990445705d6627d0e3a57d7c017761e0b580d76dd1d761e7cca110e430",
+    "packages/ast-native/src/script_transform/mod.rs": "afb3e46c36a3d97af2e2a00d1e4ababe7cd72c6b9a9cde1709ce32fd50d78e61",
+    "packages/ast-native/src/script_transform/request_decode.rs": "3d2a58826aca2eabff487bae96dbfb81d9dcb073b1dd581da76433f8f2ffa7f8",
+    "packages/ast-native/src/script_transform/request.rs": "41415d759e8f97b31e064e05b869240a4fb230a49e5935c532fa3ccdfc93b390",
+    "packages/ast-native/src/script_transform/rewrite/component.rs": "f05290ac3ea6ef3b7736529a8ff75df6d5baf9294b83ff0b3b53b6ece63743fb",
+    "packages/ast-native/src/script_transform/rewrite/expose_baseline_tests.rs": "90a6ba564c6fb382042134a39c8fff497e703c5faa49e184e5216c38c5efc769",
+    "packages/ast-native/src/script_transform/rewrite/expose.rs": "77a579639ff7210f81f551946530e72c91995dde7c229efea8f9939d5531a3f5",
+    "packages/ast-native/src/script_transform/rewrite/imports.rs": "252beb7496bcf2a79008cf2858f864b29f9ed74c0230441e64e03d629408a743",
+    "packages/ast-native/src/script_transform/rewrite/mod.rs": "dda69e976bb26c081e3267edc10e642fd597546fdbde25ce8ebe92e4eecc6752",
+    "packages/ast-native/src/script_transform/rewrite/strip_types.rs": "723657f935f282c7dcb8c6836b5cde0534201e33928b008fed04d019f07b89f4",
+    "packages/ast-native/src/script_transform/rewrite/tests.rs": "158aafa2a8f3423581207da92ae63763ada3d33f2a9e73361ce25559ba060e73",
+    "packages/ast-native/src/script_transform/tests.rs": "8da4c8c755b231e7e075d51371232bd2e82fdda767bd84607897d4d891704722",
+    "packages/ast-native/src/script_transform/transform_tests.rs": "129ee53154b59d7b05c13b4ebf4a57ac9dd4b2c5f9669fd62cfcb27483e8311c",
+    "packages/ast-native/src/script_transform/transform.rs": "5e0ba0cc773794f81d4ff5ab28fdedb8f05267aa20d7e78fa18921de00fb4d2f",
+    "packages/ast-native/src/vue_sfc_signature.rs": "e345f821b4b845d3ee7d22d6e62c1c50405c5213f025ab99fa1f0e69a18b4859",
+    "pnpm-lock.yaml": "c3470f724491ebdd5176c23b1ee61761c858a44f48a20a813721f1ee71276145",
+    "pnpm-workspace.yaml": "92ed41dfb9f9992e80bad748a07812568f0c66425bc4c60a1cadd74ef339e865",
+    "scripts/astMigrationProfile/cpuSummary.ts": "adf74601551038de8ae74a6144b923711c9c310d736884a7b386f3450e2ffa98",
+    "scripts/astMigrationProfile/fixtures.ts": "128ea7247bc205c73e0f22b44136c4bc5e7dc7927317fe5fb671e2c5239b39cd",
+    "scripts/nativeBindingAnalysis/capture.ts": "769f941612f7de76dcfeb9f17d171b83c3a5961acaf21c442362002d15fd3b93",
+    "scripts/nativeBindingAnalysis/check.ts": "d888a5eb64f588e499c325146ace2cd6f43813e407da098c5be1163971a67592",
+    "scripts/nativeBindingAnalysis/compile.ts": "b9d3a263dfd1c1075fbc622ebdc8ee59ab081faf79797add468d557184508c38",
+    "scripts/nativeBindingAnalysis/compileBatch/controller.ts": "033331fefbbafe80bcab01a2d35b816aa96fd427ce9b7f56ad81780aa8de4864",
+    "scripts/nativeBindingAnalysis/compileBatch/hooks.ts": "f0a93b7e7d86190b19ebab799ede9f473d95e71ea14057274fbeca4fec22e775",
+    "scripts/nativeBindingAnalysis/compileBatch/index.ts": "f557318b4b292a2aa7fe082828682cd89cb7ff4f4e0d7578e6ebc6b6ca63a0ea",
+    "scripts/nativeBindingAnalysis/compileBatch/plan.ts": "f7a3a3e7782c6d5c8ad4f0bf4a2025e86ee9c6cea71a593ea741082c304bbc54",
+    "scripts/nativeBindingAnalysis/compileBatch/types.ts": "c66980f98cce2e7c8d07012ba1178fe78e28e966655b7089245a07e9395607a9",
+    "scripts/nativeBindingAnalysis/compileProcess.ts": "54f7bd813d571e381c111e328214861266a7e61cb11d554d278a88f204b565e0",
+    "scripts/nativeBindingAnalysis/compileProtocol.ts": "978f901be814001145064c3419268f7ef60fa8b640d71dc4a5b90f75b91e4bd4",
+    "scripts/nativeBindingAnalysis/compileScenarios.ts": "85d696b87a43c2fdb8e25cdd0a25e00a82f30190d44c9262c96cf1e21b7c5b0a",
+    "scripts/nativeBindingAnalysis/compileTimings.ts": "48a7e448c34b28b1fd1bd88c8acf414da9a68d7640029c5b6fd7a08dc76fd7c7",
+    "scripts/nativeBindingAnalysis/compileTimings/aggregate.ts": "cffed1e850ac224684393a3a938ee2b0576ea3f1369074281a853c2693ff3620",
+    "scripts/nativeBindingAnalysis/compileTimings/runner.ts": "6a9a16eaec6b083888b0be97dd266ef9516f51afcadf8284c862d7d344ffa57e",
+    "scripts/nativeBindingAnalysis/compileTimings/testUtils/reports.ts": "dd52570bb978fa7a606a26d718ae942dc06f2ed3349fad6d4fa060bb29b71794",
+    "scripts/nativeBindingAnalysis/compileTimings/types.ts": "66aa737ba4bb0cff00871db2c976fd9beac18c7f8230af1942bcd3986bd6b184",
+    "scripts/nativeBindingAnalysis/compileTimings/validate.ts": "17697d12733723cbd0f8e31ac3e4bedcb562af045609933d69bdb688acbef1e5",
+    "scripts/nativeBindingAnalysis/compileWorker.ts": "b03700bcddd95bf12e69c4a778b939538e8c6b1f4c536e08c6cb196db046d272",
+    "scripts/nativeBindingAnalysis/globals.ts": "1fb3caeb0c414400de447418bf63fa1d3ee2fdf5fb1d3e9365a2b3613d61e594",
+    "scripts/nativeBindingAnalysis/orders.ts": "543e70f90fc0542dcbee4d34a3fd5b34dad63eef3fc8d800ad8b04ee0d947e45",
+    "scripts/nativeBindingAnalysis/replay.ts": "57858b97537b23a923fb1d38420245e56ee64227cf27095d6b4078dd8433a03f",
+    "scripts/nativeBindingAnalysis/run.ts": "c2b5627e45d5b0471f223093af78965ef0a75701289c8bac0cf16775b0eb80f9",
+    "scripts/nativeBindingAnalysis/source.ts": "7a38ceb3bac14bc56be5691c4f7666d9679dec89df4f379aa33f6da7379946ba",
+    "scripts/nativeBindingAnalysis/workerLifecycle.ts": "9bbfbdfb9c32b935cada603efe961d1d7094b0893b9ea112e29299091fed1649",
+    "scripts/nativeBindingAnalysis/workerProcess.ts": "bb5e701fc243465437368fbb6cc061fb4d78b3e450d8cf62e231e387b33c767b",
+    "scripts/nativeScriptTransform/capture.ts": "a68895f39c770f80df05e1dd5af697a9720e393aaec9a7c8ea323bcfd246325a",
+    "scripts/nativeScriptTransform/captureLoader.ts": "0eaa97a87f0ee7844ae1e63c895988455f128d6d242ae462e65ba7b03eda1ed1",
+    "scripts/nativeScriptTransform/captureRead.ts": "e82370f83aedb08c1bd1014a9778e9a1d24cae9aea5fa4583db3aeea8f2da6a3",
+    "scripts/nativeScriptTransform/captureSerialize.ts": "cbbe0d448e66c8ca854fb67aa91d1a34f18b3abdf3fb3e63297f0a9da16bd70c",
+    "scripts/nativeScriptTransform/captureSource.ts": "2a768aac2faeaf803141282266e7474dd33f0e71cf6b0d61bbf5e59c6d7e6e31",
+    "scripts/nativeScriptTransform/captureState.ts": "fe36eec2deec5334d8690707ff27a666a51c5d6ea7f800ffd5af2799fc164ef2",
+    "scripts/nativeScriptTransform/captureTypes.ts": "34ebf0e6a678c397204d2ae92b400968b335b13fe91628138114c3b0e0b02d65",
+    "scripts/nativeScriptTransform/check.ts": "5175815bc1f11d4a114a155e505b9d1d3767353574a833bfc4d51bbc5ac52ea4",
+    "scripts/nativeScriptTransform/identity.ts": "ebfd28f4048b8a063d938d3609034af0b11457785167ee9fbc63c7abfebfd996",
+    "scripts/nativeScriptTransform/native.ts": "5545acf97d7371c2388092d31aff01375013b4f964454f68b67f3a3e0aa4d025",
+    "scripts/nativeScriptTransform/oracle.ts": "469c611d4e4168f32106e0ec39da0e4c1bd248e25825f04a279f34a7744bd664",
+    "scripts/nativeScriptTransform/printChecks.ts": "ff028f83bc21bab5055ef5ea737d0667113877dd1b08c458fc636e6e162cfeda",
+    "scripts/nativeScriptTransform/printerCases.ts": "133bf33b6973d87b67add6087d0176b1bbc96a999688be2b5999b78ff5c47923",
+    "scripts/nativeScriptTransform/request.ts": "347d3119a3eb08bef57fe9d70793932e7800162dd3b1a96baca5fb5a6ddb03c0",
+    "scripts/nativeScriptTransform/stageChecks.ts": "72ac2060ed294d5d10ff46305f4120e34beac2fff9e59f8a8f56eef9c73ea8bf",
+    "scripts/nativeScriptTransform/stageWorker.ts": "d6a25ea7604fe328822b5ab3d2fac243fa991186957f3df4b98d536f23f33ba9",
+    "scripts/nativeScriptTransform/transformCheck.ts": "7ad8b0e25ac6b864b60fd26b765cbb806f759c7d13a569d142381044fe725b5a",
+    "scripts/nativeScriptTransform/transformNative.ts": "b7066da4e603b15ee8682ff202d349c4080c5bcfd30e8a452de3ddb69a2c0b3e",
+    "scripts/nativeScriptTransform/transformOracle.ts": "cc094c03f60b87c3d84fbb5381c08f386b6ad088e7efcc98d9b14efbfbae8528",
+    "scripts/nativeScriptTransform/tsconfig.json": "6789c6abcaf62a01d2184275c499c540af8038e0b0b34aa4e156c2c1d5c69b14",
+    "scripts/optimizedCompilerAnalysis/check.ts": "7c6df835e063541243fe07717dee3a9aad2abcf0b087f74a031ada796f090cc9",
+    "scripts/optimizedCompilerAnalysis/cpu.ts": "f6956f5875b0d54816b59594f5b3627acaeea7637a71dab217334907901ed015",
+    "scripts/optimizedCompilerAnalysis/cpuWorker.ts": "51b16b7111a4b067602eb8677253019a83737063683ef8d17c0d58b0f960a80f",
+    "scripts/optimizedCompilerAnalysis/cpuWorkload.ts": "174bdecd5b90abb1464d030d0b64f4a305d463520e39c308aba83fd95977faef",
+    "scripts/optimizedCompilerAnalysis/diagnosticError.ts": "e6ea47d5643fd43d185b0e4269ac2c72f74b312d3bc70fb17674bdbaa71f6f8e",
+    "scripts/optimizedCompilerAnalysis/execution.ts": "d74c8367b0b14ecfd465cc6658e64886c5a7441747486b69f26a2c9cde6049b7",
+    "scripts/optimizedCompilerAnalysis/identity.ts": "e207d10ed779b9c39dca16d7cdece09bdb2bb51d83dd31aa6e19dccf7f00a2a6",
+    "scripts/optimizedCompilerAnalysis/options.ts": "0047db038c4c10147e9cb81fb02492b8522b5e19323a074a6a1b5d330b40799e",
+    "scripts/optimizedCompilerAnalysis/profile.ts": "c9fea853fa254ab8dbe4e4e4f0d0c856173bcb635e1a9b2a562620c752a0b03f",
+    "scripts/optimizedCompilerAnalysis/profileCheck.ts": "af257e7093ce1897a394794151317b75ace586214529770ad75727bd827045da",
+    "scripts/optimizedCompilerAnalysis/scenarios.ts": "8ebe2299120168744eff20485e8294e9a0908e1bef2dff405f43cc3115c5f051",
+    "scripts/optimizedCompilerAnalysis/tsconfig.json": "6789c6abcaf62a01d2184275c499c540af8038e0b0b34aa4e156c2c1d5c69b14",
+    "scripts/optimizedCompilerAnalysis/verify.ts": "f1b0f77154f4353a3877b3c5d1e4102a799afaad4001227244e2053b3e42f60c",
+    "scripts/optimizedCompilerAnalysis/worker.ts": "c93aa8030edb910d7a363f4d3d2007f50546ca909805367ab490a1b323138f5d",
+    "scripts/scriptAnalysisBaseline/check.ts": "d57beafcec35384bdb47ed2be83f10a90d3892387cbf1a47555e01a601e1c45f",
+    "scripts/scriptAnalysisBaseline/diagnostics.ts": "5823b3393bdd896488e6612175f4ce34c60201d34d1f5140d832622a4dbfe4fe",
+    "scripts/scriptAnalysisBaseline/execution.ts": "cb96fda8c2e017b3c0e30c366eed298ff878a1504641b0162224d6ca329a883a",
+    "scripts/scriptAnalysisBaseline/identity.ts": "9d8fdb820ce53131f22c72d42ee39614f764019126a48606c243bc209922efe7",
+    "scripts/scriptAnalysisBaseline/install.ts": "935379efccb57870ad703d985d78bf0ca8835e77e9db0289f73a318170ff0155",
+    "scripts/scriptAnalysisBaseline/installHelpers/source.ts": "b5e5ed6418cd5d38156747864f2ec51611fb7ea6c24bb3fe87cfc73a15451922",
+    "scripts/scriptAnalysisBaseline/installHelpers/state.ts": "892406ed15bc6ef05649c7af06243abdb9853d10e29f9b0ae0415fc37532ec8d",
+    "scripts/scriptAnalysisBaseline/scenarios.ts": "d7d206e335faa9e2bd89ed0fc54f3c26562359f723d5f0b32d720c897394703e",
+    "scripts/scriptAnalysisBaseline/timing/aggregate.ts": "87dbc58cfb8bc54acbfa58fcfe5403123755b53d67a92da4df5f20c034b24683",
+    "scripts/scriptAnalysisBaseline/timing/collect.ts": "1383e2a89adb7189d0648a1f29fe5f5954bc2c439becad86e64fab699604a3bc",
+    "scripts/scriptAnalysisBaseline/timing/correctness.ts": "e4d3a5309a3e70ac6863085811d5e113ab9b784583fca90109aee5930b2dc0ee",
+    "scripts/scriptAnalysisBaseline/timing/process.ts": "3985d01752fa4016791967f0554a9fcc29b39161a9952669d627e6c33bd8f90d",
+    "scripts/scriptAnalysisBaseline/timing/protocol.ts": "8e33b27594db6451a29610094617026ff2686deccda73753d72f1fb6afc15739",
+    "scripts/scriptAnalysisBaseline/timing/run.ts": "2f4efa3e81cee69d2a9ecadd6e2f33dd08dc9555faf2d96cb708f0373b6fc834",
+    "scripts/scriptAnalysisBaseline/timing/testUtils/correctness.ts": "60b22ef283db7937742fbaa04a7ca7bfbbc392f1e3334b54ecbd03d34e4a0080",
+    "scripts/scriptAnalysisBaseline/timing/testUtils/reports.ts": "3e5ea90acc4486ae965759042f9f1e2961fd9ba32c6188e5aaf5ab218f3fc95f",
+    "scripts/scriptAnalysisBaseline/timing/types.ts": "cef7aeadea60ffb8abd42297d761da926147a8ab102edb3d7c8a2d5645a275c5",
+    "scripts/scriptAnalysisBaseline/timing/validate.ts": "21f349a911342481c4001c15ea5cb370eac1bc2f958cb1ce3f6afe5cb97ce98f",
+    "scripts/scriptAnalysisBaseline/timing/worker.ts": "8193e6ba7217e2236e96a7cb082a9d6ae949cde81d5b109d78c8a6678870c010",
+    "scripts/scriptAnalysisBaseline/timingRun.ts": "855221ec09ada4b71a2f103d7b5dc1300a575622235ef9144ccd765b459d7b00",
+    "scripts/scriptAnalysisBaseline/timings.ts": "683903514048ee897b46272062b7e0226f89c823008d67fb56ff8d96eb699de0",
+    "scripts/scriptAnalysisBaseline/types.ts": "4c5e33a200a7a25a67ec5394e5344feabdf9a4dd50b3bd7a37479bc5dcd2e256",
+    "scripts/scriptAnalysisBaseline/worker.ts": "4f12f841868188967ba88edc8d3aa06e0e6e47719cec4a8f7f6aae5d1a7758e8",
+    "tsconfig.base.json": "e80b57254b381bd5dc0b1c705add49f394ce0246b5f09abc495d5a3d14f50000"
+  },
+  "workers": [
+    {
+      "variant": "baseline",
+      "reportSha256": "4a083357ab4d185823aa262df21f5e633377201d0eb2279627fec9d6592b6206",
+      "checks": 90,
+      "scenarioCount": 45,
+      "captureRecords": 0,
+      "fullOutputsRecompared": true
+    },
+    {
+      "variant": "optimized-js",
+      "reportSha256": "e9ace3cb274ee1fce59a79a82690a4e406942bab7ab8a79d254fb5223f4f682e",
+      "checks": 90,
+      "scenarioCount": 45,
+      "captureRecords": 0,
+      "fullOutputsRecompared": true
+    },
+    {
+      "variant": "captured-optimized-js",
+      "reportSha256": "2a07f8b6801655b7aff491d08dd1cd6ff4fabbb805d09f491f326e914dd796d1",
+      "checks": 90,
+      "scenarioCount": 45,
+      "captureRecords": 72,
+      "fullOutputsRecompared": true,
+      "loader": {
+        "target": "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/index.ts",
+        "loadCount": 1,
+        "upstreamSha256": "e45526f9b42b8ae3984ea16a8f64d80d9519d13601f9417f9415fbc0591a0d8e",
+        "instrumentedSha256": "2243d94c2806d60b4a128769d14da4c8388826f2e3dc38e5e50c1b844e4cdfc9"
+      }
+    }
+  ],
+  "differences": {
+    "comparedRecords": 36,
+    "strict": {
+      "ast": {
+        "equalRecords": 36,
+        "differingRecords": 0,
+        "differenceCount": 0
+      },
+      "comment": {
+        "equalRecords": 36,
+        "differingRecords": 0,
+        "differenceCount": 0
+      },
+      "annotation": {
+        "equalRecords": 36,
+        "differingRecords": 0,
+        "differenceCount": 0
+      },
+      "metadata": {
+        "equalRecords": 36,
+        "differingRecords": 0,
+        "differenceCount": 0
+      },
+      "warning": {
+        "equalRecords": 36,
+        "differingRecords": 0,
+        "differenceCount": 0
+      }
+    },
+    "mapDifferenceCount": 8888,
+    "mapReasons": {
+      "Both maps omit an anchor also present in the input; origin coverage is unverified": 84,
+      "Independent stage origins differ": 8776,
+      "Origin is outside the shared input source": 28
+    },
+    "changedOriginFields": {
+      "source,line,column": 8600,
+      "column,name": 44,
+      "name": 44,
+      "column": 88
+    },
+    "mappedVsUnmapped": {
+      "expected-mapped/actual-unmapped": 8600,
+      "expected-mapped/actual-mapped": 176
+    },
+    "outOfBoundsBySide": {
+      "expected": 28
+    },
+    "unmappedClassifications": {
+      "generated-or-injected-unmapped-candidate": 8114,
+      "unmapped-source-candidate": 1062
+    },
+    "representativeDifferences": [
+      {
+        "classification": "Both maps omit an anchor also present in the input; origin coverage is unverified",
+        "example": {
+          "scenarioId": "sfc-wevu",
+          "callIndex": 2,
+          "path": "$.program.body[2].specifiers[0].imported",
+          "reason": "Both maps omit an anchor also present in the input; origin coverage is unverified",
+          "classification": "unmapped-source-candidate"
+        }
+      },
+      {
+        "classification": "Independent stage origins differ: source,line,column",
+        "example": {
+          "scenarioId": "sfc-wevu",
+          "callIndex": 2,
+          "path": "$.program.body[5]",
+          "reason": "Independent stage origins differ",
+          "expectedOrigin": {
+            "source": "inline.ts",
+            "line": 4,
+            "column": 67,
+            "name": null
+          },
+          "actualOrigin": {
+            "source": null,
+            "line": null,
+            "column": null,
+            "name": null
+          },
+          "expectedLocation": {
+            "line": 4,
+            "column": 68
+          },
+          "actualLocation": {
+            "line": 6,
+            "column": 0
+          }
+        }
+      },
+      {
+        "classification": "Independent stage origins differ: column,name",
+        "example": {
+          "scenarioId": "sfc-wevu",
+          "callIndex": 2,
+          "path": "$.program.body[7].declarations[0].init.properties[3].params[1].properties[0].key",
+          "reason": "Independent stage origins differ",
+          "expectedOrigin": {
+            "source": "inline.ts",
+            "line": 33,
+            "column": 19,
+            "name": null
+          },
+          "actualOrigin": {
+            "source": "inline.ts",
+            "line": 33,
+            "column": 27,
+            "name": "__expose"
+          },
+          "expectedLocation": {
+            "line": 39,
+            "column": 52
+          },
+          "actualLocation": {
+            "line": 63,
+            "column": 18
+          }
+        }
+      },
+      {
+        "classification": "Independent stage origins differ: name",
+        "example": {
+          "scenarioId": "sfc-wevu",
+          "callIndex": 2,
+          "path": "$.program.body[7].declarations[0].init.properties[3].body.body[0]",
+          "reason": "Independent stage origins differ",
+          "expectedOrigin": {
+            "source": "inline.ts",
+            "line": 34,
+            "column": 2,
+            "name": "__expose"
+          },
+          "actualOrigin": {
+            "source": "inline.ts",
+            "line": 34,
+            "column": 2,
+            "name": null
+          },
+          "expectedLocation": {
+            "line": 39,
+            "column": 63
+          },
+          "actualLocation": {
+            "line": 64,
+            "column": 2
+          }
+        }
+      },
+      {
+        "classification": "Independent stage origins differ: column",
+        "example": {
+          "scenarioId": "sfc-wevu",
+          "callIndex": 2,
+          "path": "$.program.body[7].declarations[0].init.properties[3].body.body[8].declarations[0].init.arguments[0].body.body[5].expression.arguments[0].body.body[2].consequent.body[0].expression.right.arguments[0].body.body[0].declarations[0].init.callee.object.quasis[1]",
+          "reason": "Independent stage origins differ",
+          "expectedOrigin": {
+            "source": "inline.ts",
+            "line": 89,
+            "column": 39,
+            "name": null
+          },
+          "actualOrigin": {
+            "source": "inline.ts",
+            "line": 89,
+            "column": 40,
+            "name": null
+          },
+          "expectedLocation": {
+            "line": 89,
+            "column": 44
+          },
+          "actualLocation": {
+            "line": 116,
+            "column": 38
+          }
+        }
+      },
+      {
+        "classification": "Origin is outside the shared input source: expected",
+        "example": {
+          "scenarioId": "sfc-wevu",
+          "callIndex": 2,
+          "path": "$.program.body[7].declarations[0].init.properties[5].value.properties[0].value.properties[6].key",
+          "side": "expected",
+          "reason": "Origin is outside the shared input source",
+          "origin": {
+            "source": "inline.ts",
+            "line": 1,
+            "column": 58,
+            "name": null
+          }
+        }
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "scenarioId": "sfc-pressure",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Unsupported script option: propsDerivedKeys": 2
+      }
+    },
+    {
+      "scenarioId": "sfc-wevu",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 762,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "sfc-retail",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 1638,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "sfc-nested-loops",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 942,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "sfc-scoped-slots",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Unsupported undefined position: $.bindingManifest.bindings.3.sourceLocation": 2
+      }
+    },
+    {
+      "scenarioId": "sfc-events-and-repeats",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 196,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "sfc-slot-outlet",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Unsupported script option: scopedSlotHostProperties": 2
+      }
+    },
+    {
+      "scenarioId": "sfc-jsx",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Unsupported undefined position: $.bindingManifest.bindings.0.sourceFile": 2
+      }
+    },
+    {
+      "scenarioId": "sfc-unicode-crlf",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 688,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "sfc-static-template",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 30,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "sfc-fallback-throw",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 62,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "sfc-fallback-malformed",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 62,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "sfc-shared-props-ast",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 110,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "sfc-props-return-aliases",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Unsupported script option: propsDerivedKeys": 2
+      }
+    },
+    {
+      "scenarioId": "sfc-jsx-invalidates-props-ast",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Unsupported script option: propsDerivedKeys": 2
+      }
+    },
+    {
+      "scenarioId": "script-no-page-meta",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 18,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "script-page-meta-alias",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Compiler macro imports and aliases are not implemented in this experiment": 2
+      }
+    },
+    {
+      "scenarioId": "script-page-meta-compiled-setup",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Compiler macro definePageMeta is not implemented in this experiment": 2
+      }
+    },
+    {
+      "scenarioId": "script-page-meta-escaped-import",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Compiler macro imports and aliases are not implemented in this experiment": 2
+      }
+    },
+    {
+      "scenarioId": "script-page-meta-string-import",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "String-named runtime imports are deferred": 2
+      }
+    },
+    {
+      "scenarioId": "script-page-meta-enum-shadow",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Compiler macro definePageMeta is not implemented in this experiment": 2
+      }
+    },
+    {
+      "scenarioId": "script-page-meta-namespace-shadow",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Compiler macro definePageMeta is not implemented in this experiment": 2
+      }
+    },
+    {
+      "scenarioId": "script-page-meta-type-import",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Compiler macro definePageMeta is not implemented in this experiment": 2
+      }
+    },
+    {
+      "scenarioId": "script-page-meta-ambient-namespace",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Compiler macro definePageMeta is not implemented in this experiment": 2
+      }
+    },
+    {
+      "scenarioId": "binding-pressure",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Unsupported script option: propsDerivedKeys": 2
+      }
+    },
+    {
+      "scenarioId": "binding-wevu",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 762,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "binding-retail",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 1638,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "binding-nested-loops",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 942,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "binding-scoped-slots",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Unsupported undefined position: $.bindingManifest.bindings.3.sourceLocation": 2
+      }
+    },
+    {
+      "scenarioId": "binding-events-and-repeats",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 196,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "binding-slot-outlet",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Unsupported script option: scopedSlotHostProperties": 2
+      }
+    },
+    {
+      "scenarioId": "binding-jsx",
+      "records": 2,
+      "nativeStatuses": {
+        "unsupported": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 0,
+      "mapDifferenceCount": 0,
+      "fallbackReasons": {
+        "Unsupported undefined position: $.bindingManifest.bindings.0.sourceFile": 2
+      }
+    },
+    {
+      "scenarioId": "binding-unicode-crlf",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 688,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "binding-static-template",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 30,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "binding-fallback-throw",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 62,
+      "fallbackReasons": {}
+    },
+    {
+      "scenarioId": "binding-fallback-malformed",
+      "records": 2,
+      "nativeStatuses": {
+        "ok": 2
+      },
+      "passed": 0,
+      "strictEqualRecords": 2,
+      "mapDifferenceCount": 62,
+      "fallbackReasons": {}
+    }
+  ],
+  "rawRecordManifest": [
+    {
+      "scenarioId": "sfc-pressure",
+      "callIndex": 0,
+      "sourceSha256": "5e1509571d87d29ccb79846b466eae64618452bb4ba71d4f1d21c4cf5ac8773b",
+      "requestSha256": "01448be44a5162e11fcc80b5c6ff316cea03bfce308eb9a0298ab24221b44d50",
+      "evidenceFile": "record-0000.json",
+      "evidenceSha256": "acf1514b3c00264abdf02f2cb129c8b436e17c6efc6bc0391e18acbd6a14d551"
+    },
+    {
+      "scenarioId": "sfc-pressure",
+      "callIndex": 1,
+      "sourceSha256": "5e1509571d87d29ccb79846b466eae64618452bb4ba71d4f1d21c4cf5ac8773b",
+      "requestSha256": "01448be44a5162e11fcc80b5c6ff316cea03bfce308eb9a0298ab24221b44d50",
+      "evidenceFile": "record-0001.json",
+      "evidenceSha256": "284f721c7fbd9f1bb1b9734cbc026ffe6cabe605d586c3ac98e12b6a8b47c770"
+    },
+    {
+      "scenarioId": "sfc-wevu",
+      "callIndex": 2,
+      "sourceSha256": "fd6cad8f85b12ff37db23434f8d03b7bdf019864cb9d400048878cd6a8f88992",
+      "requestSha256": "c7f75490339b97ed49f0994590c30d6632d5af2df80ab2d9eb8766cab9c435f2",
+      "evidenceFile": "record-0002.json",
+      "evidenceSha256": "50b50a77ea83d3c946d2f65357690b3308de1381064a990f5930664fa4e583e1"
+    },
+    {
+      "scenarioId": "sfc-wevu",
+      "callIndex": 3,
+      "sourceSha256": "fd6cad8f85b12ff37db23434f8d03b7bdf019864cb9d400048878cd6a8f88992",
+      "requestSha256": "c7f75490339b97ed49f0994590c30d6632d5af2df80ab2d9eb8766cab9c435f2",
+      "evidenceFile": "record-0003.json",
+      "evidenceSha256": "bf5a7e40e79f53bc43e742f1726f2f8d766bde06118675dd0552a0d070928f78"
+    },
+    {
+      "scenarioId": "sfc-retail",
+      "callIndex": 4,
+      "sourceSha256": "1d648f503bac47e4f20aabc708c561abaf77ef3b5188626be1107248ba0a4d5d",
+      "requestSha256": "2d67d3862de242296e8b2834a06d63d1f3926eee584c7fae26f5f39ff09fd886",
+      "evidenceFile": "record-0004.json",
+      "evidenceSha256": "8871457ec95a444f8465a9ebb0ac93801f4ce1afd4b549c37f8cda80f9c55af0"
+    },
+    {
+      "scenarioId": "sfc-retail",
+      "callIndex": 5,
+      "sourceSha256": "1d648f503bac47e4f20aabc708c561abaf77ef3b5188626be1107248ba0a4d5d",
+      "requestSha256": "2d67d3862de242296e8b2834a06d63d1f3926eee584c7fae26f5f39ff09fd886",
+      "evidenceFile": "record-0005.json",
+      "evidenceSha256": "00861cf3ca7f4a70a724333c2a126ba61006f5fbe7bf3b20278377ad670a75ac"
+    },
+    {
+      "scenarioId": "sfc-nested-loops",
+      "callIndex": 6,
+      "sourceSha256": "f16d29e93f11a957858fb7e620c3f7fef6c75f93848b93fa7303bb501d4fa0d9",
+      "requestSha256": "62ce6bd7298b51012374de0b65c629d89d435bceb8e8d8ef010f53c60b573e72",
+      "evidenceFile": "record-0006.json",
+      "evidenceSha256": "795d6759d69b422dd47fdf6487c4e2d0183432fd3db7e56a1d76fe8510c32659"
+    },
+    {
+      "scenarioId": "sfc-nested-loops",
+      "callIndex": 7,
+      "sourceSha256": "f16d29e93f11a957858fb7e620c3f7fef6c75f93848b93fa7303bb501d4fa0d9",
+      "requestSha256": "62ce6bd7298b51012374de0b65c629d89d435bceb8e8d8ef010f53c60b573e72",
+      "evidenceFile": "record-0007.json",
+      "evidenceSha256": "eed0ff5e790be552310f64d3b09f046a21c0e50e2b9a6214aa039e1565fb8897"
+    },
+    {
+      "scenarioId": "sfc-scoped-slots",
+      "callIndex": 8,
+      "sourceSha256": "34415319b4dd3a2b24c93b8a8865ccbdddbe08dc658d1f280ac91bde7e8f8bcb",
+      "requestSha256": "a7b7c9e8ba3c7598fbb548d232028d577f29c1e8bc8b2d74918e4ee5ebc4a045",
+      "evidenceFile": "record-0008.json",
+      "evidenceSha256": "6505e5f6b944a498c8f31630d1fd97d6ddac304fdd2fac0b0616d426e577bcba"
+    },
+    {
+      "scenarioId": "sfc-scoped-slots",
+      "callIndex": 9,
+      "sourceSha256": "34415319b4dd3a2b24c93b8a8865ccbdddbe08dc658d1f280ac91bde7e8f8bcb",
+      "requestSha256": "a7b7c9e8ba3c7598fbb548d232028d577f29c1e8bc8b2d74918e4ee5ebc4a045",
+      "evidenceFile": "record-0009.json",
+      "evidenceSha256": "57d6170a4f5f5ba6c26587ef8fac519134f110d165cedabd58460794b13ba76b"
+    },
+    {
+      "scenarioId": "sfc-events-and-repeats",
+      "callIndex": 10,
+      "sourceSha256": "805845470f8c5cd8ab6f7c04dbd31c421bf9da3d0961d663a7fbbe6ee6dffd3d",
+      "requestSha256": "1aac106dd85a47b6a231d616ae52dd05670799369a61a2fcb0e19f48336090d7",
+      "evidenceFile": "record-0010.json",
+      "evidenceSha256": "0050786c10870dfdc7bb7d528fb1e097fe6cb9b2981a18a9388cdba9f7d390ee"
+    },
+    {
+      "scenarioId": "sfc-events-and-repeats",
+      "callIndex": 11,
+      "sourceSha256": "805845470f8c5cd8ab6f7c04dbd31c421bf9da3d0961d663a7fbbe6ee6dffd3d",
+      "requestSha256": "1aac106dd85a47b6a231d616ae52dd05670799369a61a2fcb0e19f48336090d7",
+      "evidenceFile": "record-0011.json",
+      "evidenceSha256": "386132f8565f7ddf47e20debd143602532e99646db895eec3edef2cf2068e0d1"
+    },
+    {
+      "scenarioId": "sfc-slot-outlet",
+      "callIndex": 12,
+      "sourceSha256": "8ae2bd9dd9e4026fad034edd0dc166155d8509e5dd2a14acb95380d1083a26d3",
+      "requestSha256": "10a6641ed83de22c865978f98cde3e97eb7b40cd50e166cc6b7a8145e23e6a2b",
+      "evidenceFile": "record-0012.json",
+      "evidenceSha256": "96e7e8639cdbc903bbced9fbca08f048143873414f22d371546d6e0737c3907b"
+    },
+    {
+      "scenarioId": "sfc-slot-outlet",
+      "callIndex": 13,
+      "sourceSha256": "8ae2bd9dd9e4026fad034edd0dc166155d8509e5dd2a14acb95380d1083a26d3",
+      "requestSha256": "10a6641ed83de22c865978f98cde3e97eb7b40cd50e166cc6b7a8145e23e6a2b",
+      "evidenceFile": "record-0013.json",
+      "evidenceSha256": "b4e3c1728d2cb0ec72c48fa09944d6fd9ec31eb76e7e0027cfebbaee3f8551c4"
+    },
+    {
+      "scenarioId": "sfc-jsx",
+      "callIndex": 14,
+      "sourceSha256": "7408c1052ee7b98e15cc7898f314089fc4b0d05c52f5b95c7e9baa38bbd2f247",
+      "requestSha256": "79b7094d3a51eac3a44a2063c8d0897f0326c02af99ed7cfa74f7ab73decb70f",
+      "evidenceFile": "record-0014.json",
+      "evidenceSha256": "53f07f66324272ea1273f08b794b4071ff02cc5a867c1dad93e960af237319c1"
+    },
+    {
+      "scenarioId": "sfc-jsx",
+      "callIndex": 15,
+      "sourceSha256": "7408c1052ee7b98e15cc7898f314089fc4b0d05c52f5b95c7e9baa38bbd2f247",
+      "requestSha256": "79b7094d3a51eac3a44a2063c8d0897f0326c02af99ed7cfa74f7ab73decb70f",
+      "evidenceFile": "record-0015.json",
+      "evidenceSha256": "65892a0bfb48473147ea6e5c277f580c14d91e5b2a7facecc5e9d9002431e678"
+    },
+    {
+      "scenarioId": "sfc-unicode-crlf",
+      "callIndex": 16,
+      "sourceSha256": "cfc463c39c7fe4bab163736cf56914cf930914a636ed5163fa096034a5e3bcd7",
+      "requestSha256": "9d46a4b8b5dd8daa727f47a7dbb6beb7fd845ea7410a6b588c52d352f708a663",
+      "evidenceFile": "record-0016.json",
+      "evidenceSha256": "f704360437495a04796c3c8c9948cd5d59c04a0b3a78b4bccf9b8daab37160c8"
+    },
+    {
+      "scenarioId": "sfc-unicode-crlf",
+      "callIndex": 17,
+      "sourceSha256": "cfc463c39c7fe4bab163736cf56914cf930914a636ed5163fa096034a5e3bcd7",
+      "requestSha256": "9d46a4b8b5dd8daa727f47a7dbb6beb7fd845ea7410a6b588c52d352f708a663",
+      "evidenceFile": "record-0017.json",
+      "evidenceSha256": "89048845f68be7db014b23165bbb16ec0cfe14f3b7e7a9a862dba349251d184d"
+    },
+    {
+      "scenarioId": "sfc-static-template",
+      "callIndex": 18,
+      "sourceSha256": "9aeb8d59b4d483ca6298e9a450fbf37dfd2b4c63990135ab1d040d76314087ec",
+      "requestSha256": "48de11e901fe086bb456bc6cd4f9a4c8117f1f10423ce0e1bf00e0af7800dd32",
+      "evidenceFile": "record-0018.json",
+      "evidenceSha256": "71fe42cc6932a0b1c84aef8ba59c54bb1a6840fc398f815f8aaa290dfc864077"
+    },
+    {
+      "scenarioId": "sfc-static-template",
+      "callIndex": 19,
+      "sourceSha256": "9aeb8d59b4d483ca6298e9a450fbf37dfd2b4c63990135ab1d040d76314087ec",
+      "requestSha256": "48de11e901fe086bb456bc6cd4f9a4c8117f1f10423ce0e1bf00e0af7800dd32",
+      "evidenceFile": "record-0019.json",
+      "evidenceSha256": "253e98585861be34cfe875d1543f7edfe01f7d74f38d6c27e65596e613720287"
+    },
+    {
+      "scenarioId": "sfc-fallback-throw",
+      "callIndex": 20,
+      "sourceSha256": "9aeb8d59b4d483ca6298e9a450fbf37dfd2b4c63990135ab1d040d76314087ec",
+      "requestSha256": "0d47887046fc705e34e71c821c20f2e9c7d4d37ba2fcf80cb9a58c3d8dca0166",
+      "evidenceFile": "record-0020.json",
+      "evidenceSha256": "9ba8e0dd1b6be1f9f86233884e275e4d09cf149871a985dd80269ae4220e92c7"
+    },
+    {
+      "scenarioId": "sfc-fallback-throw",
+      "callIndex": 21,
+      "sourceSha256": "9aeb8d59b4d483ca6298e9a450fbf37dfd2b4c63990135ab1d040d76314087ec",
+      "requestSha256": "0d47887046fc705e34e71c821c20f2e9c7d4d37ba2fcf80cb9a58c3d8dca0166",
+      "evidenceFile": "record-0021.json",
+      "evidenceSha256": "3777ce4a28d0c475feba6a775788ada7eb98d54fa74580da9ee36343beac3afa"
+    },
+    {
+      "scenarioId": "sfc-fallback-malformed",
+      "callIndex": 22,
+      "sourceSha256": "9aeb8d59b4d483ca6298e9a450fbf37dfd2b4c63990135ab1d040d76314087ec",
+      "requestSha256": "bfaeed4fc9c1f4a4cb150cb26a97ed6a0d4672646c899a2f831b6ad42c4defef",
+      "evidenceFile": "record-0022.json",
+      "evidenceSha256": "64ee1a18cee692ec9d8c1976f75f8d7342f3b3045f6e14effec3b928e30a7bb2"
+    },
+    {
+      "scenarioId": "sfc-fallback-malformed",
+      "callIndex": 23,
+      "sourceSha256": "9aeb8d59b4d483ca6298e9a450fbf37dfd2b4c63990135ab1d040d76314087ec",
+      "requestSha256": "bfaeed4fc9c1f4a4cb150cb26a97ed6a0d4672646c899a2f831b6ad42c4defef",
+      "evidenceFile": "record-0023.json",
+      "evidenceSha256": "6fbc899e8d4b6a8ed2996ae83733706224068a248b75705f643e8ee946a37a4b"
+    },
+    {
+      "scenarioId": "sfc-shared-props-ast",
+      "callIndex": 24,
+      "sourceSha256": "10e8d7772ed3142e01402ea5dba5b30e5a7e1d1ab1b89957fd0a343b58e68f6b",
+      "requestSha256": "a1f5f4607836f627435f68acd6ca2275f9aaa11f99e6a67dbebb865d20b6d2d2",
+      "evidenceFile": "record-0024.json",
+      "evidenceSha256": "199d4ddc01ddd0d449a42f338edd2e8a50ecb978138b3e97062b1cff5b549955"
+    },
+    {
+      "scenarioId": "sfc-shared-props-ast",
+      "callIndex": 25,
+      "sourceSha256": "10e8d7772ed3142e01402ea5dba5b30e5a7e1d1ab1b89957fd0a343b58e68f6b",
+      "requestSha256": "a1f5f4607836f627435f68acd6ca2275f9aaa11f99e6a67dbebb865d20b6d2d2",
+      "evidenceFile": "record-0025.json",
+      "evidenceSha256": "24fb4808f3abac3f8fb12c1a6940aedd0415c1779cfbe6a0f792ca27aa9e655e"
+    },
+    {
+      "scenarioId": "sfc-props-return-aliases",
+      "callIndex": 26,
+      "sourceSha256": "df24e41da64aeea35d81f3a1d0d4e720367eb1cafaaed7e9aed5e8ef84ce7615",
+      "requestSha256": "a5bc0ad5f322ceb09c2f60d97831810bb0ef33801b353cbb0c6c70ecb952b3e9",
+      "evidenceFile": "record-0026.json",
+      "evidenceSha256": "10bfb2a34436033d9c69f068c8863d25081b841c347ac55c61fb1cafd88558f4"
+    },
+    {
+      "scenarioId": "sfc-props-return-aliases",
+      "callIndex": 27,
+      "sourceSha256": "df24e41da64aeea35d81f3a1d0d4e720367eb1cafaaed7e9aed5e8ef84ce7615",
+      "requestSha256": "a5bc0ad5f322ceb09c2f60d97831810bb0ef33801b353cbb0c6c70ecb952b3e9",
+      "evidenceFile": "record-0027.json",
+      "evidenceSha256": "637173ea6198db5f04e128acbb6f34cc55cbf838a5d2bde08bff6d847942cee8"
+    },
+    {
+      "scenarioId": "sfc-jsx-invalidates-props-ast",
+      "callIndex": 28,
+      "sourceSha256": "9a043deb696e95087d776d23329d49b1fba36bcabb2290e1b9db1a8e5abcdf60",
+      "requestSha256": "61f0d70f588ee3abf041aef1cdf63ef99ee3295dd848a8f256269ab0c4ace3ec",
+      "evidenceFile": "record-0028.json",
+      "evidenceSha256": "7bc5b5b6f92d5014a91662aa3a9a55fd4676971249014b13d27acb0b591c5c8e"
+    },
+    {
+      "scenarioId": "sfc-jsx-invalidates-props-ast",
+      "callIndex": 29,
+      "sourceSha256": "9a043deb696e95087d776d23329d49b1fba36bcabb2290e1b9db1a8e5abcdf60",
+      "requestSha256": "61f0d70f588ee3abf041aef1cdf63ef99ee3295dd848a8f256269ab0c4ace3ec",
+      "evidenceFile": "record-0029.json",
+      "evidenceSha256": "ffa0e4c619a2aa6cd90d4f2b52671f97e58adacf4765a24d2fdc507d3f11f82a"
+    },
+    {
+      "scenarioId": "script-no-page-meta",
+      "callIndex": 30,
+      "sourceSha256": "28072d47a68a7605243a5c1aefc7f44a5d1e0eece70775c0d4ce29af2ed3fc45",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0030.json",
+      "evidenceSha256": "249a81d50ead962ab8e493b9fb55f59638a8b39ce7ff4aa77c0c97624387352f"
+    },
+    {
+      "scenarioId": "script-no-page-meta",
+      "callIndex": 31,
+      "sourceSha256": "28072d47a68a7605243a5c1aefc7f44a5d1e0eece70775c0d4ce29af2ed3fc45",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0031.json",
+      "evidenceSha256": "7cce74407fe52859903d4b91dd8e21c843b14926bc3fd118422e947d33d8c7ae"
+    },
+    {
+      "scenarioId": "script-page-meta-alias",
+      "callIndex": 32,
+      "sourceSha256": "8a0e7b5cb472cdaa74073cefe9ee06e543c64a8b0339719434ef63a9301d3b97",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0032.json",
+      "evidenceSha256": "deba1d568ecd0d129aeae8fc60515d865512a3582df3878fe59e6de292175711"
+    },
+    {
+      "scenarioId": "script-page-meta-alias",
+      "callIndex": 33,
+      "sourceSha256": "8a0e7b5cb472cdaa74073cefe9ee06e543c64a8b0339719434ef63a9301d3b97",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0033.json",
+      "evidenceSha256": "fcb7a6bc133471118488a1a504ba6914dd674b8979abdd88e01f9ca5360681f1"
+    },
+    {
+      "scenarioId": "script-page-meta-compiled-setup",
+      "callIndex": 34,
+      "sourceSha256": "65deeee19f0a3b3b0b004048cafab1013bc1cef453eb8de38bd5d1f0ea873adb",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0034.json",
+      "evidenceSha256": "7e8c8f7d93a025f5362c2a8b9a6bb59d04e8cfe8ab3f09df2b09db91d0b7a08c"
+    },
+    {
+      "scenarioId": "script-page-meta-compiled-setup",
+      "callIndex": 35,
+      "sourceSha256": "65deeee19f0a3b3b0b004048cafab1013bc1cef453eb8de38bd5d1f0ea873adb",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0035.json",
+      "evidenceSha256": "896c4fdd614061b8ad2a56702b0d3fe7daf7ce86678c7c5d32e1a0f798676b6b"
+    },
+    {
+      "scenarioId": "script-page-meta-escaped-import",
+      "callIndex": 36,
+      "sourceSha256": "9e1ef277b2a8592a89d4054e3898c6f594e78c92a9e28cdbedfc6eaa94a0ff3b",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0036.json",
+      "evidenceSha256": "d089fc98e53a3397bca5769ae048643649fed222fcc1ab7d474d104f43429a54"
+    },
+    {
+      "scenarioId": "script-page-meta-escaped-import",
+      "callIndex": 37,
+      "sourceSha256": "9e1ef277b2a8592a89d4054e3898c6f594e78c92a9e28cdbedfc6eaa94a0ff3b",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0037.json",
+      "evidenceSha256": "a726474892bd92ba433fef14a2f707f8b75d9a8d7afa048293d89dba5d5359a2"
+    },
+    {
+      "scenarioId": "script-page-meta-string-import",
+      "callIndex": 38,
+      "sourceSha256": "cb1b4a7897ee06d5844e8b6d7af6d249e1bfee72ea876abf89be09318051cab6",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0038.json",
+      "evidenceSha256": "5ecc70a93597a1defd9b1975ee9303d685d6482b0fd373f3c4c15318f5dd478e"
+    },
+    {
+      "scenarioId": "script-page-meta-string-import",
+      "callIndex": 39,
+      "sourceSha256": "cb1b4a7897ee06d5844e8b6d7af6d249e1bfee72ea876abf89be09318051cab6",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0039.json",
+      "evidenceSha256": "c3e9417682664dff1ff5c84e95fb39b70368e7a860cd2b62e9489fc0ffd3b5e2"
+    },
+    {
+      "scenarioId": "script-page-meta-enum-shadow",
+      "callIndex": 40,
+      "sourceSha256": "1fe4b494d495a1a19531f69f944da5db0fceb52f66288649e466b0b8c41ac2ec",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0040.json",
+      "evidenceSha256": "7367cf0ec79da57a8c7c5d7fdb5b17c692cbf9b349f9bf3e616f4a49552c3815"
+    },
+    {
+      "scenarioId": "script-page-meta-enum-shadow",
+      "callIndex": 41,
+      "sourceSha256": "1fe4b494d495a1a19531f69f944da5db0fceb52f66288649e466b0b8c41ac2ec",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0041.json",
+      "evidenceSha256": "12bc77d14faa5cf25bb04c134dfd14b24e33141b7317fb506603e3cf8949a5a3"
+    },
+    {
+      "scenarioId": "script-page-meta-namespace-shadow",
+      "callIndex": 42,
+      "sourceSha256": "b11e6c7c92085c6d08845b56bad7d3a1189b316df412c1b50e2e7f4839588766",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0042.json",
+      "evidenceSha256": "cfa5156e42d15512c139d8a458c08d2c40adfb1a1756df4e80ec3efdd656e6e8"
+    },
+    {
+      "scenarioId": "script-page-meta-namespace-shadow",
+      "callIndex": 43,
+      "sourceSha256": "b11e6c7c92085c6d08845b56bad7d3a1189b316df412c1b50e2e7f4839588766",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0043.json",
+      "evidenceSha256": "977f281693dd29eeaf8504abd338bcc7fb47634342e40570aedc88c3555dc13f"
+    },
+    {
+      "scenarioId": "script-page-meta-type-import",
+      "callIndex": 44,
+      "sourceSha256": "c92cdd3aa7d647571feac09ac9fa638d512d7e2881878b9039aff1c24556b33e",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0044.json",
+      "evidenceSha256": "e1be6619f15fe189516ef05e8f170a4724f5668d64500a5300eee13d3d8af4b9"
+    },
+    {
+      "scenarioId": "script-page-meta-type-import",
+      "callIndex": 45,
+      "sourceSha256": "c92cdd3aa7d647571feac09ac9fa638d512d7e2881878b9039aff1c24556b33e",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0045.json",
+      "evidenceSha256": "48af5719060c0225f59567f24c14e53ea9b45ead9071d27d542d786b533b1f50"
+    },
+    {
+      "scenarioId": "script-page-meta-ambient-namespace",
+      "callIndex": 46,
+      "sourceSha256": "e5e368753d9a459b2e291af34beedbd078a7e13ff3b60beebcfaa1a2b13e96c3",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0046.json",
+      "evidenceSha256": "b59e0591ea4f9cd5205a9fbf57d9fb36cf27c2250fa9dd4fa7beb5d873dc7612"
+    },
+    {
+      "scenarioId": "script-page-meta-ambient-namespace",
+      "callIndex": 47,
+      "sourceSha256": "e5e368753d9a459b2e291af34beedbd078a7e13ff3b60beebcfaa1a2b13e96c3",
+      "requestSha256": "9c6d292928806b6abcab473f98bf4c3386bf0a2659eed241c2e44c6681f298de",
+      "evidenceFile": "record-0047.json",
+      "evidenceSha256": "966854fd63d1f7871f254da792bd422cb9934e1482fdcda908e65baa78925adc"
+    },
+    {
+      "scenarioId": "binding-pressure",
+      "callIndex": 48,
+      "sourceSha256": "5e1509571d87d29ccb79846b466eae64618452bb4ba71d4f1d21c4cf5ac8773b",
+      "requestSha256": "01448be44a5162e11fcc80b5c6ff316cea03bfce308eb9a0298ab24221b44d50",
+      "evidenceFile": "record-0048.json",
+      "evidenceSha256": "137a083e900b1dd4df4ab8c940257315cb9c85ab8fcb49af6585145f54ee0f56"
+    },
+    {
+      "scenarioId": "binding-pressure",
+      "callIndex": 49,
+      "sourceSha256": "5e1509571d87d29ccb79846b466eae64618452bb4ba71d4f1d21c4cf5ac8773b",
+      "requestSha256": "01448be44a5162e11fcc80b5c6ff316cea03bfce308eb9a0298ab24221b44d50",
+      "evidenceFile": "record-0049.json",
+      "evidenceSha256": "7d3f341fd18b884e990bf4bb352a05f86184b804ce9e1d2aba6cdb84ca0d6e7f"
+    },
+    {
+      "scenarioId": "binding-wevu",
+      "callIndex": 50,
+      "sourceSha256": "fd6cad8f85b12ff37db23434f8d03b7bdf019864cb9d400048878cd6a8f88992",
+      "requestSha256": "c7f75490339b97ed49f0994590c30d6632d5af2df80ab2d9eb8766cab9c435f2",
+      "evidenceFile": "record-0050.json",
+      "evidenceSha256": "116b8c6d21a1b2764f90c79eeaee305909a872e8a26ecf5fa1a86bb7779df0b5"
+    },
+    {
+      "scenarioId": "binding-wevu",
+      "callIndex": 51,
+      "sourceSha256": "fd6cad8f85b12ff37db23434f8d03b7bdf019864cb9d400048878cd6a8f88992",
+      "requestSha256": "c7f75490339b97ed49f0994590c30d6632d5af2df80ab2d9eb8766cab9c435f2",
+      "evidenceFile": "record-0051.json",
+      "evidenceSha256": "6c0e3e4d18b561dac21d03fae85521d34ea98b8d8eafb859d952a8599495b4df"
+    },
+    {
+      "scenarioId": "binding-retail",
+      "callIndex": 52,
+      "sourceSha256": "1d648f503bac47e4f20aabc708c561abaf77ef3b5188626be1107248ba0a4d5d",
+      "requestSha256": "2d67d3862de242296e8b2834a06d63d1f3926eee584c7fae26f5f39ff09fd886",
+      "evidenceFile": "record-0052.json",
+      "evidenceSha256": "c96034ec67aad32a77687c09deb31359e56d90a1afc69777df7784659b6f89ec"
+    },
+    {
+      "scenarioId": "binding-retail",
+      "callIndex": 53,
+      "sourceSha256": "1d648f503bac47e4f20aabc708c561abaf77ef3b5188626be1107248ba0a4d5d",
+      "requestSha256": "2d67d3862de242296e8b2834a06d63d1f3926eee584c7fae26f5f39ff09fd886",
+      "evidenceFile": "record-0053.json",
+      "evidenceSha256": "0787bc2f0af6fb0fad7120fbcea74cb1cf6022f88a551156588e6f4862c3deaa"
+    },
+    {
+      "scenarioId": "binding-nested-loops",
+      "callIndex": 54,
+      "sourceSha256": "f16d29e93f11a957858fb7e620c3f7fef6c75f93848b93fa7303bb501d4fa0d9",
+      "requestSha256": "62ce6bd7298b51012374de0b65c629d89d435bceb8e8d8ef010f53c60b573e72",
+      "evidenceFile": "record-0054.json",
+      "evidenceSha256": "497609ec07c82649979c891e85000ddbc03ef259d464e49eefdd7bc5f33a2926"
+    },
+    {
+      "scenarioId": "binding-nested-loops",
+      "callIndex": 55,
+      "sourceSha256": "f16d29e93f11a957858fb7e620c3f7fef6c75f93848b93fa7303bb501d4fa0d9",
+      "requestSha256": "62ce6bd7298b51012374de0b65c629d89d435bceb8e8d8ef010f53c60b573e72",
+      "evidenceFile": "record-0055.json",
+      "evidenceSha256": "645d3c07d7f0b575c7363a522ce94639c7c189c3bb81f33ff2b2419abfaf476a"
+    },
+    {
+      "scenarioId": "binding-scoped-slots",
+      "callIndex": 56,
+      "sourceSha256": "34415319b4dd3a2b24c93b8a8865ccbdddbe08dc658d1f280ac91bde7e8f8bcb",
+      "requestSha256": "a7b7c9e8ba3c7598fbb548d232028d577f29c1e8bc8b2d74918e4ee5ebc4a045",
+      "evidenceFile": "record-0056.json",
+      "evidenceSha256": "599d1e2322558aace6c7eee22d08cecaed61c165bd8df236fe30323d6c9affe9"
+    },
+    {
+      "scenarioId": "binding-scoped-slots",
+      "callIndex": 57,
+      "sourceSha256": "34415319b4dd3a2b24c93b8a8865ccbdddbe08dc658d1f280ac91bde7e8f8bcb",
+      "requestSha256": "a7b7c9e8ba3c7598fbb548d232028d577f29c1e8bc8b2d74918e4ee5ebc4a045",
+      "evidenceFile": "record-0057.json",
+      "evidenceSha256": "37ca1be2263c4208fe2bd41c8369fe122161ce7bacfb2f33a3680e336fb56b11"
+    },
+    {
+      "scenarioId": "binding-events-and-repeats",
+      "callIndex": 58,
+      "sourceSha256": "805845470f8c5cd8ab6f7c04dbd31c421bf9da3d0961d663a7fbbe6ee6dffd3d",
+      "requestSha256": "1aac106dd85a47b6a231d616ae52dd05670799369a61a2fcb0e19f48336090d7",
+      "evidenceFile": "record-0058.json",
+      "evidenceSha256": "be2baacc37f54ebf7f456a2ebae2175fbd32aedb6c7648b17af98758b6fd7b22"
+    },
+    {
+      "scenarioId": "binding-events-and-repeats",
+      "callIndex": 59,
+      "sourceSha256": "805845470f8c5cd8ab6f7c04dbd31c421bf9da3d0961d663a7fbbe6ee6dffd3d",
+      "requestSha256": "1aac106dd85a47b6a231d616ae52dd05670799369a61a2fcb0e19f48336090d7",
+      "evidenceFile": "record-0059.json",
+      "evidenceSha256": "9357f95257d98d8965c9cf51a0d7217f534539ad9c61c00e312c5284dd8705be"
+    },
+    {
+      "scenarioId": "binding-slot-outlet",
+      "callIndex": 60,
+      "sourceSha256": "8ae2bd9dd9e4026fad034edd0dc166155d8509e5dd2a14acb95380d1083a26d3",
+      "requestSha256": "10a6641ed83de22c865978f98cde3e97eb7b40cd50e166cc6b7a8145e23e6a2b",
+      "evidenceFile": "record-0060.json",
+      "evidenceSha256": "36fe65b3e9ddb0fa57e8ae8a00708d3d22e3b231c19c2d17a88293630901e47d"
+    },
+    {
+      "scenarioId": "binding-slot-outlet",
+      "callIndex": 61,
+      "sourceSha256": "8ae2bd9dd9e4026fad034edd0dc166155d8509e5dd2a14acb95380d1083a26d3",
+      "requestSha256": "10a6641ed83de22c865978f98cde3e97eb7b40cd50e166cc6b7a8145e23e6a2b",
+      "evidenceFile": "record-0061.json",
+      "evidenceSha256": "ee9f47cdf5fb6750289cbc78c978062a359011d61e69f772cbcb6a7e8748292f"
+    },
+    {
+      "scenarioId": "binding-jsx",
+      "callIndex": 62,
+      "sourceSha256": "7408c1052ee7b98e15cc7898f314089fc4b0d05c52f5b95c7e9baa38bbd2f247",
+      "requestSha256": "79b7094d3a51eac3a44a2063c8d0897f0326c02af99ed7cfa74f7ab73decb70f",
+      "evidenceFile": "record-0062.json",
+      "evidenceSha256": "ee54d811c8930ff38440e83ba9ef64158e971c6fb7d94a44f3fe6714820d2a01"
+    },
+    {
+      "scenarioId": "binding-jsx",
+      "callIndex": 63,
+      "sourceSha256": "7408c1052ee7b98e15cc7898f314089fc4b0d05c52f5b95c7e9baa38bbd2f247",
+      "requestSha256": "79b7094d3a51eac3a44a2063c8d0897f0326c02af99ed7cfa74f7ab73decb70f",
+      "evidenceFile": "record-0063.json",
+      "evidenceSha256": "a2e2e8875c9fc8f25d5acae11a5bbe19463ea97ce0d3da67e7dcf668eb08b438"
+    },
+    {
+      "scenarioId": "binding-unicode-crlf",
+      "callIndex": 64,
+      "sourceSha256": "cfc463c39c7fe4bab163736cf56914cf930914a636ed5163fa096034a5e3bcd7",
+      "requestSha256": "9d46a4b8b5dd8daa727f47a7dbb6beb7fd845ea7410a6b588c52d352f708a663",
+      "evidenceFile": "record-0064.json",
+      "evidenceSha256": "f1749e9066293a533457f68b34a0dca11e8a7f1ba00539d431b634b287957abf"
+    },
+    {
+      "scenarioId": "binding-unicode-crlf",
+      "callIndex": 65,
+      "sourceSha256": "cfc463c39c7fe4bab163736cf56914cf930914a636ed5163fa096034a5e3bcd7",
+      "requestSha256": "9d46a4b8b5dd8daa727f47a7dbb6beb7fd845ea7410a6b588c52d352f708a663",
+      "evidenceFile": "record-0065.json",
+      "evidenceSha256": "22ff5b94cceaf319bca4262920a9236d1f022eabdd9cf8fac9ed354feefd91da"
+    },
+    {
+      "scenarioId": "binding-static-template",
+      "callIndex": 66,
+      "sourceSha256": "9aeb8d59b4d483ca6298e9a450fbf37dfd2b4c63990135ab1d040d76314087ec",
+      "requestSha256": "48de11e901fe086bb456bc6cd4f9a4c8117f1f10423ce0e1bf00e0af7800dd32",
+      "evidenceFile": "record-0066.json",
+      "evidenceSha256": "cd5b12b2c957d8e33dffa71dd83c242a1ae1c75eb4e59b28086a7f8cdfd71f15"
+    },
+    {
+      "scenarioId": "binding-static-template",
+      "callIndex": 67,
+      "sourceSha256": "9aeb8d59b4d483ca6298e9a450fbf37dfd2b4c63990135ab1d040d76314087ec",
+      "requestSha256": "48de11e901fe086bb456bc6cd4f9a4c8117f1f10423ce0e1bf00e0af7800dd32",
+      "evidenceFile": "record-0067.json",
+      "evidenceSha256": "4c236a6a97b281b5f1075129a771e87767a893b5ef572c5a9ef917395c7125aa"
+    },
+    {
+      "scenarioId": "binding-fallback-throw",
+      "callIndex": 68,
+      "sourceSha256": "9aeb8d59b4d483ca6298e9a450fbf37dfd2b4c63990135ab1d040d76314087ec",
+      "requestSha256": "0d47887046fc705e34e71c821c20f2e9c7d4d37ba2fcf80cb9a58c3d8dca0166",
+      "evidenceFile": "record-0068.json",
+      "evidenceSha256": "07ac4d18be8e1349fdf34d59352f93bc4a9703ae38b32b00db21dd2df6006606"
+    },
+    {
+      "scenarioId": "binding-fallback-throw",
+      "callIndex": 69,
+      "sourceSha256": "9aeb8d59b4d483ca6298e9a450fbf37dfd2b4c63990135ab1d040d76314087ec",
+      "requestSha256": "0d47887046fc705e34e71c821c20f2e9c7d4d37ba2fcf80cb9a58c3d8dca0166",
+      "evidenceFile": "record-0069.json",
+      "evidenceSha256": "67c4f4a9395df7e02e19a0326c977249be01f0ea814a640742e4425c44045d61"
+    },
+    {
+      "scenarioId": "binding-fallback-malformed",
+      "callIndex": 70,
+      "sourceSha256": "9aeb8d59b4d483ca6298e9a450fbf37dfd2b4c63990135ab1d040d76314087ec",
+      "requestSha256": "bfaeed4fc9c1f4a4cb150cb26a97ed6a0d4672646c899a2f831b6ad42c4defef",
+      "evidenceFile": "record-0070.json",
+      "evidenceSha256": "939c5825a8d8a0f183e154a3e21da0fc72acd855f5a503fc5bf3c8d440562edc"
+    },
+    {
+      "scenarioId": "binding-fallback-malformed",
+      "callIndex": 71,
+      "sourceSha256": "9aeb8d59b4d483ca6298e9a450fbf37dfd2b4c63990135ab1d040d76314087ec",
+      "requestSha256": "bfaeed4fc9c1f4a4cb150cb26a97ed6a0d4672646c899a2f831b6ad42c4defef",
+      "evidenceFile": "record-0071.json",
+      "evidenceSha256": "833d069ed4f1bcb24077af91f0e5b4882cb7c3c9350c55553b74009ef5c7fc0b"
+    }
+  ],
+  "conclusions": [
+    "72 条真实 stage 请求全部进入一次 native 调用；36 条成功返回并完成静态对照，36 条明确返回 unsupported。严格门禁为失败，不是可发布状态。",
+    "全部 36 条 native 成功产物的 AST、注释、PURE/NO_SIDE_EFFECTS 附着、其他结果 metadata 和告警均严格一致；sfc-wevu 与 sfc-retail 各两条均成功，仍没有任何一条通过完整 sourcemap 对照。",
+    "8888 项 map 记录含 8776 项 origin 差异、84 项双侧未映射 source-candidate 和 28 项越界。越界全部在 expected/Babel 侧；不能把所有映射问题称为 native 独有问题。",
+    "unmapped/generated/injected 分类是静态候选，不是来源证明；结构匹配不排除 runtime 行为差异，也不允许消除任何映射差异来求通过。",
+    "三组 fresh 控制 worker 的 270 份完整编译结果重新逐字比对一致，证明观察器没有改变这些控制组结果；native 输出在编译器之外比较，没有接回真实编译链路。"
+  ],
+  "limitations": [
+    "这是单机 macOS arm64 的静态产物诊断；没有 Windows/Linux native 完整 stage 验证、真实小程序 runtime E2E 或完整 native 编译/HMR 性能测试。",
+    "未在本次审计重新运行任何编译、native 调用或性能采样，只读取已落盘记录并重算请求、validator、oracle 与摘要。",
+    "36 个 unsupported 是拒绝结果统计；本次完整 stage 运行未实际执行或证明生产 fallback 路径。",
+    "原始数据未被截断或覆盖；公开证据只汇总 map 分类及每类代表，完整差异仍位于按摘要绑定的私有 record 文件。",
+    "复核使用被冻结源码中的 validator/oracle，并额外重算文件摘要、闭包、控制组全文与总计；不是由另一套独立编译器验证语义。",
+    "Rust release 构建成功但日志记录非致命 debug-info stripping 的工具链警告；这不改变二进制摘要，也不能据此承诺产物大小或性能。",
+    "源码闭包没有穷尽第三方安装依赖或运行时环境；源码身份相同、静态结构一致都不能被解释为稳定提速。",
+    "72 是包含重复调用和共享 fixture 的观测条数，不是 72 个独立输入；36 个 native 成功记录只对应 10 个不同的源码／请求组合。"
+  ],
+  "observationDesign": {
+    "capturedRecords": 72,
+    "distinctScenarioIds": 36,
+    "sourceDigests": 22,
+    "requestDigests": 16,
+    "distinctSourceRequestPairs": 24,
+    "successfulDistinctSourceRequestPairs": 10,
+    "recordsPerScenario": 2,
+    "interpretation": "72 是包含重复调用和共享 fixture 的观测条数，不是 72 个独立输入；36 个 native 成功记录只对应 10 个不同的源码／请求组合。"
+  },
+  "representativePageMapAudit": {
+    "method": "读取 record-0002 与 record-0004，对原始 AST 区域和 decoded map 段作只读分类；本证据额外重算 anchor/origin/越界/去重路径总计。未生成替代 map。",
+    "classificationSource": "同轮独立只读 AST/map 审计；未另存该分类脚本或私有产物，原始记录由下列 SHA256 绑定。",
+    "classificationLimit": "生成区域和 GLB/exact-segment 分类是诊断解释，不证明 baseline 或 native 的来源映射正确。两个页面均不含 private 字段语法，不能推广到该类输入。",
+    "records": [
+      {
+        "scenarioId": "sfc-wevu",
+        "callIndex": 2,
+        "recordSha256": "50b50a77ea83d3c946d2f65357690b3308de1381064a990f5930664fa4e583e1",
+        "anchors": 737,
+        "exactMappedOrigins": 345,
+        "bothUnmapped": 22,
+        "baselineMappedNativeUnmapped": 364,
+        "bothMappedCoordinateDifferences": 4,
+        "bothMappedNameOnlyDifferences": 2,
+        "unmappedSourceCandidateFailures": 4,
+        "baselineOutOfBoundsFindings": 7,
+        "totalMapFindings": 381,
+        "distinctAffectedAnchorPaths": 374,
+        "generatedRegionClassification": {
+          "installer": 2,
+          "optionsDeclaration": 2,
+          "computed": 174,
+          "data": 6,
+          "page": 2,
+          "features": 0,
+          "manifest": 72,
+          "inlineExpressions": 101,
+          "functionPropPaths": 0,
+          "registration": 3,
+          "export": 2
+        },
+        "baselineMappedNativeUnmappedSegmentKinds": {
+          "inheritedByGreatestLowerBound": 313,
+          "exactGeneratedColumnSegment": 51
+        },
+        "coordinateDifferenceDetails": {
+          "exposeShorthandKeyOrValue": 2,
+          "templateElement": 2
+        },
+        "nameOnlyDifferenceDetails": "expose() 的 statement 与 callee：源坐标相同，expected name=__expose，actual name=null。",
+        "sourceCandidateDetails": "重新路由的 runtime import 标识符；候选分类不证明它们应映射到哪里。",
+        "outOfBoundsDetails": "7 项均在 inline i6，expected 指向 inline.ts 第 1 行第 58 列，而该行仅 57 个 UTF-16 单元；与单侧未映射路径重叠。"
+      },
+      {
+        "scenarioId": "sfc-retail",
+        "callIndex": 4,
+        "recordSha256": "8871457ec95a444f8465a9ebb0ac93801f4ce1afd4b549c37f8cda80f9c55af0",
+        "anchors": 2043,
+        "exactMappedOrigins": 1206,
+        "bothUnmapped": 28,
+        "baselineMappedNativeUnmapped": 785,
+        "bothMappedCoordinateDifferences": 22,
+        "bothMappedNameOnlyDifferences": 2,
+        "unmappedSourceCandidateFailures": 10,
+        "baselineOutOfBoundsFindings": 0,
+        "totalMapFindings": 819,
+        "distinctAffectedAnchorPaths": 819,
+        "generatedRegionClassification": {
+          "installer": 2,
+          "optionsDeclaration": 2,
+          "computed": 340,
+          "data": 35,
+          "page": 2,
+          "features": 3,
+          "manifest": 240,
+          "inlineExpressions": 128,
+          "functionPropPaths": 28,
+          "registration": 3,
+          "export": 2
+        },
+        "baselineMappedNativeUnmappedSegmentKinds": {
+          "inheritedByGreatestLowerBound": 726,
+          "exactGeneratedColumnSegment": 59
+        },
+        "coordinateDifferenceDetails": {
+          "exposeShorthandKeyOrValue": 2,
+          "templateElement": 20
+        },
+        "nameOnlyDifferenceDetails": "expose() 的 statement 与 callee：源坐标相同，expected name=__expose，actual name=null。",
+        "sourceCandidateDetails": "重新路由的 runtime import 标识符；候选分类不证明它们应映射到哪里。",
+        "outOfBoundsDetails": null
+      }
+    ]
+  }
+}

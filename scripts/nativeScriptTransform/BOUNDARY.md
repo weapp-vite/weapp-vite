@@ -1,8 +1,8 @@
 # transformScript Rust 实验边界
 
-本目录先捕获真实 `transformScript` 请求，并用 Oxc 对已有完整转换结果做 printer/map 探针。**打印已经完成转换的 JavaScript，不等于实现了 Rust `transformScript`，也不能用于宣称整段编译或整项目提速。** 完整阶段的下一步应在一次 native 调用内拥有解析、语义分析、改写、生成和 map；生产路径不得再依赖 Babel 后处理来补齐结果。
+本目录已有真实请求捕获、独立 printer，以及受限的完整 Rust 脚本阶段实验。`transformScriptNative` 在一次 native 调用内执行实际类型清理、作用域改名、导入路由、组件注入和代码生成；`roundTripScriptNative` 仍只打印已经转换的 JS。完整阶段尚未通过 sourcemap 兼容门禁，且明确拒绝未覆盖选项，不能据此宣称生产替换、完整 Vue 编译器或整项目提速。
 
-本文是源码边界审计和实现路线，不是该转换器已经完成的声明。真实请求以当前运行生成的 capture 为准；下文历史产物只能证明需要覆盖的行为，不能代替当前请求、产物及性能复核。相关计时证据见 [`docs/plans/2026-10-04-script-baseline-timing-evidence.json`](../../docs/plans/2026-10-04-script-baseline-timing-evidence.json)。
+本文保留源码边界审计，并在末尾记录已经实现的范围；不是全面兼容声明。真实请求以当前运行生成的 capture 为准；下文历史产物只能证明需要覆盖的行为，不能代替当前请求、产物及性能复核。相关计时证据见 [`docs/plans/2026-10-04-script-baseline-timing-evidence.json`](../../docs/plans/2026-10-04-script-baseline-timing-evidence.json)。
 
 ## 真实入口与所有权
 
@@ -134,3 +134,14 @@ Oxc 0.152 API 使用 AST 类型上的构造方法，例如 `Statement::new_impor
 构建期语义 oracle 可在受控 Node module harness 中分别运行旧、新完整输出，使用一致的确定性 import stubs，记录 installer、组件注册、setup、expose、lifecycle 顺序；比较初始 data、manifest、flags、functionPropPaths；调用 computed 和所有 inline handler 检查结果、参数、scope resolver、异常日志与异步行为。特别覆盖数组/对象/数字循环、关闭条件不求值、投影保留字段冲突、props/state 同名与局部 shadowing。
 
 该 harness 不是小程序生产代码，也不能替代后续真实 runtime E2E。扩大 native 覆盖前仍需真实编译入口的配对采样、包重建后的串行下游验证和跨平台证据。性能判断沿用既定门槛，不能由 printer micro benchmark 推断整链收益。
+
+
+## 已实现范围与仍未满足的门槛
+
+阶段实现位于 `packages/ast-native/src/script_transform/{request*,rewrite,metadata,component_*,capabilities,transform}`。主脚本有一个 Oxc AST；模板表达式和合成片段在 Rust 内解析后加入该树。setup 初值直接 clone 原节点，保留其 span；新片段清空 span，不能将独立表达式位置冒充脚本位置。
+
+已有显式拒绝覆盖 app、未实现的 Vue/Wevu 宏、非空 propsAliases/propsDerivedKeys、scoped slots、template refs/layout/CSS、复杂 component/capability shape 等。自定义 TS 删除、expose 的 visitor 顺序、显式 this 参数和类型/值命名空间分别有当前 TypeScript 实现的直接 oracle 回归。请求层保持字段顺序与 undefined 描述，private helper/routes 从现有源码提取，避免 Rust 静默维护另一套常量。
+
+最新独立检查仍先比较原始、优化 JS、附加 capture 的完整编译返回值，再把完整真实阶段输入交给 Rust。native 输出尚未回灌 `compileVueFile`，没有运行时 E2E 或性能样本。strict 模式不接受 fallback 或 map 差异，诊断完成与语义门禁分别记录。完整证据与当前计数见 [`2026-10-04-script-transform-stage-evidence.json`](../../docs/plans/2026-10-04-script-transform-stage-evidence.json)。
+
+后续需要先完成主源码与合成区间的来源策略、保留必要注释，并通过完整编译/真实宿主验证，再决定是否进行正式配对计时。不能通过丢掉 maps、只比较裁剪页面、仅跑返回成功或弱化 AST oracle 来扩大实验覆盖。

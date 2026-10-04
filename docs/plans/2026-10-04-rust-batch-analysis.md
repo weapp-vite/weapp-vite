@@ -461,3 +461,22 @@ oracle 特别补了三个反例：不含标识符的源码配空 map 不得通�
 本轮证据只来自本机 macOS arm64，三平台检查随 PR CI 验证；第十九轮固定提交的独立 CPU 作业仍需完成和复核，不重复触发。真实 Stable 微信开发者工具 runtime 仍未完成最终验收。下一阶段应先确定完整转换的注释/map 契约，再在一次 native 请求中实现有序改写，保留 fastSetup 与整段 fallback；不将本打印器单独接入热路径，也不声称已经获得额外 Rust 提速。
 
 来源 hash、独立审计、逐项计数与限制见[脚本打印探针证据](./2026-10-04-script-transform-printer-evidence.json)；命令见[工具说明](../../scripts/nativeScriptTransform/README.md)，完整语义审计见[阶段边界](../../scripts/nativeScriptTransform/BOUNDARY.md)。
+
+
+## 第二十一轮：实际 Rust 脚本改写与严格来源对照
+
+新增 `transformScriptNative`，在默认关闭的 `experimental-script-transform` 内接收一次完整源码和 version 1 请求，完成主脚本解析、语义信息收集、自定义 TS 删除、作用域准确的 expose 改名、导入路由、组件默认值、初始 data、绑定清单、class/style/key 计算、内联事件、function prop paths、能力安装及最终注册。主源码只解析一次；metadata 和合成片段仍在 Rust 内分别解析，不把一次 N-API 调用当成所有内容只有一次 parse。没有完整 AST 往返或逐节点 JS callback，也没有将 Babel 后处理放到 native 输出之后。
+
+JS bridge 保留 26 个声明选项、字段顺序、undefined 与属性描述符。表达式按原角色传源码；warn callback 和已有 AST transfer 仍由原调用者拥有。runtime 路由、marker、private import allowlist、installer/helper 名称从当前常量和四份源码静态提取，首次共五次解析，之后每进程缓存。Rust 有序 JSON 解码仅省略允许的 optional undefined，路径单独返回；负零、数组空洞、不可枚举 defaults 和未知字段明确拒绝。adapter 在校验完整成功结果后才发布 warning，native 异常或 unsupported 可走整段 JS fallback；caller warning 自身抛错不触发重做。
+
+真实 Wevu/零售输入没有裁掉元数据。Wevu 的一个 class computed、7 个 inline events、16 条 manifest 与 setup 初始数据，零售的两个 computed（含条件 key 投影）、14 个 inline events、58 条 manifest、27 个 function prop paths、page feature、外部业务 import 都由 Rust 生成。未覆盖的宏、app、propsDerivedKeys/scoped slots、template refs/layout/CSS、复杂 component/capability shape 保持显式 unsupported，不因提高命中率而放宽边界。
+
+正式严格运行先用三个新进程执行 45 场景两轮，270 次完整编译结果、map、告警和公开诊断逐字相同。随后将捕获到的 72 条真实 stage 请求独立交给 Rust：36 次成功、36 次 unsupported。成功记录含重复轮次与跨语料复用，实际只有 10 个不同的 source/request 组合，不能当作 36 个独立功能样本。36 份成功结果全部通过去位置 AST、注释顺序、PURE/NO_SIDE_EFFECTS 归属、返回元数据和告警对照；两真实页面各两次均原生成成功。原始 code/map 均与 JS 字节不同；**36 份都没有通过来源映射对照，因此 nativePassed=0，严格命令 exit 1，comparisonPassed=false。** completed=true 只代表完整收集，不代表兼容门禁通过。
+
+map 对照查询两份实际 stage map 从各自产物回到同一真实源脚本，包括 UTF-16 坐标及 name。新生成片段清空 span，与 Babel 继承邻近位置的行为产生大量差异；此外仍有原源码锚点、映射名称、模板字面量和基线映射自身覆盖限制。两边都缺失映射也不能自动视为来源覆盖通过，更不能把所有差异直接归为 Rust 独有错误。两真实页面中，Wevu/零售分别有 364/785 个基线有映射、native 未映射锚点，全部处在生成区域；其中 313/726 个基线坐标来自 GLB 继承。源脚本区域的坐标差异为 4/22 个，集中在 expose shorthand 与 TemplateElement，另各有两个名称差异锚点。Wevu 的 7 个越界 finding 发生在基线 inline 元数据映射，均与上述单侧映射路径重叠；不能重复加总成独立路径数，也不能据此认定 native 的未映射满足来源覆盖。没有伪造新片段位置以追平基线。逐项计数和审计边界见[完整阶段证据](./2026-10-04-script-transform-stage-evidence.json)。
+
+53 项 Rust 测试、161 项工具测试、局部 TypeScript/ESLint 通过；默认与实验组合 cargo check 通过。Rust 测试直接调用当前 TS oracle，覆盖真实页面 metadata 求值、嵌套 loop/raw key 条件、告警/冲突、setup seed、显式 this 参数、expose 类型/值命名空间、router hooks 和重复 defaults。合成对象括号形态曾触发 native 崩溃，已用解析选项修正并补 Unicode/关键词/转义 key 回归；正式运行没有该失败。默认正常依赖树不引入 codegen/semantic/sourcemap/indexmap。实现按职责拆分，各实现文件保持 300 行以内，Rust 文件用系统 rustfmt 检查，isolated 1.99 工具链用于编译。
+
+同轮完成固定[独立 CPU 运行 37207342592](https://github.com/weapp-vite/weapp-vite/actions/runs/37207342592)的摘要审计：Linux/macOS 成功，Windows 在采样前的测试 ESM import 边界失败，未产生 Windows 样本。已将测试的绝对路径改成 file URL，13 项定向测试和 lint 通过；未重跑该固定 benchmark。两平台 269 项 Git 源码身份、30 组运行、1050 条摘要观测和 600 个采样窗口一致；只有 sanitized summary 可供复核，原始 profile/worker 输出没有下载，不宣称已重算原始栈。optimized-js Babel self 的占比仍较高，但不能据 CPU 样本比例推导提速，详见[固定 CPU 证据](./2026-10-04-optimized-cpu-ci-evidence.json)。
+
+完整阶段输出尚未回灌 `compileVueFile`，没有新增性能采样、Vite/HMR 或真实 Stable 微信开发者工具 runtime 结果。实验继续默认关闭，没有扩大生产路径。下一步应处理真实源码与合成区间的 map 契约，再做完整编译/宿主对照和正式配对计时；当前不能承诺额外 Rust 收益，更不能承诺全项目两倍提速。本轮仅为内部实验和测试工具，不新增 changeset 或脚手架 bump。
