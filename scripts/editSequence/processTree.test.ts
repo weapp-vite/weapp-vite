@@ -1,10 +1,19 @@
 import { Buffer } from 'node:buffer'
 import { exec } from 'tinyexec'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, expect, it, vi } from 'vitest'
 import { observeProcessTree, parseProcessMemory, summarizeProcessTree } from './processTree'
 
 vi.mock('node:process', () => ({ default: { platform: 'win32' } }))
 vi.mock('tinyexec', () => ({ exec: vi.fn() }))
+beforeAll(async () => {
+  // 真实 Windows 的模块预热含异步读取；先等待公共采样入口就绪，再隔离各测试的调用记录。
+  // 否则预热可能在前几个同步测试之后才调用 exec，被误认成带根 PID 的实际查询。
+  vi.mocked(exec).mockResolvedValue({
+    stdout: JSON.stringify([{ ProcessId: 10, ParentProcessId: 1, WorkingSetSize: '2048' }]),
+  } as Awaited<ReturnType<typeof exec>>)
+  await observeProcessTree(10)
+  vi.resetAllMocks()
+})
 afterEach(() => vi.resetAllMocks())
 
 it('counts the entire owned process tree without including unrelated workers', () => {
@@ -37,6 +46,7 @@ it('queries the registered Windows process tree without starting the CIM provide
     { ProcessId: 99, ParentProcessId: 1, WorkingSetSize: '999999' },
   ]) } as Awaited<ReturnType<typeof exec>>)
   expect(await observeProcessTree(10)).toMatchObject({ processCount: 2, rssBytes: 3072 })
+  expect(exec).toHaveBeenCalledOnce()
   const [command, args, options] = vi.mocked(exec).mock.calls[0]!
   expect(command).toBe('powershell.exe')
   expect(args).toEqual(expect.arrayContaining(['-NoProfile', '-NonInteractive']))
