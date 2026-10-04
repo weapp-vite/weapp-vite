@@ -15,6 +15,8 @@ import { isDeepEqualValue } from '../../app/setData/snapshot'
 import { updateNativeDeclarationAddress } from '../runtimeInstance/nativeDeclaration'
 import { refreshOwnerSnapshotFromInstance } from '../snapshot'
 
+type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string } }
+
 export function createPropsSync(options: {
   restOptions: Record<string, any>
   propsAliases?: Record<string, string>
@@ -330,7 +332,10 @@ export function createPropsSync(options: {
   if (propKeys.length) {
     for (const key of propKeys) {
       injectedObservers[key] = function __wevu_prop_observer(this: InternalRuntimeState, newValue: unknown) {
-        if (key === WEVU_NATIVE_DECLARATION_ADDRESS_PROP) {
+        if (
+          (!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+          && key === WEVU_NATIVE_DECLARATION_ADDRESS_PROP
+        ) {
           updateNativeDeclarationAddress(this, newValue)
         }
         // 注意：在部分小程序运行时中，observer 回调触发时 `this.properties` 可能尚未更新，
@@ -342,7 +347,8 @@ export function createPropsSync(options: {
 
   const finalObservers: Record<string, any> = {
     // 地址 observer 必须先于通配/组合用户 observer，避免同步创建的后代看到旧索引。
-    ...(propKeySet.has(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)
+    ...((!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+      && propKeySet.has(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)
       ? { [WEVU_NATIVE_DECLARATION_ADDRESS_PROP]: undefined }
       : {}),
     ...(userObservers ?? {}),

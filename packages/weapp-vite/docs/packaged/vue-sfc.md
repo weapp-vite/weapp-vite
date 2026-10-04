@@ -134,7 +134,7 @@ defineOptions({ behaviors: [i18n.behavior] })
 
 内层 Wevu Provider 即使使用过滤后的 `export()` / `expose()`，其普通模板子组件（含 Options API 局部注册别名）和原生插槽子组件仍共享内层上下文；外部选择器只看到该 Provider 的公开导出，内部父链不依赖公开导出对象。
 
-已验证环境：微信 DevTools Stable `2.02.2608080`、基础库 `3.17.2`，并保留 mpcore 回归。其他小程序平台及 Web 目标不启用此协议，不能由微信或 headless 结果推断支持。`false` / augmented 和实际 scoped props 继续使用既有增强插槽路径。
+已验证环境：微信 DevTools Stable `2.02.2608080`（基础库 `3.17.2`、`3.13.2`）和 `2.02.2608060`（基础库 `3.17.2`），并保留 mpcore 回归；这些结果不代替其他版本组合或真机验证。其他小程序平台及 Web 目标不启用此协议，构建时裁剪其声明属性、事件接收与清理代码，不能由微信或 headless 结果推断支持。`false` / augmented 和实际 scoped props 继续使用既有增强插槽路径。
 
 ## 具名插槽透传 wrapper
 

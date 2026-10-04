@@ -27,6 +27,8 @@ import { receiveNativeDeclaration } from '../runtimeInstance/nativeDeclaration'
 import { receiveNativeSlotParent } from '../runtimeInstance/provideContext'
 import { registerNativeComponentDefinition } from './registerNativeDefinition'
 
+type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string } }
+
 export function registerComponentDefinition<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   runtimeApp: RuntimeApp<D, C, M>
   watch: WatchMap | undefined
@@ -196,6 +198,25 @@ export function registerComponentDefinition<D extends object, C extends Computed
       pageMethodBridges[hookName] = function pageMethodBridge(this: InternalRuntimeState, ...args: any[]) {
         return pageHook.apply(this, args)
       }
+    }
+  }
+
+  const methods: Record<string, (...args: any[]) => any> = {
+    ...pageMethodBridges,
+    ...finalMethods,
+    [WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD]: function resolvePublicInstance(this: InternalRuntimeState) {
+      const result = mountMissingRuntime(this)
+      if (result.mounted) {
+        callVueLifecycle(this, 'created', [])
+        callVueLifecycle(this, 'beforeMount', [])
+      }
+      return result.runtime?.proxy
+    },
+  }
+  if (!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp') {
+    methods[WEVU_NATIVE_SLOT_PARENT_METHOD] = receiveNativeSlotParent
+    if (nativeSlotContext) {
+      methods[WEVU_NATIVE_DECLARATION_METHOD] = receiveNativeDeclaration
     }
   }
 
@@ -435,20 +456,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
         }
       },
     },
-    methods: {
-      ...pageMethodBridges,
-      ...finalMethods,
-      [WEVU_NATIVE_SLOT_PARENT_METHOD]: receiveNativeSlotParent,
-      ...(nativeSlotContext ? { [WEVU_NATIVE_DECLARATION_METHOD]: receiveNativeDeclaration } : {}),
-      [WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD]: function resolvePublicInstance(this: InternalRuntimeState) {
-        const result = mountMissingRuntime(this)
-        if (result.mounted) {
-          callVueLifecycle(this, 'created', [])
-          callVueLifecycle(this, 'beforeMount', [])
-        }
-        return result.runtime?.proxy
-      },
-    },
+    methods,
     options: finalOptions,
   }
   if (!registerNative) {

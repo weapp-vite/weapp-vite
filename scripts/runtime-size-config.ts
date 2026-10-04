@@ -236,6 +236,12 @@ export const runtimeSizeBudgets: readonly RuntimeSizeBudget[] = [
 ]
 
 export const runtimeSizeDenyRules: readonly RuntimeSizeDenyRule[] = [
+  ...runtimeSizeTargets.filter(target => target.id !== 'weapp').map(target => ({
+    target: target.id,
+    mode: 'production' as const,
+    suffix: '/runtime/register/runtimeInstance/nativeDeclaration.mjs',
+    allowedTiers: [],
+  })),
   {
     target: 'weapp',
     mode: 'production',

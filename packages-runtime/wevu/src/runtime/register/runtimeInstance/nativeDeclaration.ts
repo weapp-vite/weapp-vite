@@ -2,14 +2,15 @@ import type { InternalRuntimeState } from '../../types'
 import {
   WEVU_NATIVE_DECLARATION_ADDRESS_PROP,
   WEVU_NATIVE_DECLARATION_EVENT,
-  WEVU_NATIVE_SLOT_CONTEXT_KEY,
 } from '@weapp-core/constants'
 
-const addressKey = /* @__PURE__ */ Symbol('native-declaration-address')
-const registrationKey = /* @__PURE__ */ Symbol('native-declaration-registration')
-const indexKey = /* @__PURE__ */ Symbol('native-declaration-index')
+// 平台条件须在调用点直接读取 import.meta.env.PLATFORM；跨模块布尔常量在发布产物
+// 压缩后不一定被下游折叠，会导致未启用原生协议的目标仍保留本模块。
 
-type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string } }
+const addressKey = /* @__PURE__ */ Symbol('address')
+const registrationKey = /* @__PURE__ */ Symbol('registration')
+const indexKey = /* @__PURE__ */ Symbol('index')
+
 type NativeDeclarationAddress = readonly [selfKey: string, parentKey: string]
 type DeclarationHost = InternalRuntimeState & {
   [addressKey]?: NativeDeclarationAddress | null
@@ -25,11 +26,6 @@ interface NativeDeclarationRegistration {
 
 interface NativeDeclarationDetail {
   register: (owner: InternalRuntimeState) => void
-}
-
-export function usesNativeSlotContext(target: object) {
-  const platform = (import.meta as ImportMetaWithEnv).env?.PLATFORM
-  return (!platform || platform === 'weapp') && (target as Record<string, unknown>)[WEVU_NATIVE_SLOT_CONTEXT_KEY] === true
 }
 
 function parseAddress(value: unknown): NativeDeclarationAddress | undefined {

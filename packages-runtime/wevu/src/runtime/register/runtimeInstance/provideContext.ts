@@ -53,12 +53,6 @@ function resolveNativeOwner(target: InternalRuntimeState): InternalRuntimeState 
 }
 
 function resolveNativeSlotParent(target: InternalRuntimeState): InternalRuntimeState | undefined {
-  if (
-    (import.meta as ImportMetaWithEnv).env?.PLATFORM
-    && (import.meta as ImportMetaWithEnv).env?.PLATFORM !== 'weapp'
-  ) {
-    return undefined
-  }
   if (target[WEVU_NATIVE_SLOT_CONTEXT_KEY] !== true || typeof target.triggerEvent !== 'function') {
     return undefined
   }
@@ -100,7 +94,10 @@ function resolveRuntimeParentInstance(
   }
 
   // 生命周期由注册入口显式传入；created 和提前恢复不能假定原生投影已就绪。
-  if (attached) {
+  if (
+    (!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+    && attached
+  ) {
     const slotParent = resolveNativeSlotParent(target)
     if (slotParent) {
       return slotParent

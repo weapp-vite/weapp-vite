@@ -128,7 +128,7 @@ export default defineConfig({
   - 微信目标（`weapp`）下，编译后的 Wevu 组件使用默认 `setupLifecycle: 'attached'` 时，普通原生插槽中的消费者会在 `setup()` 前同步关联最近的 Wevu 插槽承载者。因此 `<Provider><Leaf /></Provider>` 中的 `Leaf` 可以直接 `inject()` Provider 提供的上下文，无需 scoped props。
   - 默认、具名、普通节点包裹及嵌套插槽均保留提供对象、ref 和方法的原始身份；多个 Provider 独立，卸载后重建使用新上下文。编译器为已知 Wevu 组件节点（含 Options API 局部注册别名）记录内部声明地址，并结合原生 `<slot>` 的投影事件同步关联父级；接收插槽初始未投影时也不需要延迟 setup 或提前打开组件。循环关系跟随实际原生 key（要求有效且唯一）和声明位置，支持重排及隐藏期间创建子组件。内部实例索引仅属于各自模板所有者，不是应用级 context 表；不增加包装节点，也不改写 `Component.export` 或 `selectOwnerComponent()`。
   - 显式 `setupLifecycle: 'created'`，以及在 `attached` 前触发的公开实例恢复，仍保持原有的提前 setup 时机，不能使用这条原生插槽上下文保证。原生/第三方组件未参与 Wevu 编译协议时也不自动成为注入承载者。
-  - 该能力已在微信 DevTools Stable `2.02.2608080`、基础库 `3.17.2` 验证；mpcore 提供对应回归覆盖，不代替真机验证。支付宝、抖音、百度和 Web 等其他目标不启用此协议，不承诺相同原生 slot 注入行为。
+  - 该能力已在微信 DevTools Stable `2.02.2608080`（基础库 `3.17.2`、`3.13.2`）和 `2.02.2608060`（基础库 `3.17.2`）验证；mpcore 提供对应回归覆盖，不代替其他版本组合或真机验证。支付宝、抖音、百度和 Web 等其他目标不启用此协议，构建时裁剪其声明属性、事件接收与清理代码，不承诺相同原生 slot 注入行为。
   - 自定义 Chrome `154` / glass-easel `1.2.1` 预览宿主已验证初始关闭的 Varo Dialog 打开、同步取消关闭及允许关闭后的单次状态更新，并验证 Provider 更新、卸载重挂载和 Menu 选择。该宿主仍有其自身的原生 owner 实现差异，这些结果不等同于微信客户端、其他 glass-easel 宿主或真机兼容保证。
   - `false` / augmented 和传递实际 scoped props 的既有编译路径保持各自的增强插槽语义。
 - `slotSingleRootNoWrapper`：普通具名插槽内容只有一个可投影根节点时，是否把 `slot="..."` 直接下推到该根节点，避免额外生成 wrapper。

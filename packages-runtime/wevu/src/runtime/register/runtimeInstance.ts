@@ -63,6 +63,8 @@ import {
 } from './runtimeInstance/utils'
 import { registerWatches } from './watch'
 
+type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string } }
+
 const initialReactiveSetupSnapshots = new WeakMap<object, Record<string, unknown>>()
 
 function cloneInitialSnapshotValue(value: unknown, cache = new WeakMap<object, unknown>()): unknown {
@@ -990,7 +992,9 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
         }
       }
     },
-    () => releaseNativeDeclaration(target, options?.preserveNativeDeclarationChildren),
+    ...((!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+      ? [() => releaseNativeDeclaration(target, options?.preserveNativeDeclarationChildren)]
+      : []),
     () => runtimeCapabilityRegistry.scopedSlots?.teardown(target),
     () => {
       if (Array.isArray(target.__wevuTemplateRefs) && target.__wevuTemplateRefs.length > 0) {
