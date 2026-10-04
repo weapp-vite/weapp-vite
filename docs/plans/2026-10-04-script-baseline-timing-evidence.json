@@ -1,0 +1,3165 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-04T13:08:02.374766+00:00",
+  "run": {
+    "id": 37202918268,
+    "url": "https://github.com/weapp-vite/weapp-vite/actions/runs/37202918268",
+    "head": "2d53ed9c4c6ab0f2d0b3dae23326c94ad78213c0"
+  },
+  "coverage": "Linux and Windows complete; macOS pending. This is not complete three-platform evidence.",
+  "productionAcceptance": "not-evaluated",
+  "sourceHashes": {
+    "packages-runtime/wevu-compiler/src/ast/operations/jsxAutoComponents.ts": "8c6db39550fecb0ef74b3e67a9943b99f86d8c560e2448e26e27eb934d5ae011",
+    "packages-runtime/wevu-compiler/src/ast/operations/pageFeatures.ts": "6cffc877a352850db16de1f91838699cc5658200bc9c5a6a90818cc38353da5a",
+    "packages-runtime/wevu-compiler/src/ast/types.ts": "d335f24586e6af2ad83307129a6e2eb257346bcd206ed146bc0f123babf51f4a",
+    "packages-runtime/wevu-compiler/src/auto-import-components/builtin.auto.ts": "80cf7c3c1524f1433e0bc32009cfcc112cf7de586cc62b937e9867b2e162a03b",
+    "packages-runtime/wevu-compiler/src/auto-import-components/builtin.ts": "a776892c0c6d5e55942b33e8dc62cb7074c9724876d1d80402dba995ece7562e",
+    "packages-runtime/wevu-compiler/src/bindingManifest.ts": "1d584e2e9c4144566ef7b1d828d6257e52bfeaaa906496f7001854c6bfa4fd29",
+    "packages-runtime/wevu-compiler/src/constants.ts": "6465248bb01cff727a6e1b6e4230d59be2d5c40ac3d8fd16619abacf1289cbe8",
+    "packages-runtime/wevu-compiler/src/index.ts": "f918877b83ff80854df9c6022ee03a60776d5819768123e7e9b711ac88942c5c",
+    "packages-runtime/wevu-compiler/src/inlineDataset.ts": "4caf79e3021d4badfd36f14a2c725f6ef7c93dc64f4050899a38729a00a82afd",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/analyze.ts": "b8685dff6ff5a7ee883d74ea36b25a860c1538e80e15f561e2f7086a653ee137",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/diagnostics.ts": "dc0cdd47892da158e607acf1a18cfbd4c71db2ea103f6e393c3cdecfdb89fc62",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/index.ts": "6f0e8567f4610196e675e8fb41c9cf44853887c73e429e5e8cd6fc17bcc6e9f6",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/macroBindings.ts": "11e5f2360ea743f8fb7d354bfb2d61dd32bf8796cb12eaba19907ac6f7b4dece",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/program.ts": "dbf9bcfab21c21db6b5012983f225b97a8387cef4e32b1da3defa5652159a388",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/public.ts": "b0451ada949f88bea6bddcd018ddb799ba51d8cd7be9039cd8bd31648f36be95",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/rewrite.ts": "8c18b98383a2583c498bb6830dad83748e93e7ef96c78051744485c6d1952e12",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/sfc.ts": "79f946a47928d425d18c24d15aa9ea5d713a7fa1912aee286590c3595381200e",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/static.ts": "1a7c1dea6d10001060fa77d3e8de381640567eabbd566c33edd2f52ae152ec52",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/types.ts": "0c26ce1c5274be7e8ab9876570d177dc4129c4f585f39ec91a2afa601d7c59df",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts": "b8df4152150746ceb601ea9f0aa6bd1382ff84fbb2e80bd2552cccfc653fdceb",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/ast.ts": "e4baeb23e3977b8755196af530aab30429957f09932b8530b30a7a49d46bad79",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/attributes.ts": "0548e25c128c9743bd24a79532319243dee29c22b6a893c61c5dc2ec0f8deab4",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/bindingManifest.ts": "87f263a150a26b070ee834d8d60368895b49f260517f021f54bdec68ed4f71f7",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/diagnostics.ts": "b1ff83968c315755d30f22aa7ad61e5265f5bde0d8c82ad0fa01129f5402aa3f",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/islandScript.ts": "811894a1bb28283d1ba1643ae09bf0904e1eeb88efe5b90f6ffbe2434df7579b",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/moduleResolver.ts": "6a42f864557fabaf2f304a82721952c2488f8fda788771068f42f01c88c6ef4c",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/render.ts": "eb241829b9c75b91504695b41f27a70a22b18ea1c2d35b5910dae0f38d69c472",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/script.ts": "f3a71fef2b6c86317e87ad1cb9227adcbe0ad9bc89ff7d8c8fa061286ee7db1e",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/setupBindings.ts": "e278a2aada2f790eb65cbd04f76f18f77706ae8f43ae4425741c95464aa18d1a",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/template.ts": "a0360a64a89aa6c42de9915e4bacc90bf7faac53da8fc3968bdf9f79d587b46a",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/types.ts": "126ada82c980ffe7759251b3f0119801a30c36ecd45508bed9dbe2bf8c0ef8f0",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsxFile.ts": "e065c2aa447d2d14d515bab2c2a48bcb767876cd559b565d3b744a3a85ebbe66",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/upstreamCompatibility.ts": "74d08f3719bfbeeedb2dd87cc118732da25ec35487bd4c1215375cbbfdbbf988",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/vueJsxTransform.ts": "91449734a8d20d79dfe9313ed5b364655b10dd55fb85dd50874a7fa9ace5c5ac",
+    "packages-runtime/wevu-compiler/src/plugins/uniApp/index.ts": "7748c0134baf57c28e8781cbc0992dc67a7321342ac9fdd02d64906cd5402276",
+    "packages-runtime/wevu-compiler/src/plugins/utils/cache.ts": "e31eb40c60c2bac77bda73feef8c5b0d3df28b02c2f8a277a6b73598dd23da01",
+    "packages-runtime/wevu-compiler/src/plugins/utils/vueSfc.ts": "efe1531e4d78c6cb9bac74a91efc46ee38d208777cf0be91204b4983ec641378",
+    "packages-runtime/wevu-compiler/src/plugins/utils/vueSfcBlockSrc.ts": "5cf8d9c38ce59758ae833a75244feecc06dad2a187acb09d3c8f075ea86c445f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/style.ts": "1ba42356f00313e4c231156c4147f5790a8ca235d60c4c7a476eaaacb24f9f89",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template.ts": "b581bdc66464b5a2a27232b67dbbb6a544f4e87ca9d72e7f1a9edc0342aa5346",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/attributes.ts": "f95664a2a95ac7a3e27c33213889bec381f8c681b36a0824525afd66f41f2c06",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/bindingManifest.ts": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/classStyleRuntime.ts": "8cf49c18675cdcee1afc0821f79f35e17b1b6820c4c8c2c6c6974dd21fd3b621",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/conditions.ts": "587e8a18ea00ca74a3d430d5268c55fc55249e853eaea93c95be1c0f051671b0",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/diagnostics.ts": "6519dfbac33943bb013da8e7b4132eac341a02149c2a190929f4ee9cffbd7042",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/bind.ts": "f23f506cec94cf40bb43388bef9b80f9dc46965d7a0872afe8f69e8b9ed65141",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/custom.ts": "19bb76ee930ab178e23005f6e9f4ba994497dcebbcf0c83d738ee419ef429920",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/forKey/index.ts": "fe5f14091b0cd3510930a3277b8ded76f1dfde489547e88b4cd06fe3e0d7ab04",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/forKey/projection.ts": "1ccb707185c72aa511235951b7c4574401af1ebe449321b6d940e5113ff2811d",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/index.ts": "8da462cd033d699b299f7eb888a02ec619863f3422c0b026bd17315e39599eb8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/model.ts": "f62abbd43e879b977fd41f2cac15e93784fbf2716457351b96b0f6cc9a96efaa",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/on.ts": "5d33ada09b6f2c63a4c3da3cecdbab88a07bc577390cdde99e34d299a40667ed",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/show.ts": "59dace7cd7270b8bee1d6f3b053cee7872cfd0d8d716d3a044ea7304289cf5e8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/attrs.ts": "819a2739128728548b1634aa93b57af5e6d9646444a271538ab3d57095df82f1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/forExpression.ts": "5db330db73c7c22b1ce1cebec4945ab69002c35996ec1a350219b590eb3c9739",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/forPatternProjection.ts": "c25d6201ebb1cd2acf132bf50e156049275d2a1a70888d1f23c35339383f0d3f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/helpers.ts": "da3ac6b531af474a76321abe29a91428e8f165f707b3ef7d415346e0ff5961b0",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/index.ts": "b1555231ce3640f3ab7e81c0e3874fbd984bd1bdc3522bfbdf221c25e0939122",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/slotProps.ts": "03698058bc7be5e0499faa0c00f52f8dcf9f8efcf9155b956e1ad53bbd5daa31",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-builtin.ts": "ac2fbef0d21ccb6edde5cda35c0ade0b7ded447cceee3ce82fc83d73b53a039c",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-component.ts": "f1e58a1549e7aad506fa455801e22c175eb0fbfcb38b83a131b21627b7442f4b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-normal.ts": "8034b403e57fd8479576f73d9c014f81e25d00c15b1965c5d5888e6a89b01aeb",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-slot.ts": "3e684b7b521382698b551e9c18ab85ca49c2e3e302af982a7fafbd912d3f7e22",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-structural.ts": "053c7e5d816d2af956d7c2004c4ce32c47a1f00a62a88396669a0166803fc61a",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/bindings.ts": "742fb5a493f04c79f8558cb2edd794138e38fc6bef660205e8893fc47b4d2692",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/forItemAccess.ts": "e12c61770891faff688fdcd2c0f246447e423c3d9417795e02e23d4ae3f51411",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/forItemResolver.ts": "e8c470af09ea16d062a0210b21bba4aa318ee793378809deffbf50828e91e90b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/index.ts": "d4a8f562c6b83a224750f6af4ad8b21ef70216ca88c62116ab69fdb52ca2b7f6",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/inline.ts": "de17b271547d63ccb96b5c418569935b02c6a7dc556513e6ae48e9eb768db6b0",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/inlineShared.ts": "85ed6c84c60b76f88b4fa8f0bd99029787b5790d3eb1f3db1a175813c96ba8f2",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/js.ts": "de5e3c7c81896503ba8b7f01da02b5abe84689acf72366490c32e9c920f99ca6",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/numeric.ts": "8a4bb4a9498e3ec4ff4ca43904a66c029d466b3f076a3ea6a9941389b6736c21",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/parse.ts": "99a537ff6a8796816ceadfe6e624f715d30f2ff71b22f7f0dca112b1dcdb71d3",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/runtimeBinding.ts": "07438f2a2e5a6121964dbb19d27b4b53ba2c895eba4729adae8df739bb00ff99",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/scopedSlot.ts": "b4e8ec169858badaa30a16d9d7f142c2d095daa11ee6aa7693e81acf34239ef4",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/wxml.ts": "c93e9f9f7cb7959f43736980be34349b6a38d2e84dd5288d33ad3a9cf4da4670",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/format.ts": "7a8d04661fb7c7ad8f0e4435c53850dc157088a035fa6d98fbddc452c297d8e3",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/htmlTagMapping.ts": "8d01bee3ad35851bcdd96b88ea2883897f0daffa3ab35be14d036ec6c712bcb9",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/mustache.ts": "68c8245dd05ed02ce24e53bbcf2911ef4495a8efe65945d40ce43c523ec1f5a8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/nodes.ts": "d55aa3027f24121a755872c23758c8fd49409214886b6c71766d98cf1fdde307",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platform.ts": "fec6db299106aa46734fa3df988b5770dd9867c6e38768c601e6c9acbd1f9cb6",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/alipay.ts": "c9a6dc421492c4a6770b2cfdd3bbdc234c692ee334b30d9949914e2eeee7a846",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/default.ts": "38f25d9cb6b673261a1f964e198167b609392261cbd958cfb02d5627de293666",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/generatedEventAliases.ts": "6f670f31a032aa8469817d263e9d97d1c7b9d3e9d16ccb2f580f999cfeaf4745",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/index.ts": "46d8e0972d600e76c959deb8b836ab52a7c3ab7aeff245b7422787be74cd3a86",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/swan.ts": "57872f2f665f9273a328b65eb4694c5251dd11e3a9be898bf24957f75a737afc",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/tt.ts": "96c4a71c3ae65f92eff32744dce07f28411ac57afbfb60fad4cd9228ac6d66cb",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/wechat.ts": "bf4fd52cf0b89747e8c13118fbcee97257f8c15e2e1fd99bc4913eead611bf5c",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/scopedSlotOwnerBindings.ts": "e653868a40aea9a119978165a42f7405210122e1140d2c37ffeba405d4ccf7e1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/scopedSlotScript.ts": "f9edc8dc95b9e9c15b9690845b7648a53b17ddabb9045bcc7237cd20eef9b595",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/types.ts": "c4a4177a6aad1ea4f1d6402bfbd02c328e221a38bdc3a527ac4b5eb077445827",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/upstreamCompatibility.ts": "773b0c4e20c18612e382f9cb350d9d9762379d97369a068887268b00707d02cb",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/wxss.ts": "8ea19ce4196d79df5d86637962ee27ee22d43151a23c32775d797788b633736e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/hmr/sfcPayload.ts": "f6f6261c27696b9cbfdbf5fcea1681b4fbdeef4f38316bd04d19989c1e638b4d",
+    "packages-runtime/wevu-compiler/src/plugins/vue/hmr/sfcSignature.ts": "b453ce03e2cf8eeee5fdddca48d43cc7bb6e821b1952f45c6d12e615c82b0b9e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/hmr/tailwindContent.ts": "c560194c9c2c55e9126455703ce972ae74f206d029ae3a738cbe6dbceb187c84",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform.ts": "8663876f3231d87de93e20adc7398d2a73fd2499ca40b001945e82083cb83d4e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/classStyleComputed.ts": "9cac0dc878905155b9c679056b29c64143e18607e65b0ad31ef97f81aa27f3a4",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/classStyleComputedBuilders.ts": "38b72317948de2e8717af9664890c99c989dc6e28c2ba5d0e56da8f5cd109b29",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/bindingManifestLocations.ts": "01f3e95ea3795e387c5433a01251c10f6dfd94e9bf701855dfe25a495bbbd0f8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/componentSources.ts": "0152ea24da3d23749e7875ab30eaf69b6197a40bfa0a926b951a871b5a7fad3b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/config.ts": "c6b0037e81a6a314074c17d28c64e9763c0857f7ea987f3b06982287644f290c",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/finalize.ts": "eca7978d676f34b7e89851f3d5399a916f84fa4c6062b79ee2a0e0387ffda56f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/index.ts": "e99a4199cea83b73e6b79b6545d9706c2555450a60ac885149919c3982faf700",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/jsonOnly.ts": "ad252b2851fac8362e791fcd271640278e26af822987363bfaa17fda12855737",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/pageLayout.ts": "a594eb4e2e3c7020b8ab1bf151b6509bc13dee62851a5b7bc22cb273e5f8a123",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/parse.ts": "d2fc8d0e8b5becf68a6f596e184d329251b74b7d55542ac71a3ba39f27fa56ee",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/propsProjection.ts": "ad372ffc1d1927950a4084b19194d1e956c85a37a75b6658241d4b9f23d343d8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/reservedProps.ts": "1fe7544438995e2b2947269c7c4ea56ac8d04a42b0848043c1178274d5339c7e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/script.ts": "3208528fa23a1c70f894b1056cdfa882603bd187b566a46ec4cfa1596e3f6473",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/style.ts": "afbf88b2c828605eb79f5f82601180d2942cbe35e657f176eea4368317835aeb",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/template.ts": "74a6842cb86e2268c6db083abe31b9e3196154c825744606aa61ce03d64f5cc1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/types.ts": "8f9ebbc010e3ca2b88cf141014731e3a7f2cabe5756c4ee0abaaf16e5f4b724c",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/config.ts": "bd5615fa257b010035361084a6aed32227a410de95bebca5f7bc32812be09578",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/constants.ts": "c385876a94a14a1e60666330ff91ac3207e633a3e80e1a3a2c01ff21976d8b04",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/defineOptions/inline.ts": "bc0d309d1a5e9c3faaf31454e5bd6c8422b4156ab05c634d3f9a521addaee9bc",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/defineOptions/serialize.ts": "5af4bd9367549626a07b0c411cb05a0b24ca483acadf0bf706f26bcf715a83e1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/defineOptions/static.ts": "eee5a236a7896abca4a87f2ca08cbd0a830e254ba54fcff6f94f220a082b7328",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/analyze.ts": "e95de7d95c328ff7adad49c9df09985f400b184afab3d0c0938c34f7a1b911bd",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/execute.ts": "1a0f7e10da05a16e302c74fe56ec3ed0415c4e2586fd4c911c033704b5b464a3",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/index.ts": "25dff5bdff80b05aaa6780083cc5befdaedfcc69ba3b018f53cb63c7b665974f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/parse.ts": "e8645b75d11c4308367bbaec4e9a0de0de167a3239b19b88e99fbbf4e099204d",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/rewrite.ts": "62cde048ee3a4b63542cfc82396db323de8d1d33f5a8f96504fa11b45629a372",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/static.ts": "4e8292df1bc9ce961ff2955d0609d1e2554b591bd55769bf39bc36fcc662094d",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMerge.ts": "566f7d6ea1e765fcc5469928e48eb94c0ae77677693666535b351aa8bc4e3ca9",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scopedId.ts": "fbc1cdf61a4399000c5e54f52bc9e8798b68c069b48671230dd477c0ffb99d04",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/script.ts": "c4a19fc2fdfe07e8b1f1177587f350a41b380e782f1ee818634cf42883b46c40",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptComponent.ts": "e51f5263b5d619029e12d1a1a35e9c0ef6ee81afe198332656a0855e90e87801",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptRuntimeImport.ts": "6fd6fa22c2fb0ba171448c4ea7278535b3251aeaba3207cb6de0006c77af7c06",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptTemplateMeta.ts": "8c407fa9967755b73d3221daa3110b978dcfe86dd16034a49a898c4bbaa1f009",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptVueSfcTransform.ts": "822b9cb0f73d8cdebe6e70e02d7465675a14288aa72653a1243fa309622913c3",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/tempDirLock.ts": "51b2df5259daf61768d1d864c4f3a4f661574e1db88b4bac597e8d3f1c6c4e68",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/tempImportRewrite.ts": "7a4a9a1905dcbf8859931cc4fcb9f2afe13239da59135c6ad484197f754881b6",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/collect.ts": "1993801a918603d3708aa252fd3611bcd09774a536719d9ee048b7975c191775",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/componentStyleOptions.ts": "edacfccff8b0a994ec612e1b81729d4628df32518a1f4557eb08196861556988",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/fastSetup.ts": "cf6cd5fde4c2f3683e599022f1c2a0a17524697faa1e461761e44faebd95ca57",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/imports.ts": "14a2ea7abbeb9895966a183448a5d70bb0357cf59b1116b962084276c5b927c0",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/index.ts": "452b2ba785216d64c54b9bcf85772fefb9607dc91cdc38250d9695e09fb8a273",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/appSetup.ts": "635afb9d4f32a1446a32be331deb6e03bcc6374f030c1b7233556ebe9ac6c592",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/index.ts": "fe805ba9ba6862fe18c04e11cce31d89a1bf62c947d597daa073466db7161e7e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/optional.ts": "9677079d57a14fbd82681a47453941a8ece38b31a9a4a13dc08c5dbe600f3782",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/pageMeta.ts": "b7775023ee379797ed6171e7aa048a559257fc9c52d4ae93b5405db2f926c918",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/setupExpose.ts": "92ce327fcf6aba75ee694702a1679f22ebfd97b6f99374bceb39386de746bc38",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/stripTypes.ts": "7e83480b20cb0aa4784904ff22da6d144da0d6038cca7dcb5f6b61d6a75e093a",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/bindingManifest.ts": "a5e26b299886ea6884ecb2e850817f0f43a0194afff8b96cd94509d0bf7073ca",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/classStyle.ts": "69e274b1a71a533d649c53a1831d77818d528bd15cdb2fe365f9613a107eedb1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/cssVarsRuntime.ts": "e8b80f036e590e3b6444d5dd70ae419e8f3c906a29d283723d6818e7e1fe2edf",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/defaults.ts": "3aa3327135cdd089952f398f23a8d28ca7ca3dc33a9ad1134cfec8bb17f33333",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/defaultsExpression.ts": "b8780eb8b9c0dad15743fe8b97d4c25c4b71c2c54ae82d4a4a0a0f13a6ca82f1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/export.ts": "2560b3e59697c6971512e3385aeb77494584f2f47ff47a950903994c44255bd5",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/index.ts": "b2520bd677b07de8775eed17935a50492aa839ef6639741c0d54e095d548f726",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/inlineExpressions.ts": "669d928f4f75094ef10aabd73f9ce393200e5a0d367c1e4d0f769e920faeace4",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/layoutHosts.ts": "f64473ee25dbcd31d2764a0c7846f7dbcc44b1badb4052af3af7ef0a2e5eded8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/propsAliases.ts": "95b28c3ae4ff6546ee227f20f2e5b78b8ce4bf9a668f46932aa1caa96c45fce5",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/setupInitialData.ts": "afcf4947053a985dcd0254c4552970ea1f1bc559e47ac0c757e91ecf8f06c35b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/templateRefs.ts": "a2f57a5133a052683d5d840b5e5bed85ca63d366f7419815c3729de283e7270b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/runtimeCapabilities.ts": "dd0f973e058c3960c907468d740e7919b37c5512657a87bf4e2f29e84acb21f8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/runtimeCapabilityInjection.ts": "f264c93df6e7f5475ff3d74780e4656a8ad9e908ac00ca389e8051334015a034",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/runtimeCapabilityOptions.ts": "b6230eb22c416e5aaeb34f58c0e5a3e42cc20977c234dd3277260cbd198e153f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/utils.ts": "1042d82268434f5320484af0744378538c25b481eafbd7790d6b17d7fd35946e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/wevuTempDir.ts": "8a8ea2dc1729c50dfa0a3672e9a3dac008e1cc5949f6d4a80f5ca5bb3c3e2ae6",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures.ts": "ba719d0a56d805263f2ccd4c7d524fcf911c2fef08fc722775d003ee92eed71d",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/analysis.ts": "f9d7b903f7265b13e4b656056678aa2a2323602b3a6e2381a137d64e19eafc2b",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/astUtils.ts": "624ee4c9b100b5d66c98bd00e1ea373bf87b11cd65e39a92500bacc1cdac81de",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/flags.ts": "63106464a9238b8dd26df16a5c6b9e50fb72af61f1261f4bb2a1ec5b6679d09a",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts": "c2e1510a38b879d11969ad63ba665d6fc65e248fe6b38e83d8e93a1434cd3674",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/matcher.ts": "b1ff5281c74c46f7b52d4ece901caf260ca45d3056f3679b5bb794586388fb80",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/babel.ts": "392ab760e8e197010c604cdaeb82968952a396481a220ac168927ff13b0735b2",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/index.ts": "5a4c38330057fd886be4883fff5ba9e913e594108fdece970550db33a89bc5f6",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/oxc.ts": "a9463d854838658e1bb56e9c7d013efdea5ef39854ded1d2b041d0dd52e5cdac",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/shared.ts": "d7cd6ea833e9682d494f2f9e54ce3cbdf4b0c5a652648ccb655e3a3500a3b51d",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/types.ts": "cfa0f1ea6acfdc1029dd92951d6f2211acd698451968547091d331732c6bf26c",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts": "c64c796795bdbf44df99076f8c8bc4d7fadd1d2f4bbe1f6f6e8442d638687779",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/calls.ts": "f82cb2f20064ee3de56f2c53f15997771ae2ef45856717dc9c1c06d20ab5b56c",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/hooks.ts": "8d8a34fcbad0197b7c278fa0a062878389c42289cf386a275f1e0fb0f2c42904",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/index.ts": "a2decd8d5c3ca5dc97c6ea3821485b0b113f5b7bfd74d771e7753abb8017cc29",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/resolve.ts": "078e20e3f2437ac5d259aa75552219ea4a342b369062b16126d7b5e469cb1f24",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/walk.ts": "56f0aa9f50016dcc64c673c3be43338a32e4825a88e28e35794bc2aa268a761b",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/types.ts": "e11fe269c8530046ba37890f6c127765411160ebf4440aea79e093a31079cc0f",
+    "packages-runtime/wevu-compiler/src/profiling/internal.ts": "a25ac02aa783458deac6213c3977d0c23323a65867dd8dfc90b7ed29e0119c33",
+    "packages-runtime/wevu-compiler/src/profiling/node.ts": "3bf91a3bb6d1cf1d353b359c35341a953e15dfb9a00b2a53c62250de6b52e983",
+    "packages-runtime/wevu-compiler/src/profiling/types.ts": "a6d7d7d1de19970de45c65eecf2ac7bc984d490c6f3a4ff49451f8c7f5745be1",
+    "packages-runtime/wevu-compiler/src/runtimeCapabilities.ts": "a69a7c696b49f2fbfb792ef57a948d1ced1486096f2c1aa9f33b3f1145527d70",
+    "packages-runtime/wevu-compiler/src/types/bindingManifest.ts": "f5a36a058f85dc790d913978ca36ba76fdb4b8d60834e18810dbbefbcde7ebe0",
+    "packages-runtime/wevu-compiler/src/types/componentStyleOptions.ts": "9426e9ffe32188534b44c2bad8fb24058175f4f76e7d4d705e27e334ae85175d",
+    "packages-runtime/wevu-compiler/src/types/diagnostics.ts": "029e702ade9923c9733c9b36c08eb6d448620396a9af777195872904afa87f5d",
+    "packages-runtime/wevu-compiler/src/types/json.ts": "1718253fa17d5913047feea226e4fad05a8c994d892e8a8b02a3069c4f0215d9",
+    "packages-runtime/wevu-compiler/src/types/pageLayout.ts": "8fd9a7861f2879bbcc1412b010294030ea5a102282d5c7fd9ee34e9b26cdf1cd",
+    "packages-runtime/wevu-compiler/src/types/platform.ts": "f00d95ad1556e37544d7e319a395c241c90efa37bd7f65fde71e68d30677c682",
+    "packages-runtime/wevu-compiler/src/types/wevu.ts": "03fb4bca554b63849f70f861b3eab1d2acb8b7711f7d50a62af85185740b2adb",
+    "packages-runtime/wevu-compiler/src/utils/babel.ts": "3aace418d870795d53aa53cc25458687a48940b7f52ef6fdbdba2ea8ae6e3686",
+    "packages-runtime/wevu-compiler/src/utils/cachePolicy.ts": "d7de5846153e606a5891ae34f868b65b40332dd97fcaa4d07ee1b2eb5073b5b1",
+    "packages-runtime/wevu-compiler/src/utils/fs.ts": "1092d341ee3f85504f49c806f548bca18d4e95f577848fbc2496ce4b04ac2aa6",
+    "packages-runtime/wevu-compiler/src/utils/object.ts": "caec001338d607c61af3be7c0cbe2eabc7f0c7f5d6a75ae1d7cc8d7e2515f290",
+    "packages-runtime/wevu-compiler/src/utils/path.ts": "e233a6d11599b492a5f4deb709d14a24f56cb8ac036217ec20ea962f2ae74b15",
+    "packages-runtime/wevu-compiler/src/utils/resolvedId.ts": "1cefc3f80149646d1e27b9d4c4383315f1a592e1f489bfbeee0368ad9ab21d47",
+    "packages-runtime/wevu-compiler/src/utils/sourcemap.ts": "9fb177900fb05cb5c34a35d4d4a96d8c6c5a63593c03a449ae0d4fada4e457e3",
+    "packages-runtime/wevu-compiler/src/utils/text.ts": "91c89ffc81d34175f388611a4ce943e5c8918697d57d0bdbf650eba9779e0bed",
+    "packages-runtime/wevu-compiler/src/utils/viteId.ts": "de65f470961d39d83189d24d45c102c93f8ba9c1aafaa30d58a58259c350a500",
+    "packages-runtime/wevu-compiler/src/utils/vueTemplateTags.ts": "79b573138cb2b64be9ddabbd991b4ed121686c4317b699295eb021399bd773a2",
+    "packages-runtime/wevu-compiler/src/utils/warn.ts": "e0d9a80c2764d1063b9abe73e860409209dd656c146e3072984a6a52caf4cf67",
+    "pnpm-lock.yaml": "c3470f724491ebdd5176c23b1ee61761c858a44f48a20a813721f1ee71276145",
+    "scripts/astMigrationProfile/fixtures.ts": "128ea7247bc205c73e0f22b44136c4bc5e7dc7927317fe5fb671e2c5239b39cd",
+    "scripts/nativeBindingAnalysis/compileScenarios.ts": "85d696b87a43c2fdb8e25cdd0a25e00a82f30190d44c9262c96cf1e21b7c5b0a",
+    "scripts/nativeBindingAnalysis/orders.ts": "543e70f90fc0542dcbee4d34a3fd5b34dad63eef3fc8d800ad8b04ee0d947e45",
+    "scripts/nativeBindingAnalysis/workerLifecycle.ts": "9bbfbdfb9c32b935cada603efe961d1d7094b0893b9ea112e29299091fed1649",
+    "scripts/nativeBindingAnalysis/workerProcess.ts": "bb5e701fc243465437368fbb6cc061fb4d78b3e450d8cf62e231e387b33c767b",
+    "scripts/scriptAnalysisBaseline/check.ts": "d57beafcec35384bdb47ed2be83f10a90d3892387cbf1a47555e01a601e1c45f",
+    "scripts/scriptAnalysisBaseline/diagnostics.ts": "5823b3393bdd896488e6612175f4ce34c60201d34d1f5140d832622a4dbfe4fe",
+    "scripts/scriptAnalysisBaseline/execution.ts": "cb96fda8c2e017b3c0e30c366eed298ff878a1504641b0162224d6ca329a883a",
+    "scripts/scriptAnalysisBaseline/identity.ts": "9d8fdb820ce53131f22c72d42ee39614f764019126a48606c243bc209922efe7",
+    "scripts/scriptAnalysisBaseline/install.ts": "935379efccb57870ad703d985d78bf0ca8835e77e9db0289f73a318170ff0155",
+    "scripts/scriptAnalysisBaseline/installHelpers/source.ts": "b5e5ed6418cd5d38156747864f2ec51611fb7ea6c24bb3fe87cfc73a15451922",
+    "scripts/scriptAnalysisBaseline/installHelpers/state.ts": "892406ed15bc6ef05649c7af06243abdb9853d10e29f9b0ae0415fc37532ec8d",
+    "scripts/scriptAnalysisBaseline/scenarios.ts": "d7d206e335faa9e2bd89ed0fc54f3c26562359f723d5f0b32d720c897394703e",
+    "scripts/scriptAnalysisBaseline/timing/aggregate.ts": "87dbc58cfb8bc54acbfa58fcfe5403123755b53d67a92da4df5f20c034b24683",
+    "scripts/scriptAnalysisBaseline/timing/collect.ts": "1383e2a89adb7189d0648a1f29fe5f5954bc2c439becad86e64fab699604a3bc",
+    "scripts/scriptAnalysisBaseline/timing/correctness.ts": "e4d3a5309a3e70ac6863085811d5e113ab9b784583fca90109aee5930b2dc0ee",
+    "scripts/scriptAnalysisBaseline/timing/process.ts": "3985d01752fa4016791967f0554a9fcc29b39161a9952669d627e6c33bd8f90d",
+    "scripts/scriptAnalysisBaseline/timing/protocol.ts": "8e33b27594db6451a29610094617026ff2686deccda73753d72f1fb6afc15739",
+    "scripts/scriptAnalysisBaseline/timing/run.ts": "2f4efa3e81cee69d2a9ecadd6e2f33dd08dc9555faf2d96cb708f0373b6fc834",
+    "scripts/scriptAnalysisBaseline/timing/testUtils/correctness.ts": "60b22ef283db7937742fbaa04a7ca7bfbbc392f1e3334b54ecbd03d34e4a0080",
+    "scripts/scriptAnalysisBaseline/timing/testUtils/reports.ts": "3e5ea90acc4486ae965759042f9f1e2961fd9ba32c6188e5aaf5ab218f3fc95f",
+    "scripts/scriptAnalysisBaseline/timing/types.ts": "cef7aeadea60ffb8abd42297d761da926147a8ab102edb3d7c8a2d5645a275c5",
+    "scripts/scriptAnalysisBaseline/timing/validate.ts": "21f349a911342481c4001c15ea5cb370eac1bc2f958cb1ce3f6afe5cb97ce98f",
+    "scripts/scriptAnalysisBaseline/timing/worker.ts": "8193e6ba7217e2236e96a7cb082a9d6ae949cde81d5b109d78c8a6678870c010",
+    "scripts/scriptAnalysisBaseline/timingRun.ts": "855221ec09ada4b71a2f103d7b5dc1300a575622235ef9144ccd765b459d7b00",
+    "scripts/scriptAnalysisBaseline/timings.ts": "683903514048ee897b46272062b7e0226f89c823008d67fb56ff8d96eb699de0",
+    "scripts/scriptAnalysisBaseline/types.ts": "4c5e33a200a7a25a67ec5394e5344feabdf9a4dd50b3bd7a37479bc5dcd2e256",
+    "scripts/scriptAnalysisBaseline/worker.ts": "4f12f841868188967ba88edc8d3aa06e0e6e47719cec4a8f7f6aae5d1a7758e8"
+  },
+  "platforms": [
+    {
+      "passed": true,
+      "run": 37202918268,
+      "head": "2d53ed9c4c6ab0f2d0b3dae23326c94ad78213c0",
+      "artifact": "script-baseline-timings-ubuntu-latest",
+      "artifactId": 11304355980,
+      "summarySha256": "9e882f38cdeddee8adf8885f4c7a93763c3be1758b772042960ca6bede4abe56",
+      "checks": {
+        "sourceHashes": 230,
+        "reportHashes": 14,
+        "correctnessChecks": 448,
+        "timingCorrectnessObservations": 42,
+        "timedObservations": 1764,
+        "verifiedAggregateNumbers": 4932,
+        "distributionQuantiles": 396,
+        "pairedRecords": 1512
+      },
+      "environment": {
+        "node": "v24.21.0",
+        "platform": "linux",
+        "arch": "x64",
+        "cpus": 4
+      },
+      "fullCorrectnessCoverage": {
+        "baseline": {},
+        "control": {},
+        "ast-reuse": {
+          "astReuse": 20,
+          "astSourceMismatch": 4,
+          "astUnavailable": 24,
+          "astOffered": 30
+        },
+        "props-no-scope": {
+          "propsNoScopeVisits": 22
+        },
+        "page-meta-gate": {
+          "pageMetaSkipped": 32,
+          "pageMetaAnalyzed": 16
+        },
+        "reserved-props-gate": {
+          "reservedSkipped": 20,
+          "reservedAnalyzed": 18
+        },
+        "optimized": {
+          "astReuse": 20,
+          "astSourceMismatch": 4,
+          "astUnavailable": 24,
+          "astOffered": 30,
+          "pageMetaSkipped": 32,
+          "pageMetaAnalyzed": 16,
+          "reservedSkipped": 20,
+          "reservedAnalyzed": 18,
+          "propsNoScopeVisits": 22
+        }
+      },
+      "groups": [
+        {
+          "id": "batch-1-sfc-pressure",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 108.57886799999687,
+                "p95": 120.57349500000055
+              },
+              "cpuMicroseconds": {
+                "p50": 143520,
+                "p95": 175433
+              },
+              "rssAfterBytes": {
+                "p50": 516243456,
+                "p95": 525950976
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 112.04030499999499,
+                "p95": 129.04886099999567
+              },
+              "cpuMicroseconds": {
+                "p50": 147871,
+                "p95": 184726
+              },
+              "rssAfterBytes": {
+                "p50": 540585984,
+                "p95": 557555712
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 108.88348399999813,
+                "p95": 122.9921039999972
+              },
+              "cpuMicroseconds": {
+                "p50": 144840,
+                "p95": 172283
+              },
+              "rssAfterBytes": {
+                "p50": 539955200,
+                "p95": 550719488
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 107.68810499999381,
+                "p95": 116.88947799999733
+              },
+              "cpuMicroseconds": {
+                "p50": 141761,
+                "p95": 176793
+              },
+              "rssAfterBytes": {
+                "p50": 538755072,
+                "p95": 554336256
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 108.12311699999555,
+                "p95": 118.67710600000282
+              },
+              "cpuMicroseconds": {
+                "p50": 143902,
+                "p95": 169821
+              },
+              "rssAfterBytes": {
+                "p50": 539156480,
+                "p95": 554295296
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 109.58802800000194,
+                "p95": 121.87276500000007
+              },
+              "cpuMicroseconds": {
+                "p50": 147334,
+                "p95": 182107
+              },
+              "rssAfterBytes": {
+                "p50": 542167040,
+                "p95": 558059520
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 106.30178399999568,
+                "p95": 114.53218899999774
+              },
+              "cpuMicroseconds": {
+                "p50": 139792,
+                "p95": 168298
+              },
+              "rssAfterBytes": {
+                "p50": 539168768,
+                "p95": 549666816
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": -3.0047799999883864,
+                "p95": 3.4036639999976614
+              },
+              "savedPercent": {
+                "p50": -2.750077653041541,
+                "p95": 3.0800419307099185
+              },
+              "wallP95ChangePercent": 7.029211519492806,
+              "wallP50ChangePercent": 3.1879472163940825,
+              "rssP50ChangePercent": 4.715319432543086
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 1.9289219999991474,
+                "p95": 16.732084999999643
+              },
+              "savedPercent": {
+                "p50": 1.7934696654733573,
+                "p95": 11.997366527937896
+              },
+              "wallP95ChangePercent": -4.6933827645318615,
+              "wallP50ChangePercent": -2.817576228480456,
+              "rssP50ChangePercent": -0.11668523022602129
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 3.773273999999219,
+                "p95": 15.023284999995667
+              },
+              "savedPercent": {
+                "p50": 3.254734553344,
+                "p95": 12.0168451808456
+              },
+              "wallP95ChangePercent": -9.422309430533248,
+              "wallP50ChangePercent": -3.8844949592036326,
+              "rssP50ChangePercent": -0.33869024617553256
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 3.5755449999924167,
+                "p95": 13.031725999993796
+              },
+              "savedPercent": {
+                "p50": 3.375876937243795,
+                "p95": 10.586762460227416
+              },
+              "wallP95ChangePercent": -8.0370759723274,
+              "wallP50ChangePercent": -3.496231110759307,
+              "rssP50ChangePercent": -0.26443600875897255
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 1.9189530000003288,
+                "p95": 9.693619999998191
+              },
+              "savedPercent": {
+                "p50": 1.7760628802747087,
+                "p95": 8.162214878483985
+              },
+              "wallP95ChangePercent": -5.560758881859362,
+              "wallP50ChangePercent": -2.188745380506729,
+              "rssP50ChangePercent": 0.2924707718652275
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 4.992710000002262,
+                "p95": 22.689196999999695
+              },
+              "savedPercent": {
+                "p50": 4.177129653966293,
+                "p95": 18.148665064051
+              },
+              "wallP95ChangePercent": -11.248973363661385,
+              "wallP50ChangePercent": -5.121836289181436,
+              "rssP50ChangePercent": -0.2621629198584663
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedAnalyzed": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedAnalyzed": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-1-sfc-retail",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 65.42800600000191,
+                "p95": 74.24444000000221
+              },
+              "cpuMicroseconds": {
+                "p50": 96425,
+                "p95": 127901
+              },
+              "rssAfterBytes": {
+                "p50": 492761088,
+                "p95": 493314048
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 66.05031800000143,
+                "p95": 78.43462200000067
+              },
+              "cpuMicroseconds": {
+                "p50": 99622,
+                "p95": 128155
+              },
+              "rssAfterBytes": {
+                "p50": 507854848,
+                "p95": 522166272
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 61.52811400000064,
+                "p95": 71.95551600000181
+              },
+              "cpuMicroseconds": {
+                "p50": 91671,
+                "p95": 117071
+              },
+              "rssAfterBytes": {
+                "p50": 513966080,
+                "p95": 524775424
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 64.3069179999984,
+                "p95": 81.27239899999768
+              },
+              "cpuMicroseconds": {
+                "p50": 94581,
+                "p95": 126308
+              },
+              "rssAfterBytes": {
+                "p50": 505966592,
+                "p95": 520282112
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 60.71662799999831,
+                "p95": 68.51610500000061
+              },
+              "cpuMicroseconds": {
+                "p50": 92589,
+                "p95": 119068
+              },
+              "rssAfterBytes": {
+                "p50": 509526016,
+                "p95": 528236544
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 58.86546300000191,
+                "p95": 72.10621200000242
+              },
+              "cpuMicroseconds": {
+                "p50": 85158,
+                "p95": 117788
+              },
+              "rssAfterBytes": {
+                "p50": 507707392,
+                "p95": 530358272
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 50.51060399999915,
+                "p95": 60.89182499999879
+              },
+              "cpuMicroseconds": {
+                "p50": 70497,
+                "p95": 100314
+              },
+              "rssAfterBytes": {
+                "p50": 506728448,
+                "p95": 507420672
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": -1.5207979999977397,
+                "p95": 6.819420000003447
+              },
+              "savedPercent": {
+                "p50": -2.4835866887486096,
+                "p95": 10.108605167853876
+              },
+              "wallP95ChangePercent": 5.6437653782536845,
+              "wallP50ChangePercent": 0.9511400974064443,
+              "rssP50ChangePercent": 3.0630990083372778
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 6.516375999995944,
+                "p95": 17.75684900000124
+              },
+              "savedPercent": {
+                "p50": 9.544721524127185,
+                "p95": 21.265513370205355
+              },
+              "wallP95ChangePercent": -8.260517912611098,
+              "wallP50ChangePercent": -6.8466044327003655,
+              "rssP50ChangePercent": 1.203342258928286
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 0.7877019999978074,
+                "p95": 13.044164000002638
+              },
+              "savedPercent": {
+                "p50": 1.1574038837036476,
+                "p95": 18.314390176049354
+              },
+              "wallP95ChangePercent": 3.6180157787934153,
+              "wallP50ChangePercent": -2.6395028105738794,
+              "rssP50ChangePercent": -0.37181017517824433
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 5.952141999998275,
+                "p95": 18.79610799999864
+              },
+              "savedPercent": {
+                "p50": 8.927931323764605,
+                "p95": 26.606309424012974
+              },
+              "wallP95ChangePercent": -12.645585262079774,
+              "wallP50ChangePercent": -8.07519200740714,
+              "rssP50ChangePercent": 0.3290641029777053
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 6.805174999999508,
+                "p95": 19.861557000003813
+              },
+              "savedPercent": {
+                "p50": 10.59167476519278,
+                "p95": 28.612593247669864
+              },
+              "wallP95ChangePercent": -8.068388472629096,
+              "wallP50ChangePercent": -10.877850731921324,
+              "rssP50ChangePercent": -0.029035067909799483
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 13.49690599999667,
+                "p95": 27.286708999999973
+              },
+              "savedPercent": {
+                "p50": 19.925999225484368,
+                "p95": 38.94956321325779
+              },
+              "wallP95ChangePercent": -22.366139534658213,
+              "wallP50ChangePercent": -23.527084305637924,
+              "rssP50ChangePercent": -0.22179565764428588
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedSkipped": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedSkipped": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-1-sfc-wevu",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 22.942150000000765,
+                "p95": 32.540509000000384
+              },
+              "cpuMicroseconds": {
+                "p50": 29689,
+                "p95": 61286
+              },
+              "rssAfterBytes": {
+                "p50": 348790784,
+                "p95": 410345472
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 23.41461200000049,
+                "p95": 31.483485000000655
+              },
+              "cpuMicroseconds": {
+                "p50": 30024,
+                "p95": 61979
+              },
+              "rssAfterBytes": {
+                "p50": 366198784,
+                "p95": 425721856
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 22.664984000002733,
+                "p95": 27.503820000001724
+              },
+              "cpuMicroseconds": {
+                "p50": 29694,
+                "p95": 49546
+              },
+              "rssAfterBytes": {
+                "p50": 352387072,
+                "p95": 400838656
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 21.917577000000165,
+                "p95": 29.418206000000282
+              },
+              "cpuMicroseconds": {
+                "p50": 28832,
+                "p95": 48035
+              },
+              "rssAfterBytes": {
+                "p50": 368705536,
+                "p95": 427798528
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 21.618829999999434,
+                "p95": 31.31297900000027
+              },
+              "cpuMicroseconds": {
+                "p50": 29224,
+                "p95": 57817
+              },
+              "rssAfterBytes": {
+                "p50": 370958336,
+                "p95": 426176512
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 21.96676899999875,
+                "p95": 25.666666000000987
+              },
+              "cpuMicroseconds": {
+                "p50": 27821,
+                "p95": 51696
+              },
+              "rssAfterBytes": {
+                "p50": 357330944,
+                "p95": 404516864
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 19.40139900000031,
+                "p95": 23.203558000001067
+              },
+              "cpuMicroseconds": {
+                "p50": 25084,
+                "p95": 41266
+              },
+              "rssAfterBytes": {
+                "p50": 364212224,
+                "p95": 400441344
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": -0.14168299999801093,
+                "p95": 3.1385100000006787
+              },
+              "savedPercent": {
+                "p50": -0.6319021121844378,
+                "p95": 12.864725171244162
+              },
+              "wallP95ChangePercent": -3.2483327166139775,
+              "wallP50ChangePercent": 2.059362352698879,
+              "rssP50ChangePercent": 4.990957559245612
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 0.6232529999997496,
+                "p95": 7.5436420000005455
+              },
+              "savedPercent": {
+                "p50": 2.4947386116128403,
+                "p95": 23.96063205836453
+              },
+              "wallP95ChangePercent": -12.640484368229398,
+              "wallP50ChangePercent": -3.2015392781129193,
+              "rssP50ChangePercent": -3.771643326920493
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 0.7762799999982235,
+                "p95": 6.7024079999991955
+              },
+              "savedPercent": {
+                "p50": 3.7133579283177767,
+                "p95": 24.904708687637335
+              },
+              "wallP95ChangePercent": -6.559880521487161,
+              "wallP50ChangePercent": -6.393593026441325,
+              "rssP50ChangePercent": 0.684533130508691
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 0.9739789999985078,
+                "p95": 7.3139439999995375
+              },
+              "savedPercent": {
+                "p50": 3.6763705698704072,
+                "p95": 26.314224932531815
+              },
+              "wallP95ChangePercent": -0.5415728277869625,
+              "wallP50ChangePercent": -7.669492879066353,
+              "rssP50ChangePercent": 1.2997181334168495
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 1.9996530000007624,
+                "p95": 8.360107000000426
+              },
+              "savedPercent": {
+                "p50": 8.405156598048835,
+                "p95": 29.360404075467905
+              },
+              "wallP95ChangePercent": -18.47577865029728,
+              "wallP50ChangePercent": -6.18350199440294,
+              "rssP50ChangePercent": -2.421591875083884
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 4.527121999999508,
+                "p95": 10.481087000001935
+              },
+              "savedPercent": {
+                "p50": 20.36977691330777,
+                "p95": 37.841866071961945
+              },
+              "wallP95ChangePercent": -26.299270871694848,
+              "wallP50ChangePercent": -17.139780065542375,
+              "rssP50ChangePercent": -0.5424813207462797
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedSkipped": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedSkipped": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-2-sfc-pressure",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 111.86857400000008,
+                "p95": 124.31285399999615
+              },
+              "cpuMicroseconds": {
+                "p50": 147074,
+                "p95": 190233
+              },
+              "rssAfterBytes": {
+                "p50": 513105920,
+                "p95": 522432512
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 111.24675399999978,
+                "p95": 132.56446300000243
+              },
+              "cpuMicroseconds": {
+                "p50": 147904,
+                "p95": 181982
+              },
+              "rssAfterBytes": {
+                "p50": 536600576,
+                "p95": 552550400
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 107.30241899999965,
+                "p95": 124.03737100000217
+              },
+              "cpuMicroseconds": {
+                "p50": 143245,
+                "p95": 178999
+              },
+              "rssAfterBytes": {
+                "p50": 540491776,
+                "p95": 551510016
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 109.84453399999984,
+                "p95": 121.64149600000019
+              },
+              "cpuMicroseconds": {
+                "p50": 146652,
+                "p95": 179958
+              },
+              "rssAfterBytes": {
+                "p50": 536281088,
+                "p95": 551821312
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 106.37301199999638,
+                "p95": 117.98464799999783
+              },
+              "cpuMicroseconds": {
+                "p50": 143890,
+                "p95": 173572
+              },
+              "rssAfterBytes": {
+                "p50": 537321472,
+                "p95": 553529344
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 109.63092799999868,
+                "p95": 124.36991200000193
+              },
+              "cpuMicroseconds": {
+                "p50": 145961,
+                "p95": 186227
+              },
+              "rssAfterBytes": {
+                "p50": 539680768,
+                "p95": 558968832
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 108.57233099999576,
+                "p95": 117.52667899999506
+              },
+              "cpuMicroseconds": {
+                "p50": 142758,
+                "p95": 168253
+              },
+              "rssAfterBytes": {
+                "p50": 536612864,
+                "p95": 547762176
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": 1.334911000005377,
+                "p95": 12.036744000004546
+              },
+              "savedPercent": {
+                "p50": 1.1439999767215427,
+                "p95": 9.85454780884805
+              },
+              "wallP95ChangePercent": 6.637776170762311,
+              "wallP50ChangePercent": -0.555848687228544,
+              "rssP50ChangePercent": 4.578909555360422
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 2.468634999997448,
+                "p95": 28.368388000002597
+              },
+              "savedPercent": {
+                "p50": 2.3048243352587807,
+                "p95": 21.26007126643103
+              },
+              "wallP95ChangePercent": -6.432411678837424,
+              "wallP50ChangePercent": -3.5455731139806046,
+              "rssP50ChangePercent": 0.7251576263682669
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 0.08779400000639725,
+                "p95": 15.563342000001285
+              },
+              "savedPercent": {
+                "p50": 0.08146147872615869,
+                "p95": 11.663608100109046
+              },
+              "wallP95ChangePercent": -8.23973993694075,
+              "wallP50ChangePercent": -1.260459248995205,
+              "rssP50ChangePercent": -0.059539257743923546
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 3.2560469999953057,
+                "p95": 17.65142300000298
+              },
+              "savedPercent": {
+                "p50": 2.9476581599517253,
+                "p95": 13.121714121195474
+              },
+              "wallP95ChangePercent": -10.998283152253507,
+              "wallP50ChangePercent": -4.381019512716222,
+              "rssP50ChangePercent": 0.13434499183242465
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 0.46135299999878043,
+                "p95": 11.58020199999737
+              },
+              "savedPercent": {
+                "p50": 0.4147114260958853,
+                "p95": 9.886942226419647
+              },
+              "wallP95ChangePercent": -6.181559382170432,
+              "wallP50ChangePercent": -1.4524702446608972,
+              "rssP50ChangePercent": 0.574019510556778
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 1.6101479999997537,
+                "p95": 25.596142000002146
+              },
+              "savedPercent": {
+                "p50": 1.4473662755137617,
+                "p95": 19.182471808609087
+              },
+              "wallP95ChangePercent": -11.343752058202128,
+              "wallP50ChangePercent": -2.4040458744567283,
+              "rssP50ChangePercent": 0.002289971451685524
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedAnalyzed": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedAnalyzed": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-2-sfc-retail",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 67.64660200000071,
+                "p95": 75.009656000002
+              },
+              "cpuMicroseconds": {
+                "p50": 102135,
+                "p95": 129547
+              },
+              "rssAfterBytes": {
+                "p50": 492396544,
+                "p95": 493735936
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 65.96045400000003,
+                "p95": 80.06861299999946
+              },
+              "cpuMicroseconds": {
+                "p50": 97720,
+                "p95": 125406
+              },
+              "rssAfterBytes": {
+                "p50": 508653568,
+                "p95": 522620928
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 63.048877000001085,
+                "p95": 75.46379499999966
+              },
+              "cpuMicroseconds": {
+                "p50": 89193,
+                "p95": 117720
+              },
+              "rssAfterBytes": {
+                "p50": 516165632,
+                "p95": 526336000
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 65.31416699999681,
+                "p95": 77.71034299999883
+              },
+              "cpuMicroseconds": {
+                "p50": 96858,
+                "p95": 127294
+              },
+              "rssAfterBytes": {
+                "p50": 514854912,
+                "p95": 529637376
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 61.84599799999887,
+                "p95": 70.15195499999754
+              },
+              "cpuMicroseconds": {
+                "p50": 92933,
+                "p95": 122187
+              },
+              "rssAfterBytes": {
+                "p50": 507379712,
+                "p95": 525488128
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 58.964952999998786,
+                "p95": 67.86907299999984
+              },
+              "cpuMicroseconds": {
+                "p50": 86993,
+                "p95": 115254
+              },
+              "rssAfterBytes": {
+                "p50": 506118144,
+                "p95": 527138816
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 50.75210900000093,
+                "p95": 61.74188900000081
+              },
+              "cpuMicroseconds": {
+                "p50": 69617,
+                "p95": 100188
+              },
+              "rssAfterBytes": {
+                "p50": 510902272,
+                "p95": 531349504
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": 1.4962450000020908,
+                "p95": 12.898901000000478
+              },
+              "savedPercent": {
+                "p50": 2.493697356595357,
+                "p95": 17.194046422054832
+              },
+              "wallP95ChangePercent": 6.744407679989006,
+              "wallP50ChangePercent": -2.4925834412209857,
+              "rssP50ChangePercent": 3.3016121250436736
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 3.2469419999979436,
+                "p95": 17.083599000001414
+              },
+              "savedPercent": {
+                "p50": 4.926123242463356,
+                "p95": 23.417078540402073
+              },
+              "wallP95ChangePercent": -5.751090005767711,
+              "wallP50ChangePercent": -4.414125166571692,
+              "rssP50ChangePercent": 1.4768527093080408
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 0.32827300000280957,
+                "p95": 15.16542699999627
+              },
+              "savedPercent": {
+                "p50": 0.4741401977920988,
+                "p95": 18.32934711766753
+              },
+              "wallP95ChangePercent": -2.945311416847751,
+              "wallP50ChangePercent": -0.9798098115019194,
+              "rssP50ChangePercent": 1.2191684852193907
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 4.200652999999875,
+                "p95": 17.71957399999519
+              },
+              "savedPercent": {
+                "p50": 6.4909900867645005,
+                "p95": 23.391030765358256
+              },
+              "wallP95ChangePercent": -12.385200178254596,
+              "wallP50ChangePercent": -6.237761795880226,
+              "rssP50ChangePercent": -0.25043685528615134
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 5.369184999999561,
+                "p95": 19.271252000002278
+              },
+              "savedPercent": {
+                "p50": 8.345779032587176,
+                "p95": 28.25115927045358
+              },
+              "wallP95ChangePercent": -15.23635734766593,
+              "wallP50ChangePercent": -10.605598621260604,
+              "rssP50ChangePercent": -0.49845792097147346
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 11.39806999999928,
+                "p95": 30.202272999998968
+              },
+              "savedPercent": {
+                "p50": 19.234425462167778,
+                "p95": 37.72048980041552
+              },
+              "wallP95ChangePercent": -22.88877415673327,
+              "wallP50ChangePercent": -23.056762162369427,
+              "rssP50ChangePercent": 0.44208949695208055
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedSkipped": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedSkipped": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-2-sfc-wevu",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 23.102371000000858,
+                "p95": 28.811836999999286
+              },
+              "cpuMicroseconds": {
+                "p50": 29948,
+                "p95": 58298
+              },
+              "rssAfterBytes": {
+                "p50": 346865664,
+                "p95": 408195072
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 22.933975999998438,
+                "p95": 29.506294000000707
+              },
+              "cpuMicroseconds": {
+                "p50": 31060,
+                "p95": 53081
+              },
+              "rssAfterBytes": {
+                "p50": 363823104,
+                "p95": 425304064
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 21.5627650000024,
+                "p95": 27.5978410000007
+              },
+              "cpuMicroseconds": {
+                "p50": 29192,
+                "p95": 47531
+              },
+              "rssAfterBytes": {
+                "p50": 353239040,
+                "p95": 401342464
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 22.87434200000098,
+                "p95": 31.92770399999972
+              },
+              "cpuMicroseconds": {
+                "p50": 30308,
+                "p95": 55636
+              },
+              "rssAfterBytes": {
+                "p50": 366542848,
+                "p95": 425725952
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 22.413144000000102,
+                "p95": 30.17089500000111
+              },
+              "cpuMicroseconds": {
+                "p50": 29109,
+                "p95": 56662
+              },
+              "rssAfterBytes": {
+                "p50": 367063040,
+                "p95": 421928960
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 21.19344600000113,
+                "p95": 25.184747000001153
+              },
+              "cpuMicroseconds": {
+                "p50": 27709,
+                "p95": 44111
+              },
+              "rssAfterBytes": {
+                "p50": 369729536,
+                "p95": 417296384
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 18.043665000001056,
+                "p95": 24.5289929999999
+              },
+              "cpuMicroseconds": {
+                "p50": 24141,
+                "p95": 45101
+              },
+              "rssAfterBytes": {
+                "p50": 364130304,
+                "p95": 400818176
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": 0.2108040000020992,
+                "p95": 4.237670000000435
+              },
+              "savedPercent": {
+                "p50": 0.9381107004896077,
+                "p95": 14.852959149816462
+              },
+              "wallP95ChangePercent": 2.4103183701942976,
+              "wallP50ChangePercent": -0.7289078683846539,
+              "rssP50ChangePercent": 4.888762930423685
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 1.5653629999978875,
+                "p95": 7.503026999998838
+              },
+              "savedPercent": {
+                "p50": 6.604509758158603,
+                "p95": 28.152145307318012
+              },
+              "wallP95ChangePercent": -6.467952227412777,
+              "wallP50ChangePercent": -5.978950182890797,
+              "rssP50ChangePercent": -2.909123660271995
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 0.8155419999984588,
+                "p95": 8.180453000000853
+              },
+              "savedPercent": {
+                "p50": 3.594980827676253,
+                "p95": 26.491962961308918
+              },
+              "wallP95ChangePercent": 8.206418603430699,
+              "wallP50ChangePercent": -0.26002468999472006,
+              "rssP50ChangePercent": 0.7475457083671033
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 1.3662709999989602,
+                "p95": 7.273596000000907
+              },
+              "savedPercent": {
+                "p50": 6.293601956945055,
+                "p95": 20.500283747692695
+              },
+              "wallP95ChangePercent": 2.25240418197008,
+              "wallP50ChangePercent": -2.2710061264491266,
+              "rssP50ChangePercent": 0.8905250833108225
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 1.7031690000003437,
+                "p95": 9.76696499999889
+              },
+              "savedPercent": {
+                "p50": 7.988994012931568,
+                "p95": 34.75331021395285
+              },
+              "wallP95ChangePercent": -14.646187013521427,
+              "wallP50ChangePercent": -7.58930767171565,
+              "rssP50ChangePercent": 1.623435107628568
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 4.6218069999986255,
+                "p95": 11.228702999998859
+              },
+              "savedPercent": {
+                "p50": 18.840654763658648,
+                "p95": 39.95454050048789
+              },
+              "wallP95ChangePercent": -16.868607762129283,
+              "wallP50ChangePercent": -21.32343297122886,
+              "rssP50ChangePercent": 0.08443663874628804
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedSkipped": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedSkipped": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        }
+      ],
+      "limitations": [
+        "linux evidence only; do not infer other OS results.",
+        "Warm complete compiler JS diagnostic; not Rust, cold build, Vite/HMR or runtime acceptance.",
+        "Warmup count is recorded as 14; individual warmup observations were not persisted and cannot be independently recounted.",
+        "Predecessor balance applies within seven-treatment rounds, not every boundary between consecutive rounds.",
+        "Source hashing covers the declared 230 files plus real corpus blobs, not every installed dependency file.",
+        "Timed artifacts persist output digests; full output byte comparisons can be independently checked in the 448 correctness worker records."
+      ],
+      "rawManifest": {
+        "summary.json": "9e882f38cdeddee8adf8885f4c7a93763c3be1758b772042960ca6bede4abe56",
+        "correctness/report.json": "21f6cf5db72a488470cfa2e90fc0dc5ae8d26adbad0e112bc59dbbbcc1eb8768",
+        "batch-1-sfc-pressure/report.json": "5c07e95eb832fea6e91f92f6e049688b1908193bba43b48ccf5709698667003c",
+        "batch-1-sfc-retail/report.json": "71d7e7c6e71be9ebbfb63026535f7c99f1949b5ff2eee0515e4f6f21d23c96f5",
+        "batch-1-sfc-wevu/report.json": "7e90063c6b2d4ff32bd5bffed6382eecbb50265c3a751b8a92b17b5b105737ea",
+        "batch-2-sfc-pressure/report.json": "d9970a054ff25b8a81ac9a37faf2cb2e8866a29a8347a8c7f6928633cb772072",
+        "batch-2-sfc-retail/report.json": "f3b38b3b7bbc531d4e565a6196e412162aa9341912f55ceefc7102cda214a41e",
+        "batch-2-sfc-wevu/report.json": "9b2d529486865e1c61e28557c3a07c7190f3d37a209d52674eb0618c8e75842e",
+        "correctness/baseline.json": "2dcfe3e1c2e4ec4a48a881448253791668d606e7c5cb931652c65c4a30d4b25b",
+        "correctness/control.json": "865122ae6939abedc99cd7115b225dcac05972ebfe1d1dc8bf39a1d43dc040e0",
+        "correctness/ast-reuse.json": "c3b3d900f04342d32c56ae0ac068162b8d11d6e5ebe7f2e49fd1304c8f9364b2",
+        "correctness/props-no-scope.json": "64f9efb0df495f5a93f34a1dceca4e176a4b75e293425157fff6956d6d47b803",
+        "correctness/page-meta-gate.json": "fb23593f9ef478c8ab807c9a527938d61dfd9512c4c24286772e4c78710bcea4",
+        "correctness/reserved-props-gate.json": "5282223c0bdc80b56e8270c8bea4465e3fe7fdb8174db31f651c856ac0554a62",
+        "correctness/optimized.json": "8a8b640c4106c12809f979249e0e7f28f722db9e033bafc0a467eb56eff3d991"
+      },
+      "independentAuditSha256": "757aa2b8042af66f5addf7b64d88f423110d01b646c4bf22a8b5029c61f96614"
+    },
+    {
+      "passed": true,
+      "run": 37202918268,
+      "head": "2d53ed9c4c6ab0f2d0b3dae23326c94ad78213c0",
+      "artifact": "script-baseline-timings-windows-latest",
+      "artifactId": 11303559344,
+      "summarySha256": "9697b5b56c4d802a3305d627c8ecf8560d3793bceb4d33992b6fe90f63bb01cd",
+      "checks": {
+        "sourceHashes": 230,
+        "reportHashes": 14,
+        "correctnessChecks": 448,
+        "timingCorrectnessObservations": 42,
+        "timedObservations": 1764,
+        "verifiedAggregateNumbers": 4932,
+        "distributionQuantiles": 396,
+        "pairedRecords": 1512
+      },
+      "environment": {
+        "node": "v24.21.0",
+        "platform": "win32",
+        "arch": "x64",
+        "cpus": 4
+      },
+      "fullCorrectnessCoverage": {
+        "baseline": {},
+        "control": {},
+        "ast-reuse": {
+          "astReuse": 20,
+          "astSourceMismatch": 4,
+          "astUnavailable": 24,
+          "astOffered": 30
+        },
+        "props-no-scope": {
+          "propsNoScopeVisits": 22
+        },
+        "page-meta-gate": {
+          "pageMetaSkipped": 32,
+          "pageMetaAnalyzed": 16
+        },
+        "reserved-props-gate": {
+          "reservedSkipped": 20,
+          "reservedAnalyzed": 18
+        },
+        "optimized": {
+          "astReuse": 20,
+          "astSourceMismatch": 4,
+          "astUnavailable": 24,
+          "astOffered": 30,
+          "pageMetaSkipped": 32,
+          "pageMetaAnalyzed": 16,
+          "reservedSkipped": 20,
+          "reservedAnalyzed": 18,
+          "propsNoScopeVisits": 22
+        }
+      },
+      "groups": [
+        {
+          "id": "batch-1-sfc-pressure",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 122.21019999999407,
+                "p95": 135.15350000000035
+              },
+              "cpuMicroseconds": {
+                "p50": 172000,
+                "p95": 219000
+              },
+              "rssAfterBytes": {
+                "p50": 459722752,
+                "p95": 467877888
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 122.26629999999568,
+                "p95": 138.0468999999939
+              },
+              "cpuMicroseconds": {
+                "p50": 172000,
+                "p95": 235000
+              },
+              "rssAfterBytes": {
+                "p50": 498626560,
+                "p95": 513798144
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 119.89800000000105,
+                "p95": 135.4269000000022
+              },
+              "cpuMicroseconds": {
+                "p50": 172000,
+                "p95": 203000
+              },
+              "rssAfterBytes": {
+                "p50": 493330432,
+                "p95": 505303040
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 116.74440000000322,
+                "p95": 132.40820000000167
+              },
+              "cpuMicroseconds": {
+                "p50": 156000,
+                "p95": 219000
+              },
+              "rssAfterBytes": {
+                "p50": 497913856,
+                "p95": 510914560
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 117.33230000000185,
+                "p95": 130.91319999999905
+              },
+              "cpuMicroseconds": {
+                "p50": 156000,
+                "p95": 219000
+              },
+              "rssAfterBytes": {
+                "p50": 495656960,
+                "p95": 504512512
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 124.85639999999694,
+                "p95": 142.07540000000154
+              },
+              "cpuMicroseconds": {
+                "p50": 172000,
+                "p95": 219000
+              },
+              "rssAfterBytes": {
+                "p50": 498372608,
+                "p95": 512733184
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 115.34949999999662,
+                "p95": 128.3022000000019
+              },
+              "cpuMicroseconds": {
+                "p50": 157000,
+                "p95": 203000
+              },
+              "rssAfterBytes": {
+                "p50": 494166016,
+                "p95": 505716736
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": -0.287400000008347,
+                "p95": 14.230900000002293
+              },
+              "savedPercent": {
+                "p50": -0.227587140778847,
+                "p95": 10.907135789469976
+              },
+              "wallP95ChangePercent": 2.1408250618693225,
+              "wallP50ChangePercent": 0.04590451533637019,
+              "rssP50ChangePercent": 8.462449994208686
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 2.5591999999960535,
+                "p95": 20.6985999999888
+              },
+              "savedPercent": {
+                "p50": 2.093136048114766,
+                "p95": 14.993889757748791
+              },
+              "wallP95ChangePercent": -1.8979057117485598,
+              "wallP50ChangePercent": -1.9370014468375274,
+              "rssP50ChangePercent": -1.0621431798578884
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 4.780299999998533,
+                "p95": 16.343999999997322
+              },
+              "savedPercent": {
+                "p50": 3.909744549396442,
+                "p95": 12.657414198079115
+              },
+              "wallP95ChangePercent": -4.084626311777006,
+              "wallP50ChangePercent": -4.5162894436101,
+              "rssP50ChangePercent": -0.142933420955349
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 4.553799999997864,
+                "p95": 21.989399999991292
+              },
+              "savedPercent": {
+                "p50": 3.820990685437849,
+                "p95": 15.928934296961586
+              },
+              "wallP95ChangePercent": -5.16759159386786,
+              "wallP50ChangePercent": -4.0354537595347235,
+              "rssP50ChangePercent": -0.595555920647306
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": -1.0697999999902095,
+                "p95": 10.943599999998696
+              },
+              "savedPercent": {
+                "p50": -0.8995177011009522,
+                "p95": 8.436987719389366
+              },
+              "wallP95ChangePercent": 2.9182111297014313,
+              "wallP50ChangePercent": 2.118408752044787,
+              "rssP50ChangePercent": -0.05093029942087046
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 6.547500000000582,
+                "p95": 19.402999999991152
+              },
+              "savedPercent": {
+                "p50": 5.56422376210415,
+                "p95": 14.240995247612972
+              },
+              "wallP95ChangePercent": -7.058977782183041,
+              "wallP50ChangePercent": -5.657159822452551,
+              "rssP50ChangePercent": -0.8945660656343724
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedAnalyzed": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedAnalyzed": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-1-sfc-retail",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 67.26590000000215,
+                "p95": 80.61830000000191
+              },
+              "cpuMicroseconds": {
+                "p50": 94000,
+                "p95": 155000
+              },
+              "rssAfterBytes": {
+                "p50": 449548288,
+                "p95": 451198976
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 68.70439999999871,
+                "p95": 80.27189999999973
+              },
+              "cpuMicroseconds": {
+                "p50": 94000,
+                "p95": 157000
+              },
+              "rssAfterBytes": {
+                "p50": 469110784,
+                "p95": 488837120
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 67.25460000000021,
+                "p95": 83.47880000000077
+              },
+              "cpuMicroseconds": {
+                "p50": 79000,
+                "p95": 125000
+              },
+              "rssAfterBytes": {
+                "p50": 480411648,
+                "p95": 485257216
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 68.43740000000253,
+                "p95": 76.04420000000027
+              },
+              "cpuMicroseconds": {
+                "p50": 79000,
+                "p95": 141000
+              },
+              "rssAfterBytes": {
+                "p50": 471318528,
+                "p95": 485806080
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 65.87189999999828,
+                "p95": 75.31920000000173
+              },
+              "cpuMicroseconds": {
+                "p50": 78000,
+                "p95": 141000
+              },
+              "rssAfterBytes": {
+                "p50": 487026688,
+                "p95": 495882240
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 62.56910000000062,
+                "p95": 74.2619999999988
+              },
+              "cpuMicroseconds": {
+                "p50": 94000,
+                "p95": 141000
+              },
+              "rssAfterBytes": {
+                "p50": 472281088,
+                "p95": 493232128
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 54.3122000000003,
+                "p95": 64.98129999999946
+              },
+              "cpuMicroseconds": {
+                "p50": 63000,
+                "p95": 125000
+              },
+              "rssAfterBytes": {
+                "p50": 421597184,
+                "p95": 485474304
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": -0.8482999999978347,
+                "p95": 20.820299999999406
+              },
+              "savedPercent": {
+                "p50": -1.5282564400935459,
+                "p95": 22.221259528917496
+              },
+              "wallP95ChangePercent": -0.4296791175231518,
+              "wallP50ChangePercent": 2.1385278424826293,
+              "rssP50ChangePercent": 4.351589478191942
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 2.1358000000036554,
+                "p95": 17.898999999997613
+              },
+              "savedPercent": {
+                "p50": 3.538846453371923,
+                "p95": 24.755576885572804
+              },
+              "wallP95ChangePercent": 3.9950468345723023,
+              "wallP50ChangePercent": -2.110199637866761,
+              "rssP50ChangePercent": 2.408996847959899
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 0.6099000000031083,
+                "p95": 15.001700000007986
+              },
+              "savedPercent": {
+                "p50": 1.0243698697185954,
+                "p95": 20.931454803571352
+              },
+              "wallP95ChangePercent": -5.266724719359416,
+              "wallP50ChangePercent": -0.3886213983328446,
+              "rssP50ChangePercent": 0.47062316094612644
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 3.5675000000010186,
+                "p95": 21.58740000000398
+              },
+              "savedPercent": {
+                "p50": 5.225337555163918,
+                "p95": 27.608018671872237
+              },
+              "wallP95ChangePercent": -6.169905035258938,
+              "wallP50ChangePercent": -4.122734497354596,
+              "rssP50ChangePercent": 3.8191200481973997
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 3.4976000000024214,
+                "p95": 24.743000000002212
+              },
+              "savedPercent": {
+                "p50": 4.658508043153251,
+                "p95": 29.160193027045604
+              },
+              "wallP95ChangePercent": -7.486928800739667,
+              "wallP50ChangePercent": -8.929995749905695,
+              "rssP50ChangePercent": 0.6758113665534582
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 14.236399999997957,
+                "p95": 31.7928000000029
+              },
+              "savedPercent": {
+                "p50": 22.026403577257263,
+                "p95": 40.00355245233985
+              },
+              "wallP95ChangePercent": -19.048508880442995,
+              "wallP50ChangePercent": -20.948003330206923,
+              "rssP50ChangePercent": -10.12843908529717
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedSkipped": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedSkipped": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-1-sfc-wevu",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 25.27890000000116,
+                "p95": 35.81369999999879
+              },
+              "cpuMicroseconds": {
+                "p50": 31000,
+                "p95": 62000
+              },
+              "rssAfterBytes": {
+                "p50": 309563392,
+                "p95": 375828480
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 25.459999999999127,
+                "p95": 34.8109000000004
+              },
+              "cpuMicroseconds": {
+                "p50": 31000,
+                "p95": 78000
+              },
+              "rssAfterBytes": {
+                "p50": 354013184,
+                "p95": 411717632
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 23.84059999999954,
+                "p95": 32.949900000003254
+              },
+              "cpuMicroseconds": {
+                "p50": 31000,
+                "p95": 63000
+              },
+              "rssAfterBytes": {
+                "p50": 314679296,
+                "p95": 345587712
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 23.764999999999418,
+                "p95": 30.67740000000049
+              },
+              "cpuMicroseconds": {
+                "p50": 31000,
+                "p95": 63000
+              },
+              "rssAfterBytes": {
+                "p50": 342196224,
+                "p95": 346386432
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 23.09020000000055,
+                "p95": 29.3224999999984
+              },
+              "cpuMicroseconds": {
+                "p50": 31000,
+                "p95": 78000
+              },
+              "rssAfterBytes": {
+                "p50": 362270720,
+                "p95": 393977856
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 22.167900000000373,
+                "p95": 30.449099999999817
+              },
+              "cpuMicroseconds": {
+                "p50": 16000,
+                "p95": 63000
+              },
+              "rssAfterBytes": {
+                "p50": 348741632,
+                "p95": 351154176
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 19.451900000000023,
+                "p95": 25.089899999999943
+              },
+              "cpuMicroseconds": {
+                "p50": 16000,
+                "p95": 47000
+              },
+              "rssAfterBytes": {
+                "p50": 325296128,
+                "p95": 367910912
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": -0.23539999999775318,
+                "p95": 13.78900000000067
+              },
+              "savedPercent": {
+                "p50": -1.107801198146379,
+                "p95": 37.708195467092594
+              },
+              "wallP95ChangePercent": -2.8000457925275057,
+              "wallP50ChangePercent": 0.7164077550762205,
+              "rssP50ChangePercent": 14.358865792503007
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 1.3022999999957392,
+                "p95": 10.915100000000166
+              },
+              "savedPercent": {
+                "p50": 5.94872122818688,
+                "p95": 31.355408794371993
+              },
+              "wallP95ChangePercent": -5.346026675544513,
+              "wallP50ChangePercent": -6.360565593085788,
+              "rssP50ChangePercent": -11.110853995765313
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 1.0420999999987544,
+                "p95": 9.962600000000748
+              },
+              "savedPercent": {
+                "p50": 4.292009884673823,
+                "p95": 31.388993798043984
+              },
+              "wallP95ChangePercent": -11.874154359697297,
+              "wallP50ChangePercent": -6.657501963863977,
+              "rssP50ChangePercent": -3.337999976859618
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 2.043199999996432,
+                "p95": 13.195199999996476
+              },
+              "savedPercent": {
+                "p50": 7.859610250715901,
+                "p95": 31.543617743517338
+              },
+              "wallP95ChangePercent": -15.766326064542824,
+              "wallP50ChangePercent": -9.307934014134556,
+              "rssP50ChangePercent": 2.3325504171053613
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 2.415999999999258,
+                "p95": 12.219200000001365
+              },
+              "savedPercent": {
+                "p50": 10.477100565618267,
+                "p95": 34.79736752925623
+              },
+              "wallP95ChangePercent": -12.529983424733448,
+              "wallP50ChangePercent": -12.930479183027755,
+              "rssP50ChangePercent": -1.489083525205659
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 4.675100000000384,
+                "p95": 16.253700000001118
+              },
+              "savedPercent": {
+                "p50": 18.930573129113345,
+                "p95": 46.691409874496
+              },
+              "wallP95ChangePercent": -27.925161371870153,
+              "wallP50ChangePercent": -23.59819324430208,
+              "rssP50ChangePercent": -8.111860602344123
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedSkipped": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedSkipped": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-2-sfc-pressure",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 122.7667999999976,
+                "p95": 143.50540000000183
+              },
+              "cpuMicroseconds": {
+                "p50": 172000,
+                "p95": 203000
+              },
+              "rssAfterBytes": {
+                "p50": 462594048,
+                "p95": 472100864
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 121.09780000000319,
+                "p95": 143.48819999999978
+              },
+              "cpuMicroseconds": {
+                "p50": 157000,
+                "p95": 203000
+              },
+              "rssAfterBytes": {
+                "p50": 498679808,
+                "p95": 512409600
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 120.89370000000054,
+                "p95": 154.17949999999837
+              },
+              "cpuMicroseconds": {
+                "p50": 156000,
+                "p95": 203000
+              },
+              "rssAfterBytes": {
+                "p50": 492654592,
+                "p95": 504967168
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 122.54170000000158,
+                "p95": 163.7505999999994
+              },
+              "cpuMicroseconds": {
+                "p50": 172000,
+                "p95": 218000
+              },
+              "rssAfterBytes": {
+                "p50": 497803264,
+                "p95": 511623168
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 119.41259999999966,
+                "p95": 146.63390000000072
+              },
+              "cpuMicroseconds": {
+                "p50": 157000,
+                "p95": 203000
+              },
+              "rssAfterBytes": {
+                "p50": 491917312,
+                "p95": 511922176
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 119.84229999999661,
+                "p95": 141.72000000000116
+              },
+              "cpuMicroseconds": {
+                "p50": 156000,
+                "p95": 203000
+              },
+              "rssAfterBytes": {
+                "p50": 492093440,
+                "p95": 512114688
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 118.7812000000049,
+                "p95": 141.601800000004
+              },
+              "cpuMicroseconds": {
+                "p50": 156000,
+                "p95": 219000
+              },
+              "rssAfterBytes": {
+                "p50": 493887488,
+                "p95": 504836096
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": -0.5854999999937718,
+                "p95": 16.965700000000652
+              },
+              "savedPercent": {
+                "p50": -0.5055371645312122,
+                "p95": 12.471065601787926
+              },
+              "wallP95ChangePercent": -0.011985611692699738,
+              "wallP50ChangePercent": -1.359488070060022,
+              "rssP50ChangePercent": 7.80074022915227
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": -0.1422000000020489,
+                "p95": 17.574300000007497
+              },
+              "savedPercent": {
+                "p50": -0.12029255962776317,
+                "p95": 12.817945108569976
+              },
+              "wallP95ChangePercent": 7.450995970399377,
+              "wallP50ChangePercent": -0.1685414598800672,
+              "rssP50ChangePercent": -1.2082334001379924
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 0.011399999995774124,
+                "p95": 10.48689999999624
+              },
+              "savedPercent": {
+                "p50": 0.009680887377119972,
+                "p95": 7.85200918921641
+              },
+              "wallP95ChangePercent": 14.12130056687564,
+              "wallP50ChangePercent": 1.1923420574100785,
+              "rssP50ChangePercent": -0.17577290797384792
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 2.174200000001292,
+                "p95": 22.630599999996775
+              },
+              "savedPercent": {
+                "p50": 1.853142978905899,
+                "p95": 16.509840713076198
+              },
+              "wallP95ChangePercent": 2.192305708762765,
+              "wallP50ChangePercent": -1.3916024898912194,
+              "rssP50ChangePercent": -1.3560797713309425
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 2.341899999999441,
+                "p95": 21.64779999999155
+              },
+              "savedPercent": {
+                "p50": 1.9663704390343903,
+                "p95": 15.792852588461741
+              },
+              "wallP95ChangePercent": -1.232296453644699,
+              "wallP50ChangePercent": -1.0367653252218778,
+              "rssP50ChangePercent": -1.3207609159904043
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 2.2744000000020606,
+                "p95": 21.085500000008324
+              },
+              "savedPercent": {
+                "p50": 1.7793730729798563,
+                "p95": 15.006332601083717
+              },
+              "wallP95ChangePercent": -1.314672565406616,
+              "wallP50ChangePercent": -1.9129992452366795,
+              "rssP50ChangePercent": -0.9610014127542144
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedAnalyzed": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedAnalyzed": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-2-sfc-retail",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 70.31160000000091,
+                "p95": 86.7670999999973
+              },
+              "cpuMicroseconds": {
+                "p50": 94000,
+                "p95": 140000
+              },
+              "rssAfterBytes": {
+                "p50": 450482176,
+                "p95": 452026368
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 71.78319999999803,
+                "p95": 83.50710000000254
+              },
+              "cpuMicroseconds": {
+                "p50": 94000,
+                "p95": 156000
+              },
+              "rssAfterBytes": {
+                "p50": 484286464,
+                "p95": 488325120
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 66.33950000000186,
+                "p95": 80.16430000000037
+              },
+              "cpuMicroseconds": {
+                "p50": 78000,
+                "p95": 156000
+              },
+              "rssAfterBytes": {
+                "p50": 475832320,
+                "p95": 485158912
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 68.41589999999997,
+                "p95": 78.84500000000116
+              },
+              "cpuMicroseconds": {
+                "p50": 94000,
+                "p95": 156000
+              },
+              "rssAfterBytes": {
+                "p50": 484618240,
+                "p95": 487034880
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 68.15510000000359,
+                "p95": 85.47999999999956
+              },
+              "cpuMicroseconds": {
+                "p50": 78000,
+                "p95": 156000
+              },
+              "rssAfterBytes": {
+                "p50": 487608320,
+                "p95": 490475520
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 64.02880000000005,
+                "p95": 78.8137999999999
+              },
+              "cpuMicroseconds": {
+                "p50": 79000,
+                "p95": 126000
+              },
+              "rssAfterBytes": {
+                "p50": 471621632,
+                "p95": 493043712
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 52.49859999999899,
+                "p95": 65.6420999999973
+              },
+              "cpuMicroseconds": {
+                "p50": 63000,
+                "p95": 125000
+              },
+              "rssAfterBytes": {
+                "p50": 395018240,
+                "p95": 478265344
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": -2.93670000000202,
+                "p95": 13.683899999999994
+              },
+              "savedPercent": {
+                "p50": -3.935402947635257,
+                "p95": 16.675214453401075
+              },
+              "wallP95ChangePercent": -3.757184462768559,
+              "wallP50ChangePercent": 2.0929690122214684,
+              "rssP50ChangePercent": 7.504023422227468
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 4.959800000004179,
+                "p95": 18.659400000004098
+              },
+              "savedPercent": {
+                "p50": 7.021005827958904,
+                "p95": 22.80381256063524
+              },
+              "wallP95ChangePercent": -4.003012917466986,
+              "wallP50ChangePercent": -7.583529293757197,
+              "rssP50ChangePercent": -1.7456907488539675
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 5.157099999996717,
+                "p95": 17.46719999999914
+              },
+              "savedPercent": {
+                "p50": 6.931635018873875,
+                "p95": 22.131951395663354
+              },
+              "wallP95ChangePercent": -5.582878581583161,
+              "wallP50ChangePercent": -4.690930468407872,
+              "rssP50ChangePercent": 0.068508212527707
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 3.0361999999986438,
+                "p95": 17.418100000002596
+              },
+              "savedPercent": {
+                "p50": 4.20200980127386,
+                "p95": 23.084344381664778
+              },
+              "wallP95ChangePercent": 2.3625536032229277,
+              "wallP50ChangePercent": -5.054246676094887,
+              "rssP50ChangePercent": 0.6859279056785628
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 9.47439999999915,
+                "p95": 24.102799999993294
+              },
+              "savedPercent": {
+                "p50": 11.841541755886329,
+                "p95": 31.64974093021321
+              },
+              "wallP95ChangePercent": -5.620240674149257,
+              "wallP50ChangePercent": -10.802527610914803,
+              "rssP50ChangePercent": -2.6151530016746416
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 18.525799999995797,
+                "p95": 34.060899999996764
+              },
+              "savedPercent": {
+                "p50": 26.022884198068468,
+                "p95": 41.76622567634987
+              },
+              "wallP95ChangePercent": -21.393390502130593,
+              "wallP50ChangePercent": -26.865060348381753,
+              "rssP50ChangePercent": -18.432938071958993
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedSkipped": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedSkipped": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        },
+        {
+          "id": "batch-2-sfc-wevu",
+          "stats": {
+            "baseline": {
+              "wallMs": {
+                "p50": 25.340600000003178,
+                "p95": 34.25879999999961
+              },
+              "cpuMicroseconds": {
+                "p50": 31000,
+                "p95": 63000
+              },
+              "rssAfterBytes": {
+                "p50": 300294144,
+                "p95": 339722240
+              }
+            },
+            "control": {
+              "wallMs": {
+                "p50": 24.932199999999284,
+                "p95": 34.840400000000955
+              },
+              "cpuMicroseconds": {
+                "p50": 31000,
+                "p95": 78000
+              },
+              "rssAfterBytes": {
+                "p50": 359522304,
+                "p95": 392773632
+              }
+            },
+            "ast-reuse": {
+              "wallMs": {
+                "p50": 24.802099999998973,
+                "p95": 33.31030000000101
+              },
+              "cpuMicroseconds": {
+                "p50": 31000,
+                "p95": 63000
+              },
+              "rssAfterBytes": {
+                "p50": 320507904,
+                "p95": 366436352
+              }
+            },
+            "props-no-scope": {
+              "wallMs": {
+                "p50": 23.452800000000934,
+                "p95": 31.250800000001618
+              },
+              "cpuMicroseconds": {
+                "p50": 31000,
+                "p95": 63000
+              },
+              "rssAfterBytes": {
+                "p50": 366329856,
+                "p95": 401829888
+              }
+            },
+            "page-meta-gate": {
+              "wallMs": {
+                "p50": 22.82680000000073,
+                "p95": 32.951499999999214
+              },
+              "cpuMicroseconds": {
+                "p50": 31000,
+                "p95": 62000
+              },
+              "rssAfterBytes": {
+                "p50": 341520384,
+                "p95": 413642752
+              }
+            },
+            "reserved-props-gate": {
+              "wallMs": {
+                "p50": 22.31760000000031,
+                "p95": 30.860999999998967
+              },
+              "cpuMicroseconds": {
+                "p50": 31000,
+                "p95": 63000
+              },
+              "rssAfterBytes": {
+                "p50": 348966912,
+                "p95": 400838656
+              }
+            },
+            "optimized": {
+              "wallMs": {
+                "p50": 19.991799999999785,
+                "p95": 27.19800000000032
+              },
+              "cpuMicroseconds": {
+                "p50": 31000,
+                "p95": 62000
+              },
+              "rssAfterBytes": {
+                "p50": 325156864,
+                "p95": 364486656
+              }
+            }
+          },
+          "comparisons": [
+            {
+              "reference": "baseline",
+              "candidate": "control",
+              "savedMs": {
+                "p50": 0.5300999999999476,
+                "p95": 9.598899999999048
+              },
+              "savedPercent": {
+                "p50": 2.1560700224512113,
+                "p95": 28.39919644732397
+              },
+              "wallP95ChangePercent": 1.6976660011481792,
+              "wallP50ChangePercent": -1.6116429761088624,
+              "rssP50ChangePercent": 19.723381618790413
+            },
+            {
+              "reference": "control",
+              "candidate": "ast-reuse",
+              "savedMs": {
+                "p50": 0.3011999999980617,
+                "p95": 8.67659999999887
+              },
+              "savedPercent": {
+                "p50": 1.2550601550280553,
+                "p95": 27.67845980748896
+              },
+              "wallP95ChangePercent": -4.391740622954687,
+              "wallP50ChangePercent": -0.5218151627225609,
+              "rssP50ChangePercent": -10.851732859388886
+            },
+            {
+              "reference": "control",
+              "candidate": "props-no-scope",
+              "savedMs": {
+                "p50": 1.3678999999992811,
+                "p95": 9.578299999997398
+              },
+              "savedPercent": {
+                "p50": 4.223751694408092,
+                "p95": 29.719751636177328
+              },
+              "wallP95ChangePercent": -10.302981596075933,
+              "wallP50ChangePercent": -5.933692173167193,
+              "rssP50ChangePercent": 1.8934992138902151
+            },
+            {
+              "reference": "control",
+              "candidate": "page-meta-gate",
+              "savedMs": {
+                "p50": 1.6301999999996042,
+                "p95": 13.9992000000002
+              },
+              "savedPercent": {
+                "p50": 6.684929528881575,
+                "p95": 35.68302785438606
+              },
+              "wallP95ChangePercent": -5.421579545589861,
+              "wallP50ChangePercent": -8.44450148803,
+              "rssP50ChangePercent": -5.007177524095974
+            },
+            {
+              "reference": "control",
+              "candidate": "reserved-props-gate",
+              "savedMs": {
+                "p50": 1.8971000000019558,
+                "p95": 14.04149999999754
+              },
+              "savedPercent": {
+                "p50": 7.077358124549632,
+                "p95": 40.550421835725395
+              },
+              "wallP95ChangePercent": -11.421797683154844,
+              "wallP50ChangePercent": -10.48684031091941,
+              "rssP50ChangePercent": -2.9359491421149797
+            },
+            {
+              "reference": "control",
+              "candidate": "optimized",
+              "savedMs": {
+                "p50": 4.342499999998836,
+                "p95": 12.599100000001272
+              },
+              "savedPercent": {
+                "p50": 18.759461635792164,
+                "p95": 41.50834272289441
+              },
+              "wallP95ChangePercent": -21.935454242776853,
+              "wallP50ChangePercent": -19.81533919990872,
+              "rssP50ChangePercent": -9.558639232574562
+            }
+          ],
+          "sampledMetrics": {
+            "baseline": {},
+            "control": {},
+            "ast-reuse": {
+              "astReuse": 42,
+              "astOffered": 42
+            },
+            "props-no-scope": {
+              "propsNoScopeVisits": 42
+            },
+            "page-meta-gate": {
+              "pageMetaSkipped": 42
+            },
+            "reserved-props-gate": {
+              "reservedSkipped": 42
+            },
+            "optimized": {
+              "astReuse": 42,
+              "astOffered": 42,
+              "pageMetaSkipped": 42,
+              "reservedSkipped": 42,
+              "propsNoScopeVisits": 42
+            }
+          },
+          "metricPatternsPerVariant": {
+            "baseline": 1,
+            "control": 1,
+            "ast-reuse": 1,
+            "props-no-scope": 1,
+            "page-meta-gate": 1,
+            "reserved-props-gate": 1,
+            "optimized": 1
+          }
+        }
+      ],
+      "limitations": [
+        "Windows evidence only; do not infer other OS results.",
+        "Warm complete compiler JS diagnostic; not Rust, cold build, Vite/HMR or runtime acceptance.",
+        "Warmup count is recorded as 14; individual warmup observations were not persisted and cannot be independently recounted.",
+        "Predecessor balance applies within seven-treatment rounds, not every boundary between consecutive rounds.",
+        "Source hashing covers the declared 230 files plus real corpus blobs, not every installed dependency file.",
+        "Timed artifacts persist output digests; full output byte comparisons can be independently checked in the 448 correctness worker records."
+      ],
+      "rawManifest": {
+        "summary.json": "9697b5b56c4d802a3305d627c8ecf8560d3793bceb4d33992b6fe90f63bb01cd",
+        "correctness/report.json": "4c2c4d68f22553138322baea12c9dbb4bc4c9f61768ff4e7280a10e827979090",
+        "batch-1-sfc-pressure/report.json": "bb50d7c7dd8681e1fcd94894a9a0b593418a95f07f8cfe33d99dd9690512cb17",
+        "batch-1-sfc-retail/report.json": "02ee03db2135c7785e3501d3640e66ba1ea87c29852114a0c0f2626e359bf5be",
+        "batch-1-sfc-wevu/report.json": "ea1f9f7990a48ae75ab6958d14416e649a68ddcda7bbe5bd6638322e73d06333",
+        "batch-2-sfc-pressure/report.json": "c5fce3060e56a4f6d948eb2a8cddca0d6b5ddabffb317a9b2e882e49dc4bdb32",
+        "batch-2-sfc-retail/report.json": "b923227b7959ea93326e55be19550166e1470493beb8346a5709cac249a55eab",
+        "batch-2-sfc-wevu/report.json": "ff6ce459cf261864c459e86d71bf30b90257d7505fbfb6d1e0eac7f2efd80b1c",
+        "correctness/baseline.json": "2dcfe3e1c2e4ec4a48a881448253791668d606e7c5cb931652c65c4a30d4b25b",
+        "correctness/control.json": "865122ae6939abedc99cd7115b225dcac05972ebfe1d1dc8bf39a1d43dc040e0",
+        "correctness/ast-reuse.json": "c3b3d900f04342d32c56ae0ac068162b8d11d6e5ebe7f2e49fd1304c8f9364b2",
+        "correctness/props-no-scope.json": "64f9efb0df495f5a93f34a1dceca4e176a4b75e293425157fff6956d6d47b803",
+        "correctness/page-meta-gate.json": "fb23593f9ef478c8ab807c9a527938d61dfd9512c4c24286772e4c78710bcea4",
+        "correctness/reserved-props-gate.json": "5282223c0bdc80b56e8270c8bea4465e3fe7fdb8174db31f651c856ac0554a62",
+        "correctness/optimized.json": "8a8b640c4106c12809f979249e0e7f28f722db9e033bafc0a467eb56eff3d991"
+      },
+      "independentAuditSha256": "767c30b9ae8f740dc52075b6f09ae58d647d07dfc9574bcfa7e6b42054b9ec49"
+    }
+  ],
+  "interpretation": [
+    "This measures seven JS compiler variants, not additional Rust speedup.",
+    "Combined paired P50 savings versus same-loader control are 19.23–26.02% on retail and 18.76–20.37% on Wevu across these four OS/batch observations. Pressure savings are 1.45–5.56%.",
+    "Every combined wall P95 improves versus control in the twelve observed groups; single-feature counterexamples remain and must not be hidden.",
+    "Linux props-no-scope Wevu batch 2 wall P95 is 8.21% worse; Windows pressure batch 2 ast-reuse and props-no-scope wall P95 are 7.45% and 14.12% worse.",
+    "Baseline/control loader effects exist: Linux pressure/retail wall P95 increases 5.64–7.03%; Windows loader RSS P50 increases 4.35–19.72%. Use the same-loader control, and do not promise production memory savings.",
+    "Reserved-props gate does not skip work on pressure; apparent single-feature gains there cannot be attributed to eliminating analysis.",
+    "No cross-corpus/batch pooling, no summing independent feature percentages, no adding these gains to prior Rust experiment percentages.",
+    "Warm compileVueFile with diagnostic hooks and fixed options; not cold builds, Vite/HMR, runtime or the production 10%/5% gate.",
+    "RSS is post-compile worker snapshot, not peak or process-tree memory. CPU includes all process threads; Windows CPU accounting is coarse.",
+    "Shared runner contention is not independently measured. The two batches are repeated observations, not a statistical significance claim.",
+    "Per-round positions and within-round predecessor pairs are balanced; boundaries between rounds are not uniformly balanced.",
+    "Raw warmup observations are not persisted; 14 warmup rounds are recorded and enforced by the source protocol, not independently recounted from artifacts.",
+    "Correctness worker artifacts contain full serialized outputs; timed reports only retain output digests after in-process full comparisons.",
+    "Source identity does not verify every installed dependency file."
+  ]
+}

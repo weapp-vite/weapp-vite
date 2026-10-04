@@ -376,3 +376,25 @@ actual 的三个异常全部来自同一个故意无效的源码阶段，分别�
 这里仍没有构建、HMR 或性能样本。wrapper 初始化只观察首次未缓存 require，不等于每次 loader request；已有 fallback channel 不覆盖所有缺失方法分支，零事件不证明没有 JS fallback；`.node` 增量也不代表整个进程所有 native 加载。后续真实 HMR 需要驱动阶段标记、正常退出和产物对照，不能用本轮结果解释已有尾延迟回退。
 
 七路 JS 基线的固定提交 `2d53ed9c4` [采样运行](https://github.com/weapp-vite/weapp-vite/actions/runs/37202918268)已发起；本轮加载诊断不改变该运行的源码或采样目标。三平台数据完成并独立复核前，仍不扩大生产 Rust 覆盖。
+
+
+## 第十八轮：Linux / Windows 更强 JS 基线的实际采样
+
+固定提交 `2d53ed9c4` 的[七路采样](https://github.com/weapp-vite/weapp-vite/actions/runs/37202918268)已完成 Linux 与 Windows，macOS 此检查点仍在排队。每个平台均独立核对 230 份 Git 源码身份、14 份子报告/worker hash、448 次完整正确性输出、42 次初始计时对照与 1764 次正式观测；共重算 792 个分位数和 3024 条配对记录，全部一致，无未释放 AST 所有权或清理错误。原始报告另保留逐轮值，未合并不同语料或批次。
+
+以下是同 loader 原逻辑控制组→四项 JS 组合优化的逐对节省百分比 P50；正值表示耗时减少：
+
+| 平台 | 压力模板第一 / 第二批 | 零售详情第一 / 第二批 | Wevu 首页第一 / 第二批 |
+| --- | --- | --- | --- |
+| Linux | 4.18% / 1.45% | 19.93% / 19.23% | 20.37% / 18.84% |
+| Windows | 5.56% / 1.78% | 22.03% / 26.02% | 18.93% / 18.76% |
+
+组合版在这十二组的 wall P95 均低于控制组。单项优化仍有回退：Linux Wevu 第二批 `props-no-scope` 的 wall P95 增加 8.21%；Windows 压力第二批 `ast-reuse` 与 `props-no-scope` 分别增加 7.45%、14.12%。不能把各项百分比相加，也不能将 JS 组合收益与此前 Rust 实验收益相加。
+
+实际计数表明三个语料每次都复用一次 AST、执行一次无 scope props visitor、跳过一次 page-meta 分析；reserved-props 只在两份真实页面跳过，压力模板仍执行分析，因此压力语料中 reserved-only 的表观变化不能归因于省去工作。完整正确性另覆盖源码变化、不提供 AST、宏和保守 guard 的正负分支。
+
+loader 本身存在干扰。Linux 压力与零售两批的 baseline→control wall P95 增加 5.64%–7.03%；Windows control RSS P50 相对原始编译器增加 4.35%–19.72%。组合版相对同 loader control 的结果可比较，但不能据此保证生产 RSS 降低。RSS 是编译后 worker 快照，CPU 包括进程所有线程，Windows CPU 计数有较粗粒度；共享 runner 负载未被独立测量。
+
+该结果加强“先消除重复工作，再选 Rust 完整计算阶段”的优先级，但只是固定选项、温热 `compileVueFile` 的 JS 诊断，不是 Vite 构建/HMR，也不是生产 10%/5% 门禁通过。宏转换、AST 所有权等优化仍只通过诊断 source loader 启用，生产源码未改。接下来应在更强 JS 基线上重新采 CPU，再决定整体 `transformScript` Rust POC 是否有足够剩余收益。
+
+预热 14 轮由源码协议和报告字段确认，未保存每轮预热原始观测；独立复核不能声称重新计数。14 轮顺序设计平衡每个实现的位置及单轮内前序，跨轮边界并非均匀。完整正确性保留原始序列化输出，计时报告保留完整比较后的摘要；这些证据层次与各平台全部单项结果、反例、来源 hash 见[JS 基线采样证据](./2026-10-04-script-baseline-timing-evidence.json)。三平台最终结论仍待 macOS 完成。
