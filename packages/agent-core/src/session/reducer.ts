@@ -16,6 +16,7 @@ export interface SessionState {
 
 /** 顺序消费记录，完成结果只匹配在它之前声明的调用。 */
 export function reduceSession(events: SessionEvent[]): SessionState {
+  const deferredInputs: Message[] = []
   const state: SessionState = {
     messages: [],
     pendingCalls: [],
@@ -47,7 +48,13 @@ export function reduceSession(events: SessionEvent[]): SessionState {
     }
     if (event.type === 'message') {
       const message = event.data.message as Message
-      state.messages.push(message)
+      // 原始日志及时保留输入；模型投影须先完成当前工具组，再接收追加要求。
+      if (message.role === 'user' && state.pendingCalls.length) {
+        deferredInputs.push(message)
+      }
+      else {
+        state.messages.push(message)
+      }
       if (state.status === 'empty') {
         state.status = 'unfinished'
       }
@@ -69,6 +76,9 @@ export function reduceSession(events: SessionEvent[]): SessionState {
             throw new SessionJournalError('Invalid session journal: tool result name does not match its pending call; refusing to replay it.', events)
           }
           state.pendingCalls.splice(index, 1)
+          if (!state.pendingCalls.length) {
+            state.messages.push(...deferredInputs.splice(0))
+          }
         }
         else {
           throw new SessionJournalError(`Invalid session journal: tool result in record ${event.sequence} has no preceding pending call; refusing to replay it.`, events)
@@ -88,5 +98,7 @@ export function reduceSession(events: SessionEvent[]): SessionState {
       }
     }
   }
+  // 恢复确认前也允许读取已接收的全部输入；执行门禁负责阻止未完成工具组进入模型。
+  state.messages.push(...deferredInputs)
   return state
 }

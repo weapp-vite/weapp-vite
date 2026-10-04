@@ -1,3 +1,4 @@
+import type { SessionLock } from './session/lock.js'
 import type { PendingToolCall, SessionSummary } from './session/types.js'
 import type { Message, SessionEvent, ToolCall } from './types.js'
 import { randomUUID } from 'node:crypto'
@@ -5,14 +6,12 @@ import {
   mkdir,
   open,
   readdir,
-  readFile,
   truncate,
-  unlink,
 } from 'node:fs/promises'
 import path from 'node:path'
-import process from 'node:process'
 import { hash, stateRoot } from './config.js'
 import { redactor, redactValue } from './security.js'
+import { acquireSessionLock } from './session/lock.js'
 import { readSessionJournal } from './session/reader.js'
 import { reduceSession } from './session/reducer.js'
 import { inspectSession } from './session/summary.js'
@@ -21,10 +20,13 @@ export type { PendingToolCall, SessionSummary } from './session/types.js'
 
 export class Session {
   private sequence = 0
-  private handle?: Awaited<ReturnType<typeof open>>
+  private lock?: SessionLock
+  private opening = false
+  private ready = false
+  private writes: Promise<void> = Promise.resolve()
+  private closing?: Promise<void>
   private readonly redact = redactor()
   readonly events: SessionEvent[] = []
-  readonly messages: Message[] = []
   constructor(
     readonly root: string,
     readonly id: string = randomUUID(),
@@ -39,39 +41,21 @@ export class Session {
     return path.join(this.directory, `${this.id}.jsonl`)
   }
 
+  get messages(): Message[] {
+    return reduceSession(this.events).messages
+  }
+
   async open(resume = false): Promise<void> {
-    await mkdir(this.directory, { recursive: true, mode: 0o700 })
-    const lock = `${this.filename}.lock`
-    try {
-      this.handle = await open(lock, 'wx', 0o600)
+    if (this.opening || this.lock || this.closing) {
+      throw new Error('Session is already open or changing ownership.')
     }
-    catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
-        throw error
-      }
-      const pid = Number(await readFile(lock, 'utf8'))
-      if (!Number.isInteger(pid) || pid <= 0) {
-        throw new Error(
-          'Session lock is invalid; inspect it before removing it.',
-        )
-      }
-      try {
-        process.kill(pid, 0)
-        throw new Error('Session is already active in another process.')
-      }
-      catch (err) {
-        if ((err as NodeJS.ErrnoException).code !== 'ESRCH') {
-          throw err
-        }
-      }
-      await unlink(lock)
-      this.handle = await open(lock, 'wx', 0o600)
-    }
+    this.opening = true
     try {
-      await this.handle.writeFile(String(process.pid))
+      await mkdir(this.directory, { recursive: true, mode: 0o700 })
+      this.lock = await acquireSessionLock(this.filename)
       if (resume) {
         const journal = await readSessionJournal(this.filename, this.id)
-        const state = reduceSession(journal.events)
+        reduceSession(journal.events)
         if (journal.incompleteTail) {
           await truncate(this.filename, journal.completeBytes)
         }
@@ -87,22 +71,27 @@ export class Session {
         }
         this.sequence = journal.events.at(-1)?.sequence ?? 0
         this.events.length = 0
-        this.messages.length = 0
         for (const event of journal.events) {
           this.events.push(event)
-        }
-        for (const message of state.messages) {
-          this.messages.push(message)
         }
       }
       else {
         const file = await open(this.filename, 'wx', 0o600)
         await file.close()
+        this.sequence = 0
+        this.events.length = 0
       }
+      this.writes = Promise.resolve()
+      this.ready = true
     }
     catch (error) {
-      await this.close()
+      const lock = this.lock
+      this.lock = undefined
+      await lock?.release()
       throw error
+    }
+    finally {
+      this.opening = false
     }
   }
 
@@ -110,28 +99,37 @@ export class Session {
     type: string,
     data: Record<string, unknown>,
   ): Promise<SessionEvent> {
+    const lock = this.lock
+    if (!this.ready || !lock) {
+      throw new Error('Session must be open before appending events.')
+    }
     const safe = redactValue(data, this.redact)
-    const event: SessionEvent = {
-      version: 1,
-      sessionId: this.id,
-      sequence: ++this.sequence,
-      timestamp: new Date().toISOString(),
-      type,
-      data: safe,
-    }
-    const fd = await open(this.filename, 'a', 0o600)
-    try {
-      await fd.writeFile(`${JSON.stringify(event)}\n`)
-      await fd.sync()
-    }
-    finally {
-      await fd.close()
-    }
-    this.events.push(event)
-    if (type === 'message') {
-      this.messages.push(safe.message as Message)
-    }
-    return event
+    const write = this.writes.then(async () => {
+      await lock.assertOwned()
+      const event: SessionEvent = {
+        version: 1,
+        sessionId: this.id,
+        sequence: this.sequence + 1,
+        timestamp: new Date().toISOString(),
+        type,
+        data: safe,
+      }
+      const fd = await open(this.filename, 'a', 0o600)
+      try {
+        await fd.writeFile(`${JSON.stringify(event)}\n`)
+        await fd.sync()
+      }
+      finally {
+        await fd.close()
+      }
+      this.sequence = event.sequence
+      this.events.push(event)
+      return event
+    })
+    // 写入失败后拒绝后续追加，交由重新打开时的日志校验和尾行修复恢复。
+    this.writes = write.then(() => {})
+    void this.writes.catch(() => {})
+    return write
   }
 
   unresolved(): ToolCall[] {
@@ -142,13 +140,28 @@ export class Session {
     return reduceSession(this.events).pendingCalls
   }
 
-  async close(): Promise<void> {
-    if (!this.handle) {
-      return
+  close(): Promise<void> {
+    if (this.closing) {
+      return this.closing
     }
-    await this.handle.close()
-    this.handle = undefined
-    await unlink(`${this.filename}.lock`).catch(() => {})
+    if (this.opening) {
+      return Promise.reject(new Error('Wait for the session to finish opening before closing it.'))
+    }
+    const lock = this.lock
+    if (!lock) {
+      return Promise.resolve()
+    }
+    this.ready = false
+    this.lock = undefined
+    this.closing = (async () => {
+      try {
+        await this.writes
+      }
+      finally {
+        await lock.release()
+      }
+    })().finally(() => { this.closing = undefined })
+    return this.closing
   }
 
   static async list(root: string): Promise<string[]> {

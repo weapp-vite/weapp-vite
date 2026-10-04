@@ -1,3 +1,4 @@
+import type { Message } from '../src/types.js'
 import { appendFile, mkdtemp, readFile, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -56,6 +57,88 @@ it('distinguishes declared and started calls, and accepts a persisted result wit
     await session.close()
   }
   expect((await Session.inspect(root, 'partial')).pendingCalls.map(call => call.id)).toEqual(['started', 'waiting'])
+})
+
+it('retains queued inputs and images while projecting them after the complete tool group', async () => {
+  const original: Message = { role: 'user', text: 'Original request from a legacy session' }
+  const assistant: Message = { role: 'assistant', text: '', calls: [
+    { id: 'first', name: 'shell', input: { command: 'first operation' } },
+    { id: 'second', name: 'shell', input: { command: 'second operation' } },
+  ] }
+  const constraint: Message = {
+    role: 'user',
+    origin: 'user',
+    text: 'Preserve the database and match this image',
+    images: [{ type: 'image', mediaType: 'image/png', data: 'reference-image' }],
+  }
+  const followup: Message = { role: 'user', text: 'Preserve public exports as well' }
+  const reminder: Message = { role: 'user', origin: 'engine', text: 'Inspect before continuing' }
+  const firstResult: Message = { role: 'tool', callId: 'first', name: 'shell', result: { text: 'First result' } }
+  const secondResult: Message = { role: 'tool', callId: 'second', name: 'shell', result: { text: 'Second result' } }
+  const rawMessages = [original, assistant, constraint, firstResult, followup, reminder]
+  const session = await journal(root, 'queued-inputs', rawMessages.map(message => ['message', { message }]))
+  await session.open(true)
+  try {
+    expect(session.messages).toEqual([original, assistant, firstResult, constraint, followup, reminder])
+    expect(session.recovery().map(call => call.id)).toEqual(['second'])
+    expect(await Session.inspect(root, session.id)).toMatchObject({ prompt: followup.text })
+  }
+  finally {
+    await session.close()
+  }
+
+  const resumed = new Session(root, session.id)
+  await resumed.open(true)
+  const projected = [original, assistant, firstResult, secondResult, constraint, followup, reminder]
+  try {
+    expect(resumed.messages).toEqual(session.messages)
+    await resumed.append('message', { message: secondResult })
+    expect(resumed.messages).toEqual(projected)
+    expect(resumed.recovery()).toEqual([])
+    expect(resumed.events.filter(event => event.type === 'message').map(event => event.data.message))
+      .toEqual([...rawMessages, secondResult])
+  }
+  finally {
+    await resumed.close()
+  }
+
+  const reopened = new Session(root, session.id)
+  await reopened.open(true)
+  try {
+    expect(reopened.messages).toEqual(projected)
+  }
+  finally {
+    await reopened.close()
+  }
+})
+
+it('defers inputs only for the current occurrence of a reused call ID', async () => {
+  const firstConstraint: Message = { role: 'user', text: 'Preserve the first completed change' }
+  const betweenRuns: Message = { role: 'user', text: 'Start the second change' }
+  const secondConstraint: Message = { role: 'user', origin: 'user', text: 'Inspect the second change before continuing' }
+  const session = await journal(root, 'queued-reused-id', [
+    declared('shared'),
+    ['message', { message: firstConstraint }],
+    completed('shared'),
+    ['message', { message: betweenRuns }],
+    declared('shared'),
+    ['message', { message: secondConstraint }],
+  ])
+  await session.open(true)
+  try {
+    const initial = session.messages
+    expect(initial.at(-1)).toEqual(secondConstraint)
+    expect(initial[2]).toEqual(firstConstraint)
+    expect(initial[3]).toEqual(betweenRuns)
+    expect(session.recovery().map(call => call.id)).toEqual(['shared'])
+    const [type, data] = completed('shared')
+    await session.append(type, data)
+    expect(session.messages).toEqual([...initial.slice(0, -1), data.message, secondConstraint])
+    expect(session.recovery()).toEqual([])
+  }
+  finally {
+    await session.close()
+  }
 })
 
 it('refuses an orphan result instead of letting it resolve a future declaration with the same ID', async () => {

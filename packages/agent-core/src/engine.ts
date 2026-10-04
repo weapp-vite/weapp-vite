@@ -85,6 +85,14 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
       model: options.model.id,
       resumed: Boolean(options.sessionId),
     })
+    await emit('message', {
+      message: {
+        role: 'user',
+        origin: 'user',
+        text: options.prompt,
+        images: options.images,
+      } satisfies Message,
+    })
     const unresolved = session.recovery()
     if (unresolved.length && !options.acknowledgeInterrupted) {
       await emit('recovery.required', { calls: unresolved })
@@ -108,14 +116,6 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
         } satisfies Message,
       })
     }
-    await emit('message', {
-      message: {
-        role: 'user',
-        origin: 'user',
-        text: options.prompt,
-        images: options.images,
-      } satisfies Message,
-    })
     const registry = new Map(options.tools.map(tool => [tool.name, tool]))
     if (registry.size !== options.tools.length) {
       throw new Error('Duplicate tool names')
