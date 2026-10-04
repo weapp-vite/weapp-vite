@@ -36,7 +36,7 @@ describe.each(['node', 'browser'] as const)('%s page readiness task boundary', (
     return session
   }
 
-  it('renders completed load microtasks at ready before navigation success and complete', async () => {
+  it('renders completed load microtasks before ready and navigation callbacks', async () => {
     const session = createSession()
     const firstPage = session.reLaunch('/pages/destination/index')
     await vi.waitFor(() => expect(firstPage.data.ready).toBe(true))

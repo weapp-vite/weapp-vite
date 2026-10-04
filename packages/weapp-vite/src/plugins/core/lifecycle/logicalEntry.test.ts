@@ -17,6 +17,30 @@ vi.mock('../../../utils', () => ({
 vi.mock('../../utils/cache', () => ({ pathExists: pathExistsMock }))
 
 describe('core logical entry lifecycle', () => {
+  it('returns an empty module when a deleted entry is reloaded by the old dev engine', async () => {
+    const sourceId = '/project/src/pages/deleted/index.ts'
+    pathExistsMock.mockResolvedValueOnce(false)
+    const state = {
+      resolvedEntryMap: new Map(),
+      loadEntry: vi.fn(),
+      entriesMap: new Map(),
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          isDev: true,
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        moduleGraphService: { bindPluginContext: vi.fn() },
+      },
+    } as any
+
+    await expect(createLogicalEntryLoadHook(state).call(
+      { addWatchFile: vi.fn() } as any,
+      createLogicalEntryId(sourceId, 'page'),
+    )).resolves.toEqual({ code: '', moduleSideEffects: 'no-treeshake' })
+    expect(state.loadEntry).not.toHaveBeenCalled()
+  })
+
   it.each(['usingComponents', 'componentGenerics'])('loads the physical entry and expresses %s dependencies', async (field) => {
     const sourceId = '/project/src/pages/home/index.ts'
     const templatePath = '/project/src/pages/home/index.wxml'
