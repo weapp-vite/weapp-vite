@@ -18,7 +18,7 @@ import {
 } from '../constants'
 import { getRequireImportLiteral } from './literals'
 
-function mayNeedChunkScriptAnalysis(code: string) {
+export function mayNeedChunkScriptAnalysis(code: string) {
   if (code.includes('require')) {
     return true
   }

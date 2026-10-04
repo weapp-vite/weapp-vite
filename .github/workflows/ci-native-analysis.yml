@@ -7,9 +7,17 @@ on:
       - 'packages/ast/**'
       - 'packages/ast-native/**'
       - 'packages-runtime/wevu-compiler/**'
+      - 'packages/weapp-vite/src/plugins/core/lifecycle/emit/rewrite/**'
+      - packages/weapp-vite/src/plugins/core/lifecycle/platformApiRewrite.ts
+      - packages/weapp-vite/src/utils/outputChunk.ts
+      - 'packages/weapp-vite/src/utils/sourcemap*'
+      - 'packages/weapp-vite/src/utils/npmImport*'
+      - packages/weapp-vite/src/utils/weapi.ts
+      - 'packages/weapp-vite/src/utils/miniProgramGlobals*'
       - scripts/ast-migration-profile.ts
       - scripts/ast-migration-profile.test.ts
       - 'scripts/astMigrationProfile/**'
+      - 'scripts/nativeChunkAnalysis/**'
       - 'scripts/benchmarkNativeAnalysis/**'
       - 'scripts/benchmarkTemplatesHmr/**'
       - 'scripts/benchmarkTemplatesPerformance/**'
@@ -60,6 +68,10 @@ jobs:
         run: pnpm --filter @weapp-vite/ast-native native:build
       - name: Check native release correctness and fallback
         run: pnpm --filter @weapp-vite/ast-native exec vitest run --config native.vitest.config.ts
+      - name: Build the optional chunk analysis experiment
+        run: pnpm --filter @weapp-vite/ast-native exec napi build --platform --release --features experimental-chunk-analysis --no-js --dts target/chunk-experiment.d.ts --output-dir ../../.codex-tmp/chunk-native-release
+      - name: Check experimental binding and exact rewrite parity
+        run: node --import tsx scripts/nativeChunkAnalysis/check.ts --binding-dir=.codex-tmp/chunk-native-release --output=.codex-tmp/chunk-correctness.json
       - name: Check AST types and contracts
         run: |
           pnpm --filter @weapp-vite/ast typecheck
@@ -72,7 +84,8 @@ jobs:
           pnpm --filter @wevu/compiler test src/profiling/internal.test.ts src/profiling/internal.browser.test.ts src/utils/babel.test.ts
           pnpm exec tsc -p scripts/astMigrationProfile/tsconfig.json
           pnpm exec tsc -p scripts/benchmarkNativeAnalysis/tsconfig.json
-          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile/gc.test.ts scripts/benchmarkNativeAnalysis
+          pnpm exec tsc -p scripts/nativeChunkAnalysis/tsconfig.json
+          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile/gc.test.ts scripts/benchmarkNativeAnalysis scripts/nativeChunkAnalysis/rewrite.test.ts
       - name: Run fixed native off/on performance acceptance
         if: github.event_name == 'workflow_dispatch' && inputs.full-performance
         run: pnpm benchmark:native-analysis --mode=full --output=.codex-tmp/native-analysis --native-path=packages/ast-native/index.js

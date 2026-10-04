@@ -7,6 +7,10 @@ publish = false
 [lib]
 crate-type = [ "cdylib" ]
 
+[features]
+default = []
+experimental-chunk-analysis = [ "dep:oxc_semantic" ]
+
 [dependencies]
 napi = { version = "3.14.0", default-features = false, features = [ "napi4" ] }
 napi-derive = "3.6.10"
@@ -14,6 +18,7 @@ oxc_allocator = "0.152.0"
 oxc_ast = "0.152.0"
 oxc_ast_visit = "0.152.0"
 oxc_parser = "0.152.0"
+oxc_semantic = { version = "0.152.0", optional = true }
 oxc_span = "0.152.0"
 oxc_syntax = "0.152.0"
 serde = { version = "1.0.229", features = [ "derive" ] }

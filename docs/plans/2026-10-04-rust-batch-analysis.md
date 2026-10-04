@@ -130,3 +130,47 @@ Computer Use 读取的现有用户宿主为 `2.02.2609231 RC`，基础库 `3.16.
 PR 的原生正确性检查已在 macOS、Linux、Windows 通过。Web E2E 则在 SFC playground 发现 `AsyncLocalStorage is not a constructor`：常规编译入口导入观测模块时，顶层初始化了 Node 专用 API，进入浏览器 bundle 后启动失败。
 
 修复将编译器常规路径收敛为无 Node 依赖的可选观测门面；独立 Node 入口持有 AsyncLocalStorage、时钟与进程 CPU 采集，并在显式观测期间安装适配器。保留并发隔离、嵌套阶段和未启用时的直接执行语义。新增无 Node API 的导入回归，并保留真实 browser bundle 的既有 E2E 验证；最终 CI 结果以 PR 最新提交的检查为准。
+
+## 后续实验：作用域感知的产物改写摘要
+
+前述 native 预分析只返回布尔值。命中 require 或平台 API 后，产物改写仍需 Babel 再次 parse/traverse。本轮新增默认关闭的 Cargo feature `experimental-chunk-analysis`：一次批量 N-API 调用，在每份源码的一次 Oxc parse 与作用域分析后返回静态 require 首参和未遮蔽平台对象的 UTF-16 区间，不返回 AST，也不逐节点回调 JS。
+
+实验 JS 适配器直接复用现有 npm 路径规范化、平台别名生成和 sourcemap 组合。为保留严格 map 契约，继续执行原有两阶段 MagicString 编辑，只将第二阶段区间按第一次编辑的长度变化平移。该模块没有接入生产 JS 导出、用户配置或热路径；Oxc semantic 为可选 Cargo 依赖，普通构建不包含它。
+
+已完成以下正确性验证：
+
+- debug/release 绑定各通过 32 项差分与边界测试，覆盖词法作用域、提前声明、可选链、计算属性、括号、Unicode 标识符、UTF-16 偏移与整个批次失败。
+- JS 适配器 10 项测试通过，覆盖原始代码/maps 一致、单次批量调用、无效结果原子回退，以及无法无损转成 UTF-8 的孤立代理字符。
+- 26 个语义样本的外置/内联 map 共 52 项检查通过；新构建的 TDesign 工程 415 份 JS、873,624 字节，共 830 项检查通过，均没有 fallback。命中计数按原始语料记录，不因两种 map 模式重复累计；415 份输入中，218 份进入 native，197 份沿用生产文本预筛选跳过。该语料有 405 份 JS 位于复制的 npm 资源目录，不能用它代表真实 chunk 工作量。
+- 这些 map 是为每份已构建 JS 新建的 identity map，用来严格对照两阶段映射组合。没有读取工程原来的 map，不能将此结果写成原工程的 sourcemap 端到端验收。
+- 已添加三操作系统的独立 feature 构建与正确性步骤；本机结果为 macOS，远程 feature 矩阵尚待执行。
+
+等待同机 E2E 退出后，使用 release 绑定完成 8 对预热与 30 对交替顺序采样。首次全目录语料的 JS/native P50 为 144.703/18.767 ms，但这包含复制资源，仅保留作大语料重放证据。
+
+随后通过 Node 内存加载钩子，在真实 `resolveDevHmrRewriteBundle` 之后、任何改写之前捕获 `type === 'chunk'` 输入。实际只有 10 个 chunk、105,592 字节，其中 6 个进入 native、4 个被文本预筛选跳过；捕获时另有 21 个 asset 被排除。外置/内联 map 的 20 项检查全部通过，无 fallback；摘要有 9 个 require 字面量，没有平台 API 对象。
+
+| 实际 chunk 语料的局部重放 | JS | Rust |
+| --- | ---: | ---: |
+| P50 | 8.340 ms | 1.203 ms |
+| P95 | 11.136 ms | 1.259 ms |
+
+P50 的绝对差约 7.14 ms。这是 macOS arm64、Node 24.18.0 共享机器上的单轮实验，采样前后未见活动 E2E/性能任务，但仍有 IDE 等系统负载。捕获工程原配置是 `weapp`、Babel、未启用 `injectWeapi`；重放固定调用支付宝 npm 规范化与 `wpi` API 改写，因此不能称作该模板自然改写阶段或整构建的提速。也没有迁移 local npm root 的互操作传播逻辑。
+
+结论是该粗粒度摘要有局部净收益，但当前自然工作量较小，尚未证明整构建达到 10% 门槛。继续保留为默认关闭的实验；扩大生产覆盖仍须代表工程构建/HMR、RSS、原始产物/maps/告警与跨平台验证。
+
+可复现命令及测量边界见 [实验工具](../../scripts/nativeChunkAnalysis/README.md)，本轮 [脱敏证据摘要](./2026-10-04-rust-chunk-analysis-evidence.json) 保留输入规模、原始报告摘要和完整性结果。
+
+## 真实模板入口的重复解析归因
+
+通过 `scripts/astMigrationProfile/attribution.ts` 的 count-only 观测适配器，在同一 SFC fixture 上预热 5 次后观察 1 次真实 `compileVueFile`。实际计数确认 974 次 Babel parse、2016 次 traverse、73 次 generate：
+
+| parse 调用来源 | 次数 |
+| --- | ---: |
+| 绑定表达式的 manifest 依赖分析 | 266 |
+| 同一 manifest 分析中递归解析外层循环列表 | 458 |
+| runtime fallback 判断 | 170 |
+| JS 表达式规范化 | 49 |
+| 内联事件表达式 | 24 |
+| 脚本与宏 | 7 |
+
+模板阶段合计 967 次 parse，manifest 路径占 724 次。这是调用次数归因，不是耗时占比；采集调用栈本身较昂贵，工具刻意不计时。重复循环来源的去重机会值得先验证 JS 缓存边界，再评估整模板 Rust 批量分析。最终结果依赖作用域、for/slot 别名与 safe-call 配置，不能只按表达式字符串缓存完整结果；scoped slot 当前在遍历过程中立即消费子 manifest，批处理必须先处理这个生命周期边界。
