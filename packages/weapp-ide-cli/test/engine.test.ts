@@ -3,11 +3,17 @@ import path from 'node:path'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: async (run: () => Promise<unknown>) => await run() }))
+
 const pollWechatIdeEngineBuildResultByHttpMock = vi.hoisted(() => vi.fn())
 const startWechatIdeEngineBuildByHttpMock = vi.hoisted(() => vi.fn())
 const resetWechatIdeFileUtilsByHttpMock = vi.hoisted(() => vi.fn())
 const execaMock = vi.hoisted(() => vi.fn())
 const resolveCliPathMock = vi.hoisted(() => vi.fn())
+const resolveTarget = vi.hoisted(() => vi.fn())
+const assertHost = vi.hoisted(() => vi.fn())
+const selectedTarget = vi.hoisted(() => ({ cliPath: 'selected-cli', installationId: 'selected', appPath: 'selected-app', profileDir: 'selected-profile' }))
+vi.mock('../src/devtoolsTarget', () => ({ resolveWechatDevtoolsTarget: resolveTarget, assertWechatDevtoolsHost: assertHost }))
 
 vi.mock('execa', () => ({
   execa: execaMock,
@@ -32,6 +38,8 @@ describe('runWechatIdeEngineBuildByHttp', () => {
     pollWechatIdeEngineBuildResultByHttpMock.mockReset()
     execaMock.mockReset()
     resolveCliPathMock.mockReset()
+    resolveTarget.mockReset().mockResolvedValue(selectedTarget)
+    assertHost.mockReset().mockResolvedValue(undefined)
     startWechatIdeEngineBuildByHttpMock.mockResolvedValue({ body: 'OK' })
     resolveCliPathMock.mockResolvedValue({ cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli' })
     execaMock.mockResolvedValue({
@@ -54,6 +62,38 @@ describe('runWechatIdeEngineBuildByHttp', () => {
     expect(write).not.toHaveBeenCalled()
   })
 
+  it('keeps the explicitly selected installation when HTTP falls back to CLI', async () => {
+    startWechatIdeEngineBuildByHttpMock.mockRejectedValueOnce(new Error('Cannot GET /engine/build'))
+    const { runWechatIdeEngineBuild } = await import('../src/cli/engine')
+    await runWechatIdeEngineBuild('fixture', { cliPath: selectedTarget.cliPath })
+    expect(execaMock).toHaveBeenCalledWith(selectedTarget.cliPath, ['engine', 'build', path.resolve('fixture')], expect.any(Object))
+    expect(resolveTarget).toHaveBeenCalledTimes(2)
+    expect(resolveTarget.mock.calls[1]?.[0]).toMatchObject({ target: selectedTarget, cliPath: selectedTarget.cliPath })
+    expect(assertHost).toHaveBeenCalledWith(selectedTarget, expect.any(Object))
+    expect(resolveCliPathMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps the selected context through polling when the configured default changes', async () => {
+    const other = { ...selectedTarget, cliPath: 'other-cli', installationId: 'other' }
+    startWechatIdeEngineBuildByHttpMock.mockImplementationOnce(async () => {
+      resolveTarget.mockResolvedValue(other)
+      return { body: 'OK' }
+    })
+    pollWechatIdeEngineBuildResultByHttpMock.mockResolvedValueOnce({ done: true, failed: false })
+    const { runWechatIdeEngineBuildByHttp } = await import('../src/cli/engine')
+    await runWechatIdeEngineBuildByHttp('fixture')
+    expect(resolveTarget).toHaveBeenCalledOnce()
+    expect(pollWechatIdeEngineBuildResultByHttpMock).toHaveBeenCalledWith({ target: selectedTarget })
+  })
+
+  it('does not access an IDE installation while preparing headless acceptance', async () => {
+    const { prepareAcceptanceProject } = await import('../src/cli/engine')
+    await prepareAcceptanceProject('fixture', new AbortController().signal, { runtimeProvider: 'headless' })
+    expect(resolveTarget).not.toHaveBeenCalled()
+    expect(startWechatIdeEngineBuildByHttpMock).not.toHaveBeenCalled()
+    expect(execaMock).not.toHaveBeenCalled()
+  })
+
   it('refreshes the IDE file index before polling acceptance build completion', async () => {
     resetWechatIdeFileUtilsByHttpMock.mockResolvedValueOnce(undefined)
     pollWechatIdeEngineBuildResultByHttpMock.mockResolvedValueOnce({ done: true, failed: false })
@@ -62,7 +102,7 @@ describe('runWechatIdeEngineBuildByHttp', () => {
     const pending = prepareAcceptanceProject('/workspace/demo-app', signal)
     await vi.advanceTimersByTimeAsync(1000)
     await pending
-    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('/workspace/demo-app', { signal, timeoutMs: 10_000 })
+    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('/workspace/demo-app', { target: selectedTarget, signal, timeoutMs: 10_000 })
     expect(startWechatIdeEngineBuildByHttpMock).toHaveBeenCalledOnce()
   })
 
@@ -87,7 +127,7 @@ describe('runWechatIdeEngineBuildByHttp', () => {
     await vi.advanceTimersByTimeAsync(1000)
     const result = await pending
 
-    expect(startWechatIdeEngineBuildByHttpMock).toHaveBeenCalledWith('/workspace/demo-app', {})
+    expect(startWechatIdeEngineBuildByHttpMock).toHaveBeenCalledWith('/workspace/demo-app', { target: selectedTarget })
     expect(pollWechatIdeEngineBuildResultByHttpMock).toHaveBeenCalledTimes(2)
     expect(result).toEqual({
       body: '{"status":"END","msg":"done"}',
@@ -160,7 +200,7 @@ describe('runWechatIdeEngineBuildByHttp', () => {
     await runWechatIdeEngineBuild('/workspace/demo-app')
 
     expect(execaMock).toHaveBeenCalledWith(
-      '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+      selectedTarget.cliPath,
       ['engine', 'build', path.resolve('/workspace/demo-app')],
       {
         killDescendants: true,

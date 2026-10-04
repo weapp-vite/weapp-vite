@@ -39,3 +39,13 @@ expectType<Promise<WeappViteMcpServerFactory>>(createWeappViteMcpServerFactory({
 expectError<StartMcpServerOptions>({
   transport: 'http',
 })
+
+createWeappViteMcpServerFactory({
+  runtimeHooks: {
+    resolveSessionOptions: async input => ({ ...input, installationId: 'stable', cliPath: 'stable-cli' }),
+    connectMiniProgram: async () => { throw new Error('test contract') },
+  },
+}).then((configuredFactory) => {
+  expectType<Promise<void>>(configuredFactory.runtimeManager.close({ projectPath: 'fixture', cliPath: 'stable-cli', installationId: 'stable' }))
+  expectError(configuredFactory.runtimeManager.close({ projectPath: 'fixture', cliPath: 42 }))
+})

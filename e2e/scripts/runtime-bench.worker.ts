@@ -3,6 +3,7 @@ import type { BenchScenarioSummary, WorkerResult } from './runtimeBench/types'
 import fs from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { assertDevtoolsLoggedIn } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
@@ -197,4 +198,4 @@ async function main() {
   process.stdout.write(`RUNTIME_BENCH_RESULT ${JSON.stringify(result)}\n`)
 }
 
-void main()
+void withMachineE2ELease(main)

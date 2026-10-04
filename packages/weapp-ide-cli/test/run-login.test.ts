@@ -1,5 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const withMachineLease = vi.hoisted(() => vi.fn(async (run: () => Promise<unknown>) => run()))
+vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: withMachineLease }))
+
+const hostGuard = vi.hoisted(() => vi.fn())
+const resolveTarget = vi.hoisted(() => vi.fn())
+
+vi.mock('../src/devtoolsTarget', () => ({
+  resolveWechatDevtoolsTarget: resolveTarget,
+  assertWechatDevtoolsHost: hostGuard,
+}))
+
 const executeMock = vi.hoisted(() => vi.fn())
 const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
@@ -51,7 +62,10 @@ describe('runWechatCliWithRetry', () => {
       writable: true,
       value: true,
     })
+    hostGuard.mockReset().mockResolvedValue(undefined)
+    resolveTarget.mockReset().mockImplementation(async ({ cliPath }) => ({ cliPath, installationId: cliPath }))
     executeMock.mockReset()
+    withMachineLease.mockReset().mockImplementation(async run => run())
     promptWechatIdeLoginRetryMock.mockReset()
     isWechatIdeLoginRequiredErrorMock.mockReset()
     createWechatIdeLoginRequiredExitErrorMock.mockReset()
@@ -102,7 +116,23 @@ describe('runWechatCliWithRetry', () => {
     const { runWechatCliWithRetry } = await import('../src/cli/run-login')
     await runWechatCliWithRetry('/Applications/wechat-cli', ['open', '--project', '/project'])
 
-    expect(setRuntimeWechatDevtoolsServicePortMock).toHaveBeenCalledWith(44650)
+    expect(setRuntimeWechatDevtoolsServicePortMock).toHaveBeenCalledWith(44650, { cliPath: '/Applications/wechat-cli', installationId: '/Applications/wechat-cli' })
+  })
+
+  it('rejects another running installation before invoking the CLI or login retry', async () => {
+    hostGuard.mockRejectedValue(new Error('DEVTOOLS_INSTALLATION_MISMATCH'))
+    const { runWechatCliWithRetry } = await import('../src/cli/run-login')
+    await expect(runWechatCliWithRetry('fixture-cli', ['open'])).rejects.toThrow('DEVTOOLS_INSTALLATION_MISMATCH')
+    expect(executeMock).not.toHaveBeenCalled()
+    expect(promptWechatIdeLoginRetryMock).not.toHaveBeenCalled()
+  })
+
+  it('does not touch the host while another E2E owns the machine', async () => {
+    withMachineLease.mockRejectedValue(new Error('Runtime busy'))
+    const { runWechatCliWithRetry } = await import('../src/cli/run-login')
+    await expect(runWechatCliWithRetry('fixture-cli', ['quit'])).rejects.toThrow('Runtime busy')
+    expect(hostGuard).not.toHaveBeenCalled()
+    expect(executeMock).not.toHaveBeenCalled()
   })
 
   it('does not flush cli output for silent probes', async () => {

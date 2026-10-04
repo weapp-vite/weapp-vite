@@ -3,6 +3,7 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
+    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
     include: [
       path.resolve(import.meta.dirname, './platforms/verification.test.ts').replaceAll('\\', '/'),
       path.resolve(import.meta.dirname, './scripts/platform-runtime-doctor.test.ts').replaceAll('\\', '/'),

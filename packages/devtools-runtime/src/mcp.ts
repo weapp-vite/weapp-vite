@@ -12,7 +12,13 @@ export type AutomatorElement = InstanceType<typeof Element> & {
   input?: (value: string) => Promise<void>
 }
 
-export interface DevtoolsRuntimeSessionOptions {
+export interface DevtoolsInstallationContext {
+  cliPath?: string
+  installationId?: string
+  runtimeProvider?: 'devtools' | 'headless'
+}
+
+export interface DevtoolsRuntimeSessionOptions extends DevtoolsInstallationContext {
   miniProgram?: AutomatorMiniProgram
   openedOnly?: boolean
   preferOpenedSession?: boolean
@@ -25,13 +31,16 @@ export interface DevtoolsRuntimeSessionOptions {
 }
 
 export interface DevtoolsRuntimeHooks {
-  /** Refresh the IDE build after project compilation, before acceptance interactions. */
-  prepareProject?: (projectPath: string, signal: AbortSignal) => Promise<unknown>
+  /** 在缓存查找前固定安装上下文，供连接、复用和清理共用。 */
+  resolveSessionOptions?: (options: DevtoolsRuntimeSessionOptions) => Promise<DevtoolsRuntimeSessionOptions>
+
+  /** 项目编译后沿用已固定的安装上下文刷新 IDE。 */
+  prepareProject?: (projectPath: string, signal: AbortSignal, options?: DevtoolsInstallationContext) => Promise<unknown>
   connectMiniProgram: (options: DevtoolsRuntimeSessionOptions) => Promise<AutomatorMiniProgram>
   normalizeConnectionError?: (error: unknown) => unknown
 }
 
-export interface DevtoolsConnectionInput {
+export interface DevtoolsConnectionInput extends DevtoolsInstallationContext {
   projectPath: string
   timeout?: number
   openedOnly?: boolean

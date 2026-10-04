@@ -58,6 +58,10 @@ describe('runtime service command bridge', () => {
       'pages/detail/index',
       '-p',
       'templates/demo',
+      '--cli-path',
+      'stable-cli',
+      '--port=19510',
+      '--session-id=stable-fixture',
       '--runtime-url',
       'http://127.0.0.1:3088/api/weapp/devtools',
     ])
@@ -70,6 +74,9 @@ describe('runtime service command bridge', () => {
       path: 'pages/detail/index',
       projectPath: path.resolve('templates/demo'),
       transition: 'navigateTo',
+      cliPath: 'stable-cli',
+      port: 19510,
+      sessionId: 'stable-fixture',
     })
     expect(loggerMock.success).toHaveBeenCalledWith(expect.stringContaining('runtime service'))
   })
@@ -95,6 +102,7 @@ describe('runtime service command bridge', () => {
     const handled = await tryRunRuntimeServiceCommand('screenshot', [
       '-p',
       'templates/demo',
+      '--cli-path=stable-cli',
       '--page',
       'pages/home/home',
       '--output',
@@ -107,9 +115,11 @@ describe('runtime service command bridge', () => {
     expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).toMatchObject({
       path: 'pages/home/home',
       transition: 'reLaunch',
+      cliPath: 'stable-cli',
     })
     expect(JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string)).toMatchObject({
       outputPath: path.resolve('screenshots/home.png'),
+      cliPath: 'stable-cli',
       projectPath: path.resolve('templates/demo'),
     })
     expect(logSpy).toHaveBeenCalledWith(JSON.stringify({ path: 'screenshots/home.png' }, null, 2))

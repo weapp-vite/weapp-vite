@@ -26,6 +26,8 @@ vi.mock('../src/cli/automator', () => ({
   formatAutomatorLoginError: vi.fn(),
 }))
 
+vi.mock('../src/cli/automator/context', () => ({ resolveAutomatorSessionOptions: async (options: unknown) => options }))
+
 vi.mock('../src/logger', () => ({
   default: loggerMock,
   colors: {

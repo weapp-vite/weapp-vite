@@ -3,6 +3,7 @@ import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import path from 'pathe'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 
 interface MinidevBuildResult {
   project?: string
@@ -72,7 +73,7 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+withMachineE2ELease(main).catch((error) => {
   const detail = error instanceof Error ? error.message : String(error)
   process.stderr.write(`[alipay-minidev-smoke] failed: ${detail}\n`)
   process.exitCode = 1

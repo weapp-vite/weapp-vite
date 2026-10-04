@@ -11,7 +11,7 @@ export interface BaseConfig {
 /**
  * @description 配置来源
  */
-export type ConfigSource = 'custom' | 'default' | 'missing'
+export type ConfigSource = 'custom' | 'default' | 'environment' | 'missing'
 
 /**
  * @description 解析后的配置

@@ -4,6 +4,7 @@ import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
 
 export default defineConfig({
   test: {
+    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
     include: resolveVitestIncludePatterns(import.meta.dirname, [path.resolve(import.meta.dirname, 'dimina/*.test.ts')]),
     testTimeout: 120_000,
     hookTimeout: 240_000,

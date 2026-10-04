@@ -1,8 +1,10 @@
 import type { SuiteTask } from './suiteRunner'
+import { execFile } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { promisify } from 'node:util'
 import { describe, expect, it, vi } from 'vitest'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { readTaskCases } from './domAcceptanceReport/inventory'
@@ -182,25 +184,69 @@ describe('suiteRunner', () => {
     const pendingTask = new Promise<number>((resolve) => {
       resolveTask = resolve
     })
+    const started = Promise.withResolvers<void>()
 
     const runPromise = runTaskSuite('e2e:test', [
       { label: 'slow-task', command: 'pnpm', args: ['vitest'] },
     ], {
-      runTask: vi.fn().mockReturnValue(pendingTask),
+      runTask: async () => {
+        started.resolve()
+        return pendingTask
+      },
       writeReport: false,
     })
 
-    await vi.advanceTimersByTimeAsync(30_000)
+    try {
+      // 原子租约使用真实文件系统；等任务进入运行态后再推进心跳时钟。
+      await started.promise
+      await vi.advanceTimersByTimeAsync(30_000)
 
-    expect(consoleLog).toHaveBeenCalledWith('[e2e:test] progress [------------------------] 0/1 0.0% still-running 1/1 slow-task (30.0s)')
-    expect(consoleLog).toHaveBeenCalledWith('[e2e:test] still running slow-task (30.0s)')
+      expect(consoleLog).toHaveBeenCalledWith('[e2e:test] progress [------------------------] 0/1 0.0% still-running 1/1 slow-task (30.0s)')
+      expect(consoleLog).toHaveBeenCalledWith('[e2e:test] still running slow-task (30.0s)')
+    }
+    finally {
+      resolveTask(0)
+      try {
+        await runPromise
+      }
+      finally {
+        process.exitCode = previousExitCode
+        consoleLog.mockRestore()
+        vi.useRealTimers()
+      }
+    }
+  })
 
-    resolveTask(0)
-    await runPromise
-
-    process.exitCode = previousExitCode
-    consoleLog.mockRestore()
-    vi.useRealTimers()
+  it('rejects an unrelated process before running suite callbacks while the machine is owned', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-lease-'))
+    const runnerScript = path.join(tempRoot, 'contender.mjs')
+    const marker = path.join(tempRoot, 'started')
+    const suiteRunnerUrl = pathToFileURL(path.resolve(import.meta.dirname, 'suiteRunner.ts')).href
+    fs.writeFileSync(runnerScript, `
+      import fs from 'node:fs';
+      import { runTaskSuite } from ${JSON.stringify(suiteRunnerUrl)};
+      try {
+        await runTaskSuite('e2e:contender', [{ label: 'must-not-run', command: 'node', args: [] }], {
+          beforeEachTask: () => fs.writeFileSync(process.argv[2], 'started'),
+          runTask: async () => 0,
+          writeReport: false,
+        });
+      }
+      catch (error) {
+        console.log(error.message);
+        process.exitCode = 3;
+      }
+    `)
+    try {
+      await expect(promisify(execFile)(process.execPath, ['--import', 'tsx', runnerScript, marker], {
+        cwd: path.resolve(import.meta.dirname, '../..'),
+        env: { ...process.env, WEAPP_VITE_E2E_MACHINE_LEASE: '' },
+      })).rejects.toMatchObject({ code: 3, stdout: expect.stringContaining('Runtime busy') })
+      expect(fs.existsSync(marker)).toBe(false)
+    }
+    finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true })
+    }
   })
 
   it('does not wait forever when descendant processes keep piped stdio open after exit', async () => {

@@ -49,6 +49,7 @@
     "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
+    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

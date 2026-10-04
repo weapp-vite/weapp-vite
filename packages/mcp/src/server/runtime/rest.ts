@@ -17,9 +17,10 @@ import {
 export { DEFAULT_RUNTIME_REST_ENDPOINT }
 
 const connectionSchema = z.object({
+  cliPath: z.string().trim().min(1).optional(),
   projectPath: z.string().trim().min(1),
   timeout: z.number().int().positive().optional(),
-  port: z.number().int().positive().optional(),
+  port: z.number().int().positive().max(65535).optional(),
   preferOpenedSession: z.boolean().optional(),
   preserveProjectRoot: z.boolean().optional(),
   sessionId: z.string().trim().min(1).optional(),
@@ -127,10 +128,12 @@ function readNumberParam(value: string | null) {
 }
 
 function readConnectionFromQuery(url: URL): RuntimeConnectionInput {
+  const rawPort = url.searchParams.get('port')
   return connectionSchema.parse(compactObject({
     projectPath: url.searchParams.get('projectPath') ?? undefined,
+    cliPath: url.searchParams.get('cliPath') ?? undefined,
     timeout: readNumberParam(url.searchParams.get('timeout')),
-    port: readNumberParam(url.searchParams.get('port')),
+    port: rawPort === null ? undefined : /^\d+$/.test(rawPort) ? Number(rawPort) : Number.NaN,
     preferOpenedSession: readBooleanParam(url.searchParams.get('preferOpenedSession')),
     preserveProjectRoot: readBooleanParam(url.searchParams.get('preserveProjectRoot')),
     sessionId: url.searchParams.get('sessionId') ?? undefined,

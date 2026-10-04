@@ -1,8 +1,10 @@
+import type { ResolvedWechatDevtoolsTarget } from '../devtoolsTarget'
 import path from 'node:path'
+import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
+import { assertWechatDevtoolsPort, resolveWechatDevtoolsTarget } from '../devtoolsTarget'
 import { getRuntimeWechatDevtoolsServicePort } from './wechatDevtoolsRuntimePort'
 import { detectWechatDevtoolsServicePort } from './wechatDevtoolsSettings'
 
-const DEFAULT_WECHAT_DEVTOOLS_HTTP_PORT = 9420
 const ENGINE_BUILD_NOT_START = 'NOT_START'
 const ENGINE_BUILD_OPEN_PROJECT = 'OPEN_PROJECT'
 const ENGINE_BUILD_BUILDING = 'BUILDING'
@@ -10,6 +12,8 @@ const ENGINE_BUILD_END = 'END'
 const ENGINE_BUILD_ERROR = 'ERROR'
 
 export interface WechatDevtoolsHttpCommandOptions {
+  cliPath?: string
+  target?: ResolvedWechatDevtoolsTarget
   port?: number
   signal?: AbortSignal
   timeoutMs?: number
@@ -36,22 +40,28 @@ function createWechatDevtoolsHttpError(message: string, code: string) {
   return error
 }
 
-async function resolveWechatDevtoolsHttpPort(port?: number) {
-  if (typeof port === 'number' && Number.isInteger(port) && port > 0) {
+async function resolveWechatDevtoolsHttpPort(target: ResolvedWechatDevtoolsTarget, port?: number) {
+  if (port !== undefined) {
+    if (typeof port !== 'number' || !Number.isInteger(port) || port < 1 || port > 65535) {
+      throw createWechatDevtoolsHttpError('The explicit DevTools HTTP port must be an integer from 1 to 65535.', 'WECHAT_DEVTOOLS_INVALID_PORT')
+    }
     return port
   }
 
-  const runtimePort = getRuntimeWechatDevtoolsServicePort()
+  const runtimePort = getRuntimeWechatDevtoolsServicePort(target)
   if (runtimePort) {
     return runtimePort
   }
 
-  const detected = await detectWechatDevtoolsServicePort()
+  const detected = await detectWechatDevtoolsServicePort({ target })
   if (detected.servicePortEnabled === false) {
     throw createWechatDevtoolsHttpError('WECHAT_DEVTOOLS_SERVICE_PORT_DISABLED', 'WECHAT_DEVTOOLS_SERVICE_PORT_DISABLED')
   }
 
-  return detected.servicePort ?? DEFAULT_WECHAT_DEVTOOLS_HTTP_PORT
+  if (!detected.servicePort) {
+    throw createWechatDevtoolsHttpError('The selected DevTools installation has no known HTTP service port.', 'WECHAT_DEVTOOLS_SERVICE_PORT_UNKNOWN')
+  }
+  return detected.servicePort
 }
 
 function createWechatDevtoolsHttpUrl(port: number, pathname: string, query: Record<string, string>) {
@@ -72,16 +82,20 @@ function parseWechatDevtoolsEngineBuildResult(body: string) {
   }
 }
 
-export async function requestWechatDevtoolsHttp(
+async function requestSelectedWechatDevtoolsHttp(
   pathname: string,
   query: Record<string, string>,
   options: WechatDevtoolsHttpCommandOptions = {},
 ) {
   options.signal?.throwIfAborted()
-  const port = await resolveWechatDevtoolsHttpPort(options.port).catch((error: unknown) => {
+  const target = await resolveWechatDevtoolsTarget(options)
+  options.signal?.throwIfAborted()
+  const port = await resolveWechatDevtoolsHttpPort(target, options.port).catch((error: unknown) => {
     options.signal?.throwIfAborted()
     throw error
   })
+  options.signal?.throwIfAborted()
+  await assertWechatDevtoolsPort(target, port, { signal: options.signal, timeout: options.timeoutMs })
   options.signal?.throwIfAborted()
   const url = createWechatDevtoolsHttpUrl(port, pathname, query)
 
@@ -112,16 +126,27 @@ export async function requestWechatDevtoolsHttp(
   }
 }
 
+/** 请求期间持有机器租约，避免 E2E 与另一入口同时更改共享宿主。 */
+export async function requestWechatDevtoolsHttp(pathname: string, query: Record<string, string>, options: WechatDevtoolsHttpCommandOptions = {}) {
+  options.signal?.throwIfAborted()
+  return await withMachineE2ELease(() => requestSelectedWechatDevtoolsHttp(pathname, query, options))
+}
+
 /**
- * @description 通过微信开发者工具 HTTP 服务端口重新打开项目；若项目已打开，开发者工具会刷新当前项目。
+ * @description 请求微信开发者工具打开项目并返回原始响应；目标 runtime 状态仍需通过会话或界面确认。
  */
 export async function openWechatIdeProjectByHttp(
   projectPath: string,
   options: WechatDevtoolsHttpCommandOptions = {},
 ) {
-  return await requestWechatDevtoolsHttp('/open', {
-    projectpath: path.resolve(projectPath),
+  const body = await requestWechatDevtoolsHttp('/v2/open', {
+    project: path.resolve(projectPath),
   }, options)
+  const response = body.trim()
+  if (!response || /^\{\s*\}$/.test(response)) {
+    throw createWechatDevtoolsHttpError('DevTools HTTP returned no project-open result; the target project opening is unconfirmed.', 'WECHAT_DEVTOOLS_HTTP_OPEN_UNCONFIRMED')
+  }
+  return body
 }
 
 /**

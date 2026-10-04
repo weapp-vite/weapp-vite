@@ -85,6 +85,7 @@ export function parseScreenshotArgs(argv: string[]): ScreenshotOptions {
 
   return {
     projectPath: parsed.projectPath,
+    ...(parsed.cliPath ? { cliPath: parsed.cliPath } : {}),
     ...(parsed.timeout ? { timeout: parsed.timeout } : {}),
     ...(parsed.port ? { port: parsed.port } : {}),
     ...(parsed.sessionId ? { sessionId: parsed.sessionId } : {}),

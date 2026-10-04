@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fsMock = vi.hoisted(() => {
   const ensureDir = vi.fn()
@@ -48,6 +48,7 @@ async function loadConfigModule() {
 
 describe('config helpers', () => {
   beforeEach(() => {
+    vi.stubEnv('WEAPP_IDE_CLI_PATH', '')
     vi.resetModules()
     fsMock.ensureDir.mockReset()
     fsMock.writeJSON.mockReset()
@@ -60,6 +61,35 @@ describe('config helpers', () => {
     colorsMock.green.mockClear()
     platformMock.getDefaultCliPath.mockReset()
     platformMock.getDefaultCliPath.mockResolvedValue('/default/cli')
+  })
+
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('uses a process selection without changing persisted preferences', async () => {
+    fsMock.pathExists.mockResolvedValue(true)
+    fsMock.readJSON.mockResolvedValue({ cliPath: '/custom/cli', locale: 'en', autoTrustProject: false })
+    vi.stubEnv('WEAPP_IDE_CLI_PATH', ' /selected/cli ')
+
+    const { getConfig } = await loadConfigModule()
+    expect(await getConfig()).toMatchObject({
+      cliPath: '/selected/cli',
+      source: 'environment',
+      locale: 'en',
+      autoTrustProject: false,
+    })
+    expect(fsMock.writeJSON).not.toHaveBeenCalled()
+    expect(platformMock.getDefaultCliPath).not.toHaveBeenCalled()
+  })
+
+  it('keeps explicit process selection when global configuration is unreadable', async () => {
+    fsMock.pathExists.mockResolvedValue(true)
+    fsMock.readJSON.mockRejectedValue(new SyntaxError('invalid JSON'))
+    vi.stubEnv('WEAPP_IDE_CLI_PATH', '/selected/cli')
+
+    const { getConfig } = await loadConfigModule()
+    expect(await getConfig()).toMatchObject({ cliPath: '/selected/cli', source: 'environment' })
+    expect(fsMock.writeJSON).not.toHaveBeenCalled()
+    expect(platformMock.getDefaultCliPath).not.toHaveBeenCalled()
   })
 
   it('normalises and writes custom config', async () => {

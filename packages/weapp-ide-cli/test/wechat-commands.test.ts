@@ -4,9 +4,15 @@ const runWechatCliCommandMock = vi.hoisted(() => vi.fn())
 const openWechatIdeProjectByHttpMock = vi.hoisted(() => vi.fn())
 const resetWechatIdeFileUtilsByHttpMock = vi.hoisted(() => vi.fn())
 const withMiniProgramMock = vi.hoisted(() => vi.fn())
+const resolveTargetMock = vi.hoisted(() => vi.fn())
+const withMachineLeaseMock = vi.hoisted(() => vi.fn())
+const target = vi.hoisted(() => ({ cliPath: 'selected-cli', appPath: 'selected-app', profileDir: 'selected-profile', installationId: 'selected' }))
+
+vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: withMachineLeaseMock }))
 
 vi.mock('../src/cli/run-wechat-cli', () => ({
   runWechatCliCommand: runWechatCliCommandMock,
+  resolveWechatCliCommandTarget: resolveTargetMock,
 }))
 
 vi.mock('../src/cli/http', () => ({
@@ -29,6 +35,8 @@ function createPathSuffixPattern(suffix: string) {
 describe('wechat command helpers', () => {
   beforeEach(() => {
     vi.resetModules()
+    resolveTargetMock.mockReset().mockResolvedValue(target)
+    withMachineLeaseMock.mockReset().mockImplementation(async run => await run())
     runWechatCliCommandMock.mockReset()
     runWechatCliCommandMock.mockResolvedValue(undefined)
     openWechatIdeProjectByHttpMock.mockReset()
@@ -81,6 +89,7 @@ describe('wechat command helpers', () => {
 
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith(
       expect.stringMatching(createPathSuffixPattern('dist/dev/mp-weixin')),
+      { target },
     )
     expect(runWechatCliCommandMock).not.toHaveBeenCalled()
   })
@@ -102,7 +111,55 @@ describe('wechat command helpers', () => {
       '--platform',
       'weapp',
       '--trust-project',
-    ])
+    ], { target })
+    expect(resolveTargetMock).toHaveBeenCalledTimes(1)
+    expect(withMachineLeaseMock).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH', 'WECHAT_DEVTOOLS_INSTALLATION_SELECTION_CONFLICT'])('does not replace an installation failure with a CLI fallback: %s', async (code) => {
+    const failure = Object.assign(new Error('installation cannot be used'), { code })
+    openWechatIdeProjectByHttpMock.mockRejectedValueOnce(failure)
+    const { openWechatIde } = await import('../src/cli/wechat-commands')
+    await expect(openWechatIde({ projectPath: 'fixture' })).rejects.toBe(failure)
+    expect(runWechatCliCommandMock).not.toHaveBeenCalled()
+  })
+
+  it('holds one machine lease through selection, HTTP failure, and native fallback', async () => {
+    let leaseHeld = false
+    withMachineLeaseMock.mockImplementation(async (run) => {
+      leaseHeld = true
+      try {
+        return await run()
+      }
+      finally {
+        leaseHeld = false
+      }
+    })
+    resolveTargetMock.mockImplementation(async () => {
+      expect(leaseHeld).toBe(true)
+      return target
+    })
+    openWechatIdeProjectByHttpMock.mockImplementation(async () => {
+      expect(leaseHeld).toBe(true)
+      throw new Error('HTTP endpoint unavailable')
+    })
+    runWechatCliCommandMock.mockImplementation(async (_argv, options) => {
+      expect(leaseHeld).toBe(true)
+      expect(options.target).toBe(target)
+    })
+    const { openWechatIde } = await import('../src/cli/wechat-commands')
+    await openWechatIde({ projectPath: 'fixture' })
+    expect(resolveTargetMock).toHaveBeenCalledTimes(1)
+    expect(leaseHeld).toBe(false)
+  })
+
+  it('returns after the existing missing CLI configuration flow without attempting HTTP', async () => {
+    resolveTargetMock.mockResolvedValueOnce(undefined)
+    const { openWechatIde } = await import('../src/cli/wechat-commands')
+    await openWechatIde({ projectPath: 'fixture' })
+    expect(resolveTargetMock).toHaveBeenCalledTimes(1)
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(runWechatCliCommandMock).not.toHaveBeenCalled()
   })
 
   it('uses the official cli when opening by appid without a project path', async () => {
@@ -123,7 +180,7 @@ describe('wechat command helpers', () => {
       'wx456',
       '--platform',
       'weapp',
-    ])
+    ], { target })
   })
 
   it('runs islogin through official cli wrapper', async () => {

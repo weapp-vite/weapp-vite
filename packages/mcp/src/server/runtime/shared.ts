@@ -1,6 +1,7 @@
 /* eslint-disable ts/no-use-before-define */
 import type {
   DevtoolsRuntimeHooks,
+  DevtoolsRuntimeSessionOptions,
 } from '@weapp-vite/devtools-runtime'
 import { Buffer } from 'node:buffer'
 import {
@@ -53,6 +54,9 @@ export interface MiniProgramLike {
   callWxMethod: (method: string, ...args: unknown[]) => Promise<unknown>
 }
 export interface RuntimeConnectionInput {
+  cliPath?: string
+  installationId?: string
+  runtimeProvider?: 'devtools' | 'headless'
   projectPath: string
   timeout?: number
   port?: number
@@ -83,22 +87,26 @@ interface AttachedSession {
   currentPage?: MiniProgramPage
 }
 export const connectionSchema = z.object({
+  cliPath: z.string().trim().min(1).optional(),
   projectPath: z.string().trim().min(1).describe('小程序项目路径；支持 workspaceRoot 相对路径'),
   timeout: z.number().int().positive().optional(),
-  port: z.number().int().positive().optional(),
+  port: z.number().int().positive().max(65535).optional(),
   preferOpenedSession: z.boolean().optional(),
   preserveProjectRoot: z.boolean().optional(),
   sessionId: z.string().trim().min(1).optional(),
 })
 export const connectionInputSchema = {
+  cliPath: z.string().trim().min(1).optional(),
   projectPath: z.string().trim().min(1).describe('小程序项目路径；支持 workspaceRoot 相对路径'),
   timeout: z.number().int().positive().optional(),
-  port: z.number().int().positive().optional(),
+  port: z.number().int().positive().max(65535).optional(),
   preferOpenedSession: z.boolean().optional(),
   preserveProjectRoot: z.boolean().optional(),
   sessionId: z.string().trim().min(1).optional(),
 }
 export class RuntimeSessionManager {
+  private readonly resolvedInputs = new Map<string, Promise<DevtoolsRuntimeSessionOptions>>()
+  private readonly resolvedSessionKeys = new Map<string, string>()
   private readonly logs: RuntimeConsoleLogEntry[] = []
   private readonly attachedSessions = new Map<string, AttachedSession>()
   private readonly maxLogs = 1000
@@ -111,11 +119,12 @@ export class RuntimeSessionManager {
   }
 
   async close(input: RuntimeConnectionInput) {
+    input = await this.resolveInput(input)
     const projectPath = this.resolveProjectPath(input.projectPath)
     const sessionKey = this.resolveSessionKey(projectPath, input)
     await withRuntimeLease(projectPath, async () => {
       this.detach(sessionKey)
-      await closeSharedMiniProgram(projectPath, input.sessionId || input.port)
+      await closeSharedMiniProgram(projectPath, input.sessionId || input.port, input)
     })
   }
 
@@ -132,7 +141,8 @@ export class RuntimeSessionManager {
   }
 
   async prepareProject(projectPath: string, signal: AbortSignal) {
-    await this.runtimeHooks.prepareProject?.(projectPath, signal)
+    const options = await this.resolveInput({ projectPath })
+    await this.runtimeHooks.prepareProject?.(projectPath, signal, options)
   }
 
   fork(workspaceRoot = this.workspaceRoot) {
@@ -161,10 +171,12 @@ export class RuntimeSessionManager {
     input: RuntimeConnectionInput,
     runner: (miniProgram: MiniProgramLike) => Promise<T>,
   ): Promise<T> {
+    input = await this.resolveInput(input)
     const projectPath = this.resolveProjectPath(input.projectPath)
     return withRuntimeLease(projectPath, async () => {
       const existed = hasSharedMiniProgram({ ...input, projectPath })
       const miniProgram = await acquireSharedMiniProgram(this.runtimeHooks, {
+        ...input,
         port: input.port,
         projectPath,
         sessionId: input.sessionId,
@@ -182,7 +194,7 @@ export class RuntimeSessionManager {
         return await runner(miniProgram)
       }
       finally {
-        releaseSharedMiniProgram(projectPath, input.sessionId || input.port)
+        releaseSharedMiniProgram(projectPath, input.sessionId || input.port, input)
       }
     })
   }
@@ -191,6 +203,7 @@ export class RuntimeSessionManager {
     input: RuntimeConnectionInput,
     runner: (page: MiniProgramPage, miniProgram: MiniProgramLike) => Promise<T>,
   ): Promise<T> {
+    input = await this.resolveInput(input)
     const projectPath = this.resolveProjectPath(input.projectPath)
     const sessionKey = this.resolveSessionKey(projectPath, input)
     return await this.withMiniProgram(input, async (miniProgram) => {
@@ -211,12 +224,28 @@ export class RuntimeSessionManager {
     this.attachedSessions.get(sessionKey)!.currentPage = page
   }
 
-  private resolveSessionKey(projectPath: string, input: Pick<RuntimeConnectionInput, 'port' | 'sessionId'>) {
-    return resolveSharedMiniProgramSessionKey({
-      port: input.port,
-      projectPath,
-      sessionId: input.sessionId,
-    })
+  private async resolveInput(input: RuntimeConnectionInput) {
+    const options = { ...input, projectPath: this.resolveProjectPath(input.projectPath) }
+    const key = resolveSharedMiniProgramSessionKey(options)
+    let resolution = this.resolvedInputs.get(key)
+    if (!resolution) {
+      resolution = this.runtimeHooks.resolveSessionOptions?.(options) ?? Promise.resolve(options)
+      this.resolvedInputs.set(key, resolution)
+    }
+    try {
+      const resolved = await resolution
+      this.resolvedSessionKeys.set(key, resolveSharedMiniProgramSessionKey(resolved))
+      return { ...resolved, ...input, projectPath: options.projectPath, cliPath: resolved.cliPath, installationId: resolved.installationId }
+    }
+    catch (error) {
+      this.resolvedInputs.delete(key)
+      throw error
+    }
+  }
+
+  private resolveSessionKey(projectPath: string, input: RuntimeConnectionInput) {
+    const key = resolveSharedMiniProgramSessionKey({ ...input, projectPath })
+    return this.resolvedSessionKeys.get(key) ?? key
   }
 
   private attach(sessionKey: string, miniProgram: MiniProgramLike, projectPath: string) {

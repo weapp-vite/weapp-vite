@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   createServer: vi.fn(),
   startServer: vi.fn(),
   connectMiniProgram: vi.fn(),
+  resolveSessionOptions: vi.fn(),
   prepareProject: vi.fn(),
 }))
 
@@ -19,7 +20,7 @@ vi.mock('@weapp-vite/mcp', () => {
 
 vi.mock('weapp-ide-cli', () => {
   mocks.ideLoaded()
-  return { connectMiniProgram: mocks.connectMiniProgram, prepareAcceptanceProject: mocks.prepareProject }
+  return { resolveAutomatorSessionOptions: mocks.resolveSessionOptions, connectMiniProgram: mocks.connectMiniProgram, prepareAcceptanceProject: mocks.prepareProject }
 })
 
 it('keeps synchronous configuration independent of optional servers and loads them only when used', async () => {
@@ -46,7 +47,7 @@ it('keeps synchronous configuration independent of optional servers and loads th
   await expect(mcp.startWeappViteMcpServer(options)).resolves.toBe(handle)
   expect(mocks.startServer).toHaveBeenCalledWith(expect.objectContaining({
     workspaceRoot: options.workspaceRoot,
-    runtimeHooks: { connectMiniProgram: mocks.connectMiniProgram, prepareProject: mocks.prepareProject },
+    runtimeHooks: { resolveSessionOptions: mocks.resolveSessionOptions, connectMiniProgram: mocks.connectMiniProgram, prepareProject: mocks.prepareProject },
   }))
   expect(mocks.ideLoaded).toHaveBeenCalledTimes(1)
 })

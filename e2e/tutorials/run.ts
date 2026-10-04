@@ -4,6 +4,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import {
   assertGuideBuild,
   assertHandbookBuild,
@@ -401,5 +402,5 @@ async function main() {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
-  void main()
+  void withMachineE2ELease(main)
 }

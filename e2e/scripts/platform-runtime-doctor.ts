@@ -4,6 +4,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
+import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { PLATFORM_VERIFICATION_CAPABILITIES } from '../platforms/verification'
 
 export interface PlatformRuntimeDiagnostic {
@@ -164,5 +165,5 @@ const isDirectRun = process.argv[1]
   : false
 
 if (isDirectRun) {
-  await main()
+  await withMachineE2ELease(main)
 }

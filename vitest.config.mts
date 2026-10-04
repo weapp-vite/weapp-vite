@@ -126,12 +126,14 @@ const projects = [
     extends: false,
     test: {
       name: 'e2e-hmr-infra',
+      globalSetup: [path.resolve(ROOT_DIR, 'e2e/vitest.e2e.machine.global-setup.ts')],
       include: [
         'e2e/scripts/e2e-suite-manifest.test.ts',
         'e2e/scripts/domAcceptanceReport/inventory.test.ts',
         'e2e/scripts/githubIssuesRouteScope.test.ts',
         'e2e/scripts/hmr-guard-manifest.test.ts',
         'e2e/scripts/run-e2e-suite.test.ts',
+        'e2e/scripts/run-e2e-commands.test.ts',
         'e2e/scripts/suiteRunner.test.ts',
         'e2e/utils/agentAcceptanceLifecycle.test.ts',
         'e2e/utils/automator.cli-bridge.test.ts',

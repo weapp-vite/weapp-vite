@@ -46,6 +46,7 @@ interface CommandDefinition {
 }
 
 const COMMON_OPTION_DEFINITIONS: CommandOptionDefinition[] = [
+  { flag: '--cli-path <path>', description: { zh: '指定微信开发者工具安装', en: 'Select the WeChat DevTools installation' } },
   { flag: '-p, --project <path>', description: { zh: '项目路径（默认：当前目录）', en: 'Project path (default: current directory)' } },
   { flag: '-t, --timeout <ms>', description: { zh: '连接超时时间（默认：30000）', en: 'Connection timeout (default: 30000)' } },
   { flag: '--port <port>', description: { zh: '连接已打开的 automator 端口', en: 'Connect to an opened automator port' } },
@@ -57,7 +58,7 @@ const COMMON_OPTION_DEFINITIONS: CommandOptionDefinition[] = [
   { flag: '-h, --help', description: { zh: '显示命令帮助', en: 'Show command help' } },
 ]
 
-const COMMON_ALLOWED_OPTIONS = new Set(['-p', '--project', '-t', '--timeout', '--port', '--session-id', '--runtime-url', '--no-runtime-service', '--json', '--lang', '-h', '--help'])
+const COMMON_ALLOWED_OPTIONS = new Set(['--cli-path', '-p', '--project', '-t', '--timeout', '--port', '--session-id', '--runtime-url', '--no-runtime-service', '--json', '--lang', '-h', '--help'])
 
 function createDefinition(input: {
   description: LocalizedText
