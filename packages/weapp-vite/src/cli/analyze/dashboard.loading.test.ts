@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { expect, it, vi } from 'vitest'
 import { startAnalyzeDashboard } from './dashboard'
 
@@ -21,7 +23,7 @@ it('loads dashboard transport only after resolving an installed dashboard', asyn
   await expect(startAnalyzeDashboard(result, { artifacts: new Map() })).resolves.toBeUndefined()
   expect(bridge.loaded).toBe(false)
 
-  resolveDashboardRoot.mockReturnValue({ root: '/dashboard' })
+  resolveDashboardRoot.mockReturnValue({ root: path.join(tmpdir(), 'dashboard-loading') })
   await expect(startAnalyzeDashboard(result, { artifacts: new Map() })).rejects.toMatchObject({ cause: bridge.failure })
   expect(bridge.loaded).toBe(true)
 })

@@ -489,6 +489,18 @@ Windows 窄矩阵 `37172276999` 绑定 `0af75a05e`，两个 Node 版本各实际
 
 ## 文档与发布同步
 
+### 2026-10-04 后续复核
+
+`434899347` 修正 Dashboard 与 IDE CLI 的 MCP 加载边界。真实 `wv --help` 加载跟踪先证明 Dashboard bridge 静态引入 agentic/Node MCP，同时 IDE CLI 的公开 barrel 静态引入 server/stdio；现分别在已安装 Dashboard 的实际启动点和既有异步服务工厂内加载。同步工具注册与公开类型保持原契约。既有大型 server 模块继续承载同一组工具注册，本次不混入无关拆分。
+
+两包 typecheck、IDE CLI 公共类型套件、16 项定向单测、ESLint 和正常提交 hooks 通过。干净候选的依赖闭包构建 33/33 通过，32 个 tarball 的归档与 dist 逐字节一致；独立严格 npm 安装得到 642 个包，32 个候选安装来源和公开 exports 全部核对，破坏 exports/移走 CLI 的负控均被拒绝。独立消费者的帮助命令加载 825 个模块，未加载 `@weapp-vite/mcp`、`@devframes/agentic` 或 MCP node/server/core。这是实际加载边界证据，不是安装体积、启动时间或真实 IDE 收益结论；消费者保留待后续 runtime，旧候选消费者已按归属清理。
+
+`8cd8b9ccf` 的六组 runtime-publication 中五组通过，macOS Node 24 的最后一次 external-template 恢复未通过。受控复现确认旧脚本批次的完成日志可能提前解除模板编辑等待；有序七轮原生编译产物回归通过。补丁将等待关联到本次编辑文件、完成批次及源事件时钟，保留原 30 秒超时和全部 JSON/DOM 断言，并覆盖旧同文件事件、截断/部分 JSONL、Windows 路径及退出时读操作清理。新 helper 的 E2E 目录单测与 runtime 仍等待本机全局串行资源，尚未提交为通过结果。
+
+同一候选的 classic HMR 正式 20 配对及唯一确认结果仍为 2 项 regression、3 项 unstable。确认轮 plain-wxss 首次恢复为 218.83 → 270.08 ms，scss 重复编辑为 282.56 → 320.83 ms；主要差异落在保存起点到 provider 收到事件之前，现有 raw 尚不能区分轮询相位、Vite 读取及前置处理。固定 120 ms 轮询、原门槛与失败样本均保留，不将同步路径调用减少当作这些回归已修复的证据。
+
+Rolldown 1.2.12 的临时 callable owner 草案在 Node 24.18.0 完成 10 例真实公开 API 对照。两臂固定 normalized-options 修复、官方 native、相同物理 fixture/模块路径，仅替换 callable owner 的一个 JS 模块。提取 hook、回调快照、错误后复用、两个到一个在途回调、generate/write 关闭后复用的 API、错误字段、回调记录和输出字节均一致；基线 9 个 owner 仍可达，候选 10 个全部回收。全部自有子进程退出且 fixture 删除。该结果不覆盖 watch/dev/scan、WASI、跨平台或 512 SFC 正式资源门禁；正式依赖与 lockfile 未使用草案，#1135 仍未完成。
+
 功能变更均配中文 changeset，`weapp-vite` 联动 `create-weapp-vite` patch。配置/插件说明同步到 `website/config/hmr.md`、`website/guide/vite-plugin.md`、`website/packages/create-weapp-vite.md`、`packages/weapp-vite/docs/packaged` 和公开 skill。通过包构建刷新随包文档，通过网站构建刷新生成索引，不手工编辑生成资产。
 
 复验入口包括所属包的 `typecheck` / `test:types`、新增的定向测试、`pnpm --filter website-weapp-vite build`、`scripts/check-create-weapp-vite-changeset.ts` 与 `scripts/check-catalog-changeset.ts`；最终提交保留 husky 和 lint-staged 检查。
