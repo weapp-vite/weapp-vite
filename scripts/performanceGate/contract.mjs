@@ -39,6 +39,14 @@ export function isReportSamplingContract(contract) {
   return contract === policy.samplingContract || contract === 'paired-v3-profile-capability'
 }
 
+/**
+ * 冒烟报告只记录单次提交的正确性证据，可以消费已经启动的历史契约。
+ * 完整性能汇总仍只接受当前契约及已登记的 v3，避免把旧样本混入统计门禁。
+ */
+export function isSmokeSamplingContract(contract) {
+  return isReportSamplingContract(contract) || contract === 'paired-v2-template-shards'
+}
+
 export function targetKey(target, samplingContract = policy.samplingContract) {
   assertSha(target.headSha)
   assertSha(target.baselineSha)
