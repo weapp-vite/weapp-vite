@@ -7,6 +7,7 @@ on:
       - .github/workflows/reusable-node-command.yml
       - 'packages/weapp-vite/**'
       - e2e/ide/stateful-hmr.runtime.test.ts
+      - e2e/ide/hmr-auto-classic.runtime.test.ts
       - e2e/ide/react-runtime-spike.runtime.test.ts
       - e2e/ide/wevu-subpackage-placement.runtime.test.ts
       - e2e/ide/worker-host.runtime.test.ts
@@ -214,10 +215,29 @@ jobs:
       node_version: 24.18.0
       timeout_minutes: 30
       build_command: pnpm build:pkgs:ci
-      main_command: >-
-        ${{ matrix.host == 'vite-plus' && 'node packages/weapp-vite/scripts/verify-vite-host-install.mjs vite-plus headless' ||
-        format('pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_COMPILER_HOST={0} WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/stateful-hmr.runtime.test.ts -t "preserves native Component|preserves Wevu local and store|preserves native page state across two template"', matrix.host) }}
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless stateful
       artifact_name: stateful-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+    secrets: inherit
+
+  classic-runtime:
+    name: Classic runtime (${{ matrix.host }} / ${{ matrix.profile }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+        profile: [classic, classic-watch]
+        exclude:
+          - host: wv
+            profile: classic-watch
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless ${{ matrix.profile }}
+      artifact_name: classic-runtime-${{ matrix.host }}-${{ matrix.profile }}
       artifact_path: docs/reports/dom-acceptance/**
     secrets: inherit
 

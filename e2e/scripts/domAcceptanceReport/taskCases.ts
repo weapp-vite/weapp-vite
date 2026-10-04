@@ -1,6 +1,8 @@
 import type { SuiteTask } from '../suiteRunner'
 import type { AcceptanceReport } from './types'
+import process from 'node:process'
 import { ACCEPTANCE_ROOT } from './helpers'
+import { readSelectedAcceptanceCases } from './selectedCases'
 
 export interface PlannedTaskCase {
   file: string
@@ -8,6 +10,10 @@ export interface PlannedTaskCase {
 }
 
 export async function readPlannedTaskCases(task: SuiteTask, provider: AcceptanceReport['provider']): Promise<PlannedTaskCase[]> {
+  const selected = readSelectedAcceptanceCases({ ...process.env, ...task.env })
+  if (selected) {
+    return selected
+  }
   const { readTaskCases } = await import('./inventory')
   const cases = readTaskCases(ACCEPTANCE_ROOT, task.label, task.acceptanceTemplates)
   if (!cases.length || cases.some(item => item.notes.some(note => note.startsWith('Dynamic')))) {
@@ -22,10 +28,12 @@ export async function readPlannedTaskCases(task: SuiteTask, provider: Acceptance
   })
 }
 
-export function assertTaskCaseCoverage(expected: PlannedTaskCase[], reports: Pick<AcceptanceReport, 'cases'>[]) {
+export function assertTaskCaseCoverage(expected: PlannedTaskCase[], reports: Pick<AcceptanceReport, 'cases'>[], selected = false) {
   const key = (item: PlannedTaskCase) => JSON.stringify([item.file.replaceAll('\\', '/'), item.name])
   const planned = expected.map(key).sort()
-  const actual = reports.flatMap(report => report.cases.map(key)).sort()
+  const actual = reports.flatMap(report => report.cases
+    .filter(item => !selected || planned.includes(key(item)) || item.state !== 'skipped' || item.acceptance)
+    .map(key)).sort()
   if (!planned.length || JSON.stringify(actual) !== JSON.stringify(planned)) {
     const missing = [...planned]
     const unexpected: string[] = []

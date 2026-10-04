@@ -1,7 +1,7 @@
-import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { resolveRuntimeCompilerCli, selectClassicRuntimeHost } from '../../packages/weapp-vite/scripts/consumerRuntimeHost.mjs'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
@@ -12,9 +12,8 @@ import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
-const APP_ROOT = path.join(ROOT, 'e2e-apps/stateful-hmr')
-const CLI_PATH = path.join(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
-const VITE_CLI = path.join(path.dirname(createRequire(import.meta.url).resolve('vite/package.json')), 'bin/vite.js')
+const externalProject = process.env.WEAPP_VITE_E2E_CLASSIC_PROJECT
+const APP_ROOT = externalProject ? path.resolve(externalProject) : path.join(ROOT, 'e2e-apps/stateful-hmr')
 const CONTROL_FILE = path.join(APP_ROOT, 'dist/__weapp_vite_hmr/control.js')
 const DIST_NATIVE_JS = path.join(APP_ROOT, 'dist/pages/native/index.js')
 const NATIVE_SOURCE = path.join(APP_ROOT, 'src/pages/native/index.ts')
@@ -94,7 +93,12 @@ async function disconnectAutomatorSession() {
   }
 }
 
-for (const host of ['wv', 'vite', 'vite-watch'] as const) {
+const hosts = ['wv', 'vite', 'vite-watch']
+if (externalProject || process.env.WEAPP_VITE_E2E_COMPILER_HOST) {
+  hosts.splice(0, hosts.length, selectClassicRuntimeHost(process.env.WEAPP_VITE_E2E_COMPILER_HOST ?? 'wv', process.env.WEAPP_VITE_E2E_CLASSIC_MODE))
+}
+
+for (const host of hosts) {
   describe(`${host} automatic classic HMR in real WeChat DevTools`, { concurrent: false }, () => {
     beforeAll(async () => {
       await cleanupResidualDevProcesses()
@@ -113,11 +117,13 @@ for (const host of ['wv', 'vite', 'vite-watch'] as const) {
       await fs.writeFile(NATIVE_SOURCE, normalizeNativeSource(originalNativeSource), 'utf8')
       await fs.remove(path.join(APP_ROOT, 'dist'))
 
+      const compilerHost = host === 'wv' ? 'wv' : host.startsWith('vite-plus') ? 'vite-plus' : 'vite'
+      const cli = resolveRuntimeCompilerCli(compilerHost, APP_ROOT, { repositoryRoot: ROOT, isolated: Boolean(externalProject) })
       const args = host === 'wv'
-        ? [CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm']
-        : host === 'vite-watch'
-          ? [VITE_CLI, 'build', '--watch', '--config', 'vite.plugin.config.mts']
-          : [VITE_CLI, 'dev', '--config', 'vite.plugin.config.mts', '--host', '127.0.0.1', '--port', '0']
+        ? [cli, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm']
+        : host.endsWith('-watch')
+          ? [cli, 'build', '--watch', '--config', 'vite.plugin.config.mts']
+          : [cli, 'dev', '--config', 'vite.plugin.config.mts', '--host', '127.0.0.1', '--port', '0']
       devProcess = startDevProcess(process.execPath, args, {
         all: true,
         cwd: APP_ROOT,

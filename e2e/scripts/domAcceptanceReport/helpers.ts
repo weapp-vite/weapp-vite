@@ -9,6 +9,7 @@ import { assertDomAcceptanceComplete } from '../../utils/domAcceptance/checkpoin
 import { evaluateExpectedErrors } from './expectedErrors'
 import { evaluateDiagnosticTimestamps } from './runtimeDiagnostics'
 import { evaluateRuntimeVersions } from './runtimeVersions'
+import { evaluateSelectedAcceptanceCases } from './selectedCases'
 import { assertSerializedDomEvidence, serializedReport } from './validation'
 
 export const DOM_ACCEPTANCE_ENV = 'WEAPP_VITE_E2E_DOM_ACCEPTANCE'
@@ -161,13 +162,14 @@ export function assertAcceptanceReportPassed(value: unknown, identity: Acceptanc
   if (report.schemaVersion !== 1 || report.runId !== identity.runId || report.commitSha !== identity.commitSha || report.commitSha === 'unknown') {
     throw new Error('DOM acceptance report identity does not match the current run')
   }
-  if (report.status !== 'passed' || !report.strict || !report.finishedAt || !report.cases.length || report.errors.length
+  if (report.status !== 'passed' || !report.strict || !report.finishedAt || !report.summary.plannedCount || !report.cases.length || report.errors.length
     || evaluateExpectedErrors(report.cases, report.runtimeDiagnostics ?? []).length) {
     throw new Error('DOM acceptance did not finish all collected cases successfully')
   }
   const metadataErrors = [
     ...evaluateRuntimeVersions(report.cases, report.provider, report.environment),
     ...evaluateDiagnosticTimestamps(report.runtimeDiagnostics ?? []),
+    ...evaluateSelectedAcceptanceCases(report.selectedCases, report.cases),
   ]
   if (metadataErrors.length) {
     throw new Error(`DOM acceptance metadata incomplete: ${metadataErrors.join('; ')}`)
