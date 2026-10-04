@@ -83,7 +83,6 @@ it('keeps type-only edits during the first publication and recovers declarations
   await writeFile(types, 'export interface PublicValue { initial: string }')
   await writeFile(path.join(root, 'src/utils/index.ts'), 'export type { PublicValue } from "./types"; export const value = 1')
   const publication = Promise.withResolvers<void>()
-  const publishing = Promise.withResolvers<void>()
   let firstPublication = true
   const started = performance.now()
   const timeline: { phase: string, elapsed: number, watchesTypes?: boolean }[] = []
@@ -103,18 +102,11 @@ it('keeps type-only edits during the first publication and recovers declarations
       record('writeBundle')
       if (firstPublication) {
         firstPublication = false
-        publishing.resolve()
         await publication.promise
       }
     },
   })
   const watcher = await build({ ...config, build: { ...config.build, watch: {} } }) as RolldownWatcher
-  let initialBuildFinished = false
-  watcher.on('event', (event) => {
-    if (event.code === 'END') {
-      initialBuildFinished = true
-    }
-  })
   const errors: unknown[] = []
   watcher.on('event', (event) => {
     record(event.code)
@@ -123,11 +115,10 @@ it('keeps type-only edits during the first publication and recovers declarations
     }
   })
   try {
-    // 声明产物写出早于纯类型依赖的原生监听注册，首轮必须等待完整构建结束。
-    await expect.poll(() => initialBuildFinished, { timeout: 20_000 }).toBe(true)
+    // 首轮 writeBundle 已进入受控发布窗口；放行前不能等待该轮 END。
+    await expect.poll(() => firstPublication, { timeout: 20_000 }).toBe(false)
     await expect.poll(() => read('utils.d.ts'), { timeout: 20_000 }).toContain('initial: string')
     record('initial declaration observed')
-    await publishing.promise
     await writeFile(types, 'export interface PublicValue { updated: number }')
     record('type dependency edited')
     publication.resolve()
@@ -143,7 +134,10 @@ it('keeps type-only edits during the first publication and recovers declarations
     process.stderr.write(`[lib-dts-watch-timeline] ${JSON.stringify({ timeline, errors: errors.map(error => String(error).replaceAll(root, '<fixture>').replaceAll(path.resolve('.'), '<workspace>')) })}\n`)
     throw error
   }
-  finally { await watcher.close() }
+  finally {
+    publication.resolve()
+    await watcher.close()
+  }
 }, 80_000)
 
 it('updates library templates in classic dev without an application entry', async () => {
