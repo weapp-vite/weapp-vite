@@ -6,11 +6,14 @@ import path from 'node:path'
 import process from 'node:process'
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import { hash, loadConfig, loadProjectConfig } from '@weapp-agent/core'
-import { afterEach, beforeEach, expect, it } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { AcceptanceService } from '../src/acceptance.js'
 import { createAcceptanceMcpServer } from '../src/server.js'
 import { acceptanceDiagnostics } from './helpers/acceptanceDiagnostics.js'
+
+// 本文件包含真实文件系统、报告持久化和 Node 子进程编排；30 秒仅是测试执行上限，不代表产品性能 SLA。
+vi.setConfig({ testTimeout: 30_000 })
 
 let temporary: string
 let root: string
