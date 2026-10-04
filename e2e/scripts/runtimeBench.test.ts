@@ -89,6 +89,22 @@ describe('runtime benchmark recovery', () => {
     expect(safeClose).not.toHaveBeenCalled()
   })
 
+  it('retains cleanup failure and never launches a second host or closes ownership twice', async () => {
+    const launch = vi.fn(async () => ({ id: 1 }))
+    const safeClose = vi.fn(async () => {
+      throw new Error('close failed')
+    })
+    const controller = await createRecoverableSession({ launch, safeClose, isRetryable: () => true })
+    const failure = await controller.run('sample', async () => {
+      throw new Error('sample timeout')
+    }).catch(error => error)
+    expect(failure).toBeInstanceOf(AggregateError)
+    expect(failure.errors.map((error: Error) => error.message)).toEqual(['sample timeout', 'close failed'])
+    await expect(controller.close()).rejects.toThrow('close failed')
+    expect(safeClose).toHaveBeenCalledOnce()
+    expect(launch).toHaveBeenCalledOnce()
+  })
+
   it('writes and resumes commit-scoped checkpoints', async () => {
     const checkpointRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-bench-checkpoint-'))
     const checkpointPath = resolveRuntimeBenchCheckpointPath({

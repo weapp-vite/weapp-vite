@@ -11,6 +11,7 @@ export async function createRuntimeBenchSession(options: {
   log: (message: string) => void
   projectRoot: string
   runtimeProvider: ReturnType<typeof import('../utils/runtimeProvider').resolveRuntimeProviderName>
+  onCleanupError?: (error: unknown) => Promise<void>
 }): Promise<RecoverableSession<any>> {
   const launch = () => launchAutomator({
     projectPath: options.projectRoot,
@@ -21,7 +22,13 @@ export async function createRuntimeBenchSession(options: {
   return await createRecoverableSession({
     launch,
     safeClose: async (miniProgram) => {
-      await miniProgram?.close?.().catch(() => {})
+      try {
+        await miniProgram?.close?.()
+      }
+      catch (error) {
+        await options.onCleanupError?.(error)
+        throw error
+      }
     },
     isRetryable: isLikelyRelaunchRetryableError,
     onRetry: async ({ attempt, error, label }) => {

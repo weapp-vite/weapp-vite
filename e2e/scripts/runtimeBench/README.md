@@ -8,10 +8,16 @@
 
 有效宿主结果是 AppService JS 堆当前已用/已分配字节；没有强制 GC，不代表峰值或 renderer/native 总内存。已知不支持保留明确原因；headless 直接记录 `not-devtools`，不调用真实 IDE 内存接口。接口缺失、无效数据、连接超时和其他协议故障导致本轮失败，不制造零值或沿用上一份样本。IDE/SDK 元数据缺失保留 null，不能用 Node 或浏览器版本替代。
 
-测量入口仍是 `e2e/scripts/runtime-bench.ts` 的发布消费者预设对照。真实运行前由执行者记录官方 Stable 查询时间、所选 CLI、实际 IDE/基础库版本；本目录单元测试不启动 IDE、浏览器或 headless runtime。
+测量入口为 `pnpm e2e:runtime-bench --published-presets --tarballs=<目录> --output=<报告>`（`e2e/scripts/run-runtime-bench.ts`）。真实运行前由执行者记录官方 Stable 查询时间、所选 CLI、实际 IDE/基础库版本；本目录单元测试不启动 IDE、浏览器或 headless runtime。
+
+两套消费者必须具有相同的源码、候选 tarball 和完整安装依赖闭包；第二套安装完成后先核对闭包，再开始其采样。`collectionComplete` 仅表示两套数据采集结束，`memoryEvidence` 单列每个更新样本前后的宿主堆证据及缺失原因。宿主返回 unsupported 时保留原始 reason，并令 `complete: false`；worker RSS 不能补齐该证据。
+
+每个正式样本结束后在计时之外原子保存 `runtime-bench-evidence.json`，预热不进入正式样本。中途失败的已完成样本、完整输出清单、采集错误和宿主清理错误随最终报告归档。采样、内存或清理不完整时保留本次消费者目录，并在本机诊断输出打印位置；归档失败也保留目录。只有完整报告先成功归档且所有验收证据齐全后才删除本次消费者，成功关闭宿主之后才发布 worker 结果。
+
+首屏与详情导航的 `firstCommitMs` / `firstCommitMsMedian` 保持 null；ready marker 和包含固定等待的 wall time 不代表首个 host commit。更新场景继续独立保存宿主提交阶段与 DOM 可见观测，不改变工作负载、预热次数、正式采样次数或计时边界。
 
 ```sh
 pnpm vitest run -c e2e/scripts/runtimeBench/vitest.config.ts
 ```
 
-原始样本、产物字节、phase、可见结果及内存能力共同决定最终结论。`complete` 表示当前配置的采集流程完成；若宿主不支持 heap 或未完成 Stable runtime，#1137 的内存/目标宿主验收仍未完成，不发布收益结论。
+原始样本、产物字节、phase、可见结果及内存能力共同决定最终结论。`complete` 要求两套采样完成、输入与安装闭包等价、宿主 heap 证据齐全、报告归档及资源清理成功；只有采集结束时使用 `collectionComplete`。官方 Stable 渠道身份仍由附带的官方查询时间、所选 CLI 与实际宿主版本证据判定，不能仅凭 `complete` 推导。heap 不支持或 Stable 身份证据缺失时，#1137 对应验收仍未完成，不发布收益结论。

@@ -160,6 +160,9 @@ async function main() {
       output: path.resolve(option('--output') ?? path.join(repoRoot, '.tmp/runtime-bench/published-presets.json')),
     })
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    if (!report.complete) {
+      process.exitCode = 1
+    }
     return
   }
   process.stdout.write(`[runtime-bench] provider=${runtimeProvider}\n`)

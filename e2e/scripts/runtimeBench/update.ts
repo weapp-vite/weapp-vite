@@ -46,6 +46,7 @@ export async function measureUpdate(options: {
   provider: string
   workload?: string
   log: (message: string) => void
+  onSample?: (sample: BenchUpdateSample, index: number) => Promise<void>
 }): Promise<BenchUpdateSummary> {
   const samples: BenchUpdateSample[] = []
   const prefix = options.method === 'runSingleCommitBench' ? 'singleCommit' : 'microCommit'
@@ -107,6 +108,7 @@ export async function measureUpdate(options: {
     })
     if (index >= 0) {
       samples.push(sample)
+      await options.onSample?.(sample, index)
     }
   }
   const fallbackReasons: Record<string, number> = {}

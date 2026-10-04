@@ -1,0 +1,543 @@
+{
+  "schemaVersion": 1,
+  "issue": 1058,
+  "conclusion": {
+    "productOrAcceptanceGapFound": false,
+    "completionLabelReady": false,
+    "remaining": [
+      "Full CI run 37189458593 and required final-delivery checks must finish.",
+      "Release run 37192095286 must finish; no completed label is asserted by this evidence update."
+    ],
+    "scope": "Selected #1058 cases passed. The interrupted mixed Stable batch did not pass; its unfinished top-level report does not certify suite teardown."
+  },
+  "formalCompiler": {
+    "commit": "a88e9e260ccc684f4cf3501a38fc919d3a63cc42",
+    "clean": true,
+    "jobUrl": "https://github.com/weapp-vite/weapp-vite/actions/runs/37153581572/job/111292262381",
+    "jobStatus": "success",
+    "wholeRunStatus": "failure",
+    "wholeRunFailureScope": "weapp-classic resource job; not template-analysis",
+    "artifactId": 11284539992,
+    "archiveSha256": "13c4b219488922cf736f281d5f13377d74396121b2668e3d4a1c4c34c43a3a3e",
+    "apiDigestVerified": true,
+    "evidence": "formal",
+    "status": "passed",
+    "trials": 7,
+    "samples": 56,
+    "equivalentPairs": 28,
+    "allPairHashesEqual": true,
+    "templateParsesPerThreeInputSuite": {
+      "duplicateControl": 6,
+      "shared": 3
+    },
+    "inputHash": "13741666afdf1323ec0074e25fcf371e04f3b7e23f427a4f19ee3f7a761ed341",
+    "environment": {
+      "node": "v24.18.0",
+      "platform": "linux",
+      "arch": "x64",
+      "cpu": "INTEL(R) XEON(R) PLATINUM 8573C"
+    },
+    "summary": [
+      {
+        "variant": "duplicate-control",
+        "condition": "cold",
+        "compileMedianMs": 302.333098,
+        "sampledAllocationMedianBytes": 158573432,
+        "processPeakRssMedianBytes": 233672704,
+        "retainedHeapDeltaMedianBytes": 15787472
+      },
+      {
+        "variant": "shared",
+        "condition": "cold",
+        "compileMedianMs": 296.93751499999996,
+        "sampledAllocationMedianBytes": 150857432,
+        "processPeakRssMedianBytes": 226357248,
+        "retainedHeapDeltaMedianBytes": 15782560
+      },
+      {
+        "variant": "duplicate-control",
+        "condition": "warm",
+        "compileMedianMs": 158.14398900000003,
+        "sampledAllocationMedianBytes": 103383864,
+        "processPeakRssMedianBytes": 310050816,
+        "retainedHeapDeltaMedianBytes": 562448
+      },
+      {
+        "variant": "shared",
+        "condition": "warm",
+        "compileMedianMs": 145.77894000000003,
+        "sampledAllocationMedianBytes": 98527528,
+        "processPeakRssMedianBytes": 313389056,
+        "retainedHeapDeltaMedianBytes": 567280
+      }
+    ],
+    "method": {
+      "control": "Same current compiler and dependencies; only component tag collection uses the two-pass algorithm from 585a02c65.",
+      "cold": "Fresh process; first complete compilation of the 10/100/1000-row suite. Module import time is recorded separately; OS file caches are not flushed.",
+      "warm": "Fresh process; two complete suite warmups before the measured suite.",
+      "allocation": "Separate process pass with V8 HeapProfiler 16 KiB sampling, including collected objects; estimated allocated bytes, not retained heap.",
+      "memory": "GC before/after; RSS and heap boundaries plus whole-process peak RSS. Peak includes module startup; retained delta includes output objects.",
+      "timings": "Complete compileVueFile calls, without profiler sampling. No speedup or memory threshold is assumed."
+    },
+    "limits": [
+      "Same-compiler two-pass/shared comparison, not a frozen Nightly baseline.",
+      "Results belong to this formal commit; no current-head timing rerun is claimed.",
+      "Warm peak RSS and retained heap increased; no all-resource improvement claim."
+    ]
+  },
+  "inputAndDependencyBoundary": {
+    "formalToStable": {
+      "from": "a88e9e260ccc684f4cf3501a38fc919d3a63cc42",
+      "to": "6d599a48285a50effc84ba2744fc61ed260c5fd0",
+      "entireCompilerSourceDirectoryUnchanged": true,
+      "entireBenchmarkSourceDirectoryUnchanged": true,
+      "recordedHashes": [
+        {
+          "path": "pnpm-lock.yaml",
+          "formalHashMatchesRecordedCommit": true,
+          "unchangedAtStableCommit": false
+        },
+        {
+          "path": "packages-runtime/wevu-compiler/src/index.ts",
+          "formalHashMatchesRecordedCommit": true,
+          "unchangedAtStableCommit": true
+        },
+        {
+          "path": "packages-runtime/wevu-compiler/src/utils/vueTemplateTags.ts",
+          "formalHashMatchesRecordedCommit": true,
+          "unchangedAtStableCommit": true
+        },
+        {
+          "path": "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/componentSources.ts",
+          "formalHashMatchesRecordedCommit": true,
+          "unchangedAtStableCommit": true
+        }
+      ]
+    },
+    "headlessToStable": {
+      "from": "977bc90dd20dc996e5982bc2f6446e12b60a7fe2",
+      "to": "6d599a48285a50effc84ba2744fc61ed260c5fd0",
+      "issueFixtureTestHelperCompilerAndMpcoreSourcesUnchanged": true
+    },
+    "lockfile": {
+      "byteIdentical": false,
+      "compilerImporterUnchanged": true,
+      "allPackageSnapshotsUnchanged": true,
+      "allDependencySnapshotsUnchanged": true,
+      "changedImporters": [
+        {
+          "name": "packages/dashboard",
+          "addedDevDependencies": [
+            "weapp-vite"
+          ]
+        },
+        {
+          "name": "packages/weapp-vite",
+          "addedDependencies": [
+            "@devframes/agentic",
+            "@modelcontextprotocol/node",
+            "zod"
+          ],
+          "addedDevDependencies": [
+            "@modelcontextprotocol/client"
+          ]
+        }
+      ],
+      "limit": "Do not claim the complete install graph is identical; compiler importer and resolved dependency snapshots are unchanged."
+    }
+  },
+  "stable": {
+    "commit": "6d599a48285a50effc84ba2744fc61ed260c5fd0",
+    "workingTreeDirty": false,
+    "strict": true,
+    "environment": {
+      "nodeVersion": "v22.22.3",
+      "ideVersion": "2.02.2608080",
+      "baseLibraryVersion": "3.17.2"
+    },
+    "artifact": "docs/reports/dom-acceptance/0be2067e-ba30-4f92-ac70-08b66433ccac/4c4137ab-550f-4258-b96b-698e0f9f24d2.json",
+    "artifactSha256": "9fbbbbfd137341ae8a459cfc53435a18358e6cdf133fd36870776b5b1fd39f2a",
+    "selectedCasesPassed": 2,
+    "selectedCheckpointsCaptured": 5,
+    "observationSource": "devtools-page-frame",
+    "caseWarningsErrorsExceptions": 0,
+    "startupProtocol": {
+      "retryWarnings": 5,
+      "recovered": true,
+      "scope": "outside selected cases"
+    },
+    "wholeBatch": {
+      "status": "not-executed",
+      "finishedAt": null,
+      "summary": {
+        "plannedCount": 4,
+        "executedCount": 3,
+        "passedCount": 3,
+        "failedCount": 0,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 1,
+        "plannedCheckpointCount": 11,
+        "capturedCheckpointCount": 11
+      },
+      "passed": false
+    },
+    "channelProvenance": {
+      "channel": "Stable",
+      "version": "2.02.2608080",
+      "officialSource": "https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html",
+      "recordedQueryTime": "2026-10-04 04:22 UTC",
+      "recordedIn": "docs/reports/2026-10-03-compiler-runtime-attribution/issue-delivery.md",
+      "limit": "This review verified the existing official-channel record and actual runtime version; it did not perform a fresh official download-page query."
+    }
+  },
+  "headless": {
+    "commit": "977bc90dd20dc996e5982bc2f6446e12b60a7fe2",
+    "workingTreeDirty": false,
+    "strict": true,
+    "artifact": "docs/reports/dom-acceptance/cc8d6f74-d1d5-442a-95a0-5bd2a6c59e21/c694edd6-f787-40d6-b805-08e79375e163.json",
+    "artifactSha256": "98d5cc911ef802a3ca35aedba3e1ec157be0e75b318ce98e89216018dcfb96d8",
+    "wholeBatchStatus": "passed",
+    "wholeBatchSummary": {
+      "plannedCount": 15,
+      "executedCount": 15,
+      "passedCount": 15,
+      "failedCount": 0,
+      "blockedCount": 0,
+      "skippedCount": 0,
+      "notExecutedCount": 0,
+      "plannedCheckpointCount": 92,
+      "capturedCheckpointCount": 92
+    },
+    "selectedCasesPassed": 2,
+    "selectedCheckpointsCaptured": 5,
+    "observationSource": "headless-logical-tree",
+    "sameSelectedObservedSemanticsAsStable": true
+  },
+  "matchedRuntimeObservations": [
+    {
+      "case": "renders both tag spellings and duplicates with reactive updates",
+      "status": "passed",
+      "violations": [],
+      "observations": [
+        {
+          "id": "count-0",
+          "route": "pages/home/index",
+          "nodes": {
+            "#builtin": {
+              "count": 1,
+              "texts": [
+                "builtin"
+              ]
+            },
+            "#pascal": {
+              "count": 1,
+              "texts": [
+                "pascal-0"
+              ]
+            },
+            "#kebab": {
+              "count": 1,
+              "texts": [
+                "kebab-0"
+              ]
+            },
+            "#duplicate": {
+              "count": 1,
+              "texts": [
+                "duplicate-0"
+              ]
+            },
+            "#increment": {
+              "count": 1,
+              "texts": [
+                "0"
+              ]
+            }
+          }
+        },
+        {
+          "id": "count-1",
+          "route": "pages/home/index",
+          "nodes": {
+            "#builtin": {
+              "count": 1,
+              "texts": [
+                "builtin"
+              ]
+            },
+            "#pascal": {
+              "count": 1,
+              "texts": [
+                "pascal-1"
+              ]
+            },
+            "#kebab": {
+              "count": 1,
+              "texts": [
+                "kebab-1"
+              ]
+            },
+            "#duplicate": {
+              "count": 1,
+              "texts": [
+                "duplicate-1"
+              ]
+            },
+            "#increment": {
+              "count": 1,
+              "texts": [
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "preserves lowercase explicit imports through branch removal and restoration",
+      "status": "passed",
+      "violations": [],
+      "observations": [
+        {
+          "id": "branch-0",
+          "route": "pages/boundary/index",
+          "nodes": {
+            "#lowercase": {
+              "count": 1,
+              "texts": [
+                "explicit-lowercase"
+              ]
+            },
+            "#explicit-pascal": {
+              "count": 1,
+              "texts": [
+                "explicit-pascal"
+              ]
+            },
+            "#toggle": {
+              "count": 1,
+              "texts": [
+                "visible"
+              ]
+            }
+          }
+        },
+        {
+          "id": "branch-1",
+          "route": "pages/boundary/index",
+          "nodes": {
+            "#lowercase": {
+              "count": 0,
+              "texts": []
+            },
+            "#explicit-pascal": {
+              "count": 0,
+              "texts": []
+            },
+            "#toggle": {
+              "count": 1,
+              "texts": [
+                "hidden"
+              ]
+            }
+          }
+        },
+        {
+          "id": "branch-2",
+          "route": "pages/boundary/index",
+          "nodes": {
+            "#lowercase": {
+              "count": 1,
+              "texts": [
+                "explicit-lowercase"
+              ]
+            },
+            "#explicit-pascal": {
+              "count": 1,
+              "texts": [
+                "explicit-pascal"
+              ]
+            },
+            "#toggle": {
+              "count": 1,
+              "texts": [
+                "visible"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "implementationCoverage": {
+    "owner": "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/componentSources.ts",
+    "unitTests": [
+      "packages-runtime/wevu-compiler/src/utils/vueTemplateTags.test.ts",
+      "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/componentSources.test.ts"
+    ],
+    "contracts": [
+      "builtin/reserved tags",
+      "spelling and duplicate filtering",
+      "lowercase explicit imports and registration precedence",
+      "usingComponents/WXML/JS semantics",
+      "malformed-template rejection and warning boundaries"
+    ],
+    "ownership": "One local analysis in the existing compiler; no cross-file/process mutable AST cache."
+  },
+  "publication": {
+    "rawRuntimeArtifactsTracked": false,
+    "externalWritesOrTestsPerformed": false,
+    "updatedDocs": [
+      "docs/reports/2026-10-03-compiler-runtime-attribution/README.md",
+      "docs/reports/2026-10-03-compiler-runtime-attribution/issue-delivery.md"
+    ],
+    "sanitizedSummaryArchived": true
+  },
+  "ciEvidence": {
+    "runtimePublication": {
+      "runId": 37188267405,
+      "sourceSha": "691c405e42cb8c8646f66d6475f760da8cb193aa",
+      "allSixMatricesPassed": true,
+      "matrices": [
+        {
+          "matrix": "macos24",
+          "artifactId": 11300285812,
+          "casesPassed": 9,
+          "checkpointsCaptured": 66,
+          "failed": 0,
+          "skipped": 0,
+          "strict": true
+        },
+        {
+          "matrix": "macos22",
+          "artifactId": 11299568328,
+          "casesPassed": 9,
+          "checkpointsCaptured": 66,
+          "failed": 0,
+          "skipped": 0,
+          "strict": true
+        },
+        {
+          "matrix": "windows22",
+          "artifactId": 11299505077,
+          "casesPassed": 9,
+          "checkpointsCaptured": 66,
+          "failed": 0,
+          "skipped": 0,
+          "strict": true
+        },
+        {
+          "matrix": "ubuntu22",
+          "artifactId": 11298611409,
+          "casesPassed": 9,
+          "checkpointsCaptured": 66,
+          "failed": 0,
+          "skipped": 0,
+          "strict": true
+        },
+        {
+          "matrix": "windows24",
+          "artifactId": 11298559065,
+          "casesPassed": 9,
+          "checkpointsCaptured": 66,
+          "failed": 0,
+          "skipped": 0,
+          "strict": true
+        },
+        {
+          "matrix": "ubuntu24",
+          "artifactId": 11297664382,
+          "casesPassed": 9,
+          "checkpointsCaptured": 66,
+          "failed": 0,
+          "skipped": 0,
+          "strict": true
+        }
+      ]
+    },
+    "pluginWatch": {
+      "runId": 37189048511,
+      "sourceSha": "977bc90dd20dc996e5982bc2f6446e12b60a7fe2",
+      "allSixMatricesPassed": true,
+      "matrices": [
+        {
+          "matrix": "macos24",
+          "artifactId": 11300086820,
+          "testsPassed": 13,
+          "failed": 0,
+          "skipped": 0
+        },
+        {
+          "matrix": "macos22",
+          "artifactId": 11300001316,
+          "testsPassed": 13,
+          "failed": 0,
+          "skipped": 0
+        },
+        {
+          "matrix": "windows24",
+          "artifactId": 11299318266,
+          "testsPassed": 13,
+          "failed": 0,
+          "skipped": 0
+        },
+        {
+          "matrix": "ubuntu24",
+          "artifactId": 11298577130,
+          "testsPassed": 13,
+          "failed": 0,
+          "skipped": 0
+        },
+        {
+          "matrix": "ubuntu22",
+          "artifactId": 11298472361,
+          "testsPassed": 13,
+          "failed": 0,
+          "skipped": 0
+        },
+        {
+          "matrix": "windows22",
+          "artifactId": 11297589956,
+          "testsPassed": 13,
+          "failed": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    "fullCi": {
+      "runId": 37189458593,
+      "statusAtReview": "not-completed"
+    },
+    "website": {
+      "runId": 37192095346,
+      "sourceSha": "6d599a48285a50effc84ba2744fc61ed260c5fd0",
+      "statusAtReview": "success"
+    },
+    "release": {
+      "runId": 37192095286,
+      "sourceSha": "6d599a48285a50effc84ba2744fc61ed260c5fd0",
+      "statusAtReview": "not-completed"
+    },
+    "boundary": "Each result applies to its stated source commit and scope. Pending checks and other issue failures are not converted into passes."
+  },
+  "separateIssue1015Boundary": {
+    "issue": 1015,
+    "commit": "6d599a48285a50effc84ba2744fc61ed260c5fd0",
+    "status": "failed",
+    "summary": {
+      "plannedCount": 2,
+      "executedCount": 2,
+      "passedCount": 0,
+      "failedCount": 2,
+      "blockedCount": 0,
+      "skippedCount": 0,
+      "notExecutedCount": 0,
+      "plannedCheckpointCount": 14,
+      "capturedCheckpointCount": 3
+    },
+    "artifact": "docs/reports/dom-acceptance/d51eece7-26aa-4440-b107-896c15b5f325/e0da86a6-31b8-4fe7-ae92-c827dc7bfbdc.json",
+    "artifactSha256": "8f8c1fcd49012d04330f4da340fabe7f297859826748d7411dff66e97c53e51b",
+    "boundary": "This actual Stable failure remains unresolved by the issue 1058 successes."
+  }
+}

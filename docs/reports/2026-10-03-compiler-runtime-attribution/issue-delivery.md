@@ -80,8 +80,8 @@ v5/v6 四类消费者均独立严格安装，并各完成五次普通构建和�
 
 | Issue | 剩余实现与最终证据 |
 | --- | --- |
-| #1015 | Stable IDE 中 classic/stateful 的 CSS 变量连续替换、删除、恢复及交互 |
-| #1058 | `a88e9e260ccc684f4cf3501a38fc919d3a63cc42` 的正式 run `37153581572` 已通过七组配对、56 个样本及 28 次产物等价比较；仍缺对应真实 Stable runtime |
+| #1015 | `6d599a482` 的 Stable 实测两例均失败，仅捕获 3/14 检查点；仍需修复并完成 classic/stateful 的 CSS 变量连续替换、删除、恢复及交互 |
+| #1058 | 正式 template-analysis job 已完成七组配对、56 个样本及 28 次产物等价比较；`6d599a482` 的 Stable 两例、5/5 检查点通过且与 headless 一致，专项六矩阵已收敛，完整 CI 与发布检查待收尾；见精简验收证据 |
 | #1065 | Stable IDE 的第三方 compiler 脚本、资产和依赖连续更新，以及内置 Tailwind adapter 的既有运行语义；安装体积不是本议题的验收条件 |
 | #1081 | Stable IDE 的 Tailwind 样式、JS patch 与批次一致性 |
 | #1082 | 固定批准基线的三 OS、九分片完整性能验收；历史基线缺陷必须单列 |
@@ -512,3 +512,11 @@ Rolldown 1.2.12 的临时 callable owner 草案在 Node 24.18.0 完成 10 例真
 完整 CI `37184015892` 的 Linux/Windows 四组通过；macOS Node 22 的插件依赖恢复用例在语法错误保存后 15 秒内没有收到错误事件。测试先前只等插件产物可读，子目标 `writeBundle` 仍可能在执行，父 watcher 尚未完成依赖登记。新增受控发布回归证明文件已可读而父构建仍未完成；普通依赖恢复用例现在先等待首轮 `END/ERROR`，后续保存、语法错误、恢复及删除断言保持原时机和 15 秒预算，整例仍为 30 秒。本地完整插件文件 13/13、工作流守卫 5/5、包 typecheck 及定向 ESLint 通过。独立 `plugin-watch-readiness` 手动矩阵仅执行该文件并保存每组 JSON，不取消既有 runtime-publication 或 HMR 运行。此改动仅修正测试同步及诊断入口，不涉及产品行为，不新增 changeset。
 
 `434899347` 的独立发布消费候选完成额外 headless 验证：最小页面首屏正确，典型页面从 `1 / 2` 点击更新到 `2 / 4`，两场景都正常关闭。四轮构建的插桩与普通产物保持逐文件一致，消费者源码、配置和锁文件恢复后的摘要与运行前一致。构建证据及新增运行时证据分别归档；Mac 锁屏仍使真实 Stable 操作不可用，以上结果仍未完成最终验收，未增加 issue 完成标签。
+
+## 2026-10-04 后续 Stable 场景与专项矩阵
+
+干净 `6d599a482` 的 #1058 两例在 Stable `2.02.2608080`、基础库 `3.17.2` 下通过，5/5 page-frame 检查点与干净 `977bc90dd` 的 headless 逻辑树观测逐项一致，案例内零违规。启动前五次协议重试告警已有 recovered 记录；所属混合批次中断，顶层仍为 `not-executed` 且未记录结束时间，不能记为整批通过或已证明整批 teardown。正式 compiler 对照只引用已成功的 template-analysis job，不覆盖同一旧 workflow 中失败的 classic 资源任务。[精简验收证据](./issue-1058-acceptance.json) 保存候选、原始 artifact hash、组件观测及输入/依赖变化边界。
+
+同一候选的独立 #1015 Stable 实测实际为 2/2 失败，仅捕获 3/14 检查点。该结果保留为待修复问题，不能用 headless 通过或 #1058 的通过结果替代。
+
+`691c405e4` 的 [runtime publication 六矩阵](https://github.com/weapp-vite/weapp-vite/actions/runs/37188267405) 已全部通过，每组严格 9/9 cases、66/66 checkpoints，无失败或跳过；`977bc90dd` 的 [plugin-watch 六矩阵](https://github.com/weapp-vite/weapp-vite/actions/runs/37189048511) 也全部通过，每组 13/13、无失败或跳过。完整 CI [37189458593](https://github.com/weapp-vite/weapp-vite/actions/runs/37189458593) 尚未完成；`6d599a482` 的 Website [37192095346](https://github.com/weapp-vite/weapp-vite/actions/runs/37192095346) 已成功，Release [37192095286](https://github.com/weapp-vite/weapp-vite/actions/runs/37192095286) 仍待结束。各项按自身提交与范围判断，#1058 的最终完成标记仍等待剩余必需检查。

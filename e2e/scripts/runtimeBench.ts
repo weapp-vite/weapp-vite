@@ -19,12 +19,15 @@ export async function createRecoverableSession<T>(options: {
 }): Promise<RecoverableSession<T>> {
   const maxAttempts = Math.max(1, Math.floor(options.maxAttempts ?? 2))
   let session = await options.launch()
+  let closePromise: Promise<void> | undefined
+  const close = () => closePromise ??= Promise.resolve().then(() => options.safeClose(session))
 
   return {
-    async close() {
-      await options.safeClose(session)
-    },
+    close,
     async run(label, operation) {
+      if (closePromise) {
+        throw new Error('Runtime benchmark session is already closed')
+      }
       let lastError: unknown
       for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
         try {
@@ -35,9 +38,15 @@ export async function createRecoverableSession<T>(options: {
           if (attempt >= maxAttempts || !options.isRetryable(error)) {
             throw error
           }
-          await options.safeClose(session)
+          try {
+            await close()
+          }
+          catch (cleanupError) {
+            throw new AggregateError([error, cleanupError], 'Benchmark sample and session cleanup failed')
+          }
           await options.onRetry?.({ attempt, error, label })
           session = await options.launch()
+          closePromise = undefined
         }
       }
       throw lastError
