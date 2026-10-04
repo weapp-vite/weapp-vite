@@ -13,6 +13,12 @@ export interface BindingAnalysis {
   snapshotFallback: boolean
 }
 
+export interface BindingSyntaxSummary {
+  readonly dependencies: readonly Readonly<BindingAnalysis['dependencies'][number]>[]
+  readonly directCallNames: readonly string[]
+  readonly unconditionalSnapshotFallback: boolean
+}
+
 const sourceUrl = new URL('../../packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/bindingManifest.ts', import.meta.url)
 const anchor = 'const parsed = parseBabelExpressionFile(normalized)'
 const analysisAnchor = 'if (localNames.size && context) {'
@@ -79,6 +85,32 @@ export async function loadProductionBindingAnalysis(options: { capture?: boolean
         scopeStack: [new Set(input.locals)],
         forStack: [],
         templateSafeCallNames: new Set(input.safeCallNames),
+      })
+    },
+    summarize(expression: string): BindingSyntaxSummary | null {
+      if (options.capture) {
+        throw new Error('Syntax summaries require replay mode with normalized expressions')
+      }
+      const directCallNames = new Set<string>()
+      const analysis = module.experimentalCollectDependencies(expression, {
+        rewriteScopedSlot: false,
+        scopeStack: [],
+        forStack: [],
+        // 仅在诊断中观察生产 visitor 的安全调用查询，不复制解析、作用域和遍历逻辑。
+        templateSafeCallNames: {
+          has(name: string) {
+            directCallNames.add(name)
+            return true
+          },
+        },
+      })
+      if (!analysis) {
+        return null
+      }
+      return Object.freeze({
+        dependencies: Object.freeze(analysis.dependencies.map(dependency => Object.freeze(dependency))),
+        directCallNames: Object.freeze([...directCallNames]),
+        unconditionalSnapshotFallback: analysis.snapshotFallback,
       })
     },
     dispose,

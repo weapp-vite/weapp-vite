@@ -101,6 +101,17 @@ function expectParity(value: BindingInput, contextual = false) {
   return result[0]!
 }
 
+function expectBatchParity(values: BindingInput[]) {
+  const expected = values.map(value => production(value, true))
+  const result = binding!.analyzeBindingExpressionsNative(expected.map(value => value.input), ignoredGlobals)
+  expect(result).toHaveLength(values.length)
+  expect(result.map(observable)).toEqual(expected.map(({ record }) => ({
+    dependencies: record.dependencies,
+    updateMode: record.updateMode,
+  })))
+  return result
+}
+
 const expressions = [
   'profile.name + profile.name + count + profile.age',
   'items[0].name + table["first"].label + items[1.5] + items[0x10]',
@@ -211,6 +222,42 @@ describe.runIf(Boolean(modulePath))('experimental binding expression analysis wi
     expect(expectParity(input('format?.(value)')).snapshotFallback).toBe(true)
   })
 
+  it.each(['format(value)', 'format?.(value)', 'service.format(value)'])('isolates contextual normalized projections in both orders: %s', (expression) => {
+    // WXML normalization 将 optional call 降为判空分支中的普通调用，再进入分析边界。
+    const safeFallback = expression === 'service.format(value)'
+    const variants = [
+      { value: input(expression), fallback: true },
+      { value: input(expression, ['format', 'service', 'value'], ['format']), fallback: safeFallback },
+      { value: input(expression, ['value'], ['format']), fallback: safeFallback },
+      { value: input(expression, ['format', 'service', 'value']), fallback: true },
+    ]
+    for (const ordered of [variants, [...variants].reverse()]) {
+      const result = expectBatchParity(ordered.map(item => item.value))
+      expect(result.map(item => item!.snapshotFallback)).toEqual(ordered.map(item => item.fallback))
+    }
+  })
+
+  it('keeps raw optional calls in fallback across cached locals and safe-call projections', () => {
+    const variants = [
+      input('format?.(value)'),
+      input('format?.(value)', ['value'], ['format']),
+      input('format?.(value)', ['format', 'value'], ['format']),
+      input('format?.(value)', ['format', 'value']),
+    ]
+    for (const ordered of [variants, [...variants].reverse()]) {
+      // 直接测试 native 的已规范化源码输入边界，不经过 contextual WXML normalization。
+      const expected = ordered.map(value => production(value))
+      const result = binding!.analyzeBindingExpressionsNative(ordered, ignoredGlobals)
+      expect(result).toHaveLength(ordered.length)
+      expect(result.map(observable)).toEqual(expected.map(({ record }) => ({
+        dependencies: record.dependencies,
+        updateMode: record.updateMode,
+      })))
+      expect(result.map(item => item!.snapshotFallback)).toEqual([true, true, true, true])
+      expect(result.filter(item => item!.dependencies.length === 0)).toHaveLength(2)
+    }
+  })
+
   it.each(['() => 1', 'Math.random()', '[...[]]'])('retains fallback facts when an expression has no dependencies: %s', (expression) => {
     const result = expectParity(input(expression))
     expect(result).toEqual({ dependencies: [], snapshotFallback: true })
@@ -243,6 +290,18 @@ describe.runIf(Boolean(modulePath))('experimental binding expression analysis wi
     ], [...ignoredGlobals, surrogate])).toThrow()
   })
 
+  it.each(['value', 'value +'])('validates UTF-16 fields after a cached success or parse failure: %s', (expression) => {
+    for (const surrogate of ['\uD800', '\uDC00']) {
+      for (const malformed of [input(expression, [surrogate]), input(expression, [], [surrogate])]) {
+        expect(() => binding!.analyzeBindingExpressionsNative([
+          input(expression),
+          malformed,
+          input('other.name'),
+        ], ignoredGlobals)).toThrow()
+      }
+    }
+  })
+
   it.each([String.raw`table["\uD800"]`, String.raw`table["\uDC00"]`])('rejects escaped lone surrogates in property values: %s', (expression) => {
     expect(() => binding!.analyzeBindingExpressionsNative([
       input('profile.name'),
@@ -259,21 +318,38 @@ describe.runIf(Boolean(modulePath))('experimental binding expression analysis wi
     expect(expectParity(escaped)).toEqual(expected)
   })
 
-  it('preserves batch order, local and safe-call isolation, and failed entries', () => {
+  it.each([false, true])('preserves batch order, scope isolation and failed entries with reverse=%s', (reverse) => {
     const values = [
       input('format(profile.name)', [], ['format']),
       input('row.name + suffix', ['row']),
       input('value +'),
       input('row.name + suffix'),
       input('format(profile.name)'),
-    ].map(value => production(value, true))
-    const result = binding!.analyzeBindingExpressionsNative(values.map(value => value.input), ignoredGlobals)
-    expect(result).toHaveLength(values.length)
+    ]
+    const result = expectBatchParity(reverse ? [...values].reverse() : values)
     expect(result[2]).toBeNull()
-    expect(result.map(observable)).toEqual(values.map(({ record }) => ({
-      dependencies: record.dependencies,
-      updateMode: record.updateMode,
-    })))
     expect(binding!.analyzeBindingExpressionsNative([], ignoredGlobals)).toEqual([])
+  })
+
+  it('applies ignored globals independently across batches', () => {
+    const value = input('state.value + other.value')
+    const original = expectParity(value)
+    for (const ignoredRoot of ['state', 'other', 'state']) {
+      const expected = production(input(value.expression, [ignoredRoot]))
+      const [result] = binding!.analyzeBindingExpressionsNative([value], [...ignoredGlobals, ignoredRoot])
+      expect(observable(result!)).toEqual({ dependencies: expected.record.dependencies, updateMode: expected.record.updateMode })
+    }
+    expect(binding!.analyzeBindingExpressionsNative([value], ignoredGlobals)).toEqual([original])
+  })
+
+  it('returns independent projections for repeated expressions', () => {
+    const value = input('profile.name + count')
+    const expected = expectParity(value)
+    const [first, second] = expectBatchParity([value, value])
+    first!.dependencies[0]!.path = 'changed'
+    first!.dependencies.pop()
+    first!.snapshotFallback = true
+    expect(second).toEqual(expected)
+    expect(binding!.analyzeBindingExpressionsNative([value], ignoredGlobals)).toEqual([expected])
   })
 })

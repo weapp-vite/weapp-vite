@@ -1,16 +1,14 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet, hash_map::Entry};
 
 use napi::bindgen_prelude::Utf16String;
 use napi_derive::napi;
-use oxc_allocator::Allocator;
-use oxc_ast::{AstKind, ast::{Expression, Statement}};
-use oxc_ast_visit::VisitMut;
-use oxc_parser::{ParseOptions, Parser};
-use oxc_semantic::SemanticBuilder;
-use oxc_span::SourceType;
 
 mod normalize;
 mod references;
+mod summary;
+
+#[cfg(test)]
+mod tests;
 
 #[napi(object)]
 pub struct NativeBindingExpressionInput {
@@ -19,6 +17,7 @@ pub struct NativeBindingExpressionInput {
     pub safe_call_names: Vec<Utf16String>,
 }
 
+#[derive(Clone)]
 #[napi(object)]
 pub struct NativeBindingDependency {
     pub root: String,
@@ -40,84 +39,46 @@ fn string_set(values: &[Utf16String]) -> napi::Result<HashSet<String>> {
     values.iter().map(lossless_string).collect()
 }
 
-fn analyze_expression(
-    input: NativeBindingExpressionInput,
+fn specialize_summary(
+    summary: &summary::BindingExpressionSummary,
+    locals: &HashSet<String>,
+    safe_call_names: &HashSet<String>,
     ignored_globals: &HashSet<String>,
-) -> napi::Result<Option<NativeBindingExpressionAnalysis>> {
-    let expression = lossless_string(&input.expression)?;
-    let locals = string_set(&input.locals)?;
-    let safe_call_names = string_set(&input.safe_call_names)?;
-    let source = format!("({expression})");
-    let allocator = Allocator::default();
-    let mut parsed = Parser::new(&allocator, &source, SourceType::ts())
-        .with_options(ParseOptions { preserve_parens: false, ..ParseOptions::default() })
-        .parse();
-    if parsed.fatal_error || !parsed.diagnostics.is_empty()
-        || !matches!(parsed.program.body.first(), Some(Statement::ExpressionStatement(_)))
-    {
-        return Ok(None);
+) -> NativeBindingExpressionAnalysis {
+    NativeBindingExpressionAnalysis {
+        dependencies: summary.dependencies.iter()
+            .filter(|dependency| !locals.contains(&dependency.root) && !ignored_globals.contains(&dependency.root))
+            .cloned()
+            .collect(),
+        snapshot_fallback: summary.unconditional_snapshot_fallback
+            || summary.direct_call_names.iter().any(|name| !safe_call_names.contains(name)),
     }
-    let mut normalization = normalize::NormalizeTypes { allocator: &allocator, unsupported: false };
-    normalization.visit_program(&mut parsed.program);
-    if normalization.unsupported {
-        return Err(napi::Error::from_reason("Experimental binding assignment target is unsupported"));
-    }
-    let built = SemanticBuilder::new().with_build_nodes(true).with_check_syntax_error(true).build(&parsed.program);
-    if !built.diagnostics.is_empty() {
-        return Ok(None);
-    }
-    let semantic = &built.semantic;
-    let nodes = semantic.nodes();
-    let mut seen = HashSet::new();
-    let mut result = NativeBindingExpressionAnalysis { dependencies: Vec::new(), snapshot_fallback: false };
-    for (id, node) in nodes.iter_enumerated() {
-        let name = match node.kind() {
-            AstKind::IdentifierReference(identifier)
-                if references::is_referenced(nodes, id) =>
-            {
-                Some(identifier.name.to_string())
-            }
-            AstKind::IdentifierName(_) | AstKind::BindingIdentifier(_) | AstKind::TSIndexSignatureName(_)
-                | AstKind::TSThisParameter(_) => references::referenced_type_name(nodes, id),
-            AstKind::CallExpression(call) => {
-                if call.optional || !matches!(&call.callee, Expression::Identifier(identifier) if safe_call_names.contains(identifier.name.as_str())) {
-                    result.snapshot_fallback = true;
-                }
-                None
-            }
-            AstKind::NewExpression(_) | AstKind::Function(_) | AstKind::ArrowFunctionExpression(_) | AstKind::SpreadElement(_) => {
-                result.snapshot_fallback = true;
-                None
-            }
-            AstKind::StringLiteral(literal) if literal.lone_surrogates => {
-                return Err(napi::Error::from_reason("Experimental binding literal contains lone surrogates"));
-            }
-            AstKind::TemplateElement(element) if element.lone_surrogates => {
-                return Err(napi::Error::from_reason("Experimental binding literal contains lone surrogates"));
-            }
-            _ => None,
-        };
-        let Some(name) = name else { continue };
-        if locals.contains(&name) || ignored_globals.contains(&name)
-            || references::has_babel_binding(semantic, id, &name)
-        {
-            continue;
-        }
-        let dependency = references::dependency(nodes, id, &name)?;
-        let key = format!("{}:{}:{}", dependency.root, dependency.path.as_deref().unwrap_or(""), dependency.mode);
-        if seen.insert(key) {
-            result.dependencies.push(dependency);
-        }
-    }
-    Ok(Some(result))
 }
 
-/// 实验批处理入口；每个表达式只解析一次，保留单项解析失败与整批无损回退边界。
+/// 实验批处理入口；同批唯一表达式只解析一次，逐项特化并保留整批无损回退边界。
 #[napi(js_name = "analyzeBindingExpressionsNative")]
 pub fn analyze_binding_expressions_native(
     inputs: Vec<NativeBindingExpressionInput>,
     ignored_globals: Vec<Utf16String>,
 ) -> napi::Result<Vec<Option<NativeBindingExpressionAnalysis>>> {
     let ignored_globals = string_set(&ignored_globals)?;
-    inputs.into_iter().map(|input| analyze_expression(input, &ignored_globals)).collect()
+    let mut summaries = HashMap::new();
+    let mut results = Vec::with_capacity(inputs.len());
+    for input in inputs {
+        let expression = lossless_string(&input.expression)?;
+        // 即使命中成功或解析失败的摘要，也必须逐项校验所有 UTF-16 配置字符串。
+        let locals = string_set(&input.locals)?;
+        let safe_call_names = string_set(&input.safe_call_names)?;
+        let summary = match summaries.entry(expression) {
+            Entry::Occupied(entry) => entry.into_mut(),
+            Entry::Vacant(entry) => {
+                let summary = summary::parse_expression_summary(entry.key())?;
+                entry.insert(summary)
+            }
+        };
+        results.push(summary.as_ref().map(|summary| {
+            specialize_summary(summary, &locals, &safe_call_names, &ignored_globals)
+        }));
+    }
+    Ok(results)
 }

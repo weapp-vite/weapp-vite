@@ -1,6 +1,6 @@
-import type { BindingAnalysis, BindingInput } from './source'
+import type { BindingAnalysis, BindingInput, BindingSyntaxSummary } from './source'
 import { describe, expect, it, vi } from 'vitest'
-import { replayWithFallback, replayWithJs, replayWithNative } from './replay'
+import { replayWithFallback, replayWithJs, replayWithJsSummary, replayWithNative } from './replay'
 
 const input: BindingInput = { expression: 'row.name + format(value)', locals: ['row'], safeCallNames: ['format'] }
 const value: BindingAnalysis = {
@@ -33,6 +33,58 @@ describe('experimental binding replay', () => {
     expect(replayWithJs([input, input], analyze, true)).toEqual([null, null])
     expect(analyze).toHaveBeenCalledTimes(1)
     expect(replayWithNative([input], { analyzeBindingExpressionsNative: () => [{ dependencies: [], snapshotFallback: false }] }, []).results).toEqual([{ dependencies: [], snapshotFallback: false }])
+  })
+
+  it('specializes one syntax summary per expression and deduplicates complete requests', () => {
+    const summary: BindingSyntaxSummary = Object.freeze({
+      dependencies: Object.freeze(['row', 'format', 'value'].map(root => Object.freeze({ root, path: root, mode: 'exact-path' as const }))),
+      directCallNames: Object.freeze(['format']),
+      unconditionalSnapshotFallback: false,
+    })
+    const summarize = vi.fn(() => summary)
+    const requests = [input, { ...input, locals: ['format'] }, { ...input, safeCallNames: [] }, input]
+    const result = replayWithJsSummary(requests, summarize)
+    expect(summarize).toHaveBeenCalledExactlyOnceWith(input.expression)
+    expect(result.map(analysis => analysis?.dependencies.map(dependency => dependency.root))).toEqual([
+      ['format', 'value'],
+      ['row', 'value'],
+      ['format', 'value'],
+      ['format', 'value'],
+    ])
+    expect(result.map(analysis => analysis?.snapshotFallback)).toEqual([false, false, true, false])
+    expect(result[0]).toBe(result[3])
+    result[0]!.dependencies[1]!.path = 'changed'
+    expect(result[1]!.dependencies[1]!.path).toBe('value')
+    expect(summary.dependencies[2]!.path).toBe('value')
+  })
+
+  it('keys syntax summaries by the exact expression and resets both caches per batch', () => {
+    const summarize = vi.fn((): BindingSyntaxSummary => ({ dependencies: [], directCallNames: [], unconditionalSnapshotFallback: false }))
+    const requests = [input, { ...input, expression: ` ${input.expression}` }, input]
+    const first = replayWithJsSummary(requests, summarize)
+    const second = replayWithJsSummary(requests, summarize)
+    expect(summarize).toHaveBeenCalledTimes(4)
+    expect(summarize.mock.calls).toEqual([[input.expression], [` ${input.expression}`], [input.expression], [` ${input.expression}`]])
+    expect(first).toEqual(second)
+    expect(first[0]).not.toBe(second[0])
+    expect(replayWithJsSummary([], summarize)).toEqual([])
+    expect(summarize).toHaveBeenCalledTimes(4)
+  })
+
+  it('caches null summaries separately from empty results with and without fallback', () => {
+    const summarize = vi.fn((expression: string): BindingSyntaxSummary | null => expression === 'value +'
+      ? null
+      : { dependencies: [], directCallNames: [], unconditionalSnapshotFallback: expression === '() => 1' })
+    const requests = ['value +', '42', '() => 1', 'value +'].map(expression => ({ ...input, expression }))
+    requests.push({ ...requests[0]!, locals: [] })
+    expect(replayWithJsSummary(requests, summarize)).toEqual([
+      null,
+      { dependencies: [], snapshotFallback: false },
+      { dependencies: [], snapshotFallback: true },
+      null,
+      null,
+    ])
+    expect(summarize).toHaveBeenCalledTimes(3)
   })
 
   it.each([

@@ -9,7 +9,8 @@ import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { isDeepStrictEqual } from 'node:util'
 import { collectIgnoredGlobals } from './globals'
-import { replayWithFallback, replayWithJs } from './replay'
+import { balancedOrders } from './orders'
+import { replayWithFallback, replayWithJs, replayWithJsSummary } from './replay'
 import { loadProductionBindingAnalysis } from './source'
 
 function stats(values: number[]) {
@@ -24,11 +25,12 @@ async function main() {
   const args = process.argv.slice(2)
   const argument = (name: string) => args.find(arg => arg.startsWith(`--${name}=`))?.slice(name.length + 3)
   const bindingPath = argument('binding')
+  const previousBindingPath = argument('previous-binding')
   const inputPath = argument('input')
   const output = argument('output')
   const iterations = Number(argument('iterations') ?? '0')
   if (!bindingPath || !inputPath || !output || !Number.isSafeInteger(iterations) || iterations < 0) {
-    throw new Error('Expected --binding=<feature-built .node> --input=<capture.json> --output=<new report.json> [--iterations=0]')
+    throw new Error('Expected --binding=<feature-built .node> --input=<capture.json> --output=<new report.json> [--previous-binding=<earlier .node>] [--iterations=0]')
   }
   const raw = await readFile(inputPath, 'utf8')
   const captured = JSON.parse(raw) as {
@@ -52,31 +54,43 @@ async function main() {
       throw new Error('Production binding analysis changed since capture')
     }
     const binding = createRequire(import.meta.url)(path.resolve(bindingPath)) as BindingNative
+    const previousBinding = previousBindingPath
+      ? createRequire(import.meta.url)(path.resolve(previousBindingPath)) as BindingNative
+      : undefined
     const ignored = collectIgnoredGlobals()
     const { inputs, expected } = captured
     const js = replayWithJs(inputs, source.analyze, false)
     const jsCached = replayWithJs(inputs, source.analyze, true)
+    const jsSummary = replayWithJsSummary(inputs, source.summarize)
     const native = replayWithFallback(inputs, binding, ignored, source.analyze)
+    const nativePrevious = previousBinding && replayWithFallback(inputs, previousBinding, ignored, source.analyze)
     const failures = inputs.flatMap((input, index) => {
       const actual = native.results[index]
       const matches = {
         capturedOracle: isDeepStrictEqual(js[index], expected[index]),
         jsCached: isDeepStrictEqual(jsCached[index], expected[index]),
+        jsSummary: isDeepStrictEqual(jsSummary[index], expected[index]),
         native: isDeepStrictEqual(actual, expected[index]),
+        ...(nativePrevious ? { nativePrevious: isDeepStrictEqual(nativePrevious.results[index], expected[index]) } : {}),
       }
-      return Object.values(matches).every(Boolean) && !native.fallback
+      return Object.values(matches).every(Boolean) && !native.fallback && !nativePrevious?.fallback
         ? []
-        : [{ index, input, matches, expected: expected[index], actual, fallback: native.fallback }]
+        : [{ index, input, matches, expected: expected[index], actual, fallback: native.fallback, previousFallback: nativePrevious?.fallback }]
     })
-    const variants = ['js', 'jsCached', 'native'] as const
+    const variants = ['js', 'jsCached', 'jsSummary', 'native', ...previousBinding ? ['nativePrevious'] as const : []] as const
     type Variant = typeof variants[number]
-    const samples: Array<{ pair: number, order: Variant[], js: number, jsCached: number, native: number }> = []
+    const samples: Array<{ pair: number, order: Variant[] } & Partial<Record<Variant, number>>> = []
+    const orders = balancedOrders(variants)
+    let warmupCycles = 0
+    const startedAt = new Date().toISOString()
     const initialLoad = loadavg()
     const measure = (variant: Variant) => {
       const start = performance.now()
-      const result = variant === 'native'
-        ? replayWithFallback(inputs, binding, ignored, source.analyze)
-        : { results: replayWithJs(inputs, source.analyze, variant === 'jsCached'), fallback: undefined }
+      const result = variant === 'native' || variant === 'nativePrevious'
+        ? replayWithFallback(inputs, variant === 'native' ? binding : previousBinding!, ignored, source.analyze)
+        : { results: variant === 'jsSummary'
+            ? replayWithJsSummary(inputs, source.summarize)
+            : replayWithJs(inputs, source.analyze, variant === 'jsCached'), fallback: undefined }
       const duration = performance.now() - start
       if (result.fallback) {
         throw new Error(`Timed native fallback: ${result.fallback}`)
@@ -88,15 +102,8 @@ async function main() {
         for (const variant of variants) {
           measure(variant)
         }
+        warmupCycles++
       }
-      const orders: Variant[][] = [
-        ['js', 'jsCached', 'native'],
-        ['native', 'jsCached', 'js'],
-        ['jsCached', 'native', 'js'],
-        ['js', 'native', 'jsCached'],
-        ['native', 'js', 'jsCached'],
-        ['jsCached', 'js', 'native'],
-      ]
       for (let pair = 0; pair < iterations; pair++) {
         const order = orders[pair % orders.length]!
         const values = Object.fromEntries(order.map(variant => [variant, measure(variant)])) as Record<Variant, number>
@@ -104,18 +111,25 @@ async function main() {
       }
     }
     const report = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       scope: 'Captured normalized expression analysis only; excludes template normalization, loop merging, manifest generation and complete compilation.',
       inputSha256: createHash('sha256').update(raw).digest('hex'),
       sourceSha256: source.sourceSha256,
       bindingSha256: createHash('sha256').update(await readFile(bindingPath)).digest('hex'),
+      previousBindingSha256: previousBindingPath && createHash('sha256').update(await readFile(previousBindingPath)).digest('hex'),
       inputCount: inputs.length,
       uniqueInputs: native.uniqueInputs,
+      uniqueExpressions: new Set(inputs.map(input => input.expression)).size,
       nativeCallsPerBatch: native.nativeCalls,
       fallback: native.fallback,
       failures,
-      environment: { node: process.version, platform: process.platform, arch: process.arch, cpus: cpus().length, initialLoad, finalLoad: loadavg() },
-      measured: samples.length ? Object.fromEntries(variants.map(variant => [variant, stats(samples.map(sample => sample[variant]))])) : undefined,
+      environment: { node: process.version, platform: process.platform, arch: process.arch, cpus: cpus().length, startedAt, finishedAt: new Date().toISOString(), initialLoad, finalLoad: loadavg() },
+      warmupCycles,
+      orderPeriod: orders.length,
+      completedOrderCycles: Math.floor(samples.length / orders.length),
+      orderRemainder: samples.length % orders.length,
+      fullyBalanced: samples.length > 0 && samples.length % orders.length === 0,
+      measured: samples.length ? Object.fromEntries(variants.map(variant => [variant, stats(samples.map(sample => sample[variant]!))])) : undefined,
       samples,
     }
     await writeFile(output, `${JSON.stringify(report, null, 2)}\n`, { flag: 'wx' })

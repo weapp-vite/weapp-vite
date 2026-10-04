@@ -1,10 +1,11 @@
-import type { BindingAnalysis, BindingInput } from './source'
+import type { BindingAnalysis, BindingInput, BindingSyntaxSummary } from './source'
 
 export interface BindingNative {
   analyzeBindingExpressionsNative: (inputs: BindingInput[], ignoredGlobals: string[]) => Array<BindingAnalysis | null>
 }
 
 export type BindingAnalyzer = (input: BindingInput) => BindingAnalysis | null
+export type BindingSummaryAnalyzer = (expression: string) => BindingSyntaxSummary | null
 
 export function replayWithJs(inputs: BindingInput[], analyze: BindingAnalyzer, deduplicate: boolean) {
   const cache = new Map<string, BindingAnalysis | null>()
@@ -17,6 +18,37 @@ export function replayWithJs(inputs: BindingInput[], analyze: BindingAnalyzer, d
       cache.set(key, analyze(input))
     }
     return cache.get(key)!
+  })
+}
+
+/** 每批按精确表达式复用不可变摘要，再按完整请求缓存作用域与安全调用特化结果。 */
+export function replayWithJsSummary(inputs: BindingInput[], summarize: BindingSummaryAnalyzer): Array<BindingAnalysis | null> {
+  const summaries = new Map<string, BindingSyntaxSummary | null>()
+  const results = new Map<string, BindingAnalysis | null>()
+  return inputs.map((input) => {
+    const key = JSON.stringify(input)
+    if (results.has(key)) {
+      return results.get(key)!
+    }
+    if (!summaries.has(input.expression)) {
+      summaries.set(input.expression, summarize(input.expression))
+    }
+    const summary = summaries.get(input.expression)!
+    if (summary === null) {
+      results.set(key, null)
+      return null
+    }
+    const locals = new Set(input.locals)
+    const safeCallNames = new Set(input.safeCallNames)
+    const analysis: BindingAnalysis = {
+      dependencies: summary.dependencies
+        .filter(dependency => !locals.has(dependency.root))
+        .map(dependency => ({ ...dependency })),
+      snapshotFallback: summary.unconditionalSnapshotFallback
+        || summary.directCallNames.some(name => !safeCallNames.has(name)),
+    }
+    results.set(key, analysis)
+    return analysis
   })
 }
 

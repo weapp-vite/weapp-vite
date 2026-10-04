@@ -1,0 +1,2249 @@
+{
+  "schemaVersion": 1,
+  "evidenceDate": "2026-10-04",
+  "generatedAt": "2026-10-04T09:48:23.690295+00:00",
+  "title": "规范化绑定表达式摘要缓存的五路局部对照证据",
+  "decision": {
+    "productionAdoption": false,
+    "stableSummaryCacheSpeedupEstablished": false,
+    "wholeProjectRustMigrationJustified": false,
+    "summary": "新 Rust 相比旧 Rust 在压力样本中 P50 微降，但在零售和 Wevu 样本中回退。一次局部测量不能证明摘要缓存具有稳定收益，当前不推进生产接入。",
+    "limitations": [
+      "仅测已规范化表达式的依赖分析；不包含模板规范化、loop 依赖合并、manifest 生成或完整编译。",
+      "三份语料各为一个本地进程中的 40 轮测量，不是多机器、跨平台或多次独立运行的稳定性证据。",
+      "没有据此推导完整构建、HMR、RSS、sourcemap 或小程序 runtime 的收益。",
+      "完整采样顺序周期控制执行位置与轮内前序，不能排除操作系统负载、GC 或其他系统噪声。",
+      "报告保留了原始 loadavg；采样前后的任务进程检查为空并不等于整台机器处于空闲状态。",
+      "正式 CI 尚未完成，不能视为已满足跨平台验收门槛。"
+    ]
+  },
+  "comparisonImplementations": {
+    "js": "每个请求调用原生产 JS 分析函数。",
+    "jsCached": "本批次按包含 expression、locals、safeCallNames 的完整请求键去重，调用原生产 JS 分析函数。",
+    "jsSummary": "完整请求缓存外再按精确规范化表达式复用冻结摘要；通过原生产 visitor 的安全调用 has 查询收集名称，再按 locals 和 safeCallNames 特化，不复制 Babel 遍历实现。",
+    "native": "按完整请求去重后一次 NAPI 调用；新 Rust 在本次调用内按精确表达式缓存自有数据摘要，再按外部 locals、safeCallNames 与 globals 特化。",
+    "nativePrevious": "此前独立构建的 Rust 实验绑定，使用相同 JS 适配器和完整请求去重；每个唯一完整请求分别解析，二进制身份单独保留。"
+  },
+  "method": {
+    "unit": "milliseconds per replay batch",
+    "variants": [
+      "js",
+      "jsCached",
+      "jsSummary",
+      "native",
+      "nativePrevious"
+    ],
+    "cacheLifetime": "每次重放批次或每次 native 调用内；不跨编译、批次或测量轮次保留缓存。",
+    "includedCosts": [
+      "请求键生成与去重",
+      "摘要缓存建立、收集与特化",
+      "NAPI 输入输出",
+      "native 结果结构校验",
+      "恢复原始请求顺序"
+    ],
+    "oracle": "真实 compileVueFile 捕获的 collectDependencies normalization 后、loop 依赖合并前的生产结果。",
+    "correctnessGate": "计时前所有五路结果逐项严格匹配 captured oracle；任何不一致或 native 回退都会阻止计时，计时中的 native 回退会终止运行。",
+    "warmupCyclesPerCorpus": 6,
+    "measuredCyclesPerCorpus": 40,
+    "orderPeriod": 10,
+    "completedOrderCyclesPerCorpus": 4,
+    "orderRemainder": 0,
+    "fullyBalanced": true,
+    "independentRunsPerCorpus": 1
+  },
+  "correctness": {
+    "corpusCount": 3,
+    "inputCount": 822,
+    "inputCounts": {
+      "profile": 724,
+      "retail": 64,
+      "wevu": 34
+    },
+    "failureCount": 0,
+    "nativeFallbackCount": 0,
+    "nativePreviousFallbackCount": 0,
+    "allFiveVariantsMatchCapturedOracle": true,
+    "fallbackEvidence": "三份报告 failures 为空且完整产生 40 轮样本；运行器拒绝任何新旧 native 回退。原始 JSON 的可选 fallback 字段在无回退时省略。"
+  },
+  "parseReduction": {
+    "corpus": "profile",
+    "inputRequests": 724,
+    "previousParsesPerBatch": 197,
+    "summaryParsesPerBatch": 148,
+    "removedParsesPerBatch": 49,
+    "reductionPercent": 24.873096446700508,
+    "basis": "真实捕获语料有 197 个不同完整请求、148 个不同精确表达式；旧实现逐唯一请求解析，新实现逐唯一表达式解析。Rust 内部计数测试锁定每个唯一表达式仅解析一次，包括失败解析与不同上下文。",
+    "timedBinaryContainsParseCounter": false,
+    "parseCountContractTest": "packages/ast-native/src/binding_analysis/tests.rs",
+    "smallerCorpora": [
+      {
+        "corpus": "retail",
+        "previousParsesPerBatch": 53,
+        "summaryParsesPerBatch": 53
+      },
+      {
+        "corpus": "wevu",
+        "previousParsesPerBatch": 19,
+        "summaryParsesPerBatch": 19
+      }
+    ],
+    "interpretation": "减少解析次数不等于稳定减少耗时；摘要分配、缓存和特化也有成本。"
+  },
+  "newNativeVersusPrevious": {
+    "changePercentDefinition": "(new / previous - 1) * 100；负值表示该分位数耗时减少，正值表示回退。",
+    "comparisons": [
+      {
+        "corpus": "profile",
+        "nativePreviousP50Ms": 0.6581250000000409,
+        "nativeP50Ms": 0.6514579999999341,
+        "p50ChangePercent": -1.0130294397122652,
+        "nativePreviousP95Ms": 0.7750410000001011,
+        "nativeP95Ms": 0.7275829999999814,
+        "p95ChangePercent": -6.123288961501839
+      },
+      {
+        "corpus": "retail",
+        "nativePreviousP50Ms": 0.1711249999999609,
+        "nativeP50Ms": 0.17845900000003212,
+        "p50ChangePercent": 4.28575602633916,
+        "nativePreviousP95Ms": 0.213374999999985,
+        "nativeP95Ms": 0.22191600000002154,
+        "p95ChangePercent": 4.002811950808272
+      },
+      {
+        "corpus": "wevu",
+        "nativePreviousP50Ms": 0.07970900000000825,
+        "nativeP50Ms": 0.09125000000000227,
+        "p50ChangePercent": 14.478917060799713,
+        "nativePreviousP95Ms": 0.11341700000002675,
+        "nativeP95Ms": 0.14254099999999426,
+        "p95ChangePercent": 25.678690143418216
+      }
+    ],
+    "interpretation": "压力样本 P50 约减少 1.0%，零售约增加 4.3%，Wevu 约增加 14.5%。这是单次局部观察，不是缓存稳定提速的结论。"
+  },
+  "processChecks": {
+    "source": ".codex-tmp/rust-analysis/binding-summary-process-check.json",
+    "sourceFileSha256": "32e3694bb51bbca6f86794b55565f068848cc04664629f3e21d3f3581d932e33",
+    "checks": [
+      {
+        "label": "profile",
+        "concurrentBefore": [],
+        "concurrentAfter": []
+      },
+      {
+        "label": "retail",
+        "concurrentBefore": [],
+        "concurrentAfter": []
+      },
+      {
+        "label": "wevu",
+        "concurrentBefore": [],
+        "concurrentAfter": []
+      }
+    ],
+    "summary": "三份局部采样各自在运行前后检查相关并发 E2E、构建和性能进程，保存结果均为空。",
+    "limits": "这是采样前后的进程快照，不是持续系统审计；保留 timed 报告的原始负载数据供评估。"
+  },
+  "invalidSmokeAttempt": {
+    "source": ".codex-tmp/rust-analysis/native-smoke-v4/report.json",
+    "sourceFileSha256": "938c22c623eba116bbbd7e919f71731c28c6709636e11a66b6cea5ded0cd4250",
+    "commit": "a822fb7ff5eeb341a6b95bafa4f9eaef24fbd412",
+    "status": "incomplete",
+    "runCount": 13,
+    "sampleCount": 64,
+    "failure": "Error: Collection failed; later samples were not started: Error: Collector interrupted",
+    "regressionGate": "not-run",
+    "fullAcceptance": "not-run",
+    "validForPerformanceEvidence": false,
+    "excludedReason": "协调执行期间发现另一任务的 E2E 与 smoke 重叠，主动中止 collector；该轮全部性能样本排除，不据此宣称构建或 HMR 收益。",
+    "exclusionProvenance": "本任务执行协调记录；原始报告保留 Collector interrupted。",
+    "primaryReportedNativeCalls": 0,
+    "diagnosticNativeCalls": 2,
+    "diagnostics": [
+      {
+        "input": "weapp-vite-template",
+        "kind": "build",
+        "side": "on",
+        "pair": 0,
+        "native": {
+          "calls": 0,
+          "failures": 0,
+          "inputs": 0,
+          "inputBytes": 0,
+          "processes": 0,
+          "observation": {
+            "processes": 2,
+            "completedProcesses": 2,
+            "bindingCalls": 0,
+            "batchCalls": 0,
+            "inputScripts": 0,
+            "inputBytes": 0,
+            "cacheHits": 0,
+            "fallbacks": 0,
+            "loadFailures": 0
+          },
+          "coverage": "not-exercised"
+        }
+      },
+      {
+        "input": "weapp-vite-wevu-template",
+        "kind": "build",
+        "side": "on",
+        "pair": 0,
+        "native": {
+          "calls": 0,
+          "failures": 0,
+          "inputs": 0,
+          "inputBytes": 0,
+          "processes": 0,
+          "observation": {
+            "processes": 2,
+            "completedProcesses": 2,
+            "bindingCalls": 0,
+            "batchCalls": 0,
+            "inputScripts": 0,
+            "inputBytes": 0,
+            "cacheHits": 0,
+            "fallbacks": 0,
+            "loadFailures": 0
+          },
+          "coverage": "not-exercised"
+        }
+      },
+      {
+        "input": "weapp-vite-tailwindcss-tdesign-template",
+        "kind": "build",
+        "side": "on",
+        "pair": 0,
+        "native": {
+          "calls": 2,
+          "failures": 0,
+          "inputs": 12,
+          "inputBytes": 208962,
+          "processes": 2,
+          "observation": {
+            "processes": 2,
+            "completedProcesses": 2,
+            "bindingCalls": 2,
+            "batchCalls": 2,
+            "inputScripts": 12,
+            "inputBytes": 208962,
+            "cacheHits": 0,
+            "fallbacks": 0,
+            "loadFailures": 0
+          },
+          "coverage": "exercised"
+        }
+      }
+    ],
+    "diagnosticInterpretation": "调用计数来自独立诊断记录：原生模板和 Wevu 模板各 0 次，TDesign 模板 2 次批量调用、12 个输入脚本。primary 无诊断标记的 0 值不能解释为生产路径从未执行 native；这些调用记录仅作覆盖诊断，不作性能证据。"
+  },
+  "formalCi": {
+    "workflow": ".github/workflows/ci-native-analysis.yml",
+    "runId": 37192496301,
+    "headSha": "a822fb7ff5eeb341a6b95bafa4f9eaef24fbd412",
+    "statusAtHandoff": "queued",
+    "conclusionAtHandoff": null,
+    "source": "本任务协调代理在证据整理交接时报告的 CI 快照，本文未再次查询远端。",
+    "gateProven": false,
+    "scope": "该 head 的正式 CI；本地摘要缓存改动及局部采样不能代替远端检查结果。"
+  },
+  "timedReports": [
+    {
+      "id": "profile",
+      "source": ".codex-tmp/rust-analysis/binding-summary-profile-timed.json",
+      "sourceFileSha256": "7f1ccd898465bbc116804323e861a39cbff3c417ed5e779576b34a00dcec40e5",
+      "report": {
+        "schemaVersion": 2,
+        "scope": "Captured normalized expression analysis only; excludes template normalization, loop merging, manifest generation and complete compilation.",
+        "inputSha256": "50693e82d67a1c631a3a9c07761d16a6f761720829cbeb0fed62290146ae20a7",
+        "sourceSha256": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+        "bindingSha256": "2df6012109fe24c713d1f4baa4016c3c1ee658cf33433c1fa8a022207fda09b8",
+        "previousBindingSha256": "42897b07327ac65a6f489d692d0eb90a33c76b416bed984d442473a1f926f42c",
+        "inputCount": 724,
+        "uniqueInputs": 197,
+        "uniqueExpressions": 148,
+        "nativeCallsPerBatch": 1,
+        "failures": [],
+        "environment": {
+          "node": "v24.18.0",
+          "platform": "darwin",
+          "arch": "arm64",
+          "cpus": 16,
+          "startedAt": "2026-10-04T09:44:53.783Z",
+          "finishedAt": "2026-10-04T09:44:54.624Z",
+          "initialLoad": [
+            21.97705078125,
+            40.9404296875,
+            53.29150390625
+          ],
+          "finalLoad": [
+            21.97705078125,
+            40.9404296875,
+            53.29150390625
+          ]
+        },
+        "warmupCycles": 6,
+        "orderPeriod": 10,
+        "completedOrderCycles": 4,
+        "orderRemainder": 0,
+        "fullyBalanced": true,
+        "measured": {
+          "js": {
+            "p50": 8.54216699999995,
+            "p95": 15.052791999999954
+          },
+          "jsCached": {
+            "p50": 2.734457999999904,
+            "p95": 6.277790999999979
+          },
+          "jsSummary": {
+            "p50": 2.3320420000000013,
+            "p95": 5.459666999999968
+          },
+          "native": {
+            "p50": 0.6514579999999341,
+            "p95": 0.7275829999999814
+          },
+          "nativePrevious": {
+            "p50": 0.6581250000000409,
+            "p95": 0.7750410000001011
+          }
+        },
+        "samples": [
+          {
+            "pair": 0,
+            "order": [
+              "js",
+              "jsCached",
+              "nativePrevious",
+              "jsSummary",
+              "native"
+            ],
+            "js": 15.052791999999954,
+            "jsCached": 3.5748330000000124,
+            "nativePrevious": 0.6990420000000199,
+            "jsSummary": 3.137125000000026,
+            "native": 0.710207999999966
+          },
+          {
+            "pair": 1,
+            "order": [
+              "jsCached",
+              "jsSummary",
+              "js",
+              "native",
+              "nativePrevious"
+            ],
+            "jsCached": 3.3552909999999656,
+            "jsSummary": 3.3181659999999624,
+            "js": 14.566958,
+            "native": 0.6887910000000375,
+            "nativePrevious": 0.9940000000000282
+          },
+          {
+            "pair": 2,
+            "order": [
+              "jsSummary",
+              "native",
+              "jsCached",
+              "nativePrevious",
+              "js"
+            ],
+            "jsSummary": 2.440832999999998,
+            "native": 0.6461249999999836,
+            "jsCached": 3.1780410000000074,
+            "nativePrevious": 0.682042000000024,
+            "js": 10.856208000000038
+          },
+          {
+            "pair": 3,
+            "order": [
+              "native",
+              "nativePrevious",
+              "jsSummary",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.7275829999999814,
+            "nativePrevious": 0.6909580000000233,
+            "jsSummary": 3.5742500000000064,
+            "js": 12.514082999999914,
+            "jsCached": 2.7985419999999976
+          },
+          {
+            "pair": 4,
+            "order": [
+              "nativePrevious",
+              "js",
+              "native",
+              "jsCached",
+              "jsSummary"
+            ],
+            "nativePrevious": 0.7197079999999687,
+            "js": 8.276749999999993,
+            "native": 0.7096669999999676,
+            "jsCached": 2.5585829999999987,
+            "jsSummary": 2.1382500000000846
+          },
+          {
+            "pair": 5,
+            "order": [
+              "native",
+              "jsSummary",
+              "nativePrevious",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.6346250000000282,
+            "jsSummary": 5.459666999999968,
+            "nativePrevious": 0.6478749999999991,
+            "jsCached": 2.528542000000016,
+            "js": 7.730000000000018
+          },
+          {
+            "pair": 6,
+            "order": [
+              "nativePrevious",
+              "native",
+              "js",
+              "jsSummary",
+              "jsCached"
+            ],
+            "nativePrevious": 0.659917000000064,
+            "native": 0.6257090000000289,
+            "js": 7.938916000000063,
+            "jsSummary": 6.44520799999998,
+            "jsCached": 2.6613329999998996
+          },
+          {
+            "pair": 7,
+            "order": [
+              "js",
+              "nativePrevious",
+              "jsCached",
+              "native",
+              "jsSummary"
+            ],
+            "js": 7.460582999999929,
+            "nativePrevious": 0.6604999999999563,
+            "jsCached": 2.921333000000004,
+            "native": 0.8345829999999523,
+            "jsSummary": 2.2503749999999627
+          },
+          {
+            "pair": 8,
+            "order": [
+              "jsCached",
+              "js",
+              "jsSummary",
+              "nativePrevious",
+              "native"
+            ],
+            "jsCached": 2.516707999999994,
+            "js": 13.846915999999965,
+            "jsSummary": 2.1982080000000224,
+            "nativePrevious": 0.7750410000001011,
+            "native": 0.6351250000000164
+          },
+          {
+            "pair": 9,
+            "order": [
+              "jsSummary",
+              "jsCached",
+              "native",
+              "js",
+              "nativePrevious"
+            ],
+            "jsSummary": 2.1481249999999363,
+            "jsCached": 2.480250000000069,
+            "native": 0.6372499999999945,
+            "js": 11.46633399999996,
+            "nativePrevious": 0.7512500000000273
+          },
+          {
+            "pair": 10,
+            "order": [
+              "js",
+              "jsCached",
+              "nativePrevious",
+              "jsSummary",
+              "native"
+            ],
+            "js": 8.224124999999958,
+            "jsCached": 3.2958750000000236,
+            "nativePrevious": 0.7661249999999882,
+            "jsSummary": 2.3929580000000215,
+            "native": 0.6756669999999758
+          },
+          {
+            "pair": 11,
+            "order": [
+              "jsCached",
+              "jsSummary",
+              "js",
+              "native",
+              "nativePrevious"
+            ],
+            "jsCached": 2.698833000000036,
+            "jsSummary": 2.459541999999942,
+            "js": 13.225832999999966,
+            "native": 0.6572079999999687,
+            "nativePrevious": 0.6324170000000322
+          },
+          {
+            "pair": 12,
+            "order": [
+              "jsSummary",
+              "native",
+              "jsCached",
+              "nativePrevious",
+              "js"
+            ],
+            "jsSummary": 2.1942920000000186,
+            "native": 0.62337500000001,
+            "jsCached": 2.4922919999999067,
+            "nativePrevious": 0.6282079999999723,
+            "js": 8.512374999999906
+          },
+          {
+            "pair": 13,
+            "order": [
+              "native",
+              "nativePrevious",
+              "jsSummary",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.6606669999999895,
+            "nativePrevious": 0.6344159999999874,
+            "jsSummary": 2.2719580000000406,
+            "js": 12.035458000000062,
+            "jsCached": 2.739334000000099
+          },
+          {
+            "pair": 14,
+            "order": [
+              "nativePrevious",
+              "js",
+              "native",
+              "jsCached",
+              "jsSummary"
+            ],
+            "nativePrevious": 0.6389159999999947,
+            "js": 8.128874999999994,
+            "native": 0.8499580000000151,
+            "jsCached": 2.8447499999999764,
+            "jsSummary": 6.724415999999906
+          },
+          {
+            "pair": 15,
+            "order": [
+              "native",
+              "jsSummary",
+              "nativePrevious",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.6417919999998958,
+            "jsSummary": 2.175875000000019,
+            "nativePrevious": 0.640625,
+            "jsCached": 2.4779170000000477,
+            "js": 8.54216699999995
+          },
+          {
+            "pair": 16,
+            "order": [
+              "nativePrevious",
+              "native",
+              "js",
+              "jsSummary",
+              "jsCached"
+            ],
+            "nativePrevious": 0.6838750000000573,
+            "native": 0.6521660000000793,
+            "js": 12.31595900000002,
+            "jsSummary": 2.18912499999999,
+            "jsCached": 2.5634579999999687
+          },
+          {
+            "pair": 17,
+            "order": [
+              "js",
+              "nativePrevious",
+              "jsCached",
+              "native",
+              "jsSummary"
+            ],
+            "js": 8.13033299999995,
+            "nativePrevious": 0.6674170000000004,
+            "jsCached": 2.572541000000001,
+            "native": 0.6392080000000533,
+            "jsSummary": 2.174417000000062
+          },
+          {
+            "pair": 18,
+            "order": [
+              "jsCached",
+              "js",
+              "jsSummary",
+              "nativePrevious",
+              "native"
+            ],
+            "jsCached": 2.7751670000000104,
+            "js": 23.116209000000026,
+            "jsSummary": 2.569084000000089,
+            "nativePrevious": 0.7235829999999623,
+            "native": 0.699542000000065
+          },
+          {
+            "pair": 19,
+            "order": [
+              "jsSummary",
+              "jsCached",
+              "native",
+              "js",
+              "nativePrevious"
+            ],
+            "jsSummary": 2.7726670000000695,
+            "jsCached": 2.639083000000028,
+            "native": 0.6461249999999836,
+            "js": 8.794083,
+            "nativePrevious": 0.6610419999999522
+          },
+          {
+            "pair": 20,
+            "order": [
+              "js",
+              "jsCached",
+              "nativePrevious",
+              "jsSummary",
+              "native"
+            ],
+            "js": 11.217833000000041,
+            "jsCached": 2.734457999999904,
+            "nativePrevious": 0.8347500000000991,
+            "jsSummary": 2.63312499999995,
+            "native": 0.6474160000000211
+          },
+          {
+            "pair": 21,
+            "order": [
+              "jsCached",
+              "jsSummary",
+              "js",
+              "native",
+              "nativePrevious"
+            ],
+            "jsCached": 3.1416249999999764,
+            "jsSummary": 2.6914580000000115,
+            "js": 13.946958999999993,
+            "native": 0.6514999999999418,
+            "nativePrevious": 0.6307079999999132
+          },
+          {
+            "pair": 22,
+            "order": [
+              "jsSummary",
+              "native",
+              "jsCached",
+              "nativePrevious",
+              "js"
+            ],
+            "jsSummary": 2.1787080000000287,
+            "native": 0.6296250000000327,
+            "jsCached": 2.508583000000044,
+            "nativePrevious": 0.624416999999994,
+            "js": 7.609833999999978
+          },
+          {
+            "pair": 23,
+            "order": [
+              "native",
+              "nativePrevious",
+              "jsSummary",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.6406670000000076,
+            "nativePrevious": 0.6289590000000089,
+            "jsSummary": 2.1835829999999987,
+            "js": 11.269374999999968,
+            "jsCached": 2.46875
+          },
+          {
+            "pair": 24,
+            "order": [
+              "nativePrevious",
+              "js",
+              "native",
+              "jsCached",
+              "jsSummary"
+            ],
+            "nativePrevious": 0.6380410000000438,
+            "js": 8.037292000000093,
+            "native": 0.6654999999999518,
+            "jsCached": 2.8349580000000287,
+            "jsSummary": 2.3737500000000864
+          },
+          {
+            "pair": 25,
+            "order": [
+              "native",
+              "jsSummary",
+              "nativePrevious",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.7050839999999425,
+            "jsSummary": 2.2679580000000215,
+            "nativePrevious": 0.6361250000001064,
+            "jsCached": 6.277790999999979,
+            "js": 8.003375000000005
+          },
+          {
+            "pair": 26,
+            "order": [
+              "nativePrevious",
+              "native",
+              "js",
+              "jsSummary",
+              "jsCached"
+            ],
+            "nativePrevious": 0.7169579999999769,
+            "native": 0.6278330000000096,
+            "js": 7.7811249999999745,
+            "jsSummary": 2.8077500000000555,
+            "jsCached": 7.10445900000002
+          },
+          {
+            "pair": 27,
+            "order": [
+              "js",
+              "nativePrevious",
+              "jsCached",
+              "native",
+              "jsSummary"
+            ],
+            "js": 7.454707999999982,
+            "nativePrevious": 0.6465420000000677,
+            "jsCached": 3.1375419999999394,
+            "native": 0.6516659999999774,
+            "jsSummary": 2.274041000000011
+          },
+          {
+            "pair": 28,
+            "order": [
+              "jsCached",
+              "js",
+              "jsSummary",
+              "nativePrevious",
+              "native"
+            ],
+            "jsCached": 2.4825419999999667,
+            "js": 12.227499999999964,
+            "jsSummary": 2.1318750000000364,
+            "nativePrevious": 0.6539999999999964,
+            "native": 0.6204169999999749
+          },
+          {
+            "pair": 29,
+            "order": [
+              "jsSummary",
+              "jsCached",
+              "native",
+              "js",
+              "nativePrevious"
+            ],
+            "jsSummary": 2.5361669999999776,
+            "jsCached": 2.53774999999996,
+            "native": 0.6462080000000014,
+            "js": 8.523165999999947,
+            "nativePrevious": 0.6441670000000386
+          },
+          {
+            "pair": 30,
+            "order": [
+              "js",
+              "jsCached",
+              "nativePrevious",
+              "jsSummary",
+              "native"
+            ],
+            "js": 11.618166999999971,
+            "jsCached": 3.1615840000000617,
+            "nativePrevious": 0.6581250000000409,
+            "jsSummary": 2.4173749999999927,
+            "native": 0.6353339999999434
+          },
+          {
+            "pair": 31,
+            "order": [
+              "jsCached",
+              "jsSummary",
+              "js",
+              "native",
+              "nativePrevious"
+            ],
+            "jsCached": 2.457791000000043,
+            "jsSummary": 2.0656660000000784,
+            "js": 11.264875000000075,
+            "native": 0.6514579999999341,
+            "nativePrevious": 0.6231250000000728
+          },
+          {
+            "pair": 32,
+            "order": [
+              "jsSummary",
+              "native",
+              "jsCached",
+              "nativePrevious",
+              "js"
+            ],
+            "jsSummary": 2.093458000000055,
+            "native": 0.5937920000000076,
+            "jsCached": 2.4107079999999996,
+            "nativePrevious": 0.6029159999999365,
+            "js": 8.439707999999996
+          },
+          {
+            "pair": 33,
+            "order": [
+              "native",
+              "nativePrevious",
+              "jsSummary",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.6567500000001019,
+            "nativePrevious": 0.6331250000000637,
+            "jsSummary": 2.1736249999999018,
+            "js": 12.552417000000105,
+            "jsCached": 2.53066600000011
+          },
+          {
+            "pair": 34,
+            "order": [
+              "nativePrevious",
+              "js",
+              "native",
+              "jsCached",
+              "jsSummary"
+            ],
+            "nativePrevious": 0.6662499999999909,
+            "js": 7.723874999999907,
+            "native": 0.636209000000008,
+            "jsCached": 3.096708000000035,
+            "jsSummary": 2.1587500000000546
+          },
+          {
+            "pair": 35,
+            "order": [
+              "native",
+              "jsSummary",
+              "nativePrevious",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.726041000000123,
+            "jsSummary": 2.3320420000000013,
+            "nativePrevious": 0.6440829999999096,
+            "jsCached": 6.456250000000182,
+            "js": 8.485666000000037
+          },
+          {
+            "pair": 36,
+            "order": [
+              "nativePrevious",
+              "native",
+              "js",
+              "jsSummary",
+              "jsCached"
+            ],
+            "nativePrevious": 0.7166250000000218,
+            "native": 0.6207090000000335,
+            "js": 7.93645800000013,
+            "jsSummary": 2.603166999999985,
+            "jsCached": 6.023458000000119
+          },
+          {
+            "pair": 37,
+            "order": [
+              "js",
+              "nativePrevious",
+              "jsCached",
+              "native",
+              "jsSummary"
+            ],
+            "js": 8.064333000000033,
+            "nativePrevious": 0.635332999999946,
+            "jsCached": 2.9500409999998283,
+            "native": 0.6612499999998818,
+            "jsSummary": 2.139458999999988
+          },
+          {
+            "pair": 38,
+            "order": [
+              "jsCached",
+              "js",
+              "jsSummary",
+              "nativePrevious",
+              "native"
+            ],
+            "jsCached": 2.4700840000000426,
+            "js": 23.727666,
+            "jsSummary": 2.7609580000000733,
+            "nativePrevious": 0.715125000000171,
+            "native": 0.6640420000001086
+          },
+          {
+            "pair": 39,
+            "order": [
+              "jsSummary",
+              "jsCached",
+              "native",
+              "js",
+              "nativePrevious"
+            ],
+            "jsSummary": 2.3972919999998794,
+            "jsCached": 3.095542000000023,
+            "native": 0.69074999999998,
+            "js": 9.528332999999975,
+            "nativePrevious": 0.6868339999998625
+          }
+        ]
+      }
+    },
+    {
+      "id": "retail",
+      "source": ".codex-tmp/rust-analysis/binding-summary-retail-timed.json",
+      "sourceFileSha256": "16aa45e571e636103c7a05c86037ca2e6b8372b666a83d5c29d4474dd073ba05",
+      "report": {
+        "schemaVersion": 2,
+        "scope": "Captured normalized expression analysis only; excludes template normalization, loop merging, manifest generation and complete compilation.",
+        "inputSha256": "8a75bcc58068405f89d83b6023b9eeef32688258eba0832dfa0ab936dce9931c",
+        "sourceSha256": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+        "bindingSha256": "2df6012109fe24c713d1f4baa4016c3c1ee658cf33433c1fa8a022207fda09b8",
+        "previousBindingSha256": "42897b07327ac65a6f489d692d0eb90a33c76b416bed984d442473a1f926f42c",
+        "inputCount": 64,
+        "uniqueInputs": 53,
+        "uniqueExpressions": 53,
+        "nativeCallsPerBatch": 1,
+        "failures": [],
+        "environment": {
+          "node": "v24.18.0",
+          "platform": "darwin",
+          "arch": "arm64",
+          "cpus": 16,
+          "startedAt": "2026-10-04T09:44:55.119Z",
+          "finishedAt": "2026-10-04T09:44:55.295Z",
+          "initialLoad": [
+            21.97705078125,
+            40.9404296875,
+            53.29150390625
+          ],
+          "finalLoad": [
+            21.97705078125,
+            40.9404296875,
+            53.29150390625
+          ]
+        },
+        "warmupCycles": 6,
+        "orderPeriod": 10,
+        "completedOrderCycles": 4,
+        "orderRemainder": 0,
+        "fullyBalanced": true,
+        "measured": {
+          "js": {
+            "p50": 0.93587500000001,
+            "p95": 2.5505830000000174
+          },
+          "jsCached": {
+            "p50": 0.7657080000000178,
+            "p95": 1.6047499999999957
+          },
+          "jsSummary": {
+            "p50": 0.839917000000014,
+            "p95": 1.660250000000019
+          },
+          "native": {
+            "p50": 0.17845900000003212,
+            "p95": 0.22191600000002154
+          },
+          "nativePrevious": {
+            "p50": 0.1711249999999609,
+            "p95": 0.213374999999985
+          }
+        },
+        "samples": [
+          {
+            "pair": 0,
+            "order": [
+              "js",
+              "jsCached",
+              "nativePrevious",
+              "jsSummary",
+              "native"
+            ],
+            "js": 1.7332079999999905,
+            "jsCached": 1.1875410000000102,
+            "nativePrevious": 0.19366700000000492,
+            "jsSummary": 1.0613329999999905,
+            "native": 0.19779199999999264
+          },
+          {
+            "pair": 1,
+            "order": [
+              "jsCached",
+              "jsSummary",
+              "js",
+              "native",
+              "nativePrevious"
+            ],
+            "jsCached": 1.0880000000000223,
+            "jsSummary": 1.0715419999999938,
+            "js": 2.5505830000000174,
+            "native": 0.21204099999999926,
+            "nativePrevious": 0.17900000000000205
+          },
+          {
+            "pair": 2,
+            "order": [
+              "jsSummary",
+              "native",
+              "jsCached",
+              "nativePrevious",
+              "js"
+            ],
+            "jsSummary": 0.8934999999999889,
+            "native": 0.17737500000001205,
+            "jsCached": 0.7631660000000124,
+            "nativePrevious": 0.15874999999999773,
+            "js": 0.8345839999999782
+          },
+          {
+            "pair": 3,
+            "order": [
+              "native",
+              "nativePrevious",
+              "jsSummary",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.1646250000000009,
+            "nativePrevious": 0.14004100000002495,
+            "jsSummary": 0.8293749999999989,
+            "js": 0.9666659999999752,
+            "jsCached": 0.9057090000000017
+          },
+          {
+            "pair": 4,
+            "order": [
+              "nativePrevious",
+              "js",
+              "native",
+              "jsCached",
+              "jsSummary"
+            ],
+            "nativePrevious": 0.2925419999999974,
+            "js": 1.537415999999979,
+            "native": 0.33250000000001023,
+            "jsCached": 1.6047499999999957,
+            "jsSummary": 0.9278339999999901
+          },
+          {
+            "pair": 5,
+            "order": [
+              "native",
+              "jsSummary",
+              "nativePrevious",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.18274999999999864,
+            "jsSummary": 0.9086670000000083,
+            "nativePrevious": 0.17683300000001623,
+            "jsCached": 0.9591669999999795,
+            "js": 0.9897919999999942
+          },
+          {
+            "pair": 6,
+            "order": [
+              "nativePrevious",
+              "native",
+              "js",
+              "jsSummary",
+              "jsCached"
+            ],
+            "nativePrevious": 0.1599999999999966,
+            "native": 0.17312499999999886,
+            "js": 1.0013330000000167,
+            "jsSummary": 4.042459000000008,
+            "jsCached": 0.7755829999999833
+          },
+          {
+            "pair": 7,
+            "order": [
+              "js",
+              "nativePrevious",
+              "jsCached",
+              "native",
+              "jsSummary"
+            ],
+            "js": 1.1299579999999878,
+            "nativePrevious": 0.19629199999997127,
+            "jsCached": 1.2585409999999797,
+            "native": 0.21320800000000872,
+            "jsSummary": 1.2559999999999718
+          },
+          {
+            "pair": 8,
+            "order": [
+              "jsCached",
+              "js",
+              "jsSummary",
+              "nativePrevious",
+              "native"
+            ],
+            "jsCached": 0.7429159999999797,
+            "js": 1.1789999999999736,
+            "jsSummary": 0.7640840000000253,
+            "nativePrevious": 0.18654199999997445,
+            "native": 0.1951670000000263
+          },
+          {
+            "pair": 9,
+            "order": [
+              "jsSummary",
+              "jsCached",
+              "native",
+              "js",
+              "nativePrevious"
+            ],
+            "jsSummary": 1.660250000000019,
+            "jsCached": 0.7591669999999908,
+            "native": 0.19595799999996188,
+            "js": 1.135041000000001,
+            "nativePrevious": 0.20241699999996854
+          },
+          {
+            "pair": 10,
+            "order": [
+              "js",
+              "jsCached",
+              "nativePrevious",
+              "jsSummary",
+              "native"
+            ],
+            "js": 0.8482500000000073,
+            "jsCached": 0.7087920000000167,
+            "nativePrevious": 0.16474999999996953,
+            "jsSummary": 0.7394999999999641,
+            "native": 0.1981670000000122
+          },
+          {
+            "pair": 11,
+            "order": [
+              "jsCached",
+              "jsSummary",
+              "js",
+              "native",
+              "nativePrevious"
+            ],
+            "jsCached": 4.348042000000021,
+            "jsSummary": 1.4449999999999932,
+            "js": 0.9495000000000005,
+            "native": 0.21295800000001464,
+            "nativePrevious": 0.1804159999999797
+          },
+          {
+            "pair": 12,
+            "order": [
+              "jsSummary",
+              "native",
+              "jsCached",
+              "nativePrevious",
+              "js"
+            ],
+            "jsSummary": 0.7806249999999864,
+            "native": 0.1657910000000129,
+            "jsCached": 0.697749999999985,
+            "nativePrevious": 0.15237500000000637,
+            "js": 0.7827079999999569
+          },
+          {
+            "pair": 13,
+            "order": [
+              "native",
+              "nativePrevious",
+              "jsSummary",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.15716700000001538,
+            "nativePrevious": 0.13691699999998264,
+            "jsSummary": 0.7287080000000401,
+            "js": 0.789291999999989,
+            "jsCached": 0.6963329999999814
+          },
+          {
+            "pair": 14,
+            "order": [
+              "nativePrevious",
+              "js",
+              "native",
+              "jsCached",
+              "jsSummary"
+            ],
+            "nativePrevious": 0.14404100000001563,
+            "js": 0.7864999999999895,
+            "native": 0.16258400000003803,
+            "jsCached": 0.7108750000000441,
+            "jsSummary": 0.7404579999999896
+          },
+          {
+            "pair": 15,
+            "order": [
+              "native",
+              "jsSummary",
+              "nativePrevious",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.15029200000003584,
+            "jsSummary": 1.1197500000000105,
+            "nativePrevious": 0.17700000000002092,
+            "jsCached": 0.7657080000000178,
+            "js": 0.8632499999999936
+          },
+          {
+            "pair": 16,
+            "order": [
+              "nativePrevious",
+              "native",
+              "js",
+              "jsSummary",
+              "jsCached"
+            ],
+            "nativePrevious": 0.15554099999997106,
+            "native": 0.18137500000000273,
+            "js": 1.0433330000000183,
+            "jsSummary": 0.8821250000000305,
+            "jsCached": 0.8509159999999838
+          },
+          {
+            "pair": 17,
+            "order": [
+              "js",
+              "nativePrevious",
+              "jsCached",
+              "native",
+              "jsSummary"
+            ],
+            "js": 1.0409170000000358,
+            "nativePrevious": 0.27549999999996544,
+            "jsCached": 1.0592919999999708,
+            "native": 0.21754199999998036,
+            "jsSummary": 0.9440830000000346
+          },
+          {
+            "pair": 18,
+            "order": [
+              "jsCached",
+              "js",
+              "jsSummary",
+              "nativePrevious",
+              "native"
+            ],
+            "jsCached": 0.8758339999999976,
+            "js": 0.9796249999999986,
+            "jsSummary": 0.9734170000000404,
+            "nativePrevious": 0.18495799999999463,
+            "native": 0.17591700000002675
+          },
+          {
+            "pair": 19,
+            "order": [
+              "jsSummary",
+              "jsCached",
+              "native",
+              "js",
+              "nativePrevious"
+            ],
+            "jsSummary": 0.8817909999999642,
+            "jsCached": 0.8236249999999927,
+            "native": 0.1633340000000203,
+            "js": 0.9421250000000327,
+            "nativePrevious": 0.16825000000000045
+          },
+          {
+            "pair": 20,
+            "order": [
+              "js",
+              "jsCached",
+              "nativePrevious",
+              "jsSummary",
+              "native"
+            ],
+            "js": 0.9437080000000151,
+            "jsCached": 1.0591670000000022,
+            "nativePrevious": 0.18337499999995543,
+            "jsSummary": 1.0397499999999695,
+            "native": 0.16712499999999864
+          },
+          {
+            "pair": 21,
+            "order": [
+              "jsCached",
+              "jsSummary",
+              "js",
+              "native",
+              "nativePrevious"
+            ],
+            "jsCached": 0.8470419999999876,
+            "jsSummary": 0.9468749999999773,
+            "js": 0.926208000000031,
+            "native": 0.15899999999999181,
+            "nativePrevious": 0.14970799999997553
+          },
+          {
+            "pair": 22,
+            "order": [
+              "jsSummary",
+              "native",
+              "jsCached",
+              "nativePrevious",
+              "js"
+            ],
+            "jsSummary": 5.087499999999977,
+            "native": 0.22191600000002154,
+            "jsCached": 1.3595409999999788,
+            "nativePrevious": 0.18133399999999256,
+            "js": 3.733957999999973
+          },
+          {
+            "pair": 23,
+            "order": [
+              "native",
+              "nativePrevious",
+              "jsSummary",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.20874999999995225,
+            "nativePrevious": 0.16024999999996226,
+            "jsSummary": 0.784958999999958,
+            "js": 1.3005420000000072,
+            "jsCached": 0.727374999999995
+          },
+          {
+            "pair": 24,
+            "order": [
+              "nativePrevious",
+              "js",
+              "native",
+              "jsCached",
+              "jsSummary"
+            ],
+            "nativePrevious": 0.1745000000000232,
+            "js": 0.8064170000000104,
+            "native": 0.18029200000000856,
+            "jsCached": 0.6688749999999573,
+            "jsSummary": 0.7004579999999692
+          },
+          {
+            "pair": 25,
+            "order": [
+              "native",
+              "jsSummary",
+              "nativePrevious",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.1518750000000182,
+            "jsSummary": 0.7207500000000095,
+            "nativePrevious": 0.14966699999996536,
+            "jsCached": 1.1420830000000137,
+            "js": 0.8993340000000103
+          },
+          {
+            "pair": 26,
+            "order": [
+              "nativePrevious",
+              "native",
+              "js",
+              "jsSummary",
+              "jsCached"
+            ],
+            "nativePrevious": 0.2044159999999806,
+            "native": 0.19600000000002638,
+            "js": 1.0426669999999945,
+            "jsSummary": 0.738207999999986,
+            "jsCached": 0.7006670000000099
+          },
+          {
+            "pair": 27,
+            "order": [
+              "js",
+              "nativePrevious",
+              "jsCached",
+              "native",
+              "jsSummary"
+            ],
+            "js": 0.7858750000000327,
+            "nativePrevious": 0.1711249999999609,
+            "jsCached": 0.6793749999999932,
+            "native": 0.1776659999999879,
+            "jsSummary": 0.7170419999999922
+          },
+          {
+            "pair": 28,
+            "order": [
+              "jsCached",
+              "js",
+              "jsSummary",
+              "nativePrevious",
+              "native"
+            ],
+            "jsCached": 0.6523750000000064,
+            "js": 0.7457499999999868,
+            "jsSummary": 0.6905419999999935,
+            "nativePrevious": 0.15037499999999682,
+            "native": 0.15883400000001302
+          },
+          {
+            "pair": 29,
+            "order": [
+              "jsSummary",
+              "jsCached",
+              "native",
+              "js",
+              "nativePrevious"
+            ],
+            "jsSummary": 0.689707999999996,
+            "jsCached": 0.6746669999999995,
+            "native": 0.16991700000005494,
+            "js": 0.7504579999999805,
+            "nativePrevious": 0.14145800000000008
+          },
+          {
+            "pair": 30,
+            "order": [
+              "js",
+              "jsCached",
+              "nativePrevious",
+              "jsSummary",
+              "native"
+            ],
+            "js": 0.93587500000001,
+            "jsCached": 0.93587500000001,
+            "nativePrevious": 0.15687500000001364,
+            "jsSummary": 0.7285840000000121,
+            "native": 0.17895800000002282
+          },
+          {
+            "pair": 31,
+            "order": [
+              "jsCached",
+              "jsSummary",
+              "js",
+              "native",
+              "nativePrevious"
+            ],
+            "jsCached": 0.6812920000000418,
+            "jsSummary": 0.7325420000000236,
+            "js": 2.5739169999999945,
+            "native": 0.22929199999998673,
+            "nativePrevious": 0.174082999999996
+          },
+          {
+            "pair": 32,
+            "order": [
+              "jsSummary",
+              "native",
+              "jsCached",
+              "nativePrevious",
+              "js"
+            ],
+            "jsSummary": 0.866375000000005,
+            "native": 0.17074999999999818,
+            "jsCached": 0.7388750000000073,
+            "nativePrevious": 0.1599170000000072,
+            "js": 0.7885830000000169
+          },
+          {
+            "pair": 33,
+            "order": [
+              "native",
+              "nativePrevious",
+              "jsSummary",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.1615419999999972,
+            "nativePrevious": 0.13812500000000227,
+            "jsSummary": 0.7059159999999451,
+            "js": 0.9250000000000114,
+            "jsCached": 0.7461660000000165
+          },
+          {
+            "pair": 34,
+            "order": [
+              "nativePrevious",
+              "js",
+              "native",
+              "jsCached",
+              "jsSummary"
+            ],
+            "nativePrevious": 0.18620899999996254,
+            "js": 0.8991250000000264,
+            "native": 0.18637499999999818,
+            "jsCached": 0.6791670000000067,
+            "jsSummary": 0.7063339999999698
+          },
+          {
+            "pair": 35,
+            "order": [
+              "native",
+              "jsSummary",
+              "nativePrevious",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.17845900000003212,
+            "jsSummary": 0.7403749999999718,
+            "nativePrevious": 0.15874999999999773,
+            "jsCached": 3.0560420000000477,
+            "js": 0.7489160000000084
+          },
+          {
+            "pair": 36,
+            "order": [
+              "nativePrevious",
+              "native",
+              "js",
+              "jsSummary",
+              "jsCached"
+            ],
+            "nativePrevious": 0.16637499999995953,
+            "native": 0.17337500000002137,
+            "js": 0.7461250000000064,
+            "jsSummary": 1.1850000000000023,
+            "jsCached": 0.759791000000007
+          },
+          {
+            "pair": 37,
+            "order": [
+              "js",
+              "nativePrevious",
+              "jsCached",
+              "native",
+              "jsSummary"
+            ],
+            "js": 0.7999999999999545,
+            "nativePrevious": 0.213374999999985,
+            "jsCached": 0.6952500000000441,
+            "native": 0.20845800000000736,
+            "jsSummary": 0.839917000000014
+          },
+          {
+            "pair": 38,
+            "order": [
+              "jsCached",
+              "js",
+              "jsSummary",
+              "nativePrevious",
+              "native"
+            ],
+            "jsCached": 0.8153749999999604,
+            "js": 0.943834000000038,
+            "jsSummary": 0.8251670000000217,
+            "nativePrevious": 0.17433299999999008,
+            "native": 0.18129099999998743
+          },
+          {
+            "pair": 39,
+            "order": [
+              "jsSummary",
+              "jsCached",
+              "native",
+              "js",
+              "nativePrevious"
+            ],
+            "jsSummary": 0.8580410000000143,
+            "jsCached": 0.828125,
+            "native": 0.1679589999999962,
+            "js": 0.888917000000049,
+            "nativePrevious": 0.20320800000001782
+          }
+        ]
+      }
+    },
+    {
+      "id": "wevu",
+      "source": ".codex-tmp/rust-analysis/binding-summary-wevu-timed.json",
+      "sourceFileSha256": "6851351a5949bec85ba202e17fdc06586425c5ac65fd62f7874395f91ab677d9",
+      "report": {
+        "schemaVersion": 2,
+        "scope": "Captured normalized expression analysis only; excludes template normalization, loop merging, manifest generation and complete compilation.",
+        "inputSha256": "ec82fad4af8e9ad0f20bd6de9480de96203a3a9fec177570abd03d5221ff4cd7",
+        "sourceSha256": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+        "bindingSha256": "2df6012109fe24c713d1f4baa4016c3c1ee658cf33433c1fa8a022207fda09b8",
+        "previousBindingSha256": "42897b07327ac65a6f489d692d0eb90a33c76b416bed984d442473a1f926f42c",
+        "inputCount": 34,
+        "uniqueInputs": 19,
+        "uniqueExpressions": 19,
+        "nativeCallsPerBatch": 1,
+        "failures": [],
+        "environment": {
+          "node": "v24.18.0",
+          "platform": "darwin",
+          "arch": "arm64",
+          "cpus": 16,
+          "startedAt": "2026-10-04T09:44:55.696Z",
+          "finishedAt": "2026-10-04T09:44:55.803Z",
+          "initialLoad": [
+            21.09765625,
+            40.443359375,
+            53.04345703125
+          ],
+          "finalLoad": [
+            21.09765625,
+            40.443359375,
+            53.04345703125
+          ]
+        },
+        "warmupCycles": 6,
+        "orderPeriod": 10,
+        "completedOrderCycles": 4,
+        "orderRemainder": 0,
+        "fullyBalanced": true,
+        "measured": {
+          "js": {
+            "p50": 0.5385830000000169,
+            "p95": 3.283999999999992
+          },
+          "jsCached": {
+            "p50": 0.3406659999999988,
+            "p95": 0.5528750000000002
+          },
+          "jsSummary": {
+            "p50": 0.3709580000000017,
+            "p95": 0.6283339999999953
+          },
+          "native": {
+            "p50": 0.09125000000000227,
+            "p95": 0.14254099999999426
+          },
+          "nativePrevious": {
+            "p50": 0.07970900000000825,
+            "p95": 0.11341700000002675
+          }
+        },
+        "samples": [
+          {
+            "pair": 0,
+            "order": [
+              "js",
+              "jsCached",
+              "nativePrevious",
+              "jsSummary",
+              "native"
+            ],
+            "js": 1.5902080000000183,
+            "jsCached": 0.44120800000001736,
+            "nativePrevious": 0.11341700000002675,
+            "jsSummary": 0.4932089999999789,
+            "native": 0.14254099999999426
+          },
+          {
+            "pair": 1,
+            "order": [
+              "jsCached",
+              "jsSummary",
+              "js",
+              "native",
+              "nativePrevious"
+            ],
+            "jsCached": 0.42349999999999,
+            "jsSummary": 0.6090420000000165,
+            "js": 0.5775839999999732,
+            "native": 0.1062080000000094,
+            "nativePrevious": 0.09304199999999696
+          },
+          {
+            "pair": 2,
+            "order": [
+              "jsSummary",
+              "native",
+              "jsCached",
+              "nativePrevious",
+              "js"
+            ],
+            "jsSummary": 0.42591600000000085,
+            "native": 0.08270799999999667,
+            "jsCached": 0.4511669999999981,
+            "nativePrevious": 0.07420799999999872,
+            "js": 4.125459000000006
+          },
+          {
+            "pair": 3,
+            "order": [
+              "native",
+              "nativePrevious",
+              "jsSummary",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.12162499999999454,
+            "nativePrevious": 0.09495900000001711,
+            "jsSummary": 0.43166700000000446,
+            "js": 0.5832080000000133,
+            "jsCached": 0.38741600000000176
+          },
+          {
+            "pair": 4,
+            "order": [
+              "nativePrevious",
+              "js",
+              "native",
+              "jsCached",
+              "jsSummary"
+            ],
+            "nativePrevious": 0.08570900000000847,
+            "js": 0.528125000000017,
+            "native": 0.09454099999999244,
+            "jsCached": 0.3238749999999868,
+            "jsSummary": 0.3456250000000125
+          },
+          {
+            "pair": 5,
+            "order": [
+              "native",
+              "jsSummary",
+              "nativePrevious",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.07775000000000887,
+            "jsSummary": 0.3385409999999922,
+            "nativePrevious": 0.07399999999998386,
+            "jsCached": 0.33654200000000856,
+            "js": 0.5168329999999912
+          },
+          {
+            "pair": 6,
+            "order": [
+              "nativePrevious",
+              "native",
+              "js",
+              "jsSummary",
+              "jsCached"
+            ],
+            "nativePrevious": 0.06845900000001848,
+            "native": 0.08683400000001029,
+            "js": 0.5337079999999901,
+            "jsSummary": 0.3529999999999802,
+            "jsCached": 0.32358399999998255
+          },
+          {
+            "pair": 7,
+            "order": [
+              "js",
+              "nativePrevious",
+              "jsCached",
+              "native",
+              "jsSummary"
+            ],
+            "js": 0.5421659999999804,
+            "nativePrevious": 0.07699999999999818,
+            "jsCached": 0.5528750000000002,
+            "native": 0.11166600000001381,
+            "jsSummary": 0.4732089999999971
+          },
+          {
+            "pair": 8,
+            "order": [
+              "jsCached",
+              "js",
+              "jsSummary",
+              "nativePrevious",
+              "native"
+            ],
+            "jsCached": 0.4165830000000028,
+            "js": 2.1745839999999816,
+            "jsSummary": 0.4872919999999965,
+            "nativePrevious": 0.13195899999999483,
+            "native": 0.11070800000001668
+          },
+          {
+            "pair": 9,
+            "order": [
+              "jsSummary",
+              "jsCached",
+              "native",
+              "js",
+              "nativePrevious"
+            ],
+            "jsSummary": 0.48425000000000296,
+            "jsCached": 0.3878750000000082,
+            "native": 0.12154099999997925,
+            "js": 0.6221670000000188,
+            "nativePrevious": 0.08487500000001091
+          },
+          {
+            "pair": 10,
+            "order": [
+              "js",
+              "jsCached",
+              "nativePrevious",
+              "jsSummary",
+              "native"
+            ],
+            "js": 0.6152079999999955,
+            "jsCached": 0.40691699999999287,
+            "nativePrevious": 0.07345800000001645,
+            "jsSummary": 0.4302500000000009,
+            "native": 0.09125000000000227
+          },
+          {
+            "pair": 11,
+            "order": [
+              "jsCached",
+              "jsSummary",
+              "js",
+              "native",
+              "nativePrevious"
+            ],
+            "jsCached": 0.38879199999999514,
+            "jsSummary": 0.39449999999999363,
+            "js": 0.8654999999999973,
+            "native": 0.1200409999999863,
+            "nativePrevious": 0.07495799999998098
+          },
+          {
+            "pair": 12,
+            "order": [
+              "jsSummary",
+              "native",
+              "jsCached",
+              "nativePrevious",
+              "js"
+            ],
+            "jsSummary": 0.4300839999999937,
+            "native": 0.07508300000000645,
+            "jsCached": 0.3747499999999775,
+            "nativePrevious": 0.06825000000000614,
+            "js": 3.283999999999992
+          },
+          {
+            "pair": 13,
+            "order": [
+              "native",
+              "nativePrevious",
+              "jsSummary",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.1251659999999788,
+            "nativePrevious": 0.09549999999998704,
+            "jsSummary": 0.3602499999999793,
+            "js": 0.4988749999999982,
+            "jsCached": 0.3021669999999972
+          },
+          {
+            "pair": 14,
+            "order": [
+              "nativePrevious",
+              "js",
+              "native",
+              "jsCached",
+              "jsSummary"
+            ],
+            "nativePrevious": 0.07970900000000825,
+            "js": 0.47212500000000546,
+            "native": 0.09033400000001279,
+            "jsCached": 0.2959160000000054,
+            "jsSummary": 0.5049579999999878
+          },
+          {
+            "pair": 15,
+            "order": [
+              "native",
+              "jsSummary",
+              "nativePrevious",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.24458300000000577,
+            "jsSummary": 0.8482500000000073,
+            "nativePrevious": 0.10737500000001887,
+            "jsCached": 1.2724170000000186,
+            "js": 0.5853329999999914
+          },
+          {
+            "pair": 16,
+            "order": [
+              "nativePrevious",
+              "native",
+              "js",
+              "jsSummary",
+              "jsCached"
+            ],
+            "nativePrevious": 0.10720900000001166,
+            "native": 0.09950000000000614,
+            "js": 0.5457920000000058,
+            "jsSummary": 0.40441699999999514,
+            "jsCached": 0.4426250000000209
+          },
+          {
+            "pair": 17,
+            "order": [
+              "js",
+              "nativePrevious",
+              "jsCached",
+              "native",
+              "jsSummary"
+            ],
+            "js": 0.5423749999999927,
+            "nativePrevious": 0.09220899999999688,
+            "jsCached": 0.3410829999999976,
+            "native": 0.10266699999999673,
+            "jsSummary": 0.35941600000001017
+          },
+          {
+            "pair": 18,
+            "order": [
+              "jsCached",
+              "js",
+              "jsSummary",
+              "nativePrevious",
+              "native"
+            ],
+            "jsCached": 0.34654199999999946,
+            "js": 0.6235420000000147,
+            "jsSummary": 0.3709580000000017,
+            "nativePrevious": 0.08308300000001623,
+            "native": 0.0846249999999884
+          },
+          {
+            "pair": 19,
+            "order": [
+              "jsSummary",
+              "jsCached",
+              "native",
+              "js",
+              "nativePrevious"
+            ],
+            "jsSummary": 0.37254100000001245,
+            "jsCached": 0.37412499999999227,
+            "native": 0.07800000000000296,
+            "js": 0.5273750000000064,
+            "nativePrevious": 0.07379200000002584
+          },
+          {
+            "pair": 20,
+            "order": [
+              "js",
+              "jsCached",
+              "nativePrevious",
+              "jsSummary",
+              "native"
+            ],
+            "js": 0.5559170000000222,
+            "jsCached": 0.35162500000001273,
+            "nativePrevious": 0.07200000000000273,
+            "jsSummary": 0.3462079999999901,
+            "native": 0.08354099999999676
+          },
+          {
+            "pair": 21,
+            "order": [
+              "jsCached",
+              "jsSummary",
+              "js",
+              "native",
+              "nativePrevious"
+            ],
+            "jsCached": 0.3285840000000064,
+            "jsSummary": 0.3527909999999963,
+            "js": 0.5262500000000045,
+            "native": 0.07970800000001077,
+            "nativePrevious": 0.070083000000011
+          },
+          {
+            "pair": 22,
+            "order": [
+              "jsSummary",
+              "native",
+              "jsCached",
+              "nativePrevious",
+              "js"
+            ],
+            "jsSummary": 0.37554099999999835,
+            "native": 0.07137500000001751,
+            "jsCached": 0.3406659999999988,
+            "nativePrevious": 0.06420900000000529,
+            "js": 2.9086250000000007
+          },
+          {
+            "pair": 23,
+            "order": [
+              "native",
+              "nativePrevious",
+              "jsSummary",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.14012500000001182,
+            "nativePrevious": 0.10533299999997325,
+            "jsSummary": 0.43262499999997317,
+            "js": 0.49099999999998545,
+            "jsCached": 0.319417000000044
+          },
+          {
+            "pair": 24,
+            "order": [
+              "nativePrevious",
+              "js",
+              "native",
+              "jsCached",
+              "jsSummary"
+            ],
+            "nativePrevious": 0.07841600000000426,
+            "js": 0.9900829999999701,
+            "native": 0.12175000000002001,
+            "jsCached": 0.66700000000003,
+            "jsSummary": 0.4329169999999749
+          },
+          {
+            "pair": 25,
+            "order": [
+              "native",
+              "jsSummary",
+              "nativePrevious",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.15200000000004366,
+            "jsSummary": 0.4141670000000204,
+            "nativePrevious": 0.40462499999995316,
+            "jsCached": 0.36099999999999,
+            "js": 0.5385830000000169
+          },
+          {
+            "pair": 26,
+            "order": [
+              "nativePrevious",
+              "native",
+              "js",
+              "jsSummary",
+              "jsCached"
+            ],
+            "nativePrevious": 0.10670900000002348,
+            "native": 0.12412499999999227,
+            "js": 0.9007500000000164,
+            "jsSummary": 0.34362499999997453,
+            "jsCached": 0.3195830000000228
+          },
+          {
+            "pair": 27,
+            "order": [
+              "js",
+              "nativePrevious",
+              "jsCached",
+              "native",
+              "jsSummary"
+            ],
+            "js": 0.47966699999994944,
+            "nativePrevious": 0.10712499999999636,
+            "jsCached": 0.29704199999997627,
+            "native": 0.10808399999996254,
+            "jsSummary": 0.31495899999998755
+          },
+          {
+            "pair": 28,
+            "order": [
+              "jsCached",
+              "js",
+              "jsSummary",
+              "nativePrevious",
+              "native"
+            ],
+            "jsCached": 0.2933750000000259,
+            "js": 0.4484160000000088,
+            "jsSummary": 0.30649999999997135,
+            "nativePrevious": 0.08237500000001319,
+            "native": 0.08800000000002228
+          },
+          {
+            "pair": 29,
+            "order": [
+              "jsSummary",
+              "jsCached",
+              "native",
+              "js",
+              "nativePrevious"
+            ],
+            "jsSummary": 0.2983750000000214,
+            "jsCached": 0.2804169999999999,
+            "native": 0.0892090000000394,
+            "js": 0.4541250000000332,
+            "nativePrevious": 0.068916999999999
+          },
+          {
+            "pair": 30,
+            "order": [
+              "js",
+              "jsCached",
+              "nativePrevious",
+              "jsSummary",
+              "native"
+            ],
+            "js": 0.44641699999999673,
+            "jsCached": 0.2810000000000059,
+            "nativePrevious": 0.06304099999999835,
+            "jsSummary": 0.8134170000000154,
+            "native": 0.08370800000000145
+          },
+          {
+            "pair": 31,
+            "order": [
+              "jsCached",
+              "jsSummary",
+              "js",
+              "native",
+              "nativePrevious"
+            ],
+            "jsCached": 0.2864169999999717,
+            "jsSummary": 0.29025000000001455,
+            "js": 0.4482919999999808,
+            "native": 0.07229200000000446,
+            "nativePrevious": 0.06258300000001782
+          },
+          {
+            "pair": 32,
+            "order": [
+              "jsSummary",
+              "native",
+              "jsCached",
+              "nativePrevious",
+              "js"
+            ],
+            "jsSummary": 0.29904200000004266,
+            "native": 0.068458000000021,
+            "jsCached": 0.29512499999998454,
+            "nativePrevious": 0.06012500000002774,
+            "js": 0.5099999999999909
+          },
+          {
+            "pair": 33,
+            "order": [
+              "native",
+              "nativePrevious",
+              "jsSummary",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.07079099999998562,
+            "nativePrevious": 0.0605419999999981,
+            "jsSummary": 0.341083000000026,
+            "js": 4.330832999999984,
+            "jsCached": 0.30512499999997544
+          },
+          {
+            "pair": 34,
+            "order": [
+              "nativePrevious",
+              "js",
+              "native",
+              "jsCached",
+              "jsSummary"
+            ],
+            "nativePrevious": 0.0976660000000038,
+            "js": 0.4485000000000241,
+            "native": 0.09304200000002538,
+            "jsCached": 0.290958000000046,
+            "jsSummary": 0.31091700000001765
+          },
+          {
+            "pair": 35,
+            "order": [
+              "native",
+              "jsSummary",
+              "nativePrevious",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.08095900000000711,
+            "jsSummary": 0.31575000000003683,
+            "nativePrevious": 0.07304199999998673,
+            "jsCached": 0.2975420000000213,
+            "js": 0.46870799999999235
+          },
+          {
+            "pair": 36,
+            "order": [
+              "nativePrevious",
+              "native",
+              "js",
+              "jsSummary",
+              "jsCached"
+            ],
+            "nativePrevious": 0.06299999999998818,
+            "native": 0.07016700000002629,
+            "js": 0.4456250000000068,
+            "jsSummary": 0.29270800000000463,
+            "jsCached": 0.476791999999989
+          },
+          {
+            "pair": 37,
+            "order": [
+              "js",
+              "nativePrevious",
+              "jsCached",
+              "native",
+              "jsSummary"
+            ],
+            "js": 0.5077080000000365,
+            "nativePrevious": 0.09558300000003328,
+            "jsCached": 0.31220899999999574,
+            "native": 0.10687499999994543,
+            "jsSummary": 0.31454199999996035
+          },
+          {
+            "pair": 38,
+            "order": [
+              "jsCached",
+              "js",
+              "jsSummary",
+              "nativePrevious",
+              "native"
+            ],
+            "jsCached": 0.41754200000002584,
+            "js": 0.5430410000000165,
+            "jsSummary": 0.3596249999999941,
+            "nativePrevious": 0.09749999999996817,
+            "native": 0.09679199999999355
+          },
+          {
+            "pair": 39,
+            "order": [
+              "jsSummary",
+              "jsCached",
+              "native",
+              "js",
+              "nativePrevious"
+            ],
+            "jsSummary": 0.6283339999999953,
+            "jsCached": 0.33579199999996945,
+            "native": 0.0906659999999988,
+            "js": 0.45770900000002257,
+            "nativePrevious": 0.08062499999999773
+          }
+        ]
+      }
+    }
+  ]
+}

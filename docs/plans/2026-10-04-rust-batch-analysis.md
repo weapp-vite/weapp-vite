@@ -224,3 +224,23 @@ debug/release 绑定各通过 82 项语义与边界测试，适配器 8 项测�
 重建 weapp-vite 后，用原生模板的真实 Vite/Rolldown 输出串行验证 4 次独立构建，native 顺序为 off→on→on→off。每次 38 个文件、9 份 map、告警完全一致；admin/default layout 的 sources 均包含自身 JSON/WXML，不再包含父 pages 文件。保留原 map 全部字段，仅规范工作目录和 JSON 键序；未删 sources/sourceContent，也不是 identity map 重放。第一次检查脚本错把虚拟 sidecar 的 `:module.js` 后缀当作物理扩展名，修正检查后重新运行到新目录，旧失败记录保留。摘要和完整文件 hash 见 `2026-10-04-rust-sidecar-ownership-evidence.json`。
 
 此轮只验证静态输出正确性，不作性能结论。原生模板历史上没有适用 native 调用，开关两侧一致也不等于 Rust 热路径覆盖。另一任务重新启动了 DevTools E2E，完整 build/HMR 配对门禁仍未重跑；此前的历史 incomplete 报告保留。此次源码行为修复添加 weapp-vite 与 create-weapp-vite 的中文 patch changeset。
+
+## 第十一轮：语法摘要缓存与五实现对照
+
+Rust 实验现在在每次 NAPI 调用内，按精确表达式缓存自有数据摘要，再按 locals、safe-call 和当前 globals 特化。压力语料的唯一完整请求有 197 项，但只有 148 个表达式，因此减少 49 次解析；两个较小语料的表达式数与唯一请求数相同，缓存没有额外解析可省。摘要不保留 Oxc AST/allocator，返回或异常时释放整批缓存；缓存命中仍逐项校验 UTF-16，解析失败的 null 和空依赖结果保持区分。
+
+新增 JS 摘要缓存对照直接使用生产 visitor，以诊断观察器记录直接调用名，不复制 Babel 分析逻辑。五路对照为原始 JS、完整请求缓存 JS、语法摘要缓存 JS、旧 Rust、新 Rust，全部按相同请求恢复结果。822 条真实请求全部对齐捕获 oracle，零回退。debug/release 各 91 项绑定测试、3 项实际 parse 计数及缓存边界 Rust 测试、16 项脚本测试通过；TypeScript 检查通过，默认绑定未包含实验 API。原始可选调用与 WXML normalization 后的普通调用分别测试，避免把降级后的 safe-call 语义误判为 Rust 差异。
+
+采样前后未发现活动仓库 E2E、构建或性能任务，三份语料串行执行；每组 6 轮预热和 40 轮采样，五实现的执行位置及轮内前序在 10 轮周期内平衡，每批缓存重置。共享机器 16 个逻辑 CPU，1 分钟 loadavg 为 21.1–22.0，仍存在系统负载。
+
+| 语料 | 原始 JS P50 / P95（ms） | 完整请求缓存 JS | 摘要缓存 JS | 旧 Rust | 新 Rust |
+| --- | --- | --- | --- | --- | --- |
+| 压力模板 | 8.542 / 15.053 | 2.734 / 6.278 | 2.332 / 5.460 | 0.658 / 0.775 | 0.651 / 0.728 |
+| 零售详情 | 0.936 / 2.551 | 0.766 / 1.605 | 0.840 / 1.660 | 0.171 / 0.213 | 0.178 / 0.222 |
+| Wevu 首页 | 0.539 / 3.284 | 0.341 / 0.553 | 0.371 / 0.628 | 0.080 / 0.113 | 0.091 / 0.143 |
+
+这次局部重放中，JS 摘要缓存只在压力语料改善 P50（约 14.7%），另外两组增加约 9.7% 和 8.9%。新 Rust 相对旧 Rust 的 P50 仅在压力语料下降约 1.0%（0.0067 ms），另外两组增加约 4.3%（0.0073 ms）和 14.5%（0.0115 ms）。减少 parse 次数没有转化成明确的 Rust 净收益，额外摘要收集、缓存和特化有成本。保留此实现用于后续默认关闭的实验，不作为生产优化推广；单轮结果也不足以判定稳定回退。完整编译、构建/HMR、RSS 和运行时收益均未由此次局部测量证明。完整 120 轮样本、双绑定 hash 与边界记录见 [摘要缓存证据](./2026-10-04-rust-binding-summary-evidence.json)。
+
+完整 build/HMR smoke v4 在启动前确认互斥，但运行期间另一任务启动 DevTools E2E，随后仅终止本任务 collector。报告保留为 incomplete（13 个 run、64 个 sample、Collector interrupted），相关耗时不用于验收。诊断构建中原生和 Wevu 模板各 0 次 native 调用，TDesign 为 2 次 batch 调用、12 份脚本、208,962 字节、零回退；不能把无命中场景的开关差值归因于 Rust。
+
+固定提交 `a822fb7ff5eeb341a6b95bafa4f9eaef24fbd412` 的 [独立三平台正式性能运行](https://github.com/weapp-vite/weapp-vite/actions/runs/37192496301) 已派发，记录时仍在排队。它测量已接入生产的 native 路径，不包含本轮默认关闭的 binding 摘要实验；端到端 10% 收益及不超过 5% 稳定回退的门槛仍未证明。
