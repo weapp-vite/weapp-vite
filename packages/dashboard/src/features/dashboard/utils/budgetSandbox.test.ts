@@ -1,3 +1,6 @@
+import type { AnalyzeSubpackagesResult } from '../types'
+import type { BudgetSandboxConfig } from './budgetSandbox'
+import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
 import {
   budgetSandboxPresets,
@@ -6,6 +9,19 @@ import {
   findMatchingBudgetPreset,
   normalizeBudgetSandboxConfig,
 } from './budgetSandbox'
+
+function createResult(sizes: Record<string, number | undefined>): AnalyzeSubpackagesResult {
+  return {
+    packages: Object.entries(sizes).map(([id, size], index) => ({
+      id,
+      label: id,
+      type: index === 0 ? 'main' : 'subPackage',
+      files: [{ file: `${id}.js`, type: 'chunk', from: 'main', size }],
+    })),
+    modules: [],
+    subPackages: [],
+  }
+}
 
 describe('budgetSandbox', () => {
   it('normalizes invalid sandbox config values', () => {
@@ -26,11 +42,7 @@ describe('budgetSandbox', () => {
 
   it('projects total and package warnings from sandbox budgets', () => {
     expect(createBudgetSandboxWarnings({
-      totalBytes: 1200,
-      packages: [
-        { id: 'main', label: '主包', type: 'main', totalBytes: 900 },
-        { id: 'subpackage', label: '分包', type: 'subPackage', totalBytes: 600 },
-      ],
+      result: createResult({ main: 900, subpackage: 600 }),
       config: {
         totalBytes: 1000,
         mainBytes: 1000,
@@ -44,14 +56,33 @@ describe('budgetSandbox', () => {
     ])
   })
 
-  it('creates a config snippet for weapp-vite analyze budgets', () => {
-    expect(createBudgetConfigSnippet({
-      totalBytes: 1000,
-      mainBytes: 200,
-      subPackageBytes: 300,
-      independentBytes: 400,
-      warningRatio: 0.8,
-    })).toContain('warningRatio: 0.8')
+  it('preserves zero runtime/package constraints through exported configuration', () => {
+    const config = normalizeBudgetSandboxConfig({
+      totalBytes: 2000,
+      mainBytes: 1000,
+      packageBytes: { 'main': 0, 'feature"quoted': 0 },
+      runtimeBytes: 0,
+    })
+    const exported = runInNewContext(`({${createBudgetConfigSnippet(config)}})`, {}, { timeout: 100 }) as { analyze: { budgets: BudgetSandboxConfig } }
+    expect(createBudgetSandboxWarnings({
+      result: createResult({ 'main': 900, 'feature"quoted': 100 }),
+      config: exported.analyze.budgets,
+    }).map(item => [item.id, item.limitBytes, item.status]).sort()).toEqual([
+      ['__runtime__', 0, 'unknown'],
+      ['feature"quoted', 0, 'critical'],
+      ['main', 0, 'critical'],
+    ])
+  })
+
+  it('does not claim that raising limits resolves missing measurements', () => {
+    const result = createResult({ main: undefined })
+    const config = normalizeBudgetSandboxConfig({ totalBytes: 10000, mainBytes: 5000 })
+    expect(createBudgetSandboxWarnings({ result, config }).map(item => [item.id, item.limitBytes, item.status]).sort()).toEqual([
+      ['__total__', 10000, 'unknown'],
+      ['main', 5000, 'unknown'],
+    ])
+    result.packages[0]!.files[0]!.size = 900
+    expect(createBudgetSandboxWarnings({ result, config })).toEqual([])
   })
 
   it('matches normalized sandbox presets', () => {

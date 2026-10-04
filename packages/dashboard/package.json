@@ -63,7 +63,8 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:",
-    "weapp-tailwindcss": "catalog:"
+    "weapp-tailwindcss": "catalog:",
+    "weapp-vite": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

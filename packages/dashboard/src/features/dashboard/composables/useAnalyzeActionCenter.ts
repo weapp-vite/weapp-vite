@@ -12,7 +12,7 @@ import { formatBytes } from '../utils/format'
 import { createTreemapModuleNodeId } from '../utils/treemap'
 
 function formatWarningValue(warning: PackageBudgetWarning) {
-  return `${(warning.ratio * 100).toFixed(1)}%`
+  return warning.status === 'unknown' ? '未知' : `${(warning.ratio * 100).toFixed(1)}%`
 }
 
 function findFile(files: LargestFileEntry[], packageId: string | undefined, fileName: string | undefined) {
@@ -106,7 +106,7 @@ export function useAnalyzeActionCenter(options: {
         key: `budget:${warning.id}`,
         kind: 'budget',
         title: `处理 ${warning.label} 预算`,
-        meta: `${warning.status === 'critical' ? '已超预算' : '接近预算'} · 当前 ${formatBytes(warning.currentBytes)} / ${formatBytes(warning.limitBytes)}`,
+        meta: warning.status === 'unknown' ? '体积或归因不完整，无法验收预算' : `${warning.status === 'critical' ? '已超预算' : '接近预算'} · 当前 ${formatBytes(warning.currentBytes)} / ${formatBytes(warning.limitBytes)}`,
         value: formatWarningValue(warning),
         tone: warning.status === 'critical' ? 'critical' : 'warning',
         tab: 'files',

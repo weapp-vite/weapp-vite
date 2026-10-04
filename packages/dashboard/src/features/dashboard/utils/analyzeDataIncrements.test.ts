@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { useAnalyzeActionCenter } from '../composables/useAnalyzeActionCenter'
 import { createIncrementAttribution } from './analyzeDataIncrements'
 import { createPackageInsights } from './analyzeDataPackages'
-import { createComparisonMaps, createModuleInfoMap } from './analyzeDataShared'
+import { createComparisonMaps } from './analyzeDataShared'
 import { createTreemapModuleNodeId } from './treemap'
 
 function createResult(modules: Array<{ id: string, source: string, bytes: number, sourceType?: ModuleSourceType }>): AnalyzeSubpackagesResult {
@@ -63,8 +63,6 @@ describe('analyze increment attribution', () => {
     const items = createIncrementAttribution({
       result: current,
       previousResult: previous,
-      previousMaps: createComparisonMaps(previous),
-      moduleInfoMap: createModuleInfoMap(current),
     })
 
     expect(items).toHaveLength(1)
@@ -93,8 +91,6 @@ describe('analyze increment attribution', () => {
     const items = createIncrementAttribution({
       result: current,
       previousResult: previous,
-      previousMaps: createComparisonMaps(previous),
-      moduleInfoMap: createModuleInfoMap(current),
     })
 
     expect(items).toHaveLength(1)
@@ -123,8 +119,6 @@ describe('analyze increment attribution', () => {
     const items = createIncrementAttribution({
       result: current,
       previousResult: previous,
-      previousMaps: createComparisonMaps(previous),
-      moduleInfoMap: createModuleInfoMap(current),
     })
 
     expect(items).toHaveLength(1)
@@ -155,8 +149,6 @@ describe('analyze increment attribution', () => {
     const items = createIncrementAttribution({
       result: current,
       previousResult: previous,
-      previousMaps,
-      moduleInfoMap: createModuleInfoMap(current),
     })
 
     expect(items).toEqual([

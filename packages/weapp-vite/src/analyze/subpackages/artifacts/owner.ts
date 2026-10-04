@@ -56,7 +56,3 @@ export function classifyOwnedModule(owner: AnalyzeModuleOwner | undefined, appli
   }
   return owner ? 'dependency' : 'unknown'
 }
-
-export function isRuntimeCategory(category: AnalyzeModuleCategory) {
-  return ['runtime', 'reactivity', 'host', 'helper'].includes(category)
-}

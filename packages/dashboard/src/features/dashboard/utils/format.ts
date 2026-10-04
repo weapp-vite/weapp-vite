@@ -7,7 +7,7 @@ import type {
 } from '../types'
 
 export function formatBytes(bytes?: number) {
-  if (!bytes || Number.isNaN(bytes)) {
+  if (bytes === undefined || Number.isNaN(bytes)) {
     return '—'
   }
 

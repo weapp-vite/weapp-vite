@@ -1,3 +1,4 @@
+import type { AnalyzeSubpackagesResult as CoreAnalyzeSubpackagesResult } from 'weapp-vite/dashboard/analyze'
 import type { BuildOrigin, ModuleSourceType, PackageBudgetStatus, PackageType } from './base'
 
 export interface ModuleInFile {
@@ -13,6 +14,8 @@ export interface AnalyzeBudgetConfig {
   mainBytes: number
   subPackageBytes: number
   independentBytes: number
+  runtimeBytes?: number
+  packageBytes?: Record<string, number>
   warningRatio: number
   source: 'config' | 'default'
 }
@@ -67,6 +70,7 @@ export interface SubPackageDescriptor {
 
 export interface AnalyzeSubpackagesResult {
   metadata?: AnalyzeSubpackagesMetadata
+  artifacts?: CoreAnalyzeSubpackagesResult['artifacts']
   packages: PackageReport[]
   modules: ModuleUsage[]
   subPackages: SubPackageDescriptor[]
@@ -191,11 +195,12 @@ export interface ModuleSourceSummary {
 export interface PackageBudgetWarning {
   id: string
   label: string
-  scope: 'total' | PackageType
+  scope: 'total' | 'runtime' | PackageType
   currentBytes: number
   limitBytes: number
   ratio: number
   status: PackageBudgetStatus
+  files?: string[]
 }
 
 export interface PackageBudgetLimitItem {

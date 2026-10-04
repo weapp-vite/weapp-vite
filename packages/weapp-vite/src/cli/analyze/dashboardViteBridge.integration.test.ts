@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { DEVFRAME_CONNECTION_META_FILENAME, DEVFRAME_SSE_ROUTE, DEVFRAME_WS_ROUTE } from 'devframe/constants'
 import { createServer } from 'vite'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { createAnalyzeDashboardDevframe } from '../../dashboard'
 import { ANALYZE_DASHBOARD_DEVFRAME_BASE, createAnalyzeDashboardViteBridge } from './dashboardViteBridge'
 
@@ -31,6 +31,7 @@ it('serves native Vite pages and assets beside real Devframe discovery and SSE',
   })
   let server: ViteDevServer | undefined
   try {
+    vi.stubEnv('DEVFRAME_INSTANCES_DIR', path.join(root, 'instances'))
     await fs.writeFile(path.join(root, 'index.html'), '<!doctype html><main>Portable Dashboard page</main>')
     await fs.writeFile(path.join(root, 'probe.txt'), 'Dashboard client asset')
     server = await createServer({
@@ -85,6 +86,7 @@ it('serves native Vite pages and assets beside real Devframe discovery and SSE',
     }
     finally {
       controller.dispose()
+      vi.unstubAllEnvs()
       await fs.rm(root, { recursive: true, force: true })
     }
   }

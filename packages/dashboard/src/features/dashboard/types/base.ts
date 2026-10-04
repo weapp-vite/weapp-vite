@@ -1,7 +1,7 @@
 export type PackageType = 'main' | 'subPackage' | 'independent' | 'virtual'
 export type ModuleSourceType = 'src' | 'plugin' | 'node_modules' | 'workspace'
 export type BuildOrigin = 'main' | 'independent'
-export type PackageBudgetStatus = 'warning' | 'critical'
+export type PackageBudgetStatus = 'warning' | 'critical' | 'unknown'
 export type ThemePreference = 'system' | 'light' | 'dark'
 export type ResolvedTheme = 'light' | 'dark'
 export type AnalyzeComparisonMode = 'previous' | 'baseline'
