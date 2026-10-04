@@ -7,9 +7,12 @@ import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { installCompileBatch } from './compileBatch'
 import { collectIgnoredGlobals } from './globals'
+import { createWorkerLifecycle } from './workerLifecycle'
+
+const lifecycle = createWorkerLifecycle()
 
 function send(value: CompileResponse) {
-  process.send?.(value)
+  return lifecycle.send(value)
 }
 
 /** 每种实现独占一个新进程，计时窗口只包含真实编译及同步清单消费。 */
@@ -30,10 +33,11 @@ async function main() {
     },
   }
   const installed = mode === 'baseline' ? undefined : await installCompileBatch({ mode, binding, ignoredGlobals: collectIgnoredGlobals() })
+  lifecycle.setDispose(() => installed?.dispose())
   const bindingSha256 = bindingPath ? createHash('sha256').update(await readFile(bindingPath)).digest('hex') : undefined
   const { compileVueFile } = await import('../../packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile')
   let running = false
-  process.on('message', async (request: CompileRequest) => {
+  process.on('message', (request: CompileRequest) => lifecycle.run(async () => {
     if (running) {
       send({ id: request.id, kind: 'error', message: 'Overlapping compiler requests' })
       return
@@ -41,9 +45,7 @@ async function main() {
     running = true
     try {
       if (request.kind === 'close') {
-        installed?.dispose()
-        send({ id: request.id, kind: 'closed' })
-        process.disconnect?.()
+        lifecycle.close({ id: request.id, kind: 'closed' })
         return
       }
       installed?.reset()
@@ -82,11 +84,11 @@ async function main() {
     finally {
       running = false
     }
-  })
+  }))
   send({ id: 0, kind: 'ready', sourceHashes: installed?.sourceHashes ?? {}, bindingSha256 })
 }
 
-main().catch((error: unknown) => {
-  send({ id: 0, kind: 'error', message: error instanceof Error ? error.message : String(error) })
-  process.exitCode = 1
+lifecycle.run(main).catch(async (error: unknown) => {
+  await send({ id: 0, kind: 'error', message: error instanceof Error ? error.message : String(error) })
+  lifecycle.close(undefined, 1)
 })

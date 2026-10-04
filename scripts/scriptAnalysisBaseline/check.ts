@@ -1,35 +1,19 @@
 import type { ScriptCheck, ScriptWorkerReport } from './types'
 import { createHash } from 'node:crypto'
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { isDeepStrictEqual } from 'node:util'
 // eslint-disable-next-line e18e/ban-dependencies -- 使用当前 Node 可执行文件和参数数组，保持 Windows 与 Unix 的串行进程行为一致。
 import { execa } from 'execa'
+import { sanitizeScriptDiagnostic } from './diagnostics'
+import { scriptSourceIdentity } from './identity'
 import { scriptScenarios } from './scenarios'
 import { SCRIPT_VARIANTS } from './types'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const digest = (value: string) => createHash('sha256').update(value).digest('hex')
-
-async function sourceIdentity() {
-  const files: string[] = ['pnpm-lock.yaml', 'scripts/nativeBindingAnalysis/compileScenarios.ts', 'scripts/astMigrationProfile/fixtures.ts']
-  const collect = async (directory: string) => {
-    for (const entry of await readdir(path.join(root, directory), { withFileTypes: true })) {
-      const relative = `${directory}/${entry.name}`
-      if (entry.isDirectory()) {
-        await collect(relative)
-      }
-      else if (entry.name.endsWith('.ts') && !/\.(?:test|spec)\.ts$/.test(entry.name)) {
-        files.push(relative)
-      }
-    }
-  }
-  await collect('scripts/scriptAnalysisBaseline')
-  await collect('packages-runtime/wevu-compiler/src')
-  return Object.fromEntries(await Promise.all(files.sort().map(async file => [file, digest(await readFile(path.join(root, file), 'utf8'))])))
-}
 
 function readReport(source: string): ScriptWorkerReport {
   const value = JSON.parse(source) as unknown
@@ -71,13 +55,13 @@ async function main() {
   const output = path.resolve(outputArgument)
   await mkdir(path.dirname(output), { recursive: true })
   await mkdir(output)
-  const identity = await sourceIdentity()
+  const identity = await scriptSourceIdentity()
   const scenarios = await scriptScenarios()
   const runs: Array<Record<string, unknown>> = []
   const expected = new Map<string, ScriptCheck>()
   let controlHashes: Record<string, string> | undefined
   let failure: string | undefined
-  const scrub = (value: string) => value.replaceAll(root, '<repo>/').replaceAll(root.replaceAll('/', '\\'), '<repo>\\')
+  const scrub = (value: string) => String(sanitizeScriptDiagnostic(value, [root, output]))
   try {
     for (const variant of SCRIPT_VARIANTS) {
       const reportFile = path.join(output, `${variant}.json`)
@@ -131,7 +115,7 @@ async function main() {
   catch (error) {
     failure = scrub(error instanceof Error ? error.message : String(error))
   }
-  const sourcesUnchanged = isDeepStrictEqual(identity, await sourceIdentity())
+  const sourcesUnchanged = isDeepStrictEqual(identity, await scriptSourceIdentity())
   if (!sourcesUnchanged) {
     failure = `${failure ?? ''} Source identity changed during comparison`.trim()
   }

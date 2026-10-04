@@ -38,9 +38,13 @@ on:
         description: Run two serial batches of the five-variant complete compiler experiment
         type: boolean
         default: false
+      script-baseline-performance:
+        description: Run two serial batches of the seven-variant stronger JS script baseline
+        type: boolean
+        default: false
 
 concurrency:
-  group: native-analysis-${{ inputs.compiler-performance && 'compiler-' || '' }}${{ github.event.pull_request.number || github.ref }}
+  group: native-analysis-${{ inputs.script-baseline-performance && 'script-' || inputs.compiler-performance && 'compiler-' || '' }}${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -162,6 +166,22 @@ jobs:
       - name: Run fixed native off/on performance acceptance
         if: github.event_name == 'workflow_dispatch' && inputs.full-performance
         run: pnpm benchmark:native-analysis --mode=full --output=.codex-tmp/native-analysis --native-path=packages/ast-native/index.js
+      - name: Sample stronger JS script baselines serially
+        if: github.event_name == 'workflow_dispatch' && inputs.script-baseline-performance
+        run: node --import tsx scripts/scriptAnalysisBaseline/timings.ts --output=.codex-tmp/script-baseline-timings --iterations=42
+      - name: Upload stronger JS script baseline samples
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.script-baseline-performance
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: script-baseline-timings-${{ matrix.os }}
+          path: |
+            .codex-tmp/script-baseline-timings/summary.json
+            .codex-tmp/script-baseline-timings/*/report.json
+            .codex-tmp/script-baseline-timings/**/*-mismatch.json
+            .codex-tmp/script-baseline-timings/correctness/*.json
+            .codex-tmp/script-baseline-timings/*.log
+            .codex-tmp/script-baseline-timings/correctness/*.log
+          include-hidden-files: true
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always() && github.event_name == 'workflow_dispatch' && inputs.full-performance
         with:

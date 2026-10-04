@@ -64,6 +64,12 @@ afterEach(() => {
 it('exchanges ready, compile and close messages, then waits for the owned child to exit', async () => {
   const child = new FakeChild()
   const compiler = await open(child)
+  expect(fork).toHaveBeenCalledWith(expect.stringMatching(/compileWorker\.ts$/), ['baseline', 'binding.node'], expect.objectContaining({
+    execPath: process.execPath,
+    execArgv: ['--import', 'tsx'],
+    env: expect.objectContaining({ WEAPP_VITE_NATIVE: '0' }),
+    stdio: ['ignore', 'ignore', 'pipe', 'ipc'],
+  }))
   expect(compiler.ready).toMatchObject({ kind: 'ready', sourceHashes: { compiler: 'fixed-source' } })
   const compiling = compiler.compile(scenario)
   const request = child.lastRequest()

@@ -338,3 +338,17 @@ page-meta/props 查询已经使用 Babel AST，拆成单独 native API 会增加
 该正式运行测量已有生产 native 路径，不包含本轮 binding 或脚本 JS 基线实验。诊断构建中原生/Wevu 两个模板各零 native 调用，TDesign 各有两次调用，零失败/回退。零调用只表示没有覆盖 native 计算，不能排除加载或路径开销，也不能将越线直接解释为纯噪声。HMR 使用已有 120 ms polling watcher 协议，强制 GC 和产物读取发生在计时外并影响下一样本，不能视为默认 watcher 的无观测延迟；build RSS 为进程树采样峰值，HMR RSS 为 GC 后快照，不能混为同一内存指标。正式失败结果进一步约束生产接入，不替代 Stable DevTools runtime 最终验收。
 
 Linux/macOS 的 100 项基础指标均完整；分别有 322/390 个 side-run 和 3124/3660 条 samples。Linux 的 P50/P95 门禁有 197 项通过、3 项不稳定；macOS 有 167 项通过、26 项不稳定、7 项在确认批次仍回退。持续回退均是 wall P95，涉及普通模板的 repeat build、script first edit / repeat restore、template repeat restore、style first restore，以及 Wevu script repeat restore / style repeat edit；确认批次回退约 6.09%–28.69%。原始报告 hash、完整性、全部未通过指标的首批/确认数值、失败阶段和限制见[正式运行证据](./2026-10-04-rust-production-run-status.json)。后续优先定位这些整链尾延迟及 native 加载成本，再决定是否修改生产接入；本轮没有降低阈值或重新派发固定运行。
+
+## 第十六轮：七路 JS 基线计时入口与加载边界核查
+
+为判断脚本完整阶段迁移到 Rust 的剩余空间，新增七路 `compileVueFile` 配对采集。先执行全部 32 场景正确性，再串行测压力模板、零售详情、Wevu 首页各两批；每组拥有七个独立持久 worker，预热 14 轮、采样 42 轮，14 轮周期平衡执行位置和前序。计时内保留真实编译及诊断 hook 成本；reset、输入 hash、IPC、序列化、对照与计数快照在窗口外。每次都与首次原始编译完整输出比较，各组还对齐先行正确性 oracle；没有计时外预填分析结果。
+
+正确性和计时共用执行逻辑；binding 与脚本实验共用进程所有权传输。父 IPC 断开后，worker 等当前启动/编译完成，再卸载 hook 并退出。新增严格报告验证及逐对聚合，保留原始观测，不混合语料/批次，不把收益 P95 当成坏尾延迟。编译失败、输入漂移或输出分歧时保存完整诊断副本，CI 上传对应文件；Windows 多层 JSON 转义路径仅在落盘副本中脱敏，原始比较和摘要不变。
+
+23 个文件共 132 项测试通过，两组脚本 typecheck 和定向 ESLint 通过。真实 IPC smoke 串行覆盖七种实现的重复编译、预期错误、恢复、关闭及重复关闭；全部进程确认退出。重构后重新执行 448 次脚本正确性检查，及 13 场景五路 native 完整编译对照，全部通过；后者采样轮数为零。本机仍有其他任务的构建/E2E，没有收集新的本地性能样本。CI 新增独立的 `script-baseline-performance` 手动入口；实现、输入及输出身份见[采集工具证据](./2026-10-04-script-timing-collection-evidence.json)。在取得实际样本前，不宣称这四项 JS 优化提升性能。
+
+另核查了正式门禁的加载边界。`native.ts` 在首次实际分析请求才 require addon，成功/加载失败均在进程内缓存；模块 import 本身不加载。a822 和当前相关实现一致。普通原生模板与 Wevu 的独立 build 诊断不仅 calls=0，wrapper 的 processes 也为零，而外层 lifetime preload 完整记录两个 CLI 进程且没有 load failure，支持这些诊断构建没有加载 addon。正式 timed runs 的 native 零值是初始化占位，不能当成逐次观测；HMR 仍缺同等证据。
+
+七项确认回退中六项发生在 dev 初始构建之后，一次启动加载不能直接解释持续 HMR 延迟。强制 GC 和完整产物读取在计时后发生，可能影响下一样本，但会话首次 edit 不能归因于前一次强制 GC；也不能直接减去 120 ms polling 来取消回退。下一步可在同一首次请求边界对照 off、阻止加载并真实 JS fallback、只加载但 JS fallback、实际 native 四种诊断模式，并将事件关联到启动/edit/restore；没有 loader 请求的工程不能被强制预加载后冒充生产路径。
+
+完整 `transformScript` 的 Rust 边界还有一项必要前提：class/style、template-ref 等元数据携带 Babel Expression，需先定义紧凑表达式输入契约，不能直接跨边界复制整棵 AST。当前 native Cargo 只有 Oxc parser/AST/visitor/可选 semantic，没有 codegen/transformer/sourcemap 集成；现有 TS visitor 对 enum、namespace、parameter property 的行为也不能被通用 TS 转换器直接替代。待更强 JS 基线采样后，再按剩余热点决定阶段迁移，而非增加细粒度 props/page-meta NAPI。

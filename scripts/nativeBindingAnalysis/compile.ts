@@ -25,6 +25,8 @@ async function toolSourceHashes() {
     'compileWorker.ts',
     'compileScenarios.ts',
     'compileProcess.ts',
+    'workerProcess.ts',
+    'workerLifecycle.ts',
     'compileProtocol.ts',
     'globals.ts',
     'orders.ts',
