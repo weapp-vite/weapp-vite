@@ -131,11 +131,6 @@ export async function buildStatefulHmrSnapshot(
             if (id.startsWith('\0') || id.includes('?')) {
               return null
             }
-            const source = sources.get(compilerSourceId(id))
-            // 只为本批固定的输入判断原生加载归属，其他模块继续交给原有插件。
-            if (source === undefined) {
-              return null
-            }
             const sourceId = normalizeFsResolvedId(id)
             const nativeEntry = ctx.runtimeState.build.hmr.entriesMap.get(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(sourceId)))
             // 发现的组件记录暂时指向引用它的入口；按注册身份保留原生加载及其伴随资产输出。
@@ -143,10 +138,11 @@ export async function buildStatefulHmrSnapshot(
               || (ctx.scanService.appEntry?.path && normalizeFsResolvedId(ctx.scanService.appEntry.path) === sourceId)) {
               return null
             }
+            const source = sources.get(compilerSourceId(id))
             if (source === null) {
               throw new Error(`Source removed from snapshot: ${id}`)
             }
-            return { code: source }
+            return source === undefined ? null : { code: source }
           },
         },
       }, ...(options.plugins ?? [])]
