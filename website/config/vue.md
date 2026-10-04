@@ -129,6 +129,7 @@ export default defineConfig({
   - 默认、具名、普通节点包裹及嵌套插槽均保留提供对象、ref 和方法的原始身份；多个 Provider 独立，卸载后重建使用新上下文。编译器为已知 Wevu 组件节点（含 Options API 局部注册别名）和原生 `<slot>` 增加内部事件绑定，不为此引入包装节点，也不改写 `Component.export` 或 `selectOwnerComponent()`；内层 Provider 过滤公开导出时，其普通模板子组件和插槽子组件仍共享内层上下文。
   - 显式 `setupLifecycle: 'created'`，以及在 `attached` 前触发的公开实例恢复，仍保持原有的提前 setup 时机，不能使用这条原生插槽上下文保证。原生/第三方组件未参与 Wevu 编译协议时也不自动成为注入承载者。
   - 该能力已在微信 DevTools Stable `2.02.2608080`、基础库 `3.17.2` 验证；mpcore 提供对应回归覆盖，不代替真机验证。支付宝、抖音、百度和 Web 等其他目标不启用此协议，不承诺相同原生 slot 注入行为。
+  - 已知未解决场景：自定义 Chrome / glass-easel `1.2.1` 预览宿主中，条件插槽初始未投影时，消费者仍进入 `attached`，可能无法注入承载者上下文。初始已投影的对照场景通过不能替代该场景验收；这也不是上述微信 DevTools 已验证结果覆盖的边界，不能据此宣称自定义宿主兼容。
   - `false` / augmented 和传递实际 scoped props 的既有编译路径保持各自的增强插槽语义。
 - `slotSingleRootNoWrapper`：普通具名插槽内容只有一个可投影根节点时，是否把 `slot="..."` 直接下推到该根节点，避免额外生成 wrapper。
   - 默认 `false`，保持稳定的真实节点 wrapper。

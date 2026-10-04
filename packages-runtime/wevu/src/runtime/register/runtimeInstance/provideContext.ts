@@ -10,6 +10,8 @@ import { isRuntimeLayoutComponentTarget } from '../../layoutComponentMatcher'
 import { getCurrentMiniProgramPages } from '../../platform'
 import { attachRuntimeLayoutProvideContext, attachRuntimeProvideContext } from '../../provideContext'
 
+type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string } }
+
 interface NativeSlotParentDetail {
   resolve: (parent: InternalRuntimeState) => void
 }
@@ -44,6 +46,12 @@ function resolveNativeOwner(target: InternalRuntimeState): InternalRuntimeState 
 }
 
 function resolveNativeSlotParent(target: InternalRuntimeState): InternalRuntimeState | undefined {
+  if (
+    (import.meta as ImportMetaWithEnv).env?.PLATFORM
+    && (import.meta as ImportMetaWithEnv).env?.PLATFORM !== 'weapp'
+  ) {
+    return undefined
+  }
   if (target[WEVU_NATIVE_SLOT_CONTEXT_KEY] !== true || typeof target.triggerEvent !== 'function') {
     return undefined
   }
