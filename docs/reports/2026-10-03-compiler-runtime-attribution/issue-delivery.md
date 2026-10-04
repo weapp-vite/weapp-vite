@@ -358,13 +358,23 @@ Nightly run `37158223308` 的采样 driver 为 `6e3ad8d73`，冻结候选为 `e1
 
 TDesign 新增无磁盘改写的入口解析诊断，普通与插桩两轮在模板、脚本场景各有 2,059 个产物文件逐字节一致。每场景记录 150 次物化解析、68 个不同的 importer/request 组合；38 次返回空值，包括已有物理 Vue 来源的逻辑输出路径。两个场景的等待累计约 300.641 / 287.214 ms，包含异步重叠，不能当作墙钟占比或远端回退量。该证据用于修复本轮自动导入来源信息的传递，不支持跳过来源未知的第三方 resolver。诊断的源码、dist、lock 未变，临时工程和登记进程均已清理。
 
-自动导入修正 `dacaf685b` 携带本轮物理来源，审查中另发现公开 resolver 的绝对源码路径不能视作已生成输出路径。后续修正 `3bcc523ab` 沿用内部 `AutoImportMatch.kind`，只允许本地 registry 的有效物理来源跳过重复解析；自定义 resolver 的绝对路径、别名、query、原生组件及冲突记录仍按原 bundler 语义解析。修正后 130 项定向回归、包级 typecheck、ESLint 和包构建通过，三 OS、Node 22/24 的定向 run `37166460856` 绑定此修正，结果待完成；旧提交的通过结果不能替代。
+自动导入修正 `dacaf685b` 携带本轮物理来源，审查中另发现公开 resolver 的绝对源码路径不能视作已生成输出路径。后续修正 `3bcc523ab` 沿用内部 `AutoImportMatch.kind`，只允许本地 registry 的有效物理来源跳过重复解析；自定义 resolver 的绝对路径、别名、query、原生组件及冲突记录仍按原 bundler 语义解析。修正后 130 项定向回归、包级 typecheck、ESLint 和包构建通过，三 OS、Node 22/24 的定向 run `37166460856` 绑定此修正，六组全部通过；逐 job 日志核对每组实际执行 94 项基础设施回归、7 个自动导入/外链组件构建与 HMR 用例、5 个严格 headless runtime 用例，对应场景无跳过。
 
 独立 owner/pending native 探针已完成单次两文件构建，显式关闭 watch，无 E2E/IDE/server；80 个既有 API 与四个新增诊断 API 的 ABI 检查通过。首个输出、close、15 秒自然空闲和精确资源清理均完成，无异常。deferred pending 为 0，但 Bundler、BundleFactory、PluginDriver 各创建一次，至末次采样均未析构；JS wrapper 的 WeakRef 仍可达且未收到自然 finalization。没有强制 GC、allocator collect 或 drain，因此该结果不能区分尚未 GC 与引用保留，不能据此断言泄漏；下一步继续核对 close 与 wrapper/native owner 的边界。它也不替代原 classic 长期 RSS 门禁。
 
+`50c66d243` 将编辑驱动的 pending 发布、普通重命名和连续重命名接入共享 Windows 原子替换协议；短暂的 `EPERM`、`EACCES`、`EBUSY` 最多重试 20 次、累计等待 1,550 ms，不删除目标、不降级为复制，也不重置原序列期限。取消信号贯穿重试与源文件写入，停止后续保存，只清理本次 pending 文件。源编辑职责从大型构建会话拆出，原时间戳、单次 revision、完整发布和运行语义保持。32 项纯文件/协议回归、定向严格类型检查及 ESLint 通过，新三 OS × Node 22/24 lifecycle run `37166903162` 的 Windows Node 22 在新增单测中发现四项斜杠期望不一致，原 16 项 runtime 编辑序列尚未开始，不是原 `EPERM` 的再次复现。`e44c959a9` 将测试路径构造与被测代码统一，并把 framework 序列剩余重命名路径接入同一 helper，保留 framework 的直接保存语义。36 项定向回归、严格类型检查及 ESLint 通过；新 lifecycle `37167479195` 与完整 CI `37167479509` 绑定该修正。该内部测试工具修复不新增产品 changeset。
+
+后续独立可达性对照为上述 native owner 观察补充了关键边界：关闭后继续持有 engine 与 moduleGraph 时，诊断 GC 不触发原生 owner 析构；只释放 engine 时，其 JS finalizer 已执行，但 moduleGraph 仍单独保活三类原生 owner；再释放 moduleGraph，三类 owner 均达到创建一次、析构一次，deferred pending 始终为 0。每阶段三次跨 JS job 的 GC 仅用于证明可达性，未调用 allocator collect/drain，也不是资源回收修复。此最小无 watch 场景没有不可回收引用环，不能据先前 15 秒无自然 GC 的结果修改 close 后公开对象语义；完整 classic 驻留增长仍需单独定位。所有登记进程和 fixture 均已清理。
+
+`e44c959a9` 的 lifecycle run `37167479195` 已终态成功。六组原始日志与 JSON artifact 相互核验：Windows Node 22/24 各有 97 项纯单测通过；Linux/macOS 的四组各有 96 项通过、1 项 Windows 专属检查跳过；全部六组均实际执行 16/16 项编辑序列，功能失败与未执行均为 0。完整 CI `37167479509` 仍独立跟踪，不以定向矩阵代替其结论。
+
+后续完整 Workspace HMR run `37165812090`（`dacaf685b`）已终态失败：76 个工程的 229/229 个场景语义成功，失败与未执行均为 0，但 TDesign Wevu 模板、脚本的 compiler `totalMs` 为 1,710.273 / 1,707.754 ms，仍超过原 1,500 ms 门槛。与旧运行相比，两场景的源事件、入口加载和 dirty/pending/emitted 数量未扩大，实际改写集合也相同；不同 runner 上的单次阶段耗时不能证明性能收益。下一步对固定批准基线与候选的恢复路径独立采集诊断，保留正式 Nightly 的失败结论与门槛。
+
+DevOptions 引用环的两个独立无 watch 最小构建进一步确认了回收边界：三个回调捕获持有 engine 的宿主对象，close 后移除全部外部强根；保留宿主到 engine 的内部引用时，96 轮跨 job 诊断 GC、约 5 秒内三个 JS 对象仍可达，三类原生 owner 各为创建一次、析构零次。唯一改变为 close 后断开该内部引用的反事实进程，三轮 GC 后三个 JS finalizer 全部执行，三类原生 owner 各为创建一次、析构一次。两进程使用相同 native/adapter，输出哈希相同，deferred pending 均为 0，所有登记 fixture 与进程均清理。该结果支持真实 Vite DevOptions 回调闭环的根因，但断开私有字段不是产品修复；仍需在引擎终止后释放回调所有权、保留已排队通知和公开读取契约，并解决正式依赖分发与跨平台验证。诊断 GC 不进入产品释放路径，也不替代 #1135 的原资源验收。
+
 ## Stable IDE 环境记录
 
-本轮原生 Computer Use 检查返回 Mac 已锁屏且无法自动解锁，未进行 IDE 操作。需要维护者手动解锁；现有其他项目 RC 宿主仍不能擅自关闭。远端 CI 与只读证据检查继续独立执行。
+本轮原生 Computer Use 检查返回 Mac 已锁屏且无法自动解锁，未进行 IDE 操作。后续再次按 Stable 安装路径读取时返回无可用窗口，应用列表也再次确认锁屏仍未解除。需要维护者手动解锁；现有其他项目 RC 宿主仍不能擅自关闭。远端 CI 与只读证据检查继续独立执行。
 
 2026-10-03 05:20 UTC 核对官方渠道数据，最新 Stable 为 `2.02.2608080`，发布日期 2026-09-30。两份该版本安装均尝试了原生 Computer Use 启动，未得到可用宿主；CLI 登录查询超时或缺失该安装的 CLI 端口文件。已运行的 `2.02.2609231` 属于 RC 和其他项目，未关闭或用它替代 Stable。
 
