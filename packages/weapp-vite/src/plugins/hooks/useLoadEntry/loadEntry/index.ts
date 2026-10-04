@@ -3,6 +3,7 @@ import type { BuildTarget, CompilerContext } from '../../../../context'
 import type { Entry } from '../../../../types'
 import type { HmrProfileDurationKey } from '../../../../utils/hmrProfile'
 import type { ResolvedPageLayoutPlan } from '../../../vue/transform/pageLayout'
+import type { ResolvedAutoImportComponent } from '../autoImport'
 import type { ChunkEmitTask } from '../chunkEmitter'
 import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
@@ -22,7 +23,6 @@ import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { isPathInside } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
-import { usingComponentFromResolvedFile } from '../../../../utils/usingComponentFrom'
 import { analyzeCommonJson } from '../../../utils/analyze'
 import { markComponentEntries, registerResolvedPageLayoutEntries } from '../../../utils/layoutEntries'
 import { registerResolvedPageLayoutDependencies } from '../../../utils/pageLayout'
@@ -31,6 +31,7 @@ import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromS
 import { readCompilerInput } from '../../../utils/sourceSnapshot'
 import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectAppEntries } from './app'
+import { materializeVueAutoImportEntries } from './autoImport'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
 import { createEntryResolver } from './resolve'
 import { createScriptSetupAnalyzer } from './scriptSetupAnalysis'
@@ -53,7 +54,7 @@ interface EntryLoaderOptions {
   registerJsonAsset: (entry: JsonEmitFileEntry) => void
   scanTemplateEntry: (templateEntry: string) => Promise<void>
   emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => ChunkEmitTask[]
-  applyAutoImports: (baseName: string, json: any) => string[] | Promise<string[]>
+  applyAutoImports: (baseName: string, json: any) => ResolvedAutoImportComponent[] | Promise<ResolvedAutoImportComponent[]>
   extendedLibManager: ExtendedLibManager
   buildTarget?: BuildTarget
   debug?: (...args: any[]) => void
@@ -179,53 +180,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const templateEntryPathCache = new Map<string, string>()
   const styleImportsCache = new Map<string, string[]>()
   let resolveCacheVersion = 0
-
-  async function materializeVueAutoImportEntries(
-    pluginCtx: PluginContext,
-    importer: string,
-    json: any,
-    injectedEntries: string[],
-  ) {
-    const usingComponents = get(json, 'usingComponents')
-    if (!isObject(usingComponents) || !injectedEntries.length) {
-      if (!isObject(usingComponents) || !configService.weappViteConfig?.uniApp) {
-        return injectedEntries
-      }
-    }
-    const candidateEntries = Array.from(new Set([
-      ...injectedEntries,
-      ...Object.values(usingComponents).filter((entry): entry is string => typeof entry === 'string' && entry.endsWith('.vue')),
-    ]))
-    const rewritten = new Map<string, string>()
-    for (const entry of candidateEntries) {
-      const resolved = await pluginCtx.resolve(entry, importer)
-      const resolvedId = resolved?.id ? normalizeFsResolvedId(resolved.id) : undefined
-      if (!resolvedId?.endsWith('.vue')) {
-        if (configService.weappViteConfig?.uniApp && entry.endsWith('.vue')) {
-          throw new Error(`[uni-app] 无法解析外部 Vue 组件: importer=${importer} request=${entry}`)
-        }
-        continue
-      }
-      const outputPath = usingComponentFromResolvedFile(resolvedId, configService)
-      if (!outputPath) {
-        throw new Error(`[uni-app] 无法生成外部 Vue 组件输出路径: importer=${importer} resolvedId=${resolvedId}`)
-      }
-      for (const [name, value] of Object.entries(usingComponents)) {
-        if (value === entry) {
-          usingComponents[name] = outputPath
-        }
-      }
-      ctx.runtimeState.build.hmr.externalComponentEntryMap.set(
-        removeExtensionDeep(outputPath).replace(/^\/+/, ''),
-        resolvedId,
-      )
-      rewritten.set(entry, outputPath)
-    }
-    return Array.from(new Set([
-      ...injectedEntries.map(entry => rewritten.get(entry) ?? entry),
-      ...candidateEntries.map(entry => rewritten.get(entry) ?? entry),
-    ]))
-  }
 
   const shouldEmitScriptlessVueLayoutJs = async (layoutFile: string) => {
     const cached = scriptlessVueLayoutDecisionCache.get(layoutFile)
@@ -700,6 +654,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         }
         const rawInjectedAutoImportEntries = await applyAutoImports(baseName, json) ?? []
         const injectedAutoImportEntries = await materializeVueAutoImportEntries(
+          ctx,
           this,
           vueEntryPath ?? id,
           json,

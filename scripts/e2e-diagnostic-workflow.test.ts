@@ -20,7 +20,7 @@ async function workflow() {
 describe('bounded HMR workflow diagnosis', () => {
   it('requires an explicit manual selection and uses a separate concurrency group', async () => {
     const config = await workflow()
-    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication'] })
+    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'workspace-hmr'] })
     expect(config.concurrency.group).toContain('inputs.hmr-diagnostic || \'full\'')
     const job = config.jobs['shared-layout-windows-diagnostic']!
     expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'shared-layout-windows\'')
@@ -30,6 +30,13 @@ describe('bounded HMR workflow diagnosis', () => {
       build_command: 'pnpm build:pkgs:ci:windows',
       main_command: 'pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/hmr-layout-shared-template-wxs.test.ts',
       timeout_minutes: 30,
+    })
+    const workspaceHmr = config.jobs['workspace-hmr-nightly']!
+    expect(workspaceHmr.if).toContain('inputs.hmr-diagnostic == \'workspace-hmr\'')
+    expect(workspaceHmr.with).toMatchObject({
+      main_command: 'pnpm audit:hmr:nightly',
+      artifact_name: 'workspace-hmr-nightly',
+      timeout_minutes: 120,
     })
   })
 
@@ -55,7 +62,7 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'runtime-publication\'')
     expect(job.strategy?.matrix).toEqual({ 'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'], 'node-version': [22, 24] })
     const commands = String(job.with?.main_command)
-    for (const file of ['devBuildCompletion.test.ts', 'statefulArtifactMeasurement.deadline.test.ts', 'issue-1134-native-topology.runtime.test.ts', 'script-setup-external-src.runtime.test.ts', 'issue-1015-css-hmr.runtime.test.ts']) {
+    for (const file of ['devBuildCompletion.test.ts', 'statefulArtifactMeasurement.deadline.test.ts', 'auto-import-vue-sfc.test.ts', 'external-linked-vue-component.hmr.test.ts', 'issue-1134-native-topology.runtime.test.ts', 'script-setup-external-src.runtime.test.ts', 'issue-1015-css-hmr.runtime.test.ts']) {
       expect(commands).toContain(file)
     }
     expect(commands).toContain('WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1')

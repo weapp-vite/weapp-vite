@@ -32,7 +32,7 @@ describe('createAutoImportAugmenter', () => {
     expect(json.usingComponents).toEqual({
       Navbar: '/components/Navbar/index',
     })
-    expect(injectedEntries).toEqual(['/components/Navbar/index'])
+    expect(injectedEntries).toEqual([{ from: '/components/Navbar/index' }])
   })
 
   it('does not inject usingComponents when tag name case mismatches', () => {
@@ -126,7 +126,7 @@ describe('createAutoImportAugmenter', () => {
     expect(json.usingComponents).toEqual({
       HotCard: '/components/HotCard/index',
     })
-    expect(injectedEntries).toEqual(['/components/HotCard/index'])
+    expect(injectedEntries).toEqual([{ from: '/components/HotCard/index' }])
   })
 
   it('does not return entries when explicit usingComponents points elsewhere', () => {
@@ -194,7 +194,10 @@ describe('createAutoImportAugmenter', () => {
     expect(json.usingComponents).toEqual({
       ResolverBadge: '/weapp_vite_external/resolver-ui/ResolverBadge',
     })
-    expect(injectedEntries).toEqual(['/weapp_vite_external/resolver-ui/ResolverBadge'])
+    expect(injectedEntries).toEqual([{
+      from: '/weapp_vite_external/resolver-ui/ResolverBadge',
+      resolvedId: '/workspace/packages/resolver-ui/ResolverBadge.vue',
+    }])
     expect(externalComponentEntryMap.get('weapp_vite_external/resolver-ui/ResolverBadge')).toBe(
       '/workspace/packages/resolver-ui/ResolverBadge.vue',
     )
@@ -230,7 +233,10 @@ describe('createAutoImportAugmenter', () => {
     expect(json.usingComponents).toEqual({
       HotCard: '/components/HotCard/index',
     })
-    expect(injectedEntries).toEqual(['/components/HotCard/index'])
+    expect(injectedEntries).toEqual([{
+      from: '/components/HotCard/index',
+      resolvedId: '/project/src/components/HotCard/index.vue',
+    }])
     expect(componentEntryMap.get('components/HotCard/index')).toBe(
       '/project/src/components/HotCard/index.vue',
     )
@@ -270,7 +276,10 @@ describe('createAutoImportAugmenter', () => {
     expect(json.usingComponents).toEqual({
       HotCard: '/components/HotCard/index',
     })
-    expect(injectedEntries).toEqual(['/components/HotCard/index'])
+    expect(injectedEntries).toEqual([{
+      from: '/components/HotCard/index',
+      resolvedId: '/project/src/components/HotCard/index.vue',
+    }])
     expect(componentEntryMap.get('components/HotCard/index')).toBe(
       '/project/src/components/HotCard/index.vue',
     )
@@ -334,7 +343,10 @@ describe('createAutoImportAugmenter', () => {
       expect(json.usingComponents).toEqual({
         'hot-card': '/components/hot-card',
       })
-      expect(injectedEntries).toEqual(['/components/hot-card'])
+      expect(injectedEntries).toEqual([{
+        from: '/components/hot-card',
+        resolvedId: hotCardPath,
+      }])
       expect(componentEntryMap.get('components/hot-card')).toBe(hotCardPath)
     }
     finally {
@@ -377,6 +389,63 @@ describe('createAutoImportAugmenter', () => {
     expect(secondJson.usingComponents).toEqual({
       'van-button': '/miniprogram_npm/@vant/weapp/button/index',
     })
+  })
+
+  it.each(['wevu-sfc', 'native'] as const)('publishes current %s source on cache hits without exposing cached records', async (sourceType) => {
+    const hit = { HotCard: [{ start: 0, end: 0 }] }
+    const component = {
+      from: '/components/HotCard/index',
+      resolvedId: `/project/src/components/HotCard/index.${sourceType === 'native' ? 'js' : 'vue'}`,
+      sourceType,
+    }
+    const resolve = vi.fn(() => ({ value: { name: 'HotCard', ...component } }))
+    const componentEntryMap = new Map<string, string>()
+    const applyAutoImports = createAutoImportAugmenter(
+      { resolve, getVersion: () => 0 } as any,
+      { getAggregatedAutoImportComponents: () => hit } as any,
+      componentEntryMap,
+    )
+
+    const first = await applyAutoImports('/project/src/pages/home', {})
+    expect(first).toEqual([component])
+    Object.assign(first[0]!, { resolvedId: '/stale/source.vue' })
+    componentEntryMap.set('components/HotCard/index', '/stale/registry.vue')
+    const cached = await applyAutoImports('/project/src/pages/home', {
+      usingComponents: { HotCard: component.from },
+    })
+
+    expect(cached).toEqual([component])
+    expect(resolve).toHaveBeenCalledTimes(1)
+    expect(componentEntryMap.get('components/HotCard/index')).toBe(component.resolvedId)
+    expect(await applyAutoImports('/project/src/pages/home', {
+      usingComponents: { HotCard: '/components/ExplicitCard/index' },
+    })).toEqual([])
+  })
+
+  it('refreshes source provenance when the component registry version changes', async () => {
+    const hit = { HotCard: [{ start: 0, end: 0 }] }
+    let version = 0
+    const resolve = vi.fn(() => ({
+      value: {
+        name: 'HotCard',
+        from: '/components/HotCard/index',
+        resolvedId: version === 0 ? '/project/src/components/HotCard/index.vue' : '/project/src/components/HotCard/index.js',
+        sourceType: version === 0 ? 'wevu-sfc' : 'native',
+      },
+    }))
+    const applyAutoImports = createAutoImportAugmenter(
+      { resolve, getVersion: () => version } as any,
+      { getAggregatedAutoImportComponents: () => hit } as any,
+    )
+
+    await applyAutoImports('/project/src/pages/home', {})
+    version += 1
+    expect(await applyAutoImports('/project/src/pages/home', {})).toEqual([{
+      from: '/components/HotCard/index',
+      resolvedId: '/project/src/components/HotCard/index.js',
+      sourceType: 'native',
+    }])
+    expect(resolve).toHaveBeenCalledTimes(2)
   })
 
   it('prefers auto-import candidates so builtin-name local components still resolve to user component', () => {

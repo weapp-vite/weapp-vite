@@ -1,3 +1,4 @@
+import type { ResolvedValue } from '../../../auto-import-components/resolvers/types'
 import type { CompilerContext } from '../../../context'
 import { get, isObject, set } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
@@ -8,10 +9,7 @@ import { toKebabCaseComponentName } from '../../../utils/json'
 const GLOB_WILDCARD_RE = /[*?[{]/
 const AUTO_IMPORT_LOCAL_EXTENSIONS = ['vue', 'wxml', 'js', 'ts', 'json'] as const
 
-interface ResolvedAutoImportComponent {
-  from: string
-  resolvedId?: string
-}
+export type ResolvedAutoImportComponent = Pick<ResolvedValue, 'from' | 'resolvedId' | 'sourceType'>
 type ResolvedAutoImportComponents = Record<string, ResolvedAutoImportComponent>
 
 function toPascalTagName(name: string) {
@@ -116,7 +114,7 @@ export function createAutoImportAugmenter(
     json: any,
     resolvedComponents: ResolvedAutoImportComponents,
   ) {
-    const injectedEntries: string[] = []
+    const injectedEntries: ResolvedAutoImportComponent[] = []
     for (const [name, resolved] of Object.entries(resolvedComponents)) {
       const trackResolvedId = () => {
         if (resolved.resolvedId) {
@@ -127,19 +125,19 @@ export function createAutoImportAugmenter(
       if (isObject(usingComponents) && Reflect.has(usingComponents, name)) {
         if (usingComponents[name] === resolved.from) {
           trackResolvedId()
-          injectedEntries.push(resolved.from)
+          injectedEntries.push({ ...resolved })
         }
         continue
       }
 
       set(json, `usingComponents.${name}`, resolved.from)
-      injectedEntries.push(resolved.from)
+      injectedEntries.push({ ...resolved })
       trackResolvedId()
     }
     return injectedEntries
   }
 
-  return function applyAutoImports(baseName: string, json: any, retryMissing = true): string[] | Promise<string[]> {
+  return function applyAutoImports(baseName: string, json: any, retryMissing = true): ResolvedAutoImportComponent[] | Promise<ResolvedAutoImportComponent[]> {
     const hit = wxmlService.getAggregatedAutoImportComponents?.(baseName)
       ?? wxmlService.getAggregatedComponents(baseName)
     if (!hit) {
@@ -164,6 +162,7 @@ export function createAutoImportAugmenter(
       resolvedComponents[match.value.name] = {
         from: match.value.from,
         resolvedId: match.value.resolvedId,
+        sourceType: match.value.sourceType,
       }
     }
     cache.set(baseName, {

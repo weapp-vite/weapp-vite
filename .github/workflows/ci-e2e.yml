@@ -17,6 +17,7 @@ on:
           - shared-layout-windows
           - lifecycle
           - runtime-publication
+          - workspace-hmr
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.hmr-diagnostic || 'full' }}
@@ -44,6 +45,7 @@ jobs:
       main_command: |
         pnpm vitest run e2e/utils/devBuildCompletion.test.ts e2e/scripts/e2e-suite-manifest.test.ts e2e/scripts/hmr-guard-manifest.test.ts
         pnpm exec vitest run --config scripts/vitest.config.mjs scripts/workspace-hmr/statefulArtifactMeasurement.test.ts scripts/workspace-hmr/statefulArtifactMeasurement.deadline.test.ts scripts/workspace-hmr/statefulAuditClient.test.ts scripts/workspace-hmr/statefulAuditUpdate.test.ts scripts/e2e-diagnostic-workflow.test.ts scripts/repoctl-release-workflow.test.ts
+        pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/auto-import-vue-sfc.test.ts e2e/ci/external-linked-vue-component.hmr.test.ts
         pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/issue-1134-native-topology.runtime.test.ts e2e/ide/script-setup-external-src.runtime.test.ts e2e/ide/issue-1015-css-hmr.runtime.test.ts
       e2e_platform: weapp
       artifact_name: runtime-publication-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ github.sha }}
@@ -445,7 +447,7 @@ jobs:
     secrets: inherit
 
   workspace-hmr-nightly:
-    if: github.event_name != 'pull_request' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
+    if: github.event_name != 'pull_request' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr')
     name: Workspace HMR Nightly Full (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
