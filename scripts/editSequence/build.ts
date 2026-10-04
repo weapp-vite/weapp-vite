@@ -2,8 +2,9 @@ import type { OutputBundle, PluginContext, RolldownOutput, RolldownWatcher } fro
 import type { DevEngine } from 'rolldown/experimental'
 import type { Plugin } from 'vite'
 import type { StatefulHmrDevEngineUpdate } from '../../packages/weapp-vite/src/runtime/statefulHmr/viteAdapter'
+import type { SequenceSaveOptions } from './buildSources'
 import type { SequenceInput } from './driver'
-import { mkdir, readFile, rename, rm, utimes, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'pathe'
 import { build } from 'vite'
 import { createStatefulHmrRolldownRuntimeSource } from '../../packages/weapp-vite/src/runtime/statefulHmr/commonRuntime'
@@ -14,7 +15,8 @@ import { writeStatefulHmrOutput } from '../../packages/weapp-vite/src/runtime/st
 import { createViteDevEngine } from '../../packages/weapp-vite/src/runtime/statefulHmr/viteDevEngine'
 import { SequenceBuildDiagnostics } from './buildDiagnostics'
 import { createSequenceFixturePlugin } from './buildFixture'
-import { applyAction, bounded } from './driver'
+import { SequenceSourceWriter } from './buildSources'
+import { bounded } from './driver'
 import { observeError } from './editor'
 import { SequenceMeasurements } from './measurement'
 import { SequencePublicationBarrier } from './publicationBarrier'
@@ -32,16 +34,11 @@ interface PublicationReceipt {
   ready: boolean
 }
 
-interface SequenceSaveOptions {
-  afterSave?: (files: Readonly<Record<string, string>>) => Promise<void>
-  fileTimestamp?: Date
-}
-
 export class BuildSequenceSession {
   private engine?: DevEngine
   private engineRun?: Promise<void>
   private watcher?: RolldownWatcher
-  private sourceFiles: Record<string, string> = {}
+  private readonly sources: SequenceSourceWriter
   private completion = Promise.withResolvers<void>()
   private failure: unknown
   private outputTask: Promise<void> = Promise.resolve()
@@ -70,16 +67,18 @@ export class BuildSequenceSession {
   readonly measurements: SequenceMeasurements
 
   constructor(mode: 'classic' | 'stateful-experimental', private readonly root: string, private readonly outDir: string) {
+    this.sources = new SequenceSourceWriter(root, file => this.noteSourceWrite(file))
     this.stateful = mode === 'stateful-experimental'
     this.measurements = new SequenceMeasurements(root)
   }
 
   async observe(input: SequenceInput, options: SequenceSaveOptions = {}) {
+    input.signal.throwIfAborted()
     this.trace.record('observe', { step: input.step })
     this.measurements.reset()
     const topologyChange = this.started && (
-      Object.keys(input.files).some(file => !Object.hasOwn(this.sourceFiles, file))
-      || Object.keys(this.sourceFiles).some(file => !Object.hasOwn(input.files, file))
+      Object.keys(input.files).some(file => !Object.hasOwn(this.sources.files, file))
+      || Object.keys(this.sources.files).some(file => !Object.hasOwn(input.files, file))
     )
     const configChange = input.action?.kind === 'config' || (input.action?.kind === 'rapid' && input.action.saves.some(action => action.kind === 'config'))
     // classic 的新增/删除走完整构建边界；同一进程及输出目录仍保留缓存和历史产物供校验。
@@ -96,7 +95,7 @@ export class BuildSequenceSession {
     this.writing = true
     const sourceWrite = this.trace.begin('write-sources')
     try {
-      await this.writeSources(input, options)
+      await this.sources.write(input, { ...options, started: this.started })
       this.trace.end(sourceWrite, 'completed')
     }
     catch (error) {
@@ -107,6 +106,7 @@ export class BuildSequenceSession {
       this.writing = false
       this.completeIfPublished()
     }
+    input.signal.throwIfAborted()
     if (!this.started) {
       await mkdir(this.outDir, { recursive: true })
       // emptyOutDir:false 的用户边界；只在最初创建，后续绝不重写或清理。
@@ -273,71 +273,10 @@ export class BuildSequenceSession {
     }
   }
 
-  private async writeSources(input: SequenceInput, options: SequenceSaveOptions) {
-    const save = async (files: Readonly<Record<string, string>>) => {
-      for (const file of Object.keys(this.sourceFiles)) {
-        if (!Object.hasOwn(files, file)) {
-          this.noteSourceWrite(file)
-          await rm(path.join(this.root, file), { force: true })
-        }
-      }
-      for (const [file, content] of Object.entries(files)) {
-        if (this.sourceFiles[file] === content) {
-          continue
-        }
-        const target = path.join(this.root, file)
-        // fresh baseline 和活动 watcher 共享源码路径；相同字节不能再次触发活动构建。
-        let current: string | undefined
-        try {
-          current = await readFile(target, 'utf8')
-        }
-        catch (error) {
-          if (!(error instanceof Error) || !('code' in error) || error.code !== 'ENOENT') {
-            throw error
-          }
-        }
-        if (current !== content) {
-          this.noteSourceWrite(file)
-          await mkdir(path.dirname(target), { recursive: true })
-          await writeFile(`${target}.pending`, content)
-          if (options.fileTimestamp) {
-            await utimes(`${target}.pending`, options.fileTimestamp, options.fileTimestamp)
-          }
-          await rename(`${target}.pending`, target)
-        }
-      }
-      this.sourceFiles = { ...files }
-    }
-    if (input.action?.kind === 'rename' && this.started) {
-      const { file, to } = input.action
-      this.noteSourceWrite(file)
-      this.noteSourceWrite(to)
-      await mkdir(path.dirname(path.join(this.root, to)), { recursive: true })
-      await rename(path.join(this.root, file), path.join(this.root, to))
-      applyAction(this.sourceFiles, input.action)
-    }
-    if (input.action?.kind === 'rapid' && this.started) {
-      const intermediate = { ...this.sourceFiles }
-      for (const action of input.action.saves) {
-        if (action.kind === 'rename') {
-          this.noteSourceWrite(action.file)
-          this.noteSourceWrite(action.to)
-          await mkdir(path.dirname(path.join(this.root, action.to)), { recursive: true })
-          await rename(path.join(this.root, action.file), path.join(this.root, action.to))
-          applyAction(this.sourceFiles, action)
-        }
-        applyAction(intermediate, action)
-        await save(intermediate)
-        await options.afterSave?.({ ...intermediate })
-      }
-    }
-    await save(input.files)
-  }
-
   private async start() {
     this.started = true
     this.watchedFiles.clear()
-    const config = this.sourceFiles['sequence.config.json'] ? JSON.parse(this.sourceFiles['sequence.config.json']) as { define?: Record<string, string> } : {}
+    const config = this.sources.files['sequence.config.json'] ? JSON.parse(this.sources.files['sequence.config.json']) as { define?: Record<string, string> } : {}
     const recordBundle = (bundle: OutputBundle, context: PluginContext) => {
       if (this.stateful) {
         return

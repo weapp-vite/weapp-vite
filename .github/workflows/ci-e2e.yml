@@ -44,7 +44,7 @@ jobs:
       build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...
       main_command: |
         pnpm vitest run e2e/utils/devBuildCompletion.test.ts e2e/scripts/e2e-suite-manifest.test.ts e2e/scripts/hmr-guard-manifest.test.ts
-        pnpm exec vitest run --config scripts/vitest.config.mjs scripts/workspace-hmr/statefulArtifactMeasurement.test.ts scripts/workspace-hmr/statefulArtifactMeasurement.deadline.test.ts scripts/workspace-hmr/statefulAuditClient.test.ts scripts/workspace-hmr/statefulAuditUpdate.test.ts scripts/e2e-diagnostic-workflow.test.ts scripts/repoctl-release-workflow.test.ts
+        pnpm exec vitest run --config scripts/vitest.config.mjs scripts/workspace-hmr/statefulArtifactMeasurement.test.ts scripts/workspace-hmr/statefulArtifactMeasurement.deadline.test.ts scripts/workspace-hmr/statefulAuditClient.test.ts scripts/workspace-hmr/statefulAuditUpdate.test.ts scripts/e2e-diagnostic-workflow.test.ts scripts/repoctl-release-workflow.test.ts scripts/utils/atomicRename.test.ts scripts/editSequence/buildSources.test.ts
         pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/auto-import-vue-sfc.test.ts e2e/ci/external-linked-vue-component.hmr.test.ts
         pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/issue-1134-native-topology.runtime.test.ts e2e/ide/script-setup-external-src.runtime.test.ts e2e/ide/issue-1015-css-hmr.runtime.test.ts
       e2e_platform: weapp
@@ -68,7 +68,7 @@ jobs:
       timeout_minutes: 30
       build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...
       main_command: |
-        pnpm vitest run packages/weapp-vite/src/utils/watchDependencies.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotInputs.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotBuild.integration.test.ts scripts/editSequence/processTree.test.ts scripts/editSequence/processTree.windows.integration.test.ts scripts/editSequence/processObserver.test.ts scripts/editSequence/processObserverClose.test.ts scripts/editSequence/worker.test.ts
+        pnpm vitest run packages/weapp-vite/src/utils/watchDependencies.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotInputs.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotBuild.integration.test.ts scripts/editSequence/processTree.test.ts scripts/editSequence/processTree.windows.integration.test.ts scripts/editSequence/processObserver.test.ts scripts/editSequence/processObserverClose.test.ts scripts/editSequence/worker.test.ts scripts/utils/atomicRename.test.ts scripts/editSequence/buildSources.test.ts
         pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/edit-sequence.test.ts --reporter=default --reporter=json --outputFile=.tmp/hmr-lifecycle-report.json
       e2e_platform: weapp
       artifact_name: hmr-lifecycle-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ github.sha }}
