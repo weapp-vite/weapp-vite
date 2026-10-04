@@ -23,6 +23,7 @@ import { createBuildService } from './service'
 const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
 
 const buildMock = vi.hoisted(() => vi.fn())
+const vueStyleSnapshotMock = vi.hoisted(() => vi.fn<typeof import('./vueStyleSnapshot').withVueStyleDependencySnapshot>())
 const cleanOutputsMock = vi.hoisted(() => vi.fn(async () => {}))
 const resetEmittedOutputCachesMock = vi.hoisted(() => vi.fn())
 const isOutputRootInsideOutDirMock = vi.hoisted(() => vi.fn((outDir: string, pluginOutputRoot: string) => {
@@ -106,6 +107,8 @@ vi.mock('node:fs/promises', () => ({
   appendFile: appendFileMock,
   mkdir: mkdirMock,
 }))
+
+vi.mock('./vueStyleSnapshot', () => ({ withVueStyleDependencySnapshot: vueStyleSnapshotMock }))
 
 vi.mock('vite', () => ({
   build: buildMock,
@@ -488,6 +491,7 @@ describe('runtime buildPlugin service', () => {
     devBuildWatcherQueue.length = 0
     vi.clearAllMocks()
     buildMock.mockReset()
+    vueStyleSnapshotMock.mockReset().mockImplementation(async (_ctx, _entries, _files, run) => await run())
     disableProjectPrivateConfigHotReloadMock.mockReset()
     disableProjectPrivateConfigHotReloadMock.mockResolvedValue(true)
     runStatefulHmrDevMock.mockReset()
@@ -1431,6 +1435,87 @@ describe('runtime buildPlugin service', () => {
       await watcher.close()
     }
     expect(sequence).toEqual(['initial-start', 'initial-write-complete', 'snapshot-write'])
+  })
+
+  it('rescans entry topology when external input capture fails after source refresh', async () => {
+    const { ctx, watcher, onChange } = await startClassicSnapshotContext()
+    ctx.scanService.markDirty = vi.fn()
+    const rebuilt = Promise.withResolvers<void>()
+    vueStyleSnapshotMock.mockImplementationOnce(async (_ctx, _entries, _files, run) => {
+      // 入口可在源刷新结束后消失；capture失败必须撤销入口扫描快照。
+      expect(ctx.scanService.markDirty).not.toHaveBeenCalled()
+      return await run({ forceFullRescan: true })
+    })
+    buildMock.mockImplementation(async () => {
+      expect(ctx.scanService.markDirty).toHaveBeenCalled()
+      expect(ctx.runtimeState.build.hmr.fullEntryScan).toBe(true)
+      expect(ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh).toBe(true)
+      rebuilt.resolve()
+      return { output: [] }
+    })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      onChange({ event: 'update', file: '/project/src/pages/logs/external.css' })
+      await vi.runOnlyPendingTimersAsync()
+      await rebuilt.promise
+    }
+    finally {
+      await watcher.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it('upgrades an already chained watcher batch for source drift without another publication', async () => {
+    const { ctx, watcher, onChange } = await startClassicSnapshotContext()
+    const file = '/project/src/pages/logs/external.css'
+    const started = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    const successor = Promise.withResolvers<void>()
+    const publications: Array<{ full: boolean, events: unknown }> = []
+    vueStyleSnapshotMock.mockImplementationOnce(async (_ctx, _entries, _files, run, onDrift) => {
+      const result = await run()
+      onDrift([{ file, event: 'delete' }])
+      return result
+    })
+    buildMock.mockImplementation(async () => {
+      publications.push({
+        full: ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh === true,
+        events: ctx.runtimeState.build.hmr.profile.sourceEvents,
+      })
+      if (publications.length === 1) {
+        started.resolve()
+        await release.promise
+      }
+      else {
+        successor.resolve()
+      }
+      return { output: [] }
+    })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      onChange({ file, event: 'update' })
+      await vi.runOnlyPendingTimersAsync()
+      await started.promise
+      onChange({ file, event: 'update' })
+      // 定时器先把后继批次放入串行链，旧构建此时仍被显式屏障阻塞。
+      await vi.runOnlyPendingTimersAsync()
+      expect(publications).toHaveLength(1)
+      release.resolve()
+      await successor.promise
+      await vi.runOnlyPendingTimersAsync()
+      await flushAsyncTasks()
+      expect(publications).toEqual([
+        { full: false, events: [expect.objectContaining({ file, event: 'update' })] },
+        { full: true, events: [expect.objectContaining({ file, event: 'update' })] },
+      ])
+      expect(buildMock).toHaveBeenCalledTimes(3)
+      expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenLastCalledWith(file, 'delete')
+    }
+    finally {
+      release.resolve()
+      await watcher.close()
+      vi.useRealTimers()
+    }
   })
 
   it('discards queued source changes after an unrecoverable initial publication failure', async () => {
@@ -3080,6 +3165,7 @@ describe('runtime buildPlugin service', () => {
   it('runs isolated plugin watcher in dev mode and registers it on main watcher service', async () => {
     const pluginWatcher = createWatcher(['START', 'END'])
     buildMock.mockReset()
+    vueStyleSnapshotMock.mockReset().mockImplementation(async (_ctx, _entries, _files, run) => await run())
     buildMock
       .mockResolvedValueOnce(createWatcher(['START', 'END']))
       .mockResolvedValueOnce({ output: [] })
