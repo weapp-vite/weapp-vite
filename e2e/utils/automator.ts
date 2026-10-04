@@ -320,6 +320,10 @@ type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 export type AutomatorBridgeProjectMode = 'direct' | 'snapshot'
 
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
+  /** 仅通知本次实际创建的独立快照，允许调用者登记失败启动的资源。 */
+  onOwnedSnapshot?: (project: { projectPath: string, cliPath: string }) => Promise<void>
+  /** 在桥接握手前暴露已获得的端点，不转移共享 IDE 宿主所有权。 */
+  onSessionMetadata?: (metadata: { projectPath: string, wsEndpoint: string, port: number }) => Promise<void>
   configureHeadlessSession?: HeadlessAutomatorLaunchOptions['configureSession']
   /** HMR 验收直连构建器输出；snapshot 仅用于需要独立项目快照的验收。 */
   bridgeProjectMode?: AutomatorBridgeProjectMode
@@ -2576,6 +2580,7 @@ export async function launchAutomatorViaCliBridge(
   project: string,
   lifecycle: AutomatorLaunchLifecycle,
   monitor?: ReturnType<typeof createDevtoolsSimulatorBootLogMonitor>,
+  onSessionMetadata?: LaunchAutomatorOptions['onSessionMetadata'],
 ) {
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-start project=${project}\n`)
   const result = await lifecycle.step(() => execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify({ ...options, timeout: lifecycle.remainingMs(options.timeout) })], {
@@ -2615,6 +2620,11 @@ export async function launchAutomatorViaCliBridge(
   if (!bridgeResult.wsEndpoint || typeof bridgeResult.wsEndpoint !== 'string') {
     throw new Error(`Invalid automator cli bridge output: ${rawStdout}`)
   }
+  await onSessionMetadata?.({
+    projectPath: options.projectPath!,
+    wsEndpoint: bridgeResult.wsEndpoint,
+    port: Number(new URL(bridgeResult.wsEndpoint).port),
+  })
   lifecycle.throwIfAborted()
   if (typeof bridgeResult.servicePort === 'number') {
     setRuntimeWechatDevtoolsServicePort(bridgeResult.servicePort)
@@ -2741,7 +2751,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   }
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
-  const { configureHeadlessSession: _configureHeadlessSession, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { configureHeadlessSession: _configureHeadlessSession, onOwnedSnapshot, onSessionMetadata, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   rest.cliPath = resolveWechatCliPath(rest.cliPath)
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
@@ -2784,6 +2794,9 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               const runtimeRoot = resolveReportProjectPath(bridgeWrapperProject.runtimeRoot)
               process.stdout.write(`[info] [runtime:launch-step] bridge-project-ready mode=${mode} runtimeRoot=${runtimeRoot} project=${project}\n`)
             }
+            if (bridgeWrapperProject?.stopSync) {
+              await onOwnedSnapshot?.({ projectPath: bridgeWrapperProject.path, cliPath: rest.cliPath! })
+            }
             await lifecycle.step(() => waitForBridgeWrapperWarmupAsset(bridgeWrapperProject, resolvedWarmupRoute, project))
             const launchProjectPath = bridgeWrapperProject?.path ?? rest.projectPath
             const launchRest = {
@@ -2809,7 +2822,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             lifecycle.throwIfAborted()
             process.stdout.write(`[info] [runtime:launch-step] connect-start mode=${launchMode || 'direct'} project=${project}\n`)
             miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
-              ? await launchAutomatorViaCliBridge(launchOptions, project, lifecycle, devtoolsLogMonitor)
+              ? await launchAutomatorViaCliBridge(launchOptions, project, lifecycle, devtoolsLogMonitor, onSessionMetadata)
               : await lifecycle.step(() => runWithDevtoolsLogMonitor(
                   () => automator.launch({ ...launchOptions, signal: lifecycle.signal, timeout: lifecycle.remainingMs(launchTimeout) }),
                   lifecycle.remainingMs(launchTimeout),

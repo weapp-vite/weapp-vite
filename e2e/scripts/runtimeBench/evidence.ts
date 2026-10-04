@@ -1,6 +1,8 @@
+import type { BenchSessionResource } from './resources'
 import type { BenchScenarioSummary, BenchUpdateSample, WorkerResult } from './types'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { assertBenchResourcesClosed } from './resources'
 
 export interface BenchWorkerEvidence {
   schemaVersion: 1
@@ -13,6 +15,7 @@ export interface BenchWorkerEvidence {
   failures: string[]
   attemptFailures: Array<{ attempt: number, label: string, error: string }>
   cleanupErrors: string[]
+  resources: BenchSessionResource[]
   metadata?: Pick<WorkerResult, 'runtime' | 'artifact'>
   result?: WorkerResult
 }
@@ -26,7 +29,7 @@ export function describeBenchError(error: unknown): string {
 
 /** 每次完成样本后原子落盘；后续场景失败不会丢失先前原始观测。 */
 export function createBenchEvidence(filePath: string) {
-  const evidence: BenchWorkerEvidence = { schemaVersion: 1, status: 'running', samples: [], failures: [], attemptFailures: [], cleanupErrors: [] }
+  const evidence: BenchWorkerEvidence = { schemaVersion: 1, status: 'running', samples: [], failures: [], attemptFailures: [], cleanupErrors: [], resources: [] }
   const save = async () => {
     await fs.mkdir(path.dirname(filePath), { recursive: true })
     const temporaryPath = `${filePath}.tmp`
@@ -36,6 +39,16 @@ export function createBenchEvidence(filePath: string) {
   return {
     evidence,
     save,
+    async onResource(resource: BenchSessionResource) {
+      const index = evidence.resources.findIndex(item => item.id === resource.id)
+      if (index === -1) {
+        evidence.resources.push({ ...resource })
+      }
+      else {
+        evidence.resources[index] = { ...resource }
+      }
+      await save()
+    },
     onSample: (scenario: string) => async (sample: BenchWorkerEvidence['samples'][number]['sample'], index: number) => {
       evidence.samples.push({ scenario, index, sample })
       await save()
@@ -74,6 +87,9 @@ export async function finishBenchEvidence(
   finally {
     try {
       await close()
+      if (journal.evidence.metadata?.runtime?.provider === 'devtools' || journal.evidence.result?.runtime?.provider === 'devtools') {
+        assertBenchResourcesClosed(journal.evidence.resources)
+      }
     }
     catch (error) {
       errors.push(error)

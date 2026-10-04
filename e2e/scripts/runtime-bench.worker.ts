@@ -46,6 +46,7 @@ async function createBenchSession(projectRoot: string, journal: EvidenceJournal)
     runtimeProvider,
     onCleanupError: journal.onCleanupError,
     onRetry: journal.onRetry,
+    onResource: journal.onResource,
   })
 }
 

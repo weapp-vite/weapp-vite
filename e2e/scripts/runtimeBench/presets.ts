@@ -10,6 +10,7 @@ import { createConsumerTemporaryRoot, packConsumerTarballs } from '../../../pack
 import { assertEquivalentBenchConsumers, assessBenchMemory } from './acceptance'
 import { createRuntimeBenchConsumer } from './consumer'
 import { describeBenchError, readBenchEvidence } from './evidence'
+import { assertBenchResourcesClosed } from './resources'
 
 const RESULT_PREFIX = 'RUNTIME_BENCH_RESULT '
 
@@ -24,6 +25,7 @@ export async function runPublishedPresetBench(options: {
     provenance?: Awaited<ReturnType<typeof createRuntimeBenchConsumer>>
     result?: WorkerResult
     evidence?: BenchWorkerEvidence
+    logs?: { stdout: string, stderr: string }
   }> = {}
   const failures: Record<string, string> = {}
   const report = {
@@ -75,8 +77,22 @@ export async function runPublishedPresetBench(options: {
           assertEquivalentBenchConsumers(results.normal!.provenance!, provenance)
           report.equivalentInputs = true
         }
-        const { stdout } = await execa(process.execPath, ['--import', 'tsx', path.join(options.repoRoot, 'e2e/scripts/runtime-bench.worker.ts'), root], {
+        const logDirectory = `${options.output}.workers`
+        await fs.mkdir(logDirectory, { recursive: true })
+        const stdoutPath = path.join(logDirectory, `${preset}.stdout.log`)
+        const stderrPath = path.join(logDirectory, `${preset}.stderr.log`)
+        await fs.writeFile(stdoutPath, '')
+        await fs.writeFile(stderrPath, '')
+        entry.logs = {
+          stdout: path.relative(path.dirname(options.output), stdoutPath).replaceAll('\\', '/'),
+          stderr: path.relative(path.dirname(options.output), stderrPath).replaceAll('\\', '/'),
+        }
+        // 直接流式写入报告旁的文件；成功、失败和启动重试的输出都不依赖 execa 错误缓冲区。
+        await execa(process.execPath, ['--import', 'tsx', path.join(options.repoRoot, 'e2e/scripts/runtime-bench.worker.ts'), root], {
           cwd: options.repoRoot,
+          stdout: { file: stdoutPath },
+          stderr: { file: stderrPath },
+          buffer: false,
           env: {
             NODE_PATH: '',
             WEVU_BENCH_PROJECT: 'runtime-bench-vue',
@@ -88,6 +104,7 @@ export async function runPublishedPresetBench(options: {
             WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP: undefined,
           },
         })
+        const stdout = await fs.readFile(stdoutPath, 'utf8')
         const line = stdout.split(/\r?\n/).find(item => item.startsWith(RESULT_PREFIX))
         assert(line, `Missing published benchmark result: ${preset}`)
         const result = JSON.parse(line.slice(RESULT_PREFIX.length)) as WorkerResult
@@ -106,6 +123,9 @@ export async function runPublishedPresetBench(options: {
         if (!failures[preset]) {
           assert.equal(entry.evidence?.status, 'passed', 'Missing successful worker evidence')
           assert.deepEqual(entry.evidence?.result, entry.result, 'Worker result differs from archived evidence')
+          if (options.provider === 'devtools') {
+            assertBenchResourcesClosed(entry.evidence?.resources)
+          }
         }
       }
       catch (error) {

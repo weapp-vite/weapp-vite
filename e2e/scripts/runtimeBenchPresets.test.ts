@@ -82,6 +82,7 @@ let output: string
 let supported: boolean
 let failure: 'sample' | 'cleanup' | undefined
 let drift: boolean
+let resourcesClosed: boolean
 
 beforeEach(async () => {
   vi.clearAllMocks()
@@ -91,6 +92,7 @@ beforeEach(async () => {
   supported = true
   failure = undefined
   drift = false
+  resourcesClosed = true
   mocks.temporaryRoot.mockResolvedValue(consumerRoot)
   mocks.consumer.mockImplementation(async ({ root }: { root: string }) => {
     await fs.mkdir(root, { recursive: true })
@@ -104,18 +106,21 @@ beforeEach(async () => {
       installedClosure: [{ location: 'node_modules/vue', version: drift && path.basename(root) === 'performance' ? 'different' : 'same', integrity: 'sha512-test' }],
     }
   })
-  mocks.execa.mockImplementation(async (command: string, _args: string[], options: { env?: Record<string, string> }) => {
+  mocks.execa.mockImplementation(async (command: string, _args: string[], options: { env?: Record<string, string>, stdout?: { file: string }, stderr?: { file: string } }) => {
     if (command === 'git') {
       return { stdout: 'test-commit' }
     }
     const preset = options.env!.WEVU_BENCH_PRESET!
     const result = workerResult(preset, supported)
+    await fs.writeFile(options.stdout!.file, `bridge attempt 1\nbridge attempt 2\nRUNTIME_BENCH_RESULT ${JSON.stringify(result)}\n`)
+    await fs.writeFile(options.stderr!.file, failure ? 'worker failed after bridge retry\n' : 'runtime warning\n')
     const evidence = {
       schemaVersion: 1,
       status: failure ? 'failed' : 'passed',
       samples: [{ scenario: 'firstScreen', index: 0, sample: result.firstScreen.samples![0] }],
       failures: failure === 'sample' ? ['later sample failed'] : [],
       cleanupErrors: failure === 'cleanup' ? ['owned close failed'] : [],
+      resources: [{ id: 'session-1', projectPath: 'owned-snapshot', cliPath: 'selected-cli', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415, status: resourcesClosed ? 'closed' : 'owned', projectClosed: resourcesClosed, portClosed: resourcesClosed }],
       result: failure === 'sample' ? undefined : result,
     }
     await fs.writeFile(options.env!.WEVU_BENCH_EVIDENCE_PATH!, JSON.stringify(evidence))
@@ -171,6 +176,9 @@ describe('published benchmark acceptance and retention', () => {
     expect(saved.complete).toBe(false)
     expect(saved.results.normal?.evidence?.samples).toHaveLength(1)
     expect(saved.cleanup.errors).toEqual(kind === 'cleanup' ? ['normal: owned close failed'] : [])
+    const logs = saved.results.normal!.logs!
+    expect(await fs.readFile(path.join(path.dirname(output), logs.stdout), 'utf8')).toContain('bridge attempt 1\nbridge attempt 2')
+    expect(await fs.readFile(path.join(path.dirname(output), logs.stderr), 'utf8')).toBe('worker failed after bridge retry\n')
     await expect(fs.access(path.join(consumerRoot, 'normal/retained-input.vue'))).resolves.toBeUndefined()
   })
 
@@ -192,9 +200,23 @@ describe('published benchmark acceptance and retention', () => {
     await fs.mkdir(unrelated)
     expect(await run()).toMatchObject({ complete: true, collectionComplete: true, equivalentInputs: true, cleanup: { consumers: 'removed', errors: [] } })
     expect((await report()).results.performance?.evidence?.status).toBe('passed')
+    for (const preset of ['normal', 'performance']) {
+      const logs = (await report()).results[preset]!.logs!
+      expect(await fs.readFile(path.join(path.dirname(output), logs.stdout), 'utf8')).toContain('bridge attempt 1\nbridge attempt 2')
+      expect(await fs.readFile(path.join(path.dirname(output), logs.stderr), 'utf8')).toBe('runtime warning\n')
+    }
     await expect(fs.access(consumerRoot)).rejects.toMatchObject({ code: 'ENOENT' })
     await expect(fs.access(unrelated)).resolves.toBeUndefined()
     expect(mocks.pack).not.toHaveBeenCalled()
+  })
+
+  it('rejects a successful worker with unverified project cleanup and retains its input', async () => {
+    resourcesClosed = false
+    await expect(run()).rejects.toThrow('Benchmark owned project or port was not closed')
+    const saved = await report()
+    expect(saved.complete).toBe(false)
+    expect(saved.failures['normal:evidence']).toContain('was not closed')
+    await expect(fs.access(consumerRoot)).resolves.toBeUndefined()
   })
 
   it('records a consumer cleanup error in the archived report without reporting completion', async () => {

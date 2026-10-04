@@ -14,6 +14,10 @@
 
 每个正式样本结束后在计时之外原子保存 `runtime-bench-evidence.json`，预热不进入正式样本。中途失败的已完成样本、完整输出清单、采集错误和宿主清理错误随最终报告归档。采样、内存或清理不完整时保留本次消费者目录，并在本机诊断输出打印位置；归档失败也保留目录。只有完整报告先成功归档且所有验收证据齐全后才删除本次消费者，成功关闭宿主之后才发布 worker 结果。
 
+每个 worker 的 stdout/stderr 从启动起直接写入报告旁的 `<报告>.workers/`，包括内部启动重试和最终失败的日志；成功后删除消费者目录也保留日志。原始日志与 worker checkpoint 含本机诊断信息，公开 issue 前须单独脱敏，不能直接上传。报告中的 `logs` 是相对报告目录的文件位置。
+
+真实 IDE worker 通过启动器的独立快照创建事件登记所有权，并从实际 session metadata 校核项目、端点和端口。收尾先刷新日志并断开连接，再用启动时选定的同一 CLI 执行精确 `close --project`，随后核验已知 automator 端口关闭。每个快照只释放一次，失败启动也进入收尾；手动项目、其他项目、其他安装和共享宿主不在释放范围。`resources` 逐项记录关闭状态；缺失 metadata、CLI 关闭失败或端口仍开放均不能发布通过结果。`cleanup.consumers` 仅描述临时安装目录，不能替代项目和端口清理证据。
+
 会话恢复前将失败的样本名称、attempt 和原因写入 `attemptFailures` 与 `failures`。恢复后的样本可以继续留作诊断，但存在失败尝试的整轮结果仍为 failed，不能用替代样本生成通过的性能结论。
 
 首屏与详情导航的 `firstCommitMs` / `firstCommitMsMedian` 保持 null；ready marker 和包含固定等待的 wall time 不代表首个 host commit。更新场景继续独立保存宿主提交阶段与 DOM 可见观测，不改变工作负载、预热次数、正式采样次数或计时边界。

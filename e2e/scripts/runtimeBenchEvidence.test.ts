@@ -94,4 +94,21 @@ describe('runtime benchmark incremental evidence', () => {
     await expect(finishBenchEvidence(journal, async () => result, async () => {})).rejects.toThrow('Runtime benchmark failed')
     expect(await readBenchEvidence(file)).toMatchObject({ status: 'failed', result, cleanupErrors: ['previous host close rejected'] })
   })
+
+  it('requires verified resource evidence for a DevTools result before publication', async () => {
+    const { file, journal } = await fixture()
+    const result = { schemaVersion: 2, project: 'mock', runtime: { provider: 'devtools' } } as WorkerResult
+    await expect(finishBenchEvidence(journal, async () => result, async () => {})).rejects.toThrow('Runtime benchmark failed')
+    expect(await readBenchEvidence(file)).toMatchObject({ status: 'failed', cleanupErrors: ['Missing benchmark owned resource evidence'] })
+  })
+
+  it('persists the actual session resource then replaces it with the verified cleanup state', async () => {
+    const { file, journal } = await fixture()
+    const resource = { id: 'session-1', projectPath: 'owned-snapshot', cliPath: 'selected-cli', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415, status: 'owned' as const, projectClosed: false, portClosed: false }
+    await journal.onResource(resource)
+    expect((await readBenchEvidence(file))?.resources).toEqual([resource])
+    const result = { schemaVersion: 2, project: 'mock', runtime: { provider: 'devtools' } } as WorkerResult
+    await finishBenchEvidence(journal, async () => result, async () => journal.onResource({ ...resource, status: 'closed', projectClosed: true, portClosed: true }))
+    expect(await readBenchEvidence(file)).toMatchObject({ status: 'passed', resources: [{ id: 'session-1', status: 'closed', projectClosed: true, portClosed: true }] })
+  })
 })
