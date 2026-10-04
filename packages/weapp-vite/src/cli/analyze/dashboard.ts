@@ -9,7 +9,6 @@ import { createServer } from 'vite'
 import { createAnalyzeDashboardDevframe } from '../../dashboard'
 import { ANALYZE_DASHBOARD_PACKAGE_NAME, resolveDashboardRoot } from '../../dashboard/assets'
 import logger, { colors } from '../../logger'
-import { ANALYZE_DASHBOARD_DEVFRAME_BASE, createAnalyzeDashboardViteBridge } from './dashboardViteBridge'
 
 type PackageManagerAgent = Parameters<typeof resolveCommand>[0]
 
@@ -48,6 +47,7 @@ export async function startAnalyzeDashboard(
     return
   }
   const { root, configFile } = resolved
+  const { ANALYZE_DASHBOARD_DEVFRAME_BASE, createAnalyzeDashboardViteBridge } = await import('./dashboardViteBridge')
   const devframe = createAnalyzeDashboardDevframe({
     snapshot: { current: result, previous: options.previousResult ?? null, artifacts: options.artifacts },
     initialEvents: [

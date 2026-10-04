@@ -78,7 +78,7 @@ try {
     startup: await profileConsumerStartup(consumerRoot),
   }
   const loadedPackages = new Set(evidence.startup.trace.modules.map(module => module.package))
-  for (const adapter of ['@weapp-vite/web', '@weapp-tailwindcss/engine', 'vite-tsconfig-paths', 'tsconfck']) {
+  for (const adapter of ['@weapp-vite/web', '@weapp-tailwindcss/engine', 'vite-tsconfig-paths', 'tsconfck', '@devframes/agentic', '@modelcontextprotocol/node', '@modelcontextprotocol/server', '@modelcontextprotocol/core']) {
     assert(!loadedPackages.has(adapter), `Inactive adapter loaded by CLI help: ${adapter}`)
   }
   if (process.env.WEAPP_VITE_CONSUMER_EVIDENCE) {

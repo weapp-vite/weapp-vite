@@ -1,9 +1,9 @@
+import type { McpServer } from '@modelcontextprotocol/server'
 import type { MiniProgramElement, MiniProgramLike, MiniProgramPage } from '../cli/automator-session'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import { readElementSnapshot, toSerializableValue } from './shared'
 
@@ -392,6 +392,7 @@ export function registerWeappIdeMcpTools(server: ToolRegistrar, options: WeappId
 }
 
 export async function createWeappIdeMcpServer(options: WeappIdeMcpServerOptions) {
+  const { McpServer } = await import('@modelcontextprotocol/server')
   const server = new McpServer({
     name: 'weapp-ide-cli',
     version: '1.0.0',
