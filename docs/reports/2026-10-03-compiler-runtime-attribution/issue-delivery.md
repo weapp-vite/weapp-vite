@@ -504,3 +504,11 @@ Rolldown 1.2.12 的临时 callable owner 草案在 Node 24.18.0 完成 10 例真
 功能变更均配中文 changeset，`weapp-vite` 联动 `create-weapp-vite` patch。配置/插件说明同步到 `website/config/hmr.md`、`website/guide/vite-plugin.md`、`website/packages/create-weapp-vite.md`、`packages/weapp-vite/docs/packaged` 和公开 skill。通过包构建刷新随包文档，通过网站构建刷新生成索引，不手工编辑生成资产。
 
 复验入口包括所属包的 `typecheck` / `test:types`、新增的定向测试、`pnpm --filter website-weapp-vite build`、`scripts/check-create-weapp-vite-changeset.ts` 与 `scripts/check-catalog-changeset.ts`；最终提交保留 husky 和 lint-staged 检查。
+
+## 外部模板发布与插件监听首轮边界复验
+
+`691c405e4` 已提交外部模板的源事件关联等待。18 项 helper 回归通过；该干净提交的严格 headless 用例为 1/1、检查点 7/7，无跳过、告警、错误或异常，覆盖首次渲染、外部模板/脚本修改、组件删除及恢复。运行前后检查全局 E2E 进程，独立核对其他任务的启动时间，确认本轮没有交叠。三系统、Node 22/24 的远端复验为 `37188267405`，结果另行核对，不能用本地通过代替整个矩阵。
+
+完整 CI `37184015892` 的 Linux/Windows 四组通过；macOS Node 22 的插件依赖恢复用例在语法错误保存后 15 秒内没有收到错误事件。测试先前只等插件产物可读，子目标 `writeBundle` 仍可能在执行，父 watcher 尚未完成依赖登记。新增受控发布回归证明文件已可读而父构建仍未完成；普通依赖恢复用例现在先等待首轮 `END/ERROR`，后续保存、语法错误、恢复及删除断言保持原时机和 15 秒预算，整例仍为 30 秒。本地完整插件文件 13/13、工作流守卫 5/5、包 typecheck 及定向 ESLint 通过。独立 `plugin-watch-readiness` 手动矩阵仅执行该文件并保存每组 JSON，不取消既有 runtime-publication 或 HMR 运行。此改动仅修正测试同步及诊断入口，不涉及产品行为，不新增 changeset。
+
+`434899347` 的独立发布消费候选完成额外 headless 验证：最小页面首屏正确，典型页面从 `1 / 2` 点击更新到 `2 / 4`，两场景都正常关闭。四轮构建的插桩与普通产物保持逐文件一致，消费者源码、配置和锁文件恢复后的摘要与运行前一致。构建证据及新增运行时证据分别归档；Mac 锁屏仍使真实 Stable 操作不可用，以上结果仍未完成最终验收，未增加 issue 完成标签。
