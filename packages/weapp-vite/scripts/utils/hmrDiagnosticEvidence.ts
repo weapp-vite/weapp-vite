@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import {
+  WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY,
   WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE,
   WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY,
   WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE,
@@ -65,6 +66,33 @@ export async function snapshotOutputCheckpoint(outDir: string, completionSignal:
   if (!registeredSessionMatches) {
     throw new Error('Stateful HMR output no longer matches the session registered by the benchmark client')
   }
+  if (registeredControl) {
+    for (const [file, manifest] of Object.entries(files)) {
+      if (!file.endsWith('.js')) {
+        continue
+      }
+      const source = await readFile(path.join(outDir, file), 'utf8')
+      if (Buffer.byteLength(source, 'utf8') !== manifest.bytes || createHash('sha256').update(source).digest('hex') !== manifest.sha256) {
+        throw new Error('HMR output changed while collecting its raw and canonical identity')
+      }
+      const updateBatch = file === WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE
+        ? canonicalizeRegisteredUpdateBatch(source, registeredControl.buildId)
+        : undefined
+      const buildStamp = file === WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE
+        ? undefined
+        : canonicalizeRegisteredBuildStamp(source, registeredControl.buildId)
+      const canonical = updateBatch ?? buildStamp
+      if (canonical) {
+        Object.assign(manifest, {
+          canonicalBytes: Buffer.byteLength(canonical, 'utf8'),
+          canonicalSha256: createHash('sha256').update(canonical).digest('hex'),
+          normalized: updateBatch
+            ? 'registered-stateful-hmr-batch-nonce-and-build-id'
+            : 'registered-stateful-build-id-first-line',
+        })
+      }
+    }
+  }
   const fingerprint = (value: string) => createHash('sha256').update(value).digest('hex')
   return {
     completionSignal,
@@ -91,6 +119,64 @@ export async function snapshotOutputCheckpoint(outDir: string, completionSignal:
     },
     files,
   }
+}
+
+export function canonicalizeRegisteredBuildStamp(source: string, registeredBuildId: string): string | undefined {
+  const stamp = `// weapp-vite-stateful-build:${registeredBuildId}\n`
+  if (!source.startsWith(stamp)) {
+    return undefined
+  }
+  return `// weapp-vite-stateful-build:<REGISTERED_BUILD_ID>\n${source.slice(stamp.length)}`
+}
+
+export function canonicalizeRegisteredUpdateBatch(source: string, registeredBuildId: string): string | undefined {
+  const firstLineEnd = source.indexOf('\n')
+  if (firstLineEnd < 0 || !/^\/\/ [a-f0-9]{32}$/.test(source.slice(0, firstLineEnd))) {
+    return undefined
+  }
+  const callPrefix = `globalThis.${WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY}.receiveBatch(`
+  const header = source.slice(firstLineEnd + 1)
+  if (!header.startsWith(callPrefix)) {
+    return undefined
+  }
+  const metadataStart = firstLineEnd + 1 + callPrefix.length
+  const metadataEnd = source.indexOf(', () => {\n', metadataStart)
+  if (metadataEnd < 0) {
+    return undefined
+  }
+  const metadataSource = source.slice(metadataStart, metadataEnd)
+  let metadata: unknown
+  try {
+    metadata = JSON.parse(metadataSource)
+  }
+  catch {
+    return undefined
+  }
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return undefined
+  }
+  const record = metadata as Record<string, unknown>
+  if (Object.keys(record).join(',') !== 'buildId,changedIds,compatible,fromVersion,targetVersion'
+    || record.buildId !== registeredBuildId
+    || !Array.isArray(record.changedIds) || !record.changedIds.every(id => typeof id === 'string')
+    || record.compatible !== true
+    || !Number.isInteger(record.fromVersion) || !Number.isInteger(record.targetVersion)
+    || Number(record.fromVersion) < 0 || Number(record.targetVersion) < Number(record.fromVersion)
+    || JSON.stringify(record) !== metadataSource) {
+    return undefined
+  }
+  const bodyStart = metadataEnd + ', () => {\n'.length
+  const footer = '\n});\n'
+  const footerStart = source.lastIndexOf(footer)
+  if (footerStart < bodyStart) {
+    return undefined
+  }
+  const trailingSource = source.slice(footerStart + footer.length)
+  if (trailingSource && !/^\/\/# sourceMappingURL=data:application\/json;charset=utf-8;base64,[A-Za-z0-9+/=]+\n?$/.test(trailingSource)) {
+    return undefined
+  }
+  const canonicalMetadata = JSON.stringify({ ...record, buildId: '<REGISTERED_BUILD_ID>' })
+  return `// <REGISTERED_BATCH_NONCE>\n${callPrefix}${canonicalMetadata}, () => {\n${source.slice(bodyStart)}`
 }
 
 function normalizeControlSource(source: string, control: { buildId: string, token: string, url: string }) {

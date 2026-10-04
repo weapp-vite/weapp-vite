@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 const execFileAsync = promisify(execFile)
 
 describe('auto-import HMR diagnostic output verifier', () => {
-  it('ignores only randomized control bytes while requiring the complete deterministic manifests to match', async () => {
+  it('compares canonical registered session metadata and preserves raw output identity evidence', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'auto-import-hmr-verify-'))
     try {
       await writePhase(root, 'control', 'a'.repeat(32), 'b'.repeat(32))
@@ -18,16 +18,31 @@ describe('auto-import HMR diagnostic output verifier', () => {
       await expect(execFileAsync(process.execPath, [verifier, root])).resolves.toBeDefined()
       const equivalence = JSON.parse(await readFile(path.join(root, 'equivalence.json'), 'utf8'))
       expect(equivalence.failures).toEqual([])
+      expect(equivalence.comparisons.every((item: { allOriginalOutputBytesIdentical: boolean }) => !item.allOriginalOutputBytesIdentical)).toBe(true)
 
       const probeReportPath = path.join(root, 'candidate', 'probe', 'report.json')
       const probeReport = JSON.parse(await readFile(probeReportPath, 'utf8'))
-      probeReport.results[0].raw.manual[0].pairEvidence.initial.files['app.js'].sha256 = 'different'
+      probeReport.results[0].raw.manual[0].pairEvidence.initial.files['app.js'].canonicalSha256 = 'f'.repeat(64)
       await writeFile(probeReportPath, JSON.stringify(probeReport))
       await expect(execFileAsync(process.execPath, [verifier, root])).rejects.toThrow()
       const failed = JSON.parse(await readFile(path.join(root, 'equivalence.json'), 'utf8'))
       expect(failed.failures).toContainEqual(expect.objectContaining({ reason: 'deterministic output differs' }))
 
-      probeReport.results[0].raw.manual[0].pairEvidence.initial.files['app.js'].sha256 = 'app'
+      probeReport.results[0].raw.manual[0].pairEvidence.initial.files['app.js'].canonicalSha256 = 'a'.repeat(64)
+      delete probeReport.results[0].raw.manual[0].pairEvidence.initial.files['app.js'].canonicalSha256
+      await writeFile(probeReportPath, JSON.stringify(probeReport))
+      await expect(execFileAsync(process.execPath, [verifier, root])).rejects.toThrow()
+      const missingCanonicalHashFailure = JSON.parse(await readFile(path.join(root, 'equivalence.json'), 'utf8'))
+      expect(missingCanonicalHashFailure.failures).toContainEqual(expect.objectContaining({ reason: 'deterministic output differs' }))
+
+      probeReport.results[0].raw.manual[0].pairEvidence.initial.files['app.js'].canonicalSha256 = 'a'.repeat(64)
+      delete probeReport.results[0].raw.manual[0].pairEvidence.initial.files['app.js'].normalized
+      await writeFile(probeReportPath, JSON.stringify(probeReport))
+      await expect(execFileAsync(process.execPath, [verifier, root])).rejects.toThrow()
+      const unnormalizedFailure = JSON.parse(await readFile(path.join(root, 'equivalence.json'), 'utf8'))
+      expect(unnormalizedFailure.failures).toContainEqual(expect.objectContaining({ reason: 'deterministic output differs' }))
+
+      probeReport.results[0].raw.manual[0].pairEvidence.initial.files['app.js'].normalized = 'registered-stateful-build-id-first-line'
       probeReport.results[0].raw.manual[0].pairEvidence.initial.controlContract.canonicalSourceSha256 = 'different'
       await writeFile(probeReportPath, JSON.stringify(probeReport))
       await expect(execFileAsync(process.execPath, [verifier, root])).rejects.toThrow()
@@ -45,7 +60,20 @@ async function writePhase(root: string, phase: 'control' | 'probe', buildFingerp
   await mkdir(directory, { recursive: true })
   const checkpoints = () => ({
     files: {
-      'app.js': { sha256: 'app', bytes: 4 },
+      'app.js': {
+        sha256: phase,
+        bytes: 4,
+        canonicalSha256: 'a'.repeat(64),
+        canonicalBytes: 4,
+        normalized: 'registered-stateful-build-id-first-line',
+      },
+      '__weapp_vite_hmr/update.js': {
+        sha256: phase,
+        bytes: 6,
+        canonicalSha256: 'b'.repeat(64),
+        canonicalBytes: 6,
+        normalized: 'registered-stateful-hmr-batch-nonce-and-build-id',
+      },
       '__weapp_vite_hmr/control.js': { sha256: phase, bytes: phase.length },
     },
     controlContract: {
