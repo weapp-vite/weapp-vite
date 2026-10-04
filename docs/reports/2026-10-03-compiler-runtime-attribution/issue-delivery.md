@@ -402,9 +402,46 @@ Windows 窄矩阵 `37172276999` 绑定 `0af75a05e`，两个 Node 版本各实际
 
 重建后四个严格 headless suite 在 Node 24.18.0 上完成 6/6 用例和 39/39 检查点，但内置 Undici 7.28.0 抛出未捕获的 `setTypeOfService EINVAL`，整轮正确保留失败。堆栈和版本匹配上游 [nodejs/undici#5544](https://github.com/nodejs/undici/issues/5544)；未吞掉异常或改写断言。相同产物与同一组用例使用受支持的 Node 22.22.3 复验，6/6、39/39 严格通过，运行时告警、错误和异常均为零。该补充不代表 Node 24 的上游缺陷已经修复，也不替代 Stable IDE 最终验收。
 
+## 独立快照的引用保留诊断
+
+回退后同一物理两页/Wevu fixture 连续执行 15 次 `buildStatefulHmrSnapshot`，官方 native 与纯统计 native 的完整输出及 metadata 逐字一致，源码、依赖、分发文件和二进制哈希前后未变，登记子进程正常退出且 fixture 已清理。两侧的快照返回对象、插件上下文 wrapper 和 240 个产物对象已回收；但 normalized input/output、其 native inner、PluginContextData 与 Vite environment 均保留 15/15。释放末轮产物、关闭并释放调用方 owner，各经过三次跨任务 GC，再等待五秒后仍保持。该独立构建没有创建 DevEngine，不能把前述 DevOptions 回调问题直接认定为这条保留链。
+
+第二轮固定同一统计 native，仅比较官方 JS 与 normalized-options 的 classic-only 私有草案。15 轮的完整产物、metadata、关闭后 6 个 input / 41 个 output 公开 getter 值及插件/回调身份全部一致。草案让旧 native options inner 各 15/15 回收，但 JS options wrapper、PluginContextData、Vite environment 和调用方 owner 仍可达。末尾 requested live 原始统计分别为 23,168,597 / 23,056,911 B，均随轮数累计；不据此声称资源改善。该结果证明释放 inner 这一条边不足以清除此快照的引用保留，后续需结合 Vite hook 与 callable owner 的独立链继续验证。
+
+第三轮将 normalized options、callable owner 与 Vite hook 的三个 JS 草案组合，保持同一统计 native。15 轮完整产物、关闭后 getter 与插件/回调身份仍一致，登记子进程退出且 fixture 已删除；旧 native options inner 均回收，但 JS options、PluginContextData、environment 各保留 15/15，owner/sourceConfig 各保留 1/1。末尾 requested 统计为官方 22,925,750 B、组合草案 22,701,163 B，两组均继续累计。因此组合仍未修复完整快照保留，不能将它宣称为仅 allocator 缓存问题。下一步采用三轮单次 heap 的实际保留路径诊断，避免继续盲目扩大组合矩阵。
+
+这些是引用与分配诊断，不是原 512 SFC/14 次编辑的正式资源门禁。统计 API 会刷新调用线程的 tracking 批次，其他线程仍有未量化的批量误差；没有精确活分配误差界或 native owner 析构证明。allocator committed/resident 也不等于活对象字节。正式依赖、lockfile、资源预算与失败结论保持原状。
+
+## 同步真实路径与无消费者分析
+
+`7a9546fa8` 在单次同步 snapshot load 回调内复用已有真实路径解析作用域，源码身份也使用同一解析入口；作用域在返回或异常时结束，不跨事件、构建或异步边界保留，失败查询不缓存。真实文件测试覆盖入口/源码共享身份、操作结束后的重新查询、junction 改指向、删除后父路径回退与随后创建；相关六文件 57 项通过。
+
+重建后，同一候选分发在控制组仅绕过 snapshot load 的同步作用域，实验组保留生产实现；50/69 组件各一组真实连续修改。两组各 1,296 次 hook 回调、1,288 次源码解析尝试和 3,784 次路径归一化尝试相同，原生 realpath 调用从 5,072 降至 3,912，准确减少 1,160 次，128 次异常保持相同。10 个 canonical 检查点一致，源码/dist/lock 身份未变，三个登记子进程正常退出且 fixture 清理成功。本轮无计时/profile 插桩，只证明消除重复系统调用，不宣称 #1082 的正式性能门禁通过。
+
+同一提交使 npm 重写只在后续平台 API 转换存在时收集宿主 API。底层省略选项仍保留既有行为；关闭时保留保守分析事实，源码变化继续失效缓存。先仅加入测试，原实现 41 项中 11 项因多余 collector 调用失败；修复后相关七文件 152 项通过。实际 generate hook 的 weapp/alipay 无 replaceWx 消费者与插件提前返回路径从 1 次降至 0，存在消费者仍为 1；无/external/inline sourcemap 的完整 chunk 产物保持相同。包 typecheck、公共类型测试、源文件 ESLint、changeset 联动检查与构建通过；Markdown changeset 被 ESLint 既有忽略规则排除，不能记为已 lint。
+
+## 最新矩阵与上下文生命周期修复
+
+`a994f379a` 的完整 CI `37174583376` 已终态：Linux、Windows 的 Node 22/24 与 macOS Node 24 通过；macOS Node 22 的配置变更回归实际读到两次新配置加载，而预期一次。失败约 3.24 秒，不是超时。调查确认 Vite 宿主和 core watcher 同时登记并处理配置依赖，候选将配置重启交回 Vite 唯一所有者，保留无宿主路径及 WXML 依赖监听；四个新增所有权测试先失败，再与其余 watch 回归共 101 项通过。随后实际 Vite 宿主 5/5 回归通过，仍保留配置次数、拓扑交接和关闭后所有 engine 释放的原断言。
+
+`7a9546fa8` 的 Release 与 Website 已成功；runtime publication `37177482828` 为五个矩阵通过、macOS Node 24 失败。六份严格 artifact 合计 29/30 cases、196/198 checkpoints。失败发生在 classic CSS 变量删除后恢复：对应 CSS marker 已落盘，但 45 秒内页面未恢复 red 变量；stateful 及同轮其他场景通过。保留原失败及断言，继续定位产物、交付与 headless 页面重载边界，不能用旧候选的六矩阵成功替代。
+
+`ff507d3dc` 保留既有大型 watch 编排文件，本次仅复用配置分类并收敛监听所有者，避免为小范围修复引入无关拆分。
+
+三轮实际 heap 诊断进一步定位到本仓库三个 hook 上下文保留点：页面匹配工厂与 transform 的词法作用域共享、输出发布闭包保存 generateBundle 上下文、Vue 编译选项缓存保存绑定的 warn/resolve。候选把页面 matcher 工厂移到独立作用域，待写入发布改为纯数据，关闭 bundle/watcher 时清理含上下文缓存；最小 GC 回归及 lifecycle 回归通过，已重建 package。官方依赖的三轮完整快照诊断正常退出，源码、dist、依赖和 fixture 输入摘要前后一致，48/48 产物与所追踪的 hook 上下文已回收；但 input/output options、其 native inner、PluginContextData 和 environment 仍各保留 3/3，owner/sourceConfig 保留 1/1。新旧完整序列化产物比较发现差异，原数据保留并离线核对，整轮不能记为等价性通过。此结果未证明正式资源改善，不重复原 512 SFC 门禁寻找通过样本。
+
+本次源码修复后的严格 headless 汇总已完成：#1015、#1065、#1081 事务/批次、#1134 拓扑/批次和 external script 七文件共 11/11 用例、59/59 检查点通过，无告警、错误或异常。新增 #1140 两种 emptyOutDir 各八步生产输出模式/缓存回归为 2/2 用例、28/28 检查点通过；每步与另一目录 fresh build 比较完整产物，主页面、组件与分包导航均验证。这些报告明确记录工作树修改状态，不冒充已提交干净 SHA 的正式性能或 Stable 结果。
+
+官方新 heap 中 BindingPluginContext / BindingTransformPluginContext 实例已由旧诊断的 9 / 6 降至 0，先前仓库缓存到 hook 上下文的返回边消失；其中一条余留链为 native Global handles 经 bound_this 到 PluginContextData，再经 normalized options 的 inner 回到原生 options；另有 Vite resolveSubpathImports 和跨轮旧配置/插件链，不能声称剩余只涉及一项。新旧序列化产物差异经精确已知 fixture 路径表示重基准后为零，原始 supervisor 的比较失败仍保留；这不等于跨运行原始字节相同，也不证明 #1135 的完整引用环已消除。
+
 ## Stable IDE 环境记录
 
-本轮原生 Computer Use 检查返回 Mac 已锁屏且无法自动解锁，未进行 IDE 操作。后续再次按 Stable 安装路径读取时返回无可用窗口，应用列表也再次确认锁屏仍未解除。需要维护者手动解锁；现有其他项目 RC 宿主仍不能擅自关闭。远端 CI 与只读证据检查继续独立执行。
+2026-10-04 04:22 UTC 再查官方渠道仍为 Stable `2.02.2608080`。维护者明确允许暂退共享 RC、验收后恢复 SQLite、Taro 和预检项目。原生 Computer Use 已退出 RC，启动所选 Stable，显示 `appVersionType=0`，使用已有账号完成快捷登录；随后 CLI 在 `127.0.0.1` 确认 `login: true`、服务端口可用。没有复制、刷新或替换登录票据。
+
+重建后的 `12868aa`（main 对应 `7a9546fa8`）先完成四文件 headless：6/6 cases、39/39 checkpoints，严格模式、零告警/错误/异常，启动时工作树干净。随后相同四文件选择显式 Stable CLI 开始实测，但在 bridge bootstrap 前后所选 Stable 宿主消失，观察到默认 RC 的 SQLite 项目重新出现。该轮未执行任何 runtime case，主动停止并保留日志；登记 Vitest 与遗留 dev 进程均已退出，没有终止共享 RC。尚未确定是人工/其他任务操作还是宿主启动链改变了版本，不能将此轮算成真实 Stable 验收通过。维护者的统一切换许可仍有效，当前等待操作归属澄清后继续。
+
+
+早期原生 Computer Use 检查返回 Mac 已锁屏且无法自动解锁，按 Stable 安装路径读取也没有可用窗口。2026-10-04 后续读取已恢复，现有窗口仍是其他项目使用的 `2.02.2609231 RC`，显示基础库 `3.16.2`。本次仅只读核对，未操作该项目或关闭宿主；Stable 的单实例启动冲突仍在，切换现有手动宿主需要维护者确认。远端 CI 与本地只读诊断继续独立执行。
 
 2026-10-03 05:20 UTC 核对官方渠道数据，最新 Stable 为 `2.02.2608080`，发布日期 2026-09-30。两份该版本安装均尝试了原生 Computer Use 启动，未得到可用宿主；CLI 登录查询超时或缺失该安装的 CLI 端口文件。已运行的 `2.02.2609231` 属于 RC 和其他项目，未关闭或用它替代 Stable。
 
@@ -412,7 +449,7 @@ Windows 窄矩阵 `37172276999` 绑定 `0af75a05e`，两个 Node 版本各实际
 
 后续只读检查发现，两种安装的 Electron 应用共用产品数据根目录的单实例锁；Stable 的入口在选择按安装路径区分的数据目录前就申请该锁，现有锁属于运行中的 RC。普通启动 Stable 因此不能建立独立的稳定版宿主。这是环境启动限制，不是已观察到的小程序 runtime 行为。
 
-因此相关 issue **未完成最终验收**。需要可正常启动、已登录且开启服务端口的官方 Stable 安装，或由维护者明确允许切换现有 IDE 后继续；不会为通过检查而降低 runtime 断言。
+相关 issue 仍 **未完成最终验收**。登录和服务端口已在最新轮次实际确认，当前需要保持同一 Stable 宿主完成 bridge 和目标场景；真实 runtime 断言保持原要求。
 
 ## 文档与发布同步
 
