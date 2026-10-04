@@ -94,7 +94,35 @@ jobs:
           pnpm exec tsc -p scripts/benchmarkNativeAnalysis/tsconfig.json
           pnpm exec tsc -p scripts/nativeChunkAnalysis/tsconfig.json
           pnpm exec tsc -p scripts/nativeBindingAnalysis/tsconfig.json
-          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile/gc.test.ts scripts/benchmarkNativeAnalysis scripts/nativeChunkAnalysis/rewrite.test.ts scripts/nativeBindingAnalysis
+          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile scripts/benchmarkNativeAnalysis scripts/nativeChunkAnalysis/rewrite.test.ts scripts/nativeBindingAnalysis
+      - name: Collect compiler main-thread samples
+        env:
+          WEAPP_VITE_NATIVE: '0'
+        run: |
+          node --input-type=module -e "import { mkdirSync } from 'node:fs'; mkdirSync('.codex-tmp/compiler-cpu', { recursive: true })"
+          node --import tsx scripts/astMigrationProfile/cpu.ts --output=.codex-tmp/compiler-cpu/profile.json --raw-profile=.codex-tmp/compiler-cpu/profile.cpuprofile
+          node --import tsx scripts/astMigrationProfile/cpu.ts --source=apps/wevu-vue-demo/src/pages/index/index.vue --output=.codex-tmp/compiler-cpu/wevu.json --raw-profile=.codex-tmp/compiler-cpu/wevu.cpuprofile
+          node --import tsx scripts/astMigrationProfile/cpu.ts --source=templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/index.vue --output=.codex-tmp/compiler-cpu/retail.json --raw-profile=.codex-tmp/compiler-cpu/retail.cpuprofile
+      - name: Upload sanitized compiler sample summaries
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compiler-cpu-${{ matrix.os }}
+          path: .codex-tmp/compiler-cpu/*.json
+          include-hidden-files: true
+      - name: Check the real staged template diagnostic
+        run: node --import tsx scripts/benchmarkNativeAnalysis/checkStage.ts --output=.codex-tmp/native-stage-check
+      - name: Upload staged dependency diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-stage-check-${{ matrix.os }}
+          path: |
+            .codex-tmp/native-stage-check/stage-check.json
+            .codex-tmp/native-stage-check/**/dependency-layout.json
+            .codex-tmp/native-stage-check/**/first.log
+            .codex-tmp/native-stage-check/**/repeat.log
+          include-hidden-files: true
       - name: Run fixed native off/on performance acceptance
         if: github.event_name == 'workflow_dispatch' && inputs.full-performance
         run: pnpm benchmark:native-analysis --mode=full --output=.codex-tmp/native-analysis --native-path=packages/ast-native/index.js

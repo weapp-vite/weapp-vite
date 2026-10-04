@@ -6,10 +6,16 @@ use super::{NativeBindingExpressionInput, analyze_binding_expressions_native};
 
 thread_local! {
     static PARSE_COUNT: Cell<usize> = const { Cell::new(0) };
+    static RESET_COUNT: Cell<usize> = const { Cell::new(0) };
 }
 
 pub(super) fn record_parse() {
     PARSE_COUNT.with(|count| count.set(count.get() + 1));
+}
+
+pub(super) fn record_reset(used_bytes: usize) {
+    assert_eq!(used_bytes, 0);
+    RESET_COUNT.with(|count| count.set(count.get() + 1));
 }
 
 fn parse_count() -> usize {
@@ -85,4 +91,46 @@ fn validates_context_strings_before_successful_or_failed_cache_hits() {
             assert_eq!(parse_count() - before, 1);
         }
     }
+}
+
+#[test]
+fn preserves_large_cached_summary_after_arena_reuse_for_small_and_invalid_expressions() {
+    let large_expression = format!("format({})", (0..128)
+        .map(|index| format!("table{index}.value"))
+        .collect::<Vec<_>>()
+        .join(" + "));
+    let before = parse_count();
+    let resets_before = RESET_COUNT.with(Cell::get);
+    let results = analyze_binding_expressions_native(vec![
+        input(&large_expression, &[], &["format"]),
+        input("table127 + count", &[], &[]),
+        input("value +", &[], &[]),
+        input(&large_expression, &["format", "table0"], &[]),
+    ], strings(&["table127"])).unwrap();
+
+    assert_eq!(parse_count() - before, 3);
+    assert_eq!(RESET_COUNT.with(Cell::get) - resets_before, 3);
+    let first = results[0].as_ref().unwrap();
+    let first_paths: Vec<_> = first.dependencies.iter()
+        .map(|dependency| dependency.path.clone().unwrap())
+        .collect();
+    let expected_first_paths: Vec<_> = std::iter::once("format".to_string())
+        .chain((0..127).map(|index| format!("table{index}.value")))
+        .collect();
+    assert_eq!(first_paths, expected_first_paths);
+    assert!(!first.snapshot_fallback);
+
+    let small = results[1].as_ref().unwrap();
+    assert_eq!(small.dependencies.len(), 1);
+    assert_eq!(small.dependencies[0].path.as_deref(), Some("count"));
+    assert!(!small.snapshot_fallback);
+    assert!(results[2].is_none());
+
+    let repeated = results[3].as_ref().unwrap();
+    let repeated_paths: Vec<_> = repeated.dependencies.iter()
+        .map(|dependency| dependency.path.clone().unwrap())
+        .collect();
+    let expected_repeated_paths: Vec<_> = (1..127).map(|index| format!("table{index}.value")).collect();
+    assert_eq!(repeated_paths, expected_repeated_paths);
+    assert!(repeated.snapshot_fallback);
 }

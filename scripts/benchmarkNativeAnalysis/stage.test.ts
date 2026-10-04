@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -9,7 +9,7 @@ import { sha256 } from './artifacts'
 import { INPUTS, parseOptions } from './contract'
 import { captureIdentity, stageInput } from './stage'
 
-it('preserves root-relative pnpm dependency paths for both staged input and HMR copies', async () => {
+it('preserves pnpm dependency resolution and cache writes through staged directory links', async () => {
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'native-stage-')))
   const input = INPUTS[2]
   const source = path.join(root, input.source)
@@ -37,6 +37,17 @@ it('preserves root-relative pnpm dependency paths for both staged input and HMR 
     options.inputIdentities = { [input.source]: sourceDigest }
 
     const staged = await stageInput(options, input)
+    const packageCache = path.join(root, 'packages/weapp-vite/.cache')
+    for (const project of [source, staged.project]) {
+      // 分别验证包链接，以及暂存 node_modules 链接叠加包链接时的首次写入和幂等创建。
+      await rm(packageCache, { recursive: true, force: true })
+      const cache = path.join(project, 'node_modules/weapp-vite/.cache')
+      await mkdir(cache, { recursive: true })
+      await writeFile(path.join(cache, '-.json'), JSON.stringify({ hash: 'staged-cache' }))
+      await mkdir(cache, { recursive: true })
+      expect(await realpath(cache)).toBe(await realpath(packageCache))
+      expect(JSON.parse(await readFile(path.join(packageCache, '-.json'), 'utf8')) as unknown).toEqual({ hash: 'staged-cache' })
+    }
     const hmrProject = path.join(staged.owned, 'hmr', input.id)
     await write(path.join(hmrProject, 'package.json'), '{"name":"hmr-template"}')
     for (const project of [staged.project, hmrProject]) {

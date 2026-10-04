@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet, hash_map::Entry};
 
 use napi::bindgen_prelude::Utf16String;
 use napi_derive::napi;
+use oxc_allocator::Allocator;
 
 mod normalize;
 mod references;
@@ -62,6 +63,7 @@ pub fn analyze_binding_expressions_native(
     ignored_globals: Vec<Utf16String>,
 ) -> napi::Result<Vec<Option<NativeBindingExpressionAnalysis>>> {
     let ignored_globals = string_set(&ignored_globals)?;
+    let mut allocator = Allocator::default();
     let mut summaries = HashMap::new();
     let mut results = Vec::with_capacity(inputs.len());
     for input in inputs {
@@ -72,8 +74,12 @@ pub fn analyze_binding_expressions_native(
         let summary = match summaries.entry(expression) {
             Entry::Occupied(entry) => entry.into_mut(),
             Entry::Vacant(entry) => {
-                let summary = summary::parse_expression_summary(entry.key())?;
-                entry.insert(summary)
+                let result = summary::parse_expression_summary(entry.key(), &allocator);
+                // 返回值只持有自有数据；成功、解析失败和错误均在传播前释放本次 AST。
+                allocator.reset();
+                #[cfg(test)]
+                tests::record_reset(allocator.used_bytes());
+                entry.insert(result?)
             }
         };
         results.push(summary.as_ref().map(|summary| {

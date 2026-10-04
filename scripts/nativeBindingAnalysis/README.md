@@ -50,6 +50,8 @@ pnpm exec tsc -p scripts/nativeBindingAnalysis/tsconfig.json
 cargo test --locked --manifest-path packages/ast-native/Cargo.toml --features experimental-binding-analysis,napi/noop,napi-derive/noop binding_analysis::tests
 ```
 
+当前实验在每次 NAPI 调用内复用一个 Oxc arena。每次解析返回自有摘要后立即 reset，再缓存结果或传播错误；缓存不含 AST 引用。arena 保留最大的内存块直到当前调用结束，不跨调用池化，也不据此承诺 RSS 下降。对照上一版本时，使用独立保存的摘要缓存绑定作为 `--previous-binding`，才能区分 arena 复用与之前的解析去重。
+
 ## 保留的语义与边界
 
 - 表达式内部词法绑定、静态/动态成员路径、访问顺序、去重、safe-call 与 snapshot fallback 必须对齐。JS 把现有 INLINE_GLOBALS、Babel globals 和普通对象原型名称传给 Rust，保留当前过滤行为。

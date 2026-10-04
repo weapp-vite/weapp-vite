@@ -16,12 +16,11 @@ pub(super) struct BindingExpressionSummary {
     pub unconditional_snapshot_fallback: bool,
 }
 
-pub(super) fn parse_expression_summary(expression: &str) -> napi::Result<Option<BindingExpressionSummary>> {
+pub(super) fn parse_expression_summary(expression: &str, allocator: &Allocator) -> napi::Result<Option<BindingExpressionSummary>> {
     let source = format!("({expression})");
-    let allocator = Allocator::default();
     #[cfg(test)]
     super::tests::record_parse();
-    let mut parsed = Parser::new(&allocator, &source, SourceType::ts())
+    let mut parsed = Parser::new(allocator, &source, SourceType::ts())
         .with_options(ParseOptions { preserve_parens: false, ..ParseOptions::default() })
         .parse();
     if parsed.fatal_error || !parsed.diagnostics.is_empty()
@@ -29,7 +28,7 @@ pub(super) fn parse_expression_summary(expression: &str) -> napi::Result<Option<
     {
         return Ok(None);
     }
-    let mut normalization = normalize::NormalizeTypes { allocator: &allocator, unsupported: false };
+    let mut normalization = normalize::NormalizeTypes { allocator, unsupported: false };
     normalization.visit_program(&mut parsed.program);
     if normalization.unsupported {
         return Err(napi::Error::from_reason("Experimental binding assignment target is unsupported"));

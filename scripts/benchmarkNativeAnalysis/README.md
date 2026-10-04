@@ -31,3 +31,17 @@ RSS 探针同时记录成功/不可用次数和完整性状态；至少需要一
 本工具始终标记 headless runtime、Stable IDE、真机与其他 OS 为 `not-run`。单机 smoke、构建成功或采样进程退出 0 均不能替代这些验收。
 
 纯功能验证：`pnpm exec vitest run --config scripts/vitest.config.mjs scripts/benchmarkNativeAnalysis`。这只检查驱动合同，不启动 build/watch/E2E，也不代表性能结果。
+
+## 隔离目录与平台诊断
+
+`checkStage.ts` 在新的输出目录里运行第一个真实代表模板的 prepare 和两次诊断构建，检查产物/maps 及 native 观察完整性，不启动 HMR、不执行性能门禁：
+
+```sh
+node --import tsx scripts/benchmarkNativeAnalysis/checkStage.ts --output=.codex-tmp/native-stage-check
+```
+
+它复用正式采集器的 staging 和 build worker，因此可在三平台 CI 中较早暴露依赖链接、目录写入或启动错误。原生模板无适用 native 工作时记录 `not-exercised`，不冒充目标 TDesign 的覆盖。
+
+诊断构建在 prepare 前保存 `dependency-layout.json`，分别读取原依赖目录、暂存工程和仓库的 `node_modules/weapp-vite` 直接路径，记录 lstat/stat/readlink/realpath 及直接 package.json 的结果。路径脱敏，读取错误只记录错误码；诊断读取失败仍继续真实构建。不能用可沿父目录回退的 `require.resolve` 成功来替代这些直接路径证据。worker 的具体构建错误优先保留，避免被外层 collector 的通用退出信息覆盖。
+
+这些读操作仅用于诊断，不进入正式配对计时。平台失败仍须结合原始构建日志和对应操作系统结果判定根因，增加诊断不等于修复通过。

@@ -5,6 +5,7 @@ import process from 'node:process'
 import { runCollector } from '../performanceGate/process'
 import { normalizeRoots } from './artifacts'
 import { assertCollectionActive } from './contract'
+import { captureDependencyLayout } from './dependencyLayout'
 import { createDiagnosticPreload, readDiagnosticObservation, validNativeDiagnostic } from './diagnosticObservation'
 import { collectHmr } from './hmr'
 import { collectorEnvironment, createDiagnosticBinding, readNativeTrace } from './native'
@@ -18,6 +19,10 @@ export async function collectRun(options: Options, input: Input, kind: Run['kind
   try {
     assertCollectionActive(options)
     const staged = await stageInput(options, input)
+    if (diagnostic) {
+      const layout = await captureDependencyLayout({ root: options.root, source: path.join(options.root, input.dependencies), project: staged.project })
+      await writeFile(path.join(directory, 'dependency-layout.json'), JSON.stringify(layout, null, 2))
+    }
     result.inputDigest = staged.inputDigest
     result.sourceDigest = staged.sourceDigest
     await writeFile(path.join(directory, 'input-manifest.json'), JSON.stringify(staged.manifest))
@@ -74,7 +79,7 @@ export async function collectRun(options: Options, input: Input, kind: Run['kind
     }
   }
   catch (error) {
-    result.error = normalizeRoots(String(error), [options.output, options.root])
+    result.error ??= normalizeRoots(String(error), [options.output, options.root])
   }
   finally {
     try {
