@@ -2,6 +2,7 @@ import type { DiagnosticError } from '../optimizedCompilerAnalysis/diagnosticErr
 import type { OptimizedCompilerExecutionResult } from '../optimizedCompilerAnalysis/execution'
 import type { CaptureLoadIdentity } from './captureLoader'
 import type { CaptureBridgeMetrics, CapturedValue, CapturedWarning } from './captureTypes'
+import type { InlineOriginSnapshot, InlineProvenance } from './origins/types'
 import type { NativeTransformOutcome } from './transformNative'
 
 export type IntegratedMode = 'control-js' | 'native'
@@ -16,6 +17,7 @@ export interface IntegratedRecord {
   callIndex: number
   source: { code: string, sha256: string, utf16Length: number, utf8Bytes: number }
   options?: CapturedValue
+  provenance?: InlineProvenance
   request?: string
   rawNative?: CapturedValue
   nativeStatus?: NativeTransformOutcome['status']
@@ -37,6 +39,9 @@ export interface IntegratedSnapshot {
   bindingSha256?: string
   loadError?: DiagnosticError
   loader: CaptureLoadIdentity
+  mapLoader: CaptureLoadIdentity
+  origins: InlineOriginSnapshot
+  mapComposition: { calls: number, selectiveCalls: number }
   records: IntegratedRecord[]
 }
 export interface IntegratedCheck extends OptimizedCompilerExecutionResult {

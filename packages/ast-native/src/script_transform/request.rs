@@ -6,6 +6,7 @@ pub struct Request {
     pub options: Value,
     pub contract: Value,
     pub omitted_undefined: Vec<String>,
+    pub provenance: Option<super::template_provenance::SourceContract>,
 }
 
 pub fn string(value: &Value, key: &str) -> Result<String, String> {
@@ -137,6 +138,13 @@ impl Request {
             options,
             contract: raw["contract"].clone(),
             omitted_undefined,
+            provenance: raw
+                .get("provenance")
+                .map(|value| {
+                    serde_json::from_value(value.clone())
+                        .map_err(|error| format!("Invalid template provenance contract: {error}"))
+                })
+                .transpose()?,
         })
     }
 

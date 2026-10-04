@@ -1,6 +1,7 @@
 import type { TransformResult } from '../../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/utils'
 import type { CaptureExpressionTools } from './captureTypes'
 import type { IntegratedBinding, IntegratedMode } from './integratedTypes'
+import type { InlineProvenance } from './origins/types'
 import { describe, expect, it, vi } from 'vitest'
 import { decodeCapturedData } from './captureRead'
 import { IntegratedTransformState } from './integratedState'
@@ -14,6 +15,33 @@ const unsupported = () => ({ status: 'unsupported', unsupportedReason: 'Deferred
 const stateFor = (binding: IntegratedBinding = {}, mode: IntegratedMode = 'native', key?: symbol) => new IntegratedTransformState(mode, binding, () => key)
 
 describe('integrated stage selection and fallback ownership', () => {
+  it('passes origins beside untouched options once and preserves the complete map object', async () => {
+    const provenance: InlineProvenance = { schemaVersion: 1, coordinateEncoding: 'utf16', sources: [{ id: 'source', filename: 'Page.vue', content: '<template />' }], occurrences: [] }
+    const map = { version: 3, sources: ['inline.ts', 'Page.vue'], sourcesContent: [source, '<template />'], names: [], mappings: 'AAAA' }
+    const result = { ...nativeResult, map }
+    const options = Object.freeze({ sourceMap: true })
+    const origins = vi.fn((actual) => {
+      expect(actual).toBe(options)
+      return provenance
+    })
+    const invoke = vi.fn((_source: string, request: string) => {
+      expect(JSON.parse(request).provenance).toEqual(provenance)
+      return { ...ok(), resultJson: JSON.stringify(result) }
+    })
+    const state = new IntegratedTransformState('native', { invoke }, () => undefined, origins)
+    const fallback = vi.fn(() => jsResult)
+    const { value, records } = await state.run('origins', () => state.invoke(source, options, fallback, expressions, () => vi.fn()))
+    expect(value).toEqual(result)
+    expect(origins).toHaveBeenCalledTimes(1)
+    expect(invoke).toHaveBeenCalledTimes(1)
+    expect(fallback).not.toHaveBeenCalled()
+    expect(records[0]!.provenance).toEqual(provenance)
+    expect(decodeCapturedData(records[0]!.options!)).toEqual({ sourceMap: true })
+    const select = vi.fn(() => null)
+    state.maps.compose(value.map, null, () => null, select)
+    expect(select).toHaveBeenCalledExactlyOnceWith(value.map, null, 'inline.ts')
+  })
+
   it('returns the complete control result by identity without native or fallback', async () => {
     const invoke = vi.fn(ok)
     const state = stateFor({ invoke }, 'control-js')
@@ -161,13 +189,15 @@ describe('integrated warnings, capture and lifecycle', () => {
   })
 
   it('keeps evidence failures visible without changing a control compiler result', async () => {
-    const state = stateFor({}, 'control-js')
+    const origins = vi.fn(() => undefined)
+    const state = new IntegratedTransformState('control-js', {}, () => undefined, origins)
     const options = { get sourceMap() {
       throw new Error('must not evaluate')
     } }
     const { value, records } = await state.run('capture', () => state.invoke(source, options, () => jsResult, expressions, () => vi.fn()))
     expect(value).toBe(jsResult)
     expect(records[0]!.evidenceErrors).toEqual([expect.objectContaining({ message: expect.stringContaining('accessor') })])
+    expect(origins).not.toHaveBeenCalled()
   })
 
   it('rejects overlapping scenarios and active disposal, while disposal stays idempotent', async () => {

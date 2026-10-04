@@ -28,6 +28,23 @@ describe('whole-stage native result validation', () => {
     expect(verified).toMatchObject({ status: 'ok', result, resultJson: JSON.stringify(result), warnings: ['notice'], diagnostics: [], omittedUndefined: [] })
   })
 
+  it('requires every declared template source and its exact content in the native map', () => {
+    const provenance = { schemaVersion: 1, coordinateEncoding: 'utf16', sources: [{ id: 'owner', filename: 'Page.vue', content: '<template />' }], occurrences: [] }
+    const input = JSON.stringify({ ...JSON.parse(request()), provenance })
+    const mapped = { ...value(), map: { ...map(), sources: ['inline.ts', 'Page.vue'], sourcesContent: [source, '<template />'] } }
+    expect(validateNativeTransformOutcome(ok(mapped), source, input).status).toBe('ok')
+    expect(() => validateNativeTransformOutcome(ok(mapped), source, request())).toThrow('source map')
+    for (const change of [
+      { sources: ['Page.vue', 'inline.ts'] },
+      { sourcesContent: [source, 'wrong owner'] },
+      { sources: ['inline.ts'] },
+      { sources: ['inline.ts', 'Other.vue'] },
+    ]) {
+      expect(() => validateNativeTransformOutcome(ok({ ...mapped, map: { ...mapped.map, ...change } }), source, input)).toThrow('source map')
+    }
+    expect(() => validateNativeTransformOutcome(ok(mapped), source, JSON.stringify({ ...JSON.parse(input), provenance: { ...provenance, sources: [...provenance.sources, ...provenance.sources] } }))).toThrow('duplicate')
+  })
+
   it('honors sourceMap:false and allows an unchanged result without a map', () => {
     expect(validateNativeTransformOutcome(ok({ code: 'compiled', transformed: true, map: null }), source, request({ sourceMap: false })).status).toBe('ok')
     expect(() => validateNativeTransformOutcome(ok(), source, request({ sourceMap: false }))).toThrow('sourceMap:false')

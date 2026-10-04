@@ -42,7 +42,7 @@ Rust 在内部有序 JSON 上只省略允许位置的 optional undefined，并�
 
 `integratedCheck.ts` 先运行上述三个 JS 控制组，再依次运行只透传原 JS 的入口包装器和实际 native 包装器。四组 JS 共 360 次完整输出必须逐字相同，native 组另外保存 90 次完整返回值。每条阶段记录必须与控制组的实际源码、options 描述和表达式 bridge 一致；两真实页面各两轮必须由 Rust 成功生成，所有权及前后源码、二进制身份必须一致。
 
-native 的成功结果经完整校验后直接返回给 `compileVueFile` 或直接脚本调用者，后续 sourcemap 组合由原编译器执行。unsupported 等失败只调用一次原阶段闭包，失败分支的完整产物与告警必须逐字等于 JS 控制组。loader 的加载失败、native 异常、解析错误和坏 payload 回退另有合成测试，不能把该测试覆盖称为真实宿主验证。成功路径只校验一次原始 payload，不加载完整 AST，也不调用 JS 节点回调；请求构造和告警交付成本仍属于实验链路。
+native 的成功结果经完整校验后直接返回给 `compileVueFile` 或直接脚本调用者，后续 sourcemap 组合使用现有编译器工具；带真实模板来源的 native map 在诊断加载器中只对 `inline.ts` 合成主脚本 map，直接模板来源保持不变。JS 控制与回退继续调用原合成函数。unsupported 等失败只调用一次原阶段闭包，失败分支的完整产物与告警必须逐字等于 JS 控制组。loader 的加载失败、native 异常、解析错误和坏 payload 回退另有合成测试，不能把该测试覆盖称为真实宿主验证。成功路径只校验一次原始 payload，不加载完整 AST，也不调用 JS 节点回调；请求构造和告警交付成本仍属于实验链路。
 
 `compiler-XXXX.json` 保存原输入、原始 JS 和 native 完整结果及所有差异；`stage-XXXX.json` 另查每份实际交付的 native 结果，原阶段严格 map 门槛保持不变。完整 SFC 比较独立查询两份最终 scriptMap 到原 SFC，核对 UTF-16 范围、来源内容和名称，同时保持 template、style、config、manifest、metadata、告警和错误完整对照。多来源无法绑定到本次输入、两份空映射或单侧缺失映射都不能当作来源已验证。
 
@@ -56,7 +56,11 @@ native 对移动的 import 保留原 imported/local 位置。`expose` 合并为�
 
 这隔离了 Oxc 实际写映射的辅助 token、注册／导出及部分容器边界；它不是每个字符的区间证明。Oxc 不写映射的逗号、分号、部分括号和 import 的 `from` 关键字仍可能 GLB 继承。没有使用 helper 名搜索生成范围，也没有把保留行作为用户源码发布。
 
-模板合成表达式仍没有可追溯的原 SFC token map，因此 unmapped 只表示没有主脚本来源，不能证明每个 token 都是纯生成代码。模板表达式的根 span 不足以恢复更早的改写；后续需由上游 owner 提供可组合的 token 来源。严格 oracle 继续拒绝没有独立所有权证据的双侧 unmapped，来源与 runtime 门槛尚未通过。
+`origins/` 现仅覆盖 `v-on` 内联表达式的直接 handler 名称：从实际 Vue 指令及原始完整 SFC 建立 occurrence，通过原 asset 的 WeakMap 保留关系，在唯一请求顶层附加 UTF-16 `provenance`。不增写生产 AST、options 或 metadata，不按相同文本搜索位置，不把生成的 `_ctx`、`_event`、参数或整个表达式标为来自该名称。只有精确原文切片、原 parser callee 与改写后根调用均可证明时才传入。
+
+Rust 校验来源、范围和原始直接 callee AST，再沿实际 metadata 结构只给生成成员名分配位置；单次 codegen 支持主脚本与完整模板来源。`originChecks` 另从完整 SFC 解析真实 on 指令，对照实际 asset 注册顺序，并在阶段和最终产物的 callee token 上要求明确 segment 与实际 map consumer 查询同时正确。未知来源、实体解码差异、范围错误、重复或换绑均不能通过；含候选 handler 的 slot 子树目前拒绝，无事件的展示 slot 不影响当前检查。
+
+这只是 callee token 起点的来源切片。class/key、inline 参数、包装代码和其他模板 token 仍缺乏完整来源关系，部分标点仍可 GLB 继承。严格旧 oracle 继续拒绝未核验的双侧 unmapped，独立 callee 校验通过也不消除严格编译失败。完整源码传输、上游观察、额外局部解析及多来源 map 重建的成本尚未测量。
 
 ## 打印与 map
 

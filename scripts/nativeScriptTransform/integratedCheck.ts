@@ -47,6 +47,7 @@ async function main() {
   const comparisons: ComparisonSummary[] = []
   const stageComparisons: (Evidence & { scenarioId: string, callIndex: number, comparisonPassed: boolean })[] = []
   let captured: TransformScriptCaptureRecord[] = []
+  let control: ReturnType<typeof verifyIntegratedReport> | undefined
   let native: ReturnType<typeof verifyIntegratedReport> | undefined
   let failure: DiagnosticError | undefined
   const worker = async (filename: string, args: string[], label: string) => {
@@ -80,7 +81,13 @@ async function main() {
       const { checks, records, ...summary } = verified
       integratedWorkers.push({ mode, reportSha256: report.sha256, ...summary, records: records.length, checks: checks.length })
       if (mode === 'native') {
+        if (!control || !isDeepStrictEqual(verified.records.map(record => record.provenance), control.records.map(record => record.provenance))) {
+          throw new Error('Native provenance differs from the independently executed JS control')
+        }
         native = verified
+      }
+      else {
+        control = verified
       }
       console.log(`[integrated-script-transform] ${mode}: ${checks.length} complete calls; ${verified.nativeSucceeded} native; ${verified.fallbackCalls} fallback`)
     }

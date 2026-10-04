@@ -77,6 +77,11 @@ fn registration<'a>(
 
 fn run(source: &str, request: Request) -> Result<NativeScriptTransform, String> {
     let allocator = Allocator::default();
+    let origins = request
+        .provenance
+        .as_ref()
+        .map(|contract| super::template_provenance::InlineOrigins::new(source, contract))
+        .transpose()?;
     let mut parsed = Parser::new(&allocator, source, SourceType::ts()).parse();
     if !parsed.diagnostics.is_empty() || parsed.fatal_error {
         let mut result = NativeScriptTransform::empty("parse-error");
@@ -122,6 +127,12 @@ fn run(source: &str, request: Request) -> Result<NativeScriptTransform, String> 
         component_manifest::inject(object, &request, &allocator)?;
         let plan = metadata::build(&request.options, &request.symbols()?)?;
         let applied = metadata::apply_to_component(plan, object, &allocator)?;
+        if let Some(origins) = &origins {
+            if !applied.inline_injected {
+                return Err("Provenance inline assets were not injected".to_owned());
+            }
+            origins.apply(object, &request.symbols()?.inline_map_key, &request.options)?;
+        }
         imports = applied.imports;
         warnings = applied.warnings;
         component_options::function_paths(object, &request, &allocator)?;
@@ -174,15 +185,16 @@ fn run(source: &str, request: Request) -> Result<NativeScriptTransform, String> 
     }
     let source_map = request.options["sourceMap"] != false;
     let source_mappings = source_map.then(|| rewrite::source_mapping::prepare(&mut parsed.program));
-    let generated = provenance::generate(
-        &mut parsed.program,
-        &allocator,
-        CodegenOptions {
-            minify: request.options["minify"] == true,
-            source_map_path: source_map.then(|| PathBuf::from("inline.ts")),
-            ..CodegenOptions::default()
-        },
-    )?;
+    let codegen_options = CodegenOptions {
+        minify: request.options["minify"] == true,
+        source_map_path: source_map.then(|| PathBuf::from("inline.ts")),
+        ..CodegenOptions::default()
+    };
+    let generated = if let Some(origins) = &origins {
+        origins.generate(&mut parsed.program, &allocator, codegen_options)?
+    } else {
+        provenance::generate(&mut parsed.program, &allocator, codegen_options)?
+    };
     let map = if source_map {
         let map = source_mappings
             .as_ref()
@@ -224,3 +236,7 @@ pub fn transform_script_native(
 #[cfg(test)]
 #[path = "transform_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "template_provenance/transform_tests.rs"]
+mod template_provenance_tests;

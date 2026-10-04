@@ -28,11 +28,13 @@ impl<'a> OriginalSourceMappings<'a> {
             let Some(source_id) = token.get_source_id() else {
                 continue;
             };
-            if parts
-                .source_contents
-                .get(source_id as usize)
-                .and_then(Option::as_deref)
-                != Some(self.source)
+            // 完整脚本固定占据 source 0；同内容的模板来源也不能继承脚本改名记录。
+            if source_id != 0
+                || parts
+                    .source_contents
+                    .get(source_id as usize)
+                    .and_then(Option::as_deref)
+                    != Some(self.source)
             {
                 continue;
             }

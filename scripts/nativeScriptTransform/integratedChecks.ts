@@ -1,4 +1,5 @@
 import type { OptimizedScenario } from '../optimizedCompilerAnalysis/scenarios'
+import type { ScriptScenario } from '../scriptAnalysisBaseline/types'
 import type { TransformScriptCaptureRecord } from './captureTypes'
 import type { IntegratedMode, IntegratedRecord } from './integratedTypes'
 import { Buffer } from 'node:buffer'
@@ -7,6 +8,9 @@ import { expectedHookSources, object, verifyOptimizedCheck, verifyScriptCoverage
 import { decodeCapturedData } from './captureRead'
 import { captureTarget } from './captureSource'
 import { digest } from './identity'
+import { integratedMapTarget } from './integratedMap'
+import { inlineOriginOptions, inspectIntegratedOrigins, verifyInlineOriginSnapshot } from './integratedOrigins'
+import { validateInlineProvenance } from './originChecks'
 import { serializeTransformScriptRequest } from './request'
 import { validateNativeTransformOutcome } from './transformNative'
 
@@ -29,7 +33,7 @@ export function verifyIntegratedCallOwnership(indexes: unknown, records: Integra
 }
 
 /** 校验每条实际入口记录的所有权、请求、交付结果与真实回退次数。 */
-export function verifyIntegratedRecord(raw: unknown, expected: TransformScriptCaptureRecord, mode: IntegratedMode) {
+export function verifyIntegratedRecord(raw: unknown, expected: TransformScriptCaptureRecord, mode: IntegratedMode, scenario?: ScriptScenario) {
   const record = object(raw) as unknown as IntegratedRecord
   ensure(record.schemaVersion === 1 && record.callIndex === expected.callIndex && record.scenarioId === expected.scenarioId
     && ['returned', 'threw'].includes(record.status) && Array.isArray(record.evidenceErrors) && !record.evidenceErrors.length
@@ -37,6 +41,10 @@ export function verifyIntegratedRecord(raw: unknown, expected: TransformScriptCa
     && record.source.utf8Bytes === Buffer.byteLength(record.source.code)
     && isDeepStrictEqual(record.source, expected.source) && isDeepStrictEqual(record.options, expected.options)
     && isDeepStrictEqual(record.bridge, expected.bridge) && Array.isArray(record.warnings), 'Integrated stage input, ownership or evidence differs')
+  if (record.provenance !== undefined) {
+    ensure(scenario, 'Template provenance has no owning compiler scenario')
+    validateInlineProvenance(record.provenance, scenario, inlineOriginOptions(expected.options))
+  }
   ensure(record.status === expected.status, 'Integrated stage changed success/error status')
   const warnings = record.warnings.map((raw) => {
     const warning = object(raw)
@@ -61,7 +69,7 @@ export function verifyIntegratedRecord(raw: unknown, expected: TransformScriptCa
       && isDeepStrictEqual(record.error, expected.error), 'Integrated control changed the stage result')
     return record
   }
-  ensure(record.request === serializeTransformScriptRequest({ kind: 'captured', options: expected.options! })
+  ensure(record.request === serializeTransformScriptRequest({ kind: 'captured', options: expected.options!, provenance: record.provenance })
     && record.nativeCalls === 1 && record.rawNative && !record.requestError && !record.nativeError, 'Integrated native did not execute one complete actual request')
   const outcome = validateNativeTransformOutcome(decodeCapturedData(record.rawNative), record.source.code, record.request)
   ensure(record.nativeStatus === outcome.status, 'Integrated native outcome status differs from raw evidence')
@@ -94,7 +102,12 @@ export function verifyIntegratedReport(raw: unknown, mode: IntegratedMode, ident
     : [report.bindingSha256Before, report.bindingSha256After, integration.bindingSha256].every(value => value === undefined), 'Integrated binding identity differs')
   ensure(Array.isArray(report.checks) && report.checks.length === scenarios.length * 2
     && Array.isArray(integration.records) && integration.records.length === captured.length, 'Integrated scenario or stage coverage is incomplete')
-  const records = integration.records.map((record, index) => verifyIntegratedRecord(record, captured[index]!, mode))
+  const records = integration.records.map((record, index) => verifyIntegratedRecord(record, captured[index]!, mode, scenarios.find(entry => entry.scenario.id === captured[index]!.scenarioId)?.scenario))
+  const origins = verifyInlineOriginSnapshot(integration.origins, records)
+  const mapLoader = object(integration.mapLoader)
+  ensure(mapLoader.target === integratedMapTarget && mapLoader.loadCount === 1
+    && [mapLoader.upstreamSha256, mapLoader.instrumentedSha256].every(value => typeof value === 'string' && /^[a-f\d]{64}$/.test(value)), 'Map composition loader identity is incomplete')
+  const originChecks: { scenarioId: string, iteration: number, records: ReturnType<typeof inspectIntegratedOrigins> }[] = []
   let visited = 0
   const repeated = new Map<string, string>()
   const checks = report.checks.map((rawCheck, index) => {
@@ -113,6 +126,7 @@ export function verifyIntegratedReport(raw: unknown, mode: IntegratedMode, ident
     if (mode === 'control-js' || owned.every(record => record.used !== 'native')) {
       ensure(check.output === expected.get(check.scenario), 'Integrated control or fallback changed complete output/maps/warnings/errors')
     }
+    originChecks.push({ scenarioId: entry.scenario.id, iteration: index % 2, records: inspectIntegratedOrigins(entry.scenario, check.output, owned) })
     return { ...check, integratedCallIndexes: indexes as number[] }
   })
   ensure(visited === records.length, 'Unowned integrated records remain')
@@ -128,8 +142,16 @@ export function verifyIntegratedReport(raw: unknown, mode: IntegratedMode, ident
   const realPages = ['sfc-wevu', 'sfc-retail'].map((scenarioId) => {
     const owned = records.filter(record => record.scenarioId === scenarioId)
     const nativeSucceeded = owned.filter(record => record.used === 'native').length
+    ensure(owned.every((record) => {
+      const options = inlineOriginOptions(record.options)
+      return Array.isArray(options.inlineExpressions) && options.inlineExpressions.length > 0
+        && record.provenance?.occurrences.length === options.inlineExpressions.length
+    }), 'Representative page inline callee provenance is incomplete')
     ensure(owned.length === 2 && (mode !== 'native' || nativeSucceeded === 2), 'Representative page did not use complete native transformation twice')
     return { scenarioId, requiredRecords: owned.length, nativeSucceeded }
   })
-  return { checks, records, loader, realPages, ...counts }
+  const mapComposition = object(integration.mapComposition)
+  const selectiveCalls = originChecks.reduce((sum, check) => sum + check.records.filter(record => !record.mapDisabled).length, 0)
+  ensure(Number.isSafeInteger(mapComposition.calls) && Number(mapComposition.calls) >= selectiveCalls && mapComposition.selectiveCalls === selectiveCalls, 'Selective source map composition counts differ')
+  return { checks, records, loader, mapLoader, origins, mapComposition, originChecks, realPages, ...counts }
 }

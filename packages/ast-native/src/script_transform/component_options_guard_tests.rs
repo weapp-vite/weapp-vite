@@ -12,6 +12,7 @@ fn request() -> Request {
         options: json!({"wevuDefaults":{"component":{"options":{"first":true,"second":true},"setData":{"first":true,"second":true}}}}),
         contract: json!({"markers":{"WEVU_IS_PAGE_KEY":"pageMarker"}}),
         omitted_undefined: Vec::new(),
+        provenance: None,
     }
 }
 

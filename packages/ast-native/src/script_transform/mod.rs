@@ -18,6 +18,7 @@ mod metadata;
 mod provenance;
 mod request;
 mod rewrite;
+mod template_provenance;
 mod transform;
 
 #[cfg(test)]

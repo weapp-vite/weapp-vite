@@ -1,10 +1,12 @@
 import type { TransformResult } from '../../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/utils'
 import type { CaptureExpressionTools } from './captureTypes'
 import type { IntegratedBinding, IntegratedMode, IntegratedRecord } from './integratedTypes'
+import type { InlineProvenance } from './origins/types'
 import { Buffer } from 'node:buffer'
 import { serializeDiagnosticError } from '../optimizedCompilerAnalysis/diagnosticError'
 import { createCaptureBridgeMetrics, serializeCaptureValue } from './captureSerialize'
 import { digest } from './identity'
+import { IntegratedMapComposition } from './integratedMap'
 import { serializeTransformScriptRequest } from './request'
 import { validateNativeTransformOutcome, withTransformScriptFallback } from './transformNative'
 
@@ -14,8 +16,9 @@ export class IntegratedTransformState {
   private scenarioId?: string
   private active?: IntegratedRecord
   private disposed = false
+  readonly maps = new IntegratedMapComposition()
 
-  constructor(private readonly mode: IntegratedMode, private readonly binding: IntegratedBinding, private readonly transferKey: () => symbol | undefined) {}
+  constructor(private readonly mode: IntegratedMode, private readonly binding: IntegratedBinding, private readonly transferKey: () => symbol | undefined, private readonly origins: (options: unknown) => InlineProvenance | undefined = () => undefined) {}
 
   snapshot() {
     return structuredClone(this.records)
@@ -123,6 +126,7 @@ export class IntegratedTransformState {
     try {
       this.observe(() => {
         record.options = serializeCaptureValue(options, { inputOptions: true, transferKey: this.transferKey(), expressions, metrics: record.bridge })
+        record.provenance = this.origins(options)
       })
       let result: TransformResult
       if (this.mode === 'control-js') {
@@ -134,7 +138,7 @@ export class IntegratedTransformState {
           if (!record.options) {
             throw new Error('Cannot build native request without complete captured options')
           }
-          record.request = serializeTransformScriptRequest({ kind: 'captured', options: record.options })
+          record.request = serializeTransformScriptRequest({ kind: 'captured', options: record.options, provenance: record.provenance })
         }
         catch (error) {
           record.requestError = serializeDiagnosticError(error)
@@ -178,6 +182,9 @@ export class IntegratedTransformState {
           record.used = 'native'
           record.nativeStatus = 'ok'
         }
+      }
+      if (record.used === 'native' && record.provenance && result.map) {
+        this.maps.register(result.map)
       }
       this.observe(() => {
         record.result = serializeCaptureValue(result)

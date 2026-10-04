@@ -66,17 +66,33 @@ function requestContext(json: string) {
     }
   }
   visit(options, '$')
-  return { sourceMap, omitted }
+  const sources: { filename: string, content: string }[] = []
+  if (request.provenance !== undefined) {
+    const provenance = object(request.provenance)
+    if (provenance.schemaVersion !== 1 || provenance.coordinateEncoding !== 'utf16' || !Array.isArray(provenance.sources)) {
+      throw new TypeError('Invalid native provenance sources')
+    }
+    const filenames = new Set(['inline.ts'])
+    for (const raw of provenance.sources) {
+      const entry = object(raw)
+      if (typeof entry.filename !== 'string' || !entry.filename || filenames.has(entry.filename) || typeof entry.content !== 'string') {
+        throw new TypeError('Invalid or duplicate native provenance source')
+      }
+      filenames.add(entry.filename)
+      sources.push({ filename: entry.filename, content: entry.content })
+    }
+  }
+  return { sourceMap, omitted, sources }
 }
 
-function validateMap(raw: unknown, source: string) {
+function validateMap(raw: unknown, source: string, sources: { filename: string, content: string }[]) {
   const map = object(raw)
   exactKeys(map, ['version', 'file', 'names', 'sourceRoot', 'sources', 'sourcesContent', 'mappings', 'ignoreList'])
   if (![3, '3'].includes(map.version as number | string) || !strings(map.names) || !strings(map.sources)
-    || map.sources.length !== 1 || map.sources[0] !== 'inline.ts' || typeof map.mappings !== 'string'
-    || !Array.isArray(map.sourcesContent) || map.sourcesContent.length !== 1 || map.sourcesContent[0] !== source
+    || !isDeepStrictEqual(map.sources, ['inline.ts', ...sources.map(entry => entry.filename)]) || typeof map.mappings !== 'string'
+    || !isDeepStrictEqual(map.sourcesContent, [source, ...sources.map(entry => entry.content)])
     || (map.file !== undefined && typeof map.file !== 'string') || (map.sourceRoot !== undefined && typeof map.sourceRoot !== 'string')
-    || (map.ignoreList !== undefined && (!Array.isArray(map.ignoreList) || !map.ignoreList.every(index => Number.isSafeInteger(index) && index >= 0 && index < 1)))) {
+    || (map.ignoreList !== undefined && (!Array.isArray(map.ignoreList) || !map.ignoreList.every(index => Number.isSafeInteger(index) && index >= 0 && index < 1 + sources.length)))) {
     throw new TypeError('Invalid native script source map')
   }
 }
@@ -162,7 +178,7 @@ export function validateNativeTransformOutcome(raw: unknown, source: string, req
     throw new TypeError('Native ignored sourceMap:false')
   }
   if (result.map != null) {
-    validateMap(result.map, source)
+    validateMap(result.map, source, context.sources)
   }
   else if (context.sourceMap && result.transformed) {
     throw new TypeError('Transformed native script omitted the requested source map')

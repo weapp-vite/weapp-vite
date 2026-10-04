@@ -551,3 +551,34 @@ map 对照查询两份实际 stage map 从各自产物回到同一真实源脚�
 59 项新增工具测试、定向 ESLint 与脚本 TypeScript 检查通过，新增实现文件均低于 300 行。工具、场景与报告按职责拆分；无生产接口或行为变更，不新增 changeset／脚手架 bump。详细计数与独立审计见[受控行为证据](./2026-10-05-script-transform-semantic-evidence.json)。
 
 这些结果只覆盖有限 Node 宿主和受跟踪 Promise／已观察状态，不能证明所有脱离调用链的 continuation，也不能替代完整 Wevu Component 宿主或真实 Stable 微信开发者工具。未完成最终 runtime 验收，本轮没有性能、RSS、Vite 构建／HMR 或跨平台采样；整链提速门槛仍未满足。
+
+
+## 第二十五轮：真实模板 handler callee 来源贯穿
+
+本轮在默认关闭的完整脚本实验中，补上 `v-on` 内联 handler 名称的真实模板来源。诊断加载器在上游仍持有 Vue 指令、完整 SFC 和原解析结果时记录 occurrence，通过原 inline asset 的 WeakMap 关联；原生产 AST、options、metadata 和共享解析缓存不增写字段。请求顶层的可选 `provenance` 一次传递完整来源与 UTF-16 范围，不增加 N-API 往返，也不传完整 AST 或逐节点回调。
+
+Rust 先核对精确原文切片、字符边界、原直接 callee AST、inlineId 及生成根调用形状，然后只将成员名 token 关联到原 handler。多来源 codegen 的内部源码区将外部来源放在主脚本之前，保持主脚本 EOF；打印后恢复各来源、names、注释与 AST。最终诊断合成只将 `inline.ts` 经主脚本 map 回溯，直接模板来源保留。JS 控制与 fallback 仍调用原合成函数，完整产物逐字门槛保留。
+
+父进程另外从原始 SFC 解析 on 指令，核对真实 asset 次序，并沿实际 metadata AST 路径查找输出 callee；同列必须存在明确映射分段，真实 map consumer 也必须精确返回对应源 token。重复文本不能交换归属，参数里的同名标识符不能冒充 callee，无事件的展示 slot 不影响检查，含候选 handler 的 slot 子树仍拒绝。CRLF 预处理后无法证明完整原文与 descriptor 对齐的来源记录 unsupported，不补猜测偏移。
+
+正式复跑得到 **360 次 JS 完整控制逐字相同**。native 的 90 次完整调用仍为 36 次实际 native、36 次实际单次 JS fallback、18 次无 stage；54 份 fallback／无 stage 完整输出逐字保持。与第二十四轮逐条对照，90 个输入与控制输出、72 条 stage 源码／options 相同；去掉新增旁表后的请求结构相同。36 份 native stage code、72 份可解析最终 script 均逐字不变。
+
+| 本轮来源证据 | 范围 |
+| --- | --- |
+| 真实 Wevu 首页 | 7 个独立 handler callee，在阶段及最终 map 都精确命中原模板 |
+| 真实零售详情 | 14 个独立 handler callee，在阶段及最终 map 都精确命中原模板 |
+| 额外事件 fixture | 1 个独立 callee，两个 map 层都通过 |
+| 压力 fixture | 24 个 occurrence 已捕获，但整个 stage 走 JS fallback，不计入 native 映射覆盖 |
+| 全语料重复检查 | 12 次多来源合成，各 map 层 88 次 callee 检查；不是 176 个独立 token |
+
+捕获快照共有 4 个 source、46 个不同 occurrence，真正由 native 交付来源的是其中 22 个。sfc/binding 两个语料入口各重复两轮，不能将重复检查当成独立页面。两真实页的受控语义仍为 **4/4 对比通过、8/8 worker 成功**；实际 handler/computed/lifecycle 调用、异步账本与 cleanup 门槛保留。
+
+**严格命令仍实际 exit 1，`completed=true`、`semanticComparisonPassed=true`、`compilerComparisonPassed=false`、联合 `comparisonPassed=false`。** 顶层命令、编译子进程及八个语义 worker 均保留进程退出记录。严格完整比较仍只有 32 项通过，来自 14 次 fallback 与 18 次无 stage；native 严格通过数为 0。新增 callee 来源检查是额外证据，没有改变旧 AST/map oracle 或把缺失来源判为通过。
+
+最初的一次诊断在加载器阶段拒绝了 tsx 紧凑源码，未执行 native；失败记录保留。修复将插桩定位改为 AST 结构、作用域和唯一调用检查，只在原加载文本上插入或包裹，不重打印整个模块；随后通过 raw／strip／compact 格式及真实加载链回归，并用新目录重新正式采集。Rust v8 addon 已重新构建，60 份构建输入、正式采集的 390 份源码和 842 份声明 helper 身份均保持一致。
+
+独立复核重算 134 份编译产物、31 份语义产物、390 份源码、842 份 helper、60 份构建输入及两份构建输出，并校验进程退出与跨轮逐字对照；现有来源／语义校验器另在保存产物上静态重放，不是独立重写的 oracle。另一复核直接消费实际 map 分段和原文 UTF-16 位置，该复核者此前参与来源捕获实现。新多来源 stage map 会被旧单来源门禁提前拒绝，不能把差异总数下降或旧越界项不再进入细查当作修复；最终双侧 unmapped 减少 88、来源差异增加 88，正是新增 callee 来源与 JS 空映射不同。
+
+342 项工具测试、脚本 TypeScript、ESLint 通过。Rust 先通过 84 项阶段测试，新增两项测试后通过 8 项来源测试；组合实验 feature 的 cargo check 与 rustfmt 通过。新增及修改实现均小于 300 行。无生产入口、公开配置或运行时行为变化，不新增 changeset／脚手架 bump；保留 pre-commit 和 lint-staged。
+
+这只解决直接 callee 的 token 起点；参数、class/key、包装代码、其他模板 token 及完整字符区间仍需真实来源关系，标点仍可能 GLB 继承。完整 SFC 传输、额外原表达式解析及 map 重建都有成本，本轮未测性能、RSS、Vite 构建／HMR或真实 Stable 微信开发者工具，未完成最终 runtime 验收。独立审计和具体身份见[模板 callee 来源证据](./2026-10-05-template-callee-origin-evidence.json)。

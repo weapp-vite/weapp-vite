@@ -1,5 +1,6 @@
 import type { TransformScriptOptions } from '../../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/utils'
 import type { CapturedValue, CaptureExpressionTools, CaptureProperty } from './captureTypes'
+import type { InlineProvenance } from './origins/types'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { performance } from 'node:perf_hooks'
@@ -49,8 +50,8 @@ export type ScriptRequestValue
     | { kind: 'expression-source', role: string, id: number, nodeType: string, source: string, originalSpan: CapturedValue }
 
 export type ScriptRequestInput
-  = | { kind: 'captured', options: CapturedValue }
-    | { kind: 'live', options: TransformScriptOptions | undefined, expressions: CaptureExpressionTools, transferKey?: symbol }
+  = | { kind: 'captured', options: CapturedValue, provenance?: InlineProvenance }
+    | { kind: 'live', options: TransformScriptOptions | undefined, expressions: CaptureExpressionTools, transferKey?: symbol, provenance?: InlineProvenance }
 
 function initializer(source: string, name: string): t.Expression {
   const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
@@ -233,7 +234,7 @@ export function buildTransformScriptRequest(input: ScriptRequestInput) {
     sharedContract = createScriptRequestContract()
     initialization = { durationMs: performance.now() - started, sourceReads: 4, parseCalls: 5 }
   }
-  return { schemaVersion: 1 as const, options, contract: structuredClone(sharedContract), bridge }
+  return { schemaVersion: 1 as const, options, contract: structuredClone(sharedContract), bridge, ...(input.provenance === undefined ? {} : { provenance: structuredClone(input.provenance) }) }
 }
 
 export type TransformScriptRequest = ReturnType<typeof buildTransformScriptRequest>

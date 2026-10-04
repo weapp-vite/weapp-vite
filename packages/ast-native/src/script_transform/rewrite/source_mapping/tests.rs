@@ -236,11 +236,12 @@ fn name_repair_preserves_coordinates_and_never_assigns_names_to_unmapped_tokens(
         None,
         vec![],
         None,
-        vec!["input.ts".into()],
-        vec![Some(source.into())],
+        vec!["input.ts".into(), "template.vue".into()],
+        vec![Some(source.into()), Some(source.into())],
         vec![
             Token::new(0, 0, 0, 0, Some(0), None),
             Token::new(0, 6, 0, 0, None, None),
+            Token::new(0, 7, 0, 0, Some(1), None),
         ]
         .into_boxed_slice(),
         None,
@@ -255,6 +256,7 @@ fn name_repair_preserves_coordinates_and_never_assigns_names_to_unmapped_tokens(
         repaired.get_token(1).unwrap(),
         Token::new(0, 6, 0, 0, None, None)
     );
+    assert_eq!(repaired.get_token(2).unwrap(), Token::new(0, 7, 0, 0, Some(1), None));
 }
 
 #[test]

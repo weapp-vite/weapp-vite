@@ -8,7 +8,9 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { installIntegratedTransform, loadIntegratedBinding } from './integrated'
+import { integratedMapTarget } from './integratedMap'
 import { instrumentIntegratedTransform, integratedGlobalKey } from './integratedSource'
+import { inlineOriginsGlobalKey, inlineOriginTargets } from './origins/source'
 
 describe('integrated loader installation and source boundary', () => {
   it('requires explicit mode and binding selection', async () => {
@@ -57,6 +59,21 @@ describe('integrated loader installation and source boundary', () => {
     }
   })
 
+  it('releases its integrated owner even when the origin global has been replaced', async () => {
+    const owner = await installIntegratedTransform({ mode: 'control-js' })
+    const foreign = {}
+    Object.defineProperty(globalThis, inlineOriginsGlobalKey, { configurable: true, value: foreign })
+    try {
+      expect(() => owner.dispose()).toThrow('foreign owner was preserved')
+      expect(Object.hasOwn(globalThis, integratedGlobalKey)).toBe(false)
+      expect(Object.getOwnPropertyDescriptor(globalThis, inlineOriginsGlobalKey)?.value).toBe(foreign)
+      owner.dispose()
+    }
+    finally {
+      delete (globalThis as unknown as Record<string, unknown>)[inlineOriginsGlobalKey]
+    }
+  })
+
   it('wraps the real stage return and original warning handler after type stripping', () => {
     const source = stripTypeScriptTypes(readFileSync(new URL('../../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/index.ts', import.meta.url), 'utf8'), { mode: 'strip' })
     const transformed = instrumentIntegratedTransform(source)
@@ -85,19 +102,29 @@ describe('integrated loader installation and source boundary', () => {
         return measureCompilerStage('transformScript', () => transformScriptInternal(source, options))
       }
     `
+    const support = [
+      'import { composeSourceMaps } from \'../../../../utils/sourcemap\'\nexport function map() { return { scriptMap: composeSourceMaps(transformed.map ?? jsxTransformed.map, scriptMap) } }',
+      'function compileVueTemplateToWxml() {} export function compileTemplatePhase(descriptor, filename, source, templateResolvedId, options, result, bindingManifestSourceFile) { const templateCompiled = compileVueTemplateToWxml(descriptor.template.content, filename, options); return templateCompiled }',
+      'function registerInlineExpression() {} export function transformOnDirective(node, context, options) { const inlineSource = \'value\'; const inlineExpression = true ? registerInlineExpression(inlineSource, context) : null; return inlineExpression }',
+      'function parseBabelExpressionFile() {} export function registerInlineExpression(exp, context) { const parsed = parseBabelExpressionFile(exp); const asset = {}; const updatedExpressionNode = null; context.inlineExpressions.push(asset); return asset }',
+    ]
+    const modules = Object.fromEntries([integratedMapTarget, ...inlineOriginTargets.map(entry => entry.target)].map((filename, index) => [new URL(`../../${filename}`, import.meta.url).href, support[index]]))
     const script = `
       import {registerHooks} from 'node:module';
       const {installIntegratedTransform} = await import(${JSON.stringify(installer)});
       const target = ${JSON.stringify(target)};
       const integrated = await installIntegratedTransform({mode: 'control-js'});
       let loads = 0;
+      const modules = ${JSON.stringify(modules)};
       const owner = registerHooks({load(url, context, next) {
+        if (Object.hasOwn(modules, url)) return {format:'module', shortCircuit:true, source:modules[url]};
         if (url !== target) return next(url, context);
         loads++;
         return {format:'module', shortCircuit:true, source:${JSON.stringify(synthetic)}};
       }});
       try {
         const {transformScript} = await import(target);
+        for (const url of Object.keys(modules)) await import(url);
         integrated.assertInstalled();
         const warnings = [];
         const result = await integrated.run('synthetic', () => transformScript('original', {warn: message => warnings.push(message)}));
@@ -114,7 +141,7 @@ describe('integrated loader installation and source boundary', () => {
       result: { value: { code: 'original', transformed: false }, records: [{ used: 'control-js', nativeCalls: 0, fallbackCalls: 0, evidenceErrors: [] }] },
       warnings: ['original warning'],
       loads: 1,
-      snapshot: { loader: { loadCount: 1, instrumentedSha256: expect.stringMatching(/^[a-f\d]{64}$/) } },
+      snapshot: { loader: { loadCount: 1, instrumentedSha256: expect.stringMatching(/^[a-f\d]{64}$/) }, mapLoader: { loadCount: 1 }, origins: { loaders: [{ loadCount: 1 }, { loadCount: 1 }, { loadCount: 1 }], requestCalls: 1 } },
     })
   })
 })

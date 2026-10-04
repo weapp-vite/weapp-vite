@@ -86,14 +86,21 @@ export async function readSemanticCompilerEvidence(artifacts: CompilerArtifacts,
       captured = verified.records
     }
   }
+  let control: ReturnType<typeof verifyIntegratedReport> | undefined
   let native: ReturnType<typeof verifyIntegratedReport> | undefined
   for (const [index, mode] of (['control-js', 'native'] as const).entries()) {
     const filename = `integrated-${mode}/report.json`
     const verified = verifyIntegratedReport(await artifacts.read(filename), mode, identity, bindingSha256, scenarios, captured, expected)
     const recorded = object(summary.integratedWorkers[index])
     ensure(recorded.mode === mode && recorded.reportSha256 === artifacts.hashes[filename], 'Integrated worker report differs from its summary')
+    ensure(isDeepStrictEqual(recorded.origins, verified.origins) && isDeepStrictEqual(recorded.originChecks, verified.originChecks)
+      && isDeepStrictEqual(recorded.mapComposition, verified.mapComposition), 'Origin summary differs from independent replay')
     if (mode === 'native') {
+      ensure(control && isDeepStrictEqual(verified.records.map(record => record.provenance), control.records.map(record => record.provenance)), 'Native provenance differs from the JS control')
       native = verified
+    }
+    else {
+      control = verified
     }
   }
   ensure(native && summary.completeControlByteChecks === scenarios.length * 8

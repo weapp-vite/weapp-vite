@@ -7,8 +7,10 @@ import { scriptBaselineGlobalKey } from '../scriptAnalysisBaseline/installHelper
 import { installCaptureLoader } from './captureLoader'
 import { captureTarget } from './captureSource'
 import { digest } from './identity'
+import { instrumentIntegratedMap, integratedMapTarget } from './integratedMap'
 import { instrumentIntegratedTransform, integratedGlobalKey } from './integratedSource'
 import { IntegratedTransformState } from './integratedState'
+import { installInlineOrigins } from './origins/index'
 
 export type { IntegratedCheck, IntegratedRecord, IntegratedSnapshot, IntegratedWorkerReport } from './integratedTypes'
 
@@ -52,13 +54,19 @@ export async function installIntegratedTransform(options: { mode: IntegratedMode
   if (Object.hasOwn(globalThis, integratedGlobalKey)) {
     throw new Error('Integrated transformScript was installed while loading the binding')
   }
-  const state = new IntegratedTransformState(options.mode, binding, transferKey)
+  const origins = installInlineOrigins()
+  const state = new IntegratedTransformState(options.mode, binding, transferKey, origins.requestFor)
+  const mapLoader = installCaptureLoader(new URL(`../../${integratedMapTarget}`, import.meta.url).href, integratedMapTarget, instrumentIntegratedMap)
   const loader = installCaptureLoader(new URL(`../../${captureTarget}`, import.meta.url).href, captureTarget, instrumentIntegratedTransform)
   Object.defineProperty(globalThis, integratedGlobalKey, { configurable: true, value: state })
   let disposed = false
   return {
-    assertInstalled: () => loader.assertInstalled(),
-    snapshot: (): IntegratedSnapshot => ({ mode: options.mode, bindingSha256: binding.sha256, loadError: binding.loadError, loader: loader.snapshot(), records: state.snapshot() }),
+    assertInstalled: () => {
+      loader.assertInstalled()
+      mapLoader.assertInstalled()
+      origins.assertInstalled()
+    },
+    snapshot: (): IntegratedSnapshot => ({ mode: options.mode, bindingSha256: binding.sha256, loadError: binding.loadError, loader: loader.snapshot(), mapLoader: mapLoader.snapshot(), origins: origins.snapshot(), mapComposition: state.maps.snapshot(), records: state.snapshot() }),
     run: <T>(scenarioId: string, execute: () => Promise<T> | T) => {
       loader.assertInstalled()
       return state.run(scenarioId, execute)
@@ -69,11 +77,24 @@ export async function installIntegratedTransform(options: { mode: IntegratedMode
       }
       state.dispose()
       disposed = true
-      loader.dispose()
-      if (Object.getOwnPropertyDescriptor(globalThis, integratedGlobalKey)?.value !== state) {
-        throw new Error('Integrated global ownership changed; foreign owner was preserved')
+      const errors: unknown[] = []
+      for (const owner of [loader, mapLoader, origins]) {
+        try {
+          owner.dispose()
+        }
+        catch (error) {
+          errors.push(error)
+        }
       }
-      delete (globalThis as unknown as Record<string, unknown>)[integratedGlobalKey]
+      if (Object.getOwnPropertyDescriptor(globalThis, integratedGlobalKey)?.value !== state) {
+        errors.push(new Error('Integrated global ownership changed; foreign owner was preserved'))
+      }
+      else {
+        delete (globalThis as unknown as Record<string, unknown>)[integratedGlobalKey]
+      }
+      if (errors.length) {
+        throw new AggregateError(errors, errors.map(error => String(error)).join('; '))
+      }
     },
   }
 }
