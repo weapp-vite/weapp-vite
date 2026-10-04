@@ -1,7 +1,9 @@
+import type { ViteDevServer } from 'vite'
 import type { CorePluginState } from '../helpers'
 import { fs } from '@weapp-core/shared/fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
+import { attachDevModuleGraphHost } from '../../../moduleGraph/host'
 import { createModuleGraphService } from '../../../moduleGraph/service'
 import { storeVueSfcHmrSignatures } from '../../../runtime/storeVueSfcHmrSignatures'
 import { createBuildStartHook, createWatchChangeHook } from './watch'
@@ -228,6 +230,56 @@ describe('core lifecycle watch hook', () => {
     expect(addWatchFile).toHaveBeenCalledWith('/project/vite.config.mts')
     expect(addWatchFile).toHaveBeenCalledWith('/project/config/shared.ts')
     expect(state.ctx.runtimeState.build.hmr.profile.buildStartMs).toBeTypeOf('number')
+  })
+
+  it('leaves config dependency watching to the attached host while retaining WXML dependencies', async () => {
+    const state = createState()
+    state.ctx.configService.configFileDependencies = [
+      '/project/vite.config.mts',
+      '/project/config/shared.ts',
+    ]
+    state.ctx.runtimeState.wxmlProcessing = {
+      references: new Map([
+        ['/project/template-rules.json', 1],
+        ['/project/config/shared.ts', 1],
+      ]),
+    }
+    const addWatchFile = vi.fn()
+    const buildStart = createBuildStartHook(state)
+    const detachHost = attachDevModuleGraphHost(state.ctx, {} as ViteDevServer)
+    try {
+      await buildStart.call({ addWatchFile })
+
+      expect(addWatchFile.mock.calls).toEqual([['/project/template-rules.json']])
+      expect(state.emitDirtyEntries).toHaveBeenCalledOnce()
+    }
+    finally {
+      detachHost()
+    }
+
+    addWatchFile.mockClear()
+    await buildStart.call({ addWatchFile })
+    expect(addWatchFile).toHaveBeenCalledWith('/project/vite.config.mts')
+    expect(addWatchFile).toHaveBeenCalledWith('/project/config/shared.ts')
+  })
+
+  it.each(['create', 'update', 'delete'] as const)('leaves config dependency %s to the attached host', async (event) => {
+    const state = createState()
+    state.ctx.configService.configFileDependencies = ['/project/config/shared.ts']
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    const detachHost = attachDevModuleGraphHost(state.ctx, {} as ViteDevServer)
+    try {
+      await createWatchChangeHook(state)('/project/config/shared.ts', { event })
+
+      expect(state.ctx.buildService.requestConfigRestart).not.toHaveBeenCalled()
+      expect(state.ctx.scanService.markDirty).not.toHaveBeenCalled()
+      expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+      expect(state.ctx.onStatefulHmrSourceChange).not.toHaveBeenCalled()
+      expect(state.ctx.runtimeState.build.hmr.profile).toEqual({})
+    }
+    finally {
+      detachHost()
+    }
   })
 
   it.each([
