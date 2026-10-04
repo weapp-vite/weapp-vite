@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 1,
+  "issue": 1097,
+  "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+  "archiveCount": 28,
+  "cohortManifestHashes": {
+    "candidate-evidence.json": "832be6d367c4102d8a83d875d902ff1d985d8175106323d22f6eeec97883272e",
+    "consumer-tarballs.json": "785c6ed10371af7dd389a4c4a0b1f1d3505383ff11ce470b31f27a56fb9c7c3c"
+  },
+  "rows": [
+    {
+      "host": "wv",
+      "profile": "worker",
+      "functionalAssertionsPassed": true,
+      "plannedCheckpointAssertionsPassed": true,
+      "finalRowAccepted": true,
+      "cohortAfterSnapshotRecorded": true,
+      "cohortMatchesFrozenManifestAtAudit": true,
+      "compilerCandidate": "c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b",
+      "harness": {
+        "commit": "4678a84ee45c2c561b716b9250cad599a3818947",
+        "dirty": false,
+        "before": {
+          "commit": "4678a84ee45c2c561b716b9250cad599a3818947",
+          "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "untracked": {},
+          "capturedAt": "2026-10-04T16:43:46.423245+00:00",
+          "trackedPatchIncludesIndex": true,
+          "controllerSha256": "001593055cf91898658c6613943a6ed1e595ff6b6f8315364fd4a1d46cedc8ea"
+        },
+        "after": {
+          "commit": "4678a84ee45c2c561b716b9250cad599a3818947",
+          "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "untracked": {},
+          "capturedAt": "2026-10-04T16:45:24.247074+00:00",
+          "trackedPatchIncludesIndex": true,
+          "controllerSha256": "001593055cf91898658c6613943a6ed1e595ff6b6f8315364fd4a1d46cedc8ea"
+        },
+        "snapshotsEqual": true,
+        "snapshotCoversIndex": true
+      },
+      "installation": {
+        "candidatePackages": 28,
+        "comparedArchiveFiles": 1735,
+        "mismatches": 0,
+        "fixtureLinks": [
+          {
+            "package": "fake-pkg",
+            "target": "worker-vendor",
+            "scope": "consumer-contained fixture only",
+            "recordedHarnessBlobFiles": 2,
+            "candidatePackage": false
+          }
+        ],
+        "symlinksAudited": 38,
+        "externalSymlinks": 0,
+        "lockSha256": "87ced5547157d7734a8fbb33f77b0d2c54c3ad6ab7ad626cbc357a2c69956a39",
+        "reportSha256": "d4395a00bde6b66d446de7b314e6626dc1d01ad545ecc2d0770417027d992517",
+        "exportPackagesVerified": 28,
+        "negativeControls": {
+          "brokenExportsRejected": true,
+          "missingCliRejected": true
+        }
+      },
+      "officialDevtools": {
+        "queriedAt": "2026-10-04T16:43:46.042355+00:00",
+        "channel": "stable",
+        "selectedAndInstalledVersion": "2.02.2608080",
+        "source": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json",
+        "evidenceSha256": "c4f38ac755de2356c4fcb480115315dc720540c47eaffa885d7b6902ae142eb1"
+      },
+      "providers": [
+        {
+          "provider": "headless",
+          "runId": "issue1097-wv-worker-c3-01",
+          "reportSha256": "08b8055030372ee6459b926c30f7dc0779778efdf4caa894ef0853660e1a8063",
+          "startedAt": "2026-10-04T16:44:24.753Z",
+          "finishedAt": "2026-10-04T16:44:27.787Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": null,
+            "baseLibraryVersion": null
+          },
+          "strict": true,
+          "status": "passed",
+          "runtimeErrors": [],
+          "summary": {
+            "plannedCount": 1,
+            "executedCount": 1,
+            "passedCount": 1,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 3,
+            "capturedCheckpointCount": 3
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 0,
+            "error": 0,
+            "informationalCount": 6
+          },
+          "nativeSlotGeometryAssertions": 0,
+          "recoveredStartupProtocolDiagnostics": []
+        },
+        {
+          "provider": "devtools",
+          "runId": "issue1097-wv-worker-c3-01",
+          "reportSha256": "7c65f222578af7450d533a598012047253b902eedd79b826d18f579b336d71f7",
+          "startedAt": "2026-10-04T16:44:28.498Z",
+          "finishedAt": "2026-10-04T16:45:20.570Z",
+          "environment": {
+            "nodeVersion": "v24.18.0",
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.17.3"
+          },
+          "strict": true,
+          "status": "passed",
+          "runtimeErrors": [],
+          "summary": {
+            "plannedCount": 1,
+            "executedCount": 1,
+            "passedCount": 1,
+            "failedCount": 0,
+            "blockedCount": 0,
+            "skippedCount": 0,
+            "notExecutedCount": 0,
+            "plannedCheckpointCount": 3,
+            "capturedCheckpointCount": 3
+          },
+          "selectedIdentityMatchesExecuted": true,
+          "runtimeConsoleSummary": {
+            "warn": 0,
+            "error": 0,
+            "exception": 0
+          },
+          "diagnosticMessages": {
+            "warn": 6,
+            "error": 0,
+            "informationalCount": 10
+          },
+          "nativeSlotGeometryAssertions": 0,
+          "recoveredStartupProtocolDiagnostics": [
+            {
+              "method": "App.getCurrentPage",
+              "route": "/pages/worker/index",
+              "failedAttempts": 6,
+              "firstFailureAt": "2026-10-04T16:44:45.128Z",
+              "lastFailureAt": "2026-10-04T16:45:15.119Z",
+              "recoveredAt": "2026-10-04T16:45:16.456Z",
+              "state": "recovered"
+            }
+          ]
+        }
+      ],
+      "commonCases": [
+        {
+          "name": "e2e app: worker host > exchanges worker messages and resets worker state after page reentry",
+          "checkpoints": [
+            {
+              "id": "worker-initial",
+              "action": "等待首条 worker 消息",
+              "route": "/pages/worker/index"
+            },
+            {
+              "id": "worker-echo",
+              "action": "点击发送并确认消息复制及计数",
+              "route": "/pages/worker/index"
+            },
+            {
+              "id": "worker-reentry",
+              "action": "重新进入页面并确认 worker 状态重置",
+              "route": "/pages/worker/index"
+            }
+          ],
+          "observationSha256": "bb3e201e90139ea079815d90066be7ce6c066a7f2be27b578f7e5065c79ecfb1"
+        }
+      ],
+      "parity": {
+        "commonCases": 1,
+        "commonCheckpoints": 3,
+        "commonObservationsMatch": true,
+        "webUsesBrowserAssertions": false
+      },
+      "serialization": {
+        "rawReportedProcessCount": 9,
+        "controllerSerialAcceptance": false,
+        "controllerFinalRowAccepted": false,
+        "independentReviewSupersedesClassificationOnly": true,
+        "reportWriterFalsePositives": 5,
+        "testDiscoveryFalsePositives": 4,
+        "externalRuntimeProcesses": 0,
+        "observedExternalRuntimeOverlap": false,
+        "finalSerialAcceptance": true,
+        "overlapKinds": [],
+        "review": {
+          "reportWriter": {
+            "sourceSha256": "af20d3a8fd99183f3a68e958ed8f19778c1e2e1515ebe5eaadec4b9f170f5647",
+            "imports": [
+              "pathlib.Path",
+              "json"
+            ],
+            "operations": [
+              "read one manifest",
+              "write two reports",
+              "print the report path"
+            ],
+            "spawnOrDynamicExecutionCalls": 0,
+            "literalCommandTextWasNotExecuted": true
+          },
+          "testDiscovery": {
+            "operation": "playwright test plugin-copy-names.spec.ts --list --project=chromium",
+            "listedCases": 26,
+            "executedCases": 0,
+            "logSha256": "6eea73a1b259aadb800e8154326651cb1388282c9b6d35a850352fe1d6ff166d",
+            "installedPlaywrightVersion": "1.63.0",
+            "listBranchRunsGlobalSetupOrWebServerOrTests": false,
+            "runnerSourceSha256": "7a2e4e1114d3237d61b87723b4d86a37944c9143f3ce2fb0b2e8867e0c612a5e",
+            "cliSourceSha256": "844ee2482212864404513729b51871f43d28693b5c98f260e6fbc5d7bf02827f"
+          },
+          "processEvidence": {
+            "pollCount": 116,
+            "changedRelevantSnapshots": 39,
+            "allFlaggedIdentitiesAccountedFor": true,
+            "additionalRecordedDescendants": 0,
+            "newBrowserRootProcessesInFullBoundarySnapshots": 0,
+            "backgroundExtensionRenderersUnderPreexistingBrowser": 6,
+            "backgroundExtensionsPredateDiscoveryCommand": true,
+            "discoveryWebServerObserved": false,
+            "sourceHashes": {
+              "preflight-processes.json": "e647704ff59d2229553a67840bbbbc74876184aaedba1bf8d150e414e939f974",
+              "runtime-ended-processes.json": "a32b7fabacc56ba2a12f46930a2a9c2364b4cdbce2c985f9d412dab2d1863011",
+              "postflight-processes.json": "b5d16e003300ed24faf312277d9bcc5f5065f58e951dcf819c5b2601b18edd22",
+              "process-snapshots.jsonl": "5225ae61f0ffa35cea1260f442834341c7b285421734616085dd46061a21b58d",
+              "resources.json": "e091c71875c6d886e3ea568adeee134873502c4673b6d02518f469fe28ad00ca",
+              "row-summary.json": "4ec775d44abe8b9d058c6d2a3d5feb1f865dcf6bf0cc780025c81666ed130979"
+            }
+          }
+        }
+      },
+      "cleanup": {
+        "resourcesSha256": "e091c71875c6d886e3ea568adeee134873502c4673b6d02518f469fe28ad00ca",
+        "completedAt": "2026-10-04T16:45:23.142757+00:00",
+        "registeredChildren": 36,
+        "sameIdentityStillRunning": 0,
+        "ownedEndpoints": 1,
+        "ownedListeningPortsStillOpen": 0,
+        "errors": 0
+      },
+      "evidence": {
+        "runLogSha256": "b010ef30cd67a73e77e8e06c0a9486f20c9056762f89107e1225b8738be0e2ea",
+        "rowSummarySha256": "4ec775d44abe8b9d058c6d2a3d5feb1f865dcf6bf0cc780025c81666ed130979"
+      }
+    }
+  ],
+  "limitations": [
+    "This audit only reads retained evidence and verifies installations and owned-resource closure. It does not run E2E or modify the source repository.",
+    "Functional assertions, observed serialization and source provenance are separate gates. A row with a true external runtime overlap or incomplete modern process/source snapshots is not final acceptance.",
+    "The compiler cohort remains c3c643d40 even when the harness commit changes. Dirty harness identity is explicitly recorded; no compiler upgrade is inferred.",
+    "Headless common observations do not establish CSS geometry parity. React Stable rows separately prove 42 native slot geometry observations.",
+    "Process polling cannot exclude a process whose complete lifetime lies between snapshots. No exclusive-machine or performance claim is made.",
+    "Web rows use their public browser assertions and recorded successful command completion rather than mini-program provider DOM reports.",
+    "The controller originally rejected serialization because command text inside a report writer and Playwright --list were classified as runtime execution. The original controller summary and resource ledger remain unchanged; this report records the evidence-backed independent classification.",
+    "The worker fixture has one consumer-contained fake-pkg symlink whose two files byte-match the recorded harness Git blobs. All 28 compiler cohort packages remain physical tarball installs.",
+    "Existing unrelated browser sessions and a static preview predate this row. They were preserved; this report does not claim an idle or exclusive machine."
+  ]
+}

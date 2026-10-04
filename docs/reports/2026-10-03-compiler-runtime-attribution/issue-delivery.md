@@ -611,7 +611,7 @@ classic 路由目录 watcher 现在保留长期宿主的订阅与释放所有权
 
 Stable 纯原生 WXSS 对照仍在一次保存后保持旧颜色，App/Page 状态不变。宿主日志显示外层 WXSS 转换先于内部缓存清理约 397ms，但未直接取得旧缓存值或热更新 payload，不能据此断言唯一根因；见 [缓存顺序证据](native-wxss-cache-ordering.md)。未修改安装的 IDE，也未增加重复保存或延时绕过。
 
-#1097 的 Vite+ React 两次观察均完成功能检查，但分别与外部 E2E 重叠，不计入正式通过。随后 `wv/independent` 的 headless 1/1 用例、10/10 检查点通过；Stable 同样捕获全部 10 个检查点，却因两条未分类的 `routeDone`/`SystemError` runtime 错误使严格报告失败，且另有外部 Playwright 重叠。资源清理均无错误。正式矩阵保持 6/29；其他行继续验收，不更改完成标签。
+Issue #1097 的 Vite+ React 两次观察均完成功能检查，但分别与外部 E2E 重叠，不计入正式通过。随后 `wv/independent` 的 headless 1/1 用例、10/10 检查点通过；Stable 同样捕获全部 10 个检查点，却因两条未分类的 `routeDone`/`SystemError` runtime 错误使严格报告失败，且另有外部 Playwright 重叠。资源清理均无错误。正式矩阵保持 6/29；其他行继续验收，不更改完成标签。
 
 ### 完成标签与最终候选的继续验证
 
@@ -619,6 +619,8 @@ Stable 纯原生 WXSS 对照仍在一次保存后保持旧颜色，App/Page 状�
 
 三项后续源码修复 `5ece96d8b` 与证据提交 `4678a84ee` 已推送 main。新提交另行启动完整 CI `37218252591` 与固定基线的 HMR 归因 `37218258010`；调度成功不等于通过。新候选包含真实生产差异，原性能基线、输入、样本数和阈值不变；不以本次修复回填旧性能结果。
 
-Vite+ React 的第三轮独立复核通过，前两次有外部 E2E 重叠的观察仍保留原结论。第三轮两 provider 各 3 用例、14 检查点通过；Stable 额外 42 次 slot 几何检查通过，运行时错误和外部重叠均为零，冻结归档及 1,735 个安装文件逐字节核对、资源清理与干净 harness 前后身份均通过。#1097 正式矩阵达到 7/29，详见 [该行验收](issue-1097-vite-plus-react-consumer-acceptance.json)。
+Vite+ React 的第三轮独立复核通过，前两次有外部 E2E 重叠的观察仍保留原结论。第三轮两 provider 各 3 用例、14 检查点通过；Stable 额外 42 次 slot 几何检查通过，运行时错误和外部重叠均为零，冻结归档及 1,735 个安装文件逐字节核对、资源清理与干净 harness 前后身份均通过。该行完成后 #1097 正式矩阵达到 7/29，详见 [该行验收](issue-1097-vite-plus-react-consumer-acceptance.json)。
 
-#1137 的独立原生 AppService 探针观察到 Memory 面板数值及 `performance.memory` 字段，但未取得带 target/isolate 身份的 `Runtime.getHeapUsage` 原始响应。两种读数不作替换、不回填历史样本；临时启用 Protocol Monitor 的请求仍待授权，探针项目已关闭。详见 [能力边界](issue-1137-native-memory-capability.md)。
+随后 `wv/worker` 独立审计通过，正式矩阵达到 8/29。原控制器保留 `serial: false` 与九条告警；独立审计逐项确认五条仅写报告的 Python 进程、四条 Playwright `--list` 枚举均未启动 E2E。两 provider 各 1 用例、3 检查点通过，归档和安装文件一致，36 个登记子进程及项目端口均已释放。Stable 启动时六次协议重试最终恢复，业务运行时告警、错误、异常为零；不将本机描述为完全空闲。审计范围与原始结果摘要见 [worker 验收](issue-1097-wv-worker-consumer-acceptance.json)。后续 `vite/worker` 虽通过功能检查，但与另一项目实际执行的 Playwright 测试重叠，不计入正式通过。
+
+Issue #1137 的独立原生 AppService 探针观察到 Memory 面板数值及 `performance.memory` 字段，但未取得带 target/isolate 身份的 `Runtime.getHeapUsage` 原始响应。两种读数不作替换、不回填历史样本；临时启用 Protocol Monitor 的请求仍待授权，探针项目已关闭。详见 [能力边界](issue-1137-native-memory-capability.md)。
