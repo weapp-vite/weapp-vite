@@ -11,6 +11,7 @@ interface MeasureFileMarkerUpdateOptions {
   update: () => Promise<void>
   timeoutMs: number
   signal?: AbortSignal
+  onObserved?: (observation: { sourceWriteStartedAt: number, wxmlObservedAt: number, elapsedMs: number, output: string }) => void
 }
 
 /** 以新标记实际写入产物作为更新完成边界，日志不参与验收。 */
@@ -44,11 +45,15 @@ export async function measureFileMarkerUpdate(options: MeasureFileMarkerUpdateOp
       }
     }
     signal?.throwIfAborted()
-    const elapsedMs = performance.now() - startedAt
+    const wxmlObservedAt = performance.now()
+    const elapsedMs = wxmlObservedAt - startedAt
     if (elapsedMs >= timeoutMs) {
       break
     }
     if (options.expectedOutput === undefined ? output?.includes(marker) : output === options.expectedOutput) {
+      if (output !== undefined) {
+        options.onObserved?.({ sourceWriteStartedAt: startedAt, wxmlObservedAt, elapsedMs, output })
+      }
       return elapsedMs
     }
     await setTimeout(Math.min(HMR_OUTPUT_POLL_INTERVAL_MS, timeoutMs - elapsedMs), undefined, { signal })

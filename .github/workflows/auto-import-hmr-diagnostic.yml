@@ -1,0 +1,227 @@
+name: Auto-import HMR Restore Diagnostic
+run-name: Auto-import HMR restore diagnostic @ ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate-sha:
+        description: Full committed candidate SHA; must match the selected workflow ref
+        type: string
+        required: true
+
+concurrency:
+  group: auto-import-hmr-diagnostic-${{ github.sha }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    name: Ubuntu / 50 and 69 manual configurations
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      EXPECTED_CANDIDATE_SHA: ${{ inputs.candidate-sha }}
+      CANDIDATE_SHA: ${{ github.sha }}
+      BASELINE_SHA: e7862e61dd83e3b9e356ac1e176267b31ab298af
+      CANDIDATE_ROOT: ${{ github.workspace }}/candidate
+      BASELINE_ROOT: ${{ github.workspace }}/baseline
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the exact candidate and collector
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: candidate
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check out the fixed baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: baseline
+          ref: e7862e61dd83e3b9e356ac1e176267b31ab298af
+          persist-credentials: false
+      - name: Verify immutable checkout identities
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process'
+          import { createHash } from 'node:crypto'
+          import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+          import os from 'node:os'
+          import path from 'node:path'
+          const identities = Object.fromEntries(['BASELINE', 'CANDIDATE'].map(side => {
+            const cwd = process.env[`${side}_ROOT`]
+            const revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' }).trim()
+            const clean = !execFileSync('git', ['status', '--porcelain', '--untracked-files=normal'], { cwd, encoding: 'utf8' }).trim()
+            return [side.toLowerCase(), {
+              revision,
+              expected: process.env[`${side}_SHA`],
+              clean,
+              lockfileSha256: createHash('sha256').update(readFileSync(path.join(cwd, 'pnpm-lock.yaml'))).digest('hex'),
+            }]
+          }))
+          const reportRoot = path.join(process.env.RUNNER_TEMP, 'auto-import-hmr-diagnostic')
+          mkdirSync(reportRoot, { recursive: true })
+          writeFileSync(process.env.GITHUB_ENV, `REPORT_ROOT=${reportRoot}\n`, { flag: 'a' })
+          writeFileSync(path.join(reportRoot, 'dispatch.json'), JSON.stringify({
+            identities,
+            platform: process.platform,
+            architecture: process.arch,
+            cpu: os.cpus()[0]?.model,
+            cpuCount: os.availableParallelism(),
+            runnerImage: process.env.ImageOS,
+            runnerImageVersion: process.env.ImageVersion,
+            configurations: ['50:manual', '69:manual'],
+            iterations: 1,
+            cycles: ['first', 'repeat'],
+            performanceGate: 'not-run; diagnostic evidence only',
+          }, null, 2) + '\n')
+          if (!/^[a-f0-9]{40}$/.test(process.env.EXPECTED_CANDIDATE_SHA ?? '')
+            || process.env.EXPECTED_CANDIDATE_SHA !== process.env.CANDIDATE_SHA
+            || identities.baseline.revision !== process.env.BASELINE_SHA
+            || identities.candidate.revision !== process.env.CANDIDATE_SHA
+            || Object.values(identities).some(value => !value.clean)) {
+            throw new Error('Dispatch requires the exact clean candidate and fixed baseline commits')
+          }
+          NODE
+      - name: Prepare report directories
+        run: |
+          root="$RUNNER_TEMP/auto-import-hmr-diagnostic"
+          mkdir -p "$root/baseline" "$root/candidate/control" "$root/candidate/probe" "$root/fixtures"
+          owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
+          printf '%s\n' "$owner" > "$root/fixtures/.auto-import-hmr-diagnostic-owner"
+          printf 'DIAGNOSTIC_FIXTURE_OWNER=%s\n' "$owner" >> "$GITHUB_ENV"
+      - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+        with:
+          package_json_file: candidate/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: |
+            candidate/pnpm-lock.yaml
+            baseline/pnpm-lock.yaml
+      - name: Install candidate dependencies
+        working-directory: candidate
+        run: pnpm install --frozen-lockfile
+      - name: Install baseline dependencies
+        working-directory: baseline
+        run: pnpm install --frozen-lockfile
+      - name: Build benchmark package dependencies
+        run: |
+          pnpm --dir baseline --filter 'weapp-vite...' -r run build
+          pnpm --dir candidate --filter 'weapp-vite...' -r run build
+      - name: Collect baseline manual restore timings
+        working-directory: candidate
+        env:
+          AUTO_IMPORT_BENCH_TARGET_ROOT: ${{ env.BASELINE_ROOT }}
+          AUTO_IMPORT_HMR_DIAGNOSTIC: '0'
+          AUTO_IMPORT_HMR_DIAGNOSTIC_PROFILE: '0'
+          AUTO_IMPORT_BENCH_PAIRED: '1'
+          BENCH_ITERATIONS: '1'
+          BENCH_SCENARIOS: 50,69
+          BENCH_CONFIGURATIONS: '["50:manual","69:manual"]'
+          BENCH_REPORT_DIR: ${{ runner.temp }}/auto-import-hmr-diagnostic/baseline
+        run: pnpm exec tsx packages/weapp-vite/scripts/benchmark-auto-import-hmr.ts 2>&1 | tee "$RUNNER_TEMP/auto-import-hmr-diagnostic/baseline-runner.log"
+      - name: Collect candidate control outputs
+        working-directory: candidate
+        env:
+          AUTO_IMPORT_BENCH_TARGET_ROOT: ${{ env.CANDIDATE_ROOT }}
+          AUTO_IMPORT_HMR_DIAGNOSTIC: '0'
+          AUTO_IMPORT_HMR_DIAGNOSTIC_PROFILE: '0'
+          AUTO_IMPORT_HMR_DIAGNOSTIC_PAIR: '1'
+          AUTO_IMPORT_HMR_DIAGNOSTIC_PHASE: control
+          AUTO_IMPORT_HMR_DIAGNOSTIC_ROOT: ${{ runner.temp }}/auto-import-hmr-diagnostic/fixtures
+          AUTO_IMPORT_HMR_DIAGNOSTIC_OWNER: ${{ env.DIAGNOSTIC_FIXTURE_OWNER }}
+          AUTO_IMPORT_BENCH_PAIRED: '1'
+          BENCH_ITERATIONS: '1'
+          BENCH_SCENARIOS: 50,69
+          BENCH_CONFIGURATIONS: '["50:manual","69:manual"]'
+          BENCH_REPORT_DIR: ${{ runner.temp }}/auto-import-hmr-diagnostic/candidate/control
+        run: pnpm exec tsx packages/weapp-vite/scripts/benchmark-auto-import-hmr.ts 2>&1 | tee "$RUNNER_TEMP/auto-import-hmr-diagnostic/candidate-control-runner.log"
+      - name: Collect candidate probe timings and profile
+        working-directory: candidate
+        env:
+          AUTO_IMPORT_BENCH_TARGET_ROOT: ${{ env.CANDIDATE_ROOT }}
+          AUTO_IMPORT_HMR_DIAGNOSTIC: '1'
+          AUTO_IMPORT_HMR_DIAGNOSTIC_PROFILE: '1'
+          AUTO_IMPORT_HMR_DIAGNOSTIC_PAIR: '1'
+          AUTO_IMPORT_HMR_DIAGNOSTIC_PHASE: probe
+          AUTO_IMPORT_HMR_DIAGNOSTIC_ROOT: ${{ runner.temp }}/auto-import-hmr-diagnostic/fixtures
+          AUTO_IMPORT_HMR_DIAGNOSTIC_OWNER: ${{ env.DIAGNOSTIC_FIXTURE_OWNER }}
+          AUTO_IMPORT_BENCH_PAIRED: '1'
+          BENCH_ITERATIONS: '1'
+          BENCH_SCENARIOS: 50,69
+          BENCH_CONFIGURATIONS: '["50:manual","69:manual"]'
+          BENCH_REPORT_DIR: ${{ runner.temp }}/auto-import-hmr-diagnostic/candidate/probe
+        run: pnpm exec tsx packages/weapp-vite/scripts/benchmark-auto-import-hmr.ts 2>&1 | tee "$RUNNER_TEMP/auto-import-hmr-diagnostic/candidate-probe-runner.log"
+      - name: Verify deterministic output equivalence
+        working-directory: candidate
+        run: node scripts/verify-auto-import-hmr-diagnostic.mjs "$RUNNER_TEMP/auto-import-hmr-diagnostic"
+      - name: Summarize diagnostic measurements
+        if: always()
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, existsSync, readFileSync } from 'node:fs'
+          import path from 'node:path'
+          const root = process.env.REPORT_ROOT ?? path.join(process.env.RUNNER_TEMP, 'auto-import-hmr-diagnostic')
+          const lines = [
+            `Candidate: \`${process.env.CANDIDATE_SHA}\`; baseline: \`${process.env.BASELINE_SHA}\`.`,
+            'Ubuntu diagnostic only: 50/69 component manual configurations, one iteration, first/repeat edit and restore cycles.',
+            'Restore milliseconds retain the existing complete-WXML observation boundary. Helper tail is reported separately and is not labeled as acknowledgement time.',
+            'Candidate HMR profile is attribution evidence only; no 5% or Nightly verdict was run.',
+            '',
+          ]
+          for (const side of ['baseline']) {
+            const file = path.join(root, side, 'report.json')
+            if (!existsSync(file)) {
+              lines.push(`${side}: report unavailable`)
+              continue
+            }
+            const report = JSON.parse(readFileSync(file, 'utf8'))
+            for (const result of report.results ?? []) {
+              const sample = result.raw?.manual?.[0]
+              const restore = sample?.cycles?.map((cycle, index) => `cycle-${index + 1}=${cycle.restoreMs.toFixed(1)} ms`).join(', ') ?? 'restore unavailable'
+              const tails = sample?.diagnostic?.cycles?.map((cycle, index) => `cycle-${index + 1}=${Number(cycle.restore.helperTailMs).toFixed(1)} ms`).join(', ') ?? 'helper tail unavailable'
+              lines.push(`${side} ${result.usedCount} manual restore: ${restore}; helper tail after WXML observation: ${tails}`)
+              if (sample?.diagnostic?.profile) {
+                lines.push(`${side} ${result.usedCount} matching candidate profile samples: ${sample.diagnostic.profile.samples.length}`)
+              }
+            }
+          }
+          for (const phase of ['control', 'probe']) {
+            const file = path.join(root, 'candidate', phase, 'report.json')
+            if (!existsSync(file)) {
+              lines.push(`candidate ${phase}: report unavailable`)
+              continue
+            }
+            const report = JSON.parse(readFileSync(file, 'utf8'))
+            for (const result of report.results ?? []) {
+              const sample = result.raw?.manual?.[0]
+              if (phase === 'probe') {
+                const restore = sample?.cycles?.map((cycle, index) => `cycle-${index + 1}=${cycle.restoreMs.toFixed(1)} ms`).join(', ') ?? 'restore unavailable'
+                const tails = sample?.diagnostic?.cycles?.map((cycle, index) => `cycle-${index + 1}=${Number(cycle.restore.helperTailMs).toFixed(1)} ms`).join(', ') ?? 'helper tail unavailable'
+                lines.push(`candidate ${result.usedCount} manual restore: ${restore}; helper tail after WXML observation: ${tails}`)
+                lines.push(`candidate ${result.usedCount} matching profile samples: ${sample?.diagnostic?.profile?.samples?.length ?? 0}`)
+              }
+            }
+          }
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n')
+          NODE
+      - name: Upload raw diagnostic reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: auto-import-hmr-diagnostic-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/auto-import-hmr-diagnostic/dispatch.json
+            ${{ runner.temp }}/auto-import-hmr-diagnostic/equivalence.json
+            ${{ runner.temp }}/auto-import-hmr-diagnostic/baseline/**
+            ${{ runner.temp }}/auto-import-hmr-diagnostic/candidate/**
+          if-no-files-found: error
+          retention-days: 90
+      - name: Clean diagnostic runner temporary files
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/auto-import-hmr-diagnostic"
