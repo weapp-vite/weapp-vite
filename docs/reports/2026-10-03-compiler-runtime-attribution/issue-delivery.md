@@ -90,7 +90,7 @@ v5/v6 四类消费者均独立严格安装，并各完成五次普通构建和�
 | #1135 | 干净候选、512 SFC、14 次连续编辑的正式资源门禁与动作族回归 |
 | #1136 | 验收条件已满足，待同步标签：`434899347` 的官方 Stable 两场景、三个 page-frame 检查点与 headless 一致；七端 49 项通过原门禁，完整源码图的 5,422 个正字节模块缺链为 0；新 collector 重采的三个消费者全部产物 hash 与原 Stable 相等，未重复 runtime，身份边界见精简证据 |
 | #1137 | 已实现宿主 heap 协议探测与前后快照；仍缺普通/预设同输入的真实 Stable host commit、内存与工作负载样本，现有 headless 数据不支持收益结论 |
-| #1140 | `0b54186a3` 干净候选的两组模式/缓存恢复等价性已通过；仍缺目标 Stable runtime |
+| #1140 | 两种 `emptyOutDir` 策略已通过 headless 与 Stable 各 2 个场景、28 个检查点；生产代际边界修正已提交为 `86b60ed1a`，待推送及对应 CI |
 | #1142 | 所依赖的子议题完成上述验收后再完成总跟踪项 |
 
 `Compiler and Resource Acceptance` 手动工作流要求输入完整提交 SHA，并核对实际 checkout 与 `github.sha`；分别采集七组 compiler 对照、classic/stateful 的 512 SFC 资源门禁及 mode/cache 等价性。profile 按 off/on/on/off 顺序执行两组独立对照，逐次核对真实源事件、输入、产物、runtime 语义和资源清理，默认开销门槛为 5%。原始日志与报告随工作流归档，失败和缺失证据会使 job 失败。
@@ -536,3 +536,37 @@ Rolldown 1.2.12 的临时 callable owner 草案在 Node 24.18.0 完成 10 例真
 基线 `49446adad` 的 [Release 37197051772](https://github.com/weapp-vite/weapp-vite/actions/runs/37197051772) 与 [Website 37197051750](https://github.com/weapp-vite/weapp-vite/actions/runs/37197051750) 已成功；它们不冒充后续 `a96200123` collector 修复的远端 CI 结果。
 
 议题 #1136 已满足本议题验收条件，待维护流程同步完成标签。此时范围内仍为 29/41 个 issue 带标签；没有预先把尚未执行的标签操作计入结果，也不改变其他议题的实际样式更新失败、HMR 性能或长期资源门禁。
+
+## #1081 最新 Stable 批次验收
+
+干净 `c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b` 重建后，于 2026-10-04 11:55 UTC 重新核对官方 Stable `2.02.2608080`、原生窗口版本和登录状态，再独占串行运行 Tailwind 批次及延迟编译事务两例。实际基础库 `3.17.3`，严格报告为 0/2 cases、3/9 checkpoints：两例初始样式与事务 held 状态通过；首次更新后文本已改变，但新背景规则未呈现，计算结果为透明，模拟器截图一致。后续 CSS Modules、失败恢复等检查点尚未执行，不能记为通过。
+
+[失败边界与截图摘要](./issue-1081-stable-boundary.json) 保留原报告 hash、全部计划检查点、实际观测及原始错误。启动阶段的 fixture 依赖声明警告和未到达的预期错误作用域另行保留。两个自有 fixture 窗口显式关闭、端口关闭且测试进程退出，共享 Stable 宿主保留。该表现与此前纯原生 WXSS 首次保存不刷新的诊断一致，尚不能标记 #1081 完成；不改变 29/41 标签计数。
+
+### #1137 Stable 页面方法协议回归
+
+Stable `2.02.2608080`、基础库 `3.17.3` 的两轮同场景诊断确认：修复前默认 `Page.callMethod(readBenchState)` 与强制原生协议各四次返回 `{}`，显式 AppService 调用四次返回完整状态；加入该 Stable 版本的既有方法兼容边界并重建 automator 后，默认调用四次取得页面 marker 和有效 ready 指标，强制原生协议仍四次返回 `{}`。两轮原始 `reLaunch` 首页→详情→首页均成功，协议与 AppService 路由一致。原始证据 SHA、源码/测试工具身份与清理状态见 `issue-1137-stable-protocol.json`。
+
+测试复用冻结候选 `434899347` 的 normal 消费者，探针没有重建应用；归档时 22 个产物文件仍与原 journal 的 SHA 完全一致。修复后运行使用 `c3c643d40` 上未提交但已重建的 automator 变更，不能把该结果写成纯 `c3c643d40` 的验证。前一轮 automator dist 未单独留存 hash，现有证据不补写该值。
+
+两轮 owned 会话已关闭，端口已关闭，操作方确认对精确测试快照执行 CLI close；共享宿主保持。修复后的原生 UI debugger badge 显示 1 error、7 warnings，但未成功切换到 Console 查看内容，因此不宣称零错误。此记录仅验证异步方法返回值兼容，不是 normal/performance 正式 A/B；原始 `navigateToDetail` 样本序列、工作负载和内存门槛仍须正式运行，#1137 暂不标记完成。
+
+### #1140：生产模式与缓存切换的真实 runtime 验收
+
+2026-10-04，`e2e/ide/issue-1140-mode-cache.runtime.test.ts` 在 headless 与官方 Stable 两个 provider 中均严格通过 **2 个场景、28 个 DOM 检查点**，没有失败、跳过或未执行项。每个场景覆盖 `emptyOutDir=true/false` 中的一种设置，两端全部路由、节点数量和文本结果一致。实际连接的微信开发者工具为 **2.02.2608080**，基础库为 **3.17.2**；官方 Stable 查询时间为 `2026-10-04T12:26:25.041514+00:00`。headless 在 `12:25:34.329Z` 结束，Stable 在 `12:26:26.116Z` 开始。
+
+覆盖初始生产构建、production→dev→production、共享模块变更、组件移动/删除、分包移动/删除及恢复旧生产缓存后的重建。每个 provider 完成 16 次全量产物比较：长期目录的最终文件集合与文件字节必须等于独立目录中的新生产构建；同时检查页面 `.js/.wxml/.json`、chunk 引用存在性，以及 `emptyOutDir=false` 保留其他工具的文件。新生产基线使用同一测试进程中的新 session 与独立目录。本次报告没有持久化逐步产物哈希，比较通过由严格 suite 的控制流与结果共同证明。
+
+验收边界已明确为全量 production 代际：先关闭上一代由本测试拥有的项目，再修改磁盘；产物比较成功后才装载新一代。同一代的主包/分包导航复用连接。该边界针对完整生产构建，不作为保留页面状态的 HMR 通过依据。Stable 共 16 个运行会话，runtime warn/error/exception 均为 0；16 个登记端口全部关闭，2 个测试项目目录均已移除，共享 Stable 宿主保留。
+
+这次运行基于 `c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b` 加尚未提交的 #1137 automator、#1097 selected-case 与 #1140 production 边界变更。脱敏 JSON 保留原始报告 SHA-256、实际版本、检查点观测及清理证明。当前结论是**本地 runtime 验收通过**；提交与目标提交的必需 CI 仍须完成，之后才标记 issue 已完成。
+
+### #1097：Vite+ classic-watch 独立消费者验收
+
+`vite-plus / classic-watch` 这一行使用 `c3c643d409ca661a89cc0ed069c6bfb7f5ea0b9b` 的 28 个候选 tarball，在仓库外的独立临时项目中通过 npm 安装。已逐包核对归档 SHA-256、package-lock SHA-512 integrity、resolved 来源、版本和实际安装文件；全部候选目录都是消费者内部的实体目录，没有 workspace 软链接或候选包的嵌套副本。28 个包的公开导出及 broken-export/missing-CLI 负向控制通过。
+
+2026-10-04 的串行复核中，headless 与官方 Stable 各严格通过 **1 个选定场景、4 个 DOM 检查点**，selected 身份与实际执行身份一致。两端均观察到初始 `BASE/0/空输入`、编辑前 `BASE/1/classic-held-input`、源码更新触发 classic 重载后的 `PATCHED/0/空输入`，以及后续交互的 `PATCHED/2/空输入`。真实宿主为 **2.02.2608080**，基础库为 **3.16.3**，执行 Node 为 **v24.18.0**。2 个拥有的 automator 端口均已关闭，指定消费者项目经同一 CLI 关闭；安装目录保留用于归档核对。
+
+第一次功能运行可能与另一任务的共享 Stable 预检重叠，因此不作为独占最终验收。复核时另一任务已 idle/blocked，进程快照仅观察到本次 Vitest；JSON 同时保留两次原报告的 SHA-256 与该限制。复核 harness 为 `8eb6b145758949df9de0f53a183f99cbeccb3c53` 加未提交的 #1097 selected-case 改动；编译器仍来自上述 `c3c643d40` tarball。此证据只完成这一矩阵行，完整 #1097 矩阵与目标提交 CI 仍需汇总后才能标记 issue 已完成。
+
+本轮源码与验收工具分别提交为 `8eb6b1457`（Stable 异步方法）、`2a12f6d0a`（消费者用例清单）和 `86b60ed1a`（生产代际边界）。以上原始报告保留执行时的 commit 与 dirty 标识；对应实现随后提交，不改写历史报告身份。
