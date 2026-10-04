@@ -143,6 +143,7 @@ const projects = [
         'e2e/utils/devBuildCompletion.test.ts',
         'e2e/utils/hmr-helpers.test.ts',
         'e2e/utils/hmrRuntimeDiagnostics.test.ts',
+        'e2e/utils/hmrOutputDiagnostics.test.ts',
         'e2e/utils/ide-devtools-cleanup.test.ts',
         'e2e/utils/devtoolsCli.test.ts',
         'e2e/utils/devtoolsProcessOwnership.test.ts',
