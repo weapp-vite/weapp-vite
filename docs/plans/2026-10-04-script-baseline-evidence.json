@@ -1,0 +1,842 @@
+{
+  "schemaVersion": 1,
+  "scope": "Correctness-only diagnostic loader experiment; no production source changes or timing samples.",
+  "reportSha256": "0f69c46d90f38eea6b04aafc8b28fa836987a2bc0a7797f71ffd5a2bf62dfaef",
+  "command": "node --import tsx scripts/scriptAnalysisBaseline/check.ts --output=<new-directory>",
+  "passed": true,
+  "sourceIdentityVerified": true,
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "scenarios": [
+    {
+      "id": "sfc-pressure",
+      "kind": "sfc",
+      "filename": "src/pages/batch-pressure/index.vue",
+      "options": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "expectError": false,
+      "sourceSha256": "9e5ddb3ca118abc9891b194a7e02c4a06797e0243fdfb7d1863e640e4d4b54c4",
+      "inputSha256": "2e7ad9f623388aae25e933650e1274e6c0dd400a582aa14d7d9ae3c2137809fd"
+    },
+    {
+      "id": "sfc-wevu",
+      "kind": "sfc",
+      "filename": "apps/wevu-vue-demo/src/pages/index/index.vue",
+      "options": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "expectError": false,
+      "sourceSha256": "6c234bbfbeb8467af821f43724f4bd01dc546356126fe144f91d6cb368c1a085",
+      "inputSha256": "5e9c6f995a70301ccfb9924702386cac4c030753336e335bb2407c89d5fcfe0e"
+    },
+    {
+      "id": "sfc-retail",
+      "kind": "sfc",
+      "filename": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/index.vue",
+      "options": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "expectError": false,
+      "sourceSha256": "28a8c41959d94da732fc97a045bf901e0cde52b7a3c63beb327a705586ec2ecb",
+      "inputSha256": "275145dcde39fc1189fcfcb26945a3f45ed3bf16671642ba0bc731fe85722b93"
+    },
+    {
+      "id": "sfc-nested-loops",
+      "kind": "sfc",
+      "filename": "src/pages/batch-nested-loops/index.vue",
+      "options": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "expectError": false,
+      "sourceSha256": "b52fbd1de37e9e28272b802e93b001a9ce63a9d5063760ea45ee62fb7578398e",
+      "inputSha256": "e8b046f6618c965637d59914093ef7aa2c5e3d633017b86fd00664dddcfd1f03"
+    },
+    {
+      "id": "sfc-scoped-slots",
+      "kind": "sfc",
+      "filename": "src/pages/batch-scoped-slots/index.vue",
+      "options": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        },
+        "template": {
+          "wevuComponentTags": [
+            "slot-box"
+          ],
+          "scopedSlotsRequireProps": true
+        }
+      },
+      "expectError": false,
+      "sourceSha256": "5a759c231b87ad33a92d4635c3e0049565c5ab28fc3b08356a5e5f0bca015908",
+      "inputSha256": "f3135a760b37d6b446a04a3d96cc21aae5bf369437b75c4a259c82068ac6c243"
+    },
+    {
+      "id": "sfc-events-and-repeats",
+      "kind": "sfc",
+      "filename": "src/pages/batch-events-and-repeats/index.vue",
+      "options": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "expectError": false,
+      "sourceSha256": "d0756211712aa1ad7c9cc7bfd80ebbef344e2746fbc48eea6070028122bd8b38",
+      "inputSha256": "108bf0ed851708bc03dfb3d9f00c7077b4402f1ada3c160607d5a5df8d72d230"
+    },
+    {
+      "id": "sfc-slot-outlet",
+      "kind": "sfc",
+      "filename": "src/pages/batch-slot-outlet/index.vue",
+      "options": {
+        "isPage": false,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "expectError": false,
+      "sourceSha256": "3611df3eb75c1e32dcebd87d3d84fd704d0919bb3041e64f95887a54a2b0798a",
+      "inputSha256": "e950fa87520291569dbe488398878cdf0f90c3945d12015c77ec9ac24bce8c6e"
+    },
+    {
+      "id": "sfc-jsx",
+      "kind": "sfc",
+      "filename": "src/pages/batch-jsx/index.vue",
+      "options": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "expectError": false,
+      "sourceSha256": "8e329f1818486fd9a1701e7532f33d9dbb394427f87b057acf7494e7f06906ef",
+      "inputSha256": "7ead66743c25a1daf4b4ef273d0f0e3db0cc2108a64e2cdaf30bdf67d9d6a78c"
+    },
+    {
+      "id": "sfc-unicode-crlf",
+      "kind": "sfc",
+      "filename": "src/pages/batch-unicode-crlf/index.vue",
+      "options": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "expectError": false,
+      "sourceSha256": "32a8af0746c9cd223f32682b6c4b2406fba6f3cea1531b322526031b47744191",
+      "inputSha256": "1dc3ce64f24efd6025a7c557741ac3dc2be7049f3f684ae2ae6dabe5e468396e"
+    },
+    {
+      "id": "sfc-static-template",
+      "kind": "sfc",
+      "filename": "src/pages/batch-static-template/index.vue",
+      "options": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "expectError": false,
+      "sourceSha256": "28d3d89c0d5fb8d4463031682ab5437ddde33eb788f1d5f35f8993bcb7d18db5",
+      "inputSha256": "7b0df6fea4e8d2588ee94f6a56e48e76ca538d6f3ef8111956016293a5cdd16f"
+    },
+    {
+      "id": "sfc-fallback-throw",
+      "kind": "sfc",
+      "filename": "src/pages/batch-fallback-throw/index.vue",
+      "options": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "expectError": false,
+      "sourceSha256": "6bf84e4a6b98e1299b93d1dd9ccf0286c387fba3cd7ddc31b7cbbd484f5d51a9",
+      "inputSha256": "a47b76ca0f5260d8c927491ff00cdca051556cb8f5e4abc2460ef99c445f14b3"
+    },
+    {
+      "id": "sfc-fallback-malformed",
+      "kind": "sfc",
+      "filename": "src/pages/batch-fallback-malformed/index.vue",
+      "options": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "expectError": false,
+      "sourceSha256": "6bf84e4a6b98e1299b93d1dd9ccf0286c387fba3cd7ddc31b7cbbd484f5d51a9",
+      "inputSha256": "112dfebc4fd9bfa75146564fe42cd12ac04d168348bb4b8c1d72e61be90c5124"
+    },
+    {
+      "id": "sfc-invalid-template",
+      "kind": "sfc",
+      "filename": "src/pages/batch-invalid-template/index.vue",
+      "options": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "expectError": true,
+      "sourceSha256": "670d6ba6b59f6db56fdd7e403e6acd7c571cdf4b6a3992923ed73202f366be64",
+      "inputSha256": "8cd966cc6807199ac3037ca0a86ccc3ffc0ff04f13346ae46b1e076710b07b43"
+    },
+    {
+      "id": "sfc-shared-props-ast",
+      "kind": "sfc",
+      "filename": "src/components/script-analysis-shared-props-ast.vue",
+      "options": {
+        "sourceMap": true
+      },
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "c8ec285a4902c6a0f2a0e6280cdc4cc8ce501e3ad8a0d9dfd53e4c5946b7d182",
+      "inputSha256": "ceda490825af5a8ee9e3aac2d931b674c818942a4983d4732b41bf02efa94437"
+    },
+    {
+      "id": "sfc-props-return-aliases",
+      "kind": "sfc",
+      "filename": "src/components/script-analysis-props-return-aliases.vue",
+      "options": {
+        "sourceMap": true
+      },
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "f21337b45df6d573471a44a1bb716cfb2f4848c9711352ea2c6979e7987a55ae",
+      "inputSha256": "6632be35bc47e300a9819163b71ae4b84c3b47d8b39c5a2bda37cc95e2f0a9dd"
+    },
+    {
+      "id": "sfc-jsx-invalidates-props-ast",
+      "kind": "sfc",
+      "filename": "src/components/script-analysis-jsx-invalidates-props-ast.vue",
+      "options": {
+        "sourceMap": true
+      },
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "84979199b7a4b20edebbc1bde359a2fc7c759c87407908039de9a442eccc741a",
+      "inputSha256": "6af80f5fe4d40bb6ab9a15f7415af251a16d695080ccdb568a89a6010ced0918"
+    },
+    {
+      "id": "script-no-page-meta",
+      "kind": "script",
+      "filename": "src/pages/script-analysis-no-page-meta.ts",
+      "options": {
+        "isTypeScript": true,
+        "isPage": true,
+        "sourceMap": true
+      },
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "28072d47a68a7605243a5c1aefc7f44a5d1e0eece70775c0d4ce29af2ed3fc45",
+      "inputSha256": "bd7e175d1fe426c67d6ff450aab0796b962442af15a3acc1932c2b1347b077f2"
+    },
+    {
+      "id": "script-page-meta-alias",
+      "kind": "script",
+      "filename": "src/pages/script-analysis-page-meta-alias.ts",
+      "options": {
+        "isTypeScript": true,
+        "isPage": true,
+        "sourceMap": true
+      },
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "8a0e7b5cb472cdaa74073cefe9ee06e543c64a8b0339719434ef63a9301d3b97",
+      "inputSha256": "1ce903316d3a8d48ac93dc94aceef0f578a2d0ce7be48597fccd39ed97c55af2"
+    },
+    {
+      "id": "script-page-meta-compiled-setup",
+      "kind": "script",
+      "filename": "src/pages/script-analysis-page-meta-compiled-setup.ts",
+      "options": {
+        "isTypeScript": true,
+        "isPage": true,
+        "sourceMap": true
+      },
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "65deeee19f0a3b3b0b004048cafab1013bc1cef453eb8de38bd5d1f0ea873adb",
+      "inputSha256": "a599cf692f706c065ed52470ad1b287b3c2601308d5fb56132d1d532a9c7ddc7"
+    },
+    {
+      "id": "script-page-meta-escaped-import",
+      "kind": "script",
+      "filename": "src/pages/script-analysis-page-meta-escaped-import.ts",
+      "options": {
+        "isTypeScript": true,
+        "isPage": true,
+        "sourceMap": true
+      },
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "9e1ef277b2a8592a89d4054e3898c6f594e78c92a9e28cdbedfc6eaa94a0ff3b",
+      "inputSha256": "d6cb541c4b92e463aa4a084d96342aee1edbb9232627b7a61291d7491c0b8a49"
+    },
+    {
+      "id": "script-page-meta-string-import",
+      "kind": "script",
+      "filename": "src/pages/script-analysis-page-meta-string-import.ts",
+      "options": {
+        "isTypeScript": true,
+        "isPage": true,
+        "sourceMap": true
+      },
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "cb1b4a7897ee06d5844e8b6d7af6d249e1bfee72ea876abf89be09318051cab6",
+      "inputSha256": "a7be531cb6e0c1cfe208e77078734e9c0b4f7f3e135ec478f8f059432bcdf95f"
+    },
+    {
+      "id": "script-page-meta-enum-shadow",
+      "kind": "script",
+      "filename": "src/pages/script-analysis-page-meta-enum-shadow.ts",
+      "options": {
+        "isTypeScript": true,
+        "isPage": true,
+        "sourceMap": true
+      },
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "1fe4b494d495a1a19531f69f944da5db0fceb52f66288649e466b0b8c41ac2ec",
+      "inputSha256": "4d9f9029ca360e5b253d9c008d0748d021aa83aa10e4717d1559599f454f160b"
+    },
+    {
+      "id": "script-page-meta-namespace-shadow",
+      "kind": "script",
+      "filename": "src/pages/script-analysis-page-meta-namespace-shadow.ts",
+      "options": {
+        "isTypeScript": true,
+        "isPage": true,
+        "sourceMap": true
+      },
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "b11e6c7c92085c6d08845b56bad7d3a1189b316df412c1b50e2e7f4839588766",
+      "inputSha256": "7730ad2a7cd35744f96f3b4b3c88bb95ff2295f29955a0f52723ac935a3e3553"
+    },
+    {
+      "id": "script-page-meta-type-import",
+      "kind": "script",
+      "filename": "src/pages/script-analysis-page-meta-type-import.ts",
+      "options": {
+        "isTypeScript": true,
+        "isPage": true,
+        "sourceMap": true
+      },
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "c92cdd3aa7d647571feac09ac9fa638d512d7e2881878b9039aff1c24556b33e",
+      "inputSha256": "abcbd7c5958634a166b51c912eee5186028e06f90a649df932042b372813d050"
+    },
+    {
+      "id": "script-page-meta-ambient-namespace",
+      "kind": "script",
+      "filename": "src/pages/script-analysis-page-meta-ambient-namespace.ts",
+      "options": {
+        "isTypeScript": true,
+        "isPage": true,
+        "sourceMap": true
+      },
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "e5e368753d9a459b2e291af34beedbd078a7e13ff3b60beebcfaa1a2b13e96c3",
+      "inputSha256": "c8ae5de1f7c8aae24069d97f3fb933c341483c25e0fa8d65fba63e7301b5735a"
+    },
+    {
+      "id": "reserved-runtime-object",
+      "kind": "reserved-props",
+      "filename": "src/components/script-analysis-runtime-object.vue",
+      "expectError": false,
+      "expectWarning": true,
+      "start": {
+        "line": 9,
+        "column": 4
+      },
+      "sourceSha256": "23f27ff48c147bd9703895de83a79593756052114a1cf791e4ea0c8ad0a4f1de",
+      "inputSha256": "0c142d681f99a592d488180bdd01b6928b49670fe529203da0a35203132dc3ec"
+    },
+    {
+      "id": "reserved-type-alias",
+      "kind": "reserved-props",
+      "filename": "src/components/script-analysis-type-alias.vue",
+      "expectError": false,
+      "expectWarning": true,
+      "sourceSha256": "ffa0d7f295679274e7bd52c478afaa8dccb909ecc605063e23f3d87d40e07d74",
+      "inputSha256": "94deb77cad867602c6436aeb820705eea759db518daab8990d896e66b6938c02"
+    },
+    {
+      "id": "reserved-unicode-crlf",
+      "kind": "reserved-props",
+      "filename": "src/components/script-analysis-unicode-crlf.vue",
+      "expectError": false,
+      "expectWarning": true,
+      "start": {
+        "line": 11,
+        "column": 7
+      },
+      "sourceSha256": "2e41cf5c91b563f3c62abde94241bba43ba35bd408611b6756d2fe8d5cae961b",
+      "inputSha256": "7648bd0521bd81d417ed6c77ef80bebf54b0e0d86a05cc21e0c2ce7c82000f80"
+    },
+    {
+      "id": "reserved-escaped-identifier",
+      "kind": "reserved-props",
+      "filename": "src/components/script-analysis-escaped-identifier.vue",
+      "expectError": false,
+      "expectWarning": true,
+      "sourceSha256": "e0fa3cbd6809b7fcd1237d8b447ffab6bd650ba293f9d48e7bf618d0508b714f",
+      "inputSha256": "bd77cb8b43735397216651ed7466f4bde474465230419fd98886522c974fdd22"
+    },
+    {
+      "id": "reserved-no-warning-handler",
+      "kind": "reserved-props",
+      "filename": "src/components/script-analysis-no-warning-handler.vue",
+      "expectError": false,
+      "expectWarning": false,
+      "withoutWarn": true,
+      "sourceSha256": "7fd9a3eee22c82d668714a63694c39e95fd37b4b8d5c47cdbb349e32258a428c",
+      "inputSha256": "3e52b263a5408c5eccd56ffe54188381f28f005d9e96de03c3b25887836eb150"
+    },
+    {
+      "id": "reserved-no-props-macro",
+      "kind": "reserved-props",
+      "filename": "src/components/script-analysis-no-props-macro.vue",
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "6f95b23526c3d1d7918777894d34b0b65dacc4a54d1a12545e47ddf22118dc18",
+      "inputSha256": "87bb4758ef2a6f7ac358948ac0691f68bb8c470eacdb85cd848c0db7c938627a"
+    },
+    {
+      "id": "reserved-readable-props",
+      "kind": "reserved-props",
+      "filename": "src/components/script-analysis-readable-props.vue",
+      "expectError": false,
+      "expectWarning": false,
+      "sourceSha256": "97aba09c06eb4afc0d4e2cde3f55b6a90ebc4c6f0d138d7d76c58777e72d6db1",
+      "inputSha256": "be52d6ae0fa3763deb10d28c4b4b85d6577e2f03c903453e5569af59b005f402"
+    }
+  ],
+  "sourceHashes": {
+    "packages-runtime/wevu-compiler/src/ast/operations/jsxAutoComponents.ts": "8c6db39550fecb0ef74b3e67a9943b99f86d8c560e2448e26e27eb934d5ae011",
+    "packages-runtime/wevu-compiler/src/ast/operations/pageFeatures.ts": "6cffc877a352850db16de1f91838699cc5658200bc9c5a6a90818cc38353da5a",
+    "packages-runtime/wevu-compiler/src/ast/types.ts": "d335f24586e6af2ad83307129a6e2eb257346bcd206ed146bc0f123babf51f4a",
+    "packages-runtime/wevu-compiler/src/auto-import-components/builtin.auto.ts": "80cf7c3c1524f1433e0bc32009cfcc112cf7de586cc62b937e9867b2e162a03b",
+    "packages-runtime/wevu-compiler/src/auto-import-components/builtin.ts": "a776892c0c6d5e55942b33e8dc62cb7074c9724876d1d80402dba995ece7562e",
+    "packages-runtime/wevu-compiler/src/bindingManifest.ts": "1d584e2e9c4144566ef7b1d828d6257e52bfeaaa906496f7001854c6bfa4fd29",
+    "packages-runtime/wevu-compiler/src/constants.ts": "6465248bb01cff727a6e1b6e4230d59be2d5c40ac3d8fd16619abacf1289cbe8",
+    "packages-runtime/wevu-compiler/src/index.ts": "f918877b83ff80854df9c6022ee03a60776d5819768123e7e9b711ac88942c5c",
+    "packages-runtime/wevu-compiler/src/inlineDataset.ts": "4caf79e3021d4badfd36f14a2c725f6ef7c93dc64f4050899a38729a00a82afd",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/analyze.ts": "b8685dff6ff5a7ee883d74ea36b25a860c1538e80e15f561e2f7086a653ee137",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/diagnostics.ts": "dc0cdd47892da158e607acf1a18cfbd4c71db2ea103f6e393c3cdecfdb89fc62",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/index.ts": "6f0e8567f4610196e675e8fb41c9cf44853887c73e429e5e8cd6fc17bcc6e9f6",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/macroBindings.ts": "11e5f2360ea743f8fb7d354bfb2d61dd32bf8796cb12eaba19907ac6f7b4dece",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/program.ts": "dbf9bcfab21c21db6b5012983f225b97a8387cef4e32b1da3defa5652159a388",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/public.ts": "b0451ada949f88bea6bddcd018ddb799ba51d8cd7be9039cd8bd31648f36be95",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/rewrite.ts": "8c18b98383a2583c498bb6830dad83748e93e7ef96c78051744485c6d1952e12",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/sfc.ts": "79f946a47928d425d18c24d15aa9ea5d713a7fa1912aee286590c3595381200e",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/static.ts": "1a7c1dea6d10001060fa77d3e8de381640567eabbd566c33edd2f52ae152ec52",
+    "packages-runtime/wevu-compiler/src/pageDeclaration/types.ts": "0c26ce1c5274be7e8ab9876570d177dc4129c4f585f39ec91a2afa601d7c59df",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts": "b8df4152150746ceb601ea9f0aa6bd1382ff84fbb2e80bd2552cccfc653fdceb",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/ast.ts": "e4baeb23e3977b8755196af530aab30429957f09932b8530b30a7a49d46bad79",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/attributes.ts": "0548e25c128c9743bd24a79532319243dee29c22b6a893c61c5dc2ec0f8deab4",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/bindingManifest.ts": "87f263a150a26b070ee834d8d60368895b49f260517f021f54bdec68ed4f71f7",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/diagnostics.ts": "b1ff83968c315755d30f22aa7ad61e5265f5bde0d8c82ad0fa01129f5402aa3f",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/islandScript.ts": "811894a1bb28283d1ba1643ae09bf0904e1eeb88efe5b90f6ffbe2434df7579b",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/moduleResolver.ts": "6a42f864557fabaf2f304a82721952c2488f8fda788771068f42f01c88c6ef4c",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/render.ts": "eb241829b9c75b91504695b41f27a70a22b18ea1c2d35b5910dae0f38d69c472",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/script.ts": "f3a71fef2b6c86317e87ad1cb9227adcbe0ad9bc89ff7d8c8fa061286ee7db1e",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/setupBindings.ts": "e278a2aada2f790eb65cbd04f76f18f77706ae8f43ae4425741c95464aa18d1a",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/template.ts": "a0360a64a89aa6c42de9915e4bacc90bf7faac53da8fc3968bdf9f79d587b46a",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/types.ts": "126ada82c980ffe7759251b3f0119801a30c36ecd45508bed9dbe2bf8c0ef8f0",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/compileJsxFile.ts": "e065c2aa447d2d14d515bab2c2a48bcb767876cd559b565d3b744a3a85ebbe66",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/upstreamCompatibility.ts": "74d08f3719bfbeeedb2dd87cc118732da25ec35487bd4c1215375cbbfdbbf988",
+    "packages-runtime/wevu-compiler/src/plugins/jsx/vueJsxTransform.ts": "91449734a8d20d79dfe9313ed5b364655b10dd55fb85dd50874a7fa9ace5c5ac",
+    "packages-runtime/wevu-compiler/src/plugins/uniApp/index.ts": "7748c0134baf57c28e8781cbc0992dc67a7321342ac9fdd02d64906cd5402276",
+    "packages-runtime/wevu-compiler/src/plugins/utils/cache.ts": "e31eb40c60c2bac77bda73feef8c5b0d3df28b02c2f8a277a6b73598dd23da01",
+    "packages-runtime/wevu-compiler/src/plugins/utils/vueSfc.ts": "efe1531e4d78c6cb9bac74a91efc46ee38d208777cf0be91204b4983ec641378",
+    "packages-runtime/wevu-compiler/src/plugins/utils/vueSfcBlockSrc.ts": "5cf8d9c38ce59758ae833a75244feecc06dad2a187acb09d3c8f075ea86c445f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/style.ts": "1ba42356f00313e4c231156c4147f5790a8ca235d60c4c7a476eaaacb24f9f89",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template.ts": "b581bdc66464b5a2a27232b67dbbb6a544f4e87ca9d72e7f1a9edc0342aa5346",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/attributes.ts": "f95664a2a95ac7a3e27c33213889bec381f8c681b36a0824525afd66f41f2c06",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/bindingManifest.ts": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/classStyleRuntime.ts": "8cf49c18675cdcee1afc0821f79f35e17b1b6820c4c8c2c6c6974dd21fd3b621",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/conditions.ts": "587e8a18ea00ca74a3d430d5268c55fc55249e853eaea93c95be1c0f051671b0",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/diagnostics.ts": "6519dfbac33943bb013da8e7b4132eac341a02149c2a190929f4ee9cffbd7042",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/bind.ts": "f23f506cec94cf40bb43388bef9b80f9dc46965d7a0872afe8f69e8b9ed65141",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/custom.ts": "19bb76ee930ab178e23005f6e9f4ba994497dcebbcf0c83d738ee419ef429920",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/forKey/index.ts": "fe5f14091b0cd3510930a3277b8ded76f1dfde489547e88b4cd06fe3e0d7ab04",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/forKey/projection.ts": "1ccb707185c72aa511235951b7c4574401af1ebe449321b6d940e5113ff2811d",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/index.ts": "8da462cd033d699b299f7eb888a02ec619863f3422c0b026bd17315e39599eb8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/model.ts": "f62abbd43e879b977fd41f2cac15e93784fbf2716457351b96b0f6cc9a96efaa",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/on.ts": "5d33ada09b6f2c63a4c3da3cecdbab88a07bc577390cdde99e34d299a40667ed",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/directives/show.ts": "59dace7cd7270b8bee1d6f3b053cee7872cfd0d8d716d3a044ea7304289cf5e8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/attrs.ts": "819a2739128728548b1634aa93b57af5e6d9646444a271538ab3d57095df82f1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/forExpression.ts": "5db330db73c7c22b1ce1cebec4945ab69002c35996ec1a350219b590eb3c9739",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/forPatternProjection.ts": "c25d6201ebb1cd2acf132bf50e156049275d2a1a70888d1f23c35339383f0d3f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/helpers.ts": "da3ac6b531af474a76321abe29a91428e8f165f707b3ef7d415346e0ff5961b0",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/index.ts": "b1555231ce3640f3ab7e81c0e3874fbd984bd1bdc3522bfbdf221c25e0939122",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/slotProps.ts": "03698058bc7be5e0499faa0c00f52f8dcf9f8efcf9155b956e1ad53bbd5daa31",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-builtin.ts": "ac2fbef0d21ccb6edde5cda35c0ade0b7ded447cceee3ce82fc83d73b53a039c",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-component.ts": "f1e58a1549e7aad506fa455801e22c175eb0fbfcb38b83a131b21627b7442f4b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-normal.ts": "8034b403e57fd8479576f73d9c014f81e25d00c15b1965c5d5888e6a89b01aeb",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-slot.ts": "3e684b7b521382698b551e9c18ab85ca49c2e3e302af982a7fafbd912d3f7e22",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-structural.ts": "053c7e5d816d2af956d7c2004c4ce32c47a1f00a62a88396669a0166803fc61a",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/bindings.ts": "742fb5a493f04c79f8558cb2edd794138e38fc6bef660205e8893fc47b4d2692",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/forItemAccess.ts": "e12c61770891faff688fdcd2c0f246447e423c3d9417795e02e23d4ae3f51411",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/forItemResolver.ts": "e8c470af09ea16d062a0210b21bba4aa318ee793378809deffbf50828e91e90b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/index.ts": "d4a8f562c6b83a224750f6af4ad8b21ef70216ca88c62116ab69fdb52ca2b7f6",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/inline.ts": "de17b271547d63ccb96b5c418569935b02c6a7dc556513e6ae48e9eb768db6b0",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/inlineShared.ts": "85ed6c84c60b76f88b4fa8f0bd99029787b5790d3eb1f3db1a175813c96ba8f2",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/js.ts": "de5e3c7c81896503ba8b7f01da02b5abe84689acf72366490c32e9c920f99ca6",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/numeric.ts": "8a4bb4a9498e3ec4ff4ca43904a66c029d466b3f076a3ea6a9941389b6736c21",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/parse.ts": "99a537ff6a8796816ceadfe6e624f715d30f2ff71b22f7f0dca112b1dcdb71d3",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/runtimeBinding.ts": "07438f2a2e5a6121964dbb19d27b4b53ba2c895eba4729adae8df739bb00ff99",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/scopedSlot.ts": "b4e8ec169858badaa30a16d9d7f142c2d095daa11ee6aa7693e81acf34239ef4",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/expression/wxml.ts": "c93e9f9f7cb7959f43736980be34349b6a38d2e84dd5288d33ad3a9cf4da4670",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/format.ts": "7a8d04661fb7c7ad8f0e4435c53850dc157088a035fa6d98fbddc452c297d8e3",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/htmlTagMapping.ts": "8d01bee3ad35851bcdd96b88ea2883897f0daffa3ab35be14d036ec6c712bcb9",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/mustache.ts": "68c8245dd05ed02ce24e53bbcf2911ef4495a8efe65945d40ce43c523ec1f5a8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/nodes.ts": "d55aa3027f24121a755872c23758c8fd49409214886b6c71766d98cf1fdde307",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platform.ts": "fec6db299106aa46734fa3df988b5770dd9867c6e38768c601e6c9acbd1f9cb6",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/alipay.ts": "c9a6dc421492c4a6770b2cfdd3bbdc234c692ee334b30d9949914e2eeee7a846",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/default.ts": "38f25d9cb6b673261a1f964e198167b609392261cbd958cfb02d5627de293666",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/generatedEventAliases.ts": "6f670f31a032aa8469817d263e9d97d1c7b9d3e9d16ccb2f580f999cfeaf4745",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/index.ts": "46d8e0972d600e76c959deb8b836ab52a7c3ab7aeff245b7422787be74cd3a86",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/swan.ts": "57872f2f665f9273a328b65eb4694c5251dd11e3a9be898bf24957f75a737afc",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/tt.ts": "96c4a71c3ae65f92eff32744dce07f28411ac57afbfb60fad4cd9228ac6d66cb",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/platforms/wechat.ts": "bf4fd52cf0b89747e8c13118fbcee97257f8c15e2e1fd99bc4913eead611bf5c",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/scopedSlotOwnerBindings.ts": "e653868a40aea9a119978165a42f7405210122e1140d2c37ffeba405d4ccf7e1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/scopedSlotScript.ts": "f9edc8dc95b9e9c15b9690845b7648a53b17ddabb9045bcc7237cd20eef9b595",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/types.ts": "c4a4177a6aad1ea4f1d6402bfbd02c328e221a38bdc3a527ac4b5eb077445827",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/upstreamCompatibility.ts": "773b0c4e20c18612e382f9cb350d9d9762379d97369a068887268b00707d02cb",
+    "packages-runtime/wevu-compiler/src/plugins/vue/compiler/wxss.ts": "8ea19ce4196d79df5d86637962ee27ee22d43151a23c32775d797788b633736e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/hmr/sfcPayload.ts": "f6f6261c27696b9cbfdbf5fcea1681b4fbdeef4f38316bd04d19989c1e638b4d",
+    "packages-runtime/wevu-compiler/src/plugins/vue/hmr/sfcSignature.ts": "b453ce03e2cf8eeee5fdddca48d43cc7bb6e821b1952f45c6d12e615c82b0b9e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/hmr/tailwindContent.ts": "c560194c9c2c55e9126455703ce972ae74f206d029ae3a738cbe6dbceb187c84",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform.ts": "8663876f3231d87de93e20adc7398d2a73fd2499ca40b001945e82083cb83d4e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/classStyleComputed.ts": "9cac0dc878905155b9c679056b29c64143e18607e65b0ad31ef97f81aa27f3a4",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/classStyleComputedBuilders.ts": "38b72317948de2e8717af9664890c99c989dc6e28c2ba5d0e56da8f5cd109b29",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/bindingManifestLocations.ts": "01f3e95ea3795e387c5433a01251c10f6dfd94e9bf701855dfe25a495bbbd0f8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/componentSources.ts": "0152ea24da3d23749e7875ab30eaf69b6197a40bfa0a926b951a871b5a7fad3b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/config.ts": "c6b0037e81a6a314074c17d28c64e9763c0857f7ea987f3b06982287644f290c",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/finalize.ts": "eca7978d676f34b7e89851f3d5399a916f84fa4c6062b79ee2a0e0387ffda56f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/index.ts": "e99a4199cea83b73e6b79b6545d9706c2555450a60ac885149919c3982faf700",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/jsonOnly.ts": "ad252b2851fac8362e791fcd271640278e26af822987363bfaa17fda12855737",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/pageLayout.ts": "a594eb4e2e3c7020b8ab1bf151b6509bc13dee62851a5b7bc22cb273e5f8a123",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/parse.ts": "d2fc8d0e8b5becf68a6f596e184d329251b74b7d55542ac71a3ba39f27fa56ee",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/propsProjection.ts": "ad372ffc1d1927950a4084b19194d1e956c85a37a75b6658241d4b9f23d343d8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/reservedProps.ts": "1fe7544438995e2b2947269c7c4ea56ac8d04a42b0848043c1178274d5339c7e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/script.ts": "3208528fa23a1c70f894b1056cdfa882603bd187b566a46ec4cfa1596e3f6473",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/style.ts": "afbf88b2c828605eb79f5f82601180d2942cbe35e657f176eea4368317835aeb",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/template.ts": "74a6842cb86e2268c6db083abe31b9e3196154c825744606aa61ce03d64f5cc1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/types.ts": "8f9ebbc010e3ca2b88cf141014731e3a7f2cabe5756c4ee0abaaf16e5f4b724c",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/config.ts": "bd5615fa257b010035361084a6aed32227a410de95bebca5f7bc32812be09578",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/constants.ts": "c385876a94a14a1e60666330ff91ac3207e633a3e80e1a3a2c01ff21976d8b04",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/defineOptions/inline.ts": "bc0d309d1a5e9c3faaf31454e5bd6c8422b4156ab05c634d3f9a521addaee9bc",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/defineOptions/serialize.ts": "5af4bd9367549626a07b0c411cb05a0b24ca483acadf0bf706f26bcf715a83e1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/defineOptions/static.ts": "eee5a236a7896abca4a87f2ca08cbd0a830e254ba54fcff6f94f220a082b7328",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/analyze.ts": "e95de7d95c328ff7adad49c9df09985f400b184afab3d0c0938c34f7a1b911bd",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/execute.ts": "1a0f7e10da05a16e302c74fe56ec3ed0415c4e2586fd4c911c033704b5b464a3",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/index.ts": "25dff5bdff80b05aaa6780083cc5befdaedfcc69ba3b018f53cb63c7b665974f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/parse.ts": "e8645b75d11c4308367bbaec4e9a0de0de167a3239b19b88e99fbbf4e099204d",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/rewrite.ts": "62cde048ee3a4b63542cfc82396db323de8d1d33f5a8f96504fa11b45629a372",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/static.ts": "4e8292df1bc9ce961ff2955d0609d1e2554b591bd55769bf39bc36fcc662094d",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMerge.ts": "566f7d6ea1e765fcc5469928e48eb94c0ae77677693666535b351aa8bc4e3ca9",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scopedId.ts": "fbc1cdf61a4399000c5e54f52bc9e8798b68c069b48671230dd477c0ffb99d04",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/script.ts": "c4a19fc2fdfe07e8b1f1177587f350a41b380e782f1ee818634cf42883b46c40",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptComponent.ts": "e51f5263b5d619029e12d1a1a35e9c0ef6ee81afe198332656a0855e90e87801",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptRuntimeImport.ts": "6fd6fa22c2fb0ba171448c4ea7278535b3251aeaba3207cb6de0006c77af7c06",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptTemplateMeta.ts": "8c407fa9967755b73d3221daa3110b978dcfe86dd16034a49a898c4bbaa1f009",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/scriptVueSfcTransform.ts": "822b9cb0f73d8cdebe6e70e02d7465675a14288aa72653a1243fa309622913c3",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/tempDirLock.ts": "51b2df5259daf61768d1d864c4f3a4f661574e1db88b4bac597e8d3f1c6c4e68",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/tempImportRewrite.ts": "7a4a9a1905dcbf8859931cc4fcb9f2afe13239da59135c6ad484197f754881b6",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/collect.ts": "1993801a918603d3708aa252fd3611bcd09774a536719d9ee048b7975c191775",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/componentStyleOptions.ts": "edacfccff8b0a994ec612e1b81729d4628df32518a1f4557eb08196861556988",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/fastSetup.ts": "cf6cd5fde4c2f3683e599022f1c2a0a17524697faa1e461761e44faebd95ca57",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/imports.ts": "14a2ea7abbeb9895966a183448a5d70bb0357cf59b1116b962084276c5b927c0",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/index.ts": "452b2ba785216d64c54b9bcf85772fefb9607dc91cdc38250d9695e09fb8a273",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/appSetup.ts": "635afb9d4f32a1446a32be331deb6e03bcc6374f030c1b7233556ebe9ac6c592",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/index.ts": "fe805ba9ba6862fe18c04e11cce31d89a1bf62c947d597daa073466db7161e7e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/optional.ts": "9677079d57a14fbd82681a47453941a8ece38b31a9a4a13dc08c5dbe600f3782",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/pageMeta.ts": "b7775023ee379797ed6171e7aa048a559257fc9c52d4ae93b5405db2f926c918",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/setupExpose.ts": "92ce327fcf6aba75ee694702a1679f22ebfd97b6f99374bceb39386de746bc38",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/macros/stripTypes.ts": "7e83480b20cb0aa4784904ff22da6d144da0d6038cca7dcb5f6b61d6a75e093a",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/bindingManifest.ts": "a5e26b299886ea6884ecb2e850817f0f43a0194afff8b96cd94509d0bf7073ca",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/classStyle.ts": "69e274b1a71a533d649c53a1831d77818d528bd15cdb2fe365f9613a107eedb1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/cssVarsRuntime.ts": "e8b80f036e590e3b6444d5dd70ae419e8f3c906a29d283723d6818e7e1fe2edf",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/defaults.ts": "3aa3327135cdd089952f398f23a8d28ca7ca3dc33a9ad1134cfec8bb17f33333",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/defaultsExpression.ts": "b8780eb8b9c0dad15743fe8b97d4c25c4b71c2c54ae82d4a4a0a0f13a6ca82f1",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/export.ts": "2560b3e59697c6971512e3385aeb77494584f2f47ff47a950903994c44255bd5",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/index.ts": "b2520bd677b07de8775eed17935a50492aa839ef6639741c0d54e095d548f726",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/inlineExpressions.ts": "669d928f4f75094ef10aabd73f9ce393200e5a0d367c1e4d0f769e920faeace4",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/layoutHosts.ts": "f64473ee25dbcd31d2764a0c7846f7dbcc44b1badb4052af3af7ef0a2e5eded8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/propsAliases.ts": "95b28c3ae4ff6546ee227f20f2e5b78b8ce4bf9a668f46932aa1caa96c45fce5",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/setupInitialData.ts": "afcf4947053a985dcd0254c4552970ea1f1bc559e47ac0c757e91ecf8f06c35b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/rewrite/templateRefs.ts": "a2f57a5133a052683d5d840b5e5bed85ca63d366f7419815c3729de283e7270b",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/runtimeCapabilities.ts": "dd0f973e058c3960c907468d740e7919b37c5512657a87bf4e2f29e84acb21f8",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/runtimeCapabilityInjection.ts": "f264c93df6e7f5475ff3d74780e4656a8ad9e908ac00ca389e8051334015a034",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/runtimeCapabilityOptions.ts": "b6230eb22c416e5aaeb34f58c0e5a3e42cc20977c234dd3277260cbd198e153f",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript/utils.ts": "1042d82268434f5320484af0744378538c25b481eafbd7790d6b17d7fd35946e",
+    "packages-runtime/wevu-compiler/src/plugins/vue/transform/wevuTempDir.ts": "8a8ea2dc1729c50dfa0a3672e9a3dac008e1cc5949f6d4a80f5ca5bb3c3e2ae6",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures.ts": "ba719d0a56d805263f2ccd4c7d524fcf911c2fef08fc722775d003ee92eed71d",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/analysis.ts": "f9d7b903f7265b13e4b656056678aa2a2323602b3a6e2381a137d64e19eafc2b",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/astUtils.ts": "624ee4c9b100b5d66c98bd00e1ea373bf87b11cd65e39a92500bacc1cdac81de",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/flags.ts": "63106464a9238b8dd26df16a5c6b9e50fb72af61f1261f4bb2a1ec5b6679d09a",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts": "c2e1510a38b879d11969ad63ba665d6fc65e248fe6b38e83d8e93a1434cd3674",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/matcher.ts": "b1ff5281c74c46f7b52d4ece901caf260ca45d3056f3679b5bb794586388fb80",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/babel.ts": "392ab760e8e197010c604cdaeb82968952a396481a220ac168927ff13b0735b2",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/index.ts": "5a4c38330057fd886be4883fff5ba9e913e594108fdece970550db33a89bc5f6",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/oxc.ts": "a9463d854838658e1bb56e9c7d013efdea5ef39854ded1d2b041d0dd52e5cdac",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/shared.ts": "d7cd6ea833e9682d494f2f9e54ce3cbdf4b0c5a652648ccb655e3a3500a3b51d",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis/types.ts": "cfa0f1ea6acfdc1029dd92951d6f2211acd698451968547091d331732c6bf26c",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts": "c64c796795bdbf44df99076f8c8bc4d7fadd1d2f4bbe1f6f6e8442d638687779",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/calls.ts": "f82cb2f20064ee3de56f2c53f15997771ae2ef45856717dc9c1c06d20ab5b56c",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/hooks.ts": "8d8a34fcbad0197b7c278fa0a062878389c42289cf386a275f1e0fb0f2c42904",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/index.ts": "a2decd8d5c3ca5dc97c6ea3821485b0b113f5b7bfd74d771e7753abb8017cc29",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/resolve.ts": "078e20e3f2437ac5d259aa75552219ea4a342b369062b16126d7b5e469cb1f24",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/reachability/walk.ts": "56f0aa9f50016dcc64c673c3be43338a32e4825a88e28e35794bc2aa268a761b",
+    "packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/types.ts": "e11fe269c8530046ba37890f6c127765411160ebf4440aea79e093a31079cc0f",
+    "packages-runtime/wevu-compiler/src/profiling/internal.ts": "a25ac02aa783458deac6213c3977d0c23323a65867dd8dfc90b7ed29e0119c33",
+    "packages-runtime/wevu-compiler/src/profiling/node.ts": "3bf91a3bb6d1cf1d353b359c35341a953e15dfb9a00b2a53c62250de6b52e983",
+    "packages-runtime/wevu-compiler/src/profiling/types.ts": "a6d7d7d1de19970de45c65eecf2ac7bc984d490c6f3a4ff49451f8c7f5745be1",
+    "packages-runtime/wevu-compiler/src/runtimeCapabilities.ts": "a69a7c696b49f2fbfb792ef57a948d1ced1486096f2c1aa9f33b3f1145527d70",
+    "packages-runtime/wevu-compiler/src/types/bindingManifest.ts": "f5a36a058f85dc790d913978ca36ba76fdb4b8d60834e18810dbbefbcde7ebe0",
+    "packages-runtime/wevu-compiler/src/types/componentStyleOptions.ts": "9426e9ffe32188534b44c2bad8fb24058175f4f76e7d4d705e27e334ae85175d",
+    "packages-runtime/wevu-compiler/src/types/diagnostics.ts": "029e702ade9923c9733c9b36c08eb6d448620396a9af777195872904afa87f5d",
+    "packages-runtime/wevu-compiler/src/types/json.ts": "1718253fa17d5913047feea226e4fad05a8c994d892e8a8b02a3069c4f0215d9",
+    "packages-runtime/wevu-compiler/src/types/pageLayout.ts": "8fd9a7861f2879bbcc1412b010294030ea5a102282d5c7fd9ee34e9b26cdf1cd",
+    "packages-runtime/wevu-compiler/src/types/platform.ts": "f00d95ad1556e37544d7e319a395c241c90efa37bd7f65fde71e68d30677c682",
+    "packages-runtime/wevu-compiler/src/types/wevu.ts": "03fb4bca554b63849f70f861b3eab1d2acb8b7711f7d50a62af85185740b2adb",
+    "packages-runtime/wevu-compiler/src/utils/babel.ts": "3aace418d870795d53aa53cc25458687a48940b7f52ef6fdbdba2ea8ae6e3686",
+    "packages-runtime/wevu-compiler/src/utils/cachePolicy.ts": "d7de5846153e606a5891ae34f868b65b40332dd97fcaa4d07ee1b2eb5073b5b1",
+    "packages-runtime/wevu-compiler/src/utils/fs.ts": "1092d341ee3f85504f49c806f548bca18d4e95f577848fbc2496ce4b04ac2aa6",
+    "packages-runtime/wevu-compiler/src/utils/object.ts": "caec001338d607c61af3be7c0cbe2eabc7f0c7f5d6a75ae1d7cc8d7e2515f290",
+    "packages-runtime/wevu-compiler/src/utils/path.ts": "e233a6d11599b492a5f4deb709d14a24f56cb8ac036217ec20ea962f2ae74b15",
+    "packages-runtime/wevu-compiler/src/utils/resolvedId.ts": "1cefc3f80149646d1e27b9d4c4383315f1a592e1f489bfbeee0368ad9ab21d47",
+    "packages-runtime/wevu-compiler/src/utils/sourcemap.ts": "9fb177900fb05cb5c34a35d4d4a96d8c6c5a63593c03a449ae0d4fada4e457e3",
+    "packages-runtime/wevu-compiler/src/utils/text.ts": "91c89ffc81d34175f388611a4ce943e5c8918697d57d0bdbf650eba9779e0bed",
+    "packages-runtime/wevu-compiler/src/utils/viteId.ts": "de65f470961d39d83189d24d45c102c93f8ba9c1aafaa30d58a58259c350a500",
+    "packages-runtime/wevu-compiler/src/utils/vueTemplateTags.ts": "79b573138cb2b64be9ddabbd991b4ed121686c4317b699295eb021399bd773a2",
+    "packages-runtime/wevu-compiler/src/utils/warn.ts": "e0d9a80c2764d1063b9abe73e860409209dd656c146e3072984a6a52caf4cf67",
+    "pnpm-lock.yaml": "c3470f724491ebdd5176c23b1ee61761c858a44f48a20a813721f1ee71276145",
+    "scripts/astMigrationProfile/fixtures.ts": "128ea7247bc205c73e0f22b44136c4bc5e7dc7927317fe5fb671e2c5239b39cd",
+    "scripts/nativeBindingAnalysis/compileScenarios.ts": "85d696b87a43c2fdb8e25cdd0a25e00a82f30190d44c9262c96cf1e21b7c5b0a",
+    "scripts/scriptAnalysisBaseline/check.ts": "a442fc1c7402bcd0df7b465b6cc70c203556ca74d11267692d0986c60fa72416",
+    "scripts/scriptAnalysisBaseline/install.ts": "935379efccb57870ad703d985d78bf0ca8835e77e9db0289f73a318170ff0155",
+    "scripts/scriptAnalysisBaseline/installHelpers/source.ts": "b5e5ed6418cd5d38156747864f2ec51611fb7ea6c24bb3fe87cfc73a15451922",
+    "scripts/scriptAnalysisBaseline/installHelpers/state.ts": "892406ed15bc6ef05649c7af06243abdb9853d10e29f9b0ae0415fc37532ec8d",
+    "scripts/scriptAnalysisBaseline/scenarios.ts": "d7d206e335faa9e2bd89ed0fc54f3c26562359f723d5f0b32d720c897394703e",
+    "scripts/scriptAnalysisBaseline/types.ts": "4c5e33a200a7a25a67ec5394e5344feabdf9a4dd50b3bd7a37479bc5dcd2e256",
+    "scripts/scriptAnalysisBaseline/worker.ts": "131e67ccfd8171d687ba3b688669b4e4034881985baf73af6ee5979728aa2c0f"
+  },
+  "runs": [
+    {
+      "variant": "baseline",
+      "reportSha256": "1031a5cdc5094dfd3e2ea95dd49259070220882087fcb35751d43b9ff6822f51",
+      "checks": 64,
+      "metrics": {}
+    },
+    {
+      "variant": "control",
+      "reportSha256": "1dd724c7ed336b841b7e516eaa729d5d9e8ac084f75c7c37c03b4d692ffa0c15",
+      "checks": 64,
+      "metrics": {
+        "astReuse": 0,
+        "astSourceMismatch": 0,
+        "astUnavailable": 0,
+        "astAlreadyConsumed": 0,
+        "astOffered": 0,
+        "astNotConsumed": 0,
+        "pageMetaSkipped": 0,
+        "pageMetaAnalyzed": 0,
+        "reservedSkipped": 0,
+        "reservedAnalyzed": 0,
+        "propsNoScopeVisits": 0,
+        "activeCompiles": 0,
+        "pendingTransfers": 0
+      }
+    },
+    {
+      "variant": "ast-reuse",
+      "reportSha256": "9f6c3216d2c69a71f712038e94e08af6e0db40d070ff8e706957613e222ed26f",
+      "checks": 64,
+      "metrics": {
+        "astReuse": 20,
+        "astSourceMismatch": 4,
+        "astUnavailable": 24,
+        "astAlreadyConsumed": 0,
+        "astOffered": 30,
+        "astNotConsumed": 0,
+        "pageMetaSkipped": 0,
+        "pageMetaAnalyzed": 0,
+        "reservedSkipped": 0,
+        "reservedAnalyzed": 0,
+        "propsNoScopeVisits": 0,
+        "activeCompiles": 0,
+        "pendingTransfers": 0
+      }
+    },
+    {
+      "variant": "props-no-scope",
+      "reportSha256": "2a92d591e0292046491cb47164f2aadf22de9b5221367dfc35101ad2f56ac570",
+      "checks": 64,
+      "metrics": {
+        "astReuse": 0,
+        "astSourceMismatch": 0,
+        "astUnavailable": 0,
+        "astAlreadyConsumed": 0,
+        "astOffered": 0,
+        "astNotConsumed": 0,
+        "pageMetaSkipped": 0,
+        "pageMetaAnalyzed": 0,
+        "reservedSkipped": 0,
+        "reservedAnalyzed": 0,
+        "propsNoScopeVisits": 22,
+        "activeCompiles": 0,
+        "pendingTransfers": 0
+      }
+    },
+    {
+      "variant": "page-meta-gate",
+      "reportSha256": "05254332901ec80efd873a8ddde15381f5b1d5848af32713666fcd8b0a6bbf65",
+      "checks": 64,
+      "metrics": {
+        "astReuse": 0,
+        "astSourceMismatch": 0,
+        "astUnavailable": 0,
+        "astAlreadyConsumed": 0,
+        "astOffered": 0,
+        "astNotConsumed": 0,
+        "pageMetaSkipped": 32,
+        "pageMetaAnalyzed": 16,
+        "reservedSkipped": 0,
+        "reservedAnalyzed": 0,
+        "propsNoScopeVisits": 0,
+        "activeCompiles": 0,
+        "pendingTransfers": 0
+      }
+    },
+    {
+      "variant": "reserved-props-gate",
+      "reportSha256": "0504aa285c0b6d3effb3b9236aa489ad26c0fa810ff106527355b9b516437180",
+      "checks": 64,
+      "metrics": {
+        "astReuse": 0,
+        "astSourceMismatch": 0,
+        "astUnavailable": 0,
+        "astAlreadyConsumed": 0,
+        "astOffered": 0,
+        "astNotConsumed": 0,
+        "pageMetaSkipped": 0,
+        "pageMetaAnalyzed": 0,
+        "reservedSkipped": 20,
+        "reservedAnalyzed": 18,
+        "propsNoScopeVisits": 0,
+        "activeCompiles": 0,
+        "pendingTransfers": 0
+      }
+    },
+    {
+      "variant": "optimized",
+      "reportSha256": "e986ce23a1027a38ce941e588535691dfb6e2182e24f8e98d98ce4e35615d8cc",
+      "checks": 64,
+      "metrics": {
+        "astReuse": 20,
+        "astSourceMismatch": 4,
+        "astUnavailable": 24,
+        "astAlreadyConsumed": 0,
+        "astOffered": 30,
+        "astNotConsumed": 0,
+        "pageMetaSkipped": 32,
+        "pageMetaAnalyzed": 16,
+        "reservedSkipped": 20,
+        "reservedAnalyzed": 18,
+        "propsNoScopeVisits": 22,
+        "activeCompiles": 0,
+        "pendingTransfers": 0
+      }
+    }
+  ],
+  "totalCompilationChecks": 448,
+  "comparison": "Every repeat and variant compared with the first original compiler output, including complete value/maps/warnings and error name/message/code/severity/filename/source/loc; stack and arbitrary cause excluded. Worker input hashes matched parent scenarios.",
+  "unitTests": {
+    "files": 3,
+    "passed": 17
+  },
+  "limitations": [
+    "Each implementation runs in an isolated fresh process; both calls per scenario compare the complete result with the original compiler.",
+    "Controls use the same TypeScript loader, source URLs and line-ending normalization as optimized variants.",
+    "This does not measure performance, Vite/HMR, memory or mini-program runtime behavior.",
+    "The compiler source and diagnostic files are hashed before and after; installed dependency files are not rehashed."
+  ]
+}

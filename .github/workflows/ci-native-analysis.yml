@@ -19,6 +19,7 @@ on:
       - 'scripts/astMigrationProfile/**'
       - 'scripts/nativeChunkAnalysis/**'
       - 'scripts/nativeBindingAnalysis/**'
+      - 'scripts/scriptAnalysisBaseline/**'
       - 'scripts/benchmarkNativeAnalysis/**'
       - 'scripts/benchmarkTemplatesHmr/**'
       - 'scripts/benchmarkTemplatesPerformance/**'
@@ -105,7 +106,19 @@ jobs:
           pnpm exec tsc -p scripts/benchmarkNativeAnalysis/tsconfig.json
           pnpm exec tsc -p scripts/nativeChunkAnalysis/tsconfig.json
           pnpm exec tsc -p scripts/nativeBindingAnalysis/tsconfig.json
-          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile scripts/benchmarkNativeAnalysis scripts/nativeChunkAnalysis/rewrite.test.ts scripts/nativeBindingAnalysis
+          pnpm exec tsc -p scripts/scriptAnalysisBaseline/tsconfig.json
+          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile scripts/benchmarkNativeAnalysis scripts/nativeChunkAnalysis/rewrite.test.ts scripts/nativeBindingAnalysis scripts/scriptAnalysisBaseline
+      - name: Compare script analysis baselines
+        run: node --import tsx scripts/scriptAnalysisBaseline/check.ts --output=.codex-tmp/script-baseline-correctness
+      - name: Upload script analysis comparison
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: script-baseline-correctness-${{ matrix.os }}
+          path: |
+            .codex-tmp/script-baseline-correctness/report.json
+            .codex-tmp/script-baseline-correctness/*.log
+          include-hidden-files: true
       - name: Collect compiler main-thread samples
         env:
           WEAPP_VITE_NATIVE: '0'

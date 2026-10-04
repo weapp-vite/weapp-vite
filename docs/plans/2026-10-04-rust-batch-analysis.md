@@ -312,3 +312,23 @@ Windows run `37195472616` 的诊断表明，源工程和仓库直接依赖均能
 另有三个值得先验证的 JS 基线：props-return visitor 不查询 scope，可尝试 `noScope`；page-meta 在已存在 AST 上固定遍历两次，可用现有 `mayContainPageMeta` 作保守负向检查；reserved-props 对没有 `defineProps` 的 setup 也会解析和遍历，可增加保留反斜杠兜底的负向检查。这些只是源码审计得出的候选，本轮未实施，也未把理论节省写成实测收益。
 
 page-meta/props 查询已经使用 Babel AST，拆成单独 native API 会增加 Oxc parse，却保留最终 JS 改写与生成。下一项完整阶段 Rust POC 应在优化 JS 后重新归因，再决定是否迁移整个 `transformScript`：一次输入最终源码、可序列化模板元数据与选项，返回 code/map/能力/告警；Babel `expAst` 转成自有数据的成本也必须计入，失败只能整阶段回退。继续遵守粗粒度边界，不根据局部倍率扩大生产覆盖。
+
+## 第十五轮：三平台完整编译采样与更强 JS 基线
+
+提交 `717348860e0305a0467b127336fbe23be7b44e97` 的[独立完整编译运行](https://github.com/weapp-vite/weapp-vite/actions/runs/37199077258)在 Linux、Windows、macOS 全部成功。每个平台先通过 13 场景五路正确性，再串行执行压力模板、零售详情和 Wevu 首页各两批；每组预热 10 轮、采样 40 轮，五实现按平衡顺序运行。21 份原始报告 SHA 核验通过，聚合重算一致；另独立重算 972 个分位数和 4320 条配对记录。720 次计时 native 调用零 fallback、零清理错误；正确性故障注入每平台各两次 fallback 单独记录。
+
+压力模板中，native 相对相同 loader 原逻辑控制组的配对 P50 耗时减少 23.42%–28.54%，相对相同计划的 JS 摘要缓存减少 9.32%–18.65%。真实页面的 Rust 附加收益小得多，甚至变号：
+
+| 平台 | 零售详情第一 / 第二批 | Wevu 首页第一 / 第二批 |
+| --- | --- | --- |
+| Linux | 1.05% / 1.25% | 5.32% / 2.69% |
+| Windows | 3.60% / 2.78% | −0.71% / −3.35% |
+| macOS | 5.89% / −3.79% | 3.90% / 2.67% |
+
+表中为 JS 摘要缓存→native 的逐对耗时节省百分比 P50，负值表示 native 更慢；不是分别取 P50 后相减，也未混合语料或批次。坏尾延迟同样没有一致改善：Linux 零售第二批 native wall P95 比摘要 JS 高 13.28%，Windows 零售第二批高 5.65%。Windows 零售第一批及 macOS 压力第一批的 native RSS P50 分别高 12.68%、10.90%。RSS 仅是编译后 worker 快照，不能解释为峰值或进程树内存；收益分位数的 P95 也不能替代 wall latency P95。
+
+这些是温热缓存下完整 `compileVueFile` 的诊断结果，不是冷构建、Vite/HMR 或小程序运行时。macOS runner 为 Node 24.20/arm64/3 CPU，Linux/Windows 为 Node 24.21/x64/4 CPU，且 macOS 有较高 loadavg；不能直接比较不同 OS 的绝对耗时，Windows loadavg 为零也不证明空闲。生产固定 off/on 性能门禁在此 run 中未启用。完整聚合、配对样本、身份和限制见[三平台采样证据](./2026-10-04-rust-compiler-timing-evidence.json)。结果支持继续调查计算边界，不支持扩大生产覆盖或默认启用。
+
+同时新增[脚本 JS 基线工具](../../scripts/scriptAnalysisBaseline/README.md)，仅通过诊断 source loader 实施四项独立实验：同次编译的 AST 单次所有权移交、props-return visitor 的 `noScope`、page-meta 和 reserved-props 保守负向检查。AST 只在已有值、最终源码逐字相同、fast path 未命中时复用；源码变化仍重新 parse，异常和未消费 token 在 finally 释放。没有生产源码改动，也没有新增 NAPI 调用。
+
+原始编译器、相同 loader 控制组、四项单独优化及组合版，七个独立进程各执行 32 场景两次，共 448 次编译检查通过。重复调用也与首次原始结果比较，完整保留输出、map、告警和公开错误诊断字段；每次实际源码/配置输入摘要与父进程一致。覆盖 AST 复用/源码变化/不可用、两类 guard 的正负分支、宏转义/别名/类型与值遮蔽、TSX、Unicode/CRLF 和失败清理。17 项单测、脚本 typecheck 和定向 ESLint 通过，已接入三平台 correctness CI；当前本地记录见[JS 基线证据](./2026-10-04-script-baseline-evidence.json)。此工具尚未采集性能，不能从省去解析/遍历的次数推导提速。
