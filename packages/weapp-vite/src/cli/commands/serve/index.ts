@@ -1,28 +1,8 @@
 import type { CAC } from 'cac'
-import type { ViteDevServer } from 'vite'
-import type { AnalyzeDashboardHandle } from '../../analyze/dashboard'
 import type { GlobalCLIOptions } from '../../types'
-import process from 'node:process'
-import { detectAiDevelopmentEnvironment } from '../../../aiEnvironment'
-import { getBackendForCapability } from '../../../backends'
-import { createCompilerContext } from '../../../createContext'
+import { createDevShutdownScope } from '../../../devLifecycle/shutdown'
 import logger from '../../../logger'
-import { startAnalyzeDashboard } from '../../analyze/dashboard'
-import { startDevHotkeys } from '../../devHotkeys'
-import { formatDuration } from '../../formatDuration'
-import { closeActiveForwardConsole, maybeStartForwardConsole } from '../../forwardConsole'
-import { logBuildAppFinish } from '../../logBuildAppFinish'
-import { applyMcpCliOptions } from '../../mcpOptions'
-import { setCommandNodeEnv } from '../../nodeEnv'
-import { openIde, resolveIdeProjectRoot } from '../../openIde'
-import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../../options'
-import { createInlineConfig, logRuntimeTarget, resolveConfiguredRuntimeTargets, resolveRuntimeTargets } from '../../runtime'
-import { createAnalyzeController } from './analyze'
-import { createServeMiniProgramDevActions, resolveServeIdeOpenStrategy, resolveWebHost, waitForServeShutdownSignal } from './shared'
-
-function writePostOpenSeparator() {
-  process.stdout?.write?.('\n')
-}
+import { startServeCommand } from './startup'
 
 export function registerServeCommand(cli: CAC) {
   cli
@@ -46,244 +26,20 @@ export function registerServeCommand(cli: CAC) {
     .option('--analyze', `[boolean] 启动分包分析仪表盘 (实验特性)`, { default: false })
     .option('--scope <scope>', `[string] 局部构建范围，例如 main,packages/order`)
     .action(async (root: string, options: GlobalCLIOptions) => {
-      filterDuplicateOptions(options)
-      setCommandNodeEnv('development')
-      const cwd = root ?? process.cwd()
-      const configFile = resolveConfigFile(options)
-      let targets = resolveRuntimeTargets(options)
-      const host = resolveWebHost(options.host)
-      const inlineConfig = createInlineConfig(targets, {
-        scope: options.scope,
-        host,
-        inlineConfig: host === undefined ? undefined : { server: { host } },
-      })
-      const ctx = await createCompilerContext({
-        cwd,
-        mode: options.mode ?? 'development',
-        isDev: true,
-        configFile,
-        inlineConfig,
-        cliPlatform: targets.rawPlatform,
-        preloadAppEntry: false,
-        syncAutoImportSupportFiles: false,
-        projectConfigPath: options.projectConfig,
-      })
-      const { configService } = ctx
-      targets = resolveConfiguredRuntimeTargets(targets, configService.options?.sourceConfig?.weapp?.platform)
-      const webBackend = getBackendForCapability(targets, 'web', 'dev')
-      const miniBackend = getBackendForCapability(targets, 'miniprogram', 'dev')
-      const aiEnvironment = await detectAiDevelopmentEnvironment()
-      const mcpConfig = applyMcpCliOptions(configService.weappViteConfig?.mcp, options)
-      logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
-      const enableAnalyze = Boolean(isUiEnabled(options) && miniBackend)
-      let analyzeHandle: AnalyzeDashboardHandle | undefined
-      const generatedProjectConfig = configService.multiPlatform.projectConfigs !== undefined
-      const miniProgramDevActions = createServeMiniProgramDevActions({
-        build: async () => {
-          await miniBackend?.driver.dev(ctx, options)
-        },
-        fallbackProjectPath: configService.cwd,
-        openIde: async (projectPath, openOptions) => {
-          const forceReopen = openOptions?.forceReopen === true
-          const openStrategy = resolveServeIdeOpenStrategy(openOptions, options.ideOpenStrategy)
-          const useAutomatorOpen = openStrategy === 'automator'
-          await openIde(configService.platform, projectPath, {
-            loginRetry: options.loginRetry,
-            loginRetryTimeout: options.loginRetryTimeout,
-            nonInteractive: options.nonInteractive,
-            openRecovery: false,
-            prepareAutomatorSession: useAutomatorOpen,
-            reuseOpenedProject: !forceReopen,
-            skipAutomatorCompile: !forceReopen,
-            skipPostOpenHealthCheck: true,
-            trustProject: options.trustProject,
-            openStrategy,
-            useAutomatorOpen,
-          })
-          writePostOpenSeparator()
-        },
-        projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd, generatedProjectConfig),
-        startForwardConsole: async (openOptions) => {
-          if (resolveServeIdeOpenStrategy(openOptions, options.ideOpenStrategy) === 'automator') {
-            // IDE 启动由 openIde 负责；日志消费者只能连接，不能再次启动或恢复项目。
-            return await maybeStartForwardConsole({
-              openedOnly: true,
-              preferOpenedSession: true,
-              platform: configService.platform,
-              mpDistRoot: configService.mpDistRoot,
-              cwd: configService.cwd,
-              weappViteConfig: configService.weappViteConfig,
-            })
-          }
-          return await maybeStartForwardConsole({
-            platform: configService.platform,
-            mpDistRoot: configService.mpDistRoot,
-            cwd: configService.cwd,
-            preferOpenedSession: false,
-            recoverAutomatorSession: async () => {
-              const projectPath = resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd, generatedProjectConfig)
-              await openIde(configService.platform, projectPath, {
-                loginRetry: options.loginRetry,
-                loginRetryTimeout: options.loginRetryTimeout,
-                nonInteractive: options.nonInteractive,
-                openRecovery: false,
-                openStrategy: 'automator',
-                prepareAutomatorSession: true,
-                reuseOpenedProject: false,
-                skipAutomatorCompile: false,
-                skipPostOpenHealthCheck: true,
-                trustProject: options.trustProject,
-                useAutomatorOpen: true,
-              })
-            },
-            weappViteConfig: configService.weappViteConfig,
-          })
-        },
-        tryReuseForwardConsole: async () => {
-          return await maybeStartForwardConsole({
-            openedOnly: true,
-            platform: configService.platform,
-            mpDistRoot: configService.mpDistRoot,
-            cwd: configService.cwd,
-            weappViteConfig: configService.weappViteConfig,
-          })
-        },
-      })
-      const devHotkeysSession = miniBackend
-        ? startDevHotkeys({
-            cwd: configService.cwd,
-            agentName: aiEnvironment.agentName,
-            isAgent: aiEnvironment.isAgent,
-            mcpConfig,
-            openIde: async () => await miniProgramDevActions.openIde({
-              forceOpen: true,
-              forceReopen: true,
-            }),
-            platform: configService.platform,
-            projectPath: miniProgramDevActions.projectPath ?? configService.cwd,
-            rebuild: miniProgramDevActions.rebuild,
-            silentStartupHint: true,
-            weappViteConfig: configService.weappViteConfig,
-          })
-        : undefined
+      const shutdown = createDevShutdownScope({ reportError: error => logger.error(error) })
+      let failure: unknown
       try {
-        const analyzeController = createAnalyzeController({
-          configFile,
-          ctx,
-          options,
-          targets,
-        })
-
-        let webServer: ViteDevServer | undefined
-        for (const backend of targets.select('dev')) {
-          if (backend.descriptor.id === 'miniprogram') {
-            const miniBuildStartedAt = Date.now()
-            const buildResult = await backend.driver.dev(ctx, options)
-            const miniBuildDurationMs = Date.now() - miniBuildStartedAt
-            logger.success(`小程序初次构建完成，耗时：${formatDuration(miniBuildDurationMs)}`)
-            void ctx.autoImportService?.syncSupportFileResolverComponents().catch((error) => {
-              const message = error instanceof Error ? error.message : String(error)
-              logger.warn(`[prepare] 后台同步 .weapp-vite 支持文件失败：${message}`)
-            })
-
-            if (enableAnalyze) {
-              await analyzeController.startDashboard(startAnalyzeDashboard)
-              analyzeHandle = analyzeController.getHandle()
-              analyzeController.emitRuntimeEvents([
-                {
-                  kind: 'build',
-                  level: 'success',
-                  title: 'mini initial build completed',
-                  detail: '小程序开发态初次构建已完成，dashboard 可继续监听后续刷新。',
-                  durationMs: miniBuildDurationMs,
-                  tags: ['dev', 'mini', 'initial'],
-                },
-              ])
-              const watcherControl = analyzeController.bindWatcher(buildResult)
-              await watcherControl.runInitialUpdate()
-            }
-            continue
-          }
-
-          if (backend.descriptor.id !== 'web') {
-            continue
-          }
-          const webServerStartedAt = Date.now()
-          try {
-            webServer = await backend.driver.dev(ctx, options) as ViteDevServer | undefined
-            logger.success(`Web 开发服务启动完成，耗时：${formatDuration(Date.now() - webServerStartedAt)}`)
-            analyzeController.emitRuntimeEvents([
-              {
-                kind: 'system',
-                level: 'success',
-                title: 'web dev server started',
-                detail: 'Web 开发服务器已启动，可与小程序调试 UI 并行工作。',
-                durationMs: Date.now() - webServerStartedAt,
-                tags: ['dev', 'web'],
-              },
-            ])
-          }
-          catch (error) {
-            analyzeController.emitRuntimeEvents([
-              {
-                kind: 'diagnostic',
-                level: 'error',
-                title: 'web dev server failed',
-                detail: error instanceof Error ? error.message : String(error),
-                durationMs: Date.now() - webServerStartedAt,
-                tags: ['dev', 'web'],
-              },
-            ])
-            logger.error(error)
-            throw error
-          }
+        const started = await shutdown.run('startup', () => startServeCommand(root, options, shutdown))
+        if (started?.waitForExit) {
+          await Promise.race([shutdown.signal, started.waitForExit()])
         }
-        if (miniBackend) {
-          logBuildAppFinish(configService, webServer, {
-            skipWeb: !webBackend,
-            uiUrls: analyzeHandle?.urls,
-          })
-          devHotkeysSession?.restore()
-        }
-        else if (webBackend) {
-          logBuildAppFinish(configService, webServer, { skipMini: true })
-        }
-        if (options.open && getBackendForCapability(targets, 'miniprogram', 'ide')) {
-          analyzeController.emitRuntimeEvents([
-            {
-              kind: 'command',
-              level: 'info',
-              title: 'opening ide',
-              detail: '开发服务已就绪，准备打开 IDE 项目。',
-              tags: ['ide', 'open'],
-            },
-          ])
-          devHotkeysSession?.suspend()
-          try {
-            await miniProgramDevActions.openIde({
-              forceOpen: true,
-              forceReopen: false,
-              openStrategy: options.ideOpenStrategy ?? 'cli',
-            })
-          }
-          finally {
-            devHotkeysSession?.restore()
-          }
-        }
-
-        if (analyzeHandle) {
-          await analyzeController.waitForExit()
-        }
-        else if (targets.has('dev')) {
-          await waitForServeShutdownSignal()
+        else if (started?.watch) {
+          await shutdown.signal
         }
       }
-      finally {
-        devHotkeysSession?.close()
-        await closeActiveForwardConsole()
-        for (const backend of [...targets.select('dev')].reverse()) {
-          await backend.driver.close(ctx)
-        }
+      catch (error) {
+        failure = error
       }
+      await shutdown.close(failure)
     })
 }

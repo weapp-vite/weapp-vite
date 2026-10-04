@@ -29,19 +29,26 @@ interface DashboardHost {
 export function createAnalyzeDashboardViteBridge(
   controller: AnalyzeDashboardDevframeController,
   options: AnalyzeDashboardViteBridgeOptions = {},
-): Plugin {
+): Plugin & { close: () => Promise<void> } {
   const hosts = new WeakMap<ResolvedConfig, DashboardHost>()
+  const ownedHosts = new Set<DashboardHost>()
   let activeHost: DashboardHost | undefined
+  let closing: Promise<void> | undefined
+  let stopped = false
 
   return {
     name: 'weapp-vite:dashboard-devframe',
     apply: 'serve',
     configureServer(server) {
+      if (stopped) {
+        throw new Error('Dashboard bridge is already closed.')
+      }
       const httpServer = server.httpServer instanceof Server ? server.httpServer : undefined
       let instance: DevframeInstance | undefined
       let mcp: DashboardMcp | undefined
       let starting: Promise<void> | undefined
-      let closing: Promise<void> | undefined
+      let acquiring: Promise<void> | undefined
+      let hostClosing: Promise<void> | undefined
       let closed = false
       const onListening = () => mcp?.register()
       const host: DashboardHost & { onClose: () => void } = {
@@ -51,28 +58,37 @@ export function createAnalyzeDashboardViteBridge(
           }
           starting ??= (async () => {
             try {
-              if (!httpServer) {
-                throw new Error('Dashboard MCP requires the Dashboard Vite HTTP server.')
-              }
-              instance = initDevframe(withStandaloneDashboardPolicy(controller.definition), {
-                base: ANALYZE_DASHBOARD_DEVFRAME_BASE,
-                distDir: false,
-                server: httpServer,
-                allowedOrigins: [],
-                auth: true,
-                mcp: false,
-                register: false,
+              // 资源取得与失败收尾分开，close 可等待晚到资源而不反向等待 start 的 catch。
+              acquiring = Promise.resolve().then(async () => {
+                if (closed) {
+                  return
+                }
+                if (!httpServer) {
+                  throw new Error('Dashboard MCP requires the Dashboard Vite HTTP server.')
+                }
+                instance = initDevframe(withStandaloneDashboardPolicy(controller.definition), {
+                  base: ANALYZE_DASHBOARD_DEVFRAME_BASE,
+                  distDir: false,
+                  server: httpServer,
+                  allowedOrigins: [],
+                  auth: true,
+                  mcp: false,
+                  register: false,
+                })
+                await instance.ready
+                if (!closed) {
+                  mcp = await createDashboardMcp(instance, httpServer, {
+                    projectRoot: options.projectRoot ?? process.cwd(),
+                    id: controller.definition.id,
+                    name: controller.definition.name,
+                    version: controller.definition.version,
+                  })
+                }
               })
-              await instance.ready
-              mcp = await createDashboardMcp(instance, httpServer, {
-                projectRoot: options.projectRoot ?? process.cwd(),
-                id: controller.definition.id,
-                name: controller.definition.name,
-                version: controller.definition.version,
-              })
+              await acquiring
               if (closed) {
-                await mcp?.close()
-                return
+                // buildStart 成功返回会让 Vite 继续 HTTP listen；关闭中的启动必须明确终止。
+                throw new Error('Dashboard host initialization was cancelled by shutdown.')
               }
               activeHost = host
               httpServer?.once('listening', onListening)
@@ -91,7 +107,7 @@ export function createAnalyzeDashboardViteBridge(
           return starting
         },
         close() {
-          if (!closing) {
+          if (!hostClosing) {
             closed = true
             if (activeHost === host) {
               activeHost = undefined
@@ -99,22 +115,31 @@ export function createAnalyzeDashboardViteBridge(
             httpServer?.off('listening', onListening)
             httpServer?.off('close', host.onClose)
             httpServer?.off('error', host.onClose)
-            closing = Promise.resolve().then(async () => {
-              try {
-                await mcp?.close()
+            hostClosing = Promise.resolve().then(async () => {
+              await acquiring?.catch(() => {})
+              const errors: unknown[] = []
+              for (const release of [() => mcp?.close(), () => instance?.close()]) {
+                try {
+                  await release()
+                }
+                catch (error) {
+                  errors.push(error)
+                }
               }
-              finally {
-                await instance?.close()
+              if (errors.length) {
+                throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Dashboard host cleanup failed')
               }
+              ownedHosts.delete(host)
             })
           }
-          return closing
+          return hostClosing
         },
         onClose() {
           void host.close().catch(error => server.config.logger.error(String(error)))
         },
       }
       hosts.set(server.config, host)
+      ownedHosts.add(host)
       // 先占协议路由的位置；初始化留给启动阶段，失败候选不会抢走当前宿主的通知或资源。
       server.middlewares.use((request, response, next) => {
         if (closed || !instance) {
@@ -149,6 +174,19 @@ export function createAnalyzeDashboardViteBridge(
       if (reason === 'close' && !activeHost) {
         controller.dispose()
       }
+    },
+    close() {
+      if (!closing) {
+        stopped = true
+        // Vite 会忽略环境 closeBundle 的错误；显式边界保留失败宿主并等待全部资源结算。
+        closing = Promise.allSettled([...ownedHosts].map(host => host.close())).then((results) => {
+          const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+          if (errors.length) {
+            throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Dashboard bridge cleanup failed')
+          }
+        })
+      }
+      return closing
     },
   }
 }

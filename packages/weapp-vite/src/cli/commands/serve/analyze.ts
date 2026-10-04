@@ -2,6 +2,7 @@ import type { RolldownWatcher } from 'rolldown'
 import type { AnalyzeSubpackagesOptions, AnalyzeSubpackagesResult } from '../../../analyze/subpackages'
 import type { CompilerContext } from '../../../context'
 import type { DashboardArtifactFiles, DashboardRuntimeEventInput, DashboardRuntimeEventProfile } from '../../../dashboard'
+import type { DevShutdownScope } from '../../../devLifecycle/shutdown'
 import type { AnalyzeDashboardHandle, startAnalyzeDashboard } from '../../analyze/dashboard'
 import type { RuntimeTargets } from '../../runtime'
 import type { GlobalCLIOptions } from '../../types'
@@ -188,8 +189,9 @@ export function createAnalyzeController(options: {
   ctx: CompilerContext
   options: GlobalCLIOptions
   targets: RuntimeTargets
+  shutdown?: DevShutdownScope
 }) {
-  const { configFile, ctx, options: cliOptions, targets } = options
+  const { configFile, ctx, options: cliOptions, targets, shutdown } = options
   const { configService } = ctx
   let analyzeRunId = 0
   let analyzeHandle: AnalyzeDashboardHandle | undefined
@@ -245,8 +247,8 @@ export function createAnalyzeController(options: {
     return runFallback('完整分析结果为空，已回退到 dist 文件扫描。')
   }
 
-  const triggerAnalyzeUpdate = async (reason: 'initial' | 'watch' = 'watch') => {
-    if (!analyzeHandle) {
+  const runAnalyzeUpdate = async (reason: 'initial' | 'watch') => {
+    if (!analyzeHandle || shutdown?.stopping) {
       return
     }
     emitDashboardEvents(analyzeHandle, [
@@ -261,6 +263,9 @@ export function createAnalyzeController(options: {
       },
     ])
     const next = await runAnalyze()
+    if (shutdown?.stopping) {
+      return
+    }
     if (next.mode === 'fallback') {
       emitDashboardEvents(analyzeHandle, [
         {
@@ -288,6 +293,13 @@ export function createAnalyzeController(options: {
           : ['analyze', reason === 'watch' ? 'refresh' : 'initial'],
       },
     ])
+  }
+
+  const triggerAnalyzeUpdate = (reason: 'initial' | 'watch' = 'watch') => {
+    if (shutdown?.stopping) {
+      return Promise.resolve()
+    }
+    return shutdown ? shutdown.run('startup', () => runAnalyzeUpdate(reason)) : runAnalyzeUpdate(reason)
   }
 
   const bindWatcher = (buildResult: unknown) => {
@@ -328,6 +340,9 @@ export function createAnalyzeController(options: {
     if (analyzeHandle && buildResult && typeof (buildResult as RolldownWatcher).on === 'function') {
       const watcher = buildResult as RolldownWatcher
       watcher.on('event', (event) => {
+        if (shutdown?.stopping) {
+          return
+        }
         if (event.code === 'ERROR') {
           emitDashboardEvents(analyzeHandle, [{
             kind: 'diagnostic',
@@ -363,6 +378,9 @@ export function createAnalyzeController(options: {
       startDashboard: typeof startAnalyzeDashboard,
     ) {
       const initialAnalyze = await runAnalyze()
+      if (shutdown?.stopping) {
+        return
+      }
       analyzeHandle = await startDashboard(initialAnalyze.result, {
         watch: true,
         artifacts: initialAnalyze.artifacts,

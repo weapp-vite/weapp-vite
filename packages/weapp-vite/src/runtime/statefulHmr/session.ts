@@ -19,10 +19,11 @@ import {
 } from '@weapp-core/constants'
 import { HmrAssetStore } from '@weapp-vite/hmr'
 import path from 'pathe'
-import { createServer, transformWithOxc } from 'vite'
+import { transformWithOxc } from 'vite'
 import { isNativeScriptAnalysisOwner, refreshGlassEaselNativeScripts } from '../../analyze/glassEasel/nativeScripts'
 import { isGlassEaselDetected } from '../../analyze/glassEasel/state'
 import { logger } from '../../context/shared'
+import { createDevViteServer } from '../../devLifecycle/vite'
 import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { CompilerHmrResyncError, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
@@ -101,7 +102,7 @@ export async function runStatefulHmrDev(
   const host = getStatefulHmrHost(compilerContext)
   const controller = host?.controller ?? createStatefulHmrHostPlugins(compilerContext)
   controller.setInputs(entryIds, delegatedComponentEntryIds)
-  const server = host?.server ?? await createServer({
+  const server = host?.server ?? await createDevViteServer({
     ...buildOptions,
     root: buildOptions.root ?? configService.cwd,
     appType: 'custom',
@@ -337,44 +338,67 @@ class StatefulHmrSession {
 
   close(status: 'incomplete' | 'failed' = 'incomplete'): Promise<void> {
     return this.closing ??= (async () => {
+      const failures: unknown[] = []
       try {
-        await this.closeResources(status)
+        await this.closeResources(status, failures)
       }
-      finally {
-        const restore = this.restoreIdeAssetWatch
-        this.restoreIdeAssetWatch = undefined
+      catch (error) {
+        failures.push(error)
+      }
+      const restore = this.restoreIdeAssetWatch
+      this.restoreIdeAssetWatch = undefined
+      try {
         await restore?.()
+      }
+      catch (error) {
+        failures.push(error)
+      }
+      if (failures.length) {
+        throw failures.length === 1 ? failures[0] : new AggregateError(failures, 'Stateful HMR session cleanup failed', { cause: failures[0] })
       }
     })()
   }
 
-  private async closeResources(status: 'incomplete' | 'failed'): Promise<void> {
+  private async closeResources(status: 'incomplete' | 'failed', failures: unknown[]): Promise<void> {
+    const release = async (action: () => unknown) => {
+      try {
+        await action()
+      }
+      catch (error) {
+        failures.push(error)
+      }
+    }
     this.closed = true
-    this.initialProfile?.finish(status)
+    // 先同步封闭交付代次，再取消传输；等待必须留到传输解除未确认交付之后。
+    const closeDelivery = release(() => this.delivery.close())
+    // 保持释放顺序，但某个资源失败不能跳过后续监听器、引擎或诊断的关闭。
+    await release(() => this.initialProfile?.finish(status))
     this.initialProfile = undefined
-    this.interruptSettlement()
-    this.releaseSettlement?.()
+    await release(() => this.interruptSettlement())
+    await release(() => this.releaseSettlement?.())
     if (this.restartTimer) {
       clearTimeout(this.restartTimer)
       this.restartTimer = undefined
     }
-    await this.restartHandoff?.invalidate(status)
+    await release(() => this.restartHandoff?.invalidate(status))
     this.restartHandoff = undefined
-    this.childSources?.close()
-    getCompilerHmrHost(this.ctx).onDependencyChange = undefined
-    await this.assetWatcher?.close()
+    await release(() => this.childSources?.close())
+    await release(() => {
+      getCompilerHmrHost(this.ctx).onDependencyChange = undefined
+    })
+    await release(() => this.assetWatcher?.close())
     if (this.ctx.onStatefulHmrSourceChange === this.sourceChangeListener) {
       this.ctx.onStatefulHmrSourceChange = undefined
     }
-    this.transport.close()
-    await this.delivery.close()
-    await this.snapshotScheduler.close()
-    await this.adapter.close()
+    await release(() => this.transport.close())
+    await closeDelivery
+    await release(() => this.snapshotScheduler.close())
+    await release(() => this.adapter.close())
     this.sourceDirtyReasons.clear()
     this.unpersistedNativeScripts.clear()
     this.nativeScriptInputs.clear()
-    await this.outputChain
-    await this.profile?.close(status)
+    await release(() => this.outputChain)
+    await release(() => this.profile?.close(status))
   }
 
   async refreshControl(): Promise<void> {
@@ -582,6 +606,9 @@ class StatefulHmrSession {
   }
 
   private handleBatch(batch: StatefulHmrDevEngineBatch): boolean {
+    if (this.closed) {
+      return false
+    }
     this.settlementRevision += 1
     this.diagnostics?.delivery('received', 0, batch.changedFiles)
     let files = batch.changedFiles.map(file => normalizeFsResolvedId(path.isAbsolute(file) ? file : path.resolve(this.server.config.root, file)))
