@@ -173,6 +173,33 @@ describe('legacy managed close log inventory recovery', () => {
     expect(fixture.record.windowClose).not.toHaveProperty('logInventoryRecovery')
   })
 
+  it('cannot complete a partial MAIN record using bytes after the persisted offset', async () => {
+    const header = fixture.line('project window ready')
+    await fs.writeFile(fixture.logFile, fixture.line('simulator initialized', 'BACKEND') + header.trimEnd())
+    fixture.record.windowClose!.cursors = [await snapshotLegacyCursor(fixture.logFile)]
+    await fs.appendFile(fixture.logFile, '\n')
+    await finishOriginalWindow()
+
+    await expect(fixture.wait()).rejects.toThrow('one unambiguous MAIN log')
+    expect(fixture.record.windowClose?.failure).toBe(legacyInventoryFailure)
+    expect(fixture.record.windowClose).not.toHaveProperty('logInventoryRecovery')
+  })
+
+  it('recovers a mixed stream whose MAIN record preceded the persisted offset', async () => {
+    await fs.writeFile(fixture.logFile, fixture.line('simulator initialized', 'BACKEND') + fixture.line('project window ready') + fixture.call('s5', 7))
+    fixture.record.windowClose!.cursors = [await snapshotLegacyCursor(fixture.logFile)]
+    await finishOriginalWindow()
+
+    await fixture.wait()
+
+    expect(fixture.record.windowClose?.failure).toBeUndefined()
+    expect(fixture.record.windowClose?.window).toMatchObject({
+      winId: 's5',
+      nativeClosedAt: expect.any(String),
+      webContentsDestroyedAt: expect.any(String),
+    })
+  })
+
   it('rejects ambiguity between two MAIN streams in the original inventory', async () => {
     await fs.writeFile(helperLog, fixture.boot())
     const cursors = fixture.record.windowClose!.cursors

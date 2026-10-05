@@ -6,6 +6,8 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 const readLimit = 2 * 1024 * 1024
+const scanChunkSize = 64 * 1024
+const headerLimit = 4096
 const emptyAnchor = createHash('sha256').digest('hex')
 
 export const legacyLogInventoryFailure = 'Managed DevTools window-close log set changed; host generation or log rotation is unresolved.'
@@ -62,14 +64,33 @@ async function openLogFile(directory: string, name: string) {
   }
 }
 
-async function hasMainPrefix(file: FileHandle, size: number, productVersion: string) {
-  const prefix = (await readBytes(file, 0, Math.min(size, 4096))).toString('utf8')
-  const firstNewline = prefix.indexOf('\n')
-  if (firstNewline < 0) {
-    return false
+/** 主进程日志汇聚多个来源，轮转后的首条记录可能来自 BACKEND；只识别固定偏移内的完整行。 */
+async function hasMainRecord(file: FileHandle, size: number, productVersion: string) {
+  // 只保留有限行首并等待换行，长日志消息不会累积到内存，也不能把未完成的尾行当作证据。
+  const prefix = Buffer.alloc(headerLimit)
+  let prefixSize = 0
+  for (let offset = 0; offset < size;) {
+    const bytes = await readBytes(file, offset, Math.min(size - offset, scanChunkSize))
+    if (!bytes.length) {
+      return false
+    }
+    offset += bytes.length
+    for (let start = 0; start < bytes.length;) {
+      const newline = bytes.indexOf(10, start)
+      const end = newline < 0 ? bytes.length : newline
+      prefixSize += bytes.copy(prefix, prefixSize, start, Math.min(end, start + headerLimit - prefixSize))
+      if (newline < 0) {
+        break
+      }
+      const line = prefix.toString('utf8', 0, prefixSize)
+      if (/^\[[^\]\r\n]+\]\[[A-Z]+\]\[([^\]\r\n]+)\]\[MAIN\]/.exec(line)?.[1] === productVersion) {
+        return true
+      }
+      prefixSize = 0
+      start = newline + 1
+    }
   }
-  const firstLine = prefix.slice(0, firstNewline)
-  return /^\[[^\]\r\n]+\]\[[A-Z]+\]\[([^\]\r\n]+)\]\[MAIN\]/.exec(firstLine)?.[1] === productVersion
+  return false
 }
 
 function requireUniqueMain(cursors: ManagedWechatWindowLogCursor[]) {
@@ -94,7 +115,7 @@ export async function captureLogCursors(directory: string, productVersion: strin
     const file = await openLogFile(directory, name)
     try {
       const stat = await file.stat()
-      if (!await hasMainPrefix(file, stat.size, productVersion)) {
+      if (!await hasMainRecord(file, stat.size, productVersion)) {
         continue
       }
       const last = stat.size ? await readBytes(file, stat.size - 1, 1) : undefined
@@ -123,7 +144,7 @@ export async function recoverLogCursors(directory: string, cursors: ManagedWecha
     }
     try {
       await validateCursor(file, cursor)
-      if (await hasMainPrefix(file, cursor.offset, productVersion)) {
+      if (await hasMainRecord(file, cursor.offset, productVersion)) {
         main.push({ ...cursor })
       }
     }

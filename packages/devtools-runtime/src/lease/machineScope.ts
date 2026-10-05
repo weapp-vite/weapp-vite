@@ -19,7 +19,7 @@ export interface MachineE2EChildScope {
   complete: () => Promise<void>
 }
 
-interface ScopeRecord {
+export interface ScopeRecord {
   owner: LeaseOwner
   ancestors: string[]
   sealed: boolean
@@ -67,7 +67,7 @@ function scopeFile(directory: string, token: string) {
   return path.join(directory, 'scopes', `${token}.json`)
 }
 
-async function readScope(directory: string, token: string): Promise<ScopeRecord> {
+export async function readScope(directory: string, token: string): Promise<ScopeRecord> {
   const value: unknown = JSON.parse(await readFile(scopeFile(directory, token), 'utf8'))
   if (!value || typeof value !== 'object' || !('owner' in value) || !('ancestors' in value)
     || !('sealed' in value) || typeof value.sealed !== 'boolean'

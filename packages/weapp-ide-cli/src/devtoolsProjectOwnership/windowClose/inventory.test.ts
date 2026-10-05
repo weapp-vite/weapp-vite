@@ -1,4 +1,5 @@
 import type { WindowCloseFixture } from './fixture'
+import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -29,6 +30,45 @@ describe('managed close log stream selection', () => {
     expect(fixture.record.windowClose?.cursors).toEqual([
       expect.objectContaining({ name: path.basename(fixture.logFile) }),
     ])
+  })
+
+  it.each([1, 131])('accepts a mixed stream with %s BACKEND records before its first MAIN record', async (count) => {
+    const prefix = Array.from({ length: count }, () => fixture.line('simulator initialized', 'BACKEND')).join('')
+    const contents = prefix + fixture.line('project window ready')
+    await fs.writeFile(fixture.logFile, contents)
+
+    await fixture.capture()
+    expect(fixture.record.windowClose?.cursors[0]?.offset).toBe(Buffer.byteLength(contents))
+    await fs.appendFile(fixture.logFile, completeTrace())
+
+    await fixture.wait()
+    expect(fixture.record.windowClose?.window).toMatchObject({
+      nativeClosedAt: expect.any(String),
+      webContentsDestroyedAt: expect.any(String),
+    })
+  })
+
+  it.each([65_520, 2 * 1024 * 1024 + 1])('finds a complete MAIN record after a %s-byte non-MAIN prefix', async (length) => {
+    await fs.writeFile(fixture.logFile, `${'x'.repeat(length - 1)}\n${fixture.line('project window ready')}`)
+
+    await fixture.capture()
+
+    expect(fixture.record.windowClose?.cursors).toHaveLength(1)
+  })
+
+  it.each(['unfinished', 'embedded', 'carriage-return-only', 'wrong-version', 'wrong-source'] as const)('rejects a %s MAIN lookalike after a BACKEND record', async (kind) => {
+    const header = fixture.line('project window ready')
+    const lookalike = {
+      'unfinished': header.trimEnd(),
+      'embedded': `quoted log: ${header}`,
+      'carriage-return-only': `unfinished helper\r${header}`,
+      'wrong-version': fixture.line('project window ready', 'MAIN', 'different-version'),
+      'wrong-source': fixture.line('project window ready', 'MAIN-helper'),
+    }[kind]
+    await fs.writeFile(fixture.logFile, fixture.line('simulator initialized', 'BACKEND') + lookalike)
+
+    await expect(fixture.capture()).rejects.toThrow('one unambiguous MAIN log')
+    expect(fixture.record.windowClose).toBeUndefined()
   })
 
   it.each(['wrong-version', 'auxiliary', 'no-header'] as const)('rejects a %s stream before recording close dispatch', async (kind) => {
