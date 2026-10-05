@@ -4,6 +4,7 @@ import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { CreateComponentInstanceOptions, HeadlessComponentInstance } from '../componentInstance'
 import type { DomNodeLike, RuntimeComponentRegistryEntry, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
 import path from 'node:path'
+import { bindAttachmentBindingScope } from '../../host/attachmentBindingUpdates'
 import { resolvePluginRequest } from '../../project/plugins'
 import { bindComponentEventHost, buildComponentTrigger } from '../../view/componentEvent'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
@@ -11,12 +12,10 @@ import { wxsScopeData } from '../../view/wxs'
 import {
   cloneValue,
   createComponentInstance,
-  hasComponentPropertyValueChanged,
-  normalizeComponentPropertyValue,
   runComponentLifecycle,
-  runComponentObservers,
 } from '../componentInstance'
 import { beginComponentConstruction, discardComponentConstruction, finishComponentConstruction } from '../componentInstance/construction'
+import { syncComponentProperties } from '../componentInstance/propertyBindings'
 import { resolveNativeComponentSelection } from '../componentInstance/selection'
 import { resolveMiniProgramComponent } from '../componentResolution'
 import { getRuntimeWxsLoader } from '../wxs'
@@ -143,47 +142,6 @@ export function resolveComponentGenerics(
   return resolved.size > 0 ? resolved : undefined
 }
 
-export function syncComponentProperties(
-  instance: HeadlessComponentInstance,
-  definition: HeadlessComponentDefinition,
-  nextProperties: Record<string, any>,
-  bindingExpressions: Record<string, string | undefined>,
-  changedPageKeys: string[],
-  beforeObservers?: (instance: HeadlessComponentInstance, phase: 'properties') => void,
-) {
-  const changedRootKeys: string[] = []
-  const previousProperties: Record<string, any> = {}
-  for (const [key, value] of Object.entries(nextProperties)) {
-    const nextValue = normalizeComponentPropertyValue(definition, key, value)
-    const bindingExpression = bindingExpressions[key]
-    const bindingAffected = !!bindingExpression && changedPageKeys.some((changedKey) => {
-      return changedKey === bindingExpression
-        || changedKey.startsWith(`${bindingExpression}.`)
-        || changedKey.startsWith(`${bindingExpression}[`)
-    })
-    const previousSnapshot = instance.__propertySnapshots?.[key]
-    if (hasComponentPropertyValueChanged(instance.properties[key], previousSnapshot, nextValue, bindingAffected)) {
-      previousProperties[key] = instance.properties[key]
-      // 属性跨组件边界传递时必须隔离引用，否则父级深层 patch 会提前改写子级旧值。
-      const deliveredValue = cloneValue(nextValue)
-      instance.properties[key] = deliveredValue
-      if (Object.hasOwn(definition.properties ?? {}, key)) {
-        instance.data[key] = deliveredValue
-      }
-      changedRootKeys.push(key)
-    }
-    instance.__propertySnapshots ??= {}
-    instance.__propertySnapshots[key] = cloneValue(nextValue)
-  }
-
-  if (changedRootKeys.length === 0) {
-    return
-  }
-
-  beforeObservers?.(instance, 'properties')
-  runComponentObservers(definition, instance, changedRootKeys, previousProperties)
-}
-
 export function createComponentScope(
   clonedNode: DomNodeLike,
   scope: RuntimeRenderScope,
@@ -262,6 +220,7 @@ export function createRuntimeComponentInstance(
     requestRender: callback => context.session.requestRender(callback),
   }
   const componentInstance = createComponentInstance(instanceOptions)
+  bindAttachmentBindingScope(componentInstance, context)
   setSelectorQueryScopeId(componentInstance, componentScopeId)
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')
   componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)

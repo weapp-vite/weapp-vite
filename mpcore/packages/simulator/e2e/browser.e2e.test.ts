@@ -600,6 +600,14 @@ describe('simulator browser e2e', { concurrent: false }, () => {
       lifecycleLog: ['created', 'attached', 'load', 'show', initialResizeMarker, 'ready', 'routeDone:undefined', 'routeDone:browser-e2e', 'resize:412'],
       snapshot: `created|attached|load|show|${initialResizeMarker}|ready|routeDone:undefined|routeDone:browser-e2e|resize:412`,
     })
+    const previewShadowRoot = Array.from(mountNode!.querySelectorAll('*'))
+      .map(element => element.shadowRoot)
+      .find((root): root is ShadowRoot => root !== null)
+    await waitFor(
+      () => previewShadowRoot?.querySelector('#attachment-bound-value')?.textContent,
+      value => value === 'attachment-bound-value',
+    )
+    expect(previewShadowRoot?.querySelector('#attachment-bound-value')?.textContent).toBe('attachment-bound-value')
 
     bridge.runPageMethod('openNext')
     await waitFor(
@@ -635,6 +643,11 @@ describe('simulator browser e2e', { concurrent: false }, () => {
         'show',
       ],
     })
+    await waitFor(
+      () => previewShadowRoot?.querySelector('#attachment-bound-value')?.textContent,
+      value => value === 'attachment-bound-value',
+    )
+    expect(previewShadowRoot?.querySelector('#attachment-bound-value')?.textContent).toBe('attachment-bound-value')
   })
 
   it('switches scenarios and keeps browser session runtime functional', async () => {

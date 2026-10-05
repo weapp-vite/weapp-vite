@@ -1,6 +1,7 @@
 import type { HeadlessPageDefinition, HeadlessWxMediaQueryObserver } from '../host'
 import type { HeadlessBackgroundSnapshot, HeadlessBackgroundTextStyle, HeadlessNavigationBarSnapshot } from '../project/pageConfig'
 import type { HeadlessComponentInstance } from './componentInstance'
+import { synchronizeAttachmentBindings } from '../host/attachmentBindingUpdates'
 import { bindComponentPageAttachment } from '../host/componentPageAttachment'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot } from '../project/pageConfig'
 
@@ -144,6 +145,7 @@ export function createPageInstance(
           instance.properties[rootKey] = instance.data[rootKey]
         }
       }
+      synchronizeAttachmentBindings(instance)
       if (pageState.requestRender) {
         pageState.requestRender(callback)
       }

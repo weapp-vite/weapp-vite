@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "attachment-consumer": "/components/attachment-consumer/index"
+  }
+}

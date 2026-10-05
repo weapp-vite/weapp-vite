@@ -1,6 +1,7 @@
 import type { HeadlessComponentInstance } from '../runtime/componentInstance'
 import type { HeadlessPageInstance } from '../runtime/pageInstance'
 import type { DomNodeLike, RuntimeSlotContent } from '../runtime/render/types'
+import { getAttachmentBindingRevision } from '../host/attachmentBindingUpdates'
 
 interface SlotDeclarationGroup {
   parent: DomNodeLike
@@ -18,9 +19,11 @@ export interface RenderPass {
   renderedSlots: Map<RuntimeSlotContent, DomNodeLike[]>
   hasUnprojectedSlots: boolean
   propertyUpdate: boolean
+  bindingUpdate: ReturnType<typeof getAttachmentBindingRevision>
+  bindingRevision: number
 }
 
-export function createRenderPass(propertyUpdate = false): RenderPass {
+export function createRenderPass(propertyUpdate = false, parent?: RenderPass): RenderPass {
   return {
     seenComponentScopes: new Set(),
     componentRoots: new Map(),
@@ -28,11 +31,20 @@ export function createRenderPass(propertyUpdate = false): RenderPass {
     renderedSlots: new Map(),
     hasUnprojectedSlots: false,
     propertyUpdate,
+    bindingUpdate: parent?.bindingUpdate,
+    bindingRevision: parent?.bindingUpdate?.revision ?? 0,
   }
 }
 
 export function createPageRenderPass(page: HeadlessPageInstance, cache: ComponentCache) {
-  return createRenderPass(initializedPages.get(cache)?.has(page) ?? false)
+  const pass = createRenderPass(initializedPages.get(cache)?.has(page) ?? false)
+  pass.bindingUpdate = getAttachmentBindingRevision(page)
+  pass.bindingRevision = pass.bindingUpdate?.revision ?? 0
+  return pass
+}
+
+export function isRenderPassStale(pass: RenderPass) {
+  return pass.bindingUpdate !== undefined && pass.bindingUpdate.revision !== pass.bindingRevision
 }
 
 export function markPageTreeConstructed(page: HeadlessPageInstance, cache: ComponentCache) {
