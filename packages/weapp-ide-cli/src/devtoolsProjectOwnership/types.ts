@@ -29,6 +29,8 @@ export interface ManagedWechatWindowCloseEvidence {
   profileDir: string
   productVersion: string
   capturedAt: string
+  /** 活动日志按文件句柄捕获时，绑定实际持有日志的主进程身份。 */
+  mainHost?: ManagedWechatHostIdentity
   /** 关闭意图先于 CLI 落盘；未知执行结果不能再次按路径关闭窗口。 */
   dispatchedAt?: string
   cursors: ManagedWechatWindowLogCursor[]

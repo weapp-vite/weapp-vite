@@ -1,7 +1,9 @@
 import type { ManagedWechatProjectRecord, ManagedWechatWindowCloseEvidence } from './types'
 import fs from 'node:fs/promises'
 import { setTimeout } from 'node:timers/promises'
-import { captureLogCursors, legacyLogInventoryFailure, readFreshLogLines, recoverLogCursors, selectedLogDirectory } from './windowClose/logCursor'
+import { readManagedProcessIdentity, sameManagedProcess } from './host'
+import { readActiveMainLog } from './windowClose/activeLog'
+import { captureActiveLogCursor, captureLogCursors, legacyLogInventoryFailure, readFreshLogLines, recoverLogCursors, selectedLogDirectory } from './windowClose/logCursor'
 import { consumeWindowCloseTrace } from './windowClose/protocol'
 
 /** 只捕获本次显式安装的日志，必须先于关闭命令持久化。 */
@@ -11,8 +13,12 @@ export async function captureManagedWindowClose(record: ManagedWechatProjectReco
   }
   const profileDir = await fs.realpath(record.target.profileDir)
   const capturedAt = new Date().toISOString()
-  const cursors = await captureLogCursors(await selectedLogDirectory(profileDir), record.target.version)
-  return { protocol: 'wechat-devtools-window-close-trace-v1', profileDir, productVersion: record.target.version, capturedAt, cursors, calls: [] }
+  const directory = await selectedLogDirectory(profileDir)
+  const active = await readActiveMainLog(record, directory)
+  const cursors = active
+    ? await captureActiveLogCursor(directory, active)
+    : await captureLogCursors(directory, record.target.version)
+  return { protocol: 'wechat-devtools-window-close-trace-v1', profileDir, productVersion: record.target.version, capturedAt, ...(active ? { mainHost: active.host } : {}), cursors, calls: [] }
 }
 
 /** 持久化每轮证据，worker 退出后只能续读同一游标，不能重新关闭同路径。 */
@@ -43,6 +49,12 @@ export async function waitForManagedWindowClosed(record: ManagedWechatProjectRec
     try {
       if (await fs.realpath(record.target.profileDir) !== evidence.profileDir || record.target.version !== evidence.productVersion) {
         throw new Error('Managed DevTools window-close evidence no longer matches its selected installation.')
+      }
+      if (evidence.mainHost) {
+        const current = await readManagedProcessIdentity(evidence.mainHost.pid)
+        if (!current || !sameManagedProcess(current, evidence.mainHost)) {
+          throw new Error('Managed DevTools main log owner changed; destruction evidence is unresolved.')
+        }
       }
       const lines = await readFreshLogLines(await selectedLogDirectory(evidence.profileDir), evidence.cursors)
       for (const line of lines) {

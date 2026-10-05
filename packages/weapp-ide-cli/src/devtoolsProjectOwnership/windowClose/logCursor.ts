@@ -100,6 +100,25 @@ function requireUniqueMain(cursors: ManagedWechatWindowLogCursor[]) {
   return cursors
 }
 
+/** 只接受已核验主进程持有的同一常规文件，不按名称或历史日志内容猜测。 */
+export async function captureActiveLogCursor(directory: string, active: { name: string, identity: string }): Promise<ManagedWechatWindowLogCursor[]> {
+  if (!/^[^/\\]+\.log$/.test(active.name)) {
+    throw new Error('Managed DevTools active log must belong to the selected log directory.')
+  }
+  const file = await openLogFile(directory, active.name)
+  try {
+    const stat = await file.stat()
+    if (identity(stat) !== active.identity) {
+      throw new Error('Managed DevTools active log changed before its close cursor was captured.')
+    }
+    const last = stat.size ? await readBytes(file, stat.size - 1, 1) : undefined
+    return [{ name: active.name, identity: identity(stat), offset: stat.size, anchor: await anchorAt(file, stat.size), skipPartialLine: last !== undefined && last[0] !== 10 }]
+  }
+  finally {
+    await file.close()
+  }
+}
+
 async function validateCursor(file: FileHandle, cursor: ManagedWechatWindowLogCursor) {
   const stat = await file.stat()
   if (!stat.isFile() || identity(stat) !== cursor.identity || stat.size < cursor.offset || await anchorAt(file, cursor.offset) !== cursor.anchor) {

@@ -22,6 +22,7 @@ export const managedWindowCloseSchema = z.object({
   profileDir: text,
   productVersion: text,
   capturedAt: text,
+  mainHost: z.object({ pid: z.number().int().positive(), executable: text, started: text }).optional(),
   dispatchedAt: text.optional(),
   cursors: z.array(cursorSchema).min(1),
   calls: z.array(callSchema),

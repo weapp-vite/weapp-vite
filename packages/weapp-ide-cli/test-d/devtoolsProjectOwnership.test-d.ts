@@ -1,4 +1,4 @@
-import type { ManagedWechatProjectIntent, ManagedWechatProjectRecord, ManagedWechatWindowCloseEvidence, ManagedWechatWindowLogCursor, ResolvedWechatDevtoolsTarget } from 'weapp-ide-cli'
+import type { ManagedWechatHostIdentity, ManagedWechatProjectIntent, ManagedWechatProjectRecord, ManagedWechatWindowCloseEvidence, ManagedWechatWindowLogCursor, ResolvedWechatDevtoolsTarget } from 'weapp-ide-cli'
 import { expectError, expectType } from 'tsd'
 import { beginManagedWechatProject, cleanupManagedWechatProjects, closeManagedWechatProject, MANAGED_PROJECT_JOURNAL_ENV, readManagedWechatProjectRecords } from 'weapp-ide-cli'
 
@@ -23,6 +23,7 @@ expectType<ManagedWechatWindowCloseEvidence | undefined>(record.windowClose)
 declare const evidence: ManagedWechatWindowCloseEvidence
 expectType<'wechat-devtools-window-close-trace-v1'>(evidence.protocol)
 expectType<ManagedWechatWindowLogCursor[]>(evidence.cursors)
+expectType<ManagedWechatHostIdentity | undefined>(evidence.mainHost)
 expectType<string | undefined>(evidence.dispatchedAt)
 expectType<number | undefined>(evidence.window?.browserWindowId)
 expectType<string | undefined>(evidence.window?.nativeClosedAt)
