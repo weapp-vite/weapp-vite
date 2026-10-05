@@ -156,6 +156,26 @@ describe('automator helpers', () => {
     expect(writeFileMock).not.toHaveBeenCalled()
   })
 
+  it('rejects headless sessions instead of touching DevTools state', async () => {
+    await expect(persistOpenedAutomatorSession({
+      projectPath: mockProjectPath,
+      runtimeProvider: 'headless',
+      wsEndpoint: 'ws://127.0.0.1:19620',
+    })).rejects.toThrow('DEVTOOLS_SESSION_PROVIDER_INVALID')
+    expect(writeFileMock).not.toHaveBeenCalled()
+  })
+
+  it('also persists an unqualified default session when no selector is provided', async () => {
+    await persistOpenedAutomatorSession({
+      cliPath: 'stable-cli',
+      projectPath: mockProjectPath,
+      wsEndpoint: 'ws://127.0.0.1:19620',
+    })
+    expect(writeFileMock).toHaveBeenCalledTimes(2)
+    expect(writeFileMock.mock.calls[0]?.[1]).toContain('"port"')
+    expect(writeFileMock.mock.calls[1]?.[1]).not.toContain('"port"')
+  })
+
   describe('isDevtoolsExtensionContextInvalidatedError', () => {
     it('recognises extension context invalidated errors', () => {
       const error = new Error('Extension context invalidated.')

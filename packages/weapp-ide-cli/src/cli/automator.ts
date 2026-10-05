@@ -142,6 +142,9 @@ export async function launchAutomator(options: AutomatorOptions) {
  */
 export async function persistOpenedAutomatorSession(options: AutomatorOptions & { wsEndpoint: string }) {
   const resolved = await resolveAutomatorSessionOptions(options)
+  if (resolved.runtimeProvider === 'headless' || !resolved.target) {
+    throw new Error('DEVTOOLS_SESSION_PROVIDER_INVALID: external automator sessions require the WeChat DevTools provider.')
+  }
   const endpoint = new URL(options.wsEndpoint)
   if (endpoint.protocol !== 'ws:' || endpoint.hostname !== '127.0.0.1' || !endpoint.port) {
     throw new Error('DEVTOOLS_SESSION_ENDPOINT_INVALID: automator session endpoint must be a loopback websocket.')
@@ -151,7 +154,7 @@ export async function persistOpenedAutomatorSession(options: AutomatorOptions & 
   if (port !== endpointPort) {
     throw new Error(`DEVTOOLS_SESSION_PORT_MISMATCH: endpoint=${endpointPort} option=${port}`)
   }
-  await assertWechatDevtoolsPort(resolved.target!, endpointPort, {
+  await assertWechatDevtoolsPort(resolved.target, endpointPort, {
     signal: options.signal,
     timeout: options.timeout ?? 30_000,
   })
@@ -163,6 +166,14 @@ export async function persistOpenedAutomatorSession(options: AutomatorOptions & 
     signal: options.signal,
     wsEndpoint: options.wsEndpoint,
   })
+  if (!options.port && !options.sessionId) {
+    await persistAutomatorSession({
+      installationId: resolved.installationId,
+      projectPath: options.projectPath,
+      signal: options.signal,
+      wsEndpoint: options.wsEndpoint,
+    })
+  }
 }
 
 /**
