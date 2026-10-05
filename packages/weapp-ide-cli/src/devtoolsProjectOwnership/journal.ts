@@ -7,6 +7,7 @@ import { setTimeout } from 'node:timers/promises'
 import { mutateLease } from '@weapp-vite/devtools-runtime'
 import { z } from 'zod'
 import { readManagedProcessIdentity, sameManagedProcess } from './host'
+import { createManagedChildJournal, initializeManagedJournalScope, managedJournalPrefix, resolveManagedJournalScope } from './journal/scope'
 import { managedWindowCloseSchema } from './windowClose/schema'
 
 export const MANAGED_PROJECT_JOURNAL_ENV = 'WEAPP_IDE_MANAGED_PROJECT_JOURNAL'
@@ -84,10 +85,14 @@ export async function readManagedWechatProjectRecords(journalPath?: string): Pro
   }
   const entries = await fs.readdir(directory, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
     if (error.code === 'ENOENT') {
-      return []
+      return undefined
     }
     throw error
   })
+  if (!entries) {
+    return []
+  }
+  const scope = await resolveManagedJournalScope(directory)
   const records: ManagedWechatProjectRecord[] = []
   for (const entry of entries) {
     if (entry.name.endsWith('.json')) {
@@ -102,7 +107,13 @@ export async function readManagedWechatProjectRecords(journalPath?: string): Pro
         if (!child.isDirectory()) {
           throw new Error('Managed DevTools child journal is not a regular directory.')
         }
-        records.push(...await readManagedWechatProjectRecords(path.join(directory, 'children', child.name)))
+        const childPath = path.join(directory, 'children', child.name)
+        const childScope = await resolveManagedJournalScope(childPath)
+        if ((scope.scopeId !== undefined || childScope.scopeId !== undefined)
+          && (scope.scopeId !== childScope.scopeId || scope.rootPath !== childScope.rootPath)) {
+          throw new Error('Managed DevTools journal scope changed inside its registered children; refusing another task tree.')
+        }
+        records.push(...await readManagedWechatProjectRecords(childPath))
       }
     }
   }
@@ -139,7 +150,7 @@ async function releaseDeadLock(lock: string) {
 }
 
 /** 工作进程退出后父进程可回收其锁；未知身份或不完整锁保持阻塞。 */
-export async function withManagedJournalLock<T>(directory: string, run: () => Promise<T>): Promise<T> {
+async function withManagedJournalDirectoryLock<T>(directory: string, run: () => Promise<T>): Promise<T> {
   await fs.mkdir(directory, { recursive: true, mode: 0o700 })
   const lock = path.join(directory, '.ownership-lock')
   const token = randomUUID()
@@ -186,4 +197,29 @@ export async function withManagedJournalLock<T>(directory: string, run: () => Pr
   finally {
     await releaseLock()
   }
+}
+
+/** 兄弟 journal 的检查和登记共用根锁，关闭、确认和失败更新也不能绕过该边界。 */
+export async function withManagedJournalLock<T>(directory: string, run: (scopeRoot: string) => Promise<T>): Promise<T> {
+  await fs.mkdir(directory, { recursive: true, mode: 0o700 })
+  const scope = await resolveManagedJournalScope(directory)
+  return await withManagedJournalDirectoryLock(scope.rootPath, async () => {
+    const current = await resolveManagedJournalScope(directory)
+    if (current.rootPath !== scope.rootPath || (scope.scopeId !== undefined && current.scopeId !== scope.scopeId)) {
+      throw new Error('Managed DevTools journal scope changed while waiting for its lock.')
+    }
+    return await run(scope.rootPath)
+  })
+}
+
+/** 显式创建任务根或继承父任务作用域；清理仍使用返回的独立子目录。 */
+export async function createManagedWechatProjectJournal(rootDirectory: string, parentJournalPath?: string) {
+  if (parentJournalPath?.trim()) {
+    const parent = path.resolve(parentJournalPath)
+    return await withManagedJournalLock(parent, scopeRoot => createManagedChildJournal(parent, scopeRoot))
+  }
+  await fs.mkdir(rootDirectory, { recursive: true, mode: 0o700 })
+  const directory = await fs.mkdtemp(path.join(rootDirectory, managedJournalPrefix))
+  await initializeManagedJournalScope(directory)
+  return directory
 }

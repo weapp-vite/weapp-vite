@@ -59,7 +59,7 @@ describe('managed project mutation gate', () => {
     mocks.journal.mockReturnValue(journalPath)
     mocks.records.mockResolvedValue([])
     mocks.readRecord.mockImplementation(async (_path: string, id: string) => (await mocks.records() as ManagedWechatProjectRecord[]).find(item => item.id === id))
-    mocks.lock.mockImplementation(async (_path: string, run: () => Promise<unknown>) => await run())
+    mocks.lock.mockImplementation(async (journal: string, run: (root: string) => Promise<unknown>) => await run(journal))
     mocks.inspect.mockResolvedValue(host)
     mocks.installation.mockResolvedValue(undefined)
     mocks.write.mockResolvedValue(undefined)
@@ -114,6 +114,32 @@ describe('managed project mutation gate', () => {
     expect(mocks.inspect).not.toHaveBeenCalled()
   })
 
+  it('blocks an existing healthy leaf project when its task scope contains a failed sibling', async () => {
+    const scopeRoot = path.resolve('fixtures/task-root')
+    const existing = record()
+    const failed = record({ id: 'failed-sibling', journalPath: path.join(scopeRoot, 'children', 'sibling'), state: 'failed' })
+    mocks.lock.mockImplementation(async (_path: string, run: (root: string) => Promise<unknown>) => await run(scopeRoot))
+    mocks.records.mockImplementation(async (selected: string) => selected === scopeRoot ? [existing, failed] : [existing])
+
+    await expect(ensureManagedWechatProject(target, projectPath)).rejects.toThrow('unresolved ownership')
+    expect(mocks.launch).not.toHaveBeenCalled()
+    expect(mocks.inspect).not.toHaveBeenCalled()
+    expect(mocks.write).not.toHaveBeenCalled()
+  })
+
+  it('never borrows a healthy sibling simply because the mutation guard can see its scope', async () => {
+    const scopeRoot = path.resolve('fixtures/task-root')
+    const sibling = record({ journalPath: path.join(scopeRoot, 'children', 'sibling') })
+    mocks.lock.mockImplementation(async (_path: string, run: (root: string) => Promise<unknown>) => await run(scopeRoot))
+    mocks.records.mockImplementation(async (selected: string) => selected === scopeRoot ? [sibling] : [])
+    const failure = new Error('new leaf launch attempted')
+    mocks.launch.mockRejectedValueOnce(failure)
+
+    await expect(ensureManagedWechatProject(target, projectPath)).rejects.toBe(failure)
+    expect(mocks.launch).toHaveBeenCalledOnce()
+    expect(mocks.inspect).not.toHaveBeenCalled()
+  })
+
   it.each([
     { projectPath: path.resolve('fixtures/another-project') },
     { target: { ...target, installationId: 'different-installation' } },
@@ -164,9 +190,11 @@ describe('managed project mutation gate', () => {
     const existing = record()
     mocks.records.mockResolvedValue([existing])
     mocks.inspect.mockRejectedValue(new Error('listener missing'))
-    mocks.lock.mockImplementation(async (_path: string, run: () => Promise<unknown>) => {
-      existing.state = 'released'
-      return await run()
+    mocks.lock.mockImplementation(async (journal: string, run: (root: string) => Promise<unknown>) => {
+      if (mocks.inspect.mock.calls.length) {
+        existing.state = 'released'
+      }
+      return await run(journal)
     })
     await expect(ensureManagedWechatProject(target, projectPath)).rejects.toThrow('listener missing')
     expect(mocks.readRecord).toHaveBeenCalledExactlyOnceWith(journalPath, existing.id)

@@ -101,8 +101,8 @@ export async function beginManagedWechatProject(options: BeginManagedWechatProje
     return undefined
   }
   const id = randomUUID()
-  await withManagedJournalLock(journalPath, async () => {
-    const previous = await readManagedWechatProjectRecords(journalPath)
+  await withManagedJournalLock(journalPath, async (scopeRoot) => {
+    const previous = await readManagedWechatProjectRecords(scopeRoot)
     if (previous.some(record => ['starting', 'unconfirmed', 'closing', 'failed'].includes(record.state))) {
       throw new Error('Managed DevTools journal contains unresolved ownership or cleanup; refusing another project start.')
     }

@@ -1,16 +1,14 @@
-import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { cleanupManagedWechatProjects, MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { createManagedWechatProjectJournal } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
 
 const ownedCleanups = new Set<() => Promise<void>>()
 const JOURNAL_ROOT = path.resolve(import.meta.dirname, '../../.tmp/e2e-managed-devtools-projects')
 
 /** 每个任务单独登记窗口；嵌套任务仍归属父任务的日志树。 */
 export async function createDevtoolsProjectJournal(parentJournalPath = process.env[MANAGED_PROJECT_JOURNAL_ENV]) {
-  const root = parentJournalPath ? path.join(parentJournalPath, 'children') : JOURNAL_ROOT
-  await fs.mkdir(root, { recursive: true })
-  return fs.mkdtemp(path.join(root, 'task-'))
+  return await createManagedWechatProjectJournal(JOURNAL_ROOT, parentJournalPath)
 }
 
 /** 直接运行 Vitest 时也为本轮 worker 建立独占窗口日志。 */
