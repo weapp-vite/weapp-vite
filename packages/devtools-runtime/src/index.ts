@@ -5,6 +5,7 @@ import type {
 } from './mcp'
 
 export * from './lease'
+export { mutateLease } from './lease/directory'
 export * from './lease/machine'
 export {
   readDevtoolsElementSnapshot,

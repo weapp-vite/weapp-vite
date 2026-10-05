@@ -1,3 +1,4 @@
+import type { BenchWorkerEvidence } from './runtimeBench/evidence'
 import type { BenchUpdateSample, BenchUpdateSummary, WorkerResult } from './runtimeBench/types'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -119,10 +120,21 @@ beforeEach(async () => {
       status: failure ? 'failed' : 'passed',
       samples: [{ scenario: 'firstScreen', index: 0, sample: result.firstScreen.samples![0] }],
       failures: failure === 'sample' ? ['later sample failed'] : [],
+      attemptFailures: [],
       cleanupErrors: failure === 'cleanup' ? ['owned close failed'] : [],
-      resources: [{ id: 'session-1', projectPath: 'owned-snapshot', cliPath: 'selected-cli', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415, status: resourcesClosed ? 'closed' : 'owned', projectClosed: resourcesClosed, portClosed: resourcesClosed }],
+      resources: [{
+        id: 'session-1',
+        projectPath: 'owned-snapshot',
+        cliPath: 'selected-cli',
+        wsEndpoint: 'ws://127.0.0.1:9415',
+        port: 9415,
+        managedProject: { id: `${preset}-confirmed-owner`, journalPath: path.join(consumerRoot, preset, 'managed-project-journal') },
+        status: resourcesClosed ? 'closed' : 'owned',
+        projectClosed: resourcesClosed,
+        portClosed: resourcesClosed,
+      }],
       result: failure === 'sample' ? undefined : result,
-    }
+    } satisfies BenchWorkerEvidence
     await fs.writeFile(options.env!.WEVU_BENCH_EVIDENCE_PATH!, JSON.stringify(evidence))
     if (failure) {
       throw new Error(`worker ${failure} failed`)
@@ -201,6 +213,12 @@ describe('published benchmark acceptance and retention', () => {
     expect(await run()).toMatchObject({ complete: true, collectionComplete: true, equivalentInputs: true, cleanup: { consumers: 'removed', errors: [] } })
     expect((await report()).results.performance?.evidence?.status).toBe('passed')
     for (const preset of ['normal', 'performance']) {
+      expect((await report()).results[preset]!.evidence!.resources).toEqual([expect.objectContaining({
+        managedProject: { id: `${preset}-confirmed-owner`, journalPath: path.join('<consumer>', preset, 'managed-project-journal') },
+        status: 'closed',
+        projectClosed: true,
+        portClosed: true,
+      })])
       const logs = (await report()).results[preset]!.logs!
       expect(await fs.readFile(path.join(path.dirname(output), logs.stdout), 'utf8')).toContain('bridge attempt 1\nbridge attempt 2')
       expect(await fs.readFile(path.join(path.dirname(output), logs.stderr), 'utf8')).toBe('runtime warning\n')

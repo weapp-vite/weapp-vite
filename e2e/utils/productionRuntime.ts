@@ -1,8 +1,7 @@
 import type { RuntimeProviderName } from './runtimeProvider'
 import path from 'node:path'
 import process from 'node:process'
-// eslint-disable-next-line e18e/ban-dependencies
-import { execa } from 'execa'
+import { MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 
 interface RuntimeSession {
   close: () => Promise<unknown>
@@ -24,7 +23,8 @@ export function createProductionRuntime<T extends RuntimeSession>(options: Produ
   if (options.provider === 'devtools' && !cliPath) {
     throw new Error('Production runtime requires an explicitly selected WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH')
   }
-  let owned: { session: T, protocolReleased: boolean, projectClosed: boolean } | undefined
+  let owned: { session: T, releasePending: boolean } | undefined
+  let launchFailed = false
   let opening: Promise<T> | undefined
   let closing: Promise<void> | undefined
 
@@ -32,39 +32,16 @@ export function createProductionRuntime<T extends RuntimeSession>(options: Produ
     if (closing) {
       return closing
     }
+    const pendingOpen = opening
     closing = (async () => {
-      await opening
+      await pendingOpen
       if (!owned) {
         return
       }
-      const failures: unknown[] = []
-      if (!owned.protocolReleased) {
-        // 即使 Tool.close 不可用，也只释放一次拥有的连接，再按精确项目关闭 IDE 窗口。
-        owned.protocolReleased = true
-        try {
-          await owned.session.close()
-        }
-        catch (error) {
-          failures.push(error)
-        }
-      }
-      if (!owned.projectClosed) {
-        try {
-          if (cliPath) {
-            await execa(cliPath, ['close', '--project', projectPath], { timeout: 30_000, windowsHide: true })
-          }
-          owned.projectClosed = true
-        }
-        catch (error) {
-          failures.push(error)
-        }
-      }
-      if (owned.protocolReleased && owned.projectClosed) {
-        owned = undefined
-      }
-      if (failures.length) {
-        throw new AggregateError(failures, 'Production runtime resources did not close cleanly')
-      }
+      // 启动成功不授予窗口所有权；受管会话负责验证、关窗、断连及失败后的幂等重试。
+      owned.releasePending = true
+      await owned.session.close()
+      owned = undefined
     })()
     try {
       await closing
@@ -75,17 +52,31 @@ export function createProductionRuntime<T extends RuntimeSession>(options: Produ
   }
 
   function open() {
+    const pendingClose = closing
     opening ??= (async () => {
-      await closing
+      await pendingClose
+      if (launchFailed) {
+        throw new Error('Previous production launch failed; its managed project journal must be recovered before retrying')
+      }
       if (owned) {
-        if (owned.protocolReleased) {
+        if (owned.releasePending) {
           throw new Error('Previous production project has not closed; refusing to load another generation')
         }
         return owned.session
       }
-      const session = await options.launch({ projectPath, cliPath })
-      owned = { session, protocolReleased: false, projectClosed: false }
-      return session
+      // describe 阶段只声明代际；direct Vitest 的 setup 会在 beforeAll 中登记 journal。
+      if (options.provider === 'devtools' && !process.env[MANAGED_PROJECT_JOURNAL_ENV]?.trim()) {
+        throw new Error(`Production runtime requires a managed project journal: ${MANAGED_PROJECT_JOURNAL_ENV}`)
+      }
+      try {
+        const session = await options.launch({ projectPath, cliPath })
+        owned = { session, releasePending: false }
+        return session
+      }
+      catch (error) {
+        launchFailed = options.provider === 'devtools'
+        throw error
+      }
     })()
     const current = opening
     return current.finally(() => {

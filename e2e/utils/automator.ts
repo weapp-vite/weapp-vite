@@ -9,13 +9,16 @@ import { Automator, isRecoverableOperationError } from '@weapp-vite/miniprogram-
 import { execa } from 'execa'
 import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/cli/engine'
 import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from '../../packages/weapp-ide-cli/src/cli/http'
+import { ensureManagedWechatProject } from '../../packages/weapp-ide-cli/src/cli/managedProjectGate'
 import { setRuntimeWechatDevtoolsServicePort } from '../../packages/weapp-ide-cli/src/cli/wechatDevtoolsRuntimePort'
+import { cleanupManagedWechatProjects, closeManagedWechatProject, MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { normalizeRuntimeConsoleText } from '../ide/runtimeErrors'
 import { extractWechatDevtoolsServicePort } from './automator.cli-bridge'
 import { launchHeadlessAutomator } from './automator.headless'
 import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './automatorBridgeFiles'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
 import { resolveWechatCliPath } from './devtoolsCli'
+import { createDevtoolsProjectJournal, ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 import { assertSelectedWechatDevtoolsRuntime, resolveSelectedWechatDevtools } from './devtoolsSelection'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 import { captureDevtoolsLogBaseline, scanRecentDevtoolsSimulatorBootIssues } from './ide-devtools-logs'
@@ -23,6 +26,7 @@ import {
   appendIdeReportEvent,
   resolveReportProjectPath,
 } from './ideWarningReport'
+import { attachManagedProjectSession } from './managedProjectSession'
 import { registerRuntimeConsoleSession } from './runtimeConsoleSessions'
 import { createRuntimeLogSubscription } from './runtimeLogSubscription'
 import {
@@ -310,6 +314,13 @@ class DevtoolsSimulatorBootLogError extends Error {
   }
 }
 
+class ManagedEngineBuildGateError extends Error {
+  constructor(cause: unknown) {
+    super('Managed DevTools project verification failed before engine build; stop launch recovery.', { cause })
+    this.name = 'ManagedEngineBuildGateError'
+  }
+}
+
 interface LaunchAppConfigValidationResult {
   ready: boolean
   reason?: string
@@ -324,7 +335,7 @@ interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
   /** 仅通知本次实际创建的独立快照，允许调用者登记失败启动的资源。 */
   onOwnedSnapshot?: (project: { projectPath: string, cliPath: string }) => Promise<void>
   /** 在桥接握手前暴露已获得的端点，不转移共享 IDE 宿主所有权。 */
-  onSessionMetadata?: (metadata: { projectPath: string, wsEndpoint: string, port: number }) => Promise<void>
+  onSessionMetadata?: (metadata: { projectPath: string, wsEndpoint: string, port: number, managedProject?: { id: string, journalPath: string } }) => Promise<void>
   configureHeadlessSession?: HeadlessAutomatorLaunchOptions['configureSession']
   /** HMR 验收直连构建器输出；snapshot 仅用于需要独立项目快照的验收。 */
   bridgeProjectMode?: AutomatorBridgeProjectMode
@@ -355,6 +366,7 @@ interface AutomatorCliBridgePayload {
 interface AutomatorCliBridgeResult {
   servicePort?: number
   wsEndpoint: string
+  managedProject?: { id: string, journalPath: string }
 }
 
 function patchNetListenToLoopback() {
@@ -1586,8 +1598,8 @@ function createDevtoolsLoginRequiredError(error: unknown) {
   return next
 }
 
-function isLikelyLaunchRetryableError(error: unknown) {
-  if (isDevtoolsLoginRequiredError(error)) {
+export function isLikelyLaunchRetryableError(error: unknown) {
+  if (error instanceof ManagedEngineBuildGateError || isDevtoolsLoginRequiredError(error)) {
     return false
   }
 
@@ -1921,6 +1933,7 @@ export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: str
 
   const rawClose = miniProgram.close.bind(miniProgram)
   const rawDisconnect = typeof miniProgram.disconnect === 'function' ? miniProgram.disconnect.bind(miniProgram) : undefined
+  let closePromise: Promise<any> | undefined
   if (rawDisconnect) {
     miniProgram.disconnect = (...args: any[]) => {
       if (meta.closed) {
@@ -1934,40 +1947,45 @@ export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: str
       }
     }
   }
-  miniProgram.close = async (...args: any[]) => {
-    if (meta.closed || meta.closing) {
-      return
-    }
-    meta.closing = true
-    try {
-      let flushFailed = false
-      let flushError: unknown
+  miniProgram.close = (...args: any[]) => {
+    closePromise ??= (async () => {
+      meta.closing = true
       try {
-        await miniProgram.flushConsole?.()
-      }
-      catch (error) {
-        flushFailed = true
-        flushError = error
-      }
-      let result
-      try {
-        result = await rawClose(...args)
-      }
-      catch (error) {
-        if (flushFailed) {
-          throw new AggregateError([flushError, error], 'Console inspection and session close both failed')
+        let flushFailed = false
+        let flushError: unknown
+        try {
+          if (!meta.closed) {
+            await miniProgram.flushConsole?.()
+          }
         }
-        throw error
+        catch (error) {
+          flushFailed = true
+          flushError = error
+        }
+        let result
+        try {
+          result = await rawClose(...args)
+        }
+        catch (error) {
+          if (flushFailed) {
+            throw new AggregateError([flushError, error], 'Console inspection and session close both failed')
+          }
+          throw error
+        }
+        if (flushFailed) {
+          throw flushError
+        }
+        return result
       }
-      if (flushFailed) {
-        throw flushError
+      finally {
+        meta.closing = false
+        finalizeRuntimeLogMeta(meta)
       }
-      return result
-    }
-    finally {
-      meta.closing = false
-      finalizeRuntimeLogMeta(meta)
-    }
+    })().catch((error: unknown) => {
+      closePromise = undefined
+      throw error
+    })
+    return closePromise
   }
 
   return miniProgram
@@ -2277,7 +2295,23 @@ async function runWechatIdeEngineBuildByRuntimeHttp(projectPath: string, project
   }
 }
 
-async function refreshMiniProgramProjectIndex(
+async function confirmManagedEngineBuildProject(cliPath: string, projectPath: string, lifecycle?: AutomatorLaunchLifecycle) {
+  if (!process.env[MANAGED_PROJECT_JOURNAL_ENV]?.trim()) {
+    return
+  }
+  try {
+    const target = await resolveSelectedWechatDevtools(cliPath)
+    await ensureManagedWechatProject(target, projectPath, { signal: lifecycle?.signal })
+  }
+  catch (error) {
+    lifecycle?.throwIfAborted()
+    // 原始监听错误可能含 ECONNREFUSED 等可重试文字，但所有权失败不能进入启动恢复。
+    throw new ManagedEngineBuildGateError(error)
+  }
+  lifecycle?.throwIfAborted()
+}
+
+export async function refreshMiniProgramProjectIndex(
   projectPath: string | undefined,
   project: string,
   options: { allowCliEngineBuildFallback?: boolean, cliPath?: string, cwd?: string, engineBuildFallbackSettleMs?: number, refreshProject?: boolean, lifecycle?: AutomatorLaunchLifecycle } = {},
@@ -2339,6 +2373,7 @@ async function refreshMiniProgramProjectIndex(
         return
       }
       const cliPath = resolveWechatCliPath(options.cliPath)
+      await confirmManagedEngineBuildProject(cliPath, projectPath, lifecycle)
       const build = () => execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
         cwd: options.cwd,
         reject: false,
@@ -2381,7 +2416,7 @@ async function refreshMiniProgramProjectIndex(
   process.stdout.write(`[info] [runtime:launch-step] engine-build-ready project=${project}\n`)
 }
 
-async function prebuildAutomatorProjectIndex(
+export async function prebuildAutomatorProjectIndex(
   projectPath: string | undefined,
   project: string,
   options: { cliPath?: string, cwd?: string, lifecycle?: AutomatorLaunchLifecycle } = {},
@@ -2394,6 +2429,7 @@ async function prebuildAutomatorProjectIndex(
 
   const cliPath = resolveWechatCliPath(options.cliPath)
   process.stdout.write(`[info] [runtime:launch-step] prebuild-start project=${project}\n`)
+  await confirmManagedEngineBuildProject(cliPath, projectPath, lifecycle)
   const build = () => execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
     cwd: options.cwd,
     reject: false,
@@ -2579,24 +2615,30 @@ function isRecoverableBridgeConnectError(error: unknown) {
   return isRecoverableOperationError(error)
 }
 
-export async function launchAutomatorViaCliBridge(
+async function connectAutomatorViaCliBridge(
   options: AutomatorCliBridgePayload,
   project: string,
   lifecycle: AutomatorLaunchLifecycle,
   monitor?: ReturnType<typeof createDevtoolsSimulatorBootLogMonitor>,
   onSessionMetadata?: LaunchAutomatorOptions['onSessionMetadata'],
+  cleanupAttempt?: () => Promise<void>,
+  journalPath?: string,
 ) {
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-start project=${project}\n`)
-  const result = await lifecycle.step(() => execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify({ ...options, timeout: lifecycle.remainingMs(options.timeout) })], {
+  // 直接等待真实子进程完成；lifecycle.step 的取消 race 不能作为窗口收尾的进程退出证据。
+  const result = await execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify({ ...options, timeout: lifecycle.remainingMs(options.timeout) })], {
     cwd: options.cwd,
     reject: false,
     cancelSignal: lifecycle.signal,
     gracefulCancel: true,
+    killDescendants: false,
     env: {
       ...process.env,
       [AUTOMATOR_LAUNCH_MODE_ENV]: '',
+      ...(journalPath ? { [MANAGED_PROJECT_JOURNAL_ENV]: journalPath } : {}),
     },
-  }), { stage: 'bridge-bootstrap', waitForExit: true })
+  })
+  lifecycle.throwIfAborted()
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-exit code=${result.exitCode ?? 1} project=${project}\n`)
 
   if ((result.exitCode ?? 1) !== 0) {
@@ -2624,10 +2666,20 @@ export async function launchAutomatorViaCliBridge(
   if (!bridgeResult.wsEndpoint || typeof bridgeResult.wsEndpoint !== 'string') {
     throw new Error(`Invalid automator cli bridge output: ${rawStdout}`)
   }
+  if (process.env[MANAGED_PROJECT_JOURNAL_ENV] && !bridgeResult.managedProject) {
+    throw new Error('Managed automator bridge did not return project ownership evidence')
+  }
+  const closeProject = bridgeResult.managedProject
+    ? ownDevtoolsCleanup(() => closeManagedWechatProject(bridgeResult.managedProject!))
+    : cleanupAttempt
+  if (closeProject) {
+    lifecycle.own(closeProject, 'project-window')
+  }
   await onSessionMetadata?.({
     projectPath: options.projectPath!,
     wsEndpoint: bridgeResult.wsEndpoint,
     port: Number(new URL(bridgeResult.wsEndpoint).port),
+    ...(bridgeResult.managedProject ? { managedProject: bridgeResult.managedProject } : {}),
   })
   lifecycle.throwIfAborted()
   if (typeof bridgeResult.servicePort === 'number') {
@@ -2688,15 +2740,49 @@ export async function launchAutomatorViaCliBridge(
     text: `connected=${bridgeResult.wsEndpoint}`,
   })
   const endpointPort = new URL(bridgeResult.wsEndpoint).port
+  if (closeProject) {
+    attachManagedProjectSession(miniProgram, closeProject)
+  }
   Reflect.set(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA', {
     port: Number.parseInt(endpointPort, 10),
     projectPath: options.projectPath,
     wsEndpoint: bridgeResult.wsEndpoint,
+    ...(bridgeResult.managedProject ? { managedProject: bridgeResult.managedProject } : {}),
   })
   const releaseSession = lifecycle.own(() => disconnectLaunchSession(miniProgram))
   await lifecycle.pause(BRIDGE_CONNECT_SETTLE_DELAY)
   releaseSession()
   return miniProgram
+}
+
+export async function launchAutomatorViaCliBridge(
+  options: AutomatorCliBridgePayload,
+  project: string,
+  lifecycle: AutomatorLaunchLifecycle,
+  monitor?: ReturnType<typeof createDevtoolsSimulatorBootLogMonitor>,
+  onSessionMetadata?: LaunchAutomatorOptions['onSessionMetadata'],
+  onManagedProject?: (close: () => Promise<void>) => void,
+) {
+  const parentJournal = process.env[MANAGED_PROJECT_JOURNAL_ENV]
+  const journalPath = parentJournal ? await createDevtoolsProjectJournal(parentJournal) : undefined
+  const cleanupAttempt = journalPath
+    ? ownDevtoolsCleanup(() => cleanupManagedWechatProjects({ journalPath, scope: 'journal' }))
+    : undefined
+  if (cleanupAttempt) {
+    onManagedProject?.(cleanupAttempt)
+  }
+  try {
+    return await connectAutomatorViaCliBridge(options, project, lifecycle, monitor, onSessionMetadata, cleanupAttempt, journalPath)
+  }
+  catch (error) {
+    try {
+      await cleanupAttempt?.()
+    }
+    catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], 'IDE bridge failed and its project cleanup did not complete')
+    }
+    throw error
+  }
 }
 
 function attachBridgeWrapperSyncCleanup(miniProgram: any, bridgeWrapperProject: BridgeWrapperProject | undefined) {
@@ -2756,7 +2842,8 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   const { configureHeadlessSession: _configureHeadlessSession, onOwnedSnapshot, onSessionMetadata, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
-  rest.cliPath = resolveWechatCliPath(rest.cliPath)
+  const selectedCliPath = resolveWechatCliPath(rest.cliPath)
+  rest.cliPath = selectedCliPath
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
@@ -2767,9 +2854,11 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   let forceProjectRefreshAfterRetry = false
   const operation = new AutomatorLaunchLifecycle(launchTimeout, 'launch automator')
   return (async () => {
-    const selectedTarget = await resolveSelectedWechatDevtools(rest.cliPath)
+    const selectedTarget = await resolveSelectedWechatDevtools(selectedCliPath)
     for (let attempt = 1; attempt <= launchRetries; attempt += 1) {
       let miniProgram: any = null
+      let bridgeLaunch: Promise<any> | undefined
+      let closeAttemptProject: (() => Promise<void>) | undefined
       let bridgeWrapperProject: BridgeWrapperProject | undefined
       let runtimeLogSubscription: ReturnType<typeof createRuntimeLogSubscription> | undefined
       const attemptBudget = operation.remainingMs(launchAttemptTimeout)
@@ -2817,7 +2906,8 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             const shouldPrebuild = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
               ? shouldPrebuildAutomatorBridgeProject()
               : shouldPrebuildAutomatorProject()
-            if (shouldPrebuild) {
+            const managedProject = Boolean(process.env[MANAGED_PROJECT_JOURNAL_ENV])
+            if (shouldPrebuild && !managedProject) {
               await lifecycle.step(() => prebuildAutomatorProjectIndex(launchProjectPath, project, {
                 cliPath: rest.cliPath,
                 cwd: rest.cwd,
@@ -2826,8 +2916,10 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             }
             lifecycle.throwIfAborted()
             process.stdout.write(`[info] [runtime:launch-step] connect-start mode=${launchMode || 'direct'} project=${project}\n`)
-            miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
-              ? await launchAutomatorViaCliBridge(launchOptions, project, lifecycle, devtoolsLogMonitor, onSessionMetadata)
+            miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE || Boolean(process.env[MANAGED_PROJECT_JOURNAL_ENV])
+              ? await (bridgeLaunch = launchAutomatorViaCliBridge(launchOptions, project, lifecycle, devtoolsLogMonitor, onSessionMetadata, (close) => {
+                  closeAttemptProject = close
+                }))
               : await lifecycle.step(() => runWithDevtoolsLogMonitor(
                   () => automator.launch({ ...launchOptions, signal: lifecycle.signal, timeout: lifecycle.remainingMs(launchTimeout) }),
                   lifecycle.remainingMs(launchTimeout),
@@ -2842,6 +2934,14 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                   },
                 ), { disposeLate: disconnectLaunchSession })
             lifecycle.own(() => disconnectLaunchSession(miniProgram), 'automator-session')
+            // engine build 可能先开项目；受管任务必须先取得 agent start 的窗口回执。
+            if (shouldPrebuild && managedProject) {
+              await lifecycle.step(() => prebuildAutomatorProjectIndex(launchProjectPath, project, {
+                cliPath: rest.cliPath,
+                cwd: rest.cwd,
+                lifecycle,
+              }))
+            }
             await lifecycle.step(() => assertSelectedWechatDevtoolsRuntime(selectedTarget, miniProgram))
             lifecycle.throwIfAborted()
             devtoolsLogMonitor.assertClean(`connect ${launchMode || 'direct'}`)
@@ -2925,6 +3025,14 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         )
       }
       catch (caughtError) {
+        // 启动 deadline 不截断窗口收尾；等待子桥接退出后才能重试或开始下一项目。
+        await bridgeLaunch?.catch(() => {})
+        try {
+          await closeAttemptProject?.()
+        }
+        catch (cleanupError) {
+          throw new AggregateError([caughtError, cleanupError], 'IDE launch failed and its project window could not be released')
+        }
         const error = runtimeLogSubscription?.normalizeError(caughtError) ?? caughtError
         runtimeLogSubscription?.abort(error)
         if (

@@ -45,12 +45,18 @@ it('rejects incomplete sequences before launching a child', async () => {
 it('waits for cancellation cleanup before releasing the lease and starting another sequence', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'e2e-command-cancel-'))
   const marker = path.join(root, 'child')
+  const nextMarker = path.join(root, 'next')
   const controller = new AbortController()
   const running = runE2ECommands([
     process.execPath,
     '-e',
     'require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 1000)',
     marker,
+    '--next',
+    process.execPath,
+    '-e',
+    'require("node:fs").writeFileSync(process.argv[1], "must-not-run")',
+    nextMarker,
   ], controller.signal)
   try {
     await vi.waitFor(async () => {
@@ -60,6 +66,7 @@ it('waits for cancellation cleanup before releasing the lease and starting anoth
     controller.abort()
     expect(await running).not.toBe(0)
     expect(() => process.kill(childPid, 0)).toThrow()
+    await expect(readFile(nextMarker, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
     expect(await runE2ECommands([process.execPath, '-e', 'process.exit(0)'])).toBe(0)
   }
   finally {

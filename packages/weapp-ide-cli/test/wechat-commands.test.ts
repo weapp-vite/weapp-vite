@@ -1,14 +1,21 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import path from 'node:path'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const runWechatCliCommandMock = vi.hoisted(() => vi.fn())
 const openWechatIdeProjectByHttpMock = vi.hoisted(() => vi.fn())
 const resetWechatIdeFileUtilsByHttpMock = vi.hoisted(() => vi.fn())
 const withMiniProgramMock = vi.hoisted(() => vi.fn())
 const resolveTargetMock = vi.hoisted(() => vi.fn())
+const resolveSelectedTargetMock = vi.hoisted(() => vi.fn())
 const withMachineLeaseMock = vi.hoisted(() => vi.fn())
+const ensureManagedProjectMock = vi.hoisted(() => vi.fn())
 const target = vi.hoisted(() => ({ cliPath: 'selected-cli', appPath: 'selected-app', profileDir: 'selected-profile', installationId: 'selected' }))
 
 vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: withMachineLeaseMock }))
+
+vi.mock('../src/devtoolsTarget', () => ({
+  resolveWechatDevtoolsTarget: resolveSelectedTargetMock,
+}))
 
 vi.mock('../src/cli/run-wechat-cli', () => ({
   runWechatCliCommand: runWechatCliCommandMock,
@@ -24,6 +31,8 @@ vi.mock('../src/cli/automator-session', () => ({
   withMiniProgram: withMiniProgramMock,
 }))
 
+vi.mock('../src/cli/managedProjectGate', () => ({ ensureManagedWechatProject: ensureManagedProjectMock }))
+
 function createPathSuffixPattern(suffix: string) {
   const escaped = suffix
     .split('/')
@@ -35,7 +44,10 @@ function createPathSuffixPattern(suffix: string) {
 describe('wechat command helpers', () => {
   beforeEach(() => {
     vi.resetModules()
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', '')
+    ensureManagedProjectMock.mockReset()
     resolveTargetMock.mockReset().mockResolvedValue(target)
+    resolveSelectedTargetMock.mockReset().mockResolvedValue(target)
     withMachineLeaseMock.mockReset().mockImplementation(async run => await run())
     runWechatCliCommandMock.mockReset()
     runWechatCliCommandMock.mockResolvedValue(undefined)
@@ -54,6 +66,8 @@ describe('wechat command helpers', () => {
       toolInfo: vi.fn(async () => ({ SDKVersion: '3.0.0' })),
     }))
   })
+
+  afterEach(() => vi.unstubAllEnvs())
 
   it('builds login argv with normalized output paths', async () => {
     const { loginWechatIde } = await import('../src/cli/wechat-commands')
@@ -114,6 +128,34 @@ describe('wechat command helpers', () => {
     ], { target })
     expect(resolveTargetMock).toHaveBeenCalledTimes(1)
     expect(withMachineLeaseMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses the managed project gate before opening a project', async () => {
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', path.resolve('task-journal'))
+    const { openWechatIde } = await import('../src/cli/wechat-commands')
+    await openWechatIde({ projectPath: 'fixture', trustProject: true })
+    expect(ensureManagedProjectMock).toHaveBeenCalledExactlyOnceWith(target, 'fixture', { trustProject: true })
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(runWechatCliCommandMock).not.toHaveBeenCalled()
+  })
+
+  it('never falls back to HTTP or native open after managed ownership or startup fails', async () => {
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', path.resolve('task-journal'))
+    const failure = new Error('Managed project ownership is unconfirmed')
+    ensureManagedProjectMock.mockRejectedValue(failure)
+    const { openWechatIde } = await import('../src/cli/wechat-commands')
+    await expect(openWechatIde({ projectPath: 'fixture' })).rejects.toBe(failure)
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(runWechatCliCommandMock).not.toHaveBeenCalled()
+  })
+
+  it('requires a project path for managed open instead of opening an untracked appid window', async () => {
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', path.resolve('task-journal'))
+    const { openWechatIde } = await import('../src/cli/wechat-commands')
+    await expect(openWechatIde({ appid: 'fixture-appid' })).rejects.toThrow('explicit project path')
+    expect(ensureManagedProjectMock).not.toHaveBeenCalled()
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(runWechatCliCommandMock).not.toHaveBeenCalled()
   })
 
   it.each(['WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH', 'WECHAT_DEVTOOLS_INSTALLATION_SELECTION_CONFLICT'])('does not replace an installation failure with a CLI fallback: %s', async (code) => {
@@ -356,6 +398,65 @@ describe('wechat command helpers', () => {
     expect(runWechatCliCommandMock).toHaveBeenCalledWith(['close'], {
       timeout: 10_000,
     })
+    expect(resolveSelectedTargetMock).not.toHaveBeenCalled()
+  })
+
+  it('closes only the explicitly selected project', async () => {
+    const { closeWechatIdeProject } = await import('../src/cli/wechat-commands')
+    const projectPath = path.join('fixtures', 'owned project')
+
+    await closeWechatIdeProject({ projectPath })
+
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith(['close', '--project', path.resolve(projectPath)], {
+      timeout: 10_000,
+    })
+    expect(resolveSelectedTargetMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { target },
+    { cliPath: target.cliPath },
+    { target, cliPath: target.cliPath },
+  ])('keeps the selected installation when closing a project: %j', async (selection) => {
+    const { closeWechatIdeProject } = await import('../src/cli/wechat-commands')
+    const projectPath = path.join('fixtures', 'owned project')
+
+    await closeWechatIdeProject({ projectPath, ...selection })
+
+    expect(resolveSelectedTargetMock).toHaveBeenCalledWith(selection)
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith(['close', '--project', path.resolve(projectPath)], {
+      target,
+      timeout: 10_000,
+    })
+  })
+
+  it('does not close any project when explicit installation selection fails', async () => {
+    const selectionError = new Error('Selected installation conflicts with CLI path')
+    resolveSelectedTargetMock.mockRejectedValue(selectionError)
+    const { closeWechatIdeProject } = await import('../src/cli/wechat-commands')
+
+    await expect(closeWechatIdeProject({
+      projectPath: 'fixture',
+      target,
+      cliPath: 'another-cli',
+    })).rejects.toBe(selectionError)
+
+    expect(resolveSelectedTargetMock).toHaveBeenCalledWith({ target, cliPath: 'another-cli' })
+    expect(runWechatCliCommandMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { projectPath: '' },
+    { projectPath: '   ' },
+    { projectPath: 'fixture', cliPath: '' },
+    { projectPath: 'fixture', cliPath: '   ', target },
+  ])('rejects empty explicit close options instead of falling back: %j', async (options) => {
+    const { closeWechatIdeProject } = await import('../src/cli/wechat-commands')
+
+    await expect(closeWechatIdeProject(options)).rejects.toThrow(/must not be empty/)
+
+    expect(resolveSelectedTargetMock).not.toHaveBeenCalled()
+    expect(runWechatCliCommandMock).not.toHaveBeenCalled()
   })
 
   it('runs quit through official cli wrapper', async () => {

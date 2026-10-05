@@ -2,8 +2,11 @@ import type { ResolvedWechatDevtoolsTarget } from '../devtoolsTarget'
 import path from 'node:path'
 import process from 'node:process'
 import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
+import { MANAGED_PROJECT_JOURNAL_ENV } from '../devtoolsProjectOwnership'
+import { resolveWechatDevtoolsTarget } from '../devtoolsTarget'
 import { withMiniProgram } from './automator-session'
 import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from './http'
+import { ensureManagedWechatProject } from './managedProjectGate'
 import { resolveWechatCliCommandTarget, runWechatCliCommand } from './run-wechat-cli'
 
 export interface LoginWechatIdeOptions {
@@ -80,6 +83,12 @@ export interface AutoReplayWechatIdeOptions {
 
 export interface OpenWechatIdeOtherProjectOptions {
   projectPath?: string
+}
+
+export interface CloseWechatIdeProjectOptions {
+  projectPath?: string
+  cliPath?: string
+  target?: ResolvedWechatDevtoolsTarget
 }
 
 export interface ClearWechatIdeCacheOptions {
@@ -198,6 +207,13 @@ export async function openWechatIde(options: OpenWechatIdeOptions = {}) {
   return await withMachineE2ELease(async () => {
     const target = await resolveWechatCliCommandTarget()
     if (target) {
+      if (process.env[MANAGED_PROJECT_JOURNAL_ENV]?.trim()) {
+        if (!options.projectPath) {
+          throw new Error('Managed DevTools open requires an explicit project path; no project was opened.')
+        }
+        await ensureManagedWechatProject(target, options.projectPath, { trustProject: options.trustProject })
+        return
+      }
       return await openSelectedWechatIde(options, target)
     }
   })
@@ -378,8 +394,21 @@ export async function uploadWechatIde(options: UploadWechatIdeOptions) {
 /**
  * @description 调用微信开发者工具 close 命令。
  */
-export async function closeWechatIdeProject() {
-  await runWechatCliCommand(['close'], {
+export async function closeWechatIdeProject(options: CloseWechatIdeProjectOptions = {}) {
+  if (options.projectPath !== undefined && !options.projectPath.trim()) {
+    throw new Error('The explicit close projectPath must not be empty.')
+  }
+  if (options.cliPath !== undefined && !options.cliPath.trim()) {
+    throw new Error('The explicit close cliPath must not be empty.')
+  }
+  const argv = ['close']
+  appendProjectLocatorArgv(argv, options)
+  const target = options.target || options.cliPath
+    ? await resolveWechatDevtoolsTarget({ target: options.target, cliPath: options.cliPath })
+    : undefined
+
+  await runWechatCliCommand(argv, {
+    ...(target ? { target } : {}),
     timeout: DEVTOOLS_SHUTDOWN_TIMEOUT_MS,
   })
 }

@@ -3,6 +3,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { setTimeout } from 'node:timers/promises'
+import { assertNoIncompleteMachineScopes } from './machineScopeState'
 
 export interface LeaseOwner {
   pid: number
@@ -36,9 +37,14 @@ export async function readLeaseOwner(file: string): Promise<LeaseOwner | undefin
 }
 
 /** 注册、释放和过期回收共享短临界区；归属未知的临界区不自动删除。 */
-export async function mutateLease<T>(directory: string, run: () => Promise<T>): Promise<T> {
+export async function mutateLease<T>(directory: string, run: () => Promise<T>, options: { timeoutMs?: number } = {}): Promise<T> {
   const guard = `${directory}.recovery`
-  for (let attempt = 0; ; attempt++) {
+  const timeoutMs = options.timeoutMs ?? 200
+  if (!Number.isFinite(timeoutMs) || timeoutMs < 0) {
+    throw new Error('Lease mutation timeout must be a finite non-negative number.')
+  }
+  const deadline = Date.now() + timeoutMs
+  while (true) {
     try {
       await mkdir(guard, { mode: 0o700 })
       break
@@ -47,10 +53,10 @@ export async function mutateLease<T>(directory: string, run: () => Promise<T>): 
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
         throw error
       }
-      if (attempt === 20) {
+      if (Date.now() >= deadline) {
         throw new Error('Runtime busy: lease ownership update or recovery is in progress.')
       }
-      await setTimeout(10)
+      await setTimeout(Math.min(10, Math.max(0, deadline - Date.now())))
     }
   }
   try {
@@ -105,6 +111,7 @@ export async function acquireDirectoryLease(directory: string, busyMessage: stri
         throw new Error(busyMessage)
       }
       await assertNoLeaseBorrowers(directory)
+      await assertNoIncompleteMachineScopes(directory)
       await rm(directory, { recursive: true })
       try {
         await create()
@@ -133,6 +140,7 @@ export async function acquireDirectoryLease(directory: string, busyMessage: stri
           throw new Error('Runtime lease ownership changed; refusing cleanup.')
         }
         await assertNoLeaseBorrowers(directory)
+        await assertNoIncompleteMachineScopes(directory)
         await rm(directory, { recursive: true })
         lease.released = true
       }).finally(() => { releasing = undefined })

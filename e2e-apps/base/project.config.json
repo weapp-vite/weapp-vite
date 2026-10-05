@@ -5,5 +5,5 @@
     "minifyWXML": true,
     "es6": true
   },
-  "libVersion": "3.13.2"
+  "libVersion": "3.17.2"
 }

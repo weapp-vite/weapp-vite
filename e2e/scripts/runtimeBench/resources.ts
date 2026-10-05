@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict'
 import net from 'node:net'
 import { setTimeout } from 'node:timers/promises'
-// eslint-disable-next-line e18e/ban-dependencies -- 精确项目关闭复用跨平台 CLI 封装。
-import { execa } from 'execa'
+import { closeManagedWechatProject, readManagedWechatProjectRecords } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 
 export interface BenchSessionResource {
   id: string
@@ -10,7 +9,8 @@ export interface BenchSessionResource {
   cliPath: string
   wsEndpoint?: string
   port?: number
-  status: 'owned' | 'closing' | 'closed' | 'failed'
+  managedProject?: { id: string, journalPath: string }
+  status: 'prepared' | 'owned' | 'closing' | 'closed' | 'failed' | 'unused'
   projectClosed: boolean
   portClosed: boolean | null
 }
@@ -45,10 +45,15 @@ export async function waitForBenchPortClosed(port: number, host = '127.0.0.1', t
 }
 
 export async function closeBenchProject(resource: BenchSessionResource) {
-  await execa(resource.cliPath, ['close', '--project', resource.projectPath], { timeout: 30_000 })
+  assert(resource.managedProject, 'Benchmark project has no confirmed managed owner')
+  const records = await readManagedWechatProjectRecords(resource.managedProject.journalPath)
+  const owner = records.find(record => record.id === resource.managedProject!.id)
+  assert(owner?.openedProjectWindow === true && owner.projectPath === resource.projectPath
+    && owner.target.cliPath === resource.cliPath && owner.port === resource.port, 'Benchmark project does not match its confirmed owner')
+  await closeManagedWechatProject(resource.managedProject)
 }
 
-/** 仅接收启动器明确创建的快照；路径相似或 metadata 本身不授予关闭所有权。 */
+/** 快照准备只登记报告；关闭权始终由启动回执对应的共享 owner 核验。 */
 export function createBenchResourceRegistry(options: {
   cliPath: string
   onResource?: (resource: BenchSessionResource) => Promise<void>
@@ -65,7 +70,7 @@ export function createBenchResourceRegistry(options: {
       const resource: BenchSessionResource = {
         ...project,
         id: `session-${resources.size + 1}`,
-        status: 'owned',
+        status: 'prepared',
         projectClosed: false,
         portClosed: null,
       }
@@ -77,21 +82,39 @@ export function createBenchResourceRegistry(options: {
       const value = metadata as Record<string, unknown>
       assert(typeof value.projectPath === 'string', 'Missing benchmark session project path')
       const resource = resources.get(value.projectPath)
-      assert(resource && resource.status === 'owned', 'Benchmark session is not an owned snapshot')
+      assert(resource && ['prepared', 'owned'].includes(resource.status), 'Benchmark session is not an owned snapshot')
       assert(typeof value.wsEndpoint === 'string', 'Missing benchmark session endpoint')
       assert(typeof value.port === 'number' && Number.isInteger(value.port) && value.port > 0 && value.port <= 65535, 'Invalid benchmark session port')
       const endpoint = new URL(value.wsEndpoint)
       assert(['ws:', 'wss:'].includes(endpoint.protocol) && ['127.0.0.1', 'localhost', '[::1]'].includes(endpoint.hostname), 'Benchmark session endpoint must be loopback')
       assert.equal(Number(endpoint.port), value.port, 'Benchmark session endpoint and port differ')
       assert(!resource.wsEndpoint || resource.wsEndpoint === value.wsEndpoint, 'Benchmark snapshot endpoint changed')
+      assert(value.managedProject && typeof value.managedProject === 'object', 'Missing benchmark managed project ownership')
+      const managedProject = value.managedProject as { id?: unknown, journalPath?: unknown }
+      assert(typeof managedProject.id === 'string' && managedProject.id && typeof managedProject.journalPath === 'string' && managedProject.journalPath, 'Invalid benchmark managed project ownership')
+      resource.managedProject = { id: managedProject.id, journalPath: managedProject.journalPath }
       resource.wsEndpoint = value.wsEndpoint
       resource.port = value.port
       resource.portClosed = false
+      resource.status = 'owned'
       await publish(resource)
     },
     async closeAll() {
       const errors: unknown[] = []
       for (const resource of resources.values()) {
+        if (resource.status === 'closed' || resource.status === 'unused') {
+          continue
+        }
+        if (!resource.managedProject) {
+          resource.status = 'unused'
+          try {
+            await publish(resource)
+          }
+          catch (error) {
+            errors.push(error)
+          }
+          continue
+        }
         let closing = closers.get(resource.id)
         if (!closing) {
           closing = (async () => {
@@ -104,13 +127,15 @@ export function createBenchResourceRegistry(options: {
               errors.push(error)
             }
             try {
-              await (options.closeProject ?? closeBenchProject)(resource)
+              if (!resource.projectClosed) {
+                await (options.closeProject ?? closeBenchProject)(resource)
+              }
               resource.projectClosed = true
             }
             catch (error) {
               errors.push(error)
             }
-            if (resource.port !== undefined) {
+            if (resource.projectClosed && resource.port !== undefined && !resource.portClosed) {
               try {
                 const hostname = new URL(resource.wsEndpoint!).hostname.replace(/^\[|\]$/g, '')
                 await (options.waitForPortClosed ?? waitForBenchPortClosed)(resource.port, hostname)
@@ -130,7 +155,7 @@ export function createBenchResourceRegistry(options: {
             if (errors.length) {
               throw new AggregateError(errors, `Benchmark ${resource.id} resource cleanup failed`)
             }
-          })()
+          })().finally(() => closers.delete(resource.id))
           closers.set(resource.id, closing)
         }
         try {
@@ -151,7 +176,8 @@ export function createBenchResourceRegistry(options: {
 export function assertBenchResourcesClosed(resources: BenchSessionResource[] | undefined) {
   assert(resources?.length, 'Missing benchmark owned resource evidence')
   for (const resource of resources) {
-    assert(resource.projectPath && resource.cliPath && resource.wsEndpoint && Number.isInteger(resource.port), 'Incomplete benchmark owned resource metadata')
+    assert(resource.projectPath && resource.cliPath && resource.wsEndpoint && Number.isInteger(resource.port)
+      && resource.managedProject?.id && resource.managedProject.journalPath, 'Incomplete benchmark owned resource metadata')
     assert(resource.status === 'closed' && resource.projectClosed && resource.portClosed === true, 'Benchmark owned project or port was not closed')
   }
 }
