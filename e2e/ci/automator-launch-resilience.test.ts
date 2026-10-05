@@ -50,6 +50,17 @@ vi.mock('execa', () => {
   }
 })
 
+// 保留真实 journal 子树和锁，仅隔离测试进程身份查询，避免占用 bridge 的 execa mock。
+vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host', async importOriginal => ({
+  ...await importOriginal<typeof import('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host')>(),
+  readManagedProcessIdentity: vi.fn(async (pid: number) => {
+    if (pid !== process.pid) {
+      throw new Error('Unexpected process identity lookup outside the test journal writer.')
+    }
+    return { pid, executable: process.execPath, started: 'test-journal-writer' }
+  }),
+}))
+
 vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership', async importOriginal => ({
   ...await importOriginal<typeof import('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership')>(),
   cleanupManagedWechatProjects: cleanupManagedWechatProjectsMock,
