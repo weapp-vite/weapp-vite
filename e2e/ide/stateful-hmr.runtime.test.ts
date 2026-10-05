@@ -17,6 +17,7 @@ import {
 } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import { createStatefulHmrProject } from '../utils/statefulHmrProject'
 import { relaunchPage } from './github-issues.runtime.shared'
 import { statefulHmrCheckpoints } from './statefulHmrDom'
 import { assetLifecycleCheckpoints, verifyAssetLifecycle } from './statefulHmrDom/assets'
@@ -31,23 +32,34 @@ import { installStatefulHmrTransport } from './statefulHmrDom/transport'
 import { vueChildCheckpoints } from './statefulHmrDom/vueChild'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
-const APP_ROOT = process.env.WEAPP_VITE_E2E_STATEFUL_PROJECT
-  ? path.resolve(process.env.WEAPP_VITE_E2E_STATEFUL_PROJECT)
+const CONSUMER_PROJECT = process.env.WEAPP_VITE_E2E_STATEFUL_PROJECT
+const DEFAULT_APP_ROOT = CONSUMER_PROJECT
+  ? path.resolve(CONSUMER_PROJECT)
   : path.join(ROOT, 'e2e-apps/stateful-hmr')
 const HOST = process.env.WEAPP_VITE_E2E_COMPILER_HOST ?? 'wv'
 if (HOST !== 'wv' && HOST !== 'vite' && HOST !== 'vite-plus') {
   throw new Error(`Unsupported stateful fixture host: ${HOST}`)
 }
-const COMPILER_CLI = resolveRuntimeCompilerCli(HOST, APP_ROOT, { repositoryRoot: ROOT, isolated: Boolean(process.env.WEAPP_VITE_E2E_STATEFUL_PROJECT) })
-const DIST_ROOT = path.join(APP_ROOT, 'dist')
-const CONTROL_FILE = path.join(DIST_ROOT, '__weapp_vite_hmr/control.js')
-const UPDATE_FILE = path.join(DIST_ROOT, '__weapp_vite_hmr/update.js')
-const NATIVE_SOURCE = path.join(APP_ROOT, 'src/pages/native/index.ts')
-const NATIVE_STYLE = path.join(APP_ROOT, 'src/pages/native/index.wxss')
-const COMPONENT_SOURCE = path.join(APP_ROOT, 'src/pages/component/index.ts')
-const CHILD_SOURCE = path.join(APP_ROOT, 'src/components/native-counter/index.js')
-const VUE_CHILD_SOURCE = path.join(APP_ROOT, 'src/components/vue-counter/index.vue')
-const WEVU_SOURCE = path.join(APP_ROOT, 'src/pages/wevu/index.vue')
+const COMPILER_CLI = resolveRuntimeCompilerCli(HOST, DEFAULT_APP_ROOT, { repositoryRoot: ROOT, isolated: Boolean(CONSUMER_PROJECT) })
+
+function fixturePaths(projectRoot: string) {
+  const distRoot = path.join(projectRoot, 'dist')
+  return {
+    projectRoot,
+    distRoot,
+    controlFile: path.join(distRoot, '__weapp_vite_hmr/control.js'),
+    updateFile: path.join(distRoot, '__weapp_vite_hmr/update.js'),
+    nativeSource: path.join(projectRoot, 'src/pages/native/index.ts'),
+    nativeStyle: path.join(projectRoot, 'src/pages/native/index.wxss'),
+    componentSource: path.join(projectRoot, 'src/pages/component/index.ts'),
+    childSource: path.join(projectRoot, 'src/components/native-counter/index.js'),
+    vueChildSource: path.join(projectRoot, 'src/components/vue-counter/index.vue'),
+    wevuSource: path.join(projectRoot, 'src/pages/wevu/index.vue'),
+  }
+}
+
+let fixture = fixturePaths(DEFAULT_APP_ROOT)
+let isolatedFixture: Awaited<ReturnType<typeof createStatefulHmrProject>> | undefined
 const NATIVE_ROUTE = '/pages/native/index?source=e2e'
 const COMPONENT_ROUTE = '/pages/component/index?source=e2e'
 const WEVU_ROUTE = '/pages/wevu/index?source=e2e'
@@ -216,7 +228,7 @@ async function waitForClientReady(timeoutMs = 30_000): Promise<void> {
     }
     await new Promise(resolve => setTimeout(resolve, 250))
   }
-  const publishedControl = await fs.readFile(CONTROL_FILE, 'utf8').then(parseStatefulHmrControlSource).catch(() => undefined)
+  const publishedControl = await fs.readFile(fixture.controlFile, 'utf8').then(parseStatefulHmrControlSource).catch(() => undefined)
   throw new Error(`Timed out waiting for stateful HMR transport; expectedEndpoint=${headlessTransport?.endpoint}; publishedEndpoint=${publishedControl?.url}; latest=${JSON.stringify(latest)}; devOutput=${devProcess?.getOutput().slice(-8_000) ?? ''}`)
 }
 
@@ -250,44 +262,48 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     if (resolveRuntimeProviderName() === 'devtools') {
       await cleanupResidualIdeProcesses()
     }
-    originalComponentSource = normalizeFixtureSource(await fs.readFile(COMPONENT_SOURCE, 'utf8'), 'component')
-    originalChildSource = (await fs.readFile(CHILD_SOURCE, 'utf8')).replace('this.data.count + 2', 'this.data.count + 1').replace('step:2', 'step:1')
-    originalVueChildSource = (await fs.readFile(VUE_CHILD_SOURCE, 'utf8')).replace('count.value += 2', 'count.value += 1').replace('step:2', 'step:1')
-    originalNativeSource = normalizeFixtureSource(await fs.readFile(NATIVE_SOURCE, 'utf8'), 'native')
-    originalNativeStyle = (await fs.readFile(NATIVE_STYLE, 'utf8')).replace('background-color: #dbeafe', 'background-color: #fff')
-    originalWevuSource = normalizeFixtureSource(await fs.readFile(WEVU_SOURCE, 'utf8'), 'wevu')
+    if (!CONSUMER_PROJECT && resolveRuntimeProviderName() === 'headless') {
+      isolatedFixture = await createStatefulHmrProject()
+      fixture = fixturePaths(isolatedFixture.projectRoot)
+    }
+    originalComponentSource = normalizeFixtureSource(await fs.readFile(fixture.componentSource, 'utf8'), 'component')
+    originalChildSource = (await fs.readFile(fixture.childSource, 'utf8')).replace('this.data.count + 2', 'this.data.count + 1').replace('step:2', 'step:1')
+    originalVueChildSource = (await fs.readFile(fixture.vueChildSource, 'utf8')).replace('count.value += 2', 'count.value += 1').replace('step:2', 'step:1')
+    originalNativeSource = normalizeFixtureSource(await fs.readFile(fixture.nativeSource, 'utf8'), 'native')
+    originalNativeStyle = (await fs.readFile(fixture.nativeStyle, 'utf8')).replace('background-color: #dbeafe', 'background-color: #fff')
+    originalWevuSource = normalizeFixtureSource(await fs.readFile(fixture.wevuSource, 'utf8'), 'wevu')
     await Promise.all([
-      fs.writeFile(COMPONENT_SOURCE, originalComponentSource, 'utf8'),
-      fs.writeFile(CHILD_SOURCE, originalChildSource, 'utf8'),
-      fs.writeFile(VUE_CHILD_SOURCE, originalVueChildSource, 'utf8'),
-      fs.writeFile(NATIVE_SOURCE, originalNativeSource, 'utf8'),
-      fs.writeFile(NATIVE_STYLE, originalNativeStyle, 'utf8'),
-      fs.writeFile(WEVU_SOURCE, originalWevuSource, 'utf8'),
+      fs.writeFile(fixture.componentSource, originalComponentSource, 'utf8'),
+      fs.writeFile(fixture.childSource, originalChildSource, 'utf8'),
+      fs.writeFile(fixture.vueChildSource, originalVueChildSource, 'utf8'),
+      fs.writeFile(fixture.nativeSource, originalNativeSource, 'utf8'),
+      fs.writeFile(fixture.nativeStyle, originalNativeStyle, 'utf8'),
+      fs.writeFile(fixture.wevuSource, originalWevuSource, 'utf8'),
     ])
-    await fs.remove(DIST_ROOT)
+    await fs.remove(fixture.distRoot)
 
     devProcess = startDevProcess(process.execPath, HOST === 'wv'
-      ? [COMPILER_CLI, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm']
+      ? [COMPILER_CLI, 'dev', fixture.projectRoot, '--platform', 'weapp', '--skipNpm']
       : [COMPILER_CLI, 'dev', '--config', 'vite.stateful.config.mts', '--host', '127.0.0.1', '--port', '0'], {
       all: true,
-      cwd: APP_ROOT,
+      cwd: fixture.projectRoot,
       env: createDevProcessEnv(),
       reject: false,
     })
-    await devProcess.waitFor(waitForStatefulHmrControl(CONTROL_FILE), 'stateful HMR control ready')
-    expect(await fs.pathExists(path.join(DIST_ROOT, 'hmr-tabbar.png'))).toBe(true)
+    await devProcess.waitFor(waitForStatefulHmrControl(fixture.controlFile), 'stateful HMR control ready')
+    expect(await fs.pathExists(path.join(fixture.distRoot, 'hmr-tabbar.png'))).toBe(true)
 
     miniProgram = await launchAutomator({
       async configureHeadlessSession(session) {
-        const control = parseStatefulHmrControlSource(await fs.readFile(CONTROL_FILE, 'utf8'))
+        const control = parseStatefulHmrControlSource(await fs.readFile(fixture.controlFile, 'utf8'))
         if (!control?.url) {
           throw new Error('Missing current CLI HMR endpoint')
         }
-        headlessTransport = installStatefulHmrTransport(session, control.url, UPDATE_FILE)
+        headlessTransport = installStatefulHmrTransport(session, control.url, fixture.updateFile)
       },
       bridgeProjectMode: 'direct',
       launchMode: 'bridge',
-      projectPath: APP_ROOT,
+      projectPath: fixture.projectRoot,
       projectConfig: {
         setting: {
           urlCheck: false,
@@ -314,50 +330,66 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   }, 600_000)
 
   afterAll(async () => {
-    await headlessTransport?.close()
-    headlessTransport = undefined
     try {
-      if (resolveRuntimeProviderName() === 'headless') {
-        await miniProgram?.close?.()
+      try {
+        await headlessTransport?.close()
+      }
+      finally {
+        headlessTransport = undefined
+        try {
+          if (resolveRuntimeProviderName() === 'headless') {
+            await miniProgram?.close?.()
+          }
+          else {
+            await miniProgram?.disconnect?.()
+          }
+        }
+        catch {}
+        finally {
+          miniProgram = undefined
+          // 传输关闭失败也必须停止本次构建；停止失败时保留项目供诊断。
+          await devProcess?.stop(5_000)
+          devProcess = undefined
+        }
+      }
+    }
+    finally {
+      if (previousPostConnectRefresh === undefined) {
+        delete process.env[POST_CONNECT_REFRESH_ENV]
       }
       else {
-        await miniProgram?.disconnect?.()
+        process.env[POST_CONNECT_REFRESH_ENV] = previousPostConnectRefresh
       }
-    }
-    catch {}
-    miniProgram = undefined
-    try {
-      await devProcess?.stop(5_000)
-    }
-    catch {}
-    devProcess = undefined
-    if (originalNativeSource) {
-      await fs.writeFile(NATIVE_SOURCE, originalNativeSource, 'utf8')
-    }
-    if (originalNativeStyle) {
-      await fs.writeFile(NATIVE_STYLE, originalNativeStyle, 'utf8')
-    }
-    if (originalComponentSource) {
-      await fs.writeFile(COMPONENT_SOURCE, originalComponentSource, 'utf8')
-    }
-    if (originalChildSource) {
-      await fs.writeFile(CHILD_SOURCE, originalChildSource, 'utf8')
-    }
-    if (originalVueChildSource) {
-      await fs.writeFile(VUE_CHILD_SOURCE, originalVueChildSource, 'utf8')
-    }
-    if (originalWevuSource) {
-      await fs.writeFile(WEVU_SOURCE, originalWevuSource, 'utf8')
-    }
-    if (previousPostConnectRefresh === undefined) {
-      delete process.env[POST_CONNECT_REFRESH_ENV]
-    }
-    else {
-      process.env[POST_CONNECT_REFRESH_ENV] = previousPostConnectRefresh
-    }
-    await cleanupResidualDevProcesses()
-    if (resolveRuntimeProviderName() === 'devtools') {
-      await cleanupResidualIdeProcesses()
+      if (!devProcess) {
+        try {
+          if (originalNativeSource) {
+            await fs.writeFile(fixture.nativeSource, originalNativeSource, 'utf8')
+          }
+          if (originalNativeStyle) {
+            await fs.writeFile(fixture.nativeStyle, originalNativeStyle, 'utf8')
+          }
+          if (originalComponentSource) {
+            await fs.writeFile(fixture.componentSource, originalComponentSource, 'utf8')
+          }
+          if (originalChildSource) {
+            await fs.writeFile(fixture.childSource, originalChildSource, 'utf8')
+          }
+          if (originalVueChildSource) {
+            await fs.writeFile(fixture.vueChildSource, originalVueChildSource, 'utf8')
+          }
+          if (originalWevuSource) {
+            await fs.writeFile(fixture.wevuSource, originalWevuSource, 'utf8')
+          }
+          await cleanupResidualDevProcesses()
+          if (resolveRuntimeProviderName() === 'devtools') {
+            await cleanupResidualIdeProcesses()
+          }
+        }
+        finally {
+          await isolatedFixture?.cleanup()
+          isolatedFixture = undefined
+        }
+      }
     }
   })
 
@@ -383,7 +415,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     // 样式 sidecar 先通过真实 watcher 更新，再更新同名脚本，覆盖构建文件身份隔离。
     const updatedStyle = originalNativeStyle.replace('background-color: #fff', 'background-color: #dbeafe')
     expect(updatedStyle).not.toBe(originalNativeStyle)
-    await replaceFileByRename(NATIVE_STYLE, updatedStyle)
+    await replaceFileByRename(fixture.nativeStyle, updatedStyle)
     await dom.check('style-updated', miniProgram, await miniProgram.currentPage())
     expect(await readRuntimeState(page)).toMatchObject({ count: 1, input: 'held-input', identity: 'native-instance' })
 
@@ -391,8 +423,8 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       .replace('STATEFUL-NATIVE-BASE', 'STATEFUL-NATIVE-PATCHED')
       .replace('this.data.count + 1', 'this.data.count + 2')
     const clientVersion = await readClientVersion()
-    await replaceFileByRename(NATIVE_SOURCE, updatedSource)
-    await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'this.data.count + 2'), 'native literal patch published')
+    await replaceFileByRename(fixture.nativeSource, updatedSource)
+    await devProcess!.waitFor(waitForFileContains(fixture.updateFile, 'this.data.count + 2'), 'native literal patch published')
     await waitForClientVersion(clientVersion + 1)
     await dom.check('patched', miniProgram, await miniProgram.currentPage())
     expect(await readRuntimeState(page)).toMatchObject({ count: 1, input: 'held-input', identity: 'native-instance' })
@@ -409,10 +441,10 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     })
 
     const restoreVersion = await readClientVersion()
-    await replaceFileByRename(NATIVE_SOURCE, originalNativeSource)
-    await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'this.data.count + 1'), 'native original script restored')
+    await replaceFileByRename(fixture.nativeSource, originalNativeSource)
+    await devProcess!.waitFor(waitForFileContains(fixture.updateFile, 'this.data.count + 1'), 'native original script restored')
     await waitForClientVersion(restoreVersion + 1)
-    await replaceFileByRename(NATIVE_STYLE, originalNativeStyle)
+    await replaceFileByRename(fixture.nativeStyle, originalNativeStyle)
     await dom.check('restored', miniProgram, await miniProgram.currentPage())
     expect(await readRuntimeState(page)).toMatchObject({ count: 3, input: 'held-input', identity: 'native-instance' })
     await triggerIncrement()
@@ -440,7 +472,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
           return undefined
         }
       }, file),
-      appRoot: APP_ROOT,
+      appRoot: fixture.projectRoot,
       check: async (id) => {
         const current = await miniProgram.currentPage()
         expect(current.pageId).toBe(page.pageId)
@@ -469,8 +501,8 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await waitForPatchedBehavior(0, page)
     await dom.check('initial', miniProgram, page)
     await prepareRuntimeState('editor-file-ownership')
-    const scratch = path.join(path.dirname(NATIVE_SOURCE), 'editor-buffer.note')
-    const hiddenScratch = path.join(path.dirname(NATIVE_SOURCE), '.editor-buffer')
+    const scratch = path.join(path.dirname(fixture.nativeSource), 'editor-buffer.note')
+    const hiddenScratch = path.join(path.dirname(fixture.nativeSource), '.editor-buffer')
     const initialVersion = await readClientVersion()
     let expectedCount = 0
     try {
@@ -488,9 +520,9 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         for (const step of [2, 1]) {
           const version = await readClientVersion()
           await fs.writeFile(scratch, `cycle ${cycle}, step ${step}`)
-          await replaceFileByRename(NATIVE_SOURCE, step === 2 ? updatedSource : originalNativeSource)
+          await replaceFileByRename(fixture.nativeSource, step === 2 ? updatedSource : originalNativeSource)
           await fs.remove(hiddenScratch)
-          await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, `this.data.count + ${step}`), 'native editor-save patch published')
+          await devProcess!.waitFor(waitForFileContains(fixture.updateFile, `this.data.count + ${step}`), 'native editor-save patch published')
           await waitForClientVersion(version + 1)
           await triggerIncrement()
           expectedCount += step
@@ -510,7 +542,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     finally {
       await fs.remove(scratch)
       await fs.remove(hiddenScratch)
-      await replaceFileByRename(NATIVE_SOURCE, originalNativeSource)
+      await replaceFileByRename(fixture.nativeSource, originalNativeSource)
     }
   })
 
@@ -544,12 +576,12 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       })
 
       const templateSource = originalWevuSource.replace('<input v-model="input"', '<view class="sfc-template">SFC-TEMPLATE-B</view>\n    <input v-model="input"')
-      await replaceFileByRename(WEVU_SOURCE, templateSource)
-      await devProcess!.waitFor(waitForFileContains(path.join(DIST_ROOT, 'pages/wevu/index.wxml'), 'SFC-TEMPLATE-B'), 'SFC template B emitted')
+      await replaceFileByRename(fixture.wevuSource, templateSource)
+      await devProcess!.waitFor(waitForFileContains(path.join(fixture.distRoot, 'pages/wevu/index.wxml'), 'SFC-TEMPLATE-B'), 'SFC template B emitted')
       await dom.check('template-b', miniProgram, await miniProgram.currentPage())
       expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index' })
 
-      await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      await replaceFileByRename(fixture.wevuSource, originalWevuSource)
       await dom.check('template-a', miniProgram, await miniProgram.currentPage())
       expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index' })
 
@@ -560,8 +592,8 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         .replace('store.increment(1)', 'store.increment(2)')
         .replace('  removed: \'initial\',', '  removed: \'initial\',\n  added: \'new default\',')
       const clientVersion = await readClientVersion()
-      await replaceFileByRename(WEVU_SOURCE, updatedSource)
-      await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'count.value += 2'), 'wevu literal patch published')
+      await replaceFileByRename(fixture.wevuSource, updatedSource)
+      await devProcess!.waitFor(waitForFileContains(fixture.updateFile, 'count.value += 2'), 'wevu literal patch published')
       await waitForClientVersion(clientVersion + 1)
       try {
         await dom.check('patched', miniProgram, await miniProgram.currentPage())
@@ -588,8 +620,8 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         .replace('store.increment(2)', 'store.increment(3)')
         .replace('.page {', '.page {\n  background-color: #dbeafe;')
       const styleClientVersion = await readClientVersion()
-      await replaceFileByRename(WEVU_SOURCE, styleSource)
-      await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'count.value += 3'), 'mixed SFC script and style patch published')
+      await replaceFileByRename(fixture.wevuSource, styleSource)
+      await devProcess!.waitFor(waitForFileContains(fixture.updateFile, 'count.value += 3'), 'mixed SFC script and style patch published')
       await waitForClientVersion(styleClientVersion + 1)
       try {
         await dom.check('mixed-style', miniProgram, await miniProgram.currentPage())
@@ -605,11 +637,11 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       expect(await readRuntimeState(page)).toMatchObject({ count: 7, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index', source: 'e2e' })
     }
     finally {
-      const currentSource = await fs.readFile(WEVU_SOURCE, 'utf8').catch(() => originalWevuSource)
+      const currentSource = await fs.readFile(fixture.wevuSource, 'utf8').catch(() => originalWevuSource)
       if (currentSource !== originalWevuSource) {
         const version = await readClientVersion().catch(() => -1)
-        await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
-        await devProcess?.waitFor(waitForFileContains(UPDATE_FILE, 'STATEFUL-WEVU-BASE'), 'wevu source restored').catch(() => {})
+        await replaceFileByRename(fixture.wevuSource, originalWevuSource)
+        await devProcess?.waitFor(waitForFileContains(fixture.updateFile, 'STATEFUL-WEVU-BASE'), 'wevu source restored').catch(() => {})
         if (version >= 0) {
           await waitForClientVersion(version + 1).catch(() => {})
         }
@@ -640,8 +672,8 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       .replace('STATEFUL-COMPONENT-BASE', 'STATEFUL-COMPONENT-PATCHED')
       .replace('this.data.count + 1', 'this.data.count + 2')
     const clientVersion = await readClientVersion()
-    await replaceFileByRename(COMPONENT_SOURCE, updatedSource)
-    await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'this.data.count + 2'), 'component literal patch published')
+    await replaceFileByRename(fixture.componentSource, updatedSource)
+    await devProcess!.waitFor(waitForFileContains(fixture.updateFile, 'this.data.count + 2'), 'component literal patch published')
     await waitForClientVersion(clientVersion + 1)
 
     await dom.check('patched', miniProgram, await miniProgram.currentPage())
@@ -657,7 +689,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     })
     // 后续场景会重新进入同一组件页，必须先恢复注册定义并消费恢复补丁。
     const restoreVersion = await readClientVersion()
-    await replaceFileByRename(COMPONENT_SOURCE, originalComponentSource)
+    await replaceFileByRename(fixture.componentSource, originalComponentSource)
     await waitForClientVersion(restoreVersion + 1)
   })
 
@@ -666,7 +698,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
     }
-    const control = await fs.readFile(CONTROL_FILE, 'utf8')
+    const control = await fs.readFile(fixture.controlFile, 'utf8')
     await verifyNativeChildHmr({
       dom,
       miniProgram,
@@ -675,10 +707,10 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         const source = updated
           ? originalChildSource.replace('this.data.count + 1', 'this.data.count + 2').replace('step:1', 'step:2')
           : originalChildSource
-        await replaceFileByRename(CHILD_SOURCE, source)
-        await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, updated ? 'step:2' : 'step:1'), 'native child patch published')
+        await replaceFileByRename(fixture.childSource, source)
+        await devProcess!.waitFor(waitForFileContains(fixture.updateFile, updated ? 'step:2' : 'step:1'), 'native child patch published')
         await waitForClientVersion(version + 1)
-        expect(await fs.readFile(CONTROL_FILE, 'utf8')).toBe(control)
+        expect(await fs.readFile(fixture.controlFile, 'utf8')).toBe(control)
       },
     })
   })
@@ -688,7 +720,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
     }
-    const control = await fs.readFile(CONTROL_FILE, 'utf8')
+    const control = await fs.readFile(fixture.controlFile, 'utf8')
     await verifyNativeChildHmr({
       dom,
       miniProgram,
@@ -698,10 +730,10 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         const source = updated
           ? originalVueChildSource.replace('count.value += 1', 'count.value += 2').replace('step:1', 'step:2')
           : originalVueChildSource
-        await replaceFileByRename(VUE_CHILD_SOURCE, source)
-        await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, updated ? 'step:2' : 'step:1'), 'Vue child patch published')
+        await replaceFileByRename(fixture.vueChildSource, source)
+        await devProcess!.waitFor(waitForFileContains(fixture.updateFile, updated ? 'step:2' : 'step:1'), 'Vue child patch published')
         await waitForClientVersion(version + 1)
-        expect(await fs.readFile(CONTROL_FILE, 'utf8')).toBe(control)
+        expect(await fs.readFile(fixture.controlFile, 'utf8')).toBe(control)
       },
     })
   })
@@ -709,7 +741,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   it('updates Wevu template-generated computations and event handlers without replacing page state', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', templateBindingCheckpoints())
     const page = await relaunchStatefulRoute(WEVU_ROUTE)
-    const output = path.join(DIST_ROOT, 'pages/wevu/index.wxml')
+    const output = path.join(fixture.distRoot, 'pages/wevu/index.wxml')
     try {
       await dom.check('initial', miniProgram, page)
       await prepareRuntimeState('template-bindings')
@@ -719,7 +751,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       await dom.check('prepared', miniProgram, page)
       const version = await readClientVersion()
       const updated = originalWevuSource.replace('<input', '<view class="derived-count">{{ count * 10 + 1 }}</view>\n    <button class="derived-increment" @tap="count += 2">advance</button>\n    <input')
-      await replaceFileByRename(WEVU_SOURCE, updated)
+      await replaceFileByRename(fixture.wevuSource, updated)
       await devProcess!.waitFor(waitForFileContains(output, 'derived-count'), 'generated binding template emitted')
       await waitForClientVersion(version + 1)
       await dom.check('edited', miniProgram, await miniProgram.currentPage())
@@ -731,7 +763,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       await dom.check('clicked', miniProgram, await miniProgram.currentPage())
       expect(await readRuntimeState(page)).toEqual({ ...expected, count: 4 })
       const restoreVersion = await readClientVersion()
-      await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      await replaceFileByRename(fixture.wevuSource, originalWevuSource)
       await waitForClientVersion(restoreVersion + 1)
       await dom.check('restored', miniProgram, await miniProgram.currentPage())
       await triggerIncrement()
@@ -740,8 +772,8 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       expect(await readRuntimeState(page)).toEqual({ ...expected, count: 5 })
     }
     finally {
-      if (await fs.readFile(WEVU_SOURCE, 'utf8') !== originalWevuSource) {
-        await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      if (await fs.readFile(fixture.wevuSource, 'utf8') !== originalWevuSource) {
+        await replaceFileByRename(fixture.wevuSource, originalWevuSource)
       }
     }
   })
@@ -749,8 +781,8 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   for (const runtime of ['native', 'component', 'wevu'] as const) {
     it(`preserves ${runtime} page state across two template edit and restore cycles`, async (ctx) => {
       const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', templateCycleCheckpoints(runtime))
-      const source = path.join(APP_ROOT, `src/pages/${runtime}/index.${runtime === 'wevu' ? 'vue' : 'wxml'}`)
-      const output = path.join(DIST_ROOT, `pages/${runtime}/index.wxml`)
+      const source = path.join(fixture.projectRoot, `src/pages/${runtime}/index.${runtime === 'wevu' ? 'vue' : 'wxml'}`)
+      const output = path.join(fixture.distRoot, `pages/${runtime}/index.wxml`)
       const original = await fs.readFile(source, 'utf8')
       const route = `/pages/${runtime}/index?source=e2e`
       const page = await relaunchStatefulRoute(route)
@@ -773,7 +805,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
             await waitForClientVersion(version + 1)
           }
           for (const extension of ['js', 'json', 'wxml']) {
-            expect(await fs.pathExists(path.join(DIST_ROOT, `components/native-counter/index.${extension}`)), `native component ${extension} after template edit`).toBe(true)
+            expect(await fs.pathExists(path.join(fixture.distRoot, `components/native-counter/index.${extension}`)), `native component ${extension} after template edit`).toBe(true)
           }
           await dom.check(`edit-${cycle}`, miniProgram, await miniProgram.currentPage())
           expect(await readRuntimeState(page)).toEqual(expected)
@@ -830,14 +862,14 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         .replace('STATEFUL-WEVU-BASE', 'STATEFUL-WEVU-PATCHED')
         .replace('count.value += 1', 'count.value += 2')
         .replace('store.increment(1)', 'store.increment(2)')
-      await replaceFileByRename(WEVU_SOURCE, patched)
+      await replaceFileByRename(fixture.wevuSource, patched)
       await waitForClientVersion(version + 1)
       await check('patched', 2)
       await triggerIncrement()
       await waitForPatchedBehavior(4, page)
       await check('clicked', 4)
       const restoreVersion = await readClientVersion()
-      await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      await replaceFileByRename(fixture.wevuSource, originalWevuSource)
       await waitForClientVersion(restoreVersion + 1)
       await check('restored', 4)
       await triggerIncrement()
@@ -863,7 +895,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
           returned = true
         }
       }, { key: WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, route: WEVU_ROUTE })
-      await replaceFileByRename(WEVU_SOURCE, patched)
+      await replaceFileByRename(fixture.wevuSource, patched)
       await waitForClientVersion(navigationVersion + 1)
       await dom.check('navigated', miniProgram, await miniProgram.currentPage())
       await expect.poll(() => miniProgram.evaluate((key: string) => {
@@ -882,7 +914,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       await dom.check('navigated-clicked', miniProgram, await miniProgram.currentPage())
       await expect.poll(storeCount).toBe(storedBeforeNavigation + 2)
       const navigationRestoreVersion = await readClientVersion()
-      await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      await replaceFileByRename(fixture.wevuSource, originalWevuSource)
       await waitForClientVersion(navigationRestoreVersion + 1)
       await dom.check('navigated-restored', miniProgram, await miniProgram.currentPage())
     }
@@ -898,8 +930,8 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         }, WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)
       }
       finally {
-        if (await fs.readFile(WEVU_SOURCE, 'utf8') !== originalWevuSource) {
-          await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+        if (await fs.readFile(fixture.wevuSource, 'utf8') !== originalWevuSource) {
+          await replaceFileByRename(fixture.wevuSource, originalWevuSource)
         }
       }
     }
@@ -909,12 +941,12 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', nativeDefaultCheckpoints())
     const patch = async (updated: boolean) => {
       const version = await readClientVersion()
-      await replaceFileByRename(NATIVE_SOURCE, updated ? originalNativeSource.replace('count: 0', 'count: 7') : originalNativeSource)
+      await replaceFileByRename(fixture.nativeSource, updated ? originalNativeSource.replace('count: 0', 'count: 7') : originalNativeSource)
       await waitForClientVersion(version + 1)
     }
     try {
       for (const runtime of ['native', 'component'] as const) {
-        const source = path.join(APP_ROOT, `src/pages/${runtime}/index.wxml`)
+        const source = path.join(fixture.projectRoot, `src/pages/${runtime}/index.wxml`)
         const original = await fs.readFile(source, 'utf8')
         await relaunchStatefulRoute(`/pages/${runtime}/index?source=e2e`)
         try {
@@ -940,7 +972,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       await dom.check('restored-defaults', miniProgram, await miniProgram.currentPage())
     }
     finally {
-      if (await fs.readFile(NATIVE_SOURCE, 'utf8') !== originalNativeSource) {
+      if (await fs.readFile(fixture.nativeSource, 'utf8') !== originalNativeSource) {
         await patch(false)
       }
     }
