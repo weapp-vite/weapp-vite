@@ -1,4 +1,4 @@
-import type { MachineCredential, MachineE2EChildScope } from './machineScope'
+import type { MachineCredential, MachineE2EChildScope, MachineE2EChildScopeOptions } from './machineScope'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -7,7 +7,7 @@ import { acquireDirectoryLease, mutateLease, readLeaseOwner } from './directory'
 import { inheritedMachineEnvironment, machineStateDirectory, withMachineLeaseContext } from './machineContext'
 import { assertMachineCredential, createMachineChildScope, INHERITED_LEASE_ENV, parseMachineCredential } from './machineScope'
 
-export type { MachineE2EChildScope } from './machineScope'
+export type { MachineE2EChildScope, MachineE2EChildScopeOptions, MachineE2ERecoverableDescendantScope } from './machineScope'
 
 export interface MachineE2ELeaseOptions {
   /** 仅供隔离测试或嵌入方显式选择；不从工作目录或用户配置环境变量推导。 */
@@ -19,7 +19,7 @@ export interface MachineE2ELease {
   borrowed: boolean
   released: boolean
   environment: NodeJS.ProcessEnv
-  createChildScope: () => Promise<MachineE2EChildScope>
+  createChildScope: (options?: MachineE2EChildScopeOptions) => Promise<MachineE2EChildScope>
   release: () => Promise<void>
 }
 
@@ -34,7 +34,7 @@ export async function acquireMachineE2ELease(options: MachineE2ELeaseOptions = {
       borrowed: false,
       get released() { return owned.released },
       environment: { [INHERITED_LEASE_ENV]: JSON.stringify(owned.owner) },
-      createChildScope: () => createMachineChildScope(directory, { ...owned.owner, scopes: [] }, () => !owned.released),
+      createChildScope: options => createMachineChildScope(directory, { ...owned.owner, scopes: [] }, () => !owned.released, options),
       release: owned.release,
     }
   }
@@ -60,7 +60,7 @@ export async function acquireMachineE2ELease(options: MachineE2ELeaseOptions = {
     borrowed: true,
     released: false,
     environment: { [INHERITED_LEASE_ENV]: inherited },
-    createChildScope: () => createMachineChildScope(directory, credential, () => !lease.released),
+    createChildScope: options => createMachineChildScope(directory, credential, () => !lease.released, options),
     release: () => {
       if (lease.released) {
         return Promise.resolve()
@@ -79,24 +79,44 @@ export async function acquireMachineE2ELease(options: MachineE2ELeaseOptions = {
   return lease
 }
 
-/** 入口持有租约到子任务与清理全部完成，嵌套入口仅释放自己的登记。 */
+/** 入口持有租约到清理完成；执行与释放同时失败时保留两者，嵌套入口仅释放自己的登记。 */
 export async function withMachineE2ELease<T>(run: (lease: MachineE2ELease) => Promise<T>, options: MachineE2ELeaseOptions = {}): Promise<T> {
   const lease = await acquireMachineE2ELease({ ...options, env: inheritedMachineEnvironment(options) })
   let entered = false
+  let failure: { error: unknown } | undefined
+  const release = async () => {
+    try {
+      await lease.release()
+    }
+    catch (releaseError) {
+      if (failure) {
+        throw new AggregateError([failure.error, releaseError], 'E2E operation failed and machine lease cleanup did not complete.', { cause: failure.error })
+      }
+      throw releaseError
+    }
+  }
   try {
     return await withMachineLeaseContext(lease, async () => {
       entered = true
       try {
         return await run(lease)
       }
+      catch (error) {
+        failure = { error }
+        throw error
+      }
       finally {
-        await lease.release()
+        await release()
       }
     }, options)
   }
+  catch (error) {
+    failure = { error }
+    throw error
+  }
   finally {
     if (!entered) {
-      await lease.release()
+      await release()
     }
   }
 }

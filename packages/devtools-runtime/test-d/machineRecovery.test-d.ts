@@ -3,9 +3,10 @@ import type {
   MachineE2ELeaseRecoveryResult,
   MachineE2ELeaseRecoveryScope,
   MachineE2ELeaseSnapshot,
+  MachineE2ERecoverableDescendantScope,
 } from '@weapp-vite/devtools-runtime'
 import { readMachineE2ELeaseSnapshot, recoverMachineE2ELease } from '@weapp-vite/devtools-runtime'
-import { expectAssignable, expectError, expectType } from 'tsd'
+import { expectAssignable, expectError, expectNotAssignable, expectType } from 'tsd'
 
 expectType<Promise<MachineE2ELeaseSnapshot>>(readMachineE2ELeaseSnapshot())
 expectType<Promise<MachineE2ELeaseSnapshot>>(readMachineE2ELeaseSnapshot({ stateDirectory: 'state', env: {} }))
@@ -19,6 +20,7 @@ expectType<number>(snapshot.scopes[0]!.owner.pid)
 expectType<string>(snapshot.scopes[0]!.owner.token)
 expectType<boolean>(snapshot.scopes[0]!.sealed)
 expectType<boolean>(snapshot.scopes[0]!.completed)
+expectType<string | undefined>(snapshot.scopes[0]!.cleanupKey)
 expectAssignable<readonly string[]>(snapshot.scopes[0]!.ancestors)
 expectType<number>(snapshot.borrowers[0]!.pid)
 expectType<string>(snapshot.borrowers[0]!.token)
@@ -26,6 +28,17 @@ expectAssignable<readonly string[]>(snapshot.borrowers[0]!.scopes)
 expectError(snapshot.owner.pid = 42)
 expectError(snapshot.scopes.push(snapshot.scopes[0]!))
 expectError(snapshot.borrowers[0]!.scopes.push('another-scope'))
+
+declare const legacyScope: MachineE2ELeaseRecoveryScope
+expectNotAssignable<MachineE2ERecoverableDescendantScope>(legacyScope)
+expectAssignable<MachineE2ELeaseRecoveryScope>({
+  id: 'scope',
+  owner: { pid: 42, token: 'owner' },
+  ancestors: [],
+  sealed: true,
+  completed: false,
+})
+expectAssignable<MachineE2ELeaseRecoveryScope>({ ...legacyScope, cleanupKey: 'owned-journal' })
 
 expectAssignable<MachineE2ELeaseRecoveryOptions>({
   stateDirectory: 'state',
@@ -44,6 +57,7 @@ expectType<Promise<MachineE2ELeaseRecoveryResult>>(recoverMachineE2ELease({
     expectAssignable<readonly string[]>(scope.ancestors)
     expectType<boolean>(scope.sealed)
     expectType<boolean>(scope.completed)
+    expectType<string | undefined>(scope.cleanupKey)
     expectError(scope.id = 'another-scope')
     expectError(scope.owner = snapshot.owner)
     expectError(scope.owner.pid = 42)
@@ -53,6 +67,7 @@ expectType<Promise<MachineE2ELeaseRecoveryResult>>(recoverMachineE2ELease({
     expectError(scope.ancestors[0] = 'another-scope')
     expectError(scope.sealed = false)
     expectError(scope.completed = true)
+    expectError(scope.cleanupKey = 'another-journal')
   },
 }))
 

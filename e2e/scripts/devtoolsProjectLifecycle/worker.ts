@@ -14,7 +14,7 @@ import { assertJournalReleased, assertSessionReleased, isRecord, openLifecycleSe
 
 const READY_PREFIX = 'DEVTOOLS_LIFECYCLE_WORKER_READY:'
 
-interface WorkerOptions {
+export interface WorkerOptions {
   projectPath: string
   cliPath: string
   sdkVersion: string
@@ -28,7 +28,7 @@ interface WorkerRecoveryEvidence {
   journal: Awaited<ReturnType<typeof assertJournalReleased>>
 }
 
-function parseWorkerOptions(raw: string | undefined): WorkerOptions {
+export function parseWorkerOptions(raw: string | undefined): WorkerOptions {
   const value: unknown = JSON.parse(raw || 'null')
   assert(isRecord(value), 'Lifecycle worker requires a JSON payload')
   for (const key of ['projectPath', 'cliPath', 'sdkVersion', 'selectedVersion']) {

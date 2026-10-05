@@ -11,6 +11,7 @@ export interface MachineE2ELeaseRecoveryScope {
   readonly ancestors: readonly string[]
   readonly sealed: boolean
   readonly completed: boolean
+  readonly cleanupKey?: string
 }
 
 export interface MachineE2ELeaseSnapshot {
@@ -30,17 +31,17 @@ export async function assertRecoveryNode(file: string, kind: 'directory' | 'file
   }
 }
 
-function assertKeys(value: unknown, keys: string[]): asserts value is Record<string, unknown> {
+function assertKeys(value: unknown, keys: string[], optionalKeys: string[] = []): asserts value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)
-    || !isDeepStrictEqual(Object.keys(value).sort(), keys.toSorted())) {
+    || !isDeepStrictEqual(Object.keys(value).filter(key => !optionalKeys.includes(key)).sort(), keys.toSorted())) {
     throw new Error('Machine lease recovery found unknown or missing record fields.')
   }
 }
 
-async function readRecord(file: string, keys: string[]) {
+async function readRecord(file: string, keys: string[], optionalKeys: string[] = []) {
   await assertRecoveryNode(file, 'file')
   const value: unknown = JSON.parse(await readFile(file, 'utf8'))
-  assertKeys(value, keys)
+  assertKeys(value, keys, optionalKeys)
   return value
 }
 
@@ -71,7 +72,7 @@ export async function readMachineSnapshot(directory: string): Promise<MachineE2E
   const scopes: MachineE2ELeaseRecoveryScope[] = []
   for (const file of (await entries(path.join(directory, 'scopes'))).sort()) {
     const id = file.endsWith('.json') ? file.slice(0, -5) : ''
-    const raw = await readRecord(path.join(directory, 'scopes', file), ['owner', 'ancestors', 'sealed', 'completed'])
+    const raw = await readRecord(path.join(directory, 'scopes', file), ['owner', 'ancestors', 'sealed', 'completed'], ['cleanupKey'])
     assertKeys(raw.owner, ['pid', 'token'])
     scopes.push({ id, ...await readScope(directory, id) })
   }

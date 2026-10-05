@@ -16,8 +16,8 @@ vi.mock('../../packages/devtools-runtime/src/lease/machine', async (original) =>
     ...actual,
     withMachineE2ELease: <T>(run: (lease: MachineE2ELease) => Promise<T>, options?: MachineE2ELeaseOptions) => actual.withMachineE2ELease(async (lease) => {
       const create = lease.createChildScope
-      lease.createChildScope = async () => {
-        const scope = await create()
+      lease.createChildScope = async (options) => {
+        const scope = await create(options)
         scopes.push(scope)
         return scope
       }

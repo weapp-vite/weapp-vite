@@ -15,8 +15,8 @@ vi.mock('../../../packages/devtools-runtime/src/lease/machine', async (original)
     ...actual,
     withMachineE2ELease: <T>(run: (lease: MachineE2ELease) => Promise<T>, options?: MachineE2ELeaseOptions) => actual.withMachineE2ELease(async (lease) => {
       const create = lease.createChildScope
-      lease.createChildScope = async () => {
-        const scope = await create()
+      lease.createChildScope = async (options) => {
+        const scope = await create(options)
         mocks.scopes.push(scope)
         return scope
       }
@@ -92,7 +92,9 @@ describe.skipIf(process.platform === 'win32')('real owned command process groups
     const controller = new AbortController()
     mocks.cleanup.mockClear()
     const running = runOwnedE2ECommand(process.execPath, [fixture.leaderFile], { signal: controller.signal })
-    const rejected = expect(running).rejects.toThrow(scenario === 'orphaned-borrower' ? 'child is still running' : 'stop could not be confirmed')
+    const rejected = scenario === 'orphaned-borrower'
+      ? expect(running).rejects.toMatchObject({ errors: [expect.objectContaining({ message: expect.stringContaining('child is still running') })] })
+      : expect(running).rejects.toThrow('stop could not be confirmed')
     let state: ShutdownFixtureState | undefined
     try {
       state = await fixture.ready()

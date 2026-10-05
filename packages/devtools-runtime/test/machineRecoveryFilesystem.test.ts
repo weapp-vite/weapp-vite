@@ -75,6 +75,12 @@ it('rejects a completed ancestor with unfinished descendants', async () => {
   await expect(readMachineE2ELeaseSnapshot(options)).rejects.toThrow('unverifiable scope ownership chain')
 })
 
+it.each([null, 0, '', '  '])('rejects an invalid optional cleanup binding %j', async (cleanupKey) => {
+  const { directory, options, parent, expected } = await machineRecoveryFixture(roots)
+  await writeFile(path.join(directory, 'scopes', `${parent}.json`), JSON.stringify({ owner: expected.owner, ancestors: [], sealed: true, completed: false, cleanupKey }))
+  await expect(readMachineE2ELeaseSnapshot(options)).rejects.toThrow('inherited E2E lease is invalid')
+})
+
 it('retains completed evidence if completion audit persistence prevents release', async () => {
   const { root, directory, options, expected } = await machineRecoveryFixture(roots)
   let auditPath = ''

@@ -182,3 +182,18 @@ it('serializes competing recoveries without running cleanup twice', async () => 
   }
   await expect(first).resolves.toMatchObject({ recoveredScopes: [expected.scopes[0]!.id] })
 })
+
+it('preserves an optional cleanup binding through orphan adoption and its audit', async () => {
+  const { directory, options, expected, parent } = await fixture()
+  const cleanupKey = 'bound-journal-resource'
+  await writeFile(path.join(directory, 'scopes', `${parent}.json`), JSON.stringify({ owner: expected.owner, ancestors: [], sealed: true, completed: false, cleanupKey }))
+  const bound = await readMachineE2ELeaseSnapshot(options)
+  expect(bound.scopes[0]?.cleanupKey).toBe(cleanupKey)
+  const result = await recoverMachineE2ELease({
+    ...options,
+    expected: bound,
+    recoverScope: async scope => expect(scope.cleanupKey).toBe(cleanupKey),
+  })
+  const first: unknown = JSON.parse((await readFile(result.auditFile, 'utf8')).split('\n')[0]!)
+  expect(first).toMatchObject({ expected: { scopes: [{ cleanupKey }] } })
+})

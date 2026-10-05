@@ -5,7 +5,7 @@ import { runLifecycleEntry } from './devtoolsProjectLifecycle/entry'
 import { createSuiteSignalScope } from './suiteRunner/signals'
 
 // 故意被终止的 worker 保留默认信号行为；只有负责收尾的入口接管取消信号。
-const signals = process.argv[2] === '--worker' ? undefined : createSuiteSignalScope()
+const signals = ['--worker', '--nested-runner'].includes(process.argv[2] ?? '') ? undefined : createSuiteSignalScope()
 try {
   process.exitCode = await runLifecycleEntry(fileURLToPath(import.meta.url), process.argv.slice(2), signals?.signal ?? new AbortController().signal)
 }

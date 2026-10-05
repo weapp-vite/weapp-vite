@@ -7,7 +7,8 @@ import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
 import { cleanupManagedWechatProjects, MANAGED_PROJECT_JOURNAL_ENV, readManagedWechatProjectRecords } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { createDevtoolsProjectJournal } from '../../utils/devtoolsProcessOwnership'
 import { preflightSelectedWechatDevtools, readDevtoolsVersionPolicy } from '../../utils/devtoolsSelection'
-import { assertJournalReleased, createLifecycleProject, errorText, readBaseFixtureConfiguration, recordStep, REPO_ROOT } from './context'
+import { assertJournalReleased, assertSessionReleased, createLifecycleProject, errorText, openLifecycleSession, readBaseFixtureConfiguration, recordStep, REPO_ROOT, sessionEvidence } from './context'
+import { checkKilledNestedRunner } from './nestedRunner'
 import { checkCancellationAfterReceipt, checkMultipleWindows } from './scenarios'
 import { checkKilledWorker } from './worker'
 
@@ -25,7 +26,7 @@ export async function runLifecycleChecks(signal: AbortSignal, scriptPath: string
   process.env[MANAGED_PROJECT_JOURNAL_ENV] = journalPath
   process.stdout.write(`[devtools-lifecycle] report: ${reportPath}\n`)
   try {
-    await withMachineE2ELease(async () => {
+    await withMachineE2ELease(async (lease) => {
       try {
         signal.throwIfAborted()
         const fixture = await readBaseFixtureConfiguration()
@@ -35,7 +36,7 @@ export async function runLifecycleChecks(signal: AbortSignal, scriptPath: string
         report.target = target
         report.versionPolicy = readDevtoolsVersionPolicy()
         const projects: string[] = []
-        for (const name of ['A', 'B', 'worker', 'cancellation']) {
+        for (const name of ['A', 'B', 'worker', 'cancellation', 'nested-runner', 'nested-protected']) {
           projects.push(await createLifecycleProject(runDirectory, name, fixture))
         }
         const common = { target, sdkVersion: fixture.sdkVersion, journalPath, steps, sessions, signal }
@@ -49,6 +50,30 @@ export async function runLifecycleChecks(signal: AbortSignal, scriptPath: string
           runDirectory,
           signal,
         }))
+        let protectedSession: OwnedSession | undefined
+        await recordStep(steps, 'open-nested-runner-protected-project', async () => {
+          protectedSession = await openLifecycleSession(target, projects[5]!, fixture.sdkVersion, signal)
+          sessions.push(protectedSession)
+          return sessionEvidence(protectedSession)
+        })
+        assert(protectedSession)
+        await recordStep(steps, 'nested-runner-SIGKILL-and-descendant-recovery', () => checkKilledNestedRunner({
+          lease,
+          target,
+          protectedSession: protectedSession!,
+          projectPath: projects[4]!,
+          cliPath: target.cliPath,
+          sdkVersion: fixture.sdkVersion,
+          selectedVersion: target.version!,
+          scriptPath,
+          journalPath,
+          runDirectory,
+          signal,
+        }))
+        await recordStep(steps, 'close-nested-runner-protected-project', async () => {
+          await protectedSession!.program.close()
+          return await assertSessionReleased(protectedSession!)
+        })
         await recordStep(steps, 'cancel-after-durable-receipt', () => checkCancellationAfterReceipt({ ...common, projectPath: projects[3]! }))
         await checkMultipleWindows({ ...common, projectA: projects[0]!, projectB: projects[1]! })
       }

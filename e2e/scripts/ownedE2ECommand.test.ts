@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   wait: vi.fn(),
   seal: vi.fn(),
   complete: vi.fn(),
+  scope: vi.fn(),
 }))
 vi.mock('execa', () => ({ execa: mocks.execute }))
 vi.mock('./ownedE2ECommand/shutdown', async original => ({
@@ -28,8 +29,9 @@ describe('outer E2E command ownership', () => {
     vi.resetAllMocks()
     mocks.lease.mockImplementation(async run => await run({
       environment: { WEAPP_VITE_E2E_MACHINE_LEASE: 'held-lease' },
-      createChildScope: async () => ({ environment: { WEAPP_VITE_E2E_MACHINE_LEASE: 'command-scope' }, seal: mocks.seal, complete: mocks.complete }),
+      createChildScope: mocks.scope,
     }))
+    mocks.scope.mockResolvedValue({ environment: { WEAPP_VITE_E2E_MACHINE_LEASE: 'command-scope' }, recoverStoppedDescendants: async () => {}, seal: mocks.seal, complete: mocks.complete })
     mocks.seal.mockResolvedValue(undefined)
     mocks.complete.mockResolvedValue(undefined)
     mocks.journal.mockResolvedValue('owned-command-journal')
@@ -47,7 +49,7 @@ describe('outer E2E command ownership', () => {
       try {
         return await run({
           environment: { WEAPP_VITE_E2E_MACHINE_LEASE: 'held-lease' },
-          createChildScope: async () => ({ environment: { WEAPP_VITE_E2E_MACHINE_LEASE: 'command-scope' }, seal: mocks.seal, complete: mocks.complete }),
+          createChildScope: mocks.scope,
         })
       }
       finally {
@@ -127,6 +129,15 @@ describe('outer E2E command ownership', () => {
     expect(mocks.complete).not.toHaveBeenCalled()
   })
 
+  it('does not leave a command scope when journal preparation fails', async () => {
+    const failure = new Error('journal storage unavailable')
+    mocks.journal.mockRejectedValueOnce(failure)
+    await expect(runOwnedE2ECommand('node', ['runner'])).rejects.toBe(failure)
+    expect(mocks.scope).not.toHaveBeenCalled()
+    expect(mocks.execute).not.toHaveBeenCalled()
+    expect(mocks.cleanup).not.toHaveBeenCalled()
+  })
+
   it('preserves the journal when the process tree cannot be confirmed stopped', async () => {
     const failure = new OwnedCommandShutdownError('still running')
     mocks.wait.mockRejectedValue(failure)
@@ -143,8 +154,9 @@ describe('outer E2E command ownership', () => {
   })
 
   it('does not clean the journal if a detached borrower remains after the command exits', async () => {
-    mocks.seal.mockRejectedValue(new Error('child is still running'))
-    await expect(runOwnedE2ECommand('node', ['runner'])).rejects.toThrow('child is still running')
+    const failure = new Error('child is still running')
+    mocks.seal.mockRejectedValue(failure)
+    await expect(runOwnedE2ECommand('node', ['runner'])).rejects.toMatchObject({ errors: [failure] })
     expect(mocks.cleanup).not.toHaveBeenCalled()
   })
 })

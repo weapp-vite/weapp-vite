@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   lease: vi.fn(),
   seal: vi.fn(),
   stop: vi.fn(),
+  scope: vi.fn(),
 }))
 vi.mock('execa', () => ({ execa: mocks.execa }))
 vi.mock('../../../packages/devtools-runtime/src/lease/machine', () => ({ withMachineE2ELease: mocks.lease }))
@@ -74,8 +75,9 @@ beforeEach(() => {
     child.kill('SIGKILL')
   })
   mocks.lease.mockImplementation(async run => await run({
-    createChildScope: async () => ({ environment: {}, seal: mocks.seal, complete: async () => {} }),
+    createChildScope: mocks.scope,
   }))
+  mocks.scope.mockResolvedValue({ environment: {}, recoverStoppedDescendants: async () => {}, seal: mocks.seal, complete: async () => {} })
   vi.spyOn(console, 'log').mockImplementation(() => {})
   vi.spyOn(console, 'warn').mockImplementation(() => {})
   vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -226,6 +228,15 @@ describe('suite runner cancellation ownership', () => {
     await expect(runTaskSuite('e2e:lease-busy-test', tasks, options)).rejects.toBe(failure)
     expect(mocks.execa).not.toHaveBeenCalled()
     expect(mocks.journal).not.toHaveBeenCalled()
+  })
+
+  it('does not leave a task scope when journal preparation fails', async () => {
+    mocks.journal.mockRejectedValueOnce(new Error('journal storage unavailable'))
+    const runTask = vi.fn(async () => 0)
+    expect(await runTaskSuite('e2e:journal-unavailable', tasks.slice(0, 1), { ...options, runTask })).toBe(1)
+    expect(mocks.scope).not.toHaveBeenCalled()
+    expect(runTask).not.toHaveBeenCalled()
+    expect(mocks.cleanup).not.toHaveBeenCalled()
   })
 
   it('blocks parent journal cleanup and the next task while the task scope has a live borrower', async () => {

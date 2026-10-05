@@ -2,8 +2,9 @@
 import type { Options } from 'execa'
 import { execa } from 'execa'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
-import { cleanupManagedWechatProjects, MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { createDevtoolsProjectJournal } from '../utils/devtoolsProcessOwnership'
+import { cleanupDevtoolsCommandScope } from '../utils/devtoolsScopeCleanup'
 import { OwnedCommandShutdownError, waitForOwnedCommand } from './ownedE2ECommand/shutdown'
 
 interface OwnedE2ECommandOptions {
@@ -18,8 +19,8 @@ export async function runOwnedE2ECommand(command: string, args: string[], option
     if (options.signal?.aborted) {
       return 1
     }
-    const childScope = await lease.createChildScope()
     const journalPath = await createDevtoolsProjectJournal()
+    const childScope = await lease.createChildScope({ cleanupKey: journalPath })
     const commandErrors: unknown[] = []
     let exitCode = 1
     try {
@@ -40,15 +41,18 @@ export async function runOwnedE2ECommand(command: string, args: string[], option
     catch (error) {
       commandErrors.push(error)
     }
-    // 先封存后核查，避免进程组退出但独立子任务仍活着，或快照之后才登记借用。
-    await childScope.seal()
     const shutdownError = commandErrors.find(error => error instanceof OwnedCommandShutdownError)
     if (shutdownError) {
+      try {
+        await childScope.seal()
+      }
+      catch (error) {
+        throw new AggregateError([...commandErrors, error], 'E2E command shutdown and scope sealing are incomplete.')
+      }
       throw shutdownError
     }
     try {
-      await cleanupManagedWechatProjects({ journalPath, scope: 'journal' })
-      await childScope.complete()
+      await cleanupDevtoolsCommandScope(childScope, journalPath)
     }
     catch (error) {
       throw new AggregateError([...commandErrors, error], 'E2E command project cleanup is incomplete; stop the acceptance lane.')

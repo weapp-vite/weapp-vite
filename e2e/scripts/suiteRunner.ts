@@ -7,8 +7,9 @@ import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
-import { cleanupManagedWechatProjects, MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { createDevtoolsProjectJournal } from '../utils/devtoolsProcessOwnership'
+import { cleanupDevtoolsCommandScope } from '../utils/devtoolsScopeCleanup'
 import { E2E_RUNTIME_PROVIDER_ENV, resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_REPORT_DIR_ENV, ACCEPTANCE_ROOT, ACCEPTANCE_RUN_ID_ENV, ACCEPTANCE_SHA_ENV, ACCEPTANCE_TASK_ENV, createAcceptanceIdentity, DOM_ACCEPTANCE_ENV, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { validateTaskAcceptance } from './domAcceptanceReport/task'
@@ -583,8 +584,8 @@ async function runOwnedTaskSuite(
     let processStopError: OwnedCommandShutdownError | undefined
 
     try {
-      childScope = await lease.createChildScope()
       journalPath = await createDevtoolsProjectJournal()
+      childScope = await lease.createChildScope({ cleanupKey: journalPath })
       task.env = {
         ...task.env,
         ...childScope.environment,
@@ -638,13 +639,11 @@ async function runOwnedTaskSuite(
     finally {
       if (journalPath) {
         try {
-          // 根入口同样封存任务子树；独立进程组或迟到借用均不能越过父窗口清理。
-          await childScope?.seal()
           if (processStopError) {
+            await childScope?.seal()
             await Promise.reject(processStopError)
           }
-          await cleanupManagedWechatProjects({ journalPath, scope: 'journal' })
-          await childScope?.complete()
+          await cleanupDevtoolsCommandScope(childScope, journalPath)
         }
         catch (error) {
           const message = error instanceof Error ? error.message : String(error)
