@@ -93,6 +93,9 @@ function fields(source: string) {
 
 /** 目前核对过的协议来自所选 Stable 2.02.2608070 的主进程关闭日志。 */
 export function consumeWindowCloseTrace(evidence: ManagedWechatWindowCloseEvidence, projectPath: string, input: { fileIdentity: string, line: string }) {
+  if (/^\[[^\]]+\]\[(?:WARN|INFO)\]\[[^\]]+\]\[MAIN\].*\benvMessagerService setuped\s*$/.test(input.line)) {
+    throw new Error('Managed DevTools MAIN log restarted after the close cursor; host generation is unresolved.')
+  }
   const match = /^\[([^\]]+)\]\[(?:WARN|INFO)\]\[([^\]]+)\]\[MAIN\].*? \[win-close-trace\] ([\w:-]+) (.*)$/.exec(input.line)
   if (!match) {
     return

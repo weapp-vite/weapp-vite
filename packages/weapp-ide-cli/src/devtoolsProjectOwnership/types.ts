@@ -40,6 +40,8 @@ export interface ManagedWechatWindowCloseEvidence {
     webContentsDestroyedAt?: string
   }
   failure?: string
+  /** 旧整目录门禁恢复时保留原失败和游标，不重新捕获偏移或重复关窗。 */
+  logInventoryRecovery?: { failure: string, cursors: ManagedWechatWindowLogCursor[] }
 }
 
 export interface ManagedWechatProjectRecord {

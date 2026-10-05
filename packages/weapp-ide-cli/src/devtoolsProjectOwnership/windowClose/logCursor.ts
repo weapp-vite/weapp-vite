@@ -6,6 +6,9 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 const readLimit = 2 * 1024 * 1024
+const emptyAnchor = createHash('sha256').digest('hex')
+
+export const legacyLogInventoryFailure = 'Managed DevTools window-close log set changed; host generation or log rotation is unresolved.'
 
 export async function selectedLogDirectory(profileDir: string) {
   const selected = await fs.realpath(profileDir)
@@ -39,15 +42,60 @@ async function anchorAt(file: FileHandle, offset: number) {
   return createHash('sha256').update(await readBytes(file, start, offset - start)).digest('hex')
 }
 
-/** 游标在关闭前捕获；旧日志和未完成的旧行不能成为本次关闭的证据。 */
-export async function captureLogCursors(directory: string): Promise<ManagedWechatWindowLogCursor[]> {
+async function openLogFile(directory: string, name: string) {
+  const filename = path.join(directory, name)
+  const before = await fs.lstat(filename)
+  if (!before.isFile()) {
+    throw new Error('Managed DevTools window-close log must be a regular file without redirection.')
+  }
+  const file = await fs.open(filename, 'r')
+  try {
+    const after = await file.stat()
+    if (!after.isFile() || identity(after) !== identity(before)) {
+      throw new Error('Managed DevTools window-close log changed while opening its evidence stream.')
+    }
+    return file
+  }
+  catch (error) {
+    await file.close()
+    throw error
+  }
+}
+
+async function hasMainPrefix(file: FileHandle, size: number, productVersion: string) {
+  const prefix = (await readBytes(file, 0, Math.min(size, 4096))).toString('utf8')
+  const firstNewline = prefix.indexOf('\n')
+  if (firstNewline < 0) {
+    return false
+  }
+  const firstLine = prefix.slice(0, firstNewline)
+  return /^\[[^\]\r\n]+\]\[[A-Z]+\]\[([^\]\r\n]+)\]\[MAIN\]/.exec(firstLine)?.[1] === productVersion
+}
+
+function requireUniqueMain(cursors: ManagedWechatWindowLogCursor[]) {
+  if (cursors.length !== 1) {
+    throw new Error('Managed DevTools window-close evidence requires one unambiguous MAIN log for the selected product version.')
+  }
+  return cursors
+}
+
+async function validateCursor(file: FileHandle, cursor: ManagedWechatWindowLogCursor) {
+  const stat = await file.stat()
+  if (!stat.isFile() || identity(stat) !== cursor.identity || stat.size < cursor.offset || await anchorAt(file, cursor.offset) !== cursor.anchor) {
+    throw new Error('Managed DevTools window-close log was replaced, truncated, or rewritten; destruction evidence is unresolved.')
+  }
+  return stat
+}
+
+/** 关闭前固定唯一 MAIN 流；辅助日志和历史空日志不属于窗口销毁证据。 */
+export async function captureLogCursors(directory: string, productVersion: string): Promise<ManagedWechatWindowLogCursor[]> {
   const cursors: ManagedWechatWindowLogCursor[] = []
   for (const name of await logFiles(directory)) {
-    const file = await fs.open(path.join(directory, name), 'r')
+    const file = await openLogFile(directory, name)
     try {
       const stat = await file.stat()
-      if (!stat.isFile()) {
-        throw new Error('Managed DevTools window-close log is not a regular file.')
+      if (!await hasMainPrefix(file, stat.size, productVersion)) {
+        continue
       }
       const last = stat.size ? await readBytes(file, stat.size - 1, 1) : undefined
       cursors.push({ name, identity: identity(stat), offset: stat.size, anchor: await anchorAt(file, stat.size), skipPartialLine: last !== undefined && last[0] !== 10 })
@@ -56,23 +104,43 @@ export async function captureLogCursors(directory: string): Promise<ManagedWecha
       await file.close()
     }
   }
-  return cursors
+  return requireUniqueMain(cursors)
+}
+
+/** 旧整目录门禁只能从原游标收窄；非空证据丢失或新文件均不能补充候选。 */
+export async function recoverLogCursors(directory: string, cursors: ManagedWechatWindowLogCursor[], productVersion: string) {
+  const main: ManagedWechatWindowLogCursor[] = []
+  for (const cursor of cursors) {
+    let file: FileHandle
+    try {
+      file = await openLogFile(directory, cursor.name)
+    }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT' && cursor.offset === 0 && cursor.anchor === emptyAnchor && !cursor.skipPartialLine) {
+        continue
+      }
+      throw error
+    }
+    try {
+      await validateCursor(file, cursor)
+      if (await hasMainPrefix(file, cursor.offset, productVersion)) {
+        main.push({ ...cursor })
+      }
+    }
+    finally {
+      await file.close()
+    }
+  }
+  return requireUniqueMain(main)
 }
 
 /** 仅消费完整新增行；文件更换、截断或无法衔接的轮转均保持未解决状态。 */
 export async function readFreshLogLines(directory: string, cursors: ManagedWechatWindowLogCursor[]) {
-  const names = await logFiles(directory)
-  if (names.length !== cursors.length || names.some((name, index) => name !== cursors[index]?.name)) {
-    throw new Error('Managed DevTools window-close log set changed; host generation or log rotation is unresolved.')
-  }
   const lines: { fileIdentity: string, line: string }[] = []
   for (const cursor of cursors) {
-    const file = await fs.open(path.join(directory, cursor.name), 'r')
+    const file = await openLogFile(directory, cursor.name)
     try {
-      const stat = await file.stat()
-      if (!stat.isFile() || identity(stat) !== cursor.identity || stat.size < cursor.offset || await anchorAt(file, cursor.offset) !== cursor.anchor) {
-        throw new Error('Managed DevTools window-close log was replaced, truncated, or rewritten; destruction evidence is unresolved.')
-      }
+      const stat = await validateCursor(file, cursor)
       const bytes = await readBytes(file, cursor.offset, Math.min(stat.size - cursor.offset, readLimit))
       const end = bytes.lastIndexOf(10)
       if (end < 0) {

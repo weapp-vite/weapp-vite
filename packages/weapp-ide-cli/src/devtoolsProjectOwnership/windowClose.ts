@@ -1,7 +1,7 @@
 import type { ManagedWechatProjectRecord, ManagedWechatWindowCloseEvidence } from './types'
 import fs from 'node:fs/promises'
 import { setTimeout } from 'node:timers/promises'
-import { captureLogCursors, readFreshLogLines, selectedLogDirectory } from './windowClose/logCursor'
+import { captureLogCursors, legacyLogInventoryFailure, readFreshLogLines, recoverLogCursors, selectedLogDirectory } from './windowClose/logCursor'
 import { consumeWindowCloseTrace } from './windowClose/protocol'
 
 /** 只捕获本次显式安装的日志，必须先于关闭命令持久化。 */
@@ -11,7 +11,7 @@ export async function captureManagedWindowClose(record: ManagedWechatProjectReco
   }
   const profileDir = await fs.realpath(record.target.profileDir)
   const capturedAt = new Date().toISOString()
-  const cursors = await captureLogCursors(await selectedLogDirectory(profileDir))
+  const cursors = await captureLogCursors(await selectedLogDirectory(profileDir), record.target.version)
   return { protocol: 'wechat-devtools-window-close-trace-v1', profileDir, productVersion: record.target.version, capturedAt, cursors, calls: [] }
 }
 
@@ -22,7 +22,21 @@ export async function waitForManagedWindowClosed(record: ManagedWechatProjectRec
     throw new Error('Managed DevTools project close has no durable native-window evidence cursor.')
   }
   if (evidence.failure) {
-    throw new Error(evidence.failure)
+    if (evidence.failure !== legacyLogInventoryFailure) {
+      throw new Error(evidence.failure)
+    }
+    if (await fs.realpath(record.target.profileDir) !== evidence.profileDir || record.target.version !== evidence.productVersion) {
+      throw new Error('Managed DevTools window-close evidence no longer matches its selected installation.')
+    }
+    const cursors = await recoverLogCursors(await selectedLogDirectory(evidence.profileDir), evidence.cursors, evidence.productVersion)
+    const mainIdentity = cursors[0]!.identity
+    if (evidence.calls.some(call => call.fileIdentity !== mainIdentity) || (evidence.window && evidence.window.fileIdentity !== mainIdentity)) {
+      throw new Error('Managed DevTools legacy window-close references do not belong to its original MAIN evidence stream.')
+    }
+    evidence.logInventoryRecovery = { failure: evidence.failure, cursors: evidence.cursors.map(cursor => ({ ...cursor })) }
+    evidence.cursors = cursors
+    delete evidence.failure
+    await persist()
   }
   const deadline = Date.now() + (options.timeoutMs ?? 15_000)
   do {

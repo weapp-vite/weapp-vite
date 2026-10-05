@@ -2,6 +2,13 @@ import type { ManagedWechatWindowCloseEvidence } from '../types'
 import { z } from 'zod'
 
 const text = z.string().min(1)
+const cursorSchema = z.object({
+  name: z.string().regex(/^[^/\\]+\.log$/),
+  identity: text,
+  offset: z.number().int().nonnegative(),
+  anchor: z.string().regex(/^[a-f0-9]{64}$/),
+  skipPartialLine: z.boolean(),
+})
 const callSchema = z.object({
   fileIdentity: text,
   winId: text,
@@ -16,13 +23,7 @@ export const managedWindowCloseSchema = z.object({
   productVersion: text,
   capturedAt: text,
   dispatchedAt: text.optional(),
-  cursors: z.array(z.object({
-    name: z.string().regex(/^[^/\\]+\.log$/),
-    identity: text,
-    offset: z.number().int().nonnegative(),
-    anchor: z.string().regex(/^[a-f0-9]{64}$/),
-    skipPartialLine: z.boolean(),
-  })).min(1),
+  cursors: z.array(cursorSchema).min(1),
   calls: z.array(callSchema),
   window: callSchema.extend({
     runtimeId: text,
@@ -31,4 +32,5 @@ export const managedWindowCloseSchema = z.object({
     webContentsDestroyedAt: text.optional(),
   }).optional(),
   failure: text.optional(),
+  logInventoryRecovery: z.object({ failure: text, cursors: z.array(cursorSchema).min(1) }).optional(),
 }) satisfies z.ZodType<ManagedWechatWindowCloseEvidence>
