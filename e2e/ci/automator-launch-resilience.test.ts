@@ -13,13 +13,15 @@ const DEFAULT_WECHAT_CLI_PATH = process.platform === 'win32'
   ? 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
   : '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 
-const { captureDevtoolsLogBaselineMock, cleanupResidualDevtoolsProcessesMock, connectMock, execaMock, launchMock, openWechatIdeProjectByHttpMock, resetWechatIdeFileUtilsByHttpMock, runWechatIdeEngineBuildByHttpMock, scanRecentDevtoolsSimulatorBootIssuesMock, MockMiniProgram } = vi.hoisted(() => {
+const { captureDevtoolsLogBaselineMock, cleanupManagedWechatProjectsMock, cleanupResidualDevtoolsProcessesMock, closeManagedWechatProjectMock, connectMock, execaMock, launchMock, openWechatIdeProjectByHttpMock, resetWechatIdeFileUtilsByHttpMock, runWechatIdeEngineBuildByHttpMock, scanRecentDevtoolsSimulatorBootIssuesMock, MockMiniProgram } = vi.hoisted(() => {
   class MockMiniProgramClass {
     send = vi.fn(async () => ({ SDKVersion: '3.13.2' }))
   }
   return {
     captureDevtoolsLogBaselineMock: vi.fn(() => ({ 'devtools.log': 120 })),
+    cleanupManagedWechatProjectsMock: vi.fn(async () => {}),
     cleanupResidualDevtoolsProcessesMock: vi.fn(async () => {}),
+    closeManagedWechatProjectMock: vi.fn(async () => {}),
     connectMock: vi.fn(),
     execaMock: vi.fn(),
     launchMock: vi.fn(),
@@ -47,6 +49,12 @@ vi.mock('execa', () => {
     execa: execaMock,
   }
 })
+
+vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership', async importOriginal => ({
+  ...await importOriginal<typeof import('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership')>(),
+  cleanupManagedWechatProjects: cleanupManagedWechatProjectsMock,
+  closeManagedWechatProject: closeManagedWechatProjectMock,
+}))
 
 vi.mock('../../packages/weapp-ide-cli/src/cli/http', () => {
   return {
@@ -285,12 +293,14 @@ function expectBridgeWrapperProjectPath(sourceProjectPath: string, projectPath: 
   })
 }
 
-describe('automator launch resilience', { concurrent: false }, () => {
+describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, () => {
   let sandboxRoot = ''
 
   beforeEach(() => {
     sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weapp-vite-automator-launch-'))
     const reportDir = path.join(sandboxRoot, 'report')
+    // 默认用例显式覆盖非受管路径；受管专项用例在各自 fixture 内重新启用日志。
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', undefined)
     vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', undefined)
     vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_SLUG', 'automator-launch-unit')
     vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_DIR', reportDir)
@@ -298,7 +308,9 @@ describe('automator launch resilience', { concurrent: false }, () => {
     vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_MD_FILE', path.join(reportDir, 'index.md'))
     vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_JSON_FILE', path.join(reportDir, 'index.json'))
     captureDevtoolsLogBaselineMock.mockReset()
+    cleanupManagedWechatProjectsMock.mockReset()
     cleanupResidualDevtoolsProcessesMock.mockReset()
+    closeManagedWechatProjectMock.mockReset()
     connectMock.mockReset()
     execaMock.mockReset()
     launchMock.mockReset()
@@ -306,7 +318,9 @@ describe('automator launch resilience', { concurrent: false }, () => {
     resetWechatIdeFileUtilsByHttpMock.mockReset()
     runWechatIdeEngineBuildByHttpMock.mockReset()
     scanRecentDevtoolsSimulatorBootIssuesMock.mockReset()
+    cleanupManagedWechatProjectsMock.mockResolvedValue(undefined)
     cleanupResidualDevtoolsProcessesMock.mockResolvedValue(undefined)
+    closeManagedWechatProjectMock.mockResolvedValue(undefined)
     openWechatIdeProjectByHttpMock.mockResolvedValue('')
     resetWechatIdeFileUtilsByHttpMock.mockResolvedValue('')
     runWechatIdeEngineBuildByHttpMock.mockResolvedValue({
@@ -373,6 +387,61 @@ describe('automator launch resilience', { concurrent: false }, () => {
     finally {
       signal.mockRestore()
     }
+  })
+
+  it('routes a managed direct launch through its owned bridge and closes only the received project', async () => {
+    const parentJournal = path.join(sandboxRoot, 'managed-journal')
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', parentJournal)
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const miniProgram = createMockMiniProgram()
+    const onSessionMetadata = vi.fn()
+    let receipt: { id: string, journalPath: string } | undefined
+    execaMock.mockImplementationOnce(async (_command, _args, options) => {
+      const journalPath = options.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL as string
+      expect(path.dirname(journalPath)).toBe(path.join(parentJournal, 'children'))
+      expect(fs.statSync(journalPath).isDirectory()).toBe(true)
+      receipt = { id: 'owned-window', journalPath }
+      return { exitCode: 0, stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420', managedProject: receipt }) }
+    })
+    connectMock.mockResolvedValueOnce(miniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    const session = await launchAutomator({ projectPath: sandboxRoot, launchMode: 'direct', timeout: 1_000, maxLaunchRetries: 1, onSessionMetadata })
+
+    expect(launchMock).not.toHaveBeenCalled()
+    expectBridgeBootstrapCall(0, 1_000)
+    expect(readBridgePayloadFromExecaCall()?.projectPath).toBe(sandboxRoot)
+    expect(connectMock).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ wsEndpoint: 'ws://127.0.0.1:9420' }))
+    expect(onSessionMetadata).toHaveBeenCalledExactlyOnceWith({ projectPath: sandboxRoot, wsEndpoint: 'ws://127.0.0.1:9420', port: 9420, managedProject: receipt })
+    expect(miniProgram.__rawCurrentPage).toHaveBeenCalled()
+    await session.close()
+    await session.close()
+    expect(closeManagedWechatProjectMock).toHaveBeenCalledExactlyOnceWith(receipt)
+    expect(miniProgram.__rawDisconnect).toHaveBeenCalledOnce()
+    expect(miniProgram.__rawClose).not.toHaveBeenCalled()
+  })
+
+  it.each(['direct', 'bridge'] as const)('rejects a managed %s launch without ownership evidence and cleans only its attempt journal', async (launchMode) => {
+    const parentJournal = path.join(sandboxRoot, 'managed-journal')
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', parentJournal)
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    execaMock.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }) })
+
+    const { launchAutomator } = await import('../utils/automator')
+    await expect(launchAutomator({ projectPath: sandboxRoot, launchMode, timeout: 1_000, maxLaunchRetries: 1 }))
+      .rejects
+      .toThrow('Managed automator bridge did not return project ownership evidence')
+
+    const journalPath = execaMock.mock.calls[0]?.[2].env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL as string
+    expect(path.dirname(journalPath)).toBe(path.join(parentJournal, 'children'))
+    expect(cleanupManagedWechatProjectsMock).toHaveBeenCalledExactlyOnceWith({ journalPath, scope: 'journal' })
+    expect(closeManagedWechatProjectMock).not.toHaveBeenCalled()
+    expect(connectMock).not.toHaveBeenCalled()
+    expect(launchMock).not.toHaveBeenCalled()
+    expect(execaMock).toHaveBeenCalledOnce()
   })
 
   it('exhausts the total budget without retrying a canceled bootstrap or connecting its late result', async () => {
