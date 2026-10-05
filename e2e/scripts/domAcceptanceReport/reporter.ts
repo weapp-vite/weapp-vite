@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { ACCEPTED_DEVTOOLS_VERSION_ENV, readDevtoolsVersionPolicy } from '../../utils/devtoolsSelection'
 import { evaluateExpectedErrors } from './expectedErrors'
 import {
   ACCEPTANCE_REPORT_DIR_ENV,
@@ -119,8 +120,20 @@ export default class DomAcceptanceReporter implements Reporter {
     this.diagnostics.collect(this.activeCase, Boolean(finishedAt))
     errors = [...errors, ...this.diagnostics.errors, ...(finishedAt ? evaluateExpectedErrors([...this.cases.values()], this.diagnostics.entries) : [])]
     const cases = [...this.cases.values()].map(evaluateAcceptanceCase)
+    const provider = process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER === 'headless' ? 'headless' : 'devtools'
+    const devtoolsVersionPolicy = provider === 'devtools' ? readDevtoolsVersionPolicy() : undefined
+    const runtime = cases.find(item => item.acceptance?.runtime)?.acceptance?.runtime
+    const environment: AcceptanceReport['environment'] = {
+      nodeVersion: process.version,
+      ideVersion: runtime?.ideVersion ?? null,
+      baseLibraryVersion: runtime?.baseLibraryVersion ?? null,
+      ...(devtoolsVersionPolicy ? { devtoolsVersionPolicy } : {}),
+    }
     if (finishedAt && this.strict) {
-      errors.push(...evaluateRuntimeVersions(cases, process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER === 'headless' ? 'headless' : 'devtools'))
+      if (provider === 'devtools' && process.env[ACCEPTED_DEVTOOLS_VERSION_ENV]?.trim() && !devtoolsVersionPolicy) {
+        errors.push('Missing DevTools version policy evidence for selected-version opt-in')
+      }
+      errors.push(...evaluateRuntimeVersions(cases, provider, environment))
       errors.push(...evaluateSelectedAcceptanceCases(this.selectedCases, cases))
     }
     const summary = summarizeAcceptanceCases(cases)
@@ -130,12 +143,8 @@ export default class DomAcceptanceReporter implements Reporter {
       invocationId: this.invocationId,
       taskLabel: process.env[ACCEPTANCE_TASK_ENV] || process.env.WEAPP_VITE_E2E_TARGET_FILE || 'direct-vitest',
       template: process.env.WEAPP_VITE_E2E_TEMPLATE || null,
-      provider: process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER === 'headless' ? 'headless' : 'devtools',
-      environment: {
-        nodeVersion: process.version,
-        ideVersion: cases.find(item => item.acceptance?.runtime)?.acceptance?.runtime?.ideVersion ?? null,
-        baseLibraryVersion: cases.find(item => item.acceptance?.runtime)?.acceptance?.runtime?.baseLibraryVersion ?? null,
-      },
+      provider,
+      environment,
       strict: this.strict,
       startedAt: this.startedAt,
       finishedAt,

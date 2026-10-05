@@ -1,7 +1,19 @@
+import type { DevtoolsVersionPolicyReport } from '../../utils/devtoolsSelection'
 import type { DomAcceptance } from '../../utils/domAcceptance/types'
 import type { AcceptanceReport } from './types'
 import { describe, expect, it } from 'vitest'
 import { assertAcceptanceReportPassed, createAcceptanceIdentity, evaluateAcceptanceCase, isStrictDomAcceptanceSuite, sanitizeAcceptanceText, sanitizeAcceptanceValue, summarizeAcceptanceCases } from './helpers'
+
+const selectedVersionPolicy: DevtoolsVersionPolicyReport = {
+  mode: 'selected-version-opt-in',
+  selectedVersion: '2.02.2608060',
+  selectedChannel: 'stable',
+  officialVersion: '2.02.2608080',
+  acceptedVersion: '2.02.2608060',
+  officialVersionMatches: false,
+  officialSource: 'https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json',
+  officialQueriedAt: '2026-09-01T00:00:00.000Z',
+}
 
 function createPlan(): DomAcceptance {
   return {
@@ -110,6 +122,30 @@ describe('DOM acceptance report validation', () => {
     report.environment.baseLibraryVersion = '3.17.2'
     delete report.cases[0]!.acceptance!.runtime
     expect(() => assertAcceptanceReportPassed(report, identity)).toThrow('Missing observed')
+  })
+
+  it.each<Partial<DevtoolsVersionPolicyReport>>([
+    {},
+    { mode: 'official-stable', officialVersion: selectedVersionPolicy.selectedVersion, acceptedVersion: null, officialVersionMatches: true },
+  ])('accepts a consistent version policy after serialization: %j', (update) => {
+    const report = createReport()
+    report.environment.devtoolsVersionPolicy = { ...selectedVersionPolicy, ...update }
+    expect(() => assertAcceptanceReportPassed(JSON.parse(JSON.stringify(report)), report)).not.toThrow()
+  })
+
+  it.each([
+    [{ selectedVersion: '2.02.2608070', acceptedVersion: '2.02.2608070' }, 'Observed DevTools version does not match'],
+    [{ acceptedVersion: null }, 'does not match the accepted version'],
+    [{ acceptedVersion: '2.02.2608070' }, 'does not match the accepted version'],
+    [{ mode: 'official-stable', acceptedVersion: null }, 'Official Stable policy'],
+    [{ mode: 'official-stable', officialVersion: '2.02.2608080', officialVersionMatches: false }, 'Official Stable policy'],
+    [{ officialVersionMatches: true }, 'inconsistent official version match'],
+    [{ selectedChannel: 'rc' }, 'valid serialized report'],
+  ])('rejects altered version policy evidence even when the report passed: %j', (update, message) => {
+    const report = createReport()
+    const changed = structuredClone(report)
+    Object.assign(changed.environment.devtoolsVersionPolicy = { ...selectedVersionPolicy }, update)
+    expect(() => assertAcceptanceReportPassed(JSON.parse(JSON.stringify(changed)), report)).toThrow(message as string)
   })
 
   it('redacts Windows and Unix home paths, credentials and emails', () => {

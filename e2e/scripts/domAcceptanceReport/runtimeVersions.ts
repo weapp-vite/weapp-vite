@@ -8,12 +8,25 @@ function completeVersion(value: unknown): value is string {
 export function evaluateRuntimeVersions(
   cases: AcceptanceCaseInput[],
   provider: AcceptanceReport['provider'],
-  environment?: Pick<AcceptanceReport['environment'], 'ideVersion' | 'baseLibraryVersion'>,
+  environment?: Pick<AcceptanceReport['environment'], 'ideVersion' | 'baseLibraryVersion' | 'devtoolsVersionPolicy'>,
 ): string[] {
   if (provider !== 'devtools') {
     return []
   }
   const errors: string[] = []
+  const policy = environment?.devtoolsVersionPolicy
+  if (policy) {
+    const officialVersionMatches = policy.selectedVersion === policy.officialVersion
+    if (policy.officialVersionMatches !== officialVersionMatches) {
+      errors.push('DevTools version policy has an inconsistent official version match')
+    }
+    if (policy.mode === 'official-stable' && (!officialVersionMatches || policy.acceptedVersion !== null)) {
+      errors.push('Official Stable policy must select the official version without an accepted version override')
+    }
+    if (policy.mode === 'selected-version-opt-in' && policy.acceptedVersion !== policy.selectedVersion) {
+      errors.push('Selected DevTools version policy does not match the accepted version')
+    }
+  }
   let first: NonNullable<AcceptanceCaseInput['acceptance']>['runtime']
   for (const item of cases) {
     if (item.state === 'pending' || item.state === 'skipped') {
@@ -30,6 +43,9 @@ export function evaluateRuntimeVersions(
     }
     if (environment && (runtime.ideVersion !== environment.ideVersion || runtime.baseLibraryVersion !== environment.baseLibraryVersion)) {
       errors.push(`Observed runtime versions do not match report environment: ${item.id}`)
+    }
+    if (policy && runtime.ideVersion !== policy.selectedVersion) {
+      errors.push(`Observed DevTools version does not match selected version policy: ${item.id}`)
     }
   }
   return errors

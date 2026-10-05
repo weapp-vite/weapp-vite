@@ -6,6 +6,16 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  ACCEPTED_DEVTOOLS_VERSION_ENV,
+  DEVTOOLS_ACCEPTED_VERSION_ENV,
+  DEVTOOLS_OFFICIAL_QUERIED_AT_ENV,
+  DEVTOOLS_OFFICIAL_SOURCE_ENV,
+  DEVTOOLS_OFFICIAL_VERSION_ENV,
+  DEVTOOLS_SELECTED_CHANNEL_ENV,
+  DEVTOOLS_SELECTED_VERSION_ENV,
+  DEVTOOLS_VERSION_POLICY_ENV,
+} from '../../utils/devtoolsSelection'
 import { assertAcceptanceReportPassed, createAcceptanceIdentity } from './helpers'
 import DomAcceptanceReporter from './reporter'
 import { validateTaskAcceptance } from './task'
@@ -129,6 +139,36 @@ describe('Vitest DOM reporter lifecycle', () => {
     const reporter = new DomAcceptanceReporter()
     reporter.onTestRunEnd([createModule([createTest('passed')])], [], 'passed')
     expect(readReports()[0]).toMatchObject({ status: 'passed', errors: [], runtimeDiagnostics: [] })
+  })
+
+  it('records the selected DevTools version policy in the acceptance report', () => {
+    vi.stubEnv(DEVTOOLS_VERSION_POLICY_ENV, 'selected-version-opt-in')
+    vi.stubEnv(DEVTOOLS_SELECTED_VERSION_ENV, '2.02.2608070')
+    vi.stubEnv(DEVTOOLS_SELECTED_CHANNEL_ENV, 'stable')
+    vi.stubEnv(DEVTOOLS_OFFICIAL_VERSION_ENV, '2.02.2608080')
+    vi.stubEnv(DEVTOOLS_ACCEPTED_VERSION_ENV, '2.02.2608070')
+    vi.stubEnv(DEVTOOLS_OFFICIAL_SOURCE_ENV, 'https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json')
+    vi.stubEnv(DEVTOOLS_OFFICIAL_QUERIED_AT_ENV, '2026-10-04T21:09:33.898Z')
+    const test = createTest('passed')
+    ;(test.meta() as { domAcceptance: DomAcceptance }).domAcceptance.runtime = { ideVersion: '2.02.2608070', baseLibraryVersion: '3.17.2' }
+    new DomAcceptanceReporter().onTestRunEnd([createModule([test])], [], 'passed')
+    expect(readReports()[0]?.environment.devtoolsVersionPolicy).toEqual({
+      mode: 'selected-version-opt-in',
+      selectedVersion: '2.02.2608070',
+      selectedChannel: 'stable',
+      officialVersion: '2.02.2608080',
+      acceptedVersion: '2.02.2608070',
+      officialVersionMatches: false,
+      officialSource: 'https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json',
+      officialQueriedAt: '2026-10-04T21:09:33.898Z',
+    })
+  })
+
+  it('fails strict DevTools acceptance when opt-in has no preflight evidence', () => {
+    vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, '2.02.2608070')
+    const reporter = new DomAcceptanceReporter()
+    expect(() => reporter.onTestRunEnd([createModule([createTest('passed')])], [], 'passed')).toThrow('Missing DevTools version policy evidence')
+    expect(readReports()[0]?.errors).toContain('Missing DevTools version policy evidence for selected-version opt-in')
   })
 
   it.each(['unconfigured', 'missing'] as const)('preserves non-strict reporting with an %s diagnostic journal', (state) => {

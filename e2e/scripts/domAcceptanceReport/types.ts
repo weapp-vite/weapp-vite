@@ -1,3 +1,4 @@
+import type { DevtoolsVersionPolicyReport } from '../../utils/devtoolsSelection'
 import type { DomAcceptance } from '../../utils/domAcceptance/types'
 import type { RuntimeDiagnostic } from './runtimeDiagnostics'
 import type { SelectedAcceptanceCase } from './selectedCases'
@@ -36,6 +37,7 @@ export interface AcceptanceReport extends AcceptanceIdentity {
     nodeVersion: string
     ideVersion: string | null
     baseLibraryVersion: string | null
+    devtoolsVersionPolicy?: DevtoolsVersionPolicyReport
   }
   strict: boolean
   startedAt: string

@@ -138,6 +138,34 @@ export async function launchAutomator(options: AutomatorOptions) {
 }
 
 /**
+ * @description 登记由外部 automator bridge 创建的会话，供 CLI 子进程安全复用。
+ */
+export async function persistOpenedAutomatorSession(options: AutomatorOptions & { wsEndpoint: string }) {
+  const resolved = await resolveAutomatorSessionOptions(options)
+  const endpoint = new URL(options.wsEndpoint)
+  if (endpoint.protocol !== 'ws:' || endpoint.hostname !== '127.0.0.1' || !endpoint.port) {
+    throw new Error('DEVTOOLS_SESSION_ENDPOINT_INVALID: automator session endpoint must be a loopback websocket.')
+  }
+  const endpointPort = Number(endpoint.port)
+  const port = options.port ?? endpointPort
+  if (port !== endpointPort) {
+    throw new Error(`DEVTOOLS_SESSION_PORT_MISMATCH: endpoint=${endpointPort} option=${port}`)
+  }
+  await assertWechatDevtoolsPort(resolved.target!, endpointPort, {
+    signal: options.signal,
+    timeout: options.timeout ?? 30_000,
+  })
+  await persistAutomatorSession({
+    installationId: resolved.installationId,
+    projectPath: options.projectPath,
+    port,
+    ...(options.sessionId ? { sessionId: options.sessionId } : {}),
+    signal: options.signal,
+    wsEndpoint: options.wsEndpoint,
+  })
+}
+
+/**
  * @description 只读连接当前项目已打开的自动化会话；失败不证明缓存过期，也不删除其他操作持有的会话记录。
  */
 export async function connectOpenedAutomator(options: AutomatorOptions) {

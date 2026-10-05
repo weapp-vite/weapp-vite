@@ -61,8 +61,15 @@ export function normalizeComponentPageDefinition(definition: HeadlessComponentDe
   const ready = composeDefinitionMethods(lifetimes.ready ?? rest.ready, methods.onReady ?? rest.onReady)
   const detached = lifetimes.detached ?? rest.detached ?? methods.onUnload ?? rest.onUnload
   const load = methods.onLoad ?? rest.onLoad
-  const show = composeDefinitionMethods(pageLifetimes.show, methods.onShow ?? rest.onShow)
-  const hide = composeDefinitionMethods(pageLifetimes.hide, methods.onHide ?? rest.onHide)
+  // Component 的 pageLifetimes 是页面可见性事件的宿主入口。顶层 onShow/onHide
+  // 只在没有 pageLifetimes 声明时作为旧式 Page 定义回退；WeVu 页面会同时暴露
+  // 这两组字段，不能把同一个运行时 hook 合并调用两次。
+  const show = typeof pageLifetimes.show === 'function'
+    ? composeDefinitionMethods(pageLifetimes.show, methods.onShow)
+    : methods.onShow ?? rest.onShow
+  const hide = typeof pageLifetimes.hide === 'function'
+    ? composeDefinitionMethods(pageLifetimes.hide, methods.onHide)
+    : methods.onHide ?? rest.onHide
   const resize = pageLifetimes.resize ?? methods.onResize ?? rest.onResize
   const routeDone = pageLifetimes.routeDone ?? methods.onRouteDone ?? rest.onRouteDone
 

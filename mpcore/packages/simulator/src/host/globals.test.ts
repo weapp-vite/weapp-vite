@@ -60,4 +60,30 @@ describe('normalizeComponentPageDefinition', () => {
 
     expect(calls).toEqual(['callback'])
   })
+
+  it('does not merge a top-level page hook into Component page lifetimes', () => {
+    const calls: string[] = []
+    const definition = normalizeComponentPageDefinition({
+      onShow() {
+        calls.push('top-level-show')
+      },
+      onHide() {
+        calls.push('top-level-hide')
+      },
+      pageLifetimes: {
+        show() {
+          calls.push('page-show')
+        },
+        hide() {
+          calls.push('page-hide')
+        },
+      },
+    })
+
+    const page = {}
+    definition.onShow.call(page)
+    definition.onHide.call(page)
+
+    expect(calls).toEqual(['page-show', 'page-hide'])
+  })
 })

@@ -57,6 +57,53 @@ Component({
   }
 })
 
+it('does not duplicate Component page lifetimes when top-level aliases coexist', async () => {
+  const session = createBrowserHeadlessSession({
+    files: createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index', 'pages/next/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Component({
+  data: { lifecycle: [] },
+  pageLifetimes: {
+    show() {
+      this.setData({ lifecycle: [...this.data.lifecycle, 'page-show'] })
+    },
+    hide() {
+      this.setData({ lifecycle: [...this.data.lifecycle, 'page-hide'] })
+    },
+  },
+  onShow() {
+    this.setData({ lifecycle: [...this.data.lifecycle, 'top-level-show'] })
+  },
+  onHide() {
+    this.setData({ lifecycle: [...this.data.lifecycle, 'top-level-hide'] })
+  },
+  methods: {
+    openNext() {
+      return new Promise((resolve, reject) => {
+        wx.navigateTo({ url: '/pages/next/index', success: resolve, fail: reject })
+      })
+    },
+  },
+})
+`],
+      ['pages/index/index.wxml', '<view>{{lifecycle.join("|")}}</view>'],
+      ['pages/next/index.js', 'Page({})'],
+      ['pages/next/index.wxml', '<view>next</view>'],
+    ]),
+  })
+  try {
+    const page = session.reLaunch('/pages/index/index')
+    await vi.waitFor(() => expect(page.data.lifecycle).toEqual(['page-show']))
+    await page.openNext()
+    expect(page.data.lifecycle).toEqual(['page-show', 'page-hide'])
+  }
+  finally {
+    session.close()
+  }
+})
+
 it('renders a child that reads its Component page context during attachment', async () => {
   const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(componentPageLifecycleFiles) })
   const preview = document.createElement('div')
