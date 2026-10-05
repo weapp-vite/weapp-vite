@@ -33,18 +33,31 @@ async function fixture() {
 // 只执行真实 suite 的路径初始化段，不导入 automator、不注册或运行 runtime 用例。
 async function readSuitePaths(file: string, repo: string, env: Record<string, string>) {
   const source = await readFile(path.join(repository, 'e2e/ide', file), 'utf8')
-  const initialization = source.slice(source.indexOf('const ROOT ='), source.indexOf('const CONTROL_FILE ='))
+  const parsed = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
+  const registersSuite = (node: ts.Node): boolean => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'describe') {
+      return true
+    }
+    return ts.forEachChild(node, child => registersSuite(child) || undefined) ?? false
+  }
+  const suiteIndex = parsed.statements.findIndex(registersSuite)
+  expect(suiteIndex, 'runtime suite registration boundary').toBeGreaterThanOrEqual(0)
+  const initialization = parsed.statements.slice(0, suiteIndex)
+    .filter(statement => !ts.isImportDeclaration(statement))
+    .map(statement => statement.getText(parsed))
+    .join('\n')
   const globals = {
     path,
     createRequire,
     process: { env },
     moduleMeta: { dirname: path.join(repo, 'e2e/ide'), url: pathToFileURL(path.join(repo, 'e2e/ide', file)).href },
     resolveRuntimeCompilerCli,
+    selectClassicRuntimeHost,
   }
   const code = ts.transpileModule(initialization.replaceAll('import.meta', 'moduleMeta'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
   }).outputText
-  return runInNewContext(`${code}\n({ project: APP_ROOT, cli: typeof COMPILER_CLI !== 'undefined' ? COMPILER_CLI : undefined })`, globals) as { project: string, cli?: string }
+  return runInNewContext(`${code}\n({ project: typeof fixture !== 'undefined' ? fixture.projectRoot : APP_ROOT, cli: typeof COMPILER_CLI !== 'undefined' ? COMPILER_CLI : undefined })`, globals) as { project: string, cli?: string }
 }
 
 afterEach(async () => {
