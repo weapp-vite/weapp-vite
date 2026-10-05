@@ -24,6 +24,7 @@ const state = vi.hoisted(() => ({
   session: undefined as unknown as FakeWorkerSession,
   gcClose: vi.fn(),
   gcSample: vi.fn<() => Promise<unknown>>(async () => ({})),
+  resourceSample: vi.fn<() => Promise<unknown>>(async () => ({})),
 }))
 vi.mock('node:process', () => ({ default: state.process }))
 vi.mock('node:fs/promises', () => ({ rm: vi.fn(async () => {}) }))
@@ -37,7 +38,7 @@ vi.mock('./framework', () => ({
   },
 }))
 vi.mock('./measurement', () => ({
-  observeProcessResources: () => ({}),
+  sampleProcessResources: state.resourceSample,
   SequenceGcObserver: class {
     sample = state.gcSample
     close = state.gcClose
@@ -182,7 +183,24 @@ it('does not publish success when cancellation arrives during GC measurement', a
   state.process.emit('message', cancel(1, new Error('cancelled while sampling')))
   sampling.resolve({})
   await flush()
+  expect(state.resourceSample).not.toHaveBeenCalled()
   expect(state.process.send).toHaveBeenCalledWith({ id: 1, error: expect.objectContaining({ message: 'cancelled while sampling' }) })
+  state.process.emit('message', { type: 'close' })
+  await flush()
+})
+
+it('does not publish success when cancellation arrives during timer-turn resource sampling', async () => {
+  const sampling = Promise.withResolvers<unknown>()
+  state.resourceSample.mockReturnValueOnce(sampling.promise)
+  state.session.observe.mockResolvedValue('observed')
+  state.process.emit('message', request(1))
+  await flush()
+  expect(state.gcSample).toHaveBeenCalledBefore(state.resourceSample)
+  expect(state.resourceSample).toHaveBeenCalledOnce()
+  state.process.emit('message', cancel(1, new Error('cancelled during resource sampling')))
+  sampling.resolve({})
+  await flush()
+  expect(state.process.send).toHaveBeenCalledExactlyOnceWith({ id: 1, error: expect.objectContaining({ message: 'cancelled during resource sampling' }) })
   state.process.emit('message', { type: 'close' })
   await flush()
 })
