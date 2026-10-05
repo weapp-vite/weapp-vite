@@ -8,17 +8,19 @@ import DashboardIcon from './features/dashboard/components/DashboardIcon.vue'
 import { provideDashboardTheme } from './features/dashboard/composables/useDashboardTheme'
 import { createDashboardWorkspace, provideDashboardWorkspace } from './features/dashboard/composables/useDashboardWorkspace'
 import { useThemeMode } from './features/dashboard/composables/useThemeMode'
-import { dashboardDevtoolsName, workspaceNavigation } from './features/dashboard/constants/shell'
-import { themeOptions } from './features/dashboard/constants/view'
+import { dashboardConnectionLabels, dashboardDevtoolsName, workspaceNavigation } from './features/dashboard/constants/shell'
+import { dashboardTabs, themeOptions } from './features/dashboard/constants/view'
 import { dashboardConnectionStatus } from './features/dashboard/utils/dashboardDevframe'
 
 const route = useRoute()
 const mobileNavOpen = ref(false)
+const contentRoot = ref<HTMLElement | null>(null)
 const { themePreference, resolvedTheme, setThemePreference } = useThemeMode()
 const workspace = createDashboardWorkspace()
 const hasPayload = computed(() => Boolean(workspace.resultRef.value))
 const projectName = computed(() => workspace.resultRef.value?.metadata?.projectName ?? '未命名小程序')
-const currentAnalyzeTab = computed(() => typeof route.query.tab === 'string' ? route.query.tab : 'overview')
+const currentAnalyzeView = computed(() => dashboardTabs.find(tab => tab.key === route.query.tab) ?? dashboardTabs[0]!)
+const currentAnalyzeTab = computed(() => currentAnalyzeView.value.key)
 
 provideDashboardTheme({
   themePreference,
@@ -30,31 +32,32 @@ provideDashboardWorkspace(workspace)
 const pageMeta = computed<DashboardTitleBlock>(() => {
   if (route.path.startsWith('/analyze')) {
     return {
-      title: '构建分析',
-      description: '包、模块、文件与构建诊断',
+      title: currentAnalyzeView.value.label,
+      description: currentAnalyzeView.value.description,
     }
   }
-  if (route.path.startsWith('/activity')) {
+  if (route.path === '/tokens') {
     return {
-      title: '运行事件',
-      description: 'Build、HMR、命令和错误',
+      title: '界面样式预览',
+      description: '仅供 Dashboard 开发调试，检查主题颜色、界面样式和组件状态。',
     }
   }
-  if (route.path.startsWith('/tokens')) {
-    return {
-      title: '设计令牌',
-      description: 'Dashboard 主题与组件状态',
-    }
-  }
+  const navigationItem = workspaceNavigation.find(item => item.to === route.path) ?? workspaceNavigation[0]!
   return {
-    title: '概览',
-    description: '当前构建与运行会话',
+    title: navigationItem.label,
+    description: navigationItem.caption,
   }
 })
 
 watch(() => route.fullPath, () => {
   mobileNavOpen.value = false
 })
+
+watch(() => route.path === '/analyze' ? currentAnalyzeTab.value : route.path, () => {
+  if (contentRoot.value) {
+    contentRoot.value.scrollTop = 0
+  }
+}, { flush: 'post' })
 
 function closeMobileNavigation(event: KeyboardEvent) {
   if (event.key === 'Escape') {
@@ -97,7 +100,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
               :class="dashboardConnectionStatus === 'connected' ? 'bg-emerald-500' : dashboardConnectionStatus === 'error' ? 'bg-red-500' : 'bg-amber-500'"
             />
             <span class="truncate text-(--dashboard-text-muted)">
-              {{ dashboardConnectionStatus === 'connected' ? `${dashboardDevtoolsName} connected` : dashboardConnectionStatus }}
+              {{ dashboardConnectionLabels[dashboardConnectionStatus] }}
             </span>
           </div>
           <p class="mt-1 truncate font-mono text-[10px] text-(--dashboard-text-soft)">
@@ -118,7 +121,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
           @menu="mobileNavOpen = true"
           @set-theme="setThemePreference"
         />
-        <div class="min-h-0 min-w-0 flex-1 overflow-y-auto p-3 lg:p-4">
+        <div ref="contentRoot" class="min-h-0 min-w-0 flex-1 overflow-y-auto p-3 lg:p-4">
           <RouterView />
         </div>
       </main>

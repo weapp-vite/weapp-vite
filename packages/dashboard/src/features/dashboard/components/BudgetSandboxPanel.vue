@@ -13,6 +13,7 @@ import { copyText } from '../utils/clipboard'
 import { formatBytes } from '../utils/format'
 import AppCompactListItem from './AppCompactListItem.vue'
 import AppEmptyState from './AppEmptyState.vue'
+import AppToolButton from './AppToolButton.vue'
 
 const props = defineProps<{
   activeBudgetWarningId: string | null
@@ -134,7 +135,7 @@ onBeforeUnmount(() => {
 <template>
   <section class="grid min-h-0 min-w-0 gap-3 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-3 shadow-(--dashboard-shadow) xl:h-full xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
     <div class="mb-2 flex items-center justify-between gap-3">
-      <div>
+      <div class="min-w-0">
         <h3 class="text-sm font-semibold text-(--dashboard-text)">
           预算沙盘
         </h3>
@@ -190,13 +191,16 @@ onBeforeUnmount(() => {
           预警线 {{ draft.warningPercent }}%
           <input v-model.number="draft.warningPercent" class="accent-(--dashboard-accent)" max="99" min="1" step="1" type="range">
         </label>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
           <button class="h-8 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-xs text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)" type="button" @click="resetDraft">
             重置
           </button>
-          <button class="h-8 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-xs text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent)" type="button" @click="copyBudgetSnippet">
-            复制配置
-          </button>
+          <AppToolButton
+            label="复制预算配置"
+            icon-name="metric-copy"
+            touch-label="复制"
+            @click="copyBudgetSnippet"
+          />
         </div>
       </div>
 

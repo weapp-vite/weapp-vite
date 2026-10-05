@@ -105,12 +105,24 @@ export function useAnalyzeTreemapController(options: {
   })
   const filteredDuplicateModules = computed(() => {
     const meta = selectedTreemapMeta.value
-    if (meta?.kind !== 'module') {
-      return options.duplicateModules.value
+    if (meta?.kind === 'module') {
+      return options.duplicateModules.value.filter(module =>
+        createTreemapModuleNodeId(meta.packageId, meta.fileName, module.id) === meta.nodeId,
+      )
     }
-    return options.duplicateModules.value.filter(module =>
-      createTreemapModuleNodeId(meta.packageId, meta.fileName, module.id) === meta.nodeId,
-    )
+    const packageId = treemapFilterState.value.selectedPackageId
+    return packageId
+      ? options.duplicateModules.value.filter(module => module.packages.some(pkg => pkg.packageId === packageId))
+      : options.duplicateModules.value
+  })
+  const duplicateModuleScopeLabel = computed(() => {
+    const meta = selectedTreemapMeta.value
+    if (meta?.kind === 'module') {
+      return `模块范围：${meta.source}`
+    }
+    const packageId = treemapFilterState.value.selectedPackageId
+    const pkg = options.packageInsights.value.find(pkg => pkg.id === packageId)
+    return pkg ? `包体范围：${pkg.label}` : null
   })
   const selectedFileModules = computed(() => createSelectedFileModules({
     modules: selectedFileEntry.value?.modules ?? [],
@@ -197,7 +209,7 @@ export function useAnalyzeTreemapController(options: {
       : null
   }
 
-  function handleSelectPackageInsight(item: PackageInsight) {
+  function selectPackageInsight(item: PackageInsight, tab: 'packages' | 'modules') {
     selectedTreemapMeta.value = {
       kind: 'package',
       nodeId: createTreemapPackageNodeId(item.id),
@@ -209,7 +221,18 @@ export function useAnalyzeTreemapController(options: {
     }
     selectedLargestFile.value = null
     selectedBudgetWarning.value = null
-    void setTreemapFilterMode('selected-package', 'packages')
+    void setTreemapFilterMode('selected-package', tab)
+  }
+
+  function handleSelectPackageInsight(item: PackageInsight) {
+    selectPackageInsight(item, 'packages')
+  }
+
+  function handleInspectPackageDuplicates(packageId: string) {
+    const item = options.packageInsights.value.find(pkg => pkg.id === packageId)
+    if (item) {
+      selectPackageInsight(item, 'modules')
+    }
   }
 
   function resetTreemapSelection() {
@@ -224,10 +247,12 @@ export function useAnalyzeTreemapController(options: {
     bindChartRef,
     canUseSelectedPackageFilter,
     destroyChart,
+    duplicateModuleScopeLabel,
     ensureChart,
     filteredDuplicateModules,
     filteredLargestFiles,
     handleResize,
+    handleInspectPackageDuplicates,
     handleInspectTreemapProblem,
     handleSelectBudgetWarning,
     handleSelectLargestFile,

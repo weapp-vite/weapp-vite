@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { copyText } from '../utils/clipboard'
 import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel } from '../utils/format'
 import AppSelect from './AppSelect.vue'
+import AppToolButton from './AppToolButton.vue'
 
 const props = defineProps<{
   events: DashboardRuntimeEvent[]
@@ -90,26 +91,26 @@ onBeforeUnmount(() => {
     <p class="text-xs text-(--dashboard-text-soft)">
       匹配 {{ filteredCount }} / {{ totalCount }} 条事件
     </p>
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex min-w-0 flex-wrap items-center gap-2">
       <span v-if="actionStatus" class="text-xs font-medium text-(--dashboard-accent)">
         {{ actionStatus }}
       </span>
-      <button
-        type="button"
-        class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
-        :disabled="events.length === 0"
-        @click="copyEventReport"
-      >
-        复制事件
-      </button>
-      <button
-        type="button"
-        class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
-        :disabled="events.length === 0"
-        @click="exportEventJson"
-      >
-        导出 JSON
-      </button>
+      <div class="flex shrink-0 flex-nowrap items-center gap-2">
+        <AppToolButton
+          label="复制运行事件"
+          icon-name="metric-copy"
+          touch-label="复制"
+          :disabled="events.length === 0"
+          @click="copyEventReport"
+        />
+        <AppToolButton
+          label="导出运行事件 JSON"
+          icon-name="metric-entries"
+          touch-label="导出"
+          :disabled="events.length === 0"
+          @click="exportEventJson"
+        />
+      </div>
       <AppSelect
         v-model="sortMode"
         class="w-28"

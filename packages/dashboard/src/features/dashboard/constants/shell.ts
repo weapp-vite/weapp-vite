@@ -1,3 +1,4 @@
+import type { DevframeConnectionStatus } from 'devframe/client'
 import type {
   DashboardIconFeatureItem,
   DashboardNavItem,
@@ -10,38 +11,30 @@ import { dashboardTabs } from './view'
 
 export const dashboardDevtoolsName = 'weapp-vite DevTools'
 
+export const dashboardConnectionLabels: Record<DevframeConnectionStatus, string> = {
+  connecting: '连接中',
+  connected: '已连接',
+  unauthorized: '需要授权',
+  disconnected: '已断开',
+  error: '连接异常',
+}
+
 export const workspaceNavigation: DashboardNavItem[] = [
-  { to: '/', label: '概览', caption: '当前构建与运行会话', iconName: 'nav-home' },
+  { to: '/', label: '会话状态', caption: '查看连接、构建报告与最近运行事件。', iconName: 'nav-home' },
   {
     to: '/analyze',
     label: '构建分析',
-    caption: '包、模块、文件和分包',
+    caption: '从构建结论定位问题，按需深入文件和模块。',
     iconName: 'nav-analyze',
     children: dashboardTabs.map(tab => ({
       to: tab.key === 'overview' ? '/analyze' : `/analyze?tab=${tab.key}`,
       label: tab.label,
-      caption: tab.key === 'overview'
-        ? '全局摘要和建议动作'
-        : tab.key === 'diagnostics'
-          ? '预算、增量和历史基线'
-          : tab.key === 'review'
-            ? 'PR 风险和评审清单'
-            : tab.key === 'graph'
-              ? 'Chunk 静态与动态依赖'
-              : tab.key === 'treemap'
-                ? '产物体积地图'
-                : tab.key === 'files'
-                  ? '文件、预算和模块明细'
-                  : tab.key === 'source'
-                    ? '源码与产物 Diff'
-                    : tab.key === 'packages'
-                      ? '包体和产物列表'
-                      : '模块复用与来源',
+      caption: tab.description,
+      advanced: tab.advanced,
       iconName: tab.iconName,
     })),
   },
-  { to: '/activity', label: '运行事件', caption: 'Build、HMR、命令和错误', iconName: 'nav-activity' },
-  { to: '/tokens', label: '界面令牌', caption: '主题、表面和组件状态', iconName: 'nav-tokens' },
+  { to: '/activity', label: '运行事件', caption: '查看构建、热更新、命令和错误记录。', iconName: 'nav-activity' },
 ]
 
 export const workspaceHighlights: DashboardIconFeatureItem[] = [

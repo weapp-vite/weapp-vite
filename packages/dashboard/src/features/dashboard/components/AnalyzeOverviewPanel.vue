@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import type { AnalyzeActionCenterItem, DashboardMetricCard, LargestFileEntry, PackageInsight, SummaryMetric } from '../types'
+import { computed, shallowRef, useId } from 'vue'
 import { useAnalyzeOverviewPanel } from '../composables/useAnalyzeOverviewPanel'
 import { formatBytes } from '../utils/format'
-import { surfaceStyles } from '../utils/styles'
-import AppEmptyState from './AppEmptyState.vue'
-import AppPanelHeader from './AppPanelHeader.vue'
-import DashboardIcon from './DashboardIcon.vue'
+import AppToolButton from './AppToolButton.vue'
 import DashboardMetricGrid from './DashboardMetricGrid.vue'
 import ReleaseGatePanel from './ReleaseGatePanel.vue'
 
@@ -31,149 +29,170 @@ const {
   getToneLabel,
   packageOverviewItems,
   releaseGate,
+  showAllActions,
   visibleActions,
-  visibleLargestFiles,
 } = useAnalyzeOverviewPanel(props)
+
+const actionListId = useId()
+const sizeDetailsOpen = shallowRef(false)
+const contextCards = computed(() => props.cards.filter(card => card.label === '总产物体积' || card.label === '预算告警'))
+
+function handleSizeDetailsToggle(event: Event) {
+  sizeDetailsOpen.value = (event.target as HTMLDetailsElement).open
+}
 </script>
 
 <template>
-  <section class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_auto_minmax(0,1fr)] xl:overflow-hidden">
-    <DashboardMetricGrid compact :cards="cards" :package-type-summary="packageTypeSummary" />
-
+  <section class="grid min-w-0 content-start gap-5">
     <ReleaseGatePanel
       :gate="releaseGate"
       :copy-status="gateCopyStatus"
       @copy="copyReleaseGateReport"
     />
 
-    <div class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:grid-cols-[minmax(0,0.95fr)_minmax(0,0.85fr)_minmax(0,0.9fr)] xl:overflow-hidden">
-      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-        <AppPanelHeader icon-name="metric-health" title="处理队列">
-          <template #meta>
-            <button
-              type="button"
-              class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 py-1 text-xs text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
-              @click="emit('copyReport')"
-            >
-              <span class="h-3.5 w-3.5">
-                <DashboardIcon name="metric-copy" />
+    <dl v-if="contextCards.length > 0" class="flex flex-wrap gap-x-6 gap-y-2 px-1 text-sm leading-6">
+      <div v-for="card in contextCards" :key="card.label" class="flex flex-wrap items-baseline gap-x-2">
+        <dt class="text-(--dashboard-text-soft)">
+          {{ card.label }}
+        </dt>
+        <dd class="font-semibold tabular-nums text-(--dashboard-text)">
+          {{ card.value }}
+        </dd>
+      </div>
+    </dl>
+
+    <section class="min-w-0 px-1">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-base font-semibold text-(--dashboard-text)">
+          优先处理
+        </h2>
+        <AppToolButton
+          label="复制评审摘要"
+          icon-name="metric-copy"
+          touch-label="复制"
+          @click="emit('copyReport')"
+        />
+      </div>
+
+      <p v-if="visibleActions.length === 0" class="py-3 text-sm leading-6 text-(--dashboard-text-soft)">
+        当前没有需要立即处理的事项。
+      </p>
+      <ol v-else :id="actionListId" class="mt-1 divide-y divide-(--dashboard-border)">
+        <li v-for="item in visibleActions" :key="item.key" class="min-w-0">
+          <button
+            type="button"
+            class="w-full min-w-0 rounded-sm px-2 py-3 text-left hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+            @click="emit('selectAction', item)"
+          >
+            <span class="flex flex-wrap items-center justify-between gap-2">
+              <span :class="getToneClassName(item.tone)">
+                {{ getToneLabel(item.tone) }}
               </span>
-              复制 PR
-            </button>
-          </template>
-        </AppPanelHeader>
+              <span v-if="item.value" class="text-sm font-semibold tabular-nums text-(--dashboard-text)">
+                {{ item.value }}
+              </span>
+            </span>
+            <span class="mt-2 block text-sm font-semibold leading-6 text-(--dashboard-text) [overflow-wrap:anywhere]">
+              {{ item.title }}
+            </span>
+            <span class="mt-1 block text-sm leading-6 text-(--dashboard-text-soft) [overflow-wrap:anywhere]">
+              {{ item.meta }}
+            </span>
+          </button>
+        </li>
+      </ol>
+      <button
+        v-if="actionItems.length > 3"
+        type="button"
+        class="mt-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-(--dashboard-accent) hover:bg-(--dashboard-accent-soft) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+        :aria-expanded="showAllActions"
+        :aria-controls="actionListId"
+        @click="showAllActions = !showAllActions"
+      >
+        {{ showAllActions ? '收起为前 3 项' : `查看全部 ${actionItems.length} 项` }}
+        <span class="icon-[mdi--chevron-down] size-4" :class="{ 'rotate-180': showAllActions }" aria-hidden="true" />
+      </button>
+    </section>
 
-        <div class="mt-3 min-h-0 flex-1 overflow-hidden">
-          <AppEmptyState v-if="visibleActions.length === 0" compact>
-            当前没有需要立即处理的事项。
-          </AppEmptyState>
-          <ol v-else class="grid h-full min-h-0 gap-2 overflow-y-auto pr-1">
-            <li
-              v-for="item in visibleActions"
-              :key="item.key"
-              class="list-none"
-            >
-              <button
-                type="button"
-                class="w-full rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2.5 text-left transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
-                @click="emit('selectAction', item)"
-              >
-                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-                  <div class="min-w-0">
-                    <span :class="getToneClassName(item.tone)">
-                      {{ getToneLabel(item.tone) }}
-                    </span>
-                    <p class="mt-2 line-clamp-2 break-words text-sm font-medium leading-5 text-(--dashboard-text)">
-                      {{ item.title }}
-                    </p>
-                    <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-(--dashboard-text-soft)">
-                      {{ item.meta }}
-                    </p>
-                  </div>
-                  <span v-if="item.value" class="max-w-28 shrink-0 truncate text-sm font-semibold tabular-nums text-(--dashboard-accent)">
-                    {{ item.value }}
-                  </span>
-                </div>
-              </button>
-            </li>
-          </ol>
+    <div class="min-w-0 divide-y divide-(--dashboard-border) border-t border-(--dashboard-border)">
+      <details class="group min-w-0">
+        <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-sm px-1 py-3 text-sm font-medium text-(--dashboard-text-muted) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)">
+          <span class="icon-[mdi--chevron-right] size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
+          全部指标
+        </summary>
+        <div class="px-1 pt-1 pb-5">
+          <DashboardMetricGrid compact :cards="cards" :package-type-summary="packageTypeSummary" />
         </div>
-      </section>
+      </details>
 
-      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-        <AppPanelHeader icon-name="top-files" title="Top Files" />
-        <ol class="mt-3 grid min-h-0 gap-2 overflow-y-auto pr-1">
-          <li
-            v-for="file in visibleLargestFiles"
-            :key="`${file.packageId}:${file.file}`"
-            class="list-none"
-          >
-            <button
-              type="button"
-              class="w-full rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2.5 text-left transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
-              @click="emit('selectFile', file)"
-            >
-              <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-                <div class="min-w-0">
-                  <p class="line-clamp-2 break-words font-mono text-xs font-semibold leading-5 text-(--dashboard-text)" :title="file.file">
+      <details class="group min-w-0" @toggle="handleSizeDetailsToggle">
+        <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-sm px-1 py-3 text-sm font-medium text-(--dashboard-text-muted) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)">
+          <span class="icon-[mdi--chevron-right] size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
+          体积明细
+        </summary>
+        <div v-if="sizeDetailsOpen" class="grid min-w-0 items-start gap-6 px-1 pt-1 pb-5 lg:grid-cols-2">
+          <section class="min-w-0">
+            <h3 class="text-sm font-semibold text-(--dashboard-text)">
+              文件体积排行
+            </h3>
+            <p v-if="largestFiles.length === 0" class="mt-3 text-sm leading-6 text-(--dashboard-text-soft)">
+              当前没有文件体积数据。
+            </p>
+            <ol v-else class="mt-2 divide-y divide-(--dashboard-border)">
+              <li v-for="file in largestFiles" :key="`${file.packageId}:${file.file}`" class="min-w-0">
+                <button
+                  type="button"
+                  class="w-full min-w-0 rounded-sm px-2 py-3 text-left hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+                  @click="emit('selectFile', file)"
+                >
+                  <span class="block font-mono text-sm font-medium leading-6 text-(--dashboard-text) [overflow-wrap:anywhere]">
                     {{ file.file }}
-                  </p>
-                  <p class="mt-1 truncate text-xs text-(--dashboard-text-soft)">
+                  </span>
+                  <span class="mt-1 block text-sm leading-6 text-(--dashboard-text-soft) [overflow-wrap:anywhere]">
                     {{ file.packageLabel }} · {{ file.type }} · {{ file.moduleCount }} 模块
-                  </p>
-                </div>
-                <div class="shrink-0 text-right">
-                  <p class="text-sm font-semibold leading-5 tabular-nums text-(--dashboard-accent)">
-                    {{ formatBytes(file.size) }}
-                  </p>
-                  <p class="text-xs leading-5 tabular-nums text-(--dashboard-text-soft)">
-                    压缩 {{ formatBytes(file.compressedSize) }}
-                  </p>
-                </div>
-              </div>
-            </button>
-          </li>
-        </ol>
-      </section>
+                  </span>
+                  <span class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm leading-6 tabular-nums">
+                    <span class="font-semibold text-(--dashboard-text)">{{ formatBytes(file.size) }}</span>
+                    <span class="text-(--dashboard-text-soft)">压缩 {{ formatBytes(file.compressedSize) }}</span>
+                  </span>
+                </button>
+              </li>
+            </ol>
+          </section>
 
-      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-        <AppPanelHeader icon-name="tab-packages" title="包体分布" />
-        <ol class="mt-3 grid min-h-0 gap-2 overflow-y-auto pr-1">
-          <li
-            v-for="item in packageOverviewItems"
-            :key="item.id"
-            class="list-none"
-          >
-            <button
-              type="button"
-              class="w-full rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2.5 text-left transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
-              @click="emit('selectPackage', item)"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="line-clamp-2 break-words text-sm font-medium leading-5 text-(--dashboard-text)" :title="item.label">
+          <section class="min-w-0">
+            <h3 class="text-sm font-semibold text-(--dashboard-text)">
+              包体分布
+            </h3>
+            <p v-if="packageOverviewItems.length === 0" class="mt-3 text-sm leading-6 text-(--dashboard-text-soft)">
+              当前没有包体数据。
+            </p>
+            <ol v-else class="mt-2 divide-y divide-(--dashboard-border)">
+              <li v-for="item in packageOverviewItems" :key="item.id" class="min-w-0">
+                <button
+                  type="button"
+                  class="w-full min-w-0 rounded-sm px-2 py-3 text-left hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+                  @click="emit('selectPackage', item)"
+                >
+                  <span class="block text-sm font-semibold leading-6 text-(--dashboard-text) [overflow-wrap:anywhere]">
                     {{ item.label }}
-                  </p>
-                  <p class="mt-1 text-xs text-(--dashboard-text-soft)">
+                  </span>
+                  <span class="mt-1 block text-sm leading-6 text-(--dashboard-text-soft)">
                     {{ item.typeLabel }} · {{ item.fileCount }} 产物 · {{ item.moduleCount }} 模块
-                  </p>
-                </div>
-                <div class="shrink-0 text-right">
-                  <p class="text-sm font-semibold tabular-nums text-(--dashboard-text)">
-                    {{ item.sizeLabel }}
-                  </p>
-                  <p class="text-xs tabular-nums text-(--dashboard-text-soft)">
-                    {{ item.compressedLabel }}
-                  </p>
-                </div>
-              </div>
-              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-(--dashboard-accent-soft)">
-                <div class="h-full rounded-full bg-(--dashboard-accent)" :style="item.shareStyle" />
-              </div>
-            </button>
-          </li>
-        </ol>
-      </section>
+                  </span>
+                  <span class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm leading-6 tabular-nums">
+                    <span class="font-semibold text-(--dashboard-text)">{{ item.sizeLabel }}</span>
+                    <span class="text-(--dashboard-text-soft)">{{ item.compressedLabel }}</span>
+                  </span>
+                  <span class="mt-2 block h-1.5 overflow-hidden rounded-full bg-(--dashboard-accent-soft)" aria-hidden="true">
+                    <span class="block h-full rounded-full bg-(--dashboard-accent)" :style="item.shareStyle" />
+                  </span>
+                </button>
+              </li>
+            </ol>
+          </section>
+        </div>
+      </details>
     </div>
   </section>
 </template>

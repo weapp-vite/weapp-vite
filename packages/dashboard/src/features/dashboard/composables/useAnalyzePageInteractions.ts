@@ -40,6 +40,11 @@ export function useAnalyzePageInteractions(options: {
     options.selectedBudgetWarning.value = null
   }
 
+  function handleOpenFile(file: LargestFileEntry) {
+    options.handleSelectLargestFile(file)
+    void options.setTreemapFilterMode('selected-package', 'files')
+  }
+
   function handleSelectAction(item: AnalyzeActionCenterItem) {
     selectedActionKey.value = item.key
     if (item.warning) {
@@ -48,8 +53,7 @@ export function useAnalyzePageInteractions(options: {
     }
 
     if (item.file) {
-      options.handleSelectLargestFile(item.file)
-      void options.setTreemapFilterMode('selected-package', 'files')
+      handleOpenFile(item.file)
       return
     }
 
@@ -78,8 +82,7 @@ export function useAnalyzePageInteractions(options: {
     }
 
     if (item.file) {
-      options.handleSelectLargestFile(item.file)
-      void options.setTreemapFilterMode('selected-package', 'files')
+      handleOpenFile(item.file)
       return
     }
 
@@ -144,6 +147,7 @@ export function useAnalyzePageInteractions(options: {
     commandPaletteOpen,
     selectedActionKey,
     handleAddActionToWorkQueue,
+    handleOpenFile,
     handleSelectAction,
     handleSelectCommand,
     handleSelectReviewChecklistItem,

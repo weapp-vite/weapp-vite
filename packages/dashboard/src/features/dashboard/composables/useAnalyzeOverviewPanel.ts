@@ -1,5 +1,5 @@
 import type { AnalyzeActionCenterItem, LargestFileEntry, PackageInsight } from '../types'
-import { computed } from 'vue'
+import { computed, shallowRef } from 'vue'
 import { copyText } from '../utils/clipboard'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { createReleaseGateSummary } from '../utils/releaseGate'
@@ -21,8 +21,8 @@ interface AnalyzeOverviewPanelProps {
 }
 
 export function useAnalyzeOverviewPanel(props: AnalyzeOverviewPanelProps) {
-  const visibleActions = computed(() => props.actionItems.slice(0, 4))
-  const visibleLargestFiles = computed(() => props.largestFiles.slice(0, 5))
+  const showAllActions = shallowRef(false)
+  const visibleActions = computed(() => showAllActions.value ? props.actionItems : props.actionItems.slice(0, 3))
   const totalPackageBytes = computed(() => props.packageInsights.reduce((sum, item) => sum + item.totalBytes, 0))
   const releaseGate = computed(() => createReleaseGateSummary({
     actionItems: props.actionItems,
@@ -34,7 +34,7 @@ export function useAnalyzeOverviewPanel(props: AnalyzeOverviewPanelProps) {
     setActionStatus: setGateCopyStatus,
   } = useDashboardActionStatus()
 
-  const packageOverviewItems = computed<PackageOverviewItem[]>(() => props.packageInsights.slice(0, 5).map((item) => {
+  const packageOverviewItems = computed<PackageOverviewItem[]>(() => props.packageInsights.map((item) => {
     const sharePercent = totalPackageBytes.value > 0
       ? item.totalBytes / totalPackageBytes.value * 100
       : 0
@@ -68,7 +68,7 @@ export function useAnalyzeOverviewPanel(props: AnalyzeOverviewPanelProps) {
     getToneLabel: getActionToneLabel,
     packageOverviewItems,
     releaseGate,
+    showAllActions,
     visibleActions,
-    visibleLargestFiles,
   }
 }

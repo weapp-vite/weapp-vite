@@ -31,14 +31,13 @@ const {
 </script>
 
 <template>
-  <div class="grid min-h-[40rem] min-w-0 items-start gap-3 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)] xl:items-stretch">
+  <div class="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.8fr)]">
     <AppSurfaceCard
-      eyebrow="Event Feed"
-      title="事件控制台"
+      title="事件列表"
       icon-name="hero-commands"
-      content-class="min-h-[36rem] min-w-0"
+      content-class="min-h-0 min-w-0"
     >
-      <div class="grid min-h-0 min-w-0 grid-rows-[auto_auto_minmax(14rem,1fr)] gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_auto_minmax(6rem,1fr)] xl:overflow-hidden">
+      <div class="grid min-h-0 min-w-0 content-start gap-3">
         <AppEventFilterPanel
           class="min-h-0 min-w-0"
           :search-query="searchQuery"
@@ -71,7 +70,7 @@ const {
           当前过滤条件下没有匹配事件。
         </AppEmptyState>
 
-        <ul class="grid min-h-0 gap-2 overflow-y-auto pr-1 text-sm leading-6 text-(--dashboard-text-muted)">
+        <ul class="grid min-h-0 min-w-0 content-start gap-2 text-sm leading-6 text-(--dashboard-text-muted)">
           <AppRuntimeEventListItem
             v-for="event in filteredRuntimeEvents"
             :key="event.id"

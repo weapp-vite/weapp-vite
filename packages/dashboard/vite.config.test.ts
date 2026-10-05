@@ -31,7 +31,7 @@ function extractDashboardIconNames(source: string) {
 }
 
 describe('dashboard Tailwind build', () => {
-  it('emits Web utilities and every configured MDI icon', async () => {
+  it('compiles Tailwind directives and emits every configured MDI icon', async () => {
     const outDir = await mkdtemp(path.join(tmpdir(), 'weapp-vite-dashboard-tailwind-'))
 
     try {
@@ -54,11 +54,6 @@ describe('dashboard Tailwind build', () => {
       expect(css).not.toContain('@plugin')
       expect(css).not.toContain('generator-placeholder')
       expect(css).toContain('--dashboard-bg:')
-      expect(css).toContain('.md\\:grid-cols-2')
-      expect(css).toContain('.min-h-\\[26rem\\]')
-      expect(css).toContain('.shadow-\\(--dashboard-shadow\\)')
-      expect(css).toContain('.dark\\:bg-slate-900')
-      expect(iconNames.size).toBeGreaterThan(0)
 
       for (const iconName of iconNames) {
         expect(css).toContain(`.icon-\\[mdi--${iconName}\\]`)

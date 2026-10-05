@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import type { DashboardInfoPillItem } from '../types'
-import { pillButtonStyles } from '../utils/styles'
 import AnalyzeExportMenu from './AnalyzeExportMenu.vue'
 import AppInfoPill from './AppInfoPill.vue'
-import DashboardIcon from './DashboardIcon.vue'
+import AppToolButton from './AppToolButton.vue'
 
 defineProps<{
   canSearch: boolean
@@ -31,42 +30,29 @@ const emit = defineEmits<{
 <template>
   <section class="relative z-20 flex min-w-0 flex-wrap items-center gap-2 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 shadow-(--dashboard-shadow)">
     <div class="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
-      <button
+      <AppToolButton
         v-if="canSearch"
-        class="shrink-0"
-        :class="pillButtonStyles({ kind: 'nav', active: false })"
+        icon-name="metric-search"
+        label="搜索分析结果"
+        touch-label="搜索"
         @click="emit('openSearch')"
-      >
-        <span class="h-4.5 w-4.5">
-          <DashboardIcon name="metric-search" />
-        </span>
-        搜索
-      </button>
-      <button
+      />
+      <AppToolButton
         v-if="canSearch"
-        class="shrink-0 max-sm:px-2"
-        :class="pillButtonStyles({ kind: 'nav', active: false })"
-        title="复制视图"
+        icon-name="metric-link"
+        label="复制视图链接"
+        touch-label="复制"
         @click="emit('copyViewLink')"
-      >
-        <span class="h-4.5 w-4.5">
-          <DashboardIcon name="metric-link" />
-        </span>
-        <span class="sr-only sm:not-sr-only">复制视图</span>
-      </button>
-      <button
-        v-if="canSearch"
-        class="shrink-0 disabled:cursor-not-allowed disabled:opacity-55 max-sm:px-2"
-        :class="pillButtonStyles({ kind: 'nav', active: false })"
-        :disabled="!canResetView"
-        title="重置视图"
-        @click="emit('resetView')"
-      >
-        <span class="h-4.5 w-4.5">
-          <DashboardIcon name="metric-reset" />
-        </span>
-        <span class="sr-only sm:not-sr-only">重置视图</span>
-      </button>
+      />
+      <div v-if="canSearch" class="hidden sm:block">
+        <AppToolButton
+          icon-name="metric-reset"
+          label="重置视图"
+          touch-label="重置"
+          :disabled="!canResetView"
+          @click="emit('resetView')"
+        />
+      </div>
     </div>
     <div class="order-last flex min-w-0 w-full flex-wrap items-center gap-2 empty:hidden sm:order-none sm:w-auto sm:flex-1">
       <AppInfoPill
@@ -93,6 +79,8 @@ const emit = defineEmits<{
     <AnalyzeExportMenu
       v-if="canSearch"
       :open="moreMenuOpen"
+      :can-reset-view="canResetView"
+      @reset-view="emit('resetView')"
       @update:open="emit('update:moreMenuOpen', $event)"
       @copy-markdown="emit('copyMarkdown')"
       @copy-pr="emit('copyPr')"

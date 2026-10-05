@@ -48,6 +48,7 @@ defineProps<{
   hasTreemapComparison: boolean
   comparisonMode: AnalyzeComparisonMode
   copyStatus: string
+  duplicateModuleScopeLabel: string | null
   filteredDuplicateModules: DuplicateModuleEntry[]
   filteredLargestFiles: LargestFileEntry[]
   historySnapshots: AnalyzeHistorySnapshot[]
@@ -91,7 +92,9 @@ const emit = defineEmits<{
   copyPr: []
   copyReviewChecklist: []
   copyWorkQueue: []
+  inspectDuplicates: [packageId: string]
   inspectTreemapProblem: [problem: 'duplicates' | 'growth']
+  openFile: [item: LargestFileEntry]
   openTreemapSource: [meta: TreemapNodeMeta]
   removeWorkQueueItem: [id: string]
   resetTreemapFocus: []
@@ -115,7 +118,7 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
 <template>
   <section v-if="activeTab === 'overview'" class="min-h-0">
     <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 min-w-0 gap-2 overflow-x-hidden overflow-y-auto xl:overflow-hidden"
+      grid-class="grid min-h-0 min-w-0 content-start gap-2"
       :items="overviewLayoutItems"
       storage-key="weapp-vite:dashboard:analyze-layout:overview"
     >
@@ -128,7 +131,7 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
           :package-type-summary="metricPackageTypeSummary"
           @copy-report="emit('copyPr')"
           @select-action="emit('selectAction', $event)"
-          @select-file="emit('selectFile', $event)"
+          @select-file="emit('openFile', $event)"
           @select-package="emit('selectPackage', $event)"
         />
       </template>
@@ -247,6 +250,7 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
           :package-insights="packageInsights"
           :budget-warnings="budgetWarnings"
           :selected-treemap-meta="selectedTreemapMeta"
+          @inspect-duplicates="emit('inspectDuplicates', $event)"
         />
       </template>
     </AnalyzeDraggableGrid>
@@ -261,10 +265,12 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
       <template #modules>
         <ModulesPanel
           :duplicate-modules="filteredDuplicateModules"
+          :duplicate-module-scope-label="duplicateModuleScopeLabel"
           :module-source-summary="moduleSourceSummary"
           :increment-attribution="incrementAttribution"
           :increment-summary="incrementSummary"
           :visible-largest-files="visibleLargestFiles"
+          @reset-scope="emit('resetTreemapFocus')"
         />
       </template>
     </AnalyzeDraggableGrid>
