@@ -4,6 +4,7 @@ import { Buffer } from 'node:buffer'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
+import { createDevProcessCleanup } from './devProcessCleanup'
 import { createDevProcessDiagnostics } from './devProcessDiagnostics'
 import { captureDevProcessOutput } from './devProcessStdio'
 import { resolveReportProjectPath } from './ideWarningReport'
@@ -30,14 +31,6 @@ interface DevProcessSpawnInfo {
 }
 
 const TRACKED_DEV_DISPOSERS = new Set<(forceKillDelayMs: number) => Promise<void>>()
-
-interface ProcessEntry {
-  pid: number
-  ppid: number
-  command: string
-}
-
-const PROCESS_ENTRY_SEPARATOR_RE = /\s+/
 
 function normalizeErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -86,149 +79,6 @@ function appendRecentOutput(
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
-}
-
-function isPidAlive(pid: number) {
-  try {
-    process.kill(pid, 0)
-    return true
-  }
-  catch {
-    return false
-  }
-}
-
-async function listUnixProcesses() {
-  const { stdout } = await execa('ps', ['-Ao', 'pid=,ppid=,command='], {
-    stdin: 'ignore',
-  })
-
-  return stdout
-    .split('\n')
-    .map((line) => {
-      const trimmed = line.trim()
-      if (!trimmed) {
-        return null
-      }
-
-      const [pidSegment, ppidSegment, ...commandSegments] = trimmed.split(PROCESS_ENTRY_SEPARATOR_RE)
-      if (!pidSegment || !ppidSegment || commandSegments.length === 0) {
-        return null
-      }
-
-      return {
-        pid: Number(pidSegment),
-        ppid: Number(ppidSegment),
-        command: commandSegments.join(' '),
-      } satisfies ProcessEntry
-    })
-    .filter((entry): entry is ProcessEntry => entry != null)
-}
-
-function collectProcessTreePids(rootPid: number, processList: ProcessEntry[]) {
-  const childrenMap = new Map<number, number[]>()
-  for (const processEntry of processList) {
-    if (!childrenMap.has(processEntry.ppid)) {
-      childrenMap.set(processEntry.ppid, [])
-    }
-    childrenMap.get(processEntry.ppid)!.push(processEntry.pid)
-  }
-
-  const orderedPids: number[] = []
-  const visit = (pid: number) => {
-    const childPidList = childrenMap.get(pid) ?? []
-    for (const childPid of childPidList) {
-      visit(childPid)
-    }
-    orderedPids.push(pid)
-  }
-  visit(rootPid)
-  return orderedPids
-}
-
-async function terminateWindowsPid(pid: number, forceKillDelayMs: number) {
-  await execa('taskkill', ['/PID', String(pid), '/T', '/F'], {
-    reject: false,
-    stdin: 'ignore',
-    stdout: 'ignore',
-    stderr: 'ignore',
-  })
-
-  const deadline = Date.now() + forceKillDelayMs
-  while (Date.now() < deadline) {
-    if (!isPidAlive(pid)) {
-      return
-    }
-    await sleep(100)
-  }
-}
-
-async function terminatePid(pid: number, forceKillDelayMs: number, isHeld: () => boolean) {
-  if (!isHeld() || !isPidAlive(pid)) {
-    return
-  }
-
-  if (process.platform === 'win32') {
-    await terminateWindowsPid(pid, forceKillDelayMs)
-    return
-  }
-
-  let targetPidList = [pid]
-  try {
-    const processList = await listUnixProcesses()
-    targetPidList = collectProcessTreePids(pid, processList)
-  }
-  catch {}
-
-  if (!isHeld()) {
-    return
-  }
-
-  try {
-    for (const targetPid of targetPidList) {
-      if (!isHeld()) {
-        return
-      }
-      process.kill(targetPid, 'SIGTERM')
-    }
-  }
-  catch {}
-
-  const deadline = Date.now() + forceKillDelayMs
-  while (Date.now() < deadline) {
-    if (targetPidList.every(targetPid => !isPidAlive(targetPid))) {
-      return
-    }
-    await sleep(100)
-  }
-
-  try {
-    for (const targetPid of targetPidList) {
-      if (!isHeld()) {
-        return
-      }
-      if (isPidAlive(targetPid)) {
-        process.kill(targetPid, 'SIGKILL')
-      }
-    }
-  }
-  catch {}
-}
-
-async function waitForExitWithTimeout(
-  settledExit: Promise<DevProcessExitInfo>,
-  timeoutMs: number,
-) {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  try {
-    await Promise.race([
-      settledExit,
-      new Promise<void>(resolve => timer = setTimeout(resolve, timeoutMs)),
-    ])
-  }
-  finally {
-    clearTimeout(timer)
-  }
 }
 
 export async function cleanupTrackedDevProcesses(forceKillDelayMs = 3_000) {
@@ -343,34 +193,28 @@ export function startDevProcess(
     throw new Error(appendRecentOutput(`Timed out waiting for dev output: ${description}`, outputChunks, spawnInfo))
   }
 
+  const cleanup = createDevProcessCleanup({
+    pid: child.pid,
+    settledExit,
+    isRootHeld: () => !exited && child.nodeChildProcess?.exitCode == null && child.nodeChildProcess?.signalCode == null,
+    disconnectRoot: () => {
+      if (!child.nodeChildProcess?.connected) {
+        return false
+      }
+      child.nodeChildProcess.disconnect()
+      return true
+    },
+  })
+
   const stop = (forceKillDelayMs = 3_000) => {
     if (!stopTask) {
-      stopTask = (async () => {
+      // 并发调用共享同一次清理；只有核验退出和输出排空后才撤销登记。
+      stopTask = cleanup(forceKillDelayMs).then(() => {
         TRACKED_DEV_DISPOSERS.delete(stop)
-        // 原子持有清理任务，避免 stop 与恢复并发释放；退出的句柄不再授权旧 PID。
-        if (exited) {
-          return
-        }
-        if (child.nodeChildProcess?.exitCode != null || child.nodeChildProcess?.signalCode != null) {
-          // 原生进程退出先撤销终止权限，仍等待 execa 排空输出并完成诊断。
-          await waitForExitWithTimeout(settledExit, forceKillDelayMs + 1_000)
-          return
-        }
-        if (child.nodeChildProcess?.connected) {
-          child.nodeChildProcess.disconnect()
-          await waitForExitWithTimeout(settledExit, forceKillDelayMs)
-          if (exited || child.nodeChildProcess.exitCode != null || child.nodeChildProcess.signalCode != null) {
-            return
-          }
-        }
-        if (typeof child.pid === 'number') {
-          await terminatePid(child.pid, forceKillDelayMs, () => !exited && child.nodeChildProcess?.exitCode == null && child.nodeChildProcess?.signalCode == null)
-        }
-        else {
-          child.kill('SIGTERM')
-        }
-        await waitForExitWithTimeout(settledExit, forceKillDelayMs + 1_000)
-      })()
+      }).catch((error: unknown) => {
+        stopTask = undefined
+        throw error
+      })
     }
     return stopTask
   }
@@ -379,7 +223,6 @@ export function startDevProcess(
   void settledExit.finally(() => {
     diagnostics.flush()
     exited = true
-    TRACKED_DEV_DISPOSERS.delete(stop)
   })
 
   return {
