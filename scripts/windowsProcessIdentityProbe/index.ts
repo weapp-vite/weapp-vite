@@ -1,3 +1,4 @@
+import type { ProbeIdentity } from './identity'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import { performance } from 'node:perf_hooks'
@@ -6,14 +7,18 @@ import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 诊断须保留生产身份查询使用的真实 execa 启动与超时行为。
 import { execa } from 'execa'
 import { resolveWechatInspectionTimeout } from '../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
-import { candidateCommand, cimCommand } from './commands'
+import { candidateCommand, cimCommand, measuredCimCommand } from './commands'
 import { compareIdentities, hash, readIdentity, redact, summarizeIdentity } from './identity'
+import { observeProbePhases } from './phases'
 
 const timeoutMs = resolveWechatInspectionTimeout('win32')
 const outputDirectory = '.tmp/windows-process-identity-probe'
 const samples: Record<string, unknown>[] = []
 const comparisons: Record<string, unknown>[] = []
 const owned = new Set<{ kill: () => boolean }>()
+const requestedFirstProvider = process.env.WEAPP_IDENTITY_PROBE_FIRST_PROVIDER ?? 'cim'
+const firstProvider = requestedFirstProvider === 'cim' || requestedFirstProvider === 'candidate' ? requestedFirstProvider : undefined
+const providerOrder: ('cim' | 'candidate')[] = firstProvider === 'candidate' ? ['candidate', 'cim'] : ['cim', 'candidate']
 const report = {
   kind: 'diagnostic-only-not-acceptance',
   acceptance: 'not-evaluated',
@@ -24,11 +29,14 @@ const report = {
   architecture: process.arch,
   osRelease: os.release(),
   runnerImage: process.env.ImageOS,
+  runnerImageVersion: process.env.ImageVersion,
   timeoutMs,
-  firstProbe: 'Production readManagedProcessIdentity via execa; first PowerShell query issued by this script, not a claim about prior OS provider usage.',
+  firstProvider,
+  firstProbe: 'First PowerShell query issued by this script uses firstProvider; prior OS or setup-step provider usage is unknown.',
+  sampleOrder: [...providerOrder.flatMap(provider => [`${provider}-1`, `${provider}-2-if-first-present`]), 'production-identity-if-cim-samples-present', 'powershell-startup-only'],
   timeoutPolicy: 'All identity queries retain the production 10000ms budget. A separate bounded supervisor aborts incomplete collection; it never retries or accepts a wider query budget.',
-  privacy: 'No raw stdout, stderr, executable paths, commands or environment are persisted. Paths are compared in memory and represented by hashes.',
-  limitations: ['Owned Node processes only; access-denied and arbitrary-process exit races are not covered.', 'Candidate is diagnostic only; no ownership or cleanup decision uses its result.'],
+  privacy: 'No raw stdout, executable paths, commands or environment dumps are persisted. Stderr retains marker metadata and redacted errors. Paths are compared in memory and represented by hashes.',
+  limitations: ['Owned Node processes only; access-denied and arbitrary-process exit races are not covered.', 'Candidate is diagnostic only; no ownership or cleanup decision uses its result.', 'Fresh runner jobs do not prove that the OS provider has never been used. Only the first script-issued PowerShell query is labelled first.', 'One first sample per runner is diagnostic evidence, not a cold-start distribution. Entry-marker receipt includes process launch and pipe delivery.'],
   samples,
   comparisons,
   state: 'started',
@@ -66,12 +74,18 @@ async function bounded<T>(label: string, operation: PromiseLike<T>, budgetMs: nu
   }
 }
 
-async function execute(label: string, role: string, command: string, args: string[], budgetMs = timeoutMs) {
-  const sample: Record<string, unknown> = { label, role, state: 'running', budgetMs, launcher: 'execa', diagnosticOnly: true }
+async function execute(label: string, role: string, command: string, args: string[], budgetMs = timeoutMs, metadata: Record<string, unknown> = {}) {
+  const sample: Record<string, unknown> = { ...metadata, label, role, state: 'running', budgetMs, launcher: 'execa', diagnosticOnly: true }
   samples.push(sample)
   save()
   const start = performance.now()
   const child = execa(command, args, { timeout: budgetMs, reject: false, windowsHide: true, maxBuffer: 128 * 1024 })
+  const phases = label.startsWith('cim-') || label.startsWith('candidate-')
+    ? observeProbePhases(child.stderr, () => performance.now() - start, (fields) => {
+        Object.assign(sample, fields)
+        save()
+      })
+    : undefined
   owned.add(child)
   try {
     const result = await bounded(label, child, budgetMs + 8_000)
@@ -99,6 +113,9 @@ async function execute(label: string, role: string, command: string, args: strin
     throw error
   }
   finally {
+    if (phases) {
+      Object.assign(sample, phases.finish())
+    }
     owned.delete(child)
     save()
     process.stdout.write(`${JSON.stringify({ label, role, state: sample.state, elapsedMs: sample.elapsedMs })}\n`)
@@ -131,16 +148,20 @@ async function production(role: string, pid: number) {
 }
 
 async function powerShell(role: string, pid: number, provider: 'cim' | 'candidate', iteration: number) {
-  const command = provider === 'cim' ? cimCommand(pid) : candidateCommand(pid)
-  const { sample, result } = await execute(`${provider}-${iteration}`, role, 'powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command])
+  const command = provider === 'cim' ? measuredCimCommand(pid) : candidateCommand(pid)
+  const { sample, result } = await execute(`${provider}-${iteration}`, role, 'powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command], timeoutMs, {
+    provider,
+    observation: role === 'self' && provider === firstProvider && iteration === 1 ? 'first-script-powershell-query' : 'after-earlier-probe-queries',
+  })
   if (result.failed || result.exitCode !== 0) {
     sample.outcome = 'query-error'
-    if (provider === 'candidate' && result.stdout.trim()) {
+    if (result.stdout.trim()) {
       try {
         const error: unknown = JSON.parse(result.stdout)
         if (error && typeof error === 'object' && 'ErrorType' in error && typeof error.ErrorType === 'string') {
           sample.errorType = redact(error.ErrorType)
           sample.hResult = 'HResult' in error ? error.HResult : undefined
+          sample.nativeErrorCode = 'NativeErrorCode' in error ? error.NativeErrorCode : undefined
         }
       }
       catch { sample.errorEnvelopeValid = false }
@@ -170,12 +191,31 @@ async function powerShell(role: string, pid: number, provider: 'cim' | 'candidat
 }
 
 async function inspectLive(role: string, pid: number) {
-  const original = await production(role, pid)
+  const identities: Record<'cim' | 'candidate', (ProbeIdentity | undefined)[]> = { cim: [], candidate: [] }
+  for (const provider of providerOrder) {
+    const first = await powerShell(role, pid, provider, 1)
+    identities[provider].push(first)
+    if (first) {
+      identities[provider].push(await powerShell(role, pid, provider, 2))
+    }
+    else {
+      samples.push({ label: `${provider}-2`, role, state: 'not-run', reason: 'First identity was unavailable; no retry was attempted.' })
+      save()
+    }
+  }
+  let original: ProbeIdentity | undefined
+  if (identities.cim.length === 2 && identities.cim.every(Boolean)) {
+    original = await production(role, pid)
+  }
+  else {
+    samples.push({ label: 'production-identity', role, state: 'not-run', reason: 'Measured CIM identity was unavailable; the production CIM query was not repeated.' })
+    save()
+  }
   let previousCim
   let previousCandidate
   for (const iteration of [1, 2]) {
-    const cim = await powerShell(role, pid, 'cim', iteration)
-    const candidate = await powerShell(role, pid, 'candidate', iteration)
+    const cim = identities.cim[iteration - 1]
+    const candidate = identities.candidate[iteration - 1]
     for (const [label, first, second] of [
       ['cim-vs-candidate', cim, candidate],
       ['production-vs-cim', original, cim],
@@ -196,6 +236,9 @@ let fixture: ReturnType<typeof execa> | undefined
 try {
   if (process.platform !== 'win32' || timeoutMs !== 10_000) {
     throw new Error('This diagnostic requires Windows and the unchanged production 10000ms inspection budget.')
+  }
+  if (!firstProvider) {
+    throw new Error('First provider must be cim or candidate.')
   }
   const source = readFileSync(new URL('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host.ts', import.meta.url), 'utf8')
   // eslint-disable-next-line no-template-curly-in-string -- 此处按源码模板字面量校验生产命令，不能替换成当前 PID。

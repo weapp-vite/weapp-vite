@@ -8,13 +8,14 @@ permissions:
 
 jobs:
   identity-probe:
-    name: Diagnostic only (Windows / Node ${{ matrix.node }})
+    name: Diagnostic only (Windows / Node ${{ matrix.node }} / ${{ matrix.firstProvider }})
     runs-on: windows-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         node: [22, 24]
+        firstProvider: [cim, candidate]
     steps:
       - name: Enable Git long paths
         shell: bash
@@ -35,13 +36,15 @@ jobs:
 
       - name: Collect bounded identity diagnostics without launching DevTools
         shell: bash
+        env:
+          WEAPP_IDENTITY_PROBE_FIRST_PROVIDER: ${{ matrix.firstProvider }}
         run: node --import tsx scripts/windowsProcessIdentityProbe/index.ts
 
       - name: Upload diagnostic evidence (not runtime acceptance)
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: windows-process-identity-node-${{ matrix.node }}-${{ github.sha }}
+          name: windows-process-identity-node-${{ matrix.node }}-${{ matrix.firstProvider }}-first-${{ github.sha }}
           path: .tmp/windows-process-identity-probe/report.json
           include-hidden-files: true
           if-no-files-found: error

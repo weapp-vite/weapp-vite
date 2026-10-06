@@ -1,0 +1,51 @@
+# Windows 进程身份查询诊断
+
+此 probe 比较当前生产 CIM 查询与 `.NET Process` 候选，只收集诊断证据，不启动 DevTools，也不参与所有权、清理或 runtime 验收决策。生产 `host.ts` 与 `sameManagedProcess` 保持不变。
+
+## 首次样本和后续样本
+
+手动运行 `Windows Process Identity Probe` workflow。矩阵保留 Node 22、24，并为每个 Node 版本分别创建 `cim` 与 `candidate` 优先的独立 Windows runner job。各组安装和构建步骤相同，artifact 名包含 Node 版本、首个 provider 与提交 SHA。
+
+每个 job 只把本脚本发出的第一条 PowerShell 查询标为 `first-script-powershell-query`。新 runner 不证明操作系统、runner 服务或前面的安装步骤从未使用 PowerShell/CIM；报告明确保留这个限制。
+
+对同一个存活 PID，顺序为：
+
+1. 首选 provider 的首次查询。
+2. 首次取得完整身份后，再做一次预先安排的重复采样；首次身份不可用时不重试。
+3. 另一 provider 的首次及重复采样，同样不重试失败。
+4. 两次 CIM 样本都取得完整身份时，调用原生产 `readManagedProcessIdentity` 核验表示；否则记录未执行，避免失败后变相重试 CIM。
+5. 最后记录 startup-only。这一项已经经过预热，不能当成 PowerShell 冷启动基准。
+
+随后沿用受控子进程的存活与正常退出检查。每条身份查询仍使用原来的 10000 ms 预算；外层 supervisor 只限制模块加载和失败收尾，不接受扩大后的查询预算。缺失、错误、超时和未执行的重复采样分别记录。
+
+## 阶段计时
+
+两种 provider 使用相同的 `execa` 参数与诊断包装。PowerShell 脚本第一条语句向 stderr 写入口 marker；父进程记录 `scriptEntryMs`。脚本内 Stopwatch 记录 `queryBodyMs` 与 `serializationMs`，阶段证据收到后即写入报告，supervisor 中止时也保留已经收到的部分。
+
+- `scriptEntryMs` 包含进程启动、PowerShell 初始化、调度和 marker 管道传递，不能声称它只是 PowerShell 自身耗时。
+- `queryBodyMs` 包含 provider 查询和身份构造；CIM 组也包含首次 cmdlet/module 加载，不能直接等同于 WMI 服务启动。
+- `serializationMs` 包含身份或错误 JSON 的生成与 stdout 写出。
+- `elapsedMs` 仍保留整个子进程调用时间。缺少、重复或无效 marker 时，`phaseEvidenceComplete` 不为真，不填补不存在的阶段耗时。marker 完整性与 `timedOut`、`failed` 独立记录；即使两个 marker 都已收到，退出阶段仍可能超时，不能将 `phaseEvidenceComplete` 视为查询或进程成功。
+
+首个 CIM 样本入口快而查询阶段慢，支持继续检查 CIM/module/provider 路径；入口阶段本身慢，则应检查 PowerShell 启动、调度与系统扫描等因素。候选必须看 `candidate` 优先组的首个样本，不能拿 CIM 之后的候选样本证明冷启动改善。每个 runner 只有一个首次样本，不能据此声明稳定收益、P95 或 Node 版本因果关系。
+
+## 旧身份兼容性
+
+候选保留原始 100ns `Started` 和十进制 tick 字符串，并单独输出 `LegacyStarted`。后者用整数余数截断到微秒，仍输出 UTC 七位小数；不使用 JavaScript `Date` 或浮点数转换 tick。
+
+同 PID 的对照同时记录原始字符串是否相等、兼容字符串是否与 CIM 精确相等、兼容字符串是否等于原始值的预期截断、路径是否精确一致、前后代次与存活状态。`candidateContractAgrees` 只表示该次观测满足这些条件，不代表候选已获准进入生产。
+
+初始 `.NET GetProcessById` 的明确缺失可返回 missing；字段读取失败、权限错误、查询期间退出、前后 tick 不一致都返回错误。原始错误类型、HResult 和可用的 NativeErrorCode 随报告保存，不能用这些错误冒充“进程不存在”。
+
+报告不保存原始可执行路径或 stdout，路径在内存中精确比较并以 hash 表示；stderr 只保留 marker 与脱敏错误。此轮仅覆盖本任务创建的 Node 进程，尚不能证明受限权限、跨位数目标、任意退出竞争和 PID 复用的生产正确性。
+
+生产接入还必须验证旧 journal/锁的双向兼容。`sameManagedProcess` 目前精确比较 `started` 和路径；仅改成 100ns 字符串可能把活跃旧锁误认为过期，不能通过放宽比较或增加超时解决。
+
+## 本地纯数据检查
+
+```sh
+pnpm vitest run scripts/windowsProcessIdentityProbe/identity.test.ts
+pnpm exec eslint scripts/windowsProcessIdentityProbe .github/workflows/windows-process-identity-probe.yml
+```
+
+纯数据检查验证报告解析与兼容性判定，不运行 Windows 查询，也不代替远端首次样本。
