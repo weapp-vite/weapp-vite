@@ -5,7 +5,7 @@ const E2E_UTIL_TEST_GLOB = path.resolve(import.meta.dirname, './utils/**/*.test.
 
 export default defineConfig({
   test: {
-    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
+    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine-lease.global-setup.ts')],
     taskTitleValueFormatTruncate: Number.POSITIVE_INFINITY,
     include: [E2E_UTIL_TEST_GLOB],
     testTimeout: 60_000,

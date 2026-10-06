@@ -41,10 +41,17 @@ describe('managed host startup identities', () => {
     const executable = path.resolve('windows-fixture', 'host.exe')
     inspect.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify({ ProcessId: 123, ExecutablePath: executable, Started: '2026-10-05T01:02:03.456Z' }) })
     expect(await readManagedProcessIdentity(123, 'win32')).toEqual({ pid: 123, executable, started: '2026-10-05T01:02:03.456Z' })
+    expect(inspect).toHaveBeenCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 10_000, reject: false }))
     inspect.mockResolvedValueOnce({ exitCode: 0, stdout: '' })
     expect(await readManagedProcessIdentity(123, 'win32')).toBeUndefined()
     inspect.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify({ ProcessId: 123, Started: 'same-time' }) })
     await expect(readManagedProcessIdentity(123, 'win32')).rejects.toThrow('could not be verified')
+  })
+
+  it('fails closed with diagnostic details when Windows inspection exhausts its budget', async () => {
+    inspect.mockResolvedValueOnce({ exitCode: undefined, signal: 'SIGTERM', timedOut: true, stdout: '' })
+    await expect(readManagedProcessIdentity(123, 'win32')).rejects.toThrow('signal=SIGTERM, timedOut=true, timeoutMs=10000')
+    expect(inspect).toHaveBeenCalledOnce()
   })
 
   it('combines Linux boot identity and process start ticks even when comm contains spaces and parentheses', async () => {
@@ -99,6 +106,7 @@ describe('managed host startup identities', () => {
     inspect.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify({ ProcessId: 123, ExecutablePath: executable, Started: '2026-10-05T01:02:03.456Z' }) })
     expect(await inspectManagedProjectHost(target, 19001, 'win32')).toEqual({ pid: 123, executable, started: '2026-10-05T01:02:03.456Z' })
     expect(inspect.mock.calls.every(([command]) => command === 'powershell.exe')).toBe(true)
+    expect(inspect.mock.calls.every(([, , options]) => options.timeout === 10_000)).toBe(true)
   })
 
   it('rejects a replaced installation even when its path and PID could remain the same', async () => {

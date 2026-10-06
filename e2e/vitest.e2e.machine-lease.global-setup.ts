@@ -1,6 +1,6 @@
 import process from 'node:process'
 import { acquireMachineE2ELease } from '../packages/devtools-runtime/src/lease/machine'
-import { MANAGED_PROJECT_JOURNAL_ENV } from '../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
+import { MANAGED_PROJECT_JOURNAL_ENV } from '../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/constants'
 
 /** 纯 mock 基础设施测试只持有机器租约；不取得真实 IDE 项目日志或窗口清理权。 */
 export default async function setup() {

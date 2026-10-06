@@ -5,6 +5,7 @@ import process from 'node:process'
 // 保留现有 execa 依赖，统一处理 Windows 命令解析、超时和失败输出。
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
+import { resolveWechatInspectionTimeout } from './inspection'
 
 export interface WechatDevtoolsHostInspectionOptions {
   platform?: NodeJS.Platform
@@ -40,7 +41,8 @@ function assertExecutable(target: ResolvedWechatDevtoolsTarget, executable: stri
 async function runInspection(file: string, args: string[], options: WechatDevtoolsHostInspectionOptions) {
   options.signal?.throwIfAborted()
   try {
-    const result = await execa(file, args, { timeout: Math.min(options.timeout ?? 3_000, 3_000), cancelSignal: options.signal, reject: false, windowsHide: true })
+    const timeout = resolveWechatInspectionTimeout(options.platform ?? process.platform, options.timeout)
+    const result = await execa(file, args, { timeout, cancelSignal: options.signal, reject: false, windowsHide: true })
     options.signal?.throwIfAborted()
     return result
   }

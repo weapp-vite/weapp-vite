@@ -1,0 +1,24 @@
+import type { ManagedWechatHostIdentity } from '../types'
+import process from 'node:process'
+import { readManagedProcessIdentity } from '../host'
+
+let currentIdentity: Promise<ManagedWechatHostIdentity> | undefined
+
+/** 共享在途与成功身份；失败仍拒绝当前调用，仅允许下一次显式操作重新核验。 */
+export function readManagedJournalWriterIdentity() {
+  if (!currentIdentity) {
+    const pending = readManagedProcessIdentity(process.pid).then((identity) => {
+      if (!identity) {
+        throw new Error('Cannot identify the managed DevTools journal writer.')
+      }
+      return identity
+    })
+    currentIdentity = pending
+    void pending.catch(() => {
+      if (currentIdentity === pending) {
+        currentIdentity = undefined
+      }
+    })
+  }
+  return currentIdentity
+}

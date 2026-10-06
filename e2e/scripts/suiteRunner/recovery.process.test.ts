@@ -13,6 +13,7 @@ it.each(['registered', 'missing-binding'] as const)('handles an exiting nested r
   const runnerScript = path.join(tempRoot, 'runner.mjs')
   const outerScript = path.join(tempRoot, 'outer.mjs')
   const preloadScript = path.join(tempRoot, 'isolated-home.mjs')
+  const preloadUrl = pathToFileURL(preloadScript).href
   const resultFile = path.join(tempRoot, 'result.json')
   const nextTaskFile = path.join(tempRoot, 'next-task')
   const suiteRunnerUrl = pathToFileURL(path.resolve(import.meta.dirname, '../suiteRunner.ts')).href
@@ -56,7 +57,7 @@ it.each(['registered', 'missing-binding'] as const)('handles an exiting nested r
       const exitCode = await runTaskSuite('e2e:runner-exit-fixture', [{
         label: 'exiting-runner',
         command: process.execPath,
-        args: ${JSON.stringify(['--import', 'tsx', '--import', preloadScript, runnerScript, childPidFile])},
+        args: ${JSON.stringify(['--import', 'tsx', '--import', preloadUrl, runnerScript, childPidFile])},
         env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '5000' },
       }, {
         label: 'after-recovery',
@@ -83,7 +84,7 @@ it.each(['registered', 'missing-binding'] as const)('handles an exiting nested r
   `)
 
   try {
-    const running = promisify(execFile)(process.execPath, ['--import', 'tsx', '--import', preloadScript, outerScript], {
+    const running = promisify(execFile)(process.execPath, ['--import', 'tsx', '--import', preloadUrl, outerScript], {
       cwd: path.resolve(import.meta.dirname, '../../..'),
       env: {
         ...process.env,

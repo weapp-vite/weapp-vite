@@ -50,7 +50,7 @@ describe('DevTools host ownership', () => {
     await expect(assertWechatDevtoolsPort(target(), 22001, { platform: 'darwin' })).rejects.toMatchObject({ code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' })
     execute.mockResolvedValueOnce({ exitCode: 0, stdout: `p${process.pid}\n` }).mockResolvedValueOnce({ exitCode: 0, stdout: executable() })
     await assertWechatDevtoolsPort(target(), 22001, { platform: 'darwin' })
-    expect(execute).toHaveBeenCalledWith('lsof', ['-nP', '-iTCP:22001', '-sTCP:LISTEN', '-Fp'], expect.objectContaining({ reject: false }))
+    expect(execute).toHaveBeenCalledWith('lsof', ['-nP', '-iTCP:22001', '-sTCP:LISTEN', '-Fp'], expect.objectContaining({ reject: false, timeout: 3_000 }))
   })
 
   it('rejects missing listeners and unavailable inspection instead of trusting the port number', async () => {
@@ -66,6 +66,29 @@ describe('DevTools host ownership', () => {
     await assertWechatDevtoolsPort(selected, 22001, { platform: 'win32' })
     execute.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify([{ ProcessId: 124, ExecutablePath: 'C:\\Other\\wechatdevtools.exe' }]) })
     await expect(assertWechatDevtoolsHost(selected, { platform: 'win32' })).rejects.toMatchObject({ code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' })
+  })
+
+  it('bounds Windows cold inspection while respecting smaller caller budgets and cancellation', async () => {
+    const signal = new AbortController().signal
+    execute.mockResolvedValue({ exitCode: 0, stdout: '[]' })
+    await assertWechatDevtoolsHost(target(), { platform: 'win32', signal })
+    expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 10_000, cancelSignal: signal }))
+    await assertWechatDevtoolsHost(target(), { platform: 'win32', timeout: 500, signal })
+    expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 500, cancelSignal: signal }))
+    await assertWechatDevtoolsHost(target(), { platform: 'win32', timeout: 60_000 })
+    expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 10_000 }))
+    const controller = new AbortController()
+    controller.abort(new Error('inspection cancelled'))
+    await expect(assertWechatDevtoolsHost(target(), { platform: 'win32', signal: controller.signal })).rejects.toThrow('inspection cancelled')
+    expect(execute).toHaveBeenCalledTimes(3)
+  })
+
+  it.each([0, -1, Number.NaN])('rejects an invalid inspection budget %s before launching a process', async (timeout) => {
+    await expect(assertWechatDevtoolsHost(target(), { platform: 'win32', timeout })).rejects.toMatchObject({
+      code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH',
+      cause: { name: 'RangeError', message: 'DevTools inspection timeout must be positive.' },
+    })
+    expect(execute).not.toHaveBeenCalled()
   })
 
   it('reads the Linux executable from procfs instead of treating a short comm name as its path', async () => {

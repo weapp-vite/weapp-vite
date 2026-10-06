@@ -7,11 +7,16 @@ import { setTimeout } from 'node:timers/promises'
 // eslint-disable-next-line e18e/ban-dependencies -- 项目关闭与身份检查复用跨平台子进程封装。
 import { execa } from 'execa'
 import { assertWechatDevtoolsPort, resolveWechatDevtoolsTarget } from '../devtoolsTarget'
+import { resolveWechatInspectionTimeout } from '../devtoolsTarget/inspection'
 
 const inspectionOptions = { timeout: 3_000, reject: false, windowsHide: true } as const
+const windowsInspectionOptions = { ...inspectionOptions, timeout: resolveWechatInspectionTimeout('win32') }
 
-function invalidIdentity() {
-  return new Error('Managed DevTools process identity could not be verified; no project was closed.')
+function invalidIdentity(result?: { exitCode?: number, signal?: string, timedOut?: boolean }, timeout?: number) {
+  const details = result
+    ? ` Inspection: exitCode=${result.exitCode ?? 'none'}, signal=${result.signal ?? 'none'}, timedOut=${result.timedOut ?? false}, timeoutMs=${timeout}.`
+    : ''
+  return new Error(`Managed DevTools process identity could not be verified; no project was closed.${details}`)
 }
 
 /** PID 必须连同启动时间和可执行文件核验；进程号复用不继承所有权。 */
@@ -20,9 +25,9 @@ export async function readManagedProcessIdentity(pid: number, platform = process
     throw invalidIdentity()
   }
   if (platform === 'win32') {
-    const result = await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference='Stop'; Get-CimInstance Win32_Process -Filter "ProcessId=${pid}" | Select-Object ProcessId,ExecutablePath,@{Name='Started';Expression={$_.CreationDate.ToUniversalTime().ToString('o')}} | ConvertTo-Json -Compress`], inspectionOptions)
+    const result = await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference='Stop'; Get-CimInstance Win32_Process -Filter "ProcessId=${pid}" | Select-Object ProcessId,ExecutablePath,@{Name='Started';Expression={$_.CreationDate.ToUniversalTime().ToString('o')}} | ConvertTo-Json -Compress`], windowsInspectionOptions)
     if (result.exitCode !== 0) {
-      throw invalidIdentity()
+      throw invalidIdentity(result, windowsInspectionOptions.timeout)
     }
     if (!result.stdout.trim()) {
       return undefined
@@ -74,14 +79,17 @@ export function sameManagedProcess(first: ManagedWechatHostIdentity, second: Man
 
 async function listenerPid(port: number, platform = process.platform) {
   const result = platform === 'win32'
-    ? await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference='Stop'; @(Get-NetTCPConnection -LocalPort ${port} -State Listen | Select-Object -ExpandProperty OwningProcess -Unique) | ConvertTo-Json -Compress`], inspectionOptions)
+    ? await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference='Stop'; @(Get-NetTCPConnection -LocalPort ${port} -State Listen | Select-Object -ExpandProperty OwningProcess -Unique) | ConvertTo-Json -Compress`], windowsInspectionOptions)
     : await execa('lsof', ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-Fp'], inspectionOptions)
+  if (result.exitCode !== 0) {
+    throw invalidIdentity(result, resolveWechatInspectionTimeout(platform))
+  }
   const parsed: unknown = platform === 'win32' ? JSON.parse(result.stdout.trim() || '[]') : undefined
   const pids: unknown[] = platform === 'win32'
     ? Array.isArray(parsed) ? parsed : [parsed]
     : result.stdout.split(/\r?\n/).filter(line => /^p\d+$/.test(line)).map(line => Number(line.slice(1)))
   const unique = [...new Set(pids)]
-  if (result.exitCode !== 0 || unique.length !== 1 || typeof unique[0] !== 'number' || !Number.isSafeInteger(unique[0]) || unique[0] <= 0) {
+  if (unique.length !== 1 || typeof unique[0] !== 'number' || !Number.isSafeInteger(unique[0]) || unique[0] <= 0) {
     throw invalidIdentity()
   }
   return unique[0]

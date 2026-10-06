@@ -8,10 +8,12 @@ import { mutateLease } from '@weapp-vite/devtools-runtime'
 import { z } from 'zod'
 import { readManagedProcessIdentity, sameManagedProcess } from './host'
 import { installationExitRecoverySchema } from './installationExit/schema'
+import { MANAGED_PROJECT_JOURNAL_ENV } from './journal/constants'
 import { createManagedChildJournal, initializeManagedJournalScope, managedJournalPrefix, resolveManagedJournalScope } from './journal/scope'
+import { readManagedJournalWriterIdentity } from './journal/writerIdentity'
 import { managedWindowCloseSchema } from './windowClose/schema'
 
-export const MANAGED_PROJECT_JOURNAL_ENV = 'WEAPP_IDE_MANAGED_PROJECT_JOURNAL'
+export { MANAGED_PROJECT_JOURNAL_ENV } from './journal/constants'
 export const managedProcessToken = randomUUID()
 const idSchema = z.string().uuid()
 const hostSchema = z.object({ pid: z.number().int().positive(), executable: z.string().min(1), started: z.string().min(1) })
@@ -127,7 +129,6 @@ export async function readManagedWechatProjectRecords(journalPath?: string): Pro
 }
 
 const lockOwnerSchema = z.object({ token: idSchema, identity: hostSchema })
-let currentIdentity: ReturnType<typeof readManagedProcessIdentity> | undefined
 
 async function readLockOwner(lock: string) {
   return fs.readFile(path.join(lock, 'owner'), 'utf8').then(value => lockOwnerSchema.parse(JSON.parse(value) as unknown)).catch((error: NodeJS.ErrnoException) => {
@@ -160,10 +161,7 @@ async function withManagedJournalDirectoryLock<T>(directory: string, run: () => 
   await fs.mkdir(directory, { recursive: true, mode: 0o700 })
   const lock = path.join(directory, '.ownership-lock')
   const token = randomUUID()
-  const identity = await (currentIdentity ??= readManagedProcessIdentity(process.pid))
-  if (!identity) {
-    throw new Error('Cannot identify the managed DevTools journal writer.')
-  }
+  const identity = await readManagedJournalWriterIdentity()
   const deadline = Date.now() + 45_000
   while (true) {
     const acquired = await mutateLease(lock, async () => {
