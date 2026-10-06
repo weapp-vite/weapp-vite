@@ -10,7 +10,7 @@ import { createDashboardWorkspace, provideDashboardWorkspace } from './features/
 import { useThemeMode } from './features/dashboard/composables/useThemeMode'
 import { dashboardConnectionLabels, dashboardDevtoolsName, workspaceNavigation } from './features/dashboard/constants/shell'
 import { dashboardTabs, themeOptions } from './features/dashboard/constants/view'
-import { dashboardConnectionStatus } from './features/dashboard/utils/dashboardDevframe'
+import { dashboardAnalyzeRevision, dashboardConnectionStatus } from './features/dashboard/utils/dashboardDevframe'
 
 const route = useRoute()
 const mobileNavOpen = ref(false)
@@ -19,8 +19,10 @@ const { themePreference, resolvedTheme, setThemePreference } = useThemeMode()
 const workspace = createDashboardWorkspace()
 const hasPayload = computed(() => Boolean(workspace.resultRef.value))
 const projectName = computed(() => workspace.resultRef.value?.metadata?.projectName ?? '未命名小程序')
+const isAnalyzeRoute = computed(() => route.matched.some(record => record.path === '/analyze'))
 const currentAnalyzeView = computed(() => dashboardTabs.find(tab => tab.key === route.query.tab) ?? dashboardTabs[0]!)
 const currentAnalyzeTab = computed(() => currentAnalyzeView.value.key)
+const isDiagnosticsWorkspace = computed(() => isAnalyzeRoute.value && currentAnalyzeTab.value === 'diagnostics')
 
 provideDashboardTheme({
   themePreference,
@@ -30,7 +32,7 @@ provideDashboardTheme({
 provideDashboardWorkspace(workspace)
 
 const pageMeta = computed<DashboardTitleBlock>(() => {
-  if (route.path.startsWith('/analyze')) {
+  if (isAnalyzeRoute.value) {
     return {
       title: currentAnalyzeView.value.label,
       description: currentAnalyzeView.value.description,
@@ -53,7 +55,7 @@ watch(() => route.fullPath, () => {
   mobileNavOpen.value = false
 })
 
-watch(() => route.path === '/analyze' ? currentAnalyzeTab.value : route.path, () => {
+watch(() => isAnalyzeRoute.value ? currentAnalyzeTab.value : route.path, () => {
   if (contentRoot.value) {
     contentRoot.value.scrollTop = 0
   }
@@ -70,9 +72,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
 </script>
 
 <template>
-  <div class="h-dvh overflow-hidden bg-(--dashboard-bg) text-(--dashboard-text)">
-    <div class="grid h-full min-w-0 lg:grid-cols-[15rem_minmax(0,1fr)]">
-      <aside class="hidden min-h-0 border-r border-(--dashboard-border) bg-(--dashboard-panel) lg:flex lg:flex-col">
+  <div class="h-dvh overflow-hidden bg-(--dashboard-bg) text-(--dashboard-text)" :class="{ 'diagnostics-workbench': isDiagnosticsWorkspace }">
+    <div class="grid h-full min-w-0" :class="{ 'lg:grid-cols-[15rem_minmax(0,1fr)]': !isDiagnosticsWorkspace }">
+      <aside v-if="!isDiagnosticsWorkspace" class="hidden min-h-0 border-r border-(--dashboard-border) bg-(--dashboard-panel) lg:flex lg:flex-col">
         <div class="flex h-13 shrink-0 items-center gap-2.5 border-b border-(--dashboard-border) px-3">
           <span class="flex h-7 w-7 items-center justify-center rounded bg-(--dashboard-accent-soft) text-(--dashboard-accent)">
             <span class="h-4 w-4">
@@ -109,8 +111,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
         </div>
       </aside>
 
-      <main class="flex min-h-0 min-w-0 flex-col">
+      <main class="flex min-h-0 min-w-0 flex-col" :class="{ 'diagnostics-shell': isDiagnosticsWorkspace }">
         <AppShellHeader
+          :workbench="isDiagnosticsWorkspace"
+          :project-name="projectName"
+          :revision="dashboardAnalyzeRevision"
           :connection-status="dashboardConnectionStatus"
           :has-payload="hasPayload"
           :package-count="workspace.resultRef.value?.packages.length ?? 0"
@@ -121,7 +126,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
           @menu="mobileNavOpen = true"
           @set-theme="setThemePreference"
         />
-        <div ref="contentRoot" class="min-h-0 min-w-0 flex-1 overflow-y-auto p-3 lg:p-4">
+        <div ref="contentRoot" class="min-h-0 min-w-0 flex-1 overflow-y-auto" :class="isDiagnosticsWorkspace ? 'pb-10' : 'p-3 lg:p-4'">
           <RouterView />
         </div>
       </main>
@@ -174,3 +179,26 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
     </transition>
   </div>
 </template>
+
+<style scoped>
+.diagnostics-shell {
+  width: 100%;
+  max-width: 1500px;
+  padding-inline: clamp(18px, 3.33vw, 48px);
+  margin-inline: auto;
+}
+
+:global([data-theme='dark']) .diagnostics-workbench {
+  --dashboard-bg: #11171d;
+  --dashboard-panel: #182129;
+  --dashboard-panel-strong: #202b34;
+  --dashboard-panel-muted: #182129;
+  --dashboard-border: #35424d;
+  --dashboard-border-strong: #637985;
+  --dashboard-text: #e6edf1;
+  --dashboard-text-muted: #a4b4c1;
+  --dashboard-text-soft: #a4b4c1;
+  --dashboard-accent: #72d7ed;
+  --dashboard-accent-soft: #203b45;
+}
+</style>

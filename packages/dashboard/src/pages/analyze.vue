@@ -112,6 +112,7 @@ const pageClassName = computed(() => {
     <AnalyzeEmptyPayloadPanel v-if="!resultRef" />
 
     <AnalyzeToolbar
+      v-if="activeTab !== 'diagnostics'"
       v-model:more-menu-open="moreMenuOpen"
       :can-reset-view="canResetView"
       :can-search="Boolean(resultRef)"

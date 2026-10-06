@@ -63,14 +63,18 @@ function handleTabKeydown(event: KeyboardEvent, index: number) {
 }
 
 watch(() => props.action.key, () => {
-  const focusInside = panel.value?.contains(document.activeElement) ?? false
+  const focusInside = Boolean(panel.value?.contains(document.activeElement) || tabButtons.value?.includes(document.activeElement as HTMLButtonElement))
   void selectTab('compare', focusInside)
 })
+
+function showVerification() {
+  void selectTab('verification', true)
+}
 </script>
 
 <template>
-  <section ref="panel" data-diagnostic-evidence aria-label="所选条目的证据工作区" class="grid min-w-0 gap-5">
-    <div role="tablist" aria-label="证据视图" class="grid min-w-0 grid-cols-3 border-b border-(--dashboard-border)">
+  <section data-diagnostic-evidence aria-label="所选条目的证据工作区" class="diagnostic-workspace min-w-0">
+    <div role="tablist" aria-label="证据视图" class="flex min-w-0 gap-6 border-b border-(--dashboard-border) sm:gap-7">
       <button
         v-for="(tab, index) in tabs"
         :id="`${panelId}-tab-${tab.id}`"
@@ -78,10 +82,10 @@ watch(() => props.action.key, () => {
         ref="tabButtons"
         type="button"
         role="tab"
-        class="min-h-11 min-w-0 border-b-2 px-2 py-3 text-xs font-medium [overflow-wrap:anywhere] focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) sm:text-sm"
+        class="min-h-12 min-w-0 border-b-2 py-3 text-sm font-medium [overflow-wrap:anywhere] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
         :class="activeTab === tab.id
           ? 'border-(--dashboard-accent) text-(--dashboard-accent)'
-          : 'border-transparent text-(--dashboard-text-soft) hover:bg-(--dashboard-panel-muted) hover:text-(--dashboard-text)'"
+          : 'border-transparent text-(--dashboard-text-muted) hover:text-(--dashboard-text)'"
         :aria-controls="`${panelId}-panel-${tab.id}`"
         :aria-selected="activeTab === tab.id"
         :tabindex="activeTab === tab.id ? 0 : -1"
@@ -92,76 +96,94 @@ watch(() => props.action.key, () => {
         {{ tab.label }}
       </button>
     </div>
-
-    <div
-      v-show="activeTab === 'compare'"
-      :id="`${panelId}-panel-compare`"
-      role="tabpanel"
-      tabindex="0"
-      :aria-labelledby="`${panelId}-tab-compare`"
-      class="min-w-0 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
-    >
-      <DiagnosticArtifactEvidence :evidence="evidence" :comparison-label="comparisonLabel" @open-file="emit('openFile', $event)" />
-    </div>
-    <div
-      v-show="activeTab === 'sources'"
-      :id="`${panelId}-panel-sources`"
-      role="tabpanel"
-      tabindex="0"
-      :aria-labelledby="`${panelId}-tab-sources`"
-      class="min-w-0 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
-    >
-      <DiagnosticSourcesEvidence :evidence="evidence" @open-source="emit('openSource', $event)" />
-    </div>
-    <div
-      v-show="activeTab === 'verification'"
-      :id="`${panelId}-panel-verification`"
-      role="tabpanel"
-      tabindex="0"
-      :aria-labelledby="`${panelId}-tab-verification`"
-      class="min-w-0 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
-    >
-      <p class="mb-4 text-xs font-medium text-(--dashboard-text-soft)">
-        拟议检查 · 尚未运行
-      </p>
-      <div class="grid gap-5 xl:grid-cols-2">
-        <section aria-label="调查步骤">
-          <h3 class="text-sm font-semibold text-(--dashboard-text)">
-            先补齐证据
-          </h3>
-          <ol v-if="evidence.steps.length" class="mt-3 grid list-decimal gap-3 pl-5 text-sm leading-6 text-(--dashboard-text-muted)">
-            <li v-for="step in evidence.steps" :key="step">{{ step }}</li>
-          </ol>
-          <p v-else class="mt-3 text-sm text-(--dashboard-text-soft)">当前条目尚无可用调查步骤。</p>
-        </section>
-        <section aria-label="复验要求" class="border-t border-(--dashboard-border) pt-4 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-5">
-          <h3 class="text-sm font-semibold text-(--dashboard-text)">
-            判断是否解决
-          </h3>
-          <ul v-if="evidence.checks.length" class="mt-3 grid list-disc gap-3 pl-4 text-sm leading-6 text-(--dashboard-text-muted)">
-            <li v-for="check in evidence.checks" :key="check">{{ check }}</li>
-          </ul>
-          <p v-else class="mt-3 text-sm text-(--dashboard-text-soft)">当前条目尚无可用复验条件。</p>
-        </section>
+    <div class="diagnostic-columns grid min-w-0 items-start gap-6 pt-7">
+      <aside class="diagnostic-index min-w-0" aria-label="问题与线索索引">
+        <slot name="index" />
+      </aside>
+      <div ref="panel" class="grid min-w-0 content-start gap-6">
+        <slot name="heading" />
+        <div
+          v-show="activeTab === 'compare'"
+          :id="`${panelId}-panel-compare`"
+          role="tabpanel"
+          tabindex="0"
+          :aria-labelledby="`${panelId}-tab-compare`"
+          class="min-w-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+        >
+          <DiagnosticArtifactEvidence :evidence="evidence" :comparison-label="comparisonLabel" @open-file="emit('openFile', $event)" @show-sources="selectTab('sources', true)" />
+        </div>
+        <div
+          v-show="activeTab === 'sources'"
+          :id="`${panelId}-panel-sources`"
+          role="tabpanel"
+          tabindex="0"
+          :aria-labelledby="`${panelId}-tab-sources`"
+          class="min-w-0 border-t border-(--dashboard-border) pt-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+        >
+          <DiagnosticSourcesEvidence :evidence="evidence" @open-source="emit('openSource', $event)" />
+        </div>
+        <div
+          v-show="activeTab === 'verification'"
+          :id="`${panelId}-panel-verification`"
+          role="tabpanel"
+          tabindex="0"
+          :aria-labelledby="`${panelId}-tab-verification`"
+          class="min-w-0 border-t border-(--dashboard-border) pt-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+        >
+          <p class="mb-5 font-mono text-xs text-(--dashboard-text-soft)">拟议检查 · 尚未运行</p>
+          <div class="diagnostic-verification grid gap-6">
+            <section aria-label="调查步骤">
+              <h3 class="text-base font-semibold text-(--dashboard-text)">先补齐证据</h3>
+              <ol v-if="evidence.steps.length" class="mt-3 grid list-decimal gap-3 pl-5 text-sm leading-6 text-(--dashboard-text-muted)">
+                <li v-for="step in evidence.steps" :key="step">{{ step }}</li>
+              </ol>
+              <p v-else class="mt-3 text-sm text-(--dashboard-text-soft)">当前条目尚无可用调查步骤。</p>
+            </section>
+            <section aria-label="复验要求">
+              <h3 class="text-base font-semibold text-(--dashboard-text)">判断是否解决</h3>
+              <ul v-if="evidence.checks.length" class="mt-3 grid gap-3 text-sm leading-6 text-(--dashboard-text-muted)">
+                <li v-for="check in evidence.checks" :key="check" class="border-b border-(--dashboard-border) pb-3">{{ check }}</li>
+              </ul>
+              <p v-else class="mt-3 text-sm text-(--dashboard-text-soft)">当前条目尚无可用复验条件。</p>
+            </section>
+          </div>
+          <p class="mt-5 border-l-2 border-(--dashboard-accent) pl-3 text-xs leading-5 text-(--dashboard-text-muted)">
+            只有构建通过或总量下降不足以宣称解决。需要重新读取实际测量，并验证相关页面与分包运行行为；合理增长可以保留。
+          </p>
+        </div>
+        <footer class="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-(--dashboard-text-soft)">
+          <p>产物数据不等于源码因果。</p>
+          <button type="button" data-diagnostic-inspect class="inline-flex min-h-11 items-center gap-2 text-(--dashboard-accent) hover:underline" @click="emit('inspect', action)">
+            查看完整分析
+            <span class="icon-[mdi--arrow-right] size-4 shrink-0" aria-hidden="true" />
+          </button>
+        </footer>
       </div>
-      <p class="mt-5 border-l-2 border-(--dashboard-accent) pl-3 text-xs leading-5 text-(--dashboard-text-muted)">
-        只有构建通过或总量下降不足以宣称解决。需要重新读取实际测量，并验证相关页面与分包运行行为；合理增长可以保留。
-      </p>
     </div>
-
-    <footer class="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-(--dashboard-border) pt-3">
-      <p class="text-xs leading-5 text-(--dashboard-text-soft)">
-        更多明细可下钻至现有分析页。
-      </p>
-      <button
-        type="button"
-        data-diagnostic-inspect
-        class="inline-flex min-h-9 items-center gap-2 rounded-sm px-1 text-xs font-medium text-(--dashboard-text-muted) underline decoration-(--dashboard-border-strong) underline-offset-4 hover:text-(--dashboard-accent) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:min-h-11"
-        @click="emit('inspect', action)"
-      >
-        查看完整分析
-        <span class="icon-[mdi--arrow-right] size-4 shrink-0" aria-hidden="true" />
-      </button>
-    </footer>
+    <slot name="plan" :show-verification="showVerification" />
   </section>
 </template>
+
+<style scoped>
+.diagnostic-workspace {
+  container: diagnostics / inline-size;
+}
+
+@container diagnostics (min-width: 52rem) {
+  .diagnostic-columns {
+    grid-template-columns: 17rem minmax(0, 1fr);
+    gap: 2rem;
+  }
+}
+
+@container diagnostics (min-width: 76rem) {
+  .diagnostic-columns {
+    grid-template-columns: 20rem minmax(0, 1fr);
+    gap: 2.5rem;
+  }
+
+  .diagnostic-verification {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+</style>

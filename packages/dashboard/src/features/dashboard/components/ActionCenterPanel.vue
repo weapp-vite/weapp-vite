@@ -3,7 +3,6 @@ import type { AnalyzeActionCenterItem } from '../types'
 import { computed, useId } from 'vue'
 import { useActionCenterPanel } from '../composables/useActionCenterPanel'
 import { formatModuleIdentifier } from '../utils/format'
-import { runtimeBadgeStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppSelect from './AppSelect.vue'
 
@@ -72,7 +71,7 @@ const visibleRows = computed(() => filteredActions.value.map((item) => {
     target,
     name: target.slice(separator + 1),
     directory: separator < 0 ? '' : target.slice(0, separator + 1),
-    badgeClass: runtimeBadgeStyles({ tone }),
+    toneClass: tone === 'error' || tone === 'warning' ? 'text-amber-700 dark:text-amber-200' : 'text-(--dashboard-text-muted)',
   }
 }))
 </script>
@@ -80,54 +79,39 @@ const visibleRows = computed(() => filteredActions.value.map((item) => {
 <template>
   <aside data-diagnostic-index aria-label="问题索引" class="grid min-w-0 content-start gap-3">
     <header class="flex flex-wrap items-baseline justify-between gap-2">
-      <h2 class="text-sm font-semibold text-(--dashboard-text)">
-        问题索引
-      </h2>
+      <h2 class="font-mono text-xs tracking-wide text-(--dashboard-text-muted)">ISSUE INDEX / 问题索引</h2>
       <span class="text-xs tabular-nums text-(--dashboard-text-soft)">{{ actions.length }} 项</span>
     </header>
 
-    <div class="grid min-w-0 gap-2">
-      <label :for="searchId" class="sr-only">搜索问题与线索</label>
-      <input
-        :id="searchId"
-        v-model="actionQuery"
-        data-diagnostic-search
-        class="h-9 w-full min-w-0 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text) placeholder:text-(--dashboard-text-soft) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:min-h-11"
-        placeholder="搜索问题或路径"
-        type="search"
-        :aria-controls="listId"
-      >
-      <details class="group" :open="Boolean(advancedFilterSummary)">
-        <summary class="flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-md px-1 py-2 text-xs text-(--dashboard-text-muted) hover:text-(--dashboard-text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:min-h-11">
-          <span class="icon-[mdi--filter-outline] size-4 shrink-0" aria-hidden="true" />
-          <span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
-            <span>筛选与排序</span>
-            <span v-if="advancedFilterSummary" class="text-(--dashboard-accent) [overflow-wrap:anywhere]">{{ advancedFilterSummary }}</span>
-          </span>
-          <span class="icon-[mdi--chevron-right] size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
-        </summary>
-        <div class="grid gap-2 pt-1 pb-2">
-          <AppSelect v-model="actionToneFilter" label="按严重度筛选" :options="toneFilterOptions" />
-          <AppSelect v-model="actionKindFilter" label="按问题类型筛选" :options="kindFilterOptions" />
-          <AppSelect v-model="actionSortMode" label="排序处理项" :options="actionSortOptions" />
-        </div>
-      </details>
-    </div>
+    <details class="group min-w-0" :open="Boolean(actionQuery || advancedFilterSummary)">
+      <summary class="flex min-h-9 cursor-pointer list-none items-center gap-2 py-1 text-xs text-(--dashboard-text-muted) hover:text-(--dashboard-text)">
+        <span class="icon-[mdi--filter-outline] size-4 shrink-0" aria-hidden="true" />
+        <span class="flex-1">搜索与筛选<span v-if="actionQuery || advancedFilterSummary"> · {{ filteredActions.length }} 项匹配</span></span>
+        <span class="icon-[mdi--chevron-right] size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
+      </summary>
+      <div class="grid min-w-0 gap-2 pt-2">
+        <label :for="searchId" class="sr-only">搜索问题与线索</label>
+        <input :id="searchId" v-model="actionQuery" data-diagnostic-search class="min-h-11 w-full min-w-0 rounded-sm border border-(--dashboard-border) bg-(--dashboard-panel) px-3 text-sm text-(--dashboard-text) placeholder:text-(--dashboard-text-soft)" placeholder="搜索问题或路径" type="search" :aria-controls="listId">
+        <AppSelect v-model="actionToneFilter" label="按严重度筛选" :options="toneFilterOptions" />
+        <AppSelect v-model="actionKindFilter" label="按问题类型筛选" :options="kindFilterOptions" />
+        <AppSelect v-model="actionSortMode" label="排序处理项" :options="actionSortOptions" />
+      </div>
+    </details>
 
-    <p class="text-xs tabular-nums text-(--dashboard-text-soft)" role="status">
+    <p v-if="actionQuery || advancedFilterSummary" class="text-xs tabular-nums text-(--dashboard-text-soft)" role="status">
       匹配 {{ filteredActions.length }} / {{ actions.length }} 项
     </p>
-    <div :id="listId" class="max-h-96 min-w-0 overflow-y-auto p-0.5">
+    <div :id="listId" class="max-h-[32rem] min-w-0 overflow-y-auto p-0.5">
       <AppEmptyState v-if="filteredActions.length === 0" compact>
         {{ actions.length === 0 ? '当前没有问题或待查线索。' : '没有匹配项，请调整搜索或筛选。' }}
       </AppEmptyState>
       <ol v-else class="grid gap-1">
-        <li v-for="row in visibleRows" :key="row.item.key" class="min-w-0 list-none">
+        <li v-for="(row, index) in visibleRows" :key="row.item.key" class="min-w-0 list-none">
           <button
             type="button"
-            class="w-full min-w-0 rounded-md border-l-2 px-3 py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+            class="w-full min-w-0 border border-l-2 px-3.5 py-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
             :class="activeKey === row.item.key
-              ? 'border-(--dashboard-accent) bg-(--dashboard-accent-soft)'
+              ? 'border-(--dashboard-border) border-l-(--dashboard-accent) bg-(--dashboard-panel)'
               : 'border-transparent hover:bg-(--dashboard-panel-muted)'"
             :aria-pressed="activeKey === row.item.key"
             :title="row.target"
@@ -135,7 +119,7 @@ const visibleRows = computed(() => filteredActions.value.map((item) => {
             @click="emit('select', row.item)"
           >
             <span class="flex min-w-0 flex-wrap items-center justify-between gap-2">
-              <span :class="row.badgeClass">{{ row.label }}</span>
+              <span class="text-xs" :class="row.toneClass">{{ String(index + 1).padStart(2, '0') }} / {{ row.label }}</span>
               <span v-if="row.item.value" class="text-xs font-medium tabular-nums text-(--dashboard-text) [overflow-wrap:anywhere]">
                 {{ row.item.value }}
               </span>
@@ -150,8 +134,5 @@ const visibleRows = computed(() => filteredActions.value.map((item) => {
         </li>
       </ol>
     </div>
-    <p class="border-t border-(--dashboard-border) pt-3 text-xs leading-5 text-(--dashboard-text-soft)">
-      增长与重复仅为待查线索，不代表已确认缺陷。
-    </p>
   </aside>
 </template>

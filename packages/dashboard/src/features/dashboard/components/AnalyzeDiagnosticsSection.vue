@@ -10,6 +10,7 @@ import type {
   LargestFileEntry,
   TreemapModuleNodeMeta,
 } from '../types'
+import type { DiagnosticEvidence } from '../utils/diagnosticEvidence'
 import { computed, nextTick, shallowRef, useTemplateRef, watch } from 'vue'
 import { dashboardAnalyzeRevision, dashboardConnectionStatus } from '../utils/dashboardDevframe'
 import { createDiagnosticContext, createDiagnosticEvidence } from '../utils/diagnosticEvidence'
@@ -54,6 +55,8 @@ const contextText = shallowRef('')
 const contextOpen = shallowRef(false)
 const contextChanged = shallowRef(false)
 const contextVersion = shallowRef(0)
+const contextEvidence = shallowRef<DiagnosticEvidence | null>(null)
+const contextTitle = shallowRef('')
 const selectedAction = computed(() => props.actionItems.find(item => item.key === props.selectedActionKey) ?? props.actionItems[0])
 const evidence = computed(() => selectedAction.value
   ? createDiagnosticEvidence({
@@ -92,6 +95,8 @@ function prepareContext() {
   if (connectionReason.value || !selectedAction.value || !evidence.value) {
     return
   }
+  contextEvidence.value = evidence.value
+  contextTitle.value = selectedAction.value.title
   contextText.value = createDiagnosticContext({
     action: selectedAction.value,
     evidence: evidence.value,
@@ -113,71 +118,61 @@ async function closeContext() {
 </script>
 
 <template>
-  <section class="grid min-w-0 content-start gap-4" aria-label="包体诊断">
-    <header class="flex min-w-0 flex-wrap items-end justify-between gap-3">
-      <p class="text-sm text-(--dashboard-text-muted)">
-        {{ problemCount }} 项超预算 · {{ actionItems.length - problemCount }} 项风险与线索
-      </p>
-      <div class="min-w-0 text-sm leading-6 text-(--dashboard-text-muted) [overflow-wrap:anywhere]">
-        <p>{{ comparisonLabel }}</p>
-        <p class="font-mono text-xs">
-          报告 {{ result.metadata?.generatedAt ?? '生成时间未提供' }}
-          <span v-if="dashboardAnalyzeRevision !== null"> · R{{ dashboardAnalyzeRevision }}</span>
-        </p>
-      </div>
-    </header>
-
-    <div v-if="selectedAction && evidence" class="diagnostic-layout min-w-0 overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel)">
-      <div class="diagnostic-columns grid min-w-0 items-start">
-        <aside class="diagnostic-index min-w-0 border-b border-(--dashboard-border) p-4 sm:p-5" aria-label="问题与线索索引">
-          <ActionCenterPanel
-            :actions="actionItems"
-            :active-key="selectedAction.key"
-            @select="emit('focusAction', $event)"
-          />
-        </aside>
-        <div class="min-w-0">
-          <div class="flex min-w-0 flex-wrap items-start justify-between gap-4 border-b border-(--dashboard-border) p-4 sm:p-5">
-            <div class="min-w-0 flex-1 basis-64">
-              <h2 class="text-lg font-semibold leading-7 text-(--dashboard-text) [overflow-wrap:anywhere]">{{ selectedAction.title }}</h2>
-              <p class="mt-2 text-sm leading-6 text-(--dashboard-text-muted) [overflow-wrap:anywhere]">{{ selectedAction.meta }}</p>
-            </div>
-            <div class="flex min-w-0 flex-col items-start gap-2">
-              <button
-                ref="contextTrigger"
-                type="button"
-                :disabled="Boolean(connectionReason)"
-                :aria-expanded="contextOpen"
-                aria-controls="diagnostic-ai-context"
-                class="min-h-11 rounded-md bg-(--dashboard-accent) px-4 py-2 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-950"
-                @click="prepareContext"
-              >
-                {{ contextOpen && contextInvalidReason ? '重新准备 AI 上下文' : '准备 AI 诊断上下文' }}
-              </button>
-              <span class="text-xs text-(--dashboard-text-soft)">只读交接，不会自动修复</span>
-            </div>
-          </div>
-          <p v-if="connectionReason" role="status" class="px-4 pt-3 text-sm text-(--dashboard-text-muted) sm:px-5">{{ connectionReason }}</p>
-          <DiagnosticEvidencePanel
-            :action="selectedAction"
-            :evidence="evidence"
-            :comparison-label="comparisonLabel"
-            class="p-4 sm:p-5"
-            @open-file="emit('openFile', $event)"
-            @open-source="emit('openSource', $event)"
-            @inspect="emit('selectAction', $event)"
-          />
+  <section class="grid min-w-0 content-start gap-7" aria-label="包体诊断">
+    <DiagnosticEvidencePanel
+      v-if="selectedAction && evidence"
+      :action="selectedAction"
+      :evidence="evidence"
+      :comparison-label="comparisonLabel"
+      @open-file="emit('openFile', $event)"
+      @open-source="emit('openSource', $event)"
+      @inspect="emit('selectAction', $event)"
+    >
+      <template #index>
+        <ActionCenterPanel :actions="actionItems" :active-key="selectedAction.key" @select="emit('focusAction', $event)" />
+        <div class="mt-6 grid gap-2 border-t border-(--dashboard-border) pt-4 text-xs leading-5 text-(--dashboard-text-muted)">
+          <p>{{ problemCount }} 项超预算 · {{ actionItems.length - problemCount }} 项风险与线索</p>
+          <p>{{ comparisonLabel }}</p>
+          <p class="font-mono">{{ result.metadata?.generatedAt ?? '生成时间未提供' }}<span v-if="dashboardAnalyzeRevision !== null"> · R{{ dashboardAnalyzeRevision }}</span></p>
+          <p>增长与重复仅为待查线索，估算不计作已实现收益。</p>
         </div>
-      </div>
-      <DiagnosticContextPanel
-        v-if="contextOpen"
-        id="diagnostic-ai-context"
-        :key="contextVersion"
-        :text="contextText"
-        :invalid-reason="contextInvalidReason"
-        @close="closeContext"
-      />
-    </div>
+      </template>
+      <template #heading>
+        <header class="flex min-w-0 flex-wrap items-start justify-between gap-5">
+          <div class="min-w-0 flex-1 basis-80">
+            <p class="mb-2 font-mono text-xs tracking-wide text-(--dashboard-text-soft)">PACKAGE DIAGNOSTICS / 包体诊断</p>
+            <h2 class="text-2xl font-semibold leading-snug tracking-tight text-(--dashboard-text) [overflow-wrap:anywhere]">{{ selectedAction.title }}</h2>
+            <p class="mt-2 text-sm leading-6 text-(--dashboard-text-muted) [overflow-wrap:anywhere]">{{ selectedAction.meta }}</p>
+          </div>
+          <button
+            ref="contextTrigger"
+            type="button"
+            :disabled="Boolean(connectionReason)"
+            :aria-expanded="contextOpen"
+            aria-controls="diagnostic-ai-context"
+            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-(--dashboard-accent) px-4 py-2 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) disabled:cursor-not-allowed disabled:opacity-50 max-sm:w-full dark:text-slate-950"
+            @click="prepareContext"
+          >
+            {{ contextOpen && contextInvalidReason ? '重新准备处理计划' : '查看处理计划' }}
+            <span class="icon-[mdi--arrow-down] size-4 shrink-0" aria-hidden="true" />
+          </button>
+        </header>
+        <p v-if="connectionReason" role="status" class="text-sm text-(--dashboard-text-muted)">{{ connectionReason }}</p>
+      </template>
+      <template #plan="{ showVerification }">
+        <DiagnosticContextPanel
+          v-if="contextOpen && contextEvidence"
+          id="diagnostic-ai-context"
+          :key="contextVersion"
+          :text="contextText"
+          :evidence="contextEvidence"
+          :title="contextTitle"
+          :invalid-reason="contextInvalidReason"
+          @close="closeContext"
+          @verification="contextOpen = false; showVerification()"
+        />
+      </template>
+    </DiagnosticEvidencePanel>
     <div v-else class="rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-6">
       <h3 class="font-semibold text-(--dashboard-text)">当前没有待调查的预算风险或分析线索</h3>
       <p class="mt-2 text-sm leading-6 text-(--dashboard-text-muted)">不把最大文件自动当作问题。需要继续分析时，可查看包体详情或模块复用；构建报告本身不代表运行时已验收。</p>
@@ -200,20 +195,3 @@ async function closeContext() {
     </details>
   </section>
 </template>
-
-<style scoped>
-.diagnostic-layout {
-  container: diagnostics / inline-size;
-}
-
-@container diagnostics (min-width: 60rem) {
-  .diagnostic-columns {
-    grid-template-columns: 20rem minmax(0, 1fr);
-  }
-
-  .diagnostic-index {
-    border-right: 1px solid var(--dashboard-border);
-    border-bottom: 0;
-  }
-}
-</style>
