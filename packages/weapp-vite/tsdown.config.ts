@@ -84,6 +84,10 @@ export default defineConfig({
   },
   target: 'node20',
   failOnWarn: false,
+  inputOptions: {
+    // 内联官网的唯一品牌资源，发布包不依赖源码目录或外部图片服务。
+    moduleTypes: { '.svg': 'dataurl' },
+  },
   hooks: {
     'build:done': async () => {
       const { syncPackageDocs } = await import('./scripts/sync-package-docs.mjs')

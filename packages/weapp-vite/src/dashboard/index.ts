@@ -24,6 +24,7 @@ import type {
 } from './queries/schema'
 import type { DashboardFileReadRequest } from './schema'
 import { defineDevframe, defineRpcFunction } from 'devframe'
+import logo from '../../../../website/public/logo.svg'
 import { VERSION } from '../constants'
 import { createDashboardFileReader } from './content'
 import { createDashboardRuntimeEventStore } from './events'
@@ -201,7 +202,7 @@ export function createAnalyzeDashboardDevframe({
     importMetaUrl: import.meta.url,
     homepage: 'https://vite.weapp.dev/',
     description: 'weapp-vite 构建分析与小程序开发工具。',
-    icon: 'ph:rocket-launch-duotone',
+    icon: logo,
     capabilities: { dev: true, build: false },
     clientAssets,
     async setup(ctx) {

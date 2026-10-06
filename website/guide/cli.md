@@ -135,6 +135,8 @@ wv analyze --ui-host hub
 
 Hub 入口位于 `/__devframes/`，Dashboard 面板仍位于 `/__weapp-vite/`；终端输出 Hub 的一次性 OTP magic link。二者共用同一 loopback 服务、报告控制器与原生连接，不另建报告或传输层。开发模式仍实时更新构建报告；一次性 `analyze` 展示已完成的分析结果。Hub 的语言设置仅作用于内建 UI，不自动翻译 Dashboard 自定义面板。
 
+Dashboard dock 与 Hub 品牌复用官网的 weapp-vite Logo，构建时内联 SVG；这两处品牌图标无需访问外部图标服务，也不依赖安装后的源码目录。
+
 Hub 模式不安装终端或其他默认工具，不开放聚合 MCP，也不注册 MCP 发现记录；需要下述只读 Dashboard MCP 时使用默认独立模式。此入口不是离线报告导出，`analyze --json`、`--markdown`、`--report` 等原有输出选项仍优先于 UI。
 
 #### Dashboard MCP

@@ -83,7 +83,7 @@ export function createAnalyzeDashboardViteBridge(
                     auth: true,
                     mcp: false,
                     register: false,
-                    ui: createUi({ branding: { productName: 'weapp-vite DevTools' } }),
+                    ui: createUi({ branding: { productName: 'weapp-vite DevTools', logo: controller.definition.icon } }),
                     // declarative devframes 会强制挂在 Hub 子路径；install 保留 Dashboard 的 Vite base。
                     configure: ctx => ctx.install({
                       ...controller.definition,
