@@ -1,0 +1,171 @@
+name: Windows Process Identity Probe
+
+on:
+  push:
+    branches: [codex/windows-process-identity-probe]
+    paths: [.github/workflows/windows-identity-probe.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  identity-probe:
+    name: Process identity (Windows / Node ${{ matrix.node }})
+    runs-on: windows-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Capture original CIM failure and identity comparison
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { spawn } from 'node:child_process'
+          import { createHash } from 'node:crypto'
+          import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+          import os from 'node:os'
+          import path from 'node:path'
+          import { performance } from 'node:perf_hooks'
+
+          const reportDirectory = '.tmp/windows-identity-probe'
+          mkdirSync(reportDirectory, { recursive: true })
+          const reportFile = path.join(reportDirectory, 'report.json')
+          const report = {
+            kind: 'diagnostic-only-not-acceptance',
+            baseCommit: '1b0b631b56edf7657bc04b1a70846d840458f599',
+            workflowCommit: process.env.GITHUB_SHA,
+            observedAt: new Date().toISOString(),
+            node: process.version,
+            platform: process.platform,
+            architecture: process.arch,
+            osRelease: os.release(),
+            runnerImage: process.env.ImageOS,
+            targetPid: process.pid,
+            launcher: 'node:child_process.spawn; not execa',
+            timeoutSemantics: 'Timer is armed after spawn returns and listeners are attached; elapsedMs also includes spawn startup. On expiry kill only this PowerShell subprocess using child.kill(); wait for close. No process-tree cleanup, retries or timeout escalation.',
+            firstProbe: 'First PowerShell query issued by this script; does not assert the hosted OS/CIM provider was never used before the job.',
+            samples: [],
+            comparisons: [],
+          }
+          const save = () => writeFileSync(reportFile, `${JSON.stringify(report, null, 2)}\n`)
+          const hash = value => createHash('sha256').update(value).digest('hex')
+          const safeText = text => {
+            let value = String(text)
+            for (const prefix of [process.env.USERPROFILE, process.env.HOME, process.env.LOCALAPPDATA, process.env.APPDATA, process.env.GITHUB_WORKSPACE, process.env.RUNNER_TEMP].filter(Boolean).sort((a, b) => b.length - a.length)) {
+              value = value.split(prefix).join('<redacted-path>')
+            }
+            // 全部完整路径均替换；错误类型、命令名、退出原因和行号仍保留。
+            value = value.replace(/[A-Za-z]:[\\/][^\r\n"'<>|]*/g, '<absolute-path>')
+            value = value.replace(/\\\\[^\r\n"'<>|]*/g, '<unc-path>')
+            return value
+          }
+          const outputLimit = 128 * 1024
+          const cim = `$ErrorActionPreference='Stop'; Get-CimInstance Win32_Process -Filter "ProcessId=${process.pid}" | Select-Object ProcessId,ExecutablePath,@{Name='Started';Expression={$_.CreationDate.ToUniversalTime().ToString('o')}} | ConvertTo-Json -Compress`
+          const expectedSourceExpression = cim.replace(`ProcessId=${process.pid}`, 'ProcessId=${pid}')
+          if (!readFileSync('packages/weapp-ide-cli/src/devtoolsProjectOwnership/host.ts', 'utf8').includes(expectedSourceExpression)) {
+            throw new Error('Original CIM expression changed; update the probe intentionally instead of comparing another command.')
+          }
+          const dotnet = `$ErrorActionPreference='Stop'; $target=$null; try { $target=[System.Diagnostics.Process]::GetProcessById(${process.pid}); $before=$target.StartTime.ToUniversalTime(); $executable=$target.MainModule.FileName; $target.Refresh(); $after=$target.StartTime.ToUniversalTime(); [pscustomobject]@{ProcessId=$target.Id; ExecutablePath=$executable; Started=$before.ToString('o'); StartedAfter=$after.ToString('o'); TicksBefore=$before.Ticks.ToString(); TicksAfter=$after.Ticks.ToString(); GenerationStable=($before.Ticks -eq $after.Ticks); HasExited=$target.HasExited} | ConvertTo-Json -Compress } finally { if ($null -ne $target) { $target.Dispose() } }`
+
+          async function probe(label, command, budgetMs, diagnosticOnly) {
+            const started = performance.now()
+            const sample = { label, budgetMs, diagnosticOnly, targetPid: process.pid, timedOut: false, launcher: 'node:child_process.spawn' }
+            let stdout = ''
+            let stderr = ''
+            let spawnError
+            let killReturned
+            const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+            const append = (stream, chunk) => {
+              if (stream === 'stdout') stdout += chunk.toString('utf8')
+              else stderr += chunk.toString('utf8')
+              if (Buffer.byteLength(stdout) + Buffer.byteLength(stderr) > outputLimit) {
+                sample.outputLimitExceeded = true
+                killReturned = child.kill()
+              }
+            }
+            child.stdout.on('data', chunk => append('stdout', chunk))
+            child.stderr.on('data', chunk => append('stderr', chunk))
+            child.on('error', error => { spawnError = { name: error.name, code: error.code, message: safeText(error.message) } })
+            const timer = setTimeout(() => { sample.timedOut = true; killReturned = child.kill() }, budgetMs)
+            const result = await new Promise(resolve => child.once('close', (exitCode, signal) => resolve({ exitCode, signal })))
+            clearTimeout(timer)
+            Object.assign(sample, result, { elapsedMs: Math.round((performance.now() - started) * 100) / 100, killed: child.killed, killReturned, spawnError })
+            // 不归档含路径的原始字段；完整输出只用于内存中的精确比较，报告保留脱敏文本与哈希。
+            sample.stdout = safeText(stdout)
+            sample.stderr = safeText(stderr)
+            sample.stdoutSha256 = hash(stdout)
+            sample.stderrSha256 = hash(stderr)
+            sample.success = !sample.timedOut && !spawnError && !sample.outputLimitExceeded && result.exitCode === 0
+            let value
+            if (sample.success && stdout.trim()) {
+              try {
+                value = JSON.parse(stdout)
+                if (value && typeof value === 'object' && typeof value.ExecutablePath === 'string') {
+                  sample.identity = {
+                    pidMatches: value.ProcessId === process.pid,
+                    executableSha256: hash(value.ExecutablePath),
+                    executableMatchesNode: value.ExecutablePath === process.execPath,
+                    executableMatchesNodeCaseInsensitive: value.ExecutablePath.toLowerCase() === process.execPath.toLowerCase(),
+                    started: value.Started,
+                    startedAfter: value.StartedAfter,
+                    ticksBefore: value.TicksBefore,
+                    ticksAfter: value.TicksAfter,
+                    generationStable: value.GenerationStable,
+                    hasExited: value.HasExited,
+                  }
+                }
+              }
+              catch (error) { sample.parseError = safeText(error.message) }
+            }
+            report.samples.push(sample)
+            save()
+            console.log(JSON.stringify(sample))
+            return value
+          }
+
+          // 首个查询保留源码中的 CIM 表达式和 3000ms 预算；此前不调用任何 PowerShell 探针。
+          await probe('original-cim-first-3000ms', cim, 3000, false)
+          const cimObserved = await probe('original-cim-wide-diagnostic-only', cim, 15000, true)
+          const dotnetFirst = await probe('dotnet-first-3000ms-diagnostic-only', dotnet, 3000, true)
+          const dotnetWide = await probe('dotnet-wide-diagnostic-only', dotnet, 15000, true)
+          await probe('powershell-startup-only-diagnostic', "[Console]::Write('startup-only')", 3000, true)
+          const microsecondText = value => typeof value === 'string' ? value.replace(/\.(\d{6})\d(?=Z|[+-]\d{2}:\d{2}$)/, '.$1') : undefined
+          for (const [label, observed] of [['dotnet-first', dotnetFirst], ['dotnet-wide', dotnetWide]]) {
+            if (cimObserved?.ProcessId === process.pid && observed?.ProcessId === process.pid && typeof cimObserved.ExecutablePath === 'string' && typeof observed.ExecutablePath === 'string' && typeof cimObserved.Started === 'string' && typeof observed.Started === 'string') {
+              report.comparisons.push({
+                label,
+                sameRequestedPid: true,
+                executableExactEqual: cimObserved.ExecutablePath === observed.ExecutablePath,
+                executableCaseInsensitiveEqual: cimObserved.ExecutablePath.toLowerCase() === observed.ExecutablePath.toLowerCase(),
+                startedExactEqual: cimObserved.Started === observed.Started,
+                startedMicrosecondTextEqual: microsecondText(cimObserved.Started) === microsecondText(observed.Started),
+                dotnetGenerationStable: observed.GenerationStable,
+                dotnetStartBeforeAfterEqual: observed.Started === observed.StartedAfter,
+                dotnetHasExited: observed.HasExited,
+              })
+            }
+          }
+          report.finishedAt = new Date().toISOString()
+          report.acceptance = 'not-evaluated; wider-budget or alternative-provider success is diagnostic evidence only'
+          save()
+          console.log(JSON.stringify({ comparisons: report.comparisons, acceptance: report.acceptance }))
+          // 诊断工作流允许记录原查询失败；job 绿色只代表报告采集完成，绝非正式门禁通过。
+          NODE
+      - name: Upload diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-process-identity-node-${{ matrix.node }}-${{ github.sha }}
+          path: .tmp/windows-identity-probe/report.json
+          if-no-files-found: error
+          retention-days: 7
