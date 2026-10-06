@@ -11,13 +11,14 @@ permissions:
 
 jobs:
   identity-probe:
-    name: Process identity (Windows / Node ${{ matrix.node }})
+    name: Process identity (${{ matrix.profile }} / Node ${{ matrix.node }})
     runs-on: windows-latest
     timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
         node: [22, 24]
+        profile: [cim-first, startup-first]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -26,7 +27,9 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node }}
-      - name: Capture original CIM failure and identity comparison
+      - name: Capture bounded cold process inspection
+        env:
+          IDENTITY_PROBE_PROFILE: ${{ matrix.profile }}
         shell: bash
         run: |
           node --input-type=module <<'NODE'
@@ -53,9 +56,9 @@ jobs:
             targetPid: process.pid,
             launcher: 'node:child_process.spawn; not execa',
             timeoutSemantics: 'Timer is armed after spawn returns and listeners are attached; elapsedMs also includes spawn startup. On expiry kill only this PowerShell subprocess using child.kill(); wait for close. No process-tree cleanup, retries or timeout escalation.',
-            firstProbe: 'Independent .NET snapshots are the first PowerShell query in this revision. Original CIM-first timeout evidence is preserved in run 37469181440; this revision verifies candidate cold startup.',
+            firstProbe: 'Each profile uses a fresh hosted runner. The first original CIM or empty PowerShell command has a diagnostic-only 15000ms budget; prior 3000ms failures remain preserved in runs 37469181440 and 37470679336.',
+            profile: process.env.IDENTITY_PROBE_PROFILE,
             samples: [],
-            comparisons: [],
           }
           const save = () => writeFileSync(reportFile, `${JSON.stringify(report, null, 2)}\n`)
           const hash = value => createHash('sha256').update(value).digest('hex')
@@ -75,37 +78,6 @@ jobs:
           if (!readFileSync('packages/weapp-ide-cli/src/devtoolsProjectOwnership/host.ts', 'utf8').includes(expectedSourceExpression)) {
             throw new Error('Original CIM expression changed; update the probe intentionally instead of comparing another command.')
           }
-          const dotnet = `$ErrorActionPreference='Stop'; $target=$null; try { $target=[System.Diagnostics.Process]::GetProcessById(${process.pid}); $before=$target.StartTime.ToUniversalTime(); $executable=$target.MainModule.FileName; $target.Refresh(); $after=$target.StartTime.ToUniversalTime(); [pscustomobject]@{ProcessId=$target.Id; ExecutablePath=$executable; Started=$before.ToString('o'); StartedAfter=$after.ToString('o'); TicksBefore=$before.Ticks.ToString(); TicksAfter=$after.Ticks.ToString(); GenerationStable=($before.Ticks -eq $after.Ticks); HasExited=$target.HasExited} | ConvertTo-Json -Compress } finally { if ($null -ne $target) { $target.Dispose() } }`
-
-          const independentDotnet = (targetPid, holdHandle = false) => `
-            $ErrorActionPreference='Stop';
-            function Read-Snapshot([int]$identityPid) {
-              $target=$null;
-              try { $target=[System.Diagnostics.Process]::GetProcessById($identityPid) }
-              catch {
-                $cause=$_.Exception.GetBaseException();
-                if ($cause -is [System.ArgumentException]) { return $null }
-                throw;
-              }
-              try {
-                ${holdHandle ? '$held=$target.Handle;' : ''}
-                $before=$target.StartTime.ToUniversalTime();
-                $executable=$target.MainModule.FileName;
-                $after=$target.StartTime.ToUniversalTime();
-                if ($before.Ticks -ne $after.Ticks -or $target.HasExited) { throw 'Process generation changed or exited during its identity snapshot.' }
-                if ([string]::IsNullOrWhiteSpace($executable)) { throw 'Process executable metadata is incomplete.' }
-                [pscustomobject]@{ProcessId=$target.Id; ExecutablePath=$executable; Started=$before.AddTicks(-($before.Ticks % 10)).ToString('o'); StartedExact=$before.ToString('o'); TicksBefore=$before.Ticks.ToString(); TicksAfter=$after.Ticks.ToString()};
-              }
-              finally { if ($null -ne $target) { $target.Dispose() } }
-            }
-            $first=Read-Snapshot ${targetPid};
-            if ($null -eq $first) { [pscustomobject]@{State='missing'; ProcessId=${targetPid}} | ConvertTo-Json -Compress; exit 0 }
-            $second=Read-Snapshot ${targetPid};
-            if ($null -eq $second) { throw 'Process disappeared before the independent identity confirmation.' }
-            if ($first.ProcessId -ne $second.ProcessId -or $first.TicksBefore -cne $second.TicksBefore -or $first.ExecutablePath -cne $second.ExecutablePath) { throw 'Independent process identity confirmation changed.' }
-            [pscustomobject]@{State='observed'; ProcessId=$first.ProcessId; ExecutablePath=$first.ExecutablePath; Started=$first.Started; StartedExact=$first.StartedExact; StartedAfter=$second.Started; TicksBefore=$first.TicksBefore; TicksAfter=$second.TicksBefore; GenerationStable=$true; HasExited=$false; HeldHandle=${holdHandle ? '$true' : '$false'}} | ConvertTo-Json -Compress;
-          `
-
           async function probe(label, command, budgetMs, diagnosticOnly, targetPid = process.pid, expectJson = true) {
             const started = performance.now()
             const sample = { label, budgetMs, diagnosticOnly, targetPid, timedOut: false, launcher: 'node:child_process.spawn' }
@@ -115,8 +87,14 @@ jobs:
             let killReturned
             const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
             const append = (stream, chunk) => {
-              if (stream === 'stdout') stdout += chunk.toString('utf8')
-              else stderr += chunk.toString('utf8')
+              if (stream === 'stdout') {
+                sample.firstStdoutAtMs ??= Math.round((performance.now() - started) * 100) / 100
+                stdout += chunk.toString('utf8')
+              }
+              else {
+                sample.firstStderrAtMs ??= Math.round((performance.now() - started) * 100) / 100
+                stderr += chunk.toString('utf8')
+              }
               if (Buffer.byteLength(stdout) + Buffer.byteLength(stderr) > outputLimit) {
                 sample.outputLimitExceeded = true
                 killReturned = child.kill()
@@ -146,14 +124,6 @@ jobs:
                     executableMatchesNode: value.ExecutablePath === process.execPath,
                     executableMatchesNodeCaseInsensitive: value.ExecutablePath.toLowerCase() === process.execPath.toLowerCase(),
                     started: value.Started,
-                    startedExact: value.StartedExact,
-                    state: value.State,
-                    heldHandle: value.HeldHandle,
-                    startedAfter: value.StartedAfter,
-                    ticksBefore: value.TicksBefore,
-                    ticksAfter: value.TicksAfter,
-                    generationStable: value.GenerationStable,
-                    hasExited: value.HasExited,
                   }
                 }
               }
@@ -165,103 +135,29 @@ jobs:
             return value
           }
 
-          // 首轮 run 已保留 CIM 首次超时；本轮先在新 runner 验证独立 .NET 查询冷启动。
-          await probe('independent-dotnet-first-3000ms', independentDotnet(process.pid), 3000, true)
-          await probe('original-cim-after-dotnet-3000ms', cim, 3000, false)
-          const cimObserved = await probe('original-cim-wide-diagnostic-only', cim, 15000, true)
-          const dotnetFirst = await probe('dotnet-first-3000ms-diagnostic-only', dotnet, 3000, true)
-          const dotnetWide = await probe('dotnet-wide-diagnostic-only', dotnet, 15000, true)
-          await probe('powershell-startup-only-diagnostic', "[Console]::Write('startup-only')", 3000, true, process.pid, false)
-          const microsecondText = value => typeof value === 'string' ? value.replace(/\.(\d{6})\d(?=Z|[+-]\d{2}:\d{2}$)/, '.$1') : undefined
-          for (const [label, observed] of [['dotnet-first', dotnetFirst], ['dotnet-wide', dotnetWide]]) {
-            if (cimObserved?.ProcessId === process.pid && observed?.ProcessId === process.pid && typeof cimObserved.ExecutablePath === 'string' && typeof observed.ExecutablePath === 'string' && typeof cimObserved.Started === 'string' && typeof observed.Started === 'string') {
-              report.comparisons.push({
-                label,
-                sameRequestedPid: true,
-                executableExactEqual: cimObserved.ExecutablePath === observed.ExecutablePath,
-                executableCaseInsensitiveEqual: cimObserved.ExecutablePath.toLowerCase() === observed.ExecutablePath.toLowerCase(),
-                startedExactEqual: cimObserved.Started === observed.Started,
-                startedMicrosecondTextEqual: microsecondText(cimObserved.Started) === microsecondText(observed.Started),
-                dotnetGenerationStable: observed.GenerationStable,
-                dotnetStartBeforeAfterEqual: observed.Started === observed.StartedAfter,
-                dotnetHasExited: observed.HasExited,
-              })
-            }
+          // 两个 profile 使用不同的新 runner；宽预算只采集原始首次耗时。
+          if (report.profile === 'cim-first') {
+            await probe('original-cim-cold-wide-diagnostic-only', cim, 15000, true)
           }
-          const sameIdentity = (first, second) => first.pid === second.pid && first.started === second.started && first.executable === second.executable
-          const identityOf = value => value?.State === 'observed' || typeof value?.ExecutablePath === 'string'
-            ? { pid: value.ProcessId, started: value.Started, executable: value.ExecutablePath }
-            : undefined
-          const sourceComparator = 'return first.pid === second.pid && first.started === second.started && first.executable === second.executable'
-          if (!readFileSync('packages/weapp-ide-cli/src/devtoolsProjectOwnership/host.ts', 'utf8').includes(sourceComparator)) {
-            throw new Error('Production identity comparator changed; update the diagnostic comparator intentionally.')
+          else if (report.profile === 'startup-first') {
+            await probe('powershell-cold-startup-wide-diagnostic-only', "[Console]::Write('startup-only')", 15000, true, process.pid, false)
           }
-          const ownedChildren = []
-          async function startOwnedNode() {
-            const child = spawn(process.execPath, ['-e', "process.stdout.write('ready\\n'); setInterval(() => {}, 1000)"], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
-            const stopped = new Promise((resolve, reject) => {
-              child.once('close', () => resolve())
-              child.once('error', reject)
-            })
-            ownedChildren.push({ child, stopped })
-            await new Promise((resolve, reject) => {
-              const timer = setTimeout(() => reject(new Error('Owned Node fixture did not become ready.')), 3000)
-              child.stdout.once('data', () => { clearTimeout(timer); resolve() })
-              child.once('error', error => { clearTimeout(timer); reject(error) })
-              child.once('close', () => { clearTimeout(timer); reject(new Error('Owned Node fixture exited before readiness.')) })
-            })
-            return { child, stopped }
+          else {
+            throw new Error('Unknown probe profile.')
           }
-          try {
-            const first = await startOwnedNode()
-            const second = await startOwnedNode()
-            const firstPid = first.child.pid
-            const secondPid = second.child.pid
-            const childCim = await probe('owned-child-original-cim', cim.replace(`ProcessId=${process.pid}`, `ProcessId=${firstPid}`), 3000, true, firstPid)
-            const firstRead = await probe('owned-child-independent-dotnet', independentDotnet(firstPid), 3000, true, firstPid)
-            const secondRead = await probe('owned-child-independent-dotnet-confirmation', independentDotnet(firstPid), 3000, true, firstPid)
-            const otherRead = await probe('other-child-independent-dotnet', independentDotnet(secondPid), 3000, true, secondPid)
-            const pinnedRead = await probe('owned-child-held-handle-permission-diagnostic', independentDotnet(firstPid, true), 3000, true, firstPid)
-            const original = identityOf(childCim)
-            const observed = identityOf(firstRead)
-            const confirmed = identityOf(secondRead)
-            const other = identityOf(otherRead)
-            const pinned = identityOf(pinnedRead)
-            report.contracts = {
-              ordinaryOwnedChildObserved: Boolean(observed && observed.pid === firstPid),
-              legacyCimIdentityPreserved: Boolean(original && observed && sameIdentity(original, observed)),
-              liveManagedIdentityRemainsEqual: Boolean(observed && confirmed && sameIdentity(observed, confirmed)),
-              heldAllAccessHandleAvailableForOwnedChildOnly: Boolean(pinned && observed && pinnedRead.HeldHandle && sameIdentity(observed, pinned)),
-              differentRealGenerationObserved: Boolean(observed && other && observed.started !== other.started),
-              // 第二个真实子进程的创建时间用作过期期望，明确不是宣称强制制造了 OS PID 复用。
-              staleGenerationFromAnotherRealProcessRejected: Boolean(observed && other && !sameIdentity({ ...observed, started: other.started }, observed)),
-              actualPidReuseWasNotForced: true,
-            }
-            first.child.kill()
-            await first.stopped
-            const exited = await probe('owned-child-after-confirmed-exit', independentDotnet(firstPid), 3000, true, firstPid)
-            report.contracts.confirmedExitedPidMissing = exited?.State === 'missing'
-            report.contracts.exitedIdentityCannotBeInherited = Boolean(exited?.State === 'missing' || observed && identityOf(exited) && !sameIdentity(observed, identityOf(exited)))
-          }
-          finally {
-            for (const { child, stopped } of ownedChildren) {
-              if (child.exitCode === null && child.signalCode === null) child.kill()
-              await stopped
-            }
-          }
-          save()
-          console.log(JSON.stringify({ contracts: report.contracts }))
+          await probe('original-cim-followup-3000ms-diagnostic-only', cim, 3000, true)
+          await probe('powershell-followup-startup-3000ms-diagnostic-only', "[Console]::Write('startup-only')", 3000, true, process.pid, false)
           report.finishedAt = new Date().toISOString()
           report.acceptance = 'not-evaluated; wider-budget or alternative-provider success is diagnostic evidence only'
           save()
-          console.log(JSON.stringify({ comparisons: report.comparisons, acceptance: report.acceptance }))
+          console.log(JSON.stringify({ profile: report.profile, acceptance: report.acceptance }))
           // 诊断工作流允许记录原查询失败；job 绿色只代表报告采集完成，绝非正式门禁通过。
           NODE
       - name: Upload diagnostic evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: windows-process-identity-node-${{ matrix.node }}-${{ github.sha }}
+          name: windows-process-identity-${{ matrix.profile }}-node-${{ matrix.node }}-${{ github.sha }}
           path: .tmp/windows-identity-probe/report.json
           if-no-files-found: error
           retention-days: 7
