@@ -273,6 +273,11 @@ function shouldRewriteDevHmrChunk(
   if (state.hmrState.affectedSharedChunkIds?.has(fileName) || state.hmrState.affectedSharedChunkIds?.has(chunk.fileName)) {
     return true
   }
+  // 发布计划已保留的传递依赖也必须完成重写，不能只处理入口的直接 import。
+  const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
+  if (emittedChunkFileNames?.has(fileName) || emittedChunkFileNames?.has(chunk.fileName)) {
+    return true
+  }
   return activeImportedChunkIds.has(fileName)
 }
 
@@ -508,7 +513,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         const shouldWarnOnDuplicate = Number.isFinite(duplicateWarningBytes) && duplicateWarningBytes > 0
         let redundantBytesTotal = 0
 
-        if (configService.isDev && (state.hmrSharedChunksMode === 'auto' || state.hmrSharedChunksMode === 'full')) {
+        // 所有模式都维护发布依赖与构建生命周期；off 只关闭共享 importer 的脏入口扩散。
+        if (configService.isDev) {
           const forceFullSharedChunkRefresh = ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh
           if (
             assetOnlyDevHmrBundle
