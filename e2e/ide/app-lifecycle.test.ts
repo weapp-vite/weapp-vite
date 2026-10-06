@@ -7,6 +7,7 @@ import { assertHostLifecycleForwarding, lifecycleStructure } from '../utils/appL
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDomAcceptance } from '../utils/domAcceptance'
+import { assertFreshDevtoolsWindow } from '../utils/freshDevtoolsWindow'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { waitForCurrentPagePath } from './github-issues.runtime.shared'
@@ -44,14 +45,28 @@ async function launchFreshMiniProgram(root: string) {
     sharedBuildPreparedRoots.add(root)
   }
 
-  const startupEnv = [AUTOMATOR_SKIP_WARMUP_ENV, 'WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH', 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH']
+  const prebuildEnv = ['WEAPP_VITE_E2E_AUTOMATOR_PREBUILD', 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD']
+  const startupEnv = [AUTOMATOR_SKIP_WARMUP_ENV, 'WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH', 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH', ...prebuildEnv]
   const previous = startupEnv.map(name => [name, process.env[name]] as const)
+  let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
+  let accepted = false
   try {
     for (const name of startupEnv) {
       delete process.env[name]
     }
-    return await launchAutomator({
+    for (const name of prebuildEnv) {
+      process.env[name] = '0'
+    }
+    const startedAt = Date.now()
+    let freshWindow: Awaited<ReturnType<typeof assertFreshDevtoolsWindow>> | undefined
+    miniProgram = await launchAutomator({
       projectPath: root,
+      // 冷启动使用原 fixture 产物；回执必须证明本次新建窗口，不能借用已有 AppService。
+      launchMode: 'bridge',
+      bridgeProjectMode: 'direct',
+      onSessionMetadata: async (metadata) => {
+        freshWindow = await assertFreshDevtoolsWindow(metadata, { projectPath: root, startedAt })
+      },
       maxLaunchRetries: 1,
       retryWarmupTimeout: false,
       disableRelaunchSessionRecovery: true,
@@ -61,6 +76,12 @@ async function launchFreshMiniProgram(root: string) {
       warmupRootSelectors: [INDEX_ROUTE_MARKER_SELECTOR],
       warmupRoute: INDEX_ROUTE,
     })
+    if (isDevtools) {
+      expect(freshWindow, 'cold start must open a new owned DevTools window').toBeDefined()
+      process.stdout.write(`[app-lifecycle-fresh-window] ${JSON.stringify({ variant: path.basename(root), ...freshWindow })}\n`)
+    }
+    accepted = true
+    return miniProgram
   }
   finally {
     for (const [name, value] of previous) {
@@ -70,6 +91,9 @@ async function launchFreshMiniProgram(root: string) {
       else {
         process.env[name] = value
       }
+    }
+    if (!accepted) {
+      await miniProgram?.close()
     }
   }
 }

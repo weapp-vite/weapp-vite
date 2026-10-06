@@ -50,7 +50,6 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/wot-ui-compat.runtime.test.ts', '1200000'],
 ])
 const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
-  'ide/app-lifecycle.test.ts',
   'ide/app-vue-hmr-alias.runtime.test.ts',
   'ide/automator-bridge-wrapper-hmr.runtime.test.ts',
   'ide/automator-concurrent-sessions.runtime.test.ts',

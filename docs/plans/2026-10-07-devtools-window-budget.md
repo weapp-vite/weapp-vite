@@ -31,3 +31,13 @@ Computer Use 确认 wevu-ts 窗口显示“模拟器启动失败”。原生日�
 提交前已通过 CLI 包级类型检查、公开类型契约与构建；窗口配额和所有权聚焦回归 39 项、既有窗口连接回归 4 项、日志扫描回归 19 项通过。最终基础设施回归 `pnpm exec vitest run --config e2e/vitest.e2e.internal.config.ts` 共 1162 项全部通过，变更文件 ESLint 无错误或警告。
 
 直接使用原 fixture 产物的 `app-lifecycle` 诊断通过了三个变体，实际 IDE 为 `2.02.2608070`、基础库为 `3.17.3`；该诊断尚未加入本轮新建窗口的独立断言，不能替代正式冷启动验收。headless、真实窗口回收与最终完整 IDE 验收仍需按同一候选提交执行并记录。本次为阶段性修复提交，不表示全量回归或 Goal 已完成。
+
+## 冷启动验收补强
+
+`app-lifecycle` 比较三个不同 App 实现，每个 fixture 仍只启动一次。后续验收显式使用原 fixture 产物，由 `onSessionMetadata` 读取启动回执对应的 journal，核对本次调用之后创建的 `owned` 记录、`openedProjectWindow: true`、项目路径与端口。借用既有窗口、旧记录、项目或端口漂移均在握手前失败；回执未执行也不能通过验收。
+
+原生窗口的本次新建证明与现有 `onLaunch` 宿主输入观察器共同验证冷启动，不以新磁盘目录作为冷启动判据。保留单次启动、禁止连接后刷新、禁止 warmup 导航及禁止重导航恢复的约束，不修改页面、AppID、hook/DOM 断言或全量任务清单。依次运行窗口证明的单测、同一 `app-lifecycle` headless 场景和严格真实 IDE 场景；snapshot 原始启动失败仍作为独立证据保留。
+
+补强后窗口证明、生命周期观察器和清单相关单测 96 项通过，同一场景的 headless 验证通过。真实 IDE 的三个变体均取得本轮新窗口回执，严格 DOM 子报告为 `passed`，6 个计划检查点全部完成。实际 IDE `2.02.2608070`、基础库 `3.17.3`；官方查询仍为 `2.02.2608080`，报告保留 `selected-version-opt-in`。受管窗口峰值 1、收尾 0，三个 journal 均记录原生窗口关闭与 webContents 销毁，RSS 采样峰值约 5610 MiB、收尾约 1665 MiB。
+
+该次命令仅筛选 `app-lifecycle`，严格 full 汇总因此保持 `partial/incomplete` 并返回非零退出码，其余 22 项未执行。子场景通过不能改写成完整 IDE full 通过；最终仍需在冻结提交上执行全部任务。
