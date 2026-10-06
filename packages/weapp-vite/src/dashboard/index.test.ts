@@ -623,7 +623,7 @@ describe('dashboard Devframe protocol', () => {
 })
 
 describe('dashboard MCP capabilities', () => {
-  it('discovers precisely the read-only schemas and shares live RPC results across revisions', async () => {
+  it('discovers precisely the read and task-action schemas and shares live RPC results across revisions', async () => {
     const project = await createTemporaryProject()
     const current = createAnalyzeResult([{
       file: 'app.js',
@@ -682,18 +682,25 @@ describe('dashboard MCP capabilities', () => {
       expect(keys).not.toContain('weapp-vite:dashboard')
       const { tools } = await mcp.client.listTools()
       expect(tools.map(tool => tool.name).sort()).toEqual([
+        'weapp-vite_claim-investigation',
         'weapp-vite_compare-analyze-builds',
+        'weapp-vite_complete-investigation',
         'weapp-vite_get-analyze-page',
         'weapp-vite_get-analyze-summary',
         'weapp-vite_get-dashboard-state',
+        'weapp-vite_get-investigation',
+        'weapp-vite_list-investigations',
+        'weapp-vite_propose-investigation',
         'weapp-vite_query-analyze-artifacts',
         'weapp-vite_query-analyze-modules',
         'weapp-vite_query-analyze-packages',
         'weapp-vite_query-runtime-events',
         'weapp-vite_read-dashboard-file',
+        'weapp-vite_start-investigation',
       ])
       for (const tool of tools) {
-        expect(tool.annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false })
+        const action = ['claim-investigation', 'propose-investigation', 'start-investigation', 'complete-investigation'].some(name => tool.name === `weapp-vite_${name}`)
+        expect(tool.annotations).toMatchObject({ readOnlyHint: !action, destructiveHint: false })
         expect(tool.outputSchema).toMatchObject({ type: 'object' })
       }
       expect(tools.find(tool => tool.name === 'weapp-vite_get-dashboard-state')?.inputSchema)

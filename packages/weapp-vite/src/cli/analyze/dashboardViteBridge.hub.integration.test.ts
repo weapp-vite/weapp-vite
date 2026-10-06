@@ -5,6 +5,8 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { runInNewContext } from 'node:vm'
+import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
+import { defineRpcFunction } from 'devframe'
 import { DEVFRAME_CONNECTION_META_FILENAME, DEVFRAME_SSE_ROUTE, DEVFRAME_WS_ROUTE } from 'devframe/constants'
 import { getTempAuthCode } from 'devframe/node/auth'
 import { createRpcClient } from 'devframe/rpc/client'
@@ -150,21 +152,22 @@ it('keeps Vite transforms outside the Hub while sharing authenticated RPC and wr
 
   const dashboardMeta: unknown = await (await fetch(new URL(`${DEVFRAME_CONNECTION_META_FILENAME}?cache=1`, url))).json()
   const hubMeta: unknown = await (await fetch(new URL(DEVFRAME_CONNECTION_META_FILENAME, hubUrl))).json()
-  expect(dashboardMeta).toEqual(hubMeta)
   expect(dashboardMeta).toMatchObject({
     backend: 'websocket',
     websocket: { path: `${ANALYZE_DASHBOARD_HUB_BASE}${DEVFRAME_WS_ROUTE}` },
     sse: { path: `${ANALYZE_DASHBOARD_HUB_BASE}${DEVFRAME_SSE_ROUTE}` },
   })
-  expect(dashboardMeta).not.toHaveProperty('mcp')
+  expect(dashboardMeta).toMatchObject({ mcp: { path: '__mcp' } })
+  expect(hubMeta).not.toHaveProperty('mcp')
   expect(dashboardMeta).not.toHaveProperty('authToken')
   const index: unknown = await (await fetch(new URL('__index.json', hubUrl))).json()
   expect(index).toMatchObject({ frames: [{ id: 'weapp-vite', base: ANALYZE_DASHBOARD_DEVFRAME_BASE }] })
-  for (const base of [url, hubUrl]) {
-    const mcp = await fetch(new URL('__mcp', base), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-    expect([404, 405]).toContain(mcp.status)
-    await mcp.body?.cancel()
-  }
+  const missingMcp = await fetch(new URL('__mcp', hubUrl), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+  expect([404, 405]).toContain(missingMcp.status)
+  await missingMcp.body?.cancel()
+  const unauthenticatedMcp = await fetch(new URL('__mcp', url), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+  expect(unauthenticatedMcp.status).toBe(403)
+  await unauthenticatedMcp.body?.cancel()
   const forbidden = await fetch(new URL(DEVFRAME_SSE_ROUTE, hubUrl), { headers: { Origin: 'https://attacker.example' } })
   expect(forbidden.status).toBe(403)
   await forbidden.body?.cancel()
@@ -182,7 +185,49 @@ it('keeps Vite transforms outside the Hub while sharing authenticated RPC and wr
     const settings: unknown = JSON.parse(await fs.readFile(path.join(root, 'node_modules', '.devframes', 'devframe', 'settings.json'), 'utf8'))
     expect(settings).toMatchObject({ docksPinned: ['weapp-vite'] })
   })
+  await server.close()
   expect(await fs.readdir(path.join(root, 'instances'))).toEqual([])
+})
+
+it('exposes only Dashboard agent RPCs through Hub without leaking host actions or resources', async () => {
+  let foreignExecutions = 0
+  const { server } = await createHost({ setup(ctx) {
+    ctx.scope('foreign').rpc.register(defineRpcFunction({
+      name: 'execute',
+      type: 'action',
+      agent: { safety: 'action', description: 'Foreign host action' },
+      setup: () => () => ++foreignExecutions,
+    }))
+    ctx.agent.registerTool({
+      id: 'weapp-vite:unrelated-host-tool',
+      description: 'A non-RPC tool cannot inherit Dashboard access by name.',
+      handler: () => ++foreignExecutions,
+    })
+    ctx.agent.registerResource({
+      id: 'foreign:secret',
+      name: 'Foreign host resource',
+      read: () => ({ text: 'private-host-data' }),
+    })
+  } })
+  await server.listen()
+  const url = baseUrl(server)
+  const client = new Client({ name: 'dashboard-hub-scope-test', version: '1' })
+  cleanup.push(() => client.close())
+  await client.connect(new StreamableHTTPClientTransport(new URL('__mcp', url), {
+    requestInit: { headers: { Origin: new URL(url).origin } },
+  }))
+  const names = (await client.listTools()).tools.map(tool => tool.name)
+  expect(names).toContain('weapp-vite_claim-investigation')
+  expect(names).toContain('weapp-vite_get-dashboard-state')
+  expect(names.every(name => name.startsWith('weapp-vite_'))).toBe(true)
+  expect(names).not.toContain('weapp-vite_unrelated-host-tool')
+  expect((await client.callTool({ name: 'weapp-vite_get-dashboard-state' })).structuredContent).toMatchObject({ revision: 0 })
+  for (const name of ['foreign_execute', 'foreign:execute', 'weapp-vite_unrelated-host-tool', 'weapp-vite:unrelated-host-tool', 'weapp-vite_authorize-investigation']) {
+    expect(await client.callTool({ name, arguments: {} })).toMatchObject({ isError: true })
+  }
+  expect(foreignExecutions).toBe(0)
+  expect((await client.listResources()).resources).toEqual([])
+  await expect(client.readResource({ uri: 'devframe://resource/foreign%3Asecret' })).rejects.toThrow()
 })
 
 it('waits for real Hub setup during cancellation without letting Vite start listening', async () => {

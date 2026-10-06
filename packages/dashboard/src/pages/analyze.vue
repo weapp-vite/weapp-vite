@@ -9,7 +9,6 @@ import { useAnalyzePageController } from '../features/dashboard/composables/useA
 const {
   actionItems,
   activeBudgetWarningId,
-  activeLargestFileKey,
   activeTab,
   activeWorkQueueItemId,
   baselineSnapshotId,
@@ -35,18 +34,18 @@ const {
   exportMarkdown,
   exportStatus,
   filteredDuplicateModules,
-  filteredLargestFiles,
   handleAddActionToWorkQueue,
   handleFocusAction,
+  handleCreateObjectInvestigation,
   handleInspectPackageDuplicates,
   handleInspectTreemapProblem,
   handleOpenFile,
-  handleOpenTreemapSource,
+  handleOpenInspectionSource,
   handleResetTreemapFocus,
   handleSelectAction,
   handleSelectBudgetWarning,
-  handleSelectLargestFile,
   handleSelectPackageInsight,
+  handleSelectInspectionTarget,
   handleSelectReviewChecklistItem,
   handleSelectCommand,
   handleSelectTreemapNode,
@@ -57,6 +56,10 @@ const {
   historySnapshots,
   incrementAttribution,
   incrementSummary,
+  inspectionSourcePath,
+  inspectionTarget,
+  investigationRequest,
+  investigationRequestId,
   isTreemapEmpty,
   largestFiles,
   metricPackageTypeSummary,
@@ -73,11 +76,9 @@ const {
   resultRef,
   reviewLayoutItems,
   selectedActionKey,
-  selectedFileModules,
   selectedTreemapMeta,
   setBaselineSnapshot,
   setComparisonMode,
-  sourceLayoutItems,
   statusPills,
   toggleWorkQueueItem,
   topCards,
@@ -87,7 +88,6 @@ const {
   treemapLegend,
   treemapNodes,
   treemapPath,
-  treemapSourcePath,
   treemapFilterMode,
   treemapFilterOptions,
   visibleLargestFiles,
@@ -95,7 +95,7 @@ const {
 } = useAnalyzePageController()
 
 const pageClassName = computed(() => {
-  if (activeTab.value === 'treemap' && resultRef.value) {
+  if ((activeTab.value === 'treemap' || activeTab.value === 'files') && resultRef.value) {
     return 'flex h-full min-h-0 flex-col gap-2'
   }
   if (!resultRef.value || activeTab.value === 'diagnostics') {
@@ -130,7 +130,6 @@ const pageClassName = computed(() => {
       v-if="resultRef"
       :action-items="actionItems"
       :active-budget-warning-id="activeBudgetWarningId"
-      :active-largest-file-key="activeLargestFileKey"
       :active-tab="activeTab"
       :active-work-queue-item-id="activeWorkQueueItemId"
       :baseline-snapshot-id="baselineSnapshotId"
@@ -144,10 +143,13 @@ const pageClassName = computed(() => {
       :duplicate-module-scope-label="duplicateModuleScopeLabel"
       :duplicate-modules="duplicateModules"
       :filtered-duplicate-modules="filteredDuplicateModules"
-      :filtered-largest-files="filteredLargestFiles"
       :history-snapshots="historySnapshots"
       :increment-attribution="incrementAttribution"
       :increment-summary="incrementSummary"
+      :inspection-source-path="inspectionSourcePath"
+      :inspection-target="inspectionTarget"
+      :investigation-request="investigationRequest"
+      :investigation-request-id="investigationRequestId"
       :is-treemap-empty="isTreemapEmpty"
       :largest-files="largestFiles"
       :metric-package-type-summary="metricPackageTypeSummary"
@@ -160,9 +162,7 @@ const pageClassName = computed(() => {
       :review-layout-items="reviewLayoutItems"
       :result="resultRef"
       :selected-action-key="selectedActionKey"
-      :selected-file-modules="selectedFileModules"
       :selected-treemap-meta="selectedTreemapMeta"
-      :source-layout-items="sourceLayoutItems"
       :theme="resolvedTheme"
       :top-cards="topCards"
       :treemap-color-mode="treemapColorMode"
@@ -171,7 +171,6 @@ const pageClassName = computed(() => {
       :treemap-legend="treemapLegend"
       :treemap-nodes="treemapNodes"
       :treemap-path="treemapPath"
-      :treemap-source-path="treemapSourcePath"
       :treemap-filter-mode="treemapFilterMode"
       :treemap-filter-options="treemapFilterOptions"
       :visible-largest-files="visibleLargestFiles"
@@ -185,12 +184,13 @@ const pageClassName = computed(() => {
       @inspect-duplicates="handleInspectPackageDuplicates"
       @inspect-treemap-problem="handleInspectTreemapProblem"
       @open-file="handleOpenFile"
-      @open-treemap-source="handleOpenTreemapSource"
+      @open-treemap-source="handleOpenInspectionSource"
       @remove-work-queue-item="removeWorkQueueItem"
       @reset-treemap-focus="handleResetTreemapFocus"
       @select-action="handleSelectAction"
       @select-budget-warning="handleSelectBudgetWarning"
-      @select-file="handleSelectLargestFile"
+      @select-inspection-target="handleSelectInspectionTarget"
+      @investigate="handleCreateObjectInvestigation"
       @select-package="handleSelectPackageInsight"
       @select-treemap-node="handleSelectTreemapNode"
       @select-review-checklist-item="handleSelectReviewChecklistItem"

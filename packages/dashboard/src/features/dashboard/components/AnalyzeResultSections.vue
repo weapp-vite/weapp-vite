@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DashboardInvestigationTarget } from 'weapp-vite/dashboard'
 import type {
   AnalyzeActionCenterItem,
   AnalyzeComparisonMode,
@@ -18,7 +19,6 @@ import type {
   PackageBudgetWarning,
   PackageInsight,
   ResolvedTheme,
-  SelectedFileModuleDetail,
   SummaryMetric,
   TreemapLegendItem,
   TreemapNode,
@@ -27,20 +27,20 @@ import type {
 import type { PrReviewChecklistItem, PrReviewChecklistSummary } from '../utils/prReviewChecklist'
 import { computed, defineAsyncComponent } from 'vue'
 import AnalyzeBuildSummary from './AnalyzeBuildSummary.vue'
-import AnalyzeDetailsPanel from './AnalyzeDetailsPanel.vue'
 import AnalyzeDiagnosticsSection from './AnalyzeDiagnosticsSection.vue'
 import AnalyzeDraggableGrid from './AnalyzeDraggableGrid.vue'
 import AnalyzeWorkQueuePanel from './AnalyzeWorkQueuePanel.vue'
+import BudgetSandboxPanel from './BudgetSandboxPanel.vue'
+import ObjectInvestigationPanel from './investigation/ObjectInvestigationPanel.vue'
 import ModulesPanel from './ModulesPanel.vue'
+import ObjectInspectionWorkbench from './objectInspection/ObjectInspectionWorkbench.vue'
 import PackagesPanel from './PackagesPanel.vue'
 import PrReviewChecklistPanel from './PrReviewChecklistPanel.vue'
-import SourceArtifactComparePanel from './SourceArtifactComparePanel.vue'
 import TreemapCard from './TreemapCard.vue'
 
 const props = defineProps<{
   actionItems: AnalyzeActionCenterItem[]
   activeBudgetWarningId: string | null
-  activeLargestFileKey: string | null
   activeTab: DashboardTab
   activeWorkQueueItemId: string | null
   baselineSnapshotId: string | null
@@ -53,11 +53,14 @@ const props = defineProps<{
   duplicateModuleScopeLabel: string | null
   duplicateModules: DuplicateModuleEntry[]
   filteredDuplicateModules: DuplicateModuleEntry[]
-  filteredLargestFiles: LargestFileEntry[]
   historySnapshots: AnalyzeHistorySnapshot[]
   incrementAttribution: IncrementAttributionEntry[]
   incrementSummary: IncrementAttributionSummary[]
   isTreemapEmpty: boolean
+  inspectionTarget: DashboardInvestigationTarget | null
+  inspectionSourcePath: string | null
+  investigationRequest: DashboardInvestigationTarget | null
+  investigationRequestId: number
   largestFiles: LargestFileEntry[]
   metricPackageTypeSummary: SummaryMetric[]
   moduleSourceSummary: ModuleSourceSummary[]
@@ -70,8 +73,6 @@ const props = defineProps<{
   result: AnalyzeSubpackagesResult
   selectedTreemapMeta: TreemapNodeMeta | null
   selectedActionKey: string | null
-  selectedFileModules: SelectedFileModuleDetail[]
-  sourceLayoutItems: Array<{ id: string, label: string }>
   theme: ResolvedTheme
   topCards: DashboardMetricCard[]
   treemapColorMode: AnalyzeTreemapColorMode
@@ -80,7 +81,6 @@ const props = defineProps<{
   treemapLegend: TreemapLegendItem[]
   treemapNodes: TreemapNode[]
   treemapPath: TreemapNode[]
-  treemapSourcePath: string | null
   treemapFilterMode: AnalyzeTreemapFilterMode
   treemapFilterOptions: AnalyzeTreemapFilterOption[]
   visibleLargestFiles: LargestFileEntry[]
@@ -103,9 +103,10 @@ const emit = defineEmits<{
   resetTreemapFocus: []
   selectAction: [item: AnalyzeActionCenterItem]
   selectBudgetWarning: [item: PackageBudgetWarning]
-  selectFile: [item: LargestFileEntry]
   selectPackage: [item: PackageInsight]
   selectReviewChecklistItem: [item: PrReviewChecklistItem]
+  selectInspectionTarget: [target: DashboardInvestigationTarget]
+  investigate: [target: DashboardInvestigationTarget]
   selectTreemapNode: [meta: TreemapNodeMeta]
   selectWorkQueueItem: [item: AnalyzeWorkQueueItem]
   setBaseline: [id: string]
@@ -209,36 +210,22 @@ const selectedAction = computed(() => props.actionItems.find(item => item.key ==
     />
   </section>
 
-  <section v-else-if="activeTab === 'files'" class="min-h-0">
-    <AnalyzeDetailsPanel
-      :largest-files="filteredLargestFiles"
-      :selected-file-modules="selectedFileModules"
-      :budget-warnings="budgetWarnings"
+  <section v-else-if="activeTab === 'files'" class="min-h-0 min-w-0 flex-1">
+    <ObjectInspectionWorkbench
       :result="result"
-      :active-budget-warning-id="activeBudgetWarningId"
-      :active-largest-file-key="activeLargestFileKey"
-      :selected-treemap-meta="selectedTreemapMeta"
-      @select-budget-warning="emit('selectBudgetWarning', $event)"
-      @select-file="emit('selectFile', $event)"
-    />
-  </section>
-
-  <section v-else-if="activeTab === 'source'" class="min-h-0">
-    <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 min-w-0 gap-2 overflow-x-hidden overflow-y-auto xl:overflow-hidden"
-      :items="sourceLayoutItems"
-      storage-key="weapp-vite:dashboard:analyze-layout:source"
+      :comparison-result="comparisonResult"
+      :target="inspectionTarget"
+      :source-path="inspectionSourcePath"
+      :theme="theme"
+      :baseline-label="treemapComparisonLabel"
+      :investigation-request-id="investigationRequestId"
+      @select-target="emit('selectInspectionTarget', $event)"
+      @investigate="emit('investigate', $event)"
     >
-      <template #source>
-        <SourceArtifactComparePanel
-          :active-file-key="activeLargestFileKey"
-          :files="filteredLargestFiles"
-          :theme="theme"
-          :initial-source-path="treemapSourcePath"
-          @select-file="emit('selectFile', $event)"
-        />
+      <template #investigation>
+        <ObjectInvestigationPanel :request="investigationRequest" :request-id="investigationRequestId" />
       </template>
-    </AnalyzeDraggableGrid>
+    </ObjectInspectionWorkbench>
   </section>
 
   <section v-else-if="activeTab === 'packages'" class="min-h-0">
@@ -256,6 +243,17 @@ const selectedAction = computed(() => props.actionItems.find(item => item.key ==
         />
       </template>
     </AnalyzeDraggableGrid>
+    <details class="mt-4 rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-4" :open="Boolean(activeBudgetWarningId)">
+      <summary class="min-h-11 cursor-pointer py-2 text-sm font-medium">
+        预算试算与风险范围
+      </summary>
+      <BudgetSandboxPanel
+        :active-budget-warning-id="activeBudgetWarningId"
+        :current-warnings="budgetWarnings"
+        :result="result"
+        @select-budget-warning="emit('selectBudgetWarning', $event)"
+      />
+    </details>
   </section>
 
   <section v-else class="min-h-0">

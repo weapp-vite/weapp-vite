@@ -18,7 +18,6 @@ import { computed, shallowRef } from 'vue'
 import { createTreemapFileNodeId, createTreemapModuleNodeId, createTreemapPackageNodeId } from '../utils/treemap'
 import { filterLargestFilesByTreemapState } from '../utils/treemapFilters'
 import { findTreemapNodePath } from '../utils/treemapNavigation'
-import { createSelectedFileModules } from '../utils/treemapSelection'
 import { useAnalyzeTreemapFilters } from './useAnalyzeTreemapFilters'
 import { useTreemapChartInstance } from './useTreemapChartInstance'
 import { useTreemapData } from './useTreemapData'
@@ -50,8 +49,6 @@ export function useAnalyzeTreemapController(options: {
   const hasTreemapComparison = computed(() => options.comparisonResultRef.value !== null)
   const {
     canUseSelectedPackageFilter,
-    duplicateModuleIds,
-    growthModuleIds,
     handleInspectTreemapProblem,
     handleUpdateTreemapColorMode,
     handleUpdateTreemapFilterMode,
@@ -77,7 +74,6 @@ export function useAnalyzeTreemapController(options: {
   const filteredLargestFiles = computed(() => filterLargestFilesByTreemapState({
     files: options.largestFiles.value,
     filterState: treemapFilterState.value,
-    meta: selectedTreemapMeta.value,
     warning: selectedBudgetWarning.value,
   }))
   const visibleLargestFiles = computed(() => filteredLargestFiles.value.slice(0, 10))
@@ -92,16 +88,6 @@ export function useAnalyzeTreemapController(options: {
     return meta && (meta.kind === 'module' || meta.kind === 'asset')
       ? createTreemapFileNodeId(meta.packageId, meta.fileName)
       : meta?.nodeId ?? null
-  })
-  const selectedFileEntry = computed(() => {
-    if (selectedLargestFile.value) {
-      return selectedLargestFile.value
-    }
-    const meta = selectedTreemapMeta.value
-    if (!meta || meta.kind === 'package') {
-      return null
-    }
-    return options.largestFiles.value.find(file => file.packageId === meta.packageId && file.file === meta.fileName) ?? null
   })
   const filteredDuplicateModules = computed(() => {
     const meta = selectedTreemapMeta.value
@@ -124,18 +110,10 @@ export function useAnalyzeTreemapController(options: {
     const pkg = options.packageInsights.value.find(pkg => pkg.id === packageId)
     return pkg ? `包体范围：${pkg.label}` : null
   })
-  const selectedFileModules = computed(() => createSelectedFileModules({
-    modules: selectedFileEntry.value?.modules ?? [],
-    mode: treemapFilterMode.value,
-    growthModuleIds: growthModuleIds.value,
-    duplicateModuleIds: duplicateModuleIds.value,
-    duplicateModules: options.duplicateModules.value,
-  }))
 
   const navigation = useTreemapNavigation({
     activeTab: options.activeTab,
     nodes: treemapNodes,
-    largestFiles: options.largestFiles,
     selectedMeta: selectedTreemapMeta,
     selectedFile: selectedLargestFile,
     selectedWarning: selectedBudgetWarning,
@@ -181,12 +159,11 @@ export function useAnalyzeTreemapController(options: {
 
   function handleSelectBudgetWarning(warning: PackageBudgetWarning) {
     const globalBudget = warning.scope === 'total' || warning.scope === 'runtime'
-    void setTreemapFilterMode(globalBudget ? 'all' : 'selected-package', 'files')
+    void setTreemapFilterMode(globalBudget ? 'all' : 'selected-package', 'packages')
     selectedBudgetWarning.value = warning
     selectedLargestFile.value = filterLargestFilesByTreemapState({
       files: options.largestFiles.value,
       filterState: { ...treemapFilterState.value, mode: 'all', selectedPackageId: null },
-      meta: null,
       warning,
     })[0] ?? null
 
@@ -263,7 +240,6 @@ export function useAnalyzeTreemapController(options: {
     isTreemapEmpty,
     resetTreemapSelection,
     selectedBudgetWarning,
-    selectedFileModules,
     selectedLargestFile,
     selectedTreemapMeta,
     setTreemapFilterMode,

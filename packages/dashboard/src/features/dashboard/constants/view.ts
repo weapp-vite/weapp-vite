@@ -9,11 +9,10 @@ export const themeOptions: ThemeOption[] = [
 export const dashboardTabs: Array<DashboardTabOption & { description: string, advanced?: boolean }> = [
   { key: 'diagnostics', label: '构建诊断', description: '看包体分布，定位异常，对照变化与来源。', iconName: 'metric-health' },
   { key: 'treemap', label: '体积地图', description: '按面积查看产物体积，逐层定位大文件。', iconName: 'treemap' },
-  { key: 'files', label: '文件明细', description: '检查产物文件的体积、预算和所含模块。', iconName: 'top-files' },
+  { key: 'files', label: '对象检查', description: '关联包、产物与模块，在同一上下文中检查证据、内容和调查。', iconName: 'top-files' },
   { key: 'packages', label: '包体与分包', description: '查看主包、分包的体积、预算和产物文件。', iconName: 'tab-packages' },
   { key: 'review', label: '评审清单', description: '逐项检查本次构建风险，整理代码评审结论。', iconName: 'metric-bookmark', advanced: true },
   { key: 'graph', label: '产物依赖图', description: '追踪代码产物之间的静态与动态依赖。', iconName: 'tab-modules', advanced: true },
-  { key: 'source', label: '源码与产物', description: '对照源码与构建产物，检查转换结果。', iconName: 'tab-source', advanced: true },
   { key: 'modules', label: '模块与复用', description: '查看模块来源、跨包复用和体积增长归因。', iconName: 'tab-modules', advanced: true },
 ]
 

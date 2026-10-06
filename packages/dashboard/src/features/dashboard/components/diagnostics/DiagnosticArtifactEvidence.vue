@@ -41,32 +41,37 @@ const sourceScale = computed(() => {
   }
   return maximum
 })
+
+function sourceName(source: string) {
+  const identifier = formatModuleIdentifier(source)
+  return identifier.slice(identifier.lastIndexOf('/') + 1)
+}
 </script>
 
 <template>
   <div class="@container/artifact-evidence min-w-0">
     <div class="artifact-evidence-grid grid min-w-0 border-y border-(--dashboard-border)">
-      <section aria-label="体积测量对照" class="artifact-measurements min-w-0 py-6">
+      <section aria-label="体积测量对照" class="artifact-measurements min-w-0 py-4">
         <header class="flex flex-wrap items-baseline justify-between gap-2">
           <h3 class="text-sm font-medium text-(--dashboard-text)">
             体积对照
           </h3>
           <span class="text-xs text-(--dashboard-text-soft) [overflow-wrap:anywhere]">{{ comparisonLabel }}</span>
         </header>
-        <div class="mt-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs text-(--dashboard-text-soft)">
+        <div class="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs text-(--dashboard-text-soft)">
           <span class="min-w-0 [overflow-wrap:anywhere]">{{ evidence.scopeLabel }}</span>
           <span>同一字节尺度</span>
         </div>
-        <dl class="mt-4 grid gap-4">
-          <div v-for="row in measurements" :key="row.key" :data-measurement="row.key" class="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,auto)] items-baseline gap-x-3 gap-y-2">
+        <dl class="mt-3 grid gap-3">
+          <div v-for="row in measurements" :key="row.key" :data-measurement="row.key" class="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,auto)] items-baseline gap-x-3 gap-y-1.5">
             <dt class="text-xs text-(--dashboard-text-muted) [overflow-wrap:anywhere]">
               {{ row.label }}
             </dt>
-            <dd class="min-w-0 text-right font-mono tabular-nums text-(--dashboard-text) [overflow-wrap:anywhere]" :class="row.key === 'current' ? 'text-2xl font-medium' : 'text-sm'">
+            <dd class="min-w-0 text-right font-mono tabular-nums text-(--dashboard-text) [overflow-wrap:anywhere]" :class="row.key === 'current' ? 'text-xl font-medium' : 'text-sm'">
               {{ row.bytes === null ? '未知 / 未提供' : formatBytes(row.bytes) }}
             </dd>
             <dd class="col-span-2" aria-hidden="true">
-              <span class="block h-5 bg-(--dashboard-panel-muted)" :class="row.bytes === null ? 'border border-dashed border-(--dashboard-border)' : ''">
+              <span class="block h-3 bg-(--dashboard-panel-muted)" :class="row.bytes === null ? 'border border-dashed border-(--dashboard-border)' : ''">
                 <span
                   v-if="row.width !== null && row.bytes !== 0"
                   class="block h-full"
@@ -95,7 +100,7 @@ const sourceScale = computed(() => {
           {{ evidence.previousBytes === null ? '基线未提供或缺测；' : '' }}未知不按 0 计算。
         </p>
 
-        <section aria-label="关联产物" class="mt-6 min-w-0 border-t border-(--dashboard-border) pt-4">
+        <section aria-label="关联产物" class="mt-4 min-w-0 border-t border-(--dashboard-border) pt-3">
           <header class="flex flex-wrap items-baseline justify-between gap-2">
             <h4 class="text-xs font-medium text-(--dashboard-text)">
               关联产物
@@ -105,7 +110,7 @@ const sourceScale = computed(() => {
           <p v-if="evidence.artifacts.length === 0" class="mt-3 text-sm leading-6 text-(--dashboard-text-muted)">
             当前报告没有可定位的关联产物。
           </p>
-          <details v-else :open="evidence.artifacts.length <= 2" class="mt-2">
+          <details v-else :key="evidence.scopeLabel" class="mt-1">
             <summary class="min-h-9 cursor-pointer rounded-sm py-2 text-xs text-(--dashboard-text-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:min-h-11">
               产物位置与逐项测量
             </summary>
@@ -144,7 +149,7 @@ const sourceScale = computed(() => {
         </section>
       </section>
 
-      <section aria-label="关联来源摘要" class="artifact-sources min-w-0 border-t border-(--dashboard-border) py-6">
+      <section aria-label="关联来源摘要" class="artifact-sources min-w-0 border-t border-(--dashboard-border) py-4">
         <header class="flex flex-wrap items-baseline justify-between gap-2">
           <h3 class="text-sm font-medium text-(--dashboard-text)">
             来源贡献
@@ -154,50 +159,57 @@ const sourceScale = computed(() => {
         <p v-if="sourcePreview.length === 0" class="mt-4 text-sm leading-6 text-(--dashboard-text-soft)">
           暂无可定位来源；需补齐模块报告或核对资源。
         </p>
-        <p v-if="sourcePreview.length" class="mt-4 text-xs leading-5 text-(--dashboard-text-soft)">
+        <p v-if="sourcePreview.length" class="mt-3 text-xs leading-5 text-(--dashboard-text-soft)">
           {{ sourceScale === null ? '来源体积未提供' : '条长参照：摘要内最大已知来源' }}
           <span v-if="sourceScale !== null" class="font-mono tabular-nums">{{ formatBytes(sourceScale) }}</span>
         </p>
-        <ul v-if="sourcePreview.length" class="mt-3 divide-y divide-(--dashboard-border)">
-          <li v-for="source in sourcePreview" :key="source.id" class="min-w-0 py-3 first:pt-0">
-            <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,auto)] items-baseline gap-3">
-              <code :title="source.meta.source" class="min-w-0 font-mono text-xs leading-5 text-(--dashboard-text) [overflow-wrap:anywhere]">{{ formatModuleIdentifier(source.meta.source) }}</code>
-              <span class="min-w-0 text-right font-mono text-sm tabular-nums text-(--dashboard-text) [overflow-wrap:anywhere]">{{ source.bytes === null ? '体积未知' : formatBytes(source.bytes) }}</span>
-            </div>
-            <div class="mt-2 h-2 bg-(--dashboard-panel-muted)" :class="source.bytes === null ? 'border border-dashed border-(--dashboard-border)' : ''" aria-hidden="true">
-              <span
-                v-if="source.bytes !== null && source.bytes > 0 && sourceScale !== null && sourceScale > 0"
-                class="block h-full bg-(--dashboard-accent)"
-                :style="{ width: `${source.bytes / sourceScale * 100}%` }"
-              />
-            </div>
-            <p class="mt-2 text-xs text-(--dashboard-text-soft)">
-              {{ formatSourceType(source.meta.sourceType) }}
-            </p>
-            <dl class="mt-2 grid gap-1 text-xs leading-5 text-(--dashboard-text-muted)">
-              <div class="grid grid-cols-[3rem_minmax(0,1fr)] gap-2">
-                <dt class="text-(--dashboard-text-soft)">所属包</dt>
-                <dd class="[overflow-wrap:anywhere]">{{ source.meta.packageLabel }}</dd>
-              </div>
-              <div class="grid grid-cols-[3rem_minmax(0,1fr)] gap-2">
-                <dt class="text-(--dashboard-text-soft)">产物</dt>
-                <dd class="font-mono [overflow-wrap:anywhere]">{{ source.meta.fileName }}</dd>
-              </div>
-            </dl>
+        <ul v-if="sourcePreview.length" class="mt-2 divide-y divide-(--dashboard-border)">
+          <li v-for="source in sourcePreview" :key="source.id" class="min-w-0">
+            <details class="group min-w-0" data-source-detail>
+              <summary :title="formatModuleIdentifier(source.meta.source)" :aria-label="`查看来源 ${formatModuleIdentifier(source.meta.source)}，${source.meta.packageLabel} 的关联详情`" class="min-h-11 cursor-pointer list-none rounded-sm py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)">
+                <span class="flex min-w-0 items-baseline gap-2">
+                  <span class="icon-[mdi--chevron-right] size-3 shrink-0 self-center text-(--dashboard-text-soft) group-open:rotate-90" aria-hidden="true" />
+                  <code class="min-w-0 flex-1 font-mono text-xs leading-5 text-(--dashboard-text) [overflow-wrap:anywhere]">{{ sourceName(source.meta.source) }}</code>
+                  <span class="shrink-0 font-mono text-sm tabular-nums text-(--dashboard-text)">{{ source.bytes === null ? '未知' : formatBytes(source.bytes) }}</span>
+                </span>
+                <span class="mt-1 block truncate pl-5 text-xs leading-4 text-(--dashboard-text-soft)">{{ source.meta.packageLabel }}</span>
+                <span class="mt-2 block h-1.5 bg-(--dashboard-panel-muted)" :class="source.bytes === null ? 'border border-dashed border-(--dashboard-border)' : ''" aria-hidden="true">
+                  <span
+                    v-if="source.bytes !== null && source.bytes > 0 && sourceScale !== null && sourceScale > 0"
+                    class="block h-full bg-(--dashboard-accent)"
+                    :style="{ width: `${source.bytes / sourceScale * 100}%` }"
+                  />
+                </span>
+              </summary>
+              <dl class="grid min-w-0 gap-2 pb-3 pl-5 text-xs leading-5 text-(--dashboard-text-muted)">
+                <div>
+                  <dt class="text-(--dashboard-text-soft)">来源 · {{ formatSourceType(source.meta.sourceType) }}</dt>
+                  <dd class="font-mono [overflow-wrap:anywhere]">{{ formatModuleIdentifier(source.meta.source) }}</dd>
+                </div>
+                <div>
+                  <dt class="text-(--dashboard-text-soft)">所属包</dt>
+                  <dd class="[overflow-wrap:anywhere]">{{ source.meta.packageLabel }}</dd>
+                </div>
+                <div>
+                  <dt class="text-(--dashboard-text-soft)">关联产物</dt>
+                  <dd class="font-mono [overflow-wrap:anywhere]">{{ source.meta.fileName }}</dd>
+                </div>
+              </dl>
+            </details>
           </li>
         </ul>
         <p v-if="sourcePreview.length" class="mt-3 text-xs leading-5 text-(--dashboard-text-soft)">
-          仅为报告关联，不是依赖链；来源与包／产物体积不可相加，也不等于可节省量。
+          仅为报告关联，贡献不可相加，也不等于可节省量。
         </p>
         <button
           type="button"
-          class="mt-3 inline-flex min-h-10 max-w-full items-center gap-2 rounded-sm py-2 text-left text-sm text-(--dashboard-accent) [overflow-wrap:anywhere] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:min-h-11"
+          class="mt-2 inline-flex min-h-9 max-w-full items-center gap-2 rounded-sm py-1.5 text-left text-xs text-(--dashboard-accent) [overflow-wrap:anywhere] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:min-h-11"
           @click="emit('showSources')"
         >
           查看模块与来源
           <span class="icon-[mdi--arrow-right] size-4 shrink-0" aria-hidden="true" />
         </button>
-        <details v-if="evidence.constraints.length" class="mt-4 border-t border-(--dashboard-border) pt-2">
+        <details v-if="evidence.constraints.length" class="mt-3 border-t border-(--dashboard-border) pt-1">
           <summary class="min-h-9 cursor-pointer rounded-sm py-2 text-xs text-(--dashboard-text-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:min-h-11">
             完整证据边界 · {{ evidence.constraints.length }} 项
           </summary>

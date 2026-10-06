@@ -9,12 +9,11 @@ import type {
   LargestFileEntry,
   TreemapModuleNodeMeta,
 } from '../types'
-import type { DiagnosticEvidence } from '../utils/diagnosticEvidence'
-import { computed, nextTick, shallowRef, useTemplateRef, watch } from 'vue'
-import { dashboardAnalyzeRevision, dashboardConnectionStatus } from '../utils/dashboardDevframe'
-import { createDiagnosticContext, createDiagnosticEvidence } from '../utils/diagnosticEvidence'
+import { computed } from 'vue'
+import { dashboardAnalyzeRevision } from '../utils/dashboardDevframe'
+import { createDiagnosticEvidence } from '../utils/diagnosticEvidence'
+import { formatModuleIdentifier } from '../utils/format'
 import ActionCenterPanel from './ActionCenterPanel.vue'
-import DiagnosticContextPanel from './DiagnosticContextPanel.vue'
 import DiagnosticEvidencePanel from './DiagnosticEvidencePanel.vue'
 import HistoryBaselinePanel from './HistoryBaselinePanel.vue'
 
@@ -39,14 +38,12 @@ const emit = defineEmits<{
   setComparisonMode: [mode: AnalyzeComparisonMode]
 }>()
 
-const contextTrigger = useTemplateRef<HTMLButtonElement>('contextTrigger')
-const contextText = shallowRef('')
-const contextOpen = shallowRef(false)
-const contextChanged = shallowRef(false)
-const contextVersion = shallowRef(0)
-const contextEvidence = shallowRef<DiagnosticEvidence | null>(null)
-const contextTitle = shallowRef('')
 const selectedAction = computed(() => props.actionItems.find(item => item.key === props.selectedActionKey) ?? props.actionItems[0])
+const selectedTarget = computed(() => formatModuleIdentifier(selectedAction.value?.targetLabel ?? ''))
+const selectedName = computed(() => selectedTarget.value.slice(selectedTarget.value.lastIndexOf('/') + 1))
+const selectedKindLabel = computed(() => selectedAction.value
+  ? { budget: '预算', increment: '增长', duplicate: '重复' }[selectedAction.value.kind]
+  : '')
 const evidence = computed(() => selectedAction.value
   ? createDiagnosticEvidence({
       action: selectedAction.value,
@@ -62,50 +59,7 @@ const classificationLabel = computed(() => evidence.value
 const comparisonLabel = computed(() => !props.comparisonResult
   ? '无历史基线，不推断增长'
   : props.comparisonMode === 'baseline' ? '浏览器选定基线' : '上次构建（浏览器对照）')
-const connectionReason = computed(() => dashboardConnectionStatus.value !== 'connected'
-  ? '构建报告连接不可用，不能交接旧证据。'
-  : dashboardAnalyzeRevision.value === null ? '正在等待完整构建报告。' : '')
-const contextInvalidReason = computed(() => connectionReason.value || (contextChanged.value
-  ? '报告、对照基线或所选对象已变化，原上下文已失效。'
-  : ''))
-
-watch([
-  () => props.result,
-  () => props.comparisonResult,
-  () => props.comparisonMode,
-  () => selectedAction.value?.key,
-  dashboardAnalyzeRevision,
-  dashboardConnectionStatus,
-], () => {
-  if (contextOpen.value) {
-    contextChanged.value = true
-  }
-}, { flush: 'sync' })
-
-function prepareContext() {
-  if (connectionReason.value || !selectedAction.value || !evidence.value) {
-    return
-  }
-  contextEvidence.value = evidence.value
-  contextTitle.value = selectedAction.value.title
-  contextText.value = createDiagnosticContext({
-    action: selectedAction.value,
-    evidence: evidence.value,
-    result: props.result,
-    previous: props.comparisonResult,
-    comparisonMode: props.comparisonMode,
-    revision: dashboardAnalyzeRevision.value,
-  })
-  contextChanged.value = false
-  contextVersion.value += 1
-  contextOpen.value = true
-}
-
-async function closeContext() {
-  contextOpen.value = false
-  await nextTick()
-  contextTrigger.value?.focus()
-}
+const primaryArtifact = computed(() => evidence.value?.artifacts[0]?.entry ?? null)
 </script>
 
 <template>
@@ -120,10 +74,10 @@ async function closeContext() {
     >
       <template #index>
         <slot name="overview" />
-        <div class="mt-5 border-t border-(--dashboard-border) pt-5">
+        <div class="mt-1.5 border-t border-(--dashboard-border) pt-1.5">
           <ActionCenterPanel :actions="actionItems" :active-key="selectedAction?.key ?? null" @select="emit('focusAction', $event)" />
         </div>
-        <p class="mt-4 text-xs text-(--dashboard-text-soft)">
+        <p class="mt-3 text-xs text-(--dashboard-text-soft)">
           当前报告<span v-if="dashboardAnalyzeRevision !== null"> · R{{ dashboardAnalyzeRevision }}</span>
         </p>
       </template>
@@ -138,37 +92,22 @@ async function closeContext() {
       </template>
       <template v-if="selectedAction" #heading>
         <header class="flex min-w-0 flex-wrap items-start justify-between gap-3">
-          <div class="min-w-0 flex-1 basis-72">
-            <p class="mb-1 text-xs text-(--dashboard-text-soft)">{{ classificationLabel }}</p>
-            <h2 class="text-xl font-semibold leading-snug tracking-tight text-(--dashboard-text) [overflow-wrap:anywhere]">{{ selectedAction.title }}</h2>
+          <div class="min-w-0 flex-1 basis-64">
+            <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+              <h2 data-diagnostic-object class="min-w-0 font-mono text-base font-semibold leading-6 text-(--dashboard-text) [overflow-wrap:anywhere]">{{ selectedName }}</h2>
+              <span class="rounded-sm border border-(--dashboard-border) px-1.5 py-0.5 text-xs text-(--dashboard-text-muted)">{{ selectedKindLabel }} · {{ classificationLabel }}</span>
+            </div>
+            <p v-if="selectedTarget !== selectedName" data-diagnostic-object-path class="mt-1 font-mono text-xs leading-5 text-(--dashboard-text-soft) [overflow-wrap:anywhere]">{{ selectedTarget }}</p>
           </div>
           <button
-            ref="contextTrigger"
+            v-if="primaryArtifact"
             type="button"
-            :disabled="Boolean(connectionReason)"
-            :aria-expanded="contextOpen"
-            aria-controls="diagnostic-ai-context"
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-(--dashboard-accent) px-4 py-2 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) disabled:cursor-not-allowed disabled:opacity-50 max-sm:w-full dark:text-slate-950"
-            @click="prepareContext"
+            class="inline-flex min-h-11 items-center justify-center rounded-lg border border-(--dashboard-border) px-3 text-sm font-medium text-(--dashboard-text-muted) hover:bg-(--dashboard-panel-muted)"
+            @click="emit('openFile', primaryArtifact)"
           >
-            {{ contextOpen && contextInvalidReason ? '重新准备处理计划' : '查看处理计划' }}
-            <span class="icon-[mdi--arrow-down] size-4 shrink-0" aria-hidden="true" />
+            检查关联对象
           </button>
         </header>
-        <p v-if="connectionReason" role="status" class="text-sm text-(--dashboard-text-muted)">{{ connectionReason }}</p>
-      </template>
-      <template #plan="{ showVerification }">
-        <DiagnosticContextPanel
-          v-if="contextOpen && contextEvidence"
-          id="diagnostic-ai-context"
-          :key="contextVersion"
-          :text="contextText"
-          :evidence="contextEvidence"
-          :title="contextTitle"
-          :invalid-reason="contextInvalidReason"
-          @close="closeContext"
-          @verification="contextOpen = false; showVerification()"
-        />
       </template>
     </DiagnosticEvidencePanel>
   </section>

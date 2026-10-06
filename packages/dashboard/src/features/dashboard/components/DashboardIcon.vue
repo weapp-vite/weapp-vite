@@ -17,7 +17,6 @@ const ICON_CLASS_MAP: Record<DashboardIconName, string> = {
   'nav-tokens': 'icon-[mdi--palette-outline]',
   'tab-packages': 'icon-[mdi--package-variant-closed]',
   'tab-modules': 'icon-[mdi--vector-link]',
-  'tab-source': 'icon-[mdi--source-branch]',
   'status-dark': 'icon-[mdi--circle-slice-8]',
   'status-light': 'icon-[mdi--checkbox-blank-circle]',
   'status-live': 'icon-[mdi--motion-play-outline]',

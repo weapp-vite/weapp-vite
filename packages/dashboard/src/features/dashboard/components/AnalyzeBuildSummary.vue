@@ -37,50 +37,44 @@ function handleDetailsToggle(event: Event) {
 </script>
 
 <template>
-  <section class="grid min-w-0 content-start gap-3">
-    <header class="min-w-0">
-      <h2 class="text-sm font-medium text-(--dashboard-text-soft)">总产物体积</h2>
-      <p class="mt-1 text-2xl font-semibold leading-8 tabular-nums text-(--dashboard-text)">
+  <section class="grid min-w-0 content-start gap-2">
+    <header class="flex min-w-0 flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+      <h2 class="text-xs font-medium text-(--dashboard-text-soft)">总产物体积</h2>
+      <p class="text-xl font-semibold leading-7 tabular-nums text-(--dashboard-text)">
         {{ totalPackageBytesLabel }}
       </p>
-      <p class="mt-1 text-xs leading-5 text-(--dashboard-text-muted)">{{ budgetSummary }}</p>
+      <p class="w-full text-xs leading-4 text-(--dashboard-text-muted)">{{ budgetSummary }}</p>
     </header>
 
     <figure class="min-w-0">
-      <figcaption class="text-xs leading-5 text-(--dashboard-text-soft)">
-        包体分布 · 满格 = 总产物体积
+      <figcaption class="text-xs leading-4 text-(--dashboard-text-soft)">
+        包体占比 · 前 {{ packagePreviewItems.length }} 包 · 满格 = 总量
       </figcaption>
       <p v-if="packagePreviewItems.length === 0" class="mt-2 text-sm text-(--dashboard-text-soft)">
         当前没有包体数据。
       </p>
-      <ol v-else class="mt-1 grid min-w-0 gap-1">
+      <ol v-else class="mt-1 grid min-w-0">
         <li v-for="item in packagePreviewItems" :key="item.id" class="min-w-0">
           <button
             type="button"
-            class="block min-h-11 w-full min-w-0 rounded-sm py-1.5 text-left hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+            class="block min-h-8 w-full min-w-0 rounded-sm py-1 text-left hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:min-h-11"
             :aria-label="`查看包 ${item.label} 的详情，${item.sizeLabel}`"
             @click="emit('selectPackage', item)"
           >
-            <span class="flex min-w-0 flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-sm">
-              <span class="min-w-0 font-medium text-(--dashboard-text) [overflow-wrap:anywhere]">{{ item.label }}</span>
+            <span class="flex min-w-0 items-baseline justify-between gap-2 text-xs leading-4">
+              <span :title="item.label" class="min-w-0 truncate font-medium text-(--dashboard-text)">{{ item.label }}</span>
               <span class="shrink-0 tabular-nums text-(--dashboard-text-muted)">{{ item.sizeLabel }}</span>
             </span>
-            <span class="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-(--dashboard-panel-muted)" aria-hidden="true">
+            <span class="mt-1 block h-1 overflow-hidden rounded-full bg-(--dashboard-panel-muted)" aria-hidden="true">
               <span class="block h-full rounded-full bg-(--dashboard-accent)" :style="item.shareStyle" />
-            </span>
-            <span v-if="item.deltaLabel" class="mt-1 block text-xs leading-4 tabular-nums text-(--dashboard-text-soft)">
-              {{ item.deltaLabel }}
             </span>
           </button>
         </li>
       </ol>
-      <p v-if="packagePreviewItems.length > 0" class="mt-1 text-xs leading-5 text-(--dashboard-text-soft)">
-        体积前 {{ packagePreviewItems.length }} 包 · 选择包查看详情
-      </p>
     </figure>
 
-    <details class="group min-w-0 border-y border-(--dashboard-border)" @toggle="handleDetailsToggle">
-      <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-sm py-2 text-sm font-medium text-(--dashboard-text-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)">
+    <details class="group min-w-0 border-t border-(--dashboard-border)" @toggle="handleDetailsToggle">
+      <summary class="flex min-h-9 cursor-pointer list-none items-center justify-between gap-2 rounded-sm py-1.5 text-xs font-medium text-(--dashboard-text-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:min-h-11">
         <span class="min-w-0">全部 {{ packageInsights.length }} 包与构建明细</span>
         <span class="icon-[mdi--chevron-down] size-4 shrink-0 group-open:rotate-180" aria-hidden="true" />
       </summary>

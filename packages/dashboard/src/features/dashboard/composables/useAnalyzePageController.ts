@@ -13,6 +13,7 @@ import { useAnalyzeWorkQueue } from './useAnalyzeWorkQueue'
 import { useDashboardPage } from './useDashboardPage'
 import { useDashboardTheme } from './useDashboardTheme'
 import { useDashboardWorkspace } from './useDashboardWorkspace'
+import { useObjectInspectionNavigation } from './useObjectInspectionNavigation'
 
 const reviewLayoutItems = [
   { id: 'review', label: 'PR 风险清单' },
@@ -22,9 +23,6 @@ const packagesLayoutItems = [
 ]
 const modulesLayoutItems = [
   { id: 'modules', label: '模块复用' },
-]
-const sourceLayoutItems = [
-  { id: 'source', label: '源码对比' },
 ]
 
 export function useAnalyzePageController() {
@@ -51,6 +49,7 @@ export function useAnalyzePageController() {
     moduleSourceSummary: dashboardData.moduleSourceSummary,
     lastUpdatedAt,
   })
+  const inspectionNavigation = useObjectInspectionNavigation({ resultRef, activeTab })
   const treemapController = useAnalyzeTreemapController({
     activeTab,
     resultRef,
@@ -101,18 +100,21 @@ export function useAnalyzePageController() {
     actionItems,
     workQueueItems: workQueue.workQueueItems,
     addWorkQueueItem: workQueue.addWorkQueueItem,
+    openInspectionFile: inspectionNavigation.handleOpenInspectionFile,
     exportStatus: reportActions.exportStatus,
     setTreemapFilterMode: treemapController.setTreemapFilterMode,
     selectedTreemapMeta: treemapController.selectedTreemapMeta,
     selectedLargestFile: treemapController.selectedLargestFile,
     selectedBudgetWarning: treemapController.selectedBudgetWarning,
     handleSelectBudgetWarning: treemapController.handleSelectBudgetWarning,
-    handleSelectLargestFile: treemapController.handleSelectLargestFile,
   })
   const viewActions = useAnalyzeViewActions({
     exportStatus: reportActions.exportStatus,
     moreMenuOpen,
-    resetPageSelection: interactions.resetPageSelection,
+    resetPageSelection() {
+      interactions.resetPageSelection()
+      inspectionNavigation.resetInspectionSelection()
+    },
     resetTreemapSelection: treemapController.resetTreemapSelection,
   })
 
@@ -173,6 +175,7 @@ export function useAnalyzePageController() {
   return {
     ...dashboardData,
     ...interactions,
+    ...inspectionNavigation,
     ...reportActions,
     ...treemapController,
     ...viewActions,
@@ -194,7 +197,6 @@ export function useAnalyzePageController() {
     reviewLayoutItems,
     setBaselineSnapshot,
     setComparisonMode,
-    sourceLayoutItems,
     statusPills,
     topCards,
     treemapFilterOptions,

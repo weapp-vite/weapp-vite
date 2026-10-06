@@ -91,17 +91,17 @@ pnpm add @weapp-vite/mcp
 pnpm --filter @weapp-vite/mcp start
 ```
 
-## Dashboard 实时只读接入（独立入口）
+## Dashboard 证据查询与对象调查
 
-`wv dev --ui` / `wv build --ui` 可通过 DevFrame MCP 读取当前 Dashboard。它不替换 `wv mcp`，不改变本页其余工具、Resources、Prompts、REST 或微信 IDE 会话；`wv mcp init` 仍连接原有服务。
+`wv dev --ui` / `wv build --ui` 可通过 DevFrame MCP 查询当前 Dashboard，并领取、回传对象调查。它不替换 `wv mcp`，不改变本页其余工具、Resources、Prompts、REST 或微信 IDE 会话；`wv mcp init` 仍连接原有服务。
 
 ```bash
 pnpm add -D @weapp-vite/dashboard devframe@1.2.0 @devframes/agentic@1.2.0
 ```
 
-启动 `wv dev --ui` / `wv build --ui` 后，Dashboard 自动在同一端口开放本机只读 MCP，无需生成令牌或配置认证环境变量。
+启动 `wv dev --ui` / `wv build --ui` 后，Dashboard 自动在同一端口开放本机 scoped MCP，无需生成令牌或配置认证环境变量。
 
-`--ui-host hub` 是显式可选的官方 Hub UI 宿主，但不会开放聚合 MCP 或发布 MCP 发现记录。需要本节只读工具时，使用默认 `--ui` 或 `--ui-host standalone`；Hub 的可写界面设置不提供 Dashboard 报告写入能力，也不改变现有 `wv mcp` 入口。
+默认 `standalone` 与 `--ui-host hub` 均发布 Dashboard 的 MCP 发现记录。端点都是 `/__weapp-vite/__mcp`，不会继承宿主其他插件的 RPC、工具、Resources 或 shared-state；Hub 的 `/__devframes/__mcp` 聚合入口仍关闭。`--no-mcp` 只控制原有 CLI MCP 服务，不关闭随 UI 启动的 Dashboard scoped MCP。
 
 MCP 客户端在项目目录通过 stdio 执行 `pnpm exec devframe connect`。支持 `mcpServers` 的客户端配置示例：
 
@@ -120,7 +120,7 @@ MCP 客户端在项目目录通过 stdio 执行 `pnpm exec devframe connect`。�
 
 | 工具 | 用途 |
 | --- | --- |
-| `weapp-vite_get-dashboard-state` | 无参数；取得后续查询所需的 revision |
+| `weapp-vite_get-dashboard-state` | 无参数；取得 sessionId、revision、报告描述符和调查状态 |
 | `weapp-vite_get-analyze-summary` | 包体总量、预算与缺失体积数据的汇总 |
 | `weapp-vite_query-analyze-packages` | 按包类型、名称、预算状态查询和排序 |
 | `weapp-vite_query-analyze-artifacts` | 最大产物、包内文件、指定模块的产物位置 |
@@ -129,6 +129,12 @@ MCP 客户端在项目目录通过 stdio 执行 `pnpm exec devframe connect`。�
 | `weapp-vite_query-runtime-events` | 最近事件的类型、级别、来源、文本和 ISO 时间筛选 |
 | `weapp-vite_read-dashboard-file` | 受限源码或当前产物的文本片段，也保留全文读取 |
 | `weapp-vite_get-analyze-page` | 仅在需要全量导出时拼接报告 JSON 文本页 |
+| `weapp-vite_list-investigations` | 无参数；读取当前宿主调查列表，不含领取令牌 |
+| `weapp-vite_get-investigation` | 按任务 `id` 读取权威状态与版本 |
+| `weapp-vite_claim-investigation` | 用 `id`、`version`、`agentName` 领取任务；仅响应返回私有 `claimToken` |
+| `weapp-vite_propose-investigation` | 用任务版本与领取令牌提交精确路径、变更说明、检查和风险 |
+| `weapp-vite_start-investigation` | 消费浏览器对精确提案的授权，记录开始；不启动进程 |
+| `weapp-vite_complete-investigation` | 回传外部执行结果，只写任务元数据，不自动通过复验 |
 
 常规诊断按“状态 → 摘要 → 定位 → 比较／文件片段”进行，不需要先取完整报告。输入统一使用 `arg0`，例如：
 
@@ -152,11 +158,27 @@ MCP 客户端在项目目录通过 stdio 执行 `pnpm exec devframe connect`。�
 
 结果提供对象型 `structuredContent`。页面、MCP 和 Markdown 报告复用 `weapp-vite/dashboard/analyze` 的预算、重复分析与构建比较计算；该浏览器安全入口不启动服务。
 
-独立端点为 `http://127.0.0.1:<port>/__weapp-vite/__mcp`。直接 HTTP 客户端不需要 `Authorization`，但必须提供规范 loopback `Origin`。MCP 协议请求（POST / GET / DELETE）的 Origin 缺失 / 不合法，或实际 socket 对端非 loopback / 无法识别时返回 403；不信任转发头提供的地址。OPTIONS 预检由 Vite 原生 CORS 处理，可能返回空的 204，不执行 MCP 工具或放宽后续请求的门禁。浏览器仍通过 OTP 授权，独立 MCP 不开放通用 shared-state 工具、命令或写入能力。
+两种 CLI UI 宿主的 scoped 端点均为 `http://127.0.0.1:<port>/__weapp-vite/__mcp`。直接 HTTP 客户端不需要 `Authorization`，但必须提供规范 loopback `Origin`。MCP 协议请求（POST / GET / DELETE）的 Origin 缺失 / 不合法，或实际 socket 对端非 loopback / 无法识别时返回 403；不信任转发头提供的地址。OPTIONS 预检由 Vite 原生 CORS 处理，可能返回空的 204，不执行 MCP 工具或放宽后续请求的门禁。浏览器仍通过 OTP 授权；调查动作只修改任务元数据，不开放通用 shared-state、任意文件写入或命令执行。
 
 本机模式信任同机进程，不区分本机用户。不要通过代理、隧道或端口转发对外发布 Dashboard；本机代理会使远端请求表现为本机连接。需要用户身份隔离时，应选择具有相应认证策略的宿主。
 
 实例只在真实监听后注册；关闭 / 重启清理旧记录。若注册目录不可写，可按上游诊断使用 `devframe connect --port <port> --base /__weapp-vite/` 显式探测。嵌入 Vite DevTools 时，仍由宿主决定 MCP、认证与发现策略。
+
+### 调查生命周期与权限
+
+在「对象检查」选择包、产物或模块落点，编辑并提交问题。草稿固定当时的对象和 `{ sessionId, revision, reportHash }`，后续浏览不会悄悄改绑。提交不等于 Agent 在线，也不授予源码修改权限。
+
+外部客户端按“读任务 → 领取 → 查询证据 → 提案 → 等待浏览器授权 → 记录开始 → 外部执行 → 回报”推进。所有已有任务变更携带 `id`、当前 `version`；提案、开始与回报另需领取响应的 `claimToken`。版本冲突后重新取状态，不盲目重放。令牌不出现在公开状态、广播和复制文本中；Agent 名称是客户端自报，不是认证身份。
+
+- `proposal` 为 `{ summary, changes: [{ path, description }], checks, risks }`，至少包含一项变更和一项检查。服务端生成提案 ID，浏览器展示路径、检查和风险，用户勾选后只授权该提案。报告、提案或任务版本改变后需要重新确认。
+- `start-investigation` 仅记录获授权提案的执行意图。真实文件与命令权限由外部工作区控制，不存在 Dashboard 通用执行接口。
+- `receipt` 为 `{ outcome, summary, changedFiles, checks: [{ command, outcome, summary }] }`。顶层结果为 `completed` 或 `failed`；检查结果为 `passed`、`failed` 或 `not-run`。界面明确标为 Agent 自报，不是 Dashboard 独立执行验证。
+- 回报完成后，需要同一宿主的更新报告、实际检查、复验摘要及浏览器确认才能记录复验。原始字节、Gzip、Brotli、模块归因与源码字节分开呈现；未测量和新报告中已删除的对象都不算零，报告更新也不证明节省量。
+
+创建、取消、授权和复验只提供浏览器 RPC，不暴露为 Agent 工具。报告更新使尚未执行的任务与旧授权失效；执行中及已有回报保留原报告绑定。取消不能终止外部进程或撤销文件修改。任务为宿主会话内记录，最多 32 项；最旧已结束记录可能被移除，活动项占满时拒绝新增，不是持久历史。
+
+浏览器授权只区分协议入口与明确确认，不是操作系统权限或不可伪造的人类身份。报告 hash 也不是源码快照，源码读取仍是实时工作区内容。「复制上下文」只辅助外部客户端定位任务，不会代替提交、授权或执行。
+
 
 ## 主要能力
 

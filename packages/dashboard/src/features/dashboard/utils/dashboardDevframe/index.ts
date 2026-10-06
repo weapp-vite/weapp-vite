@@ -1,13 +1,19 @@
-import type {} from 'devframe'
 import type {
   DevframeConnectionStatus,
   DevframeRpcClient,
   DevframeScopedClientContext,
 } from 'devframe/client'
+import type {
+  DashboardAuthorizeInvestigationRequest,
+  DashboardCreateInvestigationRequest,
+  DashboardInvestigation,
+  DashboardInvestigationRequest,
+  DashboardInvestigationsState,
+  DashboardReportIdentity,
+  DashboardVerifyInvestigationRequest,
+} from 'weapp-vite/dashboard'
 import type { DashboardRuntimeEvent } from '../../types'
 import type {
-  DashboardAnalyzePage,
-  DashboardAnalyzePageRequest,
   DashboardAnalyzePayloadDescriptor,
   DashboardAnalyzeSnapshot,
   DashboardDevframeState,
@@ -34,27 +40,21 @@ interface DashboardConnectionSession {
   pendingState?: DashboardDevframeState
   refreshPromise?: Promise<void>
   revision: number
+  controllerId?: string
+  reportHash?: string
 }
 
 class DashboardAuthorizationError extends Error {
   override name = 'DashboardAuthorizationError'
 }
 
-declare module 'devframe' {
-  interface DevframeRpcClientFunctions {
-    'weapp-vite:dashboard-state-updated': (state: DashboardDevframeState) => void
-  }
-
-  interface DevframeRpcServerFunctions {
-    'weapp-vite:get-dashboard-state': () => DashboardDevframeState
-    'weapp-vite:get-analyze-page': (input: DashboardAnalyzePageRequest) => DashboardAnalyzePage
-    'weapp-vite:read-dashboard-file': (input: DashboardFileRequest) => Promise<DashboardFileContent>
-  }
-}
-
 export const dashboardAnalyzeSnapshot = shallowRef<DashboardAnalyzeSnapshot | null>(null)
 /** 当前会话已完成水合且仍与宿主同步的 Analyze revision；刷新期间为空。 */
 export const dashboardAnalyzeRevision = shallowRef<number | null>(null)
+/** 只有当前报告完成水合后才可用于创建调查或授权。 */
+export const dashboardReportIdentity = shallowRef<DashboardReportIdentity | null>(null)
+/** 调查元数据由宿主单独递增版本，不依赖 Analyze revision。 */
+export const dashboardInvestigations = shallowRef<DashboardInvestigationsState>({ version: 0, items: [] })
 export const dashboardConnectionError = shallowRef<Error | null>(null)
 export const dashboardConnectionStatus = shallowRef<DevframeConnectionStatus>('connecting')
 export const dashboardRuntimeEvents = shallowRef<DashboardRuntimeEvent[]>([])
@@ -85,6 +85,7 @@ function disposeSession(session: DashboardConnectionSession, close: boolean) {
   session.dispose()
   if (activeSession === session) {
     dashboardAnalyzeRevision.value = null
+    dashboardReportIdentity.value = null
     activeSession = undefined
   }
   if (close) {
@@ -142,18 +143,50 @@ function isStaleAnalyzeRevisionError(error: unknown) {
   return error instanceof Error && STALE_DASHBOARD_ANALYZE_REVISION_RE.test(error.message)
 }
 
+function isSessionActive(session: DashboardConnectionSession) {
+  return activeSession === session && !session.disposed
+}
+
+function isSameReport(left: DashboardReportIdentity | null, right: DashboardReportIdentity) {
+  return left?.sessionId === right.sessionId
+    && left.revision === right.revision
+    && left.reportHash === right.reportHash
+}
+
+function syncDashboardMetadata(session: DashboardConnectionSession, state: DashboardDevframeState) {
+  if (session.controllerId !== state.sessionId) {
+    session.controllerId = state.sessionId
+    session.revision = -1
+    session.reportHash = undefined
+    dashboardInvestigations.value = state.investigations
+  }
+  else if (state.investigations.version >= dashboardInvestigations.value.version) {
+    dashboardInvestigations.value = state.investigations
+  }
+  dashboardRuntimeEvents.value = normalizeRuntimeEvents(state.runtimeEvents)
+  if (state.revision !== session.revision || state.analyze.current.hash !== session.reportHash) {
+    dashboardAnalyzeRevision.value = null
+    dashboardReportIdentity.value = null
+  }
+}
+
 async function hydrateDashboardState(
   session: DashboardConnectionSession,
   initialState?: DashboardDevframeState,
 ) {
-  if (session.disposed) {
+  if (!isSessionActive(session)) {
     return
   }
-  if (initialState && initialState.revision !== session.revision) {
-    dashboardAnalyzeRevision.value = null
+  if (initialState) {
+    if (initialState.sessionId === session.controllerId && initialState.revision < session.revision) {
+      return
+    }
+    syncDashboardMetadata(session, initialState)
   }
   if (session.refreshPromise) {
-    session.pendingState = initialState
+    if (initialState) {
+      session.pendingState = initialState
+    }
     return await session.refreshPromise
   }
 
@@ -162,33 +195,55 @@ async function hydrateDashboardState(
     do {
       let state = session.pendingState
       session.pendingState = undefined
-      state ??= await session.dashboard.rpc.call('get-dashboard-state')
-      dashboardRuntimeEvents.value = normalizeRuntimeEvents(state.runtimeEvents)
-      if (state.revision === session.revision && dashboardAnalyzeSnapshot.value) {
+      if (!state) {
+        state = await session.dashboard.rpc.call('get-dashboard-state')
+        if (!isSessionActive(session)) {
+          return
+        }
+        if (session.pendingState) {
+          continue
+        }
+      }
+      syncDashboardMetadata(session, state)
+      if (state.revision === session.revision && state.analyze.current.hash === session.reportHash && dashboardAnalyzeSnapshot.value) {
         continue
       }
       dashboardAnalyzeRevision.value = null
+      dashboardReportIdentity.value = null
 
       let snapshot: DashboardAnalyzeSnapshot
       try {
         snapshot = await readDashboardAnalyzeSnapshot(session.dashboard.rpc, state.analyze, state.revision)
       }
       catch (error) {
+        if (!isSessionActive(session)) {
+          return
+        }
         if (!isStaleAnalyzeRevisionError(error)) {
           throw error
         }
-        session.pendingState = await session.dashboard.rpc.call('get-dashboard-state')
+        const latest = await session.dashboard.rpc.call('get-dashboard-state')
+        if (!isSessionActive(session)) {
+          return
+        }
+        session.pendingState ??= latest
         continue
       }
-      if (session.disposed) {
+      if (!isSessionActive(session)) {
         return
       }
       if (session.pendingState) {
         continue
       }
       session.revision = state.revision
+      session.reportHash = state.analyze.current.hash
       dashboardAnalyzeSnapshot.value = snapshot
       dashboardAnalyzeRevision.value = state.revision
+      dashboardReportIdentity.value = {
+        sessionId: state.sessionId,
+        revision: state.revision,
+        reportHash: state.analyze.current.hash,
+      }
     } while (session.pendingState)
   })()
 
@@ -285,6 +340,7 @@ export async function connectDashboardDevframe() {
 
   clearReconnectTimer()
   dashboardAnalyzeRevision.value = null
+  dashboardReportIdentity.value = null
   dashboardConnectionStatus.value = 'connecting'
   connectPromise = initializeDashboardDevframe()
   try {
@@ -319,18 +375,86 @@ export async function readDashboardFileContent(
   if (session.revision !== revision || dashboardAnalyzeRevision.value !== revision) {
     throw new Error('Analyze revision 已变化，请刷新当前 Dashboard 状态。')
   }
+  const controllerId = session.controllerId
+  const reportHash = session.reportHash
   const content = await session.dashboard.rpc.call('read-dashboard-file', {
     kind,
     path: filePath,
     revision,
   })
-  if (activeSession !== session || session.disposed || session.client.status !== 'connected') {
+  if (activeSession !== session || session.disposed || session.client.status !== 'connected' || session.controllerId !== controllerId) {
     throw new Error('Devframe Dashboard 文件读取期间连接已变化。')
   }
-  if (session.revision !== revision || dashboardAnalyzeRevision.value !== revision) {
+  if (session.revision !== revision || dashboardAnalyzeRevision.value !== revision || session.reportHash !== reportHash) {
     throw new Error('Analyze revision 已变化，请刷新当前 Dashboard 状态。')
   }
   return content
+}
+
+/** 浏览器变更不自动重连或重放，避免将旧页面意图发送到新会话。 */
+function requireInvestigationSession(report?: DashboardReportIdentity, input?: DashboardInvestigationRequest) {
+  const session = activeSession
+  const current = dashboardReportIdentity.value
+  if (!session || session.disposed || session.client.status !== 'connected' || !current) {
+    throw new Error('宿主未连接或报告仍在同步。输入已保留，请连接后重试。')
+  }
+  if (report && !isSameReport(current, report)) {
+    throw new Error('调查绑定的报告已变化；请保留原调查，明确创建新草稿。')
+  }
+  if (input) {
+    const task = dashboardInvestigations.value.items.find(item => item.id === input.id)
+    if (!task || task.report.sessionId !== current.sessionId || task.version !== input.version) {
+      throw new Error('调查状态已变化，请查看最新任务后重新操作。')
+    }
+  }
+  return session
+}
+
+async function receiveInvestigationMutation(
+  session: DashboardConnectionSession,
+  response: Promise<DashboardInvestigation>,
+) {
+  const controllerId = session.controllerId
+  const result = await response
+  if (!isSessionActive(session) || session.client.status !== 'connected' || session.controllerId !== controllerId) {
+    throw new Error('调查请求期间连接已变化；请检查当前任务列表，勿将旧响应视为本次会话结果。')
+  }
+  // 以宿主列表版本为准，不把单条响应拼成缺少全局版本的乐观状态。
+  try {
+    await hydrateDashboardState(session)
+  }
+  catch (error) {
+    handleRefreshFailure(session, error)
+    throw error
+  }
+  if (!isSessionActive(session) || session.client.status !== 'connected' || session.controllerId !== controllerId) {
+    throw new Error('调查同步期间连接已变化；输入已保留，请重新连接后检查任务列表。')
+  }
+  return result
+}
+
+export async function createDashboardInvestigation(input: DashboardCreateInvestigationRequest): Promise<DashboardInvestigation> {
+  const session = requireInvestigationSession(input.report)
+  return await receiveInvestigationMutation(session, session.dashboard.rpc.call('create-investigation', input))
+}
+
+export async function cancelDashboardInvestigation(input: DashboardInvestigationRequest): Promise<DashboardInvestigation> {
+  const session = requireInvestigationSession(undefined, input)
+  return await receiveInvestigationMutation(session, session.dashboard.rpc.call('cancel-investigation', input))
+}
+
+export async function authorizeDashboardInvestigation(input: DashboardAuthorizeInvestigationRequest): Promise<DashboardInvestigation> {
+  const session = requireInvestigationSession(undefined, input)
+  const task = dashboardInvestigations.value.items.find(item => item.id === input.id)!
+  if (!isSameReport(dashboardReportIdentity.value, task.report) || task.status !== 'proposed' || task.proposal?.id !== input.proposalId) {
+    throw new Error('报告或提案已变化，请重新查看提案；旧授权意图未发送。')
+  }
+  return await receiveInvestigationMutation(session, session.dashboard.rpc.call('authorize-investigation', input))
+}
+
+export async function verifyDashboardInvestigation(input: DashboardVerifyInvestigationRequest): Promise<DashboardInvestigation> {
+  const session = requireInvestigationSession(input.report, input)
+  return await receiveInvestigationMutation(session, session.dashboard.rpc.call('verify-investigation', input))
 }
 
 export type {

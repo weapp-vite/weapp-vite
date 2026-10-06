@@ -1,6 +1,5 @@
 import type {
   AnalyzeActionCenterItem,
-  AnalyzeComparisonMode,
   AnalyzeSubpackagesResult,
   DuplicateModuleEntry,
   IncrementAttributionEntry,
@@ -45,13 +44,4 @@ export interface DiagnosticEvidenceInput {
   previous: AnalyzeSubpackagesResult | null
   duplicateModules: DuplicateModuleEntry[]
   incrementAttribution: IncrementAttributionEntry[]
-}
-
-export interface DiagnosticContextInput {
-  action: AnalyzeActionCenterItem
-  evidence: DiagnosticEvidence
-  result: AnalyzeSubpackagesResult
-  previous: AnalyzeSubpackagesResult | null
-  comparisonMode: AnalyzeComparisonMode
-  revision: number | null
 }

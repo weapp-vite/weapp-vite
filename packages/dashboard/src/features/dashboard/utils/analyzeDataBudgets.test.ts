@@ -50,12 +50,11 @@ describe('shared Dashboard budget warnings', () => {
       growthModuleIds: new Set<string>(),
       duplicateModuleIds: new Set<string>(),
     }
-    expect(filterLargestFilesByTreemapState({ files, filterState, warning, meta: null }).map(file => file.file)).toEqual(['runtime.js'])
+    expect(filterLargestFilesByTreemapState({ files, filterState, warning }).map(file => file.file)).toEqual(['runtime.js'])
     expect(filterLargestFilesByTreemapState({
       files,
       filterState: { ...filterState, mode: 'selected-package', selectedPackageId: 'other' },
       warning,
-      meta: null,
     })).toEqual([])
   })
 })

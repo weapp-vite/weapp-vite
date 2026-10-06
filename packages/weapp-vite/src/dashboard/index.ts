@@ -5,6 +5,19 @@ import type { DashboardContentRoots, DashboardFileContent } from './content'
 import type { DashboardRuntimeEvent, DashboardRuntimeEventInput } from './events'
 import type { DashboardRuntimeEventsPage, DashboardRuntimeEventsQueryRequest } from './eventsQuery'
 import type {
+  DashboardAgentInvestigationRequest,
+  DashboardAuthorizeInvestigationRequest,
+  DashboardClaimInvestigationRequest,
+  DashboardCompleteInvestigationRequest,
+  DashboardCreateInvestigationRequest,
+  DashboardInvestigation,
+  DashboardInvestigationClaim,
+  DashboardInvestigationRequest,
+  DashboardInvestigationsState,
+  DashboardProposeInvestigationRequest,
+  DashboardVerifyInvestigationRequest,
+} from './investigations/types'
+import type {
   DashboardAnalyzePage,
   DashboardAnalyzePageRequest,
   DashboardAnalyzePayloadsDescriptor,
@@ -23,12 +36,15 @@ import type {
   DashboardPackagesQuery,
 } from './queries/schema'
 import type { DashboardFileReadRequest } from './schema'
+import { randomUUID } from 'node:crypto'
 import { defineDevframe, defineRpcFunction } from 'devframe'
 import logo from '../../../../website/public/logo.svg'
 import { VERSION } from '../constants'
 import { createDashboardFileReader } from './content'
 import { createDashboardRuntimeEventStore } from './events'
 import { dashboardRuntimeEventsPageSchema, dashboardRuntimeEventsQueryRequestSchema } from './eventsQuery'
+import { createDashboardInvestigationRpc } from './investigations/rpc'
+import { createDashboardInvestigationStore } from './investigations/store'
 import {
   readDashboardAnalyzePage,
   serializeDashboardAnalyzeSnapshot,
@@ -52,7 +68,9 @@ export interface DashboardAnalyzeSnapshot {
   artifacts: DashboardArtifactFiles
 }
 
-interface DashboardDevframeState {
+export interface DashboardDevframeState {
+  sessionId: string
+  investigations: DashboardInvestigationsState
   analyze: DashboardAnalyzePayloadsDescriptor
   revision: number
   runtimeEvents: DashboardRuntimeEvent[]
@@ -89,16 +107,27 @@ declare module 'devframe' {
     'weapp-vite:query-analyze-artifacts': (input: DashboardArtifactsQuery) => DashboardArtifactsPage
     'weapp-vite:query-analyze-modules': (input: DashboardModulesQuery) => DashboardModulesPage
     'weapp-vite:compare-analyze-builds': (input: DashboardComparisonQuery) => DashboardComparisonPage
+    'weapp-vite:list-investigations': () => DashboardInvestigationsState
+    'weapp-vite:get-investigation': (input: { id: string }) => DashboardInvestigation
+    'weapp-vite:create-investigation': (input: DashboardCreateInvestigationRequest) => DashboardInvestigation
+    'weapp-vite:cancel-investigation': (input: DashboardInvestigationRequest) => DashboardInvestigation
+    'weapp-vite:authorize-investigation': (input: DashboardAuthorizeInvestigationRequest) => DashboardInvestigation
+    'weapp-vite:verify-investigation': (input: DashboardVerifyInvestigationRequest) => DashboardInvestigation
+    'weapp-vite:claim-investigation': (input: DashboardClaimInvestigationRequest) => DashboardInvestigationClaim
+    'weapp-vite:propose-investigation': (input: DashboardProposeInvestigationRequest) => DashboardInvestigation
+    'weapp-vite:start-investigation': (input: DashboardAgentInvestigationRequest) => DashboardInvestigation
+    'weapp-vite:complete-investigation': (input: DashboardCompleteInvestigationRequest) => DashboardInvestigation
   }
 }
 
-/** 创建只读分析能力，不启动服务器，也不修改宿主的共享状态或认证策略。 */
+/** 创建只读分析与任务元数据能力，不执行外部工作，也不修改宿主认证策略。 */
 export function createAnalyzeDashboardDevframe({
   snapshot: initialSnapshot,
   roots,
   initialEvents = [],
   clientAssets,
 }: CreateAnalyzeDashboardDevframeOptions): AnalyzeDashboardDevframeController {
+  const sessionId = randomUUID()
   let revision = 0
   let snapshot: DashboardAnalyzeSnapshot | undefined = initialSnapshot
   let serializedSnapshot: SerializedDashboardAnalyzeSnapshot | undefined = serializeDashboardAnalyzeSnapshot(initialSnapshot)
@@ -111,12 +140,24 @@ export function createAnalyzeDashboardDevframe({
     }
     return serializedSnapshot
   })
+  const investigations = createDashboardInvestigationStore(() => {
+    if (!snapshot || !serializedSnapshot) {
+      throw new Error(STALE_DASHBOARD_ANALYZE_REVISION_MESSAGE)
+    }
+    return {
+      identity: { sessionId, revision, reportHash: serializedSnapshot.current.descriptor.hash },
+      result: snapshot.current,
+    }
+  }, () => { void broadcastDashboardState?.() })
+  const investigationRpc = createDashboardInvestigationRpc(investigations)
 
   function getState(): DashboardDevframeState {
     if (!serializedSnapshot) {
       throw new Error(STALE_DASHBOARD_ANALYZE_REVISION_MESSAGE)
     }
     return {
+      sessionId,
+      investigations: investigations.list(),
       analyze: {
         current: serializedSnapshot.current.descriptor,
         previous: serializedSnapshot.previous?.descriptor ?? null,
@@ -219,6 +260,9 @@ export function createAnalyzeDashboardDevframe({
       dashboard.rpc.register(queries.modules)
       dashboard.rpc.register(queries.comparison)
       dashboard.rpc.register(queryRuntimeEvents)
+      for (const rpc of investigationRpc) {
+        dashboard.rpc.register(rpc)
+      }
       broadcastDashboardState = async () => {
         await dashboard.rpc.broadcast({
           method: 'dashboard-state-updated',
@@ -241,6 +285,7 @@ export function createAnalyzeDashboardDevframe({
       snapshot = nextSnapshot
       serializedSnapshot = nextSerialized
       revision += 1
+      investigations.reportUpdated()
       eventStore.prepend([{
         kind: 'build',
         level: 'info',
@@ -264,6 +309,7 @@ export function createAnalyzeDashboardDevframe({
       snapshot = undefined
       serializedSnapshot = undefined
       eventStore.dispose()
+      investigations.dispose()
       broadcastDashboardState = undefined
       fileReader.dispose()
     },
@@ -277,6 +323,32 @@ export { resolveDashboardClientAssets } from './assets'
 export type { DashboardContentRoots, DashboardFileContent } from './content'
 export type { DashboardRuntimeEvent, DashboardRuntimeEventInput, DashboardRuntimeEventProfile } from './events'
 export type { DashboardRuntimeEventsPage, DashboardRuntimeEventsQueryRequest } from './eventsQuery'
+export type {
+  DashboardAgentInvestigationRequest,
+  DashboardAuthorizeInvestigationRequest,
+  DashboardClaimInvestigationRequest,
+  DashboardCompleteInvestigationRequest,
+  DashboardCreateInvestigationRequest,
+  DashboardInvestigation,
+  DashboardInvestigationClaim,
+  DashboardInvestigationProposal,
+  DashboardInvestigationProposalInput,
+  DashboardInvestigationReceiptInput,
+  DashboardInvestigationRequest,
+  DashboardInvestigationsState,
+  DashboardInvestigationStatus,
+  DashboardInvestigationTarget,
+  DashboardObjectMeasurements,
+  DashboardProposeInvestigationRequest,
+  DashboardReportIdentity,
+  DashboardVerifyInvestigationRequest,
+} from './investigations/types'
+export type {
+  DashboardAnalyzePage,
+  DashboardAnalyzePageRequest,
+  DashboardAnalyzePayloadDescriptor,
+  DashboardAnalyzePayloadsDescriptor,
+} from './payload'
 export type {
   DashboardAnalyzeQuery,
   DashboardAnalyzeSummary,

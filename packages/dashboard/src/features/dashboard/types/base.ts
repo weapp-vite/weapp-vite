@@ -18,7 +18,6 @@ export type DashboardIconName
     | 'nav-tokens'
     | 'tab-packages'
     | 'tab-modules'
-    | 'tab-source'
     | 'status-dark'
     | 'status-light'
     | 'status-live'
@@ -57,7 +56,7 @@ export type DashboardIconName
     | 'token-surface'
     | 'token-type'
 
-export type DashboardTab = 'diagnostics' | 'review' | 'graph' | 'treemap' | 'files' | 'source' | 'packages' | 'modules'
+export type DashboardTab = 'diagnostics' | 'review' | 'graph' | 'treemap' | 'files' | 'packages' | 'modules'
 
 export interface ThemeOption {
   value: 'system' | 'light' | 'dark'

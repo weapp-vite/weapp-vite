@@ -66,19 +66,15 @@ watch(() => props.action?.key, () => {
   const focusInside = Boolean(panel.value?.contains(document.activeElement) || tabButtons.value?.includes(document.activeElement as HTMLButtonElement))
   void selectTab('compare', focusInside)
 })
-
-function showVerification() {
-  void selectTab('verification', true)
-}
 </script>
 
 <template>
   <section data-diagnostic-evidence aria-label="所选条目的证据工作区" class="diagnostic-workspace min-w-0">
-    <div class="diagnostic-columns grid min-w-0 items-start gap-6">
-      <aside class="diagnostic-index min-w-0" aria-label="问题与线索索引">
+    <div class="diagnostic-columns grid min-w-0 items-start overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel)">
+      <aside class="diagnostic-index min-w-0 border-b border-(--dashboard-border) bg-(--dashboard-bg) p-3" aria-label="问题与线索索引">
         <slot name="index" />
       </aside>
-      <div ref="panel" class="grid min-w-0 content-start gap-4">
+      <div ref="panel" class="grid min-w-0 content-start gap-3 p-3 sm:p-4">
         <slot v-if="action && evidence" name="heading" />
         <div class="flex min-w-0 flex-wrap items-center justify-between gap-x-5 gap-y-2 border-b border-(--dashboard-border)">
           <div v-if="action && evidence" role="tablist" aria-label="证据视图" class="flex min-w-0 gap-5">
@@ -169,7 +165,6 @@ function showVerification() {
         </div>
       </div>
     </div>
-    <slot name="plan" :show-verification="showVerification" />
   </section>
 </template>
 
@@ -181,14 +176,19 @@ function showVerification() {
 @container diagnostics (min-width: 52rem) {
   .diagnostic-columns {
     grid-template-columns: 17rem minmax(0, 1fr);
-    gap: 2rem;
+  }
+
+  .diagnostic-index {
+    align-self: stretch;
+    border-right: 1px solid var(--dashboard-border);
+    border-bottom: 0;
   }
 }
 
 @container diagnostics (min-width: 76rem) {
   .diagnostic-columns {
     grid-template-columns: 20rem minmax(0, 1fr);
-    gap: 2.5rem;
+    gap: 0;
   }
 
   .diagnostic-verification {

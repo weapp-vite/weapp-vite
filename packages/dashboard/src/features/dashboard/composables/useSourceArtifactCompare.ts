@@ -1,252 +1,115 @@
-import type * as MonacoApi from 'monaco-editor'
 import type { Ref } from 'vue'
-import type { LargestFileEntry } from '../types'
+import type { ResolvedTheme } from '../types'
 import type { DashboardFileContent } from '../utils/sourceArtifactFiles'
-import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
-import { dashboardAnalyzeRevision } from '../utils/dashboardDevframe'
-import { configureMonacoDiffEditor, resolveMonacoTheme } from '../utils/monacoDiffTheme'
-import { createSourceArtifactFileKey, createSourcePathOptions, fetchDashboardFileContent } from '../utils/sourceArtifactFiles'
-import { createSourceCompareStats } from '../utils/sourceCompareSummary'
+import { computed, nextTick, onBeforeUnmount, shallowRef, watch } from 'vue'
+import { useObjectContentEditor } from '../components/objectInspection/useObjectContentEditor'
+import { dashboardAnalyzeRevision, dashboardConnectionStatus } from '../utils/dashboardDevframe'
+import { fetchDashboardFileContent } from '../utils/sourceArtifactFiles'
 
-type Monaco = typeof MonacoApi
-type MonacoDiffEditor = ReturnType<Monaco['editor']['createDiffEditor']>
-type MonacoTextModel = ReturnType<Monaco['editor']['createModel']>
+export interface SourceArtifactTarget {
+  key: string
+  file: string
+}
 
+/** 受控内容读取：请求不回写目标，修订、连接、目标或卸载改变都会作废旧结果。 */
 export function useSourceArtifactCompare(options: {
-  activeFileKey: Ref<string | null>
-  files: Ref<LargestFileEntry[]>
-  theme: Ref<'light' | 'dark'>
-  initialSourcePath: string | null
-  onSelectFile: (file: LargestFileEntry) => void
+  artifact: Ref<SourceArtifactTarget | null>
+  sourcePath: Ref<string | null>
+  theme: Ref<ResolvedTheme>
 }) {
-  const editorElement = ref<HTMLDivElement>()
-  const selectedArtifactKey = ref('')
-  const selectedSourcePath = ref('')
   const sourceContent = shallowRef<DashboardFileContent | null>(null)
   const artifactContent = shallowRef<DashboardFileContent | null>(null)
-  const loadError = ref('')
-  const loading = ref(false)
-  const monacoRef = shallowRef<Monaco | null>(null)
-  let diffEditor: MonacoDiffEditor | undefined
-  let sourceModel: MonacoTextModel | undefined
-  let artifactModel: MonacoTextModel | undefined
-  let loadRequestId = 0
+  const loadError = shallowRef('')
+  const loading = shallowRef(false)
+  const { editorElement, clearEditor, showContents } = useObjectContentEditor(options.theme)
+  let requestId = 0
   let disposed = false
-
-  const artifactOptions = computed(() => options.files.value.map(file => ({
-    key: createSourceArtifactFileKey(file),
-    label: `${file.packageLabel} · ${file.file}`,
-    file,
-  })))
-
-  const selectedArtifact = computed(() =>
-    artifactOptions.value.find(item => item.key === selectedArtifactKey.value)?.file
-    ?? options.files.value[0]
-    ?? null)
-
-  const sourceOptions = computed(() => createSourcePathOptions(selectedArtifact.value))
-
-  const statusText = computed(() => {
-    if (loading.value) {
-      return '加载中'
-    }
-    if (loadError.value) {
-      return loadError.value
-    }
-    if (sourceContent.value && artifactContent.value) {
-      return `${sourceContent.value.path} ↔ ${artifactContent.value.path}`
-    }
-    return '等待文件'
-  })
-  const compareStats = computed(() => sourceContent.value && artifactContent.value
-    ? createSourceCompareStats(sourceContent.value.content, artifactContent.value.content)
-    : null)
-
-  function resolveSelectedArtifactKey() {
-    if (options.activeFileKey.value && artifactOptions.value.some(item => item.key === options.activeFileKey.value)) {
-      return options.activeFileKey.value
-    }
-    return artifactOptions.value[0]?.key ?? ''
-  }
-
-  function disposeModels() {
-    diffEditor?.setModel(null)
-    sourceModel?.dispose()
-    artifactModel?.dispose()
-    sourceModel = undefined
-    artifactModel = undefined
-  }
-
-  function isCurrentLoad(
-    requestId: number,
-    revision: number,
-    sourcePath: string,
-    artifactKey: string,
-  ) {
-    return !disposed
-      && requestId === loadRequestId
-      && dashboardAnalyzeRevision.value === revision
-      && selectedSourcePath.value === sourcePath
-      && selectedArtifactKey.value === artifactKey
-  }
-
-  function updateEditorModel() {
-    const monaco = monacoRef.value
-    if (!monaco || !diffEditor || !sourceContent.value || !artifactContent.value) {
-      return
-    }
-    disposeModels()
-    sourceModel = monaco.editor.createModel(
-      sourceContent.value.content,
-      sourceContent.value.language,
-      monaco.Uri.parse(`weapp-source://model/${encodeURIComponent(sourceContent.value.path)}`),
-    )
-    artifactModel = monaco.editor.createModel(
-      artifactContent.value.content,
-      artifactContent.value.language,
-      monaco.Uri.parse(`weapp-artifact://model/${encodeURIComponent(artifactContent.value.path)}`),
-    )
-    diffEditor.setModel({
-      original: sourceModel,
-      modified: artifactModel,
-    })
-  }
-
-  async function ensureEditor() {
-    const editorHost = editorElement.value
-    if (disposed || monacoRef.value || !editorHost) {
-      return
-    }
-    // Monaco 体积较大，仅在编辑器容器就绪后按需加载。
-    const monaco = await import('monaco-editor')
-    if (disposed || editorElement.value !== editorHost || monacoRef.value) {
-      return
-    }
-    monacoRef.value = monaco
-    configureMonacoDiffEditor(monaco)
-    monaco.editor.setTheme(resolveMonacoTheme(options.theme.value))
-    diffEditor = monaco.editor.createDiffEditor(editorHost, {
-      automaticLayout: true,
-      minimap: { enabled: false },
-      originalEditable: false,
-      readOnly: true,
-      renderSideBySide: true,
-      scrollBeyondLastLine: false,
-    })
-  }
+  const statusText = computed(() => loading.value
+    ? '正在读取当前修订的内容…'
+    : sourceContent.value && artifactContent.value
+      ? '当前源码 ↔ 报告捕获的构建产物'
+      : artifactContent.value ? '报告捕获的构建产物' : sourceContent.value ? '当前源码' : '尚无可读内容')
 
   async function loadComparison() {
     if (disposed) {
       return
     }
-    const requestId = ++loadRequestId
-    const sourcePath = selectedSourcePath.value
-    const artifact = selectedArtifact.value
+    const currentRequest = ++requestId
     const revision = dashboardAnalyzeRevision.value
-    const artifactKey = selectedArtifactKey.value
-    if (revision === null || !sourcePath || !artifact) {
-      sourceContent.value = null
-      artifactContent.value = null
-      loadError.value = sourceOptions.value.length === 0 ? '无源码候选' : ''
-      loading.value = false
-      disposeModels()
-      return
-    }
-
-    loading.value = true
-    loadError.value = ''
+    const sourcePath = options.sourcePath.value
+    const artifact = options.artifact.value
     sourceContent.value = null
     artifactContent.value = null
-    disposeModels()
-    options.onSelectFile(artifact)
+    loadError.value = ''
+    loading.value = false
+    clearEditor()
+    if (dashboardConnectionStatus.value !== 'connected') {
+      loadError.value = '后端未连接。浏览上下文已保留，连接恢复后重新读取。'
+      return
+    }
+    if (revision === null) {
+      loadError.value = '报告正在更新或已失效，等待当前修订完成同步。'
+      return
+    }
+    if (!artifact && !sourcePath) {
+      return
+    }
+    const isCurrent = () => !disposed && requestId === currentRequest
+      && dashboardAnalyzeRevision.value === revision
+      && dashboardConnectionStatus.value === 'connected'
+      && options.artifact.value?.key === artifact?.key
+      && options.sourcePath.value === sourcePath
+    loading.value = true
     try {
-      const [source, output] = await Promise.all([
-        fetchDashboardFileContent('source', sourcePath, revision),
-        fetchDashboardFileContent('artifact', artifact.file, revision),
+      const [source, output] = await Promise.allSettled([
+        sourcePath ? fetchDashboardFileContent('source', sourcePath, revision) : Promise.resolve(null),
+        artifact ? fetchDashboardFileContent('artifact', artifact.file, revision) : Promise.resolve(null),
       ])
-      if (!isCurrentLoad(requestId, revision, sourcePath, artifactKey)) {
+      if (!isCurrent()) {
         return
       }
-      sourceContent.value = source
-      artifactContent.value = output
+      const errors: string[] = []
+      if (source.status === 'fulfilled') {
+        sourceContent.value = source.value
+      }
+      else {
+        errors.push(`源码：${source.reason instanceof Error ? source.reason.message : '读取失败'}`)
+      }
+      if (output.status === 'fulfilled') {
+        artifactContent.value = output.value
+      }
+      else {
+        errors.push(`产物：${output.reason instanceof Error ? output.reason.message : '读取失败'}`)
+      }
+      loadError.value = errors.join('；')
       await nextTick()
-      if (!isCurrentLoad(requestId, revision, sourcePath, artifactKey)) {
-        return
+      if (isCurrent()) {
+        await showContents(sourceContent.value, artifactContent.value, isCurrent)
       }
-      await ensureEditor()
-      if (!isCurrentLoad(requestId, revision, sourcePath, artifactKey)) {
-        return
-      }
-      updateEditorModel()
     }
     catch (error) {
-      if (!isCurrentLoad(requestId, revision, sourcePath, artifactKey)) {
-        return
+      if (isCurrent()) {
+        loadError.value = error instanceof Error ? error.message : '内容显示失败'
       }
-      sourceContent.value = null
-      artifactContent.value = null
-      disposeModels()
-      loadError.value = error instanceof Error ? error.message : '文件读取失败'
     }
     finally {
-      if (isCurrentLoad(requestId, revision, sourcePath, artifactKey)) {
+      if (isCurrent()) {
         loading.value = false
       }
     }
   }
 
   watch(
-    () => [options.activeFileKey.value, artifactOptions.value.map(item => item.key).join('\u0000')],
-    () => {
-      selectedArtifactKey.value = resolveSelectedArtifactKey()
-    },
-    { immediate: true },
-  )
-
-  watch(
-    sourceOptions,
-    (items) => {
-      selectedSourcePath.value = options.initialSourcePath && items.includes(options.initialSourcePath)
-        ? options.initialSourcePath
-        : items[0] ?? ''
-    },
-    { immediate: true },
-  )
-
-  watch(
-    [selectedArtifactKey, selectedSourcePath, dashboardAnalyzeRevision],
+    [() => options.artifact.value?.key, options.sourcePath, dashboardAnalyzeRevision, dashboardConnectionStatus],
     () => {
       void loadComparison()
     },
-    { immediate: true },
+    { immediate: true, flush: 'sync' },
   )
-
-  watch(
-    options.theme,
-    (theme) => {
-      monacoRef.value?.editor.setTheme(resolveMonacoTheme(theme))
-    },
-  )
-
   onBeforeUnmount(() => {
     disposed = true
-    loadRequestId += 1
-    disposeModels()
-    diffEditor?.dispose()
+    requestId += 1
+    clearEditor()
   })
-
-  return {
-    artifactContent,
-    artifactOptions,
-    compareStats,
-    editorElement,
-    loadComparison,
-    loadError,
-    loading,
-    selectedArtifactKey,
-    selectedSourcePath,
-    sourceContent,
-    sourceOptions,
-    statusText,
-  }
+  return { artifactContent, sourceContent, editorElement, loadComparison, loadError, loading, statusText }
 }

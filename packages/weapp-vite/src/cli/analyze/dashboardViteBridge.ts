@@ -103,14 +103,15 @@ export function createAnalyzeDashboardViteBridge(
                     register: false,
                   })
                   await instance.ready
-                  if (!closed) {
-                    mcp = await createDashboardMcp(instance, httpServer, {
-                      projectRoot: options.projectRoot ?? process.cwd(),
-                      id: controller.definition.id,
-                      name: controller.definition.name,
-                      version: controller.definition.version,
-                    })
-                  }
+                }
+                if (!closed) {
+                  mcp = await createDashboardMcp(instance, httpServer, {
+                    projectRoot: options.projectRoot ?? process.cwd(),
+                    id: controller.definition.id,
+                    name: controller.definition.name,
+                    version: controller.definition.version,
+                    base: ANALYZE_DASHBOARD_DEVFRAME_BASE,
+                  })
                 }
               })
               await acquiring
@@ -177,13 +178,16 @@ export function createAnalyzeDashboardViteBridge(
         const url = request.url ?? '/'
         const queryIndex = url.indexOf('?')
         const pathname = queryIndex < 0 ? url : url.slice(0, queryIndex)
+        if (mcp && pathname === mcp.route) {
+          void mcp.nodeMiddleware(request, response).catch(next)
+          return
+        }
+        if (mcp && pathname === `${ANALYZE_DASHBOARD_DEVFRAME_BASE}${DEVFRAME_CONNECTION_META_FILENAME}`) {
+          void mcp.discoveryMiddleware(request, response).catch(next)
+          return
+        }
         if (options.uiHost === 'hub') {
-          if (pathname === `${ANALYZE_DASHBOARD_DEVFRAME_BASE}${DEVFRAME_CONNECTION_META_FILENAME}`) {
-            // Hub 的 Node middleware 只接收自身 base；外部挂载通过公开 metadata API 发现同一传输。
-            response.setHeader('Content-Type', 'application/json')
-            response.end(JSON.stringify(instance.connectionMeta()))
-          }
-          else if (pathname === ANALYZE_DASHBOARD_HUB_BASE.slice(0, -1) || pathname.startsWith(ANALYZE_DASHBOARD_HUB_BASE)) {
+          if (pathname === ANALYZE_DASHBOARD_HUB_BASE.slice(0, -1) || pathname.startsWith(ANALYZE_DASHBOARD_HUB_BASE)) {
             instance.nodeMiddleware(request, response, next)
           }
           else {
@@ -191,13 +195,7 @@ export function createAnalyzeDashboardViteBridge(
           }
           return
         }
-        if (mcp && pathname === mcp.route) {
-          void mcp.nodeMiddleware(request, response).catch(next)
-        }
-        else if (mcp && pathname === `${ANALYZE_DASHBOARD_DEVFRAME_BASE}${DEVFRAME_CONNECTION_META_FILENAME}`) {
-          void mcp.discoveryMiddleware(request, response).catch(next)
-        }
-        else if (transportPaths.has(pathname)) {
+        if (transportPaths.has(pathname)) {
           instance.nodeMiddleware(request, response, next)
         }
         else {
