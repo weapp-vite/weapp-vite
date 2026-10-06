@@ -101,33 +101,53 @@ describe('suiteRunner real process and machine lease integration', () => {
       });
     `)
 
+    const deadline = Promise.withResolvers<'timeout'>()
+    let deadlineTimer: ReturnType<typeof setTimeout> | undefined
+    const runPromise = runTaskSuite('e2e:test', [
+      {
+        label: 'pipe-leak-task',
+        command: process.execPath,
+        args: [leakStdoutScriptPath],
+      },
+    ], {
+      // 先完成真实租约和 journal 初始化；1 秒预算覆盖任务启动、执行及 suite 收尾。
+      beforeEachTask: () => {
+        deadlineTimer = setTimeout(deadline.resolve, 1000, 'timeout')
+      },
+      writeReport: false,
+    })
+    const stopDescendant = () => {
+      if (!fs.existsSync(pidFile)) {
+        return
+      }
+      const childPid = Number(fs.readFileSync(pidFile, 'utf8'))
+      if (Number.isInteger(childPid) && childPid > 0) {
+        terminateTestChild(childPid)
+      }
+    }
+
     try {
-      const result = await Promise.race([
-        runTaskSuite('e2e:test', [
-          {
-            label: 'pipe-leak-task',
-            command: process.execPath,
-            args: [leakStdoutScriptPath],
-          },
-        ], {
-          writeReport: false,
-        }),
-        new Promise<'timeout'>(resolve => setTimeout(resolve, 1000, 'timeout')),
-      ])
+      const result = await Promise.race([runPromise, deadline.promise])
 
       expect(result).toBe(0)
       expect(() => process.kill(Number(fs.readFileSync(pidFile, 'utf8')), 0)).not.toThrow()
     }
     finally {
-      if (fs.existsSync(pidFile)) {
-        const childPid = Number(fs.readFileSync(pidFile, 'utf8'))
-        if (Number.isInteger(childPid) && childPid > 0) {
-          terminateTestChild(childPid)
+      clearTimeout(deadlineTimer)
+      try {
+        stopDescendant()
+      }
+      finally {
+        // 超时仍保留原断言失败；先等本次 runner 结束，避免删除仍将使用的 fixture。
+        await runPromise.catch(() => {})
+        try {
+          stopDescendant()
+        }
+        finally {
+          fs.rmSync(tempRoot, { recursive: true, force: true })
+          process.exitCode = previousExitCode
         }
       }
-
-      fs.rmSync(tempRoot, { recursive: true, force: true })
-      process.exitCode = previousExitCode
     }
   })
 
