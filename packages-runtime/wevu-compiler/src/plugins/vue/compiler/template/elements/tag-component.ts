@@ -16,6 +16,7 @@ import { omitUnsupportedDynamicDirectiveNames } from '../directives'
 import { registerRuntimeBindingExpression } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
+import { withNativeDeclarationScope } from '../nativeDeclaration'
 import { collectElementAttributes, isBuiltinTag } from './attrs'
 import { buildScopePropsExpression, findSlotDirective, getBindDirectiveExpression, isScopedSlotsDisabled } from './helpers'
 import { transformNormalElement } from './tag-normal'
@@ -169,7 +170,8 @@ function shouldAugmentPlainSlot(
     return context.scopedSlotsCompiler === 'augmented'
       ? hasMiniProgramComponentSlotDescendant(decl.children, context)
       || hasExplicitWevuComponentSlotDescendant(decl.children, context)
-      : hasScopedSlotPropsSibling && hasDirectComponentSlotChild(decl.children, context)
+      : hasExplicitWevuComponentSlotDescendant(decl.children, context)
+        || (hasScopedSlotPropsSibling && hasDirectComponentSlotChild(decl.children, context))
   }
   if (context.scopedSlotsCompiler === 'augmented') {
     if (!decl.implicitDefault) {
@@ -182,7 +184,9 @@ function shouldAugmentPlainSlot(
   if (!isWevuComponentTag(ownerNode, context)) {
     return false
   }
-  return hasScopedSlotPropsSibling || hasDirectWevuComponentSlotChild(decl.children, context)
+  return hasScopedSlotPropsSibling
+    || hasDirectWevuComponentSlotChild(decl.children, context)
+    || hasExplicitWevuComponentSlotDescendant(decl.children, context)
 }
 
 function resolveTemplateSlotCondition(node: ElementNode, context: TransformContext): {
@@ -521,14 +525,14 @@ export function transformComponentWithSlots(
   }
 
   if (!slotDeclarations.length) {
-    const { attrs, vTextExp } = collectElementAttributes(node, context, {
+    const { attrs, vTextExp, declaration } = collectElementAttributes(node, context, {
       skipSlotDirective: true,
       forInfo: options?.forInfo,
       isComponent: true,
     })
-    let children = node.children
+    let children = withNativeDeclarationScope(context, declaration, () => node.children
       .map(child => transformNode(child, context))
-      .join('')
+      .join(''))
     if (vTextExp !== undefined) {
       children = renderMustache(vTextExp, context)
     }
@@ -574,7 +578,7 @@ export function transformComponentWithSlots(
     }
   }
 
-  const { attrs } = collectElementAttributes(node, context, {
+  const { attrs, declaration } = collectElementAttributes(node, context, {
     skipSlotDirective: true,
     forInfo: options?.forInfo,
     isComponent: true,
@@ -602,7 +606,7 @@ export function transformComponentWithSlots(
 
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
   const tag = resolveTemplateTagName(node.tag, context)
-  const plainSlotContent = slotDirective
+  const plainSlotContent = withNativeDeclarationScope(context, declaration, () => slotDirective
     ? plainSlotDeclarations
         .map(decl => renderSlotFallback(decl, context, transformNode, {
           component: node.tag,
@@ -619,7 +623,7 @@ export function transformComponentWithSlots(
         ownerWrapper,
         context,
         transformNode,
-      )
+      ))
   return plainSlotContent
     ? `<${tag}${attrString}>${plainSlotContent}</${tag}>`
     : `<${tag}${attrString} />`
@@ -703,14 +707,14 @@ export function transformComponentWithSlotsFallback(
   }
 
   if (!slotDeclarations.length) {
-    const { attrs, vTextExp } = collectElementAttributes(node, context, {
+    const { attrs, vTextExp, declaration } = collectElementAttributes(node, context, {
       skipSlotDirective: true,
       forInfo: options?.forInfo,
       isComponent: true,
     })
-    let children = node.children
+    let children = withNativeDeclarationScope(context, declaration, () => node.children
       .map(child => transformNode(child, context))
-      .join('')
+      .join(''))
     if (vTextExp !== undefined) {
       children = renderMustache(vTextExp, context)
     }
@@ -729,7 +733,12 @@ export function transformComponentWithSlotsFallback(
     warn(context, '已禁用作用域插槽参数，插槽绑定将被忽略。', node.loc)
   }
 
-  const renderedSlots = slotDirective
+  const { attrs, declaration } = collectElementAttributes(node, context, {
+    skipSlotDirective: true,
+    forInfo: options?.forInfo,
+    isComponent: true,
+  })
+  const renderedSlots = withNativeDeclarationScope(context, declaration, () => slotDirective
     ? slotDeclarations
         .map(decl => renderSlotFallback(decl, context, transformNode, {
           component: node.tag,
@@ -746,13 +755,8 @@ export function transformComponentWithSlotsFallback(
         ownerWrapper,
         context,
         transformNode,
-      )
+      ))
 
-  const { attrs } = collectElementAttributes(node, context, {
-    skipSlotDirective: true,
-    forInfo: options?.forInfo,
-    isComponent: true,
-  })
   const mergedAttrs = [...extraAttrs, ...attrs]
   if (shouldExposePlainSlotPresence(node) || isWevuComponentTag(node, context)) {
     pushSlotNamesAttr(

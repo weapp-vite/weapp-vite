@@ -271,14 +271,6 @@ describe('Vue Template Compiler', () => {
   })
 
   describe('Slots', () => {
-    it('should compile default slot', () => {
-      const result = compileVueTemplateToWxml(
-        '<slot></slot>',
-        'test.vue',
-      )
-      expect(result.code).toContain('<slot />')
-    })
-
     it('should not emit scoped slot placeholder for plain slot by default', () => {
       const result = compileVueTemplateToWxml(
         '<slot></slot>',

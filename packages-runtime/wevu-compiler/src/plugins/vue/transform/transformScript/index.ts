@@ -89,6 +89,17 @@ export function transformScript(source: string, options?: TransformScriptOptions
         if (
           canProvideUseSlots
           && specifier.type === 'ImportSpecifier'
+          && specifier.importKind !== 'type'
+          && (
+            (specifier.imported.type === 'Identifier' && specifier.imported.name === WE_VU_RUNTIME_APIS.defineComponent)
+            || (specifier.imported.type === 'StringLiteral' && specifier.imported.value === WE_VU_RUNTIME_APIS.defineComponent)
+          )
+        ) {
+          state.defineComponentAliases.add(specifier.local.name)
+        }
+        if (
+          canProvideUseSlots
+          && specifier.type === 'ImportSpecifier'
           && (
             (specifier.imported.type === 'Identifier' && specifier.imported.name === 'useSlots')
             || (specifier.imported.type === 'StringLiteral' && specifier.imported.value === 'useSlots')

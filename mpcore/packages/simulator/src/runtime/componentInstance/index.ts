@@ -1,4 +1,5 @@
 import type { CreateComponentInstanceOptions, HeadlessComponentInstance } from './types'
+import { synchronizeAttachmentBindings } from '../../host/attachmentBindingUpdates'
 import { runComponentObservers } from './observers'
 import {
   coerceComponentPropertyValue,
@@ -42,6 +43,7 @@ export function createComponentInstance(options: CreateComponentInstanceOptions)
         instance.properties[key] = instance.data[key]
       }
 
+      synchronizeAttachmentBindings(instance)
       runComponentObservers(definition, instance, changedKeys, previousProperties)
       if (options.requestRender) {
         options.requestRender(callback)

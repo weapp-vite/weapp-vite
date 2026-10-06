@@ -4,6 +4,8 @@ import type {
   MiniProgramComponentShortProperty,
 } from '../types'
 import {
+  WEVU_NATIVE_DECLARATION_ADDRESS_PROP,
+  WEVU_NATIVE_SLOT_CONTEXT_KEY,
   WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_KEY,
@@ -14,6 +16,7 @@ const ALLOW_NULL_PROP_INPUT_KEY = '__wevu_allowNullPropInput'
 const PUBLIC_ALLOW_NULL_PROP_INPUT_KEY = 'allowNullPropInput'
 
 type NormalizedNativePropertyType = MiniProgramComponentShortProperty | FunctionConstructor | null
+type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string } }
 
 const NATIVE_PROPERTY_TYPE_MAP = new Map<unknown, NormalizedNativePropertyType>([
   [String, String],
@@ -234,6 +237,12 @@ export function normalizeProps(
   const shouldAttachInternalProps = Boolean(props || resolvedExplicit)
   const attachInternalProps = (source?: Record<string, any>) => {
     const next = { ...(source ?? {}) }
+    if (
+      (!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+      && (baseOptions as Record<string, unknown>)[WEVU_NATIVE_SLOT_CONTEXT_KEY] === true
+    ) {
+      next[WEVU_NATIVE_DECLARATION_ADDRESS_PROP] = { type: Array, value: [] }
+    }
     if (!shouldAttachInternalProps) {
       return next
     }

@@ -98,10 +98,11 @@ export function normalizeComponentPageDefinition(definition: HeadlessComponentDe
       return callDefinitionMethod(this, routeDone, args)
     },
   }
-  registerComponentPageAttachment(pageDefinition, function () {
-    callDefinitionMethod(this, created, [])
-    callDefinitionMethod(this, attached, [])
-  })
+  registerComponentPageAttachment(
+    pageDefinition,
+    instance => callDefinitionMethod(instance, created, []),
+    instance => callDefinitionMethod(instance, attached, []),
+  )
   return pageDefinition
 }
 

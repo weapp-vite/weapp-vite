@@ -22,7 +22,11 @@ function createMemberAccess(target: t.Expression, prop: string): t.Expression {
   return t.memberExpression(target, t.stringLiteral(prop), true)
 }
 
-function applyPropsAliasesToExpression(expression: t.Expression, propsAliases: Record<string, string> | undefined) {
+function applyPropsAliasesToExpression(
+  expression: t.Expression,
+  propsAliases: Record<string, string> | undefined,
+  forStack: ClassStyleBinding['forStack'],
+) {
   if (!propsAliases || !Object.keys(propsAliases).length) {
     return expression
   }
@@ -32,8 +36,10 @@ function applyPropsAliasesToExpression(expression: t.Expression, propsAliases: R
       if (!path.isReferencedIdentifier()) {
         return
       }
-      const propName = propsAliases[path.node.name]
-      if (!propName || path.scope.hasBinding(path.node.name)) {
+      const name = path.node.name
+      const propName = propsAliases[name]
+      if (!propName || path.scope.hasBinding(name)
+        || forStack.some(scope => scope.item === name || scope.index === name || scope.key === name)) {
         return
       }
       const replacement = createMemberAccess(t.memberExpression(t.thisExpression(), t.identifier('__wevuProps')), propName)
@@ -61,7 +67,7 @@ export function buildClassStyleComputedEntries(
     const body = buildComputedFunctionBody({
       ...binding,
       expAst: binding.expAst
-        ? applyPropsAliasesToExpression(t.cloneNode(binding.expAst, true), propsAliases)
+        ? applyPropsAliasesToExpression(t.cloneNode(binding.expAst, true), propsAliases, binding.forStack)
         : binding.expAst,
     }, helpers)
     const fn = t.functionExpression(null, [], body)

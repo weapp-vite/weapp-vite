@@ -1,7 +1,18 @@
-import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
+import type { InternalRuntimeState } from '@/runtime/types'
+import {
+  WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
+  WEVU_NATIVE_SLOT_CONTEXT_KEY,
+  WEVU_NATIVE_SLOT_PARENT_METHOD,
+  WEVU_PARENT_INSTANCE_KEY,
+  WEVU_PROVIDES_KEY,
+  WEVU_RUNTIME_APP_KEY,
+} from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, defineComponent, defineStore, nextTick, onAttached, onUnload, reactive, ref, setActivePinia, storeToRefs } from '@/index'
+import { createApp } from '@/runtime/app'
 import { applySnapshotUpdate } from '@/runtime/app/setData/snapshot'
+import { inject, provide } from '@/runtime/provide'
+import { mountRuntimeInstance, registerComponent, teardownRuntimeInstance } from '@/runtime/register'
 
 describe('runtime: stateful HMR', () => {
   let dispose: ((instance: any) => void) | undefined
@@ -47,6 +58,50 @@ describe('runtime: stateful HMR', () => {
   afterEach(() => {
     delete (globalThis as any).Component
     delete (globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
+  })
+
+  it('re-resolves native slot context during attached HMR and releases only canonical host references', () => {
+    const app = createApp({})
+    const token = Symbol('slot-hmr')
+    const before = { count: ref(0) }
+    const after = { count: ref(10) }
+    const previousHost = { setData() {} }
+    const nextHost = { setData() {} }
+    mountRuntimeInstance(previousHost, app, undefined, () => provide(token, before))
+    mountRuntimeInstance(nextHost, app, undefined, () => provide(token, after))
+    const seen: unknown[] = []
+    registerComponent(app, {}, undefined, () => {
+      seen.push(inject(token))
+    }, { [WEVU_NATIVE_SLOT_CONTEXT_KEY]: true })
+    let slotHost = previousHost
+    const child: InternalRuntimeState = {
+      setData() {},
+      triggerEvent(_name: string, detail: unknown) {
+        registeredDefinition!.methods[WEVU_NATIVE_SLOT_PARENT_METHOD].call(slotHost, { detail })
+      },
+    }
+    registeredDefinition!.lifetimes.created.call(child)
+    registeredDefinition!.lifetimes.attached.call(child)
+    const facade = child.__wevu
+    expect(seen).toEqual([before])
+    expect(child[WEVU_PARENT_INSTANCE_KEY]).toBe(previousHost)
+
+    teardownRuntimeInstance(previousHost)
+    slotHost = nextHost
+    refresh!(child)
+    expect(seen[1]).toBe(after)
+    expect(child.__wevu).toBe(facade)
+    expect(child[WEVU_PARENT_INSTANCE_KEY]).toBe(nextHost)
+    expect(before.count.value).toBe(0)
+    expect(after.count.value).toBe(10)
+
+    dispose!(child)
+    expect(child[WEVU_PARENT_INSTANCE_KEY]).toBeUndefined()
+    expect(child[WEVU_PROVIDES_KEY]).toBeUndefined()
+    expect(child[WEVU_RUNTIME_APP_KEY]).toBeUndefined()
+    after.count.value++
+    expect((seen[1] as typeof after).count.value).toBe(11)
+    teardownRuntimeInstance(nextHost)
   })
 
   it('stops queued and future state updates on a replaced host without replaying user unload hooks', async () => {

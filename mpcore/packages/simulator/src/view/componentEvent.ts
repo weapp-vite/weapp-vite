@@ -38,6 +38,42 @@ export function mergeComponentEventRoot(root: DomNodeLike, host: DomNodeLike) {
   root.parent = host.parent
 }
 
+/** 按渲染完成后的实际宿主父链排序；输入只包含本轮存活的组件作用域。 */
+export function orderComponentAttachmentScopes(
+  scopeIds: Iterable<string>,
+  componentScopes: ReadonlyMap<string, RuntimeRenderScope>,
+): string[] {
+  const hostScopes = new Map<DomNodeLike, string>()
+  for (const scopeId of scopeIds) {
+    hostScopes.set(componentScopes.get(scopeId)!.hostNode!, scopeId)
+  }
+
+  const ordered: string[] = []
+  const visited = new Set<DomNodeLike>()
+  const visit = (node: DomNodeLike | null | undefined) => {
+    if (!node || visited.has(node)) {
+      return
+    }
+    visited.add(node)
+    visit(node.parent)
+    // 模板根折叠了宿主，parent 会跳过这些边；先恢复外层到内层的挂载顺序。
+    const hosts = eventNodes.get(node)?.hosts
+    if (hosts) {
+      for (let index = hosts.length - 1; index >= 0; index--) {
+        visit(hosts[index])
+      }
+    }
+    const scopeId = hostScopes.get(node)
+    if (scopeId !== undefined) {
+      ordered.push(scopeId)
+    }
+  }
+  for (const host of hostScopes.keys()) {
+    visit(host)
+  }
+  return ordered
+}
+
 export function buildComponentTrigger(
   componentScopeId: string,
   context: { componentScopes: Map<string, RuntimeRenderScope> },
