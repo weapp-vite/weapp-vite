@@ -28,7 +28,7 @@ keywords:
 ## `weapp.vue.template` {#weapp-vue-template}
 - **类型**：
   ```ts
-  {
+  interface VueTemplateOptions {
     simplifyWhitespace?: boolean
     formatWxml?: boolean | 'auto'
     htmlTagToWxml?: boolean | Record<string, string>
@@ -224,8 +224,8 @@ export default defineConfig({
 <template>
   <div class="wrap">
     <h3 :class="titleClass">标题</h3>
-    <hr />
-    <br />
+    <hr>
+    <br>
   </div>
 </template>
 ```
@@ -292,20 +292,20 @@ export default defineConfig({
 })
 ```
 
-`component` 匹配的是使用处模板标签名，不是子组件声明名。比如下面这个模板里，`component: 'issue-card'` 会命中，`component: 'HelloWorld'` 不会命中：
+`component` 匹配的是使用处模板标签名，不是子组件声明名。比如下面这个模板里，`component: 'IssueCard'` 会命中，`component: 'HelloWorld'` 不会命中：
 
 ```vue
-<template>
-  <issue-card>
-    <template #header>
-      <slot />
-    </template>
-  </issue-card>
-</template>
-
 <script setup lang="ts">
 import IssueCard from '@/components/IssueCard.vue'
 </script>
+
+<template>
+  <IssueCard>
+    <template #header>
+      <slot />
+    </template>
+  </IssueCard>
+</template>
 ```
 
 如果你希望按子组件自己的名字匹配，需要让子组件声明静态 `defineOptions({ name })`，然后在规则里使用 `componentName`：

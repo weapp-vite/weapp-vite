@@ -70,6 +70,7 @@ function recreate() {
   <text id="native-order">{{ nativeOrder }}</text>
   <view v-for="probe in probes" :id="`ready-${probe}`" :key="probe">{{ reports[probe] || 'waiting' }}</view>
   <view v-for="(item, i) in groups" :key="item.id" :data-index="i">
+    <!-- eslint-disable-next-line vue/no-template-shadow -- 回归嵌套同名 item/i 的作用域隔离与 keyed 身份，不能重命名消除遮蔽。 -->
     <Provider v-for="(item, i) in item.rows" :key="item.id" :label="item.label" :seed="item.seed" :data-index="i">
       <Outlet :open="open">
         <Leaf :probe="`${item.label}-main`" :report="true" @ready="ready" />
