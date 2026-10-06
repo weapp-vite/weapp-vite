@@ -184,7 +184,5 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
   --dashboard-text: #e6edf1;
   --dashboard-text-muted: #a4b4c1;
   --dashboard-text-soft: #a4b4c1;
-  --dashboard-accent: #72d7ed;
-  --dashboard-accent-soft: #203b45;
 }
 </style>

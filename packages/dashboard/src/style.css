@@ -18,8 +18,8 @@
     --dashboard-text: #1d2430;
     --dashboard-text-muted: #4b5565;
     --dashboard-text-soft: #626d7f;
-    --dashboard-accent: #0f766e;
-    --dashboard-accent-soft: rgb(15 118 110 / 10%);
+    --dashboard-accent: #087d3e;
+    --dashboard-accent-soft: rgb(7 193 96 / 10%);
     --dashboard-shadow: 0 1px 2px rgb(15 23 42 / 6%);
     --dashboard-code: 'SFMono-Regular', consolas, 'Liberation Mono', monospace;
   }
@@ -34,8 +34,8 @@
     --dashboard-text: #e7eaf0;
     --dashboard-text-muted: #b1b8c5;
     --dashboard-text-soft: #98a3b5;
-    --dashboard-accent: #5eead4;
-    --dashboard-accent-soft: rgb(45 212 191 / 11%);
+    --dashboard-accent: #07c160;
+    --dashboard-accent-soft: rgb(7 193 96 / 11%);
     --dashboard-shadow: 0 1px 2px rgb(0 0 0 / 28%);
   }
 
@@ -119,6 +119,6 @@
   }
 
   ::selection {
-    background: rgb(20 184 166 / 28%);
+    background: rgb(7 193 96 / 28%);
   }
 }
