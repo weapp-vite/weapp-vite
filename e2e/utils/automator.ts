@@ -297,6 +297,7 @@ interface BridgeWrapperProject {
   path: string
   runtimeRoot: string
   stopSync?: () => void
+  cleanup?: () => Promise<void>
 }
 
 interface BridgeWrapperSyncOptions {
@@ -1377,12 +1378,22 @@ export function prepareAutomatorBridgeWrapperProject(
   }
 
   const stopSync = startBridgeWrapperDistSync(distRoot, wrapperRoot, { preserveRoots })
+  let cleaned = false
+  const cleanup = async () => {
+    if (cleaned) {
+      return
+    }
+    cleaned = true
+    stopSync()
+    await fs.promises.rm(wrapperRoot, { recursive: true, force: true })
+  }
 
   return {
     distRoot,
     path: wrapperRoot,
     runtimeRoot: wrapperRoot,
     stopSync,
+    cleanup,
   }
 }
 
@@ -2821,6 +2832,15 @@ function attachBridgeWrapperSyncCleanup(miniProgram: any, bridgeWrapperProject: 
     bridgeWrapperProject.stopSync?.()
   }
 
+  let cleaned = false
+  const cleanup = async () => {
+    if (cleaned) {
+      return
+    }
+    cleaned = true
+    await bridgeWrapperProject.cleanup?.()
+  }
+
   for (const methodName of ['close', 'disconnect']) {
     const rawMethod = miniProgram?.[methodName]
     if (typeof rawMethod !== 'function') {
@@ -2828,11 +2848,17 @@ function attachBridgeWrapperSyncCleanup(miniProgram: any, bridgeWrapperProject: 
     }
 
     miniProgram[methodName] = async (...args: any[]) => {
+      let completed = false
       try {
-        return await rawMethod.apply(miniProgram, args)
+        const result = await rawMethod.apply(miniProgram, args)
+        completed = true
+        return result
       }
       finally {
         stopSync()
+        if (methodName === 'close' && completed) {
+          await cleanup()
+        }
       }
     }
   }

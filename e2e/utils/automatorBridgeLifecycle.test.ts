@@ -73,10 +73,11 @@ describe('automator bridge wrapper lifecycle', () => {
       expect(read).toHaveBeenCalledWith(path.join(configuredRoot, `${route}.js`), 'utf8')
     }
     finally {
-      wrapper.stopSync?.()
-      fs.rmSync(wrapper.path, { recursive: true, force: true })
+      await wrapper.cleanup?.()
       fs.rmSync(project, { recursive: true, force: true })
     }
+
+    expect(fs.existsSync(wrapper.path)).toBe(false)
   })
 
   it('observes the original output directly without copying, watching, or rewriting project configuration', async () => {
