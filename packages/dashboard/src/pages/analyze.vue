@@ -21,6 +21,7 @@ const {
   commandItems,
   commandPaletteOpen,
   comparisonMode,
+  comparisonResultRef,
   copyMarkdownReport,
   copyPrReport,
   copyPrReviewChecklist,
@@ -28,6 +29,7 @@ const {
   copyViewLink,
   copyWorkQueueReport,
   duplicateModuleScopeLabel,
+  duplicateModules,
   exportCsv,
   exportJson,
   exportMarkdown,
@@ -35,6 +37,7 @@ const {
   filteredDuplicateModules,
   filteredLargestFiles,
   handleAddActionToWorkQueue,
+  handleFocusAction,
   handleInspectPackageDuplicates,
   handleInspectTreemapProblem,
   handleOpenFile,
@@ -138,9 +141,11 @@ const pageClassName = computed(() => {
       :budget-warnings="budgetWarnings"
       :can-use-selected-package-filter="canUseSelectedPackageFilter"
       :comparison-mode="comparisonMode"
+      :comparison-result="comparisonResultRef"
       :has-treemap-comparison="hasTreemapComparison"
       :copy-status="exportStatus"
       :duplicate-module-scope-label="duplicateModuleScopeLabel"
+      :duplicate-modules="duplicateModules"
       :filtered-duplicate-modules="filteredDuplicateModules"
       :filtered-largest-files="filteredLargestFiles"
       :history-snapshots="historySnapshots"
@@ -180,6 +185,7 @@ const pageClassName = computed(() => {
       @copy-pr="copyPrReport"
       @copy-review-checklist="copyPrReviewChecklist"
       @copy-work-queue="copyWorkQueueReport"
+      @focus-action="handleFocusAction"
       @inspect-duplicates="handleInspectPackageDuplicates"
       @inspect-treemap-problem="handleInspectTreemapProblem"
       @open-file="handleOpenFile"

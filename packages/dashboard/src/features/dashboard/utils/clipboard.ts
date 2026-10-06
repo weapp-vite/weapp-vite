@@ -1,4 +1,5 @@
-function copyTextWithFallback(text: string) {
+/** 同步复制；不支持时由调用方提供手动复制，避免迟到的异步写入覆盖新文本。 */
+export function copyTextSynchronously(text: string) {
   const textarea = document.createElement('textarea')
   textarea.value = text
   textarea.setAttribute('readonly', 'true')
@@ -7,11 +8,13 @@ function copyTextWithFallback(text: string) {
   document.body.appendChild(textarea)
   textarea.select()
 
-  const copied = document.execCommand('copy')
-  document.body.removeChild(textarea)
-
-  if (!copied) {
-    throw new Error('copy text failed')
+  try {
+    if (!document.execCommand('copy')) {
+      throw new Error('copy text failed')
+    }
+  }
+  finally {
+    textarea.remove()
   }
 }
 
@@ -36,7 +39,7 @@ async function writeClipboardText(text: string) {
 
 export async function copyText(text: string) {
   try {
-    copyTextWithFallback(text)
+    copyTextSynchronously(text)
     return
   }
   catch {

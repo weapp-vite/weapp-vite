@@ -277,6 +277,12 @@ describe('dashboard Devframe client', () => {
     vi.useFakeTimers()
     const first = createFakeClient(createResult('first'))
     const second = createFakeClient(createResult('second'))
+    const ready = Promise.withResolvers<void>()
+    const readState = second.call.getMockImplementation()!
+    second.call.mockImplementationOnce(async (...args) => {
+      await ready.promise
+      return readState(...args)
+    })
     connectDevframeMock
       .mockResolvedValueOnce(first.client)
       .mockResolvedValueOnce(second.client)
@@ -293,13 +299,43 @@ describe('dashboard Devframe client', () => {
     expect(transport.dashboardConnectionStatus.value).toBe('disconnected')
 
     await vi.advanceTimersByTimeAsync(250)
+    expect(transport.dashboardConnectionStatus.value).toBe('connected')
+    expect(transport.dashboardAnalyzeSnapshot.value?.current.packages[0]?.id).toBe('first')
+    expect(transport.dashboardAnalyzeRevision.value).toBeNull()
+    ready.resolve()
     await vi.waitFor(() => {
       expect(connectDevframeMock).toHaveBeenCalledTimes(2)
       expect(transport.dashboardAnalyzeSnapshot.value?.current.packages[0]?.id).toBe('second')
       expect(transport.dashboardConnectionStatus.value).toBe('connected')
     })
-    expect(hydratedRevisions).toEqual([0, 0])
+    expect(hydratedRevisions).toEqual([0, null, 0])
     stopRevisionWatch()
+  })
+
+  it('withdraws the readable revision while an announced report is still hydrating', async () => {
+    const initial = createResult('initial')
+    const control = createFakeClient(initial)
+    connectDevframeMock.mockResolvedValue(control.client)
+    const transport = await loadDashboardTransport()
+    await transport.connectDashboardDevframe()
+
+    const ready = Promise.withResolvers<void>()
+    const readPage = control.call.getMockImplementation()!
+    control.call.mockImplementationOnce(async (...args) => {
+      await ready.promise
+      return readPage(...args)
+    })
+    control.setSnapshot(createResult('next'), initial, 1)
+    control.emitDashboardState()
+
+    expect(transport.dashboardAnalyzeSnapshot.value?.current).toEqual(initial)
+    expect(transport.dashboardAnalyzeRevision.value).toBeNull()
+    await expect(transport.readDashboardFileContent('source', 'src/app.ts', 0)).rejects.toThrow('Analyze revision 已变化')
+    ready.resolve()
+    await vi.waitFor(() => {
+      expect(transport.dashboardAnalyzeRevision.value).toBe(1)
+      expect(transport.dashboardAnalyzeSnapshot.value?.current.packages[0]?.id).toBe('next')
+    })
   })
 
   it('reconnects after a post-connect pagination failure', async () => {

@@ -47,8 +47,10 @@ defineProps<{
   canUseSelectedPackageFilter: boolean
   hasTreemapComparison: boolean
   comparisonMode: AnalyzeComparisonMode
+  comparisonResult: AnalyzeSubpackagesResult | null
   copyStatus: string
   duplicateModuleScopeLabel: string | null
+  duplicateModules: DuplicateModuleEntry[]
   filteredDuplicateModules: DuplicateModuleEntry[]
   filteredLargestFiles: LargestFileEntry[]
   historySnapshots: AnalyzeHistorySnapshot[]
@@ -92,6 +94,7 @@ const emit = defineEmits<{
   copyPr: []
   copyReviewChecklist: []
   copyWorkQueue: []
+  focusAction: [item: AnalyzeActionCenterItem]
   inspectDuplicates: [packageId: string]
   inspectTreemapProblem: [problem: 'duplicates' | 'growth']
   openFile: [item: LargestFileEntry]
@@ -144,14 +147,20 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
       :active-work-queue-item-id="activeWorkQueueItemId"
       :baseline-snapshot-id="baselineSnapshotId"
       :comparison-mode="comparisonMode"
+      :comparison-result="comparisonResult"
+      :duplicate-modules="duplicateModules"
+      :increment-attribution="incrementAttribution"
+      :result="result"
       :history-snapshots="historySnapshots"
       :queued-action-keys="queuedActionKeys"
       :selected-action-key="selectedActionKey"
       :work-queue-items="workQueueItems"
       @add-action-to-queue="emit('addActionToQueue', $event)"
       @clear-completed-work-queue="emit('clearCompletedWorkQueue')"
-      @copy-pr="emit('copyPr')"
       @copy-work-queue="emit('copyWorkQueue')"
+      @focus-action="emit('focusAction', $event)"
+      @open-file="emit('openFile', $event)"
+      @open-source="emit('openTreemapSource', $event)"
       @remove-work-queue-item="emit('removeWorkQueueItem', $event)"
       @select-action="emit('selectAction', $event)"
       @select-work-queue-item="emit('selectWorkQueueItem', $event)"

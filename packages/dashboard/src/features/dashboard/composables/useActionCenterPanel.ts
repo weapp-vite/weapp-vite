@@ -22,7 +22,6 @@ const actionSortOptions = [
 
 interface ActionCenterPanelProps {
   actions: AnalyzeActionCenterItem[]
-  queuedActionKeys: string[]
 }
 
 export function getActionKindLabel(kind: AnalyzeActionCenterKind) {
@@ -32,10 +31,7 @@ export function getActionKindLabel(kind: AnalyzeActionCenterKind) {
   if (kind === 'increment') {
     return '增量'
   }
-  if (kind === 'duplicate') {
-    return '重复'
-  }
-  return '文件'
+  return '重复'
 }
 
 export function getActionToneClassName(tone: AnalyzeActionCenterTone) {
@@ -145,10 +141,6 @@ export function useActionCenterPanel(props: ActionCenterPanelProps) {
     return sortActionCenterItems(actions, actionSortMode.value)
   })
 
-  function isQueued(item: AnalyzeActionCenterItem) {
-    return props.queuedActionKeys.includes(item.key)
-  }
-
   return {
     actionKindFilter,
     actionSortOptions,
@@ -160,7 +152,6 @@ export function useActionCenterPanel(props: ActionCenterPanelProps) {
     getKindLabel: getActionKindLabel,
     getToneClassName: getActionToneClassName,
     getToneLabel: getActionToneLabel,
-    isQueued,
     toneFilterOptions,
   }
 }

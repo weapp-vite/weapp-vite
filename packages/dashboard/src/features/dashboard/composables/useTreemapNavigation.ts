@@ -12,7 +12,7 @@ export function useTreemapNavigation(options: {
   selectedFile: ShallowRef<LargestFileEntry | null>
   selectedWarning: ShallowRef<PackageBudgetWarning | null>
   filterMode: Ref<AnalyzeTreemapFilterMode>
-  setFilterMode: (mode: AnalyzeTreemapFilterMode) => Promise<unknown>
+  setFilterMode: (mode: AnalyzeTreemapFilterMode, tab?: DashboardTab) => Promise<unknown>
 }) {
   const sourceTarget = shallowRef<{ fileKey: string, path: string } | null>(null)
   let selectionRequest = 0
@@ -74,7 +74,7 @@ export function useTreemapNavigation(options: {
     options.selectedMeta.value = meta
     options.selectedFile.value = file
     options.selectedWarning.value = null
-    options.activeTab.value = 'source'
+    void options.setFilterMode('selected-package', 'source')
   }
 
   watch([options.nodes, options.activeTab], ([nodes]) => {

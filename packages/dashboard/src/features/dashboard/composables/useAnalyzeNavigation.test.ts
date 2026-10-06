@@ -1,11 +1,11 @@
 import type { Ref } from 'vue'
 import type { Router } from 'vue-router'
-import type { AnalyzeActionCenterItem, AnalyzeCommandPaletteItem, AnalyzeSubpackagesResult, AnalyzeWorkQueueItem, DuplicateModuleEntry, LargestFileEntry, PackageBudgetWarning, PackageInsight, TreemapNodeMeta } from '../types'
-import { describe, expect, it } from 'vitest'
+import type { AnalyzeActionCenterItem, AnalyzeCommandPaletteItem, AnalyzeSubpackagesResult, AnalyzeWorkQueueItem, DuplicateModuleEntry, LargestFileEntry, PackageBudgetWarning, PackageInsight, TreemapModuleNodeMeta, TreemapNodeMeta } from '../types'
+import { describe, expect, it, vi } from 'vitest'
 import { createSSRApp, h, ref, shallowRef } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { renderToString } from 'vue/server-renderer'
-import { createTreemapModuleNodeId } from '../utils/treemap'
+import { createTreemapFileNodeId, createTreemapModuleNodeId, createTreemapPackageNodeId } from '../utils/treemap'
 import { useAnalyzeActionCenter } from './useAnalyzeActionCenter'
 import { useAnalyzeCommandPalette } from './useAnalyzeCommandPalette'
 import { useAnalyzeDashboardData } from './useAnalyzeDashboardData'
@@ -14,24 +14,31 @@ import { useAnalyzeTreemapController } from './useAnalyzeTreemapController'
 import { useDashboardPage } from './useDashboardPage'
 
 interface NavigationSession {
+  artifactFiles: Ref<LargestFileEntry[]>
   packageInsights: Ref<PackageInsight[]>
   actionItems: Ref<AnalyzeActionCenterItem[]>
   commandItems: Ref<AnalyzeCommandPaletteItem[]>
+  selectedActionKey: Ref<string | null>
   duplicateModuleScopeLabel: Ref<string | null>
   filteredDuplicateModules: Ref<DuplicateModuleEntry[]>
   filteredLargestFiles: Ref<LargestFileEntry[]>
   selectedLargestFile: Ref<LargestFileEntry | null>
   selectedBudgetWarning: Ref<PackageBudgetWarning | null>
   selectedTreemapMeta: Ref<TreemapNodeMeta | null>
+  activeLargestFileKey: Ref<string | null>
+  treemapSourcePath: Ref<string | null>
+  handleOpenFile: (file: LargestFileEntry) => void
+  handleOpenTreemapSource: (meta: TreemapNodeMeta) => void
   handleInspectPackageDuplicates: (packageId: string) => void
   handleResetTreemapFocus: () => Promise<void>
   handleSelectLargestFile: (file: LargestFileEntry) => void
   handleSelectPackageInsight: (item: PackageInsight) => void
+  handleFocusAction: (item: AnalyzeActionCenterItem) => void
   handleSelectAction: (item: AnalyzeActionCenterItem) => void
   handleSelectCommand: (item: AnalyzeCommandPaletteItem) => void
 }
 
-function createSession(): NavigationSession {
+function createSession(additionalPackages: AnalyzeSubpackagesResult['packages']): NavigationSession {
   const resultRef = shallowRef<AnalyzeSubpackagesResult>({
     packages: [
       {
@@ -74,6 +81,7 @@ function createSession(): NavigationSession {
           ],
         }],
       },
+      ...additionalPackages,
     ],
     modules: [
       {
@@ -99,7 +107,7 @@ function createSession(): NavigationSession {
     metadata: {
       generatedAt: '',
       history: { enabled: false, dir: '', limit: 0 },
-      budgets: { totalBytes: 2000, mainBytes: 1000, subPackageBytes: 1000, independentBytes: 1000, runtimeBytes: 50, warningRatio: 0.85, source: 'config' },
+      budgets: { totalBytes: 2000, mainBytes: 250, subPackageBytes: 1000, independentBytes: 1000, runtimeBytes: 50, warningRatio: 0.85, source: 'config' },
     },
   })
   const comparisonResultRef = shallowRef(null)
@@ -113,8 +121,8 @@ function createSession(): NavigationSession {
     resolvedTheme: ref('light'),
     largestFiles: data.artifactFiles,
   })
-  const { actionItems } = useAnalyzeActionCenter(data)
-  const { commandItems } = useAnalyzeCommandPalette({ ...data, actionItems })
+  const { actionItems } = useAnalyzeActionCenter({ ...data, resultRef })
+  const { commandItems } = useAnalyzeCommandPalette({ ...data, actionItems, resultRef })
   const workQueueItems = shallowRef<AnalyzeWorkQueueItem[]>([])
   const interactions = useAnalyzePageInteractions({
     ...treemap,
@@ -127,13 +135,13 @@ function createSession(): NavigationSession {
   return { ...treemap, ...interactions, ...data, actionItems, commandItems }
 }
 
-async function createHarness() {
+async function createHarness(additionalPackages: AnalyzeSubpackagesResult['packages'] = []) {
   const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: { render: () => h('div') } }] })
   await router.push('/')
   let session!: NavigationSession
   const app = createSSRApp({
     setup() {
-      session = createSession()
+      session = createSession(additionalPackages)
       return () => h('div')
     },
   })
@@ -155,6 +163,23 @@ function navigate(router: Router, action: () => void) {
 }
 
 describe('analyze navigation', () => {
+  it('keeps issue selection in the evidence workspace until an explicit drilldown', async () => {
+    const { router, session } = await createHarness()
+    await router.replace({ query: { tab: 'diagnostics', color: 'delta' } })
+    const item = session.actionItems.value.find(item => item.kind === 'duplicate')!
+
+    session.handleFocusAction(item)
+
+    expect(router.currentRoute.value.query).toEqual({ tab: 'diagnostics', color: 'delta' })
+    expect(session.selectedActionKey.value).toBe(item.key)
+    expect(session.selectedTreemapMeta.value).toBeNull()
+
+    await navigate(router, () => session.handleSelectAction(item))
+
+    expect(router.currentRoute.value.query).toEqual({ tab: 'modules', color: 'delta', filter: 'duplicates' })
+    expect(session.selectedTreemapMeta.value).toMatchObject({ kind: 'module', source: item.moduleMeta?.source })
+  })
+
   it.each(['overview', 'treemap'] as const)('selects a package and its tab together from %s', async (tab) => {
     const { router, session } = await createHarness()
     await router.replace({ query: { tab, color: 'source', filter: 'duplicates' } })
@@ -237,10 +262,10 @@ describe('analyze navigation', () => {
     expect(router.currentRoute.value.query).toEqual({ tab: 'modules', filter: 'selected-package' })
   })
 
-  it.each(['package', 'file', 'action'] as const)('opens a search %s with its selection and preserves unrelated query', async (kind) => {
+  it.each(['package', 'file'] as const)('opens a search %s with its selection and preserves unrelated query', async (kind) => {
     const { router, session } = await createHarness()
     await router.replace({ query: { tab: 'review', color: 'source', filter: 'duplicates' } })
-    const item = session.commandItems.value.find(item => item.kind === kind && (kind !== 'action' || item.action?.kind === 'file'))!
+    const item = session.commandItems.value.find(item => item.kind === kind)!
 
     await navigate(router, () => session.handleSelectCommand(item))
 
@@ -275,7 +300,7 @@ describe('analyze navigation', () => {
 
     await navigate(router, () => {
       if (entry === 'action') {
-        session.handleSelectAction({ ...item, kind, tone: 'info', priority: 1 })
+        session.handleSelectAction({ ...item, kind, targetLabel: moduleMeta.source, tone: 'info', priority: 1 })
       }
       else {
         session.handleSelectCommand({ ...item, kind, keywords: 'shared' })
@@ -310,5 +335,138 @@ describe('budget navigation', () => {
     expect(session.filteredLargestFiles.value.map(file => file.file).sort()).toEqual(['feature/runtime.js', 'independent/vendor.js', 'main/runtime.js'])
     expect(session.selectedLargestFile.value?.file).toBe('main/runtime.js')
     expect(session.selectedTreemapMeta.value).toBeNull()
+  })
+})
+
+describe('explicit evidence navigation', () => {
+  const sourcePackage: AnalyzeSubpackagesResult['packages'][number] = {
+    id: 'source-only',
+    label: '独立来源',
+    type: 'subPackage',
+    files: [
+      {
+        file: 'source-only/page.js',
+        type: 'chunk',
+        from: 'main',
+        size: 70,
+        modules: [
+          { id: 'helper', source: 'src/helper.ts', sourceType: 'src', bytes: 20 },
+          { id: 'page', source: 'src/Page.vue?vue&type=script', sourceType: 'src', bytes: 50 },
+          { id: 'unreadable', source: '', sourceType: 'src', bytes: 0 },
+        ],
+      },
+      {
+        file: 'source-only/dependency.js',
+        type: 'chunk',
+        from: 'main',
+        size: 30,
+        modules: [{ id: 'dependency', source: 'node_modules/dependency/index.js', sourceType: 'node_modules', bytes: 30 }],
+      },
+    ],
+  }
+
+  function moduleMeta(file: LargestFileEntry, moduleId: string): TreemapModuleNodeMeta {
+    const module = file.modules!.find(module => module.id === moduleId)!
+    return {
+      kind: 'module',
+      nodeId: createTreemapModuleNodeId(file.packageId, file.file, module.id),
+      packageId: file.packageId,
+      packageLabel: file.packageLabel,
+      fileName: file.file,
+      source: module.source,
+      sourceType: module.sourceType,
+      bytes: module.bytes,
+      packageCount: 1,
+    }
+  }
+
+  it.each([
+    { scope: 'main', packageId: 'feature', fileName: 'feature/runtime.js' },
+    { scope: 'runtime', packageId: 'other', fileName: 'other/image.png' },
+  ])('opens a new artifact after leaving the $scope budget without narrowing in-file budget browsing', async ({ scope, packageId, fileName }) => {
+    const { router, session } = await createHarness()
+    const budget = session.actionItems.value.find(item => item.warning?.scope === scope)!
+    await navigate(router, () => session.handleSelectAction(budget))
+    const budgetFiles = session.filteredLargestFiles.value
+    session.handleSelectLargestFile(budgetFiles.at(-1)!)
+    expect(session.selectedBudgetWarning.value).toEqual(budget.warning)
+    expect(session.filteredLargestFiles.value).toEqual(budgetFiles)
+
+    await router.replace({ query: { tab: 'diagnostics', filter: 'duplicates', color: 'source', search: 'keep' } })
+    const target = session.artifactFiles.value.find(file => file.packageId === packageId && file.file === fileName)!
+    await navigate(router, () => session.handleOpenFile(target))
+
+    expect(router.currentRoute.value.query).toEqual({ tab: 'files', filter: 'selected-package', color: 'source', search: 'keep' })
+    expect(session.selectedBudgetWarning.value).toBeNull()
+    expect(session.selectedLargestFile.value).toBe(target)
+    expect(session.selectedTreemapMeta.value).toMatchObject({
+      kind: 'file',
+      nodeId: createTreemapFileNodeId(packageId, fileName),
+      packageId,
+      fileName,
+    })
+    expect(session.filteredLargestFiles.value).toEqual([target])
+  })
+
+  it.each(['growth', 'duplicates', 'node_modules'] as const)('opens the clicked raw source atomically from a mismatching %s deep-link', async (filter) => {
+    const { router, session } = await createHarness([sourcePackage])
+    await router.replace({ query: { tab: 'diagnostics', filter, color: 'source', search: 'keep' } })
+    const target = session.artifactFiles.value.find(file => file.file === 'source-only/page.js')!
+    const meta = moduleMeta(target, 'page')
+    expect(session.filteredLargestFiles.value).not.toContain(target)
+
+    const visitedQueries: unknown[] = []
+    const stop = router.afterEach((to, _from, failure) => {
+      if (!failure) {
+        visitedQueries.push(to.query)
+      }
+    })
+    await navigate(router, () => session.handleOpenTreemapSource(meta))
+    stop()
+
+    expect(visitedQueries).toEqual([{ tab: 'source', filter: 'selected-package', color: 'source', search: 'keep' }])
+    expect(router.currentRoute.value.query).toEqual(visitedQueries[0])
+    expect(session.selectedBudgetWarning.value).toBeNull()
+    expect(session.selectedTreemapMeta.value).toEqual(meta)
+    expect(session.selectedLargestFile.value).toBe(target)
+    expect(session.activeLargestFileKey.value).toBe('source-only:source-only/page.js')
+    expect(session.treemapSourcePath.value).toBe('src/Page.vue')
+    expect(session.filteredLargestFiles.value).toEqual([target])
+  })
+
+  it.each(['package', 'missing-file', 'missing-module', 'node_modules', 'empty-source'] as const)('refuses %s source targets without changing the previous selection or route', async (kind) => {
+    const { router, session } = await createHarness([sourcePackage])
+    const target = session.artifactFiles.value.find(file => file.file === 'source-only/page.js')!
+    const selectedMeta = moduleMeta(target, 'page')
+    await navigate(router, () => session.handleOpenTreemapSource(selectedMeta))
+    await router.replace({ query: { tab: 'diagnostics', filter: 'duplicates', color: 'source' } })
+    const invalidTargets: Record<typeof kind, TreemapNodeMeta> = {
+      'package': {
+        kind: 'package',
+        nodeId: createTreemapPackageNodeId(target.packageId),
+        packageId: target.packageId,
+        packageLabel: target.packageLabel,
+        packageType: target.packageType,
+        fileCount: sourcePackage.files.length,
+      },
+      'missing-file': { ...selectedMeta, fileName: 'missing.js' },
+      'missing-module': { ...selectedMeta, nodeId: createTreemapModuleNodeId(target.packageId, target.file, 'missing') },
+      'node_modules': {
+        ...moduleMeta(session.artifactFiles.value.find(file => file.file === 'source-only/dependency.js')!, 'dependency'),
+        sourceType: 'src',
+        source: 'src/forged.ts',
+      },
+      'empty-source': { ...moduleMeta(target, 'unreadable'), source: 'src/forged.ts' },
+    }
+    const replace = vi.spyOn(router, 'replace')
+
+    session.handleOpenTreemapSource(invalidTargets[kind])
+
+    expect(replace).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.query).toEqual({ tab: 'diagnostics', filter: 'duplicates', color: 'source' })
+    expect(session.selectedTreemapMeta.value).toEqual(selectedMeta)
+    expect(session.selectedLargestFile.value).toBe(target)
+    expect(session.treemapSourcePath.value).toBe('src/Page.vue')
+    replace.mockRestore()
   })
 })

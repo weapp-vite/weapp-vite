@@ -16,7 +16,7 @@ import type {
   DashboardFileRequest,
 } from './payload'
 import { connectDevframe, consumeOtpFromUrl } from 'devframe/client'
-import { shallowRef, triggerRef } from 'vue'
+import { shallowRef } from 'vue'
 import { normalizeRuntimeEvents } from '../runtimeEvents'
 import { readDashboardAnalyzeSnapshot } from './payload'
 
@@ -53,7 +53,7 @@ declare module 'devframe' {
 }
 
 export const dashboardAnalyzeSnapshot = shallowRef<DashboardAnalyzeSnapshot | null>(null)
-/** 当前已完成水合并显示的 Analyze revision；连接会话切换后会重新触发同值。 */
+/** 当前会话已完成水合且仍与宿主同步的 Analyze revision；刷新期间为空。 */
 export const dashboardAnalyzeRevision = shallowRef<number | null>(null)
 export const dashboardConnectionError = shallowRef<Error | null>(null)
 export const dashboardConnectionStatus = shallowRef<DevframeConnectionStatus>('connecting')
@@ -84,6 +84,7 @@ function disposeSession(session: DashboardConnectionSession, close: boolean) {
   session.disposed = true
   session.dispose()
   if (activeSession === session) {
+    dashboardAnalyzeRevision.value = null
     activeSession = undefined
   }
   if (close) {
@@ -148,6 +149,9 @@ async function hydrateDashboardState(
   if (session.disposed) {
     return
   }
+  if (initialState && initialState.revision !== session.revision) {
+    dashboardAnalyzeRevision.value = null
+  }
   if (session.refreshPromise) {
     session.pendingState = initialState
     return await session.refreshPromise
@@ -163,6 +167,7 @@ async function hydrateDashboardState(
       if (state.revision === session.revision && dashboardAnalyzeSnapshot.value) {
         continue
       }
+      dashboardAnalyzeRevision.value = null
 
       let snapshot: DashboardAnalyzeSnapshot
       try {
@@ -182,12 +187,8 @@ async function hydrateDashboardState(
         continue
       }
       session.revision = state.revision
-      const previousRevision = dashboardAnalyzeRevision.value
       dashboardAnalyzeSnapshot.value = snapshot
       dashboardAnalyzeRevision.value = state.revision
-      if (previousRevision === state.revision) {
-        triggerRef(dashboardAnalyzeRevision)
-      }
     } while (session.pendingState)
   })()
 
@@ -283,6 +284,7 @@ export async function connectDashboardDevframe() {
   }
 
   clearReconnectTimer()
+  dashboardAnalyzeRevision.value = null
   dashboardConnectionStatus.value = 'connecting'
   connectPromise = initializeDashboardDevframe()
   try {

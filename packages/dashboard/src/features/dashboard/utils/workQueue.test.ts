@@ -41,6 +41,7 @@ describe('workQueue', () => {
       key: 'budget:main',
       kind: 'budget',
       title: '处理主包预算',
+      targetLabel: '主包',
       meta: '已超预算',
       value: '108%',
       tone: 'critical',

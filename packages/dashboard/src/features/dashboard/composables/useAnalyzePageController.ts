@@ -65,6 +65,7 @@ export function useAnalyzePageController() {
     packageInsights: dashboardData.packageInsights,
   })
   const { actionItems } = useAnalyzeActionCenter({
+    resultRef,
     budgetWarnings: dashboardData.budgetWarnings,
     incrementAttribution: dashboardData.incrementAttribution,
     duplicateModules: dashboardData.duplicateModules,
@@ -77,6 +78,7 @@ export function useAnalyzePageController() {
     workQueueItems: workQueue.workQueueItems.value,
   }))
   const { commandItems } = useAnalyzeCommandPalette({
+    resultRef,
     actionItems,
     budgetWarnings: dashboardData.budgetWarnings,
     duplicateModules: dashboardData.duplicateModules,
@@ -184,6 +186,7 @@ export function useAnalyzePageController() {
     baselineSnapshotId,
     commandItems,
     comparisonMode,
+    comparisonResultRef,
     historySnapshots,
     metricPackageTypeSummary,
     modulesLayoutItems,

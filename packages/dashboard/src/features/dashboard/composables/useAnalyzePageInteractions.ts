@@ -41,8 +41,13 @@ export function useAnalyzePageInteractions(options: {
   }
 
   function handleOpenFile(file: LargestFileEntry) {
+    options.selectedBudgetWarning.value = null
     options.handleSelectLargestFile(file)
     void options.setTreemapFilterMode('selected-package', 'files')
+  }
+
+  function handleFocusAction(item: AnalyzeActionCenterItem) {
+    selectedActionKey.value = item.key
   }
 
   function handleSelectAction(item: AnalyzeActionCenterItem) {
@@ -147,6 +152,7 @@ export function useAnalyzePageInteractions(options: {
     commandPaletteOpen,
     selectedActionKey,
     handleAddActionToWorkQueue,
+    handleFocusAction,
     handleOpenFile,
     handleSelectAction,
     handleSelectCommand,
