@@ -13,6 +13,7 @@ import {
 } from './expression'
 import { parseBabelExpression } from './expression/parse'
 import { renderMustache } from './mustache'
+import { usesNativeDeclarationContext } from './nativeDeclaration'
 
 const BACKSLASH_RE = /\\/g
 const SINGLE_QUOTE_RE = /'/g
@@ -306,7 +307,19 @@ export function renderStyleAttribute(
   return `style="${renderMustache(`${binding.name}${indexAccess}`, context)}"`
 }
 
-export function transformAttribute(node: AttributeNode, _context: TransformContext, nameOverride?: string): string {
+/** 在已建立的循环体作用域内重写原生属性，循环列表仍由节点入口按外层作用域处理。 */
+export function normalizeNativeAttributeValue(value: string, context: TransformContext): string {
+  if (!usesNativeDeclarationContext(context)
+    || !value.includes('{{')
+    || !context.forStack.some(info => info.itemAliases || info.itemAccess)) {
+    return value
+  }
+  return value.replace(/\{\{([\s\S]+?)\}\}/g, (_match, expression: string) => {
+    return renderMustache(normalizeWxmlExpressionWithContext(expression, context), context)
+  })
+}
+
+export function transformAttribute(node: AttributeNode, context: TransformContext, nameOverride?: string): string {
   const { value } = node
   const name = nameOverride ?? node.name
   if (!value) {
@@ -315,7 +328,10 @@ export function transformAttribute(node: AttributeNode, _context: TransformConte
 
   // 处理静态属性
   if (value.type === NodeTypes.TEXT) {
-    return `${name}="${escapeWxmlAttribute(value.content)}"`
+    const content = node.name === context.platform.directives.forAttr
+      ? value.content
+      : normalizeNativeAttributeValue(value.content, context)
+    return `${name}="${escapeWxmlAttribute(content)}"`
   }
 
   return `${name}=""`

@@ -279,6 +279,9 @@ export default defineConfig({
 })
 ```
 
+> [!TIP]
+> 真机调试的上传解析器与 IDE 模拟器不一定支持相同的语法。若关闭了 IDE 的 ES6 转 ES5 和增强编译，上传在可选链（`?.`）处报 `Unexpected token .`，可设置 `build.target: 'es2019'`，由 Vite 降级语法后重新构建。此设置不补齐运行时 API；成功生成二维码也不代表真机功能已通过，仍需连接目标设备验证。
+
 建议这样理解边界：
 
 - `weapp.platform` / `weapp.jsFormat` / `weapp.multiPlatform` 决定“小程序产物应该长什么样”

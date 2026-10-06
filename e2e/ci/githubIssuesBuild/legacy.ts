@@ -802,7 +802,6 @@ export function registerGithubIssuesBuildLegacyCases() {
 
     expect(await fs.pathExists(path.join(DIST_ROOT, 'app.wxml'))).toBe(false)
     expect(appShellWxml).toContain('issue-563-app-shell')
-    expect(appShellWxml).toContain('<slot />')
     expect(appShellWxml).not.toContain('scoped-slots-default')
     expect(appShellJson).toEqual({
       component: true,

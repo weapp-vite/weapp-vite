@@ -1,18 +1,25 @@
+import type { HeadlessComponentInstance } from '../../runtime/componentInstance'
 import type { HeadlessPageInstance } from '../../runtime/pageInstance'
+import type { RenderPass } from '../../view/renderPass'
 import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { BrowserRenderedPageTree, BrowserRendererContext, BrowserRenderScope, BrowserSlotContent, DomNodeLike } from './types'
 import { join } from 'pathe'
+import { bindAttachmentBindingScope, runWithAttachmentBindingUpdates } from '../../host/attachmentBindingUpdates'
 import { attachComponentPage, isComponentPageAttaching } from '../../host/componentPageAttachment'
 import { runComponentLifecycle, runComponentPageLifetime } from '../../runtime/componentInstance'
 import { flushComponentAttachments, flushComponentReady, hasPendingComponentAttachments, isComponentAttached } from '../../runtime/componentInstance/attachment'
+import { hasPendingComponentConstruction, isComponentConstructing } from '../../runtime/componentInstance/construction'
 import { flushDiscardedComponentReady, scheduleDiscardedComponentReady } from '../../runtime/componentInstance/discardedReady'
+import { syncComponentProperties } from '../../runtime/componentInstance/propertyBindings'
 import { syncComponentRelations } from '../../runtime/componentInstance/relations'
 import { isPageBeforeReady } from '../../runtime/pageLifecycle'
-import { mergeComponentEventRoot, registerComponentEventNode } from '../../view/componentEvent'
+import { bindComponentEventHost, mergeComponentEventRoot, orderComponentAttachmentScopes, registerComponentEventNode } from '../../view/componentEvent'
 import { selectConditionalChildren } from '../../view/conditionalChildren'
 import { customTabBarHostScope, customTabBarScopeId, hasCustomTabBar } from '../../view/customTabBar'
-import { resolveLoopEntries } from '../../view/loopEntries'
+import { registerInspectionTrees } from '../../view/inspectionTree'
+import { resolveLoopEntries, resolveLoopInstanceSuffix } from '../../view/loopEntries'
 import { linkRenderedParents } from '../../view/renderedTree'
+import { createPageRenderPass, createRenderPass, isRenderPassStale, markPageTreeConstructed, registerSlotDeclarations } from '../../view/renderPass'
 import { isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
 import { wxsScopeData } from '../../view/wxs'
 import { resolveBrowserPageStyles } from '../styles'
@@ -25,7 +32,6 @@ import {
   resolveComponentGenerics,
   resolveComponentProperties,
   resolveComponentRegistryEntry,
-  syncComponentProperties,
 } from './component'
 import {
   applyNodeBindings,
@@ -51,11 +57,13 @@ function expandNodeByFor(node: DomNodeLike, scope: BrowserRenderScope) {
   const items = resolveLoopEntries(list)
   const itemName = node.attribs?.['wx:for-item']?.trim() || 'item'
   const indexName = node.attribs?.['wx:for-index']?.trim() || 'index'
+  const key = node.attribs?.['wx:key']?.trim()
+  const keyOccurrences = key ? new Map<string, number>() : undefined
 
   return items.map(([index, item]) => ({
     node: cloneNode(node),
     scope: createLoopScope(scope, itemName, indexName, item, index),
-    instanceSuffix: `:for-${index}`,
+    instanceSuffix: resolveLoopInstanceSuffix(item, index, key, keyOccurrences),
   }))
 }
 
@@ -66,22 +74,32 @@ function renderNodeVariants(
   ownerJsonPath: string,
   ownerFilePath: string,
   instancePath: string,
-  seenComponentScopes: Set<string>,
+  renderPass: RenderPass,
   templateRenderState: TemplateRenderState<DomNodeLike>,
   parent: DomNodeLike,
 ) {
-  // eslint-disable-next-line ts/no-use-before-define
-  return expandNodeByFor(node, scope).map(({ node: expandedNode, scope: expandedScope, instanceSuffix }) => renderNodeTree(
-    expandedNode,
-    expandedScope,
-    context,
-    ownerJsonPath,
-    ownerFilePath,
-    `${instancePath}${instanceSuffix}`,
-    seenComponentScopes,
-    templateRenderState,
-    parent,
-  ))
+  const nodes: DomNodeLike[] = []
+  if (isRenderPassStale(renderPass)) {
+    return nodes
+  }
+  for (const { node: expandedNode, scope: expandedScope, instanceSuffix } of expandNodeByFor(node, scope)) {
+    if (isRenderPassStale(renderPass)) {
+      break
+    }
+    // eslint-disable-next-line ts/no-use-before-define
+    nodes.push(renderNodeTree(
+      expandedNode,
+      expandedScope,
+      context,
+      ownerJsonPath,
+      ownerFilePath,
+      `${instancePath}${instanceSuffix}`,
+      renderPass,
+      templateRenderState,
+      parent,
+    ))
+  }
+  return nodes
 }
 
 function renderChildren(
@@ -91,15 +109,18 @@ function renderChildren(
   ownerJsonPath: string,
   ownerFilePath: string,
   instancePath: string,
-  seenComponentScopes: Set<string>,
+  renderPass: RenderPass,
   templateRenderState: TemplateRenderState<DomNodeLike>,
   parent: DomNodeLike,
 ) {
   const renderedChildren: DomNodeLike[] = []
 
   for (const { node: child, index } of selectConditionalChildren(children, node => evaluateConditionalBranch(node, scope))) {
+    if (isRenderPassStale(renderPass)) {
+      break
+    }
     if (!isTagNode(child)) {
-      renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes, templateRenderState, parent))
+      renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, renderPass, templateRenderState, parent))
       continue
     }
 
@@ -107,7 +128,7 @@ function renderChildren(
       continue
     }
 
-    renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes, templateRenderState, parent))
+    renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, renderPass, templateRenderState, parent))
   }
 
   return renderedChildren
@@ -158,6 +179,33 @@ function collectComponentSlots(
   return slots
 }
 
+function reconcileSlotDeclarations(context: BrowserRendererContext, renderPass: RenderPass) {
+  // 实际投影优先建立事件路径；未投影的声明仍参与实例生命周期，但不加入可见树。
+  for (const [entries, { parent, scopeId }] of renderPass.slotDeclarations) {
+    if (isRenderPassStale(renderPass)) {
+      return
+    }
+    if (isComponentConstructing(context.componentCache.get(scopeId))) {
+      continue
+    }
+    for (const { index } of selectConditionalChildren(
+      entries.map(entry => entry.node),
+      (node, index) => evaluateConditionalBranch(node, entries[index]!.scope),
+    )) {
+      if (isRenderPassStale(renderPass)) {
+        return
+      }
+      const entry = entries[index]!
+      if (renderPass.renderedSlots.has(entry)) {
+        continue
+      }
+      const nodes = renderNodeVariants(entry.node, entry.scope, context, entry.ownerJsonPath, entry.ownerFilePath, entry.instancePath, renderPass, entry.templateRenderState, parent)
+      renderPass.renderedSlots.set(entry, nodes)
+      renderPass.hasUnprojectedSlots ||= nodes.length > 0
+    }
+  }
+}
+
 function renderNodeTree(
   node: DomNodeLike,
   scope: BrowserRenderScope,
@@ -165,10 +213,13 @@ function renderNodeTree(
   ownerJsonPath: string,
   ownerFilePath: string,
   instancePath: string,
-  seenComponentScopes: Set<string>,
+  renderPass: RenderPass,
   templateRenderState: TemplateRenderState<DomNodeLike>,
   parent?: DomNodeLike,
 ): DomNodeLike {
+  if (isRenderPassStale(renderPass)) {
+    return node
+  }
   if (scope.wxs !== templateRenderState.wxsModules) {
     scope = { ...scope, wxs: templateRenderState.wxsModules }
   }
@@ -207,7 +258,7 @@ function renderNodeTree(
           ownerJsonPath,
           ownerFilePath,
           `${instancePath}/template-${templateName}`,
-          seenComponentScopes,
+          renderPass,
           {
             definitions: templateRenderState.definitionScopes?.get(definition) ?? templateRenderState.definitions,
             definitionScopes: templateRenderState.definitionScopes,
@@ -225,9 +276,15 @@ function renderNodeTree(
     const slotName = clonedNode.attribs?.name?.trim() || 'default'
     const projected = scope.slots?.get(slotName) ?? []
     const fallbackChildren = clonedNode.children ?? []
+    bindComponentEventHost(clonedNode)
     clonedNode.name = 'block'
     clonedNode.attribs = {
       'data-sim-scope': scope.getScopeId(),
+    }
+    const slotOwner = scope.getScopeId()
+    if (projected.length && slotOwner && isComponentConstructing(context.componentCache.get(slotOwner))) {
+      clonedNode.children = []
+      return clonedNode
     }
     clonedNode.children = projected.length
       ? selectConditionalChildren(
@@ -235,17 +292,19 @@ function renderNodeTree(
           (node, index) => evaluateConditionalBranch(node, projected[index]!.scope),
         ).flatMap(({ index }) => {
           const entry = projected[index]!
-          return renderNodeVariants(
+          const nodes = renderNodeVariants(
             entry.node,
             entry.scope,
             context,
             entry.ownerJsonPath,
             entry.ownerFilePath,
             entry.instancePath,
-            seenComponentScopes,
+            renderPass,
             entry.templateRenderState,
             clonedNode,
           )
+          renderPass.renderedSlots.set(entry, nodes)
+          return nodes
         })
       : renderChildren(
           fallbackChildren,
@@ -254,7 +313,7 @@ function renderNodeTree(
           ownerJsonPath,
           ownerFilePath,
           `${instancePath}/slot-fallback-${slotName}`,
-          seenComponentScopes,
+          renderPass,
           templateRenderState,
           clonedNode,
         )
@@ -289,7 +348,20 @@ function renderNodeTree(
       componentScopeId,
       templateRenderState,
     )
+    registerSlotDeclarations(renderPass, slots, clonedNode, componentScopeId)
     applyNodeBindings(clonedNode, scope)
+
+    const reconcilePrivateTemplate = (instance: HeadlessComponentInstance, phase: 'defaults' | 'properties') => {
+      // 私有模板必须在 created/属性 observer 前完成；外层失效不能跳过本实例的后代属性交付。
+      let bindingPass: RenderPass
+      do {
+        const bindingScope = createComponentScope(clonedNode, scope, componentScopeId, instance, genericComponents, slots)
+        context.componentScopes.set(componentScopeId, bindingScope)
+        bindingPass = createRenderPass(phase === 'properties', renderPass)
+        renderBrowserComponentTemplate(context, componentEntry, renderNodeTree, bindingScope, componentScopeId, bindingPass)
+        reconcileSlotDeclarations(context, bindingPass)
+      } while (isRenderPassStale(bindingPass))
+    }
 
     let componentInstance = context.componentCache.get(componentScopeId)
     if (!componentInstance) {
@@ -299,12 +371,8 @@ function renderNodeTree(
         componentEntry,
         nextProperties,
         ownerScopeId,
-        (instance) => {
-          // 宿主先按默认数据创建子树，再调用父 created 并应用父级传入的 props。
-          const initialScope = createComponentScope(clonedNode, scope, componentScopeId, instance, genericComponents, slots)
-          context.componentScopes.set(componentScopeId, initialScope)
-          renderBrowserComponentTemplate(context, componentEntry, renderNodeTree, initialScope, componentScopeId, new Set())
-        },
+        reconcilePrivateTemplate,
+        renderPass.propertyUpdate,
       )
     }
     else {
@@ -322,10 +390,14 @@ function renderNodeTree(
         nextProperties,
         bindingExpressions,
         context.changedPageKeys,
+        reconcilePrivateTemplate,
       )
     }
+    if (isRenderPassStale(renderPass)) {
+      return clonedNode
+    }
 
-    seenComponentScopes.add(componentScopeId)
+    renderPass.seenComponentScopes.add(componentScopeId)
 
     const componentScope = createComponentScope(
       clonedNode,
@@ -343,7 +415,7 @@ function renderNodeTree(
       renderNodeTree,
       componentScope,
       componentScopeId,
-      seenComponentScopes,
+      renderPass,
     )
     mergeComponentEventRoot(renderedComponentRoot, clonedNode)
     if (renderedComponentRoot.attribs) {
@@ -354,6 +426,7 @@ function renderNodeTree(
       renderedComponentRoot.attribs['data-sim-component'] = clonedNode.name
       renderedComponentRoot.attribs['data-sim-scope'] = componentScopeId
     }
+    renderPass.componentRoots.set(componentScopeId, renderedComponentRoot)
     return renderedComponentRoot
   }
 
@@ -366,112 +439,162 @@ function renderNodeTree(
     ownerJsonPath,
     ownerFilePath,
     `${instancePath}/${clonedNode.name}`,
-    seenComponentScopes,
+    renderPass,
     templateRenderState,
     clonedNode,
   )
   return clonedNode
 }
 
+function reconcileBrowserPageTree(
+  context: BrowserRendererContext,
+  page: HeadlessPageInstance,
+  bindingsOnly = false,
+): { root: DomNodeLike, roots: DomNodeLike[], resourcePath: string } {
+  // 挂载批次可多次刷新；迭代重启，避免兄弟数量变成调用栈深度。
+  for (;;) {
+    bindAttachmentBindingScope(context, page)
+    if (page.__lastChangedKeys__) {
+      context.changedPageKeys = page.__lastChangedKeys__
+    }
+    const route = page.route.replace(LEADING_SLASH_RE, '')
+    const routeRecord = context.project.routes.find(item => item.route === route)
+    const resourcePath = routeRecord?.resourcePath ?? route
+    const templatePath = join(context.project.miniprogramRootPath, `${resourcePath}.wxml`)
+    const templateSource = readTemplateSource(context.files, templatePath)
+    const document = parseTemplateDocument(templateSource)
+    const pageScopeId = `page:${route}`
+    const pageScope: BrowserRenderScope = {
+      data: page.data,
+      getMethod: (methodName: string) => {
+        const method = page[methodName]
+        return typeof method === 'function' ? method.bind(page) : undefined
+      },
+      getScopeId: () => pageScopeId,
+      id: 'page-root',
+    }
+    for (const scopeId of context.componentScopes.keys()) {
+      if (scopeId === pageScopeId || scopeId.startsWith(`${pageScopeId}/`)) {
+        context.componentScopes.delete(scopeId)
+      }
+    }
+    context.componentScopes.set(pageScopeId, pageScope)
+    const renderPass = createPageRenderPass(page, context.componentCache)
+    const root = (document.children ?? [])[0] ?? document
+    const templateRenderState = prepareTemplateRenderState(context.files, root, templatePath, context.project.miniprogramRootPath, getBrowserWxsLoader(context.moduleLoader, context.files))
+    const renderedRoot = renderNodeTree(
+      root,
+      pageScope,
+      context,
+      `${resourcePath}.json`,
+      `${resourcePath}.js`,
+      pageScopeId,
+      renderPass,
+      templateRenderState,
+    )
+
+    const roots = [renderedRoot]
+    if (hasCustomTabBar(context.project.appConfig, route)) {
+      roots.push(renderNodeTree(
+        { type: 'tag', name: 'custom-tab-bar', attribs: {}, children: [] },
+        customTabBarHostScope(),
+        context,
+        'app.json',
+        'app.js',
+        pageScopeId,
+        renderPass,
+        templateRenderState,
+      ))
+    }
+    reconcileSlotDeclarations(context, renderPass)
+    if (isRenderPassStale(renderPass)) {
+      continue
+    }
+    markPageTreeConstructed(page, context.componentCache)
+    const treeRoot: DomNodeLike = roots.length > 1 ? { type: 'root', children: roots } : renderedRoot
+    linkRenderedParents(treeRoot)
+    registerInspectionTrees(treeRoot, renderPass, context.componentScopes)
+    if (bindingsOnly) {
+      return { root: treeRoot, roots, resourcePath }
+    }
+    let bindingsRefreshed = false
+    const updateBindings = () => {
+      bindingsRefreshed = true
+      if (hasPendingComponentConstruction(context.componentCache)) {
+        return
+      }
+      reconcileBrowserPageTree(context, page, true)
+    }
+
+    // Component 页面先创建子树，再执行页面 created/attached，最后统一挂载后代。
+    const pageAttached = attachComponentPage(page, updateBindings)
+    if (bindingsRefreshed) {
+      continue
+    }
+    const pageAttaching = isComponentPageAttaching(page)
+    const scopeIds = orderComponentAttachmentScopes(renderPass.seenComponentScopes, context.componentScopes)
+    const instances = scopeIds.map(scopeId => context.componentCache.get(scopeId)!)
+    const attached = !pageAttaching && runWithAttachmentBindingUpdates(
+      page,
+      updateBindings,
+      scopes => flushComponentAttachments(context.componentCache, scopes, (instance) => {
+        runComponentLifecycle(instance, 'attached')
+        if (instance !== context.componentCache.get(customTabBarScopeId(route))) {
+          runComponentPageLifetime(instance, 'show')
+        }
+        return bindingsRefreshed
+      }),
+      scopeIds,
+    )
+    if (attached === 'restart') {
+      continue
+    }
+    const canFinalize = !pageAttaching && !hasPendingComponentAttachments(instances)
+    // 挂载回调返回后才派发 detached；此时仍可读取旧关系，随后再解除双方关系。
+    const removed = canFinalize
+      ? [...context.componentCache].filter(([scopeId]) => scopeId.startsWith(`${pageScopeId}/`) && !renderPass.seenComponentScopes.has(scopeId))
+      : []
+    for (const [scopeId, instance] of removed) {
+      if (isComponentAttached(instance)) {
+        runComponentLifecycle(instance, 'detached')
+      }
+      else {
+        scheduleDiscardedComponentReady(context.componentCache, scopeId, instance)
+      }
+    }
+    const relationsChanged = canFinalize && syncComponentRelations(context.componentCache, renderPass.seenComponentScopes, pageScopeId)
+    for (const [scopeId] of removed) {
+      context.componentCache.delete(scopeId)
+      context.componentScopes.delete(scopeId)
+    }
+
+    if (pageAttached || attached || relationsChanged) {
+      continue
+    }
+
+    if (canFinalize && !isPageBeforeReady(page)) {
+      flushDiscardedComponentReady(context.componentCache, pageScopeId, instance => runComponentLifecycle(instance, 'ready'))
+    }
+
+    if (canFinalize && !isPageBeforeReady(page) && flushComponentReady(instances, instance => runComponentLifecycle(instance, 'ready'))) {
+      continue
+    }
+
+    return {
+      root: treeRoot,
+      roots,
+      resourcePath,
+    }
+  }
+}
+
 export function renderBrowserPageTree(
   context: BrowserRendererContext,
   page: HeadlessPageInstance,
 ): BrowserRenderedPageTree {
-  const route = page.route.replace(LEADING_SLASH_RE, '')
-  const routeRecord = context.project.routes.find(item => item.route === route)
-  const resourcePath = routeRecord?.resourcePath ?? route
-  const templatePath = join(context.project.miniprogramRootPath, `${resourcePath}.wxml`)
-  const templateSource = readTemplateSource(context.files, templatePath)
-  const document = parseTemplateDocument(templateSource)
-  const pageScopeId = `page:${route}`
-  const pageScope: BrowserRenderScope = {
-    data: page.data,
-    getMethod: (methodName: string) => {
-      const method = page[methodName]
-      return typeof method === 'function' ? method.bind(page) : undefined
-    },
-    getScopeId: () => pageScopeId,
-    id: 'page-root',
-  }
-  for (const scopeId of context.componentScopes.keys()) {
-    if (scopeId === pageScopeId || scopeId.startsWith(`${pageScopeId}/`)) {
-      context.componentScopes.delete(scopeId)
-    }
-  }
-  context.componentScopes.set(pageScopeId, pageScope)
-  const seenComponentScopes = new Set<string>()
-  const root = (document.children ?? [])[0] ?? document
-  const templateRenderState = prepareTemplateRenderState(context.files, root, templatePath, context.project.miniprogramRootPath, getBrowserWxsLoader(context.moduleLoader, context.files))
-  const renderedRoot = renderNodeTree(
-    root,
-    pageScope,
-    context,
-    `${resourcePath}.json`,
-    `${resourcePath}.js`,
-    pageScopeId,
-    seenComponentScopes,
-    templateRenderState,
-  )
-
-  const roots = [renderedRoot]
-  if (hasCustomTabBar(context.project.appConfig, route)) {
-    roots.push(renderNodeTree(
-      { type: 'tag', name: 'custom-tab-bar', attribs: {}, children: [] },
-      customTabBarHostScope(),
-      context,
-      'app.json',
-      'app.js',
-      pageScopeId,
-      seenComponentScopes,
-      templateRenderState,
-    ))
-  }
-
-  // Component 页面先创建子树，再执行页面 created/attached，最后统一挂载后代。
-  const pageAttached = attachComponentPage(page)
-  const pageAttaching = isComponentPageAttaching(page)
-  const attached = !pageAttaching && flushComponentAttachments(
-    [...seenComponentScopes].map(scopeId => context.componentCache.get(scopeId)!),
-    (instance) => {
-      runComponentLifecycle(instance, 'attached')
-      if (instance !== context.componentCache.get(customTabBarScopeId(route))) {
-        runComponentPageLifetime(instance, 'show')
-      }
-    },
-  )
-  // detached 仍能读取旧关系；真实宿主随后解除双方关系并调用 unlinked。
-  const removed = [...context.componentCache].filter(([scopeId]) => scopeId.startsWith(`${pageScopeId}/`) && !seenComponentScopes.has(scopeId))
-  for (const [scopeId, instance] of removed) {
-    if (isComponentAttached(instance)) {
-      runComponentLifecycle(instance, 'detached')
-    }
-    else {
-      scheduleDiscardedComponentReady(context.componentCache, scopeId, instance)
-    }
-  }
-  const instances = [...seenComponentScopes].map(scopeId => context.componentCache.get(scopeId)!)
-  const relationsChanged = !pageAttaching && !hasPendingComponentAttachments(instances) && syncComponentRelations(context.componentCache, seenComponentScopes, pageScopeId)
-  for (const [scopeId] of removed) {
-    context.componentCache.delete(scopeId)
-    context.componentScopes.delete(scopeId)
-  }
-
-  if (pageAttached || attached || relationsChanged) {
-    return renderBrowserPageTree(context, page)
-  }
-
-  if (!isPageBeforeReady(page)) {
-    flushDiscardedComponentReady(context.componentCache, pageScopeId, instance => runComponentLifecycle(instance, 'ready'))
-  }
-
-  if (!isPageBeforeReady(page) && flushComponentReady(instances, instance => runComponentLifecycle(instance, 'ready'))) {
-    return renderBrowserPageTree(context, page)
-  }
-
-  const treeRoot: DomNodeLike = roots.length > 1 ? { type: 'root', children: roots } : renderedRoot
-  linkRenderedParents(treeRoot)
+  const { root, roots, resourcePath } = reconcileBrowserPageTree(context, page)
   return {
-    root: treeRoot,
+    root,
     styles: resolveBrowserPageStyles(context.files, resourcePath, {
       miniprogramRootPath: context.project.miniprogramRootPath,
       styleIsolation: resolveBrowserComponentPageStyleIsolation(context.files, page, resourcePath, context.project.miniprogramRootPath),

@@ -1,12 +1,14 @@
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, MiniProgramComponentRawOptions, RuntimeApp } from '../types'
 import type { WatchMap } from './watch'
-import { WEVU_EXPOSED_KEY, WEVU_HOOKS_KEY } from '@weapp-core/constants'
+import { WEVU_EXPOSED_KEY, WEVU_HOOKS_KEY, WEVU_NATIVE_SLOT_CONTEXT_KEY } from '@weapp-core/constants'
 import { resolveComponentFeatures } from './component/features'
 import { createPageLifecycleHooks } from './component/lifecycle'
 import { createComponentMethods } from './component/methods'
 import { getRuntimeOwnerLabel, prepareComponentOptions } from './component/options'
 import { createPropsSync } from './component/props'
 import { registerComponentDefinition } from './component/registerDefinition'
+
+type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string } }
 
 /**
  * 注册组件入口（框架内部使用）。
@@ -201,6 +203,8 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     syncWevuPropsFromInstance,
     syncWevuPropsFromValues,
     directPropsDerivedKeys,
+    nativeSlotContext: (!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+      && (mpOptions as Record<string, unknown>)[WEVU_NATIVE_SLOT_CONTEXT_KEY] === true,
     isPage,
     vueLifecycles,
     getRuntimeOwnerLabel,

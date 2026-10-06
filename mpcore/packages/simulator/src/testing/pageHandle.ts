@@ -266,7 +266,18 @@ export class HeadlessTestingPageHandle {
   private renderedAccess() {
     return {
       assertActive: () => this.assertActive(),
-      findAll: async (selector: string) => await this.$$(selector),
+      findAll: async (selector: string) => {
+        this.assertActive()
+        const root = createPageRootNodeHandle({
+          assertActive: () => this.assertActive(),
+          createPageHandle: () => this,
+          page: this.page,
+          project: this.project,
+          projectionOnly: true,
+          session: this.session,
+        })
+        return selector === 'page' ? [root] : await root.$$(selector)
+      },
       waitFor: async (ms?: number) => await this.waitFor(ms),
       wxml: async () => await this.wxml(),
     }

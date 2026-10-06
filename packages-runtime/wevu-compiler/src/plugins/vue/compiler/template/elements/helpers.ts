@@ -3,6 +3,7 @@ import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { hasOwn } from '../../../../../utils/object'
 import { getForItemAccess } from '../expression/forItemAccess'
+import { normalizeWxmlExpressionWithContext } from '../expression/scopedSlot'
 import { FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression } from './forExpression'
 
 export { FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression }
@@ -132,9 +133,10 @@ export function collectScopePropMapping(context: TransformContext): Record<strin
   if (!context.slotMultipleInstance) {
     return mapping
   }
+  const nativeAliases = new Set(context.forStack.flatMap(info => Object.values(info.nativeAliases ?? {})))
   for (const scope of context.scopeStack) {
     for (const name of scope) {
-      if (!IDENTIFIER_RE.test(name)) {
+      if (!IDENTIFIER_RE.test(name) || nativeAliases.has(name)) {
         continue
       }
       if (!hasOwn(mapping, name)) {
@@ -160,7 +162,11 @@ export function buildScopePropsExpression(context: TransformContext): string | n
   if (!keys.length) {
     return null
   }
-  return `[${keys.map(key => `${toWxmlStringLiteral(key)},${getForItemAccess(context, key)}`).join(',')}]`
+  const renamed = context.forStack.some(info => info.nativeAliases)
+  return `[${keys.map((key) => {
+    const access = renamed ? normalizeWxmlExpressionWithContext(key, context) : getForItemAccess(context, key)
+    return `${toWxmlStringLiteral(key)},${access}`
+  }).join(',')}]`
 }
 
 export function hashString(input: string) {

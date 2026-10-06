@@ -123,6 +123,12 @@ export interface TransformScriptOptions {
    */
   scopedSlotHostProperties?: boolean
   /**
+   * 微信原生插槽上下文协议，由 SFC 编译期平台与插槽配置决定。
+   *
+   * @internal
+   */
+  nativeSlotContext?: boolean
+  /**
    * 当前 SFC 的 CSS Modules 映射。
    */
   cssModules?: Record<string, Record<string, string>>

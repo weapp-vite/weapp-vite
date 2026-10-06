@@ -1,7 +1,13 @@
-type Attachment = (this: Record<string, any>) => void
+import { runWithAttachmentBindingUpdates } from './attachmentBindingUpdates'
 
-const definitionAttachments = new WeakMap<object, Attachment>()
-const instanceAttachments = new WeakMap<object, Attachment>()
+type Attachment = (instance: Record<string, any>) => void
+interface PageAttachment {
+  created: Attachment
+  attached: Attachment
+}
+
+const definitionAttachments = new WeakMap<object, PageAttachment>()
+const instanceAttachments = new WeakMap<object, PageAttachment>()
 const attachingInstances = new WeakSet<object>()
 const instanceStyleIsolation = new WeakMap<object, string>()
 const componentPageInstances = new WeakSet<object>()
@@ -18,8 +24,8 @@ export function isComponentPageAttaching(instance: object) {
   return attachingInstances.has(instance)
 }
 
-export function registerComponentPageAttachment(definition: object, attach: Attachment) {
-  definitionAttachments.set(definition, attach)
+export function registerComponentPageAttachment(definition: object, created: Attachment, attached: Attachment) {
+  definitionAttachments.set(definition, { created, attached })
 }
 
 export function bindComponentPageAttachment(instance: object, definition: object) {
@@ -34,7 +40,7 @@ export function bindComponentPageAttachment(instance: object, definition: object
   }
 }
 
-export function attachComponentPage(instance: Record<string, any>) {
+export function attachComponentPage(instance: Record<string, any>, updateBindings: () => void) {
   const attach = instanceAttachments.get(instance)
   if (!attach) {
     return false
@@ -43,7 +49,8 @@ export function attachComponentPage(instance: Record<string, any>) {
   instanceAttachments.delete(instance)
   attachingInstances.add(instance)
   try {
-    attach.call(instance)
+    attach.created(instance)
+    runWithAttachmentBindingUpdates(instance, updateBindings, attach.attached, instance)
   }
   finally {
     attachingInstances.delete(instance)

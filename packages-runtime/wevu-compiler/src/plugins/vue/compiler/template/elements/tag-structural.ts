@@ -7,9 +7,10 @@ import { warn } from '../diagnostics'
 import { transformBindDirective } from '../directives/bind'
 import { createForKeyProjection, resolveNativeForKeyValue } from '../directives/forKey'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
-import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
+import { normalizeRuntimeBindingReference, registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
+import { normalizeNativeForAliases, usesNativeDeclarationContext, withNativeDeclarationScope } from '../nativeDeclaration'
 import { collectElementAttributes } from './attrs'
 import { registerForPatternProjection } from './forPatternProjection'
 import { findSlotDirective, FOR_ITEM_ALIAS_PLACEHOLDER, getBindDirectiveExpression, parseForExpression, withForScope, withScope } from './helpers'
@@ -65,6 +66,10 @@ export function transformIfElement(node: ElementNode, context: TransformContext,
   const { conditionKind, condition, bindingCondition } = resolveConditionalBranch(ifDirective, context)
   const content = withBindingCondition(context, bindingCondition, () => {
     const elementWithoutIf = { ...node, props: node.props.filter(prop => prop !== ifDirective) }
+    if (elementWithoutIf.props.some(prop => prop.type === NodeTypes.DIRECTIVE && prop.name === 'for')) {
+      // eslint-disable-next-line ts/no-use-before-define
+      return transformForElement(elementWithoutIf, context, transformNode)
+    }
     if (elementWithoutIf.tag === 'template') {
       return elementWithoutIf.children.map(child => transformNode(child, context)).join('')
     }
@@ -122,7 +127,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
       )
     }
   }
-  if ((context.classStyleRuntime === 'js' || requiresRuntimeForKeyProjection(node, context)) && !forInfo.index) {
+  if ((context.classStyleRuntime === 'js' || usesNativeDeclarationContext(context) || requiresRuntimeForKeyProjection(node, context)) && !forInfo.index) {
     forInfo.index = `__wv_index_${context.forIndexSeed++}`
   }
   const rawListExp = forInfo.listExp?.trim()
@@ -152,6 +157,15 @@ export function transformForElement(node: ElementNode, context: TransformContext
     listExp = projected.listExp
     listExpAst = projected.listExpAst
   }
+  const keyDirective = node.props.find((prop): prop is DirectiveNode => {
+    return prop.type === NodeTypes.DIRECTIVE
+      && prop.name === 'bind'
+      && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+      && prop.arg.content === 'key'
+  })
+  const rawKeyExp = keyDirective ? getBindDirectiveExpression(keyDirective).trim() : ''
+  const nativeKeyValue = rawKeyExp ? resolveNativeForKeyValue(rawKeyExp, forInfo, context.platform.keyThisValue) : null
+  normalizeNativeForAliases(forInfo, context)
   const scopedForInfo: ForParseResult = listExp
     ? { ...forInfo, listExp, rawListExp, listExpAst: listExpAst ?? undefined, rawListExpAst: rawListExpAst ?? undefined }
     : { ...forInfo, rawListExp, listExpAst: listExpAst ?? undefined, rawListExpAst: rawListExpAst ?? undefined }
@@ -165,16 +179,10 @@ export function transformForElement(node: ElementNode, context: TransformContext
   return withForScope(context, scopedForInfo, () => withScope(context, scopeNames, () => {
     const otherProps = node.props.filter(prop => prop !== forDirective)
     const elementWithoutFor: ElementNode = { ...node, props: otherProps }
-    const keyDirective = otherProps.find((prop): prop is DirectiveNode => {
-      return prop.type === NodeTypes.DIRECTIVE
-        && prop.name === 'bind'
-        && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
-        && prop.arg.content === 'key'
-    })
+    const nativeContext = usesNativeDeclarationContext(context)
     const keyProjection = keyDirective
-      ? createForKeyProjection(keyDirective, scopedForInfo, context)
+      ? createForKeyProjection(keyDirective, scopedForInfo, context, nativeKeyValue)
       : null
-    const rawKeyExp = keyDirective ? getBindDirectiveExpression(keyDirective).trim() : ''
     const projectedOutputPath = keyProjection?.listExp ?? (
       listExp?.startsWith('__wv_bind_') ? listExp : undefined
     )
@@ -188,18 +196,10 @@ export function transformForElement(node: ElementNode, context: TransformContext
       scopedForInfo.itemAccess = keyProjection.itemAccess
       const projectionContext: TransformContext = {
         ...context,
-        forStack: context.forStack.map(forInfo => ({ ...forInfo, itemAccess: undefined })),
+        forStack: context.forStack.slice(0, -1),
+        scopeStack: context.scopeStack.slice(0, -1),
       }
-      const projectedListExpAst = normalizeJsExpressionWithContext(
-        keyProjection.listExp,
-        projectionContext,
-        {
-          hint: 'v-for 投影列表',
-          runtimePropAccess: 'helper',
-          unrefMemberAccess: true,
-          preserveForItems: true,
-        },
-      )
+      const projectedListExpAst = normalizeRuntimeBindingReference(keyProjection.listExp, projectionContext)
       scopedForInfo.projectedListExp = keyProjection.listExp
       scopedForInfo.projectedListExpAst = projectedListExpAst ?? scopedForInfo.projectedListExpAst
       const currentForInfo = context.forStack[context.forStack.length - 1]
@@ -209,7 +209,17 @@ export function transformForElement(node: ElementNode, context: TransformContext
         currentForInfo.projectedListExpAst = scopedForInfo.projectedListExpAst
       }
     }
-    const renderElement: ElementNode = keyProjection
+    const effectiveKey = keyProjection?.keyField ?? (rawKeyExp ? nativeKeyValue ?? context.platform.keyThisValue : undefined)
+    scopedForInfo.effectiveNativeKey = effectiveKey === undefined
+      ? { kind: 'position' }
+      : effectiveKey === context.platform.keyThisValue
+        ? { kind: 'self' }
+        : { kind: 'field', field: effectiveKey }
+    const currentForInfo = context.forStack[context.forStack.length - 1]
+    if (currentForInfo) {
+      currentForInfo.effectiveNativeKey = scopedForInfo.effectiveNativeKey
+    }
+    const renderElement: ElementNode = keyProjection || (nativeContext && keyDirective)
       ? {
           ...elementWithoutFor,
           props: otherProps.filter(prop => prop !== keyDirective),
@@ -222,9 +232,16 @@ export function transformForElement(node: ElementNode, context: TransformContext
     if (keyProjection) {
       extraAttrs.push(keyProjection.keyAttr)
     }
+    else if (nativeContext && rawKeyExp && effectiveKey) {
+      extraAttrs.push(context.platform.keyAttr(effectiveKey))
+      if (!nativeKeyValue && keyDirective) {
+        warn(context, `v-for :key "${rawKeyExp}" 无法生成运行时 key 投影，已降级为 ${context.platform.keyAttr(effectiveKey)}。`
+        + '建议使用稳定的基础类型 key。', keyDirective.loc)
+      }
+    }
 
     if (renderElement.tag === 'slot') {
-      const slotKeyDirective = keyProjection ? undefined : keyDirective
+      const slotKeyDirective = keyProjection || nativeContext ? undefined : keyDirective
       const slotElementWithoutForKey: ElementNode = {
         ...renderElement,
         props: renderElement.props.filter(prop => prop !== slotKeyDirective),
@@ -248,7 +265,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
       })
     }
 
-    const { attrs, vTextExp } = collectElementAttributes(renderElement, context, {
+    const { attrs, vTextExp, declaration } = collectElementAttributes(renderElement, context, {
       forInfo: scopedForInfo,
       extraAttrs,
       resolvedTag,
@@ -256,9 +273,9 @@ export function transformForElement(node: ElementNode, context: TransformContext
 
     let children = ''
     if (renderElement.children.length > 0) {
-      children = renderElement.children
+      children = withNativeDeclarationScope(context, declaration, () => renderElement.children
         .map(child => transformNode(child, context))
-        .join('')
+        .join(''))
     }
     if (vTextExp !== undefined) {
       children = renderMustache(vTextExp, context)

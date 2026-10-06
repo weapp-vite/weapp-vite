@@ -1,3 +1,4 @@
+import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { TransformContext } from '../types'
 import { traverse } from '../../../../../utils/babel'
 import { normalizeJsExpressionWithContext } from './js'
@@ -92,6 +93,38 @@ export function shouldFallbackToRuntimeBinding(
   return shouldFallback
 }
 
+/** 内部绑定下标已是原生别名，不再应用源码遮蔽映射；对象循环使用原生条目坐标。 */
+export function normalizeRuntimeBindingReference(exp: string, context: TransformContext) {
+  return normalizeJsExpressionWithContext(exp, {
+    ...context,
+    forStack: context.forStack.map(info => ({
+      ...info,
+      itemAccess: undefined,
+      itemAliases: info.index && info.key ? { [info.index]: info.key } : undefined,
+    })),
+  }, {
+    hint: '内部循环绑定',
+    runtimePropAccess: 'helper',
+    unrefMemberAccess: true,
+    preserveForItems: true,
+  })
+}
+
+/** 注册已解析的内部表达式，避免把编译器标识符重写到插槽表达式 owner。 */
+export function registerRuntimeBindingAst(exp: string, expAst: Expression, context: TransformContext): string {
+  const binding = {
+    name: `__wv_bind_${context.classStyleBindings.filter(item => item.type === 'bind').length}`,
+    type: 'bind' as const,
+    exp,
+    expAst,
+    forStack: context.forStack.map(info => ({ ...info })),
+    conditions: context.bindingConditions?.slice(),
+  }
+  context.classStyleBindings.push(binding)
+
+  return `${binding.name}${buildForIndexAccess(context)}`
+}
+
 /**
  * 将复杂表达式注册为 JS 运行时计算绑定，返回可用于模板 mustache 的绑定引用。
  */
@@ -109,15 +142,5 @@ export function registerRuntimeBindingExpression(
     return null
   }
 
-  const binding = {
-    name: `__wv_bind_${context.classStyleBindings.filter(item => item.type === 'bind').length}`,
-    type: 'bind' as const,
-    exp,
-    expAst,
-    forStack: context.forStack.map(info => ({ ...info })),
-    conditions: context.bindingConditions?.slice(),
-  }
-  context.classStyleBindings.push(binding)
-
-  return `${binding.name}${buildForIndexAccess(context)}`
+  return registerRuntimeBindingAst(exp, expAst, context)
 }
