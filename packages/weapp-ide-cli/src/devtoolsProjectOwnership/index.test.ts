@@ -67,8 +67,8 @@ afterEach(async () => {
   await fs.rm(directory, { recursive: true, force: true })
 })
 
-async function owned(name = 'project', journalPath?: string) {
-  const intent = (await beginManagedWechatProject({ target, projectPath: path.join(directory, name), journalPath }))!
+async function owned(name = 'project', journalPath?: string, maxOwnedWindows?: 1 | 2) {
+  const intent = (await beginManagedWechatProject({ target, projectPath: path.join(directory, name), journalPath, maxOwnedWindows }))!
   await intent.confirm({ openedProjectWindow: true, port: 19001 })
   return intent
 }
@@ -106,7 +106,7 @@ describe('managed DevTools project ownership', () => {
 
   it('closes only the exact owned project and requires native destruction before port release', async () => {
     const first = await owned('first')
-    const second = await owned('second')
+    const second = await owned('second', undefined, 2)
     await first.fail(new Error('connection disconnected'))
     await first.close()
     expect(mocks.close).toHaveBeenCalledExactlyOnceWith(target.cliPath, ['close', '--project', path.join(directory, 'first')], { timeout: 30_000, windowsHide: true })

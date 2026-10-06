@@ -7,10 +7,12 @@ import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
 import { execa } from 'execa'
 import { assertManagedInstallation, inspectManagedProjectHost, isManagedPortClosed, readManagedProcessIdentity, sameManagedProcess, waitForManagedPortClosed } from './host'
 import { managedProcessToken, readManagedRecord, readManagedWechatProjectRecords, resolveManagedJournal, withManagedJournalLock, writeManagedRecord } from './journal'
+import { checkManagedWindowBudget } from './windowBudget'
 import { captureManagedWindowClose, waitForManagedWindowClosed } from './windowClose'
 
 export * from './installationExit'
 export { MANAGED_PROJECT_JOURNAL_ENV, readManagedWechatProjectRecords } from './journal'
+export { MANAGED_PROJECT_MAX_WINDOWS_ENV } from './journal/constants'
 export type * from './types'
 
 const pendingClosures = new Map<string, Promise<void>>()
@@ -107,6 +109,7 @@ export async function beginManagedWechatProject(options: BeginManagedWechatProje
     if (previous.some(record => ['starting', 'unconfirmed', 'closing', 'failed'].includes(record.state))) {
       throw new Error('Managed DevTools journal contains unresolved ownership or cleanup; refusing another project start.')
     }
+    checkManagedWindowBudget(previous, options)
     const now = new Date().toISOString()
     await writeManagedRecord({
       schemaVersion: 1,

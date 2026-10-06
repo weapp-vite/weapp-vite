@@ -15,6 +15,7 @@ import { cleanupManagedWechatProjects, closeManagedWechatProject, MANAGED_PROJEC
 import { normalizeRuntimeConsoleText } from '../ide/runtimeErrors'
 import { extractWechatDevtoolsServicePort } from './automator.cli-bridge'
 import { launchHeadlessAutomator } from './automator.headless'
+import { attachBridgeWrapperSyncCleanup, cleanupFailedBridgeLaunch, createRetryableCleanup } from './automatorBridgeCleanup'
 import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './automatorBridgeFiles'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
 import { registerAutomatorReconnect } from './automatorReconnect'
@@ -1378,15 +1379,10 @@ export function prepareAutomatorBridgeWrapperProject(
   }
 
   const stopSync = startBridgeWrapperDistSync(distRoot, wrapperRoot, { preserveRoots })
-  let cleaned = false
-  const cleanup = async () => {
-    if (cleaned) {
-      return
-    }
-    cleaned = true
+  const cleanup = createRetryableCleanup(async () => {
     stopSync()
     await fs.promises.rm(wrapperRoot, { recursive: true, force: true })
-  }
+  })
 
   return {
     distRoot,
@@ -2818,54 +2814,6 @@ export async function launchAutomatorViaCliBridge(
   }
 }
 
-function attachBridgeWrapperSyncCleanup(miniProgram: any, bridgeWrapperProject: BridgeWrapperProject | undefined) {
-  if (!bridgeWrapperProject?.stopSync) {
-    return miniProgram
-  }
-
-  let stopped = false
-  const stopSync = () => {
-    if (stopped) {
-      return
-    }
-    stopped = true
-    bridgeWrapperProject.stopSync?.()
-  }
-
-  let cleaned = false
-  const cleanup = async () => {
-    if (cleaned) {
-      return
-    }
-    cleaned = true
-    await bridgeWrapperProject.cleanup?.()
-  }
-
-  for (const methodName of ['close', 'disconnect']) {
-    const rawMethod = miniProgram?.[methodName]
-    if (typeof rawMethod !== 'function') {
-      continue
-    }
-
-    miniProgram[methodName] = async (...args: any[]) => {
-      let completed = false
-      try {
-        const result = await rawMethod.apply(miniProgram, args)
-        completed = true
-        return result
-      }
-      finally {
-        stopSync()
-        if (methodName === 'close' && completed) {
-          await cleanup()
-        }
-      }
-    }
-  }
-
-  return miniProgram
-}
-
 export function launchAutomator(options: LaunchAutomatorOptions) {
   const provider = resolveRuntimeProviderName()
   if (provider === 'headless') {
@@ -3089,18 +3037,16 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         )
       }
       catch (caughtError) {
-        // 启动 deadline 不截断窗口收尾；等待子桥接退出后才能重试或开始下一项目。
-        await bridgeLaunch?.catch(() => {})
-        try {
-          await closeAttemptProject?.()
-        }
-        catch (cleanupError) {
-          throw new AggregateError([caughtError, cleanupError], 'IDE launch failed and its project window could not be released')
-        }
         const error = caughtError instanceof AutomatorBridgeBudgetError && lastLaunchFailure
           ? lastLaunchFailure.error
           : runtimeLogSubscription?.normalizeError(caughtError) ?? caughtError
-        runtimeLogSubscription?.abort(error)
+        await cleanupFailedBridgeLaunch({
+          error,
+          bridgeLaunch,
+          getCloseProject: () => closeAttemptProject,
+          snapshot: bridgeWrapperProject,
+          subscription: runtimeLogSubscription,
+        })
         if (
           isWarmupRelaunchTimeoutError(error)
           || isWarmupPageRootTimeoutError(error)
@@ -3108,7 +3054,6 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         ) {
           forceProjectRefreshAfterRetry = true
         }
-        bridgeWrapperProject?.stopSync?.()
         // 日志订阅已在同一连接内等待完整预算；失败时保留真实错误，不再重启 IDE 掩盖启动结果。
         if (runtimeLogSubscription?.pending) {
           handleLaunchError(error, project)

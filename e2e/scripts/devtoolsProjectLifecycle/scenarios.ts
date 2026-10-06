@@ -3,6 +3,7 @@ import type { ResolvedWechatDevtoolsTarget } from '../../../packages/weapp-ide-c
 import type { LifecycleStep, OwnedSession } from './context'
 import assert from 'node:assert/strict'
 import { startWechatIdeAgent } from '../../../packages/weapp-ide-cli/src/cli/agentStart'
+import { connectOpenedAutomator } from '../../../packages/weapp-ide-cli/src/cli/automator'
 import { beginManagedWechatProject, readManagedWechatProjectRecords } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { assertJournalReleased, assertOwnedWindowLimit, assertSessionReleased, openLifecycleSession, readRuntimeEvidence, recordStep, selectFreePort, sessionEvidence, START_TIMEOUT } from './context'
 import { inspectListenerAncestors } from './diagnostics'
@@ -46,22 +47,21 @@ export async function checkMultipleWindows(options: ScenarioOptions & { projectA
   }
   const a = await open('A', options.projectA)
   const b = await open('B', options.projectB)
-  await recordStep(steps, 'borrow-A-and-close-borrowed-receipt', async () => {
+  await recordStep(steps, 'connect-A-and-close-borrowed-connection', async () => {
     signal.throwIfAborted()
-    const intent = await beginManagedWechatProject({ target, projectPath: a.projectPath, port: a.port, journalPath })
-    assert(intent)
+    const before = await readManagedWechatProjectRecords(journalPath)
+    const borrowed = await connectOpenedAutomator({ target, cliPath: target.cliPath, projectPath: a.projectPath, port: a.port, runtimeProvider: 'devtools', timeout: START_TIMEOUT, signal })
+    let info: Awaited<ReturnType<typeof readRuntimeEvidence>>
     try {
-      const receipt = await startWechatIdeAgent({ target, projectPath: a.projectPath, port: a.port, timeout: START_TIMEOUT, trustProject: true, signal, onStarted: result => intent.confirm({ openedProjectWindow: result.openedProjectWindow, port: result.autoPort }) })
-      assert.equal(receipt.openedProjectWindow, false, 'Starting A again must borrow its existing window')
-      assert.equal(receipt.version, target.version)
-      await intent.close()
-      const record = (await readManagedWechatProjectRecords(journalPath)).find(value => value.id === intent.id)
-      assert(record?.state === 'released' && record.releasedReason === 'borrowed')
-      return { receipt, borrowedRecord: record, ownerStillResponds: await readRuntimeEvidence(target, a.program, sdkVersion) }
+      info = await readRuntimeEvidence(target, borrowed, sdkVersion)
     }
-    catch (error) {
-      return await closeFailedIntent(intent, error)
+    finally {
+      await borrowed.close()
     }
+    const after = await readManagedWechatProjectRecords(journalPath)
+    assert.deepEqual(after, before, 'Connecting to A must not start another project or change window ownership')
+    assert(after.some(record => record.id === a.id && record.state === 'owned'))
+    return { borrowedConnection: { projectPath: a.projectPath, port: a.port, info }, journalUnchanged: true, ownerStillResponds: await readRuntimeEvidence(target, a.program, sdkVersion) }
   })
   await recordStep(steps, 'disconnect-B-close-B-twice-preserve-A', async () => {
     b.program.disconnect()

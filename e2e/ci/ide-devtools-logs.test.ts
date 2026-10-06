@@ -177,15 +177,58 @@ describe('ide devtools logs', () => {
     expect(issues[0]?.line).toContain('slot-wrapper/index.json')
   })
 
-  it.each(['', ' stack'])('ignores a recovered generic launch failure from the same simulator (suffix=%j)', (suffix) => {
+  it.each(['', ' stack'])('preserves the first launch failure despite a same-timestamp success and unavailable current page (suffix=%j)', (suffix) => {
     const startedAt = Date.now() - 1_000
     const timestamp = formatDevtoolsLogTimestamp(new Date())
-    writeLog(sandboxRoot, [
-      `[${timestamp}][ERROR][rt:0,win:s0] [appservice] simulator launch catch error${suffix} Error: simulator launch failed`,
+    const failure = `[${timestamp}][ERROR][rt:0,win:s0] [appservice] simulator launch catch error${suffix} Error: simulator launch failed`
+    const logFile = writeLog(sandboxRoot, [
+      failure,
       `[${timestamp}][INFO][rt:0,win:s0] [appservice] simulator launch success, set src http://127.0.0.1/appservice/s0/mainframe`,
+      `[${timestamp}][ERROR][rt:0,win:s0] App.getCurrentPage: Cannot destructure property 'rawPath' of 't.getPageMetaByWebviewId(...)' as it is null.`,
     ].join('\n'))
 
     expect(scanRecentDevtoolsSimulatorBootIssues({
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })).toEqual([{ file: logFile, line: failure }])
+    expect(() => assertNoRecentDevtoolsSimulatorBootIssues({
+      label: 'cold-start',
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })).toThrow(failure)
+  })
+
+  it('does not report a successful startup and ready current page without a launch failure', () => {
+    const startedAt = Date.now() - 1_000
+    const timestamp = formatDevtoolsLogTimestamp(new Date())
+    writeLog(sandboxRoot, [
+      `[${timestamp}][INFO][rt:0,win:s0] [SimulatorService] init simulator s0 with clientSid s0`,
+      `[${timestamp}][INFO][rt:0,win:s0] [appservice] simulator launch success, set src http://127.0.0.1/appservice/s0/mainframe`,
+      `[${timestamp}][INFO][rt:0,win:s0] App.getCurrentPage: { path: 'pages/index/index', pageId: 'page-1' }`,
+    ].join('\n'))
+
+    expect(scanRecentDevtoolsSimulatorBootIssues({
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })).toEqual([])
+  })
+
+  it('does not carry an earlier failed startup into a new successful startup baseline', () => {
+    const startedAt = Date.now() - 1_000
+    const timestamp = formatDevtoolsLogTimestamp(new Date())
+    const logFile = writeLog(sandboxRoot, [
+      `[${timestamp}][ERROR][rt:0,win:s0] [appservice] simulator launch catch error Error: simulator launch failed`,
+      `[${timestamp}][INFO][rt:0,win:s0] [appservice] simulator launch success, set src http://127.0.0.1/appservice/s0/mainframe`,
+      '',
+    ].join('\n'))
+    const baseline = captureDevtoolsLogBaseline({ rootDir: sandboxRoot })
+    fs.appendFileSync(logFile, [
+      `[${timestamp}][INFO][rt:0,win:s1] [appservice] simulator launch success, set src http://127.0.0.1/appservice/s1/mainframe`,
+      `[${timestamp}][INFO][rt:0,win:s1] App.getCurrentPage: { path: 'pages/index/index', pageId: 'page-2' }`,
+    ].join('\n'))
+
+    expect(scanRecentDevtoolsSimulatorBootIssues({
+      baseline,
       rootDir: sandboxRoot,
       sinceMs: startedAt,
     })).toEqual([])

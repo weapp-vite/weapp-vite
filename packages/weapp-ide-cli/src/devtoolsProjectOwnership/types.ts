@@ -106,6 +106,8 @@ export interface BeginManagedWechatProjectOptions {
   generation?: string
   port?: number
   journalPath?: string
+  /** 当前任务根作用域最多持有一个窗口；双项目验收须显式指定两个。 */
+  maxOwnedWindows?: 1 | 2
 }
 
 export interface ManagedWechatProjectIntent {

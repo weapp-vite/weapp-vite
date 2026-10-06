@@ -1,10 +1,13 @@
 import type { ManagedWechatHostIdentity, ManagedWechatProjectIntent, ManagedWechatProjectRecord, ManagedWechatWindowCloseEvidence, ManagedWechatWindowLogCursor, ResolvedWechatDevtoolsTarget } from 'weapp-ide-cli'
 import { expectError, expectType } from 'tsd'
-import { beginManagedWechatProject, cleanupManagedWechatProjects, closeManagedWechatProject, MANAGED_PROJECT_JOURNAL_ENV, readManagedWechatProjectRecords } from 'weapp-ide-cli'
+import { beginManagedWechatProject, cleanupManagedWechatProjects, closeManagedWechatProject, MANAGED_PROJECT_JOURNAL_ENV, MANAGED_PROJECT_MAX_WINDOWS_ENV, readManagedWechatProjectRecords } from 'weapp-ide-cli'
 
 const target: ResolvedWechatDevtoolsTarget = { cliPath: 'cli', installationId: 'stable', appPath: 'app', profileDir: 'profile' }
 expectType<'WEAPP_IDE_MANAGED_PROJECT_JOURNAL'>(MANAGED_PROJECT_JOURNAL_ENV)
+expectType<'WEAPP_IDE_MANAGED_PROJECT_MAX_WINDOWS'>(MANAGED_PROJECT_MAX_WINDOWS_ENV)
 expectType<Promise<ManagedWechatProjectIntent | undefined>>(beginManagedWechatProject({ target, projectPath: 'project', generation: 'run', port: 19001 }))
+expectType<Promise<ManagedWechatProjectIntent | undefined>>(beginManagedWechatProject({ target, projectPath: 'project', maxOwnedWindows: 2 }))
+expectError(beginManagedWechatProject({ target, projectPath: 'project', maxOwnedWindows: 3 }))
 expectType<Promise<void>>(cleanupManagedWechatProjects({ scope: 'process' }))
 expectType<Promise<void>>(cleanupManagedWechatProjects({ journalPath: 'task-journal', scope: 'journal' }))
 expectType<Promise<void>>(closeManagedWechatProject({ journalPath: 'task-journal', id: 'record' }))

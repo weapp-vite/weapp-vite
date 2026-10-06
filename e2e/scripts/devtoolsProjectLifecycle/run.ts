@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
-import { cleanupManagedWechatProjects, MANAGED_PROJECT_JOURNAL_ENV, readManagedWechatProjectRecords } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { cleanupManagedWechatProjects, MANAGED_PROJECT_JOURNAL_ENV, MANAGED_PROJECT_MAX_WINDOWS_ENV, readManagedWechatProjectRecords } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { createDevtoolsProjectJournal } from '../../utils/devtoolsProcessOwnership'
 import { preflightSelectedWechatDevtools, readDevtoolsVersionPolicy } from '../../utils/devtoolsSelection'
 import { assertJournalReleased, assertSessionReleased, createLifecycleProject, errorText, openLifecycleSession, readBaseFixtureConfiguration, recordStep, REPO_ROOT, sessionEvidence } from './context'
@@ -18,12 +18,15 @@ export async function runLifecycleChecks(signal: AbortSignal, scriptPath: string
   const runDirectory = await fs.mkdtemp(path.join(temporaryRoot, 'devtools-project-lifecycle-'))
   const reportPath = path.join(runDirectory, 'report.json')
   const previousJournal = process.env[MANAGED_PROJECT_JOURNAL_ENV]
+  const previousMaxWindows = process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV]
   const journalPath = await createDevtoolsProjectJournal(previousJournal || runDirectory)
   const steps: LifecycleStep[] = []
   const sessions: OwnedSession[] = []
   const errors: unknown[] = []
   const report: Record<string, unknown> = { startedAt: new Date().toISOString(), status: 'running', journalPath, steps }
   process.env[MANAGED_PROJECT_JOURNAL_ENV] = journalPath
+  // A/B 与 protected/nested 场景刻意验证两个窗口的独立归属，子进程继承相同上限。
+  process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV] = '2'
   process.stdout.write(`[devtools-lifecycle] report: ${reportPath}\n`)
   try {
     await withMachineE2ELease(async (lease) => {
@@ -105,6 +108,12 @@ export async function runLifecycleChecks(signal: AbortSignal, scriptPath: string
     errors.push(error)
   }
   finally {
+    if (previousMaxWindows === undefined) {
+      delete process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV]
+    }
+    else {
+      process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV] = previousMaxWindows
+    }
     if (previousJournal === undefined) {
       delete process.env[MANAGED_PROJECT_JOURNAL_ENV]
     }

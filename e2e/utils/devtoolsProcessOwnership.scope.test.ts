@@ -53,12 +53,12 @@ afterEach(async () => {
   await fs.rm(directory, { recursive: true, force: true })
 })
 
-async function begin(journalPath: string, name: string) {
-  return (await beginManagedWechatProject({ target, projectPath: path.join(directory, name), journalPath }))!
+async function begin(journalPath: string, name: string, maxOwnedWindows?: 1 | 2) {
+  return (await beginManagedWechatProject({ target, projectPath: path.join(directory, name), journalPath, maxOwnedWindows }))!
 }
 
-async function owned(journalPath: string, name: string) {
-  const intent = await begin(journalPath, name)
+async function owned(journalPath: string, name: string, maxOwnedWindows?: 1 | 2) {
+  const intent = await begin(journalPath, name, maxOwnedWindows)
   await intent.confirm({ openedProjectWindow: true, port: 19001 })
   return intent
 }
@@ -135,13 +135,16 @@ describe('DevTools task journal scope', () => {
     }
   })
 
-  it.each([true, false])('allows another window while an earlier confirmed opened=%s receipt is healthy', async (openedProjectWindow) => {
+  it.each([true, false])('applies explicit concurrency to an earlier healthy opened=%s receipt', async (openedProjectWindow) => {
     const first = await createDevtoolsProjectJournal(root)
     const second = await createDevtoolsProjectJournal(root)
     const intent = await begin(first, 'first-project')
     await intent.confirm({ openedProjectWindow, port: 19001 })
 
-    await expect(owned(second, 'second-project')).resolves.toBeDefined()
+    if (openedProjectWindow) {
+      await expect(begin(second, 'second-project')).rejects.toThrow('window budget')
+    }
+    await expect(owned(second, 'second-project', openedProjectWindow ? 2 : undefined)).resolves.toBeDefined()
     expect((await readManagedWechatProjectRecords(root)).map(record => record.state).sort()).toEqual(openedProjectWindow ? ['owned', 'owned'] : ['borrowed', 'owned'])
     expect(mocks.close).not.toHaveBeenCalled()
   })
@@ -160,7 +163,7 @@ describe('DevTools task journal scope', () => {
     const first = await createDevtoolsProjectJournal(root)
     const second = await createDevtoolsProjectJournal(root)
     const a = await owned(first, 'first-project')
-    const b = await owned(second, 'second-project')
+    const b = await owned(second, 'second-project', 2)
 
     await cleanupManagedWechatProjects({ journalPath: first, scope: 'journal' })
     expect((await readManagedWechatProjectRecords(first))[0]).toMatchObject({ id: a.id, state: 'released' })
