@@ -36,6 +36,8 @@ pnpm add -D @weapp-vite/dashboard devframe@1.2.0 @devframes/agentic@1.2.0
 
 启动 `wv dev --ui` / `wv build --ui` 后，独立 Dashboard 自动开放本机只读 MCP，无需生成令牌或配置认证环境变量。浏览器仍使用终端提供的 OTP magic link；MCP 不需要先完成浏览器授权。
 
+`--ui-host hub` 是显式可选的官方 Hub UI 宿主，但不会开放聚合 MCP 或发布 MCP 发现记录。需要本节只读工具时，使用默认 `--ui` 或 `--ui-host standalone`；不要将 Hub 的可写界面设置误认为 Dashboard 报告写入能力。该选择不改变现有 `wv mcp` 入口。
+
 在项目目录启动 stdio 连接器：
 
 ```bash

@@ -110,6 +110,7 @@ wv [root]
 | `--project-config <path>`   | 小程序 `project.config.json` 路径        |
 | `--host [host]`             | Web dev server host（`web` 场景）        |
 | `--ui`                      | 启动 Devframe Dashboard（小程序场景）    |
+| `--ui-host <host>`          | 启用 Dashboard 并选择 `standalone`（默认）或 `hub` |
 | `--analyze`                 | `--ui` 的兼容参数                        |
 | `--scope <scope>`           | 局部构建范围，例如 `main,packages/order` |
 
@@ -119,6 +120,22 @@ wv [root]
 - 默认配置是 `enabled: 'auto'`，也就是仅在检测到 AI 终端时自动启用。
 - `--scope` 会只保留主包和指定分包进入开发构建，适合日常只调试某几个业务分包。产物 `app.json.subPackages` 也只包含参与 scope 的分包。
 - `--ui` 仅监听 `127.0.0.1`，终端会输出带一次性 OTP 的 magic link；Dashboard 通过分页只读 RPC 获取 Analyze 数据，并在连接中断后自动重连。
+
+#### 可选 Hub 工作台
+
+默认 `--ui` 继续打开独立 Dashboard。需要官方 DevFrame Hub 的工具栏、停靠面板与内建设置时，显式选择 `hub`，无需另传 `--ui` 或安装 Vite DevTools：
+
+```bash
+wv dev --ui-host hub
+wv build --ui-host hub
+wv analyze --ui-host hub
+```
+
+两种模式均需安装可选面板包 `@weapp-vite/dashboard`。`--ui-host standalone` 显式启用原有独立模式；只接受这两个值，其他值在启动前报错。不传 `--ui`、`--analyze` 或 `--ui-host` 时，`dev` / `build` 不新增 UI 服务。
+
+Hub 入口位于 `/__devframes/`，Dashboard 面板仍位于 `/__weapp-vite/`；终端输出 Hub 的一次性 OTP magic link。二者共用同一 loopback 服务、报告控制器与原生连接，不另建报告或传输层。开发模式仍实时更新构建报告；一次性 `analyze` 展示已完成的分析结果。Hub 的语言设置仅作用于内建 UI，不自动翻译 Dashboard 自定义面板。
+
+Hub 模式不安装终端或其他默认工具，不开放聚合 MCP，也不注册 MCP 发现记录；需要下述只读 Dashboard MCP 时使用默认独立模式。此入口不是离线报告导出，`analyze --json`、`--markdown`、`--report` 等原有输出选项仍优先于 UI。
 
 #### Dashboard MCP
 
@@ -158,6 +175,7 @@ wv build [root]
 | `--skipNpm`                 | 跳过 npm 构建                                            |
 | `-o, --open`                | 构建后尝试打开 IDE                                       |
 | `--ui`                      | 构建后启动 Devframe Dashboard（小程序场景）              |
+| `--ui-host <host>`          | 启用 Dashboard 并选择 `standalone`（默认）或 `hub` |
 | `--analyze`                 | `--ui` 的兼容参数                                        |
 | `--scope <scope>`           | 局部构建范围，例如 `main,packages/order`                 |
 | `--upload`                  | 本次构建成功后上传小程序，不重复构建                     |
@@ -209,6 +227,7 @@ wv analyze [root]
 | 参数                        | 说明                                                                               |
 | --------------------------- | ---------------------------------------------------------------------------------- |
 | `--hmr-profile [file]`      | 分析 HMR JSONL profile，省略值时优先读取 `weapp.hmr.profileJson`，否则回退默认路径 |
+| `--ui-host <host>`          | UI 模式选择 `standalone`（默认）或 `hub`；不覆盖 JSON 等输出选项 |
 | `--json`                    | 输出 JSON 结果（stdout）                                                           |
 | `--markdown`                | 输出完整 Markdown 报告                                                             |
 | `--report <type>`           | 输出指定报告类型，当前支持 `pr`                                                    |

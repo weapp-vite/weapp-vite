@@ -1,3 +1,4 @@
+import type * as OptionsModule from '../options'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
@@ -67,7 +68,8 @@ vi.mock('../../logger', () => ({
   },
 }))
 
-vi.mock('../options', () => ({
+vi.mock('../options', async importOriginal => ({
+  ...await importOriginal<typeof OptionsModule>(),
   filterDuplicateOptions: filterDuplicateOptionsMock,
   resolveConfigFile: resolveConfigFileMock,
   isUiEnabled: isUiEnabledMock,

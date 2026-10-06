@@ -70,6 +70,7 @@ vi.mock('../../devLifecycle/shutdown', () => ({
 
 vi.mock('./dashboardViteBridge', () => ({
   ANALYZE_DASHBOARD_DEVFRAME_BASE: '/__weapp-vite/',
+  ANALYZE_DASHBOARD_HUB_BASE: '/__devframes/',
   createAnalyzeDashboardViteBridge: createAnalyzeDashboardViteBridgeMock,
 }))
 

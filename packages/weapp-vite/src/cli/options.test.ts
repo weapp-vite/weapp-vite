@@ -4,6 +4,7 @@ import {
   convertBase,
   filterDuplicateOptions,
   isUiEnabled,
+  parseDashboardUiHost,
   resolveConfigFile,
 } from './options'
 
@@ -51,6 +52,24 @@ describe('cli options helpers', () => {
     expect(coerceBooleanOption(0)).toBe(false)
     expect(coerceBooleanOption(1)).toBe(true)
     expect(coerceBooleanOption({})).toBe(true)
+  })
+
+  it('keeps an omitted UI host unset and UI disabled without opt-in flags', () => {
+    const uiHost = parseDashboardUiHost(undefined)
+    expect(uiHost).toBeUndefined()
+    expect(isUiEnabled({})).toBe(false)
+    expect(isUiEnabled({ uiHost, ui: false, analyze: false })).toBe(false)
+  })
+
+  it.each(['standalone', 'hub'] as const)('enables UI when the %s host is explicitly selected', (value) => {
+    const uiHost = parseDashboardUiHost(value)
+    expect(uiHost).toBe(value)
+    expect(isUiEnabled({ uiHost })).toBe(true)
+    expect(isUiEnabled({ uiHost, ui: false, analyze: false })).toBe(true)
+  })
+
+  it.each(['', 'Hub', 'STANDALONE', ' hub', 'standalone ', 'other', false, true, null, 0])('rejects invalid UI host %j with supported choices', (value) => {
+    expect(() => parseDashboardUiHost(value)).toThrow(/--ui-host.*standalone.*hub/)
   })
 
   it('enables ui mode from ui or analyze flags', () => {

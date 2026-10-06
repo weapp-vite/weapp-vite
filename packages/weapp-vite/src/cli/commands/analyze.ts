@@ -20,7 +20,7 @@ import logger, { colors } from '../../logger'
 import { resolveHmrProfileJsonPath } from '../../utils/hmrProfile'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { withAnalyzeOutput } from '../analyze/output'
-import { coerceBooleanOption, filterDuplicateOptions, resolveConfigFile } from '../options'
+import { coerceBooleanOption, filterDuplicateOptions, parseDashboardUiHost, resolveConfigFile } from '../options'
 import { terminateStaleSassEmbeddedProcess } from '../processCleanup'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
 
@@ -398,6 +398,7 @@ function printHmrProfileAnalysisSummary(result: HmrProfileAnalyzeResult, configS
 export function registerAnalyzeCommand(cli: CAC) {
   cli
     .command('analyze [root]', 'analyze 两端包体与源码映射')
+    .option('--ui-host <host>', `[string] 启动调试 UI 并选择宿主（standalone | hub）`)
     .option('--hmr-profile [file]', `[string | boolean] 分析 HMR JSONL profile，省略值时优先读取配置，否则回退到默认路径`)
     .option('--json', `[boolean] 输出 JSON 结果`)
     .option('--markdown', `[boolean] 输出 Markdown 报告`)
@@ -410,6 +411,7 @@ export function registerAnalyzeCommand(cli: CAC) {
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
     .action(async (root: string, options: AnalyzeCLIOptions) => {
       filterDuplicateOptions(options)
+      options.uiHost = parseDashboardUiHost(options.uiHost)
       const configFile = resolveConfigFile(options)
       const outputJson = coerceBooleanOption(options.json)
       return withAnalyzeOutput(Boolean(outputJson), async (writeJson) => {
@@ -553,6 +555,7 @@ export function registerAnalyzeCommand(cli: CAC) {
           if (artifactSnapshot) {
             printAnalysisSummary(result)
             await startAnalyzeDashboard(result, {
+              uiHost: options.uiHost,
               artifacts: artifactSnapshot.files,
               cwd: ctx.configService.cwd,
               packageManagerAgent: ctx.configService.packageManager.agent,

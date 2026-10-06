@@ -78,6 +78,20 @@ wv build -p web
 
 `web` 是浏览器 runtime 的规范平台名，`h5` 仅作为向后兼容别名保留；未选择 Web 平台时不改变现有小程序构建。完整配置和兼容边界见 [Web 运行时配置](https://vite.weapp.dev/config/web) 与 [`@weapp-vite/web`](https://vite.weapp.dev/packages/web)。
 
+### 可选 Hub 工作台
+
+`wv dev --ui` / `wv build --ui` 保持独立 Dashboard。安装可选面板包 `@weapp-vite/dashboard` 后，可显式启用 DevFrame 1.2 的官方 Hub，无需安装 Vite DevTools：
+
+```bash
+wv dev --ui-host hub
+wv build --ui-host hub
+wv analyze --ui-host hub
+```
+
+`--ui-host` 只接受 `standalone` 和 `hub`，并隐式启用 UI；不传 UI 参数时，`dev` / `build` 不新增服务。Hub 入口为 `/__devframes/`，Dashboard 面板仍为 `/__weapp-vite/`，共用 loopback 服务、OTP 认证、报告控制器和原生连接。Hub 提供停靠面板与内建设置，不安装终端或其他默认工具；语言设置不自动翻译自定义 Dashboard。
+
+Hub 模式不开放聚合 MCP，也不发布 MCP 发现记录；需要下述只读 MCP 时使用默认 `--ui` 或 `--ui-host standalone`。`analyze --json`、`--markdown`、`--report` 等输出选项优先级保持不变；Hub 不是离线报告导出。完整参数见 [CLI 指南](https://vite.weapp.dev/guide/cli#可选-hub-工作台)。
+
 ### Dashboard 嵌入 Vite DevTools
 
 `weapp-vite/dashboard` 是 Node 端共享核心；CLI 独立工作台与 Vite DevTools 复用同一个 `DevframeDefinition` 和 `@weapp-vite/dashboard` 面板。可选适配器位于 `weapp-vite/dashboard/vite`，使用官方 `createPluginFromDevframe`，不会由普通包入口或 CLI 自动加载。

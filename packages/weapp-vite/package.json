@@ -179,6 +179,8 @@
     "@babel/preset-env": "^8.0.6",
     "@babel/preset-typescript": "^8.0.1",
     "@devframes/agentic": "1.2.0",
+    "@devframes/hub": "1.2.0",
+    "@devframes/hub-ui": "1.2.0",
     "@jridgewell/remapping": "^2.3.5",
     "@modelcontextprotocol/node": "^2.1.0",
     "@typescript-eslint/parser": "^8.71.0",

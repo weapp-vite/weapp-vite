@@ -1,15 +1,21 @@
+import type { HubInstance } from '@devframes/hub/initiate'
 import type { DevframeInstance } from 'devframe/initiate'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { AnalyzeDashboardDevframeController } from '../../dashboard'
+import type { DashboardUiHost } from '../types'
 import type { DashboardMcp } from './dashboardMcp'
 import { Server } from 'node:http'
 import process from 'node:process'
+import { createUi } from '@devframes/hub-ui'
+import { initHub } from '@devframes/hub/initiate'
 import { DEVFRAME_CONNECTION_META_FILENAME, DEVFRAME_SSE_ROUTE, DEVFRAME_WS_ROUTE } from 'devframe/constants'
 import { initDevframe } from 'devframe/initiate'
 import { createDashboardMcp } from './dashboardMcp'
 import { withStandaloneDashboardPolicy } from './dashboardPolicy'
 
 export const ANALYZE_DASHBOARD_DEVFRAME_BASE = '/__weapp-vite/'
+// Hub 必须与 Dashboard 静态挂载前缀互斥，避免被上游 SPA 路由截获。
+export const ANALYZE_DASHBOARD_HUB_BASE = '/__devframes/'
 
 const transportPaths = new Set([
   `${ANALYZE_DASHBOARD_DEVFRAME_BASE}${DEVFRAME_CONNECTION_META_FILENAME}`,
@@ -19,6 +25,7 @@ const transportPaths = new Set([
 
 interface AnalyzeDashboardViteBridgeOptions {
   projectRoot?: string
+  uiHost?: DashboardUiHost
 }
 
 interface DashboardHost {
@@ -44,7 +51,7 @@ export function createAnalyzeDashboardViteBridge(
         throw new Error('Dashboard bridge is already closed.')
       }
       const httpServer = server.httpServer instanceof Server ? server.httpServer : undefined
-      let instance: DevframeInstance | undefined
+      let instance: DevframeInstance | HubInstance | undefined
       let mcp: DashboardMcp | undefined
       let starting: Promise<void> | undefined
       let acquiring: Promise<void> | undefined
@@ -64,25 +71,46 @@ export function createAnalyzeDashboardViteBridge(
                   return
                 }
                 if (!httpServer) {
-                  throw new Error('Dashboard MCP requires the Dashboard Vite HTTP server.')
+                  throw new Error('Dashboard requires the Dashboard Vite HTTP server.')
                 }
-                instance = initDevframe(withStandaloneDashboardPolicy(controller.definition), {
-                  base: ANALYZE_DASHBOARD_DEVFRAME_BASE,
-                  distDir: false,
-                  server: httpServer,
-                  allowedOrigins: [],
-                  auth: true,
-                  mcp: false,
-                  register: false,
-                })
-                await instance.ready
-                if (!closed) {
-                  mcp = await createDashboardMcp(instance, httpServer, {
-                    projectRoot: options.projectRoot ?? process.cwd(),
-                    id: controller.definition.id,
-                    name: controller.definition.name,
-                    version: controller.definition.version,
+                if (options.uiHost === 'hub') {
+                  instance = initHub({
+                    base: ANALYZE_DASHBOARD_HUB_BASE,
+                    name: 'weapp-vite DevTools',
+                    cwd: options.projectRoot ?? process.cwd(),
+                    server: httpServer,
+                    allowedOrigins: [],
+                    auth: true,
+                    mcp: false,
+                    register: false,
+                    ui: createUi({ branding: { productName: 'weapp-vite DevTools' } }),
+                    // declarative devframes 会强制挂在 Hub 子路径；install 保留 Dashboard 的 Vite base。
+                    configure: ctx => ctx.install({
+                      ...controller.definition,
+                      basePath: ANALYZE_DASHBOARD_DEVFRAME_BASE,
+                    }),
                   })
+                  await instance.ready
+                }
+                else {
+                  instance = initDevframe(withStandaloneDashboardPolicy(controller.definition), {
+                    base: ANALYZE_DASHBOARD_DEVFRAME_BASE,
+                    distDir: false,
+                    server: httpServer,
+                    allowedOrigins: [],
+                    auth: true,
+                    mcp: false,
+                    register: false,
+                  })
+                  await instance.ready
+                  if (!closed) {
+                    mcp = await createDashboardMcp(instance, httpServer, {
+                      projectRoot: options.projectRoot ?? process.cwd(),
+                      id: controller.definition.id,
+                      name: controller.definition.name,
+                      version: controller.definition.version,
+                    })
+                  }
                 }
               })
               await acquiring
@@ -149,6 +177,20 @@ export function createAnalyzeDashboardViteBridge(
         const url = request.url ?? '/'
         const queryIndex = url.indexOf('?')
         const pathname = queryIndex < 0 ? url : url.slice(0, queryIndex)
+        if (options.uiHost === 'hub') {
+          if (pathname === `${ANALYZE_DASHBOARD_DEVFRAME_BASE}${DEVFRAME_CONNECTION_META_FILENAME}`) {
+            // Hub 的 Node middleware 只接收自身 base；外部挂载通过公开 metadata API 发现同一传输。
+            response.setHeader('Content-Type', 'application/json')
+            response.end(JSON.stringify(instance.connectionMeta()))
+          }
+          else if (pathname === ANALYZE_DASHBOARD_HUB_BASE.slice(0, -1) || pathname.startsWith(ANALYZE_DASHBOARD_HUB_BASE)) {
+            instance.nodeMiddleware(request, response, next)
+          }
+          else {
+            next()
+          }
+          return
+        }
         if (mcp && pathname === mcp.route) {
           void mcp.nodeMiddleware(request, response).catch(next)
         }
