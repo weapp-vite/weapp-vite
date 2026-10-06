@@ -25,18 +25,19 @@ import type {
   TreemapNodeMeta,
 } from '../types'
 import type { PrReviewChecklistItem, PrReviewChecklistSummary } from '../utils/prReviewChecklist'
-import { defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
+import AnalyzeBuildSummary from './AnalyzeBuildSummary.vue'
 import AnalyzeDetailsPanel from './AnalyzeDetailsPanel.vue'
 import AnalyzeDiagnosticsSection from './AnalyzeDiagnosticsSection.vue'
 import AnalyzeDraggableGrid from './AnalyzeDraggableGrid.vue'
-import AnalyzeOverviewPanel from './AnalyzeOverviewPanel.vue'
+import AnalyzeWorkQueuePanel from './AnalyzeWorkQueuePanel.vue'
 import ModulesPanel from './ModulesPanel.vue'
 import PackagesPanel from './PackagesPanel.vue'
 import PrReviewChecklistPanel from './PrReviewChecklistPanel.vue'
 import SourceArtifactComparePanel from './SourceArtifactComparePanel.vue'
 import TreemapCard from './TreemapCard.vue'
 
-defineProps<{
+const props = defineProps<{
   actionItems: AnalyzeActionCenterItem[]
   activeBudgetWarningId: string | null
   activeLargestFileKey: string | null
@@ -61,7 +62,6 @@ defineProps<{
   metricPackageTypeSummary: SummaryMetric[]
   moduleSourceSummary: ModuleSourceSummary[]
   modulesLayoutItems: Array<{ id: string, label: string }>
-  overviewLayoutItems: Array<{ id: string, label: string }>
   packageInsights: PackageInsight[]
   packagesLayoutItems: Array<{ id: string, label: string }>
   prReviewChecklist: PrReviewChecklistSummary
@@ -116,35 +116,13 @@ const emit = defineEmits<{
 }>()
 
 const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue'))
+const selectedAction = computed(() => props.actionItems.find(item => item.key === props.selectedActionKey) ?? props.actionItems[0])
 </script>
 
 <template>
-  <section v-if="activeTab === 'overview'" class="min-h-0">
-    <AnalyzeDraggableGrid
-      grid-class="grid min-h-0 min-w-0 content-start gap-2"
-      :items="overviewLayoutItems"
-      storage-key="weapp-vite:dashboard:analyze-layout:overview"
-    >
-      <template #metrics>
-        <AnalyzeOverviewPanel
-          :action-items="actionItems"
-          :cards="topCards"
-          :largest-files="largestFiles"
-          :package-insights="packageInsights"
-          :package-type-summary="metricPackageTypeSummary"
-          @copy-report="emit('copyPr')"
-          @select-action="emit('selectAction', $event)"
-          @select-file="emit('openFile', $event)"
-          @select-package="emit('selectPackage', $event)"
-        />
-      </template>
-    </AnalyzeDraggableGrid>
-  </section>
-
-  <section v-else-if="activeTab === 'diagnostics'" class="min-h-0">
+  <section v-if="activeTab === 'diagnostics'" class="grid min-h-0 min-w-0 content-start gap-6">
     <AnalyzeDiagnosticsSection
       :action-items="actionItems"
-      :active-work-queue-item-id="activeWorkQueueItemId"
       :baseline-snapshot-id="baselineSnapshotId"
       :comparison-mode="comparisonMode"
       :comparison-result="comparisonResult"
@@ -152,22 +130,27 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
       :increment-attribution="incrementAttribution"
       :result="result"
       :history-snapshots="historySnapshots"
-      :queued-action-keys="queuedActionKeys"
       :selected-action-key="selectedActionKey"
-      :work-queue-items="workQueueItems"
-      @add-action-to-queue="emit('addActionToQueue', $event)"
-      @clear-completed-work-queue="emit('clearCompletedWorkQueue')"
-      @copy-work-queue="emit('copyWorkQueue')"
       @focus-action="emit('focusAction', $event)"
       @open-file="emit('openFile', $event)"
       @open-source="emit('openTreemapSource', $event)"
-      @remove-work-queue-item="emit('removeWorkQueueItem', $event)"
       @select-action="emit('selectAction', $event)"
-      @select-work-queue-item="emit('selectWorkQueueItem', $event)"
       @set-baseline="emit('setBaseline', $event)"
       @set-comparison-mode="emit('setComparisonMode', $event)"
-      @toggle-work-queue-item="emit('toggleWorkQueueItem', $event)"
-    />
+    >
+      <template #overview>
+        <AnalyzeBuildSummary
+          :action-items="actionItems"
+          :cards="topCards"
+          :largest-files="largestFiles"
+          :package-insights="packageInsights"
+          :package-type-summary="metricPackageTypeSummary"
+          @copy-report="emit('copyPr')"
+          @select-file="emit('openFile', $event)"
+          @select-package="emit('selectPackage', $event)"
+        />
+      </template>
+    </AnalyzeDiagnosticsSection>
   </section>
 
   <section v-else-if="activeTab === 'review'" class="min-h-0">
@@ -185,6 +168,16 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
         />
       </template>
     </AnalyzeDraggableGrid>
+    <details class="mt-4 border-t border-(--dashboard-border) pt-3" :open="Boolean(activeWorkQueueItemId)">
+      <summary class="min-h-11 cursor-pointer py-2 text-sm text-(--dashboard-text-muted)">
+        手动跟进清单<span v-if="workQueueItems.length">（{{ workQueueItems.length }} 项）</span>
+      </summary>
+      <p class="mb-3 text-xs leading-5 text-(--dashboard-text-soft)">仅记录本地跟进状态，不执行修复，也不证明问题已经解决。</p>
+      <button v-if="selectedAction" type="button" :disabled="queuedActionKeys.includes(selectedAction.key)" class="mb-3 min-h-11 max-w-full rounded-md border border-(--dashboard-border) px-3 text-left text-sm text-(--dashboard-text-muted) [overflow-wrap:anywhere] focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) disabled:opacity-50" @click="emit('addActionToQueue', selectedAction)">
+        {{ queuedActionKeys.includes(selectedAction.key) ? '已在清单：' : '加入清单：' }}{{ selectedAction.title }}
+      </button>
+      <AnalyzeWorkQueuePanel :items="workQueueItems" :active-id="activeWorkQueueItemId" @clear-completed="emit('clearCompletedWorkQueue')" @copy="emit('copyWorkQueue')" @remove="emit('removeWorkQueueItem', $event)" @select="emit('selectWorkQueueItem', $event)" @toggle="emit('toggleWorkQueueItem', $event)" />
+    </details>
   </section>
 
   <section v-else-if="activeTab === 'graph'" class="min-h-0">

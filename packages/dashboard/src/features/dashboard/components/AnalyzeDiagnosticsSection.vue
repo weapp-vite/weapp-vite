@@ -4,7 +4,6 @@ import type {
   AnalyzeComparisonMode,
   AnalyzeHistorySnapshot,
   AnalyzeSubpackagesResult,
-  AnalyzeWorkQueueItem,
   DuplicateModuleEntry,
   IncrementAttributionEntry,
   LargestFileEntry,
@@ -15,39 +14,29 @@ import { computed, nextTick, shallowRef, useTemplateRef, watch } from 'vue'
 import { dashboardAnalyzeRevision, dashboardConnectionStatus } from '../utils/dashboardDevframe'
 import { createDiagnosticContext, createDiagnosticEvidence } from '../utils/diagnosticEvidence'
 import ActionCenterPanel from './ActionCenterPanel.vue'
-import AnalyzeWorkQueuePanel from './AnalyzeWorkQueuePanel.vue'
 import DiagnosticContextPanel from './DiagnosticContextPanel.vue'
 import DiagnosticEvidencePanel from './DiagnosticEvidencePanel.vue'
 import HistoryBaselinePanel from './HistoryBaselinePanel.vue'
 
 const props = defineProps<{
   actionItems: AnalyzeActionCenterItem[]
-  activeWorkQueueItemId: string | null
   baselineSnapshotId: string | null
   comparisonMode: AnalyzeComparisonMode
   comparisonResult: AnalyzeSubpackagesResult | null
   duplicateModules: DuplicateModuleEntry[]
   historySnapshots: AnalyzeHistorySnapshot[]
   incrementAttribution: IncrementAttributionEntry[]
-  queuedActionKeys: string[]
   result: AnalyzeSubpackagesResult
   selectedActionKey: string | null
-  workQueueItems: AnalyzeWorkQueueItem[]
 }>()
 
 const emit = defineEmits<{
-  addActionToQueue: [item: AnalyzeActionCenterItem]
-  clearCompletedWorkQueue: []
-  copyWorkQueue: []
   focusAction: [item: AnalyzeActionCenterItem]
   openFile: [item: LargestFileEntry]
   openSource: [meta: TreemapModuleNodeMeta]
-  removeWorkQueueItem: [id: string]
   selectAction: [item: AnalyzeActionCenterItem]
-  selectWorkQueueItem: [item: AnalyzeWorkQueueItem]
   setBaseline: [id: string]
   setComparisonMode: [mode: AnalyzeComparisonMode]
-  toggleWorkQueueItem: [id: string]
 }>()
 
 const contextTrigger = useTemplateRef<HTMLButtonElement>('contextTrigger')
@@ -67,7 +56,9 @@ const evidence = computed(() => selectedAction.value
       incrementAttribution: props.incrementAttribution,
     })
   : null)
-const problemCount = computed(() => props.actionItems.filter(item => item.warning?.status === 'critical').length)
+const classificationLabel = computed(() => evidence.value
+  ? { problem: '超出预算', risk: '预算风险', clue: '待查线索', unknown: '测量不完整' }[evidence.value.classification]
+  : '')
 const comparisonLabel = computed(() => !props.comparisonResult
   ? '无历史基线，不推断增长'
   : props.comparisonMode === 'baseline' ? '浏览器选定基线' : '上次构建（浏览器对照）')
@@ -118,9 +109,8 @@ async function closeContext() {
 </script>
 
 <template>
-  <section class="grid min-w-0 content-start gap-7" aria-label="包体诊断">
+  <section class="grid min-w-0 content-start gap-5" aria-label="问题与证据">
     <DiagnosticEvidencePanel
-      v-if="selectedAction && evidence"
       :action="selectedAction"
       :evidence="evidence"
       :comparison-label="comparisonLabel"
@@ -129,20 +119,28 @@ async function closeContext() {
       @inspect="emit('selectAction', $event)"
     >
       <template #index>
-        <ActionCenterPanel :actions="actionItems" :active-key="selectedAction.key" @select="emit('focusAction', $event)" />
-        <div class="mt-6 grid gap-2 border-t border-(--dashboard-border) pt-4 text-xs leading-5 text-(--dashboard-text-muted)">
-          <p>{{ problemCount }} 项超预算 · {{ actionItems.length - problemCount }} 项风险与线索</p>
-          <p>{{ comparisonLabel }}</p>
-          <p class="font-mono">{{ result.metadata?.generatedAt ?? '生成时间未提供' }}<span v-if="dashboardAnalyzeRevision !== null"> · R{{ dashboardAnalyzeRevision }}</span></p>
-          <p>增长与重复仅为待查线索，估算不计作已实现收益。</p>
+        <slot name="overview" />
+        <div class="mt-5 border-t border-(--dashboard-border) pt-5">
+          <ActionCenterPanel :actions="actionItems" :active-key="selectedAction?.key ?? null" @select="emit('focusAction', $event)" />
         </div>
+        <p class="mt-4 text-xs text-(--dashboard-text-soft)">
+          当前报告<span v-if="dashboardAnalyzeRevision !== null"> · R{{ dashboardAnalyzeRevision }}</span>
+        </p>
       </template>
-      <template #heading>
-        <header class="flex min-w-0 flex-wrap items-start justify-between gap-5">
-          <div class="min-w-0 flex-1 basis-80">
-            <p class="mb-2 font-mono text-xs tracking-wide text-(--dashboard-text-soft)">PACKAGE DIAGNOSTICS / 包体诊断</p>
-            <h2 class="text-2xl font-semibold leading-snug tracking-tight text-(--dashboard-text) [overflow-wrap:anywhere]">{{ selectedAction.title }}</h2>
-            <p class="mt-2 text-sm leading-6 text-(--dashboard-text-muted) [overflow-wrap:anywhere]">{{ selectedAction.meta }}</p>
+      <template #controls>
+        <HistoryBaselinePanel
+          :snapshots="historySnapshots"
+          :baseline-snapshot-id="baselineSnapshotId"
+          :comparison-mode="comparisonMode"
+          @set-baseline="emit('setBaseline', $event)"
+          @set-comparison-mode="emit('setComparisonMode', $event)"
+        />
+      </template>
+      <template v-if="selectedAction" #heading>
+        <header class="flex min-w-0 flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0 flex-1 basis-72">
+            <p class="mb-1 text-xs text-(--dashboard-text-soft)">{{ classificationLabel }}</p>
+            <h2 class="text-xl font-semibold leading-snug tracking-tight text-(--dashboard-text) [overflow-wrap:anywhere]">{{ selectedAction.title }}</h2>
           </div>
           <button
             ref="contextTrigger"
@@ -173,25 +171,5 @@ async function closeContext() {
         />
       </template>
     </DiagnosticEvidencePanel>
-    <div v-else class="rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-6">
-      <h3 class="font-semibold text-(--dashboard-text)">当前没有待调查的预算风险或分析线索</h3>
-      <p class="mt-2 text-sm leading-6 text-(--dashboard-text-muted)">不把最大文件自动当作问题。需要继续分析时，可查看包体详情或模块复用；构建报告本身不代表运行时已验收。</p>
-    </div>
-
-    <details class="group min-w-0 border-t border-(--dashboard-border) pt-2" :open="Boolean(activeWorkQueueItemId) || comparisonMode === 'baseline'">
-      <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md px-2 text-sm text-(--dashboard-text-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent)">
-        <span class="icon-[mdi--chevron-right] size-4 shrink-0 group-open:rotate-90" aria-hidden="true" />
-        处理清单与历史对比<span v-if="workQueueItems.length">（{{ workQueueItems.length }} 项）</span>
-      </summary>
-      <div class="grid min-w-0 gap-4 pt-3 xl:grid-cols-2">
-        <div class="min-w-0">
-          <button v-if="selectedAction" type="button" :disabled="queuedActionKeys.includes(selectedAction.key)" class="mb-3 min-h-11 rounded-md border border-(--dashboard-border) px-3 text-sm text-(--dashboard-text-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) disabled:opacity-50" @click="emit('addActionToQueue', selectedAction)">
-            {{ queuedActionKeys.includes(selectedAction.key) ? '当前事项已在清单' : '将当前事项加入清单' }}
-          </button>
-          <AnalyzeWorkQueuePanel :items="workQueueItems" :active-id="activeWorkQueueItemId" @clear-completed="emit('clearCompletedWorkQueue')" @copy="emit('copyWorkQueue')" @remove="emit('removeWorkQueueItem', $event)" @select="emit('selectWorkQueueItem', $event)" @toggle="emit('toggleWorkQueueItem', $event)" />
-        </div>
-        <HistoryBaselinePanel :snapshots="historySnapshots" :baseline-snapshot-id="baselineSnapshotId" :comparison-mode="comparisonMode" @set-baseline="emit('setBaseline', $event)" @set-comparison-mode="emit('setComparisonMode', $event)" />
-      </div>
-    </details>
   </section>
 </template>

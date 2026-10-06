@@ -37,9 +37,9 @@ function isActive(targetPath: string) {
 function getAnalyzeTabFromPath(targetPath: string) {
   const queryIndex = targetPath.indexOf('?')
   if (queryIndex === -1) {
-    return 'overview'
+    return 'diagnostics'
   }
-  return new URLSearchParams(targetPath.slice(queryIndex + 1)).get('tab') ?? 'overview'
+  return new URLSearchParams(targetPath.slice(queryIndex + 1)).get('tab') ?? 'diagnostics'
 }
 
 function isNavigationItemActive(targetPath: string) {

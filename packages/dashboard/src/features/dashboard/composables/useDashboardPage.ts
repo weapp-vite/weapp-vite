@@ -40,11 +40,11 @@ export function useDashboardPage(options: {
       if (value === 'diagnostics' || value === 'review' || value === 'graph' || value === 'treemap' || value === 'files' || value === 'source' || value === 'packages' || value === 'modules') {
         return value
       }
-      return 'overview'
+      return 'diagnostics'
     },
     set(value) {
       const query = { ...route.query }
-      if (value === 'overview') {
+      if (value === 'diagnostics') {
         delete query.tab
       }
       else {
@@ -90,7 +90,7 @@ export function useDashboardPage(options: {
     ]
   }
 
-  function createOverviewTopCards(): DashboardMetricCard[] {
+  function createBuildSummaryTopCards(): DashboardMetricCard[] {
     return [
       createMetricCard({ label: '包体数量', value: String(options.summary.value.packageCount), iconName: 'tab-packages' }),
       createMetricCard({ label: '源码模块', value: String(options.summary.value.moduleCount), iconName: 'metric-modules' }),
@@ -109,7 +109,7 @@ export function useDashboardPage(options: {
       return createModulesTopCards()
     }
 
-    return createOverviewTopCards()
+    return createBuildSummaryTopCards()
   })
 
   return {

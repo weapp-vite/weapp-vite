@@ -14,9 +14,6 @@ import { useDashboardPage } from './useDashboardPage'
 import { useDashboardTheme } from './useDashboardTheme'
 import { useDashboardWorkspace } from './useDashboardWorkspace'
 
-const overviewLayoutItems = [
-  { id: 'metrics', label: '关键指标' },
-]
 const reviewLayoutItems = [
   { id: 'review', label: 'PR 风险清单' },
 ]
@@ -191,7 +188,6 @@ export function useAnalyzePageController() {
     metricPackageTypeSummary,
     modulesLayoutItems,
     moreMenuOpen,
-    overviewLayoutItems,
     packagesLayoutItems,
     prReviewChecklist,
     resolvedTheme,

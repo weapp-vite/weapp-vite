@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import type { Router } from 'vue-router'
-import type { AnalyzeActionCenterItem, AnalyzeCommandPaletteItem, AnalyzeSubpackagesResult, AnalyzeWorkQueueItem, DuplicateModuleEntry, LargestFileEntry, PackageBudgetWarning, PackageInsight, TreemapModuleNodeMeta, TreemapNodeMeta } from '../types'
+import type { AnalyzeActionCenterItem, AnalyzeCommandPaletteItem, AnalyzeSubpackagesResult, AnalyzeWorkQueueItem, DashboardTab, DuplicateModuleEntry, LargestFileEntry, PackageBudgetWarning, PackageInsight, TreemapModuleNodeMeta, TreemapNodeMeta } from '../types'
 import { describe, expect, it, vi } from 'vitest'
 import { createSSRApp, h, ref, shallowRef } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -14,6 +14,7 @@ import { useAnalyzeTreemapController } from './useAnalyzeTreemapController'
 import { useDashboardPage } from './useDashboardPage'
 
 interface NavigationSession {
+  activeTab: Ref<DashboardTab>
   artifactFiles: Ref<LargestFileEntry[]>
   packageInsights: Ref<PackageInsight[]>
   actionItems: Ref<AnalyzeActionCenterItem[]>
@@ -132,12 +133,12 @@ function createSession(additionalPackages: AnalyzeSubpackagesResult['packages'])
     addWorkQueueItem: item => workQueueItems.value.push(item),
     exportStatus: ref(''),
   })
-  return { ...treemap, ...interactions, ...data, actionItems, commandItems }
+  return { ...treemap, ...interactions, ...data, activeTab, actionItems, commandItems }
 }
 
 async function createHarness(additionalPackages: AnalyzeSubpackagesResult['packages'] = []) {
-  const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: { render: () => h('div') } }] })
-  await router.push('/')
+  const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/analyze', component: { render: () => h('div') } }] })
+  await router.push('/analyze')
   let session!: NavigationSession
   const app = createSSRApp({
     setup() {
@@ -163,14 +164,16 @@ function navigate(router: Router, action: () => void) {
 }
 
 describe('analyze navigation', () => {
-  it('keeps issue selection in the evidence workspace until an explicit drilldown', async () => {
+  it.each([undefined, 'diagnostics', 'unknown-tab'])('keeps issue selection in the evidence workspace for tab %s until an explicit drilldown', async (tab) => {
     const { router, session } = await createHarness()
-    await router.replace({ query: { tab: 'diagnostics', color: 'delta' } })
+    const query = tab === undefined ? { color: 'delta' } : { tab, color: 'delta' }
+    await router.replace({ query })
+    expect(session.activeTab.value).toBe('diagnostics')
     const item = session.actionItems.value.find(item => item.kind === 'duplicate')!
 
     session.handleFocusAction(item)
 
-    expect(router.currentRoute.value.query).toEqual({ tab: 'diagnostics', color: 'delta' })
+    expect(router.currentRoute.value.query).toEqual(query)
     expect(session.selectedActionKey.value).toBe(item.key)
     expect(session.selectedTreemapMeta.value).toBeNull()
 
@@ -178,9 +181,16 @@ describe('analyze navigation', () => {
 
     expect(router.currentRoute.value.query).toEqual({ tab: 'modules', color: 'delta', filter: 'duplicates' })
     expect(session.selectedTreemapMeta.value).toMatchObject({ kind: 'module', source: item.moduleMeta?.source })
+
+    await navigate(router, () => {
+      session.activeTab.value = 'diagnostics'
+    })
+
+    expect(router.currentRoute.value.query).toEqual({ color: 'delta', filter: 'duplicates' })
+    expect(session.activeTab.value).toBe('diagnostics')
   })
 
-  it.each(['overview', 'treemap'] as const)('selects a package and its tab together from %s', async (tab) => {
+  it.each(['diagnostics', 'treemap'] as const)('selects a package and its tab together from %s', async (tab) => {
     const { router, session } = await createHarness()
     await router.replace({ query: { tab, color: 'source', filter: 'duplicates' } })
     const pkg = session.packageInsights.value.find(item => item.id === 'feature')!
@@ -320,7 +330,7 @@ describe('budget navigation', () => {
     const { router, session } = await createHarness()
     if (entry === 'command') {
       session.handleSelectPackageInsight(session.packageInsights.value.find(item => item.id === 'other')!)
-      await router.replace({ query: { tab: 'overview', filter: 'selected-package' } })
+      await router.replace({ query: { tab: 'diagnostics', filter: 'selected-package' } })
       expect(session.filteredLargestFiles.value.map(file => file.file)).toEqual(['other/image.png'])
     }
     await navigate(router, () => {

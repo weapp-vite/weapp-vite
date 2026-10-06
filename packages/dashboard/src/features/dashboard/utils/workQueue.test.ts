@@ -20,6 +20,16 @@ describe('workQueue', () => {
         id: 'broken',
         title: 'invalid',
       },
+      {
+        id: 'removed-tab',
+        targetKind: 'action',
+        targetKey: 'removed-tab',
+        title: '旧视图事项',
+        meta: '已移除的分析页',
+        tone: 'info',
+        tab: 'overview',
+        createdAt: '2026-01-02T00:00:00.000Z',
+      },
     ])).toEqual([
       {
         id: 'action:a',

@@ -79,7 +79,7 @@ const visibleRows = computed(() => filteredActions.value.map((item) => {
 <template>
   <aside data-diagnostic-index aria-label="问题索引" class="grid min-w-0 content-start gap-3">
     <header class="flex flex-wrap items-baseline justify-between gap-2">
-      <h2 class="font-mono text-xs tracking-wide text-(--dashboard-text-muted)">ISSUE INDEX / 问题索引</h2>
+      <h2 class="text-sm font-semibold text-(--dashboard-text-muted)">问题与线索</h2>
       <span class="text-xs tabular-nums text-(--dashboard-text-soft)">{{ actions.length }} 项</span>
     </header>
 
@@ -101,7 +101,7 @@ const visibleRows = computed(() => filteredActions.value.map((item) => {
     <p v-if="actionQuery || advancedFilterSummary" class="text-xs tabular-nums text-(--dashboard-text-soft)" role="status">
       匹配 {{ filteredActions.length }} / {{ actions.length }} 项
     </p>
-    <div :id="listId" class="max-h-[32rem] min-w-0 overflow-y-auto p-0.5">
+    <div :id="listId" class="max-h-[min(32rem,45dvh)] min-w-0 overflow-y-auto p-0.5">
       <AppEmptyState v-if="filteredActions.length === 0" compact>
         {{ actions.length === 0 ? '当前没有问题或待查线索。' : '没有匹配项，请调整搜索或筛选。' }}
       </AppEmptyState>

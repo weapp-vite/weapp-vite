@@ -15,7 +15,6 @@ const ICON_CLASS_MAP: Record<DashboardIconName, string> = {
   'nav-analyze': 'icon-[mdi--chart-box-outline]',
   'nav-activity': 'icon-[mdi--timeline-text-outline]',
   'nav-tokens': 'icon-[mdi--palette-outline]',
-  'tab-overview': 'icon-[mdi--view-dashboard-outline]',
   'tab-packages': 'icon-[mdi--package-variant-closed]',
   'tab-modules': 'icon-[mdi--vector-link]',
   'tab-source': 'icon-[mdi--source-branch]',

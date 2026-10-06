@@ -2,15 +2,15 @@
 import type { DashboardTitleBlock } from './features/dashboard/types'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
+import logoUrl from './assets/weapp-vite.svg'
 import AppNavigationList from './features/dashboard/components/AppNavigationList.vue'
 import AppShellHeader from './features/dashboard/components/AppShellHeader.vue'
-import DashboardIcon from './features/dashboard/components/DashboardIcon.vue'
 import { provideDashboardTheme } from './features/dashboard/composables/useDashboardTheme'
 import { createDashboardWorkspace, provideDashboardWorkspace } from './features/dashboard/composables/useDashboardWorkspace'
 import { useThemeMode } from './features/dashboard/composables/useThemeMode'
 import { dashboardConnectionLabels, dashboardDevtoolsName, workspaceNavigation } from './features/dashboard/constants/shell'
 import { dashboardTabs, themeOptions } from './features/dashboard/constants/view'
-import { dashboardAnalyzeRevision, dashboardConnectionStatus } from './features/dashboard/utils/dashboardDevframe'
+import { dashboardConnectionStatus } from './features/dashboard/utils/dashboardDevframe'
 
 const route = useRoute()
 const mobileNavOpen = ref(false)
@@ -73,14 +73,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
 
 <template>
   <div class="h-dvh overflow-hidden bg-(--dashboard-bg) text-(--dashboard-text)" :class="{ 'diagnostics-workbench': isDiagnosticsWorkspace }">
-    <div class="grid h-full min-w-0" :class="{ 'lg:grid-cols-[15rem_minmax(0,1fr)]': !isDiagnosticsWorkspace }">
-      <aside v-if="!isDiagnosticsWorkspace" class="hidden min-h-0 border-r border-(--dashboard-border) bg-(--dashboard-panel) lg:flex lg:flex-col">
+    <div class="grid h-full min-w-0 lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <aside class="hidden min-h-0 border-r border-(--dashboard-border) bg-(--dashboard-panel) lg:flex lg:flex-col">
         <div class="flex h-13 shrink-0 items-center gap-2.5 border-b border-(--dashboard-border) px-3">
-          <span class="flex h-7 w-7 items-center justify-center rounded bg-(--dashboard-accent-soft) text-(--dashboard-accent)">
-            <span class="h-4 w-4">
-              <DashboardIcon name="hero-system" />
-            </span>
-          </span>
+          <img :src="logoUrl" alt="" class="size-7 shrink-0" width="28" height="28">
           <span class="min-w-0">
             <strong class="block truncate text-[13px] font-semibold">{{ dashboardDevtoolsName }}</strong>
             <span class="block truncate font-mono text-[10px] text-(--dashboard-text-soft)">{{ projectName }}</span>
@@ -111,11 +107,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
         </div>
       </aside>
 
-      <main class="flex min-h-0 min-w-0 flex-col" :class="{ 'diagnostics-shell': isDiagnosticsWorkspace }">
+      <main class="flex min-h-0 min-w-0 flex-col">
         <AppShellHeader
-          :workbench="isDiagnosticsWorkspace"
-          :project-name="projectName"
-          :revision="dashboardAnalyzeRevision"
           :connection-status="dashboardConnectionStatus"
           :has-payload="hasPayload"
           :package-count="workspace.resultRef.value?.packages.length ?? 0"
@@ -126,7 +119,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
           @menu="mobileNavOpen = true"
           @set-theme="setThemePreference"
         />
-        <div ref="contentRoot" class="min-h-0 min-w-0 flex-1 overflow-y-auto" :class="isDiagnosticsWorkspace ? 'pb-10' : 'p-3 lg:p-4'">
+        <div ref="contentRoot" class="min-h-0 min-w-0 flex-1 overflow-y-auto p-3 lg:p-4">
           <RouterView />
         </div>
       </main>
@@ -181,13 +174,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
 </template>
 
 <style scoped>
-.diagnostics-shell {
-  width: 100%;
-  max-width: 1500px;
-  padding-inline: clamp(18px, 3.33vw, 48px);
-  margin-inline: auto;
-}
-
 :global([data-theme='dark']) .diagnostics-workbench {
   --dashboard-bg: #11171d;
   --dashboard-panel: #182129;

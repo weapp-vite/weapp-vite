@@ -27,7 +27,7 @@ export const workspaceNavigation: DashboardNavItem[] = [
     caption: '从构建结论定位问题，按需深入文件和模块。',
     iconName: 'nav-analyze',
     children: dashboardTabs.map(tab => ({
-      to: tab.key === 'overview' ? '/analyze' : `/analyze?tab=${tab.key}`,
+      to: tab.key === 'diagnostics' ? '/analyze' : `/analyze?tab=${tab.key}`,
       label: tab.label,
       caption: tab.description,
       advanced: tab.advanced,

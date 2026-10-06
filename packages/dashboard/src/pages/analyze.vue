@@ -63,8 +63,6 @@ const {
   modulesLayoutItems,
   moduleSourceSummary,
   moreMenuOpen,
-  openWorkQueueItems,
-  overviewLayoutItems,
   packageInsights,
   packagesLayoutItems,
   prReviewChecklist,
@@ -100,7 +98,7 @@ const pageClassName = computed(() => {
   if (activeTab.value === 'treemap' && resultRef.value) {
     return 'flex h-full min-h-0 flex-col gap-2'
   }
-  if (!resultRef.value || activeTab.value === 'overview' || activeTab.value === 'diagnostics') {
+  if (!resultRef.value || activeTab.value === 'diagnostics') {
     return 'grid min-w-0 content-start gap-4'
   }
   return 'grid min-h-[calc(100dvh-8rem)] grid-rows-[auto_minmax(44rem,1fr)] gap-4'
@@ -112,12 +110,10 @@ const pageClassName = computed(() => {
     <AnalyzeEmptyPayloadPanel v-if="!resultRef" />
 
     <AnalyzeToolbar
-      v-if="activeTab !== 'diagnostics'"
       v-model:more-menu-open="moreMenuOpen"
       :can-reset-view="canResetView"
       :can-search="Boolean(resultRef)"
       :export-status="exportStatus"
-      :open-work-queue-count="openWorkQueueItems.length"
       :status-pills="statusPills"
       @copy-markdown="copyMarkdownReport"
       @copy-pr="copyPrReport"
@@ -157,7 +153,6 @@ const pageClassName = computed(() => {
       :metric-package-type-summary="metricPackageTypeSummary"
       :modules-layout-items="modulesLayoutItems"
       :module-source-summary="moduleSourceSummary"
-      :overview-layout-items="overviewLayoutItems"
       :package-insights="packageInsights"
       :packages-layout-items="packagesLayoutItems"
       :pr-review-checklist="prReviewChecklist"
