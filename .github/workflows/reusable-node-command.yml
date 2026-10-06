@@ -111,10 +111,6 @@ jobs:
         if: inputs.build_artifact_name != ''
         run: node scripts/create-build-artifact-manifest.mjs
 
-      - name: Increase file descriptor limit
-        if: inputs.increase_ulimit && runner.os != 'Windows'
-        run: ulimit -n 65536 || true
-
       - name: Install Playwright browsers and system dependencies
         if: inputs.install_playwright && runner.os == 'Linux'
         run: |
@@ -131,7 +127,13 @@ jobs:
         shell: bash
         env:
           E2E_PLATFORM: ${{ inputs.e2e_platform }}
-        run: ${{ inputs.main_command }}
+        run: |
+          if [[ '${{ inputs.increase_ulimit && runner.os != 'Windows' }}' == 'true' ]]; then
+            ulimit -n 65536 || true
+            printf 'Effective file descriptor limit: '
+            ulimit -n || true
+          fi
+          ${{ inputs.main_command }}
 
       - name: Upload coverage reports to Codecov
         if: inputs.upload_codecov

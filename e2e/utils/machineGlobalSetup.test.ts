@@ -188,6 +188,37 @@ describe('Vitest global setup owns its journal cleanup scope', () => {
   })
 
   describe('lease-only mock infrastructure setup', () => {
+    it('keeps native inspection mandatory for the actual DevTools configuration', async () => {
+      const failure = new Error('Native IDE inspection is unavailable')
+      mocks.createJournal.mockRejectedValue(failure)
+      const config = (await import('../vitest.e2e.devtools.config')).default
+      const configuredSetup = (await import(config.test!.globalSetup![0]!)).default as typeof setup
+
+      await expect(configuredSetup()).rejects.toBe(failure)
+      expect(mocks.createJournal).toHaveBeenCalledOnce()
+      expect(process.env[MANAGED_PROJECT_JOURNAL_ENV]).toBeUndefined()
+      await expect(fs.access(path.join(mocks.directory, 'machine-e2e'))).rejects.toMatchObject({ code: 'ENOENT' })
+    })
+
+    it.each([
+      '../vitest.e2e.ci.config',
+      '../vitest.e2e.ci.build-only.config',
+      '../vitest.e2e.hmr-guard.config',
+    ])('starts %s with only the machine lease when native IDE inspection is unavailable', async (configPath) => {
+      mocks.createJournal.mockRejectedValue(new Error('Native IDE inspection is unavailable'))
+      const config = (await import(configPath)).default as { test: { globalSetup: string[] } }
+      expect(config.test.globalSetup).toHaveLength(1)
+      const configuredSetup = (await import(config.test.globalSetup[0]!)).default as typeof setupLeaseOnly
+
+      const teardown = await configuredSetup()
+      expect(parseMachineCredential(process.env[INHERITED_LEASE_ENV]!).scopes).toEqual([])
+      expect(process.env[MANAGED_PROJECT_JOURNAL_ENV]).toBeUndefined()
+      await expect(acquireMachineE2ELease({ env: {} })).rejects.toThrow('Runtime busy')
+      await teardown()
+      expect(mocks.createJournal).not.toHaveBeenCalled()
+      expect(mocks.cleanupProjects).not.toHaveBeenCalled()
+    })
+
     it('keeps the machine exclusive without publishing a journal or creating a resource scope', async () => {
       const teardown = await setupLeaseOnly()
       expect(parseMachineCredential(process.env[INHERITED_LEASE_ENV]!).scopes).toEqual([])

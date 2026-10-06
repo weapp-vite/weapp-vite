@@ -22,7 +22,7 @@ interface Workflow {
     if?: string
     strategy?: { matrix?: { include?: { main_command?: string }[] } }
     with?: { main_command?: string }
-    steps?: { run?: string }[]
+    steps?: { name?: string, shell?: string, run?: string }[]
   }>
 }
 
@@ -88,7 +88,17 @@ describe('public type tests in CI', () => {
     // eslint-disable-next-line no-template-curly-in-string -- 校验 GitHub Actions 表达式原文。
     expect(job?.with?.main_command).toBe('${{ matrix.main_command }}')
     const reusable = parse(await readFile(path.join(root, '.github/workflows/reusable-node-command.yml'), 'utf8')) as Workflow
+    const steps = Object.values(reusable.jobs).flatMap(entry => entry.steps ?? [])
+    const runCommand = steps.find(step => step.name === 'Run command')
+    expect(runCommand?.shell).toBe('bash')
+    const commandLines = (runCommand?.run ?? '').trim().split(/\r?\n/).map(line => line.trim())
     // eslint-disable-next-line no-template-curly-in-string -- 校验 GitHub Actions 表达式原文。
-    expect(Object.values(reusable.jobs).some(entry => entry.steps?.some(step => step.run === '${{ inputs.main_command }}'))).toBe(true)
+    expect(commandLines.at(-1)).toBe('${{ inputs.main_command }}')
+    // eslint-disable-next-line no-template-curly-in-string -- 校验可选限制只在非 Windows 的主命令 shell 中设置。
+    expect(commandLines[0]).toBe('if [[ \'${{ inputs.increase_ulimit && runner.os != \'Windows\' }}\' == \'true\' ]]; then')
+    expect(commandLines).toContain('ulimit -n 65536 || true')
+    expect(commandLines.join('\n')).toMatch(/printf 'Effective file descriptor limit: '\nulimit -n \|\| true/)
+    expect(commandLines.at(-2)).toBe('fi')
+    expect(steps.filter(step => step.run?.includes('ulimit -n'))).toEqual([runCommand])
   })
 })
