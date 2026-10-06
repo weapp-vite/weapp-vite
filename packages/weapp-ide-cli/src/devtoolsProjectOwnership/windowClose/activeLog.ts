@@ -1,14 +1,14 @@
-import type { ManagedWechatHostIdentity, ManagedWechatProjectRecord } from '../types'
+import type { ManagedWechatHostIdentity, ManagedWechatProjectRecord, ManagedWechatWindowLogCursor } from '../types'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 身份与文件描述符检查复用跨平台子进程封装。
 import { execa } from 'execa'
 import { readManagedProcessIdentity, sameManagedProcess } from '../host'
+import { captureActiveLogCursor } from './logCursor'
 
-export interface ActiveMainLog {
-  name: string
-  identity: string
+export interface ActiveMainLogCursors {
+  cursors: ManagedWechatWindowLogCursor[]
   host: ManagedWechatHostIdentity
 }
 
@@ -149,7 +149,7 @@ async function existingLog(file: OpenFile, directory: string) {
   return { name: path.basename(file.filename), identity: `${stat.dev}:${stat.ino}` }
 }
 
-async function readWritableLog(pid: number, directory: string) {
+async function readWritableLogs(pid: number, directory: string) {
   const result = await execa('lsof', ['-nP', '-a', '-p', String(pid), '-F0pftainDk'], inspectionOptions)
   if (result.exitCode !== 0) {
     throw invalidLog('file descriptor inspection failed')
@@ -162,24 +162,43 @@ async function readWritableLog(pid: number, directory: string) {
       candidates.push({ file, ...candidate })
     }
   }
-  if (candidates.length !== 1) {
-    throw invalidLog('requires one unambiguous writable file')
+  if (!candidates.length) {
+    throw invalidLog('requires at least one verified writable file')
   }
-  return candidates[0]!
+  const descriptors = new Set<string>()
+  const identities = new Map<string, string>()
+  for (const candidate of candidates) {
+    if (descriptors.has(candidate.file.descriptor) || (identities.has(candidate.identity) && identities.get(candidate.identity) !== candidate.name)) {
+      throw invalidLog('file descriptors contain ambiguous aliases')
+    }
+    descriptors.add(candidate.file.descriptor)
+    identities.set(candidate.identity, candidate.name)
+  }
+  return candidates.sort((a, b) => Number(a.file.descriptor) - Number(b.file.descriptor))
 }
 
-/** 仅用已登记 backend 的直接父进程定位活动日志，不授予父进程或窗口的清理所有权。 */
-export async function readActiveMainLog(record: ManagedWechatProjectRecord, directory: string, platform = process.platform): Promise<ActiveMainLog | undefined> {
+/** 仅用已登记 backend 的直接父进程固定全部活动流；游标捕获前后核验完整描述符集合，不授予父进程清理权。 */
+export async function captureActiveMainLogCursors(record: ManagedWechatProjectRecord, directory: string, platform = process.platform): Promise<ActiveMainLogCursors | undefined> {
   if (platform !== 'darwin' || !record.host) {
     return undefined
   }
   await assertLogDirectory(record, directory)
   const installation = await selectedInstallation(record)
   const main = await mainHost(record, installation.bundle)
-  const candidate = await readWritableLog(main.pid, directory)
-  const retained = await readWritableLog(main.pid, directory)
-  if (retained.file.descriptor !== candidate.file.descriptor || retained.name !== candidate.name || retained.identity !== candidate.identity) {
-    throw invalidLog('file descriptor changed during capture')
+  const candidates = await readWritableLogs(main.pid, directory)
+  const cursors: ManagedWechatWindowLogCursor[] = []
+  for (const candidate of candidates) {
+    if (!cursors.some(cursor => cursor.identity === candidate.identity)) {
+      cursors.push(...await captureActiveLogCursor(directory, candidate))
+    }
+  }
+  const retained = await readWritableLogs(main.pid, directory)
+  if (retained.length !== candidates.length || retained.some((file, index) => {
+    const candidate = candidates[index]!
+    return file.file.descriptor !== candidate.file.descriptor || file.name !== candidate.name || file.identity !== candidate.identity
+      || file.file.access !== candidate.file.access || file.file.links !== candidate.file.links
+  })) {
+    throw invalidLog('file descriptor set changed during capture')
   }
   const after = await mainHost(record, installation.bundle)
   const selected = await selectedInstallation(record)
@@ -187,9 +206,11 @@ export async function readActiveMainLog(record: ManagedWechatProjectRecord, dire
     throw invalidLog('main process or selected directory changed')
   }
   await assertLogDirectory(record, directory)
-  const verified = await existingLog(candidate.file, directory)
-  if (!verified || verified.identity !== candidate.identity) {
-    throw invalidLog('file changed during capture')
+  for (const candidate of candidates) {
+    const verified = await existingLog(candidate.file, directory)
+    if (!verified || verified.identity !== candidate.identity) {
+      throw invalidLog('file changed during capture')
+    }
   }
-  return { name: candidate.name, identity: candidate.identity, host: main }
+  return { cursors, host: main }
 }

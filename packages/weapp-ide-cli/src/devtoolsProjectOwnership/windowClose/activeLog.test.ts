@@ -1,11 +1,11 @@
 import type { ManagedWechatHostIdentity, ManagedWechatProjectRecord } from '../types'
-import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { readActiveMainLog } from './activeLog'
+import { captureActiveMainLogCursors } from './activeLog'
+import { createActiveLogFixture, descriptor } from './activeLogFixture'
 
 const mocks = vi.hoisted(() => ({ command: vi.fn(), identity: vi.fn() }))
 vi.mock('execa', () => ({ execa: mocks.command }))
@@ -23,43 +23,9 @@ let record: ManagedWechatProjectRecord
 let output: string
 let afterInspection: (() => Promise<void>) | undefined
 
-async function descriptor(filename: string, overrides: Partial<Record<'f' | 'a' | 't' | 'D' | 'i' | 'k' | 'n', string>> = {}) {
-  const stat = await fs.stat(filename, { bigint: true })
-  const fields = { f: '25', a: 'w', t: 'REG', D: `0x${stat.dev.toString(16)}`, i: String(stat.ino), k: String(stat.nlink), n: filename, ...overrides }
-  return `${Object.entries(fields).map(([key, value]) => `${key}${value}\0`).join('')}\n`
-}
-
 beforeEach(async () => {
   vi.resetAllMocks()
-  directory = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'active-main-log-')))
-  const bundle = path.join(directory, 'selected.app')
-  const appPath = path.join(bundle, 'Contents', 'Resources', 'app.asar')
-  const cliPath = path.join(bundle, 'Contents', 'MacOS', 'cli')
-  logDirectory = path.join(directory, 'selected-profile', 'WeappLog', 'logs')
-  logFile = path.join(logDirectory, 'current.log')
-  main = { pid: process.pid + 1, started: 'Mon Oct 5 12:30:01 2026', executable: path.join(bundle, 'Contents', 'MacOS', 'Electron') }
-  backend = { pid: process.pid + 2, started: 'Mon Oct 5 12:30:02 2026', executable: path.join(bundle, 'Contents', 'Frameworks', 'Helper') }
-  for (const executable of [main.executable, backend.executable, appPath, cliPath]) {
-    await fs.mkdir(path.dirname(executable), { recursive: true })
-    await fs.writeFile(executable, '')
-  }
-  await fs.mkdir(logDirectory, { recursive: true })
-  await fs.writeFile(logFile, '[timestamp][INFO][2.02.2608070][BACKEND] simulator initialization\n')
-  const now = new Date().toISOString()
-  record = {
-    schemaVersion: 1,
-    id: randomUUID(),
-    generation: randomUUID(),
-    journalPath: path.join(directory, 'journal'),
-    ownerToken: randomUUID(),
-    ownerPid: process.pid,
-    target: { cliPath, appPath, installationId: 'selected', version: '2.02.2608070', profileDir: path.dirname(path.dirname(logDirectory)) },
-    projectPath: path.join(directory, 'project'),
-    state: 'owned',
-    host: { ...backend },
-    createdAt: now,
-    updatedAt: now,
-  }
+  ;({ directory, logDirectory, logFile, main, backend, record } = await createActiveLogFixture())
   output = `p${main.pid}\0\n${await descriptor(logFile)}`
   afterInspection = undefined
   mocks.identity.mockImplementation(async (pid: number) => ({ ...(pid === backend.pid ? backend : main) }))
@@ -83,7 +49,7 @@ describe('active main process log binding', () => {
     const stat = await fs.stat(logFile, { bigint: true })
     const before = structuredClone(record)
 
-    expect(await readActiveMainLog(record, logDirectory, 'darwin')).toEqual({ name: 'current.log', identity: `${stat.dev}:${stat.ino}`, host: main })
+    expect(await captureActiveMainLogCursors(record, logDirectory, 'darwin')).toEqual({ cursors: [expect.objectContaining({ name: 'current.log', identity: `${stat.dev}:${stat.ino}` })], host: main })
     expect(record).toEqual(before)
     expect(mocks.command).toHaveBeenCalledWith('lsof', ['-nP', '-a', '-p', String(main.pid), '-F0pftainDk'], expect.objectContaining({ reject: false, timeout: 3_000 }))
     expect(mocks.command.mock.calls.filter(([command]) => command === 'ps')).toHaveLength(2)
@@ -92,31 +58,31 @@ describe('active main process log binding', () => {
 
   it('excludes old unlinked descriptors while retaining the existing active stream', async () => {
     output += await descriptor(logFile, { f: '65', k: '0', n: path.join(logDirectory, 'removed.log') })
-    expect(await readActiveMainLog(record, logDirectory, 'darwin')).toMatchObject({ name: 'current.log', host: main })
+    expect(await captureActiveMainLogCursors(record, logDirectory, 'darwin')).toMatchObject({ cursors: [{ name: 'current.log' }], host: main })
   })
 
   it('supports the listener being the main process itself without following its parent', async () => {
     record.host = { ...main }
-    expect(await readActiveMainLog(record, logDirectory, 'darwin')).toMatchObject({ host: main })
+    expect(await captureActiveMainLogCursors(record, logDirectory, 'darwin')).toMatchObject({ host: main })
     expect(mocks.command).toHaveBeenCalledTimes(2)
     expect(mocks.identity).toHaveBeenCalledTimes(2)
   })
 
   it.each(['linux', 'win32'] as const)('retains the legacy selector on %s without process inspection', async (platform) => {
-    expect(await readActiveMainLog(record, logDirectory, platform)).toBeUndefined()
+    expect(await captureActiveMainLogCursors(record, logDirectory, platform)).toBeUndefined()
     expect(mocks.command).not.toHaveBeenCalled()
     expect(mocks.identity).not.toHaveBeenCalled()
   })
 
   it('retains the legacy selector without a recorded host', async () => {
     delete record.host
-    expect(await readActiveMainLog(record, logDirectory, 'darwin')).toBeUndefined()
+    expect(await captureActiveMainLogCursors(record, logDirectory, 'darwin')).toBeUndefined()
     expect(mocks.command).not.toHaveBeenCalled()
   })
 
   it.each(['missing', 'pid', 'started', 'executable'] as const)('rejects a %s recorded backend identity', async (kind) => {
     mocks.identity.mockResolvedValueOnce(kind === 'missing' ? undefined : { ...backend, [kind]: kind === 'pid' ? backend.pid + 1 : 'changed' })
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('process identity changed')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('process identity changed')
     expect(mocks.command).not.toHaveBeenCalled()
   })
 
@@ -131,18 +97,18 @@ describe('active main process log binding', () => {
     else {
       main.executable = other
     }
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow(kind === 'backend' ? 'different installation' : 'selected main executable')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow(kind === 'backend' ? 'different installation' : 'selected main executable')
     expect(mocks.command.mock.calls.some(([command]) => command === 'lsof')).toBe(false)
   })
 
   it('rejects a parent generation newer than its recorded backend', async () => {
     main.started = 'Mon Oct 5 12:30:03 2026'
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('generation is inconsistent')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('generation is inconsistent')
   })
 
   it.each(['', '0', '-1', '2\n3', 'not-a-pid'])('rejects an invalid direct parent %j', async (stdout) => {
     mocks.command.mockResolvedValueOnce({ exitCode: 0, stdout })
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('parent process could not be verified')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('parent process could not be verified')
   })
 
   it.each(['backend', 'parent', 'reparent'] as const)('rejects %s replacement during file inspection', async (kind) => {
@@ -157,12 +123,12 @@ describe('active main process log binding', () => {
         main.pid += 1
       }
     }
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow(/process.*changed|ambiguous process/)
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow(/process.*changed|ambiguous process/)
   })
 
   it('rejects lsof errors without guessing from old log contents', async () => {
     mocks.command.mockImplementation(async command => command === 'ps' ? { exitCode: 0, stdout: String(main.pid) } : { exitCode: 1, stdout: output })
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('inspection failed')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('inspection failed')
   })
 
   it.each(['other-process', 'second-process', 'duplicate-field', 'missing-process'] as const)('rejects %s descriptor output', async (kind) => {
@@ -178,24 +144,17 @@ describe('active main process log binding', () => {
     else {
       output = ''
     }
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('MAIN log')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('MAIN log')
   })
 
   it.each([{ a: 'r' }, { t: 'DIR' }, { f: 'txt' }, { n: path.join(os.tmpdir(), 'different-profile.log') }])('requires a writable regular descriptor under the selected profile: %j', async (overrides) => {
     output = `p${main.pid}\0\n${await descriptor(logFile, overrides)}`
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('one unambiguous writable file')
-  })
-
-  it('rejects two existing writable streams', async () => {
-    const second = path.join(logDirectory, 'second.log')
-    await fs.writeFile(second, '')
-    output += await descriptor(second, { f: '26' })
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('one unambiguous writable file')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('at least one verified writable file')
   })
 
   it.each([{ i: '0' }, { D: '0x0' }, { k: '2' }, { D: '' }])('rejects mismatched or missing file identity: %j', async (overrides) => {
     output = `p${main.pid}\0\n${await descriptor(logFile, overrides)}`
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('MAIN log')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('MAIN log')
   })
 
   it.each(['removed', 'replaced'] as const)('rejects a linked descriptor whose path is %s during inspection', async (kind) => {
@@ -205,7 +164,7 @@ describe('active main process log binding', () => {
         await fs.writeFile(logFile, '')
       }
     }
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow()
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow()
   })
 
   it('checks the file identity again after process verification', async () => {
@@ -217,7 +176,7 @@ describe('active main process log binding', () => {
       }
       return { ...(pid === backend.pid ? backend : main) }
     })
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('redirected or replaced')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('redirected or replaced')
   })
 
   it('rejects rotation between descriptor samples even when the old file still exists', async () => {
@@ -230,7 +189,7 @@ describe('active main process log binding', () => {
         output = rotated
       }
     }
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('file descriptor changed during capture')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('file descriptor set changed during capture')
     expect(await fs.stat(logFile)).toBeDefined()
   })
 
@@ -241,7 +200,7 @@ describe('active main process log binding', () => {
         output = `p${main.pid}\0\n`
       }
     }
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('one unambiguous writable file')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('at least one verified writable file')
   })
 
   it('rejects a log path redirected after the descriptor snapshot', async () => {
@@ -249,13 +208,13 @@ describe('active main process log binding', () => {
       await fs.rename(logFile, `${logFile}.old`)
       await fs.symlink(logDirectory, logFile, 'junction')
     }
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('redirected or replaced')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('redirected or replaced')
   })
 
   it('rejects a redirected log directory', async () => {
     const alias = path.join(directory, 'alias')
     await fs.symlink(logDirectory, alias, 'junction')
-    await expect(readActiveMainLog(record, alias, 'darwin')).rejects.toThrow('directory was redirected')
+    await expect(captureActiveMainLogCursors(record, alias, 'darwin')).rejects.toThrow('directory was redirected')
   })
 
   it('resolves selected installation aliases before matching executables', async () => {
@@ -263,32 +222,32 @@ describe('active main process log binding', () => {
     await fs.symlink(path.join(directory, 'selected.app'), alias, 'junction')
     record.target.appPath = path.join(alias, 'Contents', 'Resources', 'app.asar')
     record.target.cliPath = path.join(alias, 'Contents', 'MacOS', 'cli')
-    expect(await readActiveMainLog(record, logDirectory, 'darwin')).toMatchObject({ host: main })
+    expect(await captureActiveMainLogCursors(record, logDirectory, 'darwin')).toMatchObject({ host: main })
   })
 
   it.each(['app', 'package.nw'])('supports the selected unpacked %s resource layout', async (name) => {
     record.target.appPath = path.join(path.dirname(record.target.appPath), name)
     await fs.mkdir(record.target.appPath)
-    expect(await readActiveMainLog(record, logDirectory, 'darwin')).toMatchObject({ host: main })
+    expect(await captureActiveMainLogCursors(record, logDirectory, 'darwin')).toMatchObject({ host: main })
   })
 
   it('rejects application resources from a different bundle', async () => {
     record.target.appPath = path.join(directory, 'other.app', 'Contents', 'Resources', 'app.asar')
     await fs.mkdir(path.dirname(record.target.appPath), { recursive: true })
     await fs.writeFile(record.target.appPath, '')
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('CLI and application resources')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('CLI and application resources')
   })
 
   it('rejects another profile even if its logs are writable by the same main process', async () => {
     record.target.profileDir = path.join(directory, 'other-profile')
     await fs.mkdir(record.target.profileDir)
-    await expect(readActiveMainLog(record, logDirectory, 'darwin')).rejects.toThrow('selected profile')
+    await expect(captureActiveMainLogCursors(record, logDirectory, 'darwin')).rejects.toThrow('selected profile')
   })
 
   it('preserves whitespace and supported newline characters in NUL-delimited paths', async () => {
     const filename = path.join(logDirectory, process.platform === 'win32' ? 'current log name.log' : 'current log\nname.log')
     await fs.rename(logFile, filename)
     output = `p${main.pid}\0\n${await descriptor(filename)}`
-    expect(await readActiveMainLog(record, logDirectory, 'darwin')).toMatchObject({ name: path.basename(filename) })
+    expect(await captureActiveMainLogCursors(record, logDirectory, 'darwin')).toMatchObject({ cursors: [{ name: path.basename(filename) }] })
   })
 })

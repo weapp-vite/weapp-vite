@@ -6,6 +6,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 const readLimit = 2 * 1024 * 1024
+const scanLimit = 32 * 1024 * 1024
 const scanChunkSize = 64 * 1024
 const headerLimit = 4096
 const emptyAnchor = createHash('sha256').digest('hex')
@@ -42,6 +43,12 @@ async function readBytes(file: FileHandle, offset: number, size: number) {
 async function anchorAt(file: FileHandle, offset: number) {
   const start = Math.max(0, offset - 256)
   return createHash('sha256').update(await readBytes(file, start, offset - start)).digest('hex')
+}
+
+async function anchorAfterBytes(file: FileHandle, offset: number, bytes: Buffer) {
+  const before = Math.min(offset, Math.max(0, 256 - bytes.length))
+  const prefix = before ? await readBytes(file, offset - before, before) : Buffer.alloc(0)
+  return createHash('sha256').update(prefix).update(bytes.subarray(Math.max(0, bytes.length - 256))).digest('hex')
 }
 
 async function openLogFile(directory: string, name: string) {
@@ -174,34 +181,64 @@ export async function recoverLogCursors(directory: string, cursors: ManagedWecha
   return requireUniqueMain(main)
 }
 
-/** 仅消费完整新增行；文件更换、截断或无法衔接的轮转均保持未解决状态。 */
-export async function readFreshLogLines(directory: string, cursors: ManagedWechatWindowLogCursor[]) {
-  const lines: { fileIdentity: string, line: string }[] = []
-  for (const cursor of cursors) {
-    const file = await openLogFile(directory, cursor.name)
-    try {
-      const stat = await validateCursor(file, cursor)
-      const bytes = await readBytes(file, cursor.offset, Math.min(stat.size - cursor.offset, readLimit))
-      const end = bytes.lastIndexOf(10)
-      if (end < 0) {
-        if (bytes.length === readLimit) {
-          throw new Error('Managed DevTools window-close log line exceeds the supported evidence limit.')
+/** 固定本轮所有流的终点并逐块消费；未完成的新增尾行、文件替换或截断均不能提前证明关闭成功。 */
+export async function consumeFreshLogLines(directory: string, cursors: ManagedWechatWindowLogCursor[], consume: (input: { fileIdentity: string, line: string }) => void) {
+  const streams: { file: FileHandle, cursor: ManagedWechatWindowLogCursor, original: ManagedWechatWindowLogCursor, end: number }[] = []
+  let pending = 0
+  let drained = true
+  try {
+    for (const cursor of cursors) {
+      const file = await openLogFile(directory, cursor.name)
+      const stream = { file, cursor, original: { ...cursor }, end: cursor.offset }
+      streams.push(stream)
+      stream.end = (await validateCursor(file, cursor)).size
+      pending += stream.end - cursor.offset
+      if (pending > scanLimit) {
+        throw new Error('Managed DevTools window-close log backlog exceeds the supported evidence limit.')
+      }
+    }
+    for (const { file, cursor, end } of streams) {
+      while (cursor.offset < end) {
+        const size = Math.min(end - cursor.offset, readLimit)
+        const bytes = await readBytes(file, cursor.offset, size)
+        if (bytes.length !== size) {
+          throw new Error('Managed DevTools window-close log became shorter during its evidence read.')
         }
-        continue
+        const newline = bytes.lastIndexOf(10)
+        if (newline < 0) {
+          if (bytes.length === readLimit) {
+            throw new Error('Managed DevTools window-close log line exceeds the supported evidence limit.')
+          }
+          drained = false
+          break
+        }
+        const anchor = await anchorAfterBytes(file, cursor.offset, bytes.subarray(0, newline + 1))
+        for (let start = 0; start <= newline;) {
+          const lineEnd = bytes.indexOf(10, start)
+          if (cursor.skipPartialLine) {
+            cursor.skipPartialLine = false
+          }
+          else {
+            const textEnd = bytes[lineEnd - 1] === 13 ? lineEnd - 1 : lineEnd
+            consume({ fileIdentity: cursor.identity, line: bytes.toString('utf8', start, textEnd) })
+          }
+          start = lineEnd + 1
+        }
+        cursor.offset += newline + 1
+        cursor.anchor = anchor
       }
-      const complete = bytes.subarray(0, end + 1).toString('utf8').split(/\r?\n/)
-      complete.pop()
-      if (cursor.skipPartialLine) {
-        complete.shift()
-        cursor.skipPartialLine = false
+    }
+    for (const { file, cursor, original, end } of streams) {
+      await validateCursor(file, original)
+      await validateCursor(file, cursor)
+      const stat = await fs.lstat(path.join(directory, cursor.name))
+      if (!stat.isFile() || identity(stat) !== cursor.identity || stat.size < end) {
+        throw new Error('Managed DevTools window-close log changed while reading its evidence stream.')
       }
-      lines.push(...complete.map(line => ({ fileIdentity: cursor.identity, line })))
-      cursor.offset += end + 1
-      cursor.anchor = await anchorAt(file, cursor.offset)
     }
-    finally {
-      await file.close()
-    }
+    return drained
   }
-  return lines
+  finally {
+    await Promise.all(streams.map(({ file }) => file.close()))
+  }
 }

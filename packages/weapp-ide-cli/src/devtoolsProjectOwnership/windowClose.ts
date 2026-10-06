@@ -2,8 +2,8 @@ import type { ManagedWechatProjectRecord, ManagedWechatWindowCloseEvidence } fro
 import fs from 'node:fs/promises'
 import { setTimeout } from 'node:timers/promises'
 import { readManagedProcessIdentity, sameManagedProcess } from './host'
-import { readActiveMainLog } from './windowClose/activeLog'
-import { captureActiveLogCursor, captureLogCursors, legacyLogInventoryFailure, readFreshLogLines, recoverLogCursors, selectedLogDirectory } from './windowClose/logCursor'
+import { captureActiveMainLogCursors } from './windowClose/activeLog'
+import { captureLogCursors, consumeFreshLogLines, legacyLogInventoryFailure, recoverLogCursors, selectedLogDirectory } from './windowClose/logCursor'
 import { consumeWindowCloseTrace } from './windowClose/protocol'
 
 /** 只捕获本次显式安装的日志，必须先于关闭命令持久化。 */
@@ -14,9 +14,9 @@ export async function captureManagedWindowClose(record: ManagedWechatProjectReco
   const profileDir = await fs.realpath(record.target.profileDir)
   const capturedAt = new Date().toISOString()
   const directory = await selectedLogDirectory(profileDir)
-  const active = await readActiveMainLog(record, directory)
+  const active = await captureActiveMainLogCursors(record, directory)
   const cursors = active
-    ? await captureActiveLogCursor(directory, active)
+    ? active.cursors
     : await captureLogCursors(directory, record.target.version)
   return { protocol: 'wechat-devtools-window-close-trace-v1', profileDir, productVersion: record.target.version, capturedAt, ...(active ? { mainHost: active.host } : {}), cursors, calls: [] }
 }
@@ -46,6 +46,7 @@ export async function waitForManagedWindowClosed(record: ManagedWechatProjectRec
   }
   const deadline = Date.now() + (options.timeoutMs ?? 15_000)
   do {
+    let drained = false
     try {
       if (await fs.realpath(record.target.profileDir) !== evidence.profileDir || record.target.version !== evidence.productVersion) {
         throw new Error('Managed DevTools window-close evidence no longer matches its selected installation.')
@@ -56,10 +57,9 @@ export async function waitForManagedWindowClosed(record: ManagedWechatProjectRec
           throw new Error('Managed DevTools main log owner changed; destruction evidence is unresolved.')
         }
       }
-      const lines = await readFreshLogLines(await selectedLogDirectory(evidence.profileDir), evidence.cursors)
-      for (const line of lines) {
+      drained = await consumeFreshLogLines(await selectedLogDirectory(evidence.profileDir), evidence.cursors, (line) => {
         consumeWindowCloseTrace(evidence, record.projectPath, line)
-      }
+      })
     }
     catch (error) {
       evidence.failure = error instanceof Error ? error.message : String(error)
@@ -67,7 +67,7 @@ export async function waitForManagedWindowClosed(record: ManagedWechatProjectRec
       throw error
     }
     await persist()
-    if (evidence.window?.nativeClosedAt && evidence.window.webContentsDestroyedAt) {
+    if (drained && evidence.window?.nativeClosedAt && evidence.window.webContentsDestroyedAt) {
       return
     }
     if (Date.now() >= deadline) {

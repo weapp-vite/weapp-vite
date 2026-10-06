@@ -4,11 +4,11 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWindowCloseFixture } from './fixture'
-import { captureLogCursors } from './logCursor'
+import { captureActiveLogCursor, captureLogCursors } from './logCursor'
 import { managedWindowCloseSchema } from './schema'
 
 const mocks = vi.hoisted(() => ({ active: vi.fn(), identity: vi.fn() }))
-vi.mock('./activeLog', () => ({ readActiveMainLog: mocks.active }))
+vi.mock('./activeLog', () => ({ captureActiveMainLogCursors: mocks.active }))
 vi.mock('../host', async importOriginal => ({
   ...await importOriginal<typeof import('../host')>(),
   readManagedProcessIdentity: mocks.identity,
@@ -23,7 +23,7 @@ beforeEach(async () => {
   mainHost = { pid: 42, executable: path.join(fixture.directory, 'app', 'Contents', 'MacOS', 'Electron'), started: 'original-generation' }
   await fs.writeFile(fixture.logFile, fixture.line('forwarded simulator state', 'BACKEND'))
   const stat = await fs.stat(fixture.logFile)
-  mocks.active.mockResolvedValue({ name: path.basename(fixture.logFile), identity: `${stat.dev}:${stat.ino}`, host: mainHost })
+  mocks.active.mockImplementation(async () => ({ cursors: await captureActiveLogCursor(fixture.logDirectory, { name: path.basename(fixture.logFile), identity: `${stat.dev}:${stat.ino}` }), host: mainHost }))
   mocks.identity.mockResolvedValue(mainHost)
 })
 
