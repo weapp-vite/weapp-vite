@@ -22,7 +22,7 @@ beforeEach(async () => {
   fixture = await createWindowCloseFixture()
   mainHost = { pid: 42, executable: path.join(fixture.directory, 'app', 'Contents', 'MacOS', 'Electron'), started: 'original-generation' }
   await fs.writeFile(fixture.logFile, fixture.line('forwarded simulator state', 'BACKEND'))
-  const stat = await fs.stat(fixture.logFile)
+  const stat = await fs.stat(fixture.logFile, { bigint: true })
   mocks.active.mockImplementation(async () => ({ cursors: await captureActiveLogCursor(fixture.logDirectory, { name: path.basename(fixture.logFile), identity: `${stat.dev}:${stat.ino}` }), host: mainHost }))
   mocks.identity.mockResolvedValue(mainHost)
 })

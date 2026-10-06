@@ -28,7 +28,7 @@ export interface WindowCloseFixture {
 
 /** 按旧版持久化格式构造游标，用于验证旧日志记录的迁移边界。 */
 export async function snapshotLegacyCursor(file: string): Promise<ManagedWechatWindowLogCursor> {
-  const [stat, bytes] = await Promise.all([fs.stat(file), fs.readFile(file)])
+  const [stat, bytes] = await Promise.all([fs.stat(file, { bigint: true }), fs.readFile(file)])
   return {
     name: path.basename(file),
     identity: `${stat.dev}:${stat.ino}`,

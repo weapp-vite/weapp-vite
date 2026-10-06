@@ -30,8 +30,16 @@ async function logFiles(directory: string) {
   return entries.map(entry => entry.name).sort()
 }
 
-function identity(stat: { dev: number, ino: number }) {
+function identity(stat: { dev: bigint, ino: bigint }) {
   return `${stat.dev}:${stat.ino}`
+}
+
+/** 文件身份保留完整整数；只有已核验范围的字节位置才能交给 Node 读取 API。 */
+function logSize(stat: { size: bigint }) {
+  if (stat.size < 0n || stat.size > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error('Managed DevTools window-close log size exceeds the supported safe integer range.')
+  }
+  return Number(stat.size)
 }
 
 async function readBytes(file: FileHandle, offset: number, size: number) {
@@ -53,13 +61,13 @@ async function anchorAfterBytes(file: FileHandle, offset: number, bytes: Buffer)
 
 async function openLogFile(directory: string, name: string) {
   const filename = path.join(directory, name)
-  const before = await fs.lstat(filename)
+  const before = await fs.lstat(filename, { bigint: true })
   if (!before.isFile()) {
     throw new Error('Managed DevTools window-close log must be a regular file without redirection.')
   }
   const file = await fs.open(filename, 'r')
   try {
-    const after = await file.stat()
+    const after = await file.stat({ bigint: true })
     if (!after.isFile() || identity(after) !== identity(before)) {
       throw new Error('Managed DevTools window-close log changed while opening its evidence stream.')
     }
@@ -114,12 +122,13 @@ export async function captureActiveLogCursor(directory: string, active: { name: 
   }
   const file = await openLogFile(directory, active.name)
   try {
-    const stat = await file.stat()
+    const stat = await file.stat({ bigint: true })
     if (identity(stat) !== active.identity) {
       throw new Error('Managed DevTools active log changed before its close cursor was captured.')
     }
-    const last = stat.size ? await readBytes(file, stat.size - 1, 1) : undefined
-    return [{ name: active.name, identity: identity(stat), offset: stat.size, anchor: await anchorAt(file, stat.size), skipPartialLine: last !== undefined && last[0] !== 10 }]
+    const size = logSize(stat)
+    const last = size ? await readBytes(file, size - 1, 1) : undefined
+    return [{ name: active.name, identity: identity(stat), offset: size, anchor: await anchorAt(file, size), skipPartialLine: last !== undefined && last[0] !== 10 }]
   }
   finally {
     await file.close()
@@ -127,11 +136,15 @@ export async function captureActiveLogCursor(directory: string, active: { name: 
 }
 
 async function validateCursor(file: FileHandle, cursor: ManagedWechatWindowLogCursor) {
-  const stat = await file.stat()
-  if (!stat.isFile() || identity(stat) !== cursor.identity || stat.size < cursor.offset || await anchorAt(file, cursor.offset) !== cursor.anchor) {
+  if (!Number.isSafeInteger(cursor.offset) || cursor.offset < 0) {
+    throw new Error('Managed DevTools window-close log cursor offset exceeds the supported safe integer range.')
+  }
+  const stat = await file.stat({ bigint: true })
+  const size = logSize(stat)
+  if (!stat.isFile() || identity(stat) !== cursor.identity || size < cursor.offset || await anchorAt(file, cursor.offset) !== cursor.anchor) {
     throw new Error('Managed DevTools window-close log was replaced, truncated, or rewritten; destruction evidence is unresolved.')
   }
-  return stat
+  return size
 }
 
 /** 关闭前固定唯一 MAIN 流；辅助日志和历史空日志不属于窗口销毁证据。 */
@@ -140,12 +153,13 @@ export async function captureLogCursors(directory: string, productVersion: strin
   for (const name of await logFiles(directory)) {
     const file = await openLogFile(directory, name)
     try {
-      const stat = await file.stat()
-      if (!await hasMainRecord(file, stat.size, productVersion)) {
+      const stat = await file.stat({ bigint: true })
+      const size = logSize(stat)
+      if (!await hasMainRecord(file, size, productVersion)) {
         continue
       }
-      const last = stat.size ? await readBytes(file, stat.size - 1, 1) : undefined
-      cursors.push({ name, identity: identity(stat), offset: stat.size, anchor: await anchorAt(file, stat.size), skipPartialLine: last !== undefined && last[0] !== 10 })
+      const last = size ? await readBytes(file, size - 1, 1) : undefined
+      cursors.push({ name, identity: identity(stat), offset: size, anchor: await anchorAt(file, size), skipPartialLine: last !== undefined && last[0] !== 10 })
     }
     finally {
       await file.close()
@@ -191,7 +205,7 @@ export async function consumeFreshLogLines(directory: string, cursors: ManagedWe
       const file = await openLogFile(directory, cursor.name)
       const stream = { file, cursor, original: { ...cursor }, end: cursor.offset }
       streams.push(stream)
-      stream.end = (await validateCursor(file, cursor)).size
+      stream.end = await validateCursor(file, cursor)
       pending += stream.end - cursor.offset
       if (pending > scanLimit) {
         throw new Error('Managed DevTools window-close log backlog exceeds the supported evidence limit.')
@@ -231,8 +245,8 @@ export async function consumeFreshLogLines(directory: string, cursors: ManagedWe
     for (const { file, cursor, original, end } of streams) {
       await validateCursor(file, original)
       await validateCursor(file, cursor)
-      const stat = await fs.lstat(path.join(directory, cursor.name))
-      if (!stat.isFile() || identity(stat) !== cursor.identity || stat.size < end) {
+      const stat = await fs.lstat(path.join(directory, cursor.name), { bigint: true })
+      if (!stat.isFile() || identity(stat) !== cursor.identity || logSize(stat) < end) {
         throw new Error('Managed DevTools window-close log changed while reading its evidence stream.')
       }
     }
