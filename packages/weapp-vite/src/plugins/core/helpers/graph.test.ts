@@ -115,6 +115,30 @@ describe('core output graph', () => {
     expect(state.hmrSharedChunkImporters.get('vendor.js')).toEqual(new Set([pageEntry]))
   })
 
+  it('keeps page ownership when a physical component lives in a non-entry shared chunk', () => {
+    const state = createState()
+    const pageEntry = '/project/src/pages/index.ts'
+    const componentEntry = '/project/src/components/card/index.ts'
+    state.resolvedEntryMap.set(pageEntry, { id: pageEntry })
+    state.resolvedEntryMap.set(componentEntry, { id: componentEntry })
+
+    refreshSharedChunkImporters({
+      'pages/index.js': createChunk('pages/index.js', {
+        isEntry: true,
+        facadeModuleId: createLogicalEntryId(pageEntry, 'page'),
+        imports: ['component-runtime.js'],
+      }),
+      'component-runtime.js': createChunk('component-runtime.js', {
+        moduleIds: [componentEntry],
+        imports: ['component-helper.js'],
+      }),
+      'component-helper.js': createChunk('component-helper.js'),
+    }, state)
+
+    expect(state.hmrSharedChunkImporters.get('component-runtime.js')).toEqual(new Set([pageEntry]))
+    expect(state.hmrSharedChunkImporters.get('component-helper.js')).toEqual(new Set([pageEntry]))
+  })
+
   it('refreshes partial output membership without dropping unrelated entries', () => {
     const state = createState()
     const pageEntry = '/project/src/pages/index.ts'

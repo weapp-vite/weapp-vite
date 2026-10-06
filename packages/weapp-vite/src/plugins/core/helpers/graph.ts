@@ -132,7 +132,8 @@ function appendSharedChunkImporters(
       }
     }
 
-    if (Array.isArray(chunk.moduleIds)) {
+    // 物理组件源码可能被拆入共享实现 chunk；只有实际入口才能从其模块推断入口所有权。
+    if (chunk.isEntry && Array.isArray(chunk.moduleIds)) {
       for (const moduleId of chunk.moduleIds) {
         const normalizedModuleId = resolveSourceEntryId(moduleId)
         if (state.resolvedEntryMap.has(normalizedModuleId)) {
