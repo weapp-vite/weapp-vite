@@ -549,6 +549,7 @@ describe('suiteRunner', () => {
     expect(ideGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
     expect(ideFullLabels).toContain('ide/wevu-query.runtime.test.ts')
+    expect(ideFullLabels).toContain('ide/app-lifecycle.test.ts')
     expect(ideExhaustiveLabels).toContain('ide/wevu-runtime.pruning.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/wevu-query.runtime.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/wevu-runtime.pruning.test.ts')
@@ -629,9 +630,7 @@ describe('suiteRunner', () => {
     ])
     expect(ideExhaustiveLabels.slice(-3)).toEqual(ideChunkModesLabels)
     expect(ideExhaustiveTasks.find(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE === 'direct')).toBeUndefined()
-    expect(appLifecycleTask?.env).toMatchObject({
-      WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
-    })
+    expect(appLifecycleTask?.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER).toBeUndefined()
     expect(autoRoutesDefineAppJsonTask?.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER).toBeUndefined()
     expect(devtoolsCliWorkflowTask?.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER).toBeUndefined()
     expect(githubIssuesIssue621Task?.env).toMatchObject({
