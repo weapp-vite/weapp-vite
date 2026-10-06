@@ -54,9 +54,13 @@ describe('automator bridge wrapper lifecycle', () => {
       }
       const configPath = path.join(wrapper.path, 'project.config.json')
       const initialConfigBytes = fs.readFileSync(configPath)
-      const config = JSON.parse(initialConfigBytes.toString()) as { miniprogramRoot: string, srcMiniprogramRoot: string }
+      const config = JSON.parse(initialConfigBytes.toString()) as { miniprogramRoot: string, simulatorPluginLibVersion?: Record<string, unknown>, simulatorType?: string, srcMiniprogramRoot: string }
       const configuredRoot = path.resolve(wrapper.path, config.miniprogramRoot)
       expect(config.srcMiniprogramRoot).toBe(config.miniprogramRoot)
+      expect(config).toMatchObject({
+        simulatorPluginLibVersion: {},
+        simulatorType: 'wechat',
+      })
       expect(configuredRoot).toBe(path.resolve(wrapper.runtimeRoot))
       expect(fs.existsSync(path.join(configuredRoot, 'app.json'))).toBe(true)
       expect(fs.existsSync(path.join(configuredRoot, `${route}.js`))).toBe(true)

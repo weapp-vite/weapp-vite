@@ -1367,7 +1367,7 @@ export function prepareAutomatorBridgeWrapperProject(
   delete bridgePrivateConfig.qcloudRoot
   delete bridgePrivateConfig.srcMiniprogramRoot
   const wrapperProjectConfigPath = path.join(wrapperRoot, 'project.config.json')
-  const wrapperProjectConfig = createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig)
+  const wrapperProjectConfig = createBridgeWrapperProjectConfig(projectConfig, bridgePrivateConfig)
   writeJsonObject(wrapperProjectConfigPath, wrapperProjectConfig)
   const wrapperPrivateConfigPath = path.join(wrapperRoot, 'project.private.config.json')
   if (Object.keys(bridgePrivateConfig).length > 0) {
