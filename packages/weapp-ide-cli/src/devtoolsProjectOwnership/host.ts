@@ -100,7 +100,8 @@ export async function inspectManagedProjectHost(target: ResolvedWechatDevtoolsTa
 export async function assertManagedInstallation(target: ResolvedWechatDevtoolsTarget) {
   const current = await resolveWechatDevtoolsTarget({ cliPath: target.cliPath })
   if (current.installationId !== target.installationId || current.appPath !== target.appPath
-    || current.cliPath !== target.cliPath || current.version !== target.version || current.channel !== target.channel) {
+    || current.cliPath !== target.cliPath || current.profileDir !== target.profileDir
+    || current.version !== target.version || current.channel !== target.channel) {
     throw new Error('Managed DevTools installation changed; no project was closed.')
   }
 }

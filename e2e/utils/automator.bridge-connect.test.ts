@@ -47,6 +47,44 @@ describe('automator bridge handshake readiness', () => {
     return lifecycle.run(scope => launchAutomatorViaCliBridge({ projectPath: 'fixture' }, 'fixture', scope))
   }
 
+  it.each([1_265, 5_000])('does not create an intent or start a process with only %sms for the existing settle stage', async (budget) => {
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', 'task-journal')
+    const connect = vi.spyOn(Automator.prototype, 'connect')
+
+    await expect(launch(budget)).rejects.toThrow('the existing bridge connection settle requires more than 5000ms')
+    expect(createJournal).not.toHaveBeenCalled()
+    expect(execaMock).not.toHaveBeenCalled()
+    expect(connect).not.toHaveBeenCalled()
+    expect(cleanupJournal).not.toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('checks the remaining budget again after journal creation before starting the CLI', async () => {
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', 'task-journal')
+    createJournal.mockImplementationOnce(async () => {
+      await vi.advanceTimersByTimeAsync(1_500)
+      return 'task-journal/children/attempt-journal'
+    })
+
+    await expect(launch(6_000)).rejects.toThrow('4500ms remaining')
+    expect(createJournal).toHaveBeenCalledOnce()
+    expect(execaMock).not.toHaveBeenCalled()
+    expect(cleanupJournal).toHaveBeenCalledExactlyOnceWith({ journalPath: 'task-journal/children/attempt-journal', scope: 'journal' })
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('admits a bridge when its existing settle stage fits the remaining budget', async () => {
+    const session = { close: vi.fn(), disconnect: vi.fn() }
+    vi.spyOn(Automator.prototype, 'connect').mockResolvedValue(session as any)
+    const assertion = expect(launch(5_001)).resolves.toBe(session)
+
+    await vi.runAllTimersAsync()
+    await assertion
+    expect(execaMock).toHaveBeenCalledOnce()
+    expect(session.disconnect).not.toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('reports the actual bridge endpoint before a failed handshake can lose it', async () => {
     execaMock.mockResolvedValue({ exitCode: 0, stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9415' }) })
     const onSessionMetadata = vi.fn(async () => {})
@@ -86,10 +124,10 @@ describe('automator bridge handshake readiness', () => {
     const connect = vi.spyOn(Automator.prototype, 'connect').mockImplementation(options => new Promise((_resolve, reject) => {
       setTimeout(() => reject(handshakeTimeout()), options.timeout)
     }))
-    const result = expect(launch(5_000)).rejects.toThrow('Timeout in bridge launch after 5000ms')
+    const result = expect(launch(5_500)).rejects.toThrow('Timeout in bridge launch after 5500ms')
     await vi.runAllTimersAsync()
     await result
-    expect(connect.mock.calls.map(([options]) => options.timeout)).toEqual([4_000, 600])
+    expect(connect.mock.calls.map(([options]) => options.timeout)).toEqual([4_000, 1_100])
     expect(vi.getTimerCount()).toBe(0)
   })
 

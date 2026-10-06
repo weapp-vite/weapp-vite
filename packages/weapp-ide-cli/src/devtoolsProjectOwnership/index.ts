@@ -9,6 +9,7 @@ import { assertManagedInstallation, inspectManagedProjectHost, isManagedPortClos
 import { managedProcessToken, readManagedRecord, readManagedWechatProjectRecords, resolveManagedJournal, withManagedJournalLock, writeManagedRecord } from './journal'
 import { captureManagedWindowClose, waitForManagedWindowClosed } from './windowClose'
 
+export * from './installationExit'
 export { MANAGED_PROJECT_JOURNAL_ENV, readManagedWechatProjectRecords } from './journal'
 export type * from './types'
 

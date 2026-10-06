@@ -1,5 +1,6 @@
 import type { MachineE2ELease, MachineE2ELeaseOptions } from './machine'
 import type { MachineE2ELeaseRecoveryScope, MachineE2ELeaseSnapshot } from './machineRecoveryState'
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomUUID } from 'node:crypto'
 import { appendFile, mkdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -10,6 +11,16 @@ import { assertMachineSnapshot, assertRecoveryNode, assertSnapshotStopped, readM
 import { INHERITED_LEASE_ENV } from './machineScope'
 
 export type { MachineE2ELeaseRecoveryScope, MachineE2ELeaseSnapshot } from './machineRecoveryState'
+
+interface RecoveryContext {
+  directory: string
+  snapshot: MachineE2ELeaseSnapshot
+  scope: MachineE2ELeaseRecoveryScope
+  active: boolean
+  operations: Set<Promise<unknown>>
+}
+
+const currentRecovery = new AsyncLocalStorage<RecoveryContext>()
 
 export interface MachineE2ELeaseRecoveryOptions extends MachineE2ELeaseOptions {
   expected: MachineE2ELeaseSnapshot
@@ -26,6 +37,47 @@ export interface MachineE2ELeaseRecoveryResult {
 export async function readMachineE2ELeaseSnapshot(options: MachineE2ELeaseOptions = {}): Promise<MachineE2ELeaseSnapshot> {
   const directory = path.join(machineStateDirectory(options), 'machine-e2e')
   return mutateLease(directory, () => readMachineSnapshot(directory))
+}
+
+function activeRecovery(scope: MachineE2ELeaseRecoveryScope) {
+  const context = currentRecovery.getStore()
+  if (!context?.active || context.scope !== scope
+    || context.snapshot.scopes.find(item => item.id === scope.id)?.cleanupKey !== scope.cleanupKey) {
+    throw new Error('Machine lease recovery requires the active explicit recovery callback and its original scope.')
+  }
+  return context
+}
+
+/** 核验当前显式恢复回调的原始 scope 与完整接管快照，不授予普通租约额外清理权限。 */
+export async function assertMachineE2ELeaseRecoveryScope(scope: MachineE2ELeaseRecoveryScope): Promise<void> {
+  const context = activeRecovery(scope)
+  await mutateLease(context.directory, async () => {
+    activeRecovery(scope)
+    await assertMachineSnapshot(context.directory, context.snapshot)
+    activeRecovery(scope)
+  })
+  // 锁获取、快照读取与锁释放均会让出执行权，回调可能已经结束。
+  activeRecovery(scope)
+}
+
+/** 同步登记完整领域操作；回调漏等候时保留租约，直到在途操作停止后再报告失败。 */
+export function withMachineE2ELeaseRecoveryOperation<T>(scope: MachineE2ELeaseRecoveryScope, run: () => Promise<T>): Promise<T> {
+  let context: RecoveryContext
+  try {
+    context = activeRecovery(scope)
+  }
+  catch (error) {
+    return Promise.reject(error)
+  }
+  const operation = (async () => {
+    await assertMachineE2ELeaseRecoveryScope(scope)
+    const result = await run()
+    await assertMachineE2ELeaseRecoveryScope(scope)
+    return result
+  })()
+  context.operations.add(operation)
+  void operation.then(() => context.operations.delete(operation), () => context.operations.delete(operation))
+  return operation
 }
 
 /**
@@ -78,7 +130,28 @@ export async function recoverMachineE2ELease(options: MachineE2ELeaseRecoveryOpt
       const pending = adopted.scopes.filter(scope => !scope.completed).sort((a, b) => b.ancestors.length - a.ancestors.length)
       for (const scope of pending) {
         await mutateLease(directory, () => assertMachineSnapshot(directory, snapshot))
-        await options.recoverScope(recoveryScopeCopy(scope))
+        const context: RecoveryContext = { directory, snapshot, scope: recoveryScopeCopy(scope), active: true, operations: new Set() }
+        let failure: { error: unknown } | undefined
+        try {
+          await currentRecovery.run(context, () => options.recoverScope(context.scope))
+        }
+        catch (error) {
+          failure = { error }
+        }
+        finally {
+          context.active = false
+        }
+        const unfinished = [...context.operations]
+        if (unfinished.length) {
+          // 已发出的文件操作无法撤销，必须等它们结束，且不能据此完成 scope。
+          await Promise.allSettled(unfinished)
+        }
+        if (failure) {
+          throw failure.error
+        }
+        if (unfinished.length) {
+          throw new Error('Machine lease recovery callback ended with unfinished recovery operations; preserving its incomplete scope.')
+        }
         await mutateLease(directory, async () => {
           await assertMachineSnapshot(directory, snapshot)
           const { id, ...value } = scope

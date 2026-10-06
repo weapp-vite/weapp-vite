@@ -5,7 +5,7 @@ import type {
   MachineE2ELeaseSnapshot,
   MachineE2ERecoverableDescendantScope,
 } from '@weapp-vite/devtools-runtime'
-import { readMachineE2ELeaseSnapshot, recoverMachineE2ELease } from '@weapp-vite/devtools-runtime'
+import { assertMachineE2ELeaseRecoveryScope, readMachineE2ELeaseSnapshot, recoverMachineE2ELease, withMachineE2ELeaseRecoveryOperation } from '@weapp-vite/devtools-runtime'
 import { expectAssignable, expectError, expectNotAssignable, expectType } from 'tsd'
 
 expectType<Promise<MachineE2ELeaseSnapshot>>(readMachineE2ELeaseSnapshot())
@@ -30,6 +30,15 @@ expectError(snapshot.scopes.push(snapshot.scopes[0]!))
 expectError(snapshot.borrowers[0]!.scopes.push('another-scope'))
 
 declare const legacyScope: MachineE2ELeaseRecoveryScope
+expectType<Promise<void>>(assertMachineE2ELeaseRecoveryScope(legacyScope))
+expectError(assertMachineE2ELeaseRecoveryScope())
+expectError(assertMachineE2ELeaseRecoveryScope({ id: 'scope' }))
+expectError(assertMachineE2ELeaseRecoveryScope({ ...legacyScope, cleanupKey: 42 }))
+expectType<Promise<number>>(withMachineE2ELeaseRecoveryOperation(legacyScope, async () => 42))
+expectType<Promise<void>>(withMachineE2ELeaseRecoveryOperation(legacyScope, async () => {}))
+expectError(withMachineE2ELeaseRecoveryOperation(legacyScope))
+expectError(withMachineE2ELeaseRecoveryOperation(legacyScope, () => 42))
+expectError(withMachineE2ELeaseRecoveryOperation({ id: 'scope' }, async () => {}))
 expectNotAssignable<MachineE2ERecoverableDescendantScope>(legacyScope)
 expectAssignable<MachineE2ELeaseRecoveryScope>({
   id: 'scope',
@@ -50,6 +59,7 @@ expectAssignable<MachineE2ELeaseRecoveryOptions>({
 expectType<Promise<MachineE2ELeaseRecoveryResult>>(recoverMachineE2ELease({
   expected: snapshot,
   recoverScope: async (scope) => {
+    expectType<Promise<void>>(assertMachineE2ELeaseRecoveryScope(scope))
     expectType<MachineE2ELeaseRecoveryScope>(scope)
     expectType<string>(scope.id)
     expectType<number>(scope.owner.pid)

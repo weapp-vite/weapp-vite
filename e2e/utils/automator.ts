@@ -17,6 +17,7 @@ import { extractWechatDevtoolsServicePort } from './automator.cli-bridge'
 import { launchHeadlessAutomator } from './automator.headless'
 import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './automatorBridgeFiles'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
+import { registerAutomatorReconnect } from './automatorReconnect'
 import { resolveWechatCliPath } from './devtoolsCli'
 import { createDevtoolsProjectJournal, ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 import { assertSelectedWechatDevtoolsRuntime, resolveSelectedWechatDevtools } from './devtoolsSelection'
@@ -35,6 +36,8 @@ import {
 } from './runtimeProvider'
 import { createStartupProtocolDiagnostics } from './startupProtocolDiagnostics'
 import { watchResolvedDirectory } from './watchResolvedDirectory'
+
+export { reconnectAutomator } from './automatorReconnect'
 
 const DEFAULT_LIB_VERSION = '3.13.2'
 const DEVTOOLS_HTTP_PORT_ERROR = 'Failed to launch wechat web devTools, please make sure http port is open'
@@ -2615,6 +2618,21 @@ function isRecoverableBridgeConnectError(error: unknown) {
   return isRecoverableOperationError(error)
 }
 
+class AutomatorBridgeBudgetError extends Error {
+  constructor(remainingMs: number) {
+    super(`Insufficient budget to start automator bridge: ${Math.max(0, Math.floor(remainingMs))}ms remaining; the existing bridge connection settle requires more than ${BRIDGE_CONNECT_SETTLE_DELAY}ms.`)
+    this.name = 'AutomatorBridgeBudgetError'
+  }
+}
+
+function assertBridgeLaunchBudget(lifecycle: AutomatorLaunchLifecycle) {
+  lifecycle.throwIfAborted()
+  const remainingMs = lifecycle.deadlineAt - performance.now()
+  if (remainingMs <= BRIDGE_CONNECT_SETTLE_DELAY) {
+    throw new AutomatorBridgeBudgetError(remainingMs)
+  }
+}
+
 async function connectAutomatorViaCliBridge(
   options: AutomatorCliBridgePayload,
   project: string,
@@ -2624,6 +2642,8 @@ async function connectAutomatorViaCliBridge(
   cleanupAttempt?: () => Promise<void>,
   journalPath?: string,
 ) {
+  // 创建 journal 的异步步骤也会消耗预算；启动子进程前再次核对必经等待阶段。
+  assertBridgeLaunchBudget(lifecycle)
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-start project=${project}\n`)
   // 直接等待真实子进程完成；lifecycle.step 的取消 race 不能作为窗口收尾的进程退出证据。
   const result = await execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify({ ...options, timeout: lifecycle.remainingMs(options.timeout) })], {
@@ -2763,6 +2783,8 @@ export async function launchAutomatorViaCliBridge(
   onSessionMetadata?: LaunchAutomatorOptions['onSessionMetadata'],
   onManagedProject?: (close: () => Promise<void>) => void,
 ) {
+  // 无法完成既有 settle 的预算不能授予新的窗口启动意图。
+  assertBridgeLaunchBudget(lifecycle)
   const parentJournal = process.env[MANAGED_PROJECT_JOURNAL_ENV]
   const journalPath = parentJournal ? await createDevtoolsProjectJournal(parentJournal) : undefined
   const cleanupAttempt = journalPath
@@ -2852,6 +2874,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   const launchMode = requestedLaunchMode ?? resolveAutomatorLaunchMode()
   const startupDiagnostics = new Map<string, ReturnType<typeof createStartupProtocolDiagnostics>>()
   let forceProjectRefreshAfterRetry = false
+  let lastLaunchFailure: { error: unknown } | undefined
   const operation = new AutomatorLaunchLifecycle(launchTimeout, 'launch automator')
   return (async () => {
     const selectedTarget = await resolveSelectedWechatDevtools(selectedCliPath)
@@ -3009,7 +3032,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               }))
             }
             lifecycle.throwIfAborted()
-            const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs, {
+            const relaunchOptions: RelaunchRecoveryOptions = {
               checkDevtoolsLog: devtoolsLogMonitor.assertClean,
               cliPath: rest.cliPath,
               cwd: rest.cwd,
@@ -3019,7 +3042,22 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               rootSelectors: resolvedWarmupRoute ? warmupRootSelectors : undefined,
               rootSelectorsRoute: resolvedWarmupRoute,
               skipPageRootCheck: skipRelaunchPageRootCheck,
-            })
+            }
+            const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs, relaunchOptions)
+            if (!bridgeWrapperProject?.stopSync) {
+              registerAutomatorReconnect(withRelaunch, {
+                target: selectedTarget,
+                timeout: launchTimeout,
+                connect: options => automator.connect(options),
+                configure: async (session, reconnectScope) => {
+                  await reconnectScope.step(() => assertSelectedWechatDevtoolsRuntime(selectedTarget, session))
+                  enhanceMiniProgramWithRuntimeLogs(session, project)
+                  await reconnectScope.step(() => session.enableLog(reconnectScope.remainingMs(), { structured: true }))
+                  devtoolsLogMonitor.assertClean('reconnect runtime log subscription', true)
+                  enhanceMiniProgramRelaunch(session, relaunchOptions)
+                },
+              })
+            }
             return attachBridgeWrapperSyncCleanup(withRelaunch, bridgeWrapperProject)
           },
         )
@@ -3033,7 +3071,9 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         catch (cleanupError) {
           throw new AggregateError([caughtError, cleanupError], 'IDE launch failed and its project window could not be released')
         }
-        const error = runtimeLogSubscription?.normalizeError(caughtError) ?? caughtError
+        const error = caughtError instanceof AutomatorBridgeBudgetError && lastLaunchFailure
+          ? lastLaunchFailure.error
+          : runtimeLogSubscription?.normalizeError(caughtError) ?? caughtError
         runtimeLogSubscription?.abort(error)
         if (
           isWarmupRelaunchTimeoutError(error)
@@ -3053,10 +3093,16 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         }
 
         operation.recordFailure(error)
+        lastLaunchFailure = { error }
         if (performance.now() >= operation.deadlineAt) {
           handleLaunchError(error, project)
         }
         if (attempt < launchRetries && isLikelyLaunchRetryableError(error)) {
+          const usesBridge = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE || Boolean(process.env[MANAGED_PROJECT_JOURNAL_ENV])
+          // 重试必须先支付既有退避；已确定无法完成的下一轮保留本轮根因。
+          if (usesBridge && operation.deadlineAt - performance.now() <= LAUNCH_RETRY_DELAY + BRIDGE_CONNECT_SETTLE_DELAY) {
+            handleLaunchError(error, project)
+          }
           const rawMessage = error instanceof Error ? error.message : String(error)
           const compactMessage = rawMessage.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim()
           const retryLine = `[warn] [runtime:launch-retry] attempt=${attempt}/${launchRetries} delay=${LAUNCH_RETRY_DELAY}ms reason=${compactMessage.slice(0, 240)}`

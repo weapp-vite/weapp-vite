@@ -301,6 +301,48 @@ describe('runtime: stateful HMR', () => {
     expect(attached).toHaveBeenCalledTimes(existingRuntime ? 1 : 0)
   })
 
+  it('commits refreshed plain setup values to the native receiver when properties share the host data view', async () => {
+    const defineRuntime = (label: string) => defineComponent({
+      setup() {
+        const input = ref('')
+        return { input, label }
+      },
+    })
+    defineRuntime('before')
+    const renderedData: Record<string, unknown> = {}
+    const data: Record<string, unknown> = {}
+    const instance: any = { data, properties: data }
+    const nativeSetData = vi.fn(function (this: unknown, payload: Record<string, unknown>, callback?: () => void) {
+      expect(this).toBe(instance)
+      for (const [key, value] of Object.entries(payload)) {
+        applySnapshotUpdate(data, key, value, 'set')
+        applySnapshotUpdate(renderedData, key, value, 'set')
+      }
+      callback?.()
+    })
+    instance.setData = nativeSetData
+    registeredDefinition!.lifetimes.attached.call(instance)
+    instance.__wevu.setupState.input.value = 'held-input'
+    await nextTick()
+    await nextTick()
+    expect(renderedData).toMatchObject({ input: 'held-input', label: 'before' })
+
+    for (const label of ['after', 'before']) {
+      nativeSetData.mockClear()
+      applying = true
+      defineRuntime(label)
+      refresh!(instance, { ...data })
+      applying = false
+      await nextTick()
+      await nextTick()
+
+      expect(nativeSetData.mock.calls.some(([payload]) => payload.label === label)).toBe(true)
+      expect(renderedData).toMatchObject({ input: 'held-input', label })
+      expect(instance.properties).toBe(instance.data)
+      expect(instance.__wevu.setupState.input.value).toBe('held-input')
+    }
+  })
+
   it('preserves deleted reactive fields while adding defaults introduced by updated setup code', async () => {
     const defineRuntime = (updated: boolean) => defineComponent({
       setup() {

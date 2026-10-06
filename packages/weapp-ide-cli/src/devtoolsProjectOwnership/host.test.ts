@@ -107,6 +107,8 @@ describe('managed host startup identities', () => {
     await expect(assertManagedInstallation(target)).resolves.toBeUndefined()
     targetChecks.resolve.mockResolvedValueOnce({ ...target, version: '2.0.0' })
     await expect(assertManagedInstallation(target)).rejects.toThrow('installation changed')
+    targetChecks.resolve.mockResolvedValueOnce({ ...target, profileDir: path.resolve('another-profile') })
+    await expect(assertManagedInstallation(target)).rejects.toThrow('installation changed')
   })
 })
 

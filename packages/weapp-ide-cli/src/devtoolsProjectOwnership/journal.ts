@@ -7,6 +7,7 @@ import { setTimeout } from 'node:timers/promises'
 import { mutateLease } from '@weapp-vite/devtools-runtime'
 import { z } from 'zod'
 import { readManagedProcessIdentity, sameManagedProcess } from './host'
+import { installationExitRecoverySchema } from './installationExit/schema'
 import { createManagedChildJournal, initializeManagedJournalScope, managedJournalPrefix, resolveManagedJournalScope } from './journal/scope'
 import { managedWindowCloseSchema } from './windowClose/schema'
 
@@ -38,8 +39,13 @@ const recordSchema = z.object({
   updatedAt: z.string().min(1),
   closeAcknowledgedAt: z.string().min(1).optional(),
   windowClose: managedWindowCloseSchema.optional(),
-  releasedReason: z.enum(['borrowed', 'project-closed']).optional(),
+  releasedReason: z.enum(['borrowed', 'project-closed', 'installation-exited']).optional(),
+  installationExitRecovery: installationExitRecoverySchema.optional(),
   error: z.string().optional(),
+}).refine(record => record.releasedReason === 'installation-exited'
+  ? record.state === 'released' && record.installationExitRecovery !== undefined
+  : record.installationExitRecovery === undefined, {
+  message: 'Installation exit recovery requires its distinct release reason and forensic evidence.',
 })
 
 export function resolveManagedJournal(journalPath?: string) {

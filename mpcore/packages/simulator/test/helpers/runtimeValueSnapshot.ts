@@ -16,7 +16,7 @@ export async function createRuntimeValueSnapshotFiles(): Promise<Array<[string, 
         import { reactive } from ${JSON.stringify(path.join(root, 'packages-runtime/wevu/src/internal-reactivity.ts'))};
         import { collectRuntimeValueSnapshot } from ${JSON.stringify(path.join(root, 'e2e/utils/runtimeValueSnapshot.ts'))};
         Page({
-          data: { count: 0 },
+          data: { count: 0, pageLabel: 'PAGE-BASE', pageBootstrapLabel: 'BOOTSTRAP-BASE' },
           onLoad() {
             const state = reactive({ count: 0, nested: { marker: 'ready' } });
             this.__wevu = { state, setupState: state };
@@ -25,7 +25,13 @@ export async function createRuntimeValueSnapshotFiles(): Promise<Array<[string, 
             this.__wevu.state.count++;
             this.setData({ count: this.__wevu.state.count });
           },
-          snapshot() { return collectRuntimeValueSnapshot(['.count', '.missing']); }
+          snapshot() { return collectRuntimeValueSnapshot(['.count', '.missing']); },
+          updateMarkers(pageLabel, pageBootstrapLabel) {
+            this.setData({ pageLabel, pageBootstrapLabel });
+          },
+          markerSnapshot() {
+            return collectRuntimeValueSnapshot(['.page-marker', '.page-bootstrap-marker']);
+          }
         });`
         : undefined,
     }],
@@ -38,7 +44,12 @@ export async function createRuntimeValueSnapshotFiles(): Promise<Array<[string, 
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
       ['app.js', 'App({})'],
       ['pages/index/index.json', '{}'],
-      ['pages/index/index.wxml', '<view class="count">{{count}}</view>'],
+      ['pages/index/index.wxml', `
+        <view class="count">{{count}}</view>
+        <view class="page-marker">{{pageLabel}}</view>
+        <view class="page-bootstrap-marker">{{pageBootstrapLabel}}</view>
+        <view class="retained-marker">PAGE-BASE BOOTSTRAP-BASE</view>
+      `],
     ]
   }
   finally {

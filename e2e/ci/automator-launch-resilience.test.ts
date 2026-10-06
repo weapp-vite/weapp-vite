@@ -436,6 +436,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
   it.each(['direct', 'bridge'] as const)('rejects a managed %s launch without ownership evidence and cleans only its attempt journal', async (launchMode) => {
     const parentJournal = path.join(sandboxRoot, 'managed-journal')
     vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', parentJournal)
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
     createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
@@ -461,6 +462,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
     process.env.WEAPP_VITE_E2E_LAUNCH_ATTEMPT_TIMEOUT = '1000'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
     createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
     const { launchAutomator } = await import('../utils/automator')
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] })
@@ -506,6 +508,60 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
       expect(execaMock).toHaveBeenCalledOnce()
       expect(connectMock).not.toHaveBeenCalled()
       expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('preserves the second launch failure instead of starting a third window without enough settle budget', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const { launchAutomator } = await import('../utils/automator')
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] })
+    const firstFailure = new Error('connect ECONNREFUSED')
+    const secondFailure = new Error('Uncaught [object Object]')
+    execaMock
+      .mockImplementationOnce(() => new Promise((_resolve, reject) => setTimeout(reject, 42_000, firstFailure)))
+      .mockImplementationOnce(() => new Promise((_resolve, reject) => setTimeout(reject, 43_000, secondFailure)))
+
+    try {
+      const assertion = expect(launchAutomator({ projectPath: sandboxRoot, timeout: 90_000, maxLaunchRetries: 3 })).rejects.toBe(secondFailure)
+      await vi.runAllTimersAsync()
+      await assertion
+      expect(execaMock).toHaveBeenCalledTimes(2)
+      expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledOnce()
+      expect(connectMock).not.toHaveBeenCalled()
+      expect(performance.now()).toBe(86_200)
+      expect(vi.getTimerCount()).toBe(0)
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('preserves the original failure when recovery consumes the next bridge launch budget', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const { launchAutomator } = await import('../utils/automator')
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] })
+    const failure = new Error('connect ECONNREFUSED')
+    execaMock.mockRejectedValueOnce(failure)
+    cleanupResidualDevtoolsProcessesMock.mockImplementationOnce(() => new Promise(resolve => setTimeout(resolve, 6_000)))
+
+    try {
+      const assertion = expect(launchAutomator({ projectPath: sandboxRoot, timeout: 12_000, maxLaunchRetries: 3 })).rejects.toBe(failure)
+      await vi.runAllTimersAsync()
+      await assertion
+      expect(execaMock).toHaveBeenCalledOnce()
+      expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledOnce()
+      expect(connectMock).not.toHaveBeenCalled()
+      expect(performance.now()).toBe(7_200)
+      expect(vi.getTimerCount()).toBe(0)
     }
     finally {
       vi.useRealTimers()

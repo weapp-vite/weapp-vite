@@ -21,11 +21,16 @@ function normalize(value: string, platform: NodeJS.Platform) {
   return platform === 'win32' ? normalized.toLowerCase() : normalized
 }
 
-function assertExecutable(target: ResolvedWechatDevtoolsTarget, executable: string, platform: NodeJS.Platform) {
+/** 复用宿主归属检查的安装根规则，不能把 app.asar 当作可执行文件目录。 */
+export function resolveWechatDevtoolsInstallationRoot(target: ResolvedWechatDevtoolsTarget, platform: NodeJS.Platform) {
   const appPath = normalize(target.appPath, platform)
-  const root = platform === 'darwin'
+  return platform === 'darwin'
     ? appPath.split('/Contents/')[0]
     : appPath.replace(/\/(?:resources\/)?(?:app\.asar|app|package\.nw)$/, '')
+}
+
+function assertExecutable(target: ResolvedWechatDevtoolsTarget, executable: string, platform: NodeJS.Platform) {
+  const root = resolveWechatDevtoolsInstallationRoot(target, platform)
   const selected = normalize(executable.trim(), platform)
   if (!root || !selected.startsWith(`${root}/`)) {
     throw ownershipError('The running WeChat DevTools host belongs to a different installation. Keep the selected installation running and retry; no host was stopped.')

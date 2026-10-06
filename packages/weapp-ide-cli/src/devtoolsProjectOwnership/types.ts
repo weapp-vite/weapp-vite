@@ -8,6 +8,35 @@ export interface ManagedWechatHostIdentity {
 
 export type ManagedWechatProjectState = 'starting' | 'unconfirmed' | 'owned' | 'borrowed' | 'closing' | 'failed' | 'released'
 
+export interface ManagedWechatInstallationExitEvidence {
+  protocol: 'wechat-devtools-installation-exit-v1'
+  recoveredAt: string
+  recoveryScopeId: string
+  journalScopeId: string
+  journalRootPath: string
+  installationId: string
+  profileDir: string
+  previous: {
+    state: 'starting' | 'unconfirmed'
+    error?: string
+    updatedAt: string
+    recordSha256: string
+  }
+  stoppedOwnerPids: number[]
+  closedPorts: number[]
+  processInspection: {
+    platform: 'darwin'
+    installationRoot: string
+    checkedAt: string
+    inspectedProcessCount: number
+    kernelPathProcessCount: number
+    textImageProcessCount: number
+    exitedProcessCount: number
+    zombieProcessCount: number
+    selectedProcessCount: 0
+  }
+}
+
 export interface ManagedWechatWindowLogCursor {
   name: string
   identity: string
@@ -65,7 +94,9 @@ export interface ManagedWechatProjectRecord {
   closeAcknowledgedAt?: string
   /** 端口退出不是窗口退出；保存所选 profile 的增量销毁证据供父任务恢复。 */
   windowClose?: ManagedWechatWindowCloseEvidence
-  releasedReason?: 'borrowed' | 'project-closed'
+  releasedReason?: 'borrowed' | 'project-closed' | 'installation-exited'
+  /** 显式恢复只终结已退出安装的活资源；原启动失败与归属缺口仍保留。 */
+  installationExitRecovery?: ManagedWechatInstallationExitEvidence
   error?: string
 }
 
