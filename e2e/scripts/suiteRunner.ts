@@ -1,6 +1,6 @@
 /* eslint-disable e18e/ban-dependencies -- suite runner 需要 execa 保留跨平台命令参数并正确解析 Windows pnpm.cmd。 */
 import type { Options } from 'execa'
-import type { MachineE2EChildScope, MachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
+import type { MachineE2EChildScope, MachineE2ELease, MachineE2ELeaseOptions } from '../../packages/devtools-runtime/src/lease/machine'
 import type { SuiteReportContext, SuiteTaskArtifact } from './suiteReport'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -49,6 +49,8 @@ export interface SuiteTaskResult {
 }
 
 interface RunSuiteOptions {
+  /** 仅供基础设施集成测试显式隔离租约状态；正常入口沿用全机租约目录。 */
+  machineLeaseOptions?: MachineE2ELeaseOptions
   afterAll?: () => Promise<void> | void
   beforeEachTask?: (task: SuiteTask) => Promise<void> | void
   failOnTaskFailure?: boolean
@@ -734,7 +736,7 @@ export async function runTaskSuite(
 ) {
   const signals = createSuiteSignalScope()
   try {
-    const code = await withMachineE2ELease(lease => runOwnedTaskSuite(suiteName, tasks, options, signals.signal, lease))
+    const code = await withMachineE2ELease(lease => runOwnedTaskSuite(suiteName, tasks, options, signals.signal, lease), options.machineLeaseOptions)
     return signals.exitCode ?? code
   }
   finally {

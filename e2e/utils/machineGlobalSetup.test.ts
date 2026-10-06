@@ -9,6 +9,7 @@ import { acquireMachineE2ELease } from '../../packages/devtools-runtime/src/leas
 import { readMachineE2ELeaseSnapshot } from '../../packages/devtools-runtime/src/lease/machineRecovery'
 import { INHERITED_LEASE_ENV, parseMachineCredential } from '../../packages/devtools-runtime/src/lease/machineScope'
 import { createManagedWechatProjectJournal, MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
+import setupLeaseOnly from '../vitest.e2e.machine-lease.global-setup'
 import setup from '../vitest.e2e.machine.global-setup'
 
 const mocks = vi.hoisted(() => ({
@@ -184,5 +185,72 @@ describe('Vitest global setup owns its journal cleanup scope', () => {
     await teardown()
     expect(mocks.cleanupProjects).toHaveBeenCalledOnce()
     await expect(fs.access(path.join(mocks.directory, 'machine-e2e'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  describe('lease-only mock infrastructure setup', () => {
+    it('keeps the machine exclusive without publishing a journal or creating a resource scope', async () => {
+      const teardown = await setupLeaseOnly()
+      expect(parseMachineCredential(process.env[INHERITED_LEASE_ENV]!).scopes).toEqual([])
+      expect(process.env[MANAGED_PROJECT_JOURNAL_ENV]).toBeUndefined()
+      expect((await snapshot()).scopes).toEqual([])
+      expect(mocks.createJournal).not.toHaveBeenCalled()
+      await expect(acquireMachineE2ELease({ env: {} })).rejects.toThrow('Runtime busy')
+      await teardown()
+      expect(mocks.cleanupProjects).not.toHaveBeenCalled()
+      expect(process.env[INHERITED_LEASE_ENV]).toBeUndefined()
+      expect(process.env[MANAGED_PROJECT_JOURNAL_ENV]).toBeUndefined()
+      await expect(fs.access(path.join(mocks.directory, 'machine-e2e'))).rejects.toMatchObject({ code: 'ENOENT' })
+    })
+
+    it('isolates inherited journal environment while preserving its parent scope and restoring exact values', async () => {
+      const parent = await acquireMachineE2ELease({ env: {} })
+      const parentJournal = await createManagedWechatProjectJournal(path.join(mocks.directory, 'journals'))
+      const parentScope = await parent.createChildScope({ cleanupKey: parentJournal })
+      const parentCredential = parentScope.environment[INHERITED_LEASE_ENV]!
+      vi.stubEnv(INHERITED_LEASE_ENV, parentCredential)
+      vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, parentJournal)
+      const previousScopes = (await snapshot()).scopes
+      const teardown = await setupLeaseOnly()
+      expect(process.env[INHERITED_LEASE_ENV]).toBe(parentCredential)
+      expect(process.env[MANAGED_PROJECT_JOURNAL_ENV]).toBeUndefined()
+      expect((await snapshot()).scopes).toEqual(previousScopes)
+      expect((await snapshot()).borrowers).toHaveLength(1)
+      expect(mocks.createJournal).not.toHaveBeenCalled()
+      await teardown()
+      expect(process.env[INHERITED_LEASE_ENV]).toBe(parentCredential)
+      expect(process.env[MANAGED_PROJECT_JOURNAL_ENV]).toBe(parentJournal)
+      expect((await snapshot()).scopes).toEqual(previousScopes)
+      expect((await snapshot()).borrowers).toEqual([])
+      expect(mocks.cleanupProjects).not.toHaveBeenCalled()
+      await expect(fs.access(parentJournal)).resolves.toBeUndefined()
+      await parentScope.seal()
+      await parentScope.complete()
+      await parent.release()
+    })
+
+    it('keeps teardown idempotent without overwriting a later runner environment', async () => {
+      const teardown = await setupLeaseOnly()
+      const first = teardown()
+      expect(teardown()).toBe(first)
+      await first
+      const laterJournal = path.join(mocks.directory, 'later-journal')
+      vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, laterJournal)
+      await teardown()
+      expect(process.env[MANAGED_PROJECT_JOURNAL_ENV]).toBe(laterJournal)
+      expect(mocks.cleanupProjects).not.toHaveBeenCalled()
+    })
+
+    it('restores environment and preserves a lease whose child operation is still active', async () => {
+      const previousJournal = path.join(mocks.directory, 'previous-journal')
+      vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, previousJournal)
+      const teardown = await setupLeaseOnly()
+      const borrower = await acquireMachineE2ELease()
+      await expect(teardown()).rejects.toThrow('an E2E child operation still owns this machine lease')
+      expect(process.env[INHERITED_LEASE_ENV]).toBeUndefined()
+      expect(process.env[MANAGED_PROJECT_JOURNAL_ENV]).toBe(previousJournal)
+      expect((await snapshot()).borrowers).toHaveLength(1)
+      expect(mocks.cleanupProjects).not.toHaveBeenCalled()
+      await borrower.release()
+    })
   })
 })

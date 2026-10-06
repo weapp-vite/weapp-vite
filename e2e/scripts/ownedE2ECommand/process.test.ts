@@ -1,27 +1,34 @@
 /* eslint-disable e18e/ban-dependencies -- 真实进程回归需要查询本测试进程的 PGID 和退出状态。 */
 import type { MachineE2EChildScope, MachineE2ELease, MachineE2ELeaseOptions } from '../../../packages/devtools-runtime/src/lease/machine'
+import type { IsolatedMachineLease } from '../../utils/testSupport/machineLease'
 import type { ShutdownFixtureState } from './fixture'
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 import { execa } from 'execa'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createIsolatedMachineLease } from '../../utils/testSupport/machineLease'
 import { runOwnedE2ECommand } from '../ownedE2ECommand'
 import { createShutdownFixture } from './fixture'
 
-const mocks = vi.hoisted(() => ({ cleanup: vi.fn(), scopes: [] as MachineE2EChildScope[] }))
+const mocks = vi.hoisted(() => ({ cleanup: vi.fn(), scopes: [] as MachineE2EChildScope[], machine: undefined as IsolatedMachineLease | undefined }))
 vi.mock('../../../packages/devtools-runtime/src/lease/machine', async (original) => {
   const actual = await original<typeof import('../../../packages/devtools-runtime/src/lease/machine')>()
   return {
     ...actual,
-    withMachineE2ELease: <T>(run: (lease: MachineE2ELease) => Promise<T>, options?: MachineE2ELeaseOptions) => actual.withMachineE2ELease(async (lease) => {
-      const create = lease.createChildScope
-      lease.createChildScope = async (options) => {
-        const scope = await create(options)
-        mocks.scopes.push(scope)
-        return scope
+    withMachineE2ELease: <T>(run: (lease: MachineE2ELease) => Promise<T>, options?: MachineE2ELeaseOptions) => {
+      if (!mocks.machine) {
+        throw new Error('Process-group tests require an isolated machine lease.')
       }
-      return await run(lease)
-    }, options),
+      return actual.withMachineE2ELease(async (lease) => {
+        const create = lease.createChildScope
+        lease.createChildScope = async (options) => {
+          const scope = await create(options)
+          mocks.scopes.push(scope)
+          return scope
+        }
+        return await run(lease)
+      }, { ...options, stateDirectory: mocks.machine.stateDirectory })
+    },
   }
 })
 vi.mock('../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership', async (original) => {
@@ -29,11 +36,25 @@ vi.mock('../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership', async (o
   return { ...actual, cleanupManagedWechatProjects: mocks.cleanup.mockImplementation(actual.cleanupManagedWechatProjects) }
 })
 
+beforeEach(async () => {
+  mocks.machine = await createIsolatedMachineLease()
+  for (const [key, value] of Object.entries(mocks.machine.environment)) {
+    vi.stubEnv(key, value)
+  }
+})
+
 afterEach(async () => {
-  // 用例 finally 已停止其全部 Node fixture，之后才显式完成测试拥有的空窗口日志。
-  for (const scope of mocks.scopes.splice(0).reverse()) {
-    await scope.seal()
-    await scope.complete()
+  try {
+    // 用例 finally 已停止其全部 Node fixture，之后才显式完成测试拥有的空窗口日志。
+    for (const scope of mocks.scopes.splice(0).reverse()) {
+      await scope.seal()
+      await scope.complete()
+    }
+    await mocks.machine?.dispose()
+  }
+  finally {
+    mocks.machine = undefined
+    vi.unstubAllEnvs()
   }
 })
 
@@ -45,7 +66,7 @@ async function isRunning(pid: number) {
 // Unix PGID 是本组回归的被测原语；Windows 的 fail-closed 分支由 shutdown.test.ts 覆盖。
 describe.skipIf(process.platform === 'win32')('real owned command process groups', () => {
   it.each(['leader-exits', 'nested-runner'] as const)('stops %s before parent journal cleanup or machine lease release', async (scenario) => {
-    const fixture = await createShutdownFixture(scenario)
+    const fixture = await createShutdownFixture(scenario, mocks.machine!.stateDirectory)
     const controller = new AbortController()
     let state: ShutdownFixtureState | undefined
     let runningAtCleanup: boolean | undefined
@@ -88,7 +109,7 @@ describe.skipIf(process.platform === 'win32')('real owned command process groups
   }, 20_000)
 
   it.each(['orphaned-borrower', 'natural-exit'] as const)('preserves the journal when %s leaves an independently running process', async (scenario) => {
-    const fixture = await createShutdownFixture(scenario)
+    const fixture = await createShutdownFixture(scenario, mocks.machine!.stateDirectory)
     const controller = new AbortController()
     mocks.cleanup.mockClear()
     const running = runOwnedE2ECommand(process.execPath, [fixture.leaderFile], { signal: controller.signal })

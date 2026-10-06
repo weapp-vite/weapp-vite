@@ -1,10 +1,12 @@
 import type { MachineE2EChildScope, MachineE2ELease, MachineE2ELeaseOptions } from '../../packages/devtools-runtime/src/lease/machine'
+import type { IsolatedMachineLease } from '../utils/testSupport/machineLease'
 import type { SuiteTask } from './suiteRunner'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { runTaskSuite } from './suiteRunner'
+import { createIsolatedMachineLease } from '../utils/testSupport/machineLease'
+import { runTaskSuite as runTaskSuiteWithOptions } from './suiteRunner'
 
 const { cleanupProjects, scopes } = vi.hoisted(() => ({
   cleanupProjects: vi.fn<(options: { journalPath: string, scope: string }) => Promise<void>>(),
@@ -30,6 +32,11 @@ vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership', () => ({
   MANAGED_PROJECT_JOURNAL_ENV: 'WEAPP_IDE_MANAGED_PROJECT_JOURNAL',
 }))
 
+let machine: IsolatedMachineLease
+function runTaskSuite(...[name, tasks, options]: Parameters<typeof runTaskSuiteWithOptions>) {
+  return runTaskSuiteWithOptions(name, tasks, { ...options, machineLeaseOptions: { stateDirectory: machine.stateDirectory } })
+}
+
 const journals = new Set<string>()
 let previousExitCode: typeof process.exitCode
 
@@ -41,7 +48,11 @@ function journalOf(task: SuiteTask) {
 }
 
 describe('suite task project ownership', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    machine = await createIsolatedMachineLease()
+    for (const [key, value] of Object.entries(machine.environment)) {
+      vi.stubEnv(key, value)
+    }
     previousExitCode = process.exitCode
     process.exitCode = undefined
     cleanupProjects.mockImplementation(async ({ journalPath }) => {
@@ -51,15 +62,19 @@ describe('suite task project ownership', () => {
 
   afterEach(async () => {
     process.exitCode = previousExitCode
-    await Promise.all([...journals].map(journal => fs.rm(journal, { recursive: true, force: true })))
-    journals.clear()
-    // 这些测试仅创建本轮临时文件；删除测试日志后显式完成先前故意失败的清理。
-    for (const scope of scopes.splice(0).reverse()) {
-      await scope.seal()
-      await scope.complete()
+    try {
+      // 故意失败的空日志仅在测试子进程结束后完成；作用域全部释放前保留目录。
+      for (const scope of scopes.splice(0).reverse()) {
+        await scope.seal()
+        await scope.complete()
+      }
+      await machine.dispose()
     }
-    vi.clearAllMocks()
-    vi.unstubAllEnvs()
+    finally {
+      journals.clear()
+      vi.clearAllMocks()
+      vi.unstubAllEnvs()
+    }
   })
 
   it('cleans the inherited journal when a real worker exits before its teardown', async () => {

@@ -1,25 +1,44 @@
+import type { IsolatedMachineLease } from '../../utils/testSupport/machineLease'
 import type { SuiteTask } from '../suiteRunner'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import ts from 'typescript'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createIsolatedMachineLease } from '../../utils/testSupport/machineLease'
 import { getIdeExhaustiveTasks, IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS, IDE_GITHUB_ISSUES_AGGREGATE_LABEL, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS } from '../e2e-suite-manifest'
 import { createSuiteReport } from '../suiteReport'
-import { runTaskSuite } from '../suiteRunner'
+import { runTaskSuite as runTaskSuiteWithOptions } from '../suiteRunner'
 import { validateTaskAcceptance } from './task'
+
+let machine: IsolatedMachineLease
+beforeEach(async () => {
+  machine = await createIsolatedMachineLease()
+  for (const [key, value] of Object.entries(machine.environment)) {
+    vi.stubEnv(key, value)
+  }
+})
+
+function runTaskSuite(...[name, tasks, options]: Parameters<typeof runTaskSuiteWithOptions>) {
+  return runTaskSuiteWithOptions(name, tasks, { ...options, machineLeaseOptions: { stateDirectory: machine.stateDirectory } })
+}
 
 const temporaryRoots: string[] = []
 const identity = { runId: 'test-run', commitSha: 'test-commit' }
 
-afterEach(() => {
-  for (const root of temporaryRoots.splice(0)) {
-    fs.rmSync(root, { recursive: true, force: true })
+afterEach(async () => {
+  try {
+    for (const root of temporaryRoots.splice(0)) {
+      fs.rmSync(root, { recursive: true, force: true })
+    }
+    process.exitCode = 0
+    await machine.dispose()
   }
-  process.exitCode = 0
-  vi.unstubAllEnvs()
-  vi.restoreAllMocks()
+  finally {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  }
 })
 
 function temporaryRoot() {

@@ -13,7 +13,7 @@ export interface ShutdownFixtureState {
 }
 
 /** 只创建本测试的 Node 进程；嵌套场景使用真正的 suiteRunner 与机器租约。 */
-export async function createShutdownFixture(scenario: ShutdownScenario) {
+export async function createShutdownFixture(scenario: ShutdownScenario, stateDirectory: string) {
   const root = await mkdtemp(path.join(tmpdir(), 'owned-command-shutdown-'))
   const workerFile = path.join(root, 'worker.cjs')
   const leaderFile = path.join(root, 'leader.cjs')
@@ -39,6 +39,7 @@ export async function createShutdownFixture(scenario: ShutdownScenario) {
     import { runTaskSuite } from ${JSON.stringify(suiteRunnerUrl)};
     const tasks = [{ label: 'owned-node-worker', command: process.execPath, args: [${JSON.stringify(workerFile)}] }];
     await runTaskSuite('e2e:shutdown-fixture', tasks, {
+      machineLeaseOptions: { stateDirectory: ${JSON.stringify(stateDirectory)} },
       writeReport: false,
       reportContext: { runId: 'shutdown-fixture', commitSha: 'fixture', workingTreeDirty: false, partial: false, strict: false, plannedTasks: tasks },
       afterAll: () => writeFile(${JSON.stringify(completedFile)}, 'runner-cleanup-finished'),
@@ -49,7 +50,7 @@ export async function createShutdownFixture(scenario: ShutdownScenario) {
     await writeFile(runnerFile, `
       import { writeFile } from 'node:fs/promises';
       import { acquireMachineE2ELease } from ${JSON.stringify(machineUrl)};
-      await acquireMachineE2ELease();
+      await acquireMachineE2ELease({ stateDirectory: ${JSON.stringify(stateDirectory)} });
       process.on('SIGTERM', () => {});
       setInterval(() => {}, 1000);
       await writeFile(${JSON.stringify(readyFile)}, JSON.stringify({ workerPid: process.pid }));

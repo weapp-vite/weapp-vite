@@ -1,11 +1,14 @@
+import type { IsolatedMachineLease } from '../utils/testSupport/machineLease'
 import type { SuiteTask } from './suiteRunner'
+
 import { execFile } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createIsolatedMachineLease } from '../utils/testSupport/machineLease'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { readTaskCases } from './domAcceptanceReport/inventory'
 import {
@@ -20,8 +23,28 @@ import {
   formatSuiteProgress,
   formatSuiteSummary,
   getTaskSpawnOptions,
-  runTaskSuite,
+  runTaskSuite as runTaskSuiteWithOptions,
 } from './suiteRunner'
+
+let machine: IsolatedMachineLease
+beforeEach(async () => {
+  machine = await createIsolatedMachineLease()
+  for (const [key, value] of Object.entries(machine.environment)) {
+    vi.stubEnv(key, value)
+  }
+})
+afterEach(async () => {
+  try {
+    await machine.dispose()
+  }
+  finally {
+    vi.unstubAllEnvs()
+  }
+})
+
+function runTaskSuite(...[name, tasks, options]: Parameters<typeof runTaskSuiteWithOptions>) {
+  return runTaskSuiteWithOptions(name, tasks, { ...options, machineLeaseOptions: { stateDirectory: machine.stateDirectory } })
+}
 
 function terminateTestChild(pid: number) {
   try {
@@ -227,6 +250,7 @@ describe('suiteRunner', () => {
       import { runTaskSuite } from ${JSON.stringify(suiteRunnerUrl)};
       try {
         await runTaskSuite('e2e:contender', [{ label: 'must-not-run', command: 'node', args: [] }], {
+          machineLeaseOptions: { stateDirectory: ${JSON.stringify(machine.stateDirectory)} },
           beforeEachTask: () => fs.writeFileSync(process.argv[2], 'started'),
           runTask: async () => 0,
           writeReport: false,

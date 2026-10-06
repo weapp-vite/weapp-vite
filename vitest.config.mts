@@ -126,7 +126,8 @@ const projects = [
     extends: false,
     test: {
       name: 'e2e-hmr-infra',
-      globalSetup: [path.resolve(ROOT_DIR, 'e2e/vitest.e2e.machine.global-setup.ts')],
+      // 此项目仅验证模拟会话与 runner 基础设施；不能向其他单测项目传播真实 IDE 日志。
+      globalSetup: [path.resolve(ROOT_DIR, 'e2e/vitest.e2e.machine-lease.global-setup.ts')],
       include: [
         'e2e/scripts/e2e-suite-manifest.test.ts',
         'e2e/scripts/domAcceptanceReport/inventory.test.ts',
@@ -147,6 +148,8 @@ const projects = [
         'e2e/utils/hmrRuntimeDiagnostics.test.ts',
         'e2e/utils/hmrOutputDiagnostics.test.ts',
         'e2e/utils/ide-devtools-cleanup.test.ts',
+        'e2e/utils/machineGlobalSetup.test.ts',
+        'e2e/utils/testSupport/machineLease.test.ts',
         'e2e/utils/devtoolsCli.test.ts',
         'e2e/utils/devtoolsProcessOwnership.test.ts',
         'e2e/utils/issue963Project.test.ts',
