@@ -24,9 +24,12 @@ export interface DevtoolsLogIssue {
 
 export type DevtoolsLogBaseline = Record<string, number>
 
-const DEFAULT_LOG_QUIET_WINDOW_MS = 1_000
+// DevTools 在项目窗口销毁后可能要数秒才重建 backend utility process。
+// 清理门禁必须覆盖这段延迟，并在最后一次日志变化后再观察稳定窗口，
+// 否则下一项目会在 backend 重启期间进入 simulator，触发宿主竞争。
+const DEFAULT_LOG_QUIET_WINDOW_MS = 2_000
 const DEFAULT_LOG_QUIET_POLL_INTERVAL_MS = 100
-const DEFAULT_LOG_QUIET_TIMEOUT_MS = 5_000
+const DEFAULT_LOG_QUIET_TIMEOUT_MS = 12_000
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
