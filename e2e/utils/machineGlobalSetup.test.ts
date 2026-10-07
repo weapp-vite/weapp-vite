@@ -42,6 +42,19 @@ vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership', () => ({
   cleanupManagedWechatProjects: mocks.cleanupProjects,
   readManagedWechatProjectRecords: async () => [],
 }))
+vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host', async (original) => {
+  const actual = await original<typeof import('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host')>()
+  return {
+    ...actual,
+    // 此处验证真实 journal/lease 的嵌套与恢复；原生身份查询由 host 和 writerIdentity 测试覆盖。
+    readManagedProcessIdentity: async (pid: number) => {
+      if (pid !== process.pid) {
+        throw new Error('Global setup tests must not inspect another process.')
+      }
+      return { pid, executable: process.execPath, started: 'global-setup-test-generation' }
+    },
+  }
+})
 vi.mock('./devtoolsProcessOwnership', () => ({
   createDevtoolsProjectJournal: mocks.createJournal,
 }))
