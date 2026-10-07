@@ -8,6 +8,7 @@
 - 用户明确接受本机 Stable 时，通过 `WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION` 传入精确产品版本；仅所选 Stable 安装与该值一致时生效，默认官方 Stable 门禁保持不变。仍执行官方查询、安装身份、实际宿主、基础库和端口归属核验，报告保留 `officialVersion`、`selectedVersion`、查询时间和 `selected-version-opt-in`。本轮已授权基线为 `2.02.2608070`，不能把它长期写成“最新稳定版”，也不能将选择值填作未连接成功时的实际观察值。
 - 启动失败不是终止全部 IDE 的授权。恢复、重试、超时和 teardown 共用会话资源所有权；不得删除全局 session、port-lease、登录数据或用户缓存目录。已退出的 CLI PID 不能作为宿主 PID 复用，清理应可重复调用且仅释放一次。
 - 不启动 IDE 的基础设施测试只共享外层机器互斥，不向普通单测 worker 发布真实 IDE journal。测试租约、嵌套 runner 或中断恢复时使用独立临时 state 与 journal，子进程显式继承同一测试状态目录；不能把测试记录挂到外层真实 IDE scope。环境隔离须原样恢复继承值，正式 IDE 的 journal、child scope 与清理门禁保持完整。
+- 涉及 IDE journal 或 managed ownership 的测试清理时，必须从 `packages/weapp-ide-cli` 的正式导出导入 `MANAGED_PROJECT_JOURNAL_ENV` 等共享常量；禁止从未导出的本地模块导入并依赖 `undefined` 触发默认 scope。测试 mock 必须显式覆盖 `process` scope 与 journal scope，并验证 CLI 子进程创建的 child journal 能递归释放，避免只清理父 scope 后残留受管项目、端口或 watcher。
 - 同一 fixture 的 suite 复用一个受管 IDE 项目窗口，切页使用 `reLaunch`。HMR 完整重载后若只需恢复协议连接，使用已有窗口 owner 和 endpoint 重连；`disconnect()` 只断开 WebSocket，不能随后再次启动 IDE。重连前后核对 journal、安装、宿主进程身份和端口，失败保留原 owner，不隐式编译、导航或改用新窗口。
 - 文件写出或协议重连成功不代表 IDE 自动重载完成。后续导航前等待可观察的新运行状态和页面就绪，保留原有导航次数与最终断言；不得用固定等待或重复导航掩盖重载竞争。HMR 验收同时核对实际页面数据、指定节点文本和可见性；`getCurrentPages()` 包装对象可能保留旧数据，出现分歧时先比较原生页面协议与真实渲染结果，再判断是否为 runtime 缺陷。
 - 创建启动意图前及实际派发 CLI 前均核对剩余预算，扣除已有退避与必经连接阶段；预算不足不得再开窗口。取消 CLI 不证明共享宿主已撤销请求。临时项目必须保留到当前会话及登记资源全部完成清理，即使启动尚未返回 session；清理失败时保留目录、journal 与机器租约供精确恢复。
