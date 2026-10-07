@@ -34,3 +34,4 @@
 - 只有在 Computer Use 已尝试且仍无法恢复时，才可将真实 DevTools E2E 记录为环境阻塞；不得通过弱化断言、跳过场景或修改测试来掩盖基础设施故障，也不得把未运行或未完成的真实 E2E 宣称为通过。
 
 - 项目列表中的历史条目不能当作活跃窗口或内存泄漏证据。排查 OOM 同时检查受管窗口峰值、所选安装实际进程 RSS、文件 watcher 与关闭证据，不按历史路径前缀批量删除用户项目；IDE 的 `simulator launch success` 日志也不能撤销先前的启动错误，必须保留首错并核对真实页面是否就绪。
+- 若 DevTools 原生日志在 `checkAppFields.js`、`checkSubpackages` 等内部校验中出现 `MaxSubPackageLimit` 读取异常，且后续没有对应 `webview page ready`，应归类为宿主初始化阻塞；保留原始日志与 journal，不得用 `simulator launch success`、修改 `app.json`、放宽日志门禁或重复启动覆盖首错。
