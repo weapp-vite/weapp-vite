@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { InspectionNode } from '../../utils/objectInspection'
-import { computed, reactive, watch } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import ObjectRelationLane from './ObjectRelationLane.vue'
 import RelationConnections from './RelationConnections.vue'
 
@@ -19,56 +19,28 @@ const emit = defineEmits<{
   'update:artifactQuery': [value: string]
   'update:moduleQuery': [value: string]
 }>()
-const pages = reactive({ packages: 1, artifacts: 1, modules: 1 })
-const pageSize = 3
+const laneRefs = useTemplateRef<Array<InstanceType<typeof ObjectRelationLane>>>('laneRefs')
 const lanes = computed(() => [
   { key: 'packages' as const, title: '包', query: props.packageQuery, all: props.packages },
   { key: 'artifacts' as const, title: '产物', query: props.artifactQuery, all: props.artifacts },
   { key: 'modules' as const, title: '模块落点', query: props.moduleQuery, all: props.modules },
-].map(lane => ({
-  ...lane,
-  pageCount: Math.max(1, Math.ceil(lane.all.length / pageSize)),
-  items: lane.all.slice((pages[lane.key] - 1) * pageSize, pages[lane.key] * pageSize),
-})))
+])
 const edges = computed(() => {
-  const packageNodes = lanes.value[0]!.items
-  const artifacts = lanes.value[1]!.items
-  const modules = lanes.value[2]!.items
+  const packageNodes = new Map(props.packages.map(node => [node.target.packageId, node]))
+  const artifactNodes = new Map(props.artifacts.map(node => [node.key, node]))
   return [
-    ...artifacts.flatMap((artifact) => {
-      const pkg = packageNodes.find(node => node.target.packageId === artifact.target.packageId)
+    ...props.artifacts.flatMap((artifact) => {
+      const pkg = packageNodes.get(artifact.target.packageId)
       return pkg ? [{ from: pkg.key, to: artifact.key, active: props.selected?.artifactKey === artifact.key || props.selected?.key === pkg.key }] : []
     }),
-    ...modules.flatMap((module) => {
-      const artifact = artifacts.find(node => node.key === module.artifactKey)
+    ...props.modules.flatMap((module) => {
+      const artifact = module.artifactKey ? artifactNodes.get(module.artifactKey) : undefined
       return artifact ? [{ from: artifact.key, to: module.key, active: props.selected?.key === module.key || props.selected?.key === artifact.key }] : []
     }),
   ]
 })
 
-watch(() => [props.packages, props.artifacts, props.modules], () => {
-  for (const lane of lanes.value) {
-    pages[lane.key] = Math.min(pages[lane.key], lane.pageCount)
-  }
-})
-watch(() => props.packageQuery, () => {
-  pages.packages = 1
-})
-watch(() => props.artifactQuery, () => {
-  pages.artifacts = 1
-})
-watch(() => props.moduleQuery, () => {
-  pages.modules = 1
-})
-
-function setPage(key: keyof typeof pages, value: number) {
-  const lane = lanes.value.find(item => item.key === key)!
-  if (Number.isFinite(value)) {
-    pages[key] = Math.max(1, Math.min(lane.pageCount, Math.trunc(value)))
-  }
-}
-
-function setQuery(key: keyof typeof pages, value: string) {
+function setQuery(key: (typeof lanes.value)[number]['key'], value: string) {
   if (key === 'packages') {
     emit('update:packageQuery', value)
   }
@@ -80,14 +52,16 @@ function setQuery(key: keyof typeof pages, value: string) {
   }
 }
 
-/** 定位只翻页，不清除用户显式筛选，也不改变目标。 */
+/** 定位仅滚动相关列，不清除用户显式筛选，也不改变目标。 */
 function locateSelection() {
   for (const lane of lanes.value) {
-    const index = lane.all.findIndex(node => node.key === props.selected?.key
+    const node = lane.all.find(node => node.key === props.selected?.key
       || node.key === props.selected?.artifactKey
       || (node.target.kind === 'package' && node.target.packageId === props.selected?.target.packageId))
-    if (index >= 0) {
-      pages[lane.key] = Math.floor(index / pageSize) + 1
+    if (node) {
+      for (const component of laneRefs.value ?? []) {
+        component.reveal(node.key)
+      }
     }
   }
 }
@@ -98,14 +72,13 @@ function locateSelection() {
     <div class="relation-grid">
       <RelationConnections :edges="edges" />
       <ObjectRelationLane
-        v-for="(lane, index) in lanes" :key="lane.key" :title="lane.title" :number="`0${index + 1}`"
-        :items="lane.items" :total="lane.all.length" :page="pages[lane.key]" :pages="lane.pageCount"
-        :query="lane.query" :selected-key="selected?.key ?? null"
-        @select="emit('select', $event)" @query="setQuery(lane.key, $event)" @page="setPage(lane.key, $event)"
+        v-for="(lane, index) in lanes" :key="lane.key" ref="laneRefs" :title="lane.title" :number="`0${index + 1}`"
+        :items="lane.all" :total="lane.all.length" :query="lane.query" :selected-key="selected?.key ?? null"
+        @select="emit('select', $event)" @query="setQuery(lane.key, $event)"
       />
     </div>
     <footer class="relation-caption">
-      <span><span class="legend-line" />报告收录与归属，不表示 import 或调用。每列独立分页。</span>
+      <span><span class="legend-line" />报告收录与归属，不表示 import 或调用。滚动或搜索浏览全部对象。</span>
       <button type="button" :disabled="!selected" @click="locateSelection">定位当前对象</button>
     </footer>
   </div>

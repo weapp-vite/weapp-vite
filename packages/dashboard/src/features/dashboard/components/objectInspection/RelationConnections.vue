@@ -5,20 +5,31 @@ const props = defineProps<{ edges: Array<{ from: string, to: string, active: boo
 const svg = useTemplateRef<SVGSVGElement>('svg')
 const paths = shallowRef<Array<{ d: string, active: boolean }>>([])
 let observer: ResizeObserver | undefined
+let parent: HTMLElement | undefined
+let frame: number | undefined
 let disposed = false
 
-/** 连线端点取真实卡片边界，不把分页外或不存在的落点画成关系。 */
+/** 连线只连接滚动视口内的真实对象，不把隐藏行画成关系。 */
 async function updatePaths() {
   await nextTick()
   if (disposed || !svg.value?.parentElement) {
     return
   }
-  const parent = svg.value.parentElement
-  const bounds = parent.getBoundingClientRect()
+  const container = svg.value.parentElement
+  if (!svg.value.getClientRects().length) {
+    paths.value = []
+    return
+  }
+  const bounds = container.getBoundingClientRect()
   const nodes = new Map<string, DOMRect>()
-  for (const element of parent.querySelectorAll<HTMLElement>('[data-node-key]')) {
-    if (element.dataset.nodeKey) {
-      nodes.set(element.dataset.nodeKey, element.getBoundingClientRect())
+  for (const list of container.querySelectorAll<HTMLElement>('.lane-nodes')) {
+    const viewport = list.getBoundingClientRect()
+    for (const element of list.querySelectorAll<HTMLElement>('[data-node-key]')) {
+      const rect = element.getBoundingClientRect()
+      const center = rect.top + rect.height / 2
+      if (element.dataset.nodeKey && center >= viewport.top && center <= viewport.bottom) {
+        nodes.set(element.dataset.nodeKey, rect)
+      }
     }
   }
   paths.value = props.edges.flatMap((edge) => {
@@ -36,17 +47,32 @@ async function updatePaths() {
   })
 }
 
-watch(() => props.edges, updatePaths, { flush: 'post' })
-onMounted(() => {
-  if (svg.value?.parentElement) {
-    observer = new ResizeObserver(updatePaths)
-    observer.observe(svg.value.parentElement)
+function scheduleUpdate() {
+  if (frame === undefined) {
+    frame = requestAnimationFrame(() => {
+      frame = undefined
+      void updatePaths()
+    })
   }
-  void updatePaths()
+}
+
+watch(() => props.edges, scheduleUpdate, { flush: 'post' })
+onMounted(() => {
+  parent = svg.value?.parentElement ?? undefined
+  if (parent) {
+    observer = new ResizeObserver(scheduleUpdate)
+    observer.observe(parent)
+    parent.addEventListener('scroll', scheduleUpdate, { capture: true, passive: true })
+  }
+  scheduleUpdate()
 })
 onBeforeUnmount(() => {
   disposed = true
   observer?.disconnect()
+  parent?.removeEventListener('scroll', scheduleUpdate, true)
+  if (frame !== undefined) {
+    cancelAnimationFrame(frame)
+  }
 })
 </script>
 

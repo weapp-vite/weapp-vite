@@ -1,22 +1,37 @@
 <script setup lang="ts">
 import type { InspectionNode } from '../../utils/objectInspection'
+import { useTemplateRef, watch } from 'vue'
 import { formatBytes } from '../../utils/format'
 
-defineProps<{
+const props = defineProps<{
   title: string
   number: string
   items: InspectionNode[]
   total: number
-  page: number
-  pages: number
   query: string
   selectedKey: string | null
 }>()
 const emit = defineEmits<{
   select: [node: InspectionNode]
   query: [value: string]
-  page: [value: number]
 }>()
+const list = useTemplateRef<HTMLElement>('list')
+
+watch(() => props.query, () => {
+  list.value?.scrollTo({ top: 0 })
+}, { flush: 'post' })
+
+/** 只滚动本列，不移动页面或清除显式筛选。 */
+function reveal(key: string) {
+  const container = list.value
+  const node = Array.from(container?.querySelectorAll<HTMLElement>('[data-node-key]') ?? [])
+    .find(element => element.dataset.nodeKey === key)
+  if (container && node) {
+    container.scrollTop = node.offsetTop - (container.clientHeight - node.offsetHeight) / 2
+  }
+}
+
+defineExpose({ reveal })
 </script>
 
 <template>
@@ -28,7 +43,7 @@ const emit = defineEmits<{
         <input :value="query" type="search" :placeholder="`搜索${title}路径或名称`" @input="emit('query', ($event.target as HTMLInputElement).value)">
       </label>
     </header>
-    <div class="lane-nodes">
+    <div ref="list" class="lane-nodes" tabindex="0" :aria-label="`${title}列表，可滚动浏览`">
       <button
         v-for="node in items" :key="node.key" type="button" class="relation-node"
         :data-node-key="node.key" :aria-pressed="node.key === selectedKey"
@@ -49,16 +64,6 @@ const emit = defineEmits<{
       </button>
       <p v-if="!items.length" class="lane-empty" role="status">没有匹配的{{ title }}。可清除搜索或更换包范围。</p>
     </div>
-    <nav class="lane-pagination" :aria-label="`${title}分页`">
-      <button type="button" :disabled="page <= 1" :aria-label="`${title}上一页`" @click="emit('page', page - 1)">上一页</button>
-      <label v-if="pages > 1" class="page-jump">
-        <span class="sr-only">跳至页</span>
-        <input type="number" :value="page" min="1" :max="pages" :aria-label="`${title}页码`" @change="emit('page', Number(($event.target as HTMLInputElement).value))">
-        <span aria-live="polite">/ {{ pages }}</span>
-      </label>
-      <span v-else>1 / 1</span>
-      <button type="button" :disabled="page >= pages" :aria-label="`${title}下一页`" @click="emit('page', page + 1)">下一页</button>
-    </nav>
   </section>
 </template>
 
@@ -105,26 +110,31 @@ const emit = defineEmits<{
 }
 
 .lane-nodes {
+  position: relative;
   display: grid;
-  gap: 8px;
+  gap: 4px;
   align-content: start;
-  min-height: 352px;
+  max-height: 392px;
+  padding: 4px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--dashboard-border-strong) transparent;
+  scrollbar-width: thin;
 }
 
 .relation-node {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   justify-content: center;
   width: 100%;
-  height: 112px;
-  padding: 10px;
-  overflow: hidden;
+  min-height: 76px;
+  padding: 8px;
   color: var(--dashboard-text);
   text-align: left;
   background: var(--dashboard-panel);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
   transition: border-color 120ms, background-color 120ms;
 }
 
@@ -174,7 +184,7 @@ const emit = defineEmits<{
 }
 
 .node-facts strong {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--dashboard-text);
@@ -185,7 +195,7 @@ const emit = defineEmits<{
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--dashboard-text-soft);
   white-space: nowrap;
 }
@@ -199,56 +209,13 @@ const emit = defineEmits<{
   border-radius: 6px;
 }
 
-.lane-pagination {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--dashboard-text-muted);
-}
-
-.lane-pagination button {
-  min-height: 38px;
-  padding: 5px 6px;
-  color: var(--dashboard-text);
-  background: var(--dashboard-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 5px;
-}
-
-.lane-pagination button:disabled {
-  opacity: 0.45;
-}
-
-.page-jump {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  margin: 0;
-  font-size: 12px;
-  color: var(--dashboard-text-soft);
-}
-
-.page-jump input {
-  width: 48px;
-  min-height: 34px;
-  padding: 4px 8px;
-  color: var(--dashboard-text);
-  background: var(--dashboard-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 5px;
-}
-
 @media (max-width: 760px) {
   .lane-nodes {
-    min-height: 0;
+    max-height: 320px;
   }
 
   .relation-node {
-    height: auto;
-    min-height: 130px;
+    min-height: 76px;
   }
 
   .node-path {
