@@ -20,7 +20,7 @@ for (const kind of ['native', 'wevu']) {
   }
   await writeFile(path.join(root, 'package.json'), JSON.stringify({ name: `acceptance-${kind}`, private: true, type: 'module', scripts: { build: 'node node_modules/weapp-vite/bin/weapp-vite.js build' }, dependencies: { 'weapp-vite': '7.4.0', ...(kind === 'wevu' ? { wevu: '1' } : {}) } }, null, 2))
   await writeFile(path.join(root, 'vite.config.ts'), `import { defineConfig } from 'weapp-vite'\nexport default defineConfig({ weapp: { srcRoot: 'src' } })\n`)
-  await writeFile(path.join(root, 'project.config.json'), JSON.stringify({ appid, projectname: `acceptance-${kind}`, compileType: 'miniprogram', miniprogramRoot: 'dist/', simulatorType: 'wechat', simulatorPluginLibVersion: {}, setting: { es6: true, minified: false, urlCheck: false } }, null, 2))
+  await writeFile(path.join(root, 'project.config.json'), JSON.stringify({ appid, projectname: `acceptance-${kind}`, compileType: 'miniprogram', miniprogramRoot: 'dist/', setting: { es6: true, minified: false, urlCheck: false } }, null, 2))
   await writeFile(path.join(root, 'project.private.config.json'), JSON.stringify({ condition: { miniprogram: { list: [{ name: 'Agent acceptance', pathName: 'pages/agent-proof/index', query: '' }] } } }, null, 2))
   await writeFile(path.join(root, 'src/app.ts'), 'App({})\n')
   await writeFile(path.join(root, 'src/app.json'), JSON.stringify({ pages: ['pages/agent-proof/index'], window: { navigationBarTitleText: 'Acceptance' } }))
