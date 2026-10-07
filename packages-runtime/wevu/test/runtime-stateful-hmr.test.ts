@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, defineComponent, defineStore, nextTick, onAttached, onUnload, reactive, ref, setActivePinia, storeToRefs } from '@/index'
 import { createApp } from '@/runtime/app'
 import { applySnapshotUpdate } from '@/runtime/app/setData/snapshot'
+import { useCssVars } from '@/runtime/css'
 import { inject, provide } from '@/runtime/provide'
 import { mountRuntimeInstance, registerComponent, teardownRuntimeInstance } from '@/runtime/register'
 
@@ -248,6 +249,47 @@ describe('runtime: stateful HMR', () => {
       expect(instance.__wevu.setupState.label).toBe(label)
       expect(instance.data).toMatchObject({ input: 'held-input', label })
     }
+  })
+
+  it.each([false, true])('retains CSS variable tracking after an HMR refresh with an existing runtime: %s', async (existingRuntime) => {
+    const defineRuntime = () => defineComponent({
+      setup() {
+        const themeColor = ref('red')
+        useCssVars(() => ({ themeColor: themeColor.value }))
+        return { themeColor }
+      },
+    })
+    defineRuntime()
+
+    const instance: any = {
+      data: {
+        themeColor: 'red',
+        __wv_css_vars_style: '--themeColor:red',
+      },
+      properties: {},
+      setData(payload: Record<string, any>) {
+        Object.assign(this.data, payload)
+      },
+    }
+    if (existingRuntime) {
+      registeredDefinition!.lifetimes.attached.call(instance)
+      await nextTick()
+      await nextTick()
+    }
+
+    applying = true
+    defineRuntime()
+    refresh!(instance, { ...instance.data })
+    applying = false
+
+    instance.__wevu.setupState.themeColor.value = 'blue'
+    await nextTick()
+    await nextTick()
+
+    expect(instance.data).toMatchObject({
+      themeColor: 'blue',
+      __wv_css_vars_style: '--themeColor:blue',
+    })
   })
 
   it.each([false, true])('restores explicit reactive snapshots with an existing runtime: %s', async (existingRuntime) => {
