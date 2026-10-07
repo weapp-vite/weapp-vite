@@ -7,7 +7,7 @@ export const themeOptions: ThemeOption[] = [
 ]
 
 export const dashboardTabs: Array<DashboardTabOption & { description: string, advanced?: boolean }> = [
-  { key: 'diagnostics', label: '构建诊断', description: '看包体分布，定位异常，对照变化与来源。', iconName: 'metric-health' },
+  { key: 'diagnostics', label: '构建分析', description: '看包体分布，定位异常，对照变化与来源。', iconName: 'metric-health' },
   { key: 'treemap', label: '体积地图', description: '按面积查看产物体积，逐层定位大文件。', iconName: 'treemap' },
   { key: 'files', label: '对象检查', description: '关联包、产物与模块，在同一上下文中检查证据、内容和调查。', iconName: 'top-files' },
   { key: 'packages', label: '包体与分包', description: '查看主包、分包的体积、预算和产物文件。', iconName: 'tab-packages' },

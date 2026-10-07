@@ -126,10 +126,10 @@ function createActions(status: WorkspaceReadinessStatus): WorkspaceReadinessActi
   return [
     {
       id: 'open-diagnostics',
-      title: '查看构建诊断',
+      title: '查看构建分析',
       detail: '进入统一工作台查看构建结论、包体预算与问题证据。',
       to: '/analyze',
-      label: '构建诊断',
+      label: '构建分析',
     },
     {
       id: 'open-source',

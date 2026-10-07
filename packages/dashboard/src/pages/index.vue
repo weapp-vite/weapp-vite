@@ -81,7 +81,7 @@ const sessionNotice = computed(() => {
   return runtimeEvents.value.length
     ? {
         title: '暂未收到错误或警告',
-        description: '仅依据已收到的运行事件；构建问题请查看「构建诊断」。',
+        description: '仅依据已收到的运行事件；构建问题请查看「构建分析」。',
       }
     : {
         title: '构建报告已收到',

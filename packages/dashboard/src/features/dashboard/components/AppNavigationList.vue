@@ -19,7 +19,7 @@ const navigationSections = computed(() => {
   let index = 0
   const nextNumber = () => String(++index).padStart(2, '0')
   return props.items.map((item) => {
-    const number = nextNumber()
+    const number = item.children?.length ? null : nextNumber()
     const commonChildren = (item.children ?? [])
       .filter(child => !child.advanced)
       .map(child => ({ ...child, number: nextNumber() }))
@@ -74,10 +74,11 @@ watch([() => props.currentPath, () => props.currentAnalyzeTab], () => {
     <p class="navigation-heading">开发工作台</p>
     <div v-for="item in navigationSections" :key="item.to" class="navigation-section">
       <RouterLink
+        v-if="!item.children?.length"
         :to="item.to"
         class="navigation-link"
-        :class="{ 'is-active': !item.children?.length && isNavigationItemActive(item.to) }"
-        :aria-current="!item.children?.length && isNavigationItemActive(item.to) ? 'page' : 'false'"
+        :class="{ 'is-active': isNavigationItemActive(item.to) }"
+        :aria-current="isNavigationItemActive(item.to) ? 'page' : 'false'"
         @click="emit('navigate')"
       >
         <span class="navigation-number" aria-hidden="true">{{ item.number }}</span>

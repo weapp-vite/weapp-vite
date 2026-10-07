@@ -7,38 +7,40 @@
 
 @layer base {
   :root {
-    color-scheme: light dark;
+    color-scheme: light;
 
-    --dashboard-bg: #f4f7f5;
-    --dashboard-shell: #f8faf9;
-    --dashboard-panel: #fff;
-    --dashboard-panel-strong: #fff;
-    --dashboard-panel-muted: #edf3ef;
-    --dashboard-border: #d3dfd7;
-    --dashboard-border-strong: #a5b9ad;
-    --dashboard-text: #20372c;
-    --dashboard-text-muted: #4b6054;
-    --dashboard-text-soft: #5f7367;
-    --dashboard-accent: #087d3e;
-    --dashboard-accent-soft: #e0f1e7;
-    --dashboard-shadow: 0 1px 2px rgb(15 40 25 / 6%);
+    --dashboard-bg: #eceee9;
+    --dashboard-shell: #e7eae5;
+    --dashboard-panel: #f3f4f0;
+    --dashboard-panel-strong: #f6f7f3;
+    --dashboard-panel-muted: #e2e7e1;
+    --dashboard-border: #cdd4cc;
+    --dashboard-border-strong: #909e93;
+    --dashboard-text: #39443e;
+    --dashboard-text-muted: #546259;
+    --dashboard-text-soft: #5b695f;
+    --dashboard-accent: #2f704e;
+    --dashboard-accent-soft: #dce9df;
+    --dashboard-shadow: 0 1px 2px rgb(32 40 35 / 4%);
     --dashboard-code: 'SFMono-Regular', consolas, 'Liberation Mono', monospace;
   }
 
   :root[data-theme='dark'] {
-    --dashboard-bg: #121b1b;
-    --dashboard-shell: #0e1615;
-    --dashboard-panel: #1b2927;
-    --dashboard-panel-strong: #22332e;
-    --dashboard-panel-muted: #22332e;
-    --dashboard-border: #354b42;
-    --dashboard-border-strong: #627e6f;
-    --dashboard-text: #e7eee9;
-    --dashboard-text-muted: #b5c3bd;
-    --dashboard-text-soft: #95aaa0;
-    --dashboard-accent: #07c160;
-    --dashboard-accent-soft: #193a29;
-    --dashboard-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+    color-scheme: dark;
+
+    --dashboard-bg: #202423;
+    --dashboard-shell: #1c201f;
+    --dashboard-panel: #272c2a;
+    --dashboard-panel-strong: #2d3330;
+    --dashboard-panel-muted: #2d3330;
+    --dashboard-border: #3c4640;
+    --dashboard-border-strong: #6c7e71;
+    --dashboard-text: #d1d6d2;
+    --dashboard-text-muted: #adb6af;
+    --dashboard-text-soft: #a0aaa3;
+    --dashboard-accent: #61b68d;
+    --dashboard-accent-soft: #2b4035;
+    --dashboard-shadow: 0 1px 2px rgb(0 0 0 / 16%);
   }
 
   body {
@@ -121,6 +123,6 @@
   }
 
   ::selection {
-    background: rgb(7 193 96 / 28%);
+    background: color-mix(in srgb, var(--dashboard-accent) 24%, transparent);
   }
 }
