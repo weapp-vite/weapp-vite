@@ -1,6 +1,7 @@
 /* eslint-disable e18e/ban-dependencies -- suite runner 需要 execa 保留跨平台命令参数并正确解析 Windows pnpm.cmd。 */
 import type { Options } from 'execa'
 import type { MachineE2EChildScope, MachineE2ELease, MachineE2ELeaseOptions } from '../../packages/devtools-runtime/src/lease/machine'
+import type { DevtoolsHostLease } from '../utils/devtoolsHostLifecycle'
 import type { SuiteReportContext, SuiteTaskArtifact } from './suiteReport'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -8,6 +9,7 @@ import process from 'node:process'
 import { execa } from 'execa'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { claimDevtoolsHost, quitClaimedDevtoolsHost } from '../utils/devtoolsHostLifecycle'
 import { createDevtoolsProjectJournal } from '../utils/devtoolsProcessOwnership'
 import { cleanupDevtoolsCommandScope } from '../utils/devtoolsScopeCleanup'
 import { E2E_RUNTIME_PROVIDER_ENV, resolveRuntimeProviderName } from '../utils/runtimeProvider'
@@ -584,6 +586,7 @@ async function runOwnedTaskSuite(
     let journalPath: string | undefined
     let childScope: MachineE2EChildScope | undefined
     let processStopError: OwnedCommandShutdownError | undefined
+    let devtoolsHostLease: DevtoolsHostLease | undefined
 
     try {
       journalPath = await createDevtoolsProjectJournal()
@@ -614,6 +617,10 @@ async function runOwnedTaskSuite(
       signal.throwIfAborted()
       await options.beforeEachTask?.(task)
       signal.throwIfAborted()
+      if (isDevtoolsVitestTask(task)) {
+        // 只在任务启动前认领冷宿主；已有或无法核验的宿主会阻断本 lane，避免继续累积 renderer。
+        devtoolsHostLease = await claimDevtoolsHost(task.env?.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH ?? process.env.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH)
+      }
       exitCode = await runTask(task, signal)
       signal.throwIfAborted()
       if (reportContext.strict) {
@@ -646,6 +653,9 @@ async function runOwnedTaskSuite(
             await Promise.reject(processStopError)
           }
           await cleanupDevtoolsCommandScope(childScope, journalPath)
+          if (devtoolsHostLease) {
+            await quitClaimedDevtoolsHost(devtoolsHostLease)
+          }
         }
         catch (error) {
           const message = error instanceof Error ? error.message : String(error)

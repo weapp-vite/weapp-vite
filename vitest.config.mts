@@ -153,6 +153,7 @@ const projects = [
         'e2e/utils/managedAutomatorBridge.test.ts',
         'e2e/utils/testSupport/machineLease.test.ts',
         'e2e/utils/devtoolsCli.test.ts',
+        'e2e/utils/devtoolsHostLifecycle.test.ts',
         'e2e/utils/devtoolsProcessOwnership.test.ts',
         'e2e/utils/issue963Project.test.ts',
         'e2e/utils/opened-automator.test.ts',
