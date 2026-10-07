@@ -61,7 +61,7 @@ const clean = redactor()
 const program = new Command()
   .name('weapp-agent')
   .description('AI coding agent for WeChat mini-programs')
-  .version('0.1.0-preview.1')
+  .version('0.1.0')
   .option('-C, --cwd <directory>', 'project directory', process.cwd())
   .option('--trust', 'trust this exact project configuration and scripts')
   .option(
