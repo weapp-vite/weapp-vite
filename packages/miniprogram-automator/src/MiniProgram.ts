@@ -563,7 +563,7 @@ export default class MiniProgram extends EventEmitter {
   }
 
   /**
-   * @description 等待小程序 App 域协议可用，避免返回半就绪自动化会话。
+   * @description 等待原生协议返回真实页面标识和路径，避免返回半就绪自动化会话。
    */
   async waitForAppReady(timeout = APP_READY_TIMEOUT) {
     const startedAt = Date.now()
@@ -572,17 +572,26 @@ export default class MiniProgram extends EventEmitter {
     while (Date.now() - startedAt < timeout) {
       const remainingTimeout = timeout - (Date.now() - startedAt)
       try {
-        await this.send('App.captureScreenshot', {}, {
+        const page: unknown = await this.send('App.getCurrentPage', {}, {
           timeout: Math.min(APP_READY_PROBE_TIMEOUT, remainingTimeout),
         })
-        return
+        if (page && typeof page === 'object'
+          && 'pageId' in page && typeof page.pageId === 'number'
+          && Number.isSafeInteger(page.pageId) && page.pageId >= 0
+          && 'path' in page && typeof page.path === 'string' && page.path.trim()) {
+          return
+        }
+        lastError = new Error('App.getCurrentPage returned no ready page with a valid pageId and path')
       }
       catch (error) {
-        lastError = error
-        const remainingAfterProbe = timeout - (Date.now() - startedAt)
-        if (remainingAfterProbe > 0) {
-          await sleep(Math.min(APP_READY_POLL_DELAY, remainingAfterProbe))
+        if (!isCurrentPageProtocolTimeout(error) && !isPageMetaMissingError(error) && !isCurrentFrameTimedOutError(error)) {
+          throw error
         }
+        lastError = error
+      }
+      const remainingAfterProbe = timeout - (Date.now() - startedAt)
+      if (remainingAfterProbe > 0) {
+        await sleep(Math.min(APP_READY_POLL_DELAY, remainingAfterProbe))
       }
     }
 
