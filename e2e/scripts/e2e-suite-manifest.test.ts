@@ -1,10 +1,20 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+import parallelConfig from '../vitest.e2e.parallel.config'
 import { readTaskCases } from './domAcceptanceReport/inventory'
 import { getCiFullTasks, getCiPrTasks, getCiTasks, getDiminaTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
+  it('keeps the parallel config CI-only and serial', () => {
+    expect(parallelConfig.test?.include).toEqual([
+      path.resolve(import.meta.dirname, '../ci/**/*.test.ts'),
+    ])
+    expect(parallelConfig.test?.maxWorkers).toBe(1)
+    expect(parallelConfig.test?.fileParallelism).toBe(false)
+    expect(parallelConfig.test?.include?.some(pattern => pattern.includes(`${path.sep}ide${path.sep}`))).toBe(false)
+  })
+
   it('collects both automatic-route runtime cases and all topology checkpoints', () => {
     const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), 'ide/auto-routes-define-app-json.runtime.test.ts')
     expect(cases).toHaveLength(2)
