@@ -9,37 +9,37 @@
   :root {
     color-scheme: light;
 
-    --dashboard-bg: #eceee9;
-    --dashboard-shell: #e7eae5;
-    --dashboard-panel: #f3f4f0;
-    --dashboard-panel-strong: #f6f7f3;
-    --dashboard-panel-muted: #e2e7e1;
-    --dashboard-border: #cdd4cc;
-    --dashboard-border-strong: #909e93;
-    --dashboard-text: #39443e;
-    --dashboard-text-muted: #546259;
-    --dashboard-text-soft: #5b695f;
-    --dashboard-accent: #2f704e;
-    --dashboard-accent-soft: #dce9df;
-    --dashboard-shadow: 0 1px 2px rgb(32 40 35 / 4%);
+    --dashboard-bg: #f6fbf7;
+    --dashboard-shell: #e6f3ec;
+    --dashboard-panel: #fbfefc;
+    --dashboard-panel-strong: #fff;
+    --dashboard-panel-muted: #eef7f1;
+    --dashboard-border: #cbded1;
+    --dashboard-border-strong: #6b8f78;
+    --dashboard-text: #0a0f0a;
+    --dashboard-text-muted: #28322b;
+    --dashboard-text-soft: #5d6a62;
+    --dashboard-accent: #207a34;
+    --dashboard-accent-soft: #dff3e7;
+    --dashboard-shadow: 0 1px 2px rgb(10 15 10 / 4%);
     --dashboard-code: 'SFMono-Regular', consolas, 'Liberation Mono', monospace;
   }
 
   :root[data-theme='dark'] {
     color-scheme: dark;
 
-    --dashboard-bg: #202423;
-    --dashboard-shell: #1c201f;
-    --dashboard-panel: #272c2a;
-    --dashboard-panel-strong: #2d3330;
-    --dashboard-panel-muted: #2d3330;
-    --dashboard-border: #3c4640;
-    --dashboard-border-strong: #6c7e71;
-    --dashboard-text: #d1d6d2;
-    --dashboard-text-muted: #adb6af;
-    --dashboard-text-soft: #a0aaa3;
-    --dashboard-accent: #61b68d;
-    --dashboard-accent-soft: #2b4035;
+    --dashboard-bg: #070a08;
+    --dashboard-shell: #0b100d;
+    --dashboard-panel: #0a0f0c;
+    --dashboard-panel-strong: #101a14;
+    --dashboard-panel-muted: #0b100d;
+    --dashboard-border: #23382a;
+    --dashboard-border-strong: #577c60;
+    --dashboard-text: #eaf6ee;
+    --dashboard-text-muted: #cfe0d5;
+    --dashboard-text-soft: #97a59d;
+    --dashboard-accent: #95ec69;
+    --dashboard-accent-soft: #152b1b;
     --dashboard-shadow: 0 1px 2px rgb(0 0 0 / 16%);
   }
 
@@ -82,6 +82,11 @@
 
   #app :where(input, select, button, textarea, svg, canvas, img, table) {
     max-width: 100%;
+  }
+
+  #app :where(input, textarea)::placeholder {
+    color: var(--dashboard-text-soft);
+    opacity: 1;
   }
 
   #app :where(a, button, input, textarea, [tabindex]):focus-visible {
