@@ -6,6 +6,7 @@ import { applyBuildScopeToAppConfig, resolveBuildScope } from './buildScope'
 
 export interface AppConfigBuildOptions {
   buildScope?: WeappBuildScopeConfig
+  omitEmptySubPackages?: boolean
   platform?: MpPlatform
   routeRules?: WeappRouteRules
   subPackages?: Record<string, WeappSubPackageConfig>
@@ -40,5 +41,8 @@ export function finalizeAppConfigForBuild<T extends object>(
     ),
     resolveBuildScope(options.buildScope),
   )
+  if (options.omitEmptySubPackages && finalizedConfig.subPackages?.length === 0) {
+    delete finalizedConfig.subPackages
+  }
   return finalizedConfig as T
 }

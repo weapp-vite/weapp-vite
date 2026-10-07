@@ -23,6 +23,7 @@ type AppJsonSubPackage = Record<string, any> & {
 interface ResolveJsonOptions {
   dependencies?: Record<string, string>
   alipayNpmMode?: string
+  omitEmptySubPackages?: boolean
 }
 
 export const ALIPAY_GENERIC_COMPONENT_PLACEHOLDER = './__weapp_vite_generic_component'
@@ -212,6 +213,9 @@ export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedA
     const json = entry.type === 'app'
       ? normalizeAppJson(structuredClone(entry.json))
       : structuredClone(entry.json)
+    if (entry.type === 'app' && options?.omitEmptySubPackages && json.subPackages?.length === 0) {
+      delete json.subPackages
+    }
     if (entry.jsonPath && Array.isArray(aliasEntries)) {
       const usingComponents: Record<string, string> = get(json, 'usingComponents')
       if (isObject(usingComponents)) {
