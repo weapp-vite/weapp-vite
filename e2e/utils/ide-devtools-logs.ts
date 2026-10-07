@@ -35,6 +35,7 @@ export type DevtoolsLogBaseline = Record<string, number>
 const DEFAULT_LOG_QUIET_WINDOW_MS = 2_000
 const DEFAULT_LOG_QUIET_POLL_INTERVAL_MS = 100
 const DEFAULT_LOG_QUIET_TIMEOUT_MS = 30_000
+const DEFAULT_UTILITY_RESTART_GRACE_MS = 5_000
 
 interface DevtoolsUtilityProcessEvent {
   at: number
@@ -179,10 +180,12 @@ export async function waitForDevtoolsLogQuiescence(options: {
   quietWindowMs?: number
   rootDir?: string
   timeoutMs?: number
+  utilityRestartGraceMs?: number
 } = {}) {
   const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_LOG_QUIET_POLL_INTERVAL_MS
   const quietWindowMs = options.quietWindowMs ?? DEFAULT_LOG_QUIET_WINDOW_MS
   const timeoutMs = options.timeoutMs ?? DEFAULT_LOG_QUIET_TIMEOUT_MS
+  const utilityRestartGraceMs = options.utilityRestartGraceMs ?? DEFAULT_UTILITY_RESTART_GRACE_MS
   const rootDir = options.rootDir || resolveDevtoolsLogRoot()
   let baseline = captureDevtoolsLogBaseline(options)
   let quietSince = Date.now()
@@ -190,6 +193,9 @@ export async function waitForDevtoolsLogQuiescence(options: {
   const initialUtilityEvent = resolveLatestDevtoolsUtilityProcessEvent(rootDir)
   const pendingUtilityRestartAt = initialUtilityEvent?.kind === 'closed' ? initialUtilityEvent.at : undefined
   let utilityRestartObserved = pendingUtilityRestartAt === undefined
+  const utilityRestartDeadline = pendingUtilityRestartAt === undefined
+    ? undefined
+    : Date.now() + Math.min(timeoutMs, Math.max(0, utilityRestartGraceMs))
 
   while (Date.now() < deadline) {
     await sleep(pollIntervalMs)
@@ -206,7 +212,8 @@ export async function waitForDevtoolsLogQuiescence(options: {
       quietSince = Date.now()
       continue
     }
-    if (utilityRestartObserved && Date.now() - quietSince >= quietWindowMs) {
+    const restartGraceElapsed = utilityRestartDeadline !== undefined && Date.now() >= utilityRestartDeadline
+    if ((utilityRestartObserved || restartGraceElapsed) && Date.now() - quietSince >= quietWindowMs) {
       return baseline
     }
   }

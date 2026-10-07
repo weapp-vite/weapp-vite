@@ -151,6 +151,27 @@ describe('ide devtools logs', () => {
     })).toEqual([])
   })
 
+  it('finishes after the restart grace period when the utility process stays closed', async () => {
+    const logFile = writeLog(sandboxRoot, '[INFO] project window closed\n[ERROR] utility process exit!\n')
+    const startedAt = Date.now()
+    const nextTaskBaseline = await waitForDevtoolsLogQuiescence({
+      pollIntervalMs: 10,
+      quietWindowMs: 20,
+      rootDir: sandboxRoot,
+      timeoutMs: 500,
+      utilityRestartGraceMs: 60,
+    })
+
+    expect(Date.now() - startedAt).toBeGreaterThanOrEqual(60)
+    expect(Date.now() - startedAt).toBeLessThan(500)
+    expect(scanRecentDevtoolsSimulatorBootIssues({
+      baseline: nextTaskBaseline,
+      rootDir: sandboxRoot,
+      sinceMs: Date.now() - 1_000,
+    })).toEqual([])
+    expect(fs.readFileSync(logFile, 'utf8')).toContain('utility process exit!')
+  })
+
   it('ignores stale simulator boot lines with a timezone offset', () => {
     const startedAt = Date.now() - 1_000
     writeLog(
