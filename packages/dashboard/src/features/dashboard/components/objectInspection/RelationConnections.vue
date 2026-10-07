@@ -105,6 +105,20 @@ onBeforeUnmount(() => {
   stroke-width: 1.8;
 }
 
+@keyframes relation-flow {
+  to {
+    stroke-dashoffset: -24px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .relation-wires path.active {
+    stroke-linecap: round;
+    stroke-dasharray: 6 6;
+    animation: relation-flow 1.2s linear infinite;
+  }
+}
+
 @media (max-width: 760px) {
   .relation-wires {
     display: none;
