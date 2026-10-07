@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { startManagedAutomatorBridge } from './managedAutomatorBridge'
 
-const mocks = vi.hoisted(() => ({ begin: vi.fn(), start: vi.fn(), resolve: vi.fn() }))
+const mocks = vi.hoisted(() => ({ begin: vi.fn(), lease: vi.fn(), release: vi.fn(async () => {}), start: vi.fn(), resolve: vi.fn() }))
+vi.mock('@weapp-vite/miniprogram-automator', () => ({ acquireAutomatorPortLease: mocks.lease }))
 vi.mock('../../packages/weapp-ide-cli/src/cli/agentStart', () => ({ startWechatIdeAgent: mocks.start }))
 vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership', () => ({ beginManagedWechatProject: mocks.begin }))
 vi.mock('../../packages/weapp-ide-cli/src/devtoolsTarget', () => ({ resolveWechatDevtoolsTarget: mocks.resolve }))
@@ -15,6 +16,7 @@ function owner() {
 beforeEach(() => {
   vi.resetAllMocks()
   mocks.resolve.mockResolvedValue({ cliPath: options.cliPath })
+  mocks.lease.mockResolvedValue({ port: options.port, release: mocks.release })
 })
 
 describe('managed automator bridge', () => {
@@ -30,6 +32,8 @@ describe('managed automator bridge', () => {
       wsEndpoint: 'ws://127.0.0.1:9415',
       managedProject: { id: project.id, journalPath: project.journalPath },
     })
+    expect(mocks.lease).toHaveBeenCalledExactlyOnceWith(options.port)
+    expect(mocks.release).toHaveBeenCalledOnce()
     expect(project.close).not.toHaveBeenCalled()
   })
 
@@ -61,5 +65,16 @@ describe('managed automator bridge', () => {
     mocks.start.mockRejectedValue(failure)
     await expect(startManagedAutomatorBridge(options)).rejects.toMatchObject({ errors: [failure, cleanup] })
     expect(mocks.start).toHaveBeenCalledOnce()
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
+  it('does not start the IDE when the selected automator port is already leased', async () => {
+    const failure = new Error('Port 9415 is in use, please specify another port')
+    mocks.lease.mockRejectedValueOnce(failure)
+
+    await expect(startManagedAutomatorBridge(options)).rejects.toBe(failure)
+    expect(mocks.resolve).not.toHaveBeenCalled()
+    expect(mocks.begin).not.toHaveBeenCalled()
+    expect(mocks.start).not.toHaveBeenCalled()
   })
 })

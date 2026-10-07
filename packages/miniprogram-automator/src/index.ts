@@ -15,6 +15,8 @@ export { Automator, Connection, ContextElement, CustomElement, Element, InputEle
 export const SmartappAutomator = smartappAutomatorRuntime
 export type { AppServiceHeapUsage, AppServiceHeapUsageOptions } from './appServiceHeap'
 export * from './Launcher'
+export { acquireAutomatorPortLease } from './launcher/portLease'
+export type { AutomatorPortLease } from './launcher/portLease'
 export * from './operation'
 export * from './platform'
 export type { ConsoleLogOptions, ConsoleRemoteObject, StructuredConsoleEntry } from './structuredConsole'

@@ -150,6 +150,7 @@ const projects = [
         'e2e/utils/hmrOutputDiagnostics.test.ts',
         'e2e/utils/ide-devtools-cleanup.test.ts',
         'e2e/utils/machineGlobalSetup.test.ts',
+        'e2e/utils/managedAutomatorBridge.test.ts',
         'e2e/utils/testSupport/machineLease.test.ts',
         'e2e/utils/devtoolsCli.test.ts',
         'e2e/utils/devtoolsProcessOwnership.test.ts',

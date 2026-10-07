@@ -1,14 +1,56 @@
+import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { cleanupManagedWechatProjects, MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { cleanupManagedWechatProjects, MANAGED_PROJECT_JOURNAL_ENV, readManagedWechatProjectRecords } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { createManagedWechatProjectJournal } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
 
 const ownedCleanups = new Set<() => Promise<void>>()
 const JOURNAL_ROOT = path.resolve(import.meta.dirname, '../../.tmp/e2e-managed-devtools-projects')
 
+/** 跨运行检查本仓库登记的任务；只读取本项目 journal，不扫描用户 IDE 缓存或其他 worktree。 */
+export async function assertNoUnreleasedDevtoolsProjects(rootDirectory = JOURNAL_ROOT) {
+  const entries = await fs.readdir(rootDirectory, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') {
+      return []
+    }
+    throw error
+  })
+  const unresolved: Array<{ journalPath: string, projectPath: string, state: string, port?: number, ownerPid: number }> = []
+  for (const entry of entries) {
+    if (!entry.name.startsWith('task-scope-')) {
+      continue
+    }
+    const journalPath = path.join(rootDirectory, entry.name)
+    const stat = await fs.lstat(journalPath)
+    if (!stat.isDirectory() || stat.isSymbolicLink()) {
+      throw new Error(`Managed DevTools journal root contains a non-directory task scope: ${journalPath}`)
+    }
+    for (const record of await readManagedWechatProjectRecords(journalPath)) {
+      if (record.state !== 'released') {
+        unresolved.push({
+          journalPath,
+          projectPath: record.projectPath,
+          state: record.state,
+          ...(record.port === undefined ? {} : { port: record.port }),
+          ownerPid: record.ownerPid,
+        })
+      }
+    }
+  }
+  if (unresolved.length) {
+    throw new Error(`Managed DevTools has unresolved project ownership from an earlier task; recover it before starting another IDE: ${JSON.stringify(unresolved)}`)
+  }
+}
+
 /** 每个任务单独登记窗口；嵌套任务仍归属父任务的日志树。 */
-export async function createDevtoolsProjectJournal(parentJournalPath = process.env[MANAGED_PROJECT_JOURNAL_ENV]) {
-  return await createManagedWechatProjectJournal(JOURNAL_ROOT, parentJournalPath)
+export async function createDevtoolsProjectJournal(
+  parentJournalPath = process.env[MANAGED_PROJECT_JOURNAL_ENV],
+  rootDirectory = JOURNAL_ROOT,
+) {
+  if (!parentJournalPath) {
+    await assertNoUnreleasedDevtoolsProjects(rootDirectory)
+  }
+  return await createManagedWechatProjectJournal(rootDirectory, parentJournalPath)
 }
 
 /** 直接运行 Vitest 时也为本轮 worker 建立独占窗口日志。 */

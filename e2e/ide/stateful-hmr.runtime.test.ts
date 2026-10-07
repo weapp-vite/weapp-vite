@@ -330,66 +330,80 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   }, 600_000)
 
   afterAll(async () => {
+    const errors: unknown[] = []
     try {
-      try {
-        await headlessTransport?.close()
-      }
-      finally {
-        headlessTransport = undefined
-        try {
-          if (resolveRuntimeProviderName() === 'headless') {
-            await miniProgram?.close?.()
-          }
-          else {
-            await miniProgram?.disconnect?.()
-          }
-        }
-        catch {}
-        finally {
-          miniProgram = undefined
-          // 传输关闭失败也必须停止本次构建；停止失败时保留项目供诊断。
-          await devProcess?.stop(5_000)
-          devProcess = undefined
-        }
-      }
+      await headlessTransport?.close()
+    }
+    catch (error) {
+      errors.push(error)
     }
     finally {
-      if (previousPostConnectRefresh === undefined) {
-        delete process.env[POST_CONNECT_REFRESH_ENV]
+      headlessTransport = undefined
+    }
+    try {
+      // 受管 IDE 会话必须 close 以确认窗口销毁；disconnect 只释放 WebSocket，不能终结窗口所有权。
+      await miniProgram?.close?.()
+    }
+    catch (error) {
+      errors.push(error)
+    }
+    finally {
+      miniProgram = undefined
+    }
+    try {
+      await devProcess?.stop(5_000)
+    }
+    catch (error) {
+      errors.push(error)
+    }
+    finally {
+      // 即使 watcher 停止失败，也继续恢复源码和精确登记的其它资源。
+      devProcess = undefined
+    }
+    try {
+      if (originalNativeSource) {
+        await fs.writeFile(fixture.nativeSource, originalNativeSource, 'utf8')
       }
-      else {
-        process.env[POST_CONNECT_REFRESH_ENV] = previousPostConnectRefresh
+      if (originalNativeStyle) {
+        await fs.writeFile(fixture.nativeStyle, originalNativeStyle, 'utf8')
       }
-      if (!devProcess) {
-        try {
-          if (originalNativeSource) {
-            await fs.writeFile(fixture.nativeSource, originalNativeSource, 'utf8')
-          }
-          if (originalNativeStyle) {
-            await fs.writeFile(fixture.nativeStyle, originalNativeStyle, 'utf8')
-          }
-          if (originalComponentSource) {
-            await fs.writeFile(fixture.componentSource, originalComponentSource, 'utf8')
-          }
-          if (originalChildSource) {
-            await fs.writeFile(fixture.childSource, originalChildSource, 'utf8')
-          }
-          if (originalVueChildSource) {
-            await fs.writeFile(fixture.vueChildSource, originalVueChildSource, 'utf8')
-          }
-          if (originalWevuSource) {
-            await fs.writeFile(fixture.wevuSource, originalWevuSource, 'utf8')
-          }
-          await cleanupResidualDevProcesses()
-          if (resolveRuntimeProviderName() === 'devtools') {
-            await cleanupResidualIdeProcesses()
-          }
-        }
-        finally {
-          await isolatedFixture?.cleanup()
-          isolatedFixture = undefined
-        }
+      if (originalComponentSource) {
+        await fs.writeFile(fixture.componentSource, originalComponentSource, 'utf8')
       }
+      if (originalChildSource) {
+        await fs.writeFile(fixture.childSource, originalChildSource, 'utf8')
+      }
+      if (originalVueChildSource) {
+        await fs.writeFile(fixture.vueChildSource, originalVueChildSource, 'utf8')
+      }
+      if (originalWevuSource) {
+        await fs.writeFile(fixture.wevuSource, originalWevuSource, 'utf8')
+      }
+      await cleanupResidualDevProcesses()
+      if (resolveRuntimeProviderName() === 'devtools') {
+        await cleanupResidualIdeProcesses()
+      }
+    }
+    catch (error) {
+      errors.push(error)
+    }
+    try {
+      await isolatedFixture?.cleanup()
+    }
+    catch (error) {
+      errors.push(error)
+    }
+    finally {
+      isolatedFixture = undefined
+    }
+    if (previousPostConnectRefresh === undefined) {
+      delete process.env[POST_CONNECT_REFRESH_ENV]
+    }
+    else {
+      process.env[POST_CONNECT_REFRESH_ENV] = previousPostConnectRefresh
+    }
+    if (errors.length) {
+      throw new AggregateError(errors, 'Stateful HMR teardown failed')
     }
   })
 
