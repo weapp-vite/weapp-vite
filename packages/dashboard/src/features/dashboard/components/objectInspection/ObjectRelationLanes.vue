@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { InspectionNode } from '../../utils/objectInspection'
-import { computed, useTemplateRef } from 'vue'
+import { computed, onMounted, useTemplateRef, watch } from 'vue'
+import { resolveInspectionRelationTargets } from '../../utils/objectInspection'
 import ObjectRelationLane from './ObjectRelationLane.vue'
 import RelationConnections from './RelationConnections.vue'
 
@@ -54,17 +55,15 @@ function setQuery(key: (typeof lanes.value)[number]['key'], value: string) {
 
 /** 定位仅滚动相关列，不清除用户显式筛选，也不改变目标。 */
 function locateSelection() {
-  for (const lane of lanes.value) {
-    const node = lane.all.find(node => node.key === props.selected?.key
-      || node.key === props.selected?.artifactKey
-      || (node.target.kind === 'package' && node.target.packageId === props.selected?.target.packageId))
-    if (node) {
-      for (const component of laneRefs.value ?? []) {
-        component.reveal(node.key)
-      }
+  for (const node of resolveInspectionRelationTargets(props, props.selected)) {
+    for (const component of laneRefs.value ?? []) {
+      component.reveal(node.key)
     }
   }
 }
+
+watch(() => props.selected?.key, locateSelection, { flush: 'post' })
+onMounted(locateSelection)
 </script>
 
 <template>

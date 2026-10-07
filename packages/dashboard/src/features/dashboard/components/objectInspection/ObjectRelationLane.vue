@@ -26,7 +26,8 @@ function reveal(key: string) {
   const container = list.value
   const node = Array.from(container?.querySelectorAll<HTMLElement>('[data-node-key]') ?? [])
     .find(element => element.dataset.nodeKey === key)
-  if (container && node) {
+  if (container && node && (node.offsetTop < container.scrollTop
+    || node.offsetTop + node.offsetHeight > container.scrollTop + container.clientHeight)) {
     container.scrollTop = node.offsetTop - (container.clientHeight - node.offsetHeight) / 2
   }
 }

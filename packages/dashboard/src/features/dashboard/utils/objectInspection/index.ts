@@ -173,3 +173,21 @@ export function filterInspectionNodes(nodes: InspectionNode[], query: string, pa
 export function resolveInspectionTarget(index: InspectionIndex, target: DashboardInvestigationTarget | null) {
   return (target ? index.nodes.get(inspectionTargetKey(target)) : undefined) ?? index.artifacts[0] ?? null
 }
+
+/** 只定位筛选结果中的真实关联链，不补回被隐藏的对象。 */
+export function resolveInspectionRelationTargets(
+  index: Pick<InspectionIndex, 'packages' | 'artifacts' | 'modules'>,
+  selected: InspectionNode | null,
+): InspectionNode[] {
+  if (!selected) {
+    return []
+  }
+  const pkg = index.packages.find(node => node.target.packageId === selected.target.packageId)
+  const artifact = index.artifacts.find(node => selected.target.kind === 'package'
+    ? node.target.packageId === selected.target.packageId
+    : node.key === selected.artifactKey)
+  const module = index.modules.find(node => selected.target.kind === 'module'
+    ? node.key === selected.key
+    : artifact !== undefined && node.artifactKey === artifact.key)
+  return [pkg, artifact, module].filter((node): node is InspectionNode => node !== undefined)
+}

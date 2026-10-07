@@ -1,7 +1,7 @@
 import type { DashboardInvestigationTarget } from 'weapp-vite/dashboard'
 import type { AnalyzeSubpackagesResult } from '../../types'
 import { describe, expect, it } from 'vitest'
-import { createInspectionIndex, filterInspectionNodes, inspectionTargetKey, resolveInspectionTarget } from './index'
+import { createInspectionIndex, filterInspectionNodes, inspectionTargetKey, resolveInspectionRelationTargets, resolveInspectionTarget } from './index'
 
 function createReport(): AnalyzeSubpackagesResult {
   return {
@@ -59,5 +59,33 @@ describe('object inspection report membership', () => {
     expect(resolveInspectionTarget(index, missing)).toBe(index.artifacts[0])
     expect(missing.file).toBe('removed.js')
     expect(resolveInspectionTarget(createInspectionIndex({ packages: [], modules: [], subPackages: [] }), null)).toBeNull()
+  })
+
+  it('reveals the selected package chain instead of same-named artifacts in another package', () => {
+    const index = createInspectionIndex(createReport())
+    const pkg = index.packages[1]!
+    const artifact = index.artifacts[25]!
+    const module = index.modules[1]!
+    for (const selected of [pkg, artifact, module]) {
+      expect(resolveInspectionRelationTargets(index, selected)).toEqual([pkg, artifact, module])
+    }
+  })
+
+  it('keeps the exact module placement when its parent artifact is absent', () => {
+    const index = createInspectionIndex(createReport())
+    const module = index.modules[2]!
+    expect(resolveInspectionRelationTargets(index, module)).toEqual([index.packages[1], module])
+    expect(resolveInspectionRelationTargets(index, index.artifacts[24]!)).toEqual([index.packages[0], index.artifacts[24]])
+  })
+
+  it('does not reveal filtered-out nodes or substitute unrelated descendants', () => {
+    const index = createInspectionIndex(createReport())
+    const selected = index.packages[1]!
+    const mainArtifacts = filterInspectionNodes(index.artifacts, '', 'main')
+    expect(resolveInspectionRelationTargets({ ...index, artifacts: mainArtifacts }, selected)).toEqual([selected])
+    const hiddenPackage = { ...index, packages: [] }
+    expect(resolveInspectionRelationTargets(hiddenPackage, selected)).toEqual([index.artifacts[25], index.modules[1]])
+    expect(resolveInspectionRelationTargets({ ...index, modules: [] }, selected)).toEqual([selected, index.artifacts[25]])
+    expect(resolveInspectionRelationTargets(index, null)).toEqual([])
   })
 })
