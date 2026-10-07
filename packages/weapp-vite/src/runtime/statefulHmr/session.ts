@@ -82,6 +82,29 @@ interface ActiveSnapshotBatch {
   snapshot: StatefulHmrSnapshot
 }
 
+/**
+ * DevEngine 在创建时就会校验 experimental.devMode 的输出格式。
+ * Vite 的共享构建配置默认使用小程序宿主需要的 CJS，必须在创建 bundled-dev
+ * server 之前切换为 ESM；适配器后续仍会重复校验并强制保持该格式。
+ */
+function withStatefulHmrOutputFormat(buildOptions: InlineConfig): InlineConfig {
+  const rolldownOptions = buildOptions.build?.rolldownOptions
+  const configuredOutput = rolldownOptions?.output
+  const output = Array.isArray(configuredOutput)
+    ? configuredOutput.map(item => ({ ...item, format: 'esm' as const }))
+    : { ...(configuredOutput ?? {}), format: 'esm' as const }
+  return {
+    ...buildOptions,
+    build: {
+      ...(buildOptions.build ?? {}),
+      rolldownOptions: {
+        ...(rolldownOptions ?? {}),
+        output,
+      },
+    },
+  }
+}
+
 export async function runStatefulHmrDev(
   ctx: MutableCompilerContext,
   buildOptions: InlineConfig,
@@ -102,8 +125,9 @@ export async function runStatefulHmrDev(
   const host = getStatefulHmrHost(compilerContext)
   const controller = host?.controller ?? createStatefulHmrHostPlugins(compilerContext)
   controller.setInputs(entryIds, delegatedComponentEntryIds)
+  const statefulBuildOptions = withStatefulHmrOutputFormat(buildOptions)
   const server = host?.server ?? await createDevViteServer({
-    ...buildOptions,
+    ...statefulBuildOptions,
     root: buildOptions.root ?? configService.cwd,
     appType: 'custom',
     configFile: false,
@@ -133,7 +157,7 @@ export async function runStatefulHmrDev(
       },
     },
     build: {
-      ...(buildOptions.build ?? {}),
+      ...(statefulBuildOptions.build ?? {}),
       watch: undefined,
       write: false,
     },

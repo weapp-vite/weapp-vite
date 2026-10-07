@@ -2,6 +2,7 @@ import type { ResolvedWechatDevtoolsTarget } from '../../packages/weapp-ide-cli/
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -25,6 +26,9 @@ let target: ResolvedWechatDevtoolsTarget
 
 beforeEach(async () => {
   vi.resetAllMocks()
+  // 这些用例验证 POSIX SingletonLock 归属逻辑；Windows 使用 CIM 进程清单，
+  // 应由专门的 Windows 集成覆盖，不能让同一组 symlink 断言误走另一实现。
+  vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
   profileDir = await fs.mkdtemp(path.join(os.tmpdir(), 'devtools-host-lifecycle-'))
   target = {
     cliPath,
@@ -42,6 +46,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await fs.rm(profileDir, { recursive: true, force: true })
+  vi.restoreAllMocks()
   vi.unstubAllEnvs()
 })
 

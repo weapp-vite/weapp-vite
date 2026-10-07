@@ -128,12 +128,17 @@ describe('stateful session initial chunk package boundaries', () => {
       chunk('feature/vendor.js', 'feature-shared'),
       chunk('independent/vendor.js', 'independent-shared'),
     ]
-    const watcher = await runStatefulHmrDev(ctx, { root }, vi.fn(async () => {}), {
+    const watcher = await runStatefulHmrDev(ctx, {
+      root,
+      build: { rolldownOptions: { output: { format: 'cjs' } } },
+    }, vi.fn(async () => {}), {
       initial: { output: [], componentPageGlobalStyleRoutes: [], glassEaselAnalysisByOwner: new Map() },
       entryIds: [],
       rebuild: vi.fn(async () => ({ output: [], componentPageGlobalStyleRoutes: [], glassEaselAnalysisByOwner: new Map() })),
     }, createDevBuildWatcher())
     try {
+      const createdOptions = harness.createServer.mock.calls[0]?.[0] as InlineConfig | undefined
+      expect(createdOptions?.build?.rolldownOptions?.output).toMatchObject({ format: 'esm' })
       const files = harness.writeOutput.mock.calls.flatMap(([, output]) => output)
       const runtime = files.find(file => file.type === 'chunk' && file.fileName === 'rolldown-runtime.js')
       expect(runtime?.type).toBe('chunk')
