@@ -16,6 +16,9 @@ const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
 ] as const
 const DEVTOOLS_SIMULATOR_NOT_FOUND_PATTERN = /\[SimulatorService\]\s+updateSimulatorCompileOptions:\s+simulator not found\s+(\S+)/i
 const DEVTOOLS_SIMULATOR_INIT_PATTERN = /\[SimulatorService\]\s+init simulator\s+(\S+)\s+with clientSid\b/i
+const DEVTOOLS_SIMULATOR_LAUNCH_FAILED_PATTERN = /simulator launch failed\b/i
+const DEVTOOLS_WEBVIEW_PAGE_READY_PATTERN = /\[devtools\]\s+webview page ready/i
+const DEVTOOLS_WINDOW_ID_PATTERN = /\bwin:([^\]\s]+)/i
 const DEVTOOLS_UTILITY_PROCESS_OPEN_PATTERN = /utility process .*\bopened\b/i
 const DEVTOOLS_UTILITY_PROCESS_CLOSE_PATTERN = /utility process (?:exit!|.*\bdestroyed\b)/i
 
@@ -226,6 +229,29 @@ function isTransientSimulatorNotFoundWarning(lines: string[], index: number) {
   })
 }
 
+function resolveDevtoolsWindowId(line: string) {
+  return line.match(DEVTOOLS_WINDOW_ID_PATTERN)?.[1]
+}
+
+function isRecoveredSimulatorLaunchFailure(lines: string[], index: number) {
+  const issueLine = lines[index]
+  if (!issueLine || !DEVTOOLS_SIMULATOR_LAUNCH_FAILED_PATTERN.test(issueLine)) {
+    return false
+  }
+
+  const issueWindowId = resolveDevtoolsWindowId(issueLine)
+  if (!issueWindowId) {
+    return false
+  }
+
+  return lines.slice(index + 1).some((line) => {
+    if (!DEVTOOLS_WEBVIEW_PAGE_READY_PATTERN.test(line)) {
+      return false
+    }
+    return resolveDevtoolsWindowId(line) === issueWindowId
+  })
+}
+
 export function scanRecentDevtoolsSimulatorBootIssues(options: {
   baseline?: DevtoolsLogBaseline
   rootDir?: string
@@ -256,6 +282,7 @@ export function scanRecentDevtoolsSimulatorBootIssues(options: {
       if (
         isSimulatorBootIssue(line)
         && !isTransientSimulatorNotFoundWarning(lines, index)
+        && !isRecoveredSimulatorLaunchFailure(lines, index)
       ) {
         // IDE 的 launch().catch(...).then(...) 在失败后也会记录 success，不能据此丢弃首错。
         issues.push({ file: filePath, line: line.trim() })

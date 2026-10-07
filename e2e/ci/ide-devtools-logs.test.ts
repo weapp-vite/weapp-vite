@@ -222,6 +222,21 @@ describe('ide devtools logs', () => {
     })).toThrow(failure)
   })
 
+  it('ignores a generic launch failure after the same simulator reaches webview ready', () => {
+    const startedAt = Date.now() - 1_000
+    const timestamp = formatDevtoolsLogTimestamp(new Date())
+    writeLog(sandboxRoot, [
+      `[${timestamp}][ERROR][rt:0,win:s0] [appservice] simulator launch catch error Error: simulator launch failed`,
+      `[${timestamp}][INFO][rt:0,win:s0] [appservice] simulator launch success, set src http://127.0.0.1/appservice/s0/mainframe`,
+      `[${timestamp}][INFO][rt:0,win:s0] [devtools] webview page ready`,
+    ].join('\n'))
+
+    expect(scanRecentDevtoolsSimulatorBootIssues({
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })).toEqual([])
+  })
+
   it('does not report a successful startup and ready current page without a launch failure', () => {
     const startedAt = Date.now() - 1_000
     const timestamp = formatDevtoolsLogTimestamp(new Date())
