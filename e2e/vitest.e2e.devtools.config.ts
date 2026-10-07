@@ -21,6 +21,8 @@ export default defineConfig({
       path.resolve(import.meta.dirname, './ide/**/*.test.ts'),
     ]),
     testTimeout: 36_000_000,
+    // 真实 IDE teardown 需要等待窗口销毁证据与 utility backend 重启。
+    hookTimeout: 120_000,
     globals: true,
     pool: 'threads',
     maxWorkers: resolveE2EMaxWorkers(),
