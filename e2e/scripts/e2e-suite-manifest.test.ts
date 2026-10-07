@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+import devtoolsConfig from '../vitest.e2e.devtools.config'
 import parallelConfig from '../vitest.e2e.parallel.config'
 import { readTaskCases } from './domAcceptanceReport/inventory'
 import { getCiFullTasks, getCiPrTasks, getCiTasks, getDiminaTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
@@ -13,6 +14,11 @@ describe('e2e suite manifest', () => {
     expect(parallelConfig.test?.maxWorkers).toBe(1)
     expect(parallelConfig.test?.fileParallelism).toBe(false)
     expect(parallelConfig.test?.include?.some(pattern => pattern.includes(`${path.sep}ide${path.sep}`))).toBe(false)
+  })
+
+  it('keeps real DevTools acceptance on one Vitest worker', () => {
+    expect(devtoolsConfig.test?.maxWorkers).toBe(1)
+    expect(devtoolsConfig.test?.fileParallelism).toBe(false)
   })
 
   it('collects both automatic-route runtime cases and all topology checkpoints', () => {
