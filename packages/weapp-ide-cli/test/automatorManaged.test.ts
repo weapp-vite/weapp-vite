@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   fail: vi.fn(),
   close: vi.fn(),
   persist: vi.fn(),
+  lease: vi.fn(),
+  release: vi.fn(),
   assertHost: vi.fn(),
   assertPort: vi.fn(),
   bootstrap: vi.fn(),
@@ -25,7 +27,10 @@ const options = { projectPath, port: 19201, target, preserveProjectRoot: true }
 const intent = { id: 'fixture-intent', journalPath, confirm: mocks.confirm, fail: mocks.fail, close: mocks.close }
 
 vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: async (run: () => Promise<unknown>) => await run() }))
-vi.mock('@weapp-vite/miniprogram-automator', () => ({ Launcher: class { launch = mocks.launch; connect = mocks.connect } }))
+vi.mock('@weapp-vite/miniprogram-automator', () => ({
+  Launcher: class { launch = mocks.launch; connect = mocks.connect },
+  acquireAutomatorPortLease: mocks.lease,
+}))
 vi.mock('../src/cli/automator/context', () => ({ resolveAutomatorSessionOptions: async (value: object) => ({ ...value, target, installationId: target.installationId, cliPath: target.cliPath }) }))
 vi.mock('../src/config/custom', () => ({ readCustomConfig: async () => ({}) }))
 vi.mock('../src/devtoolsTarget', () => ({ assertWechatDevtoolsHost: mocks.assertHost, assertWechatDevtoolsPort: mocks.assertPort }))
@@ -48,6 +53,8 @@ describe('managed automator launch', () => {
     mocks.fail.mockResolvedValue(undefined)
     mocks.ready.mockResolvedValue(undefined)
     mocks.persist.mockResolvedValue(undefined)
+    mocks.release.mockResolvedValue(undefined)
+    mocks.lease.mockResolvedValue({ port: options.port, release: mocks.release })
     mocks.connect.mockImplementation(async () => makeProgram())
     mocks.launch.mockImplementation(async () => makeProgram())
     mocks.start.mockImplementation(async ({ port, onStarted }) => {

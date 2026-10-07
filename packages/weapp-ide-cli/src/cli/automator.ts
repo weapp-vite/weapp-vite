@@ -9,7 +9,6 @@ import { readCustomConfig } from '../config/custom'
 import { assertWechatDevtoolsHost, assertWechatDevtoolsPort } from '../devtoolsTarget'
 import { resolveAutomatorSessionOptions } from './automator/context'
 import { isRetryableAutomatorLaunchError } from './automator/errors'
-import { launchManagedAutomator } from './automator/managed'
 import { persistAutomatorSession, readPersistedAutomatorSession } from './automator/sessionStore'
 import { resolveAutomatorProjectPath } from './automatorProject'
 import { bootstrapWechatDevtoolsSettings } from './wechatDevtoolsSettings'
@@ -44,7 +43,7 @@ export function resolveProjectAutomatorPort(projectPath: string) {
 async function launchSelectedAutomator(options: AutomatorOptions) {
   const { port, projectPath, sessionId, timeout = 30_000 } = options
   const lifecycle = new OperationLifecycle(timeout, 'IDE launch', options.signal)
-  let managedLaunch: ReturnType<typeof launchManagedAutomator> | undefined
+  let managedLaunch: Promise<MiniProgram> | undefined
   try {
     return await lifecycle.run(async (scope) => {
       const { Launcher } = await scope.step(() => import('@weapp-vite/miniprogram-automator'), { stage: 'load-automator' })
@@ -67,6 +66,7 @@ async function launchSelectedAutomator(options: AutomatorOptions) {
         : await scope.step(() => resolveAutomatorProjectPath(projectPath), { stage: 'project' })
 
       if (process.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL) {
+        const { launchManagedAutomator } = await import('./automator/managed')
         managedLaunch = launchManagedAutomator({
           launcher,
           scope,
