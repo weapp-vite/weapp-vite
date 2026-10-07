@@ -1,6 +1,7 @@
 import process from 'node:process'
+import { MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { cleanupResidualDevProcesses } from './dev-process-cleanup'
-import { cleanupOwnedDevtoolsProcesses, MANAGED_PROJECT_JOURNAL_ENV } from './devtoolsProcessOwnership'
+import { cleanupOwnedDevtoolsProcesses } from './devtoolsProcessOwnership'
 import { waitForDevtoolsLogQuiescence } from './ide-devtools-logs'
 import { resolveRuntimeProviderName } from './runtimeProvider'
 

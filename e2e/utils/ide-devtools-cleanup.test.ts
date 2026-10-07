@@ -10,7 +10,6 @@ const { cleanDev, cleanIde, quiescence, cli, rm } = vi.hoisted(() => ({
 vi.mock('./dev-process-cleanup', () => ({ cleanupResidualDevProcesses: cleanDev }))
 vi.mock('./devtoolsProcessOwnership', () => ({
   cleanupOwnedDevtoolsProcesses: cleanIde,
-  MANAGED_PROJECT_JOURNAL_ENV: 'WEAPP_IDE_MANAGED_PROJECT_JOURNAL',
 }))
 vi.mock('./ide-devtools-logs', () => ({ waitForDevtoolsLogQuiescence: quiescence }))
 vi.mock('execa', () => ({ execa: cli }))
