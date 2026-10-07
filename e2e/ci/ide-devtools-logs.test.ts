@@ -127,6 +127,30 @@ describe('ide devtools logs', () => {
     expect(issues[0]?.line).toContain('current task failed')
   })
 
+  it('waits for a utility process restart after a project window closes', async () => {
+    const logFile = writeLog(sandboxRoot, '[INFO] project window closed\n[ERROR] utility process exit!\n')
+    const delayedAppend = setTimeout(() => {
+      const timestamp = formatDevtoolsLogTimestamp(new Date(Date.now() + 100))
+      fs.appendFileSync(logFile, `[${timestamp}][INFO] utility process 0_BACKENDMESSAGER|UTILITY_BACKEND opened\n`, 'utf8')
+    }, 80)
+
+    const startedAt = Date.now()
+    const nextTaskBaseline = await waitForDevtoolsLogQuiescence({
+      pollIntervalMs: 10,
+      quietWindowMs: 40,
+      rootDir: sandboxRoot,
+      timeoutMs: 500,
+    })
+    clearTimeout(delayedAppend)
+
+    expect(Date.now() - startedAt).toBeGreaterThanOrEqual(100)
+    expect(scanRecentDevtoolsSimulatorBootIssues({
+      baseline: nextTaskBaseline,
+      rootDir: sandboxRoot,
+      sinceMs: Date.now() - 1_000,
+    })).toEqual([])
+  })
+
   it('ignores stale simulator boot lines with a timezone offset', () => {
     const startedAt = Date.now() - 1_000
     writeLog(

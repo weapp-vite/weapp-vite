@@ -16,6 +16,8 @@ const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
 ] as const
 const DEVTOOLS_SIMULATOR_NOT_FOUND_PATTERN = /\[SimulatorService\]\s+updateSimulatorCompileOptions:\s+simulator not found\s+(\S+)/i
 const DEVTOOLS_SIMULATOR_INIT_PATTERN = /\[SimulatorService\]\s+init simulator\s+(\S+)\s+with clientSid\b/i
+const DEVTOOLS_UTILITY_PROCESS_OPEN_PATTERN = /utility process .*\bopened\b/i
+const DEVTOOLS_UTILITY_PROCESS_CLOSE_PATTERN = /utility process (?:exit!|.*\bdestroyed\b)/i
 
 export interface DevtoolsLogIssue {
   file: string
@@ -25,11 +27,16 @@ export interface DevtoolsLogIssue {
 export type DevtoolsLogBaseline = Record<string, number>
 
 // DevTools 在项目窗口销毁后可能要数秒才重建 backend utility process。
-// 清理门禁必须覆盖这段延迟，并在最后一次日志变化后再观察稳定窗口，
-// 否则下一项目会在 backend 重启期间进入 simulator，触发宿主竞争。
+// 清理门禁会在发现退出事件后等待对应的 opened 事件，再观察稳定窗口；
+// 总预算只作为宿主没有给出重启回执时的硬上限。
 const DEFAULT_LOG_QUIET_WINDOW_MS = 2_000
 const DEFAULT_LOG_QUIET_POLL_INTERVAL_MS = 100
-const DEFAULT_LOG_QUIET_TIMEOUT_MS = 12_000
+const DEFAULT_LOG_QUIET_TIMEOUT_MS = 30_000
+
+interface DevtoolsUtilityProcessEvent {
+  at: number
+  kind: 'closed' | 'opened'
+}
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -116,6 +123,54 @@ function isSameDevtoolsLogBaseline(left: DevtoolsLogBaseline, right: DevtoolsLog
     && leftEntries.every(([filePath, size]) => right[filePath] === size)
 }
 
+function parseDevtoolsLogLineTime(line: string) {
+  const match = line.match(DEVTOOLS_LOG_TIMESTAMP_PATTERN)
+  if (!match) {
+    return null
+  }
+  const timestamp = Date.parse(`${match[1]}T${match[2]}.${match[3]}${match[4] || ''}`)
+  return Number.isFinite(timestamp) ? timestamp : null
+}
+
+function resolveLatestDevtoolsUtilityProcessEvent(rootDir: string): DevtoolsUtilityProcessEvent | undefined {
+  let latest: DevtoolsUtilityProcessEvent | undefined
+  for (const logDir of resolveWeappLogDirs(rootDir)) {
+    for (const entry of safeReadDir(logDir)) {
+      if (!entry.isFile() || !DEVTOOLS_LOG_FILE_PATTERN.test(entry.name)) {
+        continue
+      }
+      const filePath = path.join(logDir, entry.name)
+      const stat = safeStat(filePath)
+      if (!stat) {
+        continue
+      }
+      let content = ''
+      try {
+        const raw = fs.readFileSync(filePath)
+        content = raw.subarray(Math.max(0, raw.length - 128 * 1024)).toString('utf8')
+      }
+      catch {
+        continue
+      }
+      for (const line of content.split(/\r?\n/)) {
+        const kind = DEVTOOLS_UTILITY_PROCESS_OPEN_PATTERN.test(line)
+          ? 'opened'
+          : DEVTOOLS_UTILITY_PROCESS_CLOSE_PATTERN.test(line)
+            ? 'closed'
+            : undefined
+        if (!kind) {
+          continue
+        }
+        const at = parseDevtoolsLogLineTime(line) ?? stat.mtimeMs
+        if (!latest || at >= latest.at) {
+          latest = { at, kind }
+        }
+      }
+    }
+  }
+  return latest
+}
+
 export async function waitForDevtoolsLogQuiescence(options: {
   pollIntervalMs?: number
   quietWindowMs?: number
@@ -125,19 +180,30 @@ export async function waitForDevtoolsLogQuiescence(options: {
   const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_LOG_QUIET_POLL_INTERVAL_MS
   const quietWindowMs = options.quietWindowMs ?? DEFAULT_LOG_QUIET_WINDOW_MS
   const timeoutMs = options.timeoutMs ?? DEFAULT_LOG_QUIET_TIMEOUT_MS
+  const rootDir = options.rootDir || resolveDevtoolsLogRoot()
   let baseline = captureDevtoolsLogBaseline(options)
   let quietSince = Date.now()
   const deadline = quietSince + timeoutMs
+  const initialUtilityEvent = resolveLatestDevtoolsUtilityProcessEvent(rootDir)
+  const pendingUtilityRestartAt = initialUtilityEvent?.kind === 'closed' ? initialUtilityEvent.at : undefined
+  let utilityRestartObserved = pendingUtilityRestartAt === undefined
 
   while (Date.now() < deadline) {
     await sleep(pollIntervalMs)
     const current = captureDevtoolsLogBaseline(options)
+    if (!utilityRestartObserved && pendingUtilityRestartAt !== undefined) {
+      const utilityEvent = resolveLatestDevtoolsUtilityProcessEvent(rootDir)
+      if (utilityEvent?.kind === 'opened' && utilityEvent.at > pendingUtilityRestartAt) {
+        utilityRestartObserved = true
+        quietSince = Date.now()
+      }
+    }
     if (!isSameDevtoolsLogBaseline(baseline, current)) {
       baseline = current
       quietSince = Date.now()
       continue
     }
-    if (Date.now() - quietSince >= quietWindowMs) {
+    if (utilityRestartObserved && Date.now() - quietSince >= quietWindowMs) {
       return baseline
     }
   }
@@ -158,15 +224,6 @@ function isTransientSimulatorNotFoundWarning(lines: string[], index: number) {
   return lines.some((line) => {
     return line.match(DEVTOOLS_SIMULATOR_INIT_PATTERN)?.[1] === simulatorId
   })
-}
-
-function parseDevtoolsLogLineTime(line: string) {
-  const match = line.match(DEVTOOLS_LOG_TIMESTAMP_PATTERN)
-  if (!match) {
-    return null
-  }
-  const timestamp = Date.parse(`${match[1]}T${match[2]}.${match[3]}${match[4] || ''}`)
-  return Number.isFinite(timestamp) ? timestamp : null
 }
 
 export function scanRecentDevtoolsSimulatorBootIssues(options: {
