@@ -1,21 +1,8 @@
-import type { OutputBundle, RolldownWatcher } from 'rolldown'
-import type { MutableCompilerContext } from '../../context'
-import type { CorePluginState } from '../../plugins/core/helpers'
-import type { WxmlAssetPayload } from '../../plugins/utils/wxmlEmit'
 import { EventEmitter } from 'node:events'
-import { mkdir, mkdtemp, realpath, rename, rm, writeFile } from 'node:fs/promises'
-import os from 'node:os'
+import { rm } from 'node:fs/promises'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createLogicalEntryId } from '../../moduleGraph/protocol'
-import { createModuleGraphService } from '../../moduleGraph/service'
-import { createRenderStartHook } from '../../plugins/core/lifecycle/emit'
-import { createBuildEndHook } from '../../plugins/core/lifecycle/end'
-import { createLogicalEntryLoadHook } from '../../plugins/core/lifecycle/logicalEntry'
-import { pruneUnchangedDevHmrOutputs } from '../../plugins/outputFinalizer'
-import { createRuntimeState } from '../runtimeState'
-import { createWxmlServicePlugin } from '../wxmlPlugin'
-import { createBuildService } from './service'
+import { createSnapshotTemplateFixture } from '../../../test/snapshotTemplates/fixture'
 
 const harness = vi.hoisted(() => ({
   build: vi.fn(),
@@ -32,16 +19,24 @@ vi.mock('../../moduleGraph/devProvider', () => ({
 vi.mock('chokidar', () => ({
   default: {
     watch: vi.fn(() => {
-      const watcher = Object.assign(new EventEmitter(), { add: vi.fn(), close: async () => {} })
+      let closed = false
+      const watcher = Object.assign(new EventEmitter(), {
+        add: vi.fn(),
+        unwatch: vi.fn(),
+        close: async () => {
+          closed = true
+        },
+      })
       harness.sidecars.push(watcher)
+      setImmediate(() => {
+        if (!closed) {
+          watcher.emit('ready')
+        }
+      })
       return watcher
     }),
   },
 }))
-vi.mock('../sharedBuildConfig', () => ({ createSharedBuildConfig: vi.fn(() => ({})) }))
-vi.mock('./workers', () => ({ checkWorkersOptions: vi.fn(() => ({ hasWorkersDir: false })) }))
-vi.mock('../../utils/projectConfig', () => ({ syncProjectConfigToOutput: vi.fn(async () => {}) }))
-vi.mock('./outputs', async importOriginal => ({ ...await importOriginal<typeof import('./outputs')>(), cleanOutputs: vi.fn(async () => {}) }))
 
 const cleanups: Array<() => Promise<void>> = []
 beforeEach(() => {
@@ -57,129 +52,7 @@ afterEach(async () => {
   vi.unstubAllEnvs()
 })
 
-async function createFixture() {
-  const root = path.normalize(await realpath(await mkdtemp(path.join(os.tmpdir(), 'classic-template-snapshot-'))))
-  cleanups.push(async () => await rm(root, { recursive: true, force: true }))
-  const absolute = (file: string) => path.join(root, file)
-  const owner = absolute('components/layout/index.ts')
-  const ownerTemplate = absolute('components/layout/index.wxml')
-  const files = {
-    'components/layout/index.ts': 'Component({})',
-    'components/layout/index.json': '{"component":true}',
-    'components/layout/index.wxml': '<import src="../../shared/card.wxml"/><include src="../../shared/wrapper.wxml"/><template is="card"/>',
-    'shared/card.wxml': '<template name="card"><view>card initial</view></template>',
-    'shared/wrapper.wxml': '<include src="./partial.wxml"/>',
-    'shared/partial.wxml': '<view>partial initial</view>',
-    'pages/unrelated/index.ts': 'Page({})',
-    'pages/unrelated/index.json': '{}',
-    'pages/unrelated/index.wxml': '<view>unrelated page</view>',
-  }
-  for (const [file, source] of Object.entries(files)) {
-    await mkdir(path.dirname(absolute(file)), { recursive: true })
-    await writeFile(absolute(file), source)
-  }
-  const runtimeState = createRuntimeState()
-  const rollupWatcherMap = new Map()
-  const ctx = {
-    runtimeState,
-    moduleGraphService: createModuleGraphService(),
-    configService: {
-      inlineConfig: {},
-      cwd: root,
-      absoluteSrcRoot: root,
-      outDir: absolute('dist'),
-      weappViteConfig: { hmr: { runtime: 'classic' }, cleanOutputsInDev: false },
-      configFileDependencies: [],
-      projectPrivateConfig: {},
-      multiPlatform: { enabled: false },
-      packageJson: {},
-      platform: 'weapp',
-      isDev: true,
-      outputExtensions: { template: 'wxml', scriptModule: 'wxs' },
-      relativeAbsoluteSrcRoot: (file: string) => path.relative(root, file),
-      relativeOutputPath: (file: string) => path.relative(root, file),
-      relativeCwd: (file: string) => path.relative(root, file),
-      merge: () => ({}),
-    },
-    watcherService: { rollupWatcherMap, sidecarWatcherMap: new Map(), closeAll: vi.fn(async () => {}), setRollupWatcher: (watcher: RolldownWatcher, key: string) => rollupWatcherMap.set(key, watcher) },
-    npmService: {},
-    scanService: { isMainPackageFileName: () => true },
-  } as unknown as MutableCompilerContext
-  createWxmlServicePlugin(ctx)
-  const state = {
-    ctx,
-    jsonEmitFilesMap: new Map(),
-    pendingJsonEmitFilesMap: new Map(),
-    entriesMap: new Map([
-      ['components/layout/index', { templatePath: ownerTemplate }],
-      ['pages/unrelated/index', { templatePath: absolute('pages/unrelated/index.wxml') }],
-    ]),
-    resolvedEntryMap: runtimeState.build.hmr.resolvedEntryMap,
-    loadedEntrySet: new Set(),
-    hmrRootInputIds: new Set(),
-    hmrState: { hasBuiltOnce: false, didEmitAllEntries: true },
-    buildTarget: 'app',
-    // 原生入口的最小 loadEntry 不做额外模板扫描；依赖来自真实 logical entry loader。
-    loadEntry: async () => {},
-  } as unknown as CorePluginState
-  runtimeState.build.hmr.resolvedEntryMap.set(owner, { id: owner } as never)
-  const unrelatedOwner = absolute('pages/unrelated/index.ts')
-  runtimeState.build.hmr.resolvedEntryMap.set(unrelatedOwner, { id: unrelatedOwner } as never)
-  const load = createLogicalEntryLoadHook(state)
-  const end = createBuildEndHook(state)
-  const render = createRenderStartHook(state)
-  const bundles: OutputBundle[] = []
-  const controls = { beforeRender: undefined as (() => Promise<void>) | undefined, failAfterRender: false }
-  harness.build.mockImplementation(async (config) => {
-    state.resolvedConfig = config
-    const emitted: WxmlAssetPayload[] = []
-    // 与 classic 一次性 build 相同：重新加载 owner，再执行真实 render/finalizer。
-    await load.call({ resolve: async () => null, addWatchFile: vi.fn() } as never, createLogicalEntryId(owner, 'component'))
-    await load.call({ resolve: async () => null, addWatchFile: vi.fn() } as never, createLogicalEntryId(unrelatedOwner, 'page'))
-    await controls.beforeRender?.()
-    await end.call({ getModuleIds: () => [] })
-    await render.call({ emitFile: (asset: WxmlAssetPayload) => emitted.push(asset) })
-    const bundle = Object.fromEntries(emitted.map(asset => [asset.fileName, asset])) as unknown as OutputBundle
-    pruneUnchangedDevHmrOutputs(ctx, bundle, undefined, { runtimeRewriteDone: true })
-    ctx.moduleGraphService.clearPendingChanges()
-    if (controls.failAfterRender) {
-      controls.failAfterRender = false
-      throw new Error('simulated write failure')
-    }
-    bundles.push(bundle)
-    state.hmrState.hasBuiltOnce = true
-    state.hmrState.didEmitAllEntries = false
-    return { output: Object.values(bundle) }
-  })
-  const service = createBuildService(ctx)
-  const startup = service.build({ skipNpm: true })
-  await Promise.race([startup, vi.waitFor(() => {
-    expect(harness.sidecars.length).toBeGreaterThan(0)
-    for (const sidecar of harness.sidecars) {
-      expect(sidecar.listenerCount('ready')).toBe(1)
-    }
-  })])
-  for (const sidecar of harness.sidecars) {
-    sidecar.emit('ready')
-  }
-  const watcher = await startup as RolldownWatcher
-  cleanups.push(async () => await watcher.close())
-  const save = async (file: string, source: string) => {
-    const temporary = `${absolute(file)}.save`
-    await writeFile(temporary, source)
-    await rename(temporary, absolute(file))
-  }
-  const update = (...files: string[]) => {
-    for (const file of files) {
-      harness.change!({ event: 'update', file: absolute(file) })
-    }
-  }
-  const nextBundle = async (previousCount: number) => {
-    await vi.waitFor(() => expect(bundles).toHaveLength(previousCount + 1))
-    return bundles.at(-1)!
-  }
-  return { ctx, files, absolute, save, update, bundles, nextBundle, controls, sidecar: harness.sidecars[0]! }
-}
+const createFixture = () => createSnapshotTemplateFixture(harness, cleanups)
 
 describe('classic template snapshot source freshness', () => {
   it('refreshes shared template source through the real snapshot scheduler without touching its owner', async () => {
@@ -235,14 +108,24 @@ describe('classic template snapshot source freshness', () => {
     fixture.controls.failAfterRender = true
     await fixture.save('shared/card.wxml', '<template name="card"><view>card retry</view></template>')
     fixture.update('shared/card.wxml')
-    await vi.waitFor(() => expect(harness.build).toHaveBeenCalledTimes(2))
-    await vi.waitFor(() => expect(fixture.controls.failAfterRender).toBe(false))
+    const failure = await fixture.nextFailure(0)
+    expect(String(failure)).toContain('simulated write failure')
+    expect(fixture.controls.failAfterRender).toBe(false)
     expect(fixture.bundles).toHaveLength(1)
+    expect(fixture.writes).toHaveLength(1)
+    expect(fixture.ctx.runtimeState.build.output.emittedSource.get('shared/card.wxml')).toContain('card retry')
+    expect(await fixture.readOutput('shared/card.wxml')).toBe(fixture.files['shared/card.wxml'])
+    expect(await fixture.readOutput('pages/unrelated/index.wxml')).toBe(fixture.files['pages/unrelated/index.wxml'])
     await fixture.save('shared/partial.wxml', '<view>partial next request</view>')
     fixture.update('shared/partial.wxml')
     const bundle = await fixture.nextBundle(1)
     expect(bundle['shared/card.wxml']).toMatchObject({ source: expect.stringContaining('card retry') })
     expect(bundle['shared/partial.wxml']).toMatchObject({ source: '<view>partial next request</view>' })
+    expect(await fixture.readOutput('shared/card.wxml')).toContain('card retry')
+    expect(await fixture.readOutput('shared/partial.wxml')).toBe('<view>partial next request</view>')
+    expect(await fixture.readOutput('pages/unrelated/index.wxml')).toBe(fixture.files['pages/unrelated/index.wxml'])
+    expect(fixture.failures).toHaveLength(1)
+    expect(fixture.failures[0]).toBe(failure)
   })
 
   it('deduplicates cyclic import/include dependencies after a shared topology update', async () => {
@@ -264,16 +147,63 @@ describe('classic template snapshot source freshness', () => {
   it.each(['initial', 'restored'])('does not retain deleted shared tokens and restores %s content through the same scheduler', async (content) => {
     const fixture = await createFixture()
     const card = fixture.absolute('shared/card.wxml')
+    expect(await fixture.readOutput('shared/card.wxml')).toBe(fixture.files['shared/card.wxml'])
+    expect(await fixture.readOutput('pages/unrelated/index.wxml')).toBe(fixture.files['pages/unrelated/index.wxml'])
+    await fixture.save('components/layout/index.wxml', '<include src="../../shared/wrapper.wxml"/>')
     await rm(card)
+    fixture.update('components/layout/index.wxml')
     fixture.sidecar.emit('all', 'unlink', card)
     const removed = await fixture.nextBundle(1)
     expect(fixture.ctx.wxmlService.tokenMap.has(card)).toBe(false)
     expect(removed['shared/card.wxml']).toBeUndefined()
     expect(removed['pages/unrelated/index.wxml']).toMatchObject({ source: '<view>unrelated page</view>' })
+    await expect(fixture.readOutput('shared/card.wxml')).rejects.toMatchObject({ code: 'ENOENT' })
+    expect(await fixture.readOutput('pages/unrelated/index.wxml')).toBe(fixture.files['pages/unrelated/index.wxml'])
+    expect(fixture.ctx.moduleGraphService.hasModule(card)).toBe(false)
     await fixture.save('shared/card.wxml', `<template name="card"><view>card ${content}</view></template>`)
+    await fixture.save('components/layout/index.wxml', fixture.files['components/layout/index.wxml'])
+    // card 已脱离依赖图，provider 忽略其 create；owner 更新会增量重新发现模板依赖。
     harness.change!({ event: 'create', file: card })
+    fixture.update('components/layout/index.wxml')
     const restored = await fixture.nextBundle(2)
     expect(restored['shared/card.wxml']).toMatchObject({ source: expect.stringContaining(`card ${content}`) })
-    expect(restored['pages/unrelated/index.wxml']).toMatchObject({ source: '<view>unrelated page</view>' })
+    expect(restored['components/layout/index.wxml']).toMatchObject({ source: fixture.files['components/layout/index.wxml'] })
+    expect(Object.keys(restored).filter(file => file.endsWith('.wxml')).sort()).toEqual([
+      'components/layout/index.wxml',
+      'shared/card.wxml',
+    ])
+    expect(restored['pages/unrelated/index.wxml']).toBeUndefined()
+    expect(await fixture.readOutput('shared/card.wxml')).toBe(`<template name="card"><view>card ${content}</view></template>`)
+    expect(await fixture.readOutput('components/layout/index.wxml')).toBe(fixture.files['components/layout/index.wxml'])
+    expect(await fixture.readOutput('pages/unrelated/index.wxml')).toBe(fixture.files['pages/unrelated/index.wxml'])
+    expect(fixture.failures).toHaveLength(0)
+  })
+
+  it.each(['initial', 'restored'])('preserves published files when a referenced template is missing and recovers with %s content', async (content) => {
+    const fixture = await createFixture()
+    const card = fixture.absolute('shared/card.wxml')
+    const owner = await fixture.readOutput('components/layout/index.wxml')
+    await rm(card)
+    fixture.sidecar.emit('all', 'unlink', card)
+    const failure = await fixture.nextFailure(0)
+    expect(String(failure)).toContain('ENOENT')
+    expect(String(failure)).toMatch(/shared[/\\]card\.wxml/)
+    expect(fixture.bundles).toHaveLength(1)
+    expect(fixture.writes).toHaveLength(1)
+    expect(await fixture.readOutput('shared/card.wxml')).toBe(fixture.files['shared/card.wxml'])
+    expect(await fixture.readOutput('components/layout/index.wxml')).toBe(owner)
+    expect(await fixture.readOutput('pages/unrelated/index.wxml')).toBe(fixture.files['pages/unrelated/index.wxml'])
+
+    const restoredSource = `<template name="card"><view>card ${content}</view></template>`
+    await fixture.save('shared/card.wxml', restoredSource)
+    harness.change!({ event: 'create', file: card })
+    const restored = await fixture.nextBundle(1)
+    expect(restored['shared/card.wxml']).toMatchObject({ source: restoredSource })
+    expect(fixture.ctx.wxmlService.tokenMap.get(card)?.code).toBe(restoredSource)
+    expect(await fixture.readOutput('shared/card.wxml')).toBe(restoredSource)
+    expect(await fixture.readOutput('components/layout/index.wxml')).toBe(owner)
+    expect(await fixture.readOutput('pages/unrelated/index.wxml')).toBe(fixture.files['pages/unrelated/index.wxml'])
+    expect(fixture.failures).toHaveLength(1)
+    expect(fixture.failures[0]).toBe(failure)
   })
 })
