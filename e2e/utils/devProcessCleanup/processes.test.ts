@@ -1,7 +1,7 @@
-import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fixtureWindowsProcessRows } from '../testSupport/windowsProcessRows'
 import { createDevProcessCleanup } from './index'
 import { captureDevProcessTree, isDevProcessAlive, UnconfirmedDevProcessTreeError } from './processes'
 
@@ -80,8 +80,8 @@ describe('dev process snapshot identity', () => {
     const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: 'fixture-node.exe' }
     const child = { ProcessId: 62, ParentProcessId: 61, Started: '2026-10-08T00:00:00.0000300Z', ExecutablePath: 'fixture-node.exe' }
     const unrelated = { ProcessId: 71, ParentProcessId: 1, Started: null, ExecutablePath: null }
-    execute.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify([root, { ...child, ExecutablePath: null }, unrelated]) })
-      .mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify([child]) })
+    execute.mockResolvedValueOnce({ exitCode: 0, stdout: fixtureWindowsProcessRows([root, { ...child, ExecutablePath: null }, unrelated]) })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: fixtureWindowsProcessRows([child]) })
     expect(await captureDevProcessTree(61, () => true)).toEqual([
       { pid: 62, executable: 'fixture-node.exe', started: child.Started },
       { pid: 61, executable: 'fixture-node.exe', started: root.Started },
@@ -119,7 +119,7 @@ describe('dev process snapshot identity', () => {
       expect(diagnostic!.length).toBeLessThan(512)
       expect(JSON.parse(diagnostic!.slice('[e2e-cleanup-query] '.length)) as unknown).toEqual({
         query: 'snapshot',
-        transport: 'json',
+        transport: 'rows',
         exitCode: null,
         timedOut: true,
         stdoutCharacters: 0,
@@ -135,13 +135,12 @@ describe('dev process snapshot identity', () => {
     }
   })
 
-  it.each(['json', 'rows'] as const)('only changes transport in the explicit Windows diagnostic: %s', async (transport) => {
+  it.each([undefined, '1'])('preserves Windows identity with the same default transport when trace=%s', async (trace) => {
     vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
-    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', '1')
-    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_QUERY_TRANSPORT', transport)
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', trace)
     vi.spyOn(process.stdout, 'write').mockReturnValue(true)
-    const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: 'fixture-node.exe' }
-    const stdout = transport === 'json' ? JSON.stringify([root]) : `WEAPP_DEV_PROCESS_ROWS_V1\n61\t1\t${Buffer.from(root.ExecutablePath, 'utf16le').toString('base64')}\t${root.Started}\nWEAPP_DEV_PROCESS_ROWS_V1|1`
+    const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: '节点 with space.exe' }
+    const stdout = fixtureWindowsProcessRows([root])
     execute.mockResolvedValueOnce({ exitCode: 0, stdout })
     try {
       expect(await captureDevProcessTree(61, () => true)).toEqual([{ pid: 61, executable: root.ExecutablePath, started: root.Started }])
@@ -154,20 +153,13 @@ describe('dev process snapshot identity', () => {
     }
   })
 
-  it.each([
-    { transport: 'rows', trace: undefined },
-    { transport: 'unknown', trace: '1' },
-  ])('rejects untraced or unsupported diagnostic transport before launching: $transport/$trace', async ({ transport, trace }) => {
+  it.each(['', '[]', 'WEAPP_DEV_PROCESS_ROWS_V1\n61\t1\t\t'])('rejects missing or incomplete Windows snapshots without signalling a process: %j', async (stdout) => {
     vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
-    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', trace)
-    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_QUERY_TRANSPORT', transport)
-    try {
-      await expect(captureDevProcessTree(61, () => true)).rejects.toThrow('Windows query transport diagnosis requires tracing and json or rows.')
-      expect(execute).not.toHaveBeenCalled()
-    }
-    finally {
-      vi.unstubAllEnvs()
-    }
+    execute.mockResolvedValueOnce({ exitCode: 0, stdout })
+    const kill = vi.spyOn(process, 'kill').mockReturnValue(true)
+    await expect(captureDevProcessTree(61, () => true)).rejects.toThrow('Windows process row')
+    expect(execute).toHaveBeenCalledOnce()
+    expect(kill).not.toHaveBeenCalled()
   })
 
   it('binds Linux parent relations to boot identity and stat start ticks', async () => {

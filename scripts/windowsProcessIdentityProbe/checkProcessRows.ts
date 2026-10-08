@@ -14,8 +14,7 @@ import { readManagedProcessIdentity, sameManagedProcess } from '../../packages/w
 import { checkWindowsQueryEncoding } from './checkEncoding'
 
 assert.equal(process.platform, 'win32')
-assert.equal(process.env.WEAPP_VITE_E2E_CLEANUP_TRACE, '1')
-assert.equal(process.env.WEAPP_VITE_E2E_CLEANUP_QUERY_TRANSPORT, 'rows')
+assert.equal(process.env.WEAPP_VITE_E2E_CLEANUP_TRACE, undefined)
 
 const root = await mkdtemp(path.join(tmpdir(), 'process-rows-'))
 const fixture = path.join(root, 'tree.cjs')
@@ -64,7 +63,7 @@ await runWithCleanup(async () => {
   await writeFile(fixture, source)
   const owned = await launch('tree')
   const unrelated = await launch('leaf')
-  // 首次 PowerShell 查询直接走候选；对照读取在之后，不预热冷查询。
+  // 首次 PowerShell 查询走无诊断的正式默认入口；对照读取在之后，不预热冷查询。
   const started = performance.now()
   const identities = await captureDevProcessTree(owned.child.pid!, () => owned.child.exitCode === null && owned.child.signalCode === null)
   const firstSnapshotMs = performance.now() - started

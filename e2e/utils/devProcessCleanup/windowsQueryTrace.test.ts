@@ -12,30 +12,37 @@ const end = 'WEAPP_DEV_QUERY_V1|script|end|25.125|'
 afterEach(() => vi.restoreAllMocks())
 
 describe('Windows dev process query diagnostic', () => {
-  it('preserves the uninstrumented query when the explicit trace is off', () => {
-    expect(createWindowsProcessQueryCommand(' -Filter \'ProcessId > 0\'', false)).toBe('[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); $ErrorActionPreference=\'Stop\'; @(Get-CimInstance Win32_Process -Filter \'ProcessId > 0\' | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name=\'Started\';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString(\'o\')} else {$null}}}) | ConvertTo-Json -Compress')
+  it('uses one uninstrumented CIM query and the complete row envelope when trace is off', () => {
+    const command = createWindowsProcessQueryCommand(' -Filter \'ProcessId > 0\'', false)
+    expect(command.match(/Get-CimInstance/g)).toHaveLength(1)
+    expect(command).toContain('[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)')
+    expect(command).toContain('WEAPP_DEV_PROCESS_ROWS_V1')
+    expect(command).toContain('-Filter \'ProcessId > 0\'')
+    expect(command).not.toContain('ConvertTo-Json')
+    expect(command).not.toContain('[Console]::Error')
   })
 
   it('places CIM and serialization between their own markers without serializing diagnostics', () => {
     const command = createWindowsProcessQueryCommand(' -Filter \'ProcessId=61 OR ProcessId=62\'', true)
     expect(command.match(/Get-CimInstance/g)).toHaveLength(1)
-    expect(command.match(/ConvertTo-Json/g)).toHaveLength(1)
     expect(command).toContain('-Filter \'ProcessId=61 OR ProcessId=62\'')
     expect(command.indexOf('|script|begin|')).toBeLessThan(command.indexOf('[System.Diagnostics.Stopwatch]::StartNew()'))
     expect(command.indexOf('|query|begin|')).toBeLessThan(command.indexOf('Get-CimInstance'))
     expect(command.indexOf('Get-CimInstance')).toBeLessThan(command.indexOf('|query|end|'))
-    expect(command.indexOf('|serialize|begin|')).toBeLessThan(command.indexOf('ConvertTo-Json'))
-    expect(command.indexOf('ConvertTo-Json')).toBeLessThan(command.indexOf('|serialize|end|'))
+    expect(command.indexOf('|serialize|begin|')).toBeLessThan(command.indexOf('WEAPP_DEV_PROCESS_ROWS_V1'))
+    expect(command.lastIndexOf('WEAPP_DEV_PROCESS_ROWS_V1')).toBeLessThan(command.indexOf('|serialize|end|'))
     expect(command).toContain('[Console]::Error.WriteLine')
     expect(command).toContain('ToString(\'F3\',[Globalization.CultureInfo]::InvariantCulture)')
   })
 
-  it('uses the same CIM projection while replacing only the explicit row transport', () => {
-    const json = createWindowsProcessQueryCommand(' -Filter \'ProcessId > 0\'', true)
-    const rows = createWindowsProcessQueryCommand(' -Filter \'ProcessId > 0\'', true, 'rows')
-    expect(rows.slice(0, rows.indexOf('|serialize|begin|'))).toBe(json.slice(0, json.indexOf('|serialize|begin|')))
-    expect(rows).not.toContain('ConvertTo-Json')
-    expect(rows).toContain('WEAPP_DEV_PROCESS_ROWS_V1')
+  it('keeps the same CIM projection and row formatter with and without trace', () => {
+    const plain = createWindowsProcessQueryCommand(' -Filter \'ProcessId > 0\'', false)
+    const traced = createWindowsProcessQueryCommand(' -Filter \'ProcessId > 0\'', true)
+    const projection = /@\(Get-CimInstance.+?\}\}\)/
+    expect(plain.match(projection)?.[0]).toBeDefined()
+    expect(traced.match(projection)?.[0]).toBe(plain.match(projection)?.[0])
+    const formatter = plain.slice(plain.indexOf('[Console]::Out.WriteLine'))
+    expect(traced).toContain(formatter)
   })
 
   it('retains complete CRLF markers received before a query timeout', () => {
@@ -87,7 +94,7 @@ describe('Windows dev process query diagnostic', () => {
     expect(line).not.toContain('private error text')
     expect(JSON.parse(line.slice('[e2e-cleanup-query] '.length)) as unknown).toEqual({
       query: 'snapshot',
-      transport: 'json',
+      transport: 'rows',
       exitCode: null,
       timedOut: true,
       stdoutCharacters: 0,

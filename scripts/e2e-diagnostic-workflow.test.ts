@@ -5,7 +5,7 @@ import { parse } from 'yaml'
 interface WorkflowJob {
   if?: string
   needs?: string | string[]
-  strategy?: { 'fail-fast'?: boolean, 'matrix': { 'os'?: string[], 'node-version'?: number[], 'shard'?: number[], 'include'?: Array<{ 'os'?: string, 'node-version': number, 'shard'?: number, 'transport'?: string }> } }
+  strategy?: { 'fail-fast'?: boolean, 'matrix': { 'os'?: string[], 'node-version'?: number[], 'shard'?: number[], 'include'?: Array<{ 'os'?: string, 'node-version': number, 'shard'?: number }> } }
   with?: Record<string, unknown>
 }
 
@@ -18,6 +18,18 @@ async function workflow() {
 }
 
 describe('bounded HMR workflow diagnosis', () => {
+  it('checks real Windows rows through the untraced default entry on both Node versions', async () => {
+    const config = parse(await readFile(new URL('../.github/workflows/windows-process-identity-probe.yml', import.meta.url), 'utf8')) as { jobs: Record<string, WorkflowJob> }
+    const job = config.jobs['process-row-contract']!
+    expect(job.if).toBe('inputs.scope == \'process-rows\'')
+    expect(job.strategy?.matrix).toEqual({ node: [22, 24] })
+    expect(job.with).toMatchObject({
+      runs_on: 'windows-latest',
+      main_command: 'node --import tsx scripts/windowsProcessIdentityProbe/checkProcessRows.ts',
+      timeout_minutes: 20,
+    })
+  })
+
   it('requires an explicit manual selection and uses a separate concurrency group', async () => {
     const config = await workflow()
     expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-dev-cleanup'] })
@@ -65,21 +77,18 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.strategy?.['fail-fast']).toBe(false)
     expect(job.strategy?.matrix).toEqual({
       include: [
-        { 'node-version': 22, 'shard': 3, 'transport': 'json' },
-        { 'node-version': 22, 'shard': 1, 'transport': 'json' },
-        { 'node-version': 24, 'shard': 1, 'transport': 'json' },
-        { 'node-version': 22, 'shard': 3, 'transport': 'rows' },
-        { 'node-version': 22, 'shard': 1, 'transport': 'rows' },
-        { 'node-version': 24, 'shard': 1, 'transport': 'rows' },
+        { 'node-version': 22, 'shard': 3 },
+        { 'node-version': 22, 'shard': 1 },
+        { 'node-version': 24, 'shard': 1 },
       ],
     })
     expect(job.with).toMatchObject({
       runs_on: 'windows-latest',
       node_version: `\${{ matrix.node-version }}`,
       build_command: 'pnpm build:ci:windows',
-      main_command: `pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_CLEANUP_QUERY_TRANSPORT=\${{ matrix.transport }} pnpm e2e:ci:full -- --shard-index=\${{ matrix.shard }} --shard-total=4`,
+      main_command: `pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=\${{ matrix.shard }} --shard-total=4`,
       e2e_platform: 'weapp',
-      artifact_name: expect.stringMatching(/^windows-dev-cleanup-node-.*matrix\.node-version.*shard-.*matrix\.shard.*transport-.*matrix\.transport.*github\.sha/),
+      artifact_name: expect.stringMatching(/^windows-dev-cleanup-node-.*matrix\.node-version.*shard-.*matrix\.shard.*github\.sha/),
       artifact_path: 'docs/reports/*-e2e-ci-full-*-suite-report/**',
       timeout_minutes: 40,
     })

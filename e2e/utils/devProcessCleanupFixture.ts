@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events'
 import path from 'node:path'
 import process from 'node:process'
 import { vi } from 'vitest'
+import { fixtureWindowsProcessRows } from './testSupport/windowsProcessRows'
 
 export function createChild() {
   let settle!: () => void
@@ -100,7 +101,7 @@ export function createProcessTreeFixture(execaMock: Mock) {
       if (entries.some(entry => state.unknownIdentityPids.has(entry.pid))) {
         return Promise.resolve({ exitCode: 1, stdout: '', stderr: 'Process inspection failed' })
       }
-      const stdout = JSON.stringify(entries.map(entry => ({ ProcessId: entry.pid, ParentProcessId: entry.ppid, ExecutablePath: entry.executable, Started: entry.started })))
+      const stdout = fixtureWindowsProcessRows(entries.map(entry => ({ ProcessId: entry.pid, ParentProcessId: entry.ppid, ExecutablePath: entry.executable, Started: entry.started })))
       state.identityReads.push(...entries.map(entry => ({ ...entry })))
       if (!selected.length) {
         state.afterDiscovery?.()

@@ -12,11 +12,11 @@ interface WindowsQueryMarker {
   elapsedMs: number
 }
 
-/** 两种传输共用 UTF-8 输出边界；显式诊断只在 stderr 写固定 ASCII 阶段与耗时。 */
-export function createWindowsProcessQueryCommand(filter: string, trace: boolean, transport: 'json' | 'rows' = 'json') {
+/** 查询共用固定行格式及 UTF-8 边界；显式诊断只在 stderr 写 ASCII 阶段与耗时。 */
+export function createWindowsProcessQueryCommand(filter: string, trace: boolean) {
   const query = `@(Get-CimInstance Win32_Process${filter} | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name='Started';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString('o')} else {$null}}})`
   if (!trace) {
-    return withPowerShellUtf8Output(`$ErrorActionPreference='Stop'; ${query} | ConvertTo-Json -Compress`)
+    return withPowerShellUtf8Output(`$ErrorActionPreference='Stop'; $weappQueryRows=${query}; ${serializeWindowsProcessRows()}`)
   }
   const marker = (stage: typeof stages[number]) => `[Console]::Error.WriteLine('${wirePrefix}|${stage.replace(':', '|')}|'+$weappQueryClock.Elapsed.TotalMilliseconds.ToString('F3',[Globalization.CultureInfo]::InvariantCulture)+'|')`
   return withPowerShellUtf8Output([
@@ -27,7 +27,7 @@ export function createWindowsProcessQueryCommand(filter: string, trace: boolean,
     `$weappQueryRows=${query}`,
     marker('query:end'),
     marker('serialize:begin'),
-    transport === 'rows' ? serializeWindowsProcessRows() : '@($weappQueryRows) | ConvertTo-Json -Compress',
+    serializeWindowsProcessRows(),
     marker('serialize:end'),
     marker('script:end'),
   ].join('; '))
@@ -54,13 +54,13 @@ export function parseWindowsQueryTrace(stderr = ''): WindowsQueryMarker[] {
 }
 
 /** 查询失败仍报告已收到的阶段；诊断写入失败不覆盖正式查询结果。 */
-export function reportWindowsQueryTrace(query: 'snapshot' | 'identities', result: { stdout?: string, stderr?: string, exitCode?: number, timedOut?: boolean }, transport: 'json' | 'rows' = 'json') {
+export function reportWindowsQueryTrace(query: 'snapshot' | 'identities', result: { stdout?: string, stderr?: string, exitCode?: number, timedOut?: boolean }) {
   try {
     const stderr = result.stderr ?? ''
     const boundedStderr = stderr.slice(0, maxStderrCharacters)
     process.stdout.write(`[e2e-cleanup-query] ${JSON.stringify({
       query,
-      transport,
+      transport: 'rows',
       exitCode: result.exitCode ?? null,
       timedOut: result.timedOut === true,
       stdoutCharacters: result.stdout?.length ?? 0,

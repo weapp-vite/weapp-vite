@@ -48,7 +48,7 @@ jobs:
       node_version: '${{ matrix.node }}'
       timeout_minutes: 20
       build_command: pnpm build:pkgs:ci:windows
-      main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_CLEANUP_QUERY_TRANSPORT=rows node --import tsx scripts/windowsProcessIdentityProbe/checkProcessRows.ts
+      main_command: node --import tsx scripts/windowsProcessIdentityProbe/checkProcessRows.ts
     secrets: inherit
 
   self-writer-check:

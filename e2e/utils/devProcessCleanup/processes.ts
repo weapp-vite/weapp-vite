@@ -26,24 +26,19 @@ async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
   const filter = ` -Filter '${pids ? pids.map(pid => `ProcessId=${pid}`).join(' OR ') : 'ProcessId > 0'}'`
   const timeoutMs = resolveWechatInspectionTimeout('win32')
   const trace = process.env.WEAPP_VITE_E2E_CLEANUP_TRACE === '1'
-  const diagnosticTransport = process.env.WEAPP_VITE_E2E_CLEANUP_QUERY_TRANSPORT
-  if (diagnosticTransport !== undefined && (!trace || (diagnosticTransport !== 'json' && diagnosticTransport !== 'rows'))) {
-    throw new Error('Windows query transport diagnosis requires tracing and json or rows.')
-  }
   const result = await traceCleanupStage(pids ? 'dev-cim-identities' : 'dev-cim-snapshot', () => execa('powershell.exe', [
     '-NoProfile',
     '-NonInteractive',
     '-Command',
-    createWindowsProcessQueryCommand(filter, trace, diagnosticTransport),
+    createWindowsProcessQueryCommand(filter, trace),
   ], { timeout: timeoutMs, reject: false, windowsHide: true }), { processCount: pids?.length, timeoutMs })
   if (trace) {
-    reportWindowsQueryTrace(pids ? 'identities' : 'snapshot', result, diagnosticTransport)
+    reportWindowsQueryTrace(pids ? 'identities' : 'snapshot', result)
   }
   if (result.exitCode !== 0) {
     throw new Error(`Dev process inspection failed: exitCode=${result.exitCode ?? 'none'}, signal=${result.signal ?? 'none'}, timedOut=${result.timedOut ?? false}.`)
   }
-  const value: unknown = diagnosticTransport === 'rows' ? parseWindowsProcessRows(result.stdout) : JSON.parse(result.stdout.trim() || '[]')
-  const entries: unknown[] = Array.isArray(value) ? value : [value]
+  const entries = parseWindowsProcessRows(result.stdout)
   return entries.map((entry) => {
     if (!entry || typeof entry !== 'object'
       || !('ProcessId' in entry) || typeof entry.ProcessId !== 'number' || !Number.isSafeInteger(entry.ProcessId) || entry.ProcessId <= 0
