@@ -23,6 +23,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch 
 import { createAnalyzeChunkGraph, createAnalyzeChunkGraphView } from '../utils/analyzeChunkGraph'
 import { formatBytes } from '../utils/format'
 import AppSelect from './AppSelect.vue'
+import ChunkGraphInspector from './chunkGraph/Inspector.vue'
 
 interface RenderedGraphNode extends SimulationNodeDatum {
   color: string
@@ -68,29 +69,6 @@ const visibleGraph = computed(() => createAnalyzeChunkGraphView(graph.value, {
   packageId: packageFilter.value,
   query: searchQuery.value,
 }))
-const selectedNode = computed(() => visibleGraph.value.nodes.find(node => node.id === selectedNodeId.value) ?? null)
-const visibleNodeById = computed(() => new Map(visibleGraph.value.nodes.map(node => [node.id, node])))
-const selectedImportEdges = computed(() => {
-  const node = selectedNode.value
-  if (!node) {
-    return []
-  }
-  return visibleGraph.value.edges
-    .filter(edge => (
-      edge.kind !== 'contains'
-      && (edge.source === node.id || edge.target === node.id)
-    ))
-    .map((edge) => {
-      const outgoing = edge.source === node.id
-      const relatedNode = visibleNodeById.value.get(outgoing ? edge.target : edge.source)
-      return {
-        id: edge.id,
-        kind: edge.kind === 'dynamic-import' ? '动态' : '静态',
-        label: relatedNode?.label ?? (outgoing ? edge.target : edge.source),
-        relation: outgoing ? '导入' : '被导入',
-      }
-    })
-})
 
 const packageColorById = computed(() => {
   const palette = props.theme === 'dark'
@@ -328,8 +306,8 @@ watch(() => props.theme, () => void renderGraph())
 </script>
 
 <template>
-  <section class="grid min-h-[calc(100dvh-9rem)] min-w-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) xl:grid-cols-[minmax(0,1fr)_18rem]">
-    <div class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(30rem,1fr)]">
+  <section class="grid min-h-0 min-w-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) xl:h-[calc(100dvh-10rem)] xl:min-h-[36rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(30rem,1fr)_auto]">
       <header class="grid min-w-0 grid-cols-1 gap-2 border-b border-(--dashboard-border) px-3 py-2 sm:grid-cols-[minmax(0,1fr)_minmax(10rem,14rem)_auto]">
         <label class="relative min-w-0">
           <span class="sr-only">搜索 chunk</span>
@@ -360,72 +338,24 @@ watch(() => props.theme, () => void renderGraph())
         </div>
       </header>
       <svg ref="svgRef" class="block h-full min-h-0 w-full min-w-0 max-w-full touch-none overflow-hidden" aria-hidden="true" focusable="false" />
+      <footer class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-(--dashboard-border) px-3 py-2">
+        <p class="text-xs text-(--dashboard-text-soft)">
+          滚轮缩放，拖动画布平移；也可使用视图控制按钮。
+        </p>
+        <div class="flex gap-1" role="group" aria-label="依赖图平移控制">
+          <button class="size-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:size-11" type="button" aria-label="向上平移依赖图" @click="panGraph(0, -40)">↑</button>
+          <button class="size-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:size-11" type="button" aria-label="向左平移依赖图" @click="panGraph(-40, 0)">←</button>
+          <button class="size-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:size-11" type="button" aria-label="向下平移依赖图" @click="panGraph(0, 40)">↓</button>
+          <button class="size-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:size-11" type="button" aria-label="向右平移依赖图" @click="panGraph(40, 0)">→</button>
+        </div>
+      </footer>
     </div>
 
-    <aside class="grid min-w-0 overflow-hidden border-t border-(--dashboard-border) bg-(--dashboard-panel-muted) sm:grid-cols-2 xl:block xl:border-t-0 xl:border-l">
-      <div class="border-b border-(--dashboard-border) px-3 py-3">
-        <p class="text-[10px] font-medium uppercase tracking-[0.12em] text-(--dashboard-text-soft)">Graph summary</p>
-        <dl class="mt-2 grid grid-cols-2 gap-2 text-xs">
-          <div><dt class="text-(--dashboard-text-soft)">Nodes</dt><dd class="font-mono">{{ visibleGraph.nodes.length }}</dd></div>
-          <div><dt class="text-(--dashboard-text-soft)">Edges</dt><dd class="font-mono">{{ visibleGraph.edges.length }}</dd></div>
-          <div><dt class="text-(--dashboard-text-soft)">Static</dt><dd class="font-mono text-blue-500">{{ graph.staticImportCount }}</dd></div>
-          <div><dt class="text-(--dashboard-text-soft)">Dynamic</dt><dd class="font-mono text-amber-500">{{ graph.dynamicImportCount }}</dd></div>
-        </dl>
-        <label class="mt-3 grid min-w-0 gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-(--dashboard-text-soft)">
-          节点选择
-          <select v-model="selectedNodeId" class="min-h-32 w-full min-w-0 rounded border border-(--dashboard-border) bg-(--dashboard-panel) p-1.5 text-xs normal-case tracking-normal text-(--dashboard-text)" size="6">
-            <option v-for="node in visibleGraph.nodes" :key="node.id" :value="node.id">
-              {{ node.label }} · {{ node.packageLabel }}
-            </option>
-          </select>
-        </label>
-        <div class="mt-3 grid grid-cols-3 gap-1" role="group" aria-label="依赖图平移控制">
-          <span aria-hidden="true" />
-          <button class="h-7 rounded border border-(--dashboard-border) text-xs hover:bg-(--dashboard-panel)" type="button" aria-label="向上平移依赖图" @click="panGraph(0, -40)">↑</button>
-          <span aria-hidden="true" />
-          <button class="h-7 rounded border border-(--dashboard-border) text-xs hover:bg-(--dashboard-panel)" type="button" aria-label="向左平移依赖图" @click="panGraph(-40, 0)">←</button>
-          <button class="h-7 rounded border border-(--dashboard-border) text-xs hover:bg-(--dashboard-panel)" type="button" aria-label="向下平移依赖图" @click="panGraph(0, 40)">↓</button>
-          <button class="h-7 rounded border border-(--dashboard-border) text-xs hover:bg-(--dashboard-panel)" type="button" aria-label="向右平移依赖图" @click="panGraph(40, 0)">→</button>
-        </div>
-      </div>
-
-      <div v-if="selectedNode" class="min-w-0 border-l-0 border-(--dashboard-border) px-3 py-3 sm:border-l xl:border-l-0">
-        <p class="text-[10px] font-medium uppercase tracking-[0.12em] text-(--dashboard-text-soft)">Selected</p>
-        <h3 class="mt-2 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs font-semibold text-(--dashboard-text)" :title="selectedNode.label">
-          {{ selectedNode.label }}
-        </h3>
-        <dl class="mt-3 grid min-w-0 gap-2 text-xs">
-          <div class="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-2"><dt class="text-(--dashboard-text-soft)">Kind</dt><dd class="min-w-0 truncate text-right">{{ selectedNode.kind }}</dd></div>
-          <div class="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-2"><dt class="text-(--dashboard-text-soft)">Package</dt><dd class="min-w-0 truncate text-right" :title="selectedNode.packageLabel">{{ selectedNode.packageLabel }}</dd></div>
-          <div class="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-2"><dt class="text-(--dashboard-text-soft)">Size</dt><dd class="min-w-0 truncate text-right font-mono">{{ formatBytes(selectedNode.size) }}</dd></div>
-          <div v-if="selectedNode.moduleCount !== undefined" class="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-2"><dt class="text-(--dashboard-text-soft)">Modules</dt><dd class="min-w-0 truncate text-right font-mono">{{ selectedNode.moduleCount }}</dd></div>
-          <div v-if="selectedNode.fileCount !== undefined" class="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-2"><dt class="text-(--dashboard-text-soft)">Files</dt><dd class="min-w-0 truncate text-right font-mono">{{ selectedNode.fileCount }}</dd></div>
-        </dl>
-        <div class="mt-3 min-w-0">
-          <h4 class="text-[10px] font-medium uppercase tracking-[0.12em] text-(--dashboard-text-soft)">
-            Import edges
-          </h4>
-          <p v-if="!selectedImportEdges.length" class="mt-1 text-xs text-(--dashboard-text-soft)">
-            当前节点没有可见的静态或动态 import。
-          </p>
-          <ul v-else class="mt-1 grid max-h-32 gap-1 overflow-y-auto text-xs">
-            <li v-for="edge in selectedImportEdges" :key="edge.id" class="min-w-0">
-              <span class="font-medium">{{ edge.relation }} · {{ edge.kind }}</span>
-              <span class="ml-1 break-all text-(--dashboard-text-soft)">{{ edge.label }}</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div v-else class="min-w-0 border-l-0 border-(--dashboard-border) px-3 py-5 text-xs leading-5 text-(--dashboard-text-soft) sm:border-l xl:border-l-0">
-        使用节点选择器查看 package、体积和模块数；图中仍可滚轮缩放与拖动画布。蓝色实线是静态 import，橙色虚线是动态 import。
-      </div>
-
-      <div v-if="graph.unresolvedImportCount" class="border-t border-(--dashboard-border) px-3 py-3 text-[11px] text-amber-500 sm:col-span-2 xl:col-auto">
-        {{ graph.unresolvedImportCount }} 条 import 指向未输出或外部 chunk。
-      </div>
-      <div v-if="visibleGraph.truncatedNodeCount || visibleGraph.truncatedEdgeCount" class="border-t border-(--dashboard-border) px-3 py-3 text-[11px] text-(--dashboard-text-soft) sm:col-span-2 xl:col-auto">
-        为保持交互流畅，当前隐藏 {{ visibleGraph.truncatedNodeCount }} 个节点与 {{ visibleGraph.truncatedEdgeCount }} 条边。
-      </div>
-    </aside>
+    <ChunkGraphInspector
+      :view="visibleGraph"
+      :selected-id="selectedNodeId"
+      :unresolved-import-count="graph.unresolvedImportCount"
+      @select-node="selectedNodeId = $event"
+    />
   </section>
 </template>
