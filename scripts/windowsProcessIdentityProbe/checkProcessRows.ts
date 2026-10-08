@@ -11,6 +11,7 @@ import { captureDevProcessTree, readDevProcessIdentities } from '../../e2e/utils
 import { parseWindowsProcessRows, serializeWindowsProcessRows } from '../../e2e/utils/devProcessCleanup/windowsProcessRows'
 import { runWithCleanup } from '../../e2e/utils/runWithCleanup'
 import { readManagedProcessIdentity, sameManagedProcess } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
+import { checkWindowsQueryEncoding } from './checkEncoding'
 
 assert.equal(process.platform, 'win32')
 assert.equal(process.env.WEAPP_VITE_E2E_CLEANUP_TRACE, '1')
@@ -81,6 +82,15 @@ await runWithCleanup(async () => {
       originalExecutableLength: original.executable.length,
       startedEqual: identity.started === original.started,
     }))
+    if (!sameManagedProcess(identity, original)) {
+      try {
+        await checkWindowsQueryEncoding()
+      }
+      catch {
+        // 诊断自身失败仍保留原有身份相等首错，不用诊断错误替换门禁。
+        console.info(JSON.stringify({ stage: 'synthetic-json-encoding-comparison', failed: true }))
+      }
+    }
     assert.equal(sameManagedProcess(identity, original), true)
     assert.equal(sameManagedProcess(original, identity), true)
   }
