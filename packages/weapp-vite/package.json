@@ -190,7 +190,7 @@
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/schematics": "workspace:*",
     "@weapp-core/shared": "workspace:*",
-    "@weapp-tailwindcss/engine": "0.1.4",
+    "@weapp-tailwindcss/engine": "0.1.5",
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/ast": "workspace:*",
     "@weapp-vite/eslint": "workspace:*",

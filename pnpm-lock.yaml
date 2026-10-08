@@ -402,8 +402,8 @@ catalogs:
       specifier: ^3.3.12
       version: 3.3.12
     weapp-tailwindcss:
-      specifier: ^5.5.12
-      version: 5.5.12
+      specifier: ^5.6.0
+      version: 5.6.0
     zod:
       specifier: ^4.6.5
       version: 4.6.5
@@ -424,8 +424,8 @@ catalogs:
       version: 1.17.0
   weapp-tailwindcss-fixed:
     weapp-tailwindcss:
-      specifier: 5.5.12
-      version: 5.5.12
+      specifier: 5.6.0
+      version: 5.6.0
 
 overrides:
   rolldown: 1.2.13
@@ -1059,7 +1059,7 @@ importers:
         version: 3.3.12(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1288,7 +1288,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1401,7 +1401,7 @@ importers:
         version: 12.0.2(@modelcontextprotocol/client@2.3.1)(@modelcontextprotocol/server@2.3.1)(cac@7.0.1)(srvx@1.0.5)(vite@8.3.4)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1425,7 +1425,7 @@ importers:
         version: 4.3.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1469,7 +1469,7 @@ importers:
         version: 4.3.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1518,7 +1518,7 @@ importers:
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1536,7 +1536,7 @@ importers:
         version: 6.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1697,7 +1697,7 @@ importers:
         version: 3.3.12(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1934,7 +1934,7 @@ importers:
         version: 4.3.3
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -3212,7 +3212,7 @@ importers:
         version: 3.3.12(typescript@6.0.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../weapp-vite
@@ -3316,8 +3316,8 @@ importers:
   packages/tailwindcss:
     dependencies:
       '@weapp-tailwindcss/engine':
-        specifier: 0.1.4
-        version: 0.1.4(tailwindcss@4.3.3)
+        specifier: 0.1.5
+        version: 0.1.5(tailwindcss@4.3.3)
       '@weapp-vite/hmr':
         specifier: workspace:*
         version: link:../hmr
@@ -3326,7 +3326,7 @@ importers:
         version: 2.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
 
   packages/vite-plugin-performance: {}
 
@@ -3424,8 +3424,8 @@ importers:
         specifier: workspace:*
         version: link:../../@weapp-core/shared
       '@weapp-tailwindcss/engine':
-        specifier: 0.1.4
-        version: 0.1.4(tailwindcss@4.3.3)
+        specifier: 0.1.5
+        version: 0.1.5(tailwindcss@4.3.3)
       '@weapp-vite/acceptance':
         specifier: workspace:*
         version: link:../acceptance
@@ -3569,7 +3569,7 @@ importers:
         version: link:../weapp-ide-cli
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
       wevu:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
@@ -4233,7 +4233,7 @@ importers:
         version: 4.3.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+        version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
       weapp-vite:
         specifier: workspace:*
         version: link:../../../../packages/weapp-vite
@@ -10784,8 +10784,8 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
-  '@weapp-tailwindcss/engine@0.1.4':
-    resolution: {integrity: sha512-LfrJwJseV09lVjkqfHQQBf8qfocOWWOmsD167Y5kaqKJXUSqZnt0HW+boB5esBQvHJhV5lscrZuDJrVfgfdgeA==}
+  '@weapp-tailwindcss/engine@0.1.5':
+    resolution: {integrity: sha512-+S0Q97v6lAmwQ2M5vWk3QleWR6ZFHCmJGSnmYUBRyG+ZPo4pxFZpY71OuqE7Z5B/e2GNXdMddtpk/uy8kgjg5w==}
     engines: {node: ^22.18.0 || >=24.11.0}
     peerDependencies:
       tailwindcss: ^4.0.0
@@ -10804,14 +10804,66 @@ packages:
     resolution: {integrity: sha512-SHyZk4kFcQrmBvsZk5/5IEqLaYXFuBU2yQi4lRbb/r5rQmLtsAAxNPKpKqE2tFqPcfx69w6MTkEgOdzJVnMgSg==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
+  '@weapp-tailwindcss/native-darwin-arm64@5.6.0':
+    resolution: {integrity: sha512-ukh5edoK2Uhic/xvuUiBChhyeLE9FVpUOxTd26tRiszbo3V92xW0BoGl9+GrQsBOpmI6skpT4EEjbrEnuihS5w==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@weapp-tailwindcss/native-darwin-x64@5.6.0':
+    resolution: {integrity: sha512-PKt9hE8mTnFnnq+xyiqKLBBVJRLojli5vGFW0O4aNZCzqM2OuS0RKUI1Fu3Qwkcs6E3LFq/FkvNq/Bf31lgsbg==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [darwin]
+
+  '@weapp-tailwindcss/native-linux-arm64-gnu@5.6.0':
+    resolution: {integrity: sha512-AUTxmelLo7UAHIqoD0ZK5avC5cUmhQgV8I9rhzBvt4I2JLEAF2MD2iq+yQIwtXR0iZJKc4+80ewgo+Q/8HM7OA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@weapp-tailwindcss/native-linux-arm64-musl@5.6.0':
+    resolution: {integrity: sha512-7sfcBJ3WshNseTbz1TXYL1Fg1fTDT0HIntW+ESidV3PuPiQXuIBn67snXbk7sw2YqyVC+gV1dlX8KJOisYotlw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@weapp-tailwindcss/native-linux-x64-gnu@5.6.0':
+    resolution: {integrity: sha512-cjNARsFFytoQ+rp51Zx08v954L69JoCWXsg+zMKkli0LyfqmfpfK7rr/+CDcQQaMBeiFke1HPh1Nl84V3jMc8A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@weapp-tailwindcss/native-linux-x64-musl@5.6.0':
+    resolution: {integrity: sha512-/SicBH6mXtT08AUGvbmSUUBel7Utu4JftkrdTMffiN9e5Zg7zc1K2X8f68w+psjbo/11co6Kl70/rbzzj8jXqQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@weapp-tailwindcss/native-win32-arm64-msvc@5.6.0':
+    resolution: {integrity: sha512-86c9ps17u73SgdRb62r4jLXPnLCImEKwR0HM0lZoXOuhVQpgSTHUkbn622BD8rdAgH3293RcZaZLMBgDwzKxSw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [win32]
+
+  '@weapp-tailwindcss/native-win32-x64-msvc@5.6.0':
+    resolution: {integrity: sha512-whjP1rNxdgmrPTnno7+XaW9c1JfmOQdK5dwKOFhk+apy2sbvFVPatzUFrg5sDpgXZMQbSUsH//DcnzGPphx0Cw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [win32]
+
   '@weapp-tailwindcss/postcss-calc@1.0.10':
     resolution: {integrity: sha512-Nh8FsB/GB1+0m/UdYyIexp6tsmQgwHJ08XGiNKZ24ndRYXhLWuJS/Q03c3+5i0qm87yGgCHprHEdjM4C9N31OA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       postcss: ^8.4.38
 
-  '@weapp-tailwindcss/postcss@3.3.11':
-    resolution: {integrity: sha512-PvfC6xybCpCs3xC+RwMAcpUqGgcafkKTieKPDAvXyCg/ZA/NdSkiB+tUZR1y95UKg1hLew7bwR7bq+THdCGYOw==}
+  '@weapp-tailwindcss/postcss@3.4.0':
+    resolution: {integrity: sha512-J4LBTK2vcofbxeMvTRlAWw/r0g9PGq5mP4LD3slnxHhD9KShsACEiqsZHWnVigj992klX1ByAEeszJppIY4+AA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       lightningcss: ^1.33.0
@@ -18258,8 +18310,8 @@ packages:
     resolution: {integrity: sha512-PV3wIJdPiN5Ul8LX9t3JFUI4D57FKhPB3yVBQD4i940P9PH1a/+furtXDRbufrUnMNrwkMPTxsHNUBCFJwQhWQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
-  weapp-tailwindcss@5.5.12:
-    resolution: {integrity: sha512-2t2IkQeM9kbEUHmcUWOeEsr5xiYhIbDD1VRt+Jbhguf3O6nK2l+novILJ4k8XI6GVfe+0LiF3CQ0tZ/XAWoUvw==}
+  weapp-tailwindcss@5.6.0:
+    resolution: {integrity: sha512-gipwb9STTl875N0Lz7YCEPXC02bDNm9gTMSueE3oyFaAvsctkIIbpPHs3jiQv3XSETPFQpw7RKIhvoCadebjww==}
     engines: {node: ^22.18.0 || >=24.11.0}
     peerDependencies:
       '@mpxjs/webpack-plugin': '>=2.0.0 <3.0.0'
@@ -24585,7 +24637,7 @@ snapshots:
     dependencies:
       vue: 3.5.43(typescript@6.0.3)
 
-  '@weapp-tailwindcss/engine@0.1.4(tailwindcss@4.3.3)':
+  '@weapp-tailwindcss/engine@0.1.5(tailwindcss@4.3.3)':
     dependencies:
       '@tailwindcss/node': 4.3.3
       '@tailwindcss/oxide': 4.3.3
@@ -24607,18 +24659,42 @@ snapshots:
       '@weapp-tailwindcss/runtime': 0.1.11
       tailwind-merge: 3.7.0
 
+  '@weapp-tailwindcss/native-darwin-arm64@5.6.0':
+    optional: true
+
+  '@weapp-tailwindcss/native-darwin-x64@5.6.0':
+    optional: true
+
+  '@weapp-tailwindcss/native-linux-arm64-gnu@5.6.0':
+    optional: true
+
+  '@weapp-tailwindcss/native-linux-arm64-musl@5.6.0':
+    optional: true
+
+  '@weapp-tailwindcss/native-linux-x64-gnu@5.6.0':
+    optional: true
+
+  '@weapp-tailwindcss/native-linux-x64-musl@5.6.0':
+    optional: true
+
+  '@weapp-tailwindcss/native-win32-arm64-msvc@5.6.0':
+    optional: true
+
+  '@weapp-tailwindcss/native-win32-x64-msvc@5.6.0':
+    optional: true
+
   '@weapp-tailwindcss/postcss-calc@1.0.10(postcss@8.5.29)':
     dependencies:
       postcss: 8.5.29
       postcss-selector-parser: 7.1.6
       postcss-value-parser: 4.2.0
 
-  '@weapp-tailwindcss/postcss@3.3.11(jiti@2.7.0)(lightningcss@1.33.0)(tailwindcss@4.3.3)(tsx@4.23.15)(yaml@2.9.1)':
+  '@weapp-tailwindcss/postcss@3.4.0(jiti@2.7.0)(lightningcss@1.33.0)(tailwindcss@4.3.3)(tsx@4.23.15)(yaml@2.9.1)':
     dependencies:
       '@csstools/css-color-parser': 4.2.6(@csstools/css-parser-algorithms@4.0.2(@csstools/css-tokenizer@4.0.2))(@csstools/css-tokenizer@4.0.2)
       '@csstools/css-parser-algorithms': 4.0.2(@csstools/css-tokenizer@4.0.2)
       '@csstools/css-tokenizer': 4.0.2
-      '@weapp-tailwindcss/engine': 0.1.4(tailwindcss@4.3.3)
+      '@weapp-tailwindcss/engine': 0.1.5(tailwindcss@4.3.3)
       '@weapp-tailwindcss/escape': 0.0.2
       '@weapp-tailwindcss/postcss-calc': 1.0.10(postcss@8.5.29)
       '@weapp-tailwindcss/shared': 2.0.4
@@ -24636,6 +24712,14 @@ snapshots:
       postcss-value-parser: 4.2.0
       tailwindcss-config: 2.0.6
     optionalDependencies:
+      '@weapp-tailwindcss/native-darwin-arm64': 5.6.0
+      '@weapp-tailwindcss/native-darwin-x64': 5.6.0
+      '@weapp-tailwindcss/native-linux-arm64-gnu': 5.6.0
+      '@weapp-tailwindcss/native-linux-arm64-musl': 5.6.0
+      '@weapp-tailwindcss/native-linux-x64-gnu': 5.6.0
+      '@weapp-tailwindcss/native-linux-x64-musl': 5.6.0
+      '@weapp-tailwindcss/native-win32-arm64-msvc': 5.6.0
+      '@weapp-tailwindcss/native-win32-x64-msvc': 5.6.0
       lightningcss: 1.33.0
     transitivePeerDependencies:
       - jiti
@@ -33011,16 +33095,16 @@ snapshots:
       '@weapp-tailwindcss/shared': 2.0.4
       micromatch: 4.0.8
 
-  weapp-tailwindcss@5.5.12(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4):
+  weapp-tailwindcss@5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4):
     dependencies:
       '@babel/parser': 8.0.7
       '@babel/traverse': 8.0.7
       '@babel/types': 8.0.6
       '@vue/compiler-dom': 3.5.43
-      '@weapp-tailwindcss/engine': 0.1.4(tailwindcss@4.3.3)
+      '@weapp-tailwindcss/engine': 0.1.5(tailwindcss@4.3.3)
       '@weapp-tailwindcss/escape': 0.0.2
       '@weapp-tailwindcss/logger': 2.0.4
-      '@weapp-tailwindcss/postcss': 3.3.11(jiti@2.7.0)(lightningcss@1.33.0)(tailwindcss@4.3.3)(tsx@4.23.15)(yaml@2.9.1)
+      '@weapp-tailwindcss/postcss': 3.4.0(jiti@2.7.0)(lightningcss@1.33.0)(tailwindcss@4.3.3)(tsx@4.23.15)(yaml@2.9.1)
       '@weapp-tailwindcss/reset': 0.1.5(tailwindcss@4.3.3)
       '@weapp-tailwindcss/shared': 2.0.4
       '@weapp-tailwindcss/source-scan': 0.1.2
@@ -33039,6 +33123,14 @@ snapshots:
       weapp-style-injector: 1.0.7
       yaml: 2.9.1
     optionalDependencies:
+      '@weapp-tailwindcss/native-darwin-arm64': 5.6.0
+      '@weapp-tailwindcss/native-darwin-x64': 5.6.0
+      '@weapp-tailwindcss/native-linux-arm64-gnu': 5.6.0
+      '@weapp-tailwindcss/native-linux-arm64-musl': 5.6.0
+      '@weapp-tailwindcss/native-linux-x64-gnu': 5.6.0
+      '@weapp-tailwindcss/native-linux-x64-musl': 5.6.0
+      '@weapp-tailwindcss/native-win32-arm64-msvc': 5.6.0
+      '@weapp-tailwindcss/native-win32-x64-msvc': 5.6.0
       tailwindcss: 4.3.3
       vite: 8.3.4(patch_hash=70c4592cfc2dd93a8112bf6c35cc3ae8cac803fb188106a12d659ddae55cf553)(@types/node@26.6.4)(@vitejs/devtools@0.7.6)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
