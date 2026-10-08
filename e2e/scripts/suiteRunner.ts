@@ -9,7 +9,7 @@ import process from 'node:process'
 import { execa } from 'execa'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
-import { claimDevtoolsHost, quitClaimedDevtoolsHost } from '../utils/devtoolsHostLifecycle'
+import { claimDevtoolsHost, DEVTOOLS_HOST_CLAIMED_ENV, quitClaimedDevtoolsHost } from '../utils/devtoolsHostLifecycle'
 import { createDevtoolsProjectJournal } from '../utils/devtoolsProcessOwnership'
 import { cleanupDevtoolsCommandScope } from '../utils/devtoolsScopeCleanup'
 import { E2E_RUNTIME_PROVIDER_ENV, resolveRuntimeProviderName } from '../utils/runtimeProvider'
@@ -620,6 +620,12 @@ async function runOwnedTaskSuite(
       if (isDevtoolsVitestTask(task)) {
         // 只在任务启动前认领冷宿主；已有或无法核验的宿主会阻断本 lane，避免继续累积 renderer。
         devtoolsHostLease = await claimDevtoolsHost(task.env?.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH ?? process.env.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH)
+        if (devtoolsHostLease) {
+          task.env = {
+            ...task.env,
+            [DEVTOOLS_HOST_CLAIMED_ENV]: '1',
+          }
+        }
       }
       exitCode = await runTask(task, signal)
       signal.throwIfAborted()
@@ -647,18 +653,31 @@ async function runOwnedTaskSuite(
     }
     finally {
       if (journalPath) {
-        try {
-          if (processStopError) {
+        const cleanupErrors: unknown[] = []
+        if (processStopError) {
+          try {
             await childScope?.seal()
-            await Promise.reject(processStopError)
           }
+          catch (error) {
+            cleanupErrors.push(error)
+          }
+        }
+        try {
           await cleanupDevtoolsCommandScope(childScope, journalPath)
+        }
+        catch (error) {
+          cleanupErrors.push(error)
+        }
+        try {
           if (devtoolsHostLease) {
             await quitClaimedDevtoolsHost(devtoolsHostLease)
           }
         }
         catch (error) {
-          const message = error instanceof Error ? error.message : String(error)
+          cleanupErrors.push(error)
+        }
+        if (cleanupErrors.length) {
+          const message = cleanupErrors.map(error => error instanceof Error ? error.message : String(error)).join('; ')
           resourceCleanupFailed = true
           blocked = true
           exitCode = 1

@@ -25,11 +25,18 @@ const mocks = vi.hoisted(() => ({
   journal: vi.fn<() => Promise<string>>(),
   cleanup: vi.fn<(scope: MachineE2EChildScope | undefined, journalPath: string) => Promise<void>>(),
   scope: vi.fn<MachineE2ELease['createChildScope']>(),
+  claimHost: vi.fn(),
+  quitHost: vi.fn(),
 }))
 
 // 本文件只验证 mock 调度、参数与报告；真实租约、日志和进程行为由独立集成文件保留。
 vi.mock('../utils/devtoolsProcessOwnership', () => ({ createDevtoolsProjectJournal: mocks.journal }))
 vi.mock('../utils/devtoolsScopeCleanup', () => ({ cleanupDevtoolsCommandScope: mocks.cleanup }))
+vi.mock('../utils/devtoolsHostLifecycle', () => ({
+  DEVTOOLS_HOST_CLAIMED_ENV: 'WEAPP_VITE_E2E_DEVTOOLS_HOST_CLAIMED',
+  claimDevtoolsHost: mocks.claimHost,
+  quitClaimedDevtoolsHost: mocks.quitHost,
+}))
 vi.mock('../../packages/devtools-runtime/src/lease/machine', () => ({
   withMachineE2ELease: async <T>(run: (lease: MachineE2ELease) => Promise<T>) => await run({
     borrowed: false,
@@ -55,6 +62,8 @@ beforeEach(() => {
     seal: async () => {},
     complete: async () => {},
   }))
+  mocks.claimHost.mockResolvedValue(undefined)
+  mocks.quitHost.mockResolvedValue(undefined)
 })
 afterEach(() => {
   try {
@@ -159,6 +168,25 @@ describe('suiteRunner', () => {
     expect(exitCode).toBe(1)
     expect(beforeEachTask).toHaveBeenCalledTimes(3)
     expect(runTask).toHaveBeenCalledTimes(3)
+  })
+
+  it('quits a claimed host even when project cleanup fails', async () => {
+    const hostLease = { target: {}, initial: { state: 'cold', identities: [] }, claimedAt: 'now' }
+    mocks.claimHost.mockResolvedValue(hostLease)
+    mocks.cleanup.mockRejectedValueOnce(new Error('journal cleanup failed'))
+
+    const exitCode = await runTaskSuite('e2e:ide-cleanup', [{
+      label: 'ide/cleanup.test.ts',
+      command: 'pnpm',
+      args: ['vitest', 'run', '-c', '/repo/e2e/vitest.e2e.devtools.config.ts'],
+      env: { WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH: '/repo/cli' },
+    }], {
+      runTask: vi.fn().mockResolvedValue(0),
+      writeReport: false,
+    })
+
+    expect(exitCode).toBe(1)
+    expect(mocks.quitHost).toHaveBeenCalledWith(hostLease)
   })
 
   it('can stop running remaining tasks after the first failure', async () => {

@@ -7,6 +7,7 @@
 - 仅当用户明确指定时才使用其他渠道或版本；不得因测试失败自行切换 RC、nightly、开发版或旧稳定版。最新稳定版无法确认、未安装或未登录时记录阻塞，不静默回退，不绕过登录。版本查询时间、官方来源、实际 IDE 与基础库版本随验收报告保存。
 - 用户明确接受本机 Stable 时，通过 `WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION` 传入精确产品版本；仅所选 Stable 安装与该值一致时生效，默认官方 Stable 门禁保持不变。仍执行官方查询、安装身份、实际宿主、基础库和端口归属核验，报告保留 `officialVersion`、`selectedVersion`、查询时间和 `selected-version-opt-in`。本轮已授权基线为 `2.02.2608070`，不能把它长期写成“最新稳定版”，也不能将选择值填作未连接成功时的实际观察值。
 - 启动失败不是终止全部 IDE 的授权。恢复、重试、超时和 teardown 共用会话资源所有权；不得删除全局 session、port-lease、登录数据或用户缓存目录。已退出的 CLI PID 不能作为宿主 PID 复用，清理应可重复调用且仅释放一次。
+- suite runner 的资源收尾必须分阶段执行：child scope/journal 清理失败时仍要独立尝试退出本任务已认领的 DevTools 宿主，并合并保留两类错误；不得因前一清理异常跳过宿主退出、吞掉首错或记录为已回收。
 - 不启动 IDE 的基础设施测试只共享外层机器互斥，不向普通单测 worker 发布真实 IDE journal。测试租约、嵌套 runner 或中断恢复时使用独立临时 state 与 journal，子进程显式继承同一测试状态目录；不能把测试记录挂到外层真实 IDE scope。环境隔离须原样恢复继承值，正式 IDE 的 journal、child scope 与清理门禁保持完整。
 - 涉及 IDE journal 或 managed ownership 的测试清理时，必须从 `packages/weapp-ide-cli` 的正式导出导入 `MANAGED_PROJECT_JOURNAL_ENV` 等共享常量；禁止从未导出的本地模块导入并依赖 `undefined` 触发默认 scope。测试 mock 必须显式覆盖 `process` scope 与 journal scope，并验证 CLI 子进程创建的 child journal 能递归释放，避免只清理父 scope 后残留受管项目、端口或 watcher。
 - 同一 fixture 的 suite 复用一个受管 IDE 项目窗口，切页使用 `reLaunch`。HMR 完整重载后若只需恢复协议连接，使用已有窗口 owner 和 endpoint 重连；`disconnect()` 只断开 WebSocket，不能随后再次启动 IDE。重连前后核对 journal、安装、宿主进程身份和端口，失败保留原 owner，不隐式编译、导航或改用新窗口。

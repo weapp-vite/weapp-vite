@@ -14,6 +14,7 @@ import { resolveWechatDevtoolsInstallationRoot } from '../../packages/weapp-ide-
 const HOST_WAIT_TIMEOUT_MS = 30_000
 const HOST_POLL_INTERVAL_MS = 100
 const DEVTOOLS_CLI_ENV = 'WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH'
+export const DEVTOOLS_HOST_CLAIMED_ENV = 'WEAPP_VITE_E2E_DEVTOOLS_HOST_CLAIMED'
 
 export type DevtoolsHostState = 'cold' | 'selected' | 'foreign' | 'unknown'
 
