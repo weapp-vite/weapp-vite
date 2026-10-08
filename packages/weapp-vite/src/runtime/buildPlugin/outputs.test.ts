@@ -78,12 +78,15 @@ describe('buildPlugin outputs', () => {
     expect(isOutputRootInsideOutDir('/project/dist', '/project/dist-plugin')).toBe(false)
   })
 
-  it('preserves nested child outputs during parent rebuilds while retaining startup cleanup', () => {
+  it('defers development rebuild cleanup to successful publication while retaining startup cleanup', () => {
     const parent = createConfigService({ absolutePluginOutputRoot: '/project/dist/plugin' })
     expect(shouldCleanOutputs(parent, 'startup')).toBe(true)
     expect(shouldCleanOutputs(parent, 'rebuild')).toBe(false)
-    expect(shouldCleanOutputs(createConfigService({ absolutePluginOutputRoot: '/project/dist-plugin' }), 'rebuild')).toBe(true)
-    expect(shouldCleanOutputs(createConfigService({ ...parent, pluginOnly: true }), 'rebuild')).toBe(true)
+    expect(shouldCleanOutputs(createConfigService(), 'rebuild')).toBe(false)
+    expect(shouldCleanOutputs(createConfigService({ absolutePluginOutputRoot: '/project/dist-plugin' }), 'rebuild')).toBe(false)
+    expect(shouldCleanOutputs(createConfigService({ ...parent, pluginOnly: true }), 'rebuild')).toBe(false)
+    expect(shouldCleanOutputs(createConfigService({ inlineConfig: { build: { emptyOutDir: true } } }), 'rebuild')).toBe(false)
+    expect(shouldCleanOutputs(createConfigService({ isDev: false }), 'startup')).toBe(true)
   })
 
   it('honors explicit output retention in both startup and rebuild phases', () => {
