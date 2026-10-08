@@ -66,11 +66,9 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
           return null
         }
 
-        const pageMatcher = matcher ?? (matcher = createCompilerPageMatcher(configService, scanService))
-
         // 注意：app.json 变更会影响 pages 列表，这里直接跟随 scanService 的 dirty 标记。
         if (ctx.runtimeState.scan.isDirty && !scanDirtySynced) {
-          pageMatcher.markDirty()
+          matcher?.markDirty()
           pageFileCache.clear()
           scanDirtySynced = true
         }
@@ -96,6 +94,11 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
         const startedAt = performance.now()
 
         try {
+          // 无页面特性的脚本不应触发每轮构建的页面清单加载。
+          if (!mayNeedWevuPageFeatureAnalysis(code)) {
+            return null
+          }
+          const pageMatcher = matcher ?? (matcher = createCompilerPageMatcher(configService, scanService))
           let isPageFile = pageFileCache.get(filename)
           if (isPageFile === undefined) {
             isPageFile = await pageMatcher.isPageFile(filename)
@@ -104,10 +107,6 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
           if (!isPageFile) {
             return null
           }
-          if (!mayNeedWevuPageFeatureAnalysis(code)) {
-            return null
-          }
-
           const astEngine = resolveAstEngine(configService.weappViteConfig)
           if (code.includes('onPageScroll')) {
             for (const warning of collectOnPageScrollPerformanceWarnings(code, filename, {
