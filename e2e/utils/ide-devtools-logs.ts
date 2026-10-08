@@ -1,31 +1,18 @@
+import type { DevtoolsLogIssue, DevtoolsSimulatorBootDiagnostic } from './devtoolsSimulatorBootDiagnostics'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { classifyDevtoolsSimulatorBootLine } from './devtoolsSimulatorBootDiagnostics'
+
+export type { DevtoolsLogIssue, DevtoolsSimulatorBootDiagnostic } from './devtoolsSimulatorBootDiagnostics'
 
 const DEVTOOLS_LOG_ROOT_ENV = 'WEAPP_VITE_E2E_DEVTOOLS_LOG_ROOT'
 const DEVTOOLS_PROFILE_NAME_PATTERN = /^[\w.-]+$/
 const DEVTOOLS_LOG_FILE_PATTERN = /\.log$/i
 const DEVTOOLS_LOG_TIMESTAMP_PATTERN = /^\[(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})\.(\d{3})(Z|[+-]\d{2}:\d{2})?\]/
-const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
-  /simulator launch catch error/i,
-  /simulator not found/i,
-  /模拟器启动失败/,
-  /cannot read propert(?:y|ies)\s+['"]subPackages['"]\s+of\s+undefined/i,
-  /cannot read propert(?:y|ies)\s+\(reading\s+['"]subPackages['"]\)/i,
-] as const
-const DEVTOOLS_SIMULATOR_NOT_FOUND_PATTERN = /\[SimulatorService\]\s+updateSimulatorCompileOptions:\s+simulator not found\s+(\S+)/i
-const DEVTOOLS_SIMULATOR_INIT_PATTERN = /\[SimulatorService\]\s+init simulator\s+(\S+)\s+with clientSid\b/i
-const DEVTOOLS_SIMULATOR_LAUNCH_FAILED_PATTERN = /simulator launch failed\b/i
-const DEVTOOLS_WEBVIEW_PAGE_READY_PATTERN = /\[devtools\]\s+webview page ready/i
-const DEVTOOLS_WINDOW_ID_PATTERN = /\bwin:([^\]\s]+)/i
 const DEVTOOLS_UTILITY_PROCESS_OPEN_PATTERN = /utility process .*\bopened\b/i
 const DEVTOOLS_UTILITY_PROCESS_CLOSE_PATTERN = /utility process (?:exit!|.*\bdestroyed\b)/i
-
-export interface DevtoolsLogIssue {
-  file: string
-  line: string
-}
 
 export type DevtoolsLogBaseline = Record<string, number>
 
@@ -221,51 +208,15 @@ export async function waitForDevtoolsLogQuiescence(options: {
   return baseline
 }
 
-function isSimulatorBootIssue(line: string) {
-  return DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS.some(pattern => pattern.test(line))
-}
-
-function isTransientSimulatorNotFoundWarning(lines: string[], index: number) {
-  const simulatorId = lines[index]?.match(DEVTOOLS_SIMULATOR_NOT_FOUND_PATTERN)?.[1]
-  if (!simulatorId) {
-    return false
-  }
-
-  return lines.some((line) => {
-    return line.match(DEVTOOLS_SIMULATOR_INIT_PATTERN)?.[1] === simulatorId
-  })
-}
-
-function resolveDevtoolsWindowId(line: string) {
-  return line.match(DEVTOOLS_WINDOW_ID_PATTERN)?.[1]
-}
-
-function isRecoveredSimulatorLaunchFailure(lines: string[], index: number) {
-  const issueLine = lines[index]
-  if (!issueLine || !DEVTOOLS_SIMULATOR_LAUNCH_FAILED_PATTERN.test(issueLine)) {
-    return false
-  }
-
-  const issueWindowId = resolveDevtoolsWindowId(issueLine)
-  if (!issueWindowId) {
-    return false
-  }
-
-  return lines.slice(index + 1).some((line) => {
-    if (!DEVTOOLS_WEBVIEW_PAGE_READY_PATTERN.test(line)) {
-      return false
-    }
-    return resolveDevtoolsWindowId(line) === issueWindowId
-  })
-}
-
-export function scanRecentDevtoolsSimulatorBootIssues(options: {
+interface DevtoolsLogScanOptions {
   baseline?: DevtoolsLogBaseline
   rootDir?: string
   sinceMs: number
-}): DevtoolsLogIssue[] {
+}
+
+export function scanRecentDevtoolsSimulatorBootDiagnostics(options: DevtoolsLogScanOptions): DevtoolsSimulatorBootDiagnostic[] {
   const rootDir = options.rootDir || resolveDevtoolsLogRoot()
-  const issues: DevtoolsLogIssue[] = []
+  const issues: DevtoolsSimulatorBootDiagnostic[] = []
 
   for (const filePath of resolveRecentLogFiles(rootDir, options.sinceMs)) {
     let content = ''
@@ -286,18 +237,21 @@ export function scanRecentDevtoolsSimulatorBootIssues(options: {
       if (lineTime !== null && lineTime < options.sinceMs - 1_000) {
         continue
       }
-      if (
-        isSimulatorBootIssue(line)
-        && !isTransientSimulatorNotFoundWarning(lines, index)
-        && !isRecoveredSimulatorLaunchFailure(lines, index)
-      ) {
+      const diagnostic = classifyDevtoolsSimulatorBootLine(lines, index)
+      if (diagnostic) {
         // IDE 的 launch().catch(...).then(...) 在失败后也会记录 success，不能据此丢弃首错。
-        issues.push({ file: filePath, line: line.trim() })
+        issues.push({ file: filePath, line: line.trim(), ...diagnostic })
       }
     }
   }
 
   return issues
+}
+
+export function scanRecentDevtoolsSimulatorBootIssues(options: DevtoolsLogScanOptions): DevtoolsLogIssue[] {
+  return scanRecentDevtoolsSimulatorBootDiagnostics(options)
+    .filter(issue => issue.state !== 'recovered')
+    .map(({ file, line }) => ({ file, line }))
 }
 
 export function assertNoRecentDevtoolsSimulatorBootIssues(options: {

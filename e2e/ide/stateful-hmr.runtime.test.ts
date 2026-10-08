@@ -590,12 +590,17 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       })
 
       const templateSource = originalWevuSource.replace('<input v-model="input"', '<view class="sfc-template">SFC-TEMPLATE-B</view>\n    <input v-model="input"')
+      // SFC 模板先写出，再确认脚本补丁；每笔编辑都等待确认，避免下一笔读取旧版本。
+      const templateClientVersion = await readClientVersion()
       await replaceFileByRename(fixture.wevuSource, templateSource)
       await devProcess!.waitFor(waitForFileContains(path.join(fixture.distRoot, 'pages/wevu/index.wxml'), 'SFC-TEMPLATE-B'), 'SFC template B emitted')
+      await waitForClientVersion(templateClientVersion + 1)
       await dom.check('template-b', miniProgram, await miniProgram.currentPage())
       expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index' })
 
+      const restoredTemplateClientVersion = await readClientVersion()
       await replaceFileByRename(fixture.wevuSource, originalWevuSource)
+      await waitForClientVersion(restoredTemplateClientVersion + 1)
       await dom.check('template-a', miniProgram, await miniProgram.currentPage())
       expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index' })
 

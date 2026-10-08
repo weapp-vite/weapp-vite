@@ -15,6 +15,7 @@ import { cleanupManagedWechatProjects, closeManagedWechatProject, MANAGED_PROJEC
 import { normalizeRuntimeConsoleText } from '../ide/runtimeErrors'
 import { extractWechatDevtoolsServicePort } from './automator.cli-bridge'
 import { launchHeadlessAutomator } from './automator.headless'
+import { createDevtoolsSimulatorBootLogMonitor, DEVTOOLS_LOG_SCAN_INTERVAL, DevtoolsSimulatorBootLogError } from './automatorBootLogMonitor'
 import { attachBridgeWrapperSyncCleanup, cleanupFailedBridgeLaunch, createRetryableCleanup } from './automatorBridgeCleanup'
 import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './automatorBridgeFiles'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
@@ -23,7 +24,6 @@ import { resolveWechatCliPath } from './devtoolsCli'
 import { createDevtoolsProjectJournal, ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 import { assertSelectedWechatDevtoolsRuntime, resolveSelectedWechatDevtools } from './devtoolsSelection'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
-import { captureDevtoolsLogBaseline, scanRecentDevtoolsSimulatorBootIssues } from './ide-devtools-logs'
 import {
   appendIdeReportEvent,
   resolveReportProjectPath,
@@ -103,7 +103,6 @@ const DEFAULT_PAGE_ROOT_QUERY_TIMEOUT = 1_000
 const CURRENT_PAGE_READY_RETRY_DELAY = 220
 const ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT = 1_500
 const DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY = 5_000
-const DEVTOOLS_LOG_SCAN_INTERVAL = 500
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
@@ -309,13 +308,6 @@ class LaunchAppConfigNotReadyError extends Error {
   constructor(appConfigPath: string, reason: string) {
     super(`[runtime:launch-preflight] app.json not ready: ${appConfigPath} reason=${reason}`)
     this.name = 'WechatIdeLaunchAppConfigNotReadyError'
-  }
-}
-
-class DevtoolsSimulatorBootLogError extends Error {
-  constructor(label: string) {
-    super(`WeChat DevTools simulator boot error detected in IDE log during ${label}`)
-    this.name = 'WechatIdeSimulatorBootLogError'
   }
 }
 
@@ -734,48 +726,6 @@ async function cleanupDevtoolsProcessStateAfterLaunchFailure(error: unknown, pro
   })
 }
 
-function createDevtoolsSimulatorBootLogMonitor(project: string) {
-  const sinceMs = Date.now()
-  const baseline = captureDevtoolsLogBaseline()
-  let lastScanAt = 0
-  let reportedIssueText = ''
-  const strictBootLog = process.env.WEAPP_VITE_E2E_STRICT_DEVTOOLS_BOOT_LOG === '1'
-
-  return {
-    assertClean(label: string, force = false) {
-      const now = Date.now()
-      if (!force && now - lastScanAt < DEVTOOLS_LOG_SCAN_INTERVAL) {
-        return
-      }
-      lastScanAt = now
-
-      const issues = scanRecentDevtoolsSimulatorBootIssues({ baseline, sinceMs })
-      if (issues.length === 0) {
-        return
-      }
-
-      const issueText = 'WeChat DevTools simulator boot error detected in IDE log'
-      if (issueText === reportedIssueText) {
-        if (strictBootLog) {
-          throw new DevtoolsSimulatorBootLogError(label)
-        }
-        return
-      }
-      reportedIssueText = issueText
-      process.stdout.write(`[warn] [runtime:devtools-log] label=${label} reason=${issueText} project=${project}\n`)
-      appendIdeReportEvent({
-        source: 'runtime',
-        kind: 'message',
-        project,
-        level: 'warn',
-        channel: 'devtools-log',
-        text: `${label}: ${issueText}`,
-      })
-      throw new DevtoolsSimulatorBootLogError(label)
-    },
-  }
-}
-
 function normalizeRouteForCompare(value: string) {
   return value
     .split('?', 1)[0]
@@ -911,6 +861,9 @@ export function isTransientDevtoolsPageMetadataError(error: unknown) {
 }
 
 export function isLikelyRelaunchRetryableError(error: unknown) {
+  if (error instanceof DevtoolsSimulatorBootLogError) {
+    return false
+  }
   const message = error instanceof Error ? error.message : String(error)
   return isGenericDevtoolsRelaunchError(error)
     || isLikelySimulatorBootErrorMessage(message)
@@ -1609,7 +1562,7 @@ function createDevtoolsLoginRequiredError(error: unknown) {
 }
 
 export function isLikelyLaunchRetryableError(error: unknown) {
-  if (error instanceof ManagedEngineBuildGateError || isDevtoolsLoginRequiredError(error)) {
+  if (error instanceof ManagedEngineBuildGateError || error instanceof DevtoolsSimulatorBootLogError || isDevtoolsLoginRequiredError(error)) {
     return false
   }
 
@@ -1797,8 +1750,8 @@ async function waitForCurrentRouteReady(
     const remaining = Math.max(1, timeoutMs - (Date.now() - start))
     const label = `read current page for route ${route}`
     const queryTimeout = Math.min(options.queryTimeoutMs ?? 2_000, remaining)
+    options.checkDevtoolsLog?.(label)
     try {
-      options.checkDevtoolsLog?.(label)
       const currentPage = await runWithTimeout(
         () => miniProgram.currentPage({
           appFunctionFallback: false,
@@ -1846,8 +1799,8 @@ async function waitForAnyCurrentPageReady(
     const remaining = Math.max(1, timeoutMs - (Date.now() - start))
     const label = 'read current page'
     const queryTimeout = Math.min(options.queryTimeoutMs ?? 2_000, remaining)
+    options.checkDevtoolsLog?.(label)
     try {
-      options.checkDevtoolsLog?.(label)
       const currentPage = await runWithTimeout(
         () => miniProgram.currentPage({
           appFunctionFallback: false,
@@ -2861,11 +2814,11 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
       const attemptBudget = operation.remainingMs(launchAttemptTimeout)
       const lifecycle = new AutomatorLaunchLifecycle(attemptBudget, `launch automator#${attempt}`, operation.signal)
       const attemptDeadlineAt = lifecycle.deadlineAt
+      const devtoolsLogMonitor = createDevtoolsSimulatorBootLogMonitor(project)
       try {
         return await lifecycle.run(
           async () => {
             process.stdout.write(`[info] [runtime:launch-step] preflight project=${project}\n`)
-            const devtoolsLogMonitor = createDevtoolsSimulatorBootLogMonitor(project)
             const projectMeta = await lifecycle.step(() => resolveLaunchProjectMeta(rest.projectPath))
             const resolvedWarmupRoute = typeof warmupRoute === 'string' && warmupRoute.trim()
               ? `/${warmupRoute.trim().replace(LEADING_SLASH_PATTERN, '')}`
@@ -2966,6 +2919,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               devtoolsLogMonitor,
             ).finally(() => runtimeLogSubscription?.abort())
             lifecycle.throwIfAborted()
+            await lifecycle.step(() => devtoolsLogMonitor.waitForPendingReady(lifecycle))
             const shouldRefreshProject = refreshProjectAfterConnect
               || shouldRefreshAutomatorBridgeProjectAfterConnect()
               || forceProjectRefreshAfterRetry
@@ -3006,6 +2960,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               }))
             }
             lifecycle.throwIfAborted()
+            await lifecycle.step(() => devtoolsLogMonitor.finishStartup(lifecycle))
             const relaunchOptions: RelaunchRecoveryOptions = {
               checkDevtoolsLog: devtoolsLogMonitor.assertClean,
               cliPath: rest.cliPath,
@@ -3037,9 +2992,10 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         )
       }
       catch (caughtError) {
-        const error = caughtError instanceof AutomatorBridgeBudgetError && lastLaunchFailure
+        const normalizedError = caughtError instanceof AutomatorBridgeBudgetError && lastLaunchFailure
           ? lastLaunchFailure.error
           : runtimeLogSubscription?.normalizeError(caughtError) ?? caughtError
+        const error = devtoolsLogMonitor.normalizeError(normalizedError)
         await cleanupFailedBridgeLaunch({
           error,
           bridgeLaunch,
