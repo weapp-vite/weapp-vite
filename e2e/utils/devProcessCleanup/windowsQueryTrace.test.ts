@@ -81,9 +81,24 @@ describe('Windows dev process query diagnostic', () => {
       query: 'snapshot',
       exitCode: null,
       timedOut: true,
+      stdoutCharacters: 0,
+      stderrCharacters: `${begin}\n${queryBegin}\nprivate error text`.length,
       stderrTruncated: false,
+      rawMarkerCount: 2,
+      scriptBeginReceived: true,
       markers: [{ stage: 'script', event: 'begin', elapsedMs: 0 }, { stage: 'query', event: 'begin', elapsedMs: 1.25 }],
     })
+  })
+
+  it('distinguishes absent stderr from received markers with an invalid framing', () => {
+    const output = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+    const stderr = `\uFEFF${begin}\r\n${queryBegin}`
+    reportWindowsQueryTrace('snapshot', { timedOut: true })
+    reportWindowsQueryTrace('snapshot', { stdout: 'partial', stderr, timedOut: true })
+    const reports = output.mock.calls.map(([line]) => JSON.parse(String(line).slice('[e2e-cleanup-query] '.length)) as unknown)
+    expect(reports[0]).toMatchObject({ stdoutCharacters: 0, stderrCharacters: 0, rawMarkerCount: 0, scriptBeginReceived: false, markers: [] })
+    expect(reports[1]).toMatchObject({ stdoutCharacters: 7, stderrCharacters: stderr.length, rawMarkerCount: 2, scriptBeginReceived: true, markers: [] })
+    expect(String(output.mock.calls[1]![0])).not.toContain(begin)
   })
 
   it('does not replace a query result when diagnostic output fails', () => {

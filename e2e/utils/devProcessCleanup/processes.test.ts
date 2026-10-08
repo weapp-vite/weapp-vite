@@ -96,12 +96,13 @@ describe('dev process snapshot identity', () => {
     const output = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
     const kill = vi.spyOn(process, 'kill').mockReturnValue(true)
     const disconnect = vi.fn(() => false)
+    const stderr = `WEAPP_DEV_QUERY_V1|script|begin|0.000|\r\nWEAPP_DEV_QUERY_V1|query|begin|1.250|\r\n${'private-provider-detail\n'.repeat(1_000)}`
     execute.mockResolvedValueOnce({
       exitCode: undefined,
       signal: 'SIGTERM',
       timedOut: true,
       stdout: '',
-      stderr: `WEAPP_DEV_QUERY_V1|script|begin|0.000|\r\nWEAPP_DEV_QUERY_V1|query|begin|1.250|\r\n${'private-provider-detail\n'.repeat(1_000)}`,
+      stderr,
     })
     const cleanup = createDevProcessCleanup({ pid: 61, isRootHeld: () => true, disconnectRoot: disconnect, settledExit: Promise.resolve() })
     try {
@@ -119,7 +120,11 @@ describe('dev process snapshot identity', () => {
         query: 'snapshot',
         exitCode: null,
         timedOut: true,
+        stdoutCharacters: 0,
+        stderrCharacters: stderr.length,
         stderrTruncated: true,
+        rawMarkerCount: 2,
+        scriptBeginReceived: true,
         markers: [{ stage: 'script', event: 'begin', elapsedMs: 0 }, { stage: 'query', event: 'begin', elapsedMs: 1.25 }],
       })
     }

@@ -52,14 +52,20 @@ export function parseWindowsQueryTrace(stderr = ''): WindowsQueryMarker[] {
 }
 
 /** 查询失败仍报告已收到的阶段；诊断写入失败不覆盖正式查询结果。 */
-export function reportWindowsQueryTrace(query: 'snapshot' | 'identities', result: { stderr?: string, exitCode?: number, timedOut?: boolean }) {
+export function reportWindowsQueryTrace(query: 'snapshot' | 'identities', result: { stdout?: string, stderr?: string, exitCode?: number, timedOut?: boolean }) {
   try {
+    const stderr = result.stderr ?? ''
+    const boundedStderr = stderr.slice(0, maxStderrCharacters)
     process.stdout.write(`[e2e-cleanup-query] ${JSON.stringify({
       query,
       exitCode: result.exitCode ?? null,
       timedOut: result.timedOut === true,
-      stderrTruncated: (result.stderr?.length ?? 0) > maxStderrCharacters,
-      markers: parseWindowsQueryTrace(result.stderr),
+      stdoutCharacters: result.stdout?.length ?? 0,
+      stderrCharacters: stderr.length,
+      stderrTruncated: stderr.length > maxStderrCharacters,
+      rawMarkerCount: boundedStderr.split(`${wirePrefix}|`).length - 1,
+      scriptBeginReceived: boundedStderr.includes(`${wirePrefix}|script|begin|0.000|`),
+      markers: parseWindowsQueryTrace(stderr),
     })}\n`)
   }
   catch {
