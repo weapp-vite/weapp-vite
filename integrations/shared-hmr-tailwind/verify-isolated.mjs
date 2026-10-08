@@ -6,7 +6,7 @@ import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 独立安装与构建需要跨平台子进程生命周期。
 import { execa } from 'execa'
-import { readHostDependencyOverrides } from './host-dependencies.mjs'
+import { readHostDependencyOverrides } from './hostDependencies.mjs'
 
 async function main() {
   const here = path.dirname(fileURLToPath(import.meta.url))

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 保留跨平台进程启动、流式输出与终止能力。
 import { execa } from 'execa'
 import YAML from 'yaml'
-import { readHostDependencyOverrides } from './host-dependencies.mjs'
+import { readHostDependencyOverrides } from './hostDependencies.mjs'
 
 async function main() {
   const here = path.dirname(fileURLToPath(import.meta.url))
