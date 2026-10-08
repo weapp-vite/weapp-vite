@@ -30,6 +30,14 @@ describe('Windows dev process query diagnostic', () => {
     expect(command).toContain('ToString(\'F3\',[Globalization.CultureInfo]::InvariantCulture)')
   })
 
+  it('uses the same CIM projection while replacing only the explicit row transport', () => {
+    const json = createWindowsProcessQueryCommand(' -Filter \'ProcessId > 0\'', true)
+    const rows = createWindowsProcessQueryCommand(' -Filter \'ProcessId > 0\'', true, 'rows')
+    expect(rows.slice(0, rows.indexOf('|serialize|begin|'))).toBe(json.slice(0, json.indexOf('|serialize|begin|')))
+    expect(rows).not.toContain('ConvertTo-Json')
+    expect(rows).toContain('WEAPP_DEV_PROCESS_ROWS_V1')
+  })
+
   it('retains complete CRLF markers received before a query timeout', () => {
     expect(parseWindowsQueryTrace(`${begin}\r\n${queryBegin}\r\n`)).toEqual([
       { stage: 'script', event: 'begin', elapsedMs: 0 },
@@ -79,7 +87,7 @@ describe('Windows dev process query diagnostic', () => {
     expect(line).not.toContain('private error text')
     expect(JSON.parse(line.slice('[e2e-cleanup-query] '.length)) as unknown).toEqual({
       query: 'snapshot',
-      stdin: 'pipe',
+      transport: 'json',
       exitCode: null,
       timedOut: true,
       stdoutCharacters: 0,

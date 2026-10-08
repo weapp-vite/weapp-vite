@@ -10,12 +10,14 @@ on:
         options:
           - all
           - provider-cleanup
+          - process-rows
 
 permissions:
   contents: read
 
 jobs:
   provider-cleanup:
+    if: inputs.scope != 'process-rows'
     name: Provider cleanup query (Windows / Node ${{ matrix.node }})
     strategy:
       fail-fast: false
@@ -33,8 +35,24 @@ jobs:
       artifact_path: .tmp/windows-provider-cleanup/report.json
     secrets: inherit
 
+  process-row-contract:
+    if: inputs.scope == 'process-rows'
+    name: Exact process row contract (Windows / Node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: windows-latest
+      node_version: '${{ matrix.node }}'
+      timeout_minutes: 20
+      build_command: pnpm build:pkgs:ci:windows
+      main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_CLEANUP_QUERY_TRANSPORT=rows node --import tsx scripts/windowsProcessIdentityProbe/checkProcessRows.ts
+    secrets: inherit
+
   self-writer-check:
-    if: inputs.scope != 'provider-cleanup'
+    if: inputs.scope != 'provider-cleanup' && inputs.scope != 'process-rows'
     name: Journal writer first query (Windows / Node ${{ matrix.node }})
     runs-on: windows-latest
     timeout-minutes: 15
@@ -124,7 +142,7 @@ jobs:
           retention-days: 7
 
   identity-probe:
-    if: inputs.scope != 'provider-cleanup'
+    if: inputs.scope != 'provider-cleanup' && inputs.scope != 'process-rows'
     name: Diagnostic only (Windows / Node ${{ matrix.node }} / ${{ matrix.firstProvider }})
     runs-on: windows-latest
     timeout-minutes: 15

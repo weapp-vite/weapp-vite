@@ -5,7 +5,7 @@ import { parse } from 'yaml'
 interface WorkflowJob {
   if?: string
   needs?: string | string[]
-  strategy?: { 'fail-fast'?: boolean, 'matrix': { 'os'?: string[], 'node-version'?: number[], 'shard'?: number[], 'include'?: Array<{ 'os'?: string, 'node-version': number, 'shard'?: number, 'stdin'?: string }> } }
+  strategy?: { 'fail-fast'?: boolean, 'matrix': { 'os'?: string[], 'node-version'?: number[], 'shard'?: number[], 'include'?: Array<{ 'os'?: string, 'node-version': number, 'shard'?: number, 'transport'?: string }> } }
   with?: Record<string, unknown>
 }
 
@@ -65,21 +65,21 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.strategy?.['fail-fast']).toBe(false)
     expect(job.strategy?.matrix).toEqual({
       include: [
-        { 'node-version': 22, 'shard': 3, 'stdin': 'pipe' },
-        { 'node-version': 22, 'shard': 1, 'stdin': 'pipe' },
-        { 'node-version': 24, 'shard': 1, 'stdin': 'pipe' },
-        { 'node-version': 22, 'shard': 3, 'stdin': 'ignore' },
-        { 'node-version': 22, 'shard': 1, 'stdin': 'ignore' },
-        { 'node-version': 24, 'shard': 1, 'stdin': 'ignore' },
+        { 'node-version': 22, 'shard': 3, 'transport': 'json' },
+        { 'node-version': 22, 'shard': 1, 'transport': 'json' },
+        { 'node-version': 24, 'shard': 1, 'transport': 'json' },
+        { 'node-version': 22, 'shard': 3, 'transport': 'rows' },
+        { 'node-version': 22, 'shard': 1, 'transport': 'rows' },
+        { 'node-version': 24, 'shard': 1, 'transport': 'rows' },
       ],
     })
     expect(job.with).toMatchObject({
       runs_on: 'windows-latest',
       node_version: `\${{ matrix.node-version }}`,
       build_command: 'pnpm build:ci:windows',
-      main_command: `pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_CLEANUP_QUERY_STDIN=\${{ matrix.stdin }} pnpm e2e:ci:full -- --shard-index=\${{ matrix.shard }} --shard-total=4`,
+      main_command: `pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 WEAPP_VITE_E2E_CLEANUP_QUERY_TRANSPORT=\${{ matrix.transport }} pnpm e2e:ci:full -- --shard-index=\${{ matrix.shard }} --shard-total=4`,
       e2e_platform: 'weapp',
-      artifact_name: expect.stringMatching(/^windows-dev-cleanup-node-.*matrix\.node-version.*shard-.*matrix\.shard.*stdin-.*matrix\.stdin.*github\.sha/),
+      artifact_name: expect.stringMatching(/^windows-dev-cleanup-node-.*matrix\.node-version.*shard-.*matrix\.shard.*transport-.*matrix\.transport.*github\.sha/),
       artifact_path: 'docs/reports/*-e2e-ci-full-*-suite-report/**',
       timeout_minutes: 40,
     })

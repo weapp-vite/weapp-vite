@@ -1,4 +1,5 @@
 import process from 'node:process'
+import { serializeWindowsProcessRows } from './windowsProcessRows'
 
 const wirePrefix = 'WEAPP_DEV_QUERY_V1'
 const maxStderrCharacters = 16_384
@@ -11,7 +12,7 @@ interface WindowsQueryMarker {
 }
 
 /** 默认命令保持不变；显式诊断只在 stderr 写固定 ASCII 阶段与耗时。 */
-export function createWindowsProcessQueryCommand(filter: string, trace: boolean) {
+export function createWindowsProcessQueryCommand(filter: string, trace: boolean, transport: 'json' | 'rows' = 'json') {
   const query = `@(Get-CimInstance Win32_Process${filter} | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name='Started';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString('o')} else {$null}}})`
   if (!trace) {
     return `$ErrorActionPreference='Stop'; ${query} | ConvertTo-Json -Compress`
@@ -25,7 +26,7 @@ export function createWindowsProcessQueryCommand(filter: string, trace: boolean)
     `$weappQueryRows=${query}`,
     marker('query:end'),
     marker('serialize:begin'),
-    '@($weappQueryRows) | ConvertTo-Json -Compress',
+    transport === 'rows' ? serializeWindowsProcessRows() : '@($weappQueryRows) | ConvertTo-Json -Compress',
     marker('serialize:end'),
     marker('script:end'),
   ].join('; ')
@@ -52,13 +53,13 @@ export function parseWindowsQueryTrace(stderr = ''): WindowsQueryMarker[] {
 }
 
 /** 查询失败仍报告已收到的阶段；诊断写入失败不覆盖正式查询结果。 */
-export function reportWindowsQueryTrace(query: 'snapshot' | 'identities', result: { stdout?: string, stderr?: string, exitCode?: number, timedOut?: boolean }, stdin: 'pipe' | 'ignore' = 'pipe') {
+export function reportWindowsQueryTrace(query: 'snapshot' | 'identities', result: { stdout?: string, stderr?: string, exitCode?: number, timedOut?: boolean }, transport: 'json' | 'rows' = 'json') {
   try {
     const stderr = result.stderr ?? ''
     const boundedStderr = stderr.slice(0, maxStderrCharacters)
     process.stdout.write(`[e2e-cleanup-query] ${JSON.stringify({
       query,
-      stdin,
+      transport,
       exitCode: result.exitCode ?? null,
       timedOut: result.timedOut === true,
       stdoutCharacters: result.stdout?.length ?? 0,

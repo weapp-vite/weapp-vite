@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -118,7 +119,7 @@ describe('dev process snapshot identity', () => {
       expect(diagnostic!.length).toBeLessThan(512)
       expect(JSON.parse(diagnostic!.slice('[e2e-cleanup-query] '.length)) as unknown).toEqual({
         query: 'snapshot',
-        stdin: 'pipe',
+        transport: 'json',
         exitCode: null,
         timedOut: true,
         stdoutCharacters: 0,
@@ -134,18 +135,19 @@ describe('dev process snapshot identity', () => {
     }
   })
 
-  it.each(['pipe', 'ignore'] as const)('only changes stdin in the explicit Windows diagnostic: %s', async (stdin) => {
+  it.each(['json', 'rows'] as const)('only changes transport in the explicit Windows diagnostic: %s', async (transport) => {
     vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
     vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', '1')
-    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_QUERY_STDIN', stdin)
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_QUERY_TRANSPORT', transport)
     vi.spyOn(process.stdout, 'write').mockReturnValue(true)
     const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: 'fixture-node.exe' }
-    execute.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify([root]) })
+    const stdout = transport === 'json' ? JSON.stringify([root]) : `WEAPP_DEV_PROCESS_ROWS_V1\n61\t1\t${Buffer.from(root.ExecutablePath, 'utf16le').toString('base64')}\t${root.Started}\nWEAPP_DEV_PROCESS_ROWS_V1|1`
+    execute.mockResolvedValueOnce({ exitCode: 0, stdout })
     try {
       expect(await captureDevProcessTree(61, () => true)).toEqual([{ pid: 61, executable: root.ExecutablePath, started: root.Started }])
       expect(execute).toHaveBeenCalledOnce()
       expect(execute.mock.calls[0]![0]).toBe('powershell.exe')
-      expect(execute.mock.calls[0]![2]).toMatchObject({ stdin, timeout: 10_000, reject: false, windowsHide: true })
+      expect(execute.mock.calls[0]![2]).toEqual({ timeout: 10_000, reject: false, windowsHide: true })
     }
     finally {
       vi.unstubAllEnvs()
@@ -153,14 +155,14 @@ describe('dev process snapshot identity', () => {
   })
 
   it.each([
-    { stdin: 'ignore', trace: undefined },
-    { stdin: 'inherit', trace: '1' },
-  ])('rejects untraced or unsupported diagnostic input before launching: $stdin/$trace', async ({ stdin, trace }) => {
+    { transport: 'rows', trace: undefined },
+    { transport: 'unknown', trace: '1' },
+  ])('rejects untraced or unsupported diagnostic transport before launching: $transport/$trace', async ({ transport, trace }) => {
     vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
     vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', trace)
-    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_QUERY_STDIN', stdin)
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_QUERY_TRANSPORT', transport)
     try {
-      await expect(captureDevProcessTree(61, () => true)).rejects.toThrow('Windows query stdin diagnosis requires tracing and pipe or ignore.')
+      await expect(captureDevProcessTree(61, () => true)).rejects.toThrow('Windows query transport diagnosis requires tracing and json or rows.')
       expect(execute).not.toHaveBeenCalled()
     }
     finally {
