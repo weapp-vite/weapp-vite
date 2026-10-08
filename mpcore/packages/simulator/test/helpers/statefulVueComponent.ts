@@ -32,8 +32,14 @@ const { count: storeCount } = storeToRefs(store)
     files.set(file, content)
   }
   files.set('hmr-runtime.js', 'module.exports = require(\'./compiled-component.js\');')
-  files.set('vue-counter-runtime.js', `module.exports = {
-    patched() { ${compiled.patched.code}
+  // 真实引擎为每次编辑递增工厂序号；恢复后的同内容编辑也必须使用新补丁。
+  files.set('vue-counter-runtime.js', `let patchCount = 0;
+  module.exports = {
+    patched() {
+      if (patchCount++ === 0) { ${compiled.patched.code}
+      }
+      else { ${compiled.patchedAgain.code}
+      }
     },
     repatched() { ${compiled.repatched.code}
     },

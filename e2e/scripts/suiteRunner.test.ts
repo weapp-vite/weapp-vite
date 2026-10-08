@@ -643,7 +643,7 @@ describe('suiteRunner', () => {
     })
   })
 
-  it('skips repeated devtools login checks after the first successful devtools task', async () => {
+  it('keeps login preflight for each cold host after the previous task quits', async () => {
     const tasks: SuiteTask[] = [
       {
         label: 'ide/first.test.ts',
@@ -657,10 +657,33 @@ describe('suiteRunner', () => {
       },
     ]
     const observedEnv = vi.fn<(task: SuiteTask) => void>()
+    const lifecycle: string[] = []
+    const hostLeases = ['first', 'second'].map(claimedAt => ({
+      target: { cliPath: 'selected-cli' },
+      initial: { state: 'cold', identities: [] },
+      claimedAt,
+    }))
+    let claimedCount = 0
+    mocks.claimHost.mockImplementation(async () => {
+      lifecycle.push(`claim:${++claimedCount}`)
+      return hostLeases[claimedCount - 1]
+    })
+    mocks.cleanup.mockImplementation(async () => {
+      lifecycle.push(`cleanup:${claimedCount}`)
+    })
+    mocks.quitHost.mockImplementation(async (hostLease) => {
+      expect(hostLease).toBe(hostLeases[claimedCount - 1])
+      lifecycle.push(`quit:${claimedCount}`)
+    })
 
     await runTaskSuite('e2e:ide-companion-unit', tasks, {
       beforeEachTask: observedEnv,
-      runTask: vi.fn().mockResolvedValue(0),
+      runTask: vi.fn(async (task: SuiteTask) => {
+        expect(task.env?.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK).toBeUndefined()
+        expect(task.env?.WEAPP_VITE_E2E_DEVTOOLS_HOST_CLAIMED).toBe('1')
+        lifecycle.push(`task:${claimedCount}`)
+        return 0
+      }),
       writeReport: false,
     })
 
@@ -675,10 +698,48 @@ describe('suiteRunner', () => {
     expect(secondTask).toMatchObject({
       env: {
         WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL: firstSentinel,
-        WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK: '1',
       },
       label: 'ide/second.test.ts',
     })
+    expect(firstTask?.env?.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK).toBeUndefined()
+    expect(secondTask?.env?.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK).toBeUndefined()
+    expect(lifecycle).toEqual([
+      'claim:1',
+      'task:1',
+      'cleanup:1',
+      'quit:1',
+      'claim:2',
+      'task:2',
+      'cleanup:2',
+      'quit:2',
+    ])
+  })
+
+  it('does not claim or quit DevTools for headless and CI tasks', async () => {
+    const tasks: SuiteTask[] = [
+      {
+        label: 'ide/headless.test.ts',
+        command: 'pnpm',
+        args: ['vitest', 'run', '-c', 'e2e/vitest.e2e.devtools.config.ts'],
+        env: { WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless' },
+      },
+      {
+        label: 'ci/build.test.ts',
+        command: 'pnpm',
+        args: ['vitest', 'run', '-c', 'e2e/vitest.e2e.ci.config.ts'],
+      },
+    ]
+    const runTask = vi.fn(async (task: SuiteTask) => {
+      expect(task.env?.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK).toBeUndefined()
+      expect(task.env?.WEAPP_VITE_E2E_DEVTOOLS_HOST_CLAIMED).toBeUndefined()
+      return 0
+    })
+
+    await runTaskSuite('e2e:preflight-unit', tasks, { runTask, writeReport: false })
+
+    expect(runTask).toHaveBeenCalledTimes(2)
+    expect(mocks.claimHost).not.toHaveBeenCalled()
+    expect(mocks.quitHost).not.toHaveBeenCalled()
   })
 
   it('keeps devtools login checks when the previous task was skipped by login preflight', async () => {

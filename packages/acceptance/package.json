@@ -44,7 +44,7 @@
     "test:types": "tsd"
   },
   "dependencies": {
-    "execa": "10.0.1",
+    "execa": "10.1.0",
     "zod": "catalog:"
   },
   "devDependencies": {

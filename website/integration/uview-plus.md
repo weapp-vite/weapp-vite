@@ -1,6 +1,6 @@
 ---
 title: uview-plus 与 uni-app 组件库
-description: 使用 UviewPlusResolver 和实验性的 uni-app 源码兼容层，在 Web、微信开发者工具与 headless 中运行 uview-plus 3.8.128 的 139 个具名组件。
+description: 使用 UviewPlusResolver 和实验性的 uni-app 源码兼容层，在 Web、微信开发者工具与 headless 中运行 uview-plus 3.8.130 的 139 个具名组件。
 keywords:
   - uview-plus
   - uni-app
@@ -13,14 +13,14 @@ keywords:
 # uview-plus 与 uni-app 组件库兼容（实验性）
 
 > [!WARNING]
-> 当前兼容基线固定为 `uview-plus@3.8.128`。该能力默认关闭，npm 依赖必须显式加入 `weapp.uniApp.include`。
+> 当前兼容基线固定为 `uview-plus@3.8.130`。该能力默认关闭，npm 依赖必须显式加入 `weapp.uniApp.include`。
 
-仓库测试基线同时应用 `patches/uview-plus@3.8.128.patch`，仅保留 `u-barcode` 获取 canvas 引用前等待组件实例 `this.$nextTick()` 的兼容调整。旧版的选择器、主题变量及其他组件兼容补丁已由上游修复，不再重复应用。
+上游 3.8.130 已修复 `u-barcode` 获取 canvas 引用前的组件实例 `this.$nextTick()` 等待逻辑，仓库已移除对应补丁。旧版的选择器、主题变量及其他组件兼容补丁也已由上游修复。
 
 ## 安装
 
 ```bash
-pnpm add weapp-vite wevu uview-plus@3.8.128
+pnpm add weapp-vite wevu uview-plus@3.8.130
 ```
 
 ## 配置
@@ -79,7 +79,7 @@ app.config.globalProperties.$u = uni.$u
 
 ## 兼容矩阵
 
-矩阵扫描 `uview-plus@3.8.128/components`，并与 resolver 的 141 个源码入口互相校验。139 个具名组件分别生成独立页面，并在三种 runtime 逐页执行：
+矩阵扫描 `uview-plus@3.8.130/components`，并与 resolver 的 141 个源码入口互相校验。139 个具名组件分别生成独立页面，并在三种 runtime 逐页执行：
 
 | Runtime        | 行为覆盖 | 视觉覆盖   |
 | -------------- | -------- | ---------- |

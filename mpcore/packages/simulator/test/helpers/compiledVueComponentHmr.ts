@@ -175,6 +175,6 @@ export async function compileVueComponentHmr(repoRoot: string, source: string, m
     .replace('count.value += 2', 'count.value += 3')
     .replace('store.increment(2)', 'store.increment(3)')
     .replace('step:2', 'step:3')
-  const compiled = await compileVueHmrSequence(repoRoot, source, [patchedSource, repatchedSource, source], { type: 'component', modules })
-  return { ...compiled, patched: compiled.patches[0]!, repatched: compiled.patches[1]!, restored: compiled.patches[2]! }
+  const compiled = await compileVueHmrSequence(repoRoot, source, [patchedSource, repatchedSource, source, patchedSource], { type: 'component', modules })
+  return { ...compiled, patched: compiled.patches[0]!, repatched: compiled.patches[1]!, restored: compiled.patches[2]!, patchedAgain: compiled.patches[3]! }
 }

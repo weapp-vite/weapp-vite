@@ -30,6 +30,7 @@ async function runE2E() {
     ?? parent?.selectComponent?.('#e2e-component')
     ?? slotOwner?.selectComponent?.('#e2e-component')
     ?? page?.selectComponent?.('up-video')
+    ?? page?.selectComponent?.('up-video')
     ?? registeredChild
     ?? null
   const rendered = target !== null
