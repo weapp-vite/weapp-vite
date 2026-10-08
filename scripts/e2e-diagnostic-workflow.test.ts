@@ -20,7 +20,7 @@ async function workflow() {
 describe('bounded HMR workflow diagnosis', () => {
   it('requires an explicit manual selection and uses a separate concurrency group', async () => {
     const config = await workflow()
-    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr'] })
+    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow'] })
     expect(config.concurrency.group).toContain('inputs.hmr-diagnostic || \'full\'')
     const job = config.jobs['shared-layout-windows-diagnostic']!
     expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'shared-layout-windows\'')
@@ -37,6 +37,23 @@ describe('bounded HMR workflow diagnosis', () => {
       main_command: 'pnpm audit:hmr:nightly',
       artifact_name: 'workspace-hmr-nightly',
       timeout_minutes: 120,
+    })
+  })
+
+  it('keeps the process lifecycle diagnostic manual and scoped to Windows Node 22 and 24', async () => {
+    const { jobs } = await workflow()
+    const job = jobs['windows-process-narrow-diagnostic']!
+    expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'windows-process-narrow\'')
+    expect(job.needs).toBeUndefined()
+    expect(job.strategy?.['fail-fast']).toBe(false)
+    expect(job.strategy?.matrix).toEqual({ 'node-version': [22, 24] })
+    expect(job.with).toMatchObject({
+      runs_on: 'windows-latest',
+      build_command: 'pnpm exec turbo run build --filter=weapp-ide-cli...',
+      main_command: 'pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/suiteRunner/process.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-process-narrow-report.json',
+      artifact_name: expect.stringMatching(/^windows-process-narrow-.*matrix\.node-version.*github\.sha/),
+      artifact_path: '.tmp/windows-process-narrow-report.json',
+      timeout_minutes: 15,
     })
   })
 
@@ -97,7 +114,7 @@ describe('bounded HMR workflow diagnosis', () => {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)
     }
     for (const [name, job] of Object.entries(jobs)) {
-      if (['shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic'].includes(name)) {
+      if (['shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic'].includes(name)) {
         continue
       }
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>

@@ -8,6 +8,7 @@ import { promisify } from 'node:util'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createIsolatedMachineLease } from '../../utils/testSupport/machineLease'
 import { runTaskSuite as runTaskSuiteWithOptions } from '../suiteRunner'
+import { createStdioLeakFixture } from './stdioLeakFixture'
 
 let machine: IsolatedMachineLease
 beforeEach(async () => {
@@ -27,17 +28,6 @@ afterEach(async () => {
 
 function runTaskSuite(...[name, tasks, options]: Parameters<typeof runTaskSuiteWithOptions>) {
   return runTaskSuiteWithOptions(name, tasks, { ...options, machineLeaseOptions: { stateDirectory: machine.stateDirectory } })
-}
-
-function terminateTestChild(pid: number) {
-  try {
-    process.kill(pid)
-  }
-  catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ESRCH') {
-      throw error
-    }
-  }
 }
 
 describe('suiteRunner real process and machine lease integration', () => {
@@ -75,31 +65,9 @@ describe('suiteRunner real process and machine lease integration', () => {
   })
 
   it('does not wait forever when descendant processes keep piped stdio open after exit', async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-child-exit-'))
-    const pidFile = path.join(tempRoot, 'child.pid')
+    const fixture = createStdioLeakFixture()
     const previousExitCode = process.exitCode
     process.exitCode = undefined
-
-    const leakStdoutScriptPath = path.join(tempRoot, 'leak-stdio.cjs')
-    const descendantScriptPath = path.join(tempRoot, 'descendant.cjs')
-    fs.writeFileSync(descendantScriptPath, `
-      require('node:fs').writeFileSync(process.argv[2], String(process.pid));
-      setTimeout(() => {}, 10000);
-      process.send('ready');
-    `)
-    fs.writeFileSync(leakStdoutScriptPath, `
-      const { spawn } = require('node:child_process');
-      const child = spawn(process.execPath, [${JSON.stringify(descendantScriptPath)}, ${JSON.stringify(pidFile)}], {
-        detached: true,
-        windowsHide: true,
-        stdio: ['ignore', 1, 2, 'ipc'],
-      });
-      child.once('message', () => {
-        child.disconnect();
-        child.unref();
-        process.exit(0);
-      });
-    `)
 
     const deadline = Promise.withResolvers<'timeout'>()
     let deadlineTimer: ReturnType<typeof setTimeout> | undefined
@@ -107,7 +75,7 @@ describe('suiteRunner real process and machine lease integration', () => {
       {
         label: 'pipe-leak-task',
         command: process.execPath,
-        args: [leakStdoutScriptPath],
+        args: [fixture.scriptPath],
       },
     ], {
       // 先完成真实租约和 journal 初始化；1 秒预算覆盖任务启动、执行及 suite 收尾。
@@ -116,38 +84,34 @@ describe('suiteRunner real process and machine lease integration', () => {
       },
       writeReport: false,
     })
-    const stopDescendant = () => {
-      if (!fs.existsSync(pidFile)) {
-        return
-      }
-      const childPid = Number(fs.readFileSync(pidFile, 'utf8'))
-      if (Number.isInteger(childPid) && childPid > 0) {
-        terminateTestChild(childPid)
-      }
-    }
-
+    const errors: unknown[] = []
     try {
       const result = await Promise.race([runPromise, deadline.promise])
 
-      expect(result).toBe(0)
-      expect(() => process.kill(Number(fs.readFileSync(pidFile, 'utf8')), 0)).not.toThrow()
+      expect(result, JSON.stringify(fixture.snapshot())).toBe(0)
+      expect(fixture.descendantPid()).toBeGreaterThan(0)
+      expect(() => process.kill(fixture.descendantPid()!, 0)).not.toThrow()
+    }
+    catch (error) {
+      errors.push(error)
     }
     finally {
       clearTimeout(deadlineTimer)
       try {
-        stopDescendant()
+        await fixture.cleanup(runPromise)
+      }
+      catch (error) {
+        errors.push(error)
       }
       finally {
-        // 超时仍保留原断言失败；先等本次 runner 结束，避免删除仍将使用的 fixture。
-        await runPromise.catch(() => {})
-        try {
-          stopDescendant()
-        }
-        finally {
-          fs.rmSync(tempRoot, { recursive: true, force: true })
-          process.exitCode = previousExitCode
-        }
+        process.exitCode = previousExitCode
       }
+    }
+    if (errors.length === 1) {
+      throw errors[0]
+    }
+    if (errors.length > 1) {
+      throw new AggregateError(errors, 'Inherited stdio assertion and fixture cleanup failed.')
     }
   })
 
