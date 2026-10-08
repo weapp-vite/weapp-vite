@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createIssue1034Project, runIssue1034Command } from '../utils/issue1034Project'
+import { runWithCleanup } from '../utils/runWithCleanup'
 
 const projects: string[] = []
 afterEach(async () => {
@@ -77,7 +78,7 @@ describe('issue #1034: selected auto route sources', () => {
       const files = await readdir(out, { recursive: true })
       return (await Promise.all(files.filter(file => file.endsWith('.js')).map(file => readFile(path.join(out, file), 'utf8')))).join('\n')
     }
-    try {
+    await runWithCleanup(async () => {
       await dev.waitForInitialBuild()
       await dev.waitForOutput('开发服务已就绪', 'watcher is ready')
       // 轮询 watcher 必须先建立初始文件快照，再写入首个变更。
@@ -99,9 +100,6 @@ describe('issue #1034: selected auto route sources', () => {
       await dev.waitFor(expect.poll(scripts, { timeout: 60_000 }).toContain(engine === 'classic' ? 'business-updated' : 'business-1'), 'restored snapshot preserves explicit sibling import')
       await writeFile(path.join(project, 'src/pages/excluded/index.js'), 'Page({ data: { source: \'still-excluded\' } })\n')
       expect(await declaration()).not.toContain('pages/excluded/index')
-    }
-    finally {
-      await dev.stop(5_000)
-    }
+    }, () => dev.stop(5_000))
   }, 300_000)
 })
