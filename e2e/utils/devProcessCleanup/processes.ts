@@ -6,6 +6,7 @@ import process from 'node:process'
 import { execa } from 'execa'
 import { readManagedProcessIdentity, sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
+import { traceCleanupStage } from '../cleanupTrace'
 import { collectWindowsProcessTree, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
 
 export { type DevProcessCandidate, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
@@ -21,12 +22,13 @@ async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
     return []
   }
   const filter = ` -Filter '${pids ? pids.map(pid => `ProcessId=${pid}`).join(' OR ') : 'ProcessId > 0'}'`
-  const result = await execa('powershell.exe', [
+  const timeoutMs = resolveWechatInspectionTimeout('win32')
+  const result = await traceCleanupStage(pids ? 'dev-cim-identities' : 'dev-cim-snapshot', () => execa('powershell.exe', [
     '-NoProfile',
     '-NonInteractive',
     '-Command',
     `$ErrorActionPreference='Stop'; @(Get-CimInstance Win32_Process${filter} | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name='Started';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString('o')} else {$null}}}) | ConvertTo-Json -Compress`,
-  ], { timeout: resolveWechatInspectionTimeout('win32'), reject: false, windowsHide: true })
+  ], { timeout: timeoutMs, reject: false, windowsHide: true }), { processCount: pids?.length, timeoutMs })
   if (result.exitCode !== 0) {
     throw new Error(`Dev process inspection failed: exitCode=${result.exitCode ?? 'none'}, signal=${result.signal ?? 'none'}, timedOut=${result.timedOut ?? false}.`)
   }
@@ -199,12 +201,13 @@ export async function killWindowsDevProcesses(pids: number[]) {
   if (!pids.length) {
     return
   }
-  const result = await execa('taskkill', [...pids.flatMap(pid => ['/PID', String(pid)]), '/F'], {
+  const timeoutMs = resolveWechatInspectionTimeout('win32')
+  const result = await traceCleanupStage('dev-taskkill', () => execa('taskkill', [...pids.flatMap(pid => ['/PID', String(pid)]), '/F'], {
     reject: false,
     stdin: 'ignore',
-    timeout: resolveWechatInspectionTimeout('win32'),
+    timeout: timeoutMs,
     windowsHide: true,
-  })
+  }), { processCount: pids.length, timeoutMs })
   if (result.exitCode !== 0) {
     throw new Error(`Dev process termination failed: exitCode=${result.exitCode ?? 'none'}.`)
   }

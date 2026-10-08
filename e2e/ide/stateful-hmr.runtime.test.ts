@@ -5,6 +5,7 @@ import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { resolveRuntimeCompilerCli } from '../../packages/weapp-vite/scripts/consumerRuntimeHost.mjs'
 import { launchAutomator } from '../utils/automator'
+import { traceCleanupStage } from '../utils/cleanupTrace'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -351,7 +352,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       miniProgram = undefined
     }
     try {
-      await devProcess?.stop(5_000)
+      await traceCleanupStage('stateful-dev-stop', async () => await devProcess?.stop(5_000), { defaultOnWindows: true })
     }
     catch (error) {
       errors.push(error)
@@ -361,34 +362,36 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       devProcess = undefined
     }
     try {
-      if (originalNativeSource) {
-        await fs.writeFile(fixture.nativeSource, originalNativeSource, 'utf8')
-      }
-      if (originalNativeStyle) {
-        await fs.writeFile(fixture.nativeStyle, originalNativeStyle, 'utf8')
-      }
-      if (originalComponentSource) {
-        await fs.writeFile(fixture.componentSource, originalComponentSource, 'utf8')
-      }
-      if (originalChildSource) {
-        await fs.writeFile(fixture.childSource, originalChildSource, 'utf8')
-      }
-      if (originalVueChildSource) {
-        await fs.writeFile(fixture.vueChildSource, originalVueChildSource, 'utf8')
-      }
-      if (originalWevuSource) {
-        await fs.writeFile(fixture.wevuSource, originalWevuSource, 'utf8')
-      }
-      await cleanupResidualDevProcesses()
+      await traceCleanupStage('stateful-restore-source', async () => {
+        if (originalNativeSource) {
+          await fs.writeFile(fixture.nativeSource, originalNativeSource, 'utf8')
+        }
+        if (originalNativeStyle) {
+          await fs.writeFile(fixture.nativeStyle, originalNativeStyle, 'utf8')
+        }
+        if (originalComponentSource) {
+          await fs.writeFile(fixture.componentSource, originalComponentSource, 'utf8')
+        }
+        if (originalChildSource) {
+          await fs.writeFile(fixture.childSource, originalChildSource, 'utf8')
+        }
+        if (originalVueChildSource) {
+          await fs.writeFile(fixture.vueChildSource, originalVueChildSource, 'utf8')
+        }
+        if (originalWevuSource) {
+          await fs.writeFile(fixture.wevuSource, originalWevuSource, 'utf8')
+        }
+      }, { defaultOnWindows: true })
+      await traceCleanupStage('stateful-residual-dev', cleanupResidualDevProcesses, { defaultOnWindows: true })
       if (resolveRuntimeProviderName() === 'devtools') {
-        await cleanupResidualIdeProcesses()
+        await traceCleanupStage('stateful-residual-ide', cleanupResidualIdeProcesses, { defaultOnWindows: true })
       }
     }
     catch (error) {
       errors.push(error)
     }
     try {
-      await isolatedFixture?.cleanup()
+      await traceCleanupStage('stateful-fixture-remove', async () => await isolatedFixture?.cleanup(), { defaultOnWindows: true })
     }
     catch (error) {
       errors.push(error)

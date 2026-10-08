@@ -1,6 +1,7 @@
 import type { DevProcessIdentity } from './processes'
 import process from 'node:process'
 import { sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
+import { traceCleanupStage } from '../cleanupTrace'
 import { captureDevProcessTree, isDevProcessAlive, killWindowsDevProcesses, readDevProcessIdentities, UnconfirmedDevProcessTreeError } from './processes'
 
 interface DevProcessCleanupOptions {
@@ -42,7 +43,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
 
   const reconcileIdentities = async () => {
     forgetExitedRoot()
-    const current = await readDevProcessIdentities([...pending.keys()])
+    const current = await traceCleanupStage('dev-reconcile', () => readDevProcessIdentities([...pending.keys()]), { processCount: pending.size })
     forgetExitedRoot()
     for (const [pid, identity] of pending) {
       const live = current.get(pid)
@@ -103,7 +104,8 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
 
   return async (forceKillDelayMs: number) => {
     if (unconfirmed) {
-      const current = await readDevProcessIdentities([...unconfirmed.pids])
+      const candidates = [...unconfirmed.pids]
+      const current = await traceCleanupStage('dev-recheck-unconfirmed', () => readDevProcessIdentities(candidates), { processCount: candidates.length })
       const remaining = unconfirmed.candidates.filter((candidate) => {
         const live = current.get(candidate.pid)
         return live && (!candidate.started || candidate.started === live.started)
@@ -122,7 +124,8 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
     if (!captured && options.pid != null && options.isRootHeld()) {
       let identities: DevProcessIdentity[]
       try {
-        identities = await captureDevProcessTree(options.pid, options.isRootHeld)
+        const rootPid = options.pid
+        identities = await traceCleanupStage('dev-capture', () => captureDevProcessTree(rootPid, options.isRootHeld))
       }
       catch (error) {
         if (error instanceof UnconfirmedDevProcessTreeError) {
@@ -146,17 +149,17 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
     }
     if (!disconnected && options.isRootHeld() && options.disconnectRoot()) {
       disconnected = true
-      await waitForExit(options.settledExit, forceKillDelayMs)
+      await traceCleanupStage('dev-ipc-exit', () => waitForExit(options.settledExit, forceKillDelayMs), { timeoutMs: forceKillDelayMs })
     }
     forgetExitedRoot()
     if (pending.size) {
       if (process.platform !== 'win32') {
         await signalOwned('SIGTERM')
-        await waitForOwnedExit(forceKillDelayMs)
+        await traceCleanupStage('dev-owned-exit', () => waitForOwnedExit(forceKillDelayMs), { processCount: pending.size, timeoutMs: forceKillDelayMs })
       }
       if (pending.size) {
         await signalOwned('SIGKILL')
-        if (!await waitForOwnedExit(forceKillDelayMs + 1_000)) {
+        if (!await traceCleanupStage('dev-owned-exit', () => waitForOwnedExit(forceKillDelayMs + 1_000), { processCount: pending.size, timeoutMs: forceKillDelayMs + 1_000 })) {
           await reconcileIdentities()
           if (pending.size) {
             throw new Error('Owned dev processes did not exit; cleanup remains registered for retry.')
@@ -164,7 +167,7 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
         }
       }
     }
-    if (!await waitForExit(options.settledExit, forceKillDelayMs + 1_000)) {
+    if (!await traceCleanupStage('dev-stdio-drain', () => waitForExit(options.settledExit, forceKillDelayMs + 1_000), { timeoutMs: forceKillDelayMs + 1_000 })) {
       throw new Error('Dev process exit or stdio drain timed out; cleanup remains registered for retry.')
     }
   }

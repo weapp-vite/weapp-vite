@@ -34,6 +34,7 @@ describe('dev process cleanup ownership', () => {
     }
     fixtures.clear()
     await cleanupTrackedDevProcesses(0)
+    vi.unstubAllEnvs()
     vi.restoreAllMocks()
     vi.clearAllMocks()
     vi.useRealTimers()
@@ -195,8 +196,10 @@ describe('dev process cleanup ownership', () => {
     expect([...fixture.processes.keys()]).toEqual([71, 72])
   })
 
-  it('batches Windows identity checks and terminates only the registered PID list once', async () => {
+  it.each([undefined, '1'])('batches Windows identity checks and terminates only the registered PID list once with cleanup tracing %s', async (trace) => {
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', trace)
     vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const output = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
     const fixture = mockProcessTree()
     const dev = startDevProcess('node', ['fixture.js'])
     await Promise.all([dev.stop(0), cleanupTrackedDevProcesses(0), dev.stop(0)])
@@ -206,6 +209,13 @@ describe('dev process cleanup ownership', () => {
     expect(execaMock.mock.calls.some(([command]) => command === 'ps')).toBe(false)
     expect(execaMock.mock.calls.filter(([command]) => command === 'powershell.exe')).toHaveLength(2)
     expect([...fixture.processes.keys()]).toEqual([71, 72])
+    if (trace) {
+      expect(output.mock.calls.some(([line]) => String(line).includes('"stage":"dev-cim-snapshot","event":"begin"'))).toBe(true)
+      expect(output.mock.calls.some(([line]) => String(line).includes('"stage":"dev-taskkill","event":"end"'))).toBe(true)
+    }
+    else {
+      expect(output).not.toHaveBeenCalled()
+    }
   })
 
   it('waits for an IPC child to clean up on Windows before considering force kill', async () => {
