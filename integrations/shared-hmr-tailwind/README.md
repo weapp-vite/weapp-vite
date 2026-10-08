@@ -50,7 +50,7 @@ Taro headless 与真实微信均为 2 场景、6 个 DOM 检查点通过，包�
 
 weapp-vite 的脚本状态保持通过真实微信验证；其首次样式更新的透明问题在拆分版本与未拆分 main 均复现，继续按既有原生对照单独记录。拆分不宣称修复此限制。
 
-仓库外独立验证使用 `node integrations/shared-hmr-tailwind/verify-isolated.mjs`：在系统临时目录安装真实 tarball，断言完整 weapp-vite 无法解析，再使用已安装 Taro 完成原生构建。示例显式通过宿主的 `pnpm overrides.rolldown` 对齐 Taro 与 Vite；不依赖历史 lockfile 恰好选择相同版本。公共包不设置全局引擎 override。
+仓库外独立验证使用 `node integrations/shared-hmr-tailwind/verify-isolated.mjs`：在系统临时目录安装真实 tarball，断言完整 weapp-vite 无法解析，再使用已安装 Taro 完成原生构建。示例显式通过宿主的 `pnpm overrides` 对齐 Taro 与 Vite 的 Rolldown，以及 Vite 与样式插件的 PostCSS；PostCSS 采用当前仓库实际安装版本，两种安装都验证模块解析身份一致，不依赖历史 lockfile 恰好选择相同版本。公共包不设置全局引擎 override。
 
 ## Windows 原子发布回归
 
