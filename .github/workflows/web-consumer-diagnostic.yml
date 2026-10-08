@@ -1,0 +1,30 @@
+name: Web Consumer Diagnostic
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: web-consumer-diagnostic-${{ github.ref || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  web-consumer:
+    name: Packed Web diagnostic (Ubuntu / Node 24.18 / wv)
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      install_playwright: true
+      playwright_browsers: chromium
+      main_command: >-
+        pnpm exec cross-env WEAPP_VITE_CONSUMER_WEB_DIAGNOSTICS=1
+        node --import tsx e2e/scripts/run-e2e-commands.ts
+        node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv headless web
+      artifact_name: web-consumer-diagnostic-linux-wv
+      artifact_path: .cache/web-consumer-diagnostic/**
+    secrets: inherit
