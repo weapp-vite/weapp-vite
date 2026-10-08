@@ -90,6 +90,44 @@ describe('dev process snapshot identity', () => {
     expect(execute.mock.calls[1]![1].at(-1)).toContain('-Filter \'ProcessId=62\'')
   })
 
+  it('preserves a traced Windows inspection timeout before any owned process is signalled', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', '1')
+    const output = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+    const kill = vi.spyOn(process, 'kill').mockReturnValue(true)
+    const disconnect = vi.fn(() => false)
+    execute.mockResolvedValueOnce({
+      exitCode: undefined,
+      signal: 'SIGTERM',
+      timedOut: true,
+      stdout: '',
+      stderr: `WEAPP_DEV_QUERY_V1|script|begin|0.000|\r\nWEAPP_DEV_QUERY_V1|query|begin|1.250|\r\n${'private-provider-detail\n'.repeat(1_000)}`,
+    })
+    const cleanup = createDevProcessCleanup({ pid: 61, isRootHeld: () => true, disconnectRoot: disconnect, settledExit: Promise.resolve() })
+    try {
+      await expect(cleanup(0)).rejects.toMatchObject({ message: 'Dev process inspection failed: exitCode=none, signal=SIGTERM, timedOut=true.' })
+      expect(execute).toHaveBeenCalledOnce()
+      expect(execute.mock.calls[0]![0]).toBe('powershell.exe')
+      expect(execute.mock.calls[0]![2]).toMatchObject({ timeout: 10_000, reject: false, windowsHide: true })
+      expect(kill).not.toHaveBeenCalled()
+      expect(disconnect).not.toHaveBeenCalled()
+      const diagnostic = output.mock.calls.map(([chunk]) => String(chunk)).find(line => line.startsWith('[e2e-cleanup-query] '))
+      expect(diagnostic).toBeDefined()
+      expect(diagnostic).not.toContain('private-provider-detail')
+      expect(diagnostic!.length).toBeLessThan(512)
+      expect(JSON.parse(diagnostic!.slice('[e2e-cleanup-query] '.length)) as unknown).toEqual({
+        query: 'snapshot',
+        exitCode: null,
+        timedOut: true,
+        stderrTruncated: true,
+        markers: [{ stage: 'script', event: 'begin', elapsedMs: 0 }, { stage: 'query', event: 'begin', elapsedMs: 1.25 }],
+      })
+    }
+    finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('binds Linux parent relations to boot identity and stat start ticks', async () => {
     mockLinuxSnapshot()
     expect(await captureDevProcessTree(61, () => true)).toEqual([

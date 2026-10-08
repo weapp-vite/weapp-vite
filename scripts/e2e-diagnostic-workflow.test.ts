@@ -20,7 +20,7 @@ async function workflow() {
 describe('bounded HMR workflow diagnosis', () => {
   it('requires an explicit manual selection and uses a separate concurrency group', async () => {
     const config = await workflow()
-    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow'] })
+    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-dev-cleanup'] })
     expect(config.concurrency.group).toContain('inputs.hmr-diagnostic || \'full\'')
     const job = config.jobs['shared-layout-windows-diagnostic']!
     expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'shared-layout-windows\'')
@@ -55,6 +55,26 @@ describe('bounded HMR workflow diagnosis', () => {
       artifact_path: '.tmp/windows-process-narrow-report.json',
       timeout_minutes: 15,
     })
+  })
+
+  it('traces the original full Windows Node 22 shard without narrowing its cases or extending the budget', async () => {
+    const { jobs } = await workflow()
+    const job = jobs['windows-dev-cleanup-diagnostic']!
+    expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'windows-dev-cleanup\'')
+    expect(job.needs).toBeUndefined()
+    expect(job.strategy).toBeUndefined()
+    expect(job.with).toMatchObject({
+      runs_on: 'windows-latest',
+      node_version: '22',
+      build_command: 'pnpm build:pkgs:ci:windows',
+      main_command: 'pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=3 --shard-total=4',
+      e2e_platform: 'weapp',
+      artifact_name: expect.stringMatching(/^windows-dev-cleanup-node-22-shard-3-.*github\.sha/),
+      artifact_path: 'docs/reports/*-e2e-ci-full-*-suite-report/**',
+      timeout_minutes: 40,
+    })
+    const reusable = parse(await readFile(new URL('../.github/workflows/reusable-node-command.yml', import.meta.url), 'utf8')) as { jobs: { run: { steps: Array<{ name?: string, if?: string }> } } }
+    expect(reusable.jobs.run.steps.find(step => step.name === 'Upload artifact')?.if).toContain('always()')
   })
 
   it('isolates plugin watch readiness from broader regressions on every OS and Node version', async () => {
@@ -114,7 +134,7 @@ describe('bounded HMR workflow diagnosis', () => {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)
     }
     for (const [name, job] of Object.entries(jobs)) {
-      if (['shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic'].includes(name)) {
+      if (['shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-dev-cleanup-diagnostic'].includes(name)) {
         continue
       }
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>

@@ -1794,7 +1794,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               return
             }
             markSnapshotEntriesFullDirty()
-            // 完整 snapshot 必须重新输出所有资源；是否清空目录仍服从用户配置。
+            // 完整 snapshot 重发全部资源；旧产物由成功 write 后的发布清单裁剪。
             resetEmittedOutputCaches(ctx.runtimeState)
             const hmr = ctx.runtimeState.build.hmr
             hmr.forceFullSharedChunkRefresh = true

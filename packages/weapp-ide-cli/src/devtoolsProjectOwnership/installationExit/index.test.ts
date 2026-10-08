@@ -15,6 +15,7 @@ vi.mock('@weapp-vite/devtools-runtime', async original => ({ ...await original<o
 vi.mock('../host', async original => ({ ...await original<object>(), readManagedProcessIdentity: mocks.identity, assertManagedInstallation: mocks.installation, isManagedPortClosed: mocks.port }))
 vi.mock('./processes', () => ({ inspectExitedWechatInstallation: mocks.inventory }))
 vi.mock('execa', () => ({ execa: mocks.command }))
+vi.mock('../journal/windowsSelfIdentity', () => ({ readWindowsJournalWriterIdentity: () => mocks.identity(process.pid) }))
 
 let directory: string
 let journalPath: string

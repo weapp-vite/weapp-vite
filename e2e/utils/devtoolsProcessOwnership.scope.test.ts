@@ -11,6 +11,9 @@ import { createDevtoolsProjectJournal } from './devtoolsProcessOwnership'
 
 const mocks = vi.hoisted(() => ({ close: vi.fn(), windowClosed: vi.fn() }))
 vi.mock('execa', () => ({ execa: mocks.close }))
+vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/windowsSelfIdentity', () => ({
+  readWindowsJournalWriterIdentity: async () => ({ pid: process.pid, executable: 'test-host', started: 'test-generation' }),
+}))
 vi.mock('@weapp-vite/devtools-runtime', async original => ({
   ...await original<object>(),
   // 此处只验证真实磁盘 journal 的作用域，不获取用户会话的机器租约。

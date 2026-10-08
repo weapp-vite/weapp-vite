@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   waitWindowClosed: vi.fn(),
 }))
 vi.mock('execa', () => ({ execa: mocks.close }))
+vi.mock('./journal/windowsSelfIdentity', () => ({ readWindowsJournalWriterIdentity: () => mocks.identity(process.pid) }))
 vi.mock('@weapp-vite/devtools-runtime', async importOriginal => ({ ...await importOriginal<object>(), withMachineE2ELease: mocks.lease }))
 vi.mock('./windowClose', () => ({ captureManagedWindowClose: mocks.captureWindowClose, waitForManagedWindowClosed: mocks.waitWindowClosed }))
 vi.mock('./host', async (importOriginal) => {
