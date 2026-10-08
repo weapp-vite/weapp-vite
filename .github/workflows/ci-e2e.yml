@@ -20,6 +20,7 @@ on:
           - plugin-watch-readiness
           - workspace-hmr
           - windows-process-narrow
+          - windows-dev-cleanup
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.hmr-diagnostic || 'full' }}
@@ -29,6 +30,21 @@ permissions:
   contents: read
 
 jobs:
+  windows-dev-cleanup-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-dev-cleanup'
+    name: Dev Process Cleanup Shard Diagnostic (Windows / Node 22 / shard 3)
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: windows-latest
+      node_version: '22'
+      timeout_minutes: 40
+      build_command: pnpm build:pkgs:ci:windows
+      main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=3 --shard-total=4
+      e2e_platform: weapp
+      artifact_name: windows-dev-cleanup-node-22-shard-3-${{ github.sha }}
+      artifact_path: docs/reports/*-e2e-ci-full-*-suite-report/**
+    secrets: inherit
+
   windows-process-narrow-diagnostic:
     if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-process-narrow'
     name: Suite Runner Process Diagnostic (Windows / Node ${{ matrix.node-version }})

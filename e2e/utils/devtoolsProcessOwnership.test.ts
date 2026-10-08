@@ -11,6 +11,10 @@ vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership', () => ({
   readManagedWechatProjectRecords: readRecords,
   MANAGED_PROJECT_JOURNAL_ENV: 'WEAPP_IDE_MANAGED_PROJECT_JOURNAL',
 }))
+vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/windowsSelfIdentity', () => ({
+  // 此处验证真实磁盘 journal 的继承边界；Windows 身份查询由专项契约测试覆盖。
+  readWindowsJournalWriterIdentity: async () => ({ pid: process.pid, executable: 'test-host', started: 'test-generation' }),
+}))
 
 const journals: string[] = []
 const roots: string[] = []
