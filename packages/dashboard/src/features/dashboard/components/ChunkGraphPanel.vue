@@ -7,6 +7,7 @@ import type {
 } from 'd3'
 import type { AnalyzeSubpackagesResult, ResolvedTheme } from '../types'
 import type { AnalyzeChunkGraphEdge, AnalyzeChunkGraphNode } from '../utils/analyzeChunkGraph'
+import type { ChunkGraphLinkGeometry } from '../utils/chunkGraphGeometry'
 import {
   drag,
   forceCenter,
@@ -21,6 +22,7 @@ import {
 } from 'd3'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { createAnalyzeChunkGraph, createAnalyzeChunkGraphView } from '../utils/analyzeChunkGraph'
+import { CHUNK_GRAPH_ARROW_SIZE, updateChunkGraphLinkGeometry } from '../utils/chunkGraphGeometry'
 import { formatBytes } from '../utils/format'
 import AppSelect from './AppSelect.vue'
 import ChunkGraphInspector from './chunkGraph/Inspector.vue'
@@ -30,9 +32,10 @@ interface RenderedGraphNode extends SimulationNodeDatum {
   graphNode: AnalyzeChunkGraphNode
   id: string
   radius: number
+  strokeWidth: number
 }
 
-interface RenderedGraphLink extends SimulationLinkDatum<RenderedGraphNode> {
+interface RenderedGraphLink extends SimulationLinkDatum<RenderedGraphNode>, ChunkGraphLinkGeometry {
   graphEdge: AnalyzeChunkGraphEdge
   source: string | RenderedGraphNode
   target: string | RenderedGraphNode
@@ -86,10 +89,6 @@ function resolveLinkNode(
   nodeById: Map<string, RenderedGraphNode>,
 ) {
   return typeof value === 'string' ? nodeById.get(value) : value
-}
-
-function resolveNodeStrokeWidth(node: RenderedGraphNode) {
-  return node.graphNode.kind === 'package' ? 3 : node.graphNode.isEntry ? 2.5 : 1.5
 }
 
 function selectNode(node: RenderedGraphNode) {
@@ -162,10 +161,11 @@ async function renderGraph() {
     defs.append('marker')
       .attr('id', marker.id)
       .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 16)
+      .attr('refX', 10)
       .attr('refY', 0)
-      .attr('markerWidth', 5)
-      .attr('markerHeight', 5)
+      .attr('markerUnits', 'userSpaceOnUse')
+      .attr('markerWidth', CHUNK_GRAPH_ARROW_SIZE)
+      .attr('markerHeight', CHUNK_GRAPH_ARROW_SIZE)
       .attr('orient', 'auto')
       .append('path')
       .attr('d', 'M0,-5L10,0L0,5')
@@ -188,6 +188,7 @@ async function renderGraph() {
       graphNode,
       color: packageColorById.value.get(graphNode.packageId) ?? '#64748b',
       radius,
+      strokeWidth: graphNode.kind === 'package' ? 3 : graphNode.isEntry ? 2.5 : 1.5,
     }
   })
   const nodeById = new Map(nodes.map(node => [node.id, node]))
@@ -195,6 +196,11 @@ async function renderGraph() {
     graphEdge,
     source: graphEdge.source,
     target: graphEdge.target,
+    x1: 0,
+    y1: 0,
+    x2: 0,
+    y2: 0,
+    visible: false,
   }))
 
   const linkSelection = viewport.append('g')
@@ -202,6 +208,7 @@ async function renderGraph() {
     .selectAll('line')
     .data(links)
     .join('line')
+    .attr('visibility', 'hidden')
     .attr('stroke', link => link.graphEdge.kind === 'dynamic-import'
       ? '#f59e0b'
       : link.graphEdge.kind === 'static-import'
@@ -231,9 +238,9 @@ async function renderGraph() {
 
   nodeSelection.append('circle')
     .attr('r', node => node.radius)
-    .attr('fill', node => node.graphNode.kind === 'package' ? node.color : `${node.color}cc`)
+    .attr('fill', node => node.color)
     .attr('stroke', node => node.graphNode.kind === 'package' ? node.color : props.theme === 'dark' ? '#11141a' : '#ffffff')
-    .attr('stroke-width', node => resolveNodeStrokeWidth(node))
+    .attr('stroke-width', node => node.strokeWidth)
 
   nodeSelection.append('title')
     .text(node => `${node.graphNode.label}\n${node.graphNode.packageLabel}\n${formatBytes(node.graphNode.size)}`)
@@ -266,10 +273,19 @@ async function renderGraph() {
         node.y = Math.max(padding, Math.min(height - padding, node.y ?? height / 2))
       }
       linkSelection
-        .attr('x1', link => resolveLinkNode(link.source, nodeById)?.x ?? 0)
-        .attr('y1', link => resolveLinkNode(link.source, nodeById)?.y ?? 0)
-        .attr('x2', link => resolveLinkNode(link.target, nodeById)?.x ?? 0)
-        .attr('y2', link => resolveLinkNode(link.target, nodeById)?.y ?? 0)
+        .each((link) => {
+          const source = resolveLinkNode(link.source, nodeById)
+          const target = resolveLinkNode(link.target, nodeById)
+          link.visible = false
+          if (source && target) {
+            updateChunkGraphLinkGeometry(link, source, target, link.graphEdge.kind !== 'contains')
+          }
+        })
+        .attr('visibility', link => link.visible ? null : 'hidden')
+        .attr('x1', link => link.x1)
+        .attr('y1', link => link.y1)
+        .attr('x2', link => link.x2)
+        .attr('y2', link => link.y2)
       nodeSelection.attr('transform', node => `translate(${node.x ?? 0},${node.y ?? 0})`)
     })
 }
