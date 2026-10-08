@@ -1,7 +1,10 @@
+import type { ESLint } from 'eslint'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+// eslint-disable-next-line e18e/ban-dependencies -- 使用跨平台子进程及 stdin 隔离 ESLint 与 tsx 的加载边界。
+import { execa } from 'execa'
 import { assertDomInventoryUntracked, DOM_INVENTORY_FILES } from '../../../scripts/dom-inventory-policy.mjs'
 import { chunkExtraCases, chunkMatrixCases, runtimeBaseRoutes, selectIdeRuntimeChunkExtraCases, selectIdeRuntimeChunkMatrixCases } from '../../chunk-modes.matrix'
 import { getIdeExhaustiveTasks, getIdeHeadlessTasks } from '../e2e-suite-manifest'
@@ -128,12 +131,21 @@ export function renderDomAcceptanceInventory(inventory: ReturnType<typeof create
 }
 
 export async function formatDomAcceptanceInventory(markdown: string, root = ACCEPTANCE_ROOT) {
-  const { ESLint } = await import('eslint')
-  const eslint = new ESLint({ cwd: root, fix: true })
+  // ESLint 使用原生 Node 加载配置，避免父进程 tsx 将其 ESM 依赖转为 CJS。
+  const cli = fileURLToPath(new URL('./bin/eslint.js', import.meta.resolve('eslint/package.json')))
   // 使用非忽略的虚拟文件名应用 Markdown 规则；生成报告本身不参与 Git 或 lint 扫描。
-  const [result] = await eslint.lintText(markdown, { filePath: path.join(root, 'e2e/dom-acceptance-report.md') })
-  if (!result || result.errorCount) {
-    throw new Error(`DOM inventory Markdown formatting failed: ${result?.messages.map(message => message.message).join('; ') ?? 'missing ESLint result'}`)
+  const { stdout, stderr, exitCode } = await execa(process.execPath, [
+    cli,
+    '--stdin',
+    '--stdin-filename',
+    path.join(root, 'e2e/dom-acceptance-report.md'),
+    '--fix-dry-run',
+    '--format',
+    'json',
+  ], { cwd: root, input: markdown, reject: false, env: { NODE_OPTIONS: undefined } })
+  const [result] = (stdout ? JSON.parse(stdout) : []) as ESLint.LintResult[]
+  if (exitCode !== 0 || !result || result.errorCount) {
+    throw new Error(`DOM inventory Markdown formatting failed: ${stderr || result?.messages.map(message => message.message).join('; ') || 'missing ESLint result'}`)
   }
   return result.output ?? markdown
 }

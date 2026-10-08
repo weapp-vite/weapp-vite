@@ -6,6 +6,7 @@ import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 独立安装与构建需要跨平台子进程生命周期。
 import { execa } from 'execa'
+import { readHostDependencyOverrides } from './hostDependencies.mjs'
 
 async function main() {
   const here = path.dirname(fileURLToPath(import.meta.url))
@@ -17,8 +18,7 @@ async function main() {
   const installed = JSON.parse(await readFile(path.join(prepared, 'artifacts.json'), 'utf8'))
   const overrides = Object.fromEntries(installed.artifacts.map(item => [item.name, pathToFileURL(path.resolve(prepared, item.file)).href]))
   const hostManifest = JSON.parse(await readFile(path.join(checkout, 'packages/vite-plugin-taro/package.json'), 'utf8'))
-  // 由宿主锁定 Vite 与其直接依赖所用的同一 Rolldown，公共包不引入引擎。
-  overrides.rolldown = hostManifest.dependencies.rolldown
+  Object.assign(overrides, await readHostDependencyOverrides(hostManifest))
   for (const [repository, directory] of [
     [workspace, 'packages/hmr'],
     [workspace, 'packages/tailwindcss'],
@@ -67,6 +67,9 @@ assert.throws(() => require.resolve('weapp-vite'), { code: 'MODULE_NOT_FOUND' })
 const hostRequire = createRequire(require.resolve('vite-plugin-taro'))
 const rolldown = JSON.parse(await readFile(hostRequire.resolve('rolldown/package.json'), 'utf8'))
 assert.equal(rolldown.version, '1.2.9')
+const viteRequire = createRequire(require.resolve('vite'))
+const tailwindRequire = createRequire(hostRequire.resolve('@weapp-vite/tailwindcss/package.json'))
+assert.equal(viteRequire.resolve('postcss/package.json'), tailwindRequire.resolve('postcss/package.json'))
 await build({ root: process.cwd(), configFile: false, plugins: [vpt({ target: 'wx', app: 'src/app.tsx', pages: [{ path: 'pages/index/index' }], appJson: {}, projectConfigJson: { appid: ${JSON.stringify(projectConfig.appid)} } })], build: { minify: false } })
 assert.match(await readFile('dist/assets/global.wxss', 'utf8'), /py-5_d5/)
 console.info('ISOLATED_INSTALL_AND_NATIVE_BUILD_PASSED')
