@@ -6,6 +6,8 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MANAGED_PROJECT_JOURNAL_ENV } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { createManagedWechatProjectJournal } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
 import { createIsolatedMachineLease } from '../../utils/testSupport/machineLease'
 import { runTaskSuite as runTaskSuiteWithOptions } from '../suiteRunner'
 import { createStdioLeakFixture } from './stdioLeakFixture'
@@ -16,6 +18,9 @@ beforeEach(async () => {
   for (const [key, value] of Object.entries(machine.environment)) {
     vi.stubEnv(key, value)
   }
+  // 真实嵌套 journal 的冷身份核验属于 fixture 准备，不占后续进程/管道行为的 1 秒预算。
+  const journal = await createManagedWechatProjectJournal(path.dirname(machine.journalPath), machine.journalPath)
+  vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, journal)
 })
 afterEach(async () => {
   try {

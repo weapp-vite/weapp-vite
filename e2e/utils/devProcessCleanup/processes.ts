@@ -1,35 +1,16 @@
 import type { ManagedWechatHostIdentity } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/types'
+import type { ProcessEntry } from './windowsProcessTree'
 import fs from 'node:fs/promises'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 受管进程发现和 Windows 精确终止复用跨平台子进程封装。
 import { execa } from 'execa'
 import { readManagedProcessIdentity, sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
+import { collectWindowsProcessTree, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
+
+export { type DevProcessCandidate, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
 
 export type DevProcessIdentity = ManagedWechatHostIdentity
-
-interface ProcessEntry {
-  pid: number
-  ppid: number
-  identity?: DevProcessIdentity
-  started?: string
-}
-
-export interface DevProcessCandidate {
-  pid: number
-  started?: string
-  executable?: string
-}
-
-/** 根在发现期间退出时，候选后代只保留为待核验记录，不获得终止权限。 */
-export class UnconfirmedDevProcessTreeError extends Error {
-  readonly pids: readonly number[]
-
-  constructor(readonly candidates: readonly DevProcessCandidate[], options?: ErrorOptions) {
-    super('Dev process identity could not be verified; descendant ownership remains unconfirmed.', options)
-    this.pids = candidates.map(candidate => candidate.pid)
-  }
-}
 
 function inspectionError() {
   return new Error('Dev process identity could not be verified; no unverified process was signalled.')
@@ -61,7 +42,7 @@ async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
       && 'Started' in entry && typeof entry.Started === 'string' && entry.Started
       ? { pid: entry.ProcessId, executable: entry.ExecutablePath, started: entry.Started }
       : undefined
-    return { pid: entry.ProcessId, ppid: entry.ParentProcessId, identity }
+    return { pid: entry.ProcessId, ppid: entry.ParentProcessId, identity, started: 'Started' in entry && typeof entry.Started === 'string' ? entry.Started : undefined }
   })
 }
 
@@ -134,7 +115,7 @@ function collectProcessTree(rootPid: number, entries: ProcessEntry[]) {
 export async function captureDevProcessTree(rootPid: number, isRootHeld: () => boolean): Promise<DevProcessIdentity[]> {
   const windows = process.platform === 'win32'
   const entries = windows ? await readWindowsProcesses() : process.platform === 'linux' ? await readLinuxProcesses() : await readMacProcesses()
-  const tree = collectProcessTree(rootPid, entries)
+  const tree = windows ? await collectWindowsProcessTree(rootPid, entries, readWindowsProcesses) : collectProcessTree(rootPid, entries)
   const descendants = tree.filter(entry => entry.pid !== rootPid).map(entry => ({
     pid: entry.pid,
     started: entry.identity?.started ?? entry.started,

@@ -74,6 +74,22 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('dev process snapshot identity', () => {
+  it('uses the same Windows provider to recheck only a reachable candidate with missing identity', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: 'fixture-node.exe' }
+    const child = { ProcessId: 62, ParentProcessId: 61, Started: '2026-10-08T00:00:00.0000300Z', ExecutablePath: 'fixture-node.exe' }
+    const unrelated = { ProcessId: 71, ParentProcessId: 1, Started: null, ExecutablePath: null }
+    execute.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify([root, { ...child, ExecutablePath: null }, unrelated]) })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify([child]) })
+    expect(await captureDevProcessTree(61, () => true)).toEqual([
+      { pid: 62, executable: 'fixture-node.exe', started: child.Started },
+      { pid: 61, executable: 'fixture-node.exe', started: root.Started },
+    ])
+    expect(execute).toHaveBeenCalledTimes(2)
+    expect(execute.mock.calls.every(([command]) => command === 'powershell.exe')).toBe(true)
+    expect(execute.mock.calls[1]![1].at(-1)).toContain('-Filter \'ProcessId=62\'')
+  })
+
   it('binds Linux parent relations to boot identity and stat start ticks', async () => {
     mockLinuxSnapshot()
     expect(await captureDevProcessTree(61, () => true)).toEqual([

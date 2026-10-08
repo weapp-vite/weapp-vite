@@ -33,11 +33,14 @@ interface FixtureProcess {
 export function createProcessTreeFixture(execaMock: Mock) {
   const owned = createChild()
   const executable = path.resolve('fixture-node')
+  const started = (second: number) => process.platform === 'win32'
+    ? `2026-10-05T12:30:0${second}.0000000Z`
+    : `Mon Oct 5 12:30:0${second} 2026`
   const processes = new Map<number, FixtureProcess>([
-    [61, { pid: 61, ppid: 41, executable, started: 'Mon Oct 5 12:30:01 2026' }],
-    [62, { pid: 62, ppid: 61, executable, started: 'Mon Oct 5 12:30:02 2026' }],
-    [71, { pid: 71, ppid: 21, executable, started: 'Mon Oct 5 12:30:03 2026' }],
-    [72, { pid: 72, ppid: 71, executable, started: 'Mon Oct 5 12:30:04 2026' }],
+    [61, { pid: 61, ppid: 41, executable, started: started(1) }],
+    [62, { pid: 62, ppid: 61, executable, started: started(2) }],
+    [71, { pid: 71, ppid: 21, executable, started: started(3) }],
+    [72, { pid: 72, ppid: 71, executable, started: started(4) }],
   ])
   const state = {
     processes,
