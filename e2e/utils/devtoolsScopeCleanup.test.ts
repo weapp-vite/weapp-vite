@@ -6,6 +6,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createManagedWechatProjectJournal } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
+import { createContractCleanupKey } from '../../scripts/dependencyContracts/rolldown/helpers.mjs'
 import { cleanupDevtoolsCommandScope } from './devtoolsScopeCleanup'
 
 const mocks = vi.hoisted(() => ({ cleanup: vi.fn(), records: vi.fn() }))
@@ -108,4 +109,17 @@ it('preserves a failed child cleanup without trying the parent journal', async (
   expect(mocks.cleanup).toHaveBeenCalledOnce()
   expect(recovered).not.toHaveBeenCalled()
   expect(complete).not.toHaveBeenCalled()
+})
+
+it('preserves unfinished native contract scopes instead of treating them as empty IDE journals', async () => {
+  const report = path.join(directory, 'contracts.json')
+  const fixture = path.join(directory, 'native-fixture')
+  const cleanupKey = createContractCleanupKey(report, fixture, process.pid)
+  const { scope, seal, complete, recovered } = scopeFor(cleanupKey)
+  await expect(cleanupDevtoolsCommandScope(scope, parent)).rejects.toThrow('outside its explicitly owned journal subtree')
+  expect(mocks.cleanup).not.toHaveBeenCalled()
+  expect(mocks.records).not.toHaveBeenCalled()
+  expect(seal).not.toHaveBeenCalled()
+  expect(complete).not.toHaveBeenCalled()
+  expect(recovered).not.toHaveBeenCalled()
 })

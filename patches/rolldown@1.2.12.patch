@@ -1,0 +1,168 @@
+diff --git a/dist/shared/bindingify-input-options-DCTviPFW.mjs b/dist/shared/bindingify-input-options-DCTviPFW.mjs
+index c0646e8ba7ce3b0daeeac6270c274ad2fd1684cf..8f3bd7568b4297b127e408d55d9bc198beec2cb5 100644
+--- a/dist/shared/bindingify-input-options-DCTviPFW.mjs
++++ b/dist/shared/bindingify-input-options-DCTviPFW.mjs
+@@ -770,6 +770,135 @@ function collectChangedBundle(changed, bundle) {
+ 	};
+ }
+ //#endregion
++/** 复制 native getter 返回的数据，保留 RegExp、undefined 与独立对象身份。 */
++function cloneOptionData(value) {
++  if (Array.isArray(value)) {
++    return value.map((item) => cloneOptionData(item));
++  }
++  if (value instanceof RegExp) {
++    const copy = new RegExp(value.source, value.flags);
++    copy.lastIndex = value.lastIndex;
++    return copy;
++  }
++  if (value !== null && typeof value === 'object') {
++    const prototype = Object.getPrototypeOf(value);
++    if (prototype !== Object.prototype && prototype !== null) {
++      throw new TypeError('Normalized options contain an unsupported data prototype');
++    }
++    const copy = Object.create(prototype);
++    for (const [key, item] of Object.entries(value)) {
++      Object.defineProperty(copy, key, {
++        value: cloneOptionData(item),
++        configurable: true,
++        enumerable: true,
++        writable: true,
++      });
++    }
++    return copy;
++  }
++  if (typeof value === 'function') {
++    throw new TypeError('Normalized options snapshot must not retain callbacks');
++  }
++  return value;
++}
++
++/** 只持纯 JS 数据；getter 不捕获原生包装，也不改变外层 lazyProp 的缓存。 */
++class NormalizedOptionsSnapshot {
++  #values;
++
++  constructor(values) {
++    this.#values = values;
++  }
++
++  get input() { return cloneOptionData(this.#values.input); }
++  get cwd() { return this.#values.cwd; }
++  get platform() { return this.#values.platform; }
++  get shimMissingExports() { return this.#values.shimMissingExports; }
++  get name() { return this.#values.name; }
++  get entryFilenames() { return this.#values.entryFilenames; }
++  get chunkFilenames() { return this.#values.chunkFilenames; }
++  get sourcemapFilenames() { return this.#values.sourcemapFilenames; }
++  get assetFilenames() { return this.#values.assetFilenames; }
++  get dir() { return this.#values.dir; }
++  get file() { return this.#values.file; }
++  get format() { return this.#values.format; }
++  get exports() { return this.#values.exports; }
++  get esModule() { return this.#values.esModule; }
++  get codeSplitting() { return this.#values.codeSplitting; }
++  get dynamicImportInCjs() { return this.#values.dynamicImportInCjs; }
++  get sourcemap() { return this.#values.sourcemap; }
++  get sourcemapBaseUrl() { return this.#values.sourcemapBaseUrl; }
++  get banner() { return this.#values.banner; }
++  get footer() { return this.#values.footer; }
++  get intro() { return this.#values.intro; }
++  get outro() { return this.#values.outro; }
++  get postBanner() { return this.#values.postBanner; }
++  get postFooter() { return this.#values.postFooter; }
++  get externalLiveBindings() { return this.#values.externalLiveBindings; }
++  get extend() { return this.#values.extend; }
++  get globals() { return cloneOptionData(this.#values.globals); }
++  get hashCharacters() { return this.#values.hashCharacters; }
++  get sourcemapDebugIds() { return this.#values.sourcemapDebugIds; }
++  get sourcemapExcludeSources() { return this.#values.sourcemapExcludeSources; }
++  get polyfillRequire() { return this.#values.polyfillRequire; }
++  get minify() { return cloneOptionData(this.#values.minify); }
++  get legalComments() { return this.#values.legalComments; }
++  get comments() { return cloneOptionData(this.#values.comments); }
++  get preserveModules() { return this.#values.preserveModules; }
++  get preserveModulesRoot() { return this.#values.preserveModulesRoot; }
++  get virtualDirname() { return this.#values.virtualDirname; }
++  get topLevelVar() { return this.#values.topLevelVar; }
++  get minifyInternalExports() { return this.#values.minifyInternalExports; }
++  get context() { return this.#values.context; }
++}
++
++/** 每个 PluginContextData 仅在首次 options hook 中读取一次完整原生数据。 */
++function createNormalizedOptionsSnapshot(binding) {
++  const values = {
++    input: binding.input,
++    cwd: binding.cwd,
++    platform: binding.platform,
++    shimMissingExports: binding.shimMissingExports,
++    name: binding.name,
++    entryFilenames: binding.entryFilenames,
++    chunkFilenames: binding.chunkFilenames,
++    sourcemapFilenames: binding.sourcemapFilenames,
++    assetFilenames: binding.assetFilenames,
++    dir: binding.dir,
++    file: binding.file,
++    format: binding.format,
++    exports: binding.exports,
++    esModule: binding.esModule,
++    codeSplitting: binding.codeSplitting,
++    dynamicImportInCjs: binding.dynamicImportInCjs,
++    sourcemap: binding.sourcemap,
++    sourcemapBaseUrl: binding.sourcemapBaseUrl,
++    banner: binding.banner,
++    footer: binding.footer,
++    intro: binding.intro,
++    outro: binding.outro,
++    postBanner: binding.postBanner,
++    postFooter: binding.postFooter,
++    externalLiveBindings: binding.externalLiveBindings,
++    extend: binding.extend,
++    globals: binding.globals,
++    hashCharacters: binding.hashCharacters,
++    sourcemapDebugIds: binding.sourcemapDebugIds,
++    sourcemapExcludeSources: binding.sourcemapExcludeSources,
++    polyfillRequire: binding.polyfillRequire,
++    minify: binding.minify,
++    legalComments: binding.legalComments,
++    comments: binding.comments,
++    preserveModules: binding.preserveModules,
++    preserveModulesRoot: binding.preserveModulesRoot,
++    virtualDirname: binding.virtualDirname,
++    topLevelVar: binding.topLevelVar,
++    minifyInternalExports: binding.minifyInternalExports,
++    context: binding.context,
++  };
++  return new NormalizedOptionsSnapshot(values);
++}
++
+ //#region src/options/normalized-input-options.ts
+ var NormalizedInputOptionsImpl = class extends PlainObjectLike {
+ 	onLog;
+@@ -1034,6 +1163,7 @@ var PluginContextData = class {
+ 	renderedChunkMeta = null;
+ 	normalizedInputOptions = null;
+ 	normalizedOutputOptions = null;
++	normalizedOptionsSnapshot = null;
+ 	constructor(onLog, outputOptions, normalizedInputPlugins, normalizedOutputPlugins) {
+ 		this.onLog = onLog;
+ 		this.outputOptions = outputOptions;
+@@ -1110,13 +1240,17 @@ var PluginContextData = class {
+ 		return this.renderedChunkMeta;
+ 	}
+ 	getInputOptions(opts) {
+-		this.normalizedInputOptions ??= new NormalizedInputOptionsImpl(opts, this.onLog, this.normalizedInputPlugins);
++		this.normalizedInputOptions ??= new NormalizedInputOptionsImpl(this.getNormalizedOptionsSnapshot(opts), this.onLog, this.normalizedInputPlugins);
+ 		return this.normalizedInputOptions;
+ 	}
+ 	getOutputOptions(opts) {
+-		this.normalizedOutputOptions ??= new NormalizedOutputOptionsImpl(opts, this.outputOptions, this.normalizedOutputPlugins);
++		this.normalizedOutputOptions ??= new NormalizedOutputOptionsImpl(this.getNormalizedOptionsSnapshot(opts), this.outputOptions, this.normalizedOutputPlugins);
+ 		return this.normalizedOutputOptions;
+ 	}
++	getNormalizedOptionsSnapshot(opts) {
++		this.normalizedOptionsSnapshot ??= createNormalizedOptionsSnapshot(opts);
++		return this.normalizedOptionsSnapshot;
++	}
+ 	clear() {
+ 		this.renderedChunkMeta = null;
+ 		this.loadModulePromiseMap.clear();

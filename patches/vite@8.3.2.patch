@@ -1,0 +1,155 @@
+diff --git a/dist/node/chunks/node.js b/dist/node/chunks/node.js
+index 35c5c82b149c8b2cff024cf03b8667672871d97e..9ffa6c11e1c40c28e531482e5704c28072dfd914 100644
+--- a/dist/node/chunks/node.js
++++ b/dist/node/chunks/node.js
+@@ -28935,6 +28935,23 @@ const perEnvironmentOrWorkerPlugin = (name, overrideEnvConfig, f) => {
+ 		}
+ 	}];
+ };
++function createSubpathImportsResolver(options, resolveOptions) {
++	// 在独立作用域创建原生回调，避免共享环境工厂中 getEnv 与 partialEnv 的闭包。
++	return (id, importer, isRequire) => resolveSubpathImports(id, importer, {
++		...options,
++		isRequire: resolveOptions.isRequire ?? isRequire
++	});
++}
++function createResolverWarningHandler(logger) {
++	return async (msg) => {
++		logger.warn(`warning: ${msg}`, { clear: true, timestamp: true });
++	};
++}
++function createResolverDebugHandler(debug) {
++	return async (message) => {
++		debug(message);
++	};
++}
+ function oxcResolvePlugin(resolveOptions, overrideEnvConfig, isJsPluginContainer = false) {
+ 	return [...resolveOptions.optimizeDeps && !resolveOptions.isBuild ? [optimizerResolvePlugin(resolveOptions)] : [], ...perEnvironmentOrWorkerPlugin("vite:resolve-builtin", overrideEnvConfig, (partialEnv, getEnv) => {
+ 		const depsOptimizerEnabled = resolveOptions.optimizeDeps && !resolveOptions.isBuild && !partialEnv.config.isBundled && !isDepOptimizationDisabled(partialEnv.config.optimizeDeps);
+@@ -28998,21 +29015,9 @@ function oxcResolvePlugin(resolveOptions, overrideEnvConfig, isJsPluginContainer
+ 				const newResolvedId = ensureVersionQuery(resolvedId, rawId, options, depsOptimizer);
+ 				return newResolvedId === resolvedId ? void 0 : newResolvedId;
+ 			},
+-			resolveSubpathImports(id, importer, isRequire) {
+-				return resolveSubpathImports(id, importer, {
+-					...options,
+-					isRequire: resolveOptions.isRequire ?? isRequire
+-				});
+-			},
+-			...partialEnv.config.command === "serve" || isJsPluginContainer ? { async onWarn(msg) {
+-				partialEnv.config.logger.warn(`warning: ${msg}`, {
+-					clear: true,
+-					timestamp: true
+-				});
+-			} } : {},
+-			...debug$3 ? { async onDebug(message) {
+-				debug$3(message);
+-			} } : {}
++			resolveSubpathImports: createSubpathImportsResolver(options, resolveOptions),
++			...partialEnv.config.command === "serve" || isJsPluginContainer ? { onWarn: createResolverWarningHandler(partialEnv.config.logger) } : {},
++			...debug$3 ? { onDebug: createResolverDebugHandler(debug$3) } : {}
+ 		});
+ 		plugin.perEnvironmentWatchChangeDuringDev = true;
+ 		return plugin;
+@@ -34680,31 +34685,78 @@ function injectEnvironmentToHooks(environment, chunkMetadataMap, plugin) {
+ 	return clone;
+ }
+ const wrappedHookMap = /* @__PURE__ */ new WeakMap();
+-function wrapHookObject(hook, handler) {
+-	const newHook = {
+-		...hook,
+-		handler
+-	};
+-	if (!wrappedHookMap.has(hook)) {
+-		wrappedHookMap.set(hook, []);
+-		Object.defineProperty(hook, "filter", {
+-			get() {
+-				return wrappedHookMap.get(hook)[0].filter;
+-			},
+-			set(v) {
+-				for (const h of wrappedHookMap.get(hook)) h.filter = v;
++// 元数据与包装器分离；长期插件对象不能强持有历次构建环境。
++function retainFirstHookAccessor(record) {
++	// 用户显式安装的访问器可以读取 this.handler；只在该访问器存续期间保留接收者。
++	record.retainedFirst = ["filter", "order"].some((key) => {
++		const descriptor = Object.getOwnPropertyDescriptor(record.values, key);
++		return descriptor !== undefined && !("value" in descriptor);
++	}) ? record.first.deref() : undefined;
++}
++function trackFirstHookMetadata(record) {
++	return {
++		defineProperty(target, key, descriptor) {
++			const updated = Reflect.defineProperty(target, key, descriptor);
++			if (updated && (key === "filter" || key === "order")) {
++				Reflect.defineProperty(record.values, key, descriptor);
++				retainFirstHookAccessor(record);
+ 			}
+-		});
+-		Object.defineProperty(hook, "order", {
+-			get() {
+-				return wrappedHookMap.get(hook)[0].order;
+-			},
+-			set(v) {
+-				for (const h of wrappedHookMap.get(hook)) h.order = v;
++			return updated;
++		},
++		deleteProperty(target, key) {
++			const removed = Reflect.deleteProperty(target, key);
++			if (removed && (key === "filter" || key === "order")) {
++				Reflect.deleteProperty(record.values, key);
++				retainFirstHookAccessor(record);
+ 			}
+-		});
+-	}
+-	wrappedHookMap.get(hook).push(newHook);
++			return removed;
++		},
++		preventExtensions(target) {
++			const prevented = Reflect.preventExtensions(target);
++			if (prevented) Reflect.preventExtensions(record.values);
++			return prevented;
++		}
++	};
++}
++function originalHookProperty(record, key) {
++	return {
++		get() {
++			const first = record.first.deref();
++			return first === undefined ? record.values[key] : first[key];
++		},
++		set(value) {
++			// 活包装器只在成功写入后更新缓存；回收后仍保留只读和不可扩展约束。
++			if (record.first.deref() === undefined) record.values[key] = value;
++			for (const reference of record.references) {
++				const wrapped = reference.deref();
++				if (wrapped === undefined) {
++					record.references.delete(reference);
++					continue;
++				}
++				wrapped[key] = value;
++			}
++		}
++	};
++}
++function wrapHookObject(hook, handler) {
++	let newHook = { ...hook, handler };
++	let record = wrappedHookMap.get(hook);
++	if (record === undefined) {
++		const values = {};
++		for (const key of ["filter", "order"]) {
++			const descriptor = Object.getOwnPropertyDescriptor(newHook, key);
++			if (descriptor !== undefined) Object.defineProperty(values, key, descriptor);
++		}
++		record = { values, first: undefined, retainedFirst: undefined, references: new Set() };
++		newHook = new Proxy(newHook, trackFirstHookMetadata(record));
++		record.first = new WeakRef(newHook);
++		wrappedHookMap.set(hook, record);
++		Object.defineProperty(hook, "filter", originalHookProperty(record, "filter"));
++		Object.defineProperty(hook, "order", originalHookProperty(record, "order"));
++	}
++	// 广播期间可能同步构建另一环境，原位追加才能让新包装器参与当前及后续广播。
++	for (const reference of record.references) if (reference.deref() === undefined) record.references.delete(reference);
++	record.references.add(new WeakRef(newHook));
+ 	return newHook;
+ }
+ function wrapEnvironmentResolveId(environment, hook, pluginName) {

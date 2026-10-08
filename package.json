@@ -194,6 +194,7 @@
     "up:pkg": "node --import tsx scripts/upgrade-workspace-deps.ts",
     "git:index-lock:doctor": "node scripts/git-index-lock-doctor.mjs doctor",
     "git:index-lock:clean": "node scripts/git-index-lock-doctor.mjs clean",
+    "test:dependency-contracts": "node --import tsx e2e/scripts/run-e2e-commands.ts node --expose-gc scripts/dependencyContracts/vite/run.mjs --next node --expose-gc --import tsx scripts/dependencyContracts/rolldown/run.mjs --report .tmp/dependency-contracts/rolldown.json",
     "test:packages": "turbo run test",
     "test:release": "vitest run --config scripts/vitest.config.mjs scripts/repoctl-release-publish.test.ts scripts/repoctl-release-lifecycle.test.ts scripts/repoctl-release-preparation.test.ts scripts/repoctl-release-workflow.test.ts scripts/check-publishable-workspace-changeset.test.ts",
     "repo:init": "repo init",

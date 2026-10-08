@@ -3,6 +3,8 @@
 仓库固定使用 `repoctl@5.7.1`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责，
 不再保留 `@icebreakers/monorepo` 的临时补丁。其他依赖补丁保持独立维护。
 
+Vite 与 Rolldown 的构建引用生命周期补丁见[编译依赖内存说明](./compiler-memory.md)。
+
 此前 [Release 35973791530](https://github.com/weapp-vite/weapp-vite/actions/runs/35973791530)
 在部分上传成功后遇到 OIDC 503。pnpm 12.5.1 没有保存失败批次的部分 summary，
 旧重试逻辑又将暂不可查询的版本加入上传队列，触发 npm staged 409。

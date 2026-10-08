@@ -152,4 +152,6 @@ allowBuilds:
 
 shamefullyHoist: true
 patchedDependencies:
+  rolldown@1.2.12: patches/rolldown@1.2.12.patch
   uview-plus@3.8.128: patches/uview-plus@3.8.128.patch
+  vite@8.3.2: patches/vite@8.3.2.patch
