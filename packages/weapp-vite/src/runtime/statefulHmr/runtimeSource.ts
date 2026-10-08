@@ -469,8 +469,14 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
   let lastResponse;
   let timer;
   const sessionId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+  const cancelScheduledRequest = () => {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      timer = undefined;
+    }
+  };
   const schedule = (delay) => {
-    if (timer) clearTimeout(timer);
+    cancelScheduledRequest();
     const expectedPhase = phase;
     const expectedVersion = version;
     timer = setTimeout(() => {
@@ -550,10 +556,7 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       phase = 'stopped';
       requestGeneration++;
       pendingBatch = undefined;
-      if (timer) {
-        clearTimeout(timer);
-        timer = undefined;
-      }
+      cancelScheduledRequest();
       activeRequest?.abort?.();
       activeRequest = undefined;
     },
@@ -569,6 +572,8 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       }
       pendingBatch = undefined;
       if (phase !== 'polling' || meta.buildId !== control.buildId || meta.fromVersion !== version) return send('poll');
+      // 已接受的批次接管交付；后续 poll 或 rebuild 自己负责失败恢复。
+      cancelScheduledRequest();
       phase = 'applying';
       const bridge = globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)}];
       if (!bridge?.ready) {
