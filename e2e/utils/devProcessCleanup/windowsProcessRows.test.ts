@@ -38,7 +38,7 @@ it('serializes the same selected fields without a generic JSON serializer', () =
   const script = serializeWindowsProcessRows()
   expect(script).not.toContain('ConvertTo-Json')
   expect(script).not.toContain('Get-CimInstance')
-  expect(script).toContain('[Text.Encoding]::Unicode.GetBytes')
+  expect(script).toContain('[Buffer]::BlockCopy')
   for (const field of ['ProcessId', 'ParentProcessId', 'ExecutablePath', 'Started']) {
     expect(script).toContain(`$weappRow.${field}`)
   }

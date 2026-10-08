@@ -5,7 +5,10 @@ import { copyFile, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+// eslint-disable-next-line e18e/ban-dependencies -- 真实 Windows 编码合同使用同一有界子进程封装。
+import { execa } from 'execa'
 import { captureDevProcessTree, readDevProcessIdentities } from '../../e2e/utils/devProcessCleanup/processes'
+import { parseWindowsProcessRows, serializeWindowsProcessRows } from '../../e2e/utils/devProcessCleanup/windowsProcessRows'
 import { runWithCleanup } from '../../e2e/utils/runWithCleanup'
 import { readManagedProcessIdentity, sameManagedProcess } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
 
@@ -82,6 +85,10 @@ await runWithCleanup(async () => {
   assert.ok([...exited.values()].every(value => value === undefined))
   assert.equal(unrelated.child.exitCode, null)
   assert.equal(unrelated.child.signalCode, null)
+  // 纯编码合同不授予进程权限；覆盖 .NET 默认编码器可能替换的孤立 UTF-16 单元。
+  const codeUnits = '工具"\t\n😀\uD800'
+  const raw = await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference='Stop'; $weappQueryRows=@([pscustomobject]@{ProcessId=61;ParentProcessId=1;ExecutablePath=([string]::new([char[]]@(0x5de5,0x5177,0x22,0x9,0xa,0xd83d,0xde00,0xd800)));Started='2026-10-08T00:00:00.1234560Z'}); ${serializeWindowsProcessRows()}`], { timeout: 10_000, stdin: 'ignore', windowsHide: true })
+  assert.deepEqual(parseWindowsProcessRows(raw.stdout), [{ ProcessId: 61, ParentProcessId: 1, ExecutablePath: codeUnits, Started: '2026-10-08T00:00:00.1234560Z' }])
   console.info(JSON.stringify({ status: 'passed', queryBudgetMs: 10_000, firstSnapshotMs, exactLegacyIdentity: true, processCount: identities.length, unrelatedPreserved: true, exitedMissing: true }))
 }, async () => {
   // 只给本脚本直接创建的 IPC 句柄请求正常退出；失败时保留 fixture 和原错。

@@ -4,7 +4,7 @@ const header = 'WEAPP_DEV_PROCESS_ROWS_V1'
 
 /** 固定字段保留 CIM 原值；UTF-16LE 编码路径，避免分隔符与 Unicode 改变身份。 */
 export function serializeWindowsProcessRows() {
-  const fields = '$weappPath=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes([string]$weappRow.ExecutablePath)); [Console]::Out.WriteLine(([string]$weappRow.ProcessId)+"`t"+([string]$weappRow.ParentProcessId)+"`t"+$weappPath+"`t"+([string]$weappRow.Started))'
+  const fields = '$weappChars=([string]$weappRow.ExecutablePath).ToCharArray(); $weappBytes=[byte[]]::new($weappChars.Length*2); [Buffer]::BlockCopy($weappChars,0,$weappBytes,0,$weappBytes.Length); $weappPath=[Convert]::ToBase64String($weappBytes); [Console]::Out.WriteLine(([string]$weappRow.ProcessId)+"`t"+([string]$weappRow.ParentProcessId)+"`t"+$weappPath+"`t"+([string]$weappRow.Started))'
   return [
     `[Console]::Out.WriteLine('${header}')`,
     `foreach ($weappRow in $weappQueryRows) { ${fields} }`,
