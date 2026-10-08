@@ -17,7 +17,10 @@ export default {
         beforeVersion: ['catalog:sync:create-weapp-vite'],
         afterVersion: ['check:weapp-core-constants-release-version'],
         beforePublish: ['check:weapp-core-constants-release-version'],
-        afterPublish: [{ script: 'release:vscode-marketplace' }],
+        afterPublish: [
+          { script: 'release:vscode-marketplace' },
+          { script: 'release:sync-npmmirror', continueOnError: true, idempotent: true },
+        ],
       },
     },
     upgrade: {

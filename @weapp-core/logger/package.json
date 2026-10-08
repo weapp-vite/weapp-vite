@@ -57,7 +57,7 @@
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "sync": "cnpm sync @weapp-core/logger"
+    "sync": "repo release sync-npmmirror --package @weapp-core/logger"
   },
   "tsd": {
     "compilerOptions": {

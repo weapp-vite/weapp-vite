@@ -237,7 +237,9 @@
     "commitlint": "commitlint --edit",
     "check:npm-package-metadata": "node scripts/check-npm-package-metadata.mjs",
     "check:tailwind-catalog": "node scripts/check-tailwind-catalog.mjs",
-    "e2e:dimina": "node --import tsx ./e2e/scripts/run-e2e-suite.ts dimina"
+    "e2e:dimina": "node --import tsx ./e2e/scripts/run-e2e-suite.ts dimina",
+    "sync:npmmirror": "repo release sync-npmmirror --all",
+    "release:sync-npmmirror": "repo release sync-npmmirror --published"
   },
   "devDependencies": {
     "@babel/core": "catalog:",
@@ -322,7 +324,7 @@
     "postcss-load-config": "^6.0.1",
     "postcss-selector-parser": "catalog:",
     "prettier": "^3.9.9",
-    "repoctl": "5.7.1",
+    "repoctl": "5.9.0",
     "rolldown": "catalog:",
     "rollup": "^4.64.0",
     "rollup-plugin-dts": "^6.5.1",
