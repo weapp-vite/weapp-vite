@@ -1431,6 +1431,7 @@ function rewriteStableWevuRuntimeAccess(
   wevuChunkFileName: string,
   aliases: Map<string, string>,
   usage: WevuRuntimeChunkUsage,
+  existingExports: Set<string>,
 ) {
   if (!aliases.size) {
     return
@@ -1438,8 +1439,9 @@ function rewriteStableWevuRuntimeAccess(
 
   for (const [exportName, stableName] of WEVU_EXPORT_ALIASES) {
     const localName = aliases.get(exportName)
-    // 公开导出名已经稳定；额外包装会使全量与缺少 vendor 的增量产物不一致。
-    if (!localName || localName === exportName) {
+    // 增量构建可能只保留稳定别名，不能根据局部标识符名称假定公开导出仍存在。
+    // 公开导出仍存在时保持完整构建产物的调用文本；只有导出缺失时才生成稳定别名回退。
+    if (!localName || (localName === exportName && existingExports.has(exportName))) {
       continue
     }
     if (usage.inlineMembers.has(localName) || usage.inlineMembers.has(stableName)) {
@@ -1499,7 +1501,7 @@ export function stabilizeWevuRuntimeChunkAccess(
     appendSyntheticWevuHookExports(wevuChunk, importedMembers)
     for (const usage of usageByChunk?.values() ?? []) {
       const chunk = usage.chunk
-      rewriteStableWevuRuntimeAccess(chunk, wevuChunk.fileName, aliases, usage)
+      rewriteStableWevuRuntimeAccess(chunk, wevuChunk.fileName, aliases, usage, existingExports)
       if (baseChunk?.fileName) {
         rewriteSyntheticWevuHookAccess(chunk, wevuChunk.fileName, baseChunk.fileName, missingMembers, usage)
         if (chunk.code.includes(normalizeRelativeRequireSpecifier(chunk.fileName, baseChunk.fileName))) {

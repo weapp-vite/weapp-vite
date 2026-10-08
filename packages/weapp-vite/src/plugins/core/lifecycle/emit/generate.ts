@@ -520,8 +520,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
             assetOnlyDevHmrBundle
             && !forceFullSharedChunkRefresh
           ) {
-          // 纯模板、样式、JSON 宏更新不会产出新的 JS chunk；此时刷新 shared chunk 图会让
-          // DevTools hotreload 误认为页面 JS/vendor 也需要替换，产生新旧模块短暂错位。
+            // 纯模板、样式、JSON 宏更新不会产出新的 JS chunk；此时刷新 shared chunk 图会让
+            // DevTools hotreload 误认为页面 JS/vendor 也需要替换，产生新旧模块短暂错位。
           }
           else if (
             state.hmrSharedChunksMode === 'full'
@@ -542,6 +542,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           state.hmrState.hasBuiltOnce = true
         }
         if (!nativeDevBundle) {
+          // 增量页面 chunk 的源码 require 可能尚未反映到 Rolldown imports；先同步
+          // 这些边，才能在裁剪共享 vendor 前保留页面运行时实际需要的模块。
+          syncChunkImportsFromRequireCalls(rolldownBundle)
           activeImportedChunkIds = prunePartialHmrStableSharedChunks(rolldownBundle, state)
           retainFullEntryHmrChunks(rolldownBundle, state)
           pruneUneventedDevHmrChunks(ctx, rolldownBundle)
