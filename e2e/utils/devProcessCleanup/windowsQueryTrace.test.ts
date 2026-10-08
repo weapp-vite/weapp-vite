@@ -79,6 +79,7 @@ describe('Windows dev process query diagnostic', () => {
     expect(line).not.toContain('private error text')
     expect(JSON.parse(line.slice('[e2e-cleanup-query] '.length)) as unknown).toEqual({
       query: 'snapshot',
+      stdin: 'pipe',
       exitCode: null,
       timedOut: true,
       stdoutCharacters: 0,

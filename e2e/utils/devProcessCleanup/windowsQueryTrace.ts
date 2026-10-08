@@ -52,12 +52,13 @@ export function parseWindowsQueryTrace(stderr = ''): WindowsQueryMarker[] {
 }
 
 /** 查询失败仍报告已收到的阶段；诊断写入失败不覆盖正式查询结果。 */
-export function reportWindowsQueryTrace(query: 'snapshot' | 'identities', result: { stdout?: string, stderr?: string, exitCode?: number, timedOut?: boolean }) {
+export function reportWindowsQueryTrace(query: 'snapshot' | 'identities', result: { stdout?: string, stderr?: string, exitCode?: number, timedOut?: boolean }, stdin: 'pipe' | 'ignore' = 'pipe') {
   try {
     const stderr = result.stderr ?? ''
     const boundedStderr = stderr.slice(0, maxStderrCharacters)
     process.stdout.write(`[e2e-cleanup-query] ${JSON.stringify({
       query,
+      stdin,
       exitCode: result.exitCode ?? null,
       timedOut: result.timedOut === true,
       stdoutCharacters: result.stdout?.length ?? 0,

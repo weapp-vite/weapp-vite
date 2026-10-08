@@ -118,6 +118,7 @@ describe('dev process snapshot identity', () => {
       expect(diagnostic!.length).toBeLessThan(512)
       expect(JSON.parse(diagnostic!.slice('[e2e-cleanup-query] '.length)) as unknown).toEqual({
         query: 'snapshot',
+        stdin: 'pipe',
         exitCode: null,
         timedOut: true,
         stdoutCharacters: 0,
@@ -127,6 +128,40 @@ describe('dev process snapshot identity', () => {
         scriptBeginReceived: true,
         markers: [{ stage: 'script', event: 'begin', elapsedMs: 0 }, { stage: 'query', event: 'begin', elapsedMs: 1.25 }],
       })
+    }
+    finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it.each(['pipe', 'ignore'] as const)('only changes stdin in the explicit Windows diagnostic: %s', async (stdin) => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', '1')
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_QUERY_STDIN', stdin)
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+    const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: 'fixture-node.exe' }
+    execute.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify([root]) })
+    try {
+      expect(await captureDevProcessTree(61, () => true)).toEqual([{ pid: 61, executable: root.ExecutablePath, started: root.Started }])
+      expect(execute).toHaveBeenCalledOnce()
+      expect(execute.mock.calls[0]![0]).toBe('powershell.exe')
+      expect(execute.mock.calls[0]![2]).toMatchObject({ stdin, timeout: 10_000, reject: false, windowsHide: true })
+    }
+    finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it.each([
+    { stdin: 'ignore', trace: undefined },
+    { stdin: 'inherit', trace: '1' },
+  ])('rejects untraced or unsupported diagnostic input before launching: $stdin/$trace', async ({ stdin, trace }) => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', trace)
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_QUERY_STDIN', stdin)
+    try {
+      await expect(captureDevProcessTree(61, () => true)).rejects.toThrow('Windows query stdin diagnosis requires tracing and pipe or ignore.')
+      expect(execute).not.toHaveBeenCalled()
     }
     finally {
       vi.unstubAllEnvs()

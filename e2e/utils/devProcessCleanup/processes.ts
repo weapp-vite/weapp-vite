@@ -25,14 +25,18 @@ async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
   const filter = ` -Filter '${pids ? pids.map(pid => `ProcessId=${pid}`).join(' OR ') : 'ProcessId > 0'}'`
   const timeoutMs = resolveWechatInspectionTimeout('win32')
   const trace = process.env.WEAPP_VITE_E2E_CLEANUP_TRACE === '1'
+  const diagnosticStdin = process.env.WEAPP_VITE_E2E_CLEANUP_QUERY_STDIN
+  if (diagnosticStdin !== undefined && (!trace || (diagnosticStdin !== 'pipe' && diagnosticStdin !== 'ignore'))) {
+    throw new Error('Windows query stdin diagnosis requires tracing and pipe or ignore.')
+  }
   const result = await traceCleanupStage(pids ? 'dev-cim-identities' : 'dev-cim-snapshot', () => execa('powershell.exe', [
     '-NoProfile',
     '-NonInteractive',
     '-Command',
     createWindowsProcessQueryCommand(filter, trace),
-  ], { timeout: timeoutMs, reject: false, windowsHide: true }), { processCount: pids?.length, timeoutMs })
+  ], { stdin: diagnosticStdin, timeout: timeoutMs, reject: false, windowsHide: true }), { processCount: pids?.length, timeoutMs })
   if (trace) {
-    reportWindowsQueryTrace(pids ? 'identities' : 'snapshot', result)
+    reportWindowsQueryTrace(pids ? 'identities' : 'snapshot', result, diagnosticStdin ?? 'pipe')
   }
   if (result.exitCode !== 0) {
     throw new Error(`Dev process inspection failed: exitCode=${result.exitCode ?? 'none'}, signal=${result.signal ?? 'none'}, timedOut=${result.timedOut ?? false}.`)
