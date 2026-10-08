@@ -104,6 +104,7 @@ await runWithCleanup(async () => {
   assert.equal(unrelated.child.exitCode, null)
   assert.equal(unrelated.child.signalCode, null)
   // 纯编码合同不授予进程权限；覆盖 .NET 默认编码器可能替换的孤立 UTF-16 单元。
+  await checkWindowsQueryEncoding()
   const codeUnits = '工具"\t\n😀\uD800'
   const raw = await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference='Stop'; $weappQueryRows=@([pscustomobject]@{ProcessId=61;ParentProcessId=1;ExecutablePath=([string]::new([char[]]@(0x5de5,0x5177,0x22,0x9,0xa,0xd83d,0xde00,0xd800)));Started='2026-10-08T00:00:00.1234560Z'}); ${serializeWindowsProcessRows()}`], { timeout: 10_000, stdin: 'ignore', windowsHide: true })
   assert.deepEqual(parseWindowsProcessRows(raw.stdout), [{ ProcessId: 61, ParentProcessId: 1, ExecutablePath: codeUnits, Started: '2026-10-08T00:00:00.1234560Z' }])

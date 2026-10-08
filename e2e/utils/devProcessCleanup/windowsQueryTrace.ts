@@ -1,4 +1,5 @@
 import process from 'node:process'
+import { withPowerShellUtf8Output } from '../../../packages/weapp-ide-cli/src/utils/powershell'
 import { serializeWindowsProcessRows } from './windowsProcessRows'
 
 const wirePrefix = 'WEAPP_DEV_QUERY_V1'
@@ -11,14 +12,14 @@ interface WindowsQueryMarker {
   elapsedMs: number
 }
 
-/** 默认命令保持不变；显式诊断只在 stderr 写固定 ASCII 阶段与耗时。 */
+/** 两种传输共用 UTF-8 输出边界；显式诊断只在 stderr 写固定 ASCII 阶段与耗时。 */
 export function createWindowsProcessQueryCommand(filter: string, trace: boolean, transport: 'json' | 'rows' = 'json') {
   const query = `@(Get-CimInstance Win32_Process${filter} | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name='Started';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString('o')} else {$null}}})`
   if (!trace) {
-    return `$ErrorActionPreference='Stop'; ${query} | ConvertTo-Json -Compress`
+    return withPowerShellUtf8Output(`$ErrorActionPreference='Stop'; ${query} | ConvertTo-Json -Compress`)
   }
   const marker = (stage: typeof stages[number]) => `[Console]::Error.WriteLine('${wirePrefix}|${stage.replace(':', '|')}|'+$weappQueryClock.Elapsed.TotalMilliseconds.ToString('F3',[Globalization.CultureInfo]::InvariantCulture)+'|')`
-  return [
+  return withPowerShellUtf8Output([
     `$ErrorActionPreference='Stop'`,
     `[Console]::Error.WriteLine('${wirePrefix}|script|begin|0.000|')`,
     '$weappQueryClock=[System.Diagnostics.Stopwatch]::StartNew()',
@@ -29,7 +30,7 @@ export function createWindowsProcessQueryCommand(filter: string, trace: boolean,
     transport === 'rows' ? serializeWindowsProcessRows() : '@($weappQueryRows) | ConvertTo-Json -Compress',
     marker('serialize:end'),
     marker('script:end'),
-  ].join('; ')
+  ].join('; '))
 }
 
 /** 只接受完整且按顺序到达的有限阶段；原始 stderr 不进入报告。 */

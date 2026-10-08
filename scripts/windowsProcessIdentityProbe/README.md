@@ -1,5 +1,16 @@
 # Windows 进程身份查询诊断
 
+## 输出编码回归
+
+真实 Windows Node 22/24 的中文可执行路径检查暴露默认 PowerShell JSON 输出编码损失：
+PID 与创建时间精确一致，路径却被替换字符改变。独立的合成字符串样例确认默认输出把
+中文变为问号，显式 UTF-8 保留原值。生产宿主、监听者和 E2E 查询现在共用显式 UTF-8
+输出边界，`sameManagedProcess` 仍严格比较完整身份，不接管历史受损的身份记录。
+
+`process-rows` 检查保持首次快照、父子进程关系、原 CIM 身份双向精确比较、退出与无关
+进程保护；成功路径也必须运行最小输出编码合同和完整 UTF-16 行传输合同。
+下面的历史比较描述原运行，不把编码修复当作进程查询超时的唯一根因。
+
 ## Provider 清理的定向复现
 
 同一 workflow 的 `Provider cleanup query` 在 Windows Node 22/24 上运行原有
@@ -41,7 +52,7 @@ node --import tsx scripts/windowsProcessIdentityProbe/checkSelfWriter.ts
 
 ## 历史通用查询对照
 
-原 probe 比较通用生产 CIM 查询与 `.NET Process` 候选，只收集诊断证据，不启动 DevTools，也不参与所有权、清理或 runtime 验收决策。生产 `host.ts` 与 `sameManagedProcess` 保持不变。
+原 probe 比较通用生产 CIM 查询与 `.NET Process` 候选，只收集诊断证据，不启动 DevTools，也不参与所有权、清理或 runtime 验收决策。生产 CIM 字段和 `sameManagedProcess` 保持不变，输出编码修复见上文。
 
 ## 首次样本和后续样本
 

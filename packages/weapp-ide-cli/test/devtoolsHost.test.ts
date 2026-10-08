@@ -83,6 +83,20 @@ describe('DevTools host ownership', () => {
     expect(execute).toHaveBeenCalledTimes(3)
   })
 
+  it('preserves Unicode Windows installation paths for host and listener checks', async () => {
+    const selected = { ...target(), cliPath: 'C:\\工具\\WeChat\\cli.bat', appPath: 'C:\\工具\\WeChat\\resources\\app.asar' }
+    execute.mockResolvedValue({ exitCode: 0, stdout: JSON.stringify([{ ProcessId: 123, ExecutablePath: 'C:\\工具\\WeChat\\wechatdevtools.exe' }]) })
+    await assertWechatDevtoolsHost(selected, { platform: 'win32' })
+    await assertWechatDevtoolsPort(selected, 22001, { platform: 'win32' })
+    for (const [, args] of execute.mock.calls) {
+      const script = args[3] as string
+      expect(script.indexOf('[Console]::OutputEncoding=')).toBe(0)
+      expect(script.indexOf('UTF8Encoding')).toBeLessThan(script.indexOf('Get-CimInstance'))
+    }
+    execute.mockResolvedValue({ exitCode: 0, stdout: JSON.stringify([{ ProcessId: 124, ExecutablePath: 'C:\\另一工具\\WeChat\\wechatdevtools.exe' }]) })
+    await expect(assertWechatDevtoolsHost(selected, { platform: 'win32' })).rejects.toMatchObject({ code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' })
+  })
+
   it.each([0, -1, Number.NaN])('rejects an invalid inspection budget %s before launching a process', async (timeout) => {
     await expect(assertWechatDevtoolsHost(target(), { platform: 'win32', timeout })).rejects.toMatchObject({
       code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH',

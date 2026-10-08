@@ -13,7 +13,7 @@ afterEach(() => vi.restoreAllMocks())
 
 describe('Windows dev process query diagnostic', () => {
   it('preserves the uninstrumented query when the explicit trace is off', () => {
-    expect(createWindowsProcessQueryCommand(' -Filter \'ProcessId > 0\'', false)).toBe('$ErrorActionPreference=\'Stop\'; @(Get-CimInstance Win32_Process -Filter \'ProcessId > 0\' | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name=\'Started\';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString(\'o\')} else {$null}}}) | ConvertTo-Json -Compress')
+    expect(createWindowsProcessQueryCommand(' -Filter \'ProcessId > 0\'', false)).toBe('[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); $ErrorActionPreference=\'Stop\'; @(Get-CimInstance Win32_Process -Filter \'ProcessId > 0\' | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name=\'Started\';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString(\'o\')} else {$null}}}) | ConvertTo-Json -Compress')
   })
 
   it('places CIM and serialization between their own markers without serializing diagnostics', () => {

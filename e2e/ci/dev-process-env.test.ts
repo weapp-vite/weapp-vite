@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { EventEmitter } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -184,7 +185,9 @@ describe('dev process env isolation', () => {
     }))
   })
 
-  it('stops windows package-script dev processes with taskkill without waiting forever', async () => {
+  it.each(['json', 'rows'] as const)('stops windows package-script dev processes with taskkill without waiting forever: %s', async (transport) => {
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', '1')
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_QUERY_TRANSPORT', transport)
     vi.useFakeTimers()
     Object.defineProperty(process, 'platform', {
       value: 'win32',
@@ -204,12 +207,14 @@ describe('dev process env isolation', () => {
         return Promise.resolve({
           exitCode: 0,
           signal: undefined,
-          stdout: JSON.stringify({
-            ProcessId: 12345,
-            ParentProcessId: 1,
-            ExecutablePath: 'C:\\node.exe',
-            Started: '2026-10-07T01:00:00.0000000Z',
-          }),
+          stdout: transport === 'rows'
+            ? ['WEAPP_DEV_PROCESS_ROWS_V1', `12345\t1\t${Buffer.from('C:\\node.exe', 'utf16le').toString('base64')}\t2026-10-07T01:00:00.0000000Z`, 'WEAPP_DEV_PROCESS_ROWS_V1|1'].join('\n')
+            : JSON.stringify({
+                ProcessId: 12345,
+                ParentProcessId: 1,
+                ExecutablePath: 'C:\\node.exe',
+                Started: '2026-10-07T01:00:00.0000000Z',
+              }),
         })
       }
 
