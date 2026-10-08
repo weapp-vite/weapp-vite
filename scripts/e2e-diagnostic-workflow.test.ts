@@ -5,7 +5,7 @@ import { parse } from 'yaml'
 interface WorkflowJob {
   if?: string
   needs?: string | string[]
-  strategy?: { 'fail-fast'?: boolean, 'matrix': { 'os'?: string[], 'node-version'?: number[], 'shard'?: number[], 'include'?: Array<{ 'os': string, 'node-version': number }> } }
+  strategy?: { 'fail-fast'?: boolean, 'matrix': { 'os'?: string[], 'node-version'?: number[], 'shard'?: number[], 'include'?: Array<{ 'os'?: string, 'node-version': number, 'shard'?: number }> } }
   with?: Record<string, unknown>
 }
 
@@ -57,19 +57,26 @@ describe('bounded HMR workflow diagnosis', () => {
     })
   })
 
-  it('traces the original full Windows Node 22 shard without narrowing its cases or extending the budget', async () => {
+  it('compares complete Windows shards while retaining the original shard and query budget', async () => {
     const { jobs } = await workflow()
     const job = jobs['windows-dev-cleanup-diagnostic']!
     expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'windows-dev-cleanup\'')
     expect(job.needs).toBeUndefined()
-    expect(job.strategy).toBeUndefined()
+    expect(job.strategy?.['fail-fast']).toBe(false)
+    expect(job.strategy?.matrix).toEqual({
+      include: [
+        { 'node-version': 22, 'shard': 3 },
+        { 'node-version': 22, 'shard': 1 },
+        { 'node-version': 24, 'shard': 1 },
+      ],
+    })
     expect(job.with).toMatchObject({
       runs_on: 'windows-latest',
-      node_version: '22',
-      build_command: 'pnpm build:pkgs:ci:windows',
-      main_command: 'pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=3 --shard-total=4',
+      node_version: `\${{ matrix.node-version }}`,
+      build_command: 'pnpm build:ci:windows',
+      main_command: `pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=\${{ matrix.shard }} --shard-total=4`,
       e2e_platform: 'weapp',
-      artifact_name: expect.stringMatching(/^windows-dev-cleanup-node-22-shard-3-.*github\.sha/),
+      artifact_name: expect.stringMatching(/^windows-dev-cleanup-node-.*matrix\.node-version.*shard-.*matrix\.shard.*github\.sha/),
       artifact_path: 'docs/reports/*-e2e-ci-full-*-suite-report/**',
       timeout_minutes: 40,
     })
