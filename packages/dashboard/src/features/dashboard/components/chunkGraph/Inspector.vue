@@ -8,11 +8,14 @@ import AppSelect from '../AppSelect.vue'
 const props = defineProps<{
   view: AnalyzeChunkGraphView
   selectedId: string | null
+  previewEdgeId: string | null
   unresolvedImportCount: number
 }>()
 
 const emit = defineEmits<{
   selectNode: [id: string | null]
+  hoverRelation: [id: string | null]
+  focusRelation: [id: string | null]
 }>()
 
 const selectionHeading = useTemplateRef<HTMLHeadingElement>('selectionHeading')
@@ -138,7 +141,7 @@ async function selectRelatedNode(id: string) {
       </section>
 
       <div class="border-t border-(--dashboard-border) px-4 pt-4 text-(--dashboard-text-soft)">
-        <p>以下仅列出当前视图中的关系。点击条目切换节点，不改变筛选。</p>
+        <p>悬停或用键盘聚焦条目，突出对应连线；点击切换节点，不改变筛选。</p>
         <p v-if="details.selected.kind === 'package'" class="mt-2">
           包内归属不是导入关系；选择代码产物可查看它的导入与引用。
         </p>
@@ -156,7 +159,12 @@ async function selectRelatedNode(id: string) {
             <button
               type="button"
               class="group -mx-1 flex min-h-11 w-[calc(100%+0.5rem)] items-start gap-2 rounded-sm px-1 py-3 text-left hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)"
+              :class="{ 'bg-(--dashboard-panel-muted)': previewEdgeId === relation.id }"
               :aria-label="`${section.title}：查看 ${relation.node.label}，${relationKindLabels[relation.kind]}，所属包 ${relation.node.packageLabel}（${relation.node.packageId}）`"
+              @mouseenter="emit('hoverRelation', relation.id)"
+              @mouseleave="emit('hoverRelation', null)"
+              @focus="emit('focusRelation', relation.id)"
+              @blur="emit('focusRelation', null)"
               @click="selectRelatedNode(relation.node.id)"
             >
               <span class="min-w-0 flex-1">

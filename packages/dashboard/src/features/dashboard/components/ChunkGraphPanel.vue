@@ -22,6 +22,7 @@ import {
 } from 'd3'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { createAnalyzeChunkGraph, createAnalyzeChunkGraphView } from '../utils/analyzeChunkGraph'
+import { createChunkGraphFocus } from '../utils/chunkGraphFocus'
 import { CHUNK_GRAPH_ARROW_SIZE, updateChunkGraphLinkGeometry } from '../utils/chunkGraphGeometry'
 import { formatBytes } from '../utils/format'
 import AppSelect from './AppSelect.vue'
@@ -29,6 +30,7 @@ import ChunkGraphInspector from './chunkGraph/Inspector.vue'
 
 interface RenderedGraphNode extends SimulationNodeDatum {
   color: string
+  mutedColor: string
   graphNode: AnalyzeChunkGraphNode
   id: string
   radius: number
@@ -50,9 +52,14 @@ const MAX_VISIBLE_NODES = 220
 const MAX_VISIBLE_EDGES = 900
 const MAX_SEARCH_NODES = 80
 const svgRef = shallowRef<SVGSVGElement>()
+const canvasRef = shallowRef<HTMLDivElement>()
 const packageFilter = ref('all')
 const searchQuery = ref('')
 const selectedNodeId = ref<string | null>(null)
+const hoveredNodeId = shallowRef<string | null>(null)
+const hoveredEdgeId = shallowRef<string | null>(null)
+const focusedEdgeId = shallowRef<string | null>(null)
+let applyGraphFocus: (() => void) | undefined
 let resizeObserver: ResizeObserver | undefined
 let simulation: ReturnType<typeof forceSimulation<RenderedGraphNode>> | undefined
 let zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | undefined
@@ -72,6 +79,11 @@ const visibleGraph = computed(() => createAnalyzeChunkGraphView(graph.value, {
   packageId: packageFilter.value,
   query: searchQuery.value,
 }))
+const graphFocus = computed(() => createChunkGraphFocus(
+  visibleGraph.value,
+  hoveredNodeId.value ?? selectedNodeId.value,
+  hoveredNodeId.value ? null : hoveredEdgeId.value ?? focusedEdgeId.value,
+))
 
 const packageColorById = computed(() => {
   const palette = props.theme === 'dark'
@@ -93,6 +105,12 @@ function resolveLinkNode(
 
 function selectNode(node: RenderedGraphNode) {
   selectedNodeId.value = node.id
+}
+
+function clearGraphPreview() {
+  hoveredNodeId.value = null
+  hoveredEdgeId.value = null
+  focusedEdgeId.value = null
 }
 
 function bindNodeDrag(
@@ -134,6 +152,7 @@ function panGraph(x: number, y: number) {
 
 function resetGraphView() {
   selectedNodeId.value = null
+  clearGraphPreview()
   if (svgRef.value && zoomBehavior) {
     select(svgRef.value).call(zoomBehavior.transform, zoomIdentity)
   }
@@ -142,15 +161,18 @@ function resetGraphView() {
 async function renderGraph() {
   await nextTick()
   const element = svgRef.value
-  if (!element || element.clientWidth === 0 || element.clientHeight === 0) {
+  const canvas = canvasRef.value
+  if (!element || !canvas || canvas.clientWidth === 0 || canvas.clientHeight === 0) {
     return
   }
 
   simulation?.stop()
+  applyGraphFocus = undefined
+  hoveredNodeId.value = null
   const svg = select(element)
   svg.selectAll('*').remove()
-  const width = element.clientWidth
-  const height = element.clientHeight
+  const width = canvas.clientWidth
+  const height = canvas.clientHeight
   svg.attr('viewBox', `0 0 ${width} ${height}`)
 
   const defs = svg.append('defs')
@@ -183,10 +205,12 @@ async function renderGraph() {
     const radius = graphNode.kind === 'package'
       ? 18
       : Math.max(5, Math.min(14, 5 + Math.log2(Math.max(graphNode.size, 1)) * 0.65))
+    const color = packageColorById.value.get(graphNode.packageId) ?? '#64748b'
     return {
       id: graphNode.id,
       graphNode,
-      color: packageColorById.value.get(graphNode.packageId) ?? '#64748b',
+      color,
+      mutedColor: `color-mix(in srgb, ${color} 18%, var(--dashboard-panel))`,
       radius,
       strokeWidth: graphNode.kind === 'package' ? 3 : graphNode.isEntry ? 2.5 : 1.5,
     }
@@ -205,6 +229,7 @@ async function renderGraph() {
 
   const linkSelection = viewport.append('g')
     .attr('fill', 'none')
+    .attr('pointer-events', 'none')
     .selectAll('line')
     .data(links)
     .join('line')
@@ -214,14 +239,7 @@ async function renderGraph() {
       : link.graphEdge.kind === 'static-import'
         ? props.theme === 'dark' ? '#60a5fa' : '#2563eb'
         : props.theme === 'dark' ? '#292f3a' : '#d9dee7')
-    .attr('stroke-width', link => link.graphEdge.kind === 'contains' ? 1 : 1.4)
-    .attr('stroke-opacity', link => link.graphEdge.kind === 'contains' ? 0.26 : 0.68)
     .attr('stroke-dasharray', link => link.graphEdge.kind === 'dynamic-import' ? '5 4' : null)
-    .attr('marker-end', link => link.graphEdge.kind === 'dynamic-import'
-      ? 'url(#chunk-graph-arrow-dynamic)'
-      : link.graphEdge.kind === 'static-import'
-        ? 'url(#chunk-graph-arrow-static)'
-        : null)
 
   const nodeSelection = viewport.append('g')
     .selectAll<SVGGElement, RenderedGraphNode>('g')
@@ -229,6 +247,14 @@ async function renderGraph() {
     .join('g')
     .attr('cursor', 'pointer')
     .on('click', (_event, node) => selectNode(node))
+    .on('mouseenter', (_event, node) => {
+      hoveredNodeId.value = node.id
+    })
+    .on('mouseleave', (_event, node) => {
+      if (hoveredNodeId.value === node.id) {
+        hoveredNodeId.value = null
+      }
+    })
     .call(
       drag<SVGGElement, RenderedGraphNode>()
         .on('start', (event, node) => bindNodeDrag(event, node, 'start'))
@@ -238,8 +264,6 @@ async function renderGraph() {
 
   nodeSelection.append('circle')
     .attr('r', node => node.radius)
-    .attr('fill', node => node.color)
-    .attr('stroke', node => node.graphNode.kind === 'package' ? node.color : props.theme === 'dark' ? '#11141a' : '#ffffff')
     .attr('stroke-width', node => node.strokeWidth)
 
   nodeSelection.append('title')
@@ -254,6 +278,43 @@ async function renderGraph() {
     .attr('font-weight', 600)
     .attr('fill', props.theme === 'dark' ? '#d7dce5' : '#334155')
     .text(node => formatPackageLabel(node.graphNode.label))
+
+  applyGraphFocus = () => {
+    const focus = graphFocus.value
+    linkSelection
+      .attr('stroke-opacity', (link) => {
+        if (focus.previewEdgeId === link.graphEdge.id) {
+          return 1
+        }
+        return focus.edgeIds && !focus.edgeIds.has(link.graphEdge.id)
+          ? 0.06
+          : link.graphEdge.kind === 'contains' ? 0.26 : 0.68
+      })
+      .attr('stroke-width', link => focus.previewEdgeId === link.graphEdge.id
+        ? 2.5
+        : link.graphEdge.kind === 'contains' ? 1 : 1.4)
+      .attr('marker-end', (link) => {
+        if (focus.previewEdgeId !== link.graphEdge.id || link.graphEdge.kind === 'contains') {
+          return null
+        }
+        return link.graphEdge.kind === 'dynamic-import'
+          ? 'url(#chunk-graph-arrow-dynamic)'
+          : 'url(#chunk-graph-arrow-static)'
+      })
+    nodeSelection.select('circle')
+      .attr('fill', node => focus.nodeIds && !focus.nodeIds.has(node.id) ? node.mutedColor : node.color)
+      .attr('stroke', (node) => {
+        if (node.id === selectedNodeId.value) {
+          return 'var(--dashboard-text)'
+        }
+        return node.graphNode.kind === 'package'
+          ? focus.nodeIds && !focus.nodeIds.has(node.id) ? node.mutedColor : node.color
+          : props.theme === 'dark' ? '#11141a' : '#ffffff'
+      })
+    nodeSelection.select('text')
+      .attr('opacity', node => focus.nodeIds && !focus.nodeIds.has(node.id) ? 0.35 : 1)
+  }
+  applyGraphFocus()
 
   simulation = forceSimulation(nodes)
     .force('link', forceLink<RenderedGraphNode, RenderedGraphLink>(links)
@@ -291,17 +352,17 @@ async function renderGraph() {
 }
 
 onMounted(() => {
-  if (svgRef.value) {
+  if (canvasRef.value) {
     resizeObserver = new ResizeObserver(() => void renderGraph())
-    resizeObserver.observe(svgRef.value)
+    resizeObserver.observe(canvasRef.value)
   }
-  void renderGraph()
 })
 
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   simulation?.stop()
   simulation = undefined
+  applyGraphFocus = undefined
 })
 
 watch(packageOptions, (options) => {
@@ -312,6 +373,8 @@ watch(packageOptions, (options) => {
     packageFilter.value = 'all'
   }
 })
+watch([selectedNodeId, visibleGraph], clearGraphPreview)
+watch(graphFocus, () => applyGraphFocus?.())
 watch([visibleGraph, packageColorById], ([view]) => {
   if (selectedNodeId.value && !view.nodes.some(node => node.id === selectedNodeId.value)) {
     selectedNodeId.value = null
@@ -353,10 +416,12 @@ watch(() => props.theme, () => void renderGraph())
           </button>
         </div>
       </header>
-      <svg ref="svgRef" class="block h-full min-h-0 w-full min-w-0 max-w-full touch-none overflow-hidden" aria-hidden="true" focusable="false" />
+      <div ref="canvasRef" class="relative min-h-0 min-w-0">
+        <svg ref="svgRef" class="absolute inset-0 block size-full touch-none overflow-hidden" aria-hidden="true" focusable="false" />
+      </div>
       <footer class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-(--dashboard-border) px-3 py-2">
         <p class="text-xs text-(--dashboard-text-soft)">
-          滚轮缩放，拖动画布平移；也可使用视图控制按钮。
+          悬停节点预览，点击保持聚焦；在右侧关系中查看单条连线方向。
         </p>
         <div class="flex gap-1" role="group" aria-label="依赖图平移控制">
           <button class="size-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:size-11" type="button" aria-label="向上平移依赖图" @click="panGraph(0, -40)">↑</button>
@@ -371,6 +436,9 @@ watch(() => props.theme, () => void renderGraph())
       :view="visibleGraph"
       :selected-id="selectedNodeId"
       :unresolved-import-count="graph.unresolvedImportCount"
+      :preview-edge-id="graphFocus.previewEdgeId"
+      @hover-relation="hoveredEdgeId = $event"
+      @focus-relation="focusedEdgeId = $event"
       @select-node="selectedNodeId = $event"
     />
   </section>
