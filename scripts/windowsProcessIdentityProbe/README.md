@@ -1,5 +1,16 @@
 # Windows 进程身份查询诊断
 
+## Provider 清理的定向复现
+
+同一 workflow 的 `Provider cleanup query` 在 Windows Node 22/24 上运行原有
+`e2e/ci/issue-1065-provider.test.ts`，保留构建、连续 watch 更新、dispose 和重复
+stop 的全部断言与原查询预算。`WEAPP_VITE_E2E_CLEANUP_TRACE=1` 分别记录 Node
+清理阶段及 PowerShell 的脚本入口、CIM 查询与序列化阶段；超时仍失败并保留已收到的
+marker，不重试身份查询，也不授权清理未核验进程。
+
+这个入口只用于定位完整 CI 分片中的清理失败。JSON 测试报告与阶段日志均应保留，
+定向通过不能代替完整 CI 清单或真实 IDE 验收。
+
 ## 当前 journal writer 的首次调用检查
 
 ```sh

@@ -7,6 +7,24 @@ permissions:
   contents: read
 
 jobs:
+  provider-cleanup:
+    name: Provider cleanup query (Windows / Node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: windows-latest
+      node_version: '${{ matrix.node }}'
+      timeout_minutes: 20
+      build_command: pnpm build:pkgs:ci:windows
+      # 保留原 provider 用例及查询预算；阶段日志只用于定位，不替代完整 CI 清单。
+      main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/issue-1065-provider.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-provider-cleanup/report.json
+      artifact_name: windows-provider-cleanup-node-${{ matrix.node }}-${{ github.sha }}
+      artifact_path: .tmp/windows-provider-cleanup/report.json
+    secrets: inherit
+
   self-writer-check:
     name: Journal writer first query (Windows / Node ${{ matrix.node }})
     runs-on: windows-latest
