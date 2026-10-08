@@ -2,6 +2,14 @@ name: Windows Process Identity Probe
 
 on:
   workflow_dispatch:
+    inputs:
+      scope:
+        description: 选择完整身份诊断或仅原 provider 清理场景
+        type: choice
+        default: all
+        options:
+          - all
+          - provider-cleanup
 
 permissions:
   contents: read
@@ -26,6 +34,7 @@ jobs:
     secrets: inherit
 
   self-writer-check:
+    if: inputs.scope != 'provider-cleanup'
     name: Journal writer first query (Windows / Node ${{ matrix.node }})
     runs-on: windows-latest
     timeout-minutes: 15
@@ -115,6 +124,7 @@ jobs:
           retention-days: 7
 
   identity-probe:
+    if: inputs.scope != 'provider-cleanup'
     name: Diagnostic only (Windows / Node ${{ matrix.node }} / ${{ matrix.firstProvider }})
     runs-on: windows-latest
     timeout-minutes: 15
