@@ -32,16 +32,26 @@ permissions:
 jobs:
   windows-dev-cleanup-diagnostic:
     if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-dev-cleanup'
-    name: Dev Process Cleanup Shard Diagnostic (Windows / Node 22 / shard 3)
+    name: Dev Process Cleanup Shard Diagnostic (Windows / Node ${{ matrix.node-version }} / shard ${{ matrix.shard }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - node-version: 22
+            shard: 3
+          - node-version: 22
+            shard: 1
+          - node-version: 24
+            shard: 1
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       runs_on: windows-latest
-      node_version: '22'
+      node_version: '${{ matrix.node-version }}'
       timeout_minutes: 40
-      build_command: pnpm build:pkgs:ci:windows
-      main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=3 --shard-total=4
+      build_command: pnpm build:ci:windows
+      main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=${{ matrix.shard }} --shard-total=4
       e2e_platform: weapp
-      artifact_name: windows-dev-cleanup-node-22-shard-3-${{ github.sha }}
+      artifact_name: windows-dev-cleanup-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-${{ github.sha }}
       artifact_path: docs/reports/*-e2e-ci-full-*-suite-report/**
     secrets: inherit
 
