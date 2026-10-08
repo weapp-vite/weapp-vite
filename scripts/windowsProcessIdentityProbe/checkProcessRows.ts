@@ -73,6 +73,14 @@ await runWithCleanup(async () => {
     assert.equal(identity.executable, executable)
     const original = await readManagedProcessIdentity(identity.pid)
     assert.ok(original)
+    console.info(JSON.stringify({
+      stage: 'legacy-identity-comparison',
+      pidEqual: identity.pid === original.pid,
+      executableEqual: identity.executable === original.executable,
+      executableLength: identity.executable.length,
+      originalExecutableLength: original.executable.length,
+      startedEqual: identity.started === original.started,
+    }))
     assert.equal(sameManagedProcess(identity, original), true)
     assert.equal(sameManagedProcess(original, identity), true)
   }
