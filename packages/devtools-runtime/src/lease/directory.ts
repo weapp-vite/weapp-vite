@@ -50,10 +50,16 @@ export async function mutateLease<T>(directory: string, run: () => Promise<T>, o
       break
     }
     catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+      const code = (error as NodeJS.ErrnoException).code
+      // Windows 的目录获取可能返回 EPERM；沿用原预算，仍须 mkdir 成功才取得所有权。
+      const retryPermissionError = process.platform === 'win32' && code === 'EPERM'
+      if (code !== 'EEXIST' && !retryPermissionError) {
         throw error
       }
       if (Date.now() >= deadline) {
+        if (retryPermissionError) {
+          throw error
+        }
         throw new Error('Runtime busy: lease ownership update or recovery is in progress.')
       }
       await setTimeout(Math.min(10, Math.max(0, deadline - Date.now())))
