@@ -1,12 +1,12 @@
 # uni-app 组件库兼容（实验性）
 
 > [!WARNING]
-> 这是实验性能力，当前兼容基线固定为 `@wot-ui/ui@2.3.2` 与 `uview-plus@3.8.128`。默认完全关闭；只有项目源码和 `weapp.uniApp.include` 明确列出的 npm 包会进入 uni-app 方言转换。
+> 这是实验性能力，当前兼容基线固定为 `@wot-ui/ui@2.3.2` 与 `uview-plus@3.8.130`。默认完全关闭；只有项目源码和 `weapp.uniApp.include` 明确列出的 npm 包会进入 uni-app 方言转换。
 
 ## uview-plus
 
 ```bash
-pnpm add weapp-vite wevu uview-plus@3.8.128
+pnpm add weapp-vite wevu uview-plus@3.8.130
 ```
 
 ```ts
@@ -36,9 +36,9 @@ export default defineConfig({
 
 应用启动时调用 `mount$u()`，再把 `uni.$u` 同步到 `app.config.globalProperties.$u`；全局样式引入 `uview-plus/index.scss`。不要使用会在 Web 调用 `Vue.component` 的默认插件注册流程。
 
-仓库测试基线同时应用 `patches/uview-plus@3.8.128.patch`，仅保留 `u-barcode` 获取 canvas 引用前等待组件实例 `this.$nextTick()` 的兼容调整。旧版的选择器、主题变量及其他组件兼容补丁已由上游修复，不再重复应用。
+上游 3.8.130 已修复 `u-barcode` 获取 canvas 引用前的组件实例 `this.$nextTick()` 等待逻辑，仓库已移除对应补丁。旧版的选择器、主题变量及其他组件兼容补丁也已由上游修复。
 
-`UviewPlusResolver()` 同时解析 `u-*` 与 `up-*` 标签。静态清单以 3.8.128 npm 发布包中的 141 个源码入口为准，139 个具名组件各有独立测试页。`u-action-sheet-data` 与 `u-column-notice` 没有组件名，分别由 action-sheet 和 notice-bar 页面覆盖。
+`UviewPlusResolver()` 同时解析 `u-*` 与 `up-*` 标签。静态清单以 3.8.130 npm 发布包中的 141 个源码入口为准，139 个具名组件各有独立测试页。`u-action-sheet-data` 与 `u-column-notice` 没有组件名，分别由 action-sheet 和 notice-bar 页面覆盖。
 
 `supportFilesStrategy` 默认为 `'used'`；需要生成全量组件辅助文件时可传入 `UviewPlusResolver({ supportFilesStrategy: 'full' })`。
 

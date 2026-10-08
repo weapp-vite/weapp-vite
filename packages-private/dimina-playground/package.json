@@ -31,7 +31,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/react": "catalog:",
-    "execa": "^10.0.1",
+    "execa": "^10.1.0",
     "miniprogram-api-typings": "catalog:",
     "tsx": "^4.23.15",
     "typescript": "catalog:",

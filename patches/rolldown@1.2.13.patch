@@ -1,7 +1,7 @@
-diff --git a/dist/shared/bindingify-input-options-DCTviPFW.mjs b/dist/shared/bindingify-input-options-DCTviPFW.mjs
-index c0646e8ba7ce3b0daeeac6270c274ad2fd1684cf..8f3bd7568b4297b127e408d55d9bc198beec2cb5 100644
---- a/dist/shared/bindingify-input-options-DCTviPFW.mjs
-+++ b/dist/shared/bindingify-input-options-DCTviPFW.mjs
+diff --git a/dist/shared/bindingify-input-options-C0gEvtnB.mjs b/dist/shared/bindingify-input-options-C0gEvtnB.mjs
+index ecc6c6390..f684b33ba 100644
+--- a/dist/shared/bindingify-input-options-C0gEvtnB.mjs
++++ b/dist/shared/bindingify-input-options-C0gEvtnB.mjs
 @@ -770,6 +770,135 @@ function collectChangedBundle(changed, bundle) {
  	};
  }
