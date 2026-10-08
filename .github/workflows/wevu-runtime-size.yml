@@ -33,7 +33,7 @@ jobs:
 
       - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
         with:
-          version: 12.10.1
+          package_json_file: head/package.json
 
       - name: Setup Node.js environment
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
