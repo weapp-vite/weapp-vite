@@ -211,17 +211,39 @@ async function selectRelatedNode(id: string) {
       <p v-if="unresolvedImportCount" class="mt-3 border-l-2 border-(--dashboard-border-strong) pl-3 text-(--dashboard-text-muted)">
         完整报告有 {{ unresolvedImportCount }} 条导入未解析为图中产物，可能指向外部或未输出的产物，不计入当前视图的导入数量。
       </p>
-      <details class="mt-3">
-        <summary class="min-h-11 cursor-pointer content-center rounded-sm text-(--dashboard-text-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)">
-          图例与阅读方式
-        </summary>
-        <ul class="mt-1 space-y-2 text-(--dashboard-text-soft)">
-          <li>蓝色实线：静态导入。</li>
-          <li>橙色虚线：动态导入。</li>
-          <li>淡色连线：包内归属，不代表导入。</li>
-          <li>箭头从导入方指向被导入的产物；节点颜色区分所属包。</li>
+      <div class="mt-4">
+        <h5 class="text-(--dashboard-text-muted)">图例</h5>
+        <ul class="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-(--dashboard-text-soft)" aria-label="依赖图图例">
+          <li class="flex items-center gap-2">
+            <svg aria-hidden="true" class="h-4 w-12 shrink-0 text-[#2563eb] dark:text-[#60a5fa]" viewBox="0 0 48 16">
+              <path d="M2 8H40" fill="none" stroke="currentColor" stroke-width="1.5" />
+              <path d="m36 4 8 4-8 4Z" fill="currentColor" />
+            </svg>
+            <span>静态导入</span>
+          </li>
+          <li class="flex items-center gap-2">
+            <svg aria-hidden="true" class="h-4 w-12 shrink-0 text-[#f59e0b]" viewBox="0 0 48 16">
+              <path d="M2 8H40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="5 4" />
+              <path d="m36 4 8 4-8 4Z" fill="currentColor" />
+            </svg>
+            <span>动态导入</span>
+          </li>
+          <li class="flex items-center gap-2">
+            <svg aria-hidden="true" class="h-4 w-12 shrink-0 text-(--dashboard-border-strong)" viewBox="0 0 48 16">
+              <path d="M2 8H44" fill="none" stroke="currentColor" />
+            </svg>
+            <span>包内归属</span>
+          </li>
+          <li class="flex items-center gap-2">
+            <svg aria-hidden="true" class="h-4 w-12 shrink-0" viewBox="0 0 48 16">
+              <circle cx="8" cy="8" r="4" class="fill-[#0f766e] dark:fill-[#5eead4]" />
+              <circle cx="24" cy="8" r="4" class="fill-[#7c3aed] dark:fill-[#a78bfa]" />
+              <circle cx="40" cy="8" r="4" class="fill-[#2563eb] dark:fill-[#60a5fa]" />
+            </svg>
+            <span>节点所属包</span>
+          </li>
         </ul>
-      </details>
+      </div>
     </section>
   </aside>
 </template>
