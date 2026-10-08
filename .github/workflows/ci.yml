@@ -8,15 +8,71 @@ on:
   schedule:
     - cron: '20 1 * * *'
   workflow_dispatch:
+    inputs:
+      jsx_hmr_control:
+        description: Run the fixed PR1180 JSX attribution pair only
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}${{ inputs.jsx_hmr_control == true && '-jsx-control' || '' }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
+  jsx-hmr-control:
+    if: github.event_name == 'workflow_dispatch' && inputs.jsx_hmr_control == true
+    name: JSX control (${{ matrix.snapshot }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - snapshot: main650d
+            ref: 650d329b43dd71a8f5bc6a7a4f137ffe312d7c36
+          - snapshot: merge2e9
+            ref: 2e9ac9a9711afaf78cff195a3d4fd2e2b605ca1a
+    env:
+      CI: 'true'
+      HUSKY: '0'
+      TURBO_TELEMETRY_DISABLED: '1'
+      TURBO_CACHE: local:rw
+      WEAPP_VITE_HMR_PROFILE_JSON: ''
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ matrix.ref }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: 22.23.3
+      - name: Record exact environment
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ matrix.ref }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          printf 'ImageOS=%s\nImageVersion=%s\n' "$ImageOS" "$ImageVersion"
+          cat /etc/os-release
+          uname -m
+          node --version
+          pnpm --version
+          git rev-parse HEAD
+          node -e 'for (const name of ["vitest", "vite", "rolldown"]) { const p = require.resolve(`${name}/package.json`); console.log(name, require(p).version, p) }'
+          shasum -a 256 package.json pnpm-lock.yaml .github/actions/setup-node-pnpm/action.yml packages/weapp-vite/test/runtime/jsxStatefulHmr.test.ts
+          git ls-tree -r HEAD apps/wevu-jsx-tsx-demo/src
+      - name: Fresh PR-style build
+        run: pnpm build:ci
+      - name: Original JSX cases with original assertions
+        run: pnpm exec vitest run --configLoader bundle --coverage.enabled --exclude '**/.codex-tmp/**' packages/weapp-vite/test/runtime/jsxStatefulHmr.test.ts
+
   build-pr:
     if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release/pnpm-version')
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
@@ -113,7 +169,7 @@ jobs:
     secrets: inherit
 
   build-full:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && inputs.jsx_hmr_control != true
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -210,7 +266,7 @@ jobs:
     secrets: inherit
 
   weapi-compat-full:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && inputs.jsx_hmr_control != true
     name: Weapi Compatibility Guard (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
