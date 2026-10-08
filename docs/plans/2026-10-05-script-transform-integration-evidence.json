@@ -1,0 +1,341 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-05",
+  "experiment": "experimental-script-transform: isolated complete compiler integration and original-source provenance",
+  "result": {
+    "completed": true,
+    "comparisonPassed": false,
+    "expectedStrictExitCode": 1,
+    "processExitEvidence": "Strict command actually returned exit code 1 through the execution tool; the separate read-only audit independently inferred that code from the saved result.",
+    "completeControlByteChecks": 360,
+    "fullCompilerCalls": 90,
+    "nativeCalls": 72,
+    "nativeSucceeded": 36,
+    "fallbackCalls": 36,
+    "fullCompilerPassed": 32,
+    "exactCompleteOutputs": 54,
+    "nativeFullCompilerPassed": 0,
+    "nativeExactCompleteOutputs": 0,
+    "nativeFullCompilerCalls": 36,
+    "fallbackCompilerCalls": 36,
+    "noStageCompilerCalls": 18,
+    "fullCompilerStructureCompared": 72,
+    "allComparedStructuresEqual": true,
+    "allMetadataWarningsErrorsEqual": true,
+    "fullCompilerWithMapFindings": 58,
+    "fullCompilerMapFindings": 57388,
+    "stageComparisons": 36,
+    "stagesPassed": 0,
+    "stageMapFindings": 8930,
+    "actualStrictExitCode": 1
+  },
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "command": "node --import tsx scripts/nativeScriptTransform/integratedCheck.ts --binding-dir=<experimental-script-transform release directory> --output=<new directory>",
+  "identity": {
+    "sourceFiles": 340,
+    "sourceHashesSha256": "41cb5e00e4637bf1cc38d2d7a6305c50f4d576713ecc5b7cce138dd6271cdc82",
+    "sourceHashSerialization": "SHA256 of JSON.stringify of the full sourceHashes object preserved in the private audit, in persisted key order; full identities also remain in summary.json.",
+    "buildFiles": 45,
+    "bindingSha256": "84cf921f734211b1924782f4a3154d7e821a1ed36d0a25dd56a8eebd16c17990",
+    "sourcesUnchanged": true,
+    "bindingUnchanged": true,
+    "sourceAndBinaryFilesUnchangedThroughoutAudit": true
+  },
+  "build": {
+    "exitCode": 0,
+    "feature": "experimental-script-transform",
+    "rust": "1.99.0",
+    "beforeSha256": "795e828af05057d65dc212d71b65d20497e6045b232452898d96a0ed6642f942",
+    "afterSha256": "d722f85d4a8066e231ed7ce4e99d70a2a8df0870aad85ce2411cbf6ddd2d96f2",
+    "logSha256": "8a96f637f487ec55c6b9ae7c6d3a91f3f889fc306b3b9a53d5c8e8e4d7cba764",
+    "nonfatalDebugInfoStrippingWarning": true
+  },
+  "audit": {
+    "passed": true,
+    "meaning": "Saved evidence and calculations reproduced; not compiler compatibility acceptance.",
+    "auditSha256": "2653794520b02efc961c60fc679fea09f74cb1134af18cb4ecf4167f50c1f5ce",
+    "auditScriptSha256": "181f7051e2af441fd08ef0af75f6c2d06b69138880b6fcea6732ba5bfc0f96f8",
+    "summarySha256": "c0279105f0320772ee230e8fd2c98b8fa76e06b0899206f0341b4d078fcb823a",
+    "rawFilesVerified": 139,
+    "compilerOraclesReplayed": 90,
+    "stageOraclesReplayed": 36,
+    "compilerInvocations": 0,
+    "nativeInvocations": 0,
+    "checks": [
+      "Recomputed declared 340-source and 45-build-input closures against current files and before/after records",
+      "Verified 360 complete JS control outputs, 90 actual complete compiler outputs and 72 integrated stage records",
+      "Checked each iteration owns the same indexes as the independent captured control; loader upstream/instrumented identities agree",
+      "Validated raw native payloads and direct stage delivery; both representative pages retain native code in the final script",
+      "Verified all 36 fallback calls execute JS once and return exact baseline stage and complete output",
+      "Replayed all compiler and stage oracles without rerunning compiler/native"
+    ],
+    "supplementaryAuditSha256": "d56a895bf2567fbb0a706595447702e14b16758ff70e3b4da2b8225ae1380c90",
+    "supplementaryAuditScope": "Asserts both representative scenarios have exactly two actual native records and that all four stage scripts are delivered into final compiler output; rechecks source, build and raw evidence identity."
+  },
+  "inputDesign": {
+    "compilerScenarioIds": 45,
+    "compilerChecksPerWorker": 90,
+    "stageScenarioIds": 36,
+    "stageRecords": 72,
+    "distinctSources": 22,
+    "distinctRequests": 16,
+    "distinctSourceRequestPairs": 24,
+    "successfulSourceRequestPairs": 10
+  },
+  "fallbackReasons": {
+    "Unsupported script option: propsDerivedKeys": 8,
+    "Unsupported undefined position: $.bindingManifest.bindings.3.sourceLocation": 4,
+    "Unsupported script option: scopedSlotHostProperties": 4,
+    "Unsupported undefined position: $.bindingManifest.bindings.0.sourceFile": 4,
+    "Compiler macro imports and aliases are not implemented in this experiment": 4,
+    "Compiler macro definePageMeta is not implemented in this experiment": 10,
+    "String-named runtime imports are deferred": 2
+  },
+  "representativePages": [
+    {
+      "scenarioId": "sfc-wevu",
+      "iterations": [
+        {
+          "iteration": 0,
+          "evidenceFile": "compiler-0002.json",
+          "evidenceSha256": "57387c1ec7c0d989627a6bbe3adfbaac6c83b3e6518e394638dd936b716c501e",
+          "exactOutput": false,
+          "comparisonPassed": false,
+          "nativeCalls": 1,
+          "fallbackCalls": 0,
+          "script": {
+            "astEqual": true,
+            "commentsEqual": true,
+            "annotationsEqual": true,
+            "astDifferences": 0,
+            "commentDifferences": 0,
+            "annotationDifferences": 0
+          },
+          "metadataEqual": true,
+          "warningsEqual": true,
+          "errorEqual": true,
+          "mapStatus": "present-both",
+          "mapCounts": {
+            "expected": 737,
+            "actual": 737,
+            "matchedMapped": 314,
+            "bothUnmapped": 399,
+            "oneSidedUnmapped": 22
+          },
+          "mapFindings": 423,
+          "mapReasons": {
+            "Both final maps omit this anchor; generated-region ownership is unverified": 399,
+            "Independent final origins differ": 24
+          },
+          "changedOutputFields": [
+            "$.value.script",
+            "$.value.scriptMap"
+          ]
+        },
+        {
+          "iteration": 1,
+          "evidenceFile": "compiler-0003.json",
+          "evidenceSha256": "de28c1079af2fcbc95e3e689b9ea095fdb19f0d3069a84dd8bc6100dd89253fd",
+          "exactOutput": false,
+          "comparisonPassed": false,
+          "nativeCalls": 1,
+          "fallbackCalls": 0,
+          "script": {
+            "astEqual": true,
+            "commentsEqual": true,
+            "annotationsEqual": true,
+            "astDifferences": 0,
+            "commentDifferences": 0,
+            "annotationDifferences": 0
+          },
+          "metadataEqual": true,
+          "warningsEqual": true,
+          "errorEqual": true,
+          "mapStatus": "present-both",
+          "mapCounts": {
+            "expected": 737,
+            "actual": 737,
+            "matchedMapped": 314,
+            "bothUnmapped": 399,
+            "oneSidedUnmapped": 22
+          },
+          "mapFindings": 423,
+          "mapReasons": {
+            "Both final maps omit this anchor; generated-region ownership is unverified": 399,
+            "Independent final origins differ": 24
+          },
+          "changedOutputFields": [
+            "$.value.script",
+            "$.value.scriptMap"
+          ]
+        }
+      ]
+    },
+    {
+      "scenarioId": "sfc-retail",
+      "iterations": [
+        {
+          "iteration": 0,
+          "evidenceFile": "compiler-0004.json",
+          "evidenceSha256": "9459a73c8a77b3296a04d95eef0d5d1f8c6713d92c7e0e1547c784337d35b838",
+          "exactOutput": false,
+          "comparisonPassed": false,
+          "nativeCalls": 1,
+          "fallbackCalls": 0,
+          "script": {
+            "astEqual": true,
+            "commentsEqual": true,
+            "annotationsEqual": true,
+            "astDifferences": 0,
+            "commentDifferences": 0,
+            "annotationDifferences": 0
+          },
+          "metadataEqual": true,
+          "warningsEqual": true,
+          "errorEqual": true,
+          "mapStatus": "present-both",
+          "mapCounts": {
+            "expected": 2043,
+            "actual": 2043,
+            "matchedMapped": 1059,
+            "bothUnmapped": 899,
+            "oneSidedUnmapped": 65
+          },
+          "mapFindings": 984,
+          "mapReasons": {
+            "Both final maps omit this anchor; generated-region ownership is unverified": 899,
+            "Independent final origins differ": 85
+          },
+          "changedOutputFields": [
+            "$.value.script",
+            "$.value.scriptMap"
+          ]
+        },
+        {
+          "iteration": 1,
+          "evidenceFile": "compiler-0005.json",
+          "evidenceSha256": "d912161c62ac22d4cda29b6d39b38ba61ccfe862aa5c02dcce256cac11ad1e71",
+          "exactOutput": false,
+          "comparisonPassed": false,
+          "nativeCalls": 1,
+          "fallbackCalls": 0,
+          "script": {
+            "astEqual": true,
+            "commentsEqual": true,
+            "annotationsEqual": true,
+            "astDifferences": 0,
+            "commentDifferences": 0,
+            "annotationDifferences": 0
+          },
+          "metadataEqual": true,
+          "warningsEqual": true,
+          "errorEqual": true,
+          "mapStatus": "present-both",
+          "mapCounts": {
+            "expected": 2043,
+            "actual": 2043,
+            "matchedMapped": 1059,
+            "bothUnmapped": 899,
+            "oneSidedUnmapped": 65
+          },
+          "mapFindings": 984,
+          "mapReasons": {
+            "Both final maps omit this anchor; generated-region ownership is unverified": 899,
+            "Independent final origins differ": 85
+          },
+          "changedOutputFields": [
+            "$.value.script",
+            "$.value.scriptMap"
+          ]
+        }
+      ]
+    }
+  ],
+  "originalStageComparison": {
+    "nativeCompared": 36,
+    "passed": 0,
+    "astEqual": 36,
+    "commentsEqual": 36,
+    "annotationsEqual": 36,
+    "metadataEqual": 36,
+    "warningsEqual": 36,
+    "mapFindings": 8930,
+    "originDifferences": 8902,
+    "outOfBoundsFindings": {
+      "expectedBabel": 28,
+      "actualNative": 0
+    }
+  },
+  "v5SameInputComparison": {
+    "precondition": "Source, serialized request and tagged baseline stage result are equal; native code is byte-identical before/after the source-map change.",
+    "wevu": {
+      "matchedMapped": [
+        345,
+        347
+      ],
+      "bothUnmapped": [
+        22,
+        15
+      ],
+      "sourceCandidateUnmapped": [
+        4,
+        0
+      ],
+      "findings": [
+        381,
+        382
+      ],
+      "removedFindings": 6,
+      "introducedFindings": 7
+    },
+    "retail": {
+      "matchedMapped": [
+        1206,
+        1208
+      ],
+      "bothUnmapped": [
+        28,
+        10
+      ],
+      "sourceCandidateUnmapped": [
+        10,
+        0
+      ],
+      "findings": [
+        819,
+        825
+      ],
+      "removedFindings": 12,
+      "introducedFindings": 18
+    },
+    "interpretation": "Removed findings include restored source import candidates and two missing rename-name anchors per page. Introduced findings mix genuine import origins absent in Babel with adjacent synthetic helper/module tokens inheriting GLB origins; the count is not a quality or regression metric."
+  },
+  "verification": {
+    "rustScriptTransformTests": 61,
+    "toolTests": 212,
+    "toolTestFiles": 14,
+    "scopeTypecheck": true,
+    "scopeEslint": true,
+    "defaultCargoCheck": true,
+    "combinedExperimentalCargoCheck": true,
+    "meaning": "210 tool tests passed before gate hardening; the final affected 11-test suite passed, including the two added regression cases. No unrelated broad retest was needed."
+  },
+  "limitations": [
+    "No compiler or native invocation was run during this audit; saved records were validated and both frozen oracles replayed.",
+    "Validator/oracle replay is not an independent compiler or runtime implementation. Real mini-program runtime, performance, RSS and other platforms remain untested here.",
+    "Full compiler comparison conservatively rejects every both-unmapped anchor without a generated-region ownership proof. Baseline map defects remain differences; counts are not a quality or speed metric.",
+    "The 32 complete comparisons that pass may include JS fallback or no-stage cases; they are not 32 native successes.",
+    "Source closures do not include all installed dependency/toolchain bytes; successful release build and binary hash are not a hermetic/reproducible build claim.",
+    "Same AST and source locations do not independently establish runtime semantics. v5/current-integrated comparisons are restricted to exactly equal source, serialized request and baseline stage result.",
+    "The native-success corpus has no nonempty warning list. Nonempty warning delivery, callback failure and malformed/failed native outcomes are covered by synthetic tests only.",
+    "The original JS fast path remains unchanged in production. The isolated native wrapper selects native before the original JS stage; this corpus does not establish fastSetup hit behavior or a speedup for that path.",
+    "Generated regions still lack explicit unmapped fences. Clearing spans does not prevent same-line GLB inheritance, including injected import helpers and minified registration/export.",
+    "Expression-source root spans do not reconstruct token provenance lost during earlier template rewrite/stringify. No synthetic source coordinate was invented to satisfy Babel.",
+    "No installed dependency closure, reproducible build, public production integration, real Stable WeChat DevTools runtime, build/HMR latency or RSS acceptance is established here.",
+    "The comparison keeps unsupported inputs as actual JS fallback and preserves every original map. completed=true is diagnostic completion only; comparisonPassed=false remains the compatibility result."
+  ]
+}

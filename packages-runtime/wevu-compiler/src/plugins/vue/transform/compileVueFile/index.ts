@@ -1,6 +1,7 @@
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { CompileVueFileOptions, VueTransformResult } from './types'
 import { compileScript } from 'vue/compiler-sfc'
+import { measureCompilerStage, measureCompilerStageAsync } from '../../../../profiling/internal'
 import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../../runtimeCapabilities'
 import { CompilerDiagnosticError } from '../../../../types/diagnostics'
 import { parseJsLike } from '../../../../utils/babel'
@@ -27,15 +28,8 @@ export type {
   VueTransformResult,
 } from './types'
 
-/**
- * 编译 Vue 单文件组件，输出脚本、模板、样式与配置结果。
- */
-export async function compileVueFile(
-  source: string,
-  filename: string,
-  options?: CompileVueFileOptions,
-): Promise<VueTransformResult> {
-  const parsed = await parseVueFile(source, filename, options)
+async function compileVueFileInternal(source: string, filename: string, options?: CompileVueFileOptions): Promise<VueTransformResult> {
+  const parsed = await measureCompilerStageAsync('compileVueFile.parse', () => parseVueFile(source, filename, options))
   const sfcId = generateScopedId(filename)
 
   const result: VueTransformResult = {
@@ -59,20 +53,20 @@ export async function compileVueFile(
     ? options.autoImportTags
     : undefined
 
-  const componentSourceInfo = await collectComponentSourceInfo({
+  const componentSourceInfo = await measureCompilerStageAsync('compileVueFile.componentSources', () => collectComponentSourceInfo({
     descriptor: parsed.descriptor,
     descriptorForCompile: parsed.descriptorForCompile,
     filename,
     compileOptions: options,
     autoUsingComponents,
     autoImportTags,
-  })
+  }))
 
   const scriptCompiled = parsed.descriptor.script || parsed.descriptor.scriptSetup
-    ? compileScript(parsed.descriptorForCompile, {
+    ? measureCompilerStage('compileVueFile.vueCompileScript', () => compileScript(parsed.descriptorForCompile, {
         id: sfcId,
         isProd: false,
-      })
+      }))
     : undefined
   let compiledScriptAst: ReturnType<typeof parseJsLike> | undefined
   const getCompiledScriptAst = () => compiledScriptAst ??= parseJsLike(scriptCompiled!.content)
@@ -86,7 +80,7 @@ export async function compileVueFile(
     ? resolveSetupPropConflicts(scriptCompiled.content, scriptCompiled.bindings, getCompiledScriptAst)
     : undefined
 
-  const styleCompiled = await compileStylePhase(parsed.descriptor, filename, result, options?.style)
+  const styleCompiled = await measureCompilerStageAsync('compileVueFile.style', () => compileStylePhase(parsed.descriptor, filename, result, options?.style))
   const hasCssVarsRuntime = parsed.descriptor.cssVars.length > 0 || options?.stabilizeCssVarsRuntime === true
 
   const scopedId = parsed.descriptor.styles.some(style => style.scoped)
@@ -133,7 +127,7 @@ export async function compileVueFile(
         miniProgramComponentTags: componentSourceInfo.miniProgramComponentTags,
       }
 
-  const templateCompiled = compileTemplatePhase(
+  const templateCompiled = measureCompilerStage('compileVueFile.template', () => compileTemplatePhase(
     parsed.descriptor,
     filename,
     source,
@@ -141,7 +135,7 @@ export async function compileVueFile(
     templateOptions,
     result,
     options?.bindingManifestSourceFile,
-  )
+  ))
   if (templateCompiled?.diagnostics.length) {
     let fatalDiagnostic: CompilerDiagnostic | undefined
     for (const diagnostic of templateCompiled.diagnostics) {
@@ -168,7 +162,7 @@ export async function compileVueFile(
       templateCompiled.bindingManifest,
     )
   }
-  const scriptPhase = await compileScriptPhase(
+  const scriptPhase = await measureCompilerStageAsync('compileVueFile.script', () => compileScriptPhase(
     parsed.descriptor,
     parsed.descriptorForCompile,
     filename,
@@ -185,7 +179,7 @@ export async function compileVueFile(
     },
     source,
     parsed.scriptPreprocessMap,
-  )
+  ))
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap
   if (scriptPhase.componentStyleOptions) {
@@ -204,7 +198,7 @@ export async function compileVueFile(
     result.diagnostics = [...(result.diagnostics ?? []), ...scriptPhase.diagnostics]
   }
 
-  await compileConfigPhase({
+  await measureCompilerStageAsync('compileVueFile.config', () => compileConfigPhase({
     descriptor: parsed.descriptor,
     filename,
     autoUsingComponentsMap: scriptPhase.autoUsingComponentsMap,
@@ -216,7 +210,7 @@ export async function compileVueFile(
     scriptSetupMacroConfig: parsed.scriptSetupMacroConfig,
     result,
     warn: options?.warn,
-  })
+  }))
   result.config = mergeCompilerLayoutUsingComponents(
     result.config,
     options?.pageLayout,
@@ -230,10 +224,21 @@ export async function compileVueFile(
       : undefined,
   }
 
-  finalizeResult(result, {
+  measureCompilerStage('compileVueFile.finalize', () => finalizeResult(result, {
     scriptSetupMacroHash: parsed.scriptSetupMacroHash,
     defineOptionsHash: parsed.defineOptionsHash,
-  })
+  }))
 
   return result
+}
+
+/**
+ * 编译 Vue 单文件组件，输出脚本、模板、样式与配置结果。
+ */
+export async function compileVueFile(
+  source: string,
+  filename: string,
+  options?: CompileVueFileOptions,
+): Promise<VueTransformResult> {
+  return measureCompilerStageAsync('compileVueFile', () => compileVueFileInternal(source, filename, options))
 }

@@ -6,6 +6,7 @@ const findCssEntryMock = vi.hoisted(() => vi.fn())
 const pathExistsMock = vi.hoisted(() => vi.fn(async () => true))
 
 vi.mock('../../../utils', () => ({
+  extractConfigFromVue: vi.fn(async () => undefined),
   findCssEntry: findCssEntryMock,
   findJsEntry: vi.fn(async () => ({ path: undefined })),
   findJsonEntry: vi.fn(async () => ({ path: undefined })),
@@ -62,6 +63,7 @@ describe('core logical entry lifecycle', () => {
       loadEntry: vi.fn(async () => undefined),
       entriesMap: new Map([
         ['pages/home/index', {
+          path: sourceId,
           json: {
             [field]: {
               card: field === 'usingComponents' ? linkedComponent : { default: linkedComponent },

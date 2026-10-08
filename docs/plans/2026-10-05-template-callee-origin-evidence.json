@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "round": 25,
+  "date": "2026-10-05",
+  "scope": "默认关闭的完整脚本实验：仅传递真实模板内联 handler callee token 的原始来源。",
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "outcome": {
+    "completed": true,
+    "comparisonPassed": false,
+    "semanticComparisonPassed": true,
+    "compilerComparisonPassed": false,
+    "compilerExitCode": 1
+  },
+  "processExitCode": 1,
+  "processReceipt": {
+    "status": {
+      "exitCode": 1,
+      "signal": null,
+      "timedOut": false,
+      "failed": true
+    },
+    "sha256": "7ba0422ccd9178f22e7dc416d76c86ea4e764370462f1da7fcb8e5429ae2dd2b",
+    "wrapperSha256": "d99756039275fa9e5cc01531f5cfa694a58755a0c205bbdacd178fe7a290ce3a"
+  },
+  "compiler": {
+    "completeControlByteChecks": 360,
+    "fullCompilerCalls": 90,
+    "stageCalls": 72,
+    "nativeDelivered": 36,
+    "actualSingleJsFallbacks": 36,
+    "noStage": 18,
+    "strictCompilerPassed": 32,
+    "strictNativePassed": 0,
+    "exactCompleteOutputs": 54
+  },
+  "origins": {
+    "capturedSources": 4,
+    "capturedUniqueOccurrences": 46,
+    "nativeMappedUniqueOccurrences": 22,
+    "realPageUniqueOccurrences": 21,
+    "additionalEventFixtureOccurrences": 1,
+    "fallbackOnlyPressureOccurrences": 24,
+    "stageExactAnchorChecks": 88,
+    "finalExactAnchorChecks": 88,
+    "selectiveMapCompositions": 12,
+    "unsupported": [
+      {
+        "stage": "template",
+        "reason": "template-owner-slice-mismatch",
+        "filename": "src/pages/batch-unicode-crlf/index.vue"
+      },
+      {
+        "stage": "template",
+        "reason": "template-owner-slice-mismatch",
+        "filename": "src/pages/batch-unicode-crlf/index.vue"
+      },
+      {
+        "stage": "template",
+        "reason": "template-owner-slice-mismatch",
+        "filename": "src/pages/batch-unicode-crlf/index.vue"
+      },
+      {
+        "stage": "template",
+        "reason": "template-owner-slice-mismatch",
+        "filename": "src/pages/batch-unicode-crlf/index.vue"
+      }
+    ],
+    "representativePages": [
+      {
+        "scenario": "sfc-wevu",
+        "uniqueHandlers": 7,
+        "sourceSha256": "6c234bbfbeb8467af821f43724f4bd01dc546356126fe144f91d6cb368c1a085"
+      },
+      {
+        "scenario": "sfc-retail",
+        "uniqueHandlers": 14,
+        "sourceSha256": "28a8c41959d94da732fc97a045bf901e0cde52b7a3c63beb327a705586ec2ecb"
+      }
+    ],
+    "counting": "sfc/binding 两个语料入口各重复两轮；88是每个map层的重复检查数，两个层不能相加作为独立覆盖。46个捕获occurrence中24个仅进入fallback，不能称为native映射。",
+    "proof": "实际Vue节点与原asset旁表捕获；父进程独立解析SFC并核对asset顺序；实际metadata AST callee位置必须有显式segment，且map consumer精确命中同一原始token。"
+  },
+  "semantics": {
+    "distinctPages": 2,
+    "iterationsPerPage": 2,
+    "comparisons": 4,
+    "passedComparisons": 4,
+    "workers": 8,
+    "successfulWorkers": 8,
+    "records": [
+      {
+        "scenarioId": "sfc-wevu",
+        "iteration": 0,
+        "comparisonPassed": true,
+        "differentFields": [],
+        "filename": "sfc-wevu-0.comparison.json",
+        "sha256": "49232abb1fac3b9d270463c14a50f50d70d5040b866081425de172953943092b"
+      },
+      {
+        "scenarioId": "sfc-wevu",
+        "iteration": 1,
+        "comparisonPassed": true,
+        "differentFields": [],
+        "filename": "sfc-wevu-1.comparison.json",
+        "sha256": "f92499347b40e5c805bf699de1c340672c688e3f5fef9b38d02d57c0dc9a3d62"
+      },
+      {
+        "scenarioId": "sfc-retail",
+        "iteration": 0,
+        "comparisonPassed": true,
+        "differentFields": [],
+        "filename": "sfc-retail-0.comparison.json",
+        "sha256": "9f39c7a4ff43af1306d9d57ccb796a567e9070a047f7d0894e3d602c5873c1e6"
+      },
+      {
+        "scenarioId": "sfc-retail",
+        "iteration": 1,
+        "comparisonPassed": true,
+        "differentFields": [],
+        "filename": "sfc-retail-1.comparison.json",
+        "sha256": "54c4eac17868a4fa219adc2ecaf1d0b6bd5b54e93a04751d9feb3edd040627fe"
+      }
+    ]
+  },
+  "crossRound": {
+    "baselineRound": 24,
+    "completeInputsUnchanged": 90,
+    "controlOutputsUnchanged": 90,
+    "stageSourcesAndOptionsUnchanged": 72,
+    "requestsExceptProvenanceStructurallyEqual": 72,
+    "nativeStageCodeByteEqual": 36,
+    "parseableCompleteScriptByteEqual": 72
+  },
+  "identity": {
+    "sourcesUnchanged": true,
+    "sourceFiles": 390,
+    "bindingUnchanged": true,
+    "bindingSha256": "7a243c1bc03d28c9e0cc6cbe16e0f6a2d73693d68ab473b48f3111dca534a90e",
+    "nativeRebuiltThisRound": true,
+    "buildInputs": 60,
+    "dependenciesUnchanged": true,
+    "declaredDependencyEntries": 11,
+    "dependencyFiles": 842,
+    "workspacePackageRoots": [
+      "@weapp-core/constants",
+      "@weapp-core/shared",
+      "packages-runtime/web-apis",
+      "packages-runtime/wevu"
+    ],
+    "compilerArtifacts": 134,
+    "semanticArtifacts": 31,
+    "summarySha256": "07e66b968affa0398affc9b47a0caaf796af69314c8960f97bc2f7140c433021",
+    "compilerSummarySha256": "d72775c7bf9632bb85e64c9b4e4bc748f3c3379d9850296f5e7e34cffba061b8",
+    "identityBeforeSha256": "63d78d2311624f51aa399e1ce622f5bf21bb13bc8f39c4a56a91cd5180a1f62b",
+    "identityAfterSha256": "37723eac7b14a7aa25a12c82e0d8dec6b01ab4ecea0e1251963d1d26d0c37118",
+    "nativeBuildBeforeSha256": "c12797b31d9deec0b9239c9b589747f8158e4d7ce700c123a299848b8fa7c8b4",
+    "nativeBuildAfterSha256": "67b8f2675db54670bfcbfb8aaea1487394742b3c5750a05cc0021dd716a8e05d"
+  },
+  "verification": {
+    "toolTestsPassed": 342,
+    "toolTestFiles": 25,
+    "scopedEslintPassed": true,
+    "scriptTypecheckPassed": true,
+    "rustSuitePassedBeforeTwoTestAdditions": 84,
+    "rustOriginTestsPassedAfterAdditions": 8,
+    "combinedExperimentalCargoCheckPassed": true,
+    "rustfmtPassed": true
+  },
+  "supersededDiagnostic": {
+    "completed": false,
+    "nativeWasExecuted": false,
+    "reason": "最初加载器依赖源码空白格式，遇到实际tsx紧凑模块时拒绝安装；已改为AST结构定位，并在新目录重跑。",
+    "summarySha256": "8d8ae82c9b2f62b9fba1080f46b8b9f7fd51f55c99e33a869deac54173f96113"
+  },
+  "limitations": [
+    "只证明直接callee token起点；arguments、class/key表达式、wrapper/helpers以及完整字符区间仍未证明，标点可GLB继承。",
+    "CRLF预处理导致原SFC与descriptor无法精确对齐时明确记录unsupported；不反推位置。",
+    "严格现有AST/map oracle保持不变。callee来源通过与受控语义通过均不消除严格编译失败，native默认关闭。",
+    "完整SFC旁表传输、额外表达式解析、加载器观察与多来源map重建有成本，本轮无性能、RSS或构建/HMR采样。",
+    "仅有限Node宿主、两页及受跟踪Promise；未完成真实Stable微信开发者工具或完整Wevu宿主runtime验收。",
+    "本机macOS arm64证据；跨平台结果以当前PR CI为准。842份helper身份不是全部node_modules/Node工具链字节闭包。"
+  ],
+  "independentAudit": {
+    "passed": true,
+    "rawEvidenceAuditSha256": "5a8679364028ccb3134b3efc326c5737d69d11da0858f7563bfe1201ac8c5826",
+    "scopeCountersSha256": "7f0f46422d342169a9350cfb6f36baa9e90c67626b3889197b555c25243ef2e1",
+    "rawEvidenceScope": "独立重算原始证据 hash、逐字及结构对照、进程退出与执行账本；未重跑 compiler、native、生成脚本或性能采样。",
+    "rehashes": {
+      "compiler": 134,
+      "semantic": 31,
+      "sources": 390,
+      "helpers": 842
+    },
+    "buildInputsRehashed": 60,
+    "buildOutputsRehashed": 2,
+    "completeScenarioIdentitiesRehashed": 90,
+    "existingValidatorReplay": {
+      "passed": true,
+      "scope": "在保存产物上重放现有来源与语义校验器，不是独立重写的 AST/map oracle。",
+      "sourceRecords": 32,
+      "stageExactAnchorChecks": 88,
+      "finalExactAnchorChecks": 88
+    },
+    "scopeReview": "另一代理核对 UTF-16 原文位置、实际输出 token 及唯一显式 map segment；该代理此前参与来源捕获实现，不代表完全独立实现审计。",
+    "strictOracleUnchanged": true,
+    "strictComparisonPassed": false,
+    "countingLimit": "新多来源 stage map 会被旧单来源门禁提前拒绝，差异总数下降不能算作修复；新增 88 次真实 callee 映射与 JS 空映射不同，最终双侧 unmapped 减少 88、来源差异增加 88。"
+  }
+}

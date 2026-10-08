@@ -7,6 +7,7 @@ import {
   isWevuRuntimeModuleId,
   WE_VU_RUNTIME_APIS,
 } from '../../../../constants'
+import { measureCompilerStage } from '../../../../profiling/internal'
 import {
   createWevuRuntimeCapabilityMetadata,
   mergeWevuRuntimeCapabilityMetadata,
@@ -37,17 +38,14 @@ function runVisitor(visitor: any, path: any) {
   }
 }
 
-/**
- * 转换 Vue SFC 脚本：处理宏、导入、默认导出与 wevu 相关注入。
- */
-export function transformScript(source: string, options?: TransformScriptOptions): TransformResult {
-  const fastResult = tryFastTransformCompiledScriptSetup(source, options)
+function transformScriptInternal(source: string, options?: TransformScriptOptions): TransformResult {
+  const fastResult = measureCompilerStage('transformScript.fastSetup', () => tryFastTransformCompiledScriptSetup(source, options))
   if (fastResult) {
     return fastResult
   }
 
-  const ast: BabelFile = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS)
-  const sourceRuntimeCapabilities = analyzeWevuRuntimeCalls(ast)
+  const ast: BabelFile = measureCompilerStage('transformScript.parse', () => babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS))
+  const sourceRuntimeCapabilities = measureCompilerStage('transformScript.sourceCapabilities', () => analyzeWevuRuntimeCalls(ast))
   const warn = resolveWarnHandler(options?.warn)
 
   const state: TransformState = {
@@ -60,7 +58,7 @@ export function transformScript(source: string, options?: TransformScriptOptions
   }
 
   const enabledPageFeatures: Set<WevuPageFeatureFlag> = options?.isPage
-    ? collectWevuPageFeatureFlags(ast)
+    ? measureCompilerStage('transformScript.pageFlags', () => collectWevuPageFeatureFlags(ast))
     : new Set<WevuPageFeatureFlag>()
   const serializedWevuDefaults = options?.wevuDefaults && Object.keys(options.wevuDefaults).length > 0
     ? serializeWevuDefaults(options.wevuDefaults, warn)
@@ -124,7 +122,7 @@ export function transformScript(source: string, options?: TransformScriptOptions
     },
   }
 
-  traverse(ast, visitor as any)
+  measureCompilerStage('transformScript.traverse', () => traverse(ast, visitor as any))
   const templateRuntimeCapabilities = createWevuRuntimeCapabilityMetadata([
     ...(options?.templateRefs?.length || options?.layoutHosts?.length ? ['templateRefs'] as const : []),
     ...(options?.inlineExpressions?.length ? ['inlineEvents'] as const : []),
@@ -175,20 +173,20 @@ export function transformScript(source: string, options?: TransformScriptOptions
 
   // <script setup> 组件导入自动注册：移除仅供模板使用的 import 与自动返回 getter。
   if (options?.templateComponentMeta) {
-    state.transformed = pruneTemplateComponentMeta(ast, options.templateComponentMeta) || state.transformed
+    state.transformed = measureCompilerStage('transformScript.templateMeta', () => pruneTemplateComponentMeta(ast, options.templateComponentMeta!)) || state.transformed
   }
 
   const rewriteOptions = state.usesSlots && !options?.scopedSlotHostProperties
     ? { ...options, scopedSlotHostProperties: true }
     : options
-  state.transformed = rewriteDefaultExport(
+  state.transformed = measureCompilerStage('transformScript.rewrite', () => rewriteDefaultExport(
     ast,
     state,
     rewriteOptions,
     enabledPageFeatures,
     serializedWevuDefaults,
     parsedWevuDefaults,
-  ) || state.transformed
+  )) || state.transformed
   state.transformed = injectWevuRuntimeCapabilityInstallers(ast.program, runtimeCapabilities) || state.transformed
 
   if (!state.transformed) {
@@ -201,13 +199,13 @@ export function transformScript(source: string, options?: TransformScriptOptions
   }
 
   const sourceMap = options?.sourceMap !== false
-  const generated = generate(ast, {
+  const generated = measureCompilerStage('transformScript.generate', () => generate(ast, {
     compact: options?.minify === true,
     minified: options?.minify === true,
     retainLines: options?.minify !== true,
     sourceMaps: sourceMap,
     sourceFileName: 'inline.ts',
-  }, source)
+  }, source))
 
   return {
     code: generated.code,
@@ -216,4 +214,11 @@ export function transformScript(source: string, options?: TransformScriptOptions
     ...(runtimeCapabilities ? { runtimeCapabilities } : {}),
     ...(state.componentStyleOptions ? { componentStyleOptions: state.componentStyleOptions } : {}),
   }
+}
+
+/**
+ * 转换 Vue SFC 脚本：处理宏、导入、默认导出与 wevu 相关注入。
+ */
+export function transformScript(source: string, options?: TransformScriptOptions): TransformResult {
+  return measureCompilerStage('transformScript', () => transformScriptInternal(source, options))
 }

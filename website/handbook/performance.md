@@ -125,6 +125,14 @@ const loading = ref(false)
 - 避免为了一个小功能引入很重的依赖
 - 尽量复用已有能力，不要叠加重复 SDK
 
+## 构建与 HMR 的 Rust 分析实验
+
+构建底层已使用 Rolldown/Oxc。进一步优化时，先检查重复解析、缓存失效范围和插件初始化，再判断计算热点是否适合迁入 Rust。小程序的 `setData`、宿主渲染与构建期分析属于不同成本，不能用构建微基准推导页面流畅度。
+
+仓库维护者可使用 `pnpm profile:compiler` 观测真实编译入口，使用 `pnpm benchmark:native-analysis` 对照同一输入的 native 关闭与开启路径。冒烟仅检查采集和产物，正式模式同时保留 P50、P95、RSS、输入与输出证据；未测运行时、跨平台或收益未达标时，不视为完整性能验收。
+
+Rust AST 路径仍须同时设置 `WEAPP_VITE_NATIVE=1` 与 `WEAPP_VITE_NATIVE_AST_PATH` 才会启用，失败回退现有 JS 分析。该入口用于构建期实验，不是默认配置，也不是小程序运行时的 Rust/WASM 开关。
+
 ## 体验优化不要只盯性能指标
 
 用户真正感受到的“快”，很多时候来自这些设计：

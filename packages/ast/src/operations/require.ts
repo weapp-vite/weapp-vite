@@ -3,6 +3,7 @@ import type { AstEngineName, AstParserLike } from '../types'
 import { walk } from 'oxc-walker'
 import { parseJsLikeWithEngine } from '../engine'
 import { analyzeScriptWithNative, loadNativeAstBindingSync, shouldUseNativeAst } from '../native'
+import { invokeNativeCall } from '../native/observation'
 
 export interface RequireToken {
   start: number
@@ -236,7 +237,7 @@ export function mayContainStaticRequireLiteral(
       }
       const checkNative = loadNativeAstBindingSync()?.mayContainStaticRequireLiteralNative
       if (checkNative) {
-        return checkNative(code, 'inline.ts')
+        return invokeNativeCall(code, () => checkNative(code, 'inline.ts'))
       }
     }
     catch {

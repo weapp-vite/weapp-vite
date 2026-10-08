@@ -17,11 +17,18 @@ import { collectSpecialNodes, normalizeTemplatePath, shouldMarkWxsImport, toRela
 
 const WEB_TEMPLATE_QUERY = 'weapp-web-template'
 
+interface CompileWxmlInternalOptions {
+  emitCode: boolean
+}
+
 function appendTemplateQuery(pathname: string) {
   return `${pathname}${pathname.includes('?') ? '&' : '?'}${WEB_TEMPLATE_QUERY}`
 }
 
-export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
+function compileWxmlInternal(
+  options: WxmlCompileOptions,
+  internal: CompileWxmlInternalOptions,
+): WxmlCompileResult {
   const dependencyContext = options.dependencyContext ?? createDependencyContext()
   const expandDependencies = options.expandDependencies ?? !options.dependencyContext
   const warnings = dependencyContext.warnings
@@ -47,14 +54,15 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
         continue
       }
       try {
-        const result = compileWxml({
+        // 依赖展开只需要依赖边和告警，不应为不会写出的依赖重复生成渲染函数。
+        const result = compileWxmlInternal({
           id: target,
           source,
           resolveTemplatePath: options.resolveTemplatePath,
           resolveWxsPath: options.resolveWxsPath,
           dependencyContext,
           expandDependencies: false,
-        })
+        }, { emitCode: false })
         expandDependencyTree(result.dependencies, target)
       }
       catch (error) {
@@ -95,7 +103,7 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
     resolveWxs: (raw: string) => options.resolveWxsPath(raw, options.id),
   })
 
-  if (options.navigationBar && options.navigationBar.config.navigationStyle !== 'custom') {
+  if (internal.emitCode && options.navigationBar && options.navigationBar.config.navigationStyle !== 'custom') {
     const attrs = buildNavigationBarAttrs(options.navigationBar.config, navigationBarAttrs)
     renderNodesList.unshift({
       type: 'element',
@@ -104,24 +112,43 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
     })
   }
 
+  const directDependencies: string[] = []
+
+  for (const entry of imports) {
+    addDependency(entry.id, dependencyContext, directDependencies)
+  }
+  for (const entry of includes) {
+    addDependency(entry.id, dependencyContext, directDependencies)
+  }
+  for (const entry of wxs) {
+    if (entry.kind === 'src') {
+      addDependency(entry.value, dependencyContext, directDependencies)
+    }
+  }
+
+  if (!internal.emitCode) {
+    return {
+      code: '',
+      dependencies: expandDependencies ? dependencyContext.dependencies : directDependencies,
+      warnings: warnings.length > 0 ? warnings : undefined,
+    }
+  }
+
   const importLines: string[] = [
     `import { html } from 'lit'`,
     `import { repeat } from 'lit/directives/repeat.js'`,
     `import { bindRuntimeEvent } from '${RUNTIME_ID}'`,
   ]
   const bodyLines: string[] = []
-  const directDependencies: string[] = []
 
   for (const entry of imports) {
     const importPath = normalizeTemplatePath(toRelativeImport(options.id, entry.id))
     importLines.push(`import { templates as ${entry.importName} } from '${appendTemplateQuery(importPath)}'`)
-    addDependency(entry.id, dependencyContext, directDependencies)
   }
 
   for (const entry of includes) {
     const importPath = normalizeTemplatePath(toRelativeImport(options.id, entry.id))
     importLines.push(`import { render as ${entry.importName} } from '${appendTemplateQuery(importPath)}'`)
-    addDependency(entry.id, dependencyContext, directDependencies)
   }
 
   for (const entry of wxs) {
@@ -131,7 +158,6 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
         ? `${baseImport}?wxs`
         : baseImport
       importLines.push(`import ${entry.importName} from '${importPath}'`)
-      addDependency(entry.value, dependencyContext, directDependencies)
     }
   }
 
@@ -204,11 +230,13 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
     dependencyContext.active.delete(options.id)
   }
 
-  const code = [...importLines, '', ...bodyLines].join('\n')
-  const dependencies = expandDependencies ? dependencyContext.dependencies : directDependencies
   return {
-    code,
-    dependencies,
+    code: [...importLines, '', ...bodyLines].join('\n'),
+    dependencies: expandDependencies ? dependencyContext.dependencies : directDependencies,
     warnings: warnings.length > 0 ? warnings : undefined,
   }
+}
+
+export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
+  return compileWxmlInternal(options, { emitCode: true })
 }

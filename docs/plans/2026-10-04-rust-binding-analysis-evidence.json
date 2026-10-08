@@ -1,0 +1,1244 @@
+{
+  "schemaVersion": 1,
+  "scope": "Default-off Cargo feature; no production compiler integration",
+  "correctness": [
+    {
+      "label": "profile",
+      "fixture": "scripts/astMigrationProfile/fixtures.ts:createVueSfcFixture",
+      "compileOptions": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "captureSha256": "50693e82d67a1c631a3a9c07761d16a6f761720829cbeb0fed62290146ae20a7",
+      "reportSha256": "bbec264061564c642d88f69054accd1fcab1ea99f4f0f6be20bfb7fbd1f7d919",
+      "sourceSha256": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+      "inputSha256": "9e5ddb3ca118abc9891b194a7e02c4a06797e0243fdfb7d1863e640e4d4b54c4",
+      "outputSha256": "e4ff5c11548624bf72705adf327bb847635f803426dd13bafe8c2400520f9d70",
+      "counts": {
+        "calls": 724,
+        "uniqueExpressions": 148,
+        "uniqueRequests": 197
+      },
+      "nativeCallsPerBatch": 1,
+      "failures": 0,
+      "fallback": null,
+      "bindingSha256": "42897b07327ac65a6f489d692d0eb90a33c76b416bed984d442473a1f926f42c"
+    },
+    {
+      "label": "retail",
+      "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/index.vue",
+      "compileOptions": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "captureSha256": "8a75bcc58068405f89d83b6023b9eeef32688258eba0832dfa0ab936dce9931c",
+      "reportSha256": "f271f637cacd8ac1aca87444766f642874d57c61c43e5c393b289ecf7f45c2d5",
+      "sourceSha256": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+      "inputSha256": "28a8c41959d94da732fc97a045bf901e0cde52b7a3c63beb327a705586ec2ecb",
+      "outputSha256": "e43977f472b7011f5a5e31660c249a25d6ed034daac3171bdc4c0f4b5af13c78",
+      "counts": {
+        "calls": 64,
+        "uniqueExpressions": 53,
+        "uniqueRequests": 53
+      },
+      "nativeCallsPerBatch": 1,
+      "failures": 0,
+      "fallback": null,
+      "bindingSha256": "42897b07327ac65a6f489d692d0eb90a33c76b416bed984d442473a1f926f42c"
+    },
+    {
+      "label": "wevu",
+      "fixture": "apps/wevu-vue-demo/src/pages/index/index.vue",
+      "compileOptions": {
+        "isPage": true,
+        "wevuDefaults": {
+          "component": {
+            "options": {
+              "virtualHost": false
+            }
+          }
+        }
+      },
+      "captureSha256": "ec82fad4af8e9ad0f20bd6de9480de96203a3a9fec177570abd03d5221ff4cd7",
+      "reportSha256": "35442a5af4efbe1b4662fc46a13be9bdede4761148930c2d9b90a0ab454bfbc0",
+      "sourceSha256": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+      "inputSha256": "6c234bbfbeb8467af821f43724f4bd01dc546356126fe144f91d6cb368c1a085",
+      "outputSha256": "eaa7fc289bc65650784ad67749939df2dcc69edce5f79891f4586caecbd6ea7e",
+      "counts": {
+        "calls": 34,
+        "uniqueExpressions": 19,
+        "uniqueRequests": 19
+      },
+      "nativeCallsPerBatch": 1,
+      "failures": 0,
+      "fallback": null,
+      "bindingSha256": "42897b07327ac65a6f489d692d0eb90a33c76b416bed984d442473a1f926f42c"
+    }
+  ],
+  "semanticTests": {
+    "debug": 82,
+    "release": 82
+  },
+  "adapterTests": 8,
+  "performanceAcceptance": "local replay sampled; no end-to-end performance acceptance",
+  "limitations": [
+    "Correctness compares normalized expression results before loop dependency merging.",
+    "Real page sources use fixed isolated compileVueFile options, not full project Vite configurations.",
+    "No complete build/HMR, original sourcemap, RSS or host-runtime performance claim.",
+    "Native feature correctness passed on macOS/Linux/Windows; local timing only covers macOS arm64.",
+    "Shared-machine loadavg remained high (27.1–35.0 over 16 logical CPUs); one paired session is not a stable performance guarantee. The JS baseline only deduplicates complete requests, not normalized syntax across different locals/safe-call settings."
+  ],
+  "performance": {
+    "scope": "Normalized expression analysis replay only; one shared-machine session after E2E/dev-watch processes exited. Not complete compilation, build or HMR.",
+    "iterationsPerCorpus": 30,
+    "warmupCycles": 6,
+    "order": "All six permutations rotated; fresh dedup cache per batch",
+    "timedWork": "Includes deduplication, NAPI input/output, validation and input-order restoration",
+    "reports": [
+      {
+        "label": "profile",
+        "reportSha256": "d4293b6aa21b8a5e199a8ddcf6c14e64166f8c45e60ec9d3e95f07cc5dc876c2",
+        "inputSha256": "50693e82d67a1c631a3a9c07761d16a6f761720829cbeb0fed62290146ae20a7",
+        "sourceSha256": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+        "bindingSha256": "42897b07327ac65a6f489d692d0eb90a33c76b416bed984d442473a1f926f42c",
+        "inputCount": 724,
+        "uniqueInputs": 197,
+        "nativeCallsPerBatch": 1,
+        "failures": [],
+        "environment": {
+          "node": "v24.18.0",
+          "platform": "darwin",
+          "arch": "arm64",
+          "cpus": 16,
+          "initialLoad": [
+            34.99365234375,
+            30.74853515625,
+            26.64208984375
+          ],
+          "finalLoad": [
+            34.99365234375,
+            30.74853515625,
+            26.64208984375
+          ]
+        },
+        "measured": {
+          "js": {
+            "p50": 8.887166000000036,
+            "p95": 16.517082999999957
+          },
+          "jsCached": {
+            "p50": 2.7678750000000036,
+            "p95": 7.100208000000066
+          },
+          "native": {
+            "p50": 0.6725419999999076,
+            "p95": 1.0299159999999574
+          }
+        },
+        "samples": [
+          {
+            "pair": 0,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 8.887166000000036,
+            "jsCached": 2.798582999999951,
+            "native": 0.6679589999999962
+          },
+          {
+            "pair": 1,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.6207919999999945,
+            "jsCached": 2.722417000000007,
+            "js": 14.246499999999969
+          },
+          {
+            "pair": 2,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 3.416417000000024,
+            "native": 0.6999589999999785,
+            "js": 10.862666999999988
+          },
+          {
+            "pair": 3,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 16.517082999999957,
+            "native": 0.7175410000000966,
+            "jsCached": 2.868041000000062
+          },
+          {
+            "pair": 4,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.6792500000000246,
+            "js": 9.21891699999992,
+            "jsCached": 2.7072919999999385
+          },
+          {
+            "pair": 5,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 2.923416999999972,
+            "js": 15.809500000000071,
+            "native": 0.6882500000000391
+          },
+          {
+            "pair": 6,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 7.8907500000000255,
+            "jsCached": 3.06733399999996,
+            "native": 1.0299159999999574
+          },
+          {
+            "pair": 7,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.7209169999999858,
+            "jsCached": 4.0952499999999645,
+            "js": 12.492917000000034
+          },
+          {
+            "pair": 8,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 2.6005409999999074,
+            "native": 0.6986660000000029,
+            "js": 8.153749999999945
+          },
+          {
+            "pair": 9,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 12.69683299999997,
+            "native": 0.692792000000054,
+            "jsCached": 2.580874999999992
+          },
+          {
+            "pair": 10,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.6378750000000082,
+            "js": 7.774792000000048,
+            "jsCached": 4.429916999999932
+          },
+          {
+            "pair": 11,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 2.50100000000009,
+            "js": 12.66937500000006,
+            "native": 0.6860419999999294
+          },
+          {
+            "pair": 12,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 7.703208000000018,
+            "jsCached": 2.8452909999999747,
+            "native": 0.6721249999999372
+          },
+          {
+            "pair": 13,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.6097500000000764,
+            "jsCached": 6.811874999999986,
+            "js": 8.527707999999961
+          },
+          {
+            "pair": 14,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 2.838624999999979,
+            "native": 0.6797920000000204,
+            "js": 8.163249999999948
+          },
+          {
+            "pair": 15,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 11.702916999999957,
+            "native": 0.6725419999999076,
+            "jsCached": 2.586082999999917
+          },
+          {
+            "pair": 16,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.7103329999999914,
+            "js": 7.957791000000043,
+            "jsCached": 2.5901250000000573
+          },
+          {
+            "pair": 17,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 6.945790999999986,
+            "js": 8.715791999999965,
+            "native": 0.6746669999999995
+          },
+          {
+            "pair": 18,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 8.339875000000006,
+            "jsCached": 2.5528339999999616,
+            "native": 0.6648750000000518
+          },
+          {
+            "pair": 19,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.6065830000000005,
+            "jsCached": 7.100208000000066,
+            "js": 8.664875000000052
+          },
+          {
+            "pair": 20,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 2.7407499999999345,
+            "native": 0.6755410000000666,
+            "js": 8.100832999999966
+          },
+          {
+            "pair": 21,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 13.146166999999991,
+            "native": 0.6583749999999782,
+            "jsCached": 2.612209000000007
+          },
+          {
+            "pair": 22,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 1.243082999999956,
+            "js": 11.874708000000055,
+            "jsCached": 2.598707999999988
+          },
+          {
+            "pair": 23,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 10.184708,
+            "js": 20.14333399999998,
+            "native": 0.7004590000000235
+          },
+          {
+            "pair": 24,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 8.252332999999908,
+            "jsCached": 2.730625000000032,
+            "native": 0.6560409999999592
+          },
+          {
+            "pair": 25,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.6076249999999845,
+            "jsCached": 3.2865000000000464,
+            "js": 12.12741600000004
+          },
+          {
+            "pair": 26,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 2.5788329999999178,
+            "native": 0.6615419999999403,
+            "js": 8.816832999999974
+          },
+          {
+            "pair": 27,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 13.79620900000009,
+            "native": 0.6710829999999532,
+            "jsCached": 3.7787080000000515
+          },
+          {
+            "pair": 28,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.6534169999999904,
+            "js": 7.907249999999976,
+            "jsCached": 2.7678750000000036
+          },
+          {
+            "pair": 29,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 2.5130420000000413,
+            "js": 12.23641699999996,
+            "native": 0.6651249999999891
+          }
+        ],
+        "fallback": null
+      },
+      {
+        "label": "retail",
+        "reportSha256": "484d54cd286a661ac50f057e7a5b7797748e1bdb12984302fbcbf2fc6b1e4070",
+        "inputSha256": "8a75bcc58068405f89d83b6023b9eeef32688258eba0832dfa0ab936dce9931c",
+        "sourceSha256": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+        "bindingSha256": "42897b07327ac65a6f489d692d0eb90a33c76b416bed984d442473a1f926f42c",
+        "inputCount": 64,
+        "uniqueInputs": 53,
+        "nativeCallsPerBatch": 1,
+        "failures": [],
+        "environment": {
+          "node": "v24.18.0",
+          "platform": "darwin",
+          "arch": "arm64",
+          "cpus": 16,
+          "initialLoad": [
+            29.96142578125,
+            29.845703125,
+            26.3916015625
+          ],
+          "finalLoad": [
+            29.96142578125,
+            29.845703125,
+            26.3916015625
+          ]
+        },
+        "measured": {
+          "js": {
+            "p50": 0.9961249999999495,
+            "p95": 3.2354160000000434
+          },
+          "jsCached": {
+            "p50": 0.8528749999999832,
+            "p95": 1.1975829999999519
+          },
+          "native": {
+            "p50": 0.16029099999997243,
+            "p95": 0.21837499999998045
+          }
+        },
+        "samples": [
+          {
+            "pair": 0,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 0.9536659999999983,
+            "jsCached": 0.9200000000000159,
+            "native": 0.16020800000001145
+          },
+          {
+            "pair": 1,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.19874999999996135,
+            "jsCached": 0.8902090000000271,
+            "js": 0.9701660000000061
+          },
+          {
+            "pair": 2,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 0.8862499999999613,
+            "native": 0.17116700000002538,
+            "js": 1.1503340000000435
+          },
+          {
+            "pair": 3,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 1.1502080000000205,
+            "native": 0.17104199999999992,
+            "jsCached": 1.1975829999999519
+          },
+          {
+            "pair": 4,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.19200000000000728,
+            "js": 1.1907909999999902,
+            "jsCached": 1.0889999999999986
+          },
+          {
+            "pair": 5,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 0.9805840000000217,
+            "js": 1.15866699999998,
+            "native": 0.21837499999998045
+          },
+          {
+            "pair": 6,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 3.2354160000000434,
+            "jsCached": 0.7883749999999736,
+            "native": 0.17770799999999554
+          },
+          {
+            "pair": 7,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.15516600000000835,
+            "jsCached": 1.119291999999973,
+            "js": 0.8849999999999909
+          },
+          {
+            "pair": 8,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 0.8187089999999557,
+            "native": 0.200333999999998,
+            "js": 1.0533750000000168
+          },
+          {
+            "pair": 9,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 1.0623339999999644,
+            "native": 0.1715419999999881,
+            "jsCached": 0.8732079999999769
+          },
+          {
+            "pair": 10,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.14708299999995234,
+            "js": 0.9904169999999795,
+            "jsCached": 0.8809590000000185
+          },
+          {
+            "pair": 11,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 0.8917909999999551,
+            "js": 1.1540410000000065,
+            "native": 0.21229099999999335
+          },
+          {
+            "pair": 12,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 1.168457999999987,
+            "jsCached": 3.5189169999999876,
+            "native": 0.22016600000000608
+          },
+          {
+            "pair": 13,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.1528329999999869,
+            "jsCached": 0.8825829999999542,
+            "js": 0.9961249999999495
+          },
+          {
+            "pair": 14,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 0.7465000000000259,
+            "native": 0.17858300000000327,
+            "js": 0.8358750000000441
+          },
+          {
+            "pair": 15,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 0.8416670000000295,
+            "native": 0.15587499999998045,
+            "jsCached": 0.8528749999999832
+          },
+          {
+            "pair": 16,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.14862499999998136,
+            "js": 1.4203339999999685,
+            "jsCached": 0.8099169999999845
+          },
+          {
+            "pair": 17,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 0.7072499999999877,
+            "js": 0.9062920000000076,
+            "native": 0.166499999999985
+          },
+          {
+            "pair": 18,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 0.892915999999957,
+            "jsCached": 0.8359159999999974,
+            "native": 0.14475000000004457
+          },
+          {
+            "pair": 19,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.1344169999999849,
+            "jsCached": 0.8385830000000283,
+            "js": 4.754166999999995
+          },
+          {
+            "pair": 20,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 0.8101250000000277,
+            "native": 0.20179100000001426,
+            "js": 0.8149999999999977
+          },
+          {
+            "pair": 21,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 0.8131669999999644,
+            "native": 0.1560000000000059,
+            "jsCached": 0.7006250000000023
+          },
+          {
+            "pair": 22,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.13816700000000992,
+            "js": 0.8045839999999771,
+            "jsCached": 0.7103749999999991
+          },
+          {
+            "pair": 23,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 0.6978340000000003,
+            "js": 0.8089169999999513,
+            "native": 0.14804199999997536
+          },
+          {
+            "pair": 24,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 0.8310409999999706,
+            "jsCached": 0.72037499999999,
+            "native": 0.15508300000004738
+          },
+          {
+            "pair": 25,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.13354100000003655,
+            "jsCached": 0.7307079999999928,
+            "js": 1.1460830000000328
+          },
+          {
+            "pair": 26,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 0.9762079999999855,
+            "native": 0.19216599999998607,
+            "js": 1.0172079999999823
+          },
+          {
+            "pair": 27,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 1.0631250000000136,
+            "native": 0.1607909999999606,
+            "jsCached": 0.8739160000000084
+          },
+          {
+            "pair": 28,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.14845800000000509,
+            "js": 1.0116250000000377,
+            "jsCached": 0.8551670000000513
+          },
+          {
+            "pair": 29,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 0.8449999999999704,
+            "js": 0.9940000000000282,
+            "native": 0.16029099999997243
+          }
+        ],
+        "fallback": null
+      },
+      {
+        "label": "wevu",
+        "reportSha256": "7578eebc8f7e352f4d09a86e89236c3814f25b8560ef9df44a1692d963615fdd",
+        "inputSha256": "ec82fad4af8e9ad0f20bd6de9480de96203a3a9fec177570abd03d5221ff4cd7",
+        "sourceSha256": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+        "bindingSha256": "42897b07327ac65a6f489d692d0eb90a33c76b416bed984d442473a1f926f42c",
+        "inputCount": 34,
+        "uniqueInputs": 19,
+        "nativeCallsPerBatch": 1,
+        "failures": [],
+        "environment": {
+          "node": "v24.18.0",
+          "platform": "darwin",
+          "arch": "arm64",
+          "cpus": 16,
+          "initialLoad": [
+            27.11328125,
+            29.24072265625,
+            26.21728515625
+          ],
+          "finalLoad": [
+            27.11328125,
+            29.24072265625,
+            26.21728515625
+          ]
+        },
+        "measured": {
+          "js": {
+            "p50": 0.6033750000000282,
+            "p95": 1.1201670000000377
+          },
+          "jsCached": {
+            "p50": 0.38658399999997073,
+            "p95": 3.2403750000000286
+          },
+          "native": {
+            "p50": 0.07450000000000045,
+            "p95": 0.13149999999995998
+          }
+        },
+        "samples": [
+          {
+            "pair": 0,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 1.2253749999999854,
+            "jsCached": 3.2403750000000286,
+            "native": 0.13149999999995998
+          },
+          {
+            "pair": 1,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.07145900000000438,
+            "jsCached": 0.5717920000000163,
+            "js": 0.724583999999993
+          },
+          {
+            "pair": 2,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 0.43345799999997325,
+            "native": 0.08016600000001972,
+            "js": 0.8602089999999976
+          },
+          {
+            "pair": 3,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 0.6811250000000086,
+            "native": 0.10883399999994481,
+            "jsCached": 0.5494170000000054
+          },
+          {
+            "pair": 4,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.08241699999996399,
+            "js": 0.6225000000000023,
+            "jsCached": 0.38341700000000856
+          },
+          {
+            "pair": 5,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 0.3484579999999937,
+            "js": 0.5820420000000013,
+            "native": 0.08304099999998016
+          },
+          {
+            "pair": 6,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 0.5521250000000464,
+            "jsCached": 4.131332999999984,
+            "native": 0.11362500000001319
+          },
+          {
+            "pair": 7,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.072749999999985,
+            "jsCached": 0.4257920000000013,
+            "js": 0.8418750000000159
+          },
+          {
+            "pair": 8,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 0.5519170000000031,
+            "native": 0.1577909999999747,
+            "js": 0.5998749999999973
+          },
+          {
+            "pair": 9,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 0.5308749999999804,
+            "native": 0.07879199999996445,
+            "jsCached": 0.3757079999999746
+          },
+          {
+            "pair": 10,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.06441700000004857,
+            "js": 0.5104999999999791,
+            "jsCached": 0.3235829999999851
+          },
+          {
+            "pair": 11,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 0.3202919999999949,
+            "js": 0.8874999999999886,
+            "native": 0.09629200000000537
+          },
+          {
+            "pair": 12,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 0.8157920000000445,
+            "jsCached": 0.46779199999997445,
+            "native": 0.10587500000002592
+          },
+          {
+            "pair": 13,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.06937499999997954,
+            "jsCached": 0.7071670000000267,
+            "js": 1.1201670000000377
+          },
+          {
+            "pair": 14,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 0.4382079999999746,
+            "native": 0.10900000000003729,
+            "js": 0.6581669999999917
+          },
+          {
+            "pair": 15,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 0.6066250000000082,
+            "native": 0.07845800000001191,
+            "jsCached": 0.38658399999997073
+          },
+          {
+            "pair": 16,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.06762500000002092,
+            "js": 0.6315830000000346,
+            "jsCached": 0.4226669999999899
+          },
+          {
+            "pair": 17,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 0.3993330000000128,
+            "js": 0.591165999999987,
+            "native": 0.07450000000000045
+          },
+          {
+            "pair": 18,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 0.6178330000000187,
+            "jsCached": 0.47875000000004775,
+            "native": 0.0710409999999797
+          },
+          {
+            "pair": 19,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.060124999999970896,
+            "jsCached": 0.3930840000000444,
+            "js": 0.6033750000000282
+          },
+          {
+            "pair": 20,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 2.1226670000000354,
+            "native": 0.10583300000001827,
+            "js": 0.5534579999999778
+          },
+          {
+            "pair": 21,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 0.47662500000001273,
+            "native": 0.0761669999999981,
+            "jsCached": 0.32887499999998226
+          },
+          {
+            "pair": 22,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.06337500000000773,
+            "js": 0.4732500000000073,
+            "jsCached": 0.32474999999999454
+          },
+          {
+            "pair": 23,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 0.32108299999998735,
+            "js": 0.475166999999999,
+            "native": 0.07341700000000628
+          },
+          {
+            "pair": 24,
+            "order": [
+              "js",
+              "jsCached",
+              "native"
+            ],
+            "js": 0.48270800000000236,
+            "jsCached": 0.29733299999998053,
+            "native": 0.06404200000002902
+          },
+          {
+            "pair": 25,
+            "order": [
+              "native",
+              "jsCached",
+              "js"
+            ],
+            "native": 0.05791700000003175,
+            "jsCached": 0.3139580000000137,
+            "js": 0.5838330000000269
+          },
+          {
+            "pair": 26,
+            "order": [
+              "jsCached",
+              "native",
+              "js"
+            ],
+            "jsCached": 0.3729579999999828,
+            "native": 0.06912499999998545,
+            "js": 0.986959000000013
+          },
+          {
+            "pair": 27,
+            "order": [
+              "js",
+              "native",
+              "jsCached"
+            ],
+            "js": 0.7508750000000077,
+            "native": 0.09333399999997027,
+            "jsCached": 0.3622919999999681
+          },
+          {
+            "pair": 28,
+            "order": [
+              "native",
+              "js",
+              "jsCached"
+            ],
+            "native": 0.06558300000000372,
+            "js": 0.5624169999999822,
+            "jsCached": 0.35287500000004
+          },
+          {
+            "pair": 29,
+            "order": [
+              "jsCached",
+              "js",
+              "native"
+            ],
+            "jsCached": 0.3537080000000401,
+            "js": 0.5415830000000028,
+            "native": 0.07045799999997371
+          }
+        ],
+        "fallback": null
+      }
+    ]
+  },
+  "ci": {
+    "commit": "f26ac58c1d947cee4f6b125bb044444707b227ca",
+    "workflow": "Native AST Analysis",
+    "runId": 37190452333,
+    "platforms": {
+      "macos-latest": "success",
+      "ubuntu-latest": "success",
+      "windows-latest": "success"
+    }
+  }
+}

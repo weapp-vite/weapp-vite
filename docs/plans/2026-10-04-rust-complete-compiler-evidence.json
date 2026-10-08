@@ -1,0 +1,3366 @@
+{
+  "schemaVersion": 1,
+  "scope": "Default-off diagnostic whole compileVueFile binding batching; production compiler source and public API unchanged this round.",
+  "correctness": {
+    "reportSha256": "673fbe568cac7d7eeb0843a5363cd3b933bd980f38945f9cd18cc5196cf85a52",
+    "report": {
+      "schemaVersion": 1,
+      "scope": "Complete compileVueFile with fixed options; excludes Vite orchestration, process startup and HMR. Default-off diagnostic hooks only.",
+      "environment": {
+        "node": "v24.18.0",
+        "platform": "darwin",
+        "arch": "arm64",
+        "cpus": 16,
+        "startedAt": "2026-10-04T11:06:53.900Z",
+        "finishedAt": "2026-10-04T11:06:58.330Z",
+        "initialLoad": [
+          16.87255859375,
+          24.8212890625,
+          27.08203125
+        ],
+        "finalLoad": [
+          16.64208984375,
+          24.6416015625,
+          27.00537109375
+        ]
+      },
+      "startup": {
+        "baseline": {
+          "id": 0,
+          "kind": "ready",
+          "sourceHashes": {},
+          "bindingSha256": "62df070c2db1d5e5d0cb0d9c3f34f48c1563e34c36400855943cf592811de9fb"
+        },
+        "control-js": {
+          "id": 0,
+          "kind": "ready",
+          "sourceHashes": {
+            "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/bindingManifest.ts": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+            "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template.ts": "b581bdc66464b5a2a27232b67dbbb6a544f4e87ca9d72e7f1a9edc0342aa5346",
+            "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-slot.ts": "3e684b7b521382698b551e9c18ab85ca49c2e3e302af982a7fafbd912d3f7e22"
+          },
+          "bindingSha256": "62df070c2db1d5e5d0cb0d9c3f34f48c1563e34c36400855943cf592811de9fb"
+        },
+        "planned-js": {
+          "id": 0,
+          "kind": "ready",
+          "sourceHashes": {
+            "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/bindingManifest.ts": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+            "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template.ts": "b581bdc66464b5a2a27232b67dbbb6a544f4e87ca9d72e7f1a9edc0342aa5346",
+            "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-slot.ts": "3e684b7b521382698b551e9c18ab85ca49c2e3e302af982a7fafbd912d3f7e22"
+          },
+          "bindingSha256": "62df070c2db1d5e5d0cb0d9c3f34f48c1563e34c36400855943cf592811de9fb"
+        },
+        "planned-summary": {
+          "id": 0,
+          "kind": "ready",
+          "sourceHashes": {
+            "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/bindingManifest.ts": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+            "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template.ts": "b581bdc66464b5a2a27232b67dbbb6a544f4e87ca9d72e7f1a9edc0342aa5346",
+            "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-slot.ts": "3e684b7b521382698b551e9c18ab85ca49c2e3e302af982a7fafbd912d3f7e22"
+          },
+          "bindingSha256": "62df070c2db1d5e5d0cb0d9c3f34f48c1563e34c36400855943cf592811de9fb"
+        },
+        "planned-native": {
+          "id": 0,
+          "kind": "ready",
+          "sourceHashes": {
+            "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/bindingManifest.ts": "88760181d64c90ff709f44614f99f7b6a93149266461692c16f4684513b17c2e",
+            "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template.ts": "b581bdc66464b5a2a27232b67dbbb6a544f4e87ca9d72e7f1a9edc0342aa5346",
+            "packages-runtime/wevu-compiler/src/plugins/vue/compiler/template/elements/tag-slot.ts": "3e684b7b521382698b551e9c18ab85ca49c2e3e302af982a7fafbd912d3f7e22"
+          },
+          "bindingSha256": "62df070c2db1d5e5d0cb0d9c3f34f48c1563e34c36400855943cf592811de9fb"
+        }
+      },
+      "toolSources": {
+        "scripts/nativeBindingAnalysis/compile.ts": "2255fd39623087929e9b5940417bd7e94e5f040a9a28158d801ab7d1a3be97ce",
+        "scripts/nativeBindingAnalysis/compileBatch/controller.ts": "033331fefbbafe80bcab01a2d35b816aa96fd427ce9b7f56ad81780aa8de4864",
+        "scripts/nativeBindingAnalysis/compileBatch/hooks.ts": "f0a93b7e7d86190b19ebab799ede9f473d95e71ea14057274fbeca4fec22e775",
+        "scripts/nativeBindingAnalysis/compileBatch/index.ts": "f557318b4b292a2aa7fe082828682cd89cb7ff4f4e0d7578e6ebc6b6ca63a0ea",
+        "scripts/nativeBindingAnalysis/compileBatch/plan.ts": "f7a3a3e7782c6d5c8ad4f0bf4a2025e86ee9c6cea71a593ea741082c304bbc54",
+        "scripts/nativeBindingAnalysis/compileBatch/types.ts": "c66980f98cce2e7c8d07012ba1178fe78e28e966655b7089245a07e9395607a9",
+        "scripts/nativeBindingAnalysis/compileProcess.ts": "89b8615bdad8c3d45738a452b825406ce441740770ed9937b2a07c2538003c51",
+        "scripts/nativeBindingAnalysis/compileProtocol.ts": "978f901be814001145064c3419268f7ef60fa8b640d71dc4a5b90f75b91e4bd4",
+        "scripts/nativeBindingAnalysis/compileScenarios.ts": "85d696b87a43c2fdb8e25cdd0a25e00a82f30190d44c9262c96cf1e21b7c5b0a",
+        "scripts/nativeBindingAnalysis/compileWorker.ts": "d846b8d8d3f3e4ad48fb9106e03c29926810badc18b2cc01180a4258503b8ae6",
+        "scripts/nativeBindingAnalysis/globals.ts": "1fb3caeb0c414400de447418bf63fa1d3ee2fdf5fb1d3e9365a2b3613d61e594",
+        "scripts/nativeBindingAnalysis/orders.ts": "543e70f90fc0542dcbee4d34a3fd5b34dad63eef3fc8d800ad8b04ee0d947e45",
+        "scripts/nativeBindingAnalysis/replay.ts": "57858b97537b23a923fb1d38420245e56ee64227cf27095d6b4078dd8433a03f"
+      },
+      "sourcesUnchanged": true,
+      "compiler": {
+        "compilerSourceFiles": 201,
+        "compilerSourceTreeSha256": "f9c417b2c349620bdec0792d27abbc9d322117ba8a181d794b903e2a9de61013",
+        "lockfileSha256": "c3470f724491ebdd5176c23b1ee61761c858a44f48a20a813721f1ee71276145",
+        "bindingSha256": "62df070c2db1d5e5d0cb0d9c3f34f48c1563e34c36400855943cf592811de9fb"
+      },
+      "compilerInputsUnchanged": true,
+      "checks": [
+        {
+          "scenario": "pressure",
+          "filename": "src/pages/batch-pressure/index.vue",
+          "sourceSha256": "9e5ddb3ca118abc9891b194a7e02c4a06797e0243fdfb7d1863e640e4d4b54c4",
+          "options": {
+            "isPage": true,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "830e37ab9760bbdcad2c1745f54e228780712779e72a8902971b5f9ba84e58c9",
+              "failed": false,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "830e37ab9760bbdcad2c1745f54e228780712779e72a8902971b5f9ba84e58c9",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "830e37ab9760bbdcad2c1745f54e228780712779e72a8902971b5f9ba84e58c9",
+              "failed": false,
+              "metrics": {
+                "inputCount": 724,
+                "uniqueInputCount": 197,
+                "consumedInputs": 724,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 266,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 197,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "830e37ab9760bbdcad2c1745f54e228780712779e72a8902971b5f9ba84e58c9",
+              "failed": false,
+              "metrics": {
+                "inputCount": 724,
+                "uniqueInputCount": 197,
+                "consumedInputs": 724,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 266,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 148,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "830e37ab9760bbdcad2c1745f54e228780712779e72a8902971b5f9ba84e58c9",
+              "failed": false,
+              "metrics": {
+                "inputCount": 724,
+                "uniqueInputCount": 197,
+                "consumedInputs": 724,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 1,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 266,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        },
+        {
+          "scenario": "wevu",
+          "filename": "apps/wevu-vue-demo/src/pages/index/index.vue",
+          "sourceSha256": "6c234bbfbeb8467af821f43724f4bd01dc546356126fe144f91d6cb368c1a085",
+          "options": {
+            "isPage": true,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "eaa7fc289bc65650784ad67749939df2dcc69edce5f79891f4586caecbd6ea7e",
+              "failed": false,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "eaa7fc289bc65650784ad67749939df2dcc69edce5f79891f4586caecbd6ea7e",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "eaa7fc289bc65650784ad67749939df2dcc69edce5f79891f4586caecbd6ea7e",
+              "failed": false,
+              "metrics": {
+                "inputCount": 34,
+                "uniqueInputCount": 19,
+                "consumedInputs": 34,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 16,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 19,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "eaa7fc289bc65650784ad67749939df2dcc69edce5f79891f4586caecbd6ea7e",
+              "failed": false,
+              "metrics": {
+                "inputCount": 34,
+                "uniqueInputCount": 19,
+                "consumedInputs": 34,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 16,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 19,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "eaa7fc289bc65650784ad67749939df2dcc69edce5f79891f4586caecbd6ea7e",
+              "failed": false,
+              "metrics": {
+                "inputCount": 34,
+                "uniqueInputCount": 19,
+                "consumedInputs": 34,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 1,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 16,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        },
+        {
+          "scenario": "retail",
+          "filename": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/index.vue",
+          "sourceSha256": "28a8c41959d94da732fc97a045bf901e0cde52b7a3c63beb327a705586ec2ecb",
+          "options": {
+            "isPage": true,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "e43977f472b7011f5a5e31660c249a25d6ed034daac3171bdc4c0f4b5af13c78",
+              "failed": false,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "e43977f472b7011f5a5e31660c249a25d6ed034daac3171bdc4c0f4b5af13c78",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "e43977f472b7011f5a5e31660c249a25d6ed034daac3171bdc4c0f4b5af13c78",
+              "failed": false,
+              "metrics": {
+                "inputCount": 64,
+                "uniqueInputCount": 53,
+                "consumedInputs": 64,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 52,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 53,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "e43977f472b7011f5a5e31660c249a25d6ed034daac3171bdc4c0f4b5af13c78",
+              "failed": false,
+              "metrics": {
+                "inputCount": 64,
+                "uniqueInputCount": 53,
+                "consumedInputs": 64,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 52,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 53,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "e43977f472b7011f5a5e31660c249a25d6ed034daac3171bdc4c0f4b5af13c78",
+              "failed": false,
+              "metrics": {
+                "inputCount": 64,
+                "uniqueInputCount": 53,
+                "consumedInputs": 64,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 1,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 52,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        },
+        {
+          "scenario": "nested-loops",
+          "filename": "src/pages/batch-nested-loops/index.vue",
+          "sourceSha256": "b52fbd1de37e9e28272b802e93b001a9ce63a9d5063760ea45ee62fb7578398e",
+          "options": {
+            "isPage": true,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "ea1fae51c121409ab6ee0aa2274828584da754389afe6b4ea27cac414f8d668a",
+              "failed": false,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "ea1fae51c121409ab6ee0aa2274828584da754389afe6b4ea27cac414f8d668a",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "ea1fae51c121409ab6ee0aa2274828584da754389afe6b4ea27cac414f8d668a",
+              "failed": false,
+              "metrics": {
+                "inputCount": 20,
+                "uniqueInputCount": 9,
+                "consumedInputs": 20,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 7,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 9,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "ea1fae51c121409ab6ee0aa2274828584da754389afe6b4ea27cac414f8d668a",
+              "failed": false,
+              "metrics": {
+                "inputCount": 20,
+                "uniqueInputCount": 9,
+                "consumedInputs": 20,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 7,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 9,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "ea1fae51c121409ab6ee0aa2274828584da754389afe6b4ea27cac414f8d668a",
+              "failed": false,
+              "metrics": {
+                "inputCount": 20,
+                "uniqueInputCount": 9,
+                "consumedInputs": 20,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 1,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 7,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        },
+        {
+          "scenario": "scoped-slots",
+          "filename": "src/pages/batch-scoped-slots/index.vue",
+          "sourceSha256": "5a759c231b87ad33a92d4635c3e0049565c5ab28fc3b08356a5e5f0bca015908",
+          "options": {
+            "isPage": true,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            },
+            "template": {
+              "wevuComponentTags": [
+                "slot-box"
+              ],
+              "scopedSlotsRequireProps": true
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "6fa3d14da2a31328a1529fee1c6d5b9af897dcf0b3442cdee131c2402cc5405a",
+              "failed": false,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "6fa3d14da2a31328a1529fee1c6d5b9af897dcf0b3442cdee131c2402cc5405a",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "6fa3d14da2a31328a1529fee1c6d5b9af897dcf0b3442cdee131c2402cc5405a",
+              "failed": false,
+              "metrics": {
+                "inputCount": 19,
+                "uniqueInputCount": 14,
+                "consumedInputs": 19,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 2,
+                "queuedRecords": 12,
+                "directRecords": 1,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 14,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "6fa3d14da2a31328a1529fee1c6d5b9af897dcf0b3442cdee131c2402cc5405a",
+              "failed": false,
+              "metrics": {
+                "inputCount": 19,
+                "uniqueInputCount": 14,
+                "consumedInputs": 19,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 2,
+                "queuedRecords": 12,
+                "directRecords": 1,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 13,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "6fa3d14da2a31328a1529fee1c6d5b9af897dcf0b3442cdee131c2402cc5405a",
+              "failed": false,
+              "metrics": {
+                "inputCount": 19,
+                "uniqueInputCount": 14,
+                "consumedInputs": 19,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 2,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 2,
+                "queuedRecords": 12,
+                "directRecords": 1,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        },
+        {
+          "scenario": "events-and-repeats",
+          "filename": "src/pages/batch-events-and-repeats/index.vue",
+          "sourceSha256": "d0756211712aa1ad7c9cc7bfd80ebbef344e2746fbc48eea6070028122bd8b38",
+          "options": {
+            "isPage": true,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "ad81133c6372bdb73f8d8d428966e382208b876caafac195b55c4753dc19193d",
+              "failed": false,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "ad81133c6372bdb73f8d8d428966e382208b876caafac195b55c4753dc19193d",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "ad81133c6372bdb73f8d8d428966e382208b876caafac195b55c4753dc19193d",
+              "failed": false,
+              "metrics": {
+                "inputCount": 8,
+                "uniqueInputCount": 5,
+                "consumedInputs": 8,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 6,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 5,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "ad81133c6372bdb73f8d8d428966e382208b876caafac195b55c4753dc19193d",
+              "failed": false,
+              "metrics": {
+                "inputCount": 8,
+                "uniqueInputCount": 5,
+                "consumedInputs": 8,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 6,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 5,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "ad81133c6372bdb73f8d8d428966e382208b876caafac195b55c4753dc19193d",
+              "failed": false,
+              "metrics": {
+                "inputCount": 8,
+                "uniqueInputCount": 5,
+                "consumedInputs": 8,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 1,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 6,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        },
+        {
+          "scenario": "slot-outlet",
+          "filename": "src/pages/batch-slot-outlet/index.vue",
+          "sourceSha256": "3611df3eb75c1e32dcebd87d3d84fd704d0919bb3041e64f95887a54a2b0798a",
+          "options": {
+            "isPage": false,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "308b7e3004ff6789b90b3cb6db0f6a2177c8997dc4d7460360d65141bce2222e",
+              "failed": false,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "308b7e3004ff6789b90b3cb6db0f6a2177c8997dc4d7460360d65141bce2222e",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "308b7e3004ff6789b90b3cb6db0f6a2177c8997dc4d7460360d65141bce2222e",
+              "failed": false,
+              "metrics": {
+                "inputCount": 2,
+                "uniqueInputCount": 1,
+                "consumedInputs": 2,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 2,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 1,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "308b7e3004ff6789b90b3cb6db0f6a2177c8997dc4d7460360d65141bce2222e",
+              "failed": false,
+              "metrics": {
+                "inputCount": 2,
+                "uniqueInputCount": 1,
+                "consumedInputs": 2,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 2,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 1,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "308b7e3004ff6789b90b3cb6db0f6a2177c8997dc4d7460360d65141bce2222e",
+              "failed": false,
+              "metrics": {
+                "inputCount": 2,
+                "uniqueInputCount": 1,
+                "consumedInputs": 2,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 1,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 2,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        },
+        {
+          "scenario": "jsx",
+          "filename": "src/pages/batch-jsx/index.vue",
+          "sourceSha256": "8e329f1818486fd9a1701e7532f33d9dbb394427f87b057acf7494e7f06906ef",
+          "options": {
+            "isPage": true,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "b27809d03943c8b6944a4763b28ab930a958b329bb02f340b9a4eca55e3598dc",
+              "failed": false,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "b27809d03943c8b6944a4763b28ab930a958b329bb02f340b9a4eca55e3598dc",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "b27809d03943c8b6944a4763b28ab930a958b329bb02f340b9a4eca55e3598dc",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 4,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "b27809d03943c8b6944a4763b28ab930a958b329bb02f340b9a4eca55e3598dc",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 4,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "b27809d03943c8b6944a4763b28ab930a958b329bb02f340b9a4eca55e3598dc",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 4,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        },
+        {
+          "scenario": "unicode-crlf",
+          "filename": "src/pages/batch-unicode-crlf/index.vue",
+          "sourceSha256": "32a8af0746c9cd223f32682b6c4b2406fba6f3cea1531b322526031b47744191",
+          "options": {
+            "isPage": true,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "f6ac0e536ddeb943ed6d6b05fa20cfbba3ff96f50168ed9a313a210e0ce94d46",
+              "failed": false,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "f6ac0e536ddeb943ed6d6b05fa20cfbba3ff96f50168ed9a313a210e0ce94d46",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "f6ac0e536ddeb943ed6d6b05fa20cfbba3ff96f50168ed9a313a210e0ce94d46",
+              "failed": false,
+              "metrics": {
+                "inputCount": 5,
+                "uniqueInputCount": 4,
+                "consumedInputs": 5,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 3,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 4,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "f6ac0e536ddeb943ed6d6b05fa20cfbba3ff96f50168ed9a313a210e0ce94d46",
+              "failed": false,
+              "metrics": {
+                "inputCount": 5,
+                "uniqueInputCount": 4,
+                "consumedInputs": 5,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 3,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 4,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "f6ac0e536ddeb943ed6d6b05fa20cfbba3ff96f50168ed9a313a210e0ce94d46",
+              "failed": false,
+              "metrics": {
+                "inputCount": 5,
+                "uniqueInputCount": 4,
+                "consumedInputs": 5,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 1,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 3,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        },
+        {
+          "scenario": "static-template",
+          "filename": "src/pages/batch-static-template/index.vue",
+          "sourceSha256": "28d3d89c0d5fb8d4463031682ab5437ddde33eb788f1d5f35f8993bcb7d18db5",
+          "options": {
+            "isPage": true,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "a82858d7bbed437e636a128fb445b2060b23e1791ed21e74cea442537eb4fe6d",
+              "failed": false,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "a82858d7bbed437e636a128fb445b2060b23e1791ed21e74cea442537eb4fe6d",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "a82858d7bbed437e636a128fb445b2060b23e1791ed21e74cea442537eb4fe6d",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "a82858d7bbed437e636a128fb445b2060b23e1791ed21e74cea442537eb4fe6d",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "a82858d7bbed437e636a128fb445b2060b23e1791ed21e74cea442537eb4fe6d",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        },
+        {
+          "scenario": "fallback-throw",
+          "filename": "src/pages/batch-fallback-throw/index.vue",
+          "sourceSha256": "6bf84e4a6b98e1299b93d1dd9ccf0286c387fba3cd7ddc31b7cbbd484f5d51a9",
+          "options": {
+            "isPage": true,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "6784d297cfb3c8687d131f2a8d237b62bf023c6c62bfe80ba2f3b629202e1397",
+              "failed": false,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "6784d297cfb3c8687d131f2a8d237b62bf023c6c62bfe80ba2f3b629202e1397",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "6784d297cfb3c8687d131f2a8d237b62bf023c6c62bfe80ba2f3b629202e1397",
+              "failed": false,
+              "metrics": {
+                "inputCount": 6,
+                "uniqueInputCount": 4,
+                "consumedInputs": 6,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 3,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 4,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "6784d297cfb3c8687d131f2a8d237b62bf023c6c62bfe80ba2f3b629202e1397",
+              "failed": false,
+              "metrics": {
+                "inputCount": 6,
+                "uniqueInputCount": 4,
+                "consumedInputs": 6,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 3,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 4,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "6784d297cfb3c8687d131f2a8d237b62bf023c6c62bfe80ba2f3b629202e1397",
+              "failed": false,
+              "metrics": {
+                "inputCount": 6,
+                "uniqueInputCount": 4,
+                "consumedInputs": 6,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 1,
+                "fallbackCount": 1,
+                "fallbackReasons": [
+                  "Error: Injected native execution failure"
+                ],
+                "flushCount": 1,
+                "queuedRecords": 3,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 4,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        },
+        {
+          "scenario": "fallback-malformed",
+          "filename": "src/pages/batch-fallback-malformed/index.vue",
+          "sourceSha256": "6bf84e4a6b98e1299b93d1dd9ccf0286c387fba3cd7ddc31b7cbbd484f5d51a9",
+          "options": {
+            "isPage": true,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "00d562773b6acf82cf8fe2ddb09e2ad0964e5b682436cc4eef869c907ced5ab0",
+              "failed": false,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "00d562773b6acf82cf8fe2ddb09e2ad0964e5b682436cc4eef869c907ced5ab0",
+              "failed": false,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "00d562773b6acf82cf8fe2ddb09e2ad0964e5b682436cc4eef869c907ced5ab0",
+              "failed": false,
+              "metrics": {
+                "inputCount": 6,
+                "uniqueInputCount": 4,
+                "consumedInputs": 6,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 3,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 4,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "00d562773b6acf82cf8fe2ddb09e2ad0964e5b682436cc4eef869c907ced5ab0",
+              "failed": false,
+              "metrics": {
+                "inputCount": 6,
+                "uniqueInputCount": 4,
+                "consumedInputs": 6,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 1,
+                "queuedRecords": 3,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 4,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "00d562773b6acf82cf8fe2ddb09e2ad0964e5b682436cc4eef869c907ced5ab0",
+              "failed": false,
+              "metrics": {
+                "inputCount": 6,
+                "uniqueInputCount": 4,
+                "consumedInputs": 6,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 1,
+                "fallbackCount": 1,
+                "fallbackReasons": [
+                  "Error: Native batch result length differs from unique input count"
+                ],
+                "flushCount": 1,
+                "queuedRecords": 3,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 4,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        },
+        {
+          "scenario": "invalid-template",
+          "filename": "src/pages/batch-invalid-template/index.vue",
+          "sourceSha256": "670d6ba6b59f6db56fdd7e403e6acd7c571cdf4b6a3992923ed73202f366be64",
+          "options": {
+            "isPage": true,
+            "wevuDefaults": {
+              "component": {
+                "options": {
+                  "virtualHost": false
+                }
+              }
+            }
+          },
+          "variants": {
+            "baseline": {
+              "outputSha256": "6d550195d430bf9ee6358f75d36151035bacb27df2c5ddf73e5ddca4dd72b8d5",
+              "failed": true,
+              "metrics": {}
+            },
+            "control-js": {
+              "outputSha256": "6d550195d430bf9ee6358f75d36151035bacb27df2c5ddf73e5ddca4dd72b8d5",
+              "failed": true,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-js": {
+              "outputSha256": "6d550195d430bf9ee6358f75d36151035bacb27df2c5ddf73e5ddca4dd72b8d5",
+              "failed": true,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-summary": {
+              "outputSha256": "6d550195d430bf9ee6358f75d36151035bacb27df2c5ddf73e5ddca4dd72b8d5",
+              "failed": true,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            },
+            "planned-native": {
+              "outputSha256": "6d550195d430bf9ee6358f75d36151035bacb27df2c5ddf73e5ddca4dd72b8d5",
+              "failed": true,
+              "metrics": {
+                "inputCount": 0,
+                "uniqueInputCount": 0,
+                "consumedInputs": 0,
+                "unusedPreparedInputs": 0,
+                "nativeCalls": 0,
+                "fallbackCount": 0,
+                "fallbackReasons": [],
+                "flushCount": 0,
+                "queuedRecords": 0,
+                "directRecords": 0,
+                "unbatchedCalls": 0,
+                "baseJsCalls": 0,
+                "abortedTemplates": 0,
+                "discardedRecords": 0,
+                "pendingRecords": 0,
+                "pendingInputs": 0,
+                "activeTemplates": 0
+              }
+            }
+          }
+        }
+      ],
+      "requestedIterations": 0,
+      "warmupRounds": 0,
+      "orderPeriod": 10,
+      "completedPairs": 0,
+      "fullyBalanced": false,
+      "passed": true,
+      "cleanupErrors": [],
+      "samples": [],
+      "limitations": [
+        "Each variant owns an isolated persistent process; workers are exercised serially, and caches are not shared across variants.",
+        "All source normalization, planning, JS/Rust analysis and manifest consumption happen inside the timed compilation.",
+        "One balanced order cycle of warmups follows one correctness compile; these measurements describe warm compilation only.",
+        "control-js uses identical TypeScript stripping hooks without changing compiler logic, separating loader/code-generation effects from batching.",
+        "IPC, output serialization, equality checks and metrics snapshots are outside the timing window.",
+        "RSS is the root worker snapshot immediately after compilation, not peak RSS or the process-tree total.",
+        "Every returned value, source map, warning and expected error is compared using complete JSON output on every invocation.",
+        "A single shared-machine run is not formal build/HMR performance acceptance or evidence to enable native by default.",
+        "Identity checks cover the listed diagnostic sources, compiler TypeScript source tree, native binary and lockfile; installed transitive dependency files are not rehashed."
+      ]
+    }
+  },
+  "performance": {
+    "acceptedFiveWayTimingRuns": 0,
+    "firstAttempt": {
+      "monitorExclusion": {
+        "reportSha256": "a224438b166fc068334fef6e5b6b08b671e34862558df93d99e3b6dfe44796fe",
+        "report": {
+          "excluded": true,
+          "scope": "All timing samples in this first attempt",
+          "reason": "The process monitor expanded descendants of ancestor PIDs and could hide sibling tasks. Correctness comparisons remain valid; timings are not accepted."
+        }
+      },
+      "reports": [
+        {
+          "name": "pressure-1",
+          "sha256": "0aff487a44f489d937eefa0aae1a73bf2fa289b9a7167b6130ac49426d89735f",
+          "passedCorrectness": true
+        },
+        {
+          "name": "pressure-2",
+          "sha256": "4699ab5638fb6202b557273f542226a6a532589747c836b1e694d2e255f6c40a",
+          "passedCorrectness": true
+        },
+        {
+          "name": "retail-1",
+          "sha256": "27e1f103b9ef3369fdb62cf05712fdb1a7218912546d98e4b41561e879d27b5d",
+          "passedCorrectness": true
+        },
+        {
+          "name": "retail-2",
+          "sha256": "3bbefd9180861e26a670e3962df9ec528bac91f0ffa57f38f928c0177d2932fe",
+          "passedCorrectness": true
+        },
+        {
+          "name": "wevu-1",
+          "sha256": "41d9d56f14a688b8aa9803b489e1ee2b181d10bafd67e0c400894ecae63b40ad",
+          "passedCorrectness": true
+        },
+        {
+          "name": "wevu-2",
+          "sha256": "59ef9d651cea431b098b99f36465c6a96c26e83fbce70d88403eac5e40e3f083",
+          "passedCorrectness": true
+        }
+      ],
+      "decision": "All timings excluded due process monitor ancestry bug; four variants also lack loader control."
+    },
+    "secondAttempt": {
+      "processChecksSha256": "f1a30e91ded56e21ca1311f07fe19557f1a156704d30bcf43f296aaeff681d6b",
+      "checks": [
+        {
+          "label": "pressure-1",
+          "startedAt": "2026-10-04T10:57:38.462615+00:00",
+          "finishedAt": "2026-10-04T10:57:49.450899+00:00",
+          "beforeCount": 0,
+          "duringAffectedObservations": 0,
+          "afterCount": 0,
+          "observations": 18,
+          "concurrencyExcluded": false
+        },
+        {
+          "label": "retail-1",
+          "startedAt": "2026-10-04T10:57:49.547335+00:00",
+          "finishedAt": "2026-10-04T10:57:59.197492+00:00",
+          "beforeCount": 0,
+          "duringAffectedObservations": 5,
+          "afterCount": 31,
+          "observations": 15,
+          "concurrencyExcluded": true
+        }
+      ],
+      "reports": [
+        {
+          "name": "pressure-1",
+          "sha256": "27df871b909590c362050d273e06ae7b39949d61b9814f2f7d8b1af2e8deb0b6",
+          "passedCorrectness": true
+        },
+        {
+          "name": "retail-1",
+          "sha256": "b9e852df99473c3140cd2c494dd9b30b8eef227f82fc82a8fdd35dcac9d6192a",
+          "passedCorrectness": true
+        }
+      ],
+      "decision": "Retail excluded for concurrent work. Pressure exploratory only; no control-js, no replicated three-corpus result. No Rust performance conclusion accepted."
+    },
+    "fiveWayPreflight": {
+      "reportSha256": "ec57c470300cda0db98dc95c84316b361fd0c2d3bd078aa213271161b4438ec6",
+      "report": [
+        {
+          "label": "pressure-1",
+          "startedAt": "2026-10-04T11:09:05.880605+00:00",
+          "before": [
+            {
+              "category": "watch",
+              "commandSha256": "9816b4aa223c971f062ce5993146a418f09cffe2fd89cb06a871695987e9f149"
+            },
+            {
+              "category": "build",
+              "commandSha256": "1af3acc14a0d30358a4802a5caa01d31aacc1d5ad7878f01ef1908f3760df81e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "4c04f8e026bdc24508e8ac1da35d4a1535c7c3b9d718ccfee7fcb239c2dd397d"
+            },
+            {
+              "category": "test",
+              "commandSha256": "988f6dd1d3679278f521bdae15c608335b10b19538e50f5363271b8e5e627ef8"
+            },
+            {
+              "category": "test",
+              "commandSha256": "86061e347c4e4ca0e6d44aa465243496d6351a3809e04c93524e90737844dee4"
+            },
+            {
+              "category": "test",
+              "commandSha256": "c1f32887e1f0433010be97d1d3a5295fd909bf36c5dff297e5afbe91ccecce2e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "a502e88fdb1d21cd8578129685c345fa3b3ff2b894bc774af38ee39c265510c2"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "build",
+              "commandSha256": "37d4940c6bb571cc600718514cf373ac5cbed0a3abd5ea5cdee9e26ec9725697"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "test",
+              "commandSha256": "ce7d32a6235590e151af0d7d344b5405e06e17cfc265e073c7cfe0cb7d6c4d0e"
+            },
+            {
+              "category": "build",
+              "commandSha256": "4ef814fbf9aa487260d0766b577996a82a7d3a08830d955acd68b6a47cb47801"
+            },
+            {
+              "category": "build",
+              "commandSha256": "4ef814fbf9aa487260d0766b577996a82a7d3a08830d955acd68b6a47cb47801"
+            },
+            {
+              "category": "build",
+              "commandSha256": "4ef814fbf9aa487260d0766b577996a82a7d3a08830d955acd68b6a47cb47801"
+            },
+            {
+              "category": "build",
+              "commandSha256": "4ef814fbf9aa487260d0766b577996a82a7d3a08830d955acd68b6a47cb47801"
+            },
+            {
+              "category": "build",
+              "commandSha256": "4ef814fbf9aa487260d0766b577996a82a7d3a08830d955acd68b6a47cb47801"
+            },
+            {
+              "category": "build",
+              "commandSha256": "81027e7eac417b097bdd8fb8a94c6237bed22b08ba89bdde5fadb4864a535d8a"
+            },
+            {
+              "category": "build",
+              "commandSha256": "37d4940c6bb571cc600718514cf373ac5cbed0a3abd5ea5cdee9e26ec9725697"
+            }
+          ],
+          "during": [],
+          "observations": 0,
+          "started": false,
+          "excluded": true,
+          "reason": "External work active before sampling"
+        }
+      ]
+    },
+    "plannedProtocol": {
+      "variants": [
+        "baseline",
+        "control-js",
+        "planned-js",
+        "planned-summary",
+        "planned-native"
+      ],
+      "warmups": 10,
+      "roundsPerCorpusPerBatch": 40,
+      "corpora": [
+        "pressure",
+        "retail",
+        "wevu"
+      ],
+      "batches": 2,
+      "orderPeriod": 10
+    },
+    "limits": [
+      "Warm complete compiler calls using fixed options, not cold builds or Vite/HMR.",
+      "Same-loader controls required to distinguish loader/code generation, JS caching and Rust.",
+      "Root worker RSS immediately after compile is not peak/process-tree RSS.",
+      "External tasks are preserved; a concurrent run invalidates timings and stops later corpora."
+    ]
+  },
+  "windowsStage": {
+    "failingRun": "https://github.com/weapp-vite/weapp-vite/actions/runs/37195472616",
+    "dependencyLayout": {
+      "reportSha256": "85b2b20d0398b61e07f7288f72ace34dec7bbb1b43c2894f3545837c25cea7ea",
+      "report": {
+        "schemaVersion": 1,
+        "locations": [
+          {
+            "location": "source",
+            "path": "<repo>/templates/weapp-vite-template/node_modules/weapp-vite",
+            "lstat": {
+              "ok": true,
+              "value": {
+                "isDirectory": false,
+                "isSymbolicLink": true,
+                "isFile": false
+              }
+            },
+            "stat": {
+              "ok": true,
+              "value": {
+                "isDirectory": true,
+                "isSymbolicLink": false,
+                "isFile": false
+              }
+            },
+            "readlink": {
+              "ok": true,
+              "value": {
+                "target": "<repo>/packages/weapp-vite",
+                "relative": true
+              }
+            },
+            "realpath": {
+              "ok": true,
+              "value": "<repo>/packages/weapp-vite"
+            },
+            "packageJson": {
+              "ok": true,
+              "value": {
+                "name": "weapp-vite",
+                "version": "7.4.0"
+              }
+            }
+          },
+          {
+            "location": "project",
+            "path": "<project>/node_modules/weapp-vite",
+            "lstat": {
+              "ok": true,
+              "value": {
+                "isDirectory": false,
+                "isSymbolicLink": true,
+                "isFile": false
+              }
+            },
+            "stat": {
+              "ok": false,
+              "code": "ENOENT"
+            },
+            "readlink": {
+              "ok": true,
+              "value": {
+                "target": "<repo>/packages/weapp-vite",
+                "relative": true
+              }
+            },
+            "realpath": {
+              "ok": false,
+              "code": "ENOENT"
+            },
+            "packageJson": {
+              "ok": false,
+              "code": "ENOENT"
+            }
+          },
+          {
+            "location": "repo",
+            "path": "<repo>/node_modules/weapp-vite",
+            "lstat": {
+              "ok": true,
+              "value": {
+                "isDirectory": false,
+                "isSymbolicLink": true,
+                "isFile": false
+              }
+            },
+            "stat": {
+              "ok": true,
+              "value": {
+                "isDirectory": true,
+                "isSymbolicLink": false,
+                "isFile": false
+              }
+            },
+            "readlink": {
+              "ok": true,
+              "value": {
+                "target": "<repo>/packages/weapp-vite",
+                "relative": true
+              }
+            },
+            "realpath": {
+              "ok": true,
+              "value": "<repo>/packages/weapp-vite"
+            },
+            "packageJson": {
+              "ok": true,
+              "value": {
+                "name": "weapp-vite",
+                "version": "7.4.0"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "rootCause": "Relative pnpm links fail to resolve under the staged outer node_modules junction on Windows. Original test used absolute inner junctions and missed this shape.",
+    "fix": "Materialize node_modules and scope directories on Windows, resolve dependency targets before creating absolute junctions, copy regular metadata, and verify direct package.json before require.resolve.",
+    "localValidation": {
+      "reportSha256": "b32b1dd9950910b2b1c9f49822ce45fdd2be8c1ef6adb4ead4b05b4af6864f33",
+      "platform": "darwin",
+      "node": "v24.18.0",
+      "passed": true,
+      "samples": [
+        {
+          "id": "build:weapp-vite-template:first",
+          "files": 38,
+          "maps": 9,
+          "outputDigest": "8b65c6adfd789e5d1a38ae2c3282a6d23b9c03bd286f8f96f0de89af27aef777",
+          "warnings": []
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "files": 38,
+          "maps": 9,
+          "outputDigest": "8b65c6adfd789e5d1a38ae2c3282a6d23b9c03bd286f8f96f0de89af27aef777",
+          "warnings": []
+        }
+      ],
+      "native": {
+        "calls": 0,
+        "failures": 0,
+        "inputs": 0,
+        "inputBytes": 0,
+        "processes": 0,
+        "observation": {
+          "processes": 2,
+          "completedProcesses": 2,
+          "bindingCalls": 0,
+          "batchCalls": 0,
+          "inputScripts": 0,
+          "inputBytes": 0,
+          "cacheHits": 0,
+          "fallbacks": 0,
+          "loadFailures": 0
+        },
+        "coverage": "not-exercised"
+      },
+      "scope": "Prepare, first/repeat build and cleanup correctness; timing fields intentionally omitted."
+    },
+    "realWindowsValidation": {
+      "run": "https://github.com/weapp-vite/weapp-vite/actions/runs/37198027593",
+      "head": "977178c792487942dee181d83e3995d77c00224a",
+      "reportSha256": "24099c3526553b47903561e2f96f74c8315af39350f2db42cda095dbdb101595",
+      "passed": true,
+      "platform": "win32",
+      "node": "v24.21.0",
+      "samples": [
+        {
+          "id": "build:weapp-vite-template:first",
+          "files": 38,
+          "maps": 9,
+          "outputDigest": "fca0deceae3cc016f38290a0f801a1d51c70c5723b4e7aa563f11859a0d63c29",
+          "warnings": []
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "files": 38,
+          "maps": 9,
+          "outputDigest": "fca0deceae3cc016f38290a0f801a1d51c70c5723b4e7aa563f11859a0d63c29",
+          "warnings": []
+        }
+      ],
+      "nativeCoverage": "not-exercised",
+      "dependencyLayoutSha256": "ae533f0c9966734d50e15e659aec5f5e050b5faab62e0758f9c54fd2fe18db7c",
+      "dependencyLayout": {
+        "schemaVersion": 1,
+        "locations": [
+          {
+            "location": "source",
+            "path": "<repo>/templates/weapp-vite-template/node_modules/weapp-vite",
+            "lstat": {
+              "ok": true,
+              "value": {
+                "isDirectory": false,
+                "isSymbolicLink": true,
+                "isFile": false
+              }
+            },
+            "stat": {
+              "ok": true,
+              "value": {
+                "isDirectory": true,
+                "isSymbolicLink": false,
+                "isFile": false
+              }
+            },
+            "readlink": {
+              "ok": true,
+              "value": {
+                "target": "<repo>/packages/weapp-vite",
+                "relative": true
+              }
+            },
+            "realpath": {
+              "ok": true,
+              "value": "<repo>/packages/weapp-vite"
+            },
+            "packageJson": {
+              "ok": true,
+              "value": {
+                "name": "weapp-vite",
+                "version": "7.4.0"
+              }
+            }
+          },
+          {
+            "location": "project",
+            "path": "<project>/node_modules/weapp-vite",
+            "lstat": {
+              "ok": true,
+              "value": {
+                "isDirectory": false,
+                "isSymbolicLink": true,
+                "isFile": false
+              }
+            },
+            "stat": {
+              "ok": true,
+              "value": {
+                "isDirectory": true,
+                "isSymbolicLink": false,
+                "isFile": false
+              }
+            },
+            "readlink": {
+              "ok": true,
+              "value": {
+                "target": "<repo>/packages/weapp-vite",
+                "relative": false
+              }
+            },
+            "realpath": {
+              "ok": true,
+              "value": "<repo>/packages/weapp-vite"
+            },
+            "packageJson": {
+              "ok": true,
+              "value": {
+                "name": "weapp-vite",
+                "version": "7.4.0"
+              }
+            }
+          },
+          {
+            "location": "repo",
+            "path": "<repo>/node_modules/weapp-vite",
+            "lstat": {
+              "ok": true,
+              "value": {
+                "isDirectory": false,
+                "isSymbolicLink": true,
+                "isFile": false
+              }
+            },
+            "stat": {
+              "ok": true,
+              "value": {
+                "isDirectory": true,
+                "isSymbolicLink": false,
+                "isFile": false
+              }
+            },
+            "readlink": {
+              "ok": true,
+              "value": {
+                "target": "<repo>/packages/weapp-vite",
+                "relative": true
+              }
+            },
+            "realpath": {
+              "ok": true,
+              "value": "<repo>/packages/weapp-vite"
+            },
+            "packageJson": {
+              "ok": true,
+              "value": {
+                "name": "weapp-vite",
+                "version": "7.4.0"
+              }
+            }
+          }
+        ]
+      },
+      "scope": "Staged dependency resolution, prepare, first/repeat build and cleanup correctness. Not performance evidence."
+    }
+  },
+  "validation": {
+    "scriptUnitFiles": 10,
+    "scriptUnitTests": 38,
+    "commands": [
+      "pnpm exec vitest run --config scripts/vitest.config.mjs scripts/nativeBindingAnalysis scripts/benchmarkNativeAnalysis/stage.test.ts scripts/benchmarkNativeAnalysis/collect.test.ts scripts/benchmarkNativeAnalysis/dependencyLayout.test.ts",
+      "pnpm exec tsc -p scripts/nativeBindingAnalysis/tsconfig.json",
+      "pnpm exec tsc -p scripts/benchmarkNativeAnalysis/tsconfig.json",
+      "pnpm exec eslint scripts/nativeBindingAnalysis scripts/benchmarkNativeAnalysis/stage.ts scripts/benchmarkNativeAnalysis/stage.test.ts"
+    ]
+  },
+  "productionDecision": "Keep native explicit and optional; no production expansion or whole-project Rust speedup claim from this experiment.",
+  "crossPlatformCorrectness": {
+    "run": "https://github.com/weapp-vite/weapp-vite/actions/runs/37198027593",
+    "head": "977178c792487942dee181d83e3995d77c00224a",
+    "conclusion": "success",
+    "results": [
+      {
+        "platform": "windows",
+        "reportSha256": "4e1167c4c8bdd881cf95114eb19198d10e763fc3512931041fe97a6bd4779fa9",
+        "environment": {
+          "node": "v24.21.0",
+          "platform": "win32",
+          "arch": "x64",
+          "cpus": 4,
+          "startedAt": "2026-10-04T11:18:41.362Z",
+          "finishedAt": "2026-10-04T11:18:47.897Z",
+          "initialLoad": [
+            0,
+            0,
+            0
+          ],
+          "finalLoad": [
+            0,
+            0,
+            0
+          ]
+        },
+        "compiler": {
+          "compilerSourceFiles": 201,
+          "compilerSourceTreeSha256": "f9c417b2c349620bdec0792d27abbc9d322117ba8a181d794b903e2a9de61013",
+          "lockfileSha256": "d6ac4d79f5554cb1c02942bae5c32168717290c2497f88f5da40e5a0bafe668d",
+          "bindingSha256": "a8cb42b7aa0ac25aa0d1e105deeefd3f7cb3d563c99741860e839f768514b046"
+        },
+        "toolSources": {
+          "scripts/nativeBindingAnalysis/compile.ts": "2255fd39623087929e9b5940417bd7e94e5f040a9a28158d801ab7d1a3be97ce",
+          "scripts/nativeBindingAnalysis/compileBatch/controller.ts": "033331fefbbafe80bcab01a2d35b816aa96fd427ce9b7f56ad81780aa8de4864",
+          "scripts/nativeBindingAnalysis/compileBatch/hooks.ts": "f0a93b7e7d86190b19ebab799ede9f473d95e71ea14057274fbeca4fec22e775",
+          "scripts/nativeBindingAnalysis/compileBatch/index.ts": "f557318b4b292a2aa7fe082828682cd89cb7ff4f4e0d7578e6ebc6b6ca63a0ea",
+          "scripts/nativeBindingAnalysis/compileBatch/plan.ts": "f7a3a3e7782c6d5c8ad4f0bf4a2025e86ee9c6cea71a593ea741082c304bbc54",
+          "scripts/nativeBindingAnalysis/compileBatch/types.ts": "c66980f98cce2e7c8d07012ba1178fe78e28e966655b7089245a07e9395607a9",
+          "scripts/nativeBindingAnalysis/compileProcess.ts": "89b8615bdad8c3d45738a452b825406ce441740770ed9937b2a07c2538003c51",
+          "scripts/nativeBindingAnalysis/compileProtocol.ts": "978f901be814001145064c3419268f7ef60fa8b640d71dc4a5b90f75b91e4bd4",
+          "scripts/nativeBindingAnalysis/compileScenarios.ts": "85d696b87a43c2fdb8e25cdd0a25e00a82f30190d44c9262c96cf1e21b7c5b0a",
+          "scripts/nativeBindingAnalysis/compileWorker.ts": "d846b8d8d3f3e4ad48fb9106e03c29926810badc18b2cc01180a4258503b8ae6",
+          "scripts/nativeBindingAnalysis/globals.ts": "1fb3caeb0c414400de447418bf63fa1d3ee2fdf5fb1d3e9365a2b3613d61e594",
+          "scripts/nativeBindingAnalysis/orders.ts": "543e70f90fc0542dcbee4d34a3fd5b34dad63eef3fc8d800ad8b04ee0d947e45",
+          "scripts/nativeBindingAnalysis/replay.ts": "57858b97537b23a923fb1d38420245e56ee64227cf27095d6b4078dd8433a03f"
+        },
+        "sourcesUnchanged": true,
+        "compilerInputsUnchanged": true,
+        "passed": true,
+        "checks": [
+          {
+            "scenario": "pressure",
+            "sourceSha256": "9e5ddb3ca118abc9891b194a7e02c4a06797e0243fdfb7d1863e640e4d4b54c4",
+            "outputSha256": "830e37ab9760bbdcad2c1745f54e228780712779e72a8902971b5f9ba84e58c9",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 724,
+              "uniqueInputCount": 197,
+              "consumedInputs": 724,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 266,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "wevu",
+            "sourceSha256": "6c234bbfbeb8467af821f43724f4bd01dc546356126fe144f91d6cb368c1a085",
+            "outputSha256": "eaa7fc289bc65650784ad67749939df2dcc69edce5f79891f4586caecbd6ea7e",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 34,
+              "uniqueInputCount": 19,
+              "consumedInputs": 34,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 16,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "retail",
+            "sourceSha256": "28a8c41959d94da732fc97a045bf901e0cde52b7a3c63beb327a705586ec2ecb",
+            "outputSha256": "e43977f472b7011f5a5e31660c249a25d6ed034daac3171bdc4c0f4b5af13c78",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 64,
+              "uniqueInputCount": 53,
+              "consumedInputs": 64,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 52,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "nested-loops",
+            "sourceSha256": "b52fbd1de37e9e28272b802e93b001a9ce63a9d5063760ea45ee62fb7578398e",
+            "outputSha256": "ea1fae51c121409ab6ee0aa2274828584da754389afe6b4ea27cac414f8d668a",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 20,
+              "uniqueInputCount": 9,
+              "consumedInputs": 20,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 7,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "scoped-slots",
+            "sourceSha256": "5a759c231b87ad33a92d4635c3e0049565c5ab28fc3b08356a5e5f0bca015908",
+            "outputSha256": "6fa3d14da2a31328a1529fee1c6d5b9af897dcf0b3442cdee131c2402cc5405a",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 19,
+              "uniqueInputCount": 14,
+              "consumedInputs": 19,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 2,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 2,
+              "queuedRecords": 12,
+              "directRecords": 1,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "events-and-repeats",
+            "sourceSha256": "d0756211712aa1ad7c9cc7bfd80ebbef344e2746fbc48eea6070028122bd8b38",
+            "outputSha256": "ad81133c6372bdb73f8d8d428966e382208b876caafac195b55c4753dc19193d",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 8,
+              "uniqueInputCount": 5,
+              "consumedInputs": 8,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 6,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "slot-outlet",
+            "sourceSha256": "3611df3eb75c1e32dcebd87d3d84fd704d0919bb3041e64f95887a54a2b0798a",
+            "outputSha256": "308b7e3004ff6789b90b3cb6db0f6a2177c8997dc4d7460360d65141bce2222e",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 2,
+              "uniqueInputCount": 1,
+              "consumedInputs": 2,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 2,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "jsx",
+            "sourceSha256": "8e329f1818486fd9a1701e7532f33d9dbb394427f87b057acf7494e7f06906ef",
+            "outputSha256": "b27809d03943c8b6944a4763b28ab930a958b329bb02f340b9a4eca55e3598dc",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 0,
+              "uniqueInputCount": 0,
+              "consumedInputs": 0,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 0,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 0,
+              "queuedRecords": 0,
+              "directRecords": 0,
+              "unbatchedCalls": 4,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "unicode-crlf",
+            "sourceSha256": "32a8af0746c9cd223f32682b6c4b2406fba6f3cea1531b322526031b47744191",
+            "outputSha256": "f6ac0e536ddeb943ed6d6b05fa20cfbba3ff96f50168ed9a313a210e0ce94d46",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 5,
+              "uniqueInputCount": 4,
+              "consumedInputs": 5,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 3,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "static-template",
+            "sourceSha256": "28d3d89c0d5fb8d4463031682ab5437ddde33eb788f1d5f35f8993bcb7d18db5",
+            "outputSha256": "a82858d7bbed437e636a128fb445b2060b23e1791ed21e74cea442537eb4fe6d",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 0,
+              "uniqueInputCount": 0,
+              "consumedInputs": 0,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 0,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 0,
+              "queuedRecords": 0,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "fallback-throw",
+            "sourceSha256": "6bf84e4a6b98e1299b93d1dd9ccf0286c387fba3cd7ddc31b7cbbd484f5d51a9",
+            "outputSha256": "6784d297cfb3c8687d131f2a8d237b62bf023c6c62bfe80ba2f3b629202e1397",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 6,
+              "uniqueInputCount": 4,
+              "consumedInputs": 6,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 1,
+              "fallbackReasons": [
+                "Error: Injected native execution failure"
+              ],
+              "flushCount": 1,
+              "queuedRecords": 3,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 4,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "fallback-malformed",
+            "sourceSha256": "6bf84e4a6b98e1299b93d1dd9ccf0286c387fba3cd7ddc31b7cbbd484f5d51a9",
+            "outputSha256": "00d562773b6acf82cf8fe2ddb09e2ad0964e5b682436cc4eef869c907ced5ab0",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 6,
+              "uniqueInputCount": 4,
+              "consumedInputs": 6,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 1,
+              "fallbackReasons": [
+                "Error: Native batch result length differs from unique input count"
+              ],
+              "flushCount": 1,
+              "queuedRecords": 3,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 4,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "invalid-template",
+            "sourceSha256": "670d6ba6b59f6db56fdd7e403e6acd7c571cdf4b6a3992923ed73202f366be64",
+            "outputSha256": "6d550195d430bf9ee6358f75d36151035bacb27df2c5ddf73e5ddca4dd72b8d5",
+            "failed": true,
+            "nativeMetrics": {
+              "inputCount": 0,
+              "uniqueInputCount": 0,
+              "consumedInputs": 0,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 0,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 0,
+              "queuedRecords": 0,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          }
+        ],
+        "cleanupErrors": []
+      },
+      {
+        "platform": "linux",
+        "reportSha256": "a2177057d09db342db051d0f9b42b21fbcf4e841e12c756fbad79c482690fe97",
+        "environment": {
+          "node": "v24.21.0",
+          "platform": "linux",
+          "arch": "x64",
+          "cpus": 4,
+          "startedAt": "2026-10-04T11:18:23.773Z",
+          "finishedAt": "2026-10-04T11:18:33.428Z",
+          "initialLoad": [
+            2.97,
+            2.61,
+            1.19
+          ],
+          "finalLoad": [
+            2.97,
+            2.62,
+            1.21
+          ]
+        },
+        "compiler": {
+          "compilerSourceFiles": 201,
+          "compilerSourceTreeSha256": "f9c417b2c349620bdec0792d27abbc9d322117ba8a181d794b903e2a9de61013",
+          "lockfileSha256": "d6ac4d79f5554cb1c02942bae5c32168717290c2497f88f5da40e5a0bafe668d",
+          "bindingSha256": "2b475c618209fd1da227ed2d82fded2a6b6f372ef7ac0e8479bbcd720a0c8a1d"
+        },
+        "toolSources": {
+          "scripts/nativeBindingAnalysis/compile.ts": "2255fd39623087929e9b5940417bd7e94e5f040a9a28158d801ab7d1a3be97ce",
+          "scripts/nativeBindingAnalysis/compileBatch/controller.ts": "033331fefbbafe80bcab01a2d35b816aa96fd427ce9b7f56ad81780aa8de4864",
+          "scripts/nativeBindingAnalysis/compileBatch/hooks.ts": "f0a93b7e7d86190b19ebab799ede9f473d95e71ea14057274fbeca4fec22e775",
+          "scripts/nativeBindingAnalysis/compileBatch/index.ts": "f557318b4b292a2aa7fe082828682cd89cb7ff4f4e0d7578e6ebc6b6ca63a0ea",
+          "scripts/nativeBindingAnalysis/compileBatch/plan.ts": "f7a3a3e7782c6d5c8ad4f0bf4a2025e86ee9c6cea71a593ea741082c304bbc54",
+          "scripts/nativeBindingAnalysis/compileBatch/types.ts": "c66980f98cce2e7c8d07012ba1178fe78e28e966655b7089245a07e9395607a9",
+          "scripts/nativeBindingAnalysis/compileProcess.ts": "89b8615bdad8c3d45738a452b825406ce441740770ed9937b2a07c2538003c51",
+          "scripts/nativeBindingAnalysis/compileProtocol.ts": "978f901be814001145064c3419268f7ef60fa8b640d71dc4a5b90f75b91e4bd4",
+          "scripts/nativeBindingAnalysis/compileScenarios.ts": "85d696b87a43c2fdb8e25cdd0a25e00a82f30190d44c9262c96cf1e21b7c5b0a",
+          "scripts/nativeBindingAnalysis/compileWorker.ts": "d846b8d8d3f3e4ad48fb9106e03c29926810badc18b2cc01180a4258503b8ae6",
+          "scripts/nativeBindingAnalysis/globals.ts": "1fb3caeb0c414400de447418bf63fa1d3ee2fdf5fb1d3e9365a2b3613d61e594",
+          "scripts/nativeBindingAnalysis/orders.ts": "543e70f90fc0542dcbee4d34a3fd5b34dad63eef3fc8d800ad8b04ee0d947e45",
+          "scripts/nativeBindingAnalysis/replay.ts": "57858b97537b23a923fb1d38420245e56ee64227cf27095d6b4078dd8433a03f"
+        },
+        "sourcesUnchanged": true,
+        "compilerInputsUnchanged": true,
+        "passed": true,
+        "checks": [
+          {
+            "scenario": "pressure",
+            "sourceSha256": "9e5ddb3ca118abc9891b194a7e02c4a06797e0243fdfb7d1863e640e4d4b54c4",
+            "outputSha256": "830e37ab9760bbdcad2c1745f54e228780712779e72a8902971b5f9ba84e58c9",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 724,
+              "uniqueInputCount": 197,
+              "consumedInputs": 724,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 266,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "wevu",
+            "sourceSha256": "6c234bbfbeb8467af821f43724f4bd01dc546356126fe144f91d6cb368c1a085",
+            "outputSha256": "eaa7fc289bc65650784ad67749939df2dcc69edce5f79891f4586caecbd6ea7e",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 34,
+              "uniqueInputCount": 19,
+              "consumedInputs": 34,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 16,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "retail",
+            "sourceSha256": "28a8c41959d94da732fc97a045bf901e0cde52b7a3c63beb327a705586ec2ecb",
+            "outputSha256": "e43977f472b7011f5a5e31660c249a25d6ed034daac3171bdc4c0f4b5af13c78",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 64,
+              "uniqueInputCount": 53,
+              "consumedInputs": 64,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 52,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "nested-loops",
+            "sourceSha256": "b52fbd1de37e9e28272b802e93b001a9ce63a9d5063760ea45ee62fb7578398e",
+            "outputSha256": "ea1fae51c121409ab6ee0aa2274828584da754389afe6b4ea27cac414f8d668a",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 20,
+              "uniqueInputCount": 9,
+              "consumedInputs": 20,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 7,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "scoped-slots",
+            "sourceSha256": "5a759c231b87ad33a92d4635c3e0049565c5ab28fc3b08356a5e5f0bca015908",
+            "outputSha256": "6fa3d14da2a31328a1529fee1c6d5b9af897dcf0b3442cdee131c2402cc5405a",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 19,
+              "uniqueInputCount": 14,
+              "consumedInputs": 19,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 2,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 2,
+              "queuedRecords": 12,
+              "directRecords": 1,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "events-and-repeats",
+            "sourceSha256": "d0756211712aa1ad7c9cc7bfd80ebbef344e2746fbc48eea6070028122bd8b38",
+            "outputSha256": "ad81133c6372bdb73f8d8d428966e382208b876caafac195b55c4753dc19193d",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 8,
+              "uniqueInputCount": 5,
+              "consumedInputs": 8,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 6,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "slot-outlet",
+            "sourceSha256": "3611df3eb75c1e32dcebd87d3d84fd704d0919bb3041e64f95887a54a2b0798a",
+            "outputSha256": "308b7e3004ff6789b90b3cb6db0f6a2177c8997dc4d7460360d65141bce2222e",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 2,
+              "uniqueInputCount": 1,
+              "consumedInputs": 2,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 2,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "jsx",
+            "sourceSha256": "8e329f1818486fd9a1701e7532f33d9dbb394427f87b057acf7494e7f06906ef",
+            "outputSha256": "b27809d03943c8b6944a4763b28ab930a958b329bb02f340b9a4eca55e3598dc",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 0,
+              "uniqueInputCount": 0,
+              "consumedInputs": 0,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 0,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 0,
+              "queuedRecords": 0,
+              "directRecords": 0,
+              "unbatchedCalls": 4,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "unicode-crlf",
+            "sourceSha256": "32a8af0746c9cd223f32682b6c4b2406fba6f3cea1531b322526031b47744191",
+            "outputSha256": "f6ac0e536ddeb943ed6d6b05fa20cfbba3ff96f50168ed9a313a210e0ce94d46",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 5,
+              "uniqueInputCount": 4,
+              "consumedInputs": 5,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 3,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "static-template",
+            "sourceSha256": "28d3d89c0d5fb8d4463031682ab5437ddde33eb788f1d5f35f8993bcb7d18db5",
+            "outputSha256": "a82858d7bbed437e636a128fb445b2060b23e1791ed21e74cea442537eb4fe6d",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 0,
+              "uniqueInputCount": 0,
+              "consumedInputs": 0,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 0,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 0,
+              "queuedRecords": 0,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "fallback-throw",
+            "sourceSha256": "6bf84e4a6b98e1299b93d1dd9ccf0286c387fba3cd7ddc31b7cbbd484f5d51a9",
+            "outputSha256": "6784d297cfb3c8687d131f2a8d237b62bf023c6c62bfe80ba2f3b629202e1397",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 6,
+              "uniqueInputCount": 4,
+              "consumedInputs": 6,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 1,
+              "fallbackReasons": [
+                "Error: Injected native execution failure"
+              ],
+              "flushCount": 1,
+              "queuedRecords": 3,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 4,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "fallback-malformed",
+            "sourceSha256": "6bf84e4a6b98e1299b93d1dd9ccf0286c387fba3cd7ddc31b7cbbd484f5d51a9",
+            "outputSha256": "00d562773b6acf82cf8fe2ddb09e2ad0964e5b682436cc4eef869c907ced5ab0",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 6,
+              "uniqueInputCount": 4,
+              "consumedInputs": 6,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 1,
+              "fallbackReasons": [
+                "Error: Native batch result length differs from unique input count"
+              ],
+              "flushCount": 1,
+              "queuedRecords": 3,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 4,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "invalid-template",
+            "sourceSha256": "670d6ba6b59f6db56fdd7e403e6acd7c571cdf4b6a3992923ed73202f366be64",
+            "outputSha256": "6d550195d430bf9ee6358f75d36151035bacb27df2c5ddf73e5ddca4dd72b8d5",
+            "failed": true,
+            "nativeMetrics": {
+              "inputCount": 0,
+              "uniqueInputCount": 0,
+              "consumedInputs": 0,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 0,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 0,
+              "queuedRecords": 0,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          }
+        ],
+        "cleanupErrors": []
+      },
+      {
+        "platform": "macos",
+        "reportSha256": "e4f00f1e29810e26a2760d3e7b6e0c9e2dbbbeca5f5527e9689c55f69a423ccc",
+        "environment": {
+          "node": "v24.20.0",
+          "platform": "darwin",
+          "arch": "arm64",
+          "cpus": 3,
+          "startedAt": "2026-10-04T11:20:29.582Z",
+          "finishedAt": "2026-10-04T11:20:39.209Z",
+          "initialLoad": [
+            27.83056640625,
+            29.23828125,
+            18.6484375
+          ],
+          "finalLoad": [
+            24.25927734375,
+            28.423828125,
+            18.48291015625
+          ]
+        },
+        "compiler": {
+          "compilerSourceFiles": 201,
+          "compilerSourceTreeSha256": "f9c417b2c349620bdec0792d27abbc9d322117ba8a181d794b903e2a9de61013",
+          "lockfileSha256": "d6ac4d79f5554cb1c02942bae5c32168717290c2497f88f5da40e5a0bafe668d",
+          "bindingSha256": "74bf10797bb412cddb580b4cf62ce37ac1b77c77a9a3d60e4602457d5e69a1a1"
+        },
+        "toolSources": {
+          "scripts/nativeBindingAnalysis/compile.ts": "2255fd39623087929e9b5940417bd7e94e5f040a9a28158d801ab7d1a3be97ce",
+          "scripts/nativeBindingAnalysis/compileBatch/controller.ts": "033331fefbbafe80bcab01a2d35b816aa96fd427ce9b7f56ad81780aa8de4864",
+          "scripts/nativeBindingAnalysis/compileBatch/hooks.ts": "f0a93b7e7d86190b19ebab799ede9f473d95e71ea14057274fbeca4fec22e775",
+          "scripts/nativeBindingAnalysis/compileBatch/index.ts": "f557318b4b292a2aa7fe082828682cd89cb7ff4f4e0d7578e6ebc6b6ca63a0ea",
+          "scripts/nativeBindingAnalysis/compileBatch/plan.ts": "f7a3a3e7782c6d5c8ad4f0bf4a2025e86ee9c6cea71a593ea741082c304bbc54",
+          "scripts/nativeBindingAnalysis/compileBatch/types.ts": "c66980f98cce2e7c8d07012ba1178fe78e28e966655b7089245a07e9395607a9",
+          "scripts/nativeBindingAnalysis/compileProcess.ts": "89b8615bdad8c3d45738a452b825406ce441740770ed9937b2a07c2538003c51",
+          "scripts/nativeBindingAnalysis/compileProtocol.ts": "978f901be814001145064c3419268f7ef60fa8b640d71dc4a5b90f75b91e4bd4",
+          "scripts/nativeBindingAnalysis/compileScenarios.ts": "85d696b87a43c2fdb8e25cdd0a25e00a82f30190d44c9262c96cf1e21b7c5b0a",
+          "scripts/nativeBindingAnalysis/compileWorker.ts": "d846b8d8d3f3e4ad48fb9106e03c29926810badc18b2cc01180a4258503b8ae6",
+          "scripts/nativeBindingAnalysis/globals.ts": "1fb3caeb0c414400de447418bf63fa1d3ee2fdf5fb1d3e9365a2b3613d61e594",
+          "scripts/nativeBindingAnalysis/orders.ts": "543e70f90fc0542dcbee4d34a3fd5b34dad63eef3fc8d800ad8b04ee0d947e45",
+          "scripts/nativeBindingAnalysis/replay.ts": "57858b97537b23a923fb1d38420245e56ee64227cf27095d6b4078dd8433a03f"
+        },
+        "sourcesUnchanged": true,
+        "compilerInputsUnchanged": true,
+        "passed": true,
+        "checks": [
+          {
+            "scenario": "pressure",
+            "sourceSha256": "9e5ddb3ca118abc9891b194a7e02c4a06797e0243fdfb7d1863e640e4d4b54c4",
+            "outputSha256": "830e37ab9760bbdcad2c1745f54e228780712779e72a8902971b5f9ba84e58c9",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 724,
+              "uniqueInputCount": 197,
+              "consumedInputs": 724,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 266,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "wevu",
+            "sourceSha256": "6c234bbfbeb8467af821f43724f4bd01dc546356126fe144f91d6cb368c1a085",
+            "outputSha256": "eaa7fc289bc65650784ad67749939df2dcc69edce5f79891f4586caecbd6ea7e",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 34,
+              "uniqueInputCount": 19,
+              "consumedInputs": 34,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 16,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "retail",
+            "sourceSha256": "28a8c41959d94da732fc97a045bf901e0cde52b7a3c63beb327a705586ec2ecb",
+            "outputSha256": "e43977f472b7011f5a5e31660c249a25d6ed034daac3171bdc4c0f4b5af13c78",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 64,
+              "uniqueInputCount": 53,
+              "consumedInputs": 64,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 52,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "nested-loops",
+            "sourceSha256": "b52fbd1de37e9e28272b802e93b001a9ce63a9d5063760ea45ee62fb7578398e",
+            "outputSha256": "ea1fae51c121409ab6ee0aa2274828584da754389afe6b4ea27cac414f8d668a",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 20,
+              "uniqueInputCount": 9,
+              "consumedInputs": 20,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 7,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "scoped-slots",
+            "sourceSha256": "5a759c231b87ad33a92d4635c3e0049565c5ab28fc3b08356a5e5f0bca015908",
+            "outputSha256": "6fa3d14da2a31328a1529fee1c6d5b9af897dcf0b3442cdee131c2402cc5405a",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 19,
+              "uniqueInputCount": 14,
+              "consumedInputs": 19,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 2,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 2,
+              "queuedRecords": 12,
+              "directRecords": 1,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "events-and-repeats",
+            "sourceSha256": "d0756211712aa1ad7c9cc7bfd80ebbef344e2746fbc48eea6070028122bd8b38",
+            "outputSha256": "ad81133c6372bdb73f8d8d428966e382208b876caafac195b55c4753dc19193d",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 8,
+              "uniqueInputCount": 5,
+              "consumedInputs": 8,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 6,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "slot-outlet",
+            "sourceSha256": "3611df3eb75c1e32dcebd87d3d84fd704d0919bb3041e64f95887a54a2b0798a",
+            "outputSha256": "308b7e3004ff6789b90b3cb6db0f6a2177c8997dc4d7460360d65141bce2222e",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 2,
+              "uniqueInputCount": 1,
+              "consumedInputs": 2,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 2,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "jsx",
+            "sourceSha256": "8e329f1818486fd9a1701e7532f33d9dbb394427f87b057acf7494e7f06906ef",
+            "outputSha256": "b27809d03943c8b6944a4763b28ab930a958b329bb02f340b9a4eca55e3598dc",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 0,
+              "uniqueInputCount": 0,
+              "consumedInputs": 0,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 0,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 0,
+              "queuedRecords": 0,
+              "directRecords": 0,
+              "unbatchedCalls": 4,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "unicode-crlf",
+            "sourceSha256": "32a8af0746c9cd223f32682b6c4b2406fba6f3cea1531b322526031b47744191",
+            "outputSha256": "f6ac0e536ddeb943ed6d6b05fa20cfbba3ff96f50168ed9a313a210e0ce94d46",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 5,
+              "uniqueInputCount": 4,
+              "consumedInputs": 5,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 1,
+              "queuedRecords": 3,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "static-template",
+            "sourceSha256": "28d3d89c0d5fb8d4463031682ab5437ddde33eb788f1d5f35f8993bcb7d18db5",
+            "outputSha256": "a82858d7bbed437e636a128fb445b2060b23e1791ed21e74cea442537eb4fe6d",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 0,
+              "uniqueInputCount": 0,
+              "consumedInputs": 0,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 0,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 0,
+              "queuedRecords": 0,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "fallback-throw",
+            "sourceSha256": "6bf84e4a6b98e1299b93d1dd9ccf0286c387fba3cd7ddc31b7cbbd484f5d51a9",
+            "outputSha256": "6784d297cfb3c8687d131f2a8d237b62bf023c6c62bfe80ba2f3b629202e1397",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 6,
+              "uniqueInputCount": 4,
+              "consumedInputs": 6,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 1,
+              "fallbackReasons": [
+                "Error: Injected native execution failure"
+              ],
+              "flushCount": 1,
+              "queuedRecords": 3,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 4,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "fallback-malformed",
+            "sourceSha256": "6bf84e4a6b98e1299b93d1dd9ccf0286c387fba3cd7ddc31b7cbbd484f5d51a9",
+            "outputSha256": "00d562773b6acf82cf8fe2ddb09e2ad0964e5b682436cc4eef869c907ced5ab0",
+            "failed": false,
+            "nativeMetrics": {
+              "inputCount": 6,
+              "uniqueInputCount": 4,
+              "consumedInputs": 6,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 1,
+              "fallbackCount": 1,
+              "fallbackReasons": [
+                "Error: Native batch result length differs from unique input count"
+              ],
+              "flushCount": 1,
+              "queuedRecords": 3,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 4,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          },
+          {
+            "scenario": "invalid-template",
+            "sourceSha256": "670d6ba6b59f6db56fdd7e403e6acd7c571cdf4b6a3992923ed73202f366be64",
+            "outputSha256": "6d550195d430bf9ee6358f75d36151035bacb27df2c5ddf73e5ddca4dd72b8d5",
+            "failed": true,
+            "nativeMetrics": {
+              "inputCount": 0,
+              "uniqueInputCount": 0,
+              "consumedInputs": 0,
+              "unusedPreparedInputs": 0,
+              "nativeCalls": 0,
+              "fallbackCount": 0,
+              "fallbackReasons": [],
+              "flushCount": 0,
+              "queuedRecords": 0,
+              "directRecords": 0,
+              "unbatchedCalls": 0,
+              "baseJsCalls": 0,
+              "abortedTemplates": 0,
+              "discardedRecords": 0,
+              "pendingRecords": 0,
+              "pendingInputs": 0,
+              "activeTemplates": 0
+            }
+          }
+        ],
+        "cleanupErrors": []
+      }
+    ],
+    "scope": "Exact output equality across implementations within each platform; hashes need not agree across OS line endings or native binary targets."
+  }
+}

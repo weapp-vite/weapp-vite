@@ -1,0 +1,144 @@
+{
+  "classStyleBindings": [
+    {
+      "name": "__wv_cls_0",
+      "type": "class",
+      "exp": "[\"filter\",[{active:filter.key===__wevuUnref(__wevuResolvePropValue(this,\"activeCategory\",this.activeCategory))}]]",
+      "expAst": {
+        "role": "expAst",
+        "source": "[\"filter\", [{\n  active: filter.key === __wevuUnref(__wevuResolvePropValue(this, \"activeCategory\", this.activeCategory))\n}]]"
+      },
+      "forStack": [
+        {
+          "listExp": "filterList",
+          "item": "filter",
+          "index": "__wv_index_0",
+          "rawListExp": "filterList",
+          "listExpAst": {
+            "role": "listExpAst",
+            "source": "__wevuUnref(this.$state != null && Object.prototype.hasOwnProperty.call(this.$state, \"filterList\") ? this.filterList : this.__wevuProps != null && (this.__wevuProps.filterList !== undefined || Object.prototype.hasOwnProperty.call(this.__wevuProps, \"filterList\")) ? this.__wevuProps.filterList : this.filterList)"
+          },
+          "rawListExpAst": {
+            "role": "rawListExpAst",
+            "source": "__wevuUnref(this.$state != null && Object.prototype.hasOwnProperty.call(this.$state, \"filterList\") ? this.filterList : this.__wevuProps != null && (this.__wevuProps.filterList !== undefined || Object.prototype.hasOwnProperty.call(this.__wevuProps, \"filterList\")) ? this.__wevuProps.filterList : this.filterList)"
+          }
+        }
+      ],
+      "errorFallback": "filter"
+    }
+  ],
+  "inlineExpressions": [
+    {
+      "id": "i0",
+      "expression": "_ctx.selectCategory(_scope.filter.key)",
+      "scopeKeys": [
+        "filter"
+      ],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      },
+      "indexBindings": [
+        {
+          "key": "__wv_i0",
+          "binding": "__wv_index_0"
+        }
+      ],
+      "scopeResolvers": [
+        {
+          "key": "filter",
+          "expression": "({type:'for-item',path:\"filterList\",indexKey:\"__wv_i0\"})"
+        }
+      ]
+    },
+    {
+      "id": "i1",
+      "expression": "_ctx.jump('/pages/wevu/index')",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i2",
+      "expression": "_ctx.jump('/pages/vue-compat/index')",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i3",
+      "expression": "_ctx.jump('/pages/config-ts/index')",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i4",
+      "expression": "_ctx.jump('/pages/config-js/index')",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i5",
+      "expression": "_ctx.jump(_scope.category.demoPath)",
+      "scopeKeys": [
+        "category"
+      ],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      },
+      "indexBindings": [
+        {
+          "key": "__wv_i0",
+          "binding": "__wv_index_1"
+        }
+      ],
+      "scopeResolvers": [
+        {
+          "key": "category",
+          "expression": "({type:'for-item',path:\"categoryList\",indexKey:\"__wv_i0\"})"
+        }
+      ]
+    },
+    {
+      "id": "i6",
+      "expression": "_ctx.toggleExpand(_scope.category.key)",
+      "scopeKeys": [
+        "category"
+      ],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      },
+      "indexBindings": [
+        {
+          "key": "__wv_i0",
+          "binding": "__wv_index_1"
+        }
+      ],
+      "scopeResolvers": [
+        {
+          "key": "category",
+          "expression": "({type:'for-item',path:\"categoryList\",indexKey:\"__wv_i0\"})"
+        }
+      ]
+    }
+  ]
+}

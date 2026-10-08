@@ -1,0 +1,176 @@
+{
+  "classStyleBindings": [
+    {
+      "name": "__wv_cls_0",
+      "type": "class",
+      "exp": "!__wevuUnref(__wevuResolvePropValue(this,\"selectedAttrStr\",this.selectedAttrStr))?'tintColor':''",
+      "expAst": {
+        "role": "expAst",
+        "source": "!__wevuUnref(__wevuResolvePropValue(this, \"selectedAttrStr\", this.selectedAttrStr)) ? 'tintColor' : ''"
+      },
+      "forStack": [],
+      "errorFallback": ""
+    },
+    {
+      "name": "__wv_bind_0",
+      "type": "bind",
+      "exp": "v-for :key commentItem.goodsSpu || index",
+      "expAst": {
+        "role": "expAst",
+        "source": "(() => {\n  const __wv_for_key_source_0 = __wevuUnref(this.$state != null && Object.prototype.hasOwnProperty.call(this.$state, \"commentsList\") ? this.commentsList : this.__wevuProps != null && (this.__wevuProps.commentsList !== undefined || Object.prototype.hasOwnProperty.call(this.__wevuProps, \"commentsList\")) ? this.__wevuProps.commentsList : this.commentsList);\n  if (Array.isArray(__wv_for_key_source_0)) {\n    return __wv_for_key_source_0.map((commentItem, index) => {\n      return commentItem != null && typeof commentItem === \"object\" ? (() => {\n        if (Object.prototype.hasOwnProperty.call(commentItem, \"__wv_key_0\") || Object.prototype.hasOwnProperty.call(commentItem, \"__wv_value_0\")) {\n          if (typeof console !== \"undefined\" && typeof console.warn === \"function\") {\n            console.warn(\"[wevu] v-for :key 内部字段冲突，投影将使用保留字段 __wv_key_0 / __wv_value_0\", commentItem);\n          }\n        }\n        return Object.assign({}, commentItem, {\n          \"__wv_value_0\": commentItem,\n          \"__wv_key_0\": (() => {\n            try {\n              return __wevuUnref(commentItem.goodsSpu) || index;\n            } catch (__wv_for_key_error_0) {\n              if (commentItem != null) {\n                if (typeof console !== \"undefined\" && typeof console.error === \"function\") {\n                  console.error(\"[wevu] v-for :key 表达式执行失败: commentItem.goodsSpu || index\", __wv_for_key_error_0);\n                }\n              }\n              return undefined;\n            }\n          })()\n        });\n      })() : {\n        \"__wv_value_0\": commentItem,\n        \"__wv_key_0\": (() => {\n          try {\n            return __wevuUnref(commentItem.goodsSpu) || index;\n          } catch (__wv_for_key_error_0) {\n            if (commentItem != null) {\n              if (typeof console !== \"undefined\" && typeof console.error === \"function\") {\n                console.error(\"[wevu] v-for :key 表达式执行失败: commentItem.goodsSpu || index\", __wv_for_key_error_0);\n              }\n            }\n            return undefined;\n          }\n        })()\n      };\n    });\n  }\n  if (__wv_for_key_source_0 != null && typeof __wv_for_key_source_0 === \"object\") {\n    return (() => {\n      const __wv_for_key_result_0 = {};\n      const __wv_for_key_keys_0 = Object.keys(__wv_for_key_source_0);\n      for (let __wv_for_key_loop_index_0 = 0; __wv_for_key_loop_index_0 < __wv_for_key_keys_0.length; __wv_for_key_loop_index_0++) {\n        const __wv_for_key_source_key_0 = __wv_for_key_keys_0[__wv_for_key_loop_index_0];\n        const __wv_for_key_source_item_0 = __wv_for_key_source_0[__wv_for_key_source_key_0];\n        const commentItem = __wv_for_key_source_item_0;\n        const index = __wv_for_key_source_key_0;\n        __wv_for_key_result_0[__wv_for_key_source_key_0] = __wv_for_key_source_item_0 != null && typeof __wv_for_key_source_item_0 === \"object\" ? (() => {\n          if (Object.prototype.hasOwnProperty.call(__wv_for_key_source_item_0, \"__wv_key_0\") || Object.prototype.hasOwnProperty.call(__wv_for_key_source_item_0, \"__wv_value_0\")) {\n            if (typeof console !== \"undefined\" && typeof console.warn === \"function\") {\n              console.warn(\"[wevu] v-for :key 内部字段冲突，投影将使用保留字段 __wv_key_0 / __wv_value_0\", __wv_for_key_source_item_0);\n            }\n          }\n          return Object.assign({}, __wv_for_key_source_item_0, {\n            \"__wv_value_0\": __wv_for_key_source_item_0,\n            \"__wv_key_0\": (() => {\n              try {\n                return __wevuUnref(commentItem.goodsSpu) || index;\n              } catch (__wv_for_key_error_0) {\n                if (__wv_for_key_source_item_0 != null) {\n                  if (typeof console !== \"undefined\" && typeof console.error === \"function\") {\n                    console.error(\"[wevu] v-for :key 表达式执行失败: commentItem.goodsSpu || index\", __wv_for_key_error_0);\n                  }\n                }\n                return undefined;\n              }\n            })()\n          });\n        })() : {\n          \"__wv_value_0\": __wv_for_key_source_item_0,\n          \"__wv_key_0\": (() => {\n            try {\n              return __wevuUnref(commentItem.goodsSpu) || index;\n            } catch (__wv_for_key_error_0) {\n              if (__wv_for_key_source_item_0 != null) {\n                if (typeof console !== \"undefined\" && typeof console.error === \"function\") {\n                  console.error(\"[wevu] v-for :key 表达式执行失败: commentItem.goodsSpu || index\", __wv_for_key_error_0);\n                }\n              }\n              return undefined;\n            }\n          })()\n        };\n      }\n      return __wv_for_key_result_0;\n    })();\n  }\n  return __wv_for_key_source_0;\n})()"
+      },
+      "forStack": [],
+      "conditions": [
+        {
+          "expAst": {
+            "role": "expAst",
+            "source": "__wevuUnref(__wevuUnref(__wevuResolvePropValue(this, \"commentsStatistics\", this.commentsStatistics)).commentCount) > 0"
+          },
+          "forDepth": 0
+        }
+      ]
+    }
+  ],
+  "inlineExpressions": [
+    {
+      "id": "i0",
+      "expression": "_ctx.showPromotionPopup(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i1",
+      "expression": "_ctx.showSkuSelectPopup(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i2",
+      "expression": "_ctx.navToCommentsListPage(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i3",
+      "expression": "_ctx.toAddCart(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i4",
+      "expression": "_ctx.toNav(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i5",
+      "expression": "_ctx.buyItNow(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i6",
+      "expression": "_ctx.handlePopupHide(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i7",
+      "expression": "_ctx.chooseSpecItem(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i8",
+      "expression": "_ctx.changeNum(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "i9",
+      "expression": "_ctx.addCart(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "ia",
+      "expression": "_ctx.gotoBuy(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "ib",
+      "expression": "_ctx.specsConfirm(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "ic",
+      "expression": "_ctx.closePromotionPopup(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    },
+    {
+      "id": "id",
+      "expression": "_ctx.promotionChange(_event)",
+      "scopeKeys": [],
+      "parameterNames": {
+        "context": "_ctx",
+        "scope": "_scope",
+        "event": "_event"
+      }
+    }
+  ]
+}

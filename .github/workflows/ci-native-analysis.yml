@@ -1,0 +1,263 @@
+name: Native AST Analysis
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/ci-native-analysis.yml
+      - 'packages/ast/**'
+      - 'packages/ast-native/**'
+      - 'packages-runtime/wevu-compiler/**'
+      - 'packages/weapp-vite/src/plugins/core/lifecycle/emit/rewrite/**'
+      - packages/weapp-vite/src/plugins/core/lifecycle/platformApiRewrite.ts
+      - packages/weapp-vite/src/utils/outputChunk.ts
+      - 'packages/weapp-vite/src/utils/sourcemap*'
+      - 'packages/weapp-vite/src/utils/npmImport*'
+      - packages/weapp-vite/src/utils/weapi.ts
+      - 'packages/weapp-vite/src/utils/miniProgramGlobals*'
+      - scripts/ast-migration-profile.ts
+      - scripts/ast-migration-profile.test.ts
+      - 'scripts/astMigrationProfile/**'
+      - 'scripts/nativeChunkAnalysis/**'
+      - 'scripts/nativeBindingAnalysis/**'
+      - 'scripts/scriptAnalysisBaseline/**'
+      - 'scripts/optimizedCompilerAnalysis/**'
+      - 'scripts/nativeScriptTransform/**'
+      - 'scripts/nativeLoadDiagnostic/**'
+      - 'scripts/benchmarkNativeAnalysis/**'
+      - 'scripts/benchmarkTemplatesHmr/**'
+      - 'scripts/benchmarkTemplatesPerformance/**'
+      - 'scripts/performanceGate/**'
+      - scripts/benchmark-templates-hmr.ts
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+  workflow_dispatch:
+    inputs:
+      full-performance:
+        description: Run the fixed native off/on paired benchmark after correctness checks
+        type: boolean
+        default: false
+      compiler-performance:
+        description: Run two serial batches of the five-variant complete compiler experiment
+        type: boolean
+        default: false
+      script-baseline-performance:
+        description: Run two serial batches of the seven-variant stronger JS script baseline
+        type: boolean
+        default: false
+      optimized-compiler-cpu:
+        description: Collect compiler-only main-thread samples after five-way composition correctness
+        type: boolean
+        default: false
+
+concurrency:
+  group: native-analysis-${{ inputs.optimized-compiler-cpu && 'optimized-cpu-' || inputs.script-baseline-performance && 'script-' || inputs.compiler-performance && 'compiler-' || '' }}${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Native correctness (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 150
+    env:
+      RUSTUP_TOOLCHAIN: 1.99.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '24'
+      - name: Install the isolated Rust toolchain
+        run: rustup toolchain install 1.99.0 --profile minimal
+      - name: Build workspace dependencies
+        run: pnpm exec turbo run build --filter=weapp-vite...
+      - name: Check native debug correctness and fallback
+        run: pnpm --filter @weapp-vite/ast-native native:test
+      - name: Build the release binding
+        run: pnpm --filter @weapp-vite/ast-native native:build
+      - name: Check native release correctness and fallback
+        run: pnpm --filter @weapp-vite/ast-native exec vitest run --config native.vitest.config.ts
+      - name: Build the optional chunk analysis experiment
+        run: pnpm --filter @weapp-vite/ast-native exec napi build --platform --release --features experimental-chunk-analysis --no-js --dts target/chunk-experiment.d.ts --output-dir ../../.codex-tmp/chunk-native-release
+      - name: Check experimental binding and exact rewrite parity
+        run: node --import tsx scripts/nativeChunkAnalysis/check.ts --binding-dir=.codex-tmp/chunk-native-release --output=.codex-tmp/chunk-correctness.json
+      - name: Check batch expression parsing contracts
+        working-directory: packages/ast-native
+        run: cargo test --locked --features experimental-binding-analysis,napi/noop,napi-derive/noop binding_analysis::tests
+      - name: Build the optional binding analysis experiment
+        run: pnpm --filter @weapp-vite/ast-native exec napi build --platform --release --features experimental-binding-analysis --no-js --dts target/binding-experiment.d.ts --output-dir ../../.codex-tmp/binding-native-release
+      - name: Check binding expression parity and captured compiler requests
+        run: node --import tsx scripts/nativeBindingAnalysis/check.ts --binding-dir=.codex-tmp/binding-native-release --output-dir=.codex-tmp/binding-correctness
+      - name: Upload complete compiler comparison
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: binding-complete-compiler-${{ matrix.os }}
+          path: .codex-tmp/binding-correctness/complete-compiler/report.json
+          include-hidden-files: true
+      - name: Check AST types and contracts
+        run: |
+          pnpm --filter @weapp-vite/ast typecheck
+          pnpm --filter @weapp-vite/ast test
+          pnpm --filter @weapp-vite/ast test:types
+          pnpm --filter @wevu/compiler typecheck
+          pnpm --filter @wevu/compiler test:types
+      - name: Check compiler profiling and benchmark evidence contracts
+        run: |
+          pnpm --filter @wevu/compiler test src/profiling/internal.test.ts src/profiling/internal.browser.test.ts src/utils/babel.test.ts
+          pnpm exec tsc -p scripts/astMigrationProfile/tsconfig.json
+          pnpm exec tsc -p scripts/benchmarkNativeAnalysis/tsconfig.json
+          pnpm exec tsc -p scripts/nativeChunkAnalysis/tsconfig.json
+          pnpm exec tsc -p scripts/nativeBindingAnalysis/tsconfig.json
+          pnpm exec tsc -p scripts/scriptAnalysisBaseline/tsconfig.json
+          pnpm exec tsc -p scripts/optimizedCompilerAnalysis/tsconfig.json
+          pnpm exec tsc -p scripts/nativeScriptTransform/tsconfig.json
+          pnpm exec tsc -p scripts/nativeLoadDiagnostic/tsconfig.json
+          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile scripts/benchmarkNativeAnalysis scripts/nativeChunkAnalysis/rewrite.test.ts scripts/nativeBindingAnalysis scripts/scriptAnalysisBaseline scripts/optimizedCompilerAnalysis scripts/nativeScriptTransform scripts/nativeLoadDiagnostic
+      - name: Check native lazy loading source diagnostics
+        run: node --import tsx scripts/nativeLoadDiagnostic/check.ts --output=.codex-tmp/native-load-source
+      - name: Upload native lazy loading source diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-load-source-${{ matrix.os }}
+          path: .codex-tmp/native-load-source/report.json
+          include-hidden-files: true
+      - name: Compare script analysis baselines
+        run: node --import tsx scripts/scriptAnalysisBaseline/check.ts --output=.codex-tmp/script-baseline-correctness
+      - name: Upload script analysis comparison
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: script-baseline-correctness-${{ matrix.os }}
+          path: |
+            .codex-tmp/script-baseline-correctness/report.json
+            .codex-tmp/script-baseline-correctness/*.log
+          include-hidden-files: true
+      - name: Collect compiler main-thread samples
+        env:
+          WEAPP_VITE_NATIVE: '0'
+        run: |
+          node --input-type=module -e "import { mkdirSync } from 'node:fs'; mkdirSync('.codex-tmp/compiler-cpu', { recursive: true })"
+          node --import tsx scripts/astMigrationProfile/cpu.ts --output=.codex-tmp/compiler-cpu/profile.json --raw-profile=.codex-tmp/compiler-cpu/profile.cpuprofile
+          node --import tsx scripts/astMigrationProfile/cpu.ts --source=apps/wevu-vue-demo/src/pages/index/index.vue --output=.codex-tmp/compiler-cpu/wevu.json --raw-profile=.codex-tmp/compiler-cpu/wevu.cpuprofile
+          node --import tsx scripts/astMigrationProfile/cpu.ts --source=templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/index.vue --output=.codex-tmp/compiler-cpu/retail.json --raw-profile=.codex-tmp/compiler-cpu/retail.cpuprofile
+      - name: Upload sanitized compiler sample summaries
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compiler-cpu-${{ matrix.os }}
+          path: .codex-tmp/compiler-cpu/*.json
+          include-hidden-files: true
+      - name: Compare optimized JS and batch Rust composition
+        run: node --import tsx scripts/optimizedCompilerAnalysis/check.ts --binding-dir=.codex-tmp/binding-native-release --output=.codex-tmp/optimized-compiler-correctness
+      - name: Upload optimized compiler composition
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: optimized-compiler-correctness-${{ matrix.os }}
+          path: |
+            .codex-tmp/optimized-compiler-correctness/report.json
+            .codex-tmp/optimized-compiler-correctness/*.log
+            .codex-tmp/optimized-compiler-correctness/*-mismatch.json
+          include-hidden-files: true
+      - name: Check experimental script transform and printer contracts
+        working-directory: packages/ast-native
+        run: cargo test --locked --features experimental-script-transform,napi/noop,napi-derive/noop script_transform
+      - name: Build the optional script transform probe
+        run: pnpm --filter @weapp-vite/ast-native exec napi build --platform --release --features experimental-script-transform --no-js --dts target/script-transform-experiment.d.ts --output-dir ../../.codex-tmp/script-transform-native
+      - name: Record JS printer compatibility differences (diagnostic only)
+        run: node --import tsx scripts/nativeScriptTransform/check.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-probe --allow-differences
+      - name: Upload sanitized JS printer probe
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: script-transform-probe-${{ matrix.os }}
+          path: .codex-tmp/script-transform-probe/summary.json
+          include-hidden-files: true
+      - name: Record whole script transform differences (diagnostic only)
+        run: node --import tsx scripts/nativeScriptTransform/transformCheck.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-stage --allow-differences
+      - name: Upload sanitized whole script transform probe
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: script-transform-stage-${{ matrix.os }}
+          path: .codex-tmp/script-transform-stage/summary.json
+          include-hidden-files: true
+      - name: Record complete compiler native integration (diagnostic only)
+        run: node --import tsx scripts/nativeScriptTransform/integratedCheck.ts --binding-dir=.codex-tmp/script-transform-native --output=.codex-tmp/script-transform-integrated --allow-differences
+      - name: Upload sanitized complete compiler native integration
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: script-transform-integrated-${{ matrix.os }}
+          path: .codex-tmp/script-transform-integrated/summary.json
+          include-hidden-files: true
+      - name: Collect optimized compiler main-thread samples serially
+        if: github.event_name == 'workflow_dispatch' && inputs.optimized-compiler-cpu
+        run: node --import tsx scripts/optimizedCompilerAnalysis/profile.ts --binding-dir=.codex-tmp/binding-native-release --output=.codex-tmp/optimized-compiler-cpu
+      - name: Upload sanitized optimized compiler samples
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.optimized-compiler-cpu
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: optimized-compiler-cpu-${{ matrix.os }}
+          path: .codex-tmp/optimized-compiler-cpu/summary.json
+          include-hidden-files: true
+      - name: Check the real staged template diagnostic
+        run: node --import tsx scripts/benchmarkNativeAnalysis/checkStage.ts --output=.codex-tmp/native-stage-check
+      - name: Upload staged dependency diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-stage-check-${{ matrix.os }}
+          path: |
+            .codex-tmp/native-stage-check/stage-check.json
+            .codex-tmp/native-stage-check/**/dependency-layout.json
+            .codex-tmp/native-stage-check/**/first.log
+            .codex-tmp/native-stage-check/**/repeat.log
+          include-hidden-files: true
+      - name: Sample complete compiler calls serially
+        if: github.event_name == 'workflow_dispatch' && inputs.compiler-performance
+        run: node --import tsx scripts/nativeBindingAnalysis/compileTimings.ts --binding-dir=.codex-tmp/binding-native-release --output=.codex-tmp/compiler-binding-experiment --iterations=40
+      - name: Upload complete compiler experiment
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.compiler-performance
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compiler-binding-experiment-${{ matrix.os }}
+          path: |
+            .codex-tmp/compiler-binding-experiment/**/*.json
+            .codex-tmp/compiler-binding-experiment/**/*.log
+          include-hidden-files: true
+      - name: Run fixed native off/on performance acceptance
+        if: github.event_name == 'workflow_dispatch' && inputs.full-performance
+        run: pnpm benchmark:native-analysis --mode=full --output=.codex-tmp/native-analysis --native-path=packages/ast-native/index.js
+      - name: Sample stronger JS script baselines serially
+        if: github.event_name == 'workflow_dispatch' && inputs.script-baseline-performance
+        run: node --import tsx scripts/scriptAnalysisBaseline/timings.ts --output=.codex-tmp/script-baseline-timings --iterations=42
+      - name: Upload stronger JS script baseline samples
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.script-baseline-performance
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: script-baseline-timings-${{ matrix.os }}
+          path: |
+            .codex-tmp/script-baseline-timings/summary.json
+            .codex-tmp/script-baseline-timings/*/report.json
+            .codex-tmp/script-baseline-timings/**/*-mismatch.json
+            .codex-tmp/script-baseline-timings/correctness/*.json
+            .codex-tmp/script-baseline-timings/*.log
+            .codex-tmp/script-baseline-timings/correctness/*.log
+          include-hidden-files: true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.full-performance
+        with:
+          name: native-analysis-${{ matrix.os }}
+          path: .codex-tmp/native-analysis/**
+          include-hidden-files: true

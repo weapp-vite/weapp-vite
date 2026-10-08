@@ -1,0 +1,91 @@
+# 实验：模板绑定表达式的批量 Rust 分析
+
+本实验验证 manifest 依赖分析的计算边界，默认不编译、不导出生产 JS API，也没有接入模板编译热路径。
+
+`capture.ts` 在真实 `compileVueFile` 中捕获 `collectDependencies` 完成 normalization 后的表达式、locals、safe-call 名称，以及循环依赖合并前的 Babel 结果。Node 加载钩子只修改本进程内的源码，不改磁盘源码或 dist；生产源码 hash、输入及最终编译结果 hash 随报告保存。捕获过程不计时。
+
+`run.ts` 用同一批请求比较四个实现；可选传入上轮绑定作为第五个对照：
+
+- 原始 JS：每次请求调用生产分析函数。
+- JS 去重：本批次按完整请求去重后调用相同函数。
+- JS 摘要去重：先按完整请求去重，再按精确表达式缓存不可变语法摘要，按 locals/safe-call 特化结果。摘要仍来自生产分析函数，诊断用 `.has` 观察器仅记录可豁免的直接调用；不复制 Babel visitor，也不接入生产 compiler。
+- Rust 批量：按相同请求键去重，一次 NAPI 传入唯一请求；Rust 在本次调用内按表达式缓存普通数据摘要，再按外部配置特化并恢复顺序。不同调用不共享缓存。
+- 可选旧 Rust：`--previous-binding` 指定此前独立构建的实验绑定，与新实现使用相同适配器，单独保留二进制 hash。
+
+为了保持计时边界一致，重放时只在内存中绕过已经完成的 normalization；JS 的 AST 分析主体仍来自生产函数，没有复制另一套 Babel 实现。每项结果必须与编译时捕获的 oracle 严格一致。任何 JS 或 Rust 对照不一致，或 native 发生任何 fallback，都会使实验失败并禁止计时。
+
+## 复现
+
+先按仓库规则构建工作区依赖。使用固定 Rust 工具链构建独立 feature 绑定，不覆盖默认 `.node`：
+
+```sh
+pnpm exec turbo run build --filter=weapp-vite...
+pnpm --filter @weapp-vite/ast-native exec napi build --platform --release --features experimental-binding-analysis --no-js --dts target/binding-experiment.d.ts --output-dir ../../.codex-tmp/binding-native-release
+node --import tsx scripts/nativeBindingAnalysis/check.ts --binding-dir=.codex-tmp/binding-native-release --output-dir=.codex-tmp/binding-correctness
+```
+
+检查入口串行运行真实 binding 差分、真实编译捕获和重放，不执行性能计时。输出目录必须不存在；所有入口的输出 JSON 也拒绝覆盖。环境变量 `WEAPP_VITE_NATIVE` 应取消或设为 `0`，以保留独立 JS 基线。
+
+也可分别捕获压力 fixture 和仓库现有页面。`--source` 使用统一的页面编译选项，报告会记录它们；这不是加载完整工程配置的 Vite 构建：
+
+```sh
+node --import tsx scripts/nativeBindingAnalysis/capture.ts --output=.codex-tmp/binding-profile.json
+node --import tsx scripts/nativeBindingAnalysis/capture.ts --source=apps/wevu-vue-demo/src/pages/index/index.vue --output=.codex-tmp/binding-wevu.json
+node --import tsx scripts/nativeBindingAnalysis/capture.ts --source=templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/index.vue --output=.codex-tmp/binding-retail.json
+```
+
+确认同机 E2E、构建和其他性能任务已退出后，用实际生成的 release 文件替换下面的 `binding.node`。不传 `--iterations` 则只检查正确性：
+
+```sh
+node --import tsx scripts/nativeBindingAnalysis/run.ts --binding=.codex-tmp/binding-native-release/binding.node --input=.codex-tmp/binding-profile.json --output=.codex-tmp/binding-replay.json --iterations=40
+pnpm exec vitest run --config scripts/vitest.config.mjs scripts/nativeBindingAnalysis
+pnpm exec tsc -p scripts/nativeBindingAnalysis/tsconfig.json
+```
+
+计时包含请求/表达式缓存建立、摘要收集与特化、NAPI 输入输出、结果验证和恢复顺序；六轮预热后使用平衡执行位置和轮内相邻前序的顺序。四个实现为 4 轮一周期，加入旧 Rust 后为 10 轮一周期，建议用 40 轮完整覆盖。报告 schemaVersion 为 2，并保留实际预热次数、完整周期数、余数、是否完整平衡、时间和两份绑定 hash；无计时运行的预热次数为 0。每批缓存重新创建，不能把上轮缓存命中当作 Rust 加速。摘要中的依赖对象冻结，特化结果复制对象；解析失败的 null 也按精确表达式缓存，逐项输入校验不因命中缓存而跳过。Node 加载钩子需要独立诊断进程；锚点改变或模块已缓存时会失败。
+
+新增 Rust 内部计数测试可验证实际 parse 次数。仅该纯 Rust 测试使用 `noop`；真实 Node 绑定构建不得加入这两个特性：
+
+```sh
+cargo test --locked --manifest-path packages/ast-native/Cargo.toml --features experimental-binding-analysis,napi/noop,napi-derive/noop binding_analysis::tests
+```
+
+当前实验在每次 NAPI 调用内复用一个 Oxc arena。每次解析返回自有摘要后立即 reset，再缓存结果或传播错误；缓存不含 AST 引用。arena 保留最大的内存块直到当前调用结束，不跨调用池化，也不据此承诺 RSS 下降。对照上一版本时，使用独立保存的摘要缓存绑定作为 `--previous-binding`，才能区分 arena 复用与之前的解析去重。
+
+## 保留的语义与边界
+
+- 表达式内部词法绑定、静态/动态成员路径、访问顺序、去重、safe-call 与 snapshot fallback 必须对齐。JS 把现有 INLINE_GLOBALS、Babel globals 和普通对象原型名称传给 Rust，保留当前过滤行为。
+- 原始及转义后的孤立 UTF-16 代理字符不能有损传输；无法分析的 native 输入或无效批量结果整批回退。解析失败的 `null` 与成功但无依赖的结果保持区分。
+- 外部作用域规范化、循环来源依赖合并、JSX `scopeDependencies`、manifest ID/位置/输出路径及同步 slot script 消费仍由现有 JS 流程负责，未迁移。
+- `run.ts` 离线重放先收集完整语料，不能直接把所有分析延迟到模板结束。下述 `compile.ts` 诊断实验按每个 manifest 的消费边界 flush；生产流水线仍未接入。
+- 本实验的局部 P50/P95 不证明完整编译、构建或 HMR 收益，也不覆盖 RSS、原工程 sourcemap 和运行时验收。JS 去重对照用于分清减少重复工作与换语言的贡献。
+
+## 完整编译对照
+
+`compile.ts` 把默认关闭的批量分析放回真实 `compileVueFile`。五个独立进程分别执行未修改的编译器、只替换 TypeScript 加载方式的控制组、同一请求计划上的 JS 请求缓存、JS 语法摘要缓存，以及 Rust 批量分析。每次编译都重新规范化、收集并分析请求，不从计时外的编译预填结果。
+
+```sh
+node --import tsx scripts/nativeBindingAnalysis/compile.ts --binding=<feature-built.node> --output=.codex-tmp/compile-binding-correctness
+node --import tsx scripts/nativeBindingAnalysis/compile.ts --binding=<feature-built.node> --output=.codex-tmp/compile-binding-pressure --scenario=pressure --iterations=40
+```
+
+默认只作正确性对照，包含三个代表语料和循环、scoped slot、JSX、Unicode/CRLF、native 失败回退等场景；native 三平台 CI 的 `check.ts` 也执行这项检查。完整 JSON 返回值包含产物、map、告警和预期错误，每次调用均严格比较。native 计数必须证明实际命中，scoped-slot 用例必须覆盖直接 owner 插入和子清单消费，JSX 合成绑定保持原有同步 JS 路径。
+
+计时只支持 `pressure`、`wevu`、`retail`，须在同机其他构建、E2E 和性能任务退出后串行进行。五实现的平衡周期为 10 轮；预热 10 轮后，采样轮数须是 10 的倍数。计时包含完整编译及其请求冻结、NAPI、fallback 检查和清单消费；IPC、JSON 序列化和输出对照在窗口外。每个实现使用独立的长期子进程，生产编译缓存保持温热，批分析缓存在每次 flush 重建；这不是冷构建或 Vite/HMR 验收。
+
+`baseline → control-js` 显示加载/转译方式的影响；`control-js → planned-js/planned-summary` 显示规划及 JS 缓存影响；`planned-summary → planned-native` 才能观察相同规划和加载方式下 Rust 的附加收益。不能把整个实验相对 baseline 的差值都归因 Rust。RSS 仅是本次编译后的根 worker 快照，不是峰值或进程树总内存。
+
+报告记录完整采样顺序、逐轮耗时/CPU/RSS/计数，诊断脚本、编译器 TypeScript 源码树、锁文件与 native 二进制的前后 hash。该检查不覆盖已安装依赖的全部文件。子进程的发送错误不代表已退出；运行器只清理自己创建的进程并确认退出，未完成清理时报告失败。实现边界见 [compileBatch](./compileBatch/README.md)。
+
+## 两批完整编译采集
+
+`compileTimings.ts` 先运行全部 13 个正确性场景，再串行运行两批压力模板、零售详情和 Wevu 首页。每份语料默认 40 轮、预热 10 轮；每次运行都创建独立的五组 worker。输出目录必须全新，任一步失败即停止，保留已有报告，不覆盖或自动重采样。
+
+```sh
+node --import tsx scripts/nativeBindingAnalysis/compileTimings.ts --binding-dir=.codex-tmp/binding-native-release --output=.codex-tmp/complete-compiler-sampling --iterations=40
+gh workflow run ci-native-analysis.yml --ref <branch> -f compiler-performance=true -f full-performance=false
+```
+
+手动 CI 的 `compiler-performance` 默认关闭，并使用独立 concurrency group，不取消已有固定提交的生产 native 性能运行。各平台作业内串行完成采集；共享 CI runner 的资源争用没有独立测量，因此仍需比较批次和平台，不把单次 CI 数字当作稳定承诺。
+
+`summary.json` 核对七份来源报告的完成状态、完整轮数、平衡顺序、语料、选项、输出和源码/绑定身份，保存报告 hash；失败或漂移的来源不参与统计。每批单独报告 wall/CPU/RSS 的 P50/P95，以及控制组、两种 JS 缓存相对 Rust 的逐对差值，不混合不同语料或批次。该报告不判定生产构建/HMR 的 10%/5% 门槛，也不改变默认 native 开关。

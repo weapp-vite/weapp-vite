@@ -7,7 +7,7 @@ use napi_derive::napi;
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{
     Argument, ArrowFunctionBody, ArrowFunctionExpression, CallExpression, Expression, Function,
-    FunctionBody, ImportDeclarationSpecifier, ModuleExportName, ObjectProperty, Program, PropertyKey,
+    ImportDeclarationSpecifier, ModuleExportName, ObjectProperty, Program, PropertyKey, PropertyKind,
     Statement,
 };
 use oxc_ast_visit::{Visit, walk};
@@ -17,6 +17,15 @@ use oxc_syntax::scope::ScopeFlags;
 
 mod vue_sfc_signature;
 pub use vue_sfc_signature::get_vue_sfc_signature_payload_native;
+
+#[cfg(feature = "experimental-chunk-analysis")]
+mod chunk_analysis;
+
+#[cfg(feature = "experimental-binding-analysis")]
+mod binding_analysis;
+
+#[cfg(feature = "experimental-script-transform")]
+mod script_transform;
 
 #[napi(object)]
 pub struct NativeOnPageScrollDiagnostic {
@@ -32,6 +41,7 @@ pub struct NativeScriptAnalysis {
     pub has_static_require_literal: bool,
     pub has_platform_api_access: bool,
     pub feature_flags: Vec<String>,
+    pub on_page_scroll_diagnostics: Option<Vec<NativeOnPageScrollDiagnostic>>,
 }
 
 #[napi(object)]
@@ -46,30 +56,35 @@ fn parse_program<'a>(
     allocator: &'a Allocator,
     code: &'a str,
     filename: Option<String>,
-) -> Option<Program<'a>> {
+) -> napi::Result<Program<'a>> {
     let filename = filename.unwrap_or_else(|| "inline.ts".to_string());
     let source_type =
         SourceType::from_path(Path::new(&filename)).unwrap_or_else(|_| SourceType::ts());
     let parsed = Parser::new(allocator, code, source_type).parse();
-    if parsed.fatal_error {
-        return None;
+    if parsed.fatal_error || !parsed.diagnostics.is_empty() {
+        return Err(napi::Error::from_reason("Native AST parsing failed"));
     }
-    Some(parsed.program)
+    Ok(parsed.program)
 }
 
-struct LineStarts {
+struct LineStarts<'a> {
+    code: &'a str,
     starts: Vec<usize>,
 }
 
-impl LineStarts {
-    fn new(code: &str) -> Self {
+impl<'a> LineStarts<'a> {
+    fn new(code: &'a str) -> Self {
         let mut starts = vec![0];
-        for (index, byte) in code.bytes().enumerate() {
-            if byte == b'\n' {
-                starts.push(index + 1);
+        let mut chars = code.char_indices().peekable();
+        while let Some((index, character)) = chars.next() {
+            if character == '\r' && chars.peek().is_some_and(|(_, next)| *next == '\n') {
+                continue;
+            }
+            if matches!(character, '\n' | '\r' | '\u{2028}' | '\u{2029}') {
+                starts.push(index + character.len_utf8());
             }
         }
-        Self { starts }
+        Self { code, starts }
     }
 
     fn location(&self, offset: u32) -> (u32, u32) {
@@ -80,15 +95,15 @@ impl LineStarts {
         };
         (
             (line_index + 1) as u32,
-            (offset - self.starts[line_index] + 1) as u32,
+            (self.code[self.starts[line_index]..offset].encode_utf16().count() + 1) as u32,
         )
     }
 }
 
 struct Inspection {
     empty: bool,
-    first_set_data_call_start: Option<u32>,
-    sync_api_call_starts: BTreeMap<String, u32>,
+    has_set_data_call: bool,
+    sync_apis: Vec<String>,
 }
 
 struct PageScrollInspectionVisitor {
@@ -100,34 +115,32 @@ impl PageScrollInspectionVisitor {
         Self {
             inspection: Inspection {
                 empty,
-                first_set_data_call_start: None,
-                sync_api_call_starts: BTreeMap::new(),
+                has_set_data_call: false,
+                sync_apis: Vec::new(),
             },
         }
     }
 }
 
 impl<'a> Visit<'a> for PageScrollInspectionVisitor {
-    // 遍历从回调体开始，函数节点始终属于不应进入的嵌套作用域。
+    // 根回调通过 walk 直接检查参数与函数体，后续函数节点均为嵌套作用域。
     fn visit_function(&mut self, _function: &Function<'a>, _flags: ScopeFlags) {}
 
     fn visit_arrow_function_expression(&mut self, _arrow: &ArrowFunctionExpression<'a>) {}
 
     fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
         if callee_name(&call.callee) == Some("setData") {
-            self.inspection
-                .first_set_data_call_start
-                .get_or_insert(call.callee.span().start);
+            self.inspection.has_set_data_call = true;
         }
 
-        if let Expression::StaticMemberExpression(member) = &call.callee
-            && is_identifier_expression(&member.object, "wx")
-            && member.property.name.as_str().ends_with("Sync")
+        if let Some((object, name)) = scroll_member(&call.callee)
+            && is_identifier_expression(object.without_parentheses(), "wx")
+            && name.ends_with("Sync")
         {
-            self.inspection
-                .sync_api_call_starts
-                .entry(format!("wx.{}", member.property.name.as_str()))
-                .or_insert(call.callee.span().start);
+            let api = format!("wx.{name}");
+            if !self.inspection.sync_apis.contains(&api) {
+                self.inspection.sync_apis.push(api);
+            }
         }
 
         walk::walk_call_expression(self, call);
@@ -138,16 +151,10 @@ struct OnPageScrollVisitor<'a> {
     hook_names: HashSet<String>,
     namespace_imports: HashSet<String>,
     diagnostics: Vec<NativeOnPageScrollDiagnostic>,
-    line_starts: &'a LineStarts,
+    line_starts: &'a LineStarts<'a>,
 }
 
 impl<'a> OnPageScrollVisitor<'a> {
-    fn report_function_body(&mut self, body: &FunctionBody<'a>, source_label: &str, start: u32) {
-        let mut inspector = PageScrollInspectionVisitor::new(body.statements.is_empty());
-        inspector.visit_function_body(body);
-        self.report_inspection(inspector.inspection, source_label, start);
-    }
-
     fn report_inspection(&mut self, inspection: Inspection, source_label: &str, start: u32) {
         let (line, column) = self.line_starts.location(start);
         if inspection.empty {
@@ -159,8 +166,7 @@ impl<'a> OnPageScrollVisitor<'a> {
                 sync_api: None,
             });
         }
-        if let Some(start) = inspection.first_set_data_call_start {
-            let (line, column) = self.line_starts.location(start);
+        if inspection.has_set_data_call {
             self.diagnostics.push(NativeOnPageScrollDiagnostic {
                 kind: "setData".to_string(),
                 line,
@@ -170,8 +176,7 @@ impl<'a> OnPageScrollVisitor<'a> {
             });
         }
 
-        for (sync_api, start) in inspection.sync_api_call_starts {
-            let (line, column) = self.line_starts.location(start);
+        for sync_api in inspection.sync_apis {
             self.diagnostics.push(NativeOnPageScrollDiagnostic {
                 kind: "syncApi".to_string(),
                 line,
@@ -189,7 +194,9 @@ impl<'a> OnPageScrollVisitor<'a> {
         start: u32,
     ) {
         if let Some(body) = &function.body {
-            self.report_function_body(body, source_label, start);
+            let mut inspector = PageScrollInspectionVisitor::new(body.statements.is_empty());
+            walk::walk_function(&mut inspector, function, ScopeFlags::empty());
+            self.report_inspection(inspector.inspection, source_label, start);
         }
     }
 
@@ -199,33 +206,29 @@ impl<'a> OnPageScrollVisitor<'a> {
         source_label: &str,
         start: u32,
     ) {
-        if let ArrowFunctionBody::FunctionBody(body) = &arrow.body {
-            self.report_function_body(body, source_label, start);
-            return;
-        }
-
-        let mut inspector = PageScrollInspectionVisitor::new(false);
-        inspector.visit_arrow_function_body(&arrow.body);
+        let empty = matches!(&arrow.body, ArrowFunctionBody::FunctionBody(body) if body.statements.is_empty());
+        let mut inspector = PageScrollInspectionVisitor::new(empty);
+        walk::walk_arrow_function_expression(&mut inspector, arrow);
         self.report_inspection(inspector.inspection, source_label, start);
     }
 }
 
 impl<'a> Visit<'a> for OnPageScrollVisitor<'a> {
     fn visit_object_property(&mut self, property: &ObjectProperty<'a>) {
-        if !property.computed && static_property_name(&property.key) == Some("onPageScroll") {
-            let start = if property.method {
-                property.key.span().end
+        let method = property.method || property.kind != PropertyKind::Init;
+        if (method || !property.computed) && static_property_name(&property.key) == Some("onPageScroll") {
+            let value = property.value.without_parentheses();
+            let start = if method {
+                property.span.start
             } else {
-                property.value.span().start
+                value.span().start
             };
-            match &property.value {
+            match value {
                 Expression::FunctionExpression(function) => {
                     self.report_function_expression(function, "onPageScroll", start);
-                    return;
                 }
                 Expression::ArrowFunctionExpression(arrow) => {
                     self.report_arrow_function(arrow, "onPageScroll", start);
-                    return;
                 }
                 _ => {}
             }
@@ -237,19 +240,18 @@ impl<'a> Visit<'a> for OnPageScrollVisitor<'a> {
     fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
         if is_on_page_scroll_callee(&call.callee, &self.hook_names, &self.namespace_imports)
             && let Some(argument) = call.arguments.first()
+            && let Some(expression) = argument.as_expression()
         {
-            match argument {
-                Argument::FunctionExpression(function) => {
+            match expression.without_parentheses() {
+                Expression::FunctionExpression(function) => {
                     self.report_function_expression(
                         function,
                         "onPageScroll(...)",
                         function.span.start,
                     );
-                    return;
                 }
-                Argument::ArrowFunctionExpression(arrow) => {
+                Expression::ArrowFunctionExpression(arrow) => {
                     self.report_arrow_function(arrow, "onPageScroll(...)", arrow.span.start);
-                    return;
                 }
                 _ => {}
             }
@@ -263,25 +265,26 @@ impl<'a> Visit<'a> for OnPageScrollVisitor<'a> {
 pub fn collect_on_page_scroll_diagnostics_native(
     code: String,
     filename: Option<String>,
-) -> Vec<NativeOnPageScrollDiagnostic> {
+) -> napi::Result<Vec<NativeOnPageScrollDiagnostic>> {
     if !code.contains("onPageScroll") {
-        return Vec::new();
+        return Ok(Vec::new());
     }
 
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
-        return Vec::new();
-    };
+    let program = parse_program(&allocator, &code, filename)?;
+    Ok(collect_scroll_diagnostics(&program, &code))
+}
 
-    let (hook_names, namespace_imports) = collect_wevu_scroll_imports(&program);
-    let line_starts = LineStarts::new(&code);
+fn collect_scroll_diagnostics(program: &Program, code: &str) -> Vec<NativeOnPageScrollDiagnostic> {
+    let (hook_names, namespace_imports) = collect_wevu_scroll_imports(program);
+    let line_starts = LineStarts::new(code);
     let mut visitor = OnPageScrollVisitor {
         hook_names,
         namespace_imports,
         diagnostics: Vec::new(),
         line_starts: &line_starts,
     };
-    visitor.visit_program(&program);
+    visitor.visit_program(program);
     visitor.diagnostics
 }
 
@@ -303,17 +306,15 @@ impl<'a> Visit<'a> for StaticRequireVisitor {
 }
 
 #[napi(js_name = "mayContainStaticRequireLiteralNative")]
-pub fn may_contain_static_require_literal_native(code: String, filename: Option<String>) -> bool {
+pub fn may_contain_static_require_literal_native(code: String, filename: Option<String>) -> napi::Result<bool> {
     if !code.contains("require(") && !code.contains("require (") && !code.contains("require`") {
-        return false;
+        return Ok(false);
     }
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
-        return false;
-    };
+    let program = parse_program(&allocator, &code, filename)?;
     let mut visitor = StaticRequireVisitor { found: false };
     visitor.visit_program(&program);
-    visitor.found
+    Ok(visitor.found)
 }
 
 struct PlatformApiVisitor {
@@ -345,17 +346,15 @@ impl<'a> Visit<'a> for PlatformApiVisitor {
 }
 
 #[napi(js_name = "mayContainPlatformApiAccessNative")]
-pub fn may_contain_platform_api_access_native(code: String, filename: Option<String>) -> bool {
+pub fn may_contain_platform_api_access_native(code: String, filename: Option<String>) -> napi::Result<bool> {
     if !may_contain_platform_api_text(&code) {
-        return false;
+        return Ok(false);
     }
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
-        return false;
-    };
+    let program = parse_program(&allocator, &code, filename)?;
     let mut visitor = PlatformApiVisitor { found: false };
     visitor.visit_program(&program);
-    visitor.found
+    Ok(visitor.found)
 }
 
 struct FeatureFlagVisitor {
@@ -447,28 +446,26 @@ pub fn collect_feature_flags_native(
     module_id: String,
     hook_to_feature_json: String,
     filename: Option<String>,
-) -> Vec<String> {
+) -> napi::Result<Vec<String>> {
     if !code.contains(&module_id) {
-        return Vec::new();
+        return Ok(Vec::new());
     }
 
     let Ok(hook_to_feature) =
         serde_json::from_str::<HashMap<String, String>>(&hook_to_feature_json)
     else {
-        return Vec::new();
+        return Ok(Vec::new());
     };
     if hook_to_feature.is_empty() || !hook_to_feature.keys().any(|hook| code.contains(hook)) {
-        return Vec::new();
+        return Ok(Vec::new());
     }
 
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
-        return Vec::new();
-    };
+    let program = parse_program(&allocator, &code, filename)?;
     let (named_hook_locals, namespace_locals) =
         collect_feature_flag_imports(&program, &module_id, &hook_to_feature);
     if named_hook_locals.is_empty() && namespace_locals.is_empty() {
-        return Vec::new();
+        return Ok(Vec::new());
     }
 
     let mut visitor = FeatureFlagVisitor {
@@ -478,7 +475,7 @@ pub fn collect_feature_flags_native(
         enabled: BTreeMap::new(),
     };
     visitor.visit_program(&program);
-    visitor.enabled.keys().cloned().collect()
+    Ok(visitor.enabled.keys().cloned().collect())
 }
 
 #[napi(js_name = "analyzeScriptNative")]
@@ -487,12 +484,12 @@ pub fn analyze_script_native(
     module_id: Option<String>,
     hook_to_feature_json: Option<String>,
     filename: Option<String>,
-) -> NativeScriptAnalysis {
+) -> napi::Result<NativeScriptAnalysis> {
     analyze_script_impl(&code, module_id, hook_to_feature_json, filename)
 }
 
 #[napi(js_name = "analyzeScriptsNative")]
-pub fn analyze_scripts_native(inputs: Vec<NativeScriptAnalysisInput>) -> Vec<NativeScriptAnalysis> {
+pub fn analyze_scripts_native(inputs: Vec<NativeScriptAnalysisInput>) -> napi::Result<Vec<NativeScriptAnalysis>> {
     inputs
         .into_iter()
         .map(|input| {
@@ -511,10 +508,11 @@ fn analyze_script_impl(
     module_id: Option<String>,
     hook_to_feature_json: Option<String>,
     filename: Option<String>,
-) -> NativeScriptAnalysis {
+) -> napi::Result<NativeScriptAnalysis> {
     let wants_static_require =
         code.contains("require(") || code.contains("require (") || code.contains("require`");
     let wants_platform_api = may_contain_platform_api_text(code);
+    let wants_scroll_diagnostics = code.contains("onPageScroll");
     let feature_config =
         module_id
             .zip(hook_to_feature_json)
@@ -532,22 +530,20 @@ fn analyze_script_impl(
                 Some((module_id, hook_to_feature))
             });
 
-    if !wants_static_require && !wants_platform_api && feature_config.is_none() {
-        return NativeScriptAnalysis {
+    if !wants_static_require && !wants_platform_api && !wants_scroll_diagnostics && feature_config.is_none() {
+        return Ok(NativeScriptAnalysis {
             has_static_require_literal: false,
             has_platform_api_access: false,
             feature_flags: Vec::new(),
-        };
+            on_page_scroll_diagnostics: None,
+        });
     }
 
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, code, filename) else {
-        return NativeScriptAnalysis {
-            has_static_require_literal: false,
-            has_platform_api_access: false,
-            feature_flags: Vec::new(),
-        };
-    };
+    let program = parse_program(&allocator, code, filename)?;
+    // 诊断与脚本分析共享一次 parse；没有滚动 hook 时不创建诊断遍历器。
+    let on_page_scroll_diagnostics = wants_scroll_diagnostics
+        .then(|| collect_scroll_diagnostics(&program, code));
 
     let feature_flags = feature_config.and_then(|(module_id, hook_to_feature)| {
         let (named_hook_locals, namespace_locals) =
@@ -570,14 +566,15 @@ fn analyze_script_impl(
     };
     visitor.visit_program(&program);
 
-    NativeScriptAnalysis {
+    Ok(NativeScriptAnalysis {
         has_static_require_literal: wants_static_require && visitor.has_static_require_literal,
         has_platform_api_access: wants_platform_api && visitor.has_platform_api_access,
         feature_flags: visitor
             .feature_flags
             .map(|feature_flags| feature_flags.enabled.keys().cloned().collect())
             .unwrap_or_default(),
-    }
+        on_page_scroll_diagnostics,
+    })
 }
 
 fn collect_wevu_scroll_imports(program: &Program) -> (HashSet<String>, HashSet<String>) {
@@ -597,7 +594,8 @@ fn collect_wevu_scroll_imports(program: &Program) -> (HashSet<String>, HashSet<S
         for specifier in specifiers {
             match specifier {
                 ImportDeclarationSpecifier::ImportSpecifier(import_specifier)
-                    if module_export_name(&import_specifier.imported) == Some("onPageScroll") =>
+                    if !matches!(&import_specifier.imported, ModuleExportName::StringLiteral(_))
+                        && module_export_name(&import_specifier.imported) == Some("onPageScroll") =>
                 {
                     hook_names.insert(import_specifier.local.name.as_str().to_string());
                 }
@@ -722,15 +720,29 @@ fn has_platform_api_member_expression(expression: &Expression) -> bool {
 fn static_property_name<'a>(key: &'a PropertyKey<'a>) -> Option<&'a str> {
     match key {
         PropertyKey::StaticIdentifier(identifier) => Some(identifier.name.as_str()),
+        PropertyKey::Identifier(identifier) => Some(identifier.name.as_str()),
         PropertyKey::StringLiteral(literal) => Some(literal.value.as_str()),
         _ => None,
     }
 }
 
 fn callee_name<'a>(callee: &'a Expression<'a>) -> Option<&'a str> {
-    match callee {
+    match callee.without_parentheses() {
         Expression::Identifier(identifier) => Some(identifier.name.as_str()),
-        Expression::StaticMemberExpression(member) => Some(member.property.name.as_str()),
+        _ => scroll_member(callee).map(|(_, name)| name),
+    }
+}
+
+fn scroll_member<'a>(expression: &'a Expression<'a>) -> Option<(&'a Expression<'a>, &'a str)> {
+    match expression.without_parentheses() {
+        Expression::StaticMemberExpression(member) => Some((&member.object, member.property.name.as_str())),
+        Expression::ComputedMemberExpression(member) => {
+            if let Expression::StringLiteral(literal) = member.expression.without_parentheses() {
+                Some((&member.object, literal.value.as_str()))
+            } else {
+                None
+            }
+        }
         _ => None,
     }
 }
@@ -744,13 +756,12 @@ fn is_on_page_scroll_callee(
     hook_names: &HashSet<String>,
     namespace_imports: &HashSet<String>,
 ) -> bool {
-    match callee {
+    match callee.without_parentheses() {
         Expression::Identifier(identifier) => hook_names.contains(identifier.name.as_str()),
-        Expression::StaticMemberExpression(member) => {
-            is_identifier_expression_set(&member.object, namespace_imports)
-                && member.property.name.as_str() == "onPageScroll"
-        }
-        _ => false,
+        _ => scroll_member(callee).is_some_and(|(object, name)| {
+            is_identifier_expression_set(object.without_parentheses(), namespace_imports)
+                && name == "onPageScroll"
+        }),
     }
 }
 

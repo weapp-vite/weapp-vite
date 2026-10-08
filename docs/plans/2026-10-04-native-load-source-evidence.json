@@ -1,0 +1,566 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-04T13:00:54.729508+00:00",
+  "baseCommit": "2d53ed9c4c6ab0f2d0b3dae23326c94ad78213c0",
+  "scope": "Diagnostic-only four-mode native lazy-load source probe. Production source and default enablement unchanged.",
+  "reportSha256": "f82d8a194cb9003919945bf22bc4cc39748f6cbd6dfd2b0302665ac3dbaa9418",
+  "verification": {
+    "unitTestFiles": 2,
+    "unitTestsPassed": 31,
+    "typecheck": "passed",
+    "sourceHashesRechecked": 44,
+    "outputAndTraceHashesRechecked": 8
+  },
+  "excludedInitialProbe": {
+    "passed": false,
+    "reportSha256": "45f2be1d3cb87dea236cd2f341889a86b61105a293c17fc059c2ea0a53940581",
+    "mismatchSha256": "f351d89b8429f64b79d2e41ddf8abb32bcd20cc573ee4f0d6918914870c880c9",
+    "reason": "Default Babel mayContain helpers without a parser conservatively return true; native may return precise false. The final diagnostic explicitly uses Oxc analysis fallback for exact comparison and retains the original default warning path to test native cache. No production behavior or comparison normalization changed."
+  },
+  "report": {
+    "schemaVersion": 1,
+    "passed": true,
+    "scope": "Four-mode native lazy-load source probe, not build/HMR or performance acceptance",
+    "sourceHashes": {
+      "package.json": "22e56b09c9238eb999e870adfbc1f8883e1d830950a1a89662e9277ae2f72e91",
+      "packages/ast/package.json": "e110958e913908ea0b8a0a16287240bc88070bd58820ab50b1beb057d4abb686",
+      "packages/ast/src/babel.ts": "fbe7bbff0120c6c1b04bd06e555b5519f19db3ff7610c1977961ff23dcfd569c",
+      "packages/ast/src/babelCore.ts": "cd3f54e64f08dfdf97ad97b592b8a4ef56efd514642806122495575722e87849",
+      "packages/ast/src/babelNodes.ts": "911ef1783160a4e47855f9bf385a579a182a0123bf4bcd87e5eec7124d770137",
+      "packages/ast/src/babelTraverse.ts": "ccdb504f3ebc6732c4c87dd716f5406537a512b14297ab7c4015faf0a16a615e",
+      "packages/ast/src/babelTypes.ts": "73a4e166cbc56497ef4fa8f3e29b7210638cfe6d2ffe2b673aa3eced259472a8",
+      "packages/ast/src/engine.ts": "fd84dbb9d304b3ac1ff557007e51b85a29967abac388bed299521f2de9a63abf",
+      "packages/ast/src/engines/babel.ts": "0b5ca18da2f965e71abedab4090a475233f1799854f47bb09ea63b037a8bd7ad",
+      "packages/ast/src/engines/oxc.ts": "314b3b693fa72a33347334ca31b33c47aad253f6aa86bca26cc7b4ca9a8c1eb0",
+      "packages/ast/src/index.ts": "44dd83be700e55bedb959eb1b9f9e0afab68c6a7c18dd715b577f384b12a2178",
+      "packages/ast/src/native.ts": "3d6d009ec5a2a3ce285734d1cc02d0b7f8de69cccfa216e4453fdd37eced7847",
+      "packages/ast/src/native/observation.ts": "cf8fa33436d01bf7397ab5171ba6350d6fdbe119cad2e2d49f8e43de206778eb",
+      "packages/ast/src/operations/componentProps.ts": "083acfbd5a865a9f71216b9bc8d5e02d26ab93eeb3b8dac2885821ef64668f8c",
+      "packages/ast/src/operations/featureFlags.ts": "7695de9e8c2864d1541356e2061229cfd77d36a3e8087a989f3ccba8e1386366",
+      "packages/ast/src/operations/jsxAutoComponents.ts": "8cbd495e08f6f33e6f4eba4dabd22f72f1a9a3a7ecc11266a53dd7b97c44058b",
+      "packages/ast/src/operations/jsxAutoComponents/babel.ts": "06d11aa3d2e9f0cf0dba66299170243c236595d0077f935b1235468031089cb5",
+      "packages/ast/src/operations/jsxAutoComponents/index.ts": "c642f1897d723f31be699589a60df267ad8a9e22e2143a14c08d6e499ad398e0",
+      "packages/ast/src/operations/jsxAutoComponents/oxc.ts": "aa389165cf1c191484437853b1daf921a9406c651c12c150f56ef395d49439b0",
+      "packages/ast/src/operations/jsxAutoComponents/shared.ts": "d4bd883bc5fdca60b2fa0854ca5110277ca570a33d220c6457969cc69cc106b3",
+      "packages/ast/src/operations/jsxAutoComponents/types.ts": "cd9eb635c4781035f70fa453973c182d78096bad8bce23b92571fec02624d418",
+      "packages/ast/src/operations/onPageScroll.ts": "77f093ad9e205305c21c714d15b77f2e8753d271c84b16f2e0c94e78db2336a0",
+      "packages/ast/src/operations/onPageScroll/babel.ts": "f9cbf1c4b822919544e4ca308e0054fa42f184724c7d55a2ac356d3ba6adc40b",
+      "packages/ast/src/operations/onPageScroll/index.ts": "a2fba61b8af41a4dd5854798bbdd5c2291e5b2413ed118fb63b7a90fc9d67700",
+      "packages/ast/src/operations/onPageScroll/oxc.ts": "fd1fc4e0618734f07823af9a92da96e963ac3bca7918c5bf3b1449fb9c800bf1",
+      "packages/ast/src/operations/onPageScroll/shared.ts": "6d8f652fb495081f0845558ef930b3485767a85b5164b8d3216c64cc1a0bfd51",
+      "packages/ast/src/operations/onPageScroll/types.ts": "62ee2db3786ae8fedc78a31ab1aa1cf3af3792fed171739f6784323d3c24abf9",
+      "packages/ast/src/operations/platformApi.ts": "2be271006a5221a50bf11197573f02a2b159c37e725eee05c5545dbd3b6f42be",
+      "packages/ast/src/operations/require.ts": "8d180908e9286b21152519a21f98b1c0b929fe5b8f30585deedaab46392f942a",
+      "packages/ast/src/operations/scriptAnalysis.ts": "0bc8e2bf6d280c1dfdf599c22e1925c51941ee2d7bfd71fa9d3c0fc142e1f7af",
+      "packages/ast/src/operations/scriptLiterals.ts": "8dcbd9523ced777d55eea60ce40438d7d6c89224520243c0e3a52695e0bcf0c5",
+      "packages/ast/src/operations/scriptSetupImports.ts": "5670d4c495910b5cf44a06947bced4814318876dcf096c0c9d2dd1e9f2eb5c33",
+      "packages/ast/src/operations/setDataPick.ts": "eeb32be52f2b518c0456278c930f6c76d76fc0a8dac3943d48da12deb76210a7",
+      "packages/ast/src/types.ts": "114fb0ab7a140232ecc75d8625ca2daa66cfebf7cdc46e3f7cd6eb51bc806f55",
+      "pnpm-lock.yaml": "c3470f724491ebdd5176c23b1ee61761c858a44f48a20a813721f1ee71276145",
+      "pnpm-workspace.yaml": "92ed41dfb9f9992e80bad748a07812568f0c66425bc4c60a1cadd74ef339e865",
+      "scripts/nativeLoadDiagnostic/check.ts": "8409f37456e81662da5e5062dd3affe1e3bdd9f38cf91763df32397a7135ed97",
+      "scripts/nativeLoadDiagnostic/identity.ts": "58ca6b1194150464a0fada90c250c1afeed875bbd447741ee3c3635ef7335d54",
+      "scripts/nativeLoadDiagnostic/observation.ts": "31a7c0b4285019283338329dc6e3ec31225053f98e042a00f918efc8412ffe50",
+      "scripts/nativeLoadDiagnostic/tsconfig.json": "6789c6abcaf62a01d2184275c499c540af8038e0b0b34aa4e156c2c1d5c69b14",
+      "scripts/nativeLoadDiagnostic/validate.ts": "2f2f00a0c262a6707fc8196207459b4ed4b63986807e0cd0df73e9e5cb741ba0",
+      "scripts/nativeLoadDiagnostic/worker.ts": "dd4f5ad6638772ee3567848701ccdb856fe0a7c769c611ad989ff808eaa0335f",
+      "scripts/scriptAnalysisBaseline/diagnostics.ts": "5823b3393bdd896488e6612175f4ce34c60201d34d1f5140d832622a4dbfe4fe",
+      "tsconfig.base.json": "e80b57254b381bd5dc0b1c705add49f394ce0246b5f09abc495d5a3d14f50000"
+    },
+    "bindingSha256": "62df070c2db1d5e5d0cb0d9c3f34f48c1563e34c36400855943cf592811de9fb",
+    "environment": {
+      "node": "v24.18.0",
+      "platform": "darwin",
+      "arch": "arm64"
+    },
+    "runs": [
+      {
+        "mode": "off",
+        "completedProcesses": 1,
+        "wrapperInitializations": 0,
+        "nativeLoads": 0,
+        "nativeCalls": 0,
+        "nativeExceptions": 0,
+        "analysisCacheHits": 0,
+        "observedFallbackEvents": 0,
+        "phases": [
+          "import",
+          "no-hint",
+          "batch",
+          "cached-warning",
+          "repeat-last",
+          "parse-failure",
+          "recovery",
+          "finished-workload"
+        ],
+        "events": [],
+        "outputSha256": "13a5028afb1b65dac660e93e22279f85d83cb2f45e2efc1e05876882319665cc",
+        "traceSha256": "42268037be3641d4f94515a74ecfbe5a7e89211814a02d14ae80d98ae7540eb6",
+        "generatedHashes": {
+          "preload": "01f2db54691befedc7be9abc422ed25acb79ee6a75a5bba88a255628a2456385",
+          "binding": "21772cf60870f3ad4919b679087c99b92565132540c1314d67152875350f63a0"
+        }
+      },
+      {
+        "mode": "on-no-load",
+        "completedProcesses": 1,
+        "wrapperInitializations": 1,
+        "nativeLoads": 0,
+        "nativeCalls": 0,
+        "nativeExceptions": 0,
+        "analysisCacheHits": 0,
+        "observedFallbackEvents": 22,
+        "phases": [
+          "import",
+          "no-hint",
+          "batch",
+          "cached-warning",
+          "repeat-last",
+          "parse-failure",
+          "recovery",
+          "finished-workload"
+        ],
+        "events": [
+          {
+            "kind": "binding-request",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "repeat-last"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "repeat-last"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "repeat-last"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "parse-failure"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "parse-failure"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "parse-failure"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          }
+        ],
+        "outputSha256": "13a5028afb1b65dac660e93e22279f85d83cb2f45e2efc1e05876882319665cc",
+        "traceSha256": "50749f44fa16810583a22f19127ec9702acecfbbe7409b1a86e21631d4abd1f9",
+        "generatedHashes": {
+          "preload": "3ab21430131026090aff885b70bd4b1b871897d68f94c371ae1c060d965f0bda",
+          "binding": "9d9ee6d42f578ff8933e6cc29ab15e843b8836fcc995cb07682ab7afec92deb7"
+        }
+      },
+      {
+        "mode": "load-only",
+        "completedProcesses": 1,
+        "wrapperInitializations": 1,
+        "nativeLoads": 1,
+        "nativeCalls": 0,
+        "nativeExceptions": 0,
+        "analysisCacheHits": 0,
+        "observedFallbackEvents": 22,
+        "phases": [
+          "import",
+          "no-hint",
+          "batch",
+          "cached-warning",
+          "repeat-last",
+          "parse-failure",
+          "recovery",
+          "finished-workload"
+        ],
+        "events": [
+          {
+            "kind": "binding-request",
+            "phase": "batch"
+          },
+          {
+            "kind": "load-start",
+            "phase": "batch"
+          },
+          {
+            "kind": "load-success",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "batch"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "repeat-last"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "repeat-last"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "repeat-last"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "parse-failure"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "parse-failure"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "parse-failure"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "recovery"
+          }
+        ],
+        "outputSha256": "13a5028afb1b65dac660e93e22279f85d83cb2f45e2efc1e05876882319665cc",
+        "traceSha256": "8dd56cee2e2e01b5610fd97f42f063763c4fe2d8328566a0121b230218bcf6fd",
+        "generatedHashes": {
+          "preload": "013d15e3bddc49c26f328853a60459d59f3e810cab43670f361fbe53c5bb351f",
+          "binding": "8941662d754084067911baffe0ee0851800b331eb4f746dca5372aea112594f9"
+        }
+      },
+      {
+        "mode": "actual",
+        "completedProcesses": 1,
+        "wrapperInitializations": 1,
+        "nativeLoads": 1,
+        "nativeCalls": 5,
+        "nativeExceptions": 3,
+        "analysisCacheHits": 2,
+        "observedFallbackEvents": 3,
+        "phases": [
+          "import",
+          "no-hint",
+          "batch",
+          "cached-warning",
+          "repeat-last",
+          "parse-failure",
+          "recovery",
+          "finished-workload"
+        ],
+        "events": [
+          {
+            "kind": "binding-request",
+            "phase": "batch"
+          },
+          {
+            "kind": "load-start",
+            "phase": "batch"
+          },
+          {
+            "kind": "load-success",
+            "phase": "batch"
+          },
+          {
+            "kind": "call",
+            "phase": "batch"
+          },
+          {
+            "kind": "binding-call",
+            "phase": "batch",
+            "method": "analyzeScriptsNative"
+          },
+          {
+            "kind": "binding-return",
+            "phase": "batch",
+            "method": "analyzeScriptsNative"
+          },
+          {
+            "kind": "cacheHits",
+            "phase": "cached-warning"
+          },
+          {
+            "kind": "cacheHits",
+            "phase": "repeat-last"
+          },
+          {
+            "kind": "call",
+            "phase": "parse-failure"
+          },
+          {
+            "kind": "binding-call",
+            "phase": "parse-failure",
+            "method": "analyzeScriptNative"
+          },
+          {
+            "kind": "binding-exception",
+            "phase": "parse-failure",
+            "method": "analyzeScriptNative"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "parse-failure"
+          },
+          {
+            "kind": "call",
+            "phase": "parse-failure"
+          },
+          {
+            "kind": "binding-call",
+            "phase": "parse-failure",
+            "method": "analyzeScriptNative"
+          },
+          {
+            "kind": "binding-exception",
+            "phase": "parse-failure",
+            "method": "analyzeScriptNative"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "parse-failure"
+          },
+          {
+            "kind": "call",
+            "phase": "parse-failure"
+          },
+          {
+            "kind": "binding-call",
+            "phase": "parse-failure",
+            "method": "analyzeScriptNative"
+          },
+          {
+            "kind": "binding-exception",
+            "phase": "parse-failure",
+            "method": "analyzeScriptNative"
+          },
+          {
+            "kind": "fallbacks",
+            "phase": "parse-failure"
+          },
+          {
+            "kind": "call",
+            "phase": "recovery"
+          },
+          {
+            "kind": "binding-call",
+            "phase": "recovery",
+            "method": "analyzeScriptsNative"
+          },
+          {
+            "kind": "binding-return",
+            "phase": "recovery",
+            "method": "analyzeScriptsNative"
+          }
+        ],
+        "outputSha256": "13a5028afb1b65dac660e93e22279f85d83cb2f45e2efc1e05876882319665cc",
+        "traceSha256": "8a4f9d57e50e0855b42e5d6712d15d46243b24076c785abde86d63899dc18d97",
+        "generatedHashes": {
+          "preload": "8c851aa4a8f86bf9b7c90e346f0d432dcc3dc527fca4dad928bc0e2fcdbcc495",
+          "binding": "ebffad992e7cffe397b2d65cc6acaa3a28b88a54b3588e670c1bdd1a24023cd0"
+        }
+      }
+    ],
+    "outputs": {
+      "schemaVersion": 1,
+      "results": [
+        {
+          "phase": "no-hint",
+          "output": []
+        },
+        {
+          "phase": "batch",
+          "output": [
+            {
+              "featureFlags": [
+                "load"
+              ],
+              "hasPlatformApiAccess": true,
+              "hasStaticRequireLiteral": true
+            },
+            {
+              "featureFlags": [
+                "scroll"
+              ],
+              "hasPlatformApiAccess": true,
+              "hasStaticRequireLiteral": false
+            }
+          ]
+        },
+        {
+          "phase": "cached-warning",
+          "output": [
+            "[weapp-vite][onPageScroll] inline.ts:1:51 检测到 onPageScroll(...) 内调用同步 API（wx.getStorageSync），可能阻塞渲染线程。"
+          ]
+        },
+        {
+          "phase": "repeat-last",
+          "output": {
+            "featureFlags": [
+              "scroll"
+            ],
+            "hasPlatformApiAccess": true,
+            "hasStaticRequireLiteral": false
+          }
+        },
+        {
+          "phase": "parse-failure",
+          "output": {
+            "featureFlags": [],
+            "hasPlatformApiAccess": false,
+            "hasStaticRequireLiteral": false
+          }
+        },
+        {
+          "phase": "recovery",
+          "output": [
+            {
+              "featureFlags": [
+                "load"
+              ],
+              "hasPlatformApiAccess": true,
+              "hasStaticRequireLiteral": true
+            },
+            {
+              "featureFlags": [
+                "scroll"
+              ],
+              "hasPlatformApiAccess": true,
+              "hasStaticRequireLiteral": false
+            }
+          ]
+        }
+      ]
+    },
+    "limitations": [
+      "Analysis explicitly uses Oxc fallback for exact booleans; default Babel helpers can return conservative true without a parser.",
+      "Explicit synthetic source calls exercise the production AST operations; no actual build, HMR or runtime is observed.",
+      "Wrapper initialization observes only the first uncached require boundary, not enabled checks or every loader request.",
+      "Observed fallback events do not count every JS fallback; legacy missing-method paths can return without an event.",
+      "Cache hits refer to analysis results, not module or binding loader cache hits.",
+      "Loader duration in private traces includes observer overhead and is not a performance sample.",
+      "Source/configuration/lockfile hashes do not verify every installed dependency file.",
+      "Binary identity is recorded; this tool does not establish which source revision built it.",
+      "Raw traces, generated wrappers and owner records contain local identifiers and remain private."
+    ]
+  }
+}

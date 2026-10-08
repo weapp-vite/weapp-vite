@@ -3,6 +3,7 @@ import type { AstEngineName, AstParserLike } from '../types'
 import { walk } from 'oxc-walker'
 import { parseJsLikeWithEngine } from '../engine'
 import { analyzeScriptWithNative, loadNativeAstBindingSync, shouldUseNativeAst } from '../native'
+import { invokeNativeCall } from '../native/observation'
 
 export const platformApiIdentifierList = ['wx', 'my', 'tt', 'swan', 'jd', 'xhs'] as const
 export const platformApiIdentifiers = new Set(platformApiIdentifierList)
@@ -73,7 +74,7 @@ export function mayContainPlatformApiAccess(
       }
       const checkNative = loadNativeAstBindingSync()?.mayContainPlatformApiAccessNative
       if (checkNative) {
-        return checkNative(code, 'inline.ts')
+        return invokeNativeCall(code, () => checkNative(code, 'inline.ts'))
       }
     }
     catch {

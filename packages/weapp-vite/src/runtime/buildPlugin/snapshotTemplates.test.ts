@@ -13,6 +13,7 @@ import { createRenderStartHook } from '../../plugins/core/lifecycle/emit'
 import { createBuildEndHook } from '../../plugins/core/lifecycle/end'
 import { createLogicalEntryLoadHook } from '../../plugins/core/lifecycle/logicalEntry'
 import { pruneUnchangedDevHmrOutputs } from '../../plugins/outputFinalizer'
+import { createJsonServicePlugin } from '../jsonPlugin'
 import { createRuntimeState } from '../runtimeState'
 import { createWxmlServicePlugin } from '../wxmlPlugin'
 import { createBuildService } from './service'
@@ -105,6 +106,8 @@ async function createFixture() {
     npmService: {},
     scanService: { isMainPackageFileName: () => true },
   } as unknown as MutableCompilerContext
+  // 没有完整 owner 元数据时，真实 logical entry loader 通过 JSON service 读取声明。
+  createJsonServicePlugin(ctx)
   createWxmlServicePlugin(ctx)
   const state = {
     ctx,

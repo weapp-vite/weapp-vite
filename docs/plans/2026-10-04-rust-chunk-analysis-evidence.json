@@ -1,0 +1,562 @@
+{
+  "schemaVersion": 1,
+  "scope": "experimental Cargo feature, no production integration",
+  "rewriteCorrectness": [
+    {
+      "corpus": "synthetic-semantic-fixtures",
+      "reportSha256": "3c6b82c4644b263bfce5c9aace6fdd67ee8c4a7b186a7ff254bb694b31f5594a",
+      "inputCount": 26,
+      "inputBytes": 1301,
+      "checks": 52,
+      "failures": 0,
+      "bindingSha256": "f9bca0c7cf7c2734494c5188edf44572f8de49ed45543f0d1167b1fc80ee64ef",
+      "summaryCountsPerCorpus": {
+        "requireLiterals": 16,
+        "platformApiObjects": 22,
+        "nativeInputs": 23,
+        "skippedInputs": 3
+      },
+      "mapMode": "generated identity input maps, both external and inline; original project maps not loaded",
+      "timedSamples": 0
+    },
+    {
+      "corpus": "emitted-javascript-including-assets",
+      "reportSha256": "a461132d07d3ad85bac40d86417f544b6a8e10d0c0f5cbca5b36d8c38f4b6d23",
+      "inputCount": 415,
+      "inputBytes": 873624,
+      "checks": 830,
+      "failures": 0,
+      "bindingSha256": "f9bca0c7cf7c2734494c5188edf44572f8de49ed45543f0d1167b1fc80ee64ef",
+      "summaryCountsPerCorpus": {
+        "requireLiterals": 696,
+        "platformApiObjects": 70,
+        "nativeInputs": 218,
+        "skippedInputs": 197
+      },
+      "mapMode": "generated identity input maps, both external and inline; original project maps not loaded",
+      "timedSamples": 0
+    }
+  ],
+  "manifestAttribution": {
+    "reportSha256": "1b2da3982d16c6f8e3f283d45143b18e57d24a2094cbfc3240ca82f0d0600197",
+    "inputSha256": "9e5ddb3ca118abc9891b194a7e02c4a06797e0243fdfb7d1863e640e4d4b54c4",
+    "warmup": 5,
+    "observedIterations": 1,
+    "counters": {
+      "babelParseCalls": 974,
+      "babelTraverseCalls": 2016,
+      "babelGenerateCalls": 73
+    },
+    "categories": {
+      "other": 250,
+      "manifestBinding": 266,
+      "manifestLoopRecursion": 458
+    },
+    "stageParseCounts": {
+      "compileVueFile.parse": 3,
+      "compileVueFile.componentSources": 1,
+      "compileVueFile": 1,
+      "compileVueFile.template": 967,
+      "compileVueFile.script": 1,
+      "transformScript.parse": 1
+    },
+    "timed": false
+  },
+  "performanceAcceptance": "not-run; local paired replay is not end-to-end acceptance",
+  "limitations": [
+    "Rewrite samples compare actual stage functions, not complete builds.",
+    "Manifest call counts do not establish CPU attribution or Rust speedup.",
+    "415-file corpus includes 405 copied npm JavaScript files, not natural OutputChunk workload.",
+    "Captured weapp chunks replay alipay+wpi rewrites; capture and replay feature settings differ.",
+    "All maps are generated identity input maps; original project maps are not replayed.",
+    "One local paired run on a shared machine does not prove stable end-to-end improvement or RSS reduction."
+  ],
+  "localReplaySamples": [
+    {
+      "corpus": "emitted-javascript-including-assets",
+      "reportSha256": "184ebdd0f3b750511135baa9c73b31a13d5fa44b72b950d6f9b1046bdee4d42e",
+      "inputCount": 415,
+      "inputBytes": 873624,
+      "checks": 830,
+      "failures": 0,
+      "requireLiterals": 696,
+      "platformApiObjects": 70,
+      "nativeInputs": 218,
+      "skippedInputs": 197,
+      "bindingSha256": "f9bca0c7cf7c2734494c5188edf44572f8de49ed45543f0d1167b1fc80ee64ef",
+      "environment": {
+        "node": "v24.18.0",
+        "platform": "darwin",
+        "arch": "arm64",
+        "cpus": 16,
+        "initialLoad": [
+          14.60595703125,
+          16.60400390625,
+          20.763671875
+        ],
+        "finalLoad": [
+          14.47705078125,
+          16.5439453125,
+          20.7177734375
+        ]
+      },
+      "replayOptions": {
+        "platform": "alipay",
+        "dependencies": {
+          "ui-lib": "1.0.0",
+          "tdesign-miniprogram": "1.0.0"
+        },
+        "globalName": "wpi"
+      },
+      "warmupPairs": 8,
+      "measured": {
+        "js": {
+          "p50": 144.70308300000033,
+          "p95": 152.7975830000014
+        },
+        "native": {
+          "p50": 18.76720899999964,
+          "p95": 19.761790999999903
+        }
+      },
+      "samples": [
+        {
+          "pair": 0,
+          "order": "js-native",
+          "jsMs": 144.20787500000006,
+          "nativeMs": 18.96258399999988
+        },
+        {
+          "pair": 1,
+          "order": "native-js",
+          "jsMs": 144.63262499999973,
+          "nativeMs": 19.553833000000395
+        },
+        {
+          "pair": 2,
+          "order": "js-native",
+          "jsMs": 152.0381669999997,
+          "nativeMs": 18.771082999999635
+        },
+        {
+          "pair": 3,
+          "order": "native-js",
+          "jsMs": 146.8884579999999,
+          "nativeMs": 19.010541000000103
+        },
+        {
+          "pair": 4,
+          "order": "js-native",
+          "jsMs": 144.21012500000006,
+          "nativeMs": 19.014750000000276
+        },
+        {
+          "pair": 5,
+          "order": "native-js",
+          "jsMs": 153.62575000000015,
+          "nativeMs": 18.741250000000036
+        },
+        {
+          "pair": 6,
+          "order": "js-native",
+          "jsMs": 145.3452500000003,
+          "nativeMs": 18.495333000000755
+        },
+        {
+          "pair": 7,
+          "order": "native-js",
+          "jsMs": 148.2128330000005,
+          "nativeMs": 18.934040999999525
+        },
+        {
+          "pair": 8,
+          "order": "js-native",
+          "jsMs": 146.61945800000012,
+          "nativeMs": 19.11804099999972
+        },
+        {
+          "pair": 9,
+          "order": "native-js",
+          "jsMs": 145.46595799999977,
+          "nativeMs": 18.675916999999572
+        },
+        {
+          "pair": 10,
+          "order": "js-native",
+          "jsMs": 146.5069999999996,
+          "nativeMs": 18.50524999999925
+        },
+        {
+          "pair": 11,
+          "order": "native-js",
+          "jsMs": 149.18687500000033,
+          "nativeMs": 19.08112500000061
+        },
+        {
+          "pair": 12,
+          "order": "js-native",
+          "jsMs": 140.4496250000002,
+          "nativeMs": 19.1578329999993
+        },
+        {
+          "pair": 13,
+          "order": "native-js",
+          "jsMs": 142.94045800000004,
+          "nativeMs": 18.64270899999974
+        },
+        {
+          "pair": 14,
+          "order": "js-native",
+          "jsMs": 148.80979200000002,
+          "nativeMs": 19.761790999999903
+        },
+        {
+          "pair": 15,
+          "order": "native-js",
+          "jsMs": 144.70308300000033,
+          "nativeMs": 18.169832999999926
+        },
+        {
+          "pair": 16,
+          "order": "js-native",
+          "jsMs": 139.44766700000037,
+          "nativeMs": 18.40679100000034
+        },
+        {
+          "pair": 17,
+          "order": "native-js",
+          "jsMs": 151.45625000000018,
+          "nativeMs": 18.562208000000282
+        },
+        {
+          "pair": 18,
+          "order": "js-native",
+          "jsMs": 144.2069160000001,
+          "nativeMs": 19.132916999999907
+        },
+        {
+          "pair": 19,
+          "order": "native-js",
+          "jsMs": 140.44545899999957,
+          "nativeMs": 18.593041999999514
+        },
+        {
+          "pair": 20,
+          "order": "js-native",
+          "jsMs": 139.98962500000016,
+          "nativeMs": 18.469625000000633
+        },
+        {
+          "pair": 21,
+          "order": "native-js",
+          "jsMs": 142.36049999999977,
+          "nativeMs": 18.59074999999939
+        },
+        {
+          "pair": 22,
+          "order": "js-native",
+          "jsMs": 142.94174999999996,
+          "nativeMs": 18.4184580000001
+        },
+        {
+          "pair": 23,
+          "order": "native-js",
+          "jsMs": 143.67666700000063,
+          "nativeMs": 19.491542000000663
+        },
+        {
+          "pair": 24,
+          "order": "js-native",
+          "jsMs": 147.07133299999987,
+          "nativeMs": 19.18816700000025
+        },
+        {
+          "pair": 25,
+          "order": "native-js",
+          "jsMs": 149.85220899999968,
+          "nativeMs": 18.18879199999992
+        },
+        {
+          "pair": 26,
+          "order": "js-native",
+          "jsMs": 143.45700000000033,
+          "nativeMs": 18.29374999999891
+        },
+        {
+          "pair": 27,
+          "order": "native-js",
+          "jsMs": 152.7975830000014,
+          "nativeMs": 21.299708999998984
+        },
+        {
+          "pair": 28,
+          "order": "js-native",
+          "jsMs": 149.45254199999908,
+          "nativeMs": 18.76720899999964
+        },
+        {
+          "pair": 29,
+          "order": "native-js",
+          "jsMs": 143.6390420000007,
+          "nativeMs": 19.202540999998746
+        }
+      ]
+    },
+    {
+      "corpus": "captured-production-output-chunks",
+      "reportSha256": "6a1b030e91358869284e3f19b65140aac417519840ec03e1bbf9dd520dcbef5c",
+      "inputCount": 10,
+      "inputBytes": 105592,
+      "checks": 20,
+      "failures": 0,
+      "requireLiterals": 9,
+      "platformApiObjects": 0,
+      "nativeInputs": 6,
+      "skippedInputs": 4,
+      "bindingSha256": "f9bca0c7cf7c2734494c5188edf44572f8de49ed45543f0d1167b1fc80ee64ef",
+      "environment": {
+        "node": "v24.18.0",
+        "platform": "darwin",
+        "arch": "arm64",
+        "cpus": 16,
+        "initialLoad": [
+          15.3154296875,
+          17.99462890625,
+          20.35546875
+        ],
+        "finalLoad": [
+          15.3154296875,
+          17.99462890625,
+          20.35546875
+        ]
+      },
+      "replayOptions": {
+        "platform": "alipay",
+        "dependencies": {
+          "ui-lib": "1.0.0",
+          "tdesign-miniprogram": "1.0.0"
+        },
+        "globalName": "wpi"
+      },
+      "captureConfiguration": {
+        "platform": "weapp",
+        "astEngine": "babel",
+        "injectWeapi": false
+      },
+      "assetsIgnored": 21,
+      "warmupPairs": 8,
+      "measured": {
+        "js": {
+          "p50": 8.33966600000008,
+          "p95": 11.135792000000038
+        },
+        "native": {
+          "p50": 1.203125,
+          "p95": 1.2590420000000222
+        }
+      },
+      "samples": [
+        {
+          "pair": 0,
+          "order": "js-native",
+          "jsMs": 8.514292000000069,
+          "nativeMs": 1.2468329999999241
+        },
+        {
+          "pair": 1,
+          "order": "native-js",
+          "jsMs": 8.099707999999964,
+          "nativeMs": 1.2410830000000033
+        },
+        {
+          "pair": 2,
+          "order": "js-native",
+          "jsMs": 8.551165999999967,
+          "nativeMs": 1.2289580000000342
+        },
+        {
+          "pair": 3,
+          "order": "native-js",
+          "jsMs": 8.435624999999959,
+          "nativeMs": 1.203125
+        },
+        {
+          "pair": 4,
+          "order": "js-native",
+          "jsMs": 8.190375000000017,
+          "nativeMs": 1.2590420000000222
+        },
+        {
+          "pair": 5,
+          "order": "native-js",
+          "jsMs": 10.268167000000062,
+          "nativeMs": 1.219041999999945
+        },
+        {
+          "pair": 6,
+          "order": "js-native",
+          "jsMs": 7.581916999999976,
+          "nativeMs": 1.2307079999998223
+        },
+        {
+          "pair": 7,
+          "order": "native-js",
+          "jsMs": 10.457208000000037,
+          "nativeMs": 1.420458999999937
+        },
+        {
+          "pair": 8,
+          "order": "js-native",
+          "jsMs": 8.711166999999932,
+          "nativeMs": 1.2274170000000595
+        },
+        {
+          "pair": 9,
+          "order": "native-js",
+          "jsMs": 8.33966600000008,
+          "nativeMs": 1.091166999999814
+        },
+        {
+          "pair": 10,
+          "order": "js-native",
+          "jsMs": 8.387750000000096,
+          "nativeMs": 1.1757090000000971
+        },
+        {
+          "pair": 11,
+          "order": "native-js",
+          "jsMs": 8.243832999999995,
+          "nativeMs": 1.0315420000001723
+        },
+        {
+          "pair": 12,
+          "order": "js-native",
+          "jsMs": 7.400583000000097,
+          "nativeMs": 1.2100000000000364
+        },
+        {
+          "pair": 13,
+          "order": "native-js",
+          "jsMs": 8.511459000000059,
+          "nativeMs": 1.235792000000174
+        },
+        {
+          "pair": 14,
+          "order": "js-native",
+          "jsMs": 7.947250000000167,
+          "nativeMs": 1.2052499999999782
+        },
+        {
+          "pair": 15,
+          "order": "native-js",
+          "jsMs": 10.288583000000017,
+          "nativeMs": 1.0908340000000862
+        },
+        {
+          "pair": 16,
+          "order": "js-native",
+          "jsMs": 8.118541999999934,
+          "nativeMs": 1.24675000000002
+        },
+        {
+          "pair": 17,
+          "order": "native-js",
+          "jsMs": 8.073458999999957,
+          "nativeMs": 1.1890419999999722
+        },
+        {
+          "pair": 18,
+          "order": "js-native",
+          "jsMs": 11.528249999999844,
+          "nativeMs": 1.13020900000015
+        },
+        {
+          "pair": 19,
+          "order": "native-js",
+          "jsMs": 9.507082999999966,
+          "nativeMs": 1.009499999999889
+        },
+        {
+          "pair": 20,
+          "order": "js-native",
+          "jsMs": 8.179709000000003,
+          "nativeMs": 1.1537080000000515
+        },
+        {
+          "pair": 21,
+          "order": "native-js",
+          "jsMs": 7.864000000000033,
+          "nativeMs": 1.075790999999981
+        },
+        {
+          "pair": 22,
+          "order": "js-native",
+          "jsMs": 10.562165999999934,
+          "nativeMs": 1.0703340000000026
+        },
+        {
+          "pair": 23,
+          "order": "native-js",
+          "jsMs": 10.27541599999995,
+          "nativeMs": 1.2070830000000115
+        },
+        {
+          "pair": 24,
+          "order": "js-native",
+          "jsMs": 8.178707999999915,
+          "nativeMs": 1.107332999999926
+        },
+        {
+          "pair": 25,
+          "order": "native-js",
+          "jsMs": 7.952041000000008,
+          "nativeMs": 1.2117080000000442
+        },
+        {
+          "pair": 26,
+          "order": "js-native",
+          "jsMs": 10.875374999999849,
+          "nativeMs": 1.1689160000000811
+        },
+        {
+          "pair": 27,
+          "order": "native-js",
+          "jsMs": 11.135792000000038,
+          "nativeMs": 1.0325420000001486
+        },
+        {
+          "pair": 28,
+          "order": "js-native",
+          "jsMs": 8.03083300000003,
+          "nativeMs": 1.2375839999999698
+        },
+        {
+          "pair": 29,
+          "order": "native-js",
+          "jsMs": 7.5429169999999885,
+          "nativeMs": 1.1242090000000644
+        }
+      ]
+    }
+  ],
+  "capture": {
+    "reportSha256": "fb370c77f331e1ab0e2dd01f811993adb18a805d7c951e56700c94ae039580cb",
+    "distSha256": "37593a69d431c6cde513272f9a82846512776691363a3536053dd127fa0e7881",
+    "boundary": "resolveDevHmrRewriteBundle:before-script-analysis",
+    "configuration": {
+      "platform": "weapp",
+      "astEngine": "babel",
+      "injectWeapi": false
+    }
+  },
+  "remoteCorrectness": {
+    "commit": "5e880d3c5a6845466795c679d653257506954a67",
+    "workflow": "Native AST Analysis",
+    "runId": 37188974109,
+    "platforms": {
+      "macos": "success",
+      "linux": "success",
+      "windows": "success"
+    }
+  }
+}
