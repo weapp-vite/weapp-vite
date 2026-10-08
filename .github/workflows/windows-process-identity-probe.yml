@@ -39,7 +39,11 @@ jobs:
 
       - name: Verify writer and journal ownership contracts
         shell: bash
-        run: pnpm vitest run packages/weapp-ide-cli/src/devtoolsProjectOwnership
+        run: pnpm --filter weapp-ide-cli exec vitest run src/devtoolsProjectOwnership
+
+      - name: Prepare E2E bridge dependencies
+        shell: bash
+        run: pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...
 
       - name: Verify isolated E2E journal and bridge contracts
         shell: bash
