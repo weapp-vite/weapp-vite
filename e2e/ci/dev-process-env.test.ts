@@ -208,7 +208,7 @@ describe('dev process env isolation', () => {
             ProcessId: 12345,
             ParentProcessId: 1,
             ExecutablePath: 'C:\\node.exe',
-            Started: '2026-10-07T01:00:00.000Z',
+            Started: '2026-10-07T01:00:00.0000000Z',
           }),
         })
       }
