@@ -10,6 +10,7 @@ import { managedWindowCloseSchema } from './schema'
 
 const mocks = vi.hoisted(() => ({ cli: vi.fn(), identity: vi.fn(), waitClosed: vi.fn(), inspect: vi.fn(), installation: vi.fn() }))
 vi.mock('execa', () => ({ execa: mocks.cli }))
+vi.mock('../journal/windowsSelfIdentity', () => ({ readWindowsJournalWriterIdentity: () => mocks.identity(process.pid) }))
 vi.mock('@weapp-vite/devtools-runtime', async importOriginal => ({
   ...await importOriginal<object>(),
   withMachineE2ELease: async (run: () => Promise<unknown>) => run(),

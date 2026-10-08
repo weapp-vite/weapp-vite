@@ -55,6 +55,9 @@ vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host', async 
     },
   }
 })
+vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/windowsSelfIdentity', () => ({
+  readWindowsJournalWriterIdentity: async () => ({ pid: process.pid, executable: process.execPath, started: 'global-setup-test-generation' }),
+}))
 vi.mock('./devtoolsProcessOwnership', () => ({
   createDevtoolsProjectJournal: mocks.createJournal,
 }))

@@ -7,6 +7,56 @@ permissions:
   contents: read
 
 jobs:
+  self-writer-check:
+    name: Journal writer first query (Windows / Node ${{ matrix.node }})
+    runs-on: windows-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - name: Enable Git long paths
+        shell: bash
+        run: git config --system core.longpaths true
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ matrix.node }}
+
+      - uses: ./.github/actions/refresh-workspace-deps
+        with:
+          build-command: pnpm exec turbo run build --filter=weapp-ide-cli...
+
+      - name: Verify first production writer query and exact legacy identity
+        shell: bash
+        run: node --import tsx scripts/windowsProcessIdentityProbe/checkSelfWriter.ts
+
+      - name: Verify writer and journal ownership contracts
+        shell: bash
+        run: pnpm vitest run packages/weapp-ide-cli/src/devtoolsProjectOwnership
+
+      - name: Verify isolated E2E journal and bridge contracts
+        shell: bash
+        run: |
+          pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devtoolsProcessOwnership.scope.test.ts e2e/utils/machineGlobalSetup.test.ts
+          pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/automator-launch-resilience.test.ts
+
+      - name: Upload writer query evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-journal-self-writer-node-${{ matrix.node }}-${{ github.sha }}
+          path: .tmp/windows-journal-self-writer/report.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
   identity-probe:
     name: Diagnostic only (Windows / Node ${{ matrix.node }} / ${{ matrix.firstProvider }})
     runs-on: windows-latest

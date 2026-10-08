@@ -9,6 +9,7 @@ import { createManagedWechatProjectJournal } from './journal'
 
 const mocks = vi.hoisted(() => ({ inspect: vi.fn(), close: vi.fn() }))
 vi.mock('execa', () => ({ execa: mocks.close }))
+vi.mock('./journal/windowsSelfIdentity', () => ({ readWindowsJournalWriterIdentity: async () => ({ pid: 42, executable: 'selected-host', started: 'first-start' }) }))
 vi.mock('@weapp-vite/devtools-runtime', async importOriginal => ({
   ...await importOriginal<object>(),
   withMachineE2ELease: async (run: () => Promise<unknown>) => run(),

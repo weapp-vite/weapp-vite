@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -7,12 +8,14 @@ import { setTimeout } from 'node:timers/promises'
 import { mutateLease } from '@weapp-vite/devtools-runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { withManagedJournalLock } from './journal'
+import { parseWindowsSelfIdentity, SELF_IDENTITY_WIRE } from './journal/windowsSelfIdentity/wire'
 
 const mocks = vi.hoisted(() => ({ identity: vi.fn() }))
 vi.mock('./host', async importOriginal => ({
   ...await importOriginal<typeof import('./host')>(),
   readManagedProcessIdentity: mocks.identity,
 }))
+vi.mock('./journal/windowsSelfIdentity', () => ({ readWindowsJournalWriterIdentity: () => mocks.identity(process.pid) }))
 
 const writer = { pid: process.pid, executable: 'journal-writer', started: 'current-generation' }
 let directory: string
@@ -36,6 +39,21 @@ async function writeOwner(owner: { token: string, identity: typeof writer }) {
 }
 
 describe('managed journal lock ownership', () => {
+  it.each(['legacy-owner', 'self-api-owner'])('preserves a live %s when the other identity representation inspects it', async (variant) => {
+    const pid = process.pid + 1
+    const executable = String.raw`C:\Program Files\测试工具\node.exe`
+    const legacy = { pid, executable, started: '2026-10-07T18:57:32.7968110Z' }
+    const current = parseWindowsSelfIdentity([SELF_IDENTITY_WIRE, 'present', String(pid), '639269962527968118', '639269962527968118', 'false', legacy.started, Buffer.from(executable).toString('base64')].join('\t'), pid)
+    const owner = { token: randomUUID(), identity: variant === 'legacy-owner' ? legacy : current }
+    await writeOwner(owner)
+    mocks.identity.mockImplementation(async (target: number) => target === pid ? variant === 'legacy-owner' ? current : legacy : writer)
+    vi.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(45_000)
+    const run = vi.fn(async () => undefined)
+    await expect(withManagedJournalLock(directory, run)).rejects.toThrow('still owned by another operation')
+    expect(run).not.toHaveBeenCalled()
+    expect(JSON.parse(await fs.readFile(path.join(lock, 'owner'), 'utf8'))).toEqual(owner)
+  })
+
   it('preserves a replacement lock installed while the previous owner identity is inspected', async () => {
     const previous = { token: randomUUID(), identity: { ...writer, pid: process.pid + 1, started: 'previous-generation' } }
     const replacement = { token: randomUUID(), identity: { ...writer, pid: process.pid + 2, started: 'replacement-generation' } }
