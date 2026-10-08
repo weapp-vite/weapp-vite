@@ -292,6 +292,49 @@ describe('runtime: stateful HMR', () => {
     })
   })
 
+  it('refreshes a classic HMR instance when the host reuses it for a new runtime app', async () => {
+    const bridge = (globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
+    delete (globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
+    try {
+      const defineRuntime = () => defineComponent({
+        setup() {
+          const themeColor = ref('red')
+          useCssVars(() => ({ themeColor: themeColor.value }))
+          return { themeColor }
+        },
+      })
+      defineRuntime()
+
+      const instance: any = {
+        data: {
+          themeColor: 'red',
+          __wv_css_vars_style: '--themeColor:red',
+        },
+        properties: {},
+        setData(payload: Record<string, any>) {
+          Object.assign(this.data, payload)
+        },
+      }
+      registeredDefinition!.lifetimes.attached.call(instance)
+      await nextTick()
+      await nextTick()
+
+      defineRuntime()
+      registeredDefinition!.lifetimes.attached.call(instance)
+      instance.__wevu.setupState.themeColor.value = 'blue'
+      await nextTick()
+      await nextTick()
+
+      expect(instance.data).toMatchObject({
+        themeColor: 'blue',
+        __wv_css_vars_style: '--themeColor:blue',
+      })
+    }
+    finally {
+      ;(globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY] = bridge
+    }
+  })
+
   it.each([false, true])('restores explicit reactive snapshots with an existing runtime: %s', async (existingRuntime) => {
     const attached = vi.fn()
     const defineRuntime = (label: string, delta: number) => defineComponent({

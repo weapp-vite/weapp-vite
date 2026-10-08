@@ -201,8 +201,19 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   watchMap: WatchMap | undefined,
   setup?: RuntimeSetupFunction<D, C, M>,
   options?: RuntimeMountOptions,
-) {
+): RuntimeInstance<D, C, M> {
   if (target.__wevu) {
+    // 经典 HMR 可能复用宿主页面实例并重新执行页面脚本。此时旧 runtime
+    // 仍然存在，但它绑定的是上一轮模块创建的 runtimeApp；继续直接返回会
+    // 让新脚本闭包更新一份未被旧 tracker 订阅的 setup 状态。通过统一刷新
+    // 路径重建响应式绑定，同时保留宿主实例和已提交的数据快照。
+    if (target[WEVU_RUNTIME_APP_KEY] && target[WEVU_RUNTIME_APP_KEY] !== runtimeApp) {
+      // eslint-disable-next-line ts/no-use-before-define -- refreshRuntimeInstance 统一处理旧实例快照与 facade 复用。
+      return refreshRuntimeInstance(target, runtimeApp, watchMap, setup, {
+        snapshotOmitKeys: options?.snapshotOmitKeys,
+        attached: options?.attached,
+      })
+    }
     return target.__wevu as RuntimeInstance<D, C, M>
   }
   try {
@@ -1074,7 +1085,7 @@ export function refreshRuntimeInstance<D extends object, C extends ComputedDefin
   watchMap: WatchMap | undefined,
   setup?: RuntimeSetupFunction<D, C, M>,
   options?: { snapshotOmitKeys?: string[], stateSnapshot?: Record<string, any>, attached?: boolean },
-) {
+): RuntimeInstance<D, C, M> {
   const previousRuntime = target.__wevu as RuntimeInstance<D, C, M> | undefined
   const initialSetupState = previousRuntime ? initialReactiveSetupSnapshots.get(previousRuntime) : undefined
   const previousRuntimeState = previousRuntime
