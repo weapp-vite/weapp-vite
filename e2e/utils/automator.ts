@@ -23,6 +23,7 @@ import { createAutomatorProjectTrust } from './automatorProjectTrust'
 import { registerAutomatorReconnect } from './automatorReconnect'
 import { resolveWechatCliPath } from './devtoolsCli'
 import { createDevtoolsProjectJournal, ownDevtoolsCleanup } from './devtoolsProcessOwnership'
+import { importManagedDevtoolsProject } from './devtoolsProjectImport'
 import { assertSelectedWechatDevtoolsRuntime, resolveSelectedWechatDevtools } from './devtoolsSelection'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 import {
@@ -2817,6 +2818,16 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             }
             await lifecycle.step(() => waitForBridgeWrapperWarmupAsset(bridgeWrapperProject, resolvedWarmupRoute, project))
             const launchProjectPath = bridgeWrapperProject?.path ?? rest.projectPath
+            if (launchProjectPath) {
+              await lifecycle.step(() => importManagedDevtoolsProject({
+                cliPath: selectedTarget.cliPath,
+                projectPath: launchProjectPath,
+                trusted: resolvedTrustProject,
+                timeout: lifecycle.remainingMs(launchTimeout),
+                signal: lifecycle.signal,
+              }))
+              lifecycle.throwIfAborted()
+            }
             const launchRest = {
               ...rest,
               ...(launchProjectPath ? { projectPath: launchProjectPath } : {}),
