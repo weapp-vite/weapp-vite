@@ -18,6 +18,26 @@ async function workflow() {
 }
 
 describe('bounded HMR workflow diagnosis', () => {
+  it('traces the full Windows DOM startup through the same artifact boundary and budget', async () => {
+    const config = parse(await readFile(new URL('../.github/workflows/windows-process-identity-probe.yml', import.meta.url), 'utf8')) as { jobs: Record<string, WorkflowJob> }
+    const build = config.jobs['writer-full-build']!
+    const dom = config.jobs['writer-full-dom']!
+    expect(build.if).toBe('inputs.scope == \'writer-full\'')
+    expect(dom.if).toBe(build.if)
+    expect(dom.needs).toBe('writer-full-build')
+    expect(build.strategy?.matrix).toEqual({ node: [22, 24] })
+    expect(dom.strategy?.matrix).toEqual(build.strategy?.matrix)
+    expect(build.with).toMatchObject({ build_command: 'pnpm build:pkgs:ci:windows', timeout_minutes: 40 })
+    expect(dom.with?.consume_build_artifact).toBe(build.with?.build_artifact_name)
+    expect(dom.with).toMatchObject({
+      timeout_minutes: 30,
+      main_command: 'pnpm exec cross-env NODE_DEBUG=weapp-ide-journal-writer node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless',
+    })
+    for (const name of ['provider-cleanup', 'self-writer-check', 'identity-probe']) {
+      expect(config.jobs[name]?.if).toContain('inputs.scope != \'writer-full\'')
+    }
+  })
+
   it('checks real Windows rows through the untraced default entry on both Node versions', async () => {
     const config = parse(await readFile(new URL('../.github/workflows/windows-process-identity-probe.yml', import.meta.url), 'utf8')) as { jobs: Record<string, WorkflowJob> }
     const job = config.jobs['process-row-contract']!

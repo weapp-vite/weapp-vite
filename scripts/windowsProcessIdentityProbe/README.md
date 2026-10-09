@@ -43,6 +43,17 @@ stdin 对照运行中，两种方式均在 Node 22 分片 3 超时；关闭 stdi
 
 ## 当前 journal writer 的首次调用检查
 
+`writer-full` scope 使用正式 Windows Node 22/24 构建产物，在独立 job 运行完整
+`ide-dom-headless` 清单，保留 strict DOM 策略、原查询十秒预算与原 workflow 三十分钟
+期限。通过 `NODE_DEBUG=weapp-ide-journal-writer` 记录 Node 启动回执、PowerShell
+入口、两次 lookup/StartTime、模块路径、代次与退出核验、序列化和释放阶段。默认查询
+脚本逐字保持原样；只有该诊断 opt-in 插入并剥离完整已知 stderr 阶段行，未知输出、
+超时或身份不完整仍失败。日志只输出阶段和经过时间，不输出可执行路径或查询正文。
+
+阶段的 Node 经过时间包含调度和管道传递，不能当成单一 API 的独立耗时。缺少入口标记
+不证明是哪一个宿主因素导致启动慢；有标记也不代表查询或退出成功。诊断结果单独保留，
+不能替代没有 trace 的正式跨平台验收。
+
 ```sh
 node --import tsx scripts/windowsProcessIdentityProbe/checkSelfWriter.ts
 ```
