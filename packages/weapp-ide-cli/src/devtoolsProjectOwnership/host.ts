@@ -8,6 +8,7 @@ import { setTimeout } from 'node:timers/promises'
 import { execa } from 'execa'
 import { assertWechatDevtoolsPort, resolveWechatDevtoolsTarget } from '../devtoolsTarget'
 import { resolveWechatInspectionTimeout } from '../devtoolsTarget/inspection'
+import { withPowerShellUtf8Output } from '../utils/powershell'
 
 const inspectionOptions = { timeout: 3_000, reject: false, windowsHide: true } as const
 const windowsInspectionOptions = { ...inspectionOptions, timeout: resolveWechatInspectionTimeout('win32') }
@@ -25,7 +26,7 @@ export async function readManagedProcessIdentity(pid: number, platform = process
     throw invalidIdentity()
   }
   if (platform === 'win32') {
-    const result = await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference='Stop'; Get-CimInstance Win32_Process -Filter "ProcessId=${pid}" | Select-Object ProcessId,ExecutablePath,@{Name='Started';Expression={$_.CreationDate.ToUniversalTime().ToString('o')}} | ConvertTo-Json -Compress`], windowsInspectionOptions)
+    const result = await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', withPowerShellUtf8Output(`$ErrorActionPreference='Stop'; Get-CimInstance Win32_Process -Filter "ProcessId=${pid}" | Select-Object ProcessId,ExecutablePath,@{Name='Started';Expression={$_.CreationDate.ToUniversalTime().ToString('o')}} | ConvertTo-Json -Compress`)], windowsInspectionOptions)
     if (result.exitCode !== 0) {
       throw invalidIdentity(result, windowsInspectionOptions.timeout)
     }
@@ -79,7 +80,7 @@ export function sameManagedProcess(first: ManagedWechatHostIdentity, second: Man
 
 async function listenerPid(port: number, platform = process.platform) {
   const result = platform === 'win32'
-    ? await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference='Stop'; @(Get-NetTCPConnection -LocalPort ${port} -State Listen | Select-Object -ExpandProperty OwningProcess -Unique) | ConvertTo-Json -Compress`], windowsInspectionOptions)
+    ? await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', withPowerShellUtf8Output(`$ErrorActionPreference='Stop'; @(Get-NetTCPConnection -LocalPort ${port} -State Listen | Select-Object -ExpandProperty OwningProcess -Unique) | ConvertTo-Json -Compress`)], windowsInspectionOptions)
     : await execa('lsof', ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-Fp'], inspectionOptions)
   if (result.exitCode !== 0) {
     throw invalidIdentity(result, resolveWechatInspectionTimeout(platform))

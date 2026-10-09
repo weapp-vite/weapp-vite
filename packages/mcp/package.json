@@ -58,14 +58,14 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@modelcontextprotocol/node": "^2.1.0",
-    "@modelcontextprotocol/server": "^2.2.0",
+    "@modelcontextprotocol/node": "^2.1.1",
+    "@modelcontextprotocol/server": "^2.3.1",
     "@weapp-core/constants": "workspace:*",
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/devtools-runtime": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@modelcontextprotocol/client": "^2.2.0"
+    "@modelcontextprotocol/client": "^2.3.1"
   }
 }

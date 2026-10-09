@@ -2,12 +2,96 @@ name: Windows Process Identity Probe
 
 on:
   workflow_dispatch:
+    inputs:
+      scope:
+        description: 选择完整身份诊断或仅原 provider 清理场景
+        type: choice
+        default: all
+        options:
+          - all
+          - provider-cleanup
+          - process-rows
+          - writer-full
 
 permissions:
   contents: read
 
 jobs:
+  writer-full-build:
+    if: inputs.scope == 'writer-full'
+    name: Writer diagnostic build (Windows / Node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: windows-latest
+      node_version: '${{ matrix.node }}'
+      timeout_minutes: 40
+      build_command: pnpm build:pkgs:ci:windows
+      main_command: node -e "console.log('writer diagnostic build artifact ready')"
+      build_artifact_name: writer-diagnostic-node-${{ matrix.node }}-build
+    secrets: inherit
+
+  writer-full-dom:
+    if: inputs.scope == 'writer-full'
+    needs: writer-full-build
+    name: Writer full DOM phases (Windows / Node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: windows-latest
+      node_version: '${{ matrix.node }}'
+      timeout_minutes: 30
+      consume_build_artifact: writer-diagnostic-node-${{ matrix.node }}-build
+      main_command: pnpm exec cross-env NODE_DEBUG=weapp-ide-journal-writer node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless
+      artifact_name: windows-writer-full-dom-node-${{ matrix.node }}-${{ github.sha }}
+      artifact_path: |
+        docs/reports/dom-acceptance/**
+        docs/reports/*-e2e-ide-dom-headless-*-suite-report/**
+    secrets: inherit
+
+  provider-cleanup:
+    if: inputs.scope != 'process-rows' && inputs.scope != 'writer-full'
+    name: Provider cleanup query (Windows / Node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: windows-latest
+      node_version: '${{ matrix.node }}'
+      timeout_minutes: 20
+      build_command: pnpm build:pkgs:ci:windows
+      # 保留原 provider 用例及查询预算；阶段日志只用于定位，不替代完整 CI 清单。
+      main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/issue-1065-provider.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-provider-cleanup/report.json
+      artifact_name: windows-provider-cleanup-node-${{ matrix.node }}-${{ github.sha }}
+      artifact_path: .tmp/windows-provider-cleanup/report.json
+    secrets: inherit
+
+  process-row-contract:
+    if: inputs.scope == 'process-rows'
+    name: Exact process row contract (Windows / Node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: windows-latest
+      node_version: '${{ matrix.node }}'
+      timeout_minutes: 20
+      build_command: pnpm build:pkgs:ci:windows
+      main_command: node --import tsx scripts/windowsProcessIdentityProbe/checkProcessRows.ts
+    secrets: inherit
+
   self-writer-check:
+    if: inputs.scope != 'provider-cleanup' && inputs.scope != 'process-rows' && inputs.scope != 'writer-full'
     name: Journal writer first query (Windows / Node ${{ matrix.node }})
     runs-on: windows-latest
     timeout-minutes: 15
@@ -76,7 +160,7 @@ jobs:
 
       - name: Upload writer query evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-journal-self-writer-node-${{ matrix.node }}-${{ github.sha }}
           path: .tmp/windows-journal-self-writer/report.json
@@ -86,7 +170,7 @@ jobs:
 
       - name: Upload stateful cleanup diagnostic evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-stateful-cleanup-node-${{ matrix.node }}-${{ github.sha }}
           path: |
@@ -97,6 +181,7 @@ jobs:
           retention-days: 7
 
   identity-probe:
+    if: inputs.scope != 'provider-cleanup' && inputs.scope != 'process-rows' && inputs.scope != 'writer-full'
     name: Diagnostic only (Windows / Node ${{ matrix.node }} / ${{ matrix.firstProvider }})
     runs-on: windows-latest
     timeout-minutes: 15
@@ -131,7 +216,7 @@ jobs:
 
       - name: Upload diagnostic evidence (not runtime acceptance)
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-process-identity-node-${{ matrix.node }}-${{ matrix.firstProvider }}-first-${{ github.sha }}
           path: .tmp/windows-process-identity-probe/report.json

@@ -1,4 +1,6 @@
 import process from 'node:process'
+import { withPowerShellUtf8Output } from '../../../packages/weapp-ide-cli/src/utils/powershell'
+import { serializeWindowsProcessRows } from './windowsProcessRows'
 
 const wirePrefix = 'WEAPP_DEV_QUERY_V1'
 const maxStderrCharacters = 16_384
@@ -10,14 +12,14 @@ interface WindowsQueryMarker {
   elapsedMs: number
 }
 
-/** 默认命令保持不变；显式诊断只在 stderr 写固定 ASCII 阶段与耗时。 */
+/** 查询共用固定行格式及 UTF-8 边界；显式诊断只在 stderr 写 ASCII 阶段与耗时。 */
 export function createWindowsProcessQueryCommand(filter: string, trace: boolean) {
   const query = `@(Get-CimInstance Win32_Process${filter} | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name='Started';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString('o')} else {$null}}})`
   if (!trace) {
-    return `$ErrorActionPreference='Stop'; ${query} | ConvertTo-Json -Compress`
+    return withPowerShellUtf8Output(`$ErrorActionPreference='Stop'; $weappQueryRows=${query}; ${serializeWindowsProcessRows()}`)
   }
   const marker = (stage: typeof stages[number]) => `[Console]::Error.WriteLine('${wirePrefix}|${stage.replace(':', '|')}|'+$weappQueryClock.Elapsed.TotalMilliseconds.ToString('F3',[Globalization.CultureInfo]::InvariantCulture)+'|')`
-  return [
+  return withPowerShellUtf8Output([
     `$ErrorActionPreference='Stop'`,
     `[Console]::Error.WriteLine('${wirePrefix}|script|begin|0.000|')`,
     '$weappQueryClock=[System.Diagnostics.Stopwatch]::StartNew()',
@@ -25,10 +27,10 @@ export function createWindowsProcessQueryCommand(filter: string, trace: boolean)
     `$weappQueryRows=${query}`,
     marker('query:end'),
     marker('serialize:begin'),
-    '@($weappQueryRows) | ConvertTo-Json -Compress',
+    serializeWindowsProcessRows(),
     marker('serialize:end'),
     marker('script:end'),
-  ].join('; ')
+  ].join('; '))
 }
 
 /** 只接受完整且按顺序到达的有限阶段；原始 stderr 不进入报告。 */
@@ -52,14 +54,21 @@ export function parseWindowsQueryTrace(stderr = ''): WindowsQueryMarker[] {
 }
 
 /** 查询失败仍报告已收到的阶段；诊断写入失败不覆盖正式查询结果。 */
-export function reportWindowsQueryTrace(query: 'snapshot' | 'identities', result: { stderr?: string, exitCode?: number, timedOut?: boolean }) {
+export function reportWindowsQueryTrace(query: 'snapshot' | 'identities', result: { stdout?: string, stderr?: string, exitCode?: number, timedOut?: boolean }) {
   try {
+    const stderr = result.stderr ?? ''
+    const boundedStderr = stderr.slice(0, maxStderrCharacters)
     process.stdout.write(`[e2e-cleanup-query] ${JSON.stringify({
       query,
+      transport: 'rows',
       exitCode: result.exitCode ?? null,
       timedOut: result.timedOut === true,
-      stderrTruncated: (result.stderr?.length ?? 0) > maxStderrCharacters,
-      markers: parseWindowsQueryTrace(result.stderr),
+      stdoutCharacters: result.stdout?.length ?? 0,
+      stderrCharacters: stderr.length,
+      stderrTruncated: stderr.length > maxStderrCharacters,
+      rawMarkerCount: boundedStderr.split(`${wirePrefix}|`).length - 1,
+      scriptBeginReceived: boundedStderr.includes(`${wirePrefix}|script|begin|0.000|`),
+      markers: parseWindowsQueryTrace(stderr),
     })}\n`)
   }
   catch {

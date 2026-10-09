@@ -6,6 +6,7 @@ import { expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createIssue1065Project, runIssue1065Command } from '../utils/issue1065Project'
+import { runWithCleanup } from '../utils/runWithCleanup'
 
 it('consumes a third-party provider through CLI source, output, bundle and lifecycle hooks', async () => {
   const project = await createIssue1065Project()
@@ -42,7 +43,7 @@ it('watches provider dependencies across consecutive CLI updates', async () => {
   const project = await createIssue1065Project()
   const root = path.resolve(import.meta.dirname, '../..')
   const dev = startDevProcess(process.execPath, [path.join(root, 'packages/weapp-vite/bin/weapp-vite.js'), 'dev', project, '--skipNpm'], { cwd: root, env: createDevProcessEnv(), all: true, ipc: true })
-  try {
+  await runWithCleanup(async () => {
     await dev.waitForInitialBuild()
     await dev.waitForOutput('开发服务已就绪', 'watcher is ready')
     await delay(1_000)
@@ -56,9 +57,8 @@ it('watches provider dependencies across consecutive CLI updates', async () => {
     await dev.stop(5_000)
     const closed = await readFile(path.join(project, 'provider-events.jsonl'), 'utf8')
     expect(closed.split('\"event\":\"dispose\"').length - 1).toBe(1)
-  }
-  finally {
+  }, async () => {
     await dev.stop(5_000)
     await rm(project, { recursive: true, force: true })
-  }
+  })
 }, 150_000)

@@ -18,7 +18,7 @@ function isSourceEvent(value: unknown) {
   const event = value as Record<string, unknown>
   return typeof event.eventId === 'string'
     && (event.file === undefined || typeof event.file === 'string')
-    && (event.event === undefined || ['update', 'create', 'delete'].includes(String(event.event)))
+    && (event.event === undefined || (typeof event.event === 'string' && ['update', 'create', 'delete'].includes(event.event)))
     && typeof event.receivedAtMs === 'number' && Number.isFinite(event.receivedAtMs) && event.receivedAtMs >= 0
 }
 
@@ -28,7 +28,7 @@ function isSample(value: unknown): value is HmrProfileJsonSample {
   }
   const sample = value as Record<string, unknown>
   for (const [key, values] of Object.entries({ pipeline: ['standard', 'stateful'], profileMode: ['delivery', 'full', 'refresh'], completionBoundary: ['delivery-acknowledged', 'output-published'] })) {
-    if (sample[key] !== undefined && !values.includes(String(sample[key]))) {
+    if (sample[key] !== undefined && (typeof sample[key] !== 'string' || !values.includes(sample[key]))) {
       return false
     }
   }

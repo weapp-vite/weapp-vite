@@ -20,7 +20,6 @@ import { createSuiteReport } from './suiteReport'
 import { createSuiteSignalScope } from './suiteRunner/signals'
 
 const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
-const DEVTOOLS_SKIP_LOGIN_CHECK_ENV = 'WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
@@ -557,7 +556,6 @@ async function runOwnedTaskSuite(
     partial: false,
     plannedTasks: tasks,
   }
-  let devtoolsLoginPreflightPassed = false
   let resourceCleanupFailed = false
   let suiteReportArtifact: SuiteTaskArtifact | undefined
   const ideHmrCompanionSentinelPath = shouldShareIdeHmrCompanion(suiteName)
@@ -602,12 +600,6 @@ async function runOwnedTaskSuite(
         [ACCEPTANCE_REPORT_DIR_ENV]: path.join(ACCEPTANCE_ROOT, 'docs/reports/dom-acceptance', reportContext.runId),
         ...(reportContext.strict ? { [DOM_ACCEPTANCE_ENV]: '1' } : {}),
       }
-      if (devtoolsLoginPreflightPassed && isDevtoolsVitestTask(task)) {
-        task.env = {
-          ...task.env,
-          [DEVTOOLS_SKIP_LOGIN_CHECK_ENV]: '1',
-        }
-      }
       if (ideHmrCompanionSentinelPath && isDevtoolsVitestTask(task)) {
         task.env = {
           ...task.env,
@@ -619,6 +611,7 @@ async function runOwnedTaskSuite(
       signal.throwIfAborted()
       if (isDevtoolsVitestTask(task)) {
         // 只在任务启动前认领冷宿主；已有或无法核验的宿主会阻断本 lane，避免继续累积 renderer。
+        // 上一宿主已在 task 收尾退出，新宿主必须执行自己的 global setup 登录预检。
         devtoolsHostLease = await claimDevtoolsHost(task.env?.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH ?? process.env.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH)
         if (devtoolsHostLease) {
           task.env = {
@@ -714,9 +707,6 @@ async function runOwnedTaskSuite(
     ))
     console.log(`[${suiteName}] ${status} ${task.label} (${formatDuration(durationMs)})`)
 
-    if (exitCode === 0 && isDevtoolsVitestTask(task) && !task.devtoolsLaunchSkipped) {
-      devtoolsLoginPreflightPassed = true
-    }
     if (signal.aborted || resourceCleanupFailed || (exitCode !== 0 && options.stopOnTaskFailure)) {
       console.warn(`[${suiteName}] stop after failed task: ${task.label}`)
       break

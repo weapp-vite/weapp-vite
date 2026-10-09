@@ -5,6 +5,7 @@ import process from 'node:process'
 // 保留现有 execa 依赖，统一处理 Windows 命令解析、超时和失败输出。
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
+import { withPowerShellUtf8Output } from '../utils/powershell'
 import { resolveWechatInspectionTimeout } from './inspection'
 
 export interface WechatDevtoolsHostInspectionOptions {
@@ -79,7 +80,7 @@ async function readUnixExecutable(pid: number, options: WechatDevtoolsHostInspec
 }
 
 async function readWindowsProcesses(script: string, options: WechatDevtoolsHostInspectionOptions): Promise<{ pid: number, executable: string }[]> {
-  const result = await runInspection('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], options)
+  const result = await runInspection('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', withPowerShellUtf8Output(script)], options)
   if (result.exitCode !== 0) {
     throw ownershipError('Windows could not verify the WeChat DevTools process identity.')
   }

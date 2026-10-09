@@ -63,7 +63,7 @@ import {
 } from './runtimeInstance/utils'
 import { registerWatches } from './watch'
 
-type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string } }
+type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string, PROD?: boolean } }
 
 const initialReactiveSetupSnapshots = new WeakMap<object, Record<string, unknown>>()
 
@@ -207,7 +207,8 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     // 仍然存在，但它绑定的是上一轮模块创建的 runtimeApp；继续直接返回会
     // 让新脚本闭包更新一份未被旧 tracker 订阅的 setup 状态。通过统一刷新
     // 路径重建响应式绑定，同时保留宿主实例和已提交的数据快照。
-    if (target[WEVU_RUNTIME_APP_KEY] && target[WEVU_RUNTIME_APP_KEY] !== runtimeApp) {
+    // 只在应用明确为生产构建时裁剪；未提供 Vite env 的消费者保留刷新兼容。
+    if ((import.meta as ImportMetaWithEnv).env?.PROD !== true && target[WEVU_RUNTIME_APP_KEY] && target[WEVU_RUNTIME_APP_KEY] !== runtimeApp) {
       // eslint-disable-next-line ts/no-use-before-define -- refreshRuntimeInstance 统一处理旧实例快照与 facade 复用。
       return refreshRuntimeInstance(target, runtimeApp, watchMap, setup, {
         snapshotOmitKeys: options?.snapshotOmitKeys,
@@ -795,7 +796,7 @@ function mountRuntimeInstanceWithContext<D extends object, C extends ComputedDef
       runtimeProxy: runtimeProxy as Record<string, any>,
       setup,
     })
-    if (typeof getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]?.trackWevuComponent === 'function') {
+    if ((import.meta as ImportMetaWithEnv).env?.PROD !== true && typeof getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]?.trackWevuComponent === 'function') {
       const initialReactiveSetupSnapshot: Record<string, unknown> = {}
       for (const [key, value] of Object.entries(runtimeWithDefaults.setupState ?? {})) {
         if (isReactive(value)) {

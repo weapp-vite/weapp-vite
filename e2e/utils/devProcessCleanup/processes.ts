@@ -7,6 +7,7 @@ import { execa } from 'execa'
 import { readManagedProcessIdentity, sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { traceCleanupStage } from '../cleanupTrace'
+import { parseWindowsProcessRows } from './windowsProcessRows'
 import { collectWindowsProcessTree, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
 import { createWindowsProcessQueryCommand, reportWindowsQueryTrace } from './windowsQueryTrace'
 
@@ -37,8 +38,7 @@ async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
   if (result.exitCode !== 0) {
     throw new Error(`Dev process inspection failed: exitCode=${result.exitCode ?? 'none'}, signal=${result.signal ?? 'none'}, timedOut=${result.timedOut ?? false}.`)
   }
-  const value: unknown = JSON.parse(result.stdout.trim() || '[]')
-  const entries: unknown[] = Array.isArray(value) ? value : [value]
+  const entries = parseWindowsProcessRows(result.stdout)
   return entries.map((entry) => {
     if (!entry || typeof entry !== 'object'
       || !('ProcessId' in entry) || typeof entry.ProcessId !== 'number' || !Number.isSafeInteger(entry.ProcessId) || entry.ProcessId <= 0

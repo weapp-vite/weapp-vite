@@ -1,8 +1,18 @@
 diff --git a/dist/node/chunks/node.js b/dist/node/chunks/node.js
-index 35c5c82b149c8b2cff024cf03b8667672871d97e..9ffa6c11e1c40c28e531482e5704c28072dfd914 100644
+index 121ef458164ab3687690f0e6d14c23ffe4c5d4a3..11ea22c36d8ce6df3488d382f95f0c4029e3c024 100644
 --- a/dist/node/chunks/node.js
 +++ b/dist/node/chunks/node.js
-@@ -28935,6 +28935,23 @@ const perEnvironmentOrWorkerPlugin = (name, overrideEnvConfig, f) => {
+@@ -28668,7 +28668,8 @@ function runOptimizeDeps(environment, depsInfo) {
+ 		async cancel() {
+ 			optimizerContext.cancelled = true;
+ 			const { context } = await preparedRun;
+-			context?.cancel();
++			await context?.cancel();
++			await runResult.catch(() => {});
+ 			cleanUp();
+ 		},
+ 		result: runResult
+@@ -29161,6 +29162,23 @@ const perEnvironmentOrWorkerPlugin = (name, overrideEnvConfig, f) => {
  		}
  	}];
  };
@@ -26,7 +36,7 @@ index 35c5c82b149c8b2cff024cf03b8667672871d97e..9ffa6c11e1c40c28e531482e5704c280
  function oxcResolvePlugin(resolveOptions, overrideEnvConfig, isJsPluginContainer = false) {
  	return [...resolveOptions.optimizeDeps && !resolveOptions.isBuild ? [optimizerResolvePlugin(resolveOptions)] : [], ...perEnvironmentOrWorkerPlugin("vite:resolve-builtin", overrideEnvConfig, (partialEnv, getEnv) => {
  		const depsOptimizerEnabled = resolveOptions.optimizeDeps && !resolveOptions.isBuild && !partialEnv.config.isBundled && !isDepOptimizationDisabled(partialEnv.config.optimizeDeps);
-@@ -28998,21 +29015,9 @@ function oxcResolvePlugin(resolveOptions, overrideEnvConfig, isJsPluginContainer
+@@ -29224,21 +29242,9 @@ function oxcResolvePlugin(resolveOptions, overrideEnvConfig, isJsPluginContainer
  				const newResolvedId = ensureVersionQuery(resolvedId, rawId, options, depsOptimizer);
  				return newResolvedId === resolvedId ? void 0 : newResolvedId;
  			},
@@ -51,7 +61,7 @@ index 35c5c82b149c8b2cff024cf03b8667672871d97e..9ffa6c11e1c40c28e531482e5704c280
  		});
  		plugin.perEnvironmentWatchChangeDuringDev = true;
  		return plugin;
-@@ -34680,31 +34685,78 @@ function injectEnvironmentToHooks(environment, chunkMetadataMap, plugin) {
+@@ -34906,31 +34912,78 @@ function injectEnvironmentToHooks(environment, chunkMetadataMap, plugin) {
  	return clone;
  }
  const wrappedHookMap = /* @__PURE__ */ new WeakMap();
@@ -153,3 +163,134 @@ index 35c5c82b149c8b2cff024cf03b8667672871d97e..9ffa6c11e1c40c28e531482e5704c280
  	return newHook;
  }
  function wrapEnvironmentResolveId(environment, hook, pluginName) {
+@@ -35793,22 +35846,38 @@ function createDepsOptimizer(environment) {
+ 	let waitingForCrawlEnd = false;
+ 	let optimizationResult;
+ 	let discover;
+-	async function close() {
++	let initialization;
++	let closing;
++	const pending = new Set();
++	function track(task) {
++		pending.add(task);
++		task.then(() => pending.delete(task), () => pending.delete(task));
++		return task;
++	}
++	function close() {
++		return closing ??= closeResources();
++	}
++	async function closeResources() {
+ 		closed = true;
+ 		if (debounceProcessingHandle) clearTimeout(debounceProcessingHandle);
+ 		debounceProcessingHandle = void 0;
+-		await Promise.allSettled([
+-			discover?.cancel(),
+-			depsOptimizer.scanProcessing,
+-			optimizationResult?.cancel()
+-		]);
++		if (newDepsToLogHandle) clearTimeout(newDepsToLogHandle);
++		newDepsToLogHandle = void 0;
++		// 先终结扫描与初始化，避免取消时仍派生新的缓存写入。
++		await Promise.allSettled([discover?.cancel(), initialization, depsOptimizer.scanProcessing]);
++		await Promise.allSettled([optimizationResult?.cancel(), optimizationResult?.result]);
++		while (pending.size) await Promise.allSettled([...pending]);
+ 		depOptimizationProcessing.resolve();
+ 		resolveEnqueuedProcessingPromises();
+ 	}
+-	async function init() {
+-		if (depsOptimizer.initState !== "idle") return;
++	function init() {
++		return initialization ??= initialize();
++	}
++	async function initialize() {
++		if (closed || depsOptimizer.initState !== "idle") return;
+ 		depsOptimizer.initState = "initializing";
+ 		const cachedMetadata = await loadCachedDepOptimizationMetadata(environment);
++		if (closed) return;
+ 		firstRunCalled = !!cachedMetadata;
+ 		metadata = depsOptimizer.metadata = cachedMetadata || initDepsOptimizerMetadata(environment, sessionTimestamp);
+ 		if (!cachedMetadata) {
+@@ -35816,6 +35885,7 @@ function createDepsOptimizer(environment) {
+ 			currentlyProcessing = true;
+ 			const manuallyIncludedDeps = {};
+ 			await addManuallyIncludedOptimizeDeps(environment, manuallyIncludedDeps);
++			if (closed) return;
+ 			const manuallyIncludedDepsInfo = toDiscoveredDependencies(environment, manuallyIncludedDeps, sessionTimestamp);
+ 			for (const depInfo of Object.values(manuallyIncludedDepsInfo)) {
+ 				addOptimizedDepInfo(metadata, "discovered", {
+@@ -35844,6 +35914,7 @@ function createDepsOptimizer(environment) {
+ 						} finally {
+ 							clearTimeout(scanTimer);
+ 						}
++						if (closed) return;
+ 						const manuallyIncluded = Object.keys(manuallyIncludedDepsInfo);
+ 						discoveredDepsWhileScanning.push(...Object.keys(metadata.discovered).filter((dep) => !deps[dep] && !manuallyIncluded.includes(dep)));
+ 						for (const id of Object.keys(deps)) if (!metadata.discovered[id]) addMissingDep(id, deps[id]);
+@@ -35881,7 +35952,10 @@ function createDepsOptimizer(environment) {
+ 		}
+ 		return knownDeps;
+ 	}
+-	async function runOptimizer(preRunResult) {
++	function runOptimizer(preRunResult) {
++		return track(optimize(preRunResult));
++	}
++	async function optimize(preRunResult) {
+ 		const isRerun = firstRunCalled;
+ 		firstRunCalled = true;
+ 		enqueuedRerun = void 0;
+@@ -35935,6 +36009,10 @@ function createDepsOptimizer(environment) {
+ 			};
+ 			if (!needsReload) {
+ 				await commitProcessing();
++				if (closed) {
++					currentlyProcessing = false;
++					return;
++				}
+ 				if (!debug$2) {
+ 					if (newDepsToLogHandle) clearTimeout(newDepsToLogHandle);
+ 					newDepsToLogHandle = setTimeout(() => {
+@@ -35951,6 +36029,10 @@ function createDepsOptimizer(environment) {
+ 				debug$2?.(import_picocolors.default.green(`delaying reload as new dependencies have been found...`));
+ 			} else {
+ 				await commitProcessing();
++				if (closed) {
++					currentlyProcessing = false;
++					return;
++				}
+ 				if (!debug$2) {
+ 					if (newDepsToLogHandle) clearTimeout(newDepsToLogHandle);
+ 					newDepsToLogHandle = void 0;
+@@ -36013,6 +36095,7 @@ function createDepsOptimizer(environment) {
+ 		});
+ 	}
+ 	function debouncedProcessing(timeout = debounceMs) {
++		if (closed) return;
+ 		enqueuedRerun = void 0;
+ 		if (debounceProcessingHandle) clearTimeout(debounceProcessingHandle);
+ 		if (newDepsToLogHandle) clearTimeout(newDepsToLogHandle);
+@@ -36023,15 +36106,23 @@ function createDepsOptimizer(environment) {
+ 			if (!currentlyProcessing) enqueuedRerun();
+ 		}, timeout);
+ 	}
+-	async function onCrawlEnd() {
++	function onCrawlEnd() {
++		return track(finishCrawl());
++	}
++	async function finishCrawl() {
+ 		waitingForCrawlEnd = false;
+ 		debug$2?.(import_picocolors.default.green(`static imports crawl ended`));
+ 		if (closed) return;
+ 		await depsOptimizer.scanProcessing;
++		if (closed) return;
+ 		if (optimizationResult && !options.noDiscovery) {
+ 			const afterScanResult = optimizationResult.result;
+-			optimizationResult = void 0;
+ 			const result = await afterScanResult;
++			optimizationResult = void 0;
++			if (closed) {
++				await result.cancel();
++				return;
++			}
+ 			currentlyProcessing = false;
+ 			const crawlDeps = Object.keys(metadata.discovered);
+ 			const scanDeps = Object.keys(result.metadata.optimized);

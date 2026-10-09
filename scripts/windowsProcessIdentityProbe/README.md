@@ -1,6 +1,58 @@
 # Windows 进程身份查询诊断
 
+## 输出编码回归
+
+真实 Windows Node 22/24 的中文可执行路径检查暴露默认 PowerShell JSON 输出编码损失：
+PID 与创建时间精确一致，路径却被替换字符改变。独立的合成字符串样例确认默认输出把
+中文变为问号，显式 UTF-8 保留原值。生产宿主、监听者和 E2E 查询现在共用显式 UTF-8
+输出边界，`sameManagedProcess` 仍严格比较完整身份，不接管历史受损的身份记录。
+
+`process-rows` 检查保持首次快照、父子进程关系、原 CIM 身份双向精确比较、退出与无关
+进程保护；首次查询使用无 trace 的正式默认入口，成功路径也必须运行最小输出编码合同
+和完整 UTF-16 行传输合同。
+下面的历史比较描述原运行，不把编码修复当作进程查询超时的唯一根因。
+
+## Provider 清理的定向复现
+
+同一 workflow 的 `Provider cleanup query` 在 Windows Node 22/24 上运行原有
+`e2e/ci/issue-1065-provider.test.ts`，保留构建、连续 watch 更新、dispose 和重复
+stop 的全部断言与原查询预算。`WEAPP_VITE_E2E_CLEANUP_TRACE=1` 分别记录 Node
+清理阶段及 PowerShell 的脚本入口、CIM 查询与序列化阶段；超时仍失败并保留已收到的
+marker，不重试身份查询，也不授权清理未核验进程。
+
+这个入口只用于定位完整 CI 分片中的清理失败。JSON 测试报告与阶段日志均应保留，
+定向通过不能代替完整 CI 清单或真实 IDE 验收。
+
+只需继续采集该场景时，将手动 workflow 的 `scope` 设为 `provider-cleanup`，
+避免重复执行已经采集的身份对照。查询报告额外记录 stdout/stderr 长度、原始标记次数
+和首个脚本标记是否出现，区分无输出与标记格式未被解析；不保存原始查询输出。
+
+如果单文件通过而完整分片仍失败，手动选择 `CI E2E` 的 `windows-dev-cleanup`
+入口。它保持 Node 22 分片 3，并在同一次矩阵中比较 Node 22/24 分片 1；每个 job
+先构建包及 E2E 应用，再按原顺序运行完整分片。阶段日志保留前置任务的进程查询上下文，
+分片报告只覆盖选中的 task，不能计为四分片合并的完整 CI 验收。
+
+stdin 对照运行中，两种方式均在 Node 22 分片 3 超时；关闭 stdin 不能作为修复，
+选择项已移除。原始报告保留脚本开始、查询和序列化阶段，不推定单一根因。
+
+历史六分片对照比较原 JSON 与固定行格式，编码修复后两者均通过。正式查询现在统一
+使用固定行格式，临时传输选择项已移除；trace 只添加 stderr 阶段诊断，不改变正文。
+查询仍读取相同 CIM 快照、四个字段、完整创建时间和可执行路径，保留十秒期限。
+行格式用 UTF-16LE base64 传输路径，并核对固定包络与行数；非法或不完整输出仍拒绝，
+不回退、不重试。定向通过不能代替完整正式验收，也不证明原超时只有一个根因。
+
 ## 当前 journal writer 的首次调用检查
+
+`writer-full` scope 使用正式 Windows Node 22/24 构建产物，在独立 job 运行完整
+`ide-dom-headless` 清单，保留 strict DOM 策略、原查询十秒预算与原 workflow 三十分钟
+期限。通过 `NODE_DEBUG=weapp-ide-journal-writer` 记录 Node 启动回执、PowerShell
+入口、两次 lookup/StartTime、模块路径、代次与退出核验、序列化和释放阶段。默认查询
+脚本逐字保持原样；只有该诊断 opt-in 插入并剥离完整已知 stderr 阶段行，未知输出、
+超时或身份不完整仍失败。日志只输出阶段和经过时间，不输出可执行路径或查询正文。
+
+阶段的 Node 经过时间包含调度和管道传递，不能当成单一 API 的独立耗时。缺少入口标记
+不证明是哪一个宿主因素导致启动慢；有标记也不代表查询或退出成功。诊断结果单独保留，
+不能替代没有 trace 的正式跨平台验收。
 
 ```sh
 node --import tsx scripts/windowsProcessIdentityProbe/checkSelfWriter.ts
@@ -12,7 +64,7 @@ node --import tsx scripts/windowsProcessIdentityProbe/checkSelfWriter.ts
 
 ## 历史通用查询对照
 
-原 probe 比较通用生产 CIM 查询与 `.NET Process` 候选，只收集诊断证据，不启动 DevTools，也不参与所有权、清理或 runtime 验收决策。生产 `host.ts` 与 `sameManagedProcess` 保持不变。
+原 probe 比较通用生产 CIM 查询与 `.NET Process` 候选，只收集诊断证据，不启动 DevTools，也不参与所有权、清理或 runtime 验收决策。生产 CIM 字段和 `sameManagedProcess` 保持不变，输出编码修复见上文。
 
 ## 首次样本和后续样本
 

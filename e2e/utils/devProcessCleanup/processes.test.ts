@@ -1,6 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fixtureWindowsProcessRows } from '../testSupport/windowsProcessRows'
 import { createDevProcessCleanup } from './index'
 import { captureDevProcessTree, isDevProcessAlive, UnconfirmedDevProcessTreeError } from './processes'
 
@@ -79,8 +80,8 @@ describe('dev process snapshot identity', () => {
     const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: 'fixture-node.exe' }
     const child = { ProcessId: 62, ParentProcessId: 61, Started: '2026-10-08T00:00:00.0000300Z', ExecutablePath: 'fixture-node.exe' }
     const unrelated = { ProcessId: 71, ParentProcessId: 1, Started: null, ExecutablePath: null }
-    execute.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify([root, { ...child, ExecutablePath: null }, unrelated]) })
-      .mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify([child]) })
+    execute.mockResolvedValueOnce({ exitCode: 0, stdout: fixtureWindowsProcessRows([root, { ...child, ExecutablePath: null }, unrelated]) })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: fixtureWindowsProcessRows([child]) })
     expect(await captureDevProcessTree(61, () => true)).toEqual([
       { pid: 62, executable: 'fixture-node.exe', started: child.Started },
       { pid: 61, executable: 'fixture-node.exe', started: root.Started },
@@ -96,12 +97,13 @@ describe('dev process snapshot identity', () => {
     const output = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
     const kill = vi.spyOn(process, 'kill').mockReturnValue(true)
     const disconnect = vi.fn(() => false)
+    const stderr = `WEAPP_DEV_QUERY_V1|script|begin|0.000|\r\nWEAPP_DEV_QUERY_V1|query|begin|1.250|\r\n${'private-provider-detail\n'.repeat(1_000)}`
     execute.mockResolvedValueOnce({
       exitCode: undefined,
       signal: 'SIGTERM',
       timedOut: true,
       stdout: '',
-      stderr: `WEAPP_DEV_QUERY_V1|script|begin|0.000|\r\nWEAPP_DEV_QUERY_V1|query|begin|1.250|\r\n${'private-provider-detail\n'.repeat(1_000)}`,
+      stderr,
     })
     const cleanup = createDevProcessCleanup({ pid: 61, isRootHeld: () => true, disconnectRoot: disconnect, settledExit: Promise.resolve() })
     try {
@@ -117,15 +119,47 @@ describe('dev process snapshot identity', () => {
       expect(diagnostic!.length).toBeLessThan(512)
       expect(JSON.parse(diagnostic!.slice('[e2e-cleanup-query] '.length)) as unknown).toEqual({
         query: 'snapshot',
+        transport: 'rows',
         exitCode: null,
         timedOut: true,
+        stdoutCharacters: 0,
+        stderrCharacters: stderr.length,
         stderrTruncated: true,
+        rawMarkerCount: 2,
+        scriptBeginReceived: true,
         markers: [{ stage: 'script', event: 'begin', elapsedMs: 0 }, { stage: 'query', event: 'begin', elapsedMs: 1.25 }],
       })
     }
     finally {
       vi.unstubAllEnvs()
     }
+  })
+
+  it.each([undefined, '1'])('preserves Windows identity with the same default transport when trace=%s', async (trace) => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', trace)
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+    const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: '节点 with space.exe' }
+    const stdout = fixtureWindowsProcessRows([root])
+    execute.mockResolvedValueOnce({ exitCode: 0, stdout })
+    try {
+      expect(await captureDevProcessTree(61, () => true)).toEqual([{ pid: 61, executable: root.ExecutablePath, started: root.Started }])
+      expect(execute).toHaveBeenCalledOnce()
+      expect(execute.mock.calls[0]![0]).toBe('powershell.exe')
+      expect(execute.mock.calls[0]![2]).toEqual({ timeout: 10_000, reject: false, windowsHide: true })
+    }
+    finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it.each(['', '[]', 'WEAPP_DEV_PROCESS_ROWS_V1\n61\t1\t\t'])('rejects missing or incomplete Windows snapshots without signalling a process: %j', async (stdout) => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    execute.mockResolvedValueOnce({ exitCode: 0, stdout })
+    const kill = vi.spyOn(process, 'kill').mockReturnValue(true)
+    await expect(captureDevProcessTree(61, () => true)).rejects.toThrow('Windows process row')
+    expect(execute).toHaveBeenCalledOnce()
+    expect(kill).not.toHaveBeenCalled()
   })
 
   it('binds Linux parent relations to boot identity and stat start ticks', async () => {

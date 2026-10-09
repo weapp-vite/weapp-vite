@@ -38,10 +38,13 @@ describe('managed host startup identities', () => {
   })
 
   it('uses Windows creation time and rejects incomplete executable metadata', async () => {
-    const executable = path.resolve('windows-fixture', 'host.exe')
+    const executable = path.resolve('windows-fixture', '节点 with space.exe')
     inspect.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify({ ProcessId: 123, ExecutablePath: executable, Started: '2026-10-05T01:02:03.456Z' }) })
     expect(await readManagedProcessIdentity(123, 'win32')).toEqual({ pid: 123, executable, started: '2026-10-05T01:02:03.456Z' })
     expect(inspect).toHaveBeenCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 10_000, reject: false }))
+    const script = inspect.mock.calls[0]![1][3] as string
+    expect(script.indexOf('[Console]::OutputEncoding=')).toBe(0)
+    expect(script.indexOf('UTF8Encoding')).toBeLessThan(script.indexOf('Get-CimInstance'))
     inspect.mockResolvedValueOnce({ exitCode: 0, stdout: '' })
     expect(await readManagedProcessIdentity(123, 'win32')).toBeUndefined()
     inspect.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify({ ProcessId: 123, Started: 'same-time' }) })
@@ -84,6 +87,7 @@ describe('managed host startup identities', () => {
     expect(sameManagedProcess(host, { ...host, pid: 124 })).toBe(false)
     expect(sameManagedProcess(host, { ...host, started: 'second' })).toBe(false)
     expect(sameManagedProcess(host, { ...host, executable: path.resolve('another-installation') })).toBe(false)
+    expect(sameManagedProcess({ ...host, executable: '节点.exe' }, { ...host, executable: '??.exe' })).toBe(false)
   })
 
   it('checks the selected installation before recording the exact listener process', async () => {
