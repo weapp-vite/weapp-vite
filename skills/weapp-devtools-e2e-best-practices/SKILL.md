@@ -52,6 +52,7 @@ description: 面向 weapp-vite 仓库的 WeChat DevTools 与 mpcore headless run
 
 ## 环境治理与已知边界
 
+- 全面真实 IDE suite 固定在仓库根目录的 `main` 工作树执行，包括 `pnpm e2e:ide:gate`、`pnpm e2e:ide:full`、`pnpm e2e:ide:full:exhaustive` 以及直接调用 DevTools 的完整 Vitest suite。启动前同步 `origin/main`，确认 `HEAD == origin/main` 且工作树干净；suite 运行期间不得切分支或修改源码。`.codex-tmp` 与其他分支用于 issue 修复、最小复现、headless 和局部诊断，修复合并并重建后回到 `main` 做正式 IDE 验收。这样可使 `WEAPP_VITE_E2E_TRUST_PROJECTS` 的路径前缀稳定对应主仓库，避免微信开发者工具因 worktree 路径漂移再次显示项目授权提示；主线约束不改变全机串行、机器租约、宿主身份、端口归属和清理要求。
 - 仓库级 E2E 入口通过同机、同用户、跨 worktree 的机器租约互斥运行，包含 headless、CI、直接 Vitest 和聚合脚本；项目租约、端口租约与同一 suite 的多会话仍保留。改变 `WEAPP_AGENT_STATE_DIR` 不会隔离机器租约。
 - 遇到 `Runtime busy` 时由任务调度层等待持有者完成后再试，不自动抢占、删除锁或构造跳过环境变量。受控子进程只在磁盘 owner token 与 PID 活性核验通过后借用父租约；借用方仅释放自己的登记，不能释放父租约。父进程退出后仍有活子任务或归属未知时保留占用。
 - 登录、启动、构建和其他宿主变更操作共用机器租约边界；普通已建立的多项目连接不会为了整个会话长期独占宿主。headless 参与互斥调度，但不应读取或更改真实 IDE 登录状态。

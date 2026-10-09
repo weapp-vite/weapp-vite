@@ -1,6 +1,7 @@
 # 本地工程约束
 
 - GitHub issue 或 runtime 回归优先在 `.codex-tmp/<issue>` 隔离 worktree 中处理；先建立最小复现，再定位根因，最后修改源码。
+- 全面真实 IDE E2E（包括 `pnpm e2e:ide:gate`、`pnpm e2e:ide:full`、`pnpm e2e:ide:full:exhaustive` 及直接调用 DevTools 的完整 Vitest suite）必须从仓库根目录的 `main` 工作树启动：运行前先 `git fetch origin main`、`git switch main`、`git pull --ff-only origin main`，确认 `HEAD == origin/main` 且工作树干净；运行期间不得切换分支或修改源码。`.codex-tmp` 和其他分支只用于修复、最小复现、headless 或局部诊断，修复合并到 `main`、重建产物后才做正式 IDE 验收。主工作树要求不会放宽全机同用户串行、机器租约、宿主身份、端口归属和项目清理门禁。
 - 修改 `packages/*/src/**` 或 `packages-runtime/*/src/**` 后，运行下游 app、headless 或 IDE 验证前必须先重建受影响 package 的 `dist`。
 - 任何 E2E 入口都全机、同用户、跨 worktree 串行运行。启动前检查 DevTools、automator、dev-watch 和验证 server；只释放本任务明确登记且仍持有的资源。其他任务等待，手动项目和归属未知的实例保留；已核验的空闲共享宿主可按下述恢复条件正常重启。禁止按进程名、命令行子串或镜像名全局清理。发现问题时可先用 `--allow-failures`；最终验收保留每个正式 suite 的既定策略，要求全部计划内 task、case、checkpoint 完成，严格 suite 必须保持严格模式。局部筛选、partial 或未执行任务不能计为全量通过。
 - 真实 IDE E2E 默认使用执行时官方最新稳定版微信开发者工具。每轮先核对官方下载页的稳定渠道和版本，再核对所选安装及实际连接宿主；通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 显式选择，预检、启动、构建和恢复使用同一 CLI。默认安装路径、已登录或版本数字较大均不证明它是最新稳定版。

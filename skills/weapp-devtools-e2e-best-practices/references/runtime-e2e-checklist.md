@@ -3,6 +3,7 @@
 ## 环境前提
 
 - 没有其他仓库级 e2e、automator、watch 或验证服务占用测试资源；保留手动 IDE，未知归属不清理。
+- 全面真实 IDE suite 必须从仓库根目录的 `main` 工作树运行。启动前执行 `git fetch origin main`、`git switch main`、`git pull --ff-only origin main`，确认 `HEAD == origin/main` 且工作树干净；运行期间不得切换分支或编辑源码。`.codex-tmp` 和其他分支仅用于修复、最小复现、headless 或局部诊断，修复合并并重建后再回主线验收。主线要求不改变机器租约和全机串行约束。
 - 每轮核对官方最新稳定版及查询时间，通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 显式选择固定安装；入口将选择传给本轮 `WEAPP_IDE_CLI_PATH` 和子进程，预检、公共 CLI、MCP、启动、构建、恢复使用同一目标，不临时改写用户全局配置。
 - 仅按用户明确指定使用其他渠道或版本；最新稳定版不可确认、未安装或未登录时报告阻塞，不自行降级或切换 RC/nightly。
 - 日常开发与 E2E 复用一个已登录 Stable 宿主、一个微信账号；允许该宿主承载多个项目，无需为测试再建账号。正常登录过期时重新登录，不在两份安装间复制票据。

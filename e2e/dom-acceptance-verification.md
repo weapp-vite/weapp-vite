@@ -56,7 +56,7 @@ DOM 报告的 `environment.devtoolsVersionPolicy` 记录以下字段；suite 汇
 
 产品 HMR 场景调用 `launchAutomator` 时必须在参数对象中显式指定 `bridgeProjectMode: 'direct'`，让 IDE 直接观察 Vite 写出的原项目。仅 `automator-bridge-wrapper-hmr.runtime.test.ts` 使用 `'snapshot'`，专门验证桥接快照。`layout-power-demo.runtime-vendor-hmr.test.ts` 经 CLI `dev -o` 和 `waitForOpenedAutomator` 连接原项目，是已审查的独立入口。内部 AST 守卫 `e2e/scripts/hmr-launch-mode.test.ts` 检查所有 `e2e/ide/**/*hmr*.test.ts` 及另列的 `forward-console-demo.runtime.test.ts` 调用，拒绝缺失、动态值和被后置展开覆盖的模式；新间接入口须单独审查，不从任意 dev 进程推断模式。
 
-本仓库 fixture 已获授权运行时，在启动测试进程前将 `WEAPP_VITE_E2E_TRUST_PROJECTS` 设为当前仓库路径，或仅列出已授权的 fixture 根目录。该选项匹配原始 fixture 路径，再把明确的 `trustProject=true` 传给 IDE `/auto`；不修改全局安全设置。snapshot 每次生成新项目目录，旧目录的信任状态不会继承；未准备信任时，自动化端口可已连接而模拟器仍停在信任提示，不能将首屏超时记为业务通过。
+本仓库 fixture 已获授权运行时，在启动测试进程前将 `WEAPP_VITE_E2E_TRUST_PROJECTS` 设为当前仓库路径，或仅列出已授权的 fixture 根目录。该选项匹配原始 fixture 路径，再把明确的 `trustProject=true` 传给 IDE `/auto`；不修改全局安全设置。正式的全面真实 IDE suite 必须从仓库根目录 `main` 工作树启动，并在启动前确认 `HEAD == origin/main`、工作树干净；`.codex-tmp` 等隔离 worktree 只用于修复和局部复现。这样可避免信任前缀随 worktree 路径漂移。snapshot 每次生成新项目目录，旧目录的信任状态不会继承；未准备信任时，自动化端口可已连接而模拟器仍停在信任提示，不能将首屏超时记为业务通过。
 
 同一正式 HMR 场景的七个检查点在桥接快照模式失败、原项目模式连续两次通过，说明启动观察面会影响验收。快照还会合并 private config，因此不能把差异仅归因于 `fs.watch`。最终仍须在正常运行的 HMR 客户端下检查首屏、每阶段 DOM/计算样式及应保留的交互状态；停止客户端后的隔离 probe 只能辅助诊断。
 
