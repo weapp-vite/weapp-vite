@@ -72,6 +72,7 @@ describe('Connection', () => {
     ['2.02.2608080', false, true],
     ['2.02.2609231', false, true],
     ['2.02.2610082', false, true],
+    ['2.02.2610092', false, true],
     ['2.01.2601010', false, false],
   ] as const)('selects only affected Page protocols for DevTools %s', async (version, pageProtocol, methodProtocol) => {
     const { default: Connection } = await import('./Connection')

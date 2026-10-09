@@ -2,11 +2,13 @@
 
 ## 验收边界
 
-用户明确选择 Nightly，本轮选中并实际连接微信开发者工具 `2.02.2610082`。官方 Stable 对照为 `2.02.2608080`，不能将本轮结果记为 Stable 通过。官方来源为 `https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json`；每个真实 IDE 入口均重新查询并将 UTC 查询时间保存在运行日志和版本报告中。
+用户明确选择 Nightly，本轮选中并实际连接微信开发者工具 `2.02.2610092`。官方 Stable 对照为 `2.02.2608080`，不能将本轮结果记为 Stable 通过。官方来源为 `https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json`；每个真实 IDE 入口均重新查询并将 UTC 查询时间保存在运行日志和版本报告中。
+
+2026-10-09T20:47:54Z 重新查询官方渠道：Stable 仍为 `2.02.2608080`，Nightly 为 `2.02.2610092`。所选安装、实际宿主和基础库均按 Nightly 记录；Nightly 选择使用 `selected-version-opt-in`，与 Stable 结果分开统计。
 
 本轮排除 `uview-plus-compat,wot-ui-compat`，只验证 8 项 `ide-gate` 和 23 项 `ide-full` 核心回归。显式 CLI、渠道和精确版本选择保持一致，不修改登录、宿主归属、窗口预算或正式验收策略。
 
-提交 `303cc74` 的完整 gate 已通过 8/8 task、27/27 case、162/162 checkpoint。随后完整 full 前 15 项通过，第 16 项 `ide/stateful-hmr.runtime.test.ts` 为 14/16 case、78/88 checkpoint；两个 Wevu 模板更新用例失败，后续 7 项尚未执行。完整 full 尚未通过，Goal 未完成。
+提交 `6e96c518`（工作区含待提交的 automator Nightly 协议修复）的完整 gate 已通过 8/8 task、27/27 case、162/162 checkpoint。随后完整 full 前 15 项通过，第 16 项 `ide/stateful-hmr.runtime.test.ts` 为 14/16 case、78/88 checkpoint；两个 Wevu 模板更新用例失败，后续 7 项尚未执行。完整 full 尚未通过，Goal 未完成。
 
 gate 实际基础库覆盖 `3.17.2`、`3.17.3`、`3.17.4`；stateful HMR 使用 fixture 原有的 `3.16.3`。未为获得通过而切换基础库。
 
@@ -48,9 +50,9 @@ gate 实际基础库覆盖 `3.17.2`、`3.17.3`、`3.17.4`；stateful HMR 使用 
 
 原生 TDesign 模板的 stateful `dev:open` 首屏仍为空。组合移除 `wevu/api` 与 ActionSheet 脚本依赖后没有恢复；进一步将首页 JS、WXML、JSON 精简为原生 Page，并使用 `routeRules.appLayout: false` 确认输出不再包含 layout 或子组件，仍没有完成路由初始化。共享上下文配置对照也没有恢复。
 
-Computer Use 确认 Nightly `2.02.2610082`、实际基础库 `3.17.4`、首页路径及空白模拟器。暂停无响应模拟器后，捕获栈位于 Electron sandbox 的 IPC `onMessage`，不能据此认定业务死循环。恢复执行后，控制台重复报 `App.getCurrentPage` 的页面元数据为 null；宿主日志记录 `routeTo appLaunch timeout` 和 `routeLoadTimedOut`。这些对照均未完成首屏 DOM 验收，也不能证明初始化失败的唯一根因。
+Computer Use 确认 Nightly `2.02.2610092`、实际基础库 `3.17.4`、首页路径及空白模拟器。暂停无响应模拟器后，捕获栈位于 Electron sandbox 的 IPC `onMessage`，不能据此认定业务死循环。恢复执行后，控制台重复报 `App.getCurrentPage` 的页面元数据为 null；宿主日志记录 `routeTo appLaunch timeout` 和 `routeLoadTimedOut`。这些对照均未完成首屏 DOM 验收，也不能证明初始化失败的唯一根因。
 
-所有模板源码和项目配置均已恢复。每个诊断结束后，所选安装进程树与 RSS 为零、受管项目全部 released、机器租约解除；最新已核验记录数为 318。官方版本最近查询时间为 `2026-10-09T16:35:36.958Z`，仍明确区分官方 Stable 对照与所选 Nightly。
+所有模板源码和项目配置均已恢复。每个诊断结束后，所选安装进程树与 RSS 为零、受管项目全部 released、机器租约解除；最新已核验记录数为 318。官方版本最近查询时间为 `2026-10-09T20:47:54Z`，仍明确区分官方 Stable 对照与所选 Nightly。
 
 ## 两个 provider 的回归覆盖
 
