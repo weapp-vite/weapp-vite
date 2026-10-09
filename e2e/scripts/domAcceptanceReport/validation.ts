@@ -134,6 +134,7 @@ export const serializedReport = z.object({
     nodeVersion: z.string(),
     ideVersion: z.string().nullable(),
     baseLibraryVersion: z.string().nullable(),
+    baseLibraryVersions: z.record(z.string().min(1), z.string().min(1)).optional(),
     devtoolsVersionPolicy: z.object({
       mode: z.enum(['official-stable', 'selected-version-opt-in']),
       selectedVersion: z.string().regex(/^\d+(?:\.\d+){2,}$/),

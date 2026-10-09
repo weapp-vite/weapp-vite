@@ -37,6 +37,7 @@ export interface AcceptanceReport extends AcceptanceIdentity {
     nodeVersion: string
     ideVersion: string | null
     baseLibraryVersion: string | null
+    baseLibraryVersions?: Record<string, string>
     devtoolsVersionPolicy?: DevtoolsVersionPolicyReport
   }
   strict: boolean

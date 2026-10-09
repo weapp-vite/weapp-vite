@@ -4,11 +4,38 @@ function completeVersion(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && value === value.trim()
 }
 
-/** 严格验收只接受实际会话版本，并要求所有 case 与报告摘要一致。 */
+/** 不同 fixture 可以选择不同基础库；摘要仅在全部实际 SDK 相同时显示单一版本。 */
+export function summarizeRuntimeVersions(cases: AcceptanceCaseInput[]) {
+  const versions = new Set<string>()
+  const fixtures = new Map<string, string>()
+  let ideVersion: string | null = null
+  for (const item of cases) {
+    if (item.state === 'pending' || item.state === 'skipped') {
+      continue
+    }
+    const runtime = item.acceptance?.runtime
+    if (completeVersion(runtime?.ideVersion)) {
+      ideVersion ??= runtime.ideVersion
+    }
+    if (completeVersion(runtime?.baseLibraryVersion) && item.acceptance) {
+      versions.add(runtime.baseLibraryVersion)
+      if (!fixtures.has(item.acceptance.fixture)) {
+        fixtures.set(item.acceptance.fixture, runtime.baseLibraryVersion)
+      }
+    }
+  }
+  return {
+    ideVersion,
+    baseLibraryVersion: versions.size === 1 ? [...versions][0]! : null,
+    baseLibraryVersions: Object.fromEntries(fixtures),
+  }
+}
+
+/** 严格核对统一 IDE 身份、同一 fixture 的 SDK 以及报告中对应的实际版本。 */
 export function evaluateRuntimeVersions(
   cases: AcceptanceCaseInput[],
   provider: AcceptanceReport['provider'],
-  environment?: Pick<AcceptanceReport['environment'], 'ideVersion' | 'baseLibraryVersion' | 'devtoolsVersionPolicy'>,
+  environment?: Pick<AcceptanceReport['environment'], 'ideVersion' | 'baseLibraryVersion' | 'baseLibraryVersions' | 'devtoolsVersionPolicy'>,
 ): string[] {
   if (provider !== 'devtools') {
     return []
@@ -28,6 +55,7 @@ export function evaluateRuntimeVersions(
     }
   }
   let first: NonNullable<AcceptanceCaseInput['acceptance']>['runtime']
+  const fixtures = new Map<string, string>()
   for (const item of cases) {
     if (item.state === 'pending' || item.state === 'skipped') {
       continue
@@ -38,14 +66,33 @@ export function evaluateRuntimeVersions(
       continue
     }
     first ??= runtime
-    if (runtime.ideVersion !== first.ideVersion || runtime.baseLibraryVersion !== first.baseLibraryVersion) {
+    const fixture = item.acceptance!.fixture
+    const fixtureVersion = fixtures.get(fixture)
+    if (runtime.ideVersion !== first.ideVersion || (fixtureVersion && runtime.baseLibraryVersion !== fixtureVersion)) {
       errors.push(`Observed runtime versions differ between cases: ${item.id}`)
     }
-    if (environment && (runtime.ideVersion !== environment.ideVersion || runtime.baseLibraryVersion !== environment.baseLibraryVersion)) {
+    if (!fixtures.has(fixture)) {
+      fixtures.set(fixture, runtime.baseLibraryVersion)
+    }
+    const environmentSdk = environment?.baseLibraryVersions
+      ? environment.baseLibraryVersions[fixture]
+      : environment?.baseLibraryVersion
+    if (environment && (runtime.ideVersion !== environment.ideVersion || runtime.baseLibraryVersion !== environmentSdk)) {
       errors.push(`Observed runtime versions do not match report environment: ${item.id}`)
     }
     if (policy && runtime.ideVersion !== policy.selectedVersion) {
       errors.push(`Observed DevTools version does not match selected version policy: ${item.id}`)
+    }
+  }
+  if (environment?.baseLibraryVersions) {
+    const observed = summarizeRuntimeVersions(cases)
+    if (environment.baseLibraryVersion !== observed.baseLibraryVersion) {
+      errors.push('Observed runtime versions do not match report environment: base library summary')
+    }
+    for (const fixture of Object.keys(environment.baseLibraryVersions)) {
+      if (!fixtures.has(fixture)) {
+        errors.push(`Report base library version has no observed fixture: ${fixture}`)
+      }
     }
   }
   return errors

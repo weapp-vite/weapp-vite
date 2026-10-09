@@ -135,6 +135,30 @@ describe('Vitest DOM reporter lifecycle', () => {
     expect(() => new DomAcceptanceReporter().onTestRunEnd([createModule([second])], [], 'passed')).toThrow('Missing observed')
   })
 
+  it('records distinct fixture SDKs and keeps strict serialized validation', () => {
+    const reporter = new DomAcceptanceReporter()
+    const first = createTest('passed', 'first fixture')
+    const second = createTest('passed', 'second fixture')
+    const secondPlan = (second.meta() as { domAcceptance: DomAcceptance }).domAcceptance
+    secondPlan.fixture = 'e2e-apps/other-fixture'
+    secondPlan.runtime = { ideVersion: '2.02.2608060', baseLibraryVersion: '3.17.3' }
+    for (const test of [first, second]) {
+      reporter.onTestCaseReady(test)
+      reporter.onTestCaseResult(test)
+    }
+    reporter.onTestRunEnd([createModule([first, second])], [], 'passed')
+    const report = readReports()[0]!
+    expect(report).toMatchObject({ status: 'passed', strict: true, errors: [], environment: {
+      ideVersion: '2.02.2608060',
+      baseLibraryVersion: null,
+      baseLibraryVersions: { 'e2e-apps/base': '3.17.2', 'e2e-apps/other-fixture': '3.17.3' },
+    } })
+    expect(() => assertAcceptanceReportPassed(report, report)).not.toThrow()
+    const altered = structuredClone(report)
+    altered.environment.baseLibraryVersions = { 'e2e-apps/base': '3.17.2', 'e2e-apps/other-fixture': 'wrong-sdk' }
+    expect(() => assertAcceptanceReportPassed(altered, report)).toThrow('do not match report environment')
+  })
+
   it('accepts an existing empty journal when no runtime errors occurred', () => {
     const reporter = new DomAcceptanceReporter()
     reporter.onTestRunEnd([createModule([createTest('passed')])], [], 'passed')

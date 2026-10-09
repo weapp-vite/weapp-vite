@@ -18,7 +18,7 @@ import {
   summarizeAcceptanceCases,
 } from './helpers'
 import { RuntimeDiagnosticJournal } from './runtimeDiagnostics'
-import { evaluateRuntimeVersions } from './runtimeVersions'
+import { evaluateRuntimeVersions, summarizeRuntimeVersions } from './runtimeVersions'
 import { evaluateSelectedAcceptanceCases, readSelectedAcceptanceCases } from './selectedCases'
 
 function formatStrictAcceptanceFailure(report: AcceptanceReport) {
@@ -127,11 +127,9 @@ export default class DomAcceptanceReporter implements Reporter {
     const cases = [...this.cases.values()].map(evaluateAcceptanceCase)
     const provider = process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER === 'headless' ? 'headless' : 'devtools'
     const devtoolsVersionPolicy = provider === 'devtools' ? readDevtoolsVersionPolicy() : undefined
-    const runtime = cases.find(item => item.acceptance?.runtime)?.acceptance?.runtime
     const environment: AcceptanceReport['environment'] = {
       nodeVersion: process.version,
-      ideVersion: runtime?.ideVersion ?? null,
-      baseLibraryVersion: runtime?.baseLibraryVersion ?? null,
+      ...summarizeRuntimeVersions(cases),
       ...(devtoolsVersionPolicy ? { devtoolsVersionPolicy } : {}),
     }
     if (finishedAt && this.strict) {
