@@ -21,6 +21,8 @@ export async function readWindowsJournalWriterIdentity() {
     reject: false,
     windowsHide: true,
     maxBuffer: 64 * 1024,
+    // 阶段行必须保留完整终止符；默认查询继续使用原有末尾换行裁剪。
+    stripFinalNewline: !trace,
   })
   if (trace) {
     const report = (phase: string) => debug('phase=%s elapsedMs=%s', phase, (performance.now() - started).toFixed(1))

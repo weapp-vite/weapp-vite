@@ -184,7 +184,8 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     const vueSettings = getVueComponentsSettings(state.ctx)
 
     if ((!resolvedJsEntry || !resolvedJsonPath || !resolvedTemplatePath) && vueEntry) {
-      const vueConfig = await extractConfigFromVue(vueEntry, { compilerContext: state.ctx })
+      // 显式登记必须观察当前配置，文件时间戳精度不能覆盖已经收到的文件事件。
+      const vueConfig = await extractConfigFromVue(vueEntry, { compilerContext: state.ctx, force: true })
       const vueJson = (vueConfig && typeof vueConfig === 'object' && !Array.isArray(vueConfig))
         ? { ...vueConfig }
         : {}

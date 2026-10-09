@@ -40,6 +40,7 @@ export interface ComponentLibraryWebSuiteOptions {
   serverPortEnv: string
   suiteName: string
   updateBaselinesEnv: string
+  prepareContext?: (context: BrowserContext, appRoot: string) => Promise<void>
   verifyRendered?: (page: Page, scenario: ComponentScenarioLike) => Promise<void>
 }
 
@@ -161,6 +162,8 @@ export function defineComponentLibraryWebSuite(options: ComponentLibraryWebSuite
         : { headless: true })
       mobileContext = await browser.newContext({ viewport: COMPONENT_LIBRARY_MOBILE_VIEWPORT })
       desktopContext = await browser.newContext({ viewport: COMPONENT_LIBRARY_DESKTOP_VIEWPORT })
+      await options.prepareContext?.(mobileContext, appRoot)
+      await options.prepareContext?.(desktopContext, appRoot)
       mobilePage = await mobileContext.newPage()
       desktopPage = await desktopContext.newPage()
       mobileIssues = collectRuntimeIssues(mobilePage)

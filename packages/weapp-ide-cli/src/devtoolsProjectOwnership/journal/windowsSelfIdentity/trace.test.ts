@@ -1,7 +1,19 @@
+import process from 'node:process'
+// eslint-disable-next-line e18e/ban-dependencies -- 使用真实子进程覆盖 Execa 的 stderr 换行边界。
+import { execa } from 'execa'
 import { expect, it, vi } from 'vitest'
 import { windowsSelfIdentityCommand } from './command'
 import { observeWindowsSelfIdentityPhases, stripWindowsSelfIdentityPhases, traceWindowsSelfIdentityCommand } from './trace'
 import { SELF_IDENTITY_WIRE } from './wire'
+
+it('preserves the flushed final phase line through real subprocess buffering', async () => {
+  const stderr = `${SELF_IDENTITY_WIRE}:phase:entry\r\n${SELF_IDENTITY_WIRE}:phase:complete\r\n`
+  const result = await execa(process.execPath, ['-e', `process.stderr.write(${JSON.stringify(stderr)})`], {
+    stripFinalNewline: false,
+  })
+  expect(result.stderr).toBe(stderr)
+  expect(stripWindowsSelfIdentityPhases(result.stderr)).toBe('')
+})
 
 it('retains the exact production query and only inserts flushed phase statements', () => {
   const command = windowsSelfIdentityCommand(123)

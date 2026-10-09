@@ -61,7 +61,15 @@ it('never interpolates a non-integer PID into a command', () => {
 function tracedQuery(result: Record<string, unknown>) {
   debug.enabled = true
   const stream = new PassThrough()
-  const pending = Object.assign(Promise.resolve({ exitCode: 0, stdout, stderr: `${SELF_IDENTITY_WIRE}:phase:entry\n`, ...result }), {
+  const pending = (options: { stripFinalNewline?: boolean }) => Object.assign(Promise.resolve({
+    exitCode: 0,
+    stdout,
+    // 模拟 Execa 默认会裁掉末尾换行；不保留该边界时完整阶段行会被误判为残缺。
+    stderr: options.stripFinalNewline === false
+      ? `${SELF_IDENTITY_WIRE}:phase:complete\r\n`
+      : `${SELF_IDENTITY_WIRE}:phase:complete`,
+    ...result,
+  }), {
     stderr: stream,
     nodeChildProcess: {
       once: vi.fn((event: string, listener: () => void) => {
@@ -71,7 +79,7 @@ function tracedQuery(result: Record<string, unknown>) {
       }),
     },
   })
-  inspect.mockReturnValueOnce(pending)
+  inspect.mockImplementationOnce((_command, _args, options) => pending(options))
   const query = readWindowsJournalWriterIdentity()
   stream.end(`${SELF_IDENTITY_WIRE}:phase:entry\nprivate field read details\n${SELF_IDENTITY_WIRE}:phase:module-path\n`)
   return query
@@ -80,7 +88,7 @@ function tracedQuery(result: Record<string, unknown>) {
 it('keeps exact identity and the original budget while tracing query phases', async () => {
   await expect(tracedQuery({})).resolves.toEqual({ pid: process.pid, executable: process.execPath, started })
   expect(inspect).toHaveBeenCalledOnce()
-  expect(inspect.mock.calls[0]![2]).toMatchObject({ timeout: 10_000, reject: false })
+  expect(inspect.mock.calls[0]![2]).toMatchObject({ timeout: 10_000, reject: false, stripFinalNewline: false })
   expect(debug.mock.calls.map(call => call[1]).slice(0, 4)).toEqual(['launch', 'spawn', 'entry', 'module-path'])
   expect(JSON.stringify(debug.mock.calls)).not.toContain('private field read details')
 })

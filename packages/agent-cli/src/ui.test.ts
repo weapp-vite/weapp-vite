@@ -35,6 +35,11 @@ function output() {
   return stripVTControlCharacters(terminal.frames.join(''))
 }
 
+async function flushRender() {
+  // 输出帧可能早于输入监听的 passive effect；必须等待 Ink 完成提交与 flush。
+  await Promise.all(terminal.instances.map(instance => instance.waitUntilRenderFlush()))
+}
+
 async function start(runner: InteractiveRunner) {
   const finished = interactive(runner, 'existing-session')
   await vi.waitFor(() => expect(output()).toContain('Describe a mini-program change.'))
@@ -42,8 +47,12 @@ async function start(runner: InteractiveRunner) {
 }
 
 async function submit(prompt: string) {
+  await flushRender()
   terminal.input!.write(prompt)
-  await vi.waitFor(() => expect(output()).toContain(`› ${prompt}`))
+  await vi.waitFor(async () => {
+    await flushRender()
+    expect(output()).toContain(`› ${prompt}`)
+  })
   terminal.input!.write('\r')
 }
 
