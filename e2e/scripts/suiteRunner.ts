@@ -276,6 +276,7 @@ export function getTaskSpawnOptions(task: SuiteTask): Options {
               path.resolve('test/fixture-projects'),
               path.resolve('.tmp/e2e-projects'),
               path.resolve('.tmp/e2e-ide-bridge-projects'),
+              path.resolve('.tmp/e2e/ide-wevu-tailwind-hmr'),
             // automator 的路径列表使用分号；POSIX 的冒号不是该环境变量的分隔符。
             ].join(';'),
           }

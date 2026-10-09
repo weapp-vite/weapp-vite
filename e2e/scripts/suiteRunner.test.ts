@@ -633,7 +633,7 @@ describe('suiteRunner', () => {
       args: ['vitest', 'run', '-c', path.resolve('e2e/vitest.e2e.devtools.config.ts')],
     })
     const trusts = createAutomatorProjectTrust(options.env as NodeJS.ProcessEnv)
-    for (const root of ['e2e-apps', 'templates', 'test/fixture-projects', '.tmp/e2e-projects', '.tmp/e2e-ide-bridge-projects']) {
+    for (const root of ['e2e-apps', 'templates', 'test/fixture-projects', '.tmp/e2e-projects', '.tmp/e2e-ide-bridge-projects', '.tmp/e2e/ide-wevu-tailwind-hmr']) {
       expect(trusts(path.resolve(root))).toBe(true)
       expect(trusts(path.resolve(root, 'fixture'))).toBe(true)
       expect(trusts(path.resolve(`${root}-other`, 'fixture'))).toBe(false)
@@ -642,6 +642,7 @@ describe('suiteRunner', () => {
     expect(trusts(path.resolve('apps/manual-project'))).toBe(false)
     expect(trusts(path.resolve('test/fixture-projects/weapp-vite/subPackages-shared-styles'))).toBe(true)
     expect(trusts(path.resolve('test/manual-project'))).toBe(false)
+    expect(trusts(path.resolve('.tmp/e2e/manual-project'))).toBe(false)
   })
 
   it.each([',', ';', '\n'])('preserves explicit project trust lists separated by %j', (separator) => {
