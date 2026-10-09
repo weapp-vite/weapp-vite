@@ -1,207 +1,153 @@
 <script setup lang="ts">
-import type { LargestFileEntry } from '../types'
-import type { SourceCompareInsightTone } from '../utils/sourceCompareSummary'
-import { computed, onBeforeUnmount, ref, toRefs } from 'vue'
+import type { SourceArtifactTarget } from '../composables/useSourceArtifactCompare'
+import type { ResolvedTheme } from '../types'
+import { computed, shallowRef, toRefs, watch } from 'vue'
 import { useSourceArtifactCompare } from '../composables/useSourceArtifactCompare'
 import { copyText } from '../utils/clipboard'
 import { formatBytes } from '../utils/format'
-import { createSourceCompareInsights, createSourceCompareReport, formatSignedBytes } from '../utils/sourceCompareSummary'
 import AppEmptyState from './AppEmptyState.vue'
-import AppMetricTile from './AppMetricTile.vue'
-import AppSelect from './AppSelect.vue'
-import AppToolButton from './AppToolButton.vue'
 
 const props = defineProps<{
-  activeFileKey: string | null
-  files: LargestFileEntry[]
-  theme: 'light' | 'dark'
-  initialSourcePath: string | null
+  artifact: SourceArtifactTarget | null
+  sourcePath: string | null
+  theme: ResolvedTheme
 }>()
-
-const emit = defineEmits<{
-  selectFile: [file: LargestFileEntry]
-}>()
-
-const { activeFileKey, files, theme } = toRefs(props)
-const copyStatus = ref('')
-let copyStatusTimer: ReturnType<typeof setTimeout> | null = null
-const {
-  artifactContent,
-  artifactOptions,
-  compareStats,
-  editorElement,
-  loadComparison,
-  loadError,
-  loading,
-  selectedArtifactKey,
-  selectedSourcePath,
-  sourceContent,
-  sourceOptions,
-  statusText,
-} = useSourceArtifactCompare({
-  activeFileKey,
-  files,
-  theme,
-  initialSourcePath: props.initialSourcePath,
-  onSelectFile(file) {
-    emit('selectFile', file)
-  },
+const { artifact, sourcePath, theme } = toRefs(props)
+const { artifactContent, sourceContent, editorElement, loadComparison, loadError, loading, statusText } = useSourceArtifactCompare({ artifact, sourcePath, theme })
+const copyStatus = shallowRef('')
+const copyContent = computed(() => [
+  sourceContent.value ? `当前源码：${sourceContent.value.path}\n${sourceContent.value.content}` : '',
+  artifactContent.value ? `报告产物：${artifactContent.value.path}\n${artifactContent.value.content}` : '',
+].filter(Boolean).join('\n\n'))
+watch([artifactContent, sourceContent], () => {
+  copyStatus.value = ''
 })
 
-const sourceSelectOptions = computed(() => [
-  { label: '源码文件', value: '' },
-  ...sourceOptions.value.map(source => ({ label: source, value: source })),
-])
-const artifactSelectOptions = computed(() => artifactOptions.value.map(option => ({
-  label: option.label,
-  value: option.key,
-})))
-
-const compareMetricItems = computed(() => compareStats.value
-  ? [
-      { label: '源码行数', value: String(compareStats.value.sourceLines) },
-      { label: '产物行数', value: String(compareStats.value.artifactLines) },
-      { label: '新增 / 删除', value: `${compareStats.value.addedLines} / ${compareStats.value.removedLines}` },
-      { label: '字节变化', value: formatSignedBytes(compareStats.value.byteDelta) },
-    ]
-  : [])
-
-const compareSizeText = computed(() => compareStats.value
-  ? `${formatBytes(compareStats.value.sourceBytes)} → ${formatBytes(compareStats.value.artifactBytes)}`
-  : '')
-const compareInsights = computed(() => compareStats.value ? createSourceCompareInsights(compareStats.value) : [])
-
-function getInsightClassName(tone: SourceCompareInsightTone) {
-  if (tone === 'warning') {
-    return 'border-amber-300/60 bg-amber-50 text-amber-800 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-200'
-  }
-  if (tone === 'success') {
-    return 'border-emerald-300/60 bg-emerald-50 text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-200'
-  }
-  return 'border-(--dashboard-border) bg-(--dashboard-panel-muted) text-(--dashboard-text)'
-}
-
-function setCopyStatus(status: string) {
-  copyStatus.value = status
-  if (copyStatusTimer) {
-    clearTimeout(copyStatusTimer)
-  }
-  copyStatusTimer = setTimeout(() => {
-    copyStatus.value = ''
-    copyStatusTimer = null
-  }, 1800)
-}
-
-async function copyCompareReport() {
-  if (!compareStats.value || !sourceContent.value || !artifactContent.value) {
-    return
-  }
+async function copyContents() {
+  const content = copyContent.value
   try {
-    await copyText(createSourceCompareReport({
-      sourcePath: sourceContent.value.path,
-      artifactPath: artifactContent.value.path,
-      stats: compareStats.value,
-      insights: compareInsights.value,
-    }))
-    setCopyStatus('已复制')
+    await copyText(content)
+    if (copyContent.value === content) {
+      copyStatus.value = '内容已复制'
+    }
   }
   catch {
-    setCopyStatus('复制失败')
+    if (copyContent.value === content) {
+      copyStatus.value = '复制失败，请在只读编辑器中选择内容后手动复制。'
+    }
   }
 }
-
-onBeforeUnmount(() => {
-  if (copyStatusTimer) {
-    clearTimeout(copyStatusTimer)
-  }
-})
 </script>
 
 <template>
-  <section class="grid min-h-0 min-w-0 gap-3 overflow-visible rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-3 shadow-(--dashboard-shadow) xl:h-full xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
-    <div class="grid gap-3">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="min-w-0">
-          <h2 class="text-lg font-semibold text-(--dashboard-text)">
-            源码对比
-          </h2>
-          <p class="mt-1 text-xs text-(--dashboard-text-soft)">
-            {{ statusText }}
-          </p>
-        </div>
-        <div class="flex min-w-0 flex-wrap items-center gap-2">
-          <span v-if="copyStatus" class="text-xs font-medium text-(--dashboard-accent)">
-            {{ copyStatus }}
-          </span>
-          <div class="flex shrink-0 flex-nowrap items-center gap-2">
-            <AppToolButton
-              label="复制源码对比摘要"
-              icon-name="metric-copy"
-              touch-label="复制"
-              :disabled="!compareStats"
-              @click="copyCompareReport"
-            />
-            <AppToolButton
-              label="刷新源码对比"
-              icon-name="metric-reset"
-              touch-label="刷新"
-              :disabled="loading || !selectedArtifactKey || !selectedSourcePath"
-              @click="loadComparison"
-            />
-          </div>
-        </div>
+  <section class="content-reader" aria-label="对象内容">
+    <header class="content-toolbar">
+      <div>
+        <h3>{{ statusText }}</h3>
+        <p>源码为当前文件，产物来自报告快照；两者展示构建转换，不代表优化收益或构建前后变化。</p>
       </div>
-      <div class="grid gap-2 lg:grid-cols-2">
-        <AppSelect
-          v-model="selectedSourcePath"
-          label="选择源码文件"
-          :options="sourceSelectOptions"
-        />
-        <AppSelect
-          v-model="selectedArtifactKey"
-          label="选择构建产物"
-          :options="artifactSelectOptions"
-        />
+      <div class="content-actions">
+        <button type="button" :disabled="!copyContent" @click="copyContents">复制内容</button>
+        <button type="button" :disabled="loading || (!artifact && !sourcePath)" @click="loadComparison">重新读取</button>
       </div>
-      <div v-if="compareStats" class="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-        <div class="grid grid-cols-2 gap-2 xl:grid-cols-4">
-          <AppMetricTile
-            v-for="item in compareMetricItems"
-            :key="item.label"
-            v-bind="item"
-          />
-        </div>
-        <p class="text-xs text-(--dashboard-text-soft)">
-          {{ compareSizeText }}
-        </p>
-      </div>
-      <div v-if="compareInsights.length" class="grid gap-2 lg:grid-cols-3">
-        <article
-          v-for="item in compareInsights"
-          :key="item.id"
-          class="rounded-md border px-3 py-2.5"
-          :class="getInsightClassName(item.tone)"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <p class="text-xs font-semibold uppercase tracking-[0.14em]">
-              {{ item.label }}
-            </p>
-            <p class="shrink-0 text-sm font-semibold">
-              {{ item.value }}
-            </p>
-          </div>
-          <p class="mt-2 line-clamp-2 text-xs leading-5">
-            {{ item.detail }}
-          </p>
-        </article>
-      </div>
+    </header>
+    <p v-if="copyStatus" role="status" class="content-message">{{ copyStatus }}</p>
+    <p v-if="loadError" role="alert" class="content-message">{{ loadError }}</p>
+    <div class="content-paths">
+      <p v-if="sourcePath"><span>源码</span> <code>{{ sourcePath }}</code><span v-if="sourceContent"> · {{ formatBytes(sourceContent.size) }}</span></p>
+      <p v-if="artifact"><span>产物</span> <code>{{ artifact.file }}</code><span v-if="artifactContent"> · {{ formatBytes(artifactContent.size) }}</span></p>
     </div>
-
-    <div class="relative min-h-96 min-w-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) xl:min-h-0">
-      <div v-show="sourceContent && artifactContent" ref="editorElement" class="absolute inset-0" />
-      <AppEmptyState v-if="!sourceContent || !artifactContent" class="m-3 h-[calc(100%-1.5rem)]">
-        {{ loadError || '暂无可对比文件。' }}
+    <div class="editor-frame" :aria-busy="loading">
+      <div v-show="sourceContent || artifactContent" ref="editorElement" class="editor-host" />
+      <AppEmptyState v-if="!sourceContent && !artifactContent" class="m-3">
+        {{ loading ? '正在读取…' : loadError || '此对象没有可请求的文本内容。二进制、缺失文件和无读取授权的来源不会生成替代内容。' }}
       </AppEmptyState>
     </div>
   </section>
 </template>
+
+<style scoped>
+.content-reader {
+  min-width: 0;
+}
+
+.content-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.content-toolbar h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 550;
+}
+
+.content-toolbar p {
+  max-width: 680px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--dashboard-text-muted);
+}
+
+.content-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.content-actions button {
+  min-height: 38px;
+  padding: 7px 10px;
+  color: var(--dashboard-text);
+  background: var(--dashboard-panel);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 6px;
+}
+
+.content-actions button:disabled {
+  opacity: 0.5;
+}
+
+.content-message {
+  padding: 10px 12px;
+  margin: 12px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  background: var(--dashboard-panel-muted);
+  border-left: 2px solid var(--dashboard-accent);
+}
+
+.content-paths {
+  margin: 12px 0;
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+}
+
+.content-paths p {
+  margin: 6px 0;
+}
+
+.content-paths code {
+  font-family: var(--dashboard-code);
+  overflow-wrap: anywhere;
+}
+
+.editor-frame {
+  position: relative;
+  min-width: 0;
+  height: 420px;
+  overflow: hidden;
+  background: var(--dashboard-panel);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 6px;
+}
+
+.editor-host {
+  position: absolute;
+  inset: 0;
+}
+</style>

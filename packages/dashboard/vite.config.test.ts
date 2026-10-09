@@ -14,14 +14,7 @@ async function findDashboardCss(outDir: string) {
   const assetsDir = path.resolve(outDir, 'assets')
   const cssFiles = (await readdir(assetsDir)).filter(file => file.endsWith('.css'))
 
-  for (const file of cssFiles) {
-    const css = await readFile(path.resolve(assetsDir, file), 'utf8')
-    if (css.includes('--dashboard-bg')) {
-      return css
-    }
-  }
-
-  throw new Error('Dashboard CSS asset was not emitted')
+  return (await Promise.all(cssFiles.map(file => readFile(path.resolve(assetsDir, file), 'utf8')))).join('\n')
 }
 
 function extractDashboardIconNames(source: string) {

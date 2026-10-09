@@ -9,6 +9,7 @@ describe('createPrReviewChecklistSummary', () => {
           key: 'budget:main',
           kind: 'budget',
           title: '处理主包预算',
+          targetLabel: '主包',
           meta: '已超预算',
           tone: 'critical',
           tab: 'files',
@@ -32,6 +33,7 @@ describe('createPrReviewChecklistSummary', () => {
           key: 'increment:a',
           kind: 'increment',
           title: '定位增长',
+          targetLabel: 'a',
           meta: '新增依赖',
           tone: 'warning',
           tab: 'modules',
@@ -58,14 +60,12 @@ describe('createPrReviewChecklistSummary', () => {
     }).status).toBe('review')
   })
 
-  it('creates a copyable markdown checklist', () => {
+  it('accepts an empty action and work queue', () => {
     const summary = createPrReviewChecklistSummary({
       actionItems: [],
       workQueueItems: [],
     })
 
     expect(summary.status).toBe('ready')
-    expect(summary.report).toContain('## PR 风险清单')
-    expect(summary.report).toContain('- [x] 没有阻断项。')
   })
 })

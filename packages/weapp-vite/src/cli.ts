@@ -20,7 +20,7 @@ import { registerPreviewCommand, registerUploadCommand } from './cli/commands/up
 import { handleCLIError } from './cli/error'
 import { tryRunIdeCommand } from './cli/ide'
 import { maybeAutoStartMcpServer } from './cli/mcpAutoStart'
-import { convertBase } from './cli/options'
+import { convertBase, parseDashboardUiHost } from './cli/options'
 import { handlePrepareLifecycleError } from './cli/prepareGuard'
 import { outputUploadReport } from './cli/upload/report'
 import { VERSION } from './constants'
@@ -103,6 +103,8 @@ try {
   if (!forwarded) {
     cli.parse(process.argv, { run: false })
     const runCommand = async () => {
+      const uiHost = Array.isArray(cli.options.uiHost) ? cli.options.uiHost.at(-1) : cli.options.uiHost
+      parseDashboardUiHost(uiHost)
       const managedTsconfigBootstrapRoot = resolveManagedTsconfigBootstrapRoot(args)
       if (managedTsconfigBootstrapRoot) {
         await syncManagedTsconfigBootstrapFiles(managedTsconfigBootstrapRoot)

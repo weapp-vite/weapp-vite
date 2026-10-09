@@ -3390,6 +3390,12 @@ importers:
       '@devframes/agentic':
         specifier: 1.2.3
         version: 1.2.3(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3)
+      '@devframes/hub':
+        specifier: 1.2.3
+        version: 1.2.3(@devframes/agentic@1.2.3)(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3)
+      '@devframes/hub-ui':
+        specifier: 1.2.3
+        version: 1.2.3(@devframes/hub@1.2.3(@devframes/agentic@1.2.3)(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3))(@devframes/json-render@1.2.3(@devframes/hub@1.2.3(@devframes/agentic@1.2.3)(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3))(devframe@1.2.3))(devframe@1.2.3)
       '@jridgewell/remapping':
         specifier: ^2.3.5
         version: 2.3.5

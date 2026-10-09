@@ -1,5 +1,7 @@
 import type { LogLevel } from '../logger'
 
+export type DashboardUiHost = 'standalone' | 'hub'
+
 export interface GlobalCLIOptions {
   '--'?: string[]
   'c'?: boolean | string
@@ -38,6 +40,7 @@ export interface GlobalCLIOptions {
   'emptyOutDir'?: boolean
   'analyze'?: boolean
   'ui'?: boolean
+  'uiHost'?: DashboardUiHost
   'watch'?: boolean
   'scope'?: string
 }

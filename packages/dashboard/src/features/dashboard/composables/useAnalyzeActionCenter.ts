@@ -1,6 +1,7 @@
-import type { ComputedRef } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import type {
   AnalyzeActionCenterItem,
+  AnalyzeSubpackagesResult,
   DuplicateModuleEntry,
   IncrementAttributionEntry,
   LargestFileEntry,
@@ -8,6 +9,7 @@ import type {
   PackageInsight,
 } from '../types'
 import { computed } from 'vue'
+import { duplicateMeasurement } from '../utils/analyzeDataModules'
 import { formatBytes } from '../utils/format'
 import { createTreemapModuleNodeId } from '../utils/treemap'
 
@@ -25,6 +27,7 @@ function findFile(files: LargestFileEntry[], packageId: string | undefined, file
 function createModuleAction(
   module: DuplicateModuleEntry,
   packageInsights: PackageInsight[],
+  estimatedBytes: number | null,
 ): AnalyzeActionCenterItem {
   const firstPackage = module.packages[0]
   const fileName = firstPackage?.files[0] ?? ''
@@ -34,9 +37,11 @@ function createModuleAction(
   return {
     key: `duplicate:${module.id}`,
     kind: 'duplicate',
-    title: `减少重复模块 ${module.source}`,
+    title: `核对跨包重复 ${module.source}`,
+    targetLabel: module.source,
     meta: `${module.packageCount} 个包复用 · ${module.advice}`,
-    value: `可省 ${formatBytes(module.estimatedSavingBytes)}`,
+    value: estimatedBytes === null ? '估算重复 未知' : `估算重复 ${formatBytes(estimatedBytes)}`,
+    measurementUnknown: estimatedBytes === null,
     tone: module.estimatedSavingBytes > 1024 ? 'warning' : 'info',
     tab: 'modules',
     priority: 72 + Math.min(module.estimatedSavingBytes / 1024, 18),
@@ -81,6 +86,7 @@ function createIncrementAction(
     key: `increment:${item.key}`,
     kind: 'increment',
     title: `定位增长 ${item.label}`,
+    targetLabel: item.label,
     meta: `${item.category} · ${item.advice}`,
     value: `+${formatBytes(item.deltaBytes)}`,
     tone: 'info',
@@ -92,6 +98,7 @@ function createIncrementAction(
 }
 
 export function useAnalyzeActionCenter(options: {
+  resultRef: Ref<AnalyzeSubpackagesResult | null>
   budgetWarnings: ComputedRef<PackageBudgetWarning[]>
   incrementAttribution: ComputedRef<IncrementAttributionEntry[]>
   duplicateModules: ComputedRef<DuplicateModuleEntry[]>
@@ -106,8 +113,10 @@ export function useAnalyzeActionCenter(options: {
         key: `budget:${warning.id}`,
         kind: 'budget',
         title: `处理 ${warning.label} 预算`,
+        targetLabel: warning.label,
         meta: warning.status === 'unknown' ? '体积或归因不完整，无法验收预算' : `${warning.status === 'critical' ? '已超预算' : '接近预算'} · 当前 ${formatBytes(warning.currentBytes)} / ${formatBytes(warning.limitBytes)}`,
         value: formatWarningValue(warning),
+        measurementUnknown: warning.status === 'unknown',
         tone: warning.status === 'critical' ? 'critical' : 'warning',
         tab: 'files',
         priority: warning.status === 'critical' ? 100 + warning.ratio : 90 + warning.ratio,
@@ -119,23 +128,19 @@ export function useAnalyzeActionCenter(options: {
       items.push(createIncrementAction(item, options.largestFiles.value, options.packageInsights.value))
     }
 
-    for (const module of options.duplicateModules.value.filter(item => item.estimatedSavingBytes > 0).slice(0, 12)) {
-      items.push(createModuleAction(module, options.packageInsights.value))
-    }
-
-    const largestFile = options.largestFiles.value[0]
-    if (largestFile) {
-      items.push({
-        key: `file:${largestFile.packageId}:${largestFile.file}`,
-        kind: 'file',
-        title: `查看最大文件 ${largestFile.file}`,
-        meta: `${largestFile.packageLabel} · ${largestFile.type} · 压缩后 ${formatBytes(largestFile.compressedSize)}`,
-        value: formatBytes(largestFile.size),
-        tone: 'success',
-        tab: 'files',
-        priority: 45,
-        file: largestFile,
-      })
+    const result = options.resultRef.value
+    if (result) {
+      let duplicateCount = 0
+      for (const module of options.duplicateModules.value) {
+        const estimatedBytes = duplicateMeasurement(result, module.id, module.estimatedSavingBytes)
+        if (estimatedBytes !== null && estimatedBytes <= 0) {
+          continue
+        }
+        items.push(createModuleAction(module, options.packageInsights.value, estimatedBytes))
+        if (++duplicateCount === 12) {
+          break
+        }
+      }
     }
 
     return items

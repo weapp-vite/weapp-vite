@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { DashboardTitleBlock } from './features/dashboard/types'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
+import logoUrl from './assets/weapp-vite.svg'
 import AppNavigationList from './features/dashboard/components/AppNavigationList.vue'
 import AppShellHeader from './features/dashboard/components/AppShellHeader.vue'
-import DashboardIcon from './features/dashboard/components/DashboardIcon.vue'
 import { provideDashboardTheme } from './features/dashboard/composables/useDashboardTheme'
 import { createDashboardWorkspace, provideDashboardWorkspace } from './features/dashboard/composables/useDashboardWorkspace'
 import { useThemeMode } from './features/dashboard/composables/useThemeMode'
@@ -13,12 +13,13 @@ import { dashboardTabs, themeOptions } from './features/dashboard/constants/view
 import { dashboardConnectionStatus } from './features/dashboard/utils/dashboardDevframe'
 
 const route = useRoute()
-const mobileNavOpen = ref(false)
+const mobileNavigation = useTemplateRef<HTMLDialogElement>('mobileNavigation')
 const contentRoot = ref<HTMLElement | null>(null)
 const { themePreference, resolvedTheme, setThemePreference } = useThemeMode()
 const workspace = createDashboardWorkspace()
 const hasPayload = computed(() => Boolean(workspace.resultRef.value))
 const projectName = computed(() => workspace.resultRef.value?.metadata?.projectName ?? '未命名小程序')
+const isAnalyzeRoute = computed(() => route.matched.some(record => record.path === '/analyze'))
 const currentAnalyzeView = computed(() => dashboardTabs.find(tab => tab.key === route.query.tab) ?? dashboardTabs[0]!)
 const currentAnalyzeTab = computed(() => currentAnalyzeView.value.key)
 
@@ -30,7 +31,7 @@ provideDashboardTheme({
 provideDashboardWorkspace(workspace)
 
 const pageMeta = computed<DashboardTitleBlock>(() => {
-  if (route.path.startsWith('/analyze')) {
+  if (isAnalyzeRoute.value) {
     return {
       title: currentAnalyzeView.value.label,
       description: currentAnalyzeView.value.description,
@@ -49,36 +50,40 @@ const pageMeta = computed<DashboardTitleBlock>(() => {
   }
 })
 
-watch(() => route.fullPath, () => {
-  mobileNavOpen.value = false
-})
-
-watch(() => route.path === '/analyze' ? currentAnalyzeTab.value : route.path, () => {
+watch(() => isAnalyzeRoute.value ? currentAnalyzeTab.value : route.path, () => {
   if (contentRoot.value) {
     contentRoot.value.scrollTop = 0
   }
 }, { flush: 'post' })
 
-function closeMobileNavigation(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
-    mobileNavOpen.value = false
-  }
+function openMobileNavigation() {
+  mobileNavigation.value?.showModal()
 }
 
-onMounted(() => window.addEventListener('keydown', closeMobileNavigation))
-onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigation))
+function closeMobileNavigation() {
+  mobileNavigation.value?.close()
+}
+watch(() => route.fullPath, closeMobileNavigation)
+
+let desktopViewport: MediaQueryList | undefined
+function handleViewportChange(event: MediaQueryListEvent) {
+  if (event.matches) {
+    closeMobileNavigation()
+  }
+}
+onMounted(() => {
+  desktopViewport = window.matchMedia('(min-width: 1024px)')
+  desktopViewport.addEventListener('change', handleViewportChange)
+})
+onBeforeUnmount(() => desktopViewport?.removeEventListener('change', handleViewportChange))
 </script>
 
 <template>
   <div class="h-dvh overflow-hidden bg-(--dashboard-bg) text-(--dashboard-text)">
-    <div class="grid h-full min-w-0 lg:grid-cols-[15rem_minmax(0,1fr)]">
-      <aside class="hidden min-h-0 border-r border-(--dashboard-border) bg-(--dashboard-panel) lg:flex lg:flex-col">
-        <div class="flex h-13 shrink-0 items-center gap-2.5 border-b border-(--dashboard-border) px-3">
-          <span class="flex h-7 w-7 items-center justify-center rounded bg-(--dashboard-accent-soft) text-(--dashboard-accent)">
-            <span class="h-4 w-4">
-              <DashboardIcon name="hero-system" />
-            </span>
-          </span>
+    <div class="grid h-full min-w-0 lg:grid-cols-[13.5rem_minmax(0,1fr)]">
+      <aside class="hidden min-h-0 border-r border-(--dashboard-border) bg-(--dashboard-shell) lg:flex lg:flex-col">
+        <div class="flex h-16 shrink-0 items-center gap-2.5 border-b border-(--dashboard-border) px-4">
+          <img :src="logoUrl" alt="" class="size-7 shrink-0" width="28" height="28">
           <span class="min-w-0">
             <strong class="block truncate text-[13px] font-semibold">{{ dashboardDevtoolsName }}</strong>
             <span class="block truncate font-mono text-[10px] text-(--dashboard-text-soft)">{{ projectName }}</span>
@@ -118,7 +123,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
           :description="pageMeta.description"
           :theme-options="themeOptions"
           :theme-preference="themePreference"
-          @menu="mobileNavOpen = true"
+          @menu="openMobileNavigation"
           @set-theme="setThemePreference"
         />
         <div ref="contentRoot" class="min-h-0 min-w-0 flex-1 overflow-y-auto p-3 lg:p-4">
@@ -127,50 +132,53 @@ onBeforeUnmount(() => window.removeEventListener('keydown', closeMobileNavigatio
       </main>
     </div>
 
-    <transition
-      enter-active-class="transition duration-150 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-100 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+    <dialog
+      ref="mobileNavigation"
+      class="mobile-navigation"
+      aria-label="开发工具导航"
+      @click.self="closeMobileNavigation"
     >
-      <div
-        v-if="mobileNavOpen"
-        class="fixed inset-0 z-40 bg-slate-950/45 lg:hidden"
-        @click="mobileNavOpen = false"
-      />
-    </transition>
-
-    <transition
-      enter-active-class="transition duration-150 ease-out"
-      enter-from-class="-translate-x-4"
-      enter-to-class="translate-x-0"
-      leave-active-class="transition duration-100 ease-in"
-      leave-from-class="translate-x-0"
-      leave-to-class="-translate-x-4"
-    >
-      <aside
-        v-if="mobileNavOpen"
-        class="fixed inset-y-0 left-0 z-50 flex w-[min(17rem,88vw)] flex-col border-r border-(--dashboard-border) bg-(--dashboard-panel) shadow-xl lg:hidden"
-      >
-        <div class="flex h-13 items-center justify-between border-b border-(--dashboard-border) px-3">
-          <span class="min-w-0">
-            <strong class="block truncate text-sm">{{ dashboardDevtoolsName }}</strong>
-            <span class="block truncate font-mono text-[10px] text-(--dashboard-text-soft)">{{ projectName }}</span>
-          </span>
-          <button class="h-8 w-8 rounded border border-(--dashboard-border)" type="button" aria-label="关闭导航" @click="mobileNavOpen = false">
-            ×
-          </button>
-        </div>
+      <div class="flex h-16 shrink-0 items-center justify-between border-b border-(--dashboard-border) px-4">
+        <span class="min-w-0">
+          <strong class="block truncate text-sm">{{ dashboardDevtoolsName }}</strong>
+          <span class="block truncate font-mono text-xs text-(--dashboard-text-soft)">{{ projectName }}</span>
+        </span>
+        <button class="size-11 shrink-0 rounded-lg border border-(--dashboard-border)" type="button" aria-label="关闭导航" @click="closeMobileNavigation">
+          ×
+        </button>
+      </div>
+      <div class="min-h-0 flex-1 overflow-y-auto">
         <AppNavigationList
-          mobile
           :current-analyze-tab="currentAnalyzeTab"
           :current-path="route.path"
           :items="workspaceNavigation"
-          @navigate="mobileNavOpen = false"
+          @navigate="closeMobileNavigation"
         />
-      </aside>
-    </transition>
+      </div>
+    </dialog>
   </div>
 </template>
+
+<style scoped>
+.mobile-navigation {
+  width: min(18rem, 90vw);
+  max-width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding: 0;
+  margin: 0;
+  color: var(--dashboard-text);
+  background: var(--dashboard-shell);
+  border: 0;
+  border-right: 1px solid var(--dashboard-border);
+}
+
+.mobile-navigation[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-navigation::backdrop {
+  background: rgb(0 15 8 / 55%);
+}
+</style>

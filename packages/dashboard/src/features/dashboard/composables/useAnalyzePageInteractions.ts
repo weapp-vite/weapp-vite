@@ -18,13 +18,13 @@ export function useAnalyzePageInteractions(options: {
   actionItems: Ref<AnalyzeActionCenterItem[]>
   workQueueItems: Ref<AnalyzeWorkQueueItem[]>
   addWorkQueueItem: (item: AnalyzeWorkQueueItem) => void
+  openInspectionFile: (file: LargestFileEntry) => void
   exportStatus: Ref<string>
   setTreemapFilterMode: (mode: AnalyzeTreemapFilterMode, tab?: DashboardTab) => Promise<unknown>
   selectedTreemapMeta: ShallowRef<TreemapNodeMeta | null>
   selectedLargestFile: ShallowRef<LargestFileEntry | null>
   selectedBudgetWarning: ShallowRef<PackageBudgetWarning | null>
   handleSelectBudgetWarning: (warning: PackageBudgetWarning) => void
-  handleSelectLargestFile: (file: LargestFileEntry) => void
 }) {
   const selectedActionKey = shallowRef<string | null>(null)
   const commandPaletteOpen = shallowRef(false)
@@ -41,8 +41,12 @@ export function useAnalyzePageInteractions(options: {
   }
 
   function handleOpenFile(file: LargestFileEntry) {
-    options.handleSelectLargestFile(file)
-    void options.setTreemapFilterMode('selected-package', 'files')
+    options.selectedBudgetWarning.value = null
+    options.openInspectionFile(file)
+  }
+
+  function handleFocusAction(item: AnalyzeActionCenterItem) {
+    selectedActionKey.value = item.key
   }
 
   function handleSelectAction(item: AnalyzeActionCenterItem) {
@@ -147,6 +151,7 @@ export function useAnalyzePageInteractions(options: {
     commandPaletteOpen,
     selectedActionKey,
     handleAddActionToWorkQueue,
+    handleFocusAction,
     handleOpenFile,
     handleSelectAction,
     handleSelectCommand,

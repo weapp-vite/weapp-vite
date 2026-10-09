@@ -1,9 +1,9 @@
 import type { ShallowRef } from 'vue'
-import type { LargestFileEntry } from '../types'
 import type { DashboardFileContent } from '../utils/sourceArtifactFiles'
+import type { SourceArtifactTarget } from './useSourceArtifactCompare'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRenderer, defineComponent, nextTick, shallowRef, watch } from 'vue'
-import { dashboardAnalyzeRevision } from '../utils/dashboardDevframe'
+import { dashboardAnalyzeRevision, dashboardConnectionStatus } from '../utils/dashboardDevframe'
 import { useSourceArtifactCompare } from './useSourceArtifactCompare'
 
 type FetchDashboardFileContent = (
@@ -15,8 +15,6 @@ type FetchDashboardFileContent = (
 const fetchDashboardFileContentMock = vi.hoisted(() => vi.fn<FetchDashboardFileContent>())
 
 vi.mock('../utils/sourceArtifactFiles', () => ({
-  createSourceArtifactFileKey: (file: LargestFileEntry) => `${file.packageId}:${file.file}`,
-  createSourcePathOptions: (file: LargestFileEntry | null) => file?.source ? [file.source] : [],
   fetchDashboardFileContent: fetchDashboardFileContentMock,
 }))
 
@@ -29,6 +27,7 @@ interface TestNode {
 interface ComparisonState {
   artifactContent: ShallowRef<DashboardFileContent | null>
   sourceContent: ShallowRef<DashboardFileContent | null>
+  loadError: ShallowRef<string>
 }
 
 function createTestNode(text = ''): TestNode {
@@ -91,29 +90,16 @@ function createFileContent(kind: 'artifact' | 'source', path: string, revision: 
 }
 
 function mountComparison() {
-  const file: LargestFileEntry = {
-    packageId: '__main__',
-    packageLabel: '主包',
-    packageType: 'main',
-    file: 'common.js',
-    size: 20,
-    compressedSize: 20,
-    compressedSizeSource: 'estimated',
-    type: 'chunk',
-    from: 'main',
-    isEntry: false,
-    moduleCount: 1,
-    source: 'src/common.ts',
-  }
+  const artifact = shallowRef<SourceArtifactTarget | null>({ key: 'main:common.js', file: 'common.js' })
+  const sourcePath = shallowRef<string | null>('src/common.ts')
+  dashboardConnectionStatus.value = 'connected'
   let comparison: ComparisonState | undefined
   const app = renderer.createApp(defineComponent({
     setup() {
       comparison = useSourceArtifactCompare({
-        activeFileKey: shallowRef<string | null>(null),
-        files: shallowRef<LargestFileEntry[]>([file]),
+        artifact,
+        sourcePath,
         theme: shallowRef<'light' | 'dark'>('light'),
-        initialSourcePath: null,
-        onSelectFile: () => {},
       })
       return () => null
     },
@@ -121,6 +107,8 @@ function mountComparison() {
   app.mount(createTestNode())
   return {
     app,
+    artifact,
+    sourcePath,
     comparison: comparison!,
   }
 }
@@ -236,5 +224,67 @@ describe('source artifact comparison revision', () => {
 
     expect(comparison.sourceContent.value).toBeNull()
     expect(comparison.artifactContent.value).toBeNull()
+  })
+
+  it('reacts to source changes within the same artifact without changing its target', async () => {
+    fetchDashboardFileContentMock.mockImplementation((kind, path, revision) => Promise.resolve(createFileContent(kind, path, revision)))
+    dashboardAnalyzeRevision.value = 1
+    const { app, comparison, sourcePath, artifact } = mountComparison()
+    await flushAsyncComparison()
+    sourcePath.value = 'src/other.ts'
+    await vi.waitFor(() => expect(comparison.sourceContent.value?.path).toBe('src/other.ts'))
+    expect(artifact.value).toEqual({ key: 'main:common.js', file: 'common.js' })
+    app.unmount()
+  })
+
+  it('reads an artifact without requiring a source candidate', async () => {
+    fetchDashboardFileContentMock.mockImplementation((kind, path, revision) => Promise.resolve(createFileContent(kind, path, revision)))
+    dashboardAnalyzeRevision.value = 1
+    const { app, comparison, sourcePath } = mountComparison()
+    sourcePath.value = null
+    await vi.waitFor(() => expect(comparison.artifactContent.value?.path).toBe('common.js'))
+    expect(comparison.sourceContent.value).toBeNull()
+    expect(comparison.loadError.value).toBe('')
+    app.unmount()
+  })
+
+  it('preserves the readable artifact when source is missing or binary', async () => {
+    fetchDashboardFileContentMock.mockImplementation((kind, path, revision) => kind === 'source'
+      ? Promise.reject(new Error('文件不存在或不是文本'))
+      : Promise.resolve(createFileContent(kind, path, revision)))
+    dashboardAnalyzeRevision.value = 1
+    const { app, comparison } = mountComparison()
+    await vi.waitFor(() => expect(comparison.artifactContent.value?.path).toBe('common.js'))
+    expect(comparison.sourceContent.value).toBeNull()
+    expect(comparison.loadError.value).toContain('文件不存在或不是文本')
+    app.unmount()
+  })
+
+  it('withdraws loaded contents synchronously on disconnect', async () => {
+    fetchDashboardFileContentMock.mockImplementation((kind, path, revision) => Promise.resolve(createFileContent(kind, path, revision)))
+    dashboardAnalyzeRevision.value = 1
+    const { app, comparison } = mountComparison()
+    await vi.waitFor(() => expect(comparison.artifactContent.value).not.toBeNull())
+    dashboardConnectionStatus.value = 'disconnected'
+    expect(comparison.artifactContent.value).toBeNull()
+    expect(comparison.sourceContent.value).toBeNull()
+    expect(comparison.loadError.value).toContain('后端未连接')
+    app.unmount()
+  })
+
+  it('ignores a late source response after another module is selected at the same revision', async () => {
+    const previousSource = Promise.withResolvers<DashboardFileContent>()
+    fetchDashboardFileContentMock.mockImplementation((kind, path, revision) => kind === 'source' && path === 'src/common.ts'
+      ? previousSource.promise
+      : Promise.resolve(createFileContent(kind, path, revision)))
+    dashboardAnalyzeRevision.value = 1
+    const { app, comparison, sourcePath } = mountComparison()
+    sourcePath.value = 'src/next.ts'
+    await vi.waitFor(() => expect(comparison.sourceContent.value?.path).toBe('src/next.ts'))
+    previousSource.resolve(createFileContent('source', 'src/common.ts', 1))
+    await flushAsyncComparison()
+    expect(comparison.sourceContent.value?.path).toBe('src/next.ts')
+    expect(sourcePath.value).toBe('src/next.ts')
+    app.unmount()
   })
 })

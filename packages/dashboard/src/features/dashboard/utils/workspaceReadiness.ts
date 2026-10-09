@@ -125,11 +125,11 @@ function createActions(status: WorkspaceReadinessStatus): WorkspaceReadinessActi
 
   return [
     {
-      id: 'open-overview',
-      title: '查看全局摘要',
-      detail: '进入分析视图核对包体、预算和历史趋势。',
+      id: 'open-diagnostics',
+      title: '查看构建分析',
+      detail: '进入统一工作台查看构建结论、包体预算与问题证据。',
       to: '/analyze',
-      label: '分析视图',
+      label: '构建分析',
     },
     {
       id: 'open-source',

@@ -110,6 +110,7 @@ wv [root]
 | `--project-config <path>`   | 小程序 `project.config.json` 路径        |
 | `--host [host]`             | Web dev server host（`web` 场景）        |
 | `--ui`                      | 启动 Devframe Dashboard（小程序场景）    |
+| `--ui-host <host>`          | 启用 Dashboard 并选择 `standalone`（默认）或 `hub` |
 | `--analyze`                 | `--ui` 的兼容参数                        |
 | `--scope <scope>`           | 局部构建范围，例如 `main,packages/order` |
 
@@ -120,11 +121,45 @@ wv [root]
 - `--scope` 会只保留主包和指定分包进入开发构建，适合日常只调试某几个业务分包。产物 `app.json.subPackages` 也只包含参与 scope 的分包。
 - `--ui` 仅监听 `127.0.0.1`，终端会输出带一次性 OTP 的 magic link；Dashboard 通过分页只读 RPC 获取 Analyze 数据，并在连接中断后自动重连。
 
+#### 可选 Hub 工作台
+
+默认 `--ui` 继续打开独立 Dashboard。需要官方 DevFrame Hub 的工具栏、停靠面板与内建设置时，显式选择 `hub`，无需另传 `--ui` 或安装 Vite DevTools：
+
+```bash
+wv dev --ui-host hub
+wv build --ui-host hub
+wv analyze --ui-host hub
+```
+
+两种模式均需安装可选面板包 `@weapp-vite/dashboard`。`--ui-host standalone` 显式启用原有独立模式；只接受这两个值，其他值在启动前报错。不传 `--ui`、`--analyze` 或 `--ui-host` 时，`dev` / `build` 不新增 UI 服务。
+
+Hub 入口位于 `/__devframes/`，Dashboard 面板仍位于 `/__weapp-vite/`；终端输出 Hub 的一次性 OTP magic link。二者共用同一 loopback 服务、报告控制器与原生连接，不另建报告或传输层。开发模式仍实时更新构建报告；一次性 `analyze` 展示已完成的分析结果。Hub 的语言设置仅作用于内建 UI，不自动翻译 Dashboard 自定义面板。
+
+Dashboard dock 与 Hub 品牌使用与官网相同图案的包内 SVG 字符串，以 data URL 提供。源码入口和发布产物均无需 SVG loader、官网目录或外部图标服务。
+
+Hub 模式不安装终端或其他默认工具，也不开放 `/__devframes/__mcp` 聚合端点；但会发布与独立模式一致的 Dashboard scoped MCP 发现记录。此入口不是离线报告导出，`analyze --json`、`--markdown`、`--report` 等原有输出选项仍优先于 UI。
+
 #### Dashboard MCP
 
-运行 `wv dev --ui` / `wv build --ui` 后，Dashboard 自动在同一端口开放本机只读 MCP，并在实际监听后发布实例记录，无需配置令牌或认证环境变量。
+运行 `wv dev --ui` / `wv build --ui`，或显式选择 `--ui-host hub` 后，Dashboard 在同一端口开放 `/__weapp-vite/__mcp`，并在实际监听后发布实例记录，无需配置令牌或认证环境变量。Hub scoped 端点只提供 Dashboard RPC，不继承其他插件的工具或 Resources；`--no-mcp` 只关闭原有 CLI MCP 服务。
 
-页面与工具共用当前 revision、运行事件和受限文件读取；提供摘要／预算、包与产物／模块检索、重复分析、前后构建比较及文件片段，常规诊断无需先拼接全量报告。事件窗口保留 24 条并报告丢弃数，不是持久历史。不提供通用 shared-state 工具或命令执行。MCP 校验真实 loopback 连接对端与规范 loopback Origin，浏览器仍使用 OTP magic link。本机模式信任同机进程，不区分本机用户，请勿通过代理、隧道或端口转发对外发布。连接器配置与查询用法见 [Dashboard 实时只读接入](/packages/mcp#dashboard-实时只读接入独立入口)。现有 `wv mcp`、REST 与微信 IDE 自动化入口保持不变。
+页面与工具共用当前报告、运行事件和受限文件读取；提供摘要／预算、包与产物／模块检索、重复分析、构建比较及文件片段，并支持调查领取、提案、开始与回报四个元数据动作。创建、取消、授权与复验仍只向浏览器开放，不提供通用 shared-state、任意文件写入或命令执行。MCP 校验真实 loopback 对端与规范 loopback Origin，浏览器仍使用 OTP。本机模式不区分本机用户，请勿通过代理、隧道或端口转发对外发布。连接器配置、测量口径与协议边界见 [Dashboard 证据查询与对象调查](/packages/mcp#dashboard-证据查询与对象调查)。现有 `wv mcp`、REST 与微信 IDE 自动化入口保持不变。
+
+#### 构建分析与对象调查
+
+「构建分析」将构建概况与问题诊断融合为一个图形工作台，默认地址为 `/analyze`，不再保留指向同页的“构建诊断”导航项。桌面保留完整全局左侧导航；右侧工作台的内部左栏展示总产物体积、包体分布图与问题索引，内部右栏直接对照所选对象的基线、当前体积、预算上限及来源贡献，不把两个页面上下叠放。条形图直接标注对象与字节数，并说明共同尺度；缺测不画成零体积，模块贡献也不等于可节省的产物。窄屏按阅读顺序重排，保留同一套连续编号导航。
+
+选择问题只更新同一画布，通过「产物对照」「模块与来源」「复验条件」切换证据，显式打开产物、源码或完整分析时才下钻。「全部包与构建明细」按需展示评分依据、指标、文件排行与包体详情。「对照基线」选择上次构建或浏览器历史快照，不混入历史管理与趋势预测；手动跟进清单位于「更多分析 → 评审清单」，不占据主诊断流程，也不自动执行修复。
+
+- 超预算是问题，接近预算是风险；增长与重复只作为待核实线索，不把最大文件自动当成问题。
+- 缺失测量和没有比较报告都显示未知，不按零计算。重复体积与 Runtime 文件体积采用报告的估算上界，不能当作保证可节省的体积；包、产物与模块的重叠差值不能相加。
+- 「检查关联对象」将诊断中的真实产物带入「对象检查」，不再展开独立处理计划或把复制文本当作任务交接。体积地图、搜索和源码入口也复用同一对象上下文。
+
+「对象检查」的关联工作台按报告展示包 → 产物 → 模块落点，连线只表达报告收录与归属，不是源码 import 因果图。三列使用可搜索的紧凑滚动列表，不再分别翻页；包范围需显式选择，点击对象不会收窄列表或覆盖搜索。“定位当前对象”只滚动相关列表，连线随可见对象更新。下方唯一检查区承载证据、源码／产物内容、构建变化与调查。模块下钻、查看证据和创建调查会定位检查区，键盘焦点跟随；缺失源码、二进制内容、缺少基线或已移除对象都有明确状态。
+
+调查先形成绑定当时对象与报告的可编辑草稿。提交后由外部 Agent 通过 [Dashboard MCP](/packages/mcp#dashboard-证据查询与对象调查) 领取、读取证据并回传提案；浏览器展示路径、检查和风险，用户勾选后仅授权该提案。复制上下文只是辅助，后端连接不等于 Agent 在线。报告或提案变化会使旧确认失效，切换浏览对象不会悄悄覆盖已有草稿。
+
+真正修改源码和执行构建仍发生在另行授权的外部工作区。Agent 回报不等于验证通过：同一宿主生成更新报告后，还需实际检查相关行为、填写摘要并由浏览器明确提交复验。取消不能终止外部进程，报告 hash 也不是源码快照；浏览器本地历史不一定等于 MCP 的 `previous`。构建通过或包体下降都不能独自证明问题已解决。
 
 
 #### Dashboard 嵌入 Vite DevTools
@@ -158,6 +193,7 @@ wv build [root]
 | `--skipNpm`                 | 跳过 npm 构建                                            |
 | `-o, --open`                | 构建后尝试打开 IDE                                       |
 | `--ui`                      | 构建后启动 Devframe Dashboard（小程序场景）              |
+| `--ui-host <host>`          | 启用 Dashboard 并选择 `standalone`（默认）或 `hub` |
 | `--analyze`                 | `--ui` 的兼容参数                                        |
 | `--scope <scope>`           | 局部构建范围，例如 `main,packages/order`                 |
 | `--upload`                  | 本次构建成功后上传小程序，不重复构建                     |
@@ -209,6 +245,7 @@ wv analyze [root]
 | 参数                        | 说明                                                                               |
 | --------------------------- | ---------------------------------------------------------------------------------- |
 | `--hmr-profile [file]`      | 分析 HMR JSONL profile，省略值时优先读取 `weapp.hmr.profileJson`，否则回退默认路径 |
+| `--ui-host <host>`          | UI 模式选择 `standalone`（默认）或 `hub`；不覆盖 JSON 等输出选项 |
 | `--json`                    | 输出 JSON 结果（stdout）                                                           |
 | `--markdown`                | 输出完整 Markdown 报告                                                             |
 | `--report <type>`           | 输出指定报告类型，当前支持 `pr`                                                    |

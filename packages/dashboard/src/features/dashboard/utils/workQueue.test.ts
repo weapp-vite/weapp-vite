@@ -20,6 +20,16 @@ describe('workQueue', () => {
         id: 'broken',
         title: 'invalid',
       },
+      {
+        id: 'removed-tab',
+        targetKind: 'action',
+        targetKey: 'removed-tab',
+        title: '旧视图事项',
+        meta: '已移除的分析页',
+        tone: 'info',
+        tab: 'overview',
+        createdAt: '2026-01-02T00:00:00.000Z',
+      },
     ])).toEqual([
       {
         id: 'action:a',
@@ -41,6 +51,7 @@ describe('workQueue', () => {
       key: 'budget:main',
       kind: 'budget',
       title: '处理主包预算',
+      targetLabel: '主包',
       meta: '已超预算',
       value: '108%',
       tone: 'critical',

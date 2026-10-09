@@ -78,6 +78,22 @@ wv build -p web
 
 `web` 是浏览器 runtime 的规范平台名，`h5` 仅作为向后兼容别名保留；未选择 Web 平台时不改变现有小程序构建。完整配置和兼容边界见 [Web 运行时配置](https://vite.weapp.dev/config/web) 与 [`@weapp-vite/web`](https://vite.weapp.dev/packages/web)。
 
+### 可选 Hub 工作台
+
+`wv dev --ui` / `wv build --ui` 保持独立 Dashboard。安装可选面板包 `@weapp-vite/dashboard` 后，可显式启用 DevFrame 1.2 的官方 Hub，无需安装 Vite DevTools：
+
+```bash
+wv dev --ui-host hub
+wv build --ui-host hub
+wv analyze --ui-host hub
+```
+
+`--ui-host` 只接受 `standalone` 和 `hub`，并隐式启用 UI；不传 UI 参数时，`dev` / `build` 不新增服务。Hub 入口为 `/__devframes/`，Dashboard 面板仍为 `/__weapp-vite/`，共用 loopback 服务、OTP 认证、报告控制器和原生连接。Hub 提供停靠面板与内建设置，不安装终端或其他默认工具；语言设置不自动翻译自定义 Dashboard。
+
+Dashboard dock 与 Hub 品牌使用与官网相同图案的包内 SVG 字符串，以 data URL 提供。源码入口和发布产物均无需 SVG loader、官网目录或外部图标服务。
+
+Hub 的 `/__devframes/__mcp` 聚合端点保持关闭，但与独立模式一样发布 Dashboard scoped MCP 实例，地址为 `/__weapp-vite/__mcp`，不继承其他插件的工具或 Resources。`analyze --json`、`--markdown`、`--report` 等输出选项优先级保持不变；Hub 不是离线报告导出。完整参数见 [CLI 指南](https://vite.weapp.dev/guide/cli#可选-hub-工作台)。
+
 ### Dashboard 嵌入 Vite DevTools
 
 `weapp-vite/dashboard` 是 Node 端共享核心；CLI 独立工作台与 Vite DevTools 复用同一个 `DevframeDefinition` 和 `@weapp-vite/dashboard` 面板。可选适配器位于 `weapp-vite/dashboard/vite`，使用官方 `createPluginFromDevframe`，不会由普通包入口或 CLI 自动加载。
@@ -125,9 +141,11 @@ DevTools `0.7.6` 自身存在程序化重启边界：重复使用同一个 `DevT
 
 ### Dashboard MCP
 
-CLI 独立 Dashboard 可复用只读 RPC 向 AI 提供摘要／预算、包与产物／模块检索、重复分析、前后构建比较、最近事件筛选及受限文件片段；分页报告仅作为全量导出选项。页面与工具共享 `weapp-vite/dashboard/analyze` 纯计算入口，缺失基线或体积测量不会假造增减。运行 `wv dev --ui` / `wv build --ui` 后即可通过 `devframe connect` 发现实例，无需配置令牌。MCP 校验真实 loopback 连接对端与规范 loopback Origin，不开放通用 shared-state 工具；浏览器仍使用 OTP。本机模式信任同机进程，不区分本机用户，请勿通过代理、隧道或端口转发对外发布。
+CLI 的 standalone 与 Hub 模式均向 AI 提供摘要／预算、包与产物／模块检索、重复分析、构建比较、最近事件与受限文件片段，并提供调查列表、详情和领取／提案／开始／回报四个元数据动作。页面与工具共享报告、产物及 `weapp-vite/dashboard/analyze` 纯计算，缺失基线或测量不会假造增减。实际监听后可通过 `devframe connect` 发现 scoped 实例；MCP 校验 loopback 对端与 Origin，浏览器使用 OTP。本机模式不区分本机用户，请勿通过代理、隧道或端口转发对外发布。
 
-工具与页面共享 revision 和内存产物，旧 revision 请求会被拒绝。嵌入 Vite DevTools 时仍由宿主决定是否开放 MCP；现有 `wv mcp`、REST 与微信 IDE 自动化入口保持不变。客户端配置与工具参数见 [随包 MCP 指南](docs/mcp.md#dashboard-实时只读工具devframe)。
+「对象检查」以真实包 → 产物 → 模块关系浏览完整报告，选择与显式筛选分离，证据／内容／变化／调查共用一个上下文区。浏览器提交绑定报告的调查，外部 Agent 回传提案后需用户明确授权；执行仍在外部，回执不能代替更新报告上的人工复验。创建、取消、授权和复验不暴露为 Agent 工具，也不提供通用 shared-state、任意文件写入或命令执行。
+
+旧 revision 请求与旧提案授权会被拒绝。嵌入 Vite DevTools 时仍由宿主决定是否开放 MCP；现有 `wv mcp`、REST 与微信 IDE 自动化入口保持不变。客户端配置、任务版本和领取令牌用法见 [随包 MCP 指南](docs/mcp.md#dashboard-证据查询与对象调查devframe)。
 
 
 ### Vue 项目

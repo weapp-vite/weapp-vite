@@ -1,57 +1,26 @@
 import type { DevframeScopedClientRpc } from 'devframe/client'
-import type { AnalyzeSubpackagesResult, DashboardRuntimeEvent } from '../../types'
+import type {
+  DashboardAnalyzePageRequest,
+  DashboardAnalyzePayloadDescriptor,
+  DashboardAnalyzePayloadsDescriptor,
+  DashboardFileContent,
+} from 'weapp-vite/dashboard'
+import type { AnalyzeSubpackagesResult } from '../../types'
 
 export interface DashboardAnalyzeSnapshot {
   current: AnalyzeSubpackagesResult
   previous: AnalyzeSubpackagesResult | null
 }
 
-export interface DashboardAnalyzePayloadDescriptor {
-  characters: number
-  hash: string
-  pages: number
-}
-
-export interface DashboardAnalyzePayloadsDescriptor {
-  current: DashboardAnalyzePayloadDescriptor
-  previous: DashboardAnalyzePayloadDescriptor | null
-}
-
-export interface DashboardDevframeState {
-  analyze: DashboardAnalyzePayloadsDescriptor
-  revision: number
-  runtimeEvents: DashboardRuntimeEvent[]
-}
-
-export interface DashboardFileContent {
-  content: string
-  kind: DashboardFileKind
-  language: string
-  path: string
-  size: number
-}
-
-export type DashboardFileKind = 'artifact' | 'source'
-
-export interface DashboardFileRequest {
-  kind: DashboardFileKind
-  path: string
-  revision: number
-}
-
-export interface DashboardAnalyzePageRequest {
-  index: number
-  revision: number
-  target: 'current' | 'previous'
-}
-
-export interface DashboardAnalyzePage {
-  content: string
-  descriptor: DashboardAnalyzePayloadDescriptor
-  index: number
-  revision: number
-  target: DashboardAnalyzePageRequest['target']
-}
+export type {
+  DashboardAnalyzePage,
+  DashboardAnalyzePageRequest,
+  DashboardAnalyzePayloadDescriptor,
+  DashboardDevframeState,
+  DashboardFileContent,
+  DashboardFileReadRequest as DashboardFileRequest,
+} from 'weapp-vite/dashboard'
+export type DashboardFileKind = DashboardFileContent['kind']
 
 const analyzePayloadCache = new Map<string, AnalyzeSubpackagesResult>()
 const MAX_CACHED_ANALYZE_PAYLOADS = 2

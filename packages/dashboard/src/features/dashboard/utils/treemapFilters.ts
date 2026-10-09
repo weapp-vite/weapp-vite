@@ -1,4 +1,4 @@
-import type { AnalyzeTreemapFilterMode, LargestFileEntry, PackageBudgetWarning, TreemapNodeMeta } from '../types'
+import type { AnalyzeTreemapFilterMode, LargestFileEntry, PackageBudgetWarning } from '../types'
 import { treemapFilterOptions } from '../constants/view'
 
 export interface TreemapFilterMatchState {
@@ -39,26 +39,16 @@ export function matchesTreemapFilter(file: LargestFileEntry, state: TreemapFilte
 export function filterLargestFilesByTreemapState(options: {
   files: LargestFileEntry[]
   filterState: TreemapFilterMatchState
-  meta: TreemapNodeMeta | null
   warning: PackageBudgetWarning | null
 }) {
   const modeFilteredFiles = options.files.filter(file => matchesTreemapFilter(file, options.filterState))
-  const { meta, warning } = options
+  const { warning } = options
   if (warning?.scope === 'runtime') {
     const files = new Set(warning.files)
     return modeFilteredFiles.filter(file => files.has(file.file))
   }
   if (warning && warning.scope !== 'total') {
     return modeFilteredFiles.filter(file => file.packageId === warning.id)
-  }
-  if (!meta) {
-    return modeFilteredFiles
-  }
-  if (meta.kind === 'package') {
-    return modeFilteredFiles.filter(file => file.packageId === meta.packageId)
-  }
-  if (meta.kind === 'file' || meta.kind === 'asset' || meta.kind === 'module') {
-    return modeFilteredFiles.filter(file => file.packageId === meta.packageId && file.file === meta.fileName)
   }
   return modeFilteredFiles
 }

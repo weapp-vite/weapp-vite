@@ -9,7 +9,6 @@ defineProps<{
   canResetView: boolean
   exportStatus: string
   moreMenuOpen: boolean
-  openWorkQueueCount: number
   statusPills: DashboardInfoPillItem[]
 }>()
 
@@ -59,13 +58,6 @@ const emit = defineEmits<{
         v-if="exportStatus"
         class="shrink-0"
         :label="exportStatus"
-        uppercase
-      />
-      <AppInfoPill
-        v-if="openWorkQueueCount > 0"
-        class="shrink-0"
-        icon-name="metric-bookmark"
-        :label="`${openWorkQueueCount} 个待处理`"
         uppercase
       />
       <AppInfoPill

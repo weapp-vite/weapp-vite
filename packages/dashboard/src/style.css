@@ -7,36 +7,40 @@
 
 @layer base {
   :root {
-    color-scheme: light dark;
+    color-scheme: light;
 
-    --dashboard-bg: #f6f7f9;
-    --dashboard-panel: #fff;
+    --dashboard-bg: #f6fbf7;
+    --dashboard-shell: #e6f3ec;
+    --dashboard-panel: #fbfefc;
     --dashboard-panel-strong: #fff;
-    --dashboard-panel-muted: #f1f3f6;
-    --dashboard-border: #d9dee7;
-    --dashboard-border-strong: #b8c1cf;
-    --dashboard-text: #1d2430;
-    --dashboard-text-muted: #4b5565;
-    --dashboard-text-soft: #626d7f;
-    --dashboard-accent: #0f766e;
-    --dashboard-accent-soft: rgb(15 118 110 / 10%);
-    --dashboard-shadow: 0 1px 2px rgb(15 23 42 / 6%);
+    --dashboard-panel-muted: #eef7f1;
+    --dashboard-border: #cbded1;
+    --dashboard-border-strong: #6b8f78;
+    --dashboard-text: #0a0f0a;
+    --dashboard-text-muted: #28322b;
+    --dashboard-text-soft: #5d6a62;
+    --dashboard-accent: #207a34;
+    --dashboard-accent-soft: #dff3e7;
+    --dashboard-shadow: 0 1px 2px rgb(10 15 10 / 4%);
     --dashboard-code: 'SFMono-Regular', consolas, 'Liberation Mono', monospace;
   }
 
   :root[data-theme='dark'] {
-    --dashboard-bg: #0c0e12;
-    --dashboard-panel: #11141a;
-    --dashboard-panel-strong: #141820;
-    --dashboard-panel-muted: #191e27;
-    --dashboard-border: #292f3a;
-    --dashboard-border-strong: #3a4351;
-    --dashboard-text: #e7eaf0;
-    --dashboard-text-muted: #b1b8c5;
-    --dashboard-text-soft: #98a3b5;
-    --dashboard-accent: #5eead4;
-    --dashboard-accent-soft: rgb(45 212 191 / 11%);
-    --dashboard-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+    color-scheme: dark;
+
+    --dashboard-bg: #070a08;
+    --dashboard-shell: #0b100d;
+    --dashboard-panel: #0a0f0c;
+    --dashboard-panel-strong: #101a14;
+    --dashboard-panel-muted: #0b100d;
+    --dashboard-border: #23382a;
+    --dashboard-border-strong: #577c60;
+    --dashboard-text: #eaf6ee;
+    --dashboard-text-muted: #cfe0d5;
+    --dashboard-text-soft: #97a59d;
+    --dashboard-accent: #95ec69;
+    --dashboard-accent-soft: #152b1b;
+    --dashboard-shadow: 0 1px 2px rgb(0 0 0 / 16%);
   }
 
   body {
@@ -80,6 +84,11 @@
     max-width: 100%;
   }
 
+  #app :where(input, textarea)::placeholder {
+    color: var(--dashboard-text-soft);
+    opacity: 1;
+  }
+
   #app :where(a, button, input, textarea, [tabindex]):focus-visible {
     outline: 2px solid var(--dashboard-accent);
     outline-offset: 3px;
@@ -119,6 +128,6 @@
   }
 
   ::selection {
-    background: rgb(20 184 166 / 28%);
+    background: color-mix(in srgb, var(--dashboard-accent) 24%, transparent);
   }
 }

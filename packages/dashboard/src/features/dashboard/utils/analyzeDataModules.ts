@@ -2,6 +2,31 @@ import type { AnalyzeSubpackagesResult, DuplicateModuleEntry, ModuleSourceSummar
 import { createDuplicateModuleInsights } from 'weapp-vite/dashboard/analyze'
 import { formatModuleIdentifier } from './format'
 
+export function measuredBytes(value: number | null | undefined): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null
+}
+
+/** 共享重复估算把缺测当零；在呈现前用真实位置的测量完整性阻止“未知 = 零”。 */
+export function duplicateMeasurement(result: AnalyzeSubpackagesResult, moduleId: string, estimate: number | undefined): number | null {
+  const module = result.modules.find(item => item.id === moduleId)
+  if (!module || module.packages.length <= 1) {
+    return 0
+  }
+  for (const placement of module.packages) {
+    const pkg = result.packages.find(item => item.id === placement.packageId)
+    if (!pkg || placement.files.length === 0) {
+      return null
+    }
+    for (const path of placement.files) {
+      const occurrence = pkg.files.find(file => file.file === path)?.modules?.find(item => item.id === moduleId)
+      if (measuredBytes(occurrence?.bytes ?? occurrence?.originalBytes) === null) {
+        return null
+      }
+    }
+  }
+  return measuredBytes(estimate)
+}
+
 function createDuplicateModulePackageEntry(
   packageLabelMap: Map<string, string>,
   pkg: AnalyzeSubpackagesResult['modules'][number]['packages'][number],

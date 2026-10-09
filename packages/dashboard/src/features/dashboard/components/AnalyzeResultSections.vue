@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DashboardInvestigationTarget } from 'weapp-vite/dashboard'
 import type {
   AnalyzeActionCenterItem,
   AnalyzeComparisonMode,
@@ -18,28 +19,28 @@ import type {
   PackageBudgetWarning,
   PackageInsight,
   ResolvedTheme,
-  SelectedFileModuleDetail,
   SummaryMetric,
   TreemapLegendItem,
   TreemapNode,
   TreemapNodeMeta,
 } from '../types'
 import type { PrReviewChecklistItem, PrReviewChecklistSummary } from '../utils/prReviewChecklist'
-import { defineAsyncComponent } from 'vue'
-import AnalyzeDetailsPanel from './AnalyzeDetailsPanel.vue'
+import { computed, defineAsyncComponent } from 'vue'
+import AnalyzeBuildSummary from './AnalyzeBuildSummary.vue'
 import AnalyzeDiagnosticsSection from './AnalyzeDiagnosticsSection.vue'
 import AnalyzeDraggableGrid from './AnalyzeDraggableGrid.vue'
-import AnalyzeOverviewPanel from './AnalyzeOverviewPanel.vue'
+import AnalyzeWorkQueuePanel from './AnalyzeWorkQueuePanel.vue'
+import BudgetSandboxPanel from './BudgetSandboxPanel.vue'
+import ObjectInvestigationPanel from './investigation/ObjectInvestigationPanel.vue'
 import ModulesPanel from './ModulesPanel.vue'
+import ObjectInspectionWorkbench from './objectInspection/ObjectInspectionWorkbench.vue'
 import PackagesPanel from './PackagesPanel.vue'
 import PrReviewChecklistPanel from './PrReviewChecklistPanel.vue'
-import SourceArtifactComparePanel from './SourceArtifactComparePanel.vue'
 import TreemapCard from './TreemapCard.vue'
 
-defineProps<{
+const props = defineProps<{
   actionItems: AnalyzeActionCenterItem[]
   activeBudgetWarningId: string | null
-  activeLargestFileKey: string | null
   activeTab: DashboardTab
   activeWorkQueueItemId: string | null
   baselineSnapshotId: string | null
@@ -47,19 +48,23 @@ defineProps<{
   canUseSelectedPackageFilter: boolean
   hasTreemapComparison: boolean
   comparisonMode: AnalyzeComparisonMode
+  comparisonResult: AnalyzeSubpackagesResult | null
   copyStatus: string
   duplicateModuleScopeLabel: string | null
+  duplicateModules: DuplicateModuleEntry[]
   filteredDuplicateModules: DuplicateModuleEntry[]
-  filteredLargestFiles: LargestFileEntry[]
   historySnapshots: AnalyzeHistorySnapshot[]
   incrementAttribution: IncrementAttributionEntry[]
   incrementSummary: IncrementAttributionSummary[]
   isTreemapEmpty: boolean
+  inspectionTarget: DashboardInvestigationTarget | null
+  inspectionSourcePath: string | null
+  investigationRequest: DashboardInvestigationTarget | null
+  investigationRequestId: number
   largestFiles: LargestFileEntry[]
   metricPackageTypeSummary: SummaryMetric[]
   moduleSourceSummary: ModuleSourceSummary[]
   modulesLayoutItems: Array<{ id: string, label: string }>
-  overviewLayoutItems: Array<{ id: string, label: string }>
   packageInsights: PackageInsight[]
   packagesLayoutItems: Array<{ id: string, label: string }>
   prReviewChecklist: PrReviewChecklistSummary
@@ -68,8 +73,6 @@ defineProps<{
   result: AnalyzeSubpackagesResult
   selectedTreemapMeta: TreemapNodeMeta | null
   selectedActionKey: string | null
-  selectedFileModules: SelectedFileModuleDetail[]
-  sourceLayoutItems: Array<{ id: string, label: string }>
   theme: ResolvedTheme
   topCards: DashboardMetricCard[]
   treemapColorMode: AnalyzeTreemapColorMode
@@ -78,7 +81,6 @@ defineProps<{
   treemapLegend: TreemapLegendItem[]
   treemapNodes: TreemapNode[]
   treemapPath: TreemapNode[]
-  treemapSourcePath: string | null
   treemapFilterMode: AnalyzeTreemapFilterMode
   treemapFilterOptions: AnalyzeTreemapFilterOption[]
   visibleLargestFiles: LargestFileEntry[]
@@ -92,6 +94,7 @@ const emit = defineEmits<{
   copyPr: []
   copyReviewChecklist: []
   copyWorkQueue: []
+  focusAction: [item: AnalyzeActionCenterItem]
   inspectDuplicates: [packageId: string]
   inspectTreemapProblem: [problem: 'duplicates' | 'growth']
   openFile: [item: LargestFileEntry]
@@ -100,9 +103,10 @@ const emit = defineEmits<{
   resetTreemapFocus: []
   selectAction: [item: AnalyzeActionCenterItem]
   selectBudgetWarning: [item: PackageBudgetWarning]
-  selectFile: [item: LargestFileEntry]
   selectPackage: [item: PackageInsight]
   selectReviewChecklistItem: [item: PrReviewChecklistItem]
+  selectInspectionTarget: [target: DashboardInvestigationTarget]
+  investigate: [target: DashboardInvestigationTarget]
   selectTreemapNode: [meta: TreemapNodeMeta]
   selectWorkQueueItem: [item: AnalyzeWorkQueueItem]
   setBaseline: [id: string]
@@ -113,52 +117,41 @@ const emit = defineEmits<{
 }>()
 
 const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue'))
+const selectedAction = computed(() => props.actionItems.find(item => item.key === props.selectedActionKey) ?? props.actionItems[0])
 </script>
 
 <template>
-  <section v-if="activeTab === 'overview'" class="min-h-0">
-    <AnalyzeDraggableGrid
-      grid-class="grid min-h-0 min-w-0 content-start gap-2"
-      :items="overviewLayoutItems"
-      storage-key="weapp-vite:dashboard:analyze-layout:overview"
+  <section v-if="activeTab === 'diagnostics'" class="grid min-h-0 min-w-0 content-start gap-6">
+    <AnalyzeDiagnosticsSection
+      :action-items="actionItems"
+      :baseline-snapshot-id="baselineSnapshotId"
+      :comparison-mode="comparisonMode"
+      :comparison-result="comparisonResult"
+      :duplicate-modules="duplicateModules"
+      :increment-attribution="incrementAttribution"
+      :result="result"
+      :history-snapshots="historySnapshots"
+      :selected-action-key="selectedActionKey"
+      @focus-action="emit('focusAction', $event)"
+      @open-file="emit('openFile', $event)"
+      @open-source="emit('openTreemapSource', $event)"
+      @select-action="emit('selectAction', $event)"
+      @set-baseline="emit('setBaseline', $event)"
+      @set-comparison-mode="emit('setComparisonMode', $event)"
     >
-      <template #metrics>
-        <AnalyzeOverviewPanel
+      <template #overview>
+        <AnalyzeBuildSummary
           :action-items="actionItems"
           :cards="topCards"
           :largest-files="largestFiles"
           :package-insights="packageInsights"
           :package-type-summary="metricPackageTypeSummary"
           @copy-report="emit('copyPr')"
-          @select-action="emit('selectAction', $event)"
           @select-file="emit('openFile', $event)"
           @select-package="emit('selectPackage', $event)"
         />
       </template>
-    </AnalyzeDraggableGrid>
-  </section>
-
-  <section v-else-if="activeTab === 'diagnostics'" class="min-h-0">
-    <AnalyzeDiagnosticsSection
-      :action-items="actionItems"
-      :active-work-queue-item-id="activeWorkQueueItemId"
-      :baseline-snapshot-id="baselineSnapshotId"
-      :comparison-mode="comparisonMode"
-      :history-snapshots="historySnapshots"
-      :queued-action-keys="queuedActionKeys"
-      :selected-action-key="selectedActionKey"
-      :work-queue-items="workQueueItems"
-      @add-action-to-queue="emit('addActionToQueue', $event)"
-      @clear-completed-work-queue="emit('clearCompletedWorkQueue')"
-      @copy-pr="emit('copyPr')"
-      @copy-work-queue="emit('copyWorkQueue')"
-      @remove-work-queue-item="emit('removeWorkQueueItem', $event)"
-      @select-action="emit('selectAction', $event)"
-      @select-work-queue-item="emit('selectWorkQueueItem', $event)"
-      @set-baseline="emit('setBaseline', $event)"
-      @set-comparison-mode="emit('setComparisonMode', $event)"
-      @toggle-work-queue-item="emit('toggleWorkQueueItem', $event)"
-    />
+    </AnalyzeDiagnosticsSection>
   </section>
 
   <section v-else-if="activeTab === 'review'" class="min-h-0">
@@ -176,6 +169,16 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
         />
       </template>
     </AnalyzeDraggableGrid>
+    <details class="mt-4 border-t border-(--dashboard-border) pt-3" :open="Boolean(activeWorkQueueItemId)">
+      <summary class="min-h-11 cursor-pointer py-2 text-sm text-(--dashboard-text-muted)">
+        手动跟进清单<span v-if="workQueueItems.length">（{{ workQueueItems.length }} 项）</span>
+      </summary>
+      <p class="mb-3 text-xs leading-5 text-(--dashboard-text-soft)">仅记录本地跟进状态，不执行修复，也不证明问题已经解决。</p>
+      <button v-if="selectedAction" type="button" :disabled="queuedActionKeys.includes(selectedAction.key)" class="mb-3 min-h-11 max-w-full rounded-md border border-(--dashboard-border) px-3 text-left text-sm text-(--dashboard-text-muted) [overflow-wrap:anywhere] focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) disabled:opacity-50" @click="emit('addActionToQueue', selectedAction)">
+        {{ queuedActionKeys.includes(selectedAction.key) ? '已在清单：' : '加入清单：' }}{{ selectedAction.title }}
+      </button>
+      <AnalyzeWorkQueuePanel :items="workQueueItems" :active-id="activeWorkQueueItemId" @clear-completed="emit('clearCompletedWorkQueue')" @copy="emit('copyWorkQueue')" @remove="emit('removeWorkQueueItem', $event)" @select="emit('selectWorkQueueItem', $event)" @toggle="emit('toggleWorkQueueItem', $event)" />
+    </details>
   </section>
 
   <section v-else-if="activeTab === 'graph'" class="min-h-0">
@@ -207,36 +210,22 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
     />
   </section>
 
-  <section v-else-if="activeTab === 'files'" class="min-h-0">
-    <AnalyzeDetailsPanel
-      :largest-files="filteredLargestFiles"
-      :selected-file-modules="selectedFileModules"
-      :budget-warnings="budgetWarnings"
+  <section v-else-if="activeTab === 'files'" class="min-h-0 min-w-0 flex-1">
+    <ObjectInspectionWorkbench
       :result="result"
-      :active-budget-warning-id="activeBudgetWarningId"
-      :active-largest-file-key="activeLargestFileKey"
-      :selected-treemap-meta="selectedTreemapMeta"
-      @select-budget-warning="emit('selectBudgetWarning', $event)"
-      @select-file="emit('selectFile', $event)"
-    />
-  </section>
-
-  <section v-else-if="activeTab === 'source'" class="min-h-0">
-    <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 min-w-0 gap-2 overflow-x-hidden overflow-y-auto xl:overflow-hidden"
-      :items="sourceLayoutItems"
-      storage-key="weapp-vite:dashboard:analyze-layout:source"
+      :comparison-result="comparisonResult"
+      :target="inspectionTarget"
+      :source-path="inspectionSourcePath"
+      :theme="theme"
+      :baseline-label="treemapComparisonLabel"
+      :investigation-request-id="investigationRequestId"
+      @select-target="emit('selectInspectionTarget', $event)"
+      @investigate="emit('investigate', $event)"
     >
-      <template #source>
-        <SourceArtifactComparePanel
-          :active-file-key="activeLargestFileKey"
-          :files="filteredLargestFiles"
-          :theme="theme"
-          :initial-source-path="treemapSourcePath"
-          @select-file="emit('selectFile', $event)"
-        />
+      <template #investigation>
+        <ObjectInvestigationPanel :request="investigationRequest" :request-id="investigationRequestId" />
       </template>
-    </AnalyzeDraggableGrid>
+    </ObjectInspectionWorkbench>
   </section>
 
   <section v-else-if="activeTab === 'packages'" class="min-h-0">
@@ -254,6 +243,17 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
         />
       </template>
     </AnalyzeDraggableGrid>
+    <details class="mt-4 rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-4" :open="Boolean(activeBudgetWarningId)">
+      <summary class="min-h-11 cursor-pointer py-2 text-sm font-medium">
+        预算试算与风险范围
+      </summary>
+      <BudgetSandboxPanel
+        :active-budget-warning-id="activeBudgetWarningId"
+        :current-warnings="budgetWarnings"
+        :result="result"
+        @select-budget-warning="emit('selectBudgetWarning', $event)"
+      />
+    </details>
   </section>
 
   <section v-else class="min-h-0">

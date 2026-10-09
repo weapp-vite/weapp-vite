@@ -28,7 +28,9 @@ const currentThemeIconName = computed(() =>
 </script>
 
 <template>
-  <header class="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-b border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 lg:px-4">
+  <header
+    class="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-b border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2 lg:px-4"
+  >
     <div class="flex min-w-0 items-center gap-2.5">
       <button
         class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-(--dashboard-border) bg-(--dashboard-panel-muted) text-(--dashboard-text) lg:hidden"
@@ -40,9 +42,7 @@ const currentThemeIconName = computed(() =>
           <DashboardIcon name="nav-menu" />
         </span>
       </button>
-      <h1 class="min-w-0 text-base leading-6 font-semibold text-(--dashboard-text)">
-        {{ title }}
-      </h1>
+      <h1 class="min-w-0 text-base leading-6 font-semibold text-(--dashboard-text)">{{ title }}</h1>
     </div>
 
     <div class="flex shrink-0 items-center gap-1.5">

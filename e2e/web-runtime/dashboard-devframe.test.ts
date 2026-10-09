@@ -193,14 +193,14 @@ describe('Dashboard Devframe browser regression', () => {
       { timeout: 30_000 },
     ).toBeGreaterThan(0)
 
-    await activePage.goto(new URL('analyze?tab=source', dashboardUrl).href, { waitUntil: 'domcontentloaded' })
-    await expect.poll(
-      () => activePage.getByRole('heading', { name: '源码对比' }).isVisible(),
-      { timeout: 30_000 },
-    ).toBe(true)
-    await expect.poll(() => activePage.getByText('源码行数').isVisible()).toBe(true)
-    const diffEditor = activePage.locator('.monaco-diff-editor')
+    await activePage.goto(new URL('analyze?tab=files', dashboardUrl).href, { waitUntil: 'domcontentloaded' })
+    await activePage.getByRole('region', { name: '模块落点', exact: true })
+      .getByRole('button', { name: /app\.ts/ })
+      .click()
+    const diffEditor = activePage.getByRole('region', { name: '对象内容', exact: true })
+      .locator('.monaco-diff-editor')
     await diffEditor.waitFor({ state: 'visible' })
+    await expect.poll(() => diffEditor.textContent()).toMatch(/export\s+const\s+source\s*=\s*true/)
     await expect.poll(() => diffEditor.textContent()).toContain('updatedSnapshotMarker')
     expect(await diffEditor.textContent()).not.toContain('staleDiskMarker')
 

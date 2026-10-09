@@ -9,7 +9,6 @@ import { useAnalyzePageController } from '../features/dashboard/composables/useA
 const {
   actionItems,
   activeBudgetWarningId,
-  activeLargestFileKey,
   activeTab,
   activeWorkQueueItemId,
   baselineSnapshotId,
@@ -21,6 +20,7 @@ const {
   commandItems,
   commandPaletteOpen,
   comparisonMode,
+  comparisonResultRef,
   copyMarkdownReport,
   copyPrReport,
   copyPrReviewChecklist,
@@ -28,22 +28,24 @@ const {
   copyViewLink,
   copyWorkQueueReport,
   duplicateModuleScopeLabel,
+  duplicateModules,
   exportCsv,
   exportJson,
   exportMarkdown,
   exportStatus,
   filteredDuplicateModules,
-  filteredLargestFiles,
   handleAddActionToWorkQueue,
+  handleFocusAction,
+  handleCreateObjectInvestigation,
   handleInspectPackageDuplicates,
   handleInspectTreemapProblem,
   handleOpenFile,
-  handleOpenTreemapSource,
+  handleOpenInspectionSource,
   handleResetTreemapFocus,
   handleSelectAction,
   handleSelectBudgetWarning,
-  handleSelectLargestFile,
   handleSelectPackageInsight,
+  handleSelectInspectionTarget,
   handleSelectReviewChecklistItem,
   handleSelectCommand,
   handleSelectTreemapNode,
@@ -54,14 +56,16 @@ const {
   historySnapshots,
   incrementAttribution,
   incrementSummary,
+  inspectionSourcePath,
+  inspectionTarget,
+  investigationRequest,
+  investigationRequestId,
   isTreemapEmpty,
   largestFiles,
   metricPackageTypeSummary,
   modulesLayoutItems,
   moduleSourceSummary,
   moreMenuOpen,
-  openWorkQueueItems,
-  overviewLayoutItems,
   packageInsights,
   packagesLayoutItems,
   prReviewChecklist,
@@ -72,11 +76,9 @@ const {
   resultRef,
   reviewLayoutItems,
   selectedActionKey,
-  selectedFileModules,
   selectedTreemapMeta,
   setBaselineSnapshot,
   setComparisonMode,
-  sourceLayoutItems,
   statusPills,
   toggleWorkQueueItem,
   topCards,
@@ -86,7 +88,6 @@ const {
   treemapLegend,
   treemapNodes,
   treemapPath,
-  treemapSourcePath,
   treemapFilterMode,
   treemapFilterOptions,
   visibleLargestFiles,
@@ -94,10 +95,10 @@ const {
 } = useAnalyzePageController()
 
 const pageClassName = computed(() => {
-  if (activeTab.value === 'treemap' && resultRef.value) {
+  if ((activeTab.value === 'treemap' || activeTab.value === 'files') && resultRef.value) {
     return 'flex h-full min-h-0 flex-col gap-2'
   }
-  if (!resultRef.value || activeTab.value === 'overview' || activeTab.value === 'diagnostics') {
+  if (!resultRef.value || activeTab.value === 'diagnostics') {
     return 'grid min-w-0 content-start gap-4'
   }
   return 'grid min-h-[calc(100dvh-8rem)] grid-rows-[auto_minmax(44rem,1fr)] gap-4'
@@ -113,7 +114,6 @@ const pageClassName = computed(() => {
       :can-reset-view="canResetView"
       :can-search="Boolean(resultRef)"
       :export-status="exportStatus"
-      :open-work-queue-count="openWorkQueueItems.length"
       :status-pills="statusPills"
       @copy-markdown="copyMarkdownReport"
       @copy-pr="copyPrReport"
@@ -130,7 +130,6 @@ const pageClassName = computed(() => {
       v-if="resultRef"
       :action-items="actionItems"
       :active-budget-warning-id="activeBudgetWarningId"
-      :active-largest-file-key="activeLargestFileKey"
       :active-tab="activeTab"
       :active-work-queue-item-id="activeWorkQueueItemId"
       :baseline-snapshot-id="baselineSnapshotId"
@@ -138,20 +137,24 @@ const pageClassName = computed(() => {
       :budget-warnings="budgetWarnings"
       :can-use-selected-package-filter="canUseSelectedPackageFilter"
       :comparison-mode="comparisonMode"
+      :comparison-result="comparisonResultRef"
       :has-treemap-comparison="hasTreemapComparison"
       :copy-status="exportStatus"
       :duplicate-module-scope-label="duplicateModuleScopeLabel"
+      :duplicate-modules="duplicateModules"
       :filtered-duplicate-modules="filteredDuplicateModules"
-      :filtered-largest-files="filteredLargestFiles"
       :history-snapshots="historySnapshots"
       :increment-attribution="incrementAttribution"
       :increment-summary="incrementSummary"
+      :inspection-source-path="inspectionSourcePath"
+      :inspection-target="inspectionTarget"
+      :investigation-request="investigationRequest"
+      :investigation-request-id="investigationRequestId"
       :is-treemap-empty="isTreemapEmpty"
       :largest-files="largestFiles"
       :metric-package-type-summary="metricPackageTypeSummary"
       :modules-layout-items="modulesLayoutItems"
       :module-source-summary="moduleSourceSummary"
-      :overview-layout-items="overviewLayoutItems"
       :package-insights="packageInsights"
       :packages-layout-items="packagesLayoutItems"
       :pr-review-checklist="prReviewChecklist"
@@ -159,9 +162,7 @@ const pageClassName = computed(() => {
       :review-layout-items="reviewLayoutItems"
       :result="resultRef"
       :selected-action-key="selectedActionKey"
-      :selected-file-modules="selectedFileModules"
       :selected-treemap-meta="selectedTreemapMeta"
-      :source-layout-items="sourceLayoutItems"
       :theme="resolvedTheme"
       :top-cards="topCards"
       :treemap-color-mode="treemapColorMode"
@@ -170,7 +171,6 @@ const pageClassName = computed(() => {
       :treemap-legend="treemapLegend"
       :treemap-nodes="treemapNodes"
       :treemap-path="treemapPath"
-      :treemap-source-path="treemapSourcePath"
       :treemap-filter-mode="treemapFilterMode"
       :treemap-filter-options="treemapFilterOptions"
       :visible-largest-files="visibleLargestFiles"
@@ -180,15 +180,17 @@ const pageClassName = computed(() => {
       @copy-pr="copyPrReport"
       @copy-review-checklist="copyPrReviewChecklist"
       @copy-work-queue="copyWorkQueueReport"
+      @focus-action="handleFocusAction"
       @inspect-duplicates="handleInspectPackageDuplicates"
       @inspect-treemap-problem="handleInspectTreemapProblem"
       @open-file="handleOpenFile"
-      @open-treemap-source="handleOpenTreemapSource"
+      @open-treemap-source="handleOpenInspectionSource"
       @remove-work-queue-item="removeWorkQueueItem"
       @reset-treemap-focus="handleResetTreemapFocus"
       @select-action="handleSelectAction"
       @select-budget-warning="handleSelectBudgetWarning"
-      @select-file="handleSelectLargestFile"
+      @select-inspection-target="handleSelectInspectionTarget"
+      @investigate="handleCreateObjectInvestigation"
       @select-package="handleSelectPackageInsight"
       @select-treemap-node="handleSelectTreemapNode"
       @select-review-checklist-item="handleSelectReviewChecklistItem"

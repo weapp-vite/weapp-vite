@@ -383,6 +383,7 @@ export function createAnalyzeController(options: {
       }
       analyzeHandle = await startDashboard(initialAnalyze.result, {
         watch: true,
+        uiHost: cliOptions.uiHost,
         artifacts: initialAnalyze.artifacts,
         cwd: configService.cwd,
         packageManagerAgent: configService.packageManager.agent,
