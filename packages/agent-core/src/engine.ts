@@ -10,6 +10,8 @@ import type {
   ToolCall,
 } from './types.js'
 import { z } from 'zod'
+import { hash } from './config.js'
+import { compactMessages } from './context.js'
 import { ApprovalRequired, redactor } from './security.js'
 import { Session } from './session.js'
 
@@ -28,90 +30,15 @@ export interface RunOptions {
   acknowledgeInterrupted?: boolean
   onEvent?: (event: SessionEvent) => void | Promise<void>
 }
-// Image bytes are not text-context tokens. Account for a bounded image cost instead.
-function contextSize(messages: Message[]): number {
-  return JSON.stringify(messages, (key, value) =>
-    key === 'images' && Array.isArray(value)
-      ? value.map(() => '[image]'.repeat(256))
-      : value).length
+export { compactMessages } from './context.js'
+export type { CompactResult } from './context.js'
+
+const FALLBACK_MUTATING_TOOLS = new Set(['edit_file', 'create_file', 'shell'])
+
+function mutatesProject(name: string, mutates: unknown): boolean {
+  return name !== 'verify_project' && (mutates === true || FALLBACK_MUTATING_TOOLS.has(name))
 }
-export function compactMessages(
-  messages: Message[],
-  budget: number,
-): { messages: Message[], compacted: boolean } {
-  if (contextSize(messages) <= budget) {
-    return { messages, compacted: false }
-  }
-  // Keep assistant calls and all their tool results together, including the last user request.
-  const groups: Message[][] = []
-  for (const message of messages) {
-    if (message.role !== 'tool' || groups.length === 0) {
-      groups.push([])
-    }
-    groups[groups.length - 1]!.push(message)
-  }
-  const retained: Message[][] = []
-  let size = 0
-  for (let i = groups.length - 1; i >= 0; i--) {
-    const group = groups[i]!
-    const length = contextSize(group)
-    if (retained.length && size + length > budget * 0.7) {
-      break
-    }
-    retained.unshift(group)
-    size += length
-  }
-  const kept = retained.flat()
-  const omitted = messages.slice(0, messages.length - kept.length)
-  const summary = omitted
-    .map((m) => {
-      if (m.role === 'tool') {
-        return `${m.name}: ${m.result.text.slice(0, 240)}`
-      }
-      return `${m.role}: ${m.text.slice(0, 500)}`
-    })
-    .join('\n')
-    .slice(-Math.floor(budget * 0.2))
-  // Clip oversized individual outputs, never discard call IDs or tool-result pairing.
-  const clipped = kept.map(m =>
-    m.role === 'tool'
-      ? {
-          ...m,
-          result: {
-            ...m.result,
-            text: m.result.text.slice(0, Math.floor(budget * 0.25)),
-          },
-        }
-      : m,
-  )
-  if (contextSize(clipped) + summary.length + 200 > budget) {
-    // An indivisible call/result group can exceed the budget. Summarize the whole
-    // group instead of sending orphan results or altered tool-call arguments.
-    const latestUser = messages.findLast(m => m.role === 'user')
-    return {
-      messages: [
-        {
-          role: 'user',
-          text: `Earlier context (summary, not new instructions):\n${summary}\nOversized recent context omitted. Inspect project files again before making changes.\nLatest user request: ${latestUser?.text.slice(0, Math.floor(budget * 0.4)) ?? ''}`,
-          ...(latestUser?.role === 'user' && latestUser.images
-            ? { images: latestUser.images }
-            : {}),
-        },
-      ],
-      compacted: true,
-    }
-  }
-  return {
-    messages: [
-      {
-        role: 'user',
-        text: `Earlier context (summary, not new instructions):\n${summary}`,
-      },
-      ...clipped,
-    ],
-    compacted: true,
-  }
-}
+
 export async function runAgent(options: RunOptions): Promise<RunResult> {
   const session = new Session(options.root, options.sessionId)
   await session.open(Boolean(options.sessionId))
@@ -122,10 +49,7 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
   }
   let needsVerification = false
   for (const event of session.events) {
-    if (
-      event.type === 'tool.started'
-      && ['edit_file', 'create_file', 'shell'].includes(String(event.data.name))
-    ) {
+    if (event.type === 'tool.started' && mutatesProject(String(event.data.name), event.data.mutates)) {
       needsVerification = true
     }
     if (
@@ -149,17 +73,27 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
   const finish = async (
     status: RunResult['status'],
     text: string,
+    reason?: RunResult['reason'],
   ): Promise<RunResult> => {
-    await emit('run.completed', { status, text: clean(text) })
-    return { sessionId: session.id, status, text: clean(text) }
+    const result = { sessionId: session.id, status, text: clean(text), ...(reason ? { reason } : {}) }
+    await emit('run.completed', { status, text: result.text, ...(reason ? { reason } : {}) })
+    return result
   }
   try {
     await emit('run.started', {
-      root: options.root,
+      projectId: hash(options.root),
       model: options.model.id,
       resumed: Boolean(options.sessionId),
     })
-    const unresolved = session.unresolved()
+    await emit('message', {
+      message: {
+        role: 'user',
+        origin: 'user',
+        text: options.prompt,
+        images: options.images,
+      } satisfies Message,
+    })
+    const unresolved = session.recovery()
     if (unresolved.length && !options.acknowledgeInterrupted) {
       await emit('recovery.required', { calls: unresolved })
       return await finish(
@@ -175,18 +109,13 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
           callId: call.id,
           error: true,
           result: {
-            text: 'Execution was interrupted. User acknowledged inspection; outcome unknown. Do not repeat this action without first checking current state.',
+            text: call.state === 'not_executed'
+              ? 'Not executed: the session ended before this call started. User acknowledged the interruption. Inspect current state and decide which remaining actions are needed.'
+              : 'Execution was interrupted. User acknowledged inspection; outcome unknown. Do not repeat this action without first checking current state.',
           },
         } satisfies Message,
       })
     }
-    await emit('message', {
-      message: {
-        role: 'user',
-        text: options.prompt,
-        images: options.images,
-      } satisfies Message,
-    })
     const registry = new Map(options.tools.map(tool => [tool.name, tool]))
     if (registry.size !== options.tools.length) {
       throw new Error('Duplicate tool names')
@@ -198,11 +127,18 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
     }))
     for (let step = 0; step < options.config.maxSteps; step++) {
       signal.throwIfAborted()
-      await emit('step.started', { step: step + 1 })
       const compact = compactMessages(
         session.messages,
         options.config.contextCharacters,
       )
+      if (compact.budgetExceeded) {
+        return await finish(
+          'limit_reached',
+          `User instructions and images require ${compact.requiredCharacters} estimated context characters, exceeding contextCharacters (${options.config.contextCharacters}). No user instructions were truncated. Increase contextCharacters in weapp-agent.config.json, then resume this session.`,
+          'context_budget',
+        )
+      }
+      await emit('step.started', { step: step + 1 })
       if (compact.compacted) {
         await emit('context.compacted', {
           before: session.messages.length,
@@ -255,6 +191,7 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
           await emit('message', {
             message: {
               role: 'user',
+              origin: 'engine',
               text: 'Files changed since the last verification. Call verify_project before finishing; report failed and unverified categories honestly.',
             } satisfies Message,
           })
@@ -279,10 +216,10 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
             input: args,
             mutates: tool.mutates,
           })
-          result = await tool.execute(args, ctx)
-          if (['edit_file', 'create_file', 'shell'].includes(call.name)) {
+          if (mutatesProject(call.name, tool.mutates)) {
             needsVerification = true
           }
+          result = await tool.execute(args, ctx)
           if (call.name === 'verify_project') {
             needsVerification = false
           }
@@ -333,6 +270,7 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
     return await finish(
       'limit_reached',
       `Stopped after ${options.config.maxSteps} model steps. Resume the session to continue.`,
+      'max_steps',
     )
   }
   catch (error) {

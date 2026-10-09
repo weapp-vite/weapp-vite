@@ -17,6 +17,7 @@ import { pathToFileURL } from 'node:url'
 import { execa } from 'execa'
 import YAML from 'yaml'
 import { packWorkspace } from './pack-workspace.mjs'
+import { smokeSessions } from './smoke-sessions.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const temporary = await mkdtemp(path.join(tmpdir(), 'weapp-pack-'))
@@ -43,7 +44,7 @@ try {
     'node_modules/@weapp-agent/cli/dist/index.mjs',
   )
   const { stdout: help } = await execa(process.execPath, [cli, '--help'])
-  for (const command of ['run', 'resume', 'doctor', 'verify', 'accept', 'report', 'mcp', 'skill']) {
+  for (const command of ['run', 'resume', 'sessions', 'session', 'doctor', 'verify', 'accept', 'report', 'mcp', 'skill']) {
     assert(help.includes(command))
   }
   const project = path.join(temporary, 'project')
@@ -63,6 +64,7 @@ try {
     [cli, '-C', project, 'init', '--model', 'mock', '--json'],
     { env },
   )
+  await smokeSessions(cli, project, env)
   const { stdout: result } = await execa(
     process.execPath,
     [cli, '-C', project, '--trust', 'verify', '--json'],

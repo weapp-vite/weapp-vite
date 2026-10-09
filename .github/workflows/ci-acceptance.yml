@@ -46,7 +46,8 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm --filter weapp-vite... --filter @weapp-agent/cli... -r build
       - run: pnpm --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-agent/cli --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --filter @weapp-vite/devtools-runtime -r typecheck
-      - run: pnpm --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --filter @weapp-vite/devtools-runtime -r test
+      - run: pnpm --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-agent/cli --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --filter @weapp-vite/devtools-runtime -r test
+      - run: pnpm --filter @weapp-agent/core test:types
       - run: node scripts/weapp-agent/smoke-pack.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

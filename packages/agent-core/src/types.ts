@@ -11,7 +11,7 @@ export interface ToolCall {
   input: unknown
 }
 export type Message
-  = | { role: 'user', text: string, images?: ImageInput[] }
+  = | { role: 'user', text: string, images?: ImageInput[], origin?: 'user' | 'engine' }
     | { role: 'assistant', text: string, calls?: ToolCall[] }
     | {
       role: 'tool'
@@ -73,10 +73,12 @@ export interface SessionEvent {
 }
 export type RunStatus
   = 'completed' | 'failed' | 'cancelled' | 'action_required' | 'limit_reached'
+export type RunLimitReason = 'max_steps' | 'context_budget'
 export interface RunResult {
   sessionId: string
   status: RunStatus
   text: string
+  reason?: RunLimitReason
 }
 export interface ProjectInfo {
   root: string
