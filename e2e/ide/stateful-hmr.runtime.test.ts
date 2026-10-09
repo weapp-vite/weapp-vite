@@ -411,7 +411,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   })
 
   it('preserves native Page identity, data, input, route, and query across style updates and JavaScript patches', async (ctx) => {
-    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('native'))
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('native', resolveRuntimeProviderName()))
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
     }
@@ -575,7 +575,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       ctx.skip('微信开发者工具在 component:true Wevu 页面脚本状态保持补丁后会重置页面栈；headless 已覆盖该场景。')
       return
     }
-    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('wevu'))
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('wevu', resolveRuntimeProviderName()))
     const page = await relaunchStatefulRoute(WEVU_ROUTE)
     try {
       await waitForPatchedBehavior(0, page)
@@ -672,7 +672,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   })
 
   it('preserves native Component identity, data, input, route, and query across a JavaScript patch', async (ctx) => {
-    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('component'))
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('component', resolveRuntimeProviderName()))
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
     }

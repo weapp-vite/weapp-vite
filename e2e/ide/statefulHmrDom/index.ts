@@ -1,6 +1,6 @@
-import type { DomCheckpoint } from '../../utils/domAcceptance/types'
+import type { DomCheckpoint, DomProvider } from '../../utils/domAcceptance/types'
 
-export function statefulHmrCheckpoints(runtime: 'native' | 'component' | 'wevu'): DomCheckpoint[] {
+export function statefulHmrCheckpoints(runtime: 'native' | 'component' | 'wevu', provider: DomProvider = 'devtools'): DomCheckpoint[] {
   const prepared = runtime === 'wevu' ? 2 : 1
   const checkpoints: DomCheckpoint[] = [
     ['initial', 0, '', '首屏检查初始计数、输入和标记'],
@@ -51,8 +51,12 @@ export function statefulHmrCheckpoints(runtime: 'native' | 'component' | 'wevu')
       const styled = ['style-updated', 'patched', 'updated'].includes(checkpoint.id)
       checkpoint.nodes.push({
         selector: '.page',
-        styles: { 'background-color': styled ? 'rgb(219, 234, 254)' : 'rgb(255, 255, 255)' },
-        visible: true,
+        ...(provider === 'devtools'
+          ? {
+              styles: { 'background-color': styled ? 'rgb(219, 234, 254)' : 'rgb(255, 255, 255)' },
+              visible: true,
+            }
+          : {}),
       })
     }
   }
@@ -73,7 +77,7 @@ export function statefulHmrCheckpoints(runtime: 'native' | 'component' | 'wevu')
           { selector: '.marker', text: styled ? 'STATEFUL-WEVU-PATCHED' : 'STATEFUL-WEVU-BASE' },
           { selector: '.input', attributes: { value: 'held-input' } },
           template ? { selector: '.sfc-template', text: template } : { selector: '.sfc-template', count: 0 },
-          ...(styled ? [{ selector: '.page', styles: { 'background-color': 'rgb(219, 234, 254)' }, visible: true }] : []),
+          ...(styled ? [{ selector: '.page', ...(provider === 'devtools' ? { styles: { 'background-color': 'rgb(219, 234, 254)' }, visible: true } : {}) }] : []),
         ],
       })
     }
