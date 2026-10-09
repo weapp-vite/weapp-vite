@@ -272,6 +272,7 @@ export function getTaskSpawnOptions(task: SuiteTask): Options {
         ? {
             WEAPP_VITE_E2E_TRUST_PROJECTS: [
               path.resolve('e2e-apps'),
+              path.resolve('templates'),
               path.resolve('.tmp/e2e-projects'),
               path.resolve('.tmp/e2e-ide-bridge-projects'),
             // automator 的路径列表使用分号；POSIX 的冒号不是该环境变量的分隔符。

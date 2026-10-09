@@ -633,7 +633,7 @@ describe('suiteRunner', () => {
       args: ['vitest', 'run', '-c', path.resolve('e2e/vitest.e2e.devtools.config.ts')],
     })
     const trusts = createAutomatorProjectTrust(options.env as NodeJS.ProcessEnv)
-    for (const root of ['e2e-apps', '.tmp/e2e-projects', '.tmp/e2e-ide-bridge-projects']) {
+    for (const root of ['e2e-apps', 'templates', '.tmp/e2e-projects', '.tmp/e2e-ide-bridge-projects']) {
       expect(trusts(path.resolve(root))).toBe(true)
       expect(trusts(path.resolve(root, 'fixture'))).toBe(true)
       expect(trusts(path.resolve(`${root}-other`, 'fixture'))).toBe(false)
