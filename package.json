@@ -237,7 +237,9 @@
     "commitlint": "commitlint --edit",
     "check:npm-package-metadata": "node scripts/check-npm-package-metadata.mjs",
     "check:tailwind-catalog": "node scripts/check-tailwind-catalog.mjs",
-    "e2e:dimina": "node --import tsx ./e2e/scripts/run-e2e-suite.ts dimina"
+    "e2e:dimina": "node --import tsx ./e2e/scripts/run-e2e-suite.ts dimina",
+    "sync:npmmirror": "repo release sync-npmmirror --all",
+    "release:sync-npmmirror": "repo release sync-npmmirror --published"
   },
   "devDependencies": {
     "@babel/core": "catalog:",

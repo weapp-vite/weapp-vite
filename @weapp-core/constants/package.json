@@ -61,7 +61,7 @@
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "sync": "cnpm sync @weapp-core/constants"
+    "sync": "repo release sync-npmmirror --package @weapp-core/constants"
   },
   "publishConfig": {
     "access": "public",

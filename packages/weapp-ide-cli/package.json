@@ -70,7 +70,7 @@
     "weapp": "tsx src/cli.ts",
     "debug": "tsx src/cli.ts config",
     "raw": "node bin/weapp.js",
-    "sync": "cnpm sync weapp-ide-cli"
+    "sync": "repo release sync-npmmirror --package weapp-ide-cli"
   },
   "publishConfig": {
     "access": "public",

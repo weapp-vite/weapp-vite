@@ -98,7 +98,7 @@
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "sync": "cnpm sync @weapp-core/shared"
+    "sync": "repo release sync-npmmirror --package @weapp-core/shared"
   },
   "publishConfig": {
     "exports": {
