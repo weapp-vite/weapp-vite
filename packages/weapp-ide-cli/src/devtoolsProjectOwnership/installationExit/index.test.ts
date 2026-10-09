@@ -73,6 +73,43 @@ const recover = () => recoverManagedWechatProjectsAfterInstallationExit({ target
 const bytes = (entry: ManagedWechatProjectRecord) => fs.readFile(managedRecordPath(entry.journalPath, entry.id), 'utf8')
 
 describe('explicit installation-exit recovery', () => {
+  it.each([false, true])('terminates failed confirmed ownership with close evidence=%s without inventing destruction', async (dispatched) => {
+    const windowClose = dispatched
+      ? {
+          protocol: 'wechat-devtools-window-close-trace-v1' as const,
+          profileDir: target.profileDir,
+          productVersion: target.version!,
+          capturedAt: new Date().toISOString(),
+          dispatchedAt: new Date().toISOString(),
+          cursors: [{ name: 'original-main.log', identity: 'original-stream', offset: 0, anchor: 'a'.repeat(64), skipPartialLine: false }],
+          calls: [],
+          failure: 'Original window destruction evidence unavailable',
+        }
+      : undefined
+    const entry = await record({
+      state: 'failed',
+      openedProjectWindow: true,
+      host: { pid: deadOwnerPid, executable: 'selected-backend', started: 'original-host' },
+      error: 'Listener exited before confirmed project close',
+      windowClose,
+    })
+    const before = await bytes(entry)
+    expect(await recover()).toEqual({ recoveredRecordIds: [entry.id] })
+    const after = await readManagedRecord(journalPath, entry.id)
+    expect(after).toMatchObject({
+      state: 'released',
+      releasedReason: 'installation-exited',
+      host: entry.host,
+      error: entry.error,
+      installationExitRecovery: {
+        previous: { state: 'failed', error: entry.error, recordSha256: createHash('sha256').update(before).digest('hex') },
+      },
+    })
+    expect(after.windowClose).toEqual(windowClose)
+    expect(after.closeAcknowledgedAt).toBeUndefined()
+    expect(mocks.command).not.toHaveBeenCalled()
+  })
+
   it.each(['starting', 'unconfirmed'] as const)('terminates %s only with original failure and byte fingerprint preserved', async (state) => {
     const entry = await record({ state })
     const before = await bytes(entry)
@@ -151,8 +188,15 @@ describe('explicit installation-exit recovery', () => {
     expect(await bytes(entry)).toBe(before)
   })
 
-  it.each(['live-port', 'live-installation', 'unknown-process'] as const)('keeps unknown ownership after %s evidence', async (kind) => {
-    const entry = await record()
+  it.each([
+    ['live-port', 'unconfirmed'],
+    ['live-installation', 'unconfirmed'],
+    ['unknown-process', 'unconfirmed'],
+    ['live-port', 'failed'],
+    ['live-installation', 'failed'],
+    ['unknown-process', 'failed'],
+  ] as const)('keeps %s evidence from releasing %s ownership', async (kind, state) => {
+    const entry = await record({ state, ...(state === 'failed' ? { openedProjectWindow: true, host: { pid: deadOwnerPid, executable: 'selected-backend', started: 'original-host' } } : {}) })
     const before = await bytes(entry)
     if (kind === 'live-port') {
       mocks.port.mockResolvedValue(false)

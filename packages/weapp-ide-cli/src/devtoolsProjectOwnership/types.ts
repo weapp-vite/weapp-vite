@@ -17,7 +17,7 @@ export interface ManagedWechatInstallationExitEvidence {
   installationId: string
   profileDir: string
   previous: {
-    state: 'starting' | 'unconfirmed'
+    state: 'starting' | 'unconfirmed' | 'failed'
     error?: string
     updatedAt: string
     recordSha256: string

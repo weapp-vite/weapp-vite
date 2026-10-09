@@ -29,6 +29,12 @@ async function fingerprint(record: ManagedWechatProjectRecord) {
   return createHash('sha256').update(await fs.readFile(file)).digest('hex')
 }
 
+function canRecoverAfterExit(record: ManagedWechatProjectRecord) {
+  return record.state === 'starting' || record.state === 'unconfirmed'
+    || (record.state === 'failed' && record.openedProjectWindow === true
+      && record.host !== undefined && record.port !== undefined && record.error !== undefined)
+}
+
 async function recoverAfterExit(
   options: RecoverManagedWechatProjectsAfterInstallationExitOptions,
 ): Promise<ManagedWechatInstallationExitRecoveryResult> {
@@ -53,11 +59,11 @@ async function recoverAfterExit(
     if (records.some(record => !isDeepStrictEqual(record.target, target))) {
       throw new Error('Installation-exit recovery cannot include another installation or profile.')
     }
-    if (records.some(record => !['released', 'starting', 'unconfirmed'].includes(record.state))) {
+    if (records.some(record => record.state !== 'released' && !canRecoverAfterExit(record))) {
       throw new Error('Installation-exit recovery refuses confirmed or unresolved project-close ownership.')
     }
     const scopeRecords = await readManagedWechatProjectRecords(journalPath)
-    const candidates = scopeRecords.filter(record => record.state === 'starting' || record.state === 'unconfirmed')
+    const candidates = scopeRecords.filter(canRecoverAfterExit)
     if (!candidates.length) {
       await assertMachineE2ELeaseRecoveryScope(recoveryScope)
       return { recoveredRecordIds: [] }
@@ -109,7 +115,7 @@ async function recoverAfterExit(
         throw new Error('Installation-exit recovery journal bytes changed before recording recovery.')
       }
       const previousState = record.state
-      if (previousState !== 'starting' && previousState !== 'unconfirmed') {
+      if (previousState !== 'starting' && previousState !== 'unconfirmed' && previousState !== 'failed') {
         throw new Error('Installation-exit recovery cannot replace a confirmed ownership state.')
       }
       record.installationExitRecovery = {
@@ -134,7 +140,7 @@ async function recoverAfterExit(
   })
 }
 
-/** 在精确恢复租约中终结已完全退出安装的未知启动；不补造回执，也不取得关窗权限。 */
+/** 在精确恢复租约中终结已退出安装的未知启动或失败关窗；保留原证据，不补造销毁事件。 */
 export function recoverManagedWechatProjectsAfterInstallationExit(
   options: RecoverManagedWechatProjectsAfterInstallationExitOptions,
 ): Promise<ManagedWechatInstallationExitRecoveryResult> {

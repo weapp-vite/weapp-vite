@@ -9,7 +9,7 @@ export const installationExitRecoverySchema = z.object({
   installationId: z.string().min(1),
   profileDir: z.string().min(1),
   previous: z.object({
-    state: z.enum(['starting', 'unconfirmed']),
+    state: z.enum(['starting', 'unconfirmed', 'failed']),
     error: z.string().optional(),
     updatedAt: z.string().min(1),
     recordSha256: z.string().regex(/^[\da-f]{64}$/),
