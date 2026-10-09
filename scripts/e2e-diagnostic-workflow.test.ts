@@ -5,7 +5,7 @@ import { parse } from 'yaml'
 interface WorkflowJob {
   if?: string
   needs?: string | string[]
-  strategy?: { 'fail-fast'?: boolean, 'matrix': { 'os'?: string[], 'node-version'?: number[], 'shard'?: number[], 'include'?: Array<{ 'os'?: string, 'node-version': number, 'shard'?: number }> } }
+  strategy?: { 'fail-fast'?: boolean, 'matrix': { 'os'?: string[], 'node-version'?: number[], 'shard'?: number[], 'include'?: Array<{ 'os'?: string, 'node-version': number, 'shard'?: number, 'build-command'?: string }> } }
   with?: Record<string, unknown>
 }
 
@@ -52,7 +52,7 @@ describe('bounded HMR workflow diagnosis', () => {
 
   it('requires an explicit manual selection and uses a separate concurrency group', async () => {
     const config = await workflow()
-    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-dev-cleanup'] })
+    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-dev-cleanup', 'windows-route-cleanup'] })
     expect(config.concurrency.group).toContain('inputs.hmr-diagnostic || \'full\'')
     const job = config.jobs['shared-layout-windows-diagnostic']!
     expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'shared-layout-windows\'')
@@ -116,6 +116,32 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(reusable.jobs.run.steps.find(step => step.name === 'Upload artifact')?.if).toContain('always()')
   })
 
+  it('traces the failing route shard across both Windows Node versions after the formal artifact restore', async () => {
+    const { jobs } = await workflow()
+    const build = jobs['windows-route-cleanup-build']!
+    const job = jobs['windows-route-cleanup-diagnostic']!
+    expect(build.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'windows-route-cleanup\'')
+    expect(job.if).toBe(build.if)
+    expect(job.needs).toBe('windows-route-cleanup-build')
+    expect(build.strategy?.matrix).toEqual({ 'node-version': [22, 24] })
+    expect(job.strategy).toEqual(build.strategy)
+    expect(build.strategy?.['fail-fast']).toBe(false)
+    const windowsBuilds = jobs['miniapp-e2e-build-full']?.strategy?.matrix.include?.filter(row => row.os === 'windows-latest')
+    expect(windowsBuilds?.map(row => row['node-version'])).toEqual([22, 24])
+    for (const row of windowsBuilds ?? []) {
+      expect(build.with?.build_command).toBe(row['build-command'])
+    }
+    expect(job.with?.consume_build_artifact).toBe(build.with?.build_artifact_name)
+    expect(job.with).toMatchObject({
+      runs_on: 'windows-latest',
+      timeout_minutes: jobs['miniapp-e2e-ci-full']?.with?.timeout_minutes,
+      main_command: 'pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=4 --shard-total=4',
+      e2e_platform: 'weapp',
+      increase_ulimit: true,
+      artifact_path: jobs['miniapp-e2e-ci-full']?.with?.artifact_path,
+    })
+  })
+
   it('isolates plugin watch readiness from broader regressions on every OS and Node version', async () => {
     const { jobs } = await workflow()
     const job = jobs['plugin-watch-readiness-diagnostic']!
@@ -173,7 +199,7 @@ describe('bounded HMR workflow diagnosis', () => {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)
     }
     for (const [name, job] of Object.entries(jobs)) {
-      if (['shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-dev-cleanup-diagnostic'].includes(name)) {
+      if (['shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-dev-cleanup-diagnostic', 'windows-route-cleanup-build', 'windows-route-cleanup-diagnostic'].includes(name)) {
         continue
       }
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>

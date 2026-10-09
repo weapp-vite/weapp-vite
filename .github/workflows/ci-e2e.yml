@@ -21,6 +21,7 @@ on:
           - workspace-hmr
           - windows-process-narrow
           - windows-dev-cleanup
+          - windows-route-cleanup
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.hmr-diagnostic || 'full' }}
@@ -30,6 +31,45 @@ permissions:
   contents: read
 
 jobs:
+  windows-route-cleanup-build:
+    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-route-cleanup'
+    name: Route Cleanup Diagnostic Build (Windows / Node ${{ matrix.node-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: windows-latest
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 40
+      build_command: pnpm build:pkgs:ci:windows
+      main_command: node -e "console.log('route cleanup diagnostic build artifact ready')"
+      build_artifact_name: route-cleanup-node-${{ matrix.node-version }}-build
+    secrets: inherit
+
+  windows-route-cleanup-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-route-cleanup'
+    needs: windows-route-cleanup-build
+    name: Route Cleanup Shard Diagnostic (Windows / Node ${{ matrix.node-version }} / shard 4)
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: windows-latest
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 40
+      # 使用正式分片的构建产物恢复边界；只增加查询阶段日志，不改变场景与预算。
+      consume_build_artifact: route-cleanup-node-${{ matrix.node-version }}-build
+      main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=4 --shard-total=4
+      e2e_platform: weapp
+      increase_ulimit: true
+      artifact_name: windows-route-cleanup-node-${{ matrix.node-version }}-shard-4-${{ github.sha }}
+      artifact_path: docs/reports/*-e2e-ci-full-*-suite-report/**
+    secrets: inherit
+
   windows-dev-cleanup-diagnostic:
     if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-dev-cleanup'
     name: Dev Process Cleanup Shard Diagnostic (Windows / Node ${{ matrix.node-version }} / shard ${{ matrix.shard }})
