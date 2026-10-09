@@ -38,13 +38,13 @@ import type {
 import type { DashboardFileReadRequest } from './schema'
 import { randomUUID } from 'node:crypto'
 import { defineDevframe, defineRpcFunction } from 'devframe'
-import logo from '../../../../website/public/logo.svg'
 import { VERSION } from '../constants'
 import { createDashboardFileReader } from './content'
 import { createDashboardRuntimeEventStore } from './events'
 import { dashboardRuntimeEventsPageSchema, dashboardRuntimeEventsQueryRequestSchema } from './eventsQuery'
 import { createDashboardInvestigationRpc } from './investigations/rpc'
 import { createDashboardInvestigationStore } from './investigations/store'
+import { dashboardLogo } from './logo'
 import {
   readDashboardAnalyzePage,
   serializeDashboardAnalyzeSnapshot,
@@ -243,7 +243,7 @@ export function createAnalyzeDashboardDevframe({
     importMetaUrl: import.meta.url,
     homepage: 'https://vite.weapp.dev/',
     description: 'weapp-vite 构建分析与小程序开发工具。',
-    icon: logo,
+    icon: dashboardLogo,
     capabilities: { dev: true, build: false },
     clientAssets,
     async setup(ctx) {

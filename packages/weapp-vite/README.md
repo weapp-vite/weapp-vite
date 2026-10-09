@@ -90,7 +90,7 @@ wv analyze --ui-host hub
 
 `--ui-host` 只接受 `standalone` 和 `hub`，并隐式启用 UI；不传 UI 参数时，`dev` / `build` 不新增服务。Hub 入口为 `/__devframes/`，Dashboard 面板仍为 `/__weapp-vite/`，共用 loopback 服务、OTP 认证、报告控制器和原生连接。Hub 提供停靠面板与内建设置，不安装终端或其他默认工具；语言设置不自动翻译自定义 Dashboard。
 
-Dashboard dock 与 Hub 品牌复用官网的 weapp-vite Logo，构建时内联 SVG；这两处品牌图标无需访问外部图标服务，也不依赖安装后的源码目录。
+Dashboard dock 与 Hub 品牌使用与官网相同图案的包内 SVG 字符串，以 data URL 提供。源码入口和发布产物均无需 SVG loader、官网目录或外部图标服务。
 
 Hub 的 `/__devframes/__mcp` 聚合端点保持关闭，但与独立模式一样发布 Dashboard scoped MCP 实例，地址为 `/__weapp-vite/__mcp`，不继承其他插件的工具或 Resources。`analyze --json`、`--markdown`、`--report` 等输出选项优先级保持不变；Hub 不是离线报告导出。完整参数见 [CLI 指南](https://vite.weapp.dev/guide/cli#可选-hub-工作台)。
 
