@@ -5,6 +5,7 @@ import { launchManagedAutomator } from './managed'
 const mocks = vi.hoisted(() => ({
   assertPort: vi.fn(async () => {}),
   begin: vi.fn(),
+  importProject: vi.fn(async () => {}),
   lease: vi.fn(),
   persist: vi.fn(async () => {}),
   release: vi.fn(async () => {}),
@@ -15,6 +16,7 @@ vi.mock('@weapp-vite/miniprogram-automator', () => ({ acquireAutomatorPortLease:
 vi.mock('../../devtoolsProjectOwnership', () => ({ beginManagedWechatProject: mocks.begin }))
 vi.mock('../../devtoolsTarget', () => ({ assertWechatDevtoolsPort: mocks.assertPort }))
 vi.mock('../agentStart', () => ({ startWechatIdeAgent: mocks.start }))
+vi.mock('../projectImport', () => ({ importManagedDevtoolsProject: mocks.importProject }))
 vi.mock('./sessionStore', () => ({ persistAutomatorSession: mocks.persist }))
 
 const target = {
@@ -71,6 +73,28 @@ beforeEach(() => {
 })
 
 describe('managed automator port ownership', () => {
+  it('initializes the resolved project with the selected installation before creating a window intent', async () => {
+    const scope = createScope()
+    await launchManagedAutomator({ ...options, launcher: { connect: vi.fn(async () => createProgram()) } as any, scope, target })
+    expect(mocks.importProject).toHaveBeenCalledExactlyOnceWith({
+      cliPath: target.cliPath,
+      projectPath: options.projectPath,
+      trusted: true,
+      timeout: 10_000,
+      signal: scope.signal,
+    })
+    expect(mocks.importProject.mock.invocationCallOrder[0]).toBeLessThan(mocks.begin.mock.invocationCallOrder[0]!)
+  })
+
+  it('does not acquire a port or create a window when official initialization fails', async () => {
+    const failure = new Error('official import failed')
+    mocks.importProject.mockRejectedValue(failure)
+    await expect(launchManagedAutomator({ ...options, launcher: { connect: vi.fn() } as any, scope: createScope(), target })).rejects.toBe(failure)
+    expect(mocks.lease).not.toHaveBeenCalled()
+    expect(mocks.begin).not.toHaveBeenCalled()
+    expect(mocks.start).not.toHaveBeenCalled()
+  })
+
   it('leases the selected port before starting the IDE and releases it on session close', async () => {
     const scope = createScope()
     const program = createProgram()

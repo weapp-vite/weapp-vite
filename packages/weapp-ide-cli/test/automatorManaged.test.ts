@@ -36,6 +36,7 @@ vi.mock('../src/config/custom', () => ({ readCustomConfig: async () => ({}) }))
 vi.mock('../src/devtoolsTarget', () => ({ assertWechatDevtoolsHost: mocks.assertHost, assertWechatDevtoolsPort: mocks.assertPort }))
 vi.mock('../src/devtoolsProjectOwnership', () => ({ beginManagedWechatProject: mocks.begin }))
 vi.mock('../src/cli/agentStart', () => ({ startWechatIdeAgent: mocks.start }))
+vi.mock('../src/cli/projectImport', () => ({ importManagedDevtoolsProject: vi.fn(async () => {}) }))
 vi.mock('../src/cli/wechatDevtoolsSettings', () => ({ bootstrapWechatDevtoolsSettings: mocks.bootstrap }))
 vi.mock('../src/cli/automator/sessionStore', () => ({ persistAutomatorSession: mocks.persist, readPersistedAutomatorSession: vi.fn() }))
 

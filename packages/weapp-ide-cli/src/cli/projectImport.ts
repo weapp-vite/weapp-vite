@@ -4,7 +4,7 @@ import process from 'node:process'
 import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
 // eslint-disable-next-line e18e/ban-dependencies -- 官方入口需要跨平台参数传递与取消控制。
 import { execa } from 'execa'
-import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
+import { MANAGED_PROJECT_JOURNAL_ENV } from '../devtoolsProjectOwnership'
 
 interface ProjectImportOptions {
   cliPath: string
@@ -24,9 +24,9 @@ export function resolveProjectImportCli(cliPath: string, platform = process.plat
   return paths.join(paths.dirname(cliPath), platform === 'win32' ? 'wechatide.cmd' : 'wechatide')
 }
 
-/** 官方导入会重写条件页和基础库选择；窗口启动前恢复 fixture 的原始输入。 */
-async function preservePrivateConfig(projectPath: string, run: () => Promise<void>) {
-  const file = path.join(projectPath, 'project.private.config.json')
+/** 官方导入会重写项目根、条件页和基础库选择；窗口启动前恢复原始输入。 */
+async function preserveProjectConfig(projectPath: string, fileName: string, run: () => Promise<void>) {
+  const file = path.join(projectPath, fileName)
   const original = await fs.readFile(file).catch((error: NodeJS.ErrnoException) => {
     if (error.code !== 'ENOENT') {
       throw error
@@ -74,7 +74,7 @@ export async function importManagedDevtoolsProject(options: ProjectImportOptions
   }
   options.signal.throwIfAborted()
   const projectPath = path.resolve(options.projectPath)
-  await withMachineE2ELease(() => preservePrivateConfig(projectPath, async () => {
+  await withMachineE2ELease(() => preserveProjectConfig(projectPath, 'project.config.json', () => preserveProjectConfig(projectPath, 'project.private.config.json', async () => {
     options.signal.throwIfAborted()
     const { stdout } = await execa(resolveProjectImportCli(options.cliPath), [
       '-c',
@@ -97,5 +97,5 @@ export async function importManagedDevtoolsProject(options: ProjectImportOptions
       throw new Error('DEVTOOLS_PROJECT_IMPORT_INCOMPLETE: 官方项目导入未完成；请检查本地 weapp-vite-e2e 客户端授权与导入结果，未启动项目窗口。')
     }
     options.signal.throwIfAborted()
-  }))
+  })))
 }

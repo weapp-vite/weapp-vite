@@ -5,6 +5,7 @@ import { acquireAutomatorPortLease } from '@weapp-vite/miniprogram-automator'
 import { beginManagedWechatProject } from '../../devtoolsProjectOwnership'
 import { assertWechatDevtoolsPort } from '../../devtoolsTarget'
 import { startWechatIdeAgent } from '../agentStart'
+import { importManagedDevtoolsProject } from '../projectImport'
 import { persistAutomatorSession } from './sessionStore'
 
 interface ManagedAutomatorOptions {
@@ -22,6 +23,14 @@ interface ManagedAutomatorOptions {
 /** 受管启动持有完整窗口回执，失败清理不受启动 deadline 的短暂宽限限制。 */
 export async function launchManagedAutomator(options: ManagedAutomatorOptions): Promise<MiniProgram> {
   const { launcher, scope, target, projectPath, sourceProjectPath, port } = options
+  await scope.step(() => importManagedDevtoolsProject({
+    cliPath: target.cliPath,
+    projectPath,
+    trusted: options.trustProject,
+    timeout: scope.remainingMs(),
+    signal: scope.signal,
+  }), { stage: 'project-import' })
+  scope.throwIfAborted()
   const portLease = await scope.step(() => acquireAutomatorPortLease(port), {
     stage: 'port-lease',
     disposeLate: lease => lease.release(),

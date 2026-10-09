@@ -2,8 +2,8 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
-import { importManagedDevtoolsProject, resolveProjectImportCli } from './devtoolsProjectImport'
+import { MANAGED_PROJECT_JOURNAL_ENV } from '../devtoolsProjectOwnership'
+import { importManagedDevtoolsProject, resolveProjectImportCli } from './projectImport'
 
 const { run, lease } = vi.hoisted(() => ({ run: vi.fn(), lease: vi.fn(async (callback: () => Promise<unknown>) => callback()) }))
 vi.mock('execa', () => ({ execa: run }))
@@ -84,11 +84,16 @@ describe('official managed project initialization', () => {
     expect(resolveProjectImportCli('C:\\Dev Tools\\cli.bat', 'win32')).toBe('C:\\Dev Tools\\wechatide.cmd')
   })
 
-  it.each([false, true])('restores authored conditions and SDK bytes when import fails=%s', async (fails) => {
+  it.each([
+    ['project.config.json', false],
+    ['project.config.json', true],
+    ['project.private.config.json', false],
+    ['project.private.config.json', true],
+  ] as const)('restores authored %s bytes when import fails=%s', async (fileName, fails) => {
     const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'ide-project-import-'))
     directories.push(directory)
-    const file = path.join(directory, 'project.private.config.json')
-    const original = '{"libVersion":"configured-sdk","condition":{"miniprogram":{"list":[{"pathName":"pages/start/index"}]}}}\r\n'
+    const file = path.join(directory, fileName)
+    const original = '{"miniprogramRoot":"dist","libVersion":"configured-sdk","condition":{"miniprogram":{"list":[{"pathName":"pages/start/index"}]}}}\r\n'
     await fs.writeFile(file, original)
     const failure = new Error('import failed')
     run.mockImplementation(async () => {
