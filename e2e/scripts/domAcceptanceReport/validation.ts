@@ -138,7 +138,7 @@ export const serializedReport = z.object({
     devtoolsVersionPolicy: z.object({
       mode: z.enum(['official-stable', 'selected-version-opt-in']),
       selectedVersion: z.string().regex(/^\d+(?:\.\d+){2,}$/),
-      selectedChannel: z.literal('stable'),
+      selectedChannel: z.enum(['stable', 'rc', 'nightly']),
       officialVersion: z.string().regex(/^\d+(?:\.\d+){2,}$/),
       acceptedVersion: z.string().regex(/^\d+(?:\.\d+){2,}$/).nullable(),
       officialVersionMatches: z.boolean(),

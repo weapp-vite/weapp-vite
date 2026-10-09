@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  ACCEPTED_DEVTOOLS_CHANNEL_ENV,
   ACCEPTED_DEVTOOLS_VERSION_ENV,
   assertSelectedWechatDevtoolsRuntime,
   DEVTOOLS_ACCEPTED_VERSION_ENV,
@@ -24,6 +25,7 @@ describe('selected DevTools preflight', () => {
       vi.stubEnv(key, undefined)
     }
     vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, undefined)
+    vi.stubEnv(ACCEPTED_DEVTOOLS_CHANNEL_ENV, undefined)
     vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', 'selected-cli')
     vi.stubEnv('WEAPP_IDE_CLI_PATH', 'other-cli')
     resolveTarget.mockResolvedValue(target)
@@ -90,6 +92,42 @@ describe('selected DevTools preflight', () => {
     resolveTarget.mockResolvedValue({ ...target, channel })
     await expect(preflightSelectedWechatDevtools()).rejects.toThrow('DEVTOOLS_STABLE_REQUIRED')
     expect(assertHost).not.toHaveBeenCalled()
+  })
+
+  it.each(['rc', 'nightly'])('accepts only an explicitly authorized %s channel and exact version', async (channel) => {
+    const selected = { ...target, channel }
+    resolveTarget.mockResolvedValue(selected)
+    vi.stubEnv(ACCEPTED_DEVTOOLS_CHANNEL_ENV, channel)
+    vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, target.version)
+    expect(await preflightSelectedWechatDevtools()).toBe(selected)
+    expect(assertHost).toHaveBeenCalledWith(selected)
+    expect(readDevtoolsVersionPolicy()).toMatchObject({ mode: 'selected-version-opt-in', selectedChannel: channel, acceptedVersion: target.version, officialVersionMatches: false })
+  })
+
+  it.each(['rc', 'nightly'])('requires an exact version when opting into %s', async (channel) => {
+    resolveTarget.mockResolvedValue({ ...target, channel })
+    vi.stubEnv(ACCEPTED_DEVTOOLS_CHANNEL_ENV, channel)
+    await expect(preflightSelectedWechatDevtools()).rejects.toThrow('DEVTOOLS_ACCEPTED_VERSION_REQUIRED')
+    expect(assertHost).not.toHaveBeenCalled()
+  })
+
+  it('rejects a different channel even when the accepted version matches', async () => {
+    vi.stubEnv(ACCEPTED_DEVTOOLS_CHANNEL_ENV, 'nightly')
+    vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, target.version)
+    await expect(preflightSelectedWechatDevtools()).rejects.toThrow('允许渠道为 nightly')
+    expect(assertHost).not.toHaveBeenCalled()
+  })
+
+  it('rejects invalid channel authorization', async () => {
+    vi.stubEnv(ACCEPTED_DEVTOOLS_CHANNEL_ENV, 'unknown')
+    await expect(preflightSelectedWechatDevtools()).rejects.toThrow(`${ACCEPTED_DEVTOOLS_CHANNEL_ENV} must be stable, rc or nightly`)
+    expect(assertHost).not.toHaveBeenCalled()
+  })
+
+  it('does not deserialize a non-stable installation as official Stable', async () => {
+    await preflightSelectedWechatDevtools()
+    vi.stubEnv(DEVTOOLS_SELECTED_CHANNEL_ENV, 'nightly')
+    expect(readDevtoolsVersionPolicy()).toBeUndefined()
   })
 
   it.each([undefined, target.version])('does not treat unavailable official evidence as permission to continue with opt-in %s', async (accepted) => {

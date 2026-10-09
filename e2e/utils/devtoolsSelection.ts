@@ -4,6 +4,7 @@ import { applyWechatCliSelection } from './devtoolsCli'
 
 const OFFICIAL_CHANNELS_URL = 'https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json'
 export const ACCEPTED_DEVTOOLS_VERSION_ENV = 'WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION'
+export const ACCEPTED_DEVTOOLS_CHANNEL_ENV = 'WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_CHANNEL'
 export const DEVTOOLS_VERSION_POLICY_ENV = 'WEAPP_VITE_E2E_DEVTOOLS_VERSION_POLICY'
 export const DEVTOOLS_SELECTED_VERSION_ENV = 'WEAPP_VITE_E2E_DEVTOOLS_SELECTED_VERSION'
 export const DEVTOOLS_SELECTED_CHANNEL_ENV = 'WEAPP_VITE_E2E_DEVTOOLS_SELECTED_CHANNEL'
@@ -13,11 +14,12 @@ export const DEVTOOLS_OFFICIAL_SOURCE_ENV = 'WEAPP_VITE_E2E_DEVTOOLS_OFFICIAL_SO
 export const DEVTOOLS_OFFICIAL_QUERIED_AT_ENV = 'WEAPP_VITE_E2E_DEVTOOLS_OFFICIAL_QUERIED_AT'
 
 export type DevtoolsVersionPolicyMode = 'official-stable' | 'selected-version-opt-in'
+export type DevtoolsChannel = 'stable' | 'rc' | 'nightly'
 
 export interface DevtoolsVersionPolicyReport {
   mode: DevtoolsVersionPolicyMode
   selectedVersion: string
-  selectedChannel: 'stable'
+  selectedChannel: DevtoolsChannel
   officialVersion: string
   acceptedVersion: string | null
   officialVersionMatches: boolean
@@ -56,6 +58,14 @@ function readAcceptedVersion(env = process.env) {
   return value
 }
 
+function readAcceptedChannel(env = process.env): DevtoolsChannel {
+  const value = env[ACCEPTED_DEVTOOLS_CHANNEL_ENV]?.trim() || 'stable'
+  if (value !== 'stable' && value !== 'rc' && value !== 'nightly') {
+    throw new Error(`${ACCEPTED_DEVTOOLS_CHANNEL_ENV} must be stable, rc or nightly.`)
+  }
+  return value
+}
+
 export function readDevtoolsVersionPolicy(env = process.env): DevtoolsVersionPolicyReport | undefined {
   const mode = env[DEVTOOLS_VERSION_POLICY_ENV]
   const selectedVersion = env[DEVTOOLS_SELECTED_VERSION_ENV]
@@ -64,19 +74,22 @@ export function readDevtoolsVersionPolicy(env = process.env): DevtoolsVersionPol
   const acceptedVersion = env[DEVTOOLS_ACCEPTED_VERSION_ENV] || null
   const officialSource = env[DEVTOOLS_OFFICIAL_SOURCE_ENV]
   const officialQueriedAt = env[DEVTOOLS_OFFICIAL_QUERIED_AT_ENV]
-  if (!mode || !selectedVersion || selectedChannel !== 'stable' || !officialVersion || !officialSource || !officialQueriedAt) {
+  if (!mode || !selectedVersion || !['stable', 'rc', 'nightly'].includes(selectedChannel ?? '') || !officialVersion || !officialSource || !officialQueriedAt) {
     return undefined
   }
   if (mode !== 'official-stable' && mode !== 'selected-version-opt-in') {
     return undefined
   }
+  if (mode === 'official-stable' && selectedChannel !== 'stable') {
+    return undefined
+  }
   return {
     mode,
     selectedVersion,
-    selectedChannel,
+    selectedChannel: selectedChannel as DevtoolsChannel,
     officialVersion,
     acceptedVersion,
-    officialVersionMatches: selectedVersion === officialVersion,
+    officialVersionMatches: selectedChannel === 'stable' && selectedVersion === officialVersion,
     officialSource,
     officialQueriedAt,
   }
@@ -102,10 +115,14 @@ export async function preflightSelectedWechatDevtools() {
   const target = await resolveWechatDevtoolsTarget({ cliPath })
   const official = await readOfficialStableVersion()
   const acceptedVersion = readAcceptedVersion()
-  const officialVersionMatches = target.version === official.version
+  const acceptedChannel = readAcceptedChannel()
+  const officialVersionMatches = target.channel === 'stable' && target.version === official.version
   const mode: DevtoolsVersionPolicyMode = acceptedVersion ? 'selected-version-opt-in' : 'official-stable'
-  if (target.channel !== 'stable') {
-    throw new Error(`DEVTOOLS_STABLE_REQUIRED: 官方 Stable 为 ${official.version}，选定安装为 ${target.version ?? 'unknown'} / ${target.channel ?? 'unknown'}；已停止，不自动换版。`)
+  if (target.channel !== acceptedChannel) {
+    throw new Error(`DEVTOOLS_STABLE_REQUIRED: 官方 Stable 为 ${official.version}，允许渠道为 ${acceptedChannel}，选定安装为 ${target.version ?? 'unknown'} / ${target.channel ?? 'unknown'}；已停止，不自动换版。`)
+  }
+  if (acceptedChannel !== 'stable' && !acceptedVersion) {
+    throw new Error(`DEVTOOLS_ACCEPTED_VERSION_REQUIRED: ${ACCEPTED_DEVTOOLS_CHANNEL_ENV}=${acceptedChannel} requires ${ACCEPTED_DEVTOOLS_VERSION_ENV}.`)
   }
   if (acceptedVersion && target.version !== acceptedVersion) {
     throw new Error(`DEVTOOLS_ACCEPTED_VERSION_MISMATCH: ${ACCEPTED_DEVTOOLS_VERSION_ENV}=${acceptedVersion}，选定安装为 ${target.version ?? 'unknown'}。`)
@@ -116,7 +133,7 @@ export async function preflightSelectedWechatDevtools() {
   const policy: DevtoolsVersionPolicyReport = {
     mode,
     selectedVersion: target.version!,
-    selectedChannel: 'stable',
+    selectedChannel: acceptedChannel,
     officialVersion: official.version,
     acceptedVersion: acceptedVersion ?? null,
     officialVersionMatches,
@@ -125,7 +142,7 @@ export async function preflightSelectedWechatDevtools() {
   }
   await assertWechatDevtoolsHost(target)
   setDevtoolsVersionPolicyEnv(policy)
-  process.stdout.write(`[info] [devtools:selection] ${JSON.stringify({ ...official, cliPath: target.cliPath, installationId: target.installationId, channel: target.channel, versionPolicy: policy.mode, selectedVersion: policy.selectedVersion, acceptedVersion: policy.acceptedVersion, officialVersionMatches: policy.officialVersionMatches })}\n`)
+  process.stdout.write(`[info] [devtools:selection] ${JSON.stringify({ ...official, officialChannel: 'stable', cliPath: target.cliPath, installationId: target.installationId, channel: target.channel, versionPolicy: policy.mode, selectedVersion: policy.selectedVersion, acceptedVersion: policy.acceptedVersion, officialVersionMatches: policy.officialVersionMatches })}\n`)
   return target
 }
 

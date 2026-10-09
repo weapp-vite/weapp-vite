@@ -126,6 +126,9 @@ describe('DOM acceptance report validation', () => {
 
   it.each<Partial<DevtoolsVersionPolicyReport>>([
     {},
+    { selectedChannel: 'rc' },
+    { selectedChannel: 'nightly' },
+    { selectedChannel: 'nightly', officialVersion: selectedVersionPolicy.selectedVersion },
     { mode: 'official-stable', officialVersion: selectedVersionPolicy.selectedVersion, acceptedVersion: null, officialVersionMatches: true },
   ])('accepts a consistent version policy after serialization: %j', (update) => {
     const report = createReport()
@@ -140,7 +143,9 @@ describe('DOM acceptance report validation', () => {
     [{ mode: 'official-stable', acceptedVersion: null }, 'Official Stable policy'],
     [{ mode: 'official-stable', officialVersion: '2.02.2608080', officialVersionMatches: false }, 'Official Stable policy'],
     [{ officialVersionMatches: true }, 'inconsistent official version match'],
-    [{ selectedChannel: 'rc' }, 'valid serialized report'],
+    [{ selectedChannel: 'unknown' }, 'valid serialized report'],
+    [{ selectedChannel: 'nightly', mode: 'official-stable', acceptedVersion: null }, 'Official Stable policy'],
+    [{ selectedChannel: 'nightly', officialVersion: selectedVersionPolicy.selectedVersion, officialVersionMatches: true }, 'inconsistent official version match'],
   ])('rejects altered version policy evidence even when the report passed: %j', (update, message) => {
     const report = createReport()
     const changed = structuredClone(report)

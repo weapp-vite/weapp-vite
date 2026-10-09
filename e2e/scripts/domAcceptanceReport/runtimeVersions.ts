@@ -43,11 +43,11 @@ export function evaluateRuntimeVersions(
   const errors: string[] = []
   const policy = environment?.devtoolsVersionPolicy
   if (policy) {
-    const officialVersionMatches = policy.selectedVersion === policy.officialVersion
+    const officialVersionMatches = policy.selectedChannel === 'stable' && policy.selectedVersion === policy.officialVersion
     if (policy.officialVersionMatches !== officialVersionMatches) {
       errors.push('DevTools version policy has an inconsistent official version match')
     }
-    if (policy.mode === 'official-stable' && (!officialVersionMatches || policy.acceptedVersion !== null)) {
+    if (policy.mode === 'official-stable' && (policy.selectedChannel !== 'stable' || !officialVersionMatches || policy.acceptedVersion !== null)) {
       errors.push('Official Stable policy must select the official version without an accepted version override')
     }
     if (policy.mode === 'selected-version-opt-in' && policy.acceptedVersion !== policy.selectedVersion) {
