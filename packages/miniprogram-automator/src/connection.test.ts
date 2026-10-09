@@ -71,6 +71,7 @@ describe('Connection', () => {
     ['2.02.2608070', false, true],
     ['2.02.2608080', false, true],
     ['2.02.2609231', false, true],
+    ['2.02.2610082', false, true],
     ['2.01.2601010', false, false],
   ] as const)('selects only affected Page protocols for DevTools %s', async (version, pageProtocol, methodProtocol) => {
     const { default: Connection } = await import('./Connection')
@@ -103,12 +104,12 @@ describe('Connection', () => {
     await expect(pending).rejects.toThrow('Connection closed')
   })
 
-  it('reads Stable async method results through AppService while keeping element queries native', async () => {
+  it.each(['2.02.2608080', '2.02.2610082'])('reads async method results through AppService while keeping element queries native in %s', async (version) => {
     const { default: Connection } = await import('./Connection')
     const { default: Page } = await import('./Page')
     const transport = new FakeTransport()
     const connection = new Connection(transport as any)
-    connection.configureToolInfo({ version: '2.02.2608080' })
+    connection.configureToolInfo({ version })
     const page = new Page(connection, { id: 1, path: 'pages/index/index', query: {} })
     const state = { readyMarker: 'vue-index-ready', metrics: { loadToReadyMs: 12 } }
     const result = page.callMethod('readBenchState')
