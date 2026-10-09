@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createAutomatorProjectTrust } from '../utils/automatorProjectTrust'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { readTaskCases } from './domAcceptanceReport/inventory'
 import {
@@ -621,6 +622,42 @@ describe('suiteRunner', () => {
         process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = previousBridgeWrapper
       }
     }
+  })
+
+  it('trusts each generated fixture prefix without trusting sibling directories', () => {
+    vi.stubEnv('WEAPP_VITE_E2E_TRUST_PROJECT', undefined)
+    vi.stubEnv('WEAPP_VITE_E2E_TRUST_PROJECTS', undefined)
+    const options = getTaskSpawnOptions({
+      label: 'ide/task.test.ts',
+      command: 'pnpm',
+      args: ['vitest', 'run', '-c', path.resolve('e2e/vitest.e2e.devtools.config.ts')],
+    })
+    const trusts = createAutomatorProjectTrust(options.env as NodeJS.ProcessEnv)
+    for (const root of ['e2e-apps', '.tmp/e2e-projects', '.tmp/e2e-ide-bridge-projects']) {
+      expect(trusts(path.resolve(root))).toBe(true)
+      expect(trusts(path.resolve(root, 'fixture'))).toBe(true)
+      expect(trusts(path.resolve(`${root}-other`, 'fixture'))).toBe(false)
+    }
+    expect(trusts(undefined)).toBe(false)
+    expect(trusts(path.resolve('apps/manual-project'))).toBe(false)
+  })
+
+  it.each([',', ';', '\n'])('preserves explicit project trust lists separated by %j', (separator) => {
+    vi.stubEnv('WEAPP_VITE_E2E_TRUST_PROJECT', undefined)
+    const roots = [path.join(journalRoot, 'first'), path.join(journalRoot, 'second')]
+    const trustedProjects = roots.join(separator)
+    vi.stubEnv('WEAPP_VITE_E2E_TRUST_PROJECTS', trustedProjects)
+    const options = getTaskSpawnOptions({
+      label: 'ide/task.test.ts',
+      command: 'pnpm',
+      args: ['vitest', 'run', '-c', path.resolve('e2e/vitest.e2e.devtools.config.ts')],
+    })
+    expect(options.env?.WEAPP_VITE_E2E_TRUST_PROJECTS).toBe(trustedProjects)
+    const trusts = createAutomatorProjectTrust(options.env as NodeJS.ProcessEnv)
+    for (const root of roots) {
+      expect(trusts(path.join(root, 'fixture'))).toBe(true)
+    }
+    expect(trusts(path.resolve('e2e-apps/other'))).toBe(false)
   })
 
   it('preserves explicit devtools launch mode, prebuild, and wrapper overrides', () => {

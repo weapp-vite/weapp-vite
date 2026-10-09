@@ -274,7 +274,8 @@ export function getTaskSpawnOptions(task: SuiteTask): Options {
               path.resolve('e2e-apps'),
               path.resolve('.tmp/e2e-projects'),
               path.resolve('.tmp/e2e-ide-bridge-projects'),
-            ].join(path.delimiter),
+            // automator 的路径列表使用分号；POSIX 的冒号不是该环境变量的分隔符。
+            ].join(';'),
           }
         : {}),
       [REPORT_MARKER_ENV]: '1',

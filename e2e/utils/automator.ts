@@ -19,6 +19,7 @@ import { createDevtoolsSimulatorBootLogMonitor, DEVTOOLS_LOG_SCAN_INTERVAL, Devt
 import { attachBridgeWrapperSyncCleanup, cleanupFailedBridgeLaunch, createRetryableCleanup } from './automatorBridgeCleanup'
 import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './automatorBridgeFiles'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
+import { createAutomatorProjectTrust } from './automatorProjectTrust'
 import { registerAutomatorReconnect } from './automatorReconnect'
 import { resolveWechatCliPath } from './devtoolsCli'
 import { createDevtoolsProjectJournal, ownDevtoolsCleanup } from './devtoolsProcessOwnership'
@@ -124,8 +125,6 @@ const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
   /cannot read propert(?:y|ies)\s+\(reading\s+['"]subPackages['"]\)/i,
   /getPageMetaByWebviewId/i,
 ]
-const TRAILING_PATH_SEPARATOR_PATTERN = /[\\/]+$/
-const ENV_LIST_SPLIT_PATTERN = /[,;\n]/
 const ERROR_CONSOLE_TEXT_PATTERN = /\b(?:TypeError|ReferenceError|SyntaxError|Error|RangeError)\b/
 const WARN_CONSOLE_TEXT_PATTERN = /\b(?:warn(?:ing)?|deprecated|deprecation)\b/i
 const COMPONENT_WARN_PATTERN = /\[Component\]/
@@ -173,11 +172,6 @@ const DEVTOOLS_COMPILE_CACHE_CORRUPTION_PATTERNS = [
 ] as const
 const DEVTOOLS_ISLOGIN_JSON_PATTERN = /"login"\s*:\s*(true|false)/i
 const DEVTOOLS_CLI_ENGINE_BUILD_OPENED_PATTERN = /打开项目成功|project\s+opened|open\s+project\s+success/i
-
-function normalizePathForMatch(value: string) {
-  const normalized = path.normalize(path.resolve(value))
-  return normalized.replace(TRAILING_PATH_SEPARATOR_PATTERN, '')
-}
 
 function resolvePositiveIntEnv(raw: string | undefined, fallback: number) {
   const parsed = Number.parseInt(raw ?? '', 10)
@@ -230,12 +224,7 @@ const BRIDGE_CONNECT_SETTLE_DELAY = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY,
   DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY,
 )
-const TRUST_ALL_PROJECTS = process.env.WEAPP_VITE_E2E_TRUST_PROJECT === '1'
-const TRUST_PROJECT_PREFIXES = (process.env.WEAPP_VITE_E2E_TRUST_PROJECTS || '')
-  .split(ENV_LIST_SPLIT_PATTERN)
-  .map(item => item.trim())
-  .filter(Boolean)
-  .map(item => normalizePathForMatch(item))
+const isProjectPathTrustedByEnv = createAutomatorProjectTrust()
 
 let loginPreflightPassed = false
 let localhostListenPatched = false
@@ -391,21 +380,6 @@ function patchNetListenToLoopback() {
 
     return rawListen.apply(this, args as any)
   } as typeof net.Server.prototype.listen
-}
-
-function isProjectPathTrustedByEnv(projectPath: string | undefined) {
-  if (TRUST_ALL_PROJECTS) {
-    return true
-  }
-
-  if (!projectPath || TRUST_PROJECT_PREFIXES.length === 0) {
-    return false
-  }
-
-  const normalizedProjectPath = normalizePathForMatch(projectPath)
-  return TRUST_PROJECT_PREFIXES.some((prefix) => {
-    return normalizedProjectPath === prefix || normalizedProjectPath.startsWith(`${prefix}${path.sep}`)
-  })
 }
 
 export function resolveAutomatorLaunchMode() {
