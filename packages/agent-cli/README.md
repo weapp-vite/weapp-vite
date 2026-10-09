@@ -19,6 +19,20 @@ Set your provider API key in the environment. Project configuration never stores
 
 [Documentation](https://vite.weapp.dev/guide/agent/) · [Model-free acceptance](https://vite.weapp.dev/guide/acceptance) · [Source and validation](https://github.com/weapp-vite/weapp-vite/tree/main/docs/migrations/weapp-agent)
 
+Inspect a saved session before continuing:
+
+```sh
+weapp-agent sessions --details
+weapp-agent session SESSION_ID --json
+weapp-agent resume SESSION_ID "Continue the task"
+```
+
+Inspection is read-only and requires no model credentials. Context compression preserves complete user requests and images; if they exceed `contextCharacters`, the run stops with `reason: context_budget` before calling the model. Increase the budget to resume. Interrupted calls are never replayed automatically: inspect their outcomes, then use `resume --acknowledge-interrupted` or `/acknowledge-interrupted [prompt]` in the interactive terminal. See the [session guide](https://vite.weapp.dev/guide/agent/sessions).
+
+Follow-up requirements and images are saved even when recovery stops for acknowledgement. After confirmation, they reach the model in their original order after the complete tool results. Concurrent recovery attempts cannot take over each other's session locks, and closing a session waits for accepted journal writes to finish.
+
+Machine-readable `run` and `resume` output is JSONL. The `run.started` event identifies the project with `projectId` and no longer writes an absolute workspace path. Recovery prompts show only bounded, redacted tool-input previews. Tools marked `mutates: true`, including MCP tools, require `verify_project` before the task can finish.
+
 MIT. Tool permissions are not an operating-system sandbox.
 
 ## Use with an existing AI host
