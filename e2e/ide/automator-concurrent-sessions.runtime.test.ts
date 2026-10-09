@@ -1,6 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll } from 'vitest'
+import { MANAGED_PROJECT_MAX_WINDOWS_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDomAcceptance } from '../utils/domAcceptance'
@@ -116,10 +117,14 @@ describe('automator concurrent sessions', { concurrent: false }, () => {
   let baseToolInfo: any
   let previousLaunchMode: string | undefined
   let previousPrebuild: string | undefined
+  let previousMaxWindows: string | undefined
 
   beforeAll(async () => {
     previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
     previousPrebuild = process.env[AUTOMATOR_PREBUILD_ENV]
+    previousMaxWindows = process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV]
+    // 此 suite 验证跨项目连接隔离，明确预留两个窗口，禁止第三个窗口启动。
+    process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV] = '2'
     process.env[AUTOMATOR_LAUNCH_MODE_ENV] = AUTOMATOR_LAUNCH_MODE_BRIDGE
     // 这个用例验证同一进程内保留多个 automator 会话；prebuild 会经过
     // DevTools 全局项目索引通道，可能把前一个活跃会话切到恢复路径。
@@ -131,6 +136,12 @@ describe('automator concurrent sessions', { concurrent: false }, () => {
   }, HOOK_TIMEOUT)
 
   afterAll(async () => {
+    if (previousMaxWindows === undefined) {
+      delete process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV]
+    }
+    else {
+      process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV] = previousMaxWindows
+    }
     if (previousLaunchMode === undefined) {
       delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
     }

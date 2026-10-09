@@ -1,4 +1,5 @@
 import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
+import type { VisibleRuntimeMarkersSnapshot } from '../utils/visibleRuntimeMarkers'
 import { fs } from '@weapp-core/shared/node'
 import { parse as babelParse } from '@weapp-vite/ast/babel'
 import traverse from '@weapp-vite/ast/babelTraverse'
@@ -8,6 +9,7 @@ import {
   isDevtoolsHttpPortError,
   isDevtoolsSimulatorBootError,
   launchAutomator,
+  reconnectAutomator,
 } from '../utils/automator'
 import { runCleanupSteps } from '../utils/cleanupSteps'
 import { startDevProcess } from '../utils/dev-process'
@@ -22,6 +24,7 @@ import {
 } from '../utils/hmr-helpers'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { collectRuntimeValueSnapshot } from '../utils/runtimeValueSnapshot'
+import { matchesVisibleRuntimeMarkers, readVisibleRuntimeMarkers } from '../utils/visibleRuntimeMarkers'
 
 const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 const AUTOMATOR_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH'
@@ -61,6 +64,7 @@ interface RuntimeSnapshot {
   runtimeState?: Record<string, unknown>
   setupState?: Record<string, unknown>
   bridgeSnapshot?: Record<string, unknown>
+  pageIdentity?: Record<string, unknown>
   elements: RuntimeElementSnapshot[]
   visibleCount: number
 }
@@ -82,14 +86,15 @@ function isDevtoolsRouteInfraError(error: unknown) {
     || DEVTOOLS_ROUTE_INFRA_RE.test(message)
 }
 
-async function readVisibleRuntimeSnapshot(miniProgram: any): Promise<RuntimeSnapshot> {
-  const serialized = await miniProgram.evaluate(collectRuntimeValueSnapshot, [...MARKER_SELECTORS])
+async function readVisibleRuntimeSnapshot(miniProgram: any, includeState = false): Promise<RuntimeSnapshot> {
+  const serialized = await miniProgram.evaluate(collectRuntimeValueSnapshot, [...MARKER_SELECTORS], includeState)
   const result = JSON.parse(serialized) as {
     route?: string
     pageData?: Record<string, unknown>
     runtimeState?: Record<string, unknown>
     setupState?: Record<string, unknown>
     bridgeSnapshot?: Record<string, unknown>
+    pageIdentity?: Record<string, unknown>
     results?: Array<{ width?: number, height?: number } | null>
   }
   const results = Array.isArray(result.results) ? result.results : []
@@ -110,40 +115,40 @@ async function readVisibleRuntimeSnapshot(miniProgram: any): Promise<RuntimeSnap
     runtimeState: result.runtimeState ?? {},
     setupState: result.setupState ?? {},
     bridgeSnapshot: result.bridgeSnapshot ?? {},
+    ...(includeState ? { pageIdentity: result.pageIdentity } : {}),
     elements,
     visibleCount: elements.filter(item => item.visible).length,
   }
 }
 
-async function waitForVisibleRuntime(miniProgram: any, markers: string[], timeoutMs = 20_000) {
+async function waitForVisibleRuntime(miniProgram: MiniProgram, markers: [string, string], timeoutMs = 20_000) {
   const start = Date.now()
-  const isHeadless = process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER === 'headless'
-  let latest: RuntimeSnapshot | undefined
+  const expected = [
+    { dataKey: 'pageLabel', selector: MARKER_SELECTORS[1], text: markers[0] },
+    { dataKey: 'pageBootstrapLabel', selector: MARKER_SELECTORS[2], text: markers[1] },
+  ]
+  let latest: VisibleRuntimeMarkersSnapshot | { error: string } | undefined
   while (Date.now() - start <= timeoutMs) {
-    latest = await readVisibleRuntimeSnapshot(miniProgram).catch(error => ({
-      route: '',
-      pageData: {
-        error: error instanceof Error ? error.message : String(error),
-      },
-      runtimeState: {},
-      setupState: {},
-      bridgeSnapshot: {},
-      elements: [],
-      visibleCount: 0,
-    }))
-    const stateText = JSON.stringify([latest.pageData, latest.runtimeState, latest.setupState])
-    const routeReady = latest.route === 'pages/index/index'
-    const markersReady = markers.every(marker => stateText.includes(marker))
-    const visibleReady = latest.visibleCount === MARKER_SELECTORS.length
-      || (isHeadless && markersReady)
-    if (routeReady && visibleReady && markersReady) {
-      return latest
+    try {
+      const page = await miniProgram.currentPage({ retries: 1, timeout: 5_000 })
+      latest = page
+        ? await readVisibleRuntimeMarkers(page, MARKER_SELECTORS)
+        : { route: '', pageData: null, elements: [] }
+      if (matchesVisibleRuntimeMarkers(latest, 'pages/index/index', expected)) {
+        return latest
+      }
+    }
+    catch (error) {
+      latest = { error: error instanceof Error ? error.message : String(error) }
     }
     await new Promise(resolve => setTimeout(resolve, 260))
   }
-  const runtimeLogs = miniProgram?.__weappViteRuntimeLogMeta?.entries ?? []
+  const runtimeLogs = (miniProgram as any)?.__weappViteRuntimeLogMeta?.entries ?? []
   const devOutput = devProcess?.getOutput().slice(-8_000) ?? ''
-  throw new Error(`Timed out waiting visible runtime markers ${markers.join(', ')}. latest=${JSON.stringify(latest)}; runtimeState=${JSON.stringify(latest?.runtimeState)}; setupState=${JSON.stringify(latest?.setupState)}; bridgeSnapshot=${JSON.stringify(latest?.bridgeSnapshot)}; logs=${JSON.stringify(runtimeLogs)}; devOutput=${devOutput}`)
+  const diagnostic = await readVisibleRuntimeSnapshot(miniProgram, true).catch(error => ({
+    error: error instanceof Error ? error.message : String(error),
+  }))
+  throw new Error(`Timed out waiting visible runtime markers ${markers.join(', ')}. latest=${JSON.stringify(latest)}; diagnostic=${JSON.stringify(diagnostic)}; logs=${JSON.stringify(runtimeLogs)}; devOutput=${devOutput}`)
 }
 
 async function waitForCurrentRoute(miniProgram: MiniProgram, timeoutMs = 15_000) {
@@ -315,8 +320,7 @@ async function connectAutomatorSession() {
 }
 
 async function reconnectAutomatorAfterFullReload() {
-  await miniProgram?.disconnect?.()
-  miniProgram = await connectAutomatorSession()
+  miniProgram = await reconnectAutomator(miniProgram!)
 }
 
 describe('app.vue alias import layout HMR runtime', { concurrent: false }, () => {

@@ -208,7 +208,10 @@ describe('Vitest DOM reporter lifecycle', () => {
 
   it('fails empty modules and retains runtime errors', () => {
     const reporter = new DomAcceptanceReporter()
-    expect(() => reporter.onTestRunEnd([createModule([])], [{ message: 'Unexpected AppService exception' }], 'failed')).toThrow()
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    expect(() => reporter.onTestRunEnd([createModule([])], [{ message: 'Unexpected AppService exception' }], 'failed')).not.toThrow()
+    expect(process.exitCode).toBe(1)
+    expect(stderr).toHaveBeenCalledWith(expect.stringContaining('Unexpected AppService exception'))
     expect(readReports()[0]?.errors).toContain('Unexpected AppService exception')
     expect(readReports()[0]?.errors).toContain('No cases collected in e2e/ide/example.test.ts')
   })

@@ -15,6 +15,7 @@ import {
   resetWechatIdeFileUtilsByHttp,
   startWechatIdeEngineBuildByHttp,
 } from './http'
+import { ensureManagedWechatProject } from './managedProjectGate'
 
 export interface RunWechatIdeEngineBuildByHttpOptions extends WechatDevtoolsHttpCommandOptions {
   onProgress?: (result: PollWechatIdeEngineBuildResult) => void
@@ -129,6 +130,8 @@ async function runWechatIdeEngineBuildByCli(projectPath: string, options: RunWec
     options.signal?.throwIfAborted()
     throw error
   })
+  options.signal?.throwIfAborted()
+  await ensureManagedWechatProject(target, projectPath, { signal: options.signal })
   options.signal?.throwIfAborted()
   await assertWechatDevtoolsHost(target, { signal: options.signal })
   options.signal?.throwIfAborted()
@@ -304,6 +307,8 @@ export async function prepareAcceptanceProject(projectPath: string, signal: Abor
   }
   return await withMachineE2ELease(async () => {
     const target = await resolveWechatDevtoolsTarget(options)
+    signal.throwIfAborted()
+    await ensureManagedWechatProject(target, projectPath, { signal })
     signal.throwIfAborted()
     return await prepareSelectedAcceptanceProject(projectPath, signal, { ...options, target })
   })

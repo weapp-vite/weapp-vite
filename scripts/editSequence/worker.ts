@@ -5,7 +5,7 @@ import path from 'pathe'
 import { BuildSequenceSession } from './build'
 import { observeCompiler } from './compiler'
 import { restoreSequenceError, serializeSequenceError } from './errorEvidence'
-import { observeProcessResources, SequenceGcObserver } from './measurement'
+import { sampleProcessResources, SequenceGcObserver } from './measurement'
 
 const [mode, root, role = 'incremental'] = process.argv.slice(2)
 if (!root || !mode || !['compiler', 'classic', 'stateful-experimental', 'weapp-modes', 'weapp-classic', 'weapp-stateful'].includes(mode)) {
@@ -70,11 +70,13 @@ process.on('message', (request: SequenceWorkerMessage) => {
       const elapsedMs = performance.now() - startedAt
       const gcSample = await gc.sample(process.env.EDIT_SEQUENCE_RESOURCE_GC === '1')
       signal.throwIfAborted()
+      const resources = await sampleProcessResources()
+      signal.throwIfAborted()
       process.send?.({ id: request.id, value, measurement: {
         elapsedMs,
         clock: { timeOrigin: performance.timeOrigin, startedAtMs: startedAt, endedAtMs: startedAt + elapsedMs },
         gc: gcSample,
-        process: observeProcessResources(),
+        process: resources,
         build: (build ?? fullFramework)?.measurements.snapshot(),
         session: (build ?? fullFramework)?.observeSession(),
         outputChanges: fullFramework?.outputChanges,

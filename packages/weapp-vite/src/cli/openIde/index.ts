@@ -117,7 +117,12 @@ function shouldResetWechatIdeFileUtils() {
 async function runWechatIdeOpenWithRetry(argv: string[]) {
   await executeWechatIdeCliCommand(argv, {
     cancelLevel: 'warn',
-    onNonLoginError: error => logger.error(error),
+    onNonLoginError: (error) => {
+      logger.error(error)
+      if (process.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL?.trim()) {
+        throw error
+      }
+    },
     onRetry: () => {
       logger.info(colors.bold(colors.green('正在重试连接微信开发者工具...')))
     },
@@ -478,6 +483,9 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
       }
     }
     catch (error) {
+      if (process.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL?.trim()) {
+        throw error
+      }
       if (isAutomatorLoginError(error)) {
         logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
         logger.warn(formatAutomatorLoginError(error))

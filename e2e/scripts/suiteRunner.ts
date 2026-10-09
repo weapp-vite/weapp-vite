@@ -1,18 +1,25 @@
 /* eslint-disable e18e/ban-dependencies -- suite runner 需要 execa 保留跨平台命令参数并正确解析 Windows pnpm.cmd。 */
 import type { Options } from 'execa'
+import type { MachineE2EChildScope, MachineE2ELease, MachineE2ELeaseOptions } from '../../packages/devtools-runtime/src/lease/machine'
+import type { DevtoolsHostLease } from '../utils/devtoolsHostLifecycle'
 import type { SuiteReportContext, SuiteTaskArtifact } from './suiteReport'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
+import { MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { claimDevtoolsHost, DEVTOOLS_HOST_CLAIMED_ENV, quitClaimedDevtoolsHost } from '../utils/devtoolsHostLifecycle'
+import { createDevtoolsProjectJournal } from '../utils/devtoolsProcessOwnership'
+import { cleanupDevtoolsCommandScope } from '../utils/devtoolsScopeCleanup'
 import { E2E_RUNTIME_PROVIDER_ENV, resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_REPORT_DIR_ENV, ACCEPTANCE_ROOT, ACCEPTANCE_RUN_ID_ENV, ACCEPTANCE_SHA_ENV, ACCEPTANCE_TASK_ENV, createAcceptanceIdentity, DOM_ACCEPTANCE_ENV, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { validateTaskAcceptance } from './domAcceptanceReport/task'
+import { assertOwnedCommandStopped, OwnedCommandShutdownError, stopOwnedCommand } from './ownedE2ECommand/shutdown'
 import { createSuiteReport } from './suiteReport'
+import { createSuiteSignalScope } from './suiteRunner/signals'
 
 const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
-const DEVTOOLS_SKIP_LOGIN_CHECK_ENV = 'WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
@@ -43,10 +50,12 @@ export interface SuiteTaskResult {
 }
 
 interface RunSuiteOptions {
+  /** 仅供基础设施集成测试显式隔离租约状态；正常入口沿用全机租约目录。 */
+  machineLeaseOptions?: MachineE2ELeaseOptions
   afterAll?: () => Promise<void> | void
   beforeEachTask?: (task: SuiteTask) => Promise<void> | void
   failOnTaskFailure?: boolean
-  runTask?: (task: SuiteTask) => Promise<number>
+  runTask?: (task: SuiteTask, signal: AbortSignal) => Promise<number>
   stopOnTaskFailure?: boolean
   writeReport?: boolean
   reportContext?: SuiteReportContext
@@ -330,7 +339,8 @@ export function formatSuiteArtifactsSummary(suiteName: string, artifacts: SuiteT
   return lines.join('\n')
 }
 
-async function defaultRunTask(task: SuiteTask) {
+async function defaultRunTask(task: SuiteTask, signal: AbortSignal) {
+  signal.throwIfAborted()
   const collector = createTaskArtifactCollector()
   const taskTimeoutMs = resolveTaskTimeoutMs(task)
 
@@ -346,8 +356,10 @@ async function defaultRunTask(task: SuiteTask) {
     let forceKillTimer: NodeJS.Timeout | undefined
     let settled = false
     let exited = false
-    let timedOut = false
+    let terminationRequested = false
     let forceKillSent = false
+    let processStopError: OwnedCommandShutdownError | undefined
+    let stopCancellation = () => {}
 
     function clearGraceTimer() {
       if (stdioCloseGraceTimer) {
@@ -368,7 +380,7 @@ async function defaultRunTask(task: SuiteTask) {
     }
 
     function killChild(signal: NodeJS.Signals) {
-      if (exited && !timedOut) {
+      if (exited && !terminationRequested) {
         return
       }
       try {
@@ -384,6 +396,7 @@ async function defaultRunTask(task: SuiteTask) {
       }
 
       settled = true
+      stopCancellation()
       clearGraceTimer()
       clearTaskTimers()
       stdoutForwarder.flush()
@@ -392,7 +405,12 @@ async function defaultRunTask(task: SuiteTask) {
       task.devtoolsLaunchSkipped = collector.devtoolsLaunchSkipped
       child.stdout?.destroy()
       child.stderr?.destroy()
-      resolve(code)
+      if (processStopError) {
+        reject(processStopError)
+      }
+      else {
+        void assertOwnedCommandStopped(child).then(() => resolve(code), reject)
+      }
     }
 
     function scheduleFinalize() {
@@ -407,7 +425,7 @@ async function defaultRunTask(task: SuiteTask) {
     }
 
     function maybeFinalize() {
-      if (settled || exitCode === undefined || (timedOut && !forceKillSent)) {
+      if (settled || exitCode === undefined || (terminationRequested && !forceKillSent)) {
         return
       }
 
@@ -434,18 +452,59 @@ async function defaultRunTask(task: SuiteTask) {
         return
       }
 
+      if (terminationRequested) {
+        // execa 拒绝不等于子进程已经退出；取消仍等待 exit 和进程组收尾。
+        if (child.nodeChildProcess.pid === undefined) {
+          exited = true
+          exitCode = 1
+        }
+        maybeFinalize()
+        return
+      }
+      settled = true
+      stopCancellation()
       clearGraceTimer()
       clearTaskTimers()
-      reject(error)
+      void assertOwnedCommandStopped(child).then(() => reject(error), reject)
     }
 
     function onExit(code: number | null) {
       exited = true
-      if (!timedOut) {
+      if (!terminationRequested) {
         clearTaskTimers()
       }
-      exitCode = timedOut ? 1 : code ?? 1
+      exitCode = terminationRequested ? 1 : code ?? 1
       maybeFinalize()
+    }
+
+    function terminateChild() {
+      if (settled || terminationRequested) {
+        return
+      }
+      terminationRequested = true
+      clearGraceTimer()
+      clearTaskTimers()
+      if (process.platform === 'win32') {
+        // execa 的 Windows kill 为异步 best-effort，必须另行等待定向树终止结果。
+        void stopOwnedCommand(child, 'win32').catch((error: unknown) => {
+          processStopError = new OwnedCommandShutdownError('Windows E2E task termination was not confirmed.', { cause: error })
+        }).finally(() => {
+          forceKillSent = true
+          maybeFinalize()
+        })
+        return
+      }
+      killChild('SIGTERM')
+      forceKillTimer = setTimeout(() => {
+        forceKillSent = true
+        killChild('SIGKILL')
+        maybeFinalize()
+      }, TASK_KILL_GRACE_MS)
+      // 入口退出后后代仍可能存活，必须保留计时器引用直到整组强杀完成。
+    }
+
+    function onAbort() {
+      terminateChild()
     }
 
     child.stdout?.on('data', (chunk) => {
@@ -461,6 +520,8 @@ async function defaultRunTask(task: SuiteTask) {
     child.nodeChildProcess.on('error', onError)
     child.nodeChildProcess.on('exit', onExit)
     void child.then(() => {}, onError)
+    stopCancellation = () => signal.removeEventListener('abort', onAbort)
+    signal.addEventListener('abort', onAbort, { once: true })
 
     if (taskTimeoutMs > 0) {
       taskTimeoutTimer = setTimeout(() => {
@@ -468,17 +529,12 @@ async function defaultRunTask(task: SuiteTask) {
           return
         }
         console.error(`[e2e] task timeout after ${formatDuration(taskTimeoutMs)}: ${task.label}`)
-        timedOut = true
-        clearGraceTimer()
-        killChild('SIGTERM')
-        forceKillTimer = setTimeout(() => {
-          forceKillSent = true
-          killChild('SIGKILL')
-          maybeFinalize()
-        }, TASK_KILL_GRACE_MS)
-        // 入口退出后后代仍可能存活，必须保留计时器引用直到整组强杀完成。
+        terminateChild()
       }, taskTimeoutMs)
       taskTimeoutTimer.unref?.()
+    }
+    if (signal.aborted) {
+      onAbort()
     }
   })
 }
@@ -487,6 +543,8 @@ async function runOwnedTaskSuite(
   suiteName: string,
   tasks: SuiteTask[],
   options: RunSuiteOptions,
+  signal: AbortSignal,
+  lease: MachineE2ELease,
 ) {
   const failOnTaskFailure = options.failOnTaskFailure ?? true
   const runTask = options.runTask ?? defaultRunTask
@@ -498,7 +556,7 @@ async function runOwnedTaskSuite(
     partial: false,
     plannedTasks: tasks,
   }
-  let devtoolsLoginPreflightPassed = false
+  let resourceCleanupFailed = false
   let suiteReportArtifact: SuiteTaskArtifact | undefined
   const ideHmrCompanionSentinelPath = shouldShareIdeHmrCompanion(suiteName)
     ? resolveIdeHmrCompanionSentinelPath(suiteName)
@@ -510,6 +568,9 @@ async function runOwnedTaskSuite(
   }
 
   for (const [taskIndex, task] of tasks.entries()) {
+    if (signal.aborted) {
+      break
+    }
     if (task.outOfScopeReason) {
       continue
     }
@@ -520,10 +581,18 @@ async function runOwnedTaskSuite(
     let exitCode = 1
     let reason: string | undefined
     let blocked = false
+    let journalPath: string | undefined
+    let childScope: MachineE2EChildScope | undefined
+    let processStopError: OwnedCommandShutdownError | undefined
+    let devtoolsHostLease: DevtoolsHostLease | undefined
 
     try {
+      journalPath = await createDevtoolsProjectJournal()
+      childScope = await lease.createChildScope({ cleanupKey: journalPath })
       task.env = {
         ...task.env,
+        ...childScope.environment,
+        [MANAGED_PROJECT_JOURNAL_ENV]: journalPath,
         [ACCEPTANCE_RUN_ID_ENV]: reportContext.runId,
         [ACCEPTANCE_SHA_ENV]: reportContext.commitSha,
         [ACCEPTANCE_DIRTY_ENV]: reportContext.workingTreeDirty == null ? 'unknown' : reportContext.workingTreeDirty ? '1' : '0',
@@ -531,20 +600,28 @@ async function runOwnedTaskSuite(
         [ACCEPTANCE_REPORT_DIR_ENV]: path.join(ACCEPTANCE_ROOT, 'docs/reports/dom-acceptance', reportContext.runId),
         ...(reportContext.strict ? { [DOM_ACCEPTANCE_ENV]: '1' } : {}),
       }
-      if (devtoolsLoginPreflightPassed && isDevtoolsVitestTask(task)) {
-        task.env = {
-          ...task.env,
-          [DEVTOOLS_SKIP_LOGIN_CHECK_ENV]: '1',
-        }
-      }
       if (ideHmrCompanionSentinelPath && isDevtoolsVitestTask(task)) {
         task.env = {
           ...task.env,
           [IDE_HMR_COMPANION_SENTINEL_ENV]: ideHmrCompanionSentinelPath,
         }
       }
+      signal.throwIfAborted()
       await options.beforeEachTask?.(task)
-      exitCode = await runTask(task)
+      signal.throwIfAborted()
+      if (isDevtoolsVitestTask(task)) {
+        // 只在任务启动前认领冷宿主；已有或无法核验的宿主会阻断本 lane，避免继续累积 renderer。
+        // 上一宿主已在 task 收尾退出，新宿主必须执行自己的 global setup 登录预检。
+        devtoolsHostLease = await claimDevtoolsHost(task.env?.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH ?? process.env.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH)
+        if (devtoolsHostLease) {
+          task.env = {
+            ...task.env,
+            [DEVTOOLS_HOST_CLAIMED_ENV]: '1',
+          }
+        }
+      }
+      exitCode = await runTask(task, signal)
+      signal.throwIfAborted()
       if (reportContext.strict) {
         try {
           await validateTaskAcceptance(task, reportContext)
@@ -558,6 +635,9 @@ async function runOwnedTaskSuite(
       }
     }
     catch (error) {
+      if (error instanceof OwnedCommandShutdownError) {
+        processStopError = error
+      }
       const message = error instanceof Error ? error.message : String(error)
       reason = message
       blocked = true
@@ -565,9 +645,46 @@ async function runOwnedTaskSuite(
       console.error(message)
     }
     finally {
+      if (journalPath) {
+        const cleanupErrors: unknown[] = []
+        if (processStopError) {
+          try {
+            await childScope?.seal()
+          }
+          catch (error) {
+            cleanupErrors.push(error)
+          }
+        }
+        try {
+          await cleanupDevtoolsCommandScope(childScope, journalPath)
+        }
+        catch (error) {
+          cleanupErrors.push(error)
+        }
+        try {
+          if (devtoolsHostLease) {
+            await quitClaimedDevtoolsHost(devtoolsHostLease)
+          }
+        }
+        catch (error) {
+          cleanupErrors.push(error)
+        }
+        if (cleanupErrors.length) {
+          const message = cleanupErrors.map(error => error instanceof Error ? error.message : String(error)).join('; ')
+          resourceCleanupFailed = true
+          blocked = true
+          exitCode = 1
+          reason = [reason, `DevTools resource cleanup failed: ${message}`].filter(Boolean).join('; ')
+          console.error(`[${suiteName}] ${reason}`)
+        }
+      }
       stopHeartbeat()
     }
 
+    if (signal.aborted) {
+      exitCode = 1
+      reason ??= signal.reason instanceof Error ? signal.reason.message : 'E2E suite cancelled'
+    }
     const durationMs = Date.now() - startedAt
     results.push({
       artifacts: task.artifacts ?? [],
@@ -590,10 +707,7 @@ async function runOwnedTaskSuite(
     ))
     console.log(`[${suiteName}] ${status} ${task.label} (${formatDuration(durationMs)})`)
 
-    if (exitCode === 0 && isDevtoolsVitestTask(task) && !task.devtoolsLaunchSkipped) {
-      devtoolsLoginPreflightPassed = true
-    }
-    if (exitCode !== 0 && options.stopOnTaskFailure) {
+    if (signal.aborted || resourceCleanupFailed || (exitCode !== 0 && options.stopOnTaskFailure)) {
       console.warn(`[${suiteName}] stop after failed task: ${task.label}`)
       break
     }
@@ -601,7 +715,7 @@ async function runOwnedTaskSuite(
 
   await options.afterAll?.()
   if (writeReport) {
-    const report = createSuiteReport(results, suiteName, undefined, undefined, reportContext)
+    const report = createSuiteReport(results, suiteName, undefined, undefined, { ...reportContext, partial: reportContext.partial || signal.aborted })
     suiteReportArtifact = {
       kind: 'suite-report',
       indexPath: path.join(report.reportDir, report.markdownFile),
@@ -612,7 +726,7 @@ async function runOwnedTaskSuite(
       )
     }
   }
-  console.log(formatSuiteSummary(suiteName, results))
+  console.log(signal.aborted ? `[${suiteName}] cancelled after ${results.length}/${tasks.length} tasks; cleanup finished` : formatSuiteSummary(suiteName, results))
   if (!shouldEmitReportMarkers()) {
     const artifactSummary = formatSuiteArtifactsSummary(
       suiteName,
@@ -626,7 +740,7 @@ async function runOwnedTaskSuite(
   const incomplete = reportContext.strict && (reportContext.partial
     || results.length !== reportContext.plannedTasks.filter(task => !task.outOfScopeReason).length
     || !results.length || results.some(result => result.status !== 'passed'))
-  if ((failOnTaskFailure || reportContext.strict) && (results.some(result => result.exitCode !== 0) || incomplete)) {
+  if (signal.aborted || ((resourceCleanupFailed || failOnTaskFailure || reportContext.strict) && (results.some(result => result.exitCode !== 0) || incomplete))) {
     process.exitCode = 1
     return 1
   }
@@ -639,5 +753,15 @@ export async function runTaskSuite(
   tasks: SuiteTask[],
   options: RunSuiteOptions = {},
 ) {
-  return withMachineE2ELease(() => runOwnedTaskSuite(suiteName, tasks, options))
+  const signals = createSuiteSignalScope()
+  try {
+    const code = await withMachineE2ELease(lease => runOwnedTaskSuite(suiteName, tasks, options, signals.signal, lease), options.machineLeaseOptions)
+    return signals.exitCode ?? code
+  }
+  finally {
+    if (signals.exitCode !== undefined) {
+      process.exitCode = signals.exitCode
+    }
+    signals.dispose()
+  }
 }

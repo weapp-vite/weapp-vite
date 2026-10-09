@@ -1,3 +1,4 @@
+import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
 import type { AutomatorInstallationOptions } from './automator/context'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
@@ -42,88 +43,115 @@ export function resolveProjectAutomatorPort(projectPath: string) {
 async function launchSelectedAutomator(options: AutomatorOptions) {
   const { port, projectPath, sessionId, timeout = 30_000 } = options
   const lifecycle = new OperationLifecycle(timeout, 'IDE launch', options.signal)
-  return await lifecycle.run(async (scope) => {
-    const { Launcher } = await scope.step(() => import('@weapp-vite/miniprogram-automator'), { stage: 'load-automator' })
-    const resolvedOptions = await scope.step(() => resolveAutomatorSessionOptions(options), { stage: 'resolve-cli' })
-    const { target, cliPath: resolvedCliPath, installationId, runtimeProvider } = resolvedOptions
-    if (runtimeProvider === 'headless') {
-      return await scope.step(() => new Launcher().launch({ projectPath, runtimeProvider, timeout: scope.remainingMs(), signal: scope.signal }), { stage: 'launch', disposeLate: program => program.disconnect() })
-    }
-    await scope.step(() => assertWechatDevtoolsHost(target!, { signal: scope.signal, timeout: scope.remainingMs() }), { stage: 'host-identity' })
-    const config = await scope.step(() => readCustomConfig(), { stage: 'configuration' })
-    const resolvedTrustProject = options.trustProject ?? config.autoTrustProject ?? false
-    const launcher = new Launcher()
-    let lastError: unknown = null
-    let bootstrapResult: Awaited<ReturnType<typeof bootstrapWechatDevtoolsSettings>> | undefined
-    const resolvedProject = options.preserveProjectRoot
-      ? {
-          projectPath: path.resolve(projectPath),
-          sourceProjectPath: path.resolve(projectPath),
-        }
-      : await scope.step(() => resolveAutomatorProjectPath(projectPath), { stage: 'project' })
+  let managedLaunch: Promise<MiniProgram> | undefined
+  try {
+    return await lifecycle.run(async (scope) => {
+      const { Launcher } = await scope.step(() => import('@weapp-vite/miniprogram-automator'), { stage: 'load-automator' })
+      const resolvedOptions = await scope.step(() => resolveAutomatorSessionOptions(options), { stage: 'resolve-cli' })
+      const { target, cliPath: resolvedCliPath, installationId, runtimeProvider } = resolvedOptions
+      if (runtimeProvider === 'headless') {
+        return await scope.step(() => new Launcher().launch({ projectPath, runtimeProvider, timeout: scope.remainingMs(), signal: scope.signal }), { stage: 'launch', disposeLate: program => program.disconnect() })
+      }
+      await scope.step(() => assertWechatDevtoolsHost(target!, { signal: scope.signal, timeout: scope.remainingMs() }), { stage: 'host-identity' })
+      const config = await scope.step(() => readCustomConfig(), { stage: 'configuration' })
+      const resolvedTrustProject = options.trustProject ?? config.autoTrustProject ?? false
+      const launcher = new Launcher()
+      let lastError: unknown = null
+      let bootstrapResult: Awaited<ReturnType<typeof bootstrapWechatDevtoolsSettings>> | undefined
+      const resolvedProject = options.preserveProjectRoot
+        ? {
+            projectPath: path.resolve(projectPath),
+            sourceProjectPath: path.resolve(projectPath),
+          }
+        : await scope.step(() => resolveAutomatorProjectPath(projectPath), { stage: 'project' })
 
-    if (config.autoBootstrapDevtools !== false) {
-      bootstrapResult = await scope.step(() => bootstrapWechatDevtoolsSettings({
-        target,
-        projectPath: resolvedProject.projectPath,
-        trustProject: resolvedTrustProject,
-      }), { stage: 'settings' })
-    }
-
-    if (bootstrapResult?.servicePortEnabled === false) {
-      throw new Error('Detected WeChat DevTools service port is disabled in current settings. Please enable it manually; existing user settings were not modified.')
-    }
-
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      scope.attempt()
-      try {
-        const miniProgram = await scope.step(() => launcher.launch({
-          cliPath: resolvedCliPath,
-          ...(port ? { port } : {}),
+      if (process.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL) {
+        const { launchManagedAutomator } = await import('./automator/managed')
+        managedLaunch = launchManagedAutomator({
+          launcher,
+          scope,
+          target: target!,
           projectPath: resolvedProject.projectPath,
-          timeout: scope.remainingMs(),
-          signal: scope.signal,
+          sourceProjectPath: projectPath,
+          port: port ?? resolveProjectAutomatorPort(resolvedProject.projectPath),
+          sessionId,
           trustProject: resolvedTrustProject,
-        }), { stage: 'launch', disposeLate: program => program.disconnect() })
-        scope.own(() => miniProgram.disconnect(), 'automator-session')
-        const sessionMetadata = Reflect.get(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA') as { port?: number, wsEndpoint?: string } | undefined
-        if (typeof sessionMetadata?.wsEndpoint === 'string' && sessionMetadata.wsEndpoint) {
-          const wsEndpoint = sessionMetadata.wsEndpoint
-          await scope.step(() => assertWechatDevtoolsPort(target!, Number(new URL(wsEndpoint).port), { signal: scope.signal, timeout: scope.remainingMs() }), { stage: 'port-identity' })
-          await scope.step(() => persistAutomatorSession({
-            installationId: installationId!,
+          persistAsDefaultSession: options.persistAsDefaultSession,
+        })
+        return await managedLaunch
+      }
+
+      if (config.autoBootstrapDevtools !== false) {
+        bootstrapResult = await scope.step(() => bootstrapWechatDevtoolsSettings({
+          target,
+          projectPath: resolvedProject.projectPath,
+          trustProject: resolvedTrustProject,
+        }), { stage: 'settings' })
+      }
+
+      if (bootstrapResult?.servicePortEnabled === false) {
+        throw new Error('Detected WeChat DevTools service port is disabled in current settings. Please enable it manually; existing user settings were not modified.')
+      }
+
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        scope.attempt()
+        try {
+          const miniProgram = await scope.step(() => launcher.launch({
+            cliPath: resolvedCliPath,
+            ...(port ? { port } : {}),
+            projectPath: resolvedProject.projectPath,
+            timeout: scope.remainingMs(),
             signal: scope.signal,
-            ...(port ? { port: sessionMetadata.port ?? port } : {}),
-            projectPath,
-            sessionId,
-            wsEndpoint,
-          }), { stage: 'session-persist' })
-          if (options.persistAsDefaultSession && (port || sessionId)) {
+            trustProject: resolvedTrustProject,
+          }), { stage: 'launch', disposeLate: program => program.disconnect() })
+          scope.own(() => miniProgram.disconnect(), 'automator-session')
+          const sessionMetadata = Reflect.get(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA') as { port?: number, wsEndpoint?: string } | undefined
+          if (typeof sessionMetadata?.wsEndpoint === 'string' && sessionMetadata.wsEndpoint) {
+            const wsEndpoint = sessionMetadata.wsEndpoint
+            await scope.step(() => assertWechatDevtoolsPort(target!, Number(new URL(wsEndpoint).port), { signal: scope.signal, timeout: scope.remainingMs() }), { stage: 'port-identity' })
             await scope.step(() => persistAutomatorSession({
               installationId: installationId!,
               signal: scope.signal,
+              ...(port ? { port: sessionMetadata.port ?? port } : {}),
               projectPath,
+              sessionId,
               wsEndpoint,
             }), { stage: 'session-persist' })
+            if (options.persistAsDefaultSession && (port || sessionId)) {
+              await scope.step(() => persistAutomatorSession({
+                installationId: installationId!,
+                signal: scope.signal,
+                projectPath,
+                wsEndpoint,
+              }), { stage: 'session-persist' })
+            }
+          }
+          return miniProgram
+        }
+        catch (error) {
+          lastError = error
+          scope.recordFailure(error)
+          scope.throwIfAborted()
+          if (
+            !isRetryableAutomatorLaunchError(error)
+            || attempt === 1
+          ) {
+            throw error
           }
         }
-        return miniProgram
       }
-      catch (error) {
-        lastError = error
-        scope.recordFailure(error)
-        scope.throwIfAborted()
-        if (
-          !isRetryableAutomatorLaunchError(error)
-          || attempt === 1
-        ) {
-          throw error
-        }
-      }
-    }
 
-    throw lastError instanceof Error ? lastError : new Error(String(lastError))
-  })
+      throw lastError instanceof Error ? lastError : new Error(String(lastError))
+    })
+  }
+  catch (error) {
+    if (managedLaunch) {
+      // 超时可能早于官方回执；先等待其登记和清理，禁止遗留窗口后立即开始下一任务。
+      const program = await managedLaunch
+      await program.close()
+    }
+    throw error
+  }
 }
 
 /**
@@ -179,7 +207,7 @@ export async function persistOpenedAutomatorSession(options: AutomatorOptions & 
 /**
  * @description 只读连接当前项目已打开的自动化会话；失败不证明缓存过期，也不删除其他操作持有的会话记录。
  */
-export async function connectOpenedAutomator(options: AutomatorOptions) {
+export async function connectOpenedAutomator(options: AutomatorOptions): Promise<MiniProgram> {
   const { port, projectPath, sessionId } = options
   const lifecycle = new OperationLifecycle(options.timeout ?? 30_000, 'IDE connect', options.signal)
   return await lifecycle.run(async (scope) => {
@@ -193,7 +221,7 @@ export async function connectOpenedAutomator(options: AutomatorOptions) {
     }
     const wsEndpoint = persistedSession.wsEndpoint
     await scope.step(() => assertWechatDevtoolsPort(resolved.target!, Number(new URL(wsEndpoint).port), { signal: scope.signal, timeout: scope.remainingMs() }), { stage: 'port-identity' })
-    return await scope.step(() => launcher.connect({ timeout: scope.remainingMs(), signal: scope.signal, wsEndpoint }), {
+    const miniProgram = await scope.step(async () => await launcher.connect({ timeout: scope.remainingMs(), signal: scope.signal, wsEndpoint }) as MiniProgram, {
       stage: 'connect',
       disposeLate: (program) => {
         if (program && typeof program === 'object' && 'disconnect' in program && typeof program.disconnect === 'function') {
@@ -201,5 +229,12 @@ export async function connectOpenedAutomator(options: AutomatorOptions) {
         }
       },
     })
+    if (process.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL) {
+      // 借用连接不授予窗口关闭权限，窗口仍由创建者持有的 journal 回收。
+      miniProgram.close = async () => {
+        miniProgram.disconnect()
+      }
+    }
+    return miniProgram
   })
 }

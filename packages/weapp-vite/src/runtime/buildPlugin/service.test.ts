@@ -1806,11 +1806,11 @@ describe('runtime buildPlugin service', () => {
     ]))
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.size).toBe(0)
     expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      build: expect.objectContaining({ emptyOutDir: true }),
+      build: expect.objectContaining({ emptyOutDir: false }),
     }))
   })
 
-  it.each([undefined, false])('routes atomic creates once and respects emptyOutDir=%s', async (emptyOutDir) => {
+  it.each([undefined, true, false])('routes atomic creates once and defers cleanup until publication with emptyOutDir=%s', async (emptyOutDir) => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
     const emitted = Promise.withResolvers<string[]>()
@@ -1845,7 +1845,7 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledOnce()
     expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledWith(file, 'create')
     expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      build: expect.objectContaining({ emptyOutDir: emptyOutDir !== false }),
+      build: expect.objectContaining({ emptyOutDir: false }),
     }))
   })
 

@@ -306,7 +306,7 @@ describe('automator helpers', () => {
         projectPath: mockProjectPath,
         trustProject: false,
       })
-      expect(resolveTargetMock).toHaveBeenCalledExactlyOnceWith({ cliPath: '/custom/cli', projectPath: mockProjectPath })
+      expect(resolveTargetMock).toHaveBeenCalledExactlyOnceWith({ cliPath: '/custom/cli', projectPath: '/workspace/project' })
       expect(launchMock).toHaveBeenCalledWith({
         signal: expect.any(AbortSignal),
         timeout: expect.any(Number),

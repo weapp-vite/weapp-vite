@@ -179,34 +179,37 @@ describe('MiniProgram', () => {
     })
   })
 
-  it('waits for App domain readiness before returning a launched session', async () => {
+  it('waits for a registered page before returning a launched session', async () => {
     const timeoutError = Object.assign(
-      new Error('DevTools did not respond to protocol method App.captureScreenshot within 12000ms'),
+      new Error('DevTools did not respond to protocol method App.getCurrentPage within 3000ms'),
       {
         code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
-        method: 'App.captureScreenshot',
+        method: 'App.getCurrentPage',
       },
     )
     const connection = new FakeConnection()
     connection.send
       .mockRejectedValueOnce(timeoutError)
-      .mockResolvedValueOnce({ data: 'base64-data' })
+      .mockResolvedValueOnce({ pageId: 1, path: 'pages/index/index' })
     const miniProgram = new MiniProgram(connection as any)
 
     const pending = miniProgram.waitForAppReady()
     await vi.advanceTimersByTimeAsync(600)
 
     await expect(pending).resolves.toBeUndefined()
-    expect(connection.send).toHaveBeenNthCalledWith(1, 'App.captureScreenshot', {}, {
+    expect(connection.send).toHaveBeenNthCalledWith(1, 'App.getCurrentPage', {}, {
       timeout: 3_000,
     })
-    expect(connection.send).toHaveBeenNthCalledWith(2, 'App.captureScreenshot', {}, {
+    expect(connection.send).toHaveBeenNthCalledWith(2, 'App.getCurrentPage', {}, {
       timeout: 3_000,
     })
   })
 
   it('caps the App readiness probe with the remaining launch timeout', async () => {
-    const timeoutError = new Error('App readiness timeout')
+    const timeoutError = Object.assign(new Error('App readiness timeout'), {
+      code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+      method: 'App.getCurrentPage',
+    })
     const connection = new FakeConnection()
     connection.send.mockImplementationOnce(async (_method, _params, options) => {
       await new Promise(resolve => setTimeout(resolve, Number(options?.timeout)))
@@ -220,7 +223,7 @@ describe('MiniProgram', () => {
 
     await expectation
     expect(connection.send).toHaveBeenCalledTimes(1)
-    expect(connection.send).toHaveBeenCalledWith('App.captureScreenshot', {}, {
+    expect(connection.send).toHaveBeenCalledWith('App.getCurrentPage', {}, {
       timeout: 1_000,
     })
   })

@@ -1,8 +1,8 @@
-/* eslint-disable e18e/ban-dependencies -- E2E runner 需要跨平台透传子进程退出码和 stdio。 */
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
-import { execa } from 'execa'
+import { runOwnedE2ECommand } from './ownedE2ECommand'
+import { createSuiteSignalScope } from './suiteRunner/signals'
 
 const E2E_SUITE_RUNNER_PATH = path.resolve(import.meta.dirname, 'run-e2e-suite.ts')
 
@@ -41,11 +41,14 @@ export async function runSleepInhibitedE2ESuite(args = process.argv.slice(2)) {
   if (invocation.command === 'caffeinate') {
     console.log('[e2e:sleep-inhibitor] caffeinate -dimsu enabled')
   }
-  const result = await execa(invocation.command, invocation.args, {
-    reject: false,
-    stdio: 'inherit',
-  })
-  process.exitCode = result.exitCode ?? 1
+  const scope = createSuiteSignalScope()
+  try {
+    const exitCode = await runOwnedE2ECommand(invocation.command, invocation.args, { signal: scope.signal })
+    process.exitCode = scope.exitCode ?? exitCode
+  }
+  finally {
+    scope.dispose()
+  }
 }
 
 function isCurrentModuleEntry(entryArg: string | undefined, moduleUrl: string) {

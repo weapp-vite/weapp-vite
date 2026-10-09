@@ -50,7 +50,6 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/wot-ui-compat.runtime.test.ts', '1200000'],
 ])
 const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
-  'ide/app-lifecycle.test.ts',
   'ide/app-vue-hmr-alias.runtime.test.ts',
   'ide/automator-bridge-wrapper-hmr.runtime.test.ts',
   'ide/automator-concurrent-sessions.runtime.test.ts',
@@ -121,6 +120,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/wevu-initial-style.runtime.test.ts',
   'ide/issue-1015-css-hmr.runtime.test.ts',
   'ide/issue-1126-1128.test.ts',
+  'ide/issue-1172.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
@@ -286,6 +286,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/github-issues.runtime.issue1012.test.ts',
   'ide/github-issues.runtime.issue1015.test.ts',
   'ide/issue-1126-1128.test.ts',
+  'ide/issue-1172.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes-hmr.runtime.test.ts',

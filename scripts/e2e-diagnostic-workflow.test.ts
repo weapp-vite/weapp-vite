@@ -5,7 +5,7 @@ import { parse } from 'yaml'
 interface WorkflowJob {
   if?: string
   needs?: string | string[]
-  strategy?: { 'fail-fast'?: boolean, 'matrix': { 'os'?: string[], 'node-version'?: number[], 'shard'?: number[], 'include'?: Array<{ 'os': string, 'node-version': number }> } }
+  strategy?: { 'fail-fast'?: boolean, 'matrix': { 'os'?: string[], 'node-version'?: number[], 'shard'?: number[], 'include'?: Array<{ 'os'?: string, 'node-version': number, 'shard'?: number }> } }
   with?: Record<string, unknown>
 }
 
@@ -18,9 +18,41 @@ async function workflow() {
 }
 
 describe('bounded HMR workflow diagnosis', () => {
+  it('traces the full Windows DOM startup through the same artifact boundary and budget', async () => {
+    const config = parse(await readFile(new URL('../.github/workflows/windows-process-identity-probe.yml', import.meta.url), 'utf8')) as { jobs: Record<string, WorkflowJob> }
+    const build = config.jobs['writer-full-build']!
+    const dom = config.jobs['writer-full-dom']!
+    expect(build.if).toBe('inputs.scope == \'writer-full\'')
+    expect(dom.if).toBe(build.if)
+    expect(dom.needs).toBe('writer-full-build')
+    expect(build.strategy?.matrix).toEqual({ node: [22, 24] })
+    expect(dom.strategy?.matrix).toEqual(build.strategy?.matrix)
+    expect(build.with).toMatchObject({ build_command: 'pnpm build:pkgs:ci:windows', timeout_minutes: 40 })
+    expect(dom.with?.consume_build_artifact).toBe(build.with?.build_artifact_name)
+    expect(dom.with).toMatchObject({
+      timeout_minutes: 30,
+      main_command: 'pnpm exec cross-env NODE_DEBUG=weapp-ide-journal-writer node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless',
+    })
+    for (const name of ['provider-cleanup', 'self-writer-check', 'identity-probe']) {
+      expect(config.jobs[name]?.if).toContain('inputs.scope != \'writer-full\'')
+    }
+  })
+
+  it('checks real Windows rows through the untraced default entry on both Node versions', async () => {
+    const config = parse(await readFile(new URL('../.github/workflows/windows-process-identity-probe.yml', import.meta.url), 'utf8')) as { jobs: Record<string, WorkflowJob> }
+    const job = config.jobs['process-row-contract']!
+    expect(job.if).toBe('inputs.scope == \'process-rows\'')
+    expect(job.strategy?.matrix).toEqual({ node: [22, 24] })
+    expect(job.with).toMatchObject({
+      runs_on: 'windows-latest',
+      main_command: 'node --import tsx scripts/windowsProcessIdentityProbe/checkProcessRows.ts',
+      timeout_minutes: 20,
+    })
+  })
+
   it('requires an explicit manual selection and uses a separate concurrency group', async () => {
     const config = await workflow()
-    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr'] })
+    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-dev-cleanup'] })
     expect(config.concurrency.group).toContain('inputs.hmr-diagnostic || \'full\'')
     const job = config.jobs['shared-layout-windows-diagnostic']!
     expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'shared-layout-windows\'')
@@ -38,6 +70,50 @@ describe('bounded HMR workflow diagnosis', () => {
       artifact_name: 'workspace-hmr-nightly',
       timeout_minutes: 120,
     })
+  })
+
+  it('keeps the process lifecycle diagnostic manual and scoped to Windows Node 22 and 24', async () => {
+    const { jobs } = await workflow()
+    const job = jobs['windows-process-narrow-diagnostic']!
+    expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'windows-process-narrow\'')
+    expect(job.needs).toBeUndefined()
+    expect(job.strategy?.['fail-fast']).toBe(false)
+    expect(job.strategy?.matrix).toEqual({ 'node-version': [22, 24] })
+    expect(job.with).toMatchObject({
+      runs_on: 'windows-latest',
+      build_command: 'pnpm exec turbo run build --filter=weapp-ide-cli...',
+      main_command: 'pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/suiteRunner/process.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-process-narrow-report.json',
+      artifact_name: expect.stringMatching(/^windows-process-narrow-.*matrix\.node-version.*github\.sha/),
+      artifact_path: '.tmp/windows-process-narrow-report.json',
+      timeout_minutes: 15,
+    })
+  })
+
+  it('compares complete Windows shards while retaining the original shard and query budget', async () => {
+    const { jobs } = await workflow()
+    const job = jobs['windows-dev-cleanup-diagnostic']!
+    expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'windows-dev-cleanup\'')
+    expect(job.needs).toBeUndefined()
+    expect(job.strategy?.['fail-fast']).toBe(false)
+    expect(job.strategy?.matrix).toEqual({
+      include: [
+        { 'node-version': 22, 'shard': 3 },
+        { 'node-version': 22, 'shard': 1 },
+        { 'node-version': 24, 'shard': 1 },
+      ],
+    })
+    expect(job.with).toMatchObject({
+      runs_on: 'windows-latest',
+      node_version: `\${{ matrix.node-version }}`,
+      build_command: 'pnpm build:ci:windows',
+      main_command: `pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=\${{ matrix.shard }} --shard-total=4`,
+      e2e_platform: 'weapp',
+      artifact_name: expect.stringMatching(/^windows-dev-cleanup-node-.*matrix\.node-version.*shard-.*matrix\.shard.*github\.sha/),
+      artifact_path: 'docs/reports/*-e2e-ci-full-*-suite-report/**',
+      timeout_minutes: 40,
+    })
+    const reusable = parse(await readFile(new URL('../.github/workflows/reusable-node-command.yml', import.meta.url), 'utf8')) as { jobs: { run: { steps: Array<{ name?: string, if?: string }> } } }
+    expect(reusable.jobs.run.steps.find(step => step.name === 'Upload artifact')?.if).toContain('always()')
   })
 
   it('isolates plugin watch readiness from broader regressions on every OS and Node version', async () => {
@@ -97,7 +173,7 @@ describe('bounded HMR workflow diagnosis', () => {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)
     }
     for (const [name, job] of Object.entries(jobs)) {
-      if (['shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic'].includes(name)) {
+      if (['shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-dev-cleanup-diagnostic'].includes(name)) {
         continue
       }
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>

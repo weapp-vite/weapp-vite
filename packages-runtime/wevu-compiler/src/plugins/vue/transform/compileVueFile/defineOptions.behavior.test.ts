@@ -1,4 +1,5 @@
 import os from 'node:os'
+import { baseParse, NodeTypes } from '@vue/compiler-core'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import * as fs from '../../../../utils/fs'
@@ -95,7 +96,17 @@ defineOptions({
       },
     })
 
-    expect(result.template).toContain('<cover-view slot="header"><slot /></cover-view>')
-    expect(result.template).not.toContain('<view slot="header"><slot /></view>')
+    const host = baseParse(result.template!).children[0]
+    expect(host?.type).toBe(NodeTypes.ELEMENT)
+    if (host?.type !== NodeTypes.ELEMENT) {
+      throw new Error('Expected the native child host')
+    }
+    const wrapper = host.children[0]
+    expect(wrapper).toMatchObject({
+      type: NodeTypes.ELEMENT,
+      tag: 'cover-view',
+      props: expect.arrayContaining([expect.objectContaining({ name: 'slot', value: expect.objectContaining({ content: 'header' }) })]),
+      children: [expect.objectContaining({ type: NodeTypes.ELEMENT, tag: 'slot' })],
+    })
   })
 })

@@ -97,7 +97,12 @@ export default class DomAcceptanceReporter implements Reporter {
     const report = this.persist(messages, new Date().toISOString())
     if (this.strict && report.status !== 'passed') {
       process.exitCode = 1
-      throw new Error(formatStrictAcceptanceFailure(report))
+      const message = formatStrictAcceptanceFailure(report)
+      if (reason === 'passed') {
+        throw new Error(message)
+      }
+      // Vitest 在 globalSetup 的 finally 中调用此钩子；不能用报告错误覆盖原始异常。
+      process.stderr.write(`${message}\n`)
     }
   }
 

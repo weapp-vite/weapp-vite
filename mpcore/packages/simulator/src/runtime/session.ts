@@ -45,6 +45,7 @@ import { createHeadlessVideoContext } from '../view/videoContext'
 import { createAppInstance } from './appInstance'
 import { HeadlessAppLifecycle } from './appLifecycle'
 import { runComponentLifecycle } from './componentInstance'
+import { hasPendingComponentConstruction } from './componentInstance/construction'
 import { detachComponentRelations } from './componentInstance/relations'
 import { resolveNativeComponentSelection } from './componentInstance/selection'
 import { createModuleLoader } from './moduleLoader'
@@ -739,22 +740,30 @@ export class HeadlessSession {
   }
 
   selectComponent(selector: string) {
-    this.renderCurrentPage()
+    if (!hasPendingComponentConstruction(this.componentCache)) {
+      this.renderCurrentPage()
+    }
     return this.selectComponentsWithin(null, selector)[0] ?? null
   }
 
   selectAllComponents(selector: string) {
-    this.renderCurrentPage()
+    if (!hasPendingComponentConstruction(this.componentCache)) {
+      this.renderCurrentPage()
+    }
     return this.selectComponentsWithin(null, selector)
   }
 
   selectComponentWithin(scopeId: string, selector: string) {
-    this.renderCurrentPage()
+    if (!hasPendingComponentConstruction(this.componentCache)) {
+      this.renderCurrentPage()
+    }
     return this.selectComponentsWithin(scopeId, selector)[0] ?? null
   }
 
   selectAllComponentsWithin(scopeId: string, selector: string) {
-    this.renderCurrentPage()
+    if (!hasPendingComponentConstruction(this.componentCache)) {
+      this.renderCurrentPage()
+    }
     return this.selectComponentsWithin(scopeId, selector)
   }
 

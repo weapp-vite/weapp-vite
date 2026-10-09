@@ -34,7 +34,7 @@ export async function compileVueSharedRuntime(repoRoot: string, withRouter = fal
           return [
             `export { createApp, createWevuComponent, installInlineEvents } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/internal-runtime.ts'))};`,
             `export { createStore, setActivePinia, defineStore, storeToRefs } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/index.ts'))};`,
-            `export { ref, computed } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/internal-reactivity.ts'))};`,
+            `export { ref, reactive, computed } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/internal-reactivity.ts'))};`,
             `export { nextTick } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/scheduler.ts'))};`,
             ...(pageHooks ? [`export { onLoad, onMounted } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/internal-runtime.ts'))};`] : []),
             ...(withRouter ? [`export { createRouter, useRouter } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/router.ts'))};`] : []),

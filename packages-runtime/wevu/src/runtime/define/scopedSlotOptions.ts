@@ -7,6 +7,7 @@ import {
   WEVU_INLINE_HANDLER,
   WEVU_INLINE_MAP_KEY,
   WEVU_LAYOUT_HOSTS_KEY,
+  WEVU_NATIVE_SLOT_CONTEXT_KEY,
   WEVU_OWNER_HANDLER,
   WEVU_PROPS_DERIVED_KEYS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
@@ -433,6 +434,7 @@ export function createScopedSlotOptions(
     layoutHosts?: LayoutHostBinding[]
     templateRefs?: TemplateRefBinding[]
     [WEVU_BINDING_MANIFEST_KEY]?: WevuRuntimeBindingManifestV1
+    [WEVU_NATIVE_SLOT_CONTEXT_KEY]?: boolean
   },
 ) {
   const scopedSlotComputed = overrides?.computed
@@ -453,6 +455,7 @@ export function createScopedSlotOptions(
     return ownerId ? getOwnerTarget(ownerId) : undefined
   }
   const baseOptions = {
+    [WEVU_NATIVE_SLOT_CONTEXT_KEY]: overrides?.[WEVU_NATIVE_SLOT_CONTEXT_KEY],
     [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]: true,
     options: {
       virtualHost: true,

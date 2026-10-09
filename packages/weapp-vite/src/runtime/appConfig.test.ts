@@ -43,4 +43,22 @@ describe('finalizeAppConfigForBuild independent subpackages', () => {
       subPackages: [{ root: 'pkg/settings', pages: ['pages/index'], independent: true }],
     })
   })
+
+  it('omits empty subpackages for multi-platform output', () => {
+    expect(finalizeAppConfigForBuild({ pages: ['pages/index'] }, {
+      omitEmptySubPackages: true,
+    })).toEqual({ pages: ['pages/index'] })
+  })
+
+  it('retains non-empty subpackages for multi-platform output', () => {
+    expect(finalizeAppConfigForBuild({
+      pages: ['pages/index'],
+      subPackages: [{ root: 'pkg', pages: ['pages/detail'] }],
+    }, {
+      omitEmptySubPackages: true,
+    })).toEqual({
+      pages: ['pages/index'],
+      subPackages: [{ root: 'pkg', pages: ['pages/detail'] }],
+    })
+  })
 })

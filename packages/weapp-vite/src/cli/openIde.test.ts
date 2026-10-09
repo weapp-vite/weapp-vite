@@ -212,6 +212,7 @@ describe('openIde', () => {
   })
 
   afterEach(() => {
+    vi.unstubAllEnvs()
     expect(quitWechatIdeMock).not.toHaveBeenCalled()
     expect(execFileMock).not.toHaveBeenCalled()
   })
@@ -943,6 +944,27 @@ describe('openIde', () => {
       'dist/dev/mp-weixin',
       '--trust-project',
     ])
+  })
+
+  it('stops a managed launch failure without falling back to another window', async () => {
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', 'task-owned-journal')
+    const { openIde } = await import('./openIde')
+    const error = new Error('unconfirmed project ownership')
+    connectOpenedAutomatorMock.mockRejectedValueOnce(new Error('not opened'))
+    launchAutomatorMock.mockRejectedValueOnce(error)
+    await expect(openIde('weapp', 'dist/dev/mp-weixin', { useAutomatorOpen: true })).rejects.toBe(error)
+    expect(parseMock).not.toHaveBeenCalled()
+    expect(runWechatIdeEngineBuildMock).not.toHaveBeenCalled()
+  })
+
+  it('propagates a managed CLI open failure before post-open engine recovery', async () => {
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', 'task-owned-journal')
+    const { openIde } = await import('./openIde')
+    const error = new Error('project cleanup incomplete')
+    parseMock.mockRejectedValueOnce(error)
+    await expect(openIde('weapp', 'dist/dev/mp-weixin', { useAutomatorOpen: false })).rejects.toBe(error)
+    expect(parseMock).toHaveBeenCalledOnce()
+    expect(runWechatIdeEngineBuildMock).not.toHaveBeenCalled()
   })
 
   it('falls back to plain open when detected service port is disabled', async () => {

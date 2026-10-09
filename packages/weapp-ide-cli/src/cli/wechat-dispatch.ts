@@ -194,7 +194,23 @@ export async function dispatchWechatCliCommand(argv: string[]) {
   }
 
   if (command === 'close') {
-    await closeWechatIdeProject()
+    const projectPath = readOptionValue(argv, '--project', '-p')
+    const cliPath = readOptionValue(argv, '--cli-path')
+    if ((hasOption(argv, '--project') || hasOption(argv, '-p')) && (!projectPath || projectPath.startsWith('-'))) {
+      throw new Error('The close --project/-p option requires a value.')
+    }
+    if (hasOption(argv, '--cli-path') && (!cliPath || cliPath.startsWith('-'))) {
+      throw new Error('The close --cli-path option requires a value.')
+    }
+    if (projectPath !== undefined || cliPath !== undefined) {
+      await closeWechatIdeProject({
+        ...(projectPath !== undefined ? { projectPath } : {}),
+        ...(cliPath !== undefined ? { cliPath } : {}),
+      })
+    }
+    else {
+      await closeWechatIdeProject()
+    }
     return true
   }
 

@@ -13,6 +13,8 @@ const TEMPLATE_PRESET_PLATFORMS: Record<ReturnType<typeof getMiniProgramTemplate
   swan: swanPlatform,
 }
 
+const compatibleWechatPlatform: MiniProgramPlatform = { ...defaultMiniProgramPlatform, nativeSlotContext: false }
+
 /**
  * 获取默认模板适配器。
  */
@@ -44,6 +46,9 @@ export { defaultMiniProgramPlatform, defaultPlatform }
  */
 export function getMiniProgramTemplatePlatform(platform?: MpPlatform): MiniProgramPlatform {
   const preset = getMiniProgramTemplatePreset(platform)
+  if (platform && platform !== 'weapp' && preset === 'wechat') {
+    return compatibleWechatPlatform
+  }
   return TEMPLATE_PRESET_PLATFORMS[preset] ?? getDefaultMiniProgramTemplatePlatform()
 }
 

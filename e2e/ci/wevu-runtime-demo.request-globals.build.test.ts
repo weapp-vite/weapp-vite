@@ -1,9 +1,12 @@
 import type { TestJsFormat } from '../utils/jsFormat'
+import process from 'node:process'
 import {
   REQUEST_GLOBAL_BUNDLE_MARKER,
   REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
 } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
+// eslint-disable-next-line e18e/ban-dependencies -- 类型检查子进程需要跨平台 pnpm 命令解析。
+import { execa } from 'execa'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../packages/weapp-vite/src/runtime/config/internal/injectRequestGlobals'
@@ -76,6 +79,11 @@ const PAGE_CASES = [
 ] as const
 
 describe('e2e app: wevu-runtime-demo request globals (build)', { concurrent: false }, () => {
+  it('typechecks object properties and Vue Query refs with the application module augmentations', async () => {
+    await execa(process.execPath, [CLI_PATH, 'prepare'], { cwd: APP_ROOT })
+    await execa('pnpm', ['typecheck'], { cwd: APP_ROOT })
+  })
+
   for (const jsFormat of JS_FORMATS) {
     it(`keeps top-level request globals bindings and resolves wevu/web-apis usage for request-globals pages in ${jsFormat}`, async () => {
       await runBuild(jsFormat)

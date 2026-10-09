@@ -54,9 +54,13 @@ describe('automator bridge wrapper lifecycle', () => {
       }
       const configPath = path.join(wrapper.path, 'project.config.json')
       const initialConfigBytes = fs.readFileSync(configPath)
-      const config = JSON.parse(initialConfigBytes.toString()) as { miniprogramRoot: string, srcMiniprogramRoot: string }
+      const config = JSON.parse(initialConfigBytes.toString()) as { miniprogramRoot: string, simulatorPluginLibVersion?: Record<string, unknown>, simulatorType?: string, srcMiniprogramRoot: string }
       const configuredRoot = path.resolve(wrapper.path, config.miniprogramRoot)
       expect(config.srcMiniprogramRoot).toBe(config.miniprogramRoot)
+      expect(config).toMatchObject({
+        simulatorPluginLibVersion: {},
+        simulatorType: 'wechat',
+      })
       expect(configuredRoot).toBe(path.resolve(wrapper.runtimeRoot))
       expect(fs.existsSync(path.join(configuredRoot, 'app.json'))).toBe(true)
       expect(fs.existsSync(path.join(configuredRoot, `${route}.js`))).toBe(true)
@@ -73,10 +77,11 @@ describe('automator bridge wrapper lifecycle', () => {
       expect(read).toHaveBeenCalledWith(path.join(configuredRoot, `${route}.js`), 'utf8')
     }
     finally {
-      wrapper.stopSync?.()
-      fs.rmSync(wrapper.path, { recursive: true, force: true })
+      await wrapper.cleanup?.()
       fs.rmSync(project, { recursive: true, force: true })
     }
+
+    expect(fs.existsSync(wrapper.path)).toBe(false)
   })
 
   it('observes the original output directly without copying, watching, or rewriting project configuration', async () => {

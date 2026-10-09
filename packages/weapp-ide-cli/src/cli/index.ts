@@ -1,3 +1,4 @@
+export * from './agentStart'
 export * from './automator'
 export * from './automator-argv'
 export { acquireSharedMiniProgram, type AutomatorSessionOptions, closeSharedMiniProgram, connectMiniProgram, getSharedMiniProgramSessionCount, type MiniProgramElement, type MiniProgramEventMap, type MiniProgramLike, type MiniProgramPage, releaseSharedMiniProgram, resolveAutomatorSessionOptions, withMiniProgram } from './automator-session'

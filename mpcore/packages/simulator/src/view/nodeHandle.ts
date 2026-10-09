@@ -1,7 +1,7 @@
 import { createMiniProgramEventPayload, resolveMiniProgramEventBinding } from './eventBinding'
 import { collectNodeDataset } from './nodeDataset'
-import { querySelectorAll } from './selectors'
-import { queryXPathElements } from './xpath'
+import { queryInspectionSelectorAll, querySelectorAll } from './selectors'
+import { queryInspectionXPathElements, queryXPathElements } from './xpath'
 
 interface DomNodeLike {
   attribs?: Record<string, string>
@@ -42,6 +42,7 @@ interface HeadlessTestingNodeInteractionHandlers {
   createScopeHandle: (scopeId: string | null) => { scopeId: string, snapshot: () => Promise<unknown> } | null
   createPageHandle: () => { data: (path?: string) => Promise<unknown> }
   ownerScopeId: (scopeId: string | null) => string | null
+  projectionOnly?: boolean
 }
 
 function escapeText(text: string) {
@@ -119,7 +120,8 @@ export class HeadlessTestingNodeHandle {
   }
 
   private query(selector: string) {
-    const nodes = querySelectorAll(this.node, selector)
+    const query = this.interactions?.projectionOnly ? querySelectorAll : queryInspectionSelectorAll
+    const nodes = query(this.node, selector)
     const scope = this.node.attribs?.['data-sim-scope']
     if (!scope || !this.interactions) {
       return nodes
@@ -144,7 +146,8 @@ export class HeadlessTestingNodeHandle {
 
   async getElementsByXpath(expression: string) {
     this.assertActive()
-    return queryXPathElements(this.node, expression).map(node => new HeadlessTestingNodeHandle(node, this.interactions))
+    const query = this.interactions?.projectionOnly ? queryXPathElements : queryInspectionXPathElements
+    return query(this.node, expression).map(node => new HeadlessTestingNodeHandle(node, this.interactions))
   }
 
   async attr(name: string) {

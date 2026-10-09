@@ -1,5 +1,6 @@
 import type { Attr, Element, IDomFacade, Node as XPathNode } from 'fontoxpath'
 import * as fontoxpath from 'fontoxpath'
+import { getInspectionChildren } from './inspectionTree'
 
 // Node 加载 CommonJS 入口，浏览器构建加载 ESM 入口，两者复用同一适配器。
 const xpathEngine = (Reflect.get(fontoxpath, 'default') ?? fontoxpath) as typeof fontoxpath
@@ -10,6 +11,12 @@ interface SourceNode {
   data?: string
   name?: string
   type?: string
+}
+
+type ChildrenReader = (node: SourceNode) => SourceNode[]
+
+function getRenderedChildren(node: SourceNode) {
+  return node.children ?? []
 }
 
 interface QueryNode extends Element {
@@ -24,7 +31,7 @@ interface QueryAttribute extends Attr {
   parent: QueryNode
 }
 
-function wrapNode(source: SourceNode, parent: QueryNode | null = null): QueryNode {
+function wrapNode(source: SourceNode, getChildren: ChildrenReader, parent: QueryNode | null = null): QueryNode {
   const node: QueryNode = {
     attributes: [],
     children: [],
@@ -47,7 +54,7 @@ function wrapNode(source: SourceNode, parent: QueryNode | null = null): QueryNod
     prefix: null,
     value,
   }))
-  node.children = (source.children ?? []).map(child => wrapNode(child, node))
+  node.children = getChildren(source).map(child => wrapNode(child, getChildren, node))
   return node
 }
 
@@ -72,12 +79,20 @@ const domFacade: IDomFacade = {
   getPreviousSibling: node => sibling(node, -1),
 }
 
-export function queryXPathElements<T extends SourceNode>(root: T, expression: string): T[] {
+function queryElements<T extends SourceNode>(root: T, expression: string, getChildren: ChildrenReader): T[] {
   if (!expression.trim()) {
     throw new Error('XPath must be a non-empty expression in headless testing runtime.')
   }
-  const document = wrapNode(root.type === 'root' ? root : { type: 'root', children: [root] })
+  const document = wrapNode(root.type === 'root' ? root : { type: 'root', children: [root] }, getChildren)
   return xpathEngine.evaluateXPathToNodes<QueryNode>(expression, document, domFacade)
     .filter(node => node.nodeType === 1)
     .map(node => node.source as T)
+}
+
+export function queryXPathElements<T extends SourceNode>(root: T, expression: string): T[] {
+  return queryElements(root, expression, getRenderedChildren)
+}
+
+export function queryInspectionXPathElements<T extends SourceNode>(root: T, expression: string): T[] {
+  return queryElements(root, expression, getInspectionChildren)
 }

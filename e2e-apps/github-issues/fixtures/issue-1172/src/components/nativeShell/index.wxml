@@ -1,0 +1,6 @@
+<view>
+  <view id="native-count">native:{{count}}</view>
+  <slot />
+  <slot name="named" />
+  <native-owner id="native-owner" />
+</view>

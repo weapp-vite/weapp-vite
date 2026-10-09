@@ -1,35 +1,33 @@
+import type { DevtoolsLogIssue, DevtoolsSimulatorBootDiagnostic } from './devtoolsSimulatorBootDiagnostics'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { classifyDevtoolsSimulatorBootLine } from './devtoolsSimulatorBootDiagnostics'
+
+export type { DevtoolsLogIssue, DevtoolsSimulatorBootDiagnostic } from './devtoolsSimulatorBootDiagnostics'
 
 const DEVTOOLS_LOG_ROOT_ENV = 'WEAPP_VITE_E2E_DEVTOOLS_LOG_ROOT'
 const DEVTOOLS_PROFILE_NAME_PATTERN = /^[\w.-]+$/
 const DEVTOOLS_LOG_FILE_PATTERN = /\.log$/i
 const DEVTOOLS_LOG_TIMESTAMP_PATTERN = /^\[(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})\.(\d{3})(Z|[+-]\d{2}:\d{2})?\]/
-const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
-  /simulator launch catch error/i,
-  /simulator not found/i,
-  /模拟器启动失败/,
-  /cannot read propert(?:y|ies)\s+['"]subPackages['"]\s+of\s+undefined/i,
-  /cannot read propert(?:y|ies)\s+\(reading\s+['"]subPackages['"]\)/i,
-] as const
-const DEVTOOLS_SIMULATOR_NOT_FOUND_PATTERN = /\[SimulatorService\]\s+updateSimulatorCompileOptions:\s+simulator not found\s+(\S+)/i
-const DEVTOOLS_SIMULATOR_INIT_PATTERN = /\[SimulatorService\]\s+init simulator\s+(\S+)\s+with clientSid\b/i
-const DEVTOOLS_SIMULATOR_CONTEXT_PATTERN = /\[rt:[^,\]]+,win:([^\]]+)\]/i
-const DEVTOOLS_GENERIC_SIMULATOR_LAUNCH_ERROR_PATTERN = /\bsimulator launch catch error(?: stack)? Error:\s*simulator launch failed\s*$/i
-const DEVTOOLS_SIMULATOR_LAUNCH_SUCCESS_PATTERN = /\bsimulator launch success\b/i
-
-export interface DevtoolsLogIssue {
-  file: string
-  line: string
-}
+const DEVTOOLS_UTILITY_PROCESS_OPEN_PATTERN = /utility process .*\bopened\b/i
+const DEVTOOLS_UTILITY_PROCESS_CLOSE_PATTERN = /utility process (?:exit!|.*\bdestroyed\b)/i
 
 export type DevtoolsLogBaseline = Record<string, number>
 
-const DEFAULT_LOG_QUIET_WINDOW_MS = 1_000
+// DevTools 在项目窗口销毁后可能要数秒才重建 backend utility process。
+// 清理门禁会在发现退出事件后等待对应的 opened 事件，再观察稳定窗口；
+// 总预算只作为宿主没有给出重启回执时的硬上限。
+const DEFAULT_LOG_QUIET_WINDOW_MS = 2_000
 const DEFAULT_LOG_QUIET_POLL_INTERVAL_MS = 100
-const DEFAULT_LOG_QUIET_TIMEOUT_MS = 5_000
+const DEFAULT_LOG_QUIET_TIMEOUT_MS = 30_000
+const DEFAULT_UTILITY_RESTART_GRACE_MS = 5_000
+
+interface DevtoolsUtilityProcessEvent {
+  at: number
+  kind: 'closed' | 'opened'
+}
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -116,67 +114,6 @@ function isSameDevtoolsLogBaseline(left: DevtoolsLogBaseline, right: DevtoolsLog
     && leftEntries.every(([filePath, size]) => right[filePath] === size)
 }
 
-export async function waitForDevtoolsLogQuiescence(options: {
-  pollIntervalMs?: number
-  quietWindowMs?: number
-  rootDir?: string
-  timeoutMs?: number
-} = {}) {
-  const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_LOG_QUIET_POLL_INTERVAL_MS
-  const quietWindowMs = options.quietWindowMs ?? DEFAULT_LOG_QUIET_WINDOW_MS
-  const timeoutMs = options.timeoutMs ?? DEFAULT_LOG_QUIET_TIMEOUT_MS
-  let baseline = captureDevtoolsLogBaseline(options)
-  let quietSince = Date.now()
-  const deadline = quietSince + timeoutMs
-
-  while (Date.now() < deadline) {
-    await sleep(pollIntervalMs)
-    const current = captureDevtoolsLogBaseline(options)
-    if (!isSameDevtoolsLogBaseline(baseline, current)) {
-      baseline = current
-      quietSince = Date.now()
-      continue
-    }
-    if (Date.now() - quietSince >= quietWindowMs) {
-      return baseline
-    }
-  }
-
-  return baseline
-}
-
-function isSimulatorBootIssue(line: string) {
-  return DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS.some(pattern => pattern.test(line))
-}
-
-function isTransientSimulatorNotFoundWarning(lines: string[], index: number) {
-  const simulatorId = lines[index]?.match(DEVTOOLS_SIMULATOR_NOT_FOUND_PATTERN)?.[1]
-  if (!simulatorId) {
-    return false
-  }
-
-  return lines.some((line) => {
-    return line.match(DEVTOOLS_SIMULATOR_INIT_PATTERN)?.[1] === simulatorId
-  })
-}
-
-function isRecoveredGenericSimulatorLaunchError(lines: string[], index: number) {
-  const line = lines[index] ?? ''
-  if (!DEVTOOLS_GENERIC_SIMULATOR_LAUNCH_ERROR_PATTERN.test(line)) {
-    return false
-  }
-
-  const simulatorContext = line.match(DEVTOOLS_SIMULATOR_CONTEXT_PATTERN)?.[1]
-  if (!simulatorContext) {
-    return false
-  }
-
-  return lines.slice(index + 1).some((candidate) => {
-    return DEVTOOLS_SIMULATOR_LAUNCH_SUCCESS_PATTERN.test(candidate)
-      && candidate.match(DEVTOOLS_SIMULATOR_CONTEXT_PATTERN)?.[1] === simulatorContext
-  })
-}
-
 function parseDevtoolsLogLineTime(line: string) {
   const match = line.match(DEVTOOLS_LOG_TIMESTAMP_PATTERN)
   if (!match) {
@@ -186,13 +123,100 @@ function parseDevtoolsLogLineTime(line: string) {
   return Number.isFinite(timestamp) ? timestamp : null
 }
 
-export function scanRecentDevtoolsSimulatorBootIssues(options: {
+function resolveLatestDevtoolsUtilityProcessEvent(rootDir: string): DevtoolsUtilityProcessEvent | undefined {
+  let latest: DevtoolsUtilityProcessEvent | undefined
+  for (const logDir of resolveWeappLogDirs(rootDir)) {
+    for (const entry of safeReadDir(logDir)) {
+      if (!entry.isFile() || !DEVTOOLS_LOG_FILE_PATTERN.test(entry.name)) {
+        continue
+      }
+      const filePath = path.join(logDir, entry.name)
+      const stat = safeStat(filePath)
+      if (!stat) {
+        continue
+      }
+      let content = ''
+      try {
+        const raw = fs.readFileSync(filePath)
+        content = raw.subarray(Math.max(0, raw.length - 128 * 1024)).toString('utf8')
+      }
+      catch {
+        continue
+      }
+      for (const line of content.split(/\r?\n/)) {
+        const kind = DEVTOOLS_UTILITY_PROCESS_OPEN_PATTERN.test(line)
+          ? 'opened'
+          : DEVTOOLS_UTILITY_PROCESS_CLOSE_PATTERN.test(line)
+            ? 'closed'
+            : undefined
+        if (!kind) {
+          continue
+        }
+        const at = parseDevtoolsLogLineTime(line) ?? stat.mtimeMs
+        if (!latest || at >= latest.at) {
+          latest = { at, kind }
+        }
+      }
+    }
+  }
+  return latest
+}
+
+export async function waitForDevtoolsLogQuiescence(options: {
+  pollIntervalMs?: number
+  quietWindowMs?: number
+  rootDir?: string
+  timeoutMs?: number
+  utilityRestartGraceMs?: number
+} = {}) {
+  const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_LOG_QUIET_POLL_INTERVAL_MS
+  const quietWindowMs = options.quietWindowMs ?? DEFAULT_LOG_QUIET_WINDOW_MS
+  const timeoutMs = options.timeoutMs ?? DEFAULT_LOG_QUIET_TIMEOUT_MS
+  const utilityRestartGraceMs = options.utilityRestartGraceMs ?? DEFAULT_UTILITY_RESTART_GRACE_MS
+  const rootDir = options.rootDir || resolveDevtoolsLogRoot()
+  let baseline = captureDevtoolsLogBaseline(options)
+  let quietSince = Date.now()
+  const deadline = quietSince + timeoutMs
+  const initialUtilityEvent = resolveLatestDevtoolsUtilityProcessEvent(rootDir)
+  const pendingUtilityRestartAt = initialUtilityEvent?.kind === 'closed' ? initialUtilityEvent.at : undefined
+  let utilityRestartObserved = pendingUtilityRestartAt === undefined
+  const utilityRestartDeadline = pendingUtilityRestartAt === undefined
+    ? undefined
+    : Date.now() + Math.min(timeoutMs, Math.max(0, utilityRestartGraceMs))
+
+  while (Date.now() < deadline) {
+    await sleep(pollIntervalMs)
+    const current = captureDevtoolsLogBaseline(options)
+    if (!utilityRestartObserved && pendingUtilityRestartAt !== undefined) {
+      const utilityEvent = resolveLatestDevtoolsUtilityProcessEvent(rootDir)
+      if (utilityEvent?.kind === 'opened' && utilityEvent.at > pendingUtilityRestartAt) {
+        utilityRestartObserved = true
+        quietSince = Date.now()
+      }
+    }
+    if (!isSameDevtoolsLogBaseline(baseline, current)) {
+      baseline = current
+      quietSince = Date.now()
+      continue
+    }
+    const restartGraceElapsed = utilityRestartDeadline !== undefined && Date.now() >= utilityRestartDeadline
+    if ((utilityRestartObserved || restartGraceElapsed) && Date.now() - quietSince >= quietWindowMs) {
+      return baseline
+    }
+  }
+
+  return baseline
+}
+
+interface DevtoolsLogScanOptions {
   baseline?: DevtoolsLogBaseline
   rootDir?: string
   sinceMs: number
-}): DevtoolsLogIssue[] {
+}
+
+export function scanRecentDevtoolsSimulatorBootDiagnostics(options: DevtoolsLogScanOptions): DevtoolsSimulatorBootDiagnostic[] {
   const rootDir = options.rootDir || resolveDevtoolsLogRoot()
-  const issues: DevtoolsLogIssue[] = []
+  const issues: DevtoolsSimulatorBootDiagnostic[] = []
 
   for (const filePath of resolveRecentLogFiles(rootDir, options.sinceMs)) {
     let content = ''
@@ -213,17 +237,21 @@ export function scanRecentDevtoolsSimulatorBootIssues(options: {
       if (lineTime !== null && lineTime < options.sinceMs - 1_000) {
         continue
       }
-      if (
-        isSimulatorBootIssue(line)
-        && !isTransientSimulatorNotFoundWarning(lines, index)
-        && !isRecoveredGenericSimulatorLaunchError(lines, index)
-      ) {
-        issues.push({ file: filePath, line: line.trim() })
+      const diagnostic = classifyDevtoolsSimulatorBootLine(lines, index)
+      if (diagnostic) {
+        // IDE 的 launch().catch(...).then(...) 在失败后也会记录 success，不能据此丢弃首错。
+        issues.push({ file: filePath, line: line.trim(), ...diagnostic })
       }
     }
   }
 
   return issues
+}
+
+export function scanRecentDevtoolsSimulatorBootIssues(options: DevtoolsLogScanOptions): DevtoolsLogIssue[] {
+  return scanRecentDevtoolsSimulatorBootDiagnostics(options)
+    .filter(issue => issue.state !== 'recovered')
+    .map(({ file, line }) => ({ file, line }))
 }
 
 export function assertNoRecentDevtoolsSimulatorBootIssues(options: {

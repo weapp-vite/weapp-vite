@@ -43,3 +43,29 @@ it('keeps public runtime calls identical when an incremental bundle omits unchan
   expect(fullBundle['pages/index/index.js']).toMatchObject({ code })
   expect(incrementalBundle['pages/index/index.js']).toMatchObject({ code })
 })
+
+it('keeps a public runtime call safe when its local export name matches the public name', () => {
+  const bundle = {
+    'pages/index/index.js': {
+      type: 'chunk',
+      fileName: 'pages/index/index.js',
+      code: 'const runtime = require("../../weapp-vendors/wevu-runtime.js");runtime.createWevuComponent({});',
+      imports: ['weapp-vendors/wevu-runtime.js'],
+    },
+    'weapp-vendors/wevu-runtime.js': {
+      type: 'chunk',
+      fileName: 'weapp-vendors/wevu-runtime.js',
+      code: [
+        'function createWevuComponent(options) { return options; }',
+        'Object.defineProperty(exports, "__wevuCreateWevuComponent", { enumerable: false, get: function() { return createWevuComponent; } });',
+      ].join('\n'),
+      imports: [],
+    },
+  } as unknown as OutputBundle
+
+  stabilizeWevuRuntimeChunkAccess(bundle)
+
+  expect(bundle['pages/index/index.js'].code).toContain(
+    '(runtime.__wevuCreateWevuComponent || runtime.createWevuComponent)({});',
+  )
+})

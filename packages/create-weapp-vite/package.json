@@ -85,7 +85,7 @@
     "@weapp-core/init": "workspace:*",
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/shared": "workspace:*",
-    "execa": "^10.0.1",
+    "execa": "^10.1.0",
     "make-fetch-happen": "^16.0.1",
     "npm-registry-fetch": "^20.0.1",
     "pathe": "catalog:",

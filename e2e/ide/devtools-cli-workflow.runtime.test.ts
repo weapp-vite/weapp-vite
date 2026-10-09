@@ -686,8 +686,8 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
       '3000',
       '--no-runtime-service',
     ], [
-      /无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket/,
-      /请确认当前打开的是目标项目|Please confirm the current DevTools window is the target project/,
+      /无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|Managed DevTools window budget exhausted|Managed DevTools project already has an active session/,
+      /请确认当前打开的是目标项目|Please confirm the current DevTools window is the target project|close the previous owned project|existing endpoint in connect-only mode/,
     ])
   })
 

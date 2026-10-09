@@ -1,0 +1,6 @@
+<view>
+  <native-shell id="native-shell">
+    <view id="native-default">native default projection</view>
+    <view id="native-named" slot="named">native named projection</view>
+  </native-shell>
+</view>

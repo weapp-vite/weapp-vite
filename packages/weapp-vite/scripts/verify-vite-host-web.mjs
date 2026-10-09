@@ -9,6 +9,8 @@ import { stripVTControlCharacters } from 'node:util'
 // eslint-disable-next-line e18e/ban-dependencies -- 消费验证需要跨平台原生命令和完整进程清理。
 import { execa } from 'execa'
 import { chromium } from 'playwright'
+import { createConsumerWebDiagnostics } from './consumerWebDiagnostics/index.mjs'
+import { consumerWebWatcherDiagnosticSource } from './consumerWebDiagnostics/watcher.mjs'
 
 async function waitFor(check, label, logs = () => '') {
   for (let attempt = 0; attempt < 300; attempt++) {
@@ -55,6 +57,34 @@ async function closeChild(child, done) {
 
 /** 用同一 SFC fixture 验证三种发布包入口的浏览器渲染、开发更新和原生构建。 */
 export async function verifyWebConsumer(root, host, repoRoot) {
+  const diagnostics = process.env.WEAPP_VITE_CONSUMER_WEB_DIAGNOSTICS === '1'
+    ? createConsumerWebDiagnostics({ root, repoRoot, host })
+    : undefined
+  let failure
+  let failed = false
+  try {
+    await verifyWebConsumerRuntime(root, host, repoRoot, diagnostics)
+  }
+  catch (error) {
+    failure = error
+    failed = true
+    diagnostics?.fail(error)
+  }
+  try {
+    await diagnostics?.save(failed ? 'failed' : 'passed')
+  }
+  catch (error) {
+    if (!failed) {
+      throw error
+    }
+    console.error('[web-consumer-diagnostic] Could not save diagnostics; original failure retained.')
+  }
+  if (failed) {
+    throw failure
+  }
+}
+
+async function verifyWebConsumerRuntime(root, host, repoRoot, diagnostics) {
   const fixture = path.join(repoRoot, 'templates/weapp-vite-multi-platform-sfc-template')
   for (const file of ['src', 'dist', 'project.config.json', 'project.private.config.json']) {
     await rm(path.join(root, file), { recursive: true, force: true })
@@ -68,9 +98,9 @@ export async function verifyWebConsumer(root, host, repoRoot) {
   await writeFile(path.join(root, 'vite.config.mts'), `import { appendFileSync } from 'node:fs'
 import { defineConfig } from '${packageName}'
 ${host === 'wv' ? '' : 'import { weapp } from \'weapp-vite/vite\''}
-appendFileSync(new URL('./config-calls.txt', import.meta.url), 'loaded\\n')
+${diagnostics ? `${consumerWebWatcherDiagnosticSource}\n` : ''}appendFileSync(new URL('./config-calls.txt', import.meta.url), 'loaded\\n')
 export default defineConfig({
-  ${host === 'wv' ? '' : 'plugins: [weapp()],'}
+  ${diagnostics ? `plugins: [${host === 'wv' ? '' : 'weapp(), '}...consumerWebWatcherDiagnostics()],` : host === 'wv' ? '' : 'plugins: [weapp()],'}
   server: { host: '127.0.0.1', port: 0, open: false },
   weapp: { platform: 'web', srcRoot: 'src', mcp: false },
 })
@@ -83,6 +113,7 @@ export default defineConfig({
   const browser = await chromium.launch({ headless: true })
   async function checkPage(url) {
     const page = await browser.newPage()
+    diagnostics?.observePage(page)
     const errors = []
     page.on('pageerror', error => errors.push(error.message))
     await page.goto(url)
@@ -96,6 +127,7 @@ export default defineConfig({
     return page
   }
   try {
+    diagnostics?.setPhase('preview')
     const previewServer = await preview({ root, configFile: false, build: { outDir: 'dist/web' }, preview: { host: '127.0.0.1', port: 0 } })
     try {
       const page = await checkPage(previewServer.resolvedUrls.local[0])
@@ -105,12 +137,19 @@ export default defineConfig({
       await new Promise((resolve, reject) => previewServer.httpServer.close(error => error ? reject(error) : resolve()))
     }
     for (const operation of host === 'wv' ? ['dev'] : ['dev', 'build-watch']) {
+      diagnostics?.setPhase(`${operation}:startup`)
       await writeFile(path.join(root, 'config-calls.txt'), '')
       let logs = ''
       const child = execa(process.execPath, [cli, ...(operation === 'dev' ? ['dev'] : ['build', '--watch']), '--logLevel', 'info'], { cwd: root, env: { BROWSER: 'none', WEAPP_WEB_OPEN: 'false' } })
       const done = child.catch(error => error)
-      child.stdout.on('data', chunk => logs += chunk)
-      child.stderr.on('data', chunk => logs += chunk)
+      child.stdout.on('data', (chunk) => {
+        logs += chunk
+        diagnostics?.observeChild(chunk, 'stdout')
+      })
+      child.stderr.on('data', (chunk) => {
+        logs += chunk
+        diagnostics?.observeChild(chunk, 'stderr')
+      })
       const source = path.join(root, 'src/pages/index/index.vue')
       const original = await readFile(source, 'utf8')
       try {
@@ -122,10 +161,25 @@ export default defineConfig({
           }, 'dev URL', () => logs)
           const page = await checkPage(url)
           try {
-            await writeFile(source, original.replace('SFC 响应式交互检查', 'web-host-updated'))
+            diagnostics?.setPhase('dev:update')
+            const updated = original.replace('SFC 响应式交互检查', 'web-host-updated')
+            const updateWrite = diagnostics?.startWrite('update', updated)
+            await writeFile(source, updated)
+            diagnostics?.finishWrite(updateWrite)
             await page.getByText('web-host-updated', { exact: true }).waitFor()
+            diagnostics?.visible('updated')
+            diagnostics?.setPhase('dev:restore')
+            const restoreWrite = diagnostics?.startWrite('restore', original)
             await writeFile(source, original)
+            diagnostics?.finishWrite(restoreWrite)
             await page.getByText('SFC 响应式交互检查', { exact: true }).waitFor()
+            diagnostics?.visible('restored')
+          }
+          catch (error) {
+            if (diagnostics) {
+              diagnostics.fail(error, await readFile(source).catch(() => undefined))
+            }
+            throw error
           }
           finally { await page.close() }
         }
@@ -143,6 +197,12 @@ export default defineConfig({
           }, 'watch emitted update', () => logs)
         }
         assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
+      }
+      catch (error) {
+        if (diagnostics) {
+          diagnostics.fail(error, await readFile(source).catch(() => undefined))
+        }
+        throw error
       }
       finally {
         await closeChild(child, done)

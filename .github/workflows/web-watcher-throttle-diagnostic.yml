@@ -1,0 +1,32 @@
+name: Web Watcher Throttle Diagnostic
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: web-watcher-throttle-diagnostic-${{ github.ref || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  watcher:
+    name: Watcher mechanism only (Ubuntu / Node 24.18)
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-24.04
+      node_version: 24.18.0
+      timeout_minutes: 15
+      # owned command 的源码入口仍通过包导出加载这三个 JS 依赖。
+      build_command: >-
+        pnpm -r --workspace-concurrency=1
+        --filter @weapp-core/shared --filter @weapp-core/logger
+        --filter @weapp-vite/devtools-runtime run build --no-dts
+      install_playwright: false
+      main_command: >-
+        node --import tsx e2e/scripts/run-e2e-commands.ts
+        node --import tsx packages/weapp-vite/scripts/verify-vite-watcher-throttle.mjs
+      artifact_name: web-watcher-throttle-linux
+      artifact_path: .cache/web-watcher-throttle/**
+    secrets: inherit

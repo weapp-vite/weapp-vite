@@ -103,7 +103,7 @@ describe('stateful HMR sidecar plugin', () => {
         { addWatchFile },
         `${sourceId}?raw&weapp-vite-sidecar-owner=${encodeURIComponent(ownerId)}&weapp-vite-sidecar=template&lang.js`,
       )).resolves.toEqual({ code: 'export default undefined;\n', moduleSideEffects: 'no-treeshake' })
-      expect(addWatchFile).toHaveBeenCalledWith(sourceId)
+      expect(addWatchFile).toHaveBeenCalledWith(normalizePath(sourceId))
     }
     finally {
       await rm(root, { force: true, recursive: true })

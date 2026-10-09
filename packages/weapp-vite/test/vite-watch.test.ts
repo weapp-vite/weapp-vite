@@ -18,6 +18,9 @@ it.each([
   let lastWrite = 'fixture setup'
   const writeStarted = Promise.withResolvers<void>()
   const writeRelease = Promise.withResolvers<void>()
+  let recoveryWriteHeld = false
+  const recoveryWriteRelease = Promise.withResolvers<void>()
+  let holdRecoveryWrite = initialError
   let holdWrite = false
   const write = async (file: string, content: string) => {
     await mkdir(path.dirname(path.join(root, file)), { recursive: true })
@@ -70,6 +73,12 @@ it.each([
           nativeEvents.push(`${change.event}:${path.relative(root, id).replaceAll('\\', '/')}`)
         },
         async writeBundle() {
+          // 首次恢复已经写出文件但尚未结束时，下一次编辑仍必须进入原生队列。
+          if (holdRecoveryWrite) {
+            holdRecoveryWrite = false
+            recoveryWriteHeld = true
+            await recoveryWriteRelease.promise
+          }
           if (holdWrite) {
             writeStarted.resolve()
             await writeRelease.promise
@@ -89,6 +98,7 @@ it.each([
     if (initialError) {
       await expect.poll(() => errors.length, { timeout: 10_000 }).toBeGreaterThan(0)
       await write('src/pages/home/index.ts', 'Page({ data: { message: "watch-first" } })')
+      await expect.poll(() => recoveryWriteHeld, { timeout: 10_000 }).toBe(true)
     }
     await expect.poll(() => output('pages/home/index.js'), { timeout: 10_000 }).toContain('watch-first')
     await assertComplete(['pages/home/index'])
@@ -96,6 +106,7 @@ it.each([
       await write('dist/unowned.txt', 'owned-by-another-tool')
     }
     await write('src/pages/home/index.ts', 'Page({ data: { message: "watch-second" } })')
+    recoveryWriteRelease.resolve()
     await expect.poll(() => output('pages/home/index.js'), { timeout: 10_000 }).toContain('watch-second')
     await assertComplete(['pages/home/index'])
     await write('src/pages/home/index.wxml', '<view>watch-template {{message}}</view>')
@@ -161,6 +172,7 @@ it.each([
     throw new Error(`Native watch state: ${JSON.stringify({ lastWrite, nativeEvents, failures: errors.length })}`, { cause })
   }
   finally {
+    recoveryWriteRelease.resolve()
     writeRelease.resolve()
     await watcher?.close()
     await rm(root, { recursive: true, force: true })

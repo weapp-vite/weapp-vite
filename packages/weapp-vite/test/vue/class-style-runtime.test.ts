@@ -1,5 +1,6 @@
 import vm from 'node:vm'
 import { describe, expect, it } from 'vitest'
+import { resolvePropValue } from 'wevu'
 import { compileVueTemplateToWxml, getClassStyleWxsSource } from 'wevu/compiler'
 import { compileVueFile, transformScript } from '../../src/plugins/vue/transform'
 
@@ -242,7 +243,7 @@ describe('class/style runtime', () => {
     expect(result.code).not.toContain('\'font-size\':')
   })
 
-  it('keeps v-for list expression for JS fallback bindings in wxs mode', () => {
+  it('evaluates v-for class updates with state, props, and instance list precedence in wxs mode', () => {
     const templateResult = compileVueTemplateToWxml(
       `<view v-for="tab in groupTabs" class="group-tab" :class="tab.key === activeGroup ? 'group-tab-active' : ''" />`,
       'test.vue',
@@ -252,22 +253,46 @@ describe('class/style runtime', () => {
       },
     )
 
-    expect(templateResult.code).toContain('class="{{__wv_cls_0[index]}}"')
-    expect(templateResult.code).not.toContain('__weapp_vite.cls(')
-    expect(templateResult.classStyleBindings?.length).toBe(1)
-    expect(templateResult.classStyleBindings?.[0]?.forStack?.[0]?.listExpAst).toBeTruthy()
-
     const scriptResult = transformScript('export default {}', {
       classStyleRuntime: 'wxs',
       classStyleBindings: templateResult.classStyleBindings ?? [],
     })
 
-    expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(__wevuUnref(this.$state')
-    expect(scriptResult.code).toContain('Object.prototype.hasOwnProperty.call(this.$state, "groupTabs")')
-    expect(scriptResult.code).toContain('__wevuProps.groupTabs')
-    expect(scriptResult.code).toContain(': this.groupTabs')
-    expect(scriptResult.code).toContain('try')
-    expect(scriptResult.code).toContain('catch')
+    const binding = templateResult.classStyleBindings!.find(binding => binding.type === 'class')!
+    const fnCode = extractComputedEntryFunction(scriptResult.code, binding.name)
+    const unref = createTestUnref()
+    const fn = vm.runInNewContext(`(${fnCode})`, {
+      __wevuNormalizeClass: createTestNormalizeClass(unref),
+      __wevuResolvePropValue: resolvePropValue,
+      __wevuUnref: unref,
+    }) as (this: typeof ctx) => string[]
+
+    const groupTabs = { value: [{ key: 'first' }, { key: 'second' }] }
+    const ctx = {
+      $state: { groupTabs } as { groupTabs?: typeof groupTabs },
+      __wevuProps: {
+        groupTabs: { value: [{ key: 'second' }, { key: 'props-only' }, { key: 'first' }] },
+      } as { groupTabs?: typeof groupTabs },
+      groupTabs,
+      activeGroup: { value: 'first' },
+    }
+
+    expect(fn.call(ctx)).toEqual(['group-tab group-tab-active', 'group-tab'])
+
+    ctx.activeGroup.value = 'second'
+    expect(fn.call(ctx)).toEqual(['group-tab', 'group-tab group-tab-active'])
+
+    groupTabs.value = [{ key: 'second' }, { key: 'first' }]
+    expect(fn.call(ctx)).toEqual(['group-tab group-tab-active', 'group-tab'])
+
+    delete ctx.$state.groupTabs
+    expect(fn.call(ctx)).toEqual(['group-tab group-tab-active', 'group-tab', 'group-tab'])
+
+    ctx.__wevuProps.groupTabs = undefined
+    expect(fn.call(ctx)).toEqual([])
+
+    delete ctx.__wevuProps.groupTabs
+    expect(fn.call(ctx)).toEqual(['group-tab group-tab-active', 'group-tab'])
   })
 
   it('guards v-for list evaluation when props alias is unavailable', () => {

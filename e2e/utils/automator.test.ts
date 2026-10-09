@@ -382,6 +382,9 @@ describe('automator', () => {
   })
 
   it('cleans a real owned CLI child while preserving an unrelated process', async () => {
+    const isolatedLogRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weapp-vite-automator-log-root-'))
+    const previousLogRoot = process.env.WEAPP_VITE_E2E_DEVTOOLS_LOG_ROOT
+    process.env.WEAPP_VITE_E2E_DEVTOOLS_LOG_ROOT = isolatedLogRoot
     const spawnChild = () => spawn(process.execPath, ['-e', 'setInterval(() => {}, 10_000)'], {
       detached: process.platform !== 'win32',
       stdio: 'ignore',
@@ -401,8 +404,15 @@ describe('automator', () => {
     finally {
       await dispose()
       await terminateOwnedCliProcess(unrelated)
+      if (previousLogRoot === undefined) {
+        delete process.env.WEAPP_VITE_E2E_DEVTOOLS_LOG_ROOT
+      }
+      else {
+        process.env.WEAPP_VITE_E2E_DEVTOOLS_LOG_ROOT = previousLogRoot
+      }
+      fs.rmSync(isolatedLogRoot, { recursive: true, force: true })
     }
-  })
+  }, 15_000)
 
   it('terminates detached bridge cli processes', async () => {
     const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 10_000)'], {

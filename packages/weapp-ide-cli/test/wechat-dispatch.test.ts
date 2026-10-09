@@ -215,6 +215,58 @@ describe('dispatchWechatCliCommand', () => {
     expect(clearWechatIdeCacheMock).toHaveBeenCalledWith({ clean: 'all' })
   })
 
+  it.each([
+    ['--project', 'fixtures/owned project'],
+    ['-p', 'fixtures/owned project'],
+    ['--project=fixtures/owned project'],
+    ['-p=fixtures/owned project'],
+  ])('keeps the project locator when dispatching close: %j', async (...projectArgs) => {
+    const { dispatchWechatCliCommand } = await import('../src/cli/wechat-dispatch')
+
+    expect(await dispatchWechatCliCommand(['close', ...projectArgs])).toBe(true)
+
+    expect(closeWechatIdeProjectMock).toHaveBeenCalledWith({ projectPath: 'fixtures/owned project' })
+  })
+
+  it.each([
+    ['--cli-path', 'selected-cli'],
+    ['--cli-path=selected-cli'],
+  ])('keeps the selected CLI when dispatching close: %j', async (...cliArgs) => {
+    const { dispatchWechatCliCommand } = await import('../src/cli/wechat-dispatch')
+
+    expect(await dispatchWechatCliCommand(['close', '--project', 'fixture', ...cliArgs])).toBe(true)
+
+    expect(closeWechatIdeProjectMock).toHaveBeenCalledWith({
+      projectPath: 'fixture',
+      cliPath: 'selected-cli',
+    })
+  })
+
+  it('keeps argument-free close compatible', async () => {
+    const { dispatchWechatCliCommand } = await import('../src/cli/wechat-dispatch')
+
+    expect(await dispatchWechatCliCommand(['close'])).toBe(true)
+
+    expect(closeWechatIdeProjectMock).toHaveBeenCalledWith()
+  })
+
+  it.each([
+    ['--project'],
+    ['-p'],
+    ['--project='],
+    ['-p='],
+    ['--project', '--cli-path', 'selected-cli'],
+    ['--cli-path'],
+    ['--cli-path='],
+    ['--cli-path', '--project', 'fixture'],
+  ])('rejects missing explicit close option values: %j', async (...closeArgs) => {
+    const { dispatchWechatCliCommand } = await import('../src/cli/wechat-dispatch')
+
+    await expect(dispatchWechatCliCommand(['close', ...closeArgs])).rejects.toThrow(/requires a value/)
+
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+  })
+
   it('dispatches build-apk argv to build-apk helper', async () => {
     const { dispatchWechatCliCommand } = await import('../src/cli/wechat-dispatch')
 

@@ -2,7 +2,7 @@ import path from 'node:path'
 import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { resolveRuntimeCompilerCli, selectClassicRuntimeHost } from '../../packages/weapp-vite/scripts/consumerRuntimeHost.mjs'
-import { launchAutomator } from '../utils/automator'
+import { launchAutomator, reconnectAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -28,10 +28,18 @@ interface ClassicRuntimeState {
   source: string
 }
 
+interface ClassicRuntimeObservation extends ClassicRuntimeState {
+  observedAt: string
+  pageId: string | number | null
+  route: string
+  options: Record<string, unknown>
+}
+
 let miniProgram: any
 let devProcess: ReturnType<typeof startDevProcess> | undefined
 let originalNativeSource = ''
 let originalPrivateConfig = ''
+let observeRuntime: ((observation: ClassicRuntimeObservation) => void) | undefined
 
 function normalizeNativeSource(source: string) {
   return source
@@ -39,11 +47,15 @@ function normalizeNativeSource(source: string) {
     .replace('this.data.count + 2', 'this.data.count + 1')
 }
 
-async function readRuntimeState(): Promise<ClassicRuntimeState> {
-  return await miniProgram.evaluate(() => {
+async function readRuntimeObservation(): Promise<ClassicRuntimeObservation> {
+  const observation = await miniProgram.evaluate(() => {
     const pages = getCurrentPages()
     const page = pages[pages.length - 1] as any
     return {
+      observedAt: new Date().toISOString(),
+      pageId: page.__wxWebviewId__ ?? page.__webviewId__ ?? page.data?.__webviewId__ ?? null,
+      route: String(page.route ?? ''),
+      options: page.options ?? {},
       count: Number(page.data?.count),
       identity: String(page.__statefulHmrIdentity ?? ''),
       input: String(page.data?.input ?? ''),
@@ -51,6 +63,26 @@ async function readRuntimeState(): Promise<ClassicRuntimeState> {
       source: String(page.options?.source ?? ''),
     }
   })
+  observeRuntime?.(observation)
+  return observation
+}
+
+async function readRuntimeState(): Promise<ClassicRuntimeState> {
+  const { count, identity, input, marker, source } = await readRuntimeObservation()
+  return { count, identity, input, marker, source }
+}
+
+function logClassicReload(host: string, stage: string, at: string, observation: ClassicRuntimeObservation | { error: string }) {
+  process.stdout.write(`[classic-hmr-diagnostic] ${JSON.stringify({ host, stage, at, observation })}\n`)
+}
+
+async function captureClassicReload(host: string, stage: string) {
+  const at = new Date().toISOString()
+  const observation = await readRuntimeObservation().catch((error: unknown) => ({
+    error: error instanceof Error ? error.message : String(error),
+  }))
+  logClassicReload(host, stage, at, observation)
+  return observation
 }
 
 async function waitForRuntimeState(
@@ -140,6 +172,7 @@ for (const host of hosts) {
     }, 600_000)
 
     afterAll(async () => {
+      observeRuntime = undefined
       try {
         await disconnectAutomatorSession()
       }
@@ -161,6 +194,13 @@ for (const host of hosts) {
     })
 
     it('uses direct output and reloads the page instead of preserving its state', async (ctx) => {
+      let patchedObserved = false
+      observeRuntime = (observation) => {
+        if (!patchedObserved && observation.marker === 'STATEFUL-NATIVE-PATCHED') {
+          patchedObserved = true
+          logClassicReload(host, 'first-patched-marker', new Date().toISOString(), observation)
+        }
+      }
       const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', [
         ['initial', 'STATEFUL-NATIVE-BASE', 0, ''],
         ['prepared', 'STATEFUL-NATIVE-BASE', 1, 'classic-held-input'],
@@ -204,10 +244,28 @@ for (const host of hosts) {
         'classic HMR direct page output update',
       )
 
-      await disconnectAutomatorSession()
-      miniProgram = await connectAutomatorSession()
+      if (resolveRuntimeProviderName() === 'headless') {
+        await disconnectAutomatorSession()
+        miniProgram = await connectAutomatorSession()
+      }
+      else {
+        miniProgram = await reconnectAutomator(miniProgram)
+      }
+      await captureClassicReload(host, 'reconnect-returned')
+      // 文件写出和协议重连均可能早于 IDE 自动重载；先验证新代码已重置真实页面状态。
+      // 否则带参数的导航会被随后按原 path 执行的宿主重载覆盖。
+      await waitForRuntimeState(state => (
+        state.marker === 'STATEFUL-NATIVE-PATCHED'
+        && state.count === 0
+        && state.identity === ''
+        && state.input === ''
+      ))
+      const beforeRelaunch = await captureClassicReload(host, 'automatic-reload-ready')
       // 重连 bridge 后宿主可能只恢复 path 而丢失 query，显式重放完整 route 保持断言身份稳定。
+      // 两个阶段共用一次只读快照，保留导航次数；事件时间与宿主快照时间分别记录。
+      logClassicReload(host, 'relaunch-before', new Date().toISOString(), beforeRelaunch)
       page = await miniProgram.reLaunch(NATIVE_ROUTE)
+      await captureClassicReload(host, 'relaunch-after')
       const reloaded = await waitForRuntimeState(state => (
         state.marker === 'STATEFUL-NATIVE-PATCHED'
         && state.source === 'classic-auto-e2e'

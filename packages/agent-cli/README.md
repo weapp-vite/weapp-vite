@@ -9,7 +9,7 @@ npm install --global @weapp-agent/cli@preview
 ```
 
 ```sh
-npm install --global ./weapp-agent-cli-0.1.0-preview.1.tgz
+npm install --global ./weapp-agent-cli-0.1.0.tgz
 weapp-agent init --provider openai --model YOUR_MODEL
 weapp-agent doctor
 weapp-agent --trust run "Add a counter and verify the project"

@@ -66,6 +66,7 @@ import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
 import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shouldCleanOutputs } from './outputs'
 import { assertPluginProjectOutput, createPluginProjectSession, isPluginProjectClosing, runPluginProjectRestart, setPluginProjectBuildOptions } from './pluginProject'
+import { createSnapshotBuildConfig } from './snapshotConfig'
 import { refreshSnapshotSources } from './snapshotSources'
 import { resolveTouchAppWxssEnabled, touchExistingAppStyle } from './touchAppWxss'
 import { withVueStyleDependencySnapshot } from './vueStyleSnapshot'
@@ -1770,7 +1771,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               )
               try {
                 devBuildWatcher?.emitEvent({ code: 'START' })
-                await build(snapshotBuildOptions)
+                await build(createSnapshotBuildConfig(snapshotBuildOptions))
                 emittedAutoRoutesSignature = routeSignature
                 recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
                 devBuildWatcher?.emitEvent({ code: 'END' })
@@ -1793,20 +1794,20 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               return
             }
             markSnapshotEntriesFullDirty()
-            // 完整 snapshot 必须重新输出所有资源；是否清空目录仍服从用户配置。
+            // 完整 snapshot 重发全部资源；旧产物由成功 write 后的发布清单裁剪。
             resetEmittedOutputCaches(ctx.runtimeState)
             const hmr = ctx.runtimeState.build.hmr
             hmr.forceFullSharedChunkRefresh = true
             hmr.fullEntryScan = fullEntryScan
             try {
               devBuildWatcher?.emitEvent({ code: 'START' })
-              await build({
+              await build(createSnapshotBuildConfig({
                 ...snapshotBuildOptions,
                 build: {
                   ...(snapshotBuildOptions.build ?? {}),
                   emptyOutDir: shouldCleanOutputs(configService, 'rebuild'),
                 },
-              })
+              }))
               emittedAutoRoutesSignature = routeSignature
               recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
               failedEntryTopologyChange = false
@@ -1951,7 +1952,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           try {
             await ctx.autoRoutesService?.ensureFresh()
             const routeSignature = ctx.autoRoutesService?.getSignature()
-            await build(snapshotBuildOptions)
+            await build(createSnapshotBuildConfig(snapshotBuildOptions))
             emittedAutoRoutesSignature = routeSignature
             emittedEntryTopology = captureEntryTopology(ctx)
             devBuildWatcher!.emitEvent({ code: 'END' })

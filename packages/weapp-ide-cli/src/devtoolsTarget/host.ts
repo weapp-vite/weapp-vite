@@ -5,6 +5,8 @@ import process from 'node:process'
 // 保留现有 execa 依赖，统一处理 Windows 命令解析、超时和失败输出。
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
+import { withPowerShellUtf8Output } from '../utils/powershell'
+import { resolveWechatInspectionTimeout } from './inspection'
 
 export interface WechatDevtoolsHostInspectionOptions {
   platform?: NodeJS.Platform
@@ -21,11 +23,16 @@ function normalize(value: string, platform: NodeJS.Platform) {
   return platform === 'win32' ? normalized.toLowerCase() : normalized
 }
 
-function assertExecutable(target: ResolvedWechatDevtoolsTarget, executable: string, platform: NodeJS.Platform) {
+/** 复用宿主归属检查的安装根规则，不能把 app.asar 当作可执行文件目录。 */
+export function resolveWechatDevtoolsInstallationRoot(target: ResolvedWechatDevtoolsTarget, platform: NodeJS.Platform) {
   const appPath = normalize(target.appPath, platform)
-  const root = platform === 'darwin'
+  return platform === 'darwin'
     ? appPath.split('/Contents/')[0]
     : appPath.replace(/\/(?:resources\/)?(?:app\.asar|app|package\.nw)$/, '')
+}
+
+function assertExecutable(target: ResolvedWechatDevtoolsTarget, executable: string, platform: NodeJS.Platform) {
+  const root = resolveWechatDevtoolsInstallationRoot(target, platform)
   const selected = normalize(executable.trim(), platform)
   if (!root || !selected.startsWith(`${root}/`)) {
     throw ownershipError('The running WeChat DevTools host belongs to a different installation. Keep the selected installation running and retry; no host was stopped.')
@@ -35,7 +42,8 @@ function assertExecutable(target: ResolvedWechatDevtoolsTarget, executable: stri
 async function runInspection(file: string, args: string[], options: WechatDevtoolsHostInspectionOptions) {
   options.signal?.throwIfAborted()
   try {
-    const result = await execa(file, args, { timeout: Math.min(options.timeout ?? 3_000, 3_000), cancelSignal: options.signal, reject: false, windowsHide: true })
+    const timeout = resolveWechatInspectionTimeout(options.platform ?? process.platform, options.timeout)
+    const result = await execa(file, args, { timeout, cancelSignal: options.signal, reject: false, windowsHide: true })
     options.signal?.throwIfAborted()
     return result
   }
@@ -72,7 +80,7 @@ async function readUnixExecutable(pid: number, options: WechatDevtoolsHostInspec
 }
 
 async function readWindowsProcesses(script: string, options: WechatDevtoolsHostInspectionOptions): Promise<{ pid: number, executable: string }[]> {
-  const result = await runInspection('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], options)
+  const result = await runInspection('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', withPowerShellUtf8Output(script)], options)
   if (result.exitCode !== 0) {
     throw ownershipError('Windows could not verify the WeChat DevTools process identity.')
   }

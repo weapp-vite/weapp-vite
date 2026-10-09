@@ -26,8 +26,16 @@ export function createSessionEnvironmentPlugin(session: WeappBuildSession, serve
     buildStart: {
       order: 'pre',
       async handler() {
-        if (!serve && this.meta.watchMode) {
+        if (serve) {
+          return
+        }
+        if (this.meta.watchMode) {
           await session.validateEntries()
+        }
+        // 在扫描前登记 npm 输入，避免首次成功写出后新增监听目标重启事件流。
+        const dependencies = await session.buildDependencies()
+        for (const file of dependencies.watchFiles) {
+          this.addWatchFile(file)
         }
       },
     },
@@ -36,9 +44,6 @@ export function createSessionEnvironmentPlugin(session: WeappBuildSession, serve
       async handler() {
         if (!serve) {
           const dependencies = await session.buildDependencies()
-          for (const file of dependencies.watchFiles) {
-            this.addWatchFile(file)
-          }
           for (const asset of dependencies.assets) {
             this.emitFile(asset)
           }

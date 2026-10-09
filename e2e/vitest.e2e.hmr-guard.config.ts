@@ -5,7 +5,7 @@ import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 
 export default defineConfig({
   test: {
-    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
+    globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine-lease.global-setup.ts')],
     include: HMR_GUARD_ALL_TESTS,
     testTimeout: 36_000_000,
     globals: true,

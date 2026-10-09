@@ -273,6 +273,11 @@ function shouldRewriteDevHmrChunk(
   if (state.hmrState.affectedSharedChunkIds?.has(fileName) || state.hmrState.affectedSharedChunkIds?.has(chunk.fileName)) {
     return true
   }
+  // 发布计划已保留的传递依赖也必须完成重写，不能只处理入口的直接 import。
+  const emittedChunkFileNames = state.ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
+  if (emittedChunkFileNames?.has(fileName) || emittedChunkFileNames?.has(chunk.fileName)) {
+    return true
+  }
   return activeImportedChunkIds.has(fileName)
 }
 
@@ -508,14 +513,15 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         const shouldWarnOnDuplicate = Number.isFinite(duplicateWarningBytes) && duplicateWarningBytes > 0
         let redundantBytesTotal = 0
 
-        if (configService.isDev && (state.hmrSharedChunksMode === 'auto' || state.hmrSharedChunksMode === 'full')) {
+        // 所有模式都维护发布依赖与构建生命周期；off 只关闭共享 importer 的脏入口扩散。
+        if (configService.isDev) {
           const forceFullSharedChunkRefresh = ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh
           if (
             assetOnlyDevHmrBundle
             && !forceFullSharedChunkRefresh
           ) {
-          // 纯模板、样式、JSON 宏更新不会产出新的 JS chunk；此时刷新 shared chunk 图会让
-          // DevTools hotreload 误认为页面 JS/vendor 也需要替换，产生新旧模块短暂错位。
+            // 纯模板、样式、JSON 宏更新不会产出新的 JS chunk；此时刷新 shared chunk 图会让
+            // DevTools hotreload 误认为页面 JS/vendor 也需要替换，产生新旧模块短暂错位。
           }
           else if (
             state.hmrSharedChunksMode === 'full'
@@ -536,6 +542,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           state.hmrState.hasBuiltOnce = true
         }
         if (!nativeDevBundle) {
+          // 增量页面 chunk 的源码 require 可能尚未反映到 Rolldown imports；先同步
+          // 这些边，才能在裁剪共享 vendor 前保留页面运行时实际需要的模块。
+          syncChunkImportsFromRequireCalls(rolldownBundle)
           activeImportedChunkIds = prunePartialHmrStableSharedChunks(rolldownBundle, state)
           retainFullEntryHmrChunks(rolldownBundle, state)
           pruneUneventedDevHmrChunks(ctx, rolldownBundle)

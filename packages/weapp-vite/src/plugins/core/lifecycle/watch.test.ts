@@ -1919,6 +1919,34 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     )
   })
 
+  it.each(['off', 'auto', 'full'] as const)('keeps publication tracking separate from importer expansion in %s mode', async (mode) => {
+    const state = createState({ hmrSharedChunksMode: mode })
+    const sourceRoot = state.ctx.configService.absoluteSrcRoot
+    const pageA = `${sourceRoot}/pages/a/index.ts`
+    const pageB = `${sourceRoot}/pages/b/index.ts`
+    const dirty = new Set([pageA])
+    const emitted: string[] = []
+    state.markEntryDirty.mockImplementation((id: string) => dirty.add(id))
+    state.emitDirtyEntries.mockImplementation(async () => {
+      emitted.push(...dirty)
+    })
+    state.ctx.moduleGraphService.getPendingChanges.mockReturnValue([{ event: 'update', file: pageA }])
+    state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-direct:1']
+    collectAffectedSharedChunkEntriesAndChunksMock.mockReturnValue({
+      affectedChunks: new Set(['shared.js']),
+      affectedEntries: new Set([pageA, pageB]),
+    })
+
+    await createBuildStartHook(state).call({ addWatchFile: vi.fn() })
+
+    expect(state.hmrState.affectedSharedChunkIds).toEqual(new Set(['shared.js']))
+    expect(emitted).toEqual(mode === 'off' ? [pageA] : [pageA, pageB])
+    if (mode === 'off') {
+      expect(state.markEntryDirty).not.toHaveBeenCalled()
+      expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+    }
+  })
+
   it('marks shared chunk source updates as dependency dirties', async () => {
     const dependencyId = '/project/src/shared/tokens.ts'
     collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set([

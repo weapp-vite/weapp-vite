@@ -67,6 +67,8 @@ it.each([false, true])('watches worker imports and recovers from a syntax error 
   const canonicalRoot = await realpath(root)
   const relative = (file: string) => path.relative(canonicalRoot, file).replaceAll('\\', '/')
   let publishing = false
+  let workerInputs: string[] = []
+  let scannedInputs: string[] = []
   const resumePublishing = Promise.withResolvers<void>()
   config.plugins!.push({
     name: 'fixture:worker-watch-diagnostics',
@@ -75,6 +77,14 @@ it.each([false, true])('watches worker imports and recovers from a syntax error 
     },
     watchChange(file, change) {
       timeline.push({ event: change.event, file: relative(file) })
+    },
+    buildEnd() {
+      if (this.meta.watchMode) {
+        scannedInputs = workerInputs
+      }
+      else if (this.environment.name === 'weapp_workers') {
+        workerInputs = [...this.getModuleIds()].map(relative)
+      }
     },
     generateBundle(_options, bundle) {
       const app = bundle['app.json']
@@ -119,6 +129,8 @@ it.each([false, true])('watches worker imports and recovers from a syntax error 
     if (duringPublication) {
       await expect.poll(() => publishing, { timeout: 15_000 }).toBe(true)
     }
+    // 新输入须在原生扫描结束时登记；写出后新增监听会重启 macOS 事件流。
+    expect(scannedInputs).toContain('src/workers/new.ts')
     await writeFile(path.join(root, 'src/app.json'), '{\"pages\":[\"pages/home/index\"]}')
     resumePublishing.resolve()
     await expect.poll(() => access(path.join(root, 'dist/workers/index.js')).then(() => true, () => false), { timeout: 15_000 }).toBe(false)
@@ -128,6 +140,35 @@ it.each([false, true])('watches worker imports and recovers from a syntax error 
   }
   finally {
     resumePublishing.resolve()
+    await watcher.close()
+  }
+}, 30_000)
+
+it('recovers from an initial worker syntax error when app configuration removes workers', async () => {
+  const { root, config, edit } = await fixture()
+  await edit('export const message = ;')
+  const watcher = await build({ ...config, build: { ...config.build, watch: {} } }) as RolldownWatcher
+  const errors: unknown[] = []
+  let rounds = 0
+  watcher.on('event', (event) => {
+    if (event.code === 'ERROR') {
+      errors.push(event.error)
+    }
+    else if (event.code === 'BUNDLE_END') {
+      rounds++
+    }
+  })
+  try {
+    await expect.poll(() => errors.length, { timeout: 15_000 }).toBe(1)
+    expect(String(errors[0])).toContain('Unexpected token')
+    await writeFile(path.join(root, 'src/app.json'), '{"pages":["pages/home/index"]}')
+    await expect.poll(() => rounds, { timeout: 15_000 }).toBeGreaterThan(0)
+    expect(JSON.parse(await readFile(path.join(root, 'dist/app.json'), 'utf8'))).not.toHaveProperty('workers')
+    await expect(access(path.join(root, 'dist/pages/home/index.js'))).resolves.toBeUndefined()
+    await expect(access(path.join(root, 'dist/workers/index.js'))).rejects.toMatchObject({ code: 'ENOENT' })
+    expect(errors).toHaveLength(1)
+  }
+  finally {
     await watcher.close()
   }
 }, 30_000)

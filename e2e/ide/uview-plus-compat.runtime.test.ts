@@ -24,7 +24,7 @@ defineComponentLibraryRuntimeSuite({
     'up-action-sheet': 1_500,
   },
   scenarios: componentScenarios,
-  suiteName: 'uview-plus 3.8.128 全组件运行时兼容',
+  suiteName: 'uview-plus 3.8.130 全组件运行时兼容',
   testTimeout: 2_400_000,
   updateBaselinesEnv: 'UVIEW_PLUS_UPDATE_WECHAT_BASELINES',
   visualComponents: [

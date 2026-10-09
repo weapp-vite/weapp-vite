@@ -1,8 +1,9 @@
-import { readFile, rm } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { launchAutomator } from '../utils/automator'
+import { captureAppReloadMarker, waitForAppReload } from '../utils/appReload'
+import { launchAutomator, reconnectAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDevBuildCompletion } from '../utils/devBuildCompletion'
@@ -11,6 +12,7 @@ import { NATIVE_BATCH_CLI } from '../utils/nativeBatchProject'
 import { createNativeProfileProject, hasNativeProfileEntry, NATIVE_PROFILE_FIXTURE, saveNativeProfileSource } from '../utils/nativeProfileProject'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
+import { cleanupTemporaryRuntimeProject } from '../utils/temporaryRuntimeProject'
 
 const route = '/pages/plain/index'
 
@@ -39,16 +41,18 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     })
   }
 
-  async function reconnect() {
+  async function reconnect(marker: Awaited<ReturnType<typeof captureAppReloadMarker>>) {
     // 拓扑更新替换完整引擎；headless 需换 VM，DevTools 仅重连项目 bridge，保留共享 IDE。
     disposeTransport?.()
     if (resolveRuntimeProviderName() === 'headless') {
       await miniProgram?.close()
+      miniProgram = await connect()
     }
     else {
-      await miniProgram?.disconnect()
+      miniProgram = await reconnectAutomator(miniProgram!)
     }
-    miniProgram = await connect()
+    // 重连可能早于 IDE 自动重载；确认新 App 及其页面就绪后才执行既有导航。
+    await waitForAppReload(miniProgram!, marker, '.profile-root')
   }
 
   beforeAll(async () => {
@@ -59,12 +63,12 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
   }, 180_000)
 
   afterAll(async () => {
-    disposeTransport?.()
-    await miniProgram?.close()
-    await dev?.stop()
-    if (project) {
-      await rm(project, { recursive: true, force: true })
-    }
+    await cleanupTemporaryRuntimeProject({
+      project,
+      disposeTransport,
+      closeSession: async () => { await miniProgram?.close() },
+      stopDev: async () => { await dev?.stop() },
+    })
   }, 60_000)
 
   it('renders imported style updates and added components and routes after restoration', async (context) => {
@@ -82,9 +86,10 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     const style = await read('src/styles/theme.wxss')
     for (const [index, color] of colors.entries()) {
       if (index) {
+        const marker = await captureAppReloadMarker(miniProgram!)
         await saveNativeProfileSource(project, 'styles/theme.wxss', style.replace('#123', color))
         await expect.poll(() => read('dist/pages/imported/index.wxss'), { timeout: 30_000 }).toContain(color)
-        await reconnect()
+        await reconnect(marker)
       }
       const page = await miniProgram!.reLaunch(styleRoute)
       await dom.check(`style-${index}`, miniProgram!, page)
@@ -92,6 +97,7 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     const pageConfig = await read('src/pages/plain/index.json')
     const template = await read('src/pages/plain/index.wxml')
     const appConfig = await read('src/app.json')
+    const componentReload = await captureAppReloadMarker(miniProgram!)
     const componentPublication = captureTopologyPublication()
     await saveNativeProfileSource(project, 'pages/plain/index.wxml', `${template}<optional-card id="optional-component" />`)
     await saveNativeProfileSource(project, 'pages/plain/index.json', JSON.stringify({ usingComponents: { 'optional-card': '/components/optional/index' } }))
@@ -99,15 +105,17 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     await expect.poll(() => read('dist/pages/plain/index.wxml'), { timeout: 30_000 }).toContain('optional-card')
     // 原生写出没有文件集合原子性；新页面可见时 runtime 文件仍可能在重写。
     await componentPublication.wait()
-    await reconnect()
+    await reconnect(componentReload)
     await dom.check('component-added', miniProgram!, await miniProgram!.reLaunch(route))
     const app = JSON.parse(appConfig) as { pages: string[] }
+    const routeReload = await captureAppReloadMarker(miniProgram!)
     const routePublication = captureTopologyPublication()
     await saveNativeProfileSource(project, 'app.json', JSON.stringify({ ...app, pages: [...app.pages, optionalRoute.slice(1)] }))
     await expect.poll(() => hasNativeProfileEntry(project, optionalRoute.slice(1)), { timeout: 30_000 }).toEqual([true, true, true])
     await routePublication.wait()
-    await reconnect()
+    await reconnect(routeReload)
     await dom.check('route-added', miniProgram!, await miniProgram!.reLaunch(optionalRoute))
+    const restoredReload = await captureAppReloadMarker(miniProgram!)
     const restoredPublication = captureTopologyPublication()
     await saveNativeProfileSource(project, 'pages/plain/index.wxml', template)
     await saveNativeProfileSource(project, 'pages/plain/index.json', pageConfig)
@@ -115,7 +123,7 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     await expect.poll(() => hasNativeProfileEntry(project, 'components/optional/index'), { timeout: 30_000 }).toEqual([false, false, false])
     await expect.poll(() => hasNativeProfileEntry(project, optionalRoute.slice(1)), { timeout: 30_000 }).toEqual([false, false, false])
     await restoredPublication.wait()
-    await reconnect()
+    await reconnect(restoredReload)
     const restored = await miniProgram!.reLaunch(route)
     await dom.check('restored', miniProgram!, restored)
     expect(await restored.$('#optional-component')).toBeNull()

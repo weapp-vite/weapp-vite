@@ -86,6 +86,16 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   assert.equal(repoctlConfig.commands.upgrade.noOverwrite, true)
 })
 
+it('keeps the agent CLI on the stable release line', async () => {
+  const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const packageJson = JSON.parse(
+    await fs.readFile(path.join(rootDir, 'packages/agent-cli/package.json'), 'utf8'),
+  ) as { private?: boolean, version?: string }
+
+  assert.equal(packageJson.private, false)
+  assert.match(packageJson.version ?? '', /^\d+\.\d+\.\d+$/)
+})
+
 it.each([
   { scenario: 'the original 30-minute job', jobMinutes: 30, stepMinutes: 50, error: /job must allow at least 60 minutes/ },
   { scenario: 'a missing command timeout', jobMinutes: 60, stepMinutes: undefined, error: /command must explicitly allow at least 50 minutes/ },

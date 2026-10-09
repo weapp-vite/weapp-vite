@@ -11,6 +11,7 @@ import pkg from '../package.json'
 import { readAppServiceHeapUsage } from './appServiceHeap'
 import { cmpVersion, isFn, isStr, startWith, trim } from './internal/compat'
 import Native from './Native'
+import { matchesRouteQuery } from './navigation/query'
 import Page from './Page'
 import { StructuredConsole } from './structuredConsole'
 import { decodeQrCode, extractPluginId, isPluginPath, printQrCode } from './util'
@@ -204,13 +205,15 @@ function isPluginNavigationUrl(value: string | undefined) {
 
 function matchesRouteChange(options: {
   currentPath: string | undefined
+  currentQuery: unknown
   previousPath: string | undefined
   requestedUrl: string | undefined
   expectedRoute: string
+  expectedQuery: Record<string, string>
 }) {
   const normalizedCurrentPath = normalizeRoutePath(options.currentPath)
   if (!options.expectedRoute || normalizedCurrentPath === options.expectedRoute) {
-    return true
+    return matchesRouteQuery(options.currentQuery, options.expectedQuery)
   }
   if (!isPluginNavigationUrl(options.requestedUrl) || !isPluginPath(options.currentPath)) {
     return false
@@ -560,7 +563,7 @@ export default class MiniProgram extends EventEmitter {
   }
 
   /**
-   * @description 等待小程序 App 域协议可用，避免返回半就绪自动化会话。
+   * @description 等待原生协议返回真实页面标识和路径，避免返回半就绪自动化会话。
    */
   async waitForAppReady(timeout = APP_READY_TIMEOUT) {
     const startedAt = Date.now()
@@ -569,17 +572,26 @@ export default class MiniProgram extends EventEmitter {
     while (Date.now() - startedAt < timeout) {
       const remainingTimeout = timeout - (Date.now() - startedAt)
       try {
-        await this.send('App.captureScreenshot', {}, {
+        const page: unknown = await this.send('App.getCurrentPage', {}, {
           timeout: Math.min(APP_READY_PROBE_TIMEOUT, remainingTimeout),
         })
-        return
+        if (page && typeof page === 'object'
+          && 'pageId' in page && typeof page.pageId === 'number'
+          && Number.isSafeInteger(page.pageId) && page.pageId >= 0
+          && 'path' in page && typeof page.path === 'string' && page.path.trim()) {
+          return
+        }
+        lastError = new Error('App.getCurrentPage returned no ready page with a valid pageId and path')
       }
       catch (error) {
-        lastError = error
-        const remainingAfterProbe = timeout - (Date.now() - startedAt)
-        if (remainingAfterProbe > 0) {
-          await sleep(Math.min(APP_READY_POLL_DELAY, remainingAfterProbe))
+        if (!isCurrentPageProtocolTimeout(error) && !isPageMetaMissingError(error) && !isCurrentFrameTimedOutError(error)) {
+          throw error
         }
+        lastError = error
+      }
+      const remainingAfterProbe = timeout - (Date.now() - startedAt)
+      if (remainingAfterProbe > 0) {
+        await sleep(Math.min(APP_READY_POLL_DELAY, remainingAfterProbe))
       }
     }
 
@@ -714,9 +726,11 @@ export default class MiniProgram extends EventEmitter {
         logChangeRouteDebug(`poll method=${method} url=${url ?? '<none>'} current=${page?.path ?? '<none>'}`)
         if (matchesRouteChange({
           currentPath: page?.path,
+          currentQuery: page?.query,
           previousPath: currentPage?.path,
           requestedUrl: url,
           expectedRoute,
+          expectedQuery: expectedRouteQuery,
         })) {
           logChangeRouteDebug(`ready method=${method} url=${url ?? '<none>'} current=${page?.path ?? '<none>'}`)
           return page
@@ -735,9 +749,11 @@ export default class MiniProgram extends EventEmitter {
           logChangeRouteDebug(`stack method=${method} url=${url ?? '<none>'} current=${stackTop.path}`)
           if (matchesRouteChange({
             currentPath: stackTop.path,
+            currentQuery: stackTop.query,
             previousPath: currentPage?.path,
             requestedUrl: url,
             expectedRoute,
+            expectedQuery: expectedRouteQuery,
           })) {
             logChangeRouteDebug(`stack-ready method=${method} url=${url ?? '<none>'} current=${stackTop.path}`)
             return stackTop
