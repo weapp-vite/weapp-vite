@@ -2,13 +2,15 @@
 
 ## 验收边界
 
-用户明确选择 Nightly。本文分别记录微信开发者工具 `2.02.2610092` 的完整 gate/full 运行结果和 `2.02.2610082` 的最小诊断；不同版本的证据不合并计作验收通过。官方 Stable 对照为 `2.02.2608080`，不能将 Nightly 结果记为 Stable 通过。官方来源为 `https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json`；每个真实 IDE 入口均重新查询并将 UTC 查询时间保存在运行日志和版本报告中。
+用户明确选择 Nightly。本文分别记录微信开发者工具 `2.02.2610092` 的 gate 全量执行结果、full 首轮中止结果和 `2.02.2610082` 的最小诊断；不同版本的证据不合并计作验收通过。官方 Stable 对照为 `2.02.2608080`，不能将 Nightly 结果记为 Stable 通过。官方来源为 `https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json`；每个真实 IDE 入口均重新查询并将 UTC 查询时间保存在运行日志和版本报告中。
 
 2026-10-09T20:47:54Z 重新查询官方渠道：Stable 仍为 `2.02.2608080`，Nightly 为 `2.02.2610092`。所选安装、实际宿主和基础库均按 Nightly 记录；Nightly 选择使用 `selected-version-opt-in`，与 Stable 结果分开统计。
 
 本轮排除 `uview-plus-compat,wot-ui-compat`，只验证 8 项 `ide-gate` 和 23 项 `ide-full` 核心回归。显式 CLI、渠道和精确版本选择保持一致，不修改登录、宿主归属、窗口预算或正式验收策略。
 
-Nightly `2.02.2610092` 在提交 `6e96c518`（工作区含待提交的 automator Nightly 协议修复）上的完整 gate 已通过 8/8 task、27/27 case、162/162 checkpoint。随后完整 full 前 15 项通过，第 16 项 `ide/stateful-hmr.runtime.test.ts` 为 14/16 case、78/88 checkpoint；两个 Wevu 模板更新用例失败，后续 7 项尚未执行。同提交的干净工作树在 `2.02.2610092` 上独立运行 stateful suite，仍为相同两例失败。完整 full 尚未通过，Goal 未完成。
+Nightly `2.02.2610092` 在提交 `6e96c518`（工作区含待提交的 automator Nightly 协议修复）上的 gate 已执行全部 8 项，通过 8/8 task、27/27 case、162/162 checkpoint。该轮报告为 `strict=false`、`workingTreeDirty=true`，不能替代最终干净 main 提交上的正式 Goal 验收。
+
+随后 full 首轮运行前 15 项通过，第 16 项 `ide/stateful-hmr.runtime.test.ts` 为 14/16 case、78/88 checkpoint；两个 Wevu 模板更新用例失败后中止，后续 7 项尚未执行。该轮为 `strict=true`、`workingTreeDirty=true`。同提交的干净工作树在 `2.02.2610092` 上独立运行 stateful suite，报告为 `strict=true`、`workingTreeDirty=false`，仍为相同两例失败；这次只覆盖一个 suite，属于局部验证。完整 full 尚未通过，Goal 未完成。
 
 gate 实际基础库覆盖 `3.16.3`、`3.17.2`、`3.17.3`、`3.17.4`；stateful HMR 使用 fixture 原有的 `3.16.3`。未为获得通过而切换基础库。
 
@@ -67,6 +69,12 @@ Computer Use 观察到首页路径及空白模拟器；该批对照的版本归�
 继续复用独立的 `statefulHmrDom` 模块；大型 runtime suite 只调整调用参数，本轮没有向其中扩展功能块，因此不额外拆分文件。
 
 干净 main 提交 `d4864608` 的 headless 筛选诊断中，两项目标 Wevu 用例通过，捕获 14/14 checkpoint；其余 14 项被筛选跳过，`strict=false`，实际 IDE/基础库字段为空。该结果仅证明所选 headless 逻辑场景，不是完整 stateful suite、真实 IDE 验收或 Goal 完成。
+
+## 2026-10-10 main 预检阻塞
+
+在干净 main 提交 `0215706dd` 上继续检查所选 Nightly `2.02.2610092`。独立安装的 GUI 已确认版本，但仍要求微信扫码登录，CLI 初始化与登录预检尚未完成；没有启动测试项目或进入 runtime 用例。
+
+同日对既有 `2.02.2610092` 安装的预检，在 global setup 的登录检查阶段因用户配置目录未就绪，访问 `.cli` 时抛出 `ENOENT`。该轮官方查询时间为 `2026-10-10T04:18:40.808Z`，所选渠道和版本仍为 Nightly `2.02.2610092`，Stable 对照仍为 `2.02.2608080`。DOM 报告为 0/0 case、0/0 checkpoint，实际 IDE 与基础库字段为空；这是初始化阻塞，不能记作 runtime 用例失败或通过，也不能补齐最终 gate/full 验收。
 
 ## 收尾与继续条件
 
