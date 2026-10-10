@@ -1,5 +1,12 @@
 # @mpcore/simulator-web-demo
 
+## 0.0.13
+
+### Patch Changes
+
+- Updated dependencies:
+  - @mpcore/simulator@1.0.0
+
 ## 0.0.12
 
 ### Patch Changes
