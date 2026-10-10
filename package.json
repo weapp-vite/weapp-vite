@@ -40,7 +40,7 @@
     "test:coverage:web": "node --import tsx scripts/run-web-coverage.ts",
     "check:web-coverage": "node --import tsx scripts/check-web-coverage.ts",
     "test:dev": "vitest --exclude '**/.codex-tmp/**'",
-    "test:types": "turbo run test:types:check --filter=./packages/* --filter=./packages-runtime/* --filter=./mpcore/packages/* --filter=./@weapp-core/* --filter=!@weapp-vite/dashboard",
+    "test:types": "turbo run test:types:check --filter=./packages/* --filter=./packages-runtime/* --filter=./mpcore/packages/* --filter=./@weapp-core/* --filter=weapp-vite-lib-mode-e2e --filter=!@weapp-vite/dashboard",
     "lint": "turbo run lint",
     "lint:ci:windows": "turbo run lint --concurrency=1",
     "changeset:deps:auto": "node --import tsx scripts/generate-dependency-upgrade-changeset.ts",

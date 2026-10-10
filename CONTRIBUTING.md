@@ -28,6 +28,8 @@ job 上限为 60 分钟；六阶段从 `plan` 前开始共享 50 分钟截止时
 
 Actions 恢复和保存 `.turbo/cache`，身份包含实际操作系统、架构、Node、pnpm 与锁文件。保存沿用恢复时冻结的 key，避免版本准备修改锁文件后漂移；只有受信任发布分支的成功运行可写入，缓存失败不会阻断发布。Turbo 只复用 build/lint 结果，单测、typecheck 和类型契约检查不缓存，仍按本轮质量流程执行；独立包的 `test:types` 保留先构建再检查的入口。
 
+根类型入口同时覆盖 library 包和 `e2e-apps/lib-mode` 的产物类型契约。lib-mode 每轮重新生成八组类型 fixture 后运行 TSD；它显式等待 `weapp-vite` 与 `wevu` 的构建及类型检查，不复用旧 fixture，也不额外触发 Dashboard 构建。
+
 工作流始终尝试归档 `pnpm-publish-summary.json`、`repoctl-publish-progress.json`、`repoctl-release-progress.json` 和 `repoctl-ci-progress.json`，保留 14 天，缺失文件忽略。排查失败时先查看对应阶段和这些进度报告；恢复单包发布继续使用 `repo release ci --mode publish-unpublished --package <name> --version <version>`，不跳过质量门禁。
 
 ## 增量与完整处理等价校验

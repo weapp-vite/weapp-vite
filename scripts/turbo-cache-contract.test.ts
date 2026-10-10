@@ -21,7 +21,12 @@ describe('Turbo release cache contract', () => {
     expect(checks.map(task => task.taskId).sort()).toEqual(expectedChecks.sort())
     for (const task of checks) {
       expect(task.resolvedTaskDefinition.cache, task.taskId).toBe(false)
-      expect(task.dependencies, task.taskId).toContain(task.taskId.replace(/#test:types:check$/, '#build'))
+      if (task.taskId === 'weapp-vite-lib-mode-e2e#test:types:check') {
+        expect(task.dependencies).toEqual(['weapp-vite#test:types:check', 'wevu#test:types:check'])
+      }
+      else {
+        expect(task.dependencies, task.taskId).toContain(task.taskId.replace(/#test:types:check$/, '#build'))
+      }
     }
     const tasksById = new Map(typeTasks.map(task => [task.taskId, task]))
     const requiredTasks = new Set<string>()
@@ -43,7 +48,12 @@ describe('Turbo release cache contract', () => {
     expect(unnecessaryUncachedBuilds, 'Dashboard must not rebuild solely because it was selected as a type-check transit task').toEqual([])
     const releaseBuilds = new Set(releaseTasks.filter(task => task.task === 'build').map(task => task.taskId))
     for (const task of typeTasks) {
-      expect(task.directory.replaceAll('\\', '/'), task.taskId).toMatch(/^(?:packages|packages-runtime|mpcore\/packages|@weapp-core)\//)
+      if (task.taskId === 'weapp-vite-lib-mode-e2e#test:types:check') {
+        expect(task.directory.replaceAll('\\', '/')).toBe('e2e-apps/lib-mode')
+      }
+      else {
+        expect(task.directory.replaceAll('\\', '/'), task.taskId).toMatch(/^(?:packages|packages-runtime|mpcore\/packages|@weapp-core)\//)
+      }
       if (task.task === 'build') {
         expect(releaseBuilds.has(task.taskId), task.taskId).toBe(true)
       }

@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
+import { workspaceTypeTestPackages } from './turboCacheContract/fixture'
 
 const root = path.resolve(import.meta.dirname, '..')
 const standardContracts = 'tsd --files "test-d/**/*.test-d.ts"'
@@ -137,27 +138,8 @@ async function collectContracts(packageRoot: string, script: string): Promise<st
 
 describe('public type tests in CI', () => {
   it('covers every workspace package with a public type-test entry', async () => {
-    const actual: string[] = []
-    for (const parent of ['@weapp-core', 'packages', 'packages-runtime', 'mpcore/packages', 'benchmarks', 'packages-private', 'extensions']) {
-      for (const entry of await readdir(path.join(root, parent), { withFileTypes: true })) {
-        if (!entry.isDirectory()) {
-          continue
-        }
-        const directory = `${parent}/${entry.name}`
-        try {
-          const manifest = await readManifest(path.join(root, directory))
-          if (manifest.scripts?.['test:types'] || manifest.scripts?.['test:types:check']) {
-            actual.push(directory)
-          }
-        }
-        catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-            throw error
-          }
-        }
-      }
-    }
-    expect(actual.sort()).toEqual(packages.map(([directory]) => directory).sort())
+    const actual = (await workspaceTypeTestPackages()).map(manifest => manifest.directory)
+    expect(actual.sort()).toEqual([...packages.map(([directory]) => directory), 'e2e-apps/lib-mode'].sort())
   })
 
   it.each(packages.map(([directory, build, check, prebuild]) => ({ directory, build, check, prebuild })))('$directory preserves standalone freshness and checks every real contract', async ({ directory, build, check, prebuild }) => {
@@ -184,9 +166,30 @@ describe('public type tests in CI', () => {
     expect(manifest.scripts['test:types:check']).toBe(`${jsxContracts} && tsd --files "test-d/router-named-map.test-types.ts"`)
   })
 
+  it('preserves the lib-mode fixture preparation and selects all its original contracts', async () => {
+    const packageRoot = path.join(root, 'e2e-apps/lib-mode')
+    const manifest = await readManifest(packageRoot)
+    const prepare = 'node ./scripts/prepare-type-fixtures.mjs'
+    expect(manifest.scripts['pretest:types']).toBe(prepare)
+    expect(manifest.scripts['test:types']).toBe('tsd')
+    expect(manifest.scripts['test:types:check']).toBe(`${prepare} && tsd`)
+    expect(manifest.scripts['pretest:types:check']).toBeUndefined()
+    expect(manifest.scripts['posttest:types:check']).toBeUndefined()
+    const contracts = (await filesUnder(path.join(packageRoot, 'test-d')))
+      .filter(file => /\.(?:test-d|test-types)\.tsx?$/.test(file))
+      .map(file => `test-d/${file}`)
+      .sort()
+    expect(contracts).toEqual([
+      'test-d/dist-lib-file.test-d.ts',
+      'test-d/dist-lib.test-d.ts',
+      'test-d/dist-matrix.test-d.ts',
+    ])
+    expect(await collectContracts(packageRoot, manifest.scripts['test:types']!)).toEqual(contracts)
+  })
+
   it('reaches package contracts through the PR type-check job and root task', async () => {
     const manifest = await readManifest(root)
-    expect(manifest.scripts['test:types']).toBe('turbo run test:types:check --filter=./packages/* --filter=./packages-runtime/* --filter=./mpcore/packages/* --filter=./@weapp-core/* --filter=!@weapp-vite/dashboard')
+    expect(manifest.scripts['test:types']).toBe('turbo run test:types:check --filter=./packages/* --filter=./packages-runtime/* --filter=./mpcore/packages/* --filter=./@weapp-core/* --filter=weapp-vite-lib-mode-e2e --filter=!@weapp-vite/dashboard')
     const workflow = parse(await readFile(path.join(root, '.github/workflows/ci.yml'), 'utf8')) as Workflow
     const job = workflow.jobs['build-pr']
     expect(job?.if).toContain('github.event_name == \'pull_request\'')

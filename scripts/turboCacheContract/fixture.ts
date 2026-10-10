@@ -1,10 +1,11 @@
-import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { glob, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 缓存契约需要跨平台进程启动、超时取消和错误传播。
 import { execa } from 'execa'
+import { parse } from 'yaml'
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../..')
 const turboEntry = createRequire(import.meta.url).resolve('turbo/bin/turbo')
@@ -23,6 +24,22 @@ export interface PlannedTask {
   }
 }
 
+export async function workspaceTypeTestPackages() {
+  const workspace = parse(await readFile(path.join(repositoryRoot, 'pnpm-workspace.yaml'), 'utf8')) as { packages: string[] }
+  const manifests: string[] = []
+  for await (const file of glob(workspace.packages.filter(pattern => !pattern.startsWith('!')).map(pattern => `${pattern}/package.json`), {
+    cwd: repositoryRoot,
+    exclude: workspace.packages.filter(pattern => pattern.startsWith('!')).map(pattern => `${pattern.slice(1)}/package.json`),
+  })) {
+    manifests.push(file.replaceAll('\\', '/'))
+  }
+  const packages = await Promise.all(manifests.map(async (file) => {
+    const manifest = JSON.parse(await readFile(path.join(repositoryRoot, file), 'utf8')) as { name: string, scripts?: Record<string, string> }
+    return { directory: path.posix.dirname(file), name: manifest.name, scripts: manifest.scripts ?? {} }
+  }))
+  return packages.filter(manifest => manifest.scripts['test:types'] || manifest.scripts['test:types:check'])
+}
+
 export async function planRepositoryTypeChecks() {
   const manifest = JSON.parse(await readFile(path.join(repositoryRoot, 'package.json'), 'utf8')) as { scripts: Record<string, string> }
   async function planScript(script: string) {
@@ -33,26 +50,7 @@ export async function planRepositoryTypeChecks() {
     const result = await execa(process.execPath, [turboEntry, ...args, '--dry=json'], { cwd: repositoryRoot, timeout: 30_000 })
     return (JSON.parse(result.stdout) as { tasks: PlannedTask[] }).tasks
   }
-  const expectedChecks: string[] = []
-  for (const directory of ['packages', 'packages-runtime', 'mpcore/packages', '@weapp-core']) {
-    for (const entry of await readdir(path.join(repositoryRoot, directory), { withFileTypes: true })) {
-      if (!entry.isDirectory()) {
-        continue
-      }
-      try {
-        const file = path.join(repositoryRoot, directory, entry.name, 'package.json')
-        const packageManifest = JSON.parse(await readFile(file, 'utf8')) as { name: string, scripts?: Record<string, string> }
-        if (packageManifest.scripts?.['test:types:check']) {
-          expectedChecks.push(`${packageManifest.name}#test:types:check`)
-        }
-      }
-      catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-          throw error
-        }
-      }
-    }
-  }
+  const expectedChecks = (await workspaceTypeTestPackages()).map(manifest => `${manifest.name}#test:types:check`)
   const [typeTasks, releaseTasks] = await Promise.all([planScript('test:types'), planScript('ci:release')])
   return { expectedChecks, typeTasks, releaseTasks }
 }
