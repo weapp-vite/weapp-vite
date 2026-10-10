@@ -2,15 +2,15 @@
 
 ## 验收边界
 
-用户明确选择 Nightly，本轮选中并实际连接微信开发者工具 `2.02.2610092`。官方 Stable 对照为 `2.02.2608080`，不能将本轮结果记为 Stable 通过。官方来源为 `https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json`；每个真实 IDE 入口均重新查询并将 UTC 查询时间保存在运行日志和版本报告中。
+用户明确选择 Nightly。本文分别记录微信开发者工具 `2.02.2610092` 的完整 gate/full 运行结果和 `2.02.2610082` 的最小诊断；不同版本的证据不合并计作验收通过。官方 Stable 对照为 `2.02.2608080`，不能将 Nightly 结果记为 Stable 通过。官方来源为 `https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json`；每个真实 IDE 入口均重新查询并将 UTC 查询时间保存在运行日志和版本报告中。
 
 2026-10-09T20:47:54Z 重新查询官方渠道：Stable 仍为 `2.02.2608080`，Nightly 为 `2.02.2610092`。所选安装、实际宿主和基础库均按 Nightly 记录；Nightly 选择使用 `selected-version-opt-in`，与 Stable 结果分开统计。
 
 本轮排除 `uview-plus-compat,wot-ui-compat`，只验证 8 项 `ide-gate` 和 23 项 `ide-full` 核心回归。显式 CLI、渠道和精确版本选择保持一致，不修改登录、宿主归属、窗口预算或正式验收策略。
 
-提交 `6e96c518`（工作区含待提交的 automator Nightly 协议修复）的完整 gate 已通过 8/8 task、27/27 case、162/162 checkpoint。随后完整 full 前 15 项通过，第 16 项 `ide/stateful-hmr.runtime.test.ts` 为 14/16 case、78/88 checkpoint；两个 Wevu 模板更新用例失败，后续 7 项尚未执行。完整 full 尚未通过，Goal 未完成。
+Nightly `2.02.2610092` 在提交 `6e96c518`（工作区含待提交的 automator Nightly 协议修复）上的完整 gate 已通过 8/8 task、27/27 case、162/162 checkpoint。随后完整 full 前 15 项通过，第 16 项 `ide/stateful-hmr.runtime.test.ts` 为 14/16 case、78/88 checkpoint；两个 Wevu 模板更新用例失败，后续 7 项尚未执行。同提交的干净工作树在 `2.02.2610092` 上独立运行 stateful suite，仍为相同两例失败。完整 full 尚未通过，Goal 未完成。
 
-gate 实际基础库覆盖 `3.17.2`、`3.17.3`、`3.17.4`；stateful HMR 使用 fixture 原有的 `3.16.3`。未为获得通过而切换基础库。
+gate 实际基础库覆盖 `3.16.3`、`3.17.2`、`3.17.3`、`3.17.4`；stateful HMR 使用 fixture 原有的 `3.16.3`。未为获得通过而切换基础库。
 
 ## 首错与最小对照
 
@@ -21,7 +21,7 @@ gate 实际基础库覆盖 `3.17.2`、`3.17.3`、`3.17.4`；stateful HMR 使用 
 
 两者均已完成首屏和交互准备。构建输出包含新增节点，脚本客户端版本已推进；真实页面仍保留旧结构。产物写出和补丁确认不能代替真实 DOM 断言。
 
-进一步对照：
+以下冷启动、全新项目、WXML-only writer、原生 Page/Component 和缓存探针均运行于 Nightly `2.02.2610082`、基础库 `3.16.3`。这些对照尚未在 `2.02.2610092` 完整重复：
 
 - 单独执行冷启动后的 Wevu 两轮模板往返，同样在首次编辑失败；后续通过用例不能证明首次更新正确。
 - 将原始 fixture 复制到全新独占项目后，首次 Wevu 模板更新仍失败，排除旧项目路径或历史项目缓存作为充分解释。
@@ -36,6 +36,8 @@ gate 实际基础库覆盖 `3.17.2`、`3.17.3`、`3.17.4`；stateful HMR 使用 
 
 ## 2026-10-10 发布路径对照
 
+本节全部对照来自 Nightly `2.02.2610082`、基础库 `3.16.3`；下述 UTC 时间线发生于 `2026-10-09`，不是 `2.02.2610092` 的时序采样。
+
 原生 Component 使用原样 Wevu 产物，仍保留计数、输入和页面身份。这个对照进一步区分了两条路径：
 
 - 仅通过原生 writer 更新输出 WXML，首次新增节点缺失；移除动态 style 绑定后仍失败。
@@ -48,11 +50,13 @@ gate 实际基础库覆盖 `3.17.2`、`3.17.3`、`3.17.4`；stateful HMR 使用 
 
 ## TDesign 首屏初始化对照
 
+本节最小化对照来自 Nightly `2.02.2610082`，fixture 配置基础库为 `3.17.4`；未完成首屏 DOM 验收。这些结果不能计作 `2.02.2610092` 的通过或失败。
+
 原生 TDesign 模板的 stateful `dev:open` 首屏仍为空。组合移除 `wevu/api` 与 ActionSheet 脚本依赖后没有恢复；进一步将首页 JS、WXML、JSON 精简为原生 Page，并使用 `routeRules.appLayout: false` 确认输出不再包含 layout 或子组件，仍没有完成路由初始化。共享上下文配置对照也没有恢复。
 
-Computer Use 确认 Nightly `2.02.2610092`、实际基础库 `3.17.4`、首页路径及空白模拟器。暂停无响应模拟器后，捕获栈位于 Electron sandbox 的 IPC `onMessage`，不能据此认定业务死循环。恢复执行后，控制台重复报 `App.getCurrentPage` 的页面元数据为 null；宿主日志记录 `routeTo appLaunch timeout` 和 `routeLoadTimedOut`。这些对照均未完成首屏 DOM 验收，也不能证明初始化失败的唯一根因。
+Computer Use 观察到首页路径及空白模拟器；该批对照的版本归属以宿主日志中的 `2.02.2610082` 为准。暂停无响应模拟器后，捕获栈位于 Electron sandbox 的 IPC `onMessage`，不能据此认定业务死循环。恢复执行后，控制台重复报 `App.getCurrentPage` 的页面元数据为 null；宿主日志记录 `routeTo appLaunch timeout` 和 `routeLoadTimedOut`。这些对照均未完成首屏 DOM 验收，也不能证明初始化失败的唯一根因。
 
-所有模板源码和项目配置均已恢复。每个诊断结束后，所选安装进程树与 RSS 为零、受管项目全部 released、机器租约解除；最新已核验记录数为 318。官方版本最近查询时间为 `2026-10-09T20:47:54Z`，仍明确区分官方 Stable 对照与所选 Nightly。
+所有模板源码和项目配置均已恢复。每个诊断结束后，所选安装进程树与 RSS 为零、受管项目全部 released、机器租约解除；该批已核验记录数为 318。该批官方版本查询时间为 `2026-10-09T20:47:54Z`，仍明确区分官方 Stable 对照与所选 Nightly。
 
 ## 两个 provider 的回归覆盖
 
@@ -61,6 +65,8 @@ Computer Use 确认 Nightly `2.02.2610092`、实际基础库 `3.17.4`、首页�
 本轮仅让 checkpoint 接受明确的 provider：两侧保持相同路由、节点、文本、属性和顺序；真实 DevTools 保留全部原有样式与可见性断言，headless 验证对应逻辑节点。默认 provider 仍为 DevTools，不新增公开 API，也不改变构建或运行时行为。
 
 继续复用独立的 `statefulHmrDom` 模块；大型 runtime suite 只调整调用参数，本轮没有向其中扩展功能块，因此不额外拆分文件。
+
+干净 main 提交 `d4864608` 的 headless 筛选诊断中，两项目标 Wevu 用例通过，捕获 14/14 checkpoint；其余 14 项被筛选跳过，`strict=false`，实际 IDE/基础库字段为空。该结果仅证明所选 headless 逻辑场景，不是完整 stateful suite、真实 IDE 验收或 Goal 完成。
 
 ## 收尾与继续条件
 
