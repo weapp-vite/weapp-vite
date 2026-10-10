@@ -41,7 +41,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test:types": "tsd"
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\""
   },
   "dependencies": {
     "execa": "10.1.0",

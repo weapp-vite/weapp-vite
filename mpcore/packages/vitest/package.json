@@ -51,7 +51,8 @@
     "build": "tsdown",
     "dev": "tsdown -w",
     "test": "vitest run",
-    "test:types": "pnpm build && tsd",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
@@ -66,5 +67,11 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   }
 }

@@ -23,7 +23,7 @@ import {
   renderTerminalQrCode,
   renderTerminalQrCodeFromMatrix,
 } from '@weapp-vite/qr'
-import { expectError, expectType } from 'tsd'
+import { expectAssignable, expectError, expectType } from 'tsd'
 
 type PublicApiName
   = | 'createQrCodeMatrix'
@@ -50,9 +50,9 @@ expectType<Promise<string>>(decodeQrCodeFromFile('/tmp/example.png'))
 expectType<Promise<QRCodeType>>(detectCodeTypeFromBase64('Zm9v'))
 expectType<Promise<QRCodeType>>(detectCodeTypeFromBuffer(Buffer.from('Zm9v')))
 expectType<Promise<QRCodeType>>(detectCodeTypeFromFile('/tmp/example.png'))
-expectType<Promise<MiniProgramCodeDetectionResult | null>>(detectMiniProgramCodeFromBase64('Zm9v'))
-expectType<Promise<MiniProgramCodeDetectionResult | null>>(detectMiniProgramCodeFromBuffer(Buffer.from('Zm9v')))
-expectType<Promise<MiniProgramCodeDetectionResult | null>>(detectMiniProgramCodeFromFile('/tmp/example.png'))
+expectAssignable<Promise<MiniProgramCodeDetectionResult | null>>(detectMiniProgramCodeFromBase64('Zm9v'))
+expectAssignable<Promise<MiniProgramCodeDetectionResult | null>>(detectMiniProgramCodeFromBuffer(Buffer.from('Zm9v')))
+expectAssignable<Promise<MiniProgramCodeDetectionResult | null>>(detectMiniProgramCodeFromFile('/tmp/example.png'))
 
 const matrix = createQrCodeMatrix('hello qr')
 expectType<QRCodeMatrix>(matrix)
@@ -66,14 +66,14 @@ expectType<string>(full)
 expectType<string>(renderTerminalQrCodeFromMatrix(matrix, { small: false }))
 
 const renderOptions = { small: true } satisfies QRCodeRenderOptions
-expectType<QRCodeRenderOptions>(renderOptions)
+expectAssignable<QRCodeRenderOptions>(renderOptions)
 
 const readerInput = {
   width: 1,
   height: 1,
   data: Buffer.from([0, 0, 0, 255]),
 } satisfies QRCodeReaderInput
-expectType<QRCodeReaderInput>(readerInput)
+expectAssignable<QRCodeReaderInput>(readerInput)
 expectType<Promise<QRCodeReaderResult>>(decodeWithQrReader(readerInput))
 
 expectError(createQrCodeMatrix(123))

@@ -12,4 +12,8 @@ expectType<AcceptanceReport>(await service.report('job'))
 expectType<AcceptanceReport>(await service.cancel('job'))
 expectType<void>(await service.close())
 expectType<Scenario>(scenarioSchema.parse({ version: 1, name: 'counter', steps: [] }))
-expectType<number>((await loadAcceptanceConfig('.')).version)
+const config = await loadAcceptanceConfig('.')
+expectType<1 | undefined>(config?.version)
+if (config) {
+  expectType<1>(config.version)
+}

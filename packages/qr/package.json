@@ -51,7 +51,8 @@
     "fixtures:generate": "node --import tsx scripts/generate-fixtures.ts",
     "test": "vitest run --config ./vitest.config.ts",
     "test:dev": "vitest --config ./vitest.config.ts",
-    "test:types": "tsd",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit -p ./tsconfig.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

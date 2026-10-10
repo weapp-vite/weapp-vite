@@ -20,6 +20,16 @@ pnpm i
 
 如果直接执行 `pnpm up` 后看到 catalog 同步提示，请改用 `pnpm deps:up` 或显式运行 `pnpm run catalog:sync:workspace`。
 
+## Release CI
+
+GitHub Release workflow 使用 `repoctl@5.10.0` 的原生六阶段：`plan → verify → prepare → upload → confirm → finalize`。`plan` 判定需要执行时才进入验证和准备，`prepare` 判定需要发布时才进入上传、确认和收尾。任一阶段失败都会阻断后续发布阶段；质量脚本及版本、发布 hooks 仍由 `repoctl.config.ts` 管理。同一轮 `verify` 的有效回执可供 `prepare` 使用，不能复用上一轮运行的验证结果。
+
+job 上限为 60 分钟；六阶段从 `plan` 前开始共享 50 分钟截止时间，每阶段只使用剩余预算。Ubuntu 的 GNU timeout 在截止前发送 TERM，并将 5 秒强制回收宽限计入共享预算；监督进程保持存活到 KILL，避免主命令先退出时遗留忽略 TERM 的后代。`GITHUB_TOKEN` 和 `VSCE_PAT` 只设在六阶段各自的 `step.env`，checkout 的 Git 推送凭据沿用相同发布令牌来源。
+
+Actions 恢复和保存 `.turbo/cache`，身份包含实际操作系统、架构、Node、pnpm 与锁文件。保存沿用恢复时冻结的 key，避免版本准备修改锁文件后漂移；只有受信任发布分支的成功运行可写入，缓存失败不会阻断发布。Turbo 只复用 build/lint 结果，单测、typecheck 和类型契约检查不缓存，仍按本轮质量流程执行；独立包的 `test:types` 保留先构建再检查的入口。
+
+工作流始终尝试归档 `pnpm-publish-summary.json`、`repoctl-publish-progress.json`、`repoctl-release-progress.json` 和 `repoctl-ci-progress.json`，保留 14 天，缺失文件忽略。排查失败时先查看对应阶段和这些进度报告；恢复单包发布继续使用 `repo release ci --mode publish-unpublished --package <name> --version <version>`，不跳过质量门禁。
+
 ## 增量与完整处理等价校验
 
 使用上述 Node.js 版本；源码包变更后先构建受影响包及其依赖：

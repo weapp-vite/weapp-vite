@@ -50,7 +50,8 @@
     "build": "tsdown && wv build --config weapp-vite.config.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "lint": "eslint ."
   },
   "peerDependencies": {

@@ -61,7 +61,8 @@
     "test": "vitest run",
     "test:coverage": "cross-env WEAPP_VITE_WEB_COVERAGE_STRICT=1 vitest run --coverage",
     "test:dev": "vitest",
-    "test:types": "pnpm build && tsd",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "tsd": {
@@ -87,6 +88,7 @@
     "postcss-selector-parser": "catalog:",
     "rolldown": "catalog:",
     "rolldown-require": "workspace:*",
+    "vite": "catalog:",
     "wevu": "workspace:*"
   },
   "devDependencies": {

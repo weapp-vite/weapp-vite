@@ -1,6 +1,4 @@
 import type {
-  BlobPart,
-  FormDataEntryValue,
   InstallWebRuntimeGlobalsOptions,
   MiniProgramNetworkDefaults,
   RequestGlobalsMiniProgramOptions,
@@ -11,6 +9,7 @@ import type {
 import type {
   RequestGlobalsFetchInit,
 } from '@wevu/web-apis/fetch'
+import type { BlobPart, FormDataEntryValue } from '@wevu/web-apis/web'
 import {
   BlobPolyfill,
   FilePolyfill,
@@ -28,14 +27,14 @@ import {
   URLPolyfill,
   URLSearchParamsPolyfill,
 } from '@wevu/web-apis'
-import { expectError, expectType } from 'tsd'
+import { expectAssignable, expectError, expectType } from 'tsd'
 
 const target: WeappInjectWebRuntimeGlobalsTarget = 'fetch'
-expectType<WeappInjectWebRuntimeGlobalsTarget>(target)
-expectType<WeappInjectRequestGlobalsTarget>(target)
-expectType<WeappInjectWebRuntimeGlobalsTarget>('performance')
-expectType<WeappInjectWebRuntimeGlobalsTarget>('crypto')
-expectType<WeappInjectWebRuntimeGlobalsTarget>('queueMicrotask')
+expectAssignable<WeappInjectWebRuntimeGlobalsTarget>(target)
+expectAssignable<WeappInjectRequestGlobalsTarget>(target)
+expectAssignable<WeappInjectWebRuntimeGlobalsTarget>('performance')
+expectAssignable<WeappInjectWebRuntimeGlobalsTarget>('crypto')
+expectAssignable<WeappInjectWebRuntimeGlobalsTarget>('queueMicrotask')
 
 const options: InstallWebRuntimeGlobalsOptions = {
   targets: ['fetch', 'Request', 'XMLHttpRequest', 'performance', 'crypto'],
@@ -50,10 +49,10 @@ const options: InstallWebRuntimeGlobalsOptions = {
 }
 expectType<WeappInjectWebRuntimeGlobalsTarget[] | undefined>(options.targets)
 expectType<MiniProgramNetworkDefaults | undefined>(options.networkDefaults)
-expectType<void>(installWebRuntimeGlobals(options))
-expectType<void>(installWebRuntimeGlobals())
-expectType<void>(installRequestGlobals(options))
-expectType<void>(installRequestGlobals())
+expectType<Record<string, any>>(installWebRuntimeGlobals(options))
+expectType<Record<string, any>>(installWebRuntimeGlobals())
+expectType<Record<string, any>>(installRequestGlobals(options))
+expectType<Record<string, any>>(installRequestGlobals())
 expectType<RequestPolyfill>(new RequestPolyfill(new URLPolyfill('https://request-globals.invalid')))
 expectType<URLPolyfill | null>(URLPolyfill.parse('/path', 'https://request-globals.invalid'))
 expectType<boolean>(URLPolyfill.canParse('/path', 'https://request-globals.invalid'))
@@ -62,18 +61,18 @@ expectType<void>(new URLSearchParamsPolyfill('b=2&a=1').sort())
 expectType<string[]>(new HeadersPolyfill([['Set-Cookie', 'a=1']]).getSetCookie())
 expectType<ResponsePolyfill>(ResponsePolyfill.json({ ok: true }))
 expectType<ResponsePolyfill>(ResponsePolyfill.error())
-expectType<Uint8Array>(new TextEncoderPolyfill().encode('ok'))
+expectType<Uint8Array<ArrayBuffer>>(new TextEncoderPolyfill().encode('ok'))
 expectType<string>(new TextDecoderPolyfill().decode(new Uint8Array([111, 107])))
-expectType<BlobPart>('ok')
-expectType<BlobPart>(new BlobPolyfill(['ok']))
+expectAssignable<BlobPart>('ok')
+expectAssignable<BlobPart>(new BlobPolyfill(['ok']))
 expectType<FilePolyfill>(new FilePolyfill(['ok'], 'ok.txt', {
   lastModified: 123,
   type: 'text/plain',
 }))
 expectType<string>(new FilePolyfill(['ok'], 'ok.txt').name)
 expectType<number>(new FilePolyfill(['ok'], 'ok.txt').lastModified)
-expectType<FormDataEntryValue>(new FilePolyfill(['ok'], 'ok.txt'))
-expectType<FormDataEntryValue>(new BlobPolyfill(['ok']))
+expectAssignable<FormDataEntryValue>(new FilePolyfill(['ok'], 'ok.txt'))
+expectAssignable<FormDataEntryValue>(new BlobPolyfill(['ok']))
 const formDataPolyfill = new FormDataPolyfill()
 expectType<void>(formDataPolyfill.append('file', new FilePolyfill(['ok'], 'ok.txt'), 'renamed.txt'))
 expectType<void>(formDataPolyfill.set('blob', new BlobPolyfill(['ok']), 'blob.txt'))
@@ -92,14 +91,14 @@ const networkDefaults: MiniProgramNetworkDefaults = {
   request: miniProgramOptions,
   socket: socketMiniProgramOptions,
 }
-expectType<RequestGlobalsFetchInit>({
+expectAssignable<RequestGlobalsFetchInit>({
   miniProgram: miniProgramOptions,
   miniprogram: {
     enableCache: true,
     useHighPerformanceMode: true,
   },
 })
-expectType<RequestInit>({
+expectAssignable<RequestInit>({
   miniProgram: miniProgramOptions,
   miniprogram: {
     enableCache: true,

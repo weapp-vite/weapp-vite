@@ -63,7 +63,8 @@
     "dev": "tsdown -w --sourcemap",
     "build": "tsdown",
     "test": "vitest run",
-    "test:types": "pnpm build && tsd",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
@@ -85,5 +86,11 @@
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   }
 }

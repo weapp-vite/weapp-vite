@@ -85,7 +85,8 @@
     "test:coverage": "cross-env WEAPP_VITE_WEB_COVERAGE_STRICT=1 vitest run --coverage",
     "test:dev": "vitest",
     "pretest:types": "pnpm build",
-    "test:types": "tsd",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -95,5 +96,12 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "paths": {}
+    }
   }
 }

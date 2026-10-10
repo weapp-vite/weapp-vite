@@ -40,7 +40,8 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run -c vitest.config.ts",
-    "test:types": "tsd --files \"test-d/**/*.test-d.ts\"",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "lint": "eslint ."
   },
   "dependencies": {

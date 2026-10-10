@@ -38,7 +38,8 @@
     "test": "vitest run",
     "test:browser": "pnpm build && tsx test/browser.e2e.ts",
     "typecheck": "tsc --noEmit",
-    "test:types": "pnpm build && tsd --typings dist/index.d.mts --files test-d/public-api.test-d.ts"
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --typings dist/index.d.mts --files test-d/public-api.test-d.ts"
   },
   "peerDependencies": {
     "glass-easel": "^1.2.0",
