@@ -5,7 +5,7 @@ import type {
   DevtoolsRuntimeSessionOptions,
   MiniProgramEventMap,
 } from '@weapp-vite/devtools-runtime'
-import type { ResolvedWechatDevtoolsTarget } from '../devtoolsTarget'
+import type { ResolvedWechatDevtoolsTarget, WechatDevtoolsSelectionOptions } from '../devtoolsTarget'
 import {
   acquireSharedMiniProgram as acquireRuntimeSharedMiniProgram,
   closeSharedMiniProgram,
@@ -40,7 +40,7 @@ export type MiniProgramLike = AutomatorMiniProgram
 export type MiniProgramPage = AutomatorPage
 export type MiniProgramElement = AutomatorElement
 
-export interface AutomatorSessionOptions extends DevtoolsRuntimeSessionOptions {
+export interface AutomatorSessionOptions extends DevtoolsRuntimeSessionOptions, WechatDevtoolsSelectionOptions {
   signal?: AbortSignal
   target?: ResolvedWechatDevtoolsTarget
 }

@@ -1,4 +1,4 @@
-import type { ResolvedWechatDevtoolsTarget } from '../devtoolsTarget'
+import type { ResolvedWechatDevtoolsTarget, WechatDevtoolsSelectionOptions } from '../devtoolsTarget'
 import path from 'node:path'
 import process from 'node:process'
 import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
@@ -9,14 +9,14 @@ import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from './htt
 import { ensureManagedWechatProject } from './managedProjectGate'
 import { resolveWechatCliCommandTarget, runWechatCliCommand } from './run-wechat-cli'
 
-export interface LoginWechatIdeOptions {
+export interface LoginWechatIdeOptions extends WechatDevtoolsSelectionOptions {
   qrFormat?: 'base64' | 'image' | 'terminal'
   qrOutput?: string
   qrSize?: string
   resultOutput?: string
 }
 
-export interface OpenWechatIdeOptions {
+export interface OpenWechatIdeOptions extends WechatDevtoolsSelectionOptions {
   appid?: string
   extAppid?: string
   platform?: string
@@ -24,12 +24,12 @@ export interface OpenWechatIdeOptions {
   trustProject?: boolean
 }
 
-export interface BuildWechatIdeNpmOptions {
+export interface BuildWechatIdeNpmOptions extends WechatDevtoolsSelectionOptions {
   compileType?: string
   projectPath?: string
 }
 
-export interface PreviewWechatIdeOptions {
+export interface PreviewWechatIdeOptions extends WechatDevtoolsSelectionOptions {
   appid?: string
   compileCondition?: string
   extAppid?: string
@@ -40,7 +40,7 @@ export interface PreviewWechatIdeOptions {
   qrSize?: string
 }
 
-export interface AutoPreviewWechatIdeOptions {
+export interface AutoPreviewWechatIdeOptions extends WechatDevtoolsSelectionOptions {
   appid?: string
   compileCondition?: string
   extAppid?: string
@@ -48,7 +48,7 @@ export interface AutoPreviewWechatIdeOptions {
   projectPath?: string
 }
 
-export interface UploadWechatIdeOptions {
+export interface UploadWechatIdeOptions extends WechatDevtoolsSelectionOptions {
   appid?: string
   desc: string
   extAppid?: string
@@ -57,7 +57,7 @@ export interface UploadWechatIdeOptions {
   version: string
 }
 
-export interface AutoWechatIdeOptions {
+export interface AutoWechatIdeOptions extends WechatDevtoolsSelectionOptions {
   account?: string
   appid?: string
   extAppid?: string
@@ -68,7 +68,7 @@ export interface AutoWechatIdeOptions {
   trustProject?: boolean
 }
 
-export interface AutoReplayWechatIdeOptions {
+export interface AutoReplayWechatIdeOptions extends WechatDevtoolsSelectionOptions {
   account?: string
   appid?: string
   extAppid?: string
@@ -81,25 +81,25 @@ export interface AutoReplayWechatIdeOptions {
   trustProject?: boolean
 }
 
-export interface OpenWechatIdeOtherProjectOptions {
+export interface OpenWechatIdeOtherProjectOptions extends WechatDevtoolsSelectionOptions {
   projectPath?: string
 }
 
-export interface CloseWechatIdeProjectOptions {
+export interface CloseWechatIdeProjectOptions extends WechatDevtoolsSelectionOptions {
   projectPath?: string
   cliPath?: string
   target?: ResolvedWechatDevtoolsTarget
 }
 
-export interface ClearWechatIdeCacheOptions {
+export interface ClearWechatIdeCacheOptions extends WechatDevtoolsSelectionOptions {
   clean: 'all' | 'auth' | 'compile' | 'file' | 'network' | 'session' | 'storage'
 }
 
-export interface ResetWechatIdeFileUtilsOptions {
+export interface ResetWechatIdeFileUtilsOptions extends WechatDevtoolsSelectionOptions {
   projectPath: string
 }
 
-export interface WechatIdeAutomatorSessionOptions {
+export interface WechatIdeAutomatorSessionOptions extends WechatDevtoolsSelectionOptions {
   port?: number
   preferOpenedSession?: boolean
   preserveProjectRoot?: boolean
@@ -121,7 +121,7 @@ export interface SetWechatIdeTicketOptions extends WechatIdeAutomatorSessionOpti
   ticket: string
 }
 
-export interface BuildWechatIdeApkOptions {
+export interface BuildWechatIdeApkOptions extends WechatDevtoolsSelectionOptions {
   desc?: string
   isUploadResourceBundle?: boolean
   keyAlias: string
@@ -134,7 +134,7 @@ export interface BuildWechatIdeApkOptions {
   useAab?: boolean
 }
 
-export interface BuildWechatIdeIpaOptions {
+export interface BuildWechatIdeIpaOptions extends WechatDevtoolsSelectionOptions {
   certificateName?: string
   isDistribute: boolean
   isRemoteBuild?: boolean
@@ -150,6 +150,22 @@ export interface BuildWechatIdeIpaOptions {
   versionCode?: number
   versionDesc?: string
   versionName?: string
+}
+
+function selectionOptions(options: WechatDevtoolsSelectionOptions): WechatDevtoolsSelectionOptions {
+  return Object.fromEntries(['cliPath', 'target', 'devtoolsChannel', 'devtoolsVersion', 'requireOfficialLatest']
+    .filter(key => options[key as keyof WechatDevtoolsSelectionOptions] !== undefined)
+    .map(key => [key, options[key as keyof WechatDevtoolsSelectionOptions]]))
+}
+
+async function runSelectedCommand(argv: string[], options: WechatDevtoolsSelectionOptions) {
+  const selection = selectionOptions(options)
+  if (Object.keys(selection).length) {
+    await runWechatCliCommand(argv, selection)
+  }
+  else {
+    await runWechatCliCommand(argv)
+  }
 }
 
 const DEVTOOLS_SHUTDOWN_TIMEOUT_MS = 10_000
@@ -205,7 +221,7 @@ async function openSelectedWechatIde(options: OpenWechatIdeOptions, target: Reso
 /** 打开与兼容回退在同一机器租约内沿用固定安装，禁止重新选择宿主。 */
 export async function openWechatIde(options: OpenWechatIdeOptions = {}) {
   return await withMachineE2ELease(async () => {
-    const target = await resolveWechatCliCommandTarget()
+    const target = await resolveWechatCliCommandTarget(options)
     if (target) {
       if (process.env[MANAGED_PROJECT_JOURNAL_ENV]?.trim()) {
         if (!options.projectPath) {
@@ -238,22 +254,22 @@ export async function loginWechatIde(options: LoginWechatIdeOptions = {}) {
     argv.push('--result-output', path.resolve(options.resultOutput))
   }
 
-  await runWechatCliCommand(argv)
+  await runSelectedCommand(argv, options)
 }
 
 /**
  * @description 调用微信开发者工具 islogin 命令。
  */
-export async function isWechatIdeLoggedIn(options: { nonInteractive?: boolean, silent?: boolean } = {}) {
+export async function isWechatIdeLoggedIn(options: { nonInteractive?: boolean, silent?: boolean } & WechatDevtoolsSelectionOptions = {}) {
   const argv = ['islogin']
   if (options.nonInteractive) {
     argv.push('--non-interactive')
   }
   if (options.silent) {
-    await runWechatCliCommand(argv, { silent: true })
+    await runWechatCliCommand(argv, { ...selectionOptions(options), silent: true })
   }
   else {
-    await runWechatCliCommand(argv)
+    await runSelectedCommand(argv, options)
   }
 }
 
@@ -267,7 +283,7 @@ export async function buildWechatIdeNpm(options: BuildWechatIdeNpmOptions = {}) 
     argv.push('--compile-type', options.compileType)
   }
 
-  await runWechatCliCommand(argv)
+  await runSelectedCommand(argv, options)
 }
 
 /**
@@ -294,7 +310,7 @@ export async function previewWechatIde(options: PreviewWechatIdeOptions = {}) {
     argv.push('--compile-condition', options.compileCondition)
   }
 
-  await runWechatCliCommand(argv)
+  await runSelectedCommand(argv, options)
 }
 
 /**
@@ -312,7 +328,7 @@ export async function autoPreviewWechatIde(options: AutoPreviewWechatIdeOptions 
     argv.push('--compile-condition', options.compileCondition)
   }
 
-  await runWechatCliCommand(argv)
+  await runSelectedCommand(argv, options)
 }
 
 /**
@@ -339,7 +355,7 @@ export async function autoWechatIde(options: AutoWechatIdeOptions = {}) {
     argv.push('--trust-project')
   }
 
-  await runWechatCliCommand(argv)
+  await runSelectedCommand(argv, options)
 }
 
 /**
@@ -372,7 +388,7 @@ export async function autoReplayWechatIde(options: AutoReplayWechatIdeOptions = 
     argv.push('--trust-project')
   }
 
-  await runWechatCliCommand(argv)
+  await runSelectedCommand(argv, options)
 }
 
 /**
@@ -388,7 +404,7 @@ export async function uploadWechatIde(options: UploadWechatIdeOptions) {
     argv.push('--info-output', path.resolve(options.infoOutput))
   }
 
-  await runWechatCliCommand(argv)
+  await runSelectedCommand(argv, options)
 }
 
 /**
@@ -403,12 +419,12 @@ export async function closeWechatIdeProject(options: CloseWechatIdeProjectOption
   }
   const argv = ['close']
   appendProjectLocatorArgv(argv, options)
-  const target = options.target || options.cliPath
-    ? await resolveWechatDevtoolsTarget({ target: options.target, cliPath: options.cliPath })
+  const target = options.target || options.cliPath || options.devtoolsChannel || options.devtoolsVersion
+    ? await resolveWechatDevtoolsTarget(selectionOptions(options))
     : undefined
 
   await runWechatCliCommand(argv, {
-    ...(target ? { target } : {}),
+    ...(target ? { target } : selectionOptions(options)),
     timeout: DEVTOOLS_SHUTDOWN_TIMEOUT_MS,
   })
 }
@@ -416,8 +432,9 @@ export async function closeWechatIdeProject(options: CloseWechatIdeProjectOption
 /**
  * @description 调用微信开发者工具 quit 命令。
  */
-export async function quitWechatIde() {
+export async function quitWechatIde(options: WechatDevtoolsSelectionOptions = {}) {
   await runWechatCliCommand(['quit'], {
+    ...selectionOptions(options),
     timeout: DEVTOOLS_SHUTDOWN_TIMEOUT_MS,
   })
 }
@@ -426,25 +443,34 @@ export async function quitWechatIde() {
  * @description 调用微信开发者工具 cache 命令。
  */
 export async function clearWechatIdeCache(options: ClearWechatIdeCacheOptions) {
-  await runWechatCliCommand(['cache', '--clean', options.clean])
+  await runSelectedCommand(['cache', '--clean', options.clean], options)
 }
 
 /**
  * @description 调用微信开发者工具 open-other 命令。
  */
-export async function openWechatIdeOtherProject(_options: OpenWechatIdeOtherProjectOptions = {}) {
-  await runWechatCliCommand(['open-other'])
+export async function openWechatIdeOtherProject(options: OpenWechatIdeOtherProjectOptions = {}) {
+  await runSelectedCommand(['open-other'], options)
 }
 
 /**
  * @description 通过微信开发者工具 HTTP 服务端口重置指定项目的 fileutils 状态。
  */
 export async function resetWechatIdeFileUtils(options: ResetWechatIdeFileUtilsOptions) {
-  await resetWechatIdeFileUtilsByHttp(path.resolve(options.projectPath))
+  const selection = selectionOptions(options)
+  if (Object.keys(selection).length) {
+    await resetWechatIdeFileUtilsByHttp(path.resolve(options.projectPath), selection)
+  }
+  else {
+    await resetWechatIdeFileUtilsByHttp(path.resolve(options.projectPath))
+  }
 }
 
 function createAutomatorSessionOptions(options: WechatIdeAutomatorSessionOptions) {
   return {
+    cliPath: options.cliPath,
+    target: options.target,
+    ...selectionOptions(options),
     ...(options.port ? { port: options.port } : {}),
     preferOpenedSession: options.preferOpenedSession ?? true,
     preserveProjectRoot: options.preserveProjectRoot,
@@ -556,7 +582,7 @@ export async function buildWechatIdeApk(options: BuildWechatIdeApkOptions) {
     argv.push('--resourceBundleDesc', options.resourceBundleDesc)
   }
 
-  await runWechatCliCommand(argv)
+  await runSelectedCommand(argv, options)
 }
 
 /**
@@ -611,5 +637,5 @@ export async function buildWechatIdeIpa(options: BuildWechatIdeIpaOptions) {
     argv.push('--versionDesc', options.versionDesc)
   }
 
-  await runWechatCliCommand(argv)
+  await runSelectedCommand(argv, options)
 }

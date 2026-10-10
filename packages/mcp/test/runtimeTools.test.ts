@@ -557,3 +557,27 @@ it('keeps MCP manager ownership and page state separate for installations of one
   }
   expect(rc.miniProgram.disconnect).toHaveBeenCalledExactlyOnceWith()
 })
+
+it('resolves symbolic channel selections separately before sharing canonical sessions', async () => {
+  const stable = createMiniProgram()
+  const nightly = createMiniProgram()
+  const resolveSessionOptions = vi.fn(async input => ({ ...input, cliPath: `${input.devtoolsChannel}-cli`, installationId: input.devtoolsChannel }))
+  const manager = new RuntimeSessionManager(workspaceRoot, {
+    resolveSessionOptions,
+    connectMiniProgram: vi.fn().mockImplementation(async input => input.cliPath === 'stable-cli' ? stable.miniProgram : nightly.miniProgram),
+  })
+  const stableInput = { projectPath: demoProjectPath, devtoolsChannel: 'stable' as const }
+  const nightlyInput = { projectPath: demoProjectPath, devtoolsChannel: 'nightly' as const }
+  try {
+    await manager.withPage(stableInput, async page => expect(page).toBe(stable.page))
+    await manager.withPage(nightlyInput, async page => expect(page).toBe(nightly.page))
+    await manager.close(stableInput)
+    expect(stable.miniProgram.disconnect).toHaveBeenCalledExactlyOnceWith()
+    expect(nightly.miniProgram.disconnect).not.toHaveBeenCalled()
+    await manager.withPage(nightlyInput, async page => expect(page).toBe(nightly.page))
+  }
+  finally {
+    await manager.dispose()
+  }
+  expect(nightly.miniProgram.disconnect).toHaveBeenCalledExactlyOnceWith()
+})

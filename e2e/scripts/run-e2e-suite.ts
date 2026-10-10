@@ -1,8 +1,11 @@
+import type { SuiteReportPayload } from './suiteReport'
 import type { SuiteTask } from './suiteRunner'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { splitWechatDevtoolsSelectionArgs } from 'weapp-ide-cli'
 import { excludedE2EProjects, isExcludedE2EProject } from '../../scripts/e2eProjectScope'
+import { withWechatE2ESelectionEnvironment } from '../utils/devtoolsCli'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { createAcceptanceIdentity, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { getSuiteTasks, listE2ESuites, partitionE2ETasks } from './e2e-suite-manifest'
@@ -107,7 +110,27 @@ export function orderSuiteTasks(
   return selectedTasks
 }
 
-export async function runE2ESuiteCli(args = process.argv.slice(2)) {
+interface SuiteCallbacks {
+  nonInteractive?: boolean
+  onUnsafeRuntime?: (reason: string) => void
+  onReport?: (report: SuiteReportPayload) => void
+}
+
+async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks) {
+  const parsedSelection = splitWechatDevtoolsSelectionArgs(args)
+  args = parsedSelection.args
+  const selectionEnv = { cliPath: 'WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', devtoolsChannel: 'WEAPP_VITE_E2E_DEVTOOLS_CHANNEL', devtoolsVersion: 'WEAPP_VITE_E2E_DEVTOOLS_VERSION', requireOfficialLatest: 'WEAPP_VITE_E2E_REQUIRE_OFFICIAL_LATEST' }
+  if (parsedSelection.selection.cliPath || parsedSelection.selection.devtoolsChannel || parsedSelection.selection.devtoolsVersion) {
+    for (const key of ['WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', 'WEAPP_VITE_E2E_DEVTOOLS_CHANNEL', 'WEAPP_VITE_E2E_DEVTOOLS_VERSION', 'WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_CHANNEL', 'WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION', 'WEAPP_IDE_CLI_PATH', 'WEAPP_IDE_DEVTOOLS_CHANNEL', 'WEAPP_IDE_DEVTOOLS_VERSION']) {
+      delete process.env[key]
+    }
+  }
+  for (const [key, value] of Object.entries(parsedSelection.selection)) {
+    process.env[selectionEnv[key as keyof typeof selectionEnv]] = typeof value === 'boolean' ? value ? '1' : '0' : value
+  }
+  if (parsedSelection.selection.requireOfficialLatest !== undefined) {
+    process.env.WEAPP_IDE_REQUIRE_OFFICIAL_LATEST = parsedSelection.selection.requireOfficialLatest ? '1' : '0'
+  }
   const allowFailures = args.includes('--allow-failures')
   const filter = readOption(args, 'filter', TASK_FILTER_ENV)
   const from = readOption(args, 'from', TASK_FROM_ENV)
@@ -168,8 +191,9 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
   }
 
   const cleanupHooks = createIdeSuiteCleanupHooks(tasks)
-  await runTaskSuite(`e2e:${mode}${shardLabel.replace('/', '-')}`, tasks, {
+  return await runTaskSuite(`e2e:${mode}${shardLabel.replace('/', '-')}`, tasks, {
     ...cleanupHooks,
+    ...callbacks,
     failOnTaskFailure: !allowFailures,
     stopOnTaskFailure: !allowFailures && shouldStopIdeSuiteAfterTaskFailure(tasks),
     reportContext: {
@@ -179,6 +203,11 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
       plannedTasks,
     },
   })
+}
+
+/** 选择仅在本轮 suite 生效，失败与取消同样恢复调用方环境。 */
+export async function runE2ESuiteCli(args = process.argv.slice(2), callbacks: SuiteCallbacks = {}) {
+  return await withWechatE2ESelectionEnvironment(() => runSelectedE2ESuiteCli(args, callbacks))
 }
 
 if (isCurrentModuleEntry(process.argv[1], import.meta.url)) {

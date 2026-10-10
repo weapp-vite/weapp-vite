@@ -77,9 +77,9 @@ export async function readWechatDevtoolsMetadata(appPath: string): Promise<Wecha
   }
   const productNames = [value.name, value.productName].filter((name): name is string => typeof name === 'string')
   if (!productNames.some(name => name === '微信开发者工具' || /wechat(?:web)?devtools/i.test(name))) {
-    throw new Error('The selected application metadata does not identify WeChat DevTools.')
+    throw Object.assign(new Error('The selected application metadata does not identify WeChat DevTools.'), { code: 'WECHAT_DEVTOOLS_UNRELATED_APPLICATION' })
   }
-  const version = typeof value.version === 'string' && /^\d+\.\d+\.\d+$/.test(value.version) ? value.version : undefined
+  const version = typeof value.version === 'string' && /^\d+(?:\.\d+){2,}$/.test(value.version) ? value.version : undefined
   const channel = String(value.versionType) === '0'
     ? 'stable'
     : String(value.versionType) === '1'

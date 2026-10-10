@@ -12,6 +12,8 @@ import {
 } from './command-catalog'
 import { printCompareHelp } from './compare'
 import { handleConfigCommand } from './config-command'
+import { handleDevtoolsCommand } from './devtools'
+import { withWechatDevtoolsSelectionArgs } from './devtoolsSelection'
 import { runMinidev } from './minidev'
 import { AUTOMATOR_COMMAND_NAMES, getAutomatorCommandHelp, isAutomatorCommand, runAutomatorCommand } from './run-automator'
 import { runWechatCliCommand } from './run-wechat-cli'
@@ -47,6 +49,12 @@ export function createCli() {
   for (const command of MINIDEV_NAMESPACE_COMMAND_NAMES) {
     cli.command(`${command} [...args]`, '支付宝 minidev 命令透传').allowUnknownOptions()
   }
+
+  cli.command('devtools [...args]', '管理本机多版本开发者工具').allowUnknownOptions()
+  cli.option('--devtools-channel <channel>', '选择 stable | rc | nightly')
+  cli.option('--devtools-version <version>', '固定开发者工具产品版本')
+  cli.option('--cli-path <path>', '固定开发者工具 CLI 安装路径')
+  cli.option('--require-official-latest', '要求匹配所选渠道的官方最新版本')
 
   cli.command(`${CONFIG_COMMAND_NAME} [...args]`, '配置 weapp-ide-cli').allowUnknownOptions()
   cli.command(`${MCP_COMMAND_NAME} [...args]`, '启动 weapp-ide-cli MCP 服务').allowUnknownOptions()
@@ -115,7 +123,7 @@ function createMinidevOpenArgv(argv: readonly string[]) {
 /**
  * @description CLI 入口解析与分发。
  */
-export async function parse(argv: string[]) {
+async function parseSelected(argv: string[]) {
   validateLocaleOption(argv)
   configureLocaleFromArgv(argv, await getConfiguredLocale())
 
@@ -134,6 +142,11 @@ export async function parse(argv: string[]) {
 
   if (matchedCommand && MINIDEV_NAMESPACE.has(matchedCommand)) {
     await runMinidev(argv.slice(1))
+    return
+  }
+
+  if (matchedCommand === 'devtools') {
+    await handleDevtoolsCommand(argv.slice(1))
     return
   }
 
@@ -167,4 +180,12 @@ export async function parse(argv: string[]) {
   }
 
   await runWechatCliCommand(formattedArgv)
+}
+
+/** 在分发前剥离公共选择参数并固定本次安装。 */
+export async function parse(argv: string[]) {
+  if (['help', 'config', 'devtools', 'alipay', 'ali', 'minidev'].includes(argv[0] ?? '') || argv.includes('--help') || argv.includes('-h')) {
+    return await parseSelected(argv)
+  }
+  return await withWechatDevtoolsSelectionArgs(argv, parseSelected)
 }

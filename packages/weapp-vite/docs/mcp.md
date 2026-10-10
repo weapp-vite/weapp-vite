@@ -448,3 +448,13 @@ MCP 服务端做了以下约束：
 ## 验收任务
 
 现有服务提供 weapp_project_inspect、weapp_acceptance_start/status/cancel/report，无需模型 Key。验收与其他运行操作按工程互斥；任务使用独立日志订阅。HTTP 请求共享任务服务，断开单次请求不会丢失任务；服务关闭保存取消结果，重启不重放交互。
+
+## 微信开发者工具安装选择
+
+`wv mcp` 和 `weapp mcp` 共用 `weapp-ide-cli` 的安装解析。默认本机最新 Stable，保留路径与旧全局 `cliPath` 固定；RC/nightly 需要明确选择。连接工具与相关 REST 请求支持 `cliPath`、`devtoolsChannel`、`devtoolsVersion`、`requireOfficialLatest`，同层选择必须一致；会话以实际安装身份隔离。
+
+```json
+{ "projectPath": "dist/dev/mp-weixin", "devtoolsChannel": "rc", "devtoolsVersion": "2.02.2608080" }
+```
+
+用 `wv ide devtools list --json` 查看实际渠道、版本和配置目录，用 `wv ide devtools add "<path-to-cli>"` 登记已有安装。`wv open --devtools-channel=nightly` 自动启动的后台 MCP 会继承具体 CLI 路径。官方查询默认仅作提示，`requireOfficialLatest: true` 才启用严格检查。登录保留在各安装实际配置目录中，不复制账号数据。

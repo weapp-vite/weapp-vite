@@ -1,10 +1,10 @@
 import type { DevtoolsRuntimeSessionOptions } from '@weapp-vite/devtools-runtime'
-import type { ResolvedWechatDevtoolsTarget } from '../../devtoolsTarget'
+import type { ResolvedWechatDevtoolsTarget, WechatDevtoolsSelectionOptions } from '../../devtoolsTarget'
 import process from 'node:process'
 import { resolveWechatDevtoolsTarget } from '../../devtoolsTarget'
 import { assertAutomatorPort } from './port'
 
-export interface AutomatorInstallationOptions extends DevtoolsRuntimeSessionOptions {
+export interface AutomatorInstallationOptions extends DevtoolsRuntimeSessionOptions, WechatDevtoolsSelectionOptions {
   target?: ResolvedWechatDevtoolsTarget
   signal?: AbortSignal
 }

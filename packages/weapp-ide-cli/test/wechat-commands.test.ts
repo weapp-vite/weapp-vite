@@ -241,6 +241,12 @@ describe('wechat command helpers', () => {
     expect(runWechatCliCommandMock).toHaveBeenCalledWith(['islogin', '--non-interactive'])
   })
 
+  it('forwards only selectors while keeping the upload version native', async () => {
+    const { uploadWechatIde } = await import('../src/cli/wechat-commands')
+    await uploadWechatIde({ version: '1.2.3', desc: 'release', devtoolsChannel: 'rc', devtoolsVersion: '2.02.2608080' })
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith(['upload', '--version', '1.2.3', '--desc', 'release'], { devtoolsChannel: 'rc', devtoolsVersion: '2.02.2608080' })
+  })
+
   it('supports silent islogin probes', async () => {
     const { isWechatIdeLoggedIn } = await import('../src/cli/wechat-commands')
 

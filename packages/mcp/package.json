@@ -64,7 +64,14 @@
     "@weapp-core/constants": "workspace:*",
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/devtools-runtime": "workspace:*",
+    "weapp-ide-cli": "workspace:*",
     "zod": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "^2.3.1"

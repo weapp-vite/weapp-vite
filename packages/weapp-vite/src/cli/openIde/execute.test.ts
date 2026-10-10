@@ -20,7 +20,10 @@ const loggerMock = vi.hoisted(() => ({
   warn: vi.fn(),
 }))
 
-vi.mock('weapp-ide-cli', () => ({
+vi.mock('weapp-ide-cli', async importOriginal => ({
+  ...await importOriginal<typeof import('weapp-ide-cli')>(),
+  withWechatDevtoolsSelection: async (_: unknown, run: () => Promise<unknown>) => run(),
+  withWechatDevtoolsSelectionArgs: async (args: string[], run: (args: string[]) => Promise<unknown>) => run(args),
   clearWechatIdeCacheByAutomator: clearWechatIdeCacheByAutomatorMock,
   clearWechatIdeCache: clearWechatIdeCacheMock,
   compileWechatIdeByAutomator: compileWechatIdeByAutomatorMock,

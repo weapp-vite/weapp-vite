@@ -43,7 +43,7 @@ export function evaluateRuntimeVersions(
   const errors: string[] = []
   const policy = environment?.devtoolsVersionPolicy
   if (policy) {
-    const officialVersionMatches = policy.selectedChannel === 'stable' && policy.selectedVersion === policy.officialVersion
+    const officialVersionMatches = policy.selectedChannel === (policy.officialChannel ?? 'stable') && policy.selectedVersion === policy.officialVersion
     if (policy.officialVersionMatches !== officialVersionMatches) {
       errors.push('DevTools version policy has an inconsistent official version match')
     }

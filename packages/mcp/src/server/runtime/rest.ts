@@ -18,6 +18,9 @@ export { DEFAULT_RUNTIME_REST_ENDPOINT }
 
 const connectionSchema = z.object({
   cliPath: z.string().trim().min(1).optional(),
+  devtoolsChannel: z.enum(['stable', 'rc', 'nightly']).optional(),
+  devtoolsVersion: z.string().regex(/^\d+(?:\.\d+){2,}$/).optional(),
+  requireOfficialLatest: z.boolean().optional(),
   projectPath: z.string().trim().min(1),
   timeout: z.number().int().positive().optional(),
   port: z.number().int().positive().max(65535).optional(),
@@ -132,6 +135,9 @@ function readConnectionFromQuery(url: URL): RuntimeConnectionInput {
   return connectionSchema.parse(compactObject({
     projectPath: url.searchParams.get('projectPath') ?? undefined,
     cliPath: url.searchParams.get('cliPath') ?? undefined,
+    devtoolsChannel: url.searchParams.get('devtoolsChannel') ?? undefined,
+    devtoolsVersion: url.searchParams.get('devtoolsVersion') ?? undefined,
+    requireOfficialLatest: readBooleanParam(url.searchParams.get('requireOfficialLatest')),
     timeout: readNumberParam(url.searchParams.get('timeout')),
     port: rawPort === null ? undefined : /^\d+$/.test(rawPort) ? Number(rawPort) : Number.NaN,
     preferOpenedSession: readBooleanParam(url.searchParams.get('preferOpenedSession')),

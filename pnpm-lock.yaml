@@ -3267,6 +3267,9 @@ importers:
       '@weapp-vite/devtools-runtime':
         specifier: workspace:*
         version: link:../devtools-runtime
+      weapp-ide-cli:
+        specifier: workspace:*
+        version: link:../weapp-ide-cli
       zod:
         specifier: 'catalog:'
         version: 4.6.5

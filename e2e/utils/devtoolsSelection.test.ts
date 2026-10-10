@@ -16,12 +16,12 @@ import {
 } from './devtoolsSelection'
 
 const { resolveTarget, assertHost } = vi.hoisted(() => ({ resolveTarget: vi.fn(), assertHost: vi.fn() }))
-vi.mock('weapp-ide-cli', () => ({ resolveWechatDevtoolsTarget: resolveTarget, assertWechatDevtoolsHost: assertHost }))
+vi.mock('weapp-ide-cli', async importOriginal => ({ ...await importOriginal<typeof import('weapp-ide-cli')>(), resolveWechatDevtoolsTarget: resolveTarget, assertWechatDevtoolsHost: assertHost }))
 const target = { cliPath: 'selected-cli', installationId: 'selected', appPath: 'selected-app', profileDir: 'selected-profile', version: '2.02.2608070', channel: 'stable' as const }
 
 describe('selected DevTools preflight', () => {
   beforeEach(() => {
-    for (const key of [DEVTOOLS_VERSION_POLICY_ENV, DEVTOOLS_SELECTED_VERSION_ENV, DEVTOOLS_SELECTED_CHANNEL_ENV, DEVTOOLS_OFFICIAL_VERSION_ENV, DEVTOOLS_ACCEPTED_VERSION_ENV, DEVTOOLS_OFFICIAL_SOURCE_ENV, DEVTOOLS_OFFICIAL_QUERIED_AT_ENV]) {
+    for (const key of [DEVTOOLS_VERSION_POLICY_ENV, DEVTOOLS_SELECTED_VERSION_ENV, DEVTOOLS_SELECTED_CHANNEL_ENV, DEVTOOLS_OFFICIAL_VERSION_ENV, DEVTOOLS_ACCEPTED_VERSION_ENV, DEVTOOLS_OFFICIAL_SOURCE_ENV, DEVTOOLS_OFFICIAL_QUERIED_AT_ENV, 'WEAPP_VITE_E2E_DEVTOOLS_OFFICIAL_ERROR', 'WEAPP_VITE_E2E_DEVTOOLS_OFFICIAL_CHANNEL', 'WEAPP_VITE_E2E_REQUIRE_OFFICIAL_LATEST', 'WEAPP_VITE_E2E_DEVTOOLS_CHANNEL', 'WEAPP_VITE_E2E_DEVTOOLS_VERSION']) {
       vi.stubEnv(key, undefined)
     }
     vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, undefined)
@@ -40,103 +40,58 @@ describe('selected DevTools preflight', () => {
     vi.unstubAllEnvs()
   })
 
-  it('pins the process CLI and checks both official channel and running host', async () => {
+  it('pins all child commands and records installed Stable as the default policy', async () => {
     expect(await preflightSelectedWechatDevtools()).toBe(target)
     expect(process.env.WEAPP_IDE_CLI_PATH).toBe('selected-cli')
     expect(assertHost).toHaveBeenCalledWith(target)
-    expect(readDevtoolsVersionPolicy()).toMatchObject({ mode: 'official-stable', acceptedVersion: null, officialVersionMatches: true })
+    expect(readDevtoolsVersionPolicy()).toMatchObject({ mode: 'installed-stable', acceptedVersion: null, officialVersionMatches: true })
   })
-
-  it.each([{ ...target, channel: 'rc' }, { ...target, version: '2.02.2608060' }])('rejects a different channel or stable version', async (selected) => {
-    resolveTarget.mockResolvedValue(selected)
-    await expect(preflightSelectedWechatDevtools()).rejects.toThrow('DEVTOOLS_STABLE_REQUIRED')
-    expect(assertHost).not.toHaveBeenCalled()
-  })
-
-  it('accepts an explicitly selected stable version and records the policy', async () => {
-    vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, target.version)
+  it('allows local Stable behind the official gray release', async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ channels: [{ id: 'stable', version: '2.02.2608080' }] }) } as Response)
-    expect(await preflightSelectedWechatDevtools()).toBe(target)
-    expect(readDevtoolsVersionPolicy()).toMatchObject({
-      mode: 'selected-version-opt-in',
-      selectedVersion: target.version,
-      selectedChannel: 'stable',
-      officialVersion: '2.02.2608080',
-      acceptedVersion: target.version,
-      officialVersionMatches: false,
-    })
+    await expect(preflightSelectedWechatDevtools()).resolves.toBe(target)
+    expect(readDevtoolsVersionPolicy()).toMatchObject({ mode: 'installed-stable', officialVersionMatches: false })
   })
-
-  it('accepts a complete DevTools version with an additional numeric segment', async () => {
-    const extendedVersion = '2.02.2608070.1'
-    resolveTarget.mockResolvedValue({ ...target, version: extendedVersion })
-    vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, extendedVersion)
-    expect(await preflightSelectedWechatDevtools()).toMatchObject({ version: extendedVersion })
-    expect(readDevtoolsVersionPolicy()).toMatchObject({ selectedVersion: extendedVersion, acceptedVersion: extendedVersion })
-  })
-
-  it('rejects an explicitly selected version that differs from the target', async () => {
+  it('keeps the exact legacy version pin and validates its metadata', async () => {
+    vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, target.version)
+    await preflightSelectedWechatDevtools()
+    expect(readDevtoolsVersionPolicy()).toMatchObject({ mode: 'selected-version-opt-in', acceptedVersion: target.version })
     vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, '2.02.2608060')
     await expect(preflightSelectedWechatDevtools()).rejects.toThrow('DEVTOOLS_ACCEPTED_VERSION_MISMATCH')
-    expect(assertHost).not.toHaveBeenCalled()
   })
-
-  it('rejects an invalid explicitly selected version', async () => {
-    vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, 'stable')
-    await expect(preflightSelectedWechatDevtools()).rejects.toThrow(`${ACCEPTED_DEVTOOLS_VERSION_ENV} must be a complete DevTools version`)
-    expect(assertHost).not.toHaveBeenCalled()
-  })
-
-  it.each(['rc', 'nightly', undefined])('rejects a %s channel even with an exact version opt-in', async (channel) => {
-    vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, target.version)
-    resolveTarget.mockResolvedValue({ ...target, channel })
-    await expect(preflightSelectedWechatDevtools()).rejects.toThrow('DEVTOOLS_STABLE_REQUIRED')
-    expect(assertHost).not.toHaveBeenCalled()
-  })
-
-  it.each(['rc', 'nightly'])('accepts only an explicitly authorized %s channel and exact version', async (channel) => {
-    const selected = { ...target, channel }
-    resolveTarget.mockResolvedValue(selected)
-    vi.stubEnv(ACCEPTED_DEVTOOLS_CHANNEL_ENV, channel)
-    vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, target.version)
-    expect(await preflightSelectedWechatDevtools()).toBe(selected)
-    expect(assertHost).toHaveBeenCalledWith(selected)
-    expect(readDevtoolsVersionPolicy()).toMatchObject({ mode: 'selected-version-opt-in', selectedChannel: channel, acceptedVersion: target.version, officialVersionMatches: false })
-  })
-
-  it.each(['rc', 'nightly'])('requires an exact version when opting into %s', async (channel) => {
-    resolveTarget.mockResolvedValue({ ...target, channel })
-    vi.stubEnv(ACCEPTED_DEVTOOLS_CHANNEL_ENV, channel)
-    await expect(preflightSelectedWechatDevtools()).rejects.toThrow('DEVTOOLS_ACCEPTED_VERSION_REQUIRED')
-    expect(assertHost).not.toHaveBeenCalled()
-  })
-
-  it('rejects a different channel even when the accepted version matches', async () => {
-    vi.stubEnv(ACCEPTED_DEVTOOLS_CHANNEL_ENV, 'nightly')
-    vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, target.version)
-    await expect(preflightSelectedWechatDevtools()).rejects.toThrow('允许渠道为 nightly')
-    expect(assertHost).not.toHaveBeenCalled()
-  })
-
-  it('rejects invalid channel authorization', async () => {
-    vi.stubEnv(ACCEPTED_DEVTOOLS_CHANNEL_ENV, 'unknown')
-    await expect(preflightSelectedWechatDevtools()).rejects.toThrow(`${ACCEPTED_DEVTOOLS_CHANNEL_ENV} must be stable, rc or nightly`)
-    expect(assertHost).not.toHaveBeenCalled()
-  })
-
-  it('does not deserialize a non-stable installation as official Stable', async () => {
+  it('allows explicit channel opt-in without requiring a separate exact version', async () => {
+    resolveTarget.mockResolvedValue({ ...target, channel: 'nightly' })
+    vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CHANNEL', 'nightly')
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ channels: [{ id: 'stable', version: '2.02.2608080' }, { id: 'nightly', version: target.version }] }) } as Response)
     await preflightSelectedWechatDevtools()
-    vi.stubEnv(DEVTOOLS_SELECTED_CHANNEL_ENV, 'nightly')
-    expect(readDevtoolsVersionPolicy()).toBeUndefined()
+    expect(readDevtoolsVersionPolicy()).toMatchObject({ mode: 'selected-channel', selectedChannel: 'nightly', officialChannel: 'nightly', officialVersion: target.version, officialVersionMatches: true, acceptedVersion: null })
   })
-
-  it.each([undefined, target.version])('does not treat unavailable official evidence as permission to continue with opt-in %s', async (accepted) => {
+  it('does not accept mismatched requested channels', async () => {
+    vi.stubEnv(ACCEPTED_DEVTOOLS_CHANNEL_ENV, 'nightly')
+    await expect(preflightSelectedWechatDevtools()).rejects.toThrow('允许渠道为 nightly')
+  })
+  it.each([undefined, target.version])('records official query failure without blocking local testing (%s)', async (accepted) => {
     vi.stubEnv(ACCEPTED_DEVTOOLS_VERSION_ENV, accepted)
     vi.mocked(fetch).mockRejectedValue(new Error('offline'))
-    await expect(preflightSelectedWechatDevtools()).rejects.toThrow('offline')
+    await expect(preflightSelectedWechatDevtools()).resolves.toBe(target)
+    expect(readDevtoolsVersionPolicy()).toMatchObject({ officialVersion: null, officialError: 'offline', officialVersionMatches: false })
+  })
+  it('blocks outdated Stable and unavailable official evidence only in strict mode', async () => {
+    vi.stubEnv('WEAPP_VITE_E2E_REQUIRE_OFFICIAL_LATEST', '1')
+    vi.mocked(fetch).mockRejectedValue(new Error('offline'))
+    await expect(preflightSelectedWechatDevtools()).rejects.toThrow('DEVTOOLS_OFFICIAL_LATEST_REQUIRED')
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ channels: [{ id: 'stable', version: '2.02.2608080' }] }) } as Response)
+    await expect(preflightSelectedWechatDevtools()).rejects.toThrow('DEVTOOLS_OFFICIAL_LATEST_REQUIRED')
     expect(assertHost).not.toHaveBeenCalled()
   })
-
+  it('records a successful explicit strict Stable check', async () => {
+    vi.stubEnv('WEAPP_VITE_E2E_REQUIRE_OFFICIAL_LATEST', '1')
+    await preflightSelectedWechatDevtools()
+    expect(readDevtoolsVersionPolicy()).toMatchObject({ mode: 'official-stable', officialVersionMatches: true })
+  })
+  it('rejects unknown product metadata', async () => {
+    resolveTarget.mockResolvedValue({ ...target, channel: 'unknown' })
+    await expect(preflightSelectedWechatDevtools()).rejects.toThrow('DEVTOOLS_VERSION_UNKNOWN')
+  })
   it('clears old selection evidence before a new failed preflight', async () => {
     await preflightSelectedWechatDevtools()
     expect(readDevtoolsVersionPolicy()).toBeDefined()
@@ -147,7 +102,7 @@ describe('selected DevTools preflight', () => {
 
   it('rejects missing stable metadata', async () => {
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ channels: [{ id: 'rc', version: target.version }] })))
-    await expect(readOfficialStableVersion()).rejects.toThrow('缺少有效 Stable')
+    await expect(readOfficialStableVersion()).rejects.toThrow('no valid stable version')
   })
 
   it('does not accept matching versions when another installation owns the host', async () => {

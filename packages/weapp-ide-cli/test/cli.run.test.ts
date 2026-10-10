@@ -1,5 +1,9 @@
 import type { ResolveWechatDevtoolsTargetOptions } from '../src/devtoolsTarget'
+import fs from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createDevtoolsInstallation } from './helpers/devtoolsTarget'
 
 vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: async (run: () => Promise<unknown>) => run() }))
 
@@ -53,7 +57,8 @@ vi.mock('../src/cli/resolver', () => ({
   resolveCliPath: resolveCliPathMock,
 }))
 
-vi.mock('../src/devtoolsTarget', () => ({
+vi.mock('../src/devtoolsTarget', async importOriginal => ({
+  ...await importOriginal<typeof import('../src/devtoolsTarget')>(),
   resolveWechatDevtoolsTarget: resolveTargetMock,
   assertWechatDevtoolsHost: hostGuardMock,
 }))
@@ -340,6 +345,27 @@ describe('cli parsing', () => {
       `${mockCwd}/mini-app`,
     ])
     expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('fixes the selected installation before dispatch and strips only wrapper parameters', async () => {
+    const { parse } = await import('../src/cli/run')
+    const { getActiveWechatDevtoolsTarget } = await import('../src/devtoolsTarget')
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'devtools-cli-dispatch-'))
+    try {
+      const installation = await createDevtoolsInstallation(root, { platform: process.platform === 'darwin' ? 'darwin' : 'win32', name: '微信 nightly.app', versionType: '2' })
+      dispatchWechatCliCommandMock.mockImplementationOnce(async (args: string[]) => {
+        expect(args).toEqual(['upload', '--project', `${mockCwd}/mini-app`, '--version', '1.2.3', '--desc', 'fixture'])
+        expect(getActiveWechatDevtoolsTarget()).toMatchObject({ cliPath: await fs.realpath(installation.cliPath), channel: 'nightly' })
+        return true
+      })
+      await parse(['upload', '--project', './mini-app', '--version', '1.2.3', '--desc', 'fixture', '--cli-path', installation.cliPath, '--devtools-channel=nightly'])
+      expect(dispatchWechatCliCommandMock).toHaveBeenCalledTimes(1)
+      expect(executeMock).not.toHaveBeenCalled()
+      expect(getActiveWechatDevtoolsTarget()).toBeUndefined()
+    }
+    finally {
+      await fs.rm(root, { recursive: true, force: true })
+    }
   })
 
   it('bootstraps security settings for open without project path', async () => {

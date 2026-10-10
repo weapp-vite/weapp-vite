@@ -32,6 +32,8 @@ const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
 }))
 
+vi.mock('weapp-ide-cli', () => ({ withWechatDevtoolsSelection: async (_: unknown, run: () => Promise<unknown>) => run() }))
+
 vi.mock('../../aiEnvironment', () => ({
   detectAiDevelopmentEnvironment: detectAiDevelopmentEnvironmentMock,
 }))

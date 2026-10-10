@@ -38,6 +38,14 @@ vi.mock('../src/logger', () => ({
   colors: colorsMock,
 }))
 
+vi.mock('../src/devtoolsTarget/discovery', () => ({ selectInstalledWechatDevtools: async () => {
+  const cliPath = await platformMock.getDefaultCliPath()
+  if (!cliPath) {
+    throw Object.assign(new Error('not installed'), { code: 'WECHAT_DEVTOOLS_INSTALLATION_NOT_FOUND' })
+  }
+  return { cliPath }
+} }))
+
 vi.mock('../src/runtime/platform', () => ({
   getDefaultCliPath: platformMock.getDefaultCliPath,
 }))

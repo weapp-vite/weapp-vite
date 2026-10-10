@@ -130,6 +130,10 @@ const projects = [
       globalSetup: [path.resolve(ROOT_DIR, 'e2e/vitest.e2e.machine-lease.global-setup.ts')],
       include: [
         'e2e/scripts/e2e-suite-manifest.test.ts',
+        'e2e/scripts/devtoolsMatrix.test.ts',
+        'e2e/utils/devtoolsSelection.test.ts',
+        'e2e/scripts/domAcceptanceReport/helpers.test.ts',
+        'e2e/scripts/domAcceptanceReport/reporter.test.ts',
         'e2e/scripts/domAcceptanceReport/inventory.test.ts',
         'e2e/scripts/githubIssuesRouteScope.test.ts',
         'e2e/scripts/hmr-guard-manifest.test.ts',
