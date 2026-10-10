@@ -18,11 +18,21 @@ export function createBenchmarkTemplateDependenciesCommand(packageNames: string[
   }
 }
 
-/** 对比运行器来自 optimized checkout，必须独立准备它直接导入的工具包。 */
+/** 驱动独立准备公共工具包及源码 helper 传递引入的包，不构建被测目标。 */
 export function createBenchmarkRunnerPreparationCommand(): BenchmarkCheckoutPreparationCommand {
   return {
     command: 'pnpm',
-    args: ['--filter', '@weapp-core/shared', '--filter', '@weapp-core/constants', '--if-present', 'build'],
+    args: [
+      '-r',
+      '--filter',
+      '@weapp-core/shared...',
+      '--filter',
+      '@weapp-core/constants...',
+      '--filter',
+      '@weapp-core/logger...',
+      '--if-present',
+      'build',
+    ],
   }
 }
 
