@@ -26,6 +26,17 @@ describe('github-issues runtime web runtime globals', { concurrent: false }, () 
     await closeSharedMiniProgram()
   })
 
+  it('issue #1186: decodes malformed URL queries without losing live search params', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', WEB_API_PLANS.issue1186)
+    const miniProgram = await getSharedMiniProgram(ctx)
+    const page = await relaunchPage(miniProgram, '/pages/issue-1186/index')
+    assert(page, 'Expected issue-1186 page')
+    await dom.check('initial', miniProgram, page)
+    for (const extension of ['wxml', 'json', 'js']) {
+      expect(await readDistFile(`pages/issue-1186/index.${extension}`)).not.toBe('')
+    }
+  })
+
   it('issue #448: compiles the next batch of web runtime globals for DevTools', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', WEB_API_PLANS.issue448)
     const miniProgram = await getSharedMiniProgram(ctx)
