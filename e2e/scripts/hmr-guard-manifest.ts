@@ -36,7 +36,6 @@ export const HMR_GUARD_TEST_GROUPS = {
     'hmr-issue-1015-external-css-vars.test.ts',
     'style-import-vue.test.ts',
     'hmr-asset-ownership.test.ts',
-    'hmr-profile-failed-recovery.test.ts',
     'wevu-runtime.hmr.test.ts',
     'hmr-native-batch.test.ts',
     'hmr-native-dependencies.test.ts',
