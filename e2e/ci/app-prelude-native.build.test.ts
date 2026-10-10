@@ -10,6 +10,8 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { resolveRelativeModuleReferences, resolveRequestGlobalsInstaller } from '../utils/requestGlobalsInstaller'
+import { toRelativeImport } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-prelude-native')
@@ -225,9 +227,15 @@ describe('e2e app: app-prelude-native (build)', { concurrent: false }, () => {
 
     const appJs = await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')
     const rootPreludeJs = await fs.readFile(path.join(DIST_ROOT, 'app.prelude.js'), 'utf8')
-    const installerFileName = 'weapp-vendors/request-globals-web-apis-shared.js'
-    const installerJs = await fs.readFile(path.join(DIST_ROOT, installerFileName), 'utf8')
-    const installerRequire = `require("./${installerFileName}")`
+    const installer = await resolveRequestGlobalsInstaller(DIST_ROOT)
+    const installerJs = installer.code
+    const appPath = path.join(DIST_ROOT, 'app.js')
+    const preludePath = path.join(DIST_ROOT, 'app.prelude.js')
+    const installerRequire = `require(${JSON.stringify(toRelativeImport(appPath, installer.path))})`
+    const appReferences = await resolveRelativeModuleReferences(DIST_ROOT, appPath, appJs)
+    const preludeReferences = await resolveRelativeModuleReferences(DIST_ROOT, preludePath, rootPreludeJs)
+    expect(appReferences).toContain(installer.path)
+    expect(preludeReferences).toContain(installer.path)
 
     expect(appJs).toContain('require("./app.prelude.js")')
     expect(appJs).not.toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
