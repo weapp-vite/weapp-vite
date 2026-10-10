@@ -1,5 +1,59 @@
 # @weapp-vite/web
 
+## 2.0.0
+
+### Major Changes
+
+- feat(engines)!: 将框架及编译依赖链的 Node.js 支持范围对齐为 `^22.18.0 || ^24.11.0 || >=26.0.0`，不再承诺 Node 20、23、25 或低于最低补丁版本的环境。CLI 在加载构建依赖前读取发布包声明并明确拒绝不支持的运行时；发布消费检查覆盖三系统最低版本和当前支持的 LTS 补丁版本。已有项目请先升级 Node.js；脚手架自身仍要求 Node 22.22.2、24.15.0 或 26 及以上版本，不降低其依赖所需版本。
+
+### Patch Changes
+
+- fix(hmr): 修复 classic 与原生 watch 连续编辑中的依赖遗漏、产物误删和重复重建，所有最终输出仍由 bundler 原生 emit/write 持久化。
+
+  - App 启动脚本及依赖始终由 bundler 构建，样式与配置更新不再用中间脚本覆盖入口。JS、WXML、WXSS、JSON 同批或拆批编辑保留完整输出归属、未变产物和用户文件。
+  - public 资源纳入发布与删除账本；开发重建失败保留上次成功产物，写出成功后再清理已删除页面与旧 chunk。入口拓扑与上次完整扫描比较，串行处理初次构建和启动期间的事件。
+  - 自动路由结构变化直接交给当前构建控制器；源码 JSON、Vue 宏和 SFC 快照按当前批次失效，组件删除、声明关闭与恢复同步更新绑定，保留显式源码配置和原子替换。
+  - Web Vue SFC 的模板、样式和脚本共用已完成快照，统一 Windows 路径身份，重扫未完成或失败时不读取尚未发布的源码。
+  - 保留物理组件 shared chunk、公开 Wevu runtime 导出及传递依赖；`hmr.sharedChunks: 'off'` 仅发布变化入口及其必要依赖，完成平台 API 重写且不扩散其他入口重建。
+  - SFC 分类、编译与外部样式使用同一输入快照；CSS 变量恢复同步交付脚本。统一原生与模块图样式真实身份，去重合并 sidecar 回退，避免重复或覆盖；原生样式删除事件的登记生命周期保持原边界。
+  - WXML/JSON 转换依赖和第三方 provider 输入接入宿主模块图与账本；根目录外的已登记 WXML 依赖删除后仍能观察重新创建，移除最后引用时正确退役依赖边。
+  - 提前登记 npm、worker 和库声明依赖，防止首轮写出、语法恢复后或 macOS 连续保存遗漏事件；保留 worker 失败后的监听、配置恢复与旧产物清理。
+  - 快照配置容器逐轮隔离并保留用户插件身份；解析器、provider 与配置监听遵循各自会话生命周期，修复外部脚本连续保存使用已释放解析器及重复配置重启。
+  - 同步独立分包输出归属、诊断资产过滤和 Wot UI `wd-qr-code` 自动导入。
+
+- fix(web): 修复 Web 原生/Wevu 应用的样式、事件与宿主实例桥接，并保持对应 simulator 事件语义一致。
+
+  - Vue 与原生 App 入口共享应用样式状态，按页面/组件隔离选项处理主题继承和局部覆盖；支持外部与内联样式热更新、移除及重新添加而不重置页面状态。避免选择器权重漂移和样式拼接破坏合法 `@import`。
+  - 分离组件自定义事件与同名原生事件，避免一次点击重复回调；保留名称、载荷、冒泡、捕获和手势别名，legacy 模板保留节点时正确复用或替换监听器。
+  - 分离 props 输入和 setup 方法，保留同名 Boolean 属性；完整方法快照支持替换与移除，调用时读取最新 runtime 和原生 receiver，setup 方法优先于静态方法，普通实例显式赋值、访问器和不可配置属性保持原边界。
+  - 修复嵌套对象、数组和同引用整值提交后的深层输入投影；simulator Node/browser 共用声明树事件路径，保持普通祖先、组件边界、catch、源宿主目标及重渲染监听实例归属。
+  - canvas 仅在对应尺寸属性真正变化时调整位图，普通属性同步、重复尺寸或重新挂载不再清空绘图，保留绘图 API 直接设置的尺寸。
+
+- fix(web): 修复 Web 插件的 PostCSS 配置与 Vite 模块图类型，使其可直接作为 Vite Plugin 使用，并补充类型回归覆盖。
+
+- feat(wevu): 完善 Wevu 首次绑定、原生插槽上下文和热更新响应式契约，并补充可选 setData 阶段观察能力。
+
+  - 微信目标在 `scopedSlotsRequireProps: true` 且 attached setup 时，普通原生插槽可同步注入最近 Wevu 承载者上下文，保留对象、响应式状态、方法身份与多实例隔离；不增加包装节点或改变原生 export。
+  - 原生声明关系独立于插槽是否可见，支持初始关闭、具名/转发/嵌套插槽及有效唯一原生 key 的循环重排、隐藏创建和卸载重建；最近内部父链不受 export/expose 过滤影响，Options API 别名仍保留组件身份。
+  - 默认增强模式下，普通节点包裹的 Wevu 子组件在嵌套插槽中同样保留最近普通模板父组件，避免错误继承外层 Provider；此项父链修复不局限于上述原生插槽增强选项。
+  - 保留模板表达式、循环和解构别名的声明作用域及无法投影 key 的降级诊断。created setup、其他宿主和未参与编译组件保持明确支持边界；非微信产物裁剪未启用的原生声明协议，Web 沿用既有插槽语义。
+
+- chore(deps): 合并本轮 catalog、生产依赖和构建工具链升级，联动所有受影响可发布包及脚手架，保持现有公开 peer 范围和各包声明的最低运行环境。
+
+  - 同步 Vite、Rolldown、Babel、Oxc、Devframe、Sass、Tailwind 引擎、AI/MCP SDK、CLI 依赖及工作区锁文件；脚手架模板 catalog、React SWC 和生成 AI 指引随构建基线更新。
+  - Rust Oxc/N-API 适配新版解析结果与箭头函数 AST，保留批量分析、嵌套函数边界及可选 native 回退。
+  - 对齐 React 19.3 / reconciler 0.34 所需异步提交 hook，修复 `startTransition` 因缺失宿主方法而失败。
+  - 适配新版 Vite 样式客户端，防止 DOM 客户端进入小程序 stateful HMR 产物；迁移 Vite/Rolldown 生命周期补丁并接入上游 macOS 原生 watch 修复，减少连续保存和拓扑更新丢失事件。
+  - 适配上游 stateful ESM 图及内联 helper，在原生输出 hook 保留宿主 CommonJS 格式、sourcemap 和完整 runtime 契约。
+  - 更新 uview-plus 与兼容矩阵，保留 `u-flex` / `up-flex` 自动导入、组件交互及 `u-video` 覆盖；条码 nextTick 补丁因上游已修复而移除。
+  - 更新 repoctl 并移除上游已实现的发布补丁，保留 catalog 消费者、共享 constants 依赖和固定版本组的联动发布。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.3.1
+  - @weapp-core/shared@3.2.8
+  - rolldown-require@2.0.35
+  - wevu@7.5.0
+
 ## 1.6.0
 
 ### Minor Changes

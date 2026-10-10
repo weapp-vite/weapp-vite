@@ -1,5 +1,60 @@
 # weapp-ide-cli
 
+## 6.2.0
+
+### Minor Changes
+
+- fix(devtools): 统一微信开发者工具安装、连接、受管窗口和机器租约的所有权，避免连续验证残留窗口或误清理用户项目。
+
+  - 显式 CLI 选择贯穿安装、HTTP 端口、会话与恢复；同机跨工作区互斥，保留登录数据和其他安装连接。命名会话动态端口可正确重连，关闭保留项目路径与 CLI 参数，验收可等待宿主编译完成。
+  - 启动、连接、版本/App ready、登录提示及有限重试共享总截止时间和取消信号，隔离迟到结果，移除就绪后固定等待；只释放本次持有的连接、CLI 子进程和端口。
+  - 通过官方回执区分新建/复用窗口，journal 独立核验所有权并覆盖断连、失败及工作进程退出。默认整个受管任务及子任务最多一个窗口，双项目场景可明确申请两个；同一项目只能连接已登记端点，归属未确认或超额时停止后续启动。
+  - 启动与关闭共用作用域门禁及登记锁，子作用域登记 borrower；中断后先核验子任务停止再回收，清理未完成继续阻断下一轮。原子租约变更保留等待预算，防止旧 owner 查询期间误删新锁。
+  - 窗口销毁证据绑定已核验主进程及完整日志设备号/inode，支持 BACKEND 开头、日志轮换和同主进程多份有效日志。固定流内核对关闭及双销毁事件、窗口/WebContents/端口释放，拒绝不安全大小或游标及其他日志冲突，不因辅助日志新增而重复关窗。
+  - 显式恢复核对原租约、封存 scope、精确 cleanup 绑定及已停止后代；安装退出恢复在原任务停止、安装身份一致、全部所选安装进程和登记端口消失后，可终结未知启动资源及失败关窗记录。普通未知归属仍拒绝清理，失败保留首错、销毁证据和阻塞。
+  - 恢复操作只在原始 scope 和完整接管快照一致的回调中授权；等待在途领域操作结束，回调后不延长授权。Windows guard 的 EPERM 沿原预算重试，不删除其他持有者的锁。
+  - Windows 身份查询保留有界首次 PowerShell/CIM 初始化预算、取消和严格比较，不永久缓存查询失败；journal 当前 writer 使用 Process API 与严格 UTF-8 文本，保留既有启动时间和十秒预算，支持中文安装路径。
+  - 打开、重连和截图恢复仅重试目标连接；显式关闭失败不扩大到应用退出或按进程匹配清理。受管 automator 延迟加载，配置、恢复诊断走 stderr，保持 JSON stdout 可解析。
+
+### Patch Changes
+
+- fix(acceptance): 修复 Doctor 会话清理、HMR profile 交接与测试产物缓存的归属和失效边界。
+
+  - Doctor 分阶段保存宿主事实及脱敏清理证据，共享总预算；工具信息失败仍保留已连接事实，释放本次连接而不误删持久化会话。原生 CLI 登录查询仅显式启用，只采信布尔结果，超时或无效响应保持未知。
+  - 拓扑替换独立移交原始计时与时钟，仅在完整产物发布后结算；保留重启失败、交接失效和关闭诊断。畸形枚举记录被跳过而不影响后续合法样本，异步写入使用已固定快照。
+  - profile 监听只排除实际启用的输出文件，避免失败重建自触发；关闭 profile 时同名用户文件及相邻源码仍可触发更新。
+  - 测试产物按进程、配置和 generation 隔离，基于源码、配置依赖和产物内容验证缓存，避免旧结果复用或覆盖在用产物；内容摘要去重重复通知，保留显式重建、构建中再编辑、合并更新、可等待关闭及过期缓存失败隔离。
+
+- fix(mpcore): 对齐 mpcore Node/浏览器模拟器的原生生命周期、插槽和导航行为，并完善独立测试产物及会话释放。
+
+  - Component 页面同时声明顶层生命周期和 pageLifetimes 时不再重复回调；双向派发页面事件。`navigateTo` 的 success/complete 等待目标 ready 与渲染提交后执行。
+  - 插槽投影保留事件，attached 同步事件沿承载者传播；`selectOwnerComponent()` 遵循 `wx://component-export`，测试桥仍可访问原始实例。
+  - 声明生命周期独立于可见投影：初始关闭的默认/具名插槽仍创建有效子组件，关闭不卸载、删除声明才释放；转发复用声明，循环按宿主归一化的有效 key 保持实例身份并无损编码 UTF-16 地址。
+  - 对齐私有模板构造、created、初始 observer 和 attached 的顺序；隐藏声明可查询但不进入组合可见树或被就绪探针误报为正尺寸节点。
+  - 挂载期间父级写入、条件插入与 observer 重入会同步最新有效属性，避免旧遍历覆盖兄弟节点。created 中 setData 后仍保留私有子树构造/属性交付边界；卸载写入不引发重入循环，事务刷新改为迭代避免兄弟 attached 写入累积调用栈。
+  - WXML 插值前移除标签间静态换行缩进，保留绑定表达式生成的显式空格，Node/browser 行为一致。
+  - headless 会话提供同步幂等 `disconnect()`，释放所属 runtime，包括启动取消后迟到的资源，保留其他项目；外部 automator bridge 登记会话供 CLI 安全复用。
+
+- perf(runtime): 按实际启用能力延迟加载可选插件与 Node 运行时，降低普通 CLI 和小程序构建的启动开销。
+
+  - 仅在实际启用时加载 Web、Tailwind、高级路径、Dashboard、MCP 与 automator 依赖；保留同步配置 API、公开导出和包含延迟初始化的总超时预算，MCP 默认配置统一到共享常量。
+
+- chore(deps): 合并本轮 catalog、生产依赖和构建工具链升级，联动所有受影响可发布包及脚手架，保持现有公开 peer 范围和各包声明的最低运行环境。
+
+  - 同步 Vite、Rolldown、Babel、Oxc、Devframe、Sass、Tailwind 引擎、AI/MCP SDK、CLI 依赖及工作区锁文件；脚手架模板 catalog、React SWC 和生成 AI 指引随构建基线更新。
+  - Rust Oxc/N-API 适配新版解析结果与箭头函数 AST，保留批量分析、嵌套函数边界及可选 native 回退。
+  - 对齐 React 19.3 / reconciler 0.34 所需异步提交 hook，修复 `startTransition` 因缺失宿主方法而失败。
+  - 适配新版 Vite 样式客户端，防止 DOM 客户端进入小程序 stateful HMR 产物；迁移 Vite/Rolldown 生命周期补丁并接入上游 macOS 原生 watch 修复，减少连续保存和拓扑更新丢失事件。
+  - 适配上游 stateful ESM 图及内联 helper，在原生输出 hook 保留宿主 CommonJS 格式、sourcemap 和完整 runtime 契约。
+  - 更新 uview-plus 与兼容矩阵，保留 `u-flex` / `up-flex` 自动导入、组件交互及 `u-video` 覆盖；条码 nextTick 补丁因上游已修复而移除。
+  - 更新 repoctl 并移除上游已实现的发布补丁，保留 catalog 消费者、共享 constants 依赖和固定版本组的联动发布。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.9
+  - @weapp-core/shared@3.2.8
+  - @weapp-vite/devtools-runtime@0.5.0
+  - @weapp-vite/miniprogram-automator@1.3.0
+
 ## 6.1.9
 
 ### Patch Changes

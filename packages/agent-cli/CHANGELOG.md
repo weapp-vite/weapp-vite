@@ -1,6 +1,15 @@
-# @wevu/json-render-components
+# @weapp-agent/cli
 
-## 0.1.1
+## 0.1.0
+
+### Minor Changes
+
+- feat(scaffold): 更新脚手架工具链选择与 Weapp Agent 工作流，并联动框架、Dashboard 和 IDE 验收使用契约。
+
+  - 新增与业务模板独立的 `--toolchain=wv|vite|vite-plus`，生成共享配置、多平台及组件库脚本；保持 Vite+ 引擎 alias、配套 Vitest、严格 peer、依赖覆盖与 Node 要求一致，保留小程序命令、检查及受管类型流程。
+  - 迁入独立 Weapp Agent CLI，兼容旧命令、配置和会话，生成统一验收指引；联动 Dashboard/Hub、品牌图标、受控调查及框架增量查询能力。
+  - 长任务压缩保留完整用户要求，准确处理重复工具调用 ID 与中断结果；新增只读会话详情及交互确认恢复，上下文预算不足明确停止，避免重放操作。
+  - 等待恢复确认期间保存追加要求和图片，确认后顺序交付；并发恢复仅允许一个 writer，关闭等待日志写完，避免覆盖其他会话锁或损坏记录顺序。
 
 ### Patch Changes
 
@@ -15,29 +24,6 @@
   - 更新 repoctl 并移除上游已实现的发布补丁，保留 catalog 消费者、共享 constants 依赖和固定版本组的联动发布。
 
 - Updated dependencies:
-  - wevu@7.5.0
-
-## 0.1.0
-
-### Minor Changes
-
-- 新增 json-render 的 Wevu 小程序适配包，提供组件目录、状态绑定、动作调度、事务化流式更新和可通过泛型组件扩展的递归 SFC。修复 lib 模式递归引用 SFC 时的重复组件注册，以及 simulator 未继承父级泛型映射的问题，使自定义业务节点及事件转发与真实微信运行时一致。
-
-### Patch Changes
-
-- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
-  默认 catalog 变更键：weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
-
-- 自动补充依赖升级发布记录。
-  涉及包：
-  - @weapp-vite/glass-easel-web-adapter：dependencies.glass-easel-template-compiler
-  - @weapp-vite/ast：dependencies.@oxc-project/types
-  - @weapp-vite/eslint：devDependencies.@typescript-eslint/parser
-  - @weapp-vite/mcp：dependencies.@modelcontextprotocol/server、devDependencies.@modelcontextprotocol/client
-  - @weapp-vite/tailwindcss：dependencies.@weapp-tailwindcss/engine
-  - weapp-ide-cli：dependencies.@modelcontextprotocol/server
-  - weapp-vite：dependencies.@weapp-tailwindcss/engine
-  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
-
-- Updated dependencies:
-  - wevu@7.4.0
+  - @weapp-vite/acceptance@0.1.0
+  - @weapp-vite/mcp@2.0.0
+  - weapp-ide-cli@6.2.0

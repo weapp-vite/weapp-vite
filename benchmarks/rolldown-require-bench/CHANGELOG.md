@@ -1,5 +1,12 @@
 # rolldown-require-bench
 
+## 0.0.29
+
+### Patch Changes
+
+- Updated dependencies:
+  - rolldown-require@2.0.35
+
 ## 0.0.28
 
 ### Patch Changes

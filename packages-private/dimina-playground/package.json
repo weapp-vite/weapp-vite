@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/dimina-playground",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Dimina 真实小程序产物接入实验",
   "license": "MIT",
