@@ -431,7 +431,7 @@ overrides:
   rolldown: 1.2.13
 
 patchedDependencies:
-  '@icebreakers/monorepo@5.10.0': e20a793c8878c1929337f2b72e2c29963f8ab76b6f170db3adf18963d67e1d5d
+  '@icebreakers/monorepo@5.10.0': d312d55ca461245a33644391f414fbb5357cb32f8f520fb281674db5a0a0aab5
   rolldown@1.2.13: d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23
   vite@8.3.4: a799f2052683e7ca920783450e85ecc30618b74ec208dda36304e307e699a8de
 
@@ -20485,7 +20485,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@icebreakers/monorepo@5.10.0(patch_hash=e20a793c8878c1929337f2b72e2c29963f8ab76b6f170db3adf18963d67e1d5d)(@commitlint/cli@21.2.3(@types/node@26.6.4)(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2))(happy-dom@20.14.5(bufferutil@4.1.0))(magicast@0.5.5)(postcss@8.5.29)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.29))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.3)(typescript@6.0.3)(vite@8.3.4)':
+  '@icebreakers/monorepo@5.10.0(patch_hash=d312d55ca461245a33644391f414fbb5357cb32f8f520fb281674db5a0a0aab5)(@commitlint/cli@21.2.3(@types/node@26.6.4)(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2))(happy-dom@20.14.5(bufferutil@4.1.0))(magicast@0.5.5)(postcss@8.5.29)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.29))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.3)(typescript@6.0.3)(vite@8.3.4)':
     dependencies:
       '@arethetypeswrong/core': 0.18.5
       '@babel/parser': 7.29.9
@@ -30422,7 +30422,7 @@ snapshots:
 
   repoctl@5.10.0(@commitlint/cli@21.2.3(@types/node@26.6.4)(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2))(happy-dom@20.14.5(bufferutil@4.1.0))(magicast@0.5.5)(postcss@8.5.29)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.29))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.3)(typescript@6.0.3)(vite@8.3.4)(vitest@5.0.3):
     dependencies:
-      '@icebreakers/monorepo': 5.10.0(patch_hash=e20a793c8878c1929337f2b72e2c29963f8ab76b6f170db3adf18963d67e1d5d)(@commitlint/cli@21.2.3(@types/node@26.6.4)(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2))(happy-dom@20.14.5(bufferutil@4.1.0))(magicast@0.5.5)(postcss@8.5.29)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.29))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.3)(typescript@6.0.3)(vite@8.3.4)
+      '@icebreakers/monorepo': 5.10.0(patch_hash=d312d55ca461245a33644391f414fbb5357cb32f8f520fb281674db5a0a0aab5)(@commitlint/cli@21.2.3(@types/node@26.6.4)(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2))(happy-dom@20.14.5(bufferutil@4.1.0))(magicast@0.5.5)(postcss@8.5.29)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.29))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.3)(typescript@6.0.3)(vite@8.3.4)
     optionalDependencies:
       '@commitlint/cli': 21.2.3(@types/node@26.6.4)(conventional-commits-parser@7.1.3)(typescript@6.0.3)
       eslint: 10.12.0(jiti@2.7.0)(supports-color@10.2.2)

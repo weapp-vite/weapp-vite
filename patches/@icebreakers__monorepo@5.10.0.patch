@@ -1,5 +1,5 @@
 diff --git a/dist/commands-B8PCzovx.mjs b/dist/commands-B8PCzovx.mjs
-index c873e9000f4d39cfa7de4519800c8d0ed82e9539..8cb4a287981b1c563e4df4e6f87eaabd6efe9f43 100644
+index c873e9000f4d39cfa7de4519800c8d0ed82e9539..97633326b868c409003a6c681fa77c32ae0c02c9 100644
 --- a/dist/commands-B8PCzovx.mjs
 +++ b/dist/commands-B8PCzovx.mjs
 @@ -4231,8 +4231,19 @@ function sourceCategory(commits) {
@@ -32,3 +32,21 @@ index c873e9000f4d39cfa7de4519800c8d0ed82e9539..8cb4a287981b1c563e4df4e6f87eaabd
  	const summary = hasDependency && dependencyName ? dependencyVersions.length > 1 ? `Updated dependencies: ${[...new Set(dependencyVersions)].join(", ")}.` : `Updated dependency to ${dependencyName}.` : raw.replace(/\[{1,2}`?([0-9a-f]{7,40})`?\]\([^)]+\)/gi, "").replace(/\[#\d+\]\([^)]+\)/g, "").replace(/\bby\s+@[\w-]+(?:\[bot\])?/gi, "").replace(/\*\*/g, "").replace(/`/g, "").replace(/^[-*]\s+/, "").replace(/^[^\p{L}\p{N}]+/u, "").replace(/\s+/g, " ").trim();
  	const categoryHint = /🚨|breaking/i.test(raw) ? "🚨" : /🚀|✨/.test(raw) ? "🚀" : /🐛|🐞/.test(raw) ? "🐞" : hasDependency ? "Dependencies" : "";
  	const commits = commitMatches.map((match) => ({
+@@ -5196,11 +5208,12 @@ var GitHubClient = class {
+ 		});
+ 		const existing = (await this.request("GET", `/pulls?${query.toString()}`)).data?.[0];
+ 		if (existing) {
+-			await this.request("PATCH", `/pulls/${existing.number}`, {
+-				title: options.title,
+-				body: options.body,
+-				base: options.base
+-			});
++			if (existing.title !== options.title || (existing.body ?? "") !== options.body) {
++				await this.request("PATCH", `/pulls/${existing.number}`, {
++					title: options.title,
++					body: options.body
++				});
++			}
+ 			return existing;
+ 		}
+ 		try {
