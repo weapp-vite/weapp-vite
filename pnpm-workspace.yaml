@@ -46,18 +46,18 @@ catalog:
   '@mini-types/alipay': ^3.0.14
   '@tailwindcss/vite': ^4.3.3
   '@types/d3': ^7.4.3
-  '@types/node': ^26.6.4
+  '@types/node': ^26.6.5
   '@types/react': 19.3.0
-  '@types/react-reconciler': 0.33.1
+  '@types/react-reconciler': 0.34.0
   '@types/semver': ^7.8.0
   '@vant/weapp': ^1.11.7
   '@vitejs/devtools': 0.7.6
   '@vitejs/devtools-kit': 0.7.6
-  '@vitejs/plugin-vue': ^6.0.9
+  '@vitejs/plugin-vue': ^6.0.10
   '@vue/compiler-core': ^3.5.43
   '@vue/compiler-dom': ^3.5.43
   '@vue/babel-plugin-jsx': 3.0.0
-  '@vue/language-core': ^3.3.12
+  '@vue/language-core': ^3.3.13
   '@wot-ui/ui': 2.3.2
   antd-mini: ^3.4.3
   autoprefixer: ^10.6.1
@@ -76,7 +76,7 @@ catalog:
   fdir: ^6.5.0
   gm-crypto: ^0.1.12
   graphql-request: ^7.4.0
-  happy-dom: ^20.14.5
+  happy-dom: ^20.14.6
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
   lru-cache: ^11.5.3
@@ -109,9 +109,9 @@ catalog:
   typescript: ^6.0.3
   uview-plus: 3.8.130
   vite: 8.3.4
-  vite-plugin-inspect: ^12.0.2
+  vite-plugin-inspect: ^12.1.0
   vue: ^3.5.43
-  vue-tsc: ^3.3.12
+  vue-tsc: ^3.3.13
   weapp-tailwindcss: ^5.6.0
   zod: ^4.6.5
 
@@ -154,4 +154,4 @@ shamefullyHoist: true
 patchedDependencies:
   vite@8.3.4: patches/vite@8.3.4.patch
   rolldown@1.2.13: patches/rolldown@1.2.13.patch
-  '@icebreakers/monorepo@5.10.0': patches/@icebreakers__monorepo@5.10.0.patch
+  '@icebreakers/monorepo@5.10.1': patches/@icebreakers__monorepo@5.10.1.patch
