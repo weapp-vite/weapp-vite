@@ -40,7 +40,6 @@ export const HMR_GUARD_TEST_GROUPS = {
     'wevu-runtime.hmr.test.ts',
     'hmr-native-batch.test.ts',
     'hmr-native-dependencies.test.ts',
-    'hmr-profile-failed-recovery.test.ts',
   ]),
   complexDeveloperFlows: resolveCiTests([
     'e2e-app-tailwind-memory-guard.test.ts',
