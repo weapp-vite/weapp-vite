@@ -5,6 +5,7 @@ import { parse } from 'yaml'
 interface WorkflowJob {
   if?: string
   needs?: string | string[]
+  uses?: string
   strategy?: { 'fail-fast'?: boolean, 'matrix': { 'os'?: string[], 'node-version'?: number[], 'shard'?: number[], 'include'?: Array<{ 'os'?: string, 'node-version': number, 'shard'?: number }> } }
   with?: Record<string, unknown>
 }
@@ -52,7 +53,7 @@ describe('bounded HMR workflow diagnosis', () => {
 
   it('requires an explicit manual selection and uses a separate concurrency group', async () => {
     const config = await workflow()
-    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-dev-cleanup'] })
+    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-dev-cleanup', 'native-compiler-batch'] })
     expect(config.concurrency.group).toContain('inputs.hmr-diagnostic || \'full\'')
     const job = config.jobs['shared-layout-windows-diagnostic']!
     expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'shared-layout-windows\'')
@@ -69,6 +70,25 @@ describe('bounded HMR workflow diagnosis', () => {
       main_command: 'pnpm audit:hmr:nightly',
       artifact_name: 'workspace-hmr-nightly',
       timeout_minutes: 120,
+    })
+  })
+
+  it('isolates the native compiler batch diagnostic to Node 24 on every OS', async () => {
+    const { jobs } = await workflow()
+    const job = jobs['native-compiler-batch-diagnostic']!
+    expect(job.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.hmr-diagnostic == \'native-compiler-batch\'')
+    expect(job.needs).toBeUndefined()
+    expect(job.uses).toBe('./.github/workflows/reusable-node-command.yml')
+    expect(job.strategy?.['fail-fast']).toBe(false)
+    expect(job.strategy?.matrix).toEqual({ os: ['ubuntu-latest', 'windows-latest', 'macos-latest'] })
+    expect(job.with).toEqual({
+      runs_on: `\${{ matrix.os }}`,
+      node_version: '24',
+      build_command: 'pnpm exec turbo run build --filter=weapp-vite...',
+      main_command: 'pnpm vitest run packages/weapp-vite/src/runtime/statefulHmr/compilerBatch.native.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/native-compiler-batch-report.json',
+      artifact_name: expect.stringMatching(/^native-compiler-batch-.*matrix\.os.*-node-24-.*github\.sha/),
+      artifact_path: '.tmp/native-compiler-batch-report.json',
+      timeout_minutes: 20,
     })
   })
 
@@ -173,7 +193,7 @@ describe('bounded HMR workflow diagnosis', () => {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)
     }
     for (const [name, job] of Object.entries(jobs)) {
-      if (['shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-dev-cleanup-diagnostic'].includes(name)) {
+      if (['shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-dev-cleanup-diagnostic', 'native-compiler-batch-diagnostic'].includes(name)) {
         continue
       }
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>

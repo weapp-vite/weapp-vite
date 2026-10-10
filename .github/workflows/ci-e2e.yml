@@ -21,6 +21,7 @@ on:
           - workspace-hmr
           - windows-process-narrow
           - windows-dev-cleanup
+          - native-compiler-batch
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.hmr-diagnostic || 'full' }}
@@ -30,6 +31,25 @@ permissions:
   contents: read
 
 jobs:
+  native-compiler-batch-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'native-compiler-batch'
+    name: Native Compiler Batch Diagnostic (${{ matrix.os }} / Node 24)
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: '24'
+      timeout_minutes: 20
+      build_command: pnpm exec turbo run build --filter=weapp-vite...
+      main_command: pnpm vitest run packages/weapp-vite/src/runtime/statefulHmr/compilerBatch.native.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/native-compiler-batch-report.json
+      artifact_name: native-compiler-batch-${{ matrix.os }}-node-24-${{ github.sha }}
+      artifact_path: .tmp/native-compiler-batch-report.json
+    secrets: inherit
+
   windows-dev-cleanup-diagnostic:
     if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-dev-cleanup'
     name: Dev Process Cleanup Shard Diagnostic (Windows / Node ${{ matrix.node-version }} / shard ${{ matrix.shard }})

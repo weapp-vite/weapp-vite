@@ -10,12 +10,18 @@ import { createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 it.each([false, true])('pins actual DevEngine inputs for virtual source ownership (extra dependency: %s)', async (extraDependency) => {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'hmr-compiler-batch-')))
   const entry = path.join(root, 'app.js')
+  const readinessSeed = path.join(root, 'watch-ready.seed')
+  const readinessSeedId = compilerSourceId(readinessSeed)
   const source = (value: string) => `globalThis.utility = ${JSON.stringify(value)}; if (import.meta.hot) import.meta.hot.accept();`
   await writeFile(entry, source('py-5.5'))
+  await writeFile(readinessSeed, '0')
   const sourceId = compilerSourceId(entry)
   const host = new CompilerHmrHost()
   const batches: Array<{ input: ReturnType<CompilerHmrHost['freeze']>, code: string, filename: string, graphCode?: string | null }> = []
   const runtime: Record<string, unknown> = {}
+  const seedUpdateTypes: string[] = []
+  let seedObserved = false
+  let captures = 0
   const started = performance.now()
   const events: Array<Record<string, unknown>> = []
   // 只同步保存有界阶段信息，避免诊断引入新的微任务或记录源码。
@@ -65,6 +71,7 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
       },
       transform(code, _id) {
         host.capture(entry, code)
+        captures += 1
         record('capture', { virtualEntry: _id === '\0entry' })
       },
     }],
@@ -90,6 +97,10 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
       }
       const input = host.freeze(result.changedFiles)
       record('freeze', { revision: input.revision, capturedSource: input.sources.has(sourceId) })
+      if (result.changedFiles.length > 0 && result.changedFiles.every(file => compilerSourceId(file) === readinessSeedId)) {
+        seedObserved = true
+        seedUpdateTypes.push(...result.updates.map(({ update }) => update.type))
+      }
       for (const { update } of result.updates) {
         if (update.type === 'Patch') {
           batches.push({ input, code: update.code, filename: update.filename, graphCode: engine.moduleGraph.getModuleInfo('\0entry')?.code })
@@ -100,6 +111,8 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
   record('run:start')
   const running = engine.run()
   try {
+    await running
+    record('run:end')
     await engine.registerClient('test-client')
     record('registerClient:end')
     await engine.ensureCurrentBuildFinish()
@@ -109,6 +122,28 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
     expect(runtime.utility).toBe('py-5.5')
     await engine.notifyPayloadDelivered('app.js')
     record('initialPayload:delivered')
+    const initialCaptures = captures
+    const initialRevision = host.freeze([]).revision
+    // 路径登记回执早于 polling 首次扫描；只修改无模块依赖的探针，确认基线后再保存目标源码。
+    let seedTick = 0
+    await vi.waitUntil(async () => {
+      if (seedObserved) {
+        return true
+      }
+      await writeFile(readinessSeed, String(++seedTick))
+      return false
+    }, { timeout: 10_000, interval: 20 })
+    await engine.ensureCurrentBuildFinish()
+    const readyState = await engine.getBundleState()
+    record('watchBaseline:observed', { seedTick, seedUpdateTypes: [...seedUpdateTypes], ...readyState })
+    expect(seedUpdateTypes.length).toBeGreaterThan(0)
+    expect(seedUpdateTypes.every(type => type === 'Noop')).toBe(true)
+    expect(batches).toHaveLength(0)
+    expect(captures).toBe(initialCaptures)
+    expect(host.freeze([]).revision).toBe(initialRevision)
+    expect(host.readSource(sourceId)).toBe(source('py-5.5'))
+    expect(engine.moduleGraph.getModuleInfo('\0entry')?.code).toBe(source('py-5.5'))
+    expect(runtime.utility).toBe('py-5.5')
     for (const [index, utility] of ['py-6.5', 'py-7.5'].entries()) {
       record('edit:start', { index })
       await writeFile(`${entry}.pending`, source(utility))
@@ -126,6 +161,7 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
       record('patchBuild:end', { index })
       const state = await engine.getBundleState()
       record('patchState', { index, ...state })
+      expect(seedUpdateTypes.every(type => type === 'Noop')).toBe(true)
     }
     expect(batches[0]!.input.sources.get(sourceId)).toBe(source('py-6.5'))
     expect(batches[1]!.input.revision).toBeGreaterThan(batches[0]!.input.revision)
