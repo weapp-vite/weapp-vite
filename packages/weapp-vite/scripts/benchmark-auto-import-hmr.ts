@@ -10,7 +10,9 @@ import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 import path from 'pathe'
 import { sampleHeapAfterGc, waitForInspectorUrl } from '../../../e2e/utils/dev-memory'
 import { startDevProcess } from '../../../e2e/utils/dev-process'
+import { runWithCleanup } from '../../../e2e/utils/runWithCleanup'
 import { createBenchmarkDevEnv } from '../../../scripts/benchmarkTemplatesHmr/environment'
+import { serializeSequenceError } from '../../../scripts/editSequence/errorEvidence'
 import { parseStatefulHmrControlSource } from '../../../scripts/workspace-hmr/scenarios'
 import { measureStatefulTemplateArtifact } from '../../../scripts/workspace-hmr/statefulArtifactMeasurement'
 import { StatefulHmrAuditClient } from '../../../scripts/workspace-hmr/statefulAuditClient'
@@ -213,8 +215,9 @@ async function measureHmr(options: {
     diagnostic?: Record<string, unknown>
     pairEvidence?: Record<string, unknown>
   } | undefined
+  let canRemoveFixture = true
 
-  try {
+  return runWithCleanup(async () => {
     const acknowledgementObservations: Array<{ phase: 'start' | 'complete', targetVersion: number, buildIdFingerprint: string, observedAt: number, clock: string }> = []
     const pairCycles: Array<{ cycle: number, edit: Record<string, unknown>, restore: Record<string, unknown> }> = []
     const seededSource = await seedFixture(project.tempDir, usedTags, mode)
@@ -222,6 +225,7 @@ async function measureHmr(options: {
     await rm(path.join(project.tempDir, '.weapp-vite'), { recursive: true, force: true })
 
     const startupStart = performance.now()
+    canRemoveFixture = false
     const dev = startDevProcess(process.execPath, [CLI_PATH, 'dev', project.tempDir, '--platform', 'weapp', '--skipNpm'], {
       cwd: workspaceRootDir,
       env: {
@@ -235,7 +239,7 @@ async function measureHmr(options: {
       all: true,
     })
 
-    try {
+    await runWithCleanup(async () => {
       await dev.waitForOutput(INITIAL_BUILD_READY_RE, `${mode} initial bench output`, DEV_TIMEOUT_MS)
       const startupMs = performance.now() - startupStart
       const inspectorUrl = await waitForInspectorUrl(dev.getOutput, `${mode} auto-import HMR benchmark`, DEV_TIMEOUT_MS)
@@ -394,10 +398,10 @@ async function measureHmr(options: {
           postObservationSnapshotCanAffectNextCyclePollPhase: true,
         }
       }
-    }
-    finally {
+    }, async () => {
       await dev.stop()
-    }
+      canRemoveFixture = true
+    })
     if (!measured) {
       throw new Error('Auto-import HMR benchmark completed without a measurement')
     }
@@ -413,10 +417,12 @@ async function measureHmr(options: {
       measured.diagnostic!.profile = profile
     }
     return measured
-  }
-  finally {
-    await project.cleanup()
-  }
+  }, async () => {
+    // 进程退出及输出排空未核验时保留 fixture，避免删除存活 watcher 的输入。
+    if (canRemoveFixture) {
+      await project.cleanup()
+    }
+  })
 }
 
 async function seedFixture(projectRoot: string, usedTags: string[], mode: 'baseline' | 'current') {
@@ -760,6 +766,6 @@ function formatTimestamp(date: Date) {
 void main().catch(async (error) => {
   console.error(error)
   await mkdir(reportDir, { recursive: true })
-  await writeFile(path.join(reportDir, 'error.txt'), String(error))
+  await writeFile(path.join(reportDir, 'error.txt'), `${JSON.stringify(serializeSequenceError(error), null, 2)}\n`)
   process.exitCode = 1
 })

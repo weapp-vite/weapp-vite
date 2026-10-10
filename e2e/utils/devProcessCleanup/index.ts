@@ -34,6 +34,13 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
   let captured = false
   let disconnected = false
   let unconfirmed: UnconfirmedDevProcessTreeError | undefined
+  let incompleteCapture: { cause: unknown } | undefined
+
+  const assertCaptureComplete = () => {
+    if (incompleteCapture) {
+      throw new Error('Dev process snapshot remains incomplete after root exit; descendant ownership cannot be confirmed.', incompleteCapture)
+    }
+  }
 
   const forgetExitedRoot = () => {
     if (options.pid != null && !options.isRootHeld()) {
@@ -103,6 +110,9 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
   }
 
   return async (forceKillDelayMs: number) => {
+    if (!options.isRootHeld()) {
+      assertCaptureComplete()
+    }
     if (unconfirmed) {
       const candidates = [...unconfirmed.pids]
       const current = await traceCleanupStage('dev-recheck-unconfirmed', () => readDevProcessIdentities(candidates), { processCount: candidates.length })
@@ -132,7 +142,13 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
           const candidates = new Map([...(unconfirmed?.candidates ?? []), ...error.candidates].map(candidate => [candidate.pid, candidate]))
           unconfirmed = new UnconfirmedDevProcessTreeError([...candidates.values()], { cause: error.cause })
         }
+        else {
+          incompleteCapture ??= { cause: error }
+        }
         throw error
+      }
+      if (incompleteCapture && !identities.some(identity => identity.pid === options.pid)) {
+        assertCaptureComplete()
       }
       if (unconfirmed) {
         const remaining = unconfirmed.candidates.filter(candidate => !identities.some(identity => identity.pid === candidate.pid))
@@ -145,8 +161,10 @@ export function createDevProcessCleanup(options: DevProcessCleanupOptions) {
       for (const identity of identities) {
         pending.set(identity.pid, identity)
       }
+      incompleteCapture = undefined
       captured = true
     }
+    assertCaptureComplete()
     if (!disconnected && options.isRootHeld() && options.disconnectRoot()) {
       disconnected = true
       await traceCleanupStage('dev-ipc-exit', () => waitForExit(options.settledExit, forceKillDelayMs), { timeoutMs: forceKillDelayMs })

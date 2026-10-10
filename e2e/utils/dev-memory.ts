@@ -121,8 +121,9 @@ function sendInspectorCommand<T>(
         return
       }
 
-      if (payload.error) {
-        settle(() => reject(new Error(payload.error.message ?? `Inspector command failed: ${method}`)))
+      const responseError = payload.error
+      if (responseError) {
+        settle(() => reject(new Error(responseError.message ?? `Inspector command failed: ${method}`)))
         return
       }
       settle(() => resolve(payload.result as T))

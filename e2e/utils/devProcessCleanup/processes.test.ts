@@ -135,6 +135,85 @@ describe('dev process snapshot identity', () => {
     }
   })
 
+  it('does not treat root exit after a failed snapshot as complete descendant cleanup', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const kill = vi.spyOn(process, 'kill').mockReturnValue(true)
+    const disconnect = vi.fn(() => false)
+    let held = true
+    execute.mockResolvedValueOnce({ exitCode: undefined, signal: 'SIGTERM', timedOut: true, stdout: '' })
+    const cleanup = createDevProcessCleanup({ pid: 61, isRootHeld: () => held, disconnectRoot: disconnect, settledExit: Promise.resolve() })
+    const first = await cleanup(0).catch(error => error as unknown)
+    expect(first).toBeInstanceOf(Error)
+    held = false
+    for (let retry = 0; retry < 2; retry++) {
+      await expect(cleanup(0)).rejects.toMatchObject({ message: expect.stringContaining('snapshot remains incomplete'), cause: first })
+    }
+    expect(execute).toHaveBeenCalledOnce()
+    expect(kill).not.toHaveBeenCalled()
+    expect(disconnect).not.toHaveBeenCalled()
+  })
+
+  it('clears a failed snapshot only after a successful capture while the root is still held', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: 'fixture-node.exe' }
+    let held = true
+    const disconnect = vi.fn(() => {
+      held = false
+      return true
+    })
+    execute.mockResolvedValueOnce({ exitCode: undefined, signal: 'SIGTERM', timedOut: true, stdout: '' })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: fixtureWindowsProcessRows([root]) })
+    const cleanup = createDevProcessCleanup({ pid: 61, isRootHeld: () => held, disconnectRoot: disconnect, settledExit: Promise.resolve() })
+    await expect(cleanup(0)).rejects.toThrow('Dev process inspection failed')
+    await expect(cleanup(0)).resolves.toBeUndefined()
+    await expect(cleanup(0)).resolves.toBeUndefined()
+    expect(execute).toHaveBeenCalledTimes(2)
+    expect(disconnect).toHaveBeenCalledOnce()
+  })
+
+  it('retains the first snapshot failure if the root exits during recovery inspection', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: 'fixture-node.exe' }
+    const kill = vi.spyOn(process, 'kill').mockReturnValue(true)
+    const disconnect = vi.fn(() => false)
+    let held = true
+    execute.mockResolvedValueOnce({ exitCode: undefined, signal: 'SIGTERM', timedOut: true, stdout: '' })
+      .mockImplementationOnce(async () => {
+        held = false
+        return { exitCode: 0, stdout: fixtureWindowsProcessRows([root]) }
+      })
+    const cleanup = createDevProcessCleanup({ pid: 61, isRootHeld: () => held, disconnectRoot: disconnect, settledExit: Promise.resolve() })
+    const first = await cleanup(0).catch(error => error as unknown)
+    await expect(cleanup(0)).rejects.toMatchObject({ message: expect.stringContaining('snapshot remains incomplete'), cause: first })
+    await expect(cleanup(0)).rejects.toHaveProperty('cause', first)
+    expect(execute).toHaveBeenCalledTimes(2)
+    expect(kill).not.toHaveBeenCalled()
+    expect(disconnect).not.toHaveBeenCalled()
+  })
+
+  it('does not clear an incomplete snapshot when known candidates exit during recovery', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: 'fixture-node.exe' }
+    const child = { ProcessId: 62, ParentProcessId: 61, Started: 'invalid-creation-time', ExecutablePath: 'fixture-node.exe' }
+    const kill = vi.spyOn(process, 'kill').mockReturnValue(true)
+    const disconnect = vi.fn(() => false)
+    let held = true
+    execute.mockResolvedValueOnce({ exitCode: undefined, signal: 'SIGTERM', timedOut: true, stdout: '' })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: fixtureWindowsProcessRows([root, child]) })
+      .mockImplementationOnce(async () => {
+        held = false
+        return { exitCode: 0, stdout: fixtureWindowsProcessRows([]) }
+      })
+    const cleanup = createDevProcessCleanup({ pid: 61, isRootHeld: () => held, disconnectRoot: disconnect, settledExit: Promise.resolve() })
+    const first = await cleanup(0).catch(error => error as unknown)
+    await expect(cleanup(0)).rejects.toMatchObject({ pids: [62] })
+    await expect(cleanup(0)).rejects.toMatchObject({ message: expect.stringContaining('snapshot remains incomplete'), cause: first })
+    await expect(cleanup(0)).rejects.toHaveProperty('cause', first)
+    expect(execute).toHaveBeenCalledTimes(3)
+    expect(kill).not.toHaveBeenCalled()
+    expect(disconnect).not.toHaveBeenCalled()
+  })
+
   it.each([undefined, '1'])('preserves Windows identity with the same default transport when trace=%s', async (trace) => {
     vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
     vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', trace)
