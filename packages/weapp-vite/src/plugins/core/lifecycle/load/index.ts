@@ -174,7 +174,8 @@ export function createLoadHook(state: CorePluginState) {
       }
       const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
       const selectedPageSource = getSelectedAutoRouteSource(ctx, sourceId)
-      const isSelectedPageSource = !selectedPageSource || selectedPageSource === sourceId
+      const physicalSourceId = normalizeSourceId(sourceId)
+      const isSelectedPageSource = !selectedPageSource || normalizeSourceId(selectedPageSource) === physicalSourceId
       const declaredEntry = state.entriesMap?.get(relativeBasename)
       // 父入口的声明记录可能暂时指向父源码；实际解析记录优先于这种占位信息。
       const declaredPath = declaredEntry?.path && normalizeFsResolvedId(
@@ -195,7 +196,7 @@ export function createLoadHook(state: CorePluginState) {
           ? await resolveEntryPath(removeExtensionDeep(sourceId), entryResolveOptions)
           : undefined)
       const isDeclaredSource = isSelectedPageSource
-        && selectedEntrySource === sourceId
+        && selectedEntrySource !== undefined && normalizeSourceId(selectedEntrySource) === physicalSourceId
       const declaredEntryType = isDeclaredSource ? declaredEntry?.type : undefined
       const isDeclaredEntry = Boolean(declaredEntryType)
 
@@ -215,8 +216,12 @@ export function createLoadHook(state: CorePluginState) {
       }
 
       const appSource = ctx.scanService?.appEntry?.path
+      // 插件仍扫描宿主 app 配置，但自身主入口身份由 options 的物理输入持有。
+      const isRootSource = configService.pluginOnly
+        ? !state.hmrRootInputIds || state.hmrRootInputIds.has(physicalSourceId)
+        : !appSource || normalizeSourceId(appSource) === physicalSourceId
       if (relativeBasename === resolveRootEntryBasename(state)
-        && (!appSource || normalizeFsResolvedId(appSource) === sourceId)) {
+        && isRootSource) {
         // @ts-ignore Rolldown 的 PluginContext 类型不完整
         const result = await loadProfiledEntry(this, sourceId, 'app')
         if (configService.isDev && sourceId && !sourceId.startsWith('\0')) {

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -207,6 +207,52 @@ import * as barrel from '../../components/barrel'
     expect(state.loadEntry).not.toHaveBeenCalled()
     await load.call({}, entry)
     expect(state.loadEntry).toHaveBeenCalledWith(entry, 'app')
+  })
+
+  it('loads the physical plugin main while retaining the host app scan identity', async () => {
+    const entry = await source('plugin/index.ts', 'export const value = 1')
+    const sibling = await source('plugin/index.vue', '<template><view /></template>')
+    const state = createState([])
+    const hostApp = state.ctx.scanService.appEntry.path
+    Object.assign(state.ctx.configService, {
+      pluginOnly: true,
+      relativeAbsoluteSrcRoot: (id: string) => path.relative(path.join(root, 'plugin'), id),
+    })
+    Object.assign(state.ctx.scanService, {
+      pluginJson: { main: 'index.js' },
+      pluginJsonPath: path.join(root, 'plugin/plugin.json'),
+    })
+    const options: { input?: Record<string, string> } = {}
+    await createOptionsHook(state as any)(options)
+    expect(options.input?.index).toBe(createLogicalEntryId(entry, 'app'))
+    expect(state.ctx.scanService.appEntry.path).toBe(hostApp)
+
+    const load = createLoadHook(state as any)
+    await expect(load.call({}, sibling)).resolves.toBeUndefined()
+    expect(state.loadEntry).not.toHaveBeenCalled()
+    await load.call({}, entry)
+    expect(state.loadEntry).toHaveBeenCalledTimes(1)
+    expect(state.loadEntry).toHaveBeenCalledWith(entry, 'app')
+  })
+
+  it.each(['page', 'component'] as const)('recognizes a %s declared through a directory junction without claiming its sibling', async (type) => {
+    const entry = await source('project/foo.vue', '<template><view /></template>')
+    const sibling = await source('project/foo.ts', 'export const value = 1')
+    const project = normalizeSourceId(path.join(root, 'project'))
+    const workspace = path.join(root, 'workspace')
+    await symlink(project, workspace, 'junction')
+    const state = createState([])
+    Object.assign(state.ctx.configService, {
+      absoluteSrcRoot: workspace,
+      relativeAbsoluteSrcRoot: (id: string) => path.relative(project, normalizeSourceId(id)),
+    })
+    state.entriesMap.set('foo', { path: path.join(workspace, 'foo.vue'), type })
+
+    const load = createLoadHook(state as any)
+    await expect(load.call({}, sibling)).resolves.toBeUndefined()
+    expect(state.loadEntry).not.toHaveBeenCalled()
+    await load.call({}, entry)
+    expect(state.loadEntry).toHaveBeenCalledExactlyOnceWith(entry, type)
   })
 
   it('resolves an extensionless declaration with the same default entry semantics', async () => {
