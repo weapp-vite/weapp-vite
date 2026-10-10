@@ -15,13 +15,14 @@ import { sampleHeapAfterGc, waitForInspectorUrl } from '../e2e/utils/dev-memory'
 import { startDevProcess } from '../e2e/utils/dev-process'
 import { readEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
+import { runWithCleanup } from '../e2e/utils/runWithCleanup'
 import { attributeHmrProfile } from '../packages/weapp-vite/src/analyze/hmr/attribution'
 import { readHmrProfileLines } from '../packages/weapp-vite/src/analyze/hmr/reader'
 import { readDeclaredScenarios } from './benchmarkTemplatesHmr/declaredScenarios'
 import { sanitizeBenchmarkDevLog } from './benchmarkTemplatesHmr/diagnostics'
 import { createEmittedScriptReader, waitForBenchmarkOutput } from './benchmarkTemplatesHmr/emittedOutput'
 import { createBenchmarkDevEnv } from './benchmarkTemplatesHmr/environment'
-import { captureBenchmarkFailureEvidence } from './benchmarkTemplatesHmr/failureEvidence'
+import { captureBenchmarkFailureEvidence, writeBenchmarkCleanupFailureEvidence } from './benchmarkTemplatesHmr/failureEvidence'
 import { waitForBenchmarkInitialOutputs } from './benchmarkTemplatesHmr/initialOutput'
 import { mutateJsonMarker } from './benchmarkTemplatesHmr/jsonMutation'
 import { isNativeBenchmarkScriptEntry } from './benchmarkTemplatesHmr/nativeEntry'
@@ -323,51 +324,69 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
     all: true,
   })
 
+  let cleanupComplete = false
   try {
-    const startupStartedAt = performance.now()
-    // 入口文件可能先于原生 npm 依赖写出，完整 CLI 构建结束后才能开始采样。
-    await dev.waitFor(Promise.all([
-      dev.waitForInitialBuild(startupTimeoutMs),
-      waitForBenchmarkInitialOutputs([
-        { filename: path.join(template.workspaceRoot, 'dist/app.json'), label: 'app.json' },
-        ...scenarios.map(scenario => ({ filename: scenario.outputFile, label: scenario.id })),
-      ], { timeoutMs: startupTimeoutMs }),
-    ]), `${template.id} initial outputs generated`)
-    for (const scenario of scenarios) {
-      if (scenario.group === 'native-script' || scenario.group === 'vue-script') {
-        await createEmittedScriptReader(scenario.outputFile, path.join(template.workspaceRoot, 'dist'))()
+    await runWithCleanup(async () => {
+      const startupStartedAt = performance.now()
+      // 入口文件可能先于原生 npm 依赖写出，完整 CLI 构建结束后才能开始采样。
+      await dev.waitFor(Promise.all([
+        dev.waitForInitialBuild(startupTimeoutMs),
+        waitForBenchmarkInitialOutputs([
+          { filename: path.join(template.workspaceRoot, 'dist/app.json'), label: 'app.json' },
+          ...scenarios.map(scenario => ({ filename: scenario.outputFile, label: scenario.id })),
+        ], { timeoutMs: startupTimeoutMs }),
+      ]), `${template.id} initial outputs generated`)
+      for (const scenario of scenarios) {
+        if (scenario.group === 'native-script' || scenario.group === 'vue-script') {
+          await createEmittedScriptReader(scenario.outputFile, path.join(template.workspaceRoot, 'dist'))()
+        }
       }
-    }
-    result.startupMs = performance.now() - startupStartedAt
-    const inspectorUrl = await waitForInspectorUrl(dev.getOutput, `${template.id} dev inspector`)
+      result.startupMs = performance.now() - startupStartedAt
+      const inspectorUrl = await waitForInspectorUrl(dev.getOutput, `${template.id} dev inspector`)
 
-    const scenarioResults: ScenarioResult[] = []
-    const statefulClient = new StatefulHmrAuditClient()
-    for (const scenario of scenarios) {
-      const sample = await benchmarkScenario(workspace, profilePath, scenario, inspectorUrl, statefulClient)
-      scenarioResults.push(sample)
-      if (sample.error && process.env.TEMPLATES_HMR_STOP_ON_ERROR === '1') {
-        break
+      const scenarioResults: ScenarioResult[] = []
+      result.scenarios = scenarioResults
+      const statefulClient = new StatefulHmrAuditClient()
+      for (const scenario of scenarios) {
+        const sample = await benchmarkScenario(workspace, profilePath, scenario, inspectorUrl, statefulClient)
+        scenarioResults.push(sample)
+        if (sample.error && process.env.TEMPLATES_HMR_STOP_ON_ERROR === '1') {
+          break
+        }
       }
-    }
-    result.scenarios = scenarioResults
+    }, async () => {
+      let stopped = false
+      await runWithCleanup(async () => {
+        await dev.stop(5_000)
+        stopped = true
+      }, async () => {
+        await runWithCleanup(async () => {
+          const devLog = path.join('logs', `${template.id}.dev.log`)
+          await mkdir(path.join(reportRoot, 'logs'), { recursive: true })
+          await writeFile(path.join(reportRoot, devLog), sanitizeBenchmarkDevLog(dev.getOutput(), repoRoot), 'utf8')
+          result.devLog = normalizePath(devLog)
+        }, async () => {
+          if (stopped && !keepWorkspace) {
+            await rm(template.workspaceRoot, { recursive: true, force: true })
+          }
+        })
+      })
+      cleanupComplete = true
+    })
   }
   catch (error) {
+    // 未完成收尾必须终止整轮，避免继续启动模板或删除活 watcher 的输入目录。
+    if (!cleanupComplete) {
+      return runWithCleanup(() => {
+        throw error
+      }, () => writeBenchmarkCleanupFailureEvidence({
+        artifactFile: path.join(reportRoot, 'failures', template.id, 'cleanup', 'report.json'),
+        repoRoot,
+        template: result,
+        error,
+      }))
+    }
     result.error = formatError(error)
-  }
-  finally {
-    await dev.stop(5_000).catch(() => {})
-    try {
-      const devLog = path.join('logs', `${template.id}.dev.log`)
-      await mkdir(path.join(reportRoot, 'logs'), { recursive: true })
-      await writeFile(path.join(reportRoot, devLog), sanitizeBenchmarkDevLog(dev.getOutput(), repoRoot), 'utf8')
-      result.devLog = normalizePath(devLog)
-    }
-    finally {
-      if (!keepWorkspace) {
-        await rm(template.workspaceRoot, { recursive: true, force: true }).catch(() => {})
-      }
-    }
   }
 
   return result

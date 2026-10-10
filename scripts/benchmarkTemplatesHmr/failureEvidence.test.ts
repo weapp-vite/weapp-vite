@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { expect, it } from 'vitest'
-import { captureBenchmarkFailureEvidence } from './failureEvidence'
+import { captureBenchmarkFailureEvidence, writeBenchmarkCleanupFailureEvidence } from './failureEvidence'
 
 it('retains the failed edit before cleanup and redacts encoded source maps and machine paths', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'hmr-failure-evidence-'))
@@ -68,6 +68,34 @@ it('retains collected metadata and read errors when evidence persistence fails',
     expect(result.output).toBeUndefined()
     expect(result.artifactError).toBeTypeOf('string')
     expect(result.artifactError).not.toContain(root)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('serializes nested Windows cleanup evidence after redacting string fields', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'hmr-cleanup-evidence-'))
+  try {
+    const repoRoot = 'C:\\Users\\fixture-user\\project'
+    const sampleError = new Error(`source failed at ${repoRoot}\\src\\index.wxss\n"quoted diagnostic"`)
+    const cleanupError = new Error('stop failed token=private-token')
+    const artifactFile = path.join(root, 'cleanup.json')
+    await writeBenchmarkCleanupFailureEvidence({
+      artifactFile,
+      repoRoot,
+      template: { scenarios: [{ error: sampleError.message, diagnostics: { outputError: `unreadable ${repoRoot}\\dist\\index.wxss` } }] },
+      error: new AggregateError([sampleError, cleanupError], 'sample and stop failed', { cause: sampleError }),
+    })
+    const text = await readFile(artifactFile, 'utf8')
+    expect(text).not.toMatch(/fixture-user|private-token/)
+    expect(JSON.parse(text) as unknown).toMatchObject({
+      template: { scenarios: [{ diagnostics: { outputError: 'unreadable <repo>/dist/index.wxss' } }] },
+      error: {
+        cause: { message: 'source failed at <repo>/src/index.wxss\n"quoted diagnostic"' },
+        errors: [{ message: 'source failed at <repo>/src/index.wxss\n"quoted diagnostic"' }, { message: 'stop failed <redacted>' }],
+      },
+    })
   }
   finally {
     await rm(root, { recursive: true, force: true })
