@@ -48,6 +48,8 @@
 - 将 @icebreakers/monorepo 补丁从 5.10.0 迁移至 5.10.1，保留两个发布说明分类修复：显式 change intent 的类型优先，正文提及依赖版本时不覆盖修复摘要。5.10.1 已包含发布 PR 去重更新行为，因此删除第三个重复补丁；现有分类和 GitHub PR 回归验证保留。
 - Prettier 只升级声明，格式校验使用 ESLint。没有新增跨范围 override、peer 忽略或审计忽略项。
 
+后续已在上游修复并发布 5.10.2，本仓库升级后移除了剩余补丁，详见 [上游修复与补丁移除报告](./2026-10-11-repoctl-upstream-fix.md)。
+
 完成范围内解析刷新、dedupe 和冻结安装后，共 174 个外部包的版本集合变化；独立 npm runner 有 2 个间接包更新，miniprogram-ci 保持 2.1.31。详见 [解析版本清单](./2026-10-11-dependency-resolved-versions.md)。
 
 ## 验证结果

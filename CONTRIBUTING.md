@@ -28,7 +28,7 @@ pnpm i
 
 ## Release CI
 
-GitHub Release workflow 使用 `repoctl@5.10.1` 的原生六阶段：`plan → verify → prepare → upload → confirm → finalize`。`plan` 判定需要执行时才进入验证和准备，`prepare` 判定需要发布时才进入上传、确认和收尾。任一阶段失败都会阻断后续发布阶段；质量脚本及版本、发布 hooks 仍由 `repoctl.config.ts` 管理。同一轮 `verify` 的有效回执可供 `prepare` 使用，不能复用上一轮运行的验证结果。
+GitHub Release workflow 使用 `repoctl@5.10.2` 的原生六阶段：`plan → verify → prepare → upload → confirm → finalize`。`plan` 判定需要执行时才进入验证和准备，`prepare` 判定需要发布时才进入上传、确认和收尾。任一阶段失败都会阻断后续发布阶段；质量脚本及版本、发布 hooks 仍由 `repoctl.config.ts` 管理。同一轮 `verify` 的有效回执可供 `prepare` 使用，不能复用上一轮运行的验证结果。
 
 job 上限为 60 分钟；六阶段从 `plan` 前开始共享 50 分钟截止时间，每阶段只使用剩余预算。Ubuntu 的 GNU timeout 在截止前发送 TERM，并将 5 秒强制回收宽限计入共享预算；监督进程保持存活到 KILL，避免主命令先退出时遗留忽略 TERM 的后代。`GITHUB_TOKEN` 和 `VSCE_PAT` 只设在六阶段各自的 `step.env`，checkout 的 Git 推送凭据沿用相同发布令牌来源。
 
