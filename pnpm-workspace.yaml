@@ -154,3 +154,4 @@ shamefullyHoist: true
 patchedDependencies:
   vite@8.3.4: patches/vite@8.3.4.patch
   rolldown@1.2.13: patches/rolldown@1.2.13.patch
+  '@icebreakers/monorepo@5.10.0': patches/@icebreakers__monorepo@5.10.0.patch

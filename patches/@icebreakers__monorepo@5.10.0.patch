@@ -1,0 +1,34 @@
+diff --git a/dist/commands-B8PCzovx.mjs b/dist/commands-B8PCzovx.mjs
+index c873e9000f4d39cfa7de4519800c8d0ed82e9539..8cb4a287981b1c563e4df4e6f87eaabd6efe9f43 100644
+--- a/dist/commands-B8PCzovx.mjs
++++ b/dist/commands-B8PCzovx.mjs
+@@ -4231,8 +4231,19 @@ function sourceCategory(commits) {
+ 		].includes(conventional?.[1] ?? "") || /dependencies|maintenance/i.test(subject)) return "maintenance";
+ 	}
+ }
++const declaredReleaseSummaryPattern = /^(feat|fix|perf|docs|chore|refactor|test|build|ci|style|revert)(?:\([^\s()]+\))?(!)?:[ \t]+\S/;
+ function classifyChange(heading, summary, commits) {
+ 	if (/dependenc(?:y|ies)/i.test(heading)) return "maintenance";
++	// 显式意图类型在整理提交和 changelog 往返后仍保持同一分类。
++	const declared = declaredReleaseSummaryPattern.exec(summary.trim());
++	if (declared) {
++		if (declared[2]) return "breaking";
++		if (declared[1] === "feat") return "features";
++		if (declared[1] === "fix") return "fixes";
++		if (declared[1] === "perf") return "performance";
++		if (declared[1] === "docs") return "docs";
++		return "maintenance";
++	}
+ 	const fromCommit = sourceCategory(commits);
+ 	if (fromCommit) return fromCommit;
+ 	const categoryHint = [heading, summary].join(" ").toLowerCase();
+@@ -4285,7 +4296,8 @@ function normalizeMarkdownEntry(item) {
+ 	const dependencyVersions = [...raw.matchAll(/(?:^|\s)((?:@[\w.-]+\/)?[\w.-]+@\d+\.\d+\.\d+(?:-[\w.-]+)?)/g)].map((match) => match[1]);
+ 	const dependencyLabel = /\bdependenc(?:y|ies):/i.test(raw) ? raw.replace(/^.*?\bdependenc(?:y|ies):/i, "").trim().replace(/^[-*]\s*/, "").replace(/^`|`$/g, "") : void 0;
+ 	const dependencyName = arrowDependency ?? (dependencyVersions.length ? [...new Set(dependencyVersions)].join(", ") : dependencyLabel);
+-	const hasDependency = /\bupdated\s+dependenc(?:y|ies)\b|Dependencies:|Dependency:|\*\*Dependencies\*\*|\*\*Dependency\*\*/i.test(raw) || Boolean(dependencyName);
++	// 显式类型的正文可提及依赖版本，不应被依赖归一化覆盖摘要和分类。
++	const hasDependency = !declaredReleaseSummaryPattern.test(raw) && (/\bupdated\s+dependenc(?:y|ies)\b|Dependencies:|Dependency:|\*\*Dependencies\*\*|\*\*Dependency\*\*/i.test(raw) || Boolean(dependencyName));
+ 	const summary = hasDependency && dependencyName ? dependencyVersions.length > 1 ? `Updated dependencies: ${[...new Set(dependencyVersions)].join(", ")}.` : `Updated dependency to ${dependencyName}.` : raw.replace(/\[{1,2}`?([0-9a-f]{7,40})`?\]\([^)]+\)/gi, "").replace(/\[#\d+\]\([^)]+\)/g, "").replace(/\bby\s+@[\w-]+(?:\[bot\])?/gi, "").replace(/\*\*/g, "").replace(/`/g, "").replace(/^[-*]\s+/, "").replace(/^[^\p{L}\p{N}]+/u, "").replace(/\s+/g, " ").trim();
+ 	const categoryHint = /🚨|breaking/i.test(raw) ? "🚨" : /🚀|✨/.test(raw) ? "🚀" : /🐛|🐞/.test(raw) ? "🐞" : hasDependency ? "Dependencies" : "";
+ 	const commits = commitMatches.map((match) => ({

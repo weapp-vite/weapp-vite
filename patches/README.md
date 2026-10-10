@@ -1,7 +1,11 @@
 # 发布重试与恢复
 
-仓库固定使用 `repoctl@5.7.1`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责，
-不再保留 `@icebreakers/monorepo` 的临时补丁。其他依赖补丁保持独立维护。
+仓库固定使用 `repoctl@5.10.0`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
+`@icebreakers/monorepo@5.10.0` 的受管补丁仅修正发布说明分类：明确的 Conventional 摘要类型
+优先于整理提交类型及正文关键词，并保留正文中的依赖版本描述；原生 Dependencies 条目仍归维护。
+同一分类规则用于 Release PR、正式发布和发布说明修复，避免合并 intent 后功能、修复和性能被改归维护。
+升级 repoctl 时须核对上游是否已覆盖此规则，并先运行 `scripts/repoctl-release-classification.test.ts`。
+其他依赖补丁保持独立维护。
 
 Vite 与 Rolldown 的构建引用生命周期补丁见[编译依赖内存说明](./compiler-memory.md)。
 

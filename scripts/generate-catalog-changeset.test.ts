@@ -20,13 +20,13 @@ it('shouldWriteCatalogUpgradeChangeset detects default and named catalog edits',
 it('formatCatalogUpgradeSummary describes catalog key changes in Chinese', () => {
   assert.equal(
     formatCatalogUpgradeSummary(['vitest', 'rolldown'], { runtime: new Set(['wevu']) }),
-    `基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+    `chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
 默认 catalog 变更键：vitest, rolldown。命名 catalog 变更键：runtime(wevu)。
 `,
   )
   assert.equal(
     formatCatalogUpgradeSummary([], {}),
-    `基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+    `chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
 默认 catalog 变更键：无。命名 catalog 变更键：无。
 `,
   )

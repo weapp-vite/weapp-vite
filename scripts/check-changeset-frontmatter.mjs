@@ -14,6 +14,8 @@ const ROOT = resolveRoot()
 const CHANGESET_DIR = join(ROOT, '.changeset')
 const badFiles = []
 const unknownPackageIssues = []
+const invalidSummaryFiles = []
+const summaryPrefixPattern = /^(?:feat|fix|perf|chore|docs|refactor|test|build|ci|style|revert)(?:\([^\s()]+\))?!?:\s+\S/
 
 function stripPackagePatternValue(line) {
   const rawValue = line.trim().slice(1).trim()
@@ -171,9 +173,17 @@ for (const entry of readdirSync(CHANGESET_DIR, { withFileTypes: true })) {
       unknownPackageIssues.push(`${entry.name}: ${packageName}`)
     }
   }
+
+  const summary = content.slice(closingIndex + '\n---\n'.length)
+    .split('\n')
+    .find(line => line.trim())
+    ?.trim() ?? ''
+  if (!summaryPrefixPattern.test(summary)) {
+    invalidSummaryFiles.push(entry.name)
+  }
 }
 
-if (badFiles.length > 0 || unknownPackageIssues.length > 0) {
+if (badFiles.length > 0 || unknownPackageIssues.length > 0 || invalidSummaryFiles.length > 0) {
   if (badFiles.length > 0) {
     console.error('[changeset-frontmatter] 以下 changeset frontmatter 格式无效：')
     for (const file of badFiles) {
@@ -188,6 +198,14 @@ if (badFiles.length > 0 || unknownPackageIssues.length > 0) {
       console.error(`- .changeset/${issue}`)
     }
     console.error('请使用 package.json 中的真实 name 字段。')
+  }
+
+  if (invalidSummaryFiles.length > 0) {
+    console.error('[changeset-frontmatter] 以下 changeset 首行缺少有效的 Conventional 类型或非空摘要：')
+    for (const file of invalidSummaryFiles) {
+      console.error(`- .changeset/${file}`)
+    }
+    console.error('使用 feat、fix、perf、chore、docs、refactor、test、build、ci、style 或 revert，可带 scope 和 !，例如 fix(runtime): 修复首次挂载。')
   }
 
   process.exit(1)

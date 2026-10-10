@@ -20,6 +20,12 @@ pnpm i
 
 如果直接执行 `pnpm up` 后看到 catalog 同步提示，请改用 `pnpm deps:up` 或显式运行 `pnpm run catalog:sync:workspace`。
 
+## 发布变更说明
+
+每份 `.changeset/*.md` 只记录一个变更类别，frontmatter 保留受影响包的真实名称及所需 bump。正文首个非空行必须使用 Conventional 类型并包含中文摘要，例如 `feat(vite): 增加标准插件入口`、`fix(runtime): 修复首次挂载`、`perf(compiler): 减少重复分析` 或 `chore(deps): 更新构建依赖`；允许 scope 和破坏性标记 `!`，也支持 `docs`、`refactor`、`test`、`build`、`ci`、`style`、`revert`。后续段落保留具体行为、边界及迁移说明。
+
+整理待发布 intent 时按主题与类别合并，功能、修复、性能和维护分别记录；保留每项原有的包归属，同一包合并后使用最高 bump。明确的正文类型是 Release 分类依据，优先于整理提交的类型与正文关键字，避免一次 `chore` 整理提交把功能、修复或性能说明改归维护。自动 catalog 和依赖升级记录使用 `chore(deps)`。提交前运行 `pnpm check:changeset:frontmatter` 检查首行格式与包名。
+
 ## Release CI
 
 GitHub Release workflow 使用 `repoctl@5.10.0` 的原生六阶段：`plan → verify → prepare → upload → confirm → finalize`。`plan` 判定需要执行时才进入验证和准备，`prepare` 判定需要发布时才进入上传、确认和收尾。任一阶段失败都会阻断后续发布阶段；质量脚本及版本、发布 hooks 仍由 `repoctl.config.ts` 管理。同一轮 `verify` 的有效回执可供 `prepare` 使用，不能复用上一轮运行的验证结果。
