@@ -140,7 +140,7 @@ it('keeps release caches optional and scoped to a frozen toolchain and lockfile 
   for (const command of ['node --print process.platform', 'node --print process.arch', 'node --version', 'pnpm --version']) {
     assert.ok(identity?.run?.includes(command))
   }
-  const prefix = `release-turbo-v1-${githubExpression('env.REPOCTL_RELEASE_PLATFORM')}-${githubExpression('env.REPOCTL_RELEASE_ARCH')}-node-${githubExpression('env.REPOCTL_RELEASE_NODE_VERSION')}-pnpm-${githubExpression('env.REPOCTL_RELEASE_PNPM_VERSION')}-${githubExpression('hashFiles(\'pnpm-lock.yaml\')')}-`
+  const prefix = `release-turbo-v2-${githubExpression('env.REPOCTL_RELEASE_PLATFORM')}-${githubExpression('env.REPOCTL_RELEASE_ARCH')}-node-${githubExpression('env.REPOCTL_RELEASE_NODE_VERSION')}-pnpm-${githubExpression('env.REPOCTL_RELEASE_PNPM_VERSION')}-${githubExpression('hashFiles(\'pnpm-lock.yaml\')')}-`
   assert.match(restore?.uses ?? '', /^actions\/cache\/restore@[\da-f]{40}$/)
   assert.match(save?.uses ?? '', /^actions\/cache\/save@[\da-f]{40}$/)
   assert.equal(String(restore?.with?.['restore-keys']).trim(), prefix)

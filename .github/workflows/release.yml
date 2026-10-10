@@ -90,9 +90,10 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .turbo/cache
-          key: release-turbo-v1-${{ env.REPOCTL_RELEASE_PLATFORM }}-${{ env.REPOCTL_RELEASE_ARCH }}-node-${{ env.REPOCTL_RELEASE_NODE_VERSION }}-pnpm-${{ env.REPOCTL_RELEASE_PNPM_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          # 最终缓存契约使用新命名空间，隔离升级验证期间的候选缓存。
+          key: release-turbo-v2-${{ env.REPOCTL_RELEASE_PLATFORM }}-${{ env.REPOCTL_RELEASE_ARCH }}-node-${{ env.REPOCTL_RELEASE_NODE_VERSION }}-pnpm-${{ env.REPOCTL_RELEASE_PNPM_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            release-turbo-v1-${{ env.REPOCTL_RELEASE_PLATFORM }}-${{ env.REPOCTL_RELEASE_ARCH }}-node-${{ env.REPOCTL_RELEASE_NODE_VERSION }}-pnpm-${{ env.REPOCTL_RELEASE_PNPM_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            release-turbo-v2-${{ env.REPOCTL_RELEASE_PLATFORM }}-${{ env.REPOCTL_RELEASE_ARCH }}-node-${{ env.REPOCTL_RELEASE_NODE_VERSION }}-pnpm-${{ env.REPOCTL_RELEASE_PNPM_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}-
 
       - name: Start shared release deadline
         run: echo "REPOCTL_RELEASE_DEADLINE_EPOCH=$(($(date +%s) + REPOCTL_RELEASE_BUDGET_SECONDS))" >> "$GITHUB_ENV"
