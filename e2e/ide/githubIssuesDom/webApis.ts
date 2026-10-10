@@ -2,6 +2,13 @@ import type { DomCheckpoint } from '../../utils/domAcceptance/types'
 import { githubText as text } from './nodes'
 
 export const WEB_API_PLANS = {
+  issue1186: [{ id: 'initial', route: '/pages/issue-1186/index', action: '检查畸形百分号查询、UTF-8 替换和可变 searchParams 的真实结果', nodes: [
+    text('#issue1186-title', 'issue-1186 URL query decoding'),
+    text('#issue1186-decoded', 'decoded = 你%好'),
+    text('#issue1186-replacement', 'replacement = \uFFFD(\uFFFD'),
+    text('#issue1186-live', 'live = true'),
+    text('#issue1186-serialized', 'serialized = ?q=%2B&literal=%2520%25&q=a+b'),
+  ] }],
   issue448: [{ id: 'initial', route: '/pages/issue-448/index', action: '检查实际 Web API 执行结果和微任务刷新', nodes: [
     text('.issue448-title', 'issue-448 next web runtime globals'),
     ...Object.entries({ encoded: 'QUI=', decoded: 'AB', event: 'tick', custom: 'payload', url: 'fake://abc/123', canParse: 'true', params: 'a=1&a=0&b=2', cookies: '2', json: 'application/json', error: '0:error', microtask: 'flushed' }).map(([key, value]) => text(`#issue448-${key}`, `${key} = ${value}`)),
