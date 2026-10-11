@@ -1,7 +1,9 @@
+import type { TypeTestManifest } from './publicTypeTestCoverage/contracts'
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
+import { collectTypeTestFiles } from './publicTypeTestCoverage/contracts'
 import { workspaceTypeTestPackages } from './turboCacheContract/fixture'
 
 const root = path.resolve(import.meta.dirname, '..')
@@ -61,10 +63,8 @@ const packages: readonly (readonly [directory: string, build: string, check: str
   ['mpcore/packages/weapp-vite', 'build', standardContracts],
 ]
 
-interface Manifest {
-  types?: string
+interface Manifest extends TypeTestManifest {
   scripts: Record<string, string>
-  tsd?: { directory?: string }
 }
 
 interface Workflow {
@@ -104,27 +104,17 @@ async function collectContracts(packageRoot: string, script: string): Promise<st
     const tokens = command.match(/"[^"]*"|\S+/g)?.map(token => token.replace(/^"|"$/g, '')) ?? []
     expect(tokens[0], 'The internal type check must only select and run tsd contracts').toBe('tsd')
     const manifest = await readManifest(directory)
-    const files = await filesUnder(directory)
     const filesIndex = tokens.indexOf('--files')
-    let matches: string[]
+    const typingsIndex = tokens.indexOf('--typings')
+    const matches = await collectTypeTestFiles(directory, manifest, {
+      files: filesIndex === -1 ? undefined : tokens[filesIndex + 1]!,
+      typings: typingsIndex === -1 ? undefined : tokens[typingsIndex + 1]!,
+    })
     if (filesIndex !== -1) {
       const pattern = tokens[filesIndex + 1]!
-      matches = files.filter(file => path.matchesGlob(file, pattern))
       if (pattern.includes('**')) {
         const futureFile = pattern.startsWith('test-d/') ? 'test-d/nested/future.test-d.ts' : 'nested/future.test-d.ts'
         expect(path.matchesGlob(futureFile, pattern)).toBe(true)
-      }
-    }
-    else {
-      const typingsIndex = tokens.indexOf('--typings')
-      const typings = typingsIndex === -1 ? manifest.types ?? 'index.d.ts' : tokens[typingsIndex + 1]!
-      // 与 tsd 的默认选择规则一致；.d.mts 不会被替换，必须使用显式 --files。
-      const candidates = [typings.replace(/\.d\.ts$/, '.test-d.ts'), typings.replace(/\.d\.ts$/, '.test-d.tsx')]
-        .map(file => file.replace(/^\.\//, ''))
-      matches = files.filter(file => candidates.includes(file))
-      if (matches.length === 0) {
-        const testDirectory = manifest.tsd?.directory ?? 'test-d'
-        matches = files.filter(file => path.matchesGlob(file, `${testDirectory}/**/*.{ts,tsx}`))
       }
     }
     expect(matches.length, `${command} must select real contracts`).toBeGreaterThan(0)
