@@ -64,6 +64,11 @@ export function shouldCleanOutputs(
   if (configService.inlineConfig.build?.emptyOutDir === false) {
     return false
   }
+  // Vite 在 renderStart 清空目录，晚于此阶段的模板转换失败会丢失上一轮产物。
+  // 开发重建由 output-publication 在原生 write 成功后按已提交清单裁剪旧文件。
+  if (phase === 'rebuild' && configService.isDev) {
+    return false
+  }
   // 嵌套插件输出由子目标拥有；主应用增量只按自身输出清单裁剪，不能清空子目标。
   if (phase === 'rebuild' && !configService.pluginOnly && configService.absolutePluginOutputRoot
     && isOutputRootInsideOutDir(configService.outDir, configService.absolutePluginOutputRoot)) {

@@ -163,6 +163,7 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
   if (!isPluginBuild) {
     appJson = finalizeAppConfigForBuild(json, {
       buildScope: configService.weappViteConfig.buildScope,
+      omitEmptySubPackages: configService.multiPlatform?.enabled,
       platform: configService.platform,
       routeRules: configService.weappViteConfig.routeRules,
       subPackages: configService.weappViteConfig.subPackages,

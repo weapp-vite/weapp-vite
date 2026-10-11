@@ -1,7 +1,7 @@
 {
   "name": "weapp-ide-cli",
   "type": "module",
-  "version": "6.1.9",
+  "version": "6.2.0",
   "description": "Command-line tools for automating WeChat DevTools and mini-program projects.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -65,12 +65,13 @@
     "release": "node scripts/release.js",
     "test:dev": "vitest",
     "test": "vitest run",
-    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit",
     "weapp": "tsx src/cli.ts",
     "debug": "tsx src/cli.ts config",
     "raw": "node bin/weapp.js",
-    "sync": "cnpm sync weapp-ide-cli"
+    "sync": "repo release sync-npmmirror --package weapp-ide-cli"
   },
   "publishConfig": {
     "access": "public",
@@ -90,13 +91,13 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/server": "^2.2.0",
+    "@modelcontextprotocol/server": "^2.3.1",
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/devtools-runtime": "workspace:*",
     "@weapp-vite/miniprogram-automator": "workspace:*",
-    "cac": "^7.0.0",
-    "execa": "10.0.1",
+    "cac": "^7.0.1",
+    "execa": "10.1.0",
     "pathe": "catalog:",
     "pixelmatch": "^7.2.0",
     "pngjs": "^7.0.0",

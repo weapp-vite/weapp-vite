@@ -3,6 +3,7 @@ Component({
     return {
       lifecycleLog: [],
       snapshot: '',
+      model: null,
     }
   },
   lifetimes: {
@@ -14,6 +15,7 @@ Component({
     attached() {
       this.setData({
         lifecycleLog: [...this.data.lifecycleLog, 'attached'],
+        model: { label: 'attachment-bound-value' },
       })
     },
     ready() {

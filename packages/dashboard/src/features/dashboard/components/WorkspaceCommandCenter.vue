@@ -4,7 +4,7 @@ import { useWorkspaceCommandCenter } from '../composables/useWorkspaceCommandCen
 import AppEmptyState from './AppEmptyState.vue'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
 import AppSelect from './AppSelect.vue'
-import DashboardIcon from './DashboardIcon.vue'
+import AppToolButton from './AppToolButton.vue'
 
 const props = defineProps<{
   commands: WorkspaceCommandItem[]
@@ -85,17 +85,12 @@ const {
               </span>
             </button>
 
-            <button
-              class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none"
-              type="button"
-              :aria-label="`复制命令 ${command.command}`"
-              :title="copiedCommand === command.command ? '已复制' : failedCommand === command.command ? '复制失败' : '复制命令'"
+            <AppToolButton
+              :label="`复制命令 ${command.command}${copiedCommand === command.command ? '（已复制）' : failedCommand === command.command ? '（复制失败）' : ''}`"
+              icon-name="metric-copy"
+              touch-label="复制"
               @click="copyCommand(command.command)"
-            >
-              <span class="h-4.5 w-4.5">
-                <DashboardIcon name="metric-copy" />
-              </span>
-            </button>
+            />
           </div>
         </article>
       </div>
@@ -136,16 +131,20 @@ const {
           {{ selectedCommand.command }}
         </code>
 
-        <button
-          type="button"
-          class="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) px-3 text-sm font-medium text-(--dashboard-text) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none"
-          @click="copyCommand(selectedCommand.command)"
-        >
-          <span class="h-4.5 w-4.5">
-            <DashboardIcon name="metric-copy" />
+        <div class="flex min-w-0 flex-wrap items-center gap-2">
+          <AppToolButton
+            :label="`复制命令 ${selectedCommand.command}`"
+            icon-name="metric-copy"
+            touch-label="复制"
+            @click="copyCommand(selectedCommand.command)"
+          />
+          <span
+            v-if="copiedCommand === selectedCommand.command || failedCommand === selectedCommand.command"
+            class="text-sm font-medium text-(--dashboard-text)"
+          >
+            {{ copiedCommand === selectedCommand.command ? '已复制' : '复制失败' }}
           </span>
-          {{ copiedCommand === selectedCommand.command ? '已复制' : failedCommand === selectedCommand.command ? '复制失败' : '复制命令' }}
-        </button>
+        </div>
       </div>
     </aside>
   </div>

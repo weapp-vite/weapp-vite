@@ -1,7 +1,8 @@
-import type { ResolvedWechatDevtoolsTarget } from '../devtoolsTarget'
+import type { ResolvedWechatDevtoolsTarget, WechatDevtoolsSelectionOptions } from '../devtoolsTarget'
 import path from 'node:path'
 import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
 import { assertWechatDevtoolsPort, resolveWechatDevtoolsTarget } from '../devtoolsTarget'
+import { ensureManagedWechatProject } from './managedProjectGate'
 import { getRuntimeWechatDevtoolsServicePort } from './wechatDevtoolsRuntimePort'
 import { detectWechatDevtoolsServicePort } from './wechatDevtoolsSettings'
 
@@ -11,7 +12,7 @@ const ENGINE_BUILD_BUILDING = 'BUILDING'
 const ENGINE_BUILD_END = 'END'
 const ENGINE_BUILD_ERROR = 'ERROR'
 
-export interface WechatDevtoolsHttpCommandOptions {
+export interface WechatDevtoolsHttpCommandOptions extends WechatDevtoolsSelectionOptions {
   cliPath?: string
   target?: ResolvedWechatDevtoolsTarget
   port?: number
@@ -90,6 +91,11 @@ async function requestSelectedWechatDevtoolsHttp(
   options.signal?.throwIfAborted()
   const target = await resolveWechatDevtoolsTarget(options)
   options.signal?.throwIfAborted()
+  const projectParameter = pathname === '/v2/open' ? 'project' : pathname === '/engine/build' ? 'projectpath' : undefined
+  if (projectParameter) {
+    await ensureManagedWechatProject(target, query[projectParameter] ?? '', { signal: options.signal })
+    options.signal?.throwIfAborted()
+  }
   const port = await resolveWechatDevtoolsHttpPort(target, options.port).catch((error: unknown) => {
     options.signal?.throwIfAborted()
     throw error

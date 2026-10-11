@@ -86,6 +86,13 @@ export function observeProcessResources() {
   }
 }
 
+/** 跨过已排队的零延时任务后采样；保留长期计时器，不把瞬时任务误记为滞留资源。 */
+export async function sampleProcessResources() {
+  // setImmediate 可能早于尚未到期的零延时 timer；新 timer 排在已有同类任务之后。
+  await new Promise<void>(resolve => setTimeout(resolve, 0))
+  return observeProcessResources()
+}
+
 export interface SequenceMeasurement {
   elapsedMs: number
   clock?: { timeOrigin: number, startedAtMs: number, endedAtMs: number }

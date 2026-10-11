@@ -28,6 +28,25 @@ pnpm --filter dashboard-ui-lab build
 
 本仓库开发态下，`wv dev --ui` 会优先读取 `@weapp-vite/dashboard` 的源码入口；发布包安装场景则继续读取 dashboard 的 `dist/` 静态产物。
 
+## 正式 CLI Hub 模式
+
+以下入口读取真实构建报告，不是后文 Inspector 的合成场景；依次运行，先关闭前一个会话：
+
+```bash
+pnpm --filter weapp-vite build
+pnpm --filter @weapp-vite/dashboard build
+pnpm --filter dashboard-ui-lab dev --ui-host hub --no-mcp
+# 或在开发会话关闭后运行
+pnpm --filter dashboard-ui-lab build --ui-host hub
+pnpm --filter dashboard-ui-lab exec wv analyze --ui-host hub
+```
+
+打开终端输出的 `/__devframes/` OTP 链接，在 Hub dock 内访问 `/__weapp-vite/` 面板，检查内建设置、页面导航与开发模式的报告更新。`--no-mcp` 仅关闭开发命令原有的自动 MCP 服务；Hub 自身始终关闭聚合 MCP 和实例注册，不安装终端或其他默认工具。Hub 语言设置只影响内建 UI。
+
+验证无小程序连接时的报告刷新，可修改并恢复 `src/pages/index/index.wxss`，确认活动流出现 `analyze refresh completed` 且报告更新次数递增。Stateful HMR 的脚本交付有小程序消费与确认边界，单独出现终端 `[update]` 不代表构建已完成；验证脚本交付时应连接真实运行时，不要伪造 ACK 或提前发布构建完成事件。
+
+`dev:ui` / `build:ui` 保持原有 standalone 模式与本机只读 Dashboard MCP；也可显式传 `--ui-host standalone`。不需要安装或启动 Vite DevTools。
+
 ## Inspector 可控场景
 
 ```bash

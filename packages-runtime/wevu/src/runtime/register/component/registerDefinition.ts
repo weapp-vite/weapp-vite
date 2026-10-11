@@ -10,6 +10,8 @@ import type {
 import type { WatchMap } from '../watch'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
+  WEVU_NATIVE_DECLARATION_METHOD,
+  WEVU_NATIVE_SLOT_PARENT_METHOD,
   WEVU_PUBLIC_RUNTIME_KEY,
   WEVU_READY_CALLED_KEY,
   WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD,
@@ -21,7 +23,11 @@ import { ensureInitialNavigation } from '../../navigationLifecycle'
 import { getMiniProgramRuntimeGlobalObject } from '../../platform'
 import { runTeardownSteps } from '../../teardown'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
+import { receiveNativeDeclaration } from '../runtimeInstance/nativeDeclaration'
+import { receiveNativeSlotParent } from '../runtimeInstance/provideContext'
 import { registerNativeComponentDefinition } from './registerNativeDefinition'
+
+type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string } }
 
 export function registerComponentDefinition<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   runtimeApp: RuntimeApp<D, C, M>
@@ -43,6 +49,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
   syncWevuPropsFromValues: (instance: InternalRuntimeState, values: Record<string, unknown> | undefined) => void
   directPropsDerivedKeys: string[]
   isPage: boolean
+  nativeSlotContext: boolean
   vueLifecycles: Record<string, unknown>
   getRuntimeOwnerLabel: (instance: InternalRuntimeState) => string
   registerNative?: boolean
@@ -66,6 +73,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     syncWevuPropsFromInstance,
     directPropsDerivedKeys,
     isPage,
+    nativeSlotContext,
     vueLifecycles,
     getRuntimeOwnerLabel,
     registerNative = true,
@@ -122,6 +130,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     mountRuntimeInstance(instance, runtimeApp, watch, setup, {
       deferSetData: true,
       snapshotOmitKeys: directPropsDerivedKeys,
+      attached: !pendingAttachment.has(instance),
     })
     syncWevuPropsFromInstance(instance)
     enableDeferredSetData(instance)
@@ -192,6 +201,25 @@ export function registerComponentDefinition<D extends object, C extends Computed
     }
   }
 
+  const methods: Record<string, (...args: any[]) => any> = {
+    ...pageMethodBridges,
+    ...finalMethods,
+    [WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD]: function resolvePublicInstance(this: InternalRuntimeState) {
+      const result = mountMissingRuntime(this)
+      if (result.mounted) {
+        callVueLifecycle(this, 'created', [])
+        callVueLifecycle(this, 'beforeMount', [])
+      }
+      return result.runtime?.proxy
+    },
+  }
+  if (!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp') {
+    methods[WEVU_NATIVE_SLOT_PARENT_METHOD] = receiveNativeSlotParent
+    if (nativeSlotContext) {
+      methods[WEVU_NATIVE_DECLARATION_METHOD] = receiveNativeDeclaration
+    }
+  }
+
   const componentDefinition = {
     ...restOptions,
     ...(isPage ? pageLifecycleHooks : {}),
@@ -246,6 +274,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
               mountRuntimeInstance(this, runtimeApp, watch, setup, {
                 deferSetData: true,
                 snapshotOmitKeys: directPropsDerivedKeys,
+                attached: true,
               })
             }
             catch (error) {
@@ -427,18 +456,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
         }
       },
     },
-    methods: {
-      ...pageMethodBridges,
-      ...finalMethods,
-      [WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD]: function resolvePublicInstance(this: InternalRuntimeState) {
-        const result = mountMissingRuntime(this)
-        if (result.mounted) {
-          callVueLifecycle(this, 'created', [])
-          callVueLifecycle(this, 'beforeMount', [])
-        }
-        return result.runtime?.proxy
-      },
-    },
+    methods,
     options: finalOptions,
   }
   if (!registerNative) {
@@ -454,6 +472,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
       refreshRuntimeInstance(instance, runtimeApp, watch, setup, {
         snapshotOmitKeys: directPropsDerivedKeys,
         stateSnapshot,
+        attached: !pendingAttachment.has(instance),
       })
       syncWevuPropsFromInstance(instance)
       attachPageLayoutSetter(instance)

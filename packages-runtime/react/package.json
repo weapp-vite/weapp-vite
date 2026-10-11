@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/react",
   "type": "module",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "description": "React 19 runtime for weapp-vite mini programs",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
@@ -56,7 +56,8 @@
     "build": "tsdown",
     "build:types": "tsdown --dts",
     "test": "vitest run",
-    "test:types": "tsd",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

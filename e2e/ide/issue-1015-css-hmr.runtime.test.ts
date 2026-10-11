@@ -203,7 +203,10 @@ for (const runtime of ['classic', 'stateful-experimental']) {
       await updateCss(alternatePath, '.issue1015-page { color: v-bind(accentColor); }', 'replace-variable')
       await updateCss(alternatePath, '.issue1015-page { color: black; }', 'remove-variable')
       await updateCss(alternatePath, '.issue1015-page { color: v-bind(themeColor); }', 'restore-variable')
-      await (await host.currentPage())!.callMethod('_runE2E', 'mutate')
+      // HMR 后 AppService 的路由对象可能仍绑定旧 setup 闭包；响应式验收必须调用
+      // 当前原生页面并关闭 fallback，避免把旧实例的结果误判为运行时未更新。
+      const nativePage = await host.currentPage({ appFunctionFallback: false })
+      await nativePage!.callMethodWithOptions('_runE2E', { fallback: false }, 'mutate')
       await check('reactive')
       if (runtimeErrors.length) {
         process.stdout.write(`[issue-1015-build] ${dev!.getOutput()}\n`)

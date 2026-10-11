@@ -16,6 +16,11 @@ export interface SuiteTaskArtifact {
   kind: 'ide-warning-report' | 'suite-report' | 'dom-acceptance-report'
 }
 
+export interface SuiteRuntimeBlocker {
+  code: 'needs-login'
+  reason: string
+}
+
 export interface SuiteTaskReportEntry {
   artifacts: SuiteTaskArtifact[]
   durationMs: number
@@ -23,6 +28,8 @@ export interface SuiteTaskReportEntry {
   label: string
   status?: AcceptanceStatus | 'out-of-scope'
   reason?: string
+  runtimeVersions?: Array<{ version: string, baseLibraryVersion: string | null, installationId: string }>
+  runtimeBlocker?: SuiteRuntimeBlocker
 }
 
 export interface SuiteReportContext extends AcceptanceIdentity {

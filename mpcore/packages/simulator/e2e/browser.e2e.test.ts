@@ -10,7 +10,9 @@ import { querySelectorAll } from '../src/view/selectors'
 import { componentNavigationFiles } from '../test/helpers/componentNavigation'
 import { conditionalSlotFiles } from '../test/helpers/conditionalSlots'
 import { importedTemplateFiles } from '../test/helpers/importedTemplates'
+import { createNativeConstructionFiles, nativeConstructionTrace } from '../test/helpers/nativeConstructionPhases'
 import { objectLoopFiles } from '../test/helpers/objectLoops'
+import { unprojectedSlotFiles } from '../test/helpers/unprojectedSlots'
 import { wxsFiles } from '../test/helpers/wxs'
 import '../../../demos/web/src/styles.css'
 
@@ -262,6 +264,56 @@ describe('simulator browser e2e', { concurrent: false }, () => {
       expect(preview.querySelector('#third')?.textContent).toBe('third-updated')
     }
     finally {
+      preview.remove()
+    }
+  })
+
+  it('keeps unprojected declarations alive while updating the visible keyed slot tree', () => {
+    const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(unprojectedSlotFiles) })
+    const page = session.reLaunch('/pages/index/index')
+    const preview = document.createElement('div')
+    document.body.append(preview)
+    try {
+      const original = page.findLeaf('one')
+      const events = page.readEvents() as Array<{ kind: string, label: string }>
+      expect(events.map(event => event.label).sort()).toEqual(['header', 'one', 'three', 'two'])
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('.leaf-label')).toBeNull()
+      page.setData({ open: true })
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect([...preview.querySelectorAll('.leaf-label')].map(node => node.textContent)).toEqual(['header', 'one', 'two', 'three'])
+      page.setData({ open: false, rows: [{ id: 'a', label: 'three' }, { id: 'a/b', label: 'two' }, { id: '1', label: 'one' }] })
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('.leaf-label')).toBeNull()
+      expect(page.findLeaf('one')).toBe(original)
+      page.setData({ open: true })
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect([...preview.querySelectorAll('.leaf-label')].map(node => node.textContent)).toEqual(['header', 'three', 'two', 'one'])
+      expect(events.map(event => event.kind)).toEqual(['attached', 'attached', 'attached', 'attached'])
+    }
+    finally {
+      session.close()
+      preview.remove()
+    }
+  })
+
+  it.each([false, true])('matches native construction and event phases with an initially open=%s outlet', async (open) => {
+    const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(createNativeConstructionFiles(open)) })
+    const preview = document.createElement('div')
+    document.body.append(preview)
+    try {
+      const page = session.reLaunch('/pages/index/index')
+      const events = await waitFor(
+        () => page.readEvents(),
+        value => Array.isArray(value) && value.at(-1)?.at === 'page.ready',
+      )
+      expect(events).toEqual(nativeConstructionTrace)
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#internal')?.textContent).toBe('passed')
+      expect(preview.textContent).toBe(open ? 'passedslotted' : 'passed')
+    }
+    finally {
+      session.close()
       preview.remove()
     }
   })
@@ -548,6 +600,14 @@ describe('simulator browser e2e', { concurrent: false }, () => {
       lifecycleLog: ['created', 'attached', 'load', 'show', initialResizeMarker, 'ready', 'routeDone:undefined', 'routeDone:browser-e2e', 'resize:412'],
       snapshot: `created|attached|load|show|${initialResizeMarker}|ready|routeDone:undefined|routeDone:browser-e2e|resize:412`,
     })
+    const previewShadowRoot = Array.from(mountNode!.querySelectorAll('*'))
+      .map(element => element.shadowRoot)
+      .find((root): root is ShadowRoot => root !== null)
+    await waitFor(
+      () => previewShadowRoot?.querySelector('#attachment-bound-value')?.textContent,
+      value => value === 'attachment-bound-value',
+    )
+    expect(previewShadowRoot?.querySelector('#attachment-bound-value')?.textContent).toBe('attachment-bound-value')
 
     bridge.runPageMethod('openNext')
     await waitFor(
@@ -583,6 +643,11 @@ describe('simulator browser e2e', { concurrent: false }, () => {
         'show',
       ],
     })
+    await waitFor(
+      () => previewShadowRoot?.querySelector('#attachment-bound-value')?.textContent,
+      value => value === 'attachment-bound-value',
+    )
+    expect(previewShadowRoot?.querySelector('#attachment-bound-value')?.textContent).toBe('attachment-bound-value')
   })
 
   it('switches scenarios and keeps browser session runtime functional', async () => {

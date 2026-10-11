@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/acceptance",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Deterministic mini-program acceptance and evidence",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
@@ -41,10 +41,11 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test:types": "tsd"
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\""
   },
   "dependencies": {
-    "execa": "10.0.1",
+    "execa": "10.1.0",
     "zod": "catalog:"
   },
   "devDependencies": {

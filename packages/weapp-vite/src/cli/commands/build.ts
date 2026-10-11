@@ -17,7 +17,7 @@ import { logBuildAppFinish } from '../logBuildAppFinish'
 import { logBuildPackageSizeReport } from '../logBuildPackageSizeReport'
 import { setCommandNodeEnv } from '../nodeEnv'
 import { openIde, resolveIdeProjectPath } from '../openIde'
-import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
+import { filterDuplicateOptions, isUiEnabled, parseDashboardUiHost, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveConfiguredRuntimeTargets, resolveRuntimeTargets } from '../runtime'
 import { prepareAutoUploadMetadataWithRollback, validateAutoUploadMetadata } from '../upload/autoMetadata'
 import { createUploadTarget, executeUploadTarget } from '../upload/builtProject'
@@ -124,6 +124,7 @@ export function registerBuildCommand(cli: CAC) {
     .option('--ide-open-strategy <strategy>', '[string] IDE open strategy (cli | automator)', { default: 'cli' })
     .option('--no-open-recovery', '[boolean] disable automatic target-project open retry (preserves existing IDE windows)')
     .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
+    .option('--ui-host <host>', `[string] 启动调试 UI 并选择宿主（standalone | hub）`)
     .option('--analyze', `[boolean] 输出分包分析仪表盘`, { default: false })
     .option('--scope <scope>', `[string] 局部构建范围，例如 main,packages/order`)
     .option('--upload', '[boolean] upload the mini program after this build succeeds')
@@ -143,6 +144,7 @@ export function registerBuildCommand(cli: CAC) {
       try {
         options = { ...options }
         filterDuplicateOptions(options)
+        options.uiHost = parseDashboardUiHost(options.uiHost)
         let uploadOptions = resolveBuildUploadOptions(cli, options)
         setCommandNodeEnv('production')
         const cwd = root ?? process.cwd()
@@ -212,6 +214,7 @@ export function registerBuildCommand(cli: CAC) {
               const analyzeDurationMs = Date.now() - analyzeStartedAt
               analyzeHandle = await startAnalyzeDashboard(analyzeResult, {
                 watch: true,
+                uiHost: options.uiHost,
                 artifacts: artifactSnapshot.files,
                 cwd: configService.cwd,
                 packageManagerAgent: configService.packageManager.agent,

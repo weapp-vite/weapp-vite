@@ -1,7 +1,58 @@
+import type { SequenceStepResult } from './measurement'
+import { execFile } from 'node:child_process'
+import process from 'node:process'
+import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
 import { evaluateResourceTrend, SequenceMeasurements } from './measurement'
+import { assertResourceSequence, summarizeResourceSequence } from './resourceSequence'
 
 describe('edit sequence observation gates', () => {
+  it('settles queued timers while retaining long-lived timers in the resource growth gate', async () => {
+    // 独立 Node 进程保留真实事件循环和资源计数，避免 Vitest 自身超时计时器污染样本。
+    const { stdout } = await promisify(execFile)(process.execPath, ['--import', 'tsx', '--input-type=module', '--eval', `
+      import { observeProcessResources, sampleProcessResources } from ${JSON.stringify(new URL('./measurement.ts', import.meta.url).href)};
+      const baseline = (await sampleProcessResources()).resources.Timeout ?? 0;
+      const timeouts = [];
+      let completed = 0;
+      let retained;
+      let retainedFired = false;
+      let synchronous;
+      try {
+        for (let step = 0; step < 15; step++) {
+          if (step === 7) retained = setTimeout(() => { retainedFired = true; }, 60_000);
+          setTimeout(() => { completed++; }, 0);
+          if (step === 0) synchronous = observeProcessResources().resources.Timeout ?? 0;
+          const sample = await sampleProcessResources();
+          if (completed !== step + 1) throw new Error('Queued timer did not finish before sampling');
+          timeouts.push(sample.resources.Timeout ?? 0);
+        }
+        process.stdout.write(JSON.stringify({ baseline, synchronous, timeouts, completed, retainedFired, retainedRef: retained.hasRef() }));
+      }
+      finally {
+        clearTimeout(retained);
+      }
+    `], { timeout: 10_000, windowsHide: true })
+    const observed = JSON.parse(stdout) as { baseline: number, synchronous: number, timeouts: number[], completed: number, retainedFired: boolean, retainedRef: boolean }
+    expect(observed).toMatchObject({ completed: 15, retainedFired: false, retainedRef: true })
+    expect(observed.synchronous).toBe(observed.baseline + 1)
+    expect(observed.timeouts).toEqual([...Array.from<number>({ length: 7 }).fill(observed.baseline), ...Array.from<number>({ length: 8 }).fill(observed.baseline + 1)])
+
+    const steps: SequenceStepResult[] = observed.timeouts.map((timeoutCount, step) => ({
+      step,
+      label: `step-${step}`,
+      status: 'passed',
+      measurement: {
+        elapsedMs: 1,
+        process: { memory: { rss: 100, heapUsed: 50, heapTotal: 100, external: 0, arrayBuffers: 0 }, resources: { Timeout: timeoutCount }, processListeners: {} },
+        processTree: { rssBytes: 100, processCount: 1, observationMs: 1 },
+        gc: { count: 1, durationMs: 1, forced: true, observationMs: 1 },
+        session: { watchers: 0, engines: 1 },
+        build: { loadCalls: 1, loadedModules: [], transformCalls: 1, transformedModules: [], publications: 1, outputFiles: [], outputBytes: 1, patches: 1, patchBytes: 1 },
+      },
+    }))
+    expect(() => assertResourceSequence(summarizeResourceSequence(steps))).toThrow('Resource trend resource:Timeout: growth')
+  })
+
   it('keeps repeated work, affected modules and emitted bytes separate', () => {
     const observer = new SequenceMeasurements('/fixture')
     observer.load('/fixture/changed.js')

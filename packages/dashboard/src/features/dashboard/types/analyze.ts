@@ -160,16 +160,6 @@ export interface LargestFileEntry {
   source?: string
 }
 
-export interface SelectedFileModuleDetail {
-  key: string
-  source: string
-  sourceType: ModuleSourceType
-  bytes: number
-  originalBytes?: number
-  duplicatePackageCount: number
-  estimatedSavingBytes: number
-}
-
 export interface DuplicateModuleEntry {
   id: string
   source: string

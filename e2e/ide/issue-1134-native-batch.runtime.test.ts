@@ -1,8 +1,8 @@
-import { readFile, rm, writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { launchAutomator } from '../utils/automator'
+import { launchAutomator, reconnectAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
@@ -10,6 +10,7 @@ import { renameAtomicFile } from '../utils/hmrAtomicRename'
 import { createNativeBatchProject, NATIVE_BATCH_CLI, NATIVE_BATCH_STEPS, readNativeBatchOutput, readNativeBatchSources, writeNativeBatch } from '../utils/nativeBatchProject'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
+import { cleanupTemporaryRuntimeProject } from '../utils/temporaryRuntimeProject'
 
 const route = '/pages/index/index'
 const fixture = 'e2e-apps/github-issues/fixtures/issue-1134-native-batch'
@@ -47,12 +48,12 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
   }, 180_000)
 
   afterAll(async () => {
-    disposeTransport?.()
-    await miniProgram?.close()
-    await dev?.stop()
-    if (project) {
-      await rm(project, { recursive: true, force: true })
-    }
+    await cleanupTemporaryRuntimeProject({
+      project,
+      disposeTransport,
+      closeSession: async () => { await miniProgram?.close() },
+      stopDev: async () => { await dev?.stop() },
+    })
   }, 60_000)
 
   it('renders matching script, template, style and config batches on repeated saves and restoration', async (context) => {
@@ -92,11 +93,11 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
         disposeTransport?.()
         if (resolveRuntimeProviderName() === 'headless') {
           await miniProgram!.close()
+          miniProgram = await connect()
         }
         else {
-          await miniProgram!.disconnect()
+          miniProgram = await reconnectAutomator(miniProgram!)
         }
-        miniProgram = await connect()
         await miniProgram.reLaunch(route)
         if (stateful) {
           await expect.poll(() => miniProgram!.evaluate(() => (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__.getTransportState().initialReady), { timeout: 30_000 }).toBe(true)

@@ -3,272 +3,112 @@ import type {
   AnalyzeActionCenterItem,
   AnalyzeComparisonMode,
   AnalyzeHistorySnapshot,
-  AnalyzeWorkQueueItem,
+  AnalyzeSubpackagesResult,
+  DuplicateModuleEntry,
+  IncrementAttributionEntry,
+  LargestFileEntry,
+  TreemapModuleNodeMeta,
 } from '../types'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed } from 'vue'
+import { dashboardAnalyzeRevision } from '../utils/dashboardDevframe'
+import { createDiagnosticEvidence } from '../utils/diagnosticEvidence'
+import { formatModuleIdentifier } from '../utils/format'
 import ActionCenterPanel from './ActionCenterPanel.vue'
-import AnalyzeWorkQueuePanel from './AnalyzeWorkQueuePanel.vue'
+import DiagnosticEvidencePanel from './DiagnosticEvidencePanel.vue'
 import HistoryBaselinePanel from './HistoryBaselinePanel.vue'
 
-defineProps<{
+const props = defineProps<{
   actionItems: AnalyzeActionCenterItem[]
-  activeWorkQueueItemId: string | null
   baselineSnapshotId: string | null
   comparisonMode: AnalyzeComparisonMode
+  comparisonResult: AnalyzeSubpackagesResult | null
+  duplicateModules: DuplicateModuleEntry[]
   historySnapshots: AnalyzeHistorySnapshot[]
-  queuedActionKeys: string[]
+  incrementAttribution: IncrementAttributionEntry[]
+  result: AnalyzeSubpackagesResult
   selectedActionKey: string | null
-  workQueueItems: AnalyzeWorkQueueItem[]
 }>()
 
 const emit = defineEmits<{
-  addActionToQueue: [item: AnalyzeActionCenterItem]
-  clearCompletedWorkQueue: []
-  copyPr: []
-  copyWorkQueue: []
-  removeWorkQueueItem: [id: string]
+  focusAction: [item: AnalyzeActionCenterItem]
+  openFile: [item: LargestFileEntry]
+  openSource: [meta: TreemapModuleNodeMeta]
   selectAction: [item: AnalyzeActionCenterItem]
-  selectWorkQueueItem: [item: AnalyzeWorkQueueItem]
   setBaseline: [id: string]
   setComparisonMode: [mode: AnalyzeComparisonMode]
-  toggleWorkQueueItem: [id: string]
 }>()
 
-type DiagnosticsSideTab = 'work-queue' | 'history'
-
-const splitRoot = ref<HTMLElement | null>(null)
-const splitPercent = ref(66)
-const splitMaxPercent = ref(76)
-const activeSideTab = ref<DiagnosticsSideTab>('work-queue')
-const splitStyle = computed(() => ({
-  '--diagnostics-primary': `${splitPercent.value}%`,
-}))
-let stopResize: (() => void) | null = null
-let splitResizeObserver: ResizeObserver | null = null
-
-function setSplitPercent(value: number) {
-  splitPercent.value = Math.min(splitMaxPercent.value, Math.max(52, Math.round(value)))
-}
-
-function handleResizePointerDown(event: PointerEvent) {
-  if (event.button !== 0 || !splitRoot.value) {
-    return
-  }
-  event.preventDefault()
-  const root = splitRoot.value
-  const update = (clientX: number) => {
-    const bounds = root.getBoundingClientRect()
-    setSplitPercent(((clientX - bounds.left) / bounds.width) * 100)
-  }
-  const handlePointerMove = (moveEvent: PointerEvent) => update(moveEvent.clientX)
-  const handlePointerUp = () => stopResize?.()
-  stopResize?.()
-  stopResize = () => {
-    window.removeEventListener('pointermove', handlePointerMove)
-    window.removeEventListener('pointerup', handlePointerUp)
-    window.removeEventListener('pointercancel', handlePointerUp)
-    stopResize = null
-  }
-  window.addEventListener('pointermove', handlePointerMove)
-  window.addEventListener('pointerup', handlePointerUp)
-  window.addEventListener('pointercancel', handlePointerUp)
-  update(event.clientX)
-}
-
-function handleResizeKeydown(event: KeyboardEvent) {
-  if (event.key === 'ArrowLeft') {
-    event.preventDefault()
-    setSplitPercent(splitPercent.value - 4)
-  }
-  else if (event.key === 'ArrowRight') {
-    event.preventDefault()
-    setSplitPercent(splitPercent.value + 4)
-  }
-  else if (event.key === 'Home') {
-    event.preventDefault()
-    setSplitPercent(52)
-  }
-  else if (event.key === 'End') {
-    event.preventDefault()
-    setSplitPercent(splitMaxPercent.value)
-  }
-}
-
-function updateSplitBounds() {
-  const width = splitRoot.value?.clientWidth ?? 0
-  if (width === 0) {
-    return
-  }
-  const minimumSideWidth = 320
-  const separatorAndGapsWidth = 28
-  splitMaxPercent.value = Math.min(
-    76,
-    Math.max(52, Math.floor(((width - minimumSideWidth - separatorAndGapsWidth) / width) * 100)),
-  )
-  setSplitPercent(splitPercent.value)
-}
-
-function setActiveSideTab(tab: DiagnosticsSideTab, focus = false) {
-  activeSideTab.value = tab
-  if (focus) {
-    document.getElementById(`diagnostics-${tab}-tab`)?.focus()
-  }
-}
-
-function handleSideTabKeydown(event: KeyboardEvent) {
-  if (event.key === 'ArrowLeft' || event.key === 'Home') {
-    event.preventDefault()
-    setActiveSideTab('work-queue', true)
-  }
-  else if (event.key === 'ArrowRight' || event.key === 'End') {
-    event.preventDefault()
-    setActiveSideTab('history', true)
-  }
-}
-
-onMounted(() => {
-  splitResizeObserver = new ResizeObserver(updateSplitBounds)
-  if (splitRoot.value) {
-    splitResizeObserver.observe(splitRoot.value)
-  }
-  updateSplitBounds()
-})
-
-onBeforeUnmount(() => {
-  stopResize?.()
-  splitResizeObserver?.disconnect()
-})
+const selectedAction = computed(() => props.actionItems.find(item => item.key === props.selectedActionKey) ?? props.actionItems[0])
+const selectedTarget = computed(() => formatModuleIdentifier(selectedAction.value?.targetLabel ?? ''))
+const selectedName = computed(() => selectedTarget.value.slice(selectedTarget.value.lastIndexOf('/') + 1))
+const selectedKindLabel = computed(() => selectedAction.value
+  ? { budget: '预算', increment: '增长', duplicate: '重复' }[selectedAction.value.kind]
+  : '')
+const evidence = computed(() => selectedAction.value
+  ? createDiagnosticEvidence({
+      action: selectedAction.value,
+      result: props.result,
+      previous: props.comparisonResult,
+      duplicateModules: props.duplicateModules,
+      incrementAttribution: props.incrementAttribution,
+    })
+  : null)
+const classificationLabel = computed(() => evidence.value
+  ? { problem: '超出预算', risk: '预算风险', clue: '待查线索', unknown: '测量不完整' }[evidence.value.classification]
+  : '')
+const comparisonLabel = computed(() => !props.comparisonResult
+  ? '无历史基线，不推断增长'
+  : props.comparisonMode === 'baseline' ? '浏览器选定基线' : '上次构建（浏览器对照）')
+const primaryArtifact = computed(() => evidence.value?.artifacts[0]?.entry ?? null)
 </script>
 
 <template>
-  <section
-    ref="splitRoot"
-    class="diagnostics-split"
-    :style="splitStyle"
-  >
-    <div class="min-h-0 min-w-0 xl:h-full xl:overflow-hidden">
-      <ActionCenterPanel
-        :actions="actionItems"
-        :active-key="selectedActionKey"
-        :queued-action-keys="queuedActionKeys"
-        @add-to-queue="emit('addActionToQueue', $event)"
-        @copy-report="emit('copyPr')"
-        @select="emit('selectAction', $event)"
-      />
-    </div>
-
-    <button
-      class="group hidden min-h-0 cursor-col-resize items-center justify-center rounded-md outline-none xl:flex focus-visible:ring-2 focus-visible:ring-(--dashboard-accent)"
-      type="button"
-      role="separator"
-      aria-label="调整问题中心和诊断侧栏宽度"
-      aria-orientation="vertical"
-      aria-valuemin="52"
-      :aria-valuemax="splitMaxPercent"
-      :aria-valuenow="splitPercent"
-      @keydown="handleResizeKeydown"
-      @pointerdown="handleResizePointerDown"
+  <section class="grid min-w-0 content-start gap-5" aria-label="问题与证据">
+    <DiagnosticEvidencePanel
+      :action="selectedAction"
+      :evidence="evidence"
+      :comparison-label="comparisonLabel"
+      @open-file="emit('openFile', $event)"
+      @open-source="emit('openSource', $event)"
+      @inspect="emit('selectAction', $event)"
     >
-      <span class="h-12 w-0.5 rounded-full bg-(--dashboard-border-strong) transition group-hover:bg-(--dashboard-accent)" />
-    </button>
-
-    <div class="grid min-h-0 min-w-0 gap-2 overflow-visible xl:h-full xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
-      <div
-        class="grid grid-cols-2 rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-1"
-        role="tablist"
-        aria-label="诊断侧栏"
-      >
-        <button
-          id="diagnostics-work-queue-tab"
-          type="button"
-          role="tab"
-          class="rounded-md px-3 py-2 text-sm font-medium transition"
-          :class="activeSideTab === 'work-queue'
-            ? 'bg-(--dashboard-accent-soft) text-(--dashboard-accent)'
-            : 'text-(--dashboard-text-soft) hover:bg-(--dashboard-panel-muted) hover:text-(--dashboard-text)'"
-          :aria-selected="activeSideTab === 'work-queue'"
-          :tabindex="activeSideTab === 'work-queue' ? 0 : -1"
-          aria-controls="diagnostics-work-queue-panel"
-          @click="setActiveSideTab('work-queue')"
-          @keydown="handleSideTabKeydown"
-        >
-          处理清单
-        </button>
-        <button
-          id="diagnostics-history-tab"
-          type="button"
-          role="tab"
-          class="rounded-md px-3 py-2 text-sm font-medium transition"
-          :class="activeSideTab === 'history'
-            ? 'bg-(--dashboard-accent-soft) text-(--dashboard-accent)'
-            : 'text-(--dashboard-text-soft) hover:bg-(--dashboard-panel-muted) hover:text-(--dashboard-text)'"
-          :aria-selected="activeSideTab === 'history'"
-          :tabindex="activeSideTab === 'history' ? 0 : -1"
-          aria-controls="diagnostics-history-panel"
-          @click="setActiveSideTab('history')"
-          @keydown="handleSideTabKeydown"
-        >
-          历史基线
-        </button>
-      </div>
-
-      <div class="min-h-0 min-w-0 overflow-visible xl:overflow-hidden">
-        <div
-          v-show="activeSideTab === 'work-queue'"
-          id="diagnostics-work-queue-panel"
-          class="h-full min-h-0"
-          role="tabpanel"
-          aria-labelledby="diagnostics-work-queue-tab"
-        >
-          <AnalyzeWorkQueuePanel
-            :items="workQueueItems"
-            :active-id="activeWorkQueueItemId"
-            @clear-completed="emit('clearCompletedWorkQueue')"
-            @copy="emit('copyWorkQueue')"
-            @remove="emit('removeWorkQueueItem', $event)"
-            @select="emit('selectWorkQueueItem', $event)"
-            @toggle="emit('toggleWorkQueueItem', $event)"
-          />
+      <template #index>
+        <slot name="overview" />
+        <div class="mt-1.5 border-t border-(--dashboard-border) pt-1.5">
+          <ActionCenterPanel :actions="actionItems" :active-key="selectedAction?.key ?? null" @select="emit('focusAction', $event)" />
         </div>
-        <div
-          v-show="activeSideTab === 'history'"
-          id="diagnostics-history-panel"
-          class="h-full min-h-0"
-          role="tabpanel"
-          aria-labelledby="diagnostics-history-tab"
-        >
-          <HistoryBaselinePanel
-            :snapshots="historySnapshots"
-            :baseline-snapshot-id="baselineSnapshotId"
-            :comparison-mode="comparisonMode"
-            @set-baseline="emit('setBaseline', $event)"
-            @set-comparison-mode="emit('setComparisonMode', $event)"
-          />
-        </div>
-      </div>
-    </div>
+        <p class="mt-3 text-xs text-(--dashboard-text-soft)">
+          当前报告<span v-if="dashboardAnalyzeRevision !== null"> · R{{ dashboardAnalyzeRevision }}</span>
+        </p>
+      </template>
+      <template #controls>
+        <HistoryBaselinePanel
+          :snapshots="historySnapshots"
+          :baseline-snapshot-id="baselineSnapshotId"
+          :comparison-mode="comparisonMode"
+          @set-baseline="emit('setBaseline', $event)"
+          @set-comparison-mode="emit('setComparisonMode', $event)"
+        />
+      </template>
+      <template v-if="selectedAction" #heading>
+        <header class="flex min-w-0 flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0 flex-1 basis-64">
+            <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+              <h2 data-diagnostic-object class="min-w-0 font-mono text-base font-semibold leading-6 text-(--dashboard-text) [overflow-wrap:anywhere]">{{ selectedName }}</h2>
+              <span class="rounded-sm border border-(--dashboard-border) px-1.5 py-0.5 text-xs text-(--dashboard-text-muted)">{{ selectedKindLabel }} · {{ classificationLabel }}</span>
+            </div>
+            <p v-if="selectedTarget !== selectedName" data-diagnostic-object-path class="mt-1 font-mono text-xs leading-5 text-(--dashboard-text-soft) [overflow-wrap:anywhere]">{{ selectedTarget }}</p>
+          </div>
+          <button
+            v-if="primaryArtifact"
+            type="button"
+            class="inline-flex min-h-11 items-center justify-center rounded-lg border border-(--dashboard-border) px-3 text-sm font-medium text-(--dashboard-text-muted) hover:bg-(--dashboard-panel-muted)"
+            @click="emit('openFile', primaryArtifact)"
+          >
+            检查关联对象
+          </button>
+        </header>
+      </template>
+    </DiagnosticEvidencePanel>
   </section>
 </template>
-
-<style scoped>
-.diagnostics-split {
-  display: grid;
-  gap: 0.5rem;
-  align-items: start;
-  min-width: 0;
-  min-height: 0;
-  overflow: visible;
-}
-
-@media (min-width: 1280px) {
-  .diagnostics-split {
-    grid-template-columns:
-      minmax(32rem, var(--diagnostics-primary))
-      0.75rem
-      minmax(20rem, 1fr);
-    align-items: stretch;
-    height: 100%;
-    overflow: hidden;
-  }
-}
-</style>

@@ -18,7 +18,8 @@ pnpm install
 pnpm --filter weapp-vite... --filter @weapp-agent/cli... -r build
 pnpm exec eslint packages/agent-* packages/acceptance scripts/weapp-agent
 pnpm --filter @weapp-agent/cli... -r typecheck
-pnpm --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-vite/acceptance -r test
+pnpm --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-agent/cli --filter @weapp-vite/acceptance -r test
+pnpm --filter @weapp-agent/core test:types
 node scripts/weapp-agent/smoke-pack.mjs
 pnpm exec repo doctor
 pnpm exec repo check

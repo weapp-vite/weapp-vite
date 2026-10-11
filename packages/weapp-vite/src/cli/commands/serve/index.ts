@@ -23,6 +23,7 @@ export function registerServeCommand(cli: CAC) {
     .option('--no-mcp', '[boolean] disable MCP service during dev')
     .option('--host [host]', `[string] web dev server host`)
     .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
+    .option('--ui-host <host>', `[string] 启动调试 UI 并选择宿主（standalone | hub）`)
     .option('--analyze', `[boolean] 启动分包分析仪表盘 (实验特性)`, { default: false })
     .option('--scope <scope>', `[string] 局部构建范围，例如 main,packages/order`)
     .action(async (root: string, options: GlobalCLIOptions) => {

@@ -5,8 +5,6 @@ import path from 'pathe'
 import { expect } from 'vitest'
 import { rebaseTempConfigExtends } from '../../scripts/testFixtures/configExtends'
 import {
-  isDevtoolsHttpPortError,
-  isDevtoolsLoginRequiredError,
   isDevtoolsSimulatorBootError,
   isTransientDevtoolsPageMetadataError,
   launchAutomator,
@@ -16,6 +14,7 @@ import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { appendIdeReportEvent, resolveReportProjectPath } from '../utils/ideWarningReport'
 import { createRecoverableSession } from '../utils/recoverableSession'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import { createSharedLaunch } from '../utils/sharedLaunch'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 
 const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
@@ -591,8 +590,8 @@ async function assertGithubIssuesAppConfigReady() {
 type SharedSession = ReturnType<typeof createRecoverableSession<any>>
 let sharedSession: SharedSession | null = null
 const sharedSessionOwners = new WeakMap<object, SharedSession>()
+const sharedMiniProgramLaunch = createSharedLaunch<MiniProgram>()
 let sharedBuildPrepared = false
-let sharedLaunchInfraUnavailableMessage: string | null = null
 
 export async function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -1072,14 +1071,6 @@ export async function waitForCurrentPagePath(miniProgram: RouteSession, expected
   return null
 }
 
-function isGithubIssuesLaunchInfraUnavailableError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error)
-  return isDevtoolsHttpPortError(error)
-    || isDevtoolsLoginRequiredError(error)
-    || /automator cli bridge canceled|bootstrap automator cli bridge/i.test(message)
-    || message.includes('Timeout in read current page for route')
-}
-
 export function createGithubIssuesLaunchAutomatorOptions(projectPath = APP_ROOT) {
   return {
     projectPath,
@@ -1107,27 +1098,12 @@ async function launchGithubIssuesMiniProgramOnce() {
   return miniProgram
 }
 
-async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) => void }) {
-  if (sharedLaunchInfraUnavailableMessage) {
-    ctx?.skip(sharedLaunchInfraUnavailableMessage)
-    throw new Error(sharedLaunchInfraUnavailableMessage)
-  }
-
-  await cleanupResidualIdeProcesses()
-
-  await prepareGithubIssuesBuild()
-
-  try {
+async function launchGithubIssuesMiniProgram() {
+  return await sharedMiniProgramLaunch.run(async () => {
+    await cleanupResidualIdeProcesses()
+    await prepareGithubIssuesBuild()
     return await launchGithubIssuesMiniProgramOnce()
-  }
-  catch (error) {
-    if (ctx && isGithubIssuesLaunchInfraUnavailableError(error)) {
-      const reason = error instanceof Error ? error.message : String(error)
-      sharedLaunchInfraUnavailableMessage = `WeChat DevTools 基础设施不可用，跳过 github-issues IDE 自动化用例。reason=${reason}`
-      ctx.skip(sharedLaunchInfraUnavailableMessage)
-    }
-    throw error
-  }
+  })
 }
 
 export function shouldDeferSharedMiniProgramClose(
@@ -1166,16 +1142,18 @@ export function disconnectSharedMiniProgram(options: CloseSharedMiniProgramOptio
   sharedSession = null
 }
 
-export async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
-  if (!sharedSession) {
-    sharedSession = createRecoverableSession(await launchGithubIssuesMiniProgram(ctx))
-    sharedSessionOwners.set(sharedSession.session, sharedSession)
-  }
-  return sharedSession.session
+export async function getSharedMiniProgram(_ctx?: { skip: (message?: string) => void }) {
+  return await sharedMiniProgramLaunch.shared(async () => {
+    if (!sharedSession) {
+      sharedSession = createRecoverableSession(await launchGithubIssuesMiniProgram())
+      sharedSessionOwners.set(sharedSession.session, sharedSession)
+    }
+    return sharedSession.session
+  })
 }
 
-export async function launchFreshMiniProgram(ctx?: { skip: (message?: string) => void }) {
-  return await launchGithubIssuesMiniProgram(ctx)
+export async function launchFreshMiniProgram(_ctx?: { skip: (message?: string) => void }) {
+  return await launchGithubIssuesMiniProgram()
 }
 
 export async function releaseSharedMiniProgram(miniProgram: any) {
@@ -1232,7 +1210,7 @@ async function restartSharedMiniProgram(ctx?: { skip: (message?: string) => void
         await delay(600)
       }
     }
-    recoveringSession.replace(await launchGithubIssuesMiniProgram(ctx))
+    recoveringSession.replace(await launchGithubIssuesMiniProgram())
     return recoveringSession.session
   }
   catch (error) {

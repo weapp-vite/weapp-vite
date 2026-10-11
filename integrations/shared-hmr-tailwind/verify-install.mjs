@@ -22,7 +22,14 @@ async function main() {
   const installed = await readdir(path.join(checkout, 'node_modules/.pnpm'))
   assert.equal(installed.some(name => name.startsWith('weapp-vite@')), false)
   assert.deepEqual(installed.filter(name => name.startsWith('rolldown@')), ['rolldown@1.2.9'])
-  process.stdout.write('Packed shared packages load independently; no weapp-vite installation; Rolldown 1.2.9 only.\n')
+  const viteRequire = createRequire(require.resolve('vite'))
+  const postcss = viteRequire.resolve('postcss/package.json')
+  for (const name of ['postcss-rule-unit-converter', '@weapp-vite/tailwindcss', '@weapp-tailwindcss/postcss']) {
+    // Tailwind 仅提供 ESM export，使用已公开的 package.json 创建解析边界。
+    const entry = name === '@weapp-vite/tailwindcss' ? require.resolve(`${name}/package.json`) : require.resolve(name)
+    assert.equal(createRequire(entry).resolve('postcss/package.json'), postcss, `${name} must share Vite's PostCSS identity`)
+  }
+  process.stdout.write('Packed shared packages load independently; no weapp-vite installation; Rolldown 1.2.9 only; shared PostCSS identity.\n')
 }
 
 void main().catch((error) => {

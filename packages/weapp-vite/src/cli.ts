@@ -2,6 +2,7 @@ import type { GlobalCLIOptions } from './cli/types'
 import process from 'node:process'
 import { cac } from 'cac'
 import path from 'pathe'
+import { withWechatDevtoolsSelectionArgs } from 'weapp-ide-cli'
 import { registerAcceptCommand } from './cli/commands/accept'
 import { registerAlipayCommand } from './cli/commands/alipay'
 import { registerAnalyzeCommand } from './cli/commands/analyze'
@@ -20,7 +21,7 @@ import { registerPreviewCommand, registerUploadCommand } from './cli/commands/up
 import { handleCLIError } from './cli/error'
 import { tryRunIdeCommand } from './cli/ide'
 import { maybeAutoStartMcpServer } from './cli/mcpAutoStart'
-import { convertBase } from './cli/options'
+import { convertBase, parseDashboardUiHost } from './cli/options'
 import { handlePrepareLifecycleError } from './cli/prepareGuard'
 import { outputUploadReport } from './cli/upload/report'
 import { VERSION } from './constants'
@@ -38,6 +39,10 @@ cli
   .option('-d, --debug [feat]', `[string | boolean] show debug logs`)
   .option('-f, --filter <filter>', `[string] filter debug logs`)
   .option('-m, --mode <mode>', `[string] set env mode`)
+  .option('--devtools-channel <channel>', 'select stable | rc | nightly')
+  .option('--devtools-version <version>', 'select DevTools product version')
+  .option('--cli-path <path>', 'select DevTools CLI installation')
+  .option('--require-official-latest', 'require the official latest channel version')
 
 registerAcceptCommand(cli)
 registerIdeCommand(cli)
@@ -98,31 +103,34 @@ function resolveManagedTsconfigBootstrapRoot(args: string[]) {
 }
 
 try {
-  const args = process.argv.slice(2)
-  const forwarded = await tryRunIdeCommand(args)
-  if (!forwarded) {
-    cli.parse(process.argv, { run: false })
-    const runCommand = async () => {
-      const managedTsconfigBootstrapRoot = resolveManagedTsconfigBootstrapRoot(args)
-      if (managedTsconfigBootstrapRoot) {
-        await syncManagedTsconfigBootstrapFiles(managedTsconfigBootstrapRoot)
+  await withWechatDevtoolsSelectionArgs(process.argv.slice(2), async (args) => {
+    const forwarded = await tryRunIdeCommand(args)
+    if (!forwarded) {
+      cli.parse([...process.argv.slice(0, 2), ...args], { run: false })
+      const runCommand = async () => {
+        const uiHost = Array.isArray(cli.options.uiHost) ? cli.options.uiHost.at(-1) : cli.options.uiHost
+        parseDashboardUiHost(uiHost)
+        const managedTsconfigBootstrapRoot = resolveManagedTsconfigBootstrapRoot(args)
+        if (managedTsconfigBootstrapRoot) {
+          await syncManagedTsconfigBootstrapFiles(managedTsconfigBootstrapRoot)
+        }
+        // 仅为未显式命名的默认入口预启动；dev/serve 自管生命周期，其他命令不得提前求值配置。
+        if (cli.matchedCommand?.name === '' && cli.matchedCommandName === undefined) {
+          await maybeAutoStartMcpServer(args, cli.options as GlobalCLIOptions)
+        }
+        return cli.runMatchedCommand()
       }
-      // 仅为未显式命名的默认入口预启动；dev/serve 自管生命周期，其他命令不得提前求值配置。
-      if (cli.matchedCommand?.name === '' && cli.matchedCommandName === undefined) {
-        await maybeAutoStartMcpServer(args, cli.options as GlobalCLIOptions)
+      if (cli.matchedCommand?.name === 'upload') {
+        const json = Array.isArray(cli.options.json) ? cli.options.json.at(-1) : cli.options.json
+        // 在 CAC 校验必填值和未知选项前接管输出，启动失败也必须产生报告。
+        await outputUploadReport(json === true, runCommand)
+        scheduleCompletedProductionBuildExit({}, undefined)
       }
-      return cli.runMatchedCommand()
+      else {
+        await runCommand()
+      }
     }
-    if (cli.matchedCommand?.name === 'upload') {
-      const json = Array.isArray(cli.options.json) ? cli.options.json.at(-1) : cli.options.json
-      // 在 CAC 校验必填值和未知选项前接管输出，启动失败也必须产生报告。
-      await outputUploadReport(json === true, runCommand)
-      scheduleCompletedProductionBuildExit({}, undefined)
-    }
-    else {
-      await runCommand()
-    }
-  }
+  })
 }
 catch (error) {
   const args = process.argv.slice(2)

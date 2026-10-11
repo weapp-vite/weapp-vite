@@ -39,7 +39,8 @@ describe('createPackageHealthSummary', () => {
     expect(summary.items[0]).toMatchObject({
       id: 'main',
       status: 'risk',
-      primaryRisk: '预算超限 113.0%',
+      score: 68,
+      primaryRiskKind: 'budget',
     })
   })
 
@@ -85,8 +86,64 @@ describe('createPackageHealthSummary', () => {
       budgetWarnings: [],
     })
 
-    expect(summary.weakestPackage?.id).toBe('growth')
-    expect(summary.healthiestPackage?.id).toBe('safe')
+    expect(summary.weakestPackage).toMatchObject({
+      id: 'growth',
+      score: 58,
+      status: 'risk',
+      primaryRiskKind: 'growth',
+    })
+    expect(summary.healthiestPackage).toMatchObject({
+      id: 'safe',
+      score: 100,
+      status: 'good',
+      primaryRiskKind: 'none',
+    })
+  })
+
+  it.each([
+    { warningStatus: 'warning', delta: 100, kind: 'budget', score: 62, status: 'risk' },
+    { warningStatus: 'unknown', delta: 0, kind: 'duplicates', score: 70, status: 'watch' },
+    { warningStatus: undefined, delta: -100, kind: 'duplicates', score: 88, status: 'good' },
+  ] as const)('classifies primary risk with $warningStatus budget and $delta growth', ({ warningStatus, delta, kind, score, status }) => {
+    const summary = createPackageHealthSummary({
+      packageInsights: [
+        {
+          id: 'packages/shared',
+          label: '独立分包 packages/shared',
+          type: 'independent',
+          totalBytes: 1000,
+          gzipBytes: 500,
+          brotliBytes: 400,
+          compressedBytes: 400,
+          compressedSizeSource: 'real',
+          sizeDeltaBytes: delta,
+          fileCount: 2,
+          chunkCount: 1,
+          assetCount: 1,
+          moduleCount: 10,
+          duplicateModuleCount: 2,
+          entryFileCount: 1,
+          topFiles: [],
+        },
+      ],
+      budgetWarnings: warningStatus
+        ? [{
+            id: 'packages/shared',
+            label: '独立分包 packages/shared',
+            scope: 'independent',
+            currentBytes: 1000,
+            limitBytes: 1100,
+            ratio: 1000 / 1100,
+            status: warningStatus,
+          }]
+        : [],
+    })
+
+    expect(summary.items[0]).toMatchObject({
+      primaryRiskKind: kind,
+      score,
+      status,
+    })
   })
 
   it('returns a healthy empty summary', () => {

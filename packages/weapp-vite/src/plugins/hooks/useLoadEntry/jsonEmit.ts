@@ -33,6 +33,7 @@ export function createJsonEmitManager(
           ...entry,
           json: finalizeAppConfigForBuild(entry.json, {
             buildScope: weappViteConfig.buildScope,
+            omitEmptySubPackages: configService.multiPlatform?.enabled,
             platform: configService.platform,
             routeRules: weappViteConfig.routeRules,
             subPackages: weappViteConfig.subPackages,

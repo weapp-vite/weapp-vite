@@ -40,6 +40,7 @@ import { addPredictedWatchTargets } from './watch'
 
 const VUE_LIKE_PAGE_ENTRY_RE = /\.(?:vue|jsx|tsx)$/
 const VUE_JSON_BLOCK_RE = /<json\b[^>]*>[\s\S]*?<\/json>/gi
+const VUE_SCRIPT_BLOCK_RE = /<script\b[^>]*>[\s\S]*?<\/script>/gi
 const VUE_JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
 const NO_VUE_CONFIG_SIGNATURE = 'no-vue-config'
 
@@ -86,16 +87,15 @@ function collectMatches(source: string, pattern: RegExp) {
 }
 
 function resolveCacheableVueConfigSignature(source: string) {
-  if (VUE_JSON_MACRO_HINT_RE.test(source)) {
-    return undefined
-  }
-
   const jsonBlocks = collectMatches(source, VUE_JSON_BLOCK_RE)
-  if (jsonBlocks.length === 0) {
+  const scriptBlocks = VUE_JSON_MACRO_HINT_RE.test(source)
+    ? collectMatches(source, VUE_SCRIPT_BLOCK_RE)
+    : []
+  if (jsonBlocks.length === 0 && scriptBlocks.length === 0) {
     return NO_VUE_CONFIG_SIGNATURE
   }
 
-  return hashText(jsonBlocks.join('\0'))
+  return hashText([...jsonBlocks, ...scriptBlocks].join('\0'))
 }
 
 function cloneJsonValue<T>(value: T): T {
@@ -332,7 +332,12 @@ export function createEntryLoader(options: EntryLoaderOptions) {
             const cacheSignature = source === undefined
               ? undefined
               : resolveCacheableVueConfigSignature(source)
-            const cachedVueConfig = isJsonStableHmr && cacheSignature
+            // JSON 宏可能依赖脚本块之外的本地模块。依赖图更新时必须重新执行宏，
+            // 即使当前 SFC 的脚本签名没有变化；普通 <json> 块不受该依赖影响。
+            const macroDependencyChanged = source !== undefined
+              && VUE_JSON_MACRO_HINT_RE.test(source)
+              && ctx.runtimeState.build.hmr.profile.dirtyReasonSummary?.some(reason => reason.startsWith('importer-graph:'))
+            const cachedVueConfig = isJsonStableHmr && cacheSignature && !macroDependencyChanged
               ? vueConfigCache.get(vueEntryPath)
               : undefined
             if (cachedVueConfig && cachedVueConfig.signature === cacheSignature) {

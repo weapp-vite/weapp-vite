@@ -10,6 +10,7 @@ export interface HeadlessTestingPageNodeAccessOptions {
   project: HeadlessProjectDescriptor
   session?: HeadlessSession
   includeHostRoots?: boolean
+  projectionOnly?: boolean
 }
 
 export function createPageRootNodeHandle(options: HeadlessTestingPageNodeAccessOptions) {
@@ -23,6 +24,7 @@ export function createPageRootNodeHandle(options: HeadlessTestingPageNodeAccessO
 
   return new HeadlessTestingNodeHandle(rootNode, {
     assertActive: options.assertActive,
+    projectionOnly: options.projectionOnly,
     dispatchNativeEvent: (node, eventName, event, onHandlerResult) => session?.getCurrentPages().at(-1) === page
       ? session.dispatchNativeNodeEvent(node, eventName, event, onHandlerResult)
       : false,

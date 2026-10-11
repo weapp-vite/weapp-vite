@@ -1,7 +1,7 @@
 {
   "name": "@weapp-core/types",
   "type": "module",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Shared TypeScript intrinsic element types for WeChat and multi-platform mini-programs.",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
@@ -68,13 +68,14 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
-    "test:types": "pnpm build && tsd --typings dist/index.d.mts --files \"test-d/**/*.test-d.ts\"",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --typings dist/index.d.mts --files \"test-d/**/*.test-d.ts\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
     "tsd": "^0.33.0",
-    "tsdown": "0.23.0",
+    "tsdown": "0.23.1",
     "typescript": "catalog:"
   },
   "publishConfig": {

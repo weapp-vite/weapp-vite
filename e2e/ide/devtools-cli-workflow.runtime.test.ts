@@ -4,7 +4,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { connectMiniProgram, resolveProjectAutomatorPort } from 'weapp-ide-cli'
+import { connectMiniProgram, persistOpenedAutomatorSession, resolveProjectAutomatorPort } from 'weapp-ide-cli'
 import { registerRuntimeTools } from '../../packages/mcp/src/server/runtime'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
@@ -291,6 +291,8 @@ async function runDevHotkeyScreenshotSmoke(options: {
   const devArgs = [
     'dev',
     '-o',
+    '--ide-open-strategy',
+    'automator',
     '--non-interactive',
     '--login-retry',
     'never',
@@ -401,8 +403,15 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
     }
     await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
     miniProgram = await launchAutomator({
+      bridgeProjectMode: 'direct',
       launchMode: 'bridge',
       maxLaunchRetries: 2,
+      onSessionMetadata: async (metadata) => {
+        await persistOpenedAutomatorSession({
+          cliPath: process.env.WEAPP_IDE_CLI_PATH,
+          ...metadata,
+        })
+      },
       port: AUTOMATOR_PORT,
       projectPath: TEMPLATE_ROOT,
       retryWarmupTimeout: true,
@@ -677,8 +686,8 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
       '3000',
       '--no-runtime-service',
     ], [
-      /无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket/,
-      /请确认当前打开的是目标项目|Please confirm the current DevTools window is the target project/,
+      /无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|Managed DevTools window budget exhausted|Managed DevTools project already has an active session/,
+      /请确认当前打开的是目标项目|Please confirm the current DevTools window is the target project|close the previous owned project|existing endpoint in connect-only mode/,
     ])
   })
 

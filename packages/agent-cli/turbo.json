@@ -1,0 +1,23 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "$TURBO_ROOT$/scripts/weapp-agent/sync-skill.mjs",
+        "$TURBO_ROOT$/skills/weapp-acceptance/**"
+      ],
+      "outputs": [
+        "$TURBO_EXTENDS$",
+        "skills/**"
+      ]
+    },
+    "lint": {
+      "dependsOn": [
+        "$TURBO_EXTENDS$",
+        "build"
+      ]
+    }
+  }
+}

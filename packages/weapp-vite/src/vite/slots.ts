@@ -5,6 +5,7 @@ const descriptors: Array<[string, Plugin['enforce']?]> = [
   ['weapp-vite:runtime-provider:web-runtime', 'pre'],
   ['@weapp-vite/web', 'pre'],
   ['weapp-vite:module-graph-provider', 'pre'],
+  ['weapp-vite:stateful-style-client', 'pre'],
   ['weapp-vite:hmr-input', 'pre'],
   ['weapp-vite:stateful-hmr-sidecar', 'pre'],
   ['weapp-vite:stateful-hmr-session', 'post'],

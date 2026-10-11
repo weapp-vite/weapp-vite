@@ -43,6 +43,16 @@ vi.mock('../../../utils', async () => {
   }
 })
 
+vi.mock('../../../utils/entryResolve', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../utils/entryResolve')>()
+  return {
+    ...actual,
+    resolveEntryPath: vi.fn(async (id: string) => path.extname(id)
+      ? undefined
+      : await findVueEntryMock(id) ?? (await findJsEntryMock(id)).path),
+  }
+})
+
 describe('core lifecycle load hook injectWeapi', () => {
   beforeEach(() => {
     findJsEntryMock.mockReset()
@@ -213,7 +223,7 @@ describe('core lifecycle load hook injectWeapi', () => {
       loadEntry,
       loadedEntrySet: new Set<string>(),
       entriesMap: new Map([
-        ['pages/logs/hmr-added', { type: 'page' }],
+        ['pages/logs/hmr-added', { type: 'page', path: sourceId }],
       ]),
     } as any)
 
@@ -256,7 +266,7 @@ describe('core lifecycle load hook injectWeapi', () => {
       loadEntry,
       loadedEntrySet: new Set<string>(),
       entriesMap: new Map([
-        ['pages/logs/index', { type: 'page' }],
+        ['pages/logs/index', { type: 'page', path: sourceId }],
       ]),
     } as any)
 
@@ -461,7 +471,7 @@ describe('core lifecycle load hook injectWeapi', () => {
       loadEntry,
       loadedEntrySet: new Set<string>(),
       entriesMap: new Map([
-        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+        ['pages/request-globals/fetch', { type: 'page', path: sourceId }],
       ]),
     } as any)
 
@@ -984,6 +994,13 @@ describe('core lifecycle load hook injectWeapi', () => {
 })
 
 describe('core lifecycle options hook', () => {
+  beforeEach(() => {
+    findJsEntryMock.mockReset()
+    findJsEntryMock.mockResolvedValue({ path: undefined, predictions: [] })
+    findVueEntryMock.mockReset()
+    findVueEntryMock.mockResolvedValue(undefined)
+  })
+
   it('builds input map from subPackageMeta entries', async () => {
     findJsEntryMock.mockImplementation(async (id: string) => ({
       path: `${id}.ts`,

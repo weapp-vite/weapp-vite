@@ -270,6 +270,12 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
           .createScheduler(schedulerOptions)
       : createSetDataScheduler(schedulerOptions)
     const job = () => scheduler.job()
+    // HMR 延迟快照可能把 setup 状态恢复为与宿主相同的值；此时调度器不会因值变化重新运行
+    // tracker。先主动触达一次新 setup 的响应式依赖，确保后续 ref/computed 更新仍能进入调度器。
+    const flushSetupSnapshotSync = () => {
+      tracker?.()
+      scheduler.job()
+    }
 
     tracker = effect(
       () => {
@@ -396,14 +402,14 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
 
     try {
       Object.defineProperty(runtimeInstance, '__wevu_flushSetupSnapshotSync', {
-        value: job,
+        value: flushSetupSnapshotSync,
         configurable: true,
         enumerable: false,
         writable: false,
       })
     }
     catch {
-      ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_flushSetupSnapshotSync = job
+      ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_flushSetupSnapshotSync = flushSetupSnapshotSync
     }
 
     try {

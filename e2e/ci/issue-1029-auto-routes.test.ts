@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createIssue1029Project, runIssue1029Command } from '../utils/issue1029Project'
+import { runWithCleanup } from '../utils/runWithCleanup'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const projects: string[] = []
@@ -216,7 +217,7 @@ Page({ data: { routeMarker: '${name}' } })
       const files = await readdir(output, { recursive: true })
       return (await Promise.all(files.filter(file => file.endsWith('.js')).map(file => readFile(path.join(output, file), 'utf8')))).join('\n')
     }
-    try {
+    await runWithCleanup(async () => {
       await dev.waitFor(expect.poll(async () => {
         const scripts = await readEmittedScripts()
         return {
@@ -235,10 +236,7 @@ Page({ data: { routeMarker: '${name}' } })
       await dev.waitFor(expect.poll(readEmittedScripts, { timeout: 90_000 }).toContain('external-profile-after-save'), 'external script metadata save updates runtime data')
       await dev.waitFor(expect.poll(() => readFile(declaration, 'utf8'), { timeout: 30_000 }).toMatch(/external["']?\s*:\s*boolean/), 'external script metadata save updates type shape')
       expect(await readEmittedScripts()).not.toMatch(/\b(?:definePage|declarePage)\s*\(/)
-    }
-    finally {
-      await dev.stop(5_000)
-    }
+    }, () => dev.stop(5_000))
     await runIssue1029Command(project, 'prepare')
     expect(await readFile(declaration, 'utf8')).toMatch(/revision["']?\s*:\s*number/)
     expect(await readFile(declaration, 'utf8')).toMatch(/external["']?\s*:\s*boolean/)

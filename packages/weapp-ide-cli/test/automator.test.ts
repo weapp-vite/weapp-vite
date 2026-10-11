@@ -9,6 +9,7 @@ import {
   isDevtoolsHttpPortError,
   isRetryableAutomatorLaunchError,
   launchAutomator,
+  persistOpenedAutomatorSession,
 } from '../src/cli/automator'
 
 const machineLeaseMock = vi.hoisted(() => vi.fn(async (run: () => Promise<unknown>) => await run()))
@@ -119,6 +120,60 @@ describe('automator helpers', () => {
       expect(isDevtoolsHttpPortError(null)).toBe(false)
       expect(isDevtoolsHttpPortError(undefined)).toBe(false)
     })
+  })
+
+  it('persists externally opened sessions with the selected installation identity', async () => {
+    await persistOpenedAutomatorSession({
+      cliPath: 'stable-cli',
+      port: 19620,
+      projectPath: mockProjectPath,
+      wsEndpoint: 'ws://127.0.0.1:19620',
+    })
+
+    expect(writeFileMock).toHaveBeenCalledWith(
+      expect.stringContaining('weapp-vite-automator-sessions'),
+      expect.stringContaining('"installationId": "test-installation"'),
+      expect.objectContaining({ encoding: 'utf8' }),
+    )
+  })
+
+  it('rejects non-loopback automator endpoints before persisting a session', async () => {
+    await expect(persistOpenedAutomatorSession({
+      cliPath: 'stable-cli',
+      projectPath: mockProjectPath,
+      wsEndpoint: 'ws://192.0.2.1:19620',
+    })).rejects.toThrow('DEVTOOLS_SESSION_ENDPOINT_INVALID')
+    expect(writeFileMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects a session port that differs from the websocket endpoint', async () => {
+    await expect(persistOpenedAutomatorSession({
+      cliPath: 'stable-cli',
+      port: 19621,
+      projectPath: mockProjectPath,
+      wsEndpoint: 'ws://127.0.0.1:19620',
+    })).rejects.toThrow('DEVTOOLS_SESSION_PORT_MISMATCH')
+    expect(writeFileMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects headless sessions instead of touching DevTools state', async () => {
+    await expect(persistOpenedAutomatorSession({
+      projectPath: mockProjectPath,
+      runtimeProvider: 'headless',
+      wsEndpoint: 'ws://127.0.0.1:19620',
+    })).rejects.toThrow('DEVTOOLS_SESSION_PROVIDER_INVALID')
+    expect(writeFileMock).not.toHaveBeenCalled()
+  })
+
+  it('also persists an unqualified default session when no selector is provided', async () => {
+    await persistOpenedAutomatorSession({
+      cliPath: 'stable-cli',
+      projectPath: mockProjectPath,
+      wsEndpoint: 'ws://127.0.0.1:19620',
+    })
+    expect(writeFileMock).toHaveBeenCalledTimes(2)
+    expect(writeFileMock.mock.calls[0]?.[1]).toContain('"port"')
+    expect(writeFileMock.mock.calls[1]?.[1]).not.toContain('"port"')
   })
 
   describe('isDevtoolsExtensionContextInvalidatedError', () => {
@@ -251,7 +306,7 @@ describe('automator helpers', () => {
         projectPath: mockProjectPath,
         trustProject: false,
       })
-      expect(resolveTargetMock).toHaveBeenCalledExactlyOnceWith({ cliPath: '/custom/cli', projectPath: mockProjectPath })
+      expect(resolveTargetMock).toHaveBeenCalledExactlyOnceWith({ cliPath: '/custom/cli', projectPath: '/workspace/project' })
       expect(launchMock).toHaveBeenCalledWith({
         signal: expect.any(AbortSignal),
         timeout: expect.any(Number),

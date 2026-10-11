@@ -124,6 +124,104 @@ describe('static DOM plan inventory', () => {
     expect(cases.every(item => item.plans.length === 1 && item.notes.length === 0)).toBe(true)
   })
 
+  it('excludes inactive boolean branches for each suite row', () => {
+    const cases = analyzeCaseSource(`
+      describe.each([['native', true], ['augmented', false]])('%s', (kind, native) => {
+        it('shared', ctx => createDomAcceptance(ctx, kind, []))
+        if (native) {
+          if (false) {
+            it('unreachable', ctx => createDomAcceptance(ctx, kind, []))
+          } else {
+            it('native-owner', ctx => createDomAcceptance(ctx, kind, []))
+          }
+        } else {
+          it('augmented-owner', ctx => createDomAcceptance(ctx, kind, []))
+        }
+      })
+    `, 'e2e/ide/conditional.test.ts')
+    expect(cases.map(item => item.name)).toEqual([
+      'native > shared',
+      'native > native-owner',
+      'augmented > shared',
+      'augmented > augmented-owner',
+    ])
+  })
+
+  it('keeps both possible branches when the condition is unresolved', () => {
+    const cases = analyzeCaseSource(`
+      if (runtimeFlag()) {
+        it('enabled', ctx => createDomAcceptance(ctx, 'fixture', []))
+      } else {
+        it('disabled', ctx => createDomAcceptance(ctx, 'fixture', []))
+      }
+    `, 'e2e/ide/dynamic-condition.test.ts')
+    expect(cases.map(item => item.name)).toEqual(['enabled', 'disabled'])
+  })
+
+  it('does not use stale variable initializers to exclude runnable cases', () => {
+    const cases = analyzeCaseSource(`
+      let enabled = false
+      enabled = true
+      if (enabled) {
+        it('reassigned', () => {})
+      }
+      describe('shadow', () => {
+        const enabled = false
+      })
+      describe('sibling', () => {
+        if (enabled) {
+          it('outer-binding', () => {})
+        }
+      })
+    `, 'e2e/ide/mutable.test.ts')
+    expect(cases.map(item => item.name)).toEqual(['reassigned', 'sibling > outer-binding'])
+  })
+
+  it('keeps uncertain branches for mutated or shadowed matrix parameters', () => {
+    const cases = analyzeCaseSource(`
+      describe.each([false])('mutated %s', enabled => {
+        enabled = true
+        if (enabled) {
+          it('runs', () => {})
+        }
+      })
+      describe.each([false])('shadowed %s', active => {
+        describe('inner', () => {
+          const active = runtimeFlag()
+          if (active) {
+            it('possible', () => {})
+          }
+        })
+      })
+    `, 'e2e/ide/uncertain-parameters.test.ts')
+    expect(cases.map(item => item.name)).toEqual(['mutated false > runs', 'shadowed false > inner > possible'])
+  })
+
+  it('does not prune loop-assigned or rest parameters as boolean scalars', () => {
+    const cases = analyzeCaseSource(`
+      describe.each([false])('for-of %s', value => {
+        for (value of [true]) {
+          if (value) {
+            it('runs', () => {})
+          }
+        }
+      })
+      describe.each([false])('for-in %s', key => {
+        for (key in { entry: true }) {
+          if (key) {
+            it('runs', () => {})
+          }
+        }
+      })
+      describe.each([false])('rest %s', (...values) => {
+        if (values) {
+          it('runs', () => {})
+        }
+      })
+    `, 'e2e/ide/parameter-boundaries.test.ts')
+    expect(cases.map(item => item.name)).toEqual(['for-of false > runs', 'for-in false > runs', 'rest false > runs'])
+  })
+
   it('expands tuple suites but rejects unsupported title substitutions', () => {
     const cases = analyzeCaseSource(`
       describe.skip.each([['native', false], ['vue', true]])('%# %s/%s', (kind, external) => {

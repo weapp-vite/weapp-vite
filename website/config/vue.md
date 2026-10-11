@@ -28,7 +28,7 @@ keywords:
 ## `weapp.vue.template` {#weapp-vue-template}
 - **类型**：
   ```ts
-  {
+  interface VueTemplateOptions {
     simplifyWhitespace?: boolean
     formatWxml?: boolean | 'auto'
     htmlTagToWxml?: boolean | Record<string, string>
@@ -124,7 +124,13 @@ export default defineConfig({
   - `auto`：自动选择最小可用方案（默认）。
   - `augmented`：强制使用增强方案。
   - `off`：关闭 scoped slot（仅保留原生 slot，不支持 slot props）。
-- `scopedSlotsRequireProps`：仅在 slot 传递作用域参数时才生成 scoped slot 组件。默认 `false`，普通插槽内容也会走增强 scoped slot 组件，以便 slot 投影下的运行时父子关系可被 `provide()` / `inject()` 正确解析；设为 `true` 可保留普通插槽的原生 slot 输出。
+- `scopedSlotsRequireProps`：仅在 slot 传递作用域参数时才生成 scoped slot 组件。默认 `false`，普通插槽内容也会走增强 scoped slot 组件；设为 `true` 可保留普通插槽的原生 slot 输出。
+  - 微信目标（`weapp`）下，编译后的 Wevu 组件使用默认 `setupLifecycle: 'attached'` 时，普通原生插槽中的消费者会在 `setup()` 前同步关联最近的 Wevu 插槽承载者。因此 `<Provider><Leaf /></Provider>` 中的 `Leaf` 可以直接 `inject()` Provider 提供的上下文，无需 scoped props。
+  - 默认、具名、普通节点包裹及嵌套插槽均保留提供对象、ref 和方法的原始身份；多个 Provider 独立，卸载后重建使用新上下文。编译器为已知 Wevu 组件节点（含 Options API 局部注册别名）记录内部声明地址，并结合原生 `<slot>` 的投影事件同步关联父级；接收插槽初始未投影时也不需要延迟 setup 或提前打开组件。循环关系跟随实际原生 key（要求有效且唯一）和声明位置，支持重排及隐藏期间创建子组件。内部实例索引仅属于各自模板所有者，不是应用级 context 表；不增加包装节点，也不改写 `Component.export` 或 `selectOwnerComponent()`。
+  - 显式 `setupLifecycle: 'created'`，以及在 `attached` 前触发的公开实例恢复，仍保持原有的提前 setup 时机，不能使用这条原生插槽上下文保证。原生/第三方组件未参与 Wevu 编译协议时也不自动成为注入承载者。
+  - 该能力已在微信 DevTools Stable `2.02.2608080`（基础库 `3.17.2`、`3.13.2`）和 `2.02.2608060`（基础库 `3.17.2`）验证；mpcore 提供对应回归覆盖，不代替其他版本组合或真机验证。支付宝、抖音、百度和 Web 等其他目标不启用此协议，构建时裁剪其声明属性、事件接收与清理代码，不承诺相同原生 slot 注入行为。
+  - 自定义 Chrome `154` / glass-easel `1.2.1` 预览宿主已验证初始关闭的 Varo Dialog 打开、同步取消关闭及允许关闭后的单次状态更新，并验证 Provider 更新、卸载重挂载和 Menu 选择。该宿主仍有其自身的原生 owner 实现差异，这些结果不等同于微信客户端、其他 glass-easel 宿主或真机兼容保证。
+  - `false` / augmented 和传递实际 scoped props 的既有编译路径保持各自的增强插槽语义。
 - `slotSingleRootNoWrapper`：普通具名插槽内容只有一个可投影根节点时，是否把 `slot="..."` 直接下推到该根节点，避免额外生成 wrapper。
   - 默认 `false`，保持稳定的真实节点 wrapper。
   - 开启后只影响“单个可投影根节点”；多节点、空内容、转发 `<slot />` 等场景仍会保留真实 wrapper。
@@ -218,8 +224,8 @@ export default defineConfig({
 <template>
   <div class="wrap">
     <h3 :class="titleClass">标题</h3>
-    <hr />
-    <br />
+    <hr>
+    <br>
   </div>
 </template>
 ```
@@ -286,20 +292,20 @@ export default defineConfig({
 })
 ```
 
-`component` 匹配的是使用处模板标签名，不是子组件声明名。比如下面这个模板里，`component: 'issue-card'` 会命中，`component: 'HelloWorld'` 不会命中：
+`component` 匹配的是使用处模板标签名，不是子组件声明名。比如下面这个模板里，`component: 'IssueCard'` 会命中，`component: 'HelloWorld'` 不会命中：
 
 ```vue
-<template>
-  <issue-card>
-    <template #header>
-      <slot />
-    </template>
-  </issue-card>
-</template>
-
 <script setup lang="ts">
 import IssueCard from '@/components/IssueCard.vue'
 </script>
+
+<template>
+  <IssueCard>
+    <template #header>
+      <slot />
+    </template>
+  </IssueCard>
+</template>
 ```
 
 如果你希望按子组件自己的名字匹配，需要让子组件声明静态 `defineOptions({ name })`，然后在规则里使用 `componentName`：

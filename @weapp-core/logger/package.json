@@ -1,7 +1,7 @@
 {
   "name": "@weapp-core/logger",
   "type": "module",
-  "version": "3.1.8",
+  "version": "3.1.9",
   "description": "Structured logging utilities for the weapp-vite toolchain and mini-program runtimes.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -51,13 +51,14 @@
     "dev": "tsdown -w --sourcemap",
     "build": "tsdown",
     "test": "vitest run",
-    "test:types": "tsd --typings dist/index.d.ts --files test/index.test-d.ts",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd --typings dist/index.d.ts --files test/index.test-d.ts",
     "test:dev": "vitest",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "sync": "cnpm sync @weapp-core/logger"
+    "sync": "repo release sync-npmmirror --package @weapp-core/logger"
   },
   "tsd": {
     "compilerOptions": {

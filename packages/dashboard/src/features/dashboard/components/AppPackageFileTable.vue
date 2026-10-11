@@ -35,7 +35,7 @@ const fileRows = computed(() => props.files.map(file => createPackageFileRow(fil
 
 <template>
   <div class="max-w-full overflow-x-auto rounded-xl border border-(--dashboard-border)">
-    <table class="min-w-[48rem] divide-y divide-(--dashboard-border) text-left text-sm">
+    <table class="min-w-[48rem] divide-y divide-(--dashboard-border) whitespace-nowrap text-left text-sm">
       <thead class="bg-(--dashboard-panel-muted) text-(--dashboard-text-soft)">
         <tr>
           <th class="px-3 py-2 text-[11px] font-medium uppercase tracking-[0.18em]">
@@ -57,7 +57,7 @@ const fileRows = computed(() => props.files.map(file => createPackageFileRow(fil
       </thead>
       <tbody class="divide-y divide-(--dashboard-border) text-(--dashboard-text-muted)">
         <tr v-for="file in fileRows" :key="file.file">
-          <td class="px-3 py-2 font-mono text-xs text-(--dashboard-text)">
+          <td class="px-3 py-2 whitespace-normal font-mono text-xs text-(--dashboard-text)">
             {{ file.file }}
           </td>
           <td class="px-3 py-2">

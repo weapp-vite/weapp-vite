@@ -2,6 +2,7 @@ import type { ElementNode } from '@vue/compiler-core'
 import type { TransformContext, TransformNode } from '../types'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
+import { withNativeDeclarationScope } from '../nativeDeclaration'
 import { collectElementAttributes } from './attrs'
 import { shouldTransformAsComponentWithSlots, transformComponentWithSlots } from './tag-component'
 
@@ -12,15 +13,15 @@ export function transformNormalElement(node: ElementNode, context: TransformCont
     return transformComponentWithSlots(node, context, transformNode)
   }
 
-  const { attrs, vTextExp } = collectElementAttributes(node, context, {
+  const { attrs, vTextExp, declaration } = collectElementAttributes(node, context, {
     resolvedTag: tag,
   })
 
   let children = ''
   if (node.children.length > 0) {
-    children = node.children
+    children = withNativeDeclarationScope(context, declaration, () => node.children
       .map(child => transformNode(child, context))
-      .join('')
+      .join(''))
   }
   if (vTextExp !== undefined) {
     children = renderMustache(vTextExp, context)

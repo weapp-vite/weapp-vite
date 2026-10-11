@@ -1,12 +1,18 @@
 import type { Reporter, TestRunResult } from 'vitest/node'
 import type { MpcoreArtifactWatchCallbacks } from './config'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { Worker } from 'node:worker_threads'
 import { describe, expect, it, vi } from 'vitest'
 import { createVitest } from 'vitest/node'
-import { configEntry, createRunnerFixture, packageRoot } from './runner/fixtures'
+import { configEntry, createRunnerFixture, packageRoot, runnerFixturesRoot } from './runner/fixtures'
+
+declare module 'vitest' {
+  interface ProvidedContext {
+    mpcoreRunnerEventsFile: string
+  }
+}
 
 function assertPassed(result: TestRunResult) {
   expect(result.unhandledErrors).toEqual([])
@@ -53,9 +59,10 @@ describe('@mpcore/vitest real runner integration', { concurrent: false }, () => 
       const build = vi.fn(async () => fixture.artifacts[0]!)
       const watch = vi.fn()
       runner = await createVitest({
-        root,
+        root: runnerFixturesRoot,
         config: false,
-        include: ['owned/*.test.mjs'],
+        provide: { mpcoreRunnerEventsFile: fixture.eventsFile },
+        include: ['owned/*.fixture.mjs'],
         watch: false,
         pool: 'threads',
         isolate: false,
@@ -63,6 +70,7 @@ describe('@mpcore/vitest real runner integration', { concurrent: false }, () => 
         coverage: { enabled: false },
         reporters: [],
       }, {
+        cacheDir: path.join(root, 'vite-cache'),
         plugins: [mpcoreTest({ artifact: { build, watch } })],
         server: { fs: { allow: [root, packageRoot] } },
       })
@@ -78,11 +86,15 @@ describe('@mpcore/vitest real runner integration', { concurrent: false }, () => 
   }, 60_000)
 
   it('updates provide on rerun, reruns only its project and closes its watcher once', async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'mpcore-runner-watch-'))
+    const workspace = await realpath(await mkdtemp(path.join(os.tmpdir(), 'mpcore-runner-watch-')))
+    const root = runnerFixturesRoot
+    const externalManifest = path.join(workspace, 'dependency/package.json')
     let runner: Awaited<ReturnType<typeof createVitest>> | undefined
     const close = vi.fn(async () => undefined)
     try {
-      const fixture = await createRunnerFixture(root)
+      await mkdir(path.dirname(externalManifest))
+      await writeFile(externalManifest, JSON.stringify({ name: 'external-fixture' }))
+      const fixture = await createRunnerFixture(workspace)
       const { mpcoreTest } = await import(configEntry.href) as typeof import('./config')
       const build = vi.fn(async () => fixture.artifacts[0]!)
       let callbacks!: MpcoreArtifactWatchCallbacks
@@ -91,7 +103,11 @@ describe('@mpcore/vitest real runner integration', { concurrent: false }, () => 
         return { artifact: fixture.artifacts[0]!, close }
       })
       const results: TestRunResult[] = []
+      const reruns: { files: string[], trigger?: string }[] = []
       const reporter: Reporter = {
+        onWatcherRerun(files, trigger) {
+          reruns.push({ files: files.map(file => path.relative(root, file).split(path.sep).join('/')), trigger })
+        },
         onTestRunEnd(testModules, unhandledErrors) {
           results.push({ testModules: [...testModules], unhandledErrors: [...unhandledErrors] })
         },
@@ -99,7 +115,10 @@ describe('@mpcore/vitest real runner integration', { concurrent: false }, () => 
       runner = await createVitest({
         root,
         config: false,
+        provide: { mpcoreRunnerEventsFile: fixture.eventsFile },
         watch: true,
+        // 仅本 fixture 的清单可触发全量重跑；外部依赖仍保留 Vitest 的模块图监听。
+        forceRerunTriggers: [path.join(root, 'package.json').split(path.sep).join('/')],
         pool: 'threads',
         isolate: false,
         maxWorkers: 1,
@@ -108,13 +127,19 @@ describe('@mpcore/vitest real runner integration', { concurrent: false }, () => 
         reporters: [reporter],
         projects: [
           {
+            cacheDir: path.join(workspace, 'vite-cache/owned'),
             plugins: [mpcoreTest({ artifact: { build, watch } })],
-            test: { name: 'owned', root, include: ['owned/*.test.mjs'], pool: 'threads', isolate: false },
+            test: { name: 'owned', root, include: ['owned/*.fixture.mjs'], pool: 'threads', isolate: false },
           },
-          { test: { name: 'other', root, include: ['other/*.test.mjs'], pool: 'threads', isolate: false } },
+          {
+            cacheDir: path.join(workspace, 'vite-cache/other'),
+            test: { name: 'other', root, include: ['other/*.fixture.mjs'], pool: 'threads', isolate: false },
+          },
         ],
       }, {
-        server: { fs: { allow: [root, packageRoot] }, watch: { ignored: ['**/events.log', '**/artifacts/**'] } },
+        // 被监听的测试模块保持静态；日志、产物与缓存仅写入本轮临时目录。
+        cacheDir: path.join(workspace, 'vite-cache/root'),
+        server: { fs: { allow: [workspace, packageRoot] }, watch: { ignored: ['**/events.log', '**/artifacts/**'] } },
       })
       assertPassed(await runner.start())
       expect(build).not.toHaveBeenCalled()
@@ -134,6 +159,12 @@ describe('@mpcore/vitest real runner integration', { concurrent: false }, () => 
       for (const revision of ['first', 'second']) {
         expect(new Set(owned.filter(event => event.revision === revision).map(event => event.threadId)).size).toBe(1)
       }
+      // 模拟宿主已观察到的外部清单变化，不修改共享仓库或依赖其他测试的写入时序。
+      runner.vite.watcher.emit('change', externalManifest.split(path.sep).join('/'))
+      // 在文件监听的防抖窗口后核对没有额外执行；原项目重跑与关闭断言均保持精确计数。
+      await new Promise(resolve => setTimeout(resolve, 1_000))
+      expect(results, JSON.stringify({ reruns, events: await fixture.events() })).toHaveLength(2)
+      expect(await fixture.events()).toEqual(updated)
       await runner.close()
       expect(close).toHaveBeenCalledOnce()
       await callbacks.onRebuilt(fixture.artifacts[0]!)
@@ -141,7 +172,7 @@ describe('@mpcore/vitest real runner integration', { concurrent: false }, () => 
     }
     finally {
       await runner?.close()
-      await rm(root, { recursive: true, force: true })
+      await rm(workspace, { recursive: true, force: true })
     }
   }, 120_000)
 })

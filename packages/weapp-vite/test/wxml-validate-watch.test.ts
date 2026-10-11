@@ -18,11 +18,16 @@ describe('WXML validation external dependencies', { concurrent: false }, () => {
     const failures: unknown[] = []
     const read = (file: string) => fs.readFile(path.join(project.tempDir, 'dist', file), 'utf8').catch(() => '')
     const waitForLabel = async (label: string) => {
-      await expect.poll(async () => (await Promise.all(outputs.map(read))).every(code => code.includes(`data-rule="${label}"`) && code.includes('<!-- output-plugin -->') && code.includes('data-subtree-visited="{{true}}"')), { timeout: 45_000 }).toBe(true)
+      let contents: string[] = []
+      await expect.poll(async () => {
+        contents = await Promise.all(outputs.map(read))
+        return contents.every(code => code.includes(`data-rule="${label}"`) && code.includes('<!-- output-plugin -->') && code.includes('data-subtree-visited="{{true}}"'))
+      }, { timeout: 45_000 }).toBe(true)
+      return contents
     }
     try {
       watcher = await compiler.ctx.buildService.build({ skipNpm: true }) as WatcherInstance
-      await waitForLabel('initial')
+      let previous = await waitForLabel('initial')
       ;(watcher as WatcherInstance & { on: (name: string, cb: (event: { code: string, error?: unknown }) => void) => void }).on('event', (event) => {
         if (event.code === 'ERROR') {
           failures.push(event.error)
@@ -36,16 +41,17 @@ describe('WXML validation external dependencies', { concurrent: false }, () => {
         await fs.writeJSON(rules, { reject })
         await expect.poll(() => failures.length, { timeout: 45_000 }).toBeGreaterThan(failedCount)
         failedCount = failures.length
-        const previous = await Promise.all(outputs.map(read))
+        expect(await Promise.all(outputs.map(read))).toEqual(previous)
         await fs.writeJSON(transformRules, { label: reject === 'pages/' ? 'main-retry' : 'child-retry' })
         await expect.poll(() => failures.length, { timeout: 45_000 }).toBeGreaterThan(failedCount)
         failedCount = failures.length
         expect(await Promise.all(outputs.map(read))).toEqual(previous)
         await fs.writeJSON(rules, {})
-        await waitForLabel(reject === 'pages/' ? 'main-retry' : 'child-retry')
+        previous = await waitForLabel(reject === 'pages/' ? 'main-retry' : 'child-retry')
       }
       await fs.remove(rules)
       await expect.poll(() => failures.length, { timeout: 45_000 }).toBeGreaterThan(failedCount)
+      expect(await Promise.all(outputs.map(read))).toEqual(previous)
       await fs.writeJSON(rules, {})
       await fs.writeJSON(transformRules, { label: 'restored' })
       await waitForLabel('restored')

@@ -1,6 +1,13 @@
 import type { DevframeConnectionStatus, DevframeRpcClient } from 'devframe/client'
 import type { Mock } from 'vitest'
-import type { AnalyzeSubpackagesResult, DashboardRuntimeEvent } from '../types'
+import type {
+  DashboardDevframeState,
+  DashboardInvestigation,
+  DashboardInvestigationsState,
+  DashboardReportIdentity,
+  DashboardRuntimeEvent,
+} from 'weapp-vite/dashboard'
+import type { AnalyzeSubpackagesResult } from '../types'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { watch } from 'vue'
 
@@ -12,26 +19,15 @@ vi.mock('devframe/client', () => ({
   consumeOtpFromUrl: consumeOtpFromUrlMock,
 }))
 
-interface DashboardState {
-  analyze: {
-    current: PayloadDescriptor
-    previous: PayloadDescriptor | null
-  }
-  revision: number
-  runtimeEvents: DashboardRuntimeEvent[]
-}
-
-interface PayloadDescriptor {
-  characters: number
-  hash: string
-  pages: number
-}
+type DashboardState = DashboardDevframeState
 
 interface FakeClientControl {
   call: Mock
   client: DevframeRpcClient
-  emitDashboardState: () => void
+  emitDashboardState: (state?: DashboardState) => void
   emitStatus: (status: DevframeConnectionStatus, error?: Error) => void
+  setInvestigations: (state: DashboardInvestigationsState) => void
+  setSessionId: (id: string) => void
   setSnapshot: (
     current: AnalyzeSubpackagesResult,
     previous: AnalyzeSubpackagesResult | null,
@@ -58,6 +54,7 @@ function createRuntimeEvent(id: string): DashboardRuntimeEvent {
     title: id,
     detail: id,
     timestamp: '10:00:00',
+    occurredAt: '2026-01-01T10:00:00.000Z',
     source: 'weapp-vite',
   }
 }
@@ -80,6 +77,8 @@ function createFakeClient(
   initialCurrent: AnalyzeSubpackagesResult,
   initialPrevious: AnalyzeSubpackagesResult | null = null,
 ): FakeClientControl {
+  let sessionId = `session:${initialCurrent.packages[0]?.id ?? 'empty'}`
+  let investigations: DashboardInvestigationsState = { version: 0, items: [] }
   let status: DevframeConnectionStatus = 'connected'
   let connectionError: Error | null = null
   let current = serializePayload(initialCurrent)
@@ -91,6 +90,8 @@ function createFakeClient(
   const errorListeners = new Set<(error: Error) => void>()
 
   const getState = (): DashboardState => ({
+    sessionId,
+    investigations,
     analyze: {
       current: current.descriptor,
       previous: previous?.descriptor ?? null,
@@ -179,8 +180,8 @@ function createFakeClient(
   return {
     call,
     client,
-    emitDashboardState() {
-      dashboardStateHandler?.(getState())
+    emitDashboardState(state) {
+      dashboardStateHandler?.(state ?? getState())
     },
     emitStatus(nextStatus, error) {
       const previousStatus = status
@@ -195,12 +196,37 @@ function createFakeClient(
         }
       }
     },
+    setInvestigations(state) {
+      investigations = state
+    },
+    setSessionId(id) {
+      sessionId = id
+    },
     setSnapshot(nextCurrent, nextPrevious, nextRevision, events = runtimeEvents) {
       current = serializePayload(nextCurrent)
       previous = nextPrevious ? serializePayload(nextPrevious) : null
       revision = nextRevision
       runtimeEvents = events
     },
+  }
+}
+
+function createInvestigation(report: DashboardReportIdentity, id = 'task-1'): DashboardInvestigation {
+  return {
+    id,
+    version: 1,
+    createdAt: '2026-10-06T00:00:00.000Z',
+    updatedAt: '2026-10-06T00:00:00.000Z',
+    report,
+    target: { kind: 'package', packageId: 'initial' },
+    question: 'Explain the measured package size',
+    evidence: { label: 'initial', rawBytes: null, gzipBytes: null, brotliBytes: null, attributedBytes: null, sourceBytes: null },
+    status: 'submitted',
+    agent: null,
+    proposal: null,
+    authorization: null,
+    receipt: null,
+    verification: null,
   }
 }
 
@@ -277,6 +303,12 @@ describe('dashboard Devframe client', () => {
     vi.useFakeTimers()
     const first = createFakeClient(createResult('first'))
     const second = createFakeClient(createResult('second'))
+    const ready = Promise.withResolvers<void>()
+    const readState = second.call.getMockImplementation()!
+    second.call.mockImplementationOnce(async (...args) => {
+      await ready.promise
+      return readState(...args)
+    })
     connectDevframeMock
       .mockResolvedValueOnce(first.client)
       .mockResolvedValueOnce(second.client)
@@ -293,13 +325,43 @@ describe('dashboard Devframe client', () => {
     expect(transport.dashboardConnectionStatus.value).toBe('disconnected')
 
     await vi.advanceTimersByTimeAsync(250)
+    expect(transport.dashboardConnectionStatus.value).toBe('connected')
+    expect(transport.dashboardAnalyzeSnapshot.value?.current.packages[0]?.id).toBe('first')
+    expect(transport.dashboardAnalyzeRevision.value).toBeNull()
+    ready.resolve()
     await vi.waitFor(() => {
       expect(connectDevframeMock).toHaveBeenCalledTimes(2)
       expect(transport.dashboardAnalyzeSnapshot.value?.current.packages[0]?.id).toBe('second')
       expect(transport.dashboardConnectionStatus.value).toBe('connected')
     })
-    expect(hydratedRevisions).toEqual([0, 0])
+    expect(hydratedRevisions).toEqual([0, null, 0])
     stopRevisionWatch()
+  })
+
+  it('withdraws the readable revision while an announced report is still hydrating', async () => {
+    const initial = createResult('initial')
+    const control = createFakeClient(initial)
+    connectDevframeMock.mockResolvedValue(control.client)
+    const transport = await loadDashboardTransport()
+    await transport.connectDashboardDevframe()
+
+    const ready = Promise.withResolvers<void>()
+    const readPage = control.call.getMockImplementation()!
+    control.call.mockImplementationOnce(async (...args) => {
+      await ready.promise
+      return readPage(...args)
+    })
+    control.setSnapshot(createResult('next'), initial, 1)
+    control.emitDashboardState()
+
+    expect(transport.dashboardAnalyzeSnapshot.value?.current).toEqual(initial)
+    expect(transport.dashboardAnalyzeRevision.value).toBeNull()
+    await expect(transport.readDashboardFileContent('source', 'src/app.ts', 0)).rejects.toThrow('Analyze revision 已变化')
+    ready.resolve()
+    await vi.waitFor(() => {
+      expect(transport.dashboardAnalyzeRevision.value).toBe(1)
+      expect(transport.dashboardAnalyzeSnapshot.value?.current.packages[0]?.id).toBe('next')
+    })
   })
 
   it('reconnects after a post-connect pagination failure', async () => {
@@ -545,5 +607,144 @@ describe('dashboard Devframe client', () => {
     deferred.resolve(response)
 
     await expect(pendingRead).rejects.toThrow('文件读取期间连接已变化')
+  })
+})
+
+describe('investigation transport identity', () => {
+  it('hydrates report identity and updates task metadata without downloading unchanged reports', async () => {
+    const control = createFakeClient(createResult('initial'))
+    connectDevframeMock.mockResolvedValue(control.client)
+    const transport = await loadDashboardTransport()
+    await transport.connectDashboardDevframe()
+    const report = transport.dashboardReportIdentity.value!
+    expect(report).toEqual({ sessionId: 'session:initial', revision: 0, reportHash: serializePayload(createResult('initial')).descriptor.hash })
+    const pageCount = control.call.mock.calls.filter(([method]) => method === 'get-analyze-page').length
+    const task = createInvestigation(report)
+    control.setInvestigations({ version: 1, items: [task] })
+    control.emitDashboardState()
+    await vi.waitFor(() => expect(transport.dashboardInvestigations.value.items).toEqual([task]))
+    expect(transport.dashboardReportIdentity.value).toEqual(report)
+    expect(control.call.mock.calls.filter(([method]) => method === 'get-analyze-page')).toHaveLength(pageCount)
+
+    control.setInvestigations({ version: 0, items: [] })
+    control.emitDashboardState()
+    expect(transport.dashboardInvestigations.value.items).toEqual([task])
+  })
+
+  it('withdraws the full identity during hydration and clears tasks on a different controller', async () => {
+    const initial = createResult('initial')
+    const control = createFakeClient(initial)
+    connectDevframeMock.mockResolvedValue(control.client)
+    const transport = await loadDashboardTransport()
+    await transport.connectDashboardDevframe()
+    const task = createInvestigation(transport.dashboardReportIdentity.value!)
+    control.setInvestigations({ version: 1, items: [task] })
+    control.emitDashboardState()
+    await vi.waitFor(() => expect(transport.dashboardInvestigations.value.items).toEqual([task]))
+
+    const ready = Promise.withResolvers<void>()
+    const read = control.call.getMockImplementation()!
+    control.call.mockImplementationOnce(async (...args) => {
+      await ready.promise
+      return read(...args)
+    })
+    control.setSessionId('replacement-controller')
+    control.setInvestigations({ version: 0, items: [] })
+    control.setSnapshot(createResult('replacement'), null, 0)
+    control.emitDashboardState()
+    expect(transport.dashboardReportIdentity.value).toBeNull()
+    expect(transport.dashboardInvestigations.value.items).toEqual([])
+    ready.resolve()
+    await vi.waitFor(() => expect(transport.dashboardReportIdentity.value?.sessionId).toBe('replacement-controller'))
+  })
+
+  it('dispatches an exact proposal grant and accepts only authoritative state for the task list', async () => {
+    const control = createFakeClient(createResult('initial'))
+    connectDevframeMock.mockResolvedValue(control.client)
+    const transport = await loadDashboardTransport()
+    await transport.connectDashboardDevframe()
+    const task: DashboardInvestigation = {
+      ...createInvestigation(transport.dashboardReportIdentity.value!),
+      version: 3,
+      status: 'proposed',
+      proposal: { id: 'proposal-1', summary: 'Remove duplicate work', changes: [{ path: 'src/a.ts', description: 'Deduplicate' }], checks: ['Run focused test'], risks: [] },
+    }
+    control.setInvestigations({ version: 3, items: [task] })
+    control.emitDashboardState()
+    await vi.waitFor(() => expect(transport.dashboardInvestigations.value.version).toBe(3))
+    const accepted: DashboardInvestigation = { ...task, version: 4, status: 'authorized', authorization: { proposalId: 'proposal-1', authorizedAt: task.updatedAt } }
+    control.call.mockImplementationOnce(async () => {
+      control.setInvestigations({ version: 4, items: [accepted] })
+      return accepted
+    })
+    const request = { id: task.id, version: 3, proposalId: 'proposal-1' }
+    await expect(transport.authorizeDashboardInvestigation(request)).resolves.toEqual(accepted)
+    expect(control.call).toHaveBeenCalledWith('authorize-investigation', request)
+    expect(transport.dashboardInvestigations.value).toEqual({ version: 4, items: [accepted] })
+    const callCount = control.call.mock.calls.length
+    await expect(transport.authorizeDashboardInvestigation(request)).rejects.toThrow()
+    expect(control.call).toHaveBeenCalledTimes(callCount)
+  })
+
+  it('does not dispatch a stale report or mismatched proposal', async () => {
+    const control = createFakeClient(createResult('initial'))
+    connectDevframeMock.mockResolvedValue(control.client)
+    const transport = await loadDashboardTransport()
+    await transport.connectDashboardDevframe()
+    const task: DashboardInvestigation = {
+      ...createInvestigation(transport.dashboardReportIdentity.value!),
+      status: 'proposed',
+      proposal: { id: 'replacement', summary: 'Current proposal', changes: [{ path: 'src/a.ts', description: 'Change' }], checks: ['test'], risks: [] },
+    }
+    control.setInvestigations({ version: 1, items: [task] })
+    control.emitDashboardState()
+    await vi.waitFor(() => expect(transport.dashboardInvestigations.value.items).toHaveLength(1))
+    const count = control.call.mock.calls.length
+    await expect(transport.authorizeDashboardInvestigation({ id: task.id, version: task.version, proposalId: 'old' })).rejects.toThrow()
+    await expect(transport.createDashboardInvestigation({ report: { ...task.report, reportHash: 'obsolete' }, target: task.target, question: task.question })).rejects.toThrow()
+    expect(control.call).toHaveBeenCalledTimes(count)
+  })
+
+  it('rejects delayed mutation responses after reconnect without restoring old tasks', async () => {
+    const first = createFakeClient(createResult('initial'))
+    const second = createFakeClient(createResult('new-session'))
+    connectDevframeMock.mockResolvedValueOnce(first.client).mockResolvedValueOnce(second.client)
+    const transport = await loadDashboardTransport()
+    await transport.connectDashboardDevframe()
+    const task = createInvestigation(transport.dashboardReportIdentity.value!)
+    const deferred = Promise.withResolvers<DashboardInvestigation>()
+    first.call.mockImplementationOnce(() => deferred.promise)
+    const pending = transport.createDashboardInvestigation({ report: task.report, target: task.target, question: task.question })
+    first.emitStatus('disconnected')
+    await transport.connectDashboardDevframe()
+    const rejection = expect(pending).rejects.toThrow()
+    deferred.resolve(task)
+    await rejection
+    expect(transport.dashboardReportIdentity.value?.sessionId).toBe('session:new-session')
+    expect(transport.dashboardInvestigations.value.items).toEqual([])
+    expect(second.call.mock.calls.some(([method]) => method === 'create-investigation')).toBe(false)
+  })
+
+  it('ignores a disposed session state query before publishing its metadata', async () => {
+    const first = createFakeClient(createResult('initial'))
+    const second = createFakeClient(createResult('new-session'))
+    connectDevframeMock.mockResolvedValueOnce(first.client).mockResolvedValueOnce(second.client)
+    const transport = await loadDashboardTransport()
+    await transport.connectDashboardDevframe()
+    const task = createInvestigation(transport.dashboardReportIdentity.value!)
+    first.setInvestigations({ version: 1, items: [task] })
+    const oldState = await first.call('get-dashboard-state') as DashboardState
+    const deferred = Promise.withResolvers<DashboardState>()
+    first.call.mockResolvedValueOnce(task).mockImplementationOnce(() => deferred.promise)
+    const pending = transport.createDashboardInvestigation({ report: task.report, target: task.target, question: task.question })
+    await vi.waitFor(() => expect(first.call.mock.calls.filter(([method]) => method === 'get-dashboard-state')).toHaveLength(3))
+    first.emitStatus('disconnected')
+    await transport.connectDashboardDevframe()
+    const rejection = expect(pending).rejects.toThrow()
+    deferred.resolve(oldState)
+    await rejection
+    expect(transport.dashboardReportIdentity.value?.sessionId).toBe('session:new-session')
+    expect(transport.dashboardInvestigations.value.items).toEqual([])
+    expect(transport.dashboardRuntimeEvents.value[0]?.id).toBe('initial')
   })
 })

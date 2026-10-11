@@ -27,6 +27,27 @@ function createSession() {
 }
 
 describe('automator runtime diagnostic lifecycle', () => {
+  it('still closes its project after the connection has already disconnected', async () => {
+    const session = Object.assign(createSession(), { disconnect: vi.fn(), flushConsole: vi.fn(async () => {}) })
+    const close = session.close
+    enhanceMiniProgramWithRuntimeLogs(session, 'e2e-apps/base')
+    session.disconnect()
+    await session.close()
+    await session.close()
+    expect(close).toHaveBeenCalledOnce()
+    expect(session.flushConsole).not.toHaveBeenCalled()
+  })
+
+  it('retries failed project close after log collection has finished', async () => {
+    const session = Object.assign(createSession(), { flushConsole: vi.fn(async () => {}) })
+    const close = session.close.mockRejectedValueOnce(new Error('window remained open'))
+    enhanceMiniProgramWithRuntimeLogs(session, 'e2e-apps/base')
+    await expect(session.close()).rejects.toThrow('window remained open')
+    await session.close()
+    expect(close).toHaveBeenCalledTimes(2)
+    expect(session.flushConsole).toHaveBeenCalledOnce()
+  })
+
   it('journals structured startup Errors before a failed subscription returns', async () => {
     const failure = new Error('Runtime enable failed')
     const connection = Object.assign(new EventEmitter(), {

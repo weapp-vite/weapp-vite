@@ -9,12 +9,13 @@ import { fs } from '@weapp-core/shared/fs'
 import { transform } from 'esbuild'
 import MagicString from 'magic-string'
 import path from 'pathe'
-import { compileVueFile, isUniAppCompatibilityFile, transformUniAppSource } from 'wevu/compiler'
+import { compileVueFile, getMiniProgramTemplatePlatform, isUniAppCompatibilityFile, transformUniAppSource } from 'wevu/compiler'
 import { compileWxml } from '../compiler/wxml'
 import { resolveScriptFile } from './files'
 import { appendInlineQuery, normalizePath, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport } from './path'
 
 const traverse = _babelTraverse
+const webTemplatePlatform = { ...getMiniProgramTemplatePlatform('weapp'), nativeSlotContext: false }
 
 async function resolveSfcSrc(
   request: string,
@@ -53,6 +54,7 @@ export async function compileWebVueSfc(options: {
     isApp: meta.kind === 'app',
     isPage: meta.kind === 'page',
     sourceMap: false,
+    template: { platform: webTemplatePlatform },
     style: {
       preprocessOptions: stylePreprocessOptions,
       preserveDeepSelectors: true,

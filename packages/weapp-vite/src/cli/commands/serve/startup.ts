@@ -14,7 +14,7 @@ import { closeActiveForwardConsole } from '../../forwardConsole'
 import { logBuildAppFinish } from '../../logBuildAppFinish'
 import { applyMcpCliOptions } from '../../mcpOptions'
 import { setCommandNodeEnv } from '../../nodeEnv'
-import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../../options'
+import { filterDuplicateOptions, isUiEnabled, parseDashboardUiHost, resolveConfigFile } from '../../options'
 import { createInlineConfig, logRuntimeTarget, resolveConfiguredRuntimeTargets, resolveRuntimeTargets } from '../../runtime'
 import { createServeDevelopmentActions } from './actions'
 import { createAnalyzeController } from './analyze'
@@ -26,6 +26,7 @@ export async function startServeCommand(root: string, options: GlobalCLIOptions,
     return
   }
   filterDuplicateOptions(options)
+  options.uiHost = parseDashboardUiHost(options.uiHost)
   setCommandNodeEnv('development')
   const cwd = root ?? process.cwd()
   const configFile = resolveConfigFile(options)

@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fixtureWindowsProcessRows } from '../utils/testSupport/windowsProcessRows'
 
 const { execaMock } = vi.hoisted(() => {
   return {
@@ -28,12 +29,30 @@ function createMockChild() {
 }
 
 function createPendingMockChild() {
-  const promise = new Promise(() => {})
+  let resolveChild!: (value: { exitCode: number, signal: undefined }) => void
+  const promise = new Promise<{ exitCode: number, signal: undefined }>((resolve) => {
+    resolveChild = resolve
+  })
+  const nodeChildProcess = new EventEmitter() as EventEmitter & {
+    connected: boolean
+    disconnect: () => void
+    exitCode: number | null
+    signalCode: string | null
+  }
+  nodeChildProcess.connected = false
+  nodeChildProcess.disconnect = vi.fn()
+  nodeChildProcess.exitCode = null
+  nodeChildProcess.signalCode = null
 
   return Object.assign(promise, {
     exitCode: null,
     kill: vi.fn(),
+    nodeChildProcess,
     pid: 12345,
+    resolve: () => {
+      nodeChildProcess.exitCode = 0
+      resolveChild({ exitCode: 0, signal: undefined })
+    },
     stdout: new EventEmitter(),
     stderr: new EventEmitter(),
     all: new EventEmitter(),
@@ -166,7 +185,8 @@ describe('dev process env isolation', () => {
     }))
   })
 
-  it('stops windows package-script dev processes with taskkill without waiting forever', async () => {
+  it.each([undefined, '1'])('stops windows package-script dev processes with taskkill without waiting forever when trace=%s', async (trace) => {
+    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', trace)
     vi.useFakeTimers()
     Object.defineProperty(process, 'platform', {
       value: 'win32',
@@ -175,9 +195,23 @@ describe('dev process env isolation', () => {
     const child = createPendingMockChild()
     execaMock.mockImplementation((command: string) => {
       if (command === 'taskkill') {
+        child.resolve()
         return Promise.resolve({
           exitCode: 0,
           signal: undefined,
+        })
+      }
+
+      if (command === 'powershell.exe') {
+        return Promise.resolve({
+          exitCode: 0,
+          signal: undefined,
+          stdout: fixtureWindowsProcessRows([{
+            ProcessId: 12345,
+            ParentProcessId: 1,
+            ExecutablePath: 'C:\\node.exe',
+            Started: '2026-10-07T01:00:00.0000000Z',
+          }]),
         })
       }
 
@@ -212,11 +246,11 @@ describe('dev process env isolation', () => {
     await vi.advanceTimersByTimeAsync(1_100)
     await stopPromise
 
-    expect(execaMock).toHaveBeenCalledWith('taskkill', ['/PID', '12345', '/T', '/F'], expect.objectContaining({
+    expect(execaMock).toHaveBeenCalledWith('taskkill', ['/PID', '12345', '/F'], expect.objectContaining({
       reject: false,
       stdin: 'ignore',
-      stdout: 'ignore',
-      stderr: 'ignore',
+      timeout: expect.any(Number),
+      windowsHide: true,
     }))
     expect(child.kill).not.toHaveBeenCalled()
   })

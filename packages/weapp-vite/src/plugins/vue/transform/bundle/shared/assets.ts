@@ -421,6 +421,7 @@ export async function emitCompiledEntryBundleAssets(options: {
   const finalizeJsonConfig = isAppVue
     ? (config: Record<string, any>) => finalizeAppConfigForBuild(config, {
         buildScope: options.configService.weappViteConfig?.buildScope,
+        omitEmptySubPackages: options.configService.multiPlatform?.enabled,
         platform: options.configService.platform,
         routeRules: options.configService.weappViteConfig?.routeRules,
         subPackages: options.configService.weappViteConfig?.subPackages,

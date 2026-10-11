@@ -1,7 +1,7 @@
 {
   "name": "@weapp-core/init",
   "type": "module",
-  "version": "6.0.24",
+  "version": "6.0.25",
   "description": "Project initialization utilities for weapp-vite mini-program applications.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -55,7 +55,7 @@
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "sync": "cnpm sync @weapp-core/init",
+    "sync": "repo release sync-npmmirror --package @weapp-core/init",
     "prepublishOnly": "pnpm build"
   },
   "publishConfig": {

@@ -40,7 +40,7 @@ export function collectRuntimeIssues(page: Page) {
   const issues: RuntimeIssue[] = []
   page.on('console', (message) => {
     if (message.type() === 'error' && !isIgnoredConsoleMessage(message.text())) {
-      issues.push({ type: 'console', message: message.text() })
+      issues.push({ type: 'console', message: message.text(), url: message.location().url || undefined })
     }
   })
   page.on('pageerror', (error) => {

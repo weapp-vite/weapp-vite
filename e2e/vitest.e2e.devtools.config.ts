@@ -2,7 +2,6 @@ import path from 'node:path'
 import { configDefaults, defineConfig } from 'vitest/config'
 import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
 import { ensureIdeWarningReportEnv } from './utils/ideWarningReport.ts'
-import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
 
 const DEVTOOLS_GLOBAL_SETUP = path.resolve(import.meta.dirname, './vitest.e2e.ide.global-setup.ts')
@@ -21,9 +20,12 @@ export default defineConfig({
       path.resolve(import.meta.dirname, './ide/**/*.test.ts'),
     ]),
     testTimeout: 36_000_000,
+    // 真实 IDE teardown 需要等待窗口销毁证据与 utility backend 重启。
+    hookTimeout: 120_000,
     globals: true,
     pool: 'threads',
-    maxWorkers: resolveE2EMaxWorkers(),
+    // 微信开发者工具的 renderer/compiler 进程不属于 Vitest worker 树；固定单 worker，避免窗口收尾期间叠加 IDE 会话耗尽宿主内存。
+    maxWorkers: 1,
     fileParallelism: false,
     globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts'), DEVTOOLS_GLOBAL_SETUP],
     setupFiles: [DOM_SETUP_FILE, DEVTOOLS_SETUP_FILE],

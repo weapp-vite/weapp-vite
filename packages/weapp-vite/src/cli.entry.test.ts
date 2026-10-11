@@ -4,17 +4,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const tryRunIdeCommandMock = vi.hoisted(() => vi.fn())
 const loadConfigMock = vi.hoisted(() => vi.fn())
 const nativeActionMock = vi.hoisted(() => vi.fn())
+const handleCLIErrorMock = vi.hoisted(() => vi.fn())
+const syncManagedTsconfigBootstrapFilesMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./cli/ide', () => ({
   tryRunIdeCommand: tryRunIdeCommandMock,
 }))
 
 vi.mock('./cli/commands/alipay', () => ({ registerAlipayCommand: vi.fn() }))
-vi.mock('./cli/commands/analyze', () => ({ registerAnalyzeCommand: vi.fn() }))
+vi.mock('./cli/commands/analyze', () => ({
+  registerAnalyzeCommand: vi.fn((cli: CAC) => cli.command('analyze [root]')
+    .option('--ui-host <host>', 'UI host')
+    .action(nativeActionMock)),
+}))
 vi.mock('./cli/commands/build', () => ({
   registerBuildCommand: vi.fn((cli: CAC) => cli.command('build [root]')
     .option('--upload', 'upload')
     .option('--bump <release>', 'bump')
+    .option('--ui-host <host>', 'UI host')
     .action(nativeActionMock)),
   scheduleCompletedProductionBuildExit: vi.fn(),
 }))
@@ -30,6 +37,7 @@ vi.mock('./cli/commands/serve', () => ({
   registerServeCommand: vi.fn((cli: CAC) => cli.command('[root]')
     .alias('dev')
     .alias('serve')
+    .option('--ui-host <host>', 'UI host')
     .action(nativeActionMock)),
 }))
 vi.mock('./cli/commands/upload', () => ({
@@ -42,7 +50,7 @@ vi.mock('./cli/commands/upload', () => ({
     .action(nativeActionMock)),
   registerPreviewCommand: vi.fn(),
 }))
-vi.mock('./cli/error', () => ({ handleCLIError: vi.fn() }))
+vi.mock('./cli/error', () => ({ handleCLIError: handleCLIErrorMock }))
 vi.mock('./cli/loadConfig', () => ({ loadConfig: loadConfigMock }))
 vi.mock('./aiEnvironment', () => ({ detectAiDevelopmentEnvironment: vi.fn(async () => ({ isAgent: false })) }))
 vi.mock('./mcp', () => ({
@@ -50,7 +58,7 @@ vi.mock('./mcp', () => ({
   startWeappViteMcpServer: vi.fn(),
 }))
 vi.mock('./cli/prepareGuard', () => ({ handlePrepareLifecycleError: vi.fn(() => false) }))
-vi.mock('./runtime/tsconfigSupport', () => ({ syncManagedTsconfigBootstrapFiles: vi.fn() }))
+vi.mock('./runtime/tsconfigSupport', () => ({ syncManagedTsconfigBootstrapFiles: syncManagedTsconfigBootstrapFilesMock }))
 vi.mock('./utils', () => ({ checkRuntime: vi.fn() }))
 vi.mock('./constants', () => ({ VERSION: 'test-version' }))
 
@@ -60,6 +68,8 @@ describe('weapp-vite cli entry', () => {
     tryRunIdeCommandMock.mockReset()
     loadConfigMock.mockReset().mockResolvedValue({ config: { weapp: { mcp: false } } })
     nativeActionMock.mockReset().mockResolvedValue({ schemaVersion: 1, action: 'upload', status: 'success', results: [] })
+    handleCLIErrorMock.mockReset()
+    syncManagedTsconfigBootstrapFilesMock.mockReset()
   })
 
   afterEach(() => {
@@ -94,6 +104,7 @@ describe('weapp-vite cli entry', () => {
     { args: ['--mode', 'test', 'build', '--upload', '--bump', 'patch'], configReads: 0 },
     { args: ['--config', 'vite.config.mjs', 'upload', '--bump', 'patch'], configReads: 0 },
     { args: ['--mode', 'test', 'dev'], configReads: 0 },
+    { args: ['build', '--ui-host', 'invalid', '--ui-host', 'hub'], configReads: 0 },
     { args: ['--mode', 'test'], configReads: 1 },
   ])('does not preload config for explicit commands behind global options: $args', async ({ args, configReads }) => {
     tryRunIdeCommandMock.mockResolvedValue(false)
@@ -110,6 +121,35 @@ describe('weapp-vite cli entry', () => {
 
     expect(nativeActionMock).toHaveBeenCalledTimes(1)
     expect(loadConfigMock).toHaveBeenCalledTimes(configReads)
+  })
+
+  it.each([
+    { args: ['--ui-host', 'invalid'] },
+    { args: ['dev', '--ui-host', 'invalid'] },
+    { args: ['build', '--ui-host', 'invalid'] },
+    { args: ['analyze', '--ui-host', 'invalid'] },
+    { args: ['build', '--ui-host', 'hub', '--ui-host', 'invalid'] },
+  ])('rejects invalid UI hosts before bootstrap writes or service startup: $args', async ({ args }) => {
+    tryRunIdeCommandMock.mockResolvedValue(false)
+    const originalArgv = process.argv
+    const originalExitCode = process.exitCode
+    process.argv = ['node', 'weapp-vite', ...args]
+
+    try {
+      // 入口在模块求值时处理参数，静态导入无法覆盖本用例安装后的 argv。
+      await import('./cli.ts?case=invalid-ui-host')
+      expect(process.exitCode).toBe(1)
+      expect(handleCLIErrorMock).toHaveBeenCalledWith(expect.objectContaining({
+        message: expect.stringMatching(/--ui-host.*standalone.*hub/),
+      }))
+      expect(syncManagedTsconfigBootstrapFilesMock).not.toHaveBeenCalled()
+      expect(loadConfigMock).not.toHaveBeenCalled()
+      expect(nativeActionMock).not.toHaveBeenCalled()
+    }
+    finally {
+      process.argv = originalArgv
+      process.exitCode = originalExitCode
+    }
   })
 
   it.each([

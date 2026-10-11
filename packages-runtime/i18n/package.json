@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/i18n",
   "type": "module",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "First-party i18n runtime and compiler for native WeChat mini programs",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
@@ -63,7 +63,8 @@
     "dev": "tsdown -w --sourcemap",
     "build": "tsdown",
     "test": "vitest run",
-    "test:types": "pnpm build && tsd",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
@@ -85,5 +86,11 @@
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   }
 }

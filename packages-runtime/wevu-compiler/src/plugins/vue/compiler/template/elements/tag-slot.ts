@@ -10,6 +10,8 @@ import type {
 } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import {
+  WEVU_NATIVE_SLOT_PARENT_EVENT,
+  WEVU_NATIVE_SLOT_PARENT_METHOD,
   WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_ATTR,
   WEVU_SLOT_OWNER_ID_KEY,
@@ -20,7 +22,7 @@ import {
 } from '@weapp-core/constants'
 import { createWevuRuntimeCapabilityMetadata } from '../../../../../runtimeCapabilities'
 
-import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
+import { normalizeNativeAttributeValue, renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { createBindingManifest, recordBindingExpression } from '../bindingManifest'
 import { buildClassStyleWxsTag } from '../classStyleRuntime'
 import { withBindingCondition } from '../conditions'
@@ -30,6 +32,7 @@ import { transformBindDirective } from '../directives/bind'
 import { transformOnDirective } from '../directives/on'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
+import { nativeSlotParentAttribute, usesNativeDeclarationContext } from '../nativeDeclaration'
 import { buildScopedSlotComponentScript } from '../scopedSlotScript'
 import {
   collectScopePropMapping,
@@ -60,7 +63,7 @@ export function renderSlotNameAttribute(
   attrName: 'name' | 'slot',
 ): string | undefined {
   if (info.type === 'static' && info.value !== 'default') {
-    return `${attrName}="${info.value}"`
+    return `${attrName}="${normalizeNativeAttributeValue(info.value, context)}"`
   }
   if (info.type === 'dynamic') {
     const expValue = normalizeWxmlExpressionWithContext(info.exp, context)
@@ -236,6 +239,7 @@ export function createScopedSlotComponent(
     bindingConditions: undefined,
     classStyleWxs: false,
     forStack: [],
+    nativeDeclarationStack: [],
     forIndexSeed: 0,
     inlineExpressions: [],
     inlineExpressionSeed: 0,
@@ -285,6 +289,7 @@ export function createScopedSlotComponent(
     bindingManifest,
     runtimeBindingManifest: scopedContext.runtimeBindingManifest,
     runtimeCapabilities,
+    nativeSlotContext: usesNativeDeclarationContext(scopedContext),
   })
   return { componentName, slotKey }
 }
@@ -560,6 +565,10 @@ function renderPlainSlotOutlet(node: ElementNode, context: TransformContext, tra
   if (nameAttr) {
     slotAttrs.push(nameAttr)
   }
+  if (context.platform.name === 'wechat' && context.platform.nativeSlotContext !== false && context.scopedSlotsRequireProps) {
+    slotAttrs.push(`bind:${WEVU_NATIVE_SLOT_PARENT_EVENT}="${WEVU_NATIVE_SLOT_PARENT_METHOD}"`)
+    slotAttrs.push(nativeSlotParentAttribute(context))
+  }
   const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
   if (context.preserveComments && fallbackContent && !compatibleNode.children.some(isRenderableFallbackChild)) {
     return `${fallbackContent}<slot${slotAttrString} />`
@@ -737,6 +746,10 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   const nameAttr = renderSlotNameAttribute(slotNameInfo, context, 'name')
   if (nameAttr) {
     slotAttrs.push(nameAttr)
+  }
+  if (!slotPropsExp && context.platform.name === 'wechat' && context.platform.nativeSlotContext !== false && context.scopedSlotsRequireProps) {
+    slotAttrs.push(`bind:${WEVU_NATIVE_SLOT_PARENT_EVENT}="${WEVU_NATIVE_SLOT_PARENT_METHOD}"`)
+    slotAttrs.push(nativeSlotParentAttribute(context))
   }
 
   const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''

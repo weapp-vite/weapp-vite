@@ -33,7 +33,7 @@ function toggle() {
         :aria-controls="contentId"
         @click="toggle"
       >
-        <span class="iconify mdi--chevron-right size-4 shrink-0" :class="{ 'rotate-90': open }" aria-hidden="true" />
+        <span class="icon-[mdi--chevron-right] size-4 shrink-0" :class="{ 'rotate-90': open }" aria-hidden="true" />
         <span class="min-w-0 flex-1 [overflow-wrap:anywhere]">{{ section.title }}</span>
         <span v-if="unread" role="status" class="shrink-0 text-[11px] font-medium text-(--dashboard-accent)">有更新</span>
         <span class="shrink-0 font-normal text-(--dashboard-text-soft) tabular-nums">{{ section.rows.length }}</span>

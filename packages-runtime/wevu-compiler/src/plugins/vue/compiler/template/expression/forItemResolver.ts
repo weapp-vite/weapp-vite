@@ -1,5 +1,6 @@
 import type { Scope } from '@weapp-vite/ast/babelTraverse'
 import type {
+  ForParseResult,
   InlineExpressionIndexBindingAsset,
   TransformContext,
 } from '../types'
@@ -34,7 +35,7 @@ function rewriteForItemResolverExpression(
   ]))
   traverse(ast, {
     Identifier(path) {
-      if (!path.isReferencedIdentifier() || path.scope.hasBinding(path.node.name)) {
+      if (!path.isReferencedIdentifier() || path.scope.getBinding(path.node.name)) {
         return
       }
       const name = path.node.name
@@ -81,6 +82,11 @@ function getParsedResolverExpression(
   return expression
 }
 
+/** 恢复原始循环项，避免再次沿着模板 key 投影包装访问用户数据。 */
+function getForResolverListExpression(info: ForParseResult | undefined) {
+  return (info?.itemPatternRequiresProjection ? info.listExp : info?.rawListExp ?? info?.listExp)?.trim() ?? ''
+}
+
 function buildNestedForItemResolverExpression(
   targetKey: string,
   targetLevel: number,
@@ -91,7 +97,7 @@ function buildNestedForItemResolverExpression(
   const expressionCache = new Map<string, ParsedResolverExpression | null>()
   for (let level = 0; level <= targetLevel; level += 1) {
     const forInfo = context.forStack[level]
-    const listExp = forInfo?.listExp?.trim() ?? ''
+    const listExp = getForResolverListExpression(forInfo)
     if (!listExp || !getParsedResolverExpression(listExp, expressionCache)) {
       return null
     }
@@ -126,7 +132,7 @@ function buildNestedForItemResolverExpression(
 
   for (let level = 0; level <= targetLevel; level += 1) {
     const forInfo = context.forStack[level]
-    const listExp = forInfo?.listExp?.trim() ?? ''
+    const listExp = getForResolverListExpression(forInfo)
     const indexBinding = indexBindings[level]
     const parsedList = getParsedResolverExpression(listExp, expressionCache)
     if (!forInfo || !parsedList || !indexBinding) {
@@ -153,6 +159,10 @@ function buildNestedForItemResolverExpression(
     const itemExpression = t.memberExpression(listExpression, t.cloneNode(indexExpression), true)
     if (forInfo.item) {
       resolvedLocals.set(forInfo.item, itemExpression)
+    }
+    resolvedIndexes.set(forInfo.index?.trim() || 'index', indexExpression)
+    if (forInfo.key) {
+      resolvedIndexes.set(forInfo.key, indexExpression)
     }
     for (const [alias, aliasExp] of Object.entries(forInfo.itemAliases ?? {})) {
       const parsedAlias = getParsedResolverExpression(aliasExp, expressionCache)
@@ -182,11 +192,6 @@ function buildNestedForItemResolverExpression(
         ),
       )
     }
-
-    resolvedIndexes.set(forInfo.index?.trim() || 'index', indexExpression)
-    if (forInfo.key) {
-      resolvedIndexes.set(forInfo.key, indexExpression)
-    }
   }
   return null
 }
@@ -210,7 +215,7 @@ export function buildForItemResolverExpression(
   }
 
   const forInfo = context.forStack[targetLevel]
-  const listExp = forInfo?.listExp?.trim() ?? ''
+  const listExp = getForResolverListExpression(forInfo)
   const indexBinding = indexBindings[targetLevel]
   if (!listExp || !indexBinding) {
     return null
@@ -229,6 +234,9 @@ export function buildForItemResolverExpression(
         localRoots.add(index)
       }
       localRoots.add('index')
+      for (const alias of Object.keys(context.forStack[level]?.itemAliases ?? {})) {
+        localRoots.add(alias)
+      }
     }
     if (!localRoots.has(root)) {
       return `({type:'for-item',path:${JSON.stringify(listExp)},indexKey:${JSON.stringify(indexBinding.key)}})`

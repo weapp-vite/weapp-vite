@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
+import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createGenerateBundleHook } from './emit'
 import { collectActiveHmrImportedChunkIds, isActiveHmrEntryFacade, mergeActiveHmrEntryIds } from './emit/generate'
+
+function createSharedChunkState() {
+  return {
+    hmrSharedChunksByEntry: new Map<string, Set<string>>(),
+    hmrSharedChunkDependencies: new Map<string, Set<string>>(),
+    outputChunksByModule: new Map<string, Set<string>>(),
+    hmrSourceSharedChunks: new Set<string>(),
+  }
+}
 
 describe('core lifecycle emit hook injectWeapi', () => {
   it('rewrites bundle chunk wx/my access to global wpi', async () => {
@@ -666,13 +676,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
             },
           },
         },
-        runtimeState: {
-          build: {
-            hmr: {
-              profile: {},
-            },
-          },
-        },
+        runtimeState: createRuntimeState(),
       },
       entriesMap: new Map(),
       resolvedEntryMap: new Map([[activeEntry, {}]]),
@@ -684,6 +688,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       hmrSharedChunksMode: 'off',
       hmrSharedChunkImporters: new Map(),
+      ...createSharedChunkState(),
     } as any
 
     const hook = createGenerateBundleHook(state, false)
@@ -728,13 +733,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
             },
           },
         },
-        runtimeState: {
-          build: {
-            hmr: {
-              profile: {},
-            },
-          },
-        },
+        runtimeState: createRuntimeState(),
       },
       entriesMap: new Map(),
       resolvedEntryMap: new Map([[activeEntry, {}]]),
@@ -746,6 +745,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       hmrSharedChunksMode: 'off',
       hmrSharedChunkImporters: new Map([['common.js', new Set([activeEntry])]]),
+      ...createSharedChunkState(),
     } as any
 
     const hook = createGenerateBundleHook(state, false)
@@ -778,6 +778,8 @@ describe('core lifecycle emit hook injectWeapi', () => {
   it('retains runtime vendor chunks imported after the shared chunk candidate is visited', async () => {
     const activeEntry = '/project/src/pages/index/index.ts'
     const lastEmittedChunkFileNames = new Set<string>()
+    const runtimeState = createRuntimeState()
+    runtimeState.build.hmr.lastEmittedChunkFileNames = lastEmittedChunkFileNames
     const state = {
       ctx: {
         scanService: {
@@ -787,14 +789,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
           isDev: true,
           weappViteConfig: {},
         },
-        runtimeState: {
-          build: {
-            hmr: {
-              lastEmittedChunkFileNames,
-              profile: {},
-            },
-          },
-        },
+        runtimeState,
       },
       entriesMap: new Map(),
       resolvedEntryMap: new Map([[activeEntry, {}]]),
@@ -806,6 +801,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
       },
       hmrSharedChunksMode: 'off',
       hmrSharedChunkImporters: new Map([['weapp-vendors/runtime.js', new Set([activeEntry, '/project/src/pages/other/index.ts'])]]),
+      ...createSharedChunkState(),
     } as any
 
     const hook = createGenerateBundleHook(state, false)

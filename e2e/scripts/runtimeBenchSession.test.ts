@@ -27,7 +27,7 @@ function launchOwned(disconnect = vi.fn(async () => {})) {
   mocks.launch.mockImplementation(async (options) => {
     const projectPath = `owned-snapshot-${++index}`
     await options.onOwnedSnapshot({ projectPath, cliPath: options.cliPath })
-    const metadata = { projectPath, wsEndpoint: 'ws://127.0.0.1:9415', port: 9415 }
+    const metadata = { projectPath, wsEndpoint: 'ws://127.0.0.1:9415', port: 9415, managedProject: { id: 'confirmed-owner', journalPath: 'task-journal' } }
     await options.onSessionMetadata(metadata)
     return { disconnect, __WEAPP_VITE_SESSION_METADATA: metadata }
   })
@@ -91,7 +91,7 @@ describe('runtime benchmark host ownership', () => {
     expect(mocks.launch).toHaveBeenCalledWith(expect.objectContaining({ cliPath: 'selected-stable-cli', launchMode: 'bridge', bridgeProjectMode: 'snapshot' }))
     await session.close()
     await session.close()
-    expect(onResource).toHaveBeenLastCalledWith(expect.objectContaining({ projectPath: 'owned-snapshot-1', cliPath: 'selected-stable-cli', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415, status: 'closed', portClosed: true }))
+    expect(onResource).toHaveBeenLastCalledWith(expect.objectContaining({ projectPath: 'owned-snapshot-1', cliPath: 'selected-stable-cli', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415, managedProject: { id: 'confirmed-owner', journalPath: 'task-journal' }, status: 'closed', portClosed: true }))
     expect(mocks.closeProject).toHaveBeenCalledOnce()
     expect(mocks.waitForPortClosed).toHaveBeenCalledExactlyOnceWith(9415, '127.0.0.1')
   })
@@ -99,7 +99,7 @@ describe('runtime benchmark host ownership', () => {
   it('closes registered snapshots when launch fails before returning a session', async () => {
     mocks.launch.mockImplementation(async (options) => {
       await options.onOwnedSnapshot({ projectPath: 'failed-snapshot', cliPath: options.cliPath })
-      await options.onSessionMetadata({ projectPath: 'failed-snapshot', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415 })
+      await options.onSessionMetadata({ projectPath: 'failed-snapshot', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415, managedProject: { id: 'confirmed-owner', journalPath: 'task-journal' } })
       throw new Error('bridge connect failed')
     })
     await expect(createRuntimeBenchSession({ log: () => {}, projectRoot: 'consumer', runtimeProvider: 'devtools' })).rejects.toThrow('bridge connect failed')
@@ -111,14 +111,14 @@ describe('runtime benchmark host ownership', () => {
     launchOwned()
     const onResource = vi.fn(async () => {}).mockRejectedValueOnce(new Error('evidence disk full'))
     await expect(createRuntimeBenchSession({ log: () => {}, projectRoot: 'consumer', runtimeProvider: 'devtools', onResource })).rejects.toThrow('evidence disk full')
-    expect(mocks.closeProject).toHaveBeenCalledOnce()
+    expect(mocks.closeProject).not.toHaveBeenCalled()
     expect(mocks.waitForPortClosed).not.toHaveBeenCalled()
   })
 
   it('does not claim ownership from a returned session pointing to a manual project', async () => {
     const close = vi.fn()
     const disconnect = vi.fn()
-    mocks.launch.mockResolvedValue({ close, disconnect, __WEAPP_VITE_SESSION_METADATA: { projectPath: 'manual-project', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415 } })
+    mocks.launch.mockResolvedValue({ close, disconnect, __WEAPP_VITE_SESSION_METADATA: { projectPath: 'manual-project', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415, managedProject: { id: 'confirmed-owner', journalPath: 'task-journal' } } })
     await expect(createRuntimeBenchSession({ log: () => {}, projectRoot: 'consumer', runtimeProvider: 'devtools' })).rejects.toThrow('not an owned snapshot')
     expect(disconnect).toHaveBeenCalledOnce()
     expect(close).not.toHaveBeenCalled()

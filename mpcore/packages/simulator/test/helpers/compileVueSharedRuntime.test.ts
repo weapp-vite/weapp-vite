@@ -25,6 +25,7 @@ it('compiles a static weapp runtime with unprepared application tsconfig referen
     `)
     await writeFile(path.join(runtimeRoot, 'internal-reactivity.ts'), `
       export const ref = (value: number) => ({ value });
+      export const reactive = (value: object) => value;
       export const computed = (getter: () => number) => ({ get value() { return getter(); } });
     `)
     await writeFile(path.join(runtimeRoot, 'index.ts'), `

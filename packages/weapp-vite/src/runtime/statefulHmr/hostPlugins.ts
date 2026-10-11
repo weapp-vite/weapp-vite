@@ -45,6 +45,23 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
   let delegatedEntryIds = new Set<string>()
   let settlement: (() => Promise<void>) | undefined
   const plugins: Plugin[] = [{
+    name: 'weapp-vite:stateful-style-client',
+    enforce: 'pre',
+    resolveId: {
+      order: 'pre',
+      handler(id) {
+        if (id.endsWith('/@vite/client')) {
+          return '\0/@vite/client'
+        }
+      },
+    },
+    load(id) {
+      if (id === '\0/@vite/client') {
+        // 样式由模板资产管线输出到宿主；不加载 Vite 的浏览器 DOM 样式客户端。
+        return 'export function updateStyle() {}\nexport function removeStyle() {}'
+      }
+    },
+  }, {
     name: 'weapp-vite:hmr-input',
     enforce: 'pre',
     transform(code, id) {

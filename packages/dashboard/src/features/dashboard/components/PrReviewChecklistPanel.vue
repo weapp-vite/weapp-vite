@@ -2,7 +2,7 @@
 import type { PrReviewChecklistItem, PrReviewChecklistSummary } from '../utils/prReviewChecklist'
 import AppMetricTile from './AppMetricTile.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
-import DashboardIcon from './DashboardIcon.vue'
+import AppToolButton from './AppToolButton.vue'
 
 defineProps<{
   checklist: PrReviewChecklistSummary
@@ -41,22 +41,18 @@ function getToneClassName(tone: PrReviewChecklistItem['tone']) {
 <template>
   <section class="grid min-h-0 min-w-0 gap-2 overflow-visible xl:h-full xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
     <div class="rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-4 shadow-(--dashboard-shadow)">
-      <AppPanelHeader icon-name="metric-bookmark" title="PR 风险清单">
+      <AppPanelHeader class="min-w-0 flex-wrap" icon-name="metric-bookmark" title="PR 风险清单">
         <template #meta>
-          <div class="flex items-center gap-2">
+          <div class="flex min-w-0 flex-wrap items-center gap-2">
             <span v-if="copyStatus" class="text-xs font-medium text-(--dashboard-accent)">
               {{ copyStatus }}
             </span>
-            <button
-              type="button"
-              class="inline-flex items-center gap-1.5 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 py-1 text-[11px] text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
+            <AppToolButton
+              label="复制 PR 风险清单"
+              icon-name="metric-copy"
+              touch-label="复制"
               @click="emit('copy')"
-            >
-              <span class="h-3.5 w-3.5">
-                <DashboardIcon name="metric-copy" />
-              </span>
-              复制清单
-            </button>
+            />
           </div>
         </template>
       </AppPanelHeader>

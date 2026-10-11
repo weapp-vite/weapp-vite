@@ -100,6 +100,7 @@ it('preserves call identities, image inputs and tool errors across protocol conv
   const mapped = toModelMessages([
     {
       role: 'user',
+      origin: 'user',
       text: 'reference',
       images: [{ type: 'image', data: 'base64', mediaType: 'image/png' }],
     },
@@ -117,6 +118,7 @@ it('preserves call identities, image inputs and tool errors across protocol conv
     },
   ])
   expect(JSON.stringify(mapped)).toContain('image/png')
+  expect(JSON.stringify(mapped)).not.toContain('"origin"')
   expect(mapped[2]).toMatchObject({
     role: 'tool',
     content: [

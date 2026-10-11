@@ -11,8 +11,8 @@ function isObjectAssignCall(node: t.CallExpression) {
     && t.isIdentifier(callee.property, { name: 'assign' })
 }
 
-function unwrapTypeLikeExpression(node: t.Expression): t.Expression {
-  if (t.isTSAsExpression(node) || t.isTSSatisfiesExpression(node) || t.isTSNonNullExpression(node) || t.isTypeCastExpression(node)) {
+export function unwrapTypeLikeExpression(node: t.Expression): t.Expression {
+  if (t.isTSAsExpression(node) || t.isTSSatisfiesExpression(node) || t.isTSTypeAssertion(node) || t.isTSNonNullExpression(node) || t.isTypeCastExpression(node)) {
     return unwrapTypeLikeExpression(node.expression as t.Expression)
   }
   if (t.isParenthesizedExpression(node)) {

@@ -1,3 +1,4 @@
+import type * as OptionsModule from '../options'
 import process from 'node:process'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeHmrProfile } from '../../analyze/hmr'
@@ -72,7 +73,8 @@ vi.mock('../../utils/hmrProfile', () => ({
   resolveHmrProfileJsonPath: resolveHmrProfileJsonPathMock,
 }))
 
-vi.mock('../options', () => ({
+vi.mock('../options', async importOriginal => ({
+  ...await importOriginal<typeof OptionsModule>(),
   filterDuplicateOptions: filterDuplicateOptionsMock,
   resolveConfigFile: resolveConfigFileMock,
   coerceBooleanOption: vi.fn((input: unknown) => Boolean(input)),

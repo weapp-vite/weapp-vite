@@ -5,7 +5,7 @@ export interface DashboardNavItem {
   label: string
   caption: string
   iconName: DashboardIconName
-  children?: Array<Omit<DashboardNavItem, 'children'>>
+  children?: Array<Omit<DashboardNavItem, 'children'> & { advanced?: boolean }>
 }
 
 export interface WorkspaceCommandItem {

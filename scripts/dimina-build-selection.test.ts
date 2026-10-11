@@ -13,7 +13,12 @@ const turbo = createRequire(import.meta.url).resolve('turbo/bin/turbo')
 const experiment = '@weapp-vite/dimina-playground'
 
 function selectedPackages(args: string[]) {
-  const output = execFileSync(process.execPath, [turbo, ...args, '--dry=json'], { cwd: root, encoding: 'utf8' })
+  const output = execFileSync(process.execPath, [turbo, ...args, '--dry=json'], {
+    cwd: root,
+    encoding: 'utf8',
+    // 完整 monorepo 的构建计划可能超过 Node 默认的 1 MiB 输出上限。
+    maxBuffer: 8 * 1024 * 1024,
+  })
   const result = JSON.parse(output) as { tasks: { package: string }[] }
   return result.tasks.map(task => task.package)
 }

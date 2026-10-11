@@ -229,5 +229,8 @@ dist/*            binary
 # 统一补丁的空上下文行必须保留一个前缀空格。
 integrations/shared-hmr-tailwind/*.patch text eol=lf whitespace=-blank-at-eol
 
+# pnpm 依赖补丁保留统一 diff 的上下文前缀及第三方源码缩进。
+patches/*.patch text eol=lf whitespace=-blank-at-eol,-space-before-tab
+
 # Dimina 源码补丁按 LF 校验索引，保留统一补丁的上下文前缀。
 packages-private/dimina-playground/upstream/patches/*.patch text eol=lf whitespace=-blank-at-eol,-space-before-tab

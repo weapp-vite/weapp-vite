@@ -245,6 +245,7 @@ export async function loadAppEntry(ctx: MutableCompilerContext, scanState: ScanS
     await applyAutoRoutesToAppConfigIfNeeded(ctx, config)
     config = finalizeAppConfigForBuild(config, {
       buildScope: ctx.configService.weappViteConfig.buildScope,
+      omitEmptySubPackages: ctx.configService.multiPlatform?.enabled,
       platform: ctx.configService.platform,
       routeRules: ctx.configService.weappViteConfig.routeRules,
       subPackages: ctx.configService.weappViteConfig.subPackages,

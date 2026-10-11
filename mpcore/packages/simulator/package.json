@@ -1,7 +1,7 @@
 {
   "name": "@mpcore/simulator",
   "type": "module",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "description": "Headless mini-program runtime and testing kernel for the weapp-vite ecosystem",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -50,7 +50,8 @@
     "test:dev": "vitest",
     "test:coverage": "vitest run --coverage.enabled=true",
     "test:e2e": "vitest run -c ./vitest.e2e.config.ts",
-    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

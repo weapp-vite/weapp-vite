@@ -7,6 +7,7 @@ import path from 'pathe'
 import { expect, it, vi } from 'vitest'
 import { createCompilerContext } from '../../src/createContext'
 import logger from '../../src/logger'
+import { saveSource } from '../helpers/saveSource'
 
 function createBundleRuntime(root: string) {
   const rebuilds: unknown[] = []
@@ -162,7 +163,7 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
       request.payloads?.includes('app.js') && request.payloads.includes(`${route}.js`),
     ), { timeout: 30_000 }).toBe(true)
     await expect.poll(() => runtime!.isInitialReady(), { timeout: 30_000 }).toBe(true)
-    await fs.writeFile(shared, sharedWith('updated-shared'))
+    await saveSource(shared, sharedWith('updated-shared'))
     await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain('updated-shared')
     expect(ctx.runtimeState.build.hmr).toBe(hmrState)
     expect(ctx.runtimeState.build.hmr.externalComponentEntryMap).toBe(componentEntries)
@@ -173,7 +174,7 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     }, { timeout: 30_000 }).toBeGreaterThan(0)
     const sharedVersion = runtime.getVersion()
     runtime.assertHealthy()
-    await fs.writeFile(source, page.replace('initial-page', 'updated-page').replace(initialStep, updatedStep))
+    await saveSource(source, page.replace('initial-page', 'updated-page').replace(initialStep, updatedStep))
     await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain('updated-page')
     await expect.poll(() => {
       runtime!.assertHealthy()
@@ -189,10 +190,11 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
       [shared, sharedWith('restored-shared'), 'restored-shared'],
       [source, page, 'initial-page'],
     ]) {
-      await fs.writeFile(file, content)
+      await saveSource(file, content)
       await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain(marker)
       await expect.poll(() => {
         runtime.assertHealthy()
+        expect(errors).toEqual([])
         return runtime.getVersion()
       }, { timeout: 30_000 }).toBeGreaterThan(version)
       version = runtime.getVersion()

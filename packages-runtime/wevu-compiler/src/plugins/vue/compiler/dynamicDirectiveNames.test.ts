@@ -139,7 +139,6 @@ const handle = () => {}
       ':[name]="payload"',
       ':[key]="item.id"',
     ])
-    expect(result.code).toBe('<view /><component /><slot /><view wx:for="{{items}}" wx:for-item="item" wx:for-index="__wv_index_0" />')
     expect(result.templateRefs).toBeUndefined()
   })
 
@@ -169,7 +168,6 @@ const handle = () => {}
       ])
       expect(result.code).not.toContain('name="{{payload}}"')
       expect(result.code).not.toContain('bindevent=')
-      expect(result.code).toContain('<slot />')
     }
   })
 

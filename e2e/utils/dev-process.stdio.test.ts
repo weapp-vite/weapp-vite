@@ -1,7 +1,7 @@
 /* eslint-disable e18e/ban-dependencies -- 验证 dev 进程控制器已有的 execa stdio 契约。 */
 import type { Options } from 'execa'
 import { EventEmitter } from 'node:events'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import { startDevProcess } from './dev-process'
 import { captureDevProcessOutput } from './devProcessStdio'
 
@@ -18,6 +18,43 @@ describe('dev process inherited output', () => {
     [{ stdout: ['pipe', 'inherit'], stderr: 'ignore' }, { stdout: ['pipe', 'inherit'], stderr: 'ignore' }],
   ] as [Options, Options][])('captures output while retaining configured destinations %#', (input, expected) => {
     expect(captureDevProcessOutput(input)).toEqual(expected)
+  })
+
+  it('preserves text transform types and unrelated process options', () => {
+    function* transform(chunk: string) {
+      yield chunk.toUpperCase()
+    }
+    const input = {
+      encoding: 'utf16le',
+      stdout: ['inherit', transform],
+      stderr: transform,
+      env: { FIXTURE_OPTION: 'retained' },
+      windowsHide: true,
+    } satisfies Options
+    const captured = captureDevProcessOutput(input)
+    expectTypeOf(captured).toEqualTypeOf<Extract<Options, { encoding?: 'utf8' | 'utf16le' }>>()
+    expect(captured).toEqual({ ...input, stdout: ['pipe', 'inherit', transform] })
+    expect(captured.stderr).toBe(transform)
+    expect(input.stdout).toEqual(['inherit', transform])
+  })
+
+  it('preserves binary transform types and extra file descriptors', () => {
+    function* transform(chunk: Uint8Array) {
+      yield chunk.subarray(0)
+    }
+    const input = {
+      encoding: 'buffer',
+      stdio: ['ignore', ['inherit', transform], transform, { value: transform, input: true }],
+      env: { FIXTURE_OPTION: 'retained' },
+      windowsHide: true,
+    } satisfies Options
+    const captured = captureDevProcessOutput(input)
+    expectTypeOf(captured).toEqualTypeOf<Exclude<Options, { encoding?: 'utf8' | 'utf16le' }>>()
+    expect(captured).toEqual({
+      ...input,
+      stdio: ['ignore', ['pipe', 'inherit', transform], transform, input.stdio[3]],
+    })
+    expect(input.stdio[1]).toEqual(['inherit', transform])
   })
 
   it('passes inherited output through the capture adapter before spawning', async () => {

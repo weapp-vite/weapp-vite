@@ -21,8 +21,11 @@ import {
   WEVU_HOST_COMMIT_PROMISE_KEY,
   WEVU_ON_BEFORE_UNMOUNT_HOOK,
   WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY,
+  WEVU_PARENT_INSTANCE_KEY,
   WEVU_PROPS_DERIVED_KEYS_KEY,
+  WEVU_PROVIDES_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_RUNTIME_APP_KEY,
   WEVU_SETUP_CONTEXT_INSTANCE_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_WATCH_STOPS_KEY,
@@ -37,9 +40,11 @@ import {
   runtimeCapabilityRegistry,
 } from '../capabilities'
 import { callHookList } from '../hooks'
+import { isRuntimeLayoutComponentTarget } from '../layoutComponentMatcher'
 import { getMiniProgramRuntimeGlobalObject } from '../platform'
 import { runTeardownSteps } from '../teardown'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
+import { releaseNativeDeclaration } from './runtimeInstance/nativeDeclaration'
 import { attachRuntimeProvideParentContext } from './runtimeInstance/provideContext'
 import {
   attachRuntimeSlots,
@@ -57,6 +62,8 @@ import {
   resolveNativeSetData,
 } from './runtimeInstance/utils'
 import { registerWatches } from './watch'
+
+type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string, PROD?: boolean } }
 
 const initialReactiveSetupSnapshots = new WeakMap<object, Record<string, unknown>>()
 
@@ -177,6 +184,13 @@ interface BufferedSetDataSettlement {
   next: BufferedSetDataSettlement | undefined
 }
 
+interface RuntimeMountOptions {
+  deferSetData?: boolean
+  snapshotOmitKeys?: string[]
+  attached?: boolean
+  layoutParent?: InternalRuntimeState
+}
+
 /**
  * 挂载运行时实例（框架内部注册流程使用）。
  * @internal
@@ -186,11 +200,46 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   runtimeApp: RuntimeApp<D, C, M>,
   watchMap: WatchMap | undefined,
   setup?: RuntimeSetupFunction<D, C, M>,
-  options?: { deferSetData?: boolean, snapshotOmitKeys?: string[] },
-) {
+  options?: RuntimeMountOptions,
+): RuntimeInstance<D, C, M> {
   if (target.__wevu) {
+    // 经典 HMR 可能复用宿主页面实例并重新执行页面脚本。此时旧 runtime
+    // 仍然存在，但它绑定的是上一轮模块创建的 runtimeApp；继续直接返回会
+    // 让新脚本闭包更新一份未被旧 tracker 订阅的 setup 状态。通过统一刷新
+    // 路径重建响应式绑定，同时保留宿主实例和已提交的数据快照。
+    // 只在应用明确为生产构建时裁剪；未提供 Vite env 的消费者保留刷新兼容。
+    if ((import.meta as ImportMetaWithEnv).env?.PROD !== true && target[WEVU_RUNTIME_APP_KEY] && target[WEVU_RUNTIME_APP_KEY] !== runtimeApp) {
+      // eslint-disable-next-line ts/no-use-before-define -- refreshRuntimeInstance 统一处理旧实例快照与 facade 复用。
+      return refreshRuntimeInstance(target, runtimeApp, watchMap, setup, {
+        snapshotOmitKeys: options?.snapshotOmitKeys,
+        attached: options?.attached,
+      })
+    }
     return target.__wevu as RuntimeInstance<D, C, M>
   }
+  try {
+    // eslint-disable-next-line ts/no-use-before-define -- 统一事务边界覆盖声明注册后、setup 前的挂载失败。
+    return mountRuntimeInstanceWithContext(target, runtimeApp, watchMap, setup, options)
+  }
+  catch (error) {
+    try {
+      // eslint-disable-next-line ts/no-use-before-define -- 所有挂载失败共用 teardown，不能留下原生声明地址。
+      teardownRuntimeInstance(target, { skipHooks: true })
+    }
+    catch {
+      // 保留原始挂载异常，清理异常不能覆盖它。
+    }
+    throw error
+  }
+}
+
+function mountRuntimeInstanceWithContext<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
+  target: InternalRuntimeState,
+  runtimeApp: RuntimeApp<D, C, M>,
+  watchMap: WatchMap | undefined,
+  setup?: RuntimeSetupFunction<D, C, M>,
+  options?: RuntimeMountOptions,
+) {
   const runtimeSetDataOptions = (
     runtimeApp as typeof runtimeApp & { __wevuSetDataOptions?: SetDataSnapshotOptions }
   ).__wevuSetDataOptions
@@ -209,7 +258,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const highFrequencyWarningHooks = highFrequencyWarningRequested
     ? requireRuntimeCapability('setDataHighFrequencyWarning', 'mountRuntimeInstance(setData.highFrequencyWarning)')
     : undefined
-  attachRuntimeProvideParentContext(target, runtimeApp as RuntimeApp<any, any, any>)
+  attachRuntimeProvideParentContext(target, runtimeApp, options?.attached, options?.layoutParent)
   safeMarkNoSetData(target)
   const suspendWhenHidden = Boolean(runtimeSetDataOptions?.suspendWhenHidden)
   const targetLabel = typeof (target as any).route === 'string' && (target as any).route
@@ -739,43 +788,31 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   }
 
   if (setup) {
-    try {
-      runRuntimeSetupPhase({
-        target,
-        runtime,
-        runtimeWithDefaults,
-        runtimeState: runtimeState as Record<string, any>,
-        runtimeProxy: runtimeProxy as Record<string, any>,
-        setup,
-      })
-      if (typeof getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]?.trackWevuComponent === 'function') {
-        const initialReactiveSetupSnapshot: Record<string, unknown> = {}
-        for (const [key, value] of Object.entries(runtimeWithDefaults.setupState ?? {})) {
-          if (isReactive(value)) {
-            initialReactiveSetupSnapshot[key] = cloneInitialSnapshotValue(value)
-          }
+    runRuntimeSetupPhase({
+      target,
+      runtime,
+      runtimeWithDefaults,
+      runtimeState: runtimeState as Record<string, any>,
+      runtimeProxy: runtimeProxy as Record<string, any>,
+      setup,
+    })
+    if ((import.meta as ImportMetaWithEnv).env?.PROD !== true && typeof getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]?.trackWevuComponent === 'function') {
+      const initialReactiveSetupSnapshot: Record<string, unknown> = {}
+      for (const [key, value] of Object.entries(runtimeWithDefaults.setupState ?? {})) {
+        if (isReactive(value)) {
+          initialReactiveSetupSnapshot[key] = cloneInitialSnapshotValue(value)
         }
-        initialReactiveSetupSnapshots.set(runtimeWithDefaults, initialReactiveSetupSnapshot)
       }
-      if (!options?.deferSetData) {
-        runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
-      }
-      if (!options?.deferSetData) {
-        refreshOwnerSnapshot()
-      }
-      for (const stop of watchStops) {
-        stop.resume()
-      }
+      initialReactiveSetupSnapshots.set(runtimeWithDefaults, initialReactiveSetupSnapshot)
     }
-    catch (error) {
-      try {
-        // eslint-disable-next-line ts/no-use-before-define -- setup 失败后复用统一 teardown 回滚已安装运行时
-        teardownRuntimeInstance(target, { skipHooks: true })
-      }
-      catch {
-        // setup 异常优先，回滚异常不能覆盖原始失败。
-      }
-      throw error
+    if (!options?.deferSetData) {
+      runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
+    }
+    if (!options?.deferSetData) {
+      refreshOwnerSnapshot()
+    }
+    for (const stop of watchStops) {
+      stop.resume()
     }
   }
   else if (
@@ -943,7 +980,10 @@ export function setRuntimeSetDataVisibility(target: InternalRuntimeState, visibl
  * 卸载运行时实例（框架内部注册流程使用）。
  * @internal
  */
-export function teardownRuntimeInstance(target: InternalRuntimeState, options?: { skipHooks?: boolean }) {
+export function teardownRuntimeInstance(target: InternalRuntimeState, options?: {
+  skipHooks?: boolean
+  preserveNativeDeclarationChildren?: boolean
+}) {
   const runtime = target.__wevu
 
   const stops = target[WEVU_WATCH_STOPS_KEY]
@@ -964,6 +1004,9 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
         }
       }
     },
+    ...((!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+      ? [() => releaseNativeDeclaration(target, options?.preserveNativeDeclarationChildren)]
+      : []),
     () => runtimeCapabilityRegistry.scopedSlots?.teardown(target),
     () => {
       if (Array.isArray(target.__wevuTemplateRefs) && target.__wevuTemplateRefs.length > 0) {
@@ -1020,6 +1063,16 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
         delete (target as any)[WEVU_PUBLIC_RUNTIME_KEY]
       }
     },
+    () => {
+      // 只解除宿主引用，不清空 provides 或撤销用户已持有的注入对象。
+      delete target[WEVU_PARENT_INSTANCE_KEY]
+    },
+    () => {
+      delete target[WEVU_PROVIDES_KEY]
+    },
+    () => {
+      delete target[WEVU_RUNTIME_APP_KEY]
+    },
   ])
 }
 
@@ -1032,17 +1085,22 @@ export function refreshRuntimeInstance<D extends object, C extends ComputedDefin
   runtimeApp: RuntimeApp<D, C, M>,
   watchMap: WatchMap | undefined,
   setup?: RuntimeSetupFunction<D, C, M>,
-  options?: { snapshotOmitKeys?: string[], stateSnapshot?: Record<string, any> },
-) {
+  options?: { snapshotOmitKeys?: string[], stateSnapshot?: Record<string, any>, attached?: boolean },
+): RuntimeInstance<D, C, M> {
   const previousRuntime = target.__wevu as RuntimeInstance<D, C, M> | undefined
   const initialSetupState = previousRuntime ? initialReactiveSetupSnapshots.get(previousRuntime) : undefined
   const previousRuntimeState = previousRuntime
     ? createRuntimeStateSnapshot(previousRuntime, (target as any).data, options?.stateSnapshot)
     : undefined
-  teardownRuntimeInstance(target, { skipHooks: true })
+  // 页面上方的 layout 由独立挂载插入；HMR 仅在本次重建期间保留仍存活的 layout。
+  const parent = target[WEVU_PARENT_INSTANCE_KEY]
+  const layoutParent = parent && isRuntimeLayoutComponentTarget(parent) ? parent : undefined
+  teardownRuntimeInstance(target, { skipHooks: true, preserveNativeDeclarationChildren: true })
   const nextRuntime = mountRuntimeInstance(target, runtimeApp, watchMap, setup, {
     deferSetData: true,
     snapshotOmitKeys: options?.snapshotOmitKeys,
+    attached: options?.attached,
+    layoutParent,
   })
   const stateSnapshot = previousRuntimeState ?? (options?.stateSnapshot
     ? createRuntimeStateSnapshot(nextRuntime, options.stateSnapshot, options.stateSnapshot)

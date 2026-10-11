@@ -1,10 +1,9 @@
 import type * as Router from '../src/router'
 import type * as Hooks from '../src/runtime/hooks/base'
 import type * as Platform from '../src/runtime/platform'
-import path from 'node:path'
 import { runInNewContext } from 'node:vm'
-import { rolldown } from 'rolldown'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { createRuntimeHostBundle } from './helpers/runtimeHostBundle'
 
 type Runtime = typeof Hooks & typeof Platform & Pick<typeof Router, 'createRouter' | 'useRouter'>
 type PlatformName = 'weapp' | 'alipay' | 'tt'
@@ -12,34 +11,7 @@ const bundles = new Map<PlatformName, string>()
 
 beforeAll(async () => {
   for (const platform of ['weapp', 'alipay', 'tt'] as const) {
-    const entry = 'virtual:runtime-host'
-    const bundle = await rolldown({
-      input: entry,
-      platform: 'neutral',
-      transform: { define: { 'import.meta': JSON.stringify({ env: { PLATFORM: platform } }) } },
-      plugins: [{
-        name: 'runtime-host-test',
-        resolveId: id => id === entry ? id : undefined,
-        load: id => id === entry
-          ? [
-              `export * from ${JSON.stringify(path.resolve(import.meta.dirname, '../src/runtime/platform.ts'))}`,
-              `export * from ${JSON.stringify(path.resolve(import.meta.dirname, '../src/runtime/hooks/base.ts'))}`,
-              `export { createRouter, useRouter } from ${JSON.stringify(path.resolve(import.meta.dirname, '../src/router.ts'))}`,
-            ].join('\n')
-          : undefined,
-      }],
-    })
-    try {
-      const result = await bundle.generate({ format: 'cjs' })
-      const chunk = result.output.find(item => item.type === 'chunk')
-      if (!chunk || chunk.type !== 'chunk') {
-        throw new Error('Missing runtime host test bundle')
-      }
-      bundles.set(platform, chunk.code)
-    }
-    finally {
-      await bundle.close()
-    }
+    bundles.set(platform, await createRuntimeHostBundle(platform))
   }
 })
 

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { DashboardIconName } from '../types'
+import { useId } from 'vue'
 import { pillButtonStyles } from '../utils/styles'
 import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
   open: boolean
+  canResetView: boolean
 }>()
 
 const emit = defineEmits<{
@@ -15,7 +17,10 @@ const emit = defineEmits<{
   'exportJson': []
   'exportMarkdown': []
   'exportCsv': []
+  'resetView': []
 }>()
+
+const menuId = useId()
 
 interface ExportAction {
   key: string
@@ -74,8 +79,10 @@ const exportActions: ExportAction[] = [
 <template>
   <div class="relative shrink-0" @click.stop>
     <button
-      :class="pillButtonStyles({ kind: 'nav', active: open })"
+      :class="pillButtonStyles({ kind: 'nav', active: open, class: 'h-8 py-0' })"
       type="button"
+      :aria-expanded="open"
+      :aria-controls="open ? menuId : undefined"
       @click="emit('update:open', !open)"
     >
       <span class="h-4.5 w-4.5">
@@ -86,8 +93,20 @@ const exportActions: ExportAction[] = [
 
     <div
       v-if="open"
-      class="absolute right-0 top-[calc(100%+0.45rem)] z-50 grid w-76 gap-1.5 rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-1.5 shadow-(--dashboard-shadow)"
+      :id="menuId"
+      class="absolute right-0 top-[calc(100%+0.45rem)] z-50 grid max-h-[60dvh] w-76 max-w-[calc(100vw-2rem)] gap-1.5 overflow-y-auto rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) p-1.5 shadow-(--dashboard-shadow)"
     >
+      <button
+        class="flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-(--dashboard-text) hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) disabled:opacity-50 sm:hidden pointer-coarse:min-h-11"
+        type="button"
+        :disabled="!canResetView"
+        @click="emit('resetView')"
+      >
+        <span class="size-4.5 shrink-0" aria-hidden="true">
+          <DashboardIcon name="metric-reset" />
+        </span>
+        重置视图
+      </button>
       <button
         v-for="item in exportActions"
         :key="item.key"

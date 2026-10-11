@@ -3,14 +3,16 @@ import type { DashboardTab } from './base'
 import type { TreemapModuleNodeMeta, TreemapPackageNodeMeta } from './treemap'
 
 export type AnalyzeActionCenterTone = 'critical' | 'warning' | 'info' | 'success'
-export type AnalyzeActionCenterKind = 'budget' | 'increment' | 'duplicate' | 'file'
+export type AnalyzeActionCenterKind = 'budget' | 'increment' | 'duplicate'
 
 export interface AnalyzeActionCenterItem {
   key: string
   kind: AnalyzeActionCenterKind
   title: string
+  targetLabel: string
   meta: string
   value?: string
+  measurementUnknown?: boolean
   tone: AnalyzeActionCenterTone
   tab: DashboardTab
   priority: number

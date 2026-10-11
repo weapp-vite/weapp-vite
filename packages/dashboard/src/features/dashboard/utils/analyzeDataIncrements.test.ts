@@ -1,7 +1,8 @@
 import type { AnalyzeSubpackagesResult, ModuleSourceType } from '../types'
 import { describe, expect, it } from 'vitest'
-import { computed } from 'vue'
+import { computed, shallowRef } from 'vue'
 import { useAnalyzeActionCenter } from '../composables/useAnalyzeActionCenter'
+import { useAnalyzeDashboardData } from '../composables/useAnalyzeDashboardData'
 import { createIncrementAttribution } from './analyzeDataIncrements'
 import { createPackageInsights } from './analyzeDataPackages'
 import { createComparisonMaps } from './analyzeDataShared'
@@ -39,6 +40,15 @@ function createResult(modules: Array<{ id: string, source: string, bytes: number
 }
 
 describe('analyze increment attribution', () => {
+  it('does not turn a measured largest file into a diagnostic without a risk or change', () => {
+    const result = shallowRef(createResult([{ id: 'app', source: 'src/app.ts', bytes: 1000 }]))
+    const data = useAnalyzeDashboardData(result)
+    const { actionItems } = useAnalyzeActionCenter({ ...data, resultRef: result })
+
+    expect(data.largestFiles.value[0]?.file).toBe('app.js')
+    expect(actionItems.value).toEqual([])
+  })
+
   it('compares internal module variants by their canonical source path', () => {
     const previous = createResult([
       {
@@ -160,6 +170,7 @@ describe('analyze increment attribution', () => {
       }),
     ])
     const { actionItems } = useAnalyzeActionCenter({
+      resultRef: computed(() => current),
       budgetWarnings: computed(() => []),
       incrementAttribution: computed(() => items),
       duplicateModules: computed(() => []),
@@ -195,6 +206,7 @@ describe('analyze increment attribution', () => {
       advice: '对比新增引用和共享模块。',
     }])
     const { actionItems } = useAnalyzeActionCenter({
+      resultRef: computed(() => null),
       budgetWarnings: computed(() => []),
       incrementAttribution,
       duplicateModules: computed(() => []),

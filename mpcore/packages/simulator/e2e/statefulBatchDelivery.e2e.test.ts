@@ -9,14 +9,22 @@ it('renders the applied batch and retains its version when the next batch fails'
   document.body.append(preview)
   try {
     const page = session.reLaunch('/pages/index/index')
+    page.publishBatch()
+    expect(page.pendingTimers()).toEqual([2000])
     page.patch()
+    expect(page.pendingTimers()).toEqual([])
     preview.innerHTML = session.renderCurrentPage().wxml
     expect(preview.querySelector('#utility')?.className).toBe('py-5_d5')
     expect(preview.querySelector('#utility')?.textContent).toBe('1')
     expect(page.reports().at(-1)).toMatchObject({ version: 1, payloads: ['app.js'] })
+    page.publishBatch()
+    expect(page.pendingTimers()).toEqual([2000])
     page.failPatch()
+    expect(page.pendingTimers()).toEqual([])
     expect(page.reports().at(-1)).toMatchObject({ action: 'rebuild', version: 1 })
     expect(session.getCurrentPages()[0]).toBe(page)
+    page.stopClient()
+    expect(page.pendingTimers()).toEqual([])
   }
   finally {
     session.close()

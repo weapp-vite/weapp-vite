@@ -15,6 +15,10 @@ const props = defineProps<{
   selectedTreemapMeta: TreemapNodeMeta | null
 }>()
 
+const emit = defineEmits<{
+  inspectDuplicates: [packageId: string]
+}>()
+
 const {
   actionStatus,
   copyPackageReport,
@@ -33,7 +37,10 @@ const {
 <template>
   <section class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
     <div class="grid min-w-0 gap-3">
-      <PackageHealthPanel :health="packageHealth" />
+      <PackageHealthPanel
+        :health="packageHealth"
+        @inspect-duplicates="emit('inspectDuplicates', $event)"
+      />
 
       <div :class="surfaceStyles({ padding: 'md' })" class="grid gap-3">
         <AppPanelHeader

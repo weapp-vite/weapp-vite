@@ -177,7 +177,7 @@ export function formatCatalogUpgradeSummary(
   const defaultSummary = changedKeys.length > 0 ? changedKeys.join(', ') : '无'
   const namedSummary = namedCatalogSummary || '无'
 
-  return `基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  return `chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
 默认 catalog 变更键：${defaultSummary}。命名 catalog 变更键：${namedSummary}。
 `
 }

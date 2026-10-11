@@ -1,16 +1,20 @@
 import type { DashboardMetricItem, PackageBudgetWarning, PackageInsight } from '../types'
-import { formatBytes } from './format'
+import { formatBytes, formatPackageType } from './format'
 
 export type PackageHealthStatus = 'good' | 'watch' | 'risk'
+export type PackageHealthRiskKind = 'budget' | 'growth' | 'duplicates' | 'none'
 
 export interface PackageHealthItem {
   id: string
   label: string
+  typeLabel: string
+  path?: string
   score: number
   status: PackageHealthStatus
   statusLabel: string
   detail: string
   primaryRisk: string
+  primaryRiskKind: PackageHealthRiskKind
   metrics: DashboardMetricItem[]
 }
 
@@ -73,20 +77,20 @@ function getStatusLabel(status: PackageHealthStatus) {
   return '健康'
 }
 
-function createPrimaryRisk(pkg: PackageInsight, warning?: PackageBudgetWarning) {
+function createPrimaryRisk(pkg: PackageInsight, warning?: PackageBudgetWarning): Pick<PackageHealthItem, 'primaryRisk' | 'primaryRiskKind'> {
   if (warning?.status === 'critical') {
-    return `预算超限 ${(warning.ratio * 100).toFixed(1)}%`
+    return { primaryRisk: `预算超限 ${(warning.ratio * 100).toFixed(1)}%`, primaryRiskKind: 'budget' }
   }
   if (warning?.status === 'warning') {
-    return `接近预算 ${(warning.ratio * 100).toFixed(1)}%`
+    return { primaryRisk: `接近预算 ${(warning.ratio * 100).toFixed(1)}%`, primaryRiskKind: 'budget' }
   }
   if (typeof pkg.sizeDeltaBytes === 'number' && pkg.sizeDeltaBytes > 0) {
-    return `较上次增长 ${formatBytes(pkg.sizeDeltaBytes)}`
+    return { primaryRisk: `较上次增长 ${formatBytes(pkg.sizeDeltaBytes)}`, primaryRiskKind: 'growth' }
   }
   if (pkg.duplicateModuleCount > 0) {
-    return `${pkg.duplicateModuleCount} 个重复模块`
+    return { primaryRisk: `${pkg.duplicateModuleCount} 个重复模块`, primaryRiskKind: 'duplicates' }
   }
-  return '未发现主要风险'
+  return { primaryRisk: '未发现主要风险', primaryRiskKind: 'none' }
 }
 
 function createPackageHealthItem(pkg: PackageInsight, warning?: PackageBudgetWarning): PackageHealthItem {
@@ -101,11 +105,13 @@ function createPackageHealthItem(pkg: PackageInsight, warning?: PackageBudgetWar
   return {
     id: pkg.id,
     label: pkg.label,
+    typeLabel: formatPackageType(pkg.type),
+    path: pkg.type === 'subPackage' || pkg.type === 'independent' ? pkg.id : undefined,
     score,
     status,
     statusLabel: getStatusLabel(status),
-    detail: `${pkg.fileCount} 个产物 · ${pkg.moduleCount} 个模块 · ${formatBytes(pkg.totalBytes)}`,
-    primaryRisk: createPrimaryRisk(pkg, warning),
+    detail: `${formatBytes(pkg.totalBytes)} · ${pkg.fileCount} 个产物 · ${pkg.moduleCount} 个模块`,
+    ...createPrimaryRisk(pkg, warning),
     metrics: [
       { label: '体积', value: formatBytes(pkg.totalBytes) },
       { label: '重复模块', value: pkg.duplicateModuleCount },

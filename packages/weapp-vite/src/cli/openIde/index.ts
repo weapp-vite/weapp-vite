@@ -1,3 +1,4 @@
+import type { WechatDevtoolsSelectionOptions } from 'weapp-ide-cli'
 import type { MpPlatform } from '../../types'
 import fs from 'node:fs'
 import process from 'node:process'
@@ -10,6 +11,7 @@ import {
   isWechatIdeEngineBuildEndpointMissingError,
   launchAutomator,
   resolveProjectAutomatorPort,
+  withWechatDevtoolsSelection,
 } from 'weapp-ide-cli'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
@@ -48,7 +50,7 @@ export interface ResolvedIdeCommandContext {
   mpDistRoot?: string
 }
 
-export interface OpenIdeOptions {
+export interface OpenIdeOptions extends WechatDevtoolsSelectionOptions {
   openStrategy?: 'cli' | 'automator'
   trustProject?: boolean
   reuseOpenedProject?: boolean
@@ -117,7 +119,12 @@ function shouldResetWechatIdeFileUtils() {
 async function runWechatIdeOpenWithRetry(argv: string[]) {
   await executeWechatIdeCliCommand(argv, {
     cancelLevel: 'warn',
-    onNonLoginError: error => logger.error(error),
+    onNonLoginError: (error) => {
+      logger.error(error)
+      if (process.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL?.trim()) {
+        throw error
+      }
+    },
     onRetry: () => {
       logger.info(colors.bold(colors.green('正在重试连接微信开发者工具...')))
     },
@@ -433,7 +440,7 @@ async function verifyAndRecoverOpenedWechatIdeProject(
   }
 }
 
-export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
+async function openSelectedIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
   let bootstrapResult: Awaited<ReturnType<typeof bootstrapWechatDevtoolsSettings>> | undefined
   const openStrategy = options.openStrategy ?? (options.useAutomatorOpen === true ? 'automator' : 'cli')
   const useAutomatorOpen = openStrategy === 'automator'
@@ -478,6 +485,9 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
       }
     }
     catch (error) {
+      if (process.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL?.trim()) {
+        throw error
+      }
       if (isAutomatorLoginError(error)) {
         logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
         logger.warn(formatAutomatorLoginError(error))
@@ -549,4 +559,12 @@ export async function resolveIdeCommandContext(options: ResolveIdeCommandOptions
     platform,
     projectPath,
   }
+}
+
+/** 打开项目、健康检查与恢复共用同一安装身份。 */
+export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
+  if (platform === 'weapp') {
+    return await withWechatDevtoolsSelection(options, () => openSelectedIde(platform, projectPath, options))
+  }
+  return await openSelectedIde(platform, projectPath, options)
 }

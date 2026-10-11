@@ -10,7 +10,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   resolveProjectAutomatorPort,
 } from 'weapp-ide-cli'
-import { isLikelyRelaunchRetryableError } from '../utils/automator'
 import {
   cleanupTrackedDevProcesses,
   startDevProcess,
@@ -19,6 +18,7 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
+import { waitForTemplatePageReady } from '../utils/templatePageReady'
 import {
   attachRuntimeErrorCollector,
   isUninspectableDevtoolsConsoleError,
@@ -43,7 +43,6 @@ const ACTIVE_TEMPLATE_CASES = TEMPLATE_DEV_OPEN_CASES.filter((templateCase) => {
   }
   return !TEMPLATE_EXCLUDE || templateCase.name !== TEMPLATE_EXCLUDE
 })
-const PROTOCOL_TIMEOUT_RECONNECT_THRESHOLD = 3
 
 type TemplateDevProcess = TemplateCase & {
   dev: ReturnType<typeof startDevProcess>
@@ -76,139 +75,11 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-function normalizeRoutePath(routePath: string) {
-  return routePath.split('?', 1)[0].split('#', 1)[0].replace(/^\/+/, '').replace(/\/+$/g, '')
-}
-
-function valueContainsText(value: unknown, text: string) {
-  if (typeof value === 'string') {
-    return value.includes(text)
-  }
-  if (Array.isArray(value)) {
-    return value.some(item => valueContainsText(item, text))
-  }
-  if (value && typeof value === 'object') {
-    return Object.values(value).some(item => valueContainsText(item, text))
-  }
-  return false
-}
-
-function dataMatchesExpected(data: unknown, expected: Record<string, unknown> | undefined) {
-  if (!expected) {
-    return false
-  }
-  if (!data || typeof data !== 'object') {
-    return false
-  }
-  const record = data as Record<string, unknown>
-  return Object.entries(expected).every(([key, value]) => record[key] === value)
-}
-
-function isDevtoolsProtocolTimeout(error: unknown) {
-  if (!(error instanceof Error)) {
-    return false
-  }
-  const protocolError = error as Error & { code?: unknown, method?: unknown }
-  return protocolError.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-    && (
-      protocolError.method === 'App.callFunction'
-      || protocolError.method === 'App.getCurrentPage'
-      || protocolError.method === 'App.getPageStack'
-    )
-}
-
-function canRetryOnCurrentAutomatorSession(error: unknown) {
-  return isDevtoolsProtocolTimeout(error)
-    || (error instanceof Error && /timeout waiting for automator response/i.test(error.message))
-}
-
 async function removeAutomatorSessionFiles(projectPath: string) {
   await Promise.all([
     fs.rm(resolveAutomatorSessionFile(projectPath), { force: true }).catch(() => {}),
     fs.rm(resolveAutomatorSessionFile(projectPath, resolveProjectAutomatorPort(projectPath)), { force: true }).catch(() => {}),
   ])
-}
-
-async function waitForPageText(miniProgram: any, projectPath: string, route: string, text: string, expectedData?: Record<string, unknown>, timeoutMs = 90_000) {
-  if (!route) {
-    throw new Error(`Missing route while waiting for rendered text "${text}"`)
-  }
-  const normalizedRoute = normalizeRoutePath(route)
-  const start = Date.now()
-  let latestWxml = ''
-  let latestData = ''
-  let latestRoute = ''
-  let lastProtocolTimeout = ''
-  let consecutiveProtocolTimeouts = 0
-  let currentMiniProgram = miniProgram
-
-  while (Date.now() - start <= timeoutMs) {
-    try {
-      const currentPage = await currentMiniProgram.currentPage?.()
-      latestRoute = String(currentPage?.path ?? '')
-      const page = normalizeRoutePath(String(currentPage?.path ?? '')) === normalizedRoute
-        ? currentPage
-        : await currentMiniProgram.reLaunch(route)
-      latestRoute = String(page?.path ?? latestRoute)
-      await page.waitFor(500)
-      try {
-        latestWxml = await page.waitForRendered({
-          text,
-          timeout: Math.min(5_000, Math.max(1, timeoutMs - (Date.now() - start))),
-        })
-        return latestWxml
-      }
-      catch {
-        // 继续读取 WXML，保留更具体的失败上下文。
-      }
-      const root = await page.$('page')
-      latestWxml = root ? await root.outerWxml() : ''
-      if (latestWxml.includes(text)) {
-        return latestWxml
-      }
-      try {
-        const data = await page.data(undefined, {
-          routeOnly: true,
-          timeout: 3_000,
-        })
-        latestData = JSON.stringify(data).slice(0, 1000)
-        if (valueContainsText(data, text) || dataMatchesExpected(data, expectedData)) {
-          return latestData
-        }
-      }
-      catch {
-        // Page 域 DOM 不稳定时，data fallback 也可能短暂不可读，继续轮询。
-      }
-      consecutiveProtocolTimeouts = 0
-    }
-    catch (error) {
-      if (!isDevtoolsProtocolTimeout(error) && !isLikelyRelaunchRetryableError(error)) {
-        throw error
-      }
-      lastProtocolTimeout = error.message
-      if (canRetryOnCurrentAutomatorSession(error)) {
-        consecutiveProtocolTimeouts += 1
-      }
-      if (
-        canRetryOnCurrentAutomatorSession(error)
-        && consecutiveProtocolTimeouts < PROTOCOL_TIMEOUT_RECONNECT_THRESHOLD
-      ) {
-        await delay(1_000)
-        continue
-      }
-      // 连续短协议超时通常表示 DevTools 会话已经失去响应，重建会话比继续轮询更可靠。
-      consecutiveProtocolTimeouts = 0
-      await Promise.resolve(currentMiniProgram.disconnect?.()).catch(() => {})
-      await closeSharedMiniProgram(projectPath, resolveProjectAutomatorPort(projectPath)).catch(() => {})
-      await removeAutomatorSessionFiles(projectPath)
-      await delay(1_000)
-      currentMiniProgram = (await waitForOpenedAutomator(projectPath, { timeoutMs: 120_000 })).miniProgram
-    }
-    await delay(1_000)
-  }
-
-  const timeoutDetail = lastProtocolTimeout ? `\nLatest DevTools protocol timeout: ${lastProtocolTimeout}` : ''
-  throw new Error(`Timed out waiting for rendered text "${text}".${timeoutDetail}\nLatest route: ${latestRoute || '<unknown>'}\nLatest data:\n${latestData || '<empty>'}\nLatest WXML:\n${latestWxml.slice(0, 1000)}`)
 }
 
 async function assertPluginTemplateWrapperProject(sourceProjectPath: string, wrapperProjectPath: string) {
@@ -236,12 +107,11 @@ async function assertPluginTemplateWrapperProject(sourceProjectPath: string, wra
 async function waitForTemplateCaseReady(miniProgram: any, templateCase: TemplateCase, wrapperProjectPath: string) {
   if (templateCase.assertWrapperProject) {
     await assertPluginTemplateWrapperProject(templateCase.root, wrapperProjectPath)
-    return
+    return await miniProgram.currentPage()
   }
 
-  return await waitForPageText(
+  return await waitForTemplatePageReady(
     miniProgram,
-    resolveTemplateProjectRoot(templateCase),
     templateCase.route,
     templateCase.expectedText,
     templateCase.expectedData,
@@ -369,6 +239,7 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
 
   it.for(ACTIVE_TEMPLATE_CASES)('$name renders after dev:open without runtime errors', async (templateCase, ctx) => {
     let lastError: unknown
+    let dom: ReturnType<typeof createDomAcceptance> | undefined
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       const projectRoot = resolveTemplateProjectRoot(templateCase)
       const port = resolveProjectAutomatorPort(projectRoot)
@@ -384,7 +255,8 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
             return
           }
         }
-        const dom = createDomAcceptance(ctx, `templates/${templateCase.name}`, [templateDevOpenCheckpoint(templateCase)])
+        // DOM 计划属于 case；基础设施重试仅替换连接，保留同一个验收计划。
+        dom ??= createDomAcceptance(ctx, `templates/${templateCase.name}`, [templateDevOpenCheckpoint(templateCase)])
         runtimeErrors = attachRuntimeErrorCollector(miniProgram)
         const runtimeMarker = runtimeErrors.mark()
         const { metadata } = session
@@ -413,8 +285,8 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
               })
 
         try {
-          await waitForTemplateCaseReady(miniProgram, templateCase, wrapperProjectPath)
-          await dom.check('opened', miniProgram, await miniProgram.currentPage())
+          const page = await waitForTemplateCaseReady(miniProgram, templateCase, wrapperProjectPath)
+          await dom.check('opened', miniProgram, page)
         }
         catch (error) {
           throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)

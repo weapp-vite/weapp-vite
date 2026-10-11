@@ -51,4 +51,13 @@ describe('runtime connection input selection', () => {
     expect(schema.safeParse({ projectPath: 'project', port: 65536 }).success).toBe(false)
     expect(schema.safeParse({ projectPath: 'project', port: 65535 }).success).toBe(true)
   })
+  it('validates and forwards channel/version selectors through REST and MCP', async () => {
+    const { manager, request } = createHarness()
+    expect((await request('GET', '/runtime/active-page?projectPath=project&devtoolsChannel=nightly&devtoolsVersion=2.02.2608080')).statusCode).toBe(200)
+    expect(manager.withPage).toHaveBeenCalledWith(expect.objectContaining({ devtoolsChannel: 'nightly', devtoolsVersion: '2.02.2608080' }), expect.any(Function))
+    expect((await request('POST', '/runtime/connect', { projectPath: 'project', devtoolsChannel: 'rc', requireOfficialLatest: true })).statusCode).toBe(200)
+    expect(manager.withMiniProgram).toHaveBeenCalledWith(expect.objectContaining({ devtoolsChannel: 'rc', requireOfficialLatest: true }), expect.any(Function))
+    expect(connectionSchema.safeParse({ projectPath: 'project', devtoolsChannel: 'unknown' }).success).toBe(false)
+    expect((await request('POST', '/runtime/connect', { projectPath: 'project', devtoolsVersion: 'latest' })).statusCode).toBe(400)
+  })
 })

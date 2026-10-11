@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { runtimeBadgeStyles, surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
-import DashboardIcon from './DashboardIcon.vue'
+import AppToolButton from './AppToolButton.vue'
 
 type WorkQueueFilter = 'open' | 'done' | 'all'
 
@@ -53,17 +53,13 @@ function getToneClassName(tone: AnalyzeWorkQueueItem['tone']) {
   <section :class="surfaceStyles({ padding: 'md' })" class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_auto_minmax(0,1fr)] xl:overflow-hidden">
     <AppPanelHeader icon-name="metric-bookmark" title="处理清单">
       <template #meta>
-        <button
-          type="button"
-          class="inline-flex items-center gap-1.5 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 py-1 text-[11px] text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)"
+        <AppToolButton
+          label="复制处理清单"
+          icon-name="metric-copy"
+          touch-label="复制"
           :disabled="items.length === 0"
           @click="emit('copy')"
-        >
-          <span class="h-3.5 w-3.5">
-            <DashboardIcon name="metric-copy" />
-          </span>
-          复制
-        </button>
+        />
       </template>
     </AppPanelHeader>
 

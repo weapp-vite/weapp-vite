@@ -12,6 +12,7 @@ const execaMock = vi.hoisted(() => vi.fn())
 const resolveCliPathMock = vi.hoisted(() => vi.fn())
 const resolveTarget = vi.hoisted(() => vi.fn())
 const assertHost = vi.hoisted(() => vi.fn())
+const ensureManagedProject = vi.hoisted(() => vi.fn())
 const selectedTarget = vi.hoisted(() => ({ cliPath: 'selected-cli', installationId: 'selected', appPath: 'selected-app', profileDir: 'selected-profile' }))
 vi.mock('../src/devtoolsTarget', () => ({ resolveWechatDevtoolsTarget: resolveTarget, assertWechatDevtoolsHost: assertHost }))
 
@@ -30,6 +31,8 @@ vi.mock('../src/cli/resolver', () => ({
   resolveCliPath: resolveCliPathMock,
 }))
 
+vi.mock('../src/cli/managedProjectGate', () => ({ ensureManagedWechatProject: ensureManagedProject }))
+
 describe('runWechatIdeEngineBuildByHttp', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -40,6 +43,7 @@ describe('runWechatIdeEngineBuildByHttp', () => {
     resolveCliPathMock.mockReset()
     resolveTarget.mockReset().mockResolvedValue(selectedTarget)
     assertHost.mockReset().mockResolvedValue(undefined)
+    ensureManagedProject.mockReset().mockResolvedValue(undefined)
     startWechatIdeEngineBuildByHttpMock.mockResolvedValue({ body: 'OK' })
     resolveCliPathMock.mockResolvedValue({ cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli' })
     execaMock.mockResolvedValue({
@@ -91,6 +95,30 @@ describe('runWechatIdeEngineBuildByHttp', () => {
     await prepareAcceptanceProject('fixture', new AbortController().signal, { runtimeProvider: 'headless' })
     expect(resolveTarget).not.toHaveBeenCalled()
     expect(startWechatIdeEngineBuildByHttpMock).not.toHaveBeenCalled()
+    expect(execaMock).not.toHaveBeenCalled()
+    expect(ensureManagedProject).not.toHaveBeenCalled()
+  })
+
+  it('blocks acceptance preparation before its first HTTP open when project ownership is unresolved', async () => {
+    const failure = new Error('unresolved project ownership')
+    ensureManagedProject.mockRejectedValue(failure)
+    const { prepareAcceptanceProject } = await import('../src/cli/engine')
+    const { openWechatIdeProjectByHttp } = await import('../src/cli/http')
+    vi.mocked(openWechatIdeProjectByHttp).mockClear()
+    const signal = new AbortController().signal
+    await expect(prepareAcceptanceProject('fixtures/project', signal)).rejects.toBe(failure)
+    expect(ensureManagedProject).toHaveBeenCalledExactlyOnceWith(selectedTarget, 'fixtures/project', { signal })
+    expect(openWechatIdeProjectByHttp).not.toHaveBeenCalled()
+    expect(execaMock).not.toHaveBeenCalled()
+  })
+
+  it('rechecks managed ownership before CLI fallback can open a project', async () => {
+    startWechatIdeEngineBuildByHttpMock.mockRejectedValueOnce(new Error('Cannot GET /engine/build'))
+    const failure = new Error('managed project listener disappeared')
+    ensureManagedProject.mockRejectedValue(failure)
+    const { runWechatIdeEngineBuild } = await import('../src/cli/engine')
+    await expect(runWechatIdeEngineBuild('fixtures/project')).rejects.toBe(failure)
+    expect(ensureManagedProject).toHaveBeenCalledExactlyOnceWith(selectedTarget, 'fixtures/project', { signal: undefined })
     expect(execaMock).not.toHaveBeenCalled()
   })
 

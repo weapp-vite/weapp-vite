@@ -27,7 +27,6 @@ import {
   projectFingerprint,
   redactor,
   runAgent,
-  Session,
   stateRoot,
   trustProject,
 } from '@weapp-agent/core'
@@ -54,6 +53,7 @@ import { Command, Option } from 'commander'
 // eslint-disable-next-line e18e/ban-dependencies -- Preserve cross-platform command resolution, cancellation and process cleanup semantics.
 import { execa } from 'execa'
 
+import { registerSessionCommands } from './commands/session.js'
 import { eventText, interactive } from './ui.js'
 
 const clean = redactor()
@@ -61,7 +61,7 @@ const clean = redactor()
 const program = new Command()
   .name('weapp-agent')
   .description('AI coding agent for WeChat mini-programs')
-  .version('0.1.0-preview.1')
+  .version('0.1.0')
   .option('-C, --cwd <directory>', 'project directory', process.cwd())
   .option('--trust', 'trust this exact project configuration and scripts')
   .option(
@@ -420,14 +420,7 @@ program
     exitFor(result.status)
   })
 
-program
-  .command('sessions')
-  .description('List sessions for this project')
-  .action(async (_local, command) => {
-    const opts = command.optsWithGlobals()
-
-    output(await Session.list(await findProjectRoot(opts.cwd)), opts.json)
-  })
+registerSessionCommands(program, output)
 
 program
   .command('doctor')
@@ -615,8 +608,8 @@ program.action(async () => {
 
   let trustOnce = options.trust
 
-  await interactive((prompt, session, signal, onEvent, approval) => {
-    const current = { ...options, trust: trustOnce }
+  await interactive((prompt, session, signal, onEvent, approval, runOptions) => {
+    const current = { ...options, trust: trustOnce, acknowledgeInterrupted: runOptions?.acknowledgeInterrupted }
 
     trustOnce = false
 

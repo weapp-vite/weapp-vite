@@ -133,6 +133,9 @@ export function useActivityEventConsole(runtimeEvents: Ref<DashboardRuntimeEvent
         .map(event => event.source ?? 'dashboard')
         .filter(Boolean),
     )
+    if (eventSourceFilter.value !== 'all') {
+      sourceSet.add(eventSourceFilter.value)
+    }
 
     return [
       { value: 'all', label: '全部来源' },

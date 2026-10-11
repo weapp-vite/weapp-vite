@@ -1,9 +1,43 @@
+import type { MachineE2ELease, MachineE2ELeaseOptions } from '../../packages/devtools-runtime/src/lease/machine'
+import type { IsolatedMachineLease } from '../utils/testSupport/machineLease'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { createIsolatedMachineLease } from '../utils/testSupport/machineLease'
 import { runE2ECommands } from './run-e2e-commands'
+
+const fixture = vi.hoisted(() => ({ machine: undefined as IsolatedMachineLease | undefined }))
+vi.mock('../../packages/devtools-runtime/src/lease/machine', async (original) => {
+  const actual = await original<typeof import('../../packages/devtools-runtime/src/lease/machine')>()
+  return {
+    ...actual,
+    withMachineE2ELease: <T>(run: (lease: MachineE2ELease) => Promise<T>, options?: MachineE2ELeaseOptions) => {
+      if (!fixture.machine) {
+        throw new Error('Command tests require an isolated machine lease.')
+      }
+      return actual.withMachineE2ELease(run, { ...options, stateDirectory: fixture.machine.stateDirectory })
+    },
+  }
+})
+
+beforeEach(async () => {
+  fixture.machine = await createIsolatedMachineLease()
+  for (const [key, value] of Object.entries(fixture.machine.environment)) {
+    vi.stubEnv(key, value)
+  }
+})
+
+afterEach(async () => {
+  try {
+    await fixture.machine?.dispose()
+  }
+  finally {
+    fixture.machine = undefined
+    vi.unstubAllEnvs()
+  }
+})
 
 it('passes machine ownership to commands and stops a sequence after the first failure', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'e2e-commands-'))
@@ -45,12 +79,18 @@ it('rejects incomplete sequences before launching a child', async () => {
 it('waits for cancellation cleanup before releasing the lease and starting another sequence', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'e2e-command-cancel-'))
   const marker = path.join(root, 'child')
+  const nextMarker = path.join(root, 'next')
   const controller = new AbortController()
   const running = runE2ECommands([
     process.execPath,
     '-e',
     'require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 1000)',
     marker,
+    '--next',
+    process.execPath,
+    '-e',
+    'require("node:fs").writeFileSync(process.argv[1], "must-not-run")',
+    nextMarker,
   ], controller.signal)
   try {
     await vi.waitFor(async () => {
@@ -60,6 +100,7 @@ it('waits for cancellation cleanup before releasing the lease and starting anoth
     controller.abort()
     expect(await running).not.toBe(0)
     expect(() => process.kill(childPid, 0)).toThrow()
+    await expect(readFile(nextMarker, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
     expect(await runE2ECommands([process.execPath, '-e', 'process.exit(0)'])).toBe(0)
   }
   finally {

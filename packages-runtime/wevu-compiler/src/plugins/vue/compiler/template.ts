@@ -171,6 +171,7 @@ export function compileVueTemplateToWxml(
       classStyleWxsExtension: wxsExtension,
       classStyleWxsSrc: options?.classStyleWxsSrc,
       forStack: [],
+      nativeDeclarationStack: [],
       forIndexSeed: 0,
       templateRefs: [],
       templateRefIndexSeed: 0,

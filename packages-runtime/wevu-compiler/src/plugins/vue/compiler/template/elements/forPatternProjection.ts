@@ -4,6 +4,7 @@ import * as t from '@weapp-vite/ast/babelTypes'
 import { parseJsLike, traverse } from '../../../../../utils/babel'
 import { normalizeJsExpressionWithContext } from '../expression'
 import { generateExpression } from '../expression/parse'
+import { normalizeRuntimeBindingReference } from '../expression/runtimeBinding'
 
 const RUNTIME_BINDING_REF_RE = /^__wv_bind_\d+(?:\[[A-Z_$][\w$]*\])*$/i
 
@@ -232,12 +233,7 @@ export function registerForPatternProjection(
 ) {
   const pattern = forInfo.itemPattern
   const sourceAst = RUNTIME_BINDING_REF_RE.test(listExp)
-    ? normalizeJsExpressionWithContext(listExp, context, {
-        hint: 'v-for 解构数据源',
-        runtimePropAccess: 'helper',
-        unrefMemberAccess: true,
-        preserveForItems: true,
-      })
+    ? normalizeRuntimeBindingReference(listExp, context)
     : listExpAst
   if (!pattern || !sourceAst) {
     return null
@@ -300,12 +296,7 @@ export function registerForPatternProjection(
   })
   const indexAccess = outerForStack.map(info => `[${info.index ?? 'index'}]`).join('')
   const projectedListExp = `${bindingName}${indexAccess}`
-  const projectedListExpAst = normalizeJsExpressionWithContext(projectedListExp, context, {
-    hint: 'v-for 解构列表',
-    runtimePropAccess: 'helper',
-    unrefMemberAccess: true,
-    preserveForItems: true,
-  })
+  const projectedListExpAst = normalizeRuntimeBindingReference(projectedListExp, context)
   return projectedListExpAst
     ? { listExp: projectedListExp, listExpAst: projectedListExpAst }
     : null

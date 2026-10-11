@@ -1,0 +1,13 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "test:types:check": {
+      "cache": false,
+      "dependsOn": [
+        "weapp-vite#test:types:check",
+        "wevu#test:types:check"
+      ]
+    }
+  }
+}

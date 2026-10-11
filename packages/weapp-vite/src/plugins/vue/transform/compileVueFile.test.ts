@@ -116,8 +116,7 @@ import MyCard from './my-card.vue'
       },
     )
 
-    expect(result.template).toContain(`my-card vue-slots="{{ {header:true} }}"`)
-    expect(result.script).not.toContain('__wv_bind_0')
+    expect(result.template).toContain('vue-slots="{{ {header:true} }}"')
   })
 
   it('injects slot metadata for kebab-case direct .vue imports without resolver', async () => {
@@ -137,8 +136,7 @@ import MyCard from './my-card.vue'
       '/project/src/pages/index/index.vue',
     )
 
-    expect(result.template).toContain(`my-card vue-slots="{{ {header:true} }}"`)
-    expect(result.script).not.toContain('__wv_bind_0')
+    expect(result.template).toContain('vue-slots="{{ {header:true} }}"')
   })
 
   it('does not inject slot metadata for kebab-case native auto-import components', async () => {
@@ -199,8 +197,7 @@ import MyCard from './my-card.vue'
       },
     )
 
-    expect(result.template).toContain(`resolver-card vue-slots="{{ {header:true} }}"`)
-    expect(result.script).not.toContain('__wv_bind_0')
+    expect(result.template).toContain('vue-slots="{{ {header:true} }}"')
   })
 
   it('matches fallback wrapper rules by auto-imported component defineOptions name', async () => {
@@ -258,7 +255,7 @@ defineOptions({
       },
     )
 
-    expect(result.template).toContain('<cover-view slot="header"><slot /></cover-view>')
+    expect(result.template).toMatch(/<cover-view slot="header"><slot\b[^>]*\/><\/cover-view>/)
   })
 
   it('injects inline expression map for template handlers', async () => {
@@ -601,7 +598,6 @@ defineAppJson({
       },
     })
     expect(result.template).toContain('class="app-shell"')
-    expect(result.template).toContain('<slot />')
     expect(result.template).not.toContain('scoped-slots-default')
     expect(result.scopedSlotComponents).toBeUndefined()
     expect(result.componentGenerics).toBeUndefined()

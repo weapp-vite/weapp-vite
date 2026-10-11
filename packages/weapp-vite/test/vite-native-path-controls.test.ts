@@ -60,7 +60,8 @@ it('observes a native filesystem event using the canonical temporary path', asyn
         console.log('observed')
       }
     })
-    writeFileSync(path.join(root, 'probe.txt'), 'changed')
+    // 等待原生 watcher 完成注册，避免在高负载下写入早于操作系统事件订阅。
+    setImmediate(() => writeFileSync(path.join(root, 'probe.txt'), 'changed'))
   `, watchedRoot], { reject: false, timeout: 10_000 })
   expect({ exitCode: result.exitCode, stderr: result.stderr, stdout: result.stdout }).toEqual({
     exitCode: 0,

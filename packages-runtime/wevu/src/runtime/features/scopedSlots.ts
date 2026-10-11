@@ -1,4 +1,4 @@
-import type { WEVU_BINDING_MANIFEST_KEY, WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
+import type { WEVU_BINDING_MANIFEST_KEY, WEVU_NATIVE_SLOT_CONTEXT_KEY, WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import type {
   LayoutHostBinding,
   RuntimeCapabilityRegistry,
@@ -40,6 +40,7 @@ export interface CreateWevuScopedSlotComponentOptions {
   layoutHosts?: LayoutHostBinding[]
   templateRefs?: TemplateRefBinding[]
   [WEVU_BINDING_MANIFEST_KEY]?: WevuRuntimeBindingManifestV1
+  [WEVU_NATIVE_SLOT_CONTEXT_KEY]?: boolean
 }
 
 type RuntimeTargetWithScopedSlotState = InternalRuntimeState & {

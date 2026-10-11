@@ -934,6 +934,67 @@ describe('createEntryLoader', () => {
     }))
   })
 
+  it('reuses entry-level vue config cache when only the template changes around a json macro', async () => {
+    const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.vue'
+    const source = `<script setup>definePageJson({ navigationBarTitleText: "Home" })</script><template><view>Home</view></template>`
+    const nextSource = source.replace('<view>Home</view>', '<view class="next">Home</view>')
+    const config = { navigationBarTitleText: 'Home' }
+
+    readFileMock.mockResolvedValue(source)
+    mockExtractConfigFromVue.mockResolvedValueOnce(config)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
+    mockExtractConfigFromVue.mockClear()
+    registerJsonAsset.mockClear()
+    readFileMock.mockResolvedValue(nextSource)
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['entry-direct:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath: '/project/src/pages/home/index.json',
+      json: config,
+    }))
+  })
+
+  it('re-extracts a json macro when an imported dependency invalidates the entry graph', async () => {
+    const { compilerCtx, loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = '/project/src/pages/home/index.vue'
+    const source = '<script setup>definePageJson({ navigationBarTitleText: "Home" })</script>'
+    const firstConfig = { navigationBarTitleText: 'Home' }
+    const nextConfig = { navigationBarTitleText: 'Next' }
+
+    readFileMock.mockResolvedValue(source)
+    mockExtractConfigFromVue.mockResolvedValueOnce(firstConfig)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    mockExtractConfigFromVue.mockClear()
+    registerJsonAsset.mockClear()
+    mockExtractConfigFromVue.mockResolvedValueOnce(nextConfig)
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: ['importer-graph:1'],
+    }
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source, compilerContext: compilerCtx })
+    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
+      jsonPath: '/project/src/pages/home/index.json',
+      json: nextConfig,
+    }))
+  })
+
   it('resolves json sidecar again for json sidecar hmr', async () => {
     const { loader, jsonService, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()

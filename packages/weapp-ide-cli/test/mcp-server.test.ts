@@ -50,6 +50,20 @@ describe('weapp-ide-cli mcp server', () => {
     ]))
   })
 
+  it('forwards validated channel and version selection to the runtime hook', async () => {
+    const server = createMockServer()
+    const withMiniProgram = vi.fn(async (_input, run) => run({
+      currentPage: async () => ({ path: 'pages/index/index' }),
+      systemInfo: async () => ({}),
+    }))
+    registerWeappIdeMcpTools(server as any, { runtimeHooks: { withMiniProgram }, workspaceRoot: '/workspace' })
+    const tool = server.tools.get('weapp_devtools_connect')!
+    const schema = tool.options.inputSchema as z.ZodType
+    expect(schema.safeParse({ projectPath: 'fixture', devtoolsChannel: 'beta' }).success).toBe(false)
+    await tool.handler({ projectPath: 'fixture', devtoolsChannel: 'nightly', devtoolsVersion: '2.02.2608080' })
+    expect(withMiniProgram).toHaveBeenCalledWith(expect.objectContaining({ devtoolsChannel: 'nightly', devtoolsVersion: '2.02.2608080' }), expect.any(Function))
+  })
+
   it('reads element snapshots through the current DevTools page', async () => {
     const server = createMockServer()
     const element = {

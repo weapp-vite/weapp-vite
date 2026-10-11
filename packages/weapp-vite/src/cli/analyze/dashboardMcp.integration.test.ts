@@ -1,7 +1,7 @@
 import type { DevframeDefinition, DevframeNodeContext } from 'devframe'
 import type { DevframeInstanceRecord } from 'devframe/internal'
 import type { Plugin, ViteDevServer } from 'vite'
-import type { AnalyzeSubpackagesResult } from '../../dashboard'
+import type { AnalyzeSubpackagesResult, DashboardInvestigation, DashboardInvestigationClaim } from '../../dashboard'
 import fs from 'node:fs/promises'
 import { createServer as createHttpServer } from 'node:http'
 import os from 'node:os'
@@ -219,9 +219,16 @@ it.each([false, true])('uses the live RPC authority through initialized MCP (leg
     'weapp-vite_query-analyze-modules',
     'weapp-vite_compare-analyze-builds',
     'weapp-vite_query-runtime-events',
+    'weapp-vite_list-investigations',
+    'weapp-vite_get-investigation',
+    'weapp-vite_claim-investigation',
+    'weapp-vite_propose-investigation',
+    'weapp-vite_start-investigation',
+    'weapp-vite_complete-investigation',
   ].sort())
   for (const tool of tools) {
-    expect(tool.annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false })
+    const action = ['claim-investigation', 'propose-investigation', 'start-investigation', 'complete-investigation'].some(name => tool.name === `weapp-vite_${name}`)
+    expect(tool.annotations).toMatchObject({ readOnlyHint: !action, destructiveHint: false })
     expect(tool.inputSchema).toMatchObject({ type: 'object' })
     expect(tool.outputSchema).toMatchObject({ type: 'object' })
   }
@@ -249,6 +256,94 @@ it.each([false, true])('uses the live RPC authority through initialized MCP (leg
   })
   expect(await client.callTool({ name: pageTool, arguments: { arg0: pageInput } })).toMatchObject({ isError: true })
   expect(await client.callTool({ name: fileTool, arguments: { arg0: { kind: 'artifact', path: 'app.js', revision: 0 } } })).toMatchObject({ isError: true })
+})
+
+it('keeps browser owner tools absent and denied even through direct guessed MCP and agent invocation', async () => {
+  const host = await createHost()
+  await host.server.listen()
+  const { dashboard } = host
+  const client = await connectClient(host.server)
+  const state = await dashboard.rpc.call('get-dashboard-state')
+  const report = { sessionId: state.sessionId, revision: state.revision, reportHash: state.analyze.current.hash }
+  const input = { report, target: { kind: 'artifact' as const, packageId: 'main', file: 'app.js' }, question: 'Reduce this artifact without changing behavior' }
+  const { tools } = await client.listTools()
+
+  async function rejectOwner(name: string, arg0: object) {
+    expect(tools.some(tool => tool.name === `weapp-vite_${name}`)).toBe(false)
+    expect(dashboard.agent.getTool(`weapp-vite:${name}`)).toBeUndefined()
+    const before = await dashboard.rpc.call('list-investigations')
+    for (const guessed of [`weapp-vite_${name}`, `weapp-vite:${name}`]) {
+      expect(await client.callTool({ name: guessed, arguments: { arg0 } })).toMatchObject({ isError: true })
+    }
+    await expect(dashboard.agent.invoke(`weapp-vite:${name}`, { arg0 })).rejects.toThrow('not found')
+    expect(await dashboard.rpc.call('list-investigations')).toEqual(before)
+  }
+
+  await rejectOwner('create-investigation', input)
+  let task = await dashboard.rpc.call('create-investigation', input)
+  await rejectOwner('cancel-investigation', { id: task.id, version: task.version })
+  for (const [name, arg0] of [
+    ['get-investigation', { id: '' }],
+    ['claim-investigation', { id: task.id, version: task.version }],
+    ['claim-investigation', { id: task.id, version: task.version, agentName: 'Agent', extraPermission: true }],
+    ['claim-investigation', { id: task.id, version: 0, agentName: 'Agent' }],
+  ]) {
+    expect(await client.callTool({ name: `weapp-vite_${name}`, arguments: { arg0 } })).toMatchObject({ isError: true })
+  }
+  expect(await dashboard.rpc.call('get-investigation', { id: task.id })).toEqual(task)
+  const claimInput = { id: task.id, version: task.version, agentName: 'External MCP Agent' }
+  const claims = await Promise.all([1, 2].map(() => client.callTool({ name: 'weapp-vite_claim-investigation', arguments: { arg0: claimInput } })))
+  expect(claims.filter(result => result.isError === true)).toHaveLength(1)
+  const winningClaim = claims.find(result => result.isError !== true)!
+  const { investigation, claimToken } = winningClaim.structuredContent as unknown as DashboardInvestigationClaim
+  task = investigation
+  expect(JSON.stringify((await client.callTool({ name: stateTool })).structuredContent)).not.toContain(claimToken)
+  expect(JSON.stringify((await client.callTool({ name: 'weapp-vite_list-investigations' })).structuredContent)).not.toContain(claimToken)
+  const proposal = { summary: 'Remove unused code', changes: [{ path: 'src/app.ts', description: 'Remove the unused branch' }], checks: ['pnpm test'], risks: [] }
+  const agent = { id: task.id, version: task.version, claimToken }
+  for (const invalid of [
+    { ...agent, proposal: { ...proposal, changes: [] } },
+    { ...agent, proposal: { ...proposal, summary: ' ' } },
+    { ...agent, proposal: { ...proposal, risks: Array.from({ length: 33 }).fill('Risk') } },
+    { ...agent, proposal: { ...proposal, id: 'agent-chosen-proposal' } },
+  ]) {
+    expect(await client.callTool({ name: 'weapp-vite_propose-investigation', arguments: { arg0: invalid } })).toMatchObject({ isError: true })
+  }
+  expect(await dashboard.rpc.call('get-investigation', { id: task.id })).toEqual(task)
+  expect(await client.callTool({ name: 'weapp-vite_propose-investigation', arguments: { arg0: { ...agent, claimToken: '0'.repeat(64), proposal } } })).toMatchObject({ isError: true })
+  expect(await client.callTool({ name: 'weapp-vite_start-investigation', arguments: { arg0: agent } })).toMatchObject({ isError: true })
+  const proposed = await client.callTool({ name: 'weapp-vite_propose-investigation', arguments: { arg0: { ...agent, proposal } } })
+  expect(proposed.isError).not.toBe(true)
+  task = proposed.structuredContent as unknown as DashboardInvestigation
+  const grant = { id: task.id, version: task.version, proposalId: task.proposal!.id }
+  await rejectOwner('authorize-investigation', grant)
+  task = await dashboard.rpc.call('authorize-investigation', grant)
+  const start = { ...agent, version: task.version }
+  const started = await client.callTool({ name: 'weapp-vite_start-investigation', arguments: { arg0: start } })
+  expect(started.isError).not.toBe(true)
+  task = started.structuredContent as unknown as DashboardInvestigation
+  expect(await client.callTool({ name: 'weapp-vite_start-investigation', arguments: { arg0: start } })).toMatchObject({ isError: true })
+  await host.controller.update(analyzeResult('after external work'), new Map())
+  const completed = await client.callTool({
+    name: 'weapp-vite_complete-investigation',
+    arguments: { arg0: { ...agent, version: task.version, receipt: { outcome: 'completed', summary: 'External report only', changedFiles: ['src/app.ts'], checks: [] } } },
+  })
+  expect(completed.isError).not.toBe(true)
+  task = completed.structuredContent as unknown as DashboardInvestigation
+  expect(task.status).toBe('completed')
+  expect(task.verification).toBeNull()
+  const latest = await dashboard.rpc.call('get-dashboard-state')
+  const verification = {
+    id: task.id,
+    version: task.version,
+    report: { sessionId: latest.sessionId, revision: latest.revision, reportHash: latest.analyze.current.hash },
+    summary: 'Human reviewed the new report and behavior',
+  }
+  await rejectOwner('verify-investigation', verification)
+  expect(await dashboard.rpc.call('verify-investigation', verification)).toMatchObject({ status: 'verified' })
+  host.controller.dispose()
+  expect(await client.callTool({ name: 'weapp-vite_list-investigations' })).toMatchObject({ isError: true })
+  expect(await client.callTool({ name: 'weapp-vite_get-investigation', arguments: { arg0: { id: task.id } } })).toMatchObject({ isError: true })
 })
 
 it('diagnoses growth and duplicates through bounded domain queries without report-page downloads', async () => {

@@ -1,6 +1,7 @@
 import type { ViteDevServer } from 'vite'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
 import type { AnalyzeDashboardDevframeController, DashboardArtifactFiles, DashboardRuntimeEventInput } from '../../dashboard'
+import type { DashboardUiHost } from '../types'
 import process from 'node:process'
 import { buildOtpAuthUrl, refreshTempAuthCode } from 'devframe/node/auth'
 import { resolveCommand } from 'package-manager-detector/commands'
@@ -32,6 +33,7 @@ export async function startAnalyzeDashboard(
   result: AnalyzeSubpackagesResult,
   options: {
     artifacts: DashboardArtifactFiles
+    uiHost?: DashboardUiHost
     watch?: boolean
     cwd?: string
     packageManagerAgent?: PackageManagerAgent
@@ -50,8 +52,10 @@ export async function startAnalyzeDashboard(
     return
   }
   const { root, configFile } = resolved
-  const { ANALYZE_DASHBOARD_DEVFRAME_BASE, createAnalyzeDashboardViteBridge } = await import('./dashboardViteBridge')
+  // 可选面板缺失时必须在加载传输前返回，静态导入会破坏这个 CLI 加载边界。
+  const { ANALYZE_DASHBOARD_DEVFRAME_BASE, ANALYZE_DASHBOARD_HUB_BASE, createAnalyzeDashboardViteBridge } = await import('./dashboardViteBridge')
   const devframe = createAnalyzeDashboardDevframe({
+    clientAssets: options.uiHost === 'hub' ? root : undefined,
     snapshot: { current: result, previous: options.previousResult ?? null, artifacts: options.artifacts },
     initialEvents: [
       {
@@ -71,7 +75,10 @@ export async function startAnalyzeDashboard(
       srcRoot: options.srcRoot ?? (options.cwd ? path.resolve(options.cwd, 'src') : undefined),
     },
   })
-  const bridge = createAnalyzeDashboardViteBridge(devframe, { projectRoot: options.cwd ?? process.cwd() })
+  const bridge = createAnalyzeDashboardViteBridge(devframe, {
+    projectRoot: options.cwd ?? process.cwd(),
+    uiHost: options.uiHost,
+  })
 
   let server: ViteDevServer | undefined
   let onHostClose: (() => void) | undefined
@@ -141,7 +148,10 @@ export async function startAnalyzeDashboard(
     ...(activeServer.resolvedUrls?.network ?? []),
   ]
   const authCode = refreshTempAuthCode()
-  const authenticatedUrls = urls.map(url => buildOtpAuthUrl(url, authCode))
+  const authenticatedUrls = urls.map((url) => {
+    const entryUrl = options.uiHost === 'hub' ? new URL(ANALYZE_DASHBOARD_HUB_BASE, url).href : url
+    return buildOtpAuthUrl(entryUrl, authCode)
+  })
   let closing: Promise<void> | undefined
   let resolveExit!: () => void
   const waitPromise = new Promise<void>((resolve) => {

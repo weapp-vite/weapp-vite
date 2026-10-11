@@ -1,7 +1,7 @@
 import type { ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import { EventEmitter } from 'node:events'
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
@@ -23,7 +23,7 @@ function hook<T extends (...args: never[]) => unknown>(value: T | { handler: T }
 }
 
 describe('auto import component path identity', () => {
-  it.each(['sidecar', 'native'] as const)('keeps scan and %s events on one registry identity across path separators', async (owner) => {
+  it.each(['sidecar', 'native'] as const)('keeps scan and %s events fresh across path separators and unchanged mtimes', async (owner) => {
     const root = path.normalize(await realpath(await mkdtemp(path.join(tmpdir(), 'auto-import-path-'))))
     const component = path.join(root, 'components/Card.vue')
     const watcher = new EventEmitter()
@@ -62,6 +62,12 @@ describe('auto import component path identity', () => {
     const config = { build: { outDir: 'dist' } } as ResolvedConfig
     const eventPath = component.replaceAll('/', '\\')
     const source = '<template><view>card</view></template>'
+    const mtime = new Date('2020-01-01T00:00:00Z')
+    async function writeComponent(content: string) {
+      await writeFile(component, content)
+      // 文件事件必须使配置重新登记，不能依赖文件系统时间戳精度。
+      await utimes(component, mtime, mtime)
+    }
     async function notify(event: 'add' | 'change' | 'unlink') {
       if (owner === 'sidecar') {
         watcher.emit(event, eventPath)
@@ -76,7 +82,7 @@ describe('auto import component path identity', () => {
 
     try {
       await mkdir(path.dirname(component), { recursive: true })
-      await writeFile(component, source)
+      await writeComponent(source)
       hook(plugin.configResolved)(config)
       await buildStart.call(pluginContext, buildOptions)
       expect(service.resolve('Card')?.value.resolvedId).toBe(component)
@@ -85,7 +91,7 @@ describe('auto import component path identity', () => {
       await notify('unlink')
       expect(service.resolve('Card')).toBeUndefined()
 
-      await writeFile(component, source)
+      await writeComponent(source)
       await notify('add')
       expect(service.resolve('Card')?.value).toEqual({
         name: 'Card',
@@ -93,9 +99,13 @@ describe('auto import component path identity', () => {
         resolvedId: component,
       })
 
-      await writeFile(component, `${source}<json>{ "component": false }</json>`)
+      await writeComponent(`${source}<json>{ "component": false }</json>`)
       await notify('change')
       expect(service.resolve('Card')).toBeUndefined()
+
+      await writeComponent(`${source}<json>{ "component": true }</json>`)
+      await notify('change')
+      expect(service.resolve('Card')).toMatchObject({ kind: 'local', entry: { json: { component: true } } })
     }
     finally {
       await service.awaitManifestWrites()

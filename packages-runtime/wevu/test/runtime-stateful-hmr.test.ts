@@ -1,7 +1,19 @@
-import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
+import type { InternalRuntimeState } from '@/runtime/types'
+import {
+  WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
+  WEVU_NATIVE_SLOT_CONTEXT_KEY,
+  WEVU_NATIVE_SLOT_PARENT_METHOD,
+  WEVU_PARENT_INSTANCE_KEY,
+  WEVU_PROVIDES_KEY,
+  WEVU_RUNTIME_APP_KEY,
+} from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, defineComponent, defineStore, nextTick, onAttached, onUnload, reactive, ref, setActivePinia, storeToRefs } from '@/index'
+import { createApp } from '@/runtime/app'
 import { applySnapshotUpdate } from '@/runtime/app/setData/snapshot'
+import { useCssVars } from '@/runtime/css'
+import { inject, provide } from '@/runtime/provide'
+import { mountRuntimeInstance, registerComponent, teardownRuntimeInstance } from '@/runtime/register'
 
 describe('runtime: stateful HMR', () => {
   let dispose: ((instance: any) => void) | undefined
@@ -47,6 +59,50 @@ describe('runtime: stateful HMR', () => {
   afterEach(() => {
     delete (globalThis as any).Component
     delete (globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
+  })
+
+  it('re-resolves native slot context during attached HMR and releases only canonical host references', () => {
+    const app = createApp({})
+    const token = Symbol('slot-hmr')
+    const before = { count: ref(0) }
+    const after = { count: ref(10) }
+    const previousHost = { setData() {} }
+    const nextHost = { setData() {} }
+    mountRuntimeInstance(previousHost, app, undefined, () => provide(token, before))
+    mountRuntimeInstance(nextHost, app, undefined, () => provide(token, after))
+    const seen: unknown[] = []
+    registerComponent(app, {}, undefined, () => {
+      seen.push(inject(token))
+    }, { [WEVU_NATIVE_SLOT_CONTEXT_KEY]: true })
+    let slotHost = previousHost
+    const child: InternalRuntimeState = {
+      setData() {},
+      triggerEvent(_name: string, detail: unknown) {
+        registeredDefinition!.methods[WEVU_NATIVE_SLOT_PARENT_METHOD].call(slotHost, { detail })
+      },
+    }
+    registeredDefinition!.lifetimes.created.call(child)
+    registeredDefinition!.lifetimes.attached.call(child)
+    const facade = child.__wevu
+    expect(seen).toEqual([before])
+    expect(child[WEVU_PARENT_INSTANCE_KEY]).toBe(previousHost)
+
+    teardownRuntimeInstance(previousHost)
+    slotHost = nextHost
+    refresh!(child)
+    expect(seen[1]).toBe(after)
+    expect(child.__wevu).toBe(facade)
+    expect(child[WEVU_PARENT_INSTANCE_KEY]).toBe(nextHost)
+    expect(before.count.value).toBe(0)
+    expect(after.count.value).toBe(10)
+
+    dispose!(child)
+    expect(child[WEVU_PARENT_INSTANCE_KEY]).toBeUndefined()
+    expect(child[WEVU_PROVIDES_KEY]).toBeUndefined()
+    expect(child[WEVU_RUNTIME_APP_KEY]).toBeUndefined()
+    after.count.value++
+    expect((seen[1] as typeof after).count.value).toBe(11)
+    teardownRuntimeInstance(nextHost)
   })
 
   it('stops queued and future state updates on a replaced host without replaying user unload hooks', async () => {
@@ -195,6 +251,90 @@ describe('runtime: stateful HMR', () => {
     }
   })
 
+  it.each([false, true])('retains CSS variable tracking after an HMR refresh with an existing runtime: %s', async (existingRuntime) => {
+    const defineRuntime = () => defineComponent({
+      setup() {
+        const themeColor = ref('red')
+        useCssVars(() => ({ themeColor: themeColor.value }))
+        return { themeColor }
+      },
+    })
+    defineRuntime()
+
+    const instance: any = {
+      data: {
+        themeColor: 'red',
+        __wv_css_vars_style: '--themeColor:red',
+      },
+      properties: {},
+      setData(payload: Record<string, any>) {
+        Object.assign(this.data, payload)
+      },
+    }
+    if (existingRuntime) {
+      registeredDefinition!.lifetimes.attached.call(instance)
+      await nextTick()
+      await nextTick()
+    }
+
+    applying = true
+    defineRuntime()
+    refresh!(instance, { ...instance.data })
+    applying = false
+
+    instance.__wevu.setupState.themeColor.value = 'blue'
+    await nextTick()
+    await nextTick()
+
+    expect(instance.data).toMatchObject({
+      themeColor: 'blue',
+      __wv_css_vars_style: '--themeColor:blue',
+    })
+  })
+
+  it('refreshes a classic HMR instance when the host reuses it for a new runtime app', async () => {
+    const bridge = (globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
+    delete (globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
+    try {
+      const defineRuntime = () => defineComponent({
+        setup() {
+          const themeColor = ref('red')
+          useCssVars(() => ({ themeColor: themeColor.value }))
+          return { themeColor }
+        },
+      })
+      defineRuntime()
+
+      const instance: any = {
+        data: {
+          themeColor: 'red',
+          __wv_css_vars_style: '--themeColor:red',
+        },
+        properties: {},
+        setData(payload: Record<string, any>) {
+          Object.assign(this.data, payload)
+        },
+      }
+      registeredDefinition!.lifetimes.attached.call(instance)
+      await nextTick()
+      await nextTick()
+
+      defineRuntime()
+      registeredDefinition!.lifetimes.attached.call(instance)
+      instance.__wevu.setupState.themeColor.value = 'blue'
+      await nextTick()
+      await nextTick()
+
+      expect(instance.data).toMatchObject({
+        themeColor: 'blue',
+        __wv_css_vars_style: '--themeColor:blue',
+      })
+    }
+    finally {
+      ;(globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY] = bridge
+    }
+  })
+
   it.each([false, true])('restores explicit reactive snapshots with an existing runtime: %s', async (existingRuntime) => {
     const attached = vi.fn()
     const defineRuntime = (label: string, delta: number) => defineComponent({
@@ -244,6 +384,48 @@ describe('runtime: stateful HMR', () => {
     expect(instance.data).toMatchObject({ count: 4, details: { count: 5 }, items: ['held', 'updated'], label: 'after' })
     expect(snapshot).toEqual({ count: 2, details: { count: 3 }, items: ['held'], label: 'before' })
     expect(attached).toHaveBeenCalledTimes(existingRuntime ? 1 : 0)
+  })
+
+  it('commits refreshed plain setup values to the native receiver when properties share the host data view', async () => {
+    const defineRuntime = (label: string) => defineComponent({
+      setup() {
+        const input = ref('')
+        return { input, label }
+      },
+    })
+    defineRuntime('before')
+    const renderedData: Record<string, unknown> = {}
+    const data: Record<string, unknown> = {}
+    const instance: any = { data, properties: data }
+    const nativeSetData = vi.fn(function (this: unknown, payload: Record<string, unknown>, callback?: () => void) {
+      expect(this).toBe(instance)
+      for (const [key, value] of Object.entries(payload)) {
+        applySnapshotUpdate(data, key, value, 'set')
+        applySnapshotUpdate(renderedData, key, value, 'set')
+      }
+      callback?.()
+    })
+    instance.setData = nativeSetData
+    registeredDefinition!.lifetimes.attached.call(instance)
+    instance.__wevu.setupState.input.value = 'held-input'
+    await nextTick()
+    await nextTick()
+    expect(renderedData).toMatchObject({ input: 'held-input', label: 'before' })
+
+    for (const label of ['after', 'before']) {
+      nativeSetData.mockClear()
+      applying = true
+      defineRuntime(label)
+      refresh!(instance, { ...data })
+      applying = false
+      await nextTick()
+      await nextTick()
+
+      expect(nativeSetData.mock.calls.some(([payload]) => payload.label === label)).toBe(true)
+      expect(renderedData).toMatchObject({ input: 'held-input', label })
+      expect(instance.properties).toBe(instance.data)
+      expect(instance.__wevu.setupState.input.value).toBe('held-input')
+    }
   })
 
   it('preserves deleted reactive fields while adding defaults introduced by updated setup code', async () => {

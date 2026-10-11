@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createRuntimeState } from '../../../runtime/runtimeState'
 
 const parseJsLikeMock = vi.hoisted(() => vi.fn(() => ({ type: 'Program' })))
 const traverseMock = vi.hoisted(() => vi.fn())
@@ -43,17 +44,21 @@ vi.mock('../../utils/wxmlEmit', () => ({
   emitWxmlAssetsWithCache: vi.fn(),
 }))
 
-vi.mock('../helpers', () => ({
-  createBundleChunkSnapshot: createBundleChunkSnapshotMock,
-  emitJsonAssets: vi.fn(),
-  filterPluginBundleOutputs: vi.fn(),
-  formatBytes: vi.fn(() => '0B'),
-  refreshSharedChunkImporters: vi.fn(),
-  removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
-  rewriteWevuInternalRuntimeImports: rewriteWevuInternalRuntimeImportsMock,
-  stabilizeWevuRuntimeChunkAccess: stabilizeWevuRuntimeChunkAccessMock,
-  syncChunkImportsFromRequireCalls: syncChunkImportsFromRequireCallsMock,
-}))
+vi.mock('../helpers', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../helpers')>()
+  return {
+    createBundleChunkSnapshot: createBundleChunkSnapshotMock,
+    emitJsonAssets: vi.fn(),
+    filterPluginBundleOutputs: vi.fn(),
+    formatBytes: vi.fn(() => '0B'),
+    refreshSharedChunkImporters: actual.refreshSharedChunkImporters,
+    refreshPartialSharedChunkImporters: actual.refreshPartialSharedChunkImporters,
+    removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
+    rewriteWevuInternalRuntimeImports: rewriteWevuInternalRuntimeImportsMock,
+    stabilizeWevuRuntimeChunkAccess: stabilizeWevuRuntimeChunkAccessMock,
+    syncChunkImportsFromRequireCalls: syncChunkImportsFromRequireCallsMock,
+  }
+})
 
 vi.mock('../../../logger', () => ({
   default: {
@@ -79,6 +84,7 @@ function createState(overrides: Record<string, any> = {}) {
   }
 
   const mergedCtx = {
+    runtimeState: createRuntimeState(),
     scanService: {
       subPackageMap: new Map(),
       ...((overrides.ctx?.scanService as any) ?? {}),
@@ -100,6 +106,10 @@ function createState(overrides: Record<string, any> = {}) {
     },
     hmrSharedChunksMode: 'auto',
     hmrSharedChunkImporters: new Map(),
+    hmrSharedChunksByEntry: new Map(),
+    hmrSharedChunkDependencies: new Map(),
+    outputChunksByModule: new Map(),
+    hmrSourceSharedChunks: new Set(),
     jsonEmitFilesMap: new Map(),
     pendingJsonEmitFilesMap: new Map(),
   }
@@ -302,7 +312,7 @@ describe('core lifecycle emit edge branches', () => {
     expect(generateMock).not.toHaveBeenCalled()
   })
 
-  it('limits Wevu runtime rewrite to active dev hmr chunks', async () => {
+  it('limits Wevu runtime rewrite to active dev hmr chunks and their runtime dependencies', async () => {
     const activeEntry = '/project/src/pages/index/index.ts'
     const { createGenerateBundleHook } = await import('./emit')
     const state = createState({
@@ -339,7 +349,7 @@ describe('core lifecycle emit edge branches', () => {
         fileName: 'pages/other/index.js',
         facadeModuleId: '/project/src/pages/other/index.ts',
         code: 'import { ref } from "wevu";',
-        imports: [],
+        imports: ['../../weapp-vendors/inactive-runtime.js'],
         dynamicImports: [],
       },
       'weapp-vendors/runtime.js': {
@@ -349,12 +359,23 @@ describe('core lifecycle emit edge branches', () => {
         imports: [],
         dynamicImports: [],
       },
+      'weapp-vendors/inactive-runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/inactive-runtime.js',
+        code: 'exports.computed = function computed() {}',
+        imports: [],
+        dynamicImports: [],
+      },
     } as any
 
     await hook.call({}, {}, bundle)
 
     const rewriteCall = rewriteWevuInternalRuntimeImportsMock.mock.calls[rewriteWevuInternalRuntimeImportsMock.mock.calls.length - 1]
     const rewriteBundle = rewriteCall?.[0]
-    expect(Object.keys(rewriteBundle)).toEqual(['pages/index/index.js'])
+    expect(Object.keys(rewriteBundle)).toEqual(['pages/index/index.js', 'weapp-vendors/runtime.js'])
+    expect(bundle['weapp-vendors/runtime.js']).toBeDefined()
+    expect(rewriteBundle['weapp-vendors/runtime.js']).toBe(bundle['weapp-vendors/runtime.js'])
+    expect(rewriteBundle['pages/other/index.js']).toBeUndefined()
+    expect(rewriteBundle['weapp-vendors/inactive-runtime.js']).toBeUndefined()
   })
 })

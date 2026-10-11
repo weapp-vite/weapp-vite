@@ -1,116 +1,11 @@
-import type { spawnSync } from 'node:child_process'
+import type { AppliedVersion } from './repoctl-release/preparation'
 import { writeFileSync } from 'node:fs'
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { createReleasePullRequest, prepareStable } from 'repoctl'
 import { execSync } from 'tinyexec'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { bump, cleanupPreparationFixtures, createPreparationFixture, privateName, publicName, rootName } from './repoctl-release/preparation'
 
-interface Manifest {
-  name: string
-  version?: string
-  private?: boolean
-  dependencies?: Record<string, string>
-}
-
-interface AppliedVersion {
-  name: string
-  currentVersion: string
-  newVersion: string
-}
-
-const roots: string[] = []
-const publicName = '@release-fixture/library'
-const privateName = '@release-fixture/demo'
-const rootName = '@release-fixture/root'
-
-afterEach(async () => {
-  await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
-})
-
-async function createPreparationFixture() {
-  // 使用真实路径，避免 macOS 的临时目录别名让根包过滤行为与 Linux 不一致。
-  const cwd = await realpath(await mkdtemp(path.join(tmpdir(), 'repoctl-prepare-')))
-  roots.push(cwd)
-  const manifests: Record<string, Manifest> = {
-    'package.json': { name: rootName, private: true, version: '1.0.0' },
-    'packages/library/package.json': { name: publicName, version: '1.0.0' },
-    'packages/demo/package.json': {
-      name: privateName,
-      private: true,
-      version: '1.0.0',
-      dependencies: { [publicName]: 'workspace:*' },
-    },
-    'packages/tool/package.json': { name: '@release-fixture/tool', private: true },
-  }
-  for (const [file, manifest] of Object.entries(manifests)) {
-    await mkdir(path.dirname(path.join(cwd, file)), { recursive: true })
-    await writeFile(path.join(cwd, file), JSON.stringify(manifest))
-  }
-  await writeFile(path.join(cwd, 'pnpm-workspace.yaml'), 'packages:\n  - packages/*\n')
-  await mkdir(path.join(cwd, '.changeset'))
-  await writeFile(path.join(cwd, '.changeset/update.md'), `---\n"${publicName}": patch\n"${privateName}": patch\n"${rootName}": patch\n---\n\n发布测试。\n`)
-  const hooks: string[] = []
-  const versionCalls: string[][] = []
-  const gitCommands: string[][] = []
-  const github = { ensurePullRequest: vi.fn(), ensureTag: vi.fn(), ensureRelease: vi.fn() }
-  let version = () => ({ status: 0, stdout: '[]', stderr: '' })
-  const spawn = ((command: string, args: string[]) => {
-    if (command === 'pnpm' && args[0] === 'version') {
-      versionCalls.push(args)
-      return version()
-    }
-    if (command === 'pnpm' && args[0] === 'run') {
-      hooks.push(args[1])
-      return { status: 0, stdout: '', stderr: '' }
-    }
-    if (command === 'git' && args.join(' ') === 'diff --quiet --exit-code') {
-      return { status: 1, stdout: '', stderr: '' }
-    }
-    if (command === 'git') {
-      gitCommands.push(args)
-      return { status: 0, stdout: '', stderr: '' }
-    }
-    throw new Error(`Unexpected preparation command: ${command} ${args.join(' ')}`)
-  }) as typeof spawnSync
-  return {
-    cwd,
-    hooks,
-    versionCalls,
-    gitCommands,
-    github,
-    apply(entries: AppliedVersion[]) {
-      for (const entry of entries) {
-        const match = Object.entries(manifests).find(([, manifest]) => manifest.name === entry.name)
-        if (match) {
-          writeFileSync(path.join(cwd, match[0]), JSON.stringify({ ...match[1], version: entry.newVersion }))
-        }
-      }
-    },
-    setVersion(handler: typeof version) { version = handler },
-    async manifest(file: string) {
-      return JSON.parse(await readFile(path.join(cwd, file), 'utf8')) as Manifest
-    },
-    run: () => prepareStable({
-      cwd,
-      branch: 'main',
-      config: { qualityScripts: [], hooks: { afterVersion: ['after-version'] } },
-      spawn,
-    }),
-    runPullRequest: () => createReleasePullRequest({
-      cwd,
-      branch: 'main',
-      config: { qualityScripts: [], hooks: { afterVersion: ['after-version'] } },
-      spawn,
-      github,
-    }),
-  }
-}
-
-function bump(name: string): AppliedVersion {
-  return { name, currentVersion: '1.0.0', newVersion: '1.0.1' }
-}
+afterEach(cleanupPreparationFixtures)
 
 describe('repoctl release preparation workspace boundary', () => {
   it('creates public release notes while preserving private and root version updates without notes', async () => {
@@ -142,13 +37,13 @@ describe('repoctl release preparation workspace boundary', () => {
     expect(fixture.github.ensurePullRequest).toHaveBeenCalledTimes(1)
   })
 
-  it.each(['missing', 'empty', 'wrong-version'] as const)('still refuses to push when public release notes are %s', async (kind) => {
+  it.each(['missing', 'wrong-version'] as const)('still refuses to push when public release notes are %s', async (kind) => {
     const fixture = await createPreparationFixture()
     const entries = [bump(publicName), bump(privateName)]
     fixture.setVersion(() => {
       fixture.apply(entries)
       if (kind !== 'missing') {
-        writeFileSync(path.join(fixture.cwd, 'packages/library/CHANGELOG.md'), kind === 'empty' ? '# Changelog\n\n## 1.0.1\n' : '# Changelog\n\n## 1.0.0\n\n- 旧版说明。\n')
+        writeFileSync(path.join(fixture.cwd, 'packages/library/CHANGELOG.md'), '# Changelog\n\n## 1.0.0\n\n- 旧版说明。\n')
       }
       return { status: 0, stdout: JSON.stringify(entries), stderr: '' }
     })
@@ -156,6 +51,21 @@ describe('repoctl release preparation workspace boundary', () => {
     await expect(fixture.runPullRequest()).rejects.toThrow(`Missing release notes for ${publicName}@1.0.1`)
     expect(fixture.github.ensurePullRequest).not.toHaveBeenCalled()
     expect(fixture.gitCommands.some(args => ['commit', 'push'].includes(args[0]!))).toBe(false)
+  })
+
+  it('creates a maintenance release note when the public changelog section is empty', async () => {
+    const fixture = await createPreparationFixture()
+    const entries = [bump(publicName), bump(privateName)]
+    fixture.setVersion(() => {
+      fixture.apply(entries)
+      writeFileSync(path.join(fixture.cwd, 'packages/library/CHANGELOG.md'), '# Changelog\n\n## 1.0.1\n')
+      return { status: 0, stdout: JSON.stringify(entries), stderr: '' }
+    })
+
+    await expect(fixture.runPullRequest()).resolves.toBe(true)
+    const pullRequest = fixture.github.ensurePullRequest.mock.calls[0]![0] as { body: string }
+    expect(pullRequest.body).toContain('Maintenance')
+    expect(pullRequest.body).toContain(publicName)
   })
 
   it('validates actual pnpm version output for private packages and the versioned root', async () => {

@@ -14,6 +14,7 @@ import {
   runRetryableCommand,
   runWechatIdeEngineBuild,
   runWithSuspendedSharedInput,
+  withWechatDevtoolsSelectionArgs,
 } from 'weapp-ide-cli'
 import logger from '../../logger'
 
@@ -150,7 +151,7 @@ async function tryExecuteWechatIdeCliCommandByHelper(argv: readonly string[]) {
 /**
  * @description 统一执行 weapp-ide-cli 命令，并在登录失效时复用同一套重试交互。
  */
-export async function executeWechatIdeCliCommand(
+async function executeSelectedWechatIdeCliCommand(
   argv: string[],
   options: ExecuteWechatIdeCliCommandOptions = {},
 ) {
@@ -253,3 +254,8 @@ export async function executeWechatIdeCliCommand(
 }
 
 export { isWechatIdeLoginRequiredExitError }
+
+/** 安装选择覆盖 HTTP、automator 与 CLI 回退的完整操作。 */
+export async function executeWechatIdeCliCommand(argv: string[], options: ExecuteWechatIdeCliCommandOptions = {}) {
+  return await withWechatDevtoolsSelectionArgs(argv, args => executeSelectedWechatIdeCliCommand(args, options))
+}

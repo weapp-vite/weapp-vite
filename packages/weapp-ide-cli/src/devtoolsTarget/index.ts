@@ -1,77 +1,94 @@
-import type { WechatDevtoolsMetadata } from './metadata'
-import type { WechatDevtoolsProfileOptions } from './profile'
-import { createHash } from 'node:crypto'
+import type { ResolvedWechatDevtoolsTarget, ResolveWechatDevtoolsTargetOptions, WechatDevtoolsSelectionOptions } from './types'
 import fs from 'node:fs/promises'
-import path from 'node:path'
 import process from 'node:process'
-import { getConfig } from '../config/resolver'
-import { readWechatDevtoolsMetadata } from './metadata'
-import { resolveWechatDevtoolsProfileDir } from './profile'
+import { readCustomConfig } from '../config/custom'
+import { wechatDevtoolsSelectionContext } from './context'
+import { selectInstalledWechatDevtools } from './discovery'
+import { inspectWechatDevtoolsInstallation } from './installation'
+import { assertOfficialWechatDevtoolsVersion } from './official'
 
+export { compareWechatDevtoolsVersions, listWechatDevtoolsInstallations } from './discovery'
 export { assertWechatDevtoolsHost, assertWechatDevtoolsPort, type WechatDevtoolsHostInspectionOptions } from './host'
+export { assertOfficialWechatDevtoolsVersion, readOfficialWechatDevtoolsVersion, WECHAT_DEVTOOLS_OFFICIAL_CHANNELS_URL } from './official'
+export { registerWechatDevtoolsInstallation, unregisterWechatDevtoolsInstallation } from './registry'
+export type * from './types'
 
-export interface ResolvedWechatDevtoolsTarget extends WechatDevtoolsMetadata {
-  cliPath: string
-  installationId: string
-  appPath: string
-  profileDir: string
+function conflict(message: string): never {
+  throw Object.assign(new Error(message), { code: 'WECHAT_DEVTOOLS_INSTALLATION_SELECTION_CONFLICT' })
 }
 
-export interface ResolveWechatDevtoolsTargetOptions extends WechatDevtoolsProfileOptions {
-  cliPath?: string
-  target?: ResolvedWechatDevtoolsTarget
-}
-
-async function resolveApplicationPath(cliPath: string, platform: NodeJS.Platform) {
-  const root = platform === 'darwin' && path.basename(path.dirname(cliPath)) === 'MacOS'
-    ? path.join(path.dirname(path.dirname(cliPath)), 'Resources')
-    : path.dirname(cliPath)
-  const candidates = platform === 'darwin'
-    ? [path.join(root, 'app.asar'), path.join(root, 'app'), path.join(root, 'package.nw')]
-    : [path.join(root, 'resources', 'app.asar'), path.join(root, 'resources', 'app'), path.join(root, 'package.nw'), path.join(root, 'resources', 'package.nw')]
-  for (const candidate of candidates) {
-    try {
-      const stat = await fs.stat(candidate)
-      if (candidate.endsWith('.asar') ? stat.isFile() : stat.isDirectory()) {
-        return await fs.realpath(candidate)
-      }
-    }
-    catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        throw error
-      }
-    }
+export function validateWechatDevtoolsSelection(options: WechatDevtoolsSelectionOptions) {
+  if (options.cliPath !== undefined && !options.cliPath.trim()) {
+    throw new Error('cliPath must not be empty.')
   }
-  throw new Error('Cannot identify the selected WeChat DevTools installation. Select its official CLI path.')
+  if (options.devtoolsChannel !== undefined && !['stable', 'rc', 'nightly'].includes(options.devtoolsChannel)) {
+    throw new Error('devtoolsChannel must be stable, rc or nightly.')
+  }
+  if (options.devtoolsVersion !== undefined && !/^\d+(?:\.\d+){2,}$/.test(options.devtoolsVersion)) {
+    throw new Error('devtoolsVersion must be a complete DevTools product version.')
+  }
 }
 
-/** 一次解析 CLI、应用身份及配置目录，供本次操作的所有阶段共同使用。 */
+async function assertSelection(target: ResolvedWechatDevtoolsTarget, options: WechatDevtoolsSelectionOptions) {
+  if (options.cliPath?.trim() && await fs.realpath(options.cliPath.trim()) !== await fs.realpath(target.cliPath)) {
+    conflict('The explicit CLI path conflicts with the selected DevTools installation; no installation was changed.')
+  }
+  if (options.devtoolsChannel && options.devtoolsChannel !== target.channel) {
+    conflict('The requested DevTools channel conflicts with the selected installation.')
+  }
+  if (options.devtoolsVersion && options.devtoolsVersion !== target.version) {
+    conflict('The requested DevTools version conflicts with the selected installation.')
+  }
+  if (options.requireOfficialLatest) {
+    await assertOfficialWechatDevtoolsVersion(target)
+  }
+  return target
+}
+
+export function readWechatDevtoolsSelectionEnvironment(env = process.env): WechatDevtoolsSelectionOptions {
+  const options = {
+    cliPath: env.WEAPP_IDE_CLI_PATH?.trim() || undefined,
+    devtoolsChannel: (env.WEAPP_IDE_DEVTOOLS_CHANNEL?.trim() || undefined) as WechatDevtoolsSelectionOptions['devtoolsChannel'],
+    devtoolsVersion: env.WEAPP_IDE_DEVTOOLS_VERSION?.trim() || undefined,
+    requireOfficialLatest: env.WEAPP_IDE_REQUIRE_OFFICIAL_LATEST === '1',
+  }
+  validateWechatDevtoolsSelection(options)
+  return options
+}
+
+/** 每次操作只解析一次安装，显式选择覆盖继承的配置但不写回全局设置。 */
 export async function resolveWechatDevtoolsTarget(options: ResolveWechatDevtoolsTargetOptions = {}): Promise<ResolvedWechatDevtoolsTarget> {
-  if (options.target) {
-    const explicitCliPath = options.cliPath?.trim()
-    if (explicitCliPath && explicitCliPath !== options.target.cliPath) {
-      const [explicit, selected] = await Promise.all([fs.realpath(explicitCliPath), fs.realpath(options.target.cliPath)])
-      if (explicit !== selected) {
-        throw Object.assign(new Error('The explicit CLI path conflicts with the selected DevTools installation; no installation was changed.'), { code: 'WECHAT_DEVTOOLS_INSTALLATION_SELECTION_CONFLICT' })
-      }
+  validateWechatDevtoolsSelection(options)
+  const active = wechatDevtoolsSelectionContext.getStore()
+  if (active && options.target && active.installationId !== options.target.installationId) {
+    conflict('The fixed target conflicts with the active operation installation.')
+  }
+  const frozen = active ?? options.target
+  if (frozen) {
+    return await assertSelection(frozen, options)
+  }
+  let selection: WechatDevtoolsSelectionOptions = { ...options }
+  if (!options.cliPath?.trim() && !options.devtoolsChannel && !options.devtoolsVersion) {
+    selection = readWechatDevtoolsSelectionEnvironment()
+    selection.requireOfficialLatest = options.requireOfficialLatest ?? selection.requireOfficialLatest
+    if (!selection.cliPath && !selection.devtoolsChannel && !selection.devtoolsVersion) {
+      selection = { ...selection, cliPath: (await readCustomConfig()).cliPath }
     }
-    return options.target
   }
-  const selected = options.cliPath?.trim() || (await getConfig()).cliPath
-  if (!selected) {
-    throw new Error('No WeChat DevTools CLI has been selected.')
-  }
-  const cliPath = await fs.realpath(selected)
-  if (!(await fs.stat(cliPath)).isFile()) {
-    throw new Error('The selected WeChat DevTools CLI is not a file.')
-  }
-  const appPath = await resolveApplicationPath(cliPath, options.platform ?? process.platform)
-  const metadata = await readWechatDevtoolsMetadata(appPath)
-  return {
-    cliPath,
-    appPath,
-    installationId: createHash('sha256').update(appPath).digest('hex'),
-    profileDir: resolveWechatDevtoolsProfileDir(appPath, options),
-    ...metadata,
-  }
+  selection.requireOfficialLatest ??= process.env.WEAPP_IDE_REQUIRE_OFFICIAL_LATEST === '1'
+  const target = selection.cliPath?.trim()
+    ? await inspectWechatDevtoolsInstallation(selection.cliPath.trim(), options)
+    : await selectInstalledWechatDevtools({ ...options, ...selection })
+  return await assertSelection(target, selection)
+}
+
+/** 命令的所有异步阶段复用同一安装，彼此并发的调用不会污染环境变量。 */
+export async function withWechatDevtoolsSelection<T>(options: ResolveWechatDevtoolsTargetOptions, runner: (target: ResolvedWechatDevtoolsTarget) => Promise<T>): Promise<T> {
+  const target = await resolveWechatDevtoolsTarget(options)
+  return await wechatDevtoolsSelectionContext.run(target, () => runner(target))
+}
+
+/** 读取当前操作固定的安装；没有活动选择时不触发发现或启动。 */
+export function getActiveWechatDevtoolsTarget() {
+  return wechatDevtoolsSelectionContext.getStore()
 }

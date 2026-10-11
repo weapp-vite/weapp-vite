@@ -1,5 +1,9 @@
+import type * as RuntimeDefinition from './define'
+import type * as RuntimePlatform from './platform'
+import type * as RuntimeProvide from './provide'
 import { fileURLToPath } from 'node:url'
 import { runInNewContext } from 'node:vm'
+import { WEVU_NATIVE_SLOT_CONTEXT_KEY } from '@weapp-core/constants'
 import { build } from 'esbuild'
 import { describe, expect, it } from 'vitest'
 
@@ -39,7 +43,7 @@ async function loadCompiledPlatform(platform: string, hosts: Record<string, unkn
   })
   const module = { exports: {} }
   runInNewContext(result.outputFiles[0]!.text, { module, ...hosts })
-  return module.exports as typeof import('./platform')
+  return module.exports as typeof RuntimePlatform
 }
 
 describe('runtime platform bundle boundaries', () => {
@@ -97,6 +101,58 @@ describe('runtime platform bundle boundaries', () => {
   it('does not substitute an unrelated host for an unavailable compiled host', async () => {
     const runtime = await loadCompiledPlatform('alipay', { wx: {} })
     expect(runtime.getCurrentMiniProgramGlobalObject()).toBeUndefined()
+  })
+
+  it.each(['alipay', 'tt', 'web'])('keeps ordinary owner injection without native discovery on compiled %s', async (platform) => {
+    const definitionEntry = fileURLToPath(new URL('./define.ts', import.meta.url))
+    const provideEntry = fileURLToPath(new URL('./provide.ts', import.meta.url))
+    const result = await build({
+      stdin: {
+        contents: `export { createWevuComponentDefinition, getWevuComponentLifecycleDefinition } from ${JSON.stringify(definitionEntry)}; export { inject, provide } from ${JSON.stringify(provideEntry)}`,
+        resolveDir: repositoryRoot,
+      },
+      bundle: true,
+      write: false,
+      format: 'cjs',
+      define: { 'import.meta.env.PLATFORM': JSON.stringify(platform), 'process.env.NODE_ENV': '"production"' },
+      alias: aliases,
+    })
+    const module = { exports: {} }
+    runInNewContext(result.outputFiles[0]!.text, { module, console })
+    const runtime = module.exports as typeof RuntimeDefinition & typeof RuntimeProvide
+    const token = Symbol('ordinary-owner')
+    const context = { value: 10 }
+    let injected: unknown
+    const definitions = [
+      runtime.getWevuComponentLifecycleDefinition(runtime.createWevuComponentDefinition({
+        [WEVU_NATIVE_SLOT_CONTEXT_KEY]: true,
+        setup: () => runtime.provide(token, context),
+      }))!,
+      runtime.getWevuComponentLifecycleDefinition(runtime.createWevuComponentDefinition({
+        [WEVU_NATIVE_SLOT_CONTEXT_KEY]: true,
+        setup: () => { injected = runtime.inject(token) },
+      }))!,
+    ]
+    const owner = { properties: {}, setData() {} }
+    const child = {
+      properties: {},
+      setData() {},
+      selectOwnerComponent: () => owner,
+      triggerEvent() { throw new Error('Native discovery is unsupported on this platform') },
+    }
+    const hosts = [owner, child]
+    try {
+      definitions.forEach((definition, index) => {
+        definition.lifetimes.created.call(hosts[index])
+        definition.lifetimes.attached.call(hosts[index])
+      })
+      expect(injected).toBe(context)
+    }
+    finally {
+      for (let index = hosts.length - 1; index >= 0; index--) {
+        definitions[index].lifetimes.detached.call(hosts[index])
+      }
+    }
   })
 
   it('keeps dynamic discovery for targets outside the supported build backends', async () => {

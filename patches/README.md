@@ -1,7 +1,16 @@
 # 发布重试与恢复
 
-仓库固定使用 `repoctl@5.5.7`，发布重试由上游正式实现负责，不再保留
-`@icebreakers/monorepo@5.5.5` 的临时补丁。其他依赖补丁保持独立维护。
+仓库固定使用 `repoctl@5.10.0`，发布重试、工作区根包识别和发布说明过滤均由上游正式实现负责。
+`@icebreakers/monorepo@5.10.0` 的受管补丁修正发布说明分类：明确的 Conventional 摘要类型
+优先于整理提交类型及正文关键词，并保留正文中的依赖版本描述；原生 Dependencies 条目仍归维护。
+同一分类规则用于 Release PR、正式发布和发布说明修复，避免合并 intent 后功能、修复和性能被改归维护。
+补丁同时修正 Release PR 更新：查询已限定 head/base，现有 PR 只更新变化的标题和正文，
+不重复提交相同 base；内容未变时不发送 PATCH，避免无意义的 PR 更新。
+升级 repoctl 时须核对上游是否已覆盖这两类规则，并运行
+`scripts/repoctl-release-classification.test.ts` 和 `scripts/repoctl-github-pull-request.test.ts`。
+其他依赖补丁保持独立维护。
+
+Vite 与 Rolldown 的构建引用生命周期补丁见[编译依赖内存说明](./compiler-memory.md)。
 
 此前 [Release 35973791530](https://github.com/weapp-vite/weapp-vite/actions/runs/35973791530)
 在部分上传成功后遇到 OIDC 503。pnpm 12.5.1 没有保存失败批次的部分 summary，
@@ -13,7 +22,7 @@
 
 - 合并 summary、候选包精确版本的成功行及 registry 查询结果，累计保存成功状态。
 - 退避等待后重新查询 registry；已接受上传的版本不再进入上传队列。
-- 正常上传及故障恢复均确认版本可见性，确认预算为 5 分钟，单次查询最多 10 秒。
+- 正常上传及故障恢复均确认版本可见性，确认预算为 15 分钟，单次查询最多 10 秒。
 - 可见性确认超时、永久权限错误及不伴随瞬时故障的 404 仍明确失败。
 - GitHub tags/releases 与发布后置 hooks 仅在确认成功后执行；provenance 与质量检查保持开启。
 

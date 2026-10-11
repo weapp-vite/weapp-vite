@@ -4,14 +4,16 @@ import { flushComponentAttachments, isComponentAttached } from '../src/runtime/c
 
 it('does not attach pending siblings or run ready early during a reentrant render', () => {
   const siblings = [createComponentInstance({ definition: {} }), createComponentInstance({ definition: {} })]
+  const components = new Map(siblings.map((instance, index) => [String(index), instance] as const))
   const order: string[] = []
-  const reentrantAttach = vi.fn()
-  expect(flushComponentAttachments(siblings, (instance) => {
+  const reentrantAttach = vi.fn(() => false)
+  flushComponentAttachments(components, components.keys(), (instance) => {
     order.push(`start:${siblings.indexOf(instance)}`)
     expect(isComponentAttached(instance)).toBe(false)
-    expect(flushComponentAttachments(siblings, reentrantAttach)).toBe(false)
+    flushComponentAttachments(components, components.keys(), reentrantAttach)
     order.push(`end:${siblings.indexOf(instance)}`)
-  })).toBe(true)
+    return false
+  })
   expect(reentrantAttach).not.toHaveBeenCalled()
   expect(order).toEqual(['start:0', 'end:0', 'start:1', 'end:1'])
   expect(siblings.every(isComponentAttached)).toBe(true)
@@ -20,13 +22,14 @@ it('does not attach pending siblings or run ready early during a reentrant rende
 it('releases unstarted siblings after an attached callback throws', () => {
   const first = createComponentInstance({ definition: {} })
   const second = createComponentInstance({ definition: {} })
+  const components = new Map([['first', first], ['second', second]])
   const failure = new Error('attached failed')
-  expect(() => flushComponentAttachments([first, second], () => {
+  expect(() => flushComponentAttachments(components, components.keys(), () => {
     throw failure
   })).toThrow(failure)
   expect(isComponentAttached(first)).toBe(true)
   expect(isComponentAttached(second)).toBe(false)
-  const attach = vi.fn()
-  expect(flushComponentAttachments([first, second], attach)).toBe(true)
+  const attach = vi.fn(() => false)
+  flushComponentAttachments(components, components.keys(), attach)
   expect(attach).toHaveBeenCalledExactlyOnceWith(second)
 })

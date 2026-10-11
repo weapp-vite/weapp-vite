@@ -1,4 +1,4 @@
-import type { GlobalCLIOptions } from './types'
+import type { DashboardUiHost, GlobalCLIOptions } from './types'
 
 export function filterDuplicateOptions<T extends object>(options: T) {
   for (const [key, value] of Object.entries(options)) {
@@ -50,6 +50,13 @@ export function coerceBooleanOption(value: unknown) {
   return Boolean(value)
 }
 
-export function isUiEnabled(options: Pick<GlobalCLIOptions, 'ui' | 'analyze'>) {
-  return Boolean(options.ui || options.analyze)
+export function parseDashboardUiHost(value: unknown): DashboardUiHost | undefined {
+  if (value === undefined || value === 'standalone' || value === 'hub') {
+    return value
+  }
+  throw new Error(`不支持的 --ui-host 值：${String(value)}（仅支持 standalone 或 hub）`)
+}
+
+export function isUiEnabled(options: Pick<GlobalCLIOptions, 'ui' | 'analyze' | 'uiHost'>) {
+  return Boolean(options.ui || options.analyze || options.uiHost !== undefined)
 }

@@ -106,6 +106,38 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
   const globals: Bindings = new Map(Object.entries(initialBindings))
   const imports = new Map<string, { original: string, source: string }>()
   const helpers = new Map<string, LocalHelper>()
+  const booleanSuiteParameters = new Set<string>()
+  const namedBindings = new Set<string>()
+  const uncertainConditions = new Set<string>()
+  const markWritten = (node: ts.Node) => {
+    if (ts.isIdentifier(node)) {
+      uncertainConditions.add(node.text)
+    }
+    ts.forEachChild(node, markWritten)
+  }
+  const collectConditionRisks = (node: ts.Node) => {
+    const name = (node as ts.NamedDeclaration).name
+    if (name && ts.isIdentifier(name)) {
+      if (namedBindings.has(name.text)) {
+        uncertainConditions.add(name.text)
+      }
+      namedBindings.add(name.text)
+    }
+    if (ts.isBinaryExpression(node)
+      && node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment
+      && node.operatorToken.kind <= ts.SyntaxKind.LastAssignment) {
+      markWritten(node.left)
+    }
+    if ((ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node))
+      && (node.operator === ts.SyntaxKind.PlusPlusToken || node.operator === ts.SyntaxKind.MinusMinusToken)) {
+      markWritten(node.operand)
+    }
+    if ((ts.isForOfStatement(node) || ts.isForInStatement(node)) && !ts.isVariableDeclarationList(node.initializer)) {
+      markWritten(node.initializer)
+    }
+    ts.forEachChild(node, collectConditionRisks)
+  }
+  collectConditionRisks(source)
   const position = (node: ts.Node) => `${file}:${source.getLineAndCharacterOfPosition(node.getStart()).line + 1}`
   const collectGlobals = (node: ts.Node) => {
     if (ts.isFunctionDeclaration(node) && node.name) {
@@ -250,6 +282,20 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
     if (ts.isFunctionDeclaration(node) && node.name && invokedFactories.has(node.name.text)) {
       return
     }
+    if (ts.isIfStatement(node)) {
+      const predicate = unwrap(node.expression)
+      // 只裁剪字面量或未重赋值、未遮蔽的矩阵参数；普通变量的初值不是控制流证明。
+      const known = predicate.kind === ts.SyntaxKind.TrueKeyword || predicate.kind === ts.SyntaxKind.FalseKeyword
+        || (ts.isIdentifier(predicate) && booleanSuiteParameters.has(predicate.text) && !uncertainConditions.has(predicate.text))
+      const condition = known ? readLiteral(predicate, bindings) : undefined
+      if (typeof condition === 'boolean') {
+        const branch = condition ? node.thenStatement : node.elseStatement
+        if (branch) {
+          visit(branch, bindings, suites, notes)
+        }
+        return
+      }
+    }
     if (ts.isVariableDeclaration(node)) {
       const value = readLiteral(node.initializer, bindings)
       if (ts.isIdentifier(node.name) && value !== undefined) {
@@ -316,6 +362,9 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
             for (const [index, parameter] of row.callback.parameters.entries()) {
               if (ts.isIdentifier(parameter.name)) {
                 next.set(parameter.name.text, row.values[index])
+                if (!parameter.dotDotDotToken && typeof row.values[index] === 'boolean') {
+                  booleanSuiteParameters.add(parameter.name.text)
+                }
               }
             }
             visit(row.callback.body, next, [...suites, row.name], inherited)

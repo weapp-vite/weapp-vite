@@ -571,6 +571,6 @@ describe('autoImport registry helpers', () => {
     await helpers.registerLocalComponent('/project/src/components/fancy-button/index.wxml')
 
     expect(findVueEntryMock).toHaveBeenCalledWith('/project/src/components/fancy-button/index')
-    expect(extractConfigFromVueMock).toHaveBeenCalledWith('/project/src/components/fancy-button/index.vue', { compilerContext: state.ctx })
+    expect(extractConfigFromVueMock).toHaveBeenCalledWith('/project/src/components/fancy-button/index.vue', { compilerContext: state.ctx, force: true })
   })
 })

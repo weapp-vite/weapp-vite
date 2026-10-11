@@ -1,7 +1,7 @@
 {
   "name": "@wevu/json-render-components",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Precompiled mini-program components for @wevu/json-render",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
@@ -50,7 +50,8 @@
     "build": "tsdown && wv build --config weapp-vite.config.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "lint": "eslint ."
   },
   "peerDependencies": {

@@ -3,14 +3,16 @@ import type {
   ElementNode,
   TextNode,
 } from '@vue/compiler-core'
-import type { TransformContext, TransformNode } from './types'
+import type { ForParseResult, TransformContext, TransformNode } from './types'
 import { NodeTypes } from '@vue/compiler-core'
 import { escapeWxmlText } from '@weapp-core/shared'
 import { recordBindingExpression } from './bindingManifest'
 import { transformElement } from './elements'
-import { normalizeWxmlExpressionWithContext } from './expression'
+import { withForScope, withScope } from './elements/helpers'
+import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from './expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from './expression/runtimeBinding'
 import { renderMustache } from './mustache'
+import { normalizeNativeForAliases, usesNativeDeclarationContext } from './nativeDeclaration'
 
 const NATIVE_FOR_EXPRESSION_RE = /^\s*\{\{([\s\S]+)\}\}\s*$/
 
@@ -28,20 +30,46 @@ function transformElementWithNativeForScope(node: ElementNode, context: Transfor
 
   const item = getNativeForAttribute(node, context.platform.directives.forItemAttr)?.value?.content.trim() || 'item'
   const index = getNativeForAttribute(node, context.platform.directives.forIndexAttr)?.value?.content.trim() || 'index'
-  context.forStack.push({
+  const info: ForParseResult = {
     item,
     index,
     listExp: listExpression,
     rawListExp: listExpression,
-  })
-  context.scopeStack.push(new Set([item, index]))
-  try {
-    return transformElement(node, context, transformChild)
   }
-  finally {
-    context.scopeStack.pop()
-    context.forStack.pop()
+  let renderNode = node
+  if (usesNativeDeclarationContext(context)) {
+    info.listExpAst = normalizeJsExpressionWithContext(listExpression, context, { hint: '原生循环列表' }) ?? undefined
+    info.rawListExpAst = context.forStack.some(scope => scope.itemAccess)
+      ? normalizeJsExpressionWithContext(listExpression, {
+        ...context,
+        forStack: context.forStack.map(scope => ({ ...scope, itemAccess: undefined })),
+      }, { hint: '原生循环原始列表' }) ?? undefined
+      : info.listExpAst
+    info.listExp = normalizeWxmlExpressionWithContext(listExpression, context)
+    const key = getNativeForAttribute(node, context.platform.directives.keyAttr)?.value?.content
+    info.effectiveNativeKey = key === undefined
+      ? { kind: 'position' }
+      : key === context.platform.keyThisValue ? { kind: 'self' } : { kind: 'field', field: key }
+    normalizeNativeForAliases(info, context)
+    const nativeAttrs = {
+      [context.platform.directives.forAttr]: renderMustache(info.listExp, context),
+      [context.platform.directives.forItemAttr]: info.item!,
+      [context.platform.directives.forIndexAttr]: info.index!,
+    }
+    renderNode = {
+      ...node,
+      props: [
+        ...node.props.filter(prop => prop.type !== NodeTypes.ATTRIBUTE || !(prop.name in nativeAttrs)),
+        ...Object.entries(nativeAttrs).map(([name, content]): AttributeNode => ({
+          ...forAttr!,
+          name,
+          value: { ...forAttr!.value!, content },
+        })),
+      ],
+    }
   }
+  const names = [info.item!, info.index!, ...Object.keys(info.itemAliases ?? {})]
+  return withForScope(context, info, () => withScope(context, names, () => transformElement(renderNode, context, transformChild)))
 }
 
 function transformText(node: TextNode, _context: TransformContext): string {

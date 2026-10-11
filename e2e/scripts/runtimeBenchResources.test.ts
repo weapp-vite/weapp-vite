@@ -2,10 +2,17 @@ import type { BenchSessionResource } from './runtimeBench/resources'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { assertBenchResourcesClosed, closeBenchProject, createBenchResourceRegistry } from './runtimeBench/resources'
 
-const execaMock = vi.hoisted(() => vi.fn())
-vi.mock('execa', () => ({ execa: execaMock }))
-beforeEach(() => vi.clearAllMocks())
+const mocks = vi.hoisted(() => ({ close: vi.fn(), read: vi.fn() }))
+vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership', () => ({
+  closeManagedWechatProject: mocks.close,
+  readManagedWechatProjectRecords: mocks.read,
+}))
+beforeEach(() => vi.resetAllMocks())
 
+const managedProject = { id: 'confirmed-owner', journalPath: 'task-journal' }
+function metadata(projectPath = 'snapshot') {
+  return { projectPath, wsEndpoint: 'ws://127.0.0.1:9415', port: 9415, managedProject }
+}
 function registry() {
   const closeProject = vi.fn(async (_resource: BenchSessionResource) => {})
   const waitForPortClosed = vi.fn(async (_port: number) => {})
@@ -13,63 +20,73 @@ function registry() {
   return { closeProject, waitForPortClosed, onResource, resources: createBenchResourceRegistry({ cliPath: 'stable-cli', closeProject, waitForPortClosed, onResource }) }
 }
 
-describe('benchmark owned snapshot disposal', () => {
-  it('closes only registered snapshots using the originally selected installation', async () => {
+describe('benchmark managed resource reporting', () => {
+  it('delegates cleanup to confirmed ownership and reports released ports', async () => {
     const { resources, closeProject, waitForPortClosed, onResource } = registry()
-    const metadata = Object.freeze({ projectPath: 'snapshot', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415 })
+    const value = Object.freeze(metadata())
     await resources.ownProject({ projectPath: 'snapshot', cliPath: 'stable-cli' })
-    await resources.attachMetadata(metadata)
-    await expect(resources.attachMetadata({ ...metadata, projectPath: 'manual-project' })).rejects.toThrow('not an owned snapshot')
+    await resources.attachMetadata(value)
+    await expect(resources.attachMetadata(metadata('manual-project'))).rejects.toThrow('not an owned snapshot')
     await expect(resources.ownProject({ projectPath: 'another-installation', cliPath: 'rc-cli' })).rejects.toThrow('different DevTools CLI')
     await resources.closeAll()
     await resources.closeAll()
     expect(closeProject).toHaveBeenCalledOnce()
-    expect(closeProject).toHaveBeenCalledWith(expect.objectContaining({ projectPath: 'snapshot', cliPath: 'stable-cli' }))
     expect(waitForPortClosed).toHaveBeenCalledExactlyOnceWith(9415, '127.0.0.1')
     const final = onResource.mock.calls.at(-1)![0]
     expect(final).toMatchObject({ status: 'closed', projectClosed: true, portClosed: true })
     expect(() => assertBenchResourcesClosed([final])).not.toThrow()
-    expect(metadata).toEqual({ projectPath: 'snapshot', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415 })
+    expect(value).toEqual(metadata())
+    mocks.read.mockResolvedValue([{ id: managedProject.id, openedProjectWindow: true, projectPath: 'snapshot', target: { cliPath: 'stable-cli' }, port: 9415 }])
     await closeBenchProject(final)
-    expect(execaMock).toHaveBeenCalledExactlyOnceWith('stable-cli', ['close', '--project', 'snapshot'], { timeout: 30_000 })
+    expect(mocks.close).toHaveBeenCalledExactlyOnceWith(managedProject)
   })
 
-  it.each(['project', 'port'] as const)('retains %s cleanup failure and never disposes the resource twice', async (kind) => {
+  it.each(['project', 'port'] as const)('retries a failed %s release without repeating successful work', async (kind) => {
     const { resources, closeProject, waitForPortClosed, onResource } = registry()
     await resources.ownProject({ projectPath: 'snapshot', cliPath: 'stable-cli' })
-    await resources.attachMetadata({ projectPath: 'snapshot', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415 })
+    await resources.attachMetadata(metadata())
     if (kind === 'project') {
-      closeProject.mockRejectedValue(new Error('CLI close rejected'))
+      closeProject.mockRejectedValueOnce(new Error('CLI close rejected'))
     }
     else {
-      waitForPortClosed.mockRejectedValue(new Error('port remains open'))
+      waitForPortClosed.mockRejectedValueOnce(new Error('port remains open'))
     }
     await expect(resources.closeAll()).rejects.toThrow('owned resource cleanup failed')
-    await expect(resources.closeAll()).rejects.toThrow('owned resource cleanup failed')
-    expect(closeProject).toHaveBeenCalledOnce()
-    expect(waitForPortClosed).toHaveBeenCalledOnce()
-    const final = onResource.mock.calls.at(-1)![0]
-    expect(final.status).toBe('failed')
-    expect(() => assertBenchResourcesClosed([final])).toThrow('was not closed')
+    expect(onResource.mock.calls.at(-1)![0].status).toBe('failed')
+    await resources.closeAll()
+    await resources.closeAll()
+    expect(closeProject).toHaveBeenCalledTimes(kind === 'project' ? 2 : 1)
+    expect(waitForPortClosed).toHaveBeenCalledTimes(kind === 'port' ? 2 : 1)
+    expect(() => assertBenchResourcesClosed([onResource.mock.calls.at(-1)![0]])).not.toThrow()
   })
 
-  it('releases all registered launch attempts even when an earlier attempt cannot close', async () => {
+  it('tries all confirmed owners even when an earlier cleanup fails', async () => {
     const { resources, closeProject } = registry()
-    await resources.ownProject({ projectPath: 'first-attempt', cliPath: 'stable-cli' })
-    await resources.ownProject({ projectPath: 'second-attempt', cliPath: 'stable-cli' })
+    for (const projectPath of ['first-attempt', 'second-attempt']) {
+      await resources.ownProject({ projectPath, cliPath: 'stable-cli' })
+      await resources.attachMetadata(metadata(projectPath))
+    }
     closeProject.mockRejectedValueOnce(new Error('first close failed'))
     await expect(resources.closeAll()).rejects.toThrow('owned resource cleanup failed')
     expect(closeProject.mock.calls.map(([resource]) => resource.projectPath)).toEqual(['first-attempt', 'second-attempt'])
   })
 
-  it('rejects missing ownership or endpoint evidence without touching unknown ports', async () => {
+  it('never treats snapshot preparation or an arbitrary endpoint as window ownership', async () => {
     const { resources, closeProject, waitForPortClosed } = registry()
     await resources.ownProject({ projectPath: 'snapshot', cliPath: 'stable-cli' })
-    await expect(resources.attachMetadata({ projectPath: 'snapshot', wsEndpoint: 'ws://remote-host:9415', port: 9415 })).rejects.toThrow('loopback')
+    await expect(resources.attachMetadata({ ...metadata(), managedProject: undefined })).rejects.toThrow('managed project ownership')
+    await expect(resources.attachMetadata({ ...metadata(), wsEndpoint: 'ws://remote-host:9415' })).rejects.toThrow('loopback')
     await resources.closeAll()
-    expect(closeProject).toHaveBeenCalledOnce()
+    expect(closeProject).not.toHaveBeenCalled()
     expect(waitForPortClosed).not.toHaveBeenCalled()
     expect(() => assertBenchResourcesClosed([])).toThrow('Missing benchmark owned resource evidence')
     expect(() => assertBenchResourcesClosed([{ status: 'closed', projectClosed: true } as BenchSessionResource])).toThrow('Incomplete')
+  })
+
+  it.each([false, undefined])('preserves a borrowed or unknown project (%s)', async (openedProjectWindow) => {
+    const resource: BenchSessionResource = { ...metadata(), id: 'session', cliPath: 'stable-cli', status: 'owned', projectClosed: false, portClosed: false }
+    mocks.read.mockResolvedValue([{ id: managedProject.id, openedProjectWindow, projectPath: 'snapshot', target: { cliPath: 'stable-cli' }, port: 9415 }])
+    await expect(closeBenchProject(resource)).rejects.toThrow('does not match its confirmed owner')
+    expect(mocks.close).not.toHaveBeenCalled()
   })
 })

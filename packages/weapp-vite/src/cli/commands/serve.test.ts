@@ -1,4 +1,5 @@
 import type { CompilerContext } from '../../context'
+import type * as OptionsModule from '../options'
 import type { RuntimeTargets } from '../runtime'
 import { EventEmitter } from 'node:events'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
@@ -159,7 +160,8 @@ vi.mock('../../logger', () => ({
   },
 }))
 
-vi.mock('../options', () => ({
+vi.mock('../options', async importOriginal => ({
+  ...await importOriginal<typeof OptionsModule>(),
   filterDuplicateOptions: filterDuplicateOptionsMock,
   resolveConfigFile: resolveConfigFileMock,
   isUiEnabled: isUiEnabledMock,

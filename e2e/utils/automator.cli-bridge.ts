@@ -1,6 +1,5 @@
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import { Buffer } from 'node:buffer'
-import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
@@ -8,9 +7,9 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies
 import { getCancelSignal } from 'execa'
-import { terminateOwnedCliProcess } from './automatorCliProcess'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
 import { resolveWechatCliPath } from './devtoolsCli'
+import { startManagedAutomatorBridge } from './managedAutomatorBridge'
 
 interface AutomatorCliBridgePayload {
   projectPath?: string
@@ -20,11 +19,6 @@ interface AutomatorCliBridgePayload {
   trustProject?: boolean
   args?: string[]
   projectConfig?: Record<string, any>
-}
-
-interface AutomatorCliBridgeResult {
-  servicePort?: number
-  wsEndpoint: string
 }
 
 interface WaitForSocketReadyResult {
@@ -336,7 +330,10 @@ async function pollForSocketReady(options: WaitForSocketReadyOptions, lifecycle:
   let lastError: unknown
   let targetPort = port
   let successfulExitHandled = false
-  let childSpawnError: Error | null = null
+  const childState: {
+    spawnError: Error | null
+    exit: { at: number, exitCode: number | null, signal: NodeJS.Signals | null } | null
+  } = { spawnError: null, exit: null }
   const stdoutChunks: Buffer[] = []
   const stderrChunks: Buffer[] = []
 
@@ -356,34 +353,32 @@ async function pollForSocketReady(options: WaitForSocketReadyOptions, lifecycle:
 
   const getStdout = () => Buffer.concat(stdoutChunks).toString('utf8')
   const getStderr = () => Buffer.concat(stderrChunks).toString('utf8')
-  let childExit: { at: number, exitCode: number | null, signal: NodeJS.Signals | null } | null = null
-
   if (child) {
     child.once('exit', (exitCode, signal) => {
-      childExit = { at: Date.now(), exitCode, signal }
+      childState.exit = { at: Date.now(), exitCode, signal }
     })
     child.once('error', (error) => {
-      childSpawnError = error instanceof Error ? error : new Error(String(error))
+      childState.spawnError = error instanceof Error ? error : new Error(String(error))
     })
   }
 
   while (Date.now() - startedAt <= timeoutMs) {
     lifecycle.throwIfAborted()
-    if (childSpawnError) {
+    if (child && childState.spawnError) {
       throw new Error(`Failed to spawn WeChat DevTools CLI: ${child.spawnfile}`, {
-        cause: childSpawnError,
+        cause: childState.spawnError,
       })
     }
 
-    if (childExit && shouldFailFastOnCliExit({
-      exitCode: childExit.exitCode,
+    if (child && childState.exit && shouldFailFastOnCliExit({
+      exitCode: childState.exit.exitCode,
       stdout: getStdout(),
       stderr: getStderr(),
     })) {
       throw new Error(formatCliExitDetails({
         cliPath: child.spawnfile,
-        exitCode: childExit.exitCode,
-        signal: childExit.signal,
+        exitCode: childState.exit.exitCode,
+        signal: childState.exit.signal,
         stdout: getStdout(),
         stderr: getStderr(),
       }))
@@ -430,14 +425,14 @@ async function pollForSocketReady(options: WaitForSocketReadyOptions, lifecycle:
     }
 
     if (
-      childExit?.exitCode === 0
-      && !childExit.signal
+      childState.exit?.exitCode === 0
+      && !childState.exit.signal
       && !successfulExitHandled
       && onSuccessfulCliExit
     ) {
       const servicePort = extractWechatDevtoolsServicePort(`${getStdout()}\n${getStderr()}`)
       if (servicePort) {
-        const settleRemaining = successfulCliExitSettleMs - (Date.now() - childExit.at)
+        const settleRemaining = successfulCliExitSettleMs - (Date.now() - childState.exit.at)
         if (settleRemaining > 0) {
           await lifecycle.pause(Math.min(400, settleRemaining))
           continue
@@ -451,21 +446,21 @@ async function pollForSocketReady(options: WaitForSocketReadyOptions, lifecycle:
     await lifecycle.pause(400)
   }
 
-  if (childSpawnError) {
+  if (childState.spawnError) {
     throw new Error(`Failed to spawn WeChat DevTools CLI: ${child?.spawnfile ?? '<unknown>'}`, {
-      cause: childSpawnError,
+      cause: childState.spawnError,
     })
   }
 
-  if (childExit && shouldFailFastOnCliExit({
-    exitCode: childExit.exitCode,
+  if (child && childState.exit && shouldFailFastOnCliExit({
+    exitCode: childState.exit.exitCode,
     stdout: getStdout(),
     stderr: getStderr(),
   })) {
     throw new Error(formatCliExitDetails({
       cliPath: child.spawnfile,
-      exitCode: childExit.exitCode,
-      signal: childExit.signal,
+      exitCode: childState.exit.exitCode,
+      signal: childState.exit.signal,
       stdout: getStdout(),
       stderr: getStderr(),
     }), {
@@ -536,8 +531,6 @@ async function main() {
   await extendProjectConfig(resolvedProjectPath, payload.projectConfig)
   const autoPort = await reserveLoopbackPort()
   const cliPath = resolveWechatCliPath(payload.cliPath)
-  const args = resolveBootstrapCliArgs(payload.args || [])
-
   const cancellation = new AbortController()
   const cancelSignal = process.send ? await getCancelSignal() : undefined
   const onCancel = () => cancellation.abort(cancelSignal?.reason ?? new Error('Automator cli bridge canceled'))
@@ -548,55 +541,22 @@ async function main() {
   process.once('SIGTERM', onCancel)
   process.once('SIGINT', onCancel)
   cancellation.signal.throwIfAborted()
-  const spawnOptions = resolveCliSpawnOptions(cliPath, args, payload.cwd)
-  const child = spawn(spawnOptions.command, spawnOptions.args, spawnOptions.options)
-  child.unref()
-
-  let socketReadyResult!: WaitForSocketReadyResult
-  let launchFailure: unknown
   try {
-    socketReadyResult = await waitForSocketReady({
-      child,
+    const result = await startManagedAutomatorBridge({
+      projectPath: resolvedProjectPath,
+      cliPath,
       port: autoPort,
-      timeoutMs: payload.timeout ?? 30_000,
+      timeout: payload.timeout ?? 30_000,
+      trustProject: payload.trustProject,
       signal: cancellation.signal,
-      onSuccessfulCliExit: async (servicePort, signal) => await enableAutomatorViaHttp({
-        signal,
-        args: payload.args,
-        autoPort,
-        projectPath: resolvedProjectPath,
-        servicePort,
-        trustProject: payload.trustProject,
-      }),
     })
-    cancellation.signal.throwIfAborted()
-  }
-  catch (error) {
-    launchFailure = error
-  }
-  // CLI 句柄始终留在创建它的进程中；清理失败也保留启动的原始原因。
-  try {
-    await terminateOwnedCliProcess(child)
-  }
-  catch (cleanupError) {
-    launchFailure = launchFailure === undefined
-      ? cleanupError
-      : new AggregateError([launchFailure, cleanupError], 'CLI bootstrap and resource cleanup failed', { cause: launchFailure })
+    process.stdout.write(JSON.stringify(result))
   }
   finally {
     cancelSignal?.removeEventListener('abort', onCancel)
     process.removeListener('SIGTERM', onCancel)
     process.removeListener('SIGINT', onCancel)
   }
-  if (launchFailure !== undefined) {
-    throw launchFailure
-  }
-
-  const result: AutomatorCliBridgeResult = {
-    ...(socketReadyResult.servicePort ? { servicePort: socketReadyResult.servicePort } : {}),
-    wsEndpoint: `ws://127.0.0.1:${socketReadyResult.port}`,
-  }
-  process.stdout.write(JSON.stringify(result))
 }
 
 const currentFilePath = fileURLToPath(import.meta.url)

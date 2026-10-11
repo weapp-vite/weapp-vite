@@ -363,6 +363,54 @@ describe('utils/json resolveJson', () => {
     })
   })
 
+  it('omits empty app subPackages when explicitly requested', () => {
+    const source = resolveJson({
+      type: 'app',
+      json: {
+        pages: ['pages/index/index'],
+      },
+    }, undefined, 'weapp', {
+      omitEmptySubPackages: true,
+    })!
+
+    const normalized = JSON.parse(source)
+    expect(normalized).toEqual({
+      pages: ['pages/index/index'],
+    })
+  })
+
+  it('keeps empty app subPackages by default', () => {
+    const source = resolveJson({
+      type: 'app',
+      json: {
+        pages: ['pages/index/index'],
+      },
+    })!
+
+    const normalized = JSON.parse(source)
+    expect(normalized).toEqual({
+      pages: ['pages/index/index'],
+      subPackages: [],
+    })
+  })
+
+  it('keeps non-empty app subPackages when omission is requested', () => {
+    const source = resolveJson({
+      type: 'app',
+      json: {
+        pages: ['pages/index/index'],
+        subPackages: [{ root: 'pkg', pages: ['pages/detail/index'] }],
+      },
+    }, undefined, 'weapp', {
+      omitEmptySubPackages: true,
+    })!
+
+    const normalized = JSON.parse(source)
+    expect(normalized.subPackages).toEqual([
+      { root: 'pkg', pages: ['pages/detail/index'] },
+    ])
+  })
+
   it('keeps already-normalized npm prefix and ignores unmatched dependencies', () => {
     const source = resolveJson(
       {

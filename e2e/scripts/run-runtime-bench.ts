@@ -8,6 +8,7 @@ import path from 'pathe'
 import { withMachineE2ELease } from '../../packages/devtools-runtime/src/lease/machine'
 import { assertDevtoolsLoggedIn } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { cleanupOwnedDevtoolsProcesses, ensureDevtoolsProjectJournal } from '../utils/devtoolsProcessOwnership'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import {
 
@@ -270,4 +271,16 @@ async function main() {
   process.stdout.write(`${JSON.stringify(comparison, null, 2)}\n`)
 }
 
-void withMachineE2ELease(main)
+void withMachineE2ELease(async () => {
+  if (runtimeProvider === 'devtools') {
+    await ensureDevtoolsProjectJournal()
+  }
+  try {
+    await main()
+  }
+  finally {
+    if (runtimeProvider === 'devtools') {
+      await cleanupOwnedDevtoolsProcesses({ scope: 'journal' })
+    }
+  }
+})

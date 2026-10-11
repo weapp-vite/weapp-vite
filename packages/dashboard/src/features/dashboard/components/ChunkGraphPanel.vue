@@ -7,6 +7,7 @@ import type {
 } from 'd3'
 import type { AnalyzeSubpackagesResult, ResolvedTheme } from '../types'
 import type { AnalyzeChunkGraphEdge, AnalyzeChunkGraphNode } from '../utils/analyzeChunkGraph'
+import type { ChunkGraphLinkGeometry } from '../utils/chunkGraphGeometry'
 import {
   drag,
   forceCenter,
@@ -21,17 +22,22 @@ import {
 } from 'd3'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { createAnalyzeChunkGraph, createAnalyzeChunkGraphView } from '../utils/analyzeChunkGraph'
+import { createChunkGraphFocus } from '../utils/chunkGraphFocus'
+import { CHUNK_GRAPH_ARROW_SIZE, updateChunkGraphLinkGeometry } from '../utils/chunkGraphGeometry'
 import { formatBytes } from '../utils/format'
 import AppSelect from './AppSelect.vue'
+import ChunkGraphInspector from './chunkGraph/Inspector.vue'
 
 interface RenderedGraphNode extends SimulationNodeDatum {
   color: string
+  mutedColor: string
   graphNode: AnalyzeChunkGraphNode
   id: string
   radius: number
+  strokeWidth: number
 }
 
-interface RenderedGraphLink extends SimulationLinkDatum<RenderedGraphNode> {
+interface RenderedGraphLink extends SimulationLinkDatum<RenderedGraphNode>, ChunkGraphLinkGeometry {
   graphEdge: AnalyzeChunkGraphEdge
   source: string | RenderedGraphNode
   target: string | RenderedGraphNode
@@ -46,9 +52,14 @@ const MAX_VISIBLE_NODES = 220
 const MAX_VISIBLE_EDGES = 900
 const MAX_SEARCH_NODES = 80
 const svgRef = shallowRef<SVGSVGElement>()
+const canvasRef = shallowRef<HTMLDivElement>()
 const packageFilter = ref('all')
 const searchQuery = ref('')
 const selectedNodeId = ref<string | null>(null)
+const hoveredNodeId = shallowRef<string | null>(null)
+const hoveredEdgeId = shallowRef<string | null>(null)
+const focusedEdgeId = shallowRef<string | null>(null)
+let applyGraphFocus: (() => void) | undefined
 let resizeObserver: ResizeObserver | undefined
 let simulation: ReturnType<typeof forceSimulation<RenderedGraphNode>> | undefined
 let zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | undefined
@@ -68,29 +79,11 @@ const visibleGraph = computed(() => createAnalyzeChunkGraphView(graph.value, {
   packageId: packageFilter.value,
   query: searchQuery.value,
 }))
-const selectedNode = computed(() => visibleGraph.value.nodes.find(node => node.id === selectedNodeId.value) ?? null)
-const visibleNodeById = computed(() => new Map(visibleGraph.value.nodes.map(node => [node.id, node])))
-const selectedImportEdges = computed(() => {
-  const node = selectedNode.value
-  if (!node) {
-    return []
-  }
-  return visibleGraph.value.edges
-    .filter(edge => (
-      edge.kind !== 'contains'
-      && (edge.source === node.id || edge.target === node.id)
-    ))
-    .map((edge) => {
-      const outgoing = edge.source === node.id
-      const relatedNode = visibleNodeById.value.get(outgoing ? edge.target : edge.source)
-      return {
-        id: edge.id,
-        kind: edge.kind === 'dynamic-import' ? '动态' : '静态',
-        label: relatedNode?.label ?? (outgoing ? edge.target : edge.source),
-        relation: outgoing ? '导入' : '被导入',
-      }
-    })
-})
+const graphFocus = computed(() => createChunkGraphFocus(
+  visibleGraph.value,
+  hoveredNodeId.value ?? selectedNodeId.value,
+  hoveredNodeId.value ? null : hoveredEdgeId.value ?? focusedEdgeId.value,
+))
 
 const packageColorById = computed(() => {
   const palette = props.theme === 'dark'
@@ -110,12 +103,14 @@ function resolveLinkNode(
   return typeof value === 'string' ? nodeById.get(value) : value
 }
 
-function resolveNodeStrokeWidth(node: RenderedGraphNode) {
-  return node.graphNode.kind === 'package' ? 3 : node.graphNode.isEntry ? 2.5 : 1.5
-}
-
 function selectNode(node: RenderedGraphNode) {
   selectedNodeId.value = node.id
+}
+
+function clearGraphPreview() {
+  hoveredNodeId.value = null
+  hoveredEdgeId.value = null
+  focusedEdgeId.value = null
 }
 
 function bindNodeDrag(
@@ -157,6 +152,7 @@ function panGraph(x: number, y: number) {
 
 function resetGraphView() {
   selectedNodeId.value = null
+  clearGraphPreview()
   if (svgRef.value && zoomBehavior) {
     select(svgRef.value).call(zoomBehavior.transform, zoomIdentity)
   }
@@ -165,15 +161,18 @@ function resetGraphView() {
 async function renderGraph() {
   await nextTick()
   const element = svgRef.value
-  if (!element || element.clientWidth === 0 || element.clientHeight === 0) {
+  const canvas = canvasRef.value
+  if (!element || !canvas || canvas.clientWidth === 0 || canvas.clientHeight === 0) {
     return
   }
 
   simulation?.stop()
+  applyGraphFocus = undefined
+  hoveredNodeId.value = null
   const svg = select(element)
   svg.selectAll('*').remove()
-  const width = element.clientWidth
-  const height = element.clientHeight
+  const width = canvas.clientWidth
+  const height = canvas.clientHeight
   svg.attr('viewBox', `0 0 ${width} ${height}`)
 
   const defs = svg.append('defs')
@@ -184,10 +183,11 @@ async function renderGraph() {
     defs.append('marker')
       .attr('id', marker.id)
       .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 16)
+      .attr('refX', 10)
       .attr('refY', 0)
-      .attr('markerWidth', 5)
-      .attr('markerHeight', 5)
+      .attr('markerUnits', 'userSpaceOnUse')
+      .attr('markerWidth', CHUNK_GRAPH_ARROW_SIZE)
+      .attr('markerHeight', CHUNK_GRAPH_ARROW_SIZE)
       .attr('orient', 'auto')
       .append('path')
       .attr('d', 'M0,-5L10,0L0,5')
@@ -205,11 +205,14 @@ async function renderGraph() {
     const radius = graphNode.kind === 'package'
       ? 18
       : Math.max(5, Math.min(14, 5 + Math.log2(Math.max(graphNode.size, 1)) * 0.65))
+    const color = packageColorById.value.get(graphNode.packageId) ?? '#64748b'
     return {
       id: graphNode.id,
       graphNode,
-      color: packageColorById.value.get(graphNode.packageId) ?? '#64748b',
+      color,
+      mutedColor: `color-mix(in srgb, ${color} 18%, var(--dashboard-panel))`,
       radius,
+      strokeWidth: graphNode.kind === 'package' ? 3 : graphNode.isEntry ? 2.5 : 1.5,
     }
   })
   const nodeById = new Map(nodes.map(node => [node.id, node]))
@@ -217,26 +220,26 @@ async function renderGraph() {
     graphEdge,
     source: graphEdge.source,
     target: graphEdge.target,
+    x1: 0,
+    y1: 0,
+    x2: 0,
+    y2: 0,
+    visible: false,
   }))
 
   const linkSelection = viewport.append('g')
     .attr('fill', 'none')
+    .attr('pointer-events', 'none')
     .selectAll('line')
     .data(links)
     .join('line')
+    .attr('visibility', 'hidden')
     .attr('stroke', link => link.graphEdge.kind === 'dynamic-import'
       ? '#f59e0b'
       : link.graphEdge.kind === 'static-import'
         ? props.theme === 'dark' ? '#60a5fa' : '#2563eb'
         : props.theme === 'dark' ? '#292f3a' : '#d9dee7')
-    .attr('stroke-width', link => link.graphEdge.kind === 'contains' ? 1 : 1.4)
-    .attr('stroke-opacity', link => link.graphEdge.kind === 'contains' ? 0.26 : 0.68)
     .attr('stroke-dasharray', link => link.graphEdge.kind === 'dynamic-import' ? '5 4' : null)
-    .attr('marker-end', link => link.graphEdge.kind === 'dynamic-import'
-      ? 'url(#chunk-graph-arrow-dynamic)'
-      : link.graphEdge.kind === 'static-import'
-        ? 'url(#chunk-graph-arrow-static)'
-        : null)
 
   const nodeSelection = viewport.append('g')
     .selectAll<SVGGElement, RenderedGraphNode>('g')
@@ -244,6 +247,14 @@ async function renderGraph() {
     .join('g')
     .attr('cursor', 'pointer')
     .on('click', (_event, node) => selectNode(node))
+    .on('mouseenter', (_event, node) => {
+      hoveredNodeId.value = node.id
+    })
+    .on('mouseleave', (_event, node) => {
+      if (hoveredNodeId.value === node.id) {
+        hoveredNodeId.value = null
+      }
+    })
     .call(
       drag<SVGGElement, RenderedGraphNode>()
         .on('start', (event, node) => bindNodeDrag(event, node, 'start'))
@@ -253,9 +264,7 @@ async function renderGraph() {
 
   nodeSelection.append('circle')
     .attr('r', node => node.radius)
-    .attr('fill', node => node.graphNode.kind === 'package' ? node.color : `${node.color}cc`)
-    .attr('stroke', node => node.graphNode.kind === 'package' ? node.color : props.theme === 'dark' ? '#11141a' : '#ffffff')
-    .attr('stroke-width', node => resolveNodeStrokeWidth(node))
+    .attr('stroke-width', node => node.strokeWidth)
 
   nodeSelection.append('title')
     .text(node => `${node.graphNode.label}\n${node.graphNode.packageLabel}\n${formatBytes(node.graphNode.size)}`)
@@ -269,6 +278,43 @@ async function renderGraph() {
     .attr('font-weight', 600)
     .attr('fill', props.theme === 'dark' ? '#d7dce5' : '#334155')
     .text(node => formatPackageLabel(node.graphNode.label))
+
+  applyGraphFocus = () => {
+    const focus = graphFocus.value
+    linkSelection
+      .attr('stroke-opacity', (link) => {
+        if (focus.previewEdgeId === link.graphEdge.id) {
+          return 1
+        }
+        return focus.edgeIds && !focus.edgeIds.has(link.graphEdge.id)
+          ? 0.06
+          : link.graphEdge.kind === 'contains' ? 0.26 : 0.68
+      })
+      .attr('stroke-width', link => focus.previewEdgeId === link.graphEdge.id
+        ? 2.5
+        : link.graphEdge.kind === 'contains' ? 1 : 1.4)
+      .attr('marker-end', (link) => {
+        if (focus.previewEdgeId !== link.graphEdge.id || link.graphEdge.kind === 'contains') {
+          return null
+        }
+        return link.graphEdge.kind === 'dynamic-import'
+          ? 'url(#chunk-graph-arrow-dynamic)'
+          : 'url(#chunk-graph-arrow-static)'
+      })
+    nodeSelection.select('circle')
+      .attr('fill', node => focus.nodeIds && !focus.nodeIds.has(node.id) ? node.mutedColor : node.color)
+      .attr('stroke', (node) => {
+        if (node.id === selectedNodeId.value) {
+          return 'var(--dashboard-text)'
+        }
+        return node.graphNode.kind === 'package'
+          ? focus.nodeIds && !focus.nodeIds.has(node.id) ? node.mutedColor : node.color
+          : props.theme === 'dark' ? '#11141a' : '#ffffff'
+      })
+    nodeSelection.select('text')
+      .attr('opacity', node => focus.nodeIds && !focus.nodeIds.has(node.id) ? 0.35 : 1)
+  }
+  applyGraphFocus()
 
   simulation = forceSimulation(nodes)
     .force('link', forceLink<RenderedGraphNode, RenderedGraphLink>(links)
@@ -288,26 +334,35 @@ async function renderGraph() {
         node.y = Math.max(padding, Math.min(height - padding, node.y ?? height / 2))
       }
       linkSelection
-        .attr('x1', link => resolveLinkNode(link.source, nodeById)?.x ?? 0)
-        .attr('y1', link => resolveLinkNode(link.source, nodeById)?.y ?? 0)
-        .attr('x2', link => resolveLinkNode(link.target, nodeById)?.x ?? 0)
-        .attr('y2', link => resolveLinkNode(link.target, nodeById)?.y ?? 0)
+        .each((link) => {
+          const source = resolveLinkNode(link.source, nodeById)
+          const target = resolveLinkNode(link.target, nodeById)
+          link.visible = false
+          if (source && target) {
+            updateChunkGraphLinkGeometry(link, source, target, link.graphEdge.kind !== 'contains')
+          }
+        })
+        .attr('visibility', link => link.visible ? null : 'hidden')
+        .attr('x1', link => link.x1)
+        .attr('y1', link => link.y1)
+        .attr('x2', link => link.x2)
+        .attr('y2', link => link.y2)
       nodeSelection.attr('transform', node => `translate(${node.x ?? 0},${node.y ?? 0})`)
     })
 }
 
 onMounted(() => {
-  if (svgRef.value) {
+  if (canvasRef.value) {
     resizeObserver = new ResizeObserver(() => void renderGraph())
-    resizeObserver.observe(svgRef.value)
+    resizeObserver.observe(canvasRef.value)
   }
-  void renderGraph()
 })
 
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   simulation?.stop()
   simulation = undefined
+  applyGraphFocus = undefined
 })
 
 watch(packageOptions, (options) => {
@@ -318,6 +373,8 @@ watch(packageOptions, (options) => {
     packageFilter.value = 'all'
   }
 })
+watch([selectedNodeId, visibleGraph], clearGraphPreview)
+watch(graphFocus, () => applyGraphFocus?.())
 watch([visibleGraph, packageColorById], ([view]) => {
   if (selectedNodeId.value && !view.nodes.some(node => node.id === selectedNodeId.value)) {
     selectedNodeId.value = null
@@ -328,8 +385,8 @@ watch(() => props.theme, () => void renderGraph())
 </script>
 
 <template>
-  <section class="grid min-h-[calc(100dvh-9rem)] min-w-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) xl:grid-cols-[minmax(0,1fr)_18rem]">
-    <div class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(30rem,1fr)]">
+  <section class="grid min-h-0 min-w-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) xl:h-[calc(100dvh-10rem)] xl:min-h-[36rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(30rem,1fr)_auto]">
       <header class="grid min-w-0 grid-cols-1 gap-2 border-b border-(--dashboard-border) px-3 py-2 sm:grid-cols-[minmax(0,1fr)_minmax(10rem,14rem)_auto]">
         <label class="relative min-w-0">
           <span class="sr-only">搜索 chunk</span>
@@ -359,73 +416,30 @@ watch(() => props.theme, () => void renderGraph())
           </button>
         </div>
       </header>
-      <svg ref="svgRef" class="block h-full min-h-0 w-full min-w-0 max-w-full touch-none overflow-hidden" aria-hidden="true" focusable="false" />
+      <div ref="canvasRef" class="relative min-h-0 min-w-0">
+        <svg ref="svgRef" class="absolute inset-0 block size-full touch-none overflow-hidden" aria-hidden="true" focusable="false" />
+      </div>
+      <footer class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-(--dashboard-border) px-3 py-2">
+        <p class="text-xs text-(--dashboard-text-soft)">
+          悬停节点预览，点击保持聚焦；在右侧关系中查看单条连线方向。
+        </p>
+        <div class="flex gap-1" role="group" aria-label="依赖图平移控制">
+          <button class="size-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:size-11" type="button" aria-label="向上平移依赖图" @click="panGraph(0, -40)">↑</button>
+          <button class="size-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:size-11" type="button" aria-label="向左平移依赖图" @click="panGraph(-40, 0)">←</button>
+          <button class="size-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:size-11" type="button" aria-label="向下平移依赖图" @click="panGraph(0, 40)">↓</button>
+          <button class="size-8 rounded border border-(--dashboard-border) text-sm hover:bg-(--dashboard-panel-muted) focus-visible:outline-2 focus-visible:outline-(--dashboard-accent) pointer-coarse:size-11" type="button" aria-label="向右平移依赖图" @click="panGraph(40, 0)">→</button>
+        </div>
+      </footer>
     </div>
 
-    <aside class="grid min-w-0 overflow-hidden border-t border-(--dashboard-border) bg-(--dashboard-panel-muted) sm:grid-cols-2 xl:block xl:border-t-0 xl:border-l">
-      <div class="border-b border-(--dashboard-border) px-3 py-3">
-        <p class="text-[10px] font-medium uppercase tracking-[0.12em] text-(--dashboard-text-soft)">Graph summary</p>
-        <dl class="mt-2 grid grid-cols-2 gap-2 text-xs">
-          <div><dt class="text-(--dashboard-text-soft)">Nodes</dt><dd class="font-mono">{{ visibleGraph.nodes.length }}</dd></div>
-          <div><dt class="text-(--dashboard-text-soft)">Edges</dt><dd class="font-mono">{{ visibleGraph.edges.length }}</dd></div>
-          <div><dt class="text-(--dashboard-text-soft)">Static</dt><dd class="font-mono text-blue-500">{{ graph.staticImportCount }}</dd></div>
-          <div><dt class="text-(--dashboard-text-soft)">Dynamic</dt><dd class="font-mono text-amber-500">{{ graph.dynamicImportCount }}</dd></div>
-        </dl>
-        <label class="mt-3 grid min-w-0 gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-(--dashboard-text-soft)">
-          节点选择
-          <select v-model="selectedNodeId" class="min-h-32 w-full min-w-0 rounded border border-(--dashboard-border) bg-(--dashboard-panel) p-1.5 text-xs normal-case tracking-normal text-(--dashboard-text)" size="6">
-            <option v-for="node in visibleGraph.nodes" :key="node.id" :value="node.id">
-              {{ node.label }} · {{ node.packageLabel }}
-            </option>
-          </select>
-        </label>
-        <div class="mt-3 grid grid-cols-3 gap-1" role="group" aria-label="依赖图平移控制">
-          <span aria-hidden="true" />
-          <button class="h-7 rounded border border-(--dashboard-border) text-xs hover:bg-(--dashboard-panel)" type="button" aria-label="向上平移依赖图" @click="panGraph(0, -40)">↑</button>
-          <span aria-hidden="true" />
-          <button class="h-7 rounded border border-(--dashboard-border) text-xs hover:bg-(--dashboard-panel)" type="button" aria-label="向左平移依赖图" @click="panGraph(-40, 0)">←</button>
-          <button class="h-7 rounded border border-(--dashboard-border) text-xs hover:bg-(--dashboard-panel)" type="button" aria-label="向下平移依赖图" @click="panGraph(0, 40)">↓</button>
-          <button class="h-7 rounded border border-(--dashboard-border) text-xs hover:bg-(--dashboard-panel)" type="button" aria-label="向右平移依赖图" @click="panGraph(40, 0)">→</button>
-        </div>
-      </div>
-
-      <div v-if="selectedNode" class="min-w-0 border-l-0 border-(--dashboard-border) px-3 py-3 sm:border-l xl:border-l-0">
-        <p class="text-[10px] font-medium uppercase tracking-[0.12em] text-(--dashboard-text-soft)">Selected</p>
-        <h3 class="mt-2 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs font-semibold text-(--dashboard-text)" :title="selectedNode.label">
-          {{ selectedNode.label }}
-        </h3>
-        <dl class="mt-3 grid min-w-0 gap-2 text-xs">
-          <div class="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-2"><dt class="text-(--dashboard-text-soft)">Kind</dt><dd class="min-w-0 truncate text-right">{{ selectedNode.kind }}</dd></div>
-          <div class="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-2"><dt class="text-(--dashboard-text-soft)">Package</dt><dd class="min-w-0 truncate text-right" :title="selectedNode.packageLabel">{{ selectedNode.packageLabel }}</dd></div>
-          <div class="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-2"><dt class="text-(--dashboard-text-soft)">Size</dt><dd class="min-w-0 truncate text-right font-mono">{{ formatBytes(selectedNode.size) }}</dd></div>
-          <div v-if="selectedNode.moduleCount !== undefined" class="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-2"><dt class="text-(--dashboard-text-soft)">Modules</dt><dd class="min-w-0 truncate text-right font-mono">{{ selectedNode.moduleCount }}</dd></div>
-          <div v-if="selectedNode.fileCount !== undefined" class="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-2"><dt class="text-(--dashboard-text-soft)">Files</dt><dd class="min-w-0 truncate text-right font-mono">{{ selectedNode.fileCount }}</dd></div>
-        </dl>
-        <div class="mt-3 min-w-0">
-          <h4 class="text-[10px] font-medium uppercase tracking-[0.12em] text-(--dashboard-text-soft)">
-            Import edges
-          </h4>
-          <p v-if="!selectedImportEdges.length" class="mt-1 text-xs text-(--dashboard-text-soft)">
-            当前节点没有可见的静态或动态 import。
-          </p>
-          <ul v-else class="mt-1 grid max-h-32 gap-1 overflow-y-auto text-xs">
-            <li v-for="edge in selectedImportEdges" :key="edge.id" class="min-w-0">
-              <span class="font-medium">{{ edge.relation }} · {{ edge.kind }}</span>
-              <span class="ml-1 break-all text-(--dashboard-text-soft)">{{ edge.label }}</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div v-else class="min-w-0 border-l-0 border-(--dashboard-border) px-3 py-5 text-xs leading-5 text-(--dashboard-text-soft) sm:border-l xl:border-l-0">
-        使用节点选择器查看 package、体积和模块数；图中仍可滚轮缩放与拖动画布。蓝色实线是静态 import，橙色虚线是动态 import。
-      </div>
-
-      <div v-if="graph.unresolvedImportCount" class="border-t border-(--dashboard-border) px-3 py-3 text-[11px] text-amber-500 sm:col-span-2 xl:col-auto">
-        {{ graph.unresolvedImportCount }} 条 import 指向未输出或外部 chunk。
-      </div>
-      <div v-if="visibleGraph.truncatedNodeCount || visibleGraph.truncatedEdgeCount" class="border-t border-(--dashboard-border) px-3 py-3 text-[11px] text-(--dashboard-text-soft) sm:col-span-2 xl:col-auto">
-        为保持交互流畅，当前隐藏 {{ visibleGraph.truncatedNodeCount }} 个节点与 {{ visibleGraph.truncatedEdgeCount }} 条边。
-      </div>
-    </aside>
+    <ChunkGraphInspector
+      :view="visibleGraph"
+      :selected-id="selectedNodeId"
+      :unresolved-import-count="graph.unresolvedImportCount"
+      :preview-edge-id="graphFocus.previewEdgeId"
+      @hover-relation="hoveredEdgeId = $event"
+      @focus-relation="focusedEdgeId = $event"
+      @select-node="selectedNodeId = $event"
+    />
   </section>
 </template>

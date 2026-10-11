@@ -1,8 +1,10 @@
 import type { ResolvedConfig } from '../types'
 import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
+import { resolveWechatDevtoolsTarget } from '../devtoolsTarget'
+import { wechatDevtoolsSelectionContext } from '../devtoolsTarget/context'
+import { selectInstalledWechatDevtools } from '../devtoolsTarget/discovery'
 import logger, { colors } from '../logger'
-import { getDefaultCliPath } from '../runtime/platform'
 import { readCustomConfig } from './custom'
 import { defaultCustomConfigFilePath } from './paths'
 
@@ -34,6 +36,14 @@ export function resolveDevtoolsAutomationDefaults(config: {
  * @description 读取并解析 CLI 配置（进程选择优先，其次用户配置与平台默认）
  */
 export async function getConfig(): Promise<ResolvedConfig> {
+  const frozen = wechatDevtoolsSelectionContext.getStore()
+  if (frozen) {
+    return { ...await readCustomConfig(), cliPath: frozen.cliPath, source: 'environment' }
+  }
+  if (process.env.WEAPP_IDE_DEVTOOLS_CHANNEL?.trim() || process.env.WEAPP_IDE_DEVTOOLS_VERSION?.trim()) {
+    const target = await resolveWechatDevtoolsTarget()
+    return { ...await readCustomConfig(), cliPath: target.cliPath, source: 'environment' }
+  }
   const selectedCliPath = process.env.WEAPP_IDE_CLI_PATH?.trim()
   if (await fs.pathExists(defaultCustomConfigFilePath)) {
     try {
@@ -72,7 +82,12 @@ export async function getConfig(): Promise<ResolvedConfig> {
     return { cliPath: selectedCliPath, source: 'environment' }
   }
 
-  const fallbackPath = await getDefaultCliPath()
+  const fallbackPath = await selectInstalledWechatDevtools().then(target => target.cliPath, (error: unknown) => {
+    if ((error as { code?: string }).code === 'WECHAT_DEVTOOLS_INSTALLATION_NOT_FOUND') {
+      return undefined
+    }
+    throw error
+  })
 
   if (fallbackPath) {
     return {

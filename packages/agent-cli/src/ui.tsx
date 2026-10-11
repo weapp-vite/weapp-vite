@@ -1,21 +1,57 @@
-import type {
-  Approval,
-  Approver,
-  RunResult,
-  SessionEvent,
-} from '@weapp-agent/core'
+import type { Approval, Approver, SessionEvent } from '@weapp-agent/core'
+import type { InteractiveRunner } from './ui/commands.js'
+import { redactor } from '@weapp-agent/core'
 import { Box, render, Text, useApp, useInput } from 'ink'
 import TextInput from 'ink-text-input'
 import { useRef, useState } from 'react'
+import { runInteractiveTask } from './ui/commands.js'
 
-export type InteractiveRunner = (
-  prompt: string,
-  sessionId: string | undefined,
-  signal: AbortSignal,
-  onEvent: (e: SessionEvent) => void,
-  approve: Approver,
-) => Promise<RunResult>
-export function eventText(event: SessionEvent): string {
+const cleanPreview = redactor()
+
+function safePreview(input: unknown, depth = 0): unknown {
+  if (depth > 2) {
+    return '[nested data omitted]'
+  }
+  if (typeof input === 'string') {
+    const clean = cleanPreview(input)
+      .replace(/data:[^\s,]+,\S+/gi, '[image/data omitted]')
+      .replace(/[A-Z0-9+/]{80,}={0,2}/gi, '[binary data omitted]')
+    return clean.length > 120 ? `${clean.slice(0, 120)}…` : clean
+  }
+  if (input === null || typeof input !== 'object') {
+    return input
+  }
+  if (Array.isArray(input)) {
+    return input.slice(0, 4).map(item => safePreview(item, depth + 1))
+  }
+  return Object.fromEntries(Object.entries(input as Record<string, unknown>).slice(0, 8).map(([key, value]) => [
+    key,
+    /key|token|secret|password|authorization/i.test(key)
+      ? '[REDACTED]'
+      : /^(?:data|base64|images?|image_url)$/i.test(key)
+        ? '[data omitted]'
+        : safePreview(value, depth + 1),
+  ]))
+}
+
+function inputPreview(input: unknown): string {
+  if (input === undefined) {
+    return ''
+  }
+  try {
+    const serialized = JSON.stringify(safePreview(input))
+    if (!serialized) {
+      return ''
+    }
+    return serialized.length > 240 ? `${serialized.slice(0, 240)}…` : serialized
+  }
+  catch {
+    return '[input omitted]'
+  }
+}
+
+export type { InteractiveRunner } from './ui/commands.js'
+export function eventText(event: SessionEvent, mode: 'cli' | 'interactive' = 'cli'): string {
   if (event.type === 'text.delta') {
     return String(event.data.text)
   }
@@ -30,7 +66,27 @@ export function eventText(event: SessionEvent): string {
   if (event.type === 'context.compacted') {
     return '\n· Earlier context summarized\n'
   }
+  if (event.type === 'recovery.required') {
+    const calls = Array.isArray(event.data.calls)
+      ? event.data.calls as Array<{ name: string, state?: string, input?: unknown }>
+      : []
+    const summary = calls.map((call) => {
+      const input = inputPreview(call.input)
+      return `  ${call.name}: ${call.state === 'not_executed' ? 'not executed' : 'outcome unknown'}${input ? ` ${input}` : ''}`
+    }).join('\n')
+    const command = mode === 'interactive'
+      ? '/acknowledge-interrupted [follow-up task]'
+      : `weapp-agent resume ${event.sessionId} --acknowledge-interrupted [follow-up task]`
+    return `\nRecovery requires inspection:\n${summary}\nInspect the working tree and tool outcomes, then enter ${command}. Completed calls will not be replayed.\n`
+  }
   if (event.type === 'run.completed') {
+    const reason = event.data.reason
+    if (event.data.status === 'limit_reached' && reason === 'context_budget') {
+      return '\n[limit_reached: context_budget] Increase contextCharacters, then resume the session.\n'
+    }
+    if (event.data.status === 'limit_reached' && reason === 'max_steps') {
+      return '\n[limit_reached: max_steps] Resume the session to continue.\n'
+    }
     return `\n[${event.data.status}]\n`
   }
   return ''
@@ -99,12 +155,13 @@ function App({
         }
       })
     try {
-      const result = await runner(
+      const result = await runInteractiveTask(
+        runner,
         prompt,
         session,
         abort.signal,
         (event) => {
-          append(eventText(event))
+          append(eventText(event, 'interactive'))
           if (event.type === 'run.started') {
             setSession(event.sessionId)
           }

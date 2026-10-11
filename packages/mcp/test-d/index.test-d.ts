@@ -48,4 +48,6 @@ createWeappViteMcpServerFactory({
 }).then((configuredFactory) => {
   expectType<Promise<void>>(configuredFactory.runtimeManager.close({ projectPath: 'fixture', cliPath: 'stable-cli', installationId: 'stable' }))
   expectError(configuredFactory.runtimeManager.close({ projectPath: 'fixture', cliPath: 42 }))
+  expectType<Promise<void>>(configuredFactory.runtimeManager.close({ projectPath: 'fixture', devtoolsChannel: 'rc', devtoolsVersion: '2.02.2608080', requireOfficialLatest: false }))
+  expectError(configuredFactory.runtimeManager.close({ projectPath: 'fixture', devtoolsChannel: 'beta' }))
 })

@@ -153,7 +153,7 @@ export function formatDependencyUpgradeBody(packageSummaries: Array<{ name: stri
     .map(item => `- ${item.name}：${item.summary}`)
     .join('\n')
 
-  return `自动补充依赖升级发布记录。
+  return `chore(deps): 自动补充依赖升级发布记录。
 涉及包：
 ${summaryLines}
 `

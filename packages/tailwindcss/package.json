@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/tailwindcss",
   "type": "module",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "基于 weapp-tailwindcss/core 的宿主无关编译控制器",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
@@ -40,11 +40,12 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run -c vitest.config.ts",
-    "test:types": "tsd --files \"test-d/**/*.test-d.ts\"",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "lint": "eslint ."
   },
   "dependencies": {
-    "@weapp-tailwindcss/engine": "0.1.3",
+    "@weapp-tailwindcss/engine": "0.1.5",
     "@weapp-vite/hmr": "workspace:*",
     "pathe": "catalog:",
     "weapp-tailwindcss": "catalog:"

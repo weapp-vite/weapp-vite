@@ -44,11 +44,13 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "lint": "eslint ."
   },
   "dependencies": {
     "diff": "9.0.0",
-    "execa": "10.0.1",
+    "execa": "10.1.0",
     "zod": "4.6.5"
   }
 }

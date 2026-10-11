@@ -1,4 +1,5 @@
 import type { WechatDevtoolsHttpCommandOptions } from '../../packages/weapp-ide-cli/src/cli/http'
+import type { DevtoolsSimulatorBootDiagnostic } from '../utils/ide-devtools-logs'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -13,20 +14,22 @@ const DEFAULT_WECHAT_CLI_PATH = process.platform === 'win32'
   ? 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
   : '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 
-const { captureDevtoolsLogBaselineMock, cleanupResidualDevtoolsProcessesMock, connectMock, execaMock, launchMock, openWechatIdeProjectByHttpMock, resetWechatIdeFileUtilsByHttpMock, runWechatIdeEngineBuildByHttpMock, scanRecentDevtoolsSimulatorBootIssuesMock, MockMiniProgram } = vi.hoisted(() => {
+const { captureDevtoolsLogBaselineMock, cleanupManagedWechatProjectsMock, cleanupResidualDevtoolsProcessesMock, closeManagedWechatProjectMock, connectMock, execaMock, launchMock, openWechatIdeProjectByHttpMock, resetWechatIdeFileUtilsByHttpMock, runWechatIdeEngineBuildByHttpMock, scanRecentDevtoolsSimulatorBootDiagnosticsMock, MockMiniProgram } = vi.hoisted(() => {
   class MockMiniProgramClass {
     send = vi.fn(async () => ({ SDKVersion: '3.13.2' }))
   }
   return {
     captureDevtoolsLogBaselineMock: vi.fn(() => ({ 'devtools.log': 120 })),
+    cleanupManagedWechatProjectsMock: vi.fn(async () => {}),
     cleanupResidualDevtoolsProcessesMock: vi.fn(async () => {}),
+    closeManagedWechatProjectMock: vi.fn(async () => {}),
     connectMock: vi.fn(),
     execaMock: vi.fn(),
     launchMock: vi.fn(),
     openWechatIdeProjectByHttpMock: vi.fn<(projectPath: string, options?: WechatDevtoolsHttpCommandOptions) => Promise<string>>(async () => ''),
     resetWechatIdeFileUtilsByHttpMock: vi.fn(async () => ''),
     runWechatIdeEngineBuildByHttpMock: vi.fn(async () => ({ body: '{"status":"END"}', done: true, failed: false, status: 'END' })),
-    scanRecentDevtoolsSimulatorBootIssuesMock: vi.fn(() => []),
+    scanRecentDevtoolsSimulatorBootDiagnosticsMock: vi.fn<() => DevtoolsSimulatorBootDiagnostic[]>(() => []),
     MockMiniProgram: MockMiniProgramClass,
   }
 })
@@ -47,6 +50,26 @@ vi.mock('execa', () => {
     execa: execaMock,
   }
 })
+
+// 保留真实 journal 子树和锁，仅隔离测试进程身份查询，避免占用 bridge 的 execa mock。
+vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/windowsSelfIdentity', () => ({
+  readWindowsJournalWriterIdentity: async () => ({ pid: process.pid, executable: process.execPath, started: 'test-journal-writer' }),
+}))
+vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host', async importOriginal => ({
+  ...await importOriginal<typeof import('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host')>(),
+  readManagedProcessIdentity: vi.fn(async (pid: number) => {
+    if (pid !== process.pid) {
+      throw new Error('Unexpected process identity lookup outside the test journal writer.')
+    }
+    return { pid, executable: process.execPath, started: 'test-journal-writer' }
+  }),
+}))
+
+vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership', async importOriginal => ({
+  ...await importOriginal<typeof import('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership')>(),
+  cleanupManagedWechatProjects: cleanupManagedWechatProjectsMock,
+  closeManagedWechatProject: closeManagedWechatProjectMock,
+}))
 
 vi.mock('../../packages/weapp-ide-cli/src/cli/http', () => {
   return {
@@ -70,7 +93,7 @@ vi.mock('../utils/ide-devtools-cleanup', () => {
 vi.mock('../utils/ide-devtools-logs', () => {
   return {
     captureDevtoolsLogBaseline: captureDevtoolsLogBaselineMock,
-    scanRecentDevtoolsSimulatorBootIssues: scanRecentDevtoolsSimulatorBootIssuesMock,
+    scanRecentDevtoolsSimulatorBootDiagnostics: scanRecentDevtoolsSimulatorBootDiagnosticsMock,
   }
 })
 
@@ -285,12 +308,14 @@ function expectBridgeWrapperProjectPath(sourceProjectPath: string, projectPath: 
   })
 }
 
-describe('automator launch resilience', { concurrent: false }, () => {
+describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, () => {
   let sandboxRoot = ''
 
   beforeEach(() => {
     sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weapp-vite-automator-launch-'))
     const reportDir = path.join(sandboxRoot, 'report')
+    // 默认用例显式覆盖非受管路径；受管专项用例在各自 fixture 内重新启用日志。
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', undefined)
     vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', undefined)
     vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_SLUG', 'automator-launch-unit')
     vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_DIR', reportDir)
@@ -298,15 +323,19 @@ describe('automator launch resilience', { concurrent: false }, () => {
     vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_MD_FILE', path.join(reportDir, 'index.md'))
     vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_JSON_FILE', path.join(reportDir, 'index.json'))
     captureDevtoolsLogBaselineMock.mockReset()
+    cleanupManagedWechatProjectsMock.mockReset()
     cleanupResidualDevtoolsProcessesMock.mockReset()
+    closeManagedWechatProjectMock.mockReset()
     connectMock.mockReset()
     execaMock.mockReset()
     launchMock.mockReset()
     openWechatIdeProjectByHttpMock.mockReset()
     resetWechatIdeFileUtilsByHttpMock.mockReset()
     runWechatIdeEngineBuildByHttpMock.mockReset()
-    scanRecentDevtoolsSimulatorBootIssuesMock.mockReset()
+    scanRecentDevtoolsSimulatorBootDiagnosticsMock.mockReset()
+    cleanupManagedWechatProjectsMock.mockResolvedValue(undefined)
     cleanupResidualDevtoolsProcessesMock.mockResolvedValue(undefined)
+    closeManagedWechatProjectMock.mockResolvedValue(undefined)
     openWechatIdeProjectByHttpMock.mockResolvedValue('')
     resetWechatIdeFileUtilsByHttpMock.mockResolvedValue('')
     runWechatIdeEngineBuildByHttpMock.mockResolvedValue({
@@ -316,7 +345,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
       status: 'END',
     })
     captureDevtoolsLogBaselineMock.mockReturnValue({ 'devtools.log': 120 })
-    scanRecentDevtoolsSimulatorBootIssuesMock.mockReturnValue([])
+    scanRecentDevtoolsSimulatorBootDiagnosticsMock.mockReturnValue([])
     clearLaunchEnv()
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'direct'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_PREBUILD = '0'
@@ -375,12 +404,69 @@ describe('automator launch resilience', { concurrent: false }, () => {
     }
   })
 
+  it('routes a managed direct launch through its owned bridge and closes only the received project', async () => {
+    const parentJournal = path.join(sandboxRoot, 'managed-journal')
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', parentJournal)
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const miniProgram = createMockMiniProgram()
+    const onSessionMetadata = vi.fn()
+    let receipt: { id: string, journalPath: string } | undefined
+    execaMock.mockImplementationOnce(async (_command, _args, options) => {
+      const journalPath = options.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL as string
+      expect(path.dirname(journalPath)).toBe(path.join(parentJournal, 'children'))
+      expect(fs.statSync(journalPath).isDirectory()).toBe(true)
+      receipt = { id: 'owned-window', journalPath }
+      return { exitCode: 0, stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420', managedProject: receipt }) }
+    })
+    connectMock.mockResolvedValueOnce(miniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    const session = await launchAutomator({ projectPath: sandboxRoot, launchMode: 'direct', timeout: 1_000, maxLaunchRetries: 1, onSessionMetadata })
+
+    expect(launchMock).not.toHaveBeenCalled()
+    expectBridgeBootstrapCall(0, 1_000)
+    expect(readBridgePayloadFromExecaCall()?.projectPath).toBe(sandboxRoot)
+    expect(connectMock).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ wsEndpoint: 'ws://127.0.0.1:9420' }))
+    expect(onSessionMetadata).toHaveBeenCalledExactlyOnceWith({ projectPath: sandboxRoot, wsEndpoint: 'ws://127.0.0.1:9420', port: 9420, managedProject: receipt })
+    expect(miniProgram.__rawCurrentPage).toHaveBeenCalled()
+    await session.close()
+    await session.close()
+    expect(closeManagedWechatProjectMock).toHaveBeenCalledExactlyOnceWith(receipt)
+    expect(miniProgram.__rawDisconnect).toHaveBeenCalledOnce()
+    expect(miniProgram.__rawClose).not.toHaveBeenCalled()
+  })
+
+  it.each(['direct', 'bridge'] as const)('rejects a managed %s launch without ownership evidence and cleans only its attempt journal', async (launchMode) => {
+    const parentJournal = path.join(sandboxRoot, 'managed-journal')
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', parentJournal)
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    execaMock.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }) })
+
+    const { launchAutomator } = await import('../utils/automator')
+    await expect(launchAutomator({ projectPath: sandboxRoot, launchMode, timeout: 1_000, maxLaunchRetries: 1 }))
+      .rejects
+      .toThrow('Managed automator bridge did not return project ownership evidence')
+
+    const journalPath = execaMock.mock.calls[0]?.[2].env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL as string
+    expect(path.dirname(journalPath)).toBe(path.join(parentJournal, 'children'))
+    expect(cleanupManagedWechatProjectsMock).toHaveBeenCalledExactlyOnceWith({ journalPath, scope: 'journal' })
+    expect(closeManagedWechatProjectMock).not.toHaveBeenCalled()
+    expect(connectMock).not.toHaveBeenCalled()
+    expect(launchMock).not.toHaveBeenCalled()
+    expect(execaMock).toHaveBeenCalledOnce()
+  })
+
   it('exhausts the total budget without retrying a canceled bootstrap or connecting its late result', async () => {
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
     process.env.WEAPP_VITE_E2E_LAUNCH_ATTEMPT_TIMEOUT = '1000'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
     createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
     const { launchAutomator } = await import('../utils/automator')
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] })
@@ -426,6 +512,60 @@ describe('automator launch resilience', { concurrent: false }, () => {
       expect(execaMock).toHaveBeenCalledOnce()
       expect(connectMock).not.toHaveBeenCalled()
       expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('preserves the second launch failure instead of starting a third window without enough settle budget', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const { launchAutomator } = await import('../utils/automator')
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] })
+    const firstFailure = new Error('connect ECONNREFUSED')
+    const secondFailure = new Error('Uncaught [object Object]')
+    execaMock
+      .mockImplementationOnce(() => new Promise((_resolve, reject) => setTimeout(reject, 42_000, firstFailure)))
+      .mockImplementationOnce(() => new Promise((_resolve, reject) => setTimeout(reject, 43_000, secondFailure)))
+
+    try {
+      const assertion = expect(launchAutomator({ projectPath: sandboxRoot, timeout: 90_000, maxLaunchRetries: 3 })).rejects.toBe(secondFailure)
+      await vi.runAllTimersAsync()
+      await assertion
+      expect(execaMock).toHaveBeenCalledTimes(2)
+      expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledOnce()
+      expect(connectMock).not.toHaveBeenCalled()
+      expect(performance.now()).toBe(86_200)
+      expect(vi.getTimerCount()).toBe(0)
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('preserves the original failure when recovery consumes the next bridge launch budget', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const { launchAutomator } = await import('../utils/automator')
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] })
+    const failure = new Error('connect ECONNREFUSED')
+    execaMock.mockRejectedValueOnce(failure)
+    cleanupResidualDevtoolsProcessesMock.mockImplementationOnce(() => new Promise(resolve => setTimeout(resolve, 6_000)))
+
+    try {
+      const assertion = expect(launchAutomator({ projectPath: sandboxRoot, timeout: 12_000, maxLaunchRetries: 3 })).rejects.toBe(failure)
+      await vi.runAllTimersAsync()
+      await assertion
+      expect(execaMock).toHaveBeenCalledOnce()
+      expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledOnce()
+      expect(connectMock).not.toHaveBeenCalled()
+      expect(performance.now()).toBe(7_200)
+      expect(vi.getTimerCount()).toBe(0)
     }
     finally {
       vi.useRealTimers()
@@ -978,82 +1118,131 @@ describe('automator launch resilience', { concurrent: false }, () => {
   it.each([
     '[ERROR] simulator launch catch error TypeError: Cannot read property \'subPackages\' of undefined',
     '[ERROR] simulator launch catch error Error: simulator launch failed',
-  ])('retries launch when recent DevTools logs include simulator boot errors: %s', async (line) => {
+  ])('does not cold-start again after a fatal DevTools boot log: %s', async (line) => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
-    process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
-    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'], subPackages: [] })
+    const miniProgram = createMockMiniProgram()
+    launchMock.mockResolvedValue(miniProgram)
+    scanRecentDevtoolsSimulatorBootDiagnosticsMock.mockReturnValue([{ file: 'devtools.log', line, state: 'fatal' }])
 
-    createProjectFixture(sandboxRoot, {
-      pages: ['pages/index/index'],
-      subPackages: [],
-    })
-
-    const firstMiniProgram = createMockMiniProgram()
-    const secondMiniProgram = createMockMiniProgram()
-    launchMock
-      .mockResolvedValueOnce(firstMiniProgram)
-      .mockResolvedValueOnce(secondMiniProgram)
-    execaMock.mockResolvedValueOnce({
-      exitCode: 0,
-      stdout: '',
-      stderr: '',
-    })
-    scanRecentDevtoolsSimulatorBootIssuesMock
-      .mockReturnValueOnce([{
-        file: 'devtools.log',
-        line,
-      }])
-      .mockReturnValue([])
-
-    const { launchAutomator } = await import('../utils/automator')
-    await launchAutomator({ projectPath: sandboxRoot })
-
-    expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(firstMiniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
-    expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
-    expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
-    expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
-    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
-    expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
+    const { isLikelyLaunchRetryableError, launchAutomator } = await import('../utils/automator')
+    const error = await launchAutomator({ projectPath: sandboxRoot }).catch((error: unknown) => error)
+    expect(error).toMatchObject({ name: 'WechatIdeSimulatorBootLogError', firstIssue: { line } })
+    expect(isLikelyLaunchRetryableError(error)).toBe(false)
+    expect(launchMock).toHaveBeenCalledOnce()
+    expect(miniProgram.__rawDisconnect).toHaveBeenCalledOnce()
+    expect(miniProgram.__rawClose).not.toHaveBeenCalled()
+    expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
   })
 
-  it('aborts direct connect when DevTools logs simulator boot errors before launch resolves', async () => {
+  it('aborts a pending direct connect on a fatal boot log without opening another window', async () => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
-    process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
-    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
-
-    createProjectFixture(sandboxRoot, {
-      pages: ['pages/index/index'],
-      subPackages: [],
-    })
-
-    const secondMiniProgram = createMockMiniProgram()
-    launchMock
-      .mockImplementationOnce(async () => {
-        await new Promise(resolve => setTimeout(resolve, 6_000))
-        return createMockMiniProgram()
-      })
-      .mockResolvedValueOnce(secondMiniProgram)
-    execaMock.mockResolvedValueOnce({
-      exitCode: 0,
-      stdout: '',
-      stderr: '',
-    })
-    scanRecentDevtoolsSimulatorBootIssuesMock
-      .mockReturnValueOnce([{
-        file: 'devtools.log',
-        line: '[ERROR] simulator launch catch error TypeError: Cannot read property \'subPackages\' of undefined',
-      }])
-      .mockReturnValue([])
-
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'], subPackages: [] })
     const { launchAutomator } = await import('../utils/automator')
-    await launchAutomator({ projectPath: sandboxRoot, timeout: 10_000, warmupAllowRelaunch: false })
+    vi.useFakeTimers()
+    const now = vi.spyOn(performance, 'now').mockImplementation(() => Date.now())
+    try {
+      const miniProgram = createMockMiniProgram()
+      launchMock.mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 1_000))
+        return miniProgram
+      })
+      const line = '[ERROR] simulator launch catch error TypeError: Cannot read property \'subPackages\' of undefined'
+      scanRecentDevtoolsSimulatorBootDiagnosticsMock.mockReturnValue([{ file: 'devtools.log', line, state: 'fatal' }])
+      const assertion = expect(launchAutomator({ projectPath: sandboxRoot, timeout: 10_000 })).rejects.toThrow(line)
+      await vi.advanceTimersByTimeAsync(500)
+      await assertion
+      await vi.advanceTimersByTimeAsync(500)
+      expect(launchMock).toHaveBeenCalledOnce()
+      expect(miniProgram.__rawDisconnect).toHaveBeenCalledOnce()
+      expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+    }
+    finally {
+      now.mockRestore()
+      vi.useRealTimers()
+    }
+  })
 
-    expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
-    expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
-    expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
-    expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+  it.each([true, false])('keeps one launch while a generic boot diagnostic waits for readiness (recovers=%s)', async (recovers) => {
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'], subPackages: [] })
+    const { launchAutomator } = await import('../utils/automator')
+    vi.useFakeTimers()
+    const now = vi.spyOn(performance, 'now').mockImplementation(() => Date.now())
+    try {
+      const miniProgram = createMockMiniProgram()
+      launchMock.mockResolvedValue(miniProgram)
+      const issue = {
+        file: 'devtools.log',
+        line: '[ERROR][win:s0] simulator launch catch error Error: simulator launch failed',
+        state: 'pending' as const,
+        windowId: 's0',
+      }
+      scanRecentDevtoolsSimulatorBootDiagnosticsMock.mockReturnValue([issue])
+      const running = launchAutomator({ projectPath: sandboxRoot, timeout: 1_000 })
+      const assertion = recovers
+        ? expect(running).resolves.toBe(miniProgram)
+        : expect(running).rejects.toMatchObject({ name: 'WechatIdeSimulatorBootLogError', firstIssue: issue })
+      await vi.advanceTimersByTimeAsync(250)
+      expect(miniProgram.__rawCurrentPage).not.toHaveBeenCalled()
+      expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
+      if (recovers) {
+        scanRecentDevtoolsSimulatorBootDiagnosticsMock.mockReturnValue([{ ...issue, state: 'recovered', readyLine: '[INFO][win:s0] [devtools] webview page ready' }])
+      }
+      await vi.advanceTimersByTimeAsync(750)
+      await assertion
+      expect(launchMock).toHaveBeenCalledOnce()
+      expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
+      expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+    }
+    finally {
+      now.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
+  it.each([false, true])('stops warmup polling immediately on a fatal boot log (anyPage=%s)', async (anyPage) => {
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'], subPackages: [] })
+    const { launchAutomator } = await import('../utils/automator')
+    vi.useFakeTimers()
+    const now = vi.spyOn(performance, 'now').mockImplementation(() => Date.now())
+    let completion: Promise<void> | undefined
+    try {
+      const miniProgram = createMockMiniProgram()
+      const line = '[ERROR][win:s0] simulator launch catch error TypeError: Cannot read properties of undefined (reading \'MaxSubPackageLimit\')'
+      miniProgram.currentPage = miniProgram.__rawCurrentPage = vi.fn(async () => {
+        scanRecentDevtoolsSimulatorBootDiagnosticsMock.mockReturnValue([{ file: 'devtools.log', line, state: 'fatal' }])
+        await new Promise(resolve => setTimeout(resolve, 510))
+        throw new Error('getPageMetaByWebviewId: current page metadata is unavailable')
+      })
+      launchMock.mockResolvedValue(miniProgram)
+      const running = launchAutomator({
+        projectPath: sandboxRoot,
+        timeout: 2_000,
+        warmupAnyPage: anyPage,
+        warmupAllowRelaunch: !anyPage,
+      })
+      completion = running.then(() => {}, () => {})
+      const assertion = expect(running).rejects.toThrow(line)
+      await vi.advanceTimersByTimeAsync(1_000)
+      await assertion
+      expect(launchMock).toHaveBeenCalledOnce()
+      expect(miniProgram.__rawCurrentPage).toHaveBeenCalledOnce()
+      expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
+      expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+    }
+    finally {
+      try {
+        // 断言自身失败时也推进原启动 deadline，等待取消收尾后再恢复真实时钟。
+        await vi.advanceTimersByTimeAsync(2_000)
+        await completion
+      }
+      finally {
+        now.mockRestore()
+        vi.useRealTimers()
+      }
+    }
   })
 
   it('reopens devtools project when warmup current page hangs', async () => {

@@ -1,3 +1,4 @@
+import type { NodePath } from '@weapp-vite/ast/babelTraverse'
 import type { TransformContext } from '../types'
 import {
   WEVU_CLASS_STYLE_RUNTIME_MODULE,
@@ -75,7 +76,7 @@ function collectForAliasMapping(context: TransformContext): Record<string, strin
   return mapping
 }
 
-function replaceIdentifierWithExpression(path: import('@weapp-vite/ast/babelTraverse').NodePath<t.Identifier>, replacement: t.Expression) {
+function replaceIdentifierWithExpression(path: NodePath<t.Identifier>, replacement: t.Expression) {
   const parent = path.parentPath
   if (parent.isObjectProperty() && parent.node.shorthand && parent.node.key === path.node) {
     parent.node.shorthand = false
@@ -113,10 +114,7 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
         return
       }
       const name = path.node.name
-      if (SCOPED_SLOT_GLOBALS.has(name)) {
-        return
-      }
-      if (path.scope.hasBinding(name)) {
+      if (path.scope.getBinding(name)) {
         return
       }
       if (hasOwn(forAliases, name)) {
@@ -127,6 +125,9 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
         }
       }
       if (locals.has(name)) {
+        return
+      }
+      if (SCOPED_SLOT_GLOBALS.has(name)) {
         return
       }
       if (hasOwn(slotProps, name)) {
@@ -164,7 +165,7 @@ function rewriteForAliasExpression(exp: string, context: TransformContext): stri
         return
       }
       const name = path.node.name
-      if (path.scope.hasBinding(name)) {
+      if (path.scope.getBinding(name)) {
         return
       }
       if (hasOwn(forAliases, name)) {

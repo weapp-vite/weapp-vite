@@ -1,54 +1,9 @@
 import type { RolldownWatcher } from 'rolldown'
-import type { InlineConfig } from 'vite'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import os from 'node:os'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { build, createBuilder, createServer } from 'vite'
-import { afterEach, expect, it } from 'vitest'
-import { weapp } from '../src/vite'
-
-const roots: string[] = []
-afterEach(async () => {
-  await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
-})
-
-async function fixture(nested = false) {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-plugin-project-'))
-  roots.push(root)
-  const pluginOutput = nested ? 'dist/plugin' : 'dist-plugin'
-  const files = {
-    'package.json': '{"name":"plugin-project-host","private":true,"type":"module"}',
-    'project.config.json': JSON.stringify({ miniprogramRoot: 'dist/', pluginRoot: `${pluginOutput}/`, compileType: 'plugin' }),
-    'vite.config.mjs': 'throw new Error("child must not reload config")',
-    'src/app.ts': 'import { message } from "../shared/message"; App({ globalData: { message } })',
-    'src/app.json': '{"pages":["pages/home/index"]}',
-    'src/pages/home/index.ts': 'Page({})',
-    'src/pages/home/index.json': '{}',
-    'src/pages/home/index.wxml': '<view>plugin host</view>',
-    'plugin/plugin.json': '{"main":"index.js","pages":{"hello":"pages/hello/index"}}',
-    'plugin/index.ts': 'export { message } from "../shared/message"',
-    'plugin/pages/hello/index.ts': 'Page({})',
-    'plugin/pages/hello/index.json': '{}',
-    'plugin/pages/hello/index.wxml': '<view>plugin page</view>',
-    'shared/message.ts': 'export const message = "plugin original"',
-  }
-  for (const [file, source] of Object.entries(files)) {
-    await mkdir(path.dirname(path.join(root, file)), { recursive: true })
-    await writeFile(path.join(root, file), source)
-  }
-  const config: InlineConfig = {
-    root,
-    configFile: false,
-    logLevel: 'silent',
-    plugins: [weapp()],
-    weapp: { srcRoot: 'src', pluginRoot: 'plugin', npm: { enable: false }, hmr: { runtime: 'classic' } },
-    build: { minify: false },
-    server: { middlewareMode: true },
-  }
-  const read = () => readFile(path.join(root, pluginOutput, 'index.js'), 'utf8')
-  const edit = (source: string) => writeFile(path.join(root, 'shared/message.ts'), source)
-  return { root, config, read, edit, pluginOutput }
-}
+import { expect, it } from 'vitest'
+import { fixture } from './vitePluginProject/fixture'
 
 it.each([false, true])('builds app and plugin with one config and isolated output (nested=%s)', async (nested) => {
   const { root, config, read, pluginOutput } = await fixture(nested)
@@ -141,7 +96,7 @@ it('watches plugin dependencies and recovers without reloading user config', asy
 }, 30_000)
 
 it.each([['classic', false], ['classic', true], ['stateful-experimental', false], ['stateful-experimental', true]] as const)('updates the isolated plugin target during %s with nested output=%s and closes its resources', async (runtime, nested) => {
-  const { root, config, read, edit, pluginOutput } = await fixture(nested)
+  const { root, config, read, edit, pluginOutput, pluginState } = await fixture(nested)
   config.weapp!.hmr = { runtime }
   const server = await createServer(config)
   try {
@@ -156,10 +111,13 @@ it.each([['classic', false], ['classic', true], ['stateful-experimental', false]
     await edit('export const message = "plugin restored"')
     await expect.poll(read, { timeout: 15_000 }).toContain('plugin restored')
     await writeFile(path.join(root, 'plugin/plugin.json'), '{"main":"index.js"}')
-    await expect.poll(() => readFile(path.join(root, pluginOutput, 'pages/hello/index.wxml')).then(() => true, () => false), { timeout: 15_000 }).toBe(false)
-    expect(await read()).toContain('plugin restored')
-    expect(JSON.parse(await readFile(path.join(root, pluginOutput, 'plugin.json'), 'utf8'))).not.toHaveProperty('pages')
-    await expect.poll(() => readFile(path.join(root, pluginOutput, 'pages/hello/index.js')).then(() => true, () => false), { timeout: 15_000 }).toBe(false)
+    // 单个旧文件消失可能发生在原生写入中途；同时核对发布钩子、清单、入口和全部页面文件。
+    await expect.poll(pluginState, { timeout: 15_000 }).toEqual({
+      publishedManifest: { main: 'index.js' },
+      manifest: { main: 'index.js' },
+      entry: expect.stringContaining('plugin restored'),
+      pageFiles: [],
+    })
     await writeFile(path.join(root, 'plugin/plugin.json'), '{"main":"index.js","pages":{"hello":"pages/hello/index"}}')
     await expect.poll(() => readFile(path.join(root, pluginOutput, 'pages/hello/index.wxml'), 'utf8'), { timeout: 15_000 }).toContain('plugin page')
   }
@@ -171,6 +129,44 @@ it('rejects overlapping output ownership before writing either target', async ()
   await writeFile(path.join(root, 'project.config.json'), JSON.stringify({ miniprogramRoot: 'dist/app/', pluginRoot: 'dist/', compileType: 'plugin' }))
   await expect(build(config)).rejects.toThrow('插件输出目录不能等于或包含宿主应用输出目录')
 })
+
+it('observes a completed plugin publication before accepting retired page files', async () => {
+  const { root, config, pluginState } = await fixture(true)
+  const entered = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  config.plugins!.push({
+    name: 'fixture:hold-plugin-publication-before-commit',
+    writeBundle: {
+      order: 'pre',
+      sequential: true,
+      async handler(_options, bundle) {
+        const manifest = bundle['plugin.json']
+        if (manifest?.type === 'asset' && !String(manifest.source).includes('pages')) {
+          entered.resolve()
+          await release.promise
+        }
+      },
+    },
+  })
+  const server = await createServer(config)
+  try {
+    await writeFile(path.join(root, 'plugin/plugin.json'), '{"main":"index.js"}')
+    await entered.promise
+    // 原生文件已开始发布，完整发布状态仍不能认领这一代。
+    expect((await pluginState()).publishedManifest).toHaveProperty('pages.hello', 'pages/hello/index')
+    release.resolve()
+    await expect.poll(pluginState, { timeout: 15_000 }).toEqual({
+      publishedManifest: { main: 'index.js' },
+      manifest: { main: 'index.js' },
+      entry: expect.stringContaining('plugin original'),
+      pageFiles: [],
+    })
+  }
+  finally {
+    release.resolve()
+    await server.close()
+  }
+}, 30_000)
 
 it('preserves explicit output retention for the plugin target', async () => {
   const { root, config, pluginOutput } = await fixture()

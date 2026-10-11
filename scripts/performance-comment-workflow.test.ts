@@ -39,6 +39,7 @@ describe('performance reporting workflows', () => {
     for (const [file, job, manifest] of [
       ['ci-performance.yml', 'smoke', 'package.json'],
       ['nightly-performance.yml', 'collect', 'driver/package.json'],
+      ['wevu-runtime-size.yml', 'measure', 'head/package.json'],
     ]) {
       const workflow = parse(await readFile(path.join(root, '.github/workflows', file!), 'utf8'))
       const setup = workflow.jobs[job!].steps.find((step: { uses?: string }) => step.uses?.startsWith('pnpm/action-setup@'))

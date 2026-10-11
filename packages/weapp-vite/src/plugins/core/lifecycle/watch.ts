@@ -238,9 +238,12 @@ export function createBuildStartHook(state: CorePluginState) {
           for (const chunkId of sharedChunkAffected.affectedChunks) {
             state.hmrState.affectedSharedChunkIds.add(chunkId)
           }
-          for (const entryId of sharedChunkAffected.affectedEntries) {
-            state.markEntryDirty(entryId, 'dependency')
-            sharedChunkAffectedEntryCount += 1
+          // 共享图也服务于 off 的发布裁剪；登记受影响 chunk 不等于扩散脏入口。
+          if (state.hmrSharedChunksMode !== 'off') {
+            for (const entryId of sharedChunkAffected.affectedEntries) {
+              state.markEntryDirty(entryId, 'dependency')
+              sharedChunkAffectedEntryCount += 1
+            }
           }
         }
         if (sharedChunkAffectedEntryCount) {

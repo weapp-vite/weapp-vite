@@ -1,5 +1,7 @@
 import process from 'node:process'
 
+const E2E_MACHINE_LEASE_ENV = 'WEAPP_VITE_E2E_MACHINE_LEASE'
+
 interface DevProcessEnvOptions {
   disableSidecarWatch?: boolean
   keepE2EEnv?: boolean
@@ -31,10 +33,14 @@ export function createDevProcessEnv(options: DevProcessEnvOptions = {}): NodeJS.
   delete env.VITEST_POOL_ID
   delete env.VITEST_WORKER_ID
   if (options.keepE2EEnv !== true && options.stripE2EEnv !== false) {
+    const machineLease = env[E2E_MACHINE_LEASE_ENV]
     for (const key of Object.keys(env)) {
       if (key.startsWith('WEAPP_VITE_E2E_')) {
         delete env[key]
       }
+    }
+    if (machineLease !== undefined) {
+      env[E2E_MACHINE_LEASE_ENV] = machineLease
     }
   }
   if (options.nodeOptions) {

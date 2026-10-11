@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   acquireSharedMiniProgram,
   closeSharedMiniProgram,
+  MANAGED_PROJECT_MAX_WINDOWS_ENV,
   queryWechatIdeLogin,
   releaseSharedMiniProgram,
   resolveAutomatorSessionOptions,
@@ -52,6 +53,7 @@ describe('shared Stable host and project connection ownership', { concurrent: fa
   const runtimeProvider = resolveRuntimeProviderName()
   const options: AutomatorOptions[] = []
   let target: ResolvedWechatDevtoolsTarget | undefined
+  let previousMaxWindows: string | undefined
 
   async function assertLoggedIn() {
     if (target) {
@@ -81,6 +83,9 @@ describe('shared Stable host and project connection ownership', { concurrent: fa
   }
 
   beforeAll(async () => {
+    previousMaxWindows = process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV]
+    // 同时保留两个项目，验证关闭连接与重连不会影响另一项目。
+    process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV] = '2'
     if (runtimeProvider === 'devtools') {
       target = await preflightSelectedWechatDevtools()
       await assertLoggedIn()
@@ -102,6 +107,12 @@ describe('shared Stable host and project connection ownership', { concurrent: fa
   }, TIMEOUT)
 
   afterAll(async () => {
+    if (previousMaxWindows === undefined) {
+      delete process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV]
+    }
+    else {
+      process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV] = previousMaxWindows
+    }
     // 只断开本 suite 创建的连接；不发 App.exit / Tool.close，不退出手动宿主或账号。
     for (let index = 0; index < options.length; index++) {
       await disconnectProject(index)

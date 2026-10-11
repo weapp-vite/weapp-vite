@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enhanceMiniProgramRelaunch } from './automator'
+import { DevtoolsSimulatorBootLogError } from './automatorBootLogMonitor'
 
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'fixture' }))
 
@@ -105,6 +106,29 @@ describe('route-scoped relaunch roots', () => {
 
     expect(rawReLaunch).toHaveBeenCalledTimes(1)
     expect(boundary.waitForRendered).toHaveBeenCalledWith(expect.objectContaining({ selector: 'view' }))
+    expect(miniProgram.close).not.toHaveBeenCalled()
+  })
+
+  it('does not recover a fatal boot diagnostic as a transient metadata failure', async () => {
+    const boundary = createPage(boundaryRoute, ['view'])
+    const rawReLaunch = vi.fn(async () => boundary)
+    const miniProgram = { reLaunch: rawReLaunch, currentPage: vi.fn(async () => boundary), close: vi.fn() }
+    const error = new DevtoolsSimulatorBootLogError('reLaunch', {
+      file: 'startup.log',
+      line: '[ERROR][win:s0] simulator launch catch error TypeError: getPageMetaByWebviewId is unavailable',
+      state: 'fatal',
+      windowId: 's0',
+    })
+    enhanceMiniProgramRelaunch(miniProgram, {
+      ...recoveryOptions,
+      checkDevtoolsLog: () => {
+        throw error
+      },
+    })
+
+    await expect(miniProgram.reLaunch(`/${boundaryRoute}?force=1`)).rejects.toBe(error)
+    expect(rawReLaunch).not.toHaveBeenCalled()
+    expect(miniProgram.currentPage).not.toHaveBeenCalled()
     expect(miniProgram.close).not.toHaveBeenCalled()
   })
 

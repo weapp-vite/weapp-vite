@@ -3,6 +3,7 @@ import type { PackageType } from '../types'
 import { computed } from 'vue'
 import { formatPackageType } from '../utils/format'
 import AppSelect from './AppSelect.vue'
+import AppToolButton from './AppToolButton.vue'
 
 type PackageFilterType = 'all' | PackageType
 type PackageBudgetFilter = 'all' | 'warning' | 'normal'
@@ -51,7 +52,7 @@ const sortOptions = [
 
 <template>
   <div class="flex flex-wrap items-center justify-between gap-3">
-    <div>
+    <div class="min-w-0">
       <p class="text-xs font-medium text-(--dashboard-text-soft)">
         匹配 {{ filteredCount }} / {{ totalCount }} 个包
       </p>
@@ -59,23 +60,23 @@ const sortOptions = [
         {{ actionStatus }}
       </p>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
-        :disabled="disabled"
-        @click="emit('copy')"
-      >
-        复制包体
-      </button>
-      <button
-        type="button"
-        class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) focus:border-(--dashboard-border-strong) focus:outline-none disabled:opacity-50"
-        :disabled="disabled"
-        @click="emit('exportJson')"
-      >
-        导出 JSON
-      </button>
+    <div class="flex min-w-0 flex-wrap items-center gap-2">
+      <div class="flex shrink-0 flex-nowrap items-center gap-2">
+        <AppToolButton
+          label="复制包体数据"
+          icon-name="metric-copy"
+          touch-label="复制"
+          :disabled="disabled"
+          @click="emit('copy')"
+        />
+        <AppToolButton
+          label="导出包体 JSON"
+          icon-name="metric-entries"
+          touch-label="导出"
+          :disabled="disabled"
+          @click="emit('exportJson')"
+        />
+      </div>
       <input
         v-model="query"
         class="h-9 w-56 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-sm text-(--dashboard-text) outline-none transition placeholder:text-(--dashboard-text-soft) focus:border-(--dashboard-accent)"

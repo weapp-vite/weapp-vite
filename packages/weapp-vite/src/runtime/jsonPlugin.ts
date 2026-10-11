@@ -99,6 +99,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
     return resolveJson(entry, configService.aliasEntries, configService.platform, {
       dependencies: configService.packageJson.dependencies,
       alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
+      omitEmptySubPackages: configService.multiPlatform?.enabled,
     })
   }
 

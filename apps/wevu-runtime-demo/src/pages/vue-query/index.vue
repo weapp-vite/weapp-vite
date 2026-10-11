@@ -34,6 +34,14 @@ const query = useQuery({
   },
 })
 
+const {
+  data: queryData,
+  isError,
+  isFetching,
+  isPending,
+  isSuccess,
+} = query
+
 const statusText = computed(() => {
   if (query.isPending.value) {
     return '加载中'
@@ -129,17 +137,17 @@ watchEffect(syncVueQueryState)
           {{ generatedAtText }}
         </text>
       </view>
-      <view v-if="query.data" class="payload">
+      <view v-if="queryData" class="payload">
         <text class="payload-title">
           最新数据
         </text>
-        <text id="query-payload-label">{{ query.data.label }}</text>
-        <text id="query-payload-tab">{{ query.data.selectedTab }}</text>
+        <text id="query-payload-label">{{ queryData.label }}</text>
+        <text id="query-payload-tab">{{ queryData.selectedTab }}</text>
         <text class="payload-text mono">
-          {{ JSON.stringify(query.data, null, 2) }}
+          {{ JSON.stringify(queryData, null, 2) }}
         </text>
       </view>
-      <view v-if="query.isError" class="error-box">
+      <view v-if="isError" class="error-box">
         <text class="error-text">
           {{ errorText }}
         </text>
@@ -176,19 +184,19 @@ watchEffect(syncVueQueryState)
       <view class="row">
         <text class="label">isPending</text>
         <text id="query-pending" class="value">
-          {{ query.isPending }}
+          {{ isPending }}
         </text>
       </view>
       <view class="row">
         <text class="label">isFetching</text>
         <text id="query-fetching" class="value">
-          {{ query.isFetching }}
+          {{ isFetching }}
         </text>
       </view>
       <view class="row">
         <text class="label">isSuccess</text>
         <text id="query-success" class="value">
-          {{ query.isSuccess }}
+          {{ isSuccess }}
         </text>
       </view>
     </view>

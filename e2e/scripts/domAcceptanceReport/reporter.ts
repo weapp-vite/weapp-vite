@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { ACCEPTED_DEVTOOLS_VERSION_ENV, readDevtoolsVersionPolicy } from '../../utils/devtoolsSelection'
 import { evaluateExpectedErrors } from './expectedErrors'
 import {
   ACCEPTANCE_REPORT_DIR_ENV,
@@ -17,7 +18,7 @@ import {
   summarizeAcceptanceCases,
 } from './helpers'
 import { RuntimeDiagnosticJournal } from './runtimeDiagnostics'
-import { evaluateRuntimeVersions } from './runtimeVersions'
+import { evaluateRuntimeVersions, summarizeRuntimeVersions } from './runtimeVersions'
 import { evaluateSelectedAcceptanceCases, readSelectedAcceptanceCases } from './selectedCases'
 
 function formatStrictAcceptanceFailure(report: AcceptanceReport) {
@@ -96,7 +97,12 @@ export default class DomAcceptanceReporter implements Reporter {
     const report = this.persist(messages, new Date().toISOString())
     if (this.strict && report.status !== 'passed') {
       process.exitCode = 1
-      throw new Error(formatStrictAcceptanceFailure(report))
+      const message = formatStrictAcceptanceFailure(report)
+      if (reason === 'passed') {
+        throw new Error(message)
+      }
+      // Vitest 在 globalSetup 的 finally 中调用此钩子；不能用报告错误覆盖原始异常。
+      process.stderr.write(`${message}\n`)
     }
   }
 
@@ -119,8 +125,18 @@ export default class DomAcceptanceReporter implements Reporter {
     this.diagnostics.collect(this.activeCase, Boolean(finishedAt))
     errors = [...errors, ...this.diagnostics.errors, ...(finishedAt ? evaluateExpectedErrors([...this.cases.values()], this.diagnostics.entries) : [])]
     const cases = [...this.cases.values()].map(evaluateAcceptanceCase)
+    const provider = process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER === 'headless' ? 'headless' : 'devtools'
+    const devtoolsVersionPolicy = provider === 'devtools' ? readDevtoolsVersionPolicy() : undefined
+    const environment: AcceptanceReport['environment'] = {
+      nodeVersion: process.version,
+      ...summarizeRuntimeVersions(cases),
+      ...(devtoolsVersionPolicy ? { devtoolsVersionPolicy } : {}),
+    }
     if (finishedAt && this.strict) {
-      errors.push(...evaluateRuntimeVersions(cases, process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER === 'headless' ? 'headless' : 'devtools'))
+      if (provider === 'devtools' && process.env[ACCEPTED_DEVTOOLS_VERSION_ENV]?.trim() && !devtoolsVersionPolicy) {
+        errors.push('Missing DevTools version policy evidence for selected-version opt-in')
+      }
+      errors.push(...evaluateRuntimeVersions(cases, provider, environment))
       errors.push(...evaluateSelectedAcceptanceCases(this.selectedCases, cases))
     }
     const summary = summarizeAcceptanceCases(cases)
@@ -130,12 +146,8 @@ export default class DomAcceptanceReporter implements Reporter {
       invocationId: this.invocationId,
       taskLabel: process.env[ACCEPTANCE_TASK_ENV] || process.env.WEAPP_VITE_E2E_TARGET_FILE || 'direct-vitest',
       template: process.env.WEAPP_VITE_E2E_TEMPLATE || null,
-      provider: process.env.WEAPP_VITE_E2E_RUNTIME_PROVIDER === 'headless' ? 'headless' : 'devtools',
-      environment: {
-        nodeVersion: process.version,
-        ideVersion: cases.find(item => item.acceptance?.runtime)?.acceptance?.runtime?.ideVersion ?? null,
-        baseLibraryVersion: cases.find(item => item.acceptance?.runtime)?.acceptance?.runtime?.baseLibraryVersion ?? null,
-      },
+      provider,
+      environment,
       strict: this.strict,
       startedAt: this.startedAt,
       finishedAt,

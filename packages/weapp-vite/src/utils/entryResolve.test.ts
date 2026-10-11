@@ -66,4 +66,19 @@ describe('resolveEntryPath', () => {
     })
     expect(resolved).toBe('/comp/Button.vue')
   })
+
+  it.each(['default', 'named'] as const)('keeps %s import priority when Vue and TS siblings coexist', async (kind) => {
+    const resolved = await resolveEntryPath('components/Button', {
+      kind,
+      stat: async () => ({ isDirectory: () => false }),
+      exists: async p => ['components/Button.vue', 'components/Button.ts'].includes(p),
+    })
+    expect(resolved).toBe(kind === 'default' ? 'components/Button.vue' : 'components/Button.ts')
+  })
+
+  it('does not replace an explicit script extension with its Vue sibling', async () => {
+    const exists = vi.fn(async () => true)
+    expect(await resolveEntryPath('components/Button.ts', { exists })).toBeUndefined()
+    expect(exists).not.toHaveBeenCalled()
+  })
 })

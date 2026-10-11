@@ -80,7 +80,7 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
       await fs.writeFile(independentSource, `${independentInput}<view>independent-recovered</view>`)
       await expect.poll(async () => fs.readFile(path.join(project.tempDir, 'dist/independent/index.wxml'), 'utf8'), { timeout: 45_000 }).toContain('independent-recovered')
       await fs.writeJSON(rules, { label: 'changed' })
-      await waitForOutputs(project.tempDir, 'changed')
+      const changedOutputs = await waitForOutputs(project.tempDir, 'changed')
       const previousFailures = failures.length
       await fs.remove(rules)
       // 超时时保留宿主事件与依赖登记状态，区分漏报事件、依赖丢失与构建未报错。
@@ -97,8 +97,7 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
         // 匹配器会省略未参与比较的属性，错误正文必须显式保留完整诊断。
         throw new Error(`WXML dependency removal: ${JSON.stringify(removalState())}`, { cause })
       }
-      const previous = await fs.readFile(path.join(project.tempDir, 'dist/pages/native/index.wxml'), 'utf8')
-      expect(previous).toContain('data-rule="changed"')
+      expect(await Promise.all(outputs.map(file => fs.readFile(path.join(project.tempDir, 'dist', file), 'utf8')))).toEqual(changedOutputs)
       await fs.writeJSON(rules, { label: 'restored' })
       await waitForOutputs(project.tempDir, 'restored')
       const source = path.join(project.tempDir, 'src/pages/native/index.wxml')

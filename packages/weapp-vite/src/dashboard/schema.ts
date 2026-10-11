@@ -2,6 +2,7 @@ import type { DashboardFileContent } from './content'
 import type { DashboardRuntimeEvent, DashboardRuntimeEventProfile } from './events'
 import type { DashboardAnalyzePage, DashboardAnalyzePageRequest, DashboardAnalyzePayloadDescriptor } from './payload'
 import { z } from 'zod'
+import { investigationsStateSchema } from './investigations/schema'
 
 const nonnegativeInteger = z.number().int().nonnegative()
 const revisionSchema = nonnegativeInteger.describe('Revision from get-dashboard-state; refresh state if it becomes stale.')
@@ -101,6 +102,8 @@ export const dashboardRuntimeEventSchema = z.object({
 }) satisfies z.ZodType<DashboardRuntimeEvent>
 
 export const dashboardStateSchema = z.object({
+  sessionId: z.string().uuid(),
+  investigations: investigationsStateSchema,
   analyze: z.object({
     current: analyzeDescriptorSchema,
     previous: analyzeDescriptorSchema.nullable(),

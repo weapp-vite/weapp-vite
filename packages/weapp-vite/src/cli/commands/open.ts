@@ -1,6 +1,7 @@
 import type { CAC } from 'cac'
 import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
+import { withWechatDevtoolsSelection } from 'weapp-ide-cli'
 import { detectAiDevelopmentEnvironment } from '../../aiEnvironment'
 import { getBackendForCapability } from '../../backends'
 import logger from '../../logger'
@@ -48,20 +49,28 @@ export function registerOpenCommand(cli: CAC) {
       }
       const cwdForMcp = cwd ?? process.cwd()
       const aiEnvironment = await detectAiDevelopmentEnvironment()
-      await maybeStartDetachedMcpServer({
-        agentName: aiEnvironment.agentName,
-        cwd: cwdForMcp,
-        isAgent: aiEnvironment.isAgent,
-        mcpConfig: applyMcpCliOptions(weappViteConfig?.mcp, options),
-      })
+      const openSelected = async () => {
+        await maybeStartDetachedMcpServer({
+          agentName: aiEnvironment.agentName,
+          cwd: cwdForMcp,
+          isAgent: aiEnvironment.isAgent,
+          mcpConfig: applyMcpCliOptions(weappViteConfig?.mcp, options),
+        })
 
-      await openIde(platform, projectPath ?? resolveIdeProjectRoot(mpDistRoot, process.cwd()), {
-        loginRetry: options.loginRetry,
-        loginRetryTimeout: options.loginRetryTimeout,
-        nonInteractive: options.nonInteractive,
-        openRecovery: options.openRecovery,
-        trustProject: options.trustProject,
-        openStrategy: options.ideOpenStrategy,
-      })
+        await openIde(platform, projectPath ?? resolveIdeProjectRoot(mpDistRoot, process.cwd()), {
+          loginRetry: options.loginRetry,
+          loginRetryTimeout: options.loginRetryTimeout,
+          nonInteractive: options.nonInteractive,
+          openRecovery: options.openRecovery,
+          trustProject: options.trustProject,
+          openStrategy: options.ideOpenStrategy,
+        })
+      }
+      if (platform === 'weapp') {
+        await withWechatDevtoolsSelection({}, openSelected)
+      }
+      else {
+        await openSelected()
+      }
     })
 }

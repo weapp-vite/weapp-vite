@@ -18,8 +18,24 @@ const IMPORT_STYLESHEET_URL = 'https://styles.example.test/issue-1126.css'
 async function readStyle(page: Page, selector: string) {
   return await page.locator(`${ACTIVE_PAGE} ${selector}`).evaluate((element) => {
     const style = getComputedStyle(element)
-    return { color: style.color, fontSize: style.fontSize, paddingLeft: style.paddingLeft, marginLeft: style.marginLeft }
+    return {
+      color: style.color,
+      fontSize: style.fontSize,
+      paddingLeft: style.paddingLeft,
+      marginLeft: style.marginLeft,
+      connected: element.isConnected,
+    }
   })
+}
+
+async function expectStyles(page: Page, expected: Record<string, Partial<Awaited<ReturnType<typeof readStyle>>>>) {
+  const targets = Object.entries(expected)
+  // HMR 会逐实例替换节点；同轮检查全部目标，并重新定位断开的旧节点。
+  await expect.poll(async () => Object.fromEntries(await Promise.all(
+    targets.map(async ([selector]) => [selector, await readStyle(page, selector)]),
+  )), { timeout: 45_000 }).toMatchObject(Object.fromEntries(
+    targets.map(([selector, style]) => [selector, { ...style, connected: true }]),
+  ))
 }
 
 async function closePreview(server?: PreviewServer) {
@@ -176,29 +192,43 @@ page { --probe-theme: rgb(151, 37, 113); }
 .global-probe { color: rgb(41, 73, 191); font-size: 32px; }
 .app-box { padding-left: 13px; }
 `)
-      await dev.waitFor(expect.poll(() => readStyle(page, '#global-probe'), { timeout: 45_000 }).toMatchObject({ color: 'rgb(41, 73, 191)' }), 'External app style refreshes')
-      expect(await readStyle(page, '#isolated #theme')).toMatchObject({ color: 'rgb(151, 37, 113)' })
+      await dev.waitFor(expectStyles(page, {
+        '#global-probe': { color: 'rgb(41, 73, 191)' },
+        '#isolated #theme': { color: 'rgb(151, 37, 113)' },
+      }), 'External app style refreshes')
       const app = await readFile(appFile, 'utf8')
       await writeFile(appFile, app.replace('19px', '29px'))
-      await dev.waitFor(expect.poll(() => readStyle(page, '#inline-probe'), { timeout: 45_000 }).toMatchObject({ marginLeft: '29px' }), 'Inline app style refreshes')
+      await dev.waitFor(expectStyles(page, {
+        '#inline-probe': { marginLeft: '29px' },
+      }), 'Inline app style refreshes')
       await writeFile(path.join(devProject, 'src/pages/index/index.css'), `
 .local-probe { color: rgb(179, 91, 7); }
 .local-theme { --probe-theme: rgb(157, 47, 113); }
 `)
-      await dev.waitFor(expect.poll(() => readStyle(page, '#local-probe'), { timeout: 45_000 }).toMatchObject({ color: 'rgb(179, 91, 7)' }), 'External page style refreshes')
+      await dev.waitFor(expectStyles(page, {
+        '#local-probe': { color: 'rgb(179, 91, 7)' },
+        '#local-theme #theme': { color: 'rgb(157, 47, 113)' },
+      }), 'External page style refreshes')
       await writeFile(path.join(devProject, 'src/components/applyShared/index.css'), `
 .theme-probe { color: var(--probe-theme, rgb(0, 0, 0)); }
 .app-box { margin-left: 7px; }
 `)
-      await dev.waitFor(expect.poll(() => readStyle(page, '#apply-shared #box'), { timeout: 45_000 }).toMatchObject({ marginLeft: '7px' }), 'External component style refreshes')
-      expect(await readStyle(page, '#global-probe')).toMatchObject({ color: 'rgb(41, 73, 191)' })
-      expect(await readStyle(page, '#local-theme #theme')).toMatchObject({ color: 'rgb(157, 47, 113)' })
+      await dev.waitFor(expectStyles(page, {
+        '#apply-shared #box': { marginLeft: '7px' },
+        '#local-theme #box': { marginLeft: '7px' },
+        '#global-probe': { color: 'rgb(41, 73, 191)' },
+        '#local-theme #theme': { color: 'rgb(157, 47, 113)' },
+      }), 'External component style refreshes')
       await writeFile(appFile, app.slice(0, app.indexOf('<style')))
-      await dev.waitFor(expect.poll(() => readStyle(page, '#global-probe'), { timeout: 45_000 }).toMatchObject({ color: 'rgb(0, 0, 0)', fontSize: '16px' }), 'Removed app styles stop applying')
-      expect(await readStyle(page, '#apply-shared #box')).toMatchObject({ paddingLeft: '0px' })
-      expect(await readStyle(page, '#isolated #theme')).toMatchObject({ color: 'rgb(0, 0, 0)' })
+      await dev.waitFor(expectStyles(page, {
+        '#global-probe': { color: 'rgb(0, 0, 0)', fontSize: '16px' },
+        '#apply-shared #box': { paddingLeft: '0px' },
+        '#isolated #theme': { color: 'rgb(0, 0, 0)' },
+      }), 'Removed app styles stop applying')
       await writeFile(appFile, app)
-      await dev.waitFor(expect.poll(() => readStyle(page, '#global-probe'), { timeout: 45_000 }).toMatchObject({ color: 'rgb(41, 73, 191)', fontSize: '32px' }), 'Re-added app styles apply')
+      await dev.waitFor(expectStyles(page, {
+        '#global-probe': { color: 'rgb(41, 73, 191)', fontSize: '32px' },
+      }), 'Re-added app styles apply')
       expect(await page.locator(`${ACTIVE_PAGE} #counter`).textContent()).toBe('1')
     }
     finally {

@@ -412,6 +412,10 @@ export async function compileScriptPhase(
       cssModules: precomputedScriptPhaseInfo?.cssModules,
       stabilizeCssVarsRuntime: options?.stabilizeCssVarsRuntime,
       relaxStructuredTypeOnlyProps,
+      nativeSlotContext: !isAppFile
+        && (options?.template?.platform ?? getMiniProgramTemplatePlatform()).name === 'wechat'
+        && options?.template?.platform?.nativeSlotContext !== false
+        && (options?.template?.scopedSlotsRequireProps ?? options?.template?.scopedSlotsCompiler !== 'augmented'),
       scopedSlotHostProperties: !isAppFile
         && options?.isPage !== true
         && Boolean(

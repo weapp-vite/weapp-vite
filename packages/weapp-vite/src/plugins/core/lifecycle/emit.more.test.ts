@@ -895,6 +895,56 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(state.hmrState.hasBuiltOnce).toBe(true)
   })
 
+  it('syncs textual page requires before pruning unchanged runtime vendors', async () => {
+    const entryId = '/src/pages/home/index.ts'
+    const state = createState({
+      subPackageMeta: undefined,
+      ctx: {
+        configService: { isDev: true },
+        runtimeState: {
+          build: {
+            hmr: {
+              lastEmittedChunkFileNames: new Set<string>(),
+            },
+          },
+        },
+      },
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set([entryId]),
+      },
+      hmrSharedChunkImporters: new Map([
+        ['weapp-vendors/wevu-runtime.js', new Set([entryId])],
+      ]),
+    })
+    syncChunkImportsFromRequireCallsMock.mockImplementationOnce((bundle: Record<string, any>) => {
+      bundle['pages/home/index.js'].imports = ['../../weapp-vendors/wevu-runtime.js']
+    })
+    const bundle = {
+      'pages/home/index.js': {
+        type: 'chunk',
+        fileName: 'pages/home/index.js',
+        facadeModuleId: entryId,
+        code: 'require("../../weapp-vendors/wevu-runtime.js").createWevuComponent({})',
+        imports: [],
+        dynamicImports: [],
+      },
+      'weapp-vendors/wevu-runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/wevu-runtime.js',
+        code: 'exports.createWevuComponent = createWevuComponent',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await createGenerateBundleHook(state, false).call({}, {}, bundle)
+
+    expect(syncChunkImportsFromRequireCallsMock).toHaveBeenCalledWith(bundle)
+    expect(bundle['weapp-vendors/wevu-runtime.js']).toBeDefined()
+  })
+
   it('falls back to watch file snapshot when watcher is unavailable', async () => {
     const watchFiles = vi.fn()
     const state = createState({

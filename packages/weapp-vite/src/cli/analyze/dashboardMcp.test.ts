@@ -33,7 +33,7 @@ it('disposes MCP after unregister failure and preserves both failures through re
     order.push('dispose')
     throw disposeFailure
   })
-  const instance = { base: '/dashboard/', context: Promise.resolve({}) } as unknown as DevframeInstance
+  const instance = { base: '/dashboard/', context: Promise.resolve({ agent: {} }) } as unknown as DevframeInstance
   const httpServer = { listening: true, address: () => ({ address: '127.0.0.1', port: 0 }) } as unknown as Server
   const mcp = await createDashboardMcp(instance, httpServer, { projectRoot: path.resolve('.'), id: 'cleanup-test' })
   mcp.register()

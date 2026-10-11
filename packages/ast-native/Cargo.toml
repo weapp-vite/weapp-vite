@@ -23,20 +23,20 @@ experimental-script-transform = [
 ]
 
 [dependencies]
-napi = { version = "3.14.0", default-features = false, features = [ "napi4" ] }
-napi-derive = "3.6.10"
-oxc_allocator = "0.152.0"
-oxc_ast = "0.152.0"
-oxc_ast_visit = "0.152.0"
-oxc_codegen = { version = "0.152.0", optional = true }
-oxc_diagnostics = { version = "0.152.0", optional = true }
-oxc_parser = "0.152.0"
-oxc_semantic = { version = "0.152.0", optional = true }
-oxc_span = "0.152.0"
+napi = { version = "3.14.2", default-features = false, features = [ "napi4" ] }
+napi-derive = "3.6.12"
+oxc_allocator = "0.153.0"
+oxc_ast = "0.153.0"
+oxc_ast_visit = "0.153.0"
+oxc_codegen = { version = "0.153.0", optional = true }
+oxc_diagnostics = { version = "0.153.0", optional = true }
+oxc_parser = "0.153.0"
+oxc_semantic = { version = "0.153.0", optional = true }
+oxc_span = "0.153.0"
 oxc_sourcemap = { version = "9.0.0", optional = true }
-oxc_syntax = "0.152.0"
+oxc_syntax = "0.153.0"
 serde = { version = "1.0.229", features = [ "derive" ] }
-serde_json = "1.0.151"
+serde_json = "1.0.152"
 
 [build-dependencies]
 napi-build = "2.6.0"

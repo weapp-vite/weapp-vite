@@ -9,6 +9,7 @@ describe('createReleaseGateSummary', () => {
           key: 'budget:main',
           kind: 'budget',
           title: '处理主包预算',
+          targetLabel: '主包',
           meta: '已超预算',
           tone: 'critical',
           tab: 'files',
@@ -31,6 +32,7 @@ describe('createReleaseGateSummary', () => {
           key: 'increment:a',
           kind: 'increment',
           title: '定位增长',
+          targetLabel: 'a',
           meta: '新增依赖',
           tone: 'warning',
           tab: 'files',
@@ -40,13 +42,5 @@ describe('createReleaseGateSummary', () => {
       largestFiles: [],
       packageInsights: [],
     }).status).toBe('review')
-  })
-
-  it('creates a copyable markdown report', () => {
-    expect(createReleaseGateSummary({
-      actionItems: [],
-      largestFiles: [],
-      packageInsights: [],
-    }).report).toContain('# dashboard 发布门禁')
   })
 })

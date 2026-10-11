@@ -10,6 +10,7 @@ import AppEmptyState from './AppEmptyState.vue'
 import AppMetricTile from './AppMetricTile.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 import AppSummaryValueCard from './AppSummaryValueCard.vue'
+import AppToolButton from './AppToolButton.vue'
 
 type InsightListItem = DashboardDetailItem & { key: string }
 
@@ -75,20 +76,19 @@ onBeforeUnmount(() => {
 <template>
   <div class="grid min-h-0 min-w-0 content-start gap-3 overflow-visible">
     <section :class="surfaceStyles({ padding: 'md' })" class="min-w-0 overflow-hidden">
-      <AppPanelHeader icon-name="metric-quality" title="优化计划">
+      <AppPanelHeader class="min-w-0 flex-wrap" icon-name="metric-quality" title="优化计划">
         <template #meta>
-          <div class="flex items-center gap-2">
+          <div class="flex min-w-0 flex-wrap items-center gap-2">
             <span v-if="optimizationPlanStatus" class="text-xs font-medium text-(--dashboard-accent)">
               {{ optimizationPlanStatus }}
             </span>
-            <button
-              type="button"
-              class="h-8 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 text-xs text-(--dashboard-text-soft) transition hover:border-(--dashboard-border-strong) hover:text-(--dashboard-accent) disabled:opacity-50"
+            <AppToolButton
+              label="复制模块优化计划"
+              icon-name="metric-copy"
+              touch-label="复制"
               :disabled="optimizationPlan.items.length === 0"
               @click="copyOptimizationPlan"
-            >
-              复制计划
-            </button>
+            />
           </div>
         </template>
       </AppPanelHeader>

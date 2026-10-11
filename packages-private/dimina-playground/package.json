@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/dimina-playground",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Dimina 真实小程序产物接入实验",
   "license": "MIT",
@@ -31,7 +31,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/react": "catalog:",
-    "execa": "^10.0.1",
+    "execa": "^10.1.0",
     "miniprogram-api-typings": "catalog:",
     "tsx": "^4.23.15",
     "typescript": "catalog:",

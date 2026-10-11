@@ -62,7 +62,7 @@ onPageScroll(() => {
     expect(injectWevuPageFeaturesMock).toHaveBeenCalledTimes(1)
   })
 
-  it('skips page feature injection when page script has no wevu hook hints', async () => {
+  it('skips page matcher construction and feature injection when page script has no wevu hook hints', async () => {
     const isPageFile = vi.fn(async () => true)
     createPageEntryMatcherMock.mockReturnValue({
       markDirty: vi.fn(),
@@ -93,7 +93,8 @@ onPageScroll(() => {
     )
 
     expect(result).toBeNull()
-    expect(isPageFile).toHaveBeenCalledTimes(1)
+    expect(createPageEntryMatcherMock).not.toHaveBeenCalled()
+    expect(isPageFile).not.toHaveBeenCalled()
     expect(injectWevuPageFeaturesMock).not.toHaveBeenCalled()
     expect(warnSpy).not.toHaveBeenCalled()
   })

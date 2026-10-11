@@ -1,3 +1,4 @@
+import type { BenchSessionResource } from './runtimeBench/resources'
 import type { WorkerResult } from './runtimeBench/types'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -29,7 +30,7 @@ describe('runtime benchmark incremental evidence', () => {
       onRetry: journal.onRetry,
     })
     const sample = { wallMs: 12, readyMs: 4, firstCommitMs: null }
-    const operation = vi.fn().mockRejectedValueOnce(new Error('route timeout')).mockResolvedValueOnce(sample)
+    const operation = vi.fn<() => Promise<typeof sample>>().mockRejectedValueOnce(new Error('route timeout')).mockResolvedValueOnce(sample)
     const result = { schemaVersion: 2, project: 'mock' } as WorkerResult
     await expect(finishBenchEvidence(journal, async () => {
       const recovered = await session.run('detail navigation sample 2/3', operation)
@@ -104,11 +105,21 @@ describe('runtime benchmark incremental evidence', () => {
 
   it('persists the actual session resource then replaces it with the verified cleanup state', async () => {
     const { file, journal } = await fixture()
-    const resource = { id: 'session-1', projectPath: 'owned-snapshot', cliPath: 'selected-cli', wsEndpoint: 'ws://127.0.0.1:9415', port: 9415, status: 'owned' as const, projectClosed: false, portClosed: false }
+    const resource = {
+      id: 'session-1',
+      projectPath: 'owned-snapshot',
+      cliPath: 'selected-cli',
+      wsEndpoint: 'ws://127.0.0.1:9415',
+      port: 9415,
+      managedProject: { id: 'confirmed-owner', journalPath: path.join(path.dirname(file), 'managed-project-journal') },
+      status: 'owned',
+      projectClosed: false,
+      portClosed: false,
+    } satisfies BenchSessionResource
     await journal.onResource(resource)
     expect((await readBenchEvidence(file))?.resources).toEqual([resource])
     const result = { schemaVersion: 2, project: 'mock', runtime: { provider: 'devtools' } } as WorkerResult
     await finishBenchEvidence(journal, async () => result, async () => journal.onResource({ ...resource, status: 'closed', projectClosed: true, portClosed: true }))
-    expect(await readBenchEvidence(file)).toMatchObject({ status: 'passed', resources: [{ id: 'session-1', status: 'closed', projectClosed: true, portClosed: true }] })
+    expect(await readBenchEvidence(file)).toMatchObject({ status: 'passed', resources: [{ id: 'session-1', managedProject: resource.managedProject, status: 'closed', projectClosed: true, portClosed: true }] })
   })
 })

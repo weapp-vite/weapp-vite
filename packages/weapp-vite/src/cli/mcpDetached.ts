@@ -4,6 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
+import { getActiveWechatDevtoolsTarget } from 'weapp-ide-cli'
 import logger, { colors } from '../logger'
 import { resolveWeappMcpConfig } from '../mcp'
 import { formatMcpQuickStart } from './mcpClient'
@@ -89,6 +90,7 @@ export async function maybeStartDetachedMcpServer(options: StartDetachedMcpServe
     return
   }
 
+  const target = getActiveWechatDevtoolsTarget()
   const args = [
     entrypoint,
     'mcp',
@@ -108,6 +110,10 @@ export async function maybeStartDetachedMcpServer(options: StartDetachedMcpServe
   }
   else {
     args.push('--rest-endpoint', resolvedMcp.restEndpoint)
+  }
+
+  if (target) {
+    args.push('--cli-path', target.cliPath)
   }
 
   const child = spawn(process.execPath, args, {

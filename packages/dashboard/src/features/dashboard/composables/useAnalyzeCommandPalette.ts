@@ -1,7 +1,8 @@
-import type { ComputedRef } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import type {
   AnalyzeActionCenterItem,
   AnalyzeCommandPaletteItem,
+  AnalyzeSubpackagesResult,
   DuplicateModuleEntry,
   IncrementAttributionEntry,
   LargestFileEntry,
@@ -9,6 +10,7 @@ import type {
   PackageInsight,
 } from '../types'
 import { computed } from 'vue'
+import { duplicateMeasurement } from '../utils/analyzeDataModules'
 import { formatBytes, formatPackageType } from '../utils/format'
 import {
   createTreemapModuleNodeId,
@@ -83,18 +85,20 @@ function createBudgetItem(warning: PackageBudgetWarning): AnalyzeCommandPaletteI
 function createDuplicateModuleItem(
   module: DuplicateModuleEntry,
   packageInsights: PackageInsight[],
+  result: AnalyzeSubpackagesResult | null,
 ): AnalyzeCommandPaletteItem {
   const firstPackage = module.packages[0]
   const fileName = firstPackage?.files[0] ?? ''
   const packageInfo = findPackage(packageInsights, firstPackage?.packageId, firstPackage?.packageLabel)
   const packageLabel = packageInfo?.label ?? firstPackage?.packageLabel ?? ''
+  const estimatedBytes = result ? duplicateMeasurement(result, module.id, module.estimatedSavingBytes) : null
 
   return {
     key: `module:${module.id}`,
     kind: 'module',
     title: module.source,
     meta: `${module.sourceType} · ${module.packageCount} 个包复用 · ${module.advice}`,
-    value: `可省 ${formatBytes(module.estimatedSavingBytes)}`,
+    value: estimatedBytes === null ? '估算重复 未知' : `估算重复 ${formatBytes(estimatedBytes)}`,
     keywords: createKeywords([module.id, module.source, module.sourceType, module.packageCount, module.packages.map(pkg => pkg.packageLabel).join(' ')]),
     tab: 'modules',
     moduleMeta: firstPackage && packageInfo
@@ -162,6 +166,7 @@ function createActionItem(action: AnalyzeActionCenterItem): AnalyzeCommandPalett
 }
 
 export function useAnalyzeCommandPalette(options: {
+  resultRef: Ref<AnalyzeSubpackagesResult | null>
   actionItems: ComputedRef<AnalyzeActionCenterItem[]>
   budgetWarnings: ComputedRef<PackageBudgetWarning[]>
   duplicateModules: ComputedRef<DuplicateModuleEntry[]>
@@ -174,7 +179,7 @@ export function useAnalyzeCommandPalette(options: {
     ...options.budgetWarnings.value.map(createBudgetItem),
     ...options.packageInsights.value.map(createPackageItem),
     ...options.largestFiles.value.map(createFileItem),
-    ...options.duplicateModules.value.map(module => createDuplicateModuleItem(module, options.packageInsights.value)),
+    ...options.duplicateModules.value.map(module => createDuplicateModuleItem(module, options.packageInsights.value, options.resultRef.value)),
     ...options.incrementAttribution.value.map(item => createIncrementItem(item, options.largestFiles.value, options.packageInsights.value)),
   ])
 

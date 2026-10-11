@@ -1,0 +1,6 @@
+<view>
+  <view id="native-export-keys">{{exportKeys}}</view>
+  <view id="native-owner-label">{{ownerLabel}}</view>
+  <view id="native-private-visible">{{privateVisible}}</view>
+  <button id="native-increment" bindtap="incrementOwner">Increment native owner</button>
+</view>

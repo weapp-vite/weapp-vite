@@ -1,0 +1,5 @@
+{
+  "name": "issue-1172-native-slot-context",
+  "type": "module",
+  "private": true
+}

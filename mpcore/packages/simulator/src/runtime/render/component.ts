@@ -1,8 +1,10 @@
 import type { HeadlessComponentDefinition } from '../../host'
+import type { RenderPass } from '../../view/renderPass'
 import type { TemplateRenderState } from '../../view/templateRuntime'
-import type { HeadlessComponentInstance } from '../componentInstance'
+import type { CreateComponentInstanceOptions, HeadlessComponentInstance } from '../componentInstance'
 import type { DomNodeLike, RuntimeComponentRegistryEntry, RuntimeRendererContext, RuntimeRenderScope, RuntimeSlotContent } from './types'
 import path from 'node:path'
+import { bindAttachmentBindingScope } from '../../host/attachmentBindingUpdates'
 import { resolvePluginRequest } from '../../project/plugins'
 import { bindComponentEventHost, buildComponentTrigger } from '../../view/componentEvent'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
@@ -10,11 +12,10 @@ import { wxsScopeData } from '../../view/wxs'
 import {
   cloneValue,
   createComponentInstance,
-  hasComponentPropertyValueChanged,
-  normalizeComponentPropertyValue,
   runComponentLifecycle,
-  runComponentObservers,
 } from '../componentInstance'
+import { beginComponentConstruction, discardComponentConstruction, finishComponentConstruction } from '../componentInstance/construction'
+import { syncComponentProperties } from '../componentInstance/propertyBindings'
 import { resolveNativeComponentSelection } from '../componentInstance/selection'
 import { resolveMiniProgramComponent } from '../componentResolution'
 import { getRuntimeWxsLoader } from '../wxs'
@@ -141,45 +142,6 @@ export function resolveComponentGenerics(
   return resolved.size > 0 ? resolved : undefined
 }
 
-export function syncComponentProperties(
-  instance: HeadlessComponentInstance,
-  definition: HeadlessComponentDefinition,
-  nextProperties: Record<string, any>,
-  bindingExpressions: Record<string, string | undefined>,
-  changedPageKeys: string[],
-) {
-  const changedRootKeys: string[] = []
-  const previousProperties: Record<string, any> = {}
-  for (const [key, value] of Object.entries(nextProperties)) {
-    const nextValue = normalizeComponentPropertyValue(definition, key, value)
-    const bindingExpression = bindingExpressions[key]
-    const bindingAffected = !!bindingExpression && changedPageKeys.some((changedKey) => {
-      return changedKey === bindingExpression
-        || changedKey.startsWith(`${bindingExpression}.`)
-        || changedKey.startsWith(`${bindingExpression}[`)
-    })
-    const previousSnapshot = instance.__propertySnapshots?.[key]
-    if (hasComponentPropertyValueChanged(instance.properties[key], previousSnapshot, nextValue, bindingAffected)) {
-      previousProperties[key] = instance.properties[key]
-      // 属性跨组件边界传递时必须隔离引用，否则父级深层 patch 会提前改写子级旧值。
-      const deliveredValue = cloneValue(nextValue)
-      instance.properties[key] = deliveredValue
-      if (Object.hasOwn(definition.properties ?? {}, key)) {
-        instance.data[key] = deliveredValue
-      }
-      changedRootKeys.push(key)
-    }
-    instance.__propertySnapshots ??= {}
-    instance.__propertySnapshots[key] = cloneValue(nextValue)
-  }
-
-  if (changedRootKeys.length === 0) {
-    return
-  }
-
-  runComponentObservers(definition, instance, changedRootKeys, previousProperties)
-}
-
 export function createComponentScope(
   clonedNode: DomNodeLike,
   scope: RuntimeRenderScope,
@@ -243,7 +205,8 @@ export function createRuntimeComponentInstance(
   componentEntry: NonNullable<ReturnType<typeof resolveComponentRegistryEntry>>,
   nextProperties: Record<string, any>,
   ownerScopeId: string | undefined,
-  beforeCreated?: (instance: HeadlessComponentInstance) => void,
+  renderTemplate?: (instance: HeadlessComponentInstance, phase: 'defaults' | 'properties') => void,
+  bindEventsBeforeProperties = false,
 ) {
   const isWevuNativeDefinition = Object.keys(componentEntry.definition.methods ?? {}).some(key => key.startsWith('__weapp_vite_'))
     || Object.hasOwn(componentEntry.definition.properties ?? {}, '__wvSlotOwnerId')
@@ -252,11 +215,12 @@ export function createRuntimeComponentInstance(
         .filter(key => Object.hasOwn(nextProperties, key))
         .map(key => [key, nextProperties[key]]))
     : nextProperties
-  const componentInstance = createComponentInstance({
+  const instanceOptions: CreateComponentInstanceOptions = {
     definition: componentEntry.definition,
     requestRender: callback => context.session.requestRender(callback),
-    triggerEvent: buildComponentTrigger(componentScopeId, context),
-  })
+  }
+  const componentInstance = createComponentInstance(instanceOptions)
+  bindAttachmentBindingScope(componentInstance, context)
   setSelectorQueryScopeId(componentInstance, componentScopeId)
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')
   componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)
@@ -265,16 +229,33 @@ export function createRuntimeComponentInstance(
   componentInstance.selectComponent = (selector: string) => resolveNativeComponentSelection(context.session.selectComponentWithin(componentScopeId, selector))
   componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector).map(resolveNativeComponentSelection)
   componentInstance.selectOwnerComponent = () => ownerScopeId
-    ? context.componentCache.get(ownerScopeId) ?? null
+    ? resolveNativeComponentSelection(context.componentCache.get(ownerScopeId))
     : null
+  beginComponentConstruction(context.componentCache, componentScopeId, componentInstance)
   context.componentCache.set(componentScopeId, componentInstance)
-  beforeCreated?.(componentInstance)
-  runComponentLifecycle(componentInstance, 'created')
-  componentInstance.__propertySnapshots = Object.fromEntries(
-    Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),
-  )
-  syncComponentProperties(componentInstance, componentInstance.__definition__ ?? componentEntry.definition, componentProperties, {}, [])
-  return componentInstance
+  try {
+    renderTemplate?.(componentInstance, 'defaults')
+    runComponentLifecycle(componentInstance, 'created')
+    // created 尚未连接声明事件；属性更新中新建的节点先连接，再派发初始属性 observer。
+    if (bindEventsBeforeProperties) {
+      instanceOptions.triggerEvent = buildComponentTrigger(componentScopeId, context)
+    }
+    componentInstance.__propertySnapshots = Object.fromEntries(
+      Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),
+    )
+    syncComponentProperties(componentInstance, componentInstance.__definition__ ?? componentEntry.definition, componentProperties, {}, [], renderTemplate)
+    if (!bindEventsBeforeProperties) {
+      instanceOptions.triggerEvent = buildComponentTrigger(componentScopeId, context)
+    }
+    return componentInstance
+  }
+  catch (error) {
+    discardComponentConstruction(context.componentCache, context.componentScopes, componentScopeId)
+    throw error
+  }
+  finally {
+    finishComponentConstruction(context.componentCache, componentInstance)
+  }
 }
 
 export function renderRuntimeComponentTemplate(
@@ -287,13 +268,13 @@ export function renderRuntimeComponentTemplate(
     ownerJsonPath: string,
     ownerFilePath: string,
     instancePath: string,
-    seenComponentScopes: Set<string>,
+    renderPass: RenderPass,
     templateRenderState: TemplateRenderState<DomNodeLike>,
     parent?: DomNodeLike,
   ) => DomNodeLike,
   componentScope: RuntimeRenderScope,
   componentScopeId: string,
-  seenComponentScopes: Set<string>,
+  renderPass: RenderPass,
 ) {
   const componentTemplate = readTemplateSource(context.artifactSource, componentEntry.absoluteTemplatePath)
   const componentDocument = parseTemplateDocument(componentTemplate)
@@ -306,7 +287,7 @@ export function renderRuntimeComponentTemplate(
     path.resolve(context.project.miniprogramRootPath, `${componentEntry.filePath.replace(JS_FILE_RE, '')}.json`),
     componentEntry.filePath,
     componentScopeId,
-    seenComponentScopes,
+    renderPass,
     templateRenderState,
     componentScope.hostNode,
   )
