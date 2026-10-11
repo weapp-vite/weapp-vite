@@ -58,7 +58,6 @@ import { createStatefulHmrControlSource } from './runtimeSource'
 import { createStatefulHmrSnapshotDiagnostics } from './snapshotDiagnostics'
 import { offerStatefulHmrSnapshot, StatefulHmrSnapshotHandoff } from './snapshotHandoff'
 import { StatefulHmrSnapshotScheduler } from './snapshotScheduler'
-import { retainStylesUntilScriptApplied } from './styleDelivery'
 import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
@@ -760,7 +759,6 @@ class StatefulHmrSession {
           if (shouldResetStatefulHmrRetention(this.transport.retainedDeltaCount, this.transport.retainedDeltaBytes, Buffer.byteLength(code))) {
             this.requestFullBuild(files)
           }
-          let deferredStyles: StatefulHmrOutputFile[] | undefined
           return {
             commit: () => this.enqueueOutput(async () => {
               profile?.mark('commitMs')
@@ -775,12 +773,8 @@ class StatefulHmrSession {
                       { createIfMissing: true, componentPageGlobalStyleRoutes: this.componentPageGlobalStyleRoutes, refreshPageStyles: true },
                     )
                   : [...this.snapshotAssets.values()]
-              deferredStyles = filenames.length ? next : undefined
-              const beforeScripts = deferredStyles
-                ? retainStylesUntilScriptApplied(this.snapshotAssets.values(), next, resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension)
-                : next
-              await this.commitSnapshotAssets(beforeScripts)
-              if (snapshot && !deferredStyles) {
+              await this.commitSnapshotAssets(next)
+              if (snapshot) {
                 this.adoptSnapshot(snapshot, next)
                 this.commitSnapshotMetadata(snapshot, 'refresh')
               }
@@ -806,15 +800,6 @@ class StatefulHmrSession {
                   acknowledged += 1
                 }
               })
-              if (deferredStyles) {
-                await this.enqueueOutput(async () => {
-                  await this.commitSnapshotAssets(deferredStyles!)
-                  if (snapshot) {
-                    this.adoptSnapshot(snapshot, deferredStyles!)
-                    this.commitSnapshotMetadata(snapshot, 'refresh')
-                  }
-                })
-              }
               if (scriptFacts) {
                 refreshGlassEaselNativeScripts(this.ctx, scriptFacts)
               }

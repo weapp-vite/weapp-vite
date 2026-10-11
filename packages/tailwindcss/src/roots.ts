@@ -37,7 +37,11 @@ export async function prepareTailwindRoots<K>(
   }
   const { createTailwindV4CompiledSourceEntries, createTailwindV4SourceEntryMatcher } = await import('@weapp-tailwindcss/engine')
   for (const [index, root] of capturedRoots) {
-    const base = root.request.sourceOptions?.projectRoot ?? root.request.source?.base ?? options.cwd
+    const sourceOptions = root.request.sourceOptions
+    const projectRoot = sourceOptions?.projectRoot ?? root.request.source?.projectRoot ?? options.cwd
+    const base = sourceOptions?.base === undefined
+      ? root.request.source?.base ?? projectRoot
+      : path.resolve(projectRoot, sourceOptions.base)
     const matches = createTailwindV4SourceEntryMatcher(createTailwindV4CompiledSourceEntries(
       root.result.root,
       [...root.result.sources],
@@ -47,7 +51,6 @@ export async function prepareTailwindRoots<K>(
       && !(options.isOutput?.(file))
       ? [{ content, extension: path.extname(file).slice(1) }]
       : [])
-    const sourceOptions = root.request.sourceOptions
     if (!sourceOptions) {
       throw new Error('Tailwind HMR requires a captured source entry')
     }

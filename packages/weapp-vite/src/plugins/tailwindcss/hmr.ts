@@ -18,6 +18,7 @@ import { getTailwindStyleOwners, rememberTailwindStyleOwners } from './styleOwne
 interface Root {
   request: CompilerGenerateRequest
   result: CompilerGenerateResult
+  sources: CompilerGenerateResult['sources'][number][]
   rawSources: ReadonlyMap<string, string | null | undefined>
 }
 
@@ -40,8 +41,14 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
 
   async function rememberRoot(index: number, request: CompilerGenerateRequest, result: CompilerGenerateResult) {
     const { createTailwindV4CompiledSourceEntries, createTailwindV4SourceEntryMatcher, resolveProjectSourceFiles } = await import('@weapp-tailwindcss/engine')
+    const { resolveTailwindV4Source } = await import('weapp-tailwindcss/generator')
+    const source = request.source ?? await resolveTailwindV4Source(request.sourceOptions)
+    // 内存重编译与新增来源发现必须沿用 core 解析的 CSS base，不能扩大到项目根。
+    const capturedRequest: CompilerGenerateRequest = request.sourceOptions
+      ? { ...request, sourceOptions: { ...request.sourceOptions, base: source.base } }
+      : request
     // 初始编译发现的扫描文件也属于下一次更新的完整输入视图。
-    const sources = createTailwindV4CompiledSourceEntries(result.root, [...result.sources], request.sourceOptions?.projectRoot ?? ctx.configService.cwd)
+    const sources = createTailwindV4CompiledSourceEntries(result.root, [...result.sources], source.base)
     if (ctx.configService.outDir) {
       sources.push({ base: ctx.configService.outDir, pattern: '**/*', negated: true })
     }
@@ -61,7 +68,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
       }
     }
     const inputs = [...request.sourceOptions?.cssEntries ?? [], ...request.sourceOptions?.cssSources?.flatMap(source => source.file ? [source.file] : []) ?? []]
-    roots.set(index, { request, result, rawSources: new Map(inputs.map(file => [compilerSourceId(file), host.readSource(file)])) })
+    roots.set(index, { request: capturedRequest, result, sources, rawSources: new Map(inputs.map(file => [compilerSourceId(file), host.readSource(file)])) })
   }
 
   function captureFile(file: string, deleted: boolean) {
@@ -86,9 +93,9 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
       if (!roots.size) {
         return
       }
-      const { createTailwindV4CompiledSourceEntries, createTailwindV4SourceEntryMatcher, resolveProjectSourceFiles } = await import('@weapp-tailwindcss/engine')
+      const { createTailwindV4SourceEntryMatcher, resolveProjectSourceFiles } = await import('@weapp-tailwindcss/engine')
       for (const root of roots.values()) {
-        const sources = createTailwindV4CompiledSourceEntries(root.result.root, [...root.result.sources], ctx.configService.cwd)
+        const sources = root.sources
         const matches = createTailwindV4SourceEntryMatcher(sources)
         if (!matches?.(file)) {
           continue

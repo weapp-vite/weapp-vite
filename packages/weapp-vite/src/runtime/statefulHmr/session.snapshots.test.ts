@@ -5,7 +5,7 @@ import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrProfileHandoff } from './profile'
-import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
+import type { StatefulHmrDevEngineBatch, StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { EventEmitter } from 'node:events'
 import { realpathSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
@@ -27,6 +27,7 @@ import { StatefulHmrTransport } from './transport'
 
 interface AdapterCallbacks {
   onOutput: (output: StatefulHmrOutputFile[], source?: 'full' | 'additional') => Promise<void>
+  onBatch: (batch: StatefulHmrDevEngineBatch) => void
   onPatch: (files: string[], output: StatefulHmrDevEngineUpdate) => boolean
   waitForInitialBundle: () => Promise<void>
 }
@@ -42,6 +43,8 @@ const harness = vi.hoisted(() => ({
   beforeInitialReady: vi.fn<() => Promise<void>>(),
   beforeFullPrepare: vi.fn<() => Promise<void>>(),
   registerBundleModules: vi.fn<() => Promise<number>>(),
+  registerPatchModules: vi.fn<(code: string) => Promise<void>>(),
+  markPayloadDelivered: vi.fn<(filename: string) => Promise<void>>(),
 }))
 
 vi.mock('vite', async importOriginal => ({
@@ -62,8 +65,14 @@ vi.mock('./viteAdapter', () => ({
       return harness.registerBundleModules()
     }
 
-    async registerPatchModules() {}
-    async markPayloadDelivered() {}
+    async registerPatchModules(code: string) {
+      await harness.registerPatchModules(code)
+    }
+
+    async markPayloadDelivered(filename: string) {
+      await harness.markPayloadDelivered(filename)
+    }
+
     async waitForNativeUpdates() {}
     async whenSettled() {
       await harness.nativeSettlement()
@@ -409,7 +418,7 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.writeOutput.mock.calls.flatMap(call => call[3] ?? [])).toContain('resources/partial.txt')
   })
 
-  it('commits compiler styles after script execution and keeps the build open until styles are written', async () => {
+  it('issue #1081: commits final compiler styles before publishing a patch and only acknowledges scripts after execution', async () => {
     const applied = Promise.withResolvers<void>()
     const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
       await applied.promise
@@ -422,18 +431,160 @@ describe('stateful snapshot output transactions', () => {
     harness.writeOutput.mockClear()
     const commit = Promise.withResolvers<void>()
     harness.writeOutput.mockImplementationOnce(() => commit.promise)
-    session.patch(['compiler-content:tailwind'])
+    try {
+      expect(session.patch(['compiler-content:tailwind'])).toBe(true)
+      await vi.advanceTimersByTimeAsync(50)
+      expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
+      expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: `${route}.wxss`, source: expect.stringContaining('color: blue') }))
+      expect(delta).not.toHaveBeenCalled()
+      expect(harness.registerPatchModules).not.toHaveBeenCalled()
+      expect(harness.markPayloadDelivered).not.toHaveBeenCalled()
+      expect(ended).not.toHaveBeenCalled()
+
+      commit.resolve()
+      await vi.advanceTimersByTimeAsync(1)
+      expect(delta).toHaveBeenCalledOnce()
+      expect(harness.markPayloadDelivered).not.toHaveBeenCalled()
+      expect(ended).not.toHaveBeenCalled()
+      const writesBeforeAcknowledgement = harness.writeOutput.mock.calls.length
+      applied.resolve()
+      await vi.advanceTimersByTimeAsync(1)
+      expect(harness.registerPatchModules).toHaveBeenCalledExactlyOnceWith('void 0')
+      expect(harness.markPayloadDelivered).toHaveBeenCalledExactlyOnceWith('update.js')
+      expect(harness.writeOutput).toHaveBeenCalledTimes(writesBeforeAcknowledgement)
+      expect(ended).toHaveBeenCalledWith(expect.objectContaining({ code: 'END' }))
+    }
+    finally {
+      commit.resolve()
+      applied.resolve()
+    }
+  })
+
+  it('issue #1081: does not publish or acknowledge a patch when final styles fail and restores the store before a later batch', async () => {
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    const initial = snapshot('red')
+    const session = await start(initial)
+    const failure = new Error('compiler stylesheet write failed')
+    session.rebuild.mockResolvedValueOnce(snapshot('blue')).mockResolvedValue(initial)
+    harness.writeOutput.mockClear().mockRejectedValueOnce(failure)
+    expect(session.patch(['compiler-content:tailwind'])).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(delta).not.toHaveBeenCalled()
+    expect(harness.registerPatchModules).not.toHaveBeenCalled()
+    expect(harness.markPayloadDelivered).not.toHaveBeenCalled()
+    await expect(session.whenSettled()).rejects.toBe(failure)
+
+    harness.writeOutput.mockClear()
+    expect(session.patch(['compiler-content:tailwind'])).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledOnce()
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: red; }' }))
+
+    session.rebuild.mockResolvedValue(snapshot('green'))
+    expect(session.patch(['compiler-content:tailwind'])).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: green; }' }))
+    expect(delta).toHaveBeenCalledOnce()
+    expect(harness.registerPatchModules).toHaveBeenCalledOnce()
+    expect(harness.markPayloadDelivered).toHaveBeenCalledExactlyOnceWith('update.js')
+  })
+
+  it('issue #1081: shares one final stylesheet across ordered patches and commits the next batch after acknowledgement', async () => {
+    const applied = Promise.withResolvers<void>()
+    const order: string[] = []
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      order.push('publish')
+      if (delta.mock.calls.length === 1) {
+        await applied.promise
+      }
+      await delivered?.()
+    })
+    const session = await start()
+    session.rebuild.mockResolvedValueOnce(snapshot('blue')).mockResolvedValueOnce(snapshot('green'))
+    harness.writeOutput.mockClear().mockImplementation(async (_outDir, output) => {
+      const style = output.find(item => item.fileName === styleFile)
+      if (style?.type === 'asset') {
+        order.push(`write:${style.source}`)
+      }
+    })
+    harness.registerPatchModules.mockImplementation(async (code) => {
+      order.push(`register:${code}`)
+    })
+    harness.markPayloadDelivered.mockImplementation(async (filename) => {
+      order.push(`mark:${filename}`)
+    })
+    const file = path.join(root, 'src/page.vue')
+    try {
+      session.sourceChange(file, 'update', ['compiler-content:tailwind'])
+      harness.callbacks!.onBatch({
+        changedFiles: [file],
+        updates: [
+          { clientId: 'first', update: { type: 'Patch', code: 'order.push("first")', filename: 'first.js', changedIds: ['first-module'] } },
+          { clientId: 'second', update: { type: 'Patch', code: 'order.push("second")', filename: 'second.js', changedIds: ['first-module', 'second-module'] } },
+        ],
+      })
+      await vi.advanceTimersByTimeAsync(50)
+      expect(session.rebuild).toHaveBeenCalledOnce()
+      expect(delta).toHaveBeenCalledOnce()
+      expect(harness.writeOutput).toHaveBeenCalledOnce()
+      expect(delta.mock.calls[0]![1]).toEqual(['first-module', 'second-module'])
+      const executed: string[] = []
+      runInNewContext(delta.mock.calls[0]![0], { order: executed })
+      expect(executed).toEqual(['first', 'second'])
+      expect(order).toEqual(['write:.probe { color: blue; }', 'publish'])
+
+      expect(session.patch(['compiler-content:tailwind'])).toBe(true)
+      await vi.advanceTimersByTimeAsync(50)
+      expect(session.rebuild).toHaveBeenCalledTimes(2)
+      expect(delta).toHaveBeenCalledOnce()
+      expect(harness.writeOutput).toHaveBeenCalledOnce()
+      expect(harness.markPayloadDelivered).not.toHaveBeenCalled()
+
+      applied.resolve()
+      await vi.advanceTimersByTimeAsync(1)
+      await session.whenSettled()
+      expect(delta).toHaveBeenCalledTimes(2)
+      expect(harness.writeOutput).toHaveBeenCalledTimes(2)
+      expect(order).toEqual([
+        'write:.probe { color: blue; }',
+        'publish',
+        'register:order.push("first")',
+        'mark:first.js',
+        'register:order.push("second")',
+        'mark:second.js',
+        'write:.probe { color: green; }',
+        'publish',
+        'register:void 0',
+        'mark:update.js',
+      ])
+      expect(harness.fullBuild).not.toHaveBeenCalled()
+    }
+    finally {
+      applied.resolve()
+    }
+  })
+
+  it.each(['page.js', 'page.vue'])('issue #1081: publishes a script-only %s patch without writing unchanged styles', async (sourceName) => {
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    const session = await start()
+    harness.writeOutput.mockClear()
+    const file = path.join(root, 'src', sourceName)
+    session.sourceChange(file)
+    expect(harness.callbacks!.onPatch([file], { type: 'Patch', code: 'void 0', filename: 'update.js' })).toBe(true)
     await vi.advanceTimersByTimeAsync(50)
-    expect(delta).toHaveBeenCalledTimes(1)
-    expect(writtenAssets()).toEqual([])
-    expect(ended).not.toHaveBeenCalled()
-    applied.resolve()
-    await vi.advanceTimersByTimeAsync(1)
-    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
-    expect(ended).not.toHaveBeenCalled()
-    commit.resolve()
-    await vi.advanceTimersByTimeAsync(1)
-    expect(ended).toHaveBeenCalledWith(expect.objectContaining({ code: 'END' }))
+    await session.whenSettled()
+    expect(delta).toHaveBeenCalledOnce()
+    expect(harness.registerPatchModules).toHaveBeenCalledExactlyOnceWith('void 0')
+    expect(harness.markPayloadDelivered).toHaveBeenCalledExactlyOnceWith('update.js')
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
   beforeEach(() => {
@@ -446,6 +597,8 @@ describe('stateful snapshot output transactions', () => {
     harness.beforeInitialReady.mockReset().mockResolvedValue()
     harness.beforeFullPrepare.mockReset().mockResolvedValue()
     harness.registerBundleModules.mockReset().mockResolvedValue(1)
+    harness.registerPatchModules.mockReset().mockResolvedValue()
+    harness.markPayloadDelivered.mockReset().mockResolvedValue()
     harness.fullBuild.mockReset().mockImplementation(async () => {
       harness.callbacks!.onOutput(appOutput())
     })
