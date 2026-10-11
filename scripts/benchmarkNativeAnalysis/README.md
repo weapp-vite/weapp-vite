@@ -2,7 +2,7 @@
 
 此工具比较同一源码、同一 dist 和同一依赖树中的 `WEAPP_VITE_NATIVE=0/1`。先重建受影响包及 native release binding，再由一个负责人串行执行；不得与其他 E2E、watch 或性能采样并发。
 
-该 off/on 对照包含此前已存在的 native 分析加速，不能把观测收益全部归因于本次新增的滚动诊断复用。
+该 off/on 对照包含此前已存在的 native 分析加速，不能把观测收益全部归因于本次新增的编译器批量摘要复用。
 
 ```sh
 pnpm benchmark:native-analysis --mode=smoke --native-path=packages/ast-native/index.js --output=.tmp/native-analysis-smoke
@@ -13,7 +13,7 @@ pnpm benchmark:native-analysis --mode=full --native-path=packages/ast-native/ind
 
 - `smoke` 默认 2 对，可用 `--smoke-pairs` 增加，但不允许少于 2。只验证采集完整性、native 命中及产物等价，不作正式性能通过结论。
 - smoke 的独立 `metrics` 摘要按配对证据显示 `diagnostic-only` 或 `incomplete`，`regression` 为 `null`；耗时或 RSS 波动超过正式阈值不会触发性能回退或确认批次判定。
-- `full` 只接受干净已提交 checkout，固定每模板 7 对构建、每 HMR 场景 20 对；不提供降低轮数或改变阈值的选项。
+- `full` 只接受干净已提交 checkout，使用 `native-analysis-paired-v2` 契约，固定每模板构建、每 HMR 场景各 40 对，即每项指标分别有 40 个 off 和 40 个 on 样本；不提供降低轮数或改变阈值的选项。原 v1 的 7/20 对证据不能补样或复用为 v2。
 - 每对交替 off→on/on→off。两侧复用同一路径、固定 marker 和输入摘要，每个 build/HMR 采集子进程均受 15 分钟 deadline 约束。
 - 首次构建使用新 CLI 进程与清空的工程输出，重复构建再次使用新 CLI 进程并保留输出；不声称清空 OS 缓存或测量进程内暖编译。
 - 三类真实模板覆盖构建、脚本、模板与样式。拓扑使用仓库已有 `issue-1134-profile` 的 route/component 编辑及恢复，明确作为独立 fixture，避免改变 Wevu 自动路由模板的输入语义。
@@ -23,6 +23,10 @@ pnpm benchmark:native-analysis --mode=full --native-path=packages/ast-native/ind
 - 警告比较保留 CLI 输出中的警告段落；其作用不替代 compiler 结构化诊断回归。
 
 `report.json` 保留逐轮原始数据、输入和产物摘要、真实绑定摘要、一次确认清单及重新计算的门禁。采集错误后保存已完成样本并停止后续批次，避免在清理状态不确定时继续计时。构建 RSS 是离散采样到的进程树峰值，HMR RSS 是 GC 后快照，不能混为相同指标。
+
+独立 native-on 构建诊断按 first/repeat 保存 preload 开始至 CLI 退出的 CPU user/system ms，以及主 isolate 的 GC count/duration。CPU 包含当前进程 worker threads，但不含子进程；GC 仅统计主 isolate 已送达及待处理的 performance entries，不含 worker isolate/子进程，退出时尚未报告的末次 GC 可能缺失。worker 的 native channel 计数仍会汇总，进程 CPU 不重复相加。GC duration 不是 CPU 时间，wall 减 CPU 也不解释为等待时间。该诊断包含观察器开销，不能替代正式 off/on 配对，更不能推断 CPU/GC 改善。
+
+正式配对继续只采 wall/RSS；HMR CPU/GC 和 Babel/Vue/Oxc/Rust parse 次数明确记录为 `not-collected`。`bindingCalls`、`inputScripts`、缓存命中及 fallback 是独立 native 调用证据，不能冒充 parse 次数。真实 compiler 阶段 CPU/GC 与 Babel wrapper 计数另见 `profile:compiler` 的归因报告，覆盖不到的第三方内部计数保留未知。
 
 HMR 沿用现有测试协议的 120ms polling watcher；每次计时结束后强制 GC 并读取完整产物。这些步骤会影响下一次编辑的状态，因此结果只代表相同观测协议下的编辑到产物可见延迟，不能直接外推日常默认 watcher 的延迟。
 

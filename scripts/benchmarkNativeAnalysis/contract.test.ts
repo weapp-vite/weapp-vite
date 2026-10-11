@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
-import { parseOptions, sideOrder, TARGET } from './contract'
+import { CONTRACT, parseOptions, sideOrder, TARGET } from './contract'
 import { hmrEnvironment } from './hmr'
 import { collectorEnvironment } from './native'
 
 describe('native benchmark sampling contract', () => {
   it('freezes full pairs and the target before collection', () => {
     const options = parseOptions(['--mode=full', '--output=result', '--native-path=binding.node'])
-    expect(options).toMatchObject({ mode: 'full', buildPairs: 7, hmrPairs: 20, runtime: 'classic' })
+    expect(CONTRACT).toBe('native-analysis-paired-v2')
+    expect(options).toMatchObject({ mode: 'full', buildPairs: 40, hmrPairs: 40, runtime: 'classic' })
     expect(TARGET).toBe('build:weapp-vite-tailwindcss-tdesign-template:repeat:wall')
     expect(sideOrder(0)).toEqual(['off', 'on'])
     expect(sideOrder(1)).toEqual(['on', 'off'])

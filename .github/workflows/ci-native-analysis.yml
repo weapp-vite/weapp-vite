@@ -24,6 +24,7 @@ on:
       - 'scripts/nativeScriptTransform/**'
       - 'scripts/nativeLoadDiagnostic/**'
       - 'scripts/benchmarkNativeAnalysis/**'
+      - 'scripts/compilerBatchAnalysis/**'
       - 'scripts/benchmarkTemplatesHmr/**'
       - 'scripts/benchmarkTemplatesPerformance/**'
       - 'scripts/performanceGate/**'
@@ -115,13 +116,23 @@ jobs:
           pnpm --filter @wevu/compiler test src/profiling/internal.test.ts src/profiling/internal.browser.test.ts src/utils/babel.test.ts
           pnpm exec tsc -p scripts/astMigrationProfile/tsconfig.json
           pnpm exec tsc -p scripts/benchmarkNativeAnalysis/tsconfig.json
+          pnpm exec tsc -p scripts/compilerBatchAnalysis/tsconfig.json
           pnpm exec tsc -p scripts/nativeChunkAnalysis/tsconfig.json
           pnpm exec tsc -p scripts/nativeBindingAnalysis/tsconfig.json
           pnpm exec tsc -p scripts/scriptAnalysisBaseline/tsconfig.json
           pnpm exec tsc -p scripts/optimizedCompilerAnalysis/tsconfig.json
           pnpm exec tsc -p scripts/nativeScriptTransform/tsconfig.json
           pnpm exec tsc -p scripts/nativeLoadDiagnostic/tsconfig.json
-          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile scripts/benchmarkNativeAnalysis scripts/nativeChunkAnalysis/rewrite.test.ts scripts/nativeBindingAnalysis scripts/scriptAnalysisBaseline scripts/optimizedCompilerAnalysis scripts/nativeScriptTransform scripts/nativeLoadDiagnostic
+          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/ast-migration-profile.test.ts scripts/astMigrationProfile scripts/benchmarkNativeAnalysis scripts/compilerBatchAnalysis scripts/nativeChunkAnalysis/rewrite.test.ts scripts/nativeBindingAnalysis scripts/scriptAnalysisBaseline scripts/optimizedCompilerAnalysis scripts/nativeScriptTransform scripts/nativeLoadDiagnostic
+      - name: Check production compiler batch analysis and paired calls
+        run: node --import tsx scripts/compilerBatchAnalysis/index.ts --mode=full --native-path=packages/ast-native/index.js --output=.codex-tmp/compiler-batch-analysis
+      - name: Upload sanitized compiler batch evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: compiler-batch-analysis-${{ matrix.os }}
+          path: .codex-tmp/compiler-batch-analysis/summary.json
+          include-hidden-files: true
       - name: Check native lazy loading source diagnostics
         run: node --import tsx scripts/nativeLoadDiagnostic/check.ts --output=.codex-tmp/native-load-source
       - name: Upload native lazy loading source diagnostics

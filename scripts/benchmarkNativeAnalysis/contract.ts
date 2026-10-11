@@ -3,7 +3,7 @@ import type { NativeProcessObservation } from './diagnosticObservation'
 import path from 'node:path'
 import process from 'node:process'
 
-export const CONTRACT = 'native-analysis-paired-v1'
+export const CONTRACT = 'native-analysis-paired-v2'
 export const TARGET = 'build:weapp-vite-tailwindcss-tdesign-template:repeat:wall'
 export const INPUTS = [
   { id: 'weapp-vite-template', source: 'templates/weapp-vite-template', dependencies: 'templates/weapp-vite-template', build: true, scenarios: ['native-page-script', 'native-page-template', 'native-page-style'] },
@@ -91,8 +91,8 @@ export function parseOptions(args: string[]): Options {
     nativePath: path.resolve(values.get('--native-path')!),
     mode: mode as Options['mode'],
     runtime: runtime as Options['runtime'],
-    buildPairs: mode === 'full' ? 7 : smokePairs,
-    hmrPairs: mode === 'full' ? 20 : smokePairs,
+    buildPairs: mode === 'full' ? 40 : smokePairs,
+    hmrPairs: mode === 'full' ? 40 : smokePairs,
   }
 }
 

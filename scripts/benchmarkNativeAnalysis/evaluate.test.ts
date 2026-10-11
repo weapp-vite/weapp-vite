@@ -40,7 +40,10 @@ function fixture(mode = 'smoke', change = 0) {
     failures: 0,
     processes: 1,
     coverage: 'exercised',
-    observation: { processes: 2, completedProcesses: 2, bindingCalls: 1, batchCalls: 0, inputScripts: 1, inputBytes: 12, cacheHits: 0, fallbacks: 0, loadFailures: 0 },
+    observation: { processes: 2, completedProcesses: 2, bindingCalls: 1, batchCalls: 0, inputScripts: 1, inputBytes: 12, cacheHits: 0, fallbacks: 0, loadFailures: 0, processMetrics: [
+      { phase: 'first', wallMs: 100, cpuUserMs: 10, cpuSystemMs: 5, gc: { status: 'available', count: 0, durationMs: 0 } },
+      { phase: 'repeat', wallMs: 100, cpuUserMs: 10, cpuSystemMs: 5, gc: { status: 'available', count: 0, durationMs: 0 } },
+    ] },
   } }))
   return { options, runs, diagnostics }
 }
@@ -148,10 +151,18 @@ describe('native benchmark gate', () => {
 
   it('checks P95 independently and never treats missing observations as zero', () => {
     const { options, runs } = fixture('full')
-    const outlier = runs.find(run => run.kind === 'build' && run.side === 'on')!
-    outlier.samples[0]!.wallMs = 200
-    expect(confirmationInputs(pairRuns(runs, options, 'primary'))).toContain(`build:${outlier.input}`)
+    const outliers = runs.filter(run => run.kind === 'build' && run.side === 'on' && run.input === INPUTS[0].id).slice(0, 3)
+    outliers.forEach(run => run.samples[0]!.wallMs = 200)
+    expect(confirmationInputs(pairRuns(runs, options, 'primary'))).toContain(`build:${INPUTS[0].id}`)
     expect(pairRuns([], options as Options, 'primary').every(row => row.error && row.pairs.length === 0)).toBe(true)
+  })
+
+  it('does not accept legacy 7/20-pair evidence under the 40-pair contract', () => {
+    const { options, runs, diagnostics } = fixture('full')
+    const legacy = runs.filter(run => run.pair < (run.kind === 'build' ? 7 : 20))
+    const verdict = evaluateRuns(legacy, options, [], diagnostics)
+    expect(verdict.status).toBe('incomplete')
+    expect(verdict.metrics.every(row => row.requiredPairs === 40 && row.evidenceStatus === 'incomplete')).toBe(true)
   })
 
   it('retains partial RSS diagnostics because the final probe may race process exit', () => {

@@ -2,6 +2,14 @@ import type { Run } from './contract'
 import { readFile, writeFile } from 'node:fs/promises'
 import { TARGET } from './contract'
 
+export interface DiagnosticProcessMetrics {
+  phase: 'first' | 'repeat'
+  wallMs: number
+  cpuUserMs: number
+  cpuSystemMs: number
+  gc: { status: 'available', count: number, durationMs: number } | { status: 'unavailable', count: null, durationMs: null }
+}
+
 export interface NativeProcessObservation {
   processes: number
   completedProcesses: number
@@ -12,12 +20,20 @@ export interface NativeProcessObservation {
   cacheHits: number
   fallbacks: number
   loadFailures: number
+  processMetrics: DiagnosticProcessMetrics[]
 }
 
 /** 独立诊断的 preload 从进程入口订阅现有 channel；零调用也必须留下完整进程证据。 */
 export async function createDiagnosticPreload(file: string, trace: string) {
   await writeFile(file, `const fs = require('node:fs');
 const { threadId } = require('node:worker_threads');
+const { performance, PerformanceObserver } = require('node:perf_hooks');
+const startedAt = performance.now();
+const initialCpu = threadId === 0 ? process.cpuUsage() : undefined;
+const gc = { status: PerformanceObserver.supportedEntryTypes.includes('gc') ? 'available' : 'unavailable', count: 0, durationMs: 0 };
+const collectGc = entries => { for (const entry of entries) { if (entry.startTime >= startedAt) { gc.count++; gc.durationMs += entry.duration; } } };
+const observer = threadId === 0 && gc.status === 'available' ? new PerformanceObserver(list => collectGc(list.getEntries())) : undefined;
+observer?.observe({ entryTypes: ['gc'] });
 const channel = require('node:diagnostics_channel').channel('weapp-vite.ast.native-analysis');
 const identity = { pid: process.pid, threadId };
 const stats = { bindingCalls: 0, batchCalls: 0, inputScripts: 0, inputBytes: 0, cacheHits: 0, fallbacks: 0, loadFailures: 0 };
@@ -31,8 +47,33 @@ channel.subscribe(event => {
   } else { invalidEvents++; }
 });
 write({ kind: 'started', nativeEnabled: process.env.WEAPP_VITE_NATIVE === '1', bindingConfigured: Boolean(process.env.WEAPP_VITE_NATIVE_AST_PATH) });
-process.on('exit', exitCode => write({ kind: 'finished', exitCode, invalidEvents, stats }));
+process.on('exit', exitCode => {
+  let metrics;
+  if (threadId === 0) {
+    collectGc(observer?.takeRecords() ?? []);
+    observer?.disconnect();
+    const cpu = process.cpuUsage(initialCpu);
+    metrics = { wallMs: performance.now() - startedAt, cpuUserMs: cpu.user / 1000, cpuSystemMs: cpu.system / 1000, gc: gc.status === 'available' ? gc : { status: 'unavailable', count: null, durationMs: null } };
+  }
+  write({ kind: 'finished', exitCode, invalidEvents, stats, metrics });
+});
 `)
+}
+
+/** 进程 CPU 只读取主线程报告，避免把 worker 重复计入；GC 仅覆盖主 isolate。 */
+function readProcessMetrics(value: unknown, phase: DiagnosticProcessMetrics['phase']): DiagnosticProcessMetrics {
+  const metrics = value as Partial<DiagnosticProcessMetrics> | undefined
+  const nonnegative = (metric: unknown): metric is number => typeof metric === 'number' && Number.isFinite(metric) && metric >= 0
+  if (!metrics || !nonnegative(metrics.wallMs) || metrics.wallMs === 0
+    || !nonnegative(metrics.cpuUserMs) || !nonnegative(metrics.cpuSystemMs) || !metrics.gc) {
+    throw new Error('Missing or invalid diagnostic CPU/GC metrics')
+  }
+  const gc = metrics.gc
+  if (!(gc.status === 'available' && Number.isSafeInteger(gc.count) && gc.count >= 0 && Number.isFinite(gc.durationMs) && gc.durationMs >= 0)
+    && !(gc.status === 'unavailable' && gc.count === null && gc.durationMs === null)) {
+    throw new Error('Invalid diagnostic GC metrics')
+  }
+  return { phase, wallMs: metrics.wallMs, cpuUserMs: metrics.cpuUserMs, cpuSystemMs: metrics.cpuSystemMs, gc }
 }
 
 /** 核验每个真实 CLI 子进程均从入口观察到退出；缺 preload 与没有适用工作负载分开。 */
@@ -43,7 +84,7 @@ export async function readDiagnosticObservation(trace: string, expectedProcessId
   const text = await readFile(trace, 'utf8')
   const started = new Map<string, Record<string, unknown>>()
   const finished = new Map<string, Record<string, unknown>>()
-  const result: NativeProcessObservation = { processes: 0, completedProcesses: 0, bindingCalls: 0, batchCalls: 0, inputScripts: 0, inputBytes: 0, cacheHits: 0, fallbacks: 0, loadFailures: 0 }
+  const result: NativeProcessObservation = { processes: 0, completedProcesses: 0, bindingCalls: 0, batchCalls: 0, inputScripts: 0, inputBytes: 0, cacheHits: 0, fallbacks: 0, loadFailures: 0, processMetrics: [] }
   for (const line of text.trim().split(/\r?\n/)) {
     const row = JSON.parse(line) as Record<string, unknown>
     if (!expectedProcessIds.includes(Number(row.pid)) || !Number.isSafeInteger(row.threadId) || Number(row.threadId) < 0 || !['started', 'finished'].includes(String(row.kind))) {
@@ -56,10 +97,11 @@ export async function readDiagnosticObservation(trace: string, expectedProcessId
     }
     records.set(key, row)
   }
-  for (const pid of expectedProcessIds) {
+  for (const [index, pid] of expectedProcessIds.entries()) {
     if (!started.has(`${pid}:0`) || !finished.has(`${pid}:0`)) {
       throw new Error('Diagnostic preload did not observe the entire CLI lifetime')
     }
+    result.processMetrics.push(readProcessMetrics(finished.get(`${pid}:0`)!.metrics, index === 0 ? 'first' : 'repeat'))
   }
   if (started.size !== finished.size) {
     throw new Error('Native diagnostic worker did not finish')
@@ -87,6 +129,7 @@ export function validNativeDiagnostic(run: Run) {
   const observation = run.native.observation
   return !run.error && run.native.failures === 0 && Boolean(observation)
     && observation!.processes === 2 && observation!.completedProcesses === 2
+    && observation!.processMetrics?.map(metrics => metrics.phase).join(',') === 'first,repeat'
     && observation!.fallbacks === 0 && observation!.loadFailures === 0
     && Number.isSafeInteger(run.native.calls) && run.native.calls >= 0 && observation!.bindingCalls <= run.native.calls
     && (run.native.calls > 0 ? run.native.coverage === 'exercised' && run.native.processes > 0 : run.native.coverage === 'not-exercised')

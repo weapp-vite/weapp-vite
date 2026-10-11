@@ -40,7 +40,7 @@ async function persist() {
     verdict.status = 'incomplete'
   }
   const report = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     contract: CONTRACT,
     mode: options.mode,
     runtime: options.runtime,
@@ -57,6 +57,12 @@ async function persist() {
     inputs: INPUTS,
     confirmations,
     diagnostics,
+    attributionCoverage: {
+      timedPairs: 'wall and RSS only; CPU, GC, native calls and parse counts are not collected inside measured pairs',
+      diagnosticBuilds: 'native-on only; CPU for each CLI process, main-isolate GC and native invocation counters; excluded from measured pairs',
+      parseCounts: 'not-collected; inputScripts and bindingCalls are not Babel/Vue/Oxc/Rust parse counts',
+      hmrCpuAndGc: 'not-collected; post-edit forced GC only establishes the RSS observation protocol',
+    },
     runs,
     verdict,
     failure,
