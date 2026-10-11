@@ -1,7 +1,6 @@
-import babelPresetEnv from '@babel/preset-env'
-import babelPresetTypescript from '@babel/preset-typescript'
 import * as babel from '@weapp-vite/ast/babelCore'
 import * as t from '@weapp-vite/ast/babelTypes'
+import { getWxsBabelPresets } from './presets'
 import { normalizeWxsFilename } from './utils'
 
 type BabelPluginItem = NonNullable<babel.TransformOptions['plugins']>[number]
@@ -56,6 +55,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
     }
   }
 
+  const { env: babelPresetEnv, typescript: babelPresetTypescript } = getWxsBabelPresets()
   const result = babel.transformSync(code, {
     babelrc: false,
     configFile: false,

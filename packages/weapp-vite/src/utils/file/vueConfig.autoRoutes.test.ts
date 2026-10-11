@@ -74,6 +74,31 @@ describe('JSON macro route snapshot ownership', () => {
     expect(await extractConfigFromVue(file)).toEqual({ pages: routes.pages })
     routes.pages = ['pages/home/index']
     expect(await extractConfigFromVue(file)).toEqual({ pages: ['pages/home/index'] })
+    routes.pages.push('pages/added/index')
+    expect(await extractConfigFromVue(file)).toEqual({ pages: ['pages/home/index', 'pages/added/index'] })
+    expect(await extractConfigFromVue(file)).toEqual({ pages: ['pages/home/index', 'pages/added/index'] })
+    expect(mocks.extractMacro).toHaveBeenCalledTimes(3)
+  })
+
+  it('replaces the initial recursive-scan snapshot once routes become ready', async () => {
+    const routes = { pages: [] as string[], entries: [] as string[], subPackages: [] }
+    const state = { loadingAppConfig: true }
+    mocks.getContext.mockReturnValue({
+      autoRoutesService: { ensureFresh: mocks.ensureFresh, getReference: () => routes },
+      runtimeState: { autoRoutes: state },
+    })
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'vue-config-initial-routes-'))
+    roots.push(root)
+    const file = path.join(root, 'app.vue')
+    await fs.writeFile(file, `<script setup>import { pages } from 'weapp-vite/auto-routes'
+    defineAppJson({ pages })</script>`)
+    mocks.extractMacro.mockImplementation(async () => ({ config: { pages: [...routes.pages] }, dependencies: [] }))
+    expect(await extractConfigFromVue(file)).toEqual({ pages: [] })
+    expect(mocks.ensureFresh).not.toHaveBeenCalled()
+    state.loadingAppConfig = false
+    routes.pages.push('pages/home/index')
+    expect(await extractConfigFromVue(file)).toEqual({ pages: ['pages/home/index'] })
+    expect(mocks.ensureFresh).toHaveBeenCalledOnce()
     expect(mocks.extractMacro).toHaveBeenCalledTimes(2)
   })
 })

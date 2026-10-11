@@ -129,6 +129,12 @@
     "oxc-parser": "catalog:",
     "oxc-walker": "catalog:"
   },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"

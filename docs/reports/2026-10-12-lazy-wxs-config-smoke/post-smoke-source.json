@@ -1,0 +1,9 @@
+{
+  "contract": "post-smoke-compatibility-revision-v1",
+  "includedInPerformanceSampling": false,
+  "originalPrepareReportSha256": "063d429c407dbce1cc82d8ad5f2f9313fb14e77b41f28d7cedc45b166b90ec91",
+  "sourceHashes": {
+    "packages/weapp-vite/src/utils/file/vueConfig.ts": "65e8478c3ce87f8998170e6ebc7f868bb7b3ac9bf7f6a8f7d60cfb34ea4b2f31",
+    "packages/weapp-vite/src/utils/file/vueConfig.cache.test.ts": "1df91b214fa2f2157540ae2142268b6c94166c6da32cb5b02a535ab3fa576cb3"
+  }
+}

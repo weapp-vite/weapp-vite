@@ -323,11 +323,16 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       return vueSource
     }
 
+    // app 宏消费就绪的路由版本；初次路由扫描内的 app 读取不能递归刷新路由。
+    const refreshVueAppConfig = type === 'app' && vueEntryPath && ctx.autoRoutesService?.isEnabled?.() && !ctx.runtimeState.autoRoutes.loadingAppConfig
     if (!jsonEntry.path) {
       if (vueEntryPath) {
         const vueConfigStartedAt = performance.now()
         const configFromVue = await (async () => {
           try {
+            if (refreshVueAppConfig) {
+              await ctx.autoRoutesService.ensureFresh()
+            }
             const source = await readVueSource()
             const cacheSignature = source === undefined
               ? undefined
@@ -337,13 +342,13 @@ export function createEntryLoader(options: EntryLoaderOptions) {
             const macroDependencyChanged = source !== undefined
               && VUE_JSON_MACRO_HINT_RE.test(source)
               && ctx.runtimeState.build.hmr.profile.dirtyReasonSummary?.some(reason => reason.startsWith('importer-graph:'))
-            const cachedVueConfig = isJsonStableHmr && cacheSignature && !macroDependencyChanged
+            const cachedVueConfig = !refreshVueAppConfig && isJsonStableHmr && cacheSignature && !macroDependencyChanged
               ? vueConfigCache.get(vueEntryPath)
               : undefined
             if (cachedVueConfig && cachedVueConfig.signature === cacheSignature) {
               return cloneJsonValue(cachedVueConfig.config)
             }
-            if (isJsonStableHmr && cacheSignature === NO_VUE_CONFIG_SIGNATURE) {
+            if (!refreshVueAppConfig && isJsonStableHmr && cacheSignature === NO_VUE_CONFIG_SIGNATURE) {
               vueConfigCache.set(vueEntryPath, {
                 signature: cacheSignature,
                 config: undefined,
@@ -352,6 +357,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
             }
             const config = await extractConfigFromVue(vueEntryPath, {
               compilerContext: ctx,
+              // app 宏可读取环境或未登记的动态依赖，保留原刷新分支每轮强制求值的契约。
+              ...(refreshVueAppConfig ? { force: true } : {}),
               ...(source === undefined
                 ? { readSource: readVueSource }
                 : { source }),
@@ -446,7 +453,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     if (type === 'app') {
-      if (vueEntryPath && ctx.autoRoutesService?.isEnabled?.() && !ctx.runtimeState.autoRoutes.loadingAppConfig) {
+      // 保留已有 sidecar 分支的覆盖顺序及 declaredJson 所有权；这里只消除重复求值。
+      if (refreshVueAppConfig && jsonEntry.path && vueEntryPath) {
         await ctx.autoRoutesService.ensureFresh()
         const refreshedConfigFromVue = await extractConfigFromVue(vueEntryPath, {
           compilerContext: ctx,

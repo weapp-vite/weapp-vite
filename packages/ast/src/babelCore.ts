@@ -1,8 +1,4 @@
-import type * as BabelCore from '@babel/core'
-import { createRequire } from 'node:module'
-
-const nodeRequire = createRequire(import.meta.url)
-const babelCore = nodeRequire('@babel/core') as typeof BabelCore
+import * as babelCore from '@babel/core'
 
 export const {
   parse,

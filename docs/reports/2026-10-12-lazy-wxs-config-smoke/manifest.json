@@ -1,0 +1,33 @@
+{
+  "contract": "diagnostic-evidence-manifest-v1",
+  "files": {
+    "README.md": {
+      "sha256": "22ee7cca35d14cb22d2004d41328f911363d8a87a371badb1826c69fb40fa3c5",
+      "bytes": 5374
+    },
+    "evaluation.json": {
+      "sha256": "d4c4374ce83a290d782f2d0302bc8dde6aebcd327502bdb48f181b178a9b0acd",
+      "bytes": 133069
+    },
+    "post-smoke-source.json": {
+      "sha256": "905e014a42961207efabde88f628390deb9c83e2cacb0e8f71bbd42d830eafed",
+      "bytes": 481
+    },
+    "preparation-logs.json": {
+      "sha256": "52b4088840b4357fca3c8ccbc8808c8b25d7ba411074455a815505dd754d70c4",
+      "bytes": 23307
+    },
+    "prepare-after-mtime-fix.json": {
+      "sha256": "063d429c407dbce1cc82d8ad5f2f9313fb14e77b41f28d7cedc45b166b90ec91",
+      "bytes": 7713
+    },
+    "prepare-contract.json": {
+      "sha256": "063d429c407dbce1cc82d8ad5f2f9313fb14e77b41f28d7cedc45b166b90ec91",
+      "bytes": 7713
+    },
+    "provenance.json": {
+      "sha256": "d95a2b07dee9eaa35fcbe56c94a8e8c1712191a75aa33d3c0f37899d91ade895",
+      "bytes": 1707
+    }
+  }
+}

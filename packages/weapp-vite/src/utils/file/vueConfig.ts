@@ -1,5 +1,6 @@
 import type { MutableCompilerContext } from '../../context'
 import type { AutoRoutesInlineSnapshot } from './autoRoutes'
+import { createHash } from 'node:crypto'
 import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
 import { recursive as mergeRecursive } from 'merge'
@@ -8,6 +9,7 @@ import { parse } from 'vue/compiler-sfc'
 import { hasAutoRoutesMacroImport, inlineAutoRoutesImports, resolveAutoRoutesInlineSnapshot } from './autoRoutes'
 
 const vueConfigCache = new Map<string, {
+  sourceHash: string
   config?: Record<string, any>
   autoRoutesSignature?: string
   fileMtimeMs?: number
@@ -46,11 +48,9 @@ async function isVueConfigCacheValid(vueFilePath: string, cache: {
   dependencies: string[]
   dependencyMtimeMs: Map<string, number>
 }) {
+  // 源码相同也必须保留 touch 的失效信号，宏可能读取未登记的外部值。
   const nextMtime = await getMtimeCached(vueFilePath)
-  if (nextMtime === undefined || cache.fileMtimeMs === undefined) {
-    return false
-  }
-  if (nextMtime !== cache.fileMtimeMs) {
+  if (nextMtime === undefined || cache.fileMtimeMs === undefined || nextMtime !== cache.fileMtimeMs) {
     return false
   }
   if (cache.dependencies.length === 0) {
@@ -81,16 +81,7 @@ export async function extractConfigFromVue(
     if (context) {
       contextConfigCaches.set(context, cache)
     }
-    const cached = options?.force ? undefined : cache.get(vueFilePath)
-    let autoRoutesInline: AutoRoutesInlineSnapshot | undefined
-    if (cached?.autoRoutesSignature !== undefined) {
-      autoRoutesInline = await resolveAutoRoutesInlineSnapshot(context)
-    }
-    if (cached && (cached.autoRoutesSignature === undefined || cached.autoRoutesSignature === JSON.stringify(autoRoutesInline))
-      && await isVueConfigCacheValid(vueFilePath, cached)) {
-      return cached.config
-    }
-
+    // 编译快照可能与磁盘具有相同 mtime；缓存身份必须来自本次实际消费的源码。
     const content = options?.source ?? (
       options?.readSource
         ? await options.readSource()
@@ -98,6 +89,16 @@ export async function extractConfigFromVue(
     )
     if (content === undefined) {
       return undefined
+    }
+    const sourceHash = createHash('sha256').update(content, 'utf16le').digest('hex')
+    const cached = options?.force ? undefined : cache.get(vueFilePath)
+    let autoRoutesInline: AutoRoutesInlineSnapshot | undefined
+    if (cached?.sourceHash === sourceHash && cached.autoRoutesSignature !== undefined) {
+      autoRoutesInline = await resolveAutoRoutesInlineSnapshot(context)
+    }
+    if (cached?.sourceHash === sourceHash && (cached.autoRoutesSignature === undefined || cached.autoRoutesSignature === JSON.stringify(autoRoutesInline))
+      && await isVueConfigCacheValid(vueFilePath, cached)) {
+      return structuredClone(cached.config)
     }
     const { descriptor, errors } = parse(content, { filename: vueFilePath })
 
@@ -107,6 +108,7 @@ export async function extractConfigFromVue(
 
     const mergedConfig: Record<string, any> = {}
     const macroDependencies: string[] = []
+    let cacheable = true
     const { parse: parseJson } = await import('comment-json')
 
     const jsonBlocks = descriptor.customBlocks.filter(block => block.type === 'json')
@@ -164,6 +166,8 @@ export async function extractConfigFromVue(
         if (jsonBlocks.length === 0) {
           throw error
         }
+        // JSON 回退仍可使用，但宏依赖尚未完整发现，下一次必须允许重新求值。
+        cacheable = false
       }
     }
 
@@ -183,13 +187,26 @@ export async function extractConfigFromVue(
     )
     const fileMtimeMs = await getMtimeCached(vueFilePath)
     const hasConfig = Object.keys(mergedConfig).length > 0
-    cache.set(vueFilePath, {
-      config: hasConfig ? mergedConfig : undefined,
-      autoRoutesSignature: autoRoutesInline && JSON.stringify(autoRoutesInline),
-      fileMtimeMs,
-      dependencies: normalizedDependencies,
-      dependencyMtimeMs,
-    })
+    if (cacheable) {
+      try {
+        // 路由合并、buildScope 与入口派生字段只能修改调用方的配置副本。
+        cache.set(vueFilePath, {
+          sourceHash,
+          config: hasConfig ? structuredClone(mergedConfig) : undefined,
+          autoRoutesSignature: autoRoutesInline && JSON.stringify(autoRoutesInline),
+          fileMtimeMs,
+          dependencies: normalizedDependencies,
+          dependencyMtimeMs,
+        })
+      }
+      catch {
+        // 非可克隆配置保留原返回行为，但不能把可变对象共享到后续构建。
+        cache.delete(vueFilePath)
+      }
+    }
+    else {
+      cache.delete(vueFilePath)
+    }
 
     return hasConfig ? mergedConfig : undefined
   }

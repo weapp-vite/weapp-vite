@@ -1,0 +1,46 @@
+{
+  "contract": "failed-lazy-wxs-smoke-v1",
+  "status": "rejected-warning-parity",
+  "runCount": 28,
+  "sampleCount": 200,
+  "baselineCommit": "419f49d914142a591d5e109fcb3010feed66ab19",
+  "native": "off on both sides",
+  "identityBefore": {
+    "verified": true,
+    "variants": [
+      "baseline",
+      "candidate"
+    ],
+    "contract": "isolated-runtime-artifacts-v4",
+    "baselineProductionUnchanged": true,
+    "externalDependenciesUnchanged": true
+  },
+  "identityAfter": {
+    "verified": true,
+    "variants": [
+      "baseline",
+      "candidate"
+    ],
+    "contract": "isolated-runtime-artifacts-v4",
+    "baselineProductionUnchanged": true,
+    "externalDependenciesUnchanged": true
+  },
+  "candidateDigest": "2b85fa3124410354ece04dab3a9a8887d5e815cd5c172a68123dd7ca4babc244",
+  "baselineDigest": "4fe37ea4d5b4084d08d9286c9386df091eaa37e6e192c968beb23ce1f1582bb2",
+  "originalHashes": {
+    "report.json": "4c453efdb46a2e1b6c6235219ee329144158fb223009c99406e59053efd6627f",
+    "evaluation.json": "00cb6e76fd0b80789ea9a701e9181c9942a4387df00896fe70c7d4f8079dc743",
+    "identity.json": "fa955223cf027d6fe3dbaac6f1ca8b157976ad10e28bf3cb022876b710962813"
+  },
+  "retention": "Full original report and frozen runtimes retained privately; this report publishes normalized evaluation and preparation logs, not a portable complete benchmark replay.",
+  "normalization": {
+    "<checkout>": "working checkout",
+    "<runtime>": "isolated runtime parent",
+    "<evidence>": "original run output"
+  },
+  "logCounts": {
+    "total": 28,
+    "baselineSkipped": 0,
+    "candidateSkipped": 14
+  }
+}

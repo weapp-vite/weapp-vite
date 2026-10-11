@@ -6,10 +6,12 @@ import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import logger from '../../../logger'
+import { createLogicalEntryId, createSidecarModuleId } from '../../../moduleGraph/protocol'
 import { createModuleGraphService } from '../../../moduleGraph/service'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
 import { toPosixPath } from '../../../utils/path'
+import { createLogicalEntryLoadHook } from '../../core/lifecycle/logicalEntry'
 import { clearFileCaches, invalidateFileCache } from '../../utils/cache'
 import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../utils/scriptlessComponent'
 import { createAutoImportAugmenter } from './autoImport'
@@ -76,6 +78,7 @@ const {
     options?: {
       readSource?: () => Promise<string | undefined>
       source?: string
+      force?: boolean
     },
   ) => Promise<Record<string, any> | undefined>>
   const innerResolvePageLayoutPlan = vi.fn(async () => undefined)
@@ -2259,18 +2262,15 @@ describe('createEntryLoader', () => {
     ]))
   })
 
-  it('refreshes vue app config after auto-routes are available before collecting app entries', async () => {
+  it('extracts vue app config once after auto-routes are available before collecting app entries', async () => {
     const autoRoutesService = {
       isEnabled: vi.fn(() => true),
       ensureFresh: vi.fn(async () => {}),
       getSignature: vi.fn(() => 'routes-ready'),
     }
-    mockExtractConfigFromVue
-      .mockResolvedValueOnce({
-        pages: [],
-        subPackages: [],
-      })
-      .mockResolvedValueOnce({
+    mockExtractConfigFromVue.mockImplementation(async () => {
+      expect(autoRoutesService.ensureFresh).toHaveBeenCalledOnce()
+      return {
         pages: ['pages/home/index'],
         usingComponents: {
           'custom-tab-bar': '/custom-tab-bar/index',
@@ -2284,7 +2284,8 @@ describe('createEntryLoader', () => {
             },
           ],
         },
-      })
+      }
+    })
 
     const { compilerCtx, loader, entriesMap, emitEntriesChunks } = createLoader({
       autoRoutesService,
@@ -2294,16 +2295,104 @@ describe('createEntryLoader', () => {
     await loader.call(createPluginContext(), '/project/src/app.vue', 'app')
 
     expect(autoRoutesService.ensureFresh).toHaveBeenCalledTimes(1)
-    expect(mockExtractConfigFromVue).toHaveBeenLastCalledWith('/project/src/app.vue', {
+    expect(mockExtractConfigFromVue).toHaveBeenCalledExactlyOnceWith('/project/src/app.vue', {
       source: 'console.log("noop")',
-      force: true,
       compilerContext: compilerCtx,
+      force: true,
     })
     expect(entriesMap.get('custom-tab-bar/index')?.type).toBe('component')
     const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
       ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
     )
     expect(emittedResolvedIds).toContain('/project/src/custom-tab-bar/index')
+  })
+
+  it('publishes one ready app config per load and removes or restores its logical component dependencies', async () => {
+    const withComponent = { pages: [], usingComponents: { card: '/components/card.vue' } }
+    const withoutComponent = { pages: [], usingComponents: {} }
+    let nextConfig = withComponent as { pages: string[], usingComponents: Record<string, string> }
+    let readyConfig = withoutComponent as typeof nextConfig
+    const autoRoutesService = {
+      isEnabled: () => true,
+      ensureFresh: vi.fn(async () => { readyConfig = structuredClone(nextConfig) }),
+    }
+    const fixture = createLoader({ autoRoutesService, isDev: true })
+    const { compilerCtx, loader, entriesMap, resolvedEntryMap, configService, runtimeState, registerJsonAsset } = fixture
+    const app = path.join(configService.absoluteSrcRoot, 'app.vue')
+    const component = path.join(configService.absoluteSrcRoot, 'components/card.vue')
+    const source = '<script setup>defineAppJson(externalConfig)</script>'
+    readFileMock.mockResolvedValue(source)
+    existsMock.mockImplementation(async (id: string) => id === app || id === component)
+    const graph = createModuleGraphService()
+    compilerCtx.moduleGraphService = graph
+    mockExtractConfigFromVue.mockImplementation(async (_file, options) => {
+      expect(options).toMatchObject({ source, force: true })
+      return structuredClone(readyConfig)
+    })
+    const loadLogical = createLogicalEntryLoadHook({ ctx: compilerCtx, loadEntry: loader, entriesMap, resolvedEntryMap } as any)
+    const componentImport = JSON.stringify(createSidecarModuleId(app, component, 'using-component'))
+    for (const config of [withComponent, withoutComponent, withComponent]) {
+      nextConfig = config
+      runtimeState.build.hmr.profile = { event: 'update', dirtyReasonSummary: ['entry-direct:1'] }
+      mockExtractConfigFromVue.mockClear()
+      registerJsonAsset.mockClear()
+      const result = await loadLogical.call(createPluginContext(), createLogicalEntryId(app, 'app'))
+      expect(mockExtractConfigFromVue).toHaveBeenCalledOnce()
+      expect(entriesMap.get('app')?.declaredJson).toEqual(config)
+      expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({ type: 'app', json: expect.objectContaining(config) }))
+      expect(graph.getEntryDependencies(app).filter(entry => entry.kind === 'using-component'))
+        .toEqual('card' in config.usingComponents ? [{ kind: 'using-component', sourceId: component }] : [])
+      expect(result?.code.includes(componentImport)).toBe('card' in config.usingComponents)
+    }
+  })
+
+  it('does not recursively refresh routes while reading their initial app config', async () => {
+    const autoRoutesService = {
+      isEnabled: () => true,
+      ensureFresh: vi.fn(async () => { throw new Error('recursive route refresh') }),
+    }
+    const { loader, runtimeState, configService } = createLoader({ autoRoutesService })
+    runtimeState.autoRoutes.loadingAppConfig = true
+    mockExtractConfigFromVue.mockResolvedValue({ pages: [] })
+    await loader.call(createPluginContext(), path.join(configService.absoluteSrcRoot, 'app.vue'), 'app')
+    expect(autoRoutesService.ensureFresh).not.toHaveBeenCalled()
+    expect(mockExtractConfigFromVue).toHaveBeenCalledOnce()
+  })
+
+  it.each([false, true])('preserves existing JSON sidecar and Vue override ordering (auto-routes=%s)', async (enabled) => {
+    const autoRoutesService = { isEnabled: () => enabled, ensureFresh: vi.fn(async () => {}) }
+    const { loader, jsonService, entriesMap, configService } = createLoader({ autoRoutesService })
+    const app = path.join(configService.absoluteSrcRoot, 'app.vue')
+    const sidecar = path.join(configService.absoluteSrcRoot, 'app.json')
+    const declared = { pages: [], window: { navigationBarTitleText: 'sidecar' } }
+    const vue = { pages: [], window: { navigationBarTitleText: 'vue' } }
+    mockFindJsonEntry.mockResolvedValue({ path: sidecar, predictions: [] })
+    jsonService.read.mockResolvedValue(declared)
+    mockExtractConfigFromVue.mockImplementation(async (_file, options) => {
+      expect(autoRoutesService.ensureFresh).toHaveBeenCalledOnce()
+      expect(options?.force).toBe(true)
+      return vue
+    })
+    await loader.call(createPluginContext(), app, 'app')
+    expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(enabled ? 1 : 0)
+    expect(entriesMap.get('app')).toMatchObject({
+      declaredJson: declared,
+      json: enabled ? vue : declared,
+    })
+  })
+
+  it('retries app config extraction after route refresh fails', async () => {
+    const autoRoutesService = {
+      isEnabled: () => true,
+      ensureFresh: vi.fn().mockRejectedValueOnce(new Error('route scan failed')).mockResolvedValue(undefined),
+    }
+    const { loader, configService } = createLoader({ autoRoutesService })
+    const app = path.join(configService.absoluteSrcRoot, 'app.vue')
+    mockExtractConfigFromVue.mockResolvedValue({ pages: [] })
+    await expect(loader.call(createPluginContext(), app, 'app')).rejects.toThrow('route scan failed')
+    expect(mockExtractConfigFromVue).not.toHaveBeenCalled()
+    await loader.call(createPluginContext(), app, 'app')
+    expect(mockExtractConfigFromVue).toHaveBeenCalledOnce()
   })
 
   it('marks usingComponents entries as components so native component loaders skip page layout injection', async () => {
