@@ -72,3 +72,106 @@ it('persists separate captured streams, source timing text and raw hook records 
     await rm(directory, { recursive: true, force: true })
   }
 })
+
+it('round-trips serialized virtual IDs and escapes while redacting only known checkout roots', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'build-diagnostic-escaped-output-'))
+  const root = 'C:\\checkout\\project'
+  const forwardRoot = 'C:/checkout/project'
+  const moduleIds = ['\0weapp:entry?x=1', 'virtual:literal\\n\\u0000\\path?quote="value"&line=\nnext']
+  const events = moduleIds.flatMap((moduleId, index) => {
+    const start = { ...started, id: index + 1, moduleId, pluginName: 'compiler:"quoted"\\helper\nline' }
+    return [start, { ...start, status: 'completed', endedAtMs: 30, elapsedMs: 20 }]
+  })
+  const end = { ...terminal, lastAssignedId: moduleIds.length }
+  const stdout = [`${root}\\src\\index.ts`, `${forwardRoot}/src/index.ts`, ...events.map(line), line(end), 'built in 541ms', ''].join('\r\n')
+  const warning = { path: `${root}\\src\\index.ts`, note: 'literal\\n\\u0000\\path\n"quoted"' }
+  const stderr = `${JSON.stringify(warning)}\n`
+  try {
+    await saveAutoImportBuildDiagnostics(directory, { status: 'completed', stdout, stderr, durationMs: 1_459 }, [{ path: root, label: '<project>' }])
+    const savedStdout = await readFile(path.join(directory, 'stdout.log'), 'utf8')
+    const savedStderr = await readFile(path.join(directory, 'stderr.log'), 'utf8')
+    expect(savedStdout).toBe(stdout.replaceAll(root, '<project>').replaceAll(forwardRoot, '<project>'))
+    expect(savedStderr).toBe(`${JSON.stringify({ ...warning, path: '<project>\\src\\index.ts' })}\n`)
+    expect(savedStdout.split('\r\n').filter(record => record.startsWith(AUTO_IMPORT_BUILD_HOOK_PREFIX))).toEqual([...events.map(line), line(end)])
+    const captured = readBuildHookEvidence(stdout)
+    const saved = readBuildHookEvidence(savedStdout)
+    const report = JSON.parse(await readFile(path.join(directory, 'diagnostic.json'), 'utf8')) as { hooks: ReturnType<typeof readBuildHookEvidence>, timing: ReturnType<typeof readBuildTimingEvidence> }
+    expect(captured.errors).toEqual([])
+    expect(saved).toEqual(captured)
+    expect(saved.events).toEqual(events)
+    expect(report.hooks).toEqual(captured)
+    expect(report.timing).toEqual(readBuildTimingEvidence(stdout, stderr))
+    expect(stdout).toContain(root)
+    expect(stderr).toBe(`${JSON.stringify(warning)}\n`)
+  }
+  finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+it.each(['windows', 'posix'] as const)('keeps saved logs and structured evidence equally private for %s roots in legal string fields', async (platform) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'build-diagnostic-private-fields-'))
+  const checkout = platform === 'windows' ? 'C:\\checkout' : '/checkout'
+  const separator = platform === 'windows' ? '\\' : '/'
+  const project = `${checkout}${separator}project`
+  const start = { ...started, pluginName: `owner:"${project}"\\config\nline`, moduleId: `\0virtual:${project}${separator}entry?literal=\\n&quote="value"` }
+  const finish = { ...start, status: 'failed', endedAtMs: 30, elapsedMs: 20, errorName: `failure:${checkout}\\custom\n"quoted"` }
+  const stdout = [`${project}${separator}src${separator}index.ts`, line(start), line(finish), line(terminal), 'built in 541ms', ''].join('\r\n')
+  const stderr = [`warning:${project}`, JSON.stringify({ path: project, note: 'literal\\u0000\n"quoted"' }), ''].join('\n')
+  const output = { status: 'completed' as const, stdout, stderr, durationMs: 1_459 }
+  const original = structuredClone(output)
+  try {
+    await saveAutoImportBuildDiagnostics(directory, output, [{ path: checkout, label: '<checkout>' }, { path: project, label: '<project>' }])
+    const savedStdout = await readFile(path.join(directory, 'stdout.log'), 'utf8')
+    const savedStderr = await readFile(path.join(directory, 'stderr.log'), 'utf8')
+    const reportText = await readFile(path.join(directory, 'diagnostic.json'), 'utf8')
+    const report = JSON.parse(reportText) as { hooks: ReturnType<typeof readBuildHookEvidence>, timing: ReturnType<typeof readBuildTimingEvidence> }
+    const saved = readBuildHookEvidence(savedStdout)
+    expect(saved.errors).toEqual([])
+    expect(report.hooks).toEqual(saved)
+    expect(saved.events).toEqual([
+      { ...start, pluginName: 'owner:"<project>"\\config\nline', moduleId: `\0virtual:<project>${separator}entry?literal=\\n&quote="value"` },
+      { ...finish, pluginName: 'owner:"<project>"\\config\nline', moduleId: `\0virtual:<project>${separator}entry?literal=\\n&quote="value"`, errorName: 'failure:<checkout>\\custom\n"quoted"' },
+    ])
+    for (const text of [savedStdout, savedStderr, reportText]) {
+      for (const root of [checkout, project]) {
+        expect(text).not.toContain(root)
+        expect(text).not.toContain(JSON.stringify(root).slice(1, -1))
+      }
+    }
+    expect(report.timing).toEqual(readBuildTimingEvidence(stdout, stderr))
+    expect(output).toEqual(original)
+  }
+  finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+it.each(['windows', 'posix'] as const)('redacts the registered %s root in a failed capture error name without changing input or timing', async (platform) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'build-diagnostic-failed-private-'))
+  const root = platform === 'windows' ? 'C:\\checkout\\project' : '/checkout/project'
+  const separator = platform === 'windows' ? '\\' : '/'
+  const errorName = `CustomBuild:${root}${separator}config\n"quoted"\\literal\\u0000\0`
+  const stderr = `failure:${root}${separator}config\nbuilt in 541ms\n`
+  const output = { status: 'failed' as const, stdout: '', stderr, errorName }
+  const original = structuredClone(output)
+  try {
+    await saveAutoImportBuildDiagnostics(directory, output, [{ path: root, label: '<project>' }])
+    const savedStdout = await readFile(path.join(directory, 'stdout.log'), 'utf8')
+    const savedStderr = await readFile(path.join(directory, 'stderr.log'), 'utf8')
+    const reportText = await readFile(path.join(directory, 'diagnostic.json'), 'utf8')
+    const report = JSON.parse(reportText) as { status: string, errorName: string, hooks: ReturnType<typeof readBuildHookEvidence>, timing: ReturnType<typeof readBuildTimingEvidence> }
+    expect(report.errorName).toBe(errorName.replaceAll(root, '<project>'))
+    expect(report.status).toBe('failed')
+    expect(report.hooks).toEqual(readBuildHookEvidence(savedStdout))
+    expect(report.timing).toEqual(readBuildTimingEvidence(output.stdout, stderr))
+    for (const text of [savedStdout, savedStderr, reportText]) {
+      expect(text).not.toContain(root)
+      expect(text).not.toContain(JSON.stringify(root).slice(1, -1))
+    }
+    expect(output).toEqual(original)
+  }
+  finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})

@@ -4,7 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { stripVTControlCharacters } from 'node:util'
 import { parseCliBuildMs } from '../cliTiming'
-import { AUTO_IMPORT_BUILD_HOOK_PREFIX, autoImportBuildHookNames, normalizeBuildDiagnosticText } from './hooks'
+import { AUTO_IMPORT_BUILD_HOOK_PREFIX, autoImportBuildHookNames } from './hooks'
 
 function isBuildHookEvent(value: unknown): value is BuildHookEvent {
   if (!value || typeof value !== 'object') {
@@ -138,14 +138,28 @@ export function readBuildHookEvidence(stdout: string) {
   return { events, terminal, errors }
 }
 
+function redactCapturedBuildText(value: string, roots: BuildHookOptions['roots']) {
+  let redacted = value
+  for (const root of [...roots].sort((a, b) => b.path.length - a.path.length)) {
+    const paths = [root.path.replace(/[\\/]+$/, ''), root.path.replaceAll('\\', '/').replace(/\/+$/, '')]
+    const representations = [...new Set(paths.flatMap(rootPath => [rootPath, JSON.stringify(rootPath).slice(1, -1)]))].sort((a, b) => b.length - a.length)
+    for (const rootPath of representations) {
+      redacted = redacted.replaceAll(rootPath, root.label)
+    }
+  }
+  return redacted
+}
+
 /** 调用点已经停止原进程计时；保留分离的原输出、解析文本和诊断缺口。 */
 export async function saveAutoImportBuildDiagnostics(directory: string, output: MeasuredBuildOutput, roots: BuildHookOptions['roots']) {
   await mkdir(directory, { recursive: true })
   const timing = readBuildTimingEvidence(output.stdout, output.stderr)
-  const hooks = readBuildHookEvidence(output.stdout)
+  const stdout = redactCapturedBuildText(output.stdout, roots)
+  const stderr = redactCapturedBuildText(output.stderr, roots)
+  const hooks = readBuildHookEvidence(stdout)
   await Promise.all([
-    writeFile(path.join(directory, 'stdout.log'), normalizeBuildDiagnosticText(output.stdout, roots)),
-    writeFile(path.join(directory, 'stderr.log'), normalizeBuildDiagnosticText(output.stderr, roots)),
-    writeFile(path.join(directory, 'diagnostic.json'), `${JSON.stringify({ ...output, stdout: undefined, stderr: undefined, timing, hooks, scope: 'opt-in diagnostic; not performance acceptance; hook intervals may overlap' }, null, 2)}\n`),
+    writeFile(path.join(directory, 'stdout.log'), stdout),
+    writeFile(path.join(directory, 'stderr.log'), stderr),
+    writeFile(path.join(directory, 'diagnostic.json'), `${redactCapturedBuildText(JSON.stringify({ ...output, stdout: undefined, stderr: undefined, timing, hooks, scope: 'opt-in diagnostic; not performance acceptance; hook intervals may overlap' }, null, 2), roots)}\n`),
   ])
 }
