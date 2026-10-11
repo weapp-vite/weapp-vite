@@ -57,3 +57,16 @@ it('keeps the diagnostic dispatch separate from the original performance gate an
   expect(runner).toContain('BENCH_ITERATIONS: \'1\'')
   expect(runner).toContain('AUTO_IMPORT_BENCH_PAIRED: \'1\'')
 })
+
+it('uses runner context only in step environments and keeps the collector and upload paths aligned', async () => {
+  const root = path.resolve(import.meta.dirname, '..')
+  const workflow = parse(await readFile(path.join(root, '.github/workflows/auto-import-build-diagnostic.yml'), 'utf8'))
+  const job = workflow.jobs.diagnose
+  expect(job.env).not.toHaveProperty('REPORT_ROOT')
+  expect(JSON.stringify(job.env)).not.toMatch(/\$\{\{\s*runner(?:\.|\[)/)
+  const collector = job.steps.find((step: { name?: string }) => step.name === 'Collect paired opt-in diagnostics')
+  const upload = job.steps.find((step: { name?: string }) => step.name === 'Upload completed and partial diagnostics')
+  // eslint-disable-next-line no-template-curly-in-string -- 校验 GitHub Actions 的字面量表达式，不能在测试中提前插值。
+  expect(collector.env.REPORT_ROOT).toBe('${{ runner.temp }}/auto-import-build-diagnostic')
+  expect(upload.with.path).toBe(collector.env.REPORT_ROOT)
+})

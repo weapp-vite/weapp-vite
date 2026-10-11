@@ -27,7 +27,6 @@ jobs:
       BASELINE_SHA: e7862e61dd83e3b9e356ac1e176267b31ab298af
       CANDIDATE_ROOT: ${{ github.workspace }}/candidate
       BASELINE_ROOT: ${{ github.workspace }}/baseline
-      REPORT_ROOT: ${{ runner.temp }}/auto-import-build-diagnostic
     defaults:
       run:
         shell: bash
@@ -77,6 +76,8 @@ jobs:
           pnpm --dir candidate --filter 'weapp-vite...' -r run build
       - name: Collect paired opt-in diagnostics
         working-directory: candidate
+        env:
+          REPORT_ROOT: ${{ runner.temp }}/auto-import-build-diagnostic
         run: node --import tsx scripts/autoImportBuildDiagnostic/runner.ts
       - name: Record diagnostic boundary
         if: always()
