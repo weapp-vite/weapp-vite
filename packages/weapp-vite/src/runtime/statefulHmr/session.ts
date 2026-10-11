@@ -746,6 +746,9 @@ class StatefulHmrSession {
             prepareProviders,
             rebuild: (files, sources) => sources ? this.snapshots.rebuild(files, sources) : this.snapshots.rebuild(files),
             sourcemap: Boolean(this.server.config.build.sourcemap),
+            onPreparationStage: this.diagnostics
+              ? observation => this.diagnostics!.preparation(input.revision, files, observation)
+              : undefined,
           })
           const { compilerAssets, snapshot, code, changedIds, filenames } = compiled
           profile?.mark('commitQueueMs')
