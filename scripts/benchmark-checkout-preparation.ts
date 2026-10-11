@@ -30,6 +30,8 @@ export function createBenchmarkRunnerPreparationCommand(): BenchmarkCheckoutPrep
       '@weapp-core/constants...',
       '--filter',
       '@weapp-core/logger...',
+      '--filter',
+      '@weapp-vite/devtools-runtime...',
       '--if-present',
       'build',
     ],
