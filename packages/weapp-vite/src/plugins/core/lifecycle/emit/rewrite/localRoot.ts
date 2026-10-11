@@ -10,6 +10,7 @@ import {
   getRequireImportLiteral,
   normalizeWeappLocalNpmImport,
 } from './literals'
+import { createLocalRootNpmCandidateCheck } from './localRoot/candidates'
 import { getChunkScriptAnalysis, matchesSubPackageDependency, rememberChunkScriptAnalysis } from './platform'
 
 export interface LocalRootNpmRewriteSubPackageMeta {
@@ -98,23 +99,22 @@ export function toRelativeRuntimeNpmImport(fileName: string, root: string, impor
   return relative.startsWith('.') ? relative : `./${relative}`
 }
 
-export function rewriteChunkNpmImportsToLocalRoot(
+function rewriteChunkNpmImportsToLocalRootWithCandidates(
   chunk: OutputChunk,
   root: string,
   dependencyPatterns: (string | RegExp)[] | undefined,
   dependencies: Record<string, string> | undefined,
-  options?: {
-    collectPlatformApiAccess?: boolean
-    analysisCache?: ChunkScriptAnalysisCache
-    basedir?: string
-    astEngine?: 'babel' | 'oxc'
-  },
+  options?: LocalRootNpmRewriteOptions,
+  mayNeedNpmRewrite?: (code: string) => boolean,
 ) {
   const analysis = getChunkScriptAnalysis(chunk, {
     astEngine: options?.astEngine,
     cache: options?.analysisCache,
   })
   if (!analysis.hasStaticRequireLiteral) {
+    return
+  }
+  if (mayNeedNpmRewrite && !mayNeedNpmRewrite(chunk.code)) {
     return
   }
 
@@ -240,6 +240,24 @@ export function rewriteChunkNpmImportsToLocalRoot(
   }
   catch {
   }
+}
+
+export function rewriteChunkNpmImportsToLocalRoot(
+  chunk: OutputChunk,
+  root: string,
+  dependencyPatterns: (string | RegExp)[] | undefined,
+  dependencies: Record<string, string> | undefined,
+  options?: {
+    collectPlatformApiAccess?: boolean
+    analysisCache?: ChunkScriptAnalysisCache
+    basedir?: string
+    astEngine?: 'babel' | 'oxc'
+  },
+) {
+  const mayNeedNpmRewrite = options?.collectPlatformApiAccess === false
+    ? createLocalRootNpmCandidateCheck(dependencyPatterns, dependencies)
+    : undefined
+  rewriteChunkNpmImportsToLocalRootWithCandidates(chunk, root, dependencyPatterns, dependencies, options, mayNeedNpmRewrite)
 }
 
 export function rewriteJsonNpmImportsToLocalRoot(
@@ -381,6 +399,9 @@ export function rewriteBundleNpmImportsToLocalRoots(
   options?: LocalRootNpmRewriteOptions,
 ) {
   const resolveLocalRootRewriteTarget = createLocalRootRewriteTargetResolver(localSubPackages)
+  const candidateChecks = options?.collectPlatformApiAccess === false
+    ? new Map<LocalRootNpmRewriteSubPackageMeta | undefined, (code: string) => boolean>()
+    : undefined
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
@@ -388,12 +409,17 @@ export function rewriteBundleNpmImportsToLocalRoots(
 
     const chunk = output as OutputChunk
     const subPackageTarget = resolveLocalRootRewriteTarget(chunk.fileName)
-    if (subPackageTarget) {
-      rewriteChunkNpmImportsToLocalRoot(chunk, subPackageTarget.root, subPackageTarget.dependencies, dependencies, options)
-      continue
+    if (candidateChecks && !candidateChecks.has(subPackageTarget)) {
+      candidateChecks.set(subPackageTarget, createLocalRootNpmCandidateCheck(subPackageTarget?.dependencies, dependencies))
     }
-
-    rewriteChunkNpmImportsToLocalRoot(chunk, '', undefined, dependencies, options)
+    rewriteChunkNpmImportsToLocalRootWithCandidates(
+      chunk,
+      subPackageTarget?.root ?? '',
+      subPackageTarget?.dependencies,
+      dependencies,
+      options,
+      candidateChecks?.get(subPackageTarget),
+    )
   }
 
   rewriteJsonNpmImportsToLocalRoots(bundle, dependencies, resolveLocalRootRewriteTarget, options?.basedir)

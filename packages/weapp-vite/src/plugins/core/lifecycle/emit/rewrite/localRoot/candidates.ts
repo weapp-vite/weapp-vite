@@ -1,0 +1,48 @@
+const REQUIRE_IDENTIFIER_RE = /\brequire\b/
+const DEPENDENCY_TOKEN_RE = /^(?:@[\w.-]+|\w[\w.-]*)$/
+
+function collectDependencyTokens(
+  dependencyPatterns: (string | RegExp)[] | undefined,
+  dependencies: Record<string, string> | undefined,
+) {
+  const patterns = Array.isArray(dependencyPatterns) && dependencyPatterns.length > 0
+    ? dependencyPatterns
+    : Object.keys(dependencies ?? {}).map(dependency => dependency.replaceAll('\\', '/'))
+  const tokens = new Set<string>()
+  for (const pattern of patterns) {
+    if (typeof pattern !== 'string') {
+      return
+    }
+    // fallback 前缀匹配会忽略空路径段，作用域包只取首段，避免重复斜线造成漏判。
+    const token = pattern.split('/').find(Boolean)
+    if (!token || !DEPENDENCY_TOKEN_RE.test(token)) {
+      return
+    }
+    tokens.add(token)
+  }
+  return [...tokens]
+}
+
+/** 只证明无需 npm 重写；转义、未知作用域和正则规则保留原 AST 路径。 */
+export function createLocalRootNpmCandidateCheck(
+  dependencyPatterns: (string | RegExp)[] | undefined,
+  dependencies: Record<string, string> | undefined,
+) {
+  let tokens: string[] | undefined
+  try {
+    tokens = collectDependencyTokens(dependencyPatterns, dependencies)
+  }
+  catch {
+    // 依赖对象无法静态枚举时，仍由原重写流程处理。
+  }
+  return (code: string) => {
+    // 标识符只能用 Unicode 转义；普通正则反斜线不会生成 require 标识符。
+    if (!REQUIRE_IDENTIFIER_RE.test(code) && !code.includes('\\u')) {
+      return false
+    }
+    if (code.includes('\\') || code.includes('miniprogram_npm') || !tokens) {
+      return true
+    }
+    return tokens.some(token => code.includes(token))
+  }
+}

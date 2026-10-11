@@ -35,7 +35,7 @@ export async function readLinuxProcessState(
     return await hasExited() ? 'zombie' : 'foreign'
   }
   catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+    if (!['ENOENT', 'ESRCH'].includes((error as NodeJS.ErrnoException).code ?? '')) {
       throw error
     }
     return 'gone'

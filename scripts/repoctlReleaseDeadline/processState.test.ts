@@ -40,8 +40,8 @@ describe('Linux release fixture process observation', () => {
     await expect(readLinuxProcessState(pid, ownerToken, readFile)).resolves.toBe('zombie')
   })
 
-  it('recognizes process removal after an environment permission race', async () => {
-    const readFile = createProcessReader(['R', procError('ENOENT')], procError('EACCES'))
+  it.each(['ENOENT', 'ESRCH'])('recognizes %s process removal after an environment permission race', async (code) => {
+    const readFile = createProcessReader(['R', procError(code)], procError('EACCES'))
     await expect(readLinuxProcessState(pid, ownerToken, readFile)).resolves.toBe('gone')
   })
 
@@ -66,13 +66,13 @@ describe('Linux release fixture process observation', () => {
     await expect(readLinuxProcessState(pid, ownerToken, readFile)).resolves.toBe('running')
   })
 
-  it('recognizes a process removed before observation', async () => {
-    const readFile = createProcessReader([procError('ENOENT')], procError('ENOENT'))
+  it.each(['ENOENT', 'ESRCH'])('recognizes a process removed with %s before observation', async (code) => {
+    const readFile = createProcessReader([procError(code)], procError(code))
     await expect(readLinuxProcessState(pid, ownerToken, readFile)).resolves.toBe('gone')
   })
 
-  it('recognizes a process removed between state and environment reads', async () => {
-    const readFile = createProcessReader(['R'], procError('ENOENT'))
+  it.each(['ENOENT', 'ESRCH'])('recognizes a process removed with %s between state and environment reads', async (code) => {
+    const readFile = createProcessReader(['R'], procError(code))
     await expect(readLinuxProcessState(pid, ownerToken, readFile)).resolves.toBe('gone')
   })
 
