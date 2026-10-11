@@ -1,5 +1,6 @@
 import type { LogicalEntryType } from '../../../../moduleGraph/protocol'
 import type { AppEntry } from '../../../../types'
+import type { ResolveEntryPathOptions } from '../../../../utils/entryResolve'
 import type { CorePluginState } from '../../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
@@ -10,6 +11,7 @@ import { getSelectedAutoRouteSource } from '../../../../runtime/autoRoutesPlugin
 import { prepareIndependentOutputs } from '../../../../runtime/buildPlugin/independentPlan'
 import { resolveWeappLibEntries } from '../../../../runtime/lib'
 import { findJsEntry, findVueEntry, normalizeAppJson } from '../../../../utils'
+import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../../utils/entryResolve'
 import { resolveRealpath } from '../../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 
@@ -20,21 +22,23 @@ interface LogicalInputSource {
 }
 
 // eslint-disable-next-line regexp/no-super-linear-backtracking -- import 语法需要兼容默认、命名和副作用导入。
-const LOCAL_IMPORT_RE = /\bimport\s+(?:[\s\S]*?\s+from\s+)?(['"])([^'"\n]+)\1/g
+const LOCAL_IMPORT_RE = /\bimport\s+(?:([\s\S]*?)\s+from\s+)?(['"])([^'"\n]+)\2/g
 
 async function collectImportedVueComponents(
   state: CorePluginState,
   candidates: Array<{ entry: string, type: LogicalEntryType }>,
 ) {
-  const { absoluteSrcRoot } = state.ctx.configService
+  const { configService } = state.ctx
+  const { absoluteSrcRoot } = configService
+  const entryResolveOptions = createCachedEntryResolveOptions(configService, { kind: 'default' })
   const importedComponents = new Set<string>()
   for (const candidate of candidates) {
     if (candidate.type !== 'page' || candidate.entry.includes(':')) {
       continue
     }
     const pageBase = path.resolve(absoluteSrcRoot, candidate.entry)
-    const scriptEntry = await findJsEntry(pageBase)
-    const pageSource = getSelectedAutoRouteSource(state.ctx, pageBase) ?? scriptEntry.path ?? await findVueEntry(pageBase)
+    const pageSource = getSelectedAutoRouteSource(state.ctx, pageBase)
+      ?? (path.extname(pageBase) ? pageBase : await resolveEntryPath(pageBase, entryResolveOptions))
     if (!pageSource || !await fs.pathExists(pageSource)) {
       continue
     }
@@ -46,18 +50,19 @@ async function collectImportedVueComponents(
       continue
     }
     for (const match of source.matchAll(LOCAL_IMPORT_RE)) {
-      const importSource = match[2]
+      const importSource = match[3]
       if (!importSource.startsWith('.') && !importSource.startsWith('/')) {
         continue
       }
       const importedBase = path.resolve(path.dirname(pageSource), importSource)
+      const kind = /^[{*]/.test(match[1]?.trim() ?? '') ? 'named' : 'default'
       const importedVue = importedBase.endsWith('.vue')
         ? importedBase
-        : await findVueEntry(importedBase)
-      if (!importedVue || !await fs.pathExists(importedVue)) {
+        : await resolveEntryPath(importedBase, { ...entryResolveOptions, kind })
+      if (!importedVue?.endsWith('.vue') || !await fs.pathExists(importedVue)) {
         continue
       }
-      const relativeEntry = path.relative(absoluteSrcRoot, removeExtensionDeep(importedVue)).replaceAll('\\', '/')
+      const relativeEntry = path.relative(absoluteSrcRoot, importedVue).replaceAll('\\', '/')
       if (relativeEntry && !relativeEntry.startsWith('../')) {
         importedComponents.add(relativeEntry)
       }
@@ -112,7 +117,7 @@ async function collectMainLogicalInputs(state: CorePluginState, appEntry: AppEnt
       continue
     }
     inputs[name] = {
-      input: path.resolve(absoluteSrcRoot, name),
+      input: path.resolve(absoluteSrcRoot, rawEntry.replace(/^[/\\]+/, '')),
       source: rawEntry,
       type,
     }
@@ -124,6 +129,7 @@ async function resolveLogicalInput(
   pluginContext: any,
   source: LogicalInputSource,
   importer?: string,
+  entryResolveOptions?: ResolveEntryPathOptions,
 ) {
   const resolveSource = async (id: string, sourceImporter?: string) => {
     if (typeof pluginContext?.resolve !== 'function') {
@@ -137,15 +143,19 @@ async function resolveLogicalInput(
     if (path.extname(normalized)) {
       return id
     }
-    const scriptEntry = await findJsEntry(normalized)
-    const localEntry = scriptEntry.path ?? await findVueEntry(normalized)
+    const localEntry = await resolveEntryPath(normalized, entryResolveOptions)
     if (!localEntry) {
       return undefined
     }
     return await resolveSource(localEntry, importer) ?? localEntry
   }
 
-  const primaryId = await resolveSource(source.input, importer) ?? source.input
+  // 在宿主的脚本优先 resolver 前补全入口；显式扩展名始终保留。
+  const normalizedInput = normalizeFsResolvedId(source.input)
+  const physicalInput = path.extname(normalizedInput)
+    ? source.input
+    : await resolveEntryPath(normalizedInput, entryResolveOptions) ?? source.input
+  const primaryId = await resolveSource(physicalInput, importer) ?? physicalInput
   const primaryEntry = await resolvePhysicalEntry(primaryId)
   if (primaryEntry) {
     return primaryEntry
@@ -260,7 +270,12 @@ export function createOptionsHook(state: CorePluginState) {
     const logicalInput: Record<string, string> = {}
     for (const [name, source] of Object.entries(scannedInput)) {
       const selected = source.type === 'page' ? getSelectedAutoRouteSource(ctx, source.input) : undefined
-      const sourceId = await resolveLogicalInput(this, selected ? { ...source, input: selected } : source, state.ctx.scanService.appEntry?.path)
+      const sourceId = await resolveLogicalInput(
+        this,
+        selected ? { ...source, input: selected } : source,
+        state.ctx.scanService.appEntry?.path,
+        createCachedEntryResolveOptions(configService, { kind: 'default' }),
+      )
       if (!sourceId) {
         continue
       }

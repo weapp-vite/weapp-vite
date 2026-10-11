@@ -121,7 +121,7 @@ describe('independent shared component output ownership', () => {
     expect(new Set(names).size, `Duplicate output owners: ${JSON.stringify(duplicates)}`).toBe(names.length)
     for (const entry of ['components/SharedCard', 'layouts/default']) {
       for (const extension of ['js', 'json', 'wxml', 'wxss']) {
-        expect(names).toContain(`${entry}.${extension}`)
+        expect(names, `Emitted outputs: ${JSON.stringify(names)}`).toContain(`${entry}.${extension}`)
         expect(names).toContain(`packageB/weapp-shared/${entry}.${extension}`)
       }
     }

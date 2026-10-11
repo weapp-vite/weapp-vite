@@ -1,0 +1,12 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        { "name": "组件同名导入", "pathName": "pages/component/index", "query": "", "scene": null },
+        { "name": "页面同名导入", "pathName": "pages/bar/bar", "query": "", "scene": null },
+        { "name": "同名文件未导入", "pathName": "pages/unused/unused", "query": "", "scene": null }
+      ]
+    }
+  },
+  "setting": { "urlCheck": false }
+}
