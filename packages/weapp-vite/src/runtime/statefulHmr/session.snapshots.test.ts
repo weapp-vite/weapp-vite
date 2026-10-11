@@ -483,6 +483,23 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.createServer.mock.calls.at(-1)?.[0].server.watch).toMatchObject({ usePolling: true, interval: 50 })
   })
 
+  it('retains the core ingress event across the session listener and snapshot publication', async () => {
+    const samples: HmrProfileJsonSample[] = []
+    vi.spyOn(StatefulHmrProfile.prototype, 'record').mockImplementation(sample => samples.push(sample))
+    const session = await start(snapshot('red'), [], {}, new Map(), undefined, (ctx) => {
+      ctx.configService!.weappViteConfig.hmr = { profileJson: true }
+    })
+    const file = path.join(root, 'src/page.wxss')
+    const sourceEvent = { eventId: 'core-ingress', event: 'update' as const, file, receivedAtMs: performance.now() }
+    samples.splice(0)
+    session.ctx.onStatefulHmrSourceChange!(file, ['style-sidecar:1'], sourceEvent)
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(samples.filter(sample => sample.profileMode === 'refresh')).toEqual([
+      expect.objectContaining({ status: 'complete', eventId: 'core-ingress', sourceEvents: [sourceEvent] }),
+    ])
+  })
+
   it.each(['write', 'register'] as const)('keeps a transferred profile pending until replacement %s succeeds', async (stage) => {
     const samples: HmrProfileJsonSample[] = []
     vi.spyOn(StatefulHmrProfile.prototype, 'record').mockImplementation(sample => samples.push(sample))

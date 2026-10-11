@@ -819,12 +819,13 @@ export function createWatchChangeHook(state: CorePluginState) {
     state.ctx.moduleGraphService?.recordChangedFile?.(normalizedId, event)
     const profile = state.ctx.runtimeState.build.hmr.profile
     profile.sourceEvents ??= []
-    profile.sourceEvents.push({ eventId, event, file: normalizedId, receivedAtMs: startedAt })
+    const sourceEvent = { eventId, event, file: normalizedId, receivedAtMs: startedAt }
+    profile.sourceEvents.push(sourceEvent)
     // 旧字段继续指向最后一个事件；完整来源通过 sourceEvents 保留。
     Object.assign(profile, { eventId, event, file: normalizedId })
     const dirtyReasonSummary = await processChangedFile(state, normalizedId, event, vueEntryUpdateInspector)
     profile.watchToDirtyMs = performance.now() - Math.min(...profile.sourceEvents.map(source => source.receivedAtMs))
     profile.dirtyReasonSummary = [...new Set([...(profile.dirtyReasonSummary ?? []), ...(dirtyReasonSummary ?? [])])]
-    state.ctx.onStatefulHmrSourceChange?.(normalizedId, dirtyReasonSummary ?? [])
+    state.ctx.onStatefulHmrSourceChange?.(normalizedId, dirtyReasonSummary ?? [], sourceEvent)
   }
 }

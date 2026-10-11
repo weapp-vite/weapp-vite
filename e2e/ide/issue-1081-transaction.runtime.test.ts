@@ -3,6 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { readHmrProfileLines } from '../../packages/weapp-vite/src/analyze/hmr/reader'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -26,7 +27,7 @@ describe('issue #1081: delayed compiler transaction', () => {
     project = await createIssue1081Project('issue-1081-transaction')
     dev = startDevProcess(process.execPath, [ISSUE_1081_CLI, 'dev', '--non-interactive'], {
       cwd: project,
-      env: { ...createDevProcessEnv(), WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE: '1' },
+      env: { ...createDevProcessEnv(), WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE: '1', WEAPP_VITE_HMR_PROFILE_JSON: '1' },
       reject: false,
     })
     await dev.waitForInitialBuild()
@@ -132,5 +133,13 @@ describe('issue #1081: delayed compiler transaction', () => {
     expect(final.pageId).toBe(original.pageId)
     expect(final.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
     expect(final.errors).toEqual([])
+    const profileFile = path.join(project, '.weapp-vite/hmr-profile.jsonl')
+    await expect.poll(async () => {
+      const profile = readHmrProfileLines(await readFile(profileFile, 'utf8'))
+      expect(profile.coverage.invalid).toBe(0)
+      expect(profile.coverage.incompatible).toBe(0)
+      return profile.samples.some(sample => sample.pipeline === 'stateful' && sample.status === 'complete'
+        && sample.sourceEvents?.some(event => event.file === source.replaceAll('\\', '/') && event.event === 'update'))
+    }, { timeout: 10_000 }).toBe(true)
   }, 180_000)
 })

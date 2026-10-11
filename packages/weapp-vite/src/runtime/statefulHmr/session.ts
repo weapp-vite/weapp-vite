@@ -3,6 +3,7 @@ import type { InlineConfig, ViteDevServer } from 'vite'
 /* eslint-disable ts/no-use-before-define */
 
 import type { CompilerContext, MutableCompilerContext } from '../../context'
+import type { HmrProfileSourceEvent } from '../../utils/hmrProfile/provenance'
 import type { DevBuildWatcherController } from '../buildPlugin/devBuildWatcher'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrOutputSource } from './outputPublication'
@@ -235,8 +236,8 @@ class StatefulHmrSession {
   // 原生脚本 patch 只写 delta；独立资产刷新前仍需将这些源码交给完整构建持久化。
   private readonly unpersistedNativeScripts = new Map<string, object>()
   private readonly nativeScriptInputs = new NativeScriptInputs()
-  private readonly sourceChangeListener = (file: string, dirtyReasonSummary: string[]) => {
-    this.handleSourceUpdate(file, dirtyReasonSummary)
+  private readonly sourceChangeListener = (file: string, dirtyReasonSummary: string[], sourceEvent?: HmrProfileSourceEvent) => {
+    this.handleSourceUpdate(file, dirtyReasonSummary, sourceEvent)
   }
 
   constructor(
@@ -435,7 +436,7 @@ class StatefulHmrSession {
     })
   }
 
-  handleSourceUpdate(file: string, dirtyReasonSummary: string[] = []): void {
+  handleSourceUpdate(file: string, dirtyReasonSummary: string[] = [], sourceEvent?: HmrProfileSourceEvent): void {
     if (this.closed) {
       return
     }
@@ -450,7 +451,7 @@ class StatefulHmrSession {
     }
     this.initialProfile?.finish('incomplete')
     this.initialProfile = undefined
-    this.profile?.source(normalizedFile)
+    this.profile?.source(normalizedFile, sourceEvent)
     this.settlementRevision += 1
     if (this.restartHandoff) {
       // 已验证快照等待交接期间又有输入变化，保留旧宿主并重新验证完整批次。
