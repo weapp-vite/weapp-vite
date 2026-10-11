@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 受管进程发现和 Windows 精确终止复用跨平台子进程封装。
 import { execa } from 'execa'
-import { readManagedProcessIdentity, sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
+import { readManagedProcessIdentity, sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/processIdentity'
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { traceCleanupStage } from '../cleanupTrace'
 import { parseWindowsProcessRows } from './windowsProcessRows'

@@ -2,6 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { isCollectorStop } from './collectorStop.ts'
 import { frozenManifest, isReportSamplingContract, metricsForShard, policy, shards } from './contract.mjs'
 import { evaluateGate } from './evaluate.ts'
 import { hmrProfileCapability } from './profileCapability.mjs'
@@ -14,6 +15,9 @@ function evidence(value) {
 function pair(batch, ids, requiredPairs, expected) {
   if (!batch || !Array.isArray(batch.samples) || !Array.isArray(batch.errors) || batch.errors.some(e => typeof e !== 'string')) {
     throw new Error('Invalid raw batch')
+  }
+  if (batch.stop !== undefined && !isCollectorStop(batch.stop)) {
+    throw new Error('Invalid collector stop evidence')
   }
   const samples = new Map()
   const ownership = new Set()
@@ -85,7 +89,7 @@ export function verifyShard(report, expected) {
   const count = expected.shard === 'build' || expected.shard === 'auto-build' ? 7 : 20
   const primary = pair(report.primary, ids, count, expected)
   const initial = evaluateGate(primary)
-  const requested = initial.scenarios.filter(r => r.primary.changePercent > 5 && !primary.find(s => s.id === r.id).error && r.primary.count === count).map(r => r.id)
+  const requested = report.primary.stop ? [] : initial.scenarios.filter(r => r.primary.changePercent > 5 && !primary.find(s => s.id === r.id).error && r.primary.count === count).map(r => r.id)
   if (JSON.stringify(report.executionPlan.confirmation) !== JSON.stringify(requested)) {
     throw new Error('Confirmation plan mismatch')
   }
@@ -95,7 +99,7 @@ export function verifyShard(report, expected) {
   const confirmation = report.confirmation ? pair(report.confirmation, requested, count, expected) : []
   const gate = evaluateGate(primary, confirmation)
   const errors = [...report.primary.errors, ...report.confirmation?.errors ?? []]
-  if (errors.length && gate.status !== 'regression') {
+  if ((errors.length || report.primary.stop || report.confirmation?.stop) && gate.status !== 'regression') {
     gate.status = 'incomplete'
   }
   if (report.gate?.status !== gate.status) {

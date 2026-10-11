@@ -79,7 +79,7 @@ it('syncs generated API sources before benchmarking a checkout', () => {
 it('prepares transitive runtime workspace imports used by the driver without building measurement targets', async () => {
   const command = createBenchmarkRunnerPreparationCommand()
   const cwd = fileURLToPath(new URL('../', import.meta.url))
-  const [selected, workspace, imports] = await Promise.all([
+  const [selected, workspace, imports, collectorImports] = await Promise.all([
     execa('pnpm', [...command.args.slice(0, -2), 'list', '--depth', '-1', '--json'], { cwd }),
     execa('pnpm', ['-r', 'list', '--depth', '-1', '--json'], { cwd }),
     collectRuntimeImports([
@@ -91,10 +91,11 @@ it('prepares transitive runtime workspace imports used by the driver without bui
       '../packages/weapp-vite/scripts/benchmark-auto-import-build.ts',
       '../packages/weapp-vite/scripts/benchmark-auto-import-hmr.ts',
     ].map(entry => new URL(entry, import.meta.url))),
+    collectRuntimeImports([new URL('./performanceGate/process.ts', import.meta.url)]),
   ])
   const selectedPackages = new Set((JSON.parse(selected.stdout) as Array<{ name: string }>).map(item => item.name))
   const workspacePackages = new Set((JSON.parse(workspace.stdout) as Array<{ name: string }>).map(item => item.name))
-  assert.ok(imports.has('@weapp-core/logger'), 'The driver must include the process ownership helper dependency chain')
+  assert.deepEqual(Array.from(collectorImports).filter(specifier => !specifier.startsWith('node:')).sort(), ['execa'], 'Collector startup must not require workspace package dist before preparation')
   for (const specifier of imports) {
     const dependency = specifier.split('/').slice(0, specifier.startsWith('@') ? 2 : 1).join('/')
     if (workspacePackages.has(dependency)) {
