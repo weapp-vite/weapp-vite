@@ -14,7 +14,13 @@ class HmrPreparationProfiler {
   constructor(private readonly observe: (observation: HmrPreparationObservation) => void) {}
 
   begin(stage: HmrPreparationStage) {
-    this.active = { stage, startedAtMs: performance.now() }
+    this.active = undefined
+    try {
+      this.active = { stage, startedAtMs: performance.now() }
+    }
+    catch {
+      // 诊断时钟不可用时跳过本阶段，不改变编译或准备资源的生命周期。
+    }
   }
 
   finish(status: HmrPreparationObservation['status'] = 'resolved', error?: unknown) {
@@ -23,12 +29,12 @@ class HmrPreparationProfiler {
       return
     }
     this.active = undefined
-    const elapsedMs = performance.now() - active.startedAtMs
     try {
+      const elapsedMs = performance.now() - active.startedAtMs
       this.observe({ ...active, status, elapsedMs, ...(status === 'rejected' ? { error } : {}) })
     }
     catch {
-      // 诊断接收方失败不得改变编译结果、错误身份或准备资源的释放。
+      // 诊断时钟或接收方失败不得改变编译结果、错误身份或准备资源的释放。
     }
   }
 }

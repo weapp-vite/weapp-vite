@@ -143,6 +143,79 @@ it('keeps failed snapshot evidence and preparation disposal when the diagnostic 
   expect(dispose).toHaveBeenCalledOnce()
 })
 
+it.each([
+  { stage: 'provider-wait', boundary: 'begin', read: 0 },
+  { stage: 'provider-wait', boundary: 'finish', read: 1 },
+  { stage: 'snapshot-build', boundary: 'begin', read: 2 },
+  { stage: 'snapshot-build', boundary: 'finish', read: 3 },
+  { stage: 'template-transform', boundary: 'begin', read: 4 },
+  { stage: 'template-transform', boundary: 'finish', read: 5 },
+  { stage: 'patch-prepare', boundary: 'begin', read: 6 },
+  { stage: 'patch-prepare', boundary: 'finish', read: 7 },
+])('keeps compilation and disposal when the $stage $boundary clock throws', async ({ read }) => {
+  let clockReads = 0
+  let faultTriggered = false
+  vi.spyOn(performance, 'now').mockImplementation(() => {
+    if (clockReads++ === read) {
+      faultTriggered = true
+      throw new Error('diagnostic clock failure')
+    }
+    return clockReads
+  })
+  const dispose = vi.fn()
+  const result = await compileHmrBatch({
+    ctx: { configService: { outputExtensions: { wxml: 'wxml', wxss: 'wxss' } } } as CompilerContext,
+    input: { revision: 1, changedFiles: ['page.vue'], sources: new Map() },
+    needsSnapshot: true,
+    patches: [],
+    prepareProviders: async () => [{ transformTemplate: async ({ code }) => ({ code: code.replace('before', 'after') }), dispose }],
+    rebuild: async () => ({ output: [{ type: 'asset', fileName: 'page.wxml', source: '<view>before</view>' }] }),
+    sourcemap: false,
+    onPreparationStage: () => {},
+  })
+  expect(faultTriggered).toBe(true)
+  expect(result.snapshot?.output[0]).toMatchObject({ source: '<view>after</view>' })
+  await result.dispose()
+  await result.dispose()
+  expect(dispose).toHaveBeenCalledOnce()
+})
+
+it.each([
+  { stage: 'provider', boundary: 'begin', read: 0 },
+  { stage: 'provider', boundary: 'finish', read: 1 },
+  { stage: 'snapshot', boundary: 'begin', read: 2 },
+  { stage: 'snapshot', boundary: 'finish', read: 3 },
+])('preserves the $stage error and disposal when its $boundary clock throws', async ({ stage, read }) => {
+  let clockReads = 0
+  let faultTriggered = false
+  vi.spyOn(performance, 'now').mockImplementation(() => {
+    if (clockReads++ === read) {
+      faultTriggered = true
+      throw new Error('diagnostic clock failure')
+    }
+    return clockReads
+  })
+  const failure = new Error('compilation failure')
+  const dispose = vi.fn()
+  await expect(compileHmrBatch({
+    ctx: {} as CompilerContext,
+    input: { revision: 1, changedFiles: ['page.vue'], sources: new Map() },
+    needsSnapshot: true,
+    patches: [],
+    prepareProviders: async () => {
+      if (stage === 'provider') {
+        throw failure
+      }
+      return [{ dispose }]
+    },
+    rebuild: async () => { throw failure },
+    sourcemap: false,
+    onPreparationStage: () => {},
+  })).rejects.toBe(failure)
+  expect(faultTriggered).toBe(true)
+  expect(dispose).toHaveBeenCalledTimes(stage === 'provider' ? 0 : 1)
+})
+
 it('does not read the preparation clock when observation is disabled', async () => {
   const clock = vi.spyOn(performance, 'now')
   const result = await compile({
