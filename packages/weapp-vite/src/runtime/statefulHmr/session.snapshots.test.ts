@@ -1020,6 +1020,49 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.fullBuild).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps a native patch local after asset settlement and persists it on the next asset refresh', async () => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const style = path.join(root, 'src/pages/index/index.wxss')
+    const original = 'Page({ data: { marker: "before" } })'
+    const current = 'Page({ data: { marker: "after" } })'
+    harness.nativeOutput = [{ type: 'chunk', fileName: 'pages/index/index.js', code: original, modules: {} }]
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    const published = new Map([['pages/index/index.js', original]])
+    harness.writeOutput.mockImplementation(async (_outDir, output) => {
+      for (const item of output) {
+        published.set(item.fileName, String(item.type === 'chunk' ? item.code : item.source))
+      }
+    })
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    session.sourceChange(style, 'update', ['style-sidecar:1'])
+    harness.callbacks!.onPatch([style], { type: 'Noop' })
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(session.rebuild).toHaveBeenCalledOnce()
+    expect(published.get(styleFile)).toContain('color: blue')
+
+    // 已稳定的资产批次不能使后续独立脚本编辑被强制完整重载。
+    harness.nativeOutput = [{ type: 'chunk', fileName: 'pages/index/index.js', code: current, modules: {} }]
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    getCompilerHmrHost(session.ctx).captureNative(script, current)
+    expect(harness.callbacks!.onPatch([script], { type: 'Patch', code: 'void 0', filename: 'native-update.js', changedIds: [script] })).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(delta).toHaveBeenCalledOnce()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    expect(published.get('pages/index/index.js')).toBe(original)
+
+    // 下一次资产刷新以未持久化的实际脚本输入升级完整发布。
+    session.sourceChange(style, 'update', ['style-sidecar:1'])
+    harness.callbacks!.onPatch([style], { type: 'Noop' })
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledOnce()
+    expect(published.get('pages/index/index.js')).toContain(current)
+  })
+
   it.each(['failed', 'superseded'] as const)('retains unpersisted native scripts across a %s full build', async (outcome) => {
     const script = path.join(root, 'src/pages/index/index.js')
     const style = path.join(root, 'src/pages/index/index.wxss')
