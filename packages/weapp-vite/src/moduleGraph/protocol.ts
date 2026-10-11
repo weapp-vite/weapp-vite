@@ -56,8 +56,14 @@ function normalizeProtocolPath(id: string) {
   }
 }
 
-function encodePath(id: string) {
-  return encodeURIComponent(normalizeProtocolPath(id))
+function normalizeSidecarRequest(ownerId: string, sourceId: string, kind: SidecarModuleKind, dependencyOnly?: true): SidecarSourceRequest {
+  const owner = normalizeProtocolPath(ownerId)
+  return {
+    kind,
+    ownerId: owner,
+    sourceId: sourceId === ownerId ? owner : normalizeProtocolPath(sourceId),
+    ...(dependencyOnly ? { dependencyOnly } : {}),
+  }
 }
 
 function decodePath(id: string) {
@@ -73,12 +79,16 @@ function resolveProtocolPrefix(id: string, virtualPrefix: string, resolvedPrefix
   }
 }
 
+function serializeLogicalEntry(request: LogicalEntryRequest, prefix: string) {
+  return `${prefix}${request.type}:${encodeURIComponent(request.sourceId)}${VIRTUAL_MODULE_SUFFIX}`
+}
+
 export function createLogicalEntryId(sourceId: string, type: LogicalEntryType) {
-  return `${WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX}${type}:${encodePath(sourceId)}${VIRTUAL_MODULE_SUFFIX}`
+  return serializeLogicalEntry({ sourceId: normalizeProtocolPath(sourceId), type }, WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX)
 }
 
 export function createLogicalEntrySpecifier(sourceId: string, type: LogicalEntryType) {
-  return `${WEAPP_VITE_LOGICAL_ENTRY_VIRTUAL_PREFIX}${type}:${encodePath(sourceId)}${VIRTUAL_MODULE_SUFFIX}`
+  return serializeLogicalEntry({ sourceId: normalizeProtocolPath(sourceId), type }, WEAPP_VITE_LOGICAL_ENTRY_VIRTUAL_PREFIX)
 }
 
 export function parseLogicalEntryId(id: string): LogicalEntryRequest | undefined {
@@ -108,12 +118,16 @@ export function parseLogicalEntryId(id: string): LogicalEntryRequest | undefined
   }
 }
 
+function serializeSidecarModule(request: SidecarModuleRequest, prefix: string) {
+  return `${prefix}${request.kind}:${encodeURIComponent(request.ownerId)}:${encodeURIComponent(request.sourceId)}${VIRTUAL_MODULE_SUFFIX}`
+}
+
 export function createSidecarModuleId(ownerId: string, sourceId: string, kind: SidecarModuleKind) {
-  return `${WEAPP_VITE_SIDECAR_RESOLVED_PREFIX}${kind}:${encodePath(ownerId)}:${encodePath(sourceId)}${VIRTUAL_MODULE_SUFFIX}`
+  return serializeSidecarModule(normalizeSidecarRequest(ownerId, sourceId, kind), WEAPP_VITE_SIDECAR_RESOLVED_PREFIX)
 }
 
 export function createSidecarModuleSpecifier(ownerId: string, sourceId: string, kind: SidecarModuleKind) {
-  return `${WEAPP_VITE_SIDECAR_VIRTUAL_PREFIX}${kind}:${encodePath(ownerId)}:${encodePath(sourceId)}${VIRTUAL_MODULE_SUFFIX}`
+  return serializeSidecarModule(normalizeSidecarRequest(ownerId, sourceId, kind), WEAPP_VITE_SIDECAR_VIRTUAL_PREFIX)
 }
 
 export function parseSidecarModuleId(id: string): SidecarModuleRequest | undefined {
@@ -139,21 +153,18 @@ export function parseSidecarModuleId(id: string): SidecarModuleRequest | undefin
   ) {
     return
   }
-  return {
-    kind: kind as SidecarModuleKind,
-    ownerId: decodePath(ownerId),
-    sourceId: decodePath(sourceId),
-  }
+  return normalizeSidecarRequest(decodeURIComponent(ownerId), decodeURIComponent(sourceId), kind as SidecarModuleKind)
 }
 
 export function createSidecarSourceSpecifier(ownerId: string, sourceId: string, kind: SidecarModuleKind, dependencyOnly = false) {
   const emitsStyle = kind === 'style' && !dependencyOnly
   const queryPrefix = emitsStyle ? '?' : '?raw&'
   const suffix = emitsStyle ? SIDECAR_SOURCE_STYLE_SUFFIX : SIDECAR_SOURCE_JS_SUFFIX
-  return `${normalizeProtocolPath(sourceId)}${queryPrefix}${WEAPP_VITE_SIDECAR_OWNER_QUERY_MARKER}=${encodePath(ownerId)}&${WEAPP_VITE_SIDECAR_QUERY_MARKER}=${kind}${suffix}`
+  const normalized = normalizeSidecarRequest(ownerId, sourceId, kind)
+  return `${normalized.sourceId}${queryPrefix}${WEAPP_VITE_SIDECAR_OWNER_QUERY_MARKER}=${encodeURIComponent(normalized.ownerId)}&${WEAPP_VITE_SIDECAR_QUERY_MARKER}=${kind}${suffix}`
 }
 
-export function parseSidecarSourceRequest(id: string): SidecarSourceRequest | undefined {
+function readSidecarSourceRequest(id: string): SidecarSourceRequest | undefined {
   const queryIndex = id.indexOf('?')
   if (queryIndex < 0) {
     return
@@ -178,19 +189,34 @@ export function parseSidecarSourceRequest(id: string): SidecarSourceRequest | un
   }
   return {
     kind: kind as SidecarModuleKind,
-    ownerId: normalizeProtocolPath(ownerId),
-    sourceId: normalizeProtocolPath(id.slice(0, queryIndex)),
+    ownerId,
+    sourceId: id.slice(0, queryIndex),
     ...(dependencyOnly ? { dependencyOnly: true as const } : {}),
+  }
+}
+
+export function parseSidecarSourceRequest(id: string): SidecarSourceRequest | undefined {
+  const request = readSidecarSourceRequest(id)
+  if (request) {
+    return normalizeSidecarRequest(request.ownerId, request.sourceId, request.kind, request.dependencyOnly)
+  }
+}
+
+/** 仅校验协议及交付类型；需要文件身份的图操作仍使用完整路径解析。 */
+export function parseSidecarSourceMetadata(id: string): Pick<SidecarSourceRequest, 'kind' | 'dependencyOnly'> | undefined {
+  const request = readSidecarSourceRequest(id)
+  if (request) {
+    return { kind: request.kind, ...(request.dependencyOnly ? { dependencyOnly: true } : {}) }
   }
 }
 
 export function resolveVirtualModuleId(id: string) {
   const logicalEntry = parseLogicalEntryId(id)
   if (logicalEntry) {
-    return createLogicalEntryId(logicalEntry.sourceId, logicalEntry.type)
+    return serializeLogicalEntry(logicalEntry, WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX)
   }
   const sidecar = parseSidecarModuleId(id)
   if (sidecar) {
-    return createSidecarModuleId(sidecar.ownerId, sidecar.sourceId, sidecar.kind)
+    return serializeSidecarModule(sidecar, WEAPP_VITE_SIDECAR_RESOLVED_PREFIX)
   }
 }

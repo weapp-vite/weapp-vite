@@ -15,7 +15,7 @@ import fs from 'node:fs'
 import process from 'node:process'
 import { createTailwindController } from '@weapp-vite/tailwindcss'
 import path from 'pathe'
-import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
+import { parseSidecarSourceMetadata, parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { resolveBuildScope } from '../runtime/buildScope'
 import { safeGetPackageInfoSync } from '../runtime/localPkg'
 import { deferWatcherResourceCleanup } from '../runtime/watcherPlugin'
@@ -151,6 +151,9 @@ function outputAssetSource(asset: OutputAsset) {
 }
 
 function parseManagedEntryIndex(id: string, entries: Map<string, number>) {
+  if (entries.size === 0) {
+    return
+  }
   const sourceId = normalizeFsResolvedId(id.split('?')[0], { stripLeadingNullByte: true })
   return entries.get(normalizeManagedTailwindcssEntryPath(sourceId))
 }
@@ -688,7 +691,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       return source
     },
     load(id) {
-      if (resolved.options.generator === false || parseWeappVueStyleRequest(id)) {
+      if (resolved.options.generator === false || entryIndex.size === 0 || parseWeappVueStyleRequest(id)) {
         return null
       }
       const sidecar = parseSidecarSourceRequest(id)
@@ -718,7 +721,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       return code
     },
     transform(code, id) {
-      if (resolved.options.generator === false || parseSidecarSourceRequest(id)?.dependencyOnly) {
+      if (resolved.options.generator === false || parseSidecarSourceMetadata(id)?.dependencyOnly) {
         return null
       }
       const sourceId = requestSources.get(id) ?? id

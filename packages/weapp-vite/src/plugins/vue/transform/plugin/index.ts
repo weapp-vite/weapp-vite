@@ -6,7 +6,7 @@ import type { createPageEntryMatcher } from '../../../wevu'
 import type { ResolvedAppShell } from '../appShell'
 import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import { fs } from '@weapp-core/shared/fs'
-import { parseSidecarSourceRequest } from '../../../../moduleGraph/protocol'
+import { parseSidecarSourceMetadata } from '../../../../moduleGraph/protocol'
 import { createHmrProfileEventId, recordHmrProfileDuration, recordHmrProfileOperation } from '../../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
@@ -190,7 +190,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
       if (options.react && /\.(?:jsx|tsx)(?:\?.*)?$/.test(id)) {
         return null
       }
-      if (parseSidecarSourceRequest(id) || !VUE_TRANSFORM_FILTER_RE.test(id) || !isVueLikeId(id)) {
+      if (parseSidecarSourceMetadata(id) || !VUE_TRANSFORM_FILTER_RE.test(id) || !isVueLikeId(id)) {
         return null
       }
       const startedAt = performance.now()
