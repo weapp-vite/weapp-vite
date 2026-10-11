@@ -4,6 +4,10 @@ PR 的 `Performance Smoke` 仅验证当前 HEAD 的正确性，目标 10 分钟�
 
 `Nightly Performance` 每天北京时间 03:35（UTC 19:35）运行，也可在 Actions 手动填写 `pr-number`。每次检查 main，再从带 `performance:nightly` 标签的开放 PR 中按标签等待时间选择一个尚未验收的 HEAD；手动输入替换标签队列选择。未选中的 PR 保留标签排队。普通功能、类型、runtime 和跨平台 CI 不变，Nightly 不作为普通 PR 的必需检查，本次不修改分支保护。
 
+`Candidate Performance` 用于要求完整验收先于 PR 的候选提交。维护者显式推送 `codex/performance-candidate/<完整 SHA>` 标签，且标签名中的 SHA 必须等于实际执行提交；合入默认分支后也可手动 dispatch，填写等于所选工作流提交的 `candidate-sha`。仅解析本仓该提交，不查询 main 或 PR 队列，计划标记 `execution: candidate` 并保存触发事件、ref 和完整提交身份，不将候选记录为 main。
+
+候选入口复用同一固定基线、场景清单、27 分片、7/20 对样本、唯一确认和持久去重键，并与 Nightly 共用 workflow 串行队列。重新推送标签或 rerun 不重新采集已有尝试。已有 pending、失败或取消记录继续保留；复用成功记录时重新下载原始运行的计划和全部分片，核对来源并复算，状态或原始证据缺失、过期均不能通过。采集 job 只有读权限，规划和状态发布只在维护者显式选择的本仓候选上运行；发布前核对真实运行事件、仓库、ref、driver/head SHA、登记状态和全部原始分片，不发布 PR 评论。Nightly 的默认分支规划与高权限报告路径保持原有约束。
+
 ## 固定基线与去重
 
 批准基线在 [policy.json](./policy.json) 中维护，初始为 `e7862e61dd83e3b9e356ac1e176267b31ab298af`，main 与所有 PR（包括 #1076）均使用它。禁止自动滚动到 merge-base、修改基线源码或删除失败场景。更新比较对象必须显式提交策略配置变更。
@@ -64,7 +68,7 @@ PR 评论明确区分正确性冒烟与完整性能“未运行 / 排队 / 运�
 pnpm exec vitest run scripts/performanceGate scripts/benchmarkTemplatesHmr scripts/benchmarkTemplatesPerformance/measuredBuild.test.ts scripts/performance-comment-workflow.test.ts
 ```
 
-定向测试覆盖触发与权限边界、队列/去重、启动前配置过滤、交替串行顺序、重复/缺样本/错误身份、三 OS 缺分片、smoke 与完整结论隔离、进程 deadline/退出失败/Windows 清理以及过期 PR HEAD。此类编排测试不属于正式性能验收。新 Nightly 和高权限报告入口必须合入默认分支后才生效，不能为提前验证而执行未合并 PR 的高权限脚本。
+定向测试覆盖触发与权限边界、队列/去重、启动前配置过滤、交替串行顺序、重复/缺样本/错误身份、三 OS 缺分片、smoke 与完整结论隔离、进程 deadline/退出失败/Windows 清理以及过期 PR HEAD。此类编排测试不属于正式性能验收。Nightly 和其高权限报告入口必须合入默认分支后才生效；提交合并前的正式验收只通过维护者显式选择的候选入口，不改变 Nightly 的可信来源。
 
 PR #1076 原有 Windows/macOS 唯一采集在结束并保全证据后才推送迁移，不能用新工作流取消它们。既有回退、不稳定和固定基线 Wevu sitemap 缺陷继续保留；迁移执行时机不代表 #1076 达到 5% 要求。
 
