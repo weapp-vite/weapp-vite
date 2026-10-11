@@ -33,6 +33,7 @@ import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectAppEntries } from './app'
 import { materializeVueAutoImportEntries } from './autoImport'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
+import { createNativeLayoutAssetResolver } from './nativeLayoutAssets'
 import { createEntryResolver } from './resolve'
 import { createScriptSetupAnalyzer } from './scriptSetupAnalysis'
 import { applyScriptSetupUsingComponents, scanTemplateEntry } from './template'
@@ -208,6 +209,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     type: 'app' | 'page' | 'component',
     loadOptions?: { metadataOnly?: boolean },
   ) {
+    const resolveNativeLayoutAssets = createNativeLayoutAssetResolver()
     if (configService.isDev || configService.inlineConfig?.build?.watch) {
       existsCache.clear()
     }
@@ -426,8 +428,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         normalizeEntry,
         jsonPath,
         platform: configService.platform,
+        resolveNativeLayoutAssets,
       })
-      await registerResolvedPageLayoutDependencies(ctx, normalizedId, layoutPlan.layouts)
+      await registerResolvedPageLayoutDependencies(ctx, normalizedId, layoutPlan.layouts, resolveNativeLayoutAssets)
       for (const layout of layoutPlan.layouts) {
         if (layout.kind === 'native') {
           continue
@@ -795,6 +798,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           emittedWxmlCodeCache: ctx.runtimeState?.wxml?.emittedCode,
           styleImportsCache,
           resolvedPageLayoutPlan,
+          resolveNativeLayoutAssets,
           entryCodeSource,
           skipEntries: shouldSkipAppEntries,
           metadataOnly: loadOptions?.metadataOnly,

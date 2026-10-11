@@ -321,14 +321,12 @@ defineThemeJson({
       }
     })
 
-    it('reuses cache when vue file mtime and dependencies are unchanged', async () => {
+    it('reads the current snapshot without rereading the physical source', async () => {
       const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
       const file = path.join(root, 'cache.vue')
       const readSpy = vi.spyOn(fs, 'readFile')
       try {
-        await fs.writeFile(
-          file,
-          `
+        const source = `
 <template>
   <view />
 </template>
@@ -337,19 +335,16 @@ defineThemeJson({
   "navigationBarTitleText": "cached"
 }
 </json>
-          `.trim(),
-          'utf8',
-        )
+          `.trim()
+        await fs.writeFile(file, source, 'utf8')
 
         const first = await extractConfigFromVue(file)
-        const readSource = vi.fn(async () => {
-          throw new Error('cached config should not read source')
-        })
+        const readSource = vi.fn(async () => source)
         const second = await extractConfigFromVue(file, { readSource })
 
         expect(first).toMatchObject({ navigationBarTitleText: 'cached' })
         expect(second).toMatchObject({ navigationBarTitleText: 'cached' })
-        expect(readSource).not.toHaveBeenCalled()
+        expect(readSource).toHaveBeenCalledOnce()
         const readCalls = readSpy.mock.calls.filter(call => String(call[0]) === file)
         expect(readCalls.length).toBe(1)
       }

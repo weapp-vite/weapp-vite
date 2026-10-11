@@ -1,0 +1,16 @@
+{
+  "verified": true,
+  "diagnosticOnly": true,
+  "diagnosticParent": "<diagnostic-v1>",
+  "manifestSha256": "e3b06c637eb6072fbca268b6b76f7aba7ff6311598fe7088dd9d6c1cd2b1bb05",
+  "variants": {
+    "baseline": {
+      "root": "<diagnostic-v1>/baseline",
+      "digest": "66c56d3d549e4051057354f9abbfed77168b0ace09bc0782ee85b9fb2364062e"
+    },
+    "candidate": {
+      "root": "<diagnostic-v1>/candidate",
+      "digest": "1fe17eb5d7c9dae27ad4a0d6235372bdcfcc740da0c0dcc688565b288329b449"
+    }
+  }
+}

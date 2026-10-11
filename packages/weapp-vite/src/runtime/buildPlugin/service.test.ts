@@ -429,7 +429,7 @@ async function startClassicSnapshotContext() {
   if (!onChange) {
     throw new Error('Classic HMR graph provider did not subscribe')
   }
-  return { ctx, watcher, onChange }
+  return { ctx, watcher, sidecarWatcher, onChange }
 }
 
 async function flushAsyncTasks() {
@@ -1511,6 +1511,57 @@ describe('runtime buildPlugin service', () => {
       ])
       expect(buildMock).toHaveBeenCalledTimes(3)
       expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenLastCalledWith(file, 'delete')
+    }
+    finally {
+      release.resolve()
+      await watcher.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it.each([
+    ['json', 'add'],
+    ['json', 'unlink'],
+    ['scss', 'add'],
+    ['scss', 'unlink'],
+  ])('queues layout sidecar topology changes during an active snapshot (%s, %s)', async (extension, event) => {
+    const { ctx, watcher, sidecarWatcher, onChange } = await startClassicSnapshotContext()
+    const file = `${ctx.configService.absoluteSrcRoot}/layouts/native/index.${extension}`
+    ctx.moduleGraphService.hasModule.mockImplementation((id: string) => id !== file)
+    const started = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    const successor = Promise.withResolvers<void>()
+    const publications: Array<{ full: boolean, events: unknown }> = []
+    buildMock.mockImplementation(async () => {
+      publications.push({
+        full: ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh === true,
+        events: ctx.runtimeState.build.hmr.profile.sourceEvents,
+      })
+      if (publications.length === 1) {
+        started.resolve()
+        await release.promise
+      }
+      else {
+        successor.resolve()
+      }
+      return { output: [] }
+    })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      onChange({ event: 'update', file: HMR_PAGE_ID })
+      await vi.runOnlyPendingTimersAsync()
+      await started.promise
+      sidecarWatcher.emit(event, file)
+      await vi.runOnlyPendingTimersAsync()
+      expect(publications).toHaveLength(1)
+      release.resolve()
+      await successor.promise
+      await flushAsyncTasks()
+      expect(publications).toEqual([
+        { full: false, events: [expect.objectContaining({ file: HMR_PAGE_ID, event: 'update' })] },
+        { full: true, events: [expect.objectContaining({ file, event: event === 'add' ? 'create' : 'delete' })] },
+      ])
+      expect(buildMock).toHaveBeenCalledTimes(3)
     }
     finally {
       release.resolve()

@@ -1,0 +1,25 @@
+{
+  "contract": "diagnostic-evidence-manifest-v1",
+  "files": {
+    "README.md": {
+      "sha256": "35ebdf0d0e3923c696c49fe97b7c7118a05053a35386215b91e776b8ba472569",
+      "bytes": 4858
+    },
+    "evaluation.json": {
+      "sha256": "f0f24893ac734d52671f3515d878bce828efbbc9736ea3105861554540d8b85b",
+      "bytes": 133088
+    },
+    "preparation-logs.json": {
+      "sha256": "275260014bc057f875305300fa8700dbe17835b26762dfe74b213867e5c7f73c",
+      "bytes": 22495
+    },
+    "production-identity.json": {
+      "sha256": "0916493b7dc813ebcf74125d45c4adbd85e14f2769345203c3f9f4f7bde45681",
+      "bytes": 167792
+    },
+    "provenance.json": {
+      "sha256": "e9dc74e29018fff45bd5c0cde4b12b0534c5d3c86ce0547e8c29f2be0bb70971",
+      "bytes": 1470
+    }
+  }
+}

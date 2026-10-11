@@ -1,0 +1,254 @@
+[
+  {
+    "variant": "baseline-off",
+    "input": "weapp-vite-template",
+    "kind": "build",
+    "pair": 0,
+    "file": "primary/build/weapp-vite-template/0/baseline-off/prepare.log",
+    "originalSha256": "73c3a7f2bf5b219d64cde6106ede893f1fe0a2b1a3b5fca5a298159fcd8bdc4a",
+    "contents": "[mode]: development\nℹ 已生成 .weapp-vite 支持文件。\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "weapp-vite-template",
+    "kind": "build",
+    "pair": 0,
+    "file": "primary/build/weapp-vite-template/0/candidate-off/prepare.log",
+    "originalSha256": "73c3a7f2bf5b219d64cde6106ede893f1fe0a2b1a3b5fca5a298159fcd8bdc4a",
+    "contents": "[mode]: development\nℹ 已生成 .weapp-vite 支持文件。\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "weapp-vite-template",
+    "kind": "hmr",
+    "pair": 0,
+    "file": "primary/hmr/weapp-vite-template/0/baseline-off/collector.log",
+    "originalSha256": "a12446263808287cbb22061f22994515852f91245e16486f79e4a8269ec7001b",
+    "contents": "\n[templates-hmr] benchmarking weapp-vite-template\n[mode]: development\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] weapp-vite-template native-page-template 1/2 edit wall=289.20ms total=-\n[templates-hmr] weapp-vite-template native-page-template 2/2 edit wall=287.26ms total=-\n[templates-hmr] weapp-vite-template native-page-script 1/2 edit wall=238.13ms total=-\n[templates-hmr] weapp-vite-template native-page-script 2/2 edit wall=296.90ms total=-\n[templates-hmr] weapp-vite-template native-page-style 1/2 edit wall=317.78ms total=-\n[templates-hmr] weapp-vite-template native-page-style 2/2 edit wall=291.83ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/weapp-vite-template/0/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/weapp-vite-template/0/off/report.md\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "weapp-vite-template",
+    "kind": "hmr",
+    "pair": 0,
+    "file": "primary/hmr/weapp-vite-template/0/candidate-off/collector.log",
+    "originalSha256": "e1d633f55ebb1ddab47192bf0b622a00c4afcc24d1eb0ad4fd064e91f374efd2",
+    "contents": "\n[templates-hmr] benchmarking weapp-vite-template\n[mode]: development\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] weapp-vite-template native-page-template 1/2 edit wall=286.78ms total=-\n[templates-hmr] weapp-vite-template native-page-template 2/2 edit wall=260.54ms total=-\n[templates-hmr] weapp-vite-template native-page-script 1/2 edit wall=238.35ms total=-\n[templates-hmr] weapp-vite-template native-page-script 2/2 edit wall=269.60ms total=-\n[templates-hmr] weapp-vite-template native-page-style 1/2 edit wall=289.99ms total=-\n[templates-hmr] weapp-vite-template native-page-style 2/2 edit wall=288.77ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/weapp-vite-template/0/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/weapp-vite-template/0/off/report.md\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "weapp-vite-wevu-template",
+    "kind": "build",
+    "pair": 0,
+    "file": "primary/build/weapp-vite-wevu-template/0/baseline-off/prepare.log",
+    "originalSha256": "3f31a8f28b9e7d23bc83bb61221e7bd10f188e1794091a16d575c38964de167f",
+    "contents": "ℹ 已生成 .weapp-vite 支持文件。\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "weapp-vite-wevu-template",
+    "kind": "build",
+    "pair": 0,
+    "file": "primary/build/weapp-vite-wevu-template/0/candidate-off/prepare.log",
+    "originalSha256": "3f31a8f28b9e7d23bc83bb61221e7bd10f188e1794091a16d575c38964de167f",
+    "contents": "ℹ 已生成 .weapp-vite 支持文件。\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "weapp-vite-wevu-template",
+    "kind": "hmr",
+    "pair": 0,
+    "file": "primary/hmr/weapp-vite-wevu-template/0/baseline-off/collector.log",
+    "originalSha256": "8d04a19845dbdd6d6f16db80ea8c0824891a2224d4b0df606aeace7a012242ef",
+    "contents": "\n[templates-hmr] benchmarking weapp-vite-wevu-template\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] weapp-vite-wevu-template vue-page-template 1/2 edit wall=209.42ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-template 2/2 edit wall=261.95ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-script 1/2 edit wall=219.17ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-script 2/2 edit wall=297.67ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-style 1/2 edit wall=292.24ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-style 2/2 edit wall=317.57ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/weapp-vite-wevu-template/0/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/weapp-vite-wevu-template/0/off/report.md\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "weapp-vite-wevu-template",
+    "kind": "hmr",
+    "pair": 0,
+    "file": "primary/hmr/weapp-vite-wevu-template/0/candidate-off/collector.log",
+    "originalSha256": "78296795630937a9fbe80b69276f9276a873c7e66219ffdf1f275cc1c98b70c0",
+    "contents": "\n[templates-hmr] benchmarking weapp-vite-wevu-template\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] weapp-vite-wevu-template vue-page-template 1/2 edit wall=182.46ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-template 2/2 edit wall=156.47ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-script 1/2 edit wall=221.80ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-script 2/2 edit wall=276.62ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-style 1/2 edit wall=264.23ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-style 2/2 edit wall=157.23ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/weapp-vite-wevu-template/0/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/weapp-vite-wevu-template/0/off/report.md\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "weapp-vite-tailwindcss-tdesign-template",
+    "kind": "build",
+    "pair": 0,
+    "file": "primary/build/weapp-vite-tailwindcss-tdesign-template/0/baseline-off/prepare.log",
+    "originalSha256": "3f31a8f28b9e7d23bc83bb61221e7bd10f188e1794091a16d575c38964de167f",
+    "contents": "ℹ 已生成 .weapp-vite 支持文件。\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "weapp-vite-tailwindcss-tdesign-template",
+    "kind": "build",
+    "pair": 0,
+    "file": "primary/build/weapp-vite-tailwindcss-tdesign-template/0/candidate-off/prepare.log",
+    "originalSha256": "3f31a8f28b9e7d23bc83bb61221e7bd10f188e1794091a16d575c38964de167f",
+    "contents": "ℹ 已生成 .weapp-vite 支持文件。\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "weapp-vite-tailwindcss-tdesign-template",
+    "kind": "hmr",
+    "pair": 0,
+    "file": "primary/hmr/weapp-vite-tailwindcss-tdesign-template/0/baseline-off/collector.log",
+    "originalSha256": "2e398f8631eed1912de18b3f44938b322ff21bf49987fbe57eea7092806fc451",
+    "contents": "\n[templates-hmr] benchmarking weapp-vite-tailwindcss-tdesign-template\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-template 1/2 edit wall=546.91ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-template 2/2 edit wall=523.10ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-script 1/2 edit wall=518.31ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-script 2/2 edit wall=521.97ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-style 1/2 edit wall=314.21ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-style 2/2 edit wall=261.23ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/weapp-vite-tailwindcss-tdesign-template/0/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/weapp-vite-tailwindcss-tdesign-template/0/off/report.md\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "weapp-vite-tailwindcss-tdesign-template",
+    "kind": "hmr",
+    "pair": 0,
+    "file": "primary/hmr/weapp-vite-tailwindcss-tdesign-template/0/candidate-off/collector.log",
+    "originalSha256": "b6da6acfac5657afed6c6852f70019ec1e238b23f1c344d57abc437b53a6e2e6",
+    "contents": "\n[templates-hmr] benchmarking weapp-vite-tailwindcss-tdesign-template\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-template 1/2 edit wall=444.99ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-template 2/2 edit wall=524.09ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-script 1/2 edit wall=461.93ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-script 2/2 edit wall=488.96ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-style 1/2 edit wall=289.76ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-style 2/2 edit wall=234.85ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/weapp-vite-tailwindcss-tdesign-template/0/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/weapp-vite-tailwindcss-tdesign-template/0/off/report.md\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "issue-1134-profile",
+    "kind": "hmr",
+    "pair": 0,
+    "file": "primary/hmr/issue-1134-profile/0/baseline-off/collector.log",
+    "originalSha256": "cff02ab44511c0d355b2461926397a0aed7e6beeb8c679dd41a3359b9397a844",
+    "contents": "\n[templates-hmr] benchmarking issue-1134-profile\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] issue-1134-profile component-topology-json 1/2 edit wall=317.19ms total=-\n[templates-hmr] issue-1134-profile component-topology-json 2/2 edit wall=288.14ms total=-\n[templates-hmr] issue-1134-profile route-topology-json 1/2 edit wall=288.46ms total=-\n[templates-hmr] issue-1134-profile route-topology-json 2/2 edit wall=289.01ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/issue-1134-profile/0/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/issue-1134-profile/0/off/report.md\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "issue-1134-profile",
+    "kind": "hmr",
+    "pair": 0,
+    "file": "primary/hmr/issue-1134-profile/0/candidate-off/collector.log",
+    "originalSha256": "564fcdb2de2ae669a84f27c5c1bc37e2d3585869cf11f1d9fbe2c07b694ae0ab",
+    "contents": "\n[templates-hmr] benchmarking issue-1134-profile\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] issue-1134-profile component-topology-json 1/2 edit wall=261.96ms total=-\n[templates-hmr] issue-1134-profile component-topology-json 2/2 edit wall=287.87ms total=-\n[templates-hmr] issue-1134-profile route-topology-json 1/2 edit wall=290.72ms total=-\n[templates-hmr] issue-1134-profile route-topology-json 2/2 edit wall=292.26ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/issue-1134-profile/0/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/issue-1134-profile/0/off/report.md\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "weapp-vite-template",
+    "kind": "build",
+    "pair": 1,
+    "file": "primary/build/weapp-vite-template/1/candidate-off/prepare.log",
+    "originalSha256": "73c3a7f2bf5b219d64cde6106ede893f1fe0a2b1a3b5fca5a298159fcd8bdc4a",
+    "contents": "[mode]: development\nℹ 已生成 .weapp-vite 支持文件。\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "weapp-vite-template",
+    "kind": "build",
+    "pair": 1,
+    "file": "primary/build/weapp-vite-template/1/baseline-off/prepare.log",
+    "originalSha256": "73c3a7f2bf5b219d64cde6106ede893f1fe0a2b1a3b5fca5a298159fcd8bdc4a",
+    "contents": "[mode]: development\nℹ 已生成 .weapp-vite 支持文件。\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "weapp-vite-template",
+    "kind": "hmr",
+    "pair": 1,
+    "file": "primary/hmr/weapp-vite-template/1/candidate-off/collector.log",
+    "originalSha256": "fcf6c80bbb3710c8c1d71c80bf30a0a0a587a201d49c0be6bf1816d6e49aab5f",
+    "contents": "\n[templates-hmr] benchmarking weapp-vite-template\n[mode]: development\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] weapp-vite-template native-page-template 1/2 edit wall=287.78ms total=-\n[templates-hmr] weapp-vite-template native-page-template 2/2 edit wall=260.25ms total=-\n[templates-hmr] weapp-vite-template native-page-script 1/2 edit wall=235.68ms total=-\n[templates-hmr] weapp-vite-template native-page-script 2/2 edit wall=288.94ms total=-\n[templates-hmr] weapp-vite-template native-page-style 1/2 edit wall=263.96ms total=-\n[templates-hmr] weapp-vite-template native-page-style 2/2 edit wall=312.88ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/weapp-vite-template/1/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/weapp-vite-template/1/off/report.md\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "weapp-vite-template",
+    "kind": "hmr",
+    "pair": 1,
+    "file": "primary/hmr/weapp-vite-template/1/baseline-off/collector.log",
+    "originalSha256": "85e20d8fd61db7ca413ec0a2869d7b99e52e451ccea6d13b56ca311cad96a276",
+    "contents": "\n[templates-hmr] benchmarking weapp-vite-template\n[mode]: development\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] weapp-vite-template native-page-template 1/2 edit wall=312.77ms total=-\n[templates-hmr] weapp-vite-template native-page-template 2/2 edit wall=310.86ms total=-\n[templates-hmr] weapp-vite-template native-page-script 1/2 edit wall=262.41ms total=-\n[templates-hmr] weapp-vite-template native-page-script 2/2 edit wall=292.32ms total=-\n[templates-hmr] weapp-vite-template native-page-style 1/2 edit wall=291.14ms total=-\n[templates-hmr] weapp-vite-template native-page-style 2/2 edit wall=288.83ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/weapp-vite-template/1/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/weapp-vite-template/1/off/report.md\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "weapp-vite-wevu-template",
+    "kind": "build",
+    "pair": 1,
+    "file": "primary/build/weapp-vite-wevu-template/1/candidate-off/prepare.log",
+    "originalSha256": "3f31a8f28b9e7d23bc83bb61221e7bd10f188e1794091a16d575c38964de167f",
+    "contents": "ℹ 已生成 .weapp-vite 支持文件。\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "weapp-vite-wevu-template",
+    "kind": "build",
+    "pair": 1,
+    "file": "primary/build/weapp-vite-wevu-template/1/baseline-off/prepare.log",
+    "originalSha256": "3f31a8f28b9e7d23bc83bb61221e7bd10f188e1794091a16d575c38964de167f",
+    "contents": "ℹ 已生成 .weapp-vite 支持文件。\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "weapp-vite-wevu-template",
+    "kind": "hmr",
+    "pair": 1,
+    "file": "primary/hmr/weapp-vite-wevu-template/1/candidate-off/collector.log",
+    "originalSha256": "de20c9987c1018d7ba9cfbbd353693444923dfd8524931fb7aac03a8063b3c38",
+    "contents": "\n[templates-hmr] benchmarking weapp-vite-wevu-template\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] weapp-vite-wevu-template vue-page-template 1/2 edit wall=183.57ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-template 2/2 edit wall=289.64ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-script 1/2 edit wall=248.37ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-script 2/2 edit wall=159.87ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-style 1/2 edit wall=260.85ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-style 2/2 edit wall=158.32ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/weapp-vite-wevu-template/1/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/weapp-vite-wevu-template/1/off/report.md\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "weapp-vite-wevu-template",
+    "kind": "hmr",
+    "pair": 1,
+    "file": "primary/hmr/weapp-vite-wevu-template/1/baseline-off/collector.log",
+    "originalSha256": "9708d437590f18664e483ab4fda1f9012b059217a7adc9987801d2ac6a237d1e",
+    "contents": "\n[templates-hmr] benchmarking weapp-vite-wevu-template\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] weapp-vite-wevu-template vue-page-template 1/2 edit wall=235.77ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-template 2/2 edit wall=291.64ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-script 1/2 edit wall=215.88ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-script 2/2 edit wall=277.83ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-style 1/2 edit wall=266.90ms total=-\n[templates-hmr] weapp-vite-wevu-template vue-page-style 2/2 edit wall=264.38ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/weapp-vite-wevu-template/1/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/weapp-vite-wevu-template/1/off/report.md\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "weapp-vite-tailwindcss-tdesign-template",
+    "kind": "build",
+    "pair": 1,
+    "file": "primary/build/weapp-vite-tailwindcss-tdesign-template/1/candidate-off/prepare.log",
+    "originalSha256": "3f31a8f28b9e7d23bc83bb61221e7bd10f188e1794091a16d575c38964de167f",
+    "contents": "ℹ 已生成 .weapp-vite 支持文件。\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "weapp-vite-tailwindcss-tdesign-template",
+    "kind": "build",
+    "pair": 1,
+    "file": "primary/build/weapp-vite-tailwindcss-tdesign-template/1/baseline-off/prepare.log",
+    "originalSha256": "3f31a8f28b9e7d23bc83bb61221e7bd10f188e1794091a16d575c38964de167f",
+    "contents": "ℹ 已生成 .weapp-vite 支持文件。\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "weapp-vite-tailwindcss-tdesign-template",
+    "kind": "hmr",
+    "pair": 1,
+    "file": "primary/hmr/weapp-vite-tailwindcss-tdesign-template/1/candidate-off/collector.log",
+    "originalSha256": "b6211ddd6e932af0df0beec1a14771b437123b8c017027fd85ebd3285248bc42",
+    "contents": "\n[templates-hmr] benchmarking weapp-vite-tailwindcss-tdesign-template\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-template 1/2 edit wall=523.68ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-template 2/2 edit wall=499.89ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-script 1/2 edit wall=492.20ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-script 2/2 edit wall=541.15ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-style 1/2 edit wall=315.41ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-style 2/2 edit wall=261.27ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/weapp-vite-tailwindcss-tdesign-template/1/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/weapp-vite-tailwindcss-tdesign-template/1/off/report.md\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "weapp-vite-tailwindcss-tdesign-template",
+    "kind": "hmr",
+    "pair": 1,
+    "file": "primary/hmr/weapp-vite-tailwindcss-tdesign-template/1/baseline-off/collector.log",
+    "originalSha256": "56cd8e097da33f96fa3c7b80ea58eef7129d05f97583379bf7d687f739be8f10",
+    "contents": "\n[templates-hmr] benchmarking weapp-vite-tailwindcss-tdesign-template\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-template 1/2 edit wall=548.43ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-template 2/2 edit wall=521.03ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-script 1/2 edit wall=464.03ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-script 2/2 edit wall=544.70ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-style 1/2 edit wall=289.12ms total=-\n[templates-hmr] weapp-vite-tailwindcss-tdesign-template native-page-style 2/2 edit wall=288.79ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/weapp-vite-tailwindcss-tdesign-template/1/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/weapp-vite-tailwindcss-tdesign-template/1/off/report.md\n\n\n"
+  },
+  {
+    "variant": "candidate-off",
+    "input": "issue-1134-profile",
+    "kind": "hmr",
+    "pair": 1,
+    "file": "primary/hmr/issue-1134-profile/1/candidate-off/collector.log",
+    "originalSha256": "50c861f298a2d6a515c1724a3965a92433328f12c6b3d3b14c41458b1c10e091",
+    "contents": "\n[templates-hmr] benchmarking issue-1134-profile\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] issue-1134-profile component-topology-json 1/2 edit wall=262.83ms total=-\n[templates-hmr] issue-1134-profile component-topology-json 2/2 edit wall=290.27ms total=-\n[templates-hmr] issue-1134-profile route-topology-json 1/2 edit wall=290.46ms total=-\n[templates-hmr] issue-1134-profile route-topology-json 2/2 edit wall=260.83ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/issue-1134-profile/1/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/issue-1134-profile/1/off/report.md\n\n\n"
+  },
+  {
+    "variant": "baseline-off",
+    "input": "issue-1134-profile",
+    "kind": "hmr",
+    "pair": 1,
+    "file": "primary/hmr/issue-1134-profile/1/baseline-off/collector.log",
+    "originalSha256": "885c0427874df617bae87d63d72ad9632fb1f00026c8ae64d4b7b8745cdc840b",
+    "contents": "\n[templates-hmr] benchmarking issue-1134-profile\nℹ 已生成 .weapp-vite 支持文件。\n[templates-hmr] issue-1134-profile component-topology-json 1/2 edit wall=318.18ms total=-\n[templates-hmr] issue-1134-profile component-topology-json 2/2 edit wall=288.23ms total=-\n[templates-hmr] issue-1134-profile route-topology-json 1/2 edit wall=288.93ms total=-\n[templates-hmr] issue-1134-profile route-topology-json 2/2 edit wall=313.46ms total=-\n\n[templates-hmr] report.json -> <checkout>/primary/hmr/issue-1134-profile/1/off/report.json\n[templates-hmr] report.md -> <checkout>/primary/hmr/issue-1134-profile/1/off/report.md\n\n\n"
+  }
+]
