@@ -1,7 +1,7 @@
+import type { Writable } from 'node:stream'
 import type { Plugin } from 'vite'
-import { writeSync } from 'node:fs'
 import path from 'node:path'
-import process from 'node:process'
+import { createBufferedBuildDiagnosticSink } from './sink'
 
 export const AUTO_IMPORT_BUILD_HOOK_PREFIX = '[auto-import-build-hook] '
 export const autoImportBuildHookNames = ['buildStart', 'resolveId', 'load', 'transform', 'moduleParsed', 'buildEnd', 'renderStart', 'renderChunk', 'generateBundle', 'writeBundle', 'closeBundle'] as const
@@ -26,7 +26,19 @@ export interface BuildHookOptions {
   roots: Array<{ path: string, label: string }>
   now?: () => number
   timeOrigin?: () => number
-  observe?: (event: BuildHookEvent) => void
+  observe?: (event: BuildHookEvent | BuildDiagnosticTerminal) => void
+  output?: Writable
+}
+
+export interface BuildDiagnosticTerminal {
+  kind: 'producer-end'
+  schemaVersion: 2
+  lastAssignedId: number
+  pendingIds: number[]
+  timeOrigin: number
+  endedAtMs: number
+  drained: boolean
+  finalCloseHook: boolean
 }
 
 /** 模块标识保留查询串与虚拟前缀，路径只记录稳定的所属范围。 */
@@ -58,17 +70,23 @@ export function createAutoImportBuildDiagnosticsPlugin(enabled: boolean, options
   }
   const now = options.now ?? (() => performance.now())
   const timeOrigin = options.timeOrigin ?? (() => performance.timeOrigin)
+  const sink = options.observe ? undefined : createBufferedBuildDiagnosticSink(options.output)
   const observe = options.observe ?? ((event) => {
     // 子进程输出已由原测量器捕获；写盘发生在该进程的测量结束后。
-    writeSync(process.stdout.fd, `${AUTO_IMPORT_BUILD_HOOK_PREFIX}${JSON.stringify(event)}\n`)
+    sink!.write(`${AUTO_IMPORT_BUILD_HOOK_PREFIX}${JSON.stringify(event)}\n`)
   })
   let sequence = 0
+  let observerFailed = false
+  let closing: Promise<void> | undefined
+  let resolvedPlugins: readonly Plugin[] = []
+  const pendingIds = new Set<number>()
   const wrappedPlugins = new WeakSet<object>()
-  const emit = (event: BuildHookEvent) => {
+  const emit = (event: BuildHookEvent | BuildDiagnosticTerminal) => {
     try {
       observe(event)
     }
     catch {
+      observerFailed = true
       // 诊断接收方不能改变构建结果或替换首个编译错误。
     }
   }
@@ -80,11 +98,13 @@ export function createAutoImportBuildDiagnosticsPlugin(enabled: boolean, options
     catch {
       return original.apply(this, args)
     }
+    pendingIds.add(event.id)
     emit(event)
     const finish = (status: 'completed' | 'failed', error?: unknown) => {
       try {
         const endedAtMs = now()
         emit({ ...event, status, endedAtMs, elapsedMs: endedAtMs - event.startedAtMs, ...(status === 'failed' ? { errorName: error instanceof Error ? error.name : 'non-error' } : {}) })
+        pendingIds.delete(event.id)
       }
       catch {
         // 保留开始记录，结束时钟故障不改变原 hook 的返回或异常。
@@ -117,10 +137,11 @@ export function createAutoImportBuildDiagnosticsPlugin(enabled: boolean, options
     finish('completed')
     return result
   }
-  return {
+  const diagnostics: Plugin = {
     name: 'benchmark:auto-import-build-diagnostics',
     enforce: 'post',
     configResolved(config) {
+      resolvedPlugins = config.plugins
       for (const [pluginIndex, plugin] of config.plugins.entries()) {
         if (plugin.name === 'benchmark:auto-import-build-diagnostics' || wrappedPlugins.has(plugin)) {
           continue
@@ -138,5 +159,27 @@ export function createAutoImportBuildDiagnosticsPlugin(enabled: boolean, options
         }
       }
     },
+    closeBundle: {
+      order: 'post',
+      sequential: true,
+      handler() {
+        return closing ??= (async () => {
+          try {
+            const drained = await sink?.flush() ?? true
+            const postClosePlugins = resolvedPlugins.filter(plugin => typeof plugin.closeBundle === 'object' && plugin.closeBundle.order === 'post')
+            const finalCloseHook = postClosePlugins.at(-1) === diagnostics && resolvedPlugins.filter(plugin => plugin === diagnostics).length === 1
+            emit({ kind: 'producer-end', schemaVersion: 2, lastAssignedId: sequence, pendingIds: [...pendingIds], timeOrigin: timeOrigin(), endedAtMs: now(), drained: drained && !observerFailed, finalCloseHook })
+            await sink?.flush()
+          }
+          catch {
+            // 缺失终结记录会使诊断不完整；不能替换原始构建异常。
+          }
+          finally {
+            sink?.dispose()
+          }
+        })()
+      },
+    },
   }
+  return diagnostics
 }

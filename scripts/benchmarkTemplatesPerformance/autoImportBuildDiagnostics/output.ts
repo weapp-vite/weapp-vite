@@ -1,5 +1,5 @@
 import type { MeasuredBuildOutput } from '../measuredBuild'
-import type { BuildHookEvent, BuildHookOptions } from './hooks'
+import type { BuildDiagnosticTerminal, BuildHookEvent, BuildHookOptions } from './hooks'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { stripVTControlCharacters } from 'node:util'
@@ -29,6 +29,34 @@ function isCompleteBoundary(started: BuildHookEvent, finished: BuildHookEvent) {
     && (finished.status !== 'failed' || typeof finished.errorName === 'string')
 }
 
+function isBuildDiagnosticTerminal(value: unknown): value is BuildDiagnosticTerminal {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const record = value as Record<string, unknown>
+  return record.kind === 'producer-end' && record.schemaVersion === 2
+    && Number.isSafeInteger(record.lastAssignedId) && Number(record.lastAssignedId) >= 0
+    && Array.isArray(record.pendingIds) && record.pendingIds.every(id => Number.isSafeInteger(id) && id > 0)
+    && Number.isFinite(record.timeOrigin) && Number.isFinite(record.endedAtMs) && Number(record.endedAtMs) >= 0
+    && typeof record.drained === 'boolean'
+    && typeof record.finalCloseHook === 'boolean'
+}
+
+function missingInvocationRanges(ids: number[], lastAssignedId: number) {
+  const errors: string[] = []
+  let next = 1
+  for (const id of [...new Set(ids)].sort((a, b) => a - b)) {
+    if (id > next) {
+      errors.push(`Missing hook invocation IDs: ${next}-${id - 1}`)
+    }
+    next = id + 1
+  }
+  if (next <= lastAssignedId) {
+    errors.push(`Missing hook invocation IDs: ${next}-${lastAssignedId}`)
+  }
+  return errors
+}
+
 /** 使用原解析规则保留首个命中与全部时间文本，不改变原 cliBuildMs。 */
 export function readBuildTimingEvidence(stdout: string, stderr: string) {
   const text = stripVTControlCharacters(`${stdout}\n${stderr}`)
@@ -43,14 +71,25 @@ export function readBuildTimingEvidence(stdout: string, stderr: string) {
 export function readBuildHookEvidence(stdout: string) {
   const events: BuildHookEvent[] = []
   const errors: string[] = []
+  let terminal: BuildDiagnosticTerminal | null = null
   for (const line of stdout.split(/\r?\n/)) {
     if (!line.startsWith(AUTO_IMPORT_BUILD_HOOK_PREFIX)) {
       continue
     }
     try {
       const event: unknown = JSON.parse(line.slice(AUTO_IMPORT_BUILD_HOOK_PREFIX.length))
+      if (isBuildDiagnosticTerminal(event)) {
+        if (terminal) {
+          errors.push('Duplicate producer terminal record')
+        }
+        terminal = event
+        continue
+      }
       if (!isBuildHookEvent(event)) {
         throw new Error('Invalid hook event')
+      }
+      if (terminal) {
+        errors.push(`Hook event follows producer terminal: ${event.id}`)
       }
       events.push(event)
     }
@@ -87,7 +126,16 @@ export function readBuildHookEvidence(stdout: string) {
   if (!started.length || finished.some(event => !startsById.has(event.id))) {
     errors.push('Missing build hook boundaries')
   }
-  return { events, errors }
+  const maxId = events.reduce((max, event) => Math.max(max, event.id), 0)
+  errors.push(...missingInvocationRanges(events.map(event => event.id), terminal?.lastAssignedId ?? maxId))
+  if (!terminal) {
+    errors.push('Missing producer terminal record')
+  }
+  else if (!terminal.drained || !terminal.finalCloseHook || terminal.pendingIds.length || terminal.lastAssignedId !== maxId
+    || events.some(event => event.timeOrigin !== terminal.timeOrigin || event.startedAtMs > terminal.endedAtMs || (event.endedAtMs ?? event.startedAtMs) > terminal.endedAtMs)) {
+    errors.push('Incomplete producer terminal boundary')
+  }
+  return { events, terminal, errors }
 }
 
 /** 调用点已经停止原进程计时；保留分离的原输出、解析文本和诊断缺口。 */

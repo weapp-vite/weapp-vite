@@ -1,6 +1,8 @@
 import type { Plugin, ResolvedConfig } from 'vite'
+import { Writable } from 'node:stream'
 import { afterEach, expect, it, vi } from 'vitest'
-import { createAutoImportBuildDiagnosticsPlugin, normalizeBuildDiagnosticText } from './hooks'
+import { AUTO_IMPORT_BUILD_HOOK_PREFIX, createAutoImportBuildDiagnosticsPlugin, normalizeBuildDiagnosticText } from './hooks'
+import { readBuildHookEvidence } from './output'
 
 type Callable = (this: unknown, ...args: unknown[]) => unknown
 
@@ -145,4 +147,130 @@ it('normalizes both platform separators and chooses the narrowest root while pre
   const roots = [{ path: 'C:\\workspace', label: '<checkout>' }, { path: 'C:\\workspace\\fixture', label: '<project>' }]
   expect(normalizeBuildDiagnosticText('C:\\workspace\\fixture\\src\\index.ts?vue\nC:\\workspace\\node_modules\\pkg', roots)).toBe('<project>/src/index.ts?vue\n<checkout>/node_modules/pkg')
   expect(normalizeBuildDiagnosticText('\0weapp:entry?x=1', roots)).toBe('\0weapp:entry?x=1')
+})
+
+it('finishes once after buffered hook callbacks and its terminal callback drain', async () => {
+  const lines: string[] = []
+  const callbacks: Array<() => void> = []
+  const output = new Writable({ highWaterMark: 1, write(chunk, _encoding, callback) {
+    lines.push(String(chunk))
+    callbacks.push(callback)
+  } })
+  const target = { name: 'source', load: () => 'original' } as unknown as Plugin
+  const { diagnostics } = instrument(target, { roots: [], output, timeOrigin: () => 1_000, now: () => 10 })
+  expect(handler(target.load)('virtual:source')).toBe('original')
+  expect(diagnostics.closeBundle).toMatchObject({ order: 'post', sequential: true })
+  const closing = handler(diagnostics.closeBundle)() as Promise<void>
+  expect(handler(diagnostics.closeBundle)()).toBe(closing)
+  let closed = false
+  void closing.then(() => closed = true)
+  callbacks.shift()!()
+  await Promise.resolve()
+  expect(lines).toHaveLength(2)
+  expect(closed).toBe(false)
+  callbacks.shift()!()
+  await Promise.resolve()
+  expect(lines).toHaveLength(3)
+  expect(closed).toBe(false)
+  callbacks.shift()!()
+  await closing
+  expect(readBuildHookEvidence(lines.join('')).errors).toEqual([])
+  expect(readBuildHookEvidence(lines.join('')).terminal).toMatchObject({ lastAssignedId: 1, pendingIds: [], drained: true, finalCloseHook: true })
+  expect(output.listenerCount('error')).toBe(0)
+})
+
+it('does not claim pending hooks as completed or accept records after its terminal', async () => {
+  let resolve: (value: string) => void = () => {}
+  const result = new Promise<string>((accept) => {
+    resolve = accept
+  })
+  const target = { name: 'source', load: () => result } as unknown as Plugin
+  const events: object[] = []
+  const { diagnostics } = instrument(target, { roots: [], observe: event => events.push(event) })
+  const original = handler(target.load)('virtual:pending')
+  await handler(diagnostics.closeBundle)()
+  expect(events).toHaveLength(2)
+  expect(events[1]).toMatchObject({ kind: 'producer-end', lastAssignedId: 1, pendingIds: [1] })
+  resolve('original')
+  await expect(original).resolves.toBe('original')
+  const evidence = readBuildHookEvidence(events.map(event => `${AUTO_IMPORT_BUILD_HOOK_PREFIX}${JSON.stringify(event)}`).join('\n'))
+  expect(evidence.errors).toContain('Incomplete producer terminal boundary')
+  expect(evidence.errors).toContain('Hook event follows producer terminal: 1')
+})
+
+it('checks final post close order without moving any production plugin', async () => {
+  const observe = vi.fn()
+  const firstClose = vi.fn(() => {})
+  const lastClose = vi.fn(() => {})
+  const first = { name: 'first', closeBundle: { order: 'post', sequential: true, handler: firstClose } } as Plugin
+  const last = { name: 'last', closeBundle: { order: 'post', handler: lastClose } } as Plugin
+  const { diagnostics, configure } = instrument(first, { roots: [], observe })
+  const plugins = [first, diagnostics, last]
+  configure({ plugins })
+  expect(plugins).toEqual([first, diagnostics, last])
+  expect(handler(first.closeBundle)()).toBeUndefined()
+  expect(firstClose).toHaveBeenCalledOnce()
+  await handler(diagnostics.closeBundle)()
+  expect(observe.mock.calls.at(-1)![0]).toMatchObject({ kind: 'producer-end', finalCloseHook: false })
+  expect(handler(last.closeBundle)()).toBeUndefined()
+  expect(lastClose).toHaveBeenCalledOnce()
+  const evidence = readBuildHookEvidence(observe.mock.calls.map(([event]) => `${AUTO_IMPORT_BUILD_HOOK_PREFIX}${JSON.stringify(event)}`).join('\n'))
+  expect(evidence.errors).toContain('Incomplete producer terminal boundary')
+  expect(evidence.errors).toContain('Hook event follows producer terminal: 2')
+})
+
+it('keeps stream failure incomplete without hanging close or replacing the compiler error', async () => {
+  const callbacks: Array<() => void> = []
+  const output = new Writable({ write(_chunk, _encoding, callback) {
+    callbacks.push(callback)
+  } })
+  const failure = new Error('original compiler error')
+  const target = { name: 'source', load() {
+    throw failure
+  } } as Plugin
+  const { diagnostics } = instrument(target, { roots: [], output })
+  expect(() => handler(target.load)('virtual:source')).toThrow(failure)
+  const closing = handler(diagnostics.closeBundle)() as Promise<void>
+  output.emit('error', new Error('diagnostic output error'))
+  await expect(closing).resolves.toBeUndefined()
+  callbacks.shift()!()
+  callbacks.shift()!()
+  expect(output.listenerCount('error')).toBe(0)
+})
+
+it.each(['success', 'throw', 'rejection'] as const)('keeps original %s intact across a later native Writable error', async (kind) => {
+  const streamFailure = new Error('asynchronous diagnostic write error')
+  let finishDestroy: (() => void) | undefined
+  const output = new Writable({
+    write(_chunk, _encoding, callback) {
+      queueMicrotask(() => callback(streamFailure))
+    },
+    destroy(error, callback) {
+      finishDestroy = () => callback(error)
+    },
+  })
+  const failure = new Error('original compiler error')
+  const result = { code: 'original' }
+  const target = { name: 'source', load() {
+    if (kind === 'throw') {
+      throw failure
+    }
+    return kind === 'rejection' ? Promise.reject(failure) : result
+  } } as unknown as Plugin
+  const { diagnostics } = instrument(target, { roots: [], output })
+  if (kind === 'throw') {
+    expect(() => handler(target.load)('virtual:source')).toThrow(failure)
+  }
+  else if (kind === 'rejection') {
+    await expect(handler(target.load)('virtual:source')).rejects.toBe(failure)
+  }
+  else {
+    expect(handler(target.load)('virtual:source')).toBe(result)
+  }
+  await expect(handler(diagnostics.closeBundle)()).resolves.toBeUndefined()
+  expect(output.listenerCount('error')).toBe(1)
+  finishDestroy!()
+  await new Promise(resolve => setImmediate(resolve))
+  expect(output.listenerCount('error')).toBe(0)
+  expect(output.listenerCount('drain')).toBe(0)
 })

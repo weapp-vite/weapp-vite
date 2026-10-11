@@ -8,6 +8,7 @@ import { readBuildHookEvidence, readBuildTimingEvidence, saveAutoImportBuildDiag
 
 const started = { id: 1, pluginIndex: 0, pluginName: 'publication', hookName: 'generateBundle', status: 'started', timeOrigin: 1_000, startedAtMs: 10 }
 const completed = { ...started, status: 'completed', endedAtMs: 30, elapsedMs: 20 }
+const terminal = { kind: 'producer-end', schemaVersion: 2, lastAssignedId: 1, pendingIds: [], timeOrigin: 1_000, endedAtMs: 30, drained: true, finalCloseHook: true }
 const line = (event: object) => `${AUTO_IMPORT_BUILD_HOOK_PREFIX}${JSON.stringify(event)}`
 
 it('retains the original first match and all subsequent CLI timing texts without changing parsing', () => {
@@ -25,11 +26,24 @@ it('retains the original first match and all subsequent CLI timing texts without
 })
 
 it('keeps unknown finishes, clock gaps and malformed diagnostic lines incomplete', () => {
-  expect(readBuildHookEvidence([line(started), line(completed)].join('\r\n'))).toEqual({ events: [started, completed], errors: [] })
+  expect(readBuildHookEvidence([line(started), line(completed), line(terminal)].join('\r\n'))).toEqual({ events: [started, completed], terminal, errors: [] })
   expect(readBuildHookEvidence(line(started)).errors).toContain('Incomplete hook boundary: 1')
   expect(readBuildHookEvidence(line(completed)).errors).toContain('Missing build hook boundaries')
   expect(readBuildHookEvidence(`${AUTO_IMPORT_BUILD_HOOK_PREFIX}not-json`).errors).toContain('Malformed build hook diagnostic line')
   expect(readBuildHookEvidence([line(started), line({ ...completed, elapsedMs: null })].join('\n')).errors).toContain('Incomplete hook boundary: 1')
+})
+
+it('requires a drained producer terminal and detects missing middle or trailing invocation pairs', () => {
+  const records = [line(started), line(completed)]
+  expect(readBuildHookEvidence(records.join('\n')).errors).toContain('Missing producer terminal record')
+  const third = [{ ...started, id: 3 }, { ...completed, id: 3 }].map(line)
+  expect(readBuildHookEvidence([...records, ...third, line({ ...terminal, lastAssignedId: 3 })].join('\n')).errors).toContain('Missing hook invocation IDs: 2-2')
+  expect(readBuildHookEvidence([...records, line({ ...terminal, lastAssignedId: 3 })].join('\n')).errors).toContain('Missing hook invocation IDs: 2-3')
+  for (const change of [{ drained: false }, { finalCloseHook: false }, { pendingIds: [1] }, { timeOrigin: 2_000 }, { endedAtMs: 29 }, { lastAssignedId: 0 }]) {
+    expect(readBuildHookEvidence([...records, line({ ...terminal, ...change })].join('\n')).errors).toContain('Incomplete producer terminal boundary')
+  }
+  expect(readBuildHookEvidence([...records, line(terminal), line(terminal)].join('\n')).errors).toContain('Duplicate producer terminal record')
+  expect(readBuildHookEvidence([...records, line(terminal), line({ ...started, id: 2 })].join('\n')).errors).toContain('Hook event follows producer terminal: 2')
 })
 
 it('rejects duplicate starts, finishes before starts and drifting boundary identity or clocks', () => {
@@ -45,7 +59,7 @@ it('rejects duplicate starts, finishes before starts and drifting boundary ident
 
 it('persists separate captured streams, source timing text and raw hook records after measurement', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'build-diagnostic-output-'))
-  const stdout = ['/checkout/project/src/index.ts', line(started), line(completed), 'built in 541ms'].join('\n')
+  const stdout = ['/checkout/project/src/index.ts', line(started), line(completed), line(terminal), 'built in 541ms'].join('\n')
   try {
     await saveAutoImportBuildDiagnostics(directory, { status: 'completed', stdout, stderr: 'warning', durationMs: 1_459 }, [{ path: '/checkout/project', label: '<project>' }])
     expect(await readFile(path.join(directory, 'stdout.log'), 'utf8')).toBe(stdout.replace('/checkout/project', '<project>'))

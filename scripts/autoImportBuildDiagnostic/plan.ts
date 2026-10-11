@@ -5,7 +5,7 @@ export const autoImportBuildDiagnosticPlan = Object.freeze({
   baselineSha: policy.baselineSha as string,
   pairCount: 7,
   configurations: ['69:manual'],
-  phases: ['first', 'repeat'],
+  phases: ['first', 'repeat'] as const,
   performanceGate: 'not-run; opt-in diagnostic timings do not replace original performance acceptance',
 })
 
