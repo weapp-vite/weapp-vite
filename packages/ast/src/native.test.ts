@@ -17,6 +17,15 @@ exports.analyzeScriptNative = (code, moduleId, mapping) => {
 }
 exports.analyzeScriptsNative = (inputs) => inputs.map(input =>
   exports.analyzeScriptNative(input.code, input.moduleId, input.hookToFeatureJson))
+exports.analyzeCompilerScriptsNative = (inputs) => inputs.map(input => ({
+  imports: [{ local: 'Card', imported: 'default', source: './card', kind: 'default', typeOnly: false }],
+  hasDefaultExport: input.code.includes('export default'),
+  defineOptionsName: input.code.includes('defineOptions') ? 'CardView' : undefined,
+  isMiniProgramComponent: input.code.includes('defineComponentJson'),
+  hasStaticRequireLiteral: input.code.includes('require('),
+  hasPlatformApiAccess: input.code.includes('wx.'),
+  featureFlags: input.hookToFeatureJson ? Object.values(JSON.parse(input.hookToFeatureJson)) : [],
+}))
 exports.collectOnPageScrollDiagnosticsNative = (code) => {
   if (code.includes('failNative')) throw new Error('native parsing failed')
   return [{ kind: 'empty', line: 1, column: 14, sourceLabel: 'onPageScroll(...)' }]
@@ -49,6 +58,46 @@ afterEach(async () => {
 })
 
 describe('optional native batch analysis', () => {
+  it('exposes the compiler frontend batch summary through the optional binding', async () => {
+    const { ast, observation } = await loadFixture()
+    const { value, stats } = await observation.observeNativeAnalysis(() => ast.analyzeCompilerScriptsWithNative([
+      {
+        code: 'defineOptions({ name: "CardView" }); export default {}',
+        filename: 'components/card.ts',
+        moduleId: 'wevu',
+        hookToFeatureJson: JSON.stringify({ onLoad: 'load' }),
+      },
+      {
+        code: 'require("dep"); wx.request()',
+        filename: 'pages/index.ts',
+      },
+    ]))
+
+    expect(value).toEqual([
+      expect.objectContaining({
+        hasDefaultExport: true,
+        defineOptionsName: 'CardView',
+        featureFlags: ['load'],
+      }),
+      expect.objectContaining({
+        hasStaticRequireLiteral: true,
+        hasPlatformApiAccess: true,
+      }),
+    ])
+    expect(stats).toMatchObject({ bindingCalls: 1, inputScripts: 2, batchCalls: 1, fallbacks: 0 })
+  })
+
+  it('keeps the compiler batch summary disabled unless native analysis is explicitly enabled', async () => {
+    const { ast, observation } = await loadFixture()
+    vi.stubEnv('WEAPP_VITE_NATIVE', '0')
+    const { value, stats } = await observation.observeNativeAnalysis(() => ast.analyzeCompilerScriptsWithNative([
+      { code: 'export default {}', filename: 'page.ts' },
+    ]))
+
+    expect(value).toBeUndefined()
+    expect(stats).toMatchObject({ bindingCalls: 0, batchCalls: 0, fallbacks: 0, loadFailures: 0 })
+  })
+
   it('shares diagnostics with configured script analysis without changing its public result', async () => {
     const { ast, observation } = await loadFixture()
     const source = 'import { onPageScroll } from "wevu"; require("dep"); wx.request(); onPageScroll(() => {})'

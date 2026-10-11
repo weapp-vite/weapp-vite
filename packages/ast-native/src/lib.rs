@@ -3,6 +3,9 @@ use std::{
     path::Path,
 };
 
+#[cfg(test)]
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 use napi_derive::napi;
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{
@@ -24,8 +27,13 @@ mod chunk_analysis;
 #[cfg(feature = "experimental-binding-analysis")]
 mod binding_analysis;
 
+mod compiler_analysis;
+
 #[cfg(feature = "experimental-script-transform")]
 mod script_transform;
+
+#[cfg(test)]
+static SCRIPT_PARSE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 #[napi(object)]
 pub struct NativeOnPageScrollDiagnostic {
@@ -57,6 +65,8 @@ fn parse_program<'a>(
     code: &'a str,
     filename: Option<String>,
 ) -> napi::Result<Program<'a>> {
+    #[cfg(test)]
+    SCRIPT_PARSE_COUNT.fetch_add(1, Ordering::Relaxed);
     let filename = filename.unwrap_or_else(|| "inline.ts".to_string());
     let source_type =
         SourceType::from_path(Path::new(&filename)).unwrap_or_else(|_| SourceType::ts());
@@ -490,17 +500,108 @@ pub fn analyze_script_native(
 
 #[napi(js_name = "analyzeScriptsNative")]
 pub fn analyze_scripts_native(inputs: Vec<NativeScriptAnalysisInput>) -> napi::Result<Vec<NativeScriptAnalysis>> {
-    inputs
-        .into_iter()
-        .map(|input| {
-            analyze_script_impl(
-                &input.code,
-                input.module_id,
-                input.hook_to_feature_json,
-                input.filename,
+    // 同一批次中同一源码可能以不同的 feature 配置重复出现。配置只影响
+    // 结果特化，AST 可以安全复用；按源码和 SourceType 分组后，每份输入
+    // 只 parse 一次，避免 native 批处理仍在 Rust 内部重复做同一工作。
+    let mut results: Vec<Option<NativeScriptAnalysis>> = (0..inputs.len()).map(|_| None).collect();
+    let mut groups: HashMap<(String, Option<String>), Vec<usize>> = HashMap::new();
+    for (index, input) in inputs.iter().enumerate() {
+        groups
+            .entry((input.code.clone(), input.filename.clone()))
+            .or_default()
+            .push(index);
+    }
+
+    for ((code, filename), matching) in groups {
+
+        let should_parse = matching.iter().any(|&candidate_index| {
+            let candidate = &inputs[candidate_index];
+            script_analysis_requirements(
+                &code,
+                candidate.module_id.clone(),
+                candidate.hook_to_feature_json.clone(),
             )
-        })
-        .collect()
+            .needs_parse()
+        });
+        if !should_parse {
+            for &candidate_index in &matching {
+                results[candidate_index] = Some(empty_script_analysis());
+            }
+            continue;
+        }
+
+        let allocator = Allocator::default();
+        let program = parse_program(&allocator, &code, filename.clone())?;
+        for &candidate_index in &matching {
+            let candidate = &inputs[candidate_index];
+            results[candidate_index] = Some(analyze_script_program(
+                &program,
+                &code,
+                candidate.module_id.clone(),
+                candidate.hook_to_feature_json.clone(),
+            ));
+        }
+    }
+
+    Ok(results
+        .into_iter()
+        .map(|result| result.expect("native script analysis result must be populated"))
+        .collect())
+}
+
+struct ScriptAnalysisRequirements {
+    wants_static_require: bool,
+    wants_platform_api: bool,
+    wants_scroll_diagnostics: bool,
+    feature_config: Option<(String, HashMap<String, String>)>,
+}
+
+impl ScriptAnalysisRequirements {
+    fn needs_parse(&self) -> bool {
+        self.wants_static_require
+            || self.wants_platform_api
+            || self.wants_scroll_diagnostics
+            || self.feature_config.is_some()
+    }
+}
+
+fn empty_script_analysis() -> NativeScriptAnalysis {
+    NativeScriptAnalysis {
+        has_static_require_literal: false,
+        has_platform_api_access: false,
+        feature_flags: Vec::new(),
+        on_page_scroll_diagnostics: None,
+    }
+}
+
+fn script_analysis_requirements(
+    code: &str,
+    module_id: Option<String>,
+    hook_to_feature_json: Option<String>,
+) -> ScriptAnalysisRequirements {
+    let wants_static_require =
+        code.contains("require(") || code.contains("require (") || code.contains("require`");
+    let wants_platform_api = may_contain_platform_api_text(code);
+    let wants_scroll_diagnostics = code.contains("onPageScroll");
+    let feature_config = module_id
+        .zip(hook_to_feature_json)
+        .and_then(|(module_id, hook_to_feature_json)| {
+            if !code.contains(&module_id) {
+                return None;
+            }
+            let hook_to_feature = serde_json::from_str::<HashMap<String, String>>(&hook_to_feature_json).ok()?;
+            if hook_to_feature.is_empty() || !hook_to_feature.keys().any(|hook| code.contains(hook)) {
+                return None;
+            }
+            Some((module_id, hook_to_feature))
+        });
+
+    ScriptAnalysisRequirements {
+        wants_static_require,
+        wants_platform_api,
+        wants_scroll_diagnostics,
+        feature_config,
+    }
 }
 
 fn analyze_script_impl(
@@ -509,45 +610,35 @@ fn analyze_script_impl(
     hook_to_feature_json: Option<String>,
     filename: Option<String>,
 ) -> napi::Result<NativeScriptAnalysis> {
-    let wants_static_require =
-        code.contains("require(") || code.contains("require (") || code.contains("require`");
-    let wants_platform_api = may_contain_platform_api_text(code);
-    let wants_scroll_diagnostics = code.contains("onPageScroll");
-    let feature_config =
-        module_id
-            .zip(hook_to_feature_json)
-            .and_then(|(module_id, hook_to_feature_json)| {
-                if !code.contains(&module_id) {
-                    return None;
-                }
-                let hook_to_feature =
-                    serde_json::from_str::<HashMap<String, String>>(&hook_to_feature_json).ok()?;
-                if hook_to_feature.is_empty()
-                    || !hook_to_feature.keys().any(|hook| code.contains(hook))
-                {
-                    return None;
-                }
-                Some((module_id, hook_to_feature))
-            });
-
-    if !wants_static_require && !wants_platform_api && !wants_scroll_diagnostics && feature_config.is_none() {
-        return Ok(NativeScriptAnalysis {
-            has_static_require_literal: false,
-            has_platform_api_access: false,
-            feature_flags: Vec::new(),
-            on_page_scroll_diagnostics: None,
-        });
+    let requirements = script_analysis_requirements(code, module_id.clone(), hook_to_feature_json.clone());
+    if !requirements.needs_parse() {
+        return Ok(empty_script_analysis());
     }
 
     let allocator = Allocator::default();
     let program = parse_program(&allocator, code, filename)?;
-    // 诊断与脚本分析共享一次 parse；没有滚动 hook 时不创建诊断遍历器。
-    let on_page_scroll_diagnostics = wants_scroll_diagnostics
-        .then(|| collect_scroll_diagnostics(&program, code));
+    Ok(analyze_script_program(
+        &program,
+        code,
+        module_id,
+        hook_to_feature_json,
+    ))
+}
 
-    let feature_flags = feature_config.and_then(|(module_id, hook_to_feature)| {
+fn analyze_script_program(
+    program: &Program,
+    code: &str,
+    module_id: Option<String>,
+    hook_to_feature_json: Option<String>,
+) -> NativeScriptAnalysis {
+    let requirements = script_analysis_requirements(code, module_id, hook_to_feature_json);
+    // 诊断与脚本分析共享一次 parse；没有滚动 hook 时不创建诊断遍历器。
+    let on_page_scroll_diagnostics = requirements.wants_scroll_diagnostics
+        .then(|| collect_scroll_diagnostics(program, code));
+
+    let feature_flags = requirements.feature_config.and_then(|(module_id, hook_to_feature)| {
         let (named_hook_locals, namespace_locals) =
-            collect_feature_flag_imports(&program, &module_id, &hook_to_feature);
+            collect_feature_flag_imports(program, &module_id, &hook_to_feature);
         if named_hook_locals.is_empty() && namespace_locals.is_empty() {
             return None;
         }
@@ -564,17 +655,17 @@ fn analyze_script_impl(
         has_platform_api_access: false,
         feature_flags,
     };
-    visitor.visit_program(&program);
+    visitor.visit_program(program);
 
-    Ok(NativeScriptAnalysis {
-        has_static_require_literal: wants_static_require && visitor.has_static_require_literal,
-        has_platform_api_access: wants_platform_api && visitor.has_platform_api_access,
+    NativeScriptAnalysis {
+        has_static_require_literal: requirements.wants_static_require && visitor.has_static_require_literal,
+        has_platform_api_access: requirements.wants_platform_api && visitor.has_platform_api_access,
         feature_flags: visitor
             .feature_flags
             .map(|feature_flags| feature_flags.enabled.keys().cloned().collect())
             .unwrap_or_default(),
         on_page_scroll_diagnostics,
-    })
+    }
 }
 
 fn collect_wevu_scroll_imports(program: &Program) -> (HashSet<String>, HashSet<String>) {
@@ -767,4 +858,77 @@ fn is_on_page_scroll_callee(
 
 fn is_identifier_expression_set(expression: &Expression, names: &HashSet<String>) -> bool {
     matches!(expression, Expression::Identifier(identifier) if names.contains(identifier.name.as_str()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn batch_reuses_parsed_program_for_same_source_and_filename() {
+        SCRIPT_PARSE_COUNT.store(0, Ordering::Relaxed);
+        let code = r#"import { onLoad } from 'wevu'; onLoad(() => wx.request())"#;
+        let results = analyze_scripts_native(vec![
+            NativeScriptAnalysisInput {
+                code: code.to_string(),
+                module_id: Some("wevu".to_string()),
+                hook_to_feature_json: Some(r#"{"onLoad":"load"}"#.to_string()),
+                filename: Some("page.ts".to_string()),
+            },
+            NativeScriptAnalysisInput {
+                code: code.to_string(),
+                module_id: Some("wevu".to_string()),
+                hook_to_feature_json: Some(r#"{"onLoad":"alternate"}"#.to_string()),
+                filename: Some("page.ts".to_string()),
+            },
+        ])
+        .expect("same source should parse successfully");
+
+        assert_eq!(SCRIPT_PARSE_COUNT.load(Ordering::Relaxed), 1);
+        assert_eq!(results[0].feature_flags, vec!["load"]);
+        assert_eq!(results[1].feature_flags, vec!["alternate"]);
+        assert!(results[0].has_platform_api_access);
+        assert!(results[1].has_platform_api_access);
+    }
+
+    #[test]
+    fn batch_keeps_parser_language_boundaries() {
+        SCRIPT_PARSE_COUNT.store(0, Ordering::Relaxed);
+        let code = "const element = <view />; onPageScroll(() => {})";
+        let results = analyze_scripts_native(vec![
+            NativeScriptAnalysisInput {
+                code: code.to_string(),
+                module_id: None,
+                hook_to_feature_json: None,
+                filename: Some("page.tsx".to_string()),
+            },
+            NativeScriptAnalysisInput {
+                code: code.to_string(),
+                module_id: None,
+                hook_to_feature_json: None,
+                filename: Some("page.ts".to_string()),
+            },
+        ]);
+
+        assert!(results.is_err());
+        assert_eq!(SCRIPT_PARSE_COUNT.load(Ordering::Relaxed), 2);
+    }
+
+    #[test]
+    fn batch_skips_parse_for_inputs_without_analysis_hints() {
+        SCRIPT_PARSE_COUNT.store(0, Ordering::Relaxed);
+        let results = analyze_scripts_native(vec![NativeScriptAnalysisInput {
+            code: "const value = 1".to_string(),
+            module_id: Some("wevu".to_string()),
+            hook_to_feature_json: Some(r#"{"onLoad":"load"}"#.to_string()),
+            filename: Some("page.ts".to_string()),
+        }])
+        .expect("source without analysis hints should use the empty fast path");
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(SCRIPT_PARSE_COUNT.load(Ordering::Relaxed), 0);
+        assert!(!results[0].has_static_require_literal);
+        assert!(!results[0].has_platform_api_access);
+        assert!(results[0].feature_flags.is_empty());
+    }
 }

@@ -69,6 +69,7 @@ describe('versioned native script request', () => {
       propsDerivedKeys: undefined,
       relaxStructuredTypeOnlyProps: undefined,
       scopedSlotHostProperties: undefined,
+      nativeSlotContext: undefined,
       cssModules: undefined,
       stabilizeCssVarsRuntime: undefined,
     } satisfies Record<keyof TransformScriptOptions, undefined>

@@ -26,7 +26,35 @@ export interface NativeScriptAnalysisInput {
   filename?: string
 }
 
+export interface NativeCompilerScriptInput {
+  code: string
+  filename?: string
+  moduleId?: string
+  hookToFeatureJson?: string
+}
+
+export interface NativeCompilerScriptImport {
+  local: string
+  imported?: string
+  source: string
+  kind: 'default' | 'namespace' | 'named'
+  typeOnly: boolean
+}
+
+export interface NativeCompilerScriptAnalysis {
+  imports: NativeCompilerScriptImport[]
+  hasDefaultExport: boolean
+  defineOptionsName?: string
+  isMiniProgramComponent: boolean
+  hasStaticRequireLiteral: boolean
+  hasPlatformApiAccess: boolean
+  featureFlags: string[]
+}
+
 export interface NativeAstBinding {
+  analyzeCompilerScriptsNative?: (
+    inputs: NativeCompilerScriptInput[],
+  ) => NativeCompilerScriptAnalysis[]
   analyzeScriptNative?: (
     code: string,
     moduleId?: string,
@@ -186,4 +214,19 @@ export function analyzeScriptsWithNative(inputs: NativeScriptAnalysisInput[]) {
     }
   }
   return results
+}
+
+/**
+ * 编译器前端批量摘要的显式 native 快速路径；失败时由调用方继续使用 Babel/Oxc。
+ */
+export function analyzeCompilerScriptsWithNative(inputs: NativeCompilerScriptInput[]) {
+  const analyzeNative = loadNativeAstBindingSync()?.analyzeCompilerScriptsNative
+  if (!analyzeNative) {
+    if (shouldUseNativeAst()) {
+      recordNativeEvent('fallbacks')
+    }
+    return undefined
+  }
+
+  return invokeNativeCall(inputs, () => analyzeNative(inputs))
 }

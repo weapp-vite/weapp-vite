@@ -53,6 +53,41 @@ import Unused from 'native/unused'
     })
   })
 
+  it('uses the batched native import summary without changing component registration output', async () => {
+    const descriptor = parse(`<script setup>
+import TButton from 'native/button'
+</script>
+<template><TButton /></template>`).descriptor
+    const result = await collectComponentSourceInfo({
+      descriptor,
+      descriptorForCompile: descriptor,
+      filename: 'src/pages/native-summary.vue',
+      compileOptions: undefined,
+      autoUsingComponents: {
+        resolveUsingComponentPath: async source => source,
+      },
+      autoImportTags: undefined,
+      nativeScriptAnalysis: {
+        scriptSetup: {
+          imports: [{
+            local: 'TButton',
+            imported: 'default',
+            source: 'native/button',
+            kind: 'default',
+            typeOnly: false,
+          }],
+          hasDefaultExport: false,
+          isMiniProgramComponent: false,
+          hasStaticRequireLiteral: false,
+          hasPlatformApiAccess: false,
+          featureFlags: [],
+        },
+      },
+    })
+
+    expect(result.autoUsingComponentsMap).toEqual({ TButton: 'native/button' })
+  })
+
   it('preserves usingComponents precedence, WXML tags and script bindings in a full compile', async () => {
     const warnings: string[] = []
     const result = await compileVueFile(`<script setup>

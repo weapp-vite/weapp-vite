@@ -37,6 +37,7 @@ const optionFields = {
   propsDerivedKeys: true,
   relaxStructuredTypeOnlyProps: true,
   scopedSlotHostProperties: true,
+  nativeSlotContext: true,
   cssModules: true,
   stabilizeCssVarsRuntime: true,
 } satisfies Record<keyof TransformScriptOptions, true>

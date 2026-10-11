@@ -1,3 +1,4 @@
+import type { NativeCompilerScriptAnalysis } from '@weapp-vite/ast'
 import type { File as BabelFile, ObjectExpression } from '@weapp-vite/ast/babelTypes'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { AutoImportTagsOptions, AutoUsingComponentsOptions, CompileVueFileOptions, ResolvedUsingComponentPath, VueSfcStaticComponentMeta } from './types'
@@ -337,6 +338,7 @@ async function collectScriptSetupUsingComponents(options: {
   templateComponentNames: Set<string> | undefined
   templateTagsByComponentName: Map<string, Set<string>> | undefined
   result: ComponentSourceInfo
+  nativeScriptAnalysis?: NativeCompilerScriptAnalysis
 }) {
   const {
     descriptor,
@@ -347,6 +349,7 @@ async function collectScriptSetupUsingComponents(options: {
     templateComponentNames,
     templateTagsByComponentName,
     result,
+    nativeScriptAnalysis,
   } = options
   if (!descriptor.scriptSetup || !descriptor.template) {
     return
@@ -357,44 +360,67 @@ async function collectScriptSetupUsingComponents(options: {
   }
 
   try {
-    const setupAst: BabelFile = babelParse(descriptorForCompile.scriptSetup!.content, BABEL_TS_MODULE_PARSER_OPTIONS)
     const pending: ScriptSetupImportComponent[] = []
+    const addImport = (imported: {
+      local: string
+      imported?: string
+      source: string
+      kind: 'default' | 'namespace' | 'named'
+      typeOnly: boolean
+    }) => {
+      if (imported.typeOnly || imported.kind === 'namespace' || !templateComponentNames.has(imported.local)) {
+        return
+      }
+      const templateTags = [...(templateTagsByComponentName?.get(imported.local) ?? [imported.local])]
+      if (imported.kind === 'default' || imported.kind === 'named') {
+        pending.push({
+          localName: imported.local,
+          importSource: imported.source,
+          importedName: imported.imported,
+          kind: imported.kind,
+          templateTags,
+        })
+      }
+    }
 
-    traverse(setupAst, {
-      ImportDeclaration(path) {
-        if (path.node.importKind === 'type') {
-          return
-        }
-        if (!t.isStringLiteral(path.node.source)) {
-          return
-        }
-        const importSource = path.node.source.value
-        for (const specifier of path.node.specifiers) {
-          if ('importKind' in specifier && specifier.importKind === 'type') {
-            continue
+    if (nativeScriptAnalysis) {
+      nativeScriptAnalysis.imports.forEach(addImport)
+    }
+    else {
+      const setupAst: BabelFile = babelParse(descriptorForCompile.scriptSetup!.content, BABEL_TS_MODULE_PARSER_OPTIONS)
+      traverse(setupAst, {
+        ImportDeclaration(path) {
+          if (path.node.importKind === 'type' || !t.isStringLiteral(path.node.source)) {
+            return
           }
-          if (!('local' in specifier) || !t.isIdentifier(specifier.local)) {
-            continue
+          const importSource = path.node.source.value
+          for (const specifier of path.node.specifiers) {
+            if ('importKind' in specifier && specifier.importKind === 'type') {
+              continue
+            }
+            if (!('local' in specifier) || !t.isIdentifier(specifier.local)) {
+              continue
+            }
+            const localName = specifier.local.name
+            if (!templateComponentNames.has(localName)) {
+              continue
+            }
+            const templateTags = [...(templateTagsByComponentName?.get(localName) ?? [localName])]
+            if (t.isImportDefaultSpecifier(specifier)) {
+              pending.push({ localName, importSource, importedName: 'default', kind: 'default', templateTags })
+            }
+            else if (t.isImportSpecifier(specifier)) {
+              const importedName = t.isIdentifier(specifier.imported)
+                ? specifier.imported.name
+                : t.isStringLiteral(specifier.imported)
+                  ? specifier.imported.value
+                  : undefined
+              pending.push({ localName, importSource, importedName, kind: 'named', templateTags })
+            }
           }
-          const localName = specifier.local.name
-          if (!templateComponentNames.has(localName)) {
-            continue
-          }
-          const templateTags = [...(templateTagsByComponentName?.get(localName) ?? [localName])]
-          if (t.isImportDefaultSpecifier(specifier)) {
-            pending.push({ localName, importSource, importedName: 'default', kind: 'default', templateTags })
-          }
-          else if (t.isImportSpecifier(specifier)) {
-            const importedName = t.isIdentifier(specifier.imported)
-              ? specifier.imported.name
-              : t.isStringLiteral(specifier.imported)
-                ? specifier.imported.value
-                : undefined
-            pending.push({ localName, importSource, importedName, kind: 'named', templateTags })
-          }
-        }
-      },
-    })
+        },
+      })
+    }
 
     await resolveScriptComponentRegistrations({
       pending,
@@ -454,8 +480,9 @@ async function collectOptionsApiUsingComponents(options: {
   templateComponentNames: Set<string> | undefined
   templateTagsByComponentName: Map<string, Set<string>> | undefined
   result: ComponentSourceInfo
+  nativeScriptAnalysis?: NativeCompilerScriptAnalysis
 }) {
-  const { descriptor, filename, compileOptions, autoUsingComponents, templateComponentNames, templateTagsByComponentName, result } = options
+  const { descriptor, filename, compileOptions, autoUsingComponents, templateComponentNames, templateTagsByComponentName, result, nativeScriptAnalysis } = options
   if (!descriptor.script || !descriptor.template || !templateComponentNames?.size) {
     return
   }
@@ -463,32 +490,46 @@ async function collectOptionsApiUsingComponents(options: {
   try {
     const ast = babelParse(descriptor.script.content, BABEL_TS_MODULE_PARSER_OPTIONS)
     const imports = new Map<string, { importSource: string, importedName?: string, kind: 'default' | 'named' }>()
-    traverse(ast, {
-      ImportDeclaration(path) {
-        if (path.node.importKind === 'type' || !t.isStringLiteral(path.node.source)) {
-          return
+    if (nativeScriptAnalysis) {
+      for (const imported of nativeScriptAnalysis.imports) {
+        if (imported.typeOnly || imported.kind === 'namespace') {
+          continue
         }
-        for (const specifier of path.node.specifiers) {
-          if ('importKind' in specifier && specifier.importKind === 'type') {
-            continue
+        imports.set(imported.local, {
+          importSource: imported.source,
+          importedName: imported.imported,
+          kind: imported.kind,
+        })
+      }
+    }
+    else {
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.importKind === 'type' || !t.isStringLiteral(path.node.source)) {
+            return
           }
-          if (!t.isIdentifier(specifier.local)) {
-            continue
+          for (const specifier of path.node.specifiers) {
+            if ('importKind' in specifier && specifier.importKind === 'type') {
+              continue
+            }
+            if (!t.isIdentifier(specifier.local)) {
+              continue
+            }
+            if (t.isImportDefaultSpecifier(specifier)) {
+              imports.set(specifier.local.name, { importSource: path.node.source.value, importedName: 'default', kind: 'default' })
+            }
+            else if (t.isImportSpecifier(specifier)) {
+              const importedName = t.isIdentifier(specifier.imported)
+                ? specifier.imported.name
+                : t.isStringLiteral(specifier.imported)
+                  ? specifier.imported.value
+                  : undefined
+              imports.set(specifier.local.name, { importSource: path.node.source.value, importedName, kind: 'named' })
+            }
           }
-          if (t.isImportDefaultSpecifier(specifier)) {
-            imports.set(specifier.local.name, { importSource: path.node.source.value, importedName: 'default', kind: 'default' })
-          }
-          else if (t.isImportSpecifier(specifier)) {
-            const importedName = t.isIdentifier(specifier.imported)
-              ? specifier.imported.name
-              : t.isStringLiteral(specifier.imported)
-                ? specifier.imported.value
-                : undefined
-            imports.set(specifier.local.name, { importSource: path.node.source.value, importedName, kind: 'named' })
-          }
-        }
-      },
-    })
+        },
+      })
+    }
 
     const aliases = new Set<string>([WE_VU_RUNTIME_APIS.defineComponent, '_defineComponent'])
     for (const [localName, imported] of imports) {
@@ -605,6 +646,10 @@ export async function collectComponentSourceInfo(options: {
   compileOptions: CompileVueFileOptions | undefined
   autoUsingComponents: AutoUsingComponentsOptions | undefined
   autoImportTags: AutoImportTagsOptions | undefined
+  nativeScriptAnalysis?: {
+    script?: NativeCompilerScriptAnalysis
+    scriptSetup?: NativeCompilerScriptAnalysis
+  }
 }) {
   const result = createComponentSourceInfo()
   const templateComponentTagInfo = options.descriptor.template
@@ -627,6 +672,7 @@ export async function collectComponentSourceInfo(options: {
       templateComponentNames: templateComponentTagInfo?.componentNames,
       templateTagsByComponentName: templateComponentTagInfo?.tagsByComponentName,
       result: scriptImportResult,
+      nativeScriptAnalysis: options.nativeScriptAnalysis?.scriptSetup,
     }),
     collectOptionsApiUsingComponents({
       descriptor: options.descriptor,
@@ -636,6 +682,10 @@ export async function collectComponentSourceInfo(options: {
       templateComponentNames: templateComponentTagInfo?.componentNames,
       templateTagsByComponentName: templateComponentTagInfo?.tagsByComponentName,
       result: scriptImportResult,
+      nativeScriptAnalysis: options.nativeScriptAnalysis?.script
+        && options.descriptor.script?.content === options.descriptorForCompile.script?.content
+        ? options.nativeScriptAnalysis.script
+        : undefined,
     }),
     collectAutoImportWevuComponents({
       descriptor: options.descriptor,

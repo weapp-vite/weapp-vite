@@ -1,3 +1,4 @@
+import type { NativeCompilerScriptAnalysis } from '@weapp-vite/ast'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
@@ -50,7 +51,10 @@ export interface PrecomputedScriptPhaseInfo {
 type SfcDescriptor = Parameters<typeof compileScript>[0]
 type CompiledScript = ReturnType<typeof compileScript>
 
-function hasDefaultExport(scriptCode: string) {
+function hasDefaultExport(scriptCode: string, nativeAnalysis?: NativeCompilerScriptAnalysis) {
+  if (nativeAnalysis) {
+    return nativeAnalysis.hasDefaultExport
+  }
   if (!EXPORT_DEFAULT_RE.test(scriptCode)) {
     return false
   }
@@ -275,6 +279,10 @@ export async function compileScriptPhase(
   precomputedScriptPhaseInfo?: PrecomputedScriptPhaseInfo,
   originalSource?: string,
   scriptPreprocessMap?: EncodedSourceMapLike | null,
+  nativeScriptAnalysis?: {
+    script?: NativeCompilerScriptAnalysis
+    scriptSetup?: NativeCompilerScriptAnalysis
+  },
 ): Promise<ScriptPhaseResult> {
   const autoUsingComponentsMap: Record<string, string> = { ...(componentSourceInfo?.autoUsingComponentsMap ?? {}) }
   const autoComponentMeta: Record<string, string> = { ...(componentSourceInfo?.autoComponentMeta ?? {}) }
@@ -321,7 +329,7 @@ export async function compileScriptPhase(
       scriptCode = stripJsonMacroCallsFromCode(scriptCode, filename)
     }
 
-    if (!isAppFile && !descriptor.scriptSetup && !hasDefaultExport(scriptCode)) {
+    if (!isAppFile && !descriptor.scriptSetup && !hasDefaultExport(scriptCode, nativeScriptAnalysis?.script)) {
       scriptCode += '\nexport default {}'
     }
   }

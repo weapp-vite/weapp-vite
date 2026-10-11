@@ -60,6 +60,7 @@ async function compileVueFileInternal(source: string, filename: string, options?
     compileOptions: options,
     autoUsingComponents,
     autoImportTags,
+    nativeScriptAnalysis: parsed.nativeScriptAnalysis,
   }))
 
   const scriptCompiled = parsed.descriptor.script || parsed.descriptor.scriptSetup
@@ -179,6 +180,7 @@ async function compileVueFileInternal(source: string, filename: string, options?
     },
     source,
     parsed.scriptPreprocessMap,
+    parsed.nativeScriptAnalysis,
   ))
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap

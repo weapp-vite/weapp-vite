@@ -20,6 +20,35 @@ export interface NativeScriptAnalysisInput {
   filename?: string
 }
 
+export interface NativeCompilerScriptInput {
+  code: string
+  filename?: string
+  moduleId?: string
+  hookToFeatureJson?: string
+}
+
+export interface NativeCompilerScriptImport {
+  local: string
+  imported?: string
+  source: string
+  kind: 'default' | 'namespace' | 'named'
+  typeOnly: boolean
+}
+
+export interface NativeCompilerScriptAnalysis {
+  imports: NativeCompilerScriptImport[]
+  hasDefaultExport: boolean
+  defineOptionsName?: string
+  isMiniProgramComponent: boolean
+  hasStaticRequireLiteral: boolean
+  hasPlatformApiAccess: boolean
+  featureFlags: string[]
+}
+
+export function analyzeCompilerScriptsNative(
+  inputs: NativeCompilerScriptInput[],
+): NativeCompilerScriptAnalysis[]
+
 export function analyzeScriptNative(
   code: string,
   moduleId?: string,
