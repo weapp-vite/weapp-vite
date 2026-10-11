@@ -1,8 +1,32 @@
 import { runInNewContext } from 'node:vm'
 import { describe, expect, it, vi } from 'vitest'
+import { createNativeInspectorHeapExpression } from './expression'
 import { createTestCollector, heapContext } from './testHelpers'
 
 describe('Computer Use native Inspector installation expression', () => {
+  it.each(['accepted', 'rejected-response', 'transport-error'] as const)('preserves the original frontend error when its failure report is %s', async (reportStatus) => {
+    const original = new Error('original native target failure')
+    const endpoint = 'http://127.0.0.1'
+    const expression = createNativeInspectorHeapExpression(endpoint, 'test-only-token', { sessionId: 'test-owned-session', targetUrl: 'test-only-target', toolVersion: 'test-ide', sdkVersion: 'test-sdk' })
+    const report = vi.fn(async (_input: string, _init: RequestInit) => {
+      if (reportStatus === 'transport-error') {
+        throw new Error('failure report transport error')
+      }
+      return { ok: reportStatus === 'accepted', status: reportStatus === 'accepted' ? 200 : 409 }
+    })
+    const installed = runInNewContext(expression, {
+      SDK: { targetManager: { targets() {
+        throw original
+      } } },
+      fetch: report,
+    }) as Promise<unknown>
+    await expect(installed).rejects.toBe(original)
+    expect(report).toHaveBeenCalledOnce()
+    const [input, init] = report.mock.calls[0]!
+    expect(input).toBe(`${endpoint}/failed`)
+    expect(JSON.parse(String(init.body))).toEqual({ sessionId: 'test-owned-session', message: String(original) })
+  })
+
   it('captures each original native request id synchronously despite intervening SDK traffic', async () => {
     const collector = await createTestCollector()
     let lastMessageId = 0

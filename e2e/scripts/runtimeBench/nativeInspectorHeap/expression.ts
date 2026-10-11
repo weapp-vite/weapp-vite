@@ -58,7 +58,11 @@ export function createNativeInspectorHeapExpression(endpoint: string, token: str
       });
     }
   } catch (error) {
-    await post('/failed', { sessionId, message: String(error) });
+    try {
+      await post('/failed', { sessionId, message: String(error) });
+    } catch {
+      // 失败报告本身不能替换首个原生请求或协议异常。
+    }
     throw error;
   }
 })()`
