@@ -1,0 +1,11 @@
+{
+  "schema": "rejected-compile-cache-flush-diagnostic-v1",
+  "sourceHead": "3737c613da5822623e234b095fc51f44f141ef88",
+  "originalReportSha256": "b9e1072dc2297058e9b73b0871898c8b1fe7340d0eef7668f4bf032ff9a1d9e7",
+  "redaction": "Absolute runtime, workspace and home prefixes replaced. The public report is not the original byte stream.",
+  "files": {
+    "report.json": "840ae9c2a99add8e45b96e136233591f8aa798afc86aaff45f9286afd104386b",
+    "candidate.patch": "f12013bfa6335a7e4931a1bb7114ba855842855c74206146ac95bd242af22f7a",
+    "README.md": "cd82ee703163960bd20c8e942ec6da5dcf71fb42afe8aecc45d48ef5ecc46326"
+  }
+}
