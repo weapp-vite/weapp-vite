@@ -11,6 +11,7 @@ import { createDomAcceptance } from '../utils/domAcceptance'
 import { readEmittedStylesheet } from '../utils/emittedStylesheet'
 import { renameAtomicFile } from '../utils/hmrAtomicRename'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
+import { captureHmrStyleFailure } from '../utils/hmrStyleDiagnostics'
 import { createIssue1081Project, ISSUE_1081_CLI } from '../utils/issue1081Project'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
@@ -54,7 +55,21 @@ describe('issue #1081: delayed compiler transaction', () => {
   }, 60_000)
 
   it('keeps the committed DOM while compilation is held and applies the newest source with CSS Modules', async (context) => {
-    context.onTestFailed(() => process.stdout.write(dev!.getOutput()))
+    context.onTestFailed(async () => {
+      try {
+        process.stdout.write(dev!.getOutput())
+      }
+      catch {
+        // 诊断输出失败不能覆盖原始 DOM 断言。
+      }
+      if (host && resolveRuntimeProviderName() === 'devtools') {
+        await captureHmrStyleFailure(host as any, {
+          project: fixture,
+          selector: '#issue-1081-utility',
+          stylesheets: ['app.wxss', 'pages/index/index.wxss'].map(fileName => ({ fileName, path: path.join(project, 'dist', fileName) })),
+        })
+      }
+    })
     const session = host!
     const page = await session.reLaunch(route)
     const diagnostics = createHmrRuntimeDiagnostics(session as any, fixture)

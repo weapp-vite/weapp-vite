@@ -9,6 +9,7 @@ import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/
 import { traceCleanupStage } from '../cleanupTrace'
 import { parseWindowsProcessRows } from './windowsProcessRows'
 import { collectWindowsProcessTree, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
+import { traceWindowsQueryChild } from './windowsQueryChildTrace'
 import { createWindowsProcessQueryCommand, reportWindowsQueryTrace } from './windowsQueryTrace'
 
 export { type DevProcessCandidate, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
@@ -26,12 +27,16 @@ async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
   const filter = ` -Filter '${pids ? pids.map(pid => `ProcessId=${pid}`).join(' OR ') : 'ProcessId > 0'}'`
   const timeoutMs = resolveWechatInspectionTimeout('win32')
   const trace = process.env.WEAPP_VITE_E2E_CLEANUP_TRACE === '1'
-  const result = await traceCleanupStage(pids ? 'dev-cim-identities' : 'dev-cim-snapshot', () => execa('powershell.exe', [
-    '-NoProfile',
-    '-NonInteractive',
-    '-Command',
-    createWindowsProcessQueryCommand(filter, trace),
-  ], { timeout: timeoutMs, reject: false, windowsHide: true }), { processCount: pids?.length, timeoutMs })
+  const result = await traceCleanupStage(pids ? 'dev-cim-identities' : 'dev-cim-snapshot', () => {
+    const startedMs = trace ? performance.now() : 0
+    const subprocess = execa('powershell.exe', [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      createWindowsProcessQueryCommand(filter, trace),
+    ], { timeout: timeoutMs, reject: false, windowsHide: true })
+    return trace ? traceWindowsQueryChild(pids ? 'identities' : 'snapshot', subprocess, startedMs) : subprocess
+  }, { processCount: pids?.length, timeoutMs })
   if (trace) {
     reportWindowsQueryTrace(pids ? 'identities' : 'snapshot', result)
   }

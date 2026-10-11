@@ -1,3 +1,4 @@
+import { ChildProcess } from 'node:child_process'
 import path from 'node:path'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -127,6 +128,7 @@ describe('dev process snapshot identity', () => {
         stderrTruncated: true,
         rawMarkerCount: 2,
         scriptBeginReceived: true,
+        markerVersion: 1,
         markers: [{ stage: 'script', event: 'begin', elapsedMs: 0 }, { stage: 'query', event: 'begin', elapsedMs: 1.25 }],
       })
     }
@@ -220,9 +222,15 @@ describe('dev process snapshot identity', () => {
     vi.spyOn(process.stdout, 'write').mockReturnValue(true)
     const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: '节点 with space.exe' }
     const stdout = fixtureWindowsProcessRows([root])
-    execute.mockResolvedValueOnce({ exitCode: 0, stdout })
+    const child = new ChildProcess()
+    const subprocess = Object.assign(Promise.resolve({ exitCode: 0, stdout }), { nodeChildProcess: child })
+    execute.mockReturnValueOnce(subprocess)
     try {
-      expect(await captureDevProcessTree(61, () => true)).toEqual([{ pid: 61, executable: root.ExecutablePath, started: root.Started }])
+      const captured = captureDevProcessTree(61, () => true)
+      expect(child.listenerCount('spawn')).toBe(trace === '1' ? 1 : 0)
+      child.emit('spawn')
+      child.emit('close', 0, null)
+      expect(await captured).toEqual([{ pid: 61, executable: root.ExecutablePath, started: root.Started }])
       expect(execute).toHaveBeenCalledOnce()
       expect(execute.mock.calls[0]![0]).toBe('powershell.exe')
       expect(execute.mock.calls[0]![2]).toEqual({ timeout: 10_000, reject: false, windowsHide: true })
