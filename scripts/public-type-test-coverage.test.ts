@@ -1,8 +1,15 @@
-import { readdir, readFile } from 'node:fs/promises'
+import * as filesystem from 'node:fs/promises'
+import { glob, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
 import { workspaceTypeTestPackages } from './turboCacheContract/fixture'
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
+  return { ...actual, readdir: vi.fn(actual.readdir) }
+})
 
 const root = path.resolve(import.meta.dirname, '..')
 const standardContracts = 'tsd --files "test-d/**/*.test-d.ts"'
@@ -92,6 +99,15 @@ async function filesUnder(directory: string): Promise<string[]> {
   }
 }
 
+async function matchingFiles(directory: string, patterns: string | string[]): Promise<string[]> {
+  const files: string[] = []
+  // Node 最低支持版本已包含 glob；由固定前缀限定遍历，不扫描包内的依赖和构建产物。
+  for await (const file of glob(patterns, { cwd: directory })) {
+    files.push(file.replaceAll('\\', '/'))
+  }
+  return files
+}
+
 async function collectContracts(packageRoot: string, script: string): Promise<string[]> {
   let directory = packageRoot
   const selected = new Set<string>()
@@ -104,12 +120,11 @@ async function collectContracts(packageRoot: string, script: string): Promise<st
     const tokens = command.match(/"[^"]*"|\S+/g)?.map(token => token.replace(/^"|"$/g, '')) ?? []
     expect(tokens[0], 'The internal type check must only select and run tsd contracts').toBe('tsd')
     const manifest = await readManifest(directory)
-    const files = await filesUnder(directory)
     const filesIndex = tokens.indexOf('--files')
     let matches: string[]
     if (filesIndex !== -1) {
       const pattern = tokens[filesIndex + 1]!
-      matches = files.filter(file => path.matchesGlob(file, pattern))
+      matches = (await matchingFiles(directory, pattern)).filter(file => path.matchesGlob(file, pattern))
       if (pattern.includes('**')) {
         const futureFile = pattern.startsWith('test-d/') ? 'test-d/nested/future.test-d.ts' : 'nested/future.test-d.ts'
         expect(path.matchesGlob(futureFile, pattern)).toBe(true)
@@ -121,10 +136,11 @@ async function collectContracts(packageRoot: string, script: string): Promise<st
       // 与 tsd 的默认选择规则一致；.d.mts 不会被替换，必须使用显式 --files。
       const candidates = [typings.replace(/\.d\.ts$/, '.test-d.ts'), typings.replace(/\.d\.ts$/, '.test-d.tsx')]
         .map(file => file.replace(/^\.\//, ''))
-      matches = files.filter(file => candidates.includes(file))
+      matches = (await matchingFiles(directory, candidates)).filter(file => candidates.includes(file))
       if (matches.length === 0) {
         const testDirectory = manifest.tsd?.directory ?? 'test-d'
-        matches = files.filter(file => path.matchesGlob(file, `${testDirectory}/**/*.{ts,tsx}`))
+        const pattern = `${testDirectory}/**/*.{ts,tsx}`
+        matches = (await matchingFiles(directory, pattern)).filter(file => path.matchesGlob(file, pattern))
       }
     }
     expect(matches.length, `${command} must select real contracts`).toBeGreaterThan(0)
@@ -137,6 +153,29 @@ async function collectContracts(packageRoot: string, script: string): Promise<st
 }
 
 describe('public type tests in CI', () => {
+  it.each(['tsd --files "test-d/**/*.test-d.{ts,tsx}"', 'tsd'])('selects all contracts without recursively reading unrelated package trees: %s', async (script) => {
+    const packageRoot = await mkdtemp(path.join(tmpdir(), 'type-contract-scope-'))
+    const enumerate = vi.spyOn(filesystem, 'readdir')
+    try {
+      await mkdir(path.join(packageRoot, 'test-d/nested'), { recursive: true })
+      await mkdir(path.join(packageRoot, 'node_modules/dependency'), { recursive: true })
+      await writeFile(path.join(packageRoot, 'package.json'), '{"types":"dist/index.d.ts","scripts":{}}')
+      await writeFile(path.join(packageRoot, 'test-d/nested/public.test-d.ts'), '')
+      await writeFile(path.join(packageRoot, 'test-d/nested/jsx.test-d.tsx'), '')
+      await writeFile(path.join(packageRoot, 'node_modules/dependency/internal.test-d.ts'), '')
+      expect(await collectContracts(packageRoot, script)).toEqual([
+        'test-d/nested/jsx.test-d.tsx',
+        'test-d/nested/public.test-d.ts',
+      ])
+      expect(enumerate.mock.calls.some(([directory, options]) => directory === packageRoot
+        && typeof options === 'object' && options?.recursive)).toBe(false)
+    }
+    finally {
+      enumerate.mockRestore()
+      await rm(packageRoot, { recursive: true, force: true })
+    }
+  })
+
   it('covers every workspace package with a public type-test entry', async () => {
     const actual = (await workspaceTypeTestPackages()).map(manifest => manifest.directory)
     expect(actual.sort()).toEqual([...packages.map(([directory]) => directory), 'e2e-apps/lib-mode'].sort())
