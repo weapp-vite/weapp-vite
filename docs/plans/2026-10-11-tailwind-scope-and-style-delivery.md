@@ -23,3 +23,19 @@
 源码单测后重建受影响包，再串行执行下游验证。真实 IDE 的透明样式仍需同一轮节点 class、已加载 stylesheet 与可见结果证据；本次交付顺序修复不能单独证明其根因。Windows 启动超时及性能回退也须保留原门禁复验。
 
 `session.ts` 和既有 snapshot harness 已超过 300 行。本次仅删减第二次提交并在既有测试边界补充回归，不增加新的生命周期；大规模拆分会扩大状态所有权变更，因此留待独立重构。
+
+HMR adapter 在补充 root watcher、registration token 和异步交付门禁后约 329 行；已将失效集合、owner epoch 和导入式 root 登记拆成私有模块。其余代码是同一 adapter hook 的共享状态编排，继续拆分会复制 dispose、watcher 和 snapshot 所有权，暂保持集中并在后续生命周期重构时处理。
+
+## 普通候选内容的失效时机
+
+完整内存输入已经足以让 core 更新新增、替换、删除及空来源候选，单纯内容保存无需先重建 Tailwind engine。现有即时 `invalidate` 会在第一次从磁盘扫描切到内存生成时额外重建 engine。保留即时失效最简单，但会继续承担该次重复工作；永久跳过失效则不可接受：原生候选和 `app.json` 入口同时变化、首批直接走完整快照时，相同磁盘生成请求会命中旧 output cache，负控已复现旧候选残留。
+
+采用私有的延迟失效集合，仅接纳已在宿主完整输入视图中捕获、命中有效 source matcher、且不属于任何 CSS 输入或已知依赖的普通候选。core 返回的 import、config、plugin 依赖及预处理 metadata 依赖仍即时失效；未知分类、未初始化 root、导入式样式、classic 和一次性 snapshot 保持即时失效。集合保存 root ID，避免不断新增、删除候选文件导致路径队列增长，也保证内存生成清空上游扫描来源后仍可显式失效原 root。
+
+两个磁盘生成入口统一经过私有 wrapper，在同一同步段取出待失效 root、调用 core `invalidate`、清除已处理项并提交 `generate`；内存 prepare 不处理此集合。多个 root 分别保留身份，删除入口同时移除对应 adapter root 和待失效项。生成失败沿用 core 尚未提交的失效状态；dispose 清除本实例集合和 adapter 状态，不影响其他 snapshot 或 controller。
+
+回归按真实 plugin hooks 验证首次普通内容更新的 engine 复用，同时以 fresh compiler 的 CSS、classSet 作为正确性对照。补充磁盘与内存交替、完整重同步、来源删除、CSS/config/import 与内容同时更新、多个 root、冻结批次、classic、独立 snapshot 和释放覆盖。诊断 timing 不充当正式性能通过证据，原性能基线、预算和 deadline 保持不变。
+
+异步生命周期使用私有 owner epoch。普通内容更新和同一入口的重新登记沿用活跃 owner；入口删除、同索引换成另一 root 和 adapter dispose 会撤销旧 owner。冻结的 prepare scope 通过稳定的 compiler facade 在每个 root 进入 core.generate 前检查 owner，并在生成及样式 render 返回后再次检查，避免删除期间恢复 core root、发布过期 CSS 或以新 owner 复活旧请求。磁盘生成在进入 core 前登记 generation token，删除或更新登记后迟到的生成及来源扫描均不能写回 adapter。
+
+导入式样式在首次 core.generate 前登记私有 owner；生成失败、提交后异常和处理期间保存都继续按导入式完整重同步处理，只有对应 core.remove 完成后才撤销该登记。同一导入 key 的每次生成保留独立 generation，旧 transform 完成后不能覆盖新 snapshot。
