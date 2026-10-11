@@ -519,8 +519,8 @@ function getHeadlessPatternTasks(patterns: string[]) {
 
 function getIdeDomHeadlessTasks() {
   const stateful = createHeadlessVitestTask(HEADLESS_CONFIG_PATH, path.resolve(ROOT, 'ide/stateful-hmr.runtime.test.ts'))
-  // 同一会话覆盖状态保持与模板生成脚本；计算样式断言仍留在完整真实 IDE suite。
-  stateful.args.push('-t', 'ignores unowned editor files|copied and public asset lifecycle|updates Wevu template-generated|two template edit and restore cycles|isolated script updates and restoration|commits navigation requested|initializes updated native defaults')
+  // 原生样式等待实际 WXSS 产物；计算样式断言仍留在完整真实 IDE suite。
+  stateful.args.push('-t', 'preserves native Page identity|ignores unowned editor files|copied and public asset lifecycle|updates Wevu template-generated|two template edit and restore cycles|isolated script updates and restoration|commits navigation requested|initializes updated native defaults')
   return [...getHeadlessPatternTasks(IDE_DOM_HEADLESS_PATTERNS), stateful].map(task => ({
     ...task,
     env: { ...task.env, WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1' },
