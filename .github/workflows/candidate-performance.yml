@@ -117,6 +117,8 @@ jobs:
           TEMPLATES_PERF_BASELINE_DIR: ${{ github.workspace }}/baseline
           TEMPLATES_PERF_OPTIMIZED_DIR: ${{ github.workspace }}/head
           TEMPLATES_PERF_REPORT_DIR: ${{ runner.temp }}/performance-shard
+          # 清理不参与性能采样；保存 Windows 查询阶段，定位 CIM 超时并保留原十秒预算。
+          WEAPP_VITE_E2E_CLEANUP_TRACE: ${{ runner.os == 'Windows' && '1' || '0' }}
         run: pnpm exec tsx scripts/performanceGate/full.ts
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
