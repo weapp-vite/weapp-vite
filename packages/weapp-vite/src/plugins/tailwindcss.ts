@@ -34,6 +34,7 @@ import { resolveVueStyleSource } from './tailwindcss/vueStyle'
 import {
   createManagedTailwindcssEntryMarker,
   createManagedTailwindcssOutputMarker,
+  hasManagedTailwindcssEntries,
   isManagedTailwindcssEntry,
   normalizeManagedTailwindcssEntryPath,
   registerManagedTailwindcssEntries,
@@ -151,6 +152,9 @@ function outputAssetSource(asset: OutputAsset) {
 }
 
 function parseManagedEntryIndex(id: string, entries: Map<string, number>) {
+  if (entries.size === 0) {
+    return undefined
+  }
   const sourceId = normalizeFsResolvedId(id.split('?')[0], { stripLeadingNullByte: true })
   return entries.get(normalizeManagedTailwindcssEntryPath(sourceId))
 }
@@ -534,6 +538,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       resolve: this.resolve.bind(this),
       isManaged: file => isManagedTailwindcssEntry(ctx, file),
     })
+    if (!imports.managed && importedSources.size === 0) {
+      return null
+    }
     const key = importedSourceKey(id)
     if (!imports.managed) {
       const previous = importedSources.get(key)
@@ -671,7 +678,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       if (sidecar.kind !== 'style' || sidecar.dependencyOnly) {
         return null
       }
-      let index = entryIndex.get(normalizeManagedTailwindcssEntryPath(sidecar.sourceId))
+      let index = entryIndex.size > 0
+        ? entryIndex.get(normalizeManagedTailwindcssEntryPath(sidecar.sourceId))
+        : undefined
       if (index === undefined && resolved.autoDetected) {
         try {
           index = resolveAutoEntryIndex(sidecar.sourceId, fs.readFileSync(sidecar.sourceId, 'utf8'))
@@ -688,7 +697,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       return source
     },
     load(id) {
-      if (resolved.options.generator === false || parseWeappVueStyleRequest(id)) {
+      if (resolved.options.generator === false || (entryIndex.size === 0 && !hasManagedTailwindcssEntries(ctx)) || parseWeappVueStyleRequest(id)) {
         return null
       }
       const sidecar = parseSidecarSourceRequest(id)
@@ -724,7 +733,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       const sourceId = requestSources.get(id) ?? id
       const entry = parseManagedEntryIndex(sourceId, entryIndex) ?? resolveAutoEntryIndex(sourceId, code)
       if (entry === undefined) {
-        return code.includes('@import') || importedSources.has(importedSourceKey(id))
+        return code.includes('@import') || (importedSources.size > 0 && importedSources.has(importedSourceKey(id)))
           ? transformImportedSource.call(this, code, id)
           : null
       }
@@ -747,7 +756,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       }
     },
     shouldTransformCachedModule({ id }) {
-      if (importedSources.has(importedSourceKey(id))) {
+      if (importedSources.size > 0 && importedSources.has(importedSourceKey(id))) {
         return true
       }
       const sourceId = requestSources.get(id) ?? id
