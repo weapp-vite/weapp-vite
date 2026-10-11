@@ -40,6 +40,10 @@ export function createNativeInspectorHeapExpression(endpoint: string, token: str
       const requestId = router._lastMessageId;
       const response = await heapPromise;
       const receivedAt = new Date().toISOString();
+      const afterIsolatePromise = before.target.runtimeAgent().invoke_getIsolateId({});
+      const afterIsolateRequestId = router._lastMessageId;
+      const afterIsolate = await afterIsolatePromise;
+      const verifiedAt = new Date().toISOString();
       const durationMs = performance.now() - startedMono;
       const after = targets();
       await post('/result', {
@@ -48,7 +52,8 @@ export function createNativeInspectorHeapExpression(endpoint: string, token: str
           targetId: before.targetId, targetUrl: before.targetUrl, targetCount: before.targetCount,
           afterTargetId: after.targetId, afterTargetUrl: after.targetUrl, afterTargetCount: after.targetCount,
           isolateRequestId, isolate, isolateError: isolate.getError() || null, requestId,
-          startedAt, sentAt, receivedAt, durationMs, response, error: response.getError() || null
+          afterIsolateRequestId, afterIsolate, afterIsolateError: afterIsolate.getError() || null,
+          startedAt, sentAt, receivedAt, verifiedAt, durationMs, response, error: response.getError() || null
         }
       });
     }

@@ -73,7 +73,7 @@ export function assessBenchMemory(result?: WorkerResult) {
       const after = sample.memory?.hostHeapAfter?.native
       if (before || after) {
         if (!before || !after || before.sessionId !== after.sessionId || before.raw?.targetUrl !== after.raw?.targetUrl
-          || before.raw?.isolate?.id !== after.raw?.isolate?.id || before.sequence >= after.sequence || before.raw?.requestId >= after.raw?.isolateRequestId) {
+          || before.raw?.isolate?.id !== after.raw?.isolate?.id || before.sequence >= after.sequence || before.raw?.afterIsolateRequestId >= after.raw?.isolateRequestId) {
           missing.push({ scenario, index, reason: 'native-heap-before-after-session-or-order-mismatch' })
         }
       }

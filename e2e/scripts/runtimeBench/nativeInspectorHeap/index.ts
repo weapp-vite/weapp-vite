@@ -142,7 +142,7 @@ export async function createNativeInspectorHeapCollector(options: NativeInspecto
         throw new Error('Native Inspector heap response arrived after the original 2500ms deadline')
       }
       const raw = validateNativeInspectorHeapResponse(body.raw, handshake!, lastRequestId, pending.requestedAt, receivedAtNode)
-      lastRequestId = raw.requestId
+      lastRequestId = raw.afterIsolateRequestId
       const evidence: NativeInspectorHeapEvidence = {
         transport: 'native-inspector-sdk',
         sessionId: identity.sessionId,

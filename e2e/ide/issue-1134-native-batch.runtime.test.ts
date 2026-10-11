@@ -7,7 +7,7 @@ import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { renameAtomicFile } from '../utils/hmrAtomicRename'
-import { createNativeBatchProject, NATIVE_BATCH_CLI, NATIVE_BATCH_STEPS, readNativeBatchOutput, readNativeBatchSources, writeNativeBatch } from '../utils/nativeBatchProject'
+import { createNativeBatchProject, NATIVE_BATCH_CLI, NATIVE_BATCH_STEPS, readNativeBatchDiagnostics, readNativeBatchOutput, readNativeBatchSources, writeNativeBatch } from '../utils/nativeBatchProject'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
 import { cleanupTemporaryRuntimeProject } from '../utils/temporaryRuntimeProject'
@@ -57,9 +57,20 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
   }, 60_000)
 
   it('renders matching script, template, style and config batches on repeated saves and restoration', async (context) => {
-    context.onTestFailed(() => {
-      process.stdout.write(dev?.getOutput().slice(-16_000) ?? '')
+    context.onTestFailed(async () => {
+      try {
+        process.stdout.write(dev?.getOutput().slice(-16_000) ?? '')
+        process.stdout.write(`[native-batch-diagnostics] ${JSON.stringify({ runtime, files: await readNativeBatchDiagnostics(project) })}\n`)
+      }
+      catch {
+        // 诊断失败不能覆盖原始四文件交付断言。
+      }
     })
+    if (process.env.WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE === '1') {
+      context.onTestFinished(() => {
+        process.stdout.write(dev?.getOutput() ?? '')
+      })
+    }
     const checkpoints = NATIVE_BATCH_STEPS.map((step, index) => ({
       id: `batch-${index}`,
       route,

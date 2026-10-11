@@ -89,23 +89,29 @@ export async function prepareNativeInspectorBench(options: {
     await fs.writeFile(temporary, `${JSON.stringify({ schemaVersion: 1, phase, ...options.identity, preset: options.preset, resource: options.resource, inputPath, ...extra }, null, 2)}\n`)
     await fs.rename(temporary, requestPath)
   }
-  await publish('target-required')
-  options.log(`native Inspector target required: ${requestPath}`)
-  const targetUrl = await readNativeInspectorTarget(inputPath, options.identity.sessionId)
-  const collector = await createNativeInspectorHeapCollector({ ...options.identity, targetUrl })
+  let targetUrl: string | undefined
+  let collector: Awaited<ReturnType<typeof createNativeInspectorHeapCollector>> | undefined
+  let installationFailed = false
   let installationError: unknown
   let closing: Promise<void> | undefined
   const close = () => closing ??= (async () => {
     const errors: unknown[] = []
     try {
-      await collector.close()
+      await collector?.close()
+    }
+    catch (error) {
+      errors.push(error)
+    }
+    let rawSaved = false
+    try {
+      await fs.writeFile(rawPath, `${JSON.stringify({ identity: collector?.identity ?? options.identity, targetUrl, state: collector?.state ?? null, installationError: installationFailed ? installationError instanceof Error ? installationError.message : String(installationError) : null, records: collector?.records ?? [], rawResponses: collector?.rawResponses ?? [] }, null, 2)}\n`)
+      rawSaved = true
     }
     catch (error) {
       errors.push(error)
     }
     try {
-      await fs.writeFile(rawPath, `${JSON.stringify({ identity: collector.identity, state: collector.state, installationError: installationError instanceof Error ? installationError.message : installationError, records: collector.records, rawResponses: collector.rawResponses }, null, 2)}\n`)
-      await publish(errors.length || installationError ? 'failed' : 'closed', { targetUrl, rawPath })
+      await publish(errors.length || installationFailed ? 'failed' : 'closed', { targetUrl, rawPath, rawSaved })
     }
     catch (error) {
       errors.push(error)
@@ -116,6 +122,10 @@ export async function prepareNativeInspectorBench(options: {
   })()
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
+    await publish('target-required')
+    options.log(`native Inspector target required: ${requestPath}`)
+    targetUrl = await readNativeInspectorTarget(inputPath, options.identity.sessionId)
+    collector = await createNativeInspectorHeapCollector({ ...options.identity, targetUrl })
     await fs.writeFile(expressionPath, collector.consoleExpression, { flag: 'wx', mode: 0o600 })
     await publish('install-required', { targetUrl, expressionPath })
     options.log(`native Inspector Console expression ready: ${expressionPath}`)
@@ -128,6 +138,7 @@ export async function prepareNativeInspectorBench(options: {
     await publish('sampling', { targetUrl, endpoint: collector.endpoint })
   }
   catch (error) {
+    installationFailed = true
     installationError = error
     try {
       await close()

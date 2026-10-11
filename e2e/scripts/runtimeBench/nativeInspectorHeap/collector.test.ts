@@ -24,7 +24,7 @@ describe('native Inspector heap collector ownership and deadline', () => {
     const evidence = await before
     expect(evidence).toMatchObject({ transport: 'native-inspector-sdk', sessionId: collector.identity.sessionId, sequence: 1, context: heapContext, raw: { targetUrl: collector.identity.targetUrl, isolate: { id: 'test-native-isolate' }, isolateRequestId: 11, requestId: 12, response: { usedSize: 12, totalSize: 24, embedderHeapUsedSize: 4, backingStorageSize: 7 }, error: null } })
     const after = collector.read({ ...heapContext, phase: 'after' })
-    expect((await deliverInspectorResponse(collector, rawHeapResponse(collector, 13))).status).toBe(200)
+    expect((await deliverInspectorResponse(collector, rawHeapResponse(collector, 14))).status).toBe(200)
     expect((await after).sequence).toBe(2)
     expect(collector.records).toHaveLength(2)
     expect(collector.rawResponses).toHaveLength(2)
@@ -94,6 +94,21 @@ describe('native Inspector heap collector ownership and deadline', () => {
     expect(collector.rawResponses).toHaveLength(2)
     await expect(collector.read(heapContext)).rejects.toThrow('duplicate')
     await expect(collector.close()).rejects.toThrow('duplicate')
+  })
+
+  it('does not reuse the preceding post-heap isolate request id for the next checkpoint', async () => {
+    const collector = await fixture()
+    await readyCollector(collector)
+    const first = collector.read(heapContext)
+    const raw = rawHeapResponse(collector)
+    expect((await deliverInspectorResponse(collector, raw)).status).toBe(200)
+    await first
+    const next = collector.read({ ...heapContext, phase: 'after' })
+    const failure = expect(next).rejects.toThrow('reordered native request ids')
+    expect((await deliverInspectorResponse(collector, rawHeapResponse(collector, raw.afterIsolateRequestId))).status).toBe(409)
+    await failure
+    expect(collector.records).toHaveLength(1)
+    expect(collector.rawResponses).toHaveLength(2)
   })
 
   it('uses the original total 2500ms budget including waiting for delivery and preserves late raw data', async () => {

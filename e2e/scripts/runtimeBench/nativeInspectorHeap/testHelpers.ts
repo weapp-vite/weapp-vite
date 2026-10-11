@@ -68,9 +68,13 @@ export function rawHeapResponse(collector: Pick<TestCollector, 'identity'>, isol
     isolate: { id: 'test-native-isolate' },
     isolateError: null,
     requestId: isolateRequestId + 1,
+    afterIsolateRequestId: isolateRequestId + 2,
+    afterIsolate: { id: 'test-native-isolate' },
+    afterIsolateError: null,
     startedAt: at,
     sentAt: at,
     receivedAt: at,
+    verifiedAt: at,
     durationMs: 0,
     response: { usedSize: 12, totalSize: 24, embedderHeapUsedSize: 4, backingStorageSize: 7 },
     error: null,
@@ -83,6 +87,6 @@ export async function deliverInspectorResponse(collector: TestCollector, raw = r
 }
 
 export function testNativeEvidence(identity: NativeInspectorHeapIdentity, context: BenchHeapSampleContext, sequence = 1): NativeInspectorHeapEvidence {
-  const raw = rawHeapResponse({ identity }, 9 + sequence * 2)
+  const raw = rawHeapResponse({ identity }, 9 + sequence * 3)
   return { transport: 'native-inspector-sdk', sessionId: identity.sessionId, sequence, context, requestedAt: raw.startedAt, receivedAtNode: raw.receivedAt, elapsedMs: 0, raw }
 }

@@ -36,9 +36,13 @@ export interface NativeInspectorHeapResponse {
   isolate: { id: string }
   isolateError: null
   requestId: number
+  afterIsolateRequestId: number
+  afterIsolate: { id: string }
+  afterIsolateError: null
   startedAt: string
   sentAt: string
   receivedAt: string
+  verifiedAt: string
   durationMs: number
   response: { usedSize: number, totalSize: number, embedderHeapUsedSize?: number, backingStorageSize?: number }
   error: null
@@ -102,7 +106,7 @@ export function validateNativeInspectorHandshake(value: unknown, identity: Nativ
   return value as unknown as NativeInspectorHandshake
 }
 
-/** 原始字节与两个原生请求编号均完整时才接受，保留宿主返回的全部 JSON 字段。 */
+/** 原始字节与前后 isolate 核验均完整时才接受，保留宿主返回的全部 JSON 字段。 */
 export function validateNativeInspectorHeapResponse(
   value: unknown,
   handshake: NativeInspectorHandshake,
@@ -113,18 +117,23 @@ export function validateNativeInspectorHeapResponse(
   requireValue(isRecord(value), 'missing native response')
   requireValue(value.targetId === 'main' && value.targetUrl === handshake.targetUrl && value.targetCount === 1
     && value.afterTargetId === 'main' && value.afterTargetUrl === handshake.targetUrl && value.afterTargetCount === 1, 'AppService target drift')
-  requireValue(value.isolateError === null && isRecord(value.isolate) && value.isolate.id === handshake.isolate.id, 'AppService isolate drift or failure')
-  requireValue(requestId(value.isolateRequestId) && requestId(value.requestId)
-    && value.isolateRequestId > previousRequestId && value.requestId > value.isolateRequestId, 'missing, repeated, or reordered native request ids')
+  requireValue(value.isolateError === null && isRecord(value.isolate) && value.isolate.id === handshake.isolate.id
+    && !value.isolate.error && !value.isolate.exceptionDetails
+    && value.afterIsolateError === null && isRecord(value.afterIsolate) && value.afterIsolate.id === handshake.isolate.id
+    && !value.afterIsolate.error && !value.afterIsolate.exceptionDetails, 'AppService isolate drift or failure')
+  requireValue(requestId(value.isolateRequestId) && requestId(value.requestId) && requestId(value.afterIsolateRequestId)
+    && value.isolateRequestId > previousRequestId && value.requestId > value.isolateRequestId
+    && value.afterIsolateRequestId > value.requestId, 'missing, repeated, or reordered native request ids')
   requireValue(value.error === null, `native Runtime.getHeapUsage failed: ${JSON.stringify(value.error)}`)
   requireValue(isRecord(value.response) && bytes(value.response.usedSize) && bytes(value.response.totalSize)
     && value.response.totalSize >= value.response.usedSize && !value.response.error && !value.response.exceptionDetails, 'expected raw finite byte counts with usedSize <= totalSize')
   for (const field of ['embedderHeapUsedSize', 'backingStorageSize']) {
     requireValue(value.response[field] === undefined || bytes(value.response[field]), `invalid ${field} byte count`)
   }
-  requireValue(timestamp(value.startedAt) && timestamp(value.sentAt) && timestamp(value.receivedAt)
+  requireValue(timestamp(value.startedAt) && timestamp(value.sentAt) && timestamp(value.receivedAt) && timestamp(value.verifiedAt)
     && Date.parse(requestedAt) <= Date.parse(value.startedAt) && Date.parse(value.startedAt) <= Date.parse(value.sentAt)
-    && Date.parse(value.sentAt) <= Date.parse(value.receivedAt) && Date.parse(value.receivedAt) <= Date.parse(receivedAtNode), 'missing, stale, or reordered UTC timestamps')
+    && Date.parse(value.sentAt) <= Date.parse(value.receivedAt) && Date.parse(value.receivedAt) <= Date.parse(value.verifiedAt)
+    && Date.parse(value.verifiedAt) <= Date.parse(receivedAtNode), 'missing, stale, or reordered UTC timestamps')
   requireValue(typeof value.durationMs === 'number' && Number.isFinite(value.durationMs)
     && value.durationMs >= 0 && value.durationMs <= NATIVE_HEAP_TIMEOUT_MS, 'native request exceeded the original timeout')
   return value as unknown as NativeInspectorHeapResponse
