@@ -1,0 +1,352 @@
+{
+  "scope": "Four-pair Node compile-cache diagnostic on the same frozen candidate; native disabled; not formal acceptance or Rust performance evidence",
+  "originalSha256": "ef9fe5ae9368d0778d6d036ba7b1e8a51dcac532125d749a3bbac674fe8868ac",
+  "pairs": 4,
+  "metrics": [
+    {
+      "phase": "first",
+      "wall": {
+        "count": 4,
+        "baselineMedianMs": 1894.6556249999999,
+        "currentMedianMs": 2021.6314165,
+        "baselineP95Ms": 1916.365291,
+        "currentP95Ms": 2051.609459,
+        "pairedDeltaMedianMs": 132.37341749999985,
+        "changePercent": 6.701787376267918
+      }
+    },
+    {
+      "phase": "repeat",
+      "wall": {
+        "count": 4,
+        "baselineMedianMs": 1474.7745,
+        "currentMedianMs": 1384.139688,
+        "baselineP95Ms": 1481.8371670000001,
+        "currentP95Ms": 1393.6845420000004,
+        "pairedDeltaMedianMs": -90.63481200000012,
+        "changePercent": -6.1456725757056425
+      }
+    }
+  ],
+  "identityBefore": {
+    "verified": true,
+    "variants": [
+      "baseline",
+      "candidate"
+    ]
+  },
+  "identityAfter": {
+    "verified": true,
+    "variants": [
+      "baseline",
+      "candidate"
+    ]
+  },
+  "error": null,
+  "runs": [
+    {
+      "pair": 0,
+      "variant": "cache-off",
+      "error": null,
+      "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+      "cliCacheStates": [
+        {
+          "command": "prepare",
+          "enabled": false
+        },
+        {
+          "command": "build",
+          "enabled": false
+        },
+        {
+          "command": "build",
+          "enabled": false
+        }
+      ],
+      "samples": [
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "wallMs": 1916.365291,
+          "rssBytes": 774733824,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "wallMs": 1460.6243749999999,
+          "rssBytes": 696926208,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        }
+      ]
+    },
+    {
+      "pair": 0,
+      "variant": "cache-on",
+      "error": null,
+      "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+      "cliCacheStates": [
+        {
+          "command": "prepare",
+          "enabled": true
+        },
+        {
+          "command": "build",
+          "enabled": true
+        },
+        {
+          "command": "build",
+          "enabled": true
+        }
+      ],
+      "samples": [
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "wallMs": 2051.609459,
+          "rssBytes": 830963712,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "wallMs": 1393.6845420000004,
+          "rssBytes": 656048128,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        }
+      ]
+    },
+    {
+      "pair": 1,
+      "variant": "cache-on",
+      "error": null,
+      "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+      "cliCacheStates": [
+        {
+          "command": "prepare",
+          "enabled": true
+        },
+        {
+          "command": "build",
+          "enabled": true
+        },
+        {
+          "command": "build",
+          "enabled": true
+        }
+      ],
+      "samples": [
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "wallMs": 2003.3030419999998,
+          "rssBytes": 833912832,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "wallMs": 1388.6191669999998,
+          "rssBytes": 667877376,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        }
+      ]
+    },
+    {
+      "pair": 1,
+      "variant": "cache-off",
+      "error": null,
+      "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+      "cliCacheStates": [
+        {
+          "command": "prepare",
+          "enabled": false
+        },
+        {
+          "command": "build",
+          "enabled": false
+        },
+        {
+          "command": "build",
+          "enabled": false
+        }
+      ],
+      "samples": [
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "wallMs": 1873.8003749999998,
+          "rssBytes": 804749312,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "wallMs": 1469.334,
+          "rssBytes": 699416576,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        }
+      ]
+    },
+    {
+      "pair": 2,
+      "variant": "cache-off",
+      "error": null,
+      "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+      "cliCacheStates": [
+        {
+          "command": "prepare",
+          "enabled": false
+        },
+        {
+          "command": "build",
+          "enabled": false
+        },
+        {
+          "command": "build",
+          "enabled": false
+        }
+      ],
+      "samples": [
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "wallMs": 1900.867125,
+          "rssBytes": 788234240,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "wallMs": 1481.8371670000001,
+          "rssBytes": 693993472,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        }
+      ]
+    },
+    {
+      "pair": 2,
+      "variant": "cache-on",
+      "error": null,
+      "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+      "cliCacheStates": [
+        {
+          "command": "prepare",
+          "enabled": true
+        },
+        {
+          "command": "build",
+          "enabled": true
+        },
+        {
+          "command": "build",
+          "enabled": true
+        }
+      ],
+      "samples": [
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "wallMs": 2016.134667,
+          "rssBytes": 835371008,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "wallMs": 1379.4135,
+          "rssBytes": 664174592,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        }
+      ]
+    },
+    {
+      "pair": 3,
+      "variant": "cache-on",
+      "error": null,
+      "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+      "cliCacheStates": [
+        {
+          "command": "prepare",
+          "enabled": true
+        },
+        {
+          "command": "build",
+          "enabled": true
+        },
+        {
+          "command": "build",
+          "enabled": true
+        }
+      ],
+      "samples": [
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "wallMs": 2027.128166,
+          "rssBytes": 830537728,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "wallMs": 1379.6602090000001,
+          "rssBytes": 667533312,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        }
+      ]
+    },
+    {
+      "pair": 3,
+      "variant": "cache-off",
+      "error": null,
+      "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+      "cliCacheStates": [
+        {
+          "command": "prepare",
+          "enabled": false
+        },
+        {
+          "command": "build",
+          "enabled": false
+        },
+        {
+          "command": "build",
+          "enabled": false
+        }
+      ],
+      "samples": [
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "wallMs": 1888.444125,
+          "rssBytes": 794394624,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "wallMs": 1480.2150000000001,
+          "rssBytes": 682721280,
+          "inputDigest": "2505cadb2362282b381729cee3fbeae600cb1c0f67a59feb5f445d8edf41d9c0",
+          "outputEvidenceSha256": "7d9e1493e17aeae9e79fc4d59bc31a8d85cf4504c81bb2b3778c76c6d9710fe7",
+          "warningEvidence": []
+        }
+      ]
+    }
+  ]
+}

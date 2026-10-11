@@ -56,6 +56,12 @@ const report = await runDoctor({ cwd: '.', build: true, targets: ['weapp'] })
 const json = formatDoctorReport(report, 'json')
 ```
 
+## 模块编译缓存
+
+`wv` / `weapp-vite` CLI 在 Node 版本检查通过后自动启用 Node 模块编译缓存，以复用后续进程加载相同模块的编译结果。首次生成缓存可能增加启动耗时；收益取决于模块规模和缓存复用。缓存遵循 Node 的 `NODE_COMPILE_CACHE` 目录设置和 `NODE_DISABLE_COMPILE_CACHE=1` 禁用开关，默认使用系统临时目录，目录不可用时继续正常执行。设置 `NODE_V8_COVERAGE` 或 `VITEST=true` 时 CLI 不主动启用缓存；若运行器已通过环境变量启用缓存，覆盖率测试应另设 `NODE_DISABLE_COMPILE_CACHE=1`。
+
+这项缓存由 Node 管理，复用 CLI 自身及依赖模块的编译结果；源码变化时 Node 会重新编译。构建产物和 HMR 文件更新仍由原有构建链路处理。直接调用 Vite 或程序 API 时不会经过此 CLI 启用入口。
+
 ## 命令格式
 
 ```bash

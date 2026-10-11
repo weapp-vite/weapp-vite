@@ -18,5 +18,15 @@
     "sha256": "1b0efead0e0c0ab979323698133490cd4948631c3e3f28595757bc46c5fdba0e",
     "bytes": 444660,
     "origin": "lossless compact export; original report hash and reconstruction metadata included"
+  },
+  "hmr-handoff.json": {
+    "sha256": "c73192f4cad4ba61a1c0a3d9f794d7266f69239ee98c0d58cda8c7026e51f125",
+    "bytes": 25148,
+    "origin": "instrumented baseline/candidate HMR summaries; filesystem roots sanitized; not performance data"
+  },
+  "cli-cache-diagnostic.json": {
+    "sha256": "848afabb9c392d6bfbd748383dc47901a2a8a74f8ddba13855dc45aaaefc149e",
+    "bytes": 11142,
+    "origin": "compact 4-pair diagnostic export with original report digest; per-sample output evidence hashed; not formal acceptance"
   }
 }

@@ -56,4 +56,16 @@ CPU profile 原驱动误设 `WEAPP_VITE_NATIVE_PATH`，实际 loader 使用 `WEA
 
 超过 300 行的文件已评估：build 命令拆为 action、registration、completion；analyze/IDE action 保留既有控制流，只移动加载边界，避免同步改写生命周期。options 的交接逻辑拆入专门模块；WXML normalizer 保留一个内聚实现及有界字符串缓存。
 
+跨版本隔离冒烟另完成 28 次侧运行，100 项 wall/RSS 指标的原始证据完整，产物、告警、逐轮保留的 sourcemap 均一致。map 仅规范明确归属的源码根目录，不改变 mappings、names、sourcesContent 或未知来源。
+
+计时外真实拓扑诊断覆盖两侧各 8 次 fullEntryScan：基线每轮独立分包构建 2 次；候选全部降为 1 次，且 buildStart 阶段不再扫描或重复构建。配置守卫实际被接受，交接 8/8 次命中。见 [hmr-handoff.json](./hmr-handoff.json)；带诊断包装的 wall/RSS 不作性能数据。
+
 完整构建/HMR 的旧版对新版比较仍需独立的 40 对证据。目标仍是 TDesign 重复构建 P50 至少降低 10%，其他代表场景 P50、P95、RSS 不发生稳定超过 5% 的回退。后续报告分别标注架构改动总收益与当前版本 native 开关的边际收益。
+
+## CLI 模块编译缓存后续实验（10 月 12 日）
+
+CLI 在 engines 检查后、加载执行入口前启用 Node 模块编译缓存。保留 Node 的目录和禁用变量语义，覆盖率及 Vitest 环境不主动启用；目录不可用时仍正常执行。实际子进程测试覆盖同路径源码变更、默认/显式目录、禁用、目录失败和冷暖缓存的 sourcemap 错误位置。
+
+同一冻结新版、native 关闭的 4 对交替诊断中，重复构建 P50 从 1474.775 ms 降至 1384.140 ms（-6.15%）；首次构建从 1894.656 ms 增至 2021.631 ms（+6.70%）。两侧每对使用独立缓存目录，同侧 prepare、首次和重复构建共享目录。实际三个 CLI 子进程逐个确认缓存开关，产物/map/告警一致，冻结产物和依赖在采样前后核验一致。此处仅验证缓存收益与首次生成成本，不能视为完整候选通过，不能归因于 Rust。见 [cli-cache-diagnostic.json](./cli-cache-diagnostic.json)。此前两个未正确启用缓存或未进入采样的尝试保留在私有诊断记录中，没有纳入统计。
+
+缓存相关的两个测试文件共 20 项通过，weapp-vite typecheck、构建、限定 ESLint 和 website 构建通过；website 的 SEO 检查为 0 问题。正式旧版/新版比较将使用 CLI 自身的默认行为，不用环境变量提前替两侧启用缓存；每个配对侧从独立的空临时目录开始，明确区分 prepare 后首次构建与重复构建。

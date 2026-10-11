@@ -1,0 +1,896 @@
+{
+  "baseline": {
+    "sourceSha256": "1929d920e349769b795dcaca260a9cf8f2abb0ee497ca0dc4456853165c66a27",
+    "summary": {
+      "contract": "hmr-entry-preparation-diagnostic-v1",
+      "interpretation": "Instrumented correctness attribution only; timings/RSS are not performance evidence.",
+      "fullScans": [
+        {
+          "event": "buildStart:end",
+          "build": 2,
+          "fullEntryScan": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "handoffObserved": false,
+          "totalIndependentCalls": 2
+        },
+        {
+          "event": "buildStart:end",
+          "build": 3,
+          "fullEntryScan": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "handoffObserved": false,
+          "totalIndependentCalls": 2
+        },
+        {
+          "event": "buildStart:end",
+          "build": 4,
+          "fullEntryScan": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "handoffObserved": false,
+          "totalIndependentCalls": 2
+        },
+        {
+          "event": "buildStart:end",
+          "build": 5,
+          "fullEntryScan": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "handoffObserved": false,
+          "totalIndependentCalls": 2
+        },
+        {
+          "event": "buildStart:end",
+          "build": 6,
+          "fullEntryScan": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "handoffObserved": false,
+          "totalIndependentCalls": 2
+        },
+        {
+          "event": "buildStart:end",
+          "build": 7,
+          "fullEntryScan": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "handoffObserved": false,
+          "totalIndependentCalls": 2
+        },
+        {
+          "event": "buildStart:end",
+          "build": 8,
+          "fullEntryScan": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "handoffObserved": false,
+          "totalIndependentCalls": 2
+        },
+        {
+          "event": "buildStart:end",
+          "build": 9,
+          "fullEntryScan": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "handoffObserved": false,
+          "totalIndependentCalls": 2
+        }
+      ],
+      "inputShapes": [
+        {
+          "event": "options:start",
+          "build": 2,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 3,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 4,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 5,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 6,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 7,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 8,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 9,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        }
+      ],
+      "options": [
+        {
+          "event": "options:end",
+          "build": 2,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 3,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 4,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 5,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 6,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 7,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 8,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 9,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        }
+      ],
+      "failures": [],
+      "sourceGuardSha256": "cd1f07b24089ff003457a7f6958a365409a879255d6a10a9b3f29d5cd06705ff"
+    }
+  },
+  "candidate": {
+    "sourceSha256": "3da2b2cb408d6f327bf70f0c0917bce9dfcd6031da3ffaa97cd885b770383ec2",
+    "summary": {
+      "contract": "hmr-entry-preparation-diagnostic-v1",
+      "interpretation": "Instrumented correctness attribution only; timings/RSS are not performance evidence.",
+      "fullScans": [
+        {
+          "event": "buildStart:end",
+          "build": 2,
+          "fullEntryScan": true,
+          "independentCalls": 0,
+          "scanCalls": 0,
+          "handoffObserved": true,
+          "totalIndependentCalls": 1
+        },
+        {
+          "event": "buildStart:end",
+          "build": 3,
+          "fullEntryScan": true,
+          "independentCalls": 0,
+          "scanCalls": 0,
+          "handoffObserved": true,
+          "totalIndependentCalls": 1
+        },
+        {
+          "event": "buildStart:end",
+          "build": 4,
+          "fullEntryScan": true,
+          "independentCalls": 0,
+          "scanCalls": 0,
+          "handoffObserved": true,
+          "totalIndependentCalls": 1
+        },
+        {
+          "event": "buildStart:end",
+          "build": 5,
+          "fullEntryScan": true,
+          "independentCalls": 0,
+          "scanCalls": 0,
+          "handoffObserved": true,
+          "totalIndependentCalls": 1
+        },
+        {
+          "event": "buildStart:end",
+          "build": 6,
+          "fullEntryScan": true,
+          "independentCalls": 0,
+          "scanCalls": 0,
+          "handoffObserved": true,
+          "totalIndependentCalls": 1
+        },
+        {
+          "event": "buildStart:end",
+          "build": 7,
+          "fullEntryScan": true,
+          "independentCalls": 0,
+          "scanCalls": 0,
+          "handoffObserved": true,
+          "totalIndependentCalls": 1
+        },
+        {
+          "event": "buildStart:end",
+          "build": 8,
+          "fullEntryScan": true,
+          "independentCalls": 0,
+          "scanCalls": 0,
+          "handoffObserved": true,
+          "totalIndependentCalls": 1
+        },
+        {
+          "event": "buildStart:end",
+          "build": 9,
+          "fullEntryScan": true,
+          "independentCalls": 0,
+          "scanCalls": 0,
+          "handoffObserved": true,
+          "totalIndependentCalls": 1
+        }
+      ],
+      "inputShapes": [
+        {
+          "event": "options:start",
+          "build": 2,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 3,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 4,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 5,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 6,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 7,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 8,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        },
+        {
+          "event": "options:start",
+          "build": 9,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "shape": {
+            "fieldCount": 295,
+            "unsupported": [],
+            "opaque": [
+              {
+                "path": "options.config.build.rolldownOptions.output.entryFileNames",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.weapp.isAdditionalWxml",
+                "kind": "data",
+                "type": "function"
+              },
+              {
+                "path": "options.config.plugins.0",
+                "kind": "plugins",
+                "type": "object"
+              },
+              {
+                "path": "options.relativeSrcRoot",
+                "kind": "data",
+                "type": "function"
+              }
+            ]
+          }
+        }
+      ],
+      "options": [
+        {
+          "event": "options:end",
+          "build": 2,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 3,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 4,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 5,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 6,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 7,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 8,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        },
+        {
+          "event": "options:end",
+          "build": 9,
+          "fullEntryScan": true,
+          "guardAccepted": true,
+          "independentCalls": 1,
+          "scanCalls": 1,
+          "independentRoots": [
+            "isolated"
+          ],
+          "configCurrent": true,
+          "changedPaths": []
+        }
+      ],
+      "failures": [],
+      "sourceGuardSha256": "cd1f07b24089ff003457a7f6958a365409a879255d6a10a9b3f29d5cd06705ff"
+    }
+  }
+}

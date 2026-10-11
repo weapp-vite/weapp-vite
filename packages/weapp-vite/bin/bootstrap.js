@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import nodeModule from 'node:module'
 // eslint-disable-next-line e18e/ban-dependencies -- 启动检查使用与发布 engines 完全相同的 npm semver 语义。
 import satisfies from 'semver/functions/satisfies.js'
 
@@ -120,6 +121,11 @@ export async function runWeappViteCLI(options = {}) {
   // 在加载 Babel 等依赖前校验同一份发布声明；prepare 的容错不能吞掉不受支持的运行时。
   if (!satisfies(nodeVersion, engines.node)) {
     throw new Error(`weapp-vite requires Node.js ${engines.node}; current version is ${nodeVersion}. Please upgrade Node.js before running this command.`)
+  }
+  const { env } = getGlobalProcess()
+  // V8 覆盖率反序列化缓存时可能丢失精度；Vitest 的 Inspector 覆盖率不一定设置 NODE_V8_COVERAGE。
+  if (env.NODE_V8_COVERAGE === undefined && env.VITEST !== 'true') {
+    nodeModule.enableCompileCache?.()
   }
   const restorePrepareGuard = guardPrepareProcessExit(argv)
   const restoreKnownNoiseGuard = guardKnownLocalPkgResolveNoise()
