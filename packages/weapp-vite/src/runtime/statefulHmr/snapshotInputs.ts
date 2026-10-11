@@ -23,6 +23,8 @@ function excluded(file: string, scope: SnapshotInputScope) {
 export async function captureSnapshotInputs(scope: SnapshotInputScope): Promise<SnapshotInputs> {
   const versions = new Map<string, string>()
   const physicalPaths = new Map<string, Promise<string>>()
+  const visits = new Map<string, Promise<void>>()
+  const fileVersions = new Map<string, Promise<string>>()
   const physicalPath = (file: string): Promise<string> => {
     let pending = physicalPaths.get(file)
     if (!pending) {
@@ -42,41 +44,53 @@ export async function captureSnapshotInputs(scope: SnapshotInputScope): Promise<
     versions.set(file, version)
     versions.set(physical, version)
   }
-  const visit = async (input: string, parents: ReadonlySet<string> = new Set()) => {
+  const visit = (input: string, parents: ReadonlySet<string> = new Set()): Promise<void> => {
     const file = normalizeFsResolvedId(input)
     if (versions.has(file) || excluded(file, scope)) {
-      return
+      return Promise.resolve()
     }
-    const physical = await physicalPath(file)
-    if (excluded(physical, scope)) {
-      return
-    }
-    try {
-      const stat = await lstat(file)
-      if (stat.isDirectory() || stat.isSymbolicLink()) {
-        const target = physical
-        if (parents.has(target)) {
-          versions.set(file, `cycle:${target}`)
+    let pending = visits.get(file)
+    if (!pending) {
+      pending = (async () => {
+        const physical = await physicalPath(file)
+        if (excluded(physical, scope)) {
           return
         }
-        if (stat.isDirectory() || (await lstat(target)).isDirectory()) {
-          const names = (await readdir(file)).filter(name => !excluded(path.join(file, name), scope)
-            && !scope.skipPaths?.includes(path.join(file, name))).sort()
-          record(file, physical, `directory:${JSON.stringify(names)}`)
-          const ancestors = new Set([...parents, target])
-          await Promise.all(names.map(name => visit(path.join(file, name), ancestors)))
-          return
+        try {
+          const stat = await lstat(file)
+          if (stat.isDirectory() || stat.isSymbolicLink()) {
+            const target = physical
+            if (parents.has(target)) {
+              versions.set(file, `cycle:${target}`)
+              return
+            }
+            if (stat.isDirectory() || (await lstat(target)).isDirectory()) {
+              const names = (await readdir(file)).filter(name => !excluded(path.join(file, name), scope)
+                && !scope.skipPaths?.includes(path.join(file, name))).sort()
+              record(file, physical, `directory:${JSON.stringify(names)}`)
+              const ancestors = new Set([...parents, target])
+              await Promise.all(names.map(name => visit(path.join(file, name), ancestors)))
+              return
+            }
+          }
+          // 根目录递归和显式依赖共享本次访问；物理别名也只读取并散列同一份内容。
+          let version = fileVersions.get(physical)
+          if (!version) {
+            version = readFile(file).then(content => createHash('sha256').update(content).digest('hex'))
+            fileVersions.set(physical, version)
+          }
+          record(file, physical, await version)
         }
-      }
-      const content = await readFile(file)
-      record(file, physical, createHash('sha256').update(content).digest('hex'))
+        catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+            throw error
+          }
+          record(file, physical, 'missing')
+        }
+      })()
+      visits.set(file, pending)
     }
-    catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        throw error
-      }
-      record(file, physical, 'missing')
-    }
+    return pending
   }
   await Promise.all([...new Set([...scope.roots, ...scope.files])].map(file => visit(file)))
   return { scope, versions }
