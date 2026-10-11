@@ -44,7 +44,7 @@ try {
       throw new Error(`Build failed (${result.exitCode})`)
     }
     await verifyBenchmarkAppOutputs(job.project)
-    const output = await captureArtifacts(path.join(job.project, 'dist'), [job.project, job.root], path.join(job.directory, 'sourcemaps', phase))
+    const output = await captureArtifacts(path.join(job.project, 'dist'), [job.project, job.root], path.join(job.directory, 'sourcemaps', phase), process.env.NATIVE_BENCHMARK_SOURCE_ROOTS === '1')
     if (!output.maps) {
       throw new Error('Expected emitted sourcemaps are missing')
     }

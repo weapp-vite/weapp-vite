@@ -1,0 +1,4397 @@
+{
+  "scope": "isolated expression optimization source comparison; native off; two warmups, 40 alternating pairs; not full build/HMR acceptance",
+  "pairs": [
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.78875000000005,
+          "rss": 280641536
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 30.88879200000008,
+          "rss": 361316352
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0672499999999445,
+          "rss": 361742336
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6804999999999382,
+          "rss": 362053632
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.20829200000002857,
+          "rss": 362053632
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8126670000000331,
+          "rss": 362217472
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.36816699999997127,
+          "rss": 362397696
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6732079999999314,
+          "rss": 362692608
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17574999999999363,
+          "rss": 362774528
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15012500000000273,
+          "rss": 362840064
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.616334000000052,
+          "rss": 282771456
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 29.97408299999995,
+          "rss": 360660992
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9703329999999823,
+          "rss": 361070592
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.707540999999992,
+          "rss": 361463808
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19366700000000492,
+          "rss": 361480192
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8042910000000347,
+          "rss": 361627648
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.36904100000003837,
+          "rss": 361775104
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5917909999999438,
+          "rss": 362086400
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18499999999994543,
+          "rss": 362184704
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15245800000002419,
+          "rss": 362250240
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.091124999999977,
+          "rss": 232685568
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 27.634457999999995,
+          "rss": 328728576
+        },
+        {
+          "id": "define-options",
+          "wallMs": 5.182875000000081,
+          "rss": 340770816
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7409999999999854,
+          "rss": 341164032
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.18891599999994924,
+          "rss": 341213184
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8097080000000005,
+          "rss": 341540864
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.4314160000000129,
+          "rss": 341688320
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6141660000000684,
+          "rss": 342016000
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17420800000002146,
+          "rss": 342130688
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.16516599999999926,
+          "rss": 342147072
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.248374999999953,
+          "rss": 245334016
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.135041,
+          "rss": 330334208
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0141670000000431,
+          "rss": 330825728
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6427919999999858,
+          "rss": 331251712
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19033300000000963,
+          "rss": 331382784
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7914580000000342,
+          "rss": 331644928
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.36695799999995415,
+          "rss": 331808768
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.693416999999954,
+          "rss": 332136448
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.19087500000000546,
+          "rss": 332234752
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1474590000000262,
+          "rss": 332267520
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.16262499999999,
+          "rss": 228950016
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 29.560958000000028,
+          "rss": 338558976
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0779999999999745,
+          "rss": 339296256
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.746167000000014,
+          "rss": 339771392
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.262833999999998,
+          "rss": 339886080
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8607499999999391,
+          "rss": 353042432
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.35245899999995345,
+          "rss": 353157120
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6706250000000864,
+          "rss": 353337344
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1817079999999578,
+          "rss": 353386496
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14533300000005056,
+          "rss": 353435648
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.245791999999994,
+          "rss": 232062976
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 29.137958000000026,
+          "rss": 327565312
+        },
+        {
+          "id": "define-options",
+          "wallMs": 7.222165999999902,
+          "rss": 339591168
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7521249999999782,
+          "rss": 339968000
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.20004199999993943,
+          "rss": 340033536
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8282080000000178,
+          "rss": 340344832
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.36725000000001273,
+          "rss": 340508672
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5859590000000026,
+          "rss": 340852736
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.172916999999984,
+          "rss": 340934656
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15541699999994307,
+          "rss": 340951040
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.494416999999999,
+          "rss": 228851712
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 30.51466700000003,
+          "rss": 326909952
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.1704579999999396,
+          "rss": 338673664
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7855829999999742,
+          "rss": 339083264
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.20420799999999417,
+          "rss": 339214336
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7729579999999032,
+          "rss": 339509248
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3718340000000353,
+          "rss": 339689472
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.637958000000026,
+          "rss": 340066304
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18120799999996962,
+          "rss": 340131840
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15383399999996072,
+          "rss": 340180992
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.184833000000026,
+          "rss": 246169600
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.154833999999937,
+          "rss": 332742656
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.4341660000000047,
+          "rss": 333299712
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7588330000000951,
+          "rss": 333709312
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.203125,
+          "rss": 333807616
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.1440830000000233,
+          "rss": 334086144
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.4341670000000022,
+          "rss": 334266368
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6567909999999983,
+          "rss": 334577664
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1765410000000429,
+          "rss": 334659584
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1470000000000482,
+          "rss": 334692352
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.804708000000005,
+          "rss": 229179392
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 39.22974999999997,
+          "rss": 337903616
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9375420000000076,
+          "rss": 338329600
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6614580000000387,
+          "rss": 338788352
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.18983400000001893,
+          "rss": 338919424
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8856250000000045,
+          "rss": 339181568
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.4026659999999538,
+          "rss": 339361792
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.653583000000026,
+          "rss": 339689472
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18174999999996544,
+          "rss": 339771392
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1655839999999671,
+          "rss": 339804160
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.331208000000004,
+          "rss": 232013824
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 29.50229200000001,
+          "rss": 330186752
+        },
+        {
+          "id": "define-options",
+          "wallMs": 5.537958000000003,
+          "rss": 342376448
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7582920000000968,
+          "rss": 342671360
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19737499999996544,
+          "rss": 342753280
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7969170000000076,
+          "rss": 342917120
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.40733399999999165,
+          "rss": 343080960
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6205410000000029,
+          "rss": 343425024
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18037500000002638,
+          "rss": 343506944
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1555829999999787,
+          "rss": 343539712
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.889584000000013,
+          "rss": 239075328
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 32.766707999999994,
+          "rss": 335478784
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9527919999999312,
+          "rss": 336052224
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6707079999999905,
+          "rss": 336478208
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.3466250000000173,
+          "rss": 336592896
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7839589999999816,
+          "rss": 336871424
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3710839999999962,
+          "rss": 337018880
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5887089999999944,
+          "rss": 337412096
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1637910000000602,
+          "rss": 337494016
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.17804200000000492,
+          "rss": 337510400
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 18.84916599999997,
+          "rss": 244809728
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 34.41274999999996,
+          "rss": 346882048
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.1949579999999287,
+          "rss": 347455488
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.768291999999974,
+          "rss": 347963392
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.2129170000000613,
+          "rss": 348094464
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8512080000000424,
+          "rss": 348471296
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3964579999999387,
+          "rss": 348635136
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7882500000000618,
+          "rss": 348979200
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.177791999999954,
+          "rss": 349061120
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15733399999999165,
+          "rss": 349093888
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.822457999999983,
+          "rss": 233422848
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 28.734750000000076,
+          "rss": 330792960
+        },
+        {
+          "id": "define-options",
+          "wallMs": 7.293416999999977,
+          "rss": 342933504
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 1.0752499999999827,
+          "rss": 343326720
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.22587499999997362,
+          "rss": 343375872
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8580419999999549,
+          "rss": 343719936
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.37541700000008404,
+          "rss": 343883776
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7205419999999094,
+          "rss": 344244224
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1821669999999358,
+          "rss": 344342528
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14395899999999529,
+          "rss": 344375296
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.082790999999986,
+          "rss": 228704256
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 30.93566700000008,
+          "rss": 336379904
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0773750000000746,
+          "rss": 337068032
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.694417000000044,
+          "rss": 337592320
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.20595800000000963,
+          "rss": 337723392
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.013417000000004,
+          "rss": 350765056
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.4053750000000491,
+          "rss": 350896128
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6797500000000127,
+          "rss": 351092736
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1905420000000504,
+          "rss": 351125504
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.17304200000000947,
+          "rss": 351207424
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.914207999999974,
+          "rss": 233488384
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 32.392083999999954,
+          "rss": 332234752
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.934833000000026,
+          "rss": 332660736
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6682499999999436,
+          "rss": 333185024
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.18895799999995688,
+          "rss": 333299712
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.150792000000024,
+          "rss": 333578240
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.4281670000000304,
+          "rss": 333742080
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6460409999999683,
+          "rss": 334036992
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17999999999994998,
+          "rss": 334135296
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.21166700000003402,
+          "rss": 334168064
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.525708000000009,
+          "rss": 234209280
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 27.808917000000065,
+          "rss": 325992448
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.126374999999939,
+          "rss": 337149952
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7269160000000738,
+          "rss": 337657856
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.1887090000000171,
+          "rss": 337756160
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.9195840000000999,
+          "rss": 338067456
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.37420800000006693,
+          "rss": 338231296
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5946249999999509,
+          "rss": 338558976
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18041700000003402,
+          "rss": 338657280
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14187500000002728,
+          "rss": 338706432
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.130667000000017,
+          "rss": 247480320
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.550499999999943,
+          "rss": 331022336
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.2928329999999733,
+          "rss": 331546624
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6983750000000555,
+          "rss": 331907072
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19166600000005474,
+          "rss": 332054528
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7963750000000118,
+          "rss": 332300288
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.38179200000001856,
+          "rss": 332431360
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6110830000000078,
+          "rss": 332742656
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.2365420000000995,
+          "rss": 332808192
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15012500000000273,
+          "rss": 332857344
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.918499999999995,
+          "rss": 229441536
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 28.264167000000043,
+          "rss": 326418432
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.1345839999999043,
+          "rss": 338313216
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.9940000000000282,
+          "rss": 338739200
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.2178750000000491,
+          "rss": 338870272
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8438750000000255,
+          "rss": 339165184
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.7156670000000531,
+          "rss": 339361792
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.631040999999982,
+          "rss": 339607552
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17566600000009203,
+          "rss": 339689472
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14991699999995944,
+          "rss": 339755008
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 14.874833000000024,
+          "rss": 230424576
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 27.691124999999943,
+          "rss": 337149952
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.1046669999999494,
+          "rss": 337838080
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6810829999999441,
+          "rss": 338313216
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.18966599999998834,
+          "rss": 338444288
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.795833000000016,
+          "rss": 351453184
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3687080000000833,
+          "rss": 351567872
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6272089999999935,
+          "rss": 351748096
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17041600000004564,
+          "rss": 351797248
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14150000000006457,
+          "rss": 351862784
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.397291999999993,
+          "rss": 231915520
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.445041999999944,
+          "rss": 333627392
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.3307079999999587,
+          "rss": 334168064
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6867080000000669,
+          "rss": 334561280
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.18795800000009422,
+          "rss": 334675968
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8225419999999986,
+          "rss": 334938112
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3784170000000131,
+          "rss": 335118336
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5896249999999554,
+          "rss": 335413248
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18237499999997908,
+          "rss": 335511552
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14341699999999946,
+          "rss": 335544320
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 18.35620799999998,
+          "rss": 246136832
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 33.16512499999999,
+          "rss": 339099648
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.4799580000000105,
+          "rss": 339640320
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7872919999999795,
+          "rss": 340082688
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.21770900000001348,
+          "rss": 340180992
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7961249999999609,
+          "rss": 340459520
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.400333000000046,
+          "rss": 340639744
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7352080000000569,
+          "rss": 340951040
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1920830000000251,
+          "rss": 341032960
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15533300000004147,
+          "rss": 341082112
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.351042000000007,
+          "rss": 240599040
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 32.58783299999993,
+          "rss": 335872000
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9642910000000029,
+          "rss": 336379904
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7158339999999725,
+          "rss": 336838656
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.1957919999999831,
+          "rss": 336986112
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7500840000000153,
+          "rss": 337264640
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.36533299999996416,
+          "rss": 337412096
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6062919999999394,
+          "rss": 337723392
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1711249999999609,
+          "rss": 337838080
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1447090000000344,
+          "rss": 337870848
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.716165999999987,
+          "rss": 233275392
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 28.53054199999997,
+          "rss": 328630272
+        },
+        {
+          "id": "define-options",
+          "wallMs": 5.5650419999999485,
+          "rss": 340721664
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.716542000000004,
+          "rss": 341098496
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19070800000008603,
+          "rss": 341147648
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7944169999999531,
+          "rss": 341442560
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.537499999999909,
+          "rss": 341590016
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6425410000000511,
+          "rss": 341934080
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1823339999999689,
+          "rss": 342016000
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14762499999994816,
+          "rss": 342048768
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.813625000000002,
+          "rss": 229687296
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 27.068624999999997,
+          "rss": 338952192
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9985000000000355,
+          "rss": 339460096
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.8214169999999967,
+          "rss": 339869696
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.2357919999999467,
+          "rss": 339984384
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.76400000000001,
+          "rss": 340279296
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3687089999999671,
+          "rss": 340443136
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5788749999999254,
+          "rss": 340787200
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.16875000000004547,
+          "rss": 340885504
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.26604199999997036,
+          "rss": 340934656
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.886582999999973,
+          "rss": 245334016
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 30.89254100000005,
+          "rss": 329400320
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.1633330000000797,
+          "rss": 329875456
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7139999999999418,
+          "rss": 330301440
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19316700000001674,
+          "rss": 330416128
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8972500000000991,
+          "rss": 330678272
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.37383299999999053,
+          "rss": 330891264
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5962089999999307,
+          "rss": 331169792
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.16833299999996143,
+          "rss": 331268096
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14258300000005875,
+          "rss": 331284480
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.70520799999997,
+          "rss": 230866944
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 27.55762500000003,
+          "rss": 326615040
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9881670000000895,
+          "rss": 338427904
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7041249999999764,
+          "rss": 338870272
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19420800000000327,
+          "rss": 338984960
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8710829999999987,
+          "rss": 339296256
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3997079999999187,
+          "rss": 339443712
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6385000000000218,
+          "rss": 339722240
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18175000000007913,
+          "rss": 339804160
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15137500000003,
+          "rss": 339836928
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.079458999999986,
+          "rss": 235290624
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 32.52141599999993,
+          "rss": 334512128
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.1501670000000104,
+          "rss": 334905344
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.73275000000001,
+          "rss": 335413248
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.1948330000000169,
+          "rss": 335527936
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.9168750000000045,
+          "rss": 335773696
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.45545900000001893,
+          "rss": 335953920
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7310410000000047,
+          "rss": 336265216
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18954099999996288,
+          "rss": 336363520
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15783300000009604,
+          "rss": 336412672
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.138582999999983,
+          "rss": 233144320
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 30.53262499999994,
+          "rss": 333660160
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0072920000000067,
+          "rss": 334184448
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6845419999999649,
+          "rss": 334561280
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.1957919999999831,
+          "rss": 334708736
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7600000000001046,
+          "rss": 334970880
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.36579200000005585,
+          "rss": 335151104
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6425840000000562,
+          "rss": 335478784
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18433300000003783,
+          "rss": 335560704
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15841699999998582,
+          "rss": 335593472
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 14.840250000000026,
+          "rss": 229457920
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.367375000000038,
+          "rss": 336773120
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.4712499999999409,
+          "rss": 337281024
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7962090000000899,
+          "rss": 337690624
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.20558299999993324,
+          "rss": 337821696
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.9857909999999492,
+          "rss": 338116608
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.39049999999997453,
+          "rss": 338264064
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6726659999999356,
+          "rss": 338608128
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18650000000002365,
+          "rss": 338706432
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1492920000000595,
+          "rss": 338739200
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 20.059833000000026,
+          "rss": 231096320
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 29.70920799999999,
+          "rss": 326615040
+        },
+        {
+          "id": "define-options",
+          "wallMs": 4.7007919999999785,
+          "rss": 338690048
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7219169999999622,
+          "rss": 339066880
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.1892920000000231,
+          "rss": 339132416
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7617079999999987,
+          "rss": 339410944
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.5874589999999671,
+          "rss": 339591168
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7235829999999623,
+          "rss": 339951616
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18520799999998871,
+          "rss": 340033536
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14554099999998016,
+          "rss": 340082688
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.569958000000042,
+          "rss": 233308160
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 29.46241699999996,
+          "rss": 326680576
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0663749999999936,
+          "rss": 338427904
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6681670000000395,
+          "rss": 338821120
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19591600000001108,
+          "rss": 338968576
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.1419169999999212,
+          "rss": 339247104
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.6644159999999601,
+          "rss": 339394560
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7395000000000209,
+          "rss": 339722240
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.2449579999999969,
+          "rss": 339836928
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.16504199999997127,
+          "rss": 339869696
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.531958000000031,
+          "rss": 228966400
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.096625000000017,
+          "rss": 336281600
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0853329999999914,
+          "rss": 336773120
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6573329999999942,
+          "rss": 337166336
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19049999999992906,
+          "rss": 337281024
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.9707499999999527,
+          "rss": 337592320
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3754999999999882,
+          "rss": 337723392
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6830829999998969,
+          "rss": 338051072
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18433300000003783,
+          "rss": 338149376
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15712500000006457,
+          "rss": 338182144
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.206500000000005,
+          "rss": 234356736
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 33.27337499999999,
+          "rss": 334430208
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0452920000000177,
+          "rss": 334888960
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6876250000000255,
+          "rss": 335282176
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.5701249999999618,
+          "rss": 335446016
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.1009579999999914,
+          "rss": 335691776
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.4043340000000626,
+          "rss": 335872000
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.8170000000000073,
+          "rss": 336199680
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.20658300000002328,
+          "rss": 336314368
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1592920000000504,
+          "rss": 336330752
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 17.182416999999987,
+          "rss": 235372544
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 30.23970799999995,
+          "rss": 333791232
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.3577080000000024,
+          "rss": 334282752
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.9400000000000546,
+          "rss": 334725120
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.3718340000000353,
+          "rss": 334856192
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.813083000000006,
+          "rss": 335118336
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3743329999999787,
+          "rss": 335282176
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6243340000000899,
+          "rss": 335577088
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18437500000004547,
+          "rss": 335659008
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14116699999999582,
+          "rss": 335724544
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 14.754167000000052,
+          "rss": 232669184
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 28.204165999999987,
+          "rss": 328400896
+        },
+        {
+          "id": "define-options",
+          "wallMs": 6.535791999999901,
+          "rss": 340377600
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7672919999999976,
+          "rss": 340754432
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.22570900000005167,
+          "rss": 340803584
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8253750000000082,
+          "rss": 341131264
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.36424999999997,
+          "rss": 341278720
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.664209000000028,
+          "rss": 341606400
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.19695899999999256,
+          "rss": 341688320
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14850000000001273,
+          "rss": 341737472
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.631916999999987,
+          "rss": 232669184
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 33.623249999999985,
+          "rss": 334479360
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.125833000000057,
+          "rss": 334921728
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6843749999999318,
+          "rss": 335380480
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.18812500000001364,
+          "rss": 335511552
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.866457999999966,
+          "rss": 335757312
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3812920000000304,
+          "rss": 335937536
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5859580000000051,
+          "rss": 336265216
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17220800000006875,
+          "rss": 336347136
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.20941700000003038,
+          "rss": 336396288
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.00883300000004,
+          "rss": 231997440
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 26.809708,
+          "rss": 324878336
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0821670000000267,
+          "rss": 336019456
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.658416000000102,
+          "rss": 336478208
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.25383399999998346,
+          "rss": 336592896
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8161249999999427,
+          "rss": 336920576
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3731249999999591,
+          "rss": 337068032
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.8251250000000709,
+          "rss": 337412096
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.2008330000001024,
+          "rss": 337510400
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15679199999999582,
+          "rss": 337543168
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.425375000000031,
+          "rss": 229801984
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 27.13712499999997,
+          "rss": 328384512
+        },
+        {
+          "id": "define-options",
+          "wallMs": 7.122000000000071,
+          "rss": 340475904
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7681670000000622,
+          "rss": 340836352
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19524999999998727,
+          "rss": 340885504
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8520419999999831,
+          "rss": 341196800
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.38087499999994634,
+          "rss": 341360640
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7245419999999285,
+          "rss": 341704704
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18204200000002402,
+          "rss": 341803008
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15462500000001,
+          "rss": 341852160
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.10737499999999,
+          "rss": 245301248
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 29.043542000000002,
+          "rss": 329400320
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9304580000000442,
+          "rss": 329842688
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.8335409999999683,
+          "rss": 330334208
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.18820899999991525,
+          "rss": 330465280
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.269292000000064,
+          "rss": 330760192
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.39475000000004457,
+          "rss": 330907648
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6306250000000091,
+          "rss": 331202560
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17174999999997453,
+          "rss": 331300864
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14866699999993216,
+          "rss": 331350016
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.899166999999977,
+          "rss": 235503616
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 28.34349999999995,
+          "rss": 332021760
+        },
+        {
+          "id": "define-options",
+          "wallMs": 7.150624999999991,
+          "rss": 344014848
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7419579999999542,
+          "rss": 344489984
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.2141669999999749,
+          "rss": 344539136
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8483750000000327,
+          "rss": 344850432
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3752920000000586,
+          "rss": 345030656
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6317500000000109,
+          "rss": 345325568
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.24462499999992815,
+          "rss": 345440256
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15141699999992397,
+          "rss": 345473024
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.961415999999986,
+          "rss": 247709696
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 32.227416999999946,
+          "rss": 331988992
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0086669999999458,
+          "rss": 332447744
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.8367909999999483,
+          "rss": 332857344
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.2377079999999978,
+          "rss": 332988416
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8555830000000242,
+          "rss": 333250560
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.5177499999999782,
+          "rss": 333430784
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7102089999999635,
+          "rss": 333725696
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18795799999998053,
+          "rss": 333840384
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14666599999998198,
+          "rss": 333889536
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.999957999999992,
+          "rss": 230670336
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 28.717167000000018,
+          "rss": 327548928
+        },
+        {
+          "id": "define-options",
+          "wallMs": 7.214583999999945,
+          "rss": 339427328
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7490840000000389,
+          "rss": 339820544
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.188666000000012,
+          "rss": 339869696
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7977499999999509,
+          "rss": 340180992
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3821249999999736,
+          "rss": 340328448
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6275420000000622,
+          "rss": 340672512
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1679589999999962,
+          "rss": 340770816
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14449999999999363,
+          "rss": 340819968
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.233292000000006,
+          "rss": 234192896
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 28.877124999999978,
+          "rss": 328925184
+        },
+        {
+          "id": "define-options",
+          "wallMs": 8.355749999999944,
+          "rss": 340951040
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.8989170000000968,
+          "rss": 341344256
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.21691599999996924,
+          "rss": 341409792
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.9123329999999896,
+          "rss": 341737472
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.39008400000000165,
+          "rss": 341917696
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6234580000000278,
+          "rss": 342228992
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17095899999992525,
+          "rss": 342310912
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1425419999999349,
+          "rss": 342343680
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.069957999999986,
+          "rss": 232521728
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 28.483667000000082,
+          "rss": 330039296
+        },
+        {
+          "id": "define-options",
+          "wallMs": 4.965749999999957,
+          "rss": 342261760
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6772499999999582,
+          "rss": 342654976
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.1877910000000611,
+          "rss": 342687744
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.0706250000000637,
+          "rss": 343031808
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3889169999999922,
+          "rss": 343179264
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7193340000000035,
+          "rss": 343523328
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.19362499999999727,
+          "rss": 343621632
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15650000000005093,
+          "rss": 343670784
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.85250000000002,
+          "rss": 246218752
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.187000000000012,
+          "rss": 331005952
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.2880840000000262,
+          "rss": 331464704
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.74187500000005,
+          "rss": 331890688
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19916699999998855,
+          "rss": 332005376
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8785000000000309,
+          "rss": 332316672
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.5062919999999167,
+          "rss": 332447744
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.691915999999992,
+          "rss": 332726272
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17658299999993687,
+          "rss": 332824576
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1442500000000564,
+          "rss": 332890112
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.492999999999995,
+          "rss": 232636416
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 28.444792000000007,
+          "rss": 333971456
+        },
+        {
+          "id": "define-options",
+          "wallMs": 7.116457999999966,
+          "rss": 345964544
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7188330000000178,
+          "rss": 346308608
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.1975840000000062,
+          "rss": 346374144
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7890829999998914,
+          "rss": 346701824
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3650830000000269,
+          "rss": 346849280
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.593915999999922,
+          "rss": 347176960
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.19020899999998164,
+          "rss": 347275264
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1429160000000138,
+          "rss": 347308032
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.763458000000014,
+          "rss": 230703104
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 27.233874999999898,
+          "rss": 325107712
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9880419999999503,
+          "rss": 336953344
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6542080000000396,
+          "rss": 337395712
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.1902500000001055,
+          "rss": 337526784
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.149332999999956,
+          "rss": 337805312
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3745840000000271,
+          "rss": 337985536
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6011250000000246,
+          "rss": 338296832
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.21820800000000418,
+          "rss": 338362368
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1478749999999991,
+          "rss": 338411520
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.742999999999995,
+          "rss": 230850560
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 33.220249999999965,
+          "rss": 340131840
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.111332999999945,
+          "rss": 340688896
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7128750000000537,
+          "rss": 341082112
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.2259159999999838,
+          "rss": 341180416
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7935840000000098,
+          "rss": 341508096
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3805000000000973,
+          "rss": 341639168
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.625583000000006,
+          "rss": 341983232
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.16800000000000637,
+          "rss": 342048768
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15387500000008458,
+          "rss": 342114304
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.995875000000012,
+          "rss": 247644160
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 33.79483400000004,
+          "rss": 331661312
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.980209000000059,
+          "rss": 332070912
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.8270840000000135,
+          "rss": 332546048
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.1978750000000673,
+          "rss": 332660736
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7843749999999545,
+          "rss": 332939264
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.39837499999998727,
+          "rss": 333086720
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7136669999999867,
+          "rss": 333414400
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1787499999999227,
+          "rss": 333496320
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14454200000000128,
+          "rss": 333545472
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.131417,
+          "rss": 233668608
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 29.559749999999894,
+          "rss": 331137024
+        },
+        {
+          "id": "define-options",
+          "wallMs": 4.642500000000041,
+          "rss": 343310336
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.9837499999999864,
+          "rss": 343638016
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.2976249999999254,
+          "rss": 343687168
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.036457999999925,
+          "rss": 343883776
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.385167000000024,
+          "rss": 344031232
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7346249999999372,
+          "rss": 344358912
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.20095800000001418,
+          "rss": 344440832
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14187500000002728,
+          "rss": 344489984
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.28087499999998,
+          "rss": 233455616
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 32.086708000000044,
+          "rss": 332431360
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9538330000000315,
+          "rss": 332857344
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.799082999999996,
+          "rss": 333316096
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19783399999994344,
+          "rss": 333447168
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7979579999999942,
+          "rss": 333742080
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.38599999999996726,
+          "rss": 333889536
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6175409999999601,
+          "rss": 334151680
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.2699159999999665,
+          "rss": 334217216
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1579590000000053,
+          "rss": 334315520
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 17.325333,
+          "rss": 244826112
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.36824999999999,
+          "rss": 329842688
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0961660000000393,
+          "rss": 330334208
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7832090000000562,
+          "rss": 330776576
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.271041000000082,
+          "rss": 330891264
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.857332999999926,
+          "rss": 331186176
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.5337080000000469,
+          "rss": 331317248
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7426250000000891,
+          "rss": 331612160
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.2205829999999196,
+          "rss": 331694080
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1722499999999627,
+          "rss": 331776000
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.99516600000004,
+          "rss": 228720640
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 32.52941699999997,
+          "rss": 336166912
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.3509579999999914,
+          "rss": 336658432
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7237920000000031,
+          "rss": 337100800
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.38983300000006693,
+          "rss": 337199104
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8355000000000246,
+          "rss": 337510400
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.36341700000002675,
+          "rss": 337657856
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5873339999999416,
+          "rss": 338001920
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.16829200000006495,
+          "rss": 338083840
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1426250000000664,
+          "rss": 338132992
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.80966699999999,
+          "rss": 233193472
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 27.900416999999948,
+          "rss": 325124096
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.2095000000000482,
+          "rss": 336150528
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.9249579999999469,
+          "rss": 336592896
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.21625000000005912,
+          "rss": 336723968
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7870000000000346,
+          "rss": 337051648
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3686249999999518,
+          "rss": 337215488
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5931249999999864,
+          "rss": 337494016
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17049999999994725,
+          "rss": 337575936
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.17937500000005002,
+          "rss": 337608704
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.836916999999971,
+          "rss": 233177088
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 28.290834000000018,
+          "rss": 327925760
+        },
+        {
+          "id": "define-options",
+          "wallMs": 5.5625,
+          "rss": 339902464
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.9911250000000109,
+          "rss": 340246528
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.20291699999995672,
+          "rss": 340312064
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.9565420000000131,
+          "rss": 340590592
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.37000000000000455,
+          "rss": 340787200
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6102089999999407,
+          "rss": 341147648
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.19304199999999128,
+          "rss": 341245952
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1522499999999809,
+          "rss": 341278720
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.144000000000005,
+          "rss": 229916672
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 32.039750000000026,
+          "rss": 337559552
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9983330000000024,
+          "rss": 338083840
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6549170000000686,
+          "rss": 338575360
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.1922909999999547,
+          "rss": 338690048
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.9440839999999753,
+          "rss": 338952192
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3988329999999678,
+          "rss": 339132416
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7125419999999849,
+          "rss": 339460096
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17733399999997346,
+          "rss": 339542016
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1558750000000373,
+          "rss": 339574784
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.93870800000002,
+          "rss": 227328000
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 30.089458000000036,
+          "rss": 336248832
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9777090000000044,
+          "rss": 336707584
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6877500000000509,
+          "rss": 337133568
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.18641600000000835,
+          "rss": 337297408
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8575829999999769,
+          "rss": 337608704
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.38495799999998326,
+          "rss": 337772544
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.607915999999932,
+          "rss": 338116608
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.171875,
+          "rss": 338214912
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.279166000000032,
+          "rss": 338247680
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 14.742000000000019,
+          "rss": 234012672
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 27.093875000000025,
+          "rss": 338247680
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9471660000000384,
+          "rss": 339034112
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6949160000000347,
+          "rss": 339558400
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.20412499999997635,
+          "rss": 339673088
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8454580000000078,
+          "rss": 352681984
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3818749999999227,
+          "rss": 352796672
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5911250000000337,
+          "rss": 352960512
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18462499999998272,
+          "rss": 353042432
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15079200000002402,
+          "rss": 353075200
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.462666000000013,
+          "rss": 232521728
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 33.12879200000009,
+          "rss": 331694080
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.029457999999977,
+          "rss": 332201984
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7556660000000193,
+          "rss": 332644352
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.265166000000022,
+          "rss": 332759040
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.222167000000013,
+          "rss": 333053952
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.6216249999999945,
+          "rss": 333217792
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6186669999999594,
+          "rss": 333512704
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17074999999999818,
+          "rss": 333627392
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14812500000005002,
+          "rss": 333643776
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 17.19595800000002,
+          "rss": 243154944
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.09466599999996,
+          "rss": 331104256
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.5518329999999878,
+          "rss": 331661312
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.674959000000058,
+          "rss": 332054528
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.1956670000000713,
+          "rss": 332169216
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8320830000000115,
+          "rss": 332447744
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.48954200000002857,
+          "rss": 332578816
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.8014170000000149,
+          "rss": 332857344
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17724999999995816,
+          "rss": 332939264
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15370799999993778,
+          "rss": 333004800
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.732666999999992,
+          "rss": 232734720
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 28.00845800000002,
+          "rss": 328499200
+        },
+        {
+          "id": "define-options",
+          "wallMs": 7.256124999999997,
+          "rss": 340525056
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.9756659999999329,
+          "rss": 340819968
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.21295800000007148,
+          "rss": 340951040
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8306669999999485,
+          "rss": 341360640
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.4356670000000804,
+          "rss": 341524480
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6466249999999718,
+          "rss": 341835776
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18633299999999053,
+          "rss": 341934080
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1508330000000342,
+          "rss": 341983232
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.371083,
+          "rss": 228589568
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.276749999999993,
+          "rss": 327221248
+        },
+        {
+          "id": "define-options",
+          "wallMs": 4.42816700000003,
+          "rss": 339345408
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 1.2247499999999718,
+          "rss": 339673088
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.23004200000002584,
+          "rss": 339755008
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.2145000000000437,
+          "rss": 340066304
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.38258300000006784,
+          "rss": 340213760
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7554580000000897,
+          "rss": 340541440
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1972920000000613,
+          "rss": 340672512
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15612499999997453,
+          "rss": 340688896
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.643875000000037,
+          "rss": 233259008
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.296583000000055,
+          "rss": 332742656
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.058499999999981,
+          "rss": 333299712
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.818540999999982,
+          "rss": 333725696
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.20058300000005147,
+          "rss": 333856768
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.1011670000000322,
+          "rss": 334135296
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3915829999999687,
+          "rss": 334299136
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6480829999999287,
+          "rss": 334561280
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18299999999999272,
+          "rss": 334626816
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14599999999995816,
+          "rss": 334675968
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.942833000000007,
+          "rss": 228540416
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 30.996125000000006,
+          "rss": 331776000
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.172666999999933,
+          "rss": 332283904
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.664209000000028,
+          "rss": 332709888
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.18516699999997854,
+          "rss": 332824576
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.9441249999999854,
+          "rss": 333086720
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.37312500000007276,
+          "rss": 333266944
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6171669999999949,
+          "rss": 333578240
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18287499999996726,
+          "rss": 333660160
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15391599999998107,
+          "rss": 333709312
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.309374999999989,
+          "rss": 229965824
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 27.128833999999983,
+          "rss": 328155136
+        },
+        {
+          "id": "define-options",
+          "wallMs": 6.94825000000003,
+          "rss": 340295680
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 1.0728339999999434,
+          "rss": 340688896
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.20141699999999219,
+          "rss": 340738048
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7860410000000684,
+          "rss": 341082112
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.38041599999996834,
+          "rss": 341229568
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.61525000000006,
+          "rss": 341573632
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1720829999999296,
+          "rss": 341671936
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1453750000000582,
+          "rss": 341721088
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 19.600207999999952,
+          "rss": 227639296
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.363875000000007,
+          "rss": 329170944
+        },
+        {
+          "id": "define-options",
+          "wallMs": 5.587625000000003,
+          "rss": 341180416
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.8509999999999991,
+          "rss": 341524480
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.20687499999996817,
+          "rss": 341573632
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.0631249999999,
+          "rss": 341884928
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.4540829999999687,
+          "rss": 342048768
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7372910000000275,
+          "rss": 342392832
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1997920000000022,
+          "rss": 342491136
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15858300000002146,
+          "rss": 342523904
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.428375000000017,
+          "rss": 261128192
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 32.16108299999996,
+          "rss": 332038144
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0847500000000991,
+          "rss": 332546048
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.672040999999922,
+          "rss": 333004800
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.27604199999996126,
+          "rss": 333103104
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8132090000000289,
+          "rss": 333430784
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.5562079999999696,
+          "rss": 333578240
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7003330000000005,
+          "rss": 333938688
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.19262500000002092,
+          "rss": 334020608
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.15441699999996672,
+          "rss": 334118912
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.233208999999988,
+          "rss": 230817792
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 27.620915999999966,
+          "rss": 336314368
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.189958000000047,
+          "rss": 337035264
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7779170000000022,
+          "rss": 337543168
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.20229199999994307,
+          "rss": 337657856
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.1112499999999272,
+          "rss": 350846976
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.4043330000000651,
+          "rss": 351010816
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6333750000000009,
+          "rss": 351207424
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18200000000001637,
+          "rss": 351256576
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.143291999999974,
+          "rss": 351322112
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.12770800000004,
+          "rss": 230031360
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 33.62841700000001,
+          "rss": 339230720
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9470409999998992,
+          "rss": 339689472
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6433329999999842,
+          "rss": 340131840
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.18866699999989578,
+          "rss": 340246528
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.2196250000000646,
+          "rss": 340606976
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.39495799999997416,
+          "rss": 340738048
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6094160000000102,
+          "rss": 341049344
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.1677079999999478,
+          "rss": 341131264
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.144457999999986,
+          "rss": 341180416
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.23762499999998,
+          "rss": 230555648
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 27.586875000000077,
+          "rss": 324124672
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.14874999999995,
+          "rss": 335167488
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7201250000000528,
+          "rss": 335626240
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.20479100000000017,
+          "rss": 335740928
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.9199159999999438,
+          "rss": 336084992
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.7037500000000136,
+          "rss": 336216064
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6607919999999012,
+          "rss": 336510976
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17879199999993034,
+          "rss": 336592896
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14545899999995981,
+          "rss": 336642048
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 17.653750000000002,
+          "rss": 245760000
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 34.32287500000007,
+          "rss": 343883776
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9200000000000728,
+          "rss": 344391680
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6943330000000287,
+          "rss": 344965120
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.2562080000000151,
+          "rss": 345096192
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.9173749999999927,
+          "rss": 345505792
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.38058300000000145,
+          "rss": 345653248
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6602090000000089,
+          "rss": 345980928
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.2493330000000924,
+          "rss": 346079232
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1502500000000282,
+          "rss": 346128384
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.709334000000013,
+          "rss": 229720064
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 32.78466700000001,
+          "rss": 339181568
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.087833000000046,
+          "rss": 339722240
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7001250000000709,
+          "rss": 340180992
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.2067499999999427,
+          "rss": 340312064
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 1.0704999999999245,
+          "rss": 340606976
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.4033329999999751,
+          "rss": 340803584
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.6222500000000082,
+          "rss": 341082112
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.18899999999996453,
+          "rss": 341164032
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14941699999997127,
+          "rss": 341196800
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.153624999999977,
+          "rss": 227672064
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 30.917208000000073,
+          "rss": 337444864
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.4358330000000024,
+          "rss": 337936384
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7273749999999382,
+          "rss": 338345984
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.2001669999999649,
+          "rss": 338460672
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7868339999999989,
+          "rss": 338771968
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.37145799999996143,
+          "rss": 338952192
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.61587499999996,
+          "rss": 339247104
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.16791699999998855,
+          "rss": 339329024
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14737500000001091,
+          "rss": 339378176
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 16.244916999999987,
+          "rss": 233701376
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 29.00324999999998,
+          "rss": 325582848
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.040290999999911,
+          "rss": 336609280
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7987080000000333,
+          "rss": 337068032
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.23424999999997453,
+          "rss": 337182720
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.813083000000006,
+          "rss": 337510400
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.36704199999996945,
+          "rss": 337690624
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5948329999999942,
+          "rss": 337985536
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.5748340000000098,
+          "rss": 338067456
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.16249999999990905,
+          "rss": 338100224
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.314625000000035,
+          "rss": 235929600
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 29.150291999999922,
+          "rss": 329498624
+        },
+        {
+          "id": "define-options",
+          "wallMs": 7.341042000000016,
+          "rss": 341557248
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7342499999999745,
+          "rss": 341901312
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19174999999995634,
+          "rss": 341966848
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8127910000000611,
+          "rss": 342294528
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.39229100000000017,
+          "rss": 342491136
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.62662499999999,
+          "rss": 342802432
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.19479200000000674,
+          "rss": 342884352
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14391699999998764,
+          "rss": 342949888
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.402874999999995,
+          "rss": 232128512
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 29.92008300000009,
+          "rss": 333152256
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.8780410000000529,
+          "rss": 333627392
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 1.2332499999999982,
+          "rss": 334135296
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.2261670000000322,
+          "rss": 334249984
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.821207999999956,
+          "rss": 334512128
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3847079999999323,
+          "rss": 334659584
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7699579999999742,
+          "rss": 334987264
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.19637499999998909,
+          "rss": 335085568
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.16362500000002456,
+          "rss": 335101952
+        }
+      ]
+    },
+    {
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.883000000000038,
+          "rss": 244187136
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 31.08962500000007,
+          "rss": 331137024
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.021541999999954,
+          "rss": 331628544
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6980419999999867,
+          "rss": 332021760
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.19508299999995415,
+          "rss": 332152832
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7445410000000265,
+          "rss": 332382208
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.35970800000006875,
+          "rss": 332562432
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.8832909999999856,
+          "rss": 332857344
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17812499999990905,
+          "rss": 332939264
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.22870799999998326,
+          "rss": 332988416
+        }
+      ],
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 14.97724999999997,
+          "rss": 226869248
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 26.906875000000014,
+          "rss": 324714496
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.0600409999999556,
+          "rss": 336396288
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.9784170000000358,
+          "rss": 336789504
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.2048340000000053,
+          "rss": 336904192
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7552919999999403,
+          "rss": 337199104
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3566250000000082,
+          "rss": 337362944
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.7482080000000906,
+          "rss": 337674240
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.17695900000001075,
+          "rss": 337772544
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1442500000000564,
+          "rss": 337788928
+        }
+      ]
+    },
+    {
+      "candidate": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.443458000000021,
+          "rss": 232308736
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 26.687209000000053,
+          "rss": 339329024
+        },
+        {
+          "id": "define-options",
+          "wallMs": 0.9949159999999893,
+          "rss": 340033536
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.6485000000000127,
+          "rss": 340525056
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.18745799999999235,
+          "rss": 340688896
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.8663750000000618,
+          "rss": 353665024
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3845410000000129,
+          "rss": 353796096
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5974579999999605,
+          "rss": 353976320
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.38524999999992815,
+          "rss": 354025472
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.1492079999999305,
+          "rss": 354074624
+        }
+      ],
+      "baseline": [
+        {
+          "id": "wevu-home",
+          "wallMs": 15.964790999999991,
+          "rss": 229064704
+        },
+        {
+          "id": "retail-detail",
+          "wallMs": 30.69495900000004,
+          "rss": 332283904
+        },
+        {
+          "id": "define-options",
+          "wallMs": 1.141416999999933,
+          "rss": 332808192
+        },
+        {
+          "id": "dual-script",
+          "wallMs": 0.7165830000000142,
+          "rss": 333250560
+        },
+        {
+          "id": "no-default-export",
+          "wallMs": 0.1931250000000091,
+          "rss": 333365248
+        },
+        {
+          "id": "imported-components",
+          "wallMs": 0.7602909999999383,
+          "rss": 333643776
+        },
+        {
+          "id": "options-api-components",
+          "wallMs": 0.3558749999999691,
+          "rss": 333791232
+        },
+        {
+          "id": "escaped-string-components",
+          "wallMs": 0.5996249999999463,
+          "rss": 334135296
+        },
+        {
+          "id": "invalid-template",
+          "wallMs": 0.16929099999993014,
+          "rss": 334233600
+        },
+        {
+          "id": "invalid-script",
+          "wallMs": 0.14533300000005056,
+          "rss": 334249984
+        }
+      ]
+    }
+  ],
+  "summary": [
+    {
+      "id": "wevu-home",
+      "baseline": {
+        "p50": 15.942833000000007,
+        "p95": 17.325333,
+        "rssP50": 232521728
+      },
+      "candidate": {
+        "p50": 15.836916999999971,
+        "p95": 17.653750000000002,
+        "rssP50": 232685568
+      },
+      "p50Change": -0.6643486762988537,
+      "p95Change": 1.8955883849389954
+    },
+    {
+      "id": "retail-detail",
+      "baseline": {
+        "p50": 31.09466599999996,
+        "p95": 33.79483400000004,
+        "rssP50": 333152256
+      },
+      "candidate": {
+        "p50": 29.137958000000026,
+        "p95": 32.766707999999994,
+        "rssP50": 329170944
+      },
+      "p50Change": -6.29274487141922,
+      "p95Change": -3.042257878822663
+    },
+    {
+      "id": "define-options",
+      "baseline": {
+        "p50": 1.125833000000057,
+        "p95": 7.150624999999991,
+        "rssP50": 336707584
+      },
+      "candidate": {
+        "p50": 1.1345839999999043,
+        "p95": 7.222165999999902,
+        "rssP50": 338427904
+      },
+      "p50Change": 0.7772911257572845,
+      "p95Change": 1.0004859715047498
+    },
+    {
+      "id": "dual-script",
+      "baseline": {
+        "p50": 0.7139999999999418,
+        "p95": 1.0728339999999434,
+        "rssP50": 337133568
+      },
+      "candidate": {
+        "p50": 0.7409999999999854,
+        "p95": 0.9911250000000109,
+        "rssP50": 338870272
+      },
+      "p50Change": 3.7815126050484427,
+      "p95Change": -7.616182932302373
+    },
+    {
+      "id": "no-default-export",
+      "baseline": {
+        "p50": 0.2001669999999649,
+        "p95": 0.271041000000082,
+        "rssP50": 337281024
+      },
+      "candidate": {
+        "p50": 0.20004199999993943,
+        "p95": 0.2976249999999254,
+        "rssP50": 338984960
+      },
+      "p50Change": -0.062447856052938455,
+      "p95Change": 9.808110212047394
+    },
+    {
+      "id": "imported-components",
+      "baseline": {
+        "p50": 0.8512080000000424,
+        "p95": 1.1112499999999272,
+        "rssP50": 337592320
+      },
+      "candidate": {
+        "p50": 0.8282080000000178,
+        "p95": 1.2145000000000437,
+        "rssP50": 339509248
+      },
+      "p50Change": -2.7020422740415273,
+      "p95Change": 9.291338582688248
+    },
+    {
+      "id": "options-api-components",
+      "baseline": {
+        "p50": 0.3812920000000304,
+        "p95": 0.5062919999999167,
+        "rssP50": 337723392
+      },
+      "candidate": {
+        "p50": 0.3845410000000129,
+        "p95": 0.6644159999999601,
+        "rssP50": 339689472
+      },
+      "p50Change": 0.8521028503043038,
+      "p95Change": 31.231779289435636
+    },
+    {
+      "id": "escaped-string-components",
+      "baseline": {
+        "p50": 0.653583000000026,
+        "p95": 0.8170000000000073,
+        "rssP50": 338051072
+      },
+      "candidate": {
+        "p50": 0.6275420000000622,
+        "p95": 0.7395000000000209,
+        "rssP50": 340066304
+      },
+      "p50Change": -3.98434475804339,
+      "p95Change": -9.485924112605348
+    },
+    {
+      "id": "invalid-template",
+      "baseline": {
+        "p50": 0.1817079999999578,
+        "p95": 0.2205829999999196,
+        "rssP50": 338149376
+      },
+      "candidate": {
+        "p50": 0.18299999999999272,
+        "p95": 0.2699159999999665,
+        "rssP50": 340131840
+      },
+      "p50Change": 0.7110308847355196,
+      "p95Change": 22.364824125188655
+    },
+    {
+      "id": "invalid-script",
+      "baseline": {
+        "p50": 0.15012500000000273,
+        "p95": 0.22870799999998326,
+        "rssP50": 338182144
+      },
+      "candidate": {
+        "p50": 0.1502500000000282,
+        "p95": 0.17804200000000492,
+        "rssP50": 340180992
+      },
+      "p50Change": 0.0832639467280405,
+      "p95Change": -22.153138499738557
+    }
+  ]
+}

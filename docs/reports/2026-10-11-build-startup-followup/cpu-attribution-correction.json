@@ -1,0 +1,6 @@
+{
+  "scope": "CPU diagnostic correction",
+  "nativeEnabled": false,
+  "reason": "build-profile.mts set WEAPP_VITE_NATIVE_PATH, but AST loader requires WEAPP_VITE_NATIVE_AST_PATH. Parent environment had neither configured. These profiles are native-disabled baseline CPU diagnostics, not native-on attribution or performance acceptance.",
+  "originalDriverPreserved": true
+}

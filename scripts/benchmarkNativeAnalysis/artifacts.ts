@@ -2,6 +2,7 @@ import type { Evidence } from './contract'
 import { createHash } from 'node:crypto'
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { canonicalSourceMapRoots } from './sourceMapRoots'
 
 export const sha256 = (value: string | Uint8Array) => createHash('sha256').update(value).digest('hex')
 const textExtensions = /\.(?:js|mjs|cjs|json|map|wxml|wxss|wxs|css|html)$/i
@@ -46,7 +47,7 @@ function canonical(value: unknown, roots: string[]): unknown {
 }
 
 /** 仅规范工作目录与 JSON 键序；不删除 helper、hash、映射位置或 HMR 协议字段。 */
-export async function captureArtifacts(directory: string, roots: string[] = [], sourceMapsDirectory?: string): Promise<Evidence> {
+export async function captureArtifacts(directory: string, roots: string[] = [], sourceMapsDirectory?: string, sourceRootEvidence = false): Promise<Evidence> {
   const files: Record<string, string> = {}
   let maps = 0
   const entries = await readdir(directory, { recursive: true, withFileTypes: true })
@@ -64,7 +65,11 @@ export async function captureArtifacts(directory: string, roots: string[] = [], 
     }
     let content: string | Uint8Array = bytes
     if (textExtensions.test(relative)) {
-      content = normalizeRoots(bytes.toString('utf8'), roots)
+      content = bytes.toString('utf8')
+      if (sourceRootEvidence && relative.endsWith('.map')) {
+        content = JSON.stringify(canonicalSourceMapRoots(JSON.parse(content) as Record<string, unknown>, file, roots))
+      }
+      content = normalizeRoots(content, roots)
       if (/\.(?:json|map)$/.test(relative)) {
         content = JSON.stringify(canonical(JSON.parse(content) as unknown, roots))
       }

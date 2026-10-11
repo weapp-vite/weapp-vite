@@ -1,0 +1,22 @@
+{
+  "compiler-native.json": {
+    "sha256": "7978590cedb20fc288ad01820bdbedd8c8de835b7ec6342214087f38df9e56d6",
+    "bytes": 493040,
+    "origin": "private frozen evidence; byte-identical export"
+  },
+  "expression-native-off.json": {
+    "sha256": "cc4e49a39f5d9509b4a2ee8956eda8f6dc91f37527081d89fe09f0c00d0a33ec",
+    "bytes": 105866,
+    "origin": "private frozen evidence; byte-identical export"
+  },
+  "cpu-attribution-correction.json": {
+    "sha256": "14170af3f125e02408414bde261cc1483bf612bb478279697c07306631212ad7",
+    "bytes": 374,
+    "origin": "private frozen evidence; byte-identical export"
+  },
+  "native-smoke.json": {
+    "sha256": "1b0efead0e0c0ab979323698133490cd4948631c3e3f28595757bc46c5fdba0e",
+    "bytes": 444660,
+    "origin": "lossless compact export; original report hash and reconstruction metadata included"
+  }
+}

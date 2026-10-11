@@ -159,6 +159,7 @@ const profileTimeoutMs = readPositiveIntegerEnv('TEMPLATES_HMR_PROFILE_TIMEOUT_M
 const profileEnabled = process.env.TEMPLATES_HMR_PROFILE !== '0'
 const observeOutputScope = process.env.TEMPLATES_HMR_OUTPUT_SCOPE === '1'
 const captureArtifactEvidence = process.env.TEMPLATES_HMR_ARTIFACT_EVIDENCE === '1'
+const sourceRootEvidence = process.env.NATIVE_BENCHMARK_SOURCE_ROOTS === '1'
 const markerSeed = process.env.TEMPLATES_HMR_MARKER_SEED ?? Date.now().toString(36)
 if (!/^[\w-]+$/.test(markerSeed)) {
   throw new Error('TEMPLATES_HMR_MARKER_SEED must contain only letters, digits, underscores or hyphens')
@@ -730,7 +731,7 @@ async function benchmarkScenario(
       const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample, performance.timeOrigin + startedAt)
       editSample.inputSha256 = createHash('sha256').update(updated).digest('hex')
       if (captureArtifactEvidence) {
-        editSample.artifactEvidence = await captureArtifacts(path.join(template.workspaceRoot, 'dist'), [template.workspaceRoot, repoRoot])
+        editSample.artifactEvidence = await captureArtifacts(path.join(template.workspaceRoot, 'dist'), [template.workspaceRoot, repoRoot], sourceRootEvidence ? path.join(reportRoot, 'sourcemaps', template.id, scenario.id, String(index), 'edit') : undefined, sourceRootEvidence)
       }
       const editedOutputs = observeOutputScope ? await snapshotBenchmarkOutputs(path.join(template.workspaceRoot, 'dist')) : undefined
       if (beforeOutputs && editedOutputs) {
@@ -747,7 +748,7 @@ async function benchmarkScenario(
       const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample, performance.timeOrigin + restoreStartedAt)
       restoreSample.inputSha256 = createHash('sha256').update(original).digest('hex')
       if (captureArtifactEvidence) {
-        restoreSample.artifactEvidence = await captureArtifacts(path.join(template.workspaceRoot, 'dist'), [template.workspaceRoot, repoRoot])
+        restoreSample.artifactEvidence = await captureArtifacts(path.join(template.workspaceRoot, 'dist'), [template.workspaceRoot, repoRoot], sourceRootEvidence ? path.join(reportRoot, 'sourcemaps', template.id, scenario.id, String(index), 'restore') : undefined, sourceRootEvidence)
       }
       if (editedOutputs) {
         restoreSample.outputChanges = compareBenchmarkOutputs(editedOutputs, await snapshotBenchmarkOutputs(path.join(template.workspaceRoot, 'dist')))
