@@ -29,3 +29,9 @@ pnpm vitest run -c e2e/scripts/runtimeBench/vitest.config.ts
 ```
 
 原始样本、产物字节、phase、可见结果及内存能力共同决定最终结论。`complete` 要求两套采样完成、输入与安装闭包等价、宿主 heap 证据齐全、报告归档及资源清理成功；只有采集结束时使用 `collectionComplete`。官方 Stable 渠道身份仍由附带的官方查询时间、所选 CLI 与实际宿主版本证据判定，不能仅凭 `complete` 推导。heap 不支持或 Stable 身份证据缺失时，#1137 对应验收仍未完成，不发布收益结论。
+
+默认采集继续使用 automator。`nativeInspectorHeap` 是显式接线的私有测试通道：执行者先用 Computer Use 在当前受管项目的官方 AppService Inspector 观察唯一 `main` 目标 URL，再以该 URL、journal session id 和批准 IDE/基础库版本创建 collector。准备过程放在已固定的 launchMs 之后、首个场景计时之前；生成的 `consoleExpression` 仅由 Computer Use 粘贴到官方“调试调试器” Console，不通过后台调试连接执行。`ready` 握手成功后，原有八组更新场景把 collector、preset、scenario 传入 `nativeHeap`，route、sampleIndex 和 before/after 由原采样循环生成。
+
+原生通道仍以 2500ms 为整次请求预算，包含长轮询交付、原生 getIsolateId/getHeapUsage 和回环回传。每次保存原始字节、UTC、单调耗时、同步捕获的原生请求编号、唯一目标与 isolate；响应不得跨 session、过期、重复或并发。`records` 保留预热探针，正式样本数量与计时不变；`rawResponses` 额外保留畸形和迟到响应用于诊断。collector 与原会话独立收尾并保留两类错误，不把桥接、设置准备或能力探针记为原 workload 通过。该通道仅测 AppService 当前 JS 堆，不采 renderer/native 内存、不强制 GC、不读取格式化 Memory 数值。
+
+私有接线通过 `WEAPP_VITE_BENCH_NATIVE_INSPECTOR_DIRECTORY` 显式启用，同时要求显式批准的 `WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION` 与 `WEAPP_VITE_BENCH_NATIVE_INSPECTOR_SDK_VERSION`，实际版本必须逐项相等。每套预设在该目录下创建新的 session 子目录；执行者读 `request.json`，用 Computer Use 核对当前项目与唯一目标，再原子保存包含当前 `sessionId` 和观察到的 `targetUrl` 的 `target.json`。随后只在同一原生 Console 粘贴 `console.js` 一次，握手成功才开始原有采样。两次安装阶段各限 120 秒，均在采样计时之外；每次 heap 请求仍限原来的 2500ms。收尾保存 `raw.json`，包括安装失败、预热及正式采样的原始回传；这些本机诊断文件不得直接公开。
