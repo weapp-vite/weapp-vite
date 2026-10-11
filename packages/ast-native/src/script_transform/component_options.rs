@@ -167,6 +167,22 @@ pub fn defaults_and_page<'a>(
 #[path = "component_options_guard_tests.rs"]
 mod tests;
 
+pub fn native_slot_context<'a>(
+    object: &mut ObjectExpression<'a>,
+    request: &Request,
+    allocator: &'a Allocator,
+) -> Result<(), String> {
+    if request.options["isApp"] != true && request.options["nativeSlotContext"] == true {
+        // 与 Babel 保持一致：追加标记，让已有同名选项按对象属性顺序被覆盖。
+        object.properties.push(f::property(
+            &request.marker("WEVU_NATIVE_SLOT_CONTEXT_KEY")?,
+            f::expression("true", allocator)?,
+            allocator,
+        )?);
+    }
+    Ok(())
+}
+
 pub fn function_paths<'a>(
     object: &mut ObjectExpression<'a>,
     request: &Request,

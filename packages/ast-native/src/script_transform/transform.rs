@@ -124,6 +124,7 @@ fn run(source: &str, request: Request) -> Result<NativeScriptTransform, String> 
         )?);
         runtime = capabilities::resolve(object, &request)?;
         component_seed::inject(object, &allocator)?;
+        component_options::native_slot_context(object, &request, &allocator)?;
         component_manifest::inject(object, &request, &allocator)?;
         let plan = metadata::build(&request.options, &request.symbols()?)?;
         let applied = metadata::apply_to_component(plan, object, &allocator)?;
@@ -236,6 +237,10 @@ pub fn transform_script_native(
 #[cfg(test)]
 #[path = "transform_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "native_slot_context_tests.rs"]
+mod native_slot_context_tests;
 
 #[cfg(test)]
 #[path = "template_provenance/transform_tests.rs"]

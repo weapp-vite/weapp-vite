@@ -53,6 +53,7 @@ impl Request {
             "propsDerivedKeys",
             "relaxStructuredTypeOnlyProps",
             "scopedSlotHostProperties",
+            "nativeSlotContext",
             "cssModules",
             "stabilizeCssVarsRuntime",
         ];
@@ -81,6 +82,7 @@ impl Request {
             "autoSetDataPick",
             "relaxStructuredTypeOnlyProps",
             "scopedSlotHostProperties",
+            "nativeSlotContext",
             "stabilizeCssVarsRuntime",
         ] {
             if options.get(key).is_some_and(|value| !value.is_boolean()) {
@@ -104,6 +106,7 @@ impl Request {
             "runtimeCapabilities",
             "functionPropPaths",
             "autoSetDataPick",
+            "nativeSlotContext",
         ];
         let deferred = [
             "templateComponentMeta",
