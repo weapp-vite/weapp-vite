@@ -39,7 +39,6 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
   const registrations = new Map<number, symbol>()
   const lifecycle = new TailwindRootLifecycle()
   const invalidation = new TailwindContentInvalidation({ sourceId: compilerSourceId, readSource: file => host.readSource(file) })
-  let originalBundle: OutputBundle = {}
   let disposed = false
 
   const watchFiles = new Set<string>()
@@ -194,13 +193,6 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
 
   function rememberBundle(bundle: OutputBundle) {
     rememberTailwindStyleOwners(ctx, bundle, extensions.styleExtension)
-    const next = { ...originalBundle }
-    for (const [file, output] of Object.entries(bundle)) {
-      if (output.type === 'asset' && file.endsWith(`.${extensions.templateExtension}`)) {
-        next[file] = { ...output }
-      }
-    }
-    originalBundle = next
   }
 
   let captured = new WeakMap<WeappCompilerHmrRequest, { roots: Map<number, Root>, bundle: OutputBundle, scope: ReturnType<TailwindRootLifecycle['capture']> }>()
@@ -211,7 +203,8 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     }
     let input = captured.get(request)
     if (!input) {
-      const bundle = { ...originalBundle }
+      // 此阶段只提交样式；模板由批次 preparation 在实际快照上转换一次。
+      const bundle: OutputBundle = {}
       for (const [fileName, source] of getTailwindStyleOwners(ctx)) {
         // 仅供编译器处理的内存资产；最终文件仍由 Vite emit/write 创建。
         bundle[fileName] = { type: 'asset', fileName, source, names: [], originalFileNames: [] } as unknown as OutputAsset
@@ -297,7 +290,6 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     watchFiles.clear()
     nativeDependencies.clear()
     discoveredSources.clear()
-    originalBundle = {}
     captured = new WeakMap()
   }
 
