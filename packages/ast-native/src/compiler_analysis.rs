@@ -12,6 +12,13 @@ use crate::{NativeScriptAnalysis, analyze_script_program, parse_program, static_
 
 mod components;
 use components::{NativeCompilerRegisteredComponent, collect_registered_components};
+mod reserved_props;
+use reserved_props::{NativeReservedPropsDiagnostic, ReservedPropsAnalysis};
+
+#[cfg(test)]
+thread_local! {
+    static COMPILER_ANALYSIS_COUNT: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
 
 #[napi(object)]
 pub struct NativeCompilerScriptInput {
@@ -50,12 +57,14 @@ pub struct NativeCompilerScriptAnalysis {
     pub has_static_require_literal: bool,
     pub has_platform_api_access: bool,
     pub feature_flags: Vec<String>,
+    pub reserved_props_diagnostic: Option<NativeReservedPropsDiagnostic>,
 }
 
 struct MacroVisitor {
     define_options_name: Option<String>,
     is_mini_program_component: bool,
     has_lone_surrogate_literal: bool,
+    reserved_props: ReservedPropsAnalysis,
 }
 
 impl MacroVisitor {
@@ -64,6 +73,7 @@ impl MacroVisitor {
             define_options_name: None,
             is_mini_program_component: false,
             has_lone_surrogate_literal: false,
+            reserved_props: ReservedPropsAnalysis::default(),
         }
     }
 
@@ -106,6 +116,7 @@ impl<'a> Visit<'a> for MacroVisitor {
     }
 
     fn visit_call_expression(&mut self, call: &oxc_ast::ast::CallExpression<'a>) {
+        self.reserved_props.inspect_call(call);
         if let Expression::Identifier(callee) = call.callee.without_parentheses()
             && let Some(argument) = call
                 .arguments
@@ -172,6 +183,8 @@ fn analyze_compiler_script_program(
     code: &str,
     input: &NativeCompilerScriptInput,
 ) -> Option<NativeCompilerScriptAnalysis> {
+    #[cfg(test)]
+    COMPILER_ANALYSIS_COUNT.set(COMPILER_ANALYSIS_COUNT.get() + 1);
     let mut macros = MacroVisitor::new();
     macros.visit_program(program);
     if macros.has_lone_surrogate_literal {
@@ -196,6 +209,7 @@ fn analyze_compiler_script_program(
         has_static_require_literal: script_analysis.has_static_require_literal,
         has_platform_api_access: script_analysis.has_platform_api_access,
         feature_flags: script_analysis.feature_flags,
+        reserved_props_diagnostic: macros.reserved_props.finish(code),
     })
 }
 
@@ -254,8 +268,14 @@ pub fn analyze_compiler_scripts_native(
         let Ok(program) = parse_program(&allocator, &code, filename) else {
             continue;
         };
+        let mut analyses = HashMap::new();
         for index in matching {
-            results[index] = analyze_compiler_script_program(&program, &code, &inputs[index]);
+            let input = &inputs[index];
+            let key = (input.module_id.clone(), input.hook_to_feature_json.clone());
+            results[index] = analyses
+                .entry(key)
+                .or_insert_with(|| analyze_compiler_script_program(&program, &code, input))
+                .clone();
         }
     }
     results

@@ -7,6 +7,7 @@ export async function prepareIndependentOutputs(ctx: CompilerContext) {
   independentState.pendingOutputs = []
   scanService.loadSubPackages()
   const previousSubPackageRoot = configService.currentSubPackageRoot
+  let succeeded = true
   for (const root of scanService.drainIndependentDirtyRoots()) {
     const meta = scanService.independentSubPackageMap.get(root)
     if (!meta) {
@@ -15,9 +16,12 @@ export async function prepareIndependentOutputs(ctx: CompilerContext) {
     // 保持串行，避免第三方插件的进程级状态在子构建间竞争。
     const task = buildService.buildIndependentBundle(root, meta)
     independentState.pendingOutputs.push(task)
-    await task.catch(() => {})
+    await task.catch(() => {
+      succeeded = false
+    })
   }
   if (configService.currentSubPackageRoot !== previousSubPackageRoot) {
     configService.options = { ...configService.options, currentSubPackageRoot: previousSubPackageRoot }
   }
+  return succeeded
 }

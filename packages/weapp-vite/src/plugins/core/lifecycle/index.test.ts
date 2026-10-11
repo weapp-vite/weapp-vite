@@ -1,8 +1,11 @@
 import type { ResolvedConfig, ViteDevServer } from 'vite'
+import type { CompilerContext } from '../../../context'
 import type { CorePluginState } from '../helpers'
 import { describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { createModuleGraphService } from '../../../moduleGraph/service'
+import { beginEntryPreparation, captureEntryPreparation, recordEntryPreparation, takeEntryPreparation } from '../../../runtime/buildPlugin/entryPreparation'
+import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createCoreLifecyclePlugin } from './index'
 
 vi.mock('./emit', () => ({
@@ -29,6 +32,26 @@ vi.mock('./watch', () => ({
 }))
 
 describe('createCoreLifecyclePlugin', () => {
+  it.each(['buildEnd', 'closeBundle', 'closeWatcher'] as const)('releases unconsumed options preparation on %s', async (phase) => {
+    const runtimeState = createRuntimeState()
+    runtimeState.scan.isDirty = false
+    runtimeState.scan.appEntry = { path: 'app.js', type: 'app' }
+    const ctx = {
+      runtimeState,
+      configService: { options: {}, weappViteConfig: {} },
+      moduleGraphService: createModuleGraphService(),
+    } as unknown as CompilerContext
+    const state = { ctx, loadEntry: vi.fn() } as unknown as CorePluginState
+    const plugin = createCoreLifecyclePlugin(state)
+    const prepare = () => recordEntryPreparation(state.loadEntry, beginEntryPreparation(state.loadEntry), captureEntryPreparation(ctx))
+    prepare()
+    expect(takeEntryPreparation(state.loadEntry, ctx)).toBe(runtimeState.scan.appEntry)
+    prepare()
+    const hook = plugin[phase] as (this: { meta: { watchMode: boolean } }) => unknown
+    await hook.call({ meta: { watchMode: false } })
+    expect(takeEntryPreparation(state.loadEntry, ctx)).toBeUndefined()
+  })
+
   it('declares a rolldown filter for source transform hooks', () => {
     const plugin = createCoreLifecyclePlugin({
       ctx: {

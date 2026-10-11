@@ -2,7 +2,6 @@ import type { CAC } from 'cac'
 import type { GlobalCLIOptions } from '../types'
 import path from 'pathe'
 import logger from '../../logger'
-import { resolveIdeCommandContext } from '../openIde'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 import { spawnMinidev } from './alipayExecute'
 
@@ -87,6 +86,7 @@ export async function runAlipayCommand(action: string | undefined, root: string 
 
   filterDuplicateOptions(options)
   const configFile = resolveConfigFile(options)
+  const { resolveIdeCommandContext } = await import('../openIde')
   const resolved = await resolveIdeCommandContext({
     configFile,
     mode: options.mode ?? (normalizedAction === 'upload' ? 'production' : 'development'),

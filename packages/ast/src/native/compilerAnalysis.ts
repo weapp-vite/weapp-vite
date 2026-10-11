@@ -24,6 +24,17 @@ export function isNativeCompilerScriptAnalysis(value: unknown, code: string): va
     return false
   }
   const analysis = value as Partial<NativeCompilerScriptAnalysis>
+  const diagnostic = analysis.reservedPropsDiagnostic
+  if (diagnostic !== undefined) {
+    if (!diagnostic || typeof diagnostic !== 'object' || Array.isArray(diagnostic)) {
+      return false
+    }
+    const offset = diagnostic.warningOffset
+    if (offset !== undefined && (!Number.isInteger(offset) || offset < 0 || offset >= code.length
+      || !isUtf16Boundary(code, offset))) {
+      return false
+    }
+  }
   if (
     !Array.isArray(analysis.imports)
     || typeof analysis.hasDefaultExport !== 'boolean'

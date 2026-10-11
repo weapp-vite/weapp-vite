@@ -29,6 +29,7 @@ coverage
 .next/
 out/
 build
+!packages/weapp-vite/src/cli/commands/build/
 
 # misc
 .DS_Store

@@ -2,7 +2,6 @@ import type { CAC } from 'cac'
 import type { GlobalCLIOptions } from '../../types'
 import { createDevShutdownScope } from '../../../devLifecycle/shutdown'
 import logger from '../../../logger'
-import { startServeCommand } from './startup'
 
 export function registerServeCommand(cli: CAC) {
   cli
@@ -30,7 +29,10 @@ export function registerServeCommand(cli: CAC) {
       const shutdown = createDevShutdownScope({ reportError: error => logger.error(error) })
       let failure: unknown
       try {
-        const started = await shutdown.run('startup', () => startServeCommand(root, options, shutdown))
+        const started = await shutdown.run('startup', async () => {
+          const { startServeCommand } = await import('./startup')
+          return startServeCommand(root, options, shutdown)
+        })
         if (started?.waitForExit) {
           await Promise.race([shutdown.signal, started.waitForExit()])
         }

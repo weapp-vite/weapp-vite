@@ -168,6 +168,25 @@ describe('template expression globals', () => {
     expect(shouldFallbackToRuntimeBinding('messages?.t(\'common.title\')', safeCalls)).toBe(true)
   })
 
+  it('still distinguishes shadowed props after syntax-only normalization', () => {
+    const safeCalls = new Set(['translate'])
+    const context = { ...createContext(), scriptSetupPropConflicts: ['value'] }
+
+    expect(shouldFallbackToRuntimeBinding('translate((value: string) => value)', safeCalls, context)).toBe(false)
+    expect(shouldFallbackToRuntimeBinding('translate((other: string) => value)', safeCalls, context)).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('translate(value)', safeCalls, { ...context, scopeStack: [new Set(['value'])] })).toBe(false)
+    expect(shouldFallbackToRuntimeBinding('translate(value)', safeCalls, { ...context, slotPropStack: [{ value: 'label' }] })).toBe(false)
+  })
+
+  it('keeps local bindings when rewriting typed callbacks', () => {
+    const result = normalizeJsExpressionWithContext('(value: string) => value + external', createContext(), {
+      runtimePropAccess: 'helper',
+    })
+    const code = result && generateExpression(result)
+
+    expect(code).toBe('value=>value+__wevuUnref(__wevuResolvePropValue(this,\'external\',this.external))')
+  })
+
   it('preserves vue slot metadata in scoped-slot expressions', () => {
     const context = createContext()
     context.rewriteScopedSlot = true

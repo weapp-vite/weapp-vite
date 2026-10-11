@@ -1,9 +1,7 @@
 import type { CAC } from 'cac'
 import type { GlobalCLIOptions } from '../types'
 import path from 'pathe'
-import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
-import { syncProjectSupportFiles } from '../../runtime/supportFiles'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 
 function resolvePrepareRoot(input: string[] | undefined) {
@@ -34,6 +32,10 @@ export function registerPrepareCommand(cli: CAC) {
     .option('-p, --platform <platform>', `[string] target platform (weapp | web)`)
     .action(async (input: string[] | undefined, options: GlobalCLIOptions) => {
       try {
+        const [{ createCompilerContext }, { syncProjectSupportFiles }] = await Promise.all([
+          import('../../createContext'),
+          import('../../runtime/supportFiles'),
+        ])
         filterDuplicateOptions(options)
         const cwd = path.resolve(resolvePrepareRoot(input))
         const cliPlatform = resolvePreparePlatform(options)

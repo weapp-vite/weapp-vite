@@ -37,6 +37,29 @@ afterEach(async () => {
 })
 
 describe('compiler native result validation', () => {
+  it.each([null, [], { warningOffset: -1 }, { warningOffset: 0.5 }, { warningOffset: 1 }, { warningOffset: 1000 }, { warningOffset: '2' }])(
+    'rejects malformed reserved props diagnostic %j while preserving neighboring summaries',
+    async (diagnostic) => {
+      const { native, observation } = await fixture(`exports.analyzeCompilerScriptsNative = () => [valid, { ...valid, reservedPropsDiagnostic: ${JSON.stringify(diagnostic)} }, valid]`)
+      const { value, stats } = await observation.observeNativeAnalysis(() => native.analyzeCompilerScriptsWithNative(
+        Array.from({ length: 3 }, () => ({ code: '😀; defineProps(["id"])' })),
+      ))
+      expect(value).toEqual([valid, null, valid])
+      expect(stats).toMatchObject({ bindingCalls: 1, fallbacks: 1 })
+    },
+  )
+
+  it('accepts old bindings, completed negative diagnostics and UTF-16 warning offsets', async () => {
+    const code = 'const emoji = "😀"; defineProps(["id"])'
+    const diagnostic = { warningOffset: code.indexOf('defineProps') }
+    const { native, observation } = await fixture(`exports.analyzeCompilerScriptsNative = () => [valid, { ...valid, reservedPropsDiagnostic: {} }, { ...valid, reservedPropsDiagnostic: ${JSON.stringify(diagnostic)} }]`)
+    const { value, stats } = await observation.observeNativeAnalysis(() => native.analyzeCompilerScriptsWithNative(
+      Array.from({ length: 3 }, () => ({ code })),
+    ))
+    expect(value).toEqual([valid, { ...valid, reservedPropsDiagnostic: {} }, { ...valid, reservedPropsDiagnostic: diagnostic }])
+    expect(stats).toMatchObject({ bindingCalls: 1, fallbacks: 0 })
+  })
+
   it('keeps valid neighboring items and counts every failed item once', async () => {
     const { native, observation } = await fixture('exports.analyzeCompilerScriptsNative = () => [valid, null, { ...valid, imports: [null] }, valid]')
     const { value, stats } = await observation.observeNativeAnalysis(() => native.analyzeCompilerScriptsWithNative(

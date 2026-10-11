@@ -1,6 +1,4 @@
-import { dispatchWechatCliCommand, isWeappIdeTopLevelCommand } from 'weapp-ide-cli'
 import logger from '../logger'
-import { executeWechatIdeCliCommand } from './openIde/execute'
 
 const WEAPP_VITE_NATIVE_COMMANDS = new Set([
   'dev',
@@ -118,8 +116,10 @@ export async function tryRunIdeCommand(argv: string[]) {
     if (argv[1] === 'logs' || argv[1] === 'doctor' || argv[1] === '--help' || argv[1] === '-h') {
       return false
     }
+    const { dispatchWechatCliCommand } = await import('weapp-ide-cli')
     const handledByHelper = await dispatchWechatCliCommand(argv.slice(1))
     if (!handledByHelper) {
+      const { executeWechatIdeCliCommand } = await import('./openIde/execute')
       await executeWechatIdeCliCommand(argv.slice(1))
     }
     return true
@@ -131,18 +131,27 @@ export async function tryRunIdeCommand(argv: string[]) {
 
   if (command === 'help') {
     const target = argv[1]
-    if (!target || (target !== 'upload' && WEAPP_VITE_NATIVE_COMMANDS.has(target)) || !isWeappIdeTopLevelCommand(target)) {
+    if (!target || (target !== 'upload' && WEAPP_VITE_NATIVE_COMMANDS.has(target))) {
+      return false
+    }
+    const { isWeappIdeTopLevelCommand } = await import('weapp-ide-cli')
+    if (!isWeappIdeTopLevelCommand(target)) {
       return false
     }
     if (target === 'upload') {
       warnLegacyUpload()
     }
+    const { executeWechatIdeCliCommand } = await import('./openIde/execute')
     await executeWechatIdeCliCommand(argv)
     return true
   }
 
   const legacyUpload = command === 'upload' && isLegacyUploadInvocation(argv)
-  if ((!legacyUpload && WEAPP_VITE_NATIVE_COMMANDS.has(command)) || !isWeappIdeTopLevelCommand(command)) {
+  if (!legacyUpload && WEAPP_VITE_NATIVE_COMMANDS.has(command)) {
+    return false
+  }
+  const { dispatchWechatCliCommand, isWeappIdeTopLevelCommand } = await import('weapp-ide-cli')
+  if (!isWeappIdeTopLevelCommand(command)) {
     return false
   }
   if (legacyUpload) {
@@ -151,6 +160,7 @@ export async function tryRunIdeCommand(argv: string[]) {
 
   const handledByHelper = await dispatchWechatCliCommand(argv)
   if (!handledByHelper) {
+    const { executeWechatIdeCliCommand } = await import('./openIde/execute')
     await executeWechatIdeCliCommand(argv)
   }
   return true

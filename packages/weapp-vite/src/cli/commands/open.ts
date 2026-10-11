@@ -1,16 +1,8 @@
 import type { CAC } from 'cac'
 import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
-import { withWechatDevtoolsSelection } from 'weapp-ide-cli'
-import { detectAiDevelopmentEnvironment } from '../../aiEnvironment'
-import { getBackendForCapability } from '../../backends'
 import logger from '../../logger'
-import { readLatestHmrProfileSummary } from '../hmrProfileSummary'
-import { maybeStartDetachedMcpServer } from '../mcpDetached'
-import { applyMcpCliOptions } from '../mcpOptions'
-import { openIde, resolveIdeCommandContext, resolveIdeProjectRoot } from '../openIde'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
-import { resolveRuntimeTargets } from '../runtime'
 
 export function registerOpenCommand(cli: CAC) {
   cli
@@ -25,6 +17,14 @@ export function registerOpenCommand(cli: CAC) {
     .option('--mcp', '[boolean] auto start MCP service before opening IDE')
     .option('--no-mcp', '[boolean] disable MCP service before opening IDE')
     .action(async (root: string | undefined, options: GlobalCLIOptions) => {
+      const { withWechatDevtoolsSelection } = await import('weapp-ide-cli')
+      const { detectAiDevelopmentEnvironment } = await import('../../aiEnvironment')
+      const { getBackendForCapability } = await import('../../backends')
+      const { readLatestHmrProfileSummary } = await import('../hmrProfileSummary')
+      const { maybeStartDetachedMcpServer } = await import('../mcpDetached')
+      const { applyMcpCliOptions } = await import('../mcpOptions')
+      const { openIde, resolveIdeCommandContext, resolveIdeProjectRoot } = await import('../openIde')
+      const { resolveRuntimeTargets } = await import('../runtime')
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)

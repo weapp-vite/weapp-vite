@@ -112,14 +112,11 @@ class MockWatcher extends EventEmitter {
 }
 
 async function waitForStartDevHotkeys() {
-  for (let index = 0; index < 10; index++) {
+  return vi.waitFor(() => {
     const options = startDevHotkeysMock.mock.calls[0]?.[0]
-    if (options) {
-      return options
-    }
-    await Promise.resolve()
-  }
-  return undefined
+    expect(options).toBeDefined()
+    return options
+  })
 }
 
 function createAnalyzeTestContext(): CompilerContext {
@@ -252,6 +249,7 @@ describe('serve cli command', () => {
     buildServiceBuildMock.mockReset()
     buildServiceBuildMock.mockResolvedValue({})
     createCompilerContextMock
+      .mockReset()
       .mockResolvedValueOnce({
         buildService: {
           build: buildServiceBuildMock,
@@ -310,9 +308,25 @@ describe('serve cli command', () => {
     fakeProcess.removeAllListeners()
   })
 
-  it('cancels before the initial build and releases the acquired context backend', async () => {
+  it('cancels while loading startup without acquiring a compiler context', async () => {
     const action = createServeActionHandler()('/project', { ui: true, open: true })
     fakeProcess.emit('SIGINT')
+    await action
+    expect(createCompilerContextMock).not.toHaveBeenCalled()
+    expect(buildServiceBuildMock).not.toHaveBeenCalled()
+    expect(watcherCloseAllMock).not.toHaveBeenCalled()
+    expect(fakeProcess.listenerCount('SIGINT')).toBe(0)
+  })
+
+  it('cancels before the initial build and releases the acquired context backend', async () => {
+    createCompilerContextMock.mockReset().mockImplementationOnce(async () => {
+      fakeProcess.emit('SIGINT')
+      return {
+        ...createAnalyzeTestContext(),
+        watcherService: { closeAll: watcherCloseAllMock },
+      }
+    })
+    const action = createServeActionHandler()('/project', { ui: true, open: true })
     await action
     expect(buildServiceBuildMock).not.toHaveBeenCalled()
     expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
@@ -683,6 +697,7 @@ describe('serve cli command', () => {
     buildServiceBuildMock.mockResolvedValue(watcher)
     createCompilerContextMock.mockReset()
     createCompilerContextMock
+      .mockReset()
       .mockResolvedValueOnce({
         buildService: {
           build: buildServiceBuildMock,
@@ -943,7 +958,7 @@ describe('serve cli command', () => {
       platform: 'weapp',
     })
 
-    await Promise.resolve()
+    await vi.waitFor(() => expect(createCompilerContextMock).toHaveBeenCalled())
     fakeProcess.emit('SIGINT')
     await actionPromise
 
@@ -1137,6 +1152,7 @@ describe('serve cli command', () => {
   })
 
   it('injects rebuild and reopen callbacks into dev hotkeys session', async () => {
+    isUiEnabledMock.mockReturnValueOnce(false)
     const action = createServeActionHandler()
 
     const actionPromise = action('/project', {
@@ -1179,6 +1195,7 @@ describe('serve cli command', () => {
   })
 
   it('reuses resolved ide project root for hotkeys compile target and reopen callback', async () => {
+    isUiEnabledMock.mockReturnValueOnce(false)
     resolveIdeProjectRootMock.mockReturnValue('/project/ide-root')
     createCompilerContextMock.mockReset()
     createCompilerContextMock.mockResolvedValueOnce({

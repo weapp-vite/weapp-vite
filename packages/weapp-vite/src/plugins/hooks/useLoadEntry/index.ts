@@ -6,6 +6,7 @@ import { fs } from '@weapp-core/shared/fs'
 import { supportedCssLangs, vueExtensions } from '../../../constants'
 import { createDebugger } from '../../../debugger'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
+import { takeEntryPreparation } from '../../../runtime/buildPlugin/entryPreparation'
 import { prepareIndependentOutputs } from '../../../runtime/buildPlugin/independentPlan'
 import { resetEmittedOutputCaches } from '../../../runtime/buildPlugin/outputs'
 import { changeFileExtension } from '../../../utils'
@@ -580,6 +581,7 @@ export function useLoadEntry(
       entryChunkLifecycle.beginBuild()
       ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = false
       if (!options?.isSubPackage && (ctx.runtimeState.build.hmr.fullEntryScan || (this.meta?.watchMode && !ctx.configService.isDev)) && buildTarget === 'app' && !ctx.configService.weappLibConfig?.enabled) {
+        const preparedApp = takeEntryPreparation(loadEntry, ctx)
         // 生产 watch 每轮发布完整目标；模块转换缓存与产物元数据的所有权分开处理。
         resetEmittedOutputCaches(ctx.runtimeState)
         ctx.runtimeState.css.sidecarImports.clear()
@@ -604,10 +606,13 @@ export function useLoadEntry(
           entriesMap.clear()
           ctx.runtimeState.wxml.tokenMap.clear()
         }
-        ctx.autoRoutesService?.markDirty()
-        ctx.scanService.markDirty()
-        const app = await ctx.scanService.loadAppEntry()
-        await prepareIndependentOutputs(ctx)
+        let app = preparedApp
+        if (!app) {
+          ctx.autoRoutesService?.markDirty()
+          ctx.scanService.markDirty()
+          app = await ctx.scanService.loadAppEntry()
+          await prepareIndependentOutputs(ctx)
+        }
         await loadEntry.call(this, app.path, 'app')
         options?.hmr?.setDidEmitAllEntries?.(true)
         options?.hmr?.setSkipSharedChunkRefresh?.(false)

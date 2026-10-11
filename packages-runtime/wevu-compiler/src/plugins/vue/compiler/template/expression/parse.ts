@@ -50,6 +50,8 @@ function stripPatternTypes(node: any) {
 
 function stripTypeScriptExpression(ast: BabelFile) {
   traverse(ast, {
+    // 此遍历只移除语法，不读取绑定；作用域由后续语义遍历按需建立。
+    noScope: true,
     TSAsExpression(path: any) {
       path.replaceWith(path.node.expression)
     },

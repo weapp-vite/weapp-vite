@@ -1,9 +1,17 @@
 import * as t from '@weapp-vite/ast/babelTypes'
+import { LRUCache } from 'lru-cache'
 import { parse as babelParse, traverse } from '../../../../../utils/babel'
 import { canonicalizeNumericLiteral, hasExtendedNumericLiteralSyntax, normalizeTopLevelBigInt } from './numeric'
 import { generateExpression } from './parse'
 
 type OptionalChainNode = t.OptionalMemberExpression | t.OptionalCallExpression
+
+// 仅缓存与上下文无关的最终字符串，不跨调用共享可变 AST 或作用域。
+const normalizedExpressionCache = new LRUCache<string, string>({
+  max: 1024,
+  maxSize: 1024 * 1024,
+  sizeCalculation: (value, key) => 2 * (value.length + key.length),
+})
 
 type OptionalChainOperation
   = | {
@@ -133,6 +141,7 @@ const TRAILING_EMPTY_CONCAT_RE = /\s*\+\s*''\s*$/g
 
 function rewriteVueSlotsExpression(ast: ReturnType<typeof babelParse>) {
   traverse(ast, {
+    noScope: true,
     MemberExpression: {
       exit(path) {
         const node = path.node
@@ -182,19 +191,7 @@ function rewriteVueSlotsExpression(ast: ReturnType<typeof babelParse>) {
   })
 }
 
-export function normalizeWxmlExpression(exp: string): string {
-  const hasTypeScriptSyntax = (
-    /\s(?:as|satisfies)\s/.test(exp)
-    || /[\w$)\]]!(?=[.[\s,);:?]|$)/.test(exp)
-    || /^\s*<[^>]+>/.test(exp)
-  )
-  const needsVueSlotsRewrite = exp.includes('$slots')
-  const needsThisRewrite = /\bthis\./.test(exp)
-  const needsNumericLiteralRewrite = hasExtendedNumericLiteralSyntax(exp)
-  if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.') && !hasTypeScriptSyntax && !needsVueSlotsRewrite && !needsThisRewrite && !needsNumericLiteralRewrite) {
-    return exp
-  }
-
+function normalizeExpressionSyntax(exp: string, needsVueSlotsRewrite: boolean): string {
   try {
     const ast = babelParse(`(${exp})`, {
       sourceType: 'module',
@@ -213,6 +210,7 @@ export function normalizeWxmlExpression(exp: string): string {
     expressionStatement.expression = normalizeTopLevelBigInt(expressionStatement.expression)
 
     traverse(ast, {
+      noScope: true,
       MemberExpression: {
         exit(path) {
           const node = path.node
@@ -286,4 +284,26 @@ export function normalizeWxmlExpression(exp: string): string {
 
     return exp
   }
+}
+
+export function normalizeWxmlExpression(exp: string): string {
+  const hasTypeScriptSyntax = (
+    /\s(?:as|satisfies)\s/.test(exp)
+    || /[\w$)\]]!(?=[.[\s,);:?]|$)/.test(exp)
+    || /^\s*<[^>]+>/.test(exp)
+  )
+  const needsVueSlotsRewrite = exp.includes('$slots')
+  const needsThisRewrite = /\bthis\./.test(exp)
+  const needsNumericLiteralRewrite = hasExtendedNumericLiteralSyntax(exp)
+  if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.') && !hasTypeScriptSyntax && !needsVueSlotsRewrite && !needsThisRewrite && !needsNumericLiteralRewrite) {
+    return exp
+  }
+
+  const cached = normalizedExpressionCache.get(exp)
+  if (cached !== undefined) {
+    return cached
+  }
+  const normalized = normalizeExpressionSyntax(exp, needsVueSlotsRewrite)
+  normalizedExpressionCache.set(exp, normalized)
+  return normalized
 }

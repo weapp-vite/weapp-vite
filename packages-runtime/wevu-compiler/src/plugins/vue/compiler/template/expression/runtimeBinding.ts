@@ -40,10 +40,10 @@ export function shouldFallbackToRuntimeBinding(
   if (!trimmed) {
     return false
   }
-  if (hasWxmlParenthesizedMemberAccess(trimmed)) {
+  const normalized = normalizeWxmlExpression(trimmed)
+  if (WXML_PARENTHESIZED_MEMBER_RE.test(normalized)) {
     return true
   }
-  const normalized = normalizeWxmlExpression(trimmed)
   const parsed = parseBabelExpressionFile(normalized)
   if (!parsed) {
     return false
@@ -51,6 +51,8 @@ export function shouldFallbackToRuntimeBinding(
 
   let shouldFallback = false
   const visitor: Parameters<typeof traverse>[1] = {
+    // 仅在 props 冲突检查需要区分局部绑定时构建作用域。
+    noScope: !context?.scriptSetupPropConflicts?.length,
     CallExpression(path) {
       if (
         path.node.callee.type === 'Identifier'

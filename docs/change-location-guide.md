@@ -38,9 +38,9 @@
 | 需求场景               | 首查文件                                                 | 第二落点                                                           | 典型改动点                      |
 | ---------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------- |
 | 新增 CLI 子命令        | `packages/weapp-vite/src/cli.ts`                         | `packages/weapp-vite/src/cli/commands/*`                           | 注册命令 + option + action      |
-| 修改 `build` 行为      | `packages/weapp-vite/src/cli/commands/build.ts`          | `packages/weapp-vite/src/runtime/buildPlugin/service.ts`           | build 流程、参数透传、日志      |
+| 修改 `build` 行为      | `packages/weapp-vite/src/cli/commands/build/index.ts`          | `packages/weapp-vite/src/runtime/buildPlugin/service.ts`           | build 流程、参数透传、日志      |
 | 修改 `dev/serve` 行为  | `packages/weapp-vite/src/cli/commands/serve.ts`          | `packages/weapp-vite/src/runtime/buildPlugin/service.ts`           | watch 分支、host、分析面板      |
-| 平台 `-p` 路由策略调整 | `packages/weapp-vite/src/cli/runtime.ts`                 | `packages/weapp-vite/src/cli/commands/build.ts`                    | mini/web 分流与 inlineConfig    |
+| 平台 `-p` 路由策略调整 | `packages/weapp-vite/src/cli/runtime.ts`                 | `packages/weapp-vite/src/cli/commands/build/index.ts`                    | mini/web 分流与 inlineConfig    |
 | 新增/调整配置项        | `packages/weapp-vite/src/config.ts`                      | `packages/weapp-vite/src/runtime/config/*`                         | defineConfig 类型 + load/merge  |
 | 插件顺序异常           | `packages/weapp-vite/src/plugins/index.ts`               | `packages/weapp-vite/src/runtime/config/internal/merge/plugins.ts` | plugin 组合顺序与插入点         |
 | 分包共享 chunk 异常    | `packages/weapp-vite/src/runtime/sharedBuildConfig.ts`   | `packages/weapp-vite/src/runtime/chunkStrategy/*`                  | sharedStrategy/sharedMode       |
@@ -62,7 +62,7 @@
 
 ## 4.1 “新增一个 CLI 参数，并影响构建行为”
 
-1. 在 `packages/weapp-vite/src/cli/commands/build.ts` 增加 `.option()` 与读取逻辑。
+1. 在 `packages/weapp-vite/src/cli/commands/build/index.ts` 增加 `.option()`，在同目录 `action.ts` 读取并执行。
 2. 将参数传给 `buildService.build(options)`（必要时扩展 `BuildOptions`）。
 3. 在 `packages/weapp-vite/src/runtime/buildPlugin/service.ts` 实施行为。
 4. 若属于配置能力，补到 `runtime/config/*`，避免 CLI-only 硬编码。

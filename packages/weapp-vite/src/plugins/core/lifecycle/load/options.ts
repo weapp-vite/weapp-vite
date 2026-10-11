@@ -8,6 +8,7 @@ import path from 'pathe'
 import { createLogicalEntryId } from '../../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../../moduleGraph/traversal'
 import { getSelectedAutoRouteSource } from '../../../../runtime/autoRoutesPlugin/selection'
+import { beginEntryPreparation, captureEntryPreparation, captureEntryPreparationOwnership, isEntryPreparationOwnershipCurrent, recordEntryPreparation } from '../../../../runtime/buildPlugin/entryPreparation'
 import { prepareIndependentOutputs } from '../../../../runtime/buildPlugin/independentPlan'
 import { resolveWeappLibEntries } from '../../../../runtime/lib'
 import { findJsEntry, findVueEntry, normalizeAppJson } from '../../../../utils'
@@ -195,6 +196,16 @@ export function createOptionsHook(state: CorePluginState) {
   const { scanService, configService } = ctx
 
   return async function options(this: any, options: any) {
+    const generation = beginEntryPreparation(state.loadEntry)
+    const fullEntryScan = !subPackageMeta && state.buildTarget === 'app'
+      && !configService.weappLibConfig?.enabled && ctx.runtimeState.build.hmr?.fullEntryScan
+    let preparation: ReturnType<typeof captureEntryPreparation>
+    const ownership = fullEntryScan ? captureEntryPreparationOwnership(ctx) : undefined
+    if (fullEntryScan) {
+      // input 与后续完整入口发射消费同一代际，先在 options 统一刷新扫描所有权。
+      ctx.autoRoutesService?.markDirty()
+      scanService.markDirty()
+    }
     if (this) {
       ctx.moduleGraphService?.bindPluginContext(state, this)
     }
@@ -261,7 +272,10 @@ export function createOptionsHook(state: CorePluginState) {
           scanService.loadSubPackages()
         }
         else {
-          await prepareIndependentOutputs(ctx)
+          const succeeded = await prepareIndependentOutputs(ctx)
+          if (fullEntryScan && succeeded && ownership && isEntryPreparationOwnershipCurrent(ctx, ownership)) {
+            preparation = captureEntryPreparation(ctx, ownership)
+          }
         }
         scannedInput = await collectMainLogicalInputs(state, appEntry)
       }
@@ -299,5 +313,6 @@ export function createOptionsHook(state: CorePluginState) {
       }
     }
     options.input = logicalInput
+    recordEntryPreparation(state.loadEntry, generation, preparation)
   }
 }

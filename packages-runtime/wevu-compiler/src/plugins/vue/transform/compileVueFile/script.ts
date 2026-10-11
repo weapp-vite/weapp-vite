@@ -304,7 +304,7 @@ export async function compileScriptPhase(
     warnReservedScriptSetupProps(descriptorForCompile.scriptSetup?.content, options?.warn, {
       filename,
       scriptSetupStart: descriptorForCompile.scriptSetup?.loc.start,
-    })
+    }, nativeScriptAnalysis?.scriptSetup?.reservedPropsDiagnostic)
     if (!propsAliases && hasPrecomputedScriptPhaseInfo(precomputedScriptPhaseInfo, 'propsAliases')) {
       propsAliases = precomputedScriptPhaseInfo.propsAliases
     }

@@ -2,7 +2,6 @@ import type { GlobalCLIOptions } from './cli/types'
 import process from 'node:process'
 import { cac } from 'cac'
 import path from 'pathe'
-import { withWechatDevtoolsSelectionArgs } from 'weapp-ide-cli'
 import { registerAcceptCommand } from './cli/commands/accept'
 import { registerAlipayCommand } from './cli/commands/alipay'
 import { registerAnalyzeCommand } from './cli/commands/analyze'
@@ -18,12 +17,11 @@ import { registerOpenCommand } from './cli/commands/open'
 import { registerPrepareCommand } from './cli/commands/prepare'
 import { registerServeCommand } from './cli/commands/serve'
 import { registerPreviewCommand, registerUploadCommand } from './cli/commands/upload'
+import { withWechatDevtoolsSelectionArgs } from './cli/devtoolsSelection'
 import { handleCLIError } from './cli/error'
 import { tryRunIdeCommand } from './cli/ide'
-import { maybeAutoStartMcpServer } from './cli/mcpAutoStart'
 import { convertBase, parseDashboardUiHost } from './cli/options'
 import { handlePrepareLifecycleError } from './cli/prepareGuard'
-import { outputUploadReport } from './cli/upload/report'
 import { VERSION } from './constants'
 import { syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
 
@@ -116,6 +114,7 @@ try {
         }
         // 仅为未显式命名的默认入口预启动；dev/serve 自管生命周期，其他命令不得提前求值配置。
         if (cli.matchedCommand?.name === '' && cli.matchedCommandName === undefined) {
+          const { maybeAutoStartMcpServer } = await import('./cli/mcpAutoStart')
           await maybeAutoStartMcpServer(args, cli.options as GlobalCLIOptions)
         }
         return cli.runMatchedCommand()
@@ -123,6 +122,7 @@ try {
       if (cli.matchedCommand?.name === 'upload') {
         const json = Array.isArray(cli.options.json) ? cli.options.json.at(-1) : cli.options.json
         // 在 CAC 校验必填值和未知选项前接管输出，启动失败也必须产生报告。
+        const { outputUploadReport } = await import('./cli/upload/report')
         await outputUploadReport(json === true, runCommand)
         scheduleCompletedProductionBuildExit({}, undefined)
       }

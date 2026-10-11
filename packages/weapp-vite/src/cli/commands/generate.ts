@@ -3,8 +3,6 @@ import type { CAC } from 'cac'
 import type { GlobalCLIOptions } from '../types'
 import path from 'pathe'
 import logger from '../../logger'
-import { generate } from '../../schematics'
-import { loadConfig } from '../loadConfig'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 
 interface GenerateCommandOptions extends GlobalCLIOptions {
@@ -21,6 +19,8 @@ export function registerGenerateCommand(cli: CAC) {
     .option('-p, --page', 'type app')
     .option('-n, --name <name>', 'filename')
     .action(async (filepath: string, options: GenerateCommandOptions) => {
+      const { generate } = await import('../../schematics')
+      const { loadConfig } = await import('../loadConfig')
       filterDuplicateOptions(options)
       const config = await loadConfig(resolveConfigFile(options))
       let type: GenerateType = 'component'

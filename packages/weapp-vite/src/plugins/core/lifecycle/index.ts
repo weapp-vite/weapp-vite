@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite'
 import type { CorePluginState } from '../helpers'
 import { parseSidecarSourceRequest } from '../../../moduleGraph/protocol'
+import { clearEntryPreparation } from '../../../runtime/buildPlugin/entryPreparation'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 import { createBuildEndHook } from './end'
 import { createLoadHook, createOptionsHook } from './load'
@@ -18,6 +19,7 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
   let releaseServer: (() => void) | undefined
 
   const releaseScope = () => {
+    clearEntryPreparation(state.loadEntry)
     // scope 属于本插件实例；不同 hook 的 JS context 身份不能作为构建存活凭据。
     state.ctx.moduleGraphService.unbindBuildContext(state)
     releaseServer?.()
@@ -55,6 +57,7 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     renderStart: createRenderStartHook(state),
     generateBundle: createGenerateBundleHook(state, isPluginBuild),
     async buildEnd() {
+      clearEntryPreparation(state.loadEntry)
       state.entryChunkLifecycle?.endBuild()
       return await buildEnd.call(this)
     },

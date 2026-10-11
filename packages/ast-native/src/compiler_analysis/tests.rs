@@ -181,6 +181,7 @@ fn compiler_parse_counts_are_isolated_between_simultaneous_threads() {
 #[test]
 fn compiler_batch_reuses_parse_but_specializes_feature_results() {
     SCRIPT_PARSE_COUNT.set(0);
+    COMPILER_ANALYSIS_COUNT.set(0);
     let code = "import { onLoad } from 'wevu'; onLoad(() => wx.request())";
     let results = analyze_compiler_scripts_native(vec![
         NativeCompilerScriptInput {
@@ -198,9 +199,100 @@ fn compiler_batch_reuses_parse_but_specializes_feature_results() {
     ]);
 
     assert_eq!(SCRIPT_PARSE_COUNT.get(), 1);
+    assert_eq!(COMPILER_ANALYSIS_COUNT.get(), 2);
     let first = results[0].as_ref().expect("first item should parse");
     let second = results[1].as_ref().expect("second item should parse");
     assert_eq!(first.feature_flags, vec!["load"]);
     assert_eq!(second.feature_flags, vec!["alternate"]);
     assert_eq!(first.imports, second.imports);
+}
+
+#[test]
+fn compiler_batch_reuses_complete_analysis_for_identical_requests() {
+    SCRIPT_PARSE_COUNT.set(0);
+    COMPILER_ANALYSIS_COUNT.set(0);
+    let code = "defineOptions({ name: 'Card' }); defineProps({ id: String })";
+    let results = analyze_compiler_scripts_native(vec![
+        input(code, "card.ts"),
+        input(code, "card.ts"),
+        input(code, "card.ts"),
+    ]);
+    assert_eq!(SCRIPT_PARSE_COUNT.get(), 1);
+    assert_eq!(COMPILER_ANALYSIS_COUNT.get(), 1);
+    for result in results {
+        let result = result.unwrap();
+        assert_eq!(result.define_options_name.as_deref(), Some("Card"));
+        assert_eq!(
+            result.reserved_props_diagnostic.unwrap().warning_offset,
+            Some(code.find("defineProps").unwrap() as u32)
+        );
+    }
+}
+
+#[test]
+fn compiler_reserved_props_preserves_runtime_diagnostics_and_utf16_offsets() {
+    for code in [
+        "defineProps({ id: String })",
+        "defineProps(['class'])",
+        "defineProps([('slot')])",
+        "(defineProps)(({ slot: String }))",
+        "const emoji = '😀';\r\ndefineProps({ class: String }); defineProps(['id'])",
+    ] {
+        let result = analyze_compiler_scripts_native(vec![input(code, "card.ts")]);
+        let expected = if code.starts_with('(') {
+            0
+        } else {
+            code.find("defineProps").unwrap()
+        };
+        assert_eq!(
+            result[0]
+                .as_ref()
+                .unwrap()
+                .reserved_props_diagnostic
+                .as_ref()
+                .unwrap()
+                .warning_offset,
+            Some(code[..expected].encode_utf16().count() as u32),
+            "{code}",
+        );
+    }
+    for code in [
+        "const safe = 1",
+        "defineProps({ title: String, ['id']: String, get slot() { return '' }, class() {} })",
+        "defineProps(['title', ...rest])",
+        "defineProps?.(['id'])",
+        "defineProps({ id: String } as object)",
+    ] {
+        let result = analyze_compiler_scripts_native(vec![input(code, "card.ts")]);
+        assert_eq!(
+            result[0]
+                .as_ref()
+                .unwrap()
+                .reserved_props_diagnostic
+                .as_ref()
+                .unwrap()
+                .warning_offset,
+            None,
+            "{code}"
+        );
+    }
+}
+
+#[test]
+fn compiler_reserved_props_leaves_type_diagnostics_to_babel() {
+    for code in [
+        "defineProps<{ id: string }>()",
+        "interface Props { class: string }; defineProps<Props>()",
+        "type Props = { slot: string } & Other; withDefaults(defineProps<Props>(), {})",
+    ] {
+        let result = analyze_compiler_scripts_native(vec![input(code, "card.ts")]);
+        assert!(
+            result[0]
+                .as_ref()
+                .unwrap()
+                .reserved_props_diagnostic
+                .is_none(),
+            "{code}"
+        );
+    }
 }

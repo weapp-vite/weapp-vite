@@ -62,6 +62,8 @@ export interface NativeCompilerScriptAnalysis {
   hasStaticRequireLiteral: boolean
   hasPlatformApiAccess: boolean
   featureFlags: string[]
+  /** 缺失表示旧 binding 或需由 Babel 完成诊断；空对象表示已确认无警告。 */
+  reservedPropsDiagnostic?: { warningOffset?: number }
 }
 
 export interface NativeAstBinding {
