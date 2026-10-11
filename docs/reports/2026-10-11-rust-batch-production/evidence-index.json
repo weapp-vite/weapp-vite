@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "native": {
+    "file": "native-paired.json",
+    "bytes": 2467000,
+    "sha256": "30a56cc89edbffd3211965a531eeffe0dcee9c9d5ef080b818aba1732acec291",
+    "sourceBytes": 214838824,
+    "sourceSha256": "a06e2f6fe98f971860723a5aaaa76517540b6e26733c16a451cfc497448461ff",
+    "sanitizedFields": [],
+    "encoding": "Lossless base+delta manifests and output references; restores all original report fields and files order.",
+    "verification": "Serialized compact JSON roundtrip deep equality and original/restored complete evaluateRuns verdict equality passed.",
+    "performanceStatus": "regression",
+    "decoder": "replay.mts"
+  },
+  "summaries": [
+    {
+      "file": "compiler-batch.json",
+      "sourceRunId": "compiler-batch-full-20261011",
+      "bytes": 492556,
+      "sha256": "6e25594fe5f14d67866063aebc26dbe9643be1a9d7b7933f93061310dde9e1c3",
+      "sourceSha256": "6e25594fe5f14d67866063aebc26dbe9643be1a9d7b7933f93061310dde9e1c3",
+      "byteIdenticalToSource": true,
+      "sanitizedFields": [],
+      "scope": "40 paired warm production compiler measurements; includes all regressions.",
+      "completedPairs": 40,
+      "status": "complete",
+      "comparisonPassed": null
+    },
+    {
+      "file": "compiler-final-check.json",
+      "sourceRunId": "compiler-batch-final-check-20261011",
+      "bytes": 291769,
+      "sha256": "ff0c53a87e0dc8e3f2033eaecd5c7f17b59261a99715af360a576401234e447e",
+      "sourceSha256": "ff0c53a87e0dc8e3f2033eaecd5c7f17b59261a99715af360a576401234e447e",
+      "byteIdenticalToSource": true,
+      "sanitizedFields": [],
+      "scope": "Post-sampling correctness only, after sparse-array validation fix and rebuild; zero performance pairs. Source identity hashes differ from sampled code despite a potentially shared recorded commit.",
+      "completedPairs": 0,
+      "status": "complete",
+      "comparisonPassed": null
+    },
+    {
+      "file": "script-semantic.json",
+      "sourceRunId": "script-semantic-20261011-r2",
+      "bytes": 192548,
+      "sha256": "7f0f4aa5c5b3da3f941fcacbae650cccbf14c39bdaa3fb35151a1ac52892a403",
+      "sourceSha256": "7f0f4aa5c5b3da3f941fcacbae650cccbf14c39bdaa3fb35151a1ac52892a403",
+      "byteIdenticalToSource": true,
+      "sanitizedFields": [],
+      "scope": "Controlled full-script semantic observations; strict compiler comparison and combined comparison remain failed.",
+      "completedPairs": null,
+      "status": null,
+      "comparisonPassed": false
+    },
+    {
+      "file": "script-compiler.json",
+      "sourceRunId": "script-semantic-20261011-r2/compiler",
+      "bytes": 481700,
+      "sha256": "d8b0f2e1cc1a9b9bb7a72abc90f95aef9861e140e8b5b337f25ac7dce279e3f8",
+      "sourceSha256": "d8b0f2e1cc1a9b9bb7a72abc90f95aef9861e140e8b5b337f25ac7dce279e3f8",
+      "byteIdenticalToSource": true,
+      "sanitizedFields": [],
+      "scope": "Full compiler and stage comparisons for the old experimental Rust transform; all failures and fallback evidence retained.",
+      "completedPairs": null,
+      "status": null,
+      "comparisonPassed": false
+    }
+  ],
+  "privacyBoundary": "Only the pre-existing shareable summary JSON files are copied. Raw requests, source/output captures, binary worker snapshots, child logs and error stacks remain private. No field or unfavorable result was removed or replaced in the published report data.",
+  "measurementIdentity": "The formal performance run predates the sparse-array robustness fix. compiler-final-check.json is later correctness-only evidence with zero timing pairs; use captured source/dist/addon identities, not its recorded commit alone, to distinguish it."
+}

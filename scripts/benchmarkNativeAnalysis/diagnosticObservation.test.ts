@@ -25,7 +25,10 @@ describe('native diagnostic preload', () => {
       expect(observation.processMetrics.map(metrics => metrics.phase)).toEqual(['first', 'repeat'])
       for (const metrics of observation.processMetrics) {
         expect(metrics.wallMs).toBeGreaterThan(0)
-        expect(metrics.cpuUserMs + metrics.cpuSystemMs).toBeGreaterThan(0)
+        for (const cpuMs of [metrics.cpuUserMs, metrics.cpuSystemMs]) {
+          expect(Number.isFinite(cpuMs)).toBe(true)
+          expect(cpuMs).toBeGreaterThanOrEqual(0)
+        }
         expect(metrics.gc.status).toBe('available')
       }
       const lines = (await readFile(trace, 'utf8')).trim().split('\n')
@@ -61,6 +64,11 @@ describe('native diagnostic preload', () => {
       const rows = (await readFile(trace, 'utf8')).trim().split('\n').map(line => JSON.parse(line) as Record<string, unknown>)
       const main = rows.find(row => row.kind === 'finished' && row.threadId === 0)!
       const metrics = main.metrics as Record<string, unknown>
+      // 短进程在 Windows 的 CPU 计时精度内可以没有增量，必须保留真实零观测。
+      metrics.cpuUserMs = 0
+      metrics.cpuSystemMs = 0
+      await writeFile(trace, `${rows.map(row => JSON.stringify(row)).join('\n')}\n`)
+      expect((await readDiagnosticObservation(trace, pids)).processMetrics[0]).toMatchObject({ cpuUserMs: 0, cpuSystemMs: 0 })
       metrics.gc = { status: 'unavailable', count: null, durationMs: null }
       await writeFile(trace, `${rows.map(row => JSON.stringify(row)).join('\n')}\n`)
       expect((await readDiagnosticObservation(trace, pids)).processMetrics[0]!.gc).toEqual({ status: 'unavailable', count: null, durationMs: null })

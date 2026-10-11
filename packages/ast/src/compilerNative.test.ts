@@ -46,6 +46,29 @@ describe('compiler native result validation', () => {
     expect(stats).toMatchObject({ bindingCalls: 1, batchCalls: 1, inputScripts: 4, fallbacks: 2 })
   })
 
+  it.each(['imports', 'registeredComponents', 'featureFlags'])(
+    'rejects sparse %s without discarding valid neighboring summaries',
+    async (field) => {
+      const complete = {
+        ...valid,
+        imports: [{ local: 'Card', imported: 'default', source: './card', kind: 'default', typeOnly: false }],
+        registeredComponents: [{ name: 'Card', local: 'Card' }],
+        hasDefaultExport: true,
+        featureFlags: ['onPageScroll'],
+      }
+      const { native, observation } = await fixture(`
+        const complete = ${JSON.stringify(complete)};
+        const sparse = [complete.${field}[0], , complete.${field}[0]];
+        exports.analyzeCompilerScriptsNative = () => [complete, { ...complete, ${field}: sparse }, complete];
+      `)
+      const { value, stats } = await observation.observeNativeAnalysis(() => native.analyzeCompilerScriptsWithNative(
+        Array.from({ length: 3 }, () => ({ code: 'import Card from "./card"; export default { components: { Card } }' })),
+      ))
+      expect(value).toEqual([complete, null, complete])
+      expect(stats).toMatchObject({ bindingCalls: 1, batchCalls: 1, inputScripts: 3, fallbacks: 1 })
+    },
+  )
+
   it.each([
     'exports.analyzeCompilerScriptsNative = () => { throw new Error("native failure") }',
     'exports.analyzeCompilerScriptsNative = () => [valid]',

@@ -6,6 +6,16 @@ function isUtf16Boundary(code: string, offset: number) {
   return !(before >= 0xD800 && before <= 0xDBFF && after >= 0xDC00 && after <= 0xDFFF)
 }
 
+/** 逐索引校验，避免 Array.every 跳过可选 binding 返回的空槽。 */
+function everyArrayEntry<T>(values: T[], predicate: (value: T) => boolean) {
+  for (let index = 0; index < values.length; index++) {
+    if (!Object.hasOwn(values, index) || !predicate(values[index]!)) {
+      return false
+    }
+  }
+  return true
+}
+
 /**
  * 校验可选 native binding 的摘要结构和源码范围，拒绝旧版本或不完整结果。
  */
@@ -22,14 +32,14 @@ export function isNativeCompilerScriptAnalysis(value: unknown, code: string): va
     || typeof analysis.hasPlatformApiAccess !== 'boolean'
     || (analysis.defineOptionsName !== undefined && typeof analysis.defineOptionsName !== 'string')
     || !Array.isArray(analysis.featureFlags)
-    || !analysis.featureFlags.every(flag => typeof flag === 'string')
+    || !everyArrayEntry(analysis.featureFlags, flag => typeof flag === 'string')
     || !Array.isArray(analysis.defineOptionsStatements)
   ) {
     return false
   }
   if (analysis.registeredComponents !== undefined
     && (!Array.isArray(analysis.registeredComponents)
-      || !analysis.registeredComponents.every(component => component && typeof component === 'object'
+      || !everyArrayEntry(analysis.registeredComponents, component => component && typeof component === 'object'
         && typeof component.name === 'string' && typeof component.local === 'string'))) {
     return false
   }
@@ -42,7 +52,7 @@ export function isNativeCompilerScriptAnalysis(value: unknown, code: string): va
     }
     previousEnd = span.end
   }
-  return analysis.imports.every((item) => {
+  return everyArrayEntry(analysis.imports, (item) => {
     if (!item || typeof item !== 'object') {
       return false
     }

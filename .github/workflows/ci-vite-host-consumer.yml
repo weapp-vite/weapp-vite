@@ -77,11 +77,20 @@ jobs:
           WEAPP_VITE_CONSUMER_WEB: '1'
           WEAPP_VITE_CONSUMER_EVIDENCE: .cache/consumer-evidence.json
           WEAPP_VITE_CONSUMER_DEPENDENCIES: '1'
+          WEAPP_VITE_CONSUMER_WEB_DIAGNOSTICS: ${{ matrix.os == 'ubuntu-latest' && matrix.node == '26.0.0' && '1' || '0' }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: consumer-evidence-${{ matrix.os }}-${{ matrix.node }}
           path: .cache/consumer-evidence.json
+      - name: Upload Ubuntu Node 26 Web HMR diagnostics
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.node == '26.0.0'
+        with:
+          name: consumer-web-diagnostic-${{ matrix.os }}-${{ matrix.node }}
+          path: .cache/web-consumer-diagnostic/**
+          include-hidden-files: true
+          if-no-files-found: warn
 
   dependency-compatibility:
     name: Strict dependency consumer (${{ matrix.os }} / ${{ matrix.manager }})
