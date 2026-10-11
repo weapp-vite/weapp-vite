@@ -35,6 +35,7 @@ mod script_transform;
 #[cfg(test)]
 thread_local! {
     static SCRIPT_PARSE_COUNT: Cell<usize> = const { Cell::new(0) };
+    static SCRIPT_ANALYSIS_TRAVERSE_COUNT: Cell<usize> = const { Cell::new(0) };
 }
 
 #[napi(object)]
@@ -394,6 +395,12 @@ struct ScriptAnalysisVisitor {
 }
 
 impl<'a> Visit<'a> for ScriptAnalysisVisitor {
+    #[cfg(test)]
+    fn visit_program(&mut self, program: &Program<'a>) {
+        SCRIPT_ANALYSIS_TRAVERSE_COUNT.set(SCRIPT_ANALYSIS_TRAVERSE_COUNT.get() + 1);
+        walk::walk_program(self, program);
+    }
+
     fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
         if !self.has_static_require_literal && is_static_require_call(call) {
             self.has_static_require_literal = true;
@@ -651,6 +658,10 @@ fn analyze_script_program(
     hook_to_feature_json: Option<String>,
 ) -> NativeScriptAnalysis {
     let requirements = script_analysis_requirements(code, module_id, hook_to_feature_json);
+    // 编译器摘要已完成解析与宏检查；无脚本分析需求时不再遍历共享 AST。
+    if !requirements.needs_parse() {
+        return empty_script_analysis();
+    }
     // 诊断与脚本分析共享一次 parse；没有滚动 hook 时不创建诊断遍历器。
     let on_page_scroll_diagnostics = requirements
         .wants_scroll_diagnostics
@@ -891,6 +902,24 @@ fn is_identifier_expression_set(expression: &Expression, names: &HashSet<String>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shared_program_analysis_preserves_scroll_only_diagnostics() {
+        SCRIPT_ANALYSIS_TRAVERSE_COUNT.set(0);
+        let code = "onPageScroll(() => {})";
+        let allocator = Allocator::default();
+        let program = parse_program(&allocator, code, Some("page.ts".to_string())).unwrap();
+        let result = analyze_script_program(&program, code, None, None);
+
+        assert_eq!(SCRIPT_ANALYSIS_TRAVERSE_COUNT.get(), 1);
+        assert!(!result.has_static_require_literal);
+        assert!(!result.has_platform_api_access);
+        assert!(result.feature_flags.is_empty());
+        let diagnostics = result.on_page_scroll_diagnostics.unwrap();
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].kind, "empty");
+        assert_eq!(diagnostics[0].source_label, "onPageScroll(...)");
+    }
 
     #[test]
     fn batch_reuses_parsed_program_for_same_source_and_filename() {

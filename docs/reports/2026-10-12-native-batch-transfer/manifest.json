@@ -1,0 +1,17 @@
+{
+  "contract": "diagnostic-evidence-manifest-v1",
+  "files": {
+    "README.md": {
+      "sha256": "21ef8c24768ee2bcb81e304e5127d206d077eeaf3e01cb7af7c747fa941aca81",
+      "bytes": 8785
+    },
+    "compiler-native.json": {
+      "sha256": "ac2a33722e02df05456fd4448033d30443b5b597c76750967954dad6d99c9cac",
+      "bytes": 493058
+    },
+    "same-source-contract.json": {
+      "sha256": "7c036e094d4dae3999baf13e7ade4976210cc06821e397c869127243c8767149",
+      "bytes": 1186
+    }
+  }
+}

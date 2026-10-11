@@ -1,5 +1,5 @@
 use super::*;
-use crate::SCRIPT_PARSE_COUNT;
+use crate::{SCRIPT_ANALYSIS_TRAVERSE_COUNT, SCRIPT_PARSE_COUNT};
 
 fn input(code: &str, filename: &str) -> NativeCompilerScriptInput {
     NativeCompilerScriptInput {
@@ -79,6 +79,7 @@ fn compiler_registered_components_accepts_only_proven_static_objects() {
 #[test]
 fn compiler_batch_preserves_valid_results_and_caches_failed_parses() {
     SCRIPT_PARSE_COUNT.set(0);
+    SCRIPT_ANALYSIS_TRAVERSE_COUNT.set(0);
     let results = analyze_compiler_scripts_native(vec![
         input("export default {}", "page.ts"),
         input("const =", "page.ts"),
@@ -89,6 +90,7 @@ fn compiler_batch_preserves_valid_results_and_caches_failed_parses() {
     ]);
 
     assert_eq!(SCRIPT_PARSE_COUNT.get(), 4);
+    assert_eq!(SCRIPT_ANALYSIS_TRAVERSE_COUNT.get(), 0);
     assert_eq!(results.len(), 6);
     assert!(results[0].as_ref().unwrap().has_default_export);
     assert!(results[1].is_none());
@@ -182,7 +184,8 @@ fn compiler_parse_counts_are_isolated_between_simultaneous_threads() {
 fn compiler_batch_reuses_parse_but_specializes_feature_results() {
     SCRIPT_PARSE_COUNT.set(0);
     COMPILER_ANALYSIS_COUNT.set(0);
-    let code = "import { onLoad } from 'wevu'; onLoad(() => wx.request())";
+    SCRIPT_ANALYSIS_TRAVERSE_COUNT.set(0);
+    let code = "import { onLoad } from 'wevu'; onLoad(() => {})";
     let results = analyze_compiler_scripts_native(vec![
         NativeCompilerScriptInput {
             code: code.to_string().into(),
@@ -200,6 +203,7 @@ fn compiler_batch_reuses_parse_but_specializes_feature_results() {
 
     assert_eq!(SCRIPT_PARSE_COUNT.get(), 1);
     assert_eq!(COMPILER_ANALYSIS_COUNT.get(), 2);
+    assert_eq!(SCRIPT_ANALYSIS_TRAVERSE_COUNT.get(), 2);
     let first = results[0].as_ref().expect("first item should parse");
     let second = results[1].as_ref().expect("second item should parse");
     assert_eq!(first.feature_flags, vec!["load"]);
@@ -211,6 +215,7 @@ fn compiler_batch_reuses_parse_but_specializes_feature_results() {
 fn compiler_batch_reuses_complete_analysis_for_identical_requests() {
     SCRIPT_PARSE_COUNT.set(0);
     COMPILER_ANALYSIS_COUNT.set(0);
+    SCRIPT_ANALYSIS_TRAVERSE_COUNT.set(0);
     let code = "defineOptions({ name: 'Card' }); defineProps({ id: String })";
     let results = analyze_compiler_scripts_native(vec![
         input(code, "card.ts"),
@@ -219,14 +224,39 @@ fn compiler_batch_reuses_complete_analysis_for_identical_requests() {
     ]);
     assert_eq!(SCRIPT_PARSE_COUNT.get(), 1);
     assert_eq!(COMPILER_ANALYSIS_COUNT.get(), 1);
+    assert_eq!(SCRIPT_ANALYSIS_TRAVERSE_COUNT.get(), 0);
     for result in results {
         let result = result.unwrap();
+        assert!(!result.has_static_require_literal);
+        assert!(!result.has_platform_api_access);
+        assert!(result.feature_flags.is_empty());
         assert_eq!(result.define_options_name.as_deref(), Some("Card"));
         assert_eq!(
             result.reserved_props_diagnostic.unwrap().warning_offset,
             Some(code.find("defineProps").unwrap() as u32)
         );
     }
+}
+
+#[test]
+fn compiler_batch_traverses_scripts_with_require_or_platform_api_access() {
+    SCRIPT_PARSE_COUNT.set(0);
+    SCRIPT_ANALYSIS_TRAVERSE_COUNT.set(0);
+    let results = analyze_compiler_scripts_native(vec![
+        input("const value = require('./value')", "page.ts"),
+        input("wx.request({ url: '/api' })", "page.ts"),
+    ]);
+
+    assert_eq!(SCRIPT_PARSE_COUNT.get(), 2);
+    assert_eq!(SCRIPT_ANALYSIS_TRAVERSE_COUNT.get(), 2);
+    let required = results[0].as_ref().unwrap();
+    assert!(required.has_static_require_literal);
+    assert!(!required.has_platform_api_access);
+    assert!(required.feature_flags.is_empty());
+    let platform = results[1].as_ref().unwrap();
+    assert!(!platform.has_static_require_literal);
+    assert!(platform.has_platform_api_access);
+    assert!(platform.feature_flags.is_empty());
 }
 
 #[test]

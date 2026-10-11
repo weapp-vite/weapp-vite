@@ -58,6 +58,7 @@ describe('defineOptions native hash reuse', () => {
 
   it('falls back once for a missing macro summary while preserving valid sibling results', async () => {
     const source = '<script setup>defineOptions({ name: "Page" });</script>'
+    inlineOptions.mockImplementation(async () => ({ code: 'const title = "inlined";' }))
     analyze.mockReturnValue([summary, null])
     const result = await parseVueFile(source, 'src/page.vue')
     expect(result.defineOptionsHash).toHaveLength(12)
@@ -66,8 +67,25 @@ describe('defineOptions native hash reuse', () => {
     expect(analyze).toHaveBeenCalledTimes(1)
   })
 
+  it('falls back once when the setup and original macro share a failed unique summary', async () => {
+    const code = 'defineOptions({ name: "Page" });'
+    const source = `<script setup>${code}</script>`
+    analyze.mockReturnValue(undefined)
+    const baseline = await parseVueFile(source, 'src/page.vue')
+    parseBabel.mockClear()
+    analyze.mockClear().mockReturnValue([null])
+
+    const result = await parseVueFile(source, 'src/page.vue')
+
+    expect(result.defineOptionsHash).toBe(baseline.defineOptionsHash)
+    expect(result.nativeScriptAnalysis?.scriptSetup).toBeUndefined()
+    expect(parseBabel).toHaveBeenCalledTimes(1)
+    expect(analyze).toHaveBeenCalledTimes(1)
+    expect(analyze).toHaveBeenCalledWith([{ code, filename: 'src/page.vue.ts' }])
+  })
+
   it('trusts a valid empty macro summary without invoking the fallback', async () => {
-    analyze.mockReturnValue([summary, summary])
+    analyze.mockReturnValue([summary])
     const result = await parseVueFile('<script setup>function later() { defineOptions({ name: "Nested" }) }</script>', 'src/page.vue')
     expect(result.defineOptionsHash).toBeUndefined()
     expect(parseBabel).not.toHaveBeenCalled()

@@ -1,4 +1,4 @@
-import type { NativeCompilerScriptAnalysis } from '@weapp-vite/ast'
+import type { NativeCompilerScriptAnalysis, NativeCompilerScriptInput } from '@weapp-vite/ast'
 import type { SFCDescriptor, SFCScriptBlock } from 'vue/compiler-sfc'
 import { analyzeCompilerScriptsWithNative } from '@weapp-vite/ast'
 
@@ -7,7 +7,23 @@ function resolveScriptFilename(filename: string, lang?: string | null) {
   return `${filename}.${extension}`
 }
 
-/** 原始宏与预处理后的脚本一次提交；相同源码由 native 复用解析。 */
+/** 同源角色保持各自可变摘要的所有权，不共享 native 返回的容器。 */
+function cloneScriptAnalysis(analysis: NativeCompilerScriptAnalysis): NativeCompilerScriptAnalysis {
+  return {
+    ...analysis,
+    imports: analysis.imports.map(item => ({ ...item })),
+    defineOptionsStatements: analysis.defineOptionsStatements.map(span => ({ ...span })),
+    featureFlags: [...analysis.featureFlags],
+    ...(analysis.registeredComponents
+      ? { registeredComponents: analysis.registeredComponents.map(item => ({ ...item })) }
+      : {}),
+    ...(analysis.reservedPropsDiagnostic
+      ? { reservedPropsDiagnostic: { ...analysis.reservedPropsDiagnostic } }
+      : {}),
+  }
+}
+
+/** 原始宏与预处理后的脚本一次提交，同源码及解析模式只跨边界传输和校验一次。 */
 export function analyzeNativeScriptBlocks(
   descriptor: SFCDescriptor,
   filename: string,
@@ -22,25 +38,36 @@ export function analyzeNativeScriptBlocks(
     return undefined
   }
   try {
-    const results = analyzeCompilerScriptsWithNative(blocks.map(([, block]) => ({
-      code: block.content,
-      filename: resolveScriptFilename(filename, block.lang),
-    })))
-    if (!results || results.length !== blocks.length) {
+    const inputs: NativeCompilerScriptInput[] = []
+    const inputIndices = blocks.map(([, block]) => {
+      const resolvedFilename = resolveScriptFilename(filename, block.lang)
+      const index = inputs.findIndex(input => input.code === block.content && input.filename === resolvedFilename)
+      if (index >= 0) {
+        return index
+      }
+      inputs.push({ code: block.content, filename: resolvedFilename })
+      return inputs.length - 1
+    })
+    const results = analyzeCompilerScriptsWithNative(inputs)
+    if (!results || results.length !== inputs.length) {
       return undefined
     }
     const scripts: { script?: NativeCompilerScriptAnalysis, scriptSetup?: NativeCompilerScriptAnalysis } = {}
     let defineOptions: NativeCompilerScriptAnalysis | undefined
+    const assigned = new Set<number>()
     for (const [index, [key]] of blocks.entries()) {
-      const result = results[index]
+      const inputIndex = inputIndices[index]!
+      const result = results[inputIndex]
       if (!result) {
         continue
       }
+      const analysis = assigned.has(inputIndex) ? cloneScriptAnalysis(result) : result
+      assigned.add(inputIndex)
       if (key === 'defineOptions') {
-        defineOptions = result
+        defineOptions = analysis
       }
       else {
-        scripts[key] = result
+        scripts[key] = analysis
       }
     }
     return { scripts, defineOptions }
