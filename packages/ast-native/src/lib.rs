@@ -4,14 +4,14 @@ use std::{
 };
 
 #[cfg(test)]
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::cell::Cell;
 
 use napi_derive::napi;
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{
     Argument, ArrowFunctionBody, ArrowFunctionExpression, CallExpression, Expression, Function,
-    ImportDeclarationSpecifier, ModuleExportName, ObjectProperty, Program, PropertyKey, PropertyKind,
-    Statement,
+    ImportDeclarationSpecifier, ModuleExportName, ObjectProperty, Program, PropertyKey,
+    PropertyKind, Statement,
 };
 use oxc_ast_visit::{Visit, walk};
 use oxc_parser::Parser;
@@ -33,7 +33,9 @@ mod compiler_analysis;
 mod script_transform;
 
 #[cfg(test)]
-static SCRIPT_PARSE_COUNT: AtomicUsize = AtomicUsize::new(0);
+thread_local! {
+    static SCRIPT_PARSE_COUNT: Cell<usize> = const { Cell::new(0) };
+}
 
 #[napi(object)]
 pub struct NativeOnPageScrollDiagnostic {
@@ -66,7 +68,7 @@ fn parse_program<'a>(
     filename: Option<String>,
 ) -> napi::Result<Program<'a>> {
     #[cfg(test)]
-    SCRIPT_PARSE_COUNT.fetch_add(1, Ordering::Relaxed);
+    SCRIPT_PARSE_COUNT.set(SCRIPT_PARSE_COUNT.get() + 1);
     let filename = filename.unwrap_or_else(|| "inline.ts".to_string());
     let source_type =
         SourceType::from_path(Path::new(&filename)).unwrap_or_else(|_| SourceType::ts());
@@ -105,7 +107,10 @@ impl<'a> LineStarts<'a> {
         };
         (
             (line_index + 1) as u32,
-            (self.code[self.starts[line_index]..offset].encode_utf16().count() + 1) as u32,
+            (self.code[self.starts[line_index]..offset]
+                .encode_utf16()
+                .count()
+                + 1) as u32,
         )
     }
 }
@@ -226,7 +231,9 @@ impl<'a> OnPageScrollVisitor<'a> {
 impl<'a> Visit<'a> for OnPageScrollVisitor<'a> {
     fn visit_object_property(&mut self, property: &ObjectProperty<'a>) {
         let method = property.method || property.kind != PropertyKind::Init;
-        if (method || !property.computed) && static_property_name(&property.key) == Some("onPageScroll") {
+        if (method || !property.computed)
+            && static_property_name(&property.key) == Some("onPageScroll")
+        {
             let value = property.value.without_parentheses();
             let start = if method {
                 property.span.start
@@ -316,7 +323,10 @@ impl<'a> Visit<'a> for StaticRequireVisitor {
 }
 
 #[napi(js_name = "mayContainStaticRequireLiteralNative")]
-pub fn may_contain_static_require_literal_native(code: String, filename: Option<String>) -> napi::Result<bool> {
+pub fn may_contain_static_require_literal_native(
+    code: String,
+    filename: Option<String>,
+) -> napi::Result<bool> {
     if !code.contains("require(") && !code.contains("require (") && !code.contains("require`") {
         return Ok(false);
     }
@@ -356,7 +366,10 @@ impl<'a> Visit<'a> for PlatformApiVisitor {
 }
 
 #[napi(js_name = "mayContainPlatformApiAccessNative")]
-pub fn may_contain_platform_api_access_native(code: String, filename: Option<String>) -> napi::Result<bool> {
+pub fn may_contain_platform_api_access_native(
+    code: String,
+    filename: Option<String>,
+) -> napi::Result<bool> {
     if !may_contain_platform_api_text(&code) {
         return Ok(false);
     }
@@ -499,7 +512,9 @@ pub fn analyze_script_native(
 }
 
 #[napi(js_name = "analyzeScriptsNative")]
-pub fn analyze_scripts_native(inputs: Vec<NativeScriptAnalysisInput>) -> napi::Result<Vec<NativeScriptAnalysis>> {
+pub fn analyze_scripts_native(
+    inputs: Vec<NativeScriptAnalysisInput>,
+) -> napi::Result<Vec<NativeScriptAnalysis>> {
     // 同一批次中同一源码可能以不同的 feature 配置重复出现。配置只影响
     // 结果特化，AST 可以安全复用；按源码和 SourceType 分组后，每份输入
     // 只 parse 一次，避免 native 批处理仍在 Rust 内部重复做同一工作。
@@ -513,7 +528,6 @@ pub fn analyze_scripts_native(inputs: Vec<NativeScriptAnalysisInput>) -> napi::R
     }
 
     for ((code, filename), matching) in groups {
-
         let should_parse = matching.iter().any(|&candidate_index| {
             let candidate = &inputs[candidate_index];
             script_analysis_requirements(
@@ -583,18 +597,22 @@ fn script_analysis_requirements(
         code.contains("require(") || code.contains("require (") || code.contains("require`");
     let wants_platform_api = may_contain_platform_api_text(code);
     let wants_scroll_diagnostics = code.contains("onPageScroll");
-    let feature_config = module_id
-        .zip(hook_to_feature_json)
-        .and_then(|(module_id, hook_to_feature_json)| {
-            if !code.contains(&module_id) {
-                return None;
-            }
-            let hook_to_feature = serde_json::from_str::<HashMap<String, String>>(&hook_to_feature_json).ok()?;
-            if hook_to_feature.is_empty() || !hook_to_feature.keys().any(|hook| code.contains(hook)) {
-                return None;
-            }
-            Some((module_id, hook_to_feature))
-        });
+    let feature_config =
+        module_id
+            .zip(hook_to_feature_json)
+            .and_then(|(module_id, hook_to_feature_json)| {
+                if !code.contains(&module_id) {
+                    return None;
+                }
+                let hook_to_feature =
+                    serde_json::from_str::<HashMap<String, String>>(&hook_to_feature_json).ok()?;
+                if hook_to_feature.is_empty()
+                    || !hook_to_feature.keys().any(|hook| code.contains(hook))
+                {
+                    return None;
+                }
+                Some((module_id, hook_to_feature))
+            });
 
     ScriptAnalysisRequirements {
         wants_static_require,
@@ -610,7 +628,8 @@ fn analyze_script_impl(
     hook_to_feature_json: Option<String>,
     filename: Option<String>,
 ) -> napi::Result<NativeScriptAnalysis> {
-    let requirements = script_analysis_requirements(code, module_id.clone(), hook_to_feature_json.clone());
+    let requirements =
+        script_analysis_requirements(code, module_id.clone(), hook_to_feature_json.clone());
     if !requirements.needs_parse() {
         return Ok(empty_script_analysis());
     }
@@ -633,22 +652,25 @@ fn analyze_script_program(
 ) -> NativeScriptAnalysis {
     let requirements = script_analysis_requirements(code, module_id, hook_to_feature_json);
     // 诊断与脚本分析共享一次 parse；没有滚动 hook 时不创建诊断遍历器。
-    let on_page_scroll_diagnostics = requirements.wants_scroll_diagnostics
+    let on_page_scroll_diagnostics = requirements
+        .wants_scroll_diagnostics
         .then(|| collect_scroll_diagnostics(program, code));
 
-    let feature_flags = requirements.feature_config.and_then(|(module_id, hook_to_feature)| {
-        let (named_hook_locals, namespace_locals) =
-            collect_feature_flag_imports(program, &module_id, &hook_to_feature);
-        if named_hook_locals.is_empty() && namespace_locals.is_empty() {
-            return None;
-        }
-        Some(FeatureFlagVisitor {
-            named_hook_locals,
-            namespace_locals,
-            hook_to_feature,
-            enabled: BTreeMap::new(),
-        })
-    });
+    let feature_flags = requirements
+        .feature_config
+        .and_then(|(module_id, hook_to_feature)| {
+            let (named_hook_locals, namespace_locals) =
+                collect_feature_flag_imports(program, &module_id, &hook_to_feature);
+            if named_hook_locals.is_empty() && namespace_locals.is_empty() {
+                return None;
+            }
+            Some(FeatureFlagVisitor {
+                named_hook_locals,
+                namespace_locals,
+                hook_to_feature,
+                enabled: BTreeMap::new(),
+            })
+        });
 
     let mut visitor = ScriptAnalysisVisitor {
         has_static_require_literal: false,
@@ -658,7 +680,8 @@ fn analyze_script_program(
     visitor.visit_program(program);
 
     NativeScriptAnalysis {
-        has_static_require_literal: requirements.wants_static_require && visitor.has_static_require_literal,
+        has_static_require_literal: requirements.wants_static_require
+            && visitor.has_static_require_literal,
         has_platform_api_access: requirements.wants_platform_api && visitor.has_platform_api_access,
         feature_flags: visitor
             .feature_flags
@@ -685,8 +708,11 @@ fn collect_wevu_scroll_imports(program: &Program) -> (HashSet<String>, HashSet<S
         for specifier in specifiers {
             match specifier {
                 ImportDeclarationSpecifier::ImportSpecifier(import_specifier)
-                    if !matches!(&import_specifier.imported, ModuleExportName::StringLiteral(_))
-                        && module_export_name(&import_specifier.imported) == Some("onPageScroll") =>
+                    if !matches!(
+                        &import_specifier.imported,
+                        ModuleExportName::StringLiteral(_)
+                    ) && module_export_name(&import_specifier.imported)
+                        == Some("onPageScroll") =>
                 {
                     hook_names.insert(import_specifier.local.name.as_str().to_string());
                 }
@@ -826,7 +852,9 @@ fn callee_name<'a>(callee: &'a Expression<'a>) -> Option<&'a str> {
 
 fn scroll_member<'a>(expression: &'a Expression<'a>) -> Option<(&'a Expression<'a>, &'a str)> {
     match expression.without_parentheses() {
-        Expression::StaticMemberExpression(member) => Some((&member.object, member.property.name.as_str())),
+        Expression::StaticMemberExpression(member) => {
+            Some((&member.object, member.property.name.as_str()))
+        }
         Expression::ComputedMemberExpression(member) => {
             if let Expression::StringLiteral(literal) = member.expression.without_parentheses() {
                 Some((&member.object, literal.value.as_str()))
@@ -866,7 +894,7 @@ mod tests {
 
     #[test]
     fn batch_reuses_parsed_program_for_same_source_and_filename() {
-        SCRIPT_PARSE_COUNT.store(0, Ordering::Relaxed);
+        SCRIPT_PARSE_COUNT.set(0);
         let code = r#"import { onLoad } from 'wevu'; onLoad(() => wx.request())"#;
         let results = analyze_scripts_native(vec![
             NativeScriptAnalysisInput {
@@ -884,7 +912,7 @@ mod tests {
         ])
         .expect("same source should parse successfully");
 
-        assert_eq!(SCRIPT_PARSE_COUNT.load(Ordering::Relaxed), 1);
+        assert_eq!(SCRIPT_PARSE_COUNT.get(), 1);
         assert_eq!(results[0].feature_flags, vec!["load"]);
         assert_eq!(results[1].feature_flags, vec!["alternate"]);
         assert!(results[0].has_platform_api_access);
@@ -893,7 +921,7 @@ mod tests {
 
     #[test]
     fn batch_keeps_parser_language_boundaries() {
-        SCRIPT_PARSE_COUNT.store(0, Ordering::Relaxed);
+        SCRIPT_PARSE_COUNT.set(0);
         let code = "const element = <view />; onPageScroll(() => {})";
         let results = analyze_scripts_native(vec![
             NativeScriptAnalysisInput {
@@ -911,12 +939,13 @@ mod tests {
         ]);
 
         assert!(results.is_err());
-        assert_eq!(SCRIPT_PARSE_COUNT.load(Ordering::Relaxed), 2);
+        // 分组遍历顺序不固定，失败项可能先于有效项；不把提前返回次序当作契约。
+        assert!((1..=2).contains(&SCRIPT_PARSE_COUNT.get()));
     }
 
     #[test]
     fn batch_skips_parse_for_inputs_without_analysis_hints() {
-        SCRIPT_PARSE_COUNT.store(0, Ordering::Relaxed);
+        SCRIPT_PARSE_COUNT.set(0);
         let results = analyze_scripts_native(vec![NativeScriptAnalysisInput {
             code: "const value = 1".to_string(),
             module_id: Some("wevu".to_string()),
@@ -926,7 +955,7 @@ mod tests {
         .expect("source without analysis hints should use the empty fast path");
 
         assert_eq!(results.len(), 1);
-        assert_eq!(SCRIPT_PARSE_COUNT.load(Ordering::Relaxed), 0);
+        assert_eq!(SCRIPT_PARSE_COUNT.get(), 0);
         assert!(!results[0].has_static_require_literal);
         assert!(!results[0].has_platform_api_access);
         assert!(results[0].feature_flags.is_empty());

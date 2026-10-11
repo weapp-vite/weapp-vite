@@ -77,6 +77,7 @@ import TButton from 'native/button'
             typeOnly: false,
           }],
           hasDefaultExport: false,
+          defineOptionsStatements: [],
           isMiniProgramComponent: false,
           hasStaticRequireLiteral: false,
           hasPlatformApiAccess: false,

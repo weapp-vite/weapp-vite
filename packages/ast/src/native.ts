@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module'
 import process from 'node:process'
-import { invokeNativeCall, recordNativeEvent } from './native/observation'
+import { isNativeCompilerScriptAnalysis } from './native/compilerAnalysis'
+import { invokeNativeCall, recordNativeCall, recordNativeEvent } from './native/observation'
 
 const require = createRequire(import.meta.url)
 
@@ -41,10 +42,22 @@ export interface NativeCompilerScriptImport {
   typeOnly: boolean
 }
 
+export interface NativeCompilerRegisteredComponent {
+  name: string
+  local: string
+}
+
+export interface NativeCompilerScriptSpan {
+  start: number
+  end: number
+}
+
 export interface NativeCompilerScriptAnalysis {
   imports: NativeCompilerScriptImport[]
   hasDefaultExport: boolean
   defineOptionsName?: string
+  defineOptionsStatements: NativeCompilerScriptSpan[]
+  registeredComponents?: NativeCompilerRegisteredComponent[]
   isMiniProgramComponent: boolean
   hasStaticRequireLiteral: boolean
   hasPlatformApiAccess: boolean
@@ -54,7 +67,7 @@ export interface NativeCompilerScriptAnalysis {
 export interface NativeAstBinding {
   analyzeCompilerScriptsNative?: (
     inputs: NativeCompilerScriptInput[],
-  ) => NativeCompilerScriptAnalysis[]
+  ) => Array<NativeCompilerScriptAnalysis | null>
   analyzeScriptNative?: (
     code: string,
     moduleId?: string,
@@ -220,13 +233,39 @@ export function analyzeScriptsWithNative(inputs: NativeScriptAnalysisInput[]) {
  * 编译器前端批量摘要的显式 native 快速路径；失败时由调用方继续使用 Babel/Oxc。
  */
 export function analyzeCompilerScriptsWithNative(inputs: NativeCompilerScriptInput[]) {
-  const analyzeNative = loadNativeAstBindingSync()?.analyzeCompilerScriptsNative
-  if (!analyzeNative) {
-    if (shouldUseNativeAst()) {
-      recordNativeEvent('fallbacks')
-    }
+  if (!shouldUseNativeAst()) {
     return undefined
   }
+  if (!inputs.length) {
+    return []
+  }
+  const fallback = () => {
+    recordNativeEvent('fallbacks')
+    return null
+  }
+  const analyzeNative = loadNativeAstBindingSync()?.analyzeCompilerScriptsNative
+  if (!analyzeNative) {
+    return inputs.map(fallback)
+  }
 
-  return invokeNativeCall(inputs, () => analyzeNative(inputs))
+  recordNativeCall(inputs)
+  let results: unknown
+  try {
+    results = analyzeNative(inputs)
+  }
+  catch {
+    return inputs.map(fallback)
+  }
+  if (!Array.isArray(results) || results.length !== inputs.length) {
+    return inputs.map(fallback)
+  }
+  return inputs.map((input, index) => {
+    try {
+      const result: unknown = results[index]
+      return isNativeCompilerScriptAnalysis(result, input.code) ? result : fallback()
+    }
+    catch {
+      return fallback()
+    }
+  })
 }

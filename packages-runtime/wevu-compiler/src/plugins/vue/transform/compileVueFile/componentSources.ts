@@ -14,6 +14,7 @@ import { resolveWarnHandler } from '../../../../utils/warn'
 import { normalizeTemplateTagName } from '../../compiler/template/htmlTagMapping'
 import { resolveComponentExpression, unwrapDefineComponent, unwrapTypeLikeExpression } from '../scriptComponent'
 import { resolveStaticObjectProperty } from '../transformScript/componentStyleOptions'
+import { collectNativeComponentRegistrations } from './nativeComponents'
 
 type SfcDescriptorForCompile = Pick<SFCDescriptor, 'scriptSetup' | 'script'>
 
@@ -488,6 +489,11 @@ async function collectOptionsApiUsingComponents(options: {
   }
 
   try {
+    const nativeRegistrations = collectNativeComponentRegistrations(nativeScriptAnalysis, templateComponentNames, templateTagsByComponentName)
+    if (nativeRegistrations) {
+      await resolveScriptComponentRegistrations({ pending: nativeRegistrations, filename, compileOptions, autoUsingComponents, result })
+      return
+    }
     const ast = babelParse(descriptor.script.content, BABEL_TS_MODULE_PARSER_OPTIONS)
     const imports = new Map<string, { importSource: string, importedName?: string, kind: 'default' | 'named' }>()
     if (nativeScriptAnalysis) {

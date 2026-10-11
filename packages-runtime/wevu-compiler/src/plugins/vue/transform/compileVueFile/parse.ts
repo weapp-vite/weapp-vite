@@ -5,7 +5,6 @@ import type { JsonConfig, JsonMergeContext } from '../../../../types/json'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { CompileVueFileOptions } from './types'
 import { createHash } from 'node:crypto'
-import { analyzeCompilerScriptsWithNative } from '@weapp-vite/ast'
 import * as t from '@weapp-vite/ast/babelTypes'
 import MagicString from 'magic-string'
 import { mayContainPageDeclaration, mayContainPageMeta, prepareSfcScriptCompile } from '../../../../pageDeclaration'
@@ -16,6 +15,7 @@ import { createSfcParseError, readAndParseSfc, resolveSfcBlockSrc } from '../../
 import { inlineScriptSetupDefineOptionsArgs } from '../defineOptions/inline'
 import { extractJsonMacroFromScriptSetupWithSourceMap, mayContainJsonMacro } from '../jsonMacros'
 import { createJsonMerger } from '../jsonMerge'
+import { analyzeNativeScriptBlocks } from './nativeAnalysis'
 
 const SETUP_CALL_RE = /\bsetup\s*\(/
 const DEFINE_OPTIONS_CALL_RE = /\bdefineOptions\s*\(/
@@ -146,7 +146,21 @@ function replaceScriptSetupContent(
   }
 }
 
-function extractDefineOptionsHash(content: string) {
+function hashDefineOptionsSources(sources: string[]) {
+  if (!sources.length) {
+    return undefined
+  }
+  return createHash('sha256')
+    .update(sources.join('\n'))
+    .digest('hex')
+    .slice(0, 12)
+}
+
+function extractDefineOptionsHash(content: string, analysis?: NativeCompilerScriptAnalysis) {
+  if (analysis) {
+    const sources = analysis.defineOptionsStatements.map(({ start, end }) => content.slice(start, end))
+    return hashDefineOptionsSources(sources)
+  }
   let ast: BabelFile
   try {
     ast = babelParse(content, BABEL_TS_MODULE_PARSER_OPTIONS)
@@ -173,98 +187,7 @@ function extractDefineOptionsHash(content: string) {
     },
   })
 
-  if (!macroSources.length) {
-    return undefined
-  }
-
-  return createHash('sha256')
-    .update(macroSources.join('\n'))
-    .digest('hex')
-    .slice(0, 12)
-}
-
-function resolveNativeScriptFilename(filename: string, lang?: string | null) {
-  const extension = lang === 'tsx'
-    ? 'tsx'
-    : lang === 'jsx'
-      ? 'jsx'
-      : lang === 'js'
-        ? 'js'
-        : 'ts'
-  return `${filename}.${extension}`
-}
-
-function isNativeCompilerScriptAnalysis(value: unknown): value is NativeCompilerScriptAnalysis {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-  const analysis = value as Partial<NativeCompilerScriptAnalysis>
-  if (
-    !Array.isArray(analysis.imports)
-    || typeof analysis.hasDefaultExport !== 'boolean'
-    || typeof analysis.isMiniProgramComponent !== 'boolean'
-    || typeof analysis.hasStaticRequireLiteral !== 'boolean'
-    || typeof analysis.hasPlatformApiAccess !== 'boolean'
-    || !Array.isArray(analysis.featureFlags)
-    || !analysis.featureFlags.every(flag => typeof flag === 'string')
-    || (analysis.defineOptionsName !== undefined && typeof analysis.defineOptionsName !== 'string')
-  ) {
-    return false
-  }
-  return analysis.imports.every((item) => {
-    if (!item || typeof item !== 'object') {
-      return false
-    }
-    const imported = item as NativeCompilerScriptAnalysis['imports'][number]
-    return typeof imported.local === 'string'
-      && typeof imported.source === 'string'
-      && (imported.imported === undefined || typeof imported.imported === 'string')
-      && (imported.kind === 'default' || imported.kind === 'namespace' || imported.kind === 'named')
-      && typeof imported.typeOnly === 'boolean'
-  })
-}
-
-function analyzeNativeScriptBlocks(
-  descriptor: SFCDescriptor,
-  filename: string,
-) {
-  const blocks = [
-    descriptor.script
-      ? {
-          key: 'script' as const,
-          code: descriptor.script.content,
-          lang: descriptor.script.lang,
-        }
-      : undefined,
-    descriptor.scriptSetup
-      ? {
-          key: 'scriptSetup' as const,
-          code: descriptor.scriptSetup.content,
-          lang: descriptor.scriptSetup.lang,
-        }
-      : undefined,
-  ].filter((block): block is NonNullable<typeof block> => Boolean(block))
-  if (!blocks.length) {
-    return undefined
-  }
-  try {
-    const results = analyzeCompilerScriptsWithNative(blocks.map(block => ({
-      code: block.code,
-      filename: resolveNativeScriptFilename(filename, block.lang),
-    })))
-    if (!results || results.length !== blocks.length || !results.every(isNativeCompilerScriptAnalysis)) {
-      return undefined
-    }
-    const analysis: NonNullable<ParsedVueFile['nativeScriptAnalysis']> = {}
-    blocks.forEach((block, index) => {
-      analysis[block.key] = results[index]
-    })
-    return analysis
-  }
-  catch {
-    // native 失败时保留 Babel/Oxc/Vue compiler 路径；调用方只使用完整摘要。
-    return undefined
-  }
+  return hashDefineOptionsSources(macroSources)
 }
 
 function preprocessTemplateImportMeta(source: string) {
@@ -431,7 +354,7 @@ export async function parseVueFile(
 
   let scriptSetupMacroConfig: Record<string, any> | undefined
   let scriptSetupMacroHash: string | undefined
-  let defineOptionsHash: string | undefined
+  let defineOptionsSource: SFCScriptBlock | undefined
   const jsonKind = options?.json?.kind
     ?? (options?.isApp ? 'app' : options?.isPage ? 'page' : 'component')
   const jsonDefaults = options?.json?.defaults?.[jsonKind]
@@ -515,7 +438,7 @@ export async function parseVueFile(
       scriptSetupMacroHash = extracted.macroHash
     }
     if (DEFINE_OPTIONS_CALL_RE.test(scriptSetup.content)) {
-      defineOptionsHash = extractDefineOptionsHash(scriptSetup.content)
+      defineOptionsSource = scriptSetup
     }
   }
 
@@ -587,7 +510,10 @@ export async function parseVueFile(
   }
 
   const isAppFile = APP_VUE_FILE_RE.test(filename)
-  const nativeScriptAnalysis = analyzeNativeScriptBlocks(descriptorForCompile, filename)
+  const nativeAnalysis = analyzeNativeScriptBlocks(descriptorForCompile, filename, defineOptionsSource)
+  const defineOptionsHash = defineOptionsSource
+    ? extractDefineOptionsHash(defineOptionsSource.content, nativeAnalysis?.defineOptions)
+    : undefined
 
   return {
     descriptor: resolvedDescriptor,
@@ -602,6 +528,6 @@ export async function parseVueFile(
     jsonDefaults,
     mergeJson,
     isAppFile,
-    nativeScriptAnalysis,
+    nativeScriptAnalysis: nativeAnalysis?.scripts,
   }
 }

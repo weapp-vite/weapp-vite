@@ -105,6 +105,10 @@ const result = collectJsxAutoComponentsFromCode(code, {
 
 构建侧可以同时设置 `WEAPP_VITE_NATIVE=1` 和 `WEAPP_VITE_NATIVE_AST_PATH`，显式使用可加载的 Rust/Oxc binding。默认仍使用现有 JS 后端；native 加载、解析或执行失败时回退。批量分析合并同一源码上的检查与适用诊断，公共参数及结果保持兼容，不向 JS 搬运完整 AST。
 
+编译器实验入口 `analyzeCompilerScriptsWithNative(inputs[])` 共享脚本 imports、default export、原始 `defineOptions` 语句范围和保守静态组件注册摘要。native 返回的有效项独立复用，`null` 项交回现有编译路径，未启用时返回 `undefined`；直接调用此实验入口的上层负责执行 fallback，不会收到完整 AST。
+
+`WEAPP_VITE_NATIVE_AST_PATH` 建议使用绝对路径。基准 CLI 的 `--native-path` 会自行绝对化；直接设置相对环境路径时，它按 binding loader 的模块位置解析，并非按调用者当前目录解析。
+
 启用前使用仓库的 `pnpm profile:compiler` 和 `pnpm benchmark:native-analysis` 核对真实编译入口及端到端结果。微基准提速不能替代构建、HMR、产物和运行时验证。详见 [native 原型说明](../ast-native/README.md)。
 
 ## 发布校验

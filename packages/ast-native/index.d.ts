@@ -35,10 +35,22 @@ export interface NativeCompilerScriptImport {
   typeOnly: boolean
 }
 
+export interface NativeCompilerRegisteredComponent {
+  name: string
+  local: string
+}
+
+export interface NativeCompilerScriptSpan {
+  start: number
+  end: number
+}
+
 export interface NativeCompilerScriptAnalysis {
   imports: NativeCompilerScriptImport[]
   hasDefaultExport: boolean
   defineOptionsName?: string
+  defineOptionsStatements: NativeCompilerScriptSpan[]
+  registeredComponents?: NativeCompilerRegisteredComponent[]
   isMiniProgramComponent: boolean
   hasStaticRequireLiteral: boolean
   hasPlatformApiAccess: boolean
@@ -47,7 +59,7 @@ export interface NativeCompilerScriptAnalysis {
 
 export function analyzeCompilerScriptsNative(
   inputs: NativeCompilerScriptInput[],
-): NativeCompilerScriptAnalysis[]
+): Array<NativeCompilerScriptAnalysis | null>
 
 export function analyzeScriptNative(
   code: string,

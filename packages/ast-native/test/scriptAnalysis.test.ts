@@ -45,6 +45,11 @@ export default {}`
       },
     ])
 
+    expect(first).not.toBeNull()
+    expect(second).not.toBeNull()
+    if (!first || !second) {
+      throw new Error('compiler summaries must be present')
+    }
     expect(first.imports).toEqual(second.imports)
     expect(first.hasDefaultExport).toBe(second.hasDefaultExport)
     expect(first.defineOptionsName).toBe(second.defineOptionsName)

@@ -21,6 +21,7 @@ exports.analyzeCompilerScriptsNative = (inputs) => inputs.map(input => ({
   imports: [{ local: 'Card', imported: 'default', source: './card', kind: 'default', typeOnly: false }],
   hasDefaultExport: input.code.includes('export default'),
   defineOptionsName: input.code.includes('defineOptions') ? 'CardView' : undefined,
+  defineOptionsStatements: [],
   isMiniProgramComponent: input.code.includes('defineComponentJson'),
   hasStaticRequireLiteral: input.code.includes('require('),
   hasPlatformApiAccess: input.code.includes('wx.'),
