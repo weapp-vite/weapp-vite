@@ -1,5 +1,7 @@
 # 合并 main 后的 Rust 批量分析交付与后续路线
 
+> 原始采样、压缩数据与复算工具已移至[固定历史证据](../reports/rust-performance-evidence.md)，不再纳入当前 PR 的文件差异。下文数字与限制保持原记录；复算前须按索引说明检出完整历史快照。
+
 **正式性能采样已完成，当前不扩大默认 Rust 覆盖。** 预定 Tailwind/TDesign 重复构建 P50 仅减少 1.21%，未达到 10%；路由拓扑首次编辑 P95 首批增加 16.98%，等量确认仍增加 13.05%。真实零售页暖编译 P50 减少 15.29%，但小脚本存在明显回退。现有证据支持继续研究局部计算内核，不支持承诺全项目 Rust 化带来普遍大幅提速。
 
 完整表格、测量边界和公开数值见 [生产链路报告](../reports/2026-10-11-rust-batch-production/README.md)。本文件记录最终实现、历史范围与下一步决策，不把旧计划中的未执行项标为完成。
@@ -8,7 +10,7 @@
 
 本轮以 merge 保留历史，将 main `9b69ec88` 合入 `codex/rust-batch-profile`，合并提交为 `1bbee9f45`。解决 native 依赖与快照测试冲突，采用 main 的 Oxc 0.153、napi 3.14 基线，保留 `script_transform`、`template_provenance` 和实验 feature，同时保留主线 HMR/watch/native publication 修复。
 
-正式构建/HMR 采样冻结在 `ec7286064610a42579e1a444dee65fa0c33d146d`，源码、addon、相关 dist、driver 与输入身份见 [数值证据](../reports/2026-10-11-rust-batch-production/native-paired.json)。合并身份仅说明本轮基线，不表示之后 main 不再变化。
+正式构建/HMR 采样冻结在 `ec7286064610a42579e1a444dee65fa0c33d146d`，源码、addon、相关 dist、driver 与输入身份见 [数值证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-11-rust-batch-production/native-paired.json)。合并身份仅说明本轮基线，不表示之后 main 不再变化。
 
 采样完成后修复了摘要稀疏数组校验和 CI 测试/准备契约；这些是 correctness 修复，未重新采样，不将冻结版本数字改称最终提交性能。正式采样已经结束，最终 PR head 的必需 CI 尚未全部完成。
 
@@ -55,7 +57,7 @@ PR #1175 保留此前批量分析、实际链路 profiler、构建/HMR 对照、
 
 默认关闭的新实验不新增 changeset；历史行为变化已有 changeset 保留，三份旧摘要仅补充当前 main 要求的 Conventional 前缀。公开报告使用相对证据链接，保留数值、失败和来源摘要；原始源码、错误栈、机器路径和日志不公开。
 
-采样后的本地验证已完成 AST 28 项单测、typecheck/ESLint，AST → @wevu/compiler → weapp-vite 顺序重建、AST 类型契约、准备闭包 3 项及串行 opened-automator 8 项 mock 测试（未启动 IDE）。[最终生产入口 correctness 检查](../reports/2026-10-11-rust-batch-production/compiler-final-check.json)完成 10 个案例与单次故障回退，计时配对数为 0；它使用修复后的源码/dist 身份，即使元数据 commit 仍为冻结 SHA，也不能视为该冻结性能版本的复测。最终 PR head 全部必需 CI 仍待完成。
+采样后的本地验证已完成 AST 28 项单测、typecheck/ESLint，AST → @wevu/compiler → weapp-vite 顺序重建、AST 类型契约、准备闭包 3 项及串行 opened-automator 8 项 mock 测试（未启动 IDE）。[最终生产入口 correctness 检查](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-11-rust-batch-production/compiler-final-check.json)完成 10 个案例与单次故障回退，计时配对数为 0；它使用修复后的源码/dist 身份，即使元数据 commit 仍为冻结 SHA，也不能视为该冻结性能版本的复测。最终 PR head 全部必需 CI 仍待完成。
 
 已知 CI 准备失败修复为保留真实导出的 partial mock、补全 driver 的 devtools-runtime 构建闭包和接受合法零 CPU 观测；Ubuntu Node 26 Web HMR restore 超时增加定向证据，不通过提高超时或削弱断言求绿。
 

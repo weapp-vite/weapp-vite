@@ -1,5 +1,7 @@
 # 2026-10-12：批量 native 分析的实际编译入口复核
 
+> 原始采样、压缩数据与复算工具已移至[固定历史证据](../rust-performance-evidence.md)，不再纳入当前 PR 的文件差异。下文数字与限制保持原记录；复算前须按索引说明检出完整历史快照。
+
 本轮以相同代码的 native off/on 为配对两侧，直接调用生产 `compileVueFile`。零售详情暖编译 P50 降低 **18.36%**，Wevu 首页降低 **5.61%**。10 个案例各完成 40 对交替采样，完整返回对象、map、警告和支持的错误字段比较通过。
 
 这是**局部真实编译收益**。小脚本和错误场景仍有开销，不构成构建/HMR 或全项目性能验收，也不能撤销此前正式端到端门禁失败。native 继续默认关闭。
@@ -31,7 +33,7 @@ Node v24.18.0，macOS arm64，16 个逻辑 CPU。采样时间为 2026-10-11 21:3
 | invalid-template | 0.174 | 0.187 | +7.74% | +16.44% | -0.55% |
 | invalid-script | 0.069 | 0.077 | +12.25% | +20.85% | -0.56% |
 
-同一 worker 的预热与测量逐次检查完整语义；跨 worker 通过 V8 数据快照比较，并保存 tagged outcome hash。400 组计时配对哈希全部相等；采样前后源码、AST dist、工具、输入与 addon 身份不变。P50/P95 原始值及所有配对见 [compiler-native.json](./compiler-native.json)。
+同一 worker 的预热与测量逐次检查完整语义；跨 worker 通过 V8 数据快照比较，并保存 tagged outcome hash。400 组计时配对哈希全部相等；采样前后源码、AST dist、工具、输入与 addon 身份不变。P50/P95 原始值及所有配对见 [compiler-native.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-batch-transfer/compiler-native.json)。
 
 ## 独立诊断
 
@@ -54,7 +56,7 @@ Node v24.18.0，macOS arm64，16 个逻辑 CPU。采样时间为 2026-10-11 21:3
 
 ### 同源角色的真实入口契约
 
-固定性能采样完成后，用独立合成 SFC 验证跨界前去重可通过生产入口触达。普通 script 与 setup script 均为 `const title = 'same source'`，使用 TS 模式及 sourceMap；分别处在模块和 setup 函数作用域。两侧完整结果比较通过，on 实际只提交一个输入、28 bytes、一次 batch、零回退。源码/addon 身份与上述 40 对一致。见 [same-source-contract.json](./same-source-contract.json)。
+固定性能采样完成后，用独立合成 SFC 验证跨界前去重可通过生产入口触达。普通 script 与 setup script 均为 `const title = 'same source'`，使用 TS 模式及 sourceMap；分别处在模块和 setup 函数作用域。两侧完整结果比较通过，on 实际只提交一个输入、28 bytes、一次 batch、零回退。源码/addon 身份与上述 40 对一致。见 [same-source-contract.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-batch-transfer/same-source-contract.json)。
 
 这是边界契约验证，未加入固定性能语料，也没有旧 native 版本的实测对照，不能写成已测得旧版 2 → 新版 1 的性能收益。静态检查 `apps/templates` 的 421 份 Vue 文件，只发现 3 份双 script，未发现块内容完全相同；该范围不含预处理后角色、生成物或用户工程，不能推导总命中率。
 

@@ -1,12 +1,14 @@
 # HMR watcher 边界诊断：编译已变快，回调前等待仍增加
 
+> 原始采样、压缩数据与复算工具已移至[固定历史证据](../rust-performance-evidence.md)，不再纳入当前 PR 的文件差异。下文数字与限制保持原记录；复算前须按索引说明检出完整历史快照。
+
 本次诊断没有消除正式验收的 HMR 回退。Wevu 模板首轮编辑中，候选 bundler P50 降低约 12.4 ms，但源码写入到 watcher 回调的等待增加约 33.1 ms，wall P50 仍增加约 25.8 ms。这不是 Rust 收益，也不证明 polling 是唯一原因。
 
 两侧 native 关闭；原运行时来自 v8 冻结快照，基线仍是本 PR 早期 `419f49d91`，候选生产源码为 `3737c613d`。在独立副本上添加相同观测，保留原子保存、120 ms polling、场景顺序和两次 edit/restore 周期，四对逐对交替 AB/BA，未加入延迟或改变性能门槛。16 次串行运行、192 个阶段样本的输入、产物摘要、map 和告警一致，首尾冻结身份核验通过。
 
 本文件分析全部 16 次运行。共保留 128 个目标源码写入窗口：Native 脚本 32 个，Wevu 模板/脚本/样式 96 个。每个下表单元格为 4 侧样本 P50，左侧 baseline，右侧 candidate，单位 ms；表中的区间完整保留同一 stat 通知的所有 listener 交付时点，未选择最快、最慢或最近者作为因果 owner。
 
-原 evaluation 的 96 个问题全部是 Wevu 每窗有 2 个 callback，而 client hook、read begin、read end 均恰好 1 个；不存在 hook 目标不匹配或后端漏插桩。[initial-evaluation.json](./initial-evaluation.json) 保留原结果；补充分析单独保存在 [callback-interval-analysis.json](./callback-interval-analysis.json)，呈现每窗全部回调的区间。
+原 evaluation 的 96 个问题全部是 Wevu 每窗有 2 个 callback，而 client hook、read begin、read end 均恰好 1 个；不存在 hook 目标不匹配或后端漏插桩。[initial-evaluation.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-hmr-watcher-boundary-diagnostic/initial-evaluation.json) 保留原结果；补充分析单独保存在 [callback-interval-analysis.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-hmr-watcher-boundary-diagnostic/callback-interval-analysis.json)，呈现每窗全部回调的区间。
 
 Node 24.18.0 的 fs.watchFile 会规范化文件路径，按 filename 从 statWatchers map 复用同一 StatWatcher，后续登记仅增加 listener；最后一个 listener 注销才停止并删除 watcher。本次每侧 Wevu 有两个目标登记，中间没有注销，每个窗口两条回调的 current/previous stat 逐字段相同，IDs 各出现一次并全部在退出时注销。因此可以按该版本实现解释为同一底层 stat 事件的两个 listener 通知，不是两次独立 polling。原 trace 没有记录返回对象 identity 或调用栈，不能把 ID 1/2 分别指认为 Vite/autoRoutes。
 
@@ -72,13 +74,13 @@ Node 24.18.0 的 fs.watchFile 会规范化文件路径，按 filename 从 statWa
 
 ## 观测失败与公开证据
 
-首次观测尝试在首个场景产生 `fs.remove(...) is not a function`，没有有效 HMR 样本。原因是插入的独立括号表达式与前一个 await 语句发生 ASI 调用连接；这是观测代码错误，不是产品回归。[failed-attempt.json](./failed-attempt.json) 保留外层失败，[failed-profile.json](./failed-profile.json) 保留原场景错误。修正 11 处观测语句的前导分号后，实际 tsx harness 覆盖正常保存、无 observer、write/rename/remove 错误与 cleanup 覆盖先前错误，共 7 项通过，才开始本轮完整诊断。原失败及其冻结目录未覆盖。
+首次观测尝试在首个场景产生 `fs.remove(...) is not a function`，没有有效 HMR 样本。原因是插入的独立括号表达式与前一个 await 语句发生 ASI 调用连接；这是观测代码错误，不是产品回归。[failed-attempt.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-hmr-watcher-boundary-diagnostic/failed-attempt.json) 保留外层失败，[failed-profile.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-hmr-watcher-boundary-diagnostic/failed-profile.json) 保留原场景错误。修正 11 处观测语句的前导分号后，实际 tsx harness 覆盖正常保存、无 observer、write/rename/remove 错误与 cleanup 覆盖先前错误，共 7 项通过，才开始本轮完整诊断。原失败及其冻结目录未覆盖。
 
-- [report.json](./report.json)：全部 16 次运行的 192 个样本、输入/输出摘要、原始事件、缓存生命周期、工具与冻结身份摘要。
-- [profiles.json](./profiles.json)：全部 16 份原 compiler profile，含各场景 edit/restore 的分段、告警与产物摘要。
-- [callback-interval-analysis.json](./callback-interval-analysis.json)：全部 128 个观测窗口、16 组四对差值及聚合；不能只选其中有利的中位数。
-- [tool-sources.json](./tool-sources.json)：实际观测、生成、收集和两版分析代码的文本与原字节摘要。代码保留私有导入布局供审查，不是能够直接运行的完整独立采样包。
-- [manifest.json](./manifest.json)：公开文件校验值与 [original-hashes.json](./original-hashes.json) 的原报告字节承诺。公开副本替换绝对路径前缀及 argv 中对应的相对临时根目录，不能重建私有原字节；完整 emitted JS 字节和冻结依赖目录未发布。
+- [report.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-hmr-watcher-boundary-diagnostic/report.json)：全部 16 次运行的 192 个样本、输入/输出摘要、原始事件、缓存生命周期、工具与冻结身份摘要。
+- [profiles.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-hmr-watcher-boundary-diagnostic/profiles.json)：全部 16 份原 compiler profile，含各场景 edit/restore 的分段、告警与产物摘要。
+- [callback-interval-analysis.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-hmr-watcher-boundary-diagnostic/callback-interval-analysis.json)：全部 128 个观测窗口、16 组四对差值及聚合；不能只选其中有利的中位数。
+- [tool-sources.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-hmr-watcher-boundary-diagnostic/tool-sources.json)：实际观测、生成、收集和两版分析代码的文本与原字节摘要。代码保留私有导入布局供审查，不是能够直接运行的完整独立采样包。
+- [manifest.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-hmr-watcher-boundary-diagnostic/manifest.json)：公开文件校验值与 [original-hashes.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-hmr-watcher-boundary-diagnostic/original-hashes.json) 的原报告字节承诺。公开副本替换绝对路径前缀及 argv 中对应的相对临时根目录，不能重建私有原字节；完整 emitted JS 字节和冻结依赖目录未发布。
 
 Node 的同路径 StatWatcher 解释依据 [v24.18.0 的 fs.js](https://github.com/nodejs/node/blob/v24.18.0/lib/fs.js) 与仓库 `packages/weapp-vite/src/plugins/autoRoutes.ts` / `autoRoutesConfig.ts`。源 manifest 摘要为 `a15d66680ef22665e66dccf1d9f570a905ba01b9d2ee039a0d131edf9f227303`。
 

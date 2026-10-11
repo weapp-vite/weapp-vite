@@ -1,5 +1,7 @@
 # 默认构建架构性能：目标构建达标，整体门禁未通过
 
+> 原始采样、压缩数据与复算工具已移至[固定历史证据](../rust-performance-evidence.md)，不再纳入当前 PR 的文件差异。下文数字与限制保持原记录；复算前须按索引说明检出完整历史快照。
+
 本轮结论为 `regression`。TDesign 重复构建 P50 降低 **10.27%**，达到预定目标；但原生脚本首次恢复 P95 与 Wevu 模板首次编辑 P50 在首批及确认批均回退超过 5%，所以不判定全面提速，不据此扩大默认 Rust 覆盖。
 
 两侧 **native 均关闭**，本轮测量默认 JS 编译、CLI 加载/Node 编译缓存及 HMR 准备复用的组合收益，不是 Rust 的增量收益。基线是本 PR 早期提交 `419f49d914142a591d5e109fcb3010feed66ab19`，**不是 main**；候选生产字节对应 `9163a5c9bbe402fde849ac29bc221019052ef4f1`。后续 CI 修复或源码优化不能沿用本轮数字作为自身性能证据。
@@ -74,7 +76,7 @@ RSS 单位为 MiB。
 
 ## 公开数据与独立复算
 
-在仓库根目录运行：
+在归档快照的仓库根目录运行：
 
 ```sh
 node --import tsx docs/reports/2026-10-12-build-architecture-performance/tooling/replay.mts docs/reports/2026-10-12-build-architecture-performance

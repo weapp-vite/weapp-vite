@@ -1,16 +1,18 @@
 # 2026-10-11 Rust 批量分析：生产链路性能与兼容性报告
 
+> 原始采样、压缩数据与复算工具已移至[固定历史证据](../rust-performance-evidence.md)，不再纳入当前 PR 的文件差异。下文数字与限制保持原记录；复算前须按索引说明检出完整历史快照。
+
 **正式采样已完成，性能门禁失败；不扩大默认 Rust 覆盖。** 预定 Tailwind/TDesign 重复构建目标的 P50 仅减少 **1.21%**，未达到 10%。路由拓扑首次编辑 P95 首批增加 **16.98%**，追加等量确认仍增加 **13.05%**，超过 5% 回退线。暖编译的零售详情有 15.29% 局部收益，但双 script、无 default export 等案例明显变慢。本报告不支持“全项目 Rust 化已经显著提速”的结论。
 
 ## 证据与版本
 
-- [构建/HMR 完整数值证据](./native-paired.json)：无损压缩表示，包含全部 720 个实测侧运行、首批与确认、产物/告警摘要、RSS 可用性、来源身份和完整 verdict；通过 [replay.mts](./replay.mts) 还原并复算，不能将其直接当作原始 report schema。
-- [真实 compileVueFile 暖入口证据](./compiler-batch.json)：40 对、10 个案例及独立诊断；[采样后 correctness 检查](./compiler-final-check.json)为 0 个性能配对。
-- [证据索引](./evidence-index.json)：记录来源、SHA-256、字节数、脱敏与复算边界。
-- [完整 Rust script transform 语义证据](./script-semantic.json) 与 [其编译兼容性证据](./script-compiler.json)：语义 probe 一致，联合严格 parity 仍失败。
+- [构建/HMR 完整数值证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-11-rust-batch-production/native-paired.json)：无损压缩表示，包含全部 720 个实测侧运行、首批与确认、产物/告警摘要、RSS 可用性、来源身份和完整 verdict；通过 [replay.mts](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-11-rust-batch-production/replay.mts) 还原并复算，不能将其直接当作原始 report schema。
+- [真实 compileVueFile 暖入口证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-11-rust-batch-production/compiler-batch.json)：40 对、10 个案例及独立诊断；[采样后 correctness 检查](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-11-rust-batch-production/compiler-final-check.json)为 0 个性能配对。
+- [证据索引](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-11-rust-batch-production/evidence-index.json)：记录来源、SHA-256、字节数、脱敏与复算边界。
+- [完整 Rust script transform 语义证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-11-rust-batch-production/script-semantic.json) 与 [其编译兼容性证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-11-rust-batch-production/script-compiler.json)：语义 probe 一致，联合严格 parity 仍失败。
 - [实现方案与后续决策](../../plans/2026-10-11-rust-batch-production.md)、[历史实验范围](../../plans/2026-10-04-rust-batch-analysis.md)。
 
-在仓库根目录运行 `node --import tsx docs/reports/2026-10-11-rust-batch-production/replay.mts`，可还原并复算原门禁。原始报告 214,838,824 字节无损压缩为 2,467,000 字节，保留 720 个侧运行、5,606 个样本和 3 个诊断运行；没有删除或脱敏原报告字段，文件 SHA-256 与边界见证据索引。完整原始源码和机器日志不是这些公开摘要的组成部分。
+在归档快照的仓库根目录运行 `node --import tsx docs/reports/2026-10-11-rust-batch-production/replay.mts`，可还原并复算原门禁。原始报告 214,838,824 字节无损压缩为 2,467,000 字节，保留 720 个侧运行、5,606 个样本和 3 个诊断运行；没有删除或脱敏原报告字段，文件 SHA-256 与边界见证据索引。完整原始源码和机器日志不是这些公开摘要的组成部分。
 
 本轮合并基线为 main `9b69ec88`，merge commit 为 `1bbee9f45`；正式性能采样 commit 为 `ec7286064610a42579e1a444dee65fa0c33d146d`。它表示当次合并与采样身份，不代表之后 main 没有更新。计时期间源码、消费的 dist、addon、driver 与输入保持冻结；相关摘要身份在公开证据中保留。依赖锁文件有身份记录，不声称逐文件哈希了所有传递安装依赖。
 

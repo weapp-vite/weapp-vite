@@ -1,5 +1,7 @@
 # Rust 批量分析与真实链路验证
 
+> 原始采样、压缩数据与复算工具已移至[固定历史证据](../reports/rust-performance-evidence.md)，不再纳入当前 PR 的文件差异。下文数字与限制保持原记录；复算前须按索引说明检出完整历史快照。
+
 日期：2026-10-04。实施基线：`e1d0c3131`。本次没有进行全项目 Rust 重写，也没有扩大 native 默认启用范围。
 
 ## 已实现的边界
@@ -87,7 +89,7 @@ P50 差异为 -8.749%，仅有两对 smoke 样本，不构成稳定提速或达�
 
 原生模板没有 native 分析调用，且差异没有固定跟随 native 开关；另外四次最小构建复核的 map 相同。现有证据指向共享 layout sidecar 来源注册的不稳定性，尚未完成独立基线与根因证明，不把它定性为已排除的历史缺陷。本次保留失败证据，不夹带 layout 编译修复。
 
-原始记录保留在本地 `.codex-tmp/rust-analysis/native-smoke-v3/`；修正 smoke 展示语义后的离线报告另存于 `native-smoke-v3-reinterpreted/`，没有覆写原始样本。100 个指标中 96 个配对证据完整，4 个因上述产物差异不完整；完整指标仅标为 diagnostic-only。仓库保存[脱敏摘要](./2026-10-04-rust-batch-analysis-evidence.json)，包含原始报告 SHA-256、差异清单及完整性计数。更早两轮分别暴露 native 零调用分类与暂存工作区依赖链接缺失，修复后才取得本轮完整采集。
+原始记录保留在本地 `.codex-tmp/rust-analysis/native-smoke-v3/`；修正 smoke 展示语义后的离线报告另存于 `native-smoke-v3-reinterpreted/`，没有覆写原始样本。100 个指标中 96 个配对证据完整，4 个因上述产物差异不完整；完整指标仅标为 diagnostic-only。仓库保存[脱敏摘要](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-rust-batch-analysis-evidence.json)，包含原始报告 SHA-256、差异清单及完整性计数。更早两轮分别暴露 native 零调用分类与暂存工作区依赖链接缺失，修复后才取得本轮完整采集。
 
 当前结果支持保留可选 POC、继续修正正确性与测量边界，不支持整链 2 倍提速承诺。
 
@@ -158,7 +160,7 @@ P50 的绝对差约 7.14 ms。这是 macOS arm64、Node 24.18.0 共享机器上�
 
 结论是该粗粒度摘要有局部净收益，但当前自然工作量较小，尚未证明整构建达到 10% 门槛。继续保留为默认关闭的实验；扩大生产覆盖仍须代表工程构建/HMR、RSS、原始产物/maps/告警与跨平台验证。
 
-可复现命令及测量边界见 [实验工具](../../scripts/nativeChunkAnalysis/README.md)，本轮 [脱敏证据摘要](./2026-10-04-rust-chunk-analysis-evidence.json) 保留输入规模、原始报告摘要和完整性结果。
+可复现命令及测量边界见 [实验工具](../../scripts/nativeChunkAnalysis/README.md)，本轮 [脱敏证据摘要](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-rust-chunk-analysis-evidence.json) 保留输入规模、原始报告摘要和完整性结果。
 
 ## 真实模板入口的重复解析归因
 
@@ -195,7 +197,7 @@ debug/release 绑定各通过 82 项语义与边界测试，适配器 8 项测�
 
 生产接入仍有生命周期前提：scoped-slot 子脚本在模板遍历期间立即消费 manifest，之后还有 owner 依赖保留、位置重映射和 layout 追加绑定。当前离线批处理未解决这些边界，不宜直接延迟所有分析至模板结束。三操作系统 CI 已增加 feature 构建、真实捕获与无计时重放，本轮远程结果等待提交后验证。
 
-复现步骤见 [表达式实验工具](../../scripts/nativeBindingAnalysis/README.md)，可审阅的计数和报告 hash 见 [证据摘要](./2026-10-04-rust-binding-analysis-evidence.json)。
+复现步骤见 [表达式实验工具](../../scripts/nativeBindingAnalysis/README.md)，可审阅的计数和报告 hash 见 [证据摘要](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-rust-binding-analysis-evidence.json)。
 
 ## 第九轮：binding 表达式三实现配对采样
 
@@ -239,7 +241,7 @@ Rust 实验现在在每次 NAPI 调用内，按精确表达式缓存自有数据
 | 零售详情 | 0.936 / 2.551 | 0.766 / 1.605 | 0.840 / 1.660 | 0.171 / 0.213 | 0.178 / 0.222 |
 | Wevu 首页 | 0.539 / 3.284 | 0.341 / 0.553 | 0.371 / 0.628 | 0.080 / 0.113 | 0.091 / 0.143 |
 
-这次局部重放中，JS 摘要缓存只在压力语料改善 P50（约 14.7%），另外两组增加约 9.7% 和 8.9%。新 Rust 相对旧 Rust 的 P50 仅在压力语料下降约 1.0%（0.0067 ms），另外两组增加约 4.3%（0.0073 ms）和 14.5%（0.0115 ms）。减少 parse 次数没有转化成明确的 Rust 净收益，额外摘要收集、缓存和特化有成本。保留此实现用于后续默认关闭的实验，不作为生产优化推广；单轮结果也不足以判定稳定回退。完整编译、构建/HMR、RSS 和运行时收益均未由此次局部测量证明。完整 120 轮样本、双绑定 hash 与边界记录见 [摘要缓存证据](./2026-10-04-rust-binding-summary-evidence.json)。
+这次局部重放中，JS 摘要缓存只在压力语料改善 P50（约 14.7%），另外两组增加约 9.7% 和 8.9%。新 Rust 相对旧 Rust 的 P50 仅在压力语料下降约 1.0%（0.0067 ms），另外两组增加约 4.3%（0.0073 ms）和 14.5%（0.0115 ms）。减少 parse 次数没有转化成明确的 Rust 净收益，额外摘要收集、缓存和特化有成本。保留此实现用于后续默认关闭的实验，不作为生产优化推广；单轮结果也不足以判定稳定回退。完整编译、构建/HMR、RSS 和运行时收益均未由此次局部测量证明。完整 120 轮样本、双绑定 hash 与边界记录见 [摘要缓存证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-rust-binding-summary-evidence.json)。
 
 完整 build/HMR smoke v4 在启动前确认互斥，但运行期间另一任务启动 DevTools E2E，随后仅终止本任务 collector。报告保留为 incomplete（13 个 run、64 个 sample、Collector interrupted），相关耗时不用于验收。诊断构建中原生和 Wevu 模板各 0 次 native 调用，TDesign 为 2 次 batch 调用、12 份脚本、208,962 字节、零回退；不能把无命中场景的开关差值归因于 Rust。
 
@@ -271,7 +273,7 @@ arena 版本 P50 分别变化约 +1.48%、−0.95%、+4.54%，没有明确净收
 
 以上均为 V8 主线程样本占比；GC/idle/unattributed 保留在分母中，inclusive 行相互重叠，不可相加，也不是进程总 CPU 时间。系统 1 分钟 loadavg 约为 16.8–17.2，仍有系统负载。这里的 script.ts 模块还包含模板前 props 分析，不等同单个阶段。按 compileScriptPhase 函数栈统计，三组分别为 34.52%、42.45%、39.37%；模板前 resolveEffectivePropsDerivedKeys 分别为 2.51%、7.52%、7.72%，其内部函数不可再相加。两个真实页面的脚本相关样本多于模板，而 manifest 在压力 fixture 更突出：下一步优先调查脚本的重复遍历、宏转换与生成边界。若继续验证 manifest Rust 接入，应在每个 manifest 完成时批处理，分别在 scoped-slot script 生成前和根 owner-binding 保留前 flush，保留同步消费和有序 binding ID；不能用计时外预填结果替代真实完整编译。
 
-可审阅的完整配对样本、CPU 摘要、原 profile hash、环境和排除记录见 [本轮证据](./2026-10-04-rust-arena-cpu-evidence.json)。原始 `.cpuprofile` 只保留在本地，三平台 CI 只上传脱敏摘要。
+可审阅的完整配对样本、CPU 摘要、原 profile hash、环境和排除记录见 [本轮证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-rust-arena-cpu-evidence.json)。原始 `.cpuprofile` 只保留在本地，三平台 CI 只上传脱敏摘要。
 
 正式性能 run `37192496301` 的 Linux/macOS 已进入固定配对采集；Windows 全部 native 与脚本正确性检查通过，但在首个诊断构建写 npm 缓存时遭遇 `ENOTDIR`，尚无配对性能样本。检查点位于隔离工程的 `node_modules/weapp-vite/.cache` 目录创建，当前调查 junction 和文件系统路径边界，尚未证明属于 Rust 回归，也未修改性能阈值。阶段测试新增对隔离目录依赖链接下缓存写入的回归，远程复核结果待更新。
 
@@ -295,7 +297,7 @@ arena 版本 P50 分别变化约 +1.48%、−0.95%、+4.54%，没有明确净收
 
 额外覆盖嵌套循环、事件与重复表达式、slot outlet、Unicode/CRLF、静态模板、native 抛错、返回长度错误和无效模板。两个注入故障各发生一次整批 JS fallback，结果仍与原编译器完全一致；其余正常场景零 fallback。所有场景结束后均无 pending 工作或 active template，进程清理错误为零。批处理/加载器/进程生命周期及既有相关工具共 38 项测试、两组脚本类型检查和定向 ESLint 通过；生命周期测试确认发送错误不等同子进程退出，且清理不影响另一个进程。
 
-性能证据尚不足。第一轮四路完整编译采样因进程监控错误地排除了祖先进程的其他子任务，全部耗时作废。第二轮修正监控后只完成压力样本；零售样本与其他 E2E 重叠，排除后停止。两轮均缺少相同 loader 控制组，因此不得把原始编译器到批处理版本的差值归因 Rust。补齐第五组后，采样前仍检测到其他任务，未启动新计时。后续按 10 轮预热、每组 40 轮平衡顺序，串行重复三份语料两批；RSS 只记录编译后 worker 快照，不能解释为峰值或进程树 RSS。原始排除记录和最新正确性证据见 [完整编译实验记录](./2026-10-04-rust-complete-compiler-evidence.json)。
+性能证据尚不足。第一轮四路完整编译采样因进程监控错误地排除了祖先进程的其他子任务，全部耗时作废。第二轮修正监控后只完成压力样本；零售样本与其他 E2E 重叠，排除后停止。两轮均缺少相同 loader 控制组，因此不得把原始编译器到批处理版本的差值归因 Rust。补齐第五组后，采样前仍检测到其他任务，未启动新计时。后续按 10 轮预热、每组 40 轮平衡顺序，串行重复三份语料两批；RSS 只记录编译后 worker 快照，不能解释为峰值或进程树 RSS。原始排除记录和最新正确性证据见 [完整编译实验记录](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-rust-complete-compiler-evidence.json)。
 
 Windows run `37195472616` 的诊断表明，源工程和仓库直接依赖均能解析，但暂存工程的相对 pnpm 链接在外层 junction 下 `stat`、`realpath` 和直接 `package.json` 全部返回 `ENOENT`。此前测试在 Windows 内层也使用绝对 junction，未覆盖实际相对 symlink。修复仅落在 benchmark 暂存工具：Windows 使用真实 `node_modules`/scope 目录，每个依赖链接到已解析的绝对目标，保留 `.pnpm` 的绝对 junction；普通元数据文件复制，源目录只读。暂存完成时先核对直接 package 路径，再检查模块解析，避免祖先回退掩盖断链。
 
@@ -303,7 +305,7 @@ Windows run `37195472616` 的诊断表明，源工程和仓库直接依赖均能
 
 ## 第十四轮：三平台正确性与独立完整编译采集
 
-提交 `977178c792487942dee181d83e3995d77c00224a` 的 [三平台 native correctness](https://github.com/weapp-vite/weapp-vite/actions/runs/37198027593) 已全部通过。各平台的五路完整编译对照均覆盖 13 个场景。Windows 暂存修复在实际 runner 通过：源工程、隔离工程和仓库直接依赖均能解析到同一包，prepare、首次/重复构建及清理成功，两次均为 38 个文件、9 份 map、零告警；该原生模板没有 native 命中，不从此次修复推导 Rust 性能收益。对应产物及 hash 已补入 [完整编译证据](./2026-10-04-rust-complete-compiler-evidence.json)。
+提交 `977178c792487942dee181d83e3995d77c00224a` 的 [三平台 native correctness](https://github.com/weapp-vite/weapp-vite/actions/runs/37198027593) 已全部通过。各平台的五路完整编译对照均覆盖 13 个场景。Windows 暂存修复在实际 runner 通过：源工程、隔离工程和仓库直接依赖均能解析到同一包，prepare、首次/重复构建及清理成功，两次均为 38 个文件、9 份 map、零告警；该原生模板没有 native 命中，不从此次修复推导 Rust 性能收益。对应产物及 hash 已补入 [完整编译证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-rust-complete-compiler-evidence.json)。
 
 本机预检再次发现其他项目的活动 E2E、构建和 dev 服务，未启动新性能样本。新增串行采集入口 `compileTimings.ts`：先运行全部正确性场景，再执行两批三份语料，每组 10 轮预热、40 轮五实现平衡采样。聚合时拒绝失败、缺样、执行顺序不完整、来源身份漂移或产物不一致的报告；每个批次单独保留 P50/P95 和逐对差值，不混池。手动 CI 使用独立 concurrency group，已有固定提交正式性能运行不受影响。共享 runner 仍可能存在资源争用，采集结果不直接判定生产构建/HMR 的 10%/5% 门槛。 新增 15 项聚合/串行失败契约测试，binding 脚本当前 9 文件共 43 项测试通过，局部类型和 ESLint 检查通过；另用刚下载的三平台真实报告核对来源 schema。
 
@@ -327,17 +329,17 @@ page-meta/props 查询已经使用 Babel AST，拆成单独 native API 会增加
 
 表中为 JS 摘要缓存→native 的逐对耗时节省百分比 P50，负值表示 native 更慢；不是分别取 P50 后相减，也未混合语料或批次。坏尾延迟同样没有一致改善：Linux 零售第二批 native wall P95 比摘要 JS 高 13.28%，Windows 零售第二批高 5.65%。Windows 零售第一批及 macOS 压力第一批的 native RSS P50 分别高 12.68%、10.90%。RSS 仅是编译后 worker 快照，不能解释为峰值或进程树内存；收益分位数的 P95 也不能替代 wall latency P95。
 
-这些是温热缓存下完整 `compileVueFile` 的诊断结果，不是冷构建、Vite/HMR 或小程序运行时。macOS runner 为 Node 24.20/arm64/3 CPU，Linux/Windows 为 Node 24.21/x64/4 CPU，且 macOS 有较高 loadavg；不能直接比较不同 OS 的绝对耗时，Windows loadavg 为零也不证明空闲。生产固定 off/on 性能门禁在此 run 中未启用。完整聚合、配对样本、身份和限制见[三平台采样证据](./2026-10-04-rust-compiler-timing-evidence.json)。结果支持继续调查计算边界，不支持扩大生产覆盖或默认启用。
+这些是温热缓存下完整 `compileVueFile` 的诊断结果，不是冷构建、Vite/HMR 或小程序运行时。macOS runner 为 Node 24.20/arm64/3 CPU，Linux/Windows 为 Node 24.21/x64/4 CPU，且 macOS 有较高 loadavg；不能直接比较不同 OS 的绝对耗时，Windows loadavg 为零也不证明空闲。生产固定 off/on 性能门禁在此 run 中未启用。完整聚合、配对样本、身份和限制见[三平台采样证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-rust-compiler-timing-evidence.json)。结果支持继续调查计算边界，不支持扩大生产覆盖或默认启用。
 
 同时新增[脚本 JS 基线工具](../../scripts/scriptAnalysisBaseline/README.md)，仅通过诊断 source loader 实施四项独立实验：同次编译的 AST 单次所有权移交、props-return visitor 的 `noScope`、page-meta 和 reserved-props 保守负向检查。AST 只在已有值、最终源码逐字相同、fast path 未命中时复用；源码变化仍重新 parse，异常和未消费 token 在 finally 释放。没有生产源码改动，也没有新增 NAPI 调用。
 
-原始编译器、相同 loader 控制组、四项单独优化及组合版，七个独立进程各执行 32 场景两次，共 448 次编译检查通过。重复调用也与首次原始结果比较，完整保留输出、map、告警和公开错误诊断字段；每次实际源码/配置输入摘要与父进程一致。覆盖 AST 复用/源码变化/不可用、两类 guard 的正负分支、宏转义/别名/类型与值遮蔽、TSX、Unicode/CRLF 和失败清理。17 项单测、脚本 typecheck 和定向 ESLint 通过，已接入三平台 correctness CI；当前本地记录见[JS 基线证据](./2026-10-04-script-baseline-evidence.json)。此工具尚未采集性能，不能从省去解析/遍历的次数推导提速。
+原始编译器、相同 loader 控制组、四项单独优化及组合版，七个独立进程各执行 32 场景两次，共 448 次编译检查通过。重复调用也与首次原始结果比较，完整保留输出、map、告警和公开错误诊断字段；每次实际源码/配置输入摘要与父进程一致。覆盖 AST 复用/源码变化/不可用、两类 guard 的正负分支、宏转义/别名/类型与值遮蔽、TSX、Unicode/CRLF 和失败清理。17 项单测、脚本 typecheck 和定向 ESLint 通过，已接入三平台 correctness CI；当前本地记录见[JS 基线证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-script-baseline-evidence.json)。此工具尚未采集性能，不能从省去解析/遍历的次数推导提速。
 
 固定提交 `a822fb7ff5eeb341a6b95bafa4f9eaef24fbd412` 的[生产 native off/on 正式运行](https://github.com/weapp-vite/weapp-vite/actions/runs/37192496301)现已结束。Linux/macOS 均完成采样并由门禁主动退出，分别判为 `unstable`、`regression`，不是超时；Windows 在旧暂存链接问题处失败，没有配对性能样本。预先固定的 TDesign 重复构建目标，Linux P50 为 4486.08→4408.42 ms（减少 1.73%），macOS 为 3770.95→3564.22 ms（减少 5.48%），均未达到 10% 门槛。
 
 该正式运行测量已有生产 native 路径，不包含本轮 binding 或脚本 JS 基线实验。诊断构建中原生/Wevu 两个模板各零 native 调用，TDesign 各有两次调用，零失败/回退。零调用只表示没有覆盖 native 计算，不能排除加载或路径开销，也不能将越线直接解释为纯噪声。HMR 使用已有 120 ms polling watcher 协议，强制 GC 和产物读取发生在计时外并影响下一样本，不能视为默认 watcher 的无观测延迟；build RSS 为进程树采样峰值，HMR RSS 为 GC 后快照，不能混为同一内存指标。正式失败结果进一步约束生产接入，不替代 Stable DevTools runtime 最终验收。
 
-Linux/macOS 的 100 项基础指标均完整；分别有 322/390 个 side-run 和 3124/3660 条 samples。Linux 的 P50/P95 门禁有 197 项通过、3 项不稳定；macOS 有 167 项通过、26 项不稳定、7 项在确认批次仍回退。持续回退均是 wall P95，涉及普通模板的 repeat build、script first edit / repeat restore、template repeat restore、style first restore，以及 Wevu script repeat restore / style repeat edit；确认批次回退约 6.09%–28.69%。原始报告 hash、完整性、全部未通过指标的首批/确认数值、失败阶段和限制见[正式运行证据](./2026-10-04-rust-production-run-status.json)。后续优先定位这些整链尾延迟及 native 加载成本，再决定是否修改生产接入；本轮没有降低阈值或重新派发固定运行。
+Linux/macOS 的 100 项基础指标均完整；分别有 322/390 个 side-run 和 3124/3660 条 samples。Linux 的 P50/P95 门禁有 197 项通过、3 项不稳定；macOS 有 167 项通过、26 项不稳定、7 项在确认批次仍回退。持续回退均是 wall P95，涉及普通模板的 repeat build、script first edit / repeat restore、template repeat restore、style first restore，以及 Wevu script repeat restore / style repeat edit；确认批次回退约 6.09%–28.69%。原始报告 hash、完整性、全部未通过指标的首批/确认数值、失败阶段和限制见[正式运行证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-rust-production-run-status.json)。后续优先定位这些整链尾延迟及 native 加载成本，再决定是否修改生产接入；本轮没有降低阈值或重新派发固定运行。
 
 ## 第十六轮：七路 JS 基线计时入口与加载边界核查
 
@@ -345,7 +347,7 @@ Linux/macOS 的 100 项基础指标均完整；分别有 322/390 个 side-run �
 
 正确性和计时共用执行逻辑；binding 与脚本实验共用进程所有权传输。父 IPC 断开后，worker 等当前启动/编译完成，再卸载 hook 并退出。新增严格报告验证及逐对聚合，保留原始观测，不混合语料/批次，不把收益 P95 当成坏尾延迟。编译失败、输入漂移或输出分歧时保存完整诊断副本，CI 上传对应文件；Windows 多层 JSON 转义路径仅在落盘副本中脱敏，原始比较和摘要不变。
 
-23 个文件共 132 项测试通过，两组脚本 typecheck 和定向 ESLint 通过。真实 IPC smoke 串行覆盖七种实现的重复编译、预期错误、恢复、关闭及重复关闭；全部进程确认退出。重构后重新执行 448 次脚本正确性检查，及 13 场景五路 native 完整编译对照，全部通过；后者采样轮数为零。本机仍有其他任务的构建/E2E，没有收集新的本地性能样本。CI 新增独立的 `script-baseline-performance` 手动入口；实现、输入及输出身份见[采集工具证据](./2026-10-04-script-timing-collection-evidence.json)。在取得实际样本前，不宣称这四项 JS 优化提升性能。
+23 个文件共 132 项测试通过，两组脚本 typecheck 和定向 ESLint 通过。真实 IPC smoke 串行覆盖七种实现的重复编译、预期错误、恢复、关闭及重复关闭；全部进程确认退出。重构后重新执行 448 次脚本正确性检查，及 13 场景五路 native 完整编译对照，全部通过；后者采样轮数为零。本机仍有其他任务的构建/E2E，没有收集新的本地性能样本。CI 新增独立的 `script-baseline-performance` 手动入口；实现、输入及输出身份见[采集工具证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-script-timing-collection-evidence.json)。在取得实际样本前，不宣称这四项 JS 优化提升性能。
 
 另核查了正式门禁的加载边界。`native.ts` 在首次实际分析请求才 require addon，成功/加载失败均在进程内缓存；模块 import 本身不加载。a822 和当前相关实现一致。普通原生模板与 Wevu 的独立 build 诊断不仅 calls=0，wrapper 的 processes 也为零，而外层 lifetime preload 完整记录两个 CLI 进程且没有 load failure，支持这些诊断构建没有加载 addon。正式 timed runs 的 native 零值是初始化占位，不能当成逐次观测；HMR 仍缺同等证据。
 
@@ -371,7 +373,7 @@ actual 的三个异常全部来自同一个故意无效的源码阶段，分别�
 
 最初使用默认 Babel 配置的探针未通过完整输出比较，记录已保留。原因是 `mayContain` helpers 在未提供 parser 时保守返回 true，native 返回精确值；最终仅把此诊断的脚本分析与 feature flags 固定为现有 Oxc fallback，以比较精确结果，滚动告警仍保留原路径来验证缓存。没有修改生产契约或归一化掉差异，不能据此声称默认 Babel/native 的所有中间结果完全相同。
 
-31 项工具测试、局部 typecheck 和定向 ESLint 通过；独立复核最终报告的源码、逐模式输出及原始轨迹 hash。验证器要求完整进程起止、事件阶段及调用顺序，分别锁定缓存、故意解析失败与恢复，并禁止有效阶段发生 native fallback。CI 接入三平台源码探针，只上传公开报告；私有轨迹、生成 wrapper 和 owner 文件不上传。来源、首轮排除记录及最终结构化输出见[加载探针证据](./2026-10-04-native-load-source-evidence.json)。
+31 项工具测试、局部 typecheck 和定向 ESLint 通过；独立复核最终报告的源码、逐模式输出及原始轨迹 hash。验证器要求完整进程起止、事件阶段及调用顺序，分别锁定缓存、故意解析失败与恢复，并禁止有效阶段发生 native fallback。CI 接入三平台源码探针，只上传公开报告；私有轨迹、生成 wrapper 和 owner 文件不上传。来源、首轮排除记录及最终结构化输出见[加载探针证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-native-load-source-evidence.json)。
 
 这里仍没有构建、HMR 或性能样本。wrapper 初始化只观察首次未缓存 require，不等于每次 loader request；已有 fallback channel 不覆盖所有缺失方法分支，零事件不证明没有 JS fallback；`.node` 增量也不代表整个进程所有 native 加载。后续真实 HMR 需要驱动阶段标记、正常退出和产物对照，不能用本轮结果解释已有尾延迟回退。
 
@@ -400,7 +402,7 @@ loader 本身存在干扰。Linux 压力与零售两批的 baseline→control wa
 
 结果支持优先消除重复工作，并在更强 JS 基线上选择 Rust 完整计算阶段；macOS 反例意味着尚不能声称这组 JS 优化在三平台稳定获得真实页面收益。它仍只是固定选项、温热 `compileVueFile` 的 JS 诊断，不是 Vite 构建/HMR，也不是生产 10%/5% 门禁通过。宏转换、AST 所有权等优化仍只通过诊断 source loader 启用，生产源码未改。接下来应在更强 JS 基线上重新采 CPU，再决定整体 `transformScript` Rust POC 是否有足够剩余收益。
 
-预热 14 轮由源码协议和报告字段确认，未保存每轮预热原始观测；独立复核不能声称重新计数。14 轮顺序设计平衡每个实现的位置及单轮内前序，跨轮边界并非均匀。完整正确性保留原始序列化输出，计时报告保留完整比较后的摘要；源码身份覆盖声明的 230 文件和真实语料，不覆盖所有已安装依赖文件。三平台全部单项结果、反例、来源 hash 见[JS 基线采样证据](./2026-10-04-script-baseline-timing-evidence.json)。
+预热 14 轮由源码协议和报告字段确认，未保存每轮预热原始观测；独立复核不能声称重新计数。14 轮顺序设计平衡每个实现的位置及单轮内前序，跨轮边界并非均匀。完整正确性保留原始序列化输出，计时报告保留完整比较后的摘要；源码身份覆盖声明的 230 文件和真实语料，不覆盖所有已安装依赖文件。三平台全部单项结果、反例、来源 hash 见[JS 基线采样证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-script-baseline-timing-evidence.json)。
 
 ## 第十九轮：更强 JS 与 Rust 批处理组合、逐次完整编译采样
 
@@ -422,7 +424,7 @@ loader 本身存在干扰。Linux 压力与零售两批的 baseline→control wa
 
 下一项有意义的 Rust 边界仍是整个 `transformScript`：parse、scope、改写和 generate 共享 AST。单独搬一个 visitor 或 generator 通常仍需保留 Babel 解析/生成及跨界 AST 搬运。完整阶段 POC 还必须解决已改写模板表达式的源码契约（包含原始/投影循环与条件）、Vue/Babel 宏语义、自定义 TypeScript 删除规则、注释和 sourcemap。标准 Oxc lowering 不能直接替代现有行为。应保留既有 JS fastSetup，native 一次请求完成完整阶段，unsupported/error 整段回退，并记录真实页面命中率；本轮没有实现或宣称这项完整阶段迁移。
 
-新增工具共 89 项测试、局部 TypeScript 和定向 ESLint 通过，代码按执行、正确性、采样窗口、工作负载、父进程复核分文件，均未超过 300 行。原始来源 hash、逐组计数、采样区间、环境与完整限制见[组合编译证据](./2026-10-04-optimized-compiler-evidence.json)，复现命令见[工具说明](../../scripts/optimizedCompilerAnalysis/README.md)。真实 Stable 微信开发者工具 runtime 仍未完成最终验收。
+新增工具共 89 项测试、局部 TypeScript 和定向 ESLint 通过，代码按执行、正确性、采样窗口、工作负载、父进程复核分文件，均未超过 300 行。原始来源 hash、逐组计数、采样区间、环境与完整限制见[组合编译证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-optimized-compiler-evidence.json)，复现命令见[工具说明](../../scripts/optimizedCompilerAnalysis/README.md)。真实 Stable 微信开发者工具 runtime 仍未完成最终验收。
 
 同轮修复 PR CI 暴露的 `snapshotTemplates.test.ts` fixture 缺失依赖：owner 校验进入真实声明读取时需要 JSON service，现与 WXML service 一样初始化真实服务，不给生产逻辑增加可选回退。原 8 项断言、`weapp-vite` typecheck 和定向 ESLint 通过；此前 Ubuntu/Node 22 作业独跑 coverage，其他矩阵命令不同，因此不把这个失败误归为 OS 兼容性差异。
 
@@ -460,7 +462,7 @@ oracle 特别补了三个反例：不含标识符的源码配空 map 不得通�
 
 本轮证据只来自本机 macOS arm64，三平台检查随 PR CI 验证；第十九轮固定提交的独立 CPU 作业仍需完成和复核，不重复触发。真实 Stable 微信开发者工具 runtime 仍未完成最终验收。下一阶段应先确定完整转换的注释/map 契约，再在一次 native 请求中实现有序改写，保留 fastSetup 与整段 fallback；不将本打印器单独接入热路径，也不声称已经获得额外 Rust 提速。
 
-来源 hash、独立审计、逐项计数与限制见[脚本打印探针证据](./2026-10-04-script-transform-printer-evidence.json)；命令见[工具说明](../../scripts/nativeScriptTransform/README.md)，完整语义审计见[阶段边界](../../scripts/nativeScriptTransform/BOUNDARY.md)。
+来源 hash、独立审计、逐项计数与限制见[脚本打印探针证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-script-transform-printer-evidence.json)；命令见[工具说明](../../scripts/nativeScriptTransform/README.md)，完整语义审计见[阶段边界](../../scripts/nativeScriptTransform/BOUNDARY.md)。
 
 
 ## 第二十一轮：实际 Rust 脚本改写与严格来源对照
@@ -473,11 +475,11 @@ JS bridge 保留 26 个声明选项、字段顺序、undefined 与属性描述�
 
 正式严格运行先用三个新进程执行 45 场景两轮，270 次完整编译结果、map、告警和公开诊断逐字相同。随后将捕获到的 72 条真实 stage 请求独立交给 Rust：36 次成功、36 次 unsupported。成功记录含重复轮次与跨语料复用，实际只有 10 个不同的 source/request 组合，不能当作 36 个独立功能样本。36 份成功结果全部通过去位置 AST、注释顺序、PURE/NO_SIDE_EFFECTS 归属、返回元数据和告警对照；两真实页面各两次均原生成成功。原始 code/map 均与 JS 字节不同；**36 份都没有通过来源映射对照，因此 nativePassed=0，严格命令 exit 1，comparisonPassed=false。** completed=true 只代表完整收集，不代表兼容门禁通过。
 
-map 对照查询两份实际 stage map 从各自产物回到同一真实源脚本，包括 UTF-16 坐标及 name。新生成片段清空 span，与 Babel 继承邻近位置的行为产生大量差异；此外仍有原源码锚点、映射名称、模板字面量和基线映射自身覆盖限制。两边都缺失映射也不能自动视为来源覆盖通过，更不能把所有差异直接归为 Rust 独有错误。两真实页面中，Wevu/零售分别有 364/785 个基线有映射、native 未映射锚点，全部处在生成区域；其中 313/726 个基线坐标来自 GLB 继承。源脚本区域的坐标差异为 4/22 个，集中在 expose shorthand 与 TemplateElement，另各有两个名称差异锚点。Wevu 的 7 个越界 finding 发生在基线 inline 元数据映射，均与上述单侧映射路径重叠；不能重复加总成独立路径数，也不能据此认定 native 的未映射满足来源覆盖。没有伪造新片段位置以追平基线。逐项计数和审计边界见[完整阶段证据](./2026-10-04-script-transform-stage-evidence.json)。
+map 对照查询两份实际 stage map 从各自产物回到同一真实源脚本，包括 UTF-16 坐标及 name。新生成片段清空 span，与 Babel 继承邻近位置的行为产生大量差异；此外仍有原源码锚点、映射名称、模板字面量和基线映射自身覆盖限制。两边都缺失映射也不能自动视为来源覆盖通过，更不能把所有差异直接归为 Rust 独有错误。两真实页面中，Wevu/零售分别有 364/785 个基线有映射、native 未映射锚点，全部处在生成区域；其中 313/726 个基线坐标来自 GLB 继承。源脚本区域的坐标差异为 4/22 个，集中在 expose shorthand 与 TemplateElement，另各有两个名称差异锚点。Wevu 的 7 个越界 finding 发生在基线 inline 元数据映射，均与上述单侧映射路径重叠；不能重复加总成独立路径数，也不能据此认定 native 的未映射满足来源覆盖。没有伪造新片段位置以追平基线。逐项计数和审计边界见[完整阶段证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-script-transform-stage-evidence.json)。
 
 53 项 Rust 测试、161 项工具测试、局部 TypeScript/ESLint 通过；默认与实验组合 cargo check 通过。Rust 测试直接调用当前 TS oracle，覆盖真实页面 metadata 求值、嵌套 loop/raw key 条件、告警/冲突、setup seed、显式 this 参数、expose 类型/值命名空间、router hooks 和重复 defaults。合成对象括号形态曾触发 native 崩溃，已用解析选项修正并补 Unicode/关键词/转义 key 回归；正式运行没有该失败。默认正常依赖树不引入 codegen/semantic/sourcemap/indexmap。实现按职责拆分，各实现文件保持 300 行以内，Rust 文件用系统 rustfmt 检查，isolated 1.99 工具链用于编译。
 
-同轮完成固定[独立 CPU 运行 37207342592](https://github.com/weapp-vite/weapp-vite/actions/runs/37207342592)的摘要审计：Linux/macOS 成功，Windows 在采样前的测试 ESM import 边界失败，未产生 Windows 样本。已将测试的绝对路径改成 file URL，13 项定向测试和 lint 通过；未重跑该固定 benchmark。两平台 269 项 Git 源码身份、30 组运行、1050 条摘要观测和 600 个采样窗口一致；只有 sanitized summary 可供复核，原始 profile/worker 输出没有下载，不宣称已重算原始栈。optimized-js Babel self 的占比仍较高，但不能据 CPU 样本比例推导提速，详见[固定 CPU 证据](./2026-10-04-optimized-cpu-ci-evidence.json)。
+同轮完成固定[独立 CPU 运行 37207342592](https://github.com/weapp-vite/weapp-vite/actions/runs/37207342592)的摘要审计：Linux/macOS 成功，Windows 在采样前的测试 ESM import 边界失败，未产生 Windows 样本。已将测试的绝对路径改成 file URL，13 项定向测试和 lint 通过；未重跑该固定 benchmark。两平台 269 项 Git 源码身份、30 组运行、1050 条摘要观测和 600 个采样窗口一致；只有 sanitized summary 可供复核，原始 profile/worker 输出没有下载，不宣称已重算原始栈。optimized-js Babel self 的占比仍较高，但不能据 CPU 样本比例推导提速，详见[固定 CPU 证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-optimized-cpu-ci-evidence.json)。
 
 完整阶段输出尚未回灌 `compileVueFile`，没有新增性能采样、Vite/HMR 或真实 Stable 微信开发者工具 runtime 结果。实验继续默认关闭，没有扩大生产路径。下一步应处理真实源码与合成区间的 map 契约，再做完整编译/宿主对照和正式配对计时；当前不能承诺额外 Rust 收益，更不能承诺全项目两倍提速。本轮仅为内部实验和测试工具，不新增 changeset 或脚手架 bump。
 
@@ -498,7 +500,7 @@ map 对照查询两份实际 stage map 从各自产物回到同一真实源脚�
 
 61 项 Rust、212 项工具测试、局部 TypeScript／ESLint、默认及三实验 feature 并存的 cargo check 通过。Rust 仍有已记录的非致命未使用项警告；release 构建保留工具链 stripping 警告。实现文件保持 300 行以内；涉及的 Rust 文件格式同步，pre-commit／lint-staged 保留。实验及工具没有扩展生产行为，不新增 changeset 或脚手架 bump。
 
-本轮没有运行性能采样、Vite 构建／HMR 或真实 Stable 微信开发者工具 runtime，不能宣称整链收益或 runtime 最终验收完成。后续先处理生成区间和表达式来源，再扩展运行时语义对照与正式计时。原始完整证据保留在独立目录，摘要与审计边界见[完整编译接入证据](./2026-10-05-script-transform-integration-evidence.json)。
+本轮没有运行性能采样、Vite 构建／HMR 或真实 Stable 微信开发者工具 runtime，不能宣称整链收益或 runtime 最终验收完成。后续先处理生成区间和表达式来源，再扩展运行时语义对照与正式计时。原始完整证据保留在独立目录，摘要与审计边界见[完整编译接入证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-05-script-transform-integration-evidence.json)。
 
 
 ## 第二十三轮：生成映射点隔离与真实编译复核
@@ -522,7 +524,7 @@ map 对照查询两份实际 stage map 从各自产物回到同一真实源脚�
 
 78 项 Rust、24 项受影响工具测试、局部 TypeScript／ESLint／rustfmt、默认及三实验 feature 合并 cargo check 通过。独立审计复核 347 份源码、52 份构建输入、139 份正式证据与二进制身份，并重放全部 90 个完整及 36 个阶段 oracle。新增实现文件均低于 300 行；实验无新增依赖、生产入口或用户配置变化，不另加 changeset／脚手架 bump。构建仍有已记录的非致命 stripping 与 unused 警告。
 
-本轮没有性能、RSS、构建／HMR 或真实 Stable 微信开发者工具 runtime 采样，未完成最终 runtime 验收。实验继续默认关闭，不承诺整链提速。公开摘要与可复核 hash 见[生成映射点证据](./2026-10-05-script-transform-provenance-evidence.json)。
+本轮没有性能、RSS、构建／HMR 或真实 Stable 微信开发者工具 runtime 采样，未完成最终 runtime 验收。实验继续默认关闭，不承诺整链提速。公开摘要与可复核 hash 见[生成映射点证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-05-script-transform-provenance-evidence.json)。
 
 
 ## 第二十四轮：完整脚本的受控 Node 行为对照
@@ -548,7 +550,7 @@ map 对照查询两份实际 stage map 从各自产物回到同一真实源脚�
 
 正式采集前后 369 份源码身份、原 v7 addon 及声明 helper 四个包的 842 份 src/dist/manifest 身份一致；原始请求、报告和编译证据也复核了字节 hash。helper 清单覆盖本轮已知入口，不是自动解析的全部 node_modules/Node 工具链字节闭包。本轮未修改 Rust，复用上一轮已构建并固定身份的 addon，没有以新构建冒充旧二进制。
 
-59 项新增工具测试、定向 ESLint 与脚本 TypeScript 检查通过，新增实现文件均低于 300 行。工具、场景与报告按职责拆分；无生产接口或行为变更，不新增 changeset／脚手架 bump。详细计数与独立审计见[受控行为证据](./2026-10-05-script-transform-semantic-evidence.json)。
+59 项新增工具测试、定向 ESLint 与脚本 TypeScript 检查通过，新增实现文件均低于 300 行。工具、场景与报告按职责拆分；无生产接口或行为变更，不新增 changeset／脚手架 bump。详细计数与独立审计见[受控行为证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-05-script-transform-semantic-evidence.json)。
 
 这些结果只覆盖有限 Node 宿主和受跟踪 Promise／已观察状态，不能证明所有脱离调用链的 continuation，也不能替代完整 Wevu Component 宿主或真实 Stable 微信开发者工具。未完成最终 runtime 验收，本轮没有性能、RSS、Vite 构建／HMR 或跨平台采样；整链提速门槛仍未满足。
 
@@ -581,7 +583,7 @@ Rust 先核对精确原文切片、字符边界、原直接 callee AST、inlineI
 
 342 项工具测试、脚本 TypeScript、ESLint 通过。Rust 先通过 84 项阶段测试，新增两项测试后通过 8 项来源测试；组合实验 feature 的 cargo check 与 rustfmt 通过。新增及修改实现均小于 300 行。无生产入口、公开配置或运行时行为变化，不新增 changeset／脚手架 bump；保留 pre-commit 和 lint-staged。
 
-这只解决直接 callee 的 token 起点；参数、class/key、包装代码、其他模板 token 及完整字符区间仍需真实来源关系，标点仍可能 GLB 继承。完整 SFC 传输、额外原表达式解析及 map 重建都有成本，本轮未测性能、RSS、Vite 构建／HMR或真实 Stable 微信开发者工具，未完成最终 runtime 验收。独立审计和具体身份见[模板 callee 来源证据](./2026-10-05-template-callee-origin-evidence.json)。
+这只解决直接 callee 的 token 起点；参数、class/key、包装代码、其他模板 token 及完整字符区间仍需真实来源关系，标点仍可能 GLB 继承。完整 SFC 传输、额外原表达式解析及 map 重建都有成本，本轮未测性能、RSS、Vite 构建／HMR或真实 Stable 微信开发者工具，未完成最终 runtime 验收。独立审计和具体身份见[模板 callee 来源证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-05-template-callee-origin-evidence.json)。
 
 
 ## 第二十六轮：基本字面量参数来源补证
@@ -598,6 +600,6 @@ Wevu 首页新增 4 个独立字面量参数的来源起点，阶段与最终 ma
 
 394 项工具测试、91 项 Rust 阶段测试、脚本 TypeScript／ESLint、定向 rustfmt 和三个实验 feature 的组合 cargo check 通过。60 份构建输入在构建后保持一致；正式运行前后 394 份源码、二进制和声明 helper 身份保持一致。既有三项 unused 警告仍保留。新增实现按来源摘要、Rust 校验／附加与独立 checker 拆分，所有修改实现均低于 300 行。内部诊断改动不新增 changeset 或 create-weapp-vite bump。
 
-本轮没有性能、RSS、Vite 构建／HMR 或真实 Stable 微信开发者工具采样，仍未完成最终 runtime 验收，也没有证明整体提速门槛。新证据单独保存，不覆盖第二十五轮的固定产物和审计；摘要见[参数来源证据](./2026-10-05-template-argument-origin-evidence.json)。
+本轮没有性能、RSS、Vite 构建／HMR 或真实 Stable 微信开发者工具采样，仍未完成最终 runtime 验收，也没有证明整体提速门槛。新证据单独保存，不覆盖第二十五轮的固定产物和审计；摘要见[参数来源证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-05-template-argument-origin-evidence.json)。
 
 独立复核重算 60 份构建输入、2 份输出、394 份源码、842 份 helper、134 份编译产物和 31 份语义产物，未见身份差异；并复核 compiler 退出 1、8 个 worker 退出 0 及各层来源计数。既有校验器在保存证据上重放，仅用于核对一致性，并非独立重写 oracle 或再次采样。审计 hash 记录在本轮参数来源摘要中。

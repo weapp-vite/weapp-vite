@@ -2,7 +2,7 @@
 
 本目录已有真实请求捕获、独立 printer，以及受限的完整 Rust 脚本阶段实验。`transformScriptNative` 在一次 native 调用内执行实际类型清理、作用域改名、导入路由、组件注入和代码生成；`roundTripScriptNative` 仍只打印已经转换的 JS。完整阶段尚未通过 sourcemap 兼容门禁，且明确拒绝未覆盖选项，不能据此宣称生产替换、完整 Vue 编译器或整项目提速。
 
-本文保留源码边界审计，并在末尾记录已经实现的范围；不是全面兼容声明。真实请求以当前运行生成的 capture 为准；下文历史产物只能证明需要覆盖的行为，不能代替当前请求、产物及性能复核。相关计时证据见 [`docs/plans/2026-10-04-script-baseline-timing-evidence.json`](../../docs/plans/2026-10-04-script-baseline-timing-evidence.json)。
+本文保留源码边界审计，并在末尾记录已经实现的范围；不是全面兼容声明。真实请求以当前运行生成的 capture 为准；下文历史产物只能证明需要覆盖的行为，不能代替当前请求、产物及性能复核。相关计时证据见 [`docs/plans/2026-10-04-script-baseline-timing-evidence.json`](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-script-baseline-timing-evidence.json)。
 
 ## 真实入口与所有权
 
@@ -144,7 +144,7 @@ Oxc 0.152 API 使用 AST 类型上的构造方法，例如 `Statement::new_impor
 
 已有显式拒绝覆盖 app、未实现的 Vue/Wevu 宏、非空 propsAliases/propsDerivedKeys、scoped slots、template refs/layout/CSS、复杂 component/capability shape 等。自定义 TS 删除、expose 的 visitor 顺序、显式 this 参数和类型/值命名空间分别有当前 TypeScript 实现的直接 oracle 回归。请求层保持字段顺序与 undefined 描述，private helper/routes 从现有源码提取，避免 Rust 静默维护另一套常量。
 
-独立阶段检查先比较原始、优化 JS、附加 capture 的完整编译返回值，再把完整真实阶段输入交给 Rust。[10 月 4 日阶段证据](../../docs/plans/2026-10-04-script-transform-stage-evidence.json) 仅覆盖这一边界，当时没有回灌完整编译器。
+独立阶段检查先比较原始、优化 JS、附加 capture 的完整编译返回值，再把完整真实阶段输入交给 Rust。[10 月 4 日阶段证据](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/plans/2026-10-04-script-transform-stage-evidence.json) 仅覆盖这一边界，当时没有回灌完整编译器。
 
 新增 `integratedCheck.ts` 在隔离的完整编译调用中返回 native 的 code/map/metadata，让后续阶段实际组合 map；同时验证真实 JS fallback 一次执行和告警交付。四个 JS 控制组仍完整逐字对照，所有 native 完整返回值与实际阶段返回值分别保存并严格检查。生产入口仍未安装该 loader，没有运行时 E2E 或性能样本。strict 模式不接受 fallback 或 map 差异，诊断完成与语义门禁分别记录；通过 AST 或完整控制组对照不能替代来源契约。
 

@@ -1,5 +1,7 @@
 # 原生布局文件发现复用：配对冒烟
 
+> 原始采样、压缩数据与复算工具已移至[固定历史证据](../rust-performance-evidence.md)，不再纳入当前 PR 的文件差异。下文数字与限制保持原记录；复算前须按索引说明检出完整历史快照。
+
 本轮兼容性冒烟通过，**全面性能验收尚未通过**。新候选完成 2 对 AB/BA、28 次串行运行和 200 个阶段样本，严格评估 `smoke-valid`，100 项指标完整，输入、产物、sourcemap 和采集的告警零差异。所有 28 次 prepare 成功。两对样本不构成稳定收益或稳定回退的判定。
 
 ## 变更与边界
@@ -12,7 +14,7 @@
 
 ## 完整范围中的构建结果
 
-首次构建在 prepare 后测量，不代表 OS 冷缓存。单位为 ms；完整 P95、RSS 和逐对原始统计保留在 [evaluation.json](./evaluation.json)。
+首次构建在 prepare 后测量，不代表 OS 冷缓存。单位为 ms；完整 P95、RSS 和逐对原始统计保留在 [evaluation.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-layout-discovery-smoke/evaluation.json)。
 
 | 工程 / 阶段 | 基线 P50 | 候选 P50 | 变化 |
 | --- | ---: | ---: | ---: |
@@ -45,6 +47,6 @@ TDesign 首次 RSS P50 为 778,952,704 → 829,267,968 bytes。当前不能将�
 - Windows 进程身份查询仍有 10 秒超时待归因。仅在既有窄诊断 workflow 开启 writer 阶段日志，保持 Node 22/24、超时和原断言；10 项 workflow 契约测试通过。
 - 既有大型 loader/emit 只增加 resolver 传递，复用逻辑独立为短文件。首次新增此前不存在的布局脚本仍未完成全链 HMR 验证，不能把 JSON/SCSS 队列测试扩写为全部拓扑覆盖。
 
-[provenance.json](./provenance.json)保存采样首尾身份与原文件哈希；[production-identity.json](./production-identity.json)保存已复核的生产文件哈希；[preparation-logs.json](./preparation-logs.json)保存全部准备相关日志及原始字节哈希；[manifest.json](./manifest.json)保存公开文件哈希。导出核对评估中的 2,308 个数值叶子未变，仅替换本机路径。
+[provenance.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-layout-discovery-smoke/provenance.json)保存采样首尾身份与原文件哈希；[production-identity.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-layout-discovery-smoke/production-identity.json)保存已复核的生产文件哈希；[preparation-logs.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-layout-discovery-smoke/preparation-logs.json)保存全部准备相关日志及原始字节哈希；[manifest.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-layout-discovery-smoke/manifest.json)保存公开文件哈希。导出核对评估中的 2,308 个数值叶子未变，仅替换本机路径。
 
 本公开目录不包含完整 emitted JS/maps、原始未脱敏文件和冻结依赖树，不是完整独立重放包。完整私有采集和冻结运行时保留。全机串行租约与本任务 watcher 均已释放，未启动真实 IDE。没有本候选新的 40 对正式采样、跨平台性能或真实小程序 runtime 验收；native 仍显式启用，不扩大默认 Rust 覆盖。

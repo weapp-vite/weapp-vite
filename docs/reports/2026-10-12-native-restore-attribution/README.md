@@ -1,5 +1,7 @@
 # Native 恢复归因：编译更快，回调等待与驱动时机仍影响 wall
 
+> 原始采样、压缩数据与复算工具已移至[固定历史证据](../rust-performance-evidence.md)，不再纳入当前 PR 的文件差异。下文数字与限制保持原记录；复算前须按索引说明检出完整历史快照。
+
 本轮没有证明或消除正式性能回退。原生脚本首次恢复的四对样本中，候选 bundler 每对都更快，但 wall 有三对增加、一对减少；主要差异需要结合写入到 watcher callback 的等待解释。带 profile 的驱动还改变了部分恢复写入时机，不能将剩余耗时统称为纯 polling，更不能据此宣称 Rust 或全项目提速。
 
 这是固定 v10 产物上的独立插桩诊断，两侧 native 均关闭。基线仍是本 PR 早期 `419f49d914142a591d5e109fcb3010feed66ab19`，不是当前 main。v10 不含随后 Vue 配置同内容 mtime 的兼容修订；本轮 Native script/template/style 不执行 Vue 配置提取。旧正式验收失败及其门槛保持有效。
@@ -45,7 +47,7 @@ output poll读取可达bundle图，包含缓存查找或Babel import解析和匹
 
 ## V1观测失败与V2修正
 
-V1首侧实际完成12个阶段，但preload硬猜样式源为`index.wxss`，遗漏真实`index.scss`，只记录到8/12个driver窗口，比较器明确失败。它是诊断过滤错误，不是产品缺失样式构建；该侧没有纳入V2统计，原工具、衍生目录和失败报告保持不变。失败后另行执行的[独立身份审计](./identity-after-failed-v1.json)通过，核对同一衍生manifest及两侧digest；它不是采集器的正常收尾，原失败报告仍保留error和`identityAfter: null`，不改写为采样成功。
+V1首侧实际完成12个阶段，但preload硬猜样式源为`index.wxss`，遗漏真实`index.scss`，只记录到8/12个driver窗口，比较器明确失败。它是诊断过滤错误，不是产品缺失样式构建；该侧没有纳入V2统计，原工具、衍生目录和失败报告保持不变。失败后另行执行的[独立身份审计](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/identity-after-failed-v1.json)通过，核对同一衍生manifest及两侧digest；它不是采集器的正常收尾，原失败报告仍保留error和`identityAfter: null`，不改写为采样成功。
 
 V2在新目录中只改观测来源登记：从既有`driver-ready`读取真实scenario/sourceFile，仅接受固定三个scenario、fixture同目录路径，script必须匹配目标文件；后续事件须匹配已登记映射。未登记、错配、fixture外和无法解析的路径均拒绝，callback/save/read仍只观察脚本。
 
@@ -55,11 +57,11 @@ V2在新目录中只改观测来源登记：从既有`driver-ready`读取真实s
 
 - v10原identity SHA-256：`9e0a974ea754a38ed18483157a1545a6ca925d7ae0c9c052973e47117da848a1`。
 - v10基线/候选产物digest：`4fe37ea4d5b4084d08d9286c9386df091eaa37e6e192c968beb23ce1f1582bb2` / `19244b7eab1409c28e2bfc276dab584f4d931a7bb7a665426561e5b3d1c637d2`。
-- V2衍生manifest SHA-256：`58b335211f34d1d78534b6c1f65d52c38073e824a24b64d07594db8b9fddeccd`；衍生两侧digest、四类文件的before/after hash、V1身份与原v10来源保留在[identities.json](./identities.json)。V2运行前后核验通过；V1采集器末次字段仍为空，失败后的独立身份审计另列为`postFailureAudit`，核验通过。
-- [report.json](./report.json)保留8次运行、96个样本和完整内嵌trace；[driver-analysis.json](./driver-analysis.json)保留96阶段及全部1152次poll；[callback-analysis.json](./callback-analysis.json)保留全部32脚本窗口和四组配对分析；[summary.json](./summary.json)给出上述表格的未舍入数值。
-- [profiles.json](./profiles.json)保留8份完整阶段报告及96条原始profile；[logs.json](./logs.json)保留8组V2和1组V1的完整collector/dev日志副本。
-- [failed-attempt-v1.json](./failed-attempt-v1.json)及[failed-profiles-v1.json](./failed-profiles-v1.json)保留V1首侧失败；[V1工具](./tool-sources-v1.json)和[V2工具](./tool-sources-v2.json)提供原工具文本及字节hash供审查，不是独立可运行的完整采样包。
-- [original-hashes.json](./original-hashes.json)保留90份私有原文件的字节承诺，包括V1失败后的独立审计；[manifest.json](./manifest.json)列出公开副本逐文件SHA-256。导出逐项核对118,665个JSON数值叶子不变，仅对已知根路径、对应相对argv路径和本机Inspector端点作统一占位替换。
+- V2衍生manifest SHA-256：`58b335211f34d1d78534b6c1f65d52c38073e824a24b64d07594db8b9fddeccd`；衍生两侧digest、四类文件的before/after hash、V1身份与原v10来源保留在[identities.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/identities.json)。V2运行前后核验通过；V1采集器末次字段仍为空，失败后的独立身份审计另列为`postFailureAudit`，核验通过。
+- [report.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/report.json)保留8次运行、96个样本和完整内嵌trace；[driver-analysis.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/driver-analysis.json)保留96阶段及全部1152次poll；[callback-analysis.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/callback-analysis.json)保留全部32脚本窗口和四组配对分析；[summary.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/summary.json)给出上述表格的未舍入数值。
+- [profiles.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/profiles.json)保留8份完整阶段报告及96条原始profile；[logs.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/logs.json)保留8组V2和1组V1的完整collector/dev日志副本。
+- [failed-attempt-v1.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/failed-attempt-v1.json)及[failed-profiles-v1.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/failed-profiles-v1.json)保留V1首侧失败；[V1工具](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/tool-sources-v1.json)和[V2工具](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/tool-sources-v2.json)提供原工具文本及字节hash供审查，不是独立可运行的完整采样包。
+- [original-hashes.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/original-hashes.json)保留90份私有原文件的字节承诺，包括V1失败后的独立审计；[manifest.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-native-restore-attribution/manifest.json)列出公开副本逐文件SHA-256。导出逐项核对118,665个JSON数值叶子不变，仅对已知根路径、对应相对argv路径和本机Inspector端点作统一占位替换。
 
 可复验公开副本的文件hash、阶段数及表格计算；公开数据不包含原始未脱敏字节、完整emitted JS/maps或冻结依赖树，不能重建原文件或宣称完整独立重放。路径替换不改变数值，原字节hash也不等于公开副本hash。
 

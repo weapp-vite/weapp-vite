@@ -1,5 +1,7 @@
 # 2026-10-12：Node 编译缓存改为显式启用后的构建诊断
 
+> 原始采样、压缩数据与复算工具已移至[固定历史证据](../rust-performance-evidence.md)，不再纳入当前 PR 的文件差异。下文数字与限制保持原记录；复算前须按索引说明检出完整历史快照。
+
 CLI 撤回默认自动启用 Node 模块编译缓存，保留 Node 启动时 `NODE_COMPILE_CACHE` 指定目录、源码失效和禁用环境变量的原生语义。本候选的三类工程各完成四对首次／重复构建，输入、产物、sourcemap 和告警零差异。
 
 相对早期 PR 基线，原生与 Wevu 构建 P50 降低约 15%–18%；TDesign 重复构建降低 **7.43%**，仍未达到固定的 10% 目标。TDesign 首次构建 RSS P50 为 **−1.15%**，重复构建为 **+4.91%**。样本少且后者接近回退门槛，不能宣称内存风险已消除。评估器状态是 `smoke-valid`，正式验收 `not-run`。
@@ -36,7 +38,7 @@ CLI 撤回默认自动启用 Node 模块编译缓存，保留 Node 启动时 `NO
 
 48 个样本中有两个 TDesign baseline repeat 的 RSS 标记为 `partial`，各含 13 次成功和 1 次不可用采样；全部保留，未删除或重采。其余 46 个为 `available`。统计数据结构沿用 `MedianMs` / `P95Ms` 字段名，RSS 值实际单位为 bytes。
 
-全部逐对数据、输入/产物摘要、map parity 和汇总见 [evaluation.json](./evaluation.json)，准备日志见 [preparation-logs.json](./preparation-logs.json)。[provenance.json](./provenance.json)记录私有原报告、身份及评估文件哈希；公开数字未改写，仅规范化本机路径。报告未发布原始 emitted JS、完整冻结依赖和缓存目录，不能视为独立重放包。
+全部逐对数据、输入/产物摘要、map parity 和汇总见 [evaluation.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-explicit-cache-build/evaluation.json)，准备日志见 [preparation-logs.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-explicit-cache-build/preparation-logs.json)。[provenance.json](https://github.com/weapp-vite/weapp-vite/blob/09139d378d16db2d0e82ad632e8790f4372fa208/docs/reports/2026-10-12-explicit-cache-build/provenance.json)记录私有原报告、身份及评估文件哈希；公开数字未改写，仅规范化本机路径。报告未发布原始 emitted JS、完整冻结依赖和缓存目录，不能视为独立重放包。
 
 ## 验证及决策
 

@@ -119,3 +119,29 @@ docs/reports/*-e2e-dimina-*-suite-report/
 
 # Generated runtime DOM evidence; upload as CI artifacts instead.
 /docs/reports/dom-acceptance/
+
+# Archived Rust performance evidence; see docs/reports/rust-performance-evidence.md
+/docs/plans/2026-10-04-*.json
+/docs/plans/2026-10-05-*.json
+/docs/reports/2026-10-11-build-startup-followup/*
+!/docs/reports/2026-10-11-build-startup-followup/README.md
+/docs/reports/2026-10-11-rust-batch-production/*
+!/docs/reports/2026-10-11-rust-batch-production/README.md
+/docs/reports/2026-10-12-build-architecture-performance/*
+!/docs/reports/2026-10-12-build-architecture-performance/README.md
+/docs/reports/2026-10-12-compile-cache-flush-diagnostic/*
+!/docs/reports/2026-10-12-compile-cache-flush-diagnostic/README.md
+/docs/reports/2026-10-12-explicit-cache-build/*
+!/docs/reports/2026-10-12-explicit-cache-build/README.md
+/docs/reports/2026-10-12-hmr-watcher-boundary-diagnostic/*
+!/docs/reports/2026-10-12-hmr-watcher-boundary-diagnostic/README.md
+/docs/reports/2026-10-12-layout-discovery-smoke/*
+!/docs/reports/2026-10-12-layout-discovery-smoke/README.md
+/docs/reports/2026-10-12-lazy-wxs-config-smoke/*
+!/docs/reports/2026-10-12-lazy-wxs-config-smoke/README.md
+/docs/reports/2026-10-12-lazy-wxs-loading-diagnostic/*
+!/docs/reports/2026-10-12-lazy-wxs-loading-diagnostic/README.md
+/docs/reports/2026-10-12-native-batch-transfer/*
+!/docs/reports/2026-10-12-native-batch-transfer/README.md
+/docs/reports/2026-10-12-native-restore-attribution/*
+!/docs/reports/2026-10-12-native-restore-attribution/README.md
