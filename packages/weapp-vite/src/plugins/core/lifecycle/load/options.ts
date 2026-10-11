@@ -2,7 +2,7 @@ import type { LogicalEntryType } from '../../../../moduleGraph/protocol'
 import type { AppEntry } from '../../../../types'
 import type { ResolveEntryPathOptions } from '../../../../utils/entryResolve'
 import type { CorePluginState } from '../../helpers'
-import { removeExtensionDeep } from '@weapp-core/shared'
+import { removeExtension, removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createLogicalEntryId } from '../../../../moduleGraph/protocol'
@@ -281,10 +281,14 @@ export function createOptionsHook(state: CorePluginState) {
       }
       // 生产 watch 的页面拓扑由每轮 buildStart 注册，静态 input 只保留真实 app 入口。
       const dynamicWatchEntry = Boolean(state.resolvedConfig?.build.watch && !configService.isDev && source.type !== 'app' && !configService.weappLibConfig?.enabled)
-      if (!dynamicWatchEntry) {
-        logicalInput[name] = createLogicalEntryId(sourceId, source.type)
-      }
       const normalized = normalizeFsResolvedId(sourceId)
+      if (!dynamicWatchEntry) {
+        // 组件脚本与附属资源共用物理输出路径，目录声明解析后不能沿用目录别名。
+        const outputName = source.type === 'component' && !configService.weappLibConfig?.enabled
+          ? removeExtension(configService.relativeOutputPath(normalized))
+          : name
+        logicalInput[outputName] = createLogicalEntryId(sourceId, source.type)
+      }
       if (normalized) {
         if (!dynamicWatchEntry) {
           state.hmrRootInputIds.add(normalizeSourceId(normalized))

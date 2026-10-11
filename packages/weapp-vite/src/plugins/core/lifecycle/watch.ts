@@ -257,15 +257,19 @@ export function createBuildStartHook(state: CorePluginState) {
         const watchFiles = [...configService.configFileDependencies, ...getWxmlWatchFiles(ctx)]
           .filter(file => !isHostOwnedConfigFileDependency(state, normalizeFsResolvedId(file)))
         addNormalizedWatchFiles(this, watchFiles)
+        // 开发语义不代表持续监听；一次性快照只登记构建依赖，目录订阅属于活动宿主。
+        const isWatching = state.resolvedConfig
+          ? state.resolvedConfig.command === 'serve' || Boolean(state.resolvedConfig.build?.watch)
+          : this.meta?.watchMode === true
         if (isPluginBuild) {
           if (ctx.scanService.pluginJsonPath) {
             addNormalizedWatchFiles(this, [resolveRealpath(ctx.scanService.pluginJsonPath)])
           }
-          if (configService.absolutePluginRoot) {
+          if (isWatching && configService.absolutePluginRoot) {
             ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
           }
         }
-        else {
+        else if (isWatching) {
           const rootDir = subPackageMeta
             ? path.resolve(configService.absoluteSrcRoot, subPackageMeta.subPackage.root)
             : configService.absoluteSrcRoot

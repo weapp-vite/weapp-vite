@@ -39,3 +39,13 @@ HMR adapter 在补充 root watcher、registration token 和异步交付门禁后
 异步生命周期使用私有 owner epoch。普通内容更新和同一入口的重新登记沿用活跃 owner；入口删除、同索引换成另一 root 和 adapter dispose 会撤销旧 owner。冻结的 prepare scope 通过稳定的 compiler facade 在每个 root 进入 core.generate 前检查 owner，并在生成及样式 render 返回后再次检查，避免删除期间恢复 core root、发布过期 CSS 或以新 owner 复活旧请求。磁盘生成在进入 core 前登记 generation token，删除或更新登记后迟到的生成及来源扫描均不能写回 adapter。
 
 导入式样式在首次 core.generate 前登记私有 owner；生成失败、提交后异常和处理期间保存都继续按导入式完整重同步处理，只有对应 core.remove 完成后才撤销该登记。同一导入 key 的每次生成保留独立 generation，旧 transform 完成后不能覆盖新 snapshot。
+
+## 一次性快照的目录监听所有权
+
+开发语义的一次性编译快照此前也会创建常驻 source sidecar watcher，完整快照因此登记了额外目录订阅。监听是否属于当前宿主改由已解析的生命周期决定：`serve` 或 `build.watch` 持有目录监听；尚无已解析配置时，只接受明确的原生 `watchMode`。开发编译语义仍由原有配置控制，不再隐含持续监听。
+
+app、plugin 和 subpackage 使用同一创建条件，持续宿主复用既有 watcher。一次性快照保留配置、原生 WXML 和 plugin JSON 的 `addWatchFile` 构建依赖，不创建独立目录订阅；关闭快照也不释放其他活跃宿主的监听。
+
+回归使用惰性的 watcher 替身检查创建次数、复用和释放所有权，覆盖一次性编译、持续 serve、watch build 及三个入口形态。这些测试证明生命周期契约，不证明正式性能门禁改善；性能结论仍须来自原基线、预算、deadline 和真实输入路径的完整运行。
+
+`watch.ts` 已超过 300 行。本次仅收窄现有 watcher 创建分支，不增加状态机或新的资源层。拆分整个监听生命周期会扩大无关所有权变更，留待独立重构。
