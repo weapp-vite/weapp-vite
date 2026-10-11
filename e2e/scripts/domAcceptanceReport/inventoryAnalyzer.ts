@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import ts from 'typescript'
+import { readConditionBindingName, readSuiteConditionValue } from './inventoryConditions'
 import { expandSuiteParameters } from './inventoryParameters'
 
 export interface CaseInventory {
@@ -106,7 +107,8 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
   const globals: Bindings = new Map(Object.entries(initialBindings))
   const imports = new Map<string, { original: string, source: string }>()
   const helpers = new Map<string, LocalHelper>()
-  const booleanSuiteParameters = new Set<string>()
+  const suiteParameters = new Set<string>()
+  const suiteConditionAliases = new Set<string>()
   const namedBindings = new Set<string>()
   const uncertainConditions = new Set<string>()
   const markWritten = (node: ts.Node) => {
@@ -116,12 +118,12 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
     ts.forEachChild(node, markWritten)
   }
   const collectConditionRisks = (node: ts.Node) => {
-    const name = (node as ts.NamedDeclaration).name
-    if (name && ts.isIdentifier(name)) {
-      if (namedBindings.has(name.text)) {
-        uncertainConditions.add(name.text)
+    const name = readConditionBindingName(node)
+    if (name) {
+      if (namedBindings.has(name)) {
+        uncertainConditions.add(name)
       }
-      namedBindings.add(name.text)
+      namedBindings.add(name)
     }
     if (ts.isBinaryExpression(node)
       && node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment
@@ -138,6 +140,11 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
     ts.forEachChild(node, collectConditionRisks)
   }
   collectConditionRisks(source)
+  const readCondition = (node: ts.Expression | undefined, bindings: Bindings) => readSuiteConditionValue(node, name => (
+    (suiteParameters.has(name) || suiteConditionAliases.has(name)) && !uncertainConditions.has(name)
+      ? bindings.get(name)
+      : undefined
+  ))
   const position = (node: ts.Node) => `${file}:${source.getLineAndCharacterOfPosition(node.getStart()).line + 1}`
   const collectGlobals = (node: ts.Node) => {
     if (ts.isFunctionDeclaration(node) && node.name) {
@@ -283,11 +290,8 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
       return
     }
     if (ts.isIfStatement(node)) {
-      const predicate = unwrap(node.expression)
-      // 只裁剪字面量或未重赋值、未遮蔽的矩阵参数；普通变量的初值不是控制流证明。
-      const known = predicate.kind === ts.SyntaxKind.TrueKeyword || predicate.kind === ts.SyntaxKind.FalseKeyword
-        || (ts.isIdentifier(predicate) && booleanSuiteParameters.has(predicate.text) && !uncertainConditions.has(predicate.text))
-      const condition = known ? readLiteral(predicate, bindings) : undefined
+      // 只裁剪已证明的 boolean；不把字符串等矩阵值的 truthiness 当作控制流证明。
+      const condition = readCondition(node.expression, bindings)
       if (typeof condition === 'boolean') {
         const branch = condition ? node.thenStatement : node.elseStatement
         if (branch) {
@@ -300,6 +304,14 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
       const value = readLiteral(node.initializer, bindings)
       if (ts.isIdentifier(node.name) && value !== undefined) {
         bindings.set(node.name.text, value)
+      }
+      if (ts.isIdentifier(node.name) && ts.isVariableDeclarationList(node.parent)
+        && (node.parent.flags & ts.NodeFlags.Const) && !uncertainConditions.has(node.name.text)) {
+        const condition = readCondition(node.initializer, bindings)
+        if (condition !== undefined) {
+          suiteConditionAliases.add(node.name.text)
+          bindings.set(node.name.text, condition)
+        }
       }
       if (ts.isObjectBindingPattern(node.name) && value && typeof value === 'object') {
         for (const element of node.name.elements) {
@@ -362,8 +374,8 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
             for (const [index, parameter] of row.callback.parameters.entries()) {
               if (ts.isIdentifier(parameter.name)) {
                 next.set(parameter.name.text, row.values[index])
-                if (!parameter.dotDotDotToken && typeof row.values[index] === 'boolean') {
-                  booleanSuiteParameters.add(parameter.name.text)
+                if (!parameter.dotDotDotToken && ['string', 'number', 'boolean'].includes(typeof row.values[index])) {
+                  suiteParameters.add(parameter.name.text)
                 }
               }
             }
