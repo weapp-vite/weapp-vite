@@ -123,12 +123,15 @@ describe('issue #1081: delayed compiler transaction', () => {
     expect(await version()).toBeGreaterThan(previousVersion)
     await dom.check('latest', session, await session.currentPage())
     const vueFile = path.join(project, 'src/pages/index/index.vue')
+    const beforeModuleVersion = await version()
     await writeFile(vueFile, (await readFile(vueFile, 'utf8')).replace('#123', '#456'))
     await expect.poll(() => readEmittedStylesheet(stylesheet), { timeout: 45_000 }).toMatch(/color:\s*#(?:445566|456)\b/)
     const moduleNode = (await (await session.currentPage())!.$('#module-panel'))!
     const classes = await (moduleNode.attribute ?? moduleNode.attr).call(moduleNode, 'class')
     expect(classes.trim()).not.toBe('')
     expect((await readEmittedStylesheet(stylesheet)).includes(`.${classes.trim()}`)).toBe(true)
+    // 样式文件已提交不代表脚本已执行；headless 的类名和文本可能仍与更新前相同。
+    await expect.poll(version, { timeout: 45_000 }).toBeGreaterThan(beforeModuleVersion)
     await dom.check('modules', session, await session.currentPage())
     const committedVersion = await version()
     const committedStyles = await readEmittedStylesheet(stylesheet)
