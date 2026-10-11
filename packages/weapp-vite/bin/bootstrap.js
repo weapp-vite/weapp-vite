@@ -125,7 +125,8 @@ export async function runWeappViteCLI(options = {}) {
   const { env } = getGlobalProcess()
   // V8 覆盖率反序列化缓存时可能丢失精度；Vitest 的 Inspector 覆盖率不一定设置 NODE_V8_COVERAGE。
   if (env.NODE_V8_COVERAGE === undefined && env.VITEST !== 'true') {
-    nodeModule.enableCompileCache?.()
+    // Node 22 的 API 不读取环境目录；空字符串与未指定目录保持相同语义。
+    nodeModule.enableCompileCache?.(env.NODE_COMPILE_CACHE || undefined)
   }
   const restorePrepareGuard = guardPrepareProcessExit(argv)
   const restoreKnownNoiseGuard = guardKnownLocalPkgResolveNoise()

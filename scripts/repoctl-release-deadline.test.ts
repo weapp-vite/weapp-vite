@@ -1,9 +1,11 @@
+import type { ProcessRecord } from './repoctl-release/processFixture'
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
+import { cleanupFixtureProcesses, waitForProcessExit, withFixtureProcessCleanup } from './repoctl-release/processFixture'
 
 const temporaryDirectories: string[] = []
 const helper = fileURLToPath(new URL('../.github/scripts/release-stage.sh', import.meta.url))
@@ -67,11 +69,6 @@ async function readTimeoutArgs(trace: string) {
   return (await fs.readFile(trace, 'utf8')).split('\0').slice(0, -1)
 }
 
-interface ProcessRecord {
-  pid: number
-  role: 'supervisor' | 'command' | 'descendant'
-}
-
 async function readProcessRecords(evidence: string): Promise<ProcessRecord[]> {
   const content = await fs.readFile(evidence, 'utf8').catch((error: NodeJS.ErrnoException) => {
     if (error.code !== 'ENOENT') {
@@ -80,59 +77,6 @@ async function readProcessRecords(evidence: string): Promise<ProcessRecord[]> {
     return ''
   })
   return content.trim().split('\n').filter(Boolean).map(line => JSON.parse(line) as ProcessRecord)
-}
-
-async function processState(pid: number, ownerToken: string) {
-  if (process.platform === 'linux') {
-    try {
-      const [environment, stat] = await Promise.all([
-        fs.readFile(`/proc/${pid}/environ`, 'utf8'),
-        fs.readFile(`/proc/${pid}/stat`, 'utf8'),
-      ])
-      if (['Z', 'X'].includes(stat.slice(stat.lastIndexOf(')') + 2, stat.lastIndexOf(')') + 3))) {
-        return 'zombie'
-      }
-      return environment.split('\0').includes(`FIXTURE_OWNER_TOKEN=${ownerToken}`) ? 'running' : 'foreign'
-    }
-    catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        throw error
-      }
-      return 'gone'
-    }
-  }
-  const result = spawnSync('ps', ['eww', '-p', String(pid), '-o', 'command='], { encoding: 'utf8' })
-  if (result.status !== 0) {
-    return 'gone'
-  }
-  return result.stdout.includes(`FIXTURE_OWNER_TOKEN=${ownerToken}`) ? 'running' : 'foreign'
-}
-
-async function waitForProcessExit(pid: number, ownerToken: string) {
-  const deadline = Date.now() + 2000
-  let state = await processState(pid, ownerToken)
-  while (state === 'running' && Date.now() < deadline) {
-    await new Promise(resolve => setTimeout(resolve, 25))
-    state = await processState(pid, ownerToken)
-  }
-  return state
-}
-
-async function cleanupFixtureProcesses(evidence: string, ownerToken: string) {
-  for (const { pid } of await readProcessRecords(evidence)) {
-    if (await processState(pid, ownerToken) !== 'running') {
-      continue
-    }
-    try {
-      process.kill(pid, 'SIGKILL')
-    }
-    catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ESRCH') {
-        throw error
-      }
-    }
-    await waitForProcessExit(pid, ownerToken)
-  }
 }
 
 describe.skipIf(process.platform === 'win32')('Ubuntu release stage deadline', () => {
@@ -189,7 +133,6 @@ describe.skipIf(process.platform === 'win32')('Ubuntu release stage deadline', (
       throw new Error('GNU timeout is required on Linux')
     }
     const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'release-process-group-'))
-    temporaryDirectories.push(directory)
     const evidence = path.join(directory, 'processes.jsonl')
     const ready = path.join(directory, 'descendant-ready')
     const terminated = path.join(directory, 'command-terminated')
@@ -216,7 +159,7 @@ const child = spawn(process.execPath, ['-e', ${JSON.stringify(descendantSource)}
 fs.appendFileSync(process.env.FIXTURE_EVIDENCE, JSON.stringify({ pid: child.pid, role: 'descendant' }) + '\\n')
 setInterval(() => {}, 1000)
 `, { mode: 0o755 })
-    try {
+    await withFixtureProcessCleanup(async () => {
       const result = spawnSync('bash', [helper, 'verify'], {
         stdio: 'ignore',
         timeout: 15000,
@@ -242,10 +185,11 @@ setInterval(() => {}, 1000)
       for (const { pid } of records) {
         expect(['gone', 'zombie']).toContain(await waitForProcessExit(pid, ownerToken))
       }
-    }
-    finally {
+    }, async () => {
       // 失败时只清理证据中登记且身份仍匹配的测试进程，不按名称或全局进程组回收。
-      await cleanupFixtureProcesses(evidence, ownerToken)
-    }
+      await cleanupFixtureProcesses(await readProcessRecords(evidence), ownerToken)
+      // 清理未确认完成时保留目录与归属证据，不能让 afterEach 抹掉诊断信息。
+      temporaryDirectories.push(directory)
+    })
   }, 20000)
 })

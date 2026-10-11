@@ -114,15 +114,17 @@ async function assertOwnedCache(directory: string | null) {
 }
 
 describe('CLI native Node compile cache', () => {
-  it('enables the default cache before imports and persists it when each fresh process exits', async () => {
-    const cold = await runChild()
+  it.each([undefined, ''])('enables the default cache with directory %j before imports and persists it between processes', async (directory) => {
+    const options = { env: { NODE_COMPILE_CACHE: directory } }
+    const cold = await runChild(options)
     expect(cold.before).toBeNull()
     expect(cold.result).toBe(true)
     expect(cold.value).toBe(41)
     expect(cold.error).toBeNull()
     expect(cold.after).toBe(cold.during)
     await assertOwnedCache(cold.during)
-    const warm = await runChild()
+    expect(path.relative(fixture, await realpath(cold.during!)).split(path.sep)[0]).toBe('node-compile-cache')
+    const warm = await runChild(options)
     expect(warm).toEqual(cold)
   })
 
