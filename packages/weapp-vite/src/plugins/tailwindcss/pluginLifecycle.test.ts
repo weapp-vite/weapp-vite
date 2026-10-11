@@ -250,3 +250,28 @@ it.each([false, true])('does not register an old managed result after deletion (
   await app.memory()
   expect(app.record.generations.length - before).toBe(readd ? 1 : 0)
 })
+
+it('retains a replacement imported owner while an earlier remove awaits its completed core cleanup', async () => {
+  const app = await fixture()
+  await app.transform()
+  const pending = gate()
+  const remove = app.record.compiler.remove.bind(app.record.compiler)
+  vi.spyOn(app.record.compiler, 'remove').mockImplementationOnce(async (id) => {
+    await remove(id)
+    await pending.wait()
+  })
+  const removing = app.transform('owner', '.author { color: red; }')
+  await pending.ready
+  await writeFile(app.source, 'export const utility = "w-[53px]"')
+  await app.change()
+  expect((await app.transform()).code).toContain('53px')
+  pending.release()
+  await removing
+  await expect(app.memory()).rejects.toBeInstanceOf(CompilerHmrResyncError)
+  const bundle = await app.disk()
+  expect(bundle['app.wxss']!.type).toBe('asset')
+  expect((bundle['app.wxss']! as { source: string }).source).toContain('53px')
+  expect((bundle['app.wxss']! as { source: string }).source).not.toContain('37px')
+  await app.transform('owner', '.author { color: red; }')
+  await expect(app.memory()).resolves.toBeDefined()
+})
