@@ -175,3 +175,50 @@ it.each(['windows', 'posix'] as const)('redacts the registered %s root in a fail
     await rm(directory, { recursive: true, force: true })
   }
 })
+
+it.each(['windows', 'posix'].flatMap(platform => ['component', 'uri'].map(encoding => ({ platform, encoding }))))('round-trips $platform $encoding encoded roots in captured logs and structured evidence', async ({ platform, encoding }) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'build-diagnostic-uri-private-'))
+  const checkout = platform === 'windows' ? 'C:\\checkout space\\工程' : '/checkout space/工程'
+  const separator = platform === 'windows' ? '\\' : '/'
+  const project = `${checkout}${separator}project`
+  const forwardProject = project.replaceAll('\\', '/')
+  const encode = encoding === 'component' ? encodeURIComponent : encodeURI
+  const literal = 'literal=\\u0000&escape=%2Fnot-known%5Cu0000&line=\n"quoted"'
+  const moduleId = `\0virtual:${encode(`${project}${separator}entry`)}?owner=${encode(forwardProject)}&${literal}`
+  const start = { ...started, pluginName: `owner:${encode(project)}\\config\nline`, moduleId }
+  const finish = { ...start, status: 'failed', endedAtMs: 30, elapsedMs: 20, errorName: `failure:${encode(checkout)}\\custom\n"quoted"` }
+  const stdout = [`forward:${encode(forwardProject)}/src`, line(start), line(finish), line(terminal), 'built in 541ms', ''].join('\r\n')
+  const warning = { path: encode(project), note: 'literal\\u0000\n"quoted"', unregistered: encode('/unregistered space/工程') }
+  const stderr = `${JSON.stringify(warning)}\n`
+  const errorName = `CustomBuild:${encode(project)}\\literal\\u0000\0`
+  const output = { status: 'failed' as const, stdout, stderr, errorName }
+  const original = structuredClone(output)
+  try {
+    await saveAutoImportBuildDiagnostics(directory, output, [{ path: checkout, label: '<checkout>' }, { path: project, label: '<project>' }])
+    const savedStdout = await readFile(path.join(directory, 'stdout.log'), 'utf8')
+    const savedStderr = await readFile(path.join(directory, 'stderr.log'), 'utf8')
+    const reportText = await readFile(path.join(directory, 'diagnostic.json'), 'utf8')
+    const report = JSON.parse(reportText) as { errorName: string, hooks: ReturnType<typeof readBuildHookEvidence>, timing: ReturnType<typeof readBuildTimingEvidence> }
+    const saved = readBuildHookEvidence(savedStdout)
+    const expectedModuleId = `\0virtual:<project>${encode(`${separator}entry`)}?owner=<project>&${literal}`
+    expect(saved.errors).toEqual([])
+    expect(saved.events).toEqual([
+      { ...start, pluginName: 'owner:<project>\\config\nline', moduleId: expectedModuleId },
+      { ...finish, pluginName: 'owner:<project>\\config\nline', moduleId: expectedModuleId, errorName: 'failure:<checkout>\\custom\n"quoted"' },
+    ])
+    expect(report.hooks).toEqual(saved)
+    expect(report.errorName).toBe('CustomBuild:<project>\\literal\\u0000\0')
+    expect(savedStdout).toContain('forward:<project>/src\r\n')
+    expect(savedStderr).toBe(`${JSON.stringify({ ...warning, path: '<project>' })}\n`)
+    for (const text of [savedStdout, savedStderr, reportText]) {
+      for (const root of [checkout, project, checkout.replaceAll('\\', '/'), forwardProject]) {
+        expect(text).not.toContain(encode(root))
+      }
+    }
+    expect(report.timing).toEqual(readBuildTimingEvidence(stdout, stderr))
+    expect(output).toEqual(original)
+  }
+  finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})

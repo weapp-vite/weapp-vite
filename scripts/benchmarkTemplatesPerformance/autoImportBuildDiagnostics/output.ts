@@ -142,7 +142,12 @@ function redactCapturedBuildText(value: string, roots: BuildHookOptions['roots']
   let redacted = value
   for (const root of [...roots].sort((a, b) => b.path.length - a.path.length)) {
     const paths = [root.path.replace(/[\\/]+$/, ''), root.path.replaceAll('\\', '/').replace(/\/+$/, '')]
-    const representations = [...new Set(paths.flatMap(rootPath => [rootPath, JSON.stringify(rootPath).slice(1, -1)]))].sort((a, b) => b.length - a.length)
+    const representations = [...new Set(paths.flatMap(rootPath => [
+      rootPath,
+      JSON.stringify(rootPath).slice(1, -1),
+      encodeURIComponent(rootPath),
+      encodeURI(rootPath),
+    ]))].sort((a, b) => b.length - a.length)
     for (const rootPath of representations) {
       redacted = redacted.replaceAll(rootPath, root.label)
     }
