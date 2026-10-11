@@ -1,0 +1,697 @@
+{
+  "contract": "isolated-architecture-evaluation-v1",
+  "evaluated": "2026-10-11T21:51:54.752Z",
+  "status": "smoke-valid",
+  "interpretation": "Overall baseline versus candidate source/build changes, with native disabled on both sides.",
+  "formalAcceptance": "not-run",
+  "performanceConclusion": "not-evaluated: smoke evidence only",
+  "sourceReport": {
+    "file": "<evidence>/report.json",
+    "sha256": "7ac71bacab9afdf5163015d5044f914c94705a9b1ca4da729bf34b79abd04a5d"
+  },
+  "confirmationReport": null,
+  "identity": {
+    "file": "<checkout>/.codex-tmp/rust-analysis/next-cycle-20261011/isolated-runtimes-v12/identity.json",
+    "sha256": "0c1f6be58f86e5c50e5081f678f8c1d28ee06818e92dd15dca2d2e4bac2f1f72",
+    "baselineCommit": "419f49d914142a591d5e109fcb3010feed66ab19",
+    "inputIdentities": {
+      "templates/weapp-vite-template": "5ee84cbbd23d89411688b50bfe17ab4a8c65ce637f36cf0c75ae98595876b252",
+      "templates/weapp-vite-wevu-template": "eca68a0c2efe60e2c647fd3188fbdf5cff695bab52edb0d42ce89279c9bdaa68",
+      "templates/weapp-vite-tailwindcss-tdesign-template": "1fa1202dcab0abbecf63d8a5a63181d4cc0844737f799b19985b23276da42e74",
+      "e2e-apps/github-issues/fixtures/issue-1134-profile": "24719147489fbfcb49a7ae7abca419af2e3100feea5b6f46395cb2f4b35bc81b"
+    }
+  },
+  "preregistration": null,
+  "issues": [],
+  "parity": [],
+  "target": {
+    "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat:wall",
+    "requiredChangePercent": -10,
+    "met": false,
+    "observed": {
+      "count": 4,
+      "baselineMedianMs": 1559.230479,
+      "currentMedianMs": 1443.3805834999998,
+      "baselineP95Ms": 1592.075875,
+      "currentP95Ms": 1453.199917,
+      "pairedDeltaMedianMs": -111.5877710000002,
+      "changePercent": -7.429940413575011
+    }
+  },
+  "requiredConfirmation": [],
+  "metrics": [
+    {
+      "id": "build:weapp-vite-template:first:wall",
+      "requiredPairs": 4,
+      "acceptedPairs": 4,
+      "evidenceStatus": "complete",
+      "error": null,
+      "summary": {
+        "count": 4,
+        "baselineMedianMs": 744.7535204999999,
+        "currentMedianMs": 608.574833,
+        "baselineP95Ms": 1144.539209,
+        "currentP95Ms": 612.07075,
+        "pairedDeltaMedianMs": -140.37683299999998,
+        "changePercent": -18.285067979077773
+      }
+    },
+    {
+      "id": "build:weapp-vite-template:first:rss",
+      "requiredPairs": 4,
+      "acceptedPairs": 4,
+      "evidenceStatus": "complete",
+      "error": null,
+      "summary": {
+        "count": 4,
+        "baselineMedianMs": 352960512,
+        "currentMedianMs": 298205184,
+        "baselineP95Ms": 354304000,
+        "currentP95Ms": 300957696,
+        "pairedDeltaMedianMs": -52322304,
+        "changePercent": -15.513159727057513
+      }
+    },
+    {
+      "id": "build:weapp-vite-template:repeat:wall",
+      "requiredPairs": 4,
+      "acceptedPairs": 4,
+      "evidenceStatus": "complete",
+      "error": null,
+      "summary": {
+        "count": 4,
+        "baselineMedianMs": 737.5311875,
+        "currentMedianMs": 606.3275830000001,
+        "baselineP95Ms": 766.899,
+        "currentP95Ms": 613.096125,
+        "pairedDeltaMedianMs": -131.20360449999987,
+        "changePercent": -17.789566966617244
+      }
+    },
+    {
+      "id": "build:weapp-vite-template:repeat:rss",
+      "requiredPairs": 4,
+      "acceptedPairs": 4,
+      "evidenceStatus": "complete",
+      "error": null,
+      "summary": {
+        "count": 4,
+        "baselineMedianMs": 347602944,
+        "currentMedianMs": 295641088,
+        "baselineP95Ms": 354861056,
+        "currentP95Ms": 299761664,
+        "pairedDeltaMedianMs": -50536448,
+        "changePercent": -14.948623680241328
+      }
+    },
+    {
+      "id": "build:weapp-vite-wevu-template:first:wall",
+      "requiredPairs": 4,
+      "acceptedPairs": 4,
+      "evidenceStatus": "complete",
+      "error": null,
+      "summary": {
+        "count": 4,
+        "baselineMedianMs": 800.7832295000001,
+        "currentMedianMs": 681.7645625,
+        "baselineP95Ms": 809.4209579999999,
+        "currentP95Ms": 684.876833,
+        "pairedDeltaMedianMs": -119.018667,
+        "changePercent": -14.862782163197144
+      }
+    },
+    {
+      "id": "build:weapp-vite-wevu-template:first:rss",
+      "requiredPairs": 4,
+      "acceptedPairs": 4,
+      "evidenceStatus": "complete",
+      "error": null,
+      "summary": {
+        "count": 4,
+        "baselineMedianMs": 398016512,
+        "currentMedianMs": 355344384,
+        "baselineP95Ms": 401342464,
+        "currentP95Ms": 357236736,
+        "pairedDeltaMedianMs": -43016192,
+        "changePercent": -10.721195406084057
+      }
+    },
+    {
+      "id": "build:weapp-vite-wevu-template:repeat:wall",
+      "requiredPairs": 4,
+      "acceptedPairs": 4,
+      "evidenceStatus": "complete",
+      "error": null,
+      "summary": {
+        "count": 4,
+        "baselineMedianMs": 801.297458,
+        "currentMedianMs": 677.086771,
+        "baselineP95Ms": 831.3357500000001,
+        "currentP95Ms": 689.6977499999999,
+        "pairedDeltaMedianMs": -129.18693650000012,
+        "changePercent": -15.501195687057828
+      }
+    },
+    {
+      "id": "build:weapp-vite-wevu-template:repeat:rss",
+      "requiredPairs": 4,
+      "acceptedPairs": 4,
+      "evidenceStatus": "complete",
+      "error": null,
+      "summary": {
+        "count": 4,
+        "baselineMedianMs": 393715712,
+        "currentMedianMs": 355172352,
+        "baselineP95Ms": 399949824,
+        "currentP95Ms": 359366656,
+        "pairedDeltaMedianMs": -38617088,
+        "changePercent": -9.789642329539545
+      }
+    },
+    {
+      "id": "build:weapp-vite-tailwindcss-tdesign-template:first:wall",
+      "requiredPairs": 4,
+      "acceptedPairs": 4,
+      "evidenceStatus": "complete",
+      "error": null,
+      "summary": {
+        "count": 4,
+        "baselineMedianMs": 1989.371,
+        "currentMedianMs": 1860.7133330000001,
+        "baselineP95Ms": 2221.635125,
+        "currentP95Ms": 1889.088625,
+        "pairedDeltaMedianMs": -130.64770850000002,
+        "changePercent": -6.467253569092941
+      }
+    },
+    {
+      "id": "build:weapp-vite-tailwindcss-tdesign-template:first:rss",
+      "requiredPairs": 4,
+      "acceptedPairs": 4,
+      "evidenceStatus": "complete",
+      "error": null,
+      "summary": {
+        "count": 4,
+        "baselineMedianMs": 810213376,
+        "currentMedianMs": 800923648,
+        "baselineP95Ms": 816627712,
+        "currentP95Ms": 806420480,
+        "pairedDeltaMedianMs": -8962048,
+        "changePercent": -1.1465779602236537
+      }
+    },
+    {
+      "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat:wall",
+      "requiredPairs": 4,
+      "acceptedPairs": 4,
+      "evidenceStatus": "complete",
+      "error": null,
+      "summary": {
+        "count": 4,
+        "baselineMedianMs": 1559.230479,
+        "currentMedianMs": 1443.3805834999998,
+        "baselineP95Ms": 1592.075875,
+        "currentP95Ms": 1453.199917,
+        "pairedDeltaMedianMs": -111.5877710000002,
+        "changePercent": -7.429940413575011
+      }
+    },
+    {
+      "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat:rss",
+      "requiredPairs": 4,
+      "acceptedPairs": 4,
+      "evidenceStatus": "complete",
+      "error": null,
+      "summary": {
+        "count": 4,
+        "baselineMedianMs": 656900096,
+        "currentMedianMs": 689184768,
+        "baselineP95Ms": 689291264,
+        "currentP95Ms": 692961280,
+        "pairedDeltaMedianMs": 31563776,
+        "changePercent": 4.914700453933256
+      }
+    }
+  ],
+  "rawStatistics": {
+    "primary": [
+      {
+        "id": "build:weapp-vite-template:first:wall",
+        "unit": "ms",
+        "raw": [
+          {
+            "pair": 0,
+            "baseline": 1144.539209,
+            "current": 611.381833
+          },
+          {
+            "pair": 1,
+            "current": 605.767833,
+            "baseline": 743.318458
+          },
+          {
+            "pair": 2,
+            "baseline": 735.623,
+            "current": 612.07075
+          },
+          {
+            "pair": 3,
+            "current": 602.985542,
+            "baseline": 746.188583
+          }
+        ],
+        "summary": {
+          "count": 4,
+          "baselineMedianMs": 744.7535204999999,
+          "currentMedianMs": 608.574833,
+          "baselineP95Ms": 1144.539209,
+          "currentP95Ms": 612.07075,
+          "pairedDeltaMedianMs": -140.37683299999998,
+          "changePercent": -18.285067979077773
+        },
+        "p95ChangePercent": -46.522517954210166,
+        "acceptedEvidence": false
+      },
+      {
+        "id": "build:weapp-vite-template:first:rss",
+        "unit": "bytes",
+        "raw": [
+          {
+            "pair": 0,
+            "baseline": 342638592,
+            "current": 291979264
+          },
+          {
+            "pair": 1,
+            "current": 300318720,
+            "baseline": 353140736
+          },
+          {
+            "pair": 2,
+            "baseline": 354304000,
+            "current": 296091648
+          },
+          {
+            "pair": 3,
+            "current": 300957696,
+            "baseline": 352780288
+          }
+        ],
+        "summary": {
+          "count": 4,
+          "baselineMedianMs": 352960512,
+          "currentMedianMs": 298205184,
+          "baselineP95Ms": 354304000,
+          "currentP95Ms": 300957696,
+          "pairedDeltaMedianMs": -52322304,
+          "changePercent": -15.513159727057513
+        },
+        "p95ChangePercent": -15.05664739884393,
+        "acceptedEvidence": false
+      },
+      {
+        "id": "build:weapp-vite-template:repeat:wall",
+        "unit": "ms",
+        "raw": [
+          {
+            "pair": 0,
+            "baseline": 736.7340000000002,
+            "current": 605.7923330000001
+          },
+          {
+            "pair": 1,
+            "current": 606.0692080000001,
+            "baseline": 737.3097090000001
+          },
+          {
+            "pair": 2,
+            "baseline": 737.7526659999999,
+            "current": 606.5859580000001
+          },
+          {
+            "pair": 3,
+            "current": 613.096125,
+            "baseline": 766.899
+          }
+        ],
+        "summary": {
+          "count": 4,
+          "baselineMedianMs": 737.5311875,
+          "currentMedianMs": 606.3275830000001,
+          "baselineP95Ms": 766.899,
+          "currentP95Ms": 613.096125,
+          "pairedDeltaMedianMs": -131.20360449999987,
+          "changePercent": -17.789566966617244
+        },
+        "p95ChangePercent": -20.055166977659376,
+        "acceptedEvidence": false
+      },
+      {
+        "id": "build:weapp-vite-template:repeat:rss",
+        "unit": "bytes",
+        "raw": [
+          {
+            "pair": 0,
+            "baseline": 347619328,
+            "current": 294469632
+          },
+          {
+            "pair": 1,
+            "current": 299761664,
+            "baseline": 347586560
+          },
+          {
+            "pair": 2,
+            "baseline": 354861056,
+            "current": 296812544
+          },
+          {
+            "pair": 3,
+            "current": 291553280,
+            "baseline": 339476480
+          }
+        ],
+        "summary": {
+          "count": 4,
+          "baselineMedianMs": 347602944,
+          "currentMedianMs": 295641088,
+          "baselineP95Ms": 354861056,
+          "currentP95Ms": 299761664,
+          "pairedDeltaMedianMs": -50536448,
+          "changePercent": -14.948623680241328
+        },
+        "p95ChangePercent": -15.527032642319591,
+        "acceptedEvidence": false
+      },
+      {
+        "id": "build:weapp-vite-wevu-template:first:wall",
+        "unit": "ms",
+        "raw": [
+          {
+            "pair": 0,
+            "baseline": 787.714209,
+            "current": 676.0635
+          },
+          {
+            "pair": 1,
+            "current": 681.18175,
+            "baseline": 798.798042
+          },
+          {
+            "pair": 2,
+            "baseline": 809.4209579999999,
+            "current": 684.876833
+          },
+          {
+            "pair": 3,
+            "current": 682.347375,
+            "baseline": 802.768417
+          }
+        ],
+        "summary": {
+          "count": 4,
+          "baselineMedianMs": 800.7832295000001,
+          "currentMedianMs": 681.7645625,
+          "baselineP95Ms": 809.4209579999999,
+          "currentP95Ms": 684.876833,
+          "pairedDeltaMedianMs": -119.018667,
+          "changePercent": -14.862782163197144
+        },
+        "p95ChangePercent": -15.386817424117144,
+        "acceptedEvidence": false
+      },
+      {
+        "id": "build:weapp-vite-wevu-template:first:rss",
+        "unit": "bytes",
+        "raw": [
+          {
+            "pair": 0,
+            "baseline": 335282176,
+            "current": 357236736
+          },
+          {
+            "pair": 1,
+            "current": 354009088,
+            "baseline": 400654336
+          },
+          {
+            "pair": 2,
+            "baseline": 395378688,
+            "current": 355090432
+          },
+          {
+            "pair": 3,
+            "current": 355598336,
+            "baseline": 401342464
+          }
+        ],
+        "summary": {
+          "count": 4,
+          "baselineMedianMs": 398016512,
+          "currentMedianMs": 355344384,
+          "baselineP95Ms": 401342464,
+          "currentP95Ms": 357236736,
+          "pairedDeltaMedianMs": -43016192,
+          "changePercent": -10.721195406084057
+        },
+        "p95ChangePercent": -10.989549314173743,
+        "acceptedEvidence": false
+      },
+      {
+        "id": "build:weapp-vite-wevu-template:repeat:wall",
+        "unit": "ms",
+        "raw": [
+          {
+            "pair": 0,
+            "baseline": 794.1700410000001,
+            "current": 664.942875
+          },
+          {
+            "pair": 1,
+            "current": 672.873709,
+            "baseline": 802.0204160000001
+          },
+          {
+            "pair": 2,
+            "baseline": 831.3357500000001,
+            "current": 689.6977499999999
+          },
+          {
+            "pair": 3,
+            "current": 681.2998329999999,
+            "baseline": 800.5745
+          }
+        ],
+        "summary": {
+          "count": 4,
+          "baselineMedianMs": 801.297458,
+          "currentMedianMs": 677.086771,
+          "baselineP95Ms": 831.3357500000001,
+          "currentP95Ms": 689.6977499999999,
+          "pairedDeltaMedianMs": -129.18693650000012,
+          "changePercent": -15.501195687057828
+        },
+        "p95ChangePercent": -17.03740035238472,
+        "acceptedEvidence": false
+      },
+      {
+        "id": "build:weapp-vite-wevu-template:repeat:rss",
+        "unit": "bytes",
+        "raw": [
+          {
+            "pair": 0,
+            "baseline": 399949824,
+            "current": 359366656
+          },
+          {
+            "pair": 1,
+            "current": 356499456,
+            "baseline": 392806400
+          },
+          {
+            "pair": 2,
+            "baseline": 390348800,
+            "current": 353697792
+          },
+          {
+            "pair": 3,
+            "current": 353845248,
+            "baseline": 394625024
+          }
+        ],
+        "summary": {
+          "count": 4,
+          "baselineMedianMs": 393715712,
+          "currentMedianMs": 355172352,
+          "baselineP95Ms": 399949824,
+          "currentP95Ms": 359366656,
+          "pairedDeltaMedianMs": -38617088,
+          "changePercent": -9.789642329539545
+        },
+        "p95ChangePercent": -10.14706484781451,
+        "acceptedEvidence": false
+      },
+      {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:first:wall",
+        "unit": "ms",
+        "raw": [
+          {
+            "pair": 0,
+            "baseline": 2221.635125,
+            "current": 1889.088625
+          },
+          {
+            "pair": 1,
+            "current": 1854.2818750000001,
+            "baseline": 1956.969916
+          },
+          {
+            "pair": 2,
+            "baseline": 1996.8828749999998,
+            "current": 1867.144791
+          },
+          {
+            "pair": 3,
+            "current": 1850.301792,
+            "baseline": 1981.8591250000002
+          }
+        ],
+        "summary": {
+          "count": 4,
+          "baselineMedianMs": 1989.371,
+          "currentMedianMs": 1860.7133330000001,
+          "baselineP95Ms": 2221.635125,
+          "currentP95Ms": 1889.088625,
+          "pairedDeltaMedianMs": -130.64770850000002,
+          "changePercent": -6.467253569092941
+        },
+        "p95ChangePercent": -14.968547096589488,
+        "acceptedEvidence": false
+      },
+      {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:first:rss",
+        "unit": "bytes",
+        "raw": [
+          {
+            "pair": 0,
+            "baseline": 811433984,
+            "current": 806420480
+          },
+          {
+            "pair": 1,
+            "current": 798130176,
+            "baseline": 752762880
+          },
+          {
+            "pair": 2,
+            "baseline": 808992768,
+            "current": 779747328
+          },
+          {
+            "pair": 3,
+            "current": 803717120,
+            "baseline": 816627712
+          }
+        ],
+        "summary": {
+          "count": 4,
+          "baselineMedianMs": 810213376,
+          "currentMedianMs": 800923648,
+          "baselineP95Ms": 816627712,
+          "currentP95Ms": 806420480,
+          "pairedDeltaMedianMs": -8962048,
+          "changePercent": -1.1465779602236537
+        },
+        "p95ChangePercent": -1.2499247637582007,
+        "acceptedEvidence": false
+      },
+      {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat:wall",
+        "unit": "ms",
+        "raw": [
+          {
+            "pair": 0,
+            "baseline": 1553.0705830000002,
+            "current": 1442.183708
+          },
+          {
+            "pair": 1,
+            "current": 1443.3120829999998,
+            "baseline": 1555.60075
+          },
+          {
+            "pair": 2,
+            "baseline": 1562.860208,
+            "current": 1453.199917
+          },
+          {
+            "pair": 3,
+            "current": 1443.4490839999999,
+            "baseline": 1592.075875
+          }
+        ],
+        "summary": {
+          "count": 4,
+          "baselineMedianMs": 1559.230479,
+          "currentMedianMs": 1443.3805834999998,
+          "baselineP95Ms": 1592.075875,
+          "currentP95Ms": 1453.199917,
+          "pairedDeltaMedianMs": -111.5877710000002,
+          "changePercent": -7.429940413575011
+        },
+        "p95ChangePercent": -8.722948458722176,
+        "acceptedEvidence": false
+      },
+      {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat:rss",
+        "unit": "bytes",
+        "raw": [
+          {
+            "pair": 0,
+            "baseline": 658882560,
+            "current": 687243264
+          },
+          {
+            "pair": 1,
+            "current": 692961280,
+            "baseline": 653688832
+          },
+          {
+            "pair": 2,
+            "baseline": 654917632,
+            "current": 689684480
+          },
+          {
+            "pair": 3,
+            "current": 688685056,
+            "baseline": 689291264
+          }
+        ],
+        "summary": {
+          "count": 4,
+          "baselineMedianMs": 656900096,
+          "currentMedianMs": 689184768,
+          "baselineP95Ms": 689291264,
+          "currentP95Ms": 692961280,
+          "pairedDeltaMedianMs": 31563776,
+          "changePercent": 4.914700453933256
+        },
+        "p95ChangePercent": 0.5324332675714862,
+        "acceptedEvidence": false
+      }
+    ],
+    "confirmation": []
+  },
+  "regression": null,
+  "coverage": {
+    "buildMaps": "retained bytes rehashed using declared known-root sources mapping and existing root/JSON normalization; mappings/names/sourcesContent/unknown sources preserved",
+    "hmr": "reconstructed from retained report/log; every phase sourcemap rehashed from retained bytes",
+    "artifacts": "complete recorded file sets compared exactly; full emitted JS bytes were not retained by collector",
+    "warnings": "re-extracted saved CLI paragraphs; does not replace compiler diagnostic tests",
+    "identity": "frozen fixture digests independently reconstructed; successful driver completion follows its post-run identity verification",
+    "compileCache": "owned temporary directories, initial absence, environment and archive records verified; child CLI enableCompileCache API status not inferred",
+    "firstBuild": "measured after prepare; does not prove completely cold CLI startup",
+    "runtime": "not-run",
+    "crossPlatform": "not-run"
+  }
+}

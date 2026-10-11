@@ -114,30 +114,33 @@ async function assertOwnedCache(directory: string | null) {
 }
 
 describe('CLI native Node compile cache', () => {
-  it.each([undefined, ''])('enables the default cache with directory %j before imports and persists it between processes', async (directory) => {
+  it.each([undefined, ''])('does not create a default cache with directory %j', async (directory) => {
     const options = { env: { NODE_COMPILE_CACHE: directory } }
-    const cold = await runChild(options)
-    expect(cold.before).toBeNull()
-    expect(cold.result).toBe(true)
-    expect(cold.value).toBe(41)
-    expect(cold.error).toBeNull()
-    expect(cold.after).toBe(cold.during)
-    await assertOwnedCache(cold.during)
-    expect(path.relative(fixture, await realpath(cold.during!)).split(path.sep)[0]).toBe('node-compile-cache')
-    const warm = await runChild(options)
-    expect(warm).toEqual(cold)
+    for (let index = 0; index < 2; index++) {
+      const result = await runChild(options)
+      expect(result).toMatchObject({ before: null, during: null, after: null, result: true, value: 41, error: null })
+      await expect(readdir(path.join(fixture, 'node-compile-cache'))).rejects.toMatchObject({ code: 'ENOENT' })
+    }
   })
 
-  it('honors a caller-selected directory and native disable even when both environment variables are present', async () => {
+  it.each(['absolute', 'relative'])('preserves native startup caching with an explicit %s directory across processes', async (mode) => {
     const directory = path.join(fixture, 'selected cache')
-    const enabled = await runChild({ env: { NODE_COMPILE_CACHE: directory } })
+    const options = { env: { NODE_COMPILE_CACHE: mode === 'absolute' ? directory : 'selected cache' } }
+    const enabled = await runChild(options)
     expect(enabled.result).toBe(true)
+    expect(enabled.value).toBe(41)
+    expect(enabled.error).toBeNull()
     expect(enabled.before).toBe(enabled.during)
+    expect(enabled.after).toBe(enabled.during)
     await assertOwnedCache(enabled.during)
     expect(path.relative(directory, enabled.during!).split(path.sep)).not.toContain('..')
+    const warm = await runChild(options)
+    expect(warm).toEqual(enabled)
+  })
 
+  it.each(['1', '0', ''])('preserves native disable value %j even with an explicit cache directory', async (disabledValue) => {
     const disabledDirectory = path.join(fixture, 'disabled cache')
-    const disabled = await runChild({ env: { NODE_COMPILE_CACHE: disabledDirectory, NODE_DISABLE_COMPILE_CACHE: '1' } })
+    const disabled = await runChild({ env: { NODE_COMPILE_CACHE: disabledDirectory, NODE_DISABLE_COMPILE_CACHE: disabledValue } })
     expect(disabled).toMatchObject({ before: null, during: null, after: null, result: true, value: 41, error: null })
     await expect(readdir(disabledDirectory)).rejects.toMatchObject({ code: 'ENOENT' })
   })
@@ -150,7 +153,7 @@ describe('CLI native Node compile cache', () => {
     expect(await readFile(invalidDirectory, 'utf8')).toBe('preserved')
   })
 
-  it.each(['coverage', 'vitest'])('does not enable caching inside %s instrumentation', async (mode) => {
+  it.each(['coverage', 'vitest'])('does not implicitly enable caching inside %s instrumentation', async (mode) => {
     const coverage = path.join(fixture, 'coverage')
     await mkdir(coverage)
     const result = await runChild({ env: mode === 'coverage' ? { NODE_V8_COVERAGE: coverage } : { VITEST: 'true' } })
@@ -160,7 +163,22 @@ describe('CLI native Node compile cache', () => {
     }
   })
 
-  it('rejects an unsupported engine before enabling the cache or invoking the importer', async () => {
+  it.each(['coverage', 'vitest'])('preserves explicitly enabled native caching inside %s instrumentation', async (mode) => {
+    const coverage = path.join(fixture, 'coverage')
+    await mkdir(coverage)
+    const result = await runChild({
+      env: {
+        NODE_COMPILE_CACHE: path.join(fixture, 'selected cache'),
+        ...(mode === 'coverage' ? { NODE_V8_COVERAGE: coverage } : { VITEST: 'true' }),
+      },
+    })
+    expect(result).toMatchObject({ result: true, value: 41, error: null })
+    expect(result.before).toBe(result.during)
+    expect(result.after).toBe(result.during)
+    await assertOwnedCache(result.during)
+  })
+
+  it('rejects an unsupported engine before invoking the importer', async () => {
     const result = await runChild({ nodeVersion: '20.19.0' })
     expect(result).toMatchObject({ before: null, during: null, after: null, result: null, value: null })
     expect(result.error?.message).toContain('weapp-vite requires Node.js')
@@ -168,29 +186,35 @@ describe('CLI native Node compile cache', () => {
   })
 
   it('invalidates cached code when the same module path changes', async () => {
-    const first = await runChild()
+    const options = { env: { NODE_COMPILE_CACHE: path.join(fixture, 'selected cache') } }
+    const first = await runChild(options)
     await assertOwnedCache(first.during)
     expect(first.value).toBe(41)
     await writeSubject(42)
-    const changed = await runChild()
+    const changed = await runChild(options)
     expect(changed.during).toBe(first.during)
     expect(changed.value).toBe(42)
     expect(changed.error).toBeNull()
   })
 
-  it('preserves mapped errors and prepare fallback with disabled, cold and reused cache', async () => {
-    const disabled = await runChild({ action: 'throw', env: { NODE_DISABLE_COMPILE_CACHE: '1' } })
-    const cold = await runChild({ action: 'throw' })
+  it('preserves mapped errors and prepare fallback with default, disabled, cold and reused cache', async () => {
+    const cacheEnv = { NODE_COMPILE_CACHE: path.join(fixture, 'selected cache') }
+    const disabledEnv = { ...cacheEnv, NODE_DISABLE_COMPILE_CACHE: '1' }
+    const uncached = await runChild({ action: 'throw' })
+    const disabled = await runChild({ action: 'throw', env: disabledEnv })
+    const cold = await runChild({ action: 'throw', env: cacheEnv })
     await assertOwnedCache(cold.during)
-    const warm = await runChild({ action: 'throw' })
-    for (const result of [disabled, cold, warm]) {
+    const warm = await runChild({ action: 'throw', env: cacheEnv })
+    for (const result of [uncached, disabled, cold, warm]) {
       expect(result.result).toBeNull()
       expect(result.error).toEqual({ name: 'Error', message: 'compile-cache-contract', frame: 'original.ts:3:1' })
       expect(result.warnings).toEqual([])
     }
-    const prepare = await runChild({ action: 'throw', command: 'prepare' })
-    expect(prepare.result).toBe(false)
-    expect(prepare.error).toBeNull()
-    expect(prepare.warnings).toEqual(['[prepare] 跳过 .weapp-vite 支持文件预生成：compile-cache-contract'])
+    for (const env of [undefined, disabledEnv, cacheEnv]) {
+      const prepare = await runChild({ action: 'throw', command: 'prepare', env })
+      expect(prepare.result).toBe(false)
+      expect(prepare.error).toBeNull()
+      expect(prepare.warnings).toEqual(['[prepare] 跳过 .weapp-vite 支持文件预生成：compile-cache-contract'])
+    }
   })
 })

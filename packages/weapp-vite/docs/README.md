@@ -4,7 +4,7 @@
 
 升级已有项目时先升级 Node.js，再重新安装依赖。CLI 会在加载编译依赖前检查实际 Node 版本；`prepare` 也会明确拒绝不支持的环境。直接通过 Vite 或程序 API 消费时同样需要遵守包的 `engines.node`。
 
-`wv` / `weapp-vite` CLI 在 Node 版本检查通过后自动启用 Node 模块编译缓存，以复用后续进程加载相同模块的编译结果。首次生成缓存可能增加启动耗时；收益取决于模块规模和缓存复用。缓存遵循 Node 的 `NODE_COMPILE_CACHE` 目录设置和 `NODE_DISABLE_COMPILE_CACHE=1` 禁用开关，默认使用系统临时目录，目录不可用时继续正常执行。设置 `NODE_V8_COVERAGE` 或 `VITEST=true` 时 CLI 不主动启用缓存；若运行器已通过环境变量启用缓存，覆盖率测试应另设 `NODE_DISABLE_COMPILE_CACHE=1`。
+`wv` / `weapp-vite` CLI 默认不主动启用 Node 模块编译缓存。可在启动 Node 前通过 `NODE_COMPILE_CACHE` 指定缓存目录，复用后续进程加载相同模块的编译结果；首次生成缓存可能增加耗时和内存，实际收益取决于模块规模和缓存复用。目录设置、源码失效和 `NODE_DISABLE_COMPILE_CACHE=1` 禁用开关均由 Node 管理；目录不可用时继续执行。若运行器已显式启用缓存，覆盖率测试应另设 `NODE_DISABLE_COMPILE_CACHE=1`。
 
 `create-weapp-vite` 自身依赖要求更高：Node 22 至少 22.22.2、Node 24 至少 24.15.0，或 Node 26 及以上版本。新建项目按脚手架要求选择 Node，不要将框架最低版本误认为脚手架最低版本。
 

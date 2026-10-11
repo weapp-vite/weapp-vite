@@ -1,0 +1,41 @@
+{
+  "contract": "explicit-cache-build-smoke-v1",
+  "status": "smoke-valid-not-formal-acceptance",
+  "runs": 24,
+  "samples": 48,
+  "baselineCommit": "419f49d914142a591d5e109fcb3010feed66ab19",
+  "native": "off on both sides",
+  "identityBefore": {
+    "verified": true,
+    "variants": [
+      "baseline",
+      "candidate"
+    ],
+    "contract": "isolated-runtime-artifacts-v4",
+    "baselineProductionUnchanged": true,
+    "externalDependenciesUnchanged": true
+  },
+  "identityAfter": {
+    "verified": true,
+    "variants": [
+      "baseline",
+      "candidate"
+    ],
+    "contract": "isolated-runtime-artifacts-v4",
+    "baselineProductionUnchanged": true,
+    "externalDependenciesUnchanged": true
+  },
+  "baselineDigest": "48a28f41eeb536f28e7147e399d9216066b1b6255c7c9d4e52062a39ca6ff6f4",
+  "candidateDigest": "62b7d4a4e20f963e48bdb891954bc5d93d17941059a7f8ffa116370b40c49b74",
+  "originalHashes": {
+    "report.json": "7ac71bacab9afdf5163015d5044f914c94705a9b1ca4da729bf34b79abd04a5d",
+    "evaluation.json": "cc233330d33546d910ee37e26d46ca75f5357a8cbfa703e3c7c70b08a978a340",
+    "identity.json": "0c1f6be58f86e5c50e5081f678f8c1d28ee06818e92dd15dca2d2e4bac2f1f72"
+  },
+  "numericLeavesUnchanged": 356,
+  "prepare": {
+    "logs": 24,
+    "successful": 24
+  },
+  "retention": "Complete raw reports and frozen runtimes retained privately. Public evaluation and logs are not a complete standalone replay. No emitted JS/maps or frozen dependency tree is included."
+}
