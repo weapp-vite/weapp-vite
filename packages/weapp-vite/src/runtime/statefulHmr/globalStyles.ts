@@ -19,6 +19,7 @@ export interface StatefulHmrSnapshot {
   delegatedComponentEntryIds?: string[]
   inputFiles?: string[]
   inputs?: SnapshotInputs
+  nativeScriptVersions?: ReadonlyMap<string, string>
 }
 
 function normalizeRoute(route: string): string {

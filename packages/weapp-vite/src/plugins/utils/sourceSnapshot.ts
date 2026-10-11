@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { fs } from '@weapp-core/shared/fs'
 import { compilerSourceId, getCompilerHmrHostByConfig } from '../compilerPlugin/hmr'
 
@@ -7,6 +8,45 @@ interface CompilerSourceSnapshot {
 }
 
 const snapshots = new WeakMap<object, CompilerSourceSnapshot>()
+const nativeInputs = new WeakMap<object, { versions: Map<string, string>, accepts: (id: string) => boolean }>()
+
+export function compilerNativeScriptVersion(source: string): string {
+  return createHash('sha256').update(source).digest('hex')
+}
+
+/** 只记录本轮实际返回给编译器的原生入口输入；独立上下文与嵌套作用域互不覆盖。 */
+export async function captureCompilerNativeScriptInputs<T>(
+  owner: object,
+  run: () => Promise<T>,
+  accepts: (id: string) => boolean = () => true,
+): Promise<{ value: T, versions: ReadonlyMap<string, string> }> {
+  const previous = nativeInputs.get(owner)
+  const versions = new Map<string, string>()
+  nativeInputs.set(owner, { versions, accepts })
+  try {
+    return { value: await run(), versions }
+  }
+  finally {
+    if (previous) {
+      nativeInputs.set(owner, previous)
+    }
+    else {
+      nativeInputs.delete(owner)
+    }
+  }
+}
+
+function observeNativeInput(owner: object, id: string, source: string): string {
+  const collector = nativeInputs.get(owner)
+  if (!collector) {
+    return source
+  }
+  const sourceId = compilerSourceId(id)
+  if (/\.[cm]?[jt]s$/.test(sourceId) && collector.accepts(sourceId)) {
+    collector.versions.set(sourceId, compilerNativeScriptVersion(source))
+  }
+  return source
+}
 
 /** 快照视图绑定独立编译上下文，原生异步回调不依赖 Node 异步上下文传播。 */
 export function setCompilerSourceSnapshot(owner: object, sources: ReadonlyMap<string, string | null>): void {
@@ -58,12 +98,12 @@ export function readCompilerSourceSnapshot(sources: ReadonlyMap<string, string |
 export async function readCompilerInput(owner: object, id: string, read?: (file: string) => Promise<string>): Promise<string> {
   const pinned = readCompilerSourceSnapshot(snapshots.get(owner)?.sources, id)
   if (pinned !== undefined) {
-    return pinned
+    return observeNativeInput(owner, id, pinned)
   }
   const source = await (read ? read(id) : fs.readFile(id, 'utf8'))
   const host = getCompilerHmrHostByConfig(owner)
   if (host?.onDependencyChange) {
     host.captureNative(id, source)
   }
-  return source
+  return observeNativeInput(owner, id, source)
 }

@@ -6,6 +6,7 @@ import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrProfileHandoff } from './profile'
 import type { StatefulHmrDevEngineBatch, StatefulHmrDevEngineUpdate } from './viteAdapter'
+import { createHash } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import { realpathSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
@@ -1061,6 +1062,208 @@ describe('stateful snapshot output transactions', () => {
     await session.whenSettled()
     expect(harness.fullBuild).toHaveBeenCalledOnce()
     expect(published.get('pages/index/index.js')).toContain(current)
+  })
+
+  it('persists a native input already consumed by settled assets when its real notification arrives late', async () => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const original = 'Page({ data: { marker: "before" } })'
+    const current = 'Page({ data: { marker: "after" } })'
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    session.rebuild.mockResolvedValue({
+      ...snapshot('blue'),
+      nativeScriptVersions: new Map([[script, createHash('sha256').update(current).digest('hex')]]),
+    })
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
+
+    getCompilerHmrHost(session.ctx).captureNative(script, current)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    harness.callbacks!.onPatch([script], { type: 'Patch', code: 'void 0', filename: 'late-native.js', changedIds: [script] })
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledOnce()
+    expect(delta).not.toHaveBeenCalled()
+
+    // 完整发布消费实际输入后，同版本通知与后续独立编辑均不应再次完整构建。
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    harness.callbacks!.onPatch([script], { type: 'Noop' })
+    getCompilerHmrHost(session.ctx).captureNative(script, `${current}\n// independent`)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    harness.callbacks!.onPatch([script], { type: 'Patch', code: 'void 0', filename: 'independent-native.js', changedIds: [script] })
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledOnce()
+    expect(delta).toHaveBeenCalledOnce()
+  })
+
+  it('does not adopt native input debt from an asset write that fails', async () => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const original = 'Page({ data: { marker: "before" } })'
+    const current = 'Page({ data: { marker: "after" } })'
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    session.rebuild.mockResolvedValueOnce({
+      ...snapshot('blue'),
+      nativeScriptVersions: new Map([[script, createHash('sha256').update(current).digest('hex')]]),
+    })
+    harness.writeOutput.mockRejectedValueOnce(new Error('asset publication failed'))
+    session.refresh()
+    const failed = expect(session.whenSettled()).rejects.toThrow('asset publication failed')
+    await vi.advanceTimersByTimeAsync(100)
+    await failed
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    getCompilerHmrHost(session.ctx).captureNative(script, current)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    harness.callbacks!.onPatch([script], { type: 'Patch', code: 'void 0', filename: 'native-after-failure.js', changedIds: [script] })
+    await vi.advanceTimersByTimeAsync(100)
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    expect(delta).toHaveBeenCalledOnce()
+  })
+
+  it.each(['prepare', 'write'] as const)('joins a real native notification received during independent delivery snapshot %s', async (phase) => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const component = path.join(root, 'src/component.vue')
+    const original = 'Page({ data: { marker: "before" } })'
+    const current = 'Page({ data: { marker: "after" } })'
+    const session = await start(snapshot('red'), [script, component], {}, new Map([[script, original]]))
+    const consumed = { ...snapshot('blue'), nativeScriptVersions: new Map([[script, createHash('sha256').update(current).digest('hex')]]) }
+    const prepared = Promise.withResolvers<StatefulHmrSnapshot>()
+    const published = Promise.withResolvers<void>()
+    session.rebuild.mockResolvedValue(consumed)
+    if (phase === 'prepare') {
+      session.rebuild.mockImplementationOnce(() => prepared.promise)
+    }
+    else {
+      harness.writeOutput.mockImplementationOnce(() => published.promise)
+    }
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    session.sourceChange(component, 'update', ['entry-mixed-asset:1'])
+    expect(harness.callbacks!.onPatch([component], { type: 'Patch', code: 'void 0', filename: 'component.js' })).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.rebuild).toHaveBeenCalledOnce()
+
+    getCompilerHmrHost(session.ctx).captureNative(script, current)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    prepared.resolve(consumed)
+    published.resolve()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledOnce()
+    expect(delta).not.toHaveBeenCalled()
+  })
+
+  it('discards native input facts from an asset snapshot superseded before publication', async () => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const original = 'Page({ data: { marker: "before" } })'
+    const current = 'Page({ data: { marker: "after" } })'
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    const prepared = Promise.withResolvers<StatefulHmrSnapshot>()
+    session.rebuild.mockImplementationOnce(() => prepared.promise).mockResolvedValue({
+      ...snapshot('green'),
+      nativeScriptVersions: new Map([[script, createHash('sha256').update(original).digest('hex')]]),
+    })
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    session.refresh()
+    prepared.resolve({ ...snapshot('blue'), nativeScriptVersions: new Map([[script, createHash('sha256').update(current).digest('hex')]]) })
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(writtenAssets().filter(item => item.fileName === styleFile).at(-1)?.source).toContain('color: green')
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    getCompilerHmrHost(session.ctx).captureNative(script, current)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    harness.callbacks!.onPatch([script], { type: 'Patch', code: 'void 0', filename: 'independent.js', changedIds: [script] })
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    expect(delta).toHaveBeenCalledOnce()
+  })
+
+  it('retains committed asset input debt when the correcting native full write fails', async () => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const original = 'Page({ data: { marker: "before" } })'
+    const current = 'Page({ data: { marker: "after" } })'
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    session.rebuild.mockResolvedValue({ ...snapshot('blue'), nativeScriptVersions: new Map([[script, createHash('sha256').update(current).digest('hex')]]) })
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    getCompilerHmrHost(session.ctx).captureNative(script, current)
+    harness.fullBuild.mockImplementationOnce(async () => {
+      await harness.callbacks!.onOutput(appOutput())
+    })
+    harness.writeOutput.mockRejectedValueOnce(new Error('native full write failed'))
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    const failed = expect(session.whenSettled()).rejects.toThrow('native full write failed')
+    await vi.advanceTimersByTimeAsync(100)
+    await failed
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
+  })
+
+  it('restores assets with a full publication even when the delayed native edit reverted to persisted input', async () => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const original = 'Page({ data: { marker: "before" } })'
+    const changed = 'Page({ data: { marker: "after" } })'
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), nativeScriptVersions: new Map([[script, createHash('sha256').update(changed).digest('hex')]]) })
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    session.rebuild.mockResolvedValue({ ...snapshot('red'), nativeScriptVersions: new Map([[script, createHash('sha256').update(original).digest('hex')]]) })
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    harness.callbacks!.onPatch([script], { type: 'Noop' })
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledOnce()
+    expect(writtenAssets().filter(item => item.fileName === styleFile).at(-1)?.source).toContain('color: red')
+  })
+
+  it('preserves a newer native event during the correcting full write and clears only consumed input debt', async () => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const original = 'Page({ data: { marker: "before" } })'
+    const changed = 'Page({ data: { marker: "after" } })'
+    const newest = 'Page({ data: { marker: "newest" } })'
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    const versioned = (color: string, source: string) => ({ ...snapshot(color), nativeScriptVersions: new Map([[script, createHash('sha256').update(source).digest('hex')]]) })
+    session.rebuild.mockResolvedValue(versioned('blue', changed))
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    const published = Promise.withResolvers<void>()
+    harness.writeOutput.mockImplementationOnce(() => published.promise)
+    getCompilerHmrHost(session.ctx).captureNative(script, changed)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    await vi.advanceTimersByTimeAsync(50)
+    expect(harness.fullBuild).toHaveBeenCalledOnce()
+    session.rebuild.mockResolvedValue(versioned('green', newest))
+    getCompilerHmrHost(session.ctx).captureNative(script, newest)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    published.resolve()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    harness.callbacks!.onPatch([script], { type: 'Noop' })
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
   })
 
   it.each(['failed', 'superseded'] as const)('retains unpersisted native scripts across a %s full build', async (outcome) => {

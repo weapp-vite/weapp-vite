@@ -504,7 +504,7 @@ class StatefulHmrSession {
     }
     if (/\.[cm]?[jt]s$/.test(normalizedFile) && (this.entryIds.has(normalizedFile) || isEmittedDependency)) {
       this.unpersistedNativeScripts.set(normalizedFile, {})
-      if (this.snapshotScheduler.isPending()) {
+      if (this.snapshotScheduler.isPending() || this.nativeScriptInputs.needsFullBuild(normalizedFile)) {
         this.requestFullBuild([normalizedFile])
         return
       }
@@ -621,7 +621,7 @@ class StatefulHmrSession {
       this.initialProfile = undefined
       if (nativeInputs) {
         // 完整发布失败可能已部分落盘，旧源码版本不能再证明脚本与磁盘一致。
-        this.nativeScriptInputs.clear()
+        this.nativeScriptInputs.invalidate()
       }
       if (!snapshotBatch) {
         this.initialBundle.reject(error)
@@ -1116,6 +1116,12 @@ class StatefulHmrSession {
     this.childSources?.adopt(snapshot.childSources)
     this.componentPageGlobalStyleRoutes = [...snapshot.componentPageGlobalStyleRoutes]
     this.snapshotAssets.adopt(output.filter(isStatefulHmrSnapshotAsset))
+    this.nativeScriptInputs.adoptAssets(snapshot.nativeScriptVersions)
+    // 原生通知可能在独立交付快照编译或写出期间进入；只消费真实通知，不主动失效 DevEngine。
+    const notified = [...this.unpersistedNativeScripts.keys()].filter(file => this.nativeScriptInputs.needsFullBuild(file))
+    if (notified.length) {
+      this.requestFullBuild(notified)
+    }
   }
 
   private async waitForInitialBundle(): Promise<void> {

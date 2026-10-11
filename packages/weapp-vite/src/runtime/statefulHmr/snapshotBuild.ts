@@ -12,7 +12,7 @@ import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { getTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import { configSuffixes } from '../../plugins/utils/invalidateEntry/shared'
-import { setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
+import { captureCompilerNativeScriptInputs, setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
 import { withRealpathScope } from '../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { captureWatchDependencies } from '../../utils/watchDependencies'
@@ -151,7 +151,9 @@ export async function buildStatefulHmrSnapshot(
         },
       }, ...(options.plugins ?? [])]
     }
-    const output = await build(options)
+    const { value: output, versions: nativeScriptVersions } = await captureCompilerNativeScriptInputs(ctx.configService, () => build(options), id =>
+      ctx.runtimeState.build.hmr.entriesMap.has(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)))
+      || (ctx.scanService.appEntry?.path !== undefined && compilerSourceId(ctx.scanService.appEntry.path) === id))
     // CSS/独立包可能在 generateBundle 才补充依赖，待整轮完成后统一收集。
     for (const entry of ctx.runtimeState.build.hmr.resolvedEntryMap.keys()) {
       inputFiles.add(entry)
@@ -175,6 +177,7 @@ export async function buildStatefulHmrSnapshot(
       output,
       getInputFiles: () => [...inputFiles].filter(file => path.isAbsolute(file)),
       getInputs: () => reusableInputs,
+      getNativeScriptVersions: () => nativeScriptVersions,
       getChildSources: () => ({
         files: [...new Set([...ctx.runtimeState.build.independent.watchFiles.values()].flatMap(files => [...files]).concat(getWorkerSources(ctx).files))],
         roots: [...ctx.scanService.independentSubPackageMap.keys()].map(root => path.resolve(ctx.configService.absoluteSrcRoot, root)).concat(getWorkerSources(ctx).roots),

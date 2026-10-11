@@ -8,6 +8,7 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { renameAtomicFile } from '../utils/hmrAtomicRename'
 import { createNativeBatchProject, NATIVE_BATCH_CLI, NATIVE_BATCH_STEPS, readNativeBatchDiagnostics, readNativeBatchOutput, readNativeBatchSources, writeNativeBatch } from '../utils/nativeBatchProject'
+import { createNativeBatchSourceNotification } from '../utils/nativeBatchSourceNotification'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
 import { cleanupTemporaryRuntimeProject } from '../utils/temporaryRuntimeProject'
@@ -21,7 +22,17 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
   let dev: ReturnType<typeof startDevProcess> | undefined
   let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
   let disposeTransport: (() => void) | undefined
+  let lateScriptSave: Promise<void> | undefined
   const stateful = runtime === 'stateful-experimental'
+  const notification = createNativeBatchSourceNotification(() => {
+    const file = path.join(project, 'src/pages/index/index.js')
+    lateScriptSave = (async () => {
+      await writeFile(`${file}.tmp`, source.js.replaceAll('BATCH_BASE', 'BATCH_FIRST'))
+      await renameAtomicFile(`${file}.tmp`, file)
+    })()
+    // 原断言会读取该失败；流回调不能提前产生未处理的 rejection。
+    void lateScriptSave.catch(() => {})
+  })
 
   async function connect() {
     return await launchAutomator({
@@ -40,7 +51,8 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     source = await readNativeBatchSources(project)
     dev = startDevProcess(process.execPath, [NATIVE_BATCH_CLI, 'dev', '--non-interactive'], {
       cwd: project,
-      env: createDevProcessEnv(),
+      env: { ...createDevProcessEnv(), ...(stateful ? { WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE: '1' } : {}) },
+      ...(stateful ? { stdout: ['pipe', notification.stream] as const } : {}),
       all: true,
     })
     await dev.waitForInitialBuild()
@@ -48,6 +60,8 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
   }, 180_000)
 
   afterAll(async () => {
+    notification.disarm()
+    await lateScriptSave?.catch(() => {})
     await cleanupTemporaryRuntimeProject({
       project,
       disposeTransport,
@@ -55,6 +69,76 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
       stopDev: async () => { await dev?.stop() },
     })
   }, 60_000)
+
+  if (stateful) {
+    it('persists a native script saved on the first actual sidecar notification', async (context) => {
+      context.onTestFailed(async () => {
+        try {
+          process.stdout.write(dev?.getOutput() ?? '')
+          process.stdout.write(`[native-batch-diagnostics] ${JSON.stringify({ runtime, files: await readNativeBatchDiagnostics(project) })}\n`)
+        }
+        catch {
+          // 诊断失败不能替换原四文件与 runtime 断言。
+        }
+      })
+      const step = NATIVE_BATCH_STEPS[1]
+      const dom = createDomAcceptance(context, fixture, [{
+        id: 'late-script-notification',
+        route,
+        action: '检查真实侧车通知后保存的脚本与同轮资产',
+        nodes: [
+          { selector: '#batch', text: step.marker, ...(resolveRuntimeProviderName() === 'devtools' ? { styles: { color: step.computed } } : {}) },
+          { selector: '#script', text: step.marker },
+          { selector: '#increment', text: '1' },
+        ],
+      }])
+      await expect.poll(() => miniProgram!.evaluate(() => (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__.getTransportState().initialReady), { timeout: 30_000 }).toBe(true)
+      const controlFile = path.join(project, 'dist/__weapp_vite_hmr/control.js')
+      const previousControl = await readFile(controlFile, 'utf8')
+      notification.arm()
+      // 各文件只保存一次；脚本在父进程收到真实通知后保存，不阻塞监听或改变轮询参数。
+      for (const extension of ['json', 'wxss', 'wxml'] as const) {
+        const file = path.join(project, `src/pages/index/index.${extension}`)
+        await writeFile(`${file}.tmp`, source[extension].replaceAll('BATCH_BASE', step.marker).replace(/color: #[\da-f]+/i, `color: ${step.color}`))
+        await renameAtomicFile(`${file}.tmp`, file)
+      }
+      await expect.poll(() => notification.triggered, { timeout: 30_000 }).toBe(true)
+      await lateScriptSave
+      await expect.poll(() => readNativeBatchOutput(project, step.marker), { timeout: 30_000 }).toEqual({ js: true, wxml: true, wxss: true, json: true })
+      await expect.poll(() => readFile(controlFile, 'utf8'), { timeout: 30_000 }).not.toBe(previousControl)
+      disposeTransport?.()
+      if (resolveRuntimeProviderName() === 'headless') {
+        await miniProgram!.close()
+        miniProgram = await connect()
+      }
+      else {
+        miniProgram = await reconnectAutomator(miniProgram!)
+      }
+      await miniProgram.reLaunch(route)
+      await expect.poll(() => miniProgram!.evaluate(() => (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__.getTransportState().initialReady), { timeout: 30_000 }).toBe(true)
+      await (await (await miniProgram.currentPage()).$('#increment'))!.tap()
+      await dom.check('late-script-notification', miniProgram, await miniProgram.currentPage())
+      // 完整恢复同一会话的初始输入与发布基线，再运行原重复保存断言。
+      const restored = NATIVE_BATCH_STEPS[0]
+      const controlBeforeRestore = await readFile(controlFile, 'utf8')
+      await writeNativeBatch(project, source, restored, true)
+      await expect.poll(() => readNativeBatchOutput(project, restored.marker), { timeout: 30_000 }).toEqual({ js: true, wxml: true, wxss: true, json: true })
+      await expect.poll(() => readFile(controlFile, 'utf8'), { timeout: 30_000 }).not.toBe(controlBeforeRestore)
+      disposeTransport?.()
+      if (resolveRuntimeProviderName() === 'headless') {
+        await miniProgram.close()
+        miniProgram = await connect()
+      }
+      else {
+        miniProgram = await reconnectAutomator(miniProgram)
+      }
+      await miniProgram.reLaunch(route)
+      await expect.poll(() => miniProgram!.evaluate(() => (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__.getTransportState().initialReady), { timeout: 30_000 }).toBe(true)
+      await expect.poll(async () => (await (await miniProgram!.currentPage()).$('#batch'))?.text(), { timeout: 30_000 }).toBe(restored.marker)
+      await expect.poll(async () => (await (await miniProgram!.currentPage()).$('#script'))?.text(), { timeout: 30_000 }).toBe(restored.marker)
+      expect(dev!.getOutput()).not.toMatch(/Build failed|delivery failed|patch transform failed/)
+    }, 240_000)
+  }
 
   it('renders matching script, template, style and config batches on repeated saves and restoration', async (context) => {
     context.onTestFailed(async () => {
