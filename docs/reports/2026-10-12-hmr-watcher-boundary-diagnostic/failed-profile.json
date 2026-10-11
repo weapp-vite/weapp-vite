@@ -1,0 +1,60 @@
+{
+  "budgetMs": 500,
+  "budgetMetric": "wallMs",
+  "generatedAt": "2026-10-11T19:21:32.076Z",
+  "iterations": 2,
+  "profileTimeoutMs": 15000,
+  "profileEnabled": true,
+  "outputScopeEnabled": true,
+  "markerSeed": "native-primary-0",
+  "sampleMode": "edit-only",
+  "summary": {
+    "measuredScenarioCount": 0,
+    "overBudgetCount": 0,
+    "failedTemplateCount": 0,
+    "failedScenarioCount": 1,
+    "templateCount": 1,
+    "scenarioCount": 1
+  },
+  "templates": [
+    {
+      "id": "weapp-vite-template",
+      "project": {
+        "source": "<failed-diagnostic-evidence>/.workspace/input/weapp-vite-template",
+        "workspace": "<failed-diagnostic-evidence>/.workspace/hmr/weapp-vite-template"
+      },
+      "scenarioCount": 3,
+      "scenarios": [
+        {
+          "group": "native-template",
+          "id": "native-page-template",
+          "label": "pages/index/index.wxml",
+          "outputFile": "<failed-diagnostic-evidence>/.workspace/hmr/weapp-vite-template/dist/pages/index/index.wxml",
+          "overBudget": false,
+          "samples": [],
+          "sourceFile": "<failed-diagnostic-evidence>/.workspace/hmr/weapp-vite-template/src/pages/index/index.wxml",
+          "error": "fs.remove(...) is not a function",
+          "cycles": [],
+          "diagnostics": {
+            "phase": "edit",
+            "transport": [],
+            "source": {
+              "bytes": 527,
+              "sha256": "c414748c7e6e2138c43a15a0ce3141862c98f29d22d57be42a6a6d44af24ff74",
+              "containsMarker": false
+            },
+            "output": {
+              "bytes": 631,
+              "sha256": "d190111ab84ba7f4c05b35f39d37349b5cd0b2c05f25c838f9345108f5a10230",
+              "containsMarker": false
+            },
+            "artifact": "failures/weapp-vite-template/native-page-template.json"
+          }
+        }
+      ],
+      "startupMs": 1629.569458,
+      "devLog": "logs/weapp-vite-template.dev.log"
+    }
+  ],
+  "timeoutMs": 30000
+}
