@@ -1,4 +1,4 @@
-import type { AnalyzeSubpackagesResult, PackageFileEntry } from '../../analyze/subpackages'
+import type { AnalyzeSubpackagesResult, PackageFileEntry } from '../../analyze/subpackages/types'
 import type { DashboardInvestigationTarget, DashboardObjectMeasurements } from './types'
 
 /** 不把缺失测量计为零，也不混合原始、压缩与模块归因体积。 */

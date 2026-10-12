@@ -70,6 +70,11 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node }}
+      - name: Verify packed Dashboard public types without mini-program ambient globals
+        run: node packages/weapp-vite/scripts/verify-dashboard-public-types.mjs
+        env:
+          WEAPP_VITE_CONSUMER_TARBALLS: .cache/node-support-tarballs
+          WEAPP_VITE_DASHBOARD_TYPES_EVIDENCE: .cache/dashboard-public-types.json
       - name: Install and verify published native, SFC, Tailwind and Web consumers
         run: node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv
         env:
@@ -81,7 +86,9 @@ jobs:
         if: always()
         with:
           name: consumer-evidence-${{ matrix.os }}-${{ matrix.node }}
-          path: .cache/consumer-evidence.json
+          path: |
+            .cache/consumer-evidence.json
+            .cache/dashboard-public-types.json
 
   dependency-compatibility:
     name: Strict dependency consumer (${{ matrix.os }} / ${{ matrix.manager }})
