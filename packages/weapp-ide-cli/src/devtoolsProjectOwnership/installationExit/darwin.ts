@@ -54,9 +54,12 @@ export async function readDarwinProcessStates(): Promise<DarwinProcessState[]> {
 }
 
 /** 系统 JXA/libproc 不可用时明确拒绝恢复，不安装工具或以进程标题降级。 */
-export async function readDarwinKernelPaths(pids: number[]) {
-  const result = await execa('/usr/bin/osascript', ['-l', 'JavaScript', '-e', kernelPathsScript, JSON.stringify(pids)], options)
-  if (result.exitCode !== 0 || result.stderr?.trim()) {
+export async function readDarwinKernelPaths(pids: number[], timeoutMs: number = options.timeout) {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) {
+    throw new Error('Installation-exit recovery cannot inspect kernel executable paths.')
+  }
+  const result = await execa('/usr/bin/osascript', ['-l', 'JavaScript', '-e', kernelPathsScript, JSON.stringify(pids)], { ...options, timeout: Math.min(options.timeout, timeoutMs) })
+  if (result.exitCode !== 0 || result.timedOut || result.signal || result.stderr?.trim()) {
     throw new Error('Installation-exit recovery cannot inspect kernel executable paths.')
   }
   let parsed: z.infer<typeof pathSchema>

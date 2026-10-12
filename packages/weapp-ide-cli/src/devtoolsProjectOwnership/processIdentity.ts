@@ -5,6 +5,7 @@ import process from 'node:process'
 import { execa } from 'execa'
 import { resolveWechatInspectionTimeout } from '../devtoolsTarget/inspection'
 import { withPowerShellUtf8Output } from '../utils/powershell'
+import { readDarwinManagedProcessIdentities } from './darwinProcessIdentity'
 
 const inspectionOptions = { timeout: 3_000, reject: false, windowsHide: true } as const
 const windowsInspectionOptions = { ...inspectionOptions, timeout: resolveWechatInspectionTimeout('win32') }
@@ -20,6 +21,9 @@ function invalidIdentity(result?: { exitCode?: number, signal?: string, timedOut
 export async function readManagedProcessIdentity(pid: number, platform = process.platform): Promise<ManagedWechatHostIdentity | undefined> {
   if (!Number.isSafeInteger(pid) || pid <= 0) {
     throw invalidIdentity()
+  }
+  if (platform === 'darwin') {
+    return (await readDarwinManagedProcessIdentities([pid])).get(pid)
   }
   if (platform === 'win32') {
     const result = await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', withPowerShellUtf8Output(`$ErrorActionPreference='Stop'; Get-CimInstance Win32_Process -Filter "ProcessId=${pid}" | Select-Object ProcessId,ExecutablePath,@{Name='Started';Expression={$_.CreationDate.ToUniversalTime().ToString('o')}} | ConvertTo-Json -Compress`)], windowsInspectionOptions)

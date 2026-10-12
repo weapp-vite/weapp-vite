@@ -29,11 +29,12 @@ interface FixtureProcess {
   ppid: number
   executable: string
   started: string
+  title?: string
 }
 
 export function createProcessTreeFixture(execaMock: Mock) {
   const owned = createChild()
-  const executable = path.resolve('fixture-node')
+  const executable = process.platform === 'darwin' ? path.posix.join('/', 'fixture', 'node') : path.resolve('fixture-node')
   const started = (second: number) => process.platform === 'win32'
     ? `2026-10-05T12:30:0${second}.0000000Z`
     : `Mon Oct 5 12:30:0${second} 2026`
@@ -120,25 +121,36 @@ export function createProcessTreeFixture(execaMock: Mock) {
       }
       return Promise.resolve({ exitCode: 0, stdout: '' })
     }
-    if (command !== 'ps') {
+    if (command === '/usr/bin/osascript') {
+      const pids: unknown = JSON.parse(args.at(-1) ?? '')
+      if (!Array.isArray(pids) || pids.some(pid => typeof pid !== 'number')) {
+        throw new Error('Unexpected process fixture kernel path request')
+      }
+      if (pids.some(pid => state.unknownIdentityPids.has(pid))) {
+        return Promise.resolve({ exitCode: 2, stdout: '', stderr: 'Process inspection failed' })
+      }
+      const entries = pids.map(pid => processes.get(pid))
+      state.identityReads.push(...entries.filter((entry): entry is FixtureProcess => entry != null).map(entry => ({ ...entry })))
+      return Promise.resolve({ exitCode: 0, stdout: JSON.stringify(pids.map(pid => ({ pid, executable: processes.get(pid)?.executable ?? null }))) })
+    }
+    if (command !== 'ps' && command !== '/bin/ps') {
       throw new Error(`Unexpected process fixture command: ${command}`)
     }
-    if (args.join(' ') === '-Ao pid=,ppid=,lstart=,comm=') {
-      const stdout = [...processes.values()].map(entry => `${entry.pid} ${entry.ppid} ${entry.started} ${entry.executable}`).join('\n')
+    if (args.join(' ') === '-Ao pid=,ppid=,lstart=') {
+      const stdout = [...processes.values()].map(entry => `${entry.pid} ${entry.ppid} ${entry.started}`).join('\n')
       state.afterDiscovery?.()
       return Promise.resolve({ exitCode: 0, stdout })
     }
-    if (args.length === 6 && args[0] === '-p' && args.slice(2).join(' ') === '-o lstart= -o comm=') {
-      const pid = Number(args[1])
-      if (state.unknownIdentityPids.has(pid)) {
+    if (args.length === 4 && args[0] === '-p' && args.slice(2).join(' ') === '-o pid=,lstart=') {
+      const pids = args[1]!.split(',').map(Number)
+      if (pids.some(pid => state.unknownIdentityPids.has(pid))) {
         return Promise.resolve({ exitCode: 2, stdout: '', stderr: 'Process inspection failed' })
       }
-      const entry = processes.get(pid)
-      if (!entry) {
+      const entries = pids.map(pid => processes.get(pid)).filter((entry): entry is FixtureProcess => entry != null)
+      if (!entries.length) {
         return Promise.resolve({ exitCode: 1, stdout: '' })
       }
-      state.identityReads.push({ ...entry })
-      return Promise.resolve({ exitCode: 0, stdout: `${entry.started} ${entry.executable}\n` })
+      return Promise.resolve({ exitCode: 0, stdout: entries.map(entry => `${entry.pid} ${entry.started}`).join('\n') })
     }
     throw new Error(`Unexpected process fixture ps arguments: ${args.join(' ')}`)
   })

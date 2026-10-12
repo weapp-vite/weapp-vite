@@ -147,6 +147,8 @@ const projects = [
         'e2e/utils/automatorCliProcess.test.ts',
         'e2e/utils/automatorWarmup.test.ts',
         'e2e/utils/cleanupSteps.test.ts',
+        'e2e/utils/dev-process.cleanup.test.ts',
+        'e2e/utils/devProcessCleanup/darwinProcesses.test.ts',
         'e2e/utils/dev-memory.test.ts',
         'e2e/utils/devBuildCompletion.test.ts',
         'e2e/utils/hmr-helpers.test.ts',

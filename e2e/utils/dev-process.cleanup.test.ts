@@ -133,7 +133,7 @@ describe('dev process cleanup ownership', () => {
     fixture.ignoreTermPids.add(61)
     const replacement = {
       ...fixture.processes.get(62)!,
-      [field]: field === 'started' ? 'Mon Oct 5 12:30:05 2026' : path.resolve('replacement-node'),
+      [field]: field === 'started' ? 'Mon Oct 5 12:30:05 2026' : path.posix.join('/', 'fixture', 'replacement-node'),
     }
     fixture.afterSignal = (pid, signal) => {
       if (pid === 61 && signal === 'SIGTERM') {

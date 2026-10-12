@@ -4,6 +4,7 @@ import fs from 'node:fs/promises'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 受管进程发现和 Windows 精确终止复用跨平台子进程封装。
 import { execa } from 'execa'
+import { readDarwinManagedProcessIdentities } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/darwinProcessIdentity'
 import { readManagedProcessIdentity, sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/processIdentity'
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { traceCleanupStage } from '../cleanupTrace'
@@ -59,9 +60,12 @@ async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
 }
 
 async function readMacProcesses(): Promise<ProcessEntry[]> {
-  const result = await execa('ps', ['-Ao', 'pid=,ppid=,lstart=,comm='], { stdin: 'ignore', timeout: 3_000, env: { LC_ALL: 'C' } })
+  const result = await execa('ps', ['-Ao', 'pid=,ppid=,lstart='], { stdin: 'ignore', timeout: 3_000, env: { LC_ALL: 'C' } })
+  if (result.stderr?.trim()) {
+    throw inspectionError()
+  }
   return result.stdout.split(/\r?\n/).filter(line => line.trim()).map((line) => {
-    const match = /^(\d+)\s+(\d+)\s+(\w{3}\s+\w{3}\s+\d+\s+\d{2}:\d{2}:\d{2}\s+\d{4})\s+(\S[^\r\n]*)$/.exec(line.trim())
+    const match = /^(\d+)\s+(\d+)\s+(\w{3}\s+\w{3}\s+\d+\s+\d{2}:\d{2}:\d{2}\s+\d{4})$/.exec(line.trim())
     if (!match) {
       throw inspectionError()
     }
@@ -70,7 +74,7 @@ async function readMacProcesses(): Promise<ProcessEntry[]> {
     if (!Number.isSafeInteger(pid) || pid < 0 || !Number.isSafeInteger(ppid)) {
       throw inspectionError()
     }
-    return { pid, ppid, identity: { pid, started: match[3]!.replace(/\s+/g, ' '), executable: match[4]!.trim() } }
+    return { pid, ppid, started: match[3]!.replace(/\s+/g, ' ') }
   }).filter(entry => entry.pid > 0)
 }
 
@@ -141,9 +145,12 @@ export async function captureDevProcessTree(rootPid: number, isRootHeld: () => b
   }
   let identities: (DevProcessIdentity | undefined)[]
   try {
+    const darwinIdentities = process.platform === 'darwin'
+      ? await readDarwinManagedProcessIdentities(tree.map(entry => entry.pid))
+      : undefined
     identities = await Promise.all(tree.map(async (entry) => {
       if (!windows) {
-        const identity = await readManagedProcessIdentity(entry.pid)
+        const identity = darwinIdentities ? darwinIdentities.get(entry.pid) : await readManagedProcessIdentity(entry.pid)
         if (identity && (entry.identity ? !sameManagedProcess(entry.identity, identity) : entry.started !== identity.started)) {
           throw inspectionError()
         }
@@ -177,8 +184,11 @@ export async function captureDevProcessTree(rootPid: number, isRootHeld: () => b
   return identities.filter((identity): identity is DevProcessIdentity => identity != null)
 }
 
-/** Windows 每轮只启动一次 CIM 查询；空结果代表退出，缺少身份字段代表检查失败。 */
+/** Windows 批量查询 CIM，macOS 批量核验内核路径；缺少身份字段不能当作退出。 */
 export async function readDevProcessIdentities(pids: number[]): Promise<Map<number, DevProcessIdentity | undefined>> {
+  if (process.platform === 'darwin') {
+    return readDarwinManagedProcessIdentities(pids)
+  }
   if (process.platform !== 'win32') {
     return new Map(await Promise.all(pids.map(async pid => [pid, await readManagedProcessIdentity(pid)] as const)))
   }
