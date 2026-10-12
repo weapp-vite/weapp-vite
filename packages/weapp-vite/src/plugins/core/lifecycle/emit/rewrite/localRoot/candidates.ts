@@ -1,3 +1,5 @@
+import { isProxy } from 'node:util/types'
+
 const REQUIRE_IDENTIFIER_RE = /\brequire\b/
 const DEPENDENCY_TOKEN_RE = /^(?:@[\w.-]+|\w[\w.-]*)$/
 
@@ -29,20 +31,31 @@ export function createLocalRootNpmCandidateCheck(
   dependencies: Record<string, string> | undefined,
 ) {
   let tokens: string[] | undefined
+  const hasLiteralScope = !isProxy(dependencyPatterns) && !isProxy(dependencies)
   try {
     tokens = collectDependencyTokens(dependencyPatterns, dependencies)
   }
   catch {
     // 依赖对象无法静态枚举时，仍由原重写流程处理。
   }
-  return (code: string) => {
-    // 标识符只能用 Unicode 转义；普通正则反斜线不会生成 require 标识符。
-    if (!REQUIRE_IDENTIFIER_RE.test(code) && !code.includes('\\u')) {
-      return false
-    }
-    if (code.includes('\\') || code.includes('miniprogram_npm') || !tokens) {
-      return true
-    }
-    return tokens.some(token => code.includes(token))
+  return {
+    mayNeedRewrite(code: string) {
+      // 标识符只能用 Unicode 转义；普通正则反斜线不会生成 require 标识符。
+      if (!REQUIRE_IDENTIFIER_RE.test(code) && !code.includes('\\u')) {
+        return false
+      }
+      if (code.includes('\\') || code.includes('miniprogram_npm') || !tokens) {
+        return true
+      }
+      return tokens.some(token => code.includes(token))
+    },
+    mayNeedLiteralRewrite(importee: string) {
+      // 解析后的字面量已解码转义；普通路径只比较首段，不调用 matcher 或文件系统解析。
+      return !hasLiteralScope || !tokens
+        || importee.includes('\\')
+        || importee.includes('node_modules')
+        || importee.startsWith('npm:')
+        || tokens.includes(importee.split('/').find(Boolean) ?? '')
+    },
   }
 }
