@@ -11,7 +11,7 @@ import { prepareIndependentOutputs } from '../../../../runtime/buildPlugin/indep
 import { resolveWeappLibEntries } from '../../../../runtime/lib'
 import { findJsEntry, findVueEntry, normalizeAppJson } from '../../../../utils'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../../utils/entryResolve'
-import { resolveRealpath } from '../../../../utils/realpathScope'
+import { resolveRealpath, withRealpathScope } from '../../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { collectImportedVueComponents } from './importedComponents'
 
@@ -229,28 +229,31 @@ export function createOptionsHook(state: CorePluginState) {
       if (!sourceId) {
         continue
       }
-      // 生产 watch 的页面拓扑由每轮 buildStart 注册，静态 input 只保留真实 app 入口。
-      const dynamicWatchEntry = Boolean(state.resolvedConfig?.build.watch && !configService.isDev && source.type !== 'app' && !configService.weappLibConfig?.enabled)
-      const normalized = normalizeFsResolvedId(sourceId)
-      if (!dynamicWatchEntry) {
-        // 组件脚本与附属资源共用物理输出路径，目录声明解析后不能沿用目录别名。
-        const outputName = source.type === 'component' && !configService.weappLibConfig?.enabled
-          ? removeExtension(configService.relativeOutputPath(normalized))
-          : name
-        logicalInput[outputName] = createLogicalEntryId(sourceId, source.type)
-      }
-      if (normalized) {
+      // 仅复用 resolver 返回后的同步登记，不跨入口或异步解析保留文件身份。
+      withRealpathScope(() => {
+        // 生产 watch 的页面拓扑由每轮 buildStart 注册，静态 input 只保留真实 app 入口。
+        const dynamicWatchEntry = Boolean(state.resolvedConfig?.build.watch && !configService.isDev && source.type !== 'app' && !configService.weappLibConfig?.enabled)
+        const normalized = normalizeFsResolvedId(sourceId)
         if (!dynamicWatchEntry) {
-          state.hmrRootInputIds.add(normalizeSourceId(normalized))
+          // 组件脚本与附属资源共用物理输出路径，目录声明解析后不能沿用目录别名。
+          const outputName = source.type === 'component' && !configService.weappLibConfig?.enabled
+            ? removeExtension(configService.relativeOutputPath(normalized))
+            : name
+          logicalInput[outputName] = createLogicalEntryId(sourceId, source.type)
         }
-        if (source.type !== 'app' && state.entriesMap) {
-          const relativeBase = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(normalized))
-          state.entriesMap.set(relativeBase, {
-            path: normalized,
-            type: source.type === 'page' ? 'page' : 'component',
-          } as any)
+        if (normalized) {
+          if (!dynamicWatchEntry) {
+            state.hmrRootInputIds.add(normalizeSourceId(normalized))
+          }
+          if (source.type !== 'app' && state.entriesMap) {
+            const relativeBase = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(normalized))
+            state.entriesMap.set(relativeBase, {
+              path: normalized,
+              type: source.type === 'page' ? 'page' : 'component',
+            } as any)
+          }
         }
-      }
+      })
     }
     options.input = logicalInput
   }
