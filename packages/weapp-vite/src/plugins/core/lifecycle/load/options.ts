@@ -3,7 +3,6 @@ import type { AppEntry } from '../../../../types'
 import type { ResolveEntryPathOptions } from '../../../../utils/entryResolve'
 import type { CorePluginState } from '../../helpers'
 import { removeExtension, removeExtensionDeep } from '@weapp-core/shared'
-import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createLogicalEntryId } from '../../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../../moduleGraph/traversal'
@@ -14,61 +13,12 @@ import { findJsEntry, findVueEntry, normalizeAppJson } from '../../../../utils'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../../utils/entryResolve'
 import { resolveRealpath } from '../../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
+import { collectImportedVueComponents } from './importedComponents'
 
 interface LogicalInputSource {
   input: string
   source?: string
   type: LogicalEntryType
-}
-
-// eslint-disable-next-line regexp/no-super-linear-backtracking -- import 语法需要兼容默认、命名和副作用导入。
-const LOCAL_IMPORT_RE = /\bimport\s+(?:([\s\S]*?)\s+from\s+)?(['"])([^'"\n]+)\2/g
-
-async function collectImportedVueComponents(
-  state: CorePluginState,
-  candidates: Array<{ entry: string, type: LogicalEntryType }>,
-) {
-  const { configService } = state.ctx
-  const { absoluteSrcRoot } = configService
-  const entryResolveOptions = createCachedEntryResolveOptions(configService, { kind: 'default' })
-  const importedComponents = new Set<string>()
-  for (const candidate of candidates) {
-    if (candidate.type !== 'page' || candidate.entry.includes(':')) {
-      continue
-    }
-    const pageBase = path.resolve(absoluteSrcRoot, candidate.entry)
-    const pageSource = getSelectedAutoRouteSource(state.ctx, pageBase)
-      ?? (path.extname(pageBase) ? pageBase : await resolveEntryPath(pageBase, entryResolveOptions))
-    if (!pageSource || !await fs.pathExists(pageSource)) {
-      continue
-    }
-    let source: string
-    try {
-      source = await fs.readFile(pageSource, 'utf8')
-    }
-    catch {
-      continue
-    }
-    for (const match of source.matchAll(LOCAL_IMPORT_RE)) {
-      const importSource = match[3]
-      if (!importSource.startsWith('.') && !importSource.startsWith('/')) {
-        continue
-      }
-      const importedBase = path.resolve(path.dirname(pageSource), importSource)
-      const kind = /^[{*]/.test(match[1]?.trim() ?? '') ? 'named' : 'default'
-      const importedVue = importedBase.endsWith('.vue')
-        ? importedBase
-        : await resolveEntryPath(importedBase, { ...entryResolveOptions, kind })
-      if (!importedVue?.endsWith('.vue') || !await fs.pathExists(importedVue)) {
-        continue
-      }
-      const relativeEntry = path.relative(absoluteSrcRoot, importedVue).replaceAll('\\', '/')
-      if (relativeEntry && !relativeEntry.startsWith('../')) {
-        importedComponents.add(relativeEntry)
-      }
-    }
-  }
-  return [...importedComponents]
 }
 
 async function collectMainLogicalInputs(state: CorePluginState, appEntry: AppEntry) {
