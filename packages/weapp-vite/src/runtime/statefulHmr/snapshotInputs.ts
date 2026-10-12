@@ -19,6 +19,35 @@ function excluded(file: string, scope: SnapshotInputScope) {
   return scope.excluded.some(root => file === root || file.startsWith(`${root}/`))
 }
 
+/** 新发现的外部依赖若没有构建前版本，保守地取消复用。 */
+export function coversSnapshotInputs(inputs: SnapshotInputs, files: Iterable<string>) {
+  return [...files].every((file) => {
+    if (!path.isAbsolute(file)) {
+      return true
+    }
+    const normalized = normalizeFsResolvedId(file)
+    if (excluded(normalized, inputs.scope) || inputs.versions.has(normalized)) {
+      return true
+    }
+    if (inputs.scope.skipPaths?.some(root => normalized === root || normalized.startsWith(`${root}/`))) {
+      return false
+    }
+    // 目录清单本身证明未列出的后缀不存在；新入口的可选 sidecar 无需预先枚举。
+    let child = normalized
+    for (let parent = path.dirname(child); parent !== child; child = parent, parent = path.dirname(parent)) {
+      const version = inputs.versions.get(parent)
+      if (version === 'missing') {
+        return true
+      }
+      if (version?.startsWith('directory:')) {
+        const names = JSON.parse(version.slice('directory:'.length)) as string[]
+        return !names.includes(path.basename(child))
+      }
+    }
+    return false
+  })
+}
+
 /** 内容版本同时覆盖目录增删；不依赖 mtime 精度，也不把输出和支持文件当作输入。 */
 export async function captureSnapshotInputs(scope: SnapshotInputScope): Promise<SnapshotInputs> {
   const versions = new Map<string, string>()
@@ -92,41 +121,21 @@ export async function captureSnapshotInputs(scope: SnapshotInputScope): Promise<
     }
     return pending
   }
-  await Promise.all([...new Set([...scope.roots, ...scope.files])].map(file => visit(file)))
-  return { scope, versions }
+  const roots = [...new Set(scope.roots.map(file => normalizeFsResolvedId(file)))].filter(file => !excluded(file, scope))
+  const rootAliases = await aliases(roots)
+  const files = [...new Set(scope.files.map(file => normalizeFsResolvedId(file)))]
+  // 路径关系仅用于调度；根内依赖必须等目录内容版本确实覆盖后才能省略访问。
+  const rootedFiles = files.filter(file => rootAliases.some(root => file === root || file.startsWith(`${root}/`)))
+  const rooted = new Set(rootedFiles)
+  await Promise.all([...roots, ...files.filter(file => !rooted.has(file))].map(file => visit(file)))
+  const inputs = { scope, versions }
+  // 根目录清单已经证明不存在的 sidecar，无需再次 realpath/lstat；跳过目录中的显式依赖仍单独读取。
+  await Promise.all(rootedFiles.filter(file => !coversSnapshotInputs(inputs, [file])).map(file => visit(file)))
+  return inputs
 }
 
 export function sameSnapshotInputs(left: SnapshotInputs, right: SnapshotInputs) {
   return left.versions.size === right.versions.size && [...left.versions].every(([file, version]) => right.versions.get(file) === version)
-}
-
-/** 新发现的外部依赖若没有构建前版本，保守地取消复用。 */
-export function coversSnapshotInputs(inputs: SnapshotInputs, files: Iterable<string>) {
-  return [...files].every((file) => {
-    if (!path.isAbsolute(file)) {
-      return true
-    }
-    const normalized = normalizeFsResolvedId(file)
-    if (excluded(normalized, inputs.scope) || inputs.versions.has(normalized)) {
-      return true
-    }
-    if (inputs.scope.skipPaths?.some(root => normalized === root || normalized.startsWith(`${root}/`))) {
-      return false
-    }
-    // 目录清单本身证明未列出的后缀不存在；新入口的可选 sidecar 无需预先枚举。
-    let child = normalized
-    for (let parent = path.dirname(child); parent !== child; child = parent, parent = path.dirname(parent)) {
-      const version = inputs.versions.get(parent)
-      if (version === 'missing') {
-        return true
-      }
-      if (version?.startsWith('directory:')) {
-        const names = JSON.parse(version.slice('directory:'.length)) as string[]
-        return !names.includes(path.basename(child))
-      }
-    }
-    return false
-  })
 }
 
 export async function validateSnapshotInputs(inputs: SnapshotInputs) {

@@ -34,17 +34,16 @@ it('shares an in-flight file visit between a source root and explicit dependenci
   const reading = Promise.withResolvers<void>()
   const release = Promise.withResolvers<void>()
   filesystem.readdir.mockImplementation(async () => {
-    await reading.promise
+    reading.resolve()
+    await release.promise
     return ['index.js']
   })
   filesystem.readFile.mockImplementation(async () => {
-    reading.resolve()
-    await release.promise
     return Buffer.from('before')
   })
   const capture = captureSnapshotInputs(scope)
   await reading.promise
-  // 所有目录访问均为内存中的已完成 Promise；推进一轮事件循环让递归访问抵达同一文件。
+  // 目录清单允许显式声明等待根遍历；推进一轮事件循环，确认重叠路径仍只读取一次。
   await setImmediate()
   release.resolve()
   const inputs = await capture
