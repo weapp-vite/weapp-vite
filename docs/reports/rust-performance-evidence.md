@@ -30,7 +30,7 @@ PR #1175 的原始证据固定保留在提交 [`09139d378`](https://github.com/w
 
 ## 离线复算
 
-报告包的 manifest 同时校验 README、tooling 和数据。必须在完整历史快照内运行原复算入口，不能把旧 manifest 与当前摘要混用，也不能删除校验项来获得通过。使用一个尚不存在的本地目录：
+架构报告包的 manifest 同时校验 README、tooling 和数据；native/startup replay 复算统计和 verdict，校验范围与架构报告包不同。必须在完整历史快照内运行原复算入口，不能把旧 manifest 与当前摘要混用，也不能删除校验项来获得通过。使用一个尚不存在的本地目录：
 
 ```sh
 git fetch origin 09139d378d16db2d0e82ad632e8790f4372fa208
