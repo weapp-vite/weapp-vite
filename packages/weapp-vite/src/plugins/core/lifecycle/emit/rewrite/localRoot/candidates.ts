@@ -2,6 +2,21 @@ import { isProxy } from 'node:util/types'
 
 const REQUIRE_IDENTIFIER_RE = /\brequire\b/
 const DEPENDENCY_TOKEN_RE = /^(?:@[\w.-]+|\w[\w.-]*)$/
+const ARRAY_INDEX_RE = /^(?:0|[1-9]\d*)$/
+
+/** 只接受普通数据数组，避免候选枚举与原 matcher 读取不同的规则或触发额外 getter。 */
+function hasStaticPatternArray(patterns: (string | RegExp)[] | undefined) {
+  if (patterns === undefined) {
+    return true
+  }
+  if (isProxy(patterns) || !Array.isArray(patterns) || Object.getPrototypeOf(patterns) !== Array.prototype) {
+    return false
+  }
+  const descriptors = Object.getOwnPropertyDescriptors(patterns)
+  return Reflect.ownKeys(descriptors).every(key => key === 'length' || (
+    typeof key === 'string' && ARRAY_INDEX_RE.test(key) && 'value' in descriptors[key]!
+  ))
+}
 
 function collectDependencyTokens(
   dependencyPatterns: (string | RegExp)[] | undefined,
@@ -31,8 +46,9 @@ export function createLocalRootNpmCandidateCheck(
   dependencies: Record<string, string> | undefined,
 ) {
   let tokens: string[] | undefined
-  const hasLiteralScope = !isProxy(dependencyPatterns) && !isProxy(dependencies)
+  let hasLiteralScope = false
   try {
+    hasLiteralScope = !isProxy(dependencies) && hasStaticPatternArray(dependencyPatterns)
     tokens = collectDependencyTokens(dependencyPatterns, dependencies)
   }
   catch {

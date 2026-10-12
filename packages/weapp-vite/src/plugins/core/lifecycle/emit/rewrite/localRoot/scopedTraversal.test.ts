@@ -3,7 +3,7 @@ import type { ChunkScriptAnalysisCache } from '../platform'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getVisitorKeys, parseJsLike, traverse } from '../../../../../../utils/babel'
 import { createPlatformApiAccessCollector } from '../../../platformApiRewrite'
-import { rewriteBundleNpmImportsToLocalRoots } from '../localRoot'
+import { rewriteBundleNpmImportsToLocalRoots, rewriteChunkNpmImportsToLocalRoot } from '../localRoot'
 import { getChunkScriptAnalysis } from '../platform'
 
 vi.mock('../../../../../../utils/babel', async (importOriginal) => {
@@ -124,6 +124,54 @@ describe('local root scoped traversal candidates', () => {
     expect(chunk.code).toBe(code)
     expect(parseJsLike).toHaveBeenCalledTimes(1)
     expect(traverse).not.toHaveBeenCalled()
+  })
+
+  it('preserves pattern getters that change between candidate collection and matching', () => {
+    let reads = 0
+    const patterns = ['ui-lib']
+    Object.defineProperty(patterns, 0, {
+      get: () => ++reads === 1 ? 'ui-lib' : 'other-lib',
+    })
+    const chunk = createChunk(String.raw`const matcher = /\B/; const dep = require('other-lib/button')`)
+    rewriteChunkNpmImportsToLocalRoot(chunk, '', patterns, {}, { collectPlatformApiAccess: false })
+
+    expect(chunk.code).toContain('require("../miniprogram_npm/other-lib/button")')
+    expect(reads).toBe(2)
+    expect(traverse).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['own', 'inherited'])('preserves a %s pattern iterator whose values differ from array entries', (owner) => {
+    const patterns = ['other-lib']
+    const iterator = vi.fn(function* () {
+      yield 'ui-lib'
+    })
+    const target = owner === 'own' ? patterns : Object.create(Array.prototype)
+    Object.defineProperty(target, Symbol.iterator, { value: iterator })
+    if (owner === 'inherited') {
+      Object.setPrototypeOf(patterns, target)
+    }
+    const chunk = createChunk(String.raw`const matcher = /\B/; const dep = require('other-lib/button')`)
+    rewriteChunkNpmImportsToLocalRoot(chunk, '', patterns, {}, { collectPlatformApiAccess: false })
+
+    expect(chunk.code).toContain('require("../miniprogram_npm/other-lib/button")')
+    expect(iterator).toHaveBeenCalledTimes(1)
+    expect(traverse).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['own', 'inherited'])('preserves a %s pattern matcher that accepts another dependency', (owner) => {
+    const patterns = ['ui-lib']
+    const some = vi.fn(() => true)
+    const target = owner === 'own' ? patterns : Object.create(Array.prototype)
+    Object.defineProperty(target, 'some', { value: some })
+    if (owner === 'inherited') {
+      Object.setPrototypeOf(patterns, target)
+    }
+    const chunk = createChunk(String.raw`const matcher = /\B/; const dep = require('other-lib/button')`)
+    rewriteChunkNpmImportsToLocalRoot(chunk, '', patterns, {}, { collectPlatformApiAccess: false })
+
+    expect(chunk.code).toContain('require("../miniprogram_npm/other-lib/button")')
+    expect(some).toHaveBeenCalledTimes(1)
+    expect(traverse).toHaveBeenCalledTimes(1)
   })
 
   it.each([
