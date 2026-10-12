@@ -19,11 +19,40 @@ interface PackageManifest {
   main: string
   module: string
   types: string
+  dependencies: Record<string, string>
   exports: {
     '.': {
       import: string
       types: string
     }
+  }
+}
+
+async function linkDependencies(artifactRoot: string, dependencies: Record<string, string>) {
+  for (const name of Object.keys(dependencies)) {
+    let dependencyRoot: string | undefined
+    for (let lookupRoot = packageDir; ; lookupRoot = path.dirname(lookupRoot)) {
+      const candidate = path.join(lookupRoot, 'node_modules', name)
+      try {
+        await access(path.join(candidate, 'package.json'))
+        dependencyRoot = await realpath(candidate)
+        break
+      }
+      catch (error) {
+        if (!['ENOENT', 'ENOTDIR'].includes((error as NodeJS.ErrnoException).code ?? '')) {
+          throw error
+        }
+      }
+      if (lookupRoot === path.dirname(lookupRoot)) {
+        break
+      }
+    }
+    if (!dependencyRoot) {
+      throw new Error(`找不到产物测试依赖：${name}`)
+    }
+    const destination = path.join(artifactRoot, 'node_modules', name)
+    await mkdir(path.dirname(destination), { recursive: true })
+    await symlink(dependencyRoot, destination, process.platform === 'win32' ? 'junction' : 'dir')
   }
 }
 
@@ -70,7 +99,7 @@ it.each(['direct', 'linked'] as const)('runs the published entry through a %s pa
     const declaration = path.resolve(artifactRoot, manifest.exports['.'].types)
 
     await mkdir(artifactRoot, { recursive: true })
-    await symlink(path.join(packageDir, 'node_modules'), path.join(artifactRoot, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir')
+    await linkDependencies(artifactRoot, manifest.dependencies)
     await executeFile(process.execPath, [
       tsdownCli,
       '--config',
