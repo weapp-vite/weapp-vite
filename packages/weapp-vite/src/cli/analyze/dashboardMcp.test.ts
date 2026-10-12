@@ -8,8 +8,8 @@ const disposeMock = vi.hoisted(() => vi.fn())
 const unregisterMock = vi.hoisted(() => vi.fn())
 const registerMock = vi.hoisted(() => vi.fn(() => ({ unregister: unregisterMock })))
 
-vi.mock('devframe/adapters/mcp', () => ({
-  createMcpFetchHandler: () => ({ dispose: disposeMock, fetch: vi.fn() }),
+vi.mock('./dashboardTransport', () => ({
+  loadDashboardTransportModule: async () => ({ createMcpFetchHandler: () => ({ dispose: disposeMock, fetch: vi.fn() }) }),
 }))
 
 vi.mock('devframe/internal', () => ({
@@ -35,7 +35,7 @@ it('disposes MCP after unregister failure and preserves both failures through re
   })
   const instance = { base: '/dashboard/', context: Promise.resolve({ agent: {} }) } as unknown as DevframeInstance
   const httpServer = { listening: true, address: () => ({ address: '127.0.0.1', port: 0 }) } as unknown as Server
-  const mcp = await createDashboardMcp(instance, httpServer, { projectRoot: path.resolve('.'), id: 'cleanup-test' })
+  const mcp = await createDashboardMcp(instance, httpServer, { packageJsonPath: path.resolve('package.json'), projectRoot: path.resolve('.'), id: 'cleanup-test' })
   mcp.register()
   const closing = mcp.close()
   expect(mcp.close()).toBe(closing)

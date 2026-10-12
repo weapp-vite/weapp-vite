@@ -4,11 +4,11 @@ import { expect, it, vi } from 'vitest'
 import { startAnalyzeDashboard } from './dashboard'
 
 const bridge = vi.hoisted(() => ({ loaded: false, failure: new Error('Dashboard transport unavailable') }))
-const resolveDashboardRoot = vi.hoisted(() => vi.fn())
+const resolveDashboardInstallation = vi.hoisted(() => vi.fn())
 
 vi.mock('../../dashboard/assets', () => ({
   ANALYZE_DASHBOARD_PACKAGE_NAME: '@weapp-vite/dashboard',
-  resolveDashboardRoot,
+  resolveDashboardInstallation,
 }))
 
 vi.mock('./dashboardViteBridge', () => {
@@ -19,11 +19,11 @@ vi.mock('./dashboardViteBridge', () => {
 it('loads dashboard transport only after resolving an installed dashboard', async () => {
   expect(bridge.loaded).toBe(false)
   const result = { packages: [], modules: [], subPackages: [] }
-  resolveDashboardRoot.mockReturnValue(undefined)
+  resolveDashboardInstallation.mockReturnValue(undefined)
   await expect(startAnalyzeDashboard(result, { artifacts: new Map() })).resolves.toBeUndefined()
   expect(bridge.loaded).toBe(false)
 
-  resolveDashboardRoot.mockReturnValue({ root: path.join(tmpdir(), 'dashboard-loading') })
+  resolveDashboardInstallation.mockReturnValue({ root: path.join(tmpdir(), 'dashboard-loading'), packageJsonPath: path.join(tmpdir(), 'dashboard-loading', 'package.json') })
   await expect(startAnalyzeDashboard(result, { artifacts: new Map() })).rejects.toMatchObject({ cause: bridge.failure })
   expect(bridge.loaded).toBe(true)
 })
