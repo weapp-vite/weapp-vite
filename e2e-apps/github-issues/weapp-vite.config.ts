@@ -272,6 +272,7 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/slot-fallback-computed-error/**',
   ],
   'github-issues.runtime.web-runtime.test.ts': [
+    'pages/issue-1186/**',
     'pages/issue-448/**',
     'pages/issue-459/**',
     'pages/issue-804/**',

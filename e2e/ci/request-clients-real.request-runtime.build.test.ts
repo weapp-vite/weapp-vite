@@ -13,11 +13,11 @@ import { FULL_REQUEST_GLOBAL_TARGETS } from '../../packages/weapp-vite/src/runti
 import { composeSourceMaps } from '../../packages/weapp-vite/src/utils/sourcemap'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { REQUEST_CLIENTS_REAL_NETWORK_DEFAULTS } from '../utils/requestClientsRealHostTraceRuntime'
+import { requestGlobalsAppModuleExpression, resolveRelativeModuleReferences, resolveRequestGlobalsInstaller } from '../utils/requestGlobalsInstaller'
 import { toRelativeImport } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const JS_FORMATS: TestJsFormat[] = ['cjs', 'esm']
-const REQUEST_GLOBAL_APP_MODULE_EXPRESSION = 'globalThis["__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js"]'
 const REQUEST_GLOBAL_BINARY_BINDING_TARGETS = [
   'URL',
   'URLSearchParams',
@@ -64,11 +64,11 @@ function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function expectOneModuleReference(code: string, specifiers: string[]) {
+function expectOneModuleReference(code: string, specifiers: string[], appModuleExpression: string) {
   expect(specifiers.some((specifier) => {
     const escapedSpecifier = escapeRegex(specifier)
     return new RegExp(`(?:require\\((['"\`])${escapedSpecifier}\\1\\)|from\\s+(['"\`])${escapedSpecifier}\\2)`).test(code)
-  }) || code.includes(REQUEST_GLOBAL_APP_MODULE_EXPRESSION)).toBe(true)
+  }) || code.includes(appModuleExpression)).toBe(true)
 }
 
 async function runBuild(appRoot: string, label: string, jsFormat: TestJsFormat, sourcemap = false) {
@@ -111,66 +111,18 @@ function expectMarkerMapping(
   expect(originalPosition.line).toBe(expectedLine)
 }
 
-async function resolveRuntimeChunkPath(distRoot: string) {
-  const requestGlobalsRuntimePath = path.join(distRoot, 'weapp-vendors/request-globals-runtime.js')
-  if (await fs.pathExists(requestGlobalsRuntimePath)) {
-    return requestGlobalsRuntimePath
-  }
-
-  const fallbackPaths = [
-    path.join(distRoot, 'weapp-vendors/wevu-ref.js'),
-    path.join(distRoot, 'weapp-vendors/wevu-defineProperty.js'),
-    path.join(distRoot, 'request-globals-web-apis-shared.js'),
-    path.join(distRoot, 'request-globals-wevu-web-apis-shared.js'),
-    path.join(distRoot, 'weapp-vendors/request-globals-web-apis-shared.js'),
-    path.join(distRoot, 'weapp-vendors/request-globals-wevu-web-apis-shared.js'),
-    path.join(distRoot, 'weapp-vendors/web-apis-shared.js'),
-  ]
-
-  for (const fallbackPath of fallbackPaths) {
-    if (await fs.pathExists(fallbackPath)) {
-      return fallbackPath
-    }
-  }
-
-  const candidateDirs = [
-    distRoot,
-    path.join(distRoot, 'weapp-vendors'),
-  ]
-
-  for (const candidateDir of candidateDirs) {
-    if (!await fs.pathExists(candidateDir)) {
-      continue
-    }
-
-    const entries = await fs.readdir(candidateDir)
-    for (const entry of entries) {
-      if (!entry.endsWith('.js')) {
-        continue
-      }
-
-      const candidatePath = path.join(candidateDir, entry)
-      const candidateCode = await fs.readFile(candidatePath, 'utf8')
-      if (
-        candidateCode.includes('Object.defineProperty(exports,')
-        && hasRequestGlobalsRuntimeMarker(candidateCode)
-      ) {
-        return candidatePath
-      }
-    }
-  }
-
-  throw new Error(`failed to resolve request globals runtime chunk under ${distRoot}`)
-}
-
 describe('e2e app: request clients request runtime (build)', { concurrent: false }, () => {
   for (const testCase of CASES) {
     for (const jsFormat of JS_FORMATS) {
       it(`emits installer runtime chunk and top-level bindings for ${testCase.label} in ${jsFormat}`, async () => {
         const distRoot = await runBuild(testCase.appRoot, testCase.label, jsFormat)
-        const runtimeChunkPath = await resolveRuntimeChunkPath(distRoot)
-        const runtimeJs = await fs.readFile(runtimeChunkPath, 'utf8')
+        const installer = await resolveRequestGlobalsInstaller(distRoot)
+        const runtimeChunkPath = installer.path
+        const runtimeJs = installer.code
         const appJs = await fs.readFile(path.join(distRoot, 'app.js'), 'utf8')
+        const appReferences = await resolveRelativeModuleReferences(distRoot, path.join(distRoot, 'app.js'), appJs)
+        const appModuleExpression = requestGlobalsAppModuleExpression(distRoot, runtimeChunkPath)
+        expect(appReferences).toContain(runtimeChunkPath)
 
         expect(runtimeJs).toMatch(/Object\.defineProperty\(exports,|export\s+\{/)
         expect(hasRequestGlobalsRuntimeMarker(runtimeJs)).toBe(true)
@@ -193,7 +145,9 @@ describe('e2e app: request clients request runtime (build)', { concurrent: false
           const entryJs = await fs.readFile(entryJsPath, 'utf8')
 
           expect(entryJs).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
-          expectOneModuleReference(entryJs, [toRelativeImport(entryJsPath, runtimeChunkPath)])
+          const entryReferences = await resolveRelativeModuleReferences(distRoot, entryJsPath, entryJs)
+          expect(entryReferences.includes(runtimeChunkPath) || entryJs.includes(appModuleExpression)).toBe(true)
+          expectOneModuleReference(entryJs, [toRelativeImport(entryJsPath, runtimeChunkPath)], appModuleExpression)
           expect(entryJs).toContain('var fetch =')
           expect(entryJs).toContain('.fetch')
           expect(entryJs).toContain('var XMLHttpRequest =')

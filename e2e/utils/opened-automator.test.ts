@@ -7,6 +7,7 @@ const connectOpenedAutomatorMock = vi.hoisted(() => vi.fn())
 const resolveProjectAutomatorPortMock = vi.hoisted(() => vi.fn(() => 11074))
 
 vi.mock('weapp-ide-cli', () => ({
+  WECHAT_DEVTOOLS_OFFICIAL_CHANNELS_URL: 'https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json',
   connectOpenedAutomator: connectOpenedAutomatorMock,
   resolveProjectAutomatorPort: resolveProjectAutomatorPortMock,
 }))
