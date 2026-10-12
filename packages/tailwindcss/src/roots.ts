@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
 import { CompilerHmrResyncError } from '@weapp-vite/hmr'
 import path from 'pathe'
+import { compactTailwindSourceEntries } from './sources/compact'
 
 export interface TailwindRootState {
   request: CompilerGenerateRequest
@@ -35,19 +36,21 @@ export async function prepareTailwindRoots<K>(
   if (!capturedRoots.size) {
     return entries
   }
-  const { createTailwindV4CompiledSourceEntries, createTailwindV4SourceEntryMatcher } = await import('@weapp-tailwindcss/engine')
+  const { createTailwindV4CompiledSourceEntries, isFileMatchedByTailwindV4SourceEntries } = await import('@weapp-tailwindcss/engine')
   for (const [index, root] of capturedRoots) {
     const sourceOptions = root.request.sourceOptions
     const projectRoot = sourceOptions?.projectRoot ?? root.request.source?.projectRoot ?? options.cwd
     const base = sourceOptions?.base === undefined
       ? root.request.source?.base ?? projectRoot
       : path.resolve(projectRoot, sourceOptions.base)
-    const matches = createTailwindV4SourceEntryMatcher(createTailwindV4CompiledSourceEntries(
+    const sourceEntries = createTailwindV4CompiledSourceEntries(
       root.result.root,
       [...root.result.sources],
       base,
-    ))
-    const sources = [...request.sources].flatMap(([file, content]) => content !== null && matches?.(file)
+    )
+    // 只合并本次判断中的固定负规则结构；回调修改字段后下一文件仍读取当前条目。
+    const sources = [...request.sources].flatMap(([file, content]) => content !== null && sourceEntries.length > 0
+      && isFileMatchedByTailwindV4SourceEntries(file, compactTailwindSourceEntries(sourceEntries))
       && !(options.isOutput?.(file))
       ? [{ content, extension: path.extname(file).slice(1) }]
       : [])
