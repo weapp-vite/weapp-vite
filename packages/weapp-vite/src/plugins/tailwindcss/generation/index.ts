@@ -194,16 +194,31 @@ async function admitGeneration(ctx: CompilerContext, generation: Generation, req
   validate()
   validations.set(ctx, async (inputFiles, consumed) => {
     validate()
+    // Iterable 可能只能读取一次；保留原始绝对路径，不能合并不同词法路径的扫描语义。
+    const consumedFiles = new Set([...consumed].filter(file => path.isAbsolute(file)))
+    const files = new Set([...consumedFiles, ...inputFiles].filter(file => path.isAbsolute(file)))
     for (const root of generation.roots) {
       const sourceRules = root.sources.map(source => ({ ...source }))
+      const selected = await resolveProjectSourceFiles({ cwd: ctx.configService.cwd, sources: sourceRules, filter: createTailwindV4SourceEntryMatcher(sourceRules) })
       const matches = createTailwindV4SourceEntryMatcher(sourceRules)
-      const selected = await resolveProjectSourceFiles({ cwd: ctx.configService.cwd, sources: sourceRules, filter: matches })
-      const actual = [...consumed].filter(file => path.isAbsolute(file) && matches?.(file))
-      const discovered = [...selected, ...inputFiles].filter(file => path.isAbsolute(file) && matches?.(file) && isGenerationSourceFile(file))
-      // 已编译模块即使随后删除也属于真实输入；不存在的解析候选仅来自依赖声明。
-      for (const file of [...actual, ...discovered]) {
-        if (typeof generation.sources.get(compilerSourceId(file)) !== 'string') {
-          reject(file)
+      if (matches) {
+        const required = new Set<string>()
+        for (const file of files) {
+          // 已编译模块即使随后删除也属于真实输入；不存在的解析候选仅来自依赖声明。
+          if (matches(file) && (consumedFiles.has(file) || isGenerationSourceFile(file))) {
+            required.add(file)
+          }
+        }
+        // 本轮 scanner 已用相同规则过滤；只重查文件存在性及封存内容，空规则不增加准入。
+        for (const file of selected) {
+          if (path.isAbsolute(file) && isGenerationSourceFile(file)) {
+            required.add(file)
+          }
+        }
+        for (const file of required) {
+          if (typeof generation.sources.get(compilerSourceId(file)) !== 'string') {
+            reject(file)
+          }
         }
       }
       validate()
