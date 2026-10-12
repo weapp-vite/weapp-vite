@@ -1,4 +1,5 @@
 import type { TailwindRootState } from './roots'
+import { symlinkSync, unlinkSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import os from 'node:os'
@@ -115,6 +116,68 @@ it('keeps captured rule topology while observing output callback field changes b
     expect(calls).toContain(third)
     expect(calls).not.toContain(ignored)
     expect(sources.get(second)).toContain('73px')
+  }
+  finally {
+    await compiler.dispose()
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('refreshes the source base after an output callback retargets its symlink', async () => {
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'tailwind-root-retarget-')))
+  const first = path.join(root, 'first')
+  const second = path.join(root, 'second')
+  const linked = path.join(root, 'linked')
+  const compiler = createCompiler({ tailwindcssBasedir: root, appType: 'weapp-vite' })
+  try {
+    await mkdir(first)
+    await mkdir(second)
+    await mkdir(path.join(root, 'node_modules'))
+    await symlink(path.dirname(require.resolve('tailwindcss/package.json')), path.join(root, 'node_modules/tailwindcss'), 'junction')
+    symlinkSync(first, linked, 'junction')
+    const entry = path.join(root, 'app.css')
+    const before = path.join(first, 'before.ts')
+    const excluded = path.join(first, 'later.ts')
+    const after = path.join(second, 'after.ts')
+    const css = '@import "tailwindcss/utilities";'
+    await writeFile(entry, css)
+    for (const file of [before, excluded, after]) {
+      await writeFile(file, '')
+    }
+    const request = {
+      id: 'root',
+      sourceOptions: { projectRoot: root, base: root, cssEntries: [entry] },
+      scanSources: true,
+      target: 'weapp' as const,
+    }
+    const generated = await compiler.generate(request)
+    const result = { ...generated, root: 'none' as const, sources: [{ base: linked, pattern: '**/*.ts', negated: false }] }
+    const sources = new Map<string, string>([
+      [before, 'export const utility = "w-[37px]"'],
+      [excluded, 'export const utility = "w-[71px]"'],
+      [after, 'export const utility = "w-[53px]"'],
+    ])
+    for (const file of result.dependencies) {
+      sources.set(file, await readFile(file, 'utf8'))
+    }
+    const state: TailwindRootState = { request, result, rawSources: new Map([[entry, css]]) }
+    const calls: string[] = []
+    const prepared = await prepareTailwindRoots(compiler, { revision: 1, changedFiles: [before, after], sources }, new Map([['root', state]]), {
+      cwd: root,
+      sourceId: file => file,
+      isOutput(file) {
+        calls.push(file)
+        if (file === before) {
+          unlinkSync(linked)
+          symlinkSync(second, linked, 'junction')
+        }
+        return false
+      },
+    })
+    expect(calls).toEqual([before, after])
+    expect(prepared.get('root')?.css).toContain('37px')
+    expect(prepared.get('root')?.css).toContain('53px')
+    expect(prepared.get('root')?.css).not.toContain('71px')
   }
   finally {
     await compiler.dispose()

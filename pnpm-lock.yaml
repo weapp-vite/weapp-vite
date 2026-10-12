@@ -3330,15 +3330,25 @@ importers:
       '@weapp-tailwindcss/engine':
         specifier: 0.1.5
         version: 0.1.5(tailwindcss@4.3.3)
+      '@weapp-tailwindcss/source-scan':
+        specifier: 0.1.2
+        version: 0.1.2
       '@weapp-vite/hmr':
         specifier: workspace:*
         version: link:../hmr
+      micromatch:
+        specifier: 4.0.8
+        version: 4.0.8
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
         version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+    devDependencies:
+      '@types/micromatch':
+        specifier: 4.0.10
+        version: 4.0.10
 
   packages/vite-plugin-performance: {}
 

@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
 import { CompilerHmrResyncError } from '@weapp-vite/hmr'
 import path from 'pathe'
-import { compactTailwindSourceEntries } from './sources/compact'
+import { createTailwindSourceMatcher } from './sources/matcher'
 
 export interface TailwindRootState {
   request: CompilerGenerateRequest
@@ -37,6 +37,7 @@ export async function prepareTailwindRoots<K>(
     return entries
   }
   const { createTailwindV4CompiledSourceEntries, isFileMatchedByTailwindV4SourceEntries } = await import('@weapp-tailwindcss/engine')
+  const matches = createTailwindSourceMatcher(isFileMatchedByTailwindV4SourceEntries)
   for (const [index, root] of capturedRoots) {
     const sourceOptions = root.request.sourceOptions
     const projectRoot = sourceOptions?.projectRoot ?? root.request.source?.projectRoot ?? options.cwd
@@ -48,9 +49,9 @@ export async function prepareTailwindRoots<K>(
       [...root.result.sources],
       base,
     )
-    // 只合并本次判断中的固定负规则结构；回调修改字段后下一文件仍读取当前条目。
+    // 条目拓扑属于本轮捕获，字段与真实路径仍在每文件判断时重新读取。
     const sources = [...request.sources].flatMap(([file, content]) => content !== null && sourceEntries.length > 0
-      && isFileMatchedByTailwindV4SourceEntries(file, compactTailwindSourceEntries(sourceEntries))
+      && matches(file, sourceEntries)
       && !(options.isOutput?.(file))
       ? [{ content, extension: path.extname(file).slice(1) }]
       : [])
