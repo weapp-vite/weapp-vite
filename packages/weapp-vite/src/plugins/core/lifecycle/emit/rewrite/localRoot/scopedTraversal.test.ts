@@ -1,3 +1,4 @@
+/* eslint-disable no-extend-native -- 临时修改并恢复原型，验证配置执行后的原有匹配契约。 */
 import type { OutputChunk } from 'rolldown'
 import type { ChunkScriptAnalysisCache } from '../platform'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -171,6 +172,60 @@ describe('local root scoped traversal candidates', () => {
 
     expect(chunk.code).toContain('require("../miniprogram_npm/other-lib/button")')
     expect(some).toHaveBeenCalledTimes(1)
+    expect(traverse).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([false, true])('preserves a changed Array prototype matcher (explicit patterns=%s)', (explicitPatterns) => {
+    const descriptor = Object.getOwnPropertyDescriptor(Array.prototype, 'some')!
+    const patterns = explicitPatterns ? ['ui-lib'] : undefined
+    const chunk = createChunk(`const note = 'ui-lib'; const dep = require('other-lib/button')`)
+    let calls = 0
+    try {
+      Object.defineProperty(Array.prototype, 'some', {
+        ...descriptor,
+        value(this: unknown[], ...args: unknown[]) {
+          if (this === patterns || (!explicitPatterns && this.length === 1 && this[0] === 'ui-lib')) {
+            calls++
+            return true
+          }
+          return Reflect.apply(descriptor.value, this, args)
+        },
+      })
+      rewriteChunkNpmImportsToLocalRoot(chunk, '', patterns, { 'ui-lib': '1.0.0' }, { collectPlatformApiAccess: false })
+    }
+    finally {
+      Object.defineProperty(Array.prototype, 'some', descriptor)
+    }
+
+    expect(chunk.code).toContain('require("../miniprogram_npm/other-lib/button")')
+    expect(calls).toBe(explicitPatterns ? 1 : 2)
+    expect(traverse).toHaveBeenCalledTimes(1)
+  })
+
+  it('preserves a changed Array prototype iterator', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Array.prototype, Symbol.iterator)!
+    const patterns = ['other-lib']
+    const chunk = createChunk(String.raw`const matcher = /\B/; const dep = require('other-lib/button')`)
+    let calls = 0
+    try {
+      Object.defineProperty(Array.prototype, Symbol.iterator, {
+        ...descriptor,
+        value(this: unknown[], ...args: unknown[]) {
+          if (this === patterns) {
+            calls++
+            return ['ui-lib'].values()
+          }
+          return Reflect.apply(descriptor.value, this, args)
+        },
+      })
+      rewriteChunkNpmImportsToLocalRoot(chunk, '', patterns, {}, { collectPlatformApiAccess: false })
+    }
+    finally {
+      Object.defineProperty(Array.prototype, Symbol.iterator, descriptor)
+    }
+
+    expect(chunk.code).toContain('require("../miniprogram_npm/other-lib/button")')
+    expect(calls).toBe(1)
     expect(traverse).toHaveBeenCalledTimes(1)
   })
 

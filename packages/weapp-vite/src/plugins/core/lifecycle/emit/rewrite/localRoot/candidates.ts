@@ -3,6 +3,17 @@ import { isProxy } from 'node:util/types'
 const REQUIRE_IDENTIFIER_RE = /\brequire\b/
 const DEPENDENCY_TOKEN_RE = /^(?:@[\w.-]+|\w[\w.-]*)$/
 const ARRAY_INDEX_RE = /^(?:0|[1-9]\d*)$/
+const ARRAY_SOME_DESCRIPTOR = Object.getOwnPropertyDescriptor(Array.prototype, 'some')!
+const ARRAY_ITERATOR_DESCRIPTOR = Object.getOwnPropertyDescriptor(Array.prototype, Symbol.iterator)!
+
+/** 框架模块先于配置加载；配置替换原型方法后不能沿用静态规则的负判定。 */
+function hasUnchangedArrayMethod(key: string | symbol, original: PropertyDescriptor) {
+  const current = Object.getOwnPropertyDescriptor(Array.prototype, key)
+  return current?.value === original.value
+    && current?.get === original.get && current?.set === original.set
+    && current?.writable === original.writable
+    && current?.enumerable === original.enumerable && current?.configurable === original.configurable
+}
 
 /** 只接受普通数据数组，避免候选枚举与原 matcher 读取不同的规则或触发额外 getter。 */
 function hasStaticPatternArray(patterns: (string | RegExp)[] | undefined) {
@@ -12,10 +23,17 @@ function hasStaticPatternArray(patterns: (string | RegExp)[] | undefined) {
   if (isProxy(patterns) || !Array.isArray(patterns) || Object.getPrototypeOf(patterns) !== Array.prototype) {
     return false
   }
-  const descriptors = Object.getOwnPropertyDescriptors(patterns)
-  return Reflect.ownKeys(descriptors).every(key => key === 'length' || (
-    typeof key === 'string' && ARRAY_INDEX_RE.test(key) && 'value' in descriptors[key]!
-  ))
+  const descriptors = Object.getOwnPropertyDescriptors(patterns) as Record<string, PropertyDescriptor>
+  const length = descriptors.length
+  if (!length || !('value' in length) || typeof length.value !== 'number') {
+    return false
+  }
+  const keys = Reflect.ownKeys(descriptors)
+  return keys.length === length.value + 1
+    && keys.every(key => key === 'length' || (
+      typeof key === 'string' && ARRAY_INDEX_RE.test(key)
+      && Number(key) < length.value && 'value' in descriptors[key]!
+    ))
 }
 
 function collectDependencyTokens(
@@ -48,7 +66,9 @@ export function createLocalRootNpmCandidateCheck(
   let tokens: string[] | undefined
   let hasLiteralScope = false
   try {
-    hasLiteralScope = !isProxy(dependencies) && hasStaticPatternArray(dependencyPatterns)
+    hasLiteralScope = hasUnchangedArrayMethod('some', ARRAY_SOME_DESCRIPTOR)
+      && hasUnchangedArrayMethod(Symbol.iterator, ARRAY_ITERATOR_DESCRIPTOR)
+      && !isProxy(dependencies) && hasStaticPatternArray(dependencyPatterns)
     tokens = collectDependencyTokens(dependencyPatterns, dependencies)
   }
   catch {
