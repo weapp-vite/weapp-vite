@@ -13,11 +13,14 @@ import { isPathInside } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../compilerPlugin/hmr'
 import { findManagedTailwindcssEntryMarker, hasManagedTailwindcssOutputMarker } from '../tailwindcssMarker'
+import { rememberTailwindGeneration } from './generation'
+import { copyGenerationValue, equalGenerationValue } from './generation/inputs'
 import { TailwindContentInvalidation } from './invalidation'
 import { TailwindRootLifecycle } from './lifecycle'
 import { getTailwindStyleOwners, rememberTailwindStyleOwners } from './styleOwners'
 
 interface Root {
+  generation: symbol
   request: CompilerGenerateRequest
   result: CompilerGenerateResult
   sources: CompilerGenerateResult['sources'][number][]
@@ -29,6 +32,7 @@ interface Root {
 interface Options {
   compiler: () => Promise<Compiler>
   render: (bundle: OutputBundle, entries: CompilerGenerateResult[], snapshot: CompilerSnapshot) => Promise<void>
+  generationOptions?: () => unknown
 }
 
 /** 使用上游的来源匹配和内存输入能力；宿主只保存内容版本，不提取或猜测候选。 */
@@ -106,7 +110,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     }
     const inputs = [...request.sourceOptions?.cssEntries ?? [], ...request.sourceOptions?.cssSources?.flatMap(source => source.file ? [source.file] : []) ?? []]
     const matches = createTailwindV4SourceEntryMatcher(sources)
-    roots.set(index, { request: capturedRequest, result, sources, matches, watchFiles: [...result.dependencies, ...files].filter(file => !ctx.configService.outDir || !isPathInside(ctx.configService.outDir, file)), rawSources: new Map(inputs.map(file => [compilerSourceId(file), host.readSource(file)])) })
+    roots.set(index, { generation: registration, request: capturedRequest, result, sources, matches, watchFiles: [...result.dependencies, ...files].filter(file => !ctx.configService.outDir || !isPathInside(ctx.configService.outDir, file)), rawSources: new Map(inputs.map(file => [compilerSourceId(file), host.readSource(file)])) })
     lifecycle.remember(index, request.id)
     rebuildOwnedWatchFiles()
     invalidation.rememberRoot(index, capturedRequest, result, matches)
@@ -201,6 +205,13 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     if (disposed) {
       throw new Error('Tailwind HMR adapter is disposed')
     }
+    let generationOptions: unknown
+    try {
+      generationOptions = copyGenerationValue(options.generationOptions?.())
+    }
+    catch {
+      // 自定义配置仍可正常编译，但不交接无法封存的生成输入。
+    }
     let input = captured.get(request)
     if (!input) {
       // 此阶段只提交样式；模板由批次 preparation 在实际快照上转换一次。
@@ -268,7 +279,23 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     if (!assets.length && entries.some((entry, index) => entry.css !== input.roots.get(index)?.result.css)) {
       throw new CompilerHmrResyncError(request.changedFiles, 'Tailwind HMR 没有可提交的样式归属，需要完整重同步。')
     }
-    return createTailwindPreparation(compiler, snapshot, assets)
+    const preparation = createTailwindPreparation(compiler, snapshot, assets)
+    const stableRoots = [...input.roots].every(([index, root], position) => index === position
+      && root.rawSources.size > 0
+      && [...root.rawSources].every(([file, source]) => typeof source === 'string' && request.sources.get(file) === source))
+    if (generationOptions !== undefined && stableRoots) {
+      const scope = input.scope
+      const owners = [...input.roots].map(([index, root]) => ({ index, generation: root.generation }))
+      const currentOptions = options.generationOptions
+      rememberTailwindGeneration(preparation, request, generationOptions, [...input.roots].map(([index, root]) => ({ request: root.request, sources: root.sources, result: entries[index]! })), () => {
+        scope.assertActive(request.changedFiles)
+        if (roots.size !== owners.length || owners.some(owner => roots.get(owner.index)?.generation !== owner.generation || registrations.get(owner.index) !== owner.generation)
+          || !equalGenerationValue(generationOptions, currentOptions?.())) {
+          throw new CompilerHmrResyncError(request.changedFiles, 'Tailwind snapshot root generation changed')
+        }
+      })
+    }
+    return preparation
   }
 
   function removeRoot(index: number) {

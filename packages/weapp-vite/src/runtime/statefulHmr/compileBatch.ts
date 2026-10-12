@@ -4,6 +4,7 @@ import type { StatefulHmrSnapshot } from './globalStyles'
 import type { HmrPreparationObservation } from './preparationProfile'
 import type { StatefulHmrDevEngineBatch } from './viteAdapter'
 import { Buffer } from 'node:buffer'
+import { withTailwindSnapshotGeneration } from '../../plugins/tailwindcss/generation'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { createStatefulHmrPatchImportResolver } from './patchModule'
 import { bundleHmrCode, prepareHmrPatch } from './patchPreparation'
@@ -48,7 +49,9 @@ export async function compileHmrBatch(options: CompileHmrBatchOptions) {
     if (needsSnapshot) {
       profile?.begin('snapshot-build')
     }
-    const builtSnapshot = needsSnapshot ? await (input.sources.size ? rebuild(files, input.sources) : rebuild(files)) : undefined
+    const builtSnapshot = needsSnapshot
+      ? await withTailwindSnapshotGeneration(input, preparations, () => input.sources.size ? rebuild(files, input.sources) : rebuild(files))
+      : undefined
     profile?.finish()
     // 原生输出可能仅暴露 getter；批次转换使用自己的容器，保留构建器快照。
     const snapshot = builtSnapshot ? { ...builtSnapshot, output: [...builtSnapshot.output] } : undefined

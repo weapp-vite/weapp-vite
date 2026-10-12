@@ -10,6 +10,7 @@ import type {
 } from 'weapp-tailwindcss/core'
 import type { UserDefinedOptions } from 'weapp-tailwindcss/types'
 import type { CompilerContext } from '../context'
+import type { TailwindGenerationEntry } from './tailwindcss/generation'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs'
 import process from 'node:process'
@@ -28,6 +29,7 @@ import { markWeappCompilerPlugin } from './compilerPlugin'
 import { CompilerHmrResyncError, getCompilerHmrHost } from './compilerPlugin/hmr'
 import { processCssWithCache } from './css/shared/preprocessor'
 import { createStyleSourceMeta } from './css/styleOwnership'
+import { takeTailwindSnapshotGeneration } from './tailwindcss/generation'
 import { createTailwindHmrAdapter } from './tailwindcss/hmr'
 import { TailwindImportedRoots } from './tailwindcss/importedRoots'
 import { findManagedStyleImports } from './tailwindcss/imports'
@@ -298,7 +300,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     return root.toString()
   }
 
-  async function generateEntryCss(compiler: Compiler, index: number, entry: string) {
+  function createEntryRequest(index: number, entry: string): CompilerGenerateRequest {
     if (dirtySlots.has(index)) {
       throw new Error(`Tailwind CSS entry must be transformed after invalidation: ${entry}`)
     }
@@ -317,7 +319,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     compilerSourceOptions.set(index, sourceOptions)
     const id = compilerRootIds.get(index) ?? createCompilerRootId(index, entry)
     compilerRootIds.set(index, id)
-    const request: CompilerGenerateRequest = {
+    return {
       id,
       sourceOptions,
       target: resolved.generatorTarget,
@@ -327,6 +329,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
         ? resolved.options.generator.styleOptions
         : undefined,
     }
+  }
+
+  async function generateEntryCss(compiler: Compiler, index: number, request: CompilerGenerateRequest) {
     const generation = statefulCompiler ? hmr.beginRootGeneration(index) : undefined
     const generated = generation
       ? await hmr.generateDiskRoot(compiler, request, index, generation)
@@ -404,6 +409,13 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     }
   }
 
+  function generationEligible() {
+    return !resolved.autoDetected && resolved.options.generator !== false && resolved.options.compiler === undefined
+      && !importedRoots.size && !contextualSlots.size && !ctx.configService.currentSubPackageRoot
+      && !ctx.scanService?.independentSubPackageMap?.size && !ctx.scanService?.workersDir
+      && (ctx.currentBuildTarget ?? 'app') === 'app'
+  }
+
   async function transformBundle(this: any, bundle: OutputBundle, pinned?: { entries: CompilerGenerateResult[], snapshot: CompilerSnapshot }) {
     if (resolved.autoDetected && resolved.cssEntries.length === 0) {
       return
@@ -412,10 +424,15 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     if (!pinned) {
       hmr.rememberBundle(bundle)
     }
-    const generatedEntries = pinned?.entries ?? (resolved.options.generator === false
+    const requests = pinned || resolved.options.generator === false ? [] : resolved.cssEntries.map((entry, index) => createEntryRequest(index, entry))
+    const reused = pinned ? undefined : await takeTailwindSnapshotGeneration(ctx, requests, resolved.options, generationEligible())
+    for (const file of reused?.files ?? []) {
+      this.addWatchFile(file)
+    }
+    const generatedEntries: readonly TailwindGenerationEntry[] = pinned?.entries ?? reused?.entries ?? (resolved.options.generator === false
       ? []
-      : await (generatedEntriesPromise ??= Promise.all(resolved.cssEntries.map((entry, index) =>
-          generateEntryCss(compiler, index, entry)))))
+      : await (generatedEntriesPromise ??= Promise.all(requests.map((request, index) =>
+          generateEntryCss(compiler, index, request)))))
     const snapshots = generatedEntries.length > 0
       ? generatedEntries.map((generated, index) => compilerSnapshots.get(index) ?? generated.snapshot)
       : [compiler.createSnapshot({
@@ -533,6 +550,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       }
       applyOutputChunkTransform(output as OutputChunk, transformed.code, labelSourceMapInput(transformed.map, output.fileName, output.code))
     }
+    reused?.validate()
   }
 
   function importedSourceKey(id: string) {
@@ -607,6 +625,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   hmr = createTailwindHmrAdapter(ctx, {
     compiler: getCompiler,
     render: (bundle, entries, snapshot) => transformBundle.call({ addWatchFile() {} }, bundle, { entries, snapshot }),
+    generationOptions: () => generationEligible() ? resolved.options : undefined,
   })
 
   const managerPlugin: Plugin = {

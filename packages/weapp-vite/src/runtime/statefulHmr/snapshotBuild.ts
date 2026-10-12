@@ -1,5 +1,5 @@
 import type { InlineConfig } from 'vite'
-import type { MutableCompilerContext } from '../../context'
+import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { LoadConfigOptions } from '../config/types'
 import { readFile } from 'node:fs/promises'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -9,6 +9,7 @@ import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
+import { bindTailwindSnapshotGeneration, validateTailwindSnapshotGeneration } from '../../plugins/tailwindcss/generation'
 import { getTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import { configSuffixes } from '../../plugins/utils/invalidateEntry/shared'
@@ -32,6 +33,7 @@ export async function buildStatefulHmrSnapshot(
   handoffInputFiles?: readonly string[],
 ) {
   const ctx = createCompilerContextInstance()
+  let releaseGeneration = () => {}
   const ownerConfig = owner?.configService
   const inheritedVueEntryIds = owner && ownerConfig
     ? (await Promise.all(Array.from(owner.runtimeState.build.hmr.resolvedEntryMap.keys())
@@ -62,7 +64,9 @@ export async function buildStatefulHmrSnapshot(
     if (sources) {
       setCompilerSourceSnapshot(ctx.configService, sources)
     }
+    releaseGeneration = bindTailwindSnapshotGeneration(ctx as CompilerContext, sources)
     const inputFiles = new Set<string>()
+    const consumedFiles = new Set<string>()
     const config = ctx.configService
     const publicDir = config.options.sourceConfig?.publicDir
     // 资产编译前记录版本，涵盖新目录和此前已发现的外部依赖。缺失信息只禁用复用。
@@ -100,7 +104,9 @@ export async function buildStatefulHmrSnapshot(
       buildEnd() {
         // Rolldown 没有 getWatchFiles 插件接口；只收集框架实际维护的依赖声明。
         for (const file of this.getModuleIds()) {
-          inputFiles.add(file.replace(/\?.*$/, ''))
+          const source = file.replace(/\?.*$/, '')
+          inputFiles.add(source)
+          consumedFiles.add(source)
           for (const dependency of ctx.moduleGraphService.getTransformDependencies(file)) {
             inputFiles.add(dependency)
           }
@@ -172,6 +178,7 @@ export async function buildStatefulHmrSnapshot(
         inputFiles.add(file)
       }
     }
+    await validateTailwindSnapshotGeneration(ctx as CompilerContext, inputFiles, consumedFiles)
     const reusableInputs = inputs && coversSnapshotInputs(inputs, inputFiles) && await validateSnapshotInputs(inputs) ? inputs : undefined
     return {
       output,
@@ -191,5 +198,8 @@ export async function buildStatefulHmrSnapshot(
       getGlobalStyleRoutes: () => globalStyleRoutes,
       getTailwindStyleOwners: () => getTailwindStyleOwners(ctx),
     }
-  }).finally(() => ctx.moduleGraphService.resetSession())
+  }).finally(() => {
+    releaseGeneration()
+    ctx.moduleGraphService.resetSession()
+  })
 }
