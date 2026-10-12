@@ -1,9 +1,7 @@
 import type { AstEngineName, AstParserLike } from '../types'
 import type { FeatureFlagOptions } from './featureFlags'
 import { analyzeScriptsWithNative, analyzeScriptWithNative, shouldUseNativeAst } from '../native'
-import { collectFeatureFlagsFromCode } from './featureFlags'
-import { mayContainPlatformApiAccess } from './platformApi'
-import { mayContainStaticRequireLiteral } from './require'
+import { jsScriptAnalysisService } from './internal/scriptAnalysis'
 
 export interface ScriptAnalysisOptions<TFeature extends string = string> {
   engine?: AstEngineName
@@ -45,8 +43,27 @@ function normalizeNativeAnalysis<TFeature extends string>(
   }
 }
 
+function analyzeScriptWithJs<TFeature extends string = string>(
+  code: string,
+  options?: ScriptAnalysisOptions<TFeature>,
+): ScriptAnalysisResult<TFeature> {
+  return {
+    featureFlags: options?.featureFlags
+      ? jsScriptAnalysisService.collectFeatureFlags(code, options.featureFlags)
+      : new Set<TFeature>(),
+    hasPlatformApiAccess: jsScriptAnalysisService.mayContainPlatformApiAccess(code, {
+      engine: options?.engine,
+      parserLike: options?.parserLike,
+    }),
+    hasStaticRequireLiteral: jsScriptAnalysisService.mayContainStaticRequireLiteral(code, {
+      engine: options?.engine,
+      parserLike: options?.parserLike,
+    }),
+  }
+}
+
 /**
- * 对同一份脚本做批量 AST 预分析，避免多个轻量检查重复 parse 或跨 native 边界。
+ * 同一份脚本只尝试一次 native；失败后显式选择完整的 JS fallback 服务。
  */
 export function analyzeScript<TFeature extends string = string>(
   code: string,
@@ -63,56 +80,46 @@ export function analyzeScript<TFeature extends string = string>(
       }
     }
     catch {
-      // native AST 是可选批处理快速路径，失败时回退原有解析。
+      // native 失败只选择一次 JS 服务，不重新进入单文件或叶子 native。
     }
   }
-
-  return {
-    featureFlags: options?.featureFlags
-      ? collectFeatureFlagsFromCode(code, options.featureFlags)
-      : new Set<TFeature>(),
-    hasPlatformApiAccess: mayContainPlatformApiAccess(code, {
-      engine: options?.engine,
-      parserLike: options?.parserLike,
-    }),
-    hasStaticRequireLiteral: mayContainStaticRequireLiteral(code, {
-      engine: options?.engine,
-      parserLike: options?.parserLike,
-    }),
-  }
+  return analyzeScriptWithJs(code, options)
 }
 
 /**
- * 对多份脚本做批量 native 预分析，减少 JS 与 Rust 的往返次数。
+ * 批次只跨 native 边界一次，失败项各自执行一次完整 JS fallback。
  */
 export function analyzeScripts<TFeature extends string = string>(
   inputs: ScriptAnalysisBatchInput<TFeature>[],
   options?: ScriptAnalysisOptions<TFeature>,
 ): Array<ScriptAnalysisResult<TFeature>> {
+  let nativeResults: ReturnType<typeof analyzeScriptsWithNative>
   if (shouldUseNativeAst() && inputs.length > 0) {
     try {
-      const nativeResults = analyzeScriptsWithNative(inputs.map(input => ({
+      nativeResults = analyzeScriptsWithNative(inputs.map(input => ({
         code: input.code,
         filename: input.filename,
         hookToFeature: input.featureFlags?.hookToFeature ?? options?.featureFlags?.hookToFeature,
         moduleId: input.featureFlags?.moduleId ?? options?.featureFlags?.moduleId,
       })))
-      if (nativeResults?.length === inputs.length) {
-        return nativeResults.map((nativeAnalysis, index) => {
-          return normalizeNativeAnalysis(
-            nativeAnalysis,
-            inputs[index]?.featureFlags ?? options?.featureFlags,
-          )
-        })
-      }
     }
     catch {
-      // native AST 是可选批处理快速路径，失败时逐项回退原有解析。
+      // 批次失败后逐项选择纯 JS 服务，不调用公开 analyzeScript 重试。
     }
   }
 
-  return inputs.map(input => analyzeScript(input.code, {
-    ...options,
-    featureFlags: input.featureFlags ?? options?.featureFlags,
-  }))
+  return inputs.map((input, index) => {
+    const featureFlags = input.featureFlags ?? options?.featureFlags
+    const nativeAnalysis = nativeResults?.[index]
+    if (nativeAnalysis) {
+      try {
+        return normalizeNativeAnalysis(nativeAnalysis, featureFlags)
+      }
+      catch {
+        // 可选摘要消费失败只回退当前项，不重复已完成的邻项。
+      }
+    }
+    // JS 调用在 native catch 之外；JS 自身失败不被捕获后重复执行。
+    return analyzeScriptWithJs(input.code, { ...options, featureFlags })
+  })
 }

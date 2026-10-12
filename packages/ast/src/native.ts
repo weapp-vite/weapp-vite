@@ -2,6 +2,7 @@ import { createRequire } from 'node:module'
 import process from 'node:process'
 import { isNativeCompilerScriptAnalysis } from './native/compilerAnalysis'
 import { invokeNativeCall, recordNativeCall, recordNativeEvent } from './native/observation'
+import { isNativeScriptAnalysisBatchShape, readNativeScriptAnalysis } from './native/scriptAnalysis'
 
 const require = createRequire(import.meta.url)
 
@@ -172,7 +173,12 @@ export function analyzeScriptWithNative(
     return lastScriptAnalysis.result
   }
 
-  const result = invokeNativeCall(code, () => analyzeNative(code, options?.moduleId, hookToFeatureJson, filename))
+  const rawResult: unknown = invokeNativeCall(code, () => analyzeNative(code, options?.moduleId, hookToFeatureJson, filename))
+  const result = readNativeScriptAnalysis(rawResult)
+  if (!result) {
+    recordNativeEvent('fallbacks')
+    return undefined
+  }
   lastScriptAnalysis = {
     key,
     code,
@@ -216,7 +222,24 @@ export function analyzeScriptsWithNative(inputs: NativeScriptAnalysisInput[]) {
       moduleId: input.moduleId,
     }
   })
-  const results = invokeNativeCall(nativeInputs, () => analyzeNative(nativeInputs))
+  const rawResults: unknown = invokeNativeCall(nativeInputs, () => analyzeNative(nativeInputs))
+  if (!isNativeScriptAnalysisBatchShape(rawResults, nativeInputs.length)) {
+    recordNativeEvent('fallbacks')
+    return undefined
+  }
+  const results = nativeInputs.map((_, index) => {
+    try {
+      const result = readNativeScriptAnalysis(rawResults[index])
+      if (result) {
+        return result
+      }
+    }
+    catch {
+      // 当前数组项读取失败只拒绝该项，保留有效邻项。
+    }
+    recordNativeEvent('fallbacks')
+    return null
+  })
   const lastInput = nativeInputs.at(-1)
   const lastResult = results.at(-1)
   if (lastInput && lastResult && results.length === nativeInputs.length) {
