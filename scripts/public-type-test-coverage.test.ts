@@ -99,7 +99,7 @@ async function filesUnder(directory: string): Promise<string[]> {
   }
 }
 
-async function matchingFiles(directory: string, patterns: string | string[]): Promise<string[]> {
+async function matchingFiles(directory: string, patterns: string[]): Promise<string[]> {
   const files: string[] = []
   // Node 最低支持版本已包含 glob；由固定前缀限定遍历，不扫描包内的依赖和构建产物。
   for await (const file of glob(patterns, { cwd: directory })) {
@@ -124,7 +124,7 @@ async function collectContracts(packageRoot: string, script: string): Promise<st
     let matches: string[]
     if (filesIndex !== -1) {
       const pattern = tokens[filesIndex + 1]!
-      matches = (await matchingFiles(directory, pattern)).filter(file => path.matchesGlob(file, pattern))
+      matches = (await matchingFiles(directory, [pattern])).filter(file => path.matchesGlob(file, pattern))
       if (pattern.includes('**')) {
         const futureFile = pattern.startsWith('test-d/') ? 'test-d/nested/future.test-d.ts' : 'nested/future.test-d.ts'
         expect(path.matchesGlob(futureFile, pattern)).toBe(true)
@@ -139,8 +139,9 @@ async function collectContracts(packageRoot: string, script: string): Promise<st
       matches = (await matchingFiles(directory, candidates)).filter(file => candidates.includes(file))
       if (matches.length === 0) {
         const testDirectory = manifest.tsd?.directory ?? 'test-d'
-        const pattern = `${testDirectory}/**/*.{ts,tsx}`
-        matches = (await matchingFiles(directory, pattern)).filter(file => path.matchesGlob(file, pattern))
+        const patterns = [`${testDirectory}/**/*.ts`, `${testDirectory}/**/*.tsx`]
+        matches = (await matchingFiles(directory, patterns))
+          .filter(file => patterns.some(pattern => path.matchesGlob(file, pattern)))
       }
     }
     expect(matches.length, `${command} must select real contracts`).toBeGreaterThan(0)

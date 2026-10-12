@@ -96,6 +96,8 @@ it('prepares transitive runtime workspace imports used by the driver without bui
   const selectedPackages = new Set((JSON.parse(selected.stdout) as Array<{ name: string }>).map(item => item.name))
   const workspacePackages = new Set((JSON.parse(workspace.stdout) as Array<{ name: string }>).map(item => item.name))
   assert.deepEqual(Array.from(collectorImports).filter(specifier => !specifier.startsWith('node:')).sort(), ['execa'], 'Collector startup must not require workspace package dist before preparation')
+  assert.ok(selectedPackages.has('@weapp-core/logger'), 'Runner preparation must include the process ownership helper dependency chain')
+  assert.ok(selectedPackages.has('@weapp-vite/devtools-runtime'), 'Runner preparation must include the automator reconnect machine lease dependency chain')
   for (const specifier of imports) {
     const dependency = specifier.split('/').slice(0, specifier.startsWith('@') ? 2 : 1).join('/')
     if (workspacePackages.has(dependency)) {
