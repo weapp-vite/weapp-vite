@@ -3,7 +3,7 @@ import { access, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } fr
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { Client } from '@modelcontextprotocol/client'
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio'
@@ -60,13 +60,13 @@ async function createWorkspace(workspaceRoot: string) {
   }
 }
 
-it('runs the published entry with Node and serves the MCP protocol', async () => {
+it.each(['direct', 'linked'] as const)('runs the published entry through a %s path and serves the MCP protocol', async (entryKind) => {
   const temporaryRoot = await realpath(await mkdtemp(path.join(os.tmpdir(), 'weapp-mcp-artifact-')))
   const artifactRoot = path.join(temporaryRoot, 'package')
   const workspaceRoot = path.join(temporaryRoot, 'workspace')
   try {
     const manifest = JSON.parse(await readFile(path.join(packageDir, 'package.json'), 'utf8')) as PackageManifest
-    const entry = path.resolve(artifactRoot, manifest.exports['.'].import)
+    const publicEntry = path.resolve(artifactRoot, manifest.exports['.'].import)
     const declaration = path.resolve(artifactRoot, manifest.exports['.'].types)
 
     await mkdir(artifactRoot, { recursive: true })
@@ -82,9 +82,26 @@ it('runs the published entry with Node and serves the MCP protocol', async () =>
     expect(manifest.main).toBe(manifest.exports['.'].import)
     expect(manifest.module).toBe(manifest.exports['.'].import)
     expect(manifest.types).toBe(manifest.exports['.'].types)
-    await Promise.all([access(entry), access(declaration)])
+    await Promise.all([access(publicEntry), access(declaration)])
     expect(await readFile(declaration, 'utf8')).toContain('startStdioServer')
     await createWorkspace(workspaceRoot)
+
+    const consumer = path.join(artifactRoot, 'consumer.mjs')
+    await writeFile(consumer, `
+import assert from 'node:assert/strict'
+import { startStdioServer } from ${JSON.stringify(pathToFileURL(publicEntry).href)}
+assert.equal(typeof startStdioServer, 'function')
+`)
+    const imported = await executeFile(process.execPath, [consumer], { cwd: workspaceRoot, timeout: 5000 })
+    expect(imported.stdout).toBe('')
+    expect(imported.stderr).toBe('')
+
+    let entry = publicEntry
+    if (entryKind === 'linked') {
+      const linkedRoot = path.join(temporaryRoot, 'linked-package')
+      await symlink(artifactRoot, linkedRoot, process.platform === 'win32' ? 'junction' : 'dir')
+      entry = path.resolve(linkedRoot, manifest.exports['.'].import)
+    }
 
     const client = new Client({ name: 'mcp-build-artifact-test', version: '1.0.0' }, {
       versionNegotiation: { mode: { pin: '2026-07-28' } },
