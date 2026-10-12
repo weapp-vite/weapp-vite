@@ -1,7 +1,11 @@
 import type { CompilerGenerateRequest } from 'weapp-tailwindcss/core'
+import type { CompilerRawRead } from '../../compilerPlugin/rawInputs'
+import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
 import { types } from 'node:util'
 import { CompilerHmrResyncError, compilerSourceId } from '../../compilerPlugin/hmr'
+import { compilerRawFileVersion } from '../../compilerPlugin/rawInputs'
 
 /** 只复制可比较的配置值；函数保留身份，未知对象不能参与复用。 */
 export function copyGenerationValue<T>(value: T, parents = new Set<object>()): T {
@@ -79,16 +83,22 @@ export function equalGenerationValue(expected: unknown, current: unknown): boole
 }
 
 /** 依赖仍由磁盘工具消费，必须同时核对封存内容和本轮文件版本。 */
-export function captureGenerationDependencies(files: readonly string[], sources: ReadonlyMap<string, string | null>, changedFiles: readonly string[]) {
+export function captureGenerationDependencies(files: readonly string[], sources: ReadonlyMap<string, string | null>, changedFiles: readonly string[], frozenReads?: ReadonlyMap<string, CompilerRawRead>) {
   const versions = new Map<string, string>()
   const validate = () => {
     for (const file of files) {
       const id = compilerSourceId(file)
       const expected = sources.get(id)
-      const actual = readFileSync(file, 'utf8')
+      const before = frozenReads ? compilerRawFileVersion(statSync(file, { bigint: true })) : undefined
+      const bytes = frozenReads ? readFileSync(file) : readFileSync(file, 'utf8')
+      const actual = typeof bytes === 'string' ? bytes : bytes.toString('utf8')
       const stat = statSync(file, { bigint: true })
-      const version = `${stat.mtimeNs}:${stat.ctimeNs}:${stat.ino}:${stat.size}`
-      if (typeof expected !== 'string' || expected !== actual || (versions.has(id) && versions.get(id) !== version)) {
+      const version = compilerRawFileVersion(stat)
+      const read = frozenReads?.get(id)
+      const exactBytes = !frozenReads || (typeof bytes !== 'string' && (read
+        ? read.digest === createHash('sha256').update(bytes).digest('hex') && read.byteLength === bytes.byteLength && read.version === version
+        : typeof expected === 'string' && bytes.equals(Buffer.from(expected, 'utf8'))))
+      if (typeof expected !== 'string' || expected !== actual || !exactBytes || (before !== undefined && before !== version) || (versions.has(id) && versions.get(id) !== version)) {
         throw new CompilerHmrResyncError(changedFiles, 'Tailwind snapshot dependency changed outside its frozen generation')
       }
       versions.set(id, version)

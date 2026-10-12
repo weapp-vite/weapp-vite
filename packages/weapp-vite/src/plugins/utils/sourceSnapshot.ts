@@ -103,7 +103,7 @@ export async function readCompilerInput(owner: object, id: string, read?: (file:
   const source = await (read ? read(id) : fs.readFile(id, 'utf8'))
   const host = getCompilerHmrHostByConfig(owner)
   if (host?.onDependencyChange) {
-    host.captureNative(id, source)
+    host.captureRaw(id, source)
   }
   return observeNativeInput(owner, id, source)
 }

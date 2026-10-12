@@ -4,6 +4,7 @@ import type { StatefulHmrSnapshot } from './globalStyles'
 import type { HmrPreparationObservation } from './preparationProfile'
 import type { StatefulHmrDevEngineBatch } from './viteAdapter'
 import { Buffer } from 'node:buffer'
+import { HmrPreparationCleanupError } from '@weapp-vite/hmr'
 import { withTailwindSnapshotGeneration } from '../../plugins/tailwindcss/generation'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { createStatefulHmrPatchImportResolver } from './patchModule'
@@ -36,13 +37,19 @@ export async function compileHmrBatch(options: CompileHmrBatchOptions) {
     profile?.finish('rejected', error)
     throw error
   }
-  let disposed = false
-  const dispose = async () => {
-    if (disposed) {
-      return
-    }
-    disposed = true
-    await Promise.allSettled(preparations.map(preparation => preparation.dispose?.()))
+  let disposal: Promise<void> | undefined
+  let disposalFailures: unknown[] = []
+  const dispose = () => {
+    disposal ??= Promise.allSettled(preparations.map(preparation => Promise.resolve().then(() => preparation.dispose?.()))).then((results) => {
+      disposalFailures = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+      if (disposalFailures.length === 1) {
+        throw disposalFailures[0]
+      }
+      if (disposalFailures.length > 1) {
+        throw new AggregateError(disposalFailures, 'HMR preparation disposal failed', { cause: disposalFailures[0] })
+      }
+    })
+    return disposal
   }
   try {
     const compilerAssets = preparations.flatMap(preparation => preparation.assets ?? [])
@@ -102,7 +109,12 @@ export async function compileHmrBatch(options: CompileHmrBatchOptions) {
   }
   catch (error) {
     profile?.finish('rejected', error)
-    await dispose()
+    try {
+      await dispose()
+    }
+    catch {
+      throw new HmrPreparationCleanupError(error, disposalFailures)
+    }
     throw error
   }
 }

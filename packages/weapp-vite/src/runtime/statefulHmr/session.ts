@@ -57,6 +57,7 @@ import { shouldResetStatefulHmrRetention } from './retention'
 import { createStatefulHmrControlSource } from './runtimeSource'
 import { createStatefulHmrSnapshotDiagnostics } from './snapshotDiagnostics'
 import { offerStatefulHmrSnapshot, StatefulHmrSnapshotHandoff } from './snapshotHandoff'
+import { withStatefulHmrSnapshotPreparation } from './snapshotPreparation'
 import { StatefulHmrSnapshotScheduler } from './snapshotScheduler'
 import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
@@ -297,6 +298,11 @@ class StatefulHmrSession {
     this.snapshotScheduler = new StatefulHmrSnapshotScheduler({
       execute: batch => this.profileSnapshotBatch(batch),
       onError: (error) => {
+        if (error instanceof CompilerHmrResyncError) {
+          this.server.config.logger.info(`[weapp-vite] stateful HMR 正在完整重同步：${error.message}`)
+          this.requestFullBuild(error.files)
+          return
+        }
         const failure = error instanceof Error ? error : new Error(String(error))
         this.buildEvents.emitEvent({ code: 'ERROR', error: failure, result: undefined as never })
         this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', { error: failure })
@@ -395,6 +401,8 @@ class StatefulHmrSession {
     this.closed = true
     // 先同步封闭交付代次，再取消传输；等待必须留到传输解除未确认交付之后。
     const closeDelivery = release(() => this.delivery.close())
+    // 同步封闭快照准入，异步等待留到传输关闭后，避免 pending prepare 抢先消费关闭中的会话。
+    const closeSnapshots = release(() => this.snapshotScheduler.close())
     // 保持释放顺序，但某个资源失败不能跳过后续监听器、引擎或诊断的关闭。
     await release(() => this.initialProfile?.finish(status))
     this.initialProfile = undefined
@@ -416,7 +424,7 @@ class StatefulHmrSession {
     }
     await release(() => this.transport.close())
     await closeDelivery
-    await release(() => this.snapshotScheduler.close())
+    await closeSnapshots
     await release(() => this.adapter.close())
     this.sourceDirtyReasons.clear()
     this.unpersistedNativeScripts.clear()
@@ -990,80 +998,100 @@ class StatefulHmrSession {
         }
       }
     }
-    const snapshot = await this.snapshots.rebuild(batch.files)
-    profile?.mark('snapshotPublishMs')
-    this.diagnostics?.snapshot(traceBatchId, snapshot.output, batch.isSuperseded())
-    if (batch.isSuperseded()) {
-      this.diagnostics?.discarded(traceBatchId, 'after-build')
-      return
-    }
-    const nextEntryIds = snapshot.entryIds?.map(id => normalizeFsResolvedId(id))
-    if (this.restartForEntryGraph(snapshot, profile)) {
-      return
-    }
-    if (batch.mode === 'full') {
-      if (nextEntryIds) {
-        this.entryIds.clear()
-        for (const id of nextEntryIds) {
-          this.entryIds.add(id)
-        }
+    let refreshed = false
+    let handoff: { snapshot: StatefulHmrSnapshot, sources?: ReadonlyMap<string, string | null> } | undefined
+    await withStatefulHmrSnapshotPreparation(this.ctx, batch, (files, sources) => sources ? this.snapshots.rebuild(files, sources) : this.snapshots.rebuild(files), async ({ input, rebuild }) => {
+      if (input) {
+        this.diagnostics?.input(input)
       }
-      if (snapshot.delegatedComponentEntryIds) {
-        this.delegatedComponentEntryIds.clear()
-        for (const id of snapshot.delegatedComponentEntryIds) {
-          this.delegatedComponentEntryIds.add(normalizeFsResolvedId(id))
-        }
+      const snapshot = await rebuild()
+      profile?.mark('snapshotPublishMs')
+      this.diagnostics?.snapshot(traceBatchId, snapshot.output, batch.isSuperseded())
+      if (batch.isSuperseded()) {
+        this.diagnostics?.discarded(traceBatchId, 'after-build')
+        return
       }
-      const activeBatch: ActiveSnapshotBatch = { ...batch, traceBatchId, snapshot, outputTasks: [] }
-      try {
-        await this.adapter.rebuild(() => {
-          this.activeSnapshotBatch = activeBatch
-        })
-        if (!activeBatch.outputTasks.length && !batch.isSuperseded()) {
-          throw new Error('微信状态保持 HMR 完整构建未交付可持久化的输出。')
-        }
-        await Promise.all(activeBatch.outputTasks)
-        if (!batch.isSuperseded()) {
-          if (!activeBatch.fullOutputCommitted) {
-            throw new Error('微信状态保持 HMR 完整构建未交付可持久化的原生完整输出。')
+      const nextEntryIds = snapshot.entryIds?.map(id => normalizeFsResolvedId(id))
+      if (batch.mode === 'refresh' && nextEntryIds && (nextEntryIds.length !== this.entryIds.size || nextEntryIds.some(id => !this.entryIds.has(id)))) {
+        handoff = { snapshot, sources: input?.sources }
+        return
+      }
+      if (this.restartForEntryGraph(snapshot, profile, input?.sources)) {
+        return
+      }
+      if (batch.mode === 'full') {
+        if (nextEntryIds) {
+          this.entryIds.clear()
+          for (const id of nextEntryIds) {
+            this.entryIds.add(id)
           }
-          this.resynchronizing = false
-          this.rebuiltEntryGraphRevision = entryGraphRevision
-          for (const [file, change] of nativeScriptChanges) {
-            if (this.unpersistedNativeScripts.get(file) === change) {
-              this.unpersistedNativeScripts.delete(file)
+        }
+        if (snapshot.delegatedComponentEntryIds) {
+          this.delegatedComponentEntryIds.clear()
+          for (const id of snapshot.delegatedComponentEntryIds) {
+            this.delegatedComponentEntryIds.add(normalizeFsResolvedId(id))
+          }
+        }
+        const activeBatch: ActiveSnapshotBatch = { ...batch, traceBatchId, snapshot, outputTasks: [] }
+        try {
+          await this.adapter.rebuild(() => {
+            this.activeSnapshotBatch = activeBatch
+          })
+          if (!activeBatch.outputTasks.length && !batch.isSuperseded()) {
+            throw new Error('微信状态保持 HMR 完整构建未交付可持久化的输出。')
+          }
+          await Promise.all(activeBatch.outputTasks)
+          if (!batch.isSuperseded()) {
+            if (!activeBatch.fullOutputCommitted) {
+              throw new Error('微信状态保持 HMR 完整构建未交付可持久化的原生完整输出。')
             }
+            this.resynchronizing = false
+            this.rebuiltEntryGraphRevision = entryGraphRevision
+            for (const [file, change] of nativeScriptChanges) {
+              if (this.unpersistedNativeScripts.get(file) === change) {
+                this.unpersistedNativeScripts.delete(file)
+              }
+            }
+            releaseSourceChanges()
+            this.commitSnapshotMetadata(snapshot, 'full')
+            this.buildEvents.emitEvent({ code: 'END' })
+            profile?.finish('complete')
           }
-          releaseSourceChanges()
-          this.commitSnapshotMetadata(snapshot, 'full')
-          this.buildEvents.emitEvent({ code: 'END' })
-          profile?.finish('complete')
         }
-      }
-      finally {
-        if (this.activeSnapshotBatch === activeBatch) {
-          this.activeSnapshotBatch = undefined
+        finally {
+          if (this.activeSnapshotBatch === activeBatch) {
+            this.activeSnapshotBatch = undefined
+          }
         }
-      }
-      return
-    }
-    // 资产快照不消费源分类，原生 patch 可能在快照写入完成后才抵达。
-    await this.enqueueOutput(async () => {
-      if (batch.isSuperseded()) {
-        this.diagnostics?.discarded(traceBatchId, 'before-output')
         return
       }
-      const output = this.createSnapshotAssets(snapshot)
-      await this.commitSnapshotAssets(output, traceBatchId, batch.isSuperseded())
-      // 写盘期间到达的新事件仍须以实际落盘内容为基线；分析事实只提交未被取代的批次。
-      this.adoptSnapshot(snapshot, output)
-      if (batch.isSuperseded()) {
-        return
-      }
-      this.commitSnapshotMetadata(snapshot, 'refresh')
-      this.buildEvents.emitEvent({ code: 'END' })
-      profile?.finish('complete')
+      // 资产快照不消费源分类，原生 patch 可能在快照写入完成后才抵达。
+      await this.enqueueOutput(async () => {
+        if (batch.isSuperseded()) {
+          this.diagnostics?.discarded(traceBatchId, 'before-output')
+          return
+        }
+        const output = this.createSnapshotAssets(snapshot)
+        await this.commitSnapshotAssets(output, traceBatchId, batch.isSuperseded())
+        // 写盘期间到达的新事件仍须以实际落盘内容为基线；分析事实只提交未被取代的批次。
+        this.adoptSnapshot(snapshot, output)
+        if (batch.isSuperseded()) {
+          return
+        }
+        this.commitSnapshotMetadata(snapshot, 'refresh')
+        refreshed = true
+      })
     })
+    if (!batch.isSuperseded()) {
+      // 刷新资源释放成功后才能交接 profile 或宣布完成；落盘 metadata 保留真实提交事实。
+      if (handoff) {
+        this.restartForEntryGraph(handoff.snapshot, profile, handoff.sources)
+      }
+      else if (refreshed) {
+        this.buildEvents.emitEvent({ code: 'END' })
+        profile?.finish('complete')
+      }
+    }
   }
 
   /** 快照刷新与编译批次共享资产提交、删除及失败恢复基线。 */

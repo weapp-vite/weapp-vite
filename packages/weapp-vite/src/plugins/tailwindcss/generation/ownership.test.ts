@@ -247,6 +247,20 @@ it('uses an independent build when generation handoff is disabled', async () => 
   expect(build).toHaveBeenCalledOnce()
 })
 
+it('avoids a second real generator call for the same frozen refresh projection', async () => {
+  const app = await fixture()
+  const generate = vi.spyOn(app.compiler, 'generate')
+  const take = () => app.take()
+  const prepared = await withTailwindSnapshotGeneration(app.input, [app.preparation], take)
+  expect(generate).not.toHaveBeenCalled()
+  const ordinary = await app.compiler.generate(app.first.request)
+  expect(ordinary.css).toBe(prepared!.entries[0]!.css)
+  expect(ordinary.snapshot.classSet).toEqual(prepared!.entries[0]!.snapshot.classSet)
+  const reused = await withTailwindSnapshotGeneration(app.input, [app.preparation], take)
+  expect(reused!.entries[0]!.css).toBe(ordinary.css)
+  expect(generate).toHaveBeenCalledOnce()
+})
+
 it.each(['exact', 'unrelated', 'multiple'] as const)('preserves error identity for %s wrapping and releases the failed build', async (kind) => {
   const app = await fixture()
   let rejection: unknown

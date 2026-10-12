@@ -22,6 +22,7 @@ import { getWorkerSources } from '../buildPlugin/workerPlan'
 import { resolveScanAppBasename } from '../scanPlugin/service'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
+import { createSnapshotAssetInputs } from './snapshotAssetInputs'
 import { captureSnapshotInputs, coversSnapshotInputs, validateSnapshotInputs } from './snapshotInputs'
 
 /** 快照独立编译；初始化到构建收尾均不写支持文件，由活动 DevEngine 统一维护。 */
@@ -33,6 +34,7 @@ export async function buildStatefulHmrSnapshot(
   handoffInputFiles?: readonly string[],
 ) {
   const ctx = createCompilerContextInstance()
+  const assetInputs = createSnapshotAssetInputs(sources)
   let releaseGeneration = () => {}
   const ownerConfig = owner?.configService
   const inheritedVueEntryIds = owner && ownerConfig
@@ -129,13 +131,29 @@ export async function buildStatefulHmrSnapshot(
     options.plugins = [...(options.plugins ?? []), captureWatchDependencies(file => inputFiles.add(file))]
     options.build = { ...options.build, watch: undefined, write: false }
     if (sources) {
+      let assetsInclude: ((id: string) => boolean) | undefined
       options.plugins = [{
         name: 'weapp-vite:snapshot-input',
         enforce: 'pre',
+        configResolved(config) {
+          assetsInclude = config.assetsInclude
+          assetInputs.configure(assetsInclude)
+        },
         load: {
           order: 'pre',
           handler(id) {
-            if (id.startsWith('\0') || id.includes('?')) {
+            if (id.startsWith('\0')) {
+              return null
+            }
+            if (id.includes('?')) {
+              // Vite 的 raw/url 资产 query 直接读取文件；其它 query 保留原 loader 合同。
+              if (/[?&](?:raw|url)(?:&|$)/.test(id)) {
+                assetInputs.capture(id.slice(0, id.indexOf('?')), true)
+              }
+              return null
+            }
+            if (assetsInclude?.(id)) {
+              assetInputs.capture(id)
               return null
             }
             // 入口归属与固定源码身份共用本次同步解析，下一次加载重新读取真实路径。
@@ -159,7 +177,10 @@ export async function buildStatefulHmrSnapshot(
     }
     const { value: output, versions: nativeScriptVersions } = await captureCompilerNativeScriptInputs(ctx.configService, () => build(options), id =>
       ctx.runtimeState.build.hmr.entriesMap.has(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)))
-      || (ctx.scanService.appEntry?.path !== undefined && compilerSourceId(ctx.scanService.appEntry.path) === id))
+      || (ctx.scanService.appEntry?.path !== undefined && compilerSourceId(ctx.scanService.appEntry.path) === id)).catch((error: unknown) => {
+      throw assetInputs.restoreError(error)
+    })
+    assetInputs.validate()
     // CSS/独立包可能在 generateBundle 才补充依赖，待整轮完成后统一收集。
     for (const entry of ctx.runtimeState.build.hmr.resolvedEntryMap.keys()) {
       inputFiles.add(entry)

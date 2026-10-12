@@ -15,6 +15,34 @@ afterEach(() => {
 })
 
 describe('stateful hmr snapshot scheduler', () => {
+  it('propagates an in-flight cleanup rejection awaited by close without retrying', async () => {
+    vi.useFakeTimers()
+    const pending = createDeferred()
+    const execute = vi.fn(() => pending.promise)
+    const scheduler = new StatefulHmrSnapshotScheduler({ execute })
+    scheduler.request('refresh', ['app.wxss'])
+    await vi.advanceTimersByTimeAsync(40)
+    const failure = new Error('closing preparation disposal failed')
+    const rejected = expect(scheduler.close()).rejects.toBe(failure)
+    pending.reject(failure)
+    await rejected
+    await expect(scheduler.close()).rejects.toBe(failure)
+    expect(execute).toHaveBeenCalledOnce()
+  })
+
+  it('does not turn a historical publication failure into a close cleanup rejection', async () => {
+    vi.useFakeTimers()
+    const failure = new Error('old build failed')
+    const scheduler = new StatefulHmrSnapshotScheduler({ execute: async () => {
+      throw failure
+    } })
+    scheduler.request('refresh', ['app.wxss'])
+    const failed = expect(scheduler.whenSettled()).rejects.toBe(failure)
+    await vi.advanceTimersByTimeAsync(40)
+    await failed
+    await expect(scheduler.close()).resolves.toBeUndefined()
+  })
+
   it('settles only after debounce, execution, and a newer queued refresh finish', async () => {
     vi.useFakeTimers()
     const first = createDeferred()
