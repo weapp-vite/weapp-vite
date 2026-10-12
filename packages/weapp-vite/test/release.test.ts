@@ -1,6 +1,8 @@
 import { access } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 
 import { fs } from '@weapp-core/shared/fs'
 // eslint-disable-next-line e18e/ban-dependencies
@@ -84,12 +86,8 @@ describe('weapp-vite release pack', () => {
     const { tempRoot, tempPackageRoot } = await createIsolatedPackageWorkspace(packageRoot)
 
     try {
-      await execa('pnpm', ['build'], {
+      await execa(process.execPath, [fileURLToPath(import.meta.resolve('tsdown/run'))], {
         cwd: tempPackageRoot,
-        env: {
-          ...process.env,
-          pnpm_config_loglevel: 'silent',
-        },
       })
 
       const { stdout } = await execa(

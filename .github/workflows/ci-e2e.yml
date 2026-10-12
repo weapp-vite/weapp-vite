@@ -214,7 +214,7 @@ jobs:
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
       consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
-      main_command: node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless
+      main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless
       artifact_name: ide-dom-headless-${{ matrix.os }}-node-${{ matrix.node-version }}
       artifact_path: |
         docs/reports/dom-acceptance/**
