@@ -1,0 +1,189 @@
+use std::collections::HashMap;
+
+use napi::bindgen_prelude::Utf16String;
+use napi_derive::napi;
+use oxc_ast::ast::{
+    Expression, ImportDeclarationSpecifier, ImportOrExportKind, ModuleExportName, Program,
+    Statement,
+};
+use oxc_ast_visit::Visit;
+
+use crate::parse_program;
+
+mod components;
+use components::{NativeCompilerRegisteredComponent, collect_registered_components};
+
+#[napi(object)]
+pub struct NativeCompilerScriptInput {
+    pub code: Utf16String,
+    pub filename: Option<String>,
+}
+
+#[napi(object)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NativeCompilerScriptImport {
+    pub local: String,
+    pub imported: Option<String>,
+    pub source: String,
+    pub kind: String,
+    pub type_only: bool,
+}
+
+#[napi(object)]
+#[derive(Clone)]
+pub struct NativeCompilerScriptSpan {
+    pub start: u32,
+    pub end: u32,
+}
+
+#[napi(object)]
+#[derive(Clone)]
+pub struct NativeCompilerScriptAnalysis {
+    pub imports: Vec<NativeCompilerScriptImport>,
+    pub define_options_statements: Vec<NativeCompilerScriptSpan>,
+    pub registered_components: Option<Vec<NativeCompilerRegisteredComponent>>,
+}
+
+#[derive(Default)]
+struct StringLiteralVisitor {
+    has_lone_surrogate_literal: bool,
+}
+
+impl<'a> Visit<'a> for StringLiteralVisitor {
+    fn visit_string_literal(&mut self, literal: &oxc_ast::ast::StringLiteral<'a>) {
+        // Oxc 对孤立代理项使用内部编码，不能通过 Rust String 无损返回 JS。
+        // 校验解析后的值，覆盖模块名、导入名、属性键及宏字符串。
+        self.has_lone_surrogate_literal |= literal.lone_surrogates;
+    }
+}
+
+fn module_export_name(name: &ModuleExportName<'_>) -> Option<String> {
+    match name {
+        ModuleExportName::IdentifierName(value) => Some(value.name.to_string()),
+        ModuleExportName::IdentifierReference(value) => Some(value.name.to_string()),
+        ModuleExportName::StringLiteral(value) => Some(value.value.to_string()),
+    }
+}
+
+fn collect_imports(program: &Program<'_>) -> Vec<NativeCompilerScriptImport> {
+    let mut imports = Vec::new();
+    for statement in &program.body {
+        let Statement::ImportDeclaration(import) = statement else {
+            continue;
+        };
+        let source = import.source.value.to_string();
+        for specifier in import.specifiers.iter().flatten() {
+            let (local, imported, kind, type_only) = match specifier {
+                ImportDeclarationSpecifier::ImportDefaultSpecifier(specifier) => (
+                    specifier.local.name.to_string(),
+                    Some("default".to_string()),
+                    "default".to_string(),
+                    import.import_kind == ImportOrExportKind::Type,
+                ),
+                ImportDeclarationSpecifier::ImportNamespaceSpecifier(specifier) => (
+                    specifier.local.name.to_string(),
+                    None,
+                    "namespace".to_string(),
+                    import.import_kind == ImportOrExportKind::Type,
+                ),
+                ImportDeclarationSpecifier::ImportSpecifier(specifier) => (
+                    specifier.local.name.to_string(),
+                    module_export_name(&specifier.imported),
+                    "named".to_string(),
+                    import.import_kind == ImportOrExportKind::Type
+                        || specifier.import_kind == ImportOrExportKind::Type,
+                ),
+            };
+            imports.push(NativeCompilerScriptImport {
+                local,
+                imported,
+                source: source.clone(),
+                kind,
+                type_only,
+            });
+        }
+    }
+    imports
+}
+
+fn analyze_compiler_script_program(
+    program: &Program<'_>,
+    code: &str,
+) -> Option<NativeCompilerScriptAnalysis> {
+    let mut strings = StringLiteralVisitor::default();
+    strings.visit_program(program);
+    if strings.has_lone_surrogate_literal {
+        return None;
+    }
+    Some(NativeCompilerScriptAnalysis {
+        imports: collect_imports(program),
+        define_options_statements: collect_define_options_statements(program, code),
+        registered_components: collect_registered_components(program),
+    })
+}
+
+fn collect_define_options_statements(
+    program: &Program<'_>,
+    code: &str,
+) -> Vec<NativeCompilerScriptSpan> {
+    let mut spans = Vec::new();
+    let mut previous_end = 0;
+    let mut utf16_offset = 0;
+    // Babel 默认折叠括号，但保留完整表达式语句的范围；类型包装不属于直接调用。
+    for statement in &program.body {
+        let Statement::ExpressionStatement(statement) = statement else {
+            continue;
+        };
+        let Expression::CallExpression(call) = statement.expression.without_parentheses() else {
+            continue;
+        };
+        if call.optional
+            || !matches!(call.callee.without_parentheses(), Expression::Identifier(callee) if callee.name == "defineOptions")
+        {
+            continue;
+        }
+        let start = statement.span.start as usize;
+        let end = statement.span.end as usize;
+        utf16_offset += code[previous_end..start].encode_utf16().count() as u32;
+        let utf16_start = utf16_offset;
+        utf16_offset += code[start..end].encode_utf16().count() as u32;
+        spans.push(NativeCompilerScriptSpan {
+            start: utf16_start,
+            end: utf16_offset,
+        });
+        previous_end = end;
+    }
+    spans
+}
+
+/// 编译器前端的粗粒度脚本摘要入口；每份源码只解析一次，不返回 AST。
+#[napi(js_name = "analyzeCompilerScriptsNative")]
+pub fn analyze_compiler_scripts_native(
+    inputs: Vec<NativeCompilerScriptInput>,
+) -> Vec<Option<NativeCompilerScriptAnalysis>> {
+    let mut results: Vec<Option<NativeCompilerScriptAnalysis>> =
+        (0..inputs.len()).map(|_| None).collect();
+    let mut groups: HashMap<(String, Option<String>), Vec<usize>> = HashMap::new();
+    for (index, input) in inputs.iter().enumerate() {
+        let Ok(code) = String::from_utf16(&input.code) else {
+            continue;
+        };
+        let key = (code, input.filename.clone());
+        groups.entry(key).or_default().push(index);
+    }
+
+    for ((code, filename), matching) in groups {
+        let allocator = oxc_allocator::Allocator::default();
+        let Some(program) = parse_program(&allocator, &code, filename) else {
+            continue;
+        };
+        let analysis = analyze_compiler_script_program(&program, &code);
+        for index in matching {
+            results[index] = analysis.clone();
+        }
+    }
+    results
+}
+
+#[cfg(test)]
+mod tests;
