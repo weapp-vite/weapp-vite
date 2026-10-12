@@ -1073,6 +1073,106 @@ describe('stateful snapshot output transactions', () => {
     expect(published.get('pages/index/index.js')).toContain(current)
   })
 
+  it.each(['prepare', 'write'] as const)('persists a raw script saved during asset %s when its notification arrives after settlement', async (boundary) => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const original = 'Page({ data: { marker: "before" } })'
+    const current = 'Page({ data: { marker: "after" } })'
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    let saved = false
+    const overlap = {
+      ...snapshot('blue'),
+      nativeScriptVersions: new Map([[script, createHash('sha256').update(original).digest('hex')]]),
+      captureNativeScriptDrift: () => saved ? new Map([[script, createHash('sha256').update(current).digest('hex')]]) : new Map<string, string>(),
+    }
+    session.rebuild.mockImplementationOnce(async () => {
+      if (boundary === 'prepare') {
+        saved = true
+      }
+      return overlap
+    })
+    harness.writeOutput.mockImplementationOnce(async () => {
+      if (boundary === 'write') {
+        saved = true
+      }
+    })
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(saved).toBe(true)
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    // 普通后续资产刷新不能消费尚未收到真实脚本通知的重叠输入。
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    getCompilerHmrHost(session.ctx).captureNative(script, current)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    harness.callbacks!.onPatch([script], { type: 'Patch', code: 'void 0', filename: 'overlap.js', changedIds: [script] })
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledOnce()
+    expect(delta).not.toHaveBeenCalled()
+    getCompilerHmrHost(session.ctx).captureNative(script, `${current}\n// independent`)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    harness.callbacks!.onPatch([script], { type: 'Patch', code: 'void 0', filename: 'independent.js', changedIds: [script] })
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledOnce()
+    expect(delta).toHaveBeenCalledOnce()
+  })
+
+  it('retains overlap debt when the correcting full output fails even if the source is restored', async () => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const original = 'Page({ data: { marker: "before" } })'
+    const current = 'Page({ data: { marker: "after" } })'
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), captureNativeScriptDrift: () => new Map([[script, createHash('sha256').update(current).digest('hex')]]) })
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    harness.writeOutput.mockRejectedValueOnce(new Error('overlap full write failed'))
+    getCompilerHmrHost(session.ctx).captureNative(script, current)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    await vi.advanceTimersByTimeAsync(100)
+    await expect(session.whenSettled()).rejects.toThrow('overlap full write failed')
+    expect(harness.fullBuild).toHaveBeenCalledOnce()
+    getCompilerHmrHost(session.ctx).captureNative(script, original)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps a newer raw overlap observed during the correcting full write for its own notification', async () => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const original = 'Page({ data: { marker: "before" } })'
+    const current = 'Page({ data: { marker: "after" } })'
+    const newer = 'Page({ data: { marker: "newer" } })'
+    const hash = (source: string) => createHash('sha256').update(source).digest('hex')
+    let observed = current
+    const session = await start(snapshot('red'), [script], {}, new Map([[script, original]]))
+    session.rebuild.mockResolvedValue({ ...snapshot('blue'), captureNativeScriptDrift: () => new Map([[script, hash(observed)]]) })
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    harness.writeOutput.mockImplementationOnce(async () => {
+      observed = newer
+    })
+    getCompilerHmrHost(session.ctx).captureNative(script, current)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledOnce()
+    session.rebuild.mockResolvedValue(snapshot('blue'))
+    getCompilerHmrHost(session.ctx).captureNative(script, newer)
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    await vi.advanceTimersByTimeAsync(100)
+    await session.whenSettled()
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
+  })
+
   it('persists a native input already consumed by settled assets when its real notification arrives late', async () => {
     const script = path.join(root, 'src/pages/index/index.js')
     const original = 'Page({ data: { marker: "before" } })'

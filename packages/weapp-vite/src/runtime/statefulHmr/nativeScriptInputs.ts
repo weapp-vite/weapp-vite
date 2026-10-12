@@ -7,6 +7,7 @@ type Source = string | null | undefined
 export class NativeScriptInputs {
   private readonly persisted = new Map<string, string>()
   private readonly assetInputs = new Map<string, string>()
+  private readonly assetDrift = new Map<string, { version: string | null }>()
 
   capture(files: Iterable<string>, read: (file: string) => Source) {
     const sources = new Map<string, Source>()
@@ -38,18 +39,37 @@ export class NativeScriptInputs {
     return typeof source === 'string' && this.persisted.get(id) === compilerNativeScriptVersion(source)
   }
 
-  adoptAssets(versions?: ReadonlyMap<string, string>) {
+  adoptAssets(versions?: ReadonlyMap<string, string>, drift?: ReadonlyMap<string, string | null>) {
     this.assetInputs.clear()
     for (const [file, version] of versions ?? []) {
       const id = compilerSourceId(file)
       this.assetInputs.set(id, version)
+    }
+    for (const [file, version] of drift ?? []) {
+      const id = compilerSourceId(file)
+      if (this.assetDrift.get(id)?.version !== version) {
+        this.assetDrift.set(id, { version })
+      }
+    }
+  }
+
+  captureAssetDrift() {
+    return new Map(this.assetDrift)
+  }
+
+  /** 只有完整资产及脚本事务成功才消费其启动时的债务；较新观察归后续代次。 */
+  commitAssetDrift(drift: ReadonlyMap<string, { version: string | null }>) {
+    for (const [file, observation] of drift) {
+      if (this.assetDrift.get(file) === observation) {
+        this.assetDrift.delete(file)
+      }
     }
   }
 
   needsFullBuild(file: string) {
     const id = compilerSourceId(file)
     const version = this.assetInputs.get(id)
-    return version !== undefined && version !== this.persisted.get(id)
+    return this.assetDrift.has(id) || (version !== undefined && version !== this.persisted.get(id))
   }
 
   invalidate() {
@@ -59,5 +79,6 @@ export class NativeScriptInputs {
   clear() {
     this.persisted.clear()
     this.assetInputs.clear()
+    this.assetDrift.clear()
   }
 }

@@ -1,5 +1,6 @@
 import process from 'node:process'
 import { withPowerShellUtf8Output } from '../../../packages/weapp-ide-cli/src/utils/powershell'
+import { windowsKernelProcessQuery } from './windowsKernelQuery'
 import { serializeWindowsProcessRows } from './windowsProcessRows'
 
 const wirePrefix = 'WEAPP_DEV_QUERY_V2'
@@ -13,11 +14,9 @@ interface WindowsQueryMarker {
   elapsedMs: number
 }
 
-/** 查询共用固定行格式及 UTF-8 边界；显式诊断只在 stderr 写 ASCII 阶段与耗时。 */
-export function createWindowsProcessQueryCommand(filter: string, trace: boolean) {
-  const query = `@(Get-CimInstance Win32_Process${filter} | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name='Started';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString('o')} else {$null}}})`
+function wrapWindowsQuery(query: string, trace: boolean) {
   if (!trace) {
-    return withPowerShellUtf8Output(`$ErrorActionPreference='Stop'; $weappQueryRows=${query}; ${serializeWindowsProcessRows()}`)
+    return withPowerShellUtf8Output(`$ErrorActionPreference='Stop'; ${query}; ${serializeWindowsProcessRows()}`)
   }
   const marker = (stage: typeof stages[number]) => `[Console]::Error.WriteLine('${wirePrefix}|${stage.replace(':', '|')}|'+$weappQueryClock.Elapsed.TotalMilliseconds.ToString('F3',[Globalization.CultureInfo]::InvariantCulture)+'|')`
   return [
@@ -28,7 +27,7 @@ export function createWindowsProcessQueryCommand(filter: string, trace: boolean)
       marker('utf8:end'),
       `$ErrorActionPreference='Stop'`,
       marker('query:begin'),
-      `$weappQueryRows=${query}`,
+      query,
       marker('query:end'),
       marker('serialize:begin'),
       serializeWindowsProcessRows(),
@@ -36,6 +35,17 @@ export function createWindowsProcessQueryCommand(filter: string, trace: boolean)
       marker('script:end'),
     ].join('; ')),
   ].join('; ')
+}
+
+/** 查询共用固定行格式及 UTF-8 边界；CIM 命令仅用于独立兼容验收。 */
+export function createWindowsProcessQueryCommand(filter: string, trace: boolean) {
+  const query = `@(Get-CimInstance Win32_Process${filter} | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name='Started';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString('o')} else {$null}}})`
+  return wrapWindowsQuery(`$weappQueryRows=${query}`, trace)
+}
+
+/** 生产清理共用内核快照 provider，诊断仍保留原阶段与完整包络。 */
+export function createWindowsKernelProcessQueryCommand(pids: readonly number[] | undefined, trace: boolean) {
+  return wrapWindowsQuery(windowsKernelProcessQuery(pids), trace)
 }
 
 function readWindowsQueryTrace(stderr: string) {

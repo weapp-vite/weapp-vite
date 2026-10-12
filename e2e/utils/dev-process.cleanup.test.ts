@@ -210,7 +210,7 @@ describe('dev process cleanup ownership', () => {
     expect(execaMock.mock.calls.filter(([command]) => command === 'powershell.exe')).toHaveLength(2)
     expect([...fixture.processes.keys()]).toEqual([71, 72])
     if (trace) {
-      expect(output.mock.calls.some(([line]) => String(line).includes('"stage":"dev-cim-snapshot","event":"begin"'))).toBe(true)
+      expect(output.mock.calls.some(([line]) => String(line).includes('"stage":"dev-kernel-snapshot","event":"begin"'))).toBe(true)
       expect(output.mock.calls.some(([line]) => String(line).includes('"stage":"dev-taskkill","event":"end"'))).toBe(true)
     }
     else {

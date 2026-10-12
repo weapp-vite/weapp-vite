@@ -214,7 +214,9 @@ jobs:
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
       consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
-      main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless
+      main_command: |
+        pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts e2e/utils/devProcessCleanup/processes.test.ts e2e/utils/dev-process.cleanup.test.ts e2e/utils/devProcessCleanup/windowsProcessTree.test.ts e2e/utils/devProcessCleanup/windowsProcessRows.test.ts e2e/utils/devProcessCleanup/windowsQueryTrace.test.ts
+        pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless
       artifact_name: ide-dom-headless-${{ matrix.os }}-node-${{ matrix.node-version }}
       artifact_path: |
         docs/reports/dom-acceptance/**

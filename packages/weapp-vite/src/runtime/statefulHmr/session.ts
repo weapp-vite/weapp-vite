@@ -176,7 +176,7 @@ export async function runStatefulHmrDev(
       bindHostLifecycle(server, () => active.close())
     }
     await session.prepareIdeAssetWatch()
-    session.install()
+    session.install(controller)
     if (host) {
       await session.startEngine()
     }
@@ -202,6 +202,7 @@ export async function runStatefulHmrDev(
 
 class StatefulHmrSession {
   releaseSettlement?: () => void
+  private releaseSidecarInputDrift?: () => void
   private settlementRevision = 0
   private restarting = false
   private readonly settlementObservers = new Set<() => void>()
@@ -327,11 +328,12 @@ class StatefulHmrSession {
     })
   }
 
-  install(): void {
+  install(controller: Pick<ReturnType<typeof createStatefulHmrHostPlugins>, 'bindSidecarInputDrift'>): void {
     this.childSources = observeChildSources(this.server, file => this.requestFullBuild([file]))
     this.childSources.adopt(this.initialSnapshot?.childSources)
     this.transport.install()
     this.adapter.install()
+    this.releaseSidecarInputDrift = controller.bindSidecarInputDrift(file => this.requestFullBuild([file]))
     this.ctx.onStatefulHmrSourceChange = this.sourceChangeListener
     getCompilerHmrHost(this.ctx).onDependencyChange = (file) => {
       void this.waitForInitialBundle().then(async () => {
@@ -399,6 +401,8 @@ class StatefulHmrSession {
       }
     }
     this.closed = true
+    this.releaseSidecarInputDrift?.()
+    this.releaseSidecarInputDrift = undefined
     // 先同步封闭交付代次，再取消传输；等待必须留到传输解除未确认交付之后。
     const closeDelivery = release(() => this.delivery.close())
     // 同步封闭快照准入，异步等待留到传输关闭后，避免 pending prepare 抢先消费关闭中的会话。
@@ -598,7 +602,7 @@ class StatefulHmrSession {
         getCompilerHmrHost(this.ctx).setNativeSources(collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root))
         this.transport.registerInitialPayloads(compatibleOutput.filter(item => item.type === 'chunk').map(item => item.fileName), file => this.adapter.markPayloadDelivered(file))
         if (snapshot && snapshotOutput) {
-          this.adoptSnapshot(snapshot, snapshotOutput)
+          this.adoptSnapshot(snapshot, snapshotOutput, Boolean(snapshotBatch))
           this.initialSnapshot = undefined
         }
         for (const sourceId of collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root)) {
@@ -986,6 +990,7 @@ class StatefulHmrSession {
     this.buildEvents.emitEvent({ code: 'START' })
     const entryGraphRevision = this.entryGraphRevision
     const nativeScriptChanges = new Map(this.unpersistedNativeScripts)
+    const nativeAssetDrift = this.nativeScriptInputs.captureAssetDrift()
     // 完整构建只消费启动时捕获的事件；同一路径的新事件仍归后续批次所有。
     const sourceChanges = new Map(batch.files.map(file => [file, this.sourceDirtyReasons.get(file)]))
     const releaseSourceChanges = () => {
@@ -1047,6 +1052,7 @@ class StatefulHmrSession {
             }
             this.resynchronizing = false
             this.rebuiltEntryGraphRevision = entryGraphRevision
+            this.nativeScriptInputs.commitAssetDrift(nativeAssetDrift)
             for (const [file, change] of nativeScriptChanges) {
               if (this.unpersistedNativeScripts.get(file) === change) {
                 this.unpersistedNativeScripts.delete(file)
@@ -1140,14 +1146,15 @@ class StatefulHmrSession {
     }
   }
 
-  private adoptSnapshot(snapshot: StatefulHmrSnapshot, output: StatefulHmrOutputFile[]): void {
+  private adoptSnapshot(snapshot: StatefulHmrSnapshot, output: StatefulHmrOutputFile[], completingFullBuild = false): void {
+    const nativeScriptDrift = snapshot.captureNativeScriptDrift?.()
     this.childSources?.adopt(snapshot.childSources)
     this.componentPageGlobalStyleRoutes = [...snapshot.componentPageGlobalStyleRoutes]
     this.snapshotAssets.adopt(output.filter(isStatefulHmrSnapshotAsset))
-    this.nativeScriptInputs.adoptAssets(snapshot.nativeScriptVersions)
+    this.nativeScriptInputs.adoptAssets(snapshot.nativeScriptVersions, nativeScriptDrift)
     // 原生通知可能在独立交付快照编译或写出期间进入；只消费真实通知，不主动失效 DevEngine。
     const notified = [...this.unpersistedNativeScripts.keys()].filter(file => this.nativeScriptInputs.needsFullBuild(file))
-    if (notified.length) {
+    if (notified.length && !completingFullBuild) {
       this.requestFullBuild(notified)
     }
   }

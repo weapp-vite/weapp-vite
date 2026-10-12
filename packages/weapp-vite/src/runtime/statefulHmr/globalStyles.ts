@@ -20,6 +20,7 @@ export interface StatefulHmrSnapshot {
   inputFiles?: string[]
   inputs?: SnapshotInputs
   nativeScriptVersions?: ReadonlyMap<string, string>
+  captureNativeScriptDrift?: () => ReadonlyMap<string, string | null>
 }
 
 function normalizeRoute(route: string): string {

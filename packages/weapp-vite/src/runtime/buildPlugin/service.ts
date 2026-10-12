@@ -252,6 +252,7 @@ function prepareStatefulHmrSnapshot(snapshot: Awaited<ReturnType<typeof buildSta
     inputFiles: snapshot.getInputFiles?.(),
     inputs: snapshot.getInputs?.(),
     nativeScriptVersions: snapshot.getNativeScriptVersions?.(),
+    captureNativeScriptDrift: snapshot.getNativeScriptDrift,
   }
 }
 

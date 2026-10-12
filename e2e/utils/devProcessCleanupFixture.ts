@@ -94,10 +94,11 @@ export function createProcessTreeFixture(execaMock: Mock) {
     }
     if (command === 'powershell.exe') {
       const script = args.at(-1) ?? ''
-      if (!script.includes('Get-CimInstance Win32_Process') || !script.includes('ParentProcessId') || !script.includes('ExecutablePath')) {
-        throw new Error('Unexpected process fixture CIM query')
+      const selection = /\[WeappDevProcessSnapshot\]::Capture\((\$null|\[uint32\[\]\]@\((?:\d+(?:,\d+)*)?\))\)/.exec(script)
+      if (!selection || !script.includes('ParentProcessId') || !script.includes('ExecutablePath')) {
+        throw new Error('Unexpected process fixture kernel query')
       }
-      const selected = [...script.matchAll(/ProcessId=(\d+)/g)].map(match => Number(match[1]))
+      const selected = selection[1] === '$null' ? [] : selection[1]!.slice('[uint32[]]@('.length, -1).split(',').filter(Boolean).map(Number)
       const entries = [...processes.values()].filter(entry => !selected.length || selected.includes(entry.pid))
       if (entries.some(entry => state.unknownIdentityPids.has(entry.pid))) {
         return Promise.resolve({ exitCode: 1, stdout: '', stderr: 'Process inspection failed' })

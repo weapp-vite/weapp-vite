@@ -7,13 +7,14 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
+import { parseSidecarSourceMetadata } from '../../moduleGraph/protocol'
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { bindTailwindSnapshotGeneration, validateTailwindSnapshotGeneration } from '../../plugins/tailwindcss/generation'
 import { getTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import { configSuffixes } from '../../plugins/utils/invalidateEntry/shared'
-import { captureCompilerNativeScriptInputs, setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
+import { captureCompilerNativeScriptInputs, readCompilerInput, setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
 import { withRealpathScope } from '../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { captureWatchDependencies } from '../../utils/watchDependencies'
@@ -22,8 +23,10 @@ import { getWorkerSources } from '../buildPlugin/workerPlan'
 import { resolveScanAppBasename } from '../scanPlugin/service'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
+import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
 import { createSnapshotAssetInputs } from './snapshotAssetInputs'
 import { captureSnapshotInputs, coversSnapshotInputs, validateSnapshotInputs } from './snapshotInputs'
+import { createSnapshotNativeScriptDriftProbe } from './snapshotNativeScripts'
 
 /** 快照独立编译；初始化到构建收尾均不写支持文件，由活动 DevEngine 统一维护。 */
 export async function buildStatefulHmrSnapshot(
@@ -146,8 +149,8 @@ export async function buildStatefulHmrSnapshot(
               return null
             }
             if (id.includes('?')) {
-              // Vite 的 raw/url 资产 query 直接读取文件；其它 query 保留原 loader 合同。
-              if (/[?&](?:raw|url)(?:&|$)/.test(id)) {
+              // 内部侧车由固定源码 loader 消费；普通 raw/url 仍由 Vite 读取并核验字节。
+              if (!parseSidecarSourceMetadata(id) && /[?&](?:raw|url)(?:&|$)/.test(id)) {
                 assetInputs.capture(id.slice(0, id.indexOf('?')), true)
               }
               return null
@@ -173,7 +176,7 @@ export async function buildStatefulHmrSnapshot(
             })
           },
         },
-      }, ...(options.plugins ?? [])]
+      }, createStatefulHmrSidecarPlugin(id => readCompilerInput(ctx.configService, id)), ...(options.plugins ?? [])]
     }
     const { value: output, versions: nativeScriptVersions } = await captureCompilerNativeScriptInputs(ctx.configService, () => build(options), id =>
       ctx.runtimeState.build.hmr.entriesMap.has(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)))
@@ -206,6 +209,7 @@ export async function buildStatefulHmrSnapshot(
       getInputFiles: () => [...inputFiles].filter(file => path.isAbsolute(file)),
       getInputs: () => reusableInputs,
       getNativeScriptVersions: () => nativeScriptVersions,
+      getNativeScriptDrift: createSnapshotNativeScriptDriftProbe(sources, nativeScriptVersions),
       getChildSources: () => ({
         files: [...new Set([...ctx.runtimeState.build.independent.watchFiles.values()].flatMap(files => [...files]).concat(getWorkerSources(ctx).files))],
         roots: [...ctx.scanService.independentSubPackageMap.keys()].map(root => path.resolve(ctx.configService.absoluteSrcRoot, root)).concat(getWorkerSources(ctx).roots),

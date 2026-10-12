@@ -10,14 +10,15 @@ export function createSnapshotAssetInputs(sources?: ReadonlyMap<string, string |
   const validations = new Map<string, () => void>()
   const bindingValidations = new Map<string, () => void>()
   let assetsInclude: ((id: string) => boolean) | undefined
-  let rejection: CompilerHmrResyncError | undefined
+  const rejections = new Set<CompilerHmrResyncError>()
   const guard = (file: string, run: () => void) => {
     try {
       run()
     }
     catch (cause) {
-      rejection = new CompilerHmrResyncError([...new Set([...(raw?.changedFiles ?? []), file])], 'Raw snapshot asset changed outside its frozen input')
+      const rejection = new CompilerHmrResyncError([...new Set([...(raw?.changedFiles ?? []), file])], 'Raw snapshot asset changed outside its frozen input')
       Object.defineProperty(rejection, 'cause', { value: cause, configurable: true })
+      rejections.add(rejection)
       throw rejection
     }
   }
@@ -78,9 +79,18 @@ export function createSnapshotAssetInputs(sources?: ReadonlyMap<string, string |
       }
     },
     restoreError(error: unknown): unknown {
-      // 只还原本准入 owner 被 Rolldown 包装的单一拒绝，不覆盖其它构建错误。
+      // 只还原本准入 owner 的精确拒绝身份，混入其它 owner 或构建错误时保留原异常。
       const errors = error && typeof error === 'object' && 'errors' in error ? error.errors : undefined
-      return rejection && Array.isArray(errors) && errors.length === 1 && errors[0] === rejection ? rejection : error
+      if (!Array.isArray(errors) || !errors.length || !errors.every(rejection => rejections.has(rejection))) {
+        return error
+      }
+      const owned = errors as CompilerHmrResyncError[]
+      if (owned.length === 1) {
+        return owned[0]
+      }
+      const rejection = new CompilerHmrResyncError([...new Set(owned.flatMap(rejection => rejection.files))], 'Raw snapshot assets changed outside their frozen input')
+      Object.defineProperty(rejection, 'cause', { value: error, configurable: true })
+      return rejection
     },
   }
 }

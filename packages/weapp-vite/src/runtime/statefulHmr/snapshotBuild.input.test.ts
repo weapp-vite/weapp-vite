@@ -4,8 +4,10 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
 import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { createRuntimeState } from '../runtimeState'
+import { createStatefulHmrSidecarModuleCode } from './sidecarPlugin'
 import { buildStatefulHmrSnapshot } from './snapshotBuild'
 
 const harness = vi.hoisted(() => ({
@@ -63,6 +65,89 @@ async function inputLoader(sources: ReadonlyMap<string, string | null>, owner: C
   const load = typeof hook === 'function' ? hook : hook.handler
   return (id: string) => load.call({} as never, id)
 }
+
+function sidecarLoader() {
+  const options = harness.build.mock.calls.at(-1)![0] as { plugins: Plugin[] }
+  const plugin = options.plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-sidecar')!
+  expect(plugin).toBeDefined()
+  const hook = plugin.load!
+  const load = typeof hook === 'function' ? hook : hook.handler
+  const addWatchFile = vi.fn()
+  return { load: (id: string) => load.call({ addWatchFile } as never, id), addWatchFile }
+}
+
+it.each([
+  ['script', 'index.js', 'Page({ data: { marker: "FROZEN" } })'],
+  ['template', 'index.wxml', '<view>FROZEN</view>'],
+  ['json', 'index.json', '{"marker":"FROZEN"}'],
+  ['style', 'index.wxss', '.frozen { color: red; }'],
+] as const)('loads an internal %s dependency from its frozen source after a late save', async (kind, filename, frozen) => {
+  const owner = createOwner()
+  const file = path.join(root, 'src', filename)
+  fs.writeFileSync(file, frozen)
+  const host = getCompilerHmrHost(owner)
+  host.seed(file, frozen)
+  const input = host.freeze([])
+  const id = createSidecarSourceSpecifier(path.join(root, 'src', 'index.js'), file, kind, kind === 'style')
+  fs.writeFileSync(file, 'FUTURE-SOURCE')
+  host.captureRaw(file, 'FUTURE-SOURCE')
+  const load = await inputLoader(input.sources, owner)
+  expect(await load(id)).toBeNull()
+  const sidecar = sidecarLoader()
+  expect(await sidecar.load(id)).toEqual({ code: createStatefulHmrSidecarModuleCode(id, frozen), moduleSideEffects: 'no-treeshake' })
+  expect(sidecar.addWatchFile).toHaveBeenCalledWith(compilerSourceId(file))
+})
+
+it('keeps a real style sidecar pinned for the CSS pipeline after a late save', async () => {
+  const owner = createOwner()
+  const file = path.join(root, 'src', 'index.wxss')
+  const frozen = '.frozen { color: red; }'
+  fs.writeFileSync(file, frozen)
+  const host = getCompilerHmrHost(owner)
+  host.seed(file, frozen)
+  const load = await inputLoader(host.freeze([]).sources, owner)
+  const id = createSidecarSourceSpecifier(path.join(root, 'src', 'index.js'), file, 'style')
+  fs.writeFileSync(file, '.future { color: blue; }')
+  expect(await load(id)).toBeNull()
+  expect(await sidecarLoader().load(id)).toBe(frozen)
+})
+
+it('rejects an internal sidecar tombstone even when the file has returned on disk', async () => {
+  const owner = createOwner()
+  const file = path.join(root, 'src', 'index.js')
+  fs.writeFileSync(file, 'Page({})')
+  const host = getCompilerHmrHost(owner)
+  host.seed(file, 'Page({})')
+  host.capture(file, null)
+  const load = await inputLoader(host.freeze([]).sources, owner)
+  const id = createSidecarSourceSpecifier(file, file, 'script')
+  fs.writeFileSync(file, 'Page({ data: { future: true } })')
+  expect(await load(id)).toBeNull()
+  await expect(sidecarLoader().load(id)).rejects.toThrow('Source removed from compiler snapshot')
+})
+
+it.each(['raw', 'url'])('still rejects a native file consumed by an ordinary ?%s asset request', async (query) => {
+  const owner = createOwner()
+  const file = path.join(root, 'src', 'index.js')
+  const frozen = 'Page({ data: { marker: "FROZEN" } })'
+  fs.writeFileSync(file, frozen)
+  const host = getCompilerHmrHost(owner)
+  host.seed(file, frozen)
+  const load = await inputLoader(host.freeze([]).sources, owner)
+  fs.writeFileSync(file, 'Page({ data: { marker: "FUTURE" } })')
+  expect(() => load(`${file}?${query}`)).toThrow(CompilerHmrResyncError)
+})
+
+it('does not let an incomplete sidecar query bypass ordinary raw asset admission', async () => {
+  const owner = createOwner()
+  const file = path.join(root, 'src', 'index.js')
+  fs.writeFileSync(file, 'Page({})')
+  const host = getCompilerHmrHost(owner)
+  host.seed(file, 'Page({})')
+  const load = await inputLoader(host.freeze([]).sources, owner)
+  fs.writeFileSync(file, 'Page({ data: { future: true } })')
+  expect(() => load(`${file}?raw&weapp-vite-sidecar=script&lang.js`)).toThrow(CompilerHmrResyncError)
+})
 
 it.each([
   ['logo.svg', false],
