@@ -1,118 +1,129 @@
-import { acceptedText, assertPublicAccess, deepWikiUrl, isCooldown, minimumAgeDays, readIndexRow, refreshRestriction } from './state.mjs'
+import { load } from 'cheerio'
 
-async function waitForState(page, read, timeoutMs, message) {
-  const deadline = Date.now() + timeoutMs
-  do {
-    await assertPublicAccess(page)
-    const value = await read()
-    if (value) {
-      return value
-    }
-    await page.waitForTimeout(Math.min(100, Math.max(0, deadline - Date.now())))
-  } while (Date.now() < deadline)
-  throw new Error(message)
-}
+export const deepWikiUrl = 'https://deepwiki.com/weapp-vite/weapp-vite'
+export const minimumAgeDays = 8
 
-async function regionText(region) {
-  return region.evaluate(element => element.textContent ?? '')
-}
+const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const indexPattern = /^Last indexed:\s*(\d{1,2})\s+([a-z]+)\s+(\d{4})\s*\(([0-9a-f]{6,40})\)$/i
 
-export async function refreshDeepWiki(page, { mainSha, email, dryRun = false, now = Date.now(), timeoutMs = 30_000 }) {
-  const response = await page.goto(deepWikiUrl, { waitUntil: 'domcontentloaded', timeout: timeoutMs })
-  await assertPublicAccess(page, response?.status())
-  const status = await waitForState(page, () => readIndexRow(page, now), timeoutMs, 'Unable to read the public DeepWiki index status within the timeout')
-  const result = {
-    ...status,
-    mainSha,
-    index: { sha: status.indexedSha, dateText: status.indexedDateText, indexedAt: status.indexedAt },
+function parseRow(text, sha, now) {
+  const match = text.match(indexPattern)
+  if (!match || !sha.startsWith(match[4].toLowerCase())) {
+    throw new Error('The public DeepWiki index row has inconsistent date and SHA metadata')
   }
-  const regionLocator = page.getByText('Refresh this wiki', { exact: true }).locator('..')
-  await waitForState(page, async () => await regionLocator.count() === 1, timeoutMs, 'The official DeepWiki refresh region is unavailable')
-  const region = await regionLocator.elementHandle()
-  try {
-    const initialText = await regionText(region)
-    const restriction = refreshRestriction(initialText)
-    if (restriction) {
-      throw new Error(restriction)
-    }
-    if (mainSha.startsWith(status.indexedSha)) {
-      return { ...result, status: 'current' }
-    }
-    if (status.ageDays < minimumAgeDays) {
-      return { ...result, status: 'not-due' }
-    }
-    if (dryRun) {
-      return { ...result, status: 'dry-run' }
-    }
-    if (isCooldown(initialText)) {
-      return { ...result, status: 'cooldown' }
-    }
-    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(email)) {
-      throw new Error('DEEPWIKI_REFRESH_EMAIL must contain a valid email address')
-    }
-    if (initialText.includes(acceptedText)) {
-      throw new Error('DeepWiki already shows a refresh confirmation; a new request cannot be confirmed safely')
-    }
+  const day = Number(match[1])
+  const month = months.findIndex(value => value.toLowerCase() === match[2].toLowerCase())
+  const year = Number(match[3])
+  const indexedAt = Date.UTC(year, month, day)
+  const date = new Date(indexedAt)
+  if (month < 0 || date.getUTCFullYear() !== year || date.getUTCMonth() !== month || date.getUTCDate() !== day || indexedAt > now) {
+    throw new Error('The public DeepWiki index date is invalid or in the future')
+  }
+  return { indexedSha: sha, indexedDate: `${day} ${months[month]} ${year}`, ageDays: Math.floor((now - indexedAt) / 86_400_000) }
+}
 
-    let submissionFailure
-    const onConsole = (message) => {
-      if (/Failed to refresh wiki:/i.test(message.text())) {
-        submissionFailure ??= new Error('DeepWiki failed to refresh the wiki; the official form reported an error')
-      }
-    }
-    const onResponse = (response) => {
-      const url = new URL(response.url())
-      if (response.request().method() === 'POST' && url.pathname === '/ada/index_public_repo' && !response.ok()) {
-        submissionFailure = Object.assign(new Error(response.status() === 401
-          ? 'DeepWiki requires login to refresh this wiki (HTTP 401)'
-          : `DeepWiki rejected the refresh request (HTTP ${response.status()})`), { responseStatus: response.status() })
-      }
-    }
-    page.on('console', onConsole)
-    page.on('response', onResponse)
+export function readIndexStatus(html, now = Date.now()) {
+  const $ = load(html)
+  $('script, style, noscript, template').remove()
+  const indexes = []
+  for (const anchor of $('a[href]').toArray()) {
+    const href = $(anchor).attr('href')
+    let url
     try {
-      const waitForControl = (control, message) => waitForState(page, async () => {
-        const restriction = refreshRestriction(await regionText(region))
-        if (restriction) {
-          throw new Error(restriction)
+      url = new URL(href)
+    }
+    catch {
+      continue
+    }
+    const sha = url.pathname.match(/^\/weapp-vite\/weapp-vite\/commits\/([0-9a-f]{7,40})\/?$/i)?.[1]?.toLowerCase()
+    if (url.origin !== 'https://github.com' || !sha) {
+      continue
+    }
+    let row = $(anchor).parent()
+    while (row.length && !row.is('body, html, main, article, section, header, footer, nav, aside')) {
+      const text = row.text().replace(/\s+/g, ' ').trim()
+      if (text.startsWith('Last indexed:')) {
+        // 只接受完整索引行，禁止从页面不同区域拼接日期和提交。
+        if (row.find('a[href]').length === 1) {
+          indexes.push(parseRow(text, sha, now))
         }
-        return await control.count() === 1 && await control.isVisible() && await control.isEnabled()
-      }, timeoutMs, message)
-      const open = regionLocator.getByRole('button', { name: 'Enter email to refresh', exact: true })
-      await waitForControl(open, 'The official Enter email to refresh button is unavailable')
-      await open.click({ timeout: timeoutMs })
-      const input = regionLocator.locator('input[type="email"]')
-      await waitForControl(input, 'The official DeepWiki email input is unavailable')
-      await input.fill(email, { timeout: timeoutMs })
-      if (!await input.evaluate(element => element.checkValidity())) {
-        throw new Error('The official DeepWiki form rejected the email address')
+        break
       }
-      const submit = regionLocator.getByRole('button', { name: 'Start refresh', exact: true })
-      await waitForControl(submit, 'The official Start refresh button did not become enabled')
-      // 本次运行只点击一次；未确认或访问受限时不重试提交。
-      await submit.click({ timeout: timeoutMs })
-      await waitForState(page, async () => {
-        if (submissionFailure) {
-          throw submissionFailure
-        }
-        const text = await regionText(region)
-        const restriction = refreshRestriction(text)
-        if (restriction) {
-          throw new Error(restriction)
-        }
-        if (isCooldown(text)) {
-          throw new Error('DeepWiki rejected the refresh request with a cooldown response')
-        }
-        return text.includes(acceptedText)
-      }, timeoutMs, 'DeepWiki did not confirm that the refresh request was accepted within the timeout')
-      return { ...result, status: 'accepted' }
-    }
-    finally {
-      page.off('console', onConsole)
-      page.off('response', onResponse)
+      row = row.parent()
     }
   }
-  finally {
-    await region.dispose()
+  if (!indexes.length) {
+    throw new Error('The public DeepWiki HTML does not contain a readable index row')
   }
+  const distinct = new Set(indexes.map(index => `${index.indexedSha}:${index.indexedDate}`))
+  if (distinct.size !== 1) {
+    throw new Error('The public DeepWiki HTML contains conflicting index rows')
+  }
+  return indexes[0]
+}
+
+export async function monitorDeepWiki({ mainSha, fetchImpl = fetch, now = Date.now(), timeoutMs = 20_000 } = {}) {
+  const normalizedSha = mainSha?.trim().toLowerCase()
+  if (!normalizedSha || !/^[0-9a-f]{40}$/.test(normalizedSha)) {
+    return { status: 'unavailable', reason: 'MAIN_SHA must be a full Git commit SHA' }
+  }
+  const result = { mainSha: normalizedSha, checkedAt: new Date(now).toISOString() }
+  let response
+  try {
+    response = await fetchImpl(deepWikiUrl, {
+      method: 'GET',
+      redirect: 'error',
+      signal: AbortSignal.timeout(timeoutMs),
+      headers: { 'accept': 'text/html', 'user-agent': 'weapp-vite-deepwiki-monitor' },
+    })
+    result.httpStatus = response.status
+    if (response.headers.get('x-vercel-mitigated') === 'challenge') {
+      return { ...result, status: 'unavailable', reason: 'DeepWiki security checkpoint blocked the read-only check' }
+    }
+    if (!response.ok) {
+      return { ...result, status: 'unavailable', reason: `DeepWiki returned HTTP ${response.status}` }
+    }
+    const html = await response.text()
+    const title = load(html)('title').text()
+    if (/security checkpoint|access denied|just a moment|verify.*browser|sign in|log in/i.test(title)) {
+      return { ...result, status: 'unavailable', reason: 'DeepWiki requires verification or login to read the public index' }
+    }
+    const index = readIndexStatus(html, now)
+    const status = normalizedSha.startsWith(index.indexedSha) ? 'current' : index.ageDays >= minimumAgeDays ? 'stale' : 'pending'
+    return { ...result, ...index, status }
+  }
+  catch (error) {
+    let reason = 'Unable to fetch the public DeepWiki page'
+    if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+      reason = 'The public DeepWiki request timed out'
+    }
+    else if (response?.ok) {
+      reason = error instanceof Error && error.message.startsWith('The public DeepWiki') ? error.message : 'Unable to read the public DeepWiki index'
+    }
+    return { ...result, status: 'unavailable', reason }
+  }
+}
+
+export function formatSummary(result) {
+  const lines = ['## DeepWiki index monitor', '', `- Status: ${result.status}`]
+  if (result.mainSha) {
+    lines.push(`- main: \`${result.mainSha}\``)
+  }
+  if (result.indexedSha) {
+    lines.push(`- DeepWiki: \`${result.indexedSha}\` (${result.indexedDate}, ${result.ageDays} day(s) old)`)
+  }
+  if (result.httpStatus) {
+    lines.push(`- Page HTTP status: ${result.httpStatus}`)
+  }
+  if (result.reason) {
+    lines.push(`- Reason: ${result.reason}`)
+  }
+  if (result.status === 'stale') {
+    lines.push('- The index differs from main and is at least 8 days old. Check the official automatic refresh or refresh manually.')
+  }
+  if (result.status === 'unavailable') {
+    lines.push('- Index freshness could not be determined. This does not establish that the wiki is stale.')
+  }
+  lines.push('', `Updates use the README badge's [official automatic refresh](https://github.com/CognitionAI/deepwiki#readme-badge).`, `This check only reads [the public wiki](${deepWikiUrl}); it never submits a refresh request.`)
+  return `${lines.join('\n')}\n`
 }

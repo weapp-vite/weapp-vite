@@ -1,16 +1,10 @@
-name: Refresh DeepWiki
+name: Monitor DeepWiki
 
 on:
   schedule:
-    # GitHub cron has no continuous "every 8 days" expression. Run daily and
-    # let the public DeepWiki index date enforce the eight-day interval.
+    # Read the public index daily; the DeepWiki badge manages refresh requests.
     - cron: '17 3 * * *'
   workflow_dispatch:
-    inputs:
-      dry_run:
-        description: Inspect the public index and refresh controls without submitting a refresh
-        type: boolean
-        default: true
 
 concurrency:
   group: refresh-deepwiki
@@ -20,10 +14,10 @@ permissions:
   contents: read
 
 jobs:
-  refresh:
-    name: Refresh weapp-vite DeepWiki
+  monitor:
+    name: Monitor weapp-vite DeepWiki
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
 
     steps:
       - name: Check out the selected ref
@@ -40,13 +34,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install browser automation dependencies
-        run: |
-          pnpm install --frozen-lockfile --ignore-scripts
-          pnpm exec playwright install --with-deps chromium
-
-      - name: Check the official refresh flow with local browser fixtures
-        run: pnpm exec vitest run --config .github/scripts/deepwiki/vitest.config.mjs
+      - name: Install monitor dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Read current main commit
         run: |
@@ -63,20 +52,15 @@ jobs:
           appendFileSync(process.env.GITHUB_ENV, `MAIN_SHA=${mainSha}\n`)
           NODE
 
-      - name: Refresh DeepWiki when due
-        env:
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
-          DEEPWIKI_REFRESH_EMAIL: ${{ secrets.DEEPWIKI_REFRESH_EMAIL }}
+      - name: Monitor DeepWiki index
         run: node .github/scripts/refresh-deepwiki.mjs
 
-      - name: Upload DeepWiki diagnostics
+      - name: Upload DeepWiki index status
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: deepwiki-refresh-${{ github.run_id }}-${{ github.run_attempt }}
+          name: deepwiki-monitor-${{ github.run_id }}-${{ github.run_attempt }}
           include-hidden-files: true
-          path: |
-            .tmp/deepwiki-refresh/diagnostics.json
-            .tmp/deepwiki-refresh/page.png
+          path: .tmp/deepwiki-monitor/status.json
           if-no-files-found: ignore
           retention-days: 7
