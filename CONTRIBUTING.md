@@ -2,7 +2,7 @@
 
 ## 开发环境
 
-仓库源码构建使用 `tsdown@0.23.0`，需要 Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`。
+仓库源码构建使用 `tsdown@0.23.1`，需要 Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`。
 
 ## 依赖升级
 
@@ -19,6 +19,24 @@ pnpm i
 ```
 
 如果直接执行 `pnpm up` 后看到 catalog 同步提示，请改用 `pnpm deps:up` 或显式运行 `pnpm run catalog:sync:workspace`。
+
+## 发布变更说明
+
+每份 `.changeset/*.md` 只记录一个变更类别，frontmatter 保留受影响包的真实名称及所需 bump。正文首个非空行必须使用 Conventional 类型并包含中文摘要，例如 `feat(vite): 增加标准插件入口`、`fix(runtime): 修复首次挂载`、`perf(compiler): 减少重复分析` 或 `chore(deps): 更新构建依赖`；允许 scope 和破坏性标记 `!`，也支持 `docs`、`refactor`、`test`、`build`、`ci`、`style`、`revert`。后续段落保留具体行为、边界及迁移说明。
+
+整理待发布 intent 时按主题与类别合并，功能、修复、性能和维护分别记录；保留每项原有的包归属，同一包合并后使用最高 bump。明确的正文类型是 Release 分类依据，优先于整理提交的类型与正文关键字，避免一次 `chore` 整理提交把功能、修复或性能说明改归维护。自动 catalog 和依赖升级记录使用 `chore(deps)`。提交前运行 `pnpm check:changeset:frontmatter` 检查首行格式与包名。
+
+## Release CI
+
+GitHub Release workflow 使用 `repoctl@5.10.2` 的原生六阶段：`plan → verify → prepare → upload → confirm → finalize`。`plan` 判定需要执行时才进入验证和准备，`prepare` 判定需要发布时才进入上传、确认和收尾。任一阶段失败都会阻断后续发布阶段；质量脚本及版本、发布 hooks 仍由 `repoctl.config.ts` 管理。同一轮 `verify` 的有效回执可供 `prepare` 使用，不能复用上一轮运行的验证结果。
+
+job 上限为 60 分钟；六阶段从 `plan` 前开始共享 50 分钟截止时间，每阶段只使用剩余预算。Ubuntu 的 GNU timeout 在截止前发送 TERM，并将 5 秒强制回收宽限计入共享预算；监督进程保持存活到 KILL，避免主命令先退出时遗留忽略 TERM 的后代。`GITHUB_TOKEN` 和 `VSCE_PAT` 只设在六阶段各自的 `step.env`，checkout 的 Git 推送凭据沿用相同发布令牌来源。
+
+Actions 恢复和保存 `.turbo/cache`，身份包含实际操作系统、架构、Node、pnpm 与锁文件。保存沿用恢复时冻结的 key，避免版本准备修改锁文件后漂移；只有受信任发布分支的成功运行可写入，缓存失败不会阻断发布。Turbo 只复用 build/lint 结果，单测、typecheck 和类型契约检查不缓存，仍按本轮质量流程执行；独立包的 `test:types` 保留先构建再检查的入口。
+
+根类型入口同时覆盖 library 包和 `e2e-apps/lib-mode` 的产物类型契约。lib-mode 每轮重新生成八组类型 fixture 后运行 TSD；它显式等待 `weapp-vite` 与 `wevu` 的构建及类型检查，不复用旧 fixture，也不额外触发 Dashboard 构建。
+
+工作流始终尝试归档 `pnpm-publish-summary.json`、`repoctl-publish-progress.json`、`repoctl-release-progress.json` 和 `repoctl-ci-progress.json`，保留 14 天，缺失文件忽略。排查失败时先查看对应阶段和这些进度报告；恢复单包发布继续使用 `repo release ci --mode publish-unpublished --package <name> --version <version>`，不跳过质量门禁。
 
 ## 增量与完整处理等价校验
 

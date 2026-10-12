@@ -115,7 +115,7 @@ it('formatDependencyUpgradeBody keeps this-run summaries in Chinese', () => {
     formatDependencyUpgradeBody([
       { name: '@weapp-vite/eslint', summary: 'devDependencies.vitest' },
     ]),
-    `自动补充依赖升级发布记录。
+    `chore(deps): 自动补充依赖升级发布记录。
 涉及包：
 - @weapp-vite/eslint：devDependencies.vitest
 `,

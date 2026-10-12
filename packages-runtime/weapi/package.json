@@ -1,7 +1,7 @@
 {
   "name": "@wevu/api",
   "type": "module",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "Compatibility entry for @weapp-core/api",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -58,7 +58,8 @@
     "test": "vitest run",
     "test:dev": "vitest",
     "pretest:types": "pnpm build",
-    "test:types": "tsd",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd",
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

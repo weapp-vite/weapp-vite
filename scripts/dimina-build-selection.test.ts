@@ -16,7 +16,7 @@ function selectedPackages(args: string[]) {
   const output = execFileSync(process.execPath, [turbo, ...args, '--dry=json'], {
     cwd: root,
     encoding: 'utf8',
-    // 完整工作区任务图可能超过默认 1 MiB；保留有限缓冲并解析全部输出。
+    // 完整 monorepo 的构建计划可能超过 Node 默认的 1 MiB 输出上限。
     maxBuffer: 8 * 1024 * 1024,
   })
   const result = JSON.parse(output) as { tasks: { package: string }[] }

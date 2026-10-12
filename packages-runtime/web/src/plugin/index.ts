@@ -1,4 +1,4 @@
-import type { SourceMap } from 'magic-string'
+import type { WeappWebVitePlugin, WebCssConfig, WebDevServer, WebHmrContext, WebPluginContext, WebResolvedConfig, WebUserConfig } from './hostTypes'
 import type { ResolveWebAutoImportTag, ResolveWebModuleId, WeappWebPluginOptions, WebResolvedComponent, WebStylePreprocessOptions } from './types'
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
@@ -21,80 +21,6 @@ import { collectSfcHmrFiles } from './sfcHmr'
 import { createEmptyScanState } from './state'
 import { createInlineStyleModule } from './styleModule'
 import { ensureWebVueSfcResult, generateWebVueSfcStyle, generateWebVueSfcTemplate, resolveWebVueSfcStyleLanguage, transformWebVueSfcScript } from './vueSfc'
-
-interface WebPluginContext {
-  warn?: (message: string) => void
-  addWatchFile?: (id: string) => void
-  emitFile?: (asset: { type: 'asset', fileName: string, source: Uint8Array }) => void
-  resolve?: (source: string, importer?: string, options?: { skipSelf?: boolean }) => Promise<{ id: string } | null>
-}
-
-type WebTransformResult = { code: string, map: SourceMap | null } | null
-
-interface WebPostcssConfig {
-  plugins?: Array<{ postcssPlugin?: string }>
-  [key: string]: unknown
-}
-
-interface WebCssConfig {
-  postcss?: string | WebPostcssConfig
-  preprocessorOptions?: WebStylePreprocessOptions
-}
-
-interface WebUserConfig {
-  css?: {
-    postcss?: string | WebPostcssConfig
-    preprocessorOptions?: WebStylePreprocessOptions
-  }
-}
-
-interface WebResolvedConfig extends WebUserConfig {
-  root: string
-  command: string
-  createResolver?: () => ResolveWebModuleId
-  optimizeDeps?: {
-    exclude?: string[]
-    include?: string[]
-  }
-}
-
-interface WebHmrContext<Module extends object = object> {
-  file: string
-  modules?: Module[]
-}
-
-interface WebDevServer {
-  middlewares: {
-    use: (middleware: ReturnType<typeof createWebAssetMiddleware>) => void
-  }
-  moduleGraph?: {
-    getModuleById: (id: string) => object | undefined
-    getModulesByFile: (file: string) => Set<object> | undefined
-    invalidateModule: (module: object) => void
-  }
-}
-
-interface WeappWebVitePlugin {
-  name: string
-  enforce?: 'pre' | 'post'
-  config?: (this: WebPluginContext, config: WebUserConfig) => WebUserConfig | void
-  configResolved?: (this: WebPluginContext, config: WebResolvedConfig) => void | Promise<void>
-  configureServer?: (server: WebDevServer) => void
-  buildStart?: (this: WebPluginContext) => void | Promise<void>
-  resolveId?: (id: string, importer?: string) => string | null | Promise<string | null>
-  load?: (id: string) => string | null | Promise<string | null>
-  watchChange?: {
-    order: 'post'
-    sequential: true
-    handler: (this: WebPluginContext, id: string, change: { event: 'create' | 'update' | 'delete' }) => Promise<void>
-  }
-  handleHotUpdate?: <Module extends object>(this: WebPluginContext, ctx: WebHmrContext<Module>) => Module[] | void | Promise<Module[] | void>
-  transform?: (
-    this: WebPluginContext,
-    code: string,
-    id: string,
-  ) => WebTransformResult | Promise<WebTransformResult>
-}
 
 const WEB_RUNTIME_MODULE_IDS = [
   'lit',
@@ -146,7 +72,7 @@ function createWebCssConfig(
   }
 
   const plugins = postcssConfig?.plugins ?? []
-  if (plugins.some(plugin => plugin.postcssPlugin === 'weapp-vite-web-wxss')) {
+  if (plugins.some(plugin => 'postcssPlugin' in plugin && plugin.postcssPlugin === 'weapp-vite-web-wxss')) {
     return undefined
   }
 

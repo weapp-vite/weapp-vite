@@ -17,7 +17,7 @@ describe('JSX physical source watch ownership', () => {
       },
       loadEntry,
       loadedEntrySet: new Set([sourceId]),
-      entriesMap: new Map([['pages/index', { type: 'page' }]]),
+      entriesMap: new Map([['pages/index', { path: sourceId, type: 'page' }]]),
       resolvedEntryMap: new Map(),
     } as any)
 

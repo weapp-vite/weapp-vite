@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/mcp",
   "type": "module",
-  "version": "1.5.8",
+  "version": "2.0.0",
   "description": "@weapp-vite/mcp tools and runtime components for modern WeChat and multi-platform mini-program development.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "ISC",
@@ -46,7 +46,8 @@
     "test": "vitest run",
     "test:dev": "vitest",
     "pretest:types": "pnpm build",
-    "test:types": "tsd",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "tsd",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
@@ -63,7 +64,14 @@
     "@weapp-core/constants": "workspace:*",
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/devtools-runtime": "workspace:*",
+    "weapp-ide-cli": "workspace:*",
     "zod": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "^2.3.1"

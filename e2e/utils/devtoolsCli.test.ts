@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { applyWechatCliSelection, resolveWechatCliPath } from './devtoolsCli'
+import { applyWechatCliSelection, resolveWechatCliPath, selectWechatE2EInstallation, withWechatE2ESelectionEnvironment } from './devtoolsCli'
 
 describe('DevTools CLI selection', () => {
   afterEach(() => vi.unstubAllEnvs())
@@ -30,5 +30,30 @@ describe('DevTools CLI selection', () => {
     vi.stubEnv('WEAPP_IDE_CLI_PATH', 'other-cli')
     expect(() => applyWechatCliSelection()).toThrow('需要显式设置')
     expect(process.env.WEAPP_IDE_CLI_PATH).toBe('other-cli')
+  })
+  it.each(['CHANNEL', 'VERSION'])('rejects conflicting legacy and current E2E %s selectors', async (key) => {
+    vi.stubEnv(`WEAPP_VITE_E2E_DEVTOOLS_${key}`, key === 'CHANNEL' ? 'stable' : '2.02.1')
+    vi.stubEnv(`WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_${key}`, key === 'CHANNEL' ? 'nightly' : '2.02.2')
+    await expect(selectWechatE2EInstallation()).rejects.toMatchObject({ code: 'WECHAT_DEVTOOLS_INSTALLATION_SELECTION_CONFLICT' })
+  })
+  it.each([false, true])('restores inherited selection after a scoped run (failure=%s)', async (failure) => {
+    vi.stubEnv('WEAPP_IDE_CLI_PATH', 'original-cli')
+    vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CHANNEL', undefined)
+    const run = withWechatE2ESelectionEnvironment(async () => {
+      process.env.WEAPP_IDE_CLI_PATH = 'temporary-cli'
+      process.env.WEAPP_VITE_E2E_DEVTOOLS_CHANNEL = 'nightly'
+      if (failure) {
+        throw new Error('fixture failed')
+      }
+      return 0
+    })
+    if (failure) {
+      await expect(run).rejects.toThrow('fixture failed')
+    }
+    else {
+      expect(await run).toBe(0)
+    }
+    expect(process.env.WEAPP_IDE_CLI_PATH).toBe('original-cli')
+    expect(process.env.WEAPP_VITE_E2E_DEVTOOLS_CHANNEL).toBeUndefined()
   })
 })

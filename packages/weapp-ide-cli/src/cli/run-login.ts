@@ -1,5 +1,5 @@
 import type { OperationLifecycle } from '@weapp-vite/miniprogram-automator/operation'
-import type { ResolvedWechatDevtoolsTarget } from '../devtoolsTarget'
+import type { ResolvedWechatDevtoolsTarget, WechatDevtoolsSelectionOptions } from '../devtoolsTarget'
 import type { LoginRetryConfig } from './run-login-config'
 import process from 'node:process'
 import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
@@ -21,7 +21,7 @@ type WechatCliExecutionResult
   = { kind: 'result', value: unknown }
     | { error: unknown, kind: 'retryable' }
 
-export interface RunWechatCliWithRetryOptions {
+export interface RunWechatCliWithRetryOptions extends WechatDevtoolsSelectionOptions {
   target?: ResolvedWechatDevtoolsTarget
   silent?: boolean
   timeout?: number

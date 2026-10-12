@@ -6,7 +6,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MANAGED_PROJECT_JOURNAL_ENV } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
 import { createManagedWechatProjectJournal } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
 import { createIsolatedMachineLease } from '../../utils/testSupport/machineLease'
 import { runTaskSuite as runTaskSuiteWithOptions } from '../suiteRunner'
@@ -36,6 +36,36 @@ function runTaskSuite(...[name, tasks, options]: Parameters<typeof runTaskSuiteW
 }
 
 describe('suiteRunner real process and machine lease integration', () => {
+  it('collects fragmented login errors as blocked evidence without waiting for input', async () => {
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+    const task = { label: 'login-blocked', command: process.execPath, args: ['-e', 'process.stdout.write("WechatIdeLogin"); setImmediate(() => { console.log("RequiredError: 需要重新登录"); process.exitCode = 10 })'] }
+    try {
+      expect(await runTaskSuite('e2e:test', [task], { nonInteractive: true, writeReport: false })).toBe(1)
+      expect(task).toMatchObject({ nonInteractive: true, runtimeBlocker: { code: 'needs-login', reason: 'WechatIdeLoginRequiredError: 需要重新登录' } })
+    }
+    finally {
+      process.exitCode = previousExitCode
+    }
+  })
+
+  it.skipIf(process.platform === 'win32')('stops the suite after an unexpected SIGKILL instead of launching another task', async () => {
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+    const onUnsafeRuntime = vi.fn()
+    const beforeEachTask = vi.fn()
+    try {
+      expect(await runTaskSuite('e2e:test', [
+        { label: 'system-killed', command: process.execPath, args: ['-e', 'process.kill(process.pid, "SIGKILL")'] },
+        { label: 'must-not-run', command: process.execPath, args: ['-e', 'process.exit(0)'] },
+      ], { beforeEachTask, onUnsafeRuntime, writeReport: false })).toBe(1)
+      expect(beforeEachTask).toHaveBeenCalledTimes(1)
+      expect(onUnsafeRuntime).toHaveBeenCalledWith(expect.stringContaining('SIGKILL'))
+    }
+    finally {
+      process.exitCode = previousExitCode
+    }
+  })
   it('rejects an unrelated process before running suite callbacks while the machine is owned', async () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-lease-'))
     const runnerScript = path.join(tempRoot, 'contender.mjs')

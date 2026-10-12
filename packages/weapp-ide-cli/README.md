@@ -259,9 +259,42 @@ console.log(WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES)
 
 ### 安装选择与共享登录
 
-日常开发和本仓库 E2E 推荐使用固定位置的一份官方 Stable。多个项目复用同一个已登录宿主，无需为测试另外准备微信账号；登录正常过期时仍需通过 IDE 完成登录。不要复制 ticket、Cookie 或账号配置来同步两个安装。
+默认选择本机已安装的最新 Stable；官方灰度发布或网络查询失败不会阻塞默认选版。macOS 扫描系统及用户 Applications，Windows 读取安装登记和常见目录，Linux 与自定义位置通过显式 CLI 路径或本地登记接入。渠道和产品版本读取实际应用元数据，按数字段比较版本；符号链接按真实安装去重，同版本存在多份安装时要求 `--cli-path`。
 
-未提供固定 `target` 时，程序化调用的显式 `cliPath` 优先；未指定时依次使用进程环境变量 `WEAPP_IDE_CLI_PATH`、全局 `cliPath` 配置和平台默认路径。提供 `target` 后，额外的 `cliPath` 必须指向同一个真实 CLI 文件，符号链接别名可用；不同安装会抛出 `WECHAT_DEVTOOLS_INSTALLATION_SELECTION_CONFLICT`，不会覆盖既定选择。环境变量只作用于当前进程及其子进程，不写回配置文件。`weapp config doctor` 显示持久配置与实际生效路径、产品版本和安装身份。
+```sh
+weapp devtools list --json
+weapp devtools add "<path-to-cli>"
+weapp devtools remove "<path-to-cli>"
+wv ide devtools list
+wv open --devtools-channel=nightly
+wv dev --open --devtools-channel=rc
+wv ide preview --devtools-channel=rc --devtools-version=2.02.2608080
+```
+
+安装由用户完成，登记只保存 CLI 路径，每次重新读取元数据。列表显示渠道、版本、安装身份、实际配置目录及失效原因；登录使用各安装自己的配置目录，不复制 ticket、Cookie 或账号数据。
+
+同一微信账号切换安装后，另一安装的登录可能失效。无需准备多个账号，可在需要测试的版本中重新扫码；工具不共享或迁移登录数据。矩阵使用非交互模式，登录失效记录为 `blocked`，附带 `runtimeBlocker.code: "needs-login"`，保留原始错误并继续其他版本；不会等待扫码或自动重试，最终返回非零退出码。重新登录后可单独运行该渠道补测。
+
+选择优先级为：已固定的 `target` / 当前操作安装 → 本次 `cliPath`、`devtoolsChannel`、`devtoolsVersion` → 环境变量 → 旧全局 `cliPath` → 本机最新 Stable。显式渠道/版本覆盖继承的路径固定；同层路径、渠道、版本必须一致。`--devtools-version` 是开发者工具产品版本，上传的 `--version` 仍为小程序版本。包装参数不会传给官方 CLI。RC/nightly 需要明确选择，操作的启动、构建、连接、恢复和清理沿用同一安装。
+
+公共环境变量为 `WEAPP_IDE_CLI_PATH`、`WEAPP_IDE_DEVTOOLS_CHANNEL`、`WEAPP_IDE_DEVTOOLS_VERSION`；E2E 使用对应的 `WEAPP_VITE_E2E_DEVTOOLS_*`，解析后向全部子进程传入具体 CLI。兼容 `WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION` / `WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_CHANNEL` 的固定选择。显式 `--require-official-latest`（或公共 `WEAPP_IDE_REQUIRE_OFFICIAL_LATEST=1`、E2E `WEAPP_VITE_E2E_REQUIRE_OFFICIAL_LATEST=1`）才要求匹配所选渠道官方最新版本，查询失败也会阻塞此严格模式。
+
+```ts
+import { listWechatDevtoolsInstallations, previewWechatIde, resolveWechatDevtoolsTarget } from 'weapp-ide-cli'
+
+const installations = await listWechatDevtoolsInstallations()
+const target = await resolveWechatDevtoolsTarget({ devtoolsChannel: 'rc' })
+await previewWechatIde({ projectPath: './dist', target })
+```
+
+两套 MCP 的连接工具和相关 REST 输入都支持 `cliPath`、`devtoolsChannel`、`devtoolsVersion`、`requireOfficialLatest`；会话按真实安装身份隔离，同一项目不会串用 Stable 与 nightly 连接。
+
+```sh
+pnpm e2e:ide:matrix --targets=stable,rc,nightly --suite=ide-smoke
+pnpm e2e:ide:matrix --targets=stable@2.02.2608080,nightly --suite=ide-gate --filter=<task>
+```
+
+矩阵默认只测 Stable，复用既有 suite 及其筛选和严格策略，全程持有同机同用户串行租约。普通测试失败或缺失安装记录后继续；所有权异常、清理失败、OOM 或取消停止后续目标。报告保存在 `docs/reports/devtools-matrix`，分别记录请求、实际安装、runtime/基础库版本、官方查询状态和结果。缺失、阻塞、partial 或未执行不能计为完整通过，返回非零退出码；全量正式验收仍遵守主线工作树要求。
 
 HTTP 服务端口和 automator 会话都绑定选定安装。另一安装的配置较新、端口可连或版本号相同，均不代表可以复用。未知旧会话不会直接连接；宿主或监听端口归属不一致时停止操作，保留原有 IDE 和账号状态。`port` 仍表示对应接口原有的端口类型，不将 automator WebSocket 端口当作 HTTP 服务端口。
 
@@ -269,7 +302,7 @@ HTTP 服务端口和 automator 会话都绑定选定安装。另一安装的配�
 
 `openWechatIdeProjectByHttp()` 使用 `/v2/open` 的 `project` 参数并保留原始响应正文；空正文或空 JSON 对象会抛出 `WECHAT_DEVTOOLS_HTTP_OPEN_UNCONFIRMED`，不能把 HTTP 200 当作项目已打开的证据。目标项目及 runtime 是否就绪仍需通过会话或 IDE 界面确认。
 
-本仓库真实 IDE E2E 显式设置 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH`，预检把它传入本轮公共 CLI，核对执行时官方 Stable 与实际宿主；不会自动安装或切换版本。不同 worktree 的 E2E 使用同机同用户的排他租约，冲突报告 `Runtime busy`，应等待持有者结束。普通 CLI 的宿主变更同样参与协调，已建立的多项目连接不长期占用此租约。自动恢复不清共享缓存、不退出账号；只释放本任务登记的资源。
+本仓库真实 IDE E2E 自动解析并固定本轮安装，核对实际宿主及 runtime 版本；不会自动安装工具。不同 worktree 的 E2E 使用同机同用户的排他租约，冲突报告 `Runtime busy`，应等待持有者结束。普通 CLI 的宿主变更同样参与协调，已建立的多项目连接不长期占用此租约。自动恢复不清共享缓存、不退出账号；只释放本任务登记的资源。
 
 ### 6. 程序化 opened-session helper
 

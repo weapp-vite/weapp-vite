@@ -1,7 +1,8 @@
-import type { Plugin, ViteDevServer } from 'vite'
+import type { ViteDevServer } from 'vite'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+import postcss from 'postcss'
 import { createServer } from 'vite'
 import { describe, expect, it, vi } from 'vitest'
 import { weappWebPlugin } from '../src/plugin'
@@ -56,6 +57,13 @@ async function createSfcResolverFixture(template: string) {
 }
 
 describe('weapp web plugin hook matrix', () => {
+  it('preserves PostCSS processors, functions and wrappers when injecting WXSS', () => {
+    const plugin = weappWebPlugin()
+    const existing = [postcss([]), vi.fn(), { postcss: postcss([]) }]
+    const result = plugin.config!.call({}, { css: { postcss: { plugins: existing } } })
+    expect(result).toMatchObject({ css: { postcss: { plugins: [...existing, { postcssPlugin: 'weapp-vite-web-wxss' }] } } })
+  })
+
   it('merges CSS config and reports unsupported or duplicate PostCSS setup', () => {
     let plugin = weappWebPlugin()
     const warn = vi.fn()
@@ -120,7 +128,7 @@ describe('weapp web plugin hook matrix', () => {
       server = await createServer({
         root,
         configFile: false,
-        plugins: [weappWebPlugin() as Plugin],
+        plugins: [weappWebPlugin()],
         resolve: { alias: { '@weapp-vite/web': consumerAlias } },
         optimizeDeps: { noDiscovery: true },
         server: { hmr: false, middlewareMode: true, watch: null },
@@ -148,7 +156,7 @@ describe('weapp web plugin hook matrix', () => {
       server = await createServer({
         root,
         configFile: false,
-        plugins: [weappWebPlugin() as Plugin],
+        plugins: [weappWebPlugin()],
         optimizeDeps: { noDiscovery: true },
         server: { hmr: false, middlewareMode: true, watch: null },
         logLevel: 'silent',
@@ -186,7 +194,7 @@ describe('weapp web plugin hook matrix', () => {
       server = await createServer({
         root,
         configFile: false,
-        plugins: [weappWebPlugin() as Plugin],
+        plugins: [weappWebPlugin()],
         optimizeDeps: { noDiscovery: true },
         server: { hmr: false, middlewareMode: true, watch: null },
         logLevel: 'silent',
@@ -214,7 +222,7 @@ describe('weapp web plugin hook matrix', () => {
       server = await createServer({
         root,
         configFile: false,
-        plugins: [weappWebPlugin() as Plugin],
+        plugins: [weappWebPlugin()],
         optimizeDeps: { noDiscovery: true },
         server: { hmr: false, middlewareMode: true, watch: null },
         logLevel: 'silent',
@@ -250,7 +258,7 @@ describe('weapp web plugin hook matrix', () => {
       server = await createServer({
         root,
         configFile: false,
-        plugins: [plugin as Plugin],
+        plugins: [plugin],
         optimizeDeps: { noDiscovery: true },
         server: { hmr: false, middlewareMode: true, watch: null },
         logLevel: 'silent',

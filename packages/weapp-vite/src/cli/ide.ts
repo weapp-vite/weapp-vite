@@ -41,6 +41,9 @@ const SDK_UPLOAD_OPTIONS: Record<string, true> = {
   '--timeout': true,
 }
 const UPLOAD_VALUE_OPTIONS: Record<string, true> = {
+  '--devtools-channel': true,
+  '--devtools-version': true,
+  '--cli-path': true,
   ...LEGACY_UPLOAD_OPTIONS,
   '-p': true,
   '--desc': true,

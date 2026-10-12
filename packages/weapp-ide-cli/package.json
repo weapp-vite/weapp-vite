@@ -1,7 +1,7 @@
 {
   "name": "weapp-ide-cli",
   "type": "module",
-  "version": "6.1.9",
+  "version": "6.2.0",
   "description": "Command-line tools for automating WeChat DevTools and mini-program projects.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -65,7 +65,8 @@
     "release": "node scripts/release.js",
     "test:dev": "vitest",
     "test": "vitest run",
-    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit",
     "weapp": "tsx src/cli.ts",
     "debug": "tsx src/cli.ts config",

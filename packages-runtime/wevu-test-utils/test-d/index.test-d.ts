@@ -27,8 +27,10 @@ const sfc = {} as new () => SfcInstance
 const sfcWrapper = mountComponent(sfc, { props: { count: 2 } })
 expectType<Ref<number>>(sfcWrapper.vm.doubled)
 expectType<void>(sfcWrapper.vm.increment())
-expectType<number | undefined>(sfcWrapper.vm.$props.count)
+expectType<number>(sfcWrapper.vm.$props.count)
 expectType<Promise<void>>(sfcWrapper.setProps({ count: 3 }))
+const optionalSfcWrapper = mountComponent(sfc)
+expectType<number | undefined>(optionalSfcWrapper.vm.$props.count)
 
 const optionsWrapper = mount<{ label: string }, { label: string }>({
   props: { label: { type: String, default: 'label' } },

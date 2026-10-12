@@ -6,8 +6,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveWechatDevtoolsTarget } from '../src/devtoolsTarget'
 import { createDevtoolsInstallation, createPackageAsar } from './helpers/devtoolsTarget'
 
-const getConfig = vi.hoisted(() => vi.fn())
-vi.mock('../src/config/resolver', () => ({ getConfig }))
+const readCustomConfig = vi.hoisted(() => vi.fn())
+vi.mock('../src/config/custom', () => ({ readCustomConfig }))
 const directories: string[] = []
 async function fixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'wechat-target-'))
@@ -15,7 +15,7 @@ async function fixtureRoot() {
   return await fs.realpath(root)
 }
 afterEach(async () => {
-  getConfig.mockReset()
+  readCustomConfig.mockReset()
   await Promise.all(directories.splice(0).map(directory => fs.rm(directory, { recursive: true, force: true })))
 })
 
@@ -35,13 +35,13 @@ describe('DevTools installation resolution', () => {
     expect(other.channel).toBe('rc')
     expect(other.installationId).not.toBe(selected.installationId)
     expect(other.profileDir).not.toBe(selected.profileDir)
-    expect(getConfig).not.toHaveBeenCalled()
+    expect(readCustomConfig).not.toHaveBeenCalled()
   })
 
   it('uses the same configured CLI when no explicit selection is supplied', async () => {
     const root = await fixtureRoot()
     const { cliPath } = await createDevtoolsInstallation(root)
-    getConfig.mockResolvedValue({ cliPath })
+    readCustomConfig.mockResolvedValue({ cliPath })
     expect((await resolveWechatDevtoolsTarget({ platform: 'darwin', homeDir: root })).cliPath).toBe(cliPath)
   })
 
@@ -55,7 +55,7 @@ describe('DevTools installation resolution', () => {
     expect(await resolveWechatDevtoolsTarget({ target })).toBe(target)
     expect(await resolveWechatDevtoolsTarget({ target, cliPath: path.join(alias, 'Contents', 'MacOS', 'cli') })).toBe(target)
     await expect(resolveWechatDevtoolsTarget({ target, cliPath: second.cliPath })).rejects.toMatchObject({ code: 'WECHAT_DEVTOOLS_INSTALLATION_SELECTION_CONFLICT' })
-    expect(getConfig).not.toHaveBeenCalled()
+    expect(readCustomConfig).not.toHaveBeenCalled()
   })
 
   it.each([false, true])('supports the selected Windows installation layout (legacy=%s)', async (legacy) => {
@@ -73,7 +73,7 @@ describe('DevTools installation resolution', () => {
     const selected = await createDevtoolsInstallation(root)
     await fs.rm(selected.appPath)
     await expect(resolveWechatDevtoolsTarget({ cliPath: selected.cliPath, platform: 'darwin' })).rejects.toThrow('Cannot identify')
-    expect(getConfig).not.toHaveBeenCalled()
+    expect(readCustomConfig).not.toHaveBeenCalled()
   })
 
   it.each([{ offset: '9007199254740992' }, { size: 2 * 1024 * 1024 }, { link: '../package.json' }])('rejects malformed ASAR package bounds without evaluating code: %j', async (entry) => {

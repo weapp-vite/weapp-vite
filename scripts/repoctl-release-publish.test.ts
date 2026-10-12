@@ -106,7 +106,15 @@ it.each(['npm error code E503\nnpm error 503 Service Unavailable', ''])('does no
 
   await expect(fixture.run()).rejects.toThrow(`npm registry state is unknown; refusing to retry uploads for: ${packages[1].name}@${packages[1].version}`)
   expect(fixture.publishes).toHaveLength(1)
-  expect(fixture.sleep).toHaveBeenCalledTimes(1)
+  // 新版 registry 会有界重试查询；状态未知始终不能重传已接受的版本。
+  for (const pkg of packages) {
+    const queries = fixture.registryQueries.filter(query => query.name === pkg.name)
+    expect(queries.length).toBeGreaterThanOrEqual(3)
+    expect(queries.length).toBeLessThanOrEqual(6)
+  }
+  const wait = fixture.sleep.mock.calls.reduce((total, [milliseconds]) => total + milliseconds, 0)
+  expect(wait).toBeGreaterThan(0)
+  expect(wait).toBeLessThan(900_000)
   expect(await fixture.readSummary()).toEqual({ publishedPackages: [packages[0]] })
   expect(await fixture.progress()).toMatchObject({
     status: 'failed',

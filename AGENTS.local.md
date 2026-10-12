@@ -4,9 +4,10 @@
 - 全面真实 IDE E2E（包括 `pnpm e2e:ide:gate`、`pnpm e2e:ide:full`、`pnpm e2e:ide:full:exhaustive` 及直接调用 DevTools 的完整 Vitest suite）必须从仓库根目录的 `main` 工作树启动：运行前先 `git fetch origin main`、`git switch main`、`git pull --ff-only origin main`，确认 `HEAD == origin/main` 且工作树干净；运行期间不得切换分支或修改源码。`.codex-tmp` 和其他分支只用于修复、最小复现、headless 或局部诊断，修复合并到 `main`、重建产物后才做正式 IDE 验收。主工作树要求不会放宽全机同用户串行、机器租约、宿主身份、端口归属和项目清理门禁。
 - 修改 `packages/*/src/**` 或 `packages-runtime/*/src/**` 后，运行下游 app、headless 或 IDE 验证前必须先重建受影响 package 的 `dist`。
 - 任何 E2E 入口都全机、同用户、跨 worktree 串行运行。启动前检查 DevTools、automator、dev-watch 和验证 server；只释放本任务明确登记且仍持有的资源。其他任务等待，手动项目和归属未知的实例保留；已核验的空闲共享宿主可按下述恢复条件正常重启。禁止按进程名、命令行子串或镜像名全局清理。发现问题时可先用 `--allow-failures`；最终验收保留每个正式 suite 的既定策略，要求全部计划内 task、case、checkpoint 完成，严格 suite 必须保持严格模式。局部筛选、partial 或未执行任务不能计为全量通过。
-- 真实 IDE E2E 默认使用执行时官方最新稳定版微信开发者工具。每轮先核对官方下载页的稳定渠道和版本，再核对所选安装及实际连接宿主；通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 显式选择，预检、启动、构建和恢复使用同一 CLI。默认安装路径、已登录或版本数字较大均不证明它是最新稳定版。
-- 仅当用户明确指定时才使用其他渠道或版本；不得因测试失败自行切换 RC、nightly、开发版或旧稳定版。最新稳定版无法确认、未安装或未登录时记录阻塞，不静默回退，不绕过登录。版本查询时间、官方来源、实际 IDE 与基础库版本随验收报告保存。
-- 用户明确接受本机 Stable 时，通过 `WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION` 传入精确产品版本；仅所选 Stable 安装与该值一致时生效，默认官方 Stable 门禁保持不变。仍执行官方查询、安装身份、实际宿主、基础库和端口归属核验，报告保留 `officialVersion`、`selectedVersion`、查询时间和 `selected-version-opt-in`。本轮已授权基线为 `2.02.2608070`，不能把它长期写成“最新稳定版”，也不能将选择值填作未连接成功时的实际观察值。
+- 真实 IDE E2E 默认使用本机已安装的最新 Stable，渠道和产品版本以实际应用元数据为准。启动前自动解析并固定具体 CLI，预检、启动、构建、连接和恢复共用同一安装；保留 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH`、公共路径环境变量及旧 `cliPath` 固定行为。显式渠道或版本参数可覆盖继承配置，同层路径、渠道、版本冲突必须停止。
+- RC/nightly 只按用户明确选择执行，包括显式渠道、固定版本或安装路径；不得因测试失败自行换版。本地目标缺失、渠道未知或未登录时记录未完成，不静默回退、不绕过登录。官方版本查询用于更新提示和报告，离线失败不阻塞默认选择；仅 `--require-official-latest` 或 `WEAPP_VITE_E2E_REQUIRE_OFFICIAL_LATEST=1` 恢复所选渠道的严格官方最新版本检查。报告保留请求目标、实际安装、查询状态、实际 IDE 及基础库版本，不能用所选元数据代替 runtime 观察。
+- 兼容 `WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION` 和 `WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_CHANNEL` 的精确版本/渠道选择，安装必须与约束一致。`pnpm e2e:ide:matrix` 默认只测 Stable；显式列出其他渠道才执行。整个矩阵持有同机同用户串行租约，前一安装资源终结后再切换；普通失败或缺失安装记录后继续，宿主归属异常、清理失败、OOM 或取消立即停止。缺失、阻塞、partial 或未执行项不能计为完整通过。既有固定性能运行保持原批准目标，不重新采样。
+- 同一微信账号切换安装后可能使另一安装登录失效，无需预备多个账号。矩阵采用非交互模式，登录失效保留原始原因并记录 `blocked / needs-login`，继续其他目标；不等待扫码、自动重试、复制登录数据或把未执行断言记为通过。
 - 启动失败不是终止全部 IDE 的授权。恢复、重试、超时和 teardown 共用会话资源所有权；不得删除全局 session、port-lease、登录数据或用户缓存目录。已退出的 CLI PID 不能作为宿主 PID 复用，清理应可重复调用且仅释放一次。
 - suite runner 的资源收尾必须分阶段执行：child scope/journal 清理失败时仍要独立尝试退出本任务已认领的 DevTools 宿主，并合并保留两类错误；不得因前一清理异常跳过宿主退出、吞掉首错或记录为已回收。
 - 不启动 IDE 的基础设施测试只共享外层机器互斥，不向普通单测 worker 发布真实 IDE journal。测试租约、嵌套 runner 或中断恢复时使用独立临时 state 与 journal，子进程显式继承同一测试状态目录；不能把测试记录挂到外层真实 IDE scope。环境隔离须原样恢复继承值，正式 IDE 的 journal、child scope 与清理门禁保持完整。

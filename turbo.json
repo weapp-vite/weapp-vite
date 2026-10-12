@@ -1,20 +1,35 @@
 {
   "$schema": "https://turborepo.com/schema.json",
+  "globalDependencies": [
+    "package.json",
+    "pnpm-workspace.yaml",
+    "tsconfig.json",
+    "tsconfig.base.json",
+    ".npmrc",
+    "scripts/vite/**",
+    "e2e-apps/shared/**",
+    "e2e/utils/requestClientsRealHostTraceRuntime.ts",
+    "e2e/utils/requestClientsRealWebSocketProbe.ts",
+    "patches/**"
+  ],
+  "globalEnv": [
+    "CI",
+    "NODE_ENV",
+    "REPOCTL_RELEASE_NODE_VERSION",
+    "REPOCTL_RELEASE_PNPM_VERSION",
+    "REPOCTL_RELEASE_PLATFORM",
+    "REPOCTL_RELEASE_ARCH"
+  ],
   "tasks": {
     "build": {
       "dependsOn": [
         "^build"
       ],
       "inputs": [
-        "src/**",
-        "lib/**",
-        "package.json",
-        "tsconfig*.json",
-        "*.config.{js,ts,mjs,mts}"
+        "$TURBO_DEFAULT$"
       ],
       "outputs": [
-        "dist/**",
-        "bin/**"
+        "dist/**"
       ]
     },
     "lint": {
@@ -22,12 +37,10 @@
         "^lint"
       ],
       "inputs": [
-        "src/**",
-        "lib/**",
-        "test/**",
-        "*.config.{js,ts}",
-        ".eslintrc*",
-        ".stylelintrc*"
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/eslint.config.js",
+        "$TURBO_ROOT$/stylelint.config.js",
+        "$TURBO_ROOT$/packages/eslint/src/**"
       ],
       "outputs": []
     },
@@ -36,43 +49,43 @@
       "persistent": true
     },
     "test": {
+      "cache": false,
       "dependsOn": [
         "^test"
       ],
       "inputs": [
-        "src/**",
-        "lib/**",
-        "test/**",
-        "package.json",
-        "vitest.config.{js,ts}",
-        "tsconfig*.json"
+        "$TURBO_DEFAULT$"
       ],
       "outputs": []
     },
     "test:types": {
+      "cache": false,
       "dependsOn": [
         "^test:types"
       ],
       "inputs": [
-        "src/**",
-        "lib/**",
-        "test/**",
-        "test-d/**",
-        "package.json",
-        "tsconfig*.json"
+        "$TURBO_DEFAULT$"
+      ],
+      "outputs": []
+    },
+    "test:types:check": {
+      "cache": false,
+      "dependsOn": [
+        "build",
+        "^test:types:check"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$"
       ],
       "outputs": []
     },
     "typecheck": {
+      "cache": false,
       "dependsOn": [
         "^typecheck"
       ],
       "inputs": [
-        "src/**",
-        "lib/**",
-        "test/**",
-        "package.json",
-        "tsconfig*.json"
+        "$TURBO_DEFAULT$"
       ],
       "outputs": []
     },

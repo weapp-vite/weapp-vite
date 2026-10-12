@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/eslint",
   "type": "module",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Wevu compatibility ESLint plugin and recommended configuration",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -48,7 +48,8 @@
     "dev": "tsdown -w --sourcemap",
     "build": "tsdown",
     "test": "vitest run --config ./vitest.config.ts",
-    "test:types": "cd test-d/compatibility-eslint-public-types && tsd",
+    "test:types": "pnpm run test:types:check",
+    "test:types:check": "cd test-d/compatibility-eslint-public-types && tsd",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",

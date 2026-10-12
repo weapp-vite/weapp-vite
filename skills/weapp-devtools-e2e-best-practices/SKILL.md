@@ -30,8 +30,8 @@ description: 面向 weapp-vite 仓库的 WeChat DevTools 与 mpcore headless run
 ## 核心流程
 
 1. 先确认没有其他仓库级 e2e、automator、watch 或本地验证服务占用测试资源；保留手动打开或归属未知的 DevTools，再确认环境前提：
-   - 核对官方最新稳定版、查询时间、所选安装和实际连接宿主；默认使用最新稳定版，仅按用户明确指定使用其他版本
-   - 通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 显式选择固定位置的 Stable；入口将其传入本轮进程的 `WEAPP_IDE_CLI_PATH`，预检、公共 CLI、MCP 子调用、启动、构建和恢复共用同一安装，不改写用户全局 CLI 配置
+   - 默认解析本机已安装的最新 Stable，核对实际元数据与连接宿主；RC/nightly 仅按明确选择执行，官方查询仅用于提示和报告，`--require-official-latest` 才严格检查
+   - 自动固定本轮 CLI，也可通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 或渠道/版本参数显式选择；入口将其传入本轮进程的 `WEAPP_IDE_CLI_PATH`，预检、公共 CLI、MCP 子调用、启动、构建和恢复共用同一安装，不改写用户全局 CLI 配置
    - 日常开发与 E2E 复用同一个已登录 Stable 宿主和一个微信账号；多个项目可以共用该宿主，账号正常过期时重新登录，不同步不同安装的登录票据
    - 服务端口已开启
    - 目标 app 使用真实 AppID
@@ -60,8 +60,8 @@ description: 面向 weapp-vite 仓库的 WeChat DevTools 与 mpcore headless run
 - 启动失败不是全局清理授权。禁止按进程名、命令行子串或 Windows 镜像名终止所有 IDE；不得删除全局 session、port-lease、登录数据和用户缓存。恢复、超时、重试与 teardown 共用幂等 disposer；不将已退出的 CLI PID 当成宿主 PID。
 - 安装版本读取应用自身元数据，不能用 Electron 版本代替；连接时复核实际宿主的安装身份、监听端口归属以及 `toolInfo()` 返回的 IDE/基础库版本。显式指定端口也必须核对归属，不按其他安装最近写入的端口文件猜测目标。
 - 共享连接和持久化会话必须匹配安装身份。旧记录缺少身份或目标不匹配时停止复用并诊断，保留未知归属资源；测试不得自动安装、换版、退出账号、复制凭据或清登录缓存。诊断只记录安装、版本、端口归属与登录布尔状态，不输出账号票据或租约 token。
-- 每轮真实 IDE 验收前从[官方渠道](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)核对最新稳定版，不把默认安装路径、已登录状态或较大版本号当作渠道证明。报告记录查询时间、来源、实际 IDE 及基础库版本；不要长期硬编码某个版本为“最新”。
-- 没有用户明确指定，不切换 RC、nightly、开发版或旧稳定版，即使当前测试失败。最新稳定版无法确认、未安装或未登录时报告阻塞，不静默回退、不绕过登录；固定性能运行仍按已批准目标执行，不重新采样。
+- 默认使用本机已安装的最新 Stable；从[官方渠道](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)查询更新提示和报告证据，仅显式严格模式要求匹配官方最新版本，不把默认安装路径、已登录状态或较大版本号当作渠道证明。报告记录查询时间、来源、实际 IDE 及基础库版本；不要长期硬编码某个版本为“最新”。
+- 没有用户明确指定，不切换 RC、nightly、开发版或旧稳定版，即使当前测试失败。所选本地安装缺失或未登录时报告未完成；官方查询失败只阻塞显式严格模式，不静默回退、不绕过登录；固定性能运行仍按已批准目标执行，不重新采样。
 - 清理回归至少证明：本任务资源被释放，手动实例、另一项目及另一安装版本仍保留；重复 close/recovery 只释放一次。根因与复盘见 `docs/plans/2026-09-30-devtools-process-ownership.md`。
 - OS-only 失败先输出 `cross-platform suspect: checking command launch, path normalization, line endings, and filesystem assumptions before product logic`，并检查 workflow -> script -> Node wrapper -> child process 的最早分歧。
 - 跨平台进程启动优先使用 `execa`；原始 `spawn` 必须处理 Windows `.cmd`、quoting 和必要的 shell 边界。
@@ -100,3 +100,5 @@ description: 面向 weapp-vite 仓库的 WeChat DevTools 与 mpcore headless run
 ## 参考资料
 
 - `references/runtime-e2e-checklist.md`
+
+多版本验证使用 `pnpm e2e:ide:matrix --targets=stable,rc,nightly --suite=ide-smoke`，默认只测试 Stable。整个矩阵持有同一机器租约，前一安装资源终结后切换；失败或缺失继续记录，所有权异常、清理失败、OOM 或取消停止。同一账号切换安装后可能需要重新扫码，无需预备多个账号；矩阵采用非交互模式，登录失效记录为 `blocked / needs-login` 并继续，不等待扫码或自动重试、不迁移登录数据。报告必须区分选择元数据与实际 runtime 观察，缺失、阻塞、partial 和未执行项不能计为完整通过。

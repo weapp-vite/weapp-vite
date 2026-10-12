@@ -1,4 +1,4 @@
-import type { ResolvedWechatDevtoolsTarget } from '../devtoolsTarget'
+import type { ResolvedWechatDevtoolsTarget, WechatDevtoolsSelectionOptions } from '../devtoolsTarget'
 import path from 'node:path'
 import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
 import { assertWechatDevtoolsPort, resolveWechatDevtoolsTarget } from '../devtoolsTarget'
@@ -12,7 +12,7 @@ const ENGINE_BUILD_BUILDING = 'BUILDING'
 const ENGINE_BUILD_END = 'END'
 const ENGINE_BUILD_ERROR = 'ERROR'
 
-export interface WechatDevtoolsHttpCommandOptions {
+export interface WechatDevtoolsHttpCommandOptions extends WechatDevtoolsSelectionOptions {
   cliPath?: string
   target?: ResolvedWechatDevtoolsTarget
   port?: number

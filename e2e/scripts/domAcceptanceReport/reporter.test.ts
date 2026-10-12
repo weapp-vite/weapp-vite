@@ -181,6 +181,7 @@ describe('Vitest DOM reporter lifecycle', () => {
       selectedVersion: '2.02.2608070',
       selectedChannel: 'stable',
       officialVersion: '2.02.2608080',
+      officialChannel: 'stable',
       acceptedVersion: '2.02.2608070',
       officialVersionMatches: false,
       officialSource: 'https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json',

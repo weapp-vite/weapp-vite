@@ -49,7 +49,10 @@ const launchAutomatorMock = vi.hoisted(() => vi.fn())
 const resolveProjectAutomatorPortMock = vi.hoisted(() => vi.fn())
 const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
 
-vi.mock('weapp-ide-cli', () => ({
+vi.mock('weapp-ide-cli', async importOriginal => ({
+  ...await importOriginal<typeof import('weapp-ide-cli')>(),
+  withWechatDevtoolsSelection: async (_: unknown, run: () => Promise<unknown>) => run(),
+  withWechatDevtoolsSelectionArgs: async (args: string[], run: (args: string[]) => Promise<unknown>) => run(args),
   bootstrapWechatDevtoolsSettings: bootstrapWechatDevtoolsSettingsMock,
   closeWechatIdeProject: closeWechatIdeProjectMock,
   compileWechatIdeByAutomator: compileWechatIdeByAutomatorMock,

@@ -154,16 +154,18 @@ it('recovers from an initial worker syntax error when app configuration removes 
     if (event.code === 'ERROR') {
       errors.push(event.error)
     }
-    else if (event.code === 'BUNDLE_END') {
+    else if (event.code === 'END') {
       rounds++
     }
   })
   try {
     await expect.poll(() => errors.length, { timeout: 15_000 }).toBe(1)
     expect(String(errors[0])).toContain('Unexpected token')
+    const previousRounds = rounds
     await writeFile(path.join(root, 'src/app.json'), '{"pages":["pages/home/index"]}')
-    await expect.poll(() => rounds, { timeout: 15_000 }).toBeGreaterThan(0)
-    expect(JSON.parse(await readFile(path.join(root, 'dist/app.json'), 'utf8'))).not.toHaveProperty('workers')
+    // END 才表示本轮原生写出完成；BUNDLE_END 可能先于磁盘发布，不能用来读取产物。
+    await expect.poll(() => rounds, { timeout: 15_000 }).toBeGreaterThan(previousRounds)
+    await expect.poll(async () => JSON.parse(await readFile(path.join(root, 'dist/app.json'), 'utf8')), { timeout: 15_000 }).not.toHaveProperty('workers')
     await expect(access(path.join(root, 'dist/pages/home/index.js'))).resolves.toBeUndefined()
     await expect(access(path.join(root, 'dist/workers/index.js'))).rejects.toMatchObject({ code: 'ENOENT' })
     expect(errors).toHaveLength(1)

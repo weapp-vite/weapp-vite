@@ -2,7 +2,7 @@
 import type { Options } from 'execa'
 import type { MachineE2EChildScope, MachineE2ELease, MachineE2ELeaseOptions } from '../../packages/devtools-runtime/src/lease/machine'
 import type { DevtoolsHostLease } from '../utils/devtoolsHostLifecycle'
-import type { SuiteReportContext, SuiteTaskArtifact } from './suiteReport'
+import type { SuiteReportContext, SuiteRuntimeBlocker, SuiteTaskArtifact } from './suiteReport'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -31,6 +31,10 @@ const TEMPLATE_DEV_OPEN_RUNNER_BASENAME = 'run-template-dev-open-suite.ts'
 
 export interface SuiteTask {
   artifacts?: SuiteTaskArtifact[]
+  unsafeRuntimeReason?: string
+  runtimeVersions?: Array<{ version: string, baseLibraryVersion: string | null, installationId: string }>
+  runtimeBlocker?: SuiteRuntimeBlocker
+  nonInteractive?: boolean
   devtoolsLaunchSkipped?: boolean
   env?: Record<string, string>
   label: string
@@ -47,6 +51,8 @@ export interface SuiteTaskResult {
   label: string
   status?: 'passed' | 'failed' | 'blocked' | 'skipped'
   reason?: string
+  runtimeVersions?: SuiteTask['runtimeVersions']
+  runtimeBlocker?: SuiteRuntimeBlocker
 }
 
 interface RunSuiteOptions {
@@ -58,6 +64,9 @@ interface RunSuiteOptions {
   runTask?: (task: SuiteTask, signal: AbortSignal) => Promise<number>
   stopOnTaskFailure?: boolean
   writeReport?: boolean
+  nonInteractive?: boolean
+  onUnsafeRuntime?: (reason: string) => void
+  onReport?: (report: ReturnType<typeof createSuiteReport>) => void
   reportContext?: SuiteReportContext
 }
 
@@ -116,10 +125,33 @@ function createTaskArtifactCollector() {
   const artifacts: SuiteTaskArtifact[] = []
   const seen = new Set<string>()
   let devtoolsLaunchSkipped = false
+  let unsafeRuntimeReason: string | undefined
+  let runtimeBlocker: SuiteRuntimeBlocker | undefined
+  const runtimeVersions: NonNullable<SuiteTask['runtimeVersions']> = []
 
   function collectFromText(text: string) {
     const lines = text.split(NEWLINE_SPLIT_PATTERN)
     for (const line of lines) {
+      if (/DEVTOOLS_LOGIN_REQUIRED|WechatIdeLoginRequiredError|检测到微信开发者工具登录状态失效|\[runtime:launch-login\]/.test(line)) {
+        runtimeBlocker ??= { code: 'needs-login', reason: line.trim() }
+      }
+      if (/WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH|DEVTOOLS_INSTALLATION_MISMATCH|FATAL ERROR.*(?:heap|memory)|out of memory|DevTools.*OOM/i.test(line)) {
+        unsafeRuntimeReason ??= line
+      }
+      const runtimeMatch = /\[devtools:runtime\] (\{.*\})/.exec(line)
+      if (runtimeMatch) {
+        try {
+          const value: unknown = JSON.parse(runtimeMatch[1]!)
+          if (value && typeof value === 'object' && 'version' in value && typeof value.version === 'string'
+            && 'installationId' in value && typeof value.installationId === 'string') {
+            runtimeVersions.push({ version: value.version, installationId: value.installationId, baseLibraryVersion: 'baseLibraryVersion' in value && typeof value.baseLibraryVersion === 'string' ? value.baseLibraryVersion : null })
+          }
+        }
+        catch {
+          // 不完整的输出不能作为实际 runtime 证据。
+        }
+      }
+
       if (DEVTOOLS_LAUNCH_SKIP_PATTERN.test(line)) {
         devtoolsLaunchSkipped = true
       }
@@ -147,6 +179,9 @@ function createTaskArtifactCollector() {
 
   return {
     artifacts,
+    runtimeVersions,
+    get unsafeRuntimeReason() { return unsafeRuntimeReason },
+    get runtimeBlocker() { return runtimeBlocker },
     collectFromText,
     get devtoolsLaunchSkipped() {
       return devtoolsLaunchSkipped
@@ -293,7 +328,7 @@ export function getTaskSpawnOptions(task: SuiteTask): Options {
         : {}),
       ...task.env,
     },
-    stdio: ['inherit', 'pipe', 'pipe'],
+    stdio: [task.nonInteractive ? 'ignore' : 'inherit', 'pipe', 'pipe'],
     shell: false,
     buffer: false,
     reject: false,
@@ -405,6 +440,9 @@ async function defaultRunTask(task: SuiteTask, signal: AbortSignal) {
       clearTaskTimers()
       stdoutForwarder.flush()
       stderrForwarder.flush()
+      task.unsafeRuntimeReason ??= collector.unsafeRuntimeReason
+      task.runtimeVersions = collector.runtimeVersions
+      task.runtimeBlocker = collector.runtimeBlocker
       task.artifacts = collector.artifacts
       task.devtoolsLaunchSkipped = collector.devtoolsLaunchSkipped
       child.stdout?.destroy()
@@ -472,8 +510,11 @@ async function defaultRunTask(task: SuiteTask, signal: AbortSignal) {
       void assertOwnedCommandStopped(child).then(() => reject(error), reject)
     }
 
-    function onExit(code: number | null) {
+    function onExit(code: number | null, exitSignal: NodeJS.Signals | null) {
       exited = true
+      if (!terminationRequested && exitSignal === 'SIGKILL') {
+        task.unsafeRuntimeReason = 'E2E task was unexpectedly killed (SIGKILL); stop before launching another IDE.'
+      }
       if (!terminationRequested) {
         clearTaskTimers()
       }
@@ -572,6 +613,7 @@ async function runOwnedTaskSuite(
   }
 
   for (const [taskIndex, task] of tasks.entries()) {
+    task.nonInteractive = options.nonInteractive ?? task.nonInteractive
     if (signal.aborted) {
       break
     }
@@ -645,6 +687,9 @@ async function runOwnedTaskSuite(
       const message = error instanceof Error ? error.message : String(error)
       reason = message
       blocked = true
+      if (processStopError || (error as { code?: string }).code === 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH') {
+        options.onUnsafeRuntime?.(message)
+      }
       console.error(`[${suiteName}] task crashed: ${task.label}`)
       console.error(message)
     }
@@ -676,6 +721,7 @@ async function runOwnedTaskSuite(
         if (cleanupErrors.length) {
           const message = cleanupErrors.map(error => error instanceof Error ? error.message : String(error)).join('; ')
           resourceCleanupFailed = true
+          options.onUnsafeRuntime?.(message)
           blocked = true
           exitCode = 1
           reason = [reason, `DevTools resource cleanup failed: ${message}`].filter(Boolean).join('; ')
@@ -690,8 +736,15 @@ async function runOwnedTaskSuite(
       reason ??= signal.reason instanceof Error ? signal.reason.message : 'E2E suite cancelled'
     }
     const durationMs = Date.now() - startedAt
+    const runtimeBlocker = exitCode !== 0 ? task.runtimeBlocker : undefined
+    if (runtimeBlocker) {
+      blocked = true
+      reason = [reason, runtimeBlocker.reason].filter(Boolean).join('; ')
+    }
     results.push({
       artifacts: task.artifacts ?? [],
+      runtimeVersions: task.runtimeVersions,
+      runtimeBlocker,
       label: task.label,
       exitCode,
       durationMs,
@@ -699,6 +752,10 @@ async function runOwnedTaskSuite(
       reason,
     })
 
+    if (task.unsafeRuntimeReason) {
+      options.onUnsafeRuntime?.(task.unsafeRuntimeReason)
+      resourceCleanupFailed = true
+    }
     const status = exitCode === 0 ? 'pass' : 'fail'
     console.log(formatSuiteProgress(
       suiteName,
@@ -720,6 +777,7 @@ async function runOwnedTaskSuite(
   await options.afterAll?.()
   if (writeReport) {
     const report = createSuiteReport(results, suiteName, undefined, undefined, { ...reportContext, partial: reportContext.partial || signal.aborted })
+    options.onReport?.(report)
     suiteReportArtifact = {
       kind: 'suite-report',
       indexPath: path.join(report.reportDir, report.markdownFile),

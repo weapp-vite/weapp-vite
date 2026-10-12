@@ -1,8 +1,9 @@
-/* eslint-disable ts/no-use-before-define */
 import type {
   DevtoolsRuntimeHooks,
   DevtoolsRuntimeSessionOptions,
 } from '@weapp-vite/devtools-runtime'
+/* eslint-disable ts/no-use-before-define */
+import type { WechatDevtoolsSelectionOptions } from 'weapp-ide-cli'
 import { Buffer } from 'node:buffer'
 import {
   acquireSharedMiniProgram,
@@ -53,7 +54,7 @@ export interface MiniProgramLike {
   screenshot: (options?: { timeout?: number }) => Promise<string | Uint8Array | undefined>
   callWxMethod: (method: string, ...args: unknown[]) => Promise<unknown>
 }
-export interface RuntimeConnectionInput {
+export interface RuntimeConnectionInput extends WechatDevtoolsSelectionOptions {
   cliPath?: string
   installationId?: string
   runtimeProvider?: 'devtools' | 'headless'
@@ -88,6 +89,9 @@ interface AttachedSession {
 }
 export const connectionSchema = z.object({
   cliPath: z.string().trim().min(1).optional(),
+  devtoolsChannel: z.enum(['stable', 'rc', 'nightly']).optional(),
+  devtoolsVersion: z.string().regex(/^\d+(?:\.\d+){2,}$/).optional(),
+  requireOfficialLatest: z.boolean().optional(),
   projectPath: z.string().trim().min(1).describe('小程序项目路径；支持 workspaceRoot 相对路径'),
   timeout: z.number().int().positive().optional(),
   port: z.number().int().positive().max(65535).optional(),
@@ -97,6 +101,9 @@ export const connectionSchema = z.object({
 })
 export const connectionInputSchema = {
   cliPath: z.string().trim().min(1).optional(),
+  devtoolsChannel: z.enum(['stable', 'rc', 'nightly']).optional(),
+  devtoolsVersion: z.string().regex(/^\d+(?:\.\d+){2,}$/).optional(),
+  requireOfficialLatest: z.boolean().optional(),
   projectPath: z.string().trim().min(1).describe('小程序项目路径；支持 workspaceRoot 相对路径'),
   timeout: z.number().int().positive().optional(),
   port: z.number().int().positive().max(65535).optional(),
@@ -224,9 +231,13 @@ export class RuntimeSessionManager {
     this.attachedSessions.get(sessionKey)!.currentPage = page
   }
 
+  private selectionKey(input: RuntimeConnectionInput) {
+    return JSON.stringify([resolveSharedMiniProgramSessionKey(input), input.devtoolsChannel ?? null, input.devtoolsVersion ?? null, input.requireOfficialLatest ?? false])
+  }
+
   private async resolveInput(input: RuntimeConnectionInput) {
     const options = { ...input, projectPath: this.resolveProjectPath(input.projectPath) }
-    const key = resolveSharedMiniProgramSessionKey(options)
+    const key = this.selectionKey(options)
     let resolution = this.resolvedInputs.get(key)
     if (!resolution) {
       resolution = this.runtimeHooks.resolveSessionOptions?.(options) ?? Promise.resolve(options)
@@ -244,8 +255,8 @@ export class RuntimeSessionManager {
   }
 
   private resolveSessionKey(projectPath: string, input: RuntimeConnectionInput) {
-    const key = resolveSharedMiniProgramSessionKey({ ...input, projectPath })
-    return this.resolvedSessionKeys.get(key) ?? key
+    const key = this.selectionKey({ ...input, projectPath })
+    return input.installationId ? resolveSharedMiniProgramSessionKey({ ...input, projectPath }) : this.resolvedSessionKeys.get(key) ?? key
   }
 
   private attach(sessionKey: string, miniProgram: MiniProgramLike, projectPath: string) {

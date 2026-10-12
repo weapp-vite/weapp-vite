@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const activeTargetMock = vi.hoisted(() => vi.fn())
+vi.mock('weapp-ide-cli', () => ({ getActiveWechatDevtoolsTarget: activeTargetMock }))
+
 const spawnMock = vi.hoisted(() => vi.fn())
 const createConnectionMock = vi.hoisted(() => vi.fn())
 const mkdirMock = vi.hoisted(() => vi.fn())
@@ -86,6 +89,7 @@ function toPosixPath(value: string) {
 describe('detached mcp auto start', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    activeTargetMock.mockReturnValue(undefined)
     mkdirMock.mockResolvedValue(undefined)
     writeFileMock.mockResolvedValue(undefined)
     spawnMock.mockReturnValue({
@@ -135,6 +139,13 @@ describe('detached mcp auto start', () => {
     expect(runtimeManifestContent).toEqual(expect.stringContaining('"agentName": "codex"'))
     expect(runtimeManifestEncoding).toBe('utf8')
     expect(loggerSuccessMock).toHaveBeenCalledWith('MCP 服务已在后台自动启动：（AI 终端：codex）')
+  })
+
+  it('pins the active installation in the detached CLI process', async () => {
+    activeTargetMock.mockReturnValue({ cliPath: 'selected nightly cli' })
+    const { maybeStartDetachedMcpServer } = await import('./mcpDetached')
+    await maybeStartDetachedMcpServer({ cwd: '/repo/demo', mcpConfig: { autoStart: true } })
+    expect(spawnMock.mock.calls[0]![1]).toEqual(expect.arrayContaining(['--cli-path', 'selected nightly cli']))
   })
 
   it('reuses existing mcp server when the port is already open', async () => {

@@ -113,7 +113,7 @@ async function maybeBootstrapWechatDevtoolsSettings(argv: readonly string[], tar
 }
 
 /** 在动作开始前选择安装，沿用原有平台检查和缺失路径配置提示。 */
-export async function resolveWechatCliCommandTarget(options: Pick<RunWechatCliWithRetryOptions, 'target'> = {}) {
+export async function resolveWechatCliCommandTarget(options: RunWechatCliWithRetryOptions = {}) {
   if (!isOperatingSystemSupported(operatingSystemName)) {
     logger.warn(i18nText(
       `微信web开发者工具不支持当前平台：${operatingSystemName} !`,
@@ -122,6 +122,9 @@ export async function resolveWechatCliCommandTarget(options: Pick<RunWechatCliWi
     return
   }
 
+  if (options.cliPath || options.devtoolsChannel || options.devtoolsVersion || options.requireOfficialLatest) {
+    return await resolveWechatDevtoolsTarget(options)
+  }
   let target = options.target
   if (!target) {
     const { cliPath, source } = await resolveCliPath()

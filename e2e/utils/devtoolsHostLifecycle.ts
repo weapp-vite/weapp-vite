@@ -10,6 +10,7 @@ import { runWechatCliCommand } from '../../packages/weapp-ide-cli/src/cli/run-we
 import { readManagedProcessIdentity, sameManagedProcess } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
 import { resolveWechatDevtoolsTarget } from '../../packages/weapp-ide-cli/src/devtoolsTarget'
 import { resolveWechatDevtoolsInstallationRoot } from '../../packages/weapp-ide-cli/src/devtoolsTarget/host'
+import { selectWechatE2EInstallation } from './devtoolsCli'
 
 const HOST_WAIT_TIMEOUT_MS = 30_000
 const HOST_POLL_INTERVAL_MS = 100
@@ -142,13 +143,12 @@ export async function inspectDevtoolsHost(target: ResolvedWechatDevtoolsTarget):
 
 /** 只有启动前明确没有宿主时才取得本轮关闭权；手动或未知宿主直接停止当前 lane。 */
 export async function claimDevtoolsHost(cliPath = process.env[DEVTOOLS_CLI_ENV]?.trim()) {
-  if (!cliPath) {
-    return undefined
-  }
-  const target = await resolveWechatDevtoolsTarget({ cliPath })
+  const target = cliPath
+    ? await resolveWechatDevtoolsTarget({ cliPath })
+    : await selectWechatE2EInstallation()
   const initial = await inspectDevtoolsHost(target)
   if (initial.state !== 'cold') {
-    throw new Error(`Cannot claim WeChat DevTools host before task start: ${initial.state}. Preserve the existing host and stop the IDE lane.`)
+    throw Object.assign(new Error(`Cannot claim WeChat DevTools host before task start: ${initial.state}. Preserve the existing host and stop the IDE lane.`), { code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' })
   }
   return { target, initial, claimedAt: new Date().toISOString() } satisfies DevtoolsHostLease
 }

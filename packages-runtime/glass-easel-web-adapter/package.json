@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/glass-easel-web-adapter",
   "type": "module",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Experimental glass-easel component backend for weapp-vite Web runtime",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
@@ -38,7 +38,8 @@
     "test": "vitest run",
     "test:browser": "pnpm build && tsx test/browser.e2e.ts",
     "typecheck": "tsc --noEmit",
-    "test:types": "pnpm build && tsd --typings dist/index.d.mts --files test-d/public-api.test-d.ts"
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --typings dist/index.d.mts --files test-d/public-api.test-d.ts"
   },
   "peerDependencies": {
     "glass-easel": "^1.2.0",
@@ -50,7 +51,7 @@
   "devDependencies": {
     "playwright": "1.64.0",
     "tsd": "0.33.0",
-    "tsdown": "0.23.0",
+    "tsdown": "0.23.1",
     "tsx": "4.23.15",
     "typescript": "catalog:",
     "vite": "catalog:",
