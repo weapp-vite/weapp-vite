@@ -1,14 +1,18 @@
 import MagicString from 'magic-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { normalizeWxsFilename, transformWxsCode } from '@/wxs'
+import { transformWxsCode } from '@/wxs'
+import { normalizeWxsFilename } from '@/wxs/utils'
 import { createImportMetaDefineRegistry } from '../utils/importMeta'
 import { handleWxml } from './handle' // 替换为实际模块路径
 // 模拟 `normalizeWxsFilename` 与 `transformWxsCode` 方法
 vi.mock('@/wxs', () => ({
-  normalizeWxsFilename: vi.fn((filename, ext) => `normalized/${filename}.${ext}`),
   transformWxsCode: vi.fn(code => ({
     code: `transformed-${code}`,
   })),
+}))
+
+vi.mock('@/wxs/utils', () => ({
+  normalizeWxsFilename: vi.fn((filename, ext) => `normalized/${filename}.${ext}`),
 }))
 
 // 测试 `handleWxml`
@@ -17,7 +21,7 @@ describe('handleWxml', () => {
     vi.clearAllMocks()
   })
 
-  it('should normalize wxs filenames', () => {
+  it('should normalize wxs filenames', async () => {
     const data = {
       code: '<wxs src="./file.wxs"/>',
       wxsImportNormalizeTokens: [{ start: 6, end: 17, value: './file.wxs' }],
@@ -30,13 +34,13 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data)
+    const result = await handleWxml(data)
 
     expect(result.code).toContain('normalized/./file.wxs.wxs')
     expect(normalizeWxsFilename).toHaveBeenCalledWith('./file.wxs', 'wxs')
   })
 
-  it('should remove wxs language attributes', () => {
+  it('should remove wxs language attributes', async () => {
     const data = {
       code: '<wxs src="./file.wxs" lang="ts"/>',
       wxsImportNormalizeTokens: [],
@@ -49,12 +53,12 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data)
+    const result = await handleWxml(data)
 
     expect(result.code).not.toContain('lang="ts"')
   })
 
-  it('should transform inline wxs code', () => {
+  it('should transform inline wxs code', async () => {
     const data = {
       code: '<wxs module="test">console.log("test")</wxs>',
       wxsImportNormalizeTokens: [],
@@ -69,13 +73,13 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data)
+    const result = await handleWxml(data)
 
     expect(result.code).toContain('<wxs module="test">console.log("test")</wxs>')
     expect(transformWxsCode).toHaveBeenCalledWith('console.log("test")', { extension: 'wxs' })
   })
 
-  it('should transform event tokens', () => {
+  it('should transform event tokens', async () => {
     const data = {
       code: '<button bindtap="handleClick"/>',
       wxsImportNormalizeTokens: [],
@@ -90,12 +94,12 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data)
+    const result = await handleWxml(data)
 
     expect(result.code).toContain('bindtap="handleClick"')
   })
 
-  it('should transform wx directives for alipay output', () => {
+  it('should transform wx directives for alipay output', async () => {
     const data = {
       code: '<view wx:if="ok" wx:for="{{list}}" wx:key="id" />',
       wxsImportNormalizeTokens: [],
@@ -114,12 +118,12 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data)
+    const result = await handleWxml(data)
 
     expect(result.code).toBe('<view a:if="ok" a:for="{{list}}" a:key="id" />')
   })
 
-  it('should transform pascal-case tags for alipay output', () => {
+  it('should transform pascal-case tags for alipay output', async () => {
     const data = {
       code: '<HelloWorld><InnerItem /></HelloWorld>',
       wxsImportNormalizeTokens: [],
@@ -138,12 +142,12 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data)
+    const result = await handleWxml(data)
 
     expect(result.code).toBe('<hello-world><inner-item /></hello-world>')
   })
 
-  it('should remove comments', () => {
+  it('should remove comments', async () => {
     const data = {
       code: '<!-- This is a comment --><view></view>',
       wxsImportNormalizeTokens: [],
@@ -156,12 +160,12 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data)
+    const result = await handleWxml(data)
 
     expect(result.code).not.toContain('<!-- This is a comment -->')
   })
 
-  it('should remove code between start and end stacks', () => {
+  it('should remove code between start and end stacks', async () => {
     const data = {
       code: '<view>Keep</view><view>Remove</view>',
       wxsImportNormalizeTokens: [],
@@ -180,13 +184,13 @@ describe('handleWxml', () => {
     }
     const ms = new MagicString(data.code)
 
-    const result = handleWxml(data)
+    const result = await handleWxml(data)
     ms.remove(data.removalRanges[0].start, data.removalRanges[0].end)
     expect(ms.toString()).toBe('<view>Keep</view>')
     expect(result.code).toBe('<view>Keep</view>') // 验证最终结果
   })
 
-  it('memoizes results per token and options', () => {
+  it('memoizes results per token and options', async () => {
     const code = '<!-- comment --><wxs src="./file.wxs"></wxs>'
     const src = './file.wxs'
     const srcStart = code.indexOf(src)
@@ -205,21 +209,21 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const first = handleWxml(data)
+    const first = await handleWxml(data)
     expect(first.code).toBe('<wxs src="normalized/./file.wxs.wxs"></wxs>')
     expect(normalizeWxsFilename).toHaveBeenCalledTimes(1)
 
-    const second = handleWxml(data)
+    const second = await handleWxml(data)
     expect(second).toBe(first)
     expect(normalizeWxsFilename).toHaveBeenCalledTimes(1)
 
-    const third = handleWxml(data, { removeComment: false })
+    const third = await handleWxml(data, { removeComment: false })
     expect(third).not.toBe(first)
     expect(third.code).toContain('<!-- comment -->')
     expect(normalizeWxsFilename).toHaveBeenCalledTimes(2)
   })
 
-  it('should rewrite wxs tag and src extension for sjs', () => {
+  it('should rewrite wxs tag and src extension for sjs', async () => {
     const data = {
       code: '<wxs src="./file.wxs"></wxs>',
       wxsImportNormalizeTokens: [{ start: 10, end: 20, value: './file.wxs' }],
@@ -236,7 +240,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, {
+    const result = await handleWxml(data, {
       scriptModuleExtension: 'sjs',
       scriptModuleTag: 'import-sjs',
     })
@@ -244,7 +248,7 @@ describe('handleWxml', () => {
     expect(result.code).toBe('<import-sjs from="normalized/./file.wxs.sjs"></import-sjs>')
   })
 
-  it('should rewrite import src extension for templates', () => {
+  it('should rewrite import src extension for templates', async () => {
     const code = '<import src="./card.wxml" />'
     const value = './card.wxml'
     const start = code.indexOf(value)
@@ -262,7 +266,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, { templateExtension: 'axml' })
+    const result = await handleWxml(data, { templateExtension: 'axml' })
 
     expect(result.code).toBe('<import src="./card.axml" />')
   })
@@ -274,7 +278,7 @@ describe('handleWxml', () => {
     ['swan', 'swan'],
     ['jd', 'jxml'],
     ['xhs', 'xhsml'],
-  ])('rewrites template import extension for %s', (_platform, extension) => {
+  ])('rewrites template import extension for %s', async (_platform, extension) => {
     const code = '<import src="./card.html" />'
     const value = './card.html'
     const start = code.indexOf(value)
@@ -292,7 +296,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, { templateExtension: extension })
+    const result = await handleWxml(data, { templateExtension: extension })
 
     expect(result.code).toBe(`<import src="./card.${extension}" />`)
   })
@@ -300,7 +304,7 @@ describe('handleWxml', () => {
   it.each([
     ['alipay', 'sjs', '<wxs src="./helper.wxs"></wxs>', '<import-sjs from="normalized/./helper.wxs.sjs"></import-sjs>', 'import-sjs'],
     ['swan', 'sjs', '<wxs src="./helper.wxs"></wxs>', '<sjs src="normalized/./helper.wxs.sjs"></sjs>', undefined],
-  ])('rewrites script module for %s', (_platform, extension, code, expected, scriptModuleTag) => {
+  ])('rewrites script module for %s', async (_platform, extension, code, expected, scriptModuleTag) => {
     const value = './helper.wxs'
     const srcStart = code.indexOf(value)
     const closeTagStart = code.lastIndexOf('</wxs>')
@@ -322,12 +326,12 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, { scriptModuleExtension: extension, scriptModuleTag })
+    const result = await handleWxml(data, { scriptModuleExtension: extension, scriptModuleTag })
 
     expect(result.code).toBe(expected)
   })
 
-  it('uses extension-derived default script module tag when explicit tag is omitted', () => {
+  it('uses extension-derived default script module tag when explicit tag is omitted', async () => {
     const value = './helper.wxs'
     const code = '<wxs src="./helper.wxs"></wxs>'
     const srcStart = code.indexOf(value)
@@ -350,12 +354,12 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, { scriptModuleExtension: 'sjs' })
+    const result = await handleWxml(data, { scriptModuleExtension: 'sjs' })
 
     expect(result.code).toBe('<sjs src="normalized/./helper.wxs.sjs"></sjs>')
   })
 
-  it('reuses inline wxs transforms across instances', () => {
+  it('reuses inline wxs transforms across instances', async () => {
     const createData = (moduleName: string) => {
       const code = `<wxs module="${moduleName}">inline()</wxs>`
       const value = 'inline()'
@@ -373,16 +377,16 @@ describe('handleWxml', () => {
       }
     }
 
-    handleWxml(createData('first'))
+    await handleWxml(createData('first'))
     expect(transformWxsCode).toHaveBeenCalledTimes(1)
 
     vi.mocked(transformWxsCode).mockClear()
 
-    handleWxml(createData('second'))
+    await handleWxml(createData('second'))
     expect(transformWxsCode).not.toHaveBeenCalled()
   })
 
-  it('replaces import.meta.env.xxx expressions in wxml output', () => {
+  it('replaces import.meta.env.xxx expressions in wxml output', async () => {
     const code = '<image src="{{import.meta.env.VITE_CDN}}/logo.png" data-env="{{import.meta.env}}" />'
     const data = {
       code,
@@ -398,7 +402,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, {
+    const result = await handleWxml(data, {
       defineImportMetaEnv: {
         'import.meta.env.VITE_CDN': '"https://static.example.com"',
         'import.meta.env': '{"VITE_CDN":"https://static.example.com"}',
@@ -408,7 +412,7 @@ describe('handleWxml', () => {
     expect(result.code).toBe('<image src="{{\'https://static.example.com\'}}/logo.png" data-env="{{import.meta.env}}" />')
   })
 
-  it('uses double quotes inside mustache when outer attribute uses single quotes', () => {
+  it('uses double quotes inside mustache when outer attribute uses single quotes', async () => {
     const code = '<image src=\'{{import.meta.env.VITE_CDN}}/logo.png\' />'
     const data = {
       code,
@@ -424,7 +428,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, {
+    const result = await handleWxml(data, {
       defineImportMetaEnv: {
         'import.meta.env.VITE_CDN': '"https://static.example.com"',
       },
@@ -433,7 +437,7 @@ describe('handleWxml', () => {
     expect(result.code).toBe('<image src=\'{{"https://static.example.com"}}/logo.png\' />')
   })
 
-  it('memoizes import.meta.env replacements with define values in cache key', () => {
+  it('memoizes import.meta.env replacements with define values in cache key', async () => {
     const data = {
       code: '<view>{{import.meta.env.VITE_NAME}}</view>',
       wxsImportNormalizeTokens: [],
@@ -448,12 +452,12 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const first = handleWxml(data, {
+    const first = await handleWxml(data, {
       defineImportMetaEnv: {
         'import.meta.env.VITE_NAME': '"first"',
       },
     })
-    const second = handleWxml(data, {
+    const second = await handleWxml(data, {
       defineImportMetaEnv: {
         'import.meta.env.VITE_NAME': '"second"',
       },
@@ -464,7 +468,7 @@ describe('handleWxml', () => {
     expect(second).not.toBe(first)
   })
 
-  it('does not recursively replace import.meta.env text that comes from replacement values', () => {
+  it('does not recursively replace import.meta.env text that comes from replacement values', async () => {
     const data = {
       code: '<view>{{import.meta.env.VITE_NAME}}</view>',
       wxsImportNormalizeTokens: [],
@@ -479,7 +483,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, {
+    const result = await handleWxml(data, {
       defineImportMetaEnv: {
         'import.meta.env.VITE_NAME': '"contains import.meta.env literally"',
         'import.meta.env': '{"VITE_NAME":"contains import.meta.env literally"}',
@@ -489,7 +493,7 @@ describe('handleWxml', () => {
     expect(result.code).toBe('<view>{{\'contains import.meta.env literally\'}}</view>')
   })
 
-  it('replaces import.meta.url and import.meta.dirname but keeps bare import.meta untouched in wxml output', () => {
+  it('replaces import.meta.url and import.meta.dirname but keeps bare import.meta untouched in wxml output', async () => {
     const data = {
       code: '<view data-url="{{import.meta.url}}" data-dir="{{import.meta.dirname}}" data-meta="{{import.meta}}" />',
       wxsImportNormalizeTokens: [],
@@ -504,7 +508,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, {
+    const result = await handleWxml(data, {
       defineImportMetaEnv: {
         'import.meta.url': '"/pages/issue-431/index.wxml"',
         'import.meta.dirname': '"/pages/issue-431"',
@@ -515,7 +519,7 @@ describe('handleWxml', () => {
     expect(result.code).toBe('<view data-url="{{\'/pages/issue-431/index.wxml\'}}" data-dir="{{\'/pages/issue-431\'}}" data-meta="{{import.meta}}" />')
   })
 
-  it('keeps bare import.meta.env untouched in wxml output', () => {
+  it('keeps bare import.meta.env untouched in wxml output', async () => {
     const data = {
       code: '<view data-env="{{import.meta.env}}" />',
       wxsImportNormalizeTokens: [],
@@ -530,7 +534,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, {
+    const result = await handleWxml(data, {
       defineImportMetaEnv: {
         'import.meta.env': '{"MODE":"production"}',
       },
@@ -539,7 +543,7 @@ describe('handleWxml', () => {
     expect(result.code).toBe('<view data-env="{{import.meta.env}}" />')
   })
 
-  it('replaces import.meta.url and import.meta.dirname inside single-quoted attributes', () => {
+  it('replaces import.meta.url and import.meta.dirname inside single-quoted attributes', async () => {
     const data = {
       code: '<view data-url=\'{{import.meta.url}}\' data-dir=\'{{import.meta.dirname}}\' />',
       wxsImportNormalizeTokens: [],
@@ -554,7 +558,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, {
+    const result = await handleWxml(data, {
       defineImportMetaEnv: {
         'import.meta.url': '"/pages/issue-431/index.wxml"',
         'import.meta.dirname': '"/pages/issue-431"',
@@ -564,7 +568,7 @@ describe('handleWxml', () => {
     expect(result.code).toBe('<view data-url=\'{{"/pages/issue-431/index.wxml"}}\' data-dir=\'{{"/pages/issue-431"}}\' />')
   })
 
-  it('resolves import.meta replacements directly from import-meta registry and static context', () => {
+  it('resolves import.meta replacements directly from import-meta registry and static context', async () => {
     const data = {
       code: '<view data-url="{{import.meta.url}}" data-dir="{{import.meta.dirname}}" data-flag="{{import.meta.env.ISSUE_484_FLAG}}" data-env="{{import.meta.env}}" />',
       wxsImportNormalizeTokens: [],
@@ -579,7 +583,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, {
+    const result = await handleWxml(data, {
       importMetaDefineRegistry: createImportMetaDefineRegistry({
         baseEnv: {
           MODE: 'production',
@@ -595,7 +599,7 @@ describe('handleWxml', () => {
     expect(result.code).toBe('<view data-url="{{\'/pages/issue-484/index.wxml\'}}" data-dir="{{\'/pages/issue-484\'}}" data-flag="{{123456}}" data-env="{{import.meta.env}}" />')
   })
 
-  it('replaces numeric and boolean import.meta.env.xxx values in whole mustache output', () => {
+  it('replaces numeric and boolean import.meta.env.xxx values in whole mustache output', async () => {
     const data = {
       code: '<view data-num="{{import.meta.env.VITE_PORT}}" data-prod="{{import.meta.env.PROD}}" />',
       wxsImportNormalizeTokens: [],
@@ -610,7 +614,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, {
+    const result = await handleWxml(data, {
       defineImportMetaEnv: {
         'import.meta.env.VITE_PORT': '3000',
         'import.meta.env.PROD': 'true',
@@ -620,7 +624,7 @@ describe('handleWxml', () => {
     expect(result.code).toBe('<view data-num="{{3000}}" data-prod="{{true}}" />')
   })
 
-  it('escapes single quotes in import.meta.env string replacements inside mustache', () => {
+  it('escapes single quotes in import.meta.env string replacements inside mustache', async () => {
     const data = {
       code: '<view data-title="{{import.meta.env.VITE_TITLE}}" />',
       wxsImportNormalizeTokens: [],
@@ -635,7 +639,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, {
+    const result = await handleWxml(data, {
       defineImportMetaEnv: {
         'import.meta.env.VITE_TITLE': '"Bob\'s banner"',
       },
@@ -644,7 +648,7 @@ describe('handleWxml', () => {
     expect(result.code).toBe('<view data-title="{{\'Bob\\\'s banner\'}}" />')
   })
 
-  it('escapes double quotes when outer attribute uses single quotes', () => {
+  it('escapes double quotes when outer attribute uses single quotes', async () => {
     const data = {
       code: '<view data-title=\'{{import.meta.env.VITE_TITLE}}\' />',
       wxsImportNormalizeTokens: [],
@@ -659,7 +663,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, {
+    const result = await handleWxml(data, {
       defineImportMetaEnv: {
         'import.meta.env.VITE_TITLE': '"banner \\"double\\""',
       },

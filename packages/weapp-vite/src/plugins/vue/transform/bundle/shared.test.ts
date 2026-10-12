@@ -142,8 +142,8 @@ describe('emitSharedVueEntryAssets', () => {
     resolveVueSfcStyleIndependentSignatureMock.mockImplementation((source: string) => source.replace(/<style[\s\S]*?<\/style>/g, ''))
   })
 
-  it('emits template, class style wxs, and scoped slot assets through shared flow', () => {
-    const result = emitSharedVueEntryAssets({
+  it('emits template, class style wxs, and scoped slot assets through shared flow', async () => {
+    const result = await emitSharedVueEntryAssets({
       bundle: {},
       pluginCtx: { emitFile: vi.fn() },
       ctx: {} as any,
@@ -260,8 +260,8 @@ describe('emitSharedVueEntryAssets', () => {
     expect(getEntryBaseName('/project/src/pages/index/index')).toBe('/project/src/pages/index/index')
   })
 
-  it('emits bundle vue entry assets with shared component json defaults', () => {
-    const result = emitBundleVueEntryAssets({
+  it('emits bundle vue entry assets with shared component json defaults', async () => {
+    const result = await emitBundleVueEntryAssets({
       bundle: {},
       pluginCtx: { emitFile: vi.fn() },
       ctx: {} as any,

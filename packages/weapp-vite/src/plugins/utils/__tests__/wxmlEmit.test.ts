@@ -68,12 +68,12 @@ describe('emitWxmlAssetsWithCache', () => {
     finally { realpath.mockRestore() }
   })
 
-  it('emits assets only when content changes', () => {
+  it('emits assets only when content changes', async () => {
     const emittedCodeCache = ctx.runtimeState.wxml.emittedCode
     const addWatchFile = vi.fn()
     const emitFile = vi.fn()
 
-    const result = emitWxmlAssetsWithCache({
+    const result = await emitWxmlAssetsWithCache({
       runtime: { addWatchFile, emitFile },
       compiler: ctx as any,
       emittedCodeCache,
@@ -82,7 +82,7 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(result).toEqual(['pages/index/index.wxml'])
     expect(emitFile).toHaveBeenCalledTimes(1)
 
-    const second = emitWxmlAssetsWithCache({
+    const second = await emitWxmlAssetsWithCache({
       runtime: { addWatchFile, emitFile },
       compiler: ctx as any,
       emittedCodeCache,
@@ -94,7 +94,7 @@ describe('emitWxmlAssetsWithCache', () => {
     const updatedToken = ctx.wxmlService!.analyze('<view wx:if="true" />')
     ctx.wxmlService!.tokenMap.set(filePath, updatedToken)
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { addWatchFile, emitFile },
       compiler: ctx as any,
       emittedCodeCache,
@@ -103,13 +103,13 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(emitFile).toHaveBeenCalledTimes(2)
   })
 
-  it('filters emitted wxml assets by target ids during incremental hmr', () => {
+  it('filters emitted wxml assets by target ids during incremental hmr', async () => {
     const otherFilePath = '/project/src/pages/other/index.wxml'
     ctx.wxmlService!.tokenMap.set(otherFilePath, ctx.wxmlService!.analyze('<view>other</view>'))
     ctx.wxmlService!.depsMap.set(otherFilePath, new Set())
     const emitFile = vi.fn()
 
-    const result = emitWxmlAssetsWithCache({
+    const result = await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -196,14 +196,14 @@ describe('emitWxmlAssetsWithCache', () => {
     }).map(item => item.fileName)).toEqual(['../plugin/pages/demo/index.wxml'])
   })
 
-  it('emits a single wxml asset file with cache-aware skip and watch deps', () => {
+  it('emits a single wxml asset file with cache-aware skip and watch deps', async () => {
     const emitFile = vi.fn()
     const addWatchFile = vi.fn()
     const token = ctx.wxmlService!.analyze('<view />')
     const emittedCodeCache = new Map<string, string>()
     const deps = new Set(['/project/src/shared/helper.wxml'])
 
-    expect(emitWxmlAssetFile({
+    expect(await emitWxmlAssetFile({
       runtime: { emitFile, addWatchFile },
       id: filePath,
       fileName: 'pages/index/index.wxml',
@@ -220,7 +220,7 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(addWatchFile).toHaveBeenNthCalledWith(2, '/project/src/shared/helper.wxml')
     expect(emitFile).toHaveBeenCalledTimes(1)
 
-    expect(emitWxmlAssetFile({
+    expect(await emitWxmlAssetFile({
       runtime: { emitFile, addWatchFile },
       id: filePath,
       fileName: 'pages/index/index.wxml',
@@ -236,7 +236,7 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(emitFile).toHaveBeenCalledTimes(1)
   })
 
-  it('replaces import.meta.env expressions before emitting asset source', () => {
+  it('replaces import.meta.env expressions before emitting asset source', async () => {
     ctx = createMockCompiler({
       defineImportMetaEnv: {
         'import.meta.env': '{"VITE_CDN":"https://cdn.example.com"}',
@@ -249,7 +249,7 @@ describe('emitWxmlAssetsWithCache', () => {
 
     const emitFile = vi.fn()
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -259,7 +259,7 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(payload.source).toContain('{{\'https://cdn.example.com\'}}/logo.png')
   })
 
-  it('chooses inner double quotes when outer attribute uses single quotes before emitting asset source', () => {
+  it('chooses inner double quotes when outer attribute uses single quotes before emitting asset source', async () => {
     ctx = createMockCompiler({
       defineImportMetaEnv: {
         'import.meta.env.VITE_CDN': '"https://cdn.example.com"',
@@ -271,7 +271,7 @@ describe('emitWxmlAssetsWithCache', () => {
 
     const emitFile = vi.fn()
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -281,7 +281,7 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(payload.source).toContain('{{"https://cdn.example.com"}}/logo.png')
   })
 
-  it('replaces import.meta.url and import.meta.dirname but keeps bare import.meta untouched before emitting asset source', () => {
+  it('replaces import.meta.url and import.meta.dirname but keeps bare import.meta untouched before emitting asset source', async () => {
     ctx = createMockCompiler({
       defineImportMetaEnv: {
         'import.meta.env': '{"MODE":"production"}',
@@ -293,7 +293,7 @@ describe('emitWxmlAssetsWithCache', () => {
 
     const emitFile = vi.fn()
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -305,7 +305,7 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(payload.source).toContain('{{import.meta}}')
   })
 
-  it('keeps bare import.meta.env untouched before emitting asset source', () => {
+  it('keeps bare import.meta.env untouched before emitting asset source', async () => {
     ctx = createMockCompiler({
       defineImportMetaEnv: {
         'import.meta.env': '{"MODE":"production"}',
@@ -317,7 +317,7 @@ describe('emitWxmlAssetsWithCache', () => {
 
     const emitFile = vi.fn()
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -327,7 +327,7 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(payload.source).toContain('{{import.meta.env}}')
   })
 
-  it('replaces import.meta.url and import.meta.dirname inside single-quoted attributes before emitting asset source', () => {
+  it('replaces import.meta.url and import.meta.dirname inside single-quoted attributes before emitting asset source', async () => {
     ctx = createMockCompiler({
       defineImportMetaEnv: {
         'import.meta.env': '{"MODE":"production"}',
@@ -339,7 +339,7 @@ describe('emitWxmlAssetsWithCache', () => {
 
     const emitFile = vi.fn()
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -373,7 +373,7 @@ describe('emitWxmlAssetsWithCache', () => {
 
     const emitFile = vi.fn()
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -406,7 +406,7 @@ describe('emitWxmlAssetsWithCache', () => {
 
     const emitFile = vi.fn()
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -441,7 +441,7 @@ describe('emitWxmlAssetsWithCache', () => {
 
     const emitFile = vi.fn()
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -465,7 +465,7 @@ describe('emitWxmlAssetsWithCache', () => {
 
     const emitFile = vi.fn()
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -503,7 +503,7 @@ const cover = '/cover.png'
 
     const emitFile = vi.fn()
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -520,7 +520,7 @@ const cover = '/cover.png'
     expect(payload.source).not.toContain('<img')
   })
 
-  it('emits platform template extension and rewrites script module tags', () => {
+  it('emits platform template extension and rewrites script module tags', async () => {
     ctx = createMockCompiler({
       outputExtensions: { wxml: 'axml', wxs: 'sjs' },
       platform: 'alipay',
@@ -532,7 +532,7 @@ const cover = '/cover.png'
     const emittedCodeCache = ctx.runtimeState.wxml.emittedCode
     const emitFile = vi.fn()
 
-    const result = emitWxmlAssetsWithCache({
+    const result = await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache,
@@ -546,7 +546,7 @@ const cover = '/cover.png'
     expect(payload.source).toContain('from="./helper.sjs"')
   })
 
-  it('falls back to extension-derived script module tag when adapter does not override it', () => {
+  it('falls back to extension-derived script module tag when adapter does not override it', async () => {
     ctx = createMockCompiler({
       outputExtensions: { wxml: 'swan', wxs: 'sjs' },
       platform: 'swan',
@@ -557,7 +557,7 @@ const cover = '/cover.png'
 
     const emitFile = vi.fn()
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -569,7 +569,7 @@ const cover = '/cover.png'
     expect(payload.source).toContain('src="./helper.sjs"')
   })
 
-  it('rewrites wx directives and pascal-case tags for alipay output', () => {
+  it('rewrites wx directives and pascal-case tags for alipay output', async () => {
     ctx = createMockCompiler({
       outputExtensions: { wxml: 'axml', wxs: 'sjs' },
       platform: 'alipay',
@@ -581,7 +581,7 @@ const cover = '/cover.png'
     const emittedCodeCache = ctx.runtimeState.wxml.emittedCode
     const emitFile = vi.fn()
 
-    const result = emitWxmlAssetsWithCache({
+    const result = await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache,
@@ -593,7 +593,7 @@ const cover = '/cover.png'
     expect(payload.source).toContain('a:if="ok"')
   })
 
-  it('rewrites wechat event bindings for alipay output', () => {
+  it('rewrites wechat event bindings for alipay output', async () => {
     ctx = createMockCompiler({
       outputExtensions: { wxml: 'axml', wxs: 'sjs' },
       platform: 'alipay',
@@ -605,7 +605,7 @@ const cover = '/cover.png'
     const emittedCodeCache = ctx.runtimeState.wxml.emittedCode
     const emitFile = vi.fn()
 
-    emitWxmlAssetsWithCache({
+    await emitWxmlAssetsWithCache({
       runtime: { emitFile },
       compiler: ctx as any,
       emittedCodeCache,
@@ -619,7 +619,7 @@ const cover = '/cover.png'
     expect(payload.source).not.toContain('catchtap=')
   })
 
-  it('preserves native Alipay template syntax when the source is AXML', () => {
+  it('preserves native Alipay template syntax when the source is AXML', async () => {
     ctx = createMockCompiler({
       outputExtensions: { wxml: 'axml', wxs: 'sjs' },
       platform: 'alipay',
@@ -632,7 +632,7 @@ const cover = '/cover.png'
 
     const emitFile = vi.fn()
     const addWatchFile = vi.fn()
-    const result = emitWxmlAssetsWithCache({
+    const result = await emitWxmlAssetsWithCache({
       runtime: { addWatchFile, emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
@@ -644,7 +644,7 @@ const cover = '/cover.png'
     expect(addWatchFile).toHaveBeenCalledWith('/project/src/pages/native/helper.sjs')
   })
 
-  it('preserves native Douyin template syntax when the source is TTML', () => {
+  it('preserves native Douyin template syntax when the source is TTML', async () => {
     ctx = createMockCompiler({
       outputExtensions: { wxml: 'ttml', wxs: 'wxs' },
       platform: 'tt',
@@ -657,7 +657,7 @@ const cover = '/cover.png'
 
     const emitFile = vi.fn()
     const addWatchFile = vi.fn()
-    const result = emitWxmlAssetsWithCache({
+    const result = await emitWxmlAssetsWithCache({
       runtime: { addWatchFile, emitFile },
       compiler: ctx as any,
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,

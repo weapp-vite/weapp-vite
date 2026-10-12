@@ -1,4 +1,5 @@
 import type { HandleWxmlOptions } from '../types'
+import type { transformWxsCode } from '../wxs'
 import type { scanWxml } from './scan'
 import { defu } from '@weapp-core/shared'
 import MagicString from 'magic-string'
@@ -9,7 +10,7 @@ import {
   resolveScriptModuleTagName,
   shouldNormalizeScriptModuleAttributes,
 } from '../utils/wxmlScriptModule'
-import { normalizeWxsFilename, transformWxsCode } from '../wxs'
+import { normalizeWxsFilename } from '../wxs/utils'
 
 type ScanResult = ReturnType<typeof scanWxml>
 interface HandleWxmlReturn {
@@ -231,7 +232,7 @@ function setCachedResult(data: ScanResult, cacheKey: string, result: HandleWxmlR
   return result
 }
 
-function getCachedInlineWxsTransform(code: string, extension: string) {
+async function getCachedInlineWxsTransform(code: string, extension: string) {
   const key = `${extension}::${code}`
   const cached = inlineWxsTransformCache.get(key)
   if (cached) {
@@ -240,6 +241,14 @@ function getCachedInlineWxsTransform(code: string, extension: string) {
     return cached
   }
 
+  const { transformWxsCode } = await import('../wxs')
+  // 并发模板在同一次 import 等待后共享已成功的结果，不缓存失败的转换。
+  const initialized = inlineWxsTransformCache.get(key)
+  if (initialized) {
+    inlineWxsTransformCache.delete(key)
+    inlineWxsTransformCache.set(key, initialized)
+    return initialized
+  }
   const transformed = transformWxsCode(code, { extension })
   inlineWxsTransformCache.set(key, transformed)
   if (inlineWxsTransformCache.size > INLINE_WXS_CACHE_LIMIT) {
@@ -251,7 +260,7 @@ function getCachedInlineWxsTransform(code: string, extension: string) {
   return transformed
 }
 
-export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWxmlOptions) {
+export async function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWxmlOptions) {
   const opts = defu<Required<HandleWxmlOptions>, HandleWxmlOptions[]>(options, {
     defineImportMetaEnv: undefined,
     importMetaDefineRegistry: undefined,
@@ -353,7 +362,7 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
 
   if (shouldTransformInlineWxs) {
     for (const { end, start, value } of inlineWxsTokens) {
-      const { result } = getCachedInlineWxsTransform(value, normalizedScriptExtension ?? 'wxs')
+      const { result } = await getCachedInlineWxsTransform(value, normalizedScriptExtension ?? 'wxs')
       if (result?.code) {
         ms.update(start, end, `\n${result.code}`)
       }

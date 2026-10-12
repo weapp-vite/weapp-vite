@@ -32,7 +32,7 @@ describe('wxml', () => {
   defineBenchmark(
     'handleWxml (warm cache hit)',
     () => {
-      handleWxml(token, {
+      return handleWxml(token, {
         removeComment: true,
         transformEvent: true,
       })
@@ -49,7 +49,7 @@ describe('wxml', () => {
           return false
         },
       })
-      handleWxml(scanned, {
+      return handleWxml(scanned, {
         removeComment: true,
         transformEvent: true,
       })

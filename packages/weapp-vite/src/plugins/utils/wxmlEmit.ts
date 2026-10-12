@@ -124,7 +124,7 @@ export function resolveWxmlEmitTargets(options: {
     .filter((target): target is { id: string, token: any, fileName: string } => Boolean(target))
 }
 
-export function emitWxmlAssetFile(options: {
+export async function emitWxmlAssetFile(options: {
   runtime: WxmlEmitRuntime
   id: string
   fileName: string
@@ -146,7 +146,7 @@ export function emitWxmlAssetFile(options: {
     }
   }
 
-  const result = handleWxml(token, {
+  const result = await handleWxml(token, {
     removeComment: false,
     importMetaDefineRegistry,
     importMetaExtension: templateExtension,
@@ -170,7 +170,7 @@ export function emitWxmlAssetFile(options: {
   return true
 }
 
-export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
+export async function emitWxmlAssetsWithCache(options: EmitWxmlOptions): Promise<string[]> {
   const { runtime, compiler, subPackageMeta, emittedCodeCache, buildTarget = 'app' } = options
   const { wxmlService, configService, templateExtension, scriptModuleExtension, scriptModuleTag } = resolveWxmlEmitContext(compiler)
   const currentPackageWxmls = resolveWxmlEmitTargets({
@@ -184,7 +184,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
 
   for (const { id, fileName, token } of currentPackageWxmls) {
     emittedFiles.push(fileName)
-    emitWxmlAssetFile({
+    await emitWxmlAssetFile({
       runtime,
       id,
       fileName,

@@ -15,6 +15,7 @@ import {
   resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
+import { withRealpathScope } from '../../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER } from '../emit/constants'
 import { replaceImportMetaAccess, replaceImportMetaAccessInSfc } from './importMeta'
@@ -38,6 +39,30 @@ export function createTransformHook(state: CorePluginState) {
     webRuntime: configService.weappViteConfig?.injectWebRuntimeGlobals,
     injectRequestGlobals: configService.weappViteConfig?.injectRequestGlobals,
   }, configService.packageJson, message => logger.warn(message))
+
+  function resolveImportMetaTransformCode(id: string, code: string) {
+    if (!code.includes('import.meta')) {
+      return code
+    }
+    const sourceId = normalizeFsResolvedId(id)
+    const relativeOutputPath = sourceId
+      ? (
+          configService.relativeOutputPath?.(sourceId)
+          ?? configService.relativeAbsoluteSrcRoot?.(sourceId)
+        )
+      : undefined
+    if (!relativeOutputPath) {
+      return code
+    }
+    const options = {
+      importMetaDefineRegistry: configService.importMetaDefineRegistry,
+      extension: 'js',
+      relativePath: relativeOutputPath,
+    }
+    return sourceId?.endsWith('.vue')
+      ? replaceImportMetaAccessInSfc(code, options)
+      : replaceImportMetaAccess(code, options)
+  }
 
   function resolveRequestGlobalsTransformCode(id: string, code: string) {
     const requestGlobalsTargets = injectRequestGlobalsOptions?.targets?.length
@@ -120,28 +145,10 @@ export function createTransformHook(state: CorePluginState) {
     const startedAt = performance.now()
 
     try {
-      const sourceId = normalizeFsResolvedId(id)
-      const relativeOutputPath = sourceId
-        ? (
-            configService.relativeOutputPath?.(sourceId)
-            ?? configService.relativeAbsoluteSrcRoot?.(sourceId)
-          )
-        : undefined
-      const importMetaTransformOptions = relativeOutputPath
-        ? {
-            importMetaDefineRegistry: configService.importMetaDefineRegistry,
-            extension: 'js',
-            relativePath: relativeOutputPath,
-          }
-        : undefined
-      const importMetaCode = importMetaTransformOptions
-        ? (
-            sourceId?.endsWith('.vue')
-              ? replaceImportMetaAccessInSfc(code, importMetaTransformOptions)
-              : replaceImportMetaAccess(code, importMetaTransformOptions)
-          )
-        : code
-      const nextCode = resolveRequestGlobalsTransformCode(id, importMetaCode) ?? importMetaCode
+      const nextCode = withRealpathScope(() => {
+        const importMetaCode = resolveImportMetaTransformCode(id, code)
+        return resolveRequestGlobalsTransformCode(id, importMetaCode) ?? importMetaCode
+      })
 
       if (!injectOptions) {
         return nextCode === code

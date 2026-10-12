@@ -275,7 +275,7 @@ describe('emitVueBundleAssets platform output', () => {
     expect(emitFile.mock.calls.filter(call => call[0]?.fileName === 'weapp_vite_internal/slot-wrapper/index.js')).toHaveLength(1)
   })
 
-  it('returns original config/template when direct platform helpers hit fallback branches', () => {
+  it('returns original config/template when direct platform helpers hit fallback branches', async () => {
     expect(resolveVueBundlePlatformAssetOptions({
       configService: undefined,
       templateExtension: 'wxml',
@@ -337,14 +337,14 @@ describe('emitVueBundleAssets platform output', () => {
       platform: 'alipay',
     })).toBe('[]')
 
-    expect(normalizeVueTemplateForPlatform('<view', {
+    expect(await normalizeVueTemplateForPlatform('<view', {
       platform: 'alipay',
       templateExtension: 'axml',
       scriptModuleExtension: 'sjs',
     })).toBe('<view')
   })
 
-  it('preserves ordinary comments while applying mandatory conditional and platform normalization', () => {
+  it('preserves ordinary comments while applying mandatory conditional and platform normalization', async () => {
     const template = `
 <!-- keep <view> &amp; {{ raw }} -->
 <!-- #ifdef weapp -->
@@ -356,7 +356,7 @@ describe('emitVueBundleAssets platform output', () => {
 <import src="./shared.wxml" />
     `.trim()
 
-    const result = normalizeVueTemplateForPlatform(template, {
+    const result = await normalizeVueTemplateForPlatform(template, {
       platform: 'alipay',
       templateExtension: 'axml',
       scriptModuleExtension: 'sjs',
@@ -368,12 +368,12 @@ describe('emitVueBundleAssets platform output', () => {
     expect(result).toContain('<import src="./shared.axml" />')
   })
 
-  it('returns original template when wxml normalization throws internally', () => {
+  it('returns original template when wxml normalization throws internally', async () => {
     const handleSpy = vi.spyOn(wxmlHandleModule, 'handleWxml').mockImplementationOnce(() => {
       throw new Error('normalize failed')
     })
 
-    expect(normalizeVueTemplateForPlatform('<view />', {
+    expect(await normalizeVueTemplateForPlatform('<view />', {
       platform: 'alipay',
       templateExtension: 'axml',
       scriptModuleExtension: 'sjs',

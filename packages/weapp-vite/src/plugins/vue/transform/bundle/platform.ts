@@ -145,7 +145,7 @@ export function normalizeVueConfigForPlatform(
   }
 }
 
-export function transformVueTemplateForPlatform(
+export async function transformVueTemplateForPlatform(
   template: string,
   options: {
     platform: string
@@ -157,15 +157,15 @@ export function transformVueTemplateForPlatform(
   const token = scanWxml(template, {
     platform: options.platform as any,
   })
-  return handleWxml(token, {
+  return (await handleWxml(token, {
     removeComment: false,
     templateExtension: options.templateExtension,
     scriptModuleExtension: options.scriptModuleExtension,
     scriptModuleTag: options.scriptModuleTag,
-  }).code
+  })).code
 }
 
-export function normalizeVueTemplateForPlatform(
+export async function normalizeVueTemplateForPlatform(
   template: string,
   options: {
     platform: string
@@ -183,7 +183,7 @@ export function normalizeVueTemplateForPlatform(
   }
 
   try {
-    return transformVueTemplateForPlatform(template, {
+    return await transformVueTemplateForPlatform(template, {
       platform: options.platform,
       templateExtension: options.templateExtension,
       scriptModuleExtension: options.scriptModuleExtension,
@@ -197,7 +197,7 @@ export function normalizeVueTemplateForPlatform(
 
 export const trackPlatformTemplateAnalysis = registerVueTemplateToken
 
-export function emitPlatformTemplateAsset(
+export async function emitPlatformTemplateAsset(
   bundle: Record<string, any>,
   options: {
     ctx: CompilerContext
@@ -210,7 +210,7 @@ export function emitPlatformTemplateAsset(
     scriptModuleExtension?: string
   },
 ) {
-  const normalizedTemplate = normalizeVueTemplateForPlatform(options.template, {
+  const normalizedTemplate = await normalizeVueTemplateForPlatform(options.template, {
     platform: options.platform,
     templateExtension: options.templateExtension,
     scriptModuleExtension: options.scriptModuleExtension,

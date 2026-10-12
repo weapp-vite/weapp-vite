@@ -37,7 +37,7 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
   }
 
   if (isAppVueFile(filename) && hasAppShellTemplate(result)) {
-    emitAppShellAssetsIfNeeded({
+    await emitAppShellAssetsIfNeeded({
       bundle,
       pluginCtx,
       ctx,

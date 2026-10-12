@@ -462,10 +462,10 @@ describe('resolveVueLayoutAssetOptions', () => {
     expect(ensureScriptlessComponentAssetMock).not.toHaveBeenCalled()
   })
 
-  it('emits app shell component assets that consume app-level styles', () => {
+  it('emits app shell component assets that consume app-level styles', async () => {
     const bundle = {}
 
-    emitAppShellAssetsIfNeeded({
+    await emitAppShellAssetsIfNeeded({
       pluginCtx: { emitFile: vi.fn() },
       bundle,
       ctx: {} as any,
@@ -504,8 +504,8 @@ describe('resolveVueLayoutAssetOptions', () => {
     }))
   })
 
-  it('keeps only components referenced by the app shell template', () => {
-    emitAppShellAssetsIfNeeded({
+  it('keeps only components referenced by the app shell template', async () => {
+    await emitAppShellAssetsIfNeeded({
       pluginCtx: { emitFile: vi.fn() },
       bundle: {},
       ctx: {} as any,

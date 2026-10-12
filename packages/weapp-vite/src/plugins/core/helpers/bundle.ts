@@ -25,6 +25,7 @@ import {
 } from '../../../utils/outputChunk'
 import { resolveCompilerOutputExtensions } from '../../../utils/outputExtensions'
 import { isPathInside, normalizeRelativePath } from '../../../utils/path'
+import { withRealpathScope } from '../../../utils/realpathScope'
 import { emitJsonAsset } from '../../utils/wxmlEmit'
 
 const IMPLICIT_REQUIRE_RE = /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
@@ -517,14 +518,16 @@ export function removeImplicitPagePreloads(
   }
 
   const pageChunkFileNames = new Set<string>()
-  for (const entry of entriesMap.values()) {
-    if (!entry || entry.type !== 'page') {
-      continue
+  withRealpathScope(() => {
+    for (const entry of entriesMap.values()) {
+      if (!entry || entry.type !== 'page') {
+        continue
+      }
+      const relative = configService.relativeAbsoluteSrcRoot(entry.path)
+      const outputFile = changeFileExtension(relative, '.js')
+      pageChunkFileNames.add(outputFile)
     }
-    const relative = configService.relativeAbsoluteSrcRoot(entry.path)
-    const outputFile = changeFileExtension(relative, '.js')
-    pageChunkFileNames.add(outputFile)
-  }
+  })
 
   if (pageChunkFileNames.size === 0) {
     return

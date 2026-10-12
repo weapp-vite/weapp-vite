@@ -109,7 +109,7 @@ export async function normalizeTemplateAssetEntries(
       let normalized = code
       if (mayNeedTemplateNormalization(code, configService?.platform)) {
         const token = scanWxml(code, { platform: configService?.platform })
-        normalized = handleWxml(token, {
+        normalized = (await handleWxml(token, {
           removeComment: false,
           scriptModuleExtension: configService?.outputExtensions?.wxs,
           scriptModuleTag: resolveScriptModuleTagName({
@@ -117,7 +117,7 @@ export async function normalizeTemplateAssetEntries(
             scriptModuleExtension: configService?.outputExtensions?.wxs,
           }),
           templateExtension: configService?.outputExtensions?.wxml,
-        }).code
+        })).code
       }
       const localized = transformI18nOutputTemplate(ctx, fileName, normalized, subPackageMeta)
       let custom = localized

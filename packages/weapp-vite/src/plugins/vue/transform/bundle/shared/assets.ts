@@ -161,7 +161,7 @@ export function resolveClassStyleWxsAsset(
   }
 }
 
-export function emitSharedVueEntryAssets(options: {
+export async function emitSharedVueEntryAssets(options: {
   bundle: Record<string, any>
   pluginCtx: any
   ctx: CompilerContext
@@ -199,7 +199,7 @@ export function emitSharedVueEntryAssets(options: {
   const isAppVue = APP_VUE_LIKE_FILE_RE.test(filename)
 
   if (result.template && !isAppVue) {
-    emitPlatformTemplateAsset(bundle, {
+    await emitPlatformTemplateAsset(bundle, {
       ctx,
       pluginCtx,
       filename,
@@ -254,7 +254,7 @@ export function emitSharedVueEntryAssets(options: {
   }
 }
 
-export function emitBundleVueEntryAssets(options: {
+export async function emitBundleVueEntryAssets(options: {
   bundle: Record<string, any>
   pluginCtx: any
   ctx: CompilerContext
@@ -275,7 +275,7 @@ export function emitBundleVueEntryAssets(options: {
 }) {
   const jsonConfig = options.configService.weappViteConfig?.json
 
-  emitSharedVueEntryAssets({
+  await emitSharedVueEntryAssets({
     ...options,
     scopedSlotDefaults: jsonConfig?.defaults?.component,
     scopedSlotMergeStrategy: jsonConfig?.mergeStrategy,
@@ -307,7 +307,7 @@ export async function emitFallbackPageBundleAssets(options: {
     alipayNpmMode?: string
   }
 }) {
-  const { jsonConfig } = emitBundleVueEntryAssets({
+  const { jsonConfig } = await emitBundleVueEntryAssets({
     bundle: options.bundle,
     pluginCtx: options.pluginCtx,
     ctx: options.ctx,
@@ -392,7 +392,7 @@ export async function emitCompiledEntryBundleAssets(options: {
     )
   )
 
-  const { jsonConfig } = emitBundleVueEntryAssets({
+  const { jsonConfig } = await emitBundleVueEntryAssets({
     bundle: options.bundle,
     pluginCtx: options.pluginCtx,
     ctx: options.ctx,

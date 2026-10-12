@@ -337,7 +337,7 @@ function resolveAppShellComponentConfig(config: string | undefined, template: st
   }
 }
 
-export function emitAppShellAssetsIfNeeded(options: {
+export async function emitAppShellAssetsIfNeeded(options: {
   bundle: Record<string, any>
   pluginCtx: any
   ctx: CompilerContext
@@ -369,7 +369,7 @@ export function emitAppShellAssetsIfNeeded(options: {
     template: result.template,
   })
 
-  emitBundleVueEntryAssets({
+  await emitBundleVueEntryAssets({
     bundle: options.bundle,
     pluginCtx: options.pluginCtx,
     ctx: options.ctx,

@@ -253,30 +253,41 @@ describe('bundle platform helpers', () => {
     })).toBe('{')
   })
 
-  it('normalizes vue template only for platforms that require template transforms', () => {
-    expect(normalizeVueTemplateForPlatform('<view />', {
+  it('normalizes vue template only for platforms that require template transforms', async () => {
+    expect(await normalizeVueTemplateForPlatform('<view />', {
       platform: 'weapp',
       templateExtension: 'wxml',
       scriptModuleExtension: 'wxs',
     })).toBe('<view />')
 
-    expect(normalizeVueTemplateForPlatform('<view />', {
+    expect(await normalizeVueTemplateForPlatform('<view />', {
       platform: 'alipay',
       templateExtension: 'axml',
       scriptModuleExtension: 'sjs',
     })).toBe('normalized:<view />')
   })
 
-  it('falls back to original vue template when platform template transform throws', () => {
+  it('falls back to original vue template when platform template transform throws', async () => {
     handleWxmlMock.mockImplementation(() => {
       throw new Error('transform failed')
     })
 
-    expect(normalizeVueTemplateForPlatform('<view />', {
+    expect(await normalizeVueTemplateForPlatform('<view />', {
       platform: 'alipay',
       templateExtension: 'axml',
       scriptModuleExtension: 'sjs',
     })).toBe('<view />')
+  })
+
+  it('falls back once when asynchronous platform template transform rejects', async () => {
+    handleWxmlMock.mockRejectedValueOnce(new Error('async transform failed'))
+
+    expect(await normalizeVueTemplateForPlatform('<view />', {
+      platform: 'alipay',
+      templateExtension: 'axml',
+      scriptModuleExtension: 'sjs',
+    })).toBe('<view />')
+    expect(handleWxmlMock).toHaveBeenCalledTimes(1)
   })
 
   it('resolves alipay generic placeholder base from page-relative path', () => {
@@ -680,12 +691,12 @@ describe('bundle platform helpers', () => {
     }).not.toThrow()
   })
 
-  it('emits platform template assets even when template analysis fails', () => {
+  it('emits platform template assets even when template analysis fails', async () => {
     const analyze = vi.fn(() => {
       throw new Error('scan failed')
     })
 
-    const result = emitPlatformTemplateAsset({}, {
+    const result = await emitPlatformTemplateAsset({}, {
       ctx: {
         wxmlService: {
           analyze,

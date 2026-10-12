@@ -70,7 +70,7 @@ export function createRenderStartHook(state: CorePluginState) {
   return async function renderStart(this: any) {
     const startedAt = performance.now()
     try {
-      withRealpathScope(() => {
+      state.watchFilesSnapshot = await withRealpathScope(() => {
         const runtime: WxmlEmitRuntime = {
           emitFile: (asset) => {
             this.emitFile(asset)
@@ -78,7 +78,7 @@ export function createRenderStartHook(state: CorePluginState) {
         }
         emitJsonAssets.call(this, state)
         const targetIds = resolveIncrementalHmrWxmlTargetIds(state)
-        state.watchFilesSnapshot = emitWxmlAssetsWithCache({
+        return emitWxmlAssetsWithCache({
           runtime,
           compiler: ctx,
           subPackageMeta,

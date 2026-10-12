@@ -321,7 +321,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
         wxmlService.tokenMap.set(assets.template, token)
         await wxmlService.setTokenDeps(assets.template, token.deps)
         wxmlService.setWxmlComponentsMap(assets.template, token.components)
-        emitWxmlAssetFile({
+        await emitWxmlAssetFile({
           runtime: {
             emitFile: payload => pluginCtx.emitFile(payload),
           },

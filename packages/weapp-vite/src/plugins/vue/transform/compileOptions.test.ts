@@ -159,7 +159,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
       filename,
       options,
     )
-    const template = normalizeVueTemplateForPlatform(result.template!, {
+    const template = await normalizeVueTemplateForPlatform(result.template!, {
       platform,
       templateExtension: platform === 'weapp' ? 'wxml' : 'axml',
     })
