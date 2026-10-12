@@ -1,7 +1,7 @@
 import type { ManagedWechatHostIdentity } from './types'
 // eslint-disable-next-line e18e/ban-dependencies -- 身份核验使用系统只读进程查询，不启动或关闭 IDE。
 import { execa } from 'execa'
-import { readDarwinKernelPaths } from './installationExit/darwin'
+import { readDarwinKernelPaths } from './installationExit/darwinKernelPaths'
 
 const inspectionTimeoutMs = 3_000
 
