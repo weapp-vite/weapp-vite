@@ -1,7 +1,27 @@
+import { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from '@weapp-core/shared'
 import { describe, expect, it } from 'vitest'
 import { transformWxsCode } from './index'
 
 describe('transformWxsCode', () => {
+  it.each(MINI_PROGRAM_PLATFORM_DESCRIPTORS.map(platform => [platform.id, platform.outputExtensions.wxs ?? 'wxs']))('keeps typed script conversion and module output for %s', (_platform, extension) => {
+    const { result, importees } = transformWxsCode(`
+      const helper = require('./helper.wxs.ts')
+      const count: number = 2
+      module.exports = { count, helper }
+    `, { extension })
+    const output = result?.code ?? ''
+    expect(output).not.toContain(': number')
+    expect(output).toMatch(new RegExp(`require\\(['"]\\./helper\\.${extension}['"]\\)`))
+    expect(importees).toEqual([{ source: './helper.wxs.ts' }])
+    if (extension === 'sjs') {
+      expect(output).toContain('export default')
+      expect(output).not.toContain('module.exports')
+    }
+    else {
+      expect(output).toContain('module.exports')
+    }
+  })
+
   it('rewrites require extensions to target script module extension', () => {
     const code = `
       const foo = require('./utils.wxs')

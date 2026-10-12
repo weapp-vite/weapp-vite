@@ -9,7 +9,8 @@ import {
   resolveScriptModuleTagName,
   shouldNormalizeScriptModuleAttributes,
 } from '../utils/wxmlScriptModule'
-import { normalizeWxsFilename, transformWxsCode } from '../wxs'
+import { transformWxsCode } from '../wxs'
+import { normalizeWxsFilename } from '../wxs/utils'
 
 type ScanResult = ReturnType<typeof scanWxml>
 interface HandleWxmlReturn {
