@@ -15,7 +15,6 @@ import { composeSourceMaps } from '../../../../utils/sourcemap'
 import { createJsxDiagnostics } from '../../../jsx/compileJsx/diagnostics'
 import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from '../../../jsx/compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from '../../../jsx/compileJsx/template'
-import { transformVueJsxScript } from '../../../jsx/vueJsxTransform'
 import { getMiniProgramTemplatePlatform } from '../../compiler/template'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
 import { generateScopedId } from '../scopedId'
@@ -372,7 +371,7 @@ export async function compileScriptPhase(
       }
     }
     const jsxTransformed = isJsxScript
-      ? transformVueJsxScript(scriptCode, filename, options?.sourceMap !== false)
+      ? (await import('../../../jsx/vueJsxTransform')).transformVueJsxScript(scriptCode, filename, options?.sourceMap !== false)
       : { code: scriptCode, map: null }
     const bindingManifest = jsxTemplate?.template
       ? jsxTemplate.bindingManifest
