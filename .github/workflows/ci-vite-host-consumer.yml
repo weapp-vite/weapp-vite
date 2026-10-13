@@ -364,5 +364,9 @@ jobs:
       build_command: pnpm build:pkgs:ci
       install_playwright: true
       playwright_browsers: chromium
-      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless web
+      main_command: |
+        pnpm exec vitest run --config scripts/vitest.config.mjs scripts/hostCapabilityDiagnostic.test.mjs
+        pnpm exec cross-env WEAPP_VITE_CONSUMER_HOST_DIAGNOSTICS=1 node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless web
+      artifact_name: web-host-capability-${{ matrix.host }}-${{ github.sha }}
+      artifact_path: .cache/web-consumer-diagnostic/host-capability-*.json
     secrets: inherit
