@@ -42,6 +42,7 @@ pub struct NativeCompilerScriptSpan {
 #[derive(Clone)]
 pub struct NativeCompilerScriptAnalysis {
     pub imports: Vec<NativeCompilerScriptImport>,
+    pub has_default_export: bool,
     pub define_options_statements: Vec<NativeCompilerScriptSpan>,
     pub registered_components: Option<Vec<NativeCompilerRegisteredComponent>>,
     pub reserved_props_diagnostic: Option<NativeReservedPropsDiagnostic>,
@@ -50,10 +51,20 @@ pub struct NativeCompilerScriptAnalysis {
 #[derive(Default)]
 struct CompilerDiagnosticVisitor {
     has_lone_surrogate_literal: bool,
+    has_default_export: bool,
     reserved_props: ReservedPropsAnalysis,
 }
 
 impl<'a> Visit<'a> for CompilerDiagnosticVisitor {
+    fn visit_export_default_declaration(
+        &mut self,
+        export: &oxc_ast::ast::ExportDefaultDeclaration<'a>,
+    ) {
+        // 与原 Babel 遍历对齐，保留 ambient module 内声明的既有判断语义。
+        self.has_default_export = true;
+        walk::walk_export_default_declaration(self, export);
+    }
+
     fn visit_string_literal(&mut self, literal: &oxc_ast::ast::StringLiteral<'a>) {
         // Oxc 对孤立代理项使用内部编码，不能通过 Rust String 无损返回 JS。
         // 校验解析后的值，覆盖模块名、导入名、属性键及宏字符串。
@@ -126,6 +137,7 @@ fn analyze_compiler_script_program(
     }
     Some(NativeCompilerScriptAnalysis {
         imports: collect_imports(program),
+        has_default_export: diagnostics.has_default_export,
         define_options_statements: collect_define_options_statements(program, code),
         registered_components: collect_registered_components(program),
         reserved_props_diagnostic: diagnostics.reserved_props.finish(code),
@@ -196,5 +208,7 @@ pub fn analyze_compiler_scripts_native(
     results
 }
 
+#[cfg(test)]
+mod default_export_tests;
 #[cfg(test)]
 mod tests;

@@ -64,6 +64,7 @@ export function readNativeCompilerScriptAnalysis(value: unknown, code: string): 
     }
     const raw = value as Record<string, unknown>
     const imports = readDenseArray(raw.imports, readImport)
+    const hasDefaultExport = raw.hasDefaultExport
     let previousEnd = 0
     const defineOptionsStatements = readDenseArray<NativeCompilerScriptSpan>(raw.defineOptionsStatements, (value) => {
       if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -84,6 +85,7 @@ export function readNativeCompilerScriptAnalysis(value: unknown, code: string): 
     const rawComponents = raw.registeredComponents
     const registeredComponents = rawComponents === undefined ? undefined : readDenseArray(rawComponents, readComponent)
     if (imports === undefined || defineOptionsStatements === undefined
+      || (hasDefaultExport !== undefined && typeof hasDefaultExport !== 'boolean')
       || (rawComponents !== undefined && registeredComponents === undefined)) {
       return undefined
     }
@@ -103,6 +105,7 @@ export function readNativeCompilerScriptAnalysis(value: unknown, code: string): 
     }
     return {
       imports,
+      ...(hasDefaultExport === undefined ? {} : { hasDefaultExport }),
       defineOptionsStatements,
       ...(registeredComponents === undefined ? {} : { registeredComponents }),
       ...(reservedPropsDiagnostic === undefined ? {} : { reservedPropsDiagnostic }),

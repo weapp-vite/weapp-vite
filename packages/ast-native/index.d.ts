@@ -44,6 +44,7 @@ export interface NativeCompilerScriptSpan {
 
 export interface NativeCompilerScriptAnalysis {
   imports: NativeCompilerScriptImport[]
+  hasDefaultExport: boolean
   defineOptionsStatements: NativeCompilerScriptSpan[]
   registeredComponents?: NativeCompilerRegisteredComponent[]
   reservedPropsDiagnostic?: { warningOffset?: number }

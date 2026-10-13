@@ -9,6 +9,7 @@ const summary = results?.[0]
 if (summary) {
   expectType<NativeCompilerScriptSpan[]>(summary.defineOptionsStatements)
   expectType<NativeCompilerScriptImport[]>(summary.imports)
+  expectType<boolean | undefined>(summary.hasDefaultExport)
   expectType<NativeCompilerRegisteredComponent[] | undefined>(summary.registeredComponents)
   expectType<{ warningOffset?: number } | undefined>(summary.reservedPropsDiagnostic)
   expectType<number | undefined>(summary.reservedPropsDiagnostic?.warningOffset)
@@ -18,4 +19,5 @@ if (summary) {
 expectError(analyzeCompilerScriptsWithNative([{ code: 1 }]))
 expectError(analyzeCompilerScriptsWithNative([{ code: '', moduleId: 'wevu' }]))
 expectNotAssignable<NativeCompilerScriptAnalysis>(summary)
+expectNotAssignable<NativeCompilerScriptAnalysis['hasDefaultExport']>('true')
 expectNotAssignable<NativeCompilerScriptAnalysis['reservedPropsDiagnostic']>({ warningOffset: '1' })

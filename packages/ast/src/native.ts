@@ -51,6 +51,8 @@ export interface NativeCompilerScriptSpan {
 
 export interface NativeCompilerScriptAnalysis {
   imports: NativeCompilerScriptImport[]
+  /** 旧 binding 缺失该事实时，由编译阶段执行原有默认导出检查。 */
+  hasDefaultExport?: boolean
   defineOptionsStatements: NativeCompilerScriptSpan[]
   registeredComponents?: NativeCompilerRegisteredComponent[]
   /** 缺失表示旧 binding 或需由 Babel 完成诊断；空对象表示已确认无警告。 */

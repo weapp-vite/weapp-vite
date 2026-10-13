@@ -32,6 +32,53 @@ afterEach(async () => {
 })
 
 describe('compiler native result validation', () => {
+  it.each(['null', '0', '"true"', '{}', '[]'])('rejects malformed default export facts only for the failed item: %s', async (fact) => {
+    const { native } = await fixture(`exports.analyzeCompilerScriptsNative = () => [valid, { ...valid, hasDefaultExport: ${fact} }, valid]`)
+    const binding = native.loadNativeAstBindingSync()!
+    const analyze = vi.fn(binding.analyzeCompilerScriptsNative)
+    binding.analyzeCompilerScriptsNative = analyze
+
+    expect(native.analyzeCompilerScriptsWithNative(Array.from({ length: 3 }, () => ({ code: 'export default {}' })))).toEqual([valid, null, valid])
+    expect(analyze).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps old binding summaries usable and accepts both default export facts', async () => {
+    const { native } = await fixture('exports.analyzeCompilerScriptsNative = () => [valid, { ...valid, hasDefaultExport: true }, { ...valid, hasDefaultExport: false }]')
+
+    expect(native.analyzeCompilerScriptsWithNative(Array.from({ length: 3 }, () => ({ code: 'export default {}' })))).toEqual([
+      valid,
+      { ...valid, hasDefaultExport: true },
+      { ...valid, hasDefaultExport: false },
+    ])
+  })
+
+  it('reads the default export fact once and owns the validated value', () => {
+    let reads = 0
+    const result = readNativeCompilerScriptAnalysis({
+      ...valid,
+      get hasDefaultExport() {
+        if (++reads > 1) {
+          throw new Error('default export fact was read again')
+        }
+        return true
+      },
+    }, 'export default {}')
+
+    expect(result?.hasDefaultExport).toBe(true)
+    expect(result?.hasDefaultExport).toBe(true)
+    expect(reads).toBe(1)
+  })
+
+  it('isolates a throwing default export getter without retrying the batch', async () => {
+    const { native } = await fixture('exports.analyzeCompilerScriptsNative = () => [valid, { ...valid, get hasDefaultExport() { throw new Error("default export failure") } }, valid]')
+    const binding = native.loadNativeAstBindingSync()!
+    const analyze = vi.fn(binding.analyzeCompilerScriptsNative)
+    binding.analyzeCompilerScriptsNative = analyze
+
+    expect(native.analyzeCompilerScriptsWithNative(Array.from({ length: 3 }, () => ({ code: 'export default {}' })))).toEqual([valid, null, valid])
+    expect(analyze).toHaveBeenCalledTimes(1)
+  })
+
   it.each([
     'null',
     '[]',

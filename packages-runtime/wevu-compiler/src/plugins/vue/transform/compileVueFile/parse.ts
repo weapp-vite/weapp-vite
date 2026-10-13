@@ -5,6 +5,7 @@ import type { JsonConfig, JsonMergeContext } from '../../../../types/json'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { CompileVueFileOptions } from './types'
 import { createHash } from 'node:crypto'
+import process from 'node:process'
 import * as t from '@weapp-vite/ast/babelTypes'
 import MagicString from 'magic-string'
 import { mayContainPageDeclaration, mayContainPageMeta, prepareSfcScriptCompile } from '../../../../pageDeclaration'
@@ -15,7 +16,7 @@ import { createSfcParseError, readAndParseSfc, resolveSfcBlockSrc } from '../../
 import { inlineScriptSetupDefineOptionsArgs } from '../defineOptions/inline'
 import { extractJsonMacroFromScriptSetupWithSourceMap, mayContainJsonMacro } from '../jsonMacros'
 import { createJsonMerger } from '../jsonMerge'
-import { analyzeNativeScriptBlocks } from './nativeAnalysis'
+import { analyzeNativeScriptBlocks, mayShareNativeOptionsAnalysis } from './nativeAnalysis'
 
 const SETUP_CALL_RE = /\bsetup\s*\(/
 const DEFINE_OPTIONS_CALL_RE = /\bdefineOptions\s*\(/
@@ -245,13 +246,16 @@ function resolvePreprocessSourceMap(
   return sourceMap
 }
 
-function hasNativeAnalysisBatch(
-  descriptor: Pick<SFCDescriptor, 'script' | 'scriptSetup'>,
+function hasSharedNativeAnalysis(
+  descriptor: Pick<SFCDescriptor, 'script' | 'scriptSetup' | 'template'>,
   defineOptionsSource: SFCScriptBlock | undefined,
+  isAppFile: boolean,
 ) {
-  // 单个脚本只会触发一次 N-API 往返；原有 Babel 路径已经能完成同一项工作，
-  // 只有至少两个可共享解析结果的输入时才进入 native 批量入口。
+  // 多输入共享既有批次；普通脚本的单输入也可同时供局部组件与默认导出检查消费。
   return [descriptor.script, descriptor.scriptSetup, defineOptionsSource].filter(Boolean).length > 1
+    || (process.env.WEAPP_VITE_NATIVE === '1' && Boolean(process.env.WEAPP_VITE_NATIVE_AST_PATH?.trim())
+      && !isAppFile && !descriptor.scriptSetup
+      && Boolean(descriptor.script && mayShareNativeOptionsAnalysis(descriptor.script.content, descriptor.template)))
 }
 
 export async function parseVueFile(
@@ -519,7 +523,7 @@ export async function parseVueFile(
   }
 
   const isAppFile = APP_VUE_FILE_RE.test(filename)
-  const nativeAnalysis = hasNativeAnalysisBatch(descriptorForCompile, defineOptionsSource)
+  const nativeAnalysis = hasSharedNativeAnalysis(descriptorForCompile, defineOptionsSource, isAppFile)
     ? analyzeNativeScriptBlocks(descriptorForCompile, filename, defineOptionsSource)
     : undefined
   const defineOptionsHash = defineOptionsSource
