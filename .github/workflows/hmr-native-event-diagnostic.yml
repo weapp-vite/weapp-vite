@@ -1,0 +1,169 @@
+name: HMR Native Event Diagnostic
+run-name: HMR native event diagnostic @ ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      controller-sha:
+        description: Full controller SHA; must match the selected workflow ref
+        type: string
+        required: true
+
+concurrency:
+  group: hmr-native-event-diagnostic
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    name: Linux / one diagnostic sequence per side
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      EXPECTED_CONTROLLER_SHA: ${{ inputs.controller-sha }}
+      CONTROLLER_SHA: ${{ github.sha }}
+      BASELINE_SHA: 73b76f4acde84a4ac8c25f4b816119b19704ac28
+      CANDIDATE_SHA: 4dede68ef91956a0af36223856f7cbed1f7f8d25
+      TOOLS_ROOT: ${{ github.workspace }}/tools
+      BASELINE_ROOT: ${{ github.workspace }}/baseline
+      CANDIDATE_ROOT: ${{ github.workspace }}/candidate
+      REPORT_ROOT: ${{ runner.temp }}/hmr-native-event-diagnostic
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the exact diagnostic controller
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: tools
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check out the fixed baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: baseline
+          ref: 73b76f4acde84a4ac8c25f4b816119b19704ac28
+          persist-credentials: false
+      - name: Check out the fixed candidate and original collector
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: candidate
+          ref: 4dede68ef91956a0af36223856f7cbed1f7f8d25
+          persist-credentials: false
+      - name: Verify dispatch and immutable checkout identities
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process'
+          import { createHash } from 'node:crypto'
+          import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+          import path from 'node:path'
+          mkdirSync(process.env.REPORT_ROOT, { recursive: false })
+          const identities = Object.fromEntries(['TOOLS', 'BASELINE', 'CANDIDATE'].map(side => {
+            const cwd = process.env[`${side}_ROOT`]
+            return [side.toLowerCase(), {
+              revision: execFileSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' }).trim(),
+              clean: !execFileSync('git', ['status', '--porcelain', '--untracked-files=normal'], { cwd, encoding: 'utf8' }).trim(),
+              lockfileSha256: createHash('sha256').update(readFileSync(path.join(cwd, 'pnpm-lock.yaml'))).digest('hex'),
+              declaredPackageManager: JSON.parse(readFileSync(path.join(cwd, 'package.json'), 'utf8')).packageManager,
+            }]
+          }))
+          writeFileSync(path.join(process.env.REPORT_ROOT, 'dispatch.json'), JSON.stringify({
+            kind: 'diagnostic', performanceVerdict: false, identities,
+            controllerSha: process.env.CONTROLLER_SHA,
+            expectedControllerSha: process.env.EXPECTED_CONTROLLER_SHA,
+            historicalInstallTree: 'unavailable; fresh exact-source installs are diagnostic only',
+          }, null, 2) + '\n')
+          if (!/^[a-f0-9]{40}$/.test(process.env.EXPECTED_CONTROLLER_SHA ?? '')
+            || process.env.EXPECTED_CONTROLLER_SHA !== process.env.CONTROLLER_SHA
+            || identities.tools.revision !== process.env.CONTROLLER_SHA
+            || identities.baseline.revision !== process.env.BASELINE_SHA
+            || identities.candidate.revision !== process.env.CANDIDATE_SHA
+            || Object.values(identities).some(value => !value.clean)) {
+            throw new Error('Require exact clean controller, baseline and candidate commits')
+          }
+          NODE
+      - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+        with:
+          package_json_file: candidate/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: |
+            baseline/pnpm-lock.yaml
+            candidate/pnpm-lock.yaml
+      - name: Install baseline dependencies in its own checkout
+        working-directory: baseline
+        run: pnpm install --frozen-lockfile
+      - name: Install candidate dependencies in its own checkout
+        working-directory: candidate
+        run: pnpm install --frozen-lockfile
+      - name: Collect the original sequences with native event tracing
+        working-directory: candidate
+        env:
+          RD_LOG_OUTPUT: readable
+          RD_LOG: notify_debouncer_full=trace,rolldown_dev::bundle_coordinator=trace,rolldown_dev::bundling_task=trace
+        run: >-
+          node --import tsx "$TOOLS_ROOT/scripts/hmrNativeEventDiagnostic.mjs"
+          --tools "$TOOLS_ROOT" --controller-sha "$CONTROLLER_SHA"
+          --baseline "$BASELINE_ROOT" --candidate "$CANDIDATE_ROOT"
+          --output "$REPORT_ROOT/results"
+          > "$REPORT_ROOT/driver.log" 2>&1
+      - name: Sanitize outer driver output before uploading
+        id: sanitize-driver
+        if: always()
+        working-directory: candidate
+        run: |
+          if [[ ! -f "$REPORT_ROOT/driver.log" ]]; then
+            echo 'safe=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          node --import tsx --input-type=module <<'NODE'
+          import { existsSync } from 'node:fs'
+          import { appendFile, readFile, rm, writeFile } from 'node:fs/promises'
+          import path from 'node:path'
+          import { pathToFileURL } from 'node:url'
+          const file = path.join(process.env.REPORT_ROOT, 'driver.log')
+          if (existsSync(file)) {
+            try {
+              const { sanitizeAcceptanceText } = await import(pathToFileURL(path.join(process.env.CANDIDATE_ROOT, 'scripts/benchmarkTemplatesHmr/acceptanceRunner.ts')).href)
+              const raw = await readFile(file, 'utf8')
+              await writeFile(file, sanitizeAcceptanceText(raw, [process.env.TOOLS_ROOT, process.env.BASELINE_ROOT, process.env.CANDIDATE_ROOT, process.env.REPORT_ROOT]))
+            }
+            catch {
+              await rm(file)
+              await writeFile(path.join(process.env.REPORT_ROOT, 'driver-log-redaction-failed.json'), '{"kind":"diagnostic","performanceVerdict":false,"reason":"outer driver output removed because sanitization failed; original partial collector/dev logs remain in results"}\n')
+              await appendFile(process.env.GITHUB_OUTPUT, 'safe=true\n')
+              throw new Error('Outer driver output sanitization failed')
+            }
+          }
+          await appendFile(process.env.GITHUB_OUTPUT, 'safe=true\n')
+          NODE
+      - name: Record diagnostic boundaries
+        if: always()
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, existsSync, readFileSync } from 'node:fs'
+          import path from 'node:path'
+          const file = path.join(process.env.REPORT_ROOT, 'results/report.json')
+          const report = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : undefined
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, [
+            `Diagnostic completeness: ${report?.status ?? 'incomplete'}; performance verdict: false.`,
+            'Fixed baseline and candidate each run the original four scenarios, two edit/restore cycles, once and serially.',
+            'Readable native tracing adds overhead. No 20-pair acceptance, confirmation, policy or baseline is changed.',
+            'The former Linux install tree is unavailable. Native identities are same-install loader probes, not observations of the measured dev process.',
+            'Rust event intervals use their own wall clock; task association is unknown when ambiguous. Do not subtract them from JS wall/profile clocks.',
+            'A complete diagnostic does not revoke the original regression or replace Stable DevTools acceptance.',
+            '',
+          ].join('\n\n'))
+          NODE
+      - name: Upload complete logs and partial diagnostic evidence
+        if: always() && steps.sanitize-driver.outputs.safe == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hmr-native-event-diagnostic-${{ github.sha }}
+          path: ${{ runner.temp }}/hmr-native-event-diagnostic
+          if-no-files-found: error
+          retention-days: 90
