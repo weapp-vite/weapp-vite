@@ -22,7 +22,7 @@ jobs:
       install_playwright: true
       playwright_browsers: chromium
       main_command: >-
-        pnpm exec cross-env WEAPP_VITE_CONSUMER_WEB_DIAGNOSTICS=1
+        pnpm exec cross-env WEAPP_VITE_CONSUMER_WEB_DIAGNOSTICS=1 WEAPP_VITE_CONSUMER_HOST_DIAGNOSTICS=1
         node --import tsx e2e/scripts/run-e2e-commands.ts
         node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv headless web
       artifact_name: web-consumer-diagnostic-linux-wv
