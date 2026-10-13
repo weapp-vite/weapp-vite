@@ -333,7 +333,7 @@ jobs:
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: 40
-      main_command: pnpm e2e:ci:pr
+      main_command: ${{ matrix.os == 'windows-latest' && 'pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:pr' || 'pnpm e2e:ci:pr' }}
       e2e_platform: weapp
       increase_ulimit: true
       consume_build_artifact: miniapp-${{ matrix.os }}-node-22-weapp-build
