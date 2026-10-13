@@ -175,11 +175,13 @@
     }
   },
   "dependencies": {
+    "@babel/core": "catalog:",
     "@babel/plugin-transform-modules-commonjs": "^8.0.1",
     "@babel/preset-env": "^8.0.7",
     "@babel/preset-typescript": "^8.0.7",
     "@jridgewell/remapping": "^2.3.5",
     "@modelcontextprotocol/node": "^2.1.1",
+    "@modelcontextprotocol/server": "^2.3.1",
     "@typescript-eslint/parser": "^8.71.1",
     "@vercel/detect-agent": "^1.2.6",
     "@volar/typescript": "^2.4.28",
