@@ -1,5 +1,4 @@
 import type { CAC } from 'cac'
-import { initConfig } from '@weapp-core/init'
 import logger from '../../logger'
 
 export function registerInitCommand(cli: CAC) {
@@ -7,6 +6,7 @@ export function registerInitCommand(cli: CAC) {
     .command('init')
     .action(async () => {
       try {
+        const { initConfig } = await import('@weapp-core/init')
         await initConfig({
           command: 'weapp-vite',
         })
