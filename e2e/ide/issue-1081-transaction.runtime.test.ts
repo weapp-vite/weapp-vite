@@ -105,10 +105,13 @@ describe('issue #1081: delayed compiler transaction', () => {
     const stylesheet = path.join(project, 'dist/pages/index/index.wxss')
     const beforeStyles = await readEmittedStylesheet(stylesheet)
     const source = path.join(project, 'src/batch.ts')
+    async function saveSource(file: string, content: string) {
+      const pending = `${file}.pending`
+      await writeFile(pending, content)
+      await renameAtomicFile(pending, file)
+    }
     async function save(label: string, color: string, hold = false) {
-      const pending = `${source}.pending`
-      await writeFile(pending, `export const label = '${label}'\nexport const utility = 'bg-[${color}]'\n${hold ? '// BATCH_HOLD' : ''}\n`)
-      await renameAtomicFile(pending, source)
+      await saveSource(source, `export const label = '${label}'\nexport const utility = 'bg-[${color}]'\n${hold ? '// BATCH_HOLD' : ''}\n`)
     }
     await save('held', '#dbeafe', true)
     await expect.poll(() => access(path.join(project, 'batch.entered')).then(() => true, () => false), { timeout: 30_000 }).toBe(true)
@@ -124,7 +127,7 @@ describe('issue #1081: delayed compiler transaction', () => {
     await dom.check('latest', session, await session.currentPage())
     const vueFile = path.join(project, 'src/pages/index/index.vue')
     const beforeModuleVersion = await version()
-    await writeFile(vueFile, (await readFile(vueFile, 'utf8')).replace('#123', '#456'))
+    await saveSource(vueFile, (await readFile(vueFile, 'utf8')).replace('#123', '#456'))
     await expect.poll(() => readEmittedStylesheet(stylesheet), { timeout: 45_000 }).toMatch(/color:\s*#(?:445566|456)\b/)
     const moduleNode = (await (await session.currentPage())!.$('#module-panel'))!
     const classes = await (moduleNode.attribute ?? moduleNode.attr).call(moduleNode, 'class')
@@ -136,7 +139,8 @@ describe('issue #1081: delayed compiler transaction', () => {
     const committedVersion = await version()
     const committedStyles = await readEmittedStylesheet(stylesheet)
     await dom.act('failed', async () => {
-      await writeFile(source, 'export const label = \'invalid\'\nexport const utility = \'bg-[#abcdef]\'\n// BATCH_FAIL\n')
+      // 原地截断可能先发布合法的空源码；故障批次与正常保存共用原子替换。
+      await saveSource(source, 'export const label = \'invalid\'\nexport const utility = \'bg-[#abcdef]\'\n// BATCH_FAIL\n')
       await expect.poll(() => dev!.getOutput(), { timeout: 30_000 }).toContain('issue1081 injected transform failure')
     })
     expect(await version()).toBe(committedVersion)
