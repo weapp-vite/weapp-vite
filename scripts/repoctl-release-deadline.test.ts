@@ -82,24 +82,41 @@ async function readProcessRecords(evidence: string): Promise<ProcessRecord[]> {
   return content.trim().split('\n').filter(Boolean).map(line => JSON.parse(line) as ProcessRecord)
 }
 
-async function processState(pid: number, ownerToken: string) {
-  if (process.platform === 'linux') {
+async function linuxProcessState(pid: number, ownerToken: string, procRoot = '/proc') {
+  const directory = path.join(procRoot, String(pid))
+  const terminalState = async () => {
+    const stat = await fs.readFile(path.join(directory, 'stat'), 'utf8')
+    const state = stat.slice(stat.lastIndexOf(')') + 2, stat.lastIndexOf(')') + 3)
+    return state === 'Z' || state === 'X'
+  }
+  try {
+    if (await terminalState()) {
+      return 'zombie'
+    }
     try {
-      const [environment, stat] = await Promise.all([
-        fs.readFile(`/proc/${pid}/environ`, 'utf8'),
-        fs.readFile(`/proc/${pid}/stat`, 'utf8'),
-      ])
-      if (['Z', 'X'].includes(stat.slice(stat.lastIndexOf(')') + 2, stat.lastIndexOf(')') + 3))) {
-        return 'zombie'
-      }
+      const environment = await fs.readFile(path.join(directory, 'environ'), 'utf8')
       return environment.split('\0').includes(`FIXTURE_OWNER_TOKEN=${ownerToken}`) ? 'running' : 'foreign'
     }
     catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        throw error
+      const code = (error as NodeJS.ErrnoException).code
+      // 退出可能发生在两次读取之间；权限拒绝本身不是退出或可清理的证明。
+      if ((code === 'EACCES' || code === 'EPERM') && await terminalState()) {
+        return 'zombie'
       }
-      return 'gone'
+      throw error
     }
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error
+    }
+    return 'gone'
+  }
+}
+
+async function processState(pid: number, ownerToken: string) {
+  if (process.platform === 'linux') {
+    return linuxProcessState(pid, ownerToken)
   }
   const result = spawnSync('ps', ['eww', '-p', String(pid), '-o', 'command='], { encoding: 'utf8' })
   if (result.status !== 0) {
@@ -136,6 +153,26 @@ async function cleanupFixtureProcesses(evidence: string, ownerToken: string) {
 }
 
 describe.skipIf(process.platform === 'win32')('Ubuntu release stage deadline', () => {
+  it.each(['Z', 'X'])('recognizes terminal state %s without treating an unreadable live process as exited', async (state) => {
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'release-proc-state-'))
+    temporaryDirectories.push(directory)
+    const processDirectory = path.join(directory, '17')
+    await fs.mkdir(processDirectory)
+    const environment = path.join(processDirectory, 'environ')
+    const stat = path.join(processDirectory, 'stat')
+    await fs.writeFile(environment, 'FIXTURE_OWNER_TOKEN=owned\0', { mode: 0o000 })
+    await expect(fs.readFile(environment)).rejects.toMatchObject({ code: 'EACCES' })
+    await fs.writeFile(stat, `17 (fixture) ${state} 1 17`)
+    await expect(linuxProcessState(17, 'owned', directory)).resolves.toBe('zombie')
+    await fs.writeFile(stat, '17 (fixture) S 1 17')
+    await expect(linuxProcessState(17, 'owned', directory)).rejects.toMatchObject({ code: 'EACCES' })
+    await fs.chmod(environment, 0o600)
+    await expect(linuxProcessState(17, 'owned', directory)).resolves.toBe('running')
+    await expect(linuxProcessState(17, 'another-owner', directory)).resolves.toBe('foreign')
+    await fs.rm(processDirectory, { recursive: true })
+    await expect(linuxProcessState(17, 'owned', directory)).resolves.toBe('gone')
+  })
+
   it('uses the remaining shared budget for later stages and reserves forced termination time', async () => {
     const fixture = await createDeadlineFixture()
     expect((await fixture.run('verify', 1000)).exitCode).toBe(0)
