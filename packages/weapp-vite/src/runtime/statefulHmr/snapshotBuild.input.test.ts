@@ -3,9 +3,11 @@ import type { CompilerContext } from '../../context'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
 import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { createRuntimeState } from '../runtimeState'
 import { createStatefulHmrSidecarModuleCode } from './sidecarPlugin'
 import { buildStatefulHmrSnapshot } from './snapshotBuild'
@@ -75,6 +77,58 @@ function sidecarLoader() {
   const addWatchFile = vi.fn()
   return { load: (id: string) => load.call({ addWatchFile } as never, id), addWatchFile }
 }
+
+it.each(['path', 'file-url', 'vite-fs'] as const)('delegates a %s Vue input without resolving native entry ownership', async (format) => {
+  const owner = createOwner()
+  const file = path.join(root, 'src', 'page.vue')
+  const load = await inputLoader(new Map([[compilerSourceId(file), null]]), owner)
+  const ctx = harness.context as CompilerContext
+  const relative = vi.spyOn(ctx.configService, 'relativeAbsoluteSrcRoot')
+  const entries = vi.spyOn(ctx.runtimeState.build.hmr.entriesMap, 'get')
+  const viteFsId = `/@fs/${normalizeFsResolvedId(file).replace(/^\//, '')}`
+  const id = format === 'file-url' ? pathToFileURL(file).href : format === 'vite-fs' ? viteFsId : file
+
+  expect(await load(id)).toBeNull()
+  expect(relative).not.toHaveBeenCalled()
+  expect(entries).not.toHaveBeenCalled()
+})
+
+it('delegates the normalized app input without resolving native entry ownership', async () => {
+  const owner = createOwner()
+  const file = path.join(root, 'src', 'app.ts')
+  const load = await inputLoader(new Map([[compilerSourceId(file), null]]), owner)
+  const ctx = harness.context as CompilerContext
+  Object.assign(ctx.scanService, { appEntry: { path: pathToFileURL(file).href } })
+  const relative = vi.spyOn(ctx.configService, 'relativeAbsoluteSrcRoot')
+  const entries = vi.spyOn(ctx.runtimeState.build.hmr.entriesMap, 'get')
+
+  expect(await load(file)).toBeNull()
+  expect(relative).not.toHaveBeenCalled()
+  expect(entries).not.toHaveBeenCalled()
+})
+
+it('still rejects a removed ordinary input after checking native entry ownership', async () => {
+  const owner = createOwner()
+  const file = path.join(root, 'src', 'shared.ts')
+  const load = await inputLoader(new Map([[compilerSourceId(file), null]]), owner)
+  const ctx = harness.context as CompilerContext
+  const relative = vi.spyOn(ctx.configService, 'relativeAbsoluteSrcRoot')
+
+  expect(() => load(file)).toThrow('Source removed from snapshot')
+  expect(relative).toHaveBeenCalledWith(normalizeFsResolvedId(file))
+})
+
+it.each(['raw', 'url'])('keeps Vue ?%s asset admission before delegation', async (query) => {
+  const owner = createOwner()
+  const file = path.join(root, 'src', 'page.vue')
+  fs.writeFileSync(file, '<template><view>FROZEN</view></template>')
+  const host = getCompilerHmrHost(owner)
+  host.seed(file, fs.readFileSync(file, 'utf8'))
+  const load = await inputLoader(host.freeze([]).sources, owner)
+  fs.writeFileSync(file, '<template><view>FUTURE</view></template>')
+
+  expect(() => load(`${file}?${query}`)).toThrow(CompilerHmrResyncError)
+})
 
 it.each([
   ['script', 'index.js', 'Page({ data: { marker: "FROZEN" } })'],

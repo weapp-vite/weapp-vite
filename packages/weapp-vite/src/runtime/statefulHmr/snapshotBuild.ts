@@ -162,10 +162,14 @@ export async function buildStatefulHmrSnapshot(
             // 入口归属与固定源码身份共用本次同步解析，下一次加载重新读取真实路径。
             return withRealpathScope(() => {
               const sourceId = normalizeFsResolvedId(id)
+              // Vue 和 app 已有固定源码 loader，不需要再查询原生入口的真实路径归属。
+              if (sourceId.endsWith('.vue')
+                || (ctx.scanService.appEntry?.path && normalizeFsResolvedId(ctx.scanService.appEntry.path) === sourceId)) {
+                return null
+              }
               const nativeEntry = ctx.runtimeState.build.hmr.entriesMap.get(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(sourceId)))
               // 发现的组件记录暂时指向引用它的入口；按注册身份保留原生加载及其伴随资产输出。
-              if (sourceId.endsWith('.vue') || nativeEntry
-                || (ctx.scanService.appEntry?.path && normalizeFsResolvedId(ctx.scanService.appEntry.path) === sourceId)) {
+              if (nativeEntry) {
                 return null
               }
               const source = sources.get(compilerSourceId(id))
