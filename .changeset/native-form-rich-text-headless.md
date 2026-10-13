@@ -5,7 +5,7 @@
 "@weapp-vite/miniprogram-automator": patch
 ---
 
-修复 headless 原生控件的渲染与默认提交能力：
+fix(simulator): 修复 headless 原生控件的渲染与默认提交能力
 
 - Node/browser 共用原生 form submit 默认动作，保留按钮禁用、catch 路径、组件/插槽归属、折叠宿主事件与异步结果边界；具名原生字段从当前渲染绑定收集，picker 数组不再依赖字符串反推。
 - 后续原生监听器同步失败时仍收尾已启动的异步处理；多个失败通过带原始 cause 的 AggregateError 保留，不遗留未处理的 Promise 拒绝。
