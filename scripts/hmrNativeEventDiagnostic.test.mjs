@@ -93,11 +93,13 @@ describe('native event diagnostic resource contract', () => {
 
 it('keeps native event diagnostics manual, serial, frozen and separate from performance acceptance', async () => {
   const config = parse(await readFile(new URL('../.github/workflows/hmr-native-event-diagnostic.yml', import.meta.url), 'utf8'))
-  expect(Object.keys(config.on)).toEqual(['workflow_dispatch'])
+  expect(Object.keys(config.on)).toEqual(['workflow_call', 'workflow_dispatch'])
   expect(config.on.workflow_dispatch.inputs['controller-sha']).toMatchObject({ required: true, type: 'string' })
+  expect(config.on.workflow_call.inputs['controller-sha']).toMatchObject({ required: true, type: 'string' })
   expect(config.concurrency).toEqual({ 'group': 'hmr-native-event-diagnostic', 'cancel-in-progress': false })
   expect(Object.keys(config.jobs)).toEqual(['diagnose'])
   const job = config.jobs.diagnose
+  expect(job.if).toBe('github.event_name == \'workflow_dispatch\'')
   expect(job['runs-on']).toBe('ubuntu-24.04')
   expect(job.strategy).toBeUndefined()
   const checkouts = job.steps.filter(step => step.uses?.startsWith('actions/checkout@'))
@@ -126,4 +128,32 @@ it('keeps native event diagnostics manual, serial, frozen and separate from perf
   expect(source).toContain('const input = contract.HMR_INPUTS[0]')
   expect(source).toContain('kind: \'diagnostic\', performanceVerdict: false')
   expect(source).not.toMatch(/evaluateGate|pairAcceptanceRuns|runHmrAttributionAcceptance|collectAcceptanceBatch|HMR_ACCEPTANCE_PAIRS|MAX_SCENARIOS/)
+})
+
+it('routes only an explicit manual native-event selection through the registered restore workflow', async () => {
+  const config = parse(await readFile(new URL('../.github/workflows/auto-import-hmr-diagnostic.yml', import.meta.url), 'utf8'))
+  expect(Object.keys(config.on)).toEqual(['workflow_dispatch'])
+  const inputs = config.on.workflow_dispatch.inputs
+  expect(inputs['candidate-sha']).toEqual({
+    description: 'Full committed candidate SHA; must match the selected workflow ref',
+    type: 'string',
+    required: true,
+  })
+  expect(inputs.diagnostic).toMatchObject({ type: 'choice', required: false, default: 'auto-import-restore', options: ['auto-import-restore', 'native-event'] })
+  expect(inputs['controller-sha']).toMatchObject({ type: 'string', required: false })
+  expect(config.concurrency['cancel-in-progress']).toBe(false)
+  const native = config.jobs['native-event']
+  expect(native).toEqual({
+    if: 'github.event_name == \'workflow_dispatch\' && inputs.diagnostic == \'native-event\'',
+    name: 'Native HMR event diagnostic',
+    uses: './.github/workflows/hmr-native-event-diagnostic.yml',
+    with: { 'controller-sha': `\${{ inputs.controller-sha }}` },
+  })
+  const restore = config.jobs.diagnose
+  expect(restore.if).toBe('github.event_name == \'workflow_dispatch\' && (!inputs.diagnostic || inputs.diagnostic == \'auto-import-restore\')')
+  expect(restore.env).toMatchObject({ EXPECTED_CANDIDATE_SHA: `\${{ inputs.candidate-sha }}`, BASELINE_SHA: 'e7862e61dd83e3b9e356ac1e176267b31ab298af' })
+  const collect = restore.steps.filter(step => step.run?.includes('benchmark-auto-import-hmr.ts'))
+  expect(collect.map(step => step.name)).toEqual(['Collect baseline manual restore timings', 'Collect candidate control outputs', 'Collect candidate probe timings and profile'])
+  expect(collect.every(step => step.env.BENCH_ITERATIONS === '1' && step.env.BENCH_SCENARIOS === '50,69')).toBe(true)
+  expect(Object.keys(config.jobs)).toEqual(['native-event', 'diagnose'])
 })

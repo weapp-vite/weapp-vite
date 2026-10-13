@@ -1,5 +1,5 @@
 name: Auto-import HMR Restore Diagnostic
-run-name: Auto-import HMR restore diagnostic @ ${{ github.sha }}
+run-name: ${{ inputs.diagnostic == 'native-event' && 'Native HMR event diagnostic' || 'Auto-import HMR restore diagnostic' }} @ ${{ github.sha }}
 
 on:
   workflow_dispatch:
@@ -8,6 +8,18 @@ on:
         description: Full committed candidate SHA; must match the selected workflow ref
         type: string
         required: true
+      diagnostic:
+        description: Choose the diagnostic; the default retains the original restore sequence
+        type: choice
+        required: false
+        default: auto-import-restore
+        options:
+          - auto-import-restore
+          - native-event
+      controller-sha:
+        description: Full controller SHA; required when native-event is selected
+        type: string
+        required: false
 
 concurrency:
   group: auto-import-hmr-diagnostic-${{ github.sha }}
@@ -17,7 +29,14 @@ permissions:
   contents: read
 
 jobs:
+  native-event:
+    if: github.event_name == 'workflow_dispatch' && inputs.diagnostic == 'native-event'
+    name: Native HMR event diagnostic
+    uses: ./.github/workflows/hmr-native-event-diagnostic.yml
+    with:
+      controller-sha: ${{ inputs.controller-sha }}
   diagnose:
+    if: github.event_name == 'workflow_dispatch' && (!inputs.diagnostic || inputs.diagnostic == 'auto-import-restore')
     name: Ubuntu / 50 and 69 manual configurations
     runs-on: ubuntu-24.04
     timeout-minutes: 120

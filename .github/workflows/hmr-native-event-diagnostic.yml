@@ -2,6 +2,12 @@ name: HMR Native Event Diagnostic
 run-name: HMR native event diagnostic @ ${{ github.sha }}
 
 on:
+  workflow_call:
+    inputs:
+      controller-sha:
+        description: Full controller SHA; must match the calling workflow ref
+        type: string
+        required: true
   workflow_dispatch:
     inputs:
       controller-sha:
@@ -18,6 +24,7 @@ permissions:
 
 jobs:
   diagnose:
+    if: github.event_name == 'workflow_dispatch'
     name: Linux / one diagnostic sequence per side
     runs-on: ubuntu-24.04
     timeout-minutes: 180

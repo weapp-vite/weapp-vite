@@ -4,7 +4,8 @@
 
 ## 固定输入与边界
 
-- 手动 workflow 为 `hmr-native-event-diagnostic.yml`，只有 `workflow_dispatch`。调度者必须提供完整 controller SHA，且与所选 workflow ref 和 tools checkout 完全相同。独立 concurrency 不取消 PR CI，也不自动触发新的性能验收。
+- `hmr-native-event-diagnostic.yml` 提供 `workflow_dispatch` 和 `workflow_call`，仅通过手动入口启动。调度者必须提供完整 controller SHA，且与所选 workflow ref 和 tools checkout 完全相同。独立 concurrency 不取消 PR CI，也不自动触发新的性能验收。
+- 新 workflow 尚未在默认分支注册、直接 dispatch 返回 404 时，使用已注册的 `auto-import-hmr-diagnostic.yml`：选择诊断分支 ref，显式传 `diagnostic=native-event` 和完整 `controller-sha`。该 wrapper 的原必填 `candidate-sha` 继续保留，调度时同样传 controller SHA；native job 只向 reusable workflow 传 `controller-sha`，实际 candidate 仍固定为下述历史提交。省略 `diagnostic` 或选择默认 `auto-import-restore` 时，完整保留原 restore 诊断；两种 job 互斥，controller SHA 缺失或不符在采集前失败。正式 `hmr-attribution-acceptance.yml` 不参与本入口。
 - 单个 `ubuntu-24.04` job、Node `24.18.0`，无 matrix。baseline 固定为 `73b76f4acde84a4ac8c25f4b816119b19704ac28`，candidate/collector 固定为 `4dede68ef91956a0af36223856f7cbed1f7f8d25`。两侧分别使用自己的原 lockfile 安装；tools 只提供 controller 源码，不参与依赖构建。
 - driver 从 candidate 动态加载原 `acceptanceContract.ts`、`acceptanceRunner.ts` 和机器 lease。先调用原 `rebuildAcceptanceCheckouts`，随后按 baseline → candidate 串行调用原 `collectAcceptanceRun`，仅使用 `HMR_INPUTS[0]`、round `0`、batch `primary`，每侧一次。
 - 保留原四种场景及实际 JSON → template → script → style 顺序，每场景两次 edit/restore，共每侧 16 次 mutation。保持 marker seed、完整输入 manifest、mutation/restore hash、输出 scope、baseline profile off/candidate on、poll 120ms、settle 300ms、预算 500ms、场景 30s、首次构建 120s、每侧 15min、每份依赖构建 20min、总 deadline 165min 和 job 180min。
