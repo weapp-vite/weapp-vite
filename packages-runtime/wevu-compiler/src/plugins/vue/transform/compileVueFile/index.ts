@@ -186,6 +186,7 @@ export async function compileVueFile(
     },
     source,
     parsed.scriptPreprocessMap,
+    parsed.nativeScriptAnalysis,
   )
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap

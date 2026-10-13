@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import process from 'node:process'
-import { isNativeCompilerScriptAnalysis } from './native/compilerAnalysis'
+import { readNativeCompilerScriptAnalysis } from './native/compilerAnalysis'
 import { isNativeScriptAnalysisBatchShape, readNativeScriptAnalysis } from './native/scriptAnalysis'
 
 const require = createRequire(import.meta.url)
@@ -53,6 +53,8 @@ export interface NativeCompilerScriptAnalysis {
   imports: NativeCompilerScriptImport[]
   defineOptionsStatements: NativeCompilerScriptSpan[]
   registeredComponents?: NativeCompilerRegisteredComponent[]
+  /** 缺失表示旧 binding 或需由 Babel 完成诊断；空对象表示已确认无警告。 */
+  reservedPropsDiagnostic?: { warningOffset?: number }
 }
 
 export interface NativeAstBinding {
@@ -239,7 +241,7 @@ export function analyzeCompilerScriptsWithNative(inputs: NativeCompilerScriptInp
   return inputs.map((input, index) => {
     try {
       const result: unknown = results[index]
-      return isNativeCompilerScriptAnalysis(result, input.code) ? result : fallback()
+      return readNativeCompilerScriptAnalysis(result, input.code) ?? fallback()
     }
     catch {
       return fallback()

@@ -46,6 +46,7 @@ export interface NativeCompilerScriptAnalysis {
   imports: NativeCompilerScriptImport[]
   defineOptionsStatements: NativeCompilerScriptSpan[]
   registeredComponents?: NativeCompilerRegisteredComponent[]
+  reservedPropsDiagnostic?: { warningOffset?: number }
 }
 
 export function analyzeCompilerScriptsNative(

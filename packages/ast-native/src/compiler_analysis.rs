@@ -6,12 +6,14 @@ use oxc_ast::ast::{
     Expression, ImportDeclarationSpecifier, ImportOrExportKind, ModuleExportName, Program,
     Statement,
 };
-use oxc_ast_visit::Visit;
+use oxc_ast_visit::{Visit, walk};
 
 use crate::parse_program;
 
 mod components;
 use components::{NativeCompilerRegisteredComponent, collect_registered_components};
+mod reserved_props;
+use reserved_props::{NativeReservedPropsDiagnostic, ReservedPropsAnalysis};
 
 #[napi(object)]
 pub struct NativeCompilerScriptInput {
@@ -42,18 +44,25 @@ pub struct NativeCompilerScriptAnalysis {
     pub imports: Vec<NativeCompilerScriptImport>,
     pub define_options_statements: Vec<NativeCompilerScriptSpan>,
     pub registered_components: Option<Vec<NativeCompilerRegisteredComponent>>,
+    pub reserved_props_diagnostic: Option<NativeReservedPropsDiagnostic>,
 }
 
 #[derive(Default)]
-struct StringLiteralVisitor {
+struct CompilerDiagnosticVisitor {
     has_lone_surrogate_literal: bool,
+    reserved_props: ReservedPropsAnalysis,
 }
 
-impl<'a> Visit<'a> for StringLiteralVisitor {
+impl<'a> Visit<'a> for CompilerDiagnosticVisitor {
     fn visit_string_literal(&mut self, literal: &oxc_ast::ast::StringLiteral<'a>) {
         // Oxc 对孤立代理项使用内部编码，不能通过 Rust String 无损返回 JS。
         // 校验解析后的值，覆盖模块名、导入名、属性键及宏字符串。
         self.has_lone_surrogate_literal |= literal.lone_surrogates;
+    }
+
+    fn visit_call_expression(&mut self, call: &oxc_ast::ast::CallExpression<'a>) {
+        self.reserved_props.inspect_call(call);
+        walk::walk_call_expression(self, call);
     }
 }
 
@@ -110,15 +119,16 @@ fn analyze_compiler_script_program(
     program: &Program<'_>,
     code: &str,
 ) -> Option<NativeCompilerScriptAnalysis> {
-    let mut strings = StringLiteralVisitor::default();
-    strings.visit_program(program);
-    if strings.has_lone_surrogate_literal {
+    let mut diagnostics = CompilerDiagnosticVisitor::default();
+    diagnostics.visit_program(program);
+    if diagnostics.has_lone_surrogate_literal {
         return None;
     }
     Some(NativeCompilerScriptAnalysis {
         imports: collect_imports(program),
         define_options_statements: collect_define_options_statements(program, code),
         registered_components: collect_registered_components(program),
+        reserved_props_diagnostic: diagnostics.reserved_props.finish(code),
     })
 }
 
@@ -174,7 +184,8 @@ pub fn analyze_compiler_scripts_native(
 
     for ((code, filename), matching) in groups {
         let allocator = oxc_allocator::Allocator::default();
-        let Some(program) = parse_program(&allocator, &code, filename) else {
+        // 有恢复诊断的 AST 不能证明宏诊断完整，逐项交回原编译器处理。
+        let Some(program) = parse_program(&allocator, &code, filename, true) else {
             continue;
         };
         let analysis = analyze_compiler_script_program(&program, &code);

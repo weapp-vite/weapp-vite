@@ -1,3 +1,4 @@
+import type { NativeCompilerScriptAnalysis } from '@weapp-vite/ast'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
@@ -275,6 +276,9 @@ export async function compileScriptPhase(
   precomputedScriptPhaseInfo?: PrecomputedScriptPhaseInfo,
   originalSource?: string,
   scriptPreprocessMap?: EncodedSourceMapLike | null,
+  nativeScriptAnalysis?: {
+    scriptSetup?: NativeCompilerScriptAnalysis
+  },
 ): Promise<ScriptPhaseResult> {
   const autoUsingComponentsMap: Record<string, string> = { ...(componentSourceInfo?.autoUsingComponentsMap ?? {}) }
   const autoComponentMeta: Record<string, string> = { ...(componentSourceInfo?.autoComponentMeta ?? {}) }
@@ -296,7 +300,7 @@ export async function compileScriptPhase(
     warnReservedScriptSetupProps(descriptorForCompile.scriptSetup?.content, options?.warn, {
       filename,
       scriptSetupStart: descriptorForCompile.scriptSetup?.loc.start,
-    })
+    }, nativeScriptAnalysis?.scriptSetup?.reservedPropsDiagnostic)
     if (!propsAliases && hasPrecomputedScriptPhaseInfo(precomputedScriptPhaseInfo, 'propsAliases')) {
       propsAliases = precomputedScriptPhaseInfo.propsAliases
     }
