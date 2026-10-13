@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
 
 const source = await readFile(new URL('../packages/weapp-vite/scripts/verify-vite-host-consumer.mjs', import.meta.url), 'utf8')
 const prefix = '[host-capability-probe] '
+const consumerRoot = path.join(os.tmpdir(), 'host-capability-consumer')
+const controllerDirectory = path.join(os.tmpdir(), 'host-capability-controller', 'packages/weapp-vite/scripts')
 const functionSource = source.slice(source.indexOf('async function saveProbeDiagnostics('), source.indexOf('\nconst files ='))
 
 function generatedProbe() {
@@ -18,7 +21,8 @@ function commandContext(extra = {}) {
   return {
     assert,
     path,
-    root: '/isolated-consumer',
+    root: consumerRoot,
+    controllerDirectory,
     probeDiagnostics: true,
     probePrefix: prefix,
     toolchain: 'wv',
@@ -64,11 +68,11 @@ describe('host capability diagnostic failure isolation', () => {
 
   it('retains complete safe phases before a truncated line without persisting extra fields', async () => {
     let recorded
-    const save = runInNewContext(`(function () { ${functionSource.replaceAll('import.meta.dirname', '\'/controller/packages/weapp-vite/scripts\'')} return saveProbeDiagnostics })()`, commandContext({
+    const save = runInNewContext(`(function () { ${functionSource.replaceAll('import.meta.dirname', 'controllerDirectory')} return saveProbeDiagnostics })()`, commandContext({
       mkdir: async () => {},
       writeFile: async (_file, value) => { recorded = JSON.parse(value) },
     }))
-    await save('/isolated-consumer/probe-host.mjs', 0, { stdout: [
+    await save(path.join(consumerRoot, 'probe-host.mjs'), 0, { stdout: [
       prefix + JSON.stringify({ phase: 'close-start', elapsedMs: 15, privateField: 'must-not-persist' }),
       `${prefix}{"phase":"close-complete",`,
     ].join('\n') }, { code: null, killed: true, signal: 'SIGKILL' })
