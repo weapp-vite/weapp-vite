@@ -1,3 +1,4 @@
+import { normalizeRichTextNodes, sanitizeRichTextAttributes, sanitizeRichTextStyle } from '@weapp-core/shared/rich-text'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { BUTTON_STYLE } from '../src/runtime/button/style'
 import {
@@ -18,7 +19,6 @@ import {
   ensureNativeComponentsDefined,
   normalizePickerIndexes,
   normalizePickerViewValue,
-  normalizeRichTextNodes,
   resolveIconColor,
   resolveIconSize,
   resolveIconType,
@@ -33,8 +33,6 @@ import {
   resolveSwiperNumber,
   resolveSwipeTarget,
   resolveVideoObjectFit,
-  sanitizeRichTextAttributes,
-  sanitizeRichTextStyle,
 } from '../src/runtime/nativeComponents'
 import { connectFormControl, disconnectFormControl, resetFormControls } from '../src/runtime/nativeComponents/formControl'
 import { dispatchMiniProgramEvent, resolveMaxLength } from '../src/runtime/nativeComponents/helpers'

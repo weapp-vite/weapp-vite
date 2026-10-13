@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest'
 import {
   normalizeRichTextNodes,
   sanitizeRichTextAttributes,
   sanitizeRichTextStyle,
-} from '../src/runtime/nativeComponents/richText/helpers'
+} from '@weapp-core/shared/rich-text'
+import { describe, expect, it } from 'vitest'
 
 describe('rich text sanitization contract', () => {
   it('accepts safe URL forms and rejects active URL schemes', () => {

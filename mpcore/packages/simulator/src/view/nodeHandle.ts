@@ -223,17 +223,36 @@ export class HeadlessTestingNodeHandle {
     }
 
     let handlerResults: unknown[] | undefined
-    const nativeHandled = this.interactions.dispatchNativeEvent?.(
-      this.node,
-      normalizedEventName,
-      event,
-      normalizedEventName === 'tap'
-        ? (result) => {
-            handlerResults ??= []
-            handlerResults.push(result)
+    let nativeHandled: boolean | undefined
+    try {
+      nativeHandled = this.interactions.dispatchNativeEvent?.(
+        this.node,
+        normalizedEventName,
+        event,
+        normalizedEventName === 'tap'
+          ? (result) => {
+              handlerResults ??= []
+              handlerResults.push(result)
+            }
+          : undefined,
+      )
+    }
+    catch (error) {
+      // 后续同步失败不能遗弃已启动的异步回调；多个失败保留原始异常作为 cause。
+      let failures: unknown[] | undefined
+      if (handlerResults) {
+        for (const result of await Promise.allSettled(handlerResults)) {
+          if (result.status === 'rejected') {
+            failures ??= [error]
+            failures.push(result.reason)
           }
-        : undefined,
-    )
+        }
+      }
+      if (failures) {
+        throw new AggregateError(failures, 'Native interaction handlers failed', { cause: error })
+      }
+      throw error
+    }
     if (normalizedEventName === 'tap' && nativeHandled) {
       return handlerResults ? (await Promise.all(handlerResults))[0] : undefined
     }

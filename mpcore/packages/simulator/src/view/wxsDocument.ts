@@ -13,7 +13,8 @@ export function parseWxsTemplateDocument(templateSource: string) {
   })
   const masked = maskTemplateAttributes(source)
   const document = parseDocument(`<page>${masked.source}</page>`, {
-    xmlMode: false,
+    // WXML 不是 HTML；不能按浏览器规则隐式闭合或丢弃嵌套的 form 等原生节点。
+    xmlMode: true,
     decodeEntities: false,
     lowerCaseAttributeNames: false,
     lowerCaseTags: false,

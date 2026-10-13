@@ -2,7 +2,9 @@ import type { LoadWxsModule } from '../../view/wxs'
 import type { BrowserVirtualFiles } from '../virtualFiles'
 import type { BrowserRenderScope, DomNodeLike } from './types'
 import { dirname, join, normalize } from 'pathe'
+import { setNativePickerValue } from '../../view/nativeForm'
 import { collectNodeDataset, isDatasetAttribute, toDatasetKey } from '../../view/nodeDataset'
+import { renderRichTextNodes } from '../../view/richText'
 import { resolveTemplateExpression } from '../../view/templateExpression'
 import { createImportedTemplateState } from '../../view/templateImports'
 import { isTemplateExpression } from '../../view/templateInterpolation'
@@ -149,7 +151,7 @@ export function resolveComponentAttributeValue(value: string, scope: BrowserRend
   return interpolateTemplate(value, wxsScopeData(scope))
 }
 
-export function applyNodeBindings(node: DomNodeLike, scope: BrowserRenderScope) {
+export function applyNodeBindings(node: DomNodeLike, scope: BrowserRenderScope, richText = false) {
   if (!isTagNode(node)) {
     if (node.type === 'text' && typeof node.data === 'string') {
       node.data = interpolateTemplateText(node.data, wxsScopeData(scope))
@@ -163,6 +165,9 @@ export function applyNodeBindings(node: DomNodeLike, scope: BrowserRenderScope) 
   for (const key of STRUCTURAL_ATTRS) {
     delete node.attribs[key]
   }
+  if (richText) {
+    node.children = []
+  }
 
   let dataset: Record<string, unknown> | undefined
   for (const [key, value] of Object.entries({ ...node.attribs })) {
@@ -173,6 +178,12 @@ export function applyNodeBindings(node: DomNodeLike, scope: BrowserRenderScope) 
     const resolvedValue = typeof value === 'string'
       ? resolveAttributeValue(value, scope)
       : value
+    if (key === 'value') {
+      setNativePickerValue(node, resolvedValue)
+    }
+    if (richText && key === 'nodes') {
+      node.children = renderRichTextNodes(resolvedValue)
+    }
     node.attribs[key] = String(resolvedValue ?? '')
     if (isDatasetAttribute(key)) {
       dataset ??= {}

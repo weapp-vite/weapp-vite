@@ -90,11 +90,6 @@ export {
   resolveProgressConfig,
 } from './progress/helpers'
 export { collectRadioGroupValue } from './radio'
-export {
-  normalizeRichTextNodes,
-  sanitizeRichTextAttributes,
-  sanitizeRichTextStyle,
-} from './richText/helpers'
 export { createScrollEventDetail } from './scrollView'
 export { createSliderEventDetail, resolveSliderConfig } from './slider/helpers'
 export { NATIVE_COMPONENT_STYLE } from './style'

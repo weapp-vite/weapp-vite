@@ -823,7 +823,14 @@ importers:
         specifier: ^1.2.0
         version: 1.2.0
 
-  '@weapp-core/shared': {}
+  '@weapp-core/shared':
+    dependencies:
+      domhandler:
+        specifier: ^6.0.1
+        version: 6.0.1
+      htmlparser2:
+        specifier: 'catalog:'
+        version: 12.0.0
 
   '@weapp-core/types':
     devDependencies:
@@ -2501,6 +2508,9 @@ importers:
       '@weapp-core/constants':
         specifier: workspace:*
         version: link:../../../@weapp-core/constants
+      '@weapp-core/shared':
+        specifier: workspace:*
+        version: link:../../../@weapp-core/shared
       css-select:
         specifier: ^7.0.0
         version: 7.0.0

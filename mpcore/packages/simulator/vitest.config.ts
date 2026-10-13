@@ -7,6 +7,7 @@ const packageDir = import.meta.dirname
 export default defineProject({
   test: {
     exclude: [
+      '**/node_modules/**',
       'e2e/**',
       'test-d/**',
       '**/dist/**',

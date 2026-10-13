@@ -14,6 +14,46 @@ interface ComponentEventNode {
 
 const eventNodes = new WeakMap<DomNodeLike, ComponentEventNode>()
 
+/** 原生默认行为读取声明所有者与原始属性，避免组件根折叠覆盖宿主边界。 */
+export function getNativeNodeOwner(node: DomNodeLike) {
+  const entry = eventNodes.get(node)
+  return entry ? { scopeId: entry.scope.getScopeId(), target: entry.target } : undefined
+}
+
+/** 原生冒泡包含折叠的宿主绑定；catch 只截断其后的绑定和祖先。 */
+export function visitNativeNodeEventBindings(
+  node: DomNodeLike,
+  eventName: string,
+  visit: (scopeId: string | null, target: Pick<DomNodeLike, 'attribs' | 'dataset'>, binding: MiniProgramEventBinding) => void,
+) {
+  const collect = (entry: ComponentEventNode) => {
+    const binding = entry.bindings
+      ? entry.bindings.eventBindings?.get(eventName)
+      : resolveEventBindingPhases(entry.target.attribs, eventName, false)?.bubble
+    if (binding) {
+      visit(entry.scope.getScopeId(), entry.target, binding)
+    }
+    return binding?.stopAfter ?? false
+  }
+  const entry = eventNodes.get(node)
+  if (!entry) {
+    const binding = resolveEventBindingPhases(node.attribs, eventName, false)?.bubble
+    if (binding) {
+      visit(node.attribs?.['data-sim-scope'] ?? null, node, binding)
+    }
+    return binding?.stopAfter ?? false
+  }
+  if (collect(entry)) {
+    return true
+  }
+  for (const host of entry.hosts ?? []) {
+    if (collect(eventNodes.get(host)!)) {
+      return true
+    }
+  }
+  return false
+}
+
 /** 在构造子树之前建立父链，created/observer 中的事件也能访问声明树。 */
 export function registerComponentEventNode(node: DomNodeLike, scope: RuntimeRenderScope, parent?: DomNodeLike) {
   node.parent = parent ?? null

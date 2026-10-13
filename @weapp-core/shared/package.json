@@ -36,6 +36,10 @@
         "types": "./src/index.ts",
         "default": "./src/index.ts"
       },
+      "./rich-text": {
+        "types": "./src/rich-text.ts",
+        "default": "./src/rich-text.ts"
+      },
       "./node": {
         "types": "./src/node.ts",
         "default": "./src/node.ts"
@@ -61,6 +65,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./rich-text": {
+      "types": "./dist/rich-text.d.ts",
+      "import": "./dist/rich-text.js"
     },
     "./node": {
       "types": "./dist/node.d.ts",
@@ -101,11 +109,19 @@
     "lint:fix": "eslint . --fix",
     "sync": "repo release sync-npmmirror --package @weapp-core/shared"
   },
+  "dependencies": {
+    "domhandler": "^6.0.1",
+    "htmlparser2": "catalog:"
+  },
   "publishConfig": {
     "exports": {
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./rich-text": {
+        "types": "./dist/rich-text.d.ts",
+        "import": "./dist/rich-text.js"
       },
       "./node": {
         "types": "./dist/node.d.ts",

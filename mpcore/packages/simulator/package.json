@@ -57,6 +57,7 @@
   "dependencies": {
     "@babel/parser": "catalog:",
     "@weapp-core/constants": "workspace:*",
+    "@weapp-core/shared": "workspace:*",
     "css-select": "^7.0.0",
     "css-what": "^8.0.0",
     "fontoxpath": "^3.34.0",

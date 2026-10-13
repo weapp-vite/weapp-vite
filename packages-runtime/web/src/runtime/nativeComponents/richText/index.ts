@@ -1,8 +1,8 @@
-import type { SafeRichTextNode } from './helpers'
+import type { SafeRichTextNode } from '@weapp-core/shared/rich-text'
+import { normalizeRichTextNodes } from '@weapp-core/shared/rich-text'
 import { getNativeComponentDescriptor } from '../../../shared/nativeComponents'
 import { readBooleanAttribute, resolveContainingShadowRoot } from '../helpers'
 import { ensureNativeComponentStyle } from '../style'
-import { normalizeRichTextNodes } from './helpers'
 
 const BaseElement = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement
 
@@ -96,5 +96,3 @@ export class WeappRichText extends BaseElement {
     this.#content.replaceChildren(...normalizeRichTextNodes(this.#nodes).map(createRichTextDomNode))
   }
 }
-
-export * from './helpers'

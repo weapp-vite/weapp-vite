@@ -595,7 +595,22 @@ export class HeadlessSession {
     if (eventName === 'tap') {
       this.renderCurrentPage()
     }
-    return dispatchNativeNodeEvent(current, node, eventName, event, this.moduleLoader.wx, (scopeId, method) => this.resolveScopeMethod(current, scopeId, method), onHandlerResult)
+    return dispatchNativeNodeEvent(
+      current,
+      node,
+      eventName,
+      event,
+      this.moduleLoader.wx,
+      (scopeId, method) => this.resolveScopeMethod(current, scopeId, method),
+      onHandlerResult,
+      (scopeId) => {
+        const instance = this.componentCache.get(scopeId)
+        const scope = this.componentScopes.get(scopeId)
+        return instance?.__definition__ && scope
+          ? { definition: instance.__definition__, ownerScopeId: scope.ownerScopeId ?? null }
+          : undefined
+      },
+    )
   }
 
   requestRender(callback?: () => void) {

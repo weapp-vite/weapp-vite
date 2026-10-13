@@ -430,8 +430,12 @@ function renderNodeTree(
     return renderedComponentRoot
   }
 
-  applyNodeBindings(clonedNode, scope)
+  const richText = clonedNode.name === 'rich-text'
+  applyNodeBindings(clonedNode, scope, richText)
   clonedNode.attribs!['data-sim-node'] = instancePath
+  if (richText) {
+    return clonedNode
+  }
   clonedNode.children = renderChildren(
     clonedNode.children ?? [],
     scope,
