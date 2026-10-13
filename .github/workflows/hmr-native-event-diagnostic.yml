@@ -36,7 +36,6 @@ jobs:
       TOOLS_ROOT: ${{ github.workspace }}/tools
       BASELINE_ROOT: ${{ github.workspace }}/baseline
       CANDIDATE_ROOT: ${{ github.workspace }}/candidate
-      REPORT_ROOT: ${{ runner.temp }}/hmr-native-event-diagnostic
     defaults:
       run:
         shell: bash
@@ -60,12 +59,15 @@ jobs:
           ref: 4dede68ef91956a0af36223856f7cbed1f7f8d25
           persist-credentials: false
       - name: Verify dispatch and immutable checkout identities
+        env:
+          REPORT_ROOT: ${{ runner.temp }}/hmr-native-event-diagnostic
         run: |
           node --input-type=module <<'NODE'
           import { execFileSync } from 'node:child_process'
           import { createHash } from 'node:crypto'
-          import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+          import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
           import path from 'node:path'
+          appendFileSync(process.env.GITHUB_ENV, `REPORT_ROOT=${process.env.REPORT_ROOT}\n`)
           mkdirSync(process.env.REPORT_ROOT, { recursive: false })
           const identities = Object.fromEntries(['TOOLS', 'BASELINE', 'CANDIDATE'].map(side => {
             const cwd = process.env[`${side}_ROOT`]
