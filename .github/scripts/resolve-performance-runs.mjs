@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { appendFile, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -19,25 +20,34 @@ export function validatePerformancePrContext(context, run, repository) {
 }
 
 /** 只读取指定运行的固定上下文，不解压或执行候选提交中的脚本。 */
-export async function downloadPrContext({ apiUrl, token, repository, run, request = githubRequest }) {
-  const result = await request(apiUrl, token, `/repos/${repository}/actions/runs/${run.id}/artifacts?name=pr-context&per_page=100`)
-  if (!Array.isArray(result.artifacts)) {
-    throw new TypeError('Invalid manual PR context artifact listing')
+export async function downloadPrContext({ apiUrl, token, repository, run, artifact, request = githubRequest }) {
+  if (!artifact) {
+    const result = await request(apiUrl, token, `/repos/${repository}/actions/runs/${run.id}/artifacts?name=pr-context&per_page=100`)
+    if (!Array.isArray(result.artifacts)) {
+      throw new TypeError('Invalid manual PR context artifact listing')
+    }
+    const artifacts = result.artifacts.filter(candidate => candidate.name === 'pr-context' && !candidate.expired)
+    if (!artifacts.length) {
+      throw Object.assign(new Error('Manual PR context artifact is not available'), { code: 'PR_CONTEXT_MISSING' })
+    }
+    if (artifacts.length !== 1) {
+      throw new Error('Missing unique manual PR context artifact')
+    }
+    artifact = artifacts[0]
   }
-  const artifacts = result.artifacts.filter(artifact => artifact.name === 'pr-context' && !artifact.expired)
-  if (!artifacts.length) {
-    throw Object.assign(new Error('Manual PR context artifact is not available'), { code: 'PR_CONTEXT_MISSING' })
+  if (!/^[1-9]\d*$/u.test(String(artifact.id)) || artifact.name !== 'pr-context' || artifact.expired) {
+    throw new Error('Invalid manual PR context artifact')
   }
-  if (artifacts.length !== 1) {
-    throw new Error('Missing unique manual PR context artifact')
-  }
-  const response = await fetch(`${apiUrl}/repos/${repository}/actions/artifacts/${artifacts[0].id}/zip`, { headers: headers(token), signal: AbortSignal.timeout(30_000) })
+  const response = await fetch(`${apiUrl}/repos/${repository}/actions/artifacts/${artifact.id}/zip`, { headers: headers(token), signal: AbortSignal.timeout(30_000) })
   if (!response.ok) {
     throw new Error(`GitHub artifact API ${response.status}`)
   }
   const archive = await response.arrayBuffer()
   if (archive.byteLength > 1_048_576) {
     throw new Error('Manual PR context artifact is too large')
+  }
+  if (artifact.digest && artifact.digest !== `sha256:${createHash('sha256').update(new Uint8Array(archive)).digest('hex')}`) {
+    throw new Error('Manual PR context artifact digest does not match the authenticated upload')
   }
   const directory = await mkdtemp(path.join(os.tmpdir(), 'pr-context-'))
   try {

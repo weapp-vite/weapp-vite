@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { validatePrContext } from './pr-context.mjs'
-import { downloadPrContext } from './resolve-performance-runs.mjs'
+import { createPrStatusClient } from './pr-status-client.mjs'
 
 const workflows = new Map([
   ['CI', 'ci.yml'],
@@ -32,7 +32,8 @@ function identity(run) {
   return { id, attempt }
 }
 
-function trustedRun(run, repository, defaultBranch) {
+/** 仅默认分支调度的既定手动检查可以提供 PR 验证结果。 */
+export function trustedRun(run, repository, defaultBranch) {
   return workflows.has(run.name) && run.event === 'workflow_dispatch'
     && run.head_branch === defaultBranch && run.head_repository?.full_name === repository
     && run.path === `.github/workflows/${workflows.get(run.name)}`
@@ -41,6 +42,9 @@ function trustedRun(run, repository, defaultBranch) {
 function stateFor(run, context, baseChanged) {
   if (context.resolutionError) {
     return { state: 'error', message: 'PR target could not be resolved; dispatch again' }
+  }
+  if (run.status === 'completed' && run.conclusion === 'failure') {
+    return { state: 'failure', message: baseChanged ? 'Validation failed; base changed' : 'Manual validation failed; inspect the run' }
   }
   if (baseChanged) {
     return { state: 'error', message: 'PR base changed; dispatch again for the current base' }
@@ -55,6 +59,14 @@ function stateFor(run, context, baseChanged) {
     state: run.conclusion === 'failure' ? 'failure' : 'error',
     message: `Manual validation ${run.conclusion || 'has no successful conclusion'}; inspect the run`,
   }
+}
+
+async function baseChanged(request, repository, context, pull) {
+  const ref = await request(`/repos/${repository}/git/ref/heads/${encodeURIComponent(context.baseRef)}`)
+  if (!/^[a-f\d]{40}$/u.test(ref.object?.sha)) {
+    throw new Error('Invalid current PR base branch reference')
+  }
+  return pull.base.sha !== context.baseSha || ref.object.sha !== context.baseSha
 }
 
 function currentPull(pull, context, repository) {
@@ -115,7 +127,7 @@ function hasReceipt(statuses, run, proof, targetUrl, context) {
 }
 
 /** 可信调度器把手动验证状态写到固定 PR HEAD，并拒绝旧运行覆盖新结果。 */
-export async function publishPrStatus({ repository, run, context, defaultBranch, request, serverUrl = 'https://github.com', phase = 'completion' }) {
+export async function publishPrStatus({ repository, run, context, defaultBranch, request, verifyContext, serverUrl = 'https://github.com', phase = 'completion' }) {
   if (!['pending', 'completion'].includes(phase)) {
     throw new Error('Invalid PR status publication phase')
   }
@@ -140,9 +152,17 @@ export async function publishPrStatus({ repository, run, context, defaultBranch,
   }
   const previous = await latestStatus(request, repository, context.headSha, name)
   if (phase === 'completion' && !hasReceipt(previous, run, proof, targetUrl, context)) {
-    return { published: false, reason: 'missing-trusted-receipt' }
+    if (!verifyContext) {
+      return { published: false, reason: 'missing-trusted-receipt' }
+    }
+    // 历史运行没有首次状态；必须由可信 resolver 日志证明 artifact 的不可变身份。
+    const verified = await verifyContext(run, defaultBranch)
+    if (contextProof(verified) !== proof) {
+      throw new Error('PR context changed while verifying its source')
+    }
   }
-  const blocked = alreadyReported(previous, run, stateFor(run, context, pull.base.sha !== context.baseSha).state)
+  const moved = await baseChanged(request, repository, context, pull)
+  const blocked = alreadyReported(previous, run, stateFor(run, context, moved).state)
   if (blocked) {
     return { published: false, reason: blocked }
   }
@@ -157,9 +177,10 @@ export async function publishPrStatus({ repository, run, context, defaultBranch,
     return { published: false, reason: 'stale-pr' }
   }
   const statuses = await latestStatus(request, repository, context.headSha, name)
-  const result = phase === 'pending' && !context.resolutionError && pull.base.sha === context.baseSha
+  const currentBaseChanged = await baseChanged(request, repository, context, pull)
+  const result = phase === 'pending' && !context.resolutionError && !currentBaseChanged
     ? { state: 'pending', message: 'Queued or running' }
-    : stateFor(currentRun, context, pull.base.sha !== context.baseSha)
+    : stateFor(currentRun, context, currentBaseChanged)
   const changed = alreadyReported(statuses, currentRun, result.state)
   if (changed) {
     return { published: false, reason: changed }
@@ -182,23 +203,7 @@ async function main() {
   const token = required('GITHUB_TOKEN')
   const repository = required('GITHUB_REPOSITORY')
   const apiUrl = process.env.GITHUB_API_URL ?? 'https://api.github.com'
-  const request = async (pathname, options = {}) => {
-    const response = await fetch(`${apiUrl}${pathname}`, {
-      method: options.method ?? 'GET',
-      headers: {
-        'authorization': `Bearer ${token}`,
-        'accept': 'application/vnd.github+json',
-        'content-type': 'application/json',
-        'x-github-api-version': '2022-11-28',
-      },
-      body: options.body ? JSON.stringify(options.body) : undefined,
-      signal: AbortSignal.timeout(30_000),
-    })
-    if (!response.ok) {
-      throw new Error(`GitHub API ${response.status}: ${pathname}`)
-    }
-    return response.json()
-  }
+  const { request, readContext, verifyContext } = createPrStatusClient({ apiUrl, token, repository })
   const runId = process.env.PR_STATUS_RUN_ID?.trim() || required('GITHUB_RUN_ID')
   if (!/^[1-9]\d*$/u.test(runId)) {
     throw new Error('Invalid workflow run ID')
@@ -212,7 +217,7 @@ async function main() {
   try {
     context = process.env.PR_STATUS_CONTEXT_PATH
       ? JSON.parse(await readFile(process.env.PR_STATUS_CONTEXT_PATH, 'utf8'))
-      : await downloadPrContext({ apiUrl, token, repository, run, request: (_url, _token, pathname) => request(pathname) })
+      : await readContext(run)
   }
   catch (error) {
     if (!process.env.PR_STATUS_CONTEXT_PATH && error.code === 'PR_CONTEXT_MISSING') {
@@ -222,7 +227,7 @@ async function main() {
     throw error
   }
   const phase = process.env.PR_STATUS_CONTEXT_PATH ? process.env.PR_STATUS_PHASE || 'pending' : 'completion'
-  const result = await publishPrStatus({ repository, run, context, defaultBranch: repo.default_branch, request, serverUrl: process.env.GITHUB_SERVER_URL, phase })
+  const result = await publishPrStatus({ repository, run, context, defaultBranch: repo.default_branch, request, verifyContext, serverUrl: process.env.GITHUB_SERVER_URL, phase })
   process.stdout.write(`${JSON.stringify(result)}\n`)
 }
 

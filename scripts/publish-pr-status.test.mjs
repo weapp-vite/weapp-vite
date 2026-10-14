@@ -43,7 +43,7 @@ const pull = {
 const bot = { login: 'github-actions[bot]', type: 'Bot' }
 
 async function harness({ source = run, metadata = context, seed = true } = {}) {
-  const api = { pull, run: source, statuses: [], writes: [], pullReads: 0, statusReads: 0 }
+  const api = { pull, baseSha, run: source, statuses: [], writes: [], pullReads: 0, statusReads: 0 }
   const request = vi.fn(async (pathname, options = {}) => {
     if (options.method === 'POST') {
       api.writes.push({ pathname, body: options.body })
@@ -53,6 +53,9 @@ async function harness({ source = run, metadata = context, seed = true } = {}) {
     if (pathname === `/repos/${repository}/pulls/42`) {
       api.pullReads++
       return api.onPull?.(api.pullReads) ?? api.pull
+    }
+    if (pathname.startsWith(`/repos/${repository}/git/ref/heads/`)) {
+      return { object: { sha: api.baseSha } }
     }
     if (pathname === `/repos/${repository}/actions/runs/${source.id}`) {
       return api.run
