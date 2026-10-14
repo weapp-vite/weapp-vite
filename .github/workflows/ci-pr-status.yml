@@ -23,7 +23,13 @@ on:
     inputs:
       run-id:
         description: 已有手动 PR 运行 ID；修复状态回写时使用
-        required: true
+        required: false
+        default: ''
+        type: string
+      pr-number:
+        description: PR 编号；补同步该 PR 已有的各项手动检查，与 run-id 二选一
+        required: false
+        default: ''
         type: string
 
 permissions:
@@ -33,7 +39,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: manual-pr-status-${{ github.event.workflow_run.id || inputs.run-id }}
+  group: manual-pr-status-${{ github.event.workflow_run.id || inputs.run-id || format('pr-{0}', inputs.pr-number) }}
   cancel-in-progress: false
 
 jobs:
@@ -53,8 +59,14 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
-      - name: Publish completed manual PR status
+      - name: Publish or reconcile manual PR statuses
         env:
           GITHUB_TOKEN: ${{ github.token }}
           PR_STATUS_RUN_ID: ${{ github.event.workflow_run.id || inputs.run-id }}
-        run: node .github/scripts/publish-pr-status.mjs
+          PR_STATUS_PR_NUMBER: ${{ inputs.pr-number || '' }}
+        run: |
+          if [ -n "$PR_STATUS_PR_NUMBER" ]; then
+            node .github/scripts/reconcile-pr-status.mjs
+          else
+            node .github/scripts/publish-pr-status.mjs
+          fi

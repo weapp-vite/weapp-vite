@@ -19,7 +19,7 @@ const pull = {
   base: { sha: baseSha, ref: 'main', repo: { full_name: input.repository } },
 }
 const merge = { sha: mergeSha, parents: [{ sha: baseSha }, { sha: headSha }] }
-const respond = endpoint => endpoint.startsWith('/git/commits/') ? merge : pull
+const respond = endpoint => endpoint.startsWith('/git/ref/') ? { object: { sha: baseSha } } : endpoint.startsWith('/git/commits/') ? merge : pull
 
 describe('manual PR target resolution', () => {
   it('uses the invocation commit for standalone or scheduled validation without querying PRs', async () => {
@@ -57,20 +57,20 @@ describe('manual PR target resolution', () => {
   })
 
   it('keeps head-only performance validation available without a merge candidate', async () => {
-    const get = vi.fn().mockResolvedValue({ ...pull, merge_commit_sha: null })
+    const get = vi.fn(async endpoint => endpoint.startsWith('/git/ref/') ? respond(endpoint) : { ...pull, merge_commit_sha: null })
     expect(await resolvePrContext({ ...input, checkoutMode: 'head' }, get)).toMatchObject({ checkoutSha: headSha, checkoutMode: 'head' })
-    expect(get).toHaveBeenCalledTimes(2)
+    expect(get).toHaveBeenCalledTimes(3)
   })
 
   it('rejects unavailable or stale merge candidates instead of falling back to head', async () => {
-    await expect(resolvePrContext(input, async () => ({ ...pull, merge_commit_sha: null }))).rejects.toThrow('no merge candidate')
+    await expect(resolvePrContext(input, async endpoint => endpoint.startsWith('/git/ref/') ? respond(endpoint) : ({ ...pull, merge_commit_sha: null }))).rejects.toThrow('no merge candidate')
     for (const parents of [[{ sha: baseSha }], [{ sha: headSha }, { sha: baseSha }], [{ sha: driverSha }, { sha: headSha }]]) {
-      await expect(resolvePrContext(input, async endpoint => endpoint.startsWith('/git/commits/') ? { ...merge, parents } : pull)).rejects.toThrow('does not match')
+      await expect(resolvePrContext(input, async endpoint => endpoint.startsWith('/git/commits/') ? { ...merge, parents } : respond(endpoint))).rejects.toThrow('does not match')
     }
   })
 
   it('preserves frozen identity and attempt when target resolution fails', async () => {
-    const error = await resolvePrContext({ ...input, runAttempt: 2 }, async () => ({ ...pull, merge_commit_sha: null })).catch(error => error)
+    const error = await resolvePrContext({ ...input, runAttempt: 2 }, async endpoint => endpoint.startsWith('/git/ref/') ? respond(endpoint) : ({ ...pull, merge_commit_sha: null })).catch(error => error)
     expect(error.prContext).toMatchObject({
       runId: input.runId,
       runAttempt: 2,
@@ -83,6 +83,14 @@ describe('manual PR target resolution', () => {
     const get = vi.fn().mockRejectedValue(new Error('API unavailable'))
     const unidentified = await resolvePrContext(input, get).catch(error => error)
     expect(unidentified.prContext).toBeUndefined()
+  })
+
+  it('rejects a stale PR base snapshot before launching heavy checks or reading a merge candidate', async () => {
+    const get = vi.fn(async endpoint => endpoint.startsWith('/git/ref/') ? { object: { sha: driverSha } } : respond(endpoint))
+    const error = await resolvePrContext(input, get).catch(error => error)
+    expect(error.message).toContain('base snapshot is stale')
+    expect(error.prContext).toMatchObject({ headSha, baseSha, resolutionError: expect.stringContaining('refresh the PR branch') })
+    expect(get.mock.calls.some(([endpoint]) => endpoint.startsWith('/git/commits/'))).toBe(false)
   })
 
   it.each(['0', '-1', '1;echo unsafe', '1\n2', '1.5', '9007199254740992'])('rejects invalid PR input %s before querying', async (prNumber) => {
@@ -131,6 +139,9 @@ describe('manual PR target resolution', () => {
       if (endpoint.startsWith('/git/commits/')) {
         return merge
       }
+      if (endpoint.startsWith('/git/ref/')) {
+        return respond(endpoint)
+      }
       reads++
       return reads === 1 ? pull : { ...pull, [changed]: { ...pull[changed], sha: 'd'.repeat(40) } }
     }
@@ -142,6 +153,9 @@ describe('manual PR target resolution', () => {
     await expect(resolvePrContext(input, async (endpoint) => {
       if (endpoint.startsWith('/git/commits/')) {
         return merge
+      }
+      if (endpoint.startsWith('/git/ref/')) {
+        return respond(endpoint)
       }
       return ++reads === 1 ? pull : { ...pull, head: { ...pull.head, sha: driverSha } }
     })).rejects.toThrow('PR changed')
