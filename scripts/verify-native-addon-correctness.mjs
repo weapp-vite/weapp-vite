@@ -17,6 +17,7 @@ const requiredExports = [
 // 固定基础语料覆盖下限，防止文件筛选、only 或空 suite 被误算成完整通过。
 const requiredSuites = new Map([
   ['test/compilerAnalysis.test.ts', 33],
+  ['test/compilerAmbientParity.test.ts', 7],
   ['test/onPageScroll.test.ts', 11],
   ['test/vueSfcSignature.fuzz.test.ts', 44],
 ])

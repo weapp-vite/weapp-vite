@@ -45,11 +45,32 @@ pub struct NativeCompilerScriptAnalysis {
 }
 
 #[derive(Default)]
-struct StringLiteralVisitor {
+struct CompilerFallbackVisitor {
     has_lone_surrogate_literal: bool,
+    has_ts_module_declaration: bool,
 }
 
-impl<'a> Visit<'a> for StringLiteralVisitor {
+impl<'a> Visit<'a> for CompilerFallbackVisitor {
+    fn visit_ts_external_module_declaration(
+        &mut self,
+        _module: &oxc_ast::ast::TSExternalModuleDeclaration<'a>,
+    ) {
+        // 原 Babel 消费者遍历模块内的导入和默认导出，顶层摘要不能证明同等语义。
+        // 整项交回原路径，避免回退组件注册时仍复用不完整的导入摘要。
+        self.has_ts_module_declaration = true;
+    }
+
+    fn visit_ts_namespace_declaration(
+        &mut self,
+        _module: &oxc_ast::ast::TSNamespaceDeclaration<'a>,
+    ) {
+        self.has_ts_module_declaration = true;
+    }
+
+    fn visit_ts_global_declaration(&mut self, _module: &oxc_ast::ast::TSGlobalDeclaration<'a>) {
+        self.has_ts_module_declaration = true;
+    }
+
     fn visit_string_literal(&mut self, literal: &oxc_ast::ast::StringLiteral<'a>) {
         // Oxc 对孤立代理项使用内部编码，不能通过 Rust String 无损返回 JS。
         // 校验解析后的值，覆盖模块名、导入名、属性键及宏字符串。
@@ -110,9 +131,9 @@ fn analyze_compiler_script_program(
     program: &Program<'_>,
     code: &str,
 ) -> Option<NativeCompilerScriptAnalysis> {
-    let mut strings = StringLiteralVisitor::default();
-    strings.visit_program(program);
-    if strings.has_lone_surrogate_literal {
+    let mut fallback = CompilerFallbackVisitor::default();
+    fallback.visit_program(program);
+    if fallback.has_lone_surrogate_literal || fallback.has_ts_module_declaration {
         return None;
     }
     Some(NativeCompilerScriptAnalysis {

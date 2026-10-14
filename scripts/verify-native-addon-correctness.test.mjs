@@ -14,17 +14,18 @@ async function addonJob() {
 function successfulReport() {
   const counts = [
     ['compilerAnalysis.test.ts', 33],
+    ['compilerAmbientParity.test.ts', 7],
     ['onPageScroll.test.ts', 11],
     ['vueSfcSignature.fuzz.test.ts', 44],
   ]
   return {
     success: true,
-    numTotalTestSuites: 6,
-    numPassedTestSuites: 6,
+    numTotalTestSuites: 8,
+    numPassedTestSuites: 8,
     numFailedTestSuites: 0,
     numPendingTestSuites: 0,
-    numTotalTests: 88,
-    numPassedTests: 88,
+    numTotalTests: 95,
+    numPassedTests: 95,
     numFailedTests: 0,
     numPendingTests: 0,
     numTodoTests: 0,
@@ -39,10 +40,11 @@ function successfulReport() {
 describe('actual-addon correctness evidence gate', () => {
   it('accepts complete results and emits only portable file names and counts', () => {
     const summary = verifyNativeReport(successfulReport(), packageRoot)
-    expect(summary.passed).toBe(88)
+    expect(summary.passed).toBe(95)
     expect(summary.skipped).toBe(0)
     expect(summary.suites.map(suite => suite.file)).toEqual([
       'packages/ast-native/test/compilerAnalysis.test.ts',
+      'packages/ast-native/test/compilerAmbientParity.test.ts',
       'packages/ast-native/test/onPageScroll.test.ts',
       'packages/ast-native/test/vueSfcSignature.fuzz.test.ts',
     ])
@@ -114,6 +116,21 @@ describe('actual-addon correctness evidence gate', () => {
       expect(() => verifyNativeExports({ ...binding, [name]: undefined })).toThrow(name)
     }
   })
+
+  it('rejects the former 88-test report that omits ambient compiler parity', () => {
+    const report = successfulReport()
+    report.testResults.splice(1, 1)
+    report.numTotalTestSuites = report.numPassedTestSuites = 6
+    report.numTotalTests = report.numPassedTests = 88
+    expect(() => verifyNativeReport(report, packageRoot)).toThrow('omits suites or assertions')
+  })
+
+  it.each([0, 6])('rejects ambient compiler parity with only %s results', (count) => {
+    const report = successfulReport()
+    report.testResults[1].assertionResults.splice(count)
+    report.numTotalTests = report.numPassedTests = 88 + count
+    expect(() => verifyNativeReport(report, packageRoot)).toThrow('failed, empty, or partial')
+  })
 })
 
 describe('actual-addon CI execution contract', () => {
@@ -149,7 +166,7 @@ describe('actual-addon CI execution contract', () => {
     expect(gateIndex).toBeGreaterThan(testsIndex)
     const tests = steps[testsIndex]
     expect(tests['working-directory']).toBe('packages/ast-native')
-    for (const file of ['compilerAnalysis.test.ts', 'onPageScroll.test.ts', 'vueSfcSignature.fuzz.test.ts']) {
+    for (const file of ['compilerAnalysis.test.ts', 'compilerAmbientParity.test.ts', 'onPageScroll.test.ts', 'vueSfcSignature.fuzz.test.ts']) {
       expect(tests.run).toContain(`test/${file}`)
     }
     expect(tests.run).toContain('--reporter=json')
@@ -158,6 +175,10 @@ describe('actual-addon CI execution contract', () => {
     expect(steps[gateIndex].if).toBe('always()')
     const selfTest = steps.find(step => step.run?.includes('scripts/verify-native-addon-correctness.test.mjs'))
     expect(selfTest.run).toContain('--config scripts/vitest.config.mjs')
+    const compilerBuildIndex = steps.findIndex(step => step.run?.includes('--filter=@wevu/compiler...'))
+    expect(compilerBuildIndex).toBeGreaterThan(preflightIndex)
+    expect(compilerBuildIndex).toBeLessThan(testsIndex)
+    expect(steps[compilerBuildIndex].run).toContain('--concurrency=1')
   })
 
   it('uploads hidden evidence through a strict two-JSON allowlist that excludes raw runner paths', async () => {

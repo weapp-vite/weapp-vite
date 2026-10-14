@@ -75,6 +75,30 @@ fn compiler_registered_components_accepts_only_proven_static_objects() {
 }
 
 #[test]
+fn compiler_batch_rejects_ambient_modules_without_losing_neighbors() {
+    for code in [
+        "import Card from 'native/card'; export default { components: { Card } }; declare module 'virtual:card' { const Ambient: any; export default Ambient; }",
+        "import Card from 'native/card'; export default { components: { Card } }; declare module 'virtual:card' { import Card from 'native/ambient'; }",
+        "declare module 'virtual:card' { const Ambient: any; export default Ambient; } import Card from 'native/card'; export default { components: { Card } };",
+        "export default {}; namespace Ambient { export namespace Nested { export const marker = 'ambient'; } }",
+        "export default {}; declare global { interface Ambient { title: string } }",
+    ] {
+        SCRIPT_PARSE_COUNT.set(0);
+        let results = analyze_compiler_scripts_native(vec![
+            input("export default {}", "page.ts"),
+            input(code, "page.ts"),
+            input("const title = 'ambient'", "page.ts"),
+            input(code, "page.ts"),
+        ]);
+        assert_eq!(SCRIPT_PARSE_COUNT.get(), 3);
+        assert!(results[0].is_some());
+        assert!(results[1].is_none(), "{code}");
+        assert!(results[2].is_some());
+        assert!(results[3].is_none(), "{code}");
+    }
+}
+
+#[test]
 fn compiler_batch_preserves_valid_results_and_caches_failed_parses() {
     SCRIPT_PARSE_COUNT.set(0);
     let results = analyze_compiler_scripts_native(vec![
