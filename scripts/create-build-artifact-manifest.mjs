@@ -42,7 +42,7 @@ if (files.length === 0) {
 
 fs.mkdirSync(path.dirname(outputPath), { recursive: true })
 fs.writeFileSync(outputPath, `${JSON.stringify({
-  commit: process.env.GITHUB_SHA ?? '',
+  commit: process.env.BUILD_ARTIFACT_EXPECTED_COMMIT ?? process.env.GITHUB_SHA ?? '',
   nodeMajor: process.versions.node.split('.')[0],
   os: process.env.RUNNER_OS ?? process.platform,
   files,

@@ -48,7 +48,7 @@ describe('CI artifact coverage', () => {
     const inventoryIndex = commands.indexOf('node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check')
     expect(inventoryIndex).toBeGreaterThanOrEqual(0)
     expect(inventoryIndex).toBeLessThan(commands.findIndex(command => command.includes('vitest.e2e.internal.config.ts')))
-    expect(job.with?.artifact_name).toContain('github.sha')
+    expect(job.with?.artifact_name).toContain('needs.pr-context.outputs.checkout_sha')
     expect(splitPatterns(job.with?.artifact_path)).toEqual([
       'e2e/dom-acceptance-inventory.json',
       'e2e/dom-acceptance-inventory.md',
