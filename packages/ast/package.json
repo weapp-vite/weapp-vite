@@ -41,6 +41,10 @@
       "types": "./dist/babelCore.d.mts",
       "import": "./dist/babelCore.mjs"
     },
+    "./babelLoader": {
+      "types": "./dist/babelLoader.d.mts",
+      "import": "./dist/babelLoader.mjs"
+    },
     "./babelTraverse": {
       "types": "./dist/babelTraverse.d.mts",
       "import": "./dist/babelTraverse.mjs"
@@ -128,6 +132,12 @@
     "@weapp-core/shared": "workspace:*",
     "oxc-parser": "catalog:",
     "oxc-walker": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   },
   "publishConfig": {
     "access": "public",
