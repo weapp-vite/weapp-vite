@@ -1,56 +1,82 @@
 import process from 'node:process'
 import { withPowerShellUtf8Output } from '../../../packages/weapp-ide-cli/src/utils/powershell'
+import { windowsKernelProcessQuery } from './windowsKernelQuery'
 import { serializeWindowsProcessRows } from './windowsProcessRows'
 
-const wirePrefix = 'WEAPP_DEV_QUERY_V1'
+const wirePrefix = 'WEAPP_DEV_QUERY_V2'
 const maxStderrCharacters = 16_384
-const stages = ['script:begin', 'query:begin', 'query:end', 'serialize:begin', 'serialize:end', 'script:end'] as const
+const legacyStages = ['script:begin', 'query:begin', 'query:end', 'serialize:begin', 'serialize:end', 'script:end'] as const
+const stages = ['script:begin', 'utf8:begin', 'utf8:end', ...legacyStages.slice(1)] as const
 
 interface WindowsQueryMarker {
-  stage: 'script' | 'query' | 'serialize'
+  stage: 'script' | 'utf8' | 'query' | 'serialize'
   event: 'begin' | 'end'
   elapsedMs: number
 }
 
-/** 查询共用固定行格式及 UTF-8 边界；显式诊断只在 stderr 写 ASCII 阶段与耗时。 */
-export function createWindowsProcessQueryCommand(filter: string, trace: boolean) {
-  const query = `@(Get-CimInstance Win32_Process${filter} | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name='Started';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString('o')} else {$null}}})`
+function wrapWindowsQuery(query: string, trace: boolean) {
   if (!trace) {
-    return withPowerShellUtf8Output(`$ErrorActionPreference='Stop'; $weappQueryRows=${query}; ${serializeWindowsProcessRows()}`)
+    return withPowerShellUtf8Output(`$ErrorActionPreference='Stop'; ${query}; ${serializeWindowsProcessRows()}`)
   }
   const marker = (stage: typeof stages[number]) => `[Console]::Error.WriteLine('${wirePrefix}|${stage.replace(':', '|')}|'+$weappQueryClock.Elapsed.TotalMilliseconds.ToString('F3',[Globalization.CultureInfo]::InvariantCulture)+'|')`
-  return withPowerShellUtf8Output([
-    `$ErrorActionPreference='Stop'`,
+  return [
     `[Console]::Error.WriteLine('${wirePrefix}|script|begin|0.000|')`,
     '$weappQueryClock=[System.Diagnostics.Stopwatch]::StartNew()',
-    marker('query:begin'),
-    `$weappQueryRows=${query}`,
-    marker('query:end'),
-    marker('serialize:begin'),
-    serializeWindowsProcessRows(),
-    marker('serialize:end'),
-    marker('script:end'),
-  ].join('; '))
+    marker('utf8:begin'),
+    withPowerShellUtf8Output([
+      marker('utf8:end'),
+      `$ErrorActionPreference='Stop'`,
+      marker('query:begin'),
+      query,
+      marker('query:end'),
+      marker('serialize:begin'),
+      serializeWindowsProcessRows(),
+      marker('serialize:end'),
+      marker('script:end'),
+    ].join('; ')),
+  ].join('; ')
 }
 
-/** 只接受完整且按顺序到达的有限阶段；原始 stderr 不进入报告。 */
-export function parseWindowsQueryTrace(stderr = ''): WindowsQueryMarker[] {
+/** 查询共用固定行格式及 UTF-8 边界；CIM 命令仅用于独立兼容验收。 */
+export function createWindowsProcessQueryCommand(filter: string, trace: boolean) {
+  const query = `@(Get-CimInstance Win32_Process${filter} | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name='Started';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString('o')} else {$null}}})`
+  return wrapWindowsQuery(`$weappQueryRows=${query}`, trace)
+}
+
+/** 生产清理共用内核快照 provider，诊断仍保留原阶段与完整包络。 */
+export function createWindowsKernelProcessQueryCommand(pids: readonly number[] | undefined, trace: boolean) {
+  return wrapWindowsQuery(windowsKernelProcessQuery(pids), trace)
+}
+
+function readWindowsQueryTrace(stderr: string) {
   const markers: WindowsQueryMarker[] = []
+  let markerVersion: 1 | 2 | null = null
   for (const line of stderr.slice(0, maxStderrCharacters).split(/\r?\n/)) {
-    const match = /^WEAPP_DEV_QUERY_V1\|(script|query|serialize)\|(begin|end)\|(\d+(?:\.\d{1,3})?)\|$/.exec(line)
-    if (!match || `${match[1]}:${match[2]}` !== stages[markers.length]) {
+    const match = /^WEAPP_DEV_QUERY_V([12])\|(script|utf8|query|serialize)\|(begin|end)\|(\d+(?:\.\d{1,3})?)\|$/.exec(line)
+    if (!match) {
       continue
     }
-    const elapsedMs = Number(match[3])
+    const version = match[1] === '1' ? 1 : 2
+    const expected = version === 1 ? legacyStages : stages
+    if ((markerVersion !== null && markerVersion !== version) || `${match[2]}:${match[3]}` !== expected[markers.length]) {
+      continue
+    }
+    const elapsedMs = Number(match[4])
     if (!Number.isFinite(elapsedMs) || elapsedMs < (markers.at(-1)?.elapsedMs ?? 0)) {
       continue
     }
-    markers.push({ stage: match[1] as WindowsQueryMarker['stage'], event: match[2] as WindowsQueryMarker['event'], elapsedMs })
-    if (markers.length === stages.length) {
+    markerVersion = version
+    markers.push({ stage: match[2] as WindowsQueryMarker['stage'], event: match[3] as WindowsQueryMarker['event'], elapsedMs })
+    if (markers.length === expected.length) {
       break
     }
   }
-  return markers
+  return { markerVersion, markers }
+}
+
+/** 兼容旧阶段时钟；V2 从 UTF-8 设置前开始，只接受同版本的完整有序阶段。 */
+export function parseWindowsQueryTrace(stderr = ''): WindowsQueryMarker[] {
+  return readWindowsQueryTrace(stderr).markers
 }
 
 /** 查询失败仍报告已收到的阶段；诊断写入失败不覆盖正式查询结果。 */
@@ -58,6 +84,7 @@ export function reportWindowsQueryTrace(query: 'snapshot' | 'identities', result
   try {
     const stderr = result.stderr ?? ''
     const boundedStderr = stderr.slice(0, maxStderrCharacters)
+    const parsed = readWindowsQueryTrace(stderr)
     process.stdout.write(`[e2e-cleanup-query] ${JSON.stringify({
       query,
       transport: 'rows',
@@ -66,9 +93,9 @@ export function reportWindowsQueryTrace(query: 'snapshot' | 'identities', result
       stdoutCharacters: result.stdout?.length ?? 0,
       stderrCharacters: stderr.length,
       stderrTruncated: stderr.length > maxStderrCharacters,
-      rawMarkerCount: boundedStderr.split(`${wirePrefix}|`).length - 1,
-      scriptBeginReceived: boundedStderr.includes(`${wirePrefix}|script|begin|0.000|`),
-      markers: parseWindowsQueryTrace(stderr),
+      rawMarkerCount: boundedStderr.match(/WEAPP_DEV_QUERY_V[12]\|/g)?.length ?? 0,
+      scriptBeginReceived: /WEAPP_DEV_QUERY_V[12]\|script\|begin\|0\.000\|/.test(boundedStderr),
+      ...parsed,
     })}\n`)
   }
   catch {

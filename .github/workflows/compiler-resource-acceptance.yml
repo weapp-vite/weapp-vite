@@ -13,6 +13,11 @@ on:
         type: number
         required: false
         default: 5
+      phase-diagnostics:
+        description: Stream private worker phase boundaries without changing the sequence, samples or budgets
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: compiler-resource-acceptance-${{ github.sha }}
@@ -50,6 +55,7 @@ jobs:
       SCENARIO: ${{ matrix.scenario }}
       PROFILE_OVERHEAD_PERCENT: ${{ inputs.profile-overhead-percent }}
       WEAPP_VITE_HMR_PROFILE_JSON: 'false'
+      EDIT_SEQUENCE_PHASE_DIAGNOSTICS: ${{ inputs.phase-diagnostics && '1' || '0' }}
     defaults:
       run:
         shell: bash

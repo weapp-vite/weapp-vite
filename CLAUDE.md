@@ -193,9 +193,9 @@ The system uses a **service-oriented architecture** centered around `CompilerCon
 
 ### Build Tools
 
-- **tsup** is used for building most packages (not tsdown anymore)
-- **Vite 8 beta** for development
-- **Rolldown beta** for bundling
+- **tsdown** builds TypeScript packages; development uses watch rebuilds instead of source stubs. Some packages also use tsc for declarations or Vite for application assets.
+- **Vite 8** for development and application builds
+- **Rolldown** for bundling
 - **Turbo** for task orchestration
 
 ### Testing

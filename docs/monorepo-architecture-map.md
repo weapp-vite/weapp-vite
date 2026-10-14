@@ -116,9 +116,8 @@ graph TD
 
 ## 4.2 包级构建器分布
 
-- `tsup`：`weapp-vite`、`@weapp-vite/web`、`@weapp-vite/volar`、`weapp-ide-cli`、`create-weapp-vite`、`@weapp-core/*`
-- `tsdown`：`wevu`、`@wevu/compiler`、`@wevu/api`
-- `unbuild`：`vite-plugin-performance`（以及部分包 dev stub 场景）
+- `tsdown`：TypeScript 库与 CLI 包使用，包括 `weapp-vite`、`wevu`、`@wevu/compiler`、`@wevu/api`、`@weapp-vite/mcp`、`vite-plugin-performance`、`rolldown-require` 和 `@weapp-core/*`；开发时使用 watch 重建，不再提供源码 stub。
+- 部分包额外使用 `tsc` 生成声明，或使用 Vite 构建 Web/小程序资源；Rust/native 包保留各自的构建工具。
 
 ## 4.3 `weapp-vite build/dev` 运行链路
 

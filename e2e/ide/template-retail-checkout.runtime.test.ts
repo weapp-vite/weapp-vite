@@ -1,4 +1,4 @@
-import { access, rm } from 'node:fs/promises'
+import { access, readFile, rm } from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -19,6 +19,72 @@ const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../', FIXTURE)
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 let miniProgram: any
 let projectRoot: string | undefined
+
+/** 失败诊断只记录有界摘要，任何采集异常均不能替代原验收错误。 */
+async function captureHomeFailureDiagnostics(home: any) {
+  const timeout = 2_500
+  async function observe(read: () => Promise<unknown>) {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    try {
+      return {
+        status: 'fulfilled',
+        value: await Promise.race([
+          Promise.resolve().then(read),
+          new Promise((_, reject) => {
+            timer = setTimeout(() => {
+              const error = new Error('DiagnosticTimeout')
+              error.name = 'DiagnosticTimeout'
+              reject(error)
+            }, timeout)
+          }),
+        ]),
+      }
+    }
+    catch (error) {
+      return { status: 'rejected', error: error instanceof Error ? error.name : typeof error }
+    }
+    finally {
+      clearTimeout(timer)
+    }
+  }
+
+  const [state, goodsCount, component, bindings] = await Promise.all([
+    observe(async () => {
+      const state = await home.data('__e2eHomeState', { fallback: false, timeout })
+      return Object.fromEntries(['ready', 'goodsCount', 'loadStatus', 'pageLoading', 'tabCount', 'swiperCount']
+        .map(key => [key, state?.[key]]))
+    }),
+    observe(async () => {
+      const goods = await home.data('goodsList', { fallback: false, timeout })
+      return Array.isArray(goods) ? goods.length : null
+    }),
+    observe(async () => await miniProgram.evaluateWithOptions(() => {
+      const pages = getCurrentPages() as any[]
+      const list = pages[pages.length - 1]?.selectComponent?.('goods-list')
+      return list
+        ? {
+            found: true,
+            id: list.id,
+            listId: list.properties?.listId,
+            independentID: list.data?.independentID,
+            propertiesGoodsCount: Array.isArray(list.properties?.goodsList) ? list.properties.goodsList.length : null,
+            dataGoodsCount: Array.isArray(list.data?.goodsList) ? list.data.goodsList.length : null,
+          }
+        : { found: false }
+    }, { timeout })),
+    observe(async () => {
+      if (!projectRoot) {
+        return null
+      }
+      const sources = await Promise.all(['pages/home/home.wxml', 'components/goods-list/index.wxml']
+        .map(file => readFile(path.join(projectRoot!, 'dist', file), 'utf8')))
+      return sources.flatMap(source => source.match(/<(?:goods-list|goods-card)\b[^>]*>/g) ?? [])
+        .slice(0, 2)
+        .map(tag => tag.slice(0, 800))
+    }),
+  ])
+  process.stdout.write(`[retail-home-failure-diagnostics] ${JSON.stringify({ checkpoint: 'home-ready', state, goodsCount, component, bindings })}\n`)
+}
 
 describe('retail checkout and goods card contracts', { concurrent: false }, () => {
   beforeAll(async () => {
@@ -94,7 +160,23 @@ describe('retail checkout and goods card contracts', { concurrent: false }, () =
       nodes: retailCheckoutNodes(scenario.quantity),
     }))])
     const home = await dom.act('home-ready', () => miniProgram.reLaunch('/pages/home/home'))
-    await dom.check('home-ready', miniProgram, home)
+    try {
+      await dom.check('home-ready', miniProgram, home)
+    }
+    catch (error) {
+      try {
+        await captureHomeFailureDiagnostics(home)
+      }
+      catch (diagnosticError) {
+        try {
+          process.stdout.write(`[retail-home-failure-diagnostics] ${JSON.stringify({ status: 'rejected', error: diagnosticError instanceof Error ? diagnosticError.name : typeof diagnosticError })}\n`)
+        }
+        catch {
+          // 诊断输出自身失败不能覆盖原验收异常。
+        }
+      }
+      throw error
+    }
     for (const scenario of scenarios) {
       const goods = RETAIL_CHECKOUT_GOODS.map(item => ({ ...item, quantity: scenario.quantity }))
       const page = await dom.act(scenario.id, async () => {

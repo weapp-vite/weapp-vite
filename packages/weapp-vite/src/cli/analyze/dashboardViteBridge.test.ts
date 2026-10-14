@@ -15,8 +15,13 @@ import {
 const initDevframeMock = vi.hoisted(() => vi.fn())
 const createDashboardMcpMock = vi.hoisted(() => vi.fn())
 
-vi.mock('devframe/initiate', () => ({
-  initDevframe: initDevframeMock,
+vi.mock('./dashboardTransport', () => ({
+  loadDashboardTransportModule: async (_owner: string, specifier: string) => {
+    if (specifier !== 'devframe/initiate') {
+      throw new Error(`Unexpected Dashboard dependency: ${specifier}`)
+    }
+    return { initDevframe: initDevframeMock }
+  },
 }))
 
 vi.mock('./dashboardMcp', () => ({
@@ -74,7 +79,7 @@ describe('analyze Dashboard Vite bridge', () => {
   it('closes the owned instance only once through native Vite shutdown', async () => {
     const instance = createInstance()
     initDevframeMock.mockReturnValue(instance)
-    const server = await createHost(createAnalyzeDashboardViteBridge(controller))
+    const server = await createHost(createAnalyzeDashboardViteBridge(controller, { packageJsonPath: path.join(root, 'package.json') }))
     await server.listen()
     await server.close()
     await server.close()
@@ -84,7 +89,7 @@ describe('analyze Dashboard Vite bridge', () => {
 
   it('releases controller state even when transport cleanup fails', async () => {
     initDevframeMock.mockReturnValue(createInstance({ close: vi.fn().mockRejectedValue(new Error('transport close failed')) }))
-    const server = await createHost(createAnalyzeDashboardViteBridge(controller))
+    const server = await createHost(createAnalyzeDashboardViteBridge(controller, { packageJsonPath: path.join(root, 'package.json') }))
     await server.listen()
     await server.close().catch(() => {})
     expect(controller.dispose).toHaveBeenCalledTimes(1)
@@ -97,7 +102,7 @@ describe('analyze Dashboard Vite bridge', () => {
     const instance = createInstance({ close: vi.fn().mockRejectedValue(transportFailure) })
     initDevframeMock.mockReturnValue(instance)
     createDashboardMcpMock.mockResolvedValueOnce({ register: vi.fn(), close: mcpClose })
-    const bridge = createAnalyzeDashboardViteBridge(controller)
+    const bridge = createAnalyzeDashboardViteBridge(controller, { packageJsonPath: path.join(root, 'package.json') })
     const server = await createHost(bridge)
     await server.listen()
     await server.close()
@@ -115,7 +120,7 @@ describe('analyze Dashboard Vite bridge', () => {
     const instance = createInstance()
     initDevframeMock.mockReturnValue(instance)
     createDashboardMcpMock.mockReturnValueOnce(acquired.promise)
-    const bridge = createAnalyzeDashboardViteBridge(controller)
+    const bridge = createAnalyzeDashboardViteBridge(controller, { packageJsonPath: path.join(root, 'package.json') })
     const server = await createHost(bridge)
     const listening = server.listen().then(() => undefined, error => error)
     try {
@@ -149,7 +154,7 @@ describe('analyze Dashboard Vite bridge', () => {
     const ready = Promise.withResolvers<void>()
     const instance = createInstance({ ready: ready.promise })
     initDevframeMock.mockReturnValue(instance)
-    const bridge = createAnalyzeDashboardViteBridge(controller)
+    const bridge = createAnalyzeDashboardViteBridge(controller, { packageJsonPath: path.join(root, 'package.json') })
     const server = await createHost(bridge)
     const listening = server.listen().then(() => undefined, error => error)
     try {
@@ -175,7 +180,7 @@ describe('analyze Dashboard Vite bridge', () => {
     initDevframeMock.mockImplementationOnce(() => {
       throw failure
     })
-    const server = await createHost(createAnalyzeDashboardViteBridge(controller))
+    const server = await createHost(createAnalyzeDashboardViteBridge(controller, { packageJsonPath: path.join(root, 'package.json') }))
     await expect(server.listen()).rejects.toBe(failure)
     expect(controller.dispose).toHaveBeenCalledTimes(1)
   })
@@ -188,7 +193,7 @@ describe('analyze Dashboard Vite bridge', () => {
     })
     Object.defineProperty(instance, 'ready', { get: () => Promise.reject(failure) })
     initDevframeMock.mockReturnValue(instance)
-    const bridge = createAnalyzeDashboardViteBridge(controller)
+    const bridge = createAnalyzeDashboardViteBridge(controller, { packageJsonPath: path.join(root, 'package.json') })
     const server = await createHost(bridge)
     await expect(server.listen()).rejects.toBe(failure)
     expect(instance.close).toHaveBeenCalledTimes(1)

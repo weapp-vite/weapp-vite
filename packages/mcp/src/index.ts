@@ -1,3 +1,5 @@
+import { realpathSync } from 'node:fs'
+import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { startStdioServer } from './runtime'
@@ -16,7 +18,12 @@ function isDirectExecution() {
   if (!entry) {
     return false
   }
-  return fileURLToPath(import.meta.url) === entry
+  try {
+    return path.relative(realpathSync(fileURLToPath(import.meta.url)), realpathSync(entry)) === ''
+  }
+  catch {
+    return false
+  }
 }
 
 if (isDirectExecution()) {

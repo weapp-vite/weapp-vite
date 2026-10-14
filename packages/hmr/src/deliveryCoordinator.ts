@@ -1,3 +1,4 @@
+import { HmrPreparationCleanupError } from './errors'
 import { maxRetainedDeltaCount, shouldResetStatefulHmrRetention } from './retention'
 
 export interface HmrDeliveryPreparation {
@@ -30,6 +31,8 @@ export class HmrDeliveryCoordinator {
   private revision = 0
   private pendingBytes = 0
   private readonly disposals = new Set<Promise<void>>()
+  private readonly disposalFailures: unknown[] = []
+  private closing?: Promise<void>
 
   constructor(
     private readonly onError: (error: unknown) => void,
@@ -38,7 +41,7 @@ export class HmrDeliveryCoordinator {
   ) {}
 
   enqueue(task: HmrDeliveryTask): void {
-    if (this.closed) {
+    if (this.closed || this.disposalFailures.length) {
       return
     }
     if (this.failed && this.requestResynchronization) {
@@ -59,13 +62,16 @@ export class HmrDeliveryCoordinator {
   }
 
   retry(): void {
+    if (this.closed || this.disposalFailures.length) {
+      return
+    }
     this.failed = false
     this.failure = undefined
     this.revision += 1
     if (!this.running && !this.closed) {
       this.running = this.drain().finally(() => {
         this.running = undefined
-        if (this.pending.length && !this.failed && !this.closed) {
+        if (this.pending.length && !this.failed && !this.closed && !this.disposalFailures.length) {
           this.retry()
         }
       })
@@ -90,16 +96,17 @@ export class HmrDeliveryCoordinator {
       const revision = this.revision
       try {
         await this.running
-        await Promise.all(this.disposals)
+        await this.waitForDisposals()
       }
       catch (error) {
         throw this.failed ? this.failure : error
       }
-      if (this.closed) {
-        throw new Error('HMR delivery coordinator closed before settlement')
-      }
+      this.throwDisposalFailures()
       if (this.failed) {
         throw this.failure
+      }
+      if (this.closed) {
+        throw new Error('HMR delivery coordinator closed before settlement')
       }
       if (revision === this.revision && !this.running && this.pending.length === 0 && this.disposals.size === 0) {
         return
@@ -107,18 +114,27 @@ export class HmrDeliveryCoordinator {
     }
   }
 
-  async close(): Promise<void> {
-    this.closed = true
-    this.reset()
-    await this.running
-    await Promise.all(this.disposals)
+  close(): Promise<void> {
+    if (!this.closing) {
+      this.closed = true
+      this.reset()
+      this.closing = (async () => {
+        await this.running
+        await this.waitForDisposals()
+        this.throwDisposalFailures()
+      })()
+    }
+    return this.closing
   }
 
   private prepare(item: QueuedDelivery): Promise<HmrDeliveryPreparation> {
     if (!item.preparation) {
       item.preparation = item.task.prepare()
-      void item.preparation.catch(() => {
+      void item.preparation.catch((error) => {
         item.preparation = undefined
+        if (error instanceof HmrPreparationCleanupError) {
+          this.recordDisposalFailure(error)
+        }
       })
     }
     return item.preparation
@@ -129,31 +145,69 @@ export class HmrDeliveryCoordinator {
       return item.disposal
     }
     item.disposal = (async () => {
+      let preparation: HmrDeliveryPreparation | undefined
       try {
-        await (await item.preparation)?.dispose?.()
+        preparation = await item.preparation
       }
       catch {
-        // 编译失败由交付循环报告；资源释放不能制造未处理拒绝。
+        // 没有准备结果时无资源可释放；编译首错仍由交付循环报告。
+        return
       }
+      await preparation?.dispose?.()
     })()
     this.disposals.add(item.disposal)
-    void item.disposal.then(() => this.disposals.delete(item.disposal!))
+    void item.disposal.then(
+      () => this.disposals.delete(item.disposal!),
+      (error) => {
+        this.disposals.delete(item.disposal!)
+        this.recordDisposalFailure(error)
+      },
+    )
     return item.disposal
   }
 
+  private reportError(error: unknown): void {
+    try {
+      this.onError(error)
+    }
+    catch {
+      // 诊断回调不能覆盖资源所有者保存的错误或制造未处理拒绝。
+    }
+  }
+
+  private recordDisposalFailure(error: unknown): void {
+    this.disposalFailures.push(error)
+    this.reportError(error)
+  }
+
+  private async waitForDisposals(): Promise<void> {
+    while (this.disposals.size) {
+      await Promise.allSettled(this.disposals)
+    }
+  }
+
+  private throwDisposalFailures(): void {
+    if (this.disposalFailures.length === 1) {
+      throw this.disposalFailures[0]
+    }
+    if (this.disposalFailures.length > 1) {
+      throw new AggregateError(this.disposalFailures, 'HMR delivery disposal failed', { cause: this.disposalFailures[0] })
+    }
+  }
+
   private async drain(): Promise<void> {
-    while (!this.closed && this.pending.length) {
+    while (!this.closed && !this.disposalFailures.length && this.pending.length) {
       const item = this.pending[0]!
       try {
         const prepared = await this.prepare(item)
-        if (item.generation !== this.generation) {
+        if (item.generation !== this.generation || this.disposalFailures.length) {
           continue
         }
         if (!item.committed) {
           await prepared.commit()
           item.committed = true
         }
-        if (item.generation !== this.generation) {
+        if (item.generation !== this.generation || this.disposalFailures.length) {
           continue
         }
         await prepared.publish()
@@ -164,12 +218,20 @@ export class HmrDeliveryCoordinator {
         await this.dispose(item)
       }
       catch (error) {
+        if (this.disposalFailures.includes(error)) {
+          return
+        }
         if (item.generation === this.generation && !this.closed) {
           this.failed = true
           this.failure = error
-          this.onError(error)
+          this.reportError(error)
           if (item.generation === this.generation && this.pending.length > 1) {
-            this.requestResynchronization?.()
+            try {
+              this.requestResynchronization?.()
+            }
+            catch (resyncError) {
+              this.reportError(resyncError)
+            }
           }
           return
         }

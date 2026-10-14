@@ -2,6 +2,7 @@ import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { CorePluginState } from './types'
 import path from 'pathe'
 import { parseLogicalEntryId } from '../../../moduleGraph/protocol'
+import { withRealpathScope } from '../../../utils/realpathScope'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 
 function resolveSourceEntryId(rawId: string) {
@@ -392,10 +393,10 @@ export function refreshSharedChunkImporters(bundle: OutputBundle, state: CorePlu
   state.hmrSharedChunkDependencies.clear()
   state.outputChunksByModule.clear()
   state.hmrSourceSharedChunks.clear()
-  appendSharedChunkImporters(bundle, state)
+  withRealpathScope(() => appendSharedChunkImporters(bundle, state))
 }
 
-export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: CorePluginState, entryIds: Set<string>) {
+function refreshPartialImporters(bundle: OutputBundle, state: CorePluginState, entryIds: Set<string>) {
   if (!entryIds.size) {
     return
   }
@@ -460,4 +461,8 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
   }
 
   appendSharedChunkImporters(bundle, state, refreshedEntryIds, previousImporters, previousDependencies)
+}
+
+export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: CorePluginState, entryIds: Set<string>) {
+  return withRealpathScope(() => refreshPartialImporters(bundle, state, entryIds))
 }

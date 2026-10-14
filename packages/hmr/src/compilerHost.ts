@@ -1,7 +1,17 @@
 import type { HmrCompilerPreparation, HmrCompilerProvider, HmrCompilerRequest } from './types'
-import { CompilerHmrResyncError } from './errors'
+import { CompilerHmrResyncError, HmrPreparationCleanupError } from './errors'
 
 interface Provider { prepare?: HmrCompilerProvider['prepareHmr'] }
+
+/** 部分准备失败后仍尝试全部释放，保留最初的拒绝及每个清理错误。 */
+async function rejectPreparations(results: HmrCompilerPreparation[], failure: unknown): Promise<never> {
+  const settled = await Promise.allSettled(results.map(result => Promise.resolve().then(() => result.dispose?.())))
+  const failures = settled.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+  if (failures.length) {
+    throw new HmrPreparationCleanupError(failure, failures)
+  }
+  throw failure
+}
 
 export interface HmrCompilerHostOptions {
   sourceId?: (id: string) => string
@@ -130,16 +140,14 @@ export class HmrCompilerHost {
     const results = settled.flatMap(result => result.status === 'fulfilled' ? [result.value] : [])
     const failure = settled.find(result => result.status === 'rejected')
     if (failure?.status === 'rejected') {
-      await Promise.allSettled(results.map(result => result.dispose?.()))
-      throw failure.reason
+      return rejectPreparations(results, failure.reason)
     }
     const assets = new Set<string>()
     for (const result of results) {
       for (const asset of result.assets ?? []) {
         const file = asset.fileName.replaceAll('\\', '/')
         if (assets.has(file)) {
-          await Promise.allSettled(results.map(result => result.dispose?.()))
-          throw new CompilerHmrResyncError(request.changedFiles, `Compiler HMR asset has multiple providers: ${file}`)
+          return rejectPreparations(results, new CompilerHmrResyncError(request.changedFiles, `Compiler HMR asset has multiple providers: ${file}`))
         }
         assets.add(file)
       }

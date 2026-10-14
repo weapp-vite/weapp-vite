@@ -6,12 +6,10 @@ import type { DashboardUiHost } from '../types'
 import type { DashboardMcp } from './dashboardMcp'
 import { Server } from 'node:http'
 import process from 'node:process'
-import { createUi } from '@devframes/hub-ui'
-import { initHub } from '@devframes/hub/initiate'
 import { DEVFRAME_CONNECTION_META_FILENAME, DEVFRAME_SSE_ROUTE, DEVFRAME_WS_ROUTE } from 'devframe/constants'
-import { initDevframe } from 'devframe/initiate'
 import { createDashboardMcp } from './dashboardMcp'
 import { withStandaloneDashboardPolicy } from './dashboardPolicy'
+import { loadDashboardTransportModule } from './dashboardTransport'
 
 export const ANALYZE_DASHBOARD_DEVFRAME_BASE = '/__weapp-vite/'
 // Hub 必须与 Dashboard 静态挂载前缀互斥，避免被上游 SPA 路由截获。
@@ -24,6 +22,7 @@ const transportPaths = new Set([
 ])
 
 interface AnalyzeDashboardViteBridgeOptions {
+  packageJsonPath: string
   projectRoot?: string
   uiHost?: DashboardUiHost
 }
@@ -35,7 +34,7 @@ interface DashboardHost {
 
 export function createAnalyzeDashboardViteBridge(
   controller: AnalyzeDashboardDevframeController,
-  options: AnalyzeDashboardViteBridgeOptions = {},
+  options: AnalyzeDashboardViteBridgeOptions,
 ): Plugin & { close: () => Promise<void> } {
   const hosts = new WeakMap<ResolvedConfig, DashboardHost>()
   const ownedHosts = new Set<DashboardHost>()
@@ -74,6 +73,13 @@ export function createAnalyzeDashboardViteBridge(
                   throw new Error('Dashboard requires the Dashboard Vite HTTP server.')
                 }
                 if (options.uiHost === 'hub') {
+                  const [{ initHub }, { createUi }] = await Promise.all([
+                    loadDashboardTransportModule(options.packageJsonPath, '@devframes/hub/initiate'),
+                    loadDashboardTransportModule(options.packageJsonPath, '@devframes/hub-ui'),
+                  ])
+                  if (closed) {
+                    return
+                  }
                   instance = initHub({
                     base: ANALYZE_DASHBOARD_HUB_BASE,
                     name: 'weapp-vite DevTools',
@@ -93,6 +99,10 @@ export function createAnalyzeDashboardViteBridge(
                   await instance.ready
                 }
                 else {
+                  const { initDevframe } = await loadDashboardTransportModule(options.packageJsonPath, 'devframe/initiate')
+                  if (closed) {
+                    return
+                  }
                   instance = initDevframe(withStandaloneDashboardPolicy(controller.definition), {
                     base: ANALYZE_DASHBOARD_DEVFRAME_BASE,
                     distDir: false,
@@ -106,6 +116,7 @@ export function createAnalyzeDashboardViteBridge(
                 }
                 if (!closed) {
                   mcp = await createDashboardMcp(instance, httpServer, {
+                    packageJsonPath: options.packageJsonPath,
                     projectRoot: options.projectRoot ?? process.cwd(),
                     id: controller.definition.id,
                     name: controller.definition.name,

@@ -33,6 +33,7 @@ export async function collectAutoImport(checkout: Checkout, driver: string, outp
       BENCH_SCENARIOS: counts.join(','),
       BENCH_CONFIGURATIONS: configurations ? JSON.stringify(configurations) : '',
       BENCH_REPORT_DIR: output,
+      AUTO_IMPORT_BUILD_DIAGNOSTIC: '0',
       // 正常配置保留支持文件，不能继承诊断开关。
       BENCH_DISABLE_CURRENT_SUPPORT_OUTPUTS: '0',
     },

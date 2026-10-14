@@ -39,6 +39,7 @@ describe('performance reporting workflows', () => {
     for (const [file, job, manifest] of [
       ['ci-performance.yml', 'smoke', 'package.json'],
       ['nightly-performance.yml', 'collect', 'driver/package.json'],
+      ['candidate-performance.yml', 'collect', 'driver/package.json'],
       ['wevu-runtime-size.yml', 'measure', 'head/package.json'],
     ]) {
       const workflow = parse(await readFile(path.join(root, '.github/workflows', file!), 'utf8'))
@@ -46,6 +47,46 @@ describe('performance reporting workflows', () => {
       expect(setup.with?.version).toBeUndefined()
       expect(setup.with?.package_json_file ?? 'package.json').toBe(manifest)
     }
+  })
+
+  it('collects an explicitly selected candidate once and keeps tokens outside measured jobs', async () => {
+    const workflow = parse(await readFile(path.join(root, '.github/workflows/candidate-performance.yml'), 'utf8'))
+    const nightly = parse(await readFile(path.join(root, '.github/workflows/nightly-performance.yml'), 'utf8'))
+    expect(workflow.name).toBe('Candidate Performance')
+    expect(Object.keys(workflow.on).sort()).toEqual(['push', 'workflow_dispatch'])
+    expect(workflow.on.push.tags).toEqual(['codex/performance-candidate/*'])
+    expect(workflow.on.workflow_dispatch.inputs['candidate-sha']).toMatchObject({ type: 'string', required: true })
+    expect(workflow.concurrency).toEqual(nightly.concurrency)
+    expect(workflow.concurrency['cancel-in-progress']).toBe(false)
+    expect(workflow.permissions).toEqual({ contents: 'read' })
+    const plan = workflow.jobs.plan
+    expect(plan.permissions).toEqual({ contents: 'read', statuses: 'write' })
+    const freeze = plan.steps.find((step: { id?: string }) => step.id === 'plan')
+    expect(freeze.env.CANDIDATE_SHA).toContain('inputs.candidate-sha || github.sha')
+    expect(freeze.run).toBe('node scripts/performanceGate/candidate.mjs plan')
+    const collect = workflow.jobs.collect
+    expect(collect.if).toContain('github.run_attempt == 1')
+    expect(collect.strategy).toMatchObject({ 'fail-fast': false, 'max-parallel': 27 })
+    expect(collect.permissions).toEqual({ contents: 'read' })
+    expect(collect.steps.some((step: { env?: Record<string, unknown> }) => Object.keys(step.env ?? {}).some(key => /TOKEN|SECRET/.test(key)))).toBe(false)
+    for (const job of Object.values(workflow.jobs) as Array<{ steps: Array<{ uses?: string, with?: Record<string, unknown> }> }>) {
+      const checkouts = job.steps.filter(step => step.uses?.startsWith('actions/checkout@'))
+      expect(checkouts.every(step => step.with?.['persist-credentials'] === false)).toBe(true)
+      expect(checkouts.every(step => /^\$\{\{ (?:github\.sha|matrix\.(?:headSha|baselineSha)) \}\}$/.test(String(step.with?.ref)))).toBe(true)
+    }
+    expect(collect.steps.at(-1)).toMatchObject({ if: 'always()', with: { 'if-no-files-found': 'error', 'retention-days': 90 } })
+    const summary = workflow.jobs.summary
+    expect(summary.if).toBe('always() && needs.plan.result == \'success\'')
+    expect(summary.permissions).toEqual({ actions: 'read', contents: 'read', statuses: 'write' })
+    expect(summary.steps.find((step: { run?: string }) => step.run?.endsWith('aggregate.mjs'))).toBeDefined()
+    const restore = summary.steps.find((step: { name?: string }) => step.name === 'Restore original evidence for a reused success')
+    expect(restore.if).toBe('needs.plan.outputs.previous_run_id != \'\'')
+    expect(restore.with).toMatchObject({ pattern: 'performance-*', path: 'performance-artifacts/previous' })
+    expect(restore.with['run-id']).toContain('needs.plan.outputs.previous_run_id')
+    expect(restore.with['github-token']).toContain('secrets.GITHUB_TOKEN')
+    expect(restore.with['merge-multiple'] ?? false).toBe(false)
+    expect(summary.steps.find((step: { run?: string }) => step.run?.endsWith('candidate.mjs publish')).if).toBe('always()')
+    expect(summary.steps.at(-1)).toMatchObject({ if: 'always()', with: { 'if-no-files-found': 'error', 'retention-days': 90 } })
   })
 
   it('uses trusted workflow_run permissions and both source workflows', async () => {

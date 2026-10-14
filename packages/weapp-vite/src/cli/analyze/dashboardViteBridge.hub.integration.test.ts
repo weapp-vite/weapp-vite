@@ -8,12 +8,13 @@ import { runInNewContext } from 'node:vm'
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
 import { defineRpcFunction } from 'devframe'
 import { DEVFRAME_CONNECTION_META_FILENAME, DEVFRAME_SSE_ROUTE, DEVFRAME_WS_ROUTE } from 'devframe/constants'
-import { getTempAuthCode } from 'devframe/node/auth'
 import { createRpcClient } from 'devframe/rpc/client'
 import { createSseRpcChannel } from 'devframe/rpc/transports/sse-client'
 import { createServer } from 'vite'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createAnalyzeDashboardDevframe } from '../../dashboard'
+import { loadDashboardTransportModule } from './dashboardTransport'
+import { dashboardTransportPackageJsonPath } from './dashboardTransport/testOwner'
 import { ANALYZE_DASHBOARD_DEVFRAME_BASE, ANALYZE_DASHBOARD_HUB_BASE, createAnalyzeDashboardViteBridge } from './dashboardViteBridge'
 
 const servers: ViteDevServer[] = []
@@ -73,7 +74,7 @@ async function createHost(options: { setup?: DevframeDefinition['setup'], plugin
         await controller.definition.setup?.(ctx, info)
       },
     },
-  }, { uiHost: 'hub', projectRoot: root })
+  }, { packageJsonPath: dashboardTransportPackageJsonPath, uiHost: 'hub', projectRoot: root })
   cleanup.push(() => controller.dispose(), () => bridge.close())
   const server = await createServer({
     root,
@@ -112,6 +113,7 @@ function connectClient(server: ViteDevServer) {
     rpc,
     disconnected: disconnected.promise,
     async authenticate() {
+      const { getTempAuthCode } = await loadDashboardTransportModule(dashboardTransportPackageJsonPath, 'devframe/node/auth')
       await rpc.$call('anonymous:devframe:auth:exchange', {
         code: getTempAuthCode(),
         ua: 'dashboard-hub-test',

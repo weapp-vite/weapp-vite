@@ -1049,6 +1049,13 @@
           "pathName": "pages/issue-1138/delayed",
           "query": "",
           "scene": null
+        },
+        {
+          "name": "pages/issue-1186/index",
+          "pathName": "pages/issue-1186/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'pathe'
 import { afterEach, expect, it } from 'vitest'
-import { resolveDashboardClientAssets, resolveDashboardRoot } from './assets'
+import { resolveDashboardClientAssets, resolveDashboardInstallation, resolveDashboardRoot } from './assets'
 
 const temporaryRoots: string[] = []
 
@@ -28,4 +28,10 @@ it('locates only built SPA assets while standalone watch prefers the optional so
   expect(resolveDashboardClientAssets(cwd)).toBe(clientRoot)
   expect(resolveDashboardRoot({ cwd })).toEqual({ root: clientRoot })
   expect(resolveDashboardRoot({ cwd, watch: true })).toEqual({ root: packageRoot, configFile: path.join(packageRoot, 'vite.config.ts') })
+  expect(resolveDashboardInstallation({ cwd })).toEqual({ root: clientRoot, packageJsonPath: path.join(packageRoot, 'package.json') })
+  expect(resolveDashboardInstallation({ cwd, watch: true })).toEqual({
+    root: packageRoot,
+    configFile: path.join(packageRoot, 'vite.config.ts'),
+    packageJsonPath: path.join(packageRoot, 'package.json'),
+  })
 })

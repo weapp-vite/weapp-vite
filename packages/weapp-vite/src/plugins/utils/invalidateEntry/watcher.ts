@@ -8,7 +8,7 @@ import { configExtensions } from '../../../constants'
 import logger from '../../../logger'
 import { createSidecarWatchOptions } from '../../../runtime/watch/options'
 import { cleanupCssImporterGraph, extractCssImportDependencies } from './cssGraph'
-import { defaultIgnoredDirNames, isSidecarFile, isWatchLimitError, watchedCssExts, watchedCssSuffixes, watchedScriptModuleSuffixes, watchedTemplateExts, watchedTemplateSuffixes } from './shared'
+import { defaultIgnoredDirNames, isSidecarFile, isWatchLimitError, watchedCssExts, watchedScriptModuleSuffixes, watchedTemplateExts } from './shared'
 import { invalidateEntryForSidecar } from './sidecar'
 
 export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
@@ -35,6 +35,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
 
   let isReady = false
   const knownSidecarFiles = new Set<string>()
+  const watchedDirectories = new Set<string>()
   const preReadyDeletedKnownFiles = new Set<string>()
   const renameTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const RENAME_SETTLE_MS = 120
@@ -82,24 +83,18 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     }
   }
 
-  const patterns = [
-    ...configExtensions.map(ext => path.join(absRoot, `**/*.${ext}`)),
-    ...watchedCssSuffixes.map(ext => path.join(absRoot, `**/*${ext}`)),
-    ...watchedTemplateSuffixes.map(ext => path.join(absRoot, `**/*${ext}`)),
-    ...watchedScriptModuleSuffixes.map(ext => path.join(absRoot, `**/*${ext}`)),
-  ]
-
   // eslint-disable-next-line ts/no-use-before-define -- 同文件内 helper，保持对外导出顺序稳定
   const ignoredMatcher = createSidecarIgnoredMatcher(ctx, absRoot)
 
-  const watcher = chokidar.watch(patterns, createSidecarWatchOptions(ctx.configService, {
+  // Chokidar 4+ 不再展开 glob；监听目录才能持续发现新建的侧车文件。
+  const watcher = chokidar.watch(absRoot, createSidecarWatchOptions(ctx.configService, {
     ignoreInitial: false,
     persistent: true,
     awaitWriteFinish: {
       stabilityThreshold: 100,
       pollInterval: 20,
     },
-    ignored: ignoredMatcher,
+    ignored: (file, stat) => ignoredMatcher(file) || Boolean(stat?.isFile() && !isSidecarFile(file)),
   }))
 
   const forwardChange = (event: ChangeEvent, input: string, options?: { silent?: boolean }) => {
@@ -107,6 +102,11 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
       return
     }
     const normalizedPath = path.normalize(input)
+    const pendingRename = renameTimers.get(normalizedPath)
+    if (pendingRename) {
+      clearTimeout(pendingRename)
+      renameTimers.delete(normalizedPath)
+    }
     const wasKnown = knownSidecarFiles.has(normalizedPath)
     const isPreReadyAtomicRestore = event === 'create' && preReadyDeletedKnownFiles.has(normalizedPath)
     if (event === 'create' || event === 'update') {
@@ -128,6 +128,15 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
   watcher.on('add', path => forwardChange('create', path))
   watcher.on('change', path => forwardChange('update', path))
   watcher.on('unlink', path => forwardChange('delete', path))
+  watcher.on('addDir', directory => watchedDirectories.add(path.normalize(directory)))
+  watcher.on('unlinkDir', (directory) => {
+    const removed = path.normalize(directory)
+    for (const watched of watchedDirectories) {
+      if (watched === removed || watched.startsWith(`${removed}/`)) {
+        watchedDirectories.delete(watched)
+      }
+    }
+  })
   watcher.on('raw', (eventName, rawPath, details) => {
     if (eventName !== 'rename') {
       return
@@ -147,7 +156,8 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
       ? candidate
       : path.resolve(baseDir, candidate)
 
-    if (ignoredMatcher(resolved)) {
+    // 已登记目录由 Chokidar 的原子保存和写入稳定门禁负责，不再抢先派发 raw 回退。
+    if (ignoredMatcher(resolved) || !isSidecarFile(resolved) || watchedDirectories.has(path.dirname(resolved))) {
       return
     }
     const pending = renameTimers.get(resolved)
@@ -157,6 +167,9 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
 
     renameTimers.set(resolved, setTimeout(() => {
       renameTimers.delete(resolved)
+      if (watchedDirectories.has(path.dirname(resolved))) {
+        return
+      }
 
       const exists = fs.existsSync(resolved)
       const wasKnown = knownSidecarFiles.has(resolved)
@@ -206,6 +219,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
         clearTimeout(timer)
       }
       renameTimers.clear()
+      watchedDirectories.clear()
       preReadyDeletedKnownFiles.clear()
       return watcher.close()
     },

@@ -222,6 +222,18 @@ describe('automator helpers', () => {
       expect(isAutomatorLoginError(error)).toBe(false)
     })
 
+    it('does not classify generic project-path errors as login failures', () => {
+      expect(isAutomatorLoginError({
+        message: 'Error: 项目路径不存在 (code 10)',
+        stderr: '[error] code: 10',
+      })).toBe(false)
+    })
+
+    it('recognises the official login code and English wording', () => {
+      expect(isAutomatorLoginError({ stderr: '[error] code: 13' })).toBe(true)
+      expect(isAutomatorLoginError({ message: 'Login again is required' })).toBe(true)
+    })
+
     it('returns false for invalid inputs', () => {
       expect(isAutomatorLoginError(undefined)).toBe(false)
       expect(isAutomatorLoginError('string')).toBe(false)

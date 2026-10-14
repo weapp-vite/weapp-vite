@@ -1,5 +1,6 @@
+import { decodeSearchParam } from './url/decodeSearchParam'
+
 type URLSearchParamValue = string | readonly string[]
-const PLUS_REGEXP = /\+/g
 const LEADING_QUERY_REGEXP = /^\?/
 const ABSOLUTE_URL_REGEXP = /^([a-z][a-z\d+.-]*:)?\/\/([^/?#]+)(\/[^?#]*)?(\?[^#]*)?(#.*)?$/i
 const ABSOLUTE_URL_PREFIX_REGEXP = /^[a-z][a-z\d+.-]*:\/\//i
@@ -8,10 +9,6 @@ const HOST_WITH_PORT_REGEXP = /^([^:]*)(?::(.*))?$/
 
 function encodeSearchParam(value: string) {
   return encodeURIComponent(value).replace(ENCODED_SPACE_REGEXP, '+')
-}
-
-function decodeSearchParam(value: string) {
-  return decodeURIComponent(value.replace(PLUS_REGEXP, ' '))
 }
 
 function normalizeSearchSource(input: string) {

@@ -1,0 +1,2 @@
+@import 'tailwindcss/utilities' source(none);
+@source './pages/**/*.{js,wxml}';

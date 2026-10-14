@@ -6,7 +6,8 @@ import { waitForOpenedAutomator } from './opened-automator'
 const connectOpenedAutomatorMock = vi.hoisted(() => vi.fn())
 const resolveProjectAutomatorPortMock = vi.hoisted(() => vi.fn(() => 11074))
 
-vi.mock('weapp-ide-cli', () => ({
+vi.mock('weapp-ide-cli', async importOriginal => ({
+  ...await importOriginal<typeof import('weapp-ide-cli')>(),
   connectOpenedAutomator: connectOpenedAutomatorMock,
   resolveProjectAutomatorPort: resolveProjectAutomatorPortMock,
 }))
