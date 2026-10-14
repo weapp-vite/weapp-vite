@@ -20,6 +20,11 @@ permissions:
 jobs:
   pr-context:
     uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
     with:
       pr_number: ${{ inputs.pr-number || '' }}
       paths: '["packages/ast-native/**","packages/ast/**","packages/weapp-vite/**","packages-runtime/wevu-compiler/**","scripts/verify-native-addon-correctness*","scripts/nativeAddonCorrectness/**",".github/workflows/native-addon-correctness.yml","pnpm-lock.yaml"]'

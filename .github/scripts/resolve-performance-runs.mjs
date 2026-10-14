@@ -21,7 +21,13 @@ export function validatePerformancePrContext(context, run, repository) {
 /** 只读取指定运行的固定上下文，不解压或执行候选提交中的脚本。 */
 export async function downloadPrContext({ apiUrl, token, repository, run, request = githubRequest }) {
   const result = await request(apiUrl, token, `/repos/${repository}/actions/runs/${run.id}/artifacts?name=pr-context&per_page=100`)
-  const artifacts = result.artifacts?.filter(artifact => artifact.name === 'pr-context' && !artifact.expired) ?? []
+  if (!Array.isArray(result.artifacts)) {
+    throw new TypeError('Invalid manual PR context artifact listing')
+  }
+  const artifacts = result.artifacts.filter(artifact => artifact.name === 'pr-context' && !artifact.expired)
+  if (!artifacts.length) {
+    throw Object.assign(new Error('Manual PR context artifact is not available'), { code: 'PR_CONTEXT_MISSING' })
+  }
   if (artifacts.length !== 1) {
     throw new Error('Missing unique manual PR context artifact')
   }
