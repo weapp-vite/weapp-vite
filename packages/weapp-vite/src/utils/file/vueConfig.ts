@@ -2,10 +2,13 @@ import type { MutableCompilerContext } from '../../context'
 import type { AutoRoutesInlineSnapshot } from './autoRoutes'
 import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
+import { createBabelBackendLoader } from '@weapp-vite/ast/babelLoader'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { parse } from 'vue/compiler-sfc'
 import { hasAutoRoutesMacroImport, inlineAutoRoutesImports, resolveAutoRoutesInlineSnapshot } from './autoRoutes'
+
+const loadVueCompiler = createBabelBackendLoader(() => import('wevu/compiler'))
 
 const vueConfigCache = new Map<string, {
   config?: Record<string, any>
@@ -131,7 +134,7 @@ export async function extractConfigFromVue(
       && JSON_MACRO_HINT_RE.test(setupContent)
 
     if (hasMacroHint) {
-      const { extractJsonMacroFromScriptSetup } = await import('wevu/compiler')
+      const { extractJsonMacroFromScriptSetup } = await loadVueCompiler()
       try {
         const preambleContent = descriptor.script?.content
         // 普通 JSON 宏不依赖路由扫描，也不应触及其他编译上下文的支持文件。
