@@ -104,7 +104,7 @@ async function fixture(stateful = true, entries = 1, command: 'serve' | 'build' 
     return bundle
   }
   await disk()
-  const record = observed.instances.at(-1)!
+  const record = [...observed.instances].reverse().find(record => record.options.tailwindcssBasedir === root)!
   const host = getCompilerHmrHost(ctx)
   return {
     root,
