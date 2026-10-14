@@ -5,7 +5,6 @@ import type { DashboardUiHost } from '../types'
 import process from 'node:process'
 import { resolveCommand } from 'package-manager-detector/commands'
 import path from 'pathe'
-import { createAnalyzeDashboardDevframe } from '../../dashboard'
 import { ANALYZE_DASHBOARD_PACKAGE_NAME, resolveDashboardInstallation } from '../../dashboard/assets'
 import { getDevServerCloseRecord, replaceDevServerClose } from '../../devLifecycle/server'
 import { getDevShutdownScope } from '../../devLifecycle/shutdown'
@@ -55,7 +54,10 @@ export async function startAnalyzeDashboard(
   // 可选面板缺失时必须在加载传输前返回，静态导入会破坏这个 CLI 加载边界。
   const { ANALYZE_DASHBOARD_DEVFRAME_BASE, ANALYZE_DASHBOARD_HUB_BASE, createAnalyzeDashboardViteBridge } = await import('./dashboardViteBridge')
   // OTP 状态位于 devframe 模块内，必须与实际传输宿主使用同一安装副本。
-  const { buildOtpAuthUrl, refreshTempAuthCode } = await loadDashboardTransportModule(packageJsonPath, 'devframe/node/auth')
+  const [{ createAnalyzeDashboardDevframe }, { buildOtpAuthUrl, refreshTempAuthCode }] = await Promise.all([
+    import('../../dashboard'),
+    loadDashboardTransportModule(packageJsonPath, 'devframe/node/auth'),
+  ])
   const devframe = createAnalyzeDashboardDevframe({
     clientAssets: options.uiHost === 'hub' ? root : undefined,
     snapshot: { current: result, previous: options.previousResult ?? null, artifacts: options.artifacts },

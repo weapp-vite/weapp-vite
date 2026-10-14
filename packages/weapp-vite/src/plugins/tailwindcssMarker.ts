@@ -27,7 +27,8 @@ export function hasManagedTailwindcssEntries(ctx: MutableCompilerContext) {
 }
 
 export function isManagedTailwindcssEntry(ctx: CompilerContext, id: string) {
-  return isManagedCompilerEntryByProvider(ctx, 'tailwindcss', normalizeManagedTailwindcssEntryPath(id))
+  return hasManagedCompilerEntriesByProvider(ctx, 'tailwindcss')
+    && isManagedCompilerEntryByProvider(ctx, 'tailwindcss', normalizeManagedTailwindcssEntryPath(id))
 }
 
 export { isManagedCompilerEntry }

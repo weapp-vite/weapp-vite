@@ -1,6 +1,5 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
-import { prepareLibDtsAssets } from '../runtime/libDts/assets'
 import { addNormalizedWatchFile } from './utils/watchFiles'
 
 /** 声明依赖在输入阶段交给宿主监听，避免首次写盘后到 END 之间的编辑丢失；产物仍由宿主 emit/write。 */
@@ -23,6 +22,7 @@ export function createLibDtsPlugin(ctx: CompilerContext): Plugin {
         if (ctx.configService.isDev || ctx.configService.weappLibConfig?.dts?.enabled === false) {
           return
         }
+        const { prepareLibDtsAssets } = await import('../runtime/libDts/assets')
         for (const asset of await prepareLibDtsAssets(ctx.configService, file => this.addWatchFile(file))) {
           this.emitFile(asset)
         }

@@ -1,9 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-// eslint-disable-next-line e18e/ban-dependencies -- 原生解析器会重排变量名；新版展开需要声明顺序来复用命令输出和解密结果。
-import { parse } from 'dotenv'
-import { expand } from 'dotenv-expand'
 
 /** 凭据不经过 Vite 的 env 调试日志；文件优先级和进程环境覆盖规则保持一致。 */
 export async function loadUploadEnv(cwd: string, mode: string, root?: string, envDir?: string | false): Promise<NodeJS.ProcessEnv> {
@@ -15,6 +12,7 @@ export async function loadUploadEnv(cwd: string, mode: string, root?: string, en
   }
   const directory = path.resolve(cwd, root ?? '.', envDir ?? '.')
   const parsed: Record<string, string> = {}
+  let parse: typeof import('dotenv').parse | undefined
   for (const file of ['.env', '.env.local', `.env.${mode}`, `.env.${mode}.local`]) {
     const content = await readFile(path.join(directory, file), 'utf8').catch((error: NodeJS.ErrnoException) => {
       if (error.code === 'ENOENT') {
@@ -22,6 +20,12 @@ export async function loadUploadEnv(cwd: string, mode: string, root?: string, en
       }
       throw error
     })
+    if (!content) {
+      continue
+    }
+    // 原生解析器会重排变量名；保留声明顺序以复用命令输出和解密结果。
+    // eslint-disable-next-line e18e/ban-dependencies
+    parse ??= (await import('dotenv')).parse
     // 覆盖值也移到当前文件的声明位置，保证引用拿到已展开的命令输出和解密结果。
     for (const [key, value] of Object.entries(parse(content))) {
       delete parsed[key]
@@ -37,6 +41,9 @@ export async function loadUploadEnv(cwd: string, mode: string, root?: string, en
       delete parsed[key]
     }
   }
-  expand({ parsed, processEnv })
+  if (Object.keys(parsed).length) {
+    const { expand } = await import('dotenv-expand')
+    expand({ parsed, processEnv })
+  }
   return { ...parsed, ...process.env }
 }

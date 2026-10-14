@@ -243,3 +243,73 @@ fn compiler_batch_reuses_identical_summary_and_returns_owned_values() {
         "Card"
     );
 }
+
+#[test]
+fn compiler_reserved_props_diagnostics_share_parse_and_return_owned_offsets() {
+    SCRIPT_PARSE_COUNT.set(0);
+    let code = "const emoji = '😀'; defineOptions({ name: 'Page' }); defineProps(['slot'])";
+    let offset = code[..code.find("defineProps").unwrap()]
+        .encode_utf16()
+        .count() as u32;
+    let mut results = analyze_compiler_scripts_native(vec![
+        input(code, "page.ts"),
+        input(code, "page.ts"),
+        input("defineProps<{ id: string }>()", "page.ts"),
+        input("defineProps({ title: String })", "page.ts"),
+    ]);
+
+    assert_eq!(SCRIPT_PARSE_COUNT.get(), 3);
+    let first = results[0].as_ref().unwrap();
+    assert_eq!(first.define_options_statements.len(), 1);
+    assert_eq!(
+        first.reserved_props_diagnostic,
+        Some(NativeReservedPropsDiagnostic {
+            warning_offset: Some(offset),
+        })
+    );
+    results[0]
+        .as_mut()
+        .unwrap()
+        .reserved_props_diagnostic
+        .as_mut()
+        .unwrap()
+        .warning_offset = None;
+    assert_eq!(
+        results[1].as_ref().unwrap().reserved_props_diagnostic,
+        Some(NativeReservedPropsDiagnostic {
+            warning_offset: Some(offset),
+        })
+    );
+    assert!(
+        results[2]
+            .as_ref()
+            .unwrap()
+            .reserved_props_diagnostic
+            .is_none()
+    );
+    assert_eq!(
+        results[3].as_ref().unwrap().reserved_props_diagnostic,
+        Some(NativeReservedPropsDiagnostic {
+            warning_offset: None,
+        })
+    );
+}
+
+#[test]
+fn compiler_reserved_props_rejects_recovered_parse_without_losing_valid_items() {
+    let code = "const value; defineProps({ id: String })";
+    let results = analyze_compiler_scripts_native(vec![
+        input(code, "page.ts"),
+        input("defineProps(['id'])", "page.ts"),
+        input(code, "page.ts"),
+    ]);
+
+    assert!(results[0].is_none());
+    assert!(results[2].is_none());
+    assert_eq!(
+        results[1].as_ref().unwrap().reserved_props_diagnostic,
+        Some(NativeReservedPropsDiagnostic {
+            warning_offset: Some(0),
+        })
+    );
+}

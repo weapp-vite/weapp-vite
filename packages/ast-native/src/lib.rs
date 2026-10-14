@@ -22,6 +22,7 @@ mod vue_sfc_signature;
 pub use vue_sfc_signature::get_vue_sfc_signature_payload_native;
 
 mod compiler_analysis;
+mod npm_chunk_analysis;
 
 #[cfg(test)]
 thread_local! {
@@ -56,6 +57,7 @@ fn parse_program<'a>(
     allocator: &'a Allocator,
     code: &'a str,
     filename: Option<String>,
+    reject_diagnostics: bool,
 ) -> Option<Program<'a>> {
     #[cfg(test)]
     SCRIPT_PARSE_COUNT.with(|count| count.set(count.get() + 1));
@@ -63,7 +65,7 @@ fn parse_program<'a>(
     let source_type =
         SourceType::from_path(Path::new(&filename)).unwrap_or_else(|_| SourceType::ts());
     let parsed = Parser::new(allocator, code, source_type).parse();
-    if parsed.fatal_error {
+    if parsed.fatal_error || (reject_diagnostics && !parsed.diagnostics.is_empty()) {
         return None;
     }
     Some(parsed.program)
@@ -281,7 +283,7 @@ pub fn collect_on_page_scroll_diagnostics_native(
     }
 
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
+    let Some(program) = parse_program(&allocator, &code, filename, false) else {
         return Vec::new();
     };
 
@@ -320,7 +322,7 @@ pub fn may_contain_static_require_literal_native(code: String, filename: Option<
         return false;
     }
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
+    let Some(program) = parse_program(&allocator, &code, filename, false) else {
         return false;
     };
     let mut visitor = StaticRequireVisitor { found: false };
@@ -362,7 +364,7 @@ pub fn may_contain_platform_api_access_native(code: String, filename: Option<Str
         return false;
     }
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
+    let Some(program) = parse_program(&allocator, &code, filename, false) else {
         return false;
     };
     let mut visitor = PlatformApiVisitor { found: false };
@@ -474,7 +476,7 @@ pub fn collect_feature_flags_native(
     }
 
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
+    let Some(program) = parse_program(&allocator, &code, filename, false) else {
         return Vec::new();
     };
     let (named_hook_locals, namespace_locals) =
@@ -516,7 +518,7 @@ pub fn analyze_scripts_native(inputs: Vec<NativeScriptAnalysisInput>) -> Vec<Nat
 
     for ((code, filename), matching) in groups {
         let allocator = Allocator::default();
-        let Some(program) = parse_program(&allocator, &code, filename) else {
+        let Some(program) = parse_program(&allocator, &code, filename, false) else {
             for index in matching {
                 results[index] = Some(NativeScriptAnalysis {
                     has_static_require_literal: false,
@@ -577,7 +579,7 @@ fn analyze_script_impl(
     }
 
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, code, filename) else {
+    let Some(program) = parse_program(&allocator, code, filename, false) else {
         return NativeScriptAnalysis {
             has_static_require_literal: false,
             has_platform_api_access: false,

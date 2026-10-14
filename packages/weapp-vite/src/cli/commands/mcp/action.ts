@@ -1,34 +1,20 @@
-import type { CAC } from 'cac'
-import type { GlobalCLIOptions } from '../types'
+import type { GlobalCLIOptions } from '../../types'
+import type { McpCommandOptions } from './types'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import path from 'pathe'
 import { runWithSuspendedSharedInput } from 'weapp-ide-cli'
-import logger from '../../logger'
-import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../../mcp'
+import logger from '../../../logger'
+import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../../../mcp'
 import {
   buildMcpClientConfigPlan,
   formatMcpQuickStart,
   inspectMcpClientConfig,
   resolveSupportedMcpClient,
   writeMcpClientConfig,
-} from '../mcpClient'
-import { resolveConfigFile } from '../options'
+} from '../../mcpClient'
 
-interface McpCommandOptions {
-  c?: string
-  config?: string
-  endpoint?: string
-  host?: string
-  port?: number | string
-  rest?: boolean
-  restEndpoint?: string
-  transport?: 'command' | 'http' | 'stdio' | 'streamable-http'
-  unref?: boolean
-  url?: string
-  workspaceRoot?: string
-  yes?: boolean
-}
+import { resolveConfigFile } from '../../options'
 
 function resolvePort(port: McpCommandOptions['port']) {
   if (typeof port === 'number' && Number.isInteger(port)) {
@@ -56,7 +42,7 @@ async function resolveHttpUrl(options: Pick<McpCommandOptions, 'c' | 'config' | 
     }
 
     const configFile = resolveConfigFile(options as GlobalCLIOptions)
-    const { loadConfig } = await import('../loadConfig')
+    const { loadConfig } = await import('../../loadConfig')
     const loaded = await loadConfig(configFile)
     const resolved = resolveWeappMcpConfig(loaded?.config?.weapp?.mcp)
     return `http://${resolved.host}:${resolved.port}${resolved.endpoint}`
@@ -194,50 +180,37 @@ async function handleServer(options: McpCommandOptions) {
   }
 }
 
-export function registerMcpCommand(cli: CAC) {
-  cli
-    .command('mcp [...args]', 'start weapp-vite MCP server or manage MCP client onboarding')
-    .option('--transport <type>', '[string] stdio | streamable-http | command | http', { default: 'stdio' })
-    .option('--host <host>', '[string] streamable-http host')
-    .option('--port <port>', '[number] streamable-http port')
-    .option('--endpoint <path>', '[string] streamable-http endpoint path')
-    .option('--rest-endpoint <path>', '[string] streamable-http REST runtime endpoint path')
-    .option('--no-rest', '[boolean] disable streamable-http REST runtime endpoints')
-    .option('--unref', '[boolean] unref HTTP server to not block process exit')
-    .option('--url <url>', '[string] explicit HTTP MCP url')
-    .option('--workspace-root <path>', '[string] workspace root path, defaults to cwd')
-    .option('-y, --yes', '[boolean] write config without prompt')
-    .action(async (args: string[], options: McpCommandOptions) => {
-      const [subcommand, client] = args
+/** 执行 MCP 子命令，注册与帮助阶段不加载服务依赖。 */
+export async function runMcpCommand(args: string[], options: McpCommandOptions) {
+  const [subcommand, client] = args
 
-      if (subcommand === 'init') {
-        if (!client) {
-          throw new Error('缺少客户端名称，请使用：wv mcp init <codex|claude-code|cursor>')
-        }
-        await handlePrint(client, options, true)
-        return
-      }
+  if (subcommand === 'init') {
+    if (!client) {
+      throw new Error('缺少客户端名称，请使用：wv mcp init <codex|claude-code|cursor>')
+    }
+    await handlePrint(client, options, true)
+    return
+  }
 
-      if (subcommand === 'print') {
-        if (!client) {
-          throw new Error('缺少客户端名称，请使用：wv mcp print <codex|claude-code|cursor>')
-        }
-        await handlePrint(client, options, false)
-        return
-      }
+  if (subcommand === 'print') {
+    if (!client) {
+      throw new Error('缺少客户端名称，请使用：wv mcp print <codex|claude-code|cursor>')
+    }
+    await handlePrint(client, options, false)
+    return
+  }
 
-      if (subcommand === 'doctor') {
-        if (!client) {
-          throw new Error('缺少客户端名称，请使用：wv mcp doctor <codex|claude-code|cursor>')
-        }
-        await handleDoctor(client, options)
-        return
-      }
+  if (subcommand === 'doctor') {
+    if (!client) {
+      throw new Error('缺少客户端名称，请使用：wv mcp doctor <codex|claude-code|cursor>')
+    }
+    await handleDoctor(client, options)
+    return
+  }
 
-      if (subcommand) {
-        throw new Error(`未知的 mcp 子命令：${subcommand}`)
-      }
+  if (subcommand) {
+    throw new Error(`未知的 mcp 子命令：${subcommand}`)
+  }
 
-      await handleServer(options)
-    })
+  await handleServer(options)
 }

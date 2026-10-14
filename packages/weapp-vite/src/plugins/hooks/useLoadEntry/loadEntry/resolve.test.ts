@@ -1,26 +1,11 @@
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createEntryResolver } from './resolve'
 
 const TEMP_ROOT = path.resolve(import.meta.dirname, '../../../../test/__temp__')
 
-async function cleanupTempRoot() {
-  if (!await fs.pathExists(TEMP_ROOT)) {
-    return
-  }
-
-  const entries = await fs.readdir(TEMP_ROOT)
-  if (entries.length === 0) {
-    await fs.remove(TEMP_ROOT)
-  }
-}
-
 describe('createEntryResolver', () => {
-  afterEach(async () => {
-    await cleanupTempRoot()
-  })
-
   it('falls back to the existing absolute entry path when plugin resolve misses a new file', async () => {
     await fs.ensureDir(TEMP_ROOT)
     const tempDir = await fs.mkdtemp(path.join(TEMP_ROOT, 'load-entry-resolve-'))

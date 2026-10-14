@@ -1,6 +1,8 @@
+import type { NativeNpmChunkAnalysis, NativeNpmChunkAnalysisInput } from './native/npmChunks'
 import { createRequire } from 'node:module'
 import process from 'node:process'
-import { isNativeCompilerScriptAnalysis } from './native/compilerAnalysis'
+import { readNativeCompilerScriptAnalysis } from './native/compilerAnalysis'
+import { readNativeNpmChunkAnalysis } from './native/npmChunks'
 import { isNativeScriptAnalysisBatchShape, readNativeScriptAnalysis } from './native/scriptAnalysis'
 
 const require = createRequire(import.meta.url)
@@ -51,14 +53,23 @@ export interface NativeCompilerScriptSpan {
 
 export interface NativeCompilerScriptAnalysis {
   imports: NativeCompilerScriptImport[]
+  /** 旧 binding 缺失该事实时，由编译阶段执行原有默认导出检查。 */
+  hasDefaultExport?: boolean
   defineOptionsStatements: NativeCompilerScriptSpan[]
   registeredComponents?: NativeCompilerRegisteredComponent[]
+  /** 缺失表示旧 binding 或需由 Babel 完成诊断；空对象表示已确认无警告。 */
+  reservedPropsDiagnostic?: { warningOffset?: number }
 }
+
+export type { NativeNpmChunkAnalysis, NativeNpmChunkAnalysisInput, NativeNpmLocalRootFact, NativeNpmPlatformApiFact, NativeNpmRequireFact } from './native/npmChunks'
 
 export interface NativeAstBinding {
   analyzeCompilerScriptsNative?: (
     inputs: NativeCompilerScriptInput[],
   ) => Array<NativeCompilerScriptAnalysis | null>
+  analyzeNpmChunksNative?: (
+    inputs: NativeNpmChunkAnalysisInput[],
+  ) => Array<NativeNpmChunkAnalysis | null>
   analyzeScriptNative?: (
     code: string,
     moduleId?: string,
@@ -112,6 +123,10 @@ function createScriptAnalysisKey(code: string, filename: string, moduleId?: stri
 
 export function shouldUseNativeAst() {
   return process.env.WEAPP_VITE_NATIVE === '1' && Boolean(resolveNativeAstModulePath())
+}
+
+export function shouldUseNativeNpmChunkAnalysis() {
+  return shouldUseNativeAst() && process.env.WEAPP_VITE_NATIVE_NPM_CHUNK === '1'
 }
 
 export function loadNativeAstBindingSync() {
@@ -239,10 +254,43 @@ export function analyzeCompilerScriptsWithNative(inputs: NativeCompilerScriptInp
   return inputs.map((input, index) => {
     try {
       const result: unknown = results[index]
-      return isNativeCompilerScriptAnalysis(result, input.code) ? result : fallback()
+      return readNativeCompilerScriptAnalysis(result, input.code) ?? fallback()
     }
     catch {
       return fallback()
+    }
+  })
+}
+
+/**
+ * 批量读取最终 chunk 的重写事实；默认关闭，任何批次或单项校验失败都交回 JS。
+ */
+export function analyzeNpmChunksWithNative(inputs: NativeNpmChunkAnalysisInput[]) {
+  if (!shouldUseNativeNpmChunkAnalysis() || inputs.length === 0) {
+    return undefined
+  }
+  let rawResults: unknown
+  try {
+    const analyzeNative = loadNativeAstBindingSync()?.analyzeNpmChunksNative
+    if (!analyzeNative) {
+      return inputs.map(() => null)
+    }
+    rawResults = analyzeNative(inputs)
+  }
+  catch {
+    return inputs.map(() => null)
+  }
+  if (!isNativeScriptAnalysisBatchShape(rawResults, inputs.length)) {
+    return inputs.map(() => null)
+  }
+  return inputs.map((input, index) => {
+    try {
+      return Object.hasOwn(rawResults, index)
+        ? readNativeNpmChunkAnalysis(rawResults[index], input.code) ?? null
+        : null
+    }
+    catch {
+      return null
     }
   })
 }

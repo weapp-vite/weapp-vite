@@ -12,6 +12,7 @@ import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
 import { toPosixPath } from '../../../utils/path'
 import { clearFileCaches, invalidateFileCache } from '../../utils/cache'
 import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../utils/scriptlessComponent'
+import { withCompilerSourceSnapshot } from '../../utils/sourceSnapshot'
 import { createAutoImportAugmenter } from './autoImport'
 import { createExtendedLibManager } from './extendedLib'
 import { createEntryLoader } from './loadEntry'
@@ -3250,6 +3251,69 @@ import { VueCard } from '../../components'
       type: 'asset',
       fileName: 'layouts/default/index.js',
     }))
+  })
+
+  it('rediscovers native sidecars for each entry load while retaining the static layout plan', async () => {
+    const { loader, configService, jsonService, replaceEntryDependencies, runtimeState } = createLoader({ isDev: true })
+    const page = path.join(configService.absoluteSrcRoot, 'pages/discovery/index.ts')
+    const layout = path.join(configService.absoluteSrcRoot, 'layouts/discovery/index')
+    const style = `${layout}.wxss`
+    mockFindJsonEntry.mockResolvedValue({ path: page.replace('.ts', '.json'), predictions: [] })
+    mockFindTemplateEntry.mockResolvedValue({ path: page.replace('.ts', '.wxml'), predictions: [] })
+    jsonService.read.mockResolvedValue({})
+    readFileMock.mockImplementation(async (file: string) => file === style ? '.discovery {}' : 'Page({})')
+    mockResolvePageLayoutPlan.mockResolvedValue({
+      layouts: [{ kind: 'native', file: layout, importPath: '/layouts/discovery/index' }],
+      dynamicSwitch: false,
+      dynamicPropKeys: [],
+    })
+    for (const assets of [{}, { style }, {}]) {
+      mockCollectNativeLayoutAssets.mockResolvedValue(assets)
+      await loader.call(createPluginContext(), page, 'page')
+      expect(replaceEntryDependencies).toHaveBeenCalledWith(page, 'layout', new Set(Object.values(assets)))
+      replaceEntryDependencies.mockClear()
+      runtimeState.build.hmr.profile = { event: 'update', dirtyReasonSummary: ['entry-direct:1'] }
+    }
+    expect(mockCollectNativeLayoutAssets).toHaveBeenCalledTimes(3)
+    expect(mockResolvePageLayoutPlan).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([false, true])('keeps native layout bytes under the source snapshot fence (removed: %s)', async (removed) => {
+    const { loader, configService, jsonService } = createLoader()
+    const page = path.join(configService.absoluteSrcRoot, 'pages/snapshot/index.ts')
+    const template = page.replace('.ts', '.wxml')
+    const layout = path.join(configService.absoluteSrcRoot, 'layouts/snapshot/index')
+    const style = `${layout}.wxss`
+    mockFindJsonEntry.mockResolvedValue({ path: page.replace('.ts', '.json'), predictions: [] })
+    mockFindTemplateEntry.mockResolvedValue({ path: template, predictions: [] })
+    jsonService.read.mockResolvedValue({})
+    mockResolvePageLayoutPlan.mockResolvedValue({
+      layouts: [{ kind: 'native', file: layout, importPath: '/layouts/snapshot/index' }],
+      dynamicSwitch: false,
+      dynamicPropKeys: [],
+    })
+    mockCollectNativeLayoutAssets.mockResolvedValue({ style })
+    readFileMock.mockResolvedValue('.live-disk-content {}')
+    const pluginCtx = createPluginContext()
+    const loading = withCompilerSourceSnapshot(configService, new Map([
+      [page, 'Page({})'],
+      [template, '<view />'],
+      [style, removed ? null : '.pinned-layout {}'],
+    ]), () => loader.call(pluginCtx, page, 'page'))
+    if (removed) {
+      await expect(loading).rejects.toThrow('Source removed from compiler snapshot')
+      expect(pluginCtx.emitFile).not.toHaveBeenCalled()
+    }
+    else {
+      await loading
+      expect(pluginCtx.emitFile).toHaveBeenCalledWith({
+        type: 'asset',
+        fileName: 'layouts/snapshot/index.wxss',
+        source: '.pinned-layout {}',
+      })
+    }
+    expect(mockCollectNativeLayoutAssets).toHaveBeenCalledTimes(1)
+    expect(readFileMock).not.toHaveBeenCalled()
   })
 
   it.each(['retain', 'replace', 'remove', 'resolve-error', 'assets-error'] as const)('publishes native layout dependencies atomically (%s)', async (outcome) => {

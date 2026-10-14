@@ -1,14 +1,17 @@
 import MagicString from 'magic-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { normalizeWxsFilename, transformWxsCode } from '@/wxs'
+import { transformWxsCode } from '@/wxs'
+import { normalizeWxsFilename } from '@/wxs/utils'
 import { createImportMetaDefineRegistry } from '../utils/importMeta'
 import { handleWxml } from './handle' // 替换为实际模块路径
 // 模拟 `normalizeWxsFilename` 与 `transformWxsCode` 方法
 vi.mock('@/wxs', () => ({
-  normalizeWxsFilename: vi.fn((filename, ext) => `normalized/${filename}.${ext}`),
   transformWxsCode: vi.fn(code => ({
     code: `transformed-${code}`,
   })),
+}))
+vi.mock('@/wxs/utils', () => ({
+  normalizeWxsFilename: vi.fn((filename, ext) => `normalized/${filename}.${ext}`),
 }))
 
 // 测试 `handleWxml`

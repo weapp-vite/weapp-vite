@@ -1,8 +1,9 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
-import type { ScriptAnalysisResult } from '../../../../../ast'
+import type { NativeNpmChunkAnalysis, NativeNpmPlatformApiFact, ScriptAnalysisResult } from '../../../../../ast'
 import type { MpPlatform } from '../../../../../types'
+import type { NpmChunkTextEdit } from './nativeNpmChunks'
 import MagicString from 'magic-string'
-import { analyzeScript, analyzeScripts, mayContainPlatformApiAccess, mayContainStaticRequireLiteral, platformApiIdentifiers } from '../../../../../ast'
+import { analyzeNpmChunksWithNative, analyzeScript, analyzeScripts, mayContainPlatformApiAccess, mayContainStaticRequireLiteral, platformApiIdentifiers } from '../../../../../ast'
 import { parseJsLike, traverse } from '../../../../../utils/babel'
 import {
   hasNpmDependencyPrefix,
@@ -11,12 +12,14 @@ import {
   resolveNpmDependencyId,
 } from '../../../../../utils/npmImport'
 import { applyMagicStringChunkRewrite } from '../../../../../utils/outputChunk'
-import { createMiniProgramPlatformApiRewrite, createPlatformApiAccessCollector, rewriteMiniProgramPlatformApiAccess } from '../../platformApiRewrite'
+import { createMiniProgramPlatformApiRewrite, createMiniProgramPlatformApiRewriteFromRanges, createPlatformApiAccessCollector, rewriteMiniProgramPlatformApiAccess } from '../../platformApiRewrite'
 import {
   BROWSER_GLOBAL_HOST_TERNARY_RE,
   DYNAMIC_GLOBAL_RESOLUTION_RE,
 } from '../constants'
 import { getRequireImportLiteral } from './literals'
+import { applyNativeChunkRewrite, createNativeChunkMagicString } from './nativeNpmChunks'
+import { discardChunkNpmAnalysis, getChunkNpmChunkAnalysis, getChunkNpmPlatformApiRanges, rememberProjectedNpmChunkAnalysis } from './npmChunkCache'
 
 function mayNeedChunkScriptAnalysis(code: string) {
   if (code.includes('require')) {
@@ -35,6 +38,8 @@ export type ChunkScriptAnalysis = Pick<ScriptAnalysisResult, 'hasPlatformApiAcce
 export type ChunkScriptAnalysisCache = WeakMap<OutputChunk, {
   analysis: ChunkScriptAnalysis
   code: string
+  npmChunkAnalysis?: NativeNpmChunkAnalysis
+  npmPlatformApiRanges?: NativeNpmPlatformApiFact[]
 }>
 
 export function rememberChunkScriptAnalysis(
@@ -44,7 +49,9 @@ export function rememberChunkScriptAnalysis(
     cache?: ChunkScriptAnalysisCache
   },
 ) {
+  const previous = options?.cache?.get(chunk)
   options?.cache?.set(chunk, {
+    ...(previous?.code === chunk.code ? previous : {}),
     analysis,
     code: chunk.code,
   })
@@ -115,13 +122,42 @@ export function warmupBundleScriptAnalysis(
     return
   }
 
-  const analyses = analyzeScripts(inputs, { engine: options.astEngine })
+  const nativeNpmAnalyses = analyzeNpmChunksWithNative(inputs)
+  const analyses = nativeNpmAnalyses
+    ? inputs.map((_, index) => {
+        const native = nativeNpmAnalyses[index]
+        return {
+          hasPlatformApiAccess: native ? native.platformApiRanges.length > 0 : true,
+          hasStaticRequireLiteral: native
+            ? native.requires.length > 0 || native.localRootFacts.some(fact => fact.kind === 'interop' && fact.importee !== undefined)
+            : true,
+        }
+      })
+    : analyzeScripts(inputs, { engine: options.astEngine })
   for (const [index, analysis] of analyses.entries()) {
     const chunk = chunks[index]
     if (!chunk) {
       continue
     }
     rememberChunkScriptAnalysis(chunk, analysis, options)
+  }
+
+  if (nativeNpmAnalyses) {
+    for (const [index, nativeAnalysis] of nativeNpmAnalyses.entries()) {
+      const chunk = chunks[index]
+      if (!chunk) {
+        continue
+      }
+      const cached = cache.get(chunk)
+      cache.set(chunk, {
+        analysis: cached?.analysis ?? {
+          hasPlatformApiAccess: false,
+          hasStaticRequireLiteral: false,
+        },
+        code: chunk.code,
+        npmChunkAnalysis: nativeAnalysis ?? undefined,
+      })
+    }
   }
 }
 
@@ -162,11 +198,33 @@ function createPlatformNpmImportRewrite(
   options?: {
     collectPlatformApiAccess?: boolean
     analysis?: Pick<ChunkScriptAnalysis, 'hasStaticRequireLiteral'>
+    nativeAnalysis?: NativeNpmChunkAnalysis
     astEngine?: 'babel' | 'oxc'
   },
 ) {
   if (!(options?.analysis?.hasStaticRequireLiteral ?? mayContainStaticRequireLiteral(code, { engine: options?.astEngine }))) {
     return
+  }
+
+  try {
+    if (options?.nativeAnalysis) {
+      const edits: NpmChunkTextEdit[] = []
+      for (const requireFact of options.nativeAnalysis.requires) {
+        const nextValue = normalizeNpmImportByPlatform(platform, requireFact.importee, dependencies, mode)
+        if (nextValue === requireFact.importee) {
+          continue
+        }
+        const replacement = JSON.stringify(nextValue)
+        edits.push({ start: requireFact.start, end: requireFact.end, replacement })
+      }
+      return {
+        magicString: edits.length > 0 ? createNativeChunkMagicString(code, edits) : undefined,
+        hasPlatformApiAccess: options.nativeAnalysis.platformApiRanges.length > 0,
+        nativeEdits: edits,
+      }
+    }
+  }
+  catch {
   }
 
   try {
@@ -266,16 +324,50 @@ export function rewriteBundleNpmImportsByPlatform(
       astEngine: options?.astEngine,
       cache: options?.analysisCache,
     })
-    const rewrite = createPlatformNpmImportRewrite(platform, chunk.code, dependencies, mode, {
+    const nativeAnalysis = getChunkNpmChunkAnalysis(chunk, options?.analysisCache)
+    let rewrite = createPlatformNpmImportRewrite(platform, chunk.code, dependencies, mode, {
       analysis,
+      nativeAnalysis,
       astEngine: options?.astEngine,
       collectPlatformApiAccess: options?.collectPlatformApiAccess,
     })
     if (!rewrite) {
       continue
     }
-    if (rewrite.magicString) {
-      applyMagicStringChunkRewrite(chunk, rewrite.magicString)
+    if (nativeAnalysis && 'nativeEdits' in rewrite && rewrite.nativeEdits) {
+      const nativeEdits = rewrite.nativeEdits
+      let applied = false
+      try {
+        if (rewrite.magicString) {
+          applyNativeChunkRewrite(chunk, rewrite.magicString)
+        }
+        applied = true
+      }
+      catch {
+        discardChunkNpmAnalysis(chunk, options?.analysisCache)
+        rewrite = createPlatformNpmImportRewrite(platform, chunk.code, dependencies, mode, {
+          analysis,
+          astEngine: options?.astEngine,
+          collectPlatformApiAccess: options?.collectPlatformApiAccess,
+        })
+        if (rewrite?.magicString) {
+          applyMagicStringChunkRewrite(chunk, rewrite.magicString)
+        }
+      }
+      if (applied) {
+        rememberProjectedNpmChunkAnalysis(chunk, nativeAnalysis, nativeEdits, options?.analysisCache)
+      }
+    }
+    else {
+      if (nativeAnalysis) {
+        discardChunkNpmAnalysis(chunk, options?.analysisCache)
+      }
+      if (rewrite.magicString) {
+        applyMagicStringChunkRewrite(chunk, rewrite.magicString)
+      }
+    }
+    if (!rewrite) {
+      continue
     }
     rememberChunkScriptAnalysis(chunk, {
       ...analysis,
@@ -309,6 +401,19 @@ export function rewriteBundlePlatformApi(
     })
     if (analysis && !analysis.hasPlatformApiAccess) {
       continue
+    }
+    const ranges = getChunkNpmPlatformApiRanges(chunk, options?.analysisCache)
+    if (ranges) {
+      try {
+        const nativeRewrite = createMiniProgramPlatformApiRewriteFromRanges(chunk.code, globalName, ranges)
+        if (nativeRewrite) {
+          applyNativeChunkRewrite(chunk, nativeRewrite)
+        }
+        continue
+      }
+      catch {
+        discardChunkNpmAnalysis(chunk, options?.analysisCache)
+      }
     }
     const magicString = createMiniProgramPlatformApiRewrite(chunk.code, globalName)
     if (!magicString) {
