@@ -14,7 +14,19 @@ gh workflow run ci-e2e.yml --ref main -f pr-number=123
 
 每轮运行先解析并固定 PR 的 head/base SHA。普通检查沿用原有 PR 检查的合并候选语义：核对 GitHub 合并候选的两个父提交与固定 base/head 一致，再 checkout 该候选 SHA，构建产物也记录该提交。这样，切换前创建的 PR 也能使用主线新增的 CI 脚本；有合并冲突时先处理冲突，再手动验证。性能和运行时体积比较仍分别 checkout 固定的 PR head 与基线。
 
-主线上的 workflow 调度 SHA 与实际被测 SHA 分别记录。通过运行摘要和 `pr-context` artifact 的 `context.json` 确认 head、base 与 checkout SHA，再核对 PR 当前提交和基线。运行期间更新 PR 或基线后，应重新触发受影响的检查，不能把旧提交的结果计为新提交通过。手动运行的检查出现在 Actions 页面，不依赖 PR 页面自动收集的检查列表。
+主线上的 workflow 调度 SHA 与实际被测 SHA 分别记录。通过运行摘要和 `pr-context` artifact 的 `context.json` 确认 head、base 与 checkout SHA，再核对 PR 当前提交和基线。运行期间更新 PR 或基线后，应重新触发受影响的检查，不能把旧提交的结果计为新提交通过。
+
+手动验证会把 `Manual PR / <workflow 名称>` 状态写到被测 PR 的 head 提交，GitHub 的 pulls 列表和 PR 检查区域因此能显示运行中、成功或失败，并链接到实际运行。状态在目标解析任务获得 runner 并解析 PR 后出现；解析任务尚在排队或 PR 尚未手动验证时，不显示检查状态。路径或分支条件不适用时会显示跳过说明，合并冲突等目标解析失败也会显示错误。
+
+完成状态由可信主线报告任务依据 GitHub 的真实运行结果回写。候选代码任务没有状态写入权限；报告核对首次状态记录与冻结上下文，拒绝把旧运行覆盖到更新的一轮验证。运行中基线变化会标记为需要重新验证；PR head 更新后，旧结果仍归属旧提交。
+
+若完成状态回写任务失败，修复后可以单独重新运行报告，无需重跑构建矩阵：
+
+```bash
+gh workflow run ci-pr-status.yml --ref main -f run-id=<运行ID>
+```
+
+此入口要求原运行已有可信的首次状态记录；切换前的历史运行不会自动补记为通过。
 
 `pr-number` 留空时，保留各 workflow 原有的独立或全量检查模式；性能冒烟和运行时体积是 PR 专属检查，需要填写编号。PR 网站验证只构建、测试和检查部署产物，生产发布仍由主线触发。
 

@@ -42,12 +42,14 @@ describe('manual PR workflow entry points', () => {
     expect(workflow.jobs['pr-context']).toMatchObject({
       uses: './.github/workflows/reusable-pr-context.yml',
       with: { pr_number: expression('inputs.pr-number || \'\'') },
+      permissions: { 'contents': 'read', 'pull-requests': 'read', 'actions': 'read', 'statuses': 'write' },
     })
     expect(workflow.concurrency.group).toContain('inputs.pr-number')
     for (const [jobName, job] of Object.entries(workflow.jobs)) {
       if (jobName === 'pr-context') {
         continue
       }
+      expect(job.permissions?.statuses, `${name}/${jobName} status permission`).not.toBe('write')
       expect([job.needs].flat(), `${name}/${jobName} needs`).toContain('pr-context')
       expect(job.if, `${name}/${jobName} scope`).toContain('needs.pr-context.outputs.should_run == \'true\'')
       if (job.uses === './.github/workflows/reusable-node-command.yml') {
@@ -70,6 +72,27 @@ describe('manual PR workflow entry points', () => {
         }
       }
     }
+  })
+
+  it('isolates state writes in trusted resolver and completion reporter jobs', async () => {
+    const resolver = await readWorkflow('reusable-pr-context.yml')
+    const checkout = resolver.jobs.resolve.steps.find(step => step.uses?.startsWith('actions/checkout@'))
+    expect(checkout.with.ref).toBe(expression('github.event.repository.default_branch'))
+    expect(checkout.with['persist-credentials']).toBe(false)
+    expect(resolver.permissions.statuses).toBe('write')
+    const pending = resolver.jobs.resolve.steps.find(step => step.name === 'Publish manual PR status')
+    expect(pending.if).toContain('always()')
+    expect(pending.if).toContain('context_available')
+    const report = await readWorkflow('ci-pr-status.yml')
+    expect(report.on.workflow_run.types).toEqual(['in_progress', 'completed'])
+    for (const name of [...workflows, 'nightly-performance.yml']) {
+      expect(report.on.workflow_run.workflows).toContain((await readWorkflow(name)).name)
+      expect((await readWorkflow(name)).permissions.statuses).not.toBe('write')
+    }
+    expect(report.permissions.statuses).toBe('write')
+    expect(report.jobs.report.if).toContain('head_repository.full_name == github.repository')
+    expect(report.jobs.report.steps.find(step => step.uses?.startsWith('actions/checkout@')).with.ref)
+      .toBe(expression('github.event.repository.default_branch'))
   })
 
   it('retains scheduled checks and production push triggers', async () => {
