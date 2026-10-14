@@ -48,6 +48,42 @@ export interface NativeCompilerScriptAnalysis {
   registeredComponents?: NativeCompilerRegisteredComponent[]
 }
 
+export interface NativeNpmChunkAnalysisInput {
+  code: string
+  filename?: string
+}
+
+export interface NativeNpmRequireFact {
+  start: number
+  end: number
+  importee: string
+}
+
+export interface NativeNpmPlatformApiFact {
+  start: number
+  end: number
+}
+
+export interface NativeNpmLocalRootFact {
+  kind: 'alias' | 'require' | 'interop'
+  requireIndex?: number
+  bindingName?: string
+  referenceName?: string
+  importee?: string
+  secondArgumentStart?: number
+  secondArgumentEnd?: number
+}
+
+export interface NativeNpmChunkAnalysis {
+  requires: NativeNpmRequireFact[]
+  platformApiRanges: NativeNpmPlatformApiFact[]
+  localRootFacts: NativeNpmLocalRootFact[]
+}
+
+export function analyzeNpmChunksNative(
+  inputs: NativeNpmChunkAnalysisInput[],
+): Array<NativeNpmChunkAnalysis | null>
+
 export function analyzeCompilerScriptsNative(
   inputs: NativeCompilerScriptInput[],
 ): Array<NativeCompilerScriptAnalysis | null>

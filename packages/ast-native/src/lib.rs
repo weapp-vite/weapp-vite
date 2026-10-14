@@ -22,6 +22,7 @@ mod vue_sfc_signature;
 pub use vue_sfc_signature::get_vue_sfc_signature_payload_native;
 
 mod compiler_analysis;
+mod npm_chunk_analysis;
 
 #[cfg(test)]
 thread_local! {

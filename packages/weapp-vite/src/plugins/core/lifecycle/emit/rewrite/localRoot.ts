@@ -12,6 +12,8 @@ import {
 } from './literals'
 import { createLocalRootNpmCandidateCheck } from './localRoot/candidates'
 import { mayNeedScopedLocalRootRewrite } from './localRoot/scopedTraversal'
+import { applyNativeChunkRewrite, createNativeChunkMagicString, createNativeLocalRootNpmEdits } from './nativeNpmChunks'
+import { discardChunkNpmAnalysis, getChunkNpmChunkAnalysis, rememberProjectedNpmChunkAnalysis } from './npmChunkCache'
 import { getChunkScriptAnalysis, matchesSubPackageDependency, rememberChunkScriptAnalysis } from './platform'
 
 export interface LocalRootNpmRewriteSubPackageMeta {
@@ -117,6 +119,35 @@ function rewriteChunkNpmImportsToLocalRootWithCandidates(
   }
   if (candidateCheck && !candidateCheck.mayNeedRewrite(chunk.code)) {
     return
+  }
+
+  const nativeAnalysis = getChunkNpmChunkAnalysis(chunk, options?.analysisCache)
+  if (nativeAnalysis) {
+    let nativeEdits: ReturnType<typeof createNativeLocalRootNpmEdits>
+    try {
+      nativeEdits = createNativeLocalRootNpmEdits(chunk.code, nativeAnalysis, (importee) => {
+        return matchesSubPackageDependency(dependencyPatterns, importee, dependencies)
+          ? toRelativeRuntimeNpmImport(chunk.fileName, root, importee, options?.basedir)
+          : importee
+      })
+      if (nativeEdits) {
+        if (nativeEdits.length > 0) {
+          applyNativeChunkRewrite(chunk, createNativeChunkMagicString(chunk.code, nativeEdits))
+        }
+      }
+    }
+    catch {
+      nativeEdits = undefined
+    }
+    if (nativeEdits) {
+      rememberProjectedNpmChunkAnalysis(chunk, nativeAnalysis, nativeEdits, options?.analysisCache)
+      rememberChunkScriptAnalysis(chunk, {
+        ...analysis,
+        hasPlatformApiAccess: nativeAnalysis.platformApiRanges.length > 0,
+      }, { cache: options?.analysisCache })
+      return
+    }
+    discardChunkNpmAnalysis(chunk, options?.analysisCache)
   }
 
   try {

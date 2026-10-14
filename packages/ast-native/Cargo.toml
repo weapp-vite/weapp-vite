@@ -14,6 +14,7 @@ oxc_allocator = "0.153.0"
 oxc_ast = "0.153.0"
 oxc_ast_visit = "0.153.0"
 oxc_parser = "0.153.0"
+oxc_semantic = "0.153.0"
 oxc_span = "0.153.0"
 oxc_syntax = "0.153.0"
 serde = { version = "1.0.229", features = [ "derive" ] }

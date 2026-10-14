@@ -8,10 +8,12 @@
     "collectOnPageScrollDiagnosticsNative",
     "getVueSfcSignaturePayloadNative",
     "mayContainPlatformApiAccessNative",
-    "mayContainStaticRequireLiteralNative"
+    "mayContainStaticRequireLiteralNative",
+    "analyzeNpmChunksNative"
   ],
   "buildFilters": [
-    "@wevu/compiler..."
+    "@wevu/compiler...",
+    "weapp-vite..."
   ],
   "suites": [
     {
@@ -21,6 +23,14 @@
     {
       "file": "test/compilerAmbientParity.test.ts",
       "minimumAssertions": 7
+    },
+    {
+      "file": "test/npmChunkRewriteParity.test.ts",
+      "minimumAssertions": 6
+    },
+    {
+      "file": "test/npmChunksParity.test.ts",
+      "minimumAssertions": 13
     },
     {
       "file": "test/onPageScroll.test.ts",

@@ -15,17 +15,19 @@ function successfulReport() {
   const counts = [
     ['compilerAnalysis.test.ts', 33],
     ['compilerAmbientParity.test.ts', 7],
+    ['npmChunksParity.test.ts', 13],
+    ['npmChunkRewriteParity.test.ts', 6],
     ['onPageScroll.test.ts', 11],
     ['vueSfcSignature.fuzz.test.ts', 44],
   ]
   return {
     success: true,
-    numTotalTestSuites: 8,
-    numPassedTestSuites: 8,
+    numTotalTestSuites: 12,
+    numPassedTestSuites: 12,
     numFailedTestSuites: 0,
     numPendingTestSuites: 0,
-    numTotalTests: 95,
-    numPassedTests: 95,
+    numTotalTests: 114,
+    numPassedTests: 114,
     numFailedTests: 0,
     numPendingTests: 0,
     numTodoTests: 0,
@@ -40,11 +42,13 @@ function successfulReport() {
 describe('actual-addon correctness evidence gate', () => {
   it('accepts complete results and emits only portable file names and counts', () => {
     const summary = verifyNativeReport(successfulReport(), packageRoot)
-    expect(summary.passed).toBe(95)
+    expect(summary.passed).toBe(114)
     expect(summary.skipped).toBe(0)
     expect(summary.suites.map(suite => suite.file)).toEqual([
       'packages/ast-native/test/compilerAnalysis.test.ts',
       'packages/ast-native/test/compilerAmbientParity.test.ts',
+      'packages/ast-native/test/npmChunksParity.test.ts',
+      'packages/ast-native/test/npmChunkRewriteParity.test.ts',
       'packages/ast-native/test/onPageScroll.test.ts',
       'packages/ast-native/test/vueSfcSignature.fuzz.test.ts',
     ])
@@ -102,6 +106,7 @@ describe('actual-addon correctness evidence gate', () => {
     expect(() => verifyNativeExports(undefined)).toThrow('Required native export is missing')
     const names = [
       'analyzeCompilerScriptsNative',
+      'analyzeNpmChunksNative',
       'analyzeScriptNative',
       'analyzeScriptsNative',
       'collectFeatureFlagsNative',
@@ -117,19 +122,27 @@ describe('actual-addon correctness evidence gate', () => {
     }
   })
 
-  it('rejects the former 88-test report that omits ambient compiler parity', () => {
+  it('rejects the former report that omits ambient compiler parity', () => {
     const report = successfulReport()
     report.testResults.splice(1, 1)
-    report.numTotalTestSuites = report.numPassedTestSuites = 6
-    report.numTotalTests = report.numPassedTests = 88
+    report.numTotalTestSuites = report.numPassedTestSuites = 10
+    report.numTotalTests = report.numPassedTests = 107
     expect(() => verifyNativeReport(report, packageRoot)).toThrow('omits suites or assertions')
   })
 
   it.each([0, 6])('rejects ambient compiler parity with only %s results', (count) => {
     const report = successfulReport()
     report.testResults[1].assertionResults.splice(count)
-    report.numTotalTests = report.numPassedTests = 88 + count
+    report.numTotalTests = report.numPassedTests = 107 + count
     expect(() => verifyNativeReport(report, packageRoot)).toThrow('failed, empty, or partial')
+  })
+
+  it('rejects the former report that omits final npm chunk parity', () => {
+    const report = successfulReport()
+    report.testResults.splice(2, 2)
+    report.numTotalTestSuites = report.numPassedTestSuites = 8
+    report.numTotalTests = report.numPassedTests = 95
+    expect(() => verifyNativeReport(report, packageRoot)).toThrow('omits suites or assertions')
   })
 })
 
