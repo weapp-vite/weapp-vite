@@ -19,6 +19,39 @@ export interface NativeScriptAnalysisInput {
   filename?: string
 }
 
+export interface NativeCompilerScriptInput {
+  code: string
+  filename?: string
+}
+
+export interface NativeCompilerScriptImport {
+  local: string
+  imported?: string
+  source: string
+  kind: 'default' | 'namespace' | 'named'
+  typeOnly: boolean
+}
+
+export interface NativeCompilerRegisteredComponent {
+  name: string
+  local: string
+}
+
+export interface NativeCompilerScriptSpan {
+  start: number
+  end: number
+}
+
+export interface NativeCompilerScriptAnalysis {
+  imports: NativeCompilerScriptImport[]
+  defineOptionsStatements: NativeCompilerScriptSpan[]
+  registeredComponents?: NativeCompilerRegisteredComponent[]
+}
+
+export function analyzeCompilerScriptsNative(
+  inputs: NativeCompilerScriptInput[],
+): Array<NativeCompilerScriptAnalysis | null>
+
 export function analyzeScriptNative(
   code: string,
   moduleId?: string,
