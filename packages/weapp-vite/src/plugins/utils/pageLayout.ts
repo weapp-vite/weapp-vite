@@ -7,6 +7,7 @@ import { collectNativeLayoutAssets } from '../vue/transform/pageLayout'
 export async function expandResolvedPageLayoutFiles(
   layouts: ResolvedPageLayout[],
   platform?: MpPlatform,
+  resolveNativeLayoutAssets = collectNativeLayoutAssets,
 ) {
   const files: string[] = []
 
@@ -16,7 +17,7 @@ export async function expandResolvedPageLayoutFiles(
       continue
     }
 
-    const nativeAssets = await collectNativeLayoutAssets(layout.file, platform)
+    const nativeAssets = await resolveNativeLayoutAssets(layout.file, platform)
     for (const asset of Object.values(nativeAssets)) {
       if (asset) {
         files.push(asset)
@@ -31,8 +32,9 @@ export async function registerResolvedPageLayoutDependencies(
   ctx: CompilerContext,
   ownerId: string,
   layouts: ResolvedPageLayout[],
+  resolveNativeLayoutAssets = collectNativeLayoutAssets,
 ) {
-  const dependencies = await expandResolvedPageLayoutFiles(layouts, ctx.configService.platform)
+  const dependencies = await expandResolvedPageLayoutFiles(layouts, ctx.configService.platform, resolveNativeLayoutAssets)
   const transitiveDependencies = new Set(dependencies)
   for (const file of dependencies) {
     if (!isTemplate(file)) {
