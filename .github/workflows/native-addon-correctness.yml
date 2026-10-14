@@ -1,0 +1,77 @@
+name: Native Addon Correctness
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - packages/ast-native/**
+      - packages/ast/**
+      - packages-runtime/wevu-compiler/**
+      - scripts/verify-native-addon-correctness*
+      - .github/workflows/native-addon-correctness.yml
+      - pnpm-lock.yaml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  actual-addon:
+    name: Actual N-API Addon (${{ matrix.os }} / Node 24.18.0)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies without lifecycle builds
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Check the correctness evidence gate
+        run: pnpm exec vitest run --config scripts/vitest.config.mjs scripts/verify-native-addon-correctness.test.mjs --maxWorkers=1 --no-file-parallelism
+
+      - name: Install the package Rust toolchain
+        working-directory: packages/ast-native
+        run: rustup show active-toolchain
+
+      - name: Build the release addon from the locked Rust dependencies
+        run: pnpm --filter @weapp-vite/ast-native exec napi build --esm --platform --release --no-js --dts target/index.d.ts -- --locked
+
+      - name: Require the actual addon and all covered exports
+        run: node scripts/verify-native-addon-correctness.mjs binding .tmp/native-addon-correctness
+
+      - name: Run actual N-API correctness tests
+        working-directory: packages/ast-native
+        run: pnpm exec vitest run --config native.vitest.config.ts test/compilerAnalysis.test.ts test/onPageScroll.test.ts test/vueSfcSignature.fuzz.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=../../.tmp/native-addon-correctness/raw-vitest.json
+
+      - name: Reject skipped, empty, or incomplete correctness results
+        if: always()
+        run: node scripts/verify-native-addon-correctness.mjs report .tmp/native-addon-correctness
+
+      - name: Upload only the validated portable evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-addon-correctness-${{ matrix.os }}-${{ github.sha }}
+          include-hidden-files: true
+          path: |
+            .tmp/native-addon-correctness/binding.json
+            .tmp/native-addon-correctness/summary.json
+          if-no-files-found: error
