@@ -14,7 +14,7 @@ import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '.
 import { createAnalyzeMarkdownReport, createAnalyzePrMarkdownReport, formatAnalyzeBytes } from '../../../analyze/subpackages/report'
 import { getBackendForCapability } from '../../../backends'
 import { createCompilerContext } from '../../../createContext'
-import { createDashboardArtifactSnapshot } from '../../../dashboard'
+import { createDashboardArtifactSnapshot } from '../../../dashboard/artifacts'
 import { createAnalyzeBudgetCheck } from '../../../dashboard/analyze'
 import logger, { colors } from '../../../logger'
 import { resolveHmrProfileJsonPath } from '../../../utils/hmrProfile'
