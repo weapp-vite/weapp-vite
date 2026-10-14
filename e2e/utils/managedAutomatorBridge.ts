@@ -27,10 +27,11 @@ export async function startManagedAutomatorBridge(options: ManagedAutomatorBridg
     if (!owner) {
       throw new Error('IDE E2E requires a task-owned project journal before opening a window')
     }
+    const startedOwner = owner
     const result = await startWechatIdeAgent({
       ...options,
       target,
-      onStarted: result => owner.confirm({ openedProjectWindow: result.openedProjectWindow, port: result.autoPort }),
+      onStarted: result => startedOwner.confirm({ openedProjectWindow: result.openedProjectWindow, port: result.autoPort }),
     })
     return {
       wsEndpoint: `ws://127.0.0.1:${result.autoPort}`,

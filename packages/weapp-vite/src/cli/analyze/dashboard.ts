@@ -5,11 +5,12 @@ import type { DashboardUiHost } from '../types'
 import process from 'node:process'
 import { resolveCommand } from 'package-manager-detector/commands'
 import path from 'pathe'
-import { ANALYZE_DASHBOARD_PACKAGE_NAME, resolveDashboardRoot } from '../../dashboard/assets'
+import { ANALYZE_DASHBOARD_PACKAGE_NAME, resolveDashboardInstallation } from '../../dashboard/assets'
 import { getDevServerCloseRecord, replaceDevServerClose } from '../../devLifecycle/server'
 import { getDevShutdownScope } from '../../devLifecycle/shutdown'
 import { createDevViteServer } from '../../devLifecycle/vite'
 import logger, { colors } from '../../logger'
+import { loadDashboardTransportModule } from './dashboardTransport'
 
 type PackageManagerAgent = Parameters<typeof resolveCommand>[0]
 
@@ -43,18 +44,19 @@ export async function startAnalyzeDashboard(
   },
 ): Promise<AnalyzeDashboardHandle | void> {
   const shutdown = getDevShutdownScope()
-  const resolved = resolveDashboardRoot(options)
+  const resolved = resolveDashboardInstallation(options)
   if (!resolved) {
     logger.warn(`[weapp-vite ui] 未安装可选仪表盘包 ${colors.bold(colors.green(ANALYZE_DASHBOARD_PACKAGE_NAME))}，已自动降级关闭 dashboard 能力。`)
     logger.info(`如需启用，请执行 ${colors.bold(colors.green(createInstallCommand(options.packageManagerAgent)))}`)
     return
   }
-  const { root, configFile } = resolved
+  const { root, configFile, packageJsonPath } = resolved
   // 可选面板缺失时必须在加载传输前返回，静态导入会破坏这个 CLI 加载边界。
   const { ANALYZE_DASHBOARD_DEVFRAME_BASE, ANALYZE_DASHBOARD_HUB_BASE, createAnalyzeDashboardViteBridge } = await import('./dashboardViteBridge')
+  // OTP 状态位于 devframe 模块内，必须与实际传输宿主使用同一安装副本。
   const [{ createAnalyzeDashboardDevframe }, { buildOtpAuthUrl, refreshTempAuthCode }] = await Promise.all([
     import('../../dashboard'),
-    import('devframe/node/auth'),
+    loadDashboardTransportModule(packageJsonPath, 'devframe/node/auth'),
   ])
   const devframe = createAnalyzeDashboardDevframe({
     clientAssets: options.uiHost === 'hub' ? root : undefined,
@@ -78,6 +80,7 @@ export async function startAnalyzeDashboard(
     },
   })
   const bridge = createAnalyzeDashboardViteBridge(devframe, {
+    packageJsonPath,
     projectRoot: options.cwd ?? process.cwd(),
     uiHost: options.uiHost,
   })

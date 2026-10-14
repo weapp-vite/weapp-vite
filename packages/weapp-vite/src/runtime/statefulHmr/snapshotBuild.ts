@@ -1,5 +1,5 @@
 import type { InlineConfig } from 'vite'
-import type { MutableCompilerContext } from '../../context'
+import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { LoadConfigOptions } from '../config/types'
 import { readFile } from 'node:fs/promises'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -7,12 +7,14 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
+import { parseSidecarSourceMetadata } from '../../moduleGraph/protocol'
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
+import { bindTailwindSnapshotGeneration, validateTailwindSnapshotGeneration } from '../../plugins/tailwindcss/generation'
 import { getTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import { configSuffixes } from '../../plugins/utils/invalidateEntry/shared'
-import { setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
+import { captureCompilerNativeScriptInputs, readCompilerInput, setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
 import { withRealpathScope } from '../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { captureWatchDependencies } from '../../utils/watchDependencies'
@@ -21,7 +23,10 @@ import { getWorkerSources } from '../buildPlugin/workerPlan'
 import { resolveScanAppBasename } from '../scanPlugin/service'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
+import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
+import { createSnapshotAssetInputs } from './snapshotAssetInputs'
 import { captureSnapshotInputs, coversSnapshotInputs, validateSnapshotInputs } from './snapshotInputs'
+import { createSnapshotNativeScriptDriftProbe } from './snapshotNativeScripts'
 
 /** 快照独立编译；初始化到构建收尾均不写支持文件，由活动 DevEngine 统一维护。 */
 export async function buildStatefulHmrSnapshot(
@@ -32,6 +37,8 @@ export async function buildStatefulHmrSnapshot(
   handoffInputFiles?: readonly string[],
 ) {
   const ctx = createCompilerContextInstance()
+  const assetInputs = createSnapshotAssetInputs(sources)
+  let releaseGeneration = () => {}
   const ownerConfig = owner?.configService
   const inheritedVueEntryIds = owner && ownerConfig
     ? (await Promise.all(Array.from(owner.runtimeState.build.hmr.resolvedEntryMap.keys())
@@ -62,7 +69,9 @@ export async function buildStatefulHmrSnapshot(
     if (sources) {
       setCompilerSourceSnapshot(ctx.configService, sources)
     }
+    releaseGeneration = bindTailwindSnapshotGeneration(ctx as CompilerContext, sources)
     const inputFiles = new Set<string>()
+    const consumedFiles = new Set<string>()
     const config = ctx.configService
     const publicDir = config.options.sourceConfig?.publicDir
     // 资产编译前记录版本，涵盖新目录和此前已发现的外部依赖。缺失信息只禁用复用。
@@ -100,7 +109,9 @@ export async function buildStatefulHmrSnapshot(
       buildEnd() {
         // Rolldown 没有 getWatchFiles 插件接口；只收集框架实际维护的依赖声明。
         for (const file of this.getModuleIds()) {
-          inputFiles.add(file.replace(/\?.*$/, ''))
+          const source = file.replace(/\?.*$/, '')
+          inputFiles.add(source)
+          consumedFiles.add(source)
           for (const dependency of ctx.moduleGraphService.getTransformDependencies(file)) {
             inputFiles.add(dependency)
           }
@@ -123,22 +134,42 @@ export async function buildStatefulHmrSnapshot(
     options.plugins = [...(options.plugins ?? []), captureWatchDependencies(file => inputFiles.add(file))]
     options.build = { ...options.build, watch: undefined, write: false }
     if (sources) {
+      let assetsInclude: ((id: string) => boolean) | undefined
       options.plugins = [{
         name: 'weapp-vite:snapshot-input',
         enforce: 'pre',
+        configResolved(config) {
+          assetsInclude = config.assetsInclude
+          assetInputs.configure(assetsInclude)
+        },
         load: {
           order: 'pre',
           handler(id) {
-            if (id.startsWith('\0') || id.includes('?')) {
+            if (id.startsWith('\0')) {
+              return null
+            }
+            if (id.includes('?')) {
+              // 内部侧车由固定源码 loader 消费；普通 raw/url 仍由 Vite 读取并核验字节。
+              if (!parseSidecarSourceMetadata(id) && /[?&](?:raw|url)(?:&|$)/.test(id)) {
+                assetInputs.capture(id.slice(0, id.indexOf('?')), true)
+              }
+              return null
+            }
+            if (assetsInclude?.(id)) {
+              assetInputs.capture(id)
               return null
             }
             // 入口归属与固定源码身份共用本次同步解析，下一次加载重新读取真实路径。
             return withRealpathScope(() => {
               const sourceId = normalizeFsResolvedId(id)
+              // Vue 和 app 已有固定源码 loader，不需要再查询原生入口的真实路径归属。
+              if (sourceId.endsWith('.vue')
+                || (ctx.scanService.appEntry?.path && normalizeFsResolvedId(ctx.scanService.appEntry.path) === sourceId)) {
+                return null
+              }
               const nativeEntry = ctx.runtimeState.build.hmr.entriesMap.get(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(sourceId)))
               // 发现的组件记录暂时指向引用它的入口；按注册身份保留原生加载及其伴随资产输出。
-              if (sourceId.endsWith('.vue') || nativeEntry
-                || (ctx.scanService.appEntry?.path && normalizeFsResolvedId(ctx.scanService.appEntry.path) === sourceId)) {
+              if (nativeEntry) {
                 return null
               }
               const source = sources.get(compilerSourceId(id))
@@ -149,9 +180,14 @@ export async function buildStatefulHmrSnapshot(
             })
           },
         },
-      }, ...(options.plugins ?? [])]
+      }, createStatefulHmrSidecarPlugin(id => readCompilerInput(ctx.configService, id)), ...(options.plugins ?? [])]
     }
-    const output = await build(options)
+    const { value: output, versions: nativeScriptVersions } = await captureCompilerNativeScriptInputs(ctx.configService, () => build(options), id =>
+      ctx.runtimeState.build.hmr.entriesMap.has(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)))
+      || (ctx.scanService.appEntry?.path !== undefined && compilerSourceId(ctx.scanService.appEntry.path) === id)).catch((error: unknown) => {
+      throw assetInputs.restoreError(error)
+    })
+    assetInputs.validate()
     // CSS/独立包可能在 generateBundle 才补充依赖，待整轮完成后统一收集。
     for (const entry of ctx.runtimeState.build.hmr.resolvedEntryMap.keys()) {
       inputFiles.add(entry)
@@ -170,11 +206,14 @@ export async function buildStatefulHmrSnapshot(
         inputFiles.add(file)
       }
     }
+    await validateTailwindSnapshotGeneration(ctx as CompilerContext, inputFiles, consumedFiles)
     const reusableInputs = inputs && coversSnapshotInputs(inputs, inputFiles) && await validateSnapshotInputs(inputs) ? inputs : undefined
     return {
       output,
       getInputFiles: () => [...inputFiles].filter(file => path.isAbsolute(file)),
       getInputs: () => reusableInputs,
+      getNativeScriptVersions: () => nativeScriptVersions,
+      getNativeScriptDrift: createSnapshotNativeScriptDriftProbe(sources, nativeScriptVersions),
       getChildSources: () => ({
         files: [...new Set([...ctx.runtimeState.build.independent.watchFiles.values()].flatMap(files => [...files]).concat(getWorkerSources(ctx).files))],
         roots: [...ctx.scanService.independentSubPackageMap.keys()].map(root => path.resolve(ctx.configService.absoluteSrcRoot, root)).concat(getWorkerSources(ctx).roots),
@@ -188,5 +227,8 @@ export async function buildStatefulHmrSnapshot(
       getGlobalStyleRoutes: () => globalStyleRoutes,
       getTailwindStyleOwners: () => getTailwindStyleOwners(ctx),
     }
-  }).finally(() => ctx.moduleGraphService.resetSession())
+  }).finally(() => {
+    releaseGeneration()
+    ctx.moduleGraphService.resetSession()
+  })
 }

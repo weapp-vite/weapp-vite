@@ -45,6 +45,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@devframes/agentic": "1.2.3",
+    "@devframes/hub": "1.2.3",
+    "@devframes/hub-ui": "1.2.3",
+    "devframe": "catalog:",
     "echarts": "catalog:",
     "monaco-editor": "^0.57.0",
     "tailwind-merge": "catalog:",
@@ -58,7 +62,6 @@
     "@types/d3": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "d3": "catalog:",
-    "devframe": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
     "vite": "catalog:",

@@ -1,4 +1,4 @@
-import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
+import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages/types'
 import type { DashboardAgentInvestigationRequest, DashboardInvestigation, DashboardInvestigationClaim, DashboardInvestigationRequest, DashboardInvestigationsState, DashboardInvestigationStatus, DashboardReportIdentity } from './types'
 import { randomBytes, randomUUID } from 'node:crypto'
 import {

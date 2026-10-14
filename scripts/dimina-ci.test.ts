@@ -6,7 +6,8 @@ import { parse } from 'yaml'
 
 it('keeps explicit SDK preparation, strict browser acceptance and bounded cache/evidence in independent CI', async () => {
   const workflow = parse(await readFile(path.resolve(import.meta.dirname, '../.github/workflows/ci-dimina.yml'), 'utf8')) as {
-    jobs: Record<string, { steps: { 'name'?: string, 'run'?: string, 'uses'?: string, 'if'?: string, 'continue-on-error'?: boolean, 'with'?: Record<string, unknown> }[] }>
+    on: { workflow_dispatch: { inputs: { diagnostics: { type: string, default: boolean } } } }
+    jobs: Record<string, { steps: { 'name'?: string, 'run'?: string, 'uses'?: string, 'if'?: string, 'continue-on-error'?: boolean, 'with'?: Record<string, unknown>, 'env'?: Record<string, string> }[] }>
   }
   const steps = workflow.jobs.web!.steps
   const commandIndex = (command: string) => steps.findIndex(step => step.run === command)
@@ -18,6 +19,8 @@ it('keeps explicit SDK preparation, strict browser acceptance and bounded cache/
   expect(e2e).toBeGreaterThan(build)
   expect(steps[setup]?.if).toBeUndefined()
   expect(steps[e2e]?.if).toBeUndefined()
+  expect(workflow.on.workflow_dispatch.inputs.diagnostics).toMatchObject({ type: 'boolean', default: false })
+  expect(steps[e2e]?.env).toEqual({ WEAPP_VITE_E2E_DIMINA_DIAGNOSTICS: '$' + '{{ inputs.diagnostics && \'1\' || \'0\' }}', DEBUG: '$' + '{{ inputs.diagnostics && \'pw:browser\' || \'\' }}' })
   expect(steps.every(step => !step['continue-on-error'])).toBe(true)
   const cache = steps.find(step => step.uses?.startsWith('actions/cache@'))!
   expect(cache.with?.key).toBe('$' + '{{ steps.sdk-key.outputs.key }}')
@@ -32,6 +35,7 @@ it('keeps explicit SDK preparation, strict browser acceptance and bounded cache/
     'docs/reports/*-e2e-dimina-*-suite-report/**',
     '.cache/dimina/screenshots/**',
     '.cache/dimina/navigation/**',
+    '.cache/dimina/diagnostics/**',
   ])
 })
 

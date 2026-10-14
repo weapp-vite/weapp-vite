@@ -8,6 +8,7 @@ import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/cli
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createDevShutdownScope } from '../../devLifecycle/shutdown'
 import { startAnalyzeDashboard } from './dashboard'
+import { dashboardTransportPackageJsonPath } from './dashboardTransport/testOwner'
 
 const fixture = vi.hoisted(() => ({
   root: '',
@@ -17,7 +18,7 @@ const fixture = vi.hoisted(() => ({
 
 vi.mock('../../dashboard/assets', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../dashboard/assets')>()
-  return { ...actual, resolveDashboardRoot: () => ({ root: fixture.root }) }
+  return { ...actual, resolveDashboardInstallation: () => ({ root: fixture.root, packageJsonPath: dashboardTransportPackageJsonPath }) }
 })
 
 vi.mock('../../devLifecycle/vite', async (importOriginal) => {

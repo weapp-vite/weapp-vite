@@ -28,6 +28,17 @@ describe('macOS read-only kernel inventory primitives', () => {
     command.mockResolvedValue(success(JSON.stringify([{ pid: 21, executable: '/kernel/path' }, { pid: 22, executable: null }])))
     expect(await readDarwinKernelPaths([21, 22])).toEqual(new Map([[21, '/kernel/path'], [22, null]]))
     expect(command).toHaveBeenCalledWith('/usr/bin/osascript', ['-l', 'JavaScript', '-e', expect.stringContaining('proc_pidpath'), '[21,22]'], expect.any(Object))
+    expect(command.mock.calls[0]![2]).toMatchObject({ timeout: 10_000 })
+  })
+
+  it('accepts a smaller remaining deadline without expanding the recovery default', async () => {
+    command.mockResolvedValue(success('[{"pid":21,"executable":"/kernel/path"}]'))
+    await readDarwinKernelPaths([21], 750)
+    expect(command.mock.calls[0]![2]).toMatchObject({ timeout: 750 })
+    await readDarwinKernelPaths([21], 20_000)
+    expect(command.mock.calls[1]![2]).toMatchObject({ timeout: 10_000 })
+    await expect(readDarwinKernelPaths([21], 0)).rejects.toThrow('cannot inspect')
+    expect(command).toHaveBeenCalledTimes(2)
   })
 
   it.each(['invalid', '[]', '[{"pid":21,"executable":null},{"pid":21,"executable":null}]', '[{"pid":22,"executable":null}]'])('rejects incomplete kernel paths %j', async (stdout) => {

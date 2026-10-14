@@ -13,6 +13,7 @@ import { registerDevframeInstance } from 'devframe/internal'
 import { createServer } from 'vite'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createAnalyzeDashboardDevframe, createDashboardArtifactSnapshot } from '../../dashboard'
+import { dashboardTransportPackageJsonPath } from './dashboardTransport/testOwner'
 import { ANALYZE_DASHBOARD_DEVFRAME_BASE, createAnalyzeDashboardViteBridge } from './dashboardViteBridge'
 
 const stateTool = 'weapp-vite_get-dashboard-state'
@@ -108,7 +109,7 @@ async function createHost(options: { port?: number, failSetup?: boolean, plugins
           }
         },
       },
-      createAnalyzeDashboardViteBridge({ ...controller, definition }, { projectRoot }),
+      createAnalyzeDashboardViteBridge({ ...controller, definition }, { packageJsonPath: dashboardTransportPackageJsonPath, projectRoot }),
       ...(options.plugins ?? []),
     ],
     server: { host: '127.0.0.1', port: options.port ?? 0, strictPort: true, watch: { ignored: ['**/*'] } },

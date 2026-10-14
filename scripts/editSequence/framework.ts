@@ -7,6 +7,7 @@ import { createServer } from 'vite'
 import { weapp } from 'weapp-vite/vite'
 import { compareBenchmarkOutputs, snapshotBenchmarkOutputs } from '../benchmarkTemplatesHmr/outputScope'
 import { bounded } from './driver'
+import { createFrameworkPhaseDiagnostics, observeFrameworkPhase } from './frameworkDiagnostics'
 import { FrameworkSequenceRuntime } from './frameworkRuntime'
 import { writeFrameworkSequenceSources } from './frameworkSources'
 import { SequenceMeasurements } from './measurement'
@@ -23,11 +24,13 @@ export class FrameworkSequenceSession {
   private readonly stateful: boolean
   private readonly watchers = new SequenceResourceOwnership()
   private readonly engines = new SequenceResourceOwnership()
+  private readonly diagnostics: ReturnType<typeof createFrameworkPhaseDiagnostics>
   readonly measurements: SequenceMeasurements
   outputChanges?: ReturnType<typeof compareBenchmarkOutputs>
 
-  constructor(mode: 'weapp-classic' | 'weapp-stateful', private readonly root: string) {
+  constructor(mode: 'weapp-classic' | 'weapp-stateful', private readonly root: string, options: { diagnostics?: boolean, role?: string } = {}) {
     this.stateful = mode === 'weapp-stateful'
+    this.diagnostics = createFrameworkPhaseDiagnostics(options.diagnostics === true, { mode, role: options.role ?? 'incremental' })
     this.outDir = path.join(root, 'dist')
     this.runtime = new FrameworkSequenceRuntime(root, this.outDir, this.stateful)
     this.measurements = new SequenceMeasurements(root)
@@ -38,13 +41,14 @@ export class FrameworkSequenceSession {
   }
 
   async observe(input: SequenceInput) {
+    this.diagnostics?.setStep(input.step)
     this.measurements.reset()
-    const before = this.server ? await snapshotBenchmarkOutputs(this.outDir) : {}
+    const before = this.server ? await observeFrameworkPhase(this.diagnostics, 'output-scan-before', () => snapshotBenchmarkOutputs(this.outDir)) : {}
     const first = !this.server
-    await writeFrameworkSequenceSources(this.root, this.files, input)
+    await observeFrameworkPhase(this.diagnostics, 'source-write', () => writeFrameworkSequenceSources(this.root, this.files, input))
     this.files = input.files
     if (first) {
-      this.server = await createServer({
+      this.server = await observeFrameworkPhase(this.diagnostics, 'create-server', () => createServer({
         root: this.root,
         configFile: false,
         mode: 'development',
@@ -67,9 +71,9 @@ export class FrameworkSequenceSession {
         // classic 通过 Vite hotUpdate 调度快照；只关闭浏览器 WebSocket，保留文件更新事件。
         server: { host: '127.0.0.1', port: 0, hmr: true, ws: false },
         build: { outDir: this.outDir, emptyOutDir: false, minify: false, sourcemap: false },
-      })
-      await this.server.listen()
-      await this.runtime.start()
+      }))
+      await observeFrameworkPhase(this.diagnostics, 'listen', () => this.server!.listen())
+      await observeFrameworkPhase(this.diagnostics, 'runtime-start', () => this.runtime.start())
     }
     const { pages: routes } = JSON.parse(input.files['src/app.json']!) as { pages: string[] }
     const source = input.files[`src/${routes[0]}.vue`]!
@@ -80,29 +84,31 @@ export class FrameworkSequenceSession {
     if (!first && !this.stateful) {
       await this.waitUntil('classic output publication', async () => (await readFile(path.join(this.outDir, `${routes[0]}.js`), 'utf8')).includes(expected), input.signal)
       // classic 的宿主重载边界只重建测试 VM；Vite/编译器/worker 始终保持运行。
-      await this.runtime.start()
+      await observeFrameworkPhase(this.diagnostics, 'runtime-start', () => this.runtime.start())
     }
-    await this.waitUntil('runtime message update', async () => await this.runtime.currentMessage() === expected, input.signal)
-    return observeSettledSequencePublication(async () => {
-      if (this.stateful) {
-        const api: unknown = this.server?.config.plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-session')?.api
-        if (!api || typeof api !== 'object' || !('whenSettled' in api) || typeof api.whenSettled !== 'function') {
-          throw new Error('Framework resource observation requires the rebuilt stateful session settlement API')
-        }
-        await api.whenSettled()
-      }
-      else {
-        await this.engine?.ensureCurrentBuildFinish()
-      }
-    }, async () => {
-      const pages = await this.runtime.observe(routes)
-      this.outputChanges = compareBenchmarkOutputs(before, await snapshotBenchmarkOutputs(this.outDir))
-      return { files: await observePublishedFiles(this.outDir), pages }
+    await observeFrameworkPhase(this.diagnostics, 'runtime-message', () => this.waitUntil('runtime message update', async () => await this.runtime.currentMessage() === expected, input.signal))
+    return observeSettledSequencePublication(() => observeFrameworkPhase(this.diagnostics, 'settlement', () => this.settle()), async () => {
+      const pages = await observeFrameworkPhase(this.diagnostics, 'runtime-observe', () => this.runtime.observe(routes))
+      this.outputChanges = compareBenchmarkOutputs(before, await observeFrameworkPhase(this.diagnostics, 'output-scan-after', () => snapshotBenchmarkOutputs(this.outDir)))
+      return { files: await observeFrameworkPhase(this.diagnostics, 'output-read', () => observePublishedFiles(this.outDir)), pages }
     }, input.signal)
   }
 
   observeSession() {
     return { watchers: this.watchers.size, engines: this.engines.size }
+  }
+
+  private async settle() {
+    if (this.stateful) {
+      const api: unknown = this.server?.config.plugins.find(plugin => plugin.name === 'weapp-vite:stateful-hmr-session')?.api
+      if (!api || typeof api !== 'object' || !('whenSettled' in api) || typeof api.whenSettled !== 'function') {
+        throw new Error('Framework resource observation requires the rebuilt stateful session settlement API')
+      }
+      await api.whenSettled()
+    }
+    else {
+      await this.engine?.ensureCurrentBuildFinish()
+    }
   }
 
   private async waitUntil(stage: string, predicate: () => Promise<boolean>, signal: AbortSignal) {
@@ -121,10 +127,10 @@ export class FrameworkSequenceSession {
 
   async close() {
     try {
-      await this.runtime.close()
+      await observeFrameworkPhase(this.diagnostics, 'runtime-close', () => this.runtime.close())
     }
     finally {
-      await this.server?.close()
+      await observeFrameworkPhase(this.diagnostics, 'server-close', () => this.server?.close() ?? Promise.resolve())
       this.server = undefined
     }
     if (this.watchers.size || this.engines.size) {

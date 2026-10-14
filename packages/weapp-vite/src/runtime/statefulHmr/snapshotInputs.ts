@@ -19,73 +19,6 @@ function excluded(file: string, scope: SnapshotInputScope) {
   return scope.excluded.some(root => file === root || file.startsWith(`${root}/`))
 }
 
-/** 内容版本同时覆盖目录增删；不依赖 mtime 精度，也不把输出和支持文件当作输入。 */
-export async function captureSnapshotInputs(scope: SnapshotInputScope): Promise<SnapshotInputs> {
-  const versions = new Map<string, string>()
-  const physicalPaths = new Map<string, Promise<string>>()
-  const physicalPath = (file: string): Promise<string> => {
-    let pending = physicalPaths.get(file)
-    if (!pending) {
-      pending = realpath(file).then(normalizeFsResolvedId).catch(async (error) => {
-        if ((error as NodeJS.ErrnoException).code !== 'ENOENT' || path.dirname(file) === file) {
-          throw error
-        }
-        return path.join(await physicalPath(path.dirname(file)), path.basename(file))
-      })
-      physicalPaths.set(file, pending)
-    }
-    return pending
-  }
-  const aliases = async (files: string[]) => [...new Set((await Promise.all(files.map(async file => [normalizeFsResolvedId(file), await physicalPath(file)]))).flat())]
-  scope = { ...scope, excluded: await aliases(scope.excluded), skipPaths: await aliases(scope.skipPaths ?? []) }
-  const record = (file: string, physical: string, version: string) => {
-    versions.set(file, version)
-    versions.set(physical, version)
-  }
-  const visit = async (input: string, parents: ReadonlySet<string> = new Set()) => {
-    const file = normalizeFsResolvedId(input)
-    if (versions.has(file) || excluded(file, scope)) {
-      return
-    }
-    const physical = await physicalPath(file)
-    if (excluded(physical, scope)) {
-      return
-    }
-    try {
-      const stat = await lstat(file)
-      if (stat.isDirectory() || stat.isSymbolicLink()) {
-        const target = physical
-        if (parents.has(target)) {
-          versions.set(file, `cycle:${target}`)
-          return
-        }
-        if (stat.isDirectory() || (await lstat(target)).isDirectory()) {
-          const names = (await readdir(file)).filter(name => !excluded(path.join(file, name), scope)
-            && !scope.skipPaths?.includes(path.join(file, name))).sort()
-          record(file, physical, `directory:${JSON.stringify(names)}`)
-          const ancestors = new Set([...parents, target])
-          await Promise.all(names.map(name => visit(path.join(file, name), ancestors)))
-          return
-        }
-      }
-      const content = await readFile(file)
-      record(file, physical, createHash('sha256').update(content).digest('hex'))
-    }
-    catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        throw error
-      }
-      record(file, physical, 'missing')
-    }
-  }
-  await Promise.all([...new Set([...scope.roots, ...scope.files])].map(file => visit(file)))
-  return { scope, versions }
-}
-
-export function sameSnapshotInputs(left: SnapshotInputs, right: SnapshotInputs) {
-  return left.versions.size === right.versions.size && [...left.versions].every(([file, version]) => right.versions.get(file) === version)
-}
-
 /** 新发现的外部依赖若没有构建前版本，保守地取消复用。 */
 export function coversSnapshotInputs(inputs: SnapshotInputs, files: Iterable<string>) {
   return [...files].every((file) => {
@@ -113,6 +46,96 @@ export function coversSnapshotInputs(inputs: SnapshotInputs, files: Iterable<str
     }
     return false
   })
+}
+
+/** 内容版本同时覆盖目录增删；不依赖 mtime 精度，也不把输出和支持文件当作输入。 */
+export async function captureSnapshotInputs(scope: SnapshotInputScope): Promise<SnapshotInputs> {
+  const versions = new Map<string, string>()
+  const physicalPaths = new Map<string, Promise<string>>()
+  const visits = new Map<string, Promise<void>>()
+  const fileVersions = new Map<string, Promise<string>>()
+  const physicalPath = (file: string): Promise<string> => {
+    let pending = physicalPaths.get(file)
+    if (!pending) {
+      pending = realpath(file).then(normalizeFsResolvedId).catch(async (error) => {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT' || path.dirname(file) === file) {
+          throw error
+        }
+        return path.join(await physicalPath(path.dirname(file)), path.basename(file))
+      })
+      physicalPaths.set(file, pending)
+    }
+    return pending
+  }
+  const aliases = async (files: string[]) => [...new Set((await Promise.all(files.map(async file => [normalizeFsResolvedId(file), await physicalPath(file)]))).flat())]
+  scope = { ...scope, excluded: await aliases(scope.excluded), skipPaths: await aliases(scope.skipPaths ?? []) }
+  const record = (file: string, physical: string, version: string) => {
+    versions.set(file, version)
+    versions.set(physical, version)
+  }
+  const visit = (input: string, parents: ReadonlySet<string> = new Set()): Promise<void> => {
+    const file = normalizeFsResolvedId(input)
+    if (versions.has(file) || excluded(file, scope)) {
+      return Promise.resolve()
+    }
+    let pending = visits.get(file)
+    if (!pending) {
+      pending = (async () => {
+        const physical = await physicalPath(file)
+        if (excluded(physical, scope)) {
+          return
+        }
+        try {
+          const stat = await lstat(file)
+          if (stat.isDirectory() || stat.isSymbolicLink()) {
+            const target = physical
+            if (parents.has(target)) {
+              versions.set(file, `cycle:${target}`)
+              return
+            }
+            if (stat.isDirectory() || (await lstat(target)).isDirectory()) {
+              const names = (await readdir(file)).filter(name => !excluded(path.join(file, name), scope)
+                && !scope.skipPaths?.includes(path.join(file, name))).sort()
+              record(file, physical, `directory:${JSON.stringify(names)}`)
+              const ancestors = new Set([...parents, target])
+              await Promise.all(names.map(name => visit(path.join(file, name), ancestors)))
+              return
+            }
+          }
+          // 根目录递归和显式依赖共享本次访问；物理别名也只读取并散列同一份内容。
+          let version = fileVersions.get(physical)
+          if (!version) {
+            version = readFile(file).then(content => createHash('sha256').update(content).digest('hex'))
+            fileVersions.set(physical, version)
+          }
+          record(file, physical, await version)
+        }
+        catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+            throw error
+          }
+          record(file, physical, 'missing')
+        }
+      })()
+      visits.set(file, pending)
+    }
+    return pending
+  }
+  const roots = [...new Set(scope.roots.map(file => normalizeFsResolvedId(file)))].filter(file => !excluded(file, scope))
+  const rootAliases = await aliases(roots)
+  const files = [...new Set(scope.files.map(file => normalizeFsResolvedId(file)))]
+  // 路径关系仅用于调度；根内依赖必须等目录内容版本确实覆盖后才能省略访问。
+  const rootedFiles = files.filter(file => rootAliases.some(root => file === root || file.startsWith(`${root}/`)))
+  const rooted = new Set(rootedFiles)
+  await Promise.all([...roots, ...files.filter(file => !rooted.has(file))].map(file => visit(file)))
+  const inputs = { scope, versions }
+  // 根目录清单已经证明不存在的 sidecar，无需再次 realpath/lstat；跳过目录中的显式依赖仍单独读取。
+  await Promise.all(rootedFiles.filter(file => !coversSnapshotInputs(inputs, [file])).map(file => visit(file)))
+  return inputs
+}
+
+export function sameSnapshotInputs(left: SnapshotInputs, right: SnapshotInputs) {
+  return left.versions.size === right.versions.size && [...left.versions].every(([file, version]) => right.versions.get(file) === version)
 }
 
 export async function validateSnapshotInputs(inputs: SnapshotInputs) {

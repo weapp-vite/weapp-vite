@@ -34,10 +34,10 @@ node --import tsx scripts/benchmarkTemplatesHmr/acceptance.ts --baseline <baseli
 - `input-manifest.json` 和 collector report 内逐次 `outputChanges`。
 - `profile-capability.json`：producer SHA、观测能力及依赖 manifest hash。
 
-顶层 `report.json` 保存冻结身份、机器信息、输入清单、全部成对样本、唯一确认计划与重算门禁；`primary.json`、`confirmation.json` 每侧完成后 checkpoint。所有输出路径脱敏，临时工程由创建它的驱动清理。成功仅表示本入口性能/归因证据通过，`stableDevtoolsValidation` 始终明确记录真实 IDE 最终验收另行完成。
+顶层 `report.json` 保存冻结身份、机器信息、输入清单、全部成对样本、唯一确认计划与重算门禁；`primary.json`、`confirmation.json` 每侧完成后 checkpoint。所有输出路径脱敏，临时工程只在资源已确认终结后清理。清理未确认或收到取消时，保存结构化 `stop` 并停止全部后续输入和确认；未终结的 fixture 保留源码与原始诊断，`retainedInput` 以所属 checkout 和相对路径定位。普通已完成清理的局部失败仍保留其他输入的原采集策略。成功仅表示本入口性能/归因证据通过，`stableDevtoolsValidation` 始终明确记录真实 IDE 最终验收另行完成。
 
 工具测试（不会启动 runtime）：
 
 ```sh
-pnpm vitest run scripts/benchmarkTemplatesHmr/acceptance.test.ts
+pnpm vitest run scripts/benchmarkTemplatesHmr/acceptance.test.ts scripts/benchmarkTemplatesHmr/acceptance.stop.test.ts scripts/benchmarkTemplatesHmr/acceptanceRunner.stop.test.ts
 ```

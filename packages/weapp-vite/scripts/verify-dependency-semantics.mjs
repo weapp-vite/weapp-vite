@@ -4,10 +4,64 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { runInNewContext } from 'node:vm'
 // eslint-disable-next-line e18e/ban-dependencies -- 发布消费者需跨平台启动 CLI。
 import { execa } from 'execa'
 
-/** 通过独立发布包验证 TS6 继承、三种解析模式和实际 CSS 转换链。 */
+/** 从插件所属的发布包加载宿主，实际执行转换与 Node adapter 初始化。 */
+async function verifyPluginHosts(root, coreRequire, load) {
+  const babel = await load(coreRequire, '@babel/core')
+  const typescript = await load(coreRequire, '@babel/preset-typescript')
+  const commonjs = await load(coreRequire, '@babel/plugin-transform-modules-commonjs')
+  const transformed = await babel.transformAsync('export const answer: number = 42', {
+    filename: 'consumer-plugin-host.ts',
+    babelrc: false,
+    configFile: false,
+    presets: [typescript.default],
+    plugins: [commonjs.default],
+  })
+  assert(transformed?.code, 'Core Babel host did not produce TypeScript/CommonJS output')
+  const coreExports = {}
+  runInNewContext(transformed.code, { exports: coreExports }, { timeout: 1000 })
+  assert.equal(coreExports.answer, 42, 'Core Babel plugins must preserve the exported typed value')
+
+  const mcpNode = await load(coreRequire, '@modelcontextprotocol/node')
+  const nodeHandler = mcpNode.toNodeHandler({ fetch: async () => new Response('consumer-mcp-host') })
+  assert.equal(typeof nodeHandler, 'function', 'Core MCP Node adapter must load its server host')
+
+  // compiler 仅导出 ESM 入口且未导出 package.json，使用消费者内的真实包根建立解析归属。
+  const compilerManifest = await realpath(path.join(root, 'node_modules/@wevu/compiler/package.json'))
+  assert(compilerManifest.startsWith(`${await realpath(root)}${path.sep}node_modules${path.sep}`), 'Compiler owner escaped consumer')
+  const compilerRequire = createRequire(compilerManifest)
+  const compilerBabel = await load(compilerRequire, '@babel/core')
+  const jsxPlugin = await load(compilerRequire, '@vue/babel-plugin-jsx')
+  const vueModule = await load(compilerRequire, 'vue')
+  const vue = vueModule.default ?? vueModule
+  const jsx = await compilerBabel.transformAsync('export const vnode = <div id="consumer-compiler-jsx-host" />', {
+    filename: 'consumer-plugin-host.jsx',
+    babelrc: false,
+    configFile: false,
+    plugins: [jsxPlugin.default],
+  })
+  assert(jsx?.code, 'Compiler Babel host did not produce Vue JSX output')
+  const executableJsx = await babel.transformAsync(jsx.code, {
+    filename: 'consumer-plugin-host.js',
+    babelrc: false,
+    configFile: false,
+    plugins: [commonjs.default],
+  })
+  assert(executableJsx?.code, 'Vue JSX output could not be evaluated as CommonJS')
+  const compilerExports = {}
+  runInNewContext(executableJsx.code, { exports: compilerExports, require(specifier) {
+    assert.equal(specifier, 'vue', 'JSX output must only load its consumer-owned Vue runtime')
+    return vue
+  } }, { timeout: 1000 })
+  assert.equal(compilerExports.vnode.type, 'div')
+  assert.equal(compilerExports.vnode.props.id, 'consumer-compiler-jsx-host')
+  return { coreBabel: babel.version, typedExport: coreExports.answer, mcpNodeHandler: typeof nodeHandler, compilerBabel: compilerBabel.version, jsx: { type: compilerExports.vnode.type, id: compilerExports.vnode.props.id } }
+}
+
+/** 通过独立发布包验证插件宿主、TS6 继承、三种解析模式和实际 CSS 转换链。 */
 export async function verifyDependencySemantics(root) {
   const require = createRequire(path.join(root, 'package.json'))
   const load = async (owner, specifier) => {
@@ -16,6 +70,7 @@ export async function verifyDependencySemantics(root) {
     return import(pathToFileURL(file).href)
   }
   const compilerRequire = createRequire(require.resolve('weapp-vite/package.json'))
+  const pluginHosts = await verifyPluginHosts(root, compilerRequire, load)
   const ts = (await load(require, 'typescript')).default
   assert.equal(ts.version, '6.0.3')
   const core = await load(compilerRequire, 'weapp-tailwindcss/core')
@@ -70,5 +125,5 @@ export async function verifyDependencySemantics(root) {
     assert(output.includes(marker), `${mode.name}: resolved value must reach emitted page`)
     results.push({ mode: mode.name, marker, typeDiagnostics: 0 })
   }
-  return { typescript: ts.version, aliases: results, css }
+  return { pluginHosts, typescript: ts.version, aliases: results, css }
 }

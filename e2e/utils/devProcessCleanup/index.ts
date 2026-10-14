@@ -1,6 +1,6 @@
 import type { DevProcessIdentity } from './processes'
 import process from 'node:process'
-import { sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
+import { sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/processIdentity'
 import { traceCleanupStage } from '../cleanupTrace'
 import { captureDevProcessTree, isDevProcessAlive, killWindowsDevProcesses, readDevProcessIdentities, UnconfirmedDevProcessTreeError } from './processes'
 

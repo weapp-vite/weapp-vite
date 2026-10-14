@@ -1,11 +1,15 @@
 import type { AuditSample, Checkout, HmrProfileCapability } from './collect'
+import type { CollectorStop } from './collectorStop'
 import type { AuditBatch } from './report'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { collectorStop } from './collectorStop'
 import { confirmationConfigurations } from './contract.mjs'
+import { evaluateGate } from './evaluate'
 import { runCollector } from './process'
 import { hmrProfileCapability } from './profileCapability.mjs'
+import { pairBatch } from './report'
 
 export function pairsForShard(shard: string) {
   return shard === 'build' || shard === 'auto-build' ? 7 : 20
@@ -24,6 +28,7 @@ export async function collectSide(checkout: Checkout, shard: string, directory: 
   const profileCapability = shard.startsWith('hmr:') ? hmrProfileCapability(checkout.id, checkout.commit, shard.split(':')[1]!) : undefined
   await writeFile(path.join(directory, 'input.json'), JSON.stringify({ checkout: { ...checkout, templates }, shard, configurations, profileCapability }))
   const errors: string[] = []
+  let stop: CollectorStop | undefined
   try {
     await runCollector(process.execPath, ['--import', 'tsx', 'scripts/performanceGate/worker.ts'], {
       cwd: process.cwd(),
@@ -35,16 +40,17 @@ export async function collectSide(checkout: Checkout, shard: string, directory: 
   }
   catch (error) {
     errors.push(String(error))
+    stop = collectorStop(error)
   }
   try {
     const data = JSON.parse(await readFile(path.join(directory, 'values.json'), 'utf8')) as { values: AuditSample[], errors: string[], profileCapability?: HmrProfileCapability }
     if (JSON.stringify(data.profileCapability) !== JSON.stringify(profileCapability)) {
-      return { values: [], errors: [...errors, ...data.errors, 'Collector HMR profile capability identity mismatch'], profileCapability }
+      return { values: [], errors: [...errors, ...data.errors, 'Collector HMR profile capability identity mismatch'], profileCapability, stop }
     }
-    return { values: selected ? data.values.filter(v => selected.includes(v.id)) : data.values, errors: [...errors, ...data.errors], profileCapability }
+    return { values: selected ? data.values.filter(v => selected.includes(v.id)) : data.values, errors: [...errors, ...data.errors], profileCapability, stop }
   }
   catch {
-    return { values: [], errors: [...errors, 'Missing completed collector evidence'], profileCapability }
+    return { values: [], errors: [...errors, 'Missing completed collector evidence'], profileCapability, stop }
   }
 }
 
@@ -64,11 +70,25 @@ export async function collectShardBatch(checkouts: { baseline: Checkout, optimiz
       const collected = await collectSide(checkouts[side], shard, path.join(output, name, String(round), side), selected, Math.min(15 * 60_000, deadline - Date.now()))
       batch.samples.push({ round, side, values: collected.values, profileCapability: collected.profileCapability })
       batch.errors.push(...collected.errors.map(error => `${name} pair ${round + 1} ${side}: ${error}`))
+      if (collected.stop) {
+        batch.stop = collected.stop
+      }
       await checkpoint()
-      if (!collected.values.length && collected.errors.length) {
+      if (collected.stop || (!collected.values.length && collected.errors.length)) {
         return batch
       }
     }
   }
   return batch
+}
+
+/** 保留已完成场景的固定确认规则；资源未终结或取消时不能开启确认采集。 */
+export function requestedConfirmationMetrics(primary: AuditBatch, metrics: string[], shard: string) {
+  if (primary.stop) {
+    return []
+  }
+  const scenarios = pairBatch(primary, metrics)
+  return evaluateGate(scenarios).scenarios.filter(row => row.primary.changePercent !== null && row.primary.changePercent > 5
+    && !scenarios.find(scenario => scenario.id === row.id)?.error
+    && row.primary.count === pairsForShard(shard)).map(row => row.id)
 }

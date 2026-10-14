@@ -37,10 +37,12 @@ export const RETRY_CONFIRM_KEYS = ['y'] as const
 export const RETRY_CANCEL_KEYS = ['q', 'Esc', 'Ctrl+C'] as const
 
 const LOGIN_REQUIRED_PATTERNS = [
-  /code\s*[:=]\s*10/i,
+  // 官方 CLI 的 10 是通用错误；登录错误为 13，旧版本的 10 仍按明确登录文案识别。
+  /code(?:\s*[:=]\s*|\s+)13\b/i,
   /需要重新登录/,
   /need\s+re-?login/i,
   /re-?login/i,
+  /\blogin(?:\s+again)?\s+(?:is\s+)?required\b/i,
 ]
 
 interface ExecErrorLike {
@@ -164,8 +166,8 @@ export function isWechatIdeLoginRequiredExitError(error: unknown) {
   }
 
   return candidate.name === 'WechatIdeLoginRequiredError'
-    || candidate.code === 10
-    || candidate.exitCode === 10
+    // 10 仅是本工具登录退出码，原生 CLI 的通用错误不能单独作为登录证据。
+    || ((candidate.code === 10 || candidate.exitCode === 10) && isWechatIdeLoginRequiredError(error))
 }
 
 /**
