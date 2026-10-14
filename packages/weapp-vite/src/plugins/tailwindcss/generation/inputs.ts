@@ -47,11 +47,19 @@ export function copyGenerationValue<T>(value: T, parents = new Set<object>()): T
 }
 
 /** 比较实际解析的 CSS base 与完整入口选项，而不是仅比较 root id。 */
+export function comparableGenerationRequest(request: CompilerGenerateRequest) {
+  // incrementalCache 只控制编译器的缓存生命周期，不改变生成结果。
+  // 快照复用可能跨越 serve/build.watch 与一次性 build；比较输出输入时必须忽略这个生命周期标记。
+  const { incrementalCache: _incrementalCache, ...comparableRequest } = request
+  return comparableRequest
+}
+
 export async function generationRequest(request: CompilerGenerateRequest) {
   const { resolveTailwindV4Source } = await import('weapp-tailwindcss/generator')
   const source = request.source ?? await resolveTailwindV4Source(request.sourceOptions)
+  const comparableRequest = comparableGenerationRequest(request)
   return copyGenerationValue({
-    ...request,
+    ...comparableRequest,
     sourceOptions: request.sourceOptions ? { ...request.sourceOptions, base: source.base } : undefined,
   })
 }

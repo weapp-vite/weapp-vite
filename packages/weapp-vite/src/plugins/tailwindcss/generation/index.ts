@@ -3,7 +3,7 @@ import type { CompilerContext } from '../../../context'
 import type { WeappCompilerHmrPreparation, WeappCompilerHmrRequest } from '../../../types/compilerPlugin'
 import path from 'pathe'
 import { CompilerHmrResyncError, compilerSourceId } from '../../compilerPlugin/hmr'
-import { captureGenerationDependencies, copyGenerationValue, equalGenerationValue, generationRequest, isGenerationSourceFile } from './inputs'
+import { captureGenerationDependencies, comparableGenerationRequest, copyGenerationValue, equalGenerationValue, generationRequest, isGenerationSourceFile } from './inputs'
 
 export interface TailwindGenerationEntry {
   readonly rawCss: string
@@ -49,7 +49,7 @@ export function rememberTailwindGeneration(
       sources: new Map(request.sources),
       options: copyGenerationValue(options),
       roots: roots.map(root => ({
-        request: copyGenerationValue(root.request),
+        request: copyGenerationValue(comparableGenerationRequest(root.request)),
         sources: copyGenerationValue(root.sources),
         entry: Object.freeze({ rawCss: root.result.rawCss, css: root.result.css, dependencies: Object.freeze([...root.result.dependencies]), snapshot: root.result.snapshot }),
       })),
