@@ -73,7 +73,8 @@ graph TD
 - CLI 注册：`packages/weapp-vite/src/cli.ts`
 - 公开 API 入口：`packages/weapp-vite/src/index.ts`
 - 配置类型入口：`packages/weapp-vite/src/config.ts`
-- 构建命令：`packages/weapp-vite/src/cli/commands/build.ts`
+- 构建命令注册：`packages/weapp-vite/src/cli/commands/build/index.ts`
+- 构建命令执行：`packages/weapp-vite/src/cli/commands/build/action.ts`（派发时加载）
 - 开发命令：`packages/weapp-vite/src/cli/commands/serve.ts`
 - 运行目标路由（mini/web）：`packages/weapp-vite/src/cli/runtime.ts`
 
