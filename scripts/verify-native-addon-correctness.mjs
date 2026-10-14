@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url))
 const requiredExports = [
   'analyzeCompilerScriptsNative',
+  'analyzeNpmChunksNative',
   'analyzeScriptNative',
   'analyzeScriptsNative',
   'collectFeatureFlagsNative',
@@ -18,6 +19,8 @@ const requiredExports = [
 const requiredSuites = new Map([
   ['test/compilerAnalysis.test.ts', 33],
   ['test/compilerAmbientParity.test.ts', 7],
+  ['test/npmChunksParity.test.ts', 13],
+  ['test/npmChunkRewriteParity.test.ts', 6],
   ['test/onPageScroll.test.ts', 11],
   ['test/vueSfcSignature.fuzz.test.ts', 44],
 ])

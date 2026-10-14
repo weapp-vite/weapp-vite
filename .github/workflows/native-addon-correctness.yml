@@ -6,6 +6,7 @@ on:
     paths:
       - packages/ast-native/**
       - packages/ast/**
+      - packages/weapp-vite/**
       - packages-runtime/wevu-compiler/**
       - scripts/verify-native-addon-correctness*
       - .github/workflows/native-addon-correctness.yml
@@ -57,12 +58,12 @@ jobs:
       - name: Require the actual addon and all covered exports
         run: node scripts/verify-native-addon-correctness.mjs binding .tmp/native-addon-correctness
 
-      - name: Build fresh compiler entries and their workspace dependencies serially
-        run: pnpm exec turbo run build --filter=@wevu/compiler... --concurrency=1
+      - name: Build fresh compiler and npm consumer entries with their dependencies serially
+        run: pnpm exec turbo run build --filter=@wevu/compiler... --filter=weapp-vite... --concurrency=1
 
       - name: Run actual N-API correctness tests
         working-directory: packages/ast-native
-        run: pnpm exec vitest run --config native.vitest.config.ts test/compilerAnalysis.test.ts test/compilerAmbientParity.test.ts test/onPageScroll.test.ts test/vueSfcSignature.fuzz.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=../../.tmp/native-addon-correctness/raw-vitest.json
+        run: pnpm exec vitest run --config native.vitest.config.ts test/compilerAnalysis.test.ts test/compilerAmbientParity.test.ts test/npmChunksParity.test.ts test/npmChunkRewriteParity.test.ts test/onPageScroll.test.ts test/vueSfcSignature.fuzz.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=../../.tmp/native-addon-correctness/raw-vitest.json
 
       - name: Reject skipped, empty, or incomplete correctness results
         if: always()

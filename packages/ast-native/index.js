@@ -20,6 +20,7 @@ if (!bindingPath) {
 
 const {
   analyzeCompilerScriptsNative,
+  analyzeNpmChunksNative,
   analyzeScriptNative,
   analyzeScriptsNative,
   collectFeatureFlagsNative,
@@ -35,6 +36,7 @@ function getVueSfcSignaturePayloadNative(source) {
 
 export {
   analyzeCompilerScriptsNative,
+  analyzeNpmChunksNative,
   analyzeScriptNative,
   analyzeScriptsNative,
   collectFeatureFlagsNative,
