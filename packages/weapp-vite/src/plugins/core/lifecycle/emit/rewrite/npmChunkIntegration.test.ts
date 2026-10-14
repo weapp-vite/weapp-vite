@@ -157,7 +157,7 @@ describe.each(Object.entries(npmRewriters))('%s native chunk summary integration
     vi.mocked(analyzeNpmChunksWithNative).mockReturnValueOnce([fixtureAnalysis(code)])
     warmupBundleScriptAnalysis(bundle, { cache })
     rewriteNpm(bundle, cache)
-    chunk.code = `const inserted = 1\n${chunk.code}`
+    Object.assign(chunk, { code: `const inserted = 1\n${chunk.code}` })
     expect(getChunkNpmPlatformApiRanges(chunk, cache)).toBeUndefined()
     vi.mocked(analyzeNpmChunksWithNative).mockReturnValueOnce([null])
 

@@ -1,7 +1,7 @@
 import type { OutputChunk } from 'rolldown'
 import type { NativeNpmChunkAnalysis, NativeNpmLocalRootFact, NativeNpmPlatformApiFact } from '../../../../../ast'
 import MagicString from 'magic-string'
-import { applyMagicStringChunkRewrite } from '../../../../../utils/outputChunk'
+import { applyAtomicMagicStringChunkRewrite } from '../../../../../utils/outputChunk'
 
 export interface NpmChunkTextEdit {
   start: number
@@ -26,10 +26,7 @@ export function createNativeChunkMagicString(code: string, edits: NpmChunkTextEd
 
 /** 先完成代码与映射组合，再提交 chunk；native 消费异常不会留下部分修改。 */
 export function applyNativeChunkRewrite(chunk: OutputChunk, magicString: MagicString) {
-  const staged = { ...chunk }
-  applyMagicStringChunkRewrite(staged, magicString)
-  chunk.code = staged.code
-  chunk.map = staged.map
+  applyAtomicMagicStringChunkRewrite(chunk, magicString)
 }
 
 /** 字面量替换与 interop 删除后，只投影仍待消费的 API 范围；不复用已消费的 npm 事实。 */

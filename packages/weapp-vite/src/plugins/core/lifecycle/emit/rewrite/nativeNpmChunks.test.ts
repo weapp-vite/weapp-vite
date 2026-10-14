@@ -2,12 +2,12 @@ import type { OutputChunk } from 'rolldown'
 import type { NativeNpmChunkAnalysis } from '../../../../../ast'
 import MagicString from 'magic-string'
 import { describe, expect, it, vi } from 'vitest'
-import { applyMagicStringChunkRewrite } from '../../../../../utils/outputChunk'
+import { applyAtomicMagicStringChunkRewrite } from '../../../../../utils/outputChunk'
 import { applyNativeChunkRewrite, createNativeLocalRootNpmEdits, projectNpmChunkAnalysis } from './nativeNpmChunks'
 
 vi.mock('../../../../../utils/outputChunk', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../../utils/outputChunk')>()
-  return { ...actual, applyMagicStringChunkRewrite: vi.fn(actual.applyMagicStringChunkRewrite) }
+  return { ...actual, applyAtomicMagicStringChunkRewrite: vi.fn(actual.applyAtomicMagicStringChunkRewrite) }
 })
 
 describe('native final chunk edit consumption', () => {
@@ -63,8 +63,7 @@ describe('native final chunk edit consumption', () => {
   it('keeps the original chunk intact when map/code application fails midway', () => {
     const chunk = { code: `require('pkg')`, map: null, fileName: 'pages/index.js', type: 'chunk' } as OutputChunk
     const before = { ...chunk }
-    vi.mocked(applyMagicStringChunkRewrite).mockImplementationOnce((candidate) => {
-      candidate.code = 'partial code'
+    vi.mocked(applyAtomicMagicStringChunkRewrite).mockImplementationOnce(() => {
       throw new Error('map composition failed')
     })
 
