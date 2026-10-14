@@ -20,6 +20,11 @@ permissions:
 jobs:
   pr-context:
     uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
     with:
       pr_number: ${{ inputs.pr-number || '' }}
       paths: '[".github/workflows/ci-vite-host-consumer.yml",".github/workflows/reusable-node-command.yml","packages/weapp-vite/**","e2e/ide/stateful-hmr.runtime.test.ts","e2e/ide/hmr-auto-classic.runtime.test.ts","e2e/ide/react-runtime-spike.runtime.test.ts","e2e/ide/wevu-subpackage-placement.runtime.test.ts","e2e/ide/worker-host.runtime.test.ts","e2e/ide/platform-host.runtime.test.ts","templates/weapp-vite-multi-platform-sfc-template/**","e2e/ide/lib-host.runtime.test.ts","e2e-apps/lib-mode/**","e2e/ide/issue-963-plugin-es6.runtime.test.ts","templates/weapp-vite-plugin-template/**","e2e-apps/chunk-modes/**","mpcore/packages/simulator/**","mpcore/packages/test/**","mpcore/packages/vitest/**","mpcore/packages/weapp-vite/**","e2e/ide/subpackagePlacementDom/**","e2e-apps/wevu-subpackage-placement/**","e2e/ide/reactRuntimeDom/**","e2e-apps/react-runtime-spike/**","packages-runtime/react/**","e2e/ide/statefulHmrDom/**","e2e-apps/stateful-hmr/**","packages/rolldown-require/**","packages-runtime/wevu/**","packages-runtime/wevu-compiler/**","@weapp-core/**","package.json","pnpm-lock.yaml","pnpm-workspace.yaml"]'

@@ -36,7 +36,7 @@ export function matchesFilters(values, filters) {
 }
 
 /** 手动 PR 验证只读解析一次目标，后续任务消费固定的提交信息。 */
-export async function resolvePrContext({ repository, runId, driverSha, refName, prNumber = '', paths = [], baseBranches = [], checkoutMode = 'merge' }, get) {
+export async function resolvePrContext({ repository, runId, runAttempt = 1, driverSha, refName, prNumber = '', paths = [], baseBranches = [], checkoutMode = 'merge' }, get) {
   if (!['head', 'merge'].includes(checkoutMode)) {
     throw new Error('PR checkout mode must be head or merge')
   }
@@ -44,6 +44,7 @@ export async function resolvePrContext({ repository, runId, driverSha, refName, 
     schemaVersion: 1,
     repository,
     runId: String(runId),
+    runAttempt: Number(runAttempt),
     driverSha: sha(driverSha),
     isPr: false,
     shouldRun: true,
@@ -79,40 +80,47 @@ export async function resolvePrContext({ repository, runId, driverSha, refName, 
     checkoutSha: sha(pull.head.sha),
     checkoutMode,
   })
-  context.shouldRun = matchesFilters([context.baseRef], patterns(baseBranches))
-  const pathFilters = patterns(paths)
-  if (context.shouldRun && pathFilters.length) {
-    const files = []
-    for (let page = 1; ; page++) {
-      const rows = await get(`/pulls/${number}/files?per_page=100&page=${page}`)
-      if (!Array.isArray(rows)) {
-        throw new TypeError('Invalid PR changed-files response')
+  try {
+    context.shouldRun = matchesFilters([context.baseRef], patterns(baseBranches))
+    const pathFilters = patterns(paths)
+    if (context.shouldRun && pathFilters.length) {
+      const files = []
+      for (let page = 1; ; page++) {
+        const rows = await get(`/pulls/${number}/files?per_page=100&page=${page}`)
+        if (!Array.isArray(rows)) {
+          throw new TypeError('Invalid PR changed-files response')
+        }
+        files.push(...rows)
+        if (rows.length < 100 || files.length >= 3000) {
+          break
+        }
       }
-      files.push(...rows)
-      if (rows.length < 100 || files.length >= 3000) {
-        break
+      // API 超过三千条时可能截断；宁可保留验证，不把未知变更当作无关路径。
+      context.shouldRun = files.length >= 3000 || matchesFilters(files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean)), pathFilters)
+    }
+    if (context.shouldRun && checkoutMode === 'merge') {
+      if (!pull.merge_commit_sha) {
+        throw new Error('PR has no merge candidate; resolve conflicts or wait for GitHub to calculate it, then dispatch again')
       }
+      const mergeSha = sha(pull.merge_commit_sha)
+      const merge = await get(`/git/commits/${mergeSha}`)
+      if (merge.sha !== mergeSha || merge.parents?.length !== 2
+        || merge.parents[0].sha !== context.baseSha || merge.parents[1].sha !== context.headSha) {
+        throw new Error('PR merge candidate does not match the frozen head/base; dispatch again')
+      }
+      context.checkoutSha = mergeSha
     }
-    // API 超过三千条时可能截断；宁可保留验证，不把未知变更当作无关路径。
-    context.shouldRun = files.length >= 3000 || matchesFilters(files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean)), pathFilters)
-  }
-  if (context.shouldRun && checkoutMode === 'merge') {
-    if (!pull.merge_commit_sha) {
-      throw new Error('PR has no merge candidate; resolve conflicts or wait for GitHub to calculate it, then dispatch again')
+    const current = await get(`/pulls/${number}`)
+    if (current.state !== 'open' || current.head.sha !== context.headSha || current.base.sha !== context.baseSha) {
+      throw new Error('PR changed while resolving its validation target; dispatch again')
     }
-    const mergeSha = sha(pull.merge_commit_sha)
-    const merge = await get(`/git/commits/${mergeSha}`)
-    if (merge.sha !== mergeSha || merge.parents?.length !== 2
-      || merge.parents[0].sha !== context.baseSha || merge.parents[1].sha !== context.headSha) {
-      throw new Error('PR merge candidate does not match the frozen head/base; dispatch again')
-    }
-    context.checkoutSha = mergeSha
+    return context
   }
-  const current = await get(`/pulls/${number}`)
-  if (current.state !== 'open' || current.head.sha !== context.headSha || current.base.sha !== context.baseSha) {
-    throw new Error('PR changed while resolving its validation target; dispatch again')
+  catch (error) {
+    // 即使合并候选或路径解析失败，也保留已冻结身份供可信状态任务收尾。
+    error.prContext = { ...context, resolutionError: error.message }
+    throw error
   }
-  return context
 }
 
 /** 可信报告器核对手动运行身份，不能把调度主线 SHA 当作被测 PR SHA。 */
@@ -149,17 +157,30 @@ async function main() {
     }
     return response.json()
   }
-  const context = await resolvePrContext({
-    repository,
-    runId: process.env.GITHUB_RUN_ID,
-    driverSha: process.env.GITHUB_SHA,
-    refName: process.env.GITHUB_REF_NAME,
-    prNumber: process.env.PR_NUMBER,
-    paths: process.env.PR_PATHS,
-    baseBranches: process.env.PR_BASE_BRANCHES,
-    checkoutMode: process.env.PR_CHECKOUT_MODE || 'merge',
-  }, get)
+  let context
+  try {
+    context = await resolvePrContext({
+      repository,
+      runId: process.env.GITHUB_RUN_ID,
+      runAttempt: process.env.GITHUB_RUN_ATTEMPT || 1,
+      driverSha: process.env.GITHUB_SHA,
+      refName: process.env.GITHUB_REF_NAME,
+      prNumber: process.env.PR_NUMBER,
+      paths: process.env.PR_PATHS,
+      baseBranches: process.env.PR_BASE_BRANCHES,
+      checkoutMode: process.env.PR_CHECKOUT_MODE || 'merge',
+    }, get)
+  }
+  catch (error) {
+    if (error.prContext) {
+      await mkdir('.tmp/pr-context', { recursive: true })
+      await writeFile('.tmp/pr-context/context.json', `${JSON.stringify(error.prContext, null, 2)}\n`)
+      await appendFile(process.env.GITHUB_OUTPUT, 'context_available=true\n')
+    }
+    throw error
+  }
   const outputs = {
+    context_available: 'true',
     is_pr: String(context.isPr),
     should_run: String(context.shouldRun),
     pr_number: context.prNumber === null ? '' : String(context.prNumber),

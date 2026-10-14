@@ -36,6 +36,11 @@ concurrency:
 jobs:
   pr-context:
     uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
     with:
       pr_number: ${{ inputs.pr-number || '' }}
       paths: '[".gitattributes",".github/workflows/ci-dimina.yml",".github/actions/**","packages-private/dimina-playground/**","packages/weapp-vite/**","packages-runtime/**","@weapp-core/**","e2e/dimina/**","e2e/vitest.e2e.dimina.config.ts","e2e/scripts/**","scripts/dimina-*.test.ts","package.json","pnpm-lock.yaml","pnpm-workspace.yaml"]'

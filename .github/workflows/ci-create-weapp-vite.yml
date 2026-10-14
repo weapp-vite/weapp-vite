@@ -64,6 +64,11 @@ permissions:
 jobs:
   pr-context:
     uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
     with:
       pr_number: ${{ inputs.pr-number || '' }}
       paths: '["packages/create-weapp-vite/**","scripts/createWeappViteSmoke/**","scripts/create-weapp-vite-smoke.mjs","scripts/merge-create-weapp-vite-smoke-reports.mjs",".github/workflows/ci-create-weapp-vite.yml","templates/**","package.json","pnpm-lock.yaml"]'

@@ -20,6 +20,11 @@ permissions:
 jobs:
   pr-context:
     uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
     with:
       pr_number: ${{ inputs.pr-number || '' }}
       paths: '["extensions/vscode/**",".github/workflows/ci-vscode-extension.yml",".github/workflows/release.yml",".github/workflows/reusable-node-command.yml",".github/actions/setup-node-pnpm/**",".github/actions/refresh-workspace-deps/**"]'

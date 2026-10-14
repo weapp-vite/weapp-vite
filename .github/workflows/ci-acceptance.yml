@@ -23,6 +23,11 @@ concurrency:
 jobs:
   pr-context:
     uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
     with:
       pr_number: ${{ inputs.pr-number || '' }}
       paths: '["packages/agent-*/**","packages/acceptance/**","packages/mcp/**","packages/devtools-runtime/**","packages/weapp-vite/**","packages/weapp-ide-cli/**","packages/agent-cli/**","scripts/weapp-agent/**","skills/weapp-acceptance/**","pnpm-lock.yaml",".github/workflows/ci-acceptance.yml"]'
