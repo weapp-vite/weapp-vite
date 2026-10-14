@@ -5,10 +5,20 @@ import { baselineManifest, manifestPath } from './manifest.mjs'
 
 export function extendedManifest() {
   const value = structuredClone(baselineManifest)
-  value.requiredExports.push('analyzeNpmChunksNative')
-  value.buildFilters.push('weapp-vite...')
-  value.suites.push({ file: 'test/npmChunksParity.test.ts', minimumAssertions: 13 })
-  value.suites.push({ file: 'test/npmChunkRewriteParity.test.ts', minimumAssertions: 6 })
+  if (!value.requiredExports.includes('analyzeNpmChunksNative')) {
+    value.requiredExports.push('analyzeNpmChunksNative')
+  }
+  if (!value.buildFilters.includes('weapp-vite...')) {
+    value.buildFilters.push('weapp-vite...')
+  }
+  for (const suite of [
+    { file: 'test/npmChunksParity.test.ts', minimumAssertions: 13 },
+    { file: 'test/npmChunkRewriteParity.test.ts', minimumAssertions: 6 },
+  ]) {
+    if (!value.suites.some(item => item.file === suite.file)) {
+      value.suites.push(suite)
+    }
+  }
   return value
 }
 

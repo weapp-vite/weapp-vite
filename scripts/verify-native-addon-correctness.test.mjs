@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
+import { baselineManifest } from './nativeAddonCorrectness/manifest.mjs'
 import { verifyNativeExports, verifyNativeReport } from './verify-native-addon-correctness.mjs'
 
 const packageRoot = path.resolve('fixture-native-package')
@@ -12,25 +13,21 @@ async function addonJob() {
 }
 
 function successfulReport() {
-  const counts = [
-    ['compilerAnalysis.test.ts', 33],
-    ['compilerAmbientParity.test.ts', 7],
-    ['onPageScroll.test.ts', 11],
-    ['vueSfcSignature.fuzz.test.ts', 44],
-  ]
+  const counts = baselineManifest.suites.map(suite => [suite.file, suite.minimumAssertions])
+  const totalTests = counts.reduce((sum, [, count]) => sum + count, 0)
   return {
     success: true,
-    numTotalTestSuites: 8,
-    numPassedTestSuites: 8,
+    numTotalTestSuites: counts.length,
+    numPassedTestSuites: counts.length,
     numFailedTestSuites: 0,
     numPendingTestSuites: 0,
-    numTotalTests: 95,
-    numPassedTests: 95,
+    numTotalTests: totalTests,
+    numPassedTests: totalTests,
     numFailedTests: 0,
     numPendingTests: 0,
     numTodoTests: 0,
     testResults: counts.map(([name, count]) => ({
-      name: path.join(packageRoot, 'test', name),
+      name: path.join(packageRoot, name),
       status: 'passed',
       assertionResults: Array.from({ length: count }, () => ({ status: 'passed', failureMessages: [] })),
     })),
@@ -40,14 +37,10 @@ function successfulReport() {
 describe('actual-addon correctness evidence gate', () => {
   it('accepts complete results and emits only portable file names and counts', () => {
     const summary = verifyNativeReport(successfulReport(), packageRoot)
-    expect(summary.passed).toBe(95)
+    const expectedTests = baselineManifest.suites.reduce((sum, suite) => sum + suite.minimumAssertions, 0)
+    expect(summary.passed).toBe(expectedTests)
     expect(summary.skipped).toBe(0)
-    expect(summary.suites.map(suite => suite.file)).toEqual([
-      'packages/ast-native/test/compilerAnalysis.test.ts',
-      'packages/ast-native/test/compilerAmbientParity.test.ts',
-      'packages/ast-native/test/onPageScroll.test.ts',
-      'packages/ast-native/test/vueSfcSignature.fuzz.test.ts',
-    ])
+    expect(summary.suites.map(suite => suite.file)).toEqual(baselineManifest.suites.map(suite => `packages/ast-native/${suite.file}`))
     expect(JSON.stringify(summary)).not.toContain(packageRoot)
   })
 
@@ -102,6 +95,7 @@ describe('actual-addon correctness evidence gate', () => {
     expect(() => verifyNativeExports(undefined)).toThrow('Required native export is missing')
     const names = [
       'analyzeCompilerScriptsNative',
+      'analyzeNpmChunksNative',
       'analyzeScriptNative',
       'analyzeScriptsNative',
       'collectFeatureFlagsNative',
@@ -120,15 +114,18 @@ describe('actual-addon correctness evidence gate', () => {
   it('rejects the former 88-test report that omits ambient compiler parity', () => {
     const report = successfulReport()
     report.testResults.splice(1, 1)
-    report.numTotalTestSuites = report.numPassedTestSuites = 6
-    report.numTotalTests = report.numPassedTests = 88
+    report.numTotalTestSuites = report.numPassedTestSuites = baselineManifest.suites.length - 1
+    const removed = baselineManifest.suites[1].minimumAssertions
+    report.numTotalTests = report.numPassedTests = baselineManifest.suites.reduce((sum, suite) => sum + suite.minimumAssertions, 0) - removed
     expect(() => verifyNativeReport(report, packageRoot)).toThrow('omits suites or assertions')
   })
 
   it.each([0, 6])('rejects ambient compiler parity with only %s results', (count) => {
     const report = successfulReport()
     report.testResults[1].assertionResults.splice(count)
-    report.numTotalTests = report.numPassedTests = 88 + count
+    const total = baselineManifest.suites.reduce((sum, suite) => sum + suite.minimumAssertions, 0)
+    const ambient = baselineManifest.suites[1].minimumAssertions
+    report.numTotalTests = report.numPassedTests = total - ambient + count
     expect(() => verifyNativeReport(report, packageRoot)).toThrow('failed, empty, or partial')
   })
 })
