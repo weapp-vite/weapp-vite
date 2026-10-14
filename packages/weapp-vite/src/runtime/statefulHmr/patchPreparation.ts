@@ -37,9 +37,11 @@ export async function prepareHmrPatch(
   let { code, map } = transformed
   code = transformStatefulHmrPatchImports(code, {
     ...imports,
-    onMap: (value) => {
-      map = composeSourceMaps(value, map)
-    },
+    onMap: sourcemap
+      ? (value) => {
+          map = composeSourceMaps(value, map)
+        }
+      : undefined,
   })
   const result = await transformWithOxc(code, patch.filename, {
     assumptions: { setPublicClassFields: true },

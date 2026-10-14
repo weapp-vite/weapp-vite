@@ -85,7 +85,7 @@ function runTaskSuite(...[name, tasks, options]: Parameters<typeof runTaskSuiteW
 }
 
 describe('suiteRunner', () => {
-  it('includes generated Vue bindings and template cycles in the strict headless DOM gate', async () => {
+  it('includes native stylesheet ordering, generated Vue bindings, and template cycles in the strict headless DOM gate', async () => {
     const tasks = await getSuiteTasks('ide-dom-headless')
     const statefulTasks = tasks.filter(task => task.label === 'ide/stateful-hmr.runtime.test.ts')
     expect(statefulTasks).toHaveLength(1)
@@ -99,6 +99,7 @@ describe('suiteRunner', () => {
     const filter = new RegExp(task.args[filterIndex + 1]!)
     const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), task.label, task.acceptanceTemplates)
     const selected = cases.filter(item => filter.test(item.name)).map(item => item.name)
+    expect(selected.some(name => name.includes('preserves native Page identity, data, input, route, and query across style updates and JavaScript patches'))).toBe(true)
     expect(selected.some(name => name.includes('template-generated computations and event handlers'))).toBe(true)
     expect(selected.some(name => name.includes('ignores unowned editor files'))).toBe(true)
     expect(selected.some(name => name.includes('copied and public asset lifecycle'))).toBe(true)
@@ -110,7 +111,8 @@ describe('suiteRunner', () => {
     for (const hook of ['load', 'show', 'ready']) {
       expect(selected.some(name => name.includes(`commits navigation requested in ${hook}`))).toBe(true)
     }
-    expect(selected.some(name => name.includes('style updates') || name.includes('local and store refs'))).toBe(false)
+    expect(selected.filter(name => name.includes('style updates'))).toHaveLength(1)
+    expect(selected.some(name => name.includes('local and store refs'))).toBe(false)
   })
 
   it('formats failure summary with failed tasks', () => {

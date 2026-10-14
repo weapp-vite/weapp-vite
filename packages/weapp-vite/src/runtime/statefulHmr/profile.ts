@@ -134,8 +134,9 @@ export class StatefulHmrProfile {
     this.now = options.now ?? (() => performance.now())
   }
 
-  source(file: string) {
-    this.pending.set(file, { eventId: createHmrProfileEventId(), file, receivedAtMs: this.now() })
+  source(file: string, sourceEvent?: HmrProfileSourceEvent) {
+    // core 的失效处理可能异步完成；沿用通知入口的身份与时钟，不把这段耗时移到监听之前。
+    this.pending.set(file, sourceEvent ? { ...sourceEvent, file } : { eventId: createHmrProfileEventId(), file, receivedAtMs: this.now() })
     // 非交付输入也可能触发 watcher；限制仅诊断状态的保留量，不改变构建调度。
     if (this.pending.size > 2048) {
       this.pending.delete(this.pending.keys().next().value!)

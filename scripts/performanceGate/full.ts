@@ -5,13 +5,13 @@ import path from 'node:path'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 校验实际受测与驱动提交身份。
 import { execa } from 'execa'
-import { collectShardBatch } from './batch'
+import { collectShardBatch, requestedConfirmationMetrics } from './batch'
+import { collectorStop } from './collectorStop'
 import { assertSha, frozenManifest, metricsForShard, policy } from './contract.mjs'
-import { evaluateGate } from './evaluate'
 import { autoImportFeatureCosts, renderFeatureCosts } from './featureCosts'
 import { discoverManifest } from './manifest'
 import { runCollector } from './process'
-import { createAuditReport, evaluateAuditGate, pairBatch, renderGate } from './report'
+import { createAuditReport, evaluateAuditGate, renderGate } from './report'
 
 const output = path.resolve(process.env.TEMPLATES_PERF_REPORT_DIR!)
 await mkdir(output, { recursive: true })
@@ -51,14 +51,14 @@ try {
     throw new Error('Declared scenario lifecycle differs from approved policy')
   }
   primary = await collectShardBatch(checkouts, shard, output, 'primary', deadline)
-  const scenarios = pairBatch(primary, metrics)
-  requested = evaluateGate(scenarios).scenarios.filter(r => r.primary.changePercent !== null && r.primary.changePercent > 5 && !scenarios.find(s => s.id === r.id)?.error && r.primary.count === (shard === 'build' || shard === 'auto-build' ? 7 : 20)).map(r => r.id)
+  requested = requestedConfirmationMetrics(primary, metrics, shard)
   await writeFile(path.join(output, 'execution-plan.json'), JSON.stringify({ ...metadata, metrics, confirmation: requested }))
   if (requested.length) {
     confirmation = await collectShardBatch(checkouts, shard, output, 'confirmation', deadline, requested)
   }
 }
 catch (error) {
+  primary.stop = collectorStop(error) ?? primary.stop
   primary.errors.push([process.cwd(), process.env.TEMPLATES_PERF_BASELINE_DIR, process.env.TEMPLATES_PERF_OPTIMIZED_DIR].filter((root): root is string => Boolean(root)).reduce((text, root) => text.replaceAll(root, '<checkout>'), String(error)))
 }
 const gate = evaluateAuditGate(primary, confirmation, metrics)

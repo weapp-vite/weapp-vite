@@ -1,9 +1,13 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import type { CompilerContext } from '../../context'
+import { statSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
 import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
 import MagicString from 'magic-string'
-import { getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
+import { CompilerHmrResyncError, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
+import { readCompilerRawInput } from '../../plugins/compilerPlugin/rawInputs'
 import { parseJsLike, traverse } from '../../utils/babel'
+import { isPathInside } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { isStatefulHmrBoundary } from './boundaries'
 import { createStatefulHmrHostFormatPlugin } from './hostFormat'
@@ -44,6 +48,7 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
   let entryIds = new Set<string>()
   let delegatedEntryIds = new Set<string>()
   let settlement: (() => Promise<void>) | undefined
+  let sidecarInputDrift: { notify: (file: string) => void } | undefined
   const plugins: Plugin[] = [{
     name: 'weapp-vite:stateful-style-client',
     enforce: 'pre',
@@ -65,16 +70,93 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
     name: 'weapp-vite:hmr-input',
     enforce: 'pre',
     transform(code, id) {
-      if (!entryIds.has(normalizeFsResolvedId(id))) {
-        getCompilerHmrHost(ctx).captureNative(id, code)
+      if (id.startsWith('\0') || id.includes('?')) {
+        return
+      }
+      const host = getCompilerHmrHost(ctx)
+      if (!entryIds.has(normalizeFsResolvedId(id)) && !host.isRawInput(id)) {
+        host.captureNative(id, code)
       }
     },
-    watchChange(id, change) {
-      if (change.event === 'delete') {
-        getCompilerHmrHost(ctx).capture(id, null)
-      }
+    watchChange: {
+      order: 'pre',
+      handler(id, change) {
+        if (id.startsWith('\0') || id.includes('?')
+          || (ctx.configService.outDir && isPathInside(ctx.configService.outDir, id))) {
+          return
+        }
+        const host = getCompilerHmrHost(ctx)
+        if (change.event === 'delete') {
+          if (host.ownsRawSource(id)) {
+            host.captureRaw(id, null, false)
+          }
+          else {
+            host.capture(id, null)
+          }
+          return
+        }
+        // raw 身份由真实文件读取与编译器依赖登记；module loader 产物不能用文件字节覆盖。
+        if (!host.ownsRawSource(id)) {
+          return
+        }
+        try {
+          const read = readCompilerRawInput(id)
+          if (read) {
+            host.captureRaw(id, read.source, false, read)
+          }
+          else {
+            host.captureRaw(id, null, false)
+          }
+        }
+        catch (error) {
+          const code = error instanceof Error && 'code' in error ? error.code : undefined
+          if (code === 'ENOENT' || code === 'ENOTDIR') {
+            host.captureRaw(id, null, false)
+            return
+          }
+          // Windows 读取目录可报 EPERM；只在读取失败后检查，普通文件不增加 stat 热路径。
+          try {
+            if (statSync(id).isDirectory()) {
+              return
+            }
+          }
+          catch {
+            // 核验失败仍保留最初的读取错误，不能覆盖输入捕获失败。
+          }
+          throw error
+        }
+      },
     },
-  }, createStatefulHmrSidecarPlugin(), {
+  }, createStatefulHmrSidecarPlugin(async (file) => {
+    const binding = sidecarInputDrift
+    const host = getCompilerHmrHost(ctx)
+    // 没有活动会话或只有 module loader 归属时，保持原读取与输入分类。
+    if (!binding || !host.ownsRawSource(file)) {
+      return await readFile(file, 'utf8')
+    }
+    // 同步读取和捕获避免异步旧读取晚于下一次 watch capture 返回，倒退输入账本。
+    const previous = host.readSource(file)
+    let read: ReturnType<typeof readCompilerRawInput>
+    try {
+      read = readCompilerRawInput(file)
+    }
+    catch (error) {
+      if (error instanceof CompilerHmrResyncError) {
+        binding.notify(file)
+      }
+      throw error
+    }
+    const source = read?.source ?? null
+    host.captureRaw(file, source, false, read ?? undefined)
+    if (previous !== undefined && previous !== source) {
+      // 入口资产可能已经消费旧值；同一 owner 的完整重建负责重新读取和发射。
+      binding.notify(file)
+    }
+    if (!read) {
+      throw Object.assign(new Error('Raw sidecar source no longer exists'), { code: 'ENOENT' })
+    }
+    return read.source
+  }), {
     name: 'weapp-vite:stateful-hmr-session',
     enforce: 'post',
     api: {
@@ -92,6 +174,15 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
   }]
   return {
     plugins,
+    bindSidecarInputDrift(notify: (file: string) => void) {
+      const binding = { notify }
+      sidecarInputDrift = binding
+      return () => {
+        if (sidecarInputDrift === binding) {
+          sidecarInputDrift = undefined
+        }
+      }
+    },
     bindSettlement(wait: () => Promise<void>) {
       settlement = wait
       return () => {

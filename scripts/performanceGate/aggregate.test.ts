@@ -68,6 +68,19 @@ it('does not allow build output mismatches or missing lifecycle phases to pass',
   expect(verifyShard({ ...report, gate: { status: 'incomplete' } }, identity).gate.status).toBe('incomplete')
 })
 
+it('retains a stopped shard as incomplete and forbids launching its confirmation plan', () => {
+  const { identity, report } = fixture()
+  const id = report.manifest.metrics[0]!
+  for (const row of report.primary.samples.filter(row => row.side === 'optimized')) {
+    row.values.find(value => value.id === id)!.ms = 110
+  }
+  const stopped = { ...report, primary: { ...report.primary, stop: { reason: 'cleanup-unconfirmed', resourcesReleased: false, cancelled: false } }, gate: { status: 'incomplete' } }
+  expect(verifyShard(stopped, identity).gate.status).toBe('incomplete')
+  expect(() => verifyShard({ ...stopped, gate: { status: 'passed' } }, identity)).toThrow('Stored gate')
+  expect(() => verifyShard({ ...stopped, executionPlan: { ...stopped.executionPlan, confirmation: [id] } }, identity)).toThrow('Confirmation plan')
+  expect(() => verifyShard({ ...stopped, primary: { ...stopped.primary, stop: { reason: 'cleanup-unconfirmed', resourcesReleased: true, cancelled: false } } }, identity)).toThrow('Invalid collector stop evidence')
+})
+
 it('recomputes profile capability from frozen checkout identity without accepting forged exceptions', () => {
   const { identity, report } = fixture('hmr:stateful-experimental:weapp-vite-template')
   expect(verifyShard(report, identity).gate.status).toBe('passed')

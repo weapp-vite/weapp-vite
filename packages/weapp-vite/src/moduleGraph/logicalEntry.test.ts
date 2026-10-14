@@ -1,9 +1,49 @@
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
 import { createSidecarModuleId } from './protocol'
 
 describe('logical entry module source', () => {
+  it('shares owner path resolution in one wrapper and observes symlink retargeting in the next wrapper', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'logical-entry-paths-'))
+    const first = path.join(root, 'first')
+    const second = path.join(root, 'second')
+    const alias = path.join(root, 'alias')
+    const files = ['page.vue', 'page.json', 'page.css']
+    try {
+      for (const directory of [first, second]) {
+        mkdirSync(directory)
+        for (const file of files) {
+          writeFileSync(path.join(directory, file), '')
+        }
+      }
+      symlinkSync(first, alias, 'junction')
+      const owner = path.join(alias, files[0]!)
+      const dependencies = [
+        { kind: 'script' as const, sourceId: owner },
+        { kind: 'json' as const, sourceId: path.join(alias, files[1]!) },
+        { kind: 'style' as const, sourceId: path.join(alias, files[2]!) },
+      ]
+      const expected = createSidecarModuleId(path.join(first, files[0]!), path.join(first, files[1]!), 'json')
+      const native = vi.spyOn(realpathSync, 'native')
+      const initial = createLogicalEntryModuleCode({ sourceId: owner, type: 'page' }, dependencies.concat(dependencies))
+      expect(initial).toContain(JSON.stringify(expected))
+      expect(native.mock.calls.length).toBeLessThanOrEqual(files.length)
+      unlinkSync(alias)
+      symlinkSync(second, alias, 'junction')
+      const next = createLogicalEntryModuleCode({ sourceId: owner, type: 'page' }, dependencies)
+      expect(next).not.toContain(JSON.stringify(expected))
+      expect(next).toContain(JSON.stringify(createSidecarModuleId(path.join(second, files[0]!), path.join(second, files[1]!), 'json')))
+    }
+    finally {
+      vi.restoreAllMocks()
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it('keeps equivalent dependency sets stable across discovery order and duplicate edges', () => {
     const entry = { sourceId: '/project/src/app.vue', type: 'app' as const }
     const dependencies = [

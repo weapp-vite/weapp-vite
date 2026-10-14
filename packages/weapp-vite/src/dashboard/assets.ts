@@ -19,6 +19,10 @@ interface ResolvedDashboardRoot {
   configFile?: string
 }
 
+interface ResolvedDashboardInstallation extends ResolvedDashboardRoot {
+  packageJsonPath: string
+}
+
 function parseDashboardManifest(source: string): DashboardPackageManifest | undefined {
   const parsed: unknown = JSON.parse(source)
   const metadata = parsed && typeof parsed === 'object' && 'weappViteDashboard' in parsed
@@ -49,7 +53,7 @@ function resolveDashboardPackage(cwd?: string) {
     catch {
       manifest = undefined
     }
-    return { root: path.dirname(packageJsonPath), manifest }
+    return { root: path.dirname(packageJsonPath), manifest, packageJsonPath }
   }
   catch {
     return undefined
@@ -72,14 +76,21 @@ function resolveDashboardDevRoot(packageRoot: string, manifest: DashboardPackage
   return fs.existsSync(root) && fs.existsSync(configFile) ? { root, configFile } : undefined
 }
 
-export function resolveDashboardRoot(options: { cwd?: string, watch?: boolean }): ResolvedDashboardRoot | undefined {
+/** 同一次解析绑定 Dashboard 资源目录及其传输依赖的安装所有者。 */
+export function resolveDashboardInstallation(options: { cwd?: string, watch?: boolean }): ResolvedDashboardInstallation | undefined {
   const resolved = resolveDashboardPackage(options.cwd)
   if (!resolved) {
     return undefined
   }
-  return options.watch
+  const assets = options.watch
     ? resolveDashboardDevRoot(resolved.root, resolved.manifest) ?? resolveDashboardDistRoot(resolved.root, resolved.manifest)
     : resolveDashboardDistRoot(resolved.root, resolved.manifest) ?? resolveDashboardDevRoot(resolved.root, resolved.manifest)
+  return assets ? { ...assets, packageJsonPath: resolved.packageJsonPath } : undefined
+}
+
+export function resolveDashboardRoot(options: { cwd?: string, watch?: boolean }): ResolvedDashboardRoot | undefined {
+  const resolved = resolveDashboardInstallation(options)
+  return resolved ? resolved.configFile ? { root: resolved.root, configFile: resolved.configFile } : { root: resolved.root } : undefined
 }
 
 /** 定位可选仪表盘包的原生构建 SPA；未安装或尚未构建时返回 undefined。 */

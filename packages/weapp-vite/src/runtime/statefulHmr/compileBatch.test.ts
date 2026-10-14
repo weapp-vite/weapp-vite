@@ -1,8 +1,12 @@
 import type { CompilerContext } from '../../context'
 import type { WeappCompilerHmrPreparation } from '../../types/compilerPlugin'
 import type { StatefulHmrSnapshot } from './globalStyles'
-import { expect, it, vi } from 'vitest'
+import type { HmrPreparationObservation } from './preparationProfile'
+import path from 'pathe'
+import { afterEach, expect, it, vi } from 'vitest'
 import { compileHmrBatch } from './compileBatch'
+
+afterEach(() => vi.restoreAllMocks())
 
 function compile(snapshot: StatefulHmrSnapshot, preparation: WeappCompilerHmrPreparation) {
   return compileHmrBatch({
@@ -57,4 +61,169 @@ it('preserves frozen snapshot assets and releases preparations when a later tran
   expect(snapshot.output).toBe(output)
   expect(output.map(asset => asset.source)).toEqual(['.before{}', '<view>before</view>'])
   expect(dispose).toHaveBeenCalledOnce()
+})
+
+it('attributes sequential preparation work to the captured input without changing the snapshot', async () => {
+  let now = 10
+  vi.spyOn(performance, 'now').mockImplementation(() => now)
+  const observations: HmrPreparationObservation[] = []
+  const snapshot: StatefulHmrSnapshot = {
+    output: [{ type: 'asset', fileName: 'page.wxml', source: '<view>before</view>' }],
+  }
+  const result = await compileHmrBatch({
+    ctx: { configService: { cwd: path.resolve('.'), absoluteSrcRoot: path.resolve('src'), packageJson: {}, outputExtensions: { wxml: 'wxml', wxss: 'wxss' } } } as CompilerContext,
+    input: { revision: 42, changedFiles: ['page.vue'], sources: new Map() },
+    needsSnapshot: true,
+    patches: [{ clientId: 'test', update: { type: 'Patch', code: 'globalThis.value = 1;', filename: 'update.js', changedIds: ['page.vue'] } }],
+    prepareProviders: async () => {
+      now += 3
+      return [{
+        transformTemplate: async ({ code }) => {
+          now += 7
+          return { code: code.replace('before', 'after') }
+        },
+        transformJavaScript: async ({ code }) => {
+          now += 11
+          return { code: code.replace('value = 1', 'value = 2') }
+        },
+      }]
+    },
+    rebuild: async () => {
+      now += 5
+      return snapshot
+    },
+    sourcemap: false,
+    onPreparationStage: observation => observations.push(observation),
+  })
+
+  expect(observations.map(({ stage, startedAtMs, elapsedMs, status }) => ({ stage, startedAtMs, elapsedMs, status }))).toEqual([
+    { stage: 'provider-wait', startedAtMs: 10, elapsedMs: 3, status: 'resolved' },
+    { stage: 'snapshot-build', startedAtMs: 13, elapsedMs: 5, status: 'resolved' },
+    { stage: 'template-transform', startedAtMs: 18, elapsedMs: 7, status: 'resolved' },
+    { stage: 'patch-prepare', startedAtMs: 25, elapsedMs: 11, status: 'resolved' },
+  ])
+  expect(result.snapshot?.output[0]).toMatchObject({ source: '<view>after</view>' })
+  expect(snapshot.output[0]).toMatchObject({ source: '<view>before</view>' })
+  expect(result.code).toContain('globalThis.value = 2;')
+  expect(result.changedIds).toEqual(['page.vue'])
+  expect(result.filenames).toEqual(['update.js'])
+  await result.dispose()
+})
+
+it('keeps failed snapshot evidence and preparation disposal when the diagnostic sink rejects', async () => {
+  let now = 0
+  vi.spyOn(performance, 'now').mockImplementation(() => now)
+  const error = new Error('snapshot failure')
+  const dispose = vi.fn()
+  const observations: HmrPreparationObservation[] = []
+  await expect(compileHmrBatch({
+    ctx: {} as CompilerContext,
+    input: { revision: 1, changedFiles: ['page.vue'], sources: new Map() },
+    needsSnapshot: true,
+    patches: [],
+    prepareProviders: async () => {
+      now += 2
+      return [{ dispose }]
+    },
+    rebuild: async () => {
+      now += 4
+      throw error
+    },
+    sourcemap: false,
+    onPreparationStage: (observation) => {
+      observations.push(observation)
+      throw new Error('diagnostic sink failure')
+    },
+  })).rejects.toBe(error)
+  expect(observations.map(({ stage, status, elapsedMs }) => ({ stage, status, elapsedMs }))).toEqual([
+    { stage: 'provider-wait', status: 'resolved', elapsedMs: 2 },
+    { stage: 'snapshot-build', status: 'rejected', elapsedMs: 4 },
+  ])
+  expect(observations[1]!.error).toBe(error)
+  expect(dispose).toHaveBeenCalledOnce()
+})
+
+it.each([
+  { stage: 'provider-wait', boundary: 'begin', read: 0 },
+  { stage: 'provider-wait', boundary: 'finish', read: 1 },
+  { stage: 'snapshot-build', boundary: 'begin', read: 2 },
+  { stage: 'snapshot-build', boundary: 'finish', read: 3 },
+  { stage: 'template-transform', boundary: 'begin', read: 4 },
+  { stage: 'template-transform', boundary: 'finish', read: 5 },
+  { stage: 'patch-prepare', boundary: 'begin', read: 6 },
+  { stage: 'patch-prepare', boundary: 'finish', read: 7 },
+])('keeps compilation and disposal when the $stage $boundary clock throws', async ({ read }) => {
+  let clockReads = 0
+  let faultTriggered = false
+  vi.spyOn(performance, 'now').mockImplementation(() => {
+    if (clockReads++ === read) {
+      faultTriggered = true
+      throw new Error('diagnostic clock failure')
+    }
+    return clockReads
+  })
+  const dispose = vi.fn()
+  const result = await compileHmrBatch({
+    ctx: { configService: { outputExtensions: { wxml: 'wxml', wxss: 'wxss' } } } as CompilerContext,
+    input: { revision: 1, changedFiles: ['page.vue'], sources: new Map() },
+    needsSnapshot: true,
+    patches: [],
+    prepareProviders: async () => [{ transformTemplate: async ({ code }) => ({ code: code.replace('before', 'after') }), dispose }],
+    rebuild: async () => ({ output: [{ type: 'asset', fileName: 'page.wxml', source: '<view>before</view>' }] }),
+    sourcemap: false,
+    onPreparationStage: () => {},
+  })
+  expect(faultTriggered).toBe(true)
+  expect(result.snapshot?.output[0]).toMatchObject({ source: '<view>after</view>' })
+  await result.dispose()
+  await result.dispose()
+  expect(dispose).toHaveBeenCalledOnce()
+})
+
+it.each([
+  { stage: 'provider', boundary: 'begin', read: 0 },
+  { stage: 'provider', boundary: 'finish', read: 1 },
+  { stage: 'snapshot', boundary: 'begin', read: 2 },
+  { stage: 'snapshot', boundary: 'finish', read: 3 },
+])('preserves the $stage error and disposal when its $boundary clock throws', async ({ stage, read }) => {
+  let clockReads = 0
+  let faultTriggered = false
+  vi.spyOn(performance, 'now').mockImplementation(() => {
+    if (clockReads++ === read) {
+      faultTriggered = true
+      throw new Error('diagnostic clock failure')
+    }
+    return clockReads
+  })
+  const failure = new Error('compilation failure')
+  const dispose = vi.fn()
+  await expect(compileHmrBatch({
+    ctx: {} as CompilerContext,
+    input: { revision: 1, changedFiles: ['page.vue'], sources: new Map() },
+    needsSnapshot: true,
+    patches: [],
+    prepareProviders: async () => {
+      if (stage === 'provider') {
+        throw failure
+      }
+      return [{ dispose }]
+    },
+    rebuild: async () => { throw failure },
+    sourcemap: false,
+    onPreparationStage: () => {},
+  })).rejects.toBe(failure)
+  expect(faultTriggered).toBe(true)
+  expect(dispose).toHaveBeenCalledTimes(stage === 'provider' ? 0 : 1)
+})
+
+it('does not read the preparation clock when observation is disabled', async () => {
+  const clock = vi.spyOn(performance, 'now')
+  const result = await compile({
+    output: [{ type: 'asset', fileName: 'page.wxml', source: '<view>before</view>' }],
+  }, {
+    transformTemplate: async ({ code }) => ({ code: code.replace('before', 'after') }),
+  })
+  expect(clock).not.toHaveBeenCalled()
+  expect(result.snapshot?.output[0]).toMatchObject({ source: '<view>after</view>' })
+  await result.dispose()
 })

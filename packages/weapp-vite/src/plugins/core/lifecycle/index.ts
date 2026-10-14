@@ -1,6 +1,6 @@
 import type { Plugin } from 'vite'
 import type { CorePluginState } from '../helpers'
-import { parseSidecarSourceRequest } from '../../../moduleGraph/protocol'
+import { parseSidecarSourceMetadata } from '../../../moduleGraph/protocol'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 import { createBuildEndHook } from './end'
 import { createLoadHook, createOptionsHook } from './load'
@@ -41,7 +41,7 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     async load(id) {
       state.ctx.moduleGraphService.bindPluginContext(state, this)
       const logicalResult = await loadLogicalEntry.call(this, id)
-      if (logicalResult || parseSidecarSourceRequest(id)) {
+      if (logicalResult || parseSidecarSourceMetadata(id)) {
         return logicalResult
       }
       return await loadSource.call(this, id)
