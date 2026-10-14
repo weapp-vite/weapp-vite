@@ -98,6 +98,12 @@ export async function resolvePrContext({ repository, runId, runAttempt = 1, driv
       // API 超过三千条时可能截断；宁可保留验证，不把未知变更当作无关路径。
       context.shouldRun = files.length >= 3000 || matchesFilters(files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean)), pathFilters)
     }
+    if (context.shouldRun) {
+      const base = await get(`/git/ref/heads/${encodeURIComponent(context.baseRef)}`)
+      if (sha(base.object?.sha) !== context.baseSha) {
+        throw new Error('PR base snapshot is stale; refresh the PR branch or wait for GitHub merge refs, then dispatch again')
+      }
+    }
     if (context.shouldRun && checkoutMode === 'merge') {
       if (!pull.merge_commit_sha) {
         throw new Error('PR has no merge candidate; resolve conflicts or wait for GitHub to calculate it, then dispatch again')
