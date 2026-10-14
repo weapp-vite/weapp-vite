@@ -12,7 +12,6 @@ import { transformScript } from '../vue/transform/script'
 import { createJsxDiagnostics } from './compileJsx/diagnostics'
 import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from './compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from './compileJsx/template'
-import { transformVueJsxScript } from './vueJsxTransform'
 
 const LEADING_DOT_RE = /^\./
 const SETUP_CALL_RE = /\bsetup\s*\(/
@@ -158,6 +157,7 @@ export async function compileJsxFile(
     stripRenderOptionFromScript(scriptSource, filename, templateWarnings),
     dynamicIslands,
   )
+  const { transformVueJsxScript } = await import('./vueJsxTransform')
   const vueJsxTransformed = transformVueJsxScript(normalizedScriptSource, filename, options?.sourceMap !== false)
   const runtimeCapabilities = createWevuRuntimeCapabilityMetadataFromBindingManifest(bindingManifest)
   const transformedScript = transformScript(vueJsxTransformed.code, {
