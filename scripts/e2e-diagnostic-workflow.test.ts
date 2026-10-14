@@ -102,7 +102,7 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.with).toMatchObject({
       runs_on: 'windows-latest',
       build_command: 'pnpm exec turbo run build --filter=weapp-ide-cli...',
-      main_command: 'pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/suiteRunner/process.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-process-narrow-report.json',
+      main_command: 'pnpm exec cross-env NODE_DEBUG=weapp-ide-journal-writer pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/suiteRunner/process.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-process-narrow-report.json',
       artifact_name: expect.stringMatching(/^windows-process-narrow-.*matrix\.node-version.*github\.sha/),
       artifact_path: '.tmp/windows-process-narrow-report.json',
       timeout_minutes: 15,

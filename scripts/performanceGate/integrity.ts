@@ -1,5 +1,6 @@
 import type { AuditSample } from './collect'
 import type { AuditBatch } from './report'
+import { isCollectorStop } from './collectorStop'
 import { assertGatePassed, evaluateGate } from './evaluate'
 import { assertManifestMetrics } from './manifest'
 import { isOutputEvidence } from './outputEvidence'
@@ -14,6 +15,9 @@ function parseBatch(value: unknown): AuditBatch {
   if (!record(value) || !Array.isArray(value.errors) || !value.errors.every(item => typeof item === 'string') || !Array.isArray(value.samples)) {
     throw new Error('Invalid paired audit batch')
   }
+  if (value.stop !== undefined && !isCollectorStop(value.stop)) {
+    throw new Error('Invalid collector stop evidence')
+  }
   const samples = value.samples.map((row): AuditBatch['samples'][number] => {
     if (!record(row) || !Number.isInteger(row.round) || Number(row.round) < 0 || (row.side !== 'baseline' && row.side !== 'optimized') || !Array.isArray(row.values)) {
       throw new Error('Invalid paired sample ownership')
@@ -26,7 +30,7 @@ function parseBatch(value: unknown): AuditBatch {
     })
     return { side: row.side, round: Number(row.round), values }
   })
-  return { errors: value.errors as string[], samples }
+  return { errors: value.errors as string[], samples, stop: value.stop }
 }
 
 export function assertPairedAuditComplete(value: unknown) {
@@ -35,7 +39,7 @@ export function assertPairedAuditComplete(value: unknown) {
   }
   const primary = parseBatch(value.primary)
   const confirmation = value.confirmation ? parseBatch(value.confirmation) : undefined
-  if (primary.errors.length || confirmation?.errors.length) {
+  if (primary.errors.length || confirmation?.errors.length || primary.stop || confirmation?.stop) {
     throw new Error('Paired performance collection failed')
   }
   const scenarios = pairBatch(primary)

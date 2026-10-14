@@ -1,7 +1,6 @@
-import type { SubPackageMetaValue } from '../../types'
-import type { AnalyzeComponentUsage } from '../components'
+import type { AnalyzeComponentUsage } from '../components/types'
 import type { GlassEaselAnalyzeResult } from '../glassEasel/types'
-import type { AnalyzeArtifactAnalysis } from './artifacts'
+import type { AnalyzeArtifactAnalysis } from './artifacts/types'
 import type { AnalyzeBudgetCheckItem } from './budget'
 
 export type PackageType = 'main' | 'subPackage' | 'independent' | 'virtual'
@@ -116,5 +115,3 @@ export interface ClassifiedPackage {
   label: string
   type: PackageType
 }
-
-export type SubPackageMetas = SubPackageMetaValue[]

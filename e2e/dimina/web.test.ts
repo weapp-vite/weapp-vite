@@ -1,5 +1,6 @@
 /* eslint-disable e18e/ban-dependencies -- 使用跨平台子进程编译真实产物。 */
 import type { Browser, Page } from 'playwright'
+import type { DiminaDiagnostics } from './diagnostics'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -7,6 +8,7 @@ import { execa } from 'execa'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { cacheRoot, repositoryRoot, root } from '../../packages-private/dimina-playground/config'
+import { cleanupModeResources, startDiagnostics } from './diagnostics'
 import { content, startHost, stopHost, visible } from './helpers'
 import { observeNavigation } from './navigationEvidence'
 
@@ -14,16 +16,25 @@ for (const mode of ['preview', 'dev'] as const) {
   describe(`Dimina ${mode}`, () => {
     let browser: Browser
     let host: Awaited<ReturnType<typeof startHost>>
+    let diagnostics: DiminaDiagnostics
     beforeAll(async () => {
-      browser = await chromium.launch({ channel: process.env.WEAPP_VITE_E2E_CHANNEL })
-      if (mode === 'preview') {
-        await execa('pnpm', ['--filter', '@weapp-vite/dimina-playground', 'build'], { cwd: repositoryRoot })
+      diagnostics = await startDiagnostics(mode)
+      try {
+        browser = await chromium.launch({ channel: process.env.WEAPP_VITE_E2E_CHANNEL, ...diagnostics?.launchOptions })
+        await diagnostics?.browserConnected(browser)
+        if (mode === 'preview') {
+          await execa('pnpm', ['--filter', '@weapp-vite/dimina-playground', 'build'], { cwd: repositoryRoot })
+          diagnostics?.mark('build-complete')
+        }
+        host = await startHost(mode, diagnostics)
       }
-      host = await startHost(mode)
+      catch (error) {
+        diagnostics?.recordError('setup', error)
+        throw error
+      }
     })
     afterAll(async () => {
-      await browser?.close()
-      await stopHost(host?.process)
+      await cleanupModeResources({ closeBrowser: browser ? () => browser.close() : undefined, stopHost: () => stopHost(host?.process), diagnostics })
     })
 
     async function withPage(example: string, run: (page: Page) => Promise<void>) {
@@ -39,11 +50,14 @@ for (const mode of ['preview', 'dev'] as const) {
       })
       page.on('pageerror', error => errors.push(error.stack || error.message || String(error)))
       try {
+        diagnostics?.navigationStart(expect.getState().currentTestName ?? example)
         await page.goto(`${host.url}?example=${example}`)
         await run(page)
         expect(errors).toEqual([])
       }
       catch (error) {
+        diagnostics?.recordError('navigation-or-scenario', error)
+        diagnostics?.mark('navigation-or-scenario-failed')
         // 在读取可能尚未就绪的 iframe 前，先保存请求和加载事件，保留原始超时。
         const evidenceDirectory = path.join(cacheRoot, 'navigation')
         const name = (expect.getState().currentTestName ?? example).replace(/[^\w-]+/g, '-')

@@ -74,9 +74,13 @@ vi.mock('./dashboardViteBridge', () => ({
   createAnalyzeDashboardViteBridge: createAnalyzeDashboardViteBridgeMock,
 }))
 
-vi.mock('devframe/node/auth', () => ({
-  buildOtpAuthUrl: buildOtpAuthUrlMock,
-  refreshTempAuthCode: refreshTempAuthCodeMock,
+vi.mock('./dashboardTransport', () => ({
+  loadDashboardTransportModule: async (_owner: string, specifier: string) => {
+    if (specifier !== 'devframe/node/auth') {
+      throw new Error(`Unexpected Dashboard dependency: ${specifier}`)
+    }
+    return { buildOtpAuthUrl: buildOtpAuthUrlMock, refreshTempAuthCode: refreshTempAuthCodeMock }
+  },
 }))
 
 vi.mock('../../dashboard', () => ({

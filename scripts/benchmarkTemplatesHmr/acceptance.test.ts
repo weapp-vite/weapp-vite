@@ -105,6 +105,12 @@ describe('HMR attribution acceptance contract', () => {
     expect(evaluateGate(primary, pairAcceptanceRuns(pairedRuns(), [input])).status).toBe('unstable')
   })
 
+  it('rejects a collector stop independently of otherwise complete paired samples and string errors', () => {
+    const runs = pairedRuns()
+    runs[0]!.stop = { reason: 'cleanup-unconfirmed', resourcesReleased: false, cancelled: false }
+    expect(evaluateGate(pairAcceptanceRuns(runs, [input])).status).toBe('incomplete')
+  })
+
   it('keeps profiling waits for candidate and classic while scrubbing inherited diagnostic overrides', () => {
     vi.stubEnv('TEMPLATES_HMR_ITERATIONS', '1')
     vi.stubEnv('WEAPP_VITE_DISABLE_SIDECAR_WATCH', '1')

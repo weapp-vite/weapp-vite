@@ -6,6 +6,7 @@ import { DEVFRAME_CONNECTION_META_FILENAME, DEVFRAME_SSE_ROUTE, DEVFRAME_WS_ROUT
 import { createServer } from 'vite'
 import { expect, it, vi } from 'vitest'
 import { createAnalyzeDashboardDevframe } from '../../dashboard'
+import { dashboardTransportPackageJsonPath } from './dashboardTransport/testOwner'
 import { ANALYZE_DASHBOARD_DEVFRAME_BASE, createAnalyzeDashboardViteBridge } from './dashboardViteBridge'
 
 it('serves native Vite pages and assets beside real Devframe discovery and SSE', async () => {
@@ -39,7 +40,7 @@ it('serves native Vite pages and assets beside real Devframe discovery and SSE',
       base: ANALYZE_DASHBOARD_DEVFRAME_BASE,
       configFile: false,
       logLevel: 'silent',
-      plugins: [createAnalyzeDashboardViteBridge(controller)],
+      plugins: [createAnalyzeDashboardViteBridge(controller, { packageJsonPath: dashboardTransportPackageJsonPath })],
       server: { host: '127.0.0.1', port: 0 },
     })
     await server.listen()

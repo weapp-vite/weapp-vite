@@ -2840,6 +2840,9 @@ importers:
 
   packages-runtime/wevu-compiler:
     dependencies:
+      '@babel/core':
+        specifier: 'catalog:'
+        version: 8.0.7
       '@jridgewell/remapping':
         specifier: ^2.3.5
         version: 2.3.5
@@ -3161,6 +3164,18 @@ importers:
 
   packages/dashboard:
     dependencies:
+      '@devframes/agentic':
+        specifier: 1.2.3
+        version: 1.2.3(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3)
+      '@devframes/hub':
+        specifier: 1.2.3
+        version: 1.2.3(@devframes/agentic@1.2.3)(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3)
+      '@devframes/hub-ui':
+        specifier: 1.2.3
+        version: 1.2.3(@devframes/hub@1.2.3(@devframes/agentic@1.2.3)(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3))(@devframes/json-render@1.2.3(@devframes/hub@1.2.3(@devframes/agentic@1.2.3)(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3))(devframe@1.2.3))(devframe@1.2.3)
+      devframe:
+        specifier: 'catalog:'
+        version: 1.2.3(@devframes/agentic@1.2.3)(cac@7.0.1)(srvx@1.0.5)
       echarts:
         specifier: 'catalog:'
         version: 6.1.0
@@ -3195,9 +3210,6 @@ importers:
       d3:
         specifier: 'catalog:'
         version: 7.9.0
-      devframe:
-        specifier: 'catalog:'
-        version: 1.2.3(@devframes/agentic@1.2.3)(cac@7.0.1)(srvx@1.0.5)
       tailwindcss:
         specifier: catalog:tailwind4
         version: 4.3.3
@@ -3321,15 +3333,25 @@ importers:
       '@weapp-tailwindcss/engine':
         specifier: 0.1.5
         version: 0.1.5(tailwindcss@4.3.3)
+      '@weapp-tailwindcss/source-scan':
+        specifier: 0.1.2
+        version: 0.1.2
       '@weapp-vite/hmr':
         specifier: workspace:*
         version: link:../hmr
+      micromatch:
+        specifier: 4.0.8
+        version: 4.0.8
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
       weapp-tailwindcss:
         specifier: 'catalog:'
         version: 5.6.0(@oxc-project/types@0.153.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.13(patch_hash=d388032b47337ac3d80ac11ec0f6f7385244bd3df8cc8353c0f216bec4975d23))(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.4)
+    devDependencies:
+      '@types/micromatch':
+        specifier: 4.0.10
+        version: 4.0.10
 
   packages/vite-plugin-performance: {}
 
@@ -3381,6 +3403,9 @@ importers:
 
   packages/weapp-vite:
     dependencies:
+      '@babel/core':
+        specifier: 'catalog:'
+        version: 8.0.7
       '@babel/plugin-transform-modules-commonjs':
         specifier: ^8.0.1
         version: 8.0.1(@babel/core@8.0.7)
@@ -3390,21 +3415,15 @@ importers:
       '@babel/preset-typescript':
         specifier: ^8.0.7
         version: 8.0.7(@babel/core@8.0.7)
-      '@devframes/agentic':
-        specifier: 1.2.3
-        version: 1.2.3(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3)
-      '@devframes/hub':
-        specifier: 1.2.3
-        version: 1.2.3(@devframes/agentic@1.2.3)(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3)
-      '@devframes/hub-ui':
-        specifier: 1.2.3
-        version: 1.2.3(@devframes/hub@1.2.3(@devframes/agentic@1.2.3)(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3))(@devframes/json-render@1.2.3(@devframes/hub@1.2.3(@devframes/agentic@1.2.3)(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3))(devframe@1.2.3))(devframe@1.2.3)
       '@jridgewell/remapping':
         specifier: ^2.3.5
         version: 2.3.5
       '@modelcontextprotocol/node':
         specifier: ^2.1.1
         version: 2.1.1(@modelcontextprotocol/server@2.3.1)
+      '@modelcontextprotocol/server':
+        specifier: ^2.3.1
+        version: 2.3.1
       '@typescript-eslint/parser':
         specifier: ^8.71.1
         version: 8.71.1(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
@@ -3586,6 +3605,15 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
+      '@devframes/agentic':
+        specifier: 1.2.3
+        version: 1.2.3(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3)
+      '@devframes/hub':
+        specifier: 1.2.3
+        version: 1.2.3(@devframes/agentic@1.2.3)(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3)
+      '@devframes/hub-ui':
+        specifier: 1.2.3
+        version: 1.2.3(@devframes/hub@1.2.3(@devframes/agentic@1.2.3)(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3))(@devframes/json-render@1.2.3(@devframes/hub@1.2.3(@devframes/agentic@1.2.3)(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.3))(devframe@1.2.3))(devframe@1.2.3)
       '@modelcontextprotocol/client':
         specifier: ^2.3.1
         version: 2.3.1

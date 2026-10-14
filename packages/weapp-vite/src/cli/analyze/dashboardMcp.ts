@@ -5,10 +5,10 @@ import type { DevframeInstanceRegistration } from 'devframe/internal'
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 import process from 'node:process'
 import { toNodeHandler } from '@modelcontextprotocol/node'
-import { createMcpFetchHandler } from 'devframe/adapters/mcp'
 import { registerDevframeInstance } from 'devframe/internal'
 import { isLoopbackAddress, validateOriginCandidate } from 'devframe/utils/origin'
 import path from 'pathe'
+import { loadDashboardTransportModule } from './dashboardTransport'
 
 const MCP_ROUTE = '__mcp'
 
@@ -24,8 +24,9 @@ export interface DashboardMcp {
 export async function createDashboardMcp(
   instance: Pick<DevframeInstance, 'base' | 'context' | 'connectionMeta'>,
   httpServer: Server,
-  options: { projectRoot: string, id: string, name?: string, version?: string, base?: string },
+  options: { packageJsonPath: string, projectRoot: string, id: string, name?: string, version?: string, base?: string },
 ): Promise<DashboardMcp> {
+  const { createMcpFetchHandler } = await loadDashboardTransportModule(options.packageJsonPath, '@devframes/agentic/mcp')
   const context = await instance.context
   const prefix = `${options.id}:`
   const getTool = (id: string) => {

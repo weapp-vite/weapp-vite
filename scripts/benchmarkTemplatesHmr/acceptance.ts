@@ -1,3 +1,4 @@
+import type { CollectorStop } from '../performanceGate/collectorStop'
 import type { AcceptanceOptions, AcceptanceRun, HmrInput } from './acceptanceContract'
 import { createHash } from 'node:crypto'
 import { mkdir, realpath, writeFile } from 'node:fs/promises'
@@ -5,6 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { collectorStop } from '../performanceGate/collectorStop'
 import { evaluateGate } from '../performanceGate/evaluate'
 import { renderGate } from '../performanceGate/report'
 import { acceptanceOrder, HMR_ACCEPTANCE_BASELINE, HMR_ACCEPTANCE_CONTRACT, HMR_ACCEPTANCE_PAIRS, HMR_INPUTS, pairAcceptanceRuns, parseAcceptanceArgs } from './acceptanceContract'
@@ -27,9 +29,13 @@ export async function collectAcceptanceBatch(options: AcceptanceOptions, inputs:
           markerSeed: `hmr-attribution-${batch}-${round}`,
           samples: [],
           error: sanitizeAcceptanceText(String(error), [options.baseline, options.candidate, options.output]),
+          stop: collectorStop(error),
         }))
         runs.push(run)
         await writeFile(path.join(options.output, `${batch}.json`), `${JSON.stringify(runs, null, 2)}\n`)
+        if (run.stop) {
+          return runs
+        }
         if (run.error) {
           // 基础设施或产物失败保留原始证据，不自动重试成较快/通过样本。
           break
@@ -81,6 +87,7 @@ export async function runHmrAttributionAcceptance(options: AcceptanceOptions) {
     confirmationInputs: [] as string[],
     gate: evaluateGate([]),
     errors: [] as string[],
+    stop: undefined as CollectorStop | undefined,
   }
   const checkpoint = async () => {
     await writeFile(path.join(options.output, 'report.json'), `${JSON.stringify(report, null, 2)}\n`)
@@ -96,23 +103,25 @@ export async function runHmrAttributionAcceptance(options: AcceptanceOptions) {
     await checkpoint()
     process.stdout.write('dist sync: rebuilt weapp-vite before downstream validation\n')
     report.primary = await collectAcceptanceBatch(options, HMR_INPUTS, 'primary', deadline)
+    report.stop = report.primary.find(run => run.stop)?.stop
     for (const run of report.primary) {
       if (run.inputDigest !== report.inputs.find(input => input.id === run.input)?.digest) {
-        run.error = 'Fixture bytes changed after the input manifest was frozen'
+        run.error = [run.error, 'Fixture bytes changed after the input manifest was frozen'].filter(Boolean).join('; ')
       }
     }
     const primary = pairAcceptanceRuns(report.primary, HMR_INPUTS)
     report.gate = evaluateGate(primary)
     const exceeded = report.gate.scenarios.filter(row => row.primary.count === HMR_ACCEPTANCE_PAIRS && (row.primary.changePercent ?? 0) > 5).map(row => row.id)
-    const confirmationInputs = HMR_INPUTS.filter(input => exceeded.some(id => id.startsWith(`${input.id}:`)))
+    const confirmationInputs = report.stop ? [] : HMR_INPUTS.filter(input => exceeded.some(id => id.startsWith(`${input.id}:`)))
     report.confirmationInputs = confirmationInputs.map(input => input.id)
     // 在启动唯一确认前保存固定计划，不用首轮较快值覆盖首轮样本。
     await checkpoint()
     if (confirmationInputs.length) {
       report.confirmation = await collectAcceptanceBatch(options, confirmationInputs, 'confirmation', deadline)
+      report.stop = report.confirmation.find(run => run.stop)?.stop
       for (const run of report.confirmation) {
         if (run.inputDigest !== report.inputs.find(input => input.id === run.input)?.digest) {
-          run.error = 'Fixture bytes changed after the input manifest was frozen'
+          run.error = [run.error, 'Fixture bytes changed after the input manifest was frozen'].filter(Boolean).join('; ')
         }
       }
     }
@@ -120,9 +129,10 @@ export async function runHmrAttributionAcceptance(options: AcceptanceOptions) {
     await verifyAcceptanceCheckout(options.baseline, HMR_ACCEPTANCE_BASELINE)
     await verifyAcceptanceCheckout(options.candidate, options.candidateSha)
     report.errors.push(...[...report.primary, ...report.confirmation].flatMap(run => run.error ? [`${run.input}/${run.side}/${run.round}: ${run.error}`] : []))
-    report.status = report.errors.length ? 'incomplete' : report.gate.status
+    report.status = report.errors.length || report.stop ? 'incomplete' : report.gate.status
   }
   catch (error) {
+    report.stop = collectorStop(error) ?? report.stop
     report.errors.push(sanitizeAcceptanceText(String(error), [options.baseline, options.candidate, options.output]))
   }
   finally {

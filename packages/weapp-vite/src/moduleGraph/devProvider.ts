@@ -21,6 +21,7 @@ import {
   createSidecarSourceSpecifier,
   parseLogicalEntryId,
   parseSidecarModuleId,
+  parseSidecarSourceMetadata,
   parseSidecarSourceRequest,
   resolveVirtualModuleId,
 } from './protocol'
@@ -134,7 +135,7 @@ export function createDevModuleGraphPlugin(
       if (virtualId) {
         return virtualId
       }
-      if (parseSidecarSourceRequest(id)) {
+      if (parseSidecarSourceMetadata(id)) {
         return id
       }
       if (Array.from(npmExternalPackages).some(pkg => id === pkg || id.startsWith(`${pkg}/`))) {

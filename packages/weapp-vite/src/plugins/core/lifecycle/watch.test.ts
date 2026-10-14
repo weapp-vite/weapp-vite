@@ -334,6 +334,30 @@ describe('core lifecycle watch hook', () => {
     vi.restoreAllMocks()
   })
 
+  it('forwards the ingress event after asynchronous dirty processing without replacing its clock', async () => {
+    let now = 10
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    isTemplateMock.mockReturnValue(true)
+    findJsEntryMock.mockResolvedValue({ path: '/project/src/pages/hmr/index.ts' })
+    collectAffectedEntriesMock.mockReturnValue(new Set(['/project/src/pages/hmr/index.ts']))
+    const state = createState()
+    state.ctx.onStatefulHmrSourceChange = vi.fn()
+    const gate = Promise.withResolvers<void>()
+    state.ctx.wxmlService.scan.mockImplementationOnce(() => gate.promise)
+    const file = '/project/src/pages/hmr/index.wxml'
+    const updating = createWatchChangeHook(state)(file, { event: 'update' })
+    await vi.waitFor(() => expect(state.ctx.wxmlService.scan).toHaveBeenCalled())
+    expect(state.ctx.onStatefulHmrSourceChange).not.toHaveBeenCalled()
+    now = 50
+    gate.resolve()
+    await updating
+    const profile = state.ctx.runtimeState.build.hmr.profile
+    expect(profile.watchToDirtyMs).toBe(40)
+    expect(profile.sourceEvents).toHaveLength(1)
+    expect(profile.sourceEvents[0]).toEqual({ eventId: expect.any(String), event: 'update', file, receivedAtMs: 10 })
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledExactlyOnceWith(file, ['sidecar-direct:1'], profile.sourceEvents[0])
+  })
+
   it('marks template sidecar updates as metadata entry dirties', async () => {
     isTemplateMock.mockReturnValue(true)
     findJsEntryMock.mockResolvedValue({
@@ -352,6 +376,7 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledWith(
       '/project/src/pages/hmr/index.wxml',
       ['sidecar-direct:1'],
+      state.ctx.runtimeState.build.hmr.profile.sourceEvents.at(-1),
     )
   })
 
@@ -1094,7 +1119,7 @@ const count = 1
     await createWatchChangeHook(state)(entryId, { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledExactlyOnceWith(entryId, 'metadata')
-    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledExactlyOnceWith(entryId, [`${cause}:1`])
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledExactlyOnceWith(entryId, [`${cause}:1`], state.ctx.runtimeState.build.hmr.profile.sourceEvents.at(-1))
     expect(state.ctx.runtimeState.watcher.sidecarDirtyFiles.size).toBe(0)
   })
 
@@ -1112,7 +1137,7 @@ const count = 1
     await createWatchChangeHook(state)(stylesheet, { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
-    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledWith(stylesheet, ['style-sidecar:1'])
+    expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledWith(stylesheet, ['style-sidecar:1'], state.ctx.runtimeState.build.hmr.profile.sourceEvents.at(-1))
   })
 
   it('marks vue entry updates as metadata when only json macro content changed', async () => {
@@ -1202,7 +1227,7 @@ const count = 1
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([`${cause}:1`])
-    expect(onSourceChange).toHaveBeenCalledWith(entryId, [`${cause}:1`])
+    expect(onSourceChange).toHaveBeenCalledWith(entryId, [`${cause}:1`], state.ctx.runtimeState.build.hmr.profile.sourceEvents.at(-1))
   })
 
   it('normalizes transient create events on loaded vue entries back to metadata updates', async () => {
@@ -1916,6 +1941,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     expect(state.ctx.onStatefulHmrSourceChange).toHaveBeenCalledWith(
       dependencyId,
       ['react-template:1'],
+      state.ctx.runtimeState.build.hmr.profile.sourceEvents.at(-1),
     )
   })
 

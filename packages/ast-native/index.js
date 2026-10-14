@@ -19,6 +19,7 @@ if (!bindingPath) {
 }
 
 const {
+  analyzeCompilerScriptsNative,
   analyzeScriptNative,
   analyzeScriptsNative,
   collectFeatureFlagsNative,
@@ -33,6 +34,7 @@ function getVueSfcSignaturePayloadNative(source) {
 }
 
 export {
+  analyzeCompilerScriptsNative,
   analyzeScriptNative,
   analyzeScriptsNative,
   collectFeatureFlagsNative,

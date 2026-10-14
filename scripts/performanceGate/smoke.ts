@@ -1,8 +1,10 @@
 import type { AuditSample, Checkout } from './collect'
+import type { CollectorStop } from './collectorStop'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { collectSide } from './batch'
+import { collectorStop } from './collectorStop'
 import { policy, shards, smokeMetrics } from './contract.mjs'
 import { discoverManifest } from './manifest'
 import { runCollector } from './process'
@@ -10,7 +12,7 @@ import { verifySmoke } from './smokeReport.mjs'
 
 const output = path.resolve(process.env.TEMPLATES_PERF_REPORT_DIR!)
 await mkdir(output, { recursive: true })
-const report = { schemaVersion: 2, purpose: 'smoke', prNumber: Number(process.env.PERFORMANCE_PR_NUMBER), headSha: process.env.PERFORMANCE_HEAD_SHA, driverSha: process.env.PERFORMANCE_HEAD_SHA, baselineSha: policy.baselineSha, samplingContract: policy.samplingContract, executionPlan: { headOnly: true, metrics: shards.flatMap(smokeMetrics), confirmation: [] }, status: 'incomplete', fullAcceptance: 'not-run', stages: [] as Array<{ shard: string, values: AuditSample[] }>, errors: [] as string[] }
+const report = { schemaVersion: 2, purpose: 'smoke', prNumber: Number(process.env.PERFORMANCE_PR_NUMBER), headSha: process.env.PERFORMANCE_HEAD_SHA, driverSha: process.env.PERFORMANCE_HEAD_SHA, baselineSha: policy.baselineSha, samplingContract: policy.samplingContract, executionPlan: { headOnly: true, metrics: shards.flatMap(smokeMetrics), confirmation: [] }, status: 'incomplete', fullAcceptance: 'not-run', stages: [] as Array<{ shard: string, values: AuditSample[] }>, errors: [] as string[], stop: undefined as CollectorStop | undefined }
 const checkpoint = () => writeFile(path.join(output, 'smoke.json'), JSON.stringify(report))
 try {
   await runCollector(process.execPath, ['--import', 'tsx', 'scripts/performanceGate/prepare.ts'], {
@@ -38,9 +40,10 @@ try {
     console.log(`[performance-smoke] ${shard}`)
     const collected = await collectSide(optimized, shard, path.join(output, shard.replaceAll(':', '-')), expected, Math.min(remaining, 120_000))
     report.stages.push({ shard, values: collected.values })
+    report.stop = collected.stop
     await checkpoint()
-    if (collected.errors.length) {
-      throw new Error(collected.errors.join('; '))
+    if (collected.stop || collected.errors.length) {
+      throw new Error(collected.errors.join('; ') || `Collector stopped: ${collected.stop?.reason}`)
     }
     if (collected.values.length !== expected.length || expected.some(id => collected.values.filter(v => v.id === id && Number.isFinite(v.ms) && v.ms > 0).length !== 1)) {
       throw new Error(`Missing smoke output/lifecycle evidence: ${shard}`)
@@ -50,6 +53,7 @@ try {
   verifySmoke(report, report.headSha)
 }
 catch (error) {
+  report.stop = collectorStop(error) ?? report.stop
   report.status = 'incomplete'
   report.errors.push(String(error).replaceAll(process.cwd(), '<checkout>'))
   process.exitCode = 1

@@ -1,5 +1,6 @@
 /* eslint-disable ts/no-use-before-define */
 import type { HmrProfileJsonSample } from '../packages/weapp-vite/src/analyze/hmr'
+import type { SequenceErrorEvidence } from './editSequence/errorEvidence'
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
 import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
@@ -22,7 +23,7 @@ import { readDeclaredScenarios } from './benchmarkTemplatesHmr/declaredScenarios
 import { sanitizeBenchmarkDevLog } from './benchmarkTemplatesHmr/diagnostics'
 import { createEmittedScriptReader, waitForBenchmarkOutput } from './benchmarkTemplatesHmr/emittedOutput'
 import { createBenchmarkDevEnv } from './benchmarkTemplatesHmr/environment'
-import { captureBenchmarkFailureEvidence, writeBenchmarkCleanupFailureEvidence } from './benchmarkTemplatesHmr/failureEvidence'
+import { captureBenchmarkFailureEvidence, serializeBenchmarkError, writeBenchmarkCleanupFailureEvidence } from './benchmarkTemplatesHmr/failureEvidence'
 import { waitForBenchmarkInitialOutputs } from './benchmarkTemplatesHmr/initialOutput'
 import { mutateJsonMarker } from './benchmarkTemplatesHmr/jsonMutation'
 import { isNativeBenchmarkScriptEntry } from './benchmarkTemplatesHmr/nativeEntry'
@@ -101,12 +102,15 @@ interface ScenarioResult {
     outputError?: string
     artifact?: string
     artifactError?: string
+    error?: SequenceErrorEvidence
+    cleanupError?: SequenceErrorEvidence
   }
 }
 
 interface TemplateResult {
   devLog?: string
   error?: string
+  errorEvidence?: SequenceErrorEvidence
   id: string
   project: {
     source: string
@@ -387,6 +391,7 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
       }))
     }
     result.error = formatError(error)
+    result.errorEvidence = serializeBenchmarkError(error, repoRoot)
   }
 
   return result
@@ -751,7 +756,7 @@ async function benchmarkScenario(
     }
   }
   catch (error) {
-    const diagnostics: NonNullable<ScenarioResult['diagnostics']> = { phase, transport: [...transport] }
+    const diagnostics: NonNullable<ScenarioResult['diagnostics']> = { phase, transport: [...transport], error: serializeBenchmarkError(error, repoRoot) }
     try {
       const artifact = `failures/${template.id}/${scenario.id}.json`
       const evidence = await captureBenchmarkFailureEvidence({
@@ -760,6 +765,7 @@ async function benchmarkScenario(
         marker: expectedMarker,
         repoRoot,
         artifactFile: path.join(reportRoot, artifact),
+        error,
       })
       Object.assign(diagnostics, evidence, evidence.artifactError ? {} : { artifact })
     }
@@ -790,6 +796,8 @@ async function benchmarkScenario(
       else {
         failure.error = `${failure.error}\n${message}`
       }
+      failure.diagnostics ??= { phase, transport: [...transport] }
+      failure.diagnostics.cleanupError = serializeBenchmarkError(error, repoRoot)
     }
   }
 

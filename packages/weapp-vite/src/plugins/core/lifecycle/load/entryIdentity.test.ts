@@ -28,6 +28,7 @@ function createState(pages: string[], extensions?: string[]) {
         weappViteConfig: extensions ? { autoRoutes: { extensions } } : {},
         options: {},
         relativeAbsoluteSrcRoot: (id: string) => path.relative(root, id),
+        relativeOutputPath: (id: string) => path.relative(root, id),
       },
       scanService: {
         appEntry,

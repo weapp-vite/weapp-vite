@@ -1,26 +1,17 @@
 import type { ViteDevServer } from 'vite'
 import type { CompilerContext } from '../../context'
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { readFileSync } from 'node:fs'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { compilerSourceId, getCompilerHmrHost } from './hmr'
+import { readCompilerRawInput } from './rawInputs'
 
 /** 声明的非模块依赖进入同一批次输入账本，监听只捕获内容，交付仍由宿主负责。 */
 export function createCompilerDependencyTracker(ctx: CompilerContext) {
   const files = new Set<string>()
+  const paths = new Set<string>()
   const sourceDependencies = new AsyncLocalStorage<Set<string>>()
   const cleanups = new Set<() => void>()
   const host = getCompilerHmrHost(ctx)
-  const read = (file: string) => {
-    try {
-      return readFileSync(file, 'utf8')
-    }
-    catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return null
-      }
-      throw error
-    }
-  }
   return {
     async trackSource<T>(id: string, transform: () => Promise<T>): Promise<T> {
       const dependencies = new Set<string>()
@@ -34,19 +25,33 @@ export function createCompilerDependencyTracker(ctx: CompilerContext) {
         return
       }
       const id = compilerSourceId(file)
+      paths.add(normalizeFsResolvedId(file))
       if (files.has(id)) {
+        host.seed(file, host.readSource(id) ?? null)
         return
       }
+      const read = readCompilerRawInput(file)
+      host.seed(file, read?.source ?? null, read ?? undefined)
       files.add(id)
-      host.seed(id, read(id))
     },
     configureServer(server: ViteDevServer) {
       const capture = (file: string, removed = false) => {
         const id = compilerSourceId(file)
-        if (!files.has(id) || host.isNativeSource(id)) {
+        if ((!files.has(id) && !paths.has(normalizeFsResolvedId(file))) || host.isNativeSource(id)) {
           return
         }
-        host.capture(id, removed ? null : read(id))
+        const read = removed ? null : readCompilerRawInput(file)
+        if (!files.has(id)) {
+          // alias 改指后的新 canonical 身份也必须进入依赖集合，才能触发 compiler-only 刷新。
+          host.seed(file, read?.source ?? null, read ?? undefined)
+        }
+        if (read === null) {
+          host.captureRaw(file, null, false)
+        }
+        else {
+          host.captureRaw(file, read.source, false, read)
+        }
+        files.add(id)
         host.onDependencyChange?.(id)
       }
       const changed = (file: string) => capture(file)
@@ -65,6 +70,7 @@ export function createCompilerDependencyTracker(ctx: CompilerContext) {
         cleanup()
       }
       files.clear()
+      paths.clear()
     },
   }
 }

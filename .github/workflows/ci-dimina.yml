@@ -2,6 +2,11 @@ name: Dimina Web Experiment
 
 on:
   workflow_dispatch:
+    inputs:
+      diagnostics:
+        description: 采集原冷路径的浏览器与 Windows 网络资源证据
+        type: boolean
+        default: false
   pull_request:
     paths:
       - .gitattributes
@@ -91,6 +96,9 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - name: Serialized browser acceptance
         run: pnpm e2e:dimina
+        env:
+          WEAPP_VITE_E2E_DIMINA_DIAGNOSTICS: ${{ inputs.diagnostics && '1' || '0' }}
+          DEBUG: ${{ inputs.diagnostics && 'pw:browser' || '' }}
       - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -101,3 +109,4 @@ jobs:
             docs/reports/*-e2e-dimina-*-suite-report/**
             .cache/dimina/screenshots/**
             .cache/dimina/navigation/**
+            .cache/dimina/diagnostics/**

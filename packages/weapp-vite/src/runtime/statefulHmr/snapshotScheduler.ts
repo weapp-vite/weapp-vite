@@ -27,6 +27,7 @@ export class StatefulHmrSnapshotScheduler {
   private changed = Promise.withResolvers<void>()
   private failed = false
   private failure: unknown
+  private closeFailure?: { error: unknown }
 
   constructor(options: StatefulHmrSnapshotSchedulerOptions) {
     this.debounceMs = options.debounceMs ?? DEFAULT_SNAPSHOT_DEBOUNCE_MS
@@ -83,6 +84,9 @@ export class StatefulHmrSnapshotScheduler {
     this.pendingMode = undefined
     this.notifyChanged()
     await this.runningPromise
+    if (this.closeFailure) {
+      throw this.closeFailure.error
+    }
   }
 
   private schedule(): void {
@@ -119,6 +123,9 @@ export class StatefulHmrSnapshotScheduler {
         failed = true
         this.failed = true
         this.failure = error
+        if (this.closed) {
+          this.closeFailure = { error }
+        }
         try {
           this.onError?.(error)
         }
