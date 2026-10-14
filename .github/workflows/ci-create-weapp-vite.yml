@@ -1,18 +1,13 @@
 name: Create Weapp Vite Smoke
 
 on:
-  pull_request:
-    paths:
-      - 'packages/create-weapp-vite/**'
-      - 'scripts/createWeappViteSmoke/**'
-      - scripts/create-weapp-vite-smoke.mjs
-      - scripts/merge-create-weapp-vite-smoke-reports.mjs
-      - .github/workflows/ci-create-weapp-vite.yml
-      - 'templates/**'
-      - package.json
-      - pnpm-lock.yaml
   workflow_dispatch:
     inputs:
+      pr-number:
+        description: PR 编号；留空保留当前分支或定时验证
+        required: false
+        default: ''
+        type: string
       package-spec:
         description: npm dist-tag or version for create-weapp-vite
         required: false
@@ -59,14 +54,23 @@ on:
     - cron: '0 3 * * *'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ inputs.pr-number || github.ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+      paths: '["packages/create-weapp-vite/**","scripts/createWeappViteSmoke/**","scripts/create-weapp-vite-smoke.mjs","scripts/merge-create-weapp-vite-smoke-reports.mjs",".github/workflows/ci-create-weapp-vite.yml","templates/**","package.json","pnpm-lock.yaml"]'
+
   source-network-regression:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Scaffold Network Regression (${{ matrix.os }} / Node 22)
     strategy:
       fail-fast: false
@@ -75,6 +79,12 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: 45
@@ -86,7 +96,8 @@ jobs:
     secrets: inherit
 
   prepare:
-    if: github.event_name != 'pull_request'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')
     name: Prepare Smoke Matrix
     runs-on: ubuntu-latest
     outputs:
@@ -167,7 +178,8 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   smoke:
-    needs: [prepare]
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: [pr-context, prepare]
     name: Create Smoke (${{ matrix.os }} / Node ${{ matrix.node-version }} / ${{ matrix.scope }})
     timeout-minutes: 90
     runs-on: ${{ matrix.os }}
@@ -184,6 +196,9 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
 
       - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
 
@@ -240,13 +255,16 @@ jobs:
 
   report:
     name: Smoke Report
-    if: always() && github.event_name != 'pull_request'
-    needs: [smoke]
+    if: needs.pr-context.outputs.should_run == 'true' && (always() && needs.pr-context.outputs.is_pr != 'true')
+    needs: [pr-context, smoke]
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
 
       - name: Download smoke report artifacts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2

@@ -23,9 +23,9 @@ it('isolates manual Windows acceptance diagnostics from the complete compatibili
     default: 'full',
     options: ['full', 'windows-runtime-diagnostic'],
   })
-  expect(workflow.concurrency.group).toBe('acceptance-${{ inputs.scope || \'full\' }}-${{ github.ref }}')
-  expect(workflow.jobs.compatibility?.if).toBe('github.event_name != \'workflow_dispatch\' || inputs.scope == \'full\'')
-  expect(workflow.jobs['windows-runtime-diagnostic']?.if).toBe('github.event_name == \'workflow_dispatch\' && inputs.scope == \'windows-runtime-diagnostic\'')
+  expect(workflow.concurrency.group).toBe('acceptance-${{ inputs.scope || \'full\' }}-${{ inputs.pr-number || github.ref }}')
+  expect(workflow.jobs.compatibility?.if).toBe('needs.pr-context.outputs.should_run == \'true\' && (github.event_name != \'workflow_dispatch\' || inputs.scope == \'full\')')
+  expect(workflow.jobs['windows-runtime-diagnostic']?.if).toBe('needs.pr-context.outputs.should_run == \'true\' && (github.event_name == \'workflow_dispatch\' && inputs.scope == \'windows-runtime-diagnostic\')')
 })
 
 it('rebuilds dependencies and retains coverage and the original test timeout on both Windows Node versions', () => {
@@ -36,7 +36,8 @@ it('rebuilds dependencies and retains coverage and the original test timeout on 
     runs_on: 'windows-latest',
     node_version: '${{ matrix.node-version }}',
     build_command: 'pnpm exec turbo run build --filter=@weapp-agent/mini-program...',
-    artifact_name: 'acceptance-runtime-windows-node-${{ matrix.node-version }}-${{ github.sha }}',
+    checkout_ref: '${{ needs.pr-context.outputs.checkout_sha }}',
+    artifact_name: 'acceptance-runtime-windows-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}',
     artifact_path: '.tmp/acceptance-runtime-report.json',
   })
   expect(String(job.with.main_command).trim().split('\n')).toEqual([
