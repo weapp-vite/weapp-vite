@@ -1,4 +1,5 @@
 import type { ChildProcess } from 'node:child_process'
+import type { DevProcessIdentity } from './devProcessCleanup/processes'
 import { spawn } from 'node:child_process'
 import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
@@ -6,10 +7,10 @@ import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { describe, expect, it } from 'vitest'
-import { readManagedProcessIdentity, sameManagedProcess } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
+import { sameManagedProcess } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
 import { startDevProcess } from './dev-process'
+import { readDevProcessIdentities } from './devProcessCleanup/processes'
 
-type ProcessIdentity = NonNullable<Awaited<ReturnType<typeof readManagedProcessIdentity>>>
 interface TreeRegistration {
   rootPid: number
   descendantPid: number
@@ -62,34 +63,39 @@ async function readRegistration(directory: string): Promise<TreeRegistration | u
   return { rootPid: value.rootPid, descendantPid: value.descendantPid }
 }
 
-async function captureTree(directory: string, expectedRootPid: number | undefined) {
+async function captureTree(directory: string, expectedRootPid: number | undefined): Promise<[DevProcessIdentity, DevProcessIdentity]> {
   await waitUntil(async () => Boolean(await readRegistration(directory)), 'process tree registration')
   const registration = (await readRegistration(directory))!
   expect(registration.rootPid).toBe(expectedRootPid)
-  const identities = await within(Promise.all([
-    readManagedProcessIdentity(registration.rootPid),
-    readManagedProcessIdentity(registration.descendantPid),
+  const identities = await within(readDevProcessIdentities([
+    registration.rootPid,
+    registration.descendantPid,
   ]), 'registered process identities')
-  if (identities.some(identity => !identity)) {
+  const root = identities.get(registration.rootPid)
+  const descendant = identities.get(registration.descendantPid)
+  if (!root || !descendant) {
     throw new Error('Registered process tree exited before cleanup began')
   }
-  return identities as [ProcessIdentity, ProcessIdentity]
+  return [root, descendant]
 }
 
-async function isSameProcessRunning(identity: ProcessIdentity) {
+async function readTreeRunning(identities: DevProcessIdentity[]) {
   // Linux 身份检查读取可执行文件，已停止但尚未回收的 zombie 不算仍在执行。
-  const current = await readManagedProcessIdentity(identity.pid)
-  return Boolean(current && sameManagedProcess(identity, current))
+  const current = await readDevProcessIdentities(identities.map(identity => identity.pid))
+  return identities.map((identity) => {
+    const live = current.get(identity.pid)
+    return Boolean(live && sameManagedProcess(identity, live))
+  })
 }
 
-async function waitForTreeExit(identities: ProcessIdentity[]) {
+async function waitForTreeExit(identities: DevProcessIdentity[]) {
   await waitUntil(async () => {
-    const running = await Promise.all(identities.map(isSameProcessRunning))
+    const running = await readTreeRunning(identities)
     return running.every(value => !value)
   }, 'registered process tree exit')
 }
 
-async function waitForRegisteredDescendantExit(directory: string) {
+async function readRegisteredDescendantPid(directory: string): Promise<number | undefined> {
   let content: string
   try {
     content = await readFile(path.join(directory, 'descendant.json'), 'utf8')
@@ -105,16 +111,24 @@ async function waitForRegisteredDescendantExit(directory: string) {
     || typeof value.pid !== 'number' || !Number.isSafeInteger(value.pid) || value.pid <= 0 || value.pid === process.pid) {
     throw new Error('Invalid descendant cleanup registration')
   }
-  const identity = await within(readManagedProcessIdentity(value.pid), 'descendant cleanup identity')
-  if (identity) {
-    await waitForTreeExit([identity])
+  return value.pid
+}
+
+async function waitForRegisteredDescendantsExit(pids: number[]) {
+  if (!pids.length) {
+    return
+  }
+  const current = await within(readDevProcessIdentities(pids), 'descendant cleanup identity')
+  const identities = [...current.values()].filter((identity): identity is DevProcessIdentity => identity !== undefined)
+  if (identities.length) {
+    await waitForTreeExit(identities)
   }
 }
 
 async function cleanupFixture(options: {
   directory: string
   stateDirectories: string[]
-  captured: ProcessIdentity[]
+  captured: DevProcessIdentity[]
   dev: ReturnType<typeof startDevProcess> | undefined
   external: ChildProcess | undefined
   originalErrors: unknown[]
@@ -130,8 +144,10 @@ async function cleanupFixture(options: {
     ...(external ? [waitUntil(async () => external.exitCode !== null || external.signalCode !== null, 'held external child exit')] : []),
   ])
   // 就绪断言也可能提前失败；根退出后仍根据 fixture 登记确认其后代退出，再删除自清理信号。
-  const descendants = await Promise.allSettled(stateDirectories.map(waitForRegisteredDescendantExit))
-  const failures: unknown[] = [...cleanup, ...released, ...descendants]
+  const descendants = await Promise.allSettled(stateDirectories.map(readRegisteredDescendantPid))
+  const descendantPids = descendants.flatMap(result => result.status === 'fulfilled' && result.value !== undefined ? [result.value] : [])
+  const descendantExit = await Promise.allSettled([waitForRegisteredDescendantsExit(descendantPids)])
+  const failures: unknown[] = [...cleanup, ...released, ...descendants, ...descendantExit]
     .filter(result => result.status === 'rejected')
     .map(result => result.reason)
   if (!failures.length) {
@@ -155,7 +171,7 @@ describe('dev process real process tree cleanup', () => {
     const fixture = path.join(directory, 'process-tree.mjs')
     let dev: ReturnType<typeof startDevProcess> | undefined
     let external: ChildProcess | undefined
-    const captured: ProcessIdentity[] = []
+    const captured: DevProcessIdentity[] = []
     const originalErrors: unknown[] = []
     try {
       await Promise.all([mkdir(managedDirectory), mkdir(externalDirectory)])
@@ -190,7 +206,7 @@ describe('dev process real process tree cleanup', () => {
         expect(await readFile(path.join(managedDirectory, 'term-ignored'), 'utf8')).toBe(String(managedTree[1].pid))
       }
       // 同一命令行不授予清理权：外部树的根和后代必须保持原进程身份并继续执行。
-      expect(await within(Promise.all(externalTree.map(isSameProcessRunning)), 'external process identities')).toEqual([true, true])
+      expect(await within(readTreeRunning(externalTree), 'external process identities')).toEqual([true, true])
       expect(external.exitCode).toBeNull()
       expect(external.signalCode).toBeNull()
     }

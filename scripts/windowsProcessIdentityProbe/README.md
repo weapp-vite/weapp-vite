@@ -12,6 +12,18 @@ PID 与创建时间精确一致，路径却被替换字符改变。独立的合�
 和完整 UTF-16 行传输合同。
 下面的历史比较描述原运行，不把编码修复当作进程查询超时的唯一根因。
 
+## Dev 进程树清理合同与独立身份对照
+
+`e2e/utils/dev-process.cleanup.integration.test.ts` 验证受管树退出及同命令外部树保留，
+不是通用 CIM provider 的独立 oracle。登记身份、退出观察、外部树保留断言和后代收尾
+统一通过 `readDevProcessIdentities` 按本次 PID 集合批量查询，由该子系统选择各平台 provider。
+登记校验、完整身份必需、`sameManagedProcess` 精确比较、外部子进程句柄及原期限保持不变；
+查询错误仍失败，不转换成退出。
+
+独立 native/CIM 精确兼容对照仍由 `e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts`
+和本目录的 `checkProcessRows.ts` 在真实 Windows 上执行。复用清理子系统查询不证明
+通用 CIM 或操作系统查询延迟已解决，也不能替代这些独立检查。
+
 ## Provider 清理的定向复现
 
 同一 workflow 的 `Provider cleanup query` 在 Windows Node 22/24 上运行原有

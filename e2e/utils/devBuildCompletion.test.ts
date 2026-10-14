@@ -2,6 +2,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
 import { createDevBuildCompletion } from './devBuildCompletion'
+import { NATIVE_BATCH_EXTENSIONS } from './nativeBatchProject'
+import { NATIVE_BATCH_SETTLEMENT_PREFIX } from './nativeBatchSettlementPlugin'
 
 const profile = vi.hoisted(() => ({
   content: '',
@@ -271,5 +273,197 @@ it.each(['resolve', 'reject'])('aborts an in-flight profile read on process exit
   }
   await vi.advanceTimersByTimeAsync(100)
   expect(profile.read).toHaveBeenCalledTimes(1)
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+const snapshotFiles = NATIVE_BATCH_EXTENSIONS.map(extension => `src/pages/index/index.${extension}`)
+const snapshotSource = { files: snapshotFiles, profilePath: 'profile.jsonl' }
+
+function snapshotSourceRecord(file: string, receivedAtEpochMs = performance.timeOrigin + performance.now() + 1, status = 'incomplete') {
+  return `${sourceRecord(file, receivedAtEpochMs, {
+    pipeline: 'stateful',
+    status,
+    totalMs: status === 'complete' ? 1 : undefined,
+    elapsedMs: status === 'complete' ? undefined : 1,
+  })}\n`
+}
+
+function snapshotRecord(stage: string, details: Record<string, unknown> = {}) {
+  return `[stateful-hmr-snapshot] ${JSON.stringify({ sessionId: 'snapshot-session', stage, ...details })}\n`
+}
+
+function settlementRecord(id: string, details: Record<string, unknown> = {}) {
+  return `${NATIVE_BATCH_SETTLEMENT_PREFIX}${JSON.stringify({ id, status: 'complete', ...details })}\n`
+}
+
+it('waits for owner settlement after every notification despite superseded disk/control and active publication', async () => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const settled = Promise.withResolvers<void>()
+  const requestSettlement = vi.fn((id: string) => {
+    void settled.promise.then(() => dev.append(settlementRecord(id)))
+  })
+  const publication = createDevBuildCompletion(dev, { snapshot: { ...snapshotSource, requestSettlement } })
+  let finished = false
+  const waiting = publication.wait().then(() => {
+    finished = true
+  })
+  for (const file of snapshotFiles.slice(0, -1)) {
+    profile.content += snapshotSourceRecord(file)
+  }
+  dev.append('matching four files and new control visible\npublication complete\n')
+  dev.append(snapshotRecord('write-end', { batchId: 6, status: 'resolved' }))
+  dev.append(snapshotRecord('batch-end', { batchId: 6, status: 'resolved', superseded: true }))
+  await vi.advanceTimersByTimeAsync(50)
+  expect(requestSettlement).not.toHaveBeenCalled()
+  expect(finished).toBe(false)
+
+  profile.content += snapshotSourceRecord(snapshotFiles.at(-1)!, undefined, 'complete')
+  dev.append(snapshotRecord('batch-start', { batchId: 7, files: snapshotFiles }))
+  await vi.advanceTimersByTimeAsync(25)
+  expect(requestSettlement).toHaveBeenCalledTimes(1)
+  expect(finished).toBe(false)
+  // 即使发布记录已经完整，宿主仍可能正在释放准备资源或结束调度器。
+  dev.append(snapshotRecord('batch-end', { batchId: 7, status: 'resolved', superseded: false }))
+  dev.append(snapshotRecord('source-after', { batchId: 7 }))
+  await vi.advanceTimersByTimeAsync(50)
+  expect(finished).toBe(false)
+  expect(requestSettlement).toHaveBeenCalledTimes(1)
+
+  settled.resolve()
+  await vi.advanceTimersByTimeAsync(25)
+  await waiting
+  expect(finished).toBe(true)
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it('rejects a buffered prior edit as the missing source and retains the 30 second total deadline', async () => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const capturedAt = performance.timeOrigin + performance.now()
+  profile.content = snapshotFiles.map(file => snapshotSourceRecord(file, capturedAt - 2)).join('')
+  const requestSettlement = vi.fn()
+  const publication = createDevBuildCompletion(dev, { snapshot: { ...snapshotSource, requestSettlement } })
+  const rejected = expect(publication.wait()).rejects.toThrow('Timed out waiting for current dev build')
+  for (const file of snapshotFiles.slice(1)) {
+    profile.content += snapshotSourceRecord(file)
+  }
+  // 旧事件在捕获后才写入 profile / stdout；到达游标不能代替实际通知的高精度时间。
+  profile.content += snapshotSourceRecord(snapshotFiles[0]!, capturedAt - 0.5)
+  dev.append(snapshotRecord('source-change', { file: snapshotFiles[0] }))
+  dev.append(settlementRecord('previous-edit'))
+  await vi.advanceTimersByTimeAsync(29_999)
+  expect(requestSettlement).not.toHaveBeenCalled()
+  await vi.advanceTimersByTimeAsync(1)
+  await rejected
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it('uses a new nonce for each edit and accepts only complete matching acknowledgements', async () => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const requestSettlement = vi.fn<(id: string) => void>()
+  const first = createDevBuildCompletion(dev, { snapshot: { ...snapshotSource, requestSettlement } })
+  for (const file of snapshotFiles) {
+    profile.content += snapshotSourceRecord(file)
+  }
+  const firstWait = first.wait()
+  await vi.advanceTimersByTimeAsync(25)
+  const firstId = requestSettlement.mock.calls[0]![0]
+  dev.append(settlementRecord(firstId))
+  await vi.advanceTimersByTimeAsync(25)
+  await firstWait
+
+  const second = createDevBuildCompletion(dev, { snapshot: { ...snapshotSource, requestSettlement } })
+  let finished = false
+  const secondWait = second.wait().then(() => {
+    finished = true
+  })
+  const notifications = snapshotFiles.map(file => snapshotSourceRecord(file)).join('')
+  profile.content += notifications.slice(0, -1)
+  await vi.advanceTimersByTimeAsync(25)
+  expect(requestSettlement).toHaveBeenCalledTimes(1)
+  profile.content += '\n'
+  await vi.advanceTimersByTimeAsync(25)
+  expect(requestSettlement).toHaveBeenCalledTimes(2)
+  const secondId = requestSettlement.mock.calls[1]![0]
+  expect(secondId).not.toBe(firstId)
+  dev.append(settlementRecord(firstId))
+  await vi.advanceTimersByTimeAsync(25)
+  expect(finished).toBe(false)
+  const acknowledgement = settlementRecord(secondId)
+  dev.append(acknowledgement.slice(0, -1))
+  await vi.advanceTimersByTimeAsync(25)
+  expect(finished).toBe(false)
+  dev.append('\n')
+  await vi.advanceTimersByTimeAsync(25)
+  await secondWait
+  expect(finished).toBe(true)
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it.each([
+  { reply: (id: string) => settlementRecord(id, { status: 'failed', error: 'native output failed' }), error: 'native output failed' },
+  { reply: () => `${NATIVE_BATCH_SETTLEMENT_PREFIX}{broken}\n`, error: /JSON/ },
+  { reply: (id: string) => settlementRecord(id, { status: 'active' }), error: 'Invalid native batch settlement acknowledgement' },
+  { reply: (id: string) => settlementRecord(id, { id: undefined }), error: 'Invalid native batch settlement acknowledgement' },
+])('rejects failed or malformed settlement responses without accepting visible output: $error', async ({ reply, error }) => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const publication = createDevBuildCompletion(dev, {
+    snapshot: { ...snapshotSource, requestSettlement: id => dev.append(reply(id)) },
+  })
+  for (const file of snapshotFiles) {
+    profile.content += snapshotSourceRecord(file)
+  }
+  const rejected = expect(publication.wait()).rejects.toThrow(error)
+  await vi.advanceTimersByTimeAsync(25)
+  await rejected
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it('fails a requested settlement on child exit and ignores a late acknowledgement', async () => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const requestSettlement = vi.fn<(id: string) => void>()
+  const publication = createDevBuildCompletion(dev, { snapshot: { ...snapshotSource, requestSettlement } })
+  for (const file of snapshotFiles) {
+    profile.content += snapshotSourceRecord(file)
+  }
+  const error = new Error('child exited during native publication')
+  const rejected = expect(publication.wait()).rejects.toBe(error)
+  await vi.advanceTimersByTimeAsync(25)
+  expect(requestSettlement).toHaveBeenCalledTimes(1)
+  dev.exit(error)
+  await rejected
+  dev.append(settlementRecord(requestSettlement.mock.calls[0]![0]))
+  await vi.advanceTimersByTimeAsync(100)
+  expect(requestSettlement).toHaveBeenCalledTimes(1)
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it.each(['before-request', 'after-request'])('rejects a failed current source even if the owner would acknowledge drained work: %s', async (when) => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const requestSettlement = vi.fn<(id: string) => void>()
+  const publication = createDevBuildCompletion(dev, { snapshot: { ...snapshotSource, requestSettlement } })
+  for (const file of snapshotFiles) {
+    profile.content += snapshotSourceRecord(file)
+  }
+  if (when === 'before-request') {
+    profile.content += snapshotSourceRecord(snapshotFiles[0]!, undefined, 'failed')
+  }
+  const rejected = expect(publication.wait()).rejects.toThrow('Native batch publication failed for current source')
+  await vi.advanceTimersByTimeAsync(25)
+  if (when === 'after-request') {
+    expect(requestSettlement).toHaveBeenCalledTimes(1)
+    profile.content += snapshotSourceRecord(snapshotFiles[0]!, undefined, 'failed')
+    dev.append(settlementRecord(requestSettlement.mock.calls[0]![0]))
+    await vi.advanceTimersByTimeAsync(25)
+  }
+  else {
+    expect(requestSettlement).not.toHaveBeenCalled()
+  }
+  await rejected
   expect(vi.getTimerCount()).toBe(0)
 })
