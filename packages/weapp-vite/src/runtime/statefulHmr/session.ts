@@ -3,6 +3,7 @@ import type { InlineConfig, ViteDevServer } from 'vite'
 /* eslint-disable ts/no-use-before-define */
 
 import type { CompilerContext, MutableCompilerContext } from '../../context'
+import type { HmrProfileSourceEvent } from '../../utils/hmrProfile/provenance'
 import type { DevBuildWatcherController } from '../buildPlugin/devBuildWatcher'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrOutputSource } from './outputPublication'
@@ -56,8 +57,8 @@ import { shouldResetStatefulHmrRetention } from './retention'
 import { createStatefulHmrControlSource } from './runtimeSource'
 import { createStatefulHmrSnapshotDiagnostics } from './snapshotDiagnostics'
 import { offerStatefulHmrSnapshot, StatefulHmrSnapshotHandoff } from './snapshotHandoff'
+import { withStatefulHmrSnapshotPreparation } from './snapshotPreparation'
 import { StatefulHmrSnapshotScheduler } from './snapshotScheduler'
-import { retainStylesUntilScriptApplied } from './styleDelivery'
 import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
@@ -175,7 +176,7 @@ export async function runStatefulHmrDev(
       bindHostLifecycle(server, () => active.close())
     }
     await session.prepareIdeAssetWatch()
-    session.install()
+    session.install(controller)
     if (host) {
       await session.startEngine()
     }
@@ -201,6 +202,7 @@ export async function runStatefulHmrDev(
 
 class StatefulHmrSession {
   releaseSettlement?: () => void
+  private releaseSidecarInputDrift?: () => void
   private settlementRevision = 0
   private restarting = false
   private readonly settlementObservers = new Set<() => void>()
@@ -235,8 +237,8 @@ class StatefulHmrSession {
   // 原生脚本 patch 只写 delta；独立资产刷新前仍需将这些源码交给完整构建持久化。
   private readonly unpersistedNativeScripts = new Map<string, object>()
   private readonly nativeScriptInputs = new NativeScriptInputs()
-  private readonly sourceChangeListener = (file: string, dirtyReasonSummary: string[]) => {
-    this.handleSourceUpdate(file, dirtyReasonSummary)
+  private readonly sourceChangeListener = (file: string, dirtyReasonSummary: string[], sourceEvent?: HmrProfileSourceEvent) => {
+    this.handleSourceUpdate(file, dirtyReasonSummary, sourceEvent)
   }
 
   constructor(
@@ -297,6 +299,11 @@ class StatefulHmrSession {
     this.snapshotScheduler = new StatefulHmrSnapshotScheduler({
       execute: batch => this.profileSnapshotBatch(batch),
       onError: (error) => {
+        if (error instanceof CompilerHmrResyncError) {
+          this.server.config.logger.info(`[weapp-vite] stateful HMR 正在完整重同步：${error.message}`)
+          this.requestFullBuild(error.files)
+          return
+        }
         const failure = error instanceof Error ? error : new Error(String(error))
         this.buildEvents.emitEvent({ code: 'ERROR', error: failure, result: undefined as never })
         this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', { error: failure })
@@ -321,11 +328,12 @@ class StatefulHmrSession {
     })
   }
 
-  install(): void {
+  install(controller: Pick<ReturnType<typeof createStatefulHmrHostPlugins>, 'bindSidecarInputDrift'>): void {
     this.childSources = observeChildSources(this.server, file => this.requestFullBuild([file]))
     this.childSources.adopt(this.initialSnapshot?.childSources)
     this.transport.install()
     this.adapter.install()
+    this.releaseSidecarInputDrift = controller.bindSidecarInputDrift(file => this.requestFullBuild([file]))
     this.ctx.onStatefulHmrSourceChange = this.sourceChangeListener
     getCompilerHmrHost(this.ctx).onDependencyChange = (file) => {
       void this.waitForInitialBundle().then(async () => {
@@ -393,8 +401,12 @@ class StatefulHmrSession {
       }
     }
     this.closed = true
+    this.releaseSidecarInputDrift?.()
+    this.releaseSidecarInputDrift = undefined
     // 先同步封闭交付代次，再取消传输；等待必须留到传输解除未确认交付之后。
     const closeDelivery = release(() => this.delivery.close())
+    // 同步封闭快照准入，异步等待留到传输关闭后，避免 pending prepare 抢先消费关闭中的会话。
+    const closeSnapshots = release(() => this.snapshotScheduler.close())
     // 保持释放顺序，但某个资源失败不能跳过后续监听器、引擎或诊断的关闭。
     await release(() => this.initialProfile?.finish(status))
     this.initialProfile = undefined
@@ -416,7 +428,7 @@ class StatefulHmrSession {
     }
     await release(() => this.transport.close())
     await closeDelivery
-    await release(() => this.snapshotScheduler.close())
+    await closeSnapshots
     await release(() => this.adapter.close())
     this.sourceDirtyReasons.clear()
     this.unpersistedNativeScripts.clear()
@@ -435,7 +447,7 @@ class StatefulHmrSession {
     })
   }
 
-  handleSourceUpdate(file: string, dirtyReasonSummary: string[] = []): void {
+  handleSourceUpdate(file: string, dirtyReasonSummary: string[] = [], sourceEvent?: HmrProfileSourceEvent): void {
     if (this.closed) {
       return
     }
@@ -450,7 +462,7 @@ class StatefulHmrSession {
     }
     this.initialProfile?.finish('incomplete')
     this.initialProfile = undefined
-    this.profile?.source(normalizedFile)
+    this.profile?.source(normalizedFile, sourceEvent)
     this.settlementRevision += 1
     if (this.restartHandoff) {
       // 已验证快照等待交接期间又有输入变化，保留旧宿主并重新验证完整批次。
@@ -504,7 +516,7 @@ class StatefulHmrSession {
     }
     if (/\.[cm]?[jt]s$/.test(normalizedFile) && (this.entryIds.has(normalizedFile) || isEmittedDependency)) {
       this.unpersistedNativeScripts.set(normalizedFile, {})
-      if (this.snapshotScheduler.isPending()) {
+      if (this.snapshotScheduler.isPending() || this.nativeScriptInputs.needsFullBuild(normalizedFile)) {
         this.requestFullBuild([normalizedFile])
         return
       }
@@ -590,7 +602,7 @@ class StatefulHmrSession {
         getCompilerHmrHost(this.ctx).setNativeSources(collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root))
         this.transport.registerInitialPayloads(compatibleOutput.filter(item => item.type === 'chunk').map(item => item.fileName), file => this.adapter.markPayloadDelivered(file))
         if (snapshot && snapshotOutput) {
-          this.adoptSnapshot(snapshot, snapshotOutput)
+          this.adoptSnapshot(snapshot, snapshotOutput, Boolean(snapshotBatch))
           this.initialSnapshot = undefined
         }
         for (const sourceId of collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root)) {
@@ -621,7 +633,7 @@ class StatefulHmrSession {
       this.initialProfile = undefined
       if (nativeInputs) {
         // 完整发布失败可能已部分落盘，旧源码版本不能再证明脚本与磁盘一致。
-        this.nativeScriptInputs.clear()
+        this.nativeScriptInputs.invalidate()
       }
       if (!snapshotBatch) {
         this.initialBundle.reject(error)
@@ -746,6 +758,9 @@ class StatefulHmrSession {
             prepareProviders,
             rebuild: (files, sources) => sources ? this.snapshots.rebuild(files, sources) : this.snapshots.rebuild(files),
             sourcemap: Boolean(this.server.config.build.sourcemap),
+            onPreparationStage: this.diagnostics
+              ? observation => this.diagnostics!.preparation(input.revision, files, observation)
+              : undefined,
           })
           const { compilerAssets, snapshot, code, changedIds, filenames } = compiled
           profile?.mark('commitQueueMs')
@@ -759,7 +774,6 @@ class StatefulHmrSession {
           if (shouldResetStatefulHmrRetention(this.transport.retainedDeltaCount, this.transport.retainedDeltaBytes, Buffer.byteLength(code))) {
             this.requestFullBuild(files)
           }
-          let deferredStyles: StatefulHmrOutputFile[] | undefined
           return {
             commit: () => this.enqueueOutput(async () => {
               profile?.mark('commitMs')
@@ -774,12 +788,8 @@ class StatefulHmrSession {
                       { createIfMissing: true, componentPageGlobalStyleRoutes: this.componentPageGlobalStyleRoutes, refreshPageStyles: true },
                     )
                   : [...this.snapshotAssets.values()]
-              deferredStyles = filenames.length ? next : undefined
-              const beforeScripts = deferredStyles
-                ? retainStylesUntilScriptApplied(this.snapshotAssets.values(), next, resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension)
-                : next
-              await this.commitSnapshotAssets(beforeScripts)
-              if (snapshot && !deferredStyles) {
+              await this.commitSnapshotAssets(next)
+              if (snapshot) {
                 this.adoptSnapshot(snapshot, next)
                 this.commitSnapshotMetadata(snapshot, 'refresh')
               }
@@ -805,15 +815,6 @@ class StatefulHmrSession {
                   acknowledged += 1
                 }
               })
-              if (deferredStyles) {
-                await this.enqueueOutput(async () => {
-                  await this.commitSnapshotAssets(deferredStyles!)
-                  if (snapshot) {
-                    this.adoptSnapshot(snapshot, deferredStyles!)
-                    this.commitSnapshotMetadata(snapshot, 'refresh')
-                  }
-                })
-              }
               if (scriptFacts) {
                 refreshGlassEaselNativeScripts(this.ctx, scriptFacts)
               }
@@ -989,6 +990,7 @@ class StatefulHmrSession {
     this.buildEvents.emitEvent({ code: 'START' })
     const entryGraphRevision = this.entryGraphRevision
     const nativeScriptChanges = new Map(this.unpersistedNativeScripts)
+    const nativeAssetDrift = this.nativeScriptInputs.captureAssetDrift()
     // 完整构建只消费启动时捕获的事件；同一路径的新事件仍归后续批次所有。
     const sourceChanges = new Map(batch.files.map(file => [file, this.sourceDirtyReasons.get(file)]))
     const releaseSourceChanges = () => {
@@ -1001,80 +1003,101 @@ class StatefulHmrSession {
         }
       }
     }
-    const snapshot = await this.snapshots.rebuild(batch.files)
-    profile?.mark('snapshotPublishMs')
-    this.diagnostics?.snapshot(traceBatchId, snapshot.output, batch.isSuperseded())
-    if (batch.isSuperseded()) {
-      this.diagnostics?.discarded(traceBatchId, 'after-build')
-      return
-    }
-    const nextEntryIds = snapshot.entryIds?.map(id => normalizeFsResolvedId(id))
-    if (this.restartForEntryGraph(snapshot, profile)) {
-      return
-    }
-    if (batch.mode === 'full') {
-      if (nextEntryIds) {
-        this.entryIds.clear()
-        for (const id of nextEntryIds) {
-          this.entryIds.add(id)
-        }
+    let refreshed = false
+    let handoff: { snapshot: StatefulHmrSnapshot, sources?: ReadonlyMap<string, string | null> } | undefined
+    await withStatefulHmrSnapshotPreparation(this.ctx, batch, (files, sources) => sources ? this.snapshots.rebuild(files, sources) : this.snapshots.rebuild(files), async ({ input, rebuild }) => {
+      if (input) {
+        this.diagnostics?.input(input)
       }
-      if (snapshot.delegatedComponentEntryIds) {
-        this.delegatedComponentEntryIds.clear()
-        for (const id of snapshot.delegatedComponentEntryIds) {
-          this.delegatedComponentEntryIds.add(normalizeFsResolvedId(id))
-        }
+      const snapshot = await rebuild()
+      profile?.mark('snapshotPublishMs')
+      this.diagnostics?.snapshot(traceBatchId, snapshot.output, batch.isSuperseded())
+      if (batch.isSuperseded()) {
+        this.diagnostics?.discarded(traceBatchId, 'after-build')
+        return
       }
-      const activeBatch: ActiveSnapshotBatch = { ...batch, traceBatchId, snapshot, outputTasks: [] }
-      try {
-        await this.adapter.rebuild(() => {
-          this.activeSnapshotBatch = activeBatch
-        })
-        if (!activeBatch.outputTasks.length && !batch.isSuperseded()) {
-          throw new Error('微信状态保持 HMR 完整构建未交付可持久化的输出。')
-        }
-        await Promise.all(activeBatch.outputTasks)
-        if (!batch.isSuperseded()) {
-          if (!activeBatch.fullOutputCommitted) {
-            throw new Error('微信状态保持 HMR 完整构建未交付可持久化的原生完整输出。')
+      const nextEntryIds = snapshot.entryIds?.map(id => normalizeFsResolvedId(id))
+      if (batch.mode === 'refresh' && nextEntryIds && (nextEntryIds.length !== this.entryIds.size || nextEntryIds.some(id => !this.entryIds.has(id)))) {
+        handoff = { snapshot, sources: input?.sources }
+        return
+      }
+      if (this.restartForEntryGraph(snapshot, profile, input?.sources)) {
+        return
+      }
+      if (batch.mode === 'full') {
+        if (nextEntryIds) {
+          this.entryIds.clear()
+          for (const id of nextEntryIds) {
+            this.entryIds.add(id)
           }
-          this.resynchronizing = false
-          this.rebuiltEntryGraphRevision = entryGraphRevision
-          for (const [file, change] of nativeScriptChanges) {
-            if (this.unpersistedNativeScripts.get(file) === change) {
-              this.unpersistedNativeScripts.delete(file)
+        }
+        if (snapshot.delegatedComponentEntryIds) {
+          this.delegatedComponentEntryIds.clear()
+          for (const id of snapshot.delegatedComponentEntryIds) {
+            this.delegatedComponentEntryIds.add(normalizeFsResolvedId(id))
+          }
+        }
+        const activeBatch: ActiveSnapshotBatch = { ...batch, traceBatchId, snapshot, outputTasks: [] }
+        try {
+          await this.adapter.rebuild(() => {
+            this.activeSnapshotBatch = activeBatch
+          })
+          if (!activeBatch.outputTasks.length && !batch.isSuperseded()) {
+            throw new Error('微信状态保持 HMR 完整构建未交付可持久化的输出。')
+          }
+          await Promise.all(activeBatch.outputTasks)
+          if (!batch.isSuperseded()) {
+            if (!activeBatch.fullOutputCommitted) {
+              throw new Error('微信状态保持 HMR 完整构建未交付可持久化的原生完整输出。')
             }
+            this.resynchronizing = false
+            this.rebuiltEntryGraphRevision = entryGraphRevision
+            this.nativeScriptInputs.commitAssetDrift(nativeAssetDrift)
+            for (const [file, change] of nativeScriptChanges) {
+              if (this.unpersistedNativeScripts.get(file) === change) {
+                this.unpersistedNativeScripts.delete(file)
+              }
+            }
+            releaseSourceChanges()
+            this.commitSnapshotMetadata(snapshot, 'full')
+            this.buildEvents.emitEvent({ code: 'END' })
+            profile?.finish('complete')
           }
-          releaseSourceChanges()
-          this.commitSnapshotMetadata(snapshot, 'full')
-          this.buildEvents.emitEvent({ code: 'END' })
-          profile?.finish('complete')
         }
-      }
-      finally {
-        if (this.activeSnapshotBatch === activeBatch) {
-          this.activeSnapshotBatch = undefined
+        finally {
+          if (this.activeSnapshotBatch === activeBatch) {
+            this.activeSnapshotBatch = undefined
+          }
         }
-      }
-      return
-    }
-    // 资产快照不消费源分类，原生 patch 可能在快照写入完成后才抵达。
-    await this.enqueueOutput(async () => {
-      if (batch.isSuperseded()) {
-        this.diagnostics?.discarded(traceBatchId, 'before-output')
         return
       }
-      const output = this.createSnapshotAssets(snapshot)
-      await this.commitSnapshotAssets(output, traceBatchId, batch.isSuperseded())
-      // 写盘期间到达的新事件仍须以实际落盘内容为基线；分析事实只提交未被取代的批次。
-      this.adoptSnapshot(snapshot, output)
-      if (batch.isSuperseded()) {
-        return
-      }
-      this.commitSnapshotMetadata(snapshot, 'refresh')
-      this.buildEvents.emitEvent({ code: 'END' })
-      profile?.finish('complete')
+      // 资产快照不消费源分类，原生 patch 可能在快照写入完成后才抵达。
+      await this.enqueueOutput(async () => {
+        if (batch.isSuperseded()) {
+          this.diagnostics?.discarded(traceBatchId, 'before-output')
+          return
+        }
+        const output = this.createSnapshotAssets(snapshot)
+        await this.commitSnapshotAssets(output, traceBatchId, batch.isSuperseded())
+        // 写盘期间到达的新事件仍须以实际落盘内容为基线；分析事实只提交未被取代的批次。
+        this.adoptSnapshot(snapshot, output)
+        if (batch.isSuperseded()) {
+          return
+        }
+        this.commitSnapshotMetadata(snapshot, 'refresh')
+        refreshed = true
+      })
     })
+    if (!batch.isSuperseded()) {
+      // 刷新资源释放成功后才能交接 profile 或宣布完成；落盘 metadata 保留真实提交事实。
+      if (handoff) {
+        this.restartForEntryGraph(handoff.snapshot, profile, handoff.sources)
+      }
+      else if (refreshed) {
+        this.buildEvents.emitEvent({ code: 'END' })
+        profile?.finish('complete')
+      }
+    }
   }
 
   /** 快照刷新与编译批次共享资产提交、删除及失败恢复基线。 */
@@ -1123,10 +1146,17 @@ class StatefulHmrSession {
     }
   }
 
-  private adoptSnapshot(snapshot: StatefulHmrSnapshot, output: StatefulHmrOutputFile[]): void {
+  private adoptSnapshot(snapshot: StatefulHmrSnapshot, output: StatefulHmrOutputFile[], completingFullBuild = false): void {
+    const nativeScriptDrift = snapshot.captureNativeScriptDrift?.()
     this.childSources?.adopt(snapshot.childSources)
     this.componentPageGlobalStyleRoutes = [...snapshot.componentPageGlobalStyleRoutes]
     this.snapshotAssets.adopt(output.filter(isStatefulHmrSnapshotAsset))
+    this.nativeScriptInputs.adoptAssets(snapshot.nativeScriptVersions, nativeScriptDrift)
+    // 原生通知可能在独立交付快照编译或写出期间进入；只消费真实通知，不主动失效 DevEngine。
+    const notified = [...this.unpersistedNativeScripts.keys()].filter(file => this.nativeScriptInputs.needsFullBuild(file))
+    if (notified.length && !completingFullBuild) {
+      this.requestFullBuild(notified)
+    }
   }
 
   private async waitForInitialBundle(): Promise<void> {

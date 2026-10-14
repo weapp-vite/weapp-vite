@@ -3,6 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { readHmrProfileLines } from '../../packages/weapp-vite/src/analyze/hmr/reader'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -10,6 +11,7 @@ import { createDomAcceptance } from '../utils/domAcceptance'
 import { readEmittedStylesheet } from '../utils/emittedStylesheet'
 import { renameAtomicFile } from '../utils/hmrAtomicRename'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
+import { captureHmrStyleFailure } from '../utils/hmrStyleDiagnostics'
 import { createIssue1081Project, ISSUE_1081_CLI } from '../utils/issue1081Project'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
@@ -26,7 +28,7 @@ describe('issue #1081: delayed compiler transaction', () => {
     project = await createIssue1081Project('issue-1081-transaction')
     dev = startDevProcess(process.execPath, [ISSUE_1081_CLI, 'dev', '--non-interactive'], {
       cwd: project,
-      env: { ...createDevProcessEnv(), WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE: '1' },
+      env: { ...createDevProcessEnv(), WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE: '1', WEAPP_VITE_HMR_PROFILE_JSON: '1' },
       reject: false,
     })
     await dev.waitForInitialBuild()
@@ -53,7 +55,21 @@ describe('issue #1081: delayed compiler transaction', () => {
   }, 60_000)
 
   it('keeps the committed DOM while compilation is held and applies the newest source with CSS Modules', async (context) => {
-    context.onTestFailed(() => process.stdout.write(dev!.getOutput()))
+    context.onTestFailed(async () => {
+      try {
+        process.stdout.write(dev!.getOutput())
+      }
+      catch {
+        // 诊断输出失败不能覆盖原始 DOM 断言。
+      }
+      if (host && resolveRuntimeProviderName() === 'devtools') {
+        await captureHmrStyleFailure(host as any, {
+          project: fixture,
+          selector: '#issue-1081-utility',
+          stylesheets: ['app.wxss', 'pages/index/index.wxss'].map(fileName => ({ fileName, path: path.join(project, 'dist', fileName) })),
+        })
+      }
+    })
     const session = host!
     const page = await session.reLaunch(route)
     const diagnostics = createHmrRuntimeDiagnostics(session as any, fixture)
@@ -89,10 +105,13 @@ describe('issue #1081: delayed compiler transaction', () => {
     const stylesheet = path.join(project, 'dist/pages/index/index.wxss')
     const beforeStyles = await readEmittedStylesheet(stylesheet)
     const source = path.join(project, 'src/batch.ts')
+    async function saveSource(file: string, content: string) {
+      const pending = `${file}.pending`
+      await writeFile(pending, content)
+      await renameAtomicFile(pending, file)
+    }
     async function save(label: string, color: string, hold = false) {
-      const pending = `${source}.pending`
-      await writeFile(pending, `export const label = '${label}'\nexport const utility = 'bg-[${color}]'\n${hold ? '// BATCH_HOLD' : ''}\n`)
-      await renameAtomicFile(pending, source)
+      await saveSource(source, `export const label = '${label}'\nexport const utility = 'bg-[${color}]'\n${hold ? '// BATCH_HOLD' : ''}\n`)
     }
     await save('held', '#dbeafe', true)
     await expect.poll(() => access(path.join(project, 'batch.entered')).then(() => true, () => false), { timeout: 30_000 }).toBe(true)
@@ -107,17 +126,21 @@ describe('issue #1081: delayed compiler transaction', () => {
     expect(await version()).toBeGreaterThan(previousVersion)
     await dom.check('latest', session, await session.currentPage())
     const vueFile = path.join(project, 'src/pages/index/index.vue')
-    await writeFile(vueFile, (await readFile(vueFile, 'utf8')).replace('#123', '#456'))
+    const beforeModuleVersion = await version()
+    await saveSource(vueFile, (await readFile(vueFile, 'utf8')).replace('#123', '#456'))
     await expect.poll(() => readEmittedStylesheet(stylesheet), { timeout: 45_000 }).toMatch(/color:\s*#(?:445566|456)\b/)
     const moduleNode = (await (await session.currentPage())!.$('#module-panel'))!
     const classes = await (moduleNode.attribute ?? moduleNode.attr).call(moduleNode, 'class')
     expect(classes.trim()).not.toBe('')
     expect((await readEmittedStylesheet(stylesheet)).includes(`.${classes.trim()}`)).toBe(true)
+    // 样式文件已提交不代表脚本已执行；headless 的类名和文本可能仍与更新前相同。
+    await expect.poll(version, { timeout: 45_000 }).toBeGreaterThan(beforeModuleVersion)
     await dom.check('modules', session, await session.currentPage())
     const committedVersion = await version()
     const committedStyles = await readEmittedStylesheet(stylesheet)
     await dom.act('failed', async () => {
-      await writeFile(source, 'export const label = \'invalid\'\nexport const utility = \'bg-[#abcdef]\'\n// BATCH_FAIL\n')
+      // 原地截断可能先发布合法的空源码；故障批次与正常保存共用原子替换。
+      await saveSource(source, 'export const label = \'invalid\'\nexport const utility = \'bg-[#abcdef]\'\n// BATCH_FAIL\n')
       await expect.poll(() => dev!.getOutput(), { timeout: 30_000 }).toContain('issue1081 injected transform failure')
     })
     expect(await version()).toBe(committedVersion)
@@ -132,5 +155,13 @@ describe('issue #1081: delayed compiler transaction', () => {
     expect(final.pageId).toBe(original.pageId)
     expect(final.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
     expect(final.errors).toEqual([])
+    const profileFile = path.join(project, '.weapp-vite/hmr-profile.jsonl')
+    await expect.poll(async () => {
+      const profile = readHmrProfileLines(await readFile(profileFile, 'utf8'))
+      expect(profile.coverage.invalid).toBe(0)
+      expect(profile.coverage.incompatible).toBe(0)
+      return profile.samples.some(sample => sample.pipeline === 'stateful' && sample.status === 'complete'
+        && sample.sourceEvents?.some(event => event.file === source.replaceAll('\\', '/') && event.event === 'update'))
+    }, { timeout: 10_000 }).toBe(true)
   }, 180_000)
 })

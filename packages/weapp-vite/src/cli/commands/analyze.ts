@@ -20,6 +20,7 @@ import logger, { colors } from '../../logger'
 import { resolveHmrProfileJsonPath } from '../../utils/hmrProfile'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { withAnalyzeOutput } from '../analyze/output'
+import { setCommandNodeEnv } from '../nodeEnv'
 import { coerceBooleanOption, filterDuplicateOptions, parseDashboardUiHost, resolveConfigFile } from '../options'
 import { terminateStaleSassEmbeddedProcess } from '../processCleanup'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
@@ -410,6 +411,7 @@ export function registerAnalyzeCommand(cli: CAC) {
     .option('-p, --platform <platform>', `[string] target platform (weapp | web)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
     .action(async (root: string, options: AnalyzeCLIOptions) => {
+      setCommandNodeEnv('production')
       filterDuplicateOptions(options)
       options.uiHost = parseDashboardUiHost(options.uiHost)
       const configFile = resolveConfigFile(options)

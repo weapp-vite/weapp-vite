@@ -146,7 +146,7 @@ export function createLoadHook(state: CorePluginState) {
             const css = await readFileCached(realPath, { checkMtime: configService.isDev })
             const host = getCompilerHmrHostByConfig(configService)
             if (host?.onDependencyChange) {
-              host.captureNative(realPath, css)
+              host.captureRaw(realPath, css)
             }
             return { code: css }
           }

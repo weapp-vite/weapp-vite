@@ -1,11 +1,23 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
-import { describe, expect, it } from 'vitest'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import {
   collectAffectedSharedChunkEntriesAndChunks,
   refreshPartialSharedChunkImporters,
   refreshSharedChunkImporters,
 } from './graph'
+
+const directories: string[] = []
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  for (const directory of directories.splice(0)) {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
 
 function createChunk(fileName: string, overrides: Partial<OutputChunk> = {}): OutputChunk {
   return {
@@ -52,6 +64,54 @@ function createState() {
 }
 
 describe('core output graph', () => {
+  it.each(['full', 'partial'] as const)('%s refresh resolves repeated logical identities once and observes the next junction target', (mode) => {
+    const directory = mkdtempSync(path.join(tmpdir(), 'output-graph-paths-'))
+    directories.push(directory)
+    const root = realpathSync.native(directory).replaceAll('\\', '/')
+    const alias = `${root}/alias`
+    const logicalId = createLogicalEntryId(`${alias}/page.ts`, 'page')
+    for (const target of ['first', 'second']) {
+      mkdirSync(`${root}/${target}`)
+      writeFileSync(`${root}/${target}/page.ts`, 'Page({})')
+    }
+    const state = createState()
+    state.ctx.configService.absoluteSrcRoot = root
+    const bundle: OutputBundle = {
+      'pages/index.js': createChunk('pages/index.js', {
+        isEntry: true,
+        facadeModuleId: logicalId,
+        moduleIds: [logicalId, logicalId],
+        imports: ['shared.js'],
+      }),
+      'shared.js': createChunk('shared.js'),
+    }
+    const native = vi.spyOn(realpathSync, 'native')
+    const refresh = (page: string) => mode === 'full'
+      ? refreshSharedChunkImporters(bundle, state)
+      : refreshPartialSharedChunkImporters(bundle, state, new Set([page]))
+    for (const target of ['first', 'second']) {
+      const page = `${root}/${target}/page.ts`
+      symlinkSync(`${root}/${target}`, alias, 'junction')
+      state.resolvedEntryMap.clear()
+      state.resolvedEntryMap.set(page, {})
+      native.mockClear()
+      refresh(page)
+      expect(native.mock.calls.map(([file]) => file)).toEqual([`${alias}/page.ts`])
+      expect(state.hmrSharedChunkImporters.get('shared.js')).toContain(page)
+      Object.defineProperty(bundle['shared.js'], 'imports', {
+        configurable: true,
+        get() { throw new Error('output graph read failed') },
+      })
+      expect(() => refresh(page)).toThrow('output graph read failed')
+      Object.defineProperty(bundle['shared.js'], 'imports', { value: [], configurable: true })
+      native.mockClear()
+      refresh(page)
+      expect(native.mock.calls.map(([file]) => file)).toEqual([`${alias}/page.ts`])
+      expect(state.hmrSharedChunkImporters.get('shared.js')).toContain(page)
+      unlinkSync(alias)
+    }
+  })
+
   it('keeps logical source traversal out of output graph state', () => {
     const state = createState()
     const pageEntry = '/project/src/pages/home/index.ts'

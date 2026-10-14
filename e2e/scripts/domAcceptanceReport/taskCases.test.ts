@@ -41,6 +41,15 @@ describe('planned DOM cases versus actual collection', () => {
     ])
   })
 
+  it('enumerates native batch recovery only for its declared stateful mode', async () => {
+    const cases = await readPlannedTaskCases({ label: 'ide/issue-1134-native-batch.runtime.test.ts', command: 'node', args: [] }, 'headless')
+    expect(cases.map(item => item.name)).toEqual([
+      'issue #1134 native four-file runtime (classic) > renders matching script, template, style and config batches on repeated saves and restoration',
+      'issue #1134 native four-file runtime (stateful-experimental) > persists a native script saved on the first actual sidecar notification',
+      'issue #1134 native four-file runtime (stateful-experimental) > renders matching script, template, style and config batches on repeated saves and restoration',
+    ])
+  })
+
   it('expands provider titles and template children from the declared suite source', async () => {
     const jsx = await readPlannedTaskCases({ label: 'ide/wevu-jsx-tsx.runtime.test.ts', command: 'node', args: [] }, 'headless')
     expect(jsx).toHaveLength(3)

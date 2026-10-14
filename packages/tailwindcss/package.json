@@ -46,9 +46,14 @@
   },
   "dependencies": {
     "@weapp-tailwindcss/engine": "0.1.5",
+    "@weapp-tailwindcss/source-scan": "0.1.2",
     "@weapp-vite/hmr": "workspace:*",
+    "micromatch": "4.0.8",
     "pathe": "catalog:",
     "weapp-tailwindcss": "catalog:"
+  },
+  "devDependencies": {
+    "@types/micromatch": "4.0.10"
   },
   "publishConfig": {
     "access": "public",

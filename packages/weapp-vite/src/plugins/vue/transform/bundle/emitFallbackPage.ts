@@ -2,29 +2,33 @@ import type { VueBundleCompileOptionsState, VueBundleState } from './shared'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
+import { withRealpathScope } from '../../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
 import { emitFallbackPageBundleAssets, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, resolveFallbackPageEmitState, resolveVueBundleAssetContext } from './shared'
 
-function isFallbackEntryPending(
-  entryId: string,
-  emittedEntryIds: Set<string>,
+function collectPendingFallbackEntries(
+  entryIds: Iterable<string>,
+  emittedEntryIds: Set<string> | undefined,
   configService: NonNullable<VueBundleState['ctx']['configService']>,
 ) {
-  const normalizedEntryId = removeExtensionDeep(configService.relativeOutputPath(entryId))
-  for (const emittedEntryId of emittedEntryIds) {
-    const normalizedEmitted = normalizeFsResolvedId(emittedEntryId)
-    if (!normalizedEmitted) {
-      continue
-    }
-    const emittedOutputPath = removeExtensionDeep(configService.relativeOutputPath(normalizedEmitted))
-    if (emittedOutputPath === normalizedEntryId) {
-      return true
-    }
+  if (!emittedEntryIds) {
+    return entryIds
   }
-  return false
+  // 一次同步遍历建立本轮输出身份；不逐页重扫发布集合，也不跨 await 保留真实路径缓存。
+  return withRealpathScope(() => {
+    const outputs = new Set<string>()
+    for (const emittedEntryId of emittedEntryIds) {
+      const normalizedEmitted = normalizeFsResolvedId(emittedEntryId)
+      if (normalizedEmitted) {
+        outputs.add(removeExtensionDeep(configService.relativeOutputPath(normalizedEmitted)))
+      }
+    }
+    return Array.from(entryIds).filter(entryId =>
+      outputs.has(removeExtensionDeep(configService.relativeOutputPath(entryId))))
+  })
 }
 
 export async function emitResolvedFallbackPageEntryAssets(options: {
@@ -122,10 +126,7 @@ export async function emitFallbackPageAssets(
   } = resolveVueBundleAssetContext(configService)
 
   const collectedEntries = await collectFallbackPageEntryIds(configService, scanService)
-  for (const entryId of collectedEntries) {
-    if (options?.emittedEntryIds && !isFallbackEntryPending(entryId, options.emittedEntryIds, configService)) {
-      continue
-    }
+  for (const entryId of collectPendingFallbackEntries(collectedEntries, options?.emittedEntryIds, configService)) {
     const emitState = await resolveFallbackPageEmitState({
       entryId,
       configService,

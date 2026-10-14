@@ -1,5 +1,5 @@
 import type { DevframeDefinition } from 'devframe'
-import type { AnalyzeSubpackagesResult } from '../analyze/subpackages'
+import type { AnalyzeSubpackagesResult } from '../analyze/subpackages/types'
 import type { DashboardArtifactFiles } from './artifacts'
 import type { DashboardContentRoots, DashboardFileContent } from './content'
 import type { DashboardRuntimeEvent, DashboardRuntimeEventInput } from './events'
@@ -316,7 +316,7 @@ export function createAnalyzeDashboardDevframe({
   }
 }
 
-export type { AnalyzeSubpackagesResult } from '../analyze/subpackages'
+export type { AnalyzeSubpackagesResult } from '../analyze/subpackages/types'
 export type { DashboardArtifactFile, DashboardArtifactFiles } from './artifacts'
 export { createDashboardArtifactSnapshot } from './artifacts'
 export { resolveDashboardClientAssets } from './assets'

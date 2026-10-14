@@ -1,3 +1,5 @@
+import { isWechatIdeLoginRequiredError } from '../retry'
+
 const ERROR_STACK_PREFIX_RE = /^at /
 const ERROR_PREFIX_RE = /^\[error\]\s*/i
 const ERROR_LABEL_PREFIX_RE = /^error\s*:\s*/i
@@ -19,12 +21,6 @@ const DEVTOOLS_INFRA_ERROR_PATTERNS = [
   /EACCES/i,
   /ECONNREFUSED/i,
   /connect ECONNREFUSED/i,
-]
-const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
-  /code\s*[:=]\s*10/i,
-  /需要重新登录/,
-  /need\s+re-?login/i,
-  /re-?login/i,
 ]
 
 /**
@@ -147,12 +143,7 @@ export function getAutomatorProtocolTimeoutMethod(error: unknown): string | unde
  * @description 判断错误是否属于开发者工具登录失效。
  */
 export function isAutomatorLoginError(error: unknown): boolean {
-  const text = extractErrorText(error)
-  if (!text) {
-    return false
-  }
-
-  return DEVTOOLS_LOGIN_REQUIRED_PATTERNS.some(pattern => pattern.test(text))
+  return isWechatIdeLoginRequiredError(error)
 }
 
 /**

@@ -10,6 +10,7 @@ import type { ScanService } from '../runtime/scanPlugin'
 import type { WatcherService } from '../runtime/watcherPlugin'
 import type { WebService } from '../runtime/webPlugin'
 import type { WxmlService } from '../runtime/wxmlPlugin'
+import type { HmrProfileSourceEvent } from '../utils/hmrProfile/provenance'
 import '../config'
 
 export type BuildTarget = 'app' | 'plugin'
@@ -28,7 +29,7 @@ export interface CompilerContext {
   buildService: BuildService
   scanService: ScanService
   currentBuildTarget?: BuildTarget
-  onStatefulHmrSourceChange?: (file: string, dirtyReasonSummary: string[]) => void
+  onStatefulHmrSourceChange?: (file: string, dirtyReasonSummary: string[], sourceEvent?: HmrProfileSourceEvent) => void
 }
 
 export type MutableCompilerContext = Partial<Omit<CompilerContext, 'runtimeState'>> & {
@@ -45,5 +46,5 @@ export type MutableCompilerContext = Partial<Omit<CompilerContext, 'runtimeState
   buildService?: BuildService
   scanService?: ScanService
   currentBuildTarget?: BuildTarget
-  onStatefulHmrSourceChange?: (file: string, dirtyReasonSummary: string[]) => void
+  onStatefulHmrSourceChange?: (file: string, dirtyReasonSummary: string[], sourceEvent?: HmrProfileSourceEvent) => void
 }

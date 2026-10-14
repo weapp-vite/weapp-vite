@@ -1,4 +1,4 @@
-import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
+import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages/types'
 import type { AnalyzeBudgetCheckItem } from '../analyze'
 import type { SerializedDashboardAnalyzeSnapshot } from '../payload'
 

@@ -52,6 +52,7 @@ function fixturePaths(projectRoot: string) {
     updateFile: path.join(distRoot, '__weapp_vite_hmr/update.js'),
     nativeSource: path.join(projectRoot, 'src/pages/native/index.ts'),
     nativeStyle: path.join(projectRoot, 'src/pages/native/index.wxss'),
+    nativeStyleOutput: path.join(distRoot, 'pages/native/index.wxss'),
     componentSource: path.join(projectRoot, 'src/pages/component/index.ts'),
     childSource: path.join(projectRoot, 'src/components/native-counter/index.js'),
     vueChildSource: path.join(projectRoot, 'src/components/vue-counter/index.vue'),
@@ -411,7 +412,8 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   })
 
   it('preserves native Page identity, data, input, route, and query across style updates and JavaScript patches', async (ctx) => {
-    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('native', resolveRuntimeProviderName()))
+    const provider = resolveRuntimeProviderName()
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('native', provider))
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
     }
@@ -433,6 +435,10 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     const updatedStyle = originalNativeStyle.replace('background-color: #fff', 'background-color: #dbeafe')
     expect(updatedStyle).not.toBe(originalNativeStyle)
     await replaceFileByRename(fixture.nativeStyle, updatedStyle)
+    if (provider === 'headless') {
+      // headless 不计算 WXSS，先检查实际样式产物再进行独立脚本更新。
+      await devProcess!.waitFor(waitForFileContains(fixture.nativeStyleOutput, '#dbeafe'), 'native stylesheet update published')
+    }
     await dom.check('style-updated', miniProgram, await miniProgram.currentPage())
     expect(await readRuntimeState(page)).toMatchObject({ count: 1, input: 'held-input', identity: 'native-instance' })
 
@@ -462,6 +468,9 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await devProcess!.waitFor(waitForFileContains(fixture.updateFile, 'this.data.count + 1'), 'native original script restored')
     await waitForClientVersion(restoreVersion + 1)
     await replaceFileByRename(fixture.nativeStyle, originalNativeStyle)
+    if (provider === 'headless') {
+      await devProcess!.waitFor(waitForFileContains(fixture.nativeStyleOutput, '#fff'), 'native original stylesheet restored')
+    }
     await dom.check('restored', miniProgram, await miniProgram.currentPage())
     expect(await readRuntimeState(page)).toMatchObject({ count: 3, input: 'held-input', identity: 'native-instance' })
     await triggerIncrement()
