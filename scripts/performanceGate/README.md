@@ -1,8 +1,8 @@
 # 性能 CI：PR 冒烟与 Nightly 验收
 
-PR 的 `Performance Smoke` 仅验证当前 HEAD 的正确性，目标 10 分钟内完成，Ubuntu / Node 24 job 硬上限 15 分钟。它不准备基线、不计算统计回退、不触发确认。构建产物与 classic/stateful 的连续两次编辑/恢复覆盖原生、Wevu、Tailwind/TDesign 三个模板；自动导入只执行 1、69 个组件的手动/自动配置。启动、操作、完整恢复和 stateful 发布协议断言沿用正常 CLI 驱动，失败保存证据后立即结束。纯文档等无关路径返回“无需冒烟”，重命名同时检查原路径。
+PR 的 `Performance Smoke` 通过 Actions 手动填写 `pr-number`，或由 AI 执行 `gh workflow run ci-performance.yml --ref main -f pr-number=<PR 编号>` 启动；PR 创建、更新、转为可评审不会自动运行。不填写编号时跳过 PR 冒烟。手动入口只验证调度时冻结的 HEAD 的正确性，目标 10 分钟内完成，Ubuntu / Node 24 job 硬上限 15 分钟。它不准备基线、不计算统计回退、不触发确认。构建产物与 classic/stateful 的连续两次编辑/恢复覆盖原生、Wevu、Tailwind/TDesign 三个模板；自动导入只执行 1、69 个组件的手动/自动配置。启动、操作、完整恢复和 stateful 发布协议断言沿用正常 CLI 驱动，失败保存证据后立即结束。纯文档等无关路径返回“无需冒烟”，重命名同时检查原路径。
 
-`Nightly Performance` 每天北京时间 03:35（UTC 19:35）运行，也可在 Actions 手动填写 `pr-number`。每次检查 main，再从带 `performance:nightly` 标签的开放 PR 中按标签等待时间选择一个尚未验收的 HEAD；手动输入替换标签队列选择。未选中的 PR 保留标签排队。普通功能、类型、runtime 和跨平台 CI 不变，Nightly 不作为普通 PR 的必需检查，本次不修改分支保护。
+`Nightly Performance` 每天北京时间 03:35（UTC 19:35）运行，也可在 Actions 手动填写 `pr-number`。定时和未填写编号的手动运行只检查 main，标签不会自动选择或排队 PR。显式填写 `pr-number` 才将对应 PR 的冻结 HEAD/base 加入完整验收；AI 可执行 `gh workflow run nightly-performance.yml --ref main -f pr-number=<PR 编号>`。普通功能、类型、runtime 和跨平台 CI 同样改为显式手动启动，检查内容不变，Nightly 不作为普通 PR 的必需检查，本次不修改分支保护。
 
 `Candidate Performance` 用于要求完整验收先于 PR 的候选提交。维护者显式推送 `codex/performance-candidate/<完整 SHA>` 标签，且标签名中的 SHA 必须等于实际执行提交；合入默认分支后也可手动 dispatch，填写等于所选工作流提交的 `candidate-sha`。仅解析本仓该提交，不查询 main 或 PR 队列，计划标记 `execution: candidate` 并保存触发事件、ref 和完整提交身份，不将候选记录为 main。
 
@@ -22,7 +22,7 @@ PR 的 `Performance Smoke` 仅验证当前 HEAD 的正确性，目标 10 分钟�
 
 升级时仍在运行的 v3 计划可由可信报告器按自身契约完成原状态登记，继续核验冻结计划、27 个分片及全部原始证据；它不能消费 v4 分片，也不能覆盖同一 HEAD 的 v4 评论。planner 只为当前契约创建尝试，不因支持旧报告而重新采集历史样本。
 
-持久去重键包含 HEAD、baseline、采样契约、模板场景、OS 和配置。planner 先在被测提交上登记 `Performance Nightly / <key>` 状态，再启动只读采集。成功、失败和未完成的旧尝试均复用原运行链接，不依赖会过期的 artifact；取消任务也不会自动重新采样。重新贴标签、下一次 schedule 或手动指定同一版本不重置确认次数，GitHub 的原运行 rerun 也不启动采集。只有提交、批准基线或采样契约改变才创建新尝试。旧 artifact 到期后保留运行记录，但不能把已丢失证据重新宣称为完整验收。
+持久去重键包含 HEAD、baseline、采样契约、模板场景、OS 和配置。planner 先在被测提交上登记 `Performance Nightly / <key>` 状态，再启动只读采集。成功、失败和未完成的旧尝试均复用原运行链接，不依赖会过期的 artifact；取消任务也不会自动重新采样。下一次 schedule 或手动指定同一版本不重置确认次数，GitHub 的原运行 rerun 也不启动采集。只有提交、批准基线或采样契约改变才创建新尝试。旧 artifact 到期后保留运行记录，但不能把已丢失证据重新宣称为完整验收。
 
 ## 分片与 deadline
 
@@ -60,9 +60,9 @@ job 硬上限 180 分钟；准备子进程 20 分钟，采集器每侧最多 15 
 
 最终汇总要求每个目标的 27 个预期分片齐全，逐项校验身份、场景、轮次唯一性、交替顺序和产物证据，并从原始样本重算门禁，不能信任上传的 `gate.status`。任一分片、SHA 或生命周期证据缺失均不能通过。报告按 OS 和场景逐行展示，🔴 标记回退、不稳定或不完整，🟢 标记已通过场景的耗时下降；同提交自动导入启用成本单列。
 
-所有执行被测代码的 job 只有 `contents: read`，checkout 不保留凭据，不注入写权限 token 或业务 secrets。planner 的提交状态登记和 `workflow_run` 评论分别在可信任务中完成；高权限报告任务只 checkout main，以 Node 24 直接执行只依赖核心模块的脚本，不安装/执行 PR 的报告代码。报告重新校验来源运行、冻结计划、可信状态登记和原始分片。发布 PR 评论前两次检查最新 HEAD，过期结果只留在历史提交状态和 artifact，不覆盖当前 PR。
+所有执行被测代码的 job 只有 `contents: read`，checkout 不保留凭据，不注入写权限 token 或业务 secrets。planner 的提交状态登记和 `workflow_run` 评论分别在可信任务中完成；高权限报告任务只 checkout main，以 Node 24 直接执行只依赖核心模块的脚本，不安装/执行 PR 的报告代码。报告重新校验来源运行、冻结计划、可信状态登记和原始分片。手动 PR 运行另上传 `pr-context`，分别记录可信调度 SHA 与被测 head/base；报告核对实际 run id、默认分支、事件和固定上下文，不能把 dispatch 的 main SHA 当作 PR HEAD。发布 PR 评论前两次检查最新 HEAD/base，过期结果只留在历史提交状态和 artifact，不覆盖当前 PR。
 
-PR 评论明确区分正确性冒烟与完整性能“未运行 / 排队 / 运行中 / 已完成”；成功采集、smoke 通过或 GitHub 没有 required 元数据都不代表通过 5% 门禁。
+PR 评论明确区分正确性冒烟与完整性能“未运行（需手动启动） / 运行中 / 已完成”；成功采集、smoke 通过或 GitHub 没有 required 元数据都不代表通过 5% 门禁。
 
 ## 验证与迁移
 

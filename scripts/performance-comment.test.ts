@@ -88,22 +88,40 @@ describe('performance comment report', () => {
 
 describe('performance comment upsert', () => {
   it('creates and updates the marker comment through the GitHub API', async () => {
+    const pull = { state: 'open', head: { sha: 'a'.repeat(40) }, base: { sha: 'b'.repeat(40) } }
     const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify(pull), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(pull), { status: 200 }))
       .mockResolvedValueOnce(new Response('{}', { status: 201 }))
-    await upsertComment({ apiUrl: 'https://api.example.test', token: 'token', repository: 'owner/repo', prNumber: 42, body: `${COMMENT_MARKER}\nreport` })
+    await upsertComment({ apiUrl: 'https://api.example.test', token: 'token', repository: 'owner/repo', prNumber: 42, headSha: 'a'.repeat(40), baseSha: 'b'.repeat(40), body: `${COMMENT_MARKER}\nreport` })
     expect(fetchMock).toHaveBeenLastCalledWith(
       'https://api.example.test/repos/owner/repo/issues/42/comments',
       expect.objectContaining({ method: 'POST' }),
     )
 
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify([{ id: 7, user: { type: 'Bot' }, body: COMMENT_MARKER }]), { status: 200 }))
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(pull), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 7, user: { type: 'Bot' }, body: COMMENT_MARKER }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(pull), { status: 200 }))
       .mockResolvedValueOnce(new Response('{}', { status: 200 }))
-    await upsertComment({ apiUrl: 'https://api.example.test', token: 'token', repository: 'owner/repo', prNumber: 42, body: `${COMMENT_MARKER}\nupdated` })
+    await upsertComment({ apiUrl: 'https://api.example.test', token: 'token', repository: 'owner/repo', prNumber: 42, headSha: 'a'.repeat(40), baseSha: 'b'.repeat(40), body: `${COMMENT_MARKER}\nupdated` })
     expect(fetchMock).toHaveBeenLastCalledWith(
       'https://api.example.test/repos/owner/repo/issues/comments/7',
       expect.objectContaining({ method: 'PATCH' }),
     )
+  })
+
+  it.each(['head', 'base'])('does not publish a result after the PR %s changes during comment lookup', async (part) => {
+    const headSha = 'a'.repeat(40)
+    const baseSha = 'b'.repeat(40)
+    const pull = { state: 'open', head: { sha: headSha }, base: { sha: baseSha } }
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify(pull), { status: 200 }))
+      .mockResolvedValueOnce(new Response('[]', { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ...pull, [part]: { sha: 'c'.repeat(40) } }), { status: 200 }))
+    expect(await upsertComment({ apiUrl: 'https://api.example.test', token: 'test-only', repository: 'owner/repo', prNumber: 42, headSha, baseSha, body: 'stale' })).toBe(false)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock.mock.calls.every(([, init]) => init?.method === undefined)).toBe(true)
   })
 })
 

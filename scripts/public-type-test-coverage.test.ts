@@ -232,7 +232,7 @@ describe('public type tests in CI', () => {
     expect(manifest.scripts['test:types']).toBe('turbo run test:types:check --filter=./packages/* --filter=./packages-runtime/* --filter=./mpcore/packages/* --filter=./@weapp-core/* --filter=weapp-vite-lib-mode-e2e --filter=!@weapp-vite/dashboard')
     const workflow = parse(await readFile(path.join(root, '.github/workflows/ci.yml'), 'utf8')) as Workflow
     const job = workflow.jobs['build-pr']
-    expect(job?.if).toContain('github.event_name == \'pull_request\'')
+    expect(job?.if).toContain('needs.pr-context.outputs.is_pr == \'true\'')
     expect(job?.strategy?.matrix?.include?.some(entry => /(?:^|\n)pnpm test:types(?:\n|$)/.test(entry.main_command ?? ''))).toBe(true)
     // eslint-disable-next-line no-template-curly-in-string -- 校验 GitHub Actions 表达式原文。
     expect(job?.with?.main_command).toBe('${{ matrix.main_command }}')
