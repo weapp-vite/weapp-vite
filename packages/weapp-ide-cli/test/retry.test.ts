@@ -5,6 +5,7 @@ import {
   formatRetryHotkeyPrompt,
   formatWechatIdeLoginRequiredError,
   isWechatIdeLoginRequiredError,
+  isWechatIdeLoginRequiredExitError,
 } from '../src/cli/retry'
 
 describe('retry helpers', () => {
@@ -24,6 +25,25 @@ describe('retry helpers', () => {
     }
 
     expect(isWechatIdeLoginRequiredError(error)).toBe(false)
+  })
+
+  it.each([
+    { message: 'Error: 项目路径不存在 (code 10)', stderr: '[error] { code: 10, error: "项目路径不存在" }' },
+    { message: 'Error: Project path does not exist (code 10)', stderr: '[error] code: 10' },
+    { message: 'Error: unknown CLI failure', stderr: '[error] code: 10' },
+    { message: 'Error: unrelated CLI failure', stderr: '[error] code: 130' },
+  ])('does not infer login expiration from generic CLI codes (%j)', (error) => {
+    expect(isWechatIdeLoginRequiredError(error)).toBe(false)
+    expect(isWechatIdeLoginRequiredExitError({ ...error, code: 10, exitCode: 10 })).toBe(false)
+  })
+
+  it.each([
+    { stderr: '[error] code: 13' },
+    { message: 'Login again is required (code 13)' },
+    { message: 'Login is required' },
+    { message: 'need re-login (code 10)' },
+  ])('recognises official and legacy explicit login failures (%j)', (error) => {
+    expect(isWechatIdeLoginRequiredError(error)).toBe(true)
   })
 
   it('extracts and concatenates known error fields', () => {
@@ -70,6 +90,7 @@ describe('retry helpers', () => {
     expect((error as any).exitCode).toBe(10)
     expect(error.message).toContain('非交互模式下自动失败')
     expect(error.message).toContain('code: 10')
+    expect(isWechatIdeLoginRequiredExitError(error)).toBe(true)
   })
 
   it('returns empty text for invalid input', () => {

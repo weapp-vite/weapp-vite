@@ -88,7 +88,7 @@ jobs:
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 15
       build_command: pnpm exec turbo run build --filter=weapp-ide-cli...
-      main_command: pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/suiteRunner/process.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-process-narrow-report.json
+      main_command: pnpm exec cross-env NODE_DEBUG=weapp-ide-journal-writer pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/suiteRunner/process.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-process-narrow-report.json
       artifact_name: windows-process-narrow-node-${{ matrix.node-version }}-${{ github.sha }}
       artifact_path: .tmp/windows-process-narrow-report.json
     secrets: inherit
@@ -214,7 +214,9 @@ jobs:
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
       consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
-      main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless
+      main_command: |
+        pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts e2e/utils/devProcessCleanup/processes.test.ts e2e/utils/dev-process.cleanup.test.ts e2e/utils/devProcessCleanup/windowsProcessTree.test.ts e2e/utils/devProcessCleanup/windowsProcessRows.test.ts e2e/utils/devProcessCleanup/windowsQueryTrace.test.ts
+        pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless
       artifact_name: ide-dom-headless-${{ matrix.os }}-node-${{ matrix.node-version }}
       artifact_path: |
         docs/reports/dom-acceptance/**
@@ -331,7 +333,7 @@ jobs:
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: 40
-      main_command: pnpm e2e:ci:pr
+      main_command: ${{ matrix.os == 'windows-latest' && 'pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:pr' || 'pnpm e2e:ci:pr' }}
       e2e_platform: weapp
       increase_ulimit: true
       consume_build_artifact: miniapp-${{ matrix.os }}-node-22-weapp-build

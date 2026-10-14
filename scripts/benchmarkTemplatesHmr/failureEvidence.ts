@@ -1,3 +1,4 @@
+import type { SequenceErrorEvidence } from '../editSequence/errorEvidence'
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -28,6 +29,11 @@ function sanitizeFailureValue(value: unknown, repoRoot: string): unknown {
   return value
 }
 
+/** 序列化后只替换字符串字段，保持原 cause、聚合错误与循环引用诊断结构。 */
+export function serializeBenchmarkError(error: unknown, repoRoot: string) {
+  return sanitizeFailureValue(serializeSequenceError(error), repoRoot) as SequenceErrorEvidence
+}
+
 /** 清理失败单独保存当前模板结果和完整错误链，不发布成功报告或吞掉取证错误。 */
 export async function writeBenchmarkCleanupFailureEvidence(options: {
   artifactFile: string
@@ -51,6 +57,7 @@ export async function captureBenchmarkFailureEvidence(options: {
   marker: string
   repoRoot: string
   artifactFile: string
+  error?: unknown
 }) {
   const capturedAt = new Date().toISOString()
   const result: {
@@ -59,7 +66,11 @@ export async function captureBenchmarkFailureEvidence(options: {
     output?: ContentEvidence
     outputError?: string
     artifactError?: string
+    error?: SequenceErrorEvidence
   } = {}
+  if ('error' in options) {
+    result.error = serializeBenchmarkError(options.error, options.repoRoot)
+  }
   const contents: Partial<Record<'source' | 'output', string>> = {}
   const observations = await Promise.allSettled([options.readSource(), options.readOutput()])
   for (const [index, key] of (['source', 'output'] as const).entries()) {

@@ -9,13 +9,32 @@ import { verifySmoke } from './smokeReport.mjs'
 
 const marker = '<!-- performance-v2 -->'
 
-export function validatePlan(plan, run, repository) {
+export function validatePlan(plan, run, repository, { candidate = false } = {}) {
   if (plan.schemaVersion !== 2 || plan.purpose !== 'full' || plan.repository !== repository || String(plan.runId) !== String(run.id) || plan.driverSha !== run.head_sha || !isReportSamplingContract(plan.samplingContract) || !Array.isArray(plan.targets) || plan.targets.length > 2 || JSON.stringify(plan.manifest) !== JSON.stringify(frozenManifest())) {
     throw new Error('Untrusted performance plan provenance')
   }
-  for (const target of plan.targets) {
+  if (candidate) {
+    const invocation = plan.invocation
+    const validRef = typeof invocation?.ref === 'string' && (run.event === 'push'
+      ? invocation.ref === `refs/tags/codex/performance-candidate/${plan.driverSha}` && invocation.ref === `refs/tags/${run.head_branch}`
+      : [`refs/heads/${run.head_branch}`, `refs/tags/${run.head_branch}`].includes(invocation.ref))
+    if (plan.execution !== 'candidate' || plan.samplingContract !== policy.samplingContract
+      || run.name !== 'Candidate Performance' || run.path !== '.github/workflows/candidate-performance.yml'
+      || run.head_repository?.full_name !== repository || !['push', 'workflow_dispatch'].includes(run.event)
+      || invocation?.event !== run.event || !validRef
+      || !Array.isArray(plan.reused) || plan.targets.length + plan.reused.length !== 1) {
+      throw new Error('Untrusted candidate performance invocation')
+    }
+  }
+  else if (plan.execution === 'candidate') {
+    throw new Error('Candidate plans require explicit candidate provenance validation')
+  }
+  for (const target of candidate ? [...plan.targets, ...plan.reused] : plan.targets) {
     assertSha(target.headSha)
-    if (target.baselineSha !== policy.baselineSha || target.key !== targetKey(target, plan.samplingContract) || target.id !== (target.prNumber ? `pr-${target.prNumber}` : 'main') || (target.prNumber !== null && (!Number.isSafeInteger(target.prNumber) || target.prNumber < 1))) {
+    const validIdentity = candidate
+      ? target.kind === 'candidate' && target.prNumber === null && target.id === `candidate-${target.headSha}` && target.headSha === plan.driverSha && target.headRepository === repository
+      : target.id === (target.prNumber ? `pr-${target.prNumber}` : 'main') && (target.prNumber === null || (Number.isSafeInteger(target.prNumber) && target.prNumber > 0))
+    if (target.baselineSha !== policy.baselineSha || target.key !== targetKey(target, plan.samplingContract) || !validIdentity) {
       throw new Error('Invalid planned target')
     }
   }

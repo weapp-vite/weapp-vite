@@ -39,6 +39,7 @@ const scenarioValues = parseScenarioValues(process.env.BENCH_SCENARIOS)
 const disableCurrentSupportOutputs = process.env.BENCH_DISABLE_CURRENT_SUPPORT_OUTPUTS === '1'
 const diagnosticEnabled = isAutoImportHmrDiagnosticEnabled()
 const diagnosticProfileEnabled = isAutoImportHmrDiagnosticProfileEnabled()
+const diagnosticSnapshotTraceEnabled = diagnosticProfileEnabled && process.env.WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE === '1'
 const diagnosticPairEnabled = isAutoImportHmrDiagnosticPairEnabled()
 const diagnosticPairPhase = process.env[AUTO_IMPORT_HMR_DIAGNOSTIC_PHASE_ENV]
 const diagnosticPairRoot = process.env[AUTO_IMPORT_HMR_DIAGNOSTIC_ROOT_ENV]
@@ -399,8 +400,25 @@ async function measureHmr(options: {
         }
       }
     }, async () => {
-      await dev.stop()
-      canRemoveFixture = true
+      const stop = async () => {
+        await dev.stop()
+        canRemoveFixture = true
+      }
+      if (!diagnosticSnapshotTraceEnabled) {
+        await stop()
+        return
+      }
+      await runWithCleanup(stop, async () => {
+        // 只保存已脱敏的私有 trace，失败时也保留归因证据；不上传原始 CLI 输出。
+        const prefix = '[stateful-hmr-snapshot] '
+        const lines = dev.getOutput().split(/\r?\n/).filter(line => line.startsWith(prefix)).map(line => line.slice(prefix.length))
+        const fileName = `snapshot-trace-${mode}-${usedTags.length}-${iteration}.jsonl`
+        await mkdir(reportDir, { recursive: true })
+        await writeFile(path.join(reportDir, fileName), lines.length ? `${lines.join('\n')}\n` : '', 'utf8')
+        if (measured?.diagnostic) {
+          measured.diagnostic.snapshotTrace = { fileName, records: lines.length, interpretation: 'private producer trace; diagnostic attribution only' }
+        }
+      })
     })
     if (!measured) {
       throw new Error('Auto-import HMR benchmark completed without a measurement')

@@ -1,6 +1,7 @@
 import type { OutputAsset, OutputChunk } from 'rolldown'
 import type { InlineConfig } from 'vite'
 import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'pathe'
@@ -9,7 +10,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createGlassEaselAnalyzeResult } from '../../analyze/glassEasel'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { createLogicalEntryId } from '../../moduleGraph/protocol'
-import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
+import { compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
+import { readCompilerRawInput } from '../../plugins/compilerPlugin/rawInputs'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createRuntimeState } from '../runtimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
@@ -62,6 +64,37 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 }
 
 describe('stateful snapshot component metadata', () => {
+  it.each(['raw', 'pinned'] as const)('records native entry versions actually compiled rather than later disk contents (%s)', async (mode) => {
+    const root = await createProject()
+    const script = path.join(root, 'src/pages/index/index.ts')
+    const compiled = 'Page({ data: { marker: "snapshot-consumed" } })'
+    const later = 'Page({ data: { marker: "later-disk-version" } })'
+    await fs.writeFile(script, mode === 'raw' ? compiled : 'Page({ data: { marker: "uncompiled-disk-version" } })')
+    let sources: ReadonlyMap<string, string | null> | undefined
+    if (mode === 'pinned') {
+      const ctx = createCompilerContextInstance()
+      await fs.writeFile(script, compiled)
+      getCompilerHmrHost(ctx).captureRaw(script, compiled, true, readCompilerRawInput(script)!)
+      sources = getCompilerHmrHost(ctx).freeze([]).sources
+      await fs.writeFile(script, 'Page({ data: { marker: "uncompiled-disk-version" } })')
+    }
+    const snapshot = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' }, config => ({
+      ...config,
+      plugins: [...(config.plugins ?? []), {
+        name: 'mutate-native-input-after-compilation',
+        async generateBundle() {
+          await fs.writeFile(script, later)
+        },
+      }],
+    }), undefined, sources)
+    const outputs = Array.isArray(snapshot.output) ? snapshot.output.flatMap(item => item.output) : 'output' in snapshot.output ? snapshot.output.output : []
+    expect((outputs.find(item => item.fileName === 'pages/index/index.js') as OutputChunk).code).toContain('snapshot-consumed')
+    expect(await fs.readFile(script, 'utf8')).toBe(later)
+    expect(snapshot.getNativeScriptVersions().get(compilerSourceId(script))).toBe(createHash('sha256').update(compiled).digest('hex'))
+    expect(snapshot.getNativeScriptVersions().has(path.join(root, 'src/components/wevu-leaf/index.vue'))).toBe(false)
+    expect(snapshot.getNativeScriptDrift()).toEqual(mode === 'pinned' ? new Map([[compilerSourceId(script), createHash('sha256').update(later).digest('hex')]]) : new Map())
+  })
+
   it('reuses only complete input versions and rejects an edit made while the snapshot is compiling', async () => {
     const root = await createProject()
     const options = { cwd: root, isDev: true, mode: 'development' }

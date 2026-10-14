@@ -205,7 +205,7 @@ weapp-vite 的 `weapp.hmr`、`weapp.tailwindcss` 和可选 `prepareHmr` 类型�
 
 阶段可能相互包含，不能相加当作总时间。`buildCoreMs` 保留旧口径，但由 `estimates.buildCoreMs` 明确标记为残差估算，不是独立计时；`snapshotBuildMs` 包含 snapshot 准备与构建。外部产物可见时间单独记录，不能冒充内部编译时间。
 
-stateful 记录带有 `pipeline: 'stateful'`。`sourceToBatchMs` 只表示源通知到批次接收的已观察间隔，不假称原生 bundler 的全部耗时；交付批次依次记录 `deliveryQueueMs`、`prepareMs`、`commitQueueMs`、`commitMs`、`publishMs`，快照批次记录 `snapshotBuildMs`、`snapshotPublishMs`。`completionBoundary` 区分 `delivery-acknowledged` 与 `output-published`；发布包含客户端确认等待时，不能直接拿来替代更早发生的产物可见时间。失败、取消和未完成的批次不会进入成功统计。
+stateful 记录带有 `pipeline: 'stateful'`。`sourceToBatchMs` 只表示源通知到批次接收的已观察间隔，不假称原生 bundler 的全部耗时。core 转交源事件时保留原始 `eventId`、`event` 和 `receivedAtMs`，异步失效处理计入源通知到批次的间隔，不在 stateful 接收回调时重置时钟。交付批次依次记录 `deliveryQueueMs`、`prepareMs`、`commitQueueMs`、`commitMs`、`publishMs`，快照批次记录 `snapshotBuildMs`、`snapshotPublishMs`。`completionBoundary` 区分 `delivery-acknowledged` 与 `output-published`；发布包含客户端确认等待时，不能直接拿来替代更早发生的产物可见时间。失败、取消和未完成的批次不会进入成功统计。
 
 分析 JSON 的 `timelines` 提供各批次互不重叠的外层阶段、残差和归因状态。standard 的批次等待、队列等待已包含在 `watchToDirtyMs`，因此其他构建前时间为三者差值，不能重复相加。stateful 与 standard 分别解释；无法匹配唯一源事件、阶段缺失或出现负残差时保留 `null` / `partial`，不以零填补。benchmark 的预算和编辑/恢复样本选择统一使用 `wallMs`，内部 `totalMs` 仅保留实际 profile 值。
 

@@ -1,6 +1,7 @@
 import type { WatcherInstance } from '../src/runtime/watcherPlugin'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
+import { onTestFailed } from 'vitest'
 import { getWxmlWatchFiles } from '../src/wxml/processing/dependencies'
 import { createTempFixtureProject, createTestCompilerContext, getFixture } from './utils'
 
@@ -21,6 +22,11 @@ async function waitForOutputs(root: string, label: string) {
 
 describe('WXML transform external dependencies', { concurrent: false }, () => {
   it.each(['classic', 'stateful-experimental'] as const)('rebuilds all templates and recovers from missing dependencies with %s', async (runtime) => {
+    let failureDiagnostics: Record<string, unknown> | undefined
+    onTestFailed(() => {
+      // eslint-disable-next-line no-console -- 只在失败后输出已清理 fixture 的只读现场。
+      console.error(`[WXML transform watch] ${JSON.stringify(failureDiagnostics ?? { runtime, diagnostic: 'failed before output capture' })}`)
+    })
     const project = await createTempFixtureProject(getFixture('wxml-remove'), 'wxml-transform-watch')
     const dependencyEvents: string[] = []
     const compiler = await createTestCompilerContext({
@@ -110,6 +116,30 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
       const originalConfig = await fs.readFile(config, 'utf8')
       await fs.writeFile(config, originalConfig.replace('rules.label)', 'rules.label + \'-config\')'))
       await waitForOutputs(project.tempDir, 'restored-config')
+    }
+    catch (cause) {
+      // 失败钩子晚于 finally；清理前保留只读现场，不改变原断言与轮询预算。
+      const rules = path.join(project.tempDir, 'transform-rules.json')
+      failureDiagnostics = {
+        runtime,
+        outputs: await Promise.all(outputs.map(async (file) => {
+          const code = await fs.readFile(path.join(project.tempDir, 'dist', file), 'utf8').catch(() => undefined)
+          return {
+            file,
+            exists: code !== undefined,
+            labels: [...new Set(Array.from(code?.matchAll(/data-rule="([^"]+)"/g) ?? [], match => match[1]))],
+            transforms: code?.match(/<!-- transform-once -->/g)?.length ?? 0,
+          }
+        })),
+        rules: await fs.readFile(rules, 'utf8').then(content => ({ exists: true, content })).catch(() => ({ exists: false })),
+        dependencyRegistered: getWxmlWatchFiles(compiler.ctx).includes(rules),
+        hostEvents: [...dependencyEvents],
+        pending: compiler.ctx.moduleGraphService.getPendingChanges().map(change => ({
+          event: change.event,
+          file: path.relative(project.tempDir, change.file),
+        })),
+      }
+      throw cause
     }
     finally {
       await watcher?.close()

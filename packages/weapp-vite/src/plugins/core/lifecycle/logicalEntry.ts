@@ -14,6 +14,7 @@ import {
 } from '../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../moduleGraph/traversal'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry, isTemplate } from '../../../utils'
+import { withRealpathScope } from '../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { collectComponentEntries } from '../../utils/analyze'
 import { pathExists as pathExistsCached } from '../../utils/cache'
@@ -140,13 +141,15 @@ async function collectLogicalEntryDependencies(
   }
   dependencies.push(...collectTemplateDependencies(state, templatePath))
   dependencies.push(...await collectComponentDependencies(state, pluginContext, ownerId, entry?.declaredJson ?? entry?.json))
-  for (const kind of ['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
-    state.ctx.moduleGraphService.replaceEntryDependencies(
-      ownerId,
-      kind,
-      dependencies.filter(dependency => dependency.kind === kind).map(dependency => dependency.sourceId),
-    )
-  }
+  withRealpathScope(() => {
+    for (const kind of ['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
+      state.ctx.moduleGraphService.replaceEntryDependencies(
+        ownerId,
+        kind,
+        dependencies.filter(dependency => dependency.kind === kind).map(dependency => dependency.sourceId),
+      )
+    }
+  })
   return dependencies
 }
 

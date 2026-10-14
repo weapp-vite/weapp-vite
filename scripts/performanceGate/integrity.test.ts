@@ -41,4 +41,10 @@ describe('paired artifact integrity', () => {
     report.primary.samples.pop()
     expect(() => assertPairedAuditComplete(report)).toThrow('does not match')
   })
+  it('rejects stopped resources and forged stop evidence independently of string errors', () => {
+    const report = artifact()
+    expect(() => assertPairedAuditComplete({ ...report, primary: { ...report.primary, stop: { reason: 'cleanup-unconfirmed', resourcesReleased: false, cancelled: false } } })).toThrow('collection failed')
+    expect(() => assertPairedAuditComplete({ ...report, primary: { ...report.primary, stop: { reason: 'cancelled', resourcesReleased: true, cancelled: true } } })).toThrow('collection failed')
+    expect(() => assertPairedAuditComplete({ ...report, primary: { ...report.primary, stop: { reason: 'cleanup-unconfirmed', resourcesReleased: true, cancelled: false } } })).toThrow('Invalid collector stop evidence')
+  })
 })

@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
 import { CompilerHmrResyncError } from '@weapp-vite/hmr'
 import path from 'pathe'
+import { createTailwindSourceMatcher } from './sources/matcher'
 
 export interface TailwindRootState {
   request: CompilerGenerateRequest
@@ -35,19 +36,25 @@ export async function prepareTailwindRoots<K>(
   if (!capturedRoots.size) {
     return entries
   }
-  const { createTailwindV4CompiledSourceEntries, createTailwindV4SourceEntryMatcher } = await import('@weapp-tailwindcss/engine')
+  const { createTailwindV4CompiledSourceEntries, isFileMatchedByTailwindV4SourceEntries } = await import('@weapp-tailwindcss/engine')
+  const matches = createTailwindSourceMatcher(isFileMatchedByTailwindV4SourceEntries)
   for (const [index, root] of capturedRoots) {
-    const base = root.request.sourceOptions?.projectRoot ?? root.request.source?.base ?? options.cwd
-    const matches = createTailwindV4SourceEntryMatcher(createTailwindV4CompiledSourceEntries(
+    const sourceOptions = root.request.sourceOptions
+    const projectRoot = sourceOptions?.projectRoot ?? root.request.source?.projectRoot ?? options.cwd
+    const base = sourceOptions?.base === undefined
+      ? root.request.source?.base ?? projectRoot
+      : path.resolve(projectRoot, sourceOptions.base)
+    const sourceEntries = createTailwindV4CompiledSourceEntries(
       root.result.root,
       [...root.result.sources],
       base,
-    ))
-    const sources = [...request.sources].flatMap(([file, content]) => content !== null && matches?.(file)
+    )
+    // 条目拓扑属于本轮捕获，字段与真实路径仍在每文件判断时重新读取。
+    const sources = [...request.sources].flatMap(([file, content]) => content !== null && sourceEntries.length > 0
+      && matches(file, sourceEntries)
       && !(options.isOutput?.(file))
       ? [{ content, extension: path.extname(file).slice(1) }]
       : [])
-    const sourceOptions = root.request.sourceOptions
     if (!sourceOptions) {
       throw new Error('Tailwind HMR requires a captured source entry')
     }

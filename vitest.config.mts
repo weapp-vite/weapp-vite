@@ -118,7 +118,7 @@ const projects = [
     // 只限制测试发现范围；保留 Vite 默认转换，让跨目录导入的 TypeScript 依赖同样完成类型剥离。
     test: {
       name: 'repo-scripts',
-      include: ['scripts/**/*.test.ts'],
+      include: ['scripts/**/*.test.ts', 'integrations/shared-hmr-tailwind/hostDependencies.test.ts'],
       exclude: ['**/node_modules/**', '**/.git/**'],
     },
   },
@@ -147,6 +147,8 @@ const projects = [
         'e2e/utils/automatorCliProcess.test.ts',
         'e2e/utils/automatorWarmup.test.ts',
         'e2e/utils/cleanupSteps.test.ts',
+        'e2e/utils/dev-process.cleanup.test.ts',
+        'e2e/utils/devProcessCleanup/darwinProcesses.test.ts',
         'e2e/utils/dev-memory.test.ts',
         'e2e/utils/devBuildCompletion.test.ts',
         'e2e/utils/hmr-helpers.test.ts',

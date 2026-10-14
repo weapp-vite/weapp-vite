@@ -21,7 +21,7 @@ export function createStatefulHmrSidecarModuleCode(id: string, source: string): 
   return `export default ${JSON.stringify(digest)};\n`
 }
 
-export function createStatefulHmrSidecarPlugin(): Plugin {
+export function createStatefulHmrSidecarPlugin(readSource = (file: string) => readFile(file, 'utf8')): Plugin {
   return {
     name: 'weapp-vite:stateful-hmr-sidecar',
     enforce: 'pre',
@@ -37,7 +37,7 @@ export function createStatefulHmrSidecarPlugin(): Plugin {
       this.addWatchFile(request.sourceId)
       let source: string
       try {
-        source = await readFile(request.sourceId, 'utf8')
+        source = await readSource(request.sourceId)
       }
       catch (error) {
         // 入口图交接时旧 DevEngine 可能晚于 unlink 事件重载侧车；该源已由

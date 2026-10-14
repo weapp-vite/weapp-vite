@@ -161,18 +161,14 @@ function resolveRepoRoot(fromDir: string) {
 }
 
 function resolvePackageEntry(
-  packageName: string,
+  packageRoot: string | undefined,
   distEntries: string[],
   fallbackWorkspacePackagePath?: string,
   cwd?: string,
-  packageRoot?: string,
 ) {
-  const packageInfo = packageRoot
-    ? { rootPath: packageRoot }
-    : safeGetPackageInfoSync(packageName, cwd ? { paths: [packageResolutionPath(cwd)] } : undefined)
-  if (packageInfo) {
+  if (packageRoot !== undefined) {
     for (const distEntry of distEntries) {
-      const resolvedEntry = path.resolve(packageInfo.rootPath, distEntry)
+      const resolvedEntry = path.resolve(packageRoot, distEntry)
       if (existsSync(resolvedEntry)) {
         return resolvedEntry
       }
@@ -264,13 +260,22 @@ export function resolveBuiltinPackageAliases(options: ResolveBuiltinPackageAlias
   const aliases: BuiltinPackageAliasEntry[] = []
   const bundledWevu = resolveBundledWevu(options.cwd)
   warnWevuVersionMismatch(options.cwd, bundledWevu)
+  // 同次同步解析共享包根目录；不跨调用保留安装结果，各个子入口仍单独检查。
+  const projectPackageRoots = new Map<string, string | undefined>()
 
   for (const target of PACKAGE_ALIASES) {
     const { find, packageName, fallbackWorkspacePackagePath } = target
     const distEntries = resolveWevuRuntimeDistEntries(target, options)
-    const resolvedEntry = packageName === 'wevu' && bundledWevu
-      ? resolvePackageEntry(packageName, distEntries, undefined, options.cwd, bundledWevu.rootPath)
-      : resolvePackageEntry(packageName, distEntries, fallbackWorkspacePackagePath, options.cwd)
+    const compatibleWevu = packageName === 'wevu' ? bundledWevu : undefined
+    if (!compatibleWevu && !projectPackageRoots.has(packageName)) {
+      projectPackageRoots.set(packageName, safeGetPackageInfoSync(packageName, options.cwd ? { paths: [packageResolutionPath(options.cwd)] } : undefined)?.rootPath)
+    }
+    const resolvedEntry = resolvePackageEntry(
+      compatibleWevu?.rootPath ?? projectPackageRoots.get(packageName),
+      distEntries,
+      compatibleWevu ? undefined : fallbackWorkspacePackagePath,
+      options.cwd,
+    )
     if (!resolvedEntry) {
       continue
     }

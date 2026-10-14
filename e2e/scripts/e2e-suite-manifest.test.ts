@@ -34,6 +34,14 @@ describe('e2e suite manifest', () => {
     ])
   })
 
+  it('collects the native Tailwind snapshot case with one complete DOM plan', () => {
+    const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), 'ide/issue-1081-tailwind-snapshot.runtime.test.ts')
+    expect(cases).toHaveLength(1)
+    expect(cases[0]?.plans).toHaveLength(1)
+    expect(cases[0]?.notes).toEqual([])
+    expect(cases[0]?.routes).toEqual(['/pages/index/index'])
+  })
+
   it('lets both mode/cache cases finish draining owned resources before the task deadline', async () => {
     const label = 'ide/issue-1140-mode-cache.runtime.test.ts'
     for (const name of ['ide-full:github-issues', 'ide-dom-headless', 'ide-headless-full']) {
@@ -82,10 +90,12 @@ describe('e2e suite manifest', () => {
     'ide/github-issues.runtime.issue1015.test.ts',
     'ide/issue-1126-1128.test.ts',
     'ide/issue-1172.test.ts',
+    'ide/issue-1182-production-mount.runtime.test.ts',
     'ide/issue-1185-sibling-entry.runtime.test.ts',
     'ide/issue-997-rebuild.runtime.test.ts',
     'ide/issue-1029-auto-routes.runtime.test.ts',
     'ide/issue-1082-confirmation.runtime.test.ts',
+    'ide/issue-1081-tailwind-snapshot.runtime.test.ts',
     'ide/issue-1134-native-batch.runtime.test.ts',
     'ide/issue-1134-native-topology.runtime.test.ts',
     'ide/issue-1140-mode-cache.runtime.test.ts',

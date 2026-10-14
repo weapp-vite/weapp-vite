@@ -1,3 +1,4 @@
+import type { MiniProgram, Page } from '@weapp-vite/miniprogram-automator'
 import type { HeadlessAutomatorLaunchOptions } from './automator.headless'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -1287,7 +1288,7 @@ export function prepareAutomatorBridgeWrapperProject(
 
   const projectPrivateConfigPath = path.join(projectPath, 'project.private.config.json')
   const projectPrivateConfig = readJsonObject(projectPrivateConfigPath) ?? {}
-  const bridgePrivateConfig = {
+  const bridgePrivateConfig: Record<string, unknown> = {
     ...projectPrivateConfig,
     simulatorType: 'wechat',
     simulatorPluginLibVersion: {},
@@ -1337,7 +1338,7 @@ function resolveRouteFromAppConfig(config: Record<string, any>) {
       continue
     }
     const root = typeof subPackage.root === 'string' ? subPackage.root.replace(TRIM_ROUTE_SLASH_PATTERN, '') : ''
-    const packagePages = Array.isArray(subPackage.pages) ? subPackage.pages : []
+    const packagePages: unknown[] = Array.isArray(subPackage.pages) ? subPackage.pages : []
     const packagePage = packagePages.find(item => typeof item === 'string' && item.trim())
     if (typeof packagePage !== 'string') {
       continue
@@ -1727,7 +1728,7 @@ async function waitForCurrentRouteReady(
     const queryTimeout = Math.min(options.queryTimeoutMs ?? 2_000, remaining)
     options.checkDevtoolsLog?.(label)
     try {
-      const currentPage = await runWithTimeout(
+      const currentPage = await runWithTimeout<Page | null>(
         () => miniProgram.currentPage({
           appFunctionFallback: false,
           pageStackFallback: false,
@@ -1776,7 +1777,7 @@ async function waitForAnyCurrentPageReady(
     const queryTimeout = Math.min(options.queryTimeoutMs ?? 2_000, remaining)
     options.checkDevtoolsLog?.(label)
     try {
-      const currentPage = await runWithTimeout(
+      const currentPage = await runWithTimeout<Page | null>(
         () => miniProgram.currentPage({
           appFunctionFallback: false,
           pageStackFallback: false,
@@ -1949,7 +1950,7 @@ async function resolveCurrentPageAfterWarmupFailure(
 
   try {
     const queryTimeout = Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, RELAUNCH_READY_TIMEOUT)
-    const currentPage = await runWithTimeout(
+    const currentPage = await runWithTimeout<Page | null>(
       () => miniProgram.currentPage({
         appFunctionFallback: false,
         pageStackFallback: false,
@@ -2497,7 +2498,7 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
           throw error
         }
         try {
-          const currentPage = await runWithTimeout(
+          const currentPage = await runWithTimeout<Page | null>(
             () => miniProgram.currentPage({
               appFunctionFallback: false,
               pageStackFallback: false,
@@ -2962,7 +2963,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               registerAutomatorReconnect(withRelaunch, {
                 target: selectedTarget,
                 timeout: launchTimeout,
-                connect: options => automator.connect(options),
+                connect: options => automator.connect(options) as Promise<MiniProgram>,
                 configure: async (session, reconnectScope) => {
                   await reconnectScope.step(() => assertSelectedWechatDevtoolsRuntime(selectedTarget, session))
                   enhanceMiniProgramWithRuntimeLogs(session, project)

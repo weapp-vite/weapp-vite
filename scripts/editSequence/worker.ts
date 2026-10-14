@@ -17,7 +17,7 @@ const framework = mode === 'weapp-modes'
   ? new (await import('./weappModes')).WeappModeSequenceSession(path.join(root, role), role !== 'incremental')
   : undefined
 const fullFramework = mode === 'weapp-classic' || mode === 'weapp-stateful'
-  ? new (await import('./framework')).FrameworkSequenceSession(mode, path.join(root, role))
+  ? new (await import('./framework')).FrameworkSequenceSession(mode, path.join(root, role), { role, diagnostics: process.env.EDIT_SEQUENCE_PHASE_DIAGNOSTICS === '1' })
   : undefined
 let active = Promise.resolve()
 const requests = new Map<number, AbortController>()
