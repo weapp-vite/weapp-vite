@@ -1,3 +1,4 @@
+import type { NativeCompilerScriptAnalysis } from '@weapp-vite/ast'
 import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
 import type { parse, SFCDescriptor, SFCScriptBlock } from 'vue/compiler-sfc'
 import type { JsonConfig, JsonMergeContext } from '../../../../types/json'
@@ -14,6 +15,7 @@ import { createSfcParseError, readAndParseSfc, resolveSfcBlockSrc } from '../../
 import { inlineScriptSetupDefineOptionsArgs } from '../defineOptions/inline'
 import { extractJsonMacroFromScriptSetupWithSourceMap, mayContainJsonMacro } from '../jsonMacros'
 import { createJsonMerger } from '../jsonMerge'
+import { analyzeNativeScriptBlocks } from './nativeAnalysis'
 
 const SETUP_CALL_RE = /\bsetup\s*\(/
 const DEFINE_OPTIONS_CALL_RE = /\bdefineOptions\s*\(/
@@ -56,6 +58,10 @@ export interface ParsedVueFile {
   jsonDefaults?: NonNullable<JsonConfig['defaults']>[keyof NonNullable<JsonConfig['defaults']>]
   mergeJson: ReturnType<typeof createJsonMerger>
   isAppFile: boolean
+  nativeScriptAnalysis?: {
+    script?: NativeCompilerScriptAnalysis
+    scriptSetup?: NativeCompilerScriptAnalysis
+  }
 }
 
 function resolveSfcScriptLangLabel(lang?: string | null) {
@@ -140,7 +146,21 @@ function replaceScriptSetupContent(
   }
 }
 
-function extractDefineOptionsHash(content: string) {
+function hashDefineOptionsSources(sources: string[]) {
+  if (!sources.length) {
+    return undefined
+  }
+  return createHash('sha256')
+    .update(sources.join('\n'))
+    .digest('hex')
+    .slice(0, 12)
+}
+
+function extractDefineOptionsHash(content: string, analysis?: NativeCompilerScriptAnalysis) {
+  if (analysis) {
+    const sources = analysis.defineOptionsStatements.map(({ start, end }) => content.slice(start, end))
+    return hashDefineOptionsSources(sources)
+  }
   let ast: BabelFile
   try {
     ast = babelParse(content, BABEL_TS_MODULE_PARSER_OPTIONS)
@@ -167,14 +187,7 @@ function extractDefineOptionsHash(content: string) {
     },
   })
 
-  if (!macroSources.length) {
-    return undefined
-  }
-
-  return createHash('sha256')
-    .update(macroSources.join('\n'))
-    .digest('hex')
-    .slice(0, 12)
+  return hashDefineOptionsSources(macroSources)
 }
 
 function preprocessTemplateImportMeta(source: string) {
@@ -230,6 +243,15 @@ function resolvePreprocessSourceMap(
     }
   }
   return sourceMap
+}
+
+function hasNativeAnalysisBatch(
+  descriptor: Pick<SFCDescriptor, 'script' | 'scriptSetup'>,
+  defineOptionsSource: SFCScriptBlock | undefined,
+) {
+  // 单个脚本只会触发一次 N-API 往返；原有 Babel 路径已经能完成同一项工作，
+  // 只有至少两个可共享解析结果的输入时才进入 native 批量入口。
+  return [descriptor.script, descriptor.scriptSetup, defineOptionsSource].filter(Boolean).length > 1
 }
 
 export async function parseVueFile(
@@ -341,7 +363,7 @@ export async function parseVueFile(
 
   let scriptSetupMacroConfig: Record<string, any> | undefined
   let scriptSetupMacroHash: string | undefined
-  let defineOptionsHash: string | undefined
+  let defineOptionsSource: SFCScriptBlock | undefined
   const jsonKind = options?.json?.kind
     ?? (options?.isApp ? 'app' : options?.isPage ? 'page' : 'component')
   const jsonDefaults = options?.json?.defaults?.[jsonKind]
@@ -425,7 +447,7 @@ export async function parseVueFile(
       scriptSetupMacroHash = extracted.macroHash
     }
     if (DEFINE_OPTIONS_CALL_RE.test(scriptSetup.content)) {
-      defineOptionsHash = extractDefineOptionsHash(scriptSetup.content)
+      defineOptionsSource = scriptSetup
     }
   }
 
@@ -497,6 +519,12 @@ export async function parseVueFile(
   }
 
   const isAppFile = APP_VUE_FILE_RE.test(filename)
+  const nativeAnalysis = hasNativeAnalysisBatch(descriptorForCompile, defineOptionsSource)
+    ? analyzeNativeScriptBlocks(descriptorForCompile, filename, defineOptionsSource)
+    : undefined
+  const defineOptionsHash = defineOptionsSource
+    ? extractDefineOptionsHash(defineOptionsSource.content, nativeAnalysis?.defineOptions)
+    : undefined
 
   return {
     descriptor: resolvedDescriptor,
@@ -511,5 +539,6 @@ export async function parseVueFile(
     jsonDefaults,
     mergeJson,
     isAppFile,
+    nativeScriptAnalysis: nativeAnalysis?.scripts,
   }
 }
