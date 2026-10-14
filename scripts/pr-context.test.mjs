@@ -69,6 +69,22 @@ describe('manual PR target resolution', () => {
     }
   })
 
+  it('preserves frozen identity and attempt when target resolution fails', async () => {
+    const error = await resolvePrContext({ ...input, runAttempt: 2 }, async () => ({ ...pull, merge_commit_sha: null })).catch(error => error)
+    expect(error.prContext).toMatchObject({
+      runId: input.runId,
+      runAttempt: 2,
+      isPr: true,
+      headSha,
+      baseSha,
+      checkoutSha: headSha,
+      resolutionError: expect.stringContaining('no merge candidate'),
+    })
+    const get = vi.fn().mockRejectedValue(new Error('API unavailable'))
+    const unidentified = await resolvePrContext(input, get).catch(error => error)
+    expect(unidentified.prContext).toBeUndefined()
+  })
+
   it.each(['0', '-1', '1;echo unsafe', '1\n2', '1.5', '9007199254740992'])('rejects invalid PR input %s before querying', async (prNumber) => {
     const get = vi.fn()
     await expect(resolvePrContext({ ...input, prNumber }, get)).rejects.toThrow('positive PR number')

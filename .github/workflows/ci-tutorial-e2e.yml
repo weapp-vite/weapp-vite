@@ -36,6 +36,11 @@ permissions:
 jobs:
   pr-context:
     uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
     with:
       pr_number: ${{ inputs.pr-number || '' }}
       paths: '[".github/workflows/ci-tutorial-e2e.yml","e2e/tutorials/**","packages/create-weapp-vite/**","packages/weapp-vite/**","packages-runtime/wevu/**","templates/**","website/guide/index.md","website/guide/multi-platform.md","website/handbook/index.md","website/snippets/tutorial-e2e/**","scripts/project-lifecycle.mjs","package.json","pnpm-lock.yaml"]'

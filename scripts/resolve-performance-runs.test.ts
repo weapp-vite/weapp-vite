@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { resolvePerformanceRuns } from '../.github/scripts/resolve-performance-runs.mjs'
+import { downloadPrContext, resolvePerformanceRuns } from '../.github/scripts/resolve-performance-runs.mjs'
 
 const repository = 'owner/repo'
 const headSha = 'a'.repeat(40)
@@ -103,5 +103,27 @@ describe('resolve manual performance runs', () => {
     const request = requestFor()
     expect(await resolvePerformanceRuns({ ...options, request, readContext: vi.fn().mockResolvedValue({ ...context, isPr: false }) })).toBeNull()
     expect(request).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('manual PR artifact availability', () => {
+  it.each([
+    { artifacts: [] },
+    { artifacts: [{ name: 'pr-context', expired: true }] },
+    { artifacts: [{ name: 'other', expired: false }] },
+  ])('distinguishes a missing context artifact from an invalid one', async ({ artifacts }) => {
+    await expect(downloadPrContext({ ...options, request: vi.fn().mockResolvedValue({ artifacts }) })).rejects.toMatchObject({ code: 'PR_CONTEXT_MISSING' })
+  })
+
+  it('rejects duplicate artifacts rather than treating them as not yet available', async () => {
+    const artifacts = [{ name: 'pr-context', expired: false }, { name: 'pr-context', expired: false }]
+    const error = await downloadPrContext({ ...options, request: vi.fn().mockResolvedValue({ artifacts }) }).catch((value: unknown) => value)
+    expect(error).toBeInstanceOf(Error)
+    expect(error).not.toHaveProperty('code', 'PR_CONTEXT_MISSING')
+  })
+
+  it('does not hide malformed API responses or request failures as missing artifacts', async () => {
+    await expect(downloadPrContext({ ...options, request: vi.fn().mockResolvedValue({}) })).rejects.toThrow('Invalid manual PR context artifact listing')
+    await expect(downloadPrContext({ ...options, request: vi.fn().mockRejectedValue(new Error('GitHub API unavailable')) })).rejects.toThrow('GitHub API unavailable')
   })
 })
