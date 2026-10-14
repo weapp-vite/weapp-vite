@@ -212,7 +212,7 @@ describe('runtime npm service', () => {
     ).toBe('dayjs/index.js')
   })
 
-  it('defaults to explicit npm candidates from miniprogram packages and include patterns', async () => {
+  it.each([undefined, 'explicit'] as const)('builds explicit npm candidates asynchronously with strategy %s', async (strategy) => {
     const cwd = await createTempDir()
     const packageJson = {
       dependencies: {
@@ -222,10 +222,16 @@ describe('runtime npm service', () => {
       devDependencies: {
         '@vant/weapp': '^1.11.6',
         'lodash': '^4.17.21',
+        'tdesign-miniprogram': '^1.12.3',
       },
     }
 
     await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+    getPackageInfoMock.mockImplementation(async (dep: string) => ({
+      packageJson: dep === 'tdesign-miniprogram' || dep === '@vant/weapp'
+        ? { miniprogram: 'miniprogram_dist' }
+        : {},
+    }))
     buildPackageMock.mockImplementation(async ({ dep, outDir }) => {
       await fs.outputFile(path.resolve(outDir, dep, 'index.js'), `module.exports = "${dep}"`)
     })
@@ -239,7 +245,8 @@ describe('runtime npm service', () => {
         weappViteConfig: {
           npm: {
             enable: true,
-            include: ['dayjs'],
+            strategy,
+            include: [/^day/g],
           },
         },
       },
@@ -249,15 +256,114 @@ describe('runtime npm service', () => {
     } as any
 
     const service = createNpmService(ctx)
+    getPackageInfoSyncMock.mockClear()
+    for (let build = 0; build < 2; build++) {
+      buildPackageMock.mockClear()
+      await service.build()
+
+      expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/dayjs/index.js'))).toBe(true)
+      expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/tdesign-miniprogram/index.js'))).toBe(true)
+      expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/@vant/weapp/index.js'))).toBe(true)
+      expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/lodash/index.js'))).toBe(false)
+
+      expect(buildPackageMock.mock.calls.map(([args]) => args.dep)).toEqual(['tdesign-miniprogram', '@vant/weapp', 'dayjs'])
+      expect(getPackageInfoSyncMock).not.toHaveBeenCalled()
+      expect(getPackageInfoMock.mock.calls.map(([dep]) => dep).sort()).toEqual(['@vant/weapp', 'dayjs', 'lodash', 'tdesign-miniprogram'])
+      expect(getPackageInfoMock).toHaveBeenCalledWith('tdesign-miniprogram', { paths: [`${path.resolve(cwd)}/`] })
+    }
+  })
+
+  it('keeps legacy candidates limited to dependency keys without package metadata scans', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        'dayjs': '^1.11.13',
+        'tdesign-miniprogram': '^1.12.3',
+      },
+      devDependencies: {
+        '@vant/weapp': '^1.11.6',
+      },
+    }
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+    buildPackageMock.mockImplementation(async ({ dep, outDir }) => {
+      await fs.outputFile(path.resolve(outDir, dep, 'index.js'), `module.exports = "${dep}"`)
+    })
+
+    const service = createNpmService({
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            strategy: 'legacy',
+            include: ['@vant/weapp', 'not-declared'],
+          },
+        },
+      },
+      scanService: { subPackageMap: new Map() },
+    } as any)
+    getPackageInfoSyncMock.mockClear()
     await service.build()
 
+    expect(buildPackageMock.mock.calls.map(([args]) => args.dep)).toEqual(['dayjs', 'tdesign-miniprogram'])
+    expect(getPackageInfoMock).not.toHaveBeenCalled()
+    expect(getPackageInfoSyncMock).not.toHaveBeenCalled()
     expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/dayjs/index.js'))).toBe(true)
     expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/tdesign-miniprogram/index.js'))).toBe(true)
-    expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/@vant/weapp/index.js'))).toBe(true)
-    expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/lodash/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/@vant/weapp/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/not-declared/index.js'))).toBe(false)
+  })
 
-    const buildCalls = buildPackageMock.mock.calls.map(([args]) => args.dep)
-    expect(buildCalls).toEqual(['tdesign-miniprogram', '@vant/weapp', 'dayjs'])
+  it.each(['absent', 'unreadable'] as const)('preserves explicit includes and builder errors when package metadata is %s', async (failure) => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        'tdesign-miniprogram': '^1.12.3',
+        'missing-auto': '*',
+        'missing-included': '*',
+      },
+    }
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+    getPackageInfoMock.mockImplementation(async (dep: string) => {
+      if (dep === 'tdesign-miniprogram') {
+        return { packageJson: { miniprogram: 'miniprogram_dist' } }
+      }
+      if (failure === 'unreadable') {
+        throw new Error('Package metadata cannot be read')
+      }
+      return null
+    })
+    const buildError = new Error('Included package cannot be built')
+    buildPackageMock.mockImplementation(async ({ dep }) => {
+      if (dep === 'missing-included') {
+        throw buildError
+      }
+    })
+
+    const service = createNpmService({
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            include: ['missing-included'],
+          },
+        },
+      },
+      scanService: { subPackageMap: new Map() },
+    } as any)
+
+    getPackageInfoSyncMock.mockClear()
+    await expect(service.build()).rejects.toBe(buildError)
+    expect(buildPackageMock.mock.calls.map(([args]) => args.dep)).toEqual(['tdesign-miniprogram', 'missing-included'])
+    expect(getPackageInfoSyncMock).not.toHaveBeenCalled()
+    expect(getPackageInfoMock.mock.calls.map(([dep]) => dep).sort()).toEqual(['missing-auto', 'missing-included', 'tdesign-miniprogram'])
   })
 
   it('allows explicit subpackage patterns to build npm packages from devDependencies', async () => {
