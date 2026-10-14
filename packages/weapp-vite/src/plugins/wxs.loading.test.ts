@@ -7,7 +7,7 @@ interface WxsLoadingResult {
   missing: string[]
   loaded: string[]
   compilerLoads: number
-  presetLoads: number
+  presetRequests: number
   failureCode: string
   emittedBeforeRetry: number
   firstFiles: string[]
@@ -25,10 +25,20 @@ it('loads the real WXS compiler only for readable inputs and transforms fresh de
     const { tmpdir } = await import('node:os')
     const path = await import('node:path')
     const root = await mkdtemp(path.join(tmpdir(), 'weapp-wxs-loading-'))
-    const presetUrl = pathToFileURL(createRequire(${JSON.stringify(pluginUrl)}).resolve('@babel/preset-env')).href
+    const presetFilename = createRequire(${JSON.stringify(pluginUrl)}).resolve('@babel/preset-env')
+    const presetUrl = pathToFileURL(presetFilename).href
+    const presetRequests = []
+    // require(ESM) 不保证触发 load hook 或进入 require.cache，记录真实解析请求。
+    registerHooks({
+      resolve(specifier, context, nextResolve) {
+        const resolved = nextResolve(specifier, context)
+        if (specifier === '@babel/preset-env') presetRequests.push(resolved.url)
+        return resolved
+      },
+    })
     // scanner 现有的内置组件依赖也会使用 Babel core；这里只约束 WXS 专属转换依赖。
     const compilers = () => loadedModules().filter(url => url === ${JSON.stringify(compilerUrl)}
-      || url.includes('/node_modules/@babel/preset-env/'))
+      || url === presetUrl || url.includes('/node_modules/@babel/preset-env/'))
     try {
       const { wxs } = await import(${JSON.stringify(pluginUrl)})
       const tokenMap = new Map()
@@ -70,7 +80,7 @@ it('loads the real WXS compiler only for readable inputs and transforms fresh de
       process.stdout.write(JSON.stringify({
         initial, empty, missing, loaded: compilers(), failureCode, emittedBeforeRetry,
         compilerLoads: moduleLoads.filter(url => url === ${JSON.stringify(compilerUrl)}).length,
-        presetLoads: moduleLoads.filter(url => url === presetUrl).length,
+        presetRequests: presetRequests.length,
         firstFiles, secondFiles: emitted.map(asset => asset.fileName).sort(), firstHelper,
         secondHelper: emitted.find(asset => asset.fileName === 'helper.wxs').source, watches,
       }))
@@ -85,7 +95,7 @@ it('loads the real WXS compiler only for readable inputs and transforms fresh de
   expect(result.loaded).toContain(compilerUrl)
   expect(result.loaded.some(url => url.includes('/node_modules/@babel/preset-env/'))).toBe(true)
   expect(result.compilerLoads).toBe(1)
-  expect(result.presetLoads).toBe(1)
+  expect(result.presetRequests).toBe(1)
   expect(result.failureCode).toBe('BABEL_PARSE_ERROR')
   expect(result.emittedBeforeRetry).toBe(0)
   expect(result.firstFiles).toEqual(['helper.wxs', 'main.wxs'])
