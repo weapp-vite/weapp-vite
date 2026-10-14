@@ -38,7 +38,7 @@ function gate() {
   }
 }
 
-async function fixture(count = 1, handoff = true) {
+async function fixture(count = 1, handoff = true, incrementalCache?: boolean) {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'tailwind-generation-ownership-')))
   cleanup.push(() => rm(root, { recursive: true, force: true }))
   await mkdir(path.join(root, 'node_modules'))
@@ -67,6 +67,7 @@ async function fixture(count = 1, handoff = true) {
       sourceOptions: { projectRoot: root, cssEntries: [entry] },
       scanSources: true,
       target: 'weapp',
+      incrementalCache,
     }
     const result = await compiler.generate(request)
     await adapter.rememberRoot(index, request, result)
@@ -184,7 +185,7 @@ it('releases a failed build owner in finally so another build can consume the sa
   expect(secondBuild).toHaveBeenCalledOnce()
 })
 
-it.each(['options', 'target', 'root-id', 'project-root', 'eligibility'] as const)('rejects %s mismatch without changing the registered owner', async (mismatch) => {
+it.each(['options', 'target', 'root-id', 'project-root', 'style', 'source-css', 'hidden', 'symbol', 'eligibility'] as const)('rejects %s mismatch without changing the registered owner', async (mismatch) => {
   const app = await fixture()
   const request = { ...app.first.request }
   if (mismatch === 'target') {
@@ -196,11 +197,46 @@ it.each(['options', 'target', 'root-id', 'project-root', 'eligibility'] as const
   else if (mismatch === 'project-root') {
     request.sourceOptions = { ...request.sourceOptions, projectRoot: path.dirname(app.first.source) }
   }
+  else if (mismatch === 'style') {
+    request.styleOptions = { platform: 'weapp' }
+  }
+  else if (mismatch === 'source-css') {
+    request.sourceOptions = { ...request.sourceOptions, cssSources: ['.changed { width: 83px; }'] }
+  }
+  else if (mismatch === 'hidden') {
+    Object.defineProperty(request, 'hidden', { value: 'changed' })
+  }
+  else if (mismatch === 'symbol') {
+    Object.defineProperty(request, Symbol('request-option'), { value: 'changed' })
+  }
   await expect(withTailwindSnapshotGeneration(app.input, [app.preparation], () => app.take(
     [request],
     mismatch === 'options' ? { ...app.options, cssPreflight: true } : app.options,
     mismatch !== 'eligibility',
   ))).rejects.toBeInstanceOf(CompilerHmrResyncError)
+  await withTailwindSnapshotGeneration(app.input, [app.preparation], app.consume)
+})
+
+it.each([false, true])('reuses a real generation across a change from incrementalCache=%s', async (incrementalCache) => {
+  const app = await fixture(1, true, incrementalCache)
+  const generate = vi.spyOn(app.compiler, 'generate')
+  const requests = app.requests.map(request => ({ ...request, incrementalCache: !incrementalCache }))
+  const reused = await withTailwindSnapshotGeneration(app.input, [app.preparation], () => app.take(requests))
+  expect(reused?.entries).toHaveLength(1)
+  expect(reused!.entries[0]!.snapshot.classSet.has('w-[37px]')).toBe(true)
+  expect(generate).not.toHaveBeenCalled()
+  await withTailwindSnapshotGeneration(app.input, [app.preparation], app.consume)
+})
+
+it.each(['getter', 'proxy'] as const)('refuses an unsafe %s request without reading it or changing the owner', async (kind) => {
+  const app = await fixture()
+  const read = vi.fn(() => app.first.request.sourceOptions)
+  const request = { ...app.first.request }
+  const unsafe = kind === 'proxy'
+    ? new Proxy(request, { get: read })
+    : Object.defineProperty(request, 'sourceOptions', { get: read })
+  await expect(withTailwindSnapshotGeneration(app.input, [app.preparation], () => app.take([unsafe]))).rejects.toThrow(kind === 'proxy' ? 'proxies' : 'accessors')
+  expect(read).not.toHaveBeenCalled()
   await withTailwindSnapshotGeneration(app.input, [app.preparation], app.consume)
 })
 

@@ -1,5 +1,6 @@
+import type { CompilerGenerateRequest } from 'weapp-tailwindcss/core'
 import { expect, it, vi } from 'vitest'
-import { copyGenerationValue, equalGenerationValue } from './inputs'
+import { comparableGenerationRequest, copyGenerationValue, equalGenerationValue, generationRequest } from './inputs'
 
 it('copies every configuration value without mutating the original, including sparse arrays', () => {
   const callback = () => {}
@@ -64,4 +65,48 @@ it('refuses cycles but accepts separate properties referring to the same plain i
   expect(() => copyGenerationValue(cycle)).toThrow()
   const shared = { enabled: true }
   expect(equalGenerationValue(copyGenerationValue({ first: shared, second: shared }), { first: shared, second: shared })).toBe(true)
+})
+
+it('excludes only the cache lifetime flag and preserves all other request state', () => {
+  const marker = Symbol('request-option')
+  const request = Object.assign(Object.create(null), {
+    id: 'root',
+    sourceOptions: { projectRoot: '.' },
+    incrementalCache: true,
+    [marker]: { target: 'weapp' },
+  }) as CompilerGenerateRequest
+  Object.defineProperty(request, 'hidden', { value: { enabled: true } })
+  const comparable = comparableGenerationRequest(request)
+  expect(Object.getPrototypeOf(comparable)).toBeNull()
+  expect(Object.isFrozen(comparable)).toBe(true)
+  expect(Reflect.ownKeys(comparable)).toEqual(['id', 'sourceOptions', 'hidden', marker])
+  expect(Object.getOwnPropertyDescriptor(comparable, 'hidden')?.enumerable).toBe(false)
+  expect(comparable).toHaveProperty('hidden', { enabled: true })
+  expect(request.incrementalCache).toBe(true)
+  expect(comparable.sourceOptions).not.toBe(request.sourceOptions)
+  const changed = Object.create(null, Object.getOwnPropertyDescriptors(comparable)) as CompilerGenerateRequest
+  // 新对象保留相同原型与所有属性，仅替换隐藏配置。
+  const descriptors = Object.getOwnPropertyDescriptors(changed)
+  descriptors.hidden = { value: { enabled: false }, enumerable: false }
+  const hiddenChanged = Object.create(null, descriptors) as CompilerGenerateRequest
+  expect(equalGenerationValue(comparable, comparableGenerationRequest(hiddenChanged))).toBe(false)
+})
+
+it.each(['incrementalCache', 'sourceOptions', 'hidden'] as const)('rejects a request %s getter without calling it', async (key) => {
+  const getter = vi.fn(() => true)
+  const request = { id: 'root', sourceOptions: { projectRoot: '.' } } as CompilerGenerateRequest
+  Object.defineProperty(request, key, { get: getter })
+  expect(() => comparableGenerationRequest(request)).toThrow('accessors')
+  await expect(generationRequest(request)).rejects.toThrow('accessors')
+  expect(getter).not.toHaveBeenCalled()
+})
+
+it('rejects a proxy request before invoking any proxy traps', async () => {
+  const get = vi.fn()
+  const ownKeys = vi.fn()
+  const request = new Proxy({ id: 'root', sourceOptions: { projectRoot: '.' } }, { get, ownKeys }) as CompilerGenerateRequest
+  expect(() => comparableGenerationRequest(request)).toThrow('proxies')
+  await expect(generationRequest(request)).rejects.toThrow('proxies')
+  expect(get).not.toHaveBeenCalled()
+  expect(ownKeys).not.toHaveBeenCalled()
 })

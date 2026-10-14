@@ -46,14 +46,30 @@ export function copyGenerationValue<T>(value: T, parents = new Set<object>()): T
   }
 }
 
+function withGenerationProperty<T extends object>(copied: T, key: string, value: unknown): T {
+  const descriptors: PropertyDescriptorMap = Object.getOwnPropertyDescriptors(copied)
+  descriptors[key] = { value, enumerable: descriptors[key]?.enumerable ?? true }
+  return Object.freeze(Object.create(Object.getPrototypeOf(copied), descriptors)) as T
+}
+
+/** 只排除缓存生命周期标记，保留其他属性、枚举性和原型，并拒绝不安全配置。 */
+export function comparableGenerationRequest(request: CompilerGenerateRequest) {
+  const copied = copyGenerationValue(request)
+  const descriptors = Object.getOwnPropertyDescriptors(copied)
+  // 先校验完整输入，避免生命周期字段自身的 getter 或 proxy 绕过封存规则。
+  delete descriptors.incrementalCache
+  return Object.freeze(Object.create(Object.getPrototypeOf(copied), descriptors)) as CompilerGenerateRequest
+}
+
 /** 比较实际解析的 CSS base 与完整入口选项，而不是仅比较 root id。 */
 export async function generationRequest(request: CompilerGenerateRequest) {
+  const comparableRequest = comparableGenerationRequest(request)
   const { resolveTailwindV4Source } = await import('weapp-tailwindcss/generator')
-  const source = request.source ?? await resolveTailwindV4Source(request.sourceOptions)
-  return copyGenerationValue({
-    ...request,
-    sourceOptions: request.sourceOptions ? { ...request.sourceOptions, base: source.base } : undefined,
-  })
+  const source = comparableRequest.source ?? await resolveTailwindV4Source(comparableRequest.sourceOptions)
+  const sourceOptions = comparableRequest.sourceOptions
+    ? withGenerationProperty(comparableRequest.sourceOptions, 'base', source.base)
+    : undefined
+  return withGenerationProperty(comparableRequest, 'sourceOptions', sourceOptions)
 }
 
 function sameCopiedValue(expected: unknown, current: unknown): boolean {
