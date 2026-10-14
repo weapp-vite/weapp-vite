@@ -15,7 +15,7 @@ import { analyzeSubpackages } from '../../../analyze/subpackages'
 import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../../analyze/subpackages/history'
 import { createAnalyzeMetadata } from '../../../analyze/subpackages/metadata'
 import { createCompilerContext } from '../../../createContext'
-import { createDashboardArtifactSnapshot } from '../../../dashboard'
+import { createDashboardArtifactSnapshot } from '../../../dashboard/artifacts'
 import logger from '../../../logger'
 import { createInlineConfig } from '../../runtime'
 
