@@ -3,26 +3,15 @@ name: Dimina Web Experiment
 on:
   workflow_dispatch:
     inputs:
+      pr-number:
+        description: PR number to validate (empty uses the selected ref)
+        required: false
+        default: ''
+        type: string
       diagnostics:
         description: 采集原冷路径的浏览器与 Windows 网络资源证据
         type: boolean
         default: false
-  pull_request:
-    paths:
-      - .gitattributes
-      - .github/workflows/ci-dimina.yml
-      - '.github/actions/**'
-      - 'packages-private/dimina-playground/**'
-      - 'packages/weapp-vite/**'
-      - 'packages-runtime/**'
-      - '@weapp-core/**'
-      - 'e2e/dimina/**'
-      - e2e/vitest.e2e.dimina.config.ts
-      - 'e2e/scripts/**'
-      - 'scripts/dimina-*.test.ts'
-      - package.json
-      - pnpm-lock.yaml
-      - pnpm-workspace.yaml
   push:
     branches: [main]
     paths:
@@ -38,13 +27,22 @@ defaults:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
-  group: dimina-${{ github.workflow }}-${{ github.ref }}
+  group: dimina-${{ github.workflow }}-${{ inputs.pr-number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+      paths: '[".gitattributes",".github/workflows/ci-dimina.yml",".github/actions/**","packages-private/dimina-playground/**","packages/weapp-vite/**","packages-runtime/**","@weapp-core/**","e2e/dimina/**","e2e/vitest.e2e.dimina.config.ts","e2e/scripts/**","scripts/dimina-*.test.ts","package.json","pnpm-lock.yaml","pnpm-workspace.yaml"]'
+
   web:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Dimina (${{ matrix.os }} / Node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
@@ -60,6 +58,9 @@ jobs:
             node: '24'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ matrix.node }}
@@ -103,7 +104,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: dimina-${{ matrix.os }}-${{ matrix.node }}-${{ github.sha }}
+          name: dimina-${{ matrix.os }}-${{ matrix.node }}-${{ needs.pr-context.outputs.checkout_sha }}
           include-hidden-files: true
           path: |
             docs/reports/*-e2e-dimina-*-suite-report/**

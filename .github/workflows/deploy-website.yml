@@ -3,25 +3,42 @@ name: Deploy Website
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      pr-number:
+        description: PR number to validate (empty uses the selected ref)
+        required: false
+        default: ''
+        type: string
 
 concurrency:
-  group: website-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || (github.ref == 'refs/heads/main' && 'production' || github.ref) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: website-${{ inputs.pr-number != '' && format('pr-{0}', inputs.pr-number) || (github.ref == 'refs/heads/main' && 'production' || github.ref) }}
+  cancel-in-progress: ${{ inputs.pr-number != '' }}
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+      base_branches: '["main"]'
+
   website:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      CHECKOUT_SHA: ${{ needs.pr-context.outputs.checkout_sha }}
     steps:
       - name: Check out code with page history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
           fetch-depth: 0
 
       - uses: ./.github/actions/setup-node-pnpm
@@ -60,18 +77,18 @@ jobs:
       - name: Upload website artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: website-${{ github.sha }}-${{ github.run_attempt }}
+          name: website-${{ needs.pr-context.outputs.checkout_sha }}-${{ github.run_attempt }}
           path: website/dist
           retention-days: 7
           if-no-files-found: error
 
       - name: Check production revision
         id: production
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        if: needs.pr-context.outputs.is_pr != 'true' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         shell: bash
         run: |
           git fetch --no-tags origin main
-          if [ "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" ]; then
+          if [ "$(git rev-parse FETCH_HEAD)" = "$CHECKOUT_SHA" ]; then
             echo 'deploy=true' >> "$GITHUB_OUTPUT"
           else
             echo 'deploy=false' >> "$GITHUB_OUTPUT"
@@ -79,7 +96,7 @@ jobs:
           fi
 
       - name: Deploy website to Cloudflare
-        if: steps.production.outputs.deploy == 'true'
+        if: needs.pr-context.outputs.is_pr != 'true' && steps.production.outputs.deploy == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -92,7 +109,7 @@ jobs:
           pnpm --filter website-weapp-vite run deploy
           {
             echo '### Website deployed'
-            echo "Commit: $GITHUB_SHA"
+            echo "Commit: $CHECKOUT_SHA"
             echo '- https://vite.weapp.dev'
             echo '- https://vite.icebreaker.top'
             echo 'The Cloudflare deployment version is recorded in the Wrangler log above.'

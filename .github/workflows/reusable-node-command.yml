@@ -16,6 +16,30 @@ on:
         required: false
         type: number
         default: 2
+      checkout_ref:
+        required: false
+        type: string
+        default: ''
+      pr_number:
+        required: false
+        type: string
+        default: ''
+      base_sha:
+        required: false
+        type: string
+        default: ''
+      head_sha:
+        required: false
+        type: string
+        default: ''
+      head_ref:
+        required: false
+        type: string
+        default: ''
+      base_ref:
+        required: false
+        type: string
+        default: ''
       build_command:
         required: false
         type: string
@@ -68,10 +92,12 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     timeout-minutes: ${{ inputs.timeout_minutes }}
     env:
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TOKEN: ${{ inputs.pr_number == '' && secrets.TURBO_TOKEN || '' }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
       BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: ${{ startsWith(inputs.node_version, '22') && '22' || '24' }}
-      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ github.sha }}
+      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ inputs.checkout_ref || github.sha }}
+      PR_BASE_SHA: ${{ inputs.base_sha }}
+      PR_HEAD_REF: ${{ inputs.head_ref }}
 
     steps:
       - name: Enable Git long paths on Windows
@@ -82,7 +108,16 @@ jobs:
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: ${{ inputs.fetch_depth }}
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          fetch-depth: ${{ inputs.pr_number != '' && '0' || inputs.fetch_depth }}
+          persist-credentials: false
+
+      - name: Fetch frozen PR base
+        if: inputs.base_sha != ''
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ inputs.base_sha }}
+        run: git fetch --no-tags origin "$PR_BASE_SHA"
 
       - uses: ./.github/actions/setup-node-pnpm
         with:
@@ -109,7 +144,10 @@ jobs:
 
       - name: Create workspace build artifact manifest
         if: inputs.build_artifact_name != ''
-        run: node scripts/create-build-artifact-manifest.mjs
+        shell: bash
+        run: |
+          export GITHUB_SHA="$BUILD_ARTIFACT_EXPECTED_COMMIT"
+          node scripts/create-build-artifact-manifest.mjs
 
       - name: Install Playwright browsers and system dependencies
         if: inputs.install_playwright && runner.os == 'Linux'
@@ -133,13 +171,21 @@ jobs:
             printf 'Effective file descriptor limit: '
             ulimit -n || true
           fi
+          if [[ -n "$PR_BASE_SHA" ]]; then
+            export GITHUB_BASE_REF="$PR_BASE_SHA"
+            export GITHUB_HEAD_REF="$PR_HEAD_REF"
+          fi
           ${{ inputs.main_command }}
 
       - name: Upload coverage reports to Codecov
         if: inputs.upload_codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          override_commit: ${{ inputs.head_sha || inputs.checkout_ref || github.sha }}
+          override_pr: ${{ inputs.pr_number }}
+          override_branch: ${{ inputs.head_ref || github.ref_name }}
         env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          CODECOV_TOKEN: ${{ inputs.pr_number == '' && secrets.CODECOV_TOKEN || '' }}
 
       - name: Upload artifact
         if: ${{ always() && inputs.artifact_name != '' && inputs.artifact_path != '' }}
