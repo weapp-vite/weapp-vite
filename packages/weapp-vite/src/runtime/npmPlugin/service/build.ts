@@ -117,9 +117,8 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
   }
 
   async function resolveBuildCandidateDependencies(pkgJson: PackageJson, resolveFrom: string) {
-    const syncCandidates = resolveNpmBuildCandidateDependenciesSync(ctx, pkgJson, resolveFrom)
     if (resolveNpmStrategyMode(ctx) === 'legacy') {
-      return syncCandidates
+      return resolveNpmBuildCandidateDependenciesSync(ctx, pkgJson, resolveFrom)
     }
 
     const declaredDependencies = resolveDeclaredNpmDependencies(pkgJson)
