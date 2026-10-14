@@ -1,6 +1,29 @@
+import type { TemplateChildNode } from '@vue/compiler-core'
 import type { NativeCompilerScriptAnalysis } from '@weapp-vite/ast'
-import type { SFCDescriptor, SFCScriptBlock } from 'vue/compiler-sfc'
+import type { SFCDescriptor, SFCScriptBlock, SFCTemplateBlock } from 'vue/compiler-sfc'
+import { NodeTypes } from '@vue/compiler-core'
 import { analyzeCompilerScriptsWithNative } from '@weapp-vite/ast'
+import { isBuiltinComponent } from '../../../../auto-import-components/builtin'
+import { RESERVED_VUE_COMPONENT_TAGS } from '../../../../utils/vueTemplateTags'
+import { mayHaveDefaultExport } from './defaultExport'
+
+/** 普通脚本的局部组件与默认导出检查可共享摘要；内置标签不触发额外 native 往返。 */
+export function mayShareNativeOptionsAnalysis(scriptCode: string, template: SFCTemplateBlock | null | undefined) {
+  if (!template?.ast || template.src || !mayHaveDefaultExport(scriptCode)) {
+    return false
+  }
+  // 复用 SFC 已解析的模板 AST，属性与插值中的标签文本不会新增 native 往返。
+  const hasComponentTag = (node: TemplateChildNode): boolean => {
+    if (node.type !== NodeTypes.ELEMENT) {
+      return false
+    }
+    if (!RESERVED_VUE_COMPONENT_TAGS.has(node.tag) && !isBuiltinComponent(node.tag)) {
+      return true
+    }
+    return node.children.some(hasComponentTag)
+  }
+  return template.ast.children.some(hasComponentTag)
+}
 
 function resolveScriptFilename(filename: string, lang?: string | null) {
   const extension = lang === 'tsx' || lang === 'jsx' || lang === 'js' ? lang : 'ts'

@@ -1,7 +1,7 @@
 import type { NativeCompilerScriptAnalysis } from '@weapp-vite/ast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
-import { analyzeNativeScriptBlocks } from './nativeAnalysis'
+import { analyzeNativeScriptBlocks, mayShareNativeOptionsAnalysis } from './nativeAnalysis'
 
 const analyze = vi.hoisted(() => vi.fn())
 vi.mock('@weapp-vite/ast', async original => ({
@@ -17,6 +17,28 @@ const summary: NativeCompilerScriptAnalysis = {
 beforeEach(() => analyze.mockReset())
 
 describe('compiler native batch ownership', () => {
+  it.each([
+    ['export default {}', '<Card />', true],
+    ['export default {}', '<custom-card />', true],
+    ['export default {}', '<view />', false],
+    ['export default {}', '<slot />', false],
+    ['export default {}', '<!-- <Card /> --><view />', false],
+    ['export default {}', '<view title="<Card />" />', false],
+    ['export default {}', '<view>{{ "<Card />" }}</view>', false],
+    ['export default {}', '<view><slot><Card /></slot></view>', true],
+    ['export default {}', undefined, false],
+    ['const title = "value"', '<Card />', false],
+  ] as const)('requires both consumers before considering single-script native analysis: %s / %s', (script, template, expected) => {
+    const { descriptor } = parse(`<script>${script}</script>${template === undefined ? '' : `<template>${template}</template>`}`)
+    expect(mayShareNativeOptionsAnalysis(script, descriptor.template)).toBe(expected)
+  })
+
+  it('keeps external templates and templates without a reusable AST on the existing path', () => {
+    const { descriptor } = parse('<script>export default {}</script><template><Card /></template>')
+    expect(mayShareNativeOptionsAnalysis('export default {}', { ...descriptor.template!, ast: undefined })).toBe(false)
+    expect(mayShareNativeOptionsAnalysis('export default {}', { ...descriptor.template!, src: './card.html' })).toBe(false)
+  })
+
   it('batches transformed scripts with the original macro source in one call', () => {
     const { descriptor } = parse('<script lang="ts">export default {}</script><script setup lang="ts">const n = 1</script>')
     const original = { ...descriptor.scriptSetup!, content: 'defineOptions({ name: "Before" });' }

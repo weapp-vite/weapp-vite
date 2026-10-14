@@ -19,15 +19,17 @@ function successfulReport() {
     ['npmChunkRewriteParity.test.ts', 6],
     ['onPageScroll.test.ts', 11],
     ['vueSfcSignature.fuzz.test.ts', 44],
+    ['reservedPropsParity.test.ts', 27],
+    ['defaultExportParity.test.ts', 13],
   ]
   return {
     success: true,
-    numTotalTestSuites: 12,
-    numPassedTestSuites: 12,
+    numTotalTestSuites: 16,
+    numPassedTestSuites: 16,
     numFailedTestSuites: 0,
     numPendingTestSuites: 0,
-    numTotalTests: 114,
-    numPassedTests: 114,
+    numTotalTests: 154,
+    numPassedTests: 154,
     numFailedTests: 0,
     numPendingTests: 0,
     numTodoTests: 0,
@@ -42,7 +44,7 @@ function successfulReport() {
 describe('actual-addon correctness evidence gate', () => {
   it('accepts complete results and emits only portable file names and counts', () => {
     const summary = verifyNativeReport(successfulReport(), packageRoot)
-    expect(summary.passed).toBe(114)
+    expect(summary.passed).toBe(154)
     expect(summary.skipped).toBe(0)
     expect(summary.suites.map(suite => suite.file)).toEqual([
       'packages/ast-native/test/compilerAnalysis.test.ts',
@@ -51,6 +53,8 @@ describe('actual-addon correctness evidence gate', () => {
       'packages/ast-native/test/npmChunkRewriteParity.test.ts',
       'packages/ast-native/test/onPageScroll.test.ts',
       'packages/ast-native/test/vueSfcSignature.fuzz.test.ts',
+      'packages/ast-native/test/reservedPropsParity.test.ts',
+      'packages/ast-native/test/defaultExportParity.test.ts',
     ])
     expect(JSON.stringify(summary)).not.toContain(packageRoot)
   })

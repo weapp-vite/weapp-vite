@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "requiredExports": [
     "analyzeCompilerScriptsNative",
+    "analyzeNpmChunksNative",
     "analyzeScriptNative",
     "analyzeScriptsNative",
     "collectFeatureFlagsNative",
     "collectOnPageScrollDiagnosticsNative",
     "getVueSfcSignaturePayloadNative",
     "mayContainPlatformApiAccessNative",
-    "mayContainStaticRequireLiteralNative",
-    "analyzeNpmChunksNative"
+    "mayContainStaticRequireLiteralNative"
   ],
   "buildFilters": [
     "@wevu/compiler...",
@@ -39,6 +39,14 @@
     {
       "file": "test/vueSfcSignature.fuzz.test.ts",
       "minimumAssertions": 44
+    },
+    {
+      "file": "test/reservedPropsParity.test.ts",
+      "minimumAssertions": 27
+    },
+    {
+      "file": "test/defaultExportParity.test.ts",
+      "minimumAssertions": 13
     }
   ]
 }
