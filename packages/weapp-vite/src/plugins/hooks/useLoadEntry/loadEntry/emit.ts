@@ -140,6 +140,7 @@ interface EmitEntryOutputOptions {
   emittedWxmlCodeCache?: Map<string, string>
   styleImportsCache?: Map<string, string[]>
   resolvedPageLayoutPlan?: ResolvedPageLayoutPlan | null
+  resolveNativeLayoutAssets?: typeof collectNativeLayoutAssets
   entryCodeSource?: string
   metadataOnly?: boolean
 }
@@ -202,6 +203,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     emittedWxmlCodeCache,
     styleImportsCache,
     resolvedPageLayoutPlan,
+    resolveNativeLayoutAssets = collectNativeLayoutAssets,
     entryCodeSource,
     metadataOnly,
   } = options
@@ -281,7 +283,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       return
     }
 
-    const assets = await collectNativeLayoutAssets(layoutBasePath, configService.platform)
+    const assets = await resolveNativeLayoutAssets(layoutBasePath, configService.platform)
     const emittedLayoutAssets: Set<string> = (pluginCtx as any).__weappViteNativeLayoutAssets ?? ((pluginCtx as any).__weappViteNativeLayoutAssets = new Set<string>())
 
     if (assets.json) {
@@ -484,7 +486,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       // loader 已提交完整（含模板传递边）的依赖；输出阶段不能再次清空或降级为直接依赖。
       if (resolvedPageLayoutPlan === undefined) {
         const dependencies = layoutPlan
-          ? await expandResolvedPageLayoutFiles(layoutPlan.layouts, configService.platform)
+          ? await expandResolvedPageLayoutFiles(layoutPlan.layouts, configService.platform, resolveNativeLayoutAssets)
           : []
         replaceLayoutDependencies(id, new Set(dependencies.map(file => normalizeFsResolvedId(file))))
       }
