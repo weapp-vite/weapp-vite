@@ -8,6 +8,7 @@ import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
 import { readCompilerInput } from '../../../../utils/sourceSnapshot'
 import { readAndParseSfc } from '../../../../utils/vueSfc'
+import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
 import { createCompileVueFileOptions, resolveSfcStylePreprocessOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { resolvePageLayoutPlan } from '../../pageLayout'
@@ -60,6 +61,10 @@ export async function compileVueLikeFile(options: {
   const result = filename.endsWith('.vue')
     ? await compileVueFile(source, filename, compileOptions)
     : await compileJsxFile(source, filename, compileOptions)
+  if (Array.isArray(result.meta?.nativeSlotContextDeps)) {
+    addNormalizedWatchFiles(pluginCtx, result.meta.nativeSlotContextDeps)
+    ctx.moduleGraphService.replaceEntryDependencies(filename, 'script', result.meta.nativeSlotContextDeps)
+  }
   if (resolvedPageLayoutPlan) {
     setVueBundlePageLayoutPlan(result, resolvedPageLayoutPlan)
   }

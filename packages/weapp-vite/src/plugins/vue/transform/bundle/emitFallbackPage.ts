@@ -103,7 +103,7 @@ export async function emitFallbackPageAssets(
     emittedEntryIds?: Set<string>
   },
 ) {
-  const { ctx, pluginCtx, compilationCache, reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache, componentMetaCache } = state
+  const { ctx, pluginCtx, compilationCache, reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache, componentMetaCache, nativeSlotContextCache } = state
   const { configService, scanService } = ctx
   if (!configService || !scanService) {
     return
@@ -114,6 +114,7 @@ export async function emitFallbackPageAssets(
     classStyleRuntimeWarned,
     compileOptionsCache,
     componentMetaCache,
+    nativeSlotContextCache,
     emitResolvedComponentEntries: false,
   }
   const {

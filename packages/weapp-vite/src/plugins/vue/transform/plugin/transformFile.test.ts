@@ -121,6 +121,7 @@ function createBaseOptions(overrides: Record<string, any> = {}) {
     reExportResolutionCache: new Map(),
     compileOptionsCache: new Map(),
     componentMetaCache: new Map(),
+    nativeSlotContextCache: new Map(),
     styleBlocksCache: new Map(),
     styleRefreshTokens: new Map(),
     scopedSlotModules: new Map(),

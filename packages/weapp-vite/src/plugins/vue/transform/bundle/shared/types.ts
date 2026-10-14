@@ -43,6 +43,7 @@ export interface VueBundleState {
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
   componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
+  nativeSlotContextCache?: CompileVueFileResolvedOptions['nativeSlotContextCache']
 }
 
 export interface ClassStyleWxsAsset {
@@ -55,5 +56,6 @@ export interface VueBundleCompileOptionsState {
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
   componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
+  nativeSlotContextCache?: CompileVueFileResolvedOptions['nativeSlotContextCache']
   emitResolvedComponentEntries?: boolean
 }

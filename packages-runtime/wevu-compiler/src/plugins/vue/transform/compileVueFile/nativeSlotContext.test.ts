@@ -4,10 +4,13 @@ import { runInNewContext } from 'node:vm'
 import { baseParse, NodeTypes } from '@vue/compiler-core'
 import {
   WEVU_NATIVE_DECLARATION_ADDRESS_PROP,
+  WEVU_NATIVE_DECLARATION_EVENT,
+  WEVU_NATIVE_DECLARATION_METHOD,
   WEVU_NATIVE_SLOT_CONTEXT_KEY,
   WEVU_NATIVE_SLOT_PARENT_DATASET_ATTR,
   WEVU_NATIVE_SLOT_PARENT_EVENT,
   WEVU_NATIVE_SLOT_PARENT_METHOD,
+  WEVU_SCOPED_SLOT_CREATOR_KEY,
   WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_ATTR,
   WEVU_SLOT_OWNER_ID_KEY,
@@ -34,10 +37,13 @@ const listener = `bind:${WEVU_NATIVE_SLOT_PARENT_EVENT}`
 
 afterEach(() => vi.unstubAllGlobals())
 
-function evaluateOptions(script: string): Record<string, any> {
+function evaluateOptions(script: string, extraGlobals: Record<string, unknown> = {}): Record<string, any> {
   vi.stubGlobal('Component', vi.fn())
   const ast = parseJsLike(script)
-  const globals: Record<string, unknown> = {}
+  const globals: Record<string, unknown> = {
+    ...extraGlobals,
+    [WEVU_SCOPED_SLOT_CREATOR_KEY]: (options: Record<string, unknown>) => { globals.exportedOptions = options },
+  }
   const modules: Record<string, object> = {
     [WE_VU_COMPILER_RUNTIME_MODULE_ID]: runtime,
     [WE_VU_COMPILER_REACTIVITY_MODULE_ID]: reactivity,
@@ -106,17 +112,26 @@ describe('native slot context compilation', () => {
     ['normal identifier', '<script>const options = { setup() { return { label: "leaf" } } }; export default options</script>'],
     ['aliased defineComponent', '<script>import { defineComponent as define } from "wevu"; export default define({ setup() { return { label: "leaf" } } })</script>'],
     ['script setup', '<script setup>const label = "leaf"</script>'],
+    ['reactivity only', '<script setup>import { ref } from "wevu"; const count = ref(0); const label = "leaf"</script>'],
     ['TypeScript setup', '<script setup lang="ts">const label: string = "leaf"</script>'],
     ['merged scripts', '<script>export default { options: { virtualHost: true } }</script><script setup>const label = "leaf"</script>'],
     ['normal script without export', '<script>const label = "leaf"</script>'],
-  ])('marks a slotless leaf through the %s path', async (kind, script) => {
+  ].flatMap(([kind, script]) => [undefined, false, true].map(nativeSlotContext => ({ kind, script, nativeSlotContext }))))('omits context protocol from a pure leaf through $kind: $nativeSlotContext', async ({ kind, script, nativeSlotContext }) => {
     const result = await compileVueFile(`${script}<template><text>Leaf</text></template>`, filename, {
       skipComponentTransform: kind === 'merged scripts',
       sourceMap: false,
-      template: { platform, scopedSlotsRequireProps: true },
+      template: { platform, scopedSlotsRequireProps: true, nativeSlotContext },
     })
     const options = evaluateOptions(result.script!)
-    expect(options[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBe(true)
+    expect(options[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBeUndefined()
+    const register = vi.fn()
+    vi.stubGlobal('Component', register)
+    runtime.createWevuComponent(options)
+    const definition = register.mock.lastCall![0]
+    expect(definition.properties ?? {}).not.toHaveProperty(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)
+    expect(definition.observers ?? {}).not.toHaveProperty(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)
+    expect(definition.methods).not.toHaveProperty(WEVU_NATIVE_DECLARATION_METHOD)
+    expect(definition.methods).not.toHaveProperty(WEVU_NATIVE_SLOT_PARENT_METHOD)
     expect(readElements(result.template!)).toEqual([{ tag: 'text', attrs: {}, children: ['Leaf'] }])
     if (kind !== 'template only' && kind !== 'normal script without export') {
       expect(options.setup({}, { expose() {} }).label).toBe('leaf')
@@ -126,29 +141,52 @@ describe('native slot context compilation', () => {
     }
   })
 
-  it('marks a script-only SFC without requiring template metadata', async () => {
+  it.each([undefined, false, true])('omits context protocol from a pure script-only SFC: %s', async (nativeSlotContext) => {
     const result = await compileVueFile('<script setup>const label = "leaf"</script>', filename, {
       sourceMap: false,
-      template: { platform, scopedSlotsRequireProps: true },
+      template: { platform, scopedSlotsRequireProps: true, nativeSlotContext },
     })
-    expect(evaluateOptions(result.script!)[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBe(true)
+    expect(evaluateOptions(result.script!)[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBeUndefined()
   })
 
   it.each([
+    'export default { setup: globalThis.contextSetup }',
+    'const setup = globalThis.contextSetup; export default { setup }',
+    'import { defineComponent } from "wevu"; export default defineComponent({ setup: globalThis.contextSetup })',
+  ])('retains an opaque setup callback through compilation: %s', async (script) => {
+    const result = await compileVueFile(`<script>${script}</script><template><text>{{ label }}</text></template>`, filename, {
+      sourceMap: false,
+      template: { platform, scopedSlotsRequireProps: true, nativeSlotContext: true },
+    })
+    const options = evaluateOptions(result.script!, { contextSetup: () => ({ label: 'opaque' }) })
+    expect(options[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBe(true)
+    expect(options.setup().label).toBe('opaque')
+  })
+
+  it.each([
+    ['unconfigured', {}, false],
     ['public default', { platform, scopedSlotsRequireProps: false }, false],
     ['augmented default', { platform, scopedSlotsCompiler: 'augmented' }, false],
-    ['low-level auto default', { platform }, true],
-    ['explicit opt-in', { platform, scopedSlotsRequireProps: true }, true],
-    ['opt-in overrides augmented', { platform, scopedSlotsCompiler: 'augmented', scopedSlotsRequireProps: true }, true],
-    ['disabled scoped compiler', { platform, scopedSlotsCompiler: 'off', scopedSlotsRequireProps: true }, true],
-    ['disabled compiler without opt-in', { platform, scopedSlotsCompiler: 'off', scopedSlotsRequireProps: false }, false],
-    ['alipay', { platform: getMiniProgramTemplatePlatform('alipay'), scopedSlotsRequireProps: true }, false],
-    ['tt', { platform: getMiniProgramTemplatePlatform('tt'), scopedSlotsRequireProps: true }, false],
-    ['swan', { platform: getMiniProgramTemplatePlatform('swan'), scopedSlotsRequireProps: true }, false],
-    ['jd', { platform: getMiniProgramTemplatePlatform('jd'), scopedSlotsRequireProps: true }, false],
-    ['xhs', { platform: getMiniProgramTemplatePlatform('xhs'), scopedSlotsRequireProps: true }, false],
-    ['Web WXML adapter', { platform: { ...platform, nativeSlotContext: false }, scopedSlotsRequireProps: true }, false],
-  ] satisfies Array<[string, TemplateCompileOptions, boolean]>)('respects %s for runtime options and native outlets', async (_name, template, enabled) => {
+    ['low-level auto default', { platform }, false],
+    ['native plain slots without opt-in', { platform, scopedSlotsRequireProps: true }, false],
+    ['explicitly disabled', { platform, scopedSlotsRequireProps: true, nativeSlotContext: false }, false],
+    ['truthy string is not opt-in', JSON.parse('{"nativeSlotContext":"true"}') as TemplateCompileOptions, false],
+    ['default platform opt-in', { nativeSlotContext: true }, true],
+    ['low-level auto opt-in', { platform, nativeSlotContext: true }, true],
+    ['explicit opt-in', { platform, scopedSlotsRequireProps: true, nativeSlotContext: true }, true],
+    ['augmented mode excludes native context', { platform, scopedSlotsCompiler: 'augmented', nativeSlotContext: true }, false],
+    ['require-props disabled excludes native context', { platform, scopedSlotsRequireProps: false, nativeSlotContext: true }, false],
+    ['require-props overrides augmented', { platform, scopedSlotsCompiler: 'augmented', scopedSlotsRequireProps: true, nativeSlotContext: true }, true],
+    ['disabled scoped compiler', { platform, scopedSlotsCompiler: 'off', scopedSlotsRequireProps: true, nativeSlotContext: true }, true],
+    ['disabled compiler without opt-in', { platform, scopedSlotsCompiler: 'off', scopedSlotsRequireProps: true }, false],
+    ['disabled compiler without native mode', { platform, scopedSlotsCompiler: 'off', scopedSlotsRequireProps: false, nativeSlotContext: true }, false],
+    ['alipay', { platform: getMiniProgramTemplatePlatform('alipay'), scopedSlotsRequireProps: true, nativeSlotContext: true }, false],
+    ['tt', { platform: getMiniProgramTemplatePlatform('tt'), scopedSlotsRequireProps: true, nativeSlotContext: true }, false],
+    ['swan', { platform: getMiniProgramTemplatePlatform('swan'), scopedSlotsRequireProps: true, nativeSlotContext: true }, false],
+    ['jd', { platform: getMiniProgramTemplatePlatform('jd'), scopedSlotsRequireProps: true, nativeSlotContext: true }, false],
+    ['xhs', { platform: getMiniProgramTemplatePlatform('xhs'), scopedSlotsRequireProps: true, nativeSlotContext: true }, false],
+    ['Web WXML adapter', { platform: { ...platform, nativeSlotContext: false }, scopedSlotsRequireProps: true, nativeSlotContext: true }, false],
+  ] satisfies Array<[string, TemplateCompileOptions, boolean]>)('respects %s for runtime options and native outlets', async (_name, template: TemplateCompileOptions, enabled) => {
     const result = await compileVueFile('<template><slot name="body" /></template>', filename, {
       skipComponentTransform: true,
       sourceMap: false,
@@ -160,6 +198,38 @@ describe('native slot context compilation', () => {
       attrs: { name: 'body', ...(enabled ? { [listener]: WEVU_NATIVE_SLOT_PARENT_METHOD, [WEVU_NATIVE_SLOT_PARENT_DATASET_ATTR]: '' } : {}) },
       children: [],
     }])
+    const plain = compileVueTemplateToWxml('<Provider><Leaf /><slot /></Provider>', filename, {
+      ...template,
+      wevuComponentTags: ['Provider', 'Leaf'],
+    })
+    for (const token of [WEVU_NATIVE_DECLARATION_ADDRESS_PROP, WEVU_NATIVE_DECLARATION_EVENT, WEVU_NATIVE_SLOT_PARENT_DATASET_ATTR, WEVU_NATIVE_SLOT_PARENT_EVENT]) {
+      expect(plain.code.includes(token)).toBe(enabled)
+    }
+    if (template.scopedSlotsCompiler !== 'off') {
+      const scoped = await compileVueFile(`
+<script setup>
+import Provider from './provider.vue'
+import Leaf from './leaf.vue'
+</script>
+<template><Provider v-slot="{ item }"><Leaf /><slot name="body" /><text>{{ item }}</text></Provider></template>`, filename, {
+        sourceMap: false,
+        template,
+        autoUsingComponents: {
+          enabled: true,
+          resolveUsingComponentPath: async source => `/components/${source === './provider.vue' ? 'provider' : 'leaf'}`,
+        },
+      })
+      expect(evaluateOptions(scoped.script!)[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBe(enabled ? true : undefined)
+      expect(scoped.template!.includes(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)).toBe(enabled)
+      const asset = scoped.scopedSlotComponents?.[0]
+      if (!asset) {
+        throw new Error('Expected a scoped declaration component')
+      }
+      expect(evaluateOptions(asset.script)[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBe(enabled ? true : undefined)
+      for (const token of [WEVU_NATIVE_DECLARATION_ADDRESS_PROP, WEVU_NATIVE_DECLARATION_EVENT, WEVU_NATIVE_SLOT_PARENT_DATASET_ATTR, WEVU_NATIVE_SLOT_PARENT_EVENT]) {
+        expect(asset.template.includes(token)).toBe(enabled)
+      }
+    }
   })
 
   it.each(['auto', 'off'] as const)('preserves fallback, slot names and slotted scope in %s mode', (scopedSlotsCompiler) => {
@@ -167,6 +237,7 @@ describe('native slot context compilation', () => {
       platform,
       scopedSlotsCompiler,
       scopedSlotsRequireProps: true,
+      nativeSlotContext: true,
       slottedScopeId: 'data-v-native-s',
     })
     expect(readElements(result.code)).toEqual(['header', 'default'].flatMap(name => [
@@ -192,6 +263,7 @@ describe('native slot context compilation', () => {
       platform,
       scopedSlotsCompiler: 'off',
       scopedSlotsRequireProps: true,
+      nativeSlotContext: true,
     })
     expect(readElements(result.code)).toEqual([{
       tag: 'slot',
@@ -206,6 +278,7 @@ describe('native slot context compilation', () => {
       platform,
       scopedSlotsCompiler: 'augmented',
       scopedSlotsRequireProps: true,
+      nativeSlotContext: true,
       wevuComponentTags: ['Provider', 'Leaf'],
     })
     expect(readElements(result.code)).toMatchObject([{
@@ -223,6 +296,7 @@ describe('native slot context compilation', () => {
     const result = compileVueTemplateToWxml('<Provider v-slot="{ item }"><slot name="body" /><text>{{ item }}</text></Provider>', filename, {
       platform,
       scopedSlotsRequireProps: true,
+      nativeSlotContext: true,
       wevuComponentTags: ['Provider'],
     })
     expect(readElements(result.code)[0]?.attrs[WEVU_SLOT_OWNER_ID_ATTR]).toBe(`{{${WEVU_SLOT_OWNER_ID_KEY} || ''}}`)
@@ -237,10 +311,11 @@ describe('native slot context compilation', () => {
     })
   })
 
-  it('leaves real scoped props on their existing owner-driven path', () => {
+  it.each([undefined, false, true])('leaves real scoped props on their existing owner-driven path: %s', (nativeSlotContext) => {
     const result = compileVueTemplateToWxml('<slot :item="item" />', filename, {
       platform,
       scopedSlotsRequireProps: true,
+      nativeSlotContext,
     })
     const [scoped, fallback] = readElements(result.code)
     expect(scoped?.attrs[WEVU_SLOT_OWNER_ID_ATTR]).toBe(`{{${WEVU_SLOT_OWNER_ID_PROP}}}`)
@@ -278,7 +353,7 @@ ${declaration}
 </script>
 <template><Renamed><ThirdParty /><Renamed /></Renamed></template>`, filename, {
       sourceMap: false,
-      template: { platform, scopedSlotsRequireProps: true },
+      template: { platform, scopedSlotsRequireProps: true, nativeSlotContext: true },
       autoUsingComponents: {
         enabled: true,
         resolveUsingComponentPath: async source => source === './provider.vue' ? '/components/provider' : '/components/native',
@@ -311,7 +386,7 @@ const rows = [{ id: 'a', show: false }, { id: 'b', show: false }]
   <text :title="row.id.toUpperCase()" />
 </template>`, filename, {
       sourceMap: false,
-      template: { platform, scopedSlotsRequireProps: true },
+      template: { platform, scopedSlotsRequireProps: true, nativeSlotContext: true },
       autoUsingComponents: {
         enabled: true,
         resolveUsingComponentPath: async source => `/components/${source === './provider.vue' ? 'provider' : 'leaf'}`,

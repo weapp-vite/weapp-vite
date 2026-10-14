@@ -19,6 +19,7 @@ import {
   WEVU_EXPOSED_KEY,
   WEVU_HOOKS_KEY,
   WEVU_HOST_COMMIT_PROMISE_KEY,
+  WEVU_NATIVE_SLOT_CONTEXT_KEY,
   WEVU_ON_BEFORE_UNMOUNT_HOOK,
   WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY,
   WEVU_PARENT_INSTANCE_KEY,
@@ -1005,6 +1006,7 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
       }
     },
     ...((!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+      && target[WEVU_NATIVE_SLOT_CONTEXT_KEY] === true
       ? [() => releaseNativeDeclaration(target, options?.preserveNativeDeclarationChildren)]
       : []),
     () => runtimeCapabilityRegistry.scopedSlots?.teardown(target),

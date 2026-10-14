@@ -9,6 +9,7 @@ defineAppJson({
     'pages/exported-owner/index',
     'pages/unprojected/index',
     'pages/keyed/index',
+    'pages/plain/index',
   ],
   window: { navigationStyle: 'custom' },
 })

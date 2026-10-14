@@ -90,6 +90,7 @@ describe('e2e suite manifest', () => {
     'ide/github-issues.runtime.issue1015.test.ts',
     'ide/issue-1126-1128.test.ts',
     'ide/issue-1172.test.ts',
+    'ide/issue-1174.native-slot-opt-in.test.ts',
     'ide/issue-1182-production-mount.runtime.test.ts',
     'ide/issue-1185-sibling-entry.runtime.test.ts',
     'ide/issue-997-rebuild.runtime.test.ts',

@@ -21,6 +21,7 @@ export interface ComponentSourceInfo {
   autoImportTagsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
   wevuComponentTags: Set<string>
+  resolvedComponentIds: Map<string, string | undefined>
   miniProgramComponentTags: Set<string>
   componentNameMap: Record<string, string>
 }
@@ -207,6 +208,7 @@ function createComponentSourceInfo(): ComponentSourceInfo {
     autoImportTagsMap: {},
     autoComponentMeta: {},
     wevuComponentTags: new Set(),
+    resolvedComponentIds: new Map(),
     miniProgramComponentTags: new Set(),
     componentNameMap: {},
   }
@@ -219,6 +221,9 @@ function mergeComponentSourceInfo(target: ComponentSourceInfo, source: Component
   Object.assign(target.componentNameMap, source.componentNameMap)
   for (const tag of source.wevuComponentTags) {
     target.wevuComponentTags.add(tag)
+  }
+  for (const [tag, id] of source.resolvedComponentIds) {
+    target.resolvedComponentIds.set(tag, id)
   }
   for (const tag of source.miniProgramComponentTags) {
     target.miniProgramComponentTags.add(tag)
@@ -309,12 +314,16 @@ async function resolveScriptComponentRegistrations(options: {
       result.wevuComponentTags.add(localName)
       result.wevuComponentTags.add(normalizeTemplateTagName(localName))
     }
+    result.resolvedComponentIds.set(localName, resolved?.resolvedId)
+    result.resolvedComponentIds.set(normalizeTemplateTagName(localName), resolved?.resolvedId)
     registerComponentName(result, localName, componentMeta.componentName)
     for (const tag of templateTags) {
       if (isWevuComponent) {
         result.wevuComponentTags.add(tag)
         result.wevuComponentTags.add(normalizeTemplateTagName(tag))
       }
+      result.resolvedComponentIds.set(tag, resolved?.resolvedId)
+      result.resolvedComponentIds.set(normalizeTemplateTagName(tag), resolved?.resolvedId)
       registerComponentName(result, tag, componentMeta.componentName)
     }
     registerMiniProgramComponentTag(
@@ -419,7 +428,8 @@ function getExportDefaultExpression(scriptAst: BabelFile, aliases: Set<string>) 
       if (!t.isIdentifier(id) || !init) {
         return
       }
-      const options = t.isObjectExpression(init) ? init : unwrapDefineComponent(init, aliases)
+      const initializer = unwrapTypeLikeExpression(init)
+      const options = t.isObjectExpression(initializer) ? initializer : unwrapDefineComponent(initializer, aliases)
       if (options) {
         declarations.set(id.name, options)
       }
@@ -588,10 +598,12 @@ async function collectAutoImportWevuComponents(options: {
         result.wevuComponentTags.add(resolved.name)
       }
     }
+    result.resolvedComponentIds.set(tag, resolved.resolvedId)
     registerComponentName(result, tag, componentMeta.componentName)
     const isMiniProgramComponent = componentMeta.isMiniProgramComponent
     registerMiniProgramComponentTag(result, tag, isMiniProgramComponent)
     if (resolved.name) {
+      result.resolvedComponentIds.set(resolved.name, resolved.resolvedId)
       registerComponentName(result, resolved.name, componentMeta.componentName)
       registerMiniProgramComponentTag(result, resolved.name, isMiniProgramComponent)
     }
@@ -647,8 +659,8 @@ export async function collectComponentSourceInfo(options: {
       result: autoImportResult,
     }),
   ])
-  mergeComponentSourceInfo(result, scriptImportResult)
   mergeComponentSourceInfo(result, autoImportResult)
+  mergeComponentSourceInfo(result, scriptImportResult)
 
   return result
 }

@@ -65,6 +65,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
   const compileOptionsCache = new Map<string, CompileVueFileResolvedOptions>()
   const componentMetaCache: NonNullable<CompileVueFileResolvedOptions['componentMetaCache']> = new Map()
+  const nativeSlotContextCache: NonNullable<CompileVueFileResolvedOptions['nativeSlotContextCache']> = new Map()
   const styleBlocksCache = new Map<string, SFCStyleBlock[]>()
   const styleRefreshTokens = new Map<string, number | string>()
   const scopedSlotModules = new Map<string, string>()
@@ -75,6 +76,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     // 编译选项包含 warn/resolve/emitFile，生命周期只能到当前 bundle 结束。
     compileOptionsCache.clear()
     componentMetaCache.clear()
+    nativeSlotContextCache.clear()
     pageMatcher = null
     scanDirtySynced = false
   }
@@ -97,6 +99,8 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
   function invalidateSourceFile(file: string) {
     const normalizedId = normalizeFsResolvedId(file)
     invalidateComponentMetaCache(componentMetaCache, normalizedId)
+    nativeSlotContextCache.delete(file)
+    nativeSlotContextCache.delete(normalizedId)
     invalidateExternalSfcCompilation(normalizedId, compilationCache)
     const isLayout = handleTransformLayoutInvalidation(normalizedId, {
       configService: ctx.configService,
@@ -134,6 +138,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
       emittedScopedSlotChunks.clear()
       compileOptionsCache.clear()
       componentMetaCache.clear()
+      nativeSlotContextCache.clear()
 
       updateAppShell(await resolveAppShellForCompilation(ctx, this))
       await preloadNativeLayoutEntries({
@@ -211,6 +216,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
           reExportResolutionCache,
           compileOptionsCache,
           componentMetaCache,
+          nativeSlotContextCache,
           styleBlocksCache,
           styleRefreshTokens,
           scopedSlotModules,
@@ -237,6 +243,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
         reExportResolutionCache,
         compileOptionsCache,
         componentMetaCache,
+        nativeSlotContextCache,
         classStyleRuntimeWarned,
       })
     },

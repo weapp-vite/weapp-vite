@@ -128,7 +128,26 @@ defineOptions({ behaviors: [i18n.behavior] })
 
 `weapp.vue.template.scopedSlotsRequireProps` 默认 `false`，普通插槽仍使用增强方案。设为 `true` 时，无 scoped props 的内容保留原生 `<slot>`。
 
-微信目标下，编译后的 Wevu Provider 和 Leaf 使用默认 `setupLifecycle: 'attached'` 时，`<Provider><Leaf /></Provider>` 中的 Leaf 会在 setup 前同步关联最近的插槽承载者。Leaf 的 `inject()` 能取得 Provider 提供的原始对象、ref 和方法；点击调用 action 会更新双方共享状态。具名、普通节点包裹、嵌套和多实例场景遵循同一规则，卸载重建不会沿用旧上下文。
+原生插槽上下文协议由独立的 `weapp.vue.template.nativeSlotContext` 控制，默认 `false`。7.5.0 引入的该能力改为显式开启：需要时同时配置 `scopedSlotsRequireProps: true` 与 `nativeSlotContext: true`。未配置或显式关闭时，不生成协议标记、声明属性及插槽事件，也不为普通组件注册协议方法、observer 或清理回调；普通 `provide/inject` 与增强插槽语义不变。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    vue: {
+      template: {
+        scopedSlotsRequireProps: true,
+        nativeSlotContext: true,
+      },
+    },
+  },
+})
+```
+
+开启后，编译器会跳过可静态确认与上下文无关的纯展示组件、仅使用 `ref` 的组件及其纯容器，同时移除对应声明属性。直接或间接使用上下文的组件、插槽转发者，以及拥有相关子组件的中间 Wevu 组件仍参与协议；无法确认源码或动态调用行为时保守保留。判断依据包含组件和组合函数依赖，依赖变化时会重新编译引用方，不能仅按当前文件是否导入 `provide/inject` 裁剪。
+
+显式开启后，微信目标下编译的 Wevu Provider 和 Leaf 使用默认 `setupLifecycle: 'attached'` 时，`<Provider><Leaf /></Provider>` 中的 Leaf 会在 setup 前同步关联最近的插槽承载者。Leaf 的 `inject()` 能取得 Provider 提供的原始对象、ref 和方法；点击调用 action 会更新双方共享状态。具名、普通节点包裹、嵌套和多实例场景遵循同一规则，卸载重建不会沿用旧上下文。
 
 这条协议不新增包装节点，不复制注入值，不修改原生 `Component.export` / `selectOwnerComponent()`。显式 `setupLifecycle: 'created'` 或 attached 前的公开实例恢复仍按原时机执行 setup，不提供该保证；未经 Wevu 编译的原生/第三方组件也不自动成为注入承载者。
 

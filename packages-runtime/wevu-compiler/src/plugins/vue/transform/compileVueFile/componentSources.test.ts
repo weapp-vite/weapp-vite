@@ -1,3 +1,4 @@
+import { WEVU_NATIVE_DECLARATION_ADDRESS_PROP, WEVU_NATIVE_SLOT_CONTEXT_KEY } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
 import { collectComponentSourceInfo, collectTemplateComponentNames } from './componentSources'
@@ -105,6 +106,35 @@ console.log(TButton)
     expect(result.script).toContain('console.log(TButton)')
     expect(warnings).toContainEqual(expect.stringContaining('usingComponents'))
     expect(warnings).toContainEqual(expect.stringContaining('native/button'))
+  })
+
+  it.each([true, false])('follows explicit component precedence for native participation: %s', async (contextInExplicitImport) => {
+    const pure = '<template><text>pure</text></template>'
+    const consumer = '<script setup>import { inject } from "wevu"; inject("token")</script><template><text>consumer</text></template>'
+    const files: Record<string, string> = {
+      '/project/Explicit.vue': contextInExplicitImport ? consumer : pure,
+      '/project/Automatic.vue': contextInExplicitImport ? pure : consumer,
+    }
+    const result = await compileVueFile('<script setup>import Child from "./Explicit.vue"</script><template><Child /></template>', '/project/Parent.vue', {
+      sourceMap: false,
+      template: { nativeSlotContext: true, scopedSlotsRequireProps: true },
+      sfcSrc: { readFile: async id => files[id]! },
+      autoUsingComponents: {
+        enabled: true,
+        warn: () => {},
+        resolveUsingComponentPath: async () => ({ from: '/components/explicit', resolvedId: '/project/Explicit.vue', sourceType: 'wevu-sfc' }),
+      },
+      autoImportTags: {
+        enabled: true,
+        resolveUsingComponent: async () => ({ name: 'child', from: '/components/automatic', resolvedId: '/project/Automatic.vue', sourceType: 'wevu-sfc' }),
+      },
+    })
+    const config: unknown = JSON.parse(result.config!)
+    expect(config).toHaveProperty('usingComponents.child', '/components/explicit')
+    expect(result.script!.includes(WEVU_NATIVE_SLOT_CONTEXT_KEY)).toBe(contextInExplicitImport)
+    expect(result.template!.includes(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)).toBe(contextInExplicitImport)
+    expect(result.meta?.nativeSlotContextDeps).toContain('/project/Explicit.vue')
+    expect(result.meta?.nativeSlotContextDeps).not.toContain('/project/Automatic.vue')
   })
 
   it('rejects malformed templates through the full compiler instead of accepting recovered tags', async () => {

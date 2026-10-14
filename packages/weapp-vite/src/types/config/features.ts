@@ -351,6 +351,8 @@ export interface WeappVueTemplateConfig {
   htmlTagToWxmlTagClass?: boolean
   scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
   scopedSlotsRequireProps?: boolean
+  /** 是否启用微信原生插槽的 provide/inject 上下文协议，默认关闭；需同时开启 scopedSlotsRequireProps。 */
+  nativeSlotContext?: boolean
   slotSingleRootNoWrapper?: boolean
   slotFallbackWrapperStrategy?: 'view' | 'virtual-host'
   slotFallbackWrapper?: string | {

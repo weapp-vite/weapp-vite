@@ -33,6 +33,7 @@ export async function transformVueLikeFile(options: {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   compileOptionsCache: Map<string, CompileVueFileResolvedOptions>
   componentMetaCache: NonNullable<CompileVueFileResolvedOptions['componentMetaCache']>
+  nativeSlotContextCache: NonNullable<CompileVueFileResolvedOptions['nativeSlotContextCache']>
   styleBlocksCache: VueStyleBlocksCache
   styleRefreshTokens: Map<string, number | string>
   scopedSlotModules: Map<string, string>
@@ -56,6 +57,7 @@ export async function transformVueLikeFile(options: {
     reExportResolutionCache,
     compileOptionsCache,
     componentMetaCache,
+    nativeSlotContextCache,
     styleBlocksCache,
     styleRefreshTokens,
     scopedSlotModules,
@@ -209,6 +211,7 @@ export async function transformVueLikeFile(options: {
         classStyleRuntimeWarned,
         compileOptionsCache,
         componentMetaCache,
+        nativeSlotContextCache,
       },
       resolvedPageLayoutPlan,
       appShell,
@@ -216,7 +219,7 @@ export async function transformVueLikeFile(options: {
 
     const jsonOnlyResult = await measureVueHmrStage('refreshJsonConfig', 'vueCompileMs', async () => {
       return await tryRefreshJsonOnlyVueCompilation({
-        cachedResult: cachedCompilation?.result,
+        cachedResult: cachedCompilation?.source === undefined ? undefined : cachedCompilation.result,
         compileOptions,
         dirtyEntryId,
         dirtyReasonSummary: ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary,

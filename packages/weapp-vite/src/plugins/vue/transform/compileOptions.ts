@@ -1,5 +1,6 @@
 import type { CompilerAppShell, CompilerPageLayoutPlan, CompileVueFileOptions } from 'wevu/compiler'
 import type { CompilerContext } from '../../../context'
+import type { AutoImportMatch } from '../../../runtime/autoImportPlugin'
 import type { MpPlatform } from '../../../types'
 import type { ResolvedAppShell } from './appShell'
 import type { ResolvedPageLayoutPlan } from './pageLayout'
@@ -33,6 +34,7 @@ interface CompileOptionsContext {
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
   componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
+  nativeSlotContextCache?: CompileVueFileResolvedOptions['nativeSlotContextCache']
   emitResolvedComponentEntries?: boolean
 }
 
@@ -151,7 +153,7 @@ function buildCompileVueFileOptions(
 ): CompileVueFileResolvedOptions {
   const importerBaseName = removeExtensionDeep(vuePath)
   const autoImportResolveCache = new Map<string, {
-    match: ReturnType<NonNullable<CompilerContext['autoImportService']>['resolve']>
+    match: AutoImportMatch | undefined
     version: number
   }>()
   const resolveUsingComponentPath = createUsingComponentPathResolver(pluginCtx, configService, state.reExportResolutionCache)
@@ -181,6 +183,7 @@ function buildCompileVueFileOptions(
   const scopedSlotsCompiler = configService.weappViteConfig?.vue?.template?.scopedSlotsCompiler ?? 'auto'
   const scopedSlotsRequirePropsConfig = configService.weappViteConfig?.vue?.template?.scopedSlotsRequireProps
   const scopedSlotsRequireProps = scopedSlotsRequirePropsConfig ?? false
+  const nativeSlotContext = configService.weappViteConfig?.vue?.template?.nativeSlotContext === true
   const slotSingleRootNoWrapper = configService.weappViteConfig?.vue?.template?.slotSingleRootNoWrapper ?? false
   const slotFallbackWrapper = configService.weappViteConfig?.vue?.template?.slotFallbackWrapper
   const slotFallbackWrapperStrategy = configService.weappViteConfig?.vue?.template?.slotFallbackWrapperStrategy
@@ -227,7 +230,7 @@ function buildCompileVueFileOptions(
     configured: configService.weappViteConfig?.hmr?.runtime,
     compileHotReLoad: configService.projectPrivateConfig?.setting?.compileHotReLoad,
   }) === 'stateful-experimental'
-  async function resolvePotentialVueSfcEntryId(candidate: string | undefined) {
+  async function resolvePotentialVueSfcEntryId(candidate: string | undefined, importerFilename: string) {
     const trimmed = candidate?.trim()
     if (!trimmed) {
       return undefined
@@ -237,7 +240,7 @@ function buildCompileVueFileOptions(
     const localCandidate = path.isAbsolute(trimmed)
       ? trimmed
       : trimmed.startsWith('.')
-        ? path.resolve(path.dirname(vuePath), trimmed)
+        ? path.resolve(path.dirname(importerFilename), trimmed)
         : !trimmed.includes(':') && !trimmed.startsWith('@')
             ? path.resolve(configService.absoluteSrcRoot, trimmed)
             : undefined
@@ -260,7 +263,7 @@ function buildCompileVueFileOptions(
       : [trimmed, `${trimmed}.vue`, `${trimmed}/index.vue`]
 
     for (const resolveCandidate of resolveCandidates) {
-      const resolved = await pluginCtx.resolve?.(resolveCandidate, vuePath)
+      const resolved = await pluginCtx.resolve?.(resolveCandidate, importerFilename)
       const normalized = resolved?.id ? normalizeFsResolvedId(resolved.id) : undefined
       if (!normalized || isSkippableResolvedId(normalized)) {
         continue
@@ -279,7 +282,10 @@ function buildCompileVueFileOptions(
     return undefined
   }
 
-  async function resolveAutoImportComponentSourceType(match: NonNullable<ReturnType<NonNullable<CompilerContext['autoImportService']>['resolve']>>) {
+  async function resolveAutoImportComponentSourceType(
+    match: AutoImportMatch,
+    importerFilename: string,
+  ) {
     if (match.kind === 'local') {
       const resolvedId = match.entry.templatePath
       const sourceType: AutoImportComponentSourceType = hasVueExtension(resolvedId) ? 'wevu-sfc' : 'native'
@@ -291,7 +297,7 @@ function buildCompileVueFileOptions(
 
     const explicitSourceType = (match.value as { sourceType?: AutoImportComponentSourceType }).sourceType
     const explicitResolvedId = (match.value as { resolvedId?: string }).resolvedId
-    const resolvedExplicitVueId = await resolvePotentialVueSfcEntryId(explicitResolvedId)
+    const resolvedExplicitVueId = await resolvePotentialVueSfcEntryId(explicitResolvedId, importerFilename)
     if (explicitSourceType || resolvedExplicitVueId || hasVueExtension(explicitResolvedId) || hasVueExtension(match.value.from)) {
       return {
         resolvedId: resolvedExplicitVueId ?? explicitResolvedId,
@@ -304,7 +310,7 @@ function buildCompileVueFileOptions(
       localSourceBase = path.join(configService.absoluteSrcRoot, match.value.from.slice(1))
     }
     else if (match.value.from.startsWith('.')) {
-      localSourceBase = path.resolve(path.dirname(importerBaseName), match.value.from)
+      localSourceBase = path.resolve(path.dirname(importerFilename), match.value.from)
     }
 
     if (!localSourceBase) {
@@ -343,7 +349,7 @@ function buildCompileVueFileOptions(
     autoImportTags: {
       enabled: true,
       warn: (message: string) => logger.warn(message),
-      resolveUsingComponent: async (tag: string) => {
+      resolveUsingComponent: async (tag: string, importerFilename = vuePath) => {
         const autoImportService = ctx.autoImportService
         if (!autoImportService) {
           return undefined
@@ -352,12 +358,13 @@ function buildCompileVueFileOptions(
         const version = typeof autoImportService.getVersion === 'function'
           ? autoImportService.getVersion()
           : 0
-        const cached = autoImportResolveCache.get(tag)
+        const cacheKey = `${importerFilename}\0${tag}`
+        const cached = autoImportResolveCache.get(cacheKey)
         const match = cached && cached.version === version
           ? cached.match
-          : autoImportService.resolve(tag, importerBaseName)
+          : autoImportService.resolve(tag, importerFilename === vuePath ? importerBaseName : removeExtensionDeep(importerFilename))
         if (!cached || cached.version !== version) {
-          autoImportResolveCache.set(tag, {
+          autoImportResolveCache.set(cacheKey, {
             match,
             version,
           })
@@ -365,7 +372,7 @@ function buildCompileVueFileOptions(
         if (!match?.value) {
           return undefined
         }
-        const sourceInfo = await resolveAutoImportComponentSourceType(match)
+        const sourceInfo = await resolveAutoImportComponentSourceType(match, importerFilename)
         const stableFrom = sourceInfo.sourceType === 'wevu-sfc'
           ? usingComponentFromResolvedFile(sourceInfo.resolvedId, configService)
           : undefined
@@ -388,6 +395,7 @@ function buildCompileVueFileOptions(
       htmlTagToWxmlTagClass,
       scopedSlotsCompiler,
       scopedSlotsRequireProps,
+      nativeSlotContext,
       slotSingleRootNoWrapper,
       slotFallbackWrapper,
       slotFallbackWrapperStrategy,
@@ -415,6 +423,7 @@ function buildCompileVueFileOptions(
     minify: wevuMinify,
     sourceMap,
     componentMetaCache: state.componentMetaCache,
+    nativeSlotContextCache: state.nativeSlotContextCache,
   } as const
 }
 

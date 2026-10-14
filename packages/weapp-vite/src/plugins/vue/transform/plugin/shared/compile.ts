@@ -217,6 +217,10 @@ export async function finalizeTransformCompiledResult(options: {
   const jsxDependencies = result.meta?.jsxDependencies ?? []
   addNormalizedWatchFiles(pluginCtx, jsxDependencies)
   ctx.moduleGraphService.replaceEntryDependencies(filename, 'jsx', jsxDependencies)
+  if (Array.isArray(result.meta?.nativeSlotContextDeps)) {
+    addNormalizedWatchFiles(pluginCtx, result.meta.nativeSlotContextDeps)
+    ctx.moduleGraphService.replaceEntryDependencies(filename, 'script', result.meta.nativeSlotContextDeps)
+  }
 
   await finalizeTransformEntryScript({
     result: transformResult,
