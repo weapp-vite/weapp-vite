@@ -1,4 +1,5 @@
 import type { HmrProfileJsonSample } from '../../packages/weapp-vite/src/analyze/hmr'
+import type { CollectorStop } from '../performanceGate/collectorStop'
 import type { GateScenario } from '../performanceGate/evaluate'
 import path from 'node:path'
 import { attributeHmrProfile } from '../../packages/weapp-vite/src/analyze/hmr/attribution'
@@ -23,7 +24,7 @@ export interface AcceptanceSample {
   phases: Record<string, number | null>
   outputChanges: { added: string[], changed: string[], removed: string[], changedBytes: number }
 }
-export interface AcceptanceRun { round: number, side: HmrSide, input: string, markerSeed: string, inputDigest?: string, samples: AcceptanceSample[], error?: string }
+export interface AcceptanceRun { round: number, side: HmrSide, input: string, markerSeed: string, inputDigest?: string, samples: AcceptanceSample[], error?: string, stop?: CollectorStop, retainedInput?: { checkout: HmrSide, relativePath: string } }
 
 export function parseAcceptanceArgs(args: string[]): AcceptanceOptions {
   const values = new Map<string, string>()
@@ -136,7 +137,7 @@ export function pairAcceptanceRuns(runs: AcceptanceRun[], inputs: readonly HmrIn
       const sides = (['baseline', 'candidate'] as const).map(side => runs.filter(run => run.input === input.id && run.round === round && run.side === side))
       const [before, after] = sides.map(side => side[0])
       const [a, b] = [before, after].map(run => run?.samples.filter(sample => sample.id === id) ?? [])
-      if (sides.some(side => side.length !== 1) || before?.error || after?.error || !before?.inputDigest || before.inputDigest !== after?.inputDigest || before?.markerSeed !== after?.markerSeed || a!.length !== 1 || b!.length !== 1 || a![0]!.inputSha256 !== b![0]!.inputSha256) {
+      if (sides.some(side => side.length !== 1) || before?.error || after?.error || before?.stop || after?.stop || !before?.inputDigest || before.inputDigest !== after?.inputDigest || before?.markerSeed !== after?.markerSeed || a!.length !== 1 || b!.length !== 1 || a![0]!.inputSha256 !== b![0]!.inputSha256) {
         error = 'Missing, duplicate or unequal input/marker evidence'
         continue
       }

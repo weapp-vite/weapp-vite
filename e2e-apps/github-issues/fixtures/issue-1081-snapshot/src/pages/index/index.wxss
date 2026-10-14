@@ -1,0 +1,3 @@
+.snapshot-page {
+  display: block;
+}

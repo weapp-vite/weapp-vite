@@ -1,4 +1,4 @@
-import type { AnalyzeSubpackagesResult } from '../analyze/subpackages'
+import type { AnalyzeSubpackagesResult } from '../analyze/subpackages/types'
 import type { DashboardAnalyzeSnapshot } from './index'
 import { createHash } from 'node:crypto'
 import { dashboardAnalyzePageRequestSchema } from './schema'

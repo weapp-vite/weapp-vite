@@ -1,4 +1,5 @@
 import type { AuditSample, Checkout, HmrProfileCapability } from './collect'
+import type { CollectorStop } from './collectorStop'
 import type { GateScenario, GateSummary } from './evaluate'
 import os from 'node:os'
 import process from 'node:process'
@@ -8,6 +9,7 @@ import { isOutputEvidence } from './outputEvidence'
 export interface AuditBatch {
   samples: Array<{ round: number, side: 'baseline' | 'optimized', values: AuditSample[], profileCapability?: HmrProfileCapability }>
   errors: string[]
+  stop?: CollectorStop
 }
 
 /** 严格按轮次与场景配对，不因一侧缺失而缩小比较集合。 */
@@ -37,7 +39,7 @@ export function pairBatch(batch: AuditBatch, expected: string[] = []): GateScena
 /** 单个类别失败不抹去其他类别的完整证据，但始终阻止整个验收通过。 */
 export function evaluateAuditGate(primary: AuditBatch, confirmation?: AuditBatch, expected: string[] = []): GateSummary {
   const gate = evaluateGate(pairBatch(primary, expected), confirmation ? pairBatch(confirmation) : [])
-  if (primary.errors.length || confirmation?.errors.length) {
+  if (primary.errors.length || confirmation?.errors.length || primary.stop || confirmation?.stop) {
     gate.status = gate.status === 'regression' ? 'regression' : 'incomplete'
   }
   return gate

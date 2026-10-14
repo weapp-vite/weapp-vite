@@ -12,6 +12,7 @@ const fixture = vi.hoisted(() => ({
   root: '',
   project: '',
   completed: false,
+  output: '',
 }))
 
 vi.mock('node:fs/promises', async (original) => {
@@ -45,7 +46,7 @@ vi.mock('../e2e/utils/dev-process', () => ({
     return {
       waitForOutput: fixture.waitForOutput,
       waitFor: async (task: Promise<unknown>) => task,
-      getOutput: () => '',
+      getOutput: () => fixture.output,
       stop: fixture.stop,
     }
   },
@@ -92,6 +93,7 @@ beforeEach(async () => {
   fixture.removeFailure = undefined
   fixture.errors = []
   fixture.events = []
+  fixture.output = ''
   fixture.waitForOutput.mockImplementation(async () => {
     const output = path.join(fixture.project, 'dist/pages/bench-hmr-auto-import/index.wxml')
     await filesystem.mkdir(path.dirname(output), { recursive: true })
@@ -110,6 +112,7 @@ beforeEach(async () => {
   vi.stubEnv('AUTO_IMPORT_HMR_DIAGNOSTIC', '0')
   vi.stubEnv('AUTO_IMPORT_HMR_DIAGNOSTIC_PROFILE', '0')
   vi.stubEnv('AUTO_IMPORT_HMR_DIAGNOSTIC_PAIR', '0')
+  vi.stubEnv('WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE', '0')
 })
 
 afterEach(async () => {
@@ -158,6 +161,25 @@ describe('auto-import HMR benchmark cleanup', () => {
     expect(fixture.errors).toEqual([stopError])
     expect(await readFailureEvidence()).toMatchObject({ name: 'Error', message: stopError.message })
     await expect(filesystem.readFile(path.join(fixture.project, 'dist/pages/bench-hmr-auto-import/index.wxml'), 'utf8')).resolves.toBe('<view />')
+    await expect(filesystem.access(path.join(fixture.root, 'reports/report.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('retains only private snapshot trace records when sampling and process cleanup fail', async () => {
+    const bodyError = new Error('initial output unavailable')
+    const stopError = new Error('process ownership unconfirmed')
+    const trace = JSON.stringify({ stage: 'preparation-stage', revision: 2, preparation: 'snapshot-build', elapsedMs: 3 })
+    fixture.output = `unrelated CLI output\r\n[stateful-hmr-snapshot] ${trace}\r\n`
+    fixture.waitForOutput.mockRejectedValue(bodyError)
+    fixture.stop.mockRejectedValue(stopError)
+    vi.stubEnv('AUTO_IMPORT_HMR_DIAGNOSTIC', '1')
+    vi.stubEnv('AUTO_IMPORT_HMR_DIAGNOSTIC_PROFILE', '1')
+    vi.stubEnv('WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE', '1')
+    await runBenchmark()
+
+    expect(fixture.errors[0]).toMatchObject({ errors: [bodyError, stopError], cause: bodyError })
+    expect(await filesystem.readFile(path.join(fixture.root, 'reports/snapshot-trace-baseline-1-0.jsonl'), 'utf8')).toBe(`${trace}\n`)
+    expect(fixture.stop).toHaveBeenCalledOnce()
+    expect(fixture.events).not.toContain('fixture-remove')
     await expect(filesystem.access(path.join(fixture.root, 'reports/report.json'))).rejects.toMatchObject({ code: 'ENOENT' })
   })
 

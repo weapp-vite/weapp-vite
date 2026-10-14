@@ -1,0 +1,14 @@
+{
+  "appid": "wxb3d842a4a7e3440d",
+  "projectname": "issue-1182-production-mount",
+  "setting": {
+    "urlCheck": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        { "name": "Production mount identity", "pathName": "pages/index/index", "query": "", "launchMode": "default" }
+      ]
+    }
+  }
+}

@@ -2,7 +2,7 @@ import { isSmokeSamplingContract, policy, shards, smokeMetrics } from './contrac
 
 /** 冒烟只证明当前提交的产物和生命周期完整，不接受任何完整门禁结论。 */
 export function verifySmoke(report, headSha) {
-  if (report.schemaVersion !== 2 || report.purpose !== 'smoke' || report.headSha !== headSha || report.driverSha !== headSha || report.baselineSha !== policy.baselineSha || !isSmokeSamplingContract(report.samplingContract) || report.status !== 'passed' || report.fullAcceptance !== 'not-run' || report.gate !== undefined || report.errors?.length !== 0) {
+  if (report.schemaVersion !== 2 || report.purpose !== 'smoke' || report.headSha !== headSha || report.driverSha !== headSha || report.baselineSha !== policy.baselineSha || !isSmokeSamplingContract(report.samplingContract) || report.status !== 'passed' || report.fullAcceptance !== 'not-run' || report.gate !== undefined || report.errors?.length !== 0 || report.stop !== undefined) {
     throw new Error('Invalid smoke report identity or conclusion')
   }
   if (report.executionPlan?.headOnly !== true || report.executionPlan.confirmation?.length !== 0 || JSON.stringify(report.executionPlan.metrics) !== JSON.stringify(shards.flatMap(smokeMetrics)) || report.stages?.length !== shards.length) {

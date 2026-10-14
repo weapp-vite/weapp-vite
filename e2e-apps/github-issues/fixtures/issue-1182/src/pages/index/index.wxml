@@ -1,0 +1,8 @@
+<view>
+  <text id="mount-value">value:{{value}}</text>
+  <text id="mount-setups">setups:{{setups}}</text>
+  <text id="mount-identity">{{identity}}</text>
+  <button id="mount-increment" bindtap="incrementOriginal">Original ref</button>
+  <button id="mount-replace" bindtap="replaceMount">Replace app</button>
+  <button id="mount-replacement" bindtap="incrementReplacement">Replacement ref</button>
+</view>

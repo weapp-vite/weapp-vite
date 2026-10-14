@@ -1,4 +1,5 @@
 import type { ManagedWechatHostIdentity } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/types'
+import { windowsLegacyProcessStarted } from './windowsKernelQuery'
 
 export interface ProcessEntry {
   pid: number
@@ -19,7 +20,12 @@ export class UnconfirmedDevProcessTreeError extends Error {
 
   constructor(readonly candidates: readonly DevProcessCandidate[], options?: ErrorOptions) {
     super('Dev process identity could not be verified; descendant ownership remains unconfirmed.', options)
-    this.pids = candidates.map(candidate => candidate.pid)
+    // 树内部使用内核 100ns；恢复候选与后续身份读回共用旧身份格式，不能把精度差当作退出。
+    this.candidates = candidates.map(candidate => ({
+      ...candidate,
+      ...(candidate.started ? { started: windowsLegacyProcessStarted(candidate.started) ?? candidate.started } : {}),
+    }))
+    this.pids = this.candidates.map(candidate => candidate.pid)
   }
 }
 

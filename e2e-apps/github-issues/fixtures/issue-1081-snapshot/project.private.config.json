@@ -1,0 +1,21 @@
+{
+  "libVersion": "3.17.3",
+  "setting": {
+    "compileHotReLoad": true,
+    "urlCheck": false,
+    "es6": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "Tailwind snapshot",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}

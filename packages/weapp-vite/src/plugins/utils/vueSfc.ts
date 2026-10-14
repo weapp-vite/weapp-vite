@@ -38,7 +38,7 @@ export function createSfcResolveSrcOptions(
           readFile: async (id: string, options?: { checkMtime?: boolean }) => {
             const source = snapshot ? await readCompilerInput(configService, id) : await readFile(id, options)
             if (!snapshot) {
-              host?.captureNative(id, source)
+              host?.captureRaw(id, source)
             }
             return source
           },
