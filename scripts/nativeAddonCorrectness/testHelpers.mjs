@@ -1,0 +1,65 @@
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+import { baselineManifest, manifestPath } from './manifest.mjs'
+
+export function withSuiteFloor(manifest, file, minimumAssertions) {
+  const value = structuredClone(manifest)
+  const suite = value.suites.find(suite => suite.file === file)
+  if (suite) {
+    suite.minimumAssertions = Math.max(suite.minimumAssertions, minimumAssertions)
+  }
+  else {
+    value.suites.push({ file, minimumAssertions })
+  }
+  return value
+}
+
+export function extendedManifest() {
+  const value = structuredClone(baselineManifest)
+  value.requiredExports.push('analyzeNpmChunksNative')
+  value.buildFilters.push('weapp-vite...')
+  value.suites.push({ file: 'test/npmChunksParity.test.ts', minimumAssertions: 13 })
+  value.suites.push({ file: 'test/npmChunkRewriteParity.test.ts', minimumAssertions: 6 })
+  return value
+}
+
+export const minimumAssertionCount = manifest => manifest.suites.reduce((sum, suite) => sum + suite.minimumAssertions, 0)
+
+export async function candidateFixture(manifest = extendedManifest()) {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'native-correctness-'))
+  const files = [
+    [manifestPath, JSON.stringify(manifest)],
+    ['packages/ast-native/index.js', 'export const fixture = true\n'],
+    ['packages/ast-native/fixture.node', 'fixture binary identity only; never loaded as an addon\n'],
+    ['packages-runtime/wevu-compiler/package.json', '{"name":"@wevu/compiler"}'],
+    ['packages/weapp-vite/package.json', '{"name":"weapp-vite"}'],
+    ...manifest.suites.map(suite => [`packages/ast-native/${suite.file}`, '// correctness fixture\n']),
+  ]
+  for (const [file, source] of files) {
+    await mkdir(path.dirname(path.join(root, file)), { recursive: true })
+    await writeFile(path.join(root, file), source)
+  }
+  return { root, directory: path.join(root, '.evidence'), manifest }
+}
+
+export function completeReport(root, manifest) {
+  const count = minimumAssertionCount(manifest)
+  return {
+    success: true,
+    numTotalTestSuites: manifest.suites.length,
+    numPassedTestSuites: manifest.suites.length,
+    numFailedTestSuites: 0,
+    numPendingTestSuites: 0,
+    numTotalTests: count,
+    numPassedTests: count,
+    numFailedTests: 0,
+    numPendingTests: 0,
+    numTodoTests: 0,
+    testResults: manifest.suites.map(suite => ({
+      name: path.join(root, 'packages/ast-native', suite.file),
+      status: 'passed',
+      assertionResults: Array.from({ length: suite.minimumAssertions }, () => ({ status: 'passed', failureMessages: [] })),
+    })),
+  }
+}

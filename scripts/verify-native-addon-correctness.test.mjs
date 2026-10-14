@@ -2,9 +2,12 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
+import { baselineManifest } from './nativeAddonCorrectness/manifest.mjs'
+import { completeReport } from './nativeAddonCorrectness/testHelpers.mjs'
 import { verifyNativeExports, verifyNativeReport } from './verify-native-addon-correctness.mjs'
 
-const packageRoot = path.resolve('fixture-native-package')
+const fixtureRoot = path.resolve('fixture-native-repository')
+const packageRoot = path.join(fixtureRoot, 'packages/ast-native')
 
 async function addonJob() {
   const source = await readFile(new URL('../.github/workflows/native-addon-correctness.yml', import.meta.url), 'utf8')
@@ -12,30 +15,7 @@ async function addonJob() {
 }
 
 function successfulReport() {
-  const counts = [
-    ['compilerAnalysis.test.ts', 33],
-    ['compilerAmbientParity.test.ts', 7],
-    ['onPageScroll.test.ts', 11],
-    ['vueSfcSignature.fuzz.test.ts', 44],
-    ['reservedPropsParity.test.ts', 27],
-  ]
-  return {
-    success: true,
-    numTotalTestSuites: 10,
-    numPassedTestSuites: 10,
-    numFailedTestSuites: 0,
-    numPendingTestSuites: 0,
-    numTotalTests: 122,
-    numPassedTests: 122,
-    numFailedTests: 0,
-    numPendingTests: 0,
-    numTodoTests: 0,
-    testResults: counts.map(([name, count]) => ({
-      name: path.join(packageRoot, 'test', name),
-      status: 'passed',
-      assertionResults: Array.from({ length: count }, () => ({ status: 'passed', failureMessages: [] })),
-    })),
-  }
+  return completeReport(fixtureRoot, baselineManifest)
 }
 
 describe('actual-addon correctness evidence gate', () => {
@@ -119,10 +99,10 @@ describe('actual-addon correctness evidence gate', () => {
     }
   })
 
-  it('rejects the former 115-test report that omits ambient compiler parity', () => {
+  it('rejects a report that omits ambient compiler parity', () => {
     const report = successfulReport()
     report.testResults.splice(1, 1)
-    report.numTotalTestSuites = report.numPassedTestSuites = 8
+    report.numTotalTestSuites = report.numPassedTestSuites = 4
     report.numTotalTests = report.numPassedTests = 115
     expect(() => verifyNativeReport(report, packageRoot)).toThrow('omits suites or assertions')
   })
@@ -134,10 +114,10 @@ describe('actual-addon correctness evidence gate', () => {
     expect(() => verifyNativeReport(report, packageRoot)).toThrow('failed, empty, or partial')
   })
 
-  it('rejects the 95-test parent report without production reserved props parity', () => {
+  it('rejects the former 95-test report without production reserved props parity', () => {
     const report = successfulReport()
     report.testResults.pop()
-    report.numTotalTestSuites = report.numPassedTestSuites = 8
+    report.numTotalTestSuites = report.numPassedTestSuites = 4
     report.numTotalTests = report.numPassedTests = 95
     expect(() => verifyNativeReport(report, packageRoot)).toThrow('omits suites or assertions')
   })
@@ -176,26 +156,40 @@ describe('actual-addon CI execution contract', () => {
   it('requires the addon before the native tests and validates complete evidence even after test failure', async () => {
     const { steps } = await addonJob()
     const preflightIndex = steps.findIndex(step => step.run?.includes('verify-native-addon-correctness.mjs binding '))
-    const testsIndex = steps.findIndex(step => step.run?.includes('--config native.vitest.config.ts'))
+    const testsIndex = steps.findIndex(step => step.run?.includes('verify-native-addon-correctness.mjs run '))
     const gateIndex = steps.findIndex(step => step.run?.includes('verify-native-addon-correctness.mjs report '))
     expect(preflightIndex).toBeGreaterThanOrEqual(0)
     expect(testsIndex).toBeGreaterThan(preflightIndex)
     expect(gateIndex).toBeGreaterThan(testsIndex)
     const tests = steps[testsIndex]
-    expect(tests['working-directory']).toBe('packages/ast-native')
-    for (const file of ['compilerAnalysis.test.ts', 'compilerAmbientParity.test.ts', 'onPageScroll.test.ts', 'vueSfcSignature.fuzz.test.ts', 'reservedPropsParity.test.ts']) {
-      expect(tests.run).toContain(`test/${file}`)
-    }
-    expect(tests.run).toContain('--reporter=json')
-    expect(tests.run).toContain('--outputFile=../../.tmp/native-addon-correctness/raw-vitest.json')
+    expect(tests.run).toBe('node .tmp/pr-driver/scripts/verify-native-addon-correctness.mjs run .tmp/native-addon-correctness')
     expect(tests.run).not.toContain('--passWithNoTests')
     expect(steps[gateIndex].if).toBe('always()')
     const selfTest = steps.find(step => step.run?.includes('scripts/verify-native-addon-correctness.test.mjs'))
     expect(selfTest.run).toContain('--config scripts/vitest.config.mjs')
-    const compilerBuildIndex = steps.findIndex(step => step.run?.includes('--filter=@wevu/compiler...'))
-    expect(compilerBuildIndex).toBeGreaterThan(preflightIndex)
-    expect(compilerBuildIndex).toBeLessThan(testsIndex)
-    expect(steps[compilerBuildIndex].run).toContain('--concurrency=1')
+    expect(selfTest['working-directory']).toBeUndefined()
+    expect(selfTest.run).toContain('--root .tmp/pr-driver --config scripts/vitest.config.mjs')
+    expect(selfTest.run).toContain('scripts/nativeAddonCorrectness')
+    expect(steps.some(step => step.run?.includes('turbo run build'))).toBe(false)
+  })
+
+  it('uses a trusted driver with a frozen candidate manifest instead of candidate YAML or verifier code', async () => {
+    const job = await addonJob()
+    const driver = job.steps.find(step => step.with?.path === '.tmp/pr-driver')
+    // eslint-disable-next-line no-template-curly-in-string -- 验证 GitHub Actions 的表达式原文。
+    expect(driver.with.ref).toBe('${{ github.sha }}')
+    expect(driver.with['persist-credentials']).toBe(false)
+    // eslint-disable-next-line no-template-curly-in-string -- 验证 GitHub Actions 的表达式原文。
+    expect(job.env.NATIVE_CORRECTNESS_EXPECTED_COMMIT).toBe('${{ needs.pr-context.outputs.checkout_sha }}')
+    // eslint-disable-next-line no-template-curly-in-string -- 验证 GitHub Actions 的表达式原文。
+    expect(job.env.NATIVE_CORRECTNESS_DRIVER_COMMIT).toBe('${{ github.sha }}')
+    const planIndex = job.steps.findIndex(step => step.run?.includes('verify-native-addon-correctness.mjs plan '))
+    const buildIndex = job.steps.findIndex(step => step.run?.includes(' exec napi build '))
+    expect(planIndex).toBeGreaterThanOrEqual(0)
+    expect(planIndex).toBeLessThan(buildIndex)
+    for (const step of job.steps.filter(step => step.run?.includes('verify-native-addon-correctness.mjs '))) {
+      expect(step.run).toMatch(/^node \.tmp\/pr-driver\/scripts\/verify-native-addon-correctness\.mjs (?:plan|binding|run|report) /u)
+    }
   })
 
   it('uploads hidden evidence through a strict two-JSON allowlist that excludes raw runner paths', async () => {
