@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["../../packages/weapp-vite/src/*"],
+      "@weapp-vite/ast": ["../../packages/ast/src/index.ts"],
+      "@weapp-vite/ast/*": ["../../packages/ast/src/*"],
+      "@weapp-vite/hmr": ["../../packages/hmr/src/index.ts"],
+      "wevu/compiler": ["../../packages-runtime/wevu-compiler/src/index.ts"]
+    },
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["*.ts", "../ast-migration-profile.ts", "../ast-migration-profile.test.ts"]
+}
