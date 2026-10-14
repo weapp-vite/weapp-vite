@@ -13,7 +13,7 @@ const state = { pid: 21, started: 'first', zombie: false }
 
 beforeEach(async () => {
   vi.resetAllMocks()
-  directory = await fs.mkdtemp(path.join(os.tmpdir(), 'installation-inventory-test-'))
+  directory = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'installation-inventory-test-')))
   const bundle = path.join(directory, 'selected.app')
   await fs.mkdir(bundle)
   target = { appPath: path.join(bundle, 'Contents/Resources/app.asar').replaceAll('\\', '/'), cliPath: path.join(bundle, 'Contents/MacOS/cli'), installationId: 'selected', profileDir: path.join(directory, 'profile') }
@@ -23,6 +23,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
+  vi.restoreAllMocks()
   await fs.rm(directory, { recursive: true, force: true })
 })
 
@@ -30,6 +31,16 @@ async function executable(file: string) {
   await fs.mkdir(path.dirname(file), { recursive: true })
   await fs.writeFile(file, '')
   return file
+}
+
+function denyImageResolution(...files: string[]) {
+  const realpath = fs.realpath
+  vi.spyOn(fs, 'realpath').mockImplementation(async (file) => {
+    if (files.includes(String(file))) {
+      throw Object.assign(new Error('Permission denied'), { code: 'EACCES' })
+    }
+    return realpath(file)
+  })
 }
 
 describe('installation-exit process inventory', () => {
@@ -45,14 +56,12 @@ describe('installation-exit process inventory', () => {
     expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ installationRoot: await fs.realpath(path.join(directory, 'selected.app')), inspectedProcessCount: 1, kernelPathProcessCount: 1, selectedProcessCount: 0 })
   })
 
-  it.each([false, true])('resolves executable and selected bundle symlinks (aliased selection: %s)', async (aliasedSelection) => {
-    await executable(path.join(directory, 'selected.app/Contents/MacOS/Electron'))
+  it('resolves the selected bundle symlink before comparing kernel image paths', async () => {
+    const file = await executable(path.join(directory, 'selected.app/Contents/MacOS/Electron'))
     const alias = path.join(directory, 'unrelated-name.app')
     await fs.symlink(path.join(directory, 'selected.app'), alias, 'junction')
-    if (aliasedSelection) {
-      target.appPath = path.join(alias, 'Contents/Resources/app.asar').replaceAll('\\', '/')
-    }
-    mocks.paths.mockResolvedValue(new Map([[21, path.join(alias, 'Contents/MacOS/Electron')]]))
+    target.appPath = path.join(alias, 'Contents/Resources/app.asar').replaceAll('\\', '/')
+    mocks.paths.mockResolvedValue(new Map([[21, file]]))
     await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('still has a live process')
   })
 
@@ -61,16 +70,35 @@ describe('installation-exit process inventory', () => {
     await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('still has a live process')
   })
 
-  it('normalizes an existing symlink ancestor for a deleted text image', async () => {
-    const alias = path.join(directory, 'unrelated-name.app')
-    await fs.symlink(path.join(directory, 'selected.app'), alias, 'junction')
-    mocks.images.mockResolvedValue([path.join(alias, 'deleted/helper')])
-    await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('still has a live process')
-  })
-
   it('retains a separate count for verified unrelated deleted executable images', async () => {
     mocks.images.mockResolvedValue([path.join(directory, 'other.app/deleted'), path.join(directory, 'other.app/another-deleted')])
     expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ inspectedProcessCount: 1, kernelPathProcessCount: 0, textImageProcessCount: 1, selectedProcessCount: 0 })
+  })
+
+  it('checks every protected mapping without requiring access to its current filesystem path', async () => {
+    const image = path.join(directory, 'other.app/protected/nested/image')
+    denyImageResolution(image, path.dirname(image))
+    mocks.images.mockResolvedValue([image])
+    expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ textImageProcessCount: 1, selectedProcessCount: 0 })
+    const selected = path.join(directory, 'selected.app/Contents/deleted')
+    mocks.images.mockResolvedValue([image, selected])
+    await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('still has a live process')
+    mocks.paths.mockResolvedValue(new Map([[21, image]]))
+    expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ kernelPathProcessCount: 1, selectedProcessCount: 0 })
+  })
+
+  it.each(['executable', 'text'] as const)('rejects a live selected %s image whose deleted pathname now points outside', async (source) => {
+    const image = await executable(path.join(directory, 'selected.app/Contents/MacOS/helper'))
+    const outside = await executable(path.join(directory, 'other.app/helper'))
+    await fs.unlink(image)
+    await fs.symlink(outside, image, 'file')
+    if (source === 'executable') {
+      mocks.paths.mockResolvedValue(new Map([[21, image]]))
+    }
+    else {
+      mocks.images.mockResolvedValue([image])
+    }
+    await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('still has a live process')
   })
 
   it.each([{ images: [] }, { images: ['relative-name'] }, { images: ['invalid\npath'] }])('rejects incomplete or unresolvable text images %j', async ({ images }) => {

@@ -6,22 +6,6 @@ import process from 'node:process'
 import { resolveWechatDevtoolsInstallationRoot } from '../../devtoolsTarget/host'
 import { readDarwinKernelPaths, readDarwinProcessStates, readDarwinTextImages } from './darwin'
 
-/** 已删除映像仍有内核 vnode 路径；从现存祖先解析符号链接，不把缺失文件当成已退出进程。 */
-async function canonicalImagePath(file: string): Promise<string> {
-  if (!path.isAbsolute(file) || /[\r\n\0]/.test(file)) {
-    throw new Error('Installation-exit recovery received an unverifiable executable image path.')
-  }
-  try {
-    return await fs.realpath(file)
-  }
-  catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT' || path.dirname(file) === file) {
-      throw new Error('Installation-exit recovery cannot resolve an executable image path.', { cause: error })
-    }
-    return path.join(await canonicalImagePath(path.dirname(file)), path.basename(file))
-  }
-}
-
 /** 仅支持已验证的 macOS 全安装清单；未知平台、权限错误或不完整映像均拒绝推断退出。 */
 export async function inspectExitedWechatInstallation(
   target: ResolvedWechatDevtoolsTarget,
@@ -64,8 +48,11 @@ export async function inspectExitedWechatInstallation(
         throw new Error('Installation-exit recovery received no verifiable executable text images.')
       }
       for (const image of images) {
-        const resolved = await canonicalImagePath(image)
-        const relative = path.relative(installationRoot, resolved)
+        if (!path.isAbsolute(image) || /[\r\n\0]/.test(image)) {
+          throw new Error('Installation-exit recovery received an unverifiable executable image path.')
+        }
+        // 内核报告的是已解析的映像路径；当前文件可能受保护、已删除或已被替换，不能再次 realpath。
+        const relative = path.relative(installationRoot, image)
         if (!relative || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`))) {
           throw new Error('The selected WeChat DevTools installation still has a live process; no ownership was recovered.')
         }
