@@ -1,10 +1,12 @@
 import type { Checkout } from './collect'
+import type { AuditBatch } from './report'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
 import { benchmarkModeSelected } from '../../packages/weapp-vite/scripts/utils/benchmarkSelection'
-import { collectShardBatch, collectSide } from './batch'
+import { collectShardBatch, collectSide, requestedConfirmationMetrics } from './batch'
+import { CollectorStopError } from './collectorStop'
 import { policy } from './contract.mjs'
 import { runCollector } from './process'
 import { hmrProfileCapability } from './profileCapability.mjs'
@@ -105,4 +107,58 @@ it('keeps seven serial alternating build pairs and checkpoints launch failure', 
   finally {
     await rm(root, { recursive: true, force: true })
   }
+})
+
+it.each(['cleanup-unconfirmed', 'cancelled'] as const)('checkpoints nonempty samples and stops after %s', async (reason) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'collector-stop-'))
+  const optimized: Checkout = { id: 'optimized', cwd: root, commit: 'a'.repeat(40), templates: [] }
+  const firstError = new Error(reason === 'cancelled' ? 'Collector interrupted' : 'Collector deadline exceeded')
+  const failure = new CollectorStopError(firstError, reason === 'cleanup-unconfirmed' ? { error: new Error('identity unavailable') } : undefined, reason === 'cancelled')
+  try {
+    vi.mocked(runCollector).mockImplementation(async (_command, _args, options) => {
+      await writeFile(path.join(options.env!.PERFORMANCE_SAMPLE_DIR!, 'values.json'), JSON.stringify({ values: [{ id: 'auto-hmr:69:automatic:first:edit', ms: 100 }], errors: [] }))
+      throw failure
+    })
+    const batch = await collectShardBatch({ optimized, baseline: { ...optimized, id: 'baseline' } }, 'auto-hmr', root, 'primary', Date.now() + 10_000)
+    expect(runCollector).toHaveBeenCalledTimes(1)
+    expect(batch.samples).toHaveLength(1)
+    expect(batch.samples[0]!.values).toHaveLength(1)
+    expect(batch).toHaveProperty('stop', failure.stop)
+    expect(JSON.parse(await readFile(path.join(root, 'primary.json'), 'utf8')) as unknown).toEqual(batch)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('continues ordinary partial HMR evidence after cleanup has completed', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'partial-hmr-'))
+  const optimized: Checkout = { id: 'optimized', cwd: root, commit: 'a'.repeat(40), templates: [] }
+  try {
+    vi.mocked(runCollector).mockImplementation(async (_command, _args, options) => {
+      await writeFile(path.join(options.env!.PERFORMANCE_SAMPLE_DIR!, 'values.json'), JSON.stringify({ values: [{ id: 'auto-hmr:69:automatic:first:edit', ms: 100 }], errors: ['A separate HMR case failed after complete cleanup'] }))
+      throw new Error('Collector failed: exit=1')
+    })
+    const batch = await collectShardBatch({ optimized, baseline: { ...optimized, id: 'baseline' } }, 'auto-hmr', root, 'primary', Date.now() + 10_000)
+    expect(runCollector).toHaveBeenCalledTimes(40)
+    expect(batch.samples).toHaveLength(40)
+    expect(batch.stop).toBeUndefined()
+    expect(batch.errors).toHaveLength(80)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('does not confirm an earlier complete regression after a later collector stop', () => {
+  const id = 'auto-hmr:69:automatic:first:edit'
+  const primary: AuditBatch = {
+    errors: ['ordinary partial HMR failure'],
+    samples: Array.from({ length: 20 }, (_, round) => (['baseline', 'optimized'] as const).map(side => ({ round, side, values: [{ id, ms: side === 'baseline' ? 100 : 110, phase: 'first', template: 'auto-import' }] }))).flat(),
+  }
+  expect(requestedConfirmationMetrics(primary, [id], 'auto-hmr')).toEqual([id])
+  primary.stop = { reason: 'cleanup-unconfirmed', resourcesReleased: false, cancelled: false }
+  expect(requestedConfirmationMetrics(primary, [id], 'auto-hmr')).toEqual([])
+  primary.stop = { reason: 'cancelled', resourcesReleased: true, cancelled: true }
+  expect(requestedConfirmationMetrics(primary, [id], 'auto-hmr')).toEqual([])
 })

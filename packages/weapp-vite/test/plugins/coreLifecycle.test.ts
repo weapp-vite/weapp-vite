@@ -119,7 +119,7 @@ describe('core plugin watchChange', () => {
     const { corePlugin, ctx } = createPlugin()
     const id = '/project/src/pages/index/index.json'
 
-    await Promise.resolve(corePlugin.buildStart?.())
+    await Promise.resolve(corePlugin.buildStart?.call({ meta: { watchMode: true } }))
     expect(ensureSidecarWatcherSpy).toHaveBeenCalledWith(expect.anything(), '/project/src')
 
     await corePlugin

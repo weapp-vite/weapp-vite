@@ -4,6 +4,7 @@ import { existsSync, realpathSync } from 'node:fs'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { promisify } from 'node:util'
 
@@ -24,14 +25,59 @@ const cli = path.join(path.dirname(toolchainPackage), standalone ? 'bin/weapp-vi
 const compilerRequire = createRequire(weappPackage)
 assert.equal(realpathSync(require.resolve('vite/package.json')), realpathSync(compilerRequire.resolve('vite/package.json')), '宿主和编译器必须解析到同一个 Vite')
 const run = promisify(execFile)
+const probeDiagnostics = process.env.WEAPP_VITE_CONSUMER_HOST_DIAGNOSTICS === '1'
+const probePrefix = '[host-capability-probe] '
+
+async function saveProbeDiagnostics(file, started, result, error) {
+  if (!probeDiagnostics || file !== path.join(root, 'probe-host.mjs')) {
+    return
+  }
+  let invalidPhaseLines = 0
+  const phases = result.stdout.split(/\r?\n/).filter(line => line.startsWith(probePrefix)).flatMap((line) => {
+    try {
+      const value = JSON.parse(line.slice(probePrefix.length))
+      assert(['engine-import-start', 'engine-import-complete', 'create-start', 'create-complete', 'capability-checked', 'close-start', 'close-complete', 'probe-body-complete', 'exit'].includes(value.phase))
+      assert(Number.isFinite(value.elapsedMs) && value.elapsedMs >= 0)
+      assert(value.code === undefined || Number.isInteger(value.code))
+      return [{ phase: value.phase, elapsedMs: value.elapsedMs, ...(value.code === undefined ? {} : { code: value.code }) }]
+    }
+    catch {
+      invalidPhaseLines++
+      return []
+    }
+  })
+  const directory = path.resolve(import.meta.dirname, '../../../.cache/web-consumer-diagnostic')
+  await mkdir(directory, { recursive: true })
+  await writeFile(path.join(directory, `host-capability-${toolchain}.json`), `${JSON.stringify({
+    kind: 'diagnostic',
+    toolchain,
+    node: process.version,
+    platform: process.platform,
+    arch: process.arch,
+    timeoutMs: 120_000,
+    elapsedMs: performance.now() - started,
+    successfulNaturalExit: !error,
+    terminal: error ? { code: error.code, killed: error.killed, signal: error.signal } : { code: 0 },
+    phases,
+    invalidPhaseLines,
+    scope: 'Vite/Rolldown capability probe only; browser runtime has not started',
+  }, null, 2)}\n`)
+}
 
 async function command(file, args) {
+  const started = performance.now()
   try {
     const result = await run(process.execPath, [file, ...args], { cwd: root, timeout: 120_000, killSignal: 'SIGKILL', maxBuffer: 10 * 1024 * 1024 })
+    await saveProbeDiagnostics(file, started, result).catch(() => {
+      process.stderr.write('[host-capability-probe] Could not save phase evidence; original result retained.\n')
+    })
     process.stdout.write(result.stdout)
     process.stderr.write(result.stderr)
   }
   catch (error) {
+    await saveProbeDiagnostics(file, started, { stdout: error.stdout ?? '' }, error).catch(() => {
+      process.stderr.write('[host-capability-probe] Could not save phase evidence; original failure retained.\n')
+    })
     process.stdout.write(error.stdout ?? '')
     process.stderr.write(error.stderr ?? '')
     throw error
@@ -73,17 +119,35 @@ it('configuration does not start compilation or generate support files', () => {
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import { createServer, version } from 'vite'
-const require = createRequire(import.meta.url)
+${probeDiagnostics
+  ? `import { writeSync } from 'node:fs'
+import { performance } from 'node:perf_hooks'
+import process from 'node:process'
+const started = performance.now()
+const phase = (name, code) => {
+  try { writeSync(1, ${JSON.stringify(probePrefix)} + JSON.stringify({ phase: name, elapsedMs: performance.now() - started, ...(code === undefined ? {} : { code }) }) + '\\n') }
+  catch {}
+}
+process.once('exit', code => phase('exit', code))
+phase('engine-import-start')
+`
+  : ''}const require = createRequire(import.meta.url)
 const hostRequire = createRequire(require.resolve('vite/package.json'))
 const engine = await import(pathToFileURL(hostRequire.resolve('${plus ? '@voidzero-dev/vite-plus-core/rolldown/experimental' : 'rolldown/experimental'}')).href)
 assert.equal(typeof engine.dev, 'function')
 assert.equal(typeof engine.scan, 'function')
-const server = await createServer({ configFile: false, experimental: { bundledDev: true }, server: { middlewareMode: true }, logLevel: 'silent' })
-try {
+${probeDiagnostics ? 'phase(\'engine-import-complete\')\nphase(\'create-start\')\n' : ''}const server = await createServer({ configFile: false, experimental: { bundledDev: true }, server: { middlewareMode: true }, logLevel: 'silent' })
+${probeDiagnostics ? 'phase(\'create-complete\')\n' : ''}try {
   const adapter = server.environments.client.bundledDev
   for (const method of ['getRolldownOptions', 'storeOutputFiles', 'listen']) assert.equal(typeof adapter?.[method], 'function', method)
+  ${probeDiagnostics ? 'phase(\'capability-checked\')' : ''}
   console.log('Vite ' + version + ': matched engine and bundled-development capability probe passed (not a stateful runtime test)')
-} finally { await server.close() }
+} finally {
+  ${probeDiagnostics ? 'phase(\'close-start\')' : ''}
+  await server.close()
+  ${probeDiagnostics ? 'phase(\'close-complete\')' : ''}
+}
+${probeDiagnostics ? 'phase(\'probe-body-complete\')\n' : ''}
 `,
   'types.mts': `import { defineConfig } from '${toolchain}'
 import type { WeappViteConfig } from 'weapp-vite/config'
@@ -151,6 +215,8 @@ assert.equal(existsSync(path.join(root, '.weapp-vite')), true)
 await command(wv, ['build', '--config', 'vite.config.mts'])
 assert.match(await readOutput('pages/native/index.js'), /native-host/)
 console.log(`${toolchain}: packed exports, single host/config, TS/Vue/subpackage build and wv compatibility passed${standalone ? ' (standalone CLI without plugin registration)' : ', including test isolation'}`)
+
+await command(path.join(import.meta.dirname, 'verify-analyze-consumer.mjs'), [root, standalone ? 'wv' : toolchain])
 
 await command(path.join(import.meta.dirname, 'verify-vite-host-dev.mjs'), [root, standalone ? 'wv' : plus ? 'vite-plus' : 'vite'])
 if (!standalone) {

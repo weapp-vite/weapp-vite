@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
+import { readLinuxProcessState } from './repoctlReleaseDeadline/processState'
 
 const temporaryDirectories: string[] = []
 const helper = fileURLToPath(new URL('../.github/scripts/release-stage.sh', import.meta.url))
@@ -84,22 +85,7 @@ async function readProcessRecords(evidence: string): Promise<ProcessRecord[]> {
 
 async function processState(pid: number, ownerToken: string) {
   if (process.platform === 'linux') {
-    try {
-      const [environment, stat] = await Promise.all([
-        fs.readFile(`/proc/${pid}/environ`, 'utf8'),
-        fs.readFile(`/proc/${pid}/stat`, 'utf8'),
-      ])
-      if (['Z', 'X'].includes(stat.slice(stat.lastIndexOf(')') + 2, stat.lastIndexOf(')') + 3))) {
-        return 'zombie'
-      }
-      return environment.split('\0').includes(`FIXTURE_OWNER_TOKEN=${ownerToken}`) ? 'running' : 'foreign'
-    }
-    catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        throw error
-      }
-      return 'gone'
-    }
+    return readLinuxProcessState(pid, ownerToken)
   }
   const result = spawnSync('ps', ['eww', '-p', String(pid), '-o', 'command='], { encoding: 'utf8' })
   if (result.status !== 0) {

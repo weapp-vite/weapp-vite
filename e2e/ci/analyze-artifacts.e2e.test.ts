@@ -21,6 +21,55 @@ interface Report {
 }
 
 describe('analyze artifact consumer', { concurrent: false }, () => {
+  it.each([false, true])('matches the production build for native/SFC/shared/subpackage outputs with minify=%s', async (minify) => {
+    await fs.ensureDir(path.join(repoRoot, '.tmp'))
+    const root = await mkdtemp(path.join(repoRoot, '.tmp/analyze-production-'))
+    const write = (file: string, content: string) => fs.outputFile(path.join(root, file), content)
+    const run = (args: string[]) => execa('node', args, {
+      cwd: root,
+      extendEnv: false,
+      env: sanitizeBuildCommandEnv(),
+      reject: false,
+      timeout: 90_000,
+    })
+    try {
+      await write('package.json', JSON.stringify({ private: true, type: 'module' }))
+      await write('project.config.json', JSON.stringify({ appid: 'wxb3d842a4a7e3440d', compileType: 'miniprogram', miniprogramRoot: 'dist/' }))
+      await write('project.private.config.json', JSON.stringify({ condition: { miniprogram: { list: [
+        { name: 'native', pathName: 'pages/index/index' },
+        { name: 'sfc', pathName: 'extra/detail/index' },
+      ] } } }))
+      await write('weapp-vite.config.ts', `
+import { defineConfig } from 'weapp-vite'
+console.log('config NODE_ENV=' + process.env.NODE_ENV)
+export default defineConfig({
+  build: { minify: ${minify} },
+  weapp: { autoRoutes: false, srcRoot: 'src', analyze: { history: false } },
+})
+`)
+      await write('src/app.json', JSON.stringify({ pages: ['pages/index/index'], subPackages: [{ root: 'extra', pages: ['detail/index'] }] }))
+      await write('src/app.ts', 'App({})')
+      await write('src/shared.ts', 'export const message = "shared-business"')
+      await write('src/pages/index/index.ts', 'import {ref} from "wevu"; import {message} from "../../shared"; Page({data:{message,count:ref(1).value}})')
+      await write('src/pages/index/index.wxml', '<view>{{message}}:{{count}}</view>')
+      await write('src/extra/detail/index.vue', '<script setup lang="ts">import {ref} from "wevu"; import {message} from "../../shared"; const value=ref(message)</script><template><view>{{value}}</view></template>')
+
+      const built = await run([cli, 'build', root, '--mode', 'staging'])
+      expect(built.exitCode, built.stderr || built.stdout).toBe(0)
+      const analyzed = await run([cli, 'analyze', root, '--mode', 'staging', '--json'])
+      expect(analyzed.exitCode, analyzed.stderr).toBe(0)
+      expect(analyzed.stderr).toContain('config NODE_ENV=production')
+      const report = JSON.parse(analyzed.stdout) as Report
+      expect(report.artifacts.files.some(file => file.modules.some(module => module.package?.name === 'wevu'))).toBe(true)
+      await write('report.json', analyzed.stdout)
+      const verified = await run([verifier, 'report.json', 'dist'])
+      expect(verified.exitCode, verified.stderr).toBe(0)
+    }
+    finally {
+      await fs.remove(root)
+    }
+  }, 180_000)
+
   it('keeps JSON clean, locates budget failures and rejects missing built files', async () => {
     await fs.ensureDir(path.join(repoRoot, '.tmp'))
     const root = await mkdtemp(path.join(repoRoot, '.tmp/analyze-artifacts-'))

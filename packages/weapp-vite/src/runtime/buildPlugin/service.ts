@@ -251,6 +251,8 @@ function prepareStatefulHmrSnapshot(snapshot: Awaited<ReturnType<typeof buildSta
     glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
     inputFiles: snapshot.getInputFiles?.(),
     inputs: snapshot.getInputs?.(),
+    nativeScriptVersions: snapshot.getNativeScriptVersions?.(),
+    captureNativeScriptDrift: snapshot.getNativeScriptDrift,
   }
 }
 

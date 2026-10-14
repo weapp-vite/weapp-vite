@@ -109,6 +109,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-997-rebuild.runtime.test.ts',
   'ide/issue-998-tailwind.runtime.test.ts',
   'ide/issue-1081-tailwind-batch.runtime.test.ts',
+  'ide/issue-1081-tailwind-snapshot.runtime.test.ts',
   'ide/issue-1058-template-tags.runtime.test.ts',
   'ide/issue-1065-provider.runtime.test.ts',
   'ide/issue-1081-transaction.runtime.test.ts',
@@ -121,6 +122,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-1015-css-hmr.runtime.test.ts',
   'ide/issue-1126-1128.test.ts',
   'ide/issue-1172.test.ts',
+  'ide/issue-1182-production-mount.runtime.test.ts',
   'ide/issue-1185-sibling-entry.runtime.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes.runtime.test.ts',
@@ -271,6 +273,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/issue-997-rebuild.runtime.test.ts',
   'ide/issue-998-tailwind.runtime.test.ts',
   'ide/issue-1081-tailwind-batch.runtime.test.ts',
+  'ide/issue-1081-tailwind-snapshot.runtime.test.ts',
   'ide/issue-1081-transaction.runtime.test.ts',
   'ide/issue-1082-confirmation.runtime.test.ts',
   'ide/issue-1134-native-batch.runtime.test.ts',
@@ -288,6 +291,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/github-issues.runtime.issue1015.test.ts',
   'ide/issue-1126-1128.test.ts',
   'ide/issue-1172.test.ts',
+  'ide/issue-1182-production-mount.runtime.test.ts',
   'ide/issue-1185-sibling-entry.runtime.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes.runtime.test.ts',
@@ -517,8 +521,8 @@ function getHeadlessPatternTasks(patterns: string[]) {
 
 function getIdeDomHeadlessTasks() {
   const stateful = createHeadlessVitestTask(HEADLESS_CONFIG_PATH, path.resolve(ROOT, 'ide/stateful-hmr.runtime.test.ts'))
-  // 同一会话覆盖状态保持与模板生成脚本；计算样式断言仍留在完整真实 IDE suite。
-  stateful.args.push('-t', 'ignores unowned editor files|copied and public asset lifecycle|updates Wevu template-generated|two template edit and restore cycles|isolated script updates and restoration|commits navigation requested|initializes updated native defaults')
+  // 原生样式等待实际 WXSS 产物；计算样式断言仍留在完整真实 IDE suite。
+  stateful.args.push('-t', 'preserves native Page identity|ignores unowned editor files|copied and public asset lifecycle|updates Wevu template-generated|two template edit and restore cycles|isolated script updates and restoration|commits navigation requested|initializes updated native defaults')
   return [...getHeadlessPatternTasks(IDE_DOM_HEADLESS_PATTERNS), stateful].map(task => ({
     ...task,
     env: { ...task.env, WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1' },
