@@ -1,23 +1,29 @@
-import { expect, it } from 'vitest'
-import { profileTransformScriptPhases } from './ast-migration-profile'
+import { readFile } from 'node:fs/promises'
+import { describe, expect, it } from 'vitest'
+import { compilerCases } from './astMigrationProfile/cases'
+import { parseArguments } from './astMigrationProfile/index'
 
-it('profiles module-scoped macros without leaking page metadata into runtime output', () => {
-  const result = profileTransformScriptPhases(`
-import { defineComponent } from 'vue'
-import { definePageMeta as pageMeta, onLoad } from 'wevu'
+describe('real compiler profile public command', () => {
+  it('retains a no-argument command with forty pairs and rejects ambiguous/underpowered sampling', () => {
+    expect(parseArguments([]).trials).toBe(40)
+    expect(() => parseArguments(['--trials=7'])).toThrow('at least 40')
+    expect(() => parseArguments(['--trials=40', '--trials=41'])).toThrow('Duplicate')
+    expect(() => parseArguments(['--synthetic'])).toThrow('Unknown')
+  })
 
-export default defineComponent({
-  setup() {
-    pageMeta({ title: 'profile' })
-    onLoad(() => {})
-    return { count: 1 }
-  },
-})
-`, { isPage: true })
+  it('keeps eight real unchanged sources, including the no-batch control', async () => {
+    expect(compilerCases).toHaveLength(8)
+    for (const fixture of compilerCases) {
+      const source = await readFile(new URL(`../${fixture.project}/${fixture.file}`, import.meta.url), 'utf8')
+      expect(source).toContain('<template>')
+    }
+    expect(compilerCases.find(fixture => fixture.id === 'script-import-control')?.expectCompilerBatch).toBe(false)
+  })
 
-  expect(result.code).not.toContain('definePageMeta')
-  expect(result.code).not.toContain('pageMeta')
-  expect(result.code).toContain('onLoad')
-  expect(result.code).toContain('count: 1')
-  expect(Object.values(result.timings).every(value => Number.isFinite(value) && value >= 0)).toBe(true)
+  it('uses the built public entry and never reimplements internal compilation phases', async () => {
+    const worker = await readFile(new URL('./astMigrationProfile/worker.ts', import.meta.url), 'utf8')
+    expect(worker).toContain('\'packages-runtime/wevu-compiler/dist/index.mjs\'')
+    expect(worker).toContain('measureRealEntry(compiler.compileVueFile')
+    expect(worker).not.toMatch(/compileScriptPhase|compileTemplatePhase|parseVueFile|AST_FULL_CHAIN_SPEEDUP/)
+  })
 })
