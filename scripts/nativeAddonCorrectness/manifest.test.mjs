@@ -12,29 +12,36 @@ afterEach(async () => {
 })
 
 describe('candidate native correctness manifest', () => {
-  it('supports all three restored coverage increments without changing the driver baseline', () => {
+  it('keeps the restored coverage increments in the trusted driver baseline', () => {
     const before = structuredClone(baselineManifest)
-    const reserved = structuredClone(before)
-    reserved.suites.push({ file: 'test/reservedPropsParity.test.ts', minimumAssertions: 27 })
-    const defaultExport = structuredClone(reserved)
-    defaultExport.suites.push({ file: 'test/defaultExportParity.test.ts', minimumAssertions: 13 })
-    expect([reserved, defaultExport, extendedManifest()].map(value =>
-      validateManifest(value).suites.reduce((count, suite) => count + suite.minimumAssertions, 0),
-    )).toEqual([122, 135, 114])
+    const suiteFiles = new Set(before.suites.map(suite => suite.file))
+    expect(suiteFiles).toEqual(new Set([
+      'test/compilerAnalysis.test.ts',
+      'test/compilerAmbientParity.test.ts',
+      'test/npmChunkRewriteParity.test.ts',
+      'test/npmChunksParity.test.ts',
+      'test/onPageScroll.test.ts',
+      'test/vueSfcSignature.fuzz.test.ts',
+      'test/reservedPropsParity.test.ts',
+      'test/defaultExportParity.test.ts',
+    ]))
+    expect(before.requiredExports).toContain('analyzeNpmChunksNative')
+    expect(validateManifest(extendedManifest())).toEqual(before)
     expect(baselineManifest).toEqual(before)
   })
 
   it.each(['test/reservedPropsParity.test.ts', 'test/defaultExportParity.test.ts'])('rejects omitted or partial candidate-only %s', (file) => {
-    const coverage = structuredClone(baselineManifest)
-    coverage.suites.push({ file, minimumAssertions: file.includes('reservedProps') ? 27 : 13 })
+    const coverage = extendedManifest()
     const root = path.resolve('fixture-candidate')
     const report = completeReport(root, coverage)
-    report.testResults.pop()
-    const count = baselineManifest.suites.reduce((sum, suite) => sum + suite.minimumAssertions, 0)
+    const index = coverage.suites.findIndex(suite => suite.file === file)
+    const omitted = coverage.suites[index]
+    report.testResults.splice(index, 1)
+    const count = coverage.suites.reduce((sum, suite) => sum + suite.minimumAssertions, 0) - omitted.minimumAssertions
     report.numTotalTests = report.numPassedTests = count
     expect(() => verifyNativeReport(report, path.join(root, 'packages/ast-native'), coverage)).toThrow('omits suites')
     const partial = completeReport(root, coverage)
-    partial.testResults.at(-1).assertionResults.pop()
+    partial.testResults[index].assertionResults.pop()
     partial.numTotalTests--
     partial.numPassedTests--
     expect(() => verifyNativeReport(partial, path.join(root, 'packages/ast-native'), coverage)).toThrow('partial')
@@ -76,10 +83,13 @@ describe('candidate native correctness manifest', () => {
     const coverage = extendedManifest()
     const root = path.resolve('fixture-candidate')
     const report = completeReport(root, coverage)
-    expect(verifyNativeReport(report, path.join(root, 'packages/ast-native'), coverage).passed).toBe(114)
+    const expectedAssertions = coverage.suites.reduce((sum, suite) => sum + suite.minimumAssertions, 0)
+    expect(verifyNativeReport(report, path.join(root, 'packages/ast-native'), coverage).passed).toBe(expectedAssertions)
     report.testResults.pop()
     expect(() => verifyNativeReport(report, path.join(root, 'packages/ast-native'), coverage)).toThrow()
-    const binding = Object.fromEntries(baselineManifest.requiredExports.map(name => [name, () => {}]))
+    const binding = Object.fromEntries(baselineManifest.requiredExports
+      .filter(name => name !== 'analyzeNpmChunksNative')
+      .map(name => [name, () => {}]))
     expect(() => verifyNativeExports(binding, coverage)).toThrow('analyzeNpmChunksNative')
   })
 

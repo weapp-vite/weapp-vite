@@ -79,7 +79,8 @@ describe('trusted native correctness runner', () => {
     ])
     await run('report')
     const summary = await readJson(directory, 'summary.json')
-    expect(summary).toMatchObject({ status: 'passed', passed: 114, skipped: 0, manifestSha256: plan.manifestSha256, testedCommit: plan.testedCommit })
+    const expectedAssertions = manifest.suites.reduce((sum, suite) => sum + suite.minimumAssertions, 0)
+    expect(summary).toMatchObject({ status: 'passed', passed: expectedAssertions, skipped: 0, manifestSha256: plan.manifestSha256, testedCommit: plan.testedCommit })
     expect(summary.buildFilters).toEqual(manifest.buildFilters)
     expect(summary.buildOptions).toEqual({ force: true, concurrency: 1 })
     expect(summary.suiteFiles).toEqual(manifest.suites.map(suite => suite.file))
@@ -102,7 +103,9 @@ describe('trusted native correctness runner', () => {
 
   it('rejects an addon missing a candidate-only export before any build', async () => {
     const { run, manifest, directory } = await preparedFixture()
-    const binding = Object.fromEntries(manifest.requiredExports.slice(0, -1).map(name => [name, () => {}]))
+    const binding = Object.fromEntries(manifest.requiredExports
+      .filter(name => name !== 'analyzeNpmChunksNative')
+      .map(name => [name, () => {}]))
     await expect(run('binding', { loadBinding: async () => binding })).rejects.toThrow('analyzeNpmChunksNative')
     await expect(readFile(path.join(directory, 'binding.json'))).rejects.toThrow()
   })
