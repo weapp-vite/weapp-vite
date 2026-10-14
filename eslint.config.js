@@ -35,6 +35,8 @@ export default await defineEslintConfig({
       '**/dist-plugin/**',
       '**/dist-web/**',
       '**/build/**',
+      '!packages/weapp-vite/src/cli/commands/build/',
+      '!packages/weapp-vite/src/cli/commands/build/**',
       '**/coverage/**',
       '**/miniprogram_npm/**',
       '**/.vite/**',

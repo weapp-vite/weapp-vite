@@ -1,109 +1,31 @@
-import type { CAC } from 'cac'
-import type { HmrProfileAnalyzeResult } from '../../analyze/hmr'
-import type { PreloadAnalyzeResult } from '../../analyze/preload'
-import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
-import type { ConfigService } from '../../runtime/config/types'
-import type { AnalyzeCLIOptions } from '../types'
+import type { HmrProfileAnalyzeResult } from '../../../analyze/hmr'
+import type { PreloadAnalyzeResult } from '../../../analyze/preload'
+import type { AnalyzeSubpackagesResult } from '../../../analyze/subpackages'
+import type { ConfigService } from '../../../runtime/config/types'
+import type { AnalyzeCLIOptions } from '../../types'
+import type { WebAnalyzeResult } from './webResult'
 import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { analyzeHmrProfile } from '../../analyze/hmr'
-import { analyzePreloadRules } from '../../analyze/preload'
-import { analyzeSubpackages } from '../../analyze/subpackages'
-import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../analyze/subpackages/history'
-import { createAnalyzeMarkdownReport, createAnalyzePrMarkdownReport, formatAnalyzeBytes } from '../../analyze/subpackages/report'
-import { getBackendForCapability } from '../../backends'
-import { createCompilerContext } from '../../createContext'
-import { createAnalyzeBudgetCheck } from '../../dashboard/analyze'
-import { createDashboardArtifactSnapshot } from '../../dashboard/artifacts'
-import logger, { colors } from '../../logger'
-import { resolveHmrProfileJsonPath } from '../../utils/hmrProfile'
-import { startAnalyzeDashboard } from '../analyze/dashboard'
-import { withAnalyzeOutput } from '../analyze/output'
-import { setCommandNodeEnv } from '../nodeEnv'
-import { coerceBooleanOption, filterDuplicateOptions, parseDashboardUiHost, resolveConfigFile } from '../options'
-import { terminateStaleSassEmbeddedProcess } from '../processCleanup'
-import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
+import { analyzeHmrProfile } from '../../../analyze/hmr'
+import { analyzePreloadRules } from '../../../analyze/preload'
+import { analyzeSubpackages } from '../../../analyze/subpackages'
+import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../../analyze/subpackages/history'
+import { createAnalyzeMarkdownReport, createAnalyzePrMarkdownReport, formatAnalyzeBytes } from '../../../analyze/subpackages/report'
+import { getBackendForCapability } from '../../../backends'
+import { createCompilerContext } from '../../../createContext'
+import { createDashboardArtifactSnapshot } from '../../../dashboard'
+import { createAnalyzeBudgetCheck } from '../../../dashboard/analyze'
+import logger, { colors } from '../../../logger'
+import { resolveHmrProfileJsonPath } from '../../../utils/hmrProfile'
+import { startAnalyzeDashboard } from '../../analyze/dashboard'
+import { withAnalyzeOutput } from '../../analyze/output'
+import { setCommandNodeEnv } from '../../nodeEnv'
+import { coerceBooleanOption, filterDuplicateOptions, parseDashboardUiHost, resolveConfigFile } from '../../options'
+import { terminateStaleSassEmbeddedProcess } from '../../processCleanup'
 
-export interface WebAnalyzeResult {
-  runtime: 'web'
-  platform: 'web'
-  mode: string
-  generatedAt: string
-  experimental: true
-  configFile?: string
-  web: {
-    enabled: boolean
-    root?: string
-    srcDir?: string
-    outDir?: string
-    executionMode: 'compat' | 'safe' | 'strict'
-  }
-  supportedScopes: string[]
-  unsupportedScopes: string[]
-  limitations: string[]
-}
-
-interface CreateWebAnalyzeResultOptions {
-  platform: 'web'
-  now?: Date
-}
-
-function normalizeDisplayPath(value: string) {
-  return value || '.'
-}
-
-function getDefaultWebAnalyzeScopes() {
-  return {
-    supported: [
-      'weapp.web 配置解析（enable/root/srcDir/outDir）',
-      'runtime.executionMode 静态解析（compat/safe/strict）',
-      'JSON 报告输出（--json/--output）',
-    ],
-    unsupported: [
-      '分包产物体积分析（仅小程序）',
-      '源码模块包体映射（仅小程序）',
-      '分析仪表盘（dashboard）',
-    ],
-  }
-}
-
-export function createWebAnalyzeResult(
-  configService: ConfigService,
-  options: CreateWebAnalyzeResultOptions,
-): WebAnalyzeResult {
-  const webConfig = configService.weappWebConfig
-  const executionMode = webConfig?.pluginOptions.runtime?.executionMode ?? 'compat'
-  const scope = getDefaultWebAnalyzeScopes()
-  const limitations = [
-    '当前仅提供静态配置分析，不执行 Web 产物扫描。',
-  ]
-
-  if (!webConfig?.enabled) {
-    limitations.push('未检测到启用的 weapp.web 配置。')
-  }
-
-  return {
-    runtime: 'web',
-    platform: options.platform,
-    mode: configService.mode,
-    generatedAt: (options.now ?? new Date()).toISOString(),
-    experimental: true,
-    configFile: configService.configFilePath
-      ? normalizeDisplayPath(configService.relativeCwd(configService.configFilePath))
-      : undefined,
-    web: {
-      enabled: Boolean(webConfig?.enabled),
-      root: webConfig?.root ? normalizeDisplayPath(configService.relativeCwd(webConfig.root)) : undefined,
-      srcDir: webConfig?.srcDir,
-      outDir: webConfig?.outDir ? normalizeDisplayPath(configService.relativeCwd(webConfig.outDir)) : undefined,
-      executionMode,
-    },
-    supportedScopes: scope.supported,
-    unsupportedScopes: scope.unsupported,
-    limitations,
-  }
-}
+import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../../runtime'
+import { createWebAnalyzeResult } from './webResult'
 
 function printAnalysisSummary(result: AnalyzeSubpackagesResult) {
   const packageLabelMap = new Map<string, string>()
@@ -396,191 +318,177 @@ function printHmrProfileAnalysisSummary(result: HmrProfileAnalyzeResult, configS
   }
 }
 
-export function registerAnalyzeCommand(cli: CAC) {
-  cli
-    .command('analyze [root]', 'analyze 两端包体与源码映射')
-    .option('--ui-host <host>', `[string] 启动调试 UI 并选择宿主（standalone | hub）`)
-    .option('--hmr-profile [file]', `[string | boolean] 分析 HMR JSONL profile，省略值时优先读取配置，否则回退到默认路径`)
-    .option('--json', `[boolean] 输出 JSON 结果`)
-    .option('--markdown', `[boolean] 输出 Markdown 报告`)
-    .option('--report <type>', `[string] 输出指定报告类型（pr）`)
-    .option('--budget-check', `[boolean] 检查 analyze 预算，超过预算时返回非 0 退出码`)
-    .option('--glass-easel-check', `[boolean] 检查 glass-easel 配置、模板和 SelectorQuery 迁移兼容性`)
-    .option('--preload', `[boolean] 分析静态页面跳转、实际分包体积和 preloadRule 额度`)
-    .option('--output <file>', `[string] 将分析结果写入指定文件（JSON 或 Markdown）`)
-    .option('-p, --platform <platform>', `[string] target platform (weapp | web)`)
-    .option('--project-config <path>', `[string] project config path (miniprogram only)`)
-    .action(async (root: string, options: AnalyzeCLIOptions) => {
-      setCommandNodeEnv('production')
-      filterDuplicateOptions(options)
-      options.uiHost = parseDashboardUiHost(options.uiHost)
-      const configFile = resolveConfigFile(options)
-      const outputJson = coerceBooleanOption(options.json)
-      return withAnalyzeOutput(Boolean(outputJson), async (writeJson) => {
-        const outputMarkdown = coerceBooleanOption(options.markdown)
-        const reportType = typeof options.report === 'string' ? options.report.trim() : ''
-        const outputPrReport = reportType === 'pr'
-        if (reportType && !outputPrReport) {
-          throw new Error(`不支持的 analyze report 类型：${reportType}`)
-        }
-        const budgetCheck = coerceBooleanOption(options.budgetCheck)
-        const glassEaselCheck = coerceBooleanOption(options.glassEaselCheck)
-        const launchDashboard = !outputJson
-          && !outputMarkdown
-          && !outputPrReport
-          && !budgetCheck
-          && !glassEaselCheck
-        const targets = resolveRuntimeTargets(options)
-        const inlineConfig = createInlineConfig(targets)
-        let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
-        try {
-          ctx = await createCompilerContext({
-            cwd: root,
-            mode: options.mode ?? 'production',
-            configFile,
-            inlineConfig,
-            cliPlatform: targets.rawPlatform,
-            projectConfigPath: options.projectConfig,
-          })
-          logRuntimeTarget(targets, {
-            silent: outputJson || outputMarkdown,
-            resolvedConfigPlatform: ctx.configService.platform,
-          })
-          const outputOption = typeof options.output === 'string' ? options.output.trim() : ''
-          if (options.hmrProfile !== undefined && options.hmrProfile !== false) {
-            const profileOption = typeof options.hmrProfile === 'string' && options.hmrProfile.trim()
-              ? options.hmrProfile.trim()
-              : ctx.configService.weappViteConfig.hmr?.profileJson
-            const profilePath = resolveHmrProfileJsonPath({
-              cwd: ctx.configService.cwd,
-              option: profileOption,
-              fallbackToDefault: true,
-            })
-            if (!profilePath) {
-              throw new Error('未找到可用的 HMR profile 文件路径')
-            }
-            const hmrProfileResult = await analyzeHmrProfile({
-              profilePath,
-            })
-            const writtenPath = await writeAnalyzeResult(hmrProfileResult, outputOption, ctx.configService)
-            if (outputJson) {
-              if (!writtenPath) {
-                writeJson(hmrProfileResult)
-              }
-            }
-            else {
-              printHmrProfileAnalysisSummary(hmrProfileResult, ctx.configService)
-            }
-            return
-          }
-          if (coerceBooleanOption(options.preload)) {
-            if (targets.kind !== 'miniprogram' || ctx.configService.platform !== 'weapp') {
-              throw new Error('preloadRule 分析目前仅支持微信小程序平台。')
-            }
-            const packageAnalysis = await analyzeSubpackages(ctx)
-            const preloadResult = await analyzePreloadRules(ctx, { packageAnalysis })
-            const writtenPath = await writeAnalyzeResult(preloadResult, outputOption, ctx.configService)
-            if (outputJson && !writtenPath) {
-              writeJson(preloadResult)
-            }
-            if (!outputJson && !writtenPath) {
-              printPreloadAnalysisSummary(preloadResult)
-            }
-            return
-          }
-
-          const webBackend = getBackendForCapability(targets, 'web', 'analyze')
-          if (webBackend) {
-            const webResult = createWebAnalyzeResult(ctx.configService, {
-              platform: 'web',
-            })
-            const writtenPath = await writeAnalyzeResult(webResult, outputOption, ctx.configService)
-            if (outputJson) {
-              if (!writtenPath) {
-                writeJson(webResult)
-              }
-            }
-            else {
-              printWebAnalysisSummary(webResult)
-            }
-            return
-          }
-
-          if (!getBackendForCapability(targets, 'miniprogram', 'analyze')) {
-            logger.warn('当前命令不支持该平台，请通过 --platform weapp 或 --platform web 指定目标。')
-            return
-          }
-
-          const previousResult = await readLatestAnalyzeHistorySnapshot(ctx.configService)
-          ctx.runtimeState.glassEasel.silent = Boolean(outputJson || outputMarkdown || outputPrReport || glassEaselCheck)
-          const artifactSnapshot = launchDashboard ? createDashboardArtifactSnapshot() : undefined
-          const result = artifactSnapshot
-            ? await analyzeSubpackages(ctx, { onArtifact: artifactSnapshot.capture })
-            : await analyzeSubpackages(ctx)
-          await writeAnalyzeHistorySnapshot(result, ctx.configService)
-          const writtenPath = await writeAnalyzeResult(
-            result,
-            outputOption,
-            ctx.configService,
-            outputPrReport ? 'pr' : outputMarkdown ? 'markdown' : 'json',
-            previousResult,
-          )
-          if (outputPrReport) {
-            if (!writtenPath) {
-              process.stdout.write(`${createAnalyzePrMarkdownReport(result, previousResult)}\n`)
-            }
-          }
-          else if (outputMarkdown) {
-            if (!writtenPath) {
-              process.stdout.write(`${createAnalyzeMarkdownReport(result, previousResult)}\n`)
-            }
-          }
-          else if (outputJson) {
-            if (!writtenPath) {
-              writeJson(result)
-            }
-          }
-          const budgetFailed = budgetCheck
-            ? outputJson
-              ? createAnalyzeBudgetCheck(result).some(item => item.status === 'exceeded' || item.status === 'unknown')
-              : printBudgetCheckSummary(result)
-            : false
-          const glassEaselFailed = glassEaselCheck && !outputJson
-            ? printGlassEaselCheckSummary(result)
-            : glassEaselCheck && result.glassEasel.summary.errors > 0
-          if (budgetFailed || glassEaselFailed) {
-            process.exitCode = 1
-          }
-          if (budgetCheck || glassEaselCheck) {
-            return
-          }
-          if (artifactSnapshot) {
-            printAnalysisSummary(result)
-            await startAnalyzeDashboard(result, {
-              uiHost: options.uiHost,
-              artifacts: artifactSnapshot.files,
-              cwd: ctx.configService.cwd,
-              packageManagerAgent: ctx.configService.packageManager.agent,
-              pluginRoot: ctx.configService.absolutePluginRoot,
-              srcRoot: ctx.configService.absoluteSrcRoot,
-              previousResult,
-            })
-          }
-        }
-        catch (error) {
-          logger.error(error)
-          process.exitCode = 1
-        }
-        finally {
-          if (ctx) {
-            for (const backend of [...targets.entries].reverse()) {
-              if (backend.descriptor.capabilities.analyze) {
-                await backend.driver?.close?.(ctx)
-              }
-            }
-          }
-          terminateStaleSassEmbeddedProcess()
-        }
+/** 执行已匹配的分析命令，保持输出通道和上下文清理契约。 */
+export async function runAnalyzeCommand(root: string, options: AnalyzeCLIOptions) {
+  setCommandNodeEnv('production')
+  filterDuplicateOptions(options)
+  options.uiHost = parseDashboardUiHost(options.uiHost)
+  const configFile = resolveConfigFile(options)
+  const outputJson = coerceBooleanOption(options.json)
+  return withAnalyzeOutput(Boolean(outputJson), async (writeJson) => {
+    const outputMarkdown = coerceBooleanOption(options.markdown)
+    const reportType = typeof options.report === 'string' ? options.report.trim() : ''
+    const outputPrReport = reportType === 'pr'
+    if (reportType && !outputPrReport) {
+      throw new Error(`不支持的 analyze report 类型：${reportType}`)
+    }
+    const budgetCheck = coerceBooleanOption(options.budgetCheck)
+    const glassEaselCheck = coerceBooleanOption(options.glassEaselCheck)
+    const launchDashboard = !outputJson
+      && !outputMarkdown
+      && !outputPrReport
+      && !budgetCheck
+      && !glassEaselCheck
+    const targets = resolveRuntimeTargets(options)
+    const inlineConfig = createInlineConfig(targets)
+    let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
+    try {
+      ctx = await createCompilerContext({
+        cwd: root,
+        mode: options.mode ?? 'production',
+        configFile,
+        inlineConfig,
+        cliPlatform: targets.rawPlatform,
+        projectConfigPath: options.projectConfig,
       })
-    })
+      logRuntimeTarget(targets, {
+        silent: outputJson || outputMarkdown,
+        resolvedConfigPlatform: ctx.configService.platform,
+      })
+      const outputOption = typeof options.output === 'string' ? options.output.trim() : ''
+      if (options.hmrProfile !== undefined && options.hmrProfile !== false) {
+        const profileOption = typeof options.hmrProfile === 'string' && options.hmrProfile.trim()
+          ? options.hmrProfile.trim()
+          : ctx.configService.weappViteConfig.hmr?.profileJson
+        const profilePath = resolveHmrProfileJsonPath({
+          cwd: ctx.configService.cwd,
+          option: profileOption,
+          fallbackToDefault: true,
+        })
+        if (!profilePath) {
+          throw new Error('未找到可用的 HMR profile 文件路径')
+        }
+        const hmrProfileResult = await analyzeHmrProfile({
+          profilePath,
+        })
+        const writtenPath = await writeAnalyzeResult(hmrProfileResult, outputOption, ctx.configService)
+        if (outputJson) {
+          if (!writtenPath) {
+            writeJson(hmrProfileResult)
+          }
+        }
+        else {
+          printHmrProfileAnalysisSummary(hmrProfileResult, ctx.configService)
+        }
+        return
+      }
+      if (coerceBooleanOption(options.preload)) {
+        if (targets.kind !== 'miniprogram' || ctx.configService.platform !== 'weapp') {
+          throw new Error('preloadRule 分析目前仅支持微信小程序平台。')
+        }
+        const packageAnalysis = await analyzeSubpackages(ctx)
+        const preloadResult = await analyzePreloadRules(ctx, { packageAnalysis })
+        const writtenPath = await writeAnalyzeResult(preloadResult, outputOption, ctx.configService)
+        if (outputJson && !writtenPath) {
+          writeJson(preloadResult)
+        }
+        if (!outputJson && !writtenPath) {
+          printPreloadAnalysisSummary(preloadResult)
+        }
+        return
+      }
+
+      const webBackend = getBackendForCapability(targets, 'web', 'analyze')
+      if (webBackend) {
+        const webResult = createWebAnalyzeResult(ctx.configService, {
+          platform: 'web',
+        })
+        const writtenPath = await writeAnalyzeResult(webResult, outputOption, ctx.configService)
+        if (outputJson) {
+          if (!writtenPath) {
+            writeJson(webResult)
+          }
+        }
+        else {
+          printWebAnalysisSummary(webResult)
+        }
+        return
+      }
+
+      if (!getBackendForCapability(targets, 'miniprogram', 'analyze')) {
+        logger.warn('当前命令不支持该平台，请通过 --platform weapp 或 --platform web 指定目标。')
+        return
+      }
+
+      const previousResult = await readLatestAnalyzeHistorySnapshot(ctx.configService)
+      ctx.runtimeState.glassEasel.silent = Boolean(outputJson || outputMarkdown || outputPrReport || glassEaselCheck)
+      const artifactSnapshot = launchDashboard ? createDashboardArtifactSnapshot() : undefined
+      const result = artifactSnapshot
+        ? await analyzeSubpackages(ctx, { onArtifact: artifactSnapshot.capture })
+        : await analyzeSubpackages(ctx)
+      await writeAnalyzeHistorySnapshot(result, ctx.configService)
+      const writtenPath = await writeAnalyzeResult(
+        result,
+        outputOption,
+        ctx.configService,
+        outputPrReport ? 'pr' : outputMarkdown ? 'markdown' : 'json',
+        previousResult,
+      )
+      if (outputPrReport) {
+        if (!writtenPath) {
+          process.stdout.write(`${createAnalyzePrMarkdownReport(result, previousResult)}\n`)
+        }
+      }
+      else if (outputMarkdown) {
+        if (!writtenPath) {
+          process.stdout.write(`${createAnalyzeMarkdownReport(result, previousResult)}\n`)
+        }
+      }
+      else if (outputJson) {
+        if (!writtenPath) {
+          writeJson(result)
+        }
+      }
+      const budgetFailed = budgetCheck
+        ? outputJson
+          ? createAnalyzeBudgetCheck(result).some(item => item.status === 'exceeded' || item.status === 'unknown')
+          : printBudgetCheckSummary(result)
+        : false
+      const glassEaselFailed = glassEaselCheck && !outputJson
+        ? printGlassEaselCheckSummary(result)
+        : glassEaselCheck && result.glassEasel.summary.errors > 0
+      if (budgetFailed || glassEaselFailed) {
+        process.exitCode = 1
+      }
+      if (budgetCheck || glassEaselCheck) {
+        return
+      }
+      if (artifactSnapshot) {
+        printAnalysisSummary(result)
+        await startAnalyzeDashboard(result, {
+          uiHost: options.uiHost,
+          artifacts: artifactSnapshot.files,
+          cwd: ctx.configService.cwd,
+          packageManagerAgent: ctx.configService.packageManager.agent,
+          pluginRoot: ctx.configService.absolutePluginRoot,
+          srcRoot: ctx.configService.absoluteSrcRoot,
+          previousResult,
+        })
+      }
+    }
+    catch (error) {
+      logger.error(error)
+      process.exitCode = 1
+    }
+    finally {
+      if (ctx) {
+        for (const backend of [...targets.entries].reverse()) {
+          if (backend.descriptor.capabilities.analyze) {
+            await backend.driver?.close?.(ctx)
+          }
+        }
+      }
+      terminateStaleSassEmbeddedProcess()
+    }
+  })
 }
