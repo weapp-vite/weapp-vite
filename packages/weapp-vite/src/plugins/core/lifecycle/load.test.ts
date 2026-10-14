@@ -1058,6 +1058,7 @@ describe('core lifecycle options hook', () => {
       isDev: false,
       options: {},
       relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+      relativeOutputPath: (id: string) => id.replace('/project/src/', ''),
     }
     const appEntry = {
       path: '/project/src/app.ts',
@@ -1124,6 +1125,7 @@ describe('core lifecycle options hook', () => {
       isDev: false,
       options: {},
       relativeAbsoluteSrcRoot: (id: string) => id.replace(`${root}/`, ''),
+      relativeOutputPath: (id: string) => id.replace(`${root}/`, ''),
     }
     const appEntry = {
       path: path.join(root, 'app.ts'),

@@ -47,6 +47,11 @@ export interface ModuleGraphService {
   getEntryDependencies: (ownerId: string) => Array<{ kind: SidecarModuleKind, sourceId: string }>
 }
 
+/** 只复用本次同步输入规范化的路径读取，不向图更新回调或下一次登记保留缓存。 */
+function normalizeDependencySources(owner: string, sources: Iterable<string>): [string, Set<string>] {
+  return withRealpathScope(() => [normalizeSourceId(owner), new Set(Array.from(sources, normalizeSourceId))])
+}
+
 export function createModuleGraphService(): ModuleGraphService {
   const buildContexts = new Map<object, BuildGraphContext>()
   const buildContextTokens = new Map<object, object>()
@@ -337,13 +342,12 @@ export function createModuleGraphService(): ModuleGraphService {
       return await pluginContext.load(options)
     },
     replaceEntryDependencies(rawOwnerId, kind, sourceIds) {
-      const ownerId = normalizeSourceId(rawOwnerId)
+      const [ownerId, normalized] = normalizeDependencySources(rawOwnerId, sourceIds)
       let byKind = entryDependencies.get(ownerId)
       if (!byKind) {
         byKind = new Map()
         entryDependencies.set(ownerId, byKind)
       }
-      const normalized = new Set(Array.from(sourceIds, normalizeSourceId))
       if (normalized.size) {
         byKind.set(kind, normalized)
       }
@@ -394,11 +398,13 @@ export function createModuleGraphService(): ModuleGraphService {
       await Promise.all(logicalEntryIds.map(id => warmDevModule(id, server, binding)))
     },
     getTransformDependencies(sourceId) {
+      if (!transformDependencies.size) {
+        return []
+      }
       return [...transformDependencies.get(normalizeSourceId(sourceId)) ?? []]
     },
     replaceTransformDependencies(sourceId, dependencies) {
-      const id = normalizeSourceId(sourceId)
-      const next = new Set(Array.from(dependencies, normalizeSourceId))
+      const [id, next] = normalizeDependencySources(sourceId, dependencies)
       const previous = transformDependencies.get(id)
       if ((!previous && !next.size) || (previous?.size === next.size && [...next].every(file => previous.has(file)))) {
         return

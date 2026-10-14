@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { cp, mkdir, mkdtemp, readFile, realpath, symlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { renameAtomicFile } from './hmrAtomicRename'
@@ -53,4 +54,18 @@ export async function readNativeBatchOutput(project: string, marker: string) {
     extension,
     (await readFile(path.join(project, `dist/pages/index/index.${extension}`), 'utf8')).includes(marker),
   ])))
+}
+
+/** 失败时比较原始输入与实际产物，不记录本机路径或完整源码。 */
+export async function readNativeBatchDiagnostics(project: string) {
+  return await Promise.all(['src', 'dist'].flatMap(directory => NATIVE_BATCH_EXTENSIONS.map(async (extension) => {
+    const file = `${directory}/pages/index/index.${extension}`
+    try {
+      const contents = await readFile(path.join(project, file), 'utf8')
+      return { file, markers: [...new Set(contents.match(/BATCH_[A-Z]+/g) ?? [])], sha256: createHash('sha256').update(contents).digest('hex') }
+    }
+    catch (error) {
+      return { file, error: (error as NodeJS.ErrnoException).code ?? 'UNKNOWN' }
+    }
+  })))
 }

@@ -1,6 +1,6 @@
 import type * as OptionsModule from '../options'
 import process from 'node:process'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeHmrProfile } from '../../analyze/hmr'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
@@ -137,6 +137,7 @@ function createAnalyzeActionHandler() {
 
 describe('analyze cli command', () => {
   beforeEach(() => {
+    vi.stubEnv('NODE_ENV', 'test')
     vi.clearAllMocks()
     process.exitCode = undefined
     resolveConfigFileMock.mockReturnValue(undefined)
@@ -269,6 +270,23 @@ describe('analyze cli command', () => {
       uncoveredPages: [],
       limitations: ['静态分析限制'],
     })
+  })
+
+  afterEach(() => vi.unstubAllEnvs())
+
+  it.each([undefined, 'development', 'test', 'production'])('initializes production before loading config from NODE_ENV=%s', async (nodeEnv) => {
+    vi.stubEnv('NODE_ENV', nodeEnv)
+    const context = await createCompilerContextMock()
+    let configNodeEnv: string | undefined
+    createCompilerContextMock.mockImplementation(async () => {
+      configNodeEnv = process.env.NODE_ENV
+      return context
+    })
+
+    await createAnalyzeActionHandler()('/project', { json: true, mode: 'staging', budgetCheck: true })
+
+    expect(configNodeEnv).toBe('production')
+    expect(createCompilerContextMock).toHaveBeenLastCalledWith(expect.objectContaining({ mode: 'staging' }))
   })
 
   it('runs preload analysis without opening the dashboard', async () => {

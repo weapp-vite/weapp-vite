@@ -52,6 +52,7 @@ pub struct NativeCompilerScriptAnalysis {
 struct CompilerDiagnosticVisitor {
     has_lone_surrogate_literal: bool,
     has_default_export: bool,
+    has_ts_module_declaration: bool,
     reserved_props: ReservedPropsAnalysis,
 }
 
@@ -60,9 +61,29 @@ impl<'a> Visit<'a> for CompilerDiagnosticVisitor {
         &mut self,
         export: &oxc_ast::ast::ExportDefaultDeclaration<'a>,
     ) {
-        // 与原 Babel 遍历对齐，保留 ambient module 内声明的既有判断语义。
+        // 只为受支持源码收集事实；模块声明由整项 fallback 保留原 Babel 语义。
         self.has_default_export = true;
         walk::walk_export_default_declaration(self, export);
+    }
+
+    fn visit_ts_external_module_declaration(
+        &mut self,
+        _module: &oxc_ast::ast::TSExternalModuleDeclaration<'a>,
+    ) {
+        // 原 Babel 消费者遍历模块内的导入和默认导出，顶层摘要不能证明同等语义。
+        // 整项交回原路径，避免回退组件注册时仍复用不完整的导入摘要。
+        self.has_ts_module_declaration = true;
+    }
+
+    fn visit_ts_namespace_declaration(
+        &mut self,
+        _module: &oxc_ast::ast::TSNamespaceDeclaration<'a>,
+    ) {
+        self.has_ts_module_declaration = true;
+    }
+
+    fn visit_ts_global_declaration(&mut self, _module: &oxc_ast::ast::TSGlobalDeclaration<'a>) {
+        self.has_ts_module_declaration = true;
     }
 
     fn visit_string_literal(&mut self, literal: &oxc_ast::ast::StringLiteral<'a>) {
@@ -132,7 +153,7 @@ fn analyze_compiler_script_program(
 ) -> Option<NativeCompilerScriptAnalysis> {
     let mut diagnostics = CompilerDiagnosticVisitor::default();
     diagnostics.visit_program(program);
-    if diagnostics.has_lone_surrogate_literal {
+    if diagnostics.has_lone_surrogate_literal || diagnostics.has_ts_module_declaration {
         return None;
     }
     Some(NativeCompilerScriptAnalysis {

@@ -1,5 +1,5 @@
 import type { FileHandle } from 'node:fs/promises'
-import type { AnalyzeSubpackagesResult } from '../analyze/subpackages'
+import type { AnalyzeSubpackagesResult } from '../analyze/subpackages/types'
 import type { DashboardArtifactFiles } from './artifacts'
 import type {
   DashboardContentAllowlist,

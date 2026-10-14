@@ -5,6 +5,8 @@ import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import path from 'pathe'
+import { injectAutoImportBuildDiagnostics, isAutoImportBuildDiagnosticEnabled } from '../../../scripts/benchmarkTemplatesPerformance/autoImportBuildDiagnostics/fixture'
+import { saveAutoImportBuildDiagnostics } from '../../../scripts/benchmarkTemplatesPerformance/autoImportBuildDiagnostics/output'
 import { runMeasuredBuild } from '../../../scripts/benchmarkTemplatesPerformance/measuredBuild'
 import { captureOutputEvidence } from '../../../scripts/performanceGate/outputEvidence'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
@@ -26,6 +28,7 @@ const resolverComponents = createVantResolverComponents()
 const allResolverTags = Object.keys(resolverComponents).sort((a, b) => a.localeCompare(b))
 const DEFINE_CONFIG_IMPORT = pathToFileURL(path.join(workspaceWeappViteDir, 'dist/config.mjs')).href
 const BENCHMARK_RESOLVER_PATH = './benchmark-vant-resolver'
+const buildDiagnosticEnabled = isAutoImportBuildDiagnosticEnabled(process.env)
 const VANT_PACKAGE_PREFIX_RE = /^@vant\/weapp\/?/
 const ORIGINAL_AUTO_IMPORT_BLOCK = [
   '      autoImportComponents: {',
@@ -123,7 +126,7 @@ async function measureBuild(options: {
     await rm(path.join(project.tempDir, 'dist'), { recursive: true, force: true })
     await rm(path.join(project.tempDir, '.weapp-vite'), { recursive: true, force: true })
 
-    const memory = await runBuild(project.tempDir)
+    const memory = await runBuild(project.tempDir, `${usedTags.length}-${mode}-${iteration}`, 'first')
     const output = await captureOutputEvidence(project.tempDir)
     let repeatDurationMs: number | undefined
     let repeatRssPeakBytes: number | null | undefined
@@ -131,7 +134,7 @@ async function measureBuild(options: {
     let repeatCliBuildMs: number | null | undefined
     let repeatRssSampling: PeakRssSamplingStats | undefined
     if (process.env.AUTO_IMPORT_BENCH_PAIRED === '1') {
-      const repeatMemory = await runBuild(project.tempDir)
+      const repeatMemory = await runBuild(project.tempDir, `${usedTags.length}-${mode}-${iteration}`, 'repeat')
       repeatDurationMs = repeatMemory.durationMs
       repeatRssPeakBytes = repeatMemory.rssPeakBytes
       repeatCliBuildMs = repeatMemory.cliBuildMs
@@ -168,6 +171,9 @@ async function seedFixture(projectRoot: string, usedTags: string[], mode: 'basel
   await ensureProjectConfigFiles(projectRoot)
   await patchBenchmarkConfigImports(projectRoot)
   await patchViteConfig(projectRoot, mode)
+  if (buildDiagnosticEnabled) {
+    await patchProjectConfigFile(projectRoot, content => injectAutoImportBuildDiagnostics(content, true, pathToFileURL(path.resolve(import.meta.dirname, '../../../scripts/benchmarkTemplatesPerformance/autoImportBuildDiagnostics/hooks.ts')).href, buildDiagnosticRoots(projectRoot)), { errorMessage: 'Failed to inject the opt-in build diagnostic plugin' })
+  }
   await ensureBenchmarkResolverPackage(projectRoot, usedTags)
   await mkdir(pageDir, { recursive: true })
   await writeFile(
@@ -314,13 +320,17 @@ async function createTempFixtureProject(sourceRoot: string, prefix: string) {
   }
 }
 
-async function runBuild(cwd: string) {
+function buildDiagnosticRoots(projectRoot: string) {
+  return [{ path: projectRoot, label: '<project>' }, { path: workspaceRootDir, label: '<checkout>' }, { path: path.resolve(import.meta.dirname, '../../..'), label: '<driver>' }]
+}
+
+async function runBuild(cwd: string, id: string, phase: 'first' | 'repeat') {
   const cliPath = path.join(workspaceWeappViteDir, 'bin/weapp-vite.js')
   const workspaceBinDir = path.join(workspaceRootNodeModulesDir, '.bin')
   return await runMeasuredBuild(process.execPath, [cliPath, 'build', cwd, '--platform', 'weapp', '--skipNpm'], {
     cwd: workspaceRootDir,
     env: { ...process.env, PATH: createBenchmarkPath(workspaceBinDir) },
-  })
+  }, buildDiagnosticEnabled ? output => saveAutoImportBuildDiagnostics(path.join(reportDir, 'build-diagnostics', id, phase), output, buildDiagnosticRoots(cwd)) : undefined)
 }
 
 function createVantResolverComponents() {

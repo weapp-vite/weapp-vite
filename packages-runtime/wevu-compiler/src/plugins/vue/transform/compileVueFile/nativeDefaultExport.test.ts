@@ -91,7 +91,6 @@ describe('compileVueFile native default export reuse', () => {
     ['import { defineComponent } from "wevu"; export default defineComponent({ setup() { return { title: "value" } } })', true],
     ['// export default {}\nconst title = "value"', false],
     ['const title = "export default {}"', false],
-    ['declare module "virtual:card" { const page: any; export default page; }\nconst title = "value"', true],
   ] as const)('preserves complete output and source maps and avoids one default export parse: %s', async (code, fact) => {
     const source = createSource(code)
     const baselineWarn = vi.fn()
@@ -108,6 +107,33 @@ describe('compileVueFile native default export reuse', () => {
     expect(result).toEqual(baseline)
     expect(nativeWarn.mock.calls).toEqual(baselineWarn.mock.calls)
     expect(parse).toHaveBeenCalledTimes(baselineParses - 1)
+    expect(analyze).toHaveBeenCalledTimes(1)
+    expect(analyze).toHaveBeenCalledWith([{ code, filename: 'src/component.vue.ts' }])
+  })
+
+  it('keeps ambient declarations on the whole-item Babel fallback without losing their default export', async () => {
+    const code = 'declare module "virtual:card" { const page: any; export default page; }\nconst title = "value"'
+    expect(hasDefaultExport(code)).toBe(true)
+    expect(parse).toHaveBeenCalledTimes(1)
+    expect(parse).toHaveBeenCalledWith(code)
+    parse.mockClear()
+    const source = createSource(code)
+    const baselineWarn = vi.fn()
+    const baseline = await compileVueFile(source, 'src/component.vue', { warn: baselineWarn })
+    const baselineParses = parse.mock.calls.length
+    const baselineComponentParses = parseComponents.mock.calls.filter(([input]) => input === code).length
+    analyze.mockClear()
+    parse.mockClear()
+    parseComponents.mockClear()
+    analyze.mockReturnValue([null])
+    const nativeWarn = vi.fn()
+
+    const result = await compileVueFile(source, 'src/component.vue', { warn: nativeWarn })
+
+    expect(result).toEqual(baseline)
+    expect(nativeWarn.mock.calls).toEqual(baselineWarn.mock.calls)
+    expect(parse).toHaveBeenCalledTimes(baselineParses)
+    expect(parseComponents.mock.calls.filter(([input]) => input === code)).toHaveLength(baselineComponentParses)
     expect(analyze).toHaveBeenCalledTimes(1)
     expect(analyze).toHaveBeenCalledWith([{ code, filename: 'src/component.vue.ts' }])
   })

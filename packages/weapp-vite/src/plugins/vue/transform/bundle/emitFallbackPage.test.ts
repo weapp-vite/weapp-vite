@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_MP_PLATFORM } from '../../../../platform'
 import { emitFallbackPageAssets, emitResolvedFallbackPageEntryAssets } from './emitFallbackPage'
@@ -240,6 +241,32 @@ describe('emitFallbackPage helpers', () => {
     await emitFallbackPageAssets({}, state)
 
     expect(loadFallbackPageEntryCompilationMock).not.toHaveBeenCalled()
+  })
+
+  it('matches a large emitted page set with linear path work and refreshes the output mapping next time', async () => {
+    const root = path.resolve('fallback-page-fixture')
+    const entries = Array.from({ length: 512 }, (_, index) => path.join(root, `page-${index}`))
+    const relativeOutputPath = vi.fn((id: string) => path.relative(root, id).replace(/\.vue$/, ''))
+    const state = {
+      ctx: { configService: { platform: DEFAULT_MP_PLATFORM, relativeOutputPath }, scanService: {} },
+      pluginCtx: {},
+      compilationCache: new Map(),
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    } as any
+    collectFallbackPageEntryIdsMock.mockResolvedValue(entries)
+    const emittedEntryIds = new Set(entries.map(entry => `${entry}.vue`))
+    emittedEntryIds.add('')
+    await emitFallbackPageAssets({}, state, { emittedEntryIds })
+    expect(resolveFallbackPageEmitStateMock.mock.calls.map(([input]) => input.entryId)).toEqual(entries)
+    expect(relativeOutputPath.mock.calls.length).toBeLessThanOrEqual(entries.length * 2)
+
+    // 下一轮重新解析映射；不把已发布集合或路径身份保留到异步构建之间。
+    relativeOutputPath.mockClear().mockImplementation(id => id.endsWith('.vue') ? 'renamed' : path.relative(root, id))
+    resolveFallbackPageEmitStateMock.mockClear()
+    await emitFallbackPageAssets({}, state, { emittedEntryIds })
+    expect(resolveFallbackPageEmitStateMock).not.toHaveBeenCalled()
+    expect(relativeOutputPath.mock.calls.length).toBeLessThanOrEqual(entries.length * 2)
   })
 
   it('logs fallback page compilation failures and continues', async () => {

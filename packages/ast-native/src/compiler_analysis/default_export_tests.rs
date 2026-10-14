@@ -11,35 +11,39 @@ fn input(code: &str) -> NativeCompilerScriptInput {
 #[test]
 fn compiler_default_export_facts_share_the_existing_parse() {
     let cases = [
-        ("export default {}", true),
-        ("const page = {}; export default page", true),
-        ("export default defineComponent({})", true),
-        ("export default function page() {}", true),
-        ("export default class Page {}", true),
+        ("export default {}", Some(true)),
+        ("const page = {}; export default page", Some(true)),
+        ("export default defineComponent({})", Some(true)),
+        ("export default function page() {}", Some(true)),
+        ("export default class Page {}", Some(true)),
         (
             "const page: object = {}; export default (page satisfies object)",
-            true,
+            Some(true),
         ),
-        ("// export default {}\nconst page = {}", false),
-        ("const label = 'export default {}'", false),
-        ("const page = {}; export { page as default }", false),
+        ("// export default {}\nconst page = {}", Some(false)),
+        ("const label = 'export default {}'", Some(false)),
+        ("const page = {}; export { page as default }", Some(false)),
         (
             "declare module 'virtual:card' { const page: any; export default page; }",
-            true,
+            None,
         ),
-        ("export/*comment*/default {}", true),
+        ("export/*comment*/default {}", Some(true)),
     ];
     for (code, expected) in cases {
         SCRIPT_PARSE_COUNT.set(0);
         let results = analyze_compiler_scripts_native(vec![input(code), input(code)]);
         assert_eq!(SCRIPT_PARSE_COUNT.get(), 1, "{code}");
         assert_eq!(
-            results[0].as_ref().unwrap().has_default_export,
+            results[0]
+                .as_ref()
+                .map(|summary| summary.has_default_export),
             expected,
             "{code}"
         );
         assert_eq!(
-            results[1].as_ref().unwrap().has_default_export,
+            results[1]
+                .as_ref()
+                .map(|summary| summary.has_default_export),
             expected,
             "{code}"
         );

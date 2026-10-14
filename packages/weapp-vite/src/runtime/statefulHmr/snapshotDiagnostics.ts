@@ -1,5 +1,6 @@
 import type { WeappCompilerHmrRequest } from '../../types/compilerPlugin'
 import type { StatefulHmrOutputFile } from './outputWriter'
+import type { HmrPreparationObservation } from './preparationProfile'
 import type { StatefulHmrSnapshotBatch, StatefulHmrSnapshotMode } from './snapshotScheduler'
 import { Buffer } from 'node:buffer'
 import { createHash, randomUUID } from 'node:crypto'
@@ -45,6 +46,19 @@ class StatefulHmrSnapshotDiagnostics {
 
   delivery(stage: string, revision: number, files: readonly string[]): void {
     this.record(`delivery-${stage}`, { revision, files: files.map(file => this.label(file)), absolute: files.map(file => path.isAbsolute(file)) })
+  }
+
+  preparation(revision: number, files: readonly string[], observation: HmrPreparationObservation): void {
+    this.record('preparation-stage', {
+      revision,
+      files: files.map(file => this.label(file)),
+      preparation: observation.stage,
+      status: observation.status,
+      startedAtMs: observation.startedAtMs,
+      elapsedMs: observation.elapsedMs,
+      clock: { durations: 'performance.now', timestamp: 'UTC', timeOrigin: performance.timeOrigin },
+      ...(observation.status === 'rejected' ? { error: errorCode(observation.error) } : {}),
+    })
   }
 
   input(input: WeappCompilerHmrRequest): void {

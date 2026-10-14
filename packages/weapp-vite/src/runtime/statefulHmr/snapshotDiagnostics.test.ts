@@ -5,12 +5,14 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createHmrPreparationProfiler } from './preparationProfile'
 import { createStatefulHmrSnapshotDiagnostics } from './snapshotDiagnostics'
 
 const directories: string[] = []
 const digest = (source: string) => createHash('sha256').update(source).digest('hex')
 
 afterEach(async () => {
+  vi.restoreAllMocks()
   vi.unstubAllEnvs()
   await Promise.all(directories.splice(0).map(directory => rm(directory, { recursive: true, force: true })))
 })
@@ -26,6 +28,34 @@ function collect() {
 }
 
 describe('opt-in stateful snapshot diagnostics', () => {
+  it('correlates preparation stages with captured delivery inputs while keeping private errors out of traces', () => {
+    let now = 10
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    const { events, emit } = collect()
+    const trace = createStatefulHmrSnapshotDiagnostics({ root: '/repo', outDir: '/repo/dist', enabled: '1', emit })!
+    const files = ['/repo/src/page.vue', '/external/private/source.vue']
+    trace.input({ revision: 42, changedFiles: files, sources: new Map([[files[0]!, '<template>private input</template>']]) })
+    trace.delivery('prepare', 42, files)
+    const profile = createHmrPreparationProfiler(observation => trace.preparation(42, files, observation))!
+    profile.begin('snapshot-build')
+    now = 30
+    profile.finish('rejected', Object.assign(new Error('private input and filename'), { code: 'EIO' }))
+
+    expect(events.map(item => item.revision)).toEqual([42, 42, 42])
+    expect(events[2]).toMatchObject({
+      stage: 'preparation-stage',
+      preparation: 'snapshot-build',
+      status: 'rejected',
+      files: ['src/page.vue', '<external>'],
+      startedAtMs: 10,
+      elapsedMs: 20,
+      clock: { durations: 'performance.now', timestamp: 'UTC', timeOrigin: performance.timeOrigin },
+      error: 'EIO',
+    })
+    expect(JSON.stringify(events)).not.toMatch(/private|\/repo|\/external/)
+    expect(new Set(events.map(item => item.sessionId)).size).toBe(1)
+  })
+
   it('does not read, hash or emit anything without the exact opt-in value', () => {
     const read = vi.fn()
     const emit = vi.fn()

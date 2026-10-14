@@ -5,9 +5,10 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 独立消费者必须跨平台执行包管理器。
 import { execa } from 'execa'
-import { stringify } from 'yaml'
+import { parse, stringify } from 'yaml'
 import { parsePnpmLockfile } from '../../../scripts/pnpmLockfile/index.mjs'
 import { createConsumerTemporaryRoot, packConsumerTarballs, readConsumerTarballs, verifyConsumerTarballProvenance } from './consumerTarballs.mjs'
+import { assertDashboardIsolationWorkspace, createDashboardIsolationWorkspace } from './dashboardConsumerFixture.mjs'
 import { verifyDependencySemantics } from './verify-dependency-semantics.mjs'
 
 const manager = process.argv[2] ?? 'pnpm'
@@ -21,10 +22,22 @@ try {
   const candidates = process.env.WEAPP_VITE_CONSUMER_TARBALLS
     ? await readConsumerTarballs(path.resolve(process.env.WEAPP_VITE_CONSUMER_TARBALLS))
     : await packConsumerTarballs(repoRoot, temporaryRoot)
-  await writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'weapp-vite-host-dependency-compatibility', private: true, type: 'module', dependencies: { ...candidates, typescript: '6.0.3' } }, null, 2))
+  const repositoryWorkspace = parse(await readFile(path.join(repoRoot, 'pnpm-workspace.yaml'), 'utf8'))
+  // 全部框架档案置顶时，显式提供由应用负责的公开 peer；内部插件宿主仍由包自身提供。
+  const consumerPeers = {
+    'miniprogram-api-typings': repositoryWorkspace.catalog['miniprogram-api-typings'],
+    'rolldown': repositoryWorkspace.catalog.rolldown,
+    'tailwindcss': repositoryWorkspace.catalogs.tailwind4.tailwindcss,
+  }
+  assert(Object.values(consumerPeers).every(value => typeof value === 'string' && value.length > 0), 'Consumer peers must come from repository catalogs')
+  await writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'weapp-vite-host-dependency-compatibility', private: true, type: 'module', dependencies: { ...candidates, typescript: '6.0.3' }, devDependencies: consumerPeers }, null, 2))
   if (manager === 'pnpm') {
     // 只映射未发布的框架候选闭包；不覆盖注册表依赖版本、peer 声明或校验。
-    await writeFile(path.join(root, 'pnpm-workspace.yaml'), stringify({ overrides: candidates, allowBuilds: { '@swc/core': true, 'esbuild': true } }))
+    const workspace = createDashboardIsolationWorkspace(candidates, root)
+    assertDashboardIsolationWorkspace(workspace)
+    const yaml = stringify(workspace)
+    assert.deepEqual(parse(yaml), workspace, 'Serialized strict consumer policy changed')
+    await writeFile(path.join(root, 'pnpm-workspace.yaml'), yaml)
   }
   await execa(manager, manager === 'pnpm' ? ['install', '--strict-peer-dependencies', '--config.engine-strict=true', '--config.ignore-scripts=false'] : ['install', '--strict-peer-deps'], { cwd: root, env, stdio: 'inherit' })
   let packages
@@ -49,7 +62,7 @@ try {
     return name ? [{ name, version: entry.version ?? key.slice(name.length + 1), peers: entry.peerDependencies ?? {} }] : []
   })
   const semantics = await verifyDependencySemantics(root)
-  const evidence = { schemaVersion: 1, manager, node: process.version, strictPeers: true, versions, semantics }
+  const evidence = { schemaVersion: 1, manager, node: process.version, strictPeers: true, consumerPeers, versions, semantics }
   const destination = process.env.WEAPP_VITE_DEPENDENCY_EVIDENCE
   if (destination) {
     await mkdir(path.dirname(path.resolve(destination)), { recursive: true })

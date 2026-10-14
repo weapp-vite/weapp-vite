@@ -1,4 +1,5 @@
 import type { HmrProfileJsonSample } from '../../analyze/hmr'
+import type { HmrProfileSourceEvent } from '../../utils/hmrProfile/provenance'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -6,6 +7,38 @@ import { expect, it, vi } from 'vitest'
 import { attributeHmrProfile } from '../../analyze/hmr/attribution'
 import { readHmrProfileLines } from '../../analyze/hmr/reader'
 import { createStatefulHmrProfile, StatefulHmrProfile } from './profile'
+
+it('preserves ingress identity and includes invalidation before the stateful notification', () => {
+  let now = 40
+  const samples: HmrProfileJsonSample[] = []
+  const profile = new StatefulHmrProfile({ root: '/fixture', now: () => now, emit: sample => samples.push(sample) })
+  const event: HmrProfileSourceEvent = { eventId: 'source-ingress', event: 'update', file: '/fixture/page.vue', receivedAtMs: 10 }
+  profile.source('/fixture/page.vue', event)
+  event.receivedAtMs = 90
+  event.eventId = 'changed-after-notification'
+  now = 70
+  const batch = profile.begin(['/fixture/page.vue'], 'refresh')
+  now = 80
+  batch.mark('snapshotPublishMs')
+  now = 100
+  batch.finish('complete')
+  expect(samples).toHaveLength(1)
+  expect(samples[0]).toMatchObject({
+    eventId: 'source-ingress',
+    totalMs: 90,
+    sourceToBatchMs: 60,
+    snapshotBuildMs: 10,
+    snapshotPublishMs: 20,
+    sourceEvents: [{ eventId: 'source-ingress', event: 'update', file: '/fixture/page.vue', receivedAtMs: 10 }],
+  })
+  expect(attributeHmrProfile(samples[0]!)).toMatchObject({ status: 'complete', profileResidualMs: 0 })
+  expect(attributeHmrProfile(samples[0]!, {
+    sourceFile: '/fixture/page.vue',
+    writtenAtEpochMs: performance.timeOrigin + 5,
+    visibleAtEpochMs: performance.timeOrigin + 110,
+  }).external).toEqual({ status: 'matched', eventId: 'source-ingress', sourceToWatcherMs: 5, afterProfileToVisibleMs: 10 })
+  expect(readHmrProfileLines(JSON.stringify(samples[0])).coverage.compatible).toBe(1)
+})
 
 it('records disjoint boundaries without double counting preparation that precedes commit', async () => {
   let now = 10

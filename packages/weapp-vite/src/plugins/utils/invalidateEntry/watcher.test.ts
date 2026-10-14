@@ -97,9 +97,12 @@ describe('invalidateEntry sidecar watcher', () => {
 
     ensureSidecarWatcher(createContext(), '/project/src')
 
-    const patterns = chokidarWatchMock.mock.calls[0]?.[0] as string[]
-    expect(patterns).toContain('/project/src/**/*.axml')
-    expect(patterns).toContain('/project/src/**/*.acss')
+    expect(chokidarWatchMock.mock.calls[0]?.[0]).toBe('/project/src')
+    const { ignored } = chokidarWatchMock.mock.calls[0]![1]
+    const file = { isFile: () => true }
+    expect(ignored('/project/src/page.axml', file)).toBe(false)
+    expect(ignored('/project/src/page.acss', file)).toBe(false)
+    expect(ignored('/project/src/page.js', file)).toBe(true)
   })
 
   it('watches native Douyin template and style sidecars', () => {
@@ -111,9 +114,11 @@ describe('invalidateEntry sidecar watcher', () => {
 
     ensureSidecarWatcher(createContext(), '/project/src')
 
-    const patterns = chokidarWatchMock.mock.calls[0]?.[0] as string[]
-    expect(patterns).toContain('/project/src/**/*.ttml')
-    expect(patterns).toContain('/project/src/**/*.ttss')
+    expect(chokidarWatchMock.mock.calls[0]?.[0]).toBe('/project/src')
+    const { ignored } = chokidarWatchMock.mock.calls[0]![1]
+    const file = { isFile: () => true }
+    expect(ignored('/project/src/page.ttml', file)).toBe(false)
+    expect(ignored('/project/src/page.ttss', file)).toBe(false)
   })
 
   it('treats raw rename on an existing known sidecar file as update after settle', async () => {
@@ -170,6 +175,47 @@ describe('invalidateEntry sidecar watcher', () => {
     expect(extractCssImportDependenciesMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/hello.css')
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/hello.css', 'update')
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:rename->update] src/pages/hmr/hello.css')
+  })
+
+  it('cancels a pending raw rename fallback when Chokidar delivers the file event', async () => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+    const watcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(watcher)
+    const ctx = createContext()
+    ensureSidecarWatcher(ctx, '/project/src')
+    watcher.emit('add', '/project/src/pages/hmr/index.wxml')
+    watcher.emit('ready')
+    watcher.emit('raw', 'rename', 'pages/hmr/index.wxml', { watchedPath: '/project/src' })
+    watcher.emit('change', '/project/src/pages/hmr/index.wxml')
+    await vi.advanceTimersByTimeAsync(120)
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledTimes(1)
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'update')
+  })
+
+  it.each([true, false])('leaves covered paths to Chokidar stable file events (already covered: %s)', async (coveredFirst) => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+    const watcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(watcher)
+    const ctx = createContext()
+    ensureSidecarWatcher(ctx, '/project/src')
+    watcher.emit('ready')
+    if (coveredFirst) {
+      watcher.emit('addDir', '/project/src/pages/hmr')
+    }
+    watcher.emit('raw', 'rename', 'pages/hmr/index.wxml', { watchedPath: '/project/src' })
+    if (!coveredFirst) {
+      watcher.emit('addDir', '/project/src/pages/hmr')
+    }
+    await vi.advanceTimersByTimeAsync(240)
+    expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
+    watcher.emit('change', '/project/src/pages/hmr/index.wxml')
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledExactlyOnceWith(ctx, '/project/src/pages/hmr/index.wxml', 'update')
   })
 
   it('does not drop pre-ready atomic restore events for known sidecar files', async () => {

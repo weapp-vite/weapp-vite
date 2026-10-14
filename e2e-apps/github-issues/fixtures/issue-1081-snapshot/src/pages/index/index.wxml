@@ -1,0 +1,3 @@
+<view id="template-utility" class="snapshot-page bg-[#fce7f3]">fixed utility</view>
+<view id="script-utility" class="{{utility}}">{{marker}}</view>
+<button id="increment" bindtap="increment">{{count}}</button>
