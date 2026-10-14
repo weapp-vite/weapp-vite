@@ -19,7 +19,7 @@ async function main() {
   const data = await collectPerformanceReports({
     performanceRoot: process.env.PERFORMANCE_ARTIFACT_ROOT,
     runtimeRoot: process.env.RUNTIME_ARTIFACT_ROOT,
-    runtimeExpected: { repository, prNumber, headSha },
+    runtimeExpected: { repository, prNumber, headSha, baseSha },
   })
   const runs = [
     createRun('CI Performance', performanceRunId, process.env.PERFORMANCE_RUN_URL, process.env.PERFORMANCE_CONCLUSION, process.env.PERFORMANCE_DURATION_MS),
@@ -45,7 +45,7 @@ async function main() {
     },
   })
   body = limitBody(body)
-  await upsertComment({ apiUrl, token, repository, prNumber, body })
+  await upsertComment({ apiUrl, token, repository, prNumber, headSha, baseSha, body })
 }
 
 function createRun(name, id, url, conclusion, duration) {
@@ -68,17 +68,22 @@ async function listArtifactLinks({ apiUrl, token, repository, runIds }) {
   return artifacts.filter(artifact => artifact.name && artifact.url)
 }
 
-async function upsertComment({ apiUrl, token, repository, prNumber, body }) {
+async function upsertComment({ apiUrl, token, repository, prNumber, headSha, baseSha, body }) {
+  const current = () => githubRequest(apiUrl, token, `/repos/${repository}/pulls/${prNumber}`)
+  const matches = pull => pull.state === 'open' && pull.head?.sha === headSha && pull.base?.sha === baseSha
+  if (!matches(await current())) { return false }
   const comments = await githubRequest(apiUrl, token, `/repos/${repository}/issues/${prNumber}/comments?per_page=100`)
   const existing = (Array.isArray(comments) ? comments : []).find(comment => comment.user?.type === 'Bot' && (
     comment.body?.includes(COMMENT_MARKER)
     || comment.body?.includes('<!-- wevu-runtime-size-report -->')
   ))
+  if (!matches(await current())) { return false }
   const options = { method: existing ? 'PATCH' : 'POST', body: JSON.stringify({ body }) }
   const path = existing
     ? `/repos/${repository}/issues/comments/${existing.id}`
     : `/repos/${repository}/issues/${prNumber}/comments`
   await githubRequest(apiUrl, token, path, options)
+  return true
 }
 
 async function githubRequest(apiUrl, token, pathname, options = {}) {

@@ -1,29 +1,41 @@
 name: VSCode Extension CI
 
 on:
-  pull_request:
-    types: [opened, synchronize]
-    paths:
-      - 'extensions/vscode/**'
-      - .github/workflows/ci-vscode-extension.yml
-      - .github/workflows/release.yml
-      - .github/workflows/reusable-node-command.yml
-      - '.github/actions/setup-node-pnpm/**'
-      - '.github/actions/refresh-workspace-deps/**'
   workflow_dispatch:
+    inputs:
+      pr-number:
+        description: PR number to validate (empty uses the selected ref)
+        required: false
+        default: ''
+        type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number || github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+      paths: '["extensions/vscode/**",".github/workflows/ci-vscode-extension.yml",".github/workflows/release.yml",".github/workflows/reusable-node-command.yml",".github/actions/setup-node-pnpm/**",".github/actions/refresh-workspace-deps/**"]'
+
   vscode-extension:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: VSCode Extension Checks (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 10
@@ -32,16 +44,21 @@ jobs:
     secrets: inherit
 
   vscode-extension-package:
+    if: needs.pr-context.outputs.should_run == 'true'
     name: VSCode Extension Package Dry Run (Node 24)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs:
+      - pr-context
       - vscode-extension
       - vscode-extension-host-smoke
       - vscode-extension-vsix-e2e
     steps:
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-node-pnpm
         with:
@@ -59,13 +76,17 @@ jobs:
           include-hidden-files: true
 
   vscode-extension-host-smoke:
+    if: needs.pr-context.outputs.should_run == 'true'
     name: VSCode Extension Host Smoke (Node 24)
     runs-on: macos-latest
     timeout-minutes: 15
-    needs: vscode-extension
+    needs: [pr-context, vscode-extension]
     steps:
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-node-pnpm
         with:
@@ -78,13 +99,17 @@ jobs:
         run: pnpm --dir extensions/vscode run test:host:smoke
 
   vscode-extension-vsix-e2e:
+    if: needs.pr-context.outputs.should_run == 'true'
     name: VSCode Extension VSIX E2E (Node 24)
     runs-on: macos-latest
     timeout-minutes: 20
-    needs: vscode-extension
+    needs: [pr-context, vscode-extension]
     steps:
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-node-pnpm
         with:
