@@ -573,6 +573,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       resolve: this.resolve.bind(this),
       isManaged: file => isManagedTailwindcssEntry(ctx, file),
     })
+    if (!imports.managed && importedRoots.size === 0) {
+      return null
+    }
     const key = importedSourceKey(id)
     if (!imports.managed) {
       if (importedRoots.has(key) && await importedRoots.remove(await getCompiler(), key)) {
@@ -713,7 +716,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       if (sidecar.kind !== 'style' || sidecar.dependencyOnly) {
         return null
       }
-      let index = entryIndex.get(normalizeManagedTailwindcssEntryPath(sidecar.sourceId))
+      let index = entryIndex.size > 0
+        ? entryIndex.get(normalizeManagedTailwindcssEntryPath(sidecar.sourceId))
+        : undefined
       if (index === undefined && resolved.autoDetected) {
         try {
           index = resolveAutoEntryIndex(sidecar.sourceId, fs.readFileSync(sidecar.sourceId, 'utf8'))
@@ -766,7 +771,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       const sourceId = requestSources.get(id) ?? id
       const entry = parseManagedEntryIndex(sourceId, entryIndex) ?? resolveAutoEntryIndex(sourceId, code)
       if (entry === undefined) {
-        return code.includes('@import') || importedRoots.has(importedSourceKey(id))
+        return code.includes('@import') || (importedRoots.size > 0 && importedRoots.has(importedSourceKey(id)))
           ? transformImportedSource.call(this, code, id)
           : null
       }
@@ -792,7 +797,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       }
     },
     shouldTransformCachedModule({ id }) {
-      if (importedRoots.has(importedSourceKey(id))) {
+      if (importedRoots.size > 0 && importedRoots.has(importedSourceKey(id))) {
         return true
       }
       const sourceId = requestSources.get(id) ?? id
