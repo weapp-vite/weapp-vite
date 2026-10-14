@@ -253,6 +253,12 @@ export default await defineEslintConfig({
         'e18e/ban-dependencies': 'off',
       },
     }, {
+      files: ['packages/tailwindcss/package.json'],
+      rules: {
+        // 来源匹配保留上游 micromatch 的 glob、隐藏文件与异常短路语义。
+        'e18e/ban-dependencies': 'off',
+      },
+    }, {
       // Preserve Windows command resolution, abort handling and process cleanup semantics.
       files: ['packages/weapp-ide-cli/package.json', 'packages/agent-core/package.json', 'packages/agent-mini-program/package.json', 'packages/agent-cli/package.json', 'packages/acceptance/package.json'],
       rules: {

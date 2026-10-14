@@ -4,12 +4,15 @@ import fs from 'node:fs/promises'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 受管进程发现和 Windows 精确终止复用跨平台子进程封装。
 import { execa } from 'execa'
-import { readManagedProcessIdentity, sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
+import { readDarwinManagedProcessIdentities } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/darwinProcessIdentity'
+import { readManagedProcessIdentity, sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/processIdentity'
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { traceCleanupStage } from '../cleanupTrace'
+import { windowsLegacyProcessStarted } from './windowsKernelQuery'
 import { parseWindowsProcessRows } from './windowsProcessRows'
 import { collectWindowsProcessTree, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
-import { createWindowsProcessQueryCommand, reportWindowsQueryTrace } from './windowsQueryTrace'
+import { traceWindowsQueryChild } from './windowsQueryChildTrace'
+import { createWindowsKernelProcessQueryCommand, reportWindowsQueryTrace } from './windowsQueryTrace'
 
 export { type DevProcessCandidate, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
 
@@ -23,15 +26,18 @@ async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
   if (pids?.length === 0) {
     return []
   }
-  const filter = ` -Filter '${pids ? pids.map(pid => `ProcessId=${pid}`).join(' OR ') : 'ProcessId > 0'}'`
   const timeoutMs = resolveWechatInspectionTimeout('win32')
   const trace = process.env.WEAPP_VITE_E2E_CLEANUP_TRACE === '1'
-  const result = await traceCleanupStage(pids ? 'dev-cim-identities' : 'dev-cim-snapshot', () => execa('powershell.exe', [
-    '-NoProfile',
-    '-NonInteractive',
-    '-Command',
-    createWindowsProcessQueryCommand(filter, trace),
-  ], { timeout: timeoutMs, reject: false, windowsHide: true }), { processCount: pids?.length, timeoutMs })
+  const result = await traceCleanupStage(pids ? 'dev-kernel-identities' : 'dev-kernel-snapshot', () => {
+    const startedMs = trace ? performance.now() : 0
+    const subprocess = execa('powershell.exe', [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      createWindowsKernelProcessQueryCommand(pids, trace),
+    ], { timeout: timeoutMs, reject: false, windowsHide: true })
+    return trace ? traceWindowsQueryChild(pids ? 'identities' : 'snapshot', subprocess, startedMs) : subprocess
+  }, { processCount: pids?.length, timeoutMs })
   if (trace) {
     reportWindowsQueryTrace(pids ? 'identities' : 'snapshot', result)
   }
@@ -45,18 +51,24 @@ async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
       || !('ParentProcessId' in entry) || typeof entry.ParentProcessId !== 'number' || !Number.isSafeInteger(entry.ParentProcessId) || entry.ParentProcessId < 0) {
       throw inspectionError()
     }
+    const started = 'Started' in entry && typeof entry.Started === 'string' ? entry.Started : undefined
+    const legacyStarted = started && windowsLegacyProcessStarted(started)
     const identity = 'ExecutablePath' in entry && typeof entry.ExecutablePath === 'string' && entry.ExecutablePath
       && 'Started' in entry && typeof entry.Started === 'string' && entry.Started
-      ? { pid: entry.ProcessId, executable: entry.ExecutablePath, started: entry.Started }
+      && legacyStarted
+      ? { pid: entry.ProcessId, executable: entry.ExecutablePath, started: legacyStarted }
       : undefined
-    return { pid: entry.ProcessId, ppid: entry.ParentProcessId, identity, started: 'Started' in entry && typeof entry.Started === 'string' ? entry.Started : undefined }
+    return { pid: entry.ProcessId, ppid: entry.ParentProcessId, identity, started }
   })
 }
 
 async function readMacProcesses(): Promise<ProcessEntry[]> {
-  const result = await execa('ps', ['-Ao', 'pid=,ppid=,lstart=,comm='], { stdin: 'ignore', timeout: 3_000, env: { LC_ALL: 'C' } })
+  const result = await execa('ps', ['-Ao', 'pid=,ppid=,lstart='], { stdin: 'ignore', timeout: 3_000, env: { LC_ALL: 'C' } })
+  if (result.stderr?.trim()) {
+    throw inspectionError()
+  }
   return result.stdout.split(/\r?\n/).filter(line => line.trim()).map((line) => {
-    const match = /^(\d+)\s+(\d+)\s+(\w{3}\s+\w{3}\s+\d+\s+\d{2}:\d{2}:\d{2}\s+\d{4})\s+(\S[^\r\n]*)$/.exec(line.trim())
+    const match = /^(\d+)\s+(\d+)\s+(\w{3}\s+\w{3}\s+\d+\s+\d{2}:\d{2}:\d{2}\s+\d{4})$/.exec(line.trim())
     if (!match) {
       throw inspectionError()
     }
@@ -65,7 +77,7 @@ async function readMacProcesses(): Promise<ProcessEntry[]> {
     if (!Number.isSafeInteger(pid) || pid < 0 || !Number.isSafeInteger(ppid)) {
       throw inspectionError()
     }
-    return { pid, ppid, identity: { pid, started: match[3]!.replace(/\s+/g, ' '), executable: match[4]!.trim() } }
+    return { pid, ppid, started: match[3]!.replace(/\s+/g, ' ') }
   }).filter(entry => entry.pid > 0)
 }
 
@@ -136,9 +148,12 @@ export async function captureDevProcessTree(rootPid: number, isRootHeld: () => b
   }
   let identities: (DevProcessIdentity | undefined)[]
   try {
+    const darwinIdentities = process.platform === 'darwin'
+      ? await readDarwinManagedProcessIdentities(tree.map(entry => entry.pid))
+      : undefined
     identities = await Promise.all(tree.map(async (entry) => {
       if (!windows) {
-        const identity = await readManagedProcessIdentity(entry.pid)
+        const identity = darwinIdentities ? darwinIdentities.get(entry.pid) : await readManagedProcessIdentity(entry.pid)
         if (identity && (entry.identity ? !sameManagedProcess(entry.identity, identity) : entry.started !== identity.started)) {
           throw inspectionError()
         }
@@ -172,8 +187,11 @@ export async function captureDevProcessTree(rootPid: number, isRootHeld: () => b
   return identities.filter((identity): identity is DevProcessIdentity => identity != null)
 }
 
-/** Windows 每轮只启动一次 CIM 查询；空结果代表退出，缺少身份字段代表检查失败。 */
+/** Windows 与 macOS 批量核验内核身份；缺少身份字段不能当作退出。 */
 export async function readDevProcessIdentities(pids: number[]): Promise<Map<number, DevProcessIdentity | undefined>> {
+  if (process.platform === 'darwin') {
+    return readDarwinManagedProcessIdentities(pids)
+  }
   if (process.platform !== 'win32') {
     return new Map(await Promise.all(pids.map(async pid => [pid, await readManagedProcessIdentity(pid)] as const)))
   }

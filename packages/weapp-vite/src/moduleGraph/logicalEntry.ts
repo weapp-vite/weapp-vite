@@ -1,5 +1,6 @@
 import type { LogicalEntryRequest, SidecarModuleKind } from './protocol'
 import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
+import { withRealpathScope } from '../utils/realpathScope'
 import { createSidecarModuleId, createSidecarSourceSpecifier } from './protocol'
 
 export interface LogicalEntryDependency {
@@ -26,9 +27,11 @@ export function createLogicalEntryModuleCode(
         ? `export { default } from ${source};`
         : `import ${source};`]
   const dependencyIds = new Set<string>()
-  for (const dependency of dependencies) {
-    dependencyIds.add(createSidecarModuleId(entry.sourceId, dependency.sourceId, dependency.kind))
-  }
+  withRealpathScope(() => {
+    for (const dependency of dependencies) {
+      dependencyIds.add(createSidecarModuleId(entry.sourceId, dependency.sourceId, dependency.kind))
+    }
+  })
   // 依赖集合不携带执行顺序；首次发现与图恢复可能枚举不同顺序。
   // 保持包装模块内容稳定，避免脚本更新额外失效不执行注册的逻辑入口。
   for (const dependencyId of [...dependencyIds].sort()) {

@@ -59,4 +59,34 @@ describe('measured build lifecycle', () => {
     expect(vi.getTimerCount()).toBe(0)
     expect(probe).toHaveBeenCalledTimes(1)
   })
+
+  it('captures already buffered streams after duration is fixed and excludes an asynchronous sink', async () => {
+    vi.spyOn(performance, 'now').mockReturnValueOnce(10).mockReturnValueOnce(30)
+    launch.mockReturnValue(Promise.resolve({ stdout: 'built in 12ms', stderr: 'warning' }))
+    const sink = Promise.withResolvers<void>()
+    const observe = vi.fn(() => sink.promise)
+    const result = runMeasuredBuild('node', ['cli.js'], { cwd: '.' }, observe)
+    await vi.waitFor(() => expect(observe).toHaveBeenCalledOnce())
+    expect(observe).toHaveBeenCalledWith({ status: 'completed', stdout: 'built in 12ms', stderr: 'warning', durationMs: 20 })
+    sink.resolve()
+    await expect(result).resolves.toMatchObject({ durationMs: 20, cliBuildMs: 12 })
+    expect(performance.now).toHaveBeenCalledTimes(2)
+  })
+
+  it.each(['success', 'failure'] as const)('does not replace the original %s when saving diagnostic output fails', async (kind) => {
+    const failure = Object.assign(new Error('original build failure'), { stdout: 'partial stdout', stderr: 'original error' })
+    launch.mockReturnValue(kind === 'success' ? Promise.resolve({ stdout: 'built in 12ms', stderr: '' }) : Promise.reject(failure))
+    const observe = vi.fn(async () => {
+      throw new Error('diagnostic output failure')
+    })
+    const result = runMeasuredBuild('node', ['cli.js'], { cwd: '.' }, observe)
+    if (kind === 'success') {
+      await expect(result).resolves.toMatchObject({ cliBuildMs: 12 })
+    }
+    else {
+      await expect(result).rejects.toBe(failure)
+      expect(observe).toHaveBeenCalledWith({ status: 'failed', stdout: failure.stdout, stderr: failure.stderr, errorName: 'Error' })
+    }
+    expect(observe).toHaveBeenCalledOnce()
+  })
 })

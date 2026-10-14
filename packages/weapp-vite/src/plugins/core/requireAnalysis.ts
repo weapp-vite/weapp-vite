@@ -214,15 +214,6 @@ export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
           const dependencyRewrites: DependencyRewrite[] = []
           const nativeImportTokens: DynamicImportToken[] = []
           const resolvedDependencies: ResolvedAsyncDependency[] = []
-          const subPackageRoots = [...scanService.subPackageMap.keys()]
-            .filter(Boolean)
-            .sort((left, right) => right.length - left.length)
-          const importerPackageRoot = resolveModulePackageRoot(
-            id,
-            configService.relativeAbsoluteSrcRoot,
-            subPackageRoots,
-          )
-
           const resolveDependency = async (token: RequireToken | DynamicImportToken) => {
             if (!token.value.startsWith('.')) {
               return null
@@ -258,7 +249,11 @@ export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
             resolvedDependencies.push(resolved.dependency)
           }
 
-          if (dynamicImports === 'native' && configService.platform === 'weapp') {
+          if (dynamicImports === 'native' && configService.platform === 'weapp' && dynamicImportTokens.length > 0) {
+            const subPackageRoots = [...scanService.subPackageMap.keys()]
+              .filter(Boolean)
+              .sort((left, right) => right.length - left.length)
+            const importerPackageRoot = resolveModulePackageRoot(id, configService.relativeAbsoluteSrcRoot, subPackageRoots)
             for (const token of dynamicImportTokens) {
               const resolved = await resolveDependency(token)
               if (!resolved) {

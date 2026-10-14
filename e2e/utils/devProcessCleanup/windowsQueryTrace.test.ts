@@ -45,6 +45,46 @@ describe('Windows dev process query diagnostic', () => {
     expect(traced).toContain(formatter)
   })
 
+  it('observes script entry and both UTF-8 boundaries before querying', () => {
+    const command = createWindowsProcessQueryCommand(' -Filter \'ProcessId > 0\'', true)
+    const encoding = command.indexOf('[Console]::OutputEncoding=')
+    expect(command).toContain('WEAPP_DEV_QUERY_V2|script|begin|0.000|')
+    expect(command.indexOf('|script|begin|')).toBeLessThan(command.indexOf('|utf8|begin|'))
+    expect(command.indexOf('|utf8|begin|')).toBeLessThan(encoding)
+    expect(encoding).toBeLessThan(command.indexOf('|utf8|end|'))
+    expect(command.indexOf('|utf8|end|')).toBeLessThan(command.indexOf('|query|begin|'))
+  })
+
+  it('retains UTF-8 boundaries without inventing a query start', () => {
+    expect(parseWindowsQueryTrace([
+      'WEAPP_DEV_QUERY_V2|script|begin|0.000|',
+      'WEAPP_DEV_QUERY_V2|utf8|begin|0.100|',
+      'WEAPP_DEV_QUERY_V2|utf8|end|1.500|',
+    ].join('\r\n'))).toEqual([
+      { stage: 'script', event: 'begin', elapsedMs: 0 },
+      { stage: 'utf8', event: 'begin', elapsedMs: 0.1 },
+      { stage: 'utf8', event: 'end', elapsedMs: 1.5 },
+    ])
+  })
+
+  it('accepts all V2 stages and does not merge different marker clocks', () => {
+    const markers = [begin.replace('_V1', '_V2'), 'WEAPP_DEV_QUERY_V2|utf8|begin|0.100|', 'WEAPP_DEV_QUERY_V2|utf8|end|0.500|', queryBegin.replace('_V1', '_V2'), queryEnd.replace('_V1', '_V2'), serializeBegin.replace('_V1', '_V2'), serializeEnd.replace('_V1', '_V2'), end.replace('_V1', '_V2')]
+    expect(parseWindowsQueryTrace(markers.join('\n'))).toHaveLength(8)
+    expect(parseWindowsQueryTrace([markers[0], queryBegin, ...markers.slice(1)].join('\n'))).toHaveLength(8)
+    expect(parseWindowsQueryTrace([begin, ...markers.slice(1)].join('\n'))).toEqual([{ stage: 'script', event: 'begin', elapsedMs: 0 }])
+  })
+
+  it('reports the V2 clock origin explicitly when only entry arrived', () => {
+    const output = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+    reportWindowsQueryTrace('snapshot', { stderr: begin.replace('_V1', '_V2'), timedOut: true })
+    expect(JSON.parse(String(output.mock.calls[0]![0]).slice('[e2e-cleanup-query] '.length)) as unknown).toMatchObject({
+      markerVersion: 2,
+      rawMarkerCount: 1,
+      scriptBeginReceived: true,
+      markers: [{ stage: 'script', event: 'begin', elapsedMs: 0 }],
+    })
+  })
+
   it('retains complete CRLF markers received before a query timeout', () => {
     expect(parseWindowsQueryTrace(`${begin}\r\n${queryBegin}\r\n`)).toEqual([
       { stage: 'script', event: 'begin', elapsedMs: 0 },
@@ -102,6 +142,7 @@ describe('Windows dev process query diagnostic', () => {
       stderrTruncated: false,
       rawMarkerCount: 2,
       scriptBeginReceived: true,
+      markerVersion: 1,
       markers: [{ stage: 'script', event: 'begin', elapsedMs: 0 }, { stage: 'query', event: 'begin', elapsedMs: 1.25 }],
     })
   })

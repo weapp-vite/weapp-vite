@@ -8,6 +8,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
 import { redactSequenceEvidenceText } from '../editSequence/evidenceRedaction'
+import { collectorStop } from '../performanceGate/collectorStop'
 import { runCollector } from '../performanceGate/process'
 import { baselineProfileAvailable, HMR_ACCEPTANCE_BASELINE, readAcceptanceSamples } from './acceptanceContract'
 
@@ -170,7 +171,7 @@ async function sanitizeDirectory(directory: string, roots: string[]) {
   }
 }
 
-/** 每侧使用新会话；无论成功与否，先归档原始诊断，再释放本次隔离文件。 */
+/** 每侧使用新会话；先归档诊断，只有资源已终结才释放本次隔离文件。 */
 export async function collectAcceptanceRun(options: AcceptanceOptions, side: HmrSide, input: HmrInput, round: number, batch: string, deadline: number): Promise<AcceptanceRun> {
   const directory = path.join(options.output, batch, input.id, String(round), side)
   const markerSeed = `hmr-attribution-${batch}-${round}`
@@ -180,6 +181,9 @@ export async function collectAcceptanceRun(options: AcceptanceOptions, side: Hmr
   result.inputDigest = hash(JSON.stringify(staged.manifest))
   const workspace = path.join(staged.ownedRoot, 'workspace')
   const roots = [options.baseline, options.candidate, options.output]
+  const recordError = (error: unknown) => {
+    result.error = [result.error, sanitizeAcceptanceText(String(error), roots)].filter(Boolean).join('; ')
+  }
   try {
     await writeFile(path.join(directory, 'input-manifest.json'), `${JSON.stringify(staged.manifest, null, 2)}\n`)
     await runCollector(process.execPath, ['--import', 'tsx', 'scripts/benchmark-templates-hmr.ts'], {
@@ -202,16 +206,22 @@ export async function collectAcceptanceRun(options: AcceptanceOptions, side: Hmr
     await writeFile(path.join(directory, 'profile-capability.json'), `${JSON.stringify({ producer: side === 'baseline' ? HMR_ACCEPTANCE_BASELINE : options.candidateSha, profile: baselineProfileAvailable(side, options.runtime) ? 'enabled' : 'unavailable', historicalStages: baselineProfileAvailable(side, options.runtime) ? 'observed-only' : 'unknown', reason: baselineProfileAvailable(side, options.runtime) ? undefined : 'Fixed baseline has no stateful profile producer; existing collector profiling is disabled without changing baseline source.', packageManifestSha256: staged.packageManifestSha256 })}\n`)
   }
   catch (error) {
-    result.error = sanitizeAcceptanceText(String(error), roots)
+    result.stop = collectorStop(error)
+    recordError(error)
     const rawFile = path.join(workspace, input.id, '.weapp-vite/hmr-profile.jsonl')
     const partial = await readFile(rawFile, 'utf8').catch(() => undefined)
     if (partial !== undefined) {
-      await writeFile(path.join(directory, 'profile.raw.jsonl'), partial)
+      await writeFile(path.join(directory, 'profile.raw.jsonl'), partial).catch(recordError)
     }
   }
   finally {
-    await sanitizeDirectory(directory, roots)
-    await rm(staged.ownedRoot, { recursive: true, force: true })
+    await sanitizeDirectory(directory, roots).catch(recordError)
+    if (result.stop?.resourcesReleased === false) {
+      result.retainedInput = { checkout: side, relativePath: posix(path.relative(options[side], staged.ownedRoot)) }
+    }
+    else {
+      await rm(staged.ownedRoot, { recursive: true, force: true }).catch(recordError)
+    }
   }
   return result
 }

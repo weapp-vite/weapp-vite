@@ -72,6 +72,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@babel/core": "catalog:",
     "@jridgewell/remapping": "^2.3.5",
     "@jridgewell/trace-mapping": "^0.3.31",
     "@vue/babel-plugin-jsx": "catalog:",

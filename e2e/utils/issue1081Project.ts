@@ -5,7 +5,7 @@ import path from 'node:path'
 export const ISSUE_1081_ROOT = path.resolve(import.meta.dirname, '../..')
 export const ISSUE_1081_CLI = path.join(ISSUE_1081_ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 
-export async function createIssue1081Project(fixture: 'issue-1081' | 'issue-1081-transaction' = 'issue-1081') {
+export async function createIssue1081Project(fixture: 'issue-1081' | 'issue-1081-transaction' | 'issue-1081-snapshot' = 'issue-1081') {
   const parent = path.join(ISSUE_1081_ROOT, '.tmp/e2e-projects')
   await mkdir(parent, { recursive: true })
   const project = await mkdtemp(path.join(parent, 'issue-1081-'))

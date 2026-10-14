@@ -44,6 +44,13 @@ describe('performance comparison dimensions', () => {
     expect(autoImportFeatureCosts(batch)[0]).toMatchObject({ extraMs: 30, extraPercent: 30, overFeatureBudget: false })
     expect(autoImportFeatureCosts({ samples: [], errors: [] })[0]).toMatchObject({ extraMs: null, extraPercent: null, overFeatureBudget: null })
   })
+  it('cannot pass a stopped batch even if its completed timings and errors are otherwise green', () => {
+    const batch = makeBatch()
+    batch.stop = { reason: 'cleanup-unconfirmed', resourcesReleased: false, cancelled: false }
+    expect(evaluateAuditGate(batch).status).toBe('incomplete')
+    batch.stop = { reason: 'cancelled', resourcesReleased: true, cancelled: true }
+    expect(evaluateAuditGate(makeBatch(), batch).status).toBe('incomplete')
+  })
   it('rejects duplicated pairs instead of increasing confidence', () => {
     const batch = makeBatch()
     batch.samples[2]!.round = 0

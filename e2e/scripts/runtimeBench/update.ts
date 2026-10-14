@@ -1,4 +1,5 @@
 import type { RecoverableSession } from '../runtimeBench'
+import type { NativeInspectorHeapReader } from './nativeInspectorHeap/protocol'
 import type { BenchUpdateSample, BenchUpdateSummary } from './types'
 import process from 'node:process'
 import { readBenchHostHeap } from './heap'
@@ -45,6 +46,7 @@ export async function measureUpdate(options: {
   requirePhases: boolean
   provider: string
   workload?: string
+  nativeHeap?: { collector: NativeInspectorHeapReader, preset: string, scenario: string }
   log: (message: string) => void
   onSample?: (sample: BenchUpdateSample, index: number) => Promise<void>
 }): Promise<BenchUpdateSummary> {
@@ -58,7 +60,13 @@ export async function measureUpdate(options: {
       const page = await miniProgram.reLaunch(options.route)
       await page.waitFor('#bench-ready-marker')
       await page.waitFor(100)
-      const hostHeapBefore = await readBenchHostHeap(miniProgram, options.provider)
+      const nativeProbe = (phase: 'before' | 'after') => options.nativeHeap
+        ? {
+            collector: options.nativeHeap.collector,
+            context: { preset: options.nativeHeap.preset, scenario: options.nativeHeap.scenario, sampleIndex: index, route: options.route, phase },
+          }
+        : undefined
+      const hostHeapBefore = await readBenchHostHeap(miniProgram, options.provider, nativeProbe('before'))
       const workerRssBefore = process.memoryUsage().rss
       const startedAt = Date.now()
       let state = options.workload
@@ -70,7 +78,7 @@ export async function measureUpdate(options: {
       const visible = options.requirePhases ? await observeVisibleState(page, state, startedAt) : undefined
       const wallMs = Date.now() - startedAt
       const workerRssAfter = process.memoryUsage().rss
-      const hostHeapAfter = await readBenchHostHeap(miniProgram, options.provider)
+      const hostHeapAfter = await readBenchHostHeap(miniProgram, options.provider, nativeProbe('after'))
       const diagnostics = state?.setDataDiagnostics?.[prefix] ?? {}
       const phases = options.requirePhases ? state.measurement.phases : undefined
       return {

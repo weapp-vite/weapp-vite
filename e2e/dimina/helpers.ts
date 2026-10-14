@@ -1,6 +1,7 @@
 /* eslint-disable e18e/ban-dependencies -- 使用跨平台子进程管理测试服务。 */
 import type { Subprocess } from 'execa'
 import type { Page } from 'playwright'
+import type { DiminaDiagnostics } from './diagnostics'
 import nodeProcess from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
@@ -23,15 +24,19 @@ export async function stopHost(process?: Subprocess) {
   }
 }
 
-export async function startHost(mode: 'dev' | 'preview') {
+export async function startHost(mode: 'dev' | 'preview', diagnostics?: DiminaDiagnostics) {
   const cli = fileURLToPath(new URL('./bin/vite.js', import.meta.resolve('vite/package.json')))
-  const process = execa(nodeProcess.execPath, [cli, ...(mode === 'preview' ? ['preview'] : []), '--host', '127.0.0.1', '--port', '0'], { cwd: root, reject: false })
+  const process = execa(nodeProcess.execPath, [cli, ...(mode === 'preview' ? ['preview'] : []), '--host', '127.0.0.1', '--port', '0'], { cwd: root, reject: false, ...(diagnostics ? { env: diagnostics.hostEnvironment } : {}) })
   let logs = ''
+  if (diagnostics) {
+    process.nodeChildProcess.once('exit', (code, signal) => diagnostics.hostExited({ pid: process.pid, code, signal }))
+  }
   process.stdout?.on('data', (chunk) => {
     logs += String(chunk)
   })
   process.stderr?.on('data', (chunk) => {
     logs += String(chunk)
+    diagnostics?.hostStderr(String(chunk))
   })
   try {
     const started = Date.now()
@@ -41,6 +46,7 @@ export async function startHost(mode: 'dev' | 'preview') {
       }
       const url = findHostUrl(logs)
       if (url) {
+        diagnostics?.hostStarted(process.pid)
         return { process, url, logs: () => logs }
       }
       await delay(100)

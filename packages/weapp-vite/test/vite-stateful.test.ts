@@ -4,13 +4,25 @@ import os from 'node:os'
 import path from 'node:path'
 import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 import { createServer } from 'vite'
-import { expect, it } from 'vitest'
+import { expect, it, onTestFailed } from 'vitest'
 import { attributeHmrProfile } from '../src/analyze/hmr/attribution'
 import { readHmrProfileLines } from '../src/analyze/hmr/reader'
 import { weapp } from '../src/vite'
 
 interface TestDevEngine {
   close: () => Promise<void>
+}
+
+function restartStackNames() {
+  return new Error('stateful host restart diagnostic').stack?.split('\n').slice(1, 8).map((line) => {
+    const frame = line.trim().startsWith('at ')
+      ? line.trim().slice(3)
+      : ''
+    const nameStart = frame.startsWith('async ') ? 6 : 0
+    const nameFrame = frame.slice(nameStart)
+    const name = nameFrame.split(' (', 1)[0]
+    return name && !name.includes('/') && !name.includes('file:') ? name : '<location>'
+  }) ?? []
 }
 
 it('hands the validated topology snapshot to the replacement native host without compiling it twice', async () => {
@@ -80,6 +92,22 @@ it.each([
 ])('starts stateful in the native host, updates topology and closes (middleware: $middlewareMode, hold replacement: $holdReplacement)', async ({ middlewareMode, holdReplacement }) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-stateful-host-'))
   let server: ViteDevServer | undefined
+  const diagnosticEvents: unknown[] = []
+  let diagnosticCallsBefore: string | undefined
+  let diagnosticCallsAfter: string | undefined
+  let diagnosticGeneration = 0
+  const labelFile = (file: string) => {
+    const normalizedRoot = path.resolve(root)
+    const normalizedFile = path.resolve(file)
+    const relative = path.relative(normalizedRoot, normalizedFile)
+    return relative && !relative.startsWith('..') && !path.isAbsolute(relative)
+      ? relative.replaceAll(path.sep, '/')
+      : path.basename(normalizedFile)
+  }
+  onTestFailed(() => {
+    // eslint-disable-next-line no-console -- 只在失败后输出不含机器路径的只读生命周期诊断。
+    console.error(`[stateful host] ${JSON.stringify({ middlewareMode, holdReplacement, callsBefore: diagnosticCallsBefore, callsAfter: diagnosticCallsAfter, events: diagnosticEvents })}`)
+  })
   const replacementReady = Promise.withResolvers<void>()
   const releaseReplacement = Promise.withResolvers<void>()
   let starts = 0
@@ -111,6 +139,21 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
         name: 'test:hold-topology-replacement',
         enforce: 'post',
         async configureServer(replacement) {
+          const generation = ++diagnosticGeneration
+          diagnosticEvents.push({ event: 'configure-server', generation })
+          const originalRestart = replacement.restart.bind(replacement)
+          replacement.restart = (force) => {
+            diagnosticEvents.push({ event: 'restart-request', generation, force, stack: restartStackNames() })
+            const task = originalRestart(force)
+            void task.then(
+              () => diagnosticEvents.push({ event: 'restart-resolved', generation }),
+              error => diagnosticEvents.push({ event: 'restart-rejected', generation, error: error instanceof Error ? error.message : String(error) }),
+            )
+            return task
+          }
+          replacement.watcher.on('all', (event, file) => {
+            diagnosticEvents.push({ event: 'host-event', generation, watchEvent: event, file: labelFile(String(file)) })
+          })
           const engine = (replacement.environments.client as unknown as { bundledDev: { _devEngine: TestDevEngine } }).bundledDev._devEngine
           engines.add(engine)
           const close = engine.close.bind(engine)
@@ -171,9 +214,12 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
     await writeFile(path.join(root, 'src/pages/home/index.wxml'), '<view>stateful-restarted {{message}}</view>')
     await expect.poll(() => readFile(path.join(root, 'dist/pages/home/index.wxml'), 'utf8'), { timeout: 10_000 }).toContain('stateful-restarted')
     const callsBefore = await readFile(path.join(root, 'config-calls.txt'), 'utf8')
+    diagnosticCallsBefore = callsBefore
     await writeFile(path.join(root, 'config-value.mjs'), 'export const message = "stateful-new-config"')
     await expect.poll(() => readFile(path.join(root, 'dist/pages/home/index.js'), 'utf8'), { timeout: 15_000 }).toContain('stateful-new-config')
-    expect(await readFile(path.join(root, 'config-calls.txt'), 'utf8')).toBe(`${callsBefore}loaded\n`)
+    const callsAfter = await readFile(path.join(root, 'config-calls.txt'), 'utf8')
+    diagnosticCallsAfter = callsAfter
+    expect(callsAfter).toBe(`${callsBefore}loaded\n`)
     await server.close()
     await server.close()
     expect(closedEngines.size).toBe(engines.size)
