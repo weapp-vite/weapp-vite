@@ -1,6 +1,4 @@
 import type { Plugin } from 'rolldown'
-import transformModulesCommonjs from '@babel/plugin-transform-modules-commonjs'
-import { transformAsync } from '@weapp-vite/ast/babelCore'
 
 /** 引擎以 ESM 生成原生依赖图，宿主仍在 bundler 写出前接收 CommonJS 模块。 */
 export function createStatefulHmrHostFormatPlugin(): Pick<Plugin, 'name' | 'renderChunk'> {
@@ -9,6 +7,10 @@ export function createStatefulHmrHostFormatPlugin(): Pick<Plugin, 'name' | 'rend
     renderChunk: {
       order: 'post',
       async handler(code, chunk, options) {
+        const [{ transformAsync }, { default: transformModulesCommonjs }] = await Promise.all([
+          import('@weapp-vite/ast/babelCore'),
+          import('@babel/plugin-transform-modules-commonjs'),
+        ])
         const result = await transformAsync(code, {
           babelrc: false,
           configFile: false,
