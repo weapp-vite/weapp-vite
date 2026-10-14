@@ -60,6 +60,8 @@ node --import tsx scripts/windowsProcessIdentityProbe/checkSelfWriter.ts
 
 在独立 Windows Node 22/24 runner 上运行该入口。它只派发一次新 Node 进程，第一项主动身份查询为生产 journal writer 自查；随后核对缓存，并通过旧 CIM 读取器验证双向精确身份。报告位于 `.tmp/windows-journal-self-writer/report.json`，不保存原始可执行路径，不启动 IDE，不清理任何宿主。外层三十秒 supervisor 包含模块加载、首次自查和后续 CIM 对照；每个生产查询的预算仍为十秒，不能覆盖或扩大。
 
+直接创建真实子 journal 的 E2E 初始化钩子同样使用三十秒外层监督预算，为十秒身份查询及前后初始化保留独立的监督期限。这不放宽生产查询，也不将真实查询超时判为通过；修改钩子后仍须通过对应 Windows CI 场景，独立诊断不能替代。
+
 这项检查只证明当前自有 Node writer 的观测，不证明操作系统从未预热，也不能替代任意宿主、跨权限或退出竞争验证。生产变更只用于 writer 自查；通用宿主与旧锁读取、身份精确比较及失败阻断保持原契约。下面的四组历史诊断继续用于解释边界，不能将其结果泛化成所有宿主已通过。
 
 ## 历史通用查询对照

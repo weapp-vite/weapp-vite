@@ -1,11 +1,7 @@
 import { access, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import process from 'node:process'
-// 保留 Windows 原生崩溃的退出码和 stderr，不让子进程中断其他对照。
-// eslint-disable-next-line e18e/ban-dependencies
-import { execa } from 'execa'
-import { build } from 'vite'
+import { build, createServer } from 'vite'
 import { afterEach, expect, it } from 'vitest'
 
 const fixtureRoot = path.resolve(import.meta.dirname, '../../../e2e-apps/react-runtime-spike')
@@ -43,29 +39,41 @@ it('resolves React runtime with native Vite through linked packages', async () =
     : [])).toContain('createReactMiniProgramRoot')
 }, 30_000)
 
-// 原生失败对照保留在 scripts/diagnose-native-host-paths.mjs；门禁验证框架采用的安全输入。
-it('observes a native filesystem event using the canonical temporary path', async () => {
+// 原始 fs.watch 启动对照保留在诊断脚本；门禁使用框架 watcher 的真实 ready 边界。
+it('observes one native Vite file creation after readiness using the canonical temporary path', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'vite-native-watch-'))
   roots.push(root)
   const watchedRoot = await realpath(root)
-  const result = await execa(process.execPath, ['--input-type=module', '-e', `
-    import { watch, writeFileSync } from 'node:fs'
-    import path from 'node:path'
-    const root = process.argv[1]
-    const timer = setTimeout(() => { watcher.close(); process.exitCode = 2 }, 5000)
-    const watcher = watch(root, (_event, filename) => {
-      if (filename === 'probe.txt') {
-        clearTimeout(timer)
-        watcher.close()
-        console.log('observed')
-      }
-    })
-    // 等待原生 watcher 完成注册，避免在高负载下写入早于操作系统事件订阅。
-    setImmediate(() => writeFileSync(path.join(root, 'probe.txt'), 'changed'))
-  `, watchedRoot], { reject: false, timeout: 10_000 })
-  expect({ exitCode: result.exitCode, stderr: result.stderr, stdout: result.stdout }).toEqual({
-    exitCode: 0,
-    stderr: '',
-    stdout: 'observed',
+  const probe = path.join(watchedRoot, 'probe.txt')
+  const ready = Promise.withResolvers<void>()
+  const observed: string[] = []
+  const errors: unknown[] = []
+  const pendingServer = createServer({
+    root: watchedRoot,
+    configFile: false,
+    logLevel: 'silent',
+    server: { middlewareMode: true, hmr: false, watch: { usePolling: false } },
+    plugins: [{
+      name: 'native-watch-control',
+      configureServer(server) {
+        server.watcher.once('ready', ready.resolve)
+        server.watcher.on('error', (error) => {
+          errors.push(error)
+          ready.reject(error)
+        })
+        server.watcher.on('add', file => observed.push(path.resolve(file)))
+      },
+    }],
   })
+  try {
+    await Promise.all([pendingServer, ready.promise])
+    // ready 后只写入一次；不增加等待时长、不重复保存，也不退回轮询文件系统。
+    await writeFile(probe, 'changed')
+    await expect.poll(() => observed, { timeout: 5000 }).toContain(probe)
+    expect(await readFile(probe, 'utf8')).toBe('changed')
+    expect(errors).toEqual([])
+  }
+  finally {
+    await pendingServer.then(server => server.close(), () => {})
+  }
 }, 15_000)

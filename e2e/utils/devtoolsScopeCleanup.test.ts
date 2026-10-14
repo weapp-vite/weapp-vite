@@ -24,10 +24,11 @@ beforeEach(async () => {
   vi.resetAllMocks()
   directory = await fs.mkdtemp(path.join(os.tmpdir(), 'devtools-scope-cleanup-'))
   parent = await createManagedWechatProjectJournal(directory)
+  // 与独立 writer 诊断一致，监督预算须晚于十秒查询结束，不能先遗弃初始化。
   child = await createManagedWechatProjectJournal(directory, parent)
   mocks.cleanup.mockResolvedValue(undefined)
   mocks.records.mockResolvedValue([])
-})
+}, 30_000)
 
 afterEach(async () => {
   await fs.rm(directory, { recursive: true, force: true })

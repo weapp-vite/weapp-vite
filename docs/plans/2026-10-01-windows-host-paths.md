@@ -32,6 +32,6 @@ Vite 默认 realpath 项目 root，但此前编译会话在宿主解析前开始
 node packages/weapp-vite/scripts/diagnose-native-host-paths.mjs
 ```
 
-该命令描述未经框架适配的 Node/文件系统能力，不代表已修好 Node 本身。正常门禁保留 canonical fs.watch、有效依赖链接、实际框架构建/监听、目录别名和 preserveSymlinks 回归。未经适配的失败输入没有改写为通过或忽略返回值。
+该命令描述未经框架适配的 Node/文件系统能力，不代表已修好 Node 本身。正常门禁在 canonical 路径上等待 Vite watcher 的 `ready`，再单次创建文件并核验原生事件与文件内容；不把下一次事件循环视为 `fs.watch` 已就绪，不启用 polling，也不延长事件等待预算。有效依赖链接、实际框架构建/监听、目录别名和 preserveSymlinks 回归继续保留。未经适配的原始 Node 失败输入仍由诊断命令报告，没有改写为通过或忽略返回值。
 
 本机修复后的声明/会话/库构建监听回归、公开类型、重建和打包 Vite 消费链已通过；打包消费包含 dev/build-watch/stateful 与库组件 headless 挂载、点击、重入。Windows 新 HEAD 门禁和真实 DevTools 最终验收仍需分别完成，历史结果不能代替新 HEAD。
