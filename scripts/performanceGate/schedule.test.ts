@@ -2,33 +2,24 @@ import { expect, it, vi } from 'vitest'
 import { createMatrix, policy, statusContext, targetKey } from './contract.mjs'
 import { selectTargets } from './schedule.mjs'
 
-it('selects main and the oldest unevaluated labelled PR, preserving failures and cancellations', async () => {
-  const sha = (n: number) => n.toString(16).repeat(40)
-  const get = async (endpoint: string) => {
+it('defaults to main without querying or selecting labelled PRs', async () => {
+  const mainSha = 'a'.repeat(40)
+  const get = vi.fn(async (endpoint: string) => {
     if (endpoint === '') {
       return { default_branch: 'main' }
     }
     if (endpoint.startsWith('/git/ref/')) {
-      return { object: { sha: sha(1) } }
-    }
-    if (endpoint.startsWith('/pulls?')) {
-      return [2, 3, 4].map(n => ({ number: n, labels: [{ name: policy.label }], created_at: `2026-01-0${n}` }))
-    }
-    if (endpoint.includes('/events')) {
-      return []
-    }
-    if (/^\/pulls\/\d+$/.test(endpoint)) {
-      const n = Number(endpoint.split('/').at(-1))
-      return { number: n, state: 'open', head: { sha: sha(n), repo: { full_name: 'owner/repo' } } }
+      return { object: { sha: mainSha } }
     }
     if (endpoint.includes('/statuses')) {
-      return endpoint.includes(sha(2)) ? [{ context: statusContext({ headSha: sha(2), baselineSha: policy.baselineSha }), state: 'failure', target_url: 'https://example.test/run/1' }] : []
+      return []
     }
-    throw new Error(endpoint)
-  }
+    throw new Error(`Automatic PR selection is forbidden: ${endpoint}`)
+  })
   const result = await selectTargets({ get })
-  expect(result.targets.map((t: { id: string }) => t.id)).toEqual(['main', 'pr-3'])
-  expect(result.reused[0].previous.state).toBe('failure')
+  expect(result.targets.map((t: { id: string }) => t.id)).toEqual(['main'])
+  expect(result.reused).toEqual([])
+  expect(get).toHaveBeenCalledTimes(3)
 })
 
 it('rejects manual targets that are not open', async () => {
@@ -92,4 +83,27 @@ it('rejects main-only with an explicit PR before any GitHub request', async () =
   const get = vi.fn()
   await expect(selectTargets({ mainOnly: true, prNumber: 7, get })).rejects.toThrow('main-only cannot be combined with pr-number')
   expect(get).not.toHaveBeenCalled()
+})
+
+it('keeps the explicitly resolved PR head and base immutable before sampling', async () => {
+  const headSha = 'b'.repeat(40)
+  const baseSha = 'c'.repeat(40)
+  const prContext = { prNumber: 7, headSha, baseSha, headRepository: 'fork/repo' }
+  const get = async (endpoint: string) => {
+    if (endpoint === '') {
+      return { default_branch: 'main' }
+    }
+    if (endpoint.startsWith('/git/ref/')) {
+      return { object: { sha: 'a'.repeat(40) } }
+    }
+    if (endpoint.includes('/statuses')) {
+      return []
+    }
+    return { number: 7, state: 'open', head: { sha: headSha, repo: { full_name: 'fork/repo' } }, base: { sha: baseSha } }
+  }
+  expect((await selectTargets({ prNumber: 7, prContext, get })).targets).toMatchObject([
+    { id: 'main' },
+    { id: 'pr-7', headSha, baseSha, headRepository: 'fork/repo' },
+  ])
+  await expect(selectTargets({ prNumber: 7, prContext: { ...prContext, baseSha: 'd'.repeat(40) }, get })).rejects.toThrow('PR changed')
 })

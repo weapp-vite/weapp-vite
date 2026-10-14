@@ -1,16 +1,20 @@
-import { appendFile, mkdir, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { validatePerformancePrContext } from '../../.github/scripts/resolve-performance-runs.mjs'
 import { assertSha, createMatrix, frozenManifest, policy, statusContext, targetKey } from './contract.mjs'
 import { pages, request } from './github.mjs'
 
-export async function resolveTarget(pr, get = request) {
+export async function resolveTarget(pr, get = request, prContext) {
   if (pr) {
     const pull = await get(`/pulls/${pr}`)
     if (pull.state !== 'open') {
       throw new Error('Performance target PR must be open')
     }
-    return { id: `pr-${pull.number}`, prNumber: pull.number, headSha: assertSha(pull.head.sha), headRepository: pull.head.repo.full_name, baselineSha: policy.baselineSha }
+    if (prContext && (pull.number !== prContext.prNumber || pull.head.sha !== prContext.headSha || pull.base.sha !== prContext.baseSha || pull.head.repo.full_name !== prContext.headRepository)) {
+      throw new Error('PR changed after resolving the manual performance target')
+    }
+    return { id: `pr-${pull.number}`, prNumber: pull.number, headSha: assertSha(prContext?.headSha ?? pull.head.sha), baseSha: prContext?.baseSha ?? pull.base?.sha, headRepository: prContext?.headRepository ?? pull.head.repo.full_name, baselineSha: policy.baselineSha }
   }
   const repo = await get('')
   const ref = await get(`/git/ref/heads/${encodeURIComponent(repo.default_branch)}`)
@@ -26,7 +30,7 @@ export async function previousAttempt(target, get = request) {
  * 根据固定提交记录选择待验收目标。
  * @param {{ prNumber?: number, mainOnly?: boolean, get?: typeof request }} options 调度输入与可替换的只读查询。
  */
-export async function selectTargets({ prNumber = undefined, mainOnly = false, get = request }) {
+export async function selectTargets({ prNumber = undefined, mainOnly = false, prContext, get = request }) {
   if (mainOnly && prNumber !== undefined) {
     throw new Error('main-only cannot be combined with pr-number')
   }
@@ -51,22 +55,7 @@ export async function selectTargets({ prNumber = undefined, mainOnly = false, ge
     return { targets: candidates, reused }
   }
   if (prNumber) {
-    await consider(await resolveTarget(prNumber, get))
-  }
-  else {
-    const pulls = (await pages('/pulls?state=open', get)).filter(pull => pull.labels.some(label => label.name === policy.label))
-    const queue = []
-    for (const pull of pulls) {
-      const events = await pages(`/issues/${pull.number}/events`, get)
-      const labels = events.filter(event => event.event === 'labeled' && event.label?.name === policy.label)
-      queue.push({ number: pull.number, since: labels.at(-1)?.created_at ?? pull.created_at })
-    }
-    queue.sort((a, b) => a.since.localeCompare(b.since) || a.number - b.number)
-    for (const item of queue) {
-      if (await consider(await resolveTarget(item.number, get))) {
-        break
-      }
-    }
+    await consider(await resolveTarget(prNumber, get, prContext))
   }
   return { targets: candidates, reused }
 }
@@ -80,7 +69,11 @@ async function main() {
   if (input && !/^[1-9]\d*$/.test(input)) {
     throw new Error('Invalid PR number')
   }
-  const selection = await selectTargets({ prNumber: input ? Number(input) : undefined, mainOnly: process.env.MAIN_ONLY === 'true' })
+  const prContext = input ? validatePerformancePrContext(JSON.parse(await readFile(process.env.PR_CONTEXT_PATH, 'utf8')), { id: process.env.GITHUB_RUN_ID, head_sha: driverSha, event: process.env.GITHUB_EVENT_NAME }, process.env.GITHUB_REPOSITORY) : undefined
+  if (prContext && prContext.prNumber !== Number(input)) {
+    throw new Error('Manual PR context does not match the requested performance target')
+  }
+  const selection = await selectTargets({ prNumber: input ? Number(input) : undefined, mainOnly: process.env.MAIN_ONLY === 'true', prContext })
   const plan = { manifest: frozenManifest(), schemaVersion: 2, purpose: 'full', samplingContract: policy.samplingContract, driverSha, repository: process.env.GITHUB_REPOSITORY, runId: process.env.GITHUB_RUN_ID, ...selection }
   plan.matrix = createMatrix(plan.targets)
   const url = `${process.env.GITHUB_SERVER_URL}/${plan.repository}/actions/runs/${plan.runId}`
