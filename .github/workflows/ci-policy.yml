@@ -1,30 +1,50 @@
 name: CI Policy
 
 on:
-  pull_request:
-    types: [opened, synchronize]
   schedule:
     - cron: '0 1 * * *'
   workflow_dispatch:
+    inputs:
+      pr-number:
+        description: PR 编号；留空保留当前分支或定时验证
+        required: false
+        default: ''
+        type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number || github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+
   policy-pr:
-    if: github.event_name == 'pull_request'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true')
     name: Policy Checks (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 10
       main_command: |
         pnpm test:release
+        if [[ -f scripts/manual-pr-actions.test.mjs ]]; then
+          pnpm test:pr-actions
+        fi
         pnpm check:changeset:frontmatter
         pnpm agents:check
         pnpm check:create-weapp-vite-changeset
@@ -33,9 +53,8 @@ jobs:
         pnpm check:weapp-core-constants-dependency-range
         pnpm check:rolldown:single-version
         pnpm check:vscode-extension-changeset
-        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-          git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
-          pnpm seo:quality:strict -- --git-diff-base "origin/${{ github.base_ref }}"
+        if [[ "${{ needs.pr-context.outputs.is_pr }}" == "true" ]]; then
+          pnpm seo:quality:strict -- --git-diff-base "${{ needs.pr-context.outputs.base_sha }}"
         elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
           pnpm seo:quality:strict -- --git-diff-base "HEAD~1"
         else
@@ -45,7 +64,8 @@ jobs:
     secrets: inherit
 
   policy-full:
-    if: github.event_name != 'pull_request'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')
     name: Policy Checks (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -54,11 +74,20 @@ jobs:
         node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 10
       main_command: |
         pnpm test:release
+        if [[ -f scripts/manual-pr-actions.test.mjs ]]; then
+          pnpm test:pr-actions
+        fi
         pnpm check:changeset:frontmatter
         pnpm agents:check
         pnpm check:create-weapp-vite-changeset
@@ -67,9 +96,8 @@ jobs:
         pnpm check:weapp-core-constants-dependency-range
         pnpm check:rolldown:single-version
         pnpm check:vscode-extension-changeset
-        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-          git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
-          pnpm seo:quality:strict -- --git-diff-base "origin/${{ github.base_ref }}"
+        if [[ "${{ needs.pr-context.outputs.is_pr }}" == "true" ]]; then
+          pnpm seo:quality:strict -- --git-diff-base "${{ needs.pr-context.outputs.base_sha }}"
         elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
           pnpm seo:quality:strict -- --git-diff-base "HEAD~1"
         else

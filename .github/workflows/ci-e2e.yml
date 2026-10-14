@@ -1,12 +1,15 @@
 name: CI E2E
 
 on:
-  pull_request:
-    types: [opened, synchronize]
   schedule:
     - cron: '50 1 * * *'
   workflow_dispatch:
     inputs:
+      pr-number:
+        description: PR 编号；留空保留当前分支或定时验证
+        required: false
+        default: ''
+        type: string
       hmr-diagnostic:
         description: 选择 HMR 定向回归；默认保留完整矩阵
         type: choice
@@ -24,15 +27,22 @@ on:
           - native-compiler-batch
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.hmr-diagnostic || 'full' }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number || github.ref }}-${{ inputs.hmr-diagnostic || 'full' }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+
   native-compiler-batch-diagnostic:
-    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'native-compiler-batch'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'native-compiler-batch')
     name: Native Compiler Batch Diagnostic (${{ matrix.os }} / Node 24)
     strategy:
       fail-fast: false
@@ -41,17 +51,24 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '24'
       timeout_minutes: 20
       build_command: pnpm exec turbo run build --filter=weapp-vite...
       main_command: pnpm vitest run packages/weapp-vite/src/runtime/statefulHmr/compilerBatch.native.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/native-compiler-batch-report.json
-      artifact_name: native-compiler-batch-${{ matrix.os }}-node-24-${{ github.sha }}
+      artifact_name: native-compiler-batch-${{ matrix.os }}-node-24-${{ needs.pr-context.outputs.checkout_sha }}
       artifact_path: .tmp/native-compiler-batch-report.json
     secrets: inherit
 
   windows-dev-cleanup-diagnostic:
-    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-dev-cleanup'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-dev-cleanup')
     name: Dev Process Cleanup Shard Diagnostic (Windows / Node ${{ matrix.node-version }} / shard ${{ matrix.shard }})
     strategy:
       fail-fast: false
@@ -65,18 +82,25 @@ jobs:
             shard: 1
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: windows-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 40
       build_command: pnpm build:ci:windows
       main_command: pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=${{ matrix.shard }} --shard-total=4
       e2e_platform: weapp
-      artifact_name: windows-dev-cleanup-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-${{ github.sha }}
+      artifact_name: windows-dev-cleanup-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-${{ needs.pr-context.outputs.checkout_sha }}
       artifact_path: docs/reports/*-e2e-ci-full-*-suite-report/**
     secrets: inherit
 
   windows-process-narrow-diagnostic:
-    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-process-narrow'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-process-narrow')
     name: Suite Runner Process Diagnostic (Windows / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -84,17 +108,24 @@ jobs:
         node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: windows-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 15
       build_command: pnpm exec turbo run build --filter=weapp-ide-cli...
       main_command: pnpm exec cross-env NODE_DEBUG=weapp-ide-journal-writer pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/suiteRunner/process.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-process-narrow-report.json
-      artifact_name: windows-process-narrow-node-${{ matrix.node-version }}-${{ github.sha }}
+      artifact_name: windows-process-narrow-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}
       artifact_path: .tmp/windows-process-narrow-report.json
     secrets: inherit
 
   plugin-watch-readiness-diagnostic:
-    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'plugin-watch-readiness'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'plugin-watch-readiness')
     name: Plugin Watch Readiness (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -104,17 +135,24 @@ jobs:
         node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 20
       build_command: pnpm exec turbo run build --filter=weapp-vite...
       main_command: pnpm vitest run packages/weapp-vite/test/vite-plugin-project.test.ts --reporter=default --reporter=json --outputFile=.tmp/plugin-watch-readiness-report.json
-      artifact_name: plugin-watch-readiness-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ github.sha }}
+      artifact_name: plugin-watch-readiness-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}
       artifact_path: .tmp/plugin-watch-readiness-report.json
     secrets: inherit
 
   runtime-publication-diagnostic:
-    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'runtime-publication'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'runtime-publication')
     name: Runtime Publication Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -124,6 +162,12 @@ jobs:
         node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
@@ -134,12 +178,13 @@ jobs:
         pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/auto-import-vue-sfc.test.ts e2e/ci/external-linked-vue-component.hmr.test.ts
         pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/issue-1134-native-topology.runtime.test.ts e2e/ide/script-setup-external-src.runtime.test.ts e2e/ide/issue-1015-css-hmr.runtime.test.ts e2e/ide/issue-1140-mode-cache.runtime.test.ts e2e/ide/issue-1058-template-tags.runtime.test.ts
       e2e_platform: weapp
-      artifact_name: runtime-publication-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ github.sha }}
+      artifact_name: runtime-publication-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}
       artifact_path: docs/reports/dom-acceptance/**
     secrets: inherit
 
   lifecycle-diagnostic:
-    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'lifecycle'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'lifecycle')
     name: HMR Lifecycle Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -149,6 +194,12 @@ jobs:
         node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
@@ -157,12 +208,13 @@ jobs:
         pnpm vitest run packages/weapp-vite/src/utils/watchDependencies.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotInputs.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotBuild.integration.test.ts scripts/editSequence/processTree.test.ts scripts/editSequence/processTree.windows.integration.test.ts scripts/editSequence/processObserver.test.ts scripts/editSequence/processObserverClose.test.ts scripts/editSequence/worker.test.ts scripts/utils/atomicRename.test.ts scripts/editSequence/buildSources.test.ts scripts/editSequence/frameworkSources.test.ts
         pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/edit-sequence.test.ts --reporter=default --reporter=json --outputFile=.tmp/hmr-lifecycle-report.json
       e2e_platform: weapp
-      artifact_name: hmr-lifecycle-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ github.sha }}
+      artifact_name: hmr-lifecycle-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}
       artifact_path: .tmp/hmr-lifecycle-report.json
     secrets: inherit
 
   shared-layout-windows-diagnostic:
-    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'shared-layout-windows'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'shared-layout-windows')
     name: Shared Layout HMR Diagnostic (Windows / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -170,6 +222,12 @@ jobs:
         node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: windows-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
@@ -179,16 +237,22 @@ jobs:
     secrets: inherit
 
   simulator-browser:
-    if: ${{ !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
-    needs: [miniapp-e2e-build-pr, miniapp-e2e-build-full]
+    if: ${{ needs.pr-context.outputs.should_run == 'true' && !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
+    needs: [pr-context, miniapp-e2e-build-pr, miniapp-e2e-build-full]
     name: Simulator Browser E2E (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: ${{ fromJSON(github.event_name == 'pull_request' && '[22]' || '[22,24]') }}
+        node-version: ${{ fromJSON(needs.pr-context.outputs.is_pr == 'true' && '[22]' || '[22,24]') }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 20
@@ -200,16 +264,22 @@ jobs:
     secrets: inherit
 
   ide-dom-headless:
-    if: ${{ !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
-    needs: [miniapp-e2e-build-pr, miniapp-e2e-build-full]
+    if: ${{ needs.pr-context.outputs.should_run == 'true' && !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
+    needs: [pr-context, miniapp-e2e-build-pr, miniapp-e2e-build-full]
     name: IDE DOM Headless (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: ${{ fromJSON(github.event_name == 'pull_request' && '[22]' || '[22,24]') }}
+        node-version: ${{ fromJSON(needs.pr-context.outputs.is_pr == 'true' && '[22]' || '[22,24]') }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
@@ -224,7 +294,8 @@ jobs:
     secrets: inherit
 
   shared-compiler-hosts:
-    if: (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && ((needs.pr-context.outputs.is_pr == 'true' || github.event_name == 'workflow_dispatch') && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
     name: Shared Compiler Hosts (${{ matrix.os }} / Node 24)
     strategy:
       fail-fast: false
@@ -232,6 +303,12 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '24'
       timeout_minutes: 30
@@ -248,16 +325,22 @@ jobs:
         .tmp/shared-hosts/artifacts.json
 
   ide-dom-acceptance-internal:
-    if: ${{ !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
-    needs: [miniapp-e2e-build-pr, miniapp-e2e-build-full]
+    if: ${{ needs.pr-context.outputs.should_run == 'true' && !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
+    needs: [pr-context, miniapp-e2e-build-pr, miniapp-e2e-build-full]
     name: IDE DOM Acceptance Contracts (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: ${{ fromJSON(github.event_name == 'pull_request' && '[22]' || '[22,24]') }}
+        node-version: ${{ fromJSON(needs.pr-context.outputs.is_pr == 'true' && '[22]' || '[22,24]') }}
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 15
@@ -268,17 +351,24 @@ jobs:
         node --import tsx scripts/check-e2e-ide-shared-launch.ts
         node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check
         pnpm vitest run -c e2e/vitest.e2e.internal.config.ts --maxWorkers=1 --no-file-parallelism
-      artifact_name: dom-acceptance-inventory-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ github.sha }}
+      artifact_name: dom-acceptance-inventory-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}
       artifact_path: |
         e2e/dom-acceptance-inventory.json
         e2e/dom-acceptance-inventory.md
     secrets: inherit
 
   miniapp-platform-build-gate:
-    if: github.event_name == 'pull_request'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
     name: Miniapp Platform Build Gate (Ubuntu / Node 22)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: '22'
       timeout_minutes: 30
@@ -287,7 +377,8 @@ jobs:
     secrets: inherit
 
   miniapp-e2e-build-pr:
-    if: github.event_name == 'pull_request'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
     name: Miniapp Build Artifact (${{ matrix.os }} / Node 22 / weapp)
     strategy:
       fail-fast: false
@@ -305,6 +396,12 @@ jobs:
       max-parallel: 3
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: 40
@@ -314,8 +411,8 @@ jobs:
     secrets: inherit
 
   miniapp-e2e-ci-pr:
-    if: github.event_name == 'pull_request'
-    needs: miniapp-e2e-build-pr
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
+    needs: [pr-context, miniapp-e2e-build-pr]
     name: Miniapp E2E PR (${{ matrix.os }} / Node 22 / ${{ matrix.platform }})
     strategy:
       fail-fast: false
@@ -330,6 +427,12 @@ jobs:
       max-parallel: 3
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: 40
@@ -342,8 +445,8 @@ jobs:
     secrets: inherit
 
   miniapp-hmr-ci-pr:
-    if: github.event_name == 'pull_request'
-    needs: miniapp-e2e-build-pr
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
+    needs: [pr-context, miniapp-e2e-build-pr]
     name: Miniapp HMR Guard (${{ matrix.os }} / Node 22 / weapp)
     strategy:
       fail-fast: false
@@ -355,6 +458,12 @@ jobs:
       max-parallel: 1
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: ${{ matrix.timeout_minutes }}
@@ -365,7 +474,8 @@ jobs:
     secrets: inherit
 
   miniapp-e2e-build-full:
-    if: github.event_name != 'pull_request' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
     name: Miniapp Nightly Build Artifact (${{ matrix.os }} / Node ${{ matrix.node-version }} / weapp)
     strategy:
       fail-fast: false
@@ -397,6 +507,12 @@ jobs:
             build-command: pnpm build:pkgs:ci:macos
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 40
@@ -406,8 +522,8 @@ jobs:
     secrets: inherit
 
   miniapp-e2e-ci-full:
-    if: github.event_name != 'pull_request' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
-    needs: miniapp-e2e-build-full
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
+    needs: [pr-context, miniapp-e2e-build-full]
     name: Miniapp E2E Nightly (${{ matrix.os }} / Node ${{ matrix.node-version }} / shard ${{ matrix.shard }})
     strategy:
       fail-fast: false
@@ -418,6 +534,12 @@ jobs:
         shard: [1, 2, 3, 4]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 40
@@ -430,8 +552,8 @@ jobs:
     secrets: inherit
 
   miniapp-hmr-ci-full:
-    if: github.event_name != 'pull_request' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
-    needs: miniapp-e2e-build-full
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
+    needs: [pr-context, miniapp-e2e-build-full]
     name: Miniapp HMR Guard (${{ matrix.os }} / Node ${{ matrix.node-version }} / weapp)
     strategy:
       fail-fast: false
@@ -464,6 +586,12 @@ jobs:
             timeout_minutes: 35
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: ${{ matrix.timeout_minutes }}
@@ -474,10 +602,17 @@ jobs:
     secrets: inherit
 
   web-e2e-baseline-pr:
-    if: github.event_name == 'pull_request'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
     name: Web E2E Baseline (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       # DevTools baselines are generated on macOS and depend on its system CJK fonts.
       runs_on: macos-latest
       node_version: '24'
@@ -493,10 +628,17 @@ jobs:
     secrets: inherit
 
   web-project-builds:
-    if: (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
     name: Web Project Builds (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 45
@@ -505,10 +647,17 @@ jobs:
     secrets: inherit
 
   web-browser-smoke:
-    if: (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
     name: Web Browser Smoke (Firefox / WebKit / Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 45
@@ -519,10 +668,17 @@ jobs:
     secrets: inherit
 
   workspace-hmr-pr:
-    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release/pnpm-version')
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr') && !startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))
     name: Workspace HMR Changed Projects (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 60
@@ -535,10 +691,17 @@ jobs:
     secrets: inherit
 
   workspace-hmr-nightly:
-    if: github.event_name != 'pull_request' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr')
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr'))
     name: Workspace HMR Nightly Full (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 120
@@ -551,7 +714,8 @@ jobs:
     secrets: inherit
 
   web-e2e-baseline-full:
-    if: github.event_name != 'pull_request' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full')
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
     name: Web E2E Baseline (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -560,6 +724,12 @@ jobs:
         node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       # Keep screenshot font rasterization aligned with the DevTools baseline host.
       runs_on: macos-latest
       node_version: '${{ matrix.node-version }}'
