@@ -49,7 +49,7 @@ export function rememberTailwindGeneration(
       sources: new Map(request.sources),
       options: copyGenerationValue(options),
       roots: roots.map(root => ({
-        request: copyGenerationValue(comparableGenerationRequest(root.request)),
+        request: comparableGenerationRequest(root.request),
         sources: copyGenerationValue(root.sources),
         entry: Object.freeze({ rawCss: root.result.rawCss, css: root.result.css, dependencies: Object.freeze([...root.result.dependencies]), snapshot: root.result.snapshot }),
       })),
