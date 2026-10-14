@@ -29,3 +29,7 @@ gh workflow run nightly-performance.yml --ref main -f pr-number=123
 配置切换后，已经排队或运行中的旧任务不会自动取消。需要清理时先确认具体运行 ID 和归属，单独取消相应任务，保留定时检查、生产发布与手动诊断运行。
 
 修改触发配置、PR 上下文或报告流程后，运行 `pnpm test:pr-actions` 校验入口和提交归属合约。CI Policy 同样执行这组回归。
+
+Native Addon Correctness 从调度 `main` 使用可信 driver，读取被测候选的 `packages/ast-native/correctness.manifest.json`。新增 native 能力时，在这份清单中一起增加实际 addon 导出、suite 及最低断言数、需要的 workspace 构建闭包；不再修改 YAML 中的测试列表。候选必须包含 driver 的基础覆盖，构建目标仅允许 `@wevu/compiler...` 和 `weapp-vite...`，用 `--force --concurrency=1` 按单个依赖图重新构建后运行全部声明的 suite。最低断言数用于拒绝部分报告，所有实际断言仍须通过且不能 skip/todo。
+
+缺少清单的旧分支应先合并最新 `main` 并补齐自身能力的清单增量；workflow 会拒绝缺失或缩减覆盖，不自动退回旧测试集合。证据记录实际 tested commit、driver commit、原始 manifest SHA256、构建闭包和执行 suite，同时固定实际加载的候选 addon 二进制及入口的相对路径和 SHA256，前后核对不能替换文件。`binding.json` 与 `summary.json` 继续只输出可移植数据。新增专项测试使用 `pnpm exec vitest run --config scripts/vitest.config.mjs scripts/verify-native-addon-correctness.test.mjs scripts/nativeAddonCorrectness`。
