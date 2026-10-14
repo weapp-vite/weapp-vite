@@ -1,4 +1,5 @@
 import type { SidecarModuleRequest } from '../src/moduleGraph/protocol'
+import { WEAPP_VITE_SIDECAR_RESOLVED_PREFIX } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { parseLogicalEntryId, parseSidecarModuleId, parseSidecarSourceRequest } from '../src/moduleGraph/protocol'
@@ -51,8 +52,12 @@ function readWrapperSidecars(code: string) {
 
 function readMapSidecars(map: RawSourceMap) {
   return map.sources.flatMap((source, index) => {
-    // Rolldown 为虚拟模块附加相对目录；其后完整协议 ID 和原始内容仍须逐项验证。
-    const sidecar = parseSidecarModuleId(source.replace(/^(?:\.\.\/)+/, ''))
+    // Rolldown 会为虚拟模块附加相对目录，甚至可能包含当前 package 的路径；
+    // 从稳定协议前缀开始解析，避免让 cwd 影响 sidecar 识别。
+    const protocolStart = source.indexOf(WEAPP_VITE_SIDECAR_RESOLVED_PREFIX)
+    const sidecar = parseSidecarModuleId(protocolStart >= 0
+      ? source.slice(protocolStart)
+      : source.replace(/^(?:\.\.\/)+/, ''))
     if (!sidecar) {
       return []
     }
