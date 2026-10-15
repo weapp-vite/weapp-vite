@@ -262,7 +262,7 @@ it.each([
   await writeFile(app.cssEntries[0]!, `${app.css} @${kind} "${identity === 'junction' ? '../module-alias' : '.'}/${kind}.ts";`)
   await app.change(app.cssEntries[0])
   await app.disk()
-  expect(app.record.generations.at(-1)!.result.dependencies.map(compilerSourceId)).toContain(compilerSourceId(dependency))
+  expect.soft(app.record.generations.at(-1)!.result.dependencies.map(compilerSourceId)).toEqual(expect.arrayContaining([compilerSourceId(dependency)]))
   await writeFile(dependency, moduleSource(149))
   await app.change(dependency)
   expect(app.record.invalidations.at(-1)).toEqual([dependency])

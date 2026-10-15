@@ -97,7 +97,7 @@ describe('bounded HMR workflow diagnosis', () => {
       node_version: '24',
       e2e_exclude_projects: `\${{ inputs.exclude-e2e-projects }}`,
       build_command: 'pnpm exec turbo run build --filter=weapp-vite...',
-      main_command: 'pnpm vitest run packages/weapp-vite/src/runtime/statefulHmr/compilerBatch.native.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/native-compiler-batch-report.json',
+      main_command: 'pnpm vitest run packages/weapp-vite/src/runtime/statefulHmr/compilerBatch.native.test.ts packages/weapp-vite/src/plugins/tailwindcss/contentInvalidation.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/native-compiler-batch-report.json',
       artifact_name: expect.stringMatching(/^native-compiler-batch-.*matrix\.os.*-node-24-.*needs\.pr-context\.outputs\.checkout_sha/),
       artifact_path: '.tmp/native-compiler-batch-report.json',
       timeout_minutes: 20,
