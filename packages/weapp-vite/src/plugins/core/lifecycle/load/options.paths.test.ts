@@ -55,6 +55,7 @@ function createState(type: 'page' | 'component', entry: string) {
   return {
     ctx: { ...ctx, configService: createConfigService(ctx as any) },
     entriesMap: new Map(),
+    resolvedEntryMap: new Map<string, { id: string }>(),
     hmrRootInputIds: new Set<string>(),
   }
 }
@@ -97,6 +98,11 @@ describe('logical input synchronous path scope', () => {
     })
     expect([...state.hmrRootInputIds]).toEqual([normalizeSourceId(state.ctx.scanService.appEntry.path), normalizeSourceId(file)])
     expect(state.entriesMap.get('entries/card')).toEqual({ path: file, type })
+    expect(state.resolvedEntryMap.get(normalizeSourceId(file))).toEqual({ id: file })
+    const resolved = { id: file, meta: { marker: 'resolver-owned' } }
+    state.resolvedEntryMap.set(normalizeSourceId(file), resolved)
+    await createOptionsHook(state as any)(options)
+    expect(state.resolvedEntryMap.get(normalizeSourceId(file))).toBe(resolved)
   })
 
   it('releases the path scope before resolving the next entry asynchronously', async () => {
