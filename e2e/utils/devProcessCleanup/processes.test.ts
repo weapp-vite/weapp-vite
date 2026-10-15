@@ -111,7 +111,7 @@ describe('dev process snapshot identity', () => {
       await expect(cleanup(0)).rejects.toMatchObject({ message: 'Dev process inspection failed: exitCode=none, signal=SIGTERM, timedOut=true.' })
       expect(execute).toHaveBeenCalledOnce()
       expect(execute.mock.calls[0]![0]).toBe('powershell.exe')
-      expect(execute.mock.calls[0]![2]).toMatchObject({ timeout: 10_000, reject: false, windowsHide: true })
+      expect(execute.mock.calls[0]![2]).toMatchObject({ timeout: 30_000, reject: false, windowsHide: true })
       expect(kill).not.toHaveBeenCalled()
       expect(disconnect).not.toHaveBeenCalled()
       const diagnostic = output.mock.calls.map(([chunk]) => String(chunk)).find(line => line.startsWith('[e2e-cleanup-query] '))
@@ -233,7 +233,7 @@ describe('dev process snapshot identity', () => {
       expect(await captured).toEqual([{ pid: 61, executable: root.ExecutablePath, started: root.Started }])
       expect(execute).toHaveBeenCalledOnce()
       expect(execute.mock.calls[0]![0]).toBe('powershell.exe')
-      expect(execute.mock.calls[0]![2]).toEqual({ timeout: 10_000, reject: false, windowsHide: true })
+      expect(execute.mock.calls[0]![2]).toEqual({ timeout: 30_000, reject: false, windowsHide: true })
     }
     finally {
       vi.unstubAllEnvs()
