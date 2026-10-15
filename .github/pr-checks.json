@@ -1,0 +1,234 @@
+{
+  "ci": {
+    "name": "CI",
+    "paths": [],
+    "baseBranches": [],
+    "checkoutMode": "merge"
+  },
+  "ci-policy": {
+    "name": "CI Policy",
+    "paths": [],
+    "baseBranches": [],
+    "checkoutMode": "merge"
+  },
+  "ci-e2e": {
+    "name": "CI E2E",
+    "paths": [],
+    "baseBranches": [],
+    "checkoutMode": "merge"
+  },
+  "ci-create-weapp-vite": {
+    "name": "Create Weapp Vite Smoke",
+    "paths": [
+      "packages/create-weapp-vite/**",
+      "scripts/createWeappViteSmoke/**",
+      "scripts/create-weapp-vite-smoke.mjs",
+      "scripts/merge-create-weapp-vite-smoke-reports.mjs",
+      ".github/workflows/ci-create-weapp-vite.yml",
+      "templates/**",
+      "package.json",
+      "pnpm-lock.yaml",
+      ".github/workflows/ci-pr.yml",
+      ".github/workflows/reusable-frozen-pr-context.yml",
+      ".github/scripts/native-pr-context.mjs",
+      ".github/pr-checks.json",
+      ".github/workflows/validate-ci-create-weapp-vite.yml"
+    ],
+    "baseBranches": [],
+    "checkoutMode": "merge"
+  },
+  "ci-acceptance-http": {
+    "name": "Acceptance HTTP",
+    "paths": [
+      ".github/workflows/ci-acceptance-http.yml",
+      "packages/acceptance/**",
+      "packages/mcp/**",
+      "packages/agent-core/**",
+      "pnpm-lock.yaml",
+      ".github/workflows/ci-pr.yml",
+      ".github/workflows/reusable-frozen-pr-context.yml",
+      ".github/scripts/native-pr-context.mjs",
+      ".github/pr-checks.json",
+      ".github/workflows/validate-ci-acceptance-http.yml"
+    ],
+    "baseBranches": [],
+    "checkoutMode": "merge"
+  },
+  "ci-acceptance": {
+    "name": "Acceptance and Agent",
+    "paths": [
+      "packages/agent-*/**",
+      "packages/acceptance/**",
+      "packages/mcp/**",
+      "packages/devtools-runtime/**",
+      "packages/weapp-vite/**",
+      "packages/weapp-ide-cli/**",
+      "packages/agent-cli/**",
+      "scripts/weapp-agent/**",
+      "skills/weapp-acceptance/**",
+      "pnpm-lock.yaml",
+      ".github/workflows/ci-acceptance.yml",
+      ".github/workflows/ci-pr.yml",
+      ".github/workflows/reusable-frozen-pr-context.yml",
+      ".github/scripts/native-pr-context.mjs",
+      ".github/pr-checks.json",
+      ".github/workflows/validate-ci-acceptance.yml"
+    ],
+    "baseBranches": [],
+    "checkoutMode": "merge"
+  },
+  "ci-dimina": {
+    "name": "Dimina Web Experiment",
+    "paths": [
+      ".gitattributes",
+      ".github/workflows/ci-dimina.yml",
+      ".github/actions/**",
+      "packages-private/dimina-playground/**",
+      "packages/weapp-vite/**",
+      "packages-runtime/**",
+      "@weapp-core/**",
+      "e2e/dimina/**",
+      "e2e/vitest.e2e.dimina.config.ts",
+      "e2e/scripts/**",
+      "scripts/dimina-*.test.ts",
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      ".github/workflows/ci-pr.yml",
+      ".github/workflows/reusable-frozen-pr-context.yml",
+      ".github/scripts/native-pr-context.mjs",
+      ".github/pr-checks.json",
+      ".github/workflows/validate-ci-dimina.yml"
+    ],
+    "baseBranches": [],
+    "checkoutMode": "merge"
+  },
+  "ci-vite-host-consumer": {
+    "name": "Vite Host Consumer",
+    "paths": [
+      ".github/workflows/ci-vite-host-consumer.yml",
+      ".github/workflows/reusable-node-command.yml",
+      "packages/weapp-vite/**",
+      "e2e/ide/stateful-hmr.runtime.test.ts",
+      "e2e/ide/hmr-auto-classic.runtime.test.ts",
+      "e2e/ide/react-runtime-spike.runtime.test.ts",
+      "e2e/ide/wevu-subpackage-placement.runtime.test.ts",
+      "e2e/ide/worker-host.runtime.test.ts",
+      "e2e/ide/platform-host.runtime.test.ts",
+      "templates/weapp-vite-multi-platform-sfc-template/**",
+      "e2e/ide/lib-host.runtime.test.ts",
+      "e2e-apps/lib-mode/**",
+      "e2e/ide/issue-963-plugin-es6.runtime.test.ts",
+      "templates/weapp-vite-plugin-template/**",
+      "e2e-apps/chunk-modes/**",
+      "mpcore/packages/simulator/**",
+      "mpcore/packages/test/**",
+      "mpcore/packages/vitest/**",
+      "mpcore/packages/weapp-vite/**",
+      "e2e/ide/subpackagePlacementDom/**",
+      "e2e-apps/wevu-subpackage-placement/**",
+      "e2e/ide/reactRuntimeDom/**",
+      "e2e-apps/react-runtime-spike/**",
+      "packages-runtime/react/**",
+      "e2e/ide/statefulHmrDom/**",
+      "e2e-apps/stateful-hmr/**",
+      "packages/rolldown-require/**",
+      "packages-runtime/wevu/**",
+      "packages-runtime/wevu-compiler/**",
+      "@weapp-core/**",
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      ".github/workflows/ci-pr.yml",
+      ".github/workflows/reusable-frozen-pr-context.yml",
+      ".github/scripts/native-pr-context.mjs",
+      ".github/pr-checks.json",
+      ".github/workflows/validate-ci-vite-host-consumer.yml"
+    ],
+    "baseBranches": [],
+    "checkoutMode": "merge"
+  },
+  "ci-vscode-extension": {
+    "name": "VSCode Extension CI",
+    "paths": [
+      "extensions/vscode/**",
+      ".github/workflows/ci-vscode-extension.yml",
+      ".github/workflows/release.yml",
+      ".github/workflows/reusable-node-command.yml",
+      ".github/actions/setup-node-pnpm/**",
+      ".github/actions/refresh-workspace-deps/**",
+      ".github/workflows/ci-pr.yml",
+      ".github/workflows/reusable-frozen-pr-context.yml",
+      ".github/scripts/native-pr-context.mjs",
+      ".github/pr-checks.json",
+      ".github/workflows/validate-ci-vscode-extension.yml"
+    ],
+    "baseBranches": [],
+    "checkoutMode": "merge"
+  },
+  "ci-tutorial-e2e": {
+    "name": "Tutorial E2E",
+    "paths": [
+      ".github/workflows/ci-tutorial-e2e.yml",
+      "e2e/tutorials/**",
+      "packages/create-weapp-vite/**",
+      "packages/weapp-vite/**",
+      "packages-runtime/wevu/**",
+      "templates/**",
+      "website/guide/index.md",
+      "website/guide/multi-platform.md",
+      "website/handbook/index.md",
+      "website/snippets/tutorial-e2e/**",
+      "scripts/project-lifecycle.mjs",
+      "package.json",
+      "pnpm-lock.yaml",
+      ".github/workflows/ci-pr.yml",
+      ".github/workflows/reusable-frozen-pr-context.yml",
+      ".github/scripts/native-pr-context.mjs",
+      ".github/pr-checks.json",
+      ".github/workflows/validate-ci-tutorial-e2e.yml"
+    ],
+    "baseBranches": [],
+    "checkoutMode": "merge"
+  },
+  "deploy-website": {
+    "name": "Deploy Website",
+    "paths": [],
+    "baseBranches": [
+      "main"
+    ],
+    "checkoutMode": "merge"
+  },
+  "native-addon-correctness": {
+    "name": "Native Addon Correctness",
+    "paths": [
+      "packages/ast-native/**",
+      "packages/ast/**",
+      "packages/weapp-vite/**",
+      "packages-runtime/wevu-compiler/**",
+      "scripts/verify-native-addon-correctness*",
+      "scripts/nativeAddonCorrectness/**",
+      ".github/workflows/native-addon-correctness.yml",
+      "pnpm-lock.yaml",
+      ".github/workflows/ci-pr.yml",
+      ".github/workflows/reusable-frozen-pr-context.yml",
+      ".github/scripts/native-pr-context.mjs",
+      ".github/pr-checks.json",
+      ".github/workflows/validate-native-addon-correctness.yml"
+    ],
+    "baseBranches": [],
+    "checkoutMode": "merge"
+  },
+  "ci-performance": {
+    "name": "Performance Smoke",
+    "paths": [],
+    "baseBranches": [],
+    "checkoutMode": "head"
+  },
+  "wevu-runtime-size": {
+    "name": "Wevu Runtime Size",
+    "paths": [],
+    "baseBranches": [],
+    "checkoutMode": "head"
+  }
+}

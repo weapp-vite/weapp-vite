@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
+import { readWorkflowFixture } from './workflowFixture.mjs'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const expression = (value: string) => `$${'{{'} ${value} }}`
@@ -22,7 +23,7 @@ it('normalizes Bun test globs for Windows test discovery', async () => {
 })
 
 it('runs Bun CLI on all three systems against frozen workspace artifacts', async () => {
-  const workflow = parse(await readFile(path.join(ROOT, '.github/workflows/ci-e2e.yml'), 'utf8'))
+  const workflow = readWorkflowFixture('ci-e2e.yml')
   const job = workflow.jobs['bun-cli']
   expect(job.strategy.matrix).toEqual({
     'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'],

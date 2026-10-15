@@ -5,6 +5,7 @@ import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
 import { workspaceTypeTestPackages } from './turboCacheContract/fixture'
+import { readWorkflowFixture } from './workflowFixture.mjs'
 
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>()
@@ -230,7 +231,7 @@ describe('public type tests in CI', () => {
   it('reaches package contracts through the PR type-check job and root task', async () => {
     const manifest = await readManifest(root)
     expect(manifest.scripts['test:types']).toBe('turbo run test:types:check --filter=./packages/* --filter=./packages-runtime/* --filter=./mpcore/packages/* --filter=./@weapp-core/* --filter=weapp-vite-lib-mode-e2e --filter=!@weapp-vite/dashboard')
-    const workflow = parse(await readFile(path.join(root, '.github/workflows/ci.yml'), 'utf8')) as Workflow
+    const workflow = readWorkflowFixture('ci.yml') as Workflow
     const job = workflow.jobs['build-pr']
     expect(job?.if).toContain('needs.pr-context.outputs.is_pr == \'true\'')
     expect(job?.strategy?.matrix?.include?.some(entry => /(?:^|\n)pnpm test:types(?:\n|$)/.test(entry.main_command ?? ''))).toBe(true)

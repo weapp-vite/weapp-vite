@@ -1,4 +1,4 @@
-import { appendFile, mkdir, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
@@ -165,6 +165,11 @@ async function main() {
   }
   let context
   try {
+    const profiles = JSON.parse(await readFile(new URL('../pr-checks.json', import.meta.url), 'utf8'))
+    const profile = process.env.PR_PROFILE ? profiles[process.env.PR_PROFILE] : undefined
+    if (process.env.PR_PROFILE && !profile) {
+      throw new Error('Unknown PR validation profile')
+    }
     context = await resolvePrContext({
       repository,
       runId: process.env.GITHUB_RUN_ID,
@@ -172,9 +177,9 @@ async function main() {
       driverSha: process.env.GITHUB_SHA,
       refName: process.env.GITHUB_REF_NAME,
       prNumber: process.env.PR_NUMBER,
-      paths: process.env.PR_PATHS,
-      baseBranches: process.env.PR_BASE_BRANCHES,
-      checkoutMode: process.env.PR_CHECKOUT_MODE || 'merge',
+      paths: profile?.paths ?? process.env.PR_PATHS,
+      baseBranches: profile?.baseBranches ?? process.env.PR_BASE_BRANCHES,
+      checkoutMode: profile?.checkoutMode ?? process.env.PR_CHECKOUT_MODE ?? 'merge',
     }, get)
   }
   catch (error) {
@@ -196,6 +201,7 @@ async function main() {
     base_ref: context.baseRef,
     head_repository: context.headRepository,
     checkout_sha: context.checkoutSha,
+    pr_context: JSON.stringify(context),
   }
   if (Object.values(outputs).some(value => typeof value !== 'string' || /[\r\n]/u.test(value))) {
     throw new Error('Invalid PR context output')
