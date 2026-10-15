@@ -217,20 +217,24 @@ it('treats preprocessing metadata as dependencies even when the same file is a c
   expect(app.record.invalidations.flat()).toContain(app.source)
 })
 
-it('removes a deleted CSS root from pending invalidation and subsequent memory preparations', async () => {
+it.each([0, 1])('removes deleted CSS root %i from pending invalidation and subsequent memory preparations', async (entryIndex) => {
   const app = await fixture(true, 2)
   await writeFile(app.source, 'export const utility = "w-[53px]"')
   await app.change()
-  const removed = app.record.generations[0]!.request.id
-  await rm(app.cssEntries[0]!)
-  await app.change(app.cssEntries[0], 'delete')
+  const entry = app.cssEntries[entryIndex]!
+  // 并行生成的观察记录按完成顺序追加，必须按实际入口识别待删除 root。
+  const removed = app.record.generations.find(({ request }) =>
+    request.sourceOptions?.cssEntries?.some(file => path.normalize(file) === path.normalize(entry)),
+  )!.request.id
+  await rm(entry)
+  await app.change(entry, 'delete')
   const before = app.record.generations.length
   await app.memory()
   expect(app.record.removals).toContain(removed)
   expect(app.record.generations.slice(before).map(generation => generation.request.id)).not.toContain(removed)
   app.record.invalidations.length = 0
-  await writeFile(app.cssEntries[0]!, app.css)
-  await app.change(app.cssEntries[0], 'create')
+  await writeFile(entry, app.css)
+  await app.change(entry, 'create')
   await app.disk()
   expect(app.record.invalidations.flat()).not.toContain(removed)
   await fresh(app.record)

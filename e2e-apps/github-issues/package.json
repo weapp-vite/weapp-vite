@@ -15,7 +15,7 @@
   "dependencies": {
     "@wevu/web-apis": "workspace:*",
     "axios": "catalog:",
-    "camelcase": "^9.0.0",
+    "camelcase": "^10.0.0",
     "dayjs": "catalog:",
     "merge": "catalog:",
     "miniprogram-computed": "^9.0.0",

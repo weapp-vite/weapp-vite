@@ -47,9 +47,9 @@
     "@weapp-agent/core": "workspace:*",
     "@weapp-vite/acceptance": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
-    "execa": "10.1.0",
+    "execa": "10.1.1",
     "weapp-ide-cli": "workspace:*",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@modelcontextprotocol/node": "^2.1.1"

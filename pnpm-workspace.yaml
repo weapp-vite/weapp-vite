@@ -39,7 +39,7 @@ catalog:
   '@babel/types': ^8.0.6
   '@douyin-microapp/typings': ^1.3.1
   '@egoist/tailwindcss-icons': ^1.9.2
-  '@icebreakers/eslint-config': ^8.0.8
+  '@icebreakers/eslint-config': ^8.0.9
   '@icebreakers/stylelint-config': ^5.1.3
   '@iconify-json/mdi': ^1.2.3
   '@iconify/tailwind4': ^1.2.3
@@ -54,8 +54,8 @@ catalog:
   '@vitejs/devtools': 0.7.6
   '@vitejs/devtools-kit': 0.7.6
   '@vitejs/plugin-vue': ^6.0.10
-  '@vue/compiler-core': ^3.5.43
-  '@vue/compiler-dom': ^3.5.43
+  '@vue/compiler-core': ^3.5.44
+  '@vue/compiler-dom': ^3.5.44
   '@vue/babel-plugin-jsx': 3.0.0
   '@vue/language-core': ^3.3.13
   '@wot-ui/ui': 2.3.2
@@ -68,7 +68,7 @@ catalog:
   comment-json: ^5.0.0
   dayjs: ^1.11.23
   d3: ^7.9.0
-  devframe: 1.2.3
+  devframe: 1.2.5
   echarts: ^6.1.0
   esbuild: ^0.28.2
   eslint: ^10.12.0
@@ -76,7 +76,7 @@ catalog:
   fdir: ^6.5.0
   gm-crypto: ^0.1.12
   graphql-request: ^7.4.0
-  happy-dom: ^20.14.6
+  happy-dom: ^21.0.1
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
   lru-cache: ^11.5.3
@@ -84,16 +84,16 @@ catalog:
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.3
   obug: ^3.0.0
-  oxc-parser: ^0.153.0
+  oxc-parser: ^0.154.0
   oxc-walker: ^1.1.1
   pathe: ^2.0.3
   picocolors: ^1.1.1
   pkg-types: ^2.3.3
-  postcss: ^8.5.29
+  postcss: ^8.5.30
   postcss-selector-parser: ^7.1.6
-  react: 19.3.0
+  react: 19.3.1
   react-reconciler: 0.34.0
-  rolldown: 1.2.13
+  rolldown: 1.2.14
   sass: ^1.105.1
   sass-embedded: ^1.105.1
   sharp: ^0.35.5
@@ -110,10 +110,10 @@ catalog:
   uview-plus: 3.8.130
   vite: 8.3.4
   vite-plugin-inspect: ^12.1.0
-  vue: ^3.5.43
+  vue: ^3.5.44
   vue-tsc: ^3.3.13
-  weapp-tailwindcss: ^5.6.0
-  zod: ^4.6.5
+  weapp-tailwindcss: ^5.6.2
+  zod: ^4.6.7
 
 catalogs:
   latest:
@@ -124,7 +124,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.17.0
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.6.0
+    weapp-tailwindcss: 5.6.2
 
 gitChecks: false
 
@@ -153,4 +153,4 @@ allowBuilds:
 shamefullyHoist: true
 patchedDependencies:
   vite@8.3.4: patches/vite@8.3.4.patch
-  rolldown@1.2.13: patches/rolldown@1.2.13.patch
+  rolldown@1.2.14: patches/rolldown@1.2.14.patch

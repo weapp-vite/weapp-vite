@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@iconify/vue": "^5.0.3",
-    "@vue/shared": "^3.5.43",
+    "@vue/shared": "^3.5.44",
     "echarts": "catalog:",
     "element-plus": "^2.14.7",
     "gridstack": "^14.0.0",
@@ -41,13 +41,13 @@
   "devDependencies": {
     "@egoist/tailwindcss-icons": "catalog:",
     "@iconify-json/bi": "^1.2.7",
-    "@iconify-json/logos": "^1.2.15",
+    "@iconify-json/logos": "^1.2.16",
     "@iconify-json/mdi": "catalog:",
-    "@iconify-json/vscode-icons": "^1.2.87",
+    "@iconify-json/vscode-icons": "^1.2.89",
     "@shikijs/vitepress-twoslash": "^4.5.0",
     "@tailwindcss/vite": "catalog:",
     "create-weapp-vite": "workspace:*",
-    "mermaid": "^12.1.0",
+    "mermaid": "^12.2.0",
     "tailwindcss": "catalog:tailwind4",
     "unplugin-auto-import": "^21.1.0",
     "unplugin-vue-components": "^32.1.0",
@@ -56,6 +56,6 @@
     "vitepress-plugin-llms": "1.14.0",
     "vitepress-plugin-mermaid": "^2.0.17",
     "weapp-vite": "workspace:*",
-    "wrangler": "^4.149.0"
+    "wrangler": "^4.151.0"
   }
 }

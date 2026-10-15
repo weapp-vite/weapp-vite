@@ -8,6 +8,7 @@ export async function closing(rolldown, root) {
   const entered = deferred()
   const release = deferred()
   const events = []
+  const settled = []
   let inputRef
   let outputRef
   const plugin = {
@@ -24,16 +25,26 @@ export async function closing(rolldown, root) {
     },
   }
   const bundle = await rolldown({ input: files.entry, cwd: files.cwd, plugins: [plugin], preserveEntrySignatures: 'strict' })
+  const close = attempt => bundle.close().then(
+    () => { settled.push({ attempt, status: 'fulfilled', hookCompleted: events.at(-1) === 'closeBundle:end' }) },
+    (error) => { settled.push({ attempt, status: 'rejected', error: contractError(error) }) },
+  )
   try {
     assertChunk(await bundle.generate({ format: 'es' }))
-    const first = bundle.close()
+    const first = close('first')
     await entered.promise
-    const second = bundle.close()
+    const second = close('concurrent')
     await diagnosticGc()
     assert.ok(inputRef.deref())
     assert.ok(outputRef.deref())
+    assert.deepEqual(events, ['closeBundle:start'], 'concurrent close must not invoke the hook again')
+    assert.deepEqual(settled, [], 'both close calls must remain pending until the hook is released')
     release.resolve()
     await Promise.all([first, second])
+    assert.deepEqual([...settled].sort((left, right) => left.attempt.localeCompare(right.attempt)), [
+      { attempt: 'concurrent', status: 'fulfilled', hookCompleted: true },
+      { attempt: 'first', status: 'fulfilled', hookCompleted: true },
+    ])
     await bundle.close()
     assert.equal(bundle.closed, true)
   }
@@ -41,17 +52,9 @@ export async function closing(rolldown, root) {
     release.resolve()
     await bundle.close()
   }
-  assert.deepEqual(events, [
-    'closeBundle:start',
-    'closeBundle:start',
-    'closeBundle:end',
-    'closeBundle:end',
-    'closeBundle:start',
-    'closeBundle:end',
-    'closeBundle:start',
-    'closeBundle:end',
-  ])
-  return { events, closed: bundle.closed }
+  // 官方 #11142 修复了重复 native close；包括 finally 在内的重复调用只能等待首次关闭。
+  assert.deepEqual(events, ['closeBundle:start', 'closeBundle:end'])
+  return { events, settled, closed: bundle.closed }
 }
 
 export async function failures(rolldown, root) {
@@ -89,41 +92,61 @@ export async function failures(rolldown, root) {
   finally { await bundle.close() }
   assert.equal(bundle.closed, true)
   let closeCalls = 0
+  const closeEntered = deferred()
+  const closeRelease = deferred()
   const rejectedClose = await rolldown({
     input: files.entry,
     cwd: files.cwd,
     plugins: [{
       name: 'snapshot-close-error',
       buildStart() {},
-      closeBundle() {
+      async closeBundle() {
         closeCalls++
+        closeEntered.resolve()
+        await closeRelease.promise
         throw new Error('snapshot-contract-close-failure')
       },
     }],
   })
   await rejectedClose.generate({ format: 'es' })
   const closeOutcomes = []
-  for (const attempt of ['first', 'repeated']) {
-    try {
-      await rejectedClose.close()
-      closeOutcomes.push({ attempt, status: 'fulfilled' })
-    }
-    catch (error) {
-      closeOutcomes.push({ attempt, status: 'rejected', error: contractError(error) })
-    }
+  const closeAttempt = attempt => rejectedClose.close().then(
+    () => { closeOutcomes.push({ attempt, status: 'fulfilled' }) },
+    (error) => { closeOutcomes.push({ attempt, status: 'rejected', error: contractError(error) }) },
+  )
+  const pendingCloses = [closeAttempt('first')]
+  try {
+    await closeEntered.promise
+    pendingCloses.push(closeAttempt('concurrent'))
+    await diagnosticGc()
+    assert.equal(closeCalls, 1, 'concurrent close must not retry the failing hook')
+    assert.deepEqual(closeOutcomes, [], 'both close calls must await the failing hook')
+    closeRelease.resolve()
+    await Promise.all(pendingCloses)
+    await closeAttempt('repeated')
   }
-  assert.equal(closeCalls, 2)
-  assert.deepEqual(closeOutcomes, ['first', 'repeated'].map(attempt => ({
-    attempt,
-    status: 'rejected',
-    error: {
-      name: 'Error',
-      code: 'PLUGIN_ERROR',
-      message: 'snapshot-contract-close-failure',
-      plugin: 'snapshot-close-error',
-      hook: 'closeBundle',
+  finally {
+    closeRelease.resolve()
+    await Promise.all(pendingCloses)
+    await rejectedClose.close()
+  }
+  assert.equal(closeCalls, 1, 'a settled failure must not cause another native close')
+  // 首个调用保留完整错误；并发及后续调用仅等待首次结算，不重试也不重复传播首错。
+  assert.deepEqual([...closeOutcomes].sort((left, right) => left.attempt.localeCompare(right.attempt)), [
+    { attempt: 'concurrent', status: 'fulfilled' },
+    {
+      attempt: 'first',
+      status: 'rejected',
+      error: {
+        name: 'Error',
+        code: 'PLUGIN_ERROR',
+        message: 'snapshot-contract-close-failure',
+        plugin: 'snapshot-close-error',
+        hook: 'closeBundle',
+      },
     },
-  })))
+    { attempt: 'repeated', status: 'fulfilled' },
+  ])
   assert.deepEqual(events, ['buildStart', 'closeBundle', 'buildStart', 'renderStart', 'buildStart', 'renderStart', 'closeBundle'])
   assert.equal(rejectedClose.closed, true)
   return { events, closeCalls, closeOutcomes, failedCloseClosed: rejectedClose.closed }

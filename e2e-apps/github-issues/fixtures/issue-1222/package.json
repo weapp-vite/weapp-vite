@@ -1,0 +1,9 @@
+{
+  "name": "issue-1222-bun-cli",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --bun wv dev --no-mcp --non-interactive",
+    "build": "bun run --bun wv build"
+  }
+}

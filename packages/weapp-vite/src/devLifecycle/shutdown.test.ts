@@ -17,6 +17,33 @@ afterEach(() => {
 })
 
 it.each([
+  { connected: undefined, ipc: false, stopping: false },
+  { connected: false, ipc: false, stopping: false },
+  { connected: true, ipc: true, stopping: false },
+  { connected: false, ipc: true, stopping: true },
+])('distinguishes missing IPC from a disconnected parent: $connected / IPC=$ipc', async ({ connected, ipc, stopping }) => {
+  const descriptors = Object.getOwnPropertyDescriptors(process)
+  Object.defineProperty(process, 'connected', { configurable: true, writable: true, value: connected })
+  Object.defineProperty(process, 'disconnect', { configurable: true, writable: true, value: ipc ? vi.fn() : undefined })
+  try {
+    const scope = createDevShutdownScope()
+    expect(scope.stopping).toBe(stopping)
+    await scope.close()
+  }
+  finally {
+    for (const key of ['connected', 'disconnect']) {
+      const descriptor = descriptors[key]
+      if (descriptor) {
+        Object.defineProperty(process, key, descriptor)
+      }
+      else {
+        Reflect.deleteProperty(process, key)
+      }
+    }
+  }
+})
+
+it.each([
   ['SIGINT', 130],
   ['SIGTERM', 143],
   ['disconnect', 0],
