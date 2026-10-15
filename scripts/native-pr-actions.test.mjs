@@ -63,6 +63,18 @@ describe('native PR approval context', () => {
     await expect(resolveNativePrContext(second.options, second.get)).rejects.toThrow('waiting for approval')
   })
 
+  it('refuses movement while listing changed files before publishing shared selections', async () => {
+    const { options, get, state } = fixture()
+    const moving = async (pathname) => {
+      const response = await get(pathname)
+      if (pathname.includes('/files?')) {
+        state.pull = { ...pull, head: { ...pull.head, sha: 'd'.repeat(40) } }
+      }
+      return response
+    }
+    await expect(resolveNativePrContext(options, moving)).rejects.toThrow('while selecting checks')
+  })
+
   it('fails closed on missing profile selections and malformed native events', async () => {
     const { options, get } = fixture()
     await expect(resolveNativePrContext({ ...options, event: {} }, get)).rejects.toThrow('pull_request event')
