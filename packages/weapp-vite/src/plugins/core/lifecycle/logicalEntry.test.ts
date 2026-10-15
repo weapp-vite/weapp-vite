@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId, createSidecarModuleId, createSidecarSourceSpecifier } from '../../../moduleGraph/protocol'
+import { createModuleGraphService } from '../../../moduleGraph/service'
 import { createLogicalEntryLoadHook, createLogicalEntryResolveHook } from './logicalEntry'
 
 const findCssEntryMock = vi.hoisted(() => vi.fn())
@@ -139,7 +140,7 @@ describe('core logical entry lifecycle', () => {
     expect(state.ctx.moduleGraphService.replaceEntryDependencies).toHaveBeenCalledWith(sourceId, 'using-component', [], expect.any(Function))
   })
 
-  it.each(['jsx', 'tsx', 'vue'])('keeps compiler-discovered components out of the %s logical wrapper', async (extension) => {
+  it.each(['jsx', 'tsx', 'vue', 'ts', 'js'])('keeps compiler-discovered dependencies out of the %s logical wrapper', async (extension) => {
     const sourceId = `/project/src/pages/home/index.${extension}`
     const declared = '/project/src/components/declared.vue'
     const discovered = '/project/src/components/discovered.vue'
@@ -149,7 +150,9 @@ describe('core logical entry lifecycle', () => {
       declaredJson: { usingComponents: { declared } },
       json: { usingComponents: { declared } } as { usingComponents: Record<string, string> },
     }
-    let pending: Array<{ kind: string, sourceId: string }> = []
+    const graph = createModuleGraphService()
+    const layout = '/project/src/layouts/default.vue'
+    graph.replaceEntryDependencies(sourceId, 'layout', [layout])
     findCssEntryMock.mockResolvedValue({ path: undefined, predictions: [] })
     const state = {
       resolvedEntryMap: new Map(),
@@ -161,11 +164,7 @@ describe('core logical entry lifecycle', () => {
           isDev: true,
           relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
         },
-        moduleGraphService: {
-          bindPluginContext: vi.fn(),
-          getEntryDependencies: () => pending,
-          replaceEntryDependencies: vi.fn(),
-        },
+        moduleGraphService: graph,
         runtimeState: { build: { hmr: { externalComponentEntryMap: new Map([
           [declared.slice(1).replace(/\.vue$/, ''), declared],
           [discovered.slice(1).replace(/\.vue$/, ''), discovered],
@@ -177,14 +176,20 @@ describe('core logical entry lifecycle', () => {
     const id = createLogicalEntryId(sourceId, 'page')
     const initial = await load.call(pluginContext as any, id)
     expect(initial?.code).toContain(JSON.stringify(createSidecarModuleId(sourceId, declared, 'using-component')))
+    expect(initial?.code).toContain(JSON.stringify(createSidecarModuleId(sourceId, sourceId, 'script')))
+    expect(initial?.code).toContain(JSON.stringify(createSidecarModuleId(sourceId, layout, 'layout')))
     // 源码编译后的自动导入结果不能在下次读取元数据时提升为包装模块依赖。
     entry.json = { usingComponents: { declared, discovered } }
-    pending = [
-      { kind: 'using-component', sourceId: discovered },
-      { kind: 'json', sourceId: '/project/src/app.json' },
-    ]
+    graph.replaceEntryDependencies(sourceId, 'using-component', [discovered])
+    graph.replaceEntryDependencies(sourceId, 'json', ['/project/src/app.json'])
+    // 分别代表组件解析、外部 script src 和原生插槽上下文读取的编译输入。
+    const compilerInputs = [discovered, '/project/src/shared/setup.ts', '/project/src/components/native/index.wxml']
+    graph.replaceEntryDependencies(sourceId, 'script', compilerInputs)
     const updated = await load.call(pluginContext as any, id)
     expect(updated?.code).toBe(initial?.code)
+    for (const dependency of compilerInputs) {
+      expect(graph.collectAffectedEntries(dependency, 'script')).toContain(sourceId)
+    }
     entry.declaredJson = { usingComponents: { declared: discovered } }
     const changedDeclaration = await load.call(pluginContext as any, id)
     expect(changedDeclaration?.code).toContain(JSON.stringify(createSidecarModuleId(sourceId, discovered, 'using-component')))

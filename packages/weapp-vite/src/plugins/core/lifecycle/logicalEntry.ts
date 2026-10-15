@@ -194,7 +194,7 @@ async function collectLogicalEntryDependencies(
     ? await state.ctx.jsonService.read(effectiveJsonPath)
     : declaredJson
   dependencies.push(...await collectComponentDependencies(state, pluginContext, ownerId, componentJson))
-  withRealpathScope(() => {
+  return withRealpathScope(() => {
     const sources = getCompilerSourceSnapshot(state.ctx.configService)
     for (const kind of ['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
       state.ctx.moduleGraphService.replaceEntryDependencies(
@@ -207,8 +207,11 @@ async function collectLogicalEntryDependencies(
     for (const dependency of dependencies) {
       dependency.sourceId = compilerSnapshotSourceId(sources, dependency.sourceId)
     }
+    // 编译器读取的外部脚本、组件解析输入和插槽元数据仍保留图中的失效边。
+    // 包装模块只导入自身脚本，避免后发现的编译依赖改变不执行注册的 HMR 入口。
+    const scriptOwnerId = compilerSnapshotSourceId(sources, ownerId)
+    return dependencies.filter(dependency => dependency.kind !== 'script' || dependency.sourceId === scriptOwnerId)
   })
-  return dependencies
 }
 
 export function createLogicalEntryResolveHook(state: CorePluginState) {

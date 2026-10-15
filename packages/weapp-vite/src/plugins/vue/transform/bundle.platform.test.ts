@@ -75,6 +75,7 @@ describe('emitVueBundleAssets platform output', () => {
   })
 
   afterEach(async () => {
+    vi.restoreAllMocks()
     while (tempDirs.length) {
       const dir = tempDirs.pop()
       if (dir) {
@@ -1009,7 +1010,7 @@ describe('emitVueBundleAssets platform output', () => {
   })
 
   it('recompiles cached jsx entries in dev mode and updates transformed page script', async () => {
-    const readFileSpy = vi.spyOn(fs, 'readFile').mockResolvedValue(`
+    vi.spyOn(fs, 'readFile').mockResolvedValue(`
 export default {
   setup() {
     return () => <view>new jsx source</view>
@@ -1073,7 +1074,6 @@ export default {
     expect(compileJsxFileMock).toHaveBeenCalledTimes(1)
     expect(cached.source).toContain('new jsx source')
     expect(cached.result.script).toBe('/* injected page */')
-    readFileSpy.mockRestore()
   })
 
   it('handles invalid alipay config/template inputs without crashing', async () => {
@@ -1253,7 +1253,7 @@ export default {
   })
 
   it('emits class-style wxs in fallback page compilation flow', async () => {
-    const readFileSpy = vi.spyOn(fs, 'readFile').mockResolvedValue('export default () => <view />' as never)
+    vi.spyOn(fs, 'readFile').mockResolvedValue('export default () => <view />' as never)
     collectFallbackPageEntryIdsMock.mockResolvedValueOnce(new Set(['pages/fallback/index']))
     pathExistsCachedMock.mockImplementation(async (candidate: string) => candidate.endsWith('.jsx'))
     compileJsxFileMock.mockResolvedValueOnce({
@@ -1287,6 +1287,7 @@ export default {
 
     const ctx = {
       configService,
+      moduleGraphService: createModuleGraphService(),
       scanService: {
         independentSubPackageMap: new Map(),
       },
@@ -1304,7 +1305,6 @@ export default {
 
     const emittedFiles = emitFile.mock.calls.map(call => call[0]?.fileName)
     expect(emittedFiles).toContain('__weapp_vite_class_style.wxs')
-    readFileSpy.mockRestore()
   })
 
   it('emits compiler-wrapped page templates for default and named vue layouts', async () => {
@@ -1333,6 +1333,7 @@ export default {
 
     const ctx = {
       configService,
+      moduleGraphService: createModuleGraphService(),
       scanService: {
         independentSubPackageMap: new Map(),
       },
@@ -1454,6 +1455,7 @@ export default {
 
     const ctx = {
       configService,
+      moduleGraphService: createModuleGraphService(),
       scanService: {
         independentSubPackageMap: new Map(),
       },
@@ -1633,6 +1635,7 @@ export default {
     await expect(emitVueBundleAssets({}, {
       ctx: {
         configService,
+        moduleGraphService: createModuleGraphService(),
         scanService: {
           independentSubPackageMap: new Map(),
         },
@@ -1763,6 +1766,7 @@ export default {
 
     const ctx = {
       configService,
+      moduleGraphService: createModuleGraphService(),
       scanService: {
         independentSubPackageMap: new Map(),
       },
@@ -1845,6 +1849,7 @@ export default {
 
     const ctx = {
       configService,
+      moduleGraphService: createModuleGraphService(),
       scanService: {
         independentSubPackageMap: new Map(),
       },
@@ -1923,6 +1928,7 @@ export default {
 
     const ctx = {
       configService,
+      moduleGraphService: createModuleGraphService(),
       scanService: {
         independentSubPackageMap: new Map(),
       },
