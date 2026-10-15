@@ -256,20 +256,24 @@ it.each([
   const directory = identity === 'junction' ? 'module-alias' : 'src'
   const dependency = path.join(app.root, directory, `${kind}.ts`)
   const moduleSource = (width: number) => kind === 'config'
-    ? `export default { theme: { extend: { colors: { diagnostic: '#234567' } } } }; export const utility = 'w-[${width}px]'`
-    : `export default ({ addUtilities }) => addUtilities({ '.plugin-probe': { color: '#234567' } }); export const utility = 'w-[${width}px]'`
+    ? `export default { theme: { extend: { spacing: { probe: '${width}px' } } } }; export const utility = 'w-[${width}px]'`
+    : `export default ({ addUtilities }) => addUtilities({ '.plugin-probe': { width: '${width}px' } }); export const utility = 'w-[${width}px]'`
+  await writeFile(app.source, `export const utility = '${kind === 'config' ? 'w-probe' : 'plugin-probe'}'`)
   await writeFile(dependency, moduleSource(137))
   await writeFile(app.cssEntries[0]!, `${app.css} @${kind} "${identity === 'junction' ? '../module-alias' : '.'}/${kind}.ts";`)
   await app.change(app.cssEntries[0])
   await app.disk()
+  expect.soft(app.record.generations.at(-1)!.result.css).toMatch(/width:\s*137px/)
   expect.soft(app.record.generations.at(-1)!.result.dependencies.map(compilerSourceId)).toEqual(expect.arrayContaining([compilerSourceId(dependency)]))
   await writeFile(dependency, moduleSource(149))
   await app.change(dependency)
-  expect(app.record.invalidations.at(-1)).toEqual([dependency])
+  expect.soft(app.record.invalidations.at(-1)).toEqual([dependency])
   await app.memory()
   await fresh(app.record)
   expect(app.record.generations.at(-1)!.result.classSet.has('w-[149px]')).toBe(true)
   expect(app.record.generations.at(-1)!.result.classSet.has('w-[137px]')).toBe(false)
+  expect(app.record.generations.at(-1)!.result.css).toMatch(/width:\s*149px/)
+  expect(app.record.generations.at(-1)!.result.css).not.toMatch(/width:\s*137px/)
 })
 
 it('flushes pending roots before imported-style generation and keeps that unsupported memory path immediate', async () => {
