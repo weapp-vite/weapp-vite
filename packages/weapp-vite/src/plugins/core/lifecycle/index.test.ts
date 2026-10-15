@@ -29,6 +29,30 @@ vi.mock('./watch', () => ({
 }))
 
 describe('createCoreLifecyclePlugin', () => {
+  it('synchronizes output compiler dependencies after writing and before releasing the build scope', async () => {
+    const moduleGraphService = createModuleGraphService()
+    const state = { ctx: { moduleGraphService } } as unknown as CorePluginState
+    const plugin = createCoreLifecyclePlugin(state)
+    const source = '/project/src/app.css'
+    const dependency = '/project/src/tailwind-config.ts'
+    const context = { meta: { watchMode: false }, getModuleIds: () => [source] }
+    moduleGraphService.bindBuildContext(state, context)
+    const observed: string[][] = []
+    vi.spyOn(moduleGraphService, 'syncDevGraph').mockImplementation(async () => {
+      expect(moduleGraphService.hasModule(source)).toBe(true)
+      observed.push(moduleGraphService.getTransformDependencies(source))
+    })
+    await (plugin.buildEnd as () => Promise<void>).call(context)
+    expect(observed).toEqual([])
+    moduleGraphService.replaceTransformDependencies(source, [dependency])
+    const writeBundle = plugin.writeBundle as { order: string, sequential: boolean, handler: () => Promise<void> }
+    expect(writeBundle).toMatchObject({ order: 'post', sequential: true })
+    await writeBundle.handler.call(context)
+    expect(observed).toEqual([[dependency]])
+    ;(plugin.closeBundle as () => void).call(context)
+    expect(moduleGraphService.hasModule(source)).toBe(false)
+  })
+
   it('declares a rolldown filter for source transform hooks', () => {
     const plugin = createCoreLifecyclePlugin({
       ctx: {

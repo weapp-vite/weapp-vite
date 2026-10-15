@@ -117,8 +117,6 @@ export function createBuildEndHook(state: CorePluginState) {
       }
     }
 
-    await state.ctx.moduleGraphService.syncDevGraph(this)
-
     debug?.(`${subPackageMeta ? `独立分包 ${subPackageMeta.subPackage.root}` : '主包'} ${Array.from(this.getModuleIds()).length} 个模块被编译`)
   }
 }

@@ -19,7 +19,7 @@ async function generate(plugin: Plugin, bundle: OutputBundle) {
 
 function createFixture(cssEntries = ['src/app.css'], config: Record<string, unknown> = {}, independentRoots: string[] = []) {
   const cwd = path.resolve('tailwind-output-fixture')
-  const snapshot = { classSet: new Set(['text-xl']), roots: [], sources: [], target: 'weapp' }
+  const snapshot = { classSet: new Set(['text-xl']), dependencies: [], roots: [], sources: [], target: 'weapp' }
   const generatedCss = ':root { --text-xl--line-height: 1.4; } .text-xl { font-size: 40rpx; line-height: var(--tw-leading, var(--text-xl--line-height)); }'
   const compiler = {
     generate: vi.fn(async () => ({ css: generatedCss, rawCss: generatedCss, snapshot, dependencies: [] })),
