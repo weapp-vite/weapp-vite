@@ -8,11 +8,10 @@ import { readDarwinManagedProcessIdentities } from '../../../packages/weapp-ide-
 import { readManagedProcessIdentity, sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/processIdentity'
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { traceCleanupStage } from '../cleanupTrace'
-import { windowsLegacyProcessStarted } from './windowsKernelQuery'
+import { queryWindowsKernelProcesses, windowsLegacyProcessStarted } from './windowsKernelQuery'
 import { parseWindowsProcessRows } from './windowsProcessRows'
 import { collectWindowsProcessTree, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
-import { traceWindowsQueryChild } from './windowsQueryChildTrace'
-import { createWindowsKernelProcessQueryCommand, reportWindowsQueryTrace } from './windowsQueryTrace'
+import { reportWindowsQueryTrace } from './windowsQueryTrace'
 
 export { type DevProcessCandidate, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
 
@@ -28,16 +27,10 @@ async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
   }
   const timeoutMs = resolveWechatInspectionTimeout('win32')
   const trace = process.env.WEAPP_VITE_E2E_CLEANUP_TRACE === '1'
-  const result = await traceCleanupStage(pids ? 'dev-kernel-identities' : 'dev-kernel-snapshot', () => {
-    const startedMs = trace ? performance.now() : 0
-    const subprocess = execa('powershell.exe', [
-      '-NoProfile',
-      '-NonInteractive',
-      '-Command',
-      createWindowsKernelProcessQueryCommand(pids, trace),
-    ], { timeout: timeoutMs, reject: false, windowsHide: true })
-    return trace ? traceWindowsQueryChild(pids ? 'identities' : 'snapshot', subprocess, startedMs) : subprocess
-  }, { processCount: pids?.length, timeoutMs })
+  const result = await traceCleanupStage(pids ? 'dev-kernel-identities' : 'dev-kernel-snapshot', () => queryWindowsKernelProcesses(pids, trace), {
+    processCount: pids?.length,
+    timeoutMs,
+  })
   if (trace) {
     reportWindowsQueryTrace(pids ? 'identities' : 'snapshot', result)
   }

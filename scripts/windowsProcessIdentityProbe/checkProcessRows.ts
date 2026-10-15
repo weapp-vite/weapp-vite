@@ -63,7 +63,7 @@ await runWithCleanup(async () => {
   await writeFile(fixture, source)
   const owned = await launch('tree')
   const unrelated = await launch('leaf')
-  // 首次 PowerShell 查询走无诊断的正式默认入口；对照读取在之后，不预热冷查询。
+  // 首次内核查询包含冷编译并走无诊断正式入口；CIM 对照在之后，不预热查询。
   const started = performance.now()
   const identities = await captureDevProcessTree(owned.child.pid!, () => owned.child.exitCode === null && owned.child.signalCode === null)
   const firstSnapshotMs = performance.now() - started

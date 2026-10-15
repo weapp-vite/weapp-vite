@@ -4,12 +4,12 @@ import { execa } from 'execa'
 import { expect, it } from 'vitest'
 import { sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/processIdentity'
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
-import { windowsKernelProcessQuery, windowsLegacyProcessStarted } from './windowsKernelQuery'
+import { queryWindowsKernelProcesses, windowsLegacyProcessStarted } from './windowsKernelQuery'
 import { parseWindowsProcessRows } from './windowsProcessRows'
-import { createWindowsKernelProcessQueryCommand, createWindowsProcessQueryCommand, parseWindowsQueryTrace } from './windowsQueryTrace'
+import { createWindowsProcessQueryCommand, parseWindowsQueryTrace } from './windowsQueryTrace'
 
-it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 0x100000000])('rejects an invalid PID before dispatch: %s', (pid) => {
-  expect(() => windowsKernelProcessQuery([pid])).toThrow(TypeError)
+it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 0x100000000])('rejects an invalid PID before dispatch: %s', async (pid) => {
+  await expect(queryWindowsKernelProcesses([pid])).rejects.toThrow(TypeError)
 })
 
 it('preserves the old microsecond identity without rounding away the raw native value', () => {
@@ -43,13 +43,20 @@ function row(values: unknown[], pid: number): WindowsRow {
 // 本地 Unix 无法证明 Windows Interop；Windows CI 用同一仍持有的 worker 核验旧身份精度。
 it.runIf(process.platform === 'win32')('matches the held worker CIM identity with full and filtered native snapshots', async () => {
   const timeout = resolveWechatInspectionTimeout('win32')
-  const query = async (command: string) => {
-    const result = await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command], { timeout, windowsHide: true })
+  const nativeQuery = async (pids: number[] | undefined, trace = false) => {
+    const result = await queryWindowsKernelProcesses(pids, trace)
+    expect(result.exitCode).toBe(0)
     return { result, rows: parseWindowsProcessRows(result.stdout) }
   }
-  const full = await query(createWindowsKernelProcessQueryCommand(undefined, true))
-  const filtered = await query(createWindowsKernelProcessQueryCommand([process.pid], false))
-  const legacy = await query(createWindowsProcessQueryCommand(` -Filter 'ProcessId=${process.pid}'`, false))
+  const full = await nativeQuery(undefined)
+  const filtered = await nativeQuery([process.pid], true)
+  const legacyResult = await execa('powershell.exe', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-Command',
+    createWindowsProcessQueryCommand(` -Filter 'ProcessId=${process.pid}'`, false),
+  ], { timeout, windowsHide: true })
+  const legacy = { rows: parseWindowsProcessRows(legacyResult.stdout) }
   const first = row(full.rows, process.pid)
   const second = row(filtered.rows, process.pid)
   const prior = row(legacy.rows, process.pid)
@@ -60,7 +67,7 @@ it.runIf(process.platform === 'win32')('matches the held worker CIM identity wit
     { pid: first.ProcessId, executable: first.ExecutablePath!, started: windowsLegacyProcessStarted(first.Started!)! },
     { pid: prior.ProcessId, executable: prior.ExecutablePath!, started: prior.Started! },
   )).toBe(true)
-  expect(parseWindowsQueryTrace(full.result.stderr).map(marker => `${marker.stage}:${marker.event}`)).toEqual([
+  expect(parseWindowsQueryTrace(filtered.result.stderr).map(marker => `${marker.stage}:${marker.event}`)).toEqual([
     'script:begin',
     'utf8:begin',
     'utf8:end',

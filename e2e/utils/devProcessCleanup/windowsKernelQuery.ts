@@ -1,105 +1,130 @@
-/** 一次内核快照保留父关系；句柄内核验路径和出生时间，不依赖 WMI 服务。 */
-export function windowsKernelProcessQuery(pids?: readonly number[]) {
+import { rmSync } from 'node:fs'
+import fs from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { isAbsolute, join } from 'node:path'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
+// eslint-disable-next-line e18e/ban-dependencies -- 编译与查询均使用有界、受持有句柄管理的子进程。
+import { execa } from 'execa'
+import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
+import { traceCleanupStage } from '../cleanupTrace'
+import { runWithCleanup } from '../runWithCleanup'
+import { traceWindowsQueryChild } from './windowsQueryChildTrace'
+
+interface WindowsKernelQueryResult {
+  stdout: string
+  stderr: string
+  exitCode?: number
+  signal?: string
+  timedOut?: boolean
+}
+
+let inspector: Promise<Uint8Array> | undefined
+
+function remaining(deadline: number): number {
+  const milliseconds = Math.floor(deadline - performance.now())
+  if (milliseconds <= 0) {
+    throw new Error('Windows kernel inspection exceeded its deadline before dispatch.')
+  }
+  return milliseconds
+}
+
+async function withInspectorDirectory<T>(operation: (directory: string) => Promise<T>): Promise<T> {
+  const directory = await fs.mkdtemp(join(tmpdir(), 'weapp-dev-process-'))
+  const onExit = () => {
+    try {
+      rmSync(directory, { recursive: true, force: true })
+    }
+    catch (error) {
+      process.exitCode = Number(process.exitCode) || 1
+      process.stderr.write(`Windows kernel inspector directory cleanup failed: ${String(error)}\n`)
+    }
+  }
+  process.once('exit', onExit)
+  return runWithCleanup(() => operation(directory), async () => {
+    await fs.rm(directory, { recursive: true, force: true })
+    process.removeListener('exit', onExit)
+  })
+}
+
+async function compileInspector(deadline: number): Promise<Uint8Array> {
+  // Windows worker 的环境变量副本区分大小写，不能假定宿主保留某一种键名拼写。
+  const environmentKeys = Object.keys(process.env)
+  const systemRootKey = environmentKeys.find(key => key.toLowerCase() === 'systemroot')
+  const windirKey = environmentKeys.find(key => key.toLowerCase() === 'windir')
+  const windowsRoot = (systemRootKey && process.env[systemRootKey]) || (windirKey && process.env[windirKey])
+  if (!windowsRoot || !isAbsolute(windowsRoot)) {
+    throw new Error('Windows kernel inspection requires an absolute Windows system directory.')
+  }
+  return withInspectorDirectory(async (directory) => {
+    const executable = join(directory, 'snapshot.exe')
+    const compiler = join(windowsRoot, 'Microsoft.NET', process.arch === 'ia32' ? 'Framework' : 'Framework64', 'v4.0.30319', 'csc.exe')
+    const timeout = remaining(deadline)
+    const result = await traceCleanupStage('dev-kernel-compile', () => execa(compiler, [
+      '/nologo',
+      '/codepage:65001',
+      '/utf8output',
+      '/optimize+',
+      '/target:exe',
+      '/platform:anycpu',
+      `/out:${executable}`,
+      fileURLToPath(new URL('./windowsKernelQuery.cs', import.meta.url)),
+    ], { stdin: 'ignore', timeout, reject: false, windowsHide: true }), { timeoutMs: timeout })
+    if (result.exitCode !== 0) {
+      throw new Error(`Windows kernel inspector compilation failed: exitCode=${result.exitCode ?? 'none'}, signal=${result.signal ?? 'none'}, timedOut=${result.timedOut ?? false}.`, { cause: result })
+    }
+    return fs.readFile(executable)
+  })
+}
+
+/** 冷编译计入原预算；只缓存成功产物的字节，每次查询返回前回收自己的可执行文件。 */
+export async function queryWindowsKernelProcesses(pids?: readonly number[], trace = false): Promise<WindowsKernelQueryResult> {
   if (pids?.some(pid => !Number.isSafeInteger(pid) || pid <= 0 || pid > 0xFFFFFFFF)) {
     throw new TypeError('Windows process queries require positive 32-bit PIDs.')
   }
-  const selection = pids ? `[uint32[]]@(${[...new Set(pids)].join(',')})` : '$null'
-  return `
-Add-Type -TypeDefinition @'
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using System.Text;
-
-public static class WeappDevProcessSnapshot {
-  [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-  private struct ProcessEntry {
-    public uint Size, Usage, ProcessId;
-    public UIntPtr DefaultHeap;
-    public uint ModuleId, Threads, ParentProcessId;
-    public int Priority;
-    public uint Flags;
-    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string Name;
+  if (process.platform !== 'win32') {
+    throw new Error('Windows kernel inspection is only available on Windows.')
   }
-  public sealed class Row {
-    public uint ProcessId, ParentProcessId;
-    public string ExecutablePath, Started;
+  const startedMs = performance.now()
+  const deadline = startedMs + resolveWechatInspectionTimeout('win32')
+  const args = trace ? ['--trace'] : []
+  args.push(pids ? '--pids' : '--all')
+  if (pids) {
+    args.push(...new Set(pids.map(String)))
   }
-  [DllImport("kernel32.dll", SetLastError = true)]
-  private static extern IntPtr CreateToolhelp32Snapshot(uint flags, uint pid);
-  [DllImport("kernel32.dll", EntryPoint = "Process32FirstW", SetLastError = true)]
-  [return: MarshalAs(UnmanagedType.Bool)] private static extern bool First(IntPtr snapshot, ref ProcessEntry entry);
-  [DllImport("kernel32.dll", EntryPoint = "Process32NextW", SetLastError = true)]
-  [return: MarshalAs(UnmanagedType.Bool)] private static extern bool Next(IntPtr snapshot, ref ProcessEntry entry);
-  [DllImport("kernel32.dll", SetLastError = true)]
-  private static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
-  [DllImport("kernel32.dll", EntryPoint = "QueryFullProcessImageNameW", CharSet = CharSet.Unicode, SetLastError = true)]
-  [return: MarshalAs(UnmanagedType.Bool)] private static extern bool Image(IntPtr process, uint flags, StringBuilder path, ref uint length);
-  [DllImport("kernel32.dll", EntryPoint = "GetProcessTimes", SetLastError = true)]
-  [return: MarshalAs(UnmanagedType.Bool)] private static extern bool Times(IntPtr process, out long created, out long exited, out long kernel, out long user);
-  [DllImport("kernel32.dll")]
-  private static extern void GetSystemTimePreciseAsFileTime(out long time);
-  [DllImport("kernel32.dll", SetLastError = true)]
-  [return: MarshalAs(UnmanagedType.Bool)] private static extern bool CloseHandle(IntPtr handle);
-
-  private static void Inspect(Row row, long capturedBefore) {
-    IntPtr handle = OpenProcess(0x1000, false, row.ProcessId);
-    // 缺失权限或查询中退出保留父关系，后续 reachable 门禁不能把它当作消失。
-    if (handle == IntPtr.Zero) return;
-    try {
-      long created, exited, kernel, user;
-      if (!Times(handle, out created, out exited, out kernel, out user)
-          || created <= 0 || created > capturedBefore) return;
-      // 已核验的出生元数据仍供退出父进程的后代检查；只有完整活动身份才授予清理权限。
-      row.Started = DateTime.FromFileTimeUtc(created).ToString("o", CultureInfo.InvariantCulture);
-      if (exited != 0) return;
-      StringBuilder path = new StringBuilder(32768);
-      uint length = (uint)path.Capacity;
-      if (!Image(handle, 0, path, ref length) || length == 0 || length >= path.Capacity) return;
-      long checkedCreated, checkedExited;
-      if (!Times(handle, out checkedCreated, out checkedExited, out kernel, out user)
-          || checkedCreated != created || checkedExited != 0) return;
-      row.ExecutablePath = path.ToString();
-    }
-    finally {
-      if (!CloseHandle(handle)) throw new Win32Exception(Marshal.GetLastWin32Error());
-    }
+  const compilation = inspector ??= compileInspector(deadline)
+  let image: Uint8Array
+  try {
+    image = await compilation
   }
-
-  public static Row[] Capture(uint[] pids) {
-    long capturedBefore;
-    GetSystemTimePreciseAsFileTime(out capturedBefore);
-    IntPtr snapshot = CreateToolhelp32Snapshot(2, 0);
-    if (snapshot == new IntPtr(-1)) throw new Win32Exception(Marshal.GetLastWin32Error());
-    List<Row> rows = new List<Row>();
-    HashSet<uint> selected = pids == null ? null : new HashSet<uint>(pids);
-    HashSet<uint> seen = new HashSet<uint>();
-    try {
-      ProcessEntry entry = new ProcessEntry();
-      entry.Size = (uint)Marshal.SizeOf(typeof(ProcessEntry));
-      bool found = First(snapshot, ref entry);
-      while (found) {
-        if (entry.ProcessId > 0 && (selected == null || selected.Contains(entry.ProcessId))) {
-          if (!seen.Add(entry.ProcessId)) throw new InvalidOperationException("Duplicate process identity");
-          rows.Add(new Row { ProcessId = entry.ProcessId, ParentProcessId = entry.ParentProcessId });
-        }
-        found = Next(snapshot, ref entry);
-      }
-      if (Marshal.GetLastWin32Error() != 18) throw new Win32Exception(Marshal.GetLastWin32Error());
+  catch (error) {
+    if (inspector === compilation) {
+      inspector = undefined
     }
-    finally {
-      if (!CloseHandle(snapshot)) throw new Win32Exception(Marshal.GetLastWin32Error());
-    }
-    foreach (Row row in rows) Inspect(row, capturedBefore);
-    return rows.ToArray();
+    throw error
   }
-}
-
-'@
-$weappQueryRows=@([WeappDevProcessSnapshot]::Capture(${selection}))
-`
+  let result: WindowsKernelQueryResult | undefined
+  try {
+    return await withInspectorDirectory(async (directory) => {
+      const executable = join(directory, 'snapshot.exe')
+      await fs.writeFile(executable, image)
+      const subprocess = execa(executable, args, {
+        stdin: 'ignore',
+        timeout: remaining(deadline),
+        reject: false,
+        windowsHide: true,
+      })
+      result = await (trace ? traceWindowsQueryChild(pids ? 'identities' : 'snapshot', subprocess, startedMs) : subprocess)
+      return result
+    })
+  }
+  catch (cleanupError) {
+    // reject:false 的查询失败也是已结算的值；不能让随后的文件回收错误覆盖它。
+    if (result && result.exitCode !== 0) {
+      throw new AggregateError([result, cleanupError], 'Windows kernel query and cleanup both failed.', { cause: result })
+    }
+    throw cleanupError
+  }
 }
 
 /** 旧 CIM 身份只有微秒精度；原始内核时间继续单独参与父子代次核验。 */

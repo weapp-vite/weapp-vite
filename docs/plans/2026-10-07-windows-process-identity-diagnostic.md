@@ -11,3 +11,5 @@
 workflow 成功只代表完成诊断采集，报告始终标记 `diagnostic-only-not-acceptance` 和 `acceptance: not-evaluated`。生产查询失败仍保留原结果。拒绝访问与任意进程退出竞争未在本次受控 Node 目标中覆盖，不能据此宣称候选实现已满足生产合同。
 
 本机验证仅执行纯数据处理单测和静态 lint，不启动 PowerShell。实际 API、异常封装、时序和旧身份兼容性均以该 Windows workflow 的报告为证据。
+
+`process-rows` 范围另行验证 E2E 清理 provider：首次无诊断调用包含 C# helper 的冷编译，仍受原 10 秒查询预算约束；之后才读取独立 CIM 身份。报告中的 `firstSnapshotMs` 包含冷准备，不把预热后的快查询当首次证据。完整身份比较、Unicode 路径、外部进程保留与退出后缺失检查不因传输改为直接可执行文件而缩减。

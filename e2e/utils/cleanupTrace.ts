@@ -9,6 +9,7 @@ type CleanupTraceStage
     | 'dev-capture'
     | 'dev-reconcile'
     | 'dev-recheck-unconfirmed'
+    | 'dev-kernel-compile'
     | 'dev-kernel-snapshot'
     | 'dev-kernel-identities'
     | 'dev-taskkill'
