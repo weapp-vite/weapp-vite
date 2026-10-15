@@ -11,14 +11,17 @@ it('tracks and reloads config/plugin dependencies through the public compiler in
   const observations = JSON.parse(stdout.trim().split(/\r?\n/).at(-1)!) as {
     kind: string
     identity: string
+    phase: string
     dependencies: string[]
     initialWidth: boolean
     refreshedWidth: boolean
     staleWidth: boolean
+    refreshedCandidate: boolean
+    staleCandidate: boolean
   }[]
-  expect(observations).toHaveLength(4)
+  expect(observations).toHaveLength(8)
   for (const observation of observations) {
-    expect.soft(observation.dependencies, `${observation.kind}/${observation.identity}`).toContain(`src/${observation.kind}.ts`)
-    expect.soft(observation, `${observation.kind}/${observation.identity}`).toMatchObject({ initialWidth: true, refreshedWidth: true, staleWidth: false })
+    expect.soft(observation.dependencies, `${observation.kind}/${observation.identity}/${observation.phase}`).toContain(`src/${observation.kind}.ts`)
+    expect.soft(observation, `${observation.kind}/${observation.identity}/${observation.phase}`).toMatchObject({ initialWidth: true, refreshedWidth: true, staleWidth: false, refreshedCandidate: true, staleCandidate: false })
   }
 }, 35_000)

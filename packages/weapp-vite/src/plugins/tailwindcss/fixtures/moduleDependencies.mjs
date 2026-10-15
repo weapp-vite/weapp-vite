@@ -11,43 +11,56 @@ async function run() {
 
   for (const kind of ['config', 'plugin']) {
     for (const identity of ['physical', 'junction']) {
-      const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'tailwind-module-dependencies-')))
-      const compiler = createCompiler({ appType: 'weapp-vite', tailwindcssBasedir: root, cssPreflight: false })
-      try {
-        await mkdir(path.join(root, 'src'))
-        await mkdir(path.join(root, 'node_modules'))
-        await symlink(path.dirname(require.resolve('tailwindcss/package.json')), path.join(root, 'node_modules/tailwindcss'), 'junction')
-        if (identity === 'junction') {
-          await symlink(path.join(root, 'src'), path.join(root, 'module-alias'), 'junction')
+      for (const phase of ['initial', 'introduced']) {
+        const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'tailwind-module-dependencies-')))
+        const compiler = createCompiler({ appType: 'weapp-vite', tailwindcssBasedir: root, cssPreflight: false })
+        try {
+          await mkdir(path.join(root, 'src'))
+          await mkdir(path.join(root, 'node_modules'))
+          await symlink(path.dirname(require.resolve('tailwindcss/package.json')), path.join(root, 'node_modules/tailwindcss'), 'junction')
+          if (identity === 'junction') {
+            await symlink(path.join(root, 'src'), path.join(root, 'module-alias'), 'junction')
+          }
+          const entry = path.join(root, 'src/app.css')
+          const dependency = path.join(root, identity === 'junction' ? 'module-alias' : 'src', `${kind}.ts`)
+          const moduleSource = width => kind === 'config'
+            ? `export default { theme: { extend: { spacing: { probe: '${width}px' } } } }; export const utility = 'w-[${width}px]'`
+            : `export default ({ addUtilities }) => addUtilities({ '.plugin-probe': { width: '${width}px' } }); export const utility = 'w-[${width}px]'`
+          await writeFile(path.join(root, 'src/page.ts'), `export const utility = '${kind === 'config' ? 'w-probe' : 'plugin-probe'}'`)
+          const css = '@import "tailwindcss" source(none); @source "./*.ts";'
+          const request = { id: 'root', sourceOptions: { projectRoot: root, cssEntries: [entry] }, scanSources: true, target: 'weapp' }
+          if (phase === 'introduced') {
+            await writeFile(entry, css)
+            await compiler.generate(request)
+          }
+          await writeFile(entry, `${css} @${kind} "${identity === 'junction' ? '../module-alias' : '.'}/${kind}.ts";`)
+          await writeFile(dependency, moduleSource(137))
+          if (phase === 'introduced') {
+            compiler.invalidate([entry])
+          }
+          const initial = await compiler.generate(request)
+          await writeFile(dependency, moduleSource(149))
+          compiler.invalidate([await realpath(dependency)])
+          const refreshed = await compiler.generate(request)
+          observations.push({
+            kind,
+            identity,
+            phase,
+            dependencies: await Promise.all(initial.dependencies.map(async (file) => {
+              const relative = path.relative(root, await realpath(file)).replaceAll('\\', '/')
+              return relative.startsWith('../') || path.isAbsolute(relative) ? '<external>' : relative
+            })),
+            initialWidth: /width:\s*137px/.test(initial.css),
+            refreshedWidth: /width:\s*149px/.test(refreshed.css),
+            staleWidth: /width:\s*137px/.test(refreshed.css),
+            refreshedCandidate: refreshed.classSet.has('w-[149px]'),
+            staleCandidate: refreshed.classSet.has('w-[137px]'),
+          })
         }
-        const entry = path.join(root, 'src/app.css')
-        const dependency = path.join(root, identity === 'junction' ? 'module-alias' : 'src', `${kind}.ts`)
-        const moduleSource = width => kind === 'config'
-          ? `export default { theme: { extend: { spacing: { probe: '${width}px' } } } }`
-          : `export default ({ addUtilities }) => addUtilities({ '.plugin-probe': { width: '${width}px' } })`
-        await writeFile(path.join(root, 'src/page.html'), `<view class="${kind === 'config' ? 'w-probe' : 'plugin-probe'}"/>`)
-        await writeFile(entry, `@import "tailwindcss" source(none); @source "./*.html"; @${kind} "${identity === 'junction' ? '../module-alias' : '.'}/${kind}.ts";`)
-        await writeFile(dependency, moduleSource(137))
-        const request = { id: 'root', sourceOptions: { projectRoot: root, cssEntries: [entry] }, scanSources: true, target: 'weapp' }
-        const initial = await compiler.generate(request)
-        await writeFile(dependency, moduleSource(149))
-        compiler.invalidate([await realpath(dependency)])
-        const refreshed = await compiler.generate(request)
-        observations.push({
-          kind,
-          identity,
-          dependencies: await Promise.all(initial.dependencies.map(async (file) => {
-            const relative = path.relative(root, await realpath(file)).replaceAll('\\', '/')
-            return relative.startsWith('../') || path.isAbsolute(relative) ? '<external>' : relative
-          })),
-          initialWidth: /width:\s*137px/.test(initial.css),
-          refreshedWidth: /width:\s*149px/.test(refreshed.css),
-          staleWidth: /width:\s*137px/.test(refreshed.css),
-        })
-      }
-      finally {
-        await compiler.dispose()
-        await rm(root, { recursive: true, force: true })
+        finally {
+          await compiler.dispose()
+          await rm(root, { recursive: true, force: true })
+        }
       }
     }
   }
@@ -55,6 +68,6 @@ async function run() {
 }
 
 run().catch((error) => {
-  console.error(error)
+  process.stderr.write(`${error?.stack ?? error}\n`)
   process.exitCode = 1
 })
