@@ -1,10 +1,25 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const expression = (value: string) => `$${'{{'} ${value} }}`
+
+it('normalizes Bun test globs for Windows test discovery', async () => {
+  vi.doMock('node:path', () => ({
+    default: { ...path, resolve: (...parts: string[]) => path.win32.resolve('C:/workspace', ...parts) },
+  }))
+  try {
+    const { default: config } = await import('../e2e/vitest.e2e.bun.config')
+    expect(config.test?.include).toHaveLength(2)
+    expect(config.test?.include?.every(pattern => !pattern.includes('\\'))).toBe(true)
+    expect(config.test?.include?.map(pattern => pattern.split('/').at(-1))).toEqual(['cli.test.ts', 'ipc.test.ts'])
+  }
+  finally {
+    vi.doUnmock('node:path')
+  }
+})
 
 it('runs Bun CLI on all three systems against frozen workspace artifacts', async () => {
   const workflow = parse(await readFile(path.join(ROOT, '.github/workflows/ci-e2e.yml'), 'utf8'))
