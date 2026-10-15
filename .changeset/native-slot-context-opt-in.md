@@ -16,3 +16,5 @@ fix(wevu): 将原生插槽上下文协议改为默认关闭的显式选项
 对跨模块共享可变值及间接导出保持保守，避免其他模块安装 getter 后丢失最近 Provider；复用同轮已完成的数据证明，避免共享数据图导致重复展开。
 
 组件的协议参与状态在开发期间变化时，stateful HMR 会请求完整重建，避免新 `setup` 沿用缺少协议方法和属性的旧原生实例。
+
+修复 Options API `provide()` 过早执行导致 computed 链读取未安装的 setup 状态、方法或 inject 绑定而报 `undefined` 的问题。现在先安装 setup 与 inject 绑定，再执行 `provide()`；setup 与 Options API 提供同名 key 时以后者为准。该修复同时覆盖开关关闭、显式开启和增强插槽路径。

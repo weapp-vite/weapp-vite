@@ -290,9 +290,6 @@ function createComponentDefinition(
       }
       const publicInstance = (ctx as any)?.proxy ?? (ctx as any)?.instance ?? Object.create(null)
       const injected = resolveOptionsApiInjections(injectOptions, publicInstance)
-      if (provideOptions != null) {
-        applyOptionsApiProvide(provideOptions, publicInstance)
-      }
       const setupResult = typeof setup === 'function'
         ? runSetupFunction(setup as any, props as Record<string, any>, ctx as any) as Record<string, any> | void
         : undefined
@@ -305,6 +302,9 @@ function createComponentDefinition(
           includeFunctionsInState: allowFunctionProps === true,
           functionPropPaths: allowFunctionProps === false ? undefined : setupFunctionPropKeys,
         })
+      }
+      if (provideOptions != null) {
+        applyOptionsApiProvide(provideOptions, publicInstance)
       }
       return result
     }) satisfies DefineComponentOptions<ComponentPropsOptions, any, any, any, any>['setup']

@@ -348,6 +348,8 @@ defineComponent({
 })
 ```
 
+Options API `provide()` runs after the bindings returned by `setup()` and Options API `inject` have been installed. It can read those bindings, setup methods, and computed chains through `this` before child components run their setup. When setup and Options API provide the same key, the Options API value takes precedence.
+
 ### Shallow Reactivity
 
 ```typescript
