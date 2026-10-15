@@ -57,6 +57,14 @@ describe('macOS read-only kernel inventory primitives', () => {
     await expect(readDarwinTextImages(21)).rejects.toThrow()
   })
 
+  it('retains the sampled PID, exit status and stderr when image inventory fails', async () => {
+    command.mockResolvedValue({ stdout: '', stderr: 'Permission denied', exitCode: 1 })
+    await expect(readDarwinTextImages(21)).rejects.toMatchObject({
+      message: expect.stringContaining('PID 21'),
+      cause: { exitCode: 1, stderr: 'Permission denied' },
+    })
+  })
+
   it.each([readDarwinProcessStates, () => readDarwinKernelPaths([21]), () => readDarwinTextImages(21)])('rejects warning or permission failures instead of accepting partial inventories', async (inspect) => {
     command.mockResolvedValue({ ...success('p21\0\nftxt\0tREG\0n/path\0\n'), stderr: 'Permission denied' })
     await expect(inspect()).rejects.toThrow()

@@ -84,6 +84,24 @@ describe('installation-exit process inventory', () => {
     await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('No complete text image inventory')
   })
 
+  it('independently verifies disappearance when a process exits during text-image sampling', async () => {
+    mocks.states.mockResolvedValueOnce([state]).mockResolvedValueOnce([state]).mockResolvedValue([])
+    expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ inspectedProcessCount: 0, exitedProcessCount: 1 })
+    expect(mocks.images).toHaveBeenCalledWith(state.pid)
+  })
+
+  it('rejects a reused PID when text-image sampling fails', async () => {
+    mocks.states.mockResolvedValueOnce([state]).mockResolvedValueOnce([state]).mockResolvedValue([{ ...state, started: 'replacement' }])
+    await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('process identity changed')
+  })
+
+  it('preserves sampling failure when the confirming process inventory is unavailable', async () => {
+    mocks.states.mockResolvedValueOnce([state]).mockResolvedValueOnce([state]).mockRejectedValue(new Error('inventory denied'))
+    await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toMatchObject({
+      errors: [expect.objectContaining({ message: 'No complete text image inventory' }), expect.objectContaining({ message: 'inventory denied' })],
+    })
+  })
+
   it.each(['EACCES', 'EPERM'])('requires independent file identity evidence for %s instead of ignoring a protected mapping', async (code) => {
     const protectedImage = path.join(directory, 'protected/image')
     const realpath = fs.realpath.bind(fs)

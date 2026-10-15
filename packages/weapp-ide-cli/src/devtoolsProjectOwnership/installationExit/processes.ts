@@ -61,7 +61,25 @@ export async function inspectExitedWechatInstallation(
         continue
       }
       const executable = kernelPaths.get(entry.pid)
-      const images = executable ? [executable] : await readDarwinTextImages(entry.pid)
+      let images: string[]
+      try {
+        images = executable ? [executable] : await readDarwinTextImages(entry.pid)
+      }
+      catch (error) {
+        // 采样器读取映像前目标可能已经退出；仅独立 PID 清单确认消失才能排除。
+        const latest = await readDarwinProcessStates().then(
+          states => states.find(process => process.pid === entry.pid),
+          (confirmationError: unknown) => { throw new AggregateError([error, confirmationError], 'Installation-exit recovery cannot independently confirm process exit after failed image inspection.') },
+        )
+        if (!latest) {
+          exitedProcessCount++
+          continue
+        }
+        if (latest.started !== entry.started) {
+          throw new Error('Installation-exit recovery process identity changed during inspection.', { cause: error })
+        }
+        throw error
+      }
       if (!images.length) {
         throw new Error('Installation-exit recovery received no verifiable executable text images.')
       }
