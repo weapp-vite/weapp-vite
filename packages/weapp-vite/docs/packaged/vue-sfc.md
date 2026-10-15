@@ -128,7 +128,9 @@ defineOptions({ behaviors: [i18n.behavior] })
 
 `weapp.vue.template.scopedSlotsRequireProps` 默认 `false`，普通插槽仍使用增强方案。设为 `true` 时，无 scoped props 的内容保留原生 `<slot>`。
 
-原生插槽上下文协议由独立的 `weapp.vue.template.nativeSlotContext` 控制，默认 `false`。7.5.0 引入的该能力改为显式开启：需要时同时配置 `scopedSlotsRequireProps: true` 与 `nativeSlotContext: true`。未配置或显式关闭时，不生成协议标记、声明属性及插槽事件，也不为普通组件注册协议方法、observer 或清理回调；普通 `provide/inject` 与增强插槽语义不变。
+原生插槽上下文协议由独立的 `weapp.vue.template.nativeSlotContext` 控制，默认 `false`，**仅在微信小程序目标（`weapp`）下生效**。7.5.0 引入的该能力改为显式开启：在微信目标下，需要时同时配置 `scopedSlotsRequireProps: true` 与 `nativeSlotContext: true`。未配置或显式关闭时，不生成协议标记、声明属性及插槽事件，也不为普通组件注册协议方法、observer 或清理回调；普通 `provide/inject` 与增强插槽语义不变。
+
+支付宝、抖音、百度和 Web 等其他目标即使配置 `nativeSlotContext: true`，也不会启用此协议或生成对应声明属性、事件接收与清理代码，不能获得这里描述的原生插槽最近 Provider 上下文继承。普通 `provide/inject` 和增强插槽仍遵循各平台既有语义。以下启用示例仅适用于微信小程序目标：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -153,7 +155,7 @@ export default defineConfig({
 
 内层 Wevu Provider 即使使用过滤后的 `export()` / `expose()`，其普通模板子组件（含 Options API 局部注册别名）和原生插槽子组件仍共享内层上下文；外部选择器只看到该 Provider 的公开导出，内部父链不依赖公开导出对象。
 
-已验证环境：微信 DevTools Stable `2.02.2608080`（基础库 `3.17.2`、`3.13.2`）和 `2.02.2608060`（基础库 `3.17.2`），并保留 mpcore 回归；这些结果不代替其他版本组合或真机验证。其他小程序平台及 Web 目标不启用此协议，构建时裁剪其声明属性、事件接收与清理代码，不能由微信或 headless 结果推断支持。`false` / augmented 和实际 scoped props 继续使用既有增强插槽路径。
+已验证环境：微信 DevTools Stable `2.02.2608080`（基础库 `3.17.2`、`3.13.2`）和 `2.02.2608060`（基础库 `3.17.2`），并保留 mpcore 回归；这些结果不代替其他版本组合或真机验证，也不能由微信或 headless 结果推断其他平台支持。`false` / augmented 和实际 scoped props 继续使用既有增强插槽路径。
 
 ## 具名插槽透传 wrapper
 
