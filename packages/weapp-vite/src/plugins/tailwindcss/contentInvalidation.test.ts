@@ -7,7 +7,7 @@ import os from 'node:os'
 import path from 'pathe'
 import { afterEach, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../../runtime/runtimeState'
-import { getCompilerHmrHost } from '../compilerPlugin/hmr'
+import { compilerSourceId, getCompilerHmrHost } from '../compilerPlugin/hmr'
 import { createTailwindcssPlugin } from '../tailwindcss'
 import { createManagedTailwindcssEntryMarker } from '../tailwindcssMarker'
 
@@ -243,17 +243,26 @@ it.each([0, 1])('removes deleted CSS root %i from pending invalidation and subse
   await expect(app.memory()).rejects.toThrow()
 })
 
-it.each(['config', 'plugin'] as const)('immediately invalidates a %s module that is also a captured candidate', async (kind) => {
+it.each([
+  ['config', 'physical'],
+  ['plugin', 'physical'],
+  ['config', 'junction'],
+  ['plugin', 'junction'],
+] as const)('immediately invalidates a %s module that is also a captured candidate (%s path)', async (kind, identity) => {
   const app = await fixture()
-  const dependency = path.join(app.root, `src/${kind}.ts`)
+  if (identity === 'junction') {
+    await symlink(path.join(app.root, 'src'), path.join(app.root, 'module-alias'), 'junction')
+  }
+  const directory = identity === 'junction' ? 'module-alias' : 'src'
+  const dependency = path.join(app.root, directory, `${kind}.ts`)
   const moduleSource = (width: number) => kind === 'config'
     ? `export default { theme: { extend: { colors: { diagnostic: '#234567' } } } }; export const utility = 'w-[${width}px]'`
     : `export default ({ addUtilities }) => addUtilities({ '.plugin-probe': { color: '#234567' } }); export const utility = 'w-[${width}px]'`
   await writeFile(dependency, moduleSource(137))
-  await writeFile(app.cssEntries[0]!, `${app.css} @${kind} "./${kind}.ts";`)
+  await writeFile(app.cssEntries[0]!, `${app.css} @${kind} "${identity === 'junction' ? '../module-alias' : '.'}/${kind}.ts";`)
   await app.change(app.cssEntries[0])
   await app.disk()
-  expect(app.record.generations.at(-1)!.result.dependencies).toContain(dependency)
+  expect(app.record.generations.at(-1)!.result.dependencies.map(compilerSourceId)).toContain(compilerSourceId(dependency))
   await writeFile(dependency, moduleSource(149))
   await app.change(dependency)
   expect(app.record.invalidations.at(-1)).toEqual([dependency])

@@ -216,6 +216,8 @@ jobs:
       main_command: >-
         pnpm --filter weapp-vite exec vitest run test/vite-native-path-controls.test.ts
         test/vite-native-watch-topology.test.ts
+        src/plugins/tailwindcss/contentInvalidation.test.ts
+        src/runtime/statefulHmr/snapshotAssetInputs.test.ts
     secrets: inherit
 
   consumer:
