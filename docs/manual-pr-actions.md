@@ -18,6 +18,24 @@
 
 仓库 **Settings → Actions → General** 的 fork PR 审核策略必须为 `all_external_contributors`（所有外部贡献者均需审核），配置后通过 API 回读核验。已有贡献记录的外部账号也不能通过修改 workflow 直接启动 runner。fork PR 需要先通过 GitHub 原生 workflow 审核，再通过本轮 CI 的 Environment 审批。
 
+## 准入规则核验
+
+预期审批配置统一记录在 `.github/pr-admission.json`。修改审批人或其他保护规则时，需要一起更新这份配置并审阅差异。workflow 的 Environment 必须与配置一致。
+
+```bash
+pnpm check:pr-admission
+pnpm check:pr-admission --live
+pnpm check:pr-admission --live --repo weapp-vite/weapp-vite
+```
+
+默认命令离线核对当前 checkout 的 workflow：唯一 PR 入口、审批及冻结目标的依赖关系、关闭事件跳过全部任务、PR 并发隔离、完整性能验收独立，以及原生报告只在成功后自动运行。核验保护结构和约定的报告条件，不执行 YAML 中的表达式；改写这些条件时需同步审阅核验逻辑及回归测试。
+
+`--live` 额外通过已登录的 `gh` 查询指定 Environment 和 fork 审核配置，检查审批人、自行批准、管理员绕过、等待计时器和分支限制。省略 `--repo` 时使用当前仓库。所有 API 请求均为 GET，不会批准 PR、调度任务或修改仓库设置；本地 workflow 的核验结果仍属于当前 checkout，不代表远端分支的文件内容。
+
+每项结果输出预期值和实际值。退出码 `0` 表示全部通过，`1` 表示规则偏离，`2` 表示参数、文件、认证、权限或接口问题导致核验未完成。出现 `1` 时，根据具体差异修复 workflow 或前述 GitHub Settings；出现 `2` 时先修复所报问题，线上查询需要能读取这些管理配置的账号权限，不能把未完成核验视为通过。
+
+`test:pr-actions` 包含当前 workflow 的离线核验及回归测试，沿用现有 CI Policy，不增加 job、定时任务或管理权限。线上核验由维护者按需执行。
+
 ## 原生运行的完成报告
 
 只有整体成功的原生 `PR CI` 运行会自动启动性能和体积评论报告。失败、取消、拒绝和审批过期不启动自动报告 runner，结果直接查看 PR Checks。
