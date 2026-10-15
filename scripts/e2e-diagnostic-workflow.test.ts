@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
+import { readWorkflowFixture } from './workflowFixture.mjs'
 
 interface WorkflowJob {
   if?: string
@@ -11,7 +12,7 @@ interface WorkflowJob {
 }
 
 async function workflow() {
-  return parse(await readFile(new URL('../.github/workflows/ci-e2e.yml', import.meta.url), 'utf8')) as {
+  return readWorkflowFixture('ci-e2e.yml') as {
     on: { workflow_dispatch: { inputs: Record<string, { default: string, options: string[] }> } }
     concurrency: { group: string }
     jobs: Record<string, WorkflowJob>
@@ -143,7 +144,7 @@ describe('bounded HMR workflow diagnosis', () => {
       timeout_minutes: 40,
     })
     const reusable = parse(await readFile(new URL('../.github/workflows/reusable-node-command.yml', import.meta.url), 'utf8')) as { jobs: { run: { steps: Array<{ name?: string, if?: string }> } } }
-    expect(reusable.jobs.run.steps.find(step => step.name === 'Upload artifact')?.if).toContain('always()')
+    expect(reusable.jobs.run.steps.find(step => step.name === 'Upload artifact')?.if).toContain('!cancelled()')
   })
 
   it('isolates plugin watch readiness from broader regressions on every OS and Node version', async () => {

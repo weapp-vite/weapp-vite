@@ -1,0 +1,42 @@
+name: Validate Acceptance HTTP
+on:
+  workflow_call:
+    inputs:
+      pr_context:
+        required: true
+        type: string
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-frozen-pr-context.yml
+    with:
+      pr_context: ${{ inputs.pr_context }}
+      profile: ci-acceptance-http
+
+  acceptance-http:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
+    name: Acceptance HTTP (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ matrix.os }}
+      node_version: 24.18.0
+      timeout_minutes: 20
+      build_command: pnpm exec turbo run build --filter=@weapp-vite/mcp...
+      main_command: >-
+        pnpm --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --workspace-concurrency=1
+        exec vitest run test/completion.test.ts test/persistence.test.ts test/acceptance.test.ts
+    secrets: inherit

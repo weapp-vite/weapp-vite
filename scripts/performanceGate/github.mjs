@@ -13,10 +13,11 @@ export async function request(endpoint, body, method) {
   return response.json()
 }
 
-export async function pages(endpoint, get = request) {
+export async function pages(endpoint, get = request, field) {
   const all = []
   for (let page = 1; ; page++) {
-    const rows = await get(`${endpoint}${endpoint.includes('?') ? '&' : '?'}per_page=100&page=${page}`)
+    const response = await get(`${endpoint}${endpoint.includes('?') ? '&' : '?'}per_page=100&page=${page}`)
+    const rows = field ? response[field] : response
     if (!Array.isArray(rows)) {
       throw new TypeError('Invalid GitHub paginated response')
     }

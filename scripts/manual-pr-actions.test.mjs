@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
+import { readWorkflowFixture } from './workflowFixture.mjs'
 
 const workflows = [
   'ci.yml',
@@ -24,14 +25,19 @@ const expression = value => `$${'{{'} ${value} }}`
 const readWorkflow = async name => parse(await readFile(path.join(workflowRoot, name), 'utf8'))
 
 describe('manual PR workflow entry points', () => {
-  it('has no automatic PR event entry in any workflow', async () => {
+  it('has one native PR entry and only a close-event target entry', async () => {
     for (const name of await readdir(workflowRoot)) {
       if (!name.endsWith('.yml')) {
         continue
       }
       const workflow = await readWorkflow(name)
-      expect(workflow.on, name).not.toHaveProperty('pull_request')
-      expect(workflow.on, name).not.toHaveProperty('pull_request_target')
+      expect(Boolean(workflow.on.pull_request), name).toBe(name === 'ci-pr.yml')
+      if (name === 'ci-pr.yml') {
+        expect(workflow.on.pull_request_target).toEqual({ types: ['closed'] })
+      }
+      else {
+        expect(workflow.on, name).not.toHaveProperty('pull_request_target')
+      }
     }
   })
 
@@ -105,18 +111,18 @@ describe('manual PR workflow entry points', () => {
   })
 
   it('preserves PR profiles while standalone checks keep their existing matrices', async () => {
-    const ci = await readWorkflow('ci.yml')
+    const ci = readWorkflowFixture('ci.yml')
     expect(ci.jobs['build-pr'].if).toContain('needs.pr-context.outputs.is_pr == \'true\'')
     expect(ci.jobs['build-pr'].strategy.matrix.include).toHaveLength(4)
     expect(ci.jobs['build-release-pr'].strategy.matrix.include).toHaveLength(2)
     expect(ci.jobs['build-full'].if).toContain('needs.pr-context.outputs.is_pr != \'true\'')
     expect(ci.jobs['build-full'].strategy.matrix.include).toHaveLength(6)
-    const tutorial = await readWorkflow('ci-tutorial-e2e.yml')
+    const tutorial = readWorkflowFixture('ci-tutorial-e2e.yml')
     expect(tutorial.jobs['tutorial-e2e'].strategy.matrix.source).toContain('needs.pr-context.outputs.is_pr == \'true\' && \'["workspace"]\'')
   })
 
   it('excludes manually validated PRs from production website deployment', async () => {
-    const workflow = await readWorkflow('deploy-website.yml')
+    const workflow = readWorkflowFixture('deploy-website.yml')
     const steps = workflow.jobs.website.steps
     for (const name of ['Check production revision', 'Deploy website to Cloudflare']) {
       expect(steps.find(step => step.name === name).if).toContain('needs.pr-context.outputs.is_pr != \'true\'')
