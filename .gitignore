@@ -114,6 +114,7 @@ mpcore/packages/simulator/e2e/__screenshots__/
 # Reproducible external source/build caches
 /.cache/
 docs/reports/*-e2e-dimina-*-suite-report/
+docs/reports/*-e2e-bun*-suite-report/
 
 # Local acceptance fixtures and evidence
 /artifacts/

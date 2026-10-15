@@ -58,7 +58,7 @@ describe('bounded HMR workflow diagnosis', () => {
 
   it('requires an explicit manual selection and uses a separate concurrency group', async () => {
     const config = await workflow()
-    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-dev-cleanup', 'native-compiler-batch'] })
+    expect(config.on.workflow_dispatch.inputs['hmr-diagnostic']).toMatchObject({ default: 'full', options: ['full', 'shared-layout-windows', 'lifecycle', 'runtime-publication', 'plugin-watch-readiness', 'workspace-hmr', 'windows-process-narrow', 'windows-dev-cleanup', 'native-compiler-batch', 'bun-cli'] })
     expect(config.concurrency.group).toContain('inputs.hmr-diagnostic || \'full\'')
     const job = config.jobs['shared-layout-windows-diagnostic']!
     expect(job.if).toBe(diagnosticCondition('shared-layout-windows'))
@@ -204,7 +204,7 @@ describe('bounded HMR workflow diagnosis', () => {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)
     }
     for (const [name, job] of Object.entries(jobs)) {
-      if (['pr-context', 'shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-dev-cleanup-diagnostic', 'native-compiler-batch-diagnostic'].includes(name)) {
+      if (['pr-context', 'shared-layout-windows-diagnostic', 'lifecycle-diagnostic', 'runtime-publication-diagnostic', 'plugin-watch-readiness-diagnostic', 'windows-process-narrow-diagnostic', 'windows-dev-cleanup-diagnostic', 'native-compiler-batch-diagnostic', 'bun-build-diagnostic'].includes(name)) {
         continue
       }
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>

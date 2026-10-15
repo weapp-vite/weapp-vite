@@ -62,6 +62,9 @@
     "e2e": "node --import tsx ./e2e/scripts/run-e2e-suite.ts full",
     "e2e:full": "node --import tsx ./e2e/scripts/run-e2e-suite.ts full-regression",
     "e2e:ci": "node --import tsx ./e2e/scripts/run-e2e-suite.ts ci",
+    "e2e:bun": "node --import tsx ./e2e/scripts/run-e2e-suite.ts bun",
+    "e2e:bun:headless": "node --import tsx ./e2e/scripts/run-e2e-suite.ts bun-headless",
+    "e2e:bun:devtools": "node --import tsx ./e2e/scripts/run-e2e-suite.ts bun-devtools",
     "e2e:ci:pr": "node --import tsx ./e2e/scripts/run-e2e-suite.ts ci-pr",
     "e2e:ci:non-hmr": "cross-env WEAPP_VITE_E2E_CI_SKIP_HMR_GUARD=1 node --import tsx ./e2e/scripts/run-e2e-suite.ts ci",
     "e2e:ci:full": "node --import tsx ./e2e/scripts/run-e2e-suite.ts ci-full",
@@ -241,7 +244,7 @@
     "e2e:dimina": "node --import tsx ./e2e/scripts/run-e2e-suite.ts dimina",
     "sync:npmmirror": "repo release sync-npmmirror --all",
     "release:sync-npmmirror": "repo release sync-npmmirror --published",
-    "test:pr-actions": "vitest run --config scripts/vitest.config.mjs scripts/pr-context.test.mjs scripts/native-pr-actions.test.mjs scripts/native-pr-report.test.mjs scripts/native-pr-report-source.test.mjs scripts/pr-resource-policy.test.mjs scripts/manual-pr-actions.test.mjs scripts/publish-pr-status.test.mjs scripts/pr-status-history.test.mjs scripts/pr-context-provenance.test.mjs scripts/e2e-diagnostic-workflow.test.ts scripts/ci-artifact-coverage.test.ts scripts/acceptance-diagnostic-workflow.test.ts scripts/dimina-ci.test.ts scripts/performance-comment-workflow.test.ts scripts/resolve-performance-runs.test.ts scripts/performance-comment.test.ts scripts/performanceGate"
+    "test:pr-actions": "vitest run --config scripts/vitest.config.mjs scripts/pr-context.test.mjs scripts/native-pr-actions.test.mjs scripts/native-pr-report.test.mjs scripts/native-pr-report-source.test.mjs scripts/pr-resource-policy.test.mjs scripts/manual-pr-actions.test.mjs scripts/publish-pr-status.test.mjs scripts/pr-status-history.test.mjs scripts/pr-context-provenance.test.mjs scripts/e2e-diagnostic-workflow.test.ts scripts/ci-artifact-coverage.test.ts scripts/acceptance-diagnostic-workflow.test.ts scripts/dimina-ci.test.ts scripts/bun-ci.test.ts scripts/performance-comment-workflow.test.ts scripts/resolve-performance-runs.test.ts scripts/performance-comment.test.ts scripts/performanceGate"
   },
   "devDependencies": {
     "@babel/core": "catalog:",

@@ -501,6 +501,67 @@ jobs:
       build_artifact_name: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
     secrets: inherit
 
+  bun-build-diagnostic:
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'bun-cli')
+    name: Bun Build Artifact (${{ matrix.os }} / Node 22)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            build-command: pnpm build:pkgs:ci
+          - os: windows-latest
+            build-command: pnpm build:pkgs:ci:windows
+          - os: macos-latest
+            build-command: pnpm build:pkgs:ci:macos
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ matrix.os }}
+      node_version: '22'
+      timeout_minutes: 40
+      build_command: ${{ matrix.build-command }}
+      main_command: node -e "console.log('Bun workspace build artifact ready')"
+      build_artifact_name: miniapp-${{ matrix.os }}-node-22-weapp-build
+    secrets: inherit
+
+  bun-cli:
+    if: ${{ needs.pr-context.outputs.should_run == 'true' && !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success' || needs.bun-build-diagnostic.result == 'success') }}
+    needs: [pr-context, miniapp-e2e-build-pr, miniapp-e2e-build-full, bun-build-diagnostic]
+    name: Bun CLI (${{ matrix.os }} / Bun ${{ matrix.bun-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        bun-version: [1.4.2, latest]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ matrix.os }}
+      node_version: '22'
+      bun_version: '${{ matrix.bun-version }}'
+      timeout_minutes: 15
+      consume_build_artifact: miniapp-${{ matrix.os }}-node-22-weapp-build
+      main_command: |
+        bun --version
+        pnpm e2e:bun
+      artifact_name: bun-cli-${{ matrix.os }}-${{ matrix.bun-version }}-${{ needs.pr-context.outputs.checkout_sha }}
+      artifact_path: |
+        .tmp/bun-cli/**
+        docs/reports/*-e2e-bun-*-suite-report/**
+    secrets: inherit
+
   miniapp-e2e-ci-full:
     if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))
     needs: [pr-context, miniapp-e2e-build-full]

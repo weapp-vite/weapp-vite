@@ -25,6 +25,7 @@ on:
           - windows-process-narrow
           - windows-dev-cleanup
           - native-compiler-batch
+          - bun-cli
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.pr-number || github.ref }}-${{ inputs.hmr-diagnostic || 'full' }}
