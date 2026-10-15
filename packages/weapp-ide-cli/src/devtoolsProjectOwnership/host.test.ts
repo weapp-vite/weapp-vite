@@ -44,7 +44,7 @@ describe('managed host startup identities', () => {
     const executable = path.resolve('windows-fixture', '节点 with space.exe')
     inspect.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify({ ProcessId: 123, ExecutablePath: executable, Started: '2026-10-05T01:02:03.456Z' }) })
     expect(await readManagedProcessIdentity(123, 'win32')).toEqual({ pid: 123, executable, started: '2026-10-05T01:02:03.456Z' })
-    expect(inspect).toHaveBeenCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 10_000, reject: false }))
+    expect(inspect).toHaveBeenCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 30_000, reject: false }))
     const script = inspect.mock.calls[0]![1][3] as string
     expect(script.indexOf('[Console]::OutputEncoding=')).toBe(0)
     expect(script.indexOf('UTF8Encoding')).toBeLessThan(script.indexOf('Get-CimInstance'))
@@ -56,7 +56,7 @@ describe('managed host startup identities', () => {
 
   it('fails closed with diagnostic details when Windows inspection exhausts its budget', async () => {
     inspect.mockResolvedValueOnce({ exitCode: undefined, signal: 'SIGTERM', timedOut: true, stdout: '' })
-    await expect(readManagedProcessIdentity(123, 'win32')).rejects.toThrow('signal=SIGTERM, timedOut=true, timeoutMs=10000')
+    await expect(readManagedProcessIdentity(123, 'win32')).rejects.toThrow('signal=SIGTERM, timedOut=true, timeoutMs=30000')
     expect(inspect).toHaveBeenCalledOnce()
   })
 
@@ -115,7 +115,7 @@ describe('managed host startup identities', () => {
     inspect.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify({ ProcessId: 123, ExecutablePath: executable, Started: '2026-10-05T01:02:03.456Z' }) })
     expect(await inspectManagedProjectHost(target, 19001, 'win32')).toEqual({ pid: 123, executable, started: '2026-10-05T01:02:03.456Z' })
     expect(inspect.mock.calls.every(([command]) => command === 'powershell.exe')).toBe(true)
-    expect(inspect.mock.calls.every(([, , options]) => options.timeout === 10_000)).toBe(true)
+    expect(inspect.mock.calls.every(([, , options]) => options.timeout === 30_000)).toBe(true)
   })
 
   it('rejects a replaced installation even when its path and PID could remain the same', async () => {
