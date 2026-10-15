@@ -3,22 +3,38 @@ name: CI
 on:
   # push:
   #   branches: ['main']
-  pull_request:
-    types: [opened, synchronize]
   schedule:
     - cron: '20 1 * * *'
   workflow_dispatch:
+    inputs:
+      pr-number:
+        description: PR 编号；留空保留当前分支或定时验证
+        required: false
+        default: ''
+        type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number || github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+
   build-pr:
-    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release/pnpm-version')
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && !startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -66,6 +82,12 @@ jobs:
       max-parallel: 4
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: ${{ matrix.timeout_minutes }}
@@ -78,7 +100,8 @@ jobs:
     secrets: inherit
 
   build-release-pr:
-    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/pnpm-version')
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -97,6 +120,12 @@ jobs:
       max-parallel: 2
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: ${{ matrix.timeout_minutes }}
@@ -113,7 +142,8 @@ jobs:
     secrets: inherit
 
   build-full:
-    if: github.event_name != 'pull_request'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -160,6 +190,12 @@ jobs:
             lint_script: lint
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: ${{ matrix.timeout_minutes }}
@@ -175,10 +211,17 @@ jobs:
     secrets: inherit
 
   weapi-compat-pr:
-    if: github.event_name == 'pull_request'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true')
     name: Weapi Compatibility Guard (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 15
@@ -210,7 +253,8 @@ jobs:
     secrets: inherit
 
   weapi-compat-full:
-    if: github.event_name != 'pull_request'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')
     name: Weapi Compatibility Guard (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -219,6 +263,12 @@ jobs:
         node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 15

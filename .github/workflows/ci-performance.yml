@@ -1,11 +1,16 @@
 name: Performance Smoke
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr-number:
+        description: Optional open PR number; empty skips PR-only smoke
+        type: string
+        required: false
+        default: ''
 
 concurrency:
-  group: performance-smoke-${{ github.event.pull_request.number }}
+  group: performance-smoke-${{ inputs.pr-number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -13,20 +18,44 @@ permissions:
   pull-requests: read
 
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+      checkout_mode: head
+
   smoke:
+    needs: pr-context
+    if: needs.pr-context.outputs.is_pr == 'true' && needs.pr-context.outputs.should_run == 'true'
     name: Performance Smoke
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ needs.pr-context.outputs.head_repository }}
+          ref: ${{ needs.pr-context.outputs.head_sha }}
+          persist-credentials: false
+      - name: Check out trusted scope driver
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: .tmp/pr-driver
+          ref: ${{ github.sha }}
+          sparse-checkout: scripts/performanceGate
           persist-credentials: false
       - name: Select relevant paths
         id: scope
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/performanceGate/smokeScope.mjs
+          PERFORMANCE_PR_NUMBER: ${{ needs.pr-context.outputs.pr_number }}
+          PERFORMANCE_HEAD_SHA: ${{ needs.pr-context.outputs.head_sha }}
+          PERFORMANCE_BASE_SHA: ${{ needs.pr-context.outputs.base_sha }}
+        run: node .tmp/pr-driver/scripts/performanceGate/smokeScope.mjs
       - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
         if: steps.scope.outputs.needed == 'true'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -44,8 +73,8 @@ jobs:
         if: steps.scope.outputs.needed == 'true'
         env:
           PERFORMANCE_PURPOSE: smoke
-          PERFORMANCE_PR_NUMBER: ${{ github.event.pull_request.number }}
-          PERFORMANCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PERFORMANCE_PR_NUMBER: ${{ needs.pr-context.outputs.pr_number }}
+          PERFORMANCE_HEAD_SHA: ${{ needs.pr-context.outputs.head_sha }}
           TEMPLATES_PERF_OPTIMIZED_DIR: ${{ github.workspace }}
           TEMPLATES_PERF_REPORT_DIR: ${{ runner.temp }}/performance-smoke
         run: pnpm exec tsx scripts/performanceGate/smoke.ts

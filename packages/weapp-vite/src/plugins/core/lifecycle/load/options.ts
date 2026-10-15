@@ -207,7 +207,9 @@ export function createOptionsHook(state: CorePluginState) {
         )
       }
       else {
-        if (state.resolvedConfig?.build.watch && !configService.isDev) {
+        if ((state.buildTarget === 'app' && ctx.runtimeState.build.hmr?.fullEntryScan)
+          || (state.resolvedConfig?.build.watch && !configService.isDev)) {
+          // 完整入口重建由 buildStart 刷新扫描并准备独立输出；options 仅解析主包逻辑输入。
           scanService.loadSubPackages()
         }
         else {

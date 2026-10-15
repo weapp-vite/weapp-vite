@@ -1,4 +1,4 @@
-import type { WxmlDependencyContext } from './types'
+import type { ImportEntry, IncludeEntry, WxmlDependencyContext, WxsEntry } from './types'
 
 export function createDependencyContext(): WxmlDependencyContext {
   return {
@@ -21,6 +21,26 @@ export function addDependency(
     context.dependencies.push(value)
     direct?.push(value)
   }
+}
+
+/** 依赖扫描完成分析后，按编译器的分组顺序登记直接依赖。 */
+export function collectDependencies(
+  entries: { imports: ImportEntry[], includes: IncludeEntry[], wxs: WxsEntry[] },
+  context: WxmlDependencyContext,
+) {
+  const dependencies: string[] = []
+  for (const entry of entries.imports) {
+    addDependency(entry.id, context, dependencies)
+  }
+  for (const entry of entries.includes) {
+    addDependency(entry.id, context, dependencies)
+  }
+  for (const entry of entries.wxs) {
+    if (entry.kind === 'src') {
+      addDependency(entry.value, context, dependencies)
+    }
+  }
+  return dependencies
 }
 
 export function warnReadTemplate(context: WxmlDependencyContext, target: string) {

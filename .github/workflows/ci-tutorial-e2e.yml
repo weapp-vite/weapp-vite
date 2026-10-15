@@ -1,25 +1,15 @@
 name: Tutorial E2E
 
 on:
-  pull_request:
-    paths:
-      - .github/workflows/ci-tutorial-e2e.yml
-      - 'e2e/tutorials/**'
-      - 'packages/create-weapp-vite/**'
-      - 'packages/weapp-vite/**'
-      - 'packages-runtime/wevu/**'
-      - 'templates/**'
-      - website/guide/index.md
-      - website/guide/multi-platform.md
-      - website/handbook/index.md
-      - 'website/snippets/tutorial-e2e/**'
-      - scripts/project-lifecycle.mjs
-      - package.json
-      - pnpm-lock.yaml
   schedule:
     - cron: '30 4 * * *'
   workflow_dispatch:
     inputs:
+      pr-number:
+        description: PR number to validate (empty uses the selected ref)
+        required: false
+        default: ''
+        type: string
       source:
         description: Tutorial package source
         required: false
@@ -36,14 +26,28 @@ on:
         type: string
 
 concurrency:
-  group: tutorial-e2e-${{ github.ref || github.run_id }}
+  group: tutorial-e2e-${{ inputs.pr-number || github.ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+      paths: '[".github/workflows/ci-tutorial-e2e.yml","e2e/tutorials/**","packages/create-weapp-vite/**","packages/weapp-vite/**","packages-runtime/wevu/**","templates/**","website/guide/index.md","website/guide/multi-platform.md","website/handbook/index.md","website/snippets/tutorial-e2e/**","scripts/project-lifecycle.mjs","package.json","pnpm-lock.yaml"]'
+
   tutorial-e2e:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Tutorial E2E (${{ matrix.source }})
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -51,11 +55,14 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        source: ${{ fromJSON(github.event_name == 'pull_request' && '["workspace"]' || github.event_name == 'schedule' && '["workspace","npm"]' || github.event.inputs.source == 'both' && '["workspace","npm"]' || format('["{0}"]', github.event.inputs.source || 'workspace')) }}
+        source: ${{ fromJSON(needs.pr-context.outputs.is_pr == 'true' && '["workspace"]' || github.event_name == 'schedule' && '["workspace","npm"]' || github.event.inputs.source == 'both' && '["workspace","npm"]' || format('["{0}"]', github.event.inputs.source || 'workspace')) }}
 
     steps:
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
 
       - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
 

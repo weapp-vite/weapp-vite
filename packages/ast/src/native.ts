@@ -1,5 +1,9 @@
+import type { NativeNpmChunkAnalysis, NativeNpmChunkAnalysisInput } from './native/npmChunks'
 import { createRequire } from 'node:module'
 import process from 'node:process'
+import { readNativeCompilerScriptAnalysis } from './native/compilerAnalysis'
+import { readNativeNpmChunkAnalysis } from './native/npmChunks'
+import { isNativeScriptAnalysisBatchShape, readNativeScriptAnalysis } from './native/scriptAnalysis'
 
 const require = createRequire(import.meta.url)
 
@@ -24,7 +28,48 @@ export interface NativeScriptAnalysisInput {
   filename?: string
 }
 
+export interface NativeCompilerScriptInput {
+  code: string
+  filename?: string
+}
+
+export interface NativeCompilerScriptImport {
+  local: string
+  imported?: string
+  source: string
+  kind: 'default' | 'namespace' | 'named'
+  typeOnly: boolean
+}
+
+export interface NativeCompilerRegisteredComponent {
+  name: string
+  local: string
+}
+
+export interface NativeCompilerScriptSpan {
+  start: number
+  end: number
+}
+
+export interface NativeCompilerScriptAnalysis {
+  imports: NativeCompilerScriptImport[]
+  /** 旧 binding 缺失该事实时，由编译阶段执行原有默认导出检查。 */
+  hasDefaultExport?: boolean
+  defineOptionsStatements: NativeCompilerScriptSpan[]
+  registeredComponents?: NativeCompilerRegisteredComponent[]
+  /** 缺失表示旧 binding 或需由 Babel 完成诊断；空对象表示已确认无警告。 */
+  reservedPropsDiagnostic?: { warningOffset?: number }
+}
+
+export type { NativeNpmChunkAnalysis, NativeNpmChunkAnalysisInput, NativeNpmLocalRootFact, NativeNpmPlatformApiFact, NativeNpmRequireFact } from './native/npmChunks'
+
 export interface NativeAstBinding {
+  analyzeCompilerScriptsNative?: (
+    inputs: NativeCompilerScriptInput[],
+  ) => Array<NativeCompilerScriptAnalysis | null>
+  analyzeNpmChunksNative?: (
+    inputs: NativeNpmChunkAnalysisInput[],
+  ) => Array<NativeNpmChunkAnalysis | null>
   analyzeScriptNative?: (
     code: string,
     moduleId?: string,
@@ -72,8 +117,16 @@ function resolveNativeAstModulePath() {
   return modulePath || undefined
 }
 
+function createScriptAnalysisKey(code: string, filename: string, moduleId?: string, hookToFeatureJson?: string) {
+  return [code, filename, moduleId ?? '', hookToFeatureJson ?? ''].join('\0')
+}
+
 export function shouldUseNativeAst() {
   return process.env.WEAPP_VITE_NATIVE === '1' && Boolean(resolveNativeAstModulePath())
+}
+
+export function shouldUseNativeNpmChunkAnalysis() {
+  return shouldUseNativeAst() && process.env.WEAPP_VITE_NATIVE_NPM_CHUNK === '1'
 }
 
 export function loadNativeAstBindingSync() {
@@ -110,17 +163,17 @@ export function analyzeScriptWithNative(
   const hookToFeatureJson = options?.hookToFeature
     ? JSON.stringify(options.hookToFeature)
     : undefined
-  const key = [
-    code,
-    options?.filename ?? '',
-    options?.moduleId ?? '',
-    hookToFeatureJson ?? '',
-  ].join('\0')
+  const filename = options?.filename ?? 'inline.ts'
+  const key = createScriptAnalysisKey(code, filename, options?.moduleId, hookToFeatureJson)
   if (lastScriptAnalysis?.key === key) {
     return lastScriptAnalysis.result
   }
 
-  const result = analyzeNative(code, options?.moduleId, hookToFeatureJson, options?.filename ?? 'inline.ts')
+  const rawResult: unknown = analyzeNative(code, options?.moduleId, hookToFeatureJson, filename)
+  const result = readNativeScriptAnalysis(rawResult)
+  if (!result) {
+    return undefined
+  }
   lastScriptAnalysis = {
     key,
     result,
@@ -144,5 +197,100 @@ export function analyzeScriptsWithNative(inputs: NativeScriptAnalysisInput[]) {
       moduleId: input.moduleId,
     }
   })
-  return analyzeNative(nativeInputs)
+  const rawResults: unknown = analyzeNative(nativeInputs)
+  if (!isNativeScriptAnalysisBatchShape(rawResults, nativeInputs.length)) {
+    return undefined
+  }
+  const results = nativeInputs.map((_, index) => {
+    try {
+      const result = readNativeScriptAnalysis(rawResults[index])
+      if (result) {
+        return result
+      }
+    }
+    catch {
+      // 当前数组项读取失败只拒绝该项，保留有效邻项。
+    }
+    return null
+  })
+  const lastInput = nativeInputs.at(-1)
+  const lastResult = results.at(-1)
+  if (lastInput && lastResult && results.length === nativeInputs.length) {
+    // 仅保留批次末项，与单文件分析共享已有的单条缓存边界。
+    lastScriptAnalysis = {
+      key: createScriptAnalysisKey(lastInput.code, lastInput.filename, lastInput.moduleId, lastInput.hookToFeatureJson),
+      result: lastResult,
+    }
+  }
+  return results
+}
+
+/**
+ * 编译器前端批量摘要的显式 native 快速路径；失败时由调用方继续使用 Babel/Oxc。
+ */
+export function analyzeCompilerScriptsWithNative(inputs: NativeCompilerScriptInput[]) {
+  if (!shouldUseNativeAst()) {
+    return undefined
+  }
+  if (!inputs.length) {
+    return []
+  }
+  const fallback = () => null
+  const analyzeNative = loadNativeAstBindingSync()?.analyzeCompilerScriptsNative
+  if (!analyzeNative) {
+    return inputs.map(fallback)
+  }
+
+  let results: unknown
+  try {
+    results = analyzeNative(inputs)
+  }
+  catch {
+    return inputs.map(fallback)
+  }
+  if (!Array.isArray(results) || results.length !== inputs.length) {
+    return inputs.map(fallback)
+  }
+  return inputs.map((input, index) => {
+    try {
+      const result: unknown = results[index]
+      return readNativeCompilerScriptAnalysis(result, input.code) ?? fallback()
+    }
+    catch {
+      return fallback()
+    }
+  })
+}
+
+/**
+ * 批量读取最终 chunk 的重写事实；默认关闭，任何批次或单项校验失败都交回 JS。
+ */
+export function analyzeNpmChunksWithNative(inputs: NativeNpmChunkAnalysisInput[]) {
+  if (!shouldUseNativeNpmChunkAnalysis() || inputs.length === 0) {
+    return undefined
+  }
+  let rawResults: unknown
+  try {
+    const analyzeNative = loadNativeAstBindingSync()?.analyzeNpmChunksNative
+    if (!analyzeNative) {
+      return inputs.map(() => null)
+    }
+    rawResults = analyzeNative(inputs)
+  }
+  catch {
+    return inputs.map(() => null)
+  }
+  if (!isNativeScriptAnalysisBatchShape(rawResults, inputs.length)) {
+    return inputs.map(() => null)
+  }
+  return inputs.map((input, index) => {
+    try {
+      return Object.hasOwn(rawResults, index)
+        ? readNativeNpmChunkAnalysis(rawResults[index], input.code) ?? null
+        : null
+    }
+    catch {
+      return null
+    }
+  })
 }

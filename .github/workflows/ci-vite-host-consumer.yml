@@ -1,52 +1,37 @@
 name: Vite Host Consumer
 
 on:
-  pull_request:
-    paths:
-      - .github/workflows/ci-vite-host-consumer.yml
-      - .github/workflows/reusable-node-command.yml
-      - 'packages/weapp-vite/**'
-      - e2e/ide/stateful-hmr.runtime.test.ts
-      - e2e/ide/hmr-auto-classic.runtime.test.ts
-      - e2e/ide/react-runtime-spike.runtime.test.ts
-      - e2e/ide/wevu-subpackage-placement.runtime.test.ts
-      - e2e/ide/worker-host.runtime.test.ts
-      - e2e/ide/platform-host.runtime.test.ts
-      - 'templates/weapp-vite-multi-platform-sfc-template/**'
-      - e2e/ide/lib-host.runtime.test.ts
-      - 'e2e-apps/lib-mode/**'
-      - e2e/ide/issue-963-plugin-es6.runtime.test.ts
-      - 'templates/weapp-vite-plugin-template/**'
-      - 'e2e-apps/chunk-modes/**'
-      - 'mpcore/packages/simulator/**'
-      - 'mpcore/packages/test/**'
-      - 'mpcore/packages/vitest/**'
-      - 'mpcore/packages/weapp-vite/**'
-      - 'e2e/ide/subpackagePlacementDom/**'
-      - 'e2e-apps/wevu-subpackage-placement/**'
-      - 'e2e/ide/reactRuntimeDom/**'
-      - 'e2e-apps/react-runtime-spike/**'
-      - 'packages-runtime/react/**'
-      - 'e2e/ide/statefulHmrDom/**'
-      - 'e2e-apps/stateful-hmr/**'
-      - 'packages/rolldown-require/**'
-      - 'packages-runtime/wevu/**'
-      - 'packages-runtime/wevu-compiler/**'
-      - '@weapp-core/**'
-      - package.json
-      - pnpm-lock.yaml
-      - pnpm-workspace.yaml
   workflow_dispatch:
+    inputs:
+      pr-number:
+        description: PR number to validate (empty uses the selected ref)
+        required: false
+        default: ''
+        type: string
 
 concurrency:
-  group: vite-host-consumer-${{ github.ref || github.run_id }}
+  group: vite-host-consumer-${{ inputs.pr-number || github.ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+      paths: '[".github/workflows/ci-vite-host-consumer.yml",".github/workflows/reusable-node-command.yml","packages/weapp-vite/**","e2e/ide/stateful-hmr.runtime.test.ts","e2e/ide/hmr-auto-classic.runtime.test.ts","e2e/ide/react-runtime-spike.runtime.test.ts","e2e/ide/wevu-subpackage-placement.runtime.test.ts","e2e/ide/worker-host.runtime.test.ts","e2e/ide/platform-host.runtime.test.ts","templates/weapp-vite-multi-platform-sfc-template/**","e2e/ide/lib-host.runtime.test.ts","e2e-apps/lib-mode/**","e2e/ide/issue-963-plugin-es6.runtime.test.ts","templates/weapp-vite-plugin-template/**","e2e-apps/chunk-modes/**","mpcore/packages/simulator/**","mpcore/packages/test/**","mpcore/packages/vitest/**","mpcore/packages/weapp-vite/**","e2e/ide/subpackagePlacementDom/**","e2e-apps/wevu-subpackage-placement/**","e2e/ide/reactRuntimeDom/**","e2e-apps/react-runtime-spike/**","packages-runtime/react/**","e2e/ide/statefulHmrDom/**","e2e-apps/stateful-hmr/**","packages/rolldown-require/**","packages-runtime/wevu/**","packages-runtime/wevu-compiler/**","@weapp-core/**","package.json","pnpm-lock.yaml","pnpm-workspace.yaml"]'
+
   node-support:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Published Node support (${{ matrix.os }} / Node ${{ matrix.node }})
     strategy:
       fail-fast: false
@@ -57,6 +42,9 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: '24'
@@ -91,6 +79,8 @@ jobs:
             .cache/dashboard-public-types.json
 
   dependency-compatibility:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Strict dependency consumer (${{ matrix.os }} / ${{ matrix.manager }})
     strategy:
       fail-fast: false
@@ -99,6 +89,12 @@ jobs:
         manager: [pnpm, npm]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: 24.18.0
       timeout_minutes: 30
@@ -109,6 +105,8 @@ jobs:
     secrets: inherit
 
   react-host-paths:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: React host paths (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -116,6 +114,12 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: 24.18.0
       timeout_minutes: 30
@@ -124,6 +128,8 @@ jobs:
     secrets: inherit
 
   watch-validation:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Watch validation (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -131,6 +137,12 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: 24.18.0
       timeout_minutes: 30
@@ -143,6 +155,8 @@ jobs:
     secrets: inherit
 
   route-topology:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Route topology (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -150,6 +164,12 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: 24.18.0
       timeout_minutes: 30
@@ -161,6 +181,8 @@ jobs:
     secrets: inherit
 
   host-paths:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Host paths (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -168,6 +190,12 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: 24.18.0
       timeout_minutes: 30
@@ -179,6 +207,8 @@ jobs:
     secrets: inherit
 
   native-path-controls:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Native path controls (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -186,6 +216,12 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: 24.18.0
       timeout_minutes: 30
@@ -196,6 +232,8 @@ jobs:
     secrets: inherit
 
   consumer:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Packed consumer (${{ matrix.toolchain }})
     strategy:
       fail-fast: false
@@ -203,6 +241,12 @@ jobs:
         toolchain: [wv, vite, vite-plus]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: 24.18.0
       timeout_minutes: 30
@@ -211,6 +255,8 @@ jobs:
     secrets: inherit
 
   stateful-runtime:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Stateful runtime (${{ matrix.host }})
     strategy:
       fail-fast: false
@@ -218,6 +264,12 @@ jobs:
         host: [wv, vite, vite-plus]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: 24.18.0
       timeout_minutes: 30
@@ -228,6 +280,8 @@ jobs:
     secrets: inherit
 
   classic-runtime:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Classic runtime (${{ matrix.host }} / ${{ matrix.profile }})
     strategy:
       fail-fast: false
@@ -239,6 +293,12 @@ jobs:
             profile: classic-watch
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: 24.18.0
       timeout_minutes: 30
@@ -249,6 +309,8 @@ jobs:
     secrets: inherit
 
   react-runtime:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: React runtime (${{ matrix.host }})
     strategy:
       fail-fast: false
@@ -256,6 +318,12 @@ jobs:
         host: [wv, vite, vite-plus]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: 24.18.0
       timeout_minutes: 30
@@ -266,6 +334,8 @@ jobs:
     secrets: inherit
 
   independent-runtime:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Independent runtime (${{ matrix.host }})
     strategy:
       fail-fast: false
@@ -273,6 +343,12 @@ jobs:
         host: [wv, vite, vite-plus]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: 24.18.0
       timeout_minutes: 30
@@ -283,6 +359,8 @@ jobs:
     secrets: inherit
 
   worker-runtime:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Worker runtime (${{ matrix.host }})
     strategy:
       fail-fast: false
@@ -290,6 +368,12 @@ jobs:
         host: [wv, vite, vite-plus]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: 24.18.0
       timeout_minutes: 30
@@ -300,6 +384,8 @@ jobs:
     secrets: inherit
 
   plugin-runtime:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Plugin runtime (${{ matrix.host }})
     strategy:
       fail-fast: false
@@ -307,6 +393,12 @@ jobs:
         host: [wv, vite, vite-plus]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: 24.18.0
       timeout_minutes: 30
@@ -317,6 +409,8 @@ jobs:
     secrets: inherit
 
   lib-runtime:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Library runtime (${{ matrix.host }})
     strategy:
       fail-fast: false
@@ -324,6 +418,12 @@ jobs:
         host: [wv, vite, vite-plus]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: 24.18.0
       timeout_minutes: 30
@@ -334,6 +434,8 @@ jobs:
     secrets: inherit
 
   platform-runtime:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Platform builds and runtime (${{ matrix.host }})
     strategy:
       fail-fast: false
@@ -341,6 +443,12 @@ jobs:
         host: [wv, vite, vite-plus]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: 24.18.0
       timeout_minutes: 30
@@ -351,6 +459,8 @@ jobs:
     secrets: inherit
 
   web-runtime:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Web browser runtime (${{ matrix.host }})
     strategy:
       fail-fast: false
@@ -358,6 +468,12 @@ jobs:
         host: [wv, vite, vite-plus]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
       node_version: 24.18.0
       timeout_minutes: 30
@@ -367,6 +483,6 @@ jobs:
       main_command: |
         pnpm exec vitest run --config scripts/vitest.config.mjs scripts/hostCapabilityDiagnostic.test.mjs
         pnpm exec cross-env WEAPP_VITE_CONSUMER_HOST_DIAGNOSTICS=1 node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless web
-      artifact_name: web-host-capability-${{ matrix.host }}-${{ github.sha }}
+      artifact_name: web-host-capability-${{ matrix.host }}-${{ needs.pr-context.outputs.checkout_sha }}
       artifact_path: .cache/web-consumer-diagnostic/host-capability-*.json
     secrets: inherit

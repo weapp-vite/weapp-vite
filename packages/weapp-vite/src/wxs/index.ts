@@ -1,11 +1,28 @@
-import babelPresetEnv from '@babel/preset-env'
-import babelPresetTypescript from '@babel/preset-typescript'
+import type babelPresetEnv from '@babel/preset-env'
+import type babelPresetTypescript from '@babel/preset-typescript'
+import { createRequire } from 'node:module'
 import * as babel from '@weapp-vite/ast/babelCore'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { normalizeWxsFilename } from './utils'
 
 type BabelPluginItem = NonNullable<babel.TransformOptions['plugins']>[number]
 type BabelPresetItem = NonNullable<babel.TransformOptions['presets']>[number]
+
+const nodeRequire = createRequire(import.meta.url)
+let babelPresets: { env: typeof babelPresetEnv, typescript: typeof babelPresetTypescript } | undefined
+
+/** 首次转换才加载 presets，兼容 Babel 的 ESM default 与 CommonJS 导出。 */
+function loadBabelPreset<T>(name: string): T {
+  const loaded = nodeRequire(name) as T & { default?: T }
+  return loaded.default ?? loaded
+}
+
+function getBabelPresets() {
+  return babelPresets ??= {
+    env: loadBabelPreset<typeof babelPresetEnv>('@babel/preset-env'),
+    typescript: loadBabelPreset<typeof babelPresetTypescript>('@babel/preset-typescript'),
+  }
+}
 
 export interface TransformWxsCodeOptions {
   filename?: string
@@ -22,6 +39,7 @@ export {
 }
 
 export function transformWxsCode(code: string, options?: TransformWxsCodeOptions): TransformWxsCodeResult {
+  const presets = getBabelPresets()
   const filename = options?.filename ?? 'script.ts'
   const extension = options?.extension ?? 'wxs'
   const preserveEsmExports = extension.replace(/^\./, '') === 'sjs'
@@ -60,8 +78,8 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
     babelrc: false,
     configFile: false,
     presets: [
-      [babelPresetEnv, { modules: preserveEsmExports ? false : 'commonjs', targets: { ie: '11' } }] as BabelPresetItem,
-      babelPresetTypescript as BabelPresetItem,
+      [presets.env, { modules: preserveEsmExports ? false : 'commonjs', targets: { ie: '11' } }] as BabelPresetItem,
+      presets.typescript as BabelPresetItem,
     ],
     filename,
     plugins: [

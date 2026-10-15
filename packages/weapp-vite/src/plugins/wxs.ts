@@ -9,8 +9,7 @@ import path from 'pathe'
 import { jsExtensions } from '../constants'
 import { resolveCompilerOutputExtensions } from '../utils/outputExtensions'
 import { isScriptModuleTagName } from '../utils/wxmlScriptModule'
-import { scanWxml } from '../wxml'
-import { transformWxsCode } from '../wxs'
+import { scanWxml } from '../wxml/scan'
 import { resolveRelativeOutputFileNameWithExtension } from './utils/outputFileName'
 
 export const wxsCodeCache = new LRUCache<string, string>({
@@ -57,6 +56,7 @@ async function transformWxsFile(
   catch {
     return
   }
+  const { transformWxsCode } = await import('../wxs')
   const { result, importees } = transformWxsCode(rawCode, {
     filename: wxsPath,
     extension: scriptModuleExtension,

@@ -1,20 +1,12 @@
 name: Acceptance and Agent
 on:
-  pull_request:
-    paths:
-      - 'packages/agent-*/**'
-      - 'packages/acceptance/**'
-      - 'packages/mcp/**'
-      - 'packages/devtools-runtime/**'
-      - 'packages/weapp-vite/**'
-      - 'packages/weapp-ide-cli/**'
-      - 'packages/agent-cli/**'
-      - 'scripts/weapp-agent/**'
-      - 'skills/weapp-acceptance/**'
-      - pnpm-lock.yaml
-      - .github/workflows/ci-acceptance.yml
   workflow_dispatch:
     inputs:
+      pr-number:
+        description: PR number to validate (empty uses the selected ref)
+        required: false
+        default: ''
+        type: string
       scope:
         description: Acceptance validation scope
         type: choice
@@ -24,12 +16,25 @@ on:
           - windows-runtime-diagnostic
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
-  group: acceptance-${{ inputs.scope || 'full' }}-${{ github.ref }}
+  group: acceptance-${{ inputs.scope || 'full' }}-${{ inputs.pr-number || github.ref }}
   cancel-in-progress: true
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+      paths: '["packages/agent-*/**","packages/acceptance/**","packages/mcp/**","packages/devtools-runtime/**","packages/weapp-vite/**","packages/weapp-ide-cli/**","packages/agent-cli/**","scripts/weapp-agent/**","skills/weapp-acceptance/**","pnpm-lock.yaml",".github/workflows/ci-acceptance.yml"]'
+
   compatibility:
-    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'full'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.scope == 'full')
     strategy:
       fail-fast: false
       matrix:
@@ -38,6 +43,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
       - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -63,7 +71,8 @@ jobs:
       - run: node scripts/weapp-agent/smoke-baseline.mjs
 
   windows-runtime-diagnostic:
-    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'windows-runtime-diagnostic'
+    needs: pr-context
+    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.scope == 'windows-runtime-diagnostic')
     name: Windows acceptance runtime (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
@@ -71,6 +80,12 @@ jobs:
         node-version: [22, 24]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: windows-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 25
@@ -78,6 +93,6 @@ jobs:
       main_command: |
         pnpm --filter @weapp-agent/mini-program typecheck
         pnpm --filter @weapp-agent/mini-program exec vitest run --configLoader bundle --coverage.enabled --maxWorkers=50% test/acceptance.test.ts --reporter=default --reporter=json --outputFile=../../.tmp/acceptance-runtime-report.json
-      artifact_name: acceptance-runtime-windows-node-${{ matrix.node-version }}-${{ github.sha }}
+      artifact_name: acceptance-runtime-windows-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}
       artifact_path: .tmp/acceptance-runtime-report.json
     secrets: inherit

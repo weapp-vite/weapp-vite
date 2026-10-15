@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "requiredExports": [
+    "analyzeCompilerScriptsNative",
+    "analyzeNpmChunksNative",
+    "analyzeScriptNative",
+    "analyzeScriptsNative",
+    "collectFeatureFlagsNative",
+    "collectOnPageScrollDiagnosticsNative",
+    "getVueSfcSignaturePayloadNative",
+    "mayContainPlatformApiAccessNative",
+    "mayContainStaticRequireLiteralNative"
+  ],
+  "buildFilters": [
+    "@wevu/compiler...",
+    "weapp-vite..."
+  ],
+  "suites": [
+    {
+      "file": "test/compilerAnalysis.test.ts",
+      "minimumAssertions": 33
+    },
+    {
+      "file": "test/compilerAmbientParity.test.ts",
+      "minimumAssertions": 7
+    },
+    {
+      "file": "test/npmChunkRewriteParity.test.ts",
+      "minimumAssertions": 6
+    },
+    {
+      "file": "test/npmChunksParity.test.ts",
+      "minimumAssertions": 13
+    },
+    {
+      "file": "test/onPageScroll.test.ts",
+      "minimumAssertions": 11
+    },
+    {
+      "file": "test/vueSfcSignature.fuzz.test.ts",
+      "minimumAssertions": 44
+    },
+    {
+      "file": "test/reservedPropsParity.test.ts",
+      "minimumAssertions": 27
+    },
+    {
+      "file": "test/defaultExportParity.test.ts",
+      "minimumAssertions": 13
+    }
+  ]
+}

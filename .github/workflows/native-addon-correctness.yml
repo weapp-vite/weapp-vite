@@ -1,0 +1,103 @@
+name: Native Addon Correctness
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr-number:
+        description: PR number to validate (empty uses the selected ref)
+        required: false
+        default: ''
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.pr-number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+      paths: '["packages/ast-native/**","packages/ast/**","packages/weapp-vite/**","packages-runtime/wevu-compiler/**","scripts/verify-native-addon-correctness*","scripts/nativeAddonCorrectness/**",".github/workflows/native-addon-correctness.yml","pnpm-lock.yaml"]'
+
+  actual-addon:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
+    name: Actual N-API Addon (${{ matrix.os }} / Node 24.18.0)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      NATIVE_CORRECTNESS_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+      NATIVE_CORRECTNESS_DRIVER_COMMIT: ${{ github.sha }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
+
+      - name: Check out the trusted correctness driver
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .tmp/pr-driver
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies without lifecycle builds
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Check the correctness evidence gate
+        run: pnpm exec vitest run --root .tmp/pr-driver --config scripts/vitest.config.mjs scripts/verify-native-addon-correctness.test.mjs scripts/nativeAddonCorrectness --maxWorkers=1 --no-file-parallelism
+
+      - name: Freeze and validate the candidate correctness manifest
+        run: node .tmp/pr-driver/scripts/verify-native-addon-correctness.mjs plan .tmp/native-addon-correctness
+
+      - name: Install the package Rust toolchain
+        working-directory: packages/ast-native
+        run: rustup show active-toolchain
+
+      - name: Build the release addon from the locked Rust dependencies
+        run: pnpm --filter @weapp-vite/ast-native exec napi build --esm --platform --release --no-js --dts target/index.d.ts -- --locked
+
+      - name: Require the actual addon and all covered exports
+        run: node .tmp/pr-driver/scripts/verify-native-addon-correctness.mjs binding .tmp/native-addon-correctness
+
+      - name: Build fresh manifest closures and run actual N-API suites serially
+        run: node .tmp/pr-driver/scripts/verify-native-addon-correctness.mjs run .tmp/native-addon-correctness
+
+      - name: Reject skipped, empty, or incomplete correctness results
+        if: always()
+        run: node .tmp/pr-driver/scripts/verify-native-addon-correctness.mjs report .tmp/native-addon-correctness
+
+      - name: Upload only the validated portable evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-addon-correctness-${{ matrix.os }}-${{ needs.pr-context.outputs.checkout_sha }}
+          include-hidden-files: true
+          path: |
+            .tmp/native-addon-correctness/binding.json
+            .tmp/native-addon-correctness/summary.json
+          if-no-files-found: error

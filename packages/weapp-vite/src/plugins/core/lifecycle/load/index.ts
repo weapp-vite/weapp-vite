@@ -1,10 +1,8 @@
 import type { CorePluginState } from '../../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
-import path from 'pathe'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import { normalizeSourceId } from '../../../../moduleGraph/traversal'
-import { getSelectedAutoRouteSource } from '../../../../runtime/autoRoutesPlugin/selection'
 import {
   resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
@@ -19,6 +17,7 @@ import { pathExists as pathExistsCached, readFile as readFileCached } from '../.
 import { getCssRealPath, parseRequest } from '../../../utils/parse'
 import { getCompilerSourceSnapshot, readCompilerInput } from '../../../utils/sourceSnapshot'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
+import { resolveLoadEntryIdentity } from './entryIdentity'
 import {
   injectRequestGlobalsIntoLoadResult,
   resolvePassiveRequestGlobalsTargets,
@@ -28,7 +27,6 @@ import {
   createWeapiInjectionCode,
   replacePlatformApiInLoadResult,
   resolveInjectWeapiOptions,
-  resolveRootEntryBasename,
 } from './weapi'
 
 export { createOptionsHook } from './options'
@@ -172,17 +170,16 @@ export function createLoadHook(state: CorePluginState) {
           networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
         })
       }
-      const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
-      const selectedPageSource = getSelectedAutoRouteSource(ctx, sourceId)
-      const physicalSourceId = normalizeSourceId(sourceId)
-      const isSelectedPageSource = !selectedPageSource || normalizeSourceId(selectedPageSource) === physicalSourceId
-      const declaredEntry = state.entriesMap?.get(relativeBasename)
-      // 父入口的声明记录可能暂时指向父源码；实际解析记录优先于这种占位信息。
-      const declaredPath = declaredEntry?.path && normalizeFsResolvedId(
-        configService.absoluteSrcRoot ? path.resolve(configService.absoluteSrcRoot, declaredEntry.path) : declaredEntry.path,
-      )
-      const hasPhysicalDeclaration = declaredPath
-        && removeExtensionDeep(configService.relativeAbsoluteSrcRoot(declaredPath)) === relativeBasename
+      const {
+        relativeBasename,
+        selectedPageSource,
+        physicalSourceId,
+        isSelectedPageSource,
+        declaredEntry,
+        declaredPath,
+        hasPhysicalDeclaration,
+        isRootBasename,
+      } = resolveLoadEntryIdentity(state, sourceId)
       const entryResolveOptions = createCachedEntryResolveOptions(configService, { kind: 'default' })
       const resolvedEntrySource = !hasPhysicalDeclaration && declaredEntry
         ? await resolveEntryPath(removeExtensionDeep(sourceId), {
@@ -190,7 +187,7 @@ export function createLoadHook(state: CorePluginState) {
             exists: async candidate => resolvedEntryMap?.has(normalizeSourceId(candidate)) ?? false,
           })
         : undefined
-      const selectedEntrySource = hasPhysicalDeclaration
+      const selectedEntrySource = hasPhysicalDeclaration && declaredPath
         ? await resolveEntryPath(declaredPath, entryResolveOptions) ?? declaredPath
         : selectedPageSource ?? resolvedEntrySource ?? ((declaredEntry || subPackageMeta?.entries.includes(relativeBasename))
           ? await resolveEntryPath(removeExtensionDeep(sourceId), entryResolveOptions)
@@ -217,11 +214,10 @@ export function createLoadHook(state: CorePluginState) {
 
       const appSource = ctx.scanService?.appEntry?.path
       // 插件仍扫描宿主 app 配置，但自身主入口身份由 options 的物理输入持有。
-      const isRootSource = configService.pluginOnly
-        ? !state.hmrRootInputIds || state.hmrRootInputIds.has(physicalSourceId)
-        : !appSource || normalizeSourceId(appSource) === physicalSourceId
-      if (relativeBasename === resolveRootEntryBasename(state)
-        && isRootSource) {
+      const isRootSource = isRootBasename && (configService.pluginOnly
+        ? !state.hmrRootInputIds || (physicalSourceId !== undefined && state.hmrRootInputIds.has(physicalSourceId))
+        : !appSource || normalizeSourceId(appSource) === physicalSourceId)
+      if (isRootSource) {
         // @ts-ignore Rolldown 的 PluginContext 类型不完整
         const result = await loadProfiledEntry(this, sourceId, 'app')
         if (configService.isDev && sourceId && !sourceId.startsWith('\0')) {

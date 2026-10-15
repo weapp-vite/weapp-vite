@@ -66,6 +66,7 @@ export async function compileVueFile(
     compileOptions: options,
     autoUsingComponents,
     autoImportTags,
+    nativeScriptAnalysis: parsed.nativeScriptAnalysis,
   })
 
   const scriptCompiled = parsed.descriptor.script || parsed.descriptor.scriptSetup
@@ -185,6 +186,7 @@ export async function compileVueFile(
     },
     source,
     parsed.scriptPreprocessMap,
+    parsed.nativeScriptAnalysis,
   )
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap

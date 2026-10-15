@@ -5,6 +5,7 @@ import type { WevuRuntimeAliasMode } from '../../../packageAliases'
 import type { ConfigService, ResolvedWeappWebConfig } from '../../types'
 import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
 import { defu } from '@weapp-core/shared'
+import { createBabelBackendLoader } from '@weapp-vite/ast/babelLoader'
 import { resolveWeappAutoRoutesConfig } from '../../../../autoRoutesConfig'
 import { applyWeappViteHostMeta } from '../../../../pluginHost'
 import { autoRoutes } from '../../../../plugins/autoRoutes'
@@ -15,6 +16,8 @@ import {
 } from '../../../../runtimeProviders'
 import { normalizePreserveModulesRolldownOptions } from '../../../preserveModules'
 import { stripRollupOptions } from './inline'
+
+const loadWebPlugin = createBabelBackendLoader(() => import('@weapp-vite/web/plugin'))
 
 interface MergeWebOptions {
   ctx?: MutableCompilerContext
@@ -117,7 +120,7 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
 
   const runtimeProvider = resolveRuntimeProvider('web', 'web')
   const runtimeProviderPlugin = createSelectedRuntimeProviderPlugin(runtimeProvider, isDev)
-  const webPlugin = import('@weapp-vite/web/plugin').then(({ weappWebPlugin }) => weappWebPlugin({
+  const webPlugin = loadWebPlugin().then(({ weappWebPlugin }) => weappWebPlugin({
     ...web.pluginOptions,
     __uniApp: options.uniApp || undefined,
     __autoImportResolvers: options.autoImportResolvers,

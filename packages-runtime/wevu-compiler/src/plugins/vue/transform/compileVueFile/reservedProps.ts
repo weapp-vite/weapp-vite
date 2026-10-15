@@ -1,3 +1,4 @@
+import type { NativeCompilerScriptAnalysis } from '@weapp-vite/ast'
 import type { TSInterfaceBody, TSType } from '@weapp-vite/ast/babelTypes'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { parseJsLike, traverse } from '../../../../utils/babel'
@@ -176,11 +177,16 @@ export function warnReservedScriptSetupProps(
   scriptSetupCode: string | undefined,
   warn: ((message: string) => void) | undefined,
   context: ReservedPropsWarningContext = {},
+  diagnostic?: NativeCompilerScriptAnalysis['reservedPropsDiagnostic'],
 ) {
   if (!scriptSetupCode) {
     return
   }
-  const result = detectDefinePropsReservedName(scriptSetupCode)
+  const offset = diagnostic?.warningOffset
+  const lines = offset === undefined ? undefined : scriptSetupCode.slice(0, offset).split(/\r\n|[\r\n\u2028\u2029]/)
+  const result = diagnostic
+    ? lines && { location: { line: lines.length, column: lines.at(-1)!.length } }
+    : detectDefinePropsReservedName(scriptSetupCode)
   if (!result) {
     return
   }

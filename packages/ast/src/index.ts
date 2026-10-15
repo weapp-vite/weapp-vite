@@ -10,6 +10,19 @@ export {
 export { parseJsLikeWithEngine } from './engine'
 export { babelAstEngine } from './engines/babel'
 export { oxcAstEngine } from './engines/oxc'
+export { analyzeCompilerScriptsWithNative, analyzeNpmChunksWithNative } from './native'
+export type {
+  NativeCompilerRegisteredComponent,
+  NativeCompilerScriptAnalysis,
+  NativeCompilerScriptImport,
+  NativeCompilerScriptInput,
+  NativeCompilerScriptSpan,
+  NativeNpmChunkAnalysis,
+  NativeNpmChunkAnalysisInput,
+  NativeNpmLocalRootFact,
+  NativeNpmPlatformApiFact,
+  NativeNpmRequireFact,
+} from './native'
 export {
   collectComponentPropsFromCode,
   collectComponentPropsWithBabel,

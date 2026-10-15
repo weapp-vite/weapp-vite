@@ -10,6 +10,14 @@ export type { DynamicImportToken, RequireCallbackToken, RequireToken } from './o
 export { collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
 export type { ScriptSetupImport } from './operations/scriptSetupImports'
 export { analyzeScript, analyzeScripts } from '@weapp-vite/ast'
+export { analyzeNpmChunksWithNative, isPlatformApiIdentifier } from '@weapp-vite/ast'
+export type {
+  NativeNpmChunkAnalysis,
+  NativeNpmChunkAnalysisInput,
+  NativeNpmLocalRootFact,
+  NativeNpmPlatformApiFact,
+  NativeNpmRequireFact,
+} from '@weapp-vite/ast'
 export { babelAstEngine, oxcAstEngine } from '@weapp-vite/ast'
 export { parseJsLikeWithEngine } from '@weapp-vite/ast'
 export type { ScriptAnalysisBatchInput, ScriptAnalysisResult } from '@weapp-vite/ast'

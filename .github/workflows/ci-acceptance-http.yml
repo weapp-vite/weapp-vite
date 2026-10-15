@@ -1,24 +1,37 @@
 name: Acceptance HTTP
 
 on:
-  pull_request:
-    paths:
-      - .github/workflows/ci-acceptance-http.yml
-      - 'packages/acceptance/**'
-      - 'packages/mcp/**'
-      - 'packages/agent-core/**'
-      - pnpm-lock.yaml
   workflow_dispatch:
+    inputs:
+      pr-number:
+        description: PR number to validate (empty uses the selected ref)
+        required: false
+        default: ''
+        type: string
 
 concurrency:
-  group: acceptance-http-${{ github.ref || github.run_id }}
+  group: acceptance-http-${{ inputs.pr-number || github.ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+      paths: '[".github/workflows/ci-acceptance-http.yml","packages/acceptance/**","packages/mcp/**","packages/agent-core/**","pnpm-lock.yaml"]'
+
   acceptance-http:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
     name: Acceptance HTTP (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -26,6 +39,12 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ${{ matrix.os }}
       node_version: 24.18.0
       timeout_minutes: 20
