@@ -44,8 +44,14 @@ describe('native report source before artifact downloads', () => {
     expect(request.mock.calls).toEqual([['/actions/runs/123']])
   })
 
-  it.each(['Approve PR checks', 'Freeze approved PR target'])('skips downloads when %s did not succeed', async (name) => {
-    const jobs = approvedJobs.map(job => ({ ...job, conclusion: job.name === name ? 'failure' : job.conclusion }))
+  it.each(approvedJobs.flatMap(({ name }) => ['failure', 'cancelled', 'timed_out', 'skipped', null].map(conclusion => ({ name, conclusion }))))('skips downloads when $name concludes $conclusion', async ({ name, conclusion }) => {
+    const jobs = approvedJobs.map(job => ({ ...job, conclusion: job.name === name ? conclusion : job.conclusion }))
+    const request = vi.fn(async endpoint => endpoint === '/actions/runs/123' ? run : { jobs })
+    expect((await resolveNativeReportSource(repository, '123', request)).shouldReport).toBe(false)
+  })
+
+  it.each(approvedJobs.map(job => job.name))('skips downloads when %s is missing', async (name) => {
+    const jobs = approvedJobs.filter(job => job.name !== name)
     const request = vi.fn(async endpoint => endpoint === '/actions/runs/123' ? run : { jobs })
     expect((await resolveNativeReportSource(repository, '123', request)).shouldReport).toBe(false)
   })
