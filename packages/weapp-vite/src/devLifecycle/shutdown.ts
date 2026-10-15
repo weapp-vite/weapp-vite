@@ -43,7 +43,8 @@ export class DevShutdownScope {
     process.on('SIGTERM', this.onSigterm)
     process.on('disconnect', this.onDisconnect)
     process.stdin?.on?.('end', this.onStdinEnd)
-    if (process.connected === false) {
+    // Bun 无 IPC 时 connected 也为 false；只有存在 IPC 能力才表示通道已断开。
+    if (process.connected === false && typeof process.disconnect === 'function') {
       this.request('disconnect')
     }
   }

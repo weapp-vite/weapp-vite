@@ -778,6 +778,25 @@ export function getFullRegressionTasks() {
 }
 
 export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
+  'bun-headless': {
+    name: 'bun-headless',
+    description: 'Bun dev output in the headless mini-program runtime',
+    tasks: () => [createHeadlessVitestTask(HEADLESS_CONFIG_PATH, path.resolve(ROOT, 'bun/runtime.test.ts'))],
+  },
+  'bun-devtools': {
+    name: 'bun-devtools',
+    description: 'Bun dev output in real WeChat DevTools',
+    tasks: () => [createVitestTask(DEVTOOLS_CONFIG_PATH, path.resolve(ROOT, 'bun/runtime.test.ts'))],
+  },
+  'bun': {
+    name: 'bun',
+    description: 'Bun CLI startup, rebuild and shutdown regression',
+    tasks: () => [{
+      label: 'bun-cli',
+      command: 'pnpm',
+      args: ['vitest', 'run', '-c', path.resolve(ROOT, 'vitest.e2e.bun.config.ts')],
+    }],
+  },
   'ci': {
     name: 'ci',
     description: 'Miniapp CI e2e baseline with aggregated failure summary',
