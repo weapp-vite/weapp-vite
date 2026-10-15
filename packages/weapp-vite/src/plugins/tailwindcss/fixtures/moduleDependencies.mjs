@@ -3,6 +3,7 @@ import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { compileTailwindV4Source, loadTailwindV4DesignSystem } from '@weapp-tailwindcss/engine'
 import { createCompiler } from 'weapp-tailwindcss/core'
 import { resolveTailwindV4Source } from 'weapp-tailwindcss/generator'
 
@@ -17,6 +18,7 @@ async function run() {
           const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'tailwind-module-dependencies-')))
           const observation = { kind, identity, phase, spelling }
           let operation = 'setup'
+          let resolvedSource
           const compiler = createCompiler({ appType: 'weapp-vite', tailwindcssBasedir: root, cssPreflight: false })
           try {
             await mkdir(path.join(root, 'src'))
@@ -46,6 +48,7 @@ async function run() {
             }
             operation = 'resolve-source'
             const resolved = await resolveTailwindV4Source(request.sourceOptions)
+            resolvedSource = resolved
             observation.sourceHasModule = resolved.css.includes(`@${kind}`)
             observation.sourceBase = path.relative(root, resolved.base).replaceAll('\\', '/')
             operation = 'initial'
@@ -74,6 +77,25 @@ async function run() {
               .replaceAll(process.cwd().replaceAll('\\', '/'), '<repository>')
               .replaceAll(os.tmpdir().replaceAll('\\', '/'), '<temporary>')
             observation.operation = operation
+            if (resolvedSource && operation === 'refreshed') {
+              const source = { ...resolvedSource, baseFallbacks: [] }
+              observation.sourceCss = source.css
+                .replaceAll(root.replaceAll('\\', '/'), '<fixture>')
+                .replaceAll(root, '<fixture>')
+              for (const [stage, generate] of [['compile', compileTailwindV4Source], ['design', loadTailwindV4DesignSystem]]) {
+                try {
+                  await generate(source, { cache: false })
+                  observation[`${stage}Primary`] = 'success'
+                }
+                catch (cause) {
+                  observation[`${stage}Primary`] = String(cause?.stack ?? cause)
+                    .replaceAll('\\', '/')
+                    .replaceAll(root.replaceAll('\\', '/'), '<fixture>')
+                    .replaceAll(process.cwd().replaceAll('\\', '/'), '<repository>')
+                    .replaceAll(os.tmpdir().replaceAll('\\', '/'), '<temporary>')
+                }
+              }
+            }
           }
           finally {
             await compiler.dispose()
