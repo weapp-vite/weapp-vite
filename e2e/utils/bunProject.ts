@@ -1,5 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- Bun CLI 回归使用 execa 运行真实子进程。 */
-import { cp, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
@@ -16,7 +16,14 @@ export async function createBunProject() {
   try {
     await cp(path.join(ROOT, 'e2e-apps/github-issues/fixtures/issue-1222'), project, { recursive: true })
     await rm(path.join(project, 'node_modules'), { recursive: true, force: true })
-    await symlink(path.join(ROOT, 'e2e-apps/github-issues/node_modules'), path.join(project, 'node_modules'), 'junction')
+    // 由 pnpm 为独立 fixture 生成依赖链接和 CLI shim，避免 Windows 穿过整目录 junction 后解析错误。
+    const packagePath = path.relative(project, path.join(ROOT, 'packages/weapp-vite')).split(path.sep).join('/')
+    await execa('pnpm', ['add', '--ignore-workspace', '--offline', '--ignore-scripts', '--lockfile=false', `weapp-vite@link:${packagePath}`], {
+      cwd: project,
+      env: createDevProcessEnv(),
+      extendEnv: false,
+      timeout: 30_000,
+    })
     return project
   }
   catch (error) {
