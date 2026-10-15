@@ -12,6 +12,8 @@ it('tracks and reloads config/plugin dependencies through the public compiler in
     kind: string
     identity: string
     phase: string
+    spelling: string
+    error?: string
     dependencies: string[]
     initialWidth: boolean
     refreshedWidth: boolean
@@ -19,9 +21,13 @@ it('tracks and reloads config/plugin dependencies through the public compiler in
     refreshedCandidate: boolean
     staleCandidate: boolean
   }[]
-  expect(observations).toHaveLength(8)
+  expect(observations).toHaveLength(16)
   for (const observation of observations) {
-    expect.soft(observation.dependencies, `${observation.kind}/${observation.identity}/${observation.phase}`).toContain(`src/${observation.kind}.ts`)
-    expect.soft(observation, `${observation.kind}/${observation.identity}/${observation.phase}`).toMatchObject({ initialWidth: true, refreshedWidth: true, staleWidth: false, refreshedCandidate: true, staleCandidate: false })
+    const context = JSON.stringify(observation)
+    expect.soft(observation.error, context).toBeUndefined()
+    expect.soft(observation, context).toMatchObject({ dependencies: expect.arrayContaining([`src/${observation.kind}.ts`]), sourceHasModule: true, moduleInvalidation: true, initialWidth: true, refreshedWidth: true, staleWidth: false, refreshedCandidate: true, staleCandidate: false })
+    if (observation.phase === 'introduced') {
+      expect.soft(observation, context).toMatchObject({ entryInvalidation: true })
+    }
   }
 }, 35_000)
