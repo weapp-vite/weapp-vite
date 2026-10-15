@@ -1,6 +1,6 @@
 import type { InlineConfig } from 'vite'
 import { rm, writeFile } from 'node:fs/promises'
-import path from 'node:path'
+import path from 'pathe'
 import { expect, it } from 'vitest'
 import { CompilerHmrResyncError } from '../compilerPlugin/hmr'
 import { fixture, observations } from './snapshotGeneration/fixture'

@@ -28,10 +28,11 @@ it('locates only built SPA assets while standalone watch prefers the optional so
   expect(resolveDashboardClientAssets(cwd)).toBe(clientRoot)
   expect(resolveDashboardRoot({ cwd })).toEqual({ root: clientRoot })
   expect(resolveDashboardRoot({ cwd, watch: true })).toEqual({ root: packageRoot, configFile: path.join(packageRoot, 'vite.config.ts') })
-  expect(resolveDashboardInstallation({ cwd })).toEqual({ root: clientRoot, packageJsonPath: path.join(packageRoot, 'package.json') })
+  const packageJsonPath = await fs.realpath(path.join(packageRoot, 'package.json'))
+  expect(resolveDashboardInstallation({ cwd })).toEqual({ root: clientRoot, packageJsonPath })
   expect(resolveDashboardInstallation({ cwd, watch: true })).toEqual({
     root: packageRoot,
     configFile: path.join(packageRoot, 'vite.config.ts'),
-    packageJsonPath: path.join(packageRoot, 'package.json'),
+    packageJsonPath,
   })
 })

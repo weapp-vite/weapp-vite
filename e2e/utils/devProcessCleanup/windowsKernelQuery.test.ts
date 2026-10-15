@@ -6,7 +6,7 @@ import { sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtools
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { windowsKernelProcessQuery, windowsLegacyProcessStarted } from './windowsKernelQuery'
 import { parseWindowsProcessRows } from './windowsProcessRows'
-import { createWindowsKernelProcessQueryCommand, createWindowsProcessQueryCommand, parseWindowsQueryTrace } from './windowsQueryTrace'
+import { createWindowsKernelProcessQueryCommand, createWindowsProcessQueryCommand, parseWindowsQueryTrace, reportWindowsQueryTrace } from './windowsQueryTrace'
 
 it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 0x100000000])('rejects an invalid PID before dispatch: %s', (pid) => {
   expect(() => windowsKernelProcessQuery([pid])).toThrow(TypeError)
@@ -43,13 +43,15 @@ function row(values: unknown[], pid: number): WindowsRow {
 // 本地 Unix 无法证明 Windows Interop；Windows CI 用同一仍持有的 worker 核验旧身份精度。
 it.runIf(process.platform === 'win32')('matches the held worker CIM identity with full and filtered native snapshots', async () => {
   const timeout = resolveWechatInspectionTimeout('win32')
-  const query = async (command: string) => {
-    const result = await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command], { timeout, windowsHide: true })
+  const query = async (label: 'snapshot' | 'identities', command: string) => {
+    const result = await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command], { timeout, windowsHide: true, reject: false })
+    reportWindowsQueryTrace(label, result)
+    expect({ exitCode: result.exitCode, timedOut: result.timedOut, signal: result.signal }, `${label}: ${JSON.stringify(parseWindowsQueryTrace(result.stderr))}`).toEqual({ exitCode: 0, timedOut: false, signal: undefined })
     return { result, rows: parseWindowsProcessRows(result.stdout) }
   }
-  const full = await query(createWindowsKernelProcessQueryCommand(undefined, true))
-  const filtered = await query(createWindowsKernelProcessQueryCommand([process.pid], false))
-  const legacy = await query(createWindowsProcessQueryCommand(` -Filter 'ProcessId=${process.pid}'`, false))
+  const full = await query('snapshot', createWindowsKernelProcessQueryCommand(undefined, true))
+  const filtered = await query('identities', createWindowsKernelProcessQueryCommand([process.pid], true))
+  const legacy = await query('identities', createWindowsProcessQueryCommand(` -Filter 'ProcessId=${process.pid}'`, true))
   const first = row(full.rows, process.pid)
   const second = row(filtered.rows, process.pid)
   const prior = row(legacy.rows, process.pid)

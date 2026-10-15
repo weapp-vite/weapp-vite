@@ -10,6 +10,11 @@ let directory: string
 let bundle: string
 let selected: string
 
+// lsof 映像路径遵循 macOS 协议；磁盘 fixture 仍使用当前系统路径。
+function image(file: string) {
+  return `/protected/${path.basename(file)}`
+}
+
 function inventory(file: string, device: bigint, inode: bigint) {
   return { stdout: `p21\0\nftxt\0tREG\0D0x${device.toString(16)}\0i${inode}\0n${file}\0\n`, stderr: '', exitCode: 0 }
 }
@@ -34,18 +39,18 @@ describe('protected text image identity', () => {
     const unrelated = path.join(directory, 'protected-data')
     await fs.writeFile(unrelated, '')
     const stat = await fs.stat(unrelated, { bigint: true })
-    command.mockResolvedValue(inventory(unrelated, stat.dev, stat.ino))
+    command.mockResolvedValue(inventory(image(unrelated), stat.dev, stat.ino))
     const verify = createProtectedImageVerifier(await fs.realpath(bundle))
-    await verify(21, unrelated)
-    await verify(21, unrelated)
+    await verify(21, image(unrelated))
+    await verify(21, image(unrelated))
     expect(command).toHaveBeenCalledTimes(1)
   })
 
   it('rejects an installation image hidden behind an inaccessible alias', async () => {
     const stat = await fs.stat(selected, { bigint: true })
     const alias = path.join(directory, 'protected-alias')
-    command.mockResolvedValue(inventory(alias, stat.dev, stat.ino))
-    await expect(createProtectedImageVerifier(await fs.realpath(bundle))(21, alias)).rejects.toThrow('still has a live process')
+    command.mockResolvedValue(inventory(image(alias), stat.dev, stat.ino))
+    await expect(createProtectedImageVerifier(await fs.realpath(bundle))(21, image(alias))).rejects.toThrow('still has a live process')
   })
 
   it('does not follow installation symlinks into an unrelated bundle', async () => {
@@ -53,8 +58,8 @@ describe('protected text image identity', () => {
     await fs.writeFile(unrelated, '')
     await fs.symlink(unrelated, path.join(bundle, 'external'), 'file')
     const stat = await fs.stat(unrelated, { bigint: true })
-    command.mockResolvedValue(inventory(unrelated, stat.dev, stat.ino))
-    await createProtectedImageVerifier(await fs.realpath(bundle))(21, unrelated)
+    command.mockResolvedValue(inventory(image(unrelated), stat.dev, stat.ino))
+    await createProtectedImageVerifier(await fs.realpath(bundle))(21, image(unrelated))
   })
 
   it('preserves failure when the selected installation cannot be fully inspected', async () => {

@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import path from 'node:path'
+import path from 'pathe'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { CompilerHmrHost, CompilerHmrResyncError, compilerSourceId, getCompilerRawSnapshot } from '../../plugins/compilerPlugin/hmr'
 import { readCompilerRawInput } from '../../plugins/compilerPlugin/rawInputs'
