@@ -31,12 +31,12 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/react": "catalog:",
-    "execa": "^10.1.0",
+    "execa": "^10.1.1",
     "miniprogram-api-typings": "catalog:",
     "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "~5.0.3",
+    "vitest": "~5.0.4",
     "weapp-vite": "workspace:*"
   }
 }

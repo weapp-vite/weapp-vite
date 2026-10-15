@@ -159,48 +159,6 @@ exports[`worker-shared > dist > theme.json 1`] = `
 }"
 `;
 
-exports[`worker-shared > dist > workers/hello.js 1`] = `
-"const require_util = require("./util-56X7Zw3b.js");
-//#region test/fixture-projects/weapp-vite/worker-shared/src/workers/hello.ts
-worker.onMessage((res) => {
-	console.log(res, require_util.hello);
-});
-//#endregion
-"
-`;
-
-exports[`worker-shared > dist > workers/index.js 1`] = `
-"//#region \\0rolldown/runtime.js
-var __commonJSMin = (cb, mod) => () => (mod || (cb((mod = { exports: {} }).exports, mod), cb = null), mod.exports);
-//#endregion
-const require_util = require("./util-56X7Zw3b.js");
-//#endregion
-//#region test/fixture-projects/weapp-vite/worker-shared/src/workers/index.js
-var utils = (/* @__PURE__ */ __commonJSMin(((exports, module) => {
-	module.exports = { a: 1 };
-})))();
-worker.onMessage((res) => {
-	console.log(res, utils, require_util.hello);
-});
-//#endregion
-"
-`;
-
-exports[`worker-shared > dist > workers/util-56X7Zw3b.js 1`] = `
-"//#region test/fixture-projects/weapp-vite/worker-shared/src/utils/util.ts
-function hello() {
-	return "world";
-}
-//#endregion
-Object.defineProperty(exports, "hello", {
-	enumerable: true,
-	get: function() {
-		return hello;
-	}
-});
-"
-`;
-
 exports[`worker-shared > dist 1`] = `
 [
   "app.js",
@@ -224,8 +182,5 @@ exports[`worker-shared > dist 1`] = `
   "pages/index/xx.wxs",
   "sitemap.json",
   "theme.json",
-  "workers/hello.js",
-  "workers/index.js",
-  "workers/util-56X7Zw3b.js",
 ]
 `;

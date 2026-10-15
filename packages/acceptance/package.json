@@ -45,7 +45,7 @@
     "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\""
   },
   "dependencies": {
-    "execa": "10.1.0",
+    "execa": "10.1.1",
     "zod": "catalog:"
   },
   "devDependencies": {

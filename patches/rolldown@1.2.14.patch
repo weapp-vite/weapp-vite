@@ -1,7 +1,7 @@
-diff --git a/dist/shared/bindingify-input-options-C0gEvtnB.mjs b/dist/shared/bindingify-input-options-C0gEvtnB.mjs
+diff --git a/dist/shared/bindingify-input-options-UCGox0BH.mjs b/dist/shared/bindingify-input-options-UCGox0BH.mjs
 index ecc6c6390..f684b33ba 100644
---- a/dist/shared/bindingify-input-options-C0gEvtnB.mjs
-+++ b/dist/shared/bindingify-input-options-C0gEvtnB.mjs
+--- a/dist/shared/bindingify-input-options-UCGox0BH.mjs
++++ b/dist/shared/bindingify-input-options-UCGox0BH.mjs
 @@ -770,6 +770,135 @@ function collectChangedBundle(changed, bundle) {
  	};
  }
