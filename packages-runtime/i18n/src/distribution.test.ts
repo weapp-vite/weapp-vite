@@ -1,6 +1,7 @@
 import type { I18nCatalog } from './types'
 import { promises as fs } from 'node:fs'
 import { createRequire } from 'node:module'
+import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -23,15 +24,20 @@ describe('miniprogram distribution', () => {
     vi.stubGlobal('Page', vi.fn(options => options))
     const directory = path.resolve(import.meta.dirname, '../dist/miniprogram')
     const files = (await fs.readdir(directory)).sort()
-    const source = await fs.readFile(path.join(directory, 'index.js'), 'utf8')
-
     expect(files).toEqual(['index.js', 'package.json'])
-    expect(source).not.toContain('@weapp-core/constants')
-
-    const require = createRequire(import.meta.url)
-    const runtime = require(path.join(directory, 'index.js')) as typeof import('./index')
-    const instance = runtime.createI18n(catalog)
-    expect(instance.global.t('title')).toBe('标题')
-    expect(instance.behavior).toBeTruthy()
+    const isolated = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-i18n-distribution-'))
+    try {
+      await fs.cp(directory, isolated, { recursive: true })
+      const entry = path.join(isolated, 'index.js')
+      const require = createRequire(entry)
+      const runtime = require(entry) as typeof import('./index')
+      const instance = runtime.createI18n(catalog)
+      expect(instance.global.t('title')).toBe('标题')
+      expect(instance.behavior).toBeTruthy()
+      expect(require.cache[require.resolve(entry)]?.children).toEqual([])
+    }
+    finally {
+      await fs.rm(isolated, { recursive: true, force: true })
+    }
   })
 })

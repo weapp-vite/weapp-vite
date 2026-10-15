@@ -98,7 +98,7 @@ Hub 的 `/__devframes/__mcp` 聚合端点保持关闭，但与独立模式一样
 
 `weapp-vite/dashboard` 是 Node 端共享核心；CLI 独立工作台与 Vite DevTools 复用同一个 `DevframeDefinition` 和 `@weapp-vite/dashboard` 面板。可选适配器位于 `weapp-vite/dashboard/vite`，使用官方 `createPluginFromDevframe`，不会由普通包入口或 CLI 自动加载。
 
-接入方安装 `@weapp-vite/dashboard`、`@vitejs/devtools` 和 `@vitejs/devtools-kit`。当前接入按 Vite `8.3.0`、DevTools / Kit `0.7.6`、Devframe `1.1.0` 验证；Kit 是可选 peer，宿主依赖不进入小程序产物。
+接入方安装 `@weapp-vite/dashboard`、`@vitejs/devtools` 和 `@vitejs/devtools-kit`。当前接入使用 Vite `8.3.4`、DevTools / Kit `0.7.6`、Devframe `1.2.5`；Kit 是可选 peer，宿主依赖不进入小程序产物。
 
 ```ts
 import type { DevToolsConfig } from '@vitejs/devtools/config'

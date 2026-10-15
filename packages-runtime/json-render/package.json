@@ -57,7 +57,7 @@
     "wevu": "workspace:*"
   },
   "dependencies": {
-    "@json-render/core": "0.21.0",
+    "@json-render/core": "0.21.1",
     "@wevu/json-render-components": "workspace:*",
     "zod": "catalog:"
   },
