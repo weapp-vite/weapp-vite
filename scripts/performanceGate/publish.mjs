@@ -74,40 +74,35 @@ export async function publishComment(target, body, get = request, smokeDescripti
   return true
 }
 
-async function smokeStatus(target) {
+/** 合并手动与原生运行的时间顺序，并遍历全部子任务以读取最新冒烟结论。 */
+export async function smokeStatus(target, { get = request, readContext = downloadPrContext, repository = process.env.GITHUB_REPOSITORY } = {}) {
   if (!target.prNumber) {
     return '未运行'
   }
-  const repo = await request('')
-  const result = await request('/actions/workflows/ci-performance.yml/runs?event=workflow_dispatch&per_page=100')
-  for (const run of result.workflow_runs ?? []) {
-    if (run.name !== 'Performance Smoke' || run.head_branch !== repo.default_branch || run.head_repository?.full_name !== process.env.GITHUB_REPOSITORY) {
+  const repo = await get('')
+  const [manual, native] = await Promise.all([
+    get('/actions/workflows/ci-performance.yml/runs?event=workflow_dispatch&per_page=100'),
+    get(`/actions/workflows/ci-pr.yml/runs?event=pull_request&head_sha=${target.headSha}&per_page=100`),
+  ])
+  const runs = [...(manual.workflow_runs ?? []), ...(native.workflow_runs ?? [])].sort((a, b) => b.id - a.id)
+  for (const run of runs) {
+    const isNative = run.name === 'PR CI' && run.path === '.github/workflows/ci-pr.yml' && run.event === 'pull_request'
+    const isManual = run.name === 'Performance Smoke' && run.path === '.github/workflows/ci-performance.yml'
+      && run.event === 'workflow_dispatch' && run.head_branch === repo.default_branch && run.head_repository?.full_name === repository
+    if (!isNative && !isManual) {
       continue
     }
     try {
-      const input = await downloadPrContext({ apiUrl: process.env.GITHUB_API_URL ?? 'https://api.github.com', token: process.env.GITHUB_TOKEN, repository: process.env.GITHUB_REPOSITORY, run })
-      const context = validatePerformancePrContext(input, run, process.env.GITHUB_REPOSITORY)
-      if (context.shouldRun && context.headSha === target.headSha && context.prNumber === target.prNumber && (!target.baseSha || context.baseSha === target.baseSha)) {
-        return run.status !== 'completed' ? '运行中' : run.conclusion === 'success' ? '通过或无需冒烟' : '🔴 未通过'
-      }
-    }
-    catch {
-      // 没有可信上下文的旧运行不能用于当前 PR 的冒烟结论。
-    }
-  }
-  const native = await request('/actions/workflows/ci-pr.yml/runs?event=pull_request&per_page=100')
-  for (const run of native.workflow_runs ?? []) {
-    if (run.name !== 'PR CI' || run.path !== '.github/workflows/ci-pr.yml' || run.event !== 'pull_request') {
-      continue
-    }
-    try {
-      const input = await downloadPrContext({ apiUrl: process.env.GITHUB_API_URL ?? 'https://api.github.com', token: process.env.GITHUB_TOKEN, repository: process.env.GITHUB_REPOSITORY, run })
-      const context = validateNativePrContext(input, run, process.env.GITHUB_REPOSITORY)
-      if (context.headSha !== target.headSha || context.prNumber !== target.prNumber || (target.baseSha && context.baseSha !== target.baseSha)) {
+      const input = await readContext({ apiUrl: process.env.GITHUB_API_URL ?? 'https://api.github.com', token: process.env.GITHUB_TOKEN, repository, run })
+      const context = isNative ? validateNativePrContext(input, run, repository) : validatePerformancePrContext(input, run, repository)
+      if (!context.shouldRun || context.headSha !== target.headSha || context.prNumber !== target.prNumber || (target.baseSha && context.baseSha !== target.baseSha)) {
         continue
       }
-      const jobs = await request(`/actions/runs/${run.id}/jobs?filter=latest&per_page=100`)
-      const smoke = jobs.jobs.find(job => job.name.startsWith('Performance Smoke /') && job.steps?.some(step => step.name === 'Run correctness smoke'))
+      if (isManual) {
+        return run.status !== 'completed' ? '运行中' : run.conclusion === 'success' ? '通过或无需冒烟' : '🔴 未通过'
+      }
+      const jobs = await pages(`/actions/runs/${run.id}/jobs?filter=latest`, get, 'jobs')
+      const smoke = jobs.find(job => job.name.startsWith('Performance Smoke /') && job.steps?.some(step => step.name === 'Run correctness smoke'))
       return !smoke || smoke.status !== 'completed' ? '运行中' : smoke.conclusion === 'success' ? '通过或无需冒烟' : '🔴 未通过'
     }
     catch {

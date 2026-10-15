@@ -89,14 +89,7 @@ export async function publishNativePrReport({ repository, run, context, jobs, re
 async function main() {
   const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, 'utf8'))
   const run = await githubRequest(`/actions/runs/${event.workflow_run.id}`)
-  const jobs = []
-  for (let page = 1; ; page++) {
-    const response = await githubRequest(`/actions/runs/${run.id}/jobs?filter=latest&per_page=100&page=${page}`)
-    jobs.push(...response.jobs)
-    if (response.jobs.length < 100) {
-      break
-    }
-  }
+  const jobs = await pages(`/actions/runs/${run.id}/jobs?filter=latest`, githubRequest, 'jobs')
   const root = process.env.NATIVE_PR_ARTIFACTS || 'native-pr-artifacts'
   const readArtifact = async name => JSON.parse(await readFile(path.join(root, name), 'utf8'))
   // 拒绝/取消审批时没有冻结上下文，也没有已执行的验证任务。

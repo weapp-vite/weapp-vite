@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nativeReportJobs, publishNativePrReport } from '../.github/scripts/publish-native-pr-report.mjs'
 import { runtimeSizeSchema } from '../.github/scripts/runtime-size-schema.mjs'
 import { policy, shards, smokeMetrics } from './performanceGate/contract.mjs'
+import { smokeStatus } from './performanceGate/publish.mjs'
 
 const repository = 'example/project'
 const headSha = 'a'.repeat(40)
@@ -142,5 +143,43 @@ describe('native PR completion reporting', () => {
   it('does not confuse same-named steps in another check with the performance jobs', () => {
     const jobs = [{ name: 'Other / Build', conclusion: 'success', steps: [{ name: 'Run correctness smoke' }] }]
     expect(nativeReportJobs(jobs)).toEqual({ smoke: undefined, runtime: undefined })
+  })
+})
+
+describe('Nightly feedback for native PR smoke', () => {
+  it.each(['native-newer', 'manual-newer', 'missing-context', 'stale-context'])('selects the latest trusted run across both entries: %s', async (scenario) => {
+    const { options } = fixture()
+    const manual = { id: scenario === 'manual-newer' ? 124 : 122, name: 'Performance Smoke', path: '.github/workflows/ci-performance.yml', event: 'workflow_dispatch', head_sha: driverSha, head_branch: 'main', head_repository: { full_name: repository }, status: 'completed', conclusion: 'failure' }
+    const lateJobs = [...Array.from({ length: 100 }).fill(options.jobs[0]), { ...options.jobs[1], status: 'completed' }]
+    const get = vi.fn(async (endpoint) => {
+      if (endpoint === '') {
+        return { default_branch: 'main' }
+      }
+      if (endpoint.startsWith('/actions/workflows/ci-performance.yml/runs')) {
+        return { workflow_runs: [manual] }
+      }
+      if (endpoint.startsWith('/actions/workflows/ci-pr.yml/runs')) {
+        return { workflow_runs: [options.run] }
+      }
+      if (endpoint.startsWith('/actions/runs/123/jobs')) {
+        const page = Number(new URL(endpoint, 'https://api.example.test').searchParams.get('page'))
+        return { jobs: lateJobs.slice((page - 1) * 100, page * 100) }
+      }
+      throw new Error(`Unexpected API: ${endpoint}`)
+    })
+    const readContext = vi.fn(async ({ run }) => {
+      if (run.event === 'workflow_dispatch') {
+        return { ...options.context, runId: String(manual.id), checkoutMode: 'head', checkoutSha: headSha }
+      }
+      if (scenario === 'missing-context') {
+        throw new Error('Approval has not produced a context yet')
+      }
+      return { ...options.context, ...(scenario === 'stale-context' ? { headSha: 'd'.repeat(40) } : {}) }
+    })
+    expect(await smokeStatus({ prNumber: 42, headSha, baseSha }, { get, readContext, repository }))
+      .toBe(scenario === 'native-newer' ? '通过或无需冒烟' : '🔴 未通过')
+    if (scenario === 'native-newer') {
+      expect(get.mock.calls.some(([endpoint]) => endpoint.includes('/jobs?') && endpoint.includes('page=2'))).toBe(true)
+    }
   })
 })
