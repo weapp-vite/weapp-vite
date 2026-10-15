@@ -1,6 +1,8 @@
 # PR CI 人工批准与手动诊断
 
-新建 PR、推送新提交和重新打开 PR 时，`PR CI` 会在 PR 的 Checks 区域出现，并等待人工批准。批准前不 checkout、不安装依赖、不启动构建或测试，也没有持续轮询的报告 runner。
+新建 PR、推送新提交和重新打开 PR 时，`PR CI` 会在 PR 的 Checks 区域出现，并等待人工批准。批准前不分配 runner，不 checkout、不安装依赖、不启动构建或测试，也没有持续轮询的报告 runner。
+
+维护者通过批准数量，把有限的并发资源集中到当前关注的少数 PR；已批准的检查保留原有矩阵并行，不增加全局串行锁或固定活跃 PR 上限。AI 只验证用户或维护者选中的 PR，禁止为了“全部跑绿”批量批准无人关注的 PR，也不能批量启动独立手动诊断来绕过准入。
 
 从 PR 检查详情进入这次运行，点击 **Review deployments**，选择 `pr-ci-approval`，再点击 **Approve and deploy**。这个 GitHub 按钮只放行本轮 CI，不会部署生产环境。审批人任意一位批准即可，维护者可以批准自己的运行。
 
@@ -8,11 +10,25 @@
 
 同一 PR 的新提交会取消旧运行并重新等待批准，其他 PR 不受影响。审批绑定本轮触发事件的提交；如果等待期间 PR 或基线变化，旧运行必须停止，不能悄悄切到最新提交。统一入口只冻结并上传一份 `pr-context`，普通检查使用固定的合并候选，性能和体积比较使用固定的 PR head。候选验证任务只获取只读权限，性能评论由可信主线的独立完成报告发布。
 
+关闭 PR 会通过默认分支的 `pull_request_target: closed` 入口取消同一并发组中的旧运行；该入口全部 job 跳过，不执行候选代码、不占 runner。重新打开后需要重新批准。GitHub 取消运行和必要进程清理可能需要短暂收尾；常规检查取消后不再启动后续验证、报告或 artifact 上传，普通失败仍保留日志和产物，完整 Nightly Performance 的证据策略保持原样。
+
 ## 审批 Environment
 
-启用入口前，在仓库 **Settings → Environments** 配置 `pr-ci-approval`：required reviewers 为仓库指定的管理员和维护者，允许 self review，关闭管理员绕过，不配置 secrets、等待计时器或分支限制。仅创建同名空 Environment 不会强制人工审批，必须核验 required reviewers 保护规则。当前配置任意一位指定维护者批准即可。
+启用入口前，在仓库 **Settings → Environments** 配置 `pr-ci-approval`：required reviewers 为 `sonofmagic` 和 `daguanren21`，允许 self review，关闭管理员绕过，不配置 secrets、等待计时器或分支限制。仅创建同名空 Environment 不会强制人工审批，必须核验 required reviewers 保护规则。当前配置任意一位指定维护者批准即可。
 
-GitHub 对首次外部贡献者的原生 workflow 审核仍按仓库设置执行；它与本轮 CI 的 Environment 审批是独立门禁。
+仓库 **Settings → Actions → General** 的 fork PR 审核策略必须为 `all_external_contributors`（所有外部贡献者均需审核），配置后通过 API 回读核验。已有贡献记录的外部账号也不能通过修改 workflow 直接启动 runner。fork PR 需要先通过 GitHub 原生 workflow 审核，再通过本轮 CI 的 Environment 审批。
+
+## 原生运行的完成报告
+
+只有整体成功的原生 `PR CI` 运行会自动启动性能和体积评论报告。失败、取消、拒绝和审批过期不启动自动报告 runner，结果直接查看 PR Checks。
+
+需要为已完成的失败运行补充评论时，从默认分支显式指定运行 ID：
+
+```bash
+gh workflow run ci-performance-comment.yml --ref main -f run-id=<运行ID>
+```
+
+该入口只生成报告，不重跑验证。下载 artifact 前先核对运行来自本仓库的原生 `PR CI`、已完成、审批与冻结 job 均成功；缺少批准上下文时不发布评论。发布前继续核验冻结提交、真实子 job、分页结果及当前 PR/head/base，拒绝过期提交和旧运行覆盖新结果。自动及手动报告代码来自默认分支，入口改动需合并后再完成线上联动验收。
 
 ## 独立手动诊断与历史状态
 

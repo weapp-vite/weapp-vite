@@ -222,7 +222,7 @@ jobs:
         run: node ./scripts/create-weapp-vite-smoke.mjs
 
       - name: Upload smoke report artifact
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: create-weapp-vite-smoke-report-${{ matrix.os }}-node${{ matrix.node-version }}-${{ matrix.scope }}
@@ -231,7 +231,7 @@ jobs:
 
   report:
     name: Smoke Report
-    if: needs.pr-context.outputs.should_run == 'true' && (always() && needs.pr-context.outputs.is_pr != 'true')
+    if: needs.pr-context.outputs.should_run == 'true' && (!cancelled() && needs.pr-context.outputs.is_pr != 'true')
     needs: [pr-context, smoke]
     runs-on: ubuntu-latest
 

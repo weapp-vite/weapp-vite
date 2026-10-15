@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { appendFile, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
@@ -17,6 +17,47 @@ export function nativeReportJobs(jobs) {
   }
 }
 
+/** 自动报告只消费成功运行，手动报告必须从默认分支显式指定运行。 */
+export function nativeReportRunId(eventName, event, ref) {
+  let runId
+  if (eventName === 'workflow_dispatch' && ref === `refs/heads/${event.repository?.default_branch}`) {
+    runId = event.inputs?.['run-id']
+  }
+  else if (eventName === 'workflow_run' && event.workflow_run?.name === 'PR CI'
+    && event.workflow_run.event === 'pull_request' && event.workflow_run.conclusion === 'success') {
+    runId = event.workflow_run.id
+  }
+  else {
+    throw new Error('Native reporting requires a successful workflow_run or default-branch manual invocation')
+  }
+  if (!/^[1-9]\d*$/u.test(String(runId))) {
+    throw new Error('Invalid native PR report run ID')
+  }
+  return String(runId)
+}
+
+function validateNativeReportRun(run, repository) {
+  if (run.name !== 'PR CI' || run.path !== '.github/workflows/ci-pr.yml' || run.event !== 'pull_request'
+    || run.status !== 'completed' || run.repository?.full_name !== repository) {
+    throw new Error('Native reporting requires a completed PR CI run in this repository')
+  }
+}
+
+function hasApprovedContext(jobs) {
+  return ['Approve PR checks', 'Freeze approved PR target'].every(name => jobs.some(job => job.name === name && job.conclusion === 'success'))
+}
+
+/** 下载产物前核对真实运行和审批结果，拒绝把未批准运行作为手动报告来源。 */
+export async function resolveNativeReportSource(repository, runId, request = githubRequest) {
+  const run = await request(`/actions/runs/${runId}`)
+  validateNativeReportRun(run, repository)
+  if (String(run.id) !== String(runId)) {
+    throw new Error('Native PR report run ID mismatch')
+  }
+  const jobs = await pages(`/actions/runs/${run.id}/jobs?filter=latest`, request, 'jobs')
+  return { run, jobs, shouldReport: hasApprovedContext(jobs) }
+}
+
 async function currentPull(context, request) {
   const pull = await request(`/pulls/${context.prNumber}`)
   return pull.state === 'open' && pull.head?.sha === context.headSha && pull.base?.sha === context.baseSha
@@ -28,8 +69,9 @@ async function currentPull(context, request) {
 
 /** 独立可信报告器验证原生 PR 身份及真实子任务后才发布评论。 */
 export async function publishNativePrReport({ repository, run, context, jobs, request, readArtifact }) {
-  if (run.name !== 'PR CI' || run.path !== '.github/workflows/ci-pr.yml' || run.event !== 'pull_request' || run.status !== 'completed') {
-    throw new Error('Native reporting requires a completed PR CI run')
+  validateNativeReportRun(run, repository)
+  if (!hasApprovedContext(jobs)) {
+    return { published: false, reason: 'unapproved-run' }
   }
   validateNativePrContext(context, run, repository)
   const pull = await currentPull(context, request)
@@ -88,15 +130,20 @@ export async function publishNativePrReport({ repository, run, context, jobs, re
 
 async function main() {
   const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, 'utf8'))
-  const run = await githubRequest(`/actions/runs/${event.workflow_run.id}`)
-  const jobs = await pages(`/actions/runs/${run.id}/jobs?filter=latest`, githubRequest, 'jobs')
-  const root = process.env.NATIVE_PR_ARTIFACTS || 'native-pr-artifacts'
-  const readArtifact = async name => JSON.parse(await readFile(path.join(root, name), 'utf8'))
-  // 拒绝/取消审批时没有冻结上下文，也没有已执行的验证任务。
-  if (!jobs.some(job => job.name === 'Freeze approved PR target' && job.conclusion === 'success')) {
+  const runId = nativeReportRunId(process.env.GITHUB_EVENT_NAME, event, process.env.GITHUB_REF)
+  const repository = process.env.GITHUB_REPOSITORY
+  const { run, jobs, shouldReport } = await resolveNativeReportSource(repository, runId)
+  if (process.argv[2] === 'resolve') {
+    await appendFile(process.env.GITHUB_OUTPUT, `run_id=${runId}\nshould_report=${shouldReport}\n`)
     return
   }
-  const result = await publishNativePrReport({ repository: process.env.GITHUB_REPOSITORY, run, context: await readArtifact('pr-context/context.json'), jobs, request: githubRequest, readArtifact })
+  if (!shouldReport) {
+    process.stdout.write(`${JSON.stringify({ published: false, reason: 'unapproved-run' })}\n`)
+    return
+  }
+  const root = process.env.NATIVE_PR_ARTIFACTS || 'native-pr-artifacts'
+  const readArtifact = async name => JSON.parse(await readFile(path.join(root, name), 'utf8'))
+  const result = await publishNativePrReport({ repository, run, context: await readArtifact('pr-context/context.json'), jobs, request: githubRequest, readArtifact })
   process.stdout.write(`${JSON.stringify(result)}\n`)
 }
 

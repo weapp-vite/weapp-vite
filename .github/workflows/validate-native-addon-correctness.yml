@@ -75,11 +75,11 @@ jobs:
         run: node .tmp/pr-driver/scripts/verify-native-addon-correctness.mjs run .tmp/native-addon-correctness
 
       - name: Reject skipped, empty, or incomplete correctness results
-        if: always()
+        if: ${{ !cancelled() }}
         run: node .tmp/pr-driver/scripts/verify-native-addon-correctness.mjs report .tmp/native-addon-correctness
 
       - name: Upload only the validated portable evidence
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: native-addon-correctness-${{ matrix.os }}-${{ needs.pr-context.outputs.checkout_sha }}

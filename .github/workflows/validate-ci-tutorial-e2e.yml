@@ -79,7 +79,7 @@ jobs:
           pnpm e2e:tutorial --source "${{ matrix.source }}" --scenario "${TUTORIAL_E2E_SCENARIO}" --report-dir .tmp/tutorial-e2e-report
 
       - name: Upload tutorial report
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tutorial-e2e-${{ matrix.source }}
@@ -88,7 +88,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Append tutorial report to summary
-        if: always()
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           report=".tmp/tutorial-e2e-report/tutorial-e2e-${{ matrix.source }}.md"

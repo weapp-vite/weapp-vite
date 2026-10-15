@@ -4,9 +4,15 @@ on:
   workflow_run:
     workflows: [CI Performance, Wevu Runtime Size, Performance Smoke, Nightly Performance, PR CI]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      run-id:
+        description: 已完成的原生 PR CI 运行 ID；按需生成性能和体积评论
+        required: true
+        type: string
 
 concurrency:
-  group: ci-performance-comment-${{ github.event.workflow_run.id }}
+  group: ci-performance-comment-${{ github.event.workflow_run.id || inputs.run-id }}
   cancel-in-progress: false
 
 permissions:
@@ -127,7 +133,14 @@ jobs:
         run: node scripts/performanceGate/publish.mjs
 
   native-pr-report:
-    if: github.event.workflow_run.name == 'PR CI' && github.event.workflow_run.event == 'pull_request'
+    if: >-
+      (github.event_name == 'workflow_run'
+      && github.event.workflow_run.name == 'PR CI'
+      && github.event.workflow_run.event == 'pull_request'
+      && github.event.workflow_run.conclusion == 'success')
+      || (github.event_name == 'workflow_dispatch'
+      && github.ref_type == 'branch'
+      && github.ref_name == github.event.repository.default_branch)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -143,31 +156,40 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '24'
+      - name: Validate approved native PR report source
+        id: source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .github/scripts/publish-native-pr-report.mjs resolve
       - name: Download native pr-context
+        if: steps.source.outputs.should_report == 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: pr-context
           path: native-pr-artifacts/pr-context
           merge-multiple: false
           github-token: ${{ github.token }}
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ steps.source.outputs.run_id }}
       - name: Download native performance-smoke-report
+        if: steps.source.outputs.should_report == 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: performance-smoke-report
           path: native-pr-artifacts/performance-smoke-report
           merge-multiple: false
           github-token: ${{ github.token }}
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ steps.source.outputs.run_id }}
       - name: Download native wevu-runtime-size-report
+        if: steps.source.outputs.should_report == 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: wevu-runtime-size-report
           path: native-pr-artifacts/wevu-runtime-size-report
           merge-multiple: false
           github-token: ${{ github.token }}
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ steps.source.outputs.run_id }}
       - name: Publish native PR performance and size results
+        if: steps.source.outputs.should_report == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           NATIVE_PR_ARTIFACTS: native-pr-artifacts

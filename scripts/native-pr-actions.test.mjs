@@ -104,11 +104,12 @@ describe('native approval workflow graph', () => {
 
   it('holds every validation behind exactly one protected approval with no checkout before approval', async () => {
     const workflow = await read('ci-pr.yml')
-    expect(workflow.on).toEqual({ pull_request: { types: ['opened', 'synchronize', 'reopened'] } })
+    expect(workflow.on).toEqual({ pull_request: { types: ['opened', 'synchronize', 'reopened'] }, pull_request_target: { types: ['closed'] } })
     expect(workflow.concurrency).toEqual({ 'group': 'pr-ci-${{ github.event.pull_request.number }}', 'cancel-in-progress': true })
     expect(workflow.permissions).toEqual({ 'contents': 'read', 'pull-requests': 'read', 'actions': 'read' })
     const { approval, plan, ...checks } = workflow.jobs
     expect(approval.environment).toBe('pr-ci-approval')
+    expect(approval.if).toBe('github.event_name == \'pull_request\'')
     expect(approval.needs).toBeUndefined()
     expect(approval.steps).toHaveLength(1)
     expect(approval.steps[0].uses).toBeUndefined()
@@ -148,5 +149,12 @@ describe('native approval workflow graph', () => {
     expect(job.steps[0].with.ref).toBe('${{ github.event.repository.default_branch }}')
     const downloads = job.steps.filter(step => step.uses?.startsWith('actions/download-artifact@'))
     expect(downloads.map(step => step.with.path)).toEqual(['native-pr-artifacts/pr-context', 'native-pr-artifacts/performance-smoke-report', 'native-pr-artifacts/wevu-runtime-size-report'])
+    const source = job.steps.find(step => step.id === 'source')
+    expect(source.run).toBe('node .github/scripts/publish-native-pr-report.mjs resolve')
+    expect(job.steps.indexOf(source)).toBeLessThan(job.steps.indexOf(downloads[0]))
+    for (const download of downloads) {
+      expect(download.if).toBe('steps.source.outputs.should_report == \'true\'')
+      expect(download.with['run-id']).toBe('${{ steps.source.outputs.run_id }}')
+    }
   })
 })

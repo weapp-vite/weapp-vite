@@ -25,14 +25,19 @@ const expression = value => `$${'{{'} ${value} }}`
 const readWorkflow = async name => parse(await readFile(path.join(workflowRoot, name), 'utf8'))
 
 describe('manual PR workflow entry points', () => {
-  it('has exactly one native PR entry and no pull_request_target entry', async () => {
+  it('has one native PR entry and only a close-event target entry', async () => {
     for (const name of await readdir(workflowRoot)) {
       if (!name.endsWith('.yml')) {
         continue
       }
       const workflow = await readWorkflow(name)
       expect(Boolean(workflow.on.pull_request), name).toBe(name === 'ci-pr.yml')
-      expect(workflow.on, name).not.toHaveProperty('pull_request_target')
+      if (name === 'ci-pr.yml') {
+        expect(workflow.on.pull_request_target).toEqual({ types: ['closed'] })
+      }
+      else {
+        expect(workflow.on, name).not.toHaveProperty('pull_request_target')
+      }
     }
   })
 

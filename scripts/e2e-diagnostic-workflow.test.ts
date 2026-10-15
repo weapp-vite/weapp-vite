@@ -144,7 +144,7 @@ describe('bounded HMR workflow diagnosis', () => {
       timeout_minutes: 40,
     })
     const reusable = parse(await readFile(new URL('../.github/workflows/reusable-node-command.yml', import.meta.url), 'utf8')) as { jobs: { run: { steps: Array<{ name?: string, if?: string }> } } }
-    expect(reusable.jobs.run.steps.find(step => step.name === 'Upload artifact')?.if).toContain('always()')
+    expect(reusable.jobs.run.steps.find(step => step.name === 'Upload artifact')?.if).toContain('!cancelled()')
   })
 
   it('isolates plugin watch readiness from broader regressions on every OS and Node version', async () => {

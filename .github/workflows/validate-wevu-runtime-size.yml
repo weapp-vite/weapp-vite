@@ -95,7 +95,7 @@ jobs:
             --check
 
       - name: Upload runtime size report
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wevu-runtime-size-report
@@ -103,7 +103,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload complete runtime size report
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wevu-runtime-size-report-full

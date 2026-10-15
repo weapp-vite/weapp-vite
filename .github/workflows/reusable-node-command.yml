@@ -188,7 +188,7 @@ jobs:
           CODECOV_TOKEN: ${{ inputs.pr_number == '' && secrets.CODECOV_TOKEN || '' }}
 
       - name: Upload artifact
-        if: ${{ always() && inputs.artifact_name != '' && inputs.artifact_path != '' }}
+        if: ${{ !cancelled() && inputs.artifact_name != '' && inputs.artifact_path != '' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ inputs.artifact_name }}

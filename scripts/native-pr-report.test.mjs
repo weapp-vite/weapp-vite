@@ -34,12 +34,14 @@ function sizeReport() {
 }
 
 function fixture() {
-  const run = { id: 123, name: 'PR CI', event: 'pull_request', path: '.github/workflows/ci-pr.yml', status: 'completed', conclusion: 'failure', head_sha: headSha, pull_requests: [pull] }
+  const run = { id: 123, name: 'PR CI', event: 'pull_request', path: '.github/workflows/ci-pr.yml', status: 'completed', conclusion: 'failure', head_sha: headSha, pull_requests: [pull], repository: { full_name: repository } }
   const context = { schemaVersion: 1, event: 'pull_request', repository, runId: '123', driverSha, isPr: true, shouldRun: true, prNumber: 42, headSha, baseSha, headRef: 'feature', baseRef: 'main', headRepository: 'contributor/project', checkoutMode: 'merge', checkoutSha: driverSha, selections: { 'ci-performance': true, 'wevu-runtime-size': true } }
   const jobs = [
     { name: 'CI / Build and Test (windows-latest / Node 22)', conclusion: 'failure', steps: [] },
     { name: 'Performance Smoke / Performance Smoke', conclusion: 'success', html_url: 'https://example.test/smoke', steps: [{ name: 'Run correctness smoke', conclusion: 'success' }] },
     { name: 'Wevu Runtime Size / Runtime Size (Ubuntu / Node 24)', conclusion: 'success', html_url: 'https://example.test/size', steps: [] },
+    { name: 'Approve PR checks', conclusion: 'success' },
+    { name: 'Freeze approved PR target', conclusion: 'success' },
   ]
   const state = { pull, baseSha, runs: [run], comments: [], files: [{ filename: 'README.md' }], writes: [], artifacts: { 'performance-smoke-report/smoke.json': smokeReport(), 'wevu-runtime-size-report/report-full.json': sizeReport() } }
   const request = vi.fn(async (endpoint, body) => {
@@ -77,6 +79,15 @@ function fixture() {
 }
 
 describe('native PR completion reporting', () => {
+  it.each(['Approve PR checks', 'Freeze approved PR target'])('does not read artifacts or publish without successful %s', async (name) => {
+    const { state, options } = fixture()
+    options.jobs.find(job => job.name === name).conclusion = 'failure'
+    expect(await publishNativePrReport(options)).toEqual({ published: false, reason: 'unapproved-run' })
+    expect(state.writes).toHaveLength(0)
+    expect(options.readArtifact).not.toHaveBeenCalled()
+    expect(options.request).not.toHaveBeenCalled()
+  })
+
   it('publishes successful smoke and size despite another job failing', async () => {
     const { state, options } = fixture()
     expect(await publishNativePrReport(options)).toEqual({ published: true })

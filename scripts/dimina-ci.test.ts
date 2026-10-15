@@ -28,7 +28,7 @@ it('keeps explicit SDK preparation, strict browser acceptance and bounded cache/
   expect(commandIndex('pnpm --filter @weapp-vite/dimina-playground cache:sdk restore')).toBeLessThan(setup)
   expect(commandIndex('pnpm --filter @weapp-vite/dimina-playground cache:sdk save')).toBeGreaterThan(setup)
   const evidence = steps.find(step => step.uses?.startsWith('actions/upload-artifact@'))!
-  expect(evidence.if).toBe('always()')
+  expect(evidence.if).toBe('$' + '{{ !cancelled() }}')
   expect(evidence.with?.['include-hidden-files']).toBe(true)
   expect(String(evidence.with?.path).trim().split('\n')).toEqual([
     'docs/reports/*-e2e-dimina-*-suite-report/**',
