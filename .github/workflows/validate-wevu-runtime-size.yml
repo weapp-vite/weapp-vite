@@ -1,0 +1,113 @@
+name: Validate Wevu Runtime Size
+on:
+  workflow_call:
+    inputs:
+      pr_context:
+        required: true
+        type: string
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-frozen-pr-context.yml
+    with:
+      pr_context: ${{ inputs.pr_context }}
+      profile: wevu-runtime-size
+
+  measure:
+    needs: pr-context
+    if: needs.pr-context.outputs.is_pr == 'true' && needs.pr-context.outputs.should_run == 'true' && !startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version')
+    name: Runtime Size (Ubuntu / Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: head
+          repository: ${{ needs.pr-context.outputs.head_repository }}
+          ref: ${{ needs.pr-context.outputs.head_sha }}
+          persist-credentials: false
+
+      - name: Check out baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: baseline
+          ref: ${{ needs.pr-context.outputs.base_sha }}
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: head/package.json
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: |
+            head/pnpm-lock.yaml
+            baseline/pnpm-lock.yaml
+
+      - name: Install head dependencies
+        working-directory: head
+        run: pnpm install --frozen-lockfile
+
+      - name: Install baseline dependencies
+        working-directory: baseline
+        run: pnpm install --frozen-lockfile
+
+      - name: Build head runtime dependencies
+        working-directory: head
+        run: pnpm --filter '@weapp-vite/web...' build
+
+      - name: Build baseline runtime dependencies
+        working-directory: baseline
+        run: pnpm --filter '@weapp-vite/web...' build
+
+      # 主线可信评论脚本升级前仍读取 v2 投影；完整矩阵保留在独立 artifact 与 job summary。
+      - name: Measure head and baseline
+        working-directory: head
+        env:
+          BASE_SHA: ${{ needs.pr-context.outputs.base_sha }}
+          HEAD_SHA: ${{ needs.pr-context.outputs.head_sha }}
+          PR_NUMBER: ${{ needs.pr-context.outputs.pr_number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          pnpm exec tsx scripts/report-wevu-runtime-size.ts \
+            --root=../baseline \
+            --output-json=../runtime-size-artifact/baseline.json
+          pnpm exec tsx scripts/report-wevu-runtime-size.ts \
+            --root=. \
+            --baseline-json=../runtime-size-artifact/baseline.json \
+            --output-json=../runtime-size-artifact/head.json \
+            --output-markdown=../runtime-size-artifact/report.md \
+            --artifact-json=../runtime-size-artifact/report-full.json \
+            --legacy-artifact-json=../runtime-size-artifact/report.json \
+            --repository="$REPOSITORY" \
+            --pr-number="$PR_NUMBER" \
+            --head-sha="$HEAD_SHA" \
+            --base-sha="$BASE_SHA" \
+            --github-summary \
+            --check
+
+      - name: Upload runtime size report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: wevu-runtime-size-report
+          path: runtime-size-artifact
+          if-no-files-found: error
+
+      - name: Upload complete runtime size report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: wevu-runtime-size-report-full
+          path: |
+            runtime-size-artifact/report-full.json
+            runtime-size-artifact/report.md
+          if-no-files-found: error

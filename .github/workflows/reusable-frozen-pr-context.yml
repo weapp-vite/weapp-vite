@@ -1,0 +1,58 @@
+name: Read Frozen PR Context
+on:
+  workflow_call:
+    inputs:
+      pr_context:
+        required: true
+        type: string
+      profile:
+        required: true
+        type: string
+    outputs:
+      is_pr:
+        value: ${{ jobs.resolve.outputs.is_pr }}
+      should_run:
+        value: ${{ jobs.resolve.outputs.should_run }}
+      pr_number:
+        value: ${{ jobs.resolve.outputs.pr_number }}
+      head_sha:
+        value: ${{ jobs.resolve.outputs.head_sha }}
+      base_sha:
+        value: ${{ jobs.resolve.outputs.base_sha }}
+      head_ref:
+        value: ${{ jobs.resolve.outputs.head_ref }}
+      base_ref:
+        value: ${{ jobs.resolve.outputs.base_ref }}
+      head_repository:
+        value: ${{ jobs.resolve.outputs.head_repository }}
+      checkout_sha:
+        value: ${{ jobs.resolve.outputs.checkout_sha }}
+permissions:
+  contents: read
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      is_pr: ${{ steps.context.outputs.is_pr }}
+      should_run: ${{ steps.context.outputs.should_run }}
+      pr_number: ${{ steps.context.outputs.pr_number }}
+      head_sha: ${{ steps.context.outputs.head_sha }}
+      base_sha: ${{ steps.context.outputs.base_sha }}
+      head_ref: ${{ steps.context.outputs.head_ref }}
+      base_ref: ${{ steps.context.outputs.base_ref }}
+      head_repository: ${{ steps.context.outputs.head_repository }}
+      checkout_sha: ${{ steps.context.outputs.checkout_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - id: context
+        env:
+          PR_FROZEN_CONTEXT: ${{ inputs.pr_context }}
+          PR_PROFILE: ${{ inputs.profile }}
+        run: node .github/scripts/native-pr-context.mjs

@@ -30,69 +30,12 @@ jobs:
       statuses: write
     with:
       pr_number: ${{ inputs.pr-number || '' }}
-      paths: '["packages/agent-*/**","packages/acceptance/**","packages/mcp/**","packages/devtools-runtime/**","packages/weapp-vite/**","packages/weapp-ide-cli/**","packages/agent-cli/**","scripts/weapp-agent/**","skills/weapp-acceptance/**","pnpm-lock.yaml",".github/workflows/ci-acceptance.yml"]'
-
-  compatibility:
+      profile: ci-acceptance
+  validation:
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.scope == 'full')
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ needs.pr-context.outputs.checkout_sha }}
-          persist-credentials: false
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm --filter weapp-vite... --filter @weapp-agent/cli... -r build
-      - run: pnpm --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-agent/cli --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --filter @weapp-vite/devtools-runtime -r typecheck
-      - if: matrix.os != 'windows-latest'
-        run: pnpm --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-agent/cli --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --filter @weapp-vite/devtools-runtime -r test
-      # Windows 文件系统与进程互斥测试共享 runner 容量；保留用例内部并发和原始预算。
-      - if: matrix.os == 'windows-latest'
-        run: pnpm --workspace-concurrency=1 --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-agent/cli --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --filter @weapp-vite/devtools-runtime -r test --no-file-parallelism
-      - run: pnpm --filter @weapp-agent/core test:types
-      - run: node scripts/weapp-agent/smoke-pack.mjs
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22.18.0
-      - run: node scripts/weapp-agent/smoke-baseline.mjs
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24.11.0
-      - run: node scripts/weapp-agent/smoke-baseline.mjs
-
-  windows-runtime-diagnostic:
-    needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.scope == 'windows-runtime-diagnostic')
-    name: Windows acceptance runtime (Node ${{ matrix.node-version }})
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [22, 24]
-    uses: ./.github/workflows/reusable-node-command.yml
+    if: needs.pr-context.outputs.should_run == 'true'
+    uses: ./.github/workflows/validate-ci-acceptance.yml
     with:
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
-      runs_on: windows-latest
-      node_version: '${{ matrix.node-version }}'
-      timeout_minutes: 25
-      build_command: pnpm exec turbo run build --filter=@weapp-agent/mini-program...
-      main_command: |
-        pnpm --filter @weapp-agent/mini-program typecheck
-        pnpm --filter @weapp-agent/mini-program exec vitest run --configLoader bundle --coverage.enabled --maxWorkers=50% test/acceptance.test.ts --reporter=default --reporter=json --outputFile=../../.tmp/acceptance-runtime-report.json
-      artifact_name: acceptance-runtime-windows-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}
-      artifact_path: .tmp/acceptance-runtime-report.json
+      pr_context: ${{ needs.pr-context.outputs.pr_context }}
+      scope: ${{ inputs.scope || 'full' }}
     secrets: inherit

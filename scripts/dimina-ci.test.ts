@@ -1,11 +1,10 @@
-import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { globSync } from 'tinyglobby'
 import { afterEach, expect, it, vi } from 'vitest'
-import { parse } from 'yaml'
+import { readWorkflowFixture } from './workflowFixture.mjs'
 
 it('keeps explicit SDK preparation, strict browser acceptance and bounded cache/evidence in independent CI', async () => {
-  const workflow = parse(await readFile(path.resolve(import.meta.dirname, '../.github/workflows/ci-dimina.yml'), 'utf8')) as {
+  const workflow = readWorkflowFixture('ci-dimina.yml') as {
     on: { workflow_dispatch: { inputs: { diagnostics: { type: string, default: boolean } } } }
     jobs: Record<string, { steps: { 'name'?: string, 'run'?: string, 'uses'?: string, 'if'?: string, 'continue-on-error'?: boolean, 'with'?: Record<string, unknown>, 'env'?: Record<string, string> }[] }>
   }
@@ -29,7 +28,7 @@ it('keeps explicit SDK preparation, strict browser acceptance and bounded cache/
   expect(commandIndex('pnpm --filter @weapp-vite/dimina-playground cache:sdk restore')).toBeLessThan(setup)
   expect(commandIndex('pnpm --filter @weapp-vite/dimina-playground cache:sdk save')).toBeGreaterThan(setup)
   const evidence = steps.find(step => step.uses?.startsWith('actions/upload-artifact@'))!
-  expect(evidence.if).toBe('always()')
+  expect(evidence.if).toBe('$' + '{{ !cancelled() }}')
   expect(evidence.with?.['include-hidden-files']).toBe(true)
   expect(String(evidence.with?.path).trim().split('\n')).toEqual([
     'docs/reports/*-e2e-dimina-*-suite-report/**',

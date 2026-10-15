@@ -2,12 +2,13 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
+import { readWorkflowFixture } from './workflowFixture.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
 
 describe('performance reporting workflows', () => {
   it('keeps PR feedback on one read-only Ubuntu smoke with a hard deadline', async () => {
-    const workflow = parse(await readFile(path.join(root, '.github/workflows/ci-performance.yml'), 'utf8'))
+    const workflow = readWorkflowFixture('ci-performance.yml')
     expect(Object.keys(workflow.on)).toEqual(['workflow_dispatch'])
     expect(workflow.on.workflow_dispatch.inputs['pr-number']).toMatchObject({ type: 'string', required: false })
     expect(Object.keys(workflow.jobs)).toEqual(['pr-context', 'smoke'])
@@ -55,7 +56,7 @@ describe('performance reporting workflows', () => {
       ['candidate-performance.yml', 'collect', 'driver/package.json'],
       ['wevu-runtime-size.yml', 'measure', 'head/package.json'],
     ]) {
-      const workflow = parse(await readFile(path.join(root, '.github/workflows', file!), 'utf8'))
+      const workflow = readWorkflowFixture(file!)
       const setup = workflow.jobs[job!].steps.find((step: { uses?: string }) => step.uses?.startsWith('pnpm/action-setup@'))
       expect(setup.with?.version).toBeUndefined()
       expect(setup.with?.package_json_file ?? 'package.json').toBe(manifest)
@@ -104,7 +105,7 @@ describe('performance reporting workflows', () => {
 
   it('uses trusted workflow_run permissions and both source workflows', async () => {
     const workflow = parse(await readFile(path.join(root, '.github/workflows/ci-performance-comment.yml'), 'utf8'))
-    expect(workflow.on.workflow_run.workflows).toEqual(['CI Performance', 'Wevu Runtime Size', 'Performance Smoke', 'Nightly Performance'])
+    expect(workflow.on.workflow_run.workflows).toEqual(['CI Performance', 'Wevu Runtime Size', 'Performance Smoke', 'Nightly Performance', 'PR CI'])
     expect(workflow.permissions).toMatchObject({ 'actions': 'read', 'contents': 'read', 'pull-requests': 'write' })
     expect((workflow.jobs.comment.steps as Array<{ name?: string }>).some(step => step.name === 'Check out trusted reporting scripts')).toBe(true)
     const checkout = workflow.jobs.comment.steps.find((step: { name?: string }) => step.name === 'Check out trusted reporting scripts')
@@ -131,7 +132,7 @@ describe('performance reporting workflows', () => {
   })
 
   it('publishes the complete matrix and a compatibility artifact from the same measurement', async () => {
-    const workflow = parse(await readFile(path.join(root, '.github/workflows/wevu-runtime-size.yml'), 'utf8'))
+    const workflow = readWorkflowFixture('wevu-runtime-size.yml')
     expect(Object.keys(workflow.on)).toEqual(['workflow_dispatch'])
     expect(workflow.jobs.measure.needs).toBe('pr-context')
     expect(workflow.jobs.measure.if).toContain('needs.pr-context.outputs.is_pr == \'true\'')

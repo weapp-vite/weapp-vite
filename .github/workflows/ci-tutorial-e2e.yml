@@ -43,76 +43,13 @@ jobs:
       statuses: write
     with:
       pr_number: ${{ inputs.pr-number || '' }}
-      paths: '[".github/workflows/ci-tutorial-e2e.yml","e2e/tutorials/**","packages/create-weapp-vite/**","packages/weapp-vite/**","packages-runtime/wevu/**","templates/**","website/guide/index.md","website/guide/multi-platform.md","website/handbook/index.md","website/snippets/tutorial-e2e/**","scripts/project-lifecycle.mjs","package.json","pnpm-lock.yaml"]'
-
-  tutorial-e2e:
-    if: needs.pr-context.outputs.should_run == 'true'
+      profile: ci-tutorial-e2e
+  validation:
     needs: pr-context
-    name: Tutorial E2E (${{ matrix.source }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        source: ${{ fromJSON(needs.pr-context.outputs.is_pr == 'true' && '["workspace"]' || github.event_name == 'schedule' && '["workspace","npm"]' || github.event.inputs.source == 'both' && '["workspace","npm"]' || format('["{0}"]', github.event.inputs.source || 'workspace')) }}
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.pr-context.outputs.checkout_sha }}
-          persist-credentials: false
-
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install Bun for guide package-manager coverage
-        if: matrix.source == 'npm'
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: 1.4.3
-
-      - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Rebuild workspace packages
-        if: matrix.source == 'workspace'
-        run: pnpm build:pkgs:ci
-
-      - name: Check tutorial contract
-        run: pnpm e2e:tutorial:contract
-
-      - name: Install Chromium for Web runtime coverage
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Run tutorial E2E
-        env:
-          TUTORIAL_E2E_SKIP_WORKSPACE_BUILD: ${{ matrix.source == 'workspace' && '1' || '0' }}
-          TUTORIAL_E2E_SCENARIO: ${{ github.event.inputs.scenario || 'all' }}
-        run: |
-          mkdir -p .tmp/tutorial-e2e-report
-          pnpm e2e:tutorial --source "${{ matrix.source }}" --scenario "${TUTORIAL_E2E_SCENARIO}" --report-dir .tmp/tutorial-e2e-report
-
-      - name: Upload tutorial report
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: tutorial-e2e-${{ matrix.source }}
-          path: .tmp/tutorial-e2e-report
-          retention-days: 14
-          if-no-files-found: warn
-
-      - name: Append tutorial report to summary
-        if: always()
-        shell: bash
-        run: |
-          report=".tmp/tutorial-e2e-report/tutorial-e2e-${{ matrix.source }}.md"
-          if [ -f "$report" ]; then
-            cat "$report" >> "$GITHUB_STEP_SUMMARY"
-          fi
+    if: needs.pr-context.outputs.should_run == 'true'
+    uses: ./.github/workflows/validate-ci-tutorial-e2e.yml
+    with:
+      pr_context: ${{ needs.pr-context.outputs.pr_context }}
+      source: ${{ inputs.source || 'both' }}
+      scenario: ${{ inputs.scenario || 'all' }}
+    secrets: inherit

@@ -1,0 +1,96 @@
+name: Validate Dimina Web Experiment
+on:
+  workflow_call:
+    inputs:
+      pr_context:
+        required: true
+        type: string
+      diagnostics:
+        type: boolean
+        required: false
+        default: false
+permissions:
+  contents: read
+  pull-requests: read
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-frozen-pr-context.yml
+    with:
+      pr_context: ${{ inputs.pr_context }}
+      profile: ci-dimina
+
+  web:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
+    name: Dimina (${{ matrix.os }} / Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            node: 22.22.3
+          - os: windows-latest
+            node: '24'
+          - os: macos-latest
+            node: '24'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: ./.github/actions/refresh-workspace-deps
+        with:
+          build-command: pnpm --filter 'weapp-vite...' --filter '@weapp-vite/react...' build
+      - name: Compute SDK cache identity
+        id: sdk-key
+        run: pnpm --filter @weapp-vite/dimina-playground cache:key
+      - name: Restore SDK inputs and resources
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          key: ${{ steps.sdk-key.outputs.key }}
+          path: .cache/dimina/portable-sdk
+      - name: Restore SDK snapshot into isolated installation
+        run: pnpm --filter @weapp-vite/dimina-playground cache:sdk restore
+      - name: Prepare and verify Dimina SDK
+        run: pnpm --filter @weapp-vite/dimina-playground setup:dimina --reuse
+      - name: Save portable SDK snapshot without dependency links
+        run: pnpm --filter @weapp-vite/dimina-playground cache:sdk save
+      - name: Lint
+        run: pnpm --filter @weapp-vite/dimina-playground lint
+      - name: Stylelint
+        run: pnpm exec stylelint "packages-private/dimina-playground/**/*.{css,wxss,vue}"
+      - name: Typecheck
+        run: pnpm --filter @weapp-vite/dimina-playground typecheck
+      - name: Unit tests
+        run: pnpm --filter @weapp-vite/dimina-playground test
+      - name: Build selection and CI contract
+        run: pnpm exec vitest run scripts/dimina-build-selection.test.ts scripts/dimina-ci.test.ts
+      - name: Production build
+        run: pnpm --filter @weapp-vite/dimina-playground build
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Serialized browser acceptance
+        run: pnpm e2e:dimina
+        env:
+          WEAPP_VITE_E2E_DIMINA_DIAGNOSTICS: ${{ inputs.diagnostics && '1' || '0' }}
+          DEBUG: ${{ inputs.diagnostics && 'pw:browser' || '' }}
+      - name: Upload browser evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dimina-${{ matrix.os }}-${{ matrix.node }}-${{ needs.pr-context.outputs.checkout_sha }}
+          include-hidden-files: true
+          path: |
+            docs/reports/*-e2e-dimina-*-suite-report/**
+            .cache/dimina/screenshots/**
+            .cache/dimina/navigation/**
+            .cache/dimina/diagnostics/**

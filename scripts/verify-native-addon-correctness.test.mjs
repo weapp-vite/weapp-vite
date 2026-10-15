@@ -1,15 +1,13 @@
-import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
 import { baselineManifest } from './nativeAddonCorrectness/manifest.mjs'
 import { verifyNativeExports, verifyNativeReport } from './verify-native-addon-correctness.mjs'
+import { readWorkflowFixture } from './workflowFixture.mjs'
 
 const packageRoot = path.resolve('fixture-native-package')
 
 async function addonJob() {
-  const source = await readFile(new URL('../.github/workflows/native-addon-correctness.yml', import.meta.url), 'utf8')
-  return parse(source).jobs['actual-addon']
+  return readWorkflowFixture('native-addon-correctness.yml').jobs['actual-addon']
 }
 
 function successfulReport() {
@@ -164,7 +162,7 @@ describe('actual-addon CI execution contract', () => {
     const tests = steps[testsIndex]
     expect(tests.run).toBe('node .tmp/pr-driver/scripts/verify-native-addon-correctness.mjs run .tmp/native-addon-correctness')
     expect(tests.run).not.toContain('--passWithNoTests')
-    expect(steps[gateIndex].if).toBe('always()')
+    expect(steps[gateIndex].if).toBe('$' + '{{ !cancelled() }}')
     const selfTest = steps.find(step => step.run?.includes('scripts/verify-native-addon-correctness.test.mjs'))
     expect(selfTest.run).toContain('--config scripts/vitest.config.mjs')
     expect(selfTest['working-directory']).toBeUndefined()
@@ -196,7 +194,7 @@ describe('actual-addon CI execution contract', () => {
     const { steps } = await addonJob()
     const uploads = steps.filter(step => step.uses?.startsWith('actions/upload-artifact@'))
     expect(uploads).toHaveLength(1)
-    expect(uploads[0].if).toBe('always()')
+    expect(uploads[0].if).toBe('$' + '{{ !cancelled() }}')
     expect(uploads[0].with['include-hidden-files']).toBe(true)
     expect(uploads[0].with['if-no-files-found']).toBe('error')
     expect(uploads[0].with.path.trim().split('\n')).toEqual([

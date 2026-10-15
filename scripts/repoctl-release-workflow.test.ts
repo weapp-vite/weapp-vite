@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { createJiti } from 'jiti'
 import { it } from 'vitest'
 import { parse } from 'yaml'
+import { readWorkflowFixture } from './workflowFixture.mjs'
 
 interface WorkflowStep {
   'id'?: string
@@ -172,9 +173,7 @@ it('keeps the agent CLI on the stable release line', async () => {
 })
 
 it.each(['policy-pr', 'policy-full'])('runs release guards in %s before publishing', async (jobName) => {
-  const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const content = await fs.readFile(path.join(rootDir, '.github/workflows/ci-policy.yml'), 'utf8')
-  const workflow = parse(content) as { jobs?: Record<string, { with?: { main_command?: string } }> }
+  const workflow = readWorkflowFixture('ci-policy.yml') as { jobs?: Record<string, { with?: { main_command?: string } }> }
   const commands = workflow.jobs?.[jobName]?.with?.main_command ?? ''
   assert.match(commands, /^\s*pnpm test:release\s*$/m)
 })
