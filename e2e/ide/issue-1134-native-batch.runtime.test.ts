@@ -100,8 +100,9 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
       disposeTransport,
       closeSession: async () => { await miniProgram?.close() },
       stopDev: async () => {
-        settlementInput?.end()
+        // EOF 会主动触发 CLI 退出；先完成受管进程身份登记与停止，再释放父侧输入。
         await dev?.stop()
+        settlementInput?.end()
       },
     })
   }, 60_000)

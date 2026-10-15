@@ -38,4 +38,6 @@ node packages/weapp-vite/scripts/diagnose-native-host-paths.mjs
 
 原生四文件 runtime 回归的三个混合发布/恢复边界，在写入前捕获 profile 游标与源通知时钟，逐文件核对本轮 `sourceEvents`；被取代批次的 `incomplete` 记录只提供通知溯源，不能证明发布完成，关联 `failed` 记录仍失败。夹具随后通过独占 stdin/stdout 的 nonce 回执等待现有宿主插件 `api.whenSettled()`，再执行原有单次重连；可见文件、control 变化、profile `complete`、trace `batch-end` 和客户端 `initialReady` 均不能单独替代该边界。观察器保留 30 秒期限及进程退出/发布失败传播，不改变生产调度或重叠更新的完整重建策略。最终脚本保存仍必须在同一 VM 内推进版本并将点击计数从 1 变为 3；每轮都须独立执行当前 HEAD 的 headless 验证，不能沿用历史通过结果。
 
+该通道的 EOF 会主动触发 CLI 关闭，因此 teardown 必须先等待 `dev.stop()` 完成受管进程树的身份登记与停止，再结束父侧输入。提前结束输入会让根进程退出与身份采集竞争；遇到身份不明仍应拒绝清理，不能将这类失败当作成功退出。
+
 Native Inspector 的人工 `target.json` 输入在性能计时区间之外等待：以持久化文件为事实源，每 50 ms 最多发起一次读取，不依赖原生文件通知是否送达；这不改变 HMR watcher。输入缺失时继续等待，畸形、超限、错误 session 或读取权限错误仍立即拒绝；成功、失败与原有 120 秒期限结束后均停止后续读取并释放定时器，不延长操作员输入期限。
