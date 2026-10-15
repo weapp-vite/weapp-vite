@@ -8,6 +8,7 @@ import type {
 } from './types'
 import { createDebugger } from '../debugger'
 import { withRealpathScope } from '../utils/realpathScope'
+import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { parseLogicalEntryId, parseSidecarModuleId, parseSidecarSourceRequest } from './protocol'
 import { collectBuildStartIds, collectDevStartNodes, hasBuildModule, hasDevModule, normalizeSourceId } from './traversal'
 
@@ -23,14 +24,15 @@ export interface ModuleGraphService {
   bindPluginContext: (scope: object, context: BuildGraphContext) => void
   /** 仅用于整个会话关闭或替换，不用于普通增量构建或临时 snapshot。 */
   resetSession: () => void
-  collectAffectedEntries: (file: string) => Set<string>
+  /** 指定 kind 时仅查询该类声明依赖，不展开构建引擎的模块图。 */
+  collectAffectedEntries: (file: string, kind?: SidecarModuleKind) => Set<string>
   getPendingChanges: () => Array<{ event: string, file: string }>
   consumeTopologyRescan: () => TopologyRescanRequest | undefined
   hasModule: (file: string) => boolean
   invalidate: (file: string) => Set<string>
   isLogicalLayoutEntry: (file: string) => boolean
   load: (options: { id: string, resolveDependencies?: boolean }) => Promise<BuildModuleInfo>
-  replaceEntryDependencies: (ownerId: string, kind: SidecarModuleKind, sourceIds: Iterable<string>) => void
+  replaceEntryDependencies: (ownerId: string, kind: SidecarModuleKind, sourceIds: Iterable<string>, resolveSourceId?: (id: string) => string) => void
   /** 释放 owner 自己的依赖声明；实际 import graph 的更新仍由构建引擎负责。 */
   removeEntryDependencies: (ownerId: string) => void
   recordChangedFile: (file: string, event: string) => void
@@ -44,7 +46,7 @@ export interface ModuleGraphService {
   syncDevGraph: (context: BuildGraphContext) => Promise<void>
   getTransformDependencies: (sourceId: string) => readonly string[]
   replaceTransformDependencies: (sourceId: string, dependencies: Iterable<string>) => void
-  getEntryDependencies: (ownerId: string) => Array<{ kind: SidecarModuleKind, sourceId: string }>
+  getEntryDependencies: (ownerId: string, options?: { preserveAliases: boolean }) => Array<{ kind: SidecarModuleKind, sourceId: string }>
 }
 
 /** 只复用本次同步输入规范化的路径读取，不向图更新回调或下一次登记保留缓存。 */
@@ -61,7 +63,7 @@ export function createModuleGraphService(): ModuleGraphService {
   let devServerBinding: object | undefined
   let devServer: DevServerGraphHost | undefined
   let topologyRescan: TopologyRescanRequest | undefined
-  const entryDependencies = new Map<string, Map<SidecarModuleKind, Set<string>>>()
+  const entryDependencies = new Map<string, Map<SidecarModuleKind, Map<string, string>>>()
   const pendingChanges = new Map<string, string>()
   const transformDependencies = new Map<string, Set<string>>()
   const usesUnbundledDevGraph = () => Boolean(devServer && !devServer.environments?.client?.bundledDev)
@@ -100,13 +102,22 @@ export function createModuleGraphService(): ModuleGraphService {
     }
   }
 
+  const matchesDependency = (bindings: ReadonlyMap<string, string>, file: string) => {
+    for (const [alias, sourceId] of bindings) {
+      if (sourceId === file || normalizeSourceId(alias) === file) {
+        return true
+      }
+    }
+    return false
+  }
+
   const hasRegisteredEntryDependency = (file: string) => {
     if (entryDependencies.has(file)) {
       return true
     }
     for (const dependenciesByKind of entryDependencies.values()) {
-      for (const sourceIds of dependenciesByKind.values()) {
-        if (sourceIds.has(file)) {
+      for (const bindings of dependenciesByKind.values()) {
+        if (matchesDependency(bindings, file)) {
           return true
         }
       }
@@ -189,16 +200,19 @@ export function createModuleGraphService(): ModuleGraphService {
     }
   }
 
-  const collectAffectedEntries = (rawFile: string) => withRealpathScope(() => {
+  const collectAffectedEntries = (rawFile: string, kind?: SidecarModuleKind) => withRealpathScope(() => {
     const file = normalizeSourceId(rawFile)
     const affected = new Set<string>()
     for (const [ownerId, dependenciesByKind] of entryDependencies) {
-      for (const sourceIds of dependenciesByKind.values()) {
-        if (sourceIds.has(file)) {
+      for (const [dependencyKind, bindings] of dependenciesByKind) {
+        if ((!kind || dependencyKind === kind) && matchesDependency(bindings, file)) {
           affected.add(ownerId)
           break
         }
       }
+    }
+    if (kind) {
+      return affected
     }
     if (usesUnbundledDevGraph()) {
       collectFromDevGraph(file, affected)
@@ -329,7 +343,8 @@ export function createModuleGraphService(): ModuleGraphService {
     isLogicalLayoutEntry(rawFile) {
       const file = normalizeSourceId(rawFile)
       for (const byKind of entryDependencies.values()) {
-        if (byKind.get('layout')?.has(file) && /\.(?:[cm]?[jt]sx?|vue)$/.test(file)) {
+        const bindings = byKind.get('layout')
+        if (bindings && matchesDependency(bindings, file) && /\.(?:[cm]?[jt]sx?|vue)$/.test(file)) {
           return true
         }
       }
@@ -341,8 +356,15 @@ export function createModuleGraphService(): ModuleGraphService {
       }
       return await pluginContext.load(options)
     },
-    replaceEntryDependencies(rawOwnerId, kind, sourceIds) {
-      const [ownerId, normalized] = normalizeDependencySources(rawOwnerId, sourceIds)
+    replaceEntryDependencies(rawOwnerId, kind, sourceIds, resolveSourceId = normalizeSourceId) {
+      const [ownerId, normalized] = withRealpathScope(() => {
+        const bindings = new Map<string, string>()
+        for (const source of sourceIds) {
+          const alias = normalizeFsResolvedId(source)
+          bindings.set(alias, resolveSourceId(alias))
+        }
+        return [normalizeSourceId(rawOwnerId), bindings] as const
+      })
       let byKind = entryDependencies.get(ownerId)
       if (!byKind) {
         byKind = new Map()
@@ -420,15 +442,15 @@ export function createModuleGraphService(): ModuleGraphService {
         devServer?.moduleGraph.invalidateModule?.(module)
       }
     },
-    getEntryDependencies(rawOwnerId) {
+    getEntryDependencies(rawOwnerId, options) {
       const ownerId = normalizeSourceId(rawOwnerId)
       const byKind = entryDependencies.get(ownerId)
       if (!byKind) {
         return []
       }
       const dependencies: Array<{ kind: SidecarModuleKind, sourceId: string }> = []
-      for (const [kind, sourceIds] of byKind) {
-        for (const sourceId of sourceIds) {
+      for (const [kind, bindings] of byKind) {
+        for (const sourceId of new Set(options?.preserveAliases ? bindings.keys() : bindings.values())) {
           dependencies.push({ kind, sourceId })
         }
       }

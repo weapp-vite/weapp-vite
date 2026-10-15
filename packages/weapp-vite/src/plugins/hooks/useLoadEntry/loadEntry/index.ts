@@ -2,6 +2,7 @@ import type { PluginContext, ResolvedId } from 'rolldown'
 import type { BuildTarget, CompilerContext } from '../../../../context'
 import type { Entry } from '../../../../types'
 import type { HmrProfileDurationKey } from '../../../../utils/hmrProfile'
+import type { ReExportResolutionCache } from '../../../../utils/reExport'
 import type { ResolvedPageLayoutPlan } from '../../../vue/transform/pageLayout'
 import type { ResolvedAutoImportComponent } from '../autoImport'
 import type { ChunkEmitTask } from '../chunkEmitter'
@@ -157,7 +158,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const { jsonService, configService, wxmlService } = ctx
   const existsCache = new Map<string, boolean>()
   const pathExistsTtlMs = getPathExistsTtlMs(configService)
-  const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
+  const reExportResolutionCache: ReExportResolutionCache = new Map()
   const scriptSetupAnalyzer = createScriptSetupAnalyzer()
   const entryResolver = createEntryResolver(configService, base => path.extname(base) ? undefined : getSelectedAutoRouteSource(ctx, base))
   const appEntriesCache: { current?: AppEntriesCache } = {}

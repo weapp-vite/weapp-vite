@@ -30,7 +30,7 @@ export function leafNodes(probe: string, owner: string, count: number, visible?:
 }
 
 export function primaryNodes(count: number) {
-  return [providerNode('primary', count), ...leafNodes('primary', 'primary', count), ...leafNodes('wrapped-primary', 'primary', count)]
+  return [providerNode('primary', count), ...leafNodes('primary', 'primary', count), ...leafNodes('wrapped-primary', 'primary', count), ...leafNodes('getter-primary', 'primary', count), textNode('shared-getter-owner', 'primary')]
 }
 
 export function isolationNodes(left: number, right: number) {

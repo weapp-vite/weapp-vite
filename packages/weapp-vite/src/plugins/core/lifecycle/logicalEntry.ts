@@ -18,6 +18,7 @@ import { withRealpathScope } from '../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { collectComponentEntries } from '../../utils/analyze'
 import { pathExists as pathExistsCached } from '../../utils/cache'
+import { compilerSnapshotSourceId, getCompilerSourceSnapshot } from '../../utils/sourceSnapshot'
 
 function resolveEntryRecord(state: CorePluginState, sourceId: string) {
   const relativeBase = removeExtensionDeep(state.ctx.configService.relativeAbsoluteSrcRoot(sourceId))
@@ -103,7 +104,7 @@ async function collectLogicalEntryDependencies(
   pluginContext: PluginContext,
   ownerId: string,
 ) {
-  const pendingDependencies = state.ctx.moduleGraphService.getEntryDependencies(ownerId)
+  const pendingDependencies = state.ctx.moduleGraphService.getEntryDependencies(ownerId, { preserveAliases: true })
   const entry = resolveEntryRecord(state, ownerId)
   const dependencies: LogicalEntryDependency[] = []
   const addExistingDependency = async (kind: SidecarModuleKind, sourceId?: string) => {
@@ -142,12 +143,17 @@ async function collectLogicalEntryDependencies(
   dependencies.push(...collectTemplateDependencies(state, templatePath))
   dependencies.push(...await collectComponentDependencies(state, pluginContext, ownerId, entry?.declaredJson ?? entry?.json))
   withRealpathScope(() => {
+    const sources = getCompilerSourceSnapshot(state.ctx.configService)
     for (const kind of ['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
       state.ctx.moduleGraphService.replaceEntryDependencies(
         ownerId,
         kind,
         dependencies.filter(dependency => dependency.kind === kind).map(dependency => dependency.sourceId),
+        id => compilerSnapshotSourceId(sources, id),
       )
+    }
+    for (const dependency of dependencies) {
+      dependency.sourceId = compilerSnapshotSourceId(sources, dependency.sourceId)
     }
   })
   return dependencies

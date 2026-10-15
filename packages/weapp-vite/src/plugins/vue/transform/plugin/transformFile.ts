@@ -1,5 +1,6 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../../../context'
+import type { ReExportResolutionCache } from '../../../../utils/reExport'
 import type { ResolvedAppShell } from '../appShell'
 import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import type { VueCompilationCache, VueStyleBlocksCache } from './transformFile/types'
@@ -30,7 +31,7 @@ export async function transformVueLikeFile(options: {
   setPageMatcher: (matcher: ReturnType<typeof createPageEntryMatcher>) => void
   scanDirtySynced: boolean
   setScanDirtySynced: (synced: boolean) => void
-  reExportResolutionCache: Map<string, Map<string, string | undefined>>
+  reExportResolutionCache: ReExportResolutionCache
   compileOptionsCache: Map<string, CompileVueFileResolvedOptions>
   componentMetaCache: NonNullable<CompileVueFileResolvedOptions['componentMetaCache']>
   nativeSlotContextCache: NonNullable<CompileVueFileResolvedOptions['nativeSlotContextCache']>

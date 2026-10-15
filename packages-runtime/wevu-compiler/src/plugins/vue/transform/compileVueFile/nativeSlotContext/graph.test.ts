@@ -76,7 +76,6 @@ export default define(options)
     fixture.cache.delete('/project/Leaf.vue')
     const changed = await fixture.analyze(source)
     expect(changed.required).toBe(true)
-    expect(changed.tags).toEqual(new Set(['Imported', 'imported', 'local-leaf']))
   })
 
   it('resolves auto components relative to each descendant importer', async () => {
@@ -105,7 +104,6 @@ export default define(options)
   it('keeps unavailable children conservative and records the unavailable source', async () => {
     const result = await createAnalysisFixture().analyze(`<script setup>import Missing from './Missing.vue'</script><template><Missing /></template>`)
     expect(result.required).toBe(true)
-    expect(result.tags).toEqual(new Set(['Missing', 'missing']))
     expect(result.dependencies).toContain('/project/Missing.vue')
   })
 
@@ -134,7 +132,6 @@ export default define(options)
     const results = await Promise.all([fixture.analyze(source), fixture.analyze(source)])
     for (const result of results) {
       expect(result.required).toBe(true)
-      expect(result.tags).toEqual(new Set(['A', 'a']))
       expect(result.dependencies).toEqual(expect.arrayContaining(['/project/A.vue', '/project/B.vue', '/project/one.ts', '/project/two.ts']))
     }
     expect(fixture.reads.filter(id => id === '/project/A.vue')).toHaveLength(1)

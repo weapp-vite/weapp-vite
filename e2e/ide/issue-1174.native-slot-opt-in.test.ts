@@ -25,7 +25,7 @@ describe.each(['default', 'disabled', 'enabled'] as const)('issue #1174: %s nati
       : mode === 'disabled' ? config.replace('nativeSlotContext: true', 'nativeSlotContext: false') : config)
     await buildIssueRegressionProject(project, 'weapp')
     await assertIssue1172Artifacts(project, true)
-    const protocolFreeFiles = ['components/plainCounter/index', 'components/plainContainer/index']
+    const protocolFreeFiles = ['components/plainCounter/index', 'components/plainContainer/index', 'components/plainOptionsCounter/index', 'components/plainDualScriptCounter/index', 'components/plainReactiveCounter/index']
     if (mode !== 'enabled') {
       protocolFreeFiles.push('pages/plain/index', 'components/outlet/index', 'pages/index/index')
     }
@@ -55,8 +55,9 @@ describe.each(['default', 'disabled', 'enabled'] as const)('issue #1174: %s nati
 
   it('1174.plain-slot-updates', async (context) => {
     const dom = createDomAcceptance(context, FIXTURE, [
-      { id: 'initial', route: ROUTES.plain, action: '原生投影与无上下文协议的纯组件正常挂载', nodes: [textNode('plain-count', '0'), textNode('plain-leaf-label', 'Context-free container'), textNode('plain-leaf-count', '0')] },
+      { id: 'initial', route: ROUTES.plain, action: '原生投影与 HTML 映射、Options API、双脚本和响应式纯组件正常挂载', nodes: [textNode('plain-count', '0'), textNode('plain-leaf-label', 'Context-free container'), textNode('plain-leaf-count', '0'), textNode('plain-options-count', '0'), textNode('plain-dual-count', '0'), textNode('plain-reactive-count', '0'), textNode('plain-reactive-initial', '0')] },
       { id: 'leaf-incremented', route: ROUTES.plain, action: '没有协议注入的 ref 组件仍能响应点击并更新', nodes: [textNode('plain-leaf-count', '1'), textNode('plain-count', '0')] },
+      { id: 'variants-incremented', route: ROUTES.plain, action: '没有协议注入的不同纯组件写法均能独立更新', nodes: [textNode('plain-options-count', '1'), textNode('plain-dual-count', '1'), textNode('plain-reactive-count', '1'), textNode('plain-reactive-initial', '0'), textNode('plain-leaf-count', '1'), textNode('plain-count', '0')] },
       { id: 'incremented', route: ROUTES.plain, action: '点击后更新原生插槽内容', nodes: [textNode('plain-count', '1')] },
       { id: 'reopened', route: ROUTES.plain, action: '隐藏期间更新后重新投影最新值', nodes: [textNode('plain-count', '2')] },
     ])
@@ -64,6 +65,10 @@ describe.each(['default', 'disabled', 'enabled'] as const)('issue #1174: %s nati
     await dom.check('initial', miniProgram!, page)
     await tapButton(page, 'plain-leaf-increment')
     await dom.check('leaf-incremented', miniProgram!, page)
+    await tapButton(page, 'plain-options-increment')
+    await tapButton(page, 'plain-dual-increment')
+    await tapButton(page, 'plain-reactive-increment')
+    await dom.check('variants-incremented', miniProgram!, page)
     await tapButton(page, 'plain-increment')
     await dom.check('incremented', miniProgram!, page)
     await tapButton(page, 'plain-toggle')

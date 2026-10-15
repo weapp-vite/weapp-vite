@@ -1,6 +1,6 @@
+import type { File } from '@weapp-vite/ast/babelTypes'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { CompileVueFileOptions } from '../types'
-import type { ScriptFacts } from './script'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../../utils/resolvedId'
@@ -10,7 +10,7 @@ interface SourceFacts {
   source: string
   descriptor?: SFCDescriptor
   invalid?: boolean
-  script?: ScriptFacts
+  ast?: File
 }
 
 /** 缓存单个源文件的原始输入与解析事实，不保存递归分类或递归任务。 */

@@ -1,3 +1,4 @@
+import type * as ResolvedIdModule from '../../../utils/resolvedId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createModuleGraphService } from '../../../moduleGraph'
 
@@ -63,9 +64,10 @@ vi.mock('../../../utils/path', () => ({
   toPosixPath: vi.fn((id: string) => id),
 }))
 
-vi.mock('../../../utils/resolvedId', () => ({
-  normalizeFsResolvedId: vi.fn((id: string) => id),
-}))
+vi.mock('../../../utils/resolvedId', async (importOriginal) => {
+  const actual = await importOriginal<typeof ResolvedIdModule>()
+  return { ...actual, normalizeFsResolvedId: vi.fn((id: string) => id) }
+})
 
 vi.mock('../index', () => ({
   VUE_PLUGIN_NAME: 'weapp-vite:vue',

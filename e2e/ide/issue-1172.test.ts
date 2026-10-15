@@ -55,7 +55,7 @@ describe.each([
 
   it('1172.primary', async (context) => {
     const dom = createDomAcceptance(context, FIXTURE, [
-      { id: 'initial', route: ROUTES.primary, action: '同步注入普通插槽宿主并由宿主确认对象、ref 和函数身份', nodes: primaryNodes(0) },
+      { id: 'initial', route: ROUTES.primary, action: '同步验证直接注入、中间组件及 getter 间接注入的宿主和对象身份', nodes: primaryNodes(0) },
       { id: 'incremented', route: ROUTES.primary, action: '点击 Leaf 调用 Provider action，双方渲染同一 ref 的更新', nodes: primaryNodes(1) },
       { id: 'wrapped-action', route: ROUTES.primary, action: '无直接上下文 API 的中间组件保留首次注入，其子组件更新同一 Provider', nodes: primaryNodes(2) },
     ])

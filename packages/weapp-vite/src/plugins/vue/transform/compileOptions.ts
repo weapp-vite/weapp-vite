@@ -2,6 +2,7 @@ import type { CompilerAppShell, CompilerPageLayoutPlan, CompileVueFileOptions } 
 import type { CompilerContext } from '../../../context'
 import type { AutoImportMatch } from '../../../runtime/autoImportPlugin'
 import type { MpPlatform } from '../../../types'
+import type { ReExportResolutionCache } from '../../../utils/reExport'
 import type { ResolvedAppShell } from './appShell'
 import type { ResolvedPageLayoutPlan } from './pageLayout'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -19,6 +20,7 @@ import { resolveRelativeOutputFileNameWithExtension } from '../../utils/outputFi
 import { createSfcResolveSrcOptions } from '../../utils/vueSfc'
 import { createCompilerAppShellSignature, toCompilerAppShell } from './appShell'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
+import { componentResolutionDependencies } from './componentResolutionDependencies'
 import { createCompilerPageLayoutPlanSignature, toCompilerPageLayoutPlan } from './pageLayout'
 import { createUsingComponentPathResolver } from './usingComponentResolver'
 import { isAutoSetDataPickEnabledWithPreset, isWevuMinifyEnabled, resolveWevuDefaultsWithPreset } from './wevuPreset'
@@ -30,7 +32,7 @@ export type SfcStylePreprocessOptions = NonNullable<NonNullable<CompileVueFileOp
 const compileOptionsOwners = new WeakMap<CompileVueFileResolvedOptions, object>()
 
 interface CompileOptionsContext {
-  reExportResolutionCache: Map<string, Map<string, string | undefined>>
+  reExportResolutionCache: ReExportResolutionCache
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
   componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
@@ -156,7 +158,8 @@ function buildCompileVueFileOptions(
     match: AutoImportMatch | undefined
     version: number
   }>()
-  const resolveUsingComponentPath = createUsingComponentPathResolver(pluginCtx, configService, state.reExportResolutionCache)
+  const resolutionDependencies = new Set<string>()
+  const resolveUsingComponentPath = createUsingComponentPathResolver(pluginCtx, configService, state.reExportResolutionCache, id => resolutionDependencies.add(id))
   const externalComponentEntryMap = ctx.runtimeState?.build?.hmr?.externalComponentEntryMap
   const registerResolvedComponentEntry = externalComponentEntryMap
     ? async (...args: Parameters<typeof resolveUsingComponentPath>) => {
@@ -330,7 +333,7 @@ function buildCompileVueFileOptions(
     }
   }
 
-  return {
+  const options = {
     isPage,
     isApp,
     skipComponentTransform: delegatesComponentRegistration,
@@ -425,6 +428,8 @@ function buildCompileVueFileOptions(
     componentMetaCache: state.componentMetaCache,
     nativeSlotContextCache: state.nativeSlotContextCache,
   } as const
+  componentResolutionDependencies.set(options, resolutionDependencies)
+  return options
 }
 
 export function createCompileVueFileOptions(

@@ -50,6 +50,9 @@ function evaluateOptions(script: string, extraGlobals: Record<string, unknown> =
     [WE_VU_COMPILER_TEMPLATE_MODULE_ID]: templateRuntime,
   }
   ast.program.body = ast.program.body.flatMap<t.Statement>((statement) => {
+    if (t.isExportNamedDeclaration(statement)) {
+      return statement.declaration ? [statement.declaration] : []
+    }
     if (t.isExportDefaultDeclaration(statement) && t.isExpression(statement.declaration)) {
       return [t.expressionStatement(t.assignmentExpression(
         '=',
@@ -161,6 +164,82 @@ describe('native slot context compilation', () => {
     const options = evaluateOptions(result.script!, { contextSetup: () => ({ label: 'opaque' }) })
     expect(options[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBe(true)
     expect(options.setup().label).toBe('opaque')
+  })
+
+  it.each([
+    ['Options handler', `<script>import { ref } from 'wevu'; export default { setup() { const count = ref(0); const increment = () => count.value++; return { count, increment } } }</script>`],
+    ['Options returned aliases', `<script>import { ref } from 'wevu'; export default { setup() { const value = ref(0); const add = () => value.value++; return { count: value, increment: add } } }</script>`],
+    ['dual imports', `<script>import { ref } from 'wevu'; const seed = ref(0)</script><script setup>import { ref } from 'wevu'; const count = ref(seed.value); const increment = () => count.value++</script>`],
+    ['reactive property ref', `<script setup>import { reactive, toRef } from 'wevu'; const state = reactive({ count: 0 }); const count = toRef(state, 'count'); const increment = () => count.value++</script>`],
+    ['ref normalization', `<script setup>import { ref, toValue } from 'wevu'; const seed = ref(0); const count = ref(toValue(seed)); const increment = () => count.value++</script>`],
+  ])('omits methods and observer while preserving %s', async (_name, scripts) => {
+    const result = await compileVueFile(`${scripts}<template><button @click="increment">{{ count }}</button></template>`, filename, {
+      sourceMap: false,
+      template: { platform, scopedSlotsRequireProps: true, nativeSlotContext: true },
+    })
+    const options = evaluateOptions(result.script!)
+    expect(options[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBeUndefined()
+    const register = vi.fn()
+    vi.stubGlobal('Component', register)
+    runtime.createWevuComponent(options)
+    const definition = register.mock.lastCall![0]
+    expect(definition.properties ?? {}).not.toHaveProperty(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)
+    expect(definition.observers ?? {}).not.toHaveProperty(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)
+    expect(definition.methods).not.toHaveProperty(WEVU_NATIVE_DECLARATION_METHOD)
+    expect(definition.methods).not.toHaveProperty(WEVU_NATIVE_SLOT_PARENT_METHOD)
+    const state = options.setup({}, { expose() {} })
+    expect(reactivity.unref(state.count)).toBe(0)
+    state.increment()
+    expect(reactivity.unref(state.count)).toBe(1)
+  })
+
+  it.each([
+    'const token = globalThis.contextSource.token',
+    'const token = globalThis.contextSource?.token',
+    'const key = "token"; const token = globalThis.contextSource[key]',
+    'const { token } = globalThis.contextSource',
+  ])('retains protocol for a getter without an explicit context call: %s', async (script) => {
+    const result = await compileVueFile(`<script setup>${script}</script><template><text>{{ token }}</text></template>`, filename, {
+      sourceMap: false,
+      template: { platform, scopedSlotsRequireProps: true, nativeSlotContext: true },
+    })
+    const getter = vi.fn(() => 'getter-value')
+    const contextSource = Object.defineProperty({}, 'token', { get: getter })
+    const options = evaluateOptions(result.script!, { contextSource })
+    expect(options[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBe(true)
+    const register = vi.fn()
+    vi.stubGlobal('Component', register)
+    runtime.createWevuComponent(options)
+    const definition = register.mock.lastCall![0]
+    expect(definition.observers).toHaveProperty(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)
+    expect(definition.methods).toHaveProperty(WEVU_NATIVE_DECLARATION_METHOD)
+    expect(definition.methods).toHaveProperty(WEVU_NATIVE_SLOT_PARENT_METHOD)
+    expect(options.setup({}, { expose() {} }).token).toBe('getter-value')
+    expect(getter).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ['getter', '<script setup>const token = globalThis.contextSource.token</script>', true],
+    ['property ref', '<script setup>import { reactive, toRef, toValue } from "wevu"; const state = reactive({ count: 0 }); const token = toValue(toRef(state, "count"))</script>', false],
+    ['Options handler', '<script>import { ref } from "wevu"; export default { setup() { const token = ref(0); const increment = () => token.value++; return { token, increment } } }</script>', false],
+  ] as const)('propagates %s participation into actual child declaration attributes', async (_name, script, required) => {
+    const childId = '/project/Child.vue'
+    const result = await compileVueFile('<script setup>import Child from "./Child.vue"</script><template><Child /></template>', '/project/Parent.vue', {
+      sourceMap: false,
+      template: { platform, scopedSlotsRequireProps: true, nativeSlotContext: true },
+      sfcSrc: {
+        resolveId: async source => source === './Child.vue' || source === childId ? childId : undefined,
+        readFile: async () => `${script}<template><text>{{ token }}</text></template>`,
+      },
+      autoUsingComponents: {
+        enabled: true,
+        resolveUsingComponentPath: async () => ({ from: '/components/child', resolvedId: childId, sourceType: 'wevu-sfc' }),
+      },
+    })
+    expect(evaluateOptions(result.script!)[WEVU_NATIVE_SLOT_CONTEXT_KEY]).toBe(required ? true : undefined)
+    const child = readElements(result.template!)[0]!
+    expect(child.attrs[WEVU_NATIVE_DECLARATION_ADDRESS_PROP] !== undefined).toBe(required)
+    expect(child.attrs[`bind:${WEVU_NATIVE_DECLARATION_EVENT}`] !== undefined).toBe(required)
   })
 
   it.each([

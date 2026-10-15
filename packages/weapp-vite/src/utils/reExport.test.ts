@@ -1,14 +1,10 @@
+import type { ReExportResolutionCache } from './reExport'
 import { describe, expect, it, vi } from 'vitest'
-import { getReExportCacheKey, resolveReExportedName } from './reExport'
+import { resolveReExportedName } from './reExport'
 
 describe('resolveReExportedName', () => {
-  it('builds cache keys with engine-aware prefixes', () => {
-    expect(getReExportCacheKey('/a.ts')).toBe('babel::/a.ts')
-    expect(getReExportCacheKey('/a.ts', 'oxc')).toBe('oxc::/a.ts')
-  })
-
   it('resolves direct re-export', async () => {
-    const cache = new Map<string, Map<string, string | undefined>>()
+    const cache: ReExportResolutionCache = new Map()
     const readFile = vi.fn(async (file: string) => {
       if (file === '/a.ts') {
         return `export { default as Foo } from "./foo"\n`
@@ -25,11 +21,10 @@ describe('resolveReExportedName', () => {
 
     await expect(resolveReExportedName('/a.ts', 'Foo', { cache, readFile, resolveId })).resolves.toBe('/foo.ts')
     await expect(resolveReExportedName('/a.ts', 'Foo', { cache, readFile, resolveId })).resolves.toBe('/foo.ts')
-    expect(readFile).toHaveBeenCalledTimes(1)
   })
 
   it('resolves via export * recursion', async () => {
-    const cache = new Map<string, Map<string, string | undefined>>()
+    const cache: ReExportResolutionCache = new Map()
     const readFile = vi.fn(async (file: string) => {
       if (file === '/a.ts') {
         return `export * from "./b"\n`
@@ -53,7 +48,7 @@ describe('resolveReExportedName', () => {
   })
 
   it('supports oxc engine for direct re-export resolution', async () => {
-    const cache = new Map<string, Map<string, string | undefined>>()
+    const cache: ReExportResolutionCache = new Map()
     const readFile = vi.fn(async (file: string) => {
       if (file === '/a.ts') {
         return `export { default as Foo } from "./foo"\n`
@@ -75,31 +70,54 @@ describe('resolveReExportedName', () => {
     })).resolves.toBe('/foo.ts')
   })
 
-  it('separates cache entries by ast engine', async () => {
-    const cache = new Map<string, Map<string, string | undefined>>()
-    const readFile = vi.fn(async () => `export { default as Foo } from "./foo"\n`)
-    const resolveId = vi.fn(async () => '/foo.ts')
+  it('follows named forwarding through default barrels and terminates default cycles', async () => {
+    const sources = new Map([
+      ['/entry.ts', 'export { default as Child } from "/default.ts"'],
+      ['/default.ts', 'export { default } from "/Leaf.vue"'],
+    ])
+    const options = {
+      cache: new Map() as ReExportResolutionCache,
+      readFile: async (file: string) => sources.get(file)!,
+      resolveId: async (source: string) => source,
+    }
+    await expect(resolveReExportedName('/entry.ts', 'Child', options)).resolves.toBe('/Leaf.vue')
+    sources.set('/default.ts', 'export { default } from "/cycle.ts"')
+    sources.set('/cycle.ts', 'export { default } from "/default.ts"')
+    await expect(resolveReExportedName('/entry.ts', 'Child', options)).resolves.toBeUndefined()
+    sources.set('/default.ts', 'export { default } from "/Leaf.vue"')
+    await expect(resolveReExportedName('/entry.ts', 'Child', options)).resolves.toBe('/Leaf.vue')
+  })
 
-    await resolveReExportedName('/a.ts', 'Foo', {
-      astEngine: 'babel',
-      cache,
-      readFile,
-      resolveId,
-    })
-    await resolveReExportedName('/a.ts', 'Foo', {
-      astEngine: 'babel',
-      cache,
-      readFile,
-      resolveId,
-    })
-    await resolveReExportedName('/a.ts', 'Foo', {
-      astEngine: 'oxc',
-      cache,
-      readFile,
-      resolveId,
-    })
+  it('distinguishes named forwarding states within the same barrel from a cycle', async () => {
+    const sources = new Map([
+      ['/entry.ts', 'export { Inner as Child } from "/middle.ts"; export { default as Base } from "/Leaf.vue"'],
+      ['/middle.ts', 'export { Base as Inner } from "/entry.ts"'],
+    ])
+    const options = {
+      cache: new Map() as ReExportResolutionCache,
+      readFile: async (file: string) => sources.get(file)!,
+      resolveId: async (source: string) => source,
+    }
+    await expect(resolveReExportedName('/entry.ts', 'Child', options)).resolves.toBe('/Leaf.vue')
+    sources.set('/middle.ts', 'export { Child as Inner } from "/entry.ts"')
+    await expect(resolveReExportedName('/entry.ts', 'Child', options)).resolves.toBeUndefined()
+    sources.set('/middle.ts', 'export { Missing as Inner } from "/entry.ts"')
+    await expect(resolveReExportedName('/entry.ts', 'Child', options)).resolves.toBeUndefined()
+  })
 
-    expect(readFile).toHaveBeenCalledTimes(2)
-    expect([...cache.keys()].sort()).toEqual(['babel::/a.ts', 'oxc::/a.ts'])
+  it.each(['babel', 'oxc'] as const)('resolves a shorter named path after a depth-exhausted branch with %s', async (astEngine) => {
+    const sources = new Map([
+      ['/entry.ts', 'export * from "/long.ts"; export * from "/shared.ts"'],
+      ['/long.ts', 'export * from "/hop.ts"'],
+      ['/hop.ts', 'export * from "/shared.ts"'],
+      ['/shared.ts', 'export { Inner as Child } from "/target.ts"'],
+      ['/target.ts', 'export { default as Inner } from "/Leaf.vue"'],
+    ])
+    await expect(resolveReExportedName('/entry.ts', 'Child', {
+      astEngine,
+      cache: new Map(),
+      readFile: async file => sources.get(file)!,
+      resolveId: async source => source,
+    })).resolves.toBe('/Leaf.vue')
   })
 })

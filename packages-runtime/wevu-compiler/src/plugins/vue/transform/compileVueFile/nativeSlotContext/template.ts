@@ -1,9 +1,11 @@
 import type { TemplateChildNode } from '@vue/compiler-core'
+import type { TemplateCompileOptions } from '../../../compiler/template'
 import { baseParse, NodeTypes } from '@vue/compiler-core'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { isBuiltinComponent } from '../../../../../auto-import-components/builtin'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse } from '../../../../../utils/babel'
 import { parseForExpression } from '../../../compiler/template/elements/forExpression'
+import { resolveHtmlTagToWxmlMap, resolveTemplateTagName } from '../../../compiler/template/htmlTagMapping'
 
 export interface TemplateFacts {
   required: boolean
@@ -12,8 +14,9 @@ export interface TemplateFacts {
 }
 
 /** 模板表达式保留循环局部绑定，交给脚本的同一套词法绑定分析。 */
-export function analyzeTemplate(content: string): TemplateFacts {
+export function analyzeTemplate(content: string, options?: Pick<TemplateCompileOptions, 'htmlTagToWxml'>): TemplateFacts {
   const facts: TemplateFacts = { required: false, tags: new Set(), expressions: '' }
+  const tagContext = { htmlTagToWxmlMap: resolveHtmlTagToWxmlMap(options?.htmlTagToWxml) }
   const expression = (source: string, event = false) => {
     if (!source.trim()) {
       return ''
@@ -43,10 +46,11 @@ export function analyzeTemplate(content: string): TemplateFacts {
       if (node.type !== NodeTypes.ELEMENT) {
         return ''
       }
-      if (node.tag === 'slot' || node.tag === 'component' || (node.tag === 'template' && node.props.some(prop => prop.type === NodeTypes.ATTRIBUTE && (prop.name === 'is' || prop.name === 'src')))) {
+      const tag = resolveTemplateTagName(node.tag, tagContext)
+      if (node.tag === 'slot' || node.tag === 'component' || tag === 'slot' || tag === 'component' || (node.tag === 'template' && node.props.some(prop => prop.type === NodeTypes.ATTRIBUTE && (prop.name === 'is' || prop.name === 'src')))) {
         facts.required = true
       }
-      else if (!isBuiltinComponent(node.tag) && node.tag !== 'template' && node.tag !== 'block') {
+      else if (!isBuiltinComponent(tag.toLowerCase()) && tag !== 'template' && tag !== 'block') {
         facts.tags.add(node.tag)
       }
       let code = ''

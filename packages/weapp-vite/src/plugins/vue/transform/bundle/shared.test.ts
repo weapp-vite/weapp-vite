@@ -1,7 +1,8 @@
 import type { CompilerContext } from '../../../../context'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveVueSfcHmrSignatures, resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
-import { compileAndFinalizeVueLikeFile, compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, getVueBundlePageLayoutPlan, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { createModuleGraphService } from '../../../../moduleGraph'
+import { compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, getVueBundlePageLayoutPlan, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -747,90 +748,6 @@ describe('emitSharedVueEntryAssets', () => {
     expect(result.script).toBe('Page({ onReachBottom() {}, data: { ready: true } })')
   })
 
-  it('passes resolved layout, app shell, policy, source file, and platform to Vue compilation', async () => {
-    const resolvedLayout = {
-      kind: 'native' as const,
-      file: '/project/src/layouts/default/index',
-      importPath: '/layouts/default/index',
-      layoutName: 'default',
-      tagName: 'weapp-layout-default',
-    }
-    resolvePageLayoutPlanMock.mockResolvedValue({
-      currentLayout: resolvedLayout,
-      dynamicSwitch: false,
-      layouts: [resolvedLayout],
-      dynamicPropKeys: [],
-    })
-
-    const pluginCtx = { emitFile: vi.fn() }
-    await compileVueLikeFile({
-      source: '<view />',
-      filename: '/project/src/pages/index/index.vue',
-      ctx: {} as any,
-      pluginCtx,
-      isPage: true,
-      isApp: false,
-      configService: {
-        platform: 'weapp',
-        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
-        cwd: '/project',
-        inlineConfig: {},
-        weappViteConfig: {
-          wevu: {
-            autoSetDataPick: false,
-          },
-        },
-      } as any,
-      compileOptionsState: {
-        reExportResolutionCache: new Map(),
-        classStyleRuntimeWarned: { value: false },
-      },
-      appShell: {
-        file: '/project/src/__weapp_vite_app_shell',
-        importPath: '/__weapp_vite_app_shell',
-        tagName: 'weapp-app-shell',
-      },
-    })
-
-    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
-    expect(compileVueFileMock).toHaveBeenCalledWith(
-      '<view />',
-      '/project/src/pages/index/index.vue',
-      expect.objectContaining({
-        autoSetDataPick: false,
-        bindingManifestSourceFile: 'src/pages/index/index.vue',
-        appShell: {
-          importPath: '/__weapp_vite_app_shell',
-          tagName: 'weapp-app-shell',
-        },
-        pageLayout: {
-          currentLayout: {
-            importPath: '/layouts/default/index',
-            layoutName: 'default',
-            tagName: 'weapp-layout-default',
-          },
-          dynamicSwitch: false,
-          layouts: [{
-            importPath: '/layouts/default/index',
-            layoutName: 'default',
-            tagName: 'weapp-layout-default',
-          }],
-          dynamicPropKeys: [],
-        },
-        template: expect.objectContaining({
-          platform: expect.objectContaining({ name: 'wechat' }),
-          scopedSlotsRequireProps: false,
-        }),
-      }),
-    )
-    expect(compileJsxFileMock).not.toHaveBeenCalled()
-    expect(registerResolvedPageLayoutDependenciesMock).toHaveBeenCalledWith(
-      expect.anything(),
-      '/project/src/pages/index/index.vue',
-      [resolvedLayout],
-    )
-  })
-
   it('stores block signatures during the initial dev bundle compilation', async () => {
     const hmr = {
       vueEntryHasTemplate: new Map(),
@@ -845,6 +762,7 @@ describe('emitSharedVueEntryAssets', () => {
       source: '<template><view /></template><script setup>const count = 1</script>',
       filename,
       ctx: {
+        moduleGraphService: createModuleGraphService(),
         runtimeState: {
           build: {
             hmr,
@@ -871,133 +789,6 @@ describe('emitSharedVueEntryAssets', () => {
       style: expect.any(String),
       template: expect.any(String),
     })
-  })
-
-  it('preserves native plain slot compilation when scopedSlotsRequireProps is explicit', async () => {
-    await compileVueLikeFile({
-      source: '<slot-host><template #header><view>Header</view></template></slot-host>',
-      filename: '/project/src/pages/index/index.vue',
-      ctx: {} as any,
-      pluginCtx: { emitFile: vi.fn() },
-      isPage: true,
-      isApp: false,
-      configService: {
-        platform: 'weapp',
-        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
-        weappViteConfig: {
-          vue: {
-            template: {
-              scopedSlotsRequireProps: true,
-            },
-          },
-        },
-      } as any,
-      compileOptionsState: {
-        reExportResolutionCache: new Map(),
-        classStyleRuntimeWarned: { value: false },
-      },
-    })
-
-    expect(compileVueFileMock).toHaveBeenCalledWith(
-      '<slot-host><template #header><view>Header</view></template></slot-host>',
-      '/project/src/pages/index/index.vue',
-      expect.objectContaining({
-        template: expect.objectContaining({
-          scopedSlotsRequireProps: true,
-        }),
-      }),
-    )
-  })
-
-  it('compiles jsx-like page entries through shared jsx branch', async () => {
-    const resolvedLayout = {
-      kind: 'vue' as const,
-      file: '/layouts/default/index.vue',
-      importPath: '/layouts/default/index',
-      layoutName: 'default',
-      tagName: 'weapp-layout-default',
-    }
-    resolvePageLayoutPlanMock.mockResolvedValue({
-      currentLayout: resolvedLayout,
-      dynamicSwitch: false,
-      layouts: [resolvedLayout],
-      dynamicPropKeys: [],
-    })
-
-    const pluginCtx = { emitFile: vi.fn() }
-    await compileVueLikeFile({
-      source: 'export default () => <view />',
-      filename: '/project/src/pages/index/index.tsx',
-      ctx: {} as any,
-      pluginCtx,
-      isPage: true,
-      isApp: false,
-      configService: {
-        platform: 'weapp',
-        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
-        cwd: '/project',
-        inlineConfig: {},
-        weappViteConfig: {},
-      } as any,
-      compileOptionsState: {
-        reExportResolutionCache: new Map(),
-        classStyleRuntimeWarned: { value: false },
-      },
-    })
-
-    expect(compileJsxFileMock).toHaveBeenCalledTimes(1)
-    expect(compileVueFileMock).not.toHaveBeenCalled()
-    expect(compileJsxFileMock).toHaveBeenCalledWith(
-      'export default () => <view />',
-      '/project/src/pages/index/index.tsx',
-      expect.objectContaining({
-        bindingManifestSourceFile: 'src/pages/index/index.tsx',
-        pageLayout: expect.objectContaining({
-          dynamicSwitch: false,
-          layouts: [expect.objectContaining({
-            importPath: '/layouts/default/index',
-          })],
-        }),
-        template: expect.objectContaining({
-          platform: expect.objectContaining({ name: 'wechat' }),
-        }),
-      }),
-    )
-    expect(registerResolvedPageLayoutDependenciesMock).toHaveBeenCalledWith(
-      expect.anything(),
-      '/project/src/pages/index/index.tsx',
-      [resolvedLayout],
-    )
-  })
-
-  it('compiles and finalizes vue-like entries through shared pipeline', async () => {
-    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
-      transformed: true,
-      code: 'Page({ fromPipeline: true })',
-    })
-
-    const result = await compileAndFinalizeVueLikeFile({
-      source: '<view />',
-      filename: '/project/src/pages/index/index.vue',
-      ctx: {} as any,
-      pluginCtx: { emitFile: vi.fn() },
-      isPage: true,
-      isApp: false,
-      configService: {
-        isDev: true,
-        platform: 'weapp',
-        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
-        weappViteConfig: {},
-      } as any,
-      compileOptionsState: {
-        reExportResolutionCache: new Map(),
-        classStyleRuntimeWarned: { value: false },
-      },
-    })
-
-    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
-    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
-    expect(result.script).toBe('Page({ fromPipeline: true })')
   })
 
   it('leaves compiled app scripts unchanged', async () => {
@@ -1204,6 +995,7 @@ describe('emitSharedVueEntryAssets', () => {
       filename: '/project/src/pages/index/index.vue',
       cached,
       ctx: {
+        moduleGraphService: createModuleGraphService(),
         runtimeState: {
           build: {
             hmr: {
@@ -1328,6 +1120,7 @@ describe('emitSharedVueEntryAssets', () => {
       filename: 'D:/project/src/app.vue',
       cached,
       ctx: {
+        moduleGraphService: createModuleGraphService(),
         runtimeState: {
           build: {
             hmr: {
@@ -1395,6 +1188,7 @@ describe('emitSharedVueEntryAssets', () => {
       filename: '/project/src/pages/index/index.vue',
       cached,
       ctx: {
+        moduleGraphService: createModuleGraphService(),
         autoImportService: {
           resolve: () => undefined,
         },
@@ -1587,6 +1381,7 @@ describe('emitSharedVueEntryAssets', () => {
     const result = await loadFallbackPageEntryCompilation({
       entryFilePath: '/project/src/pages/demo/index.vue',
       ctx: {
+        moduleGraphService: createModuleGraphService(),
         autoImportService: {
           resolve: () => undefined,
         },

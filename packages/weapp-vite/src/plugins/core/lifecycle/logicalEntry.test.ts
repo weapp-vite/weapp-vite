@@ -135,8 +135,8 @@ describe('core logical entry lifecycle', () => {
     const updated = await createLogicalEntryLoadHook(state)
       .call(pluginCtx, createLogicalEntryId(sourceId, 'page'))
     expect(updated?.code).not.toContain(JSON.stringify(createSidecarModuleId(sourceId, linkedComponent, 'using-component')))
-    expect(state.ctx.moduleGraphService.replaceEntryDependencies).toHaveBeenLastCalledWith(sourceId, 'wxs', [wxsPath])
-    expect(state.ctx.moduleGraphService.replaceEntryDependencies).toHaveBeenCalledWith(sourceId, 'using-component', [])
+    expect(state.ctx.moduleGraphService.replaceEntryDependencies).toHaveBeenLastCalledWith(sourceId, 'wxs', [wxsPath], expect.any(Function))
+    expect(state.ctx.moduleGraphService.replaceEntryDependencies).toHaveBeenCalledWith(sourceId, 'using-component', [], expect.any(Function))
   })
 
   it.each(['jsx', 'tsx', 'vue'])('keeps compiler-discovered components out of the %s logical wrapper', async (extension) => {

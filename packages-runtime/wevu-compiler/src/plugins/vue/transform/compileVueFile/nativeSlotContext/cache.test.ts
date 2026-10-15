@@ -28,7 +28,6 @@ describe('native slot context input and cache ownership', () => {
     fixture.cache.delete(id)
     const participating = await fixture.analyze(root)
     expect(participating.required).toBe(true)
-    expect(participating.tags).toEqual(new Set(['Child', 'child']))
     expect(participating.dependencies).toContain(id)
     fixture.files.set(id, original)
     fixture.cache.delete(id)

@@ -6,10 +6,11 @@ import { compileJsxFile, compileVueFile, resolveVueSfcHmrSignatures, resolveVueS
 import { storeVueSfcHmrSignatures } from '../../../../../runtime/storeVueSfcHmrSignatures'
 import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
-import { readCompilerInput } from '../../../../utils/sourceSnapshot'
+import { compilerSnapshotSourceId, getCompilerSourceSnapshot, readCompilerInput } from '../../../../utils/sourceSnapshot'
 import { readAndParseSfc } from '../../../../utils/vueSfc'
 import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
 import { createCompileVueFileOptions, resolveSfcStylePreprocessOptions } from '../../compileOptions'
+import { applyComponentResolutionDependencies } from '../../componentResolutionDependencies'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { resolvePageLayoutPlan } from '../../pageLayout'
 import { isVueStyleOnlyDirtyReasonSummary, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource } from '../../plugin/shared'
@@ -61,9 +62,15 @@ export async function compileVueLikeFile(options: {
   const result = filename.endsWith('.vue')
     ? await compileVueFile(source, filename, compileOptions)
     : await compileJsxFile(source, filename, compileOptions)
-  if (Array.isArray(result.meta?.nativeSlotContextDeps)) {
-    addNormalizedWatchFiles(pluginCtx, result.meta.nativeSlotContextDeps)
-    ctx.moduleGraphService.replaceEntryDependencies(filename, 'script', result.meta.nativeSlotContextDeps)
+  applyComponentResolutionDependencies(result, compileOptions)
+  if (result.meta?.sfcSrcCompilationDeps || result.meta?.nativeSlotContextDeps) {
+    const scriptDependencies = [...new Set([
+      ...(result.meta.sfcSrcCompilationDeps ?? []),
+      ...(result.meta.nativeSlotContextDeps ?? []),
+    ])]
+    addNormalizedWatchFiles(pluginCtx, scriptDependencies)
+    const sources = getCompilerSourceSnapshot(configService)
+    ctx.moduleGraphService.replaceEntryDependencies(filename, 'script', scriptDependencies, id => compilerSnapshotSourceId(sources, id))
   }
   if (resolvedPageLayoutPlan) {
     setVueBundlePageLayoutPlan(result, resolvedPageLayoutPlan)

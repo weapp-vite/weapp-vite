@@ -1,7 +1,9 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { ComponentSourceInfo } from '../componentSources'
 import type { CompileVueFileOptions } from '../types'
+import type { ScriptFacts } from './script'
 import { prepareSfcScriptCompile } from '../../../../../pageDeclaration'
+import { BABEL_TS_MODULE_PARSER_OPTIONS, parse } from '../../../../../utils/babel'
 import { resolveSfcBlockSrc } from '../../../../utils/vueSfc'
 import { collectComponentSourceInfo } from '../componentSources'
 import { analyzeScript } from './script'
@@ -25,9 +27,43 @@ export async function analyzeNativeSlotContext({ descriptor, filename, options, 
   components: ComponentSourceInfo
 }): Promise<{ required: boolean, tags: Set<string>, dependencies: string[] }> {
   const rootId = normalizeSourceId(filename)
+  const rootTemplate = analyzeTemplate(descriptor.template?.content ?? '', options?.template)
   const dependencies = new Set<string>()
   const sources = createSourceReader(options, dependencies)
   const graph = new Map<string, ParticipationNode>()
+  // 导出值依赖当前整张图，只在本轮持有；共享缓存仅保存源文件及其 AST。
+  const modules = new Map<string, ScriptFacts>()
+  const analyzingModules = new Set<string>()
+  const loadModule = async (source: string, importer: string): Promise<ScriptFacts | undefined> => {
+    const id = await sources.resolve(source, importer)
+    if (!id || id.endsWith('.vue')) {
+      return undefined
+    }
+    const cached = modules.get(id)
+    if (cached) {
+      return cached
+    }
+    if (analyzingModules.has(id)) {
+      return { required: true, imports: new Set(), exports: new Map() }
+    }
+    const input = await sources.load(id)
+    if (!input) {
+      return undefined
+    }
+    try {
+      input.ast ??= parse(input.source, BABEL_TS_MODULE_PARSER_OPTIONS)
+    }
+    catch {
+      const result: ScriptFacts = { required: true, imports: new Set(), exports: new Map() }
+      modules.set(id, result)
+      return result
+    }
+    analyzingModules.add(id)
+    const result = await analyzeScript(input.ast, false, undefined, undefined, source => loadModule(source, id))
+    analyzingModules.delete(id)
+    modules.set(id, result)
+    return result
+  }
   const pending: string[] = []
   const enqueue = (input: string) => {
     const id = normalizeSourceId(input)
@@ -50,17 +86,13 @@ export async function analyzeNativeSlotContext({ descriptor, filename, options, 
     }
   }
   const addComponent = async (node: ParticipationNode, current: Descriptor, id: string, info: ComponentSourceInfo) => {
-    const template = analyzeTemplate(current.template?.content ?? '')
+    const template = id === rootId ? rootTemplate : analyzeTemplate(current.template?.content ?? '', options?.template)
     node.required ||= template.required || Boolean(current.template?.lang && current.template.lang !== 'html')
     for (const tag of template.tags) {
       if (!info.wevuComponentTags.has(tag)) {
         node.required = true
       }
-    }
-    for (const [tag, source] of info.resolvedComponentIds) {
-      if (!info.wevuComponentTags.has(tag)) {
-        node.required = true
-      }
+      const source = info.resolvedComponentIds.get(tag)
       if (source) {
         node.edges.add(enqueue(source))
       }
@@ -68,16 +100,7 @@ export async function analyzeNativeSlotContext({ descriptor, filename, options, 
         node.required = true
       }
     }
-    for (const tag of info.wevuComponentTags) {
-      if (!info.resolvedComponentIds.get(tag)) {
-        node.required = true
-      }
-    }
-    const script = analyzeScript([
-      current.script?.content ?? '',
-      current.scriptSetup?.content ?? '',
-      template.expressions,
-    ].join('\n;\n'), true)
+    const script = await analyzeScript(current.script?.content ?? '', true, current.scriptSetup?.content, template.expressions, source => loadModule(source, id))
     node.required ||= script.required
     await addImports(node, script.imports, id)
   }
@@ -112,9 +135,11 @@ export async function analyzeNativeSlotContext({ descriptor, filename, options, 
       continue
     }
     if (!facts.descriptor) {
-      facts.script ??= analyzeScript(facts.source)
-      node.required ||= facts.script.required
-      await addImports(node, facts.script.imports, id)
+      const script = modules.get(id) ?? await loadModule(id, id)
+      node.required ||= !script || script.required
+      if (script) {
+        await addImports(node, script.imports, id)
+      }
       continue
     }
     let current = facts.descriptor
@@ -188,7 +213,10 @@ export async function analyzeNativeSlotContext({ descriptor, filename, options, 
   }
   const rootRequired = required(rootId)
   const tags = new Set<string>()
-  for (const tag of components.wevuComponentTags) {
+  for (const tag of rootTemplate.tags) {
+    if (!components.wevuComponentTags.has(tag)) {
+      continue
+    }
     const source = components.resolvedComponentIds.get(tag)
     if (!source || required(normalizeSourceId(source))) {
       tags.add(tag)

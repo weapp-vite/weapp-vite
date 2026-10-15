@@ -1,6 +1,7 @@
 import type { PluginContext } from 'rolldown'
 import type { AstEngineName } from '../../../../ast'
 import type { CompilerContext } from '../../../../context'
+import type { ReExportResolutionCache } from '../../../../utils/reExport'
 import type { ScriptSetupAnalyzer } from './scriptSetupAnalysis'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
@@ -78,7 +79,7 @@ export async function applyScriptSetupUsingComponents(options: {
   json: any
   configService: CompilerContext['configService']
   wxmlService?: CompilerContext['wxmlService']
-  reExportResolutionCache: Map<string, Map<string, string | undefined>>
+  reExportResolutionCache: ReExportResolutionCache
   externalComponentEntryMap?: Map<string, string>
   scriptSetupAnalyzer?: ScriptSetupAnalyzer
 }) {

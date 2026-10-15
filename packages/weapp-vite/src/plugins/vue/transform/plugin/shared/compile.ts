@@ -8,8 +8,10 @@ import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
+import { compilerSnapshotSourceId, getCompilerSourceSnapshot } from '../../../../utils/sourceSnapshot'
 import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
 import { hasAppShellTemplate, resolveAppShellLayout } from '../../appShell'
+import { applyComponentResolutionDependencies } from '../../componentResolutionDependencies'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { registerVueTemplateToken, resolveVueOutputBase } from '../../shared'
 import { buildWeappVueStyleRequests } from '../../styleRequest'
@@ -132,9 +134,11 @@ export async function compileTransformEntryResult(options: {
   compileJsxFile: (source: string, filename: string, options: CompileVueFileOptions) => Promise<VueTransformResult>
 }) {
   const { transformedSource, filename, compileOptions, compileVueFile, compileJsxFile } = options
-  return filename.endsWith('.vue')
+  const result = filename.endsWith('.vue')
     ? await compileVueFile(transformedSource, filename, compileOptions)
     : await compileJsxFile(transformedSource, filename, compileOptions)
+  applyComponentResolutionDependencies(result, compileOptions)
+  return result
 }
 
 export async function finalizeTransformCompiledResult(options: {
@@ -217,10 +221,13 @@ export async function finalizeTransformCompiledResult(options: {
   const jsxDependencies = result.meta?.jsxDependencies ?? []
   addNormalizedWatchFiles(pluginCtx, jsxDependencies)
   ctx.moduleGraphService.replaceEntryDependencies(filename, 'jsx', jsxDependencies)
-  if (Array.isArray(result.meta?.nativeSlotContextDeps)) {
-    addNormalizedWatchFiles(pluginCtx, result.meta.nativeSlotContextDeps)
-    ctx.moduleGraphService.replaceEntryDependencies(filename, 'script', result.meta.nativeSlotContextDeps)
-  }
+  const scriptDependencies = [...new Set([
+    ...(result.meta?.sfcSrcCompilationDeps ?? []),
+    ...(result.meta?.nativeSlotContextDeps ?? []),
+  ])]
+  addNormalizedWatchFiles(pluginCtx, scriptDependencies)
+  const sources = getCompilerSourceSnapshot(configService)
+  ctx.moduleGraphService.replaceEntryDependencies(filename, 'script', scriptDependencies, id => compilerSnapshotSourceId(sources, id))
 
   await finalizeTransformEntryScript({
     result: transformResult,
