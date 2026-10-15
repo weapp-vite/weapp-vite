@@ -8,6 +8,7 @@ import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
 import { readCompilerInput } from '../../../../utils/sourceSnapshot'
 import { readAndParseSfc } from '../../../../utils/vueSfc'
+import { createCompilerAppShellSignature } from '../../appShell'
 import { createCompileVueFileOptions, resolveSfcStylePreprocessOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { resolvePageLayoutPlan } from '../../pageLayout'
@@ -150,11 +151,14 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
           signature: undefined,
         }
     const source = transformed.source
+    const appShellSignature = createCompilerAppShellSignature(cached.isPage && !isApp ? options.appShell : undefined)
+    const isAppShellUnchanged = (cached.appShellSignature ?? 'null') === appShellSignature
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
     const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
     if (
       source === cached.source
       && transformed.signature === cached.autoRoutesSignature
+      && isAppShellUnchanged
     ) {
       cached.refreshToken = 0
       if (dirtyEntryId) {
@@ -173,6 +177,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
       && currentStyleIndependentSignature
       && cached.styleIndependentSignature === currentStyleIndependentSignature
       && transformed.signature === cached.autoRoutesSignature
+      && isAppShellUnchanged
       && cached.source !== source
     ) {
       const { descriptor } = await readAndParseSfc(filename, {
@@ -221,6 +226,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
 
     cached.source = source
     cached.autoRoutesSignature = transformed.signature
+    cached.appShellSignature = appShellSignature
     cached.styleIndependentSignature = nextStyleIndependentSignature
     cached.refreshToken = 0
     if (dirtyEntryId) {
