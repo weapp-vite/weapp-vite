@@ -197,12 +197,20 @@ Vue Query 的真实 HTTP headless 用例首次执行有 1 项失败、6 项未�
 | 本地构建、类型、单测、依赖契约、HMR、headless 与 Web | 构建、类型、单测、契约、HMR、headless gate/demo 与 Web 通过；真实 HTTP headless 的 1 项失败另行保留 |
 | Stable IDE 局部验证 | 6 项通过；2 项失败且在升级前基线复现，未完成全量 runtime 验收 |
 | 正式全量 IDE 验收 | 未执行；依仓库约束在合并后的干净 `main == origin/main` 主工作树重建后运行 |
-| Windows/Linux/macOS CI 矩阵 | 未运行远端矩阵；本轮不推送，本地 macOS 结果不能替代跨平台验证 |
-| Dimina 独立构建 | 缺少 SDK，仍待验证；类型检查通过不能替代构建 |
+| Windows/Linux/macOS CI 矩阵 | 后续已按授权提交 PR 并启动远端矩阵；各次运行结果与最终提交核验见 PR，旧提交通过不能替代最终提交通过 |
+| Dimina 独立构建 | 本地缺少 SDK；后续 PR 首轮 CI 的 Linux、macOS、Windows 独立构建全部通过 |
 | 范围审查与本地提交 | 清理生成报告及 app 类型噪音，保留 Husky/lint-staged 和发布一致性门禁 |
 
 ## Changeset 与交付边界
 
 使用现有依赖升级和 catalog 生成器，以本轮升级前的 `2c2d8a6ccedbc96e4f1a7e9593fc6c83424f3cb6` 为 base，各自产生中文 patch intent。两份 frontmatter 都覆盖同一组 42 个可发布包，已合并为一份 `.changeset/dependency-upgrade-20261015-101137.md`，保留默认及命名 catalog 的变更摘要，包含 `weapp-vite`、`wevu` 和 `create-weapp-vite` 联动，避免为同一批升级保留重复意图。既有 changeset 未修改。
 
-本轮交付为本地 `chore(deps)` 提交，不推送、不发布。原始日志、截图与基线对照保留在忽略的临时证据目录，生成报告和临时 worktree 不进入提交；正式全量 IDE、远端矩阵和 Dimina SDK 构建按上表保留待验。
+初轮交付为本地 `chore(deps)` 提交；用户随后授权推送、提交 PR、修复 CI 并在通过后合并，未授权发布。原始日志、截图与基线对照保留在忽略的临时证据目录，生成报告和临时 worktree 不进入提交。
+
+## PR 与 CI 跟进
+
+升级提交已进入 [PR #1229](https://github.com/weapp-vite/weapp-vite/pull/1229)，通过可信 `main` 上的手动 PR 工作流运行 14 项检查。每项均核对 `pr-context` 中的 PR head、base 和实际 checkout SHA；普通任务使用冻结 merge ref，性能 smoke 和 runtime size 使用冻结 head。最终验收以 PR 最后提交对应的工作流和状态为准。
+
+首轮 Ubuntu Node 22 覆盖率单测暴露 Tailwind 测试中的顺序假设：两个 CSS root 并行生成，记录按完成顺序追加，原测试却用首条记录识别要删除的第一个物理入口。CI 恰好先完成另一个入口，因此错误地要求删除另一个 root；其他核心平台任务已通过。现在根据 `request.sourceOptions.cssEntries` 与待删除文件路径识别 root，并参数化覆盖删除两个入口，保留移除、内存准备、重新创建、输出及清理断言。旧选择逻辑在本地两个场景中稳定出现一过一败；修复后完整文件 12 项通过，路径范围 ESLint 与差异检查通过。没有修改产品的并行生成行为、添加等待或放宽断言。
+
+正式全量 IDE 验收仍未执行，需在合并后的干净主工作树重建后运行；本报告中的历史 Stable 失败与环境边界不因远端 CI 通过而改写。
