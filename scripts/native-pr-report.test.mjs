@@ -33,7 +33,7 @@ function sizeReport() {
 }
 
 function fixture() {
-  const run = { id: 123, name: 'PR CI', event: 'pull_request', path: '.github/workflows/ci-pr.yml', status: 'completed', conclusion: 'failure', head_sha: driverSha, pull_requests: [pull] }
+  const run = { id: 123, name: 'PR CI', event: 'pull_request', path: '.github/workflows/ci-pr.yml', status: 'completed', conclusion: 'failure', head_sha: headSha, pull_requests: [pull] }
   const context = { schemaVersion: 1, event: 'pull_request', repository, runId: '123', driverSha, isPr: true, shouldRun: true, prNumber: 42, headSha, baseSha, headRef: 'feature', baseRef: 'main', headRepository: 'contributor/project', checkoutMode: 'merge', checkoutSha: driverSha, selections: { 'ci-performance': true, 'wevu-runtime-size': true } }
   const jobs = [
     { name: 'CI / Build and Test (windows-latest / Node 22)', conclusion: 'failure', steps: [] },

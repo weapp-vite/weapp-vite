@@ -40,7 +40,7 @@ export async function publishNativePrReport({ repository, run, context, jobs, re
   if (base.object?.sha !== context.baseSha) {
     return { published: false, reason: 'stale-base' }
   }
-  const recent = await request(`/actions/workflows/ci-pr.yml/runs?event=pull_request&head_sha=${context.driverSha}&per_page=100`)
+  const recent = await request(`/actions/workflows/ci-pr.yml/runs?event=pull_request&head_sha=${context.headSha}&per_page=100`)
   if (recent.workflow_runs.some(candidate => BigInt(candidate.id) > BigInt(run.id))) {
     return { published: false, reason: 'newer-run' }
   }

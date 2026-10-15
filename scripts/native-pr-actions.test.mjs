@@ -91,9 +91,9 @@ describe('native PR approval context', () => {
   it('authenticates native artifact identity separately from manual dispatch', async () => {
     const { options, get } = fixture()
     const context = await resolveNativePrContext(options, get)
-    const run = { id: 123, event: 'pull_request', head_sha: driverSha, pull_requests: [pull] }
+    const run = { id: 123, event: 'pull_request', head_sha: headSha, pull_requests: [pull] }
     expect(validateNativePrContext(context, run, repository)).toBe(context)
-    for (const change of [{ event: 'workflow_dispatch' }, { head_sha: headSha }, { pull_requests: [] }]) {
+    for (const change of [{ event: 'workflow_dispatch' }, { head_sha: driverSha }, { pull_requests: [] }]) {
       expect(() => validateNativePrContext(context, { ...run, ...change }, repository)).toThrow('Untrusted native PR context')
     }
   })

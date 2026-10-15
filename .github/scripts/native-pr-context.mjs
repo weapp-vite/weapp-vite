@@ -8,7 +8,7 @@ export function validateNativePrContext(context, run, repository) {
   const pull = run.pull_requests?.find(pull => pull.number === context?.prNumber)
   if (run.event !== 'pull_request' || context?.event !== 'pull_request' || context.schemaVersion !== 1
     || context.repository !== repository || String(context.runId) !== String(run.id)
-    || context.driverSha !== run.head_sha || context.isPr !== true
+    || context.headSha !== run.head_sha || context.isPr !== true
     || !Number.isSafeInteger(context.prNumber) || context.prNumber <= 0
     || !pull || pull.head?.sha !== context.headSha || pull.base?.sha !== context.baseSha
     || pull.head?.ref !== context.headRef || pull.base?.ref !== context.baseRef
