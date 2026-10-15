@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { validateNativePrContext } from '../../.github/scripts/native-pr-context.mjs'
 import { downloadPrContext, validatePerformancePrContext } from '../../.github/scripts/resolve-performance-runs.mjs'
 import { aggregatePlan } from './aggregate.mjs'
 import { assertSha, createMatrix, frozenManifest, isReportSamplingContract, needsSmoke, policy, statusContext, targetKey } from './contract.mjs'
@@ -92,6 +93,25 @@ async function smokeStatus(target) {
     }
     catch {
       // 没有可信上下文的旧运行不能用于当前 PR 的冒烟结论。
+    }
+  }
+  const native = await request('/actions/workflows/ci-pr.yml/runs?event=pull_request&per_page=100')
+  for (const run of native.workflow_runs ?? []) {
+    if (run.name !== 'PR CI' || run.path !== '.github/workflows/ci-pr.yml' || run.event !== 'pull_request') {
+      continue
+    }
+    try {
+      const input = await downloadPrContext({ apiUrl: process.env.GITHUB_API_URL ?? 'https://api.github.com', token: process.env.GITHUB_TOKEN, repository: process.env.GITHUB_REPOSITORY, run })
+      const context = validateNativePrContext(input, run, process.env.GITHUB_REPOSITORY)
+      if (context.headSha !== target.headSha || context.prNumber !== target.prNumber || (target.baseSha && context.baseSha !== target.baseSha)) {
+        continue
+      }
+      const jobs = await request(`/actions/runs/${run.id}/jobs?filter=latest&per_page=100`)
+      const smoke = jobs.jobs.find(job => job.name.startsWith('Performance Smoke /') && job.steps?.some(step => step.name === 'Run correctness smoke'))
+      return !smoke || smoke.status !== 'completed' ? '运行中' : smoke.conclusion === 'success' ? '通过或无需冒烟' : '🔴 未通过'
+    }
+    catch {
+      // 未通过审批或提交身份不符的运行不能提供当前提交的冒烟结论。
     }
   }
   return '未运行'

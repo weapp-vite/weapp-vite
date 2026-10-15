@@ -1,8 +1,6 @@
 /* eslint-disable no-template-curly-in-string -- GitHub Actions 表达式必须按字面量核验。 */
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
-import { parse } from 'yaml'
+import { readWorkflowFixture } from './workflowFixture.mjs'
 
 interface Workflow {
   on: { workflow_dispatch: { inputs: { scope: { default: string, options: string[] } } } }
@@ -15,8 +13,7 @@ interface Workflow {
   }>
 }
 
-const workflowPath = fileURLToPath(new URL('../.github/workflows/ci-acceptance.yml', import.meta.url))
-const workflow = parse(readFileSync(workflowPath, 'utf8')) as Workflow
+const workflow = readWorkflowFixture('ci-acceptance.yml') as Workflow
 
 it('isolates manual Windows acceptance diagnostics from the complete compatibility run', () => {
   expect(workflow.on.workflow_dispatch.inputs.scope).toMatchObject({

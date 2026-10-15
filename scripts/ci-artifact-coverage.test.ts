@@ -1,11 +1,9 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { glob } from 'tinyglobby'
 import { describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
-
-const root = path.resolve(import.meta.dirname, '..')
+import { readWorkflowFixture } from './workflowFixture.mjs'
 
 interface WorkflowStep {
   name?: string
@@ -18,7 +16,7 @@ interface Workflow {
 }
 
 async function readWorkflow(name: string) {
-  return parse(await readFile(path.join(root, '.github/workflows', name), 'utf8')) as Workflow
+  return readWorkflowFixture(name) as Workflow
 }
 
 function splitPatterns(value: unknown) {

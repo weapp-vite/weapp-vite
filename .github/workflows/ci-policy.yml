@@ -29,84 +29,11 @@ jobs:
       statuses: write
     with:
       pr_number: ${{ inputs.pr-number || '' }}
-
-  policy-pr:
+      profile: ci-policy
+  validation:
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true')
-    name: Policy Checks (Node 24)
-    uses: ./.github/workflows/reusable-node-command.yml
+    if: needs.pr-context.outputs.should_run == 'true'
+    uses: ./.github/workflows/validate-ci-policy.yml
     with:
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
-      runs_on: ubuntu-latest
-      node_version: '24'
-      timeout_minutes: 10
-      main_command: |
-        pnpm test:release
-        if [[ -f scripts/manual-pr-actions.test.mjs ]]; then
-          pnpm test:pr-actions
-        fi
-        pnpm check:changeset:frontmatter
-        pnpm agents:check
-        pnpm check:create-weapp-vite-changeset
-        pnpm check:publishable-workspace-dependency-protocols
-        pnpm check:weapp-core-constants-changeset
-        pnpm check:weapp-core-constants-dependency-range
-        pnpm check:rolldown:single-version
-        pnpm check:vscode-extension-changeset
-        if [[ "${{ needs.pr-context.outputs.is_pr }}" == "true" ]]; then
-          pnpm seo:quality:strict -- --git-diff-base "${{ needs.pr-context.outputs.base_sha }}"
-        elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-          pnpm seo:quality:strict -- --git-diff-base "HEAD~1"
-        else
-          pnpm seo:quality:strict
-        fi
-        pnpm audit --audit-level=moderate || true
-    secrets: inherit
-
-  policy-full:
-    needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')
-    name: Policy Checks (Node ${{ matrix.node-version }})
-    strategy:
-      fail-fast: false
-      max-parallel: 3
-      matrix:
-        node-version: [22, 24]
-    uses: ./.github/workflows/reusable-node-command.yml
-    with:
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
-      runs_on: ubuntu-latest
-      node_version: '${{ matrix.node-version }}'
-      timeout_minutes: 10
-      main_command: |
-        pnpm test:release
-        if [[ -f scripts/manual-pr-actions.test.mjs ]]; then
-          pnpm test:pr-actions
-        fi
-        pnpm check:changeset:frontmatter
-        pnpm agents:check
-        pnpm check:create-weapp-vite-changeset
-        pnpm check:publishable-workspace-dependency-protocols
-        pnpm check:weapp-core-constants-changeset
-        pnpm check:weapp-core-constants-dependency-range
-        pnpm check:rolldown:single-version
-        pnpm check:vscode-extension-changeset
-        if [[ "${{ needs.pr-context.outputs.is_pr }}" == "true" ]]; then
-          pnpm seo:quality:strict -- --git-diff-base "${{ needs.pr-context.outputs.base_sha }}"
-        elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-          pnpm seo:quality:strict -- --git-diff-base "HEAD~1"
-        else
-          pnpm seo:quality:strict
-        fi
-        pnpm audit --audit-level=moderate || true
+      pr_context: ${{ needs.pr-context.outputs.pr_context }}
     secrets: inherit

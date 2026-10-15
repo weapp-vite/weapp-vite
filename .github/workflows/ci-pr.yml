@@ -1,0 +1,145 @@
+name: PR CI
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+concurrency:
+  group: pr-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+jobs:
+  approval:
+    name: Approve PR checks
+    runs-on: ubuntu-latest
+    environment: pr-ci-approval
+    timeout-minutes: 5
+    steps:
+      - name: Approve this revision
+        run: echo "PR checks approved for this revision"
+  plan:
+    name: Freeze approved PR target
+    needs: approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      pr_context: ${{ steps.context.outputs.pr_context }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - id: context
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .github/scripts/native-pr-context.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: pr-context
+          path: .tmp/pr-context/context.json
+          if-no-files-found: error
+  ci:
+    name: CI
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['ci'] }}
+    uses: ./.github/workflows/validate-ci.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  ci-policy:
+    name: CI Policy
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['ci-policy'] }}
+    uses: ./.github/workflows/validate-ci-policy.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  ci-e2e:
+    name: CI E2E
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['ci-e2e'] }}
+    uses: ./.github/workflows/validate-ci-e2e.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  ci-create-weapp-vite:
+    name: Create Weapp Vite Smoke
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['ci-create-weapp-vite'] }}
+    uses: ./.github/workflows/validate-ci-create-weapp-vite.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  ci-acceptance-http:
+    name: Acceptance HTTP
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['ci-acceptance-http'] }}
+    uses: ./.github/workflows/validate-ci-acceptance-http.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  ci-acceptance:
+    name: Acceptance and Agent
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['ci-acceptance'] }}
+    uses: ./.github/workflows/validate-ci-acceptance.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  ci-dimina:
+    name: Dimina Web Experiment
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['ci-dimina'] }}
+    uses: ./.github/workflows/validate-ci-dimina.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  ci-vite-host-consumer:
+    name: Vite Host Consumer
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['ci-vite-host-consumer'] }}
+    uses: ./.github/workflows/validate-ci-vite-host-consumer.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  ci-vscode-extension:
+    name: VSCode Extension CI
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['ci-vscode-extension'] }}
+    uses: ./.github/workflows/validate-ci-vscode-extension.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  ci-tutorial-e2e:
+    name: Tutorial E2E
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['ci-tutorial-e2e'] }}
+    uses: ./.github/workflows/validate-ci-tutorial-e2e.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  deploy-website:
+    name: Deploy Website
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['deploy-website'] }}
+    uses: ./.github/workflows/validate-deploy-website.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  native-addon-correctness:
+    name: Native Addon Correctness
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['native-addon-correctness'] }}
+    uses: ./.github/workflows/validate-native-addon-correctness.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  ci-performance:
+    name: Performance Smoke
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['ci-performance'] }}
+    uses: ./.github/workflows/validate-ci-performance.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}
+  wevu-runtime-size:
+    name: Wevu Runtime Size
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.pr_context).selections['wevu-runtime-size'] }}
+    uses: ./.github/workflows/validate-wevu-runtime-size.yml
+    with:
+      pr_context: ${{ needs.plan.outputs.pr_context }}

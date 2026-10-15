@@ -1,15 +1,13 @@
-import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
 import { baselineManifest } from './nativeAddonCorrectness/manifest.mjs'
 import { verifyNativeExports, verifyNativeReport } from './verify-native-addon-correctness.mjs'
+import { readWorkflowFixture } from './workflowFixture.mjs'
 
 const packageRoot = path.resolve('fixture-native-package')
 
 async function addonJob() {
-  const source = await readFile(new URL('../.github/workflows/native-addon-correctness.yml', import.meta.url), 'utf8')
-  return parse(source).jobs['actual-addon']
+  return readWorkflowFixture('native-addon-correctness.yml').jobs['actual-addon']
 }
 
 function successfulReport() {

@@ -2,7 +2,7 @@ name: CI Performance Comment
 
 on:
   workflow_run:
-    workflows: [CI Performance, Wevu Runtime Size, Performance Smoke, Nightly Performance]
+    workflows: [CI Performance, Wevu Runtime Size, Performance Smoke, Nightly Performance, PR CI]
     types: [completed]
 
 concurrency:
@@ -125,3 +125,50 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PERFORMANCE_ARTIFACTS: performance-artifacts
         run: node scripts/performanceGate/publish.mjs
+
+  native-pr-report:
+    if: github.event.workflow_run.name == 'PR CI' && github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Check out trusted native PR reporter
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - name: Download native pr-context
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: pr-context
+          path: native-pr-artifacts/pr-context
+          merge-multiple: false
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Download native performance-smoke-report
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: performance-smoke-report
+          path: native-pr-artifacts/performance-smoke-report
+          merge-multiple: false
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Download native wevu-runtime-size-report
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: wevu-runtime-size-report
+          path: native-pr-artifacts/wevu-runtime-size-report
+          merge-multiple: false
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Publish native PR performance and size results
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          NATIVE_PR_ARTIFACTS: native-pr-artifacts
+        run: node .github/scripts/publish-native-pr-report.mjs

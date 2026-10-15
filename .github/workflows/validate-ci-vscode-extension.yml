@@ -1,0 +1,111 @@
+name: Validate VSCode Extension CI
+on:
+  workflow_call:
+    inputs:
+      pr_context:
+        required: true
+        type: string
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-frozen-pr-context.yml
+    with:
+      pr_context: ${{ inputs.pr_context }}
+      profile: ci-vscode-extension
+
+  vscode-extension:
+    if: needs.pr-context.outputs.should_run == 'true'
+    needs: pr-context
+    name: VSCode Extension Checks (Node 24)
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ubuntu-latest
+      node_version: '24'
+      timeout_minutes: 10
+      main_command: |
+        pnpm --dir extensions/vscode run check:publish
+    secrets: inherit
+
+  vscode-extension-package:
+    if: needs.pr-context.outputs.should_run == 'true'
+    name: VSCode Extension Package Dry Run (Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - pr-context
+      - vscode-extension
+      - vscode-extension-host-smoke
+      - vscode-extension-vsix-e2e
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: 24
+
+      - name: Build VSIX dry run
+        run: pnpm --dir extensions/vscode run package:dry-run
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vscode-extension-vsix
+          path: extensions/vscode/.artifacts/*.vsix
+          if-no-files-found: error
+          include-hidden-files: true
+
+  vscode-extension-host-smoke:
+    if: needs.pr-context.outputs.should_run == 'true'
+    name: VSCode Extension Host Smoke (Node 24)
+    runs-on: macos-latest
+    timeout-minutes: 15
+    needs: [pr-context, vscode-extension]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: 24
+
+      - name: Build extension
+        run: pnpm --dir extensions/vscode run build
+
+      - name: Run VS Code host smoke test
+        run: pnpm --dir extensions/vscode run test:host:smoke
+
+  vscode-extension-vsix-e2e:
+    if: needs.pr-context.outputs.should_run == 'true'
+    name: VSCode Extension VSIX E2E (Node 24)
+    runs-on: macos-latest
+    timeout-minutes: 20
+    needs: [pr-context, vscode-extension]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: 24
+
+      - name: Run VSIX install-mode e2e
+        run: pnpm --dir extensions/vscode run test:vsix:e2e
