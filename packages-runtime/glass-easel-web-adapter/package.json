@@ -49,13 +49,13 @@
     "glass-easel-template-compiler": "1.2.1"
   },
   "devDependencies": {
-    "playwright": "1.64.0",
+    "playwright": "1.64.1",
     "tsd": "0.33.0",
     "tsdown": "0.23.1",
     "tsx": "4.23.15",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "~5.0.3"
+    "vitest": "~5.0.4"
   },
   "publishConfig": {
     "access": "public",

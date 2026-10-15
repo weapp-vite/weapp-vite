@@ -9,7 +9,7 @@ export const TEMPLATE_CATALOG = {
   '@babel/types': '^8.0.6',
   '@douyin-microapp/typings': '^1.3.1',
   '@egoist/tailwindcss-icons': '^1.9.2',
-  '@icebreakers/eslint-config': '^8.0.8',
+  '@icebreakers/eslint-config': '^8.0.9',
   '@icebreakers/stylelint-config': '^5.1.3',
   '@iconify-json/mdi': '^1.2.3',
   '@iconify/tailwind4': '^1.2.3',
@@ -25,8 +25,8 @@ export const TEMPLATE_CATALOG = {
   '@vitejs/devtools-kit': '0.7.6',
   '@vitejs/plugin-vue': '^6.0.10',
   '@vue/babel-plugin-jsx': '3.0.0',
-  '@vue/compiler-core': '^3.5.43',
-  '@vue/compiler-dom': '^3.5.43',
+  '@vue/compiler-core': '^3.5.44',
+  '@vue/compiler-dom': '^3.5.44',
   '@vue/language-core': '^3.3.13',
   '@wot-ui/ui': '2.3.2',
   'antd-mini': '^3.4.3',
@@ -36,11 +36,11 @@ export const TEMPLATE_CATALOG = {
   'estree-walker': '^3.0.3',
   'gm-crypto': '^0.1.12',
   'graphql-request': '^7.4.0',
-  'happy-dom': '^20.14.6',
+  'happy-dom': '^21.0.1',
   'lru-cache': '^11.5.3',
   'magic-string': '^1.4.3',
   'miniprogram-api-typings': '^5.2.3',
-  'oxc-parser': '^0.153.0',
+  'oxc-parser': '^0.154.0',
   'oxc-walker': '^1.1.1',
   'pkg-types': '^2.3.3',
   'postcss-selector-parser': '^7.1.6',
@@ -54,13 +54,13 @@ export const TEMPLATE_CATALOG = {
   'uview-plus': '3.8.130',
   'vite-plugin-inspect': '^12.1.0',
   'vue-tsc': '^3.3.13',
-  'weapp-tailwindcss': '^5.6.0',
+  'weapp-tailwindcss': '^5.6.2',
   autoprefixer: '^10.6.1',
   axios: '^1.20.0',
   clsx: '^2.1.1',
   d3: '^7.9.0',
   dayjs: '^1.11.23',
-  devframe: '1.2.3',
+  devframe: '1.2.5',
   echarts: '^6.1.0',
   esbuild: '^0.28.2',
   eslint: '^10.12.0',
@@ -71,9 +71,9 @@ export const TEMPLATE_CATALOG = {
   obug: '^3.0.0',
   pathe: '^2.0.3',
   picocolors: '^1.1.1',
-  postcss: '^8.5.29',
-  react: '19.3.0',
-  rolldown: '1.2.13',
+  postcss: '^8.5.30',
+  react: '19.3.1',
+  rolldown: '1.2.14',
   sass: '^1.105.1',
   sharp: '^0.35.5',
   stylelint: '^17.16.0',
@@ -82,8 +82,8 @@ export const TEMPLATE_CATALOG = {
   tsx: '^4.23.15',
   typescript: '^6.0.3',
   vite: '8.3.4',
-  vue: '^3.5.43',
-  zod: '^4.6.5'
+  vue: '^3.5.44',
+  zod: '^4.6.7'
 } as const
 
 export const TEMPLATE_NAMED_CATALOG = {
@@ -91,7 +91,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.17.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.6.0'
+    'weapp-tailwindcss': '5.6.2'
   },
   latest: {
     'miniprogram-api-typings': '^5.2.3',

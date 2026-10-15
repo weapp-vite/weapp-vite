@@ -7,6 +7,18 @@ import { readTaskCases } from './domAcceptanceReport/inventory'
 import { getCiFullTasks, getCiPrTasks, getCiTasks, getDiminaTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
+  it('keeps Bun runtime checks explicit without requiring Bun in Node suites', async () => {
+    const tasks = await getSuiteTasks('bun')
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0]?.args).toContain(path.resolve(import.meta.dirname, '../vitest.e2e.bun.config.ts'))
+    expect((await getCiTasks()).some(task => task.label.startsWith('bun/'))).toBe(false)
+    expect((await getCiFullTasks()).some(task => task.label.startsWith('bun/'))).toBe(false)
+    for (const suite of ['bun-headless', 'bun-devtools']) {
+      const runtime = await getSuiteTasks(suite)
+      expect(runtime).toHaveLength(1)
+      expect(runtime[0]?.env?.WEAPP_VITE_E2E_TARGET_FILE).toBe('bun/runtime.test.ts')
+    }
+  })
   it('keeps the parallel config CI-only and serial', () => {
     expect(parallelConfig.test?.include).toEqual([
       path.resolve(import.meta.dirname, '../ci/**/*.test.ts'),
