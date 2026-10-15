@@ -1,7 +1,10 @@
 import type { CompilerContext } from '../../../../../context'
 import type { ResolvedAppShell } from '../../appShell'
 import type { CompilationCacheEntry } from './types'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createCompilerAppShellSignature } from '../../appShell'
 import { refreshCompiledVueEntryCacheInDev } from './compile'
 
@@ -27,19 +30,26 @@ vi.mock('../../injectPageFeatures', () => ({
   injectWevuPageFeaturesInJsWithViteResolver: async () => ({ transformed: false }),
 }))
 
-const filename = '/project/src/pages/index/index.vue'
 const source = '<template><view>page</view></template>'
-const shell: ResolvedAppShell = {
-  file: '/project/src/__weapp_vite_app_shell',
-  importPath: '/__weapp_vite_app_shell',
-  tagName: 'weapp-app-shell',
-}
 
 describe('bundle page cache app shell inputs', () => {
+  let root: string
+  let filename: string
+  let shell: ResolvedAppShell
+
   beforeEach(() => {
+    root = mkdtempSync(path.join(tmpdir(), 'weapp-shell-cache-'))
+    filename = path.join(root, 'pages/index/index.vue')
+    shell = {
+      file: path.join(root, '__weapp_vite_app_shell'),
+      importPath: '/__weapp_vite_app_shell',
+      tagName: 'weapp-app-shell',
+    }
     mocks.compile.mockClear()
     mocks.read.mockResolvedValue(source)
   })
+
+  afterEach(() => rmSync(root, { recursive: true, force: true }))
 
   function refresh(cached: CompilationCacheEntry, appShell?: ResolvedAppShell) {
     return refreshCompiledVueEntryCacheInDev({
@@ -51,7 +61,7 @@ describe('bundle page cache app shell inputs', () => {
       configService: {
         isDev: true,
         platform: 'weapp',
-        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        relativeOutputPath: (value: string) => path.relative(root, value).split(path.sep).join('/'),
         weappViteConfig: {},
       } as NonNullable<CompilerContext['configService']>,
       compileOptionsState: {
@@ -61,10 +71,9 @@ describe('bundle page cache app shell inputs', () => {
     })
   }
 
-  it.each([
-    ['added', undefined, shell],
-    ['removed', shell, undefined],
-  ] as const)('recompiles an unchanged page when its app shell is %s', async (_label, previous, current) => {
+  it.each(['added', 'removed'])('recompiles an unchanged page when its app shell is %s', async (change) => {
+    const previous = change === 'added' ? undefined : shell
+    const current = change === 'added' ? shell : undefined
     const cached = {
       result: { script: 'Page({})', template: '<view>cached</view>' },
       source,
