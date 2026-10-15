@@ -201,10 +201,12 @@ it('normalizes Windows source paths and ignores all records preceding the profil
   expect(vi.getTimerCount()).toBe(0)
 })
 
-it('preserves recent batch provenance in timeout evidence without accepting an older source event', async () => {
+it.each([
+  { file: 'src/template.html', expectedFile: 'src/template.html' },
+  { file: 'C:\\project\\src\\template.html', expectedFile: 'c:/project/src/template.html' },
+])('preserves normalized source identity and recent batch provenance on timeout: $file', async ({ file, expectedFile }) => {
   vi.useFakeTimers()
   const dev = createProcess()
-  const file = path.join(tmpdir(), 'dev-publication', 'template.html')
   const capturedAtEpochMs = performance.timeOrigin + performance.now()
   const publication = createDevBuildCompletion(dev, {
     completed: 'publication complete',
@@ -224,7 +226,7 @@ it('preserves recent batch provenance in timeout evidence without accepting an o
     capturedAtEpochMs: number
     samples: Array<{ buildId: string, sourceEvents: Array<{ file: string }> }>
   }
-  expect(evidence.file).toBe(file.replaceAll('\\', '/'))
+  expect(evidence.file).toBe(expectedFile)
   expect(evidence.profileStatus).toBe('read')
   expect(evidence.capturedAtEpochMs).toBeGreaterThanOrEqual(capturedAtEpochMs)
   expect(evidence.samples.map(sample => sample.buildId)).toEqual(['build-2', 'build-3', 'build-4', 'build-5'])
