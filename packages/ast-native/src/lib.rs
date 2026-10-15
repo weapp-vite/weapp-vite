@@ -3,12 +3,15 @@ use std::{
     path::Path,
 };
 
+#[cfg(test)]
+use std::cell::Cell;
+
 use napi_derive::napi;
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{
     Argument, ArrowFunctionBody, ArrowFunctionExpression, CallExpression, Expression, Function,
-    FunctionBody, ImportDeclarationSpecifier, ModuleExportName, ObjectProperty, Program, PropertyKey,
-    Statement,
+    FunctionBody, ImportDeclarationSpecifier, ModuleExportName, ObjectProperty, Program,
+    PropertyKey, Statement,
 };
 use oxc_ast_visit::{Visit, walk};
 use oxc_parser::Parser;
@@ -17,6 +20,14 @@ use oxc_syntax::scope::ScopeFlags;
 
 mod vue_sfc_signature;
 pub use vue_sfc_signature::get_vue_sfc_signature_payload_native;
+
+mod compiler_analysis;
+mod npm_chunk_analysis;
+
+#[cfg(test)]
+thread_local! {
+    pub static SCRIPT_PARSE_COUNT: Cell<usize> = const { Cell::new(0) };
+}
 
 #[napi(object)]
 pub struct NativeOnPageScrollDiagnostic {
@@ -46,12 +57,15 @@ fn parse_program<'a>(
     allocator: &'a Allocator,
     code: &'a str,
     filename: Option<String>,
+    reject_diagnostics: bool,
 ) -> Option<Program<'a>> {
+    #[cfg(test)]
+    SCRIPT_PARSE_COUNT.with(|count| count.set(count.get() + 1));
     let filename = filename.unwrap_or_else(|| "inline.ts".to_string());
     let source_type =
         SourceType::from_path(Path::new(&filename)).unwrap_or_else(|_| SourceType::ts());
     let parsed = Parser::new(allocator, code, source_type).parse();
-    if parsed.fatal_error {
+    if parsed.fatal_error || (reject_diagnostics && !parsed.diagnostics.is_empty()) {
         return None;
     }
     Some(parsed.program)
@@ -269,7 +283,7 @@ pub fn collect_on_page_scroll_diagnostics_native(
     }
 
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
+    let Some(program) = parse_program(&allocator, &code, filename, false) else {
         return Vec::new();
     };
 
@@ -308,7 +322,7 @@ pub fn may_contain_static_require_literal_native(code: String, filename: Option<
         return false;
     }
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
+    let Some(program) = parse_program(&allocator, &code, filename, false) else {
         return false;
     };
     let mut visitor = StaticRequireVisitor { found: false };
@@ -350,7 +364,7 @@ pub fn may_contain_platform_api_access_native(code: String, filename: Option<Str
         return false;
     }
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
+    let Some(program) = parse_program(&allocator, &code, filename, false) else {
         return false;
     };
     let mut visitor = PlatformApiVisitor { found: false };
@@ -462,7 +476,7 @@ pub fn collect_feature_flags_native(
     }
 
     let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename) else {
+    let Some(program) = parse_program(&allocator, &code, filename, false) else {
         return Vec::new();
     };
     let (named_hook_locals, namespace_locals) =
@@ -493,16 +507,41 @@ pub fn analyze_script_native(
 
 #[napi(js_name = "analyzeScriptsNative")]
 pub fn analyze_scripts_native(inputs: Vec<NativeScriptAnalysisInput>) -> Vec<NativeScriptAnalysis> {
-    inputs
+    let mut results: Vec<Option<NativeScriptAnalysis>> = (0..inputs.len()).map(|_| None).collect();
+    let mut groups: HashMap<(String, Option<String>), Vec<usize>> = HashMap::new();
+    for (index, input) in inputs.iter().enumerate() {
+        groups
+            .entry((input.code.clone(), input.filename.clone()))
+            .or_default()
+            .push(index);
+    }
+
+    for ((code, filename), matching) in groups {
+        let allocator = Allocator::default();
+        let Some(program) = parse_program(&allocator, &code, filename, false) else {
+            for index in matching {
+                results[index] = Some(NativeScriptAnalysis {
+                    has_static_require_literal: false,
+                    has_platform_api_access: false,
+                    feature_flags: Vec::new(),
+                });
+            }
+            continue;
+        };
+        for index in matching {
+            let input = &inputs[index];
+            results[index] = Some(analyze_script_program(
+                &program,
+                &code,
+                input.module_id.clone(),
+                input.hook_to_feature_json.clone(),
+            ));
+        }
+    }
+
+    results
         .into_iter()
-        .map(|input| {
-            analyze_script_impl(
-                &input.code,
-                input.module_id,
-                input.hook_to_feature_json,
-                input.filename,
-            )
-        })
+        .map(|result| result.expect("native script analysis result must be populated"))
         .collect()
 }
 
@@ -511,6 +550,51 @@ fn analyze_script_impl(
     module_id: Option<String>,
     hook_to_feature_json: Option<String>,
     filename: Option<String>,
+) -> NativeScriptAnalysis {
+    let wants_static_require =
+        code.contains("require(") || code.contains("require (") || code.contains("require`");
+    let wants_platform_api = may_contain_platform_api_text(code);
+    let feature_config = module_id
+        .clone()
+        .zip(hook_to_feature_json.clone())
+        .and_then(|(module_id, hook_to_feature_json)| {
+            if !code.contains(&module_id) {
+                return None;
+            }
+            let hook_to_feature =
+                serde_json::from_str::<HashMap<String, String>>(&hook_to_feature_json).ok()?;
+            if hook_to_feature.is_empty() || !hook_to_feature.keys().any(|hook| code.contains(hook))
+            {
+                return None;
+            }
+            Some((module_id, hook_to_feature))
+        });
+
+    if !wants_static_require && !wants_platform_api && feature_config.is_none() {
+        return NativeScriptAnalysis {
+            has_static_require_literal: false,
+            has_platform_api_access: false,
+            feature_flags: Vec::new(),
+        };
+    }
+
+    let allocator = Allocator::default();
+    let Some(program) = parse_program(&allocator, code, filename, false) else {
+        return NativeScriptAnalysis {
+            has_static_require_literal: false,
+            has_platform_api_access: false,
+            feature_flags: Vec::new(),
+        };
+    };
+
+    analyze_script_program(&program, code, module_id, hook_to_feature_json)
+}
+
+fn analyze_script_program(
+    program: &Program,
+    code: &str,
+    module_id: Option<String>,
+    hook_to_feature_json: Option<String>,
 ) -> NativeScriptAnalysis {
     let wants_static_require =
         code.contains("require(") || code.contains("require (") || code.contains("require`");
@@ -532,26 +616,9 @@ fn analyze_script_impl(
                 Some((module_id, hook_to_feature))
             });
 
-    if !wants_static_require && !wants_platform_api && feature_config.is_none() {
-        return NativeScriptAnalysis {
-            has_static_require_literal: false,
-            has_platform_api_access: false,
-            feature_flags: Vec::new(),
-        };
-    }
-
-    let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, code, filename) else {
-        return NativeScriptAnalysis {
-            has_static_require_literal: false,
-            has_platform_api_access: false,
-            feature_flags: Vec::new(),
-        };
-    };
-
     let feature_flags = feature_config.and_then(|(module_id, hook_to_feature)| {
         let (named_hook_locals, namespace_locals) =
-            collect_feature_flag_imports(&program, &module_id, &hook_to_feature);
+            collect_feature_flag_imports(program, &module_id, &hook_to_feature);
         if named_hook_locals.is_empty() && namespace_locals.is_empty() {
             return None;
         }
@@ -568,7 +635,7 @@ fn analyze_script_impl(
         has_platform_api_access: false,
         feature_flags,
     };
-    visitor.visit_program(&program);
+    visitor.visit_program(program);
 
     NativeScriptAnalysis {
         has_static_require_literal: wants_static_require && visitor.has_static_require_literal,

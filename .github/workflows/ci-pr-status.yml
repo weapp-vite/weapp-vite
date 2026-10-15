@@ -1,0 +1,72 @@
+name: Manual PR Status
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+      - CI Policy
+      - CI E2E
+      - Create Weapp Vite Smoke
+      - Acceptance HTTP
+      - Acceptance and Agent
+      - Dimina Web Experiment
+      - Vite Host Consumer
+      - VSCode Extension CI
+      - Tutorial E2E
+      - Deploy Website
+      - Native Addon Correctness
+      - Performance Smoke
+      - Wevu Runtime Size
+      - Nightly Performance
+    types: [in_progress, completed]
+  workflow_dispatch:
+    inputs:
+      run-id:
+        description: 已有手动 PR 运行 ID；修复状态回写时使用
+        required: false
+        default: ''
+        type: string
+      pr-number:
+        description: PR 编号；补同步该 PR 已有的各项手动检查，与 run-id 二选一
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  statuses: write
+
+concurrency:
+  group: manual-pr-status-${{ github.event.workflow_run.id || inputs.run-id || format('pr-{0}', inputs.pr-number) }}
+  cancel-in-progress: false
+
+jobs:
+  report:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref_name == github.event.repository.default_branch)
+      || (github.event.workflow_run.event == 'workflow_dispatch'
+      && github.event.workflow_run.head_branch == github.event.repository.default_branch
+      && github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - name: Publish or reconcile manual PR statuses
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_STATUS_RUN_ID: ${{ github.event.workflow_run.id || inputs.run-id }}
+          PR_STATUS_PR_NUMBER: ${{ inputs.pr-number || '' }}
+        run: |
+          if [ -n "$PR_STATUS_PR_NUMBER" ]; then
+            node .github/scripts/reconcile-pr-status.mjs
+          else
+            node .github/scripts/publish-pr-status.mjs
+          fi

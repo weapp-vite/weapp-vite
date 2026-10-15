@@ -10,6 +10,7 @@ export async function registerResolvedPageLayoutEntries(options: {
   normalizeEntry: (entry: string, jsonPath: string) => string
   jsonPath: string
   platform?: MpPlatform
+  resolveNativeLayoutAssets?: typeof collectNativeLayoutAssets
 }) {
   const {
     layouts,
@@ -19,11 +20,12 @@ export async function registerResolvedPageLayoutEntries(options: {
     normalizeEntry,
     jsonPath,
     platform,
+    resolveNativeLayoutAssets = collectNativeLayoutAssets,
   } = options
 
   for (const layout of layouts) {
     if (layout.kind === 'native') {
-      const nativeAssets = await collectNativeLayoutAssets(layout.file, platform)
+      const nativeAssets = await resolveNativeLayoutAssets(layout.file, platform)
       if (!nativeAssets.script) {
         continue
       }

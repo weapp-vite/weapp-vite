@@ -1,6 +1,7 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
 import type { LogicalEntryDependency } from '../../../moduleGraph/logicalEntry'
-import type { SidecarModuleKind } from '../../../moduleGraph/protocol'
+import type { LogicalEntryType, SidecarModuleKind } from '../../../moduleGraph/protocol'
+import type { Entry } from '../../../types'
 import type { CorePluginState } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
@@ -24,6 +25,40 @@ function resolveEntryRecord(state: CorePluginState, sourceId: string) {
   const relativeBase = removeExtensionDeep(state.ctx.configService.relativeAbsoluteSrcRoot(sourceId))
   return state.entriesMap.get(relativeBase)
     ?? state.entriesMap.get(removeExtensionDeep(sourceId))
+}
+
+function ownsLayoutMetadata(state: CorePluginState, entry: Entry | undefined, sourceId: string) {
+  if (!entry?.path) {
+    return false
+  }
+  const declaredPath = normalizeFsResolvedId(entry.path)
+  const ownerId = normalizeFsResolvedId(sourceId)
+  // 插件生成的入口无需落盘；相同虚拟或词法身份也能持有自己的配置。
+  if (declaredPath === ownerId) {
+    return true
+  }
+  if (declaredPath.startsWith('\0') || ownerId.startsWith('\0')) {
+    return false
+  }
+  const absolutePath = path.isAbsolute(declaredPath)
+    ? declaredPath
+    : path.resolve(state.ctx.configService.absoluteSrcRoot, declaredPath)
+  return withRealpathScope(() => normalizeSourceId(absolutePath) === normalizeSourceId(ownerId))
+}
+
+function collectLayoutStyleSources(state: CorePluginState, ownerId: string) {
+  return withRealpathScope(() => {
+    const sources = new Set<string>()
+    const owners = new Set([normalizeFsResolvedId(ownerId), normalizeSourceId(ownerId)])
+    for (const owner of owners) {
+      const cssSources = state.ctx.runtimeState.css?.importerToDependencies.get(owner) ?? []
+      const sfcSources = state.ctx.runtimeState.build.hmr.vueEntryStyleBindings?.get(owner)?.sources ?? []
+      for (const source of [...cssSources, ...sfcSources]) {
+        sources.add(normalizeSourceId(source))
+      }
+    }
+    return sources
+  })
 }
 
 async function resolveLocalModule(
@@ -103,14 +138,20 @@ async function collectLogicalEntryDependencies(
   state: CorePluginState,
   pluginContext: PluginContext,
   ownerId: string,
+  entryType: LogicalEntryType,
 ) {
   const pendingDependencies = state.ctx.moduleGraphService.getEntryDependencies(ownerId, { preserveAliases: true })
-  const entry = resolveEntryRecord(state, ownerId)
+  const record = resolveEntryRecord(state, ownerId)
+  // 共享 layout 的发现占位记录携带父页面上下文，不能作为 layout 的配置所有者。
+  const entry = entryType === 'layout' && !ownsLayoutMetadata(state, record, ownerId) ? undefined : record
   const dependencies: LogicalEntryDependency[] = []
+  const layoutStyleSources = entryType === 'layout' ? collectLayoutStyleSources(state, ownerId) : undefined
   const addExistingDependency = async (kind: SidecarModuleKind, sourceId?: string) => {
     if (sourceId && await pathExistsCached(sourceId)) {
       dependencies.push({ kind, sourceId: normalizeFsResolvedId(sourceId) })
+      return true
     }
+    return false
   }
   for (const dependency of pendingDependencies) {
     // JSX 依赖在源码 transform 中发现并登记 addWatchFile，由源码模块持有。
@@ -123,6 +164,12 @@ async function collectLogicalEntryDependencies(
     if (dependency.kind === 'json') {
       continue
     }
+    // Layout 的脚本和模板依赖按当前物理所有者重建，不能继承旧包装模块的父页面边。
+    // SFC 的外部样式只保留编译器登记在当前源码上的 CSS 或 src 依赖。
+    if (layoutStyleSources && (dependency.kind !== 'style'
+      || !withRealpathScope(() => layoutStyleSources.has(normalizeSourceId(dependency.sourceId))))) {
+      continue
+    }
     await addExistingDependency(dependency.kind, dependency.sourceId)
   }
   await addExistingDependency('script', ownerId)
@@ -131,7 +178,8 @@ async function collectLogicalEntryDependencies(
     findTemplateEntry(ownerId, state.ctx.configService.platform),
     findCssEntry(ownerId, state.ctx.configService.platform),
   ])
-  await addExistingDependency('json', entry?.jsonPath ?? jsonEntry.path)
+  const effectiveJsonPath = entry?.jsonPath ?? jsonEntry.path
+  const hasJsonEntry = await addExistingDependency('json', effectiveJsonPath)
   await addExistingDependency('json', entry && 'sitemapJsonPath' in entry ? entry.sitemapJsonPath : undefined)
   await addExistingDependency('json', entry && 'themeJsonPath' in entry ? entry.themeJsonPath : undefined)
   const templatePath = entry && 'templatePath' in entry ? entry.templatePath : templateEntry.path
@@ -141,7 +189,11 @@ async function collectLogicalEntryDependencies(
     await state.ctx.wxmlService?.scan(templatePath)
   }
   dependencies.push(...collectTemplateDependencies(state, templatePath))
-  dependencies.push(...await collectComponentDependencies(state, pluginContext, ownerId, entry?.declaredJson ?? entry?.json))
+  const declaredJson = entry?.declaredJson ?? entry?.json
+  const componentJson = entryType === 'layout' && declaredJson === undefined && hasJsonEntry && effectiveJsonPath
+    ? await state.ctx.jsonService.read(effectiveJsonPath)
+    : declaredJson
+  dependencies.push(...await collectComponentDependencies(state, pluginContext, ownerId, componentJson))
   withRealpathScope(() => {
     const sources = getCompilerSourceSnapshot(state.ctx.configService)
     for (const kind of ['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
@@ -206,7 +258,7 @@ export function createLogicalEntryLoadHook(state: CorePluginState) {
             : logicalEntry.type === 'page' ? 'page' : 'component',
         )
       }
-      const dependencies = await collectLogicalEntryDependencies(state, this, logicalEntry.sourceId)
+      const dependencies = await collectLogicalEntryDependencies(state, this, logicalEntry.sourceId, logicalEntry.type)
       if (state.ctx.configService.isDev) {
         // 编译器直接发射的组件同样拥有逻辑入口，不能依赖父入口再次扫描 JSON 才登记。
         // sourceId 已由发射方解析；保留原始模块身份以及已有解析元数据。

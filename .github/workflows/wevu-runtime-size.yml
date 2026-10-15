@@ -1,19 +1,37 @@
 name: Wevu Runtime Size
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr-number:
+        description: Optional open PR number; empty skips PR-only runtime comparison
+        type: string
+        required: false
+        default: ''
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ inputs.pr-number || github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-pr-context.yml
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
+    with:
+      pr_number: ${{ inputs.pr-number || '' }}
+      checkout_mode: head
+
   measure:
-    if: ${{ !startsWith(github.head_ref, 'release/pnpm-version') }}
+    needs: pr-context
+    if: needs.pr-context.outputs.is_pr == 'true' && needs.pr-context.outputs.should_run == 'true' && !startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version')
     name: Runtime Size (Ubuntu / Node 24)
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -23,13 +41,16 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: head
-          ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ needs.pr-context.outputs.head_repository }}
+          ref: ${{ needs.pr-context.outputs.head_sha }}
+          persist-credentials: false
 
       - name: Check out baseline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: baseline
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ needs.pr-context.outputs.base_sha }}
+          persist-credentials: false
 
       - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
         with:
@@ -64,9 +85,9 @@ jobs:
       - name: Measure head and baseline
         working-directory: head
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ needs.pr-context.outputs.base_sha }}
+          HEAD_SHA: ${{ needs.pr-context.outputs.head_sha }}
+          PR_NUMBER: ${{ needs.pr-context.outputs.pr_number }}
           REPOSITORY: ${{ github.repository }}
         run: |
           pnpm exec tsx scripts/report-wevu-runtime-size.ts \

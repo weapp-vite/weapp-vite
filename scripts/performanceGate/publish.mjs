@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { downloadPrContext, validatePerformancePrContext } from '../../.github/scripts/resolve-performance-runs.mjs'
 import { aggregatePlan } from './aggregate.mjs'
 import { assertSha, createMatrix, frozenManifest, isReportSamplingContract, needsSmoke, policy, statusContext, targetKey } from './contract.mjs'
 import { pages, request } from './github.mjs'
@@ -48,14 +49,14 @@ export async function publishComment(target, body, get = request, smokeDescripti
     return false
   }
   const pull = await get(`/pulls/${target.prNumber}`)
-  if (pull.state !== 'open' || pull.head.sha !== target.headSha) {
+  if (pull.state !== 'open' || pull.head.sha !== target.headSha || (target.baseSha && pull.base?.sha !== target.baseSha)) {
     return false
   }
   const comments = await pages(`/issues/${target.prNumber}/comments`, get)
   const previous = comments.find(c => c.user?.type === 'Bot' && c.body?.includes(marker))
   // 在真正写入前再次读取 HEAD，避免异步报告覆盖新提交。
   const fresh = await get(`/pulls/${target.prNumber}`)
-  if (fresh.head.sha !== target.headSha || fresh.state !== 'open') {
+  if (fresh.head.sha !== target.headSha || fresh.state !== 'open' || (target.baseSha && fresh.base?.sha !== target.baseSha)) {
     return false
   }
   // 晚到的 smoke 只更新冒烟状态，保留同一 HEAD 已发布的完整明细。
@@ -72,17 +73,35 @@ export async function publishComment(target, body, get = request, smokeDescripti
   return true
 }
 
-async function smokeStatus(headSha) {
-  const result = await request(`/actions/workflows/ci-performance.yml/runs?event=pull_request&head_sha=${headSha}&per_page=10`)
-  const run = result.workflow_runs.find(r => r.head_sha === headSha && r.name === 'Performance Smoke')
-  return !run ? '未运行' : run.status !== 'completed' ? '运行中' : run.conclusion === 'success' ? '通过或无需冒烟' : '🔴 未通过'
+async function smokeStatus(target) {
+  if (!target.prNumber) {
+    return '未运行'
+  }
+  const repo = await request('')
+  const result = await request('/actions/workflows/ci-performance.yml/runs?event=workflow_dispatch&per_page=100')
+  for (const run of result.workflow_runs ?? []) {
+    if (run.name !== 'Performance Smoke' || run.head_branch !== repo.default_branch || run.head_repository?.full_name !== process.env.GITHUB_REPOSITORY) {
+      continue
+    }
+    try {
+      const input = await downloadPrContext({ apiUrl: process.env.GITHUB_API_URL ?? 'https://api.github.com', token: process.env.GITHUB_TOKEN, repository: process.env.GITHUB_REPOSITORY, run })
+      const context = validatePerformancePrContext(input, run, process.env.GITHUB_REPOSITORY)
+      if (context.shouldRun && context.headSha === target.headSha && context.prNumber === target.prNumber && (!target.baseSha || context.baseSha === target.baseSha)) {
+        return run.status !== 'completed' ? '运行中' : run.conclusion === 'success' ? '通过或无需冒烟' : '🔴 未通过'
+      }
+    }
+    catch {
+      // 没有可信上下文的旧运行不能用于当前 PR 的冒烟结论。
+    }
+  }
+  return '未运行'
 }
 
 async function main() {
   const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, 'utf8'))
   const run = await request(`/actions/runs/${event.workflow_run.id}`)
   const repository = process.env.GITHUB_REPOSITORY
-  if (run.head_repository?.full_name !== repository && run.event !== 'pull_request') {
+  if (run.head_repository?.full_name !== repository) {
     throw new Error('Unexpected workflow repository')
   }
   const root = path.resolve(process.env.PERFORMANCE_ARTIFACTS)
@@ -105,7 +124,7 @@ async function main() {
       if (plan.samplingContract !== policy.samplingContract) {
         continue
       }
-      const lines = ['## 性能检查', '', `HEAD: \`${target.headSha}\``, '', `PR 正确性冒烟：${await smokeStatus(target.headSha)}。`, '', `完整性能：已完成，${target.status === 'passed' ? '✅ passed' : `🔴 ${target.status}`}。`, '', '| 平台 | 通过 | 回退 | 不稳定 | 不完整 |', '| --- | ---: | ---: | ---: | ---: |']
+      const lines = ['## 性能检查', '', `HEAD: \`${target.headSha}\``, '', `PR 正确性冒烟：${await smokeStatus(target)}。`, '', `完整性能：已完成，${target.status === 'passed' ? '✅ passed' : `🔴 ${target.status}`}。`, '', '| 平台 | 通过 | 回退 | 不稳定 | 不完整 |', '| --- | ---: | ---: | ---: | ---: |']
       for (const system of target.systems) {
         const counts = { passed: 0, regression: 0, unstable: 0, incomplete: 0 }
         for (const part of system.parts) {
@@ -122,15 +141,22 @@ async function main() {
       await publishComment(target, lines.join('\n'))
     }
   }
-  else if (run.name === 'Performance Smoke' && run.event === 'pull_request' && run.path === '.github/workflows/ci-performance.yml') {
-    const pulls = await request(`/commits/${assertSha(run.head_sha)}/pulls`)
-    const preferred = run.pull_requests?.[0]?.number
-    const matches = pulls.filter(p => p.state === 'open' && p.head.sha === run.head_sha && p.head.ref === run.head_branch && p.head.repo?.full_name === run.head_repository?.full_name)
-    const pull = matches.find(p => p.number === preferred) ?? matches[0]
-    if (!pull) {
+  else if (run.name === 'Performance Smoke' && run.event === 'workflow_dispatch' && run.path === '.github/workflows/ci-performance.yml') {
+    const repo = await request('')
+    if (run.head_branch !== repo.default_branch) {
+      throw new Error('Smoke reporting requires a trusted default-branch run')
+    }
+    const input = JSON.parse(await readFile(path.join(root, 'pr-context', 'context.json'), 'utf8'))
+    if (!input.isPr) {
       return
     }
-    const target = { prNumber: pull.number, headSha: run.head_sha, baselineSha: policy.baselineSha }
+    const context = validatePerformancePrContext(input, run, repository)
+    const pull = await request(`/pulls/${context.prNumber}`)
+    if (!context.shouldRun || pull.state !== 'open' || pull.head.sha !== context.headSha || pull.base?.sha !== context.baseSha
+      || pull.head.ref !== context.headRef || pull.head.repo?.full_name !== context.headRepository) {
+      return
+    }
+    const target = { prNumber: context.prNumber, headSha: context.headSha, baseSha: context.baseSha, baselineSha: policy.baselineSha }
     const statuses = await pages(`/commits/${target.headSha}/statuses`)
     const previous = statuses.find(s => s.context === statusContext(target) && s.creator?.type === 'Bot')
     let description = '🔴 未通过'
@@ -151,7 +177,7 @@ async function main() {
       }
       description = '✅ 正确性冒烟通过'
     }
-    const full = previous ? previous.state === 'pending' ? `[运行中](${previous.target_url})` : `已完成，复用[已有验收记录](${previous.target_url})（${previous.state === 'success' ? '既有验收通过' : '🔴 未通过'}）` : pull.labels.some(l => l.name === policy.label) ? '排队，等待 nightly' : '未运行'
+    const full = previous ? previous.state === 'pending' ? `[运行中](${previous.target_url})` : `已完成，复用[已有验收记录](${previous.target_url})（${previous.state === 'success' ? '既有验收通过' : '🔴 未通过'}）` : '未运行，需手动启动 Nightly Performance'
     await publishComment(target, `## 性能检查\n\nHEAD: \`${target.headSha}\`\n\nPR 正确性冒烟：${description}。\n\n完整性能：${full}。冒烟不计算 5% 门禁，也不代表性能验收通过。\n\n[冒烟运行记录](${run.html_url})`, request, description)
   }
   else {

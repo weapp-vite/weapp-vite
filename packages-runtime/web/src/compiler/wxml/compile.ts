@@ -1,19 +1,12 @@
-import type {
-  ImportEntry,
-  IncludeEntry,
-  TemplateDefinition,
-  WxmlCompileOptions,
-  WxmlCompileResult,
-  WxsEntry,
-} from './types'
+import type { WxmlCompileOptions, WxmlCompileResult } from './types'
 
 import { readFileSync } from 'node:fs'
 import { RUNTIME_ID } from '../../plugin/constants'
-import { addDependency, createDependencyContext, warnCircularTemplate, warnReadTemplate } from './dependency'
-import { buildNavigationBarAttrs, extractNavigationBarFromPageMeta } from './navigation'
-import { parseWxml } from './parser'
+import { addDependency, collectDependencies, createDependencyContext, warnCircularTemplate, warnReadTemplate } from './dependency'
+import { buildNavigationBarAttrs } from './navigation'
+import { prepareWxml } from './prepare'
 import { renderer } from './renderer'
-import { collectSpecialNodes, normalizeTemplatePath, shouldMarkWxsImport, toRelativeImport } from './specialNodes'
+import { normalizeTemplatePath, shouldMarkWxsImport, toRelativeImport } from './specialNodes'
 
 const WEB_TEMPLATE_QUERY = 'weapp-web-template'
 
@@ -47,15 +40,13 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
         continue
       }
       try {
-        const result = compileWxml({
+        const result = prepareWxml({
           id: target,
           source,
           resolveTemplatePath: options.resolveTemplatePath,
           resolveWxsPath: options.resolveWxsPath,
-          dependencyContext,
-          expandDependencies: false,
-        })
-        expandDependencyTree(result.dependencies, target)
+        }, dependencyContext)
+        expandDependencyTree(collectDependencies(result, dependencyContext), target)
       }
       catch (error) {
         if (error instanceof Error && error.message) {
@@ -66,34 +57,14 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
     }
   }
 
-  let nodes = parseWxml(options.source)
-  let navigationBarAttrs: Record<string, string> | undefined
-  if (options.navigationBar) {
-    const extracted = extractNavigationBarFromPageMeta(nodes)
-    nodes = extracted.nodes
-    if (extracted.warnings.length > 0) {
-      warnings.push(...extracted.warnings)
-    }
-    navigationBarAttrs = extracted.attrs
-  }
-
-  const templates: TemplateDefinition[] = []
-  const includes: IncludeEntry[] = []
-  const imports: ImportEntry[] = []
-  const wxs: WxsEntry[] = []
-  const wxsModules = new Map<string, string>()
-
-  const renderNodesList = collectSpecialNodes(nodes, {
+  const {
+    renderNodes: renderNodesList,
+    navigationBarAttrs,
     templates,
     includes,
     imports,
     wxs,
-    wxsModules,
-    warnings,
-    sourceId: options.id,
-    resolveTemplate: (raw: string) => options.resolveTemplatePath(raw, options.id),
-    resolveWxs: (raw: string) => options.resolveWxsPath(raw, options.id),
-  })
+  } = prepareWxml(options, dependencyContext)
 
   if (options.navigationBar && options.navigationBar.config.navigationStyle !== 'custom') {
     const attrs = buildNavigationBarAttrs(options.navigationBar.config, navigationBarAttrs)

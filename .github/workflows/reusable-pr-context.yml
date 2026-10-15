@@ -1,0 +1,90 @@
+name: Resolve Manual PR Context
+
+on:
+  workflow_call:
+    inputs:
+      pr_number:
+        type: string
+        required: false
+        default: ''
+      paths:
+        type: string
+        required: false
+        default: '[]'
+      base_branches:
+        type: string
+        required: false
+        default: '[]'
+      checkout_mode:
+        type: string
+        required: false
+        default: merge
+    outputs:
+      is_pr:
+        value: ${{ jobs.resolve.outputs.is_pr }}
+      should_run:
+        value: ${{ jobs.resolve.outputs.should_run }}
+      pr_number:
+        value: ${{ jobs.resolve.outputs.pr_number }}
+      head_sha:
+        value: ${{ jobs.resolve.outputs.head_sha }}
+      base_sha:
+        value: ${{ jobs.resolve.outputs.base_sha }}
+      head_ref:
+        value: ${{ jobs.resolve.outputs.head_ref }}
+      base_ref:
+        value: ${{ jobs.resolve.outputs.base_ref }}
+      head_repository:
+        value: ${{ jobs.resolve.outputs.head_repository }}
+      checkout_sha:
+        value: ${{ jobs.resolve.outputs.checkout_sha }}
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+  statuses: write
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      is_pr: ${{ steps.context.outputs.is_pr }}
+      should_run: ${{ steps.context.outputs.should_run }}
+      pr_number: ${{ steps.context.outputs.pr_number }}
+      head_sha: ${{ steps.context.outputs.head_sha }}
+      base_sha: ${{ steps.context.outputs.base_sha }}
+      head_ref: ${{ steps.context.outputs.head_ref }}
+      base_ref: ${{ steps.context.outputs.base_ref }}
+      head_repository: ${{ steps.context.outputs.head_repository }}
+      checkout_sha: ${{ steps.context.outputs.checkout_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - id: context
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          PR_PATHS: ${{ inputs.paths }}
+          PR_BASE_BRANCHES: ${{ inputs.base_branches }}
+          PR_CHECKOUT_MODE: ${{ inputs.checkout_mode }}
+        run: node .github/scripts/pr-context.mjs
+      - name: Publish manual PR status
+        if: always() && steps.context.outputs.context_available == 'true' && inputs.pr_number != ''
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_STATUS_CONTEXT_PATH: .tmp/pr-context/context.json
+        run: node .github/scripts/publish-pr-status.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && steps.context.outputs.context_available == 'true'
+        with:
+          name: pr-context
+          overwrite: true
+          path: .tmp/pr-context/context.json
+          if-no-files-found: error

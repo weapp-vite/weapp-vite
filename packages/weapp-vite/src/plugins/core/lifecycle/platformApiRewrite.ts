@@ -1,7 +1,7 @@
-import type { AstParserLike } from '../../../ast'
+import type { AstParserLike, NativeNpmPlatformApiFact } from '../../../ast'
 import { WEAPP_VITE_INJECTED_API_IDENTIFIER } from '@weapp-core/constants'
 import MagicString from 'magic-string'
-import { platformApiIdentifiers } from '../../../ast'
+import { isPlatformApiIdentifier, platformApiIdentifiers } from '../../../ast'
 import { parseJsLike, traverse } from '../../../utils/babel'
 import { createWeapiAccessExpression } from '../../../utils/weapi'
 
@@ -86,4 +86,39 @@ export function rewriteMiniProgramPlatformApiAccess(
   },
 ) {
   return createMiniProgramPlatformApiRewrite(code, globalName, options)?.toString() ?? code
+}
+
+/**
+ * 使用 native 已校验的对象范围完成平台 API 改写；不重新解析最终 chunk。
+ */
+export function createMiniProgramPlatformApiRewriteFromRanges(
+  code: string,
+  globalName: string,
+  ranges: NativeNpmPlatformApiFact[],
+) {
+  if (ranges.length === 0) {
+    return
+  }
+  let previousEnd = -1
+  for (const range of ranges) {
+    if (
+      !Number.isSafeInteger(range.start)
+      || !Number.isSafeInteger(range.end)
+      || range.start < 0
+      || range.end <= range.start
+      || range.end > code.length
+      || range.start < previousEnd
+      || !isPlatformApiIdentifier(code.slice(range.start, range.end))
+    ) {
+      throw new RangeError('Invalid native platform API object range')
+    }
+    previousEnd = range.end
+  }
+  const magicString = new MagicString(code)
+  for (const range of ranges) {
+    magicString.update(range.start, range.end, WEAPP_VITE_INJECTED_API_IDENTIFIER)
+  }
+  const aliasCode = `var ${WEAPP_VITE_INJECTED_API_IDENTIFIER} = ${createWeapiAccessExpression(globalName)};`
+  magicString.prepend(`${aliasCode}\n`)
+  return magicString
 }

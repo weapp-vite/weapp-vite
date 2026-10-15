@@ -3,7 +3,6 @@ import type { CAC } from 'cac'
 import type { GlobalCLIOptions } from '../types'
 import path from 'pathe'
 import logger from '../../logger'
-import { generate } from '../../schematics'
 import { loadConfig } from '../loadConfig'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 
@@ -41,6 +40,7 @@ export function registerGenerateCommand(cli: CAC) {
       }
       const generateOptions = config?.config.weapp?.generate
       fileName = generateOptions?.filenames?.[type] ?? fileName
+      const { generate } = await import('../../schematics')
       await generate({
         outDir: path.join(generateOptions?.dirs?.[type] ?? '', filepath),
         type,

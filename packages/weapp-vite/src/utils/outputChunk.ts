@@ -99,6 +99,20 @@ export function applyMagicStringChunkRewrite(
 }
 
 /**
+ * 原子地提交一次 chunk 改写；映射组合失败时保留原始 chunk。
+ */
+export function applyAtomicMagicStringChunkRewrite(
+  chunk: OutputChunk,
+  magicString: MagicString,
+  options?: OutputChunkRewriteOptions,
+) {
+  const staged = { ...chunk }
+  const changed = applyMagicStringChunkRewrite(staged, magicString, options)
+  Object.assign(chunk, { code: staged.code, map: staged.map })
+  return changed
+}
+
+/**
  * 在 chunk 当前代码上执行一次可追踪编辑。
  */
 export function editOutputChunkCode(

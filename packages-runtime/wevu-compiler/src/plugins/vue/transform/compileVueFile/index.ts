@@ -68,6 +68,7 @@ export async function compileVueFile(
     compileOptions: options,
     autoUsingComponents,
     autoImportTags,
+    nativeScriptAnalysis: parsed.nativeScriptAnalysis,
   })
 
   if (!parsed.isAppFile && usesNativeDeclarationContext({
@@ -209,6 +210,7 @@ export async function compileVueFile(
     },
     source,
     parsed.scriptPreprocessMap,
+    parsed.nativeScriptAnalysis,
   )
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap

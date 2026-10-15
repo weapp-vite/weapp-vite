@@ -1,5 +1,4 @@
-import type { CAC } from 'cac'
-import type { GlobalCLIOptions } from '../types'
+import type { GlobalCLIOptions } from '../../types'
 import process from 'node:process'
 import {
   bootstrapWechatDevtoolsSettings,
@@ -15,14 +14,14 @@ import {
   resolveProjectAutomatorPort,
   setWechatIdeTicket,
 } from 'weapp-ide-cli'
-import { getBackendForCapability } from '../../backends'
-import { VERSION } from '../../constants'
-import logger from '../../logger'
-import { resolveForwardConsoleOptions, startForwardConsoleBridge } from '../forwardConsole'
-import { readLatestHmrProfileSummary } from '../hmrProfileSummary'
-import { openIde, resolveIdeCommandContext } from '../openIde'
-import { filterDuplicateOptions, resolveConfigFile } from '../options'
-import { resolveRuntimeTargets } from '../runtime'
+import { getBackendForCapability } from '../../../backends'
+import { VERSION } from '../../../constants'
+import logger from '../../../logger'
+import { resolveForwardConsoleOptions, startForwardConsoleBridge } from '../../forwardConsole'
+import { readLatestHmrProfileSummary } from '../../hmrProfileSummary'
+import { openIde, resolveIdeCommandContext } from '../../openIde'
+import { filterDuplicateOptions, resolveConfigFile } from '../../options'
+import { resolveRuntimeTargets } from '../../runtime'
 
 interface IdeDoctorCheck {
   fix?: string
@@ -355,24 +354,4 @@ export async function runIdeCommand(action: string | undefined, root: string | u
     logger.info('[forwardConsole] 正在关闭日志桥接...')
     await session.close()
   })
-}
-
-/**
- * @description 注册 IDE 相关子命令。
- */
-export function registerIdeCommand(cli: CAC) {
-  cli
-    .command('ide [action] [root]', 'run Wechat DevTools utility actions and log bridge commands')
-    .option('-o, --open', '[boolean] open ide before attaching log bridge')
-    .option('-p, --platform <platform>', '[string] target platform (weapp | web)')
-    .option('--project-config <path>', '[string] project config path (miniprogram only)')
-    .option('--json', '[boolean] output the doctor report as JSON')
-    .option('--ticket <value>', '[string] ticket used by `ide ticket:set`')
-    .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
-    .option('--ide-open-strategy <strategy>', '[string] IDE open strategy (cli | automator)', { default: 'cli' })
-    .option('--strict', '[boolean] fail when doctor finds blocking environment errors')
-    .option('--no-open-recovery', '[boolean] disable automatic target-project open retry (preserves existing IDE windows)')
-    .action(async (action: string | undefined, root: string | undefined, options: GlobalCLIOptions) => {
-      await runIdeCommand(action, root, options)
-    })
 }

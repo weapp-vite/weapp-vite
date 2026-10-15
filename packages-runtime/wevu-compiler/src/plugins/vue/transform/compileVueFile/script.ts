@@ -1,3 +1,4 @@
+import type { NativeCompilerScriptAnalysis } from '@weapp-vite/ast'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
@@ -15,18 +16,17 @@ import { composeSourceMaps } from '../../../../utils/sourcemap'
 import { createJsxDiagnostics } from '../../../jsx/compileJsx/diagnostics'
 import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from '../../../jsx/compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from '../../../jsx/compileJsx/template'
-import { transformVueJsxScript } from '../../../jsx/vueJsxTransform'
 import { getMiniProgramTemplatePlatform } from '../../compiler/template'
 import { usesNativeDeclarationContext } from '../../compiler/template/nativeDeclaration'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
 import { generateScopedId } from '../scopedId'
 import { transformScript } from '../script'
 import { remapJsxBindingManifestLocations } from './bindingManifestLocations'
+import { hasDefaultExport } from './defaultExport'
 import { applyCompilerTemplateWrappers } from './pageLayout'
 import { warnReservedScriptSetupProps } from './reservedProps'
 
 const TYPE_ONLY_DEFINE_PROPS_RE = /\bdefineProps\s*</
-const EXPORT_DEFAULT_RE = /\bexport\s+default\b/
 
 export interface ScriptPhaseResult {
   script?: string
@@ -50,27 +50,6 @@ export interface PrecomputedScriptPhaseInfo {
 
 type SfcDescriptor = Parameters<typeof compileScript>[0]
 type CompiledScript = ReturnType<typeof compileScript>
-
-function hasDefaultExport(scriptCode: string) {
-  if (!EXPORT_DEFAULT_RE.test(scriptCode)) {
-    return false
-  }
-
-  try {
-    const ast = parseJsLike(scriptCode)
-    let found = false
-    traverse(ast, {
-      ExportDefaultDeclaration(path) {
-        found = true
-        path.stop()
-      },
-    })
-    return found
-  }
-  catch {
-    return EXPORT_DEFAULT_RE.test(scriptCode)
-  }
-}
 
 export function resolveScriptSetupPropsAliases(bindings: Record<string, any> | undefined) {
   const aliases = bindings?.__propsAliases
@@ -276,6 +255,10 @@ export async function compileScriptPhase(
   precomputedScriptPhaseInfo?: PrecomputedScriptPhaseInfo,
   originalSource?: string,
   scriptPreprocessMap?: EncodedSourceMapLike | null,
+  nativeScriptAnalysis?: {
+    script?: NativeCompilerScriptAnalysis
+    scriptSetup?: NativeCompilerScriptAnalysis
+  },
 ): Promise<ScriptPhaseResult> {
   const autoUsingComponentsMap: Record<string, string> = { ...(componentSourceInfo?.autoUsingComponentsMap ?? {}) }
   const autoComponentMeta: Record<string, string> = { ...(componentSourceInfo?.autoComponentMeta ?? {}) }
@@ -297,7 +280,7 @@ export async function compileScriptPhase(
     warnReservedScriptSetupProps(descriptorForCompile.scriptSetup?.content, options?.warn, {
       filename,
       scriptSetupStart: descriptorForCompile.scriptSetup?.loc.start,
-    })
+    }, nativeScriptAnalysis?.scriptSetup?.reservedPropsDiagnostic)
     if (!propsAliases && hasPrecomputedScriptPhaseInfo(precomputedScriptPhaseInfo, 'propsAliases')) {
       propsAliases = precomputedScriptPhaseInfo.propsAliases
     }
@@ -322,7 +305,11 @@ export async function compileScriptPhase(
       scriptCode = stripJsonMacroCallsFromCode(scriptCode, filename)
     }
 
-    if (!isAppFile && !descriptor.scriptSetup && !hasDefaultExport(scriptCode)) {
+    // Vue CSS 变量注入和宏移除可能改变导出；只复用同一份源码的 native 事实。
+    const defaultExportAnalysis = scriptCode === descriptorForCompile.script?.content
+      ? nativeScriptAnalysis?.script
+      : undefined
+    if (!isAppFile && !descriptor.scriptSetup && !hasDefaultExport(scriptCode, defaultExportAnalysis)) {
       scriptCode += '\nexport default {}'
     }
   }
@@ -373,7 +360,7 @@ export async function compileScriptPhase(
       }
     }
     const jsxTransformed = isJsxScript
-      ? transformVueJsxScript(scriptCode, filename, options?.sourceMap !== false)
+      ? (await import('../../../jsx/vueJsxTransform')).transformVueJsxScript(scriptCode, filename, options?.sourceMap !== false)
       : { code: scriptCode, map: null }
     const bindingManifest = jsxTemplate?.template
       ? jsxTemplate.bindingManifest
