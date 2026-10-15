@@ -201,6 +201,37 @@ it('normalizes Windows source paths and ignores all records preceding the profil
   expect(vi.getTimerCount()).toBe(0)
 })
 
+it('preserves recent batch provenance in timeout evidence without accepting an older source event', async () => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const file = path.join(tmpdir(), 'dev-publication', 'template.html')
+  const capturedAtEpochMs = performance.timeOrigin + performance.now()
+  const publication = createDevBuildCompletion(dev, {
+    completed: 'publication complete',
+    source: { file, profilePath: 'profile.jsonl' },
+  })
+  const failed = publication.wait(100).catch((error: unknown) => error)
+  dev.append('publication complete\n')
+  profile.content = Array.from({ length: 6 }, (_, index) => `${sourceRecord(file, capturedAtEpochMs - 1, { buildId: `build-${index}` })}\n`).join('')
+  await vi.advanceTimersByTimeAsync(100)
+  const error = await failed
+  expect(error).toBeInstanceOf(Error)
+  const message = (error as Error).message
+  expect(message).toContain('Timed out waiting for current dev build: publication complete')
+  const evidence = JSON.parse(message.split('\nSource publication: ')[1]!) as {
+    file: string
+    profileStatus: string
+    capturedAtEpochMs: number
+    samples: Array<{ buildId: string, sourceEvents: Array<{ file: string }> }>
+  }
+  expect(evidence.file).toBe(file.replaceAll('\\', '/'))
+  expect(evidence.profileStatus).toBe('read')
+  expect(evidence.capturedAtEpochMs).toBeGreaterThanOrEqual(capturedAtEpochMs)
+  expect(evidence.samples.map(sample => sample.buildId)).toEqual(['build-2', 'build-3', 'build-4', 'build-5'])
+  expect(evidence.samples[0]!.sourceEvents[0]!.file).toBe(file)
+  expect(vi.getTimerCount()).toBe(0)
+})
+
 it('rejects a numeric overflow in receivedAtMs instead of accepting it as a future event', async () => {
   vi.useFakeTimers()
   const dev = createProcess()
