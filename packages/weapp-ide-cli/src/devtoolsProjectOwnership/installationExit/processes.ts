@@ -5,6 +5,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { resolveWechatDevtoolsInstallationRoot } from '../../devtoolsTarget/host'
 import { readDarwinKernelPaths, readDarwinProcessStates, readDarwinTextImages } from './darwin'
+import { createProtectedImageVerifier } from './textImageIdentity'
 
 /** 已删除映像仍有内核 vnode 路径；从现存祖先解析符号链接，不把缺失文件当成已退出进程。 */
 async function canonicalImagePath(file: string): Promise<string> {
@@ -35,6 +36,7 @@ export async function inspectExitedWechatInstallation(
     throw new Error('Installation-exit recovery cannot resolve the selected application bundle.')
   }
   const installationRoot = await fs.realpath(selectedRoot)
+  const verifyProtectedImage = createProtectedImageVerifier(installationRoot)
   let pending = await readDarwinProcessStates()
   const verified = new Map<number, { started: string, zombie: boolean }>()
   let kernelPathProcessCount = 0
@@ -64,7 +66,18 @@ export async function inspectExitedWechatInstallation(
         throw new Error('Installation-exit recovery received no verifiable executable text images.')
       }
       for (const image of images) {
-        const resolved = await canonicalImagePath(image)
+        let resolved: string
+        try {
+          resolved = await canonicalImagePath(image)
+        }
+        catch (error) {
+          const cause = error instanceof Error ? error.cause as NodeJS.ErrnoException | undefined : undefined
+          if (cause?.code !== 'EACCES' && cause?.code !== 'EPERM') {
+            throw error
+          }
+          await verifyProtectedImage(entry.pid, image)
+          continue
+        }
         const relative = path.relative(installationRoot, resolved)
         if (!relative || (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith(`..${path.sep}`))) {
           throw new Error('The selected WeChat DevTools installation still has a live process; no ownership was recovered.')

@@ -5,8 +5,9 @@ import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { inspectExitedWechatInstallation } from './processes'
 
-const mocks = vi.hoisted(() => ({ states: vi.fn(), paths: vi.fn(), images: vi.fn() }))
+const mocks = vi.hoisted(() => ({ states: vi.fn(), paths: vi.fn(), images: vi.fn(), protectedImage: vi.fn() }))
 vi.mock('./darwin', () => ({ readDarwinProcessStates: mocks.states, readDarwinKernelPaths: mocks.paths, readDarwinTextImages: mocks.images }))
+vi.mock('./textImageIdentity', () => ({ createProtectedImageVerifier: () => mocks.protectedImage }))
 let directory: string
 let target: ResolvedWechatDevtoolsTarget
 const state = { pid: 21, started: 'first', zombie: false }
@@ -23,6 +24,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
+  vi.restoreAllMocks()
   await fs.rm(directory, { recursive: true, force: true })
 })
 
@@ -80,6 +82,22 @@ describe('installation-exit process inventory', () => {
 
   it('does not treat a failed kernel lookup as proof that the process exited', async () => {
     await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('No complete text image inventory')
+  })
+
+  it.each(['EACCES', 'EPERM'])('requires independent file identity evidence for %s instead of ignoring a protected mapping', async (code) => {
+    const protectedImage = path.join(directory, 'protected/image')
+    const realpath = fs.realpath.bind(fs)
+    vi.spyOn(fs, 'realpath').mockImplementation(async (file) => {
+      if (file === protectedImage) {
+        throw Object.assign(new Error('protected image'), { code })
+      }
+      return realpath(file)
+    })
+    mocks.images.mockResolvedValue([protectedImage])
+    expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ textImageProcessCount: 1, selectedProcessCount: 0 })
+    expect(mocks.protectedImage).toHaveBeenCalledWith(state.pid, protectedImage)
+    mocks.protectedImage.mockRejectedValue(new Error('unverified image'))
+    await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('unverified image')
   })
 
   it('requires two matching zombie observations before excluding a non-running process', async () => {
