@@ -1,5 +1,8 @@
 {
   "libVersion": "3.17.3",
+  "setting": {
+    "urlCheck": false
+  },
   "condition": {
     "miniprogram": {
       "list": [
