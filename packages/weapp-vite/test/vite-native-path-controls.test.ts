@@ -52,16 +52,30 @@ it('observes a native filesystem event using the canonical temporary path', asyn
     import { watch, writeFileSync } from 'node:fs'
     import path from 'node:path'
     const root = process.argv[1]
-    const timer = setTimeout(() => { watcher.close(); process.exitCode = 2 }, 5000)
+    let registered = false
+    let sequence = 0
+    const timer = setTimeout(() => {
+      clearInterval(registration)
+      watcher.close()
+      process.exitCode = 2
+    }, 5000)
     const watcher = watch(root, (_event, filename) => {
-      if (filename === 'probe.txt') {
+      if (filename === 'registration.txt' && !registered) {
+        registered = true
+        clearInterval(registration)
+        writeFileSync(path.join(root, 'probe.txt'), 'changed')
+      }
+      else if (filename === 'probe.txt') {
         clearTimeout(timer)
         watcher.close()
         console.log('observed')
       }
     })
-    // 等待原生 watcher 完成注册，避免在高负载下写入早于操作系统事件订阅。
-    setImmediate(() => writeFileSync(path.join(root, 'probe.txt'), 'changed'))
+    // 目录 FSEvents 没有 ready 回执；收到同一 watcher 的哨兵事件后再单次写入目标。
+    // setImmediate 只能等待 JS 调度，无法证明系统事件流已完成订阅。
+    const registration = setInterval(() => {
+      writeFileSync(path.join(root, 'registration.txt'), String(++sequence))
+    }, 20)
   `, watchedRoot], { reject: false, timeout: 10_000 })
   expect({ exitCode: result.exitCode, stderr: result.stderr, stdout: result.stdout }).toEqual({
     exitCode: 0,
