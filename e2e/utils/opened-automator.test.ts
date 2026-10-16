@@ -135,6 +135,35 @@ describe('opened automator', () => {
     expect(connectOpenedAutomatorMock).toHaveBeenCalledTimes(2)
   })
 
+  it('waits for stale socket closure before connecting again', async () => {
+    const barrier = Promise.withResolvers<void>()
+    const staleMiniProgram = Object.assign(createSession(), {
+      currentPage: vi.fn(async () => { throw new Error('stale page protocol') }),
+      disconnect: vi.fn(() => barrier.promise),
+    })
+    connectOpenedAutomatorMock.mockResolvedValueOnce(staleMiniProgram).mockResolvedValueOnce(createSession())
+    const pending = waitForOpenedAutomator('/workspace/project', { timeoutMs: 50, intervalMs: 1 })
+    await vi.advanceTimersByTimeAsync(1)
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledOnce()
+    barrier.resolve()
+    await advanceOpenedAutomatorTimers(pending)
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('preserves readiness and cleanup failures instead of reconnecting an unconfirmed socket', async () => {
+    const readinessFailure = new Error('stale page protocol')
+    const disconnectFailure = new Error('socket close unconfirmed')
+    const miniProgram = Object.assign(createSession(), {
+      currentPage: vi.fn(async () => { throw readinessFailure }),
+      disconnect: vi.fn(async () => { throw disconnectFailure }),
+    })
+    connectOpenedAutomatorMock.mockResolvedValue(miniProgram)
+    await expect(advanceOpenedAutomatorTimers(waitForOpenedAutomator('/workspace/project', { timeoutMs: 50, intervalMs: 1 })))
+      .rejects
+      .toMatchObject({ errors: [readinessFailure, disconnectFailure] })
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledOnce()
+  })
+
   it('journals errors emitted during subscription and readiness before returning the session', async () => {
     const miniProgram = createSession()
     miniProgram.enableLog.mockImplementation(async () => {

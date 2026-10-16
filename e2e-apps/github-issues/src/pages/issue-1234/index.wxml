@@ -1,0 +1,4 @@
+<view id="issue-1234-page">
+  <view id="issue-1234-touch" bindtouchstart="recordTouch" bindtouchmove="recordTouch" bindtouchend="recordTouch">touch surface</view>
+  <text id="issue-1234-events">{{eventLog}}</text>
+</view>

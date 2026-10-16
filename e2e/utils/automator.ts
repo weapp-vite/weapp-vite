@@ -1096,18 +1096,19 @@ function startBridgeWrapperDistSync(
       clearTimeout(timer)
       timer = undefined
     }
+    pendingPaths.clear()
     watcher?.close()
     watcher = undefined
-    pendingPaths.clear()
   }
 
   const closeSync = () => {
+    // 停止接收同步任务不代表 watcher 已释放；关闭失败时保留其引用供下次重试。
     closed = true
-    closeWatchers()
     if (reconcileTimer) {
       clearInterval(reconcileTimer)
       reconcileTimer = undefined
     }
+    closeWatchers()
   }
 
   const syncSnapshot = () => {
@@ -1698,15 +1699,39 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
   return null
 }
 
-const disconnectedLaunchSessions = new WeakSet<object>()
+const disconnectedLaunchSessions = new WeakMap<object, Promise<void>>()
 
 /** 启动失败和迟到结果仅释放所持连接，不关闭可能由用户打开的项目。 */
-async function disconnectLaunchSession(miniProgram: any) {
-  if (!miniProgram || disconnectedLaunchSessions.has(miniProgram)) {
-    return
+function disconnectLaunchSession(miniProgram: any): Promise<void> {
+  if (!miniProgram) {
+    return Promise.resolve()
   }
-  disconnectedLaunchSessions.add(miniProgram)
-  miniProgram.disconnect?.()
+  const pending = disconnectedLaunchSessions.get(miniProgram)
+  if (pending) {
+    return pending
+  }
+  let disconnecting: Promise<void>
+  try {
+    disconnecting = Promise.resolve(miniProgram.disconnect?.())
+  }
+  catch (error) {
+    disconnecting = Promise.reject(error)
+  }
+  disconnecting = disconnecting.catch((error: unknown) => {
+    disconnectedLaunchSessions.delete(miniProgram)
+    throw error
+  })
+  disconnectedLaunchSessions.set(miniProgram, disconnecting)
+  return disconnecting
+}
+
+async function disconnectFailedLaunchSession(miniProgram: any, failure: unknown) {
+  try {
+    await disconnectLaunchSession(miniProgram)
+  }
+  catch (error) {
+    throw new AggregateError([failure, error], 'Automator operation failed and socket closure remains unconfirmed')
+  }
 }
 
 async function waitForCurrentRouteReady(
@@ -1749,7 +1774,7 @@ async function waitForCurrentRouteReady(
       options.onStartupProtocolError?.(error)
       options.signal?.throwIfAborted()
       if (shouldCloseCurrentPageQueryTimeout(options.closeOnQueryTimeout, queryTimeout) && isRunWithTimeoutError(error, label)) {
-        await disconnectLaunchSession(miniProgram).catch(() => {})
+        await disconnectFailedLaunchSession(miniProgram, error)
         throw error
       }
       // DevTools 模拟器创建期间 currentPage 可能短暂不可用，继续轮询。
@@ -1796,7 +1821,7 @@ async function waitForAnyCurrentPageReady(
       options.onStartupProtocolError?.(error)
       options.signal?.throwIfAborted()
       if (shouldCloseCurrentPageQueryTimeout(options.closeOnQueryTimeout, queryTimeout) && isRunWithTimeoutError(error, label)) {
-        await disconnectLaunchSession(miniProgram).catch(() => {})
+        await disconnectFailedLaunchSession(miniProgram, error)
         throw error
       }
       // DevTools 模拟器创建期间 currentPage 可能短暂不可用，继续轮询。
@@ -1873,17 +1898,26 @@ export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: str
   const rawClose = miniProgram.close.bind(miniProgram)
   const rawDisconnect = typeof miniProgram.disconnect === 'function' ? miniProgram.disconnect.bind(miniProgram) : undefined
   let closePromise: Promise<any> | undefined
+  let disconnectPromise: Promise<void> | undefined
   if (rawDisconnect) {
     miniProgram.disconnect = (...args: any[]) => {
-      if (meta.closed) {
-        return
+      if (disconnectPromise) {
+        return disconnectPromise
       }
       try {
-        return rawDisconnect(...args)
+        disconnectPromise = Promise.resolve(rawDisconnect(...args))
+      }
+      catch (error) {
+        disconnectPromise = Promise.reject(error)
       }
       finally {
         finalizeRuntimeLogMeta(meta)
       }
+      disconnectPromise = disconnectPromise.catch((error: unknown) => {
+        disconnectPromise = undefined
+        throw error
+      })
+      return disconnectPromise
     }
   }
   miniProgram.close = (...args: any[]) => {
@@ -2036,12 +2070,9 @@ async function warmupMiniProgramRouteImpl(
       process.stdout.write(`[warn] [runtime:launch-step] warmup-any-page-timeout route=${route} project=${project}\n`)
       return false
     }
-    try {
-      await disconnectLaunchSession(miniProgram)
-    }
-    catch {
-    }
-    throw new Error(`Timeout in warmup current page ${route} after ${currentPageReadyTimeout}ms`)
+    const failure = new Error(`Timeout in warmup current page ${route} after ${currentPageReadyTimeout}ms`)
+    await disconnectFailedLaunchSession(miniProgram, failure)
+    throw failure
   }
 
   options.signal?.throwIfAborted()
@@ -2080,11 +2111,7 @@ async function warmupMiniProgramRouteImpl(
           : undefined
         if (!retryCurrentPage) {
           if (isWarmupRelaunchTimeoutError(retryError)) {
-            try {
-              await disconnectLaunchSession(miniProgram)
-            }
-            catch {
-            }
+            await disconnectFailedLaunchSession(miniProgram, retryError)
           }
           throw retryError
         }
@@ -2093,11 +2120,7 @@ async function warmupMiniProgramRouteImpl(
     }
     else {
       if (isWarmupRelaunchTimeoutError(error)) {
-        try {
-          await disconnectLaunchSession(miniProgram)
-        }
-        catch {
-        }
+        await disconnectFailedLaunchSession(miniProgram, error)
       }
       throw error
     }

@@ -64,7 +64,7 @@ export async function checkMultipleWindows(options: ScenarioOptions & { projectA
     return { borrowedConnection: { projectPath: a.projectPath, port: a.port, info }, journalUnchanged: true, ownerStillResponds: await readRuntimeEvidence(target, a.program, sdkVersion) }
   })
   await recordStep(steps, 'disconnect-B-close-B-twice-preserve-A', async () => {
-    b.program.disconnect()
+    await b.program.disconnect()
     await b.program.close()
     await b.program.close()
     return { closedB: await assertSessionReleased(b), ownerAStillResponds: await readRuntimeEvidence(target, a.program, sdkVersion) }

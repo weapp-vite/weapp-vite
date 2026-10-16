@@ -25,6 +25,8 @@ interface SharedMiniProgramSessionEntry {
   options: SharedMiniProgramSessionOptions
   closeWhenUnused?: boolean
   session: Promise<AutomatorMiniProgram>
+  closeRequested?: boolean
+  closing?: Promise<void>
 }
 
 const sharedMiniProgramSessions = new Map<string, SharedMiniProgramSessionEntry>()
@@ -57,6 +59,22 @@ function resolveExistingSessionKey(options: SharedMiniProgramSessionOptions) {
   return matching.length === 1 ? matching[0]![0] : undefined
 }
 
+/** 确认连接关闭后移除缓存；关闭失败的条目只允许重试清理。 */
+function closeSharedEntry(sessionKey: string, entry: SharedMiniProgramSessionEntry): Promise<void> {
+  entry.closeRequested = true
+  entry.closing ??= (async () => {
+    const program = await entry.session
+    await program.disconnect()
+    if (sharedMiniProgramSessions.get(sessionKey) === entry) {
+      sharedMiniProgramSessions.delete(sessionKey)
+    }
+  })().catch((error: unknown) => {
+    entry.closing = undefined
+    throw error
+  })
+  return entry.closing
+}
+
 /**
  * @description 获取指定项目的共享 automator 会话；若不存在则自动创建。
  */
@@ -68,6 +86,10 @@ export async function acquireSharedMiniProgram(
   const sessionKey = resolveSharedMiniProgramSessionKey(options)
   const existing = sharedMiniProgramSessions.get(sessionKey)
   if (existing) {
+    if (existing.closeRequested) {
+      await closeSharedEntry(sessionKey, existing)
+      return await acquireSharedMiniProgram(hooks, options)
+    }
     existing.refs += 1
     return await existing.session
   }
@@ -92,21 +114,21 @@ export async function acquireSharedMiniProgram(
 }
 
 /** 使用创建连接时的精确键释放订阅。 */
-export function releaseSharedMiniProgramByKey(sessionKey: string) {
+export function releaseSharedMiniProgramByKey(sessionKey: string): Promise<void> {
   const entry = sharedMiniProgramSessions.get(sessionKey)
   if (entry) {
     entry.refs = Math.max(0, entry.refs - 1)
     if (entry.refs === 0 && entry.closeWhenUnused) {
-      sharedMiniProgramSessions.delete(sessionKey)
-      void entry.session.then(program => program.disconnect()).catch(() => undefined)
+      return closeSharedEntry(sessionKey, entry)
     }
   }
+  return Promise.resolve()
 }
 
 /**
  * @description 释放指定项目的共享会话引用；会话对象会继续缓存，直到显式关闭或重置。
  */
-export function releaseSharedMiniProgram(projectPath: string, sessionIdOrPort?: string | number, installation: Omit<SharedMiniProgramSessionOptions, 'projectPath'> = {}) {
+export function releaseSharedMiniProgram(projectPath: string, sessionIdOrPort?: string | number, installation: Omit<SharedMiniProgramSessionOptions, 'projectPath'> = {}): Promise<void> {
   const key = resolveExistingSessionKey({
     ...installation,
     projectPath,
@@ -114,8 +136,9 @@ export function releaseSharedMiniProgram(projectPath: string, sessionIdOrPort?: 
     ...(typeof sessionIdOrPort === 'string' ? { sessionId: sessionIdOrPort } : {}),
   })
   if (key) {
-    releaseSharedMiniProgramByKey(key)
+    return releaseSharedMiniProgramByKey(key)
   }
+  return Promise.resolve()
 }
 
 /**
@@ -132,9 +155,7 @@ export async function closeSharedMiniProgram(projectPath: string, sessionIdOrPor
   if (!entry || !sessionKey) {
     return
   }
-  sharedMiniProgramSessions.delete(sessionKey)
-  const miniProgram = await entry.session.catch(() => null)
-  miniProgram?.disconnect()
+  await closeSharedEntry(sessionKey, entry)
 }
 
 /**
@@ -160,33 +181,64 @@ export async function withMiniProgram<T>(
 
   if (options.sharedSession) {
     const miniProgram = await acquireSharedMiniProgram(hooks, options)
-
+    let result!: T
+    let failure: Error | undefined
     try {
-      return await runner(miniProgram)
+      result = await runner(miniProgram)
     }
     catch (error) {
-      await closeSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
-      throw normalizeError(hooks, error)
+      failure = normalizeError(hooks, error)
     }
-    finally {
-      releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
+    const cleanupErrors: unknown[] = []
+    if (failure) {
+      try {
+        await closeSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
+      }
+      catch (cleanupError) {
+        cleanupErrors.push(cleanupError)
+      }
     }
+    try {
+      await releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
+    }
+    catch (cleanupError) {
+      cleanupErrors.push(cleanupError)
+    }
+    if (cleanupErrors.length) {
+      throw new AggregateError([...(failure ? [failure] : []), ...cleanupErrors], 'MiniProgram operation and shared connection cleanup failed', { cause: failure })
+    }
+    if (failure) {
+      throw failure
+    }
+    return result
   }
 
   let miniProgram: AutomatorMiniProgram | null = null
+  let result!: T
+  let failure: Error | undefined
 
   try {
     miniProgram = await hooks.connectMiniProgram(options)
-    return await runner(miniProgram)
+    result = await runner(miniProgram)
   }
   catch (error) {
-    throw normalizeError(hooks, error)
+    failure = normalizeError(hooks, error)
   }
-  finally {
-    if (miniProgram) {
-      miniProgram.disconnect()
+  if (miniProgram) {
+    try {
+      await miniProgram.disconnect()
+    }
+    catch (cleanupError) {
+      if (failure) {
+        throw new AggregateError([failure, cleanupError], 'MiniProgram operation and connection cleanup failed', { cause: failure })
+      }
+      throw cleanupError
     }
   }
+  if (failure) {
+    throw failure
+  }
+  return result
 }
 
 export type {
@@ -224,8 +276,7 @@ export async function closeOwnedSharedMiniProgram(options: SharedMiniProgramSess
     entry.closeWhenUnused = true
     return
   }
-  sharedMiniProgramSessions.delete(key)
-  program?.disconnect()
+  await closeSharedEntry(key, entry)
 }
 
 /** 单独保留管理器订阅，避免与正在执行的操作共享引用计数。 */

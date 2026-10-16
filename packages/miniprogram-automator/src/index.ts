@@ -14,6 +14,8 @@ import Transport from './Transport'
 export { Automator, Connection, ContextElement, CustomElement, Element, InputElement, Launcher, MiniProgram, MovableViewElement, Native, Page, ScrollViewElement, SliderElement, SwiperElement, SwitchElement, TextareaElement, Transport }
 export const SmartappAutomator = smartappAutomatorRuntime
 export type { AppServiceHeapUsage, AppServiceHeapUsageOptions } from './appServiceHeap'
+export type { CDPCommandOptions, CDPEventListener, CDPSession } from './cdp'
+export type { IEventOptions, ITouch, ITouchEventOptions } from './Element'
 export * from './Launcher'
 export { acquireAutomatorPortLease } from './launcher/portLease'
 export type { AutomatorPortLease } from './launcher/portLease'

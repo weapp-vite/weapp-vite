@@ -28,6 +28,21 @@ function createChild() {
 afterEach(() => vi.restoreAllMocks())
 
 describe('CLI process ownership', () => {
+  it('collects stdout and stderr in a bounded tail and records truncation', async () => {
+    const child = createChild()
+    spawnMock.mockReset().mockReturnValue(child)
+    const scope = new OperationLifecycle(1000, 'output')
+    const state = spawnWechatCli('cli', [], '', scope)
+    child.stdout.write('old output\n')
+    child.stderr.write('x'.repeat(32_768))
+    child.stdout.write('\ncompile failed')
+    expect(state.output).toHaveLength(32_768)
+    expect(state.output).not.toContain('old output')
+    expect(state.output).toMatch(/compile failed$/)
+    expect(state.outputTruncated).toBe(true)
+    await state.release()
+  })
+
   it('releases only its own child once while preserving a manual host, another project and another installation', async () => {
     const manualHost = createChild()
     const owned = createChild()

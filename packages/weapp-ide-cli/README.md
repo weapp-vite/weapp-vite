@@ -353,6 +353,27 @@ await clearWechatIdeCacheByAutomator({
 console.log(info, ticket)
 ```
 
+### 7. 程序化 automator 与异步断开
+
+`connectOpenedAutomator()` 返回的会话提供公开 `send(method, params?, { timeout }?)` 与 `CDP().enable/sendCommand/listProtocol/onEvent`，用于直接调用已连接 DevTools 支持的自动化和调试协议。`onEvent` 返回取消订阅函数；可用域和命令以目标宿主 `listProtocol()` 的结果为准。
+
+```ts
+import { connectOpenedAutomator } from 'weapp-ide-cli'
+
+const miniProgram = await connectOpenedAutomator({ projectPath: '.' })
+try {
+  console.log(await miniProgram.send('Tool.getInfo', {}, { timeout: 3_000 }))
+  console.log(await miniProgram.CDP().listProtocol({ timeout: 3_000 }))
+}
+finally {
+  await miniProgram.disconnect()
+}
+```
+
+`disconnect()` 现在返回 `Promise<void>`，调用时立即停止订阅并拒绝未完成请求，等待 WebSocket 关闭后完成。迁移同步清理回调时应返回或 `await` 此 Promise；超时和清理失败继续抛出。它只释放本连接，保留已打开项目窗口；需要关闭本任务受管窗口时使用相应会话的 `close()`，并等待窗口 owner 完成确认。MCP、日志转发及命令结束清理均等待各自持有的连接，不重新启动 IDE。
+
+headless 会话的 `send` 仅适配 `Tool.getInfo`、`App.getCurrentPage/getPageStack/callFunction/callWxMethod`；`CDP()` 和其他原始协议明确报告 `HEADLESS_PROTOCOL_UNSUPPORTED`。触摸接口使用标准 `changedTouches`，旧 `changeTouches` 仍兼容，同时传入以标准字段为准。
+
 ## 路径与参数兼容
 
 - `-p` 会被自动替换为 `--project`，并且相对路径会解析为绝对路径。

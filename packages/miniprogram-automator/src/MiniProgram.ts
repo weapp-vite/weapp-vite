@@ -1,4 +1,5 @@
 import type { AppServiceHeapUsageOptions } from './appServiceHeap'
+import type { CDPController } from './cdp'
 /**
  * @file 小程序实例控制能力。
  */
@@ -9,6 +10,7 @@ import fs from 'node:fs/promises'
 import process from 'node:process'
 import pkg from '../package.json'
 import { readAppServiceHeapUsage } from './appServiceHeap'
+import { getCDPController } from './cdp'
 import { cmpVersion, isFn, isStr, startWith, trim } from './internal/compat'
 import Native from './Native'
 import { matchesRouteQuery } from './navigation/query'
@@ -264,10 +266,14 @@ export default class MiniProgram extends EventEmitter {
   private logEnabling?: Promise<void>
   private structuredLogs = false
   private structuredConsole: StructuredConsole
+  private readonly cdp: CDPController
   private pageMap = new Map<number, Page>()
   private nativeIns?: Native
+  private disconnecting?: Promise<void>
+  private closing?: Promise<void>
   constructor(private connection: Connection) {
     super()
+    this.cdp = getCDPController(connection, (method, params, options) => this.send(method, params, options))
     this.structuredConsole = new StructuredConsole(
       (method, params, options) => this.send(method, params, options),
       entry => this.emit('console', entry),
@@ -276,6 +282,7 @@ export default class MiniProgram extends EventEmitter {
     connection.on('App.logAdded', this.onLogAdded)
     connection.on('App.bindingCalled', this.onBindingCalled)
     connection.on('App.exceptionThrown', this.onExceptionThrown)
+    connection.on('close', this.stopSubscriptions)
   }
 
   async pageStack() {
@@ -439,21 +446,29 @@ export default class MiniProgram extends EventEmitter {
     })
   }
 
-  async close() {
-    try {
-      await withTimeout(this.send('App.exit'), CLOSE_STEP_TIMEOUT)
-    }
-    catch {
-    }
-    await sleep(1000)
-    try {
-      await withTimeout(this.send('Tool.close'), CLOSE_STEP_TIMEOUT)
-    }
-    catch {
-    }
-    finally {
-      this.disconnect()
-    }
+  close(): Promise<void> {
+    this.closing ??= (async () => {
+      try {
+        try {
+          await withTimeout(this.send('App.exit'), CLOSE_STEP_TIMEOUT)
+        }
+        catch {
+        }
+        await sleep(1000)
+        try {
+          await withTimeout(this.send('Tool.close'), CLOSE_STEP_TIMEOUT)
+        }
+        catch {
+        }
+      }
+      finally {
+        await this.disconnect()
+      }
+    })().catch((error: unknown) => {
+      this.closing = undefined
+      throw error
+    })
+    return this.closing
   }
 
   async remote(auto = false) {
@@ -469,9 +484,26 @@ export default class MiniProgram extends EventEmitter {
     })
   }
 
-  disconnect() {
+  disconnect(): Promise<void> {
+    if (this.disconnecting) {
+      return this.disconnecting
+    }
+    this.stopSubscriptions()
+    this.disconnecting = Promise.resolve(this.connection.dispose()).catch((error: unknown) => {
+      this.disconnecting = undefined
+      throw error
+    })
+    return this.disconnecting
+  }
+
+  private stopSubscriptions = () => {
     this.structuredConsole.stop()
-    this.connection.dispose()
+    this.cdp.stop()
+    this.connection.off('App.CDPEvent', this.structuredConsole.receive)
+    this.connection.off('App.logAdded', this.onLogAdded)
+    this.connection.off('App.bindingCalled', this.onBindingCalled)
+    this.connection.off('App.exceptionThrown', this.onExceptionThrown)
+    this.connection.off('close', this.stopSubscriptions)
   }
 
   /** 等待已接收的结构化日志完成 Error 属性检查并发布。 */
@@ -508,7 +540,16 @@ export default class MiniProgram extends EventEmitter {
       try {
         if (this.structuredLogs) {
           // 显式建立原始事件通道，不依赖 CDPCommand 在部分 SDK 中的隐式订阅副作用。
-          await request(cdpMethod)
+          if (timeout === undefined) {
+            await this.cdp.refresh()
+          }
+          else {
+            const remaining = timeout - (Date.now() - startedAt)
+            if (remaining <= 0) {
+              throw new Error(`Timed out enabling console logging within ${timeout}ms`)
+            }
+            await this.cdp.refresh({ timeout: remaining })
+          }
           cdpMethod = 'App.CDPCommand'
         }
         // 新版基础库通过 inspector 转发日志，必须主动启用 Runtime 域。
@@ -885,7 +926,13 @@ export default class MiniProgram extends EventEmitter {
     throw lastError
   }
 
-  private async send(method: string, params: Record<string, any> = {}, options?: { timeout?: number }) {
+  /** 返回当前连接共享的 CDP 调试入口。 */
+  CDP() {
+    return this.cdp.session
+  }
+
+  /** 发送原始自动化协议，沿用连接的请求超时及清理契约。 */
+  async send(method: string, params: Record<string, any> = {}, options?: { timeout?: number }) {
     return options
       ? await this.connection.send(method, params, options)
       : await this.connection.send(method, params)

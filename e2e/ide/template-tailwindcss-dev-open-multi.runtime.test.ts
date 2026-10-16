@@ -138,7 +138,7 @@ describe('template TailwindCSS dev:open multi-project IDE integration', { concur
       }
     }
     finally {
-      session.miniProgram.disconnect?.()
+      await session.miniProgram.disconnect?.()
     }
   }, 180_000)
 })

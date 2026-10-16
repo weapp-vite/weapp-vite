@@ -27,6 +27,25 @@ function createSession() {
 }
 
 describe('automator runtime diagnostic lifecycle', () => {
+  it('shares asynchronous disconnect completion after immediately detaching runtime logs', async () => {
+    const barrier = Promise.withResolvers<void>()
+    const session = Object.assign(createSession(), { disconnect: vi.fn(() => barrier.promise) })
+    const rawDisconnect = session.disconnect
+    enhanceMiniProgramWithRuntimeLogs(session, 'e2e-apps/base')
+    const first = session.disconnect()
+    const second = session.disconnect()
+    expect(second).toBe(first)
+    expect(session.listenerCount('console')).toBe(0)
+    const finished = vi.fn()
+    void second.then(finished)
+    await Promise.resolve()
+    expect(finished).not.toHaveBeenCalled()
+    barrier.resolve()
+    await Promise.all([first, second])
+    expect(rawDisconnect).toHaveBeenCalledOnce()
+    expect(finished).toHaveBeenCalledOnce()
+  })
+
   it('still closes its project after the connection has already disconnected', async () => {
     const session = Object.assign(createSession(), { disconnect: vi.fn(), flushConsole: vi.fn(async () => {}) })
     const close = session.close

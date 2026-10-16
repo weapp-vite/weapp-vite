@@ -31,6 +31,8 @@ export interface ITouch {
 /** ITouchEventOptions 的类型定义。 */
 export interface ITouchEventOptions {
   touches?: ITouch[]
+  changedTouches?: ITouch[]
+  /** @deprecated 请使用 changedTouches，发送时会自动转换旧字段。 */
   changeTouches?: ITouch[]
 }
 /** IEventOptions 的类型定义。 */
@@ -38,10 +40,18 @@ export interface IEventOptions {
   eventName: string
   $?: string
   touches?: ITouch[]
+  changedTouches?: ITouch[]
+  /** @deprecated 请使用 changedTouches，发送时会自动转换旧字段。 */
   changeTouches?: ITouch[]
   detail?: Record<string, any>
 }
 type ElementMap = Map<string, Element>
+
+function normalizeTouchOptions<T extends ITouchEventOptions>(options: T) {
+  const { changeTouches, ...payload } = options
+  const changedTouches = options.changedTouches ?? changeTouches
+  return changedTouches === undefined ? payload : { ...payload, changedTouches }
+}
 interface ElementQueryOptions {
   timeout?: number
 }
@@ -171,19 +181,19 @@ export default class Element {
   }
 
   async touchstart(options: ITouchEventOptions = {}) {
-    await this.send('Element.touchstart', options)
+    await this.send('Element.touchstart', normalizeTouchOptions(options))
   }
 
   async touchmove(options: ITouchEventOptions = {}) {
-    await this.send('Element.touchmove', options)
+    await this.send('Element.touchmove', normalizeTouchOptions(options))
   }
 
   async touchend(options: ITouchEventOptions = {}) {
-    await this.send('Element.touchend', options)
+    await this.send('Element.touchend', normalizeTouchOptions(options))
   }
 
   async dispatchEvent(options: IEventOptions) {
-    await this.send('Element.dispatchEvent', options)
+    await this.send('Element.dispatchEvent', normalizeTouchOptions(options))
   }
 
   protected async _property(name: string | string[]) {

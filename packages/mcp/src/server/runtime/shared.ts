@@ -83,6 +83,8 @@ export interface RuntimeConsoleLogEntry {
 }
 interface AttachedSession {
   miniProgram: MiniProgramLike
+  input: RuntimeConnectionInput
+  released?: boolean
   onConsole: (payload: unknown) => void
   onException: (payload: unknown) => void
   currentPage?: MiniProgramPage
@@ -130,7 +132,7 @@ export class RuntimeSessionManager {
     const projectPath = this.resolveProjectPath(input.projectPath)
     const sessionKey = this.resolveSessionKey(projectPath, input)
     await withRuntimeLease(projectPath, async () => {
-      this.detach(sessionKey)
+      await this.detach(sessionKey)
       await closeSharedMiniProgram(projectPath, input.sessionId || input.port, input)
     })
   }
@@ -157,13 +159,15 @@ export class RuntimeSessionManager {
   }
 
   async dispose() {
-    for (const key of this.attachedSessions.keys()) {
-      this.detach(key)
-    }
-    for (const { input, miniProgram } of this.ownedSessions.values()) {
+    const detached = await Promise.allSettled([...this.attachedSessions.keys()].map(key => this.detach(key)))
+    const closed = await Promise.allSettled([...this.ownedSessions].map(async ([key, { input, miniProgram }]) => {
       await closeOwnedSharedMiniProgram(input, miniProgram)
+      this.ownedSessions.delete(key)
+    }))
+    const errors = [...detached, ...closed].filter(result => result.status === 'rejected').map(result => result.reason)
+    if (errors.length) {
+      throw new AggregateError(errors, 'Runtime session manager cleanup failed')
     }
-    this.ownedSessions.clear()
   }
 
   resolveProjectPath(projectPath: string) {
@@ -196,13 +200,30 @@ export class RuntimeSessionManager {
       if (!existed) {
         this.ownedSessions.set(sessionKey, { input: { ...input, projectPath }, miniProgram })
       }
-      this.attach(sessionKey, miniProgram, projectPath)
+      let failure: unknown
+      let failed = false
+      let result!: T
       try {
-        return await runner(miniProgram)
+        await this.attach(sessionKey, miniProgram, { ...input, projectPath })
+        result = await runner(miniProgram)
       }
-      finally {
-        releaseSharedMiniProgram(projectPath, input.sessionId || input.port, input)
+      catch (error) {
+        failed = true
+        failure = error
       }
+      try {
+        await releaseSharedMiniProgram(projectPath, input.sessionId || input.port, input)
+      }
+      catch (cleanupError) {
+        if (failed) {
+          throw new AggregateError([failure, cleanupError], 'Runtime operation and shared reference release failed', { cause: failure })
+        }
+        throw cleanupError
+      }
+      if (failed) {
+        throw failure
+      }
+      return result
     })
   }
 
@@ -259,12 +280,13 @@ export class RuntimeSessionManager {
     return input.installationId ? resolveSharedMiniProgramSessionKey({ ...input, projectPath }) : this.resolvedSessionKeys.get(key) ?? key
   }
 
-  private attach(sessionKey: string, miniProgram: MiniProgramLike, projectPath: string) {
+  private async attach(sessionKey: string, miniProgram: MiniProgramLike, input: RuntimeConnectionInput) {
+    const { projectPath } = input
     const existing = this.attachedSessions.get(sessionKey)
     if (existing?.miniProgram === miniProgram) {
       return
     }
-    this.detach(sessionKey)
+    await this.detach(sessionKey)
     retainSharedMiniProgram(sessionKey)
     const onConsole = (payload: unknown) => {
       this.pushLog({ ...normalizeConsoleEvent(payload), projectPath, sessionKey })
@@ -276,6 +298,7 @@ export class RuntimeSessionManager {
     miniProgram.on('exception', onException)
     this.attachedSessions.set(sessionKey, {
       miniProgram,
+      input,
       onConsole,
       onException,
     })
@@ -296,7 +319,7 @@ export class RuntimeSessionManager {
     }
   }
 
-  private detach(projectPath: string) {
+  private async detach(projectPath: string) {
     const attached = this.attachedSessions.get(projectPath)
     if (!attached) {
       return
@@ -305,7 +328,13 @@ export class RuntimeSessionManager {
       attached.miniProgram.off('console', attached.onConsole)
       attached.miniProgram.off('exception', attached.onException)
     }
-    releaseSharedMiniProgramByKey(projectPath)
+    if (attached.released) {
+      await closeOwnedSharedMiniProgram(attached.input, attached.miniProgram)
+    }
+    else {
+      attached.released = true
+      await releaseSharedMiniProgramByKey(projectPath)
+    }
     this.attachedSessions.delete(projectPath)
   }
 

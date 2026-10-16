@@ -60,6 +60,59 @@ describe('Doctor runtime facts', () => {
     expect(disconnect).toHaveBeenCalledOnce()
   })
 
+  it('confirms asynchronous disconnection before reporting a completed probe', async () => {
+    let finish!: () => void
+    disconnect.mockImplementation(() => new Promise<void>((resolve) => {
+      finish = resolve
+    }))
+    let settled = false
+    const pending = probeDoctorRuntime('fixture', 'weapp').finally(() => {
+      settled = true
+    })
+    await vi.waitFor(() => expect(disconnect).toHaveBeenCalledOnce())
+    expect(settled).toBe(false)
+    finish()
+    const evidence = await pending
+    expect(evidence.complete).toBe(true)
+    expect(evidence.facts).toContainEqual({ stage: 'session-release', status: 'passed', code: 'disconnected' })
+  })
+
+  it('retains failed RPC facts when disconnection also fails', async () => {
+    disconnect.mockRejectedValue(new Error('socket closure unconfirmed'))
+    mocks.connect.mockResolvedValue({
+      disconnect,
+      toolInfo: async () => ({ version: '2.02.2608080' }),
+      currentPage: async () => {
+        throw new Error('page RPC failed')
+      },
+    })
+
+    const evidence = await probeDoctorRuntime('fixture', 'weapp')
+
+    expect(evidence.complete).toBe(false)
+    expect(evidence.facts).toContainEqual({ stage: 'tool-info', status: 'passed', code: 'snapshot-read' })
+    expect(evidence.facts).toContainEqual({ stage: 'current-page', status: 'failed', code: 'rpc-failed' })
+    expect(evidence.facts).toContainEqual(expect.objectContaining({ stage: 'session-release', status: 'failed' }))
+  })
+
+  it('bounds hanging disconnection and freezes evidence before late cleanup completes', async () => {
+    vi.useFakeTimers()
+    let finish!: () => void
+    disconnect.mockImplementation(() => new Promise<void>((resolve) => {
+      finish = resolve
+    }))
+    const pending = probeDoctorRuntime('fixture', 'weapp', undefined, { timeout: 100 })
+    await vi.advanceTimersByTimeAsync(100)
+    const evidence = await pending
+    expect(evidence.complete).toBe(false)
+    expect(evidence.facts).toContainEqual({ stage: 'session-release', status: 'failed', code: 'timeout' })
+    expect(evidence.bundle?.operation.cleanup).toContainEqual({ resource: 'doctor-websocket', status: 'pending' })
+    const snapshot = JSON.stringify(evidence)
+    finish()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(JSON.stringify(evidence)).toBe(snapshot)
+  })
+
   it('does not treat an empty tool response as verified host and SDK versions', async () => {
     mocks.connect.mockResolvedValue({ disconnect, toolInfo: async () => ({}), currentPage: async () => ({ path: 'pages/home' }) })
     const evidence = await probeDoctorRuntime('fixture', 'weapp')

@@ -87,6 +87,29 @@ beforeEach(() => {
 })
 
 describe('managed automator reconnect', () => {
+  it('awaits old socket closure before creating another connection to the owned endpoint', async () => {
+    const fixture = createFixture()
+    const barrier = Promise.withResolvers<void>()
+    fixture.previous.disconnect.mockImplementation(() => barrier.promise)
+    const pending = reconnectAutomator(fixture.previous.session)
+    await vi.waitFor(() => expect(fixture.previous.disconnect).toHaveBeenCalledOnce())
+    expect(fixture.connect).not.toHaveBeenCalled()
+    barrier.resolve()
+    await pending
+    expect(fixture.connect).toHaveBeenCalledOnce()
+    expect(fixture.closeOwner).not.toHaveBeenCalled()
+  })
+
+  it('keeps ownership and refuses reconnect when old socket closure is unconfirmed', async () => {
+    const fixture = createFixture()
+    const failure = new Error('socket close unconfirmed')
+    fixture.previous.disconnect.mockRejectedValueOnce(failure)
+    await expect(reconnectAutomator(fixture.previous.session)).rejects.toBe(failure)
+    expect(fixture.connect).not.toHaveBeenCalled()
+    expect(fixture.closeOwner).not.toHaveBeenCalled()
+    expect(getManagedProjectSessionOwner(fixture.previous.session)).toBe(fixture.closeOwner)
+  })
+
   it('replaces only the socket and preserves the endpoint, metadata and original owner across reloads', async () => {
     const fixture = createFixture()
     const second = createSession()
