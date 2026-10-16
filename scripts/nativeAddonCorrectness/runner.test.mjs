@@ -1,5 +1,6 @@
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { driverRoot, readJson, writeJson } from './evidence.mjs'
 import { manifestPath } from './manifest.mjs'
@@ -31,13 +32,18 @@ async function preparedFixture() {
 
 describe('trusted native correctness runner', () => {
   it('freezes candidate identity, runs one serial closure and all suites, then emits portable evidence', async () => {
+    const startedAt = performance.now()
+    const phase = name => process.stderr.write(`[native-correctness-phase] ${name} ${(performance.now() - startedAt).toFixed(2)}ms\n`)
+    phase('fixture:start')
     const fixture = await preparedFixture()
+    phase('fixture:end')
     const { root, directory, manifest, run, dependencies } = fixture
     const plan = await readJson(directory, 'plan.json')
     expect(plan.testedCommit).toBe('a'.repeat(40))
     expect(plan.driverCommit).toBe('b'.repeat(40))
     expect(plan.manifestSha256).toMatch(/^[a-f\d]{64}$/u)
     await run('binding')
+    phase('binding:end')
     expect(dependencies.loadBinding).toHaveBeenCalledOnce()
     const commands = []
     let releaseBuild
@@ -47,21 +53,26 @@ describe('trusted native correctness runner', () => {
     const execute = async (command) => {
       commands.push(command)
       if (commands.length === 1) {
+        phase('build:waiting')
         await buildFinished
       }
       else {
         await writeJson(directory, 'raw-vitest.json', completeReport(root, manifest))
+        phase('tests:report-written')
       }
     }
     const running = run('run', { execute })
     await vi.waitFor(() => expect(commands).toHaveLength(1))
+    phase('build:observed')
     expect(commands[0]).toEqual({
       command: 'pnpm',
       args: ['exec', 'turbo', 'run', 'build', '--filter=@wevu/compiler...', '--filter=weapp-vite...', '--concurrency=1', '--force'],
       cwd: root,
     })
     releaseBuild()
+    phase('build:released')
     await running
+    phase('run:end')
     expect(commands).toHaveLength(2)
     expect(commands[1].cwd).toBe(path.join(root, 'packages/ast-native'))
     expect(commands[1].args).toEqual([
@@ -78,6 +89,7 @@ describe('trusted native correctness runner', () => {
       `--outputFile=${path.join(directory, 'raw-vitest.json')}`,
     ])
     await run('report')
+    phase('report:end')
     const summary = await readJson(directory, 'summary.json')
     const expectedAssertions = manifest.suites.reduce((sum, suite) => sum + suite.minimumAssertions, 0)
     expect(summary).toMatchObject({ status: 'passed', passed: expectedAssertions, skipped: 0, manifestSha256: plan.manifestSha256, testedCommit: plan.testedCommit })
