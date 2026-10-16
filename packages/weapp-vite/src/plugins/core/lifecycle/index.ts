@@ -54,6 +54,14 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     },
     renderStart: createRenderStartHook(state),
     generateBundle: createGenerateBundleHook(state, isPluginBuild),
+    writeBundle: {
+      order: 'post',
+      sequential: true,
+      async handler() {
+        // 输出编译器也会发现依赖；统一在产物完成后将本轮声明交给长期 Vite 图。
+        await state.ctx.moduleGraphService.syncDevGraph(this)
+      },
+    },
     async buildEnd() {
       state.entryChunkLifecycle?.endBuild()
       return await buildEnd.call(this)

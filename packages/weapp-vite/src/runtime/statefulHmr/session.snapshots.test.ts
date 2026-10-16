@@ -19,7 +19,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeGlassEaselBundle, createGlassEaselAnalyzeResult } from '../../analyze/glassEasel'
 import { refreshGlassEaselNativeScripts } from '../../analyze/glassEasel/nativeScripts'
 import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
-import { CompilerHmrResyncError, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
+import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
 import { createRuntimeState } from '../runtimeState'
 import { createStatefulHmrHostPlugins } from './hostPlugins'
@@ -1520,7 +1520,7 @@ describe('stateful snapshot output transactions', () => {
     expect(prepare).toHaveBeenCalledOnce()
     expect(prepare.mock.calls[0]?.[0]).toMatchObject({ changedFiles: [style] })
     const sources = session.rebuild.mock.calls[0]?.[1]
-    expect(sources?.get(style)).toBe(changed)
+    expect(sources?.get(compilerSourceId(style))).toBe(changed)
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
@@ -1727,8 +1727,8 @@ describe('stateful snapshot output transactions', () => {
     expect(firstDispose).toHaveBeenCalledOnce()
     expect(secondDispose).toHaveBeenCalledOnce()
     expect(prepare).toHaveBeenCalledTimes(2)
-    expect(prepare.mock.calls[0]![0].sources.get(style)).toBe('blue')
-    expect(prepare.mock.calls[1]![0].sources.get(style)).toBe('green')
+    expect(prepare.mock.calls[0]![0].sources.get(compilerSourceId(style))).toBe('blue')
+    expect(prepare.mock.calls[1]![0].sources.get(compilerSourceId(style))).toBe('green')
     expect(session.rebuild).toHaveBeenCalledExactlyOnceWith([style], prepare.mock.calls[1]![0].sources)
   })
 

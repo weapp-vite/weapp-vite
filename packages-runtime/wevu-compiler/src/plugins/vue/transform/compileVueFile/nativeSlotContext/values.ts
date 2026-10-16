@@ -61,6 +61,7 @@ export interface ValueResolver {
   functionReturn: (value: Value | undefined) => Value | undefined
   imported: (source: string, name: string) => Value
   key: (node: Node, computed: boolean, scope: Scope) => string | undefined
+  moduleValue: (value: Value | undefined) => Value | undefined
 }
 
 const primitive: Value = { kind: 'primitive' }
@@ -86,7 +87,7 @@ export function isPrimitive(value: Value | undefined): boolean {
 }
 
 /** 值证明与 Babel 绑定身份共用；未知属性、原型、代理和访问器均不冒充普通字段。 */
-export function createValueResolver(scopes: WeakMap<Node, Scope>, lookup: (name: string, scope: Scope) => Value | undefined, exported: (source: string, name: string) => Value | undefined, sharedBindings: WeakSet<Node>): ValueResolver {
+export function createValueResolver(scopes: WeakMap<Node, Scope>, lookup: (name: string, scope: Scope) => Value | undefined, exported: (source: string, name: string) => Value | undefined, sharedBindings: WeakSet<Node>, moduleScope: Scope): ValueResolver {
   const resolving = new Set<Node>()
   const boundary = createModuleValueBoundary(isPrimitive, name => pureRuntimeApis[name] === true)
   const dataProofs = new WeakMap<ResolveValue, WeakMap<Scope, { complete: WeakMap<Node, boolean>, visiting: WeakSet<Node> }>>()
@@ -148,7 +149,7 @@ export function createValueResolver(scopes: WeakMap<Node, Scope>, lookup: (name:
     return undefined
   }
   function functionReturn(value: Value | undefined): Value | undefined {
-    if (value?.kind !== 'local' || !t.isFunction(value.node)) {
+    if (value?.kind !== 'local' || !t.isFunction(value.node) || value.node.async || value.node.generator) {
       return undefined
     }
     const body = value.node.body
@@ -184,7 +185,8 @@ export function createValueResolver(scopes: WeakMap<Node, Scope>, lookup: (name:
           }
           return imported(parent.source.value, t.isImportSpecifier(declaration) ? propertyName(declaration.imported, false)! : t.isImportDefaultSpecifier(declaration) ? 'default' : '*')
         }
-        const shared = sharedBindings.has(binding.identifier)
+        // 普通 script 的配置在模块求值时可读；函数/实例消费其复合值时不再拥有字段。
+        const shared = sharedBindings.has(binding.identifier) || (binding.scope === moduleScope && scope.getFunctionParent() !== null)
         if (t.isVariableDeclarator(declaration) && declaration.init) {
           let value = resolve(declaration.init, binding.path.scope)
           if (t.isObjectPattern(declaration.id)) {
@@ -294,5 +296,5 @@ export function createValueResolver(scopes: WeakMap<Node, Scope>, lookup: (name:
     proof.complete.set(value.node, safe)
     return safe
   }
-  return { resolve, member, safeData, functionReturn, imported, key }
+  return { resolve, member, safeData, functionReturn, imported, key, moduleValue: boundary.imported }
 }

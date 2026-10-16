@@ -24,6 +24,9 @@ describe('native context property and coercion proofs', () => {
     ['ref shape mutation', 'import { ref, toValue } from "wevu"; const count = ref(0); count.value = {}; const value = toValue(count) + 1'],
     ['deleted own field', 'const source = { token: 0 }; delete source.token; const value = source.token'],
     ['unknown parameter reads', 'function read(source) { return source.token }; const value = read({ token: 0 })'],
+    ['async return shape', 'async function makeValue() { return { token: 0 } }; const value = makeValue().token'],
+    ['generator return shape', 'function* makeValue() { return { token: 0 } }; const value = makeValue().token'],
+    ['async generator return shape', 'async function* makeValue() { return { token: 0 } }; const value = makeValue().token'],
   ])('retains %s', async (_name, script) => {
     const result = await createAnalysisFixture().analyze(`<script setup>${script}</script><template><text>{{ value }}</text></template>`)
     expect(result.required).toBe(true)

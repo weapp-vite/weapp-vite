@@ -101,6 +101,15 @@ const rows = [1, 2]
     expect(result.required).toBe(false)
   })
 
+  it.each([
+    '{ token = readToken() }',
+    '{ [readToken()]: token }',
+    '[token = readToken()]',
+  ])('retains executable loop pattern %s', async (pattern) => {
+    const source = `<script setup>import { inject } from 'wevu'; const rows = [{}]; const readToken = () => inject('token', 'fallback')</script><template><text v-for="(${pattern}, index) in rows">{{ token }}</text></template>`
+    expect((await createAnalysisFixture().analyze(source)).required).toBe(true)
+  })
+
   it('finds context APIs invoked as template event handlers', async () => {
     const result = await createAnalysisFixture().analyze(`<script setup>import { inject as take } from 'wevu'</script>
 <template><button @click="take">take</button></template>`)

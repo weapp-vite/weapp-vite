@@ -66,7 +66,7 @@ export function prepareScriptScopes(source: string | File, component: boolean, s
     const root = scope.getProgramParent()
     if (root === setupScope) {
       const binding = scriptScope.getBinding(name)
-      const value = binding ? values.resolve(binding.identifier, binding.scope) : undefined
+      const value = binding ? values.moduleValue(values.resolve(binding.identifier, binding.scope)) : undefined
       if (value?.kind === 'local' && t.isFunction(value.node)) {
         observedFunctions.add(value.node)
       }
@@ -82,6 +82,9 @@ export function prepareScriptScopes(source: string | File, component: boolean, s
     if (setupScope) {
       const binding = setupScope.getBinding(name) ?? scriptScope.getBinding(name)
       value = binding ? values.resolve(binding.identifier, binding.scope) : undefined
+      if (binding?.scope === scriptScope) {
+        value = values.moduleValue(value)
+      }
     }
     else if (component) {
       const options = componentExport && values.resolve(componentExport.declaration, scriptScope)
@@ -94,6 +97,6 @@ export function prepareScriptScopes(source: string | File, component: boolean, s
     const unwrapped = value?.kind === 'ref' ? value.value : value
     templateValues.set(name, unwrapped)
     return unwrapped
-  }, exported, sharedBindings)
+  }, exported, sharedBindings, scriptScope)
   return { script, setup, template, values, observedFunctions, scriptScope }
 }

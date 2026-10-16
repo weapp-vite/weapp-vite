@@ -2,16 +2,17 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { assertWechatDevtoolsHost, assertWechatDevtoolsPort } from '../src/devtoolsTarget/host'
+import { assertWechatDevtoolsHost, assertWechatDevtoolsPort, resolveWechatDevtoolsInstallationRoot } from '../src/devtoolsTarget/host'
 
 const execute = vi.hoisted(() => vi.fn())
 vi.mock('execa', () => ({ execa: execute }))
 let root: string
 function target() {
-  return { cliPath: path.join(root, 'selected.app', 'Contents', 'MacOS', 'cli'), appPath: path.join(root, 'selected.app', 'Contents', 'Resources', 'app.asar'), installationId: 'selected', profileDir: path.join(root, 'data', 'selected') }
+  const installation = path.posix.join(root.replaceAll('\\', '/'), 'selected.app')
+  return { cliPath: `${installation}/Contents/MacOS/cli`, appPath: `${installation}/Contents/Resources/app.asar`, installationId: 'selected', profileDir: path.join(root, 'data', 'selected') }
 }
 function executable(installation = 'selected.app') {
-  return path.join(root, installation, 'Contents', 'MacOS', 'Electron')
+  return path.posix.join(root.replaceAll('\\', '/'), installation, 'Contents', 'MacOS', 'Electron')
 }
 beforeEach(async () => {
   root = await fs.mkdtemp(path.join(os.tmpdir(), 'wechat-host-'))
@@ -26,6 +27,36 @@ describe('DevTools host ownership', () => {
   it('permits startup with no singleton owner and does not inspect unrelated processes', async () => {
     await assertWechatDevtoolsHost(target(), { platform: 'darwin' })
     expect(execute).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { platform: 'darwin', appPath: String.raw`/fixture/selected\literal.app/Contents/Resources/app.asar/`, expected: String.raw`/fixture/selected\literal.app` },
+    { platform: 'linux', appPath: String.raw`/fixture/selected\literal/resources/app.asar/`, expected: String.raw`/fixture/selected\literal` },
+    { platform: 'win32', appPath: 'C:\\Tools\\WeChat\\resources\\app.asar\\', expected: 'c:/tools/wechat' },
+  ] as const)('normalizes installation roots according to $platform pathname semantics', ({ platform, appPath, expected }) => {
+    expect(resolveWechatDevtoolsInstallationRoot({ ...target(), appPath }, platform)).toBe(expected)
+  })
+
+  it.each(['darwin', 'linux'] as const)('does not confuse a literal backslash with a directory separator on %s', async (platform) => {
+    const installation = String.raw`/fixture/selected\literal.app`
+    const selected = { ...target(), appPath: `${installation}/${platform === 'darwin' ? 'Contents/Resources' : 'resources'}/app.asar` }
+    const sharedLock = path.join(path.dirname(selected.profileDir), 'SingletonLock')
+    let image = '/fixture/selected/literal.app/host'
+    vi.spyOn(fs, 'readlink').mockImplementation(async (file) => {
+      if (file === sharedLock) {
+        return `test-host-${process.pid}`
+      }
+      if (file === `/proc/${process.pid}/exe`) {
+        return image
+      }
+      throw Object.assign(new Error('missing'), { code: 'ENOENT' })
+    })
+    execute.mockImplementation(async () => ({ exitCode: 0, stdout: image }))
+    await expect(assertWechatDevtoolsHost(selected, { platform })).rejects.toMatchObject({ code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' })
+    image = `${installation}/host`
+    await assertWechatDevtoolsHost(selected, { platform })
+    const nested = { ...selected, appPath: selected.appPath.replace('\\', '/') }
+    await expect(assertWechatDevtoolsHost(nested, { platform })).rejects.toMatchObject({ code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' })
   })
 
   it('rejects another installation that owns the shared singleton even at the same product version', async () => {
@@ -72,11 +103,11 @@ describe('DevTools host ownership', () => {
     const signal = new AbortController().signal
     execute.mockResolvedValue({ exitCode: 0, stdout: '[]' })
     await assertWechatDevtoolsHost(target(), { platform: 'win32', signal })
-    expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 10_000, cancelSignal: signal }))
+    expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 30_000, cancelSignal: signal }))
     await assertWechatDevtoolsHost(target(), { platform: 'win32', timeout: 500, signal })
     expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 500, cancelSignal: signal }))
     await assertWechatDevtoolsHost(target(), { platform: 'win32', timeout: 60_000 })
-    expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 10_000 }))
+    expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 30_000 }))
     const controller = new AbortController()
     controller.abort(new Error('inspection cancelled'))
     await expect(assertWechatDevtoolsHost(target(), { platform: 'win32', signal: controller.signal })).rejects.toThrow('inspection cancelled')
@@ -106,15 +137,16 @@ describe('DevTools host ownership', () => {
   })
 
   it('reads the Linux executable from procfs instead of treating a short comm name as its path', async () => {
-    const selected = { ...target(), cliPath: path.join(root, 'selected', 'cli'), appPath: path.join(root, 'selected', 'resources', 'app.asar') }
+    const installation = path.posix.join(root.replaceAll('\\', '/'), 'selected')
+    const selected = { ...target(), cliPath: `${installation}/cli`, appPath: `${installation}/resources/app.asar` }
     execute.mockImplementation(async command => command === 'lsof'
       ? { exitCode: 0, stdout: `p${process.pid}\n` }
       : { exitCode: 0, stdout: 'wechatdevtools' })
-    const readLink = vi.spyOn(fs, 'readlink').mockResolvedValue(path.join(root, 'selected', 'wechatdevtools'))
+    const readLink = vi.spyOn(fs, 'readlink').mockResolvedValue(`${installation}/wechatdevtools`)
     await assertWechatDevtoolsPort(selected, 22001, { platform: 'linux' })
     expect(readLink).toHaveBeenCalledWith(`/proc/${process.pid}/exe`)
     expect(execute.mock.calls.map(([command]) => command)).toEqual(['lsof'])
-    readLink.mockResolvedValueOnce(path.join(root, 'other', 'wechatdevtools'))
+    readLink.mockResolvedValueOnce(path.posix.join(root.replaceAll('\\', '/'), 'other', 'wechatdevtools'))
     await expect(assertWechatDevtoolsPort(selected, 22001, { platform: 'linux' })).rejects.toMatchObject({ code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' })
   })
 })

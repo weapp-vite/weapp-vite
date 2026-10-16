@@ -169,7 +169,7 @@ describe('native slot context compilation', () => {
   it.each([
     ['Options handler', `<script>import { ref } from 'wevu'; export default { setup() { const count = ref(0); const increment = () => count.value++; return { count, increment } } }</script>`],
     ['Options returned aliases', `<script>import { ref } from 'wevu'; export default { setup() { const value = ref(0); const add = () => value.value++; return { count: value, increment: add } } }</script>`],
-    ['dual imports', `<script>import { ref } from 'wevu'; const seed = ref(0)</script><script setup>import { ref } from 'wevu'; const count = ref(seed.value); const increment = () => count.value++</script>`],
+    ['dual imports', `<script>import { ref } from 'wevu'; const makeSeed = () => ref(0)</script><script setup>import { ref } from 'wevu'; const seed = makeSeed(); const count = ref(seed.value); const increment = () => count.value++</script>`],
     ['reactive property ref', `<script setup>import { reactive, toRef } from 'wevu'; const state = reactive({ count: 0 }); const count = toRef(state, 'count'); const increment = () => count.value++</script>`],
     ['ref normalization', `<script setup>import { ref, toValue } from 'wevu'; const seed = ref(0); const count = ref(toValue(seed)); const increment = () => count.value++</script>`],
   ])('omits methods and observer while preserving %s', async (_name, scripts) => {

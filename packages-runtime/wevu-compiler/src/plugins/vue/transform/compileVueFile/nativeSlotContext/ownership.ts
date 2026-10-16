@@ -3,7 +3,7 @@ import type { Node } from '@weapp-vite/ast/babelTypes'
 import type { ResolveValue, Value } from './values'
 import * as t from '@weapp-vite/ast/babelTypes'
 
-/** 模块导出的对象可被其他 importer 修改；仅保留原始值、函数身份和未逃逸工厂的新分配。 */
+/** 模块复合值可跨实例共享；仅保留原始值、同步函数身份和未逃逸工厂的新分配。 */
 export function createModuleValueBoundary(isPrimitive: (value: Value | undefined) => boolean, isRuntimeApi: (name: string) => boolean) {
   const opaque: Value = { kind: 'opaque' }
   const importedValues = new WeakMap<Value, Value>()
@@ -11,6 +11,9 @@ export function createModuleValueBoundary(isPrimitive: (value: Value | undefined
   const factoryResolvers = new WeakMap<Scope, Map<ResolveValue, ResolveValue>>()
 
   function safeFactory(fn: Extract<Value, { kind: 'local' }>) {
+    if (!t.isFunction(fn.node) || fn.node.async || fn.node.generator) {
+      return false
+    }
     const cached = factoryProofs.get(fn.node)
     if (cached !== undefined) {
       return cached

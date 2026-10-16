@@ -7,13 +7,10 @@ describe('native context SFC binding scopes', () => {
   it.each([
     ['Options method', `<script>import { ref } from 'wevu'; export default { setup() { const count = ref(0); const increment = () => count.value++; return { count, increment } } }</script>`],
     ['Options aliases', `<script>import { ref } from 'wevu'; export default { setup() { const local = ref(0); const add = () => local.value++; const exposed = { count: local, increment: add }; return exposed } }</script>`],
-    ['module variables', `<script>import { ref } from 'wevu'; const count = ref(0); const increment = () => count.value++; export default { setup() { return { count, increment } } }</script>`],
     ['setup function alias', `<script>import { ref } from 'wevu'; const setup = () => { const count = ref(0); const increment = () => count.value++; return { count, increment } }; export default { setup }</script>`],
     ['typed options', `<script lang="ts">import { defineComponent as component, ref } from 'vue'; const options = { setup() { const count = ref<number>(0); const increment = () => count.value++; return { count, increment } } } satisfies Record<string, unknown>; export default component(options)</script>`],
     ['typed component expression', `<script lang="ts">import { defineComponent, ref } from 'vue'; export default (defineComponent({ setup() { const count = ref(0); const increment = () => count.value++; return { count, increment } } }) satisfies Record<string, unknown>)</script>`],
-    ['duplicate runtime imports', `<script>import { ref } from 'wevu'; const seed = ref(0)</script><script setup>import { ref } from 'wevu'; const count = ref(seed.value); const increment = () => count.value++</script>`],
     ['module helper', `<script>import { ref } from 'wevu'; function seed() { return ref(0) }</script><script setup>const count = seed(); const increment = () => count.value++</script>`],
-    ['independent runtime aliases', `<script>import { ref as localRef } from 'wevu'; const seed = localRef(0)</script><script setup>import { ref as localRef } from 'wevu'; const count = localRef(seed.value); const increment = () => count.value++</script>`],
     ['exported primitive', `<script>export const seed = 0</script><script setup>import { ref } from 'wevu'; const count = ref(seed); const increment = () => count.value++</script>`],
     ['exported fresh factory', `<script>import { ref } from 'wevu'; export function seed() { return ref(0) }</script><script setup>const count = seed(); const increment = () => count.value++</script>`],
   ])('omits protocol with %s', async (_name, scripts) => {
@@ -21,6 +18,9 @@ describe('native context SFC binding scopes', () => {
   })
 
   it.each([
+    ['module variables', `<script>import { ref } from 'wevu'; const count = ref(0); const increment = () => count.value++; export default { setup() { return { count, increment } } }</script>`],
+    ['duplicate runtime imports', `<script>import { ref } from 'wevu'; const seed = ref(0)</script><script setup>import { ref } from 'wevu'; const count = ref(seed.value); const increment = () => count.value++</script>`],
+    ['independent runtime aliases', `<script>import { ref as localRef } from 'wevu'; const seed = localRef(0)</script><script setup>import { ref as localRef } from 'wevu'; const count = localRef(seed.value); const increment = () => count.value++</script>`],
     ['exported mutable seed', `<script>import { ref } from 'wevu'; export const seed = ref(0)</script><script setup>import { ref } from 'wevu'; const count = ref(seed.value); const increment = () => count.value++</script>`],
     ['mutable seed exposed through getter', `<script>import { ref } from 'wevu'; const seed = ref(0); export function getSeed() { return seed }</script><script setup>import { ref } from 'wevu'; const count = ref(seed.value); const increment = () => count.value++</script>`],
     ['mutable seed exposed through alias', `<script>import { ref } from 'wevu'; const seed = ref(0); const alias = seed; export { alias }</script><script setup>import { ref } from 'wevu'; const count = ref(seed.value); const increment = () => count.value++</script>`],

@@ -55,7 +55,8 @@ export function analyzeTemplate(content: string, options?: Pick<TemplateCompileO
       }
       let code = ''
       let list = ''
-      let aliases: string[] | undefined
+      let parameters: string[] | undefined
+      let bindings = ''
       for (const prop of node.props) {
         if (prop.type !== NodeTypes.DIRECTIVE) {
           continue
@@ -77,12 +78,13 @@ export function analyzeTemplate(content: string, options?: Pick<TemplateCompileO
           if (loop.listExp) {
             list += expression(loop.listExp)
           }
-          aliases = [...new Set([
-            ...Object.keys(loop.itemAliases ?? {}),
-            loop.item,
-            loop.index,
-            loop.key,
-          ].filter((name): name is string => Boolean(name)))]
+          parameters = [loop.itemPattern ?? loop.item, loop.index, loop.key].filter((name): name is string => Boolean(name))
+          // 投影模式保留完整参数语义；其余解构复用模板 owner 的实际字段表达式。
+          if (!loop.itemPattern) {
+            for (const [name, value] of Object.entries(loop.itemAliases ?? {})) {
+              bindings += `const ${name} = (${value});`
+            }
+          }
         }
         else if (prop.name !== 'slot') {
           const body = expression(prop.exp.content, prop.name === 'on')
@@ -90,7 +92,7 @@ export function analyzeTemplate(content: string, options?: Pick<TemplateCompileO
         }
       }
       code += node.children.map(visit).join('\n')
-      return aliases ? `${list};((${aliases.join(',')}) => { ${code}\n});` : code
+      return parameters ? `${list};((${parameters.join(',')}) => { ${bindings}${code}\n});` : code
     }
     facts.expressions = ast.children.map(visit).join('\n')
   }

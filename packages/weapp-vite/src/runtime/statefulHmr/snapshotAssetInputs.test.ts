@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import path from 'node:path'
+import path from 'pathe'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { CompilerHmrHost, CompilerHmrResyncError, compilerSourceId, getCompilerRawSnapshot } from '../../plugins/compilerPlugin/hmr'
 import { readCompilerRawInput } from '../../plugins/compilerPlugin/rawInputs'
@@ -327,10 +327,15 @@ it('rejects a canonical text query path replaced by a junction before Vite produ
   expect(() => createSnapshotAssetInputs(input.sources).configure(() => false)).toThrow(CompilerHmrResyncError)
 })
 
-it('retains the observed physical path identity after a lexical alias has moved to a newer input', () => {
-  const oldPhysical = path.join(root, 'old-physical')
-  const newPhysical = path.join(root, 'new-physical')
-  const replacement = path.join(root, 'replacement')
+it.each(['physical', 'junction'] as const)('retains the observed physical path identity after a lexical alias has moved to a newer input (%s root)', (identity) => {
+  const physicalRoot = path.join(root, 'physical-root')
+  const aliasRoot = path.join(root, 'alias-root')
+  mkdirSync(physicalRoot)
+  symlinkSync(physicalRoot, aliasRoot, 'junction')
+  const fixtureRoot = identity === 'junction' ? aliasRoot : physicalRoot
+  const oldPhysical = path.join(fixtureRoot, 'old-physical')
+  const newPhysical = path.join(fixtureRoot, 'new-physical')
+  const replacement = path.join(fixtureRoot, 'replacement')
   for (const directory of [oldPhysical, newPhysical, replacement]) {
     mkdirSync(directory)
     writeFileSync(path.join(directory, 'message.txt'), path.basename(directory))
@@ -344,7 +349,7 @@ it('retains the observed physical path identity after a lexical alias has moved 
   symlinkSync(newPhysical, alias, 'junction')
   host.captureRaw(aliasFile, 'new-physical', false)
   const input = host.freeze([])
-  expect(input.sources.get(path.join(oldPhysical, 'message.txt'))).toBe('old-physical')
+  expect(input.sources.get(compilerSourceId(path.join(oldPhysical, 'message.txt')))).toBe('old-physical')
   rmSync(oldPhysical, { recursive: true })
   symlinkSync(replacement, oldPhysical, 'junction')
   // 旧 physical 仍可能由另一个入口消费，更新 alias 不能撤销它已观察的路径身份。

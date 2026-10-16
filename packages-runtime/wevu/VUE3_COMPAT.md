@@ -348,7 +348,7 @@ defineComponent({
 })
 ```
 
-Options API `provide()` runs after the bindings returned by `setup()` and Options API `inject` have been installed. It can read those bindings, setup methods, and computed chains through `this` before child components run their setup. When setup and Options API provide the same key, the Options API value takes precedence.
+The bindings returned by `setup()` and Options API `inject` are installed once, before Options API `provide()` and Options watchers run. `provide()` can read those bindings, setup methods, and computed chains through `this` before child components run their setup; its computed objects and methods retain the same identity as subsequent reads through the parent proxy. Watchers, including immediate watchers and string handlers referring to setup methods, start from the installed values. When setup and Options API provide the same key, the Options API value takes precedence.
 
 ### Shallow Reactivity
 

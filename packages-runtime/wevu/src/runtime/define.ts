@@ -271,10 +271,6 @@ function createComponentDefinition(
           }
         : setData
   const resolvedSetData = resolveScopedSlotHostSetData(mpOptions, rawResolvedSetData)
-  const setupFunctionPropKeys = new Set(
-    functionPropPaths
-      .filter(path => !path.includes('.')),
-  )
 
   const normalizedMpOptions = normalizeProps(mpOptions, props, mpOptions.properties)
   const initialDataContext = resolveInitialDataContext(normalizedMpOptions.properties, methods)
@@ -298,15 +294,11 @@ function createComponentDefinition(
         ...(cssModules ?? {}),
       }, setupResult)
       if (ctx && Object.keys(result).length) {
-        applySetupResult((ctx as any).runtime, (ctx as any).instance, result, {
-          includeFunctionsInState: allowFunctionProps === true,
-          functionPropPaths: allowFunctionProps === false ? undefined : setupFunctionPropKeys,
-        })
+        applySetupResult(ctx.runtime, ctx.instance, result)
       }
       if (provideOptions != null) {
         applyOptionsApiProvide(provideOptions, publicInstance)
       }
-      return result
     }) satisfies DefineComponentOptions<ComponentPropsOptions, any, any, any, any>['setup']
     : undefined
 

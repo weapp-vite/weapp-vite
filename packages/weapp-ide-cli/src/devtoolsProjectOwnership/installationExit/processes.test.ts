@@ -33,11 +33,11 @@ async function executable(file: string) {
   return file
 }
 
-function denyImageResolution(...files: string[]) {
+function denyImageResolution(code: 'EACCES' | 'EPERM', ...files: string[]) {
   const realpath = fs.realpath
   vi.spyOn(fs, 'realpath').mockImplementation(async (file) => {
     if (files.includes(String(file))) {
-      throw Object.assign(new Error('Permission denied'), { code: 'EACCES' })
+      throw Object.assign(new Error('Permission denied'), { code })
     }
     return realpath(file)
   })
@@ -75,9 +75,9 @@ describe('installation-exit process inventory', () => {
     expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ inspectedProcessCount: 1, kernelPathProcessCount: 0, textImageProcessCount: 1, selectedProcessCount: 0 })
   })
 
-  it('checks every protected mapping without requiring access to its current filesystem path', async () => {
+  it.each(['EACCES', 'EPERM'] as const)('checks every mapping without depending on current filesystem permissions (%s)', async (code) => {
     const image = path.join(directory, 'other.app/protected/nested/image')
-    denyImageResolution(image, path.dirname(image))
+    denyImageResolution(code, image, path.dirname(image), path.join(directory, 'selected.app/Contents/deleted'))
     mocks.images.mockResolvedValue([image])
     expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ textImageProcessCount: 1, selectedProcessCount: 0 })
     const selected = path.join(directory, 'selected.app/Contents/deleted')
@@ -85,6 +85,8 @@ describe('installation-exit process inventory', () => {
     await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('still has a live process')
     mocks.paths.mockResolvedValue(new Map([[21, image]]))
     expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ kernelPathProcessCount: 1, selectedProcessCount: 0 })
+    mocks.paths.mockResolvedValue(new Map([[21, selected]]))
+    await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('still has a live process')
   })
 
   it.each(['executable', 'text'] as const)('rejects a live selected %s image whose deleted pathname now points outside', async (source) => {
@@ -101,6 +103,20 @@ describe('installation-exit process inventory', () => {
     await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('still has a live process')
   })
 
+  it.each(['executable', 'text'] as const)('keeps an unrelated %s image unrelated after its pathname is replaced by a selected symlink', async (source) => {
+    const image = await executable(path.join(directory, 'other.app/helper'))
+    const selected = await executable(path.join(directory, 'selected.app/Contents/MacOS/helper'))
+    await fs.unlink(image)
+    await fs.symlink(selected, image, 'file')
+    if (source === 'executable') {
+      mocks.paths.mockResolvedValue(new Map([[21, image]]))
+    }
+    else {
+      mocks.images.mockResolvedValue([image])
+    }
+    expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ inspectedProcessCount: 1, selectedProcessCount: 0 })
+  })
+
   it.each([{ images: [] }, { images: ['relative-name'] }, { images: ['invalid\npath'] }])('rejects incomplete or unresolvable text images %j', async ({ images }) => {
     mocks.images.mockResolvedValue(images)
     await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow()
@@ -108,6 +124,30 @@ describe('installation-exit process inventory', () => {
 
   it('does not treat a failed kernel lookup as proof that the process exited', async () => {
     await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('No complete text image inventory')
+  })
+
+  it('independently verifies disappearance when a process exits during text-image sampling', async () => {
+    mocks.states.mockResolvedValueOnce([state]).mockResolvedValueOnce([state]).mockResolvedValue([])
+    expect(await inspectExitedWechatInstallation(target, 'darwin')).toMatchObject({ inspectedProcessCount: 0, exitedProcessCount: 1 })
+    expect(mocks.images).toHaveBeenCalledWith(state.pid)
+  })
+
+  it('rejects a reused PID when text-image sampling fails', async () => {
+    mocks.states.mockResolvedValueOnce([state]).mockResolvedValueOnce([state]).mockResolvedValue([{ ...state, started: 'replacement' }])
+    await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toThrow('process identity changed')
+  })
+
+  it('preserves sampling failure when the confirming process inventory is unavailable', async () => {
+    mocks.states.mockResolvedValueOnce([state]).mockResolvedValueOnce([state]).mockRejectedValue(new Error('inventory denied'))
+    await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toMatchObject({
+      errors: [expect.objectContaining({ message: 'No complete text image inventory' }), expect.objectContaining({ message: 'inventory denied' })],
+    })
+  })
+
+  it.each(['EACCES', 'EPERM'] as const)('rejects an unverifiable selected installation root (%s)', async (code) => {
+    denyImageResolution(code, path.join(directory, 'selected.app'))
+    await expect(inspectExitedWechatInstallation(target, 'darwin')).rejects.toMatchObject({ code })
+    expect(mocks.states).not.toHaveBeenCalled()
   })
 
   it('requires two matching zombie observations before excluding a non-running process', async () => {

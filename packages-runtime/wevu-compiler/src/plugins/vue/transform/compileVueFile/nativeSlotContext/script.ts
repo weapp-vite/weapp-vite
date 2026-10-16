@@ -207,6 +207,8 @@ export async function analyzeScript(source: string | File, component = false, se
           }
         },
         Function(p) {
+          // 异步返回的 thenable 吸收与生成器恢复均超出同步调用证明范围。
+          facts.required ||= Boolean(p.node.async || p.node.generator)
           for (const parameter of p.node.params) {
             inspectPattern(parameter, undefined)
           }
@@ -312,7 +314,7 @@ export async function analyzeScript(source: string | File, component = false, se
             inspectExportValue(p.node.declaration, p.scope)
           }
         },
-        'NewExpression|TaggedTemplateExpression|ImportExpression|JSXElement|JSXFragment|Class|Decorator|SpreadElement|TSImportEqualsDeclaration|TSExportAssignment|ForOfStatement|ForInStatement': function (p) {
+        'NewExpression|TaggedTemplateExpression|ImportExpression|JSXElement|JSXFragment|Class|Decorator|SpreadElement|TSImportEqualsDeclaration|TSExportAssignment|ForOfStatement|ForInStatement|AwaitExpression|YieldExpression': function (p) {
           facts.required = true
           if (p.isImportExpression() && t.isStringLiteral(p.node.source)) {
             facts.imports.add(p.node.source.value)

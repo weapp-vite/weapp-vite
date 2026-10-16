@@ -34,8 +34,9 @@ export async function createPreparationFixture() {
   // 使用真实路径，避免 macOS 的临时目录别名让根包过滤行为与 Linux 不一致。
   const cwd = await realpath(await mkdtemp(path.join(tmpdir(), 'repoctl-prepare-')))
   roots.push(cwd)
+  const repository = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')) as { packageManager: string }
   const manifests: Record<string, Manifest> = {
-    'package.json': { name: rootName, private: true, version: '1.0.0', packageManager: 'pnpm@12.9.1' },
+    'package.json': { name: rootName, private: true, version: '1.0.0', packageManager: repository.packageManager },
     'packages/library/package.json': { name: publicName, version: '1.0.0' },
     'packages/demo/package.json': {
       name: privateName,

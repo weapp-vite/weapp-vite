@@ -1334,6 +1334,7 @@ describe('core lifecycle options hook', () => {
         buildService,
       },
       entriesMap: new Map(),
+      resolvedEntryMap: new Map(),
     } as any
 
     const options: Record<string, any> = {}

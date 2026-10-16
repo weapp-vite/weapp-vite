@@ -2,6 +2,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createHeadlessSession } from '../../mpcore/packages/simulator/src/runtime'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -107,6 +108,18 @@ function addTemplateAppShell(source: string) {
   return `${source.trimEnd()}\n\n${template}\n\n<style>\n${shellStyle}</style>\n`
 }
 
+function renderTemplatePage() {
+  // 每轮读取新发布的产物，独立 runtime 对应宿主完整重载后的页面。
+  const session = createHeadlessSession({ projectPath: TEMPLATE_ROOT })
+  try {
+    session.reLaunch('/pages/index/index')
+    return session.renderCurrentPage().wxml
+  }
+  finally {
+    session.close()
+  }
+}
+
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
   await fs.remove(DIST_ROOT)
@@ -161,7 +174,7 @@ describe('app shell HMR (dev watch)', { concurrent: false }, () => {
     }
   })
 
-  it('adds template app.vue shell through dev watch after starting without a shell', async () => {
+  it('adds and removes template app.vue shell without editing the page source', async () => {
     const originalAppSource = await fs.readFile(TEMPLATE_APP_VUE_PATH, 'utf8')
     const appSourceWithShell = addTemplateAppShell(originalAppSource)
     const restoreCompileHotReload = await disableProjectCompileHotReload(TEMPLATE_ROOT)
@@ -177,7 +190,8 @@ describe('app shell HMR (dev watch)', { concurrent: false }, () => {
     try {
       await dev.waitFor(waitForFileContains(TEMPLATE_PAGE_WXML_DIST, `<weapp-layout-default ${SLOT_OWNER_ATTR}>`), 'initial template page emitted without app shell')
       await dev.waitFor(waitForFileNotExists(TEMPLATE_APP_SHELL_WXML_DIST), 'initial template app shell is absent')
-      await dev.waitFor(waitForFileNotContains(TEMPLATE_PAGE_WXML_DIST, '<weapp-app-shell>'), 'initial template page is not wrapped with app shell')
+      await dev.waitFor(waitForFileNotContains(TEMPLATE_PAGE_WXML_DIST, '<weapp-app-shell'), 'initial template page is not wrapped with app shell')
+      expect(renderTemplatePage()).not.toContain('class="happy"')
       await sleep(1_000)
 
       await replaceFileByRename(TEMPLATE_APP_VUE_PATH, appSourceWithShell)
@@ -186,6 +200,18 @@ describe('app shell HMR (dev watch)', { concurrent: false }, () => {
       await dev.waitFor(waitForFileContains(TEMPLATE_APP_WXSS_DIST, '.happy'), 'template app shell style stays in app wxss after app.vue template add')
       await dev.waitFor(waitForFileContains(TEMPLATE_PAGE_WXML_DIST, APP_SHELL_LAYOUT_WRAPPER), 'template page wrapped with app shell after app.vue template add')
       await dev.waitFor(waitForJsonUsingAppShell(TEMPLATE_PAGE_JSON_DIST), 'template page json references app shell after app.vue template add')
+      const withShell = renderTemplatePage()
+      expect(withShell).toContain('class="happy"')
+      expect(withShell).toContain('Weapp-vite + Wevu')
+
+      await replaceFileByRename(TEMPLATE_APP_VUE_PATH, originalAppSource)
+
+      await dev.waitFor(waitForFileNotContains(TEMPLATE_PAGE_WXML_DIST, '<weapp-app-shell'), 'template page drops app shell after app.vue template removal')
+      await dev.waitFor(waitForFileContains(TEMPLATE_PAGE_WXML_DIST, `<weapp-layout-default ${SLOT_OWNER_ATTR}>`), 'template page keeps its layout after app shell removal')
+      await dev.waitFor(waitForFileNotContains(TEMPLATE_PAGE_JSON_DIST, 'weapp-app-shell'), 'template page json drops app shell after app.vue template removal')
+      const withoutShell = renderTemplatePage()
+      expect(withoutShell).not.toContain('class="happy"')
+      expect(withoutShell).toContain('Weapp-vite + Wevu')
     }
     finally {
       await dev.stop(5_000)

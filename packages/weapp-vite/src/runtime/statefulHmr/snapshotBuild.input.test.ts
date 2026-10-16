@@ -112,10 +112,20 @@ it('still rejects a removed ordinary input after checking native entry ownership
   const file = path.join(root, 'src', 'shared.ts')
   const load = await inputLoader(new Map([[compilerSourceId(file), null]]), owner)
   const ctx = harness.context as CompilerContext
-  const relative = vi.spyOn(ctx.configService, 'relativeAbsoluteSrcRoot')
+  const entries = vi.spyOn(ctx.runtimeState.build.hmr.resolvedEntryMap, 'has')
 
   expect(() => load(file)).toThrow('Source removed from snapshot')
-  expect(relative).toHaveBeenCalledWith(normalizeFsResolvedId(file))
+  expect(entries).toHaveBeenCalledWith(compilerSourceId(file))
+})
+
+it('delegates a resolved native directory component before returning its pinned script', async () => {
+  const owner = createOwner()
+  const file = path.join(root, 'src', 'native', 'index.js')
+  const load = await inputLoader(new Map([[compilerSourceId(file), 'Component({})']]), owner)
+  const ctx = harness.context as CompilerContext
+  ctx.runtimeState.build.hmr.entriesMap.set('native', { type: 'component' } as never)
+  ctx.runtimeState.build.hmr.resolvedEntryMap.set(compilerSourceId(file), { id: file })
+  expect(await load(file)).toBeNull()
 })
 
 it.each(['raw', 'url'])('keeps Vue ?%s asset admission before delegation', async (query) => {

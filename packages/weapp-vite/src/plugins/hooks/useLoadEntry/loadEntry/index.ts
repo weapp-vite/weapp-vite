@@ -410,6 +410,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         storeVueSfcHmrSignatures(ctx.runtimeState.build.hmr, normalizedVueEntryPath!, signatures)
         if (type === 'app') {
           appVueNonJsonSignature = signatures.nonJsonSignature
+          // App 模板输出为独立的无脚本 shell，不能由 App 的脚本接受边界消费视觉变化。
+          ctx.moduleGraphService.replaceEntryDependencies(normalizedId, 'template', [vueEntryPath])
         }
       }
     }

@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer'
+import { TextDecoder } from 'node:util'
 // eslint-disable-next-line e18e/ban-dependencies -- 显式恢复只读系统进程身份，不启动或关闭 IDE。
 import { execa } from 'execa'
 
@@ -10,6 +12,41 @@ export interface DarwinProcessState {
 }
 
 const options = { timeout: 10_000, reject: false, env: { LC_ALL: 'C' } } as const
+const textImageDecoder = new TextDecoder('utf-8', { fatal: true })
+
+/** 按本机 LC_ALL=C 的 lsof 表示还原字节；有歧义的控制表示不能用于负归属判断。 */
+function decodeTextImagePath(wire: string): string {
+  // ^A 等既能表示控制字节，也能表示字面文本；\b、\t、\n、\f、\r 则独立转义。
+  if (!wire.startsWith('/') || /[^\u0020-\u007E]|\^[A-GKN-Z[\]\\^_]/.test(wire)) {
+    throw new Error('Installation-exit recovery received an unverifiable executable image path.')
+  }
+  if (!wire.includes('\\')) {
+    return wire
+  }
+  const bytes = Buffer.allocUnsafe(wire.length)
+  let length = 0
+  for (let index = 0; index < wire.length; index++) {
+    let byte = wire.charCodeAt(index)
+    if (wire[index] === '\\') {
+      const escape = wire[++index]
+      if (escape === '\\') {
+        byte = 0x5C
+      }
+      else if (escape === 'x' && /^[\da-f]{2}$/.test(wire.slice(index + 1, index + 3))) {
+        byte = Number.parseInt(wire.slice(index + 1, index + 3), 16)
+        index += 2
+        if (byte < 0x80) {
+          throw new Error('Installation-exit recovery received an unverifiable executable image path.')
+        }
+      }
+      else {
+        throw new Error('Installation-exit recovery received an unverifiable executable image path.')
+      }
+    }
+    bytes[length++] = byte
+  }
+  return textImageDecoder.decode(bytes.subarray(0, length))
+}
 
 /** ps 仅用于 PID、启动时间和僵尸状态，不能用可修改的 comm 代替实际可执行文件。 */
 export async function readDarwinProcessStates(): Promise<DarwinProcessState[]> {
@@ -36,12 +73,15 @@ export async function readDarwinProcessStates(): Promise<DarwinProcessState[]> {
 
 /** 已删除可执行文件无法经 proc_pidpath 读取时，核验全部 program-text 映像而非猜测首项。 */
 export async function readDarwinTextImages(pid: number): Promise<string[]> {
+  // lsof 与 ps 不构成原子快照；字段完整仅证明本次输出完整，不能补全内核未提供的映射。
   const result = await execa('/usr/sbin/lsof', ['-nP', '-a', '-p', String(pid), '-d', 'txt', '-F0pftn'], options)
   if (result.exitCode !== 0 || result.stderr?.trim()) {
-    throw new Error('Installation-exit recovery cannot inspect all executable text images.')
+    throw new Error(`Installation-exit recovery cannot inspect all executable text images for PID ${pid}.`, {
+      cause: { exitCode: result.exitCode, stderr: result.stderr?.trim() },
+    })
   }
-  const fields = result.stdout.split('\0').map(field => field.replace(/^\r?\n/, '')).filter(Boolean)
-  if (fields.shift() !== `p${pid}` || fields.length === 0 || fields.length % 3 !== 0) {
+  const fields = result.stdout.split('\0').map(field => field.replace(/^\r?\n/, ''))
+  if (fields.pop() !== '' || fields.shift() !== `p${pid}` || fields.length === 0 || fields.length % 3 !== 0) {
     throw new Error('Installation-exit recovery received incomplete executable text images.')
   }
   const paths: string[] = []
@@ -49,7 +89,7 @@ export async function readDarwinTextImages(pid: number): Promise<string[]> {
     if (fields[index] !== 'ftxt' || fields[index + 1] !== 'tREG' || !fields[index + 2]?.startsWith('n')) {
       throw new Error('Installation-exit recovery received unverifiable executable text images.')
     }
-    paths.push(fields[index + 2]!.slice(1))
+    paths.push(decodeTextImagePath(fields[index + 2]!.slice(1)))
   }
   return paths
 }

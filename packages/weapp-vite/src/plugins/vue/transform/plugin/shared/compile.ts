@@ -11,7 +11,7 @@ import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/
 import { compilerSnapshotSourceId, getCompilerSourceSnapshot } from '../../../../utils/sourceSnapshot'
 import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
 import { hasAppShellTemplate, resolveAppShellLayout } from '../../appShell'
-import { applyComponentResolutionDependencies } from '../../componentResolutionDependencies'
+import { applyComponentResolutionDependencies, getVueCompilationDependencies } from '../../componentResolutionDependencies'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { registerVueTemplateToken, resolveVueOutputBase } from '../../shared'
 import { buildWeappVueStyleRequests } from '../../styleRequest'
@@ -221,10 +221,7 @@ export async function finalizeTransformCompiledResult(options: {
   const jsxDependencies = result.meta?.jsxDependencies ?? []
   addNormalizedWatchFiles(pluginCtx, jsxDependencies)
   ctx.moduleGraphService.replaceEntryDependencies(filename, 'jsx', jsxDependencies)
-  const scriptDependencies = [...new Set([
-    ...(result.meta?.sfcSrcCompilationDeps ?? []),
-    ...(result.meta?.nativeSlotContextDeps ?? []),
-  ])]
+  const scriptDependencies = getVueCompilationDependencies(result)
   addNormalizedWatchFiles(pluginCtx, scriptDependencies)
   const sources = getCompilerSourceSnapshot(configService)
   ctx.moduleGraphService.replaceEntryDependencies(filename, 'script', scriptDependencies, id => compilerSnapshotSourceId(sources, id))

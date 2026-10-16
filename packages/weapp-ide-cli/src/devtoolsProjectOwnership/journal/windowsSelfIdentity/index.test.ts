@@ -19,7 +19,7 @@ beforeEach(() => {
   debug.enabled = false
 })
 
-it('queries only the current process through the unchanged ten second budget', async () => {
+it('queries only the current process through the bounded cold-start budget', async () => {
   inspect.mockResolvedValueOnce({ exitCode: 0, stdout, stderr: '', timedOut: false })
   await expect(readWindowsJournalWriterIdentity()).resolves.toEqual({ pid: process.pid, executable: process.execPath, started })
   const [command, args, options] = inspect.mock.calls[0]!
@@ -27,7 +27,7 @@ it('queries only the current process through the unchanged ten second budget', a
   expect(args.slice(0, 3)).toEqual(['-NoProfile', '-NonInteractive', '-Command'])
   expect(args[3]).toContain(`[System.Diagnostics.Process]::GetProcessById(${process.pid})`)
   expect(args[3]).not.toMatch(/Get-CimInstance|ConvertTo-Json|Stop-Process|taskkill/)
-  expect(options).toMatchObject({ timeout: 10_000, reject: false, windowsHide: true })
+  expect(options).toMatchObject({ timeout: 30_000, reject: false, windowsHide: true })
   expect(inspect).toHaveBeenCalledOnce()
 })
 
@@ -85,10 +85,10 @@ function tracedQuery(result: Record<string, unknown>) {
   return query
 }
 
-it('keeps exact identity and the original budget while tracing query phases', async () => {
+it('keeps exact identity and the same budget while tracing query phases', async () => {
   await expect(tracedQuery({})).resolves.toEqual({ pid: process.pid, executable: process.execPath, started })
   expect(inspect).toHaveBeenCalledOnce()
-  expect(inspect.mock.calls[0]![2]).toMatchObject({ timeout: 10_000, reject: false, stripFinalNewline: false })
+  expect(inspect.mock.calls[0]![2]).toMatchObject({ timeout: 30_000, reject: false, stripFinalNewline: false })
   expect(debug.mock.calls.map(call => call[1]).slice(0, 4)).toEqual(['launch', 'spawn', 'entry', 'module-path'])
   expect(JSON.stringify(debug.mock.calls)).not.toContain('private field read details')
 })

@@ -52,9 +52,58 @@ describe('macOS read-only kernel inventory primitives', () => {
     expect(command).toHaveBeenCalledWith('/usr/sbin/lsof', ['-nP', '-a', '-p', '21', '-d', 'txt', '-F0pftn'], expect.any(Object))
   })
 
+  // macOS 的 LC_ALL=C、-F0pftn 实测：中文按 UTF-8 字节转义，字面反斜杠翻倍。
+  it.each([
+    [String.raw`/fixture/\xe5\xbe\xae\xe4\xbf\xa1.app/image`, '/fixture/微信.app/image'],
+    [String.raw`/fixture/selected\\literal.app/image`, String.raw`/fixture/selected\literal.app/image`],
+    [String.raw`/fixture/selected\\xe5\\xBE.app/image`, String.raw`/fixture/selected\xe5\xBE.app/image`],
+    ['/fixture/selected^H^I^J^L^M^?^a^1.app/image', '/fixture/selected^H^I^J^L^M^?^a^1.app/image'],
+  ])('decodes native lsof wire path %s without reinterpreting literal escapes', async (wire, image) => {
+    command.mockResolvedValue(success(`p21\0\nftxt\0tREG\0n${wire}\0\n`))
+    expect(await readDarwinTextImages(21)).toEqual([image])
+  })
+
+  it.each([
+    '/fixture/selected^A.app/image',
+    '/fixture/selected^K.app/image',
+    '/fixture/selected^[.app/image',
+    String.raw`/fixture/selected^\.app/image`,
+    '/fixture/selected^^.app/image',
+    '/fixture/selected^_.app/image',
+    String.raw`/fixture/selected\t\n\r\b\f.app/image`,
+    String.raw`/fixture/selected\x7f.app/image`,
+    String.raw`/fixture/selected\x.app/image`,
+    String.raw`/fixture/selected\xe.app/image`,
+    String.raw`/fixture/selected\xgg.app/image`,
+    String.raw`/fixture/selected\q.app/image`,
+    '/fixture/trailing\\',
+    String.raw`/fixture/invalid\xe5.app/image`,
+    String.raw`/fixture/invalid\xc0\xaf.app/image`,
+    String.raw`/fixture/invalid\xed\xa0\x80.app/image`,
+    String.raw`/fixture/invalid\x00.app/image`,
+    '/fixture/raw\tcontrol.app/image',
+    'relative-image',
+  ])('rejects ambiguous, control or malformed wire path %s', async (wire) => {
+    command.mockResolvedValue(success(`p21\0\nftxt\0tREG\0n${wire}\0\n`))
+    await expect(readDarwinTextImages(21)).rejects.toThrow()
+  })
+
+  it('rejects a text inventory whose final path field has no NUL terminator', async () => {
+    command.mockResolvedValue(success('p21\0\nftxt\0tREG\0n/truncated'))
+    await expect(readDarwinTextImages(21)).rejects.toThrow('incomplete')
+  })
+
   it.each(['', 'p21\0\n', 'p22\0\nftxt\0tREG\0n/path\0\n', 'p21\0\nftxt\0n/path\0\n', 'p21\0\nfmem\0tREG\0n/path\0\n'])('rejects incomplete or foreign text inventories %j', async (stdout) => {
     command.mockResolvedValue(success(stdout))
     await expect(readDarwinTextImages(21)).rejects.toThrow()
+  })
+
+  it('retains the sampled PID, exit status and stderr when image inventory fails', async () => {
+    command.mockResolvedValue({ stdout: '', stderr: 'Permission denied', exitCode: 1 })
+    await expect(readDarwinTextImages(21)).rejects.toMatchObject({
+      message: expect.stringContaining('PID 21'),
+      cause: { exitCode: 1, stderr: 'Permission denied' },
+    })
   })
 
   it.each([readDarwinProcessStates, () => readDarwinKernelPaths([21]), () => readDarwinTextImages(21)])('rejects warning or permission failures instead of accepting partial inventories', async (inspect) => {

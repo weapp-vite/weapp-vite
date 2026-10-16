@@ -94,8 +94,8 @@ describe('native slot context dependency invalidation', () => {
     const plugin = createVueTransformPlugin(ctx)
     const filename = path.join(root, 'Parent.vue')
     const source = files['Parent.vue']!
-    const transform = () => withCompilerSourceSnapshot(configService, sources, async () => {
-      return await hook(plugin.transform).call(pluginCtx as never, source, filename)
+    const transform = (nextSource = source) => withCompilerSourceSnapshot(configService, sources, async () => {
+      return await hook(plugin.transform).call(pluginCtx as never, nextSource, filename)
     })
     await transform()
     const state = captured.options!
@@ -423,6 +423,41 @@ describe('native slot context dependency invalidation', () => {
       expect(JSON.parse(fixture.cached().result.config!) as unknown).toMatchObject({ usingComponents: { child: `/${target}` } })
       expect(fixture.ctx.runtimeState.build.hmr.externalComponentEntryMap.get(target)).toBe(path.join(root, `${target}.vue`))
     }
+  })
+
+  it.each(['transform', 'bundle'] as const)('retains barrel invalidation after JSON-only refresh through %s with native context disabled', async (mode) => {
+    const parent = '<script>import { defineComponent } from "wevu"; import { Child } from "./barrel.ts"; export default defineComponent({ components: { Child } })</script><template><Child /></template><json>{ "styleIsolation": "isolated" }</json>'
+    const fixture = await setup({
+      'Parent.vue': parent,
+      'barrel.ts': 'export { default as Child } from "./First.vue"',
+      'First.vue': '<template><text>first</text></template>',
+      'Second.vue': '<template><text>second</text></template>',
+    }, async ({ ctx }) => {
+      ctx.configService.weappViteConfig.vue!.template!.nativeSlotContext = false
+    })
+    expect(JSON.parse(fixture.cached().result.config!) as unknown).toMatchObject({ usingComponents: { child: '/First' } })
+    const updatedParent = parent.replace('isolated', 'shared')
+    fixture.change('Parent.vue', updatedParent, 'entry-json-only:1')
+    fixture.ctx.runtimeState.build.hmr.dirtyVueEntryIds.add(fixture.filename)
+    await fixture.transform(updatedParent)
+    expect(JSON.parse(fixture.cached().result.config!) as unknown).toMatchObject({ styleIsolation: 'shared' })
+
+    const barrel = path.join(root, 'barrel.ts')
+    expect(fixture.ctx.moduleGraphService.collectAffectedEntries(barrel)).toContain(fixture.filename)
+    const nextExport = 'export { default as Child } from "./Second.vue"'
+    await writeFile(barrel, nextExport)
+    fixture.change('barrel.ts', nextExport)
+    await (mode === 'bundle' ? fixture.refreshBundle() : fixture.transform(updatedParent))
+    expect(JSON.parse(fixture.cached().result.config!) as unknown).toMatchObject({
+      styleIsolation: 'shared',
+      usingComponents: { child: '/Second' },
+    })
+
+    const withoutChild = '<template><text>removed</text></template>'
+    fixture.change('Parent.vue', withoutChild)
+    fixture.ctx.runtimeState.build.hmr.dirtyVueEntryIds.add(fixture.filename)
+    await (mode === 'bundle' ? fixture.refreshBundle() : fixture.transform(withoutChild))
+    expect(fixture.ctx.moduleGraphService.collectAffectedEntries(barrel)).not.toContain(fixture.filename)
   })
 
   it.each([

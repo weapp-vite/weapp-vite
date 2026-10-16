@@ -38,6 +38,16 @@ interface ScriptSetupImportComponent {
 
 type ScriptComponentRegistration = ScriptSetupImportComponent
 
+interface ResolvedComponentRegistration {
+  kind: 'script' | 'auto'
+  name: string
+  templateTags: string[]
+  from?: string
+  resolvedId?: string
+  sourceType?: 'wevu-sfc' | 'native'
+  componentMeta: VueSfcStaticComponentMeta
+}
+
 interface TemplateComponentTagInfo {
   autoImportTags: Set<string>
   componentNames: Set<string>
@@ -55,9 +65,9 @@ function normalizeResolvedUsingComponent(result: ResolvedUsingComponentPath | un
 }
 
 function isWevuSfcComponent(result: ReturnType<typeof normalizeResolvedUsingComponent>) {
-  return result?.sourceType === 'wevu-sfc'
-    || Boolean(result?.resolvedId?.endsWith('.vue'))
-    || Boolean(result?.from?.endsWith('.vue'))
+  return result?.sourceType
+    ? result.sourceType === 'wevu-sfc'
+    : Boolean(result?.resolvedId?.endsWith('.vue') || result?.from?.endsWith('.vue'))
 }
 
 function isVueSfcSource(source: string) {
@@ -188,20 +198,23 @@ async function resolveVueSfcStaticComponentMeta(
   return await task
 }
 
-function registerComponentName(result: ComponentSourceInfo, tag: string, componentName: string | undefined) {
-  if (!componentName) {
-    return
+function registerResolvedComponentTag(result: ComponentSourceInfo, tag: string, registration: ResolvedComponentRegistration) {
+  const normalizedTag = normalizeTemplateTagName(tag)
+  const { resolvedId, sourceType, componentMeta } = registration
+  result.resolvedComponentIds.set(tag, resolvedId)
+  result.resolvedComponentIds.set(normalizedTag, resolvedId)
+  if (sourceType === 'wevu-sfc') {
+    result.wevuComponentTags.add(tag)
+    result.wevuComponentTags.add(normalizedTag)
   }
-  result.componentNameMap[tag] = componentName
-  result.componentNameMap[normalizeTemplateTagName(tag)] = componentName
-}
-
-function registerMiniProgramComponentTag(result: ComponentSourceInfo, tag: string, isComponent: boolean) {
-  if (!isComponent) {
-    return
+  if (componentMeta.componentName) {
+    result.componentNameMap[tag] = componentMeta.componentName
+    result.componentNameMap[normalizedTag] = componentMeta.componentName
   }
-  result.miniProgramComponentTags.add(tag)
-  result.miniProgramComponentTags.add(normalizeTemplateTagName(tag))
+  if (componentMeta.isMiniProgramComponent) {
+    result.miniProgramComponentTags.add(tag)
+    result.miniProgramComponentTags.add(normalizedTag)
+  }
 }
 
 function createComponentSourceInfo(): ComponentSourceInfo {
@@ -213,22 +226,6 @@ function createComponentSourceInfo(): ComponentSourceInfo {
     resolvedComponentIds: new Map(),
     miniProgramComponentTags: new Set(),
     componentNameMap: {},
-  }
-}
-
-function mergeComponentSourceInfo(target: ComponentSourceInfo, source: ComponentSourceInfo) {
-  Object.assign(target.autoUsingComponentsMap, source.autoUsingComponentsMap)
-  Object.assign(target.autoImportTagsMap, source.autoImportTagsMap)
-  Object.assign(target.autoComponentMeta, source.autoComponentMeta)
-  Object.assign(target.componentNameMap, source.componentNameMap)
-  for (const tag of source.wevuComponentTags) {
-    target.wevuComponentTags.add(tag)
-  }
-  for (const [tag, id] of source.resolvedComponentIds) {
-    target.resolvedComponentIds.set(tag, id)
-  }
-  for (const tag of source.miniProgramComponentTags) {
-    target.miniProgramComponentTags.add(tag)
   }
 }
 
@@ -271,10 +268,9 @@ async function resolveScriptComponentRegistrations(options: {
   filename: string
   compileOptions: CompileVueFileOptions | undefined
   autoUsingComponents: AutoUsingComponentsOptions | undefined
-  result: ComponentSourceInfo
 }) {
-  const { pending, filename, compileOptions, autoUsingComponents, result } = options
-  const resolvedComponents = await Promise.all(pending.map(async ({ localName, importSource, importedName, kind, templateTags }) => {
+  const { pending, filename, compileOptions, autoUsingComponents } = options
+  return await Promise.all(pending.map(async ({ localName, importSource, importedName, kind, templateTags }): Promise<ResolvedComponentRegistration> => {
     let resolved = autoUsingComponents?.resolveUsingComponentPath
       ? normalizeResolvedUsingComponent(await autoUsingComponents.resolveUsingComponentPath(importSource, filename, {
           localName,
@@ -296,47 +292,15 @@ async function resolveScriptComponentRegistrations(options: {
       warn: autoUsingComponents?.warn ?? compileOptions?.warn,
     })
     return {
-      localName,
-      importSource,
-      resolved,
-      componentMeta,
+      kind: 'script',
+      name: localName,
       templateTags,
+      from: resolved?.from,
+      resolvedId: resolved?.resolvedId,
+      sourceType: resolved?.sourceType ?? (isVueSfcSource(importSource) || isWevuSfcComponent(resolved) ? 'wevu-sfc' : undefined),
+      componentMeta,
     }
   }))
-
-  for (const { localName, importSource, resolved, componentMeta, templateTags } of resolvedComponents) {
-    if (resolved?.from) {
-      for (const tag of templateTags) {
-        result.autoUsingComponentsMap[tag] = resolved.from
-      }
-      result.autoComponentMeta[localName] = resolved.from
-    }
-    const isWevuComponent = isVueSfcSource(importSource) || isWevuSfcComponent(resolved)
-    if (isWevuComponent) {
-      result.wevuComponentTags.add(localName)
-      result.wevuComponentTags.add(normalizeTemplateTagName(localName))
-    }
-    result.resolvedComponentIds.set(localName, resolved?.resolvedId)
-    result.resolvedComponentIds.set(normalizeTemplateTagName(localName), resolved?.resolvedId)
-    registerComponentName(result, localName, componentMeta.componentName)
-    for (const tag of templateTags) {
-      if (isWevuComponent) {
-        result.wevuComponentTags.add(tag)
-        result.wevuComponentTags.add(normalizeTemplateTagName(tag))
-      }
-      result.resolvedComponentIds.set(tag, resolved?.resolvedId)
-      result.resolvedComponentIds.set(normalizeTemplateTagName(tag), resolved?.resolvedId)
-      registerComponentName(result, tag, componentMeta.componentName)
-    }
-    registerMiniProgramComponentTag(
-      result,
-      localName,
-      componentMeta.isMiniProgramComponent,
-    )
-    for (const tag of templateTags) {
-      registerMiniProgramComponentTag(result, tag, componentMeta.isMiniProgramComponent)
-    }
-  }
 }
 
 async function collectScriptSetupUsingComponents(options: {
@@ -347,7 +311,6 @@ async function collectScriptSetupUsingComponents(options: {
   autoUsingComponents: AutoUsingComponentsOptions | undefined
   templateComponentNames: Set<string> | undefined
   templateTagsByComponentName: Map<string, Set<string>> | undefined
-  result: ComponentSourceInfo
   nativeScriptAnalysis?: NativeCompilerScriptAnalysis
 }) {
   const {
@@ -358,15 +321,14 @@ async function collectScriptSetupUsingComponents(options: {
     autoUsingComponents,
     templateComponentNames,
     templateTagsByComponentName,
-    result,
     nativeScriptAnalysis,
   } = options
   if (!descriptor.scriptSetup || !descriptor.template) {
-    return
+    return []
   }
 
   if (!templateComponentNames?.size) {
-    return
+    return []
   }
 
   try {
@@ -432,17 +394,17 @@ async function collectScriptSetupUsingComponents(options: {
       })
     }
 
-    await resolveScriptComponentRegistrations({
+    return await resolveScriptComponentRegistrations({
       pending,
       filename,
       compileOptions,
       autoUsingComponents,
-      result,
     })
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     autoUsingComponents?.warn?.(`[Vue 编译] 解析 ${filename} 的 <script setup> 导入失败：${message}`)
+    return []
   }
 }
 
@@ -490,19 +452,17 @@ async function collectOptionsApiUsingComponents(options: {
   autoUsingComponents: AutoUsingComponentsOptions | undefined
   templateComponentNames: Set<string> | undefined
   templateTagsByComponentName: Map<string, Set<string>> | undefined
-  result: ComponentSourceInfo
   nativeScriptAnalysis?: NativeCompilerScriptAnalysis
 }) {
-  const { descriptor, filename, compileOptions, autoUsingComponents, templateComponentNames, templateTagsByComponentName, result, nativeScriptAnalysis } = options
+  const { descriptor, filename, compileOptions, autoUsingComponents, templateComponentNames, templateTagsByComponentName, nativeScriptAnalysis } = options
   if (!descriptor.script || !descriptor.template || !templateComponentNames?.size) {
-    return
+    return []
   }
 
   try {
     const nativeRegistrations = collectNativeComponentRegistrations(nativeScriptAnalysis, templateComponentNames, templateTagsByComponentName)
     if (nativeRegistrations) {
-      await resolveScriptComponentRegistrations({ pending: nativeRegistrations, filename, compileOptions, autoUsingComponents, result })
-      return
+      return await resolveScriptComponentRegistrations({ pending: nativeRegistrations, filename, compileOptions, autoUsingComponents })
     }
     const ast = babelParse(descriptor.script.content, BABEL_TS_MODULE_PARSER_OPTIONS)
     const imports = new Map<string, { importSource: string, importedName?: string, kind: 'default' | 'named' }>()
@@ -560,7 +520,7 @@ async function collectOptionsApiUsingComponents(options: {
     const componentExpression = getExportDefaultExpression(ast, aliases)
     const componentsProperty = componentExpression && resolveStaticObjectProperty(componentExpression, 'components', undefined)
     if (componentsProperty?.kind !== 'expression' || !t.isObjectExpression(componentsProperty.node)) {
-      return
+      return []
     }
 
     const pending: ScriptComponentRegistration[] = []
@@ -579,17 +539,17 @@ async function collectOptionsApiUsingComponents(options: {
         templateTags: [...(templateTagsByComponentName?.get(registrationName) ?? [registrationName])],
       })
     }
-    await resolveScriptComponentRegistrations({
+    return await resolveScriptComponentRegistrations({
       pending,
       filename,
       compileOptions,
       autoUsingComponents,
-      result,
     })
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     autoUsingComponents?.warn?.(`[Vue 编译] 解析 ${filename} 的 Options API 局部组件失败：${message}`)
+    return []
   }
 }
 
@@ -600,7 +560,6 @@ async function collectAutoImportWevuComponents(options: {
   autoImportTags: AutoImportTagsOptions | undefined
   templateAutoImportTags: Set<string> | undefined
   warn?: (message: string) => void
-  result: ComponentSourceInfo
 }) {
   const {
     descriptor,
@@ -609,10 +568,9 @@ async function collectAutoImportWevuComponents(options: {
     autoImportTags,
     templateAutoImportTags,
     warn,
-    result,
   } = options
   if (!autoImportTags || !descriptor.template) {
-    return
+    return []
   }
 
   const resolvedTags = await Promise.all([...templateAutoImportTags ?? []].map(async (tag) => {
@@ -634,27 +592,22 @@ async function collectAutoImportWevuComponents(options: {
     }
   }))
 
+  const registrations: ResolvedComponentRegistration[] = []
   for (const { tag, resolved, componentMeta } of resolvedTags) {
     if (!resolved?.from) {
       continue
     }
-    result.autoImportTagsMap[resolved.name || tag] = resolved.from
-    if (isWevuSfcComponent(resolved)) {
-      result.wevuComponentTags.add(tag)
-      if (resolved.name) {
-        result.wevuComponentTags.add(resolved.name)
-      }
-    }
-    result.resolvedComponentIds.set(tag, resolved.resolvedId)
-    registerComponentName(result, tag, componentMeta.componentName)
-    const isMiniProgramComponent = componentMeta.isMiniProgramComponent
-    registerMiniProgramComponentTag(result, tag, isMiniProgramComponent)
-    if (resolved.name) {
-      result.resolvedComponentIds.set(resolved.name, resolved.resolvedId)
-      registerComponentName(result, resolved.name, componentMeta.componentName)
-      registerMiniProgramComponentTag(result, resolved.name, isMiniProgramComponent)
-    }
+    registrations.push({
+      kind: 'auto',
+      name: resolved.name || tag,
+      templateTags: [tag],
+      from: resolved.from,
+      resolvedId: resolved.resolvedId,
+      sourceType: resolved.sourceType ?? (isWevuSfcComponent(resolved) ? 'wevu-sfc' : undefined),
+      componentMeta,
+    })
   }
+  return registrations
 }
 
 export async function collectComponentSourceInfo(options: {
@@ -678,9 +631,7 @@ export async function collectComponentSourceInfo(options: {
       )
     : undefined
 
-  const scriptImportResult = createComponentSourceInfo()
-  const autoImportResult = createComponentSourceInfo()
-  await Promise.all([
+  const [setupRegistrations, optionsRegistrations, autoRegistrations] = await Promise.all([
     collectScriptSetupUsingComponents({
       descriptor: options.descriptor,
       descriptorForCompile: options.descriptorForCompile,
@@ -689,7 +640,6 @@ export async function collectComponentSourceInfo(options: {
       autoUsingComponents: options.autoUsingComponents,
       templateComponentNames: templateComponentTagInfo?.componentNames,
       templateTagsByComponentName: templateComponentTagInfo?.tagsByComponentName,
-      result: scriptImportResult,
       nativeScriptAnalysis: options.nativeScriptAnalysis?.scriptSetup,
     }),
     collectOptionsApiUsingComponents({
@@ -699,7 +649,6 @@ export async function collectComponentSourceInfo(options: {
       autoUsingComponents: options.autoUsingComponents,
       templateComponentNames: templateComponentTagInfo?.componentNames,
       templateTagsByComponentName: templateComponentTagInfo?.tagsByComponentName,
-      result: scriptImportResult,
       nativeScriptAnalysis: options.nativeScriptAnalysis?.script
         && options.descriptor.script?.content === options.descriptorForCompile.script?.content
         ? options.nativeScriptAnalysis.script
@@ -712,11 +661,56 @@ export async function collectComponentSourceInfo(options: {
       autoImportTags: options.autoImportTags,
       templateAutoImportTags: templateComponentTagInfo?.autoImportTags,
       warn: options.compileOptions?.warn,
-      result: autoImportResult,
     }),
   ])
-  mergeComponentSourceInfo(result, autoImportResult)
-  mergeComponentSourceInfo(result, scriptImportResult)
+  const registrationsByTag = new Map<string, { registration: ResolvedComponentRegistration, tags: Set<string> }>()
+  // Vue 模板先查找 setup 绑定，再查找 Options 注册；自动导入优先级最低。
+  // Promise.all 只解析独立候选，完成顺序不参与胜者选择。
+  for (const registrations of [autoRegistrations, optionsRegistrations, setupRegistrations]) {
+    for (const registration of registrations) {
+      if (registration.kind === 'script' && registration.from) {
+        // 绑定裁剪表保留所有已解析的脚本导入，包括被更高优先级注册遮蔽的绑定。
+        result.autoComponentMeta[registration.name] = registration.from
+      }
+      for (const tag of registration.templateTags) {
+        const normalizedTag = normalizeTemplateTagName(tag)
+        const previous = registrationsByTag.get(normalizedTag)
+        if (previous) {
+          if (registration.from && previous.registration.from && previous.registration.from !== registration.from) {
+            const warn = registration.kind === 'script' ? options.autoUsingComponents?.warn : options.autoImportTags?.warn
+            warn?.(`[Vue 编译] usingComponents 冲突：${options.filename} 中 '${normalizedTag}' 的 '${previous.registration.from}' 将被更高优先级组件注册覆盖为 '${registration.from}'`)
+          }
+          previous.registration = registration
+          previous.tags.add(tag)
+        }
+        else {
+          registrationsByTag.set(normalizedTag, { registration, tags: new Set([tag]) })
+        }
+      }
+    }
+  }
+
+  for (const [normalizedTag, { registration, tags }] of registrationsByTag) {
+    const { kind, name, from } = registration
+    if (from) {
+      if (kind === 'auto') {
+        result.autoImportTagsMap[name] = from
+      }
+      else {
+        for (const tag of tags) {
+          result.autoUsingComponentsMap[tag] = from
+        }
+      }
+    }
+    // 导入名只是别名，不能覆盖另一个实际模板标签的胜者。
+    const normalizedName = normalizeTemplateTagName(name)
+    if (normalizedName === normalizedTag || !registrationsByTag.has(normalizedName)) {
+      registerResolvedComponentTag(result, name, registration)
+    }
+    for (const tag of tags) {
+      registerResolvedComponentTag(result, tag, registration)
+    }
+  }
 
   return result
 }

@@ -9,8 +9,9 @@ import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLa
 import { compilerSnapshotSourceId, getCompilerSourceSnapshot, readCompilerInput } from '../../../../utils/sourceSnapshot'
 import { readAndParseSfc } from '../../../../utils/vueSfc'
 import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
+import { createCompilerAppShellSignature } from '../../appShell'
 import { createCompileVueFileOptions, resolveSfcStylePreprocessOptions } from '../../compileOptions'
-import { applyComponentResolutionDependencies } from '../../componentResolutionDependencies'
+import { applyComponentResolutionDependencies, getVueCompilationDependencies } from '../../componentResolutionDependencies'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { resolvePageLayoutPlan } from '../../pageLayout'
 import { isVueStyleOnlyDirtyReasonSummary, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource } from '../../plugin/shared'
@@ -63,15 +64,10 @@ export async function compileVueLikeFile(options: {
     ? await compileVueFile(source, filename, compileOptions)
     : await compileJsxFile(source, filename, compileOptions)
   applyComponentResolutionDependencies(result, compileOptions)
-  if (result.meta?.sfcSrcCompilationDeps || result.meta?.nativeSlotContextDeps) {
-    const scriptDependencies = [...new Set([
-      ...(result.meta.sfcSrcCompilationDeps ?? []),
-      ...(result.meta.nativeSlotContextDeps ?? []),
-    ])]
-    addNormalizedWatchFiles(pluginCtx, scriptDependencies)
-    const sources = getCompilerSourceSnapshot(configService)
-    ctx.moduleGraphService.replaceEntryDependencies(filename, 'script', scriptDependencies, id => compilerSnapshotSourceId(sources, id))
-  }
+  const scriptDependencies = getVueCompilationDependencies(result)
+  addNormalizedWatchFiles(pluginCtx, scriptDependencies)
+  const sources = getCompilerSourceSnapshot(configService)
+  ctx.moduleGraphService.replaceEntryDependencies(filename, 'script', scriptDependencies, id => compilerSnapshotSourceId(sources, id))
   if (resolvedPageLayoutPlan) {
     setVueBundlePageLayoutPlan(result, resolvedPageLayoutPlan)
   }
@@ -162,11 +158,14 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
           signature: undefined,
         }
     const source = transformed.source
+    const appShellSignature = createCompilerAppShellSignature(cached.isPage && !isApp ? options.appShell : undefined)
+    const isAppShellUnchanged = (cached.appShellSignature ?? 'null') === appShellSignature
     const dirtyVueEntryIds = ctx.runtimeState?.build?.hmr?.dirtyVueEntryIds
     const dirtyEntryId = resolveDirtyVueEntryId(dirtyVueEntryIds, filename)
     if (
       source === cached.source
       && transformed.signature === cached.autoRoutesSignature
+      && isAppShellUnchanged
     ) {
       cached.refreshToken = 0
       if (dirtyEntryId) {
@@ -185,6 +184,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
       && currentStyleIndependentSignature
       && cached.styleIndependentSignature === currentStyleIndependentSignature
       && transformed.signature === cached.autoRoutesSignature
+      && isAppShellUnchanged
       && cached.source !== source
     ) {
       const { descriptor } = await readAndParseSfc(filename, {
@@ -233,6 +233,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
 
     cached.source = source
     cached.autoRoutesSignature = transformed.signature
+    cached.appShellSignature = appShellSignature
     cached.styleIndependentSignature = nextStyleIndependentSignature
     cached.refreshToken = 0
     if (dirtyEntryId) {

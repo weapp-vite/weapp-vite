@@ -404,6 +404,16 @@ describe('createEntryLoader', () => {
     expect(readFileMock).toHaveBeenCalledWith('/project/src/app.js', { checkMtime: undefined })
   })
 
+  it.each(['<template><view><slot /></view></template>', '<script>App({})</script>'])('registers an app template dependency before the logical entry is loaded: %s', async (source) => {
+    const app = '/project/src/app.vue'
+    mockFindVueEntry.mockResolvedValue(app)
+    mockExtractConfigFromVue.mockResolvedValue({ pages: [] })
+    readFileMock.mockResolvedValue(source)
+    const { loader, replaceEntryDependencies } = createLoader({ isDev: true })
+    await loader.call(createPluginContext(), app, 'app')
+    expect(replaceEntryDependencies).toHaveBeenCalledWith(app, 'template', [app])
+  })
+
   it('registers normalized app json from app entry', async () => {
     const { loader, registerJsonAsset } = createLoader()
     const pluginCtx = createPluginContext()

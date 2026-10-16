@@ -20,6 +20,7 @@ import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
 import { readEmittedStylesheet, waitForEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 import { assertBenchmarkPrepareCompleted, assertBenchmarkTypeScriptPrepared, createBenchmarkPrepareArgs, discoverBenchmarkTypeScriptProjects } from './benchmarkCheckoutPreparation/typescript'
+import { isExcludedE2EProject } from './e2eProjectScope'
 import {
   createWorkspaceHmrBaseline,
   evaluateWorkspaceHmrThresholds,
@@ -457,7 +458,7 @@ export function resolveChangedProjectIds(changedFiles: string[], scope: Workspac
 }
 
 function isWorkspaceHmrSkippedProject(projectId: string) {
-  return SKIPPED_PROJECT_IDS.has(projectId)
+  return SKIPPED_PROJECT_IDS.has(projectId) || isExcludedE2EProject(projectId)
 }
 
 async function discoverProjects(): Promise<ProjectCase[]> {
@@ -474,7 +475,7 @@ async function discoverProjects(): Promise<ProjectCase[]> {
         continue
       }
       const id = `${kind}/${name}`
-      if (SKIPPED_PROJECT_IDS.has(id)) {
+      if (isWorkspaceHmrSkippedProject(id)) {
         continue
       }
       const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8')) as PackageJson

@@ -779,15 +779,6 @@ function mountRuntimeInstanceWithContext<D extends object, C extends ComputedDef
   }
   syncNativeOwnerId()
 
-  const watchStops = watchMap
-    ? registerWatches(runtimeWithDefaults, watchMap, target, {
-        deferMissingSourceBaseline: Boolean(setup),
-      })
-    : []
-  if (watchStops.length) {
-    target[WEVU_WATCH_STOPS_KEY] = watchStops
-  }
-
   if (setup) {
     runRuntimeSetupPhase({
       target,
@@ -797,6 +788,16 @@ function mountRuntimeInstanceWithContext<D extends object, C extends ComputedDef
       runtimeProxy: runtimeProxy as Record<string, any>,
       setup,
     })
+  }
+
+  const watchStops = watchMap
+    ? registerWatches(runtimeWithDefaults, watchMap, target)
+    : []
+  if (watchStops.length) {
+    target[WEVU_WATCH_STOPS_KEY] = watchStops
+  }
+
+  if (setup) {
     if ((import.meta as ImportMetaWithEnv).env?.PROD !== true && typeof getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]?.trackWevuComponent === 'function') {
       const initialReactiveSetupSnapshot: Record<string, unknown> = {}
       for (const [key, value] of Object.entries(runtimeWithDefaults.setupState ?? {})) {
@@ -811,9 +812,6 @@ function mountRuntimeInstanceWithContext<D extends object, C extends ComputedDef
     }
     if (!options?.deferSetData) {
       refreshOwnerSnapshot()
-    }
-    for (const stop of watchStops) {
-      stop.resume()
     }
   }
   else if (

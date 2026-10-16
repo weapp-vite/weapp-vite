@@ -56,6 +56,7 @@ describe.each([
   it('1172.primary', async (context) => {
     const computedNodes = (count: number) => [
       providerNode('computed-provider', count),
+      textNode('computed-watched-count', `watched:${count}`),
       ...leafNodes('computed-internal', 'computed-provider', count),
       ...leafNodes('computed-projected', 'computed-provider', count),
     ]

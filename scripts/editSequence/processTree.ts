@@ -64,16 +64,31 @@ export async function observeProcessTree(rootPid: number) {
     await windowsRuntimeReady
   }
   const started = performance.now()
+  let stderr = ''
+  let removeDiagnostics: (() => void) | undefined
   try {
     const script = windows ? await readFile(new URL('./windowsProcessTree.ps1', import.meta.url), 'utf8') : undefined
     // 编码整个固定脚本与已校验的 PID，避免路径空格、引号或终端编码参与命令解析。
     const encoded = script ? Buffer.from(`& {\n${script}\n} -RootProcessId ${rootPid}`, 'utf16le').toString('base64') : undefined
-    const result = await exec(windows ? 'powershell.exe' : 'ps', windows
+    const query = exec(windows ? 'powershell.exe' : 'ps', windows
       ? ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded!]
       : ['-axo', 'pid=,ppid=,rss='], { timeout: 10_000, throwOnError: true })
+    if (windows && query.process?.stderr) {
+      const stream = query.process.stderr
+      const capture = (chunk: Buffer | string) => {
+        stderr = (stderr + String(chunk)).slice(-1_024)
+      }
+      stream.on('data', capture)
+      removeDiagnostics = () => stream.off('data', capture)
+    }
+    const result = await query
     return { ...summarizeProcessTree(parseProcessMemory(result.stdout, process.platform), rootPid), observationMs: performance.now() - started }
   }
   catch (cause) {
-    throw new Error(`Process-tree memory observation failed on ${process.platform} after ${Math.round(performance.now() - started)}ms`, { cause })
+    const phases = [...stderr.matchAll(/process-tree:(script-enter|helper-cache-hit|helper-compile|helper-ready|query-complete)/g)].map(match => match[1])
+    throw new Error(`Process-tree memory observation failed on ${process.platform} after ${Math.round(performance.now() - started)}ms; phases=${JSON.stringify(phases)}`, { cause })
+  }
+  finally {
+    removeDiagnostics?.()
   }
 }

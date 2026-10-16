@@ -126,6 +126,55 @@ describe('runSetupFunction', () => {
 })
 
 describe('mountRuntimeInstance and teardown', () => {
+  it.each(['component', 'app'])('preserves setup bindings through raw %s registration', (entry) => {
+    const app = createApp({})
+    const target: InternalRuntimeState = { properties: {}, setData: vi.fn() }
+    const count = ref(1)
+    let label = 'initial'
+    const setup = () => ({
+      count,
+      get label() {
+        return label
+      },
+      set label(value: string) {
+        label = value
+      },
+      readCount(this: { count: typeof count }) {
+        return this.count.value
+      },
+    })
+    if (entry === 'app') {
+      const registrationIndex = appCalls.length
+      registerApp(app, {}, undefined, setup, {})
+      expect(appCalls).toHaveLength(registrationIndex + 1)
+      appCalls[registrationIndex]!.onLaunch.call(target)
+    }
+    else {
+      registerComponent(app, {}, undefined, setup, {})
+      componentCalls[0]!.lifetimes.created.call(target)
+      componentCalls[0]!.lifetimes.attached.call(target)
+    }
+    try {
+      const runtime = target.__wevu
+      if (!runtime) {
+        throw new Error('Expected runtime instance to be mounted')
+      }
+      expect(runtime.setupState?.count).toBe(count)
+      expect(runtime.proxy.count).toBe(count)
+      expect(runtime.setupState?.readCount).toBe(runtime.methods.readCount)
+      expect(runtime.proxy.readCount).toBe(runtime.methods.readCount)
+      expect(runtime.proxy.readCount()).toBe(1)
+      runtime.proxy.label = 'updated'
+      expect(label).toBe('updated')
+      expect(runtime.setupState?.label).toBe('updated')
+      count.value = 2
+      expect(runtime.proxy.readCount()).toBe(2)
+    }
+    finally {
+      teardownRuntimeInstance(target)
+    }
+  })
+
   it('supports deferred setData and watch maps', () => {
     const { app, runtime } = createRuntimeAppStub()
     const target: any = { properties: { foo: 1 }, setData: vi.fn() }
