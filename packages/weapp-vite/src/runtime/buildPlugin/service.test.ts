@@ -367,7 +367,7 @@ const runVueStyleSnapshotMock: typeof import('./vueStyleSnapshot').withVueStyleD
   })
 }
 
-async function createAppShellSnapshotHarness(before: boolean | undefined) {
+async function createAppShellSnapshotHarness(before: boolean | undefined, duringInitialBuild?: (ctx: CompilerContext, appId: string) => Promise<void>) {
   const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-app-shell-snapshot-'))))
   const appId = path.join(root, 'app.vue')
   const pageIds = ['first.vue', 'second.vue'].map(name => path.join(root, 'pages', name))
@@ -389,6 +389,10 @@ async function createAppShellSnapshotHarness(before: boolean | undefined) {
   if (before !== undefined) {
     ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appId, before)
   }
+  else {
+    // 模拟首构预捕获解析失败、交回原生构建诊断的路径，保留未知代际的契约。
+    vueStyleSnapshotMock.mockImplementationOnce(async (_ctx, _entries, _files, run) => await run({ forceFullRescan: true }))
+  }
   const allIds = [appId, ...pageIds, componentId]
   for (const id of allIds) {
     expect(compilerSourceId(id)).toBe(id)
@@ -400,7 +404,10 @@ async function createAppShellSnapshotHarness(before: boolean | undefined) {
   }
   ctx.runtimeState.build.hmr.entriesMap.set(componentId, { path: componentId, type: 'component' })
   ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([appId]))
-  buildMock.mockResolvedValueOnce(watcher).mockResolvedValue({ output: [] })
+  buildMock.mockImplementationOnce(async () => {
+    await duringInitialBuild?.(ctx, appId)
+    return watcher
+  }).mockResolvedValue({ output: [] })
   const firstBuild = createBuildService(ctx).build({ skipNpm: true })
   await watcher.subscribed
   watcher.emit('START')
@@ -1675,6 +1682,31 @@ describe('runtime buildPlugin service', () => {
     expect(touchMock).not.toHaveBeenCalled()
   })
 
+  it.each([false, true])('pins initial App shell input and commits that generation when source changes during build (before=%s)', async (before) => {
+    const reads: string[] = []
+    const source = (present: boolean) => `<script setup>const marker = 'app'</script>${present ? '<template><view><slot /></view></template>' : ''}`
+    const scenario = await createAppShellSnapshotHarness(before, async (ctx, appId) => {
+      reads.push(await readCompilerInput(ctx.configService, appId))
+      await fs.writeFile(appId, source(!before))
+      reads.push(await readCompilerInput(ctx.configService, appId))
+      // 其他 resolver 的较新观测不能成为本次已发布页面的应用壳版本。
+      ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appId, !before)
+    })
+    try {
+      expect(reads).toEqual([source(before), source(before)])
+      await scenario.update(source(!before))
+      for (const id of scenario.pageIds) {
+        expect(scenario.ctx.runtimeState.build.hmr.dirtyEntryReasons.get(id)).toBe('dependency')
+        expect(scenario.ctx.runtimeState.build.hmr.loadedEntrySet.has(id)).toBe(false)
+      }
+      expect(scenario.ctx.runtimeState.build.hmr.dirtyEntrySet.has(scenario.componentId)).toBe(false)
+      expect(scenario.ctx.runtimeState.build.hmr.loadedEntrySet.has(scenario.componentId)).toBe(true)
+    }
+    finally {
+      await scenario.close()
+    }
+  })
+
   it('keeps App shell fixture IDs canonical when native realpath uses a different directory spelling', async () => {
     const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-app-shell-identity-'))))
     const physicalRoot = path.join(root, 'physical')
@@ -1871,7 +1903,7 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
-  it('does not infer App shell presence from an unobserved initial generation', async () => {
+  it('does not infer App shell presence when initial input capture failed', async () => {
     const scenario = await createAppShellSnapshotHarness(undefined)
     try {
       await scenario.update(scenario.appSource(true))
