@@ -1,17 +1,18 @@
 param([uint32]$RootProcessId, [switch]$Warm)
 
 $ErrorActionPreference = 'Stop'
-[Console]::Error.WriteLine('process-tree:script-enter')
+$diagnosticStopwatch = [Diagnostics.Stopwatch]::StartNew()
+[Console]::Error.WriteLine("process-tree:script-enter elapsedMs=$($diagnosticStopwatch.ElapsedMilliseconds)")
 
 $assemblyPath = Join-Path ([IO.Path]::GetTempPath()) 'weapp-vite-edit-sequence-process-tree-v2.dll'
 
 # 直接读取内核进程快照，避免 WMI/CIM provider 的冷启动进入采样路径。
 if (Test-Path -LiteralPath $assemblyPath) {
-  [Console]::Error.WriteLine('process-tree:helper-cache-hit')
+  [Console]::Error.WriteLine("process-tree:helper-cache-hit elapsedMs=$($diagnosticStopwatch.ElapsedMilliseconds)")
   Add-Type -Path $assemblyPath
 }
 else {
-  [Console]::Error.WriteLine('process-tree:helper-compile')
+  [Console]::Error.WriteLine("process-tree:helper-compile elapsedMs=$($diagnosticStopwatch.ElapsedMilliseconds)")
   $temporaryAssemblyPath = "$assemblyPath.$PID.tmp"
   Add-Type -ReferencedAssemblies System.Core.dll -OutputAssembly $temporaryAssemblyPath -TypeDefinition @'
 using System;
@@ -112,11 +113,12 @@ public static class EditSequenceProcessTree {
   }
 }
 
-[Console]::Error.WriteLine('process-tree:helper-ready')
+[Console]::Error.WriteLine("process-tree:helper-ready elapsedMs=$($diagnosticStopwatch.ElapsedMilliseconds)")
 if ($Warm) {
   return
 }
 
 $observations = [EditSequenceProcessTree]::Read($RootProcessId)
-[Console]::Error.WriteLine('process-tree:query-complete')
+[Console]::Error.WriteLine("process-tree:query-complete elapsedMs=$($diagnosticStopwatch.ElapsedMilliseconds)")
 ConvertTo-Json -InputObject @($observations) -Compress
+[Console]::Error.WriteLine("process-tree:json-pipeline-returned elapsedMs=$($diagnosticStopwatch.ElapsedMilliseconds)")
