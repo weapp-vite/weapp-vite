@@ -15,6 +15,8 @@ import {
   FEATURE_ROUTES,
   LIST,
   NATIVE,
+  reportFeature1087NavigationFailure,
+  reportFeature1087NavigationPoll,
   setListPosition,
   SKYLINE,
   snapshot,
@@ -261,11 +263,36 @@ describe('e2e app: github-issues / feature #1087 scroll restoration', { concurre
     expect(aborted.instance).toBe(initial.instance)
     expect(aborted.records.some(record => record.instance === initial.instance && record.phase === 'capture')).toBe(false)
     await expectListPosition(page, 390, 65, 520)
-    await page.callMethod('_navigate', `${LIST}?guard=redirect`)
-    await expect.poll(async () => {
-      const target = await currentPage(miniProgram, LIST)
-      return (await snapshot(target)).navigation
-    }).toMatchObject({ settled: true, path: '/pages/feature-1087/index?feed=redirected' })
+    let lastNavigationPoll: Record<string, unknown> | undefined
+    const navigationPoll: Record<string, unknown> = { requestedUrl: `${LIST}?guard=redirect`, state: 'not-started' }
+    try {
+      await page.callMethod('_navigate', `${LIST}?guard=redirect`)
+      navigationPoll.startedAt = Date.now()
+      navigationPoll.state = 'pending'
+      await expect.poll(async () => {
+        const startedAt = Date.now()
+        const target = await currentPage(miniProgram, LIST)
+        const state = await snapshot(target)
+        const navigation = state.navigationDiagnostics.findLast(item => item.phase === 'probe:navigate' && item.url === navigationPoll.requestedUrl)
+        lastNavigationPoll = { startedAt, finishedAt: Date.now(), navigationId: navigation?.navigationId ?? null, route: target.path, query: target.query, snapshot: state }
+        return state.navigation
+      }).toMatchObject({ settled: true, path: '/pages/feature-1087/index?feed=redirected' })
+      reportFeature1087NavigationPoll({
+        navigationPoll: { ...navigationPoll, finishedAt: Date.now(), state: 'passed', navigationId: lastNavigationPoll?.navigationId ?? null },
+        lastNavigationPoll,
+      })
+    }
+    catch (error) {
+      // 先冻结原 matcher 的结束点；后续诊断或迟到 callback 不改写原失败样本。
+      const failedPoll = { ...navigationPoll, finishedAt: Date.now(), state: navigationPoll.startedAt === undefined ? 'dispatch-failed' : 'failed', navigationId: lastNavigationPoll?.navigationId ?? null }
+      try {
+        await reportFeature1087NavigationFailure(miniProgram, page, { initial, aborted, navigationPoll: failedPoll, lastNavigationPoll })
+      }
+      catch {
+        // 失败取证不能覆盖原 matcher 的异常。
+      }
+      throw error
+    }
     const redirected = await currentPage(miniProgram, LIST)
     await expectListPosition(redirected, 0, 0, 0)
     const accepted = await snapshot(redirected)
