@@ -112,7 +112,7 @@ export default defineConfig({
   }],
   server: {
     fs: {
-      allow: [mpcoreRoot, path.resolve(simulatorRoot, '../../../e2e/utils/requestClientsRealWebSocketProbe.ts'), path.resolve(simulatorRoot, '../../../e2e-apps/github-issues/src/pages/css-nested-vars')],
+      allow: [mpcoreRoot, path.resolve(simulatorRoot, '../../../e2e/utils/requestClientsRealWebSocketProbe.ts'), path.resolve(simulatorRoot, '../../../e2e-apps/github-issues/src/pages/css-nested-vars'), path.resolve(simulatorRoot, '../../../e2e-apps/github-issues/fixtures/issue-1235/src')],
     },
     warmup: {
       clientFiles: [path.resolve(simulatorRoot, './e2e/statefulVueComponent.e2e.test.ts')],

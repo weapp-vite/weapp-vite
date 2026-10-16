@@ -40,3 +40,5 @@ test('renders a page', async ({ mpcore, expect }) => {
 ```
 
 `createMpcoreTest({ artifact: { projectPath: process.cwd() } })` still accepts an existing artifact directly. `createVitestProject()` also uses the configured artifact when omitted, and closes its runtime with the current test. Optional host mocks and `failOnConsoleError` can be passed without replacing the injected artifact. Calling either helper without a configured or explicit artifact reports an actionable error.
+
+Setup also registers the semantic tree snapshot serializer from `@mpcore/test`. Use `expect(result.screen).toMatchSnapshot()` or snapshot an individual node. Snapshots preserve public tree and event-binding semantics while removing runtime IDs, style scope markers and generated handler names. Full diagnostic snapshots returned by `page.snapshot()` remain unchanged; use `toMiniProgramSnapshot()` explicitly to serialize one.
