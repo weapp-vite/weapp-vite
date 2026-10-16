@@ -36,7 +36,7 @@
     "postcss": "^8.5.30",
     "tailwindcss": "^4.3.3",
     "typescript": "latest",
-    "weapp-tailwindcss": "^5.6.2",
+    "weapp-tailwindcss": "^5.6.3",
     "weapp-vite": "latest"
   }
 }

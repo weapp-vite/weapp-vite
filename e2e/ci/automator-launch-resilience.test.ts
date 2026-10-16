@@ -1811,22 +1811,32 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     launchMock.mockResolvedValueOnce(miniProgram)
 
     const { launchAutomator } = await import('../utils/automator')
-    await launchAutomator({
-      projectPath: sandboxRoot,
-      refreshProjectAfterConnect: true,
-    })
+    let elapsedMs = 0
+    // 每次读取推进时钟，稳定覆盖阶段建立后必须扣除的预算。
+    const clock = vi.spyOn(performance, 'now').mockImplementation(() => elapsedMs++)
+    try {
+      await launchAutomator({
+        projectPath: sandboxRoot,
+        refreshProjectAfterConnect: true,
+      })
 
-    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith(sandboxRoot, {
-      cliPath: DEFAULT_WECHAT_CLI_PATH,
-      timeoutMs: 60_000,
-      signal: expect.any(AbortSignal),
-    })
-    expect(openWechatIdeProjectByHttpMock.mock.invocationCallOrder[0]).toBeLessThan(
-      resetWechatIdeFileUtilsByHttpMock.mock.invocationCallOrder[0]!,
-    )
-    expect(resetWechatIdeFileUtilsByHttpMock.mock.invocationCallOrder[0]).toBeLessThan(
-      miniProgram.__rawCurrentPage.mock.invocationCallOrder[0]!,
-    )
+      const refreshTimeout = openWechatIdeProjectByHttpMock.mock.calls[0]?.[1]?.timeoutMs
+      expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith(sandboxRoot, {
+        cliPath: DEFAULT_WECHAT_CLI_PATH,
+        timeoutMs: expectTimeoutWithinBudget(refreshTimeout, 60_000),
+        signal: expect.any(AbortSignal),
+      })
+      expect(refreshTimeout).toBeLessThan(60_000)
+      expect(openWechatIdeProjectByHttpMock.mock.invocationCallOrder[0]).toBeLessThan(
+        resetWechatIdeFileUtilsByHttpMock.mock.invocationCallOrder[0]!,
+      )
+      expect(resetWechatIdeFileUtilsByHttpMock.mock.invocationCallOrder[0]).toBeLessThan(
+        miniProgram.__rawCurrentPage.mock.invocationCallOrder[0]!,
+      )
+    }
+    finally {
+      clock.mockRestore()
+    }
   })
 
   it('retains startup and compile errors across post-connect refresh until session close', async () => {

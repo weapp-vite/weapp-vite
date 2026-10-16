@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer'
+import { PassThrough } from 'node:stream'
 import { exec } from 'tinyexec'
 import { afterEach, beforeAll, expect, it, vi } from 'vitest'
 import { observeProcessTree, parseProcessMemory, summarizeProcessTree } from './processTree'
@@ -73,4 +74,29 @@ it('identifies the observation phase and preserves query failures without retryi
     cause,
   })
   expect(exec).toHaveBeenCalledOnce()
+})
+
+it.each([false, true])('preserves safe script phases when a Windows query times out (entered=%s)', async (entered) => {
+  const stderr = new PassThrough()
+  const cause = new Error('query deadline exceeded')
+  vi.mocked(exec).mockImplementationOnce(() => {
+    const query = new Promise((_, reject) => {
+      queueMicrotask(() => {
+        if (entered) {
+          stderr.write('process-tree:script-')
+          stderr.write('enter\r\nprocess-tree:helper-cache-hit\r\n')
+          stderr.write('unrelated diagnostic\r\nprocess-tree:helper-ready\r\n')
+        }
+        reject(cause)
+      })
+    })
+    return Object.assign(query, { process: { stderr } }) as unknown as ReturnType<typeof exec>
+  })
+  await expect(observeProcessTree(10)).rejects.toMatchObject({
+    message: expect.stringContaining(`phases=${JSON.stringify(entered ? ['script-enter', 'helper-cache-hit', 'helper-ready'] : [])}`),
+    cause,
+  })
+  expect(exec).toHaveBeenCalledOnce()
+  expect(vi.mocked(exec).mock.calls[0]?.[2]).toMatchObject({ timeout: 10_000 })
+  expect(stderr.listenerCount('data')).toBe(0)
 })

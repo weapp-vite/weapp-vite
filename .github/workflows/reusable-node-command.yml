@@ -55,6 +55,10 @@ on:
         required: false
         type: string
         default: ''
+      e2e_exclude_projects:
+        required: false
+        type: string
+        default: ''
       install_playwright:
         required: false
         type: boolean
@@ -102,6 +106,7 @@ jobs:
       BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ inputs.checkout_ref || github.sha }}
       PR_BASE_SHA: ${{ inputs.base_sha }}
       PR_HEAD_REF: ${{ inputs.head_ref }}
+      WEAPP_VITE_E2E_EXCLUDE_PROJECTS: ${{ inputs.e2e_exclude_projects }}
 
     steps:
       - name: Enable Git long paths on Windows

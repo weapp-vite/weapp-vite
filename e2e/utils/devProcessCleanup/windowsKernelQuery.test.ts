@@ -6,7 +6,7 @@ import { sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtools
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { queryWindowsKernelProcesses, windowsLegacyProcessStarted } from './windowsKernelQuery'
 import { parseWindowsProcessRows } from './windowsProcessRows'
-import { createWindowsProcessQueryCommand, parseWindowsQueryTrace } from './windowsQueryTrace'
+import { createWindowsProcessQueryCommand, parseWindowsQueryTrace, reportWindowsQueryTrace } from './windowsQueryTrace'
 
 it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 0x100000000])('rejects an invalid PID before dispatch: %s', async (pid) => {
   await expect(queryWindowsKernelProcesses([pid])).rejects.toThrow(TypeError)
@@ -42,20 +42,23 @@ function row(values: unknown[], pid: number): WindowsRow {
 
 // 本地 Unix 无法证明 Windows Interop；Windows CI 用同一仍持有的 worker 核验旧身份精度。
 it.runIf(process.platform === 'win32')('matches the held worker CIM identity with full and filtered native snapshots', async () => {
-  const timeout = resolveWechatInspectionTimeout('win32')
-  const nativeQuery = async (pids: number[] | undefined, trace = false) => {
+  const timeout = resolveWechatInspectionTimeout('win32', 10_000)
+  const nativeQuery = async (label: 'snapshot' | 'identities', pids: number[] | undefined, trace = false) => {
     const result = await queryWindowsKernelProcesses(pids, trace)
-    expect(result.exitCode).toBe(0)
+    reportWindowsQueryTrace(label, result)
+    expect({ exitCode: result.exitCode, timedOut: result.timedOut, signal: result.signal }, `${label}: ${JSON.stringify(parseWindowsQueryTrace(result.stderr))}`).toEqual({ exitCode: 0, timedOut: false, signal: undefined })
     return { result, rows: parseWindowsProcessRows(result.stdout) }
   }
-  const full = await nativeQuery(undefined)
-  const filtered = await nativeQuery([process.pid], true)
+  const full = await nativeQuery('snapshot', undefined)
+  const filtered = await nativeQuery('identities', [process.pid], true)
   const legacyResult = await execa('powershell.exe', [
     '-NoProfile',
     '-NonInteractive',
     '-Command',
-    createWindowsProcessQueryCommand(` -Filter 'ProcessId=${process.pid}'`, false),
-  ], { timeout, windowsHide: true })
+    createWindowsProcessQueryCommand(` -Filter 'ProcessId=${process.pid}'`, true),
+  ], { timeout, windowsHide: true, reject: false })
+  reportWindowsQueryTrace('identities', legacyResult)
+  expect({ exitCode: legacyResult.exitCode, timedOut: legacyResult.timedOut, signal: legacyResult.signal }, `CIM: ${JSON.stringify(parseWindowsQueryTrace(legacyResult.stderr))}`).toEqual({ exitCode: 0, timedOut: false, signal: undefined })
   const legacy = { rows: parseWindowsProcessRows(legacyResult.stdout) }
   const first = row(full.rows, process.pid)
   const second = row(filtered.rows, process.pid)

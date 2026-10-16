@@ -1,4 +1,32 @@
-import type { Compiler, CompilerGenerateRequest, CompilerGenerateResult } from 'weapp-tailwindcss/core'
+import type { Compiler, CompilerGenerateRequest, CompilerGenerateResult, CompilerSnapshot } from 'weapp-tailwindcss/core'
+import path from 'node:path'
+import { withRealpathScope } from '../../utils/realpathScope'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
+
+/** 宿主按文件身份匹配变化，失效时仍交还 core 原始依赖 ID，保留平台分隔符与别名。 */
+export function resolveTailwindInvalidationIds(file: string, snapshots: Iterable<Pick<CompilerSnapshot, 'dependencies'>>, sourceId: (file: string) => string): string[] {
+  return withRealpathScope(() => {
+    const id = sourceId(file)
+    const dependencies = new Set<string>()
+    const identities = new Map<string, string>()
+    for (const snapshot of snapshots) {
+      for (const dependency of snapshot.dependencies) {
+        let identity = normalizeFsResolvedId(dependency)
+        if (identity !== id) {
+          if (!identities.has(dependency)) {
+            identities.set(dependency, sourceId(dependency))
+          }
+          identity = identities.get(dependency)!
+        }
+        if (identity === id) {
+          dependencies.add(dependency)
+        }
+      }
+    }
+    // 新来源尚未进入快照，沿用 core 文件依赖的原生路径格式交给来源匹配器。
+    return dependencies.size ? [...dependencies] : [path.normalize(id)]
+  })
+}
 
 interface Root {
   id: string

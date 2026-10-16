@@ -26,13 +26,14 @@ import { isPathInside } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { labelSourceMapInput } from '../utils/sourcemap'
 import { markWeappCompilerPlugin } from './compilerPlugin'
-import { CompilerHmrResyncError, getCompilerHmrHost } from './compilerPlugin/hmr'
+import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from './compilerPlugin/hmr'
 import { processCssWithCache } from './css/shared/preprocessor'
 import { createStyleSourceMeta } from './css/styleOwnership'
 import { takeTailwindSnapshotGeneration } from './tailwindcss/generation'
 import { createTailwindHmrAdapter } from './tailwindcss/hmr'
 import { TailwindImportedRoots } from './tailwindcss/importedRoots'
 import { findManagedStyleImports } from './tailwindcss/imports'
+import { resolveTailwindInvalidationIds } from './tailwindcss/invalidation'
 import { resolveVueStyleSource } from './tailwindcss/vueStyle'
 import {
   createManagedTailwindcssEntryMarker,
@@ -324,8 +325,8 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       sourceOptions,
       target: resolved.generatorTarget,
       scanSources: true,
-      // 一次性构建不预建后续增量候选缓存；持久宿主继续复用同一编译根。
-      incrementalCache: persistentWatch,
+      // 编译会话拥有增量状态；额外候选缓存会在 generate 返回后异步重读模块。
+      incrementalCache: false,
       bareArbitraryValues: resolved.options.arbitraryValues?.bareArbitraryValues,
       styleOptions: typeof resolved.options.generator === 'object'
         ? resolved.options.generator.styleOptions
@@ -388,7 +389,10 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       return
     }
     if (compiler && !(statefulCompiler && !importedRoots.size && hmr.deferContentInvalidation(normalizedId))) {
-      compiler.invalidate([normalizedId])
+      compiler.invalidate(resolveTailwindInvalidationIds(normalizedId, [
+        ...compilerSnapshots.values(),
+        ...Array.from(importedSources.values(), source => source.snapshot),
+      ], compilerSourceId))
     }
   }
 
@@ -553,6 +557,21 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       applyOutputChunkTransform(output as OutputChunk, transformed.code, labelSourceMapInput(transformed.map, output.fileName, output.code))
     }
     reused?.validate()
+    const dependenciesBySource = new Map<string, Set<string>>()
+    for (const [index, generated] of generatedEntries.entries()) {
+      if (!generated) {
+        continue
+      }
+      const source = resolved.cssEntries[index]!
+      const dependencies = dependenciesBySource.get(source) ?? new Set<string>()
+      for (const file of generated.dependencies) {
+        dependencies.add(file)
+      }
+      dependenciesBySource.set(source, dependencies)
+    }
+    for (const [source, dependencies] of dependenciesBySource) {
+      ctx.moduleGraphService?.replaceTransformDependencies?.(source, dependencies)
+    }
   }
 
   function importedSourceKey(id: string) {
@@ -593,7 +612,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       id: rootId,
       target: resolved.generatorTarget,
       scanSources: true,
-      incrementalCache: persistentWatch,
+      incrementalCache: false,
       sourceOptions: {
         ...configuredSource,
         cssEntries: [],

@@ -27,19 +27,20 @@ function assertCompleteOutput(output: { css: string, script: string, template: s
 describe('Tailwind generation follows compiler lifetime', () => {
   it.each([
     ['snapshot build', 'build', undefined, 2],
-    ['serve', 'serve', undefined, 3],
-    ['build watch', 'build', {}, 3],
+    ['serve', 'serve', undefined, 2],
+    ['build watch', 'build', {}, 2],
   ] as const)('keeps full scanned output and the expected real plugin initialization count for %s', async (_name, command, watch, initializations) => {
     const fixture = await createGenerationFixture()
     const owner = fixture.owner(command, watch)
     const output = await owner.render()
     assertCompleteOutput(output)
-    await vi.waitFor(() => expect(fixture.probe.initializations).toBe(initializations))
+    expect(fixture.probe.initializations).toBe(initializations)
     expect(owner.watched).toContain(path.join(fixture.root, 'src/probe.cjs'))
     expect(owner.watched).toContain(path.join(fixture.root, 'src/tailwind.css'))
     await owner.closeBundle()
     if (command === 'serve' || watch) {
       expect(await owner.render()).toEqual(output)
+      expect(fixture.probe.initializations).toBe(initializations)
     }
     else {
       await expect(owner.render()).rejects.toThrow('Compiler 已释放')
@@ -55,7 +56,7 @@ describe('Tailwind generation follows compiler lifetime', () => {
     fixture.probe.initializations = 0
     const persistent = fixture.owner('serve')
     const retained = await persistent.render()
-    await vi.waitFor(() => expect(fixture.probe.initializations).toBe(3))
+    expect(fixture.probe.initializations).toBe(2)
     expect(retained).toEqual(oneShot)
     assertCompleteOutput(retained)
   })
@@ -97,7 +98,7 @@ describe('Tailwind generation follows compiler lifetime', () => {
     await once.closeBundle()
     const persistent = fixture.owner('serve')
     const retained = await persistent.render()
-    await vi.waitFor(() => expect(fixture.probe.initializations).toBe(5))
+    expect(fixture.probe.initializations).toBe(4)
     expect(retained).toEqual(oneShot)
     // 默认 owner 复用 rawCss；此处只锁定生命周期 parity，宏收尾缺口留给独立修复。
     expect(declarations(oneShot.css, 'width')).toContain('37px')
@@ -106,8 +107,8 @@ describe('Tailwind generation follows compiler lifetime', () => {
 
   it.each([
     ['build', undefined, 2],
-    ['serve', undefined, 3],
-    ['build', {}, 3],
+    ['serve', undefined, 2],
+    ['build', {}, 2],
   ] as const)('uses the same lifetime policy for imported owners during %s', async (command, watch, initializations) => {
     const fixture = await createGenerationFixture()
     await fixture.write('src/styles/wrapper.css', '@import "../tailwind.css";')
@@ -118,7 +119,7 @@ describe('Tailwind generation follows compiler lifetime', () => {
     expect(declarations(transformed, 'padding')).toContain('17px')
     expect(transformed).toContain('.wrapper-author')
     expect(transformed).not.toMatch(/@(?:import|source|apply|slot|weapp-tw-ifn?def)\b/)
-    await vi.waitFor(() => expect(fixture.probe.initializations).toBe(initializations))
+    expect(fixture.probe.initializations).toBe(initializations)
     expect(owner.watched).toContain(path.join(fixture.root, 'src/tailwind.css'))
     expect(owner.watched).toContain(path.join(fixture.root, 'src/styles/wrapper.css'))
     await owner.closeBundle()

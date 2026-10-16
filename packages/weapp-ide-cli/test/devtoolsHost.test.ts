@@ -72,11 +72,11 @@ describe('DevTools host ownership', () => {
     const signal = new AbortController().signal
     execute.mockResolvedValue({ exitCode: 0, stdout: '[]' })
     await assertWechatDevtoolsHost(target(), { platform: 'win32', signal })
-    expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 10_000, cancelSignal: signal }))
+    expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 30_000, cancelSignal: signal }))
     await assertWechatDevtoolsHost(target(), { platform: 'win32', timeout: 500, signal })
     expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 500, cancelSignal: signal }))
     await assertWechatDevtoolsHost(target(), { platform: 'win32', timeout: 60_000 })
-    expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 10_000 }))
+    expect(execute).toHaveBeenLastCalledWith('powershell.exe', expect.any(Array), expect.objectContaining({ timeout: 30_000 }))
     const controller = new AbortController()
     controller.abort(new Error('inspection cancelled'))
     await expect(assertWechatDevtoolsHost(target(), { platform: 'win32', signal: controller.signal })).rejects.toThrow('inspection cancelled')

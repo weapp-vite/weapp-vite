@@ -203,6 +203,60 @@ it('normalizes Windows source paths and ignores all records preceding the profil
   expect(vi.getTimerCount()).toBe(0)
 })
 
+it.each([
+  { file: 'src/template.html', expectedFile: 'src/template.html' },
+  { file: 'C:\\project\\src\\template.html', expectedFile: 'c:/project/src/template.html' },
+])('preserves normalized source identity and recent batch provenance on timeout: $file', async ({ file, expectedFile }) => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const capturedAtEpochMs = performance.timeOrigin + performance.now()
+  const publication = createDevBuildCompletion(dev, {
+    completed: 'publication complete',
+    source: { file, profilePath: 'profile.jsonl' },
+  })
+  const failed = publication.wait(100).catch((error: unknown) => error)
+  dev.append('publication complete\n')
+  profile.content = Array.from({ length: 6 }, (_, index) => `${sourceRecord(file, capturedAtEpochMs - 1, { buildId: `build-${index}` })}\n`).join('')
+  await vi.advanceTimersByTimeAsync(100)
+  const error = await failed
+  expect(error).toBeInstanceOf(Error)
+  const message = (error as Error).message
+  expect(message).toContain('Timed out waiting for current dev build: publication complete')
+  const evidence = JSON.parse(message.split('\nSource publication: ')[1]!) as {
+    file: string
+    profileStatus: string
+    capturedAtEpochMs: number
+    samples: Array<{ buildId: string, sourceEvents: Array<{ file: string }> }>
+  }
+  expect(evidence.file).toBe(expectedFile)
+  expect(evidence.profileStatus).toBe('read')
+  expect(evidence.capturedAtEpochMs).toBeGreaterThanOrEqual(capturedAtEpochMs)
+  expect(evidence.samples.map(sample => sample.buildId)).toEqual(['build-2', 'build-3', 'build-4', 'build-5'])
+  expect(evidence.samples[0]!.sourceEvents[0]!.file).toBe(file)
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it.each(['not-read', 'missing'])('preserves profile availability on timeout: %s', async (profileStatus) => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const file = 'src/template.html'
+  const publication = createDevBuildCompletion(dev, {
+    completed: 'publication complete',
+    source: { file, profilePath: 'profile.jsonl' },
+  })
+  const failed = publication.wait(100).catch((error: unknown) => error)
+  if (profileStatus === 'missing') {
+    profile.read = () => Promise.reject(Object.assign(new Error('profile missing'), { code: 'ENOENT' }))
+    dev.append('publication complete\n')
+  }
+  await vi.advanceTimersByTimeAsync(100)
+  const error = await failed
+  expect(error).toBeInstanceOf(Error)
+  const evidence: unknown = JSON.parse((error as Error).message.split('\nSource publication: ')[1]!)
+  expect(evidence).toMatchObject({ file, profileStatus, samples: [] })
+  expect(vi.getTimerCount()).toBe(0)
+})
+
 it('rejects a numeric overflow in receivedAtMs instead of accepting it as a future event', async () => {
   vi.useFakeTimers()
   const dev = createProcess()
@@ -337,6 +391,41 @@ it('waits for owner settlement after every notification despite superseded disk/
   expect(vi.getTimerCount()).toBe(0)
 })
 
+it('requires all snapshot sources from one session before requesting settlement', async () => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const requestSettlement = vi.fn<(id: string) => void>()
+  const publication = createDevBuildCompletion(dev, { snapshot: { ...snapshotSource, requestSettlement } })
+  let finished = false
+  const waiting = publication.wait().then(() => {
+    finished = true
+  })
+  for (const file of snapshotFiles.slice(0, -1)) {
+    profile.content += snapshotSourceRecord(file)
+  }
+  const lastFile = snapshotFiles.at(-1)!
+  profile.content += `${sourceRecord(lastFile, performance.timeOrigin + performance.now() + 1, {
+    pipeline: 'stateful',
+    sessionId: 'other-session',
+    status: 'incomplete',
+    totalMs: undefined,
+    elapsedMs: 1,
+  })}\n`
+  await vi.advanceTimersByTimeAsync(25)
+  expect(requestSettlement).not.toHaveBeenCalled()
+  expect(finished).toBe(false)
+
+  profile.content += snapshotSourceRecord(lastFile)
+  await vi.advanceTimersByTimeAsync(25)
+  expect(requestSettlement).toHaveBeenCalledTimes(1)
+  expect(finished).toBe(false)
+  dev.append(settlementRecord(requestSettlement.mock.calls[0]![0]))
+  await vi.advanceTimersByTimeAsync(25)
+  await waiting
+  expect(finished).toBe(true)
+  expect(vi.getTimerCount()).toBe(0)
+})
+
 it('rejects a buffered prior edit as the missing source and retains the 30 second total deadline', async () => {
   vi.useFakeTimers()
   const dev = createProcess()
@@ -404,7 +493,7 @@ it('uses a new nonce for each edit and accepts only complete matching acknowledg
 
 it.each([
   { reply: (id: string) => settlementRecord(id, { status: 'failed', error: 'native output failed' }), error: 'native output failed' },
-  { reply: () => `${NATIVE_BATCH_SETTLEMENT_PREFIX}{broken}\n`, error: /JSON/ },
+  { reply: () => `${NATIVE_BATCH_SETTLEMENT_PREFIX}{broken}\n`, error: SyntaxError },
   { reply: (id: string) => settlementRecord(id, { status: 'active' }), error: 'Invalid native batch settlement acknowledgement' },
   { reply: (id: string) => settlementRecord(id, { id: undefined }), error: 'Invalid native batch settlement acknowledgement' },
 ])('rejects failed or malformed settlement responses without accepting visible output: $error', async ({ reply, error }) => {
@@ -465,5 +554,30 @@ it.each(['before-request', 'after-request'])('rejects a failed current source ev
     expect(requestSettlement).not.toHaveBeenCalled()
   }
   await rejected
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it.each(['resolve', 'reject'])('aborts snapshot reads at the deadline and ignores their late %s', async (mode) => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const read = Promise.withResolvers<string>()
+  profile.read = vi.fn(() => read.promise)
+  const requestSettlement = vi.fn<(id: string) => void>()
+  const publication = createDevBuildCompletion(dev, { snapshot: { ...snapshotSource, requestSettlement } })
+  const rejected = expect(publication.wait(100)).rejects.toThrow('native snapshot settlement')
+  await vi.advanceTimersByTimeAsync(100)
+  await rejected
+  expect(profile.signal?.aborted).toBe(true)
+  expect(profile.read).toHaveBeenCalledTimes(1)
+
+  if (mode === 'resolve') {
+    read.resolve(snapshotFiles.map(file => snapshotSourceRecord(file)).join(''))
+  }
+  else {
+    read.reject(new Error('late snapshot profile error'))
+  }
+  await vi.advanceTimersByTimeAsync(100)
+  expect(requestSettlement).not.toHaveBeenCalled()
+  expect(profile.read).toHaveBeenCalledTimes(1)
   expect(vi.getTimerCount()).toBe(0)
 })

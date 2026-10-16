@@ -1,6 +1,10 @@
 import { access, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
+// 保留 Windows 原生崩溃的退出码和 stderr，不让子进程中断其他对照。
+// eslint-disable-next-line e18e/ban-dependencies
+import { execa } from 'execa'
 import { build, createServer } from 'vite'
 import { afterEach, expect, it } from 'vitest'
 
@@ -39,7 +43,49 @@ it('resolves React runtime with native Vite through linked packages', async () =
     : [])).toContain('createReactMiniProgramRoot')
 }, 30_000)
 
-// 原始 fs.watch 启动对照保留在诊断脚本；门禁使用框架 watcher 的真实 ready 边界。
+// 外层测试等待子进程退出后，再由 afterEach 回收临时目录。
+it('observes a native filesystem event using the canonical temporary path', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'vite-native-watch-'))
+  roots.push(root)
+  const watchedRoot = await realpath(root)
+  const result = await execa(process.execPath, ['--input-type=module', '-e', `
+    import { watch, writeFileSync } from 'node:fs'
+    import path from 'node:path'
+    const root = process.argv[1]
+    let registered = false
+    let sequence = 0
+    const timer = setTimeout(() => {
+      clearInterval(registration)
+      watcher.close()
+      process.exitCode = 2
+    }, 5000)
+    const watcher = watch(root, (_event, filename) => {
+      if (filename === 'registration.txt' && !registered) {
+        registered = true
+        clearInterval(registration)
+        writeFileSync(path.join(root, 'probe.txt'), 'changed')
+      }
+      else if (filename === 'probe.txt') {
+        clearTimeout(timer)
+        watcher.close()
+        console.log('observed')
+      }
+    })
+    // 目录 FSEvents 没有 ready 回执；收到同一 watcher 的哨兵事件后再单次写入目标。
+    // setImmediate 只能等待 JS 调度，无法证明系统事件流已完成订阅。
+    // 虚拟时钟无法推进子进程的系统订阅；真实定时器仅驱动注册哨兵并限定失败预算。
+    const registration = setInterval(() => {
+      writeFileSync(path.join(root, 'registration.txt'), String(++sequence))
+    }, 20)
+  `, watchedRoot], { reject: false, timeout: 10_000 })
+  expect({ exitCode: result.exitCode, stderr: result.stderr, stdout: result.stdout }).toEqual({
+    exitCode: 0,
+    stderr: '',
+    stdout: 'observed',
+  })
+}, 15_000)
+
+// Vite 对照使用框架 watcher 的真实 ready 边界，不以原始 fs.watch 注册事件替代。
 it('observes one native Vite file creation after readiness using the canonical temporary path', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'vite-native-watch-'))
   roots.push(root)

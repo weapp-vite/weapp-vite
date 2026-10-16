@@ -20,6 +20,19 @@ describe('Vue component dependency digests', () => {
   const owner = '/project/src/page.js'
   const token = createSidecarSourceSpecifier(owner, component, 'using-component')
 
+  it('keeps app shell template changes outside the accepted app script boundary', () => {
+    const app = '/project/src/app.vue'
+    const template = createSidecarSourceSpecifier(app, app, 'template')
+    const digest = createStatefulHmrSidecarModuleCode(template, source)
+    expect(createStatefulHmrSidecarModuleCode(template, source.replace('return 1', 'return 2'))).toBe(digest)
+    expect(createStatefulHmrSidecarModuleCode(template, source.replace('color: red', 'color: blue'))).toBe(digest)
+    for (const changed of [source.replace('{{ count }}', 'new shell'), source.replace(/<template>.*<\/template>/, '')]) {
+      expect(createStatefulHmrSidecarModuleCode(template, changed)).not.toBe(digest)
+    }
+    expect(isStatefulHmrBoundary(template, '/project/src', [app])).toBe(false)
+    expect(isSafeJavaScriptPatch([app], { type: 'Patch', code: 'void 0', filename: 'update.js', changedIds: [template] })).toBe(false)
+  })
+
   it.each([
     source,
     source.replace('<script>export default { methods: { increment() { return 1 } } }</script>', '<script setup>const count = 1</script>'),

@@ -1,0 +1,9 @@
+{
+  "environment": "pr-ci-approval",
+  "reviewers": ["sonofmagic", "daguanren21"],
+  "preventSelfReview": false,
+  "canAdminsBypass": false,
+  "waitTimer": 0,
+  "deploymentBranchPolicy": null,
+  "forkApprovalPolicy": "all_external_contributors"
+}

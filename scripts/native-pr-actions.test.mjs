@@ -8,6 +8,7 @@ const repository = 'example/project'
 const headSha = 'a'.repeat(40)
 const baseSha = 'b'.repeat(40)
 const driverSha = 'c'.repeat(40)
+const admissionPolicy = JSON.parse(await readFile(new URL('../.github/pr-admission.json', import.meta.url), 'utf8'))
 const pull = { number: 42, state: 'open', merge_commit_sha: driverSha, head: { sha: headSha, ref: 'feature', repo: { full_name: 'contributor/project' } }, base: { sha: baseSha, ref: 'main', repo: { full_name: repository } } }
 const profiles = {
   ci: { paths: [], baseBranches: [], checkoutMode: 'merge' },
@@ -108,7 +109,7 @@ describe('native approval workflow graph', () => {
     expect(workflow.concurrency).toEqual({ 'group': 'pr-ci-${{ github.event.pull_request.number }}', 'cancel-in-progress': true })
     expect(workflow.permissions).toEqual({ 'contents': 'read', 'pull-requests': 'read', 'actions': 'read' })
     const { approval, plan, ...checks } = workflow.jobs
-    expect(approval.environment).toBe('pr-ci-approval')
+    expect(approval.environment).toBe(admissionPolicy.environment)
     expect(approval.if).toBe('github.event_name == \'pull_request\'')
     expect(approval.needs).toBeUndefined()
     expect(approval.steps).toHaveLength(1)

@@ -107,13 +107,16 @@ function captureSourcePublication(source: SourcePublication | SnapshotPublicatio
   if (!files.size) {
     throw new Error('Native batch publication requires at least one source file')
   }
-  return async (signal: AbortSignal) => {
+  let profileStatus = 'not-read'
+  let samples: HmrProfileJsonSample[] = []
+  const check = async (signal: AbortSignal) => {
     let content: string
     try {
       content = await readFile(source.profilePath, { encoding: 'utf8', signal })
     }
     catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        profileStatus = 'missing'
         return false
       }
       throw error
@@ -122,10 +125,11 @@ function captureSourcePublication(source: SourcePublication | SnapshotPublicatio
     const offset = content.startsWith(previousContent) ? previousContent.length : 0
     // appendFile 尚未写完的行不能成为完成证据；下次仍从同一游标重新读取。
     const completeLines = content.slice(offset, content.lastIndexOf('\n') + 1)
+    profileStatus = 'read'
     if ('files' in source) {
       return hasSnapshotSources(completeLines, files, capturedAtEpochMs)
     }
-    const { samples } = readHmrProfileLines(completeLines)
+    samples = readHmrProfileLines(completeLines).samples
     return samples.some(sample => sample.schemaVersion === 1
       && sample.status === 'complete'
       && sample.correlation === 'known'
@@ -136,6 +140,22 @@ function captureSourcePublication(source: SourcePublication | SnapshotPublicatio
       && sample.sourceEvents?.some(event => event.file
         && files.has(normalizedSource(event.file))
         && sample.clock!.timeOrigin + event.receivedAtMs >= capturedAtEpochMs))
+  }
+  return {
+    check,
+    diagnostics: () => JSON.stringify({
+      ...('file' in source ? { file: normalizedSource(source.file) } : { files: [...files] }),
+      capturedAtEpochMs,
+      profileStatus,
+      samples: samples.slice(-4).map(sample => ({
+        status: sample.status,
+        correlation: sample.correlation,
+        buildId: sample.buildId,
+        batchId: sample.batchId,
+        clock: sample.clock,
+        sourceEvents: sample.sourceEvents,
+      })),
+    }),
   }
 }
 
@@ -168,7 +188,7 @@ function captureSnapshotPublication(snapshot: SnapshotPublication) {
         acknowledged = true
       }
     }
-    const observed = await sourcesObserved(signal)
+    const observed = await sourcesObserved.check(signal)
     signal.throwIfAborted()
     if (acknowledged) {
       return observed
@@ -209,7 +229,7 @@ export function createDevBuildCompletion(dev: DevProcess, options: CompletionOpt
             const completedAt = output.lastIndexOf(options.completed)
             const startedAt = options.started ? output.lastIndexOf(options.started) : -1
             published = completedAt >= 0 && completedAt > startedAt
-              && (!sourcePublished || await sourcePublished(reads.signal))
+              && (!sourcePublished || await sourcePublished.check(reads.signal))
           }
           else {
             published = false
@@ -230,7 +250,10 @@ export function createDevBuildCompletion(dev: DevProcess, options: CompletionOpt
       const interval = setInterval(() => {
         void check()
       }, 25)
-      const deadline = setTimeout(() => completion.reject(new Error(`Timed out waiting for current dev build: ${description}`)), timeoutMs)
+      const deadline = setTimeout(() => {
+        const diagnostics = sourcePublished ? `\nSource publication: ${sourcePublished.diagnostics()}` : ''
+        completion.reject(new Error(`Timed out waiting for current dev build: ${description}${diagnostics}`))
+      }, timeoutMs)
       try {
         void check()
         await dev.waitFor(completion.promise, 'current dev build publication')

@@ -9,6 +9,10 @@ on:
         type: string
         required: false
         default: full
+      exclude-e2e-projects:
+        type: string
+        required: false
+        default: ''
 permissions:
   contents: read
   pull-requests: read
@@ -37,11 +41,12 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '24'
       timeout_minutes: 20
       build_command: pnpm exec turbo run build --filter=weapp-vite...
-      main_command: pnpm vitest run packages/weapp-vite/src/runtime/statefulHmr/compilerBatch.native.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/native-compiler-batch-report.json
+      main_command: pnpm vitest run packages/weapp-vite/src/runtime/statefulHmr/compilerBatch.native.test.ts packages/weapp-vite/src/plugins/tailwindcss/contentInvalidation.test.ts packages/weapp-vite/src/plugins/tailwindcss/moduleDependencies.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/native-compiler-batch-report.json
       artifact_name: native-compiler-batch-${{ matrix.os }}-node-24-${{ needs.pr-context.outputs.checkout_sha }}
       artifact_path: .tmp/native-compiler-batch-report.json
     secrets: inherit
@@ -68,6 +73,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: windows-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 40
@@ -94,6 +100,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: windows-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 15
@@ -121,6 +128,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 20
@@ -148,6 +156,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
@@ -180,6 +189,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
@@ -208,6 +218,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: windows-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
@@ -233,6 +244,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 20
@@ -260,6 +272,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 30
@@ -289,6 +302,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '24'
       timeout_minutes: 30
@@ -321,6 +335,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 15
@@ -349,6 +364,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ubuntu-latest
       node_version: '22'
       timeout_minutes: 30
@@ -382,6 +398,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: 40
@@ -413,6 +430,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: 40
@@ -444,6 +462,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: ${{ matrix.timeout_minutes }}
@@ -493,6 +512,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 40
@@ -523,6 +543,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '22'
       timeout_minutes: 40
@@ -548,6 +569,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '22'
       bun_version: '${{ matrix.bun-version }}'
@@ -581,6 +603,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 40
@@ -633,6 +656,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: ${{ matrix.timeout_minutes }}
@@ -654,6 +678,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       # DevTools baselines are generated on macOS and depend on its system CJK fonts.
       runs_on: macos-latest
       node_version: '24'
@@ -680,6 +705,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 45
@@ -699,6 +725,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 45
@@ -720,6 +747,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 60
@@ -743,6 +771,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       runs_on: ubuntu-latest
       node_version: '24'
       timeout_minutes: 120
@@ -771,6 +800,7 @@ jobs:
       pr_number: ${{ needs.pr-context.outputs.pr_number }}
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude-e2e-projects }}
       # Keep screenshot font rasterization aligned with the DevTools baseline host.
       runs_on: macos-latest
       node_version: '${{ matrix.node-version }}'

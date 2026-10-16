@@ -25,7 +25,7 @@ async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
   if (pids?.length === 0) {
     return []
   }
-  const timeoutMs = resolveWechatInspectionTimeout('win32')
+  const timeoutMs = resolveWechatInspectionTimeout('win32', 10_000)
   const trace = process.env.WEAPP_VITE_E2E_CLEANUP_TRACE === '1'
   const result = await traceCleanupStage(pids ? 'dev-kernel-identities' : 'dev-kernel-snapshot', () => queryWindowsKernelProcesses(pids, trace), {
     processCount: pids?.length,
@@ -217,7 +217,7 @@ export async function killWindowsDevProcesses(pids: number[]) {
   if (!pids.length) {
     return
   }
-  const timeoutMs = resolveWechatInspectionTimeout('win32')
+  const timeoutMs = resolveWechatInspectionTimeout('win32', 10_000)
   const result = await traceCleanupStage('dev-taskkill', () => execa('taskkill', [...pids.flatMap(pid => ['/PID', String(pid)]), '/F'], {
     reject: false,
     stdin: 'ignore',

@@ -162,6 +162,43 @@ afterEach(async () => {
 })
 
 describe('template Tailwind CSS HMR (dev watch)', { concurrent: false }, () => {
+  it.each(['config', 'plugin'] as const)('reloads a captured @%s module introduced after the initial build', async (kind) => {
+    const fixture = await createTemplateFixture(hmrCases[0]!)
+    const cssFile = path.join(fixture.fixtureRoot, 'src/app.css')
+    const dependency = path.join(fixture.fixtureRoot, `src/tailwind-${kind}.ts`)
+    const moduleSource = (width: number) => kind === 'config'
+      ? `export default { theme: { extend: { spacing: { probe: '${width}px' } } } }; export const utility = 'w-[${width}px]'`
+      : `export default ({ addUtilities }) => addUtilities({ '.plugin-probe': { width: '${width}px' } }); export const utility = 'w-[${width}px]'`
+    const dev = startDevProcess('node', [CLI_PATH, 'dev', fixture.fixtureRoot, '--platform', 'weapp'], {
+      cwd: fixture.fixtureRoot,
+      env: createDevProcessEnv(),
+      all: true,
+    })
+    try {
+      await dev.waitFor(waitForFileContains(fixture.appWxssFile, INITIAL_CSS), `${kind} baseline CSS`)
+      await dev.waitForInitialBuild()
+      await fs.writeFile(dependency, moduleSource(137))
+      await replaceFileByRename(fixture.sourceFile, fixture.initialSource.replace(INITIAL_CLASS, kind === 'config' ? 'w-probe' : 'plugin-probe'))
+      const css = await fs.readFile(cssFile, 'utf8')
+      await replaceFileByRename(cssFile, `${css}\n@${kind} "./tailwind-${kind}.ts";\n`)
+      await dev.waitFor(waitForFileContains(fixture.appWxssFile, 'width: 137px'), `${kind} introduced module CSS`)
+      await dev.waitForOutput('小程序已重新构建', `${kind} introduced module build completed`)
+
+      await replaceFileByRename(dependency, moduleSource(149))
+      const refreshed = await dev.waitFor(waitForFileContains(fixture.appWxssFile, 'width: 149px'), `${kind} refreshed module CSS`)
+      expect(refreshed).not.toContain('width: 137px')
+      expect(await fs.pathExists(path.join(fixture.fixtureRoot, 'dist/pages/index/index.js'))).toBe(true)
+    }
+    catch (error) {
+      process.stdout.write(dev.getOutput())
+      throw error
+    }
+    finally {
+      await dev.stop(3_000)
+      await fs.remove(fixture.fixtureRoot)
+    }
+  }, DEFAULT_TEST_TIMEOUT_MS)
+
   for (const testCase of hmrCases) {
     it(`updates generated CSS after class changes in ${testCase.name}`, async () => {
       const fixture = await createTemplateFixture(testCase)

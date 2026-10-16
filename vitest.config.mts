@@ -128,6 +128,9 @@ const projects = [
       name: 'e2e-hmr-infra',
       // 此项目仅验证模拟会话与 runner 基础设施；不能向其他单测项目传播真实 IDE 日志。
       globalSetup: [path.resolve(ROOT_DIR, 'e2e/vitest.e2e.machine-lease.global-setup.ts')],
+      // 真实子进程和冷身份检查分多阶段执行；保留各查询自己的预算，避免外层默认超时截断收尾。
+      testTimeout: 60_000,
+      hookTimeout: 30_000,
       include: [
         'e2e/scripts/e2e-suite-manifest.test.ts',
         'e2e/scripts/devtoolsMatrix.test.ts',

@@ -38,7 +38,9 @@ export async function readDarwinProcessStates(): Promise<DarwinProcessState[]> {
 export async function readDarwinTextImages(pid: number): Promise<string[]> {
   const result = await execa('/usr/sbin/lsof', ['-nP', '-a', '-p', String(pid), '-d', 'txt', '-F0pftn'], options)
   if (result.exitCode !== 0 || result.stderr?.trim()) {
-    throw new Error('Installation-exit recovery cannot inspect all executable text images.')
+    throw new Error(`Installation-exit recovery cannot inspect all executable text images for PID ${pid}.`, {
+      cause: { exitCode: result.exitCode, stderr: result.stderr?.trim() },
+    })
   }
   const fields = result.stdout.split('\0').map(field => field.replace(/^\r?\n/, '')).filter(Boolean)
   if (fields.shift() !== `p${pid}` || fields.length === 0 || fields.length % 3 !== 0) {

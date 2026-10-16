@@ -1,6 +1,8 @@
 import type { AppliedVersion } from './repoctl-release/preparation'
 import { writeFileSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
+import process from 'node:process'
 import { execSync } from 'tinyexec'
 import { afterEach, describe, expect, it } from 'vitest'
 import { bump, cleanupPreparationFixtures, createPreparationFixture, privateName, publicName, rootName } from './repoctl-release/preparation'
@@ -70,9 +72,14 @@ describe('repoctl release preparation workspace boundary', () => {
 
   it('validates actual pnpm version output for private packages and the versioned root', async () => {
     const fixture = await createPreparationFixture()
+    const repository = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')) as { packageManager: string }
+    expect(await fixture.manifest('package.json')).toMatchObject({ packageManager: repository.packageManager })
     let applied: AppliedVersion[] = []
     fixture.setVersion(() => {
-      const result = execSync('pnpm', ['version', '-r', '--no-git-checks', '--json'], { nodeOptions: { cwd: fixture.cwd }, timeout: 20_000 })
+      const result = execSync('pnpm', ['--config.manage-package-manager-versions=false', 'version', '-r', '--no-git-checks', '--json'], {
+        nodeOptions: { cwd: fixture.cwd, env: { ...process.env, COREPACK_ENABLE_NETWORK: '0', COREPACK_ENABLE_AUTO_PIN: '0' } },
+        timeout: 20_000,
+      })
       if (result.exitCode === 0) {
         applied = JSON.parse(result.stdout) as AppliedVersion[]
       }

@@ -4,10 +4,11 @@ import type { CompilerContext } from '../../context'
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import os from 'node:os'
-import path from 'node:path'
+import path from 'pathe'
 import { afterEach, expect, it, vi } from 'vitest'
+import { createModuleGraphService } from '../../moduleGraph/service'
 import { createRuntimeState } from '../../runtime/runtimeState'
-import { getCompilerHmrHost } from '../compilerPlugin/hmr'
+import { compilerSourceId, getCompilerHmrHost } from '../compilerPlugin/hmr'
 import { createTailwindcssPlugin } from '../tailwindcss'
 import { createManagedTailwindcssEntryMarker } from '../tailwindcssMarker'
 
@@ -87,6 +88,7 @@ async function fixture(stateful = true, entries = 1, command: 'serve' | 'build' 
       weappViteConfig: { tailwindcss: { cssEntries } },
     },
     runtimeState: createRuntimeState(),
+    moduleGraphService: createModuleGraphService(),
     scanService: { subPackageMap: new Map() },
   } as unknown as CompilerContext
   const plugins = createTailwindcssPlugin(ctx)
@@ -148,7 +150,7 @@ it('reuses the first memory engine while retaining fresh output through disk fal
   await fresh(app.record, memory)
   expect(memory.result.classSet.has('w-[53px]')).toBe(true)
   await app.disk()
-  expect(app.record.invalidations.flat()).toContain(memory.request.id)
+  expect(app.record.invalidations.flat().map(compilerSourceId)).toContain(memory.request.id)
   await fresh(app.record)
   expect(app.record.generations.at(-1)!.result.classSet.has('w-[53px]')).toBe(true)
 })
@@ -159,7 +161,7 @@ it('flushes a first content change when app entry changes force disk generation 
   await writeFile(path.join(app.root, 'src/app.json'), '{"pages":["page"]}')
   await app.change()
   await app.change(path.join(app.root, 'src/app.json'))
-  expect(app.record.invalidations.flat()).toContain(path.join(app.root, 'src/app.json'))
+  expect(app.record.invalidations.flat().map(compilerSourceId)).toContain(path.join(app.root, 'src/app.json'))
   await app.disk()
   await fresh(app.record)
   expect(app.record.generations.at(-1)!.result.classSet.has('w-[37px]')).toBe(false)
@@ -170,7 +172,7 @@ it.each([false, true])('retains immediate invalidation for classic and standalon
   const app = await fixture(false, 1, snapshot ? 'build' : 'serve')
   await writeFile(app.source, 'export const utility = "w-[53px]"')
   await app.change()
-  expect(app.record.invalidations.flat()).toContain(app.source)
+  expect(app.record.invalidations.flat().map(compilerSourceId)).toContain(app.source)
   await app.disk()
   await fresh(app.record)
   if (snapshot) {
@@ -200,7 +202,7 @@ it('flushes every matched root and keeps a frozen request independent of later c
     await fresh(app.record, generation)
   }
   await app.disk()
-  expect(app.record.invalidations.flat()).toEqual(expect.arrayContaining(memory.map(generation => generation.request.id)))
+  expect(app.record.invalidations.flat().map(compilerSourceId)).toEqual(expect.arrayContaining(memory.map(generation => generation.request.id)))
   for (const generation of app.record.generations.slice(-2)) {
     expect(generation.result.classSet.has('w-[71px]')).toBe(true)
     await fresh(app.record, generation)
@@ -214,7 +216,7 @@ it('treats preprocessing metadata as dependencies even when the same file is a c
   await app.disk()
   await writeFile(app.source, 'export const utility = "w-[53px]"')
   await app.change()
-  expect(app.record.invalidations.flat()).toContain(app.source)
+  expect(app.record.invalidations.flat().map(compilerSourceId)).toContain(app.source)
 })
 
 it.each([0, 1])('removes deleted CSS root %i from pending invalidation and subsequent memory preparations', async (entryIndex) => {
@@ -236,31 +238,66 @@ it.each([0, 1])('removes deleted CSS root %i from pending invalidation and subse
   await writeFile(entry, app.css)
   await app.change(entry, 'create')
   await app.disk()
-  expect(app.record.invalidations.flat()).not.toContain(removed)
+  expect(app.record.invalidations.flat().map(compilerSourceId)).not.toContain(removed)
   await fresh(app.record)
   await handler(app.manager.closeWatcher)()
   expect(app.record.disposals).toBe(1)
   await expect(app.memory()).rejects.toThrow()
 })
 
-it.each(['config', 'plugin'] as const)('immediately invalidates a %s module that is also a captured candidate', async (kind) => {
+it.each([
+  ['config', 'physical'],
+  ['plugin', 'physical'],
+  ['config', 'junction'],
+  ['plugin', 'junction'],
+] as const)('immediately invalidates a %s module that is also a captured candidate (%s path)', async (kind, identity) => {
   const app = await fixture()
-  const dependency = path.join(app.root, `src/${kind}.ts`)
+  if (identity === 'junction') {
+    await symlink(path.join(app.root, 'src'), path.join(app.root, 'module-alias'), 'junction')
+  }
+  const directory = identity === 'junction' ? 'module-alias' : 'src'
+  const dependency = path.join(app.root, directory, `${kind}.ts`)
   const moduleSource = (width: number) => kind === 'config'
-    ? `export default { theme: { extend: { colors: { diagnostic: '#234567' } } } }; export const utility = 'w-[${width}px]'`
-    : `export default ({ addUtilities }) => addUtilities({ '.plugin-probe': { color: '#234567' } }); export const utility = 'w-[${width}px]'`
+    ? `export default { theme: { extend: { spacing: { probe: '${width}px' } } } }; export const utility = 'w-[${width}px]'`
+    : `export default ({ addUtilities }) => addUtilities({ '.plugin-probe': { width: '${width}px' } }); export const utility = 'w-[${width}px]'`
+  await writeFile(app.source, `export const utility = '${kind === 'config' ? 'w-probe' : 'plugin-probe'}'`)
   await writeFile(dependency, moduleSource(137))
-  await writeFile(app.cssEntries[0]!, `${app.css} @${kind} "./${kind}.ts";`)
+  await writeFile(app.cssEntries[0]!, `${app.css} @${kind} "${identity === 'junction' ? '../module-alias' : '.'}/${kind}.ts";`)
   await app.change(app.cssEntries[0])
   await app.disk()
-  expect(app.record.generations.at(-1)!.result.dependencies).toContain(dependency)
+  expect.soft(app.record.generations.at(-1)!.result.css).toMatch(/width:\s*137px/)
+  expect.soft(app.record.generations.at(-1)!.result.dependencies.map(compilerSourceId)).toEqual(expect.arrayContaining([compilerSourceId(dependency)]))
+  expect(app.ctx.moduleGraphService.getTransformDependencies(app.cssEntries[0]!).map(compilerSourceId)).toContain(compilerSourceId(dependency))
   await writeFile(dependency, moduleSource(149))
   await app.change(dependency)
-  expect(app.record.invalidations.at(-1)).toEqual([dependency])
+  expect.soft(app.record.invalidations.at(-1)?.map(compilerSourceId)).toEqual([compilerSourceId(dependency)])
   await app.memory()
   await fresh(app.record)
   expect(app.record.generations.at(-1)!.result.classSet.has('w-[149px]')).toBe(true)
   expect(app.record.generations.at(-1)!.result.classSet.has('w-[137px]')).toBe(false)
+  expect(app.record.generations.at(-1)!.result.css).toMatch(/width:\s*149px/)
+  expect(app.record.generations.at(-1)!.result.css).not.toMatch(/width:\s*137px/)
+  await app.disk()
+  await fresh(app.record)
+  expect(app.record.generations.at(-1)!.result.css).toMatch(/width:\s*149px/)
+  expect(app.record.generations.at(-1)!.result.css).not.toMatch(/width:\s*137px/)
+  await writeFile(app.cssEntries[0]!, app.css)
+  await app.change(app.cssEntries[0])
+  await app.disk()
+  expect(app.ctx.moduleGraphService.getTransformDependencies(app.cssEntries[0]!).map(compilerSourceId)).not.toContain(compilerSourceId(dependency))
+})
+
+it.each([false, true])('refreshes a managed CSS root changed through a directory alias (stateful: %s)', async (stateful) => {
+  const app = await fixture(stateful)
+  const alias = path.join(app.root, 'css-alias')
+  await symlink(path.join(app.root, 'src'), alias, 'junction')
+  await writeFile(app.cssEntries[0]!, '@import "tailwindcss" source(none); @source inline("w-[83px]");')
+  await app.change(path.join(alias, 'app.css'))
+  await app.disk()
+  const result = app.record.generations.at(-1)!.result
+  expect(result.css).toMatch(/width:\s*83px/)
+  expect(result.css).not.toMatch(/width:\s*37px/)
+  await fresh(app.record)
 })
 
 it('flushes pending roots before imported-style generation and keeps that unsupported memory path immediate', async () => {
@@ -271,12 +308,12 @@ it('flushes pending roots before imported-style generation and keeps that unsupp
   const owner = path.join(app.root, 'src/owner.css')
   const transform = () => handler(app.manager.transform).call(app.pluginContext, '@import "./app.css"; .author { color: red; }', owner, {})
   await transform()
-  expect(app.record.invalidations.flat()).toContain(rootId)
+  expect(app.record.invalidations.flat().map(compilerSourceId)).toContain(rootId)
   expect(app.record.generations.at(-1)!.result.classSet.has('w-[53px]')).toBe(true)
   await fresh(app.record)
   await writeFile(app.source, 'export const utility = "w-[71px]"')
   await app.change()
-  expect(app.record.invalidations.at(-1)).toEqual([app.source])
+  expect(app.record.invalidations.at(-1)?.map(compilerSourceId)).toEqual([compilerSourceId(app.source)])
   await transform()
   await fresh(app.record)
   expect(app.record.generations.at(-1)!.result.classSet.has('w-[71px]')).toBe(true)

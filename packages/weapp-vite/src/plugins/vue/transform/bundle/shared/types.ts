@@ -29,6 +29,7 @@ export interface CompilationCacheEntry {
   source?: string
   isPage: boolean
   autoRoutesSignature?: string
+  appShellSignature?: string
   refreshToken?: number
   styleIndependentSignature?: string
 }

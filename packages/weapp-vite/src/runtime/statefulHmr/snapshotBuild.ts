@@ -167,12 +167,12 @@ export async function buildStatefulHmrSnapshot(
                 || (ctx.scanService.appEntry?.path && normalizeFsResolvedId(ctx.scanService.appEntry.path) === sourceId)) {
                 return null
               }
-              const nativeEntry = ctx.runtimeState.build.hmr.entriesMap.get(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(sourceId)))
-              // 发现的组件记录暂时指向引用它的入口；按注册身份保留原生加载及其伴随资产输出。
-              if (nativeEntry) {
+              const sourceKey = compilerSourceId(id)
+              // 声明可能指向目录；已解析入口以真实脚本路径持有原生加载及伴随资产。
+              if (ctx.runtimeState.build.hmr.resolvedEntryMap.has(sourceKey)) {
                 return null
               }
-              const source = sources.get(compilerSourceId(id))
+              const source = sources.get(sourceKey)
               if (source === null) {
                 throw new Error(`Source removed from snapshot: ${id}`)
               }

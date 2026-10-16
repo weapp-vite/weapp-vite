@@ -1,6 +1,6 @@
 import type { CompilationCacheEntry, VueBundleState } from './shared'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
-import { hasAppShellTemplate, isAppVueFile, resolveAppShellLayout } from '../appShell'
+import { isAppVueFile } from '../appShell'
 import { emitCompiledVueEntryAssets } from './emitCompiledEntry'
 import { emitFallbackPageAssets } from './emitFallbackPage'
 
@@ -19,12 +19,6 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
   if (!configService || !scanService) {
     return undefined
   }
-  const appShellEntry = Array.from(compilationCache.entries()).find(([filename, cached]) => {
-    return isAppVueFile(filename) && hasAppShellTemplate(cached.result)
-  })
-  state.appShell = appShellEntry
-    ? resolveAppShellLayout(configService)
-    : undefined
   const hmrState = ctx.runtimeState?.build?.hmr
   const currentHmrFile = hmrState?.profile?.file
   const isAppVueHmrUpdate = Boolean(

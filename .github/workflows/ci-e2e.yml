@@ -10,6 +10,11 @@ on:
         required: false
         default: ''
         type: string
+      exclude-e2e-projects:
+        description: 排除的 E2E 专项项目名，逗号分隔；留空运行完整范围
+        required: false
+        default: ''
+        type: string
       hmr-diagnostic:
         description: 选择 HMR 定向回归；默认保留完整矩阵
         type: choice
@@ -53,4 +58,5 @@ jobs:
     with:
       pr_context: ${{ needs.pr-context.outputs.pr_context }}
       hmr-diagnostic: ${{ inputs.hmr-diagnostic || 'full' }}
+      exclude-e2e-projects: ${{ inputs.exclude-e2e-projects || '' }}
     secrets: inherit

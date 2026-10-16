@@ -2,8 +2,8 @@ import type { ResolvedConfig } from 'vite'
 import type { AnalyzeSubpackagesResult } from '../analyze/subpackages/types'
 import fs from 'node:fs/promises'
 import os from 'node:os'
-import path from 'node:path'
 import { createKitContext } from '@vitejs/devtools-kit/node'
+import path from 'pathe'
 import { resolveConfig } from 'vite'
 import { expect, it, vi } from 'vitest'
 import { createAnalyzeDashboardDevframe } from './index'
@@ -25,7 +25,7 @@ function analyzeResult(label: string): AnalyzeSubpackagesResult {
 }
 
 it('mounts through the real Kit adapter and releases only the current host generation', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dashboard-kit-'))
+  const root = path.normalize(await fs.mkdtemp(path.join(os.tmpdir(), 'dashboard-kit-')))
   const controller = createAnalyzeDashboardDevframe({
     clientAssets: root,
     roots: { projectRoot: root },

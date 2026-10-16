@@ -10,11 +10,13 @@ export function createStatefulHmrSidecarModuleCode(id: string, source: string): 
     return
   }
   let dependencySource = source
-  if (request.kind === 'using-component' && request.sourceId.endsWith('.vue')) {
+  if ((request.kind === 'using-component' || request.kind === 'template') && request.sourceId.endsWith('.vue')) {
     const blocks = resolveVueSfcHmrSignatures(source, request.sourceId).blockSignatures
     if (blocks) {
       // 子组件脚本由自己的入口接受更新；父引用仍需追踪模板、样式和包含 JSON 宏的配置变化。
-      dependencySource = JSON.stringify([blocks.template, blocks.style, blocks.config])
+      dependencySource = request.kind === 'template'
+        ? blocks.template
+        : JSON.stringify([blocks.template, blocks.style, blocks.config])
     }
   }
   const digest = createHash('sha256').update(dependencySource).digest('hex')

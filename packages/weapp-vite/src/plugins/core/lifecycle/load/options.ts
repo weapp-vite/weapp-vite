@@ -1,3 +1,4 @@
+import type { ResolvedId } from 'rolldown'
 import type { LogicalEntryType } from '../../../../moduleGraph/protocol'
 import type { AppEntry } from '../../../../types'
 import type { ResolveEntryPathOptions } from '../../../../utils/entryResolve'
@@ -245,7 +246,12 @@ export function createOptionsHook(state: CorePluginState) {
         }
         if (normalized) {
           if (!dynamicWatchEntry) {
-            state.hmrRootInputIds.add(normalizeSourceId(normalized))
+            const sourceKey = normalizeSourceId(normalized)
+            state.hmrRootInputIds.add(sourceKey)
+            // 入口解析完成即持有原生加载权，不能等异步逻辑入口加载后才让固定源码 loader 委派。
+            if (configService.isDev && !state.resolvedEntryMap.has(sourceKey)) {
+              state.resolvedEntryMap.set(sourceKey, { id: sourceId } as ResolvedId)
+            }
           }
           if (source.type !== 'app' && state.entriesMap) {
             const relativeBase = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(normalized))

@@ -11,6 +11,7 @@ import { captureDevProcessTree, readDevProcessIdentities } from '../../e2e/utils
 import { parseWindowsProcessRows, serializeWindowsProcessRows } from '../../e2e/utils/devProcessCleanup/windowsProcessRows'
 import { runWithCleanup } from '../../e2e/utils/runWithCleanup'
 import { readManagedProcessIdentity, sameManagedProcess } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
+import { resolveWechatInspectionTimeout } from '../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { checkWindowsQueryEncoding } from './checkEncoding'
 
 assert.equal(process.platform, 'win32')
@@ -107,7 +108,7 @@ await runWithCleanup(async () => {
   const codeUnits = '工具"\t\n😀\uD800'
   const raw = await execa('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference='Stop'; $weappQueryRows=@([pscustomobject]@{ProcessId=61;ParentProcessId=1;ExecutablePath=([string]::new([char[]]@(0x5de5,0x5177,0x22,0x9,0xa,0xd83d,0xde00,0xd800)));Started='2026-10-08T00:00:00.1234560Z'}); ${serializeWindowsProcessRows()}`], { timeout: 10_000, stdin: 'ignore', windowsHide: true })
   assert.deepEqual(parseWindowsProcessRows(raw.stdout), [{ ProcessId: 61, ParentProcessId: 1, ExecutablePath: codeUnits, Started: '2026-10-08T00:00:00.1234560Z' }])
-  console.info(JSON.stringify({ status: 'passed', queryBudgetMs: 10_000, firstSnapshotMs, exactLegacyIdentity: true, processCount: identities.length, unrelatedPreserved: true, exitedMissing: true }))
+  console.info(JSON.stringify({ status: 'passed', queryBudgetMs: resolveWechatInspectionTimeout('win32', 10_000), cimQueryBudgetMs: resolveWechatInspectionTimeout('win32'), firstSnapshotMs, exactLegacyIdentity: true, processCount: identities.length, unrelatedPreserved: true, exitedMissing: true }))
 }, async () => {
   // 只给本脚本直接创建的 IPC 句柄请求正常退出；失败时保留 fixture 和原错。
   const results = await Promise.allSettled(children.map(close))

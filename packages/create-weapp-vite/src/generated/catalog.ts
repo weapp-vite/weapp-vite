@@ -54,7 +54,7 @@ export const TEMPLATE_CATALOG = {
   'uview-plus': '3.8.130',
   'vite-plugin-inspect': '^12.1.0',
   'vue-tsc': '^3.3.13',
-  'weapp-tailwindcss': '^5.6.2',
+  'weapp-tailwindcss': '^5.6.3',
   autoprefixer: '^10.6.1',
   axios: '^1.20.0',
   clsx: '^2.1.1',
@@ -91,7 +91,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.17.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.6.2'
+    'weapp-tailwindcss': '5.6.3'
   },
   latest: {
     'miniprogram-api-typings': '^5.2.3',
