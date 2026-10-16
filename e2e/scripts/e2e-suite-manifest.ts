@@ -50,6 +50,7 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/wot-ui-compat.runtime.test.ts', '1200000'],
 ])
 const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
+  'ide/app-shell-presence.hmr.runtime.test.ts',
   'ide/app-vue-hmr-alias.runtime.test.ts',
   'ide/automator-bridge-wrapper-hmr.runtime.test.ts',
   'ide/automator-concurrent-sessions.runtime.test.ts',
@@ -198,6 +199,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-wevu-features-app.test.ts',
 ]
 const IDE_HMR_PATTERNS = [
+  'ide/app-shell-presence.hmr.runtime.test.ts',
   'ide/script-setup-external-src.runtime.test.ts',
   'ide/issue-1015-css-hmr.runtime.test.ts',
   'ide/stateful-hmr.runtime.test.ts',
@@ -206,6 +208,7 @@ const IDE_HMR_PATTERNS = [
   'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
 ]
 const IDE_FULL_CORE_PATTERNS = [
+  'ide/app-shell-presence.hmr.runtime.test.ts',
   'ide/vite-plugin.runtime.test.ts',
   'ide/vite-plugin-npm.runtime.test.ts',
   'ide/app-lifecycle.test.ts',
@@ -261,6 +264,7 @@ const IDE_GATE_TESTS = [
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/app-shell-presence.hmr.runtime.test.ts',
   'ide/script-setup-external-src.runtime.test.ts',
   'ide/issue-1058-template-tags.runtime.test.ts',
   'ide/issue-1065-provider.runtime.test.ts',

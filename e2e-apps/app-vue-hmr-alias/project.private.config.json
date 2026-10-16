@@ -8,6 +8,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "app shell plain page",
+          "pathName": "pages/plain/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

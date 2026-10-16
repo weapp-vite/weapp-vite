@@ -6,21 +6,27 @@ import { compilerSourceResolutionKey, getCompilerSourceResolutions, getCompilerS
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../plugins/utils/vueSfc'
 import { isSkippableResolvedId } from '../../utils/resolvedId'
 
-/** 外部块预分析与编译共用一份输入，避免仅资源发射计划误剪新脚本。 */
+export interface VueSnapshotPreparation {
+  entries: Iterable<string>
+  resolveAffectedEntries: () => Promise<Iterable<string>>
+}
+
+/** 外部块及应用壳预分析与编译共用一份输入，漂移统一交回下一快照处理。 */
 export async function withVueStyleDependencySnapshot<T>(
   ctx: Pick<CompilerContext, 'runtimeState' | 'moduleGraphService' | 'configService'>,
   affectedEntries: Iterable<string>,
   changedFiles: Iterable<string>,
   run: (options?: { forceFullRescan: boolean }) => Promise<T>,
   onDrift: (files: Array<{ file: string, event: 'update' | 'delete' }>) => void,
+  preparation?: VueSnapshotPreparation,
 ): Promise<T> {
   const entries = new Set(Array.from(affectedEntries, compilerSourceId))
   const changed = new Set(Array.from(changedFiles, compilerSourceId))
-  const candidates = [...ctx.runtimeState.build.hmr.vueEntryStyleBindings]
+  const selectStyleOwners = () => [...ctx.runtimeState.build.hmr.vueEntryStyleBindings]
     .filter(([entry, bindings]) => ctx.runtimeState.build.hmr.resolvedEntryMap.has(entry)
       && (entries.has(compilerSourceId(entry)) || bindings.sources.some(file => changed.has(compilerSourceId(file)))))
     .map(([entry]) => entry)
-  if (!candidates.length) {
+  if (!preparation && !selectStyleOwners().length) {
     return await run()
   }
 
@@ -53,7 +59,7 @@ export async function withVueStyleDependencySnapshot<T>(
     }
     return read
   }
-  const captures = await Promise.allSettled(candidates.map(async (entry) => {
+  async function parseSfc(entry: string) {
     const options = createReadAndParseSfcOptions(ctx.moduleGraphService, config)
     await readAndParseSfc(entry, {
       ...options,
@@ -80,8 +86,40 @@ export async function withVueStyleDependencySnapshot<T>(
         },
       },
     })
-  }))
-  if (captures.some(result => result.status === 'rejected')) {
+  }
+  const parsed = new Map<string, Promise<void>>()
+  const captureSfc = (entry: string): Promise<void> => {
+    const id = compilerSourceId(entry)
+    let parse = parsed.get(id)
+    if (!parse) {
+      parse = parseSfc(id)
+      parsed.set(id, parse)
+    }
+    return parse
+  }
+  let captureFailed = false
+  try {
+    // 结构输入先固定；依赖展开与后续外部块捕获共用同一代源码及解析身份。
+    const seeds = Array.from(preparation?.entries ?? [], compilerSourceId)
+    const prepared = await Promise.allSettled(seeds.map(captureSfc))
+    if (prepared.some(result => result.status === 'rejected')) {
+      captureFailed = true
+    }
+    else {
+      if (preparation) {
+        const expanded = await withCompilerSourceSnapshot(config, sources, preparation.resolveAffectedEntries, resolutions)
+        for (const entry of expanded) {
+          entries.add(compilerSourceId(entry))
+        }
+      }
+      const captures = await Promise.allSettled(selectStyleOwners().map(captureSfc))
+      captureFailed = captures.some(result => result.status === 'rejected')
+    }
+  }
+  catch {
+    captureFailed = true
+  }
+  if (captureFailed) {
     // 解析失败时等待并行读完，再交回原生完整构建负责诊断和恢复依赖。
     let pendingCount: number
     do {

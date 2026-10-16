@@ -171,7 +171,7 @@ export function expectedFilesForModule(
     return [`${('pathRel' in module ? module.pathRel : module.rel)}.js`]
   }
 
-  if (module.isVendor) {
+  if ('isVendor' in module && module.isVendor) {
     return ['common.js']
   }
   if (module.hasMain) {

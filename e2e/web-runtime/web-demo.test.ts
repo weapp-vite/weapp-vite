@@ -341,6 +341,16 @@ describe('web runtime production build (weapp-vite-web-demo)', { concurrent: fal
     expect(collectRuntimeVirtualModuleReferences(javascript.code)).toEqual([])
     expect(javascript.code).not.toContain('wevu/internal-runtime')
     expect(javascript.code).not.toContain('__wevu_runtime')
+
+    const typedComponents = await fs.readFile(path.join(WEB_DEMO_ROOT, '.weapp-vite/typed-components.d.ts'), 'utf8')
+    expect(typedComponents).toContain('HelloWorld: {')
+    expect(typedComponents).toContain('ScenarioPanel: {')
+    expect(typedComponents).toContain('readonly selectedId?: string;')
+    const htmlData = await fs.readJSON(path.join(WEB_DEMO_ROOT, '.weapp-vite/mini-program.html-data.json')) as { tags: Array<{ name: string }> }
+    expect(htmlData.tags).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'HelloWorld' }),
+      expect.objectContaining({ name: 'ScenarioPanel' }),
+    ]))
   })
 })
 

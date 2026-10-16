@@ -9,6 +9,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createIssue1029Project, ISSUE_1029_HOME, ISSUE_1029_PROFILE, runIssue1029Command } from '../utils/issue1029Project'
+import { captureIssue1029WebFailure } from '../utils/issue1029WebDiagnostics'
 import { createWebDevServerEnv, resolveWebDevServerUrl } from '../utils/webDevServer'
 
 interface WebFixtureHost {
@@ -171,6 +172,15 @@ describe('issue #1029: shared named routes on the Web target', { concurrent: fal
       await activePage.locator('#open-profile').click()
       await expect.poll(() => activePage.locator('#route-title').textContent()).toBe('Web external metadata')
       expect(errors).toEqual([])
+    }
+    catch (error) {
+      try {
+        await captureIssue1029WebFailure({ page, root: ROOT, project, error, pageErrors: errors, devOutput: dev.getOutput() })
+      }
+      catch {
+        // 诊断辅助代码失败时仍传播原场景的首个异常。
+      }
+      throw error
     }
     finally {
       await page.close()

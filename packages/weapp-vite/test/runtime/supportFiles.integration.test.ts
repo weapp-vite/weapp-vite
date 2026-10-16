@@ -119,6 +119,59 @@ describe('support files integration', () => {
     }
   })
 
+  it.each(['dist/web', 'src/components/generated-web'])('keeps source component support files when pure Web output is %s', async (outDir) => {
+    const inlineConfig = {
+      weapp: {
+        autoImportComponents: {
+          globs: ['components/**/*'],
+          typedComponents: '.weapp-vite/typed-components.d.ts',
+          htmlCustomData: '.weapp-vite/mini-program.html-data.json',
+        },
+        web: { outDir },
+      },
+    }
+    const typedPath = path.resolve(cwd, '.weapp-vite/typed-components.d.ts')
+    const htmlPath = path.resolve(cwd, '.weapp-vite/mini-program.html-data.json')
+    const native = await createTestCompilerContext({ cwd, inlineConfig })
+    let nativeTypes: string
+    let nativeHtml: string
+    try {
+      nativeTypes = await fs.readFile(typedPath, 'utf8')
+      nativeHtml = await fs.readFile(htmlPath, 'utf8')
+      expect(nativeTypes).toContain('HelloWorld:')
+      expect(nativeHtml).toContain('"name": "HelloWorld"')
+    }
+    finally {
+      await native.dispose()
+    }
+
+    const generatedComponent = path.resolve(cwd, outDir, 'GeneratedOutputCard')
+    await fs.mkdir(generatedComponent, { recursive: true })
+    await fs.writeFile(path.join(generatedComponent, 'index.wxml'), '<view>emitted output</view>', 'utf8')
+    await fs.writeFile(path.join(generatedComponent, 'index.json'), '{"component":true}', 'utf8')
+    await fs.writeFile(path.join(generatedComponent, 'index.js'), 'Component({ properties: { emitted: Boolean } })', 'utf8')
+
+    const web = await createTestCompilerContext({
+      cwd,
+      inlineConfig,
+      cliPlatform: 'web',
+      emitDefaultAutoImportOutputs: false,
+    })
+    try {
+      expect(web.ctx.configService.mpDistRoot).toBe('')
+      expect(web.ctx.configService.weappWebConfig?.outDir).toBe(path.resolve(cwd, outDir))
+      const webTypes = await fs.readFile(typedPath, 'utf8')
+      const webHtml = await fs.readFile(htmlPath, 'utf8')
+      expect(webTypes).toBe(nativeTypes)
+      expect(webHtml).toBe(nativeHtml)
+      expect(webTypes).not.toContain('GeneratedOutputCard')
+      expect(webHtml).not.toContain('GeneratedOutputCard')
+    }
+    finally {
+      await web.dispose()
+    }
+  })
+
   it('supports projects that only keep weapp-vite.config.ts', async () => {
     const viteConfigPath = path.resolve(cwd, 'vite.config.ts')
     const weappConfigPath = path.resolve(cwd, 'weapp-vite.config.ts')

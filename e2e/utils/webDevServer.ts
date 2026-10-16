@@ -10,7 +10,7 @@ const TEST_ENV_KEYS = [
 ] as const
 
 export function createWebDevServerEnv(source: NodeJS.ProcessEnv) {
-  const env = {
+  const env: NodeJS.ProcessEnv = {
     ...source,
     BROWSER: 'none',
     NODE_ENV: 'development',

@@ -201,11 +201,14 @@ async function syncAutoImportSupportFiles(
           ...ctx,
           configService,
         } as CompilerContext
+        const scanOutDir = !configService.mpDistRoot && configService.weappWebConfig?.enabled
+          ? configService.weappWebConfig.outDir
+          : configService.outDir
         const files = await findAutoImportCandidates({
           ctx: autoImportCtx,
           resolvedConfig: {
             build: {
-              outDir: configService.outDir,
+              outDir: scanOutDir,
             },
           } as ResolvedConfig,
         }, globs)

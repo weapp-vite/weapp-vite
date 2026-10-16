@@ -1,4 +1,5 @@
 import type { InlineConfig, ViteDevServer } from 'vite'
+import type { DevServerCloseRecord } from '../devLifecycle/server'
 import { getDevServerCloseRecord, replaceDevServerClose } from '../devLifecycle/server'
 import { getDevShutdownScope } from '../devLifecycle/shutdown'
 
@@ -12,6 +13,7 @@ interface RestartData {
 interface HostLifecycle {
   readonly restartTask: Promise<void> | undefined
   readonly data: Map<symbol, RestartData>
+  registerReplacement: (generation: DevServerCloseRecord) => void
 }
 
 type HostInlineConfig = InlineConfig & { [hostLifecycleKey]?: HostLifecycle }
@@ -67,11 +69,26 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
   const stopping = Promise.withResolvers<void>()
   let restartTask: Promise<void> | undefined
   let closeTask: Promise<void> | undefined
+  const replacements = new Set<DevServerCloseRecord>()
   const lifecycle: HostLifecycle = {
     data,
+    registerReplacement(replacement) {
+      // 连续原生交接中已成为活动宿主的代由 Vite 持有，不能再次按遗弃代关闭。
+      replacements.delete(getDevServerCloseRecord(server))
+      replacements.add(replacement)
+    },
     get restartTask() {
       return restartTask
     },
+  }
+  const discardRestartResources = async (status: 'incomplete' | 'failed') => {
+    const active = getDevServerCloseRecord(server)
+    const abandoned = [...replacements].filter(replacement => replacement !== active)
+    replacements.clear()
+    await settleHostCleanup([
+      discardRestartData(data, status),
+      ...abandoned.map(replacement => Promise.resolve().then(() => replacement.close())),
+    ])
   }
 
   const closeResources = async () => {
@@ -97,6 +114,8 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
     : closeResources()
 
   replaceDevServerClose(server, close)
+  // 直接使用 Vite 的消费者没有 CLI acquisition gate，父链必须持有未提交的新代。
+  inherited?.registerReplacement(generation)
   server.restart = (force) => {
     if (closeTask || scope?.stopping) {
       return close()
@@ -123,6 +142,10 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
         server.config = restartHostConfig
         try {
           await nativeRestart(force)
+          // Vite 会吞掉替换宿主的初始化错误；仅完成原生代际交接才表示重启成功。
+          if (getDevServerCloseRecord(server) === generation) {
+            throw new Error('[weapp-vite] Vite 重启未完成替换宿主交接，请查看原始初始化错误。')
+          }
         }
         finally {
           delete restartConfig[hostLifecycleKey]
@@ -133,15 +156,15 @@ export function bindHostLifecycle(server: ViteDevServer, closeSession: () => Pro
       }
       catch (error) {
         try {
-          await discardRestartData(data, 'failed')
+          await discardRestartResources('failed')
         }
         catch (cleanupError) {
-          throw new AggregateError([error, cleanupError], 'Host restart and handoff cleanup failed', { cause: error })
+          throw new AggregateError([error, cleanupError], 'Host restart and resource cleanup failed', { cause: error })
         }
         throw error
       }
       finally {
-        await discardRestartData(data, 'incomplete')
+        await discardRestartResources('incomplete')
       }
     }
     return restartTask ??= (scope ? scope.run('restart', restart) : restart()).finally(() => {

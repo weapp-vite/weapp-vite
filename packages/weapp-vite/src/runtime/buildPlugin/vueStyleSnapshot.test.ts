@@ -7,6 +7,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { getCompilerSourceSnapshot, readCompilerInput, setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../plugins/utils/vueSfc'
 import { createRuntimeState } from '../runtimeState'
+import { captureAppShellSnapshot, resolveAppShellSnapshotChange } from './appShellSnapshot'
 import { withVueStyleDependencySnapshot } from './vueStyleSnapshot'
 
 const roots: string[] = []
@@ -183,4 +184,148 @@ it('preserves the native build error when drift scheduling also fails', async ()
   expect(error.errors).toEqual([buildError, schedulingError])
   expect(error.cause).toBe(buildError)
   expect(getCompilerSourceSnapshot(f.ctx.configService)).toBeUndefined()
+})
+
+it('pins an App shell without external blocks and queues its source drift through the existing snapshot callback', async () => {
+  const f = await fixture()
+  const appId = path.join(f.root, 'app.vue')
+  const before = '<script setup>const marker = "app"</script>'
+  const after = `${before}<template><view><slot /></view></template>`
+  await fs.writeFile(appId, before)
+  const committed = { appId, hasTemplate: false }
+  const drift = vi.fn()
+  const read = vi.spyOn(fs, 'readFile')
+  await withVueStyleDependencySnapshot(f.ctx, [], [], async () => {
+    expect(read.mock.calls.filter(([file]) => file === appId)).toHaveLength(1)
+    await fs.writeFile(appId, after)
+    expect(await readCompilerInput(f.ctx.configService, appId)).toBe(before)
+    expect(await resolveAppShellSnapshotChange(f.ctx, committed)).toBeUndefined()
+    f.ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appId, true)
+    expect(await captureAppShellSnapshot(f.ctx, appId)).toEqual(committed)
+  }, drift, { entries: [appId], resolveAffectedEntries: async () => [] })
+  expect(drift).toHaveBeenCalledExactlyOnceWith([{ file: appId, event: 'update' }])
+  expect(getCompilerSourceSnapshot(f.ctx.configService)).toBeUndefined()
+  expect(await readCompilerInput(f.ctx.configService, appId)).toBe(after)
+})
+
+it('expands a pinned App shell change before selecting page inputs even when its event is delayed', async () => {
+  const f = await fixture()
+  const appId = path.join(f.root, 'app.vue')
+  const appSource = '<script setup>const marker = "app"</script><template><view><slot /></view></template>'
+  await fs.writeFile(appId, appSource)
+  for (const id of [f.first, f.second]) {
+    f.ctx.runtimeState.build.hmr.entriesMap.set(id, { type: 'page', path: id } as any)
+  }
+  const committed = { appId, hasTemplate: false }
+  const drift = vi.fn()
+  const read = vi.spyOn(fs, 'readFile')
+  await withVueStyleDependencySnapshot(f.ctx, [f.first], [f.first], async () => {
+    for (const id of [appId, f.first, f.second, f.style, f.script, f.template]) {
+      expect(read.mock.calls.filter(([file]) => file === id)).toHaveLength(1)
+    }
+    await Promise.all([
+      fs.writeFile(appId, '<script setup>const marker = "future"</script>'),
+      fs.writeFile(f.second, '<template><view>future</view></template>'),
+      fs.writeFile(f.style, '.target { color: v-bind(color) }'),
+      fs.writeFile(f.script, 'export default { future: true }'),
+      fs.writeFile(f.template, '<view>future</view>'),
+    ])
+    for (const id of [f.first, f.second]) {
+      const { descriptor } = await f.parse(id)
+      expect(descriptor.cssVars).toEqual([])
+      expect(descriptor.script?.content).toBe('export default {}')
+      expect(descriptor.template?.content).toBe('<view />')
+    }
+    expect(await captureAppShellSnapshot(f.ctx, appId)).toEqual({ appId, hasTemplate: true })
+  }, drift, {
+    entries: [appId],
+    async resolveAffectedEntries() {
+      const change = await resolveAppShellSnapshotChange(f.ctx, committed)
+      expect(change?.pageIds).toEqual(new Set([f.first, f.second]))
+      return change ? [change.appId, ...change.pageIds] : []
+    },
+  })
+  expect(drift).toHaveBeenCalledExactlyOnceWith(expect.arrayContaining([
+    { file: appId, event: 'update' },
+    { file: f.second, event: 'update' },
+    { file: f.style, event: 'update' },
+    { file: f.script, event: 'update' },
+    { file: f.template, event: 'update' },
+  ]))
+  expect(getCompilerSourceSnapshot(f.ctx.configService)).toBeUndefined()
+})
+
+it('captures only affected page owners when a pinned App shell keeps its published presence', async () => {
+  const f = await fixture()
+  const appId = path.join(f.root, 'app.vue')
+  await fs.writeFile(appId, '<script setup>const marker = "app"</script>')
+  const read = vi.spyOn(fs, 'readFile')
+  await withVueStyleDependencySnapshot(f.ctx, [f.first], [f.first], async () => {
+    expect(read.mock.calls.some(([file]) => file === f.second)).toBe(false)
+    expect(read.mock.calls.filter(([file]) => file === f.first)).toHaveLength(1)
+  }, vi.fn(), {
+    entries: [appId],
+    async resolveAffectedEntries() {
+      expect(await resolveAppShellSnapshotChange(f.ctx, { appId, hasTemplate: false })).toBeUndefined()
+      return []
+    },
+  })
+})
+
+it.each([false, true])('uses the captured external App template presence instead of the raw src tag (before=%s)', async (before) => {
+  const f = await fixture()
+  const appId = path.join(f.root, 'app.vue')
+  const shell = path.join(f.root, 'shell.html')
+  await fs.writeFile(appId, '<template src="./shell.html" />')
+  await fs.writeFile(shell, before ? ' \n ' : '<view><slot /></view>')
+  f.ctx.runtimeState.build.hmr.entriesMap.set(f.first, { type: 'page', path: f.first } as any)
+  await withVueStyleDependencySnapshot(f.ctx, [], [shell], async () => {
+    f.ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appId, before)
+    expect(await captureAppShellSnapshot(f.ctx, appId)).toEqual({ appId, hasTemplate: !before })
+  }, vi.fn(), {
+    entries: [appId],
+    async resolveAffectedEntries() {
+      const change = await resolveAppShellSnapshotChange(f.ctx, { appId, hasTemplate: before })
+      expect(change).toEqual({ appId, pageIds: new Set([f.first]) })
+      return change ? [change.appId, ...change.pageIds] : []
+    },
+  })
+})
+
+it('replays external App template resolution changes through the same captured input and drift queue', async () => {
+  const f = await fixture()
+  const appId = path.join(f.root, 'app.vue')
+  const shell = path.join(f.root, 'shell.html')
+  const empty = path.join(f.root, 'empty.html')
+  await fs.writeFile(appId, '<template src="./shell.html" />')
+  await fs.writeFile(shell, '<view><slot /></view>')
+  await fs.writeFile(empty, ' \n ')
+  let target = shell
+  const resolve = f.ctx.moduleGraphService.resolve.bind(f.ctx.moduleGraphService)
+  vi.spyOn(f.ctx.moduleGraphService, 'resolve').mockImplementation(async (source, importer) => {
+    return source === './shell.html' ? { id: target } : await resolve(source, importer)
+  })
+  const drift = vi.fn()
+  let committed = { appId, hasTemplate: false }
+  const published: boolean[] = []
+  for (const next of [true, false]) {
+    await withVueStyleDependencySnapshot(f.ctx, [], [], async () => {
+      if (next) {
+        target = empty
+      }
+      const captured = await captureAppShellSnapshot(f.ctx, appId)
+      expect(captured?.hasTemplate).toBe(next)
+      committed = captured!
+      published.push(committed.hasTemplate)
+    }, drift, {
+      entries: [appId],
+      async resolveAffectedEntries() {
+        const change = await resolveAppShellSnapshotChange(f.ctx, committed)
+        expect(change?.appId).toBe(appId)
+        return change ? [change.appId, ...change.pageIds] : []
+      },
+    })
+  }
+  expect(published).toEqual([true, false])
+  expect(drift).toHaveBeenCalledExactlyOnceWith([{ file: appId, event: 'update' }])
 })

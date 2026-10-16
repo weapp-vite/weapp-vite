@@ -54,10 +54,14 @@ it.each([false, true])('hands off a parent restart through native inline config 
   const entered = Promise.withResolvers<void>()
   const ready = Promise.withResolvers<void>()
   const closeSession = vi.fn(async () => {})
-  const rebuild = vi.fn(async (_force?: boolean) => {})
+  let replacement: ViteDevServer
+  const rebuild = vi.fn(async (_force?: boolean) => {
+    const next = { close: vi.fn(async () => {}) } as unknown as ViteDevServer
+    getDevServerCloseRecord(next)
+    Object.assign(replacement, next)
+  })
   const originalConfig = Object.freeze({})
   const originalHostConfig = Object.freeze({ inlineConfig: originalConfig })
-  let replacement: ViteDevServer
   const parent = {
     config: originalHostConfig,
     close: vi.fn(async () => {}),
@@ -73,7 +77,7 @@ it.each([false, true])('hands off a parent restart through native inline config 
       entered.resolve()
       await ready.promise
       // 原生交接完成后，旧重启的 finally 不能把新一代配置恢复成旧配置。
-      parent.config = replacement.config
+      Object.assign(parent, replacement)
     },
   } as unknown as ViteDevServer
   bindHostLifecycle(parent, async () => {})
@@ -87,7 +91,11 @@ it.each([false, true])('hands off a parent restart through native inline config 
   const independent = {
     config: { inlineConfig: originalConfig },
     close: vi.fn(async () => {}),
-    restart: vi.fn(async () => {}),
+    restart: vi.fn(async () => {
+      const next = { close: vi.fn(async () => {}) } as unknown as ViteDevServer
+      getDevServerCloseRecord(next)
+      Object.assign(independent, next)
+    }),
   } as unknown as ViteDevServer
   bindHostLifecycle(independent, independentClose)
   await independent.restart()
@@ -138,7 +146,7 @@ it('cancels a replacement restart on startup failure without waiting for the par
     },
   } as unknown as ViteDevServer
   bindHostLifecycle(parent, async () => {})
-  await parent.restart()
+  await expect(parent.restart()).rejects.toThrow('未完成替换宿主交接')
   expect(nativeRestart).not.toHaveBeenCalled()
   expect(nativeClose).toHaveBeenCalledOnce()
 })
@@ -161,12 +169,14 @@ it('hands off data once and keeps a replacement generation separate from its par
           bindHostLifecycle(next, async () => {})
           expect(takeHostRestartData(next, key)).toBe(second)
           expect(takeHostRestartData(next, key)).toBeUndefined()
+          Object.assign(replacement, next)
         },
       } as unknown as ViteDevServer
       bindHostLifecycle(replacement, async () => {})
       expect(takeHostRestartData(replacement, key)).toBe(first)
       expect(takeHostRestartData(replacement, key)).toBeUndefined()
       setHostRestartData(replacement, key, second)
+      Object.assign(parent, replacement)
     },
   } as unknown as ViteDevServer
   bindHostLifecycle(parent, async () => {})
