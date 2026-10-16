@@ -35,7 +35,6 @@ describe('issue #1235: conditional loop component event reentry', { concurrent: 
     }
     host = await launchAutomator({
       projectPath: project,
-      bridgeProjectMode: 'direct',
       warmupRoute: ROUTE,
       warmupRootSelectors: ['#issue1235-page'],
     })
