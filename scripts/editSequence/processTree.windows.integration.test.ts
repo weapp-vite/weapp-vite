@@ -1,9 +1,11 @@
 import type { ChildProcess } from 'node:child_process'
+import { Buffer } from 'node:buffer'
 import { fork } from 'node:child_process'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { exec } from 'tinyexec'
 import { expect, it } from 'vitest'
 import { observeProcessTree } from './processTree'
 
@@ -104,6 +106,40 @@ it.runIf(process.platform === 'win32')('reads a live owned Windows tree and coun
     }
     expect(observation.members.some(row => row.pid === process.pid)).toBe(false)
     expect(observation.rssBytes).toBe(observation.members.reduce((sum, row) => sum + row.rssBytes, 0))
+
+    const script = await readFile(new URL('./windowsProcessTree.ps1', import.meta.url), 'utf8')
+    // 同一生产脚本须绕过通用对象序列化，且始终只向 stdout 写出完整数值 JSON。
+    // 对已就绪的 fixture 再采样用于验证协议，不能重试或替代上面的原生采样结果。
+    const probe = `
+function ConvertTo-Json { throw 'Generic PowerShell serialization must not run in the sampler' }
+[Threading.Thread]::CurrentThread.CurrentCulture = [Globalization.CultureInfo]::GetCultureInfo('fr-FR')
+& {
+${script}
+} -RootProcessId ${child.pid!}
+$row = [EditSequenceProcessTree+Observation]::new()
+$row.ProcessId = [uint32]::MaxValue
+$row.ParentProcessId = 1
+$row.WorkingSetSize = [long]5368709121
+$other = [EditSequenceProcessTree+Observation]::new()
+$other.ProcessId = 2
+$other.ParentProcessId = [uint32]::MaxValue
+$other.WorkingSetSize = [long]4294967297
+[Console]::Out.WriteLine([EditSequenceProcessTree]::ToJson([EditSequenceProcessTree+Observation[]]@()))
+[Console]::Out.WriteLine([EditSequenceProcessTree]::ToJson([EditSequenceProcessTree+Observation[]]@($row)))
+[Console]::Out.WriteLine([EditSequenceProcessTree]::ToJson([EditSequenceProcessTree+Observation[]]@($row, $other)))
+`
+    const output = await exec('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(probe, 'utf16le').toString('base64')], { timeout: 10_000, throwOnError: true })
+    const lines = output.stdout.trim().split(/\r?\n/)
+    expect(lines).toHaveLength(4)
+    const sampled = JSON.parse(lines[0]!) as { ProcessId: number, ParentProcessId: number, WorkingSetSize: number }[]
+    expect(sampled.map(row => row.ProcessId).sort((a, b) => a - b)).toEqual([...pids].sort((a, b) => a - b))
+    expect(sampled.every(row => row.WorkingSetSize >= 16 * 1024 * 1024)).toBe(true)
+    expect(JSON.parse(lines[1]!)).toEqual([])
+    const row = { ProcessId: 0xFFFFFFFF, ParentProcessId: 1, WorkingSetSize: 5_368_709_121 }
+    expect(JSON.parse(lines[2]!)).toEqual([row])
+    expect(JSON.parse(lines[3]!)).toEqual([row, { ProcessId: 2, ParentProcessId: 0xFFFFFFFF, WorkingSetSize: 4_294_967_297 }])
+    expect(output.stderr).toContain('process-tree:json-serialized')
+    expect(output.stderr).toContain('process-tree:json-output-written')
   }
   finally {
     try {
@@ -115,4 +151,5 @@ it.runIf(process.platform === 'win32')('reads a live owned Windows tree and coun
       await rm(root, { recursive: true, force: true })
     }
   }
-}, 30_000)
+// 两次独立查询各保留 10 秒；外层另留 fixture 启动及最坏 8 秒的回收预算。
+}, 40_000)

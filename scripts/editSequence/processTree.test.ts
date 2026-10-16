@@ -95,7 +95,7 @@ it('queries the registered Windows process tree without starting the CIM provide
   const script = Buffer.from(args!.at(-1)!, 'base64').toString('utf16le')
   expect(script).toContain('CreateToolhelp32Snapshot')
   expect(script).toContain('WorkingSet64')
-  expect(script).toContain('weapp-vite-edit-sequence-process-tree-v2.dll')
+  expect(script).toContain('weapp-vite-edit-sequence-process-tree-v3.dll')
   expect(script).toContain('-RootProcessId 10')
   expect(script).not.toContain('Get-CimInstance')
   expect(options).toMatchObject({ timeout: 10_000, throwOnError: true })
@@ -141,7 +141,7 @@ it.each([false, true])('preserves safe script phases when a Windows query times 
   expect(stderr.listenerCount('data')).toBe(0)
 })
 
-it('separates script timings, pipeline return, stdout EOF and child exit without consuming stdout', async () => {
+it('separates serialization, output write, stdout EOF and child exit without consuming stdout', async () => {
   let now = 1000
   vi.spyOn(performance, 'now').mockImplementation(() => now)
   const cause = new Error('query deadline exceeded')
@@ -157,7 +157,7 @@ it('separates script timings, pipeline return, stdout EOF and child exit without
     now = 1013
     stderr.write('ready elapsedMs=4\r\nprocess-tree:query-complete elapsedMs=5\r\n')
     now = 1019
-    stderr.write('process-tree:json-pipeline-returned elapsedMs=10\r\n')
+    stderr.write('process-tree:json-serialized elapsedMs=9\r\nprocess-tree:json-output-written elapsedMs=10\r\n')
     now = 1021
     stdout.emit('end')
     now = 1023
@@ -181,7 +181,8 @@ it('separates script timings, pipeline return, stdout EOF and child exit without
       { phase: 'helper-cache-hit', elapsedMs: 1, receivedMs: 8 },
       { phase: 'helper-ready', elapsedMs: 4, receivedMs: 13 },
       { phase: 'query-complete', elapsedMs: 5, receivedMs: 13 },
-      { phase: 'json-pipeline-returned', elapsedMs: 10, receivedMs: 19 },
+      { phase: 'json-serialized', elapsedMs: 9, receivedMs: 19 },
+      { phase: 'json-output-written', elapsedMs: 10, receivedMs: 19 },
     ],
     stdoutEndMs: 21,
     stdoutCloseMs: 24,
@@ -202,7 +203,7 @@ it('filters unsafe diagnostics and bounds records without turning noise into a p
     stderr.write(`process-tree:query-complete elapsedMs=3 ${secret}\nprocess-tree:${secret} elapsedMs=4\n`)
     stderr.write('x'.repeat(400))
     stderr.write('\r\nprocess-tree:query-complete elapsedMs=1.5\r\n')
-    stderr.write('process-tree:json-pipeline-returned elapsedMs=2\n'.repeat(40))
+    stderr.write('process-tree:json-output-written elapsedMs=2\n'.repeat(40))
     child.emit('error', new Error(secret))
     child.emit('exit', Number.NaN, secret)
     child.emit('close', -1, secret)
