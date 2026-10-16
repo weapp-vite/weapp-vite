@@ -4,6 +4,7 @@ import type { CompilerContext } from '../../context'
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import os from 'node:os'
+import { normalize as normalizeNativePath } from 'node:path'
 import path from 'pathe'
 import { afterEach, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../../runtime/runtimeState'
@@ -132,7 +133,7 @@ it.each(['success', 'before-commit-error', 'after-commit-error'] as const)('trac
   await expect(app.memory()).rejects.toBeInstanceOf(CompilerHmrResyncError)
   await writeFile(app.source, 'export const utility = "w-[53px]"')
   await app.change()
-  expect(app.record.invalidations.at(-1)).toEqual([app.source])
+  expect(app.record.invalidations.at(-1)).toEqual([normalizeNativePath(app.source)])
   pending.release()
   if (outcome === 'success') {
     await first

@@ -155,7 +155,7 @@ describe('managed Tailwind integration', () => {
     expect(mocks.createCompiler).toHaveBeenCalledTimes(1)
     expect(bundle['app.wxss']).toMatchObject({ source: '.late { color: red; }' })
     await plugin!.watchChange?.('/project/src/page.vue', { event: 'update' } as any)
-    expect(compiler.invalidate).toHaveBeenCalledWith(['/project/src/page.vue'])
+    expect(compiler.invalidate).toHaveBeenCalledWith([path.normalize('/project/src/page.vue')])
   })
 
   it('auto-detects an imported Tailwind v4 CSS entry, including nested CSS syntax', () => {
@@ -491,7 +491,7 @@ describe('managed Tailwind integration', () => {
     await getHookHandler(outputPlugin.generateBundle)?.call({ addWatchFile: vi.fn() } as any, {} as any, bundle, false)
 
     await plugin.watchChange?.('/project/src/pages/index.wxml', { event: 'update' } as any)
-    expect(compiler.invalidate).toHaveBeenCalledWith(['/project/src/pages/index.wxml'])
+    expect(compiler.invalidate).toHaveBeenCalledWith([path.normalize('/project/src/pages/index.wxml')])
 
     await plugin.watchChange?.(entry, { event: 'delete' } as any)
     expect(compiler.remove).toHaveBeenCalledWith(expect.stringContaining('weapp-vite:tailwindcss:0:'))

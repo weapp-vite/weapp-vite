@@ -796,7 +796,7 @@ export async function readPageWxml(page: any) {
     let lastError: unknown
     for (const selector of ['page', 'body', 'weapp-app-shell', 'view']) {
       try {
-        const element = await runWithTimeout(
+        const element = await runWithTimeout<Awaited<ReturnType<Page['$']>>>(
           () => page.$(selector),
           PAGE_ROOT_QUERY_PROTOCOL_TIMEOUT,
           `Page.queryPageRoot ${selector}`,
@@ -892,7 +892,7 @@ async function waitForAppServiceRoute(miniProgram: any, route: string, timeoutMs
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
-      const currentRoute = await runWithTimeout(
+      const currentRoute = await runWithTimeout<string>(
         () => miniProgram.evaluate(() => {
           const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
           const page = pages[pages.length - 1] as any
