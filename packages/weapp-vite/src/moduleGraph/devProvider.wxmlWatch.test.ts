@@ -1,0 +1,76 @@
+import type { Plugin } from 'vite'
+import { EventEmitter } from 'node:events'
+import { expect, it, vi } from 'vitest'
+import { createRuntimeState } from '../runtime/runtimeState'
+import { createDevModuleGraphProvider } from './devProvider'
+import { createModuleGraphService } from './service'
+
+const { createServerMock, watchMock } = vi.hoisted(() => ({
+  createServerMock: vi.fn(),
+  watchMock: vi.fn(),
+}))
+
+vi.mock('vite', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vite')>()
+  return { ...actual, createServer: createServerMock }
+})
+vi.mock('chokidar', () => ({ watch: watchMock }))
+
+it('subscribes external WXML inputs to the provider and releases only its listener', async () => {
+  const externalWatcher = Object.assign(new EventEmitter(), {
+    add: vi.fn(() => queueMicrotask(() => externalWatcher.emit('ready'))),
+    close: vi.fn(async () => {}),
+  })
+  watchMock.mockReturnValue(externalWatcher)
+  const server = {
+    config: { root: '/project', server: { watch: {} }, logger: { error: vi.fn() } },
+    watcher: { add: vi.fn() },
+    moduleGraph: {},
+    close: vi.fn(async () => {}),
+  }
+  createServerMock.mockResolvedValue(server)
+  const runtimeState = createRuntimeState()
+  const dependency = '/external/transform-rules.json'
+  const lateDependency = '/external/late-rules.json'
+  runtimeState.wxmlProcessing.references.set(dependency, 1)
+  const unrelated = vi.fn()
+  runtimeState.wxmlProcessing.listeners.add(unrelated)
+  const onChange = vi.fn()
+  const provider = await createDevModuleGraphProvider({
+    moduleGraphService: createModuleGraphService(),
+    runtimeState,
+    configService: { cwd: '/project' },
+  } as any, {}, onChange)
+  try {
+    expect(externalWatcher.add).toHaveBeenCalledExactlyOnceWith('/external')
+    expect(runtimeState.wxmlProcessing.listeners.size).toBe(2)
+    externalWatcher.emit('all', 'change', dependency)
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({ event: 'update', file: dependency })
+    const plugin = createServerMock.mock.calls[0]![0].plugins[0] as Plugin
+    const read = vi.fn(async () => '{}')
+    await (plugin.hotUpdate as any).call({ environment: { name: 'client' } }, { type: 'update', file: dependency, read })
+    expect(read).not.toHaveBeenCalled()
+    expect(onChange).toHaveBeenCalledOnce()
+    for (const listener of runtimeState.wxmlProcessing.listeners) {
+      listener([lateDependency])
+    }
+    externalWatcher.emit('all', 'change', dependency)
+    externalWatcher.emit('all', 'add', lateDependency)
+    expect(onChange.mock.calls.map(([change]) => change)).toEqual([
+      { event: 'update', file: dependency },
+      { event: 'create', file: lateDependency },
+    ])
+    // 同一根外父目录只注册一次，根内文件和根外文件均不重复注册到 Vite。
+    expect(externalWatcher.add).toHaveBeenCalledOnce()
+    expect(server.watcher.add).not.toHaveBeenCalled()
+  }
+  finally {
+    await provider.close()
+  }
+  await provider.close()
+  expect(runtimeState.wxmlProcessing.listeners).toEqual(new Set([unrelated]))
+  expect(externalWatcher.close).toHaveBeenCalledOnce()
+  expect(server.close).toHaveBeenCalledOnce()
+  externalWatcher.emit('all', 'change', lateDependency)
+  expect(onChange).toHaveBeenCalledTimes(2)
+})
