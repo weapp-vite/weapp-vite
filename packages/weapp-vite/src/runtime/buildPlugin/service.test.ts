@@ -5,13 +5,18 @@ import type { HmrProfileJsonSample } from '../../analyze/hmr'
 import type { CompilerContext } from '../../context'
 import type { CorePluginState } from '../../plugins/core/helpers'
 import type { DevBuildWatcherController } from './devBuildWatcher'
+import { realpathSync } from 'node:fs'
+import os from 'node:os'
 import process from 'node:process'
+import { fs } from '@weapp-core/shared/fs'
+import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { attachDevModuleGraphHost } from '../../moduleGraph/host'
 import { createModuleGraphService } from '../../moduleGraph/service'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
 import { createGenerateBundleHook } from '../../plugins/core/lifecycle/emit/generate'
 import { registerManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
+import { readCompilerInput, withCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
 
 import { publishAutoRoutesTopology, registerAutoRoutesTopologySource } from '../autoRoutesPlugin/topology'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
@@ -350,6 +355,84 @@ const HMR_OTHER_PAGE_ID = '/project/src/pages/about/index.ts'
 const HMR_INCREMENTAL_OUTPUTS = ['pages/logs/index.js', 'pages/logs/index.wxml']
 const HMR_FULL_OUTPUTS = [...HMR_INCREMENTAL_OUTPUTS, 'shared-dependency.js', 'shared-logic.js']
 
+const runVueStyleSnapshotMock: typeof import('./vueStyleSnapshot').withVueStyleDependencySnapshot = async (ctx, _entries, _files, run, _onDrift, preparation) => {
+  if (!preparation) {
+    return await run()
+  }
+  const sources = new Map(await Promise.all(Array.from(preparation.entries, async entry => [entry, await fs.readFile(entry, 'utf8')] as const)))
+  return await withCompilerSourceSnapshot(ctx.configService, sources, async () => {
+    await preparation.resolveAffectedEntries()
+    return await run()
+  })
+}
+
+async function createAppShellSnapshotHarness(before: boolean | undefined) {
+  const root = path.normalize(realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-app-shell-snapshot-'))))
+  const appId = path.join(root, 'app.vue')
+  const pageIds = ['first.vue', 'second.vue'].map(name => path.join(root, 'pages', name))
+  const componentId = path.join(root, 'components/plain.vue')
+  const appSource = (hasTemplate: boolean) => `<script setup>const marker = 'app'</script>${hasTemplate ? '<template><view><slot /></view></template>' : ''}`
+  const watcher = createManualWatcher()
+  const ctx = createMockContext()
+  await fs.outputFile(appId, appSource(before ?? false))
+  for (const id of [...pageIds, componentId]) {
+    await fs.outputFile(id, '<template><view>unchanged</view></template>')
+  }
+  Object.assign(ctx.configService, {
+    cwd: root,
+    absoluteSrcRoot: root,
+    outDir: path.join(root, 'dist'),
+    relativeAbsoluteSrcRoot: (id: string) => path.relative(root, id),
+  })
+  ctx.scanService.appEntry = { path: appId }
+  if (before !== undefined) {
+    ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appId, before)
+  }
+  const allIds = [appId, ...pageIds, componentId]
+  for (const id of allIds) {
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set(id, { id })
+    ctx.runtimeState.build.hmr.loadedEntrySet.add(id)
+  }
+  for (const id of pageIds) {
+    ctx.runtimeState.build.hmr.entriesMap.set(id, { path: id, type: 'page' })
+  }
+  ctx.runtimeState.build.hmr.entriesMap.set(componentId, { path: componentId, type: 'component' })
+  ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([appId]))
+  buildMock.mockResolvedValueOnce(watcher).mockResolvedValue({ output: [] })
+  const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+  await watcher.subscribed
+  watcher.emit('START')
+  watcher.emit('END')
+  await firstBuild
+  const events = createDevBuildWatcherMock.mock.results.at(-1)!.value.emitEvent
+  return {
+    appId,
+    appSource,
+    pageIds,
+    componentId,
+    ctx,
+    consumeDirtyEntries() {
+      ctx.runtimeState.build.hmr.dirtyEntrySet.clear()
+      ctx.runtimeState.build.hmr.dirtyEntryReasons.clear()
+      ctx.runtimeState.build.hmr.dirtyVueEntryIds.clear()
+      for (const id of allIds) {
+        ctx.runtimeState.build.hmr.loadedEntrySet.add(id)
+      }
+    },
+    async update(source: string, changedFile = appId) {
+      const settledEvents = () => events.mock.calls.filter(([event]) => event.code === 'END' || event.code === 'ERROR').length
+      const before = settledEvents()
+      await fs.writeFile(appId, source)
+      moduleGraphProviderChange.handler!({ event: 'update', file: changedFile })
+      await vi.waitFor(() => expect(settledEvents()).toBe(before + 1))
+    },
+    async close() {
+      await watcher.close()
+      await fs.remove(root)
+    },
+  }
+}
+
 async function emitSharedChunkSnapshot(
   ctx: CompilerContext,
   options: { metadataOnly?: boolean, affectedSharedChunks?: boolean } = {},
@@ -492,7 +575,7 @@ describe('runtime buildPlugin service', () => {
     devBuildWatcherQueue.length = 0
     vi.clearAllMocks()
     buildMock.mockReset()
-    vueStyleSnapshotMock.mockReset().mockImplementation(async (_ctx, _entries, _files, run) => await run())
+    vueStyleSnapshotMock.mockReset().mockImplementation(runVueStyleSnapshotMock)
     disableProjectPrivateConfigHotReloadMock.mockReset()
     disableProjectPrivateConfigHotReloadMock.mockResolvedValue(true)
     runStatefulHmrDevMock.mockReset()
@@ -1588,6 +1671,205 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/logs/index.ts')).toBe(false)
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/about/index.ts')).toBe(true)
     expect(touchMock).not.toHaveBeenCalled()
+  })
+
+  it.each([false, true])('invalidates page scripts when an App shell template changes presence (before=%s)', async (before) => {
+    const scenario = await createAppShellSnapshotHarness(before)
+    const { appId, appSource, pageIds, componentId, ctx } = scenario
+    try {
+      let dirtyReasonSummary: string[] | undefined
+      buildMock.mockImplementationOnce(async () => {
+        dirtyReasonSummary = ctx.runtimeState.build.hmr.profile.dirtyReasonSummary
+        return { output: [] }
+      })
+      expect(ctx.runtimeState.build.hmr.vueEntryHasTemplate.get(appId)).toBe(before)
+      await scenario.update(appSource(!before))
+
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      for (const id of pageIds) {
+        expect(ctx.runtimeState.build.hmr.dirtyEntrySet.has(id)).toBe(true)
+        expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.get(id)).toBe('dependency')
+        expect(ctx.runtimeState.build.hmr.loadedEntrySet.has(id)).toBe(false)
+        expect(ctx.runtimeState.build.hmr.dirtyVueEntryIds.has(id)).toBe(false)
+        expect(await fs.readFile(id, 'utf8')).toBe('<template><view>unchanged</view></template>')
+      }
+      expect(ctx.runtimeState.build.hmr.dirtyEntrySet.has(componentId)).toBe(false)
+      expect(ctx.runtimeState.build.hmr.loadedEntrySet.has(componentId)).toBe(true)
+      expect(dirtyReasonSummary).toContain('app-shell-dependent:2')
+    }
+    finally {
+      await scenario.close()
+    }
+  })
+
+  it.each([false, true])('replays App shell page invalidation after a failed publication advances live metadata (before=%s)', async (before) => {
+    const scenario = await createAppShellSnapshotHarness(before)
+    const { appId, appSource, pageIds, ctx } = scenario
+    try {
+      buildMock.mockImplementationOnce(async () => {
+        ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appId, !before)
+        scenario.consumeDirtyEntries()
+        throw new Error('snapshot publication failed')
+      })
+      await scenario.update(appSource(!before))
+      expect(ctx.runtimeState.build.hmr.vueEntryHasTemplate.get(appId)).toBe(!before)
+      expect(pageIds.every(id => ctx.runtimeState.build.hmr.loadedEntrySet.has(id))).toBe(true)
+      await scenario.update(appSource(!before))
+
+      expect(buildMock).toHaveBeenCalledTimes(3)
+      for (const id of pageIds) {
+        expect(ctx.runtimeState.build.hmr.dirtyEntrySet.has(id)).toBe(true)
+        expect(ctx.runtimeState.build.hmr.loadedEntrySet.has(id)).toBe(false)
+      }
+    }
+    finally {
+      await scenario.close()
+    }
+  })
+
+  it.each([false, true])('uses the captured App shell generation when its source changes before input pinning (before=%s)', async (before) => {
+    const scenario = await createAppShellSnapshotHarness(before)
+    const { appId, appSource, pageIds, ctx } = scenario
+    const captured = appSource(!before)
+    const compiled: Array<{ source: string, pages: boolean[] }> = []
+    try {
+      vueStyleSnapshotMock.mockImplementationOnce(async (_ctx, _entries, _files, run, _onDrift, preparation) => {
+        await fs.writeFile(appId, captured)
+        return await withCompilerSourceSnapshot(ctx.configService, new Map([[appId, captured]]), async () => {
+          await preparation?.resolveAffectedEntries()
+          return await run()
+        })
+      })
+      buildMock.mockImplementationOnce(async () => {
+        const source = await readCompilerInput(ctx.configService, appId)
+        compiled.push({ source, pages: pageIds.map(id => ctx.runtimeState.build.hmr.dirtyEntrySet.has(id)) })
+        ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appId, !before)
+        return { output: [] }
+      })
+      await scenario.update(appSource(before))
+      expect(compiled).toEqual([{ source: captured, pages: [true, true] }])
+    }
+    finally {
+      await scenario.close()
+    }
+  })
+
+  it.each([false, true])('publishes a captured App shell change before its delayed event joins an unrelated page batch (before=%s)', async (before) => {
+    const scenario = await createAppShellSnapshotHarness(before)
+    const { appId, appSource, pageIds, ctx } = scenario
+    const captured = appSource(!before)
+    const compiled: Array<{ source: string, app: boolean, pages: boolean[] }> = []
+    try {
+      ctx.moduleGraphService.collectAffectedEntries.mockReturnValueOnce(new Set([pageIds[0]]))
+      vueStyleSnapshotMock.mockImplementationOnce(async (_ctx, _entries, _files, run, _onDrift, preparation) => {
+        await fs.writeFile(appId, captured)
+        return await withCompilerSourceSnapshot(ctx.configService, new Map([[appId, captured]]), async () => {
+          await preparation?.resolveAffectedEntries()
+          return await run()
+        })
+      })
+      buildMock.mockImplementationOnce(async () => {
+        compiled.push({
+          source: await readCompilerInput(ctx.configService, appId),
+          app: ctx.runtimeState.build.hmr.dirtyEntrySet.has(appId),
+          pages: pageIds.map(id => ctx.runtimeState.build.hmr.dirtyEntrySet.has(id)),
+        })
+        return { output: [] }
+      })
+      await scenario.update(appSource(before), pageIds[0])
+      scenario.consumeDirtyEntries()
+      await scenario.update(captured)
+      expect(compiled).toEqual([{ source: captured, app: true, pages: [true, true] }])
+      expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([appId]))
+    }
+    finally {
+      await scenario.close()
+    }
+  })
+
+  it('commits App shell presence from a full captured generation before the next local update', async () => {
+    const scenario = await createAppShellSnapshotHarness(false)
+    const { appId, appSource, ctx } = scenario
+    const captured = appSource(true)
+    try {
+      vueStyleSnapshotMock.mockImplementationOnce(async (_ctx, _entries, _files, run) => {
+        return await withCompilerSourceSnapshot(ctx.configService, new Map([[appId, captured]]), async () => await run({ forceFullRescan: true }))
+      })
+      buildMock.mockImplementationOnce(async () => {
+        expect(await readCompilerInput(ctx.configService, appId)).toBe(captured)
+        // 共享 resolver 的较新观测不能代替本次已固定、实际参与编译的输入。
+        ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appId, false)
+        return { output: [] }
+      })
+      await scenario.update(captured)
+      scenario.consumeDirtyEntries()
+      await scenario.update(`${captured}<style>view { color: red; }</style>`)
+      expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([appId]))
+    }
+    finally {
+      await scenario.close()
+    }
+  })
+
+  it.each(['content', 'style', 'config'] as const)('keeps App shell %s changes local after successfully publishing its presence', async (kind) => {
+    const scenario = await createAppShellSnapshotHarness(false)
+    const { appId, appSource, pageIds, componentId, ctx } = scenario
+    try {
+      buildMock.mockImplementationOnce(async () => {
+        ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appId, true)
+        return { output: [] }
+      })
+      await scenario.update(appSource(true))
+      scenario.consumeDirtyEntries()
+      const source = kind === 'content'
+        ? appSource(true).replace('<view>', '<view class="changed">')
+        : appSource(true) + (kind === 'style' ? '<style>.changed { color: red; }</style>' : '<config>{"window":{"navigationBarTitleText":"changed"}}</config>')
+      await scenario.update(source)
+
+      expect(buildMock).toHaveBeenCalledTimes(3)
+      expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([appId]))
+      for (const id of [...pageIds, componentId]) {
+        expect(ctx.runtimeState.build.hmr.loadedEntrySet.has(id)).toBe(true)
+      }
+    }
+    finally {
+      await scenario.close()
+    }
+  })
+
+  it('does not infer App shell presence from an unobserved initial generation', async () => {
+    const scenario = await createAppShellSnapshotHarness(undefined)
+    try {
+      await scenario.update(scenario.appSource(true))
+      expect(scenario.ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([scenario.appId]))
+      for (const id of scenario.pageIds) {
+        expect(scenario.ctx.runtimeState.build.hmr.loadedEntrySet.has(id)).toBe(true)
+      }
+    }
+    finally {
+      await scenario.close()
+    }
+  })
+
+  it('does not commit a captured App shell from an unrelated generation that never compiles App', async () => {
+    const scenario = await createAppShellSnapshotHarness(undefined)
+    const { appId, appSource, pageIds, ctx } = scenario
+    try {
+      ctx.moduleGraphService.collectAffectedEntries.mockReturnValueOnce(new Set([pageIds[0]]))
+      vueStyleSnapshotMock.mockImplementationOnce(async (_ctx, _entries, _files, run, _onDrift, preparation) => {
+        return await withCompilerSourceSnapshot(ctx.configService, new Map([[appId, appSource(true)]]), async () => {
+          await preparation?.resolveAffectedEntries()
+          return await run()
+        })
+      })
+      await scenario.update(appSource(true), pageIds[0])
+      scenario.consumeDirtyEntries()
+      await scenario.update(appSource(false))
+      expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([appId]))
+    }
+    finally {
+      await scenario.close()
+    }
   })
 
   it.each([
@@ -3358,7 +3640,7 @@ describe('runtime buildPlugin service', () => {
   it('runs isolated plugin watcher in dev mode and registers it on main watcher service', async () => {
     const pluginWatcher = createWatcher(['START', 'END'])
     buildMock.mockReset()
-    vueStyleSnapshotMock.mockReset().mockImplementation(async (_ctx, _entries, _files, run) => await run())
+    vueStyleSnapshotMock.mockReset().mockImplementation(runVueStyleSnapshotMock)
     buildMock
       .mockResolvedValueOnce(createWatcher(['START', 'END']))
       .mockResolvedValueOnce({ output: [] })

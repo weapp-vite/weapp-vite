@@ -115,6 +115,23 @@ describe('suiteRunner', () => {
     expect(selected.some(name => name.includes('local and store refs'))).toBe(false)
   })
 
+  it('keeps unchanged plain page App shell transitions in real IDE and headless DOM matrices', async () => {
+    const label = 'ide/app-shell-presence.hmr.runtime.test.ts'
+    for (const suite of ['ide-full', 'ide-full:exhaustive', 'hmr-regression']) {
+      const task = (await getSuiteTasks(suite)).find(task => task.label === label)
+      expect(task?.env).toMatchObject({ WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1' })
+    }
+    for (const suite of ['ide-headless-full', 'ide-dom-headless']) {
+      const task = (await getSuiteTasks(suite)).find(task => task.label === label)
+      expect(task?.env).toMatchObject({
+        WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
+      })
+      if (suite === 'ide-dom-headless') {
+        expect(task?.env?.WEAPP_VITE_E2E_DOM_ACCEPTANCE).toBe('1')
+      }
+    }
+  })
+
   it('formats failure summary with failed tasks', () => {
     const summary = formatSuiteSummary('e2e:ci', [
       { label: 'task-a', exitCode: 0, durationMs: 1200, artifacts: [] },

@@ -7,6 +7,7 @@ const bootstrapLabel = ref(bootstrapApp())
 defineAppJson({
   pages: [
     'pages/index/index',
+    'pages/plain/index',
   ],
   window: {
     navigationBarTitleText: 'app vue hmr alias',

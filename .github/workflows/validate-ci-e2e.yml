@@ -689,6 +689,7 @@ jobs:
       artifact_name: web-runtime-visual-pr
       artifact_path: |
         .tmp/web-runtime-visual/**
+        .tmp/web-runtime-diagnostics/**
         .tmp/uview-plus-compat/web/**
         .tmp/wot-ui-compat/web/**
     secrets: inherit
@@ -811,6 +812,7 @@ jobs:
       artifact_name: web-runtime-visual-node-${{ matrix.node-version }}
       artifact_path: |
         .tmp/web-runtime-visual/**
+        .tmp/web-runtime-diagnostics/**
         .tmp/uview-plus-compat/web/**
         .tmp/wot-ui-compat/web/**
     secrets: inherit

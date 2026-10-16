@@ -75,6 +75,16 @@ describe('CI artifact coverage', () => {
     ])
   })
 
+  it.each(['web-e2e-baseline-pr', 'web-e2e-baseline-full'])('retains Web failure diagnostics alongside the existing visual artifacts in %s', async (jobName) => {
+    const workflow = await readWorkflow('ci-e2e.yml')
+    expect(splitPatterns(workflow.jobs[jobName].with?.artifact_path)).toEqual([
+      '.tmp/web-runtime-visual/**',
+      '.tmp/web-runtime-diagnostics/**',
+      '.tmp/uview-plus-compat/web/**',
+      '.tmp/wot-ui-compat/web/**',
+    ])
+  })
+
   it('selects hidden reports without uploading unrelated temporary files', async () => {
     const reusable = await readWorkflow('reusable-node-command.yml')
     const steps = Object.values(reusable.jobs).flatMap(job => job.steps ?? [])
@@ -87,6 +97,8 @@ describe('CI artifact coverage', () => {
       '.tmp/hmr-lifecycle-report.json',
       '.tmp/shared-hosts/artifacts.json',
       '.tmp/workspace-hmr/.session/report.json',
+      '.tmp/web-runtime-diagnostics/issue-1029-sample/viewport.png',
+      '.tmp/web-runtime-diagnostics/issue-1029-sample/failure.json',
       'docs/reports/dom-acceptance/summary.json',
     ]
     const unrelated = [

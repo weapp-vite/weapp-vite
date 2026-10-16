@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
-import { createServer } from 'vite'
+import { createLogger, createServer } from 'vite'
 import { expect, it, onTestFailed } from 'vitest'
 import { attributeHmrProfile } from '../src/analyze/hmr/attribution'
 import { readHmrProfileLines } from '../src/analyze/hmr/reader'
@@ -21,7 +21,7 @@ function restartStackNames() {
     const nameStart = frame.startsWith('async ') ? 6 : 0
     const nameFrame = frame.slice(nameStart)
     const name = nameFrame.split(' (', 1)[0]
-    return name && !name.includes('/') && !name.includes('file:') ? name : '<location>'
+    return name && !/[\\/]/.test(name) && !name.includes('file:') ? name : '<location>'
   }) ?? []
 }
 
@@ -95,6 +95,7 @@ it.each([
   const diagnosticEvents: unknown[] = []
   let diagnosticCallsBefore: string | undefined
   let diagnosticCallsAfter: string | undefined
+  let diagnosticConfigGeneration = 0
   let diagnosticGeneration = 0
   const labelFile = (file: string) => {
     const normalizedRoot = path.resolve(root)
@@ -103,6 +104,65 @@ it.each([
     return relative && !relative.startsWith('..') && !path.isAbsolute(relative)
       ? relative.replaceAll(path.sep, '/')
       : path.basename(normalizedFile)
+  }
+  const diagnosticLocations = ([
+    [path.resolve(root), '<fixture>'],
+    [process.cwd(), '<repo>'],
+    [os.homedir(), '<home>'],
+  ] as const).map(([location, label]) => [location.replaceAll('\\', '/'), label] as const).filter(([location]) => location !== '/' && !/^[a-z]:\/$/i.test(location)).sort(([left], [right]) => right.length - left.length)
+  const diagnosticMessage = (value: unknown) => {
+    let message: string
+    try {
+      message = String(value instanceof Error ? value.message : value)
+    }
+    catch {
+      message = '<unprintable>'
+    }
+    message = message.replaceAll('\\', '/')
+    for (const [location, label] of diagnosticLocations) {
+      message = message.replaceAll(`file:///${location}`, label).replaceAll(`file://${location}`, label).replaceAll(location, label)
+    }
+    return message.replace(
+      /(?<![\w>])(?:file:\/\/)?(?:[a-z]:\/|\/)[^\s"'`<>()[\]{},]*/gi,
+      location => labelFile(location.replace(/^file:\/\//, '')),
+    )
+  }
+  const diagnosticError = (value: unknown, depth = 0, seen = new WeakSet<object>()): Record<string, unknown> => {
+    if (!value || typeof value !== 'object') {
+      return { message: diagnosticMessage(value) }
+    }
+    if (seen.has(value) || depth >= 3) {
+      return { message: seen.has(value) ? '<circular>' : '<depth-limit>' }
+    }
+    seen.add(value)
+    try {
+      const error = value as { name?: unknown, code?: unknown, message?: unknown, cause?: unknown }
+      return {
+        name: typeof error.name === 'string' ? diagnosticMessage(error.name) : undefined,
+        code: typeof error.code === 'number' ? error.code : typeof error.code === 'string' ? diagnosticMessage(error.code) : undefined,
+        message: diagnosticMessage(error.message ?? value),
+        cause: error.cause === undefined ? undefined : diagnosticError(error.cause, depth + 1, seen),
+      }
+    }
+    catch {
+      return { message: '<unavailable-error>' }
+    }
+  }
+  const logger = createLogger('silent')
+  for (const level of ['error', 'warn'] as const) {
+    const log = logger[level].bind(logger)
+    logger[level] = (message, options) => {
+      const value: unknown = message
+      const error = options && 'error' in options ? options.error : value instanceof Error ? value : undefined
+      diagnosticEvents.push({
+        event: 'log',
+        level,
+        configGeneration: diagnosticConfigGeneration,
+        message: diagnosticMessage(message),
+        error: error === undefined ? undefined : diagnosticError(error),
+      })
+      log(message, options)
+    }
   }
   onTestFailed(() => {
     // eslint-disable-next-line no-console -- 只在失败后输出不含机器路径的只读生命周期诊断。
@@ -138,16 +198,33 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
       plugins: [weapp(), {
         name: 'test:hold-topology-replacement',
         enforce: 'post',
+        config(_config, env) {
+          diagnosticEvents.push({ event: 'config', generation: ++diagnosticConfigGeneration, command: env.command })
+        },
+        configResolved(config) {
+          diagnosticEvents.push({ event: 'config-resolved', generation: diagnosticConfigGeneration, command: config.command })
+        },
         async configureServer(replacement) {
           const generation = ++diagnosticGeneration
           diagnosticEvents.push({ event: 'configure-server', generation })
           const originalRestart = replacement.restart.bind(replacement)
           replacement.restart = (force) => {
             diagnosticEvents.push({ event: 'restart-request', generation, force, stack: restartStackNames() })
+            const previousConfig = replacement.config
             const task = originalRestart(force)
             void task.then(
-              () => diagnosticEvents.push({ event: 'restart-resolved', generation }),
-              error => diagnosticEvents.push({ event: 'restart-rejected', generation, error: error instanceof Error ? error.message : String(error) }),
+              () => diagnosticEvents.push({ event: 'restart-resolved', generation, configChanged: replacement.config !== previousConfig }),
+              error => diagnosticEvents.push({ event: 'restart-rejected', generation, error: diagnosticMessage(error) }),
+            )
+            return task
+          }
+          const originalListen = replacement.listen.bind(replacement)
+          replacement.listen = (...args) => {
+            diagnosticEvents.push({ event: 'listen-request', generation, isRestart: args[1] === true })
+            const task = originalListen(...args)
+            void task.then(
+              () => diagnosticEvents.push({ event: 'listen-resolved', generation }),
+              error => diagnosticEvents.push({ event: 'listen-rejected', generation, error: diagnosticMessage(error) }),
             )
             return task
           }
@@ -175,6 +252,7 @@ export default { define: { STATEFUL_MESSAGE: JSON.stringify(message) } }`,
         },
       }],
       logLevel: 'silent',
+      customLogger: logger,
       server: { middlewareMode, port: 0, host: '127.0.0.1' },
       weapp: { srcRoot: 'src', autoRoutes: false, vue: { enable: false }, hmr: { runtime: 'stateful-experimental' } },
     })

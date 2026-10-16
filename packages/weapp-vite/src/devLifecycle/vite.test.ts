@@ -170,7 +170,7 @@ it.each(modes)('waits for the full owned shutdown with real Vite during %s', asy
       }
     })
     expect(result.signal, result.stderr).toBeNull()
-    expect(result.code, result.stderr).toBe(['restore-error', 'startup-error', 'wrapper-error', 'restart-error-signal'].includes(mode) ? 1 : mode === 'stdin' || mode === 'disconnect' || process.platform === 'win32' ? 0 : mode === 'sigint' ? 130 : 143)
+    expect(result.code, result.stderr).toBe(['restore-error', 'startup-error', 'wrapper-error', 'restart-error', 'restart-error-signal'].includes(mode) ? 1 : mode === 'stdin' || mode === 'disconnect' || process.platform === 'win32' ? 0 : mode === 'sigint' ? 130 : 143)
     expect(result.stdout).toContain('RESTORE_DONE\n')
     expect(result.stdout).toContain('FINAL_CLEANUP_DONE\n')
     expect(result.stdout.match(/USER_CLOSE_DONE/g)).toHaveLength(['multiple', 'restart-error', 'restart-error-signal'].includes(mode) ? 2 : 1)
@@ -193,8 +193,9 @@ it.each(modes)('waits for the full owned shutdown with real Vite during %s', asy
     if (mode === 'restart-error' || mode === 'restart-error-signal') {
       expect(result.stdout.match(/RESTORE_DONE/g)).toHaveLength(2)
       if (mode === 'restart-error') {
-        expect(result.stdout).toContain('RESTART_FINISHED\n')
-        expect(result.stdout.indexOf('USER_CLOSE_DONE:2')).toBeLessThan(result.stdout.indexOf('RESTART_FINISHED'))
+        expect(result.stdout).not.toContain('RESTART_FINISHED\n')
+        expect(result.stdout).toContain('REPORTED:[weapp-vite] Vite 重启未完成替换宿主交接，请查看原始初始化错误。')
+        expect(result.stdout.indexOf('USER_CLOSE_DONE:2')).toBeLessThan(result.stdout.indexOf('FINAL_CLEANUP_DONE'))
       }
       else {
         expect(result.stdout).toContain('REPORTED:Vite replacement server initialization failed during development shutdown')

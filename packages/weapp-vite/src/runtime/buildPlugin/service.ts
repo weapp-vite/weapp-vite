@@ -14,6 +14,7 @@ import type { HmrRuntimeDecision } from '../hmrRuntime'
 import type { StatefulHmrSnapshot } from '../statefulHmr/globalStyles'
 import type { StatefulHmrOutputFile } from '../statefulHmr/outputWriter'
 import type { StatefulHmrProfileHandoff } from '../statefulHmr/profile'
+import type { AppShellSnapshot } from './appShellSnapshot'
 import type { DevBuildWatcherController } from './devBuildWatcher'
 import { randomUUID } from 'node:crypto'
 import { appendFile, mkdir } from 'node:fs/promises'
@@ -41,6 +42,7 @@ import {
   watchedTemplateSuffixes,
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
+import { isAppVueFile } from '../../plugins/vue/transform/appShell'
 import { createHmrProfileEventId, recordHmrProfileDuration, resolveActiveHmrProfileJsonPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
@@ -60,6 +62,7 @@ import { syncProjectSupportFiles } from '../supportFiles'
 import { watchAssetSources } from '../watch/assets'
 import { createSidecarWatchOptions } from '../watch/options'
 import { retainWatcherService } from '../watcherPlugin'
+import { captureAppShellSnapshot, resolveAppShellSnapshotChange } from './appShellSnapshot'
 import { createDevBuildWatcher } from './devBuildWatcher'
 import { captureEntryTopology } from './entryTopology'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
@@ -1591,6 +1594,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     // Web 可能先刷新共享服务，native 快照必须比较自身已成功写出的路由版本。
     let emittedAutoRoutesSignature: string | undefined
     let emittedEntryTopology: ReadonlyMap<string, string> | undefined
+    let emittedAppShellSnapshot: AppShellSnapshot | undefined
     const devBuildWatcher = target === 'app' ? (statefulBuildEvents ?? createDevBuildWatcher()) : undefined
 
     function markSnapshotEntriesFullDirty() {
@@ -1721,6 +1725,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         for (const entryId of routeDependentEntries) {
           graphAffectedEntries.add(entryId)
         }
+        const appShellInput = emittedAppShellSnapshot?.appId ?? scanService.appEntry?.path
+        let appShellDependentEntries = new Set<string>()
         return await withVueStyleDependencySnapshot(
           { runtimeState: ctx.runtimeState, moduleGraphService: ctx.moduleGraphService, configService },
           graphAffectedEntries,
@@ -1750,7 +1756,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 : dirtyReasons.includes('dependency') ? 'dependency' : 'metadata'
               for (const entryId of graphAffectedEntries) {
                 if (ctx.runtimeState.build.hmr.resolvedEntryMap.has(entryId)) {
-                  markSnapshotEntryDirty(entryId, reason, styleScriptChanges.has(entryId) ? 'direct' : routeDependentEntries.has(entryId) ? 'dependency' : dirtyReason)
+                  const isStructuralDependency = routeDependentEntries.has(entryId) || appShellDependentEntries.has(entryId)
+                  markSnapshotEntryDirty(entryId, reason, styleScriptChanges.has(entryId) ? 'direct' : isStructuralDependency ? 'dependency' : dirtyReason)
                 }
               }
               const summaryCounts = new Map<string, number>()
@@ -1767,6 +1774,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               if (styleScriptChanges.size) {
                 summaryCounts.set('entry-mixed-asset', styleScriptChanges.size)
               }
+              if (appShellDependentEntries.size) {
+                summaryCounts.set('app-shell-dependent', appShellDependentEntries.size)
+              }
               ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = Array.from(
                 summaryCounts,
                 ([summary, count]) => `${summary}:${count}`,
@@ -1775,6 +1785,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 devBuildWatcher?.emitEvent({ code: 'START' })
                 await build(createSnapshotBuildConfig(snapshotBuildOptions))
                 emittedAutoRoutesSignature = routeSignature
+                if (appShellInput && graphAffectedEntries.has(normalizeFsResolvedId(appShellInput))) {
+                  emittedAppShellSnapshot = await captureAppShellSnapshot(ctx, emittedAppShellSnapshot?.appId)
+                }
                 recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
                 devBuildWatcher?.emitEvent({ code: 'END' })
               }
@@ -1811,6 +1824,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 },
               }))
               emittedAutoRoutesSignature = routeSignature
+              emittedAppShellSnapshot = await captureAppShellSnapshot(ctx, emittedAppShellSnapshot?.appId)
               recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
               failedEntryTopologyChange = false
               if (fullEntryScan) {
@@ -1848,6 +1862,23 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               scheduleSnapshotBuild({ ...change, forceFullRescan: true }, performance.now())
             }
           },
+          appShellInput && isAppVueFile(appShellInput) && !configService.weappLibConfig?.enabled
+            ? {
+                entries: [appShellInput],
+                async resolveAffectedEntries() {
+                  const change = await resolveAppShellSnapshotChange(ctx, emittedAppShellSnapshot)
+                  if (!change) {
+                    return []
+                  }
+                  appShellDependentEntries = change.pageIds
+                  const affected = [change.appId, ...change.pageIds]
+                  for (const entryId of affected) {
+                    graphAffectedEntries.add(entryId)
+                  }
+                  return affected
+                },
+              }
+            : undefined,
         )
       })
       snapshotBuildChain = currentSnapshotBuild.catch(() => {
@@ -1957,6 +1988,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             await build(createSnapshotBuildConfig(snapshotBuildOptions))
             emittedAutoRoutesSignature = routeSignature
             emittedEntryTopology = captureEntryTopology(ctx)
+            emittedAppShellSnapshot = await captureAppShellSnapshot(ctx)
             devBuildWatcher!.emitEvent({ code: 'END' })
             return devBuildWatcher!.watcher
           }

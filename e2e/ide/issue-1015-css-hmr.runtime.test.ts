@@ -9,6 +9,7 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { createHmrOutputDiagnostics } from '../utils/hmrOutputDiagnostics'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
+import { createIssue1015HmrDiagnostics } from '../utils/issue1015HmrDiagnostics'
 import { createIssue1015Project, ISSUE_1015_CLI } from '../utils/issue1015Project'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
@@ -107,6 +108,13 @@ for (const runtime of ['classic', 'stateful-experimental']) {
       const initialAppScript = await readFile(emittedAppScript, 'utf8')
       let loadedScript = await readFile(emittedScript, 'utf8')
       const outputDiagnostics = createHmrOutputDiagnostics(path.join(project, 'dist'), 'e2e-apps/github-issues/fixtures/issue-1015')
+      const failureDiagnostics = createIssue1015HmrDiagnostics({
+        stylesheetPath: emittedCss,
+        projectPath: project,
+        captureOutput: label => outputDiagnostics.capture(label, loadedScript),
+        captureRuntime: label => diagnostics.capture(label),
+        getDevOutput: () => dev!.getOutput(),
+      })
       await host.reLaunch(ROUTE)
       await diagnostics.initialize()
 
@@ -170,9 +178,12 @@ for (const runtime of ['classic', 'stateful-experimental']) {
           ...(computedStyles ? { color: expected.color, ...(expected.background ? { background: expected.background } : {}) } : {}),
           variable: true,
         }).catch(async (error) => {
-          await outputDiagnostics.capture(`${id}-failed`, loadedScript)
-          await diagnostics.capture(`${id}-failed`)
-          process.stdout.write(`[issue-1015-build] ${dev!.getOutput()}\n`)
+          try {
+            await failureDiagnostics.captureFailure(`${id}-failed`, host)
+          }
+          catch {
+            // 诊断自身的意外异常不能替换原验收失败。
+          }
           throw error
         })
         await dom.check(id, host, await host.currentPage())
@@ -191,6 +202,9 @@ for (const runtime of ['classic', 'stateful-experimental']) {
           process.stdout.write(`[issue-1015-build] ${dev!.getOutput()}\n`)
           throw error
         })
+        if (id === 'style-only') {
+          await failureDiagnostics.captureFirstStyleOnly()
+        }
         await check(id)
       }
 

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveWechatDevtoolsTarget } from '../src/devtoolsTarget'
 import { createDevtoolsInstallation, createPackageAsar } from './helpers/devtoolsTarget'
 
@@ -14,7 +14,13 @@ async function fixtureRoot() {
   directories.push(root)
   return await fs.realpath(root)
 }
+beforeEach(() => {
+  for (const key of ['WEAPP_IDE_CLI_PATH', 'WEAPP_IDE_DEVTOOLS_CHANNEL', 'WEAPP_IDE_DEVTOOLS_VERSION', 'WEAPP_IDE_REQUIRE_OFFICIAL_LATEST']) {
+    vi.stubEnv(key, undefined)
+  }
+})
 afterEach(async () => {
+  vi.unstubAllEnvs()
   readCustomConfig.mockReset()
   await Promise.all(directories.splice(0).map(directory => fs.rm(directory, { recursive: true, force: true })))
 })

@@ -1,7 +1,9 @@
 import type { MiniProgram, Page } from '@weapp-vite/miniprogram-automator'
 import type { Feature1087Record } from '../../e2e-apps/github-issues/src/shared/feature1087'
 import { ok as assert } from 'node:assert'
+import process from 'node:process'
 import { expect } from 'vitest'
+import { sanitizeAcceptanceValue } from '../scripts/domAcceptanceReport/helpers'
 import { waitForCurrentPagePath } from './github-issues.runtime.shared'
 
 export const LIST = '/pages/feature-1087/index'
@@ -21,6 +23,8 @@ export interface Feature1087Snapshot {
   records: Feature1087Record[]
   errors: string[]
   navigation: { settled: boolean, failed: boolean, path: string }
+  navigationDiagnostics: Record<string, unknown>[]
+  nativePages: { route: string, query: Record<string, unknown> }[]
   instance: number
   path: string
   ready: boolean
@@ -104,4 +108,85 @@ export function expectNativeRoutePhases(records: Feature1087Record[], path: stri
   expect(phases[2]).toMatchObject({ path: start.path, openType, webviewId: start.webviewId })
   // SDK 的同路径 reLaunch 完成通知允许空 id；保留原始观测值，不伪造事件字段。
   expect([start.routeEventId, '']).toContain(phases[2].routeEventId)
+}
+
+function writeNavigationDiagnostic(kind: string, value: Record<string, unknown>) {
+  try {
+    process.stdout.write(`[feature1087 navigation ${kind}] ${JSON.stringify(sanitizeAcceptanceValue(value))}\n`)
+  }
+  catch {
+    // 输出诊断失败不能改变原断言结果。
+  }
+}
+
+/** 成功时只输出现有轮询样本，不增加协议调用或导航。 */
+export function reportFeature1087NavigationPoll(cached: Record<string, unknown>) {
+  writeNavigationDiagnostic('poll', cached)
+}
+
+/** 只在原断言失败后取一次证据，不导航、不重连、不延长原轮询预算。 */
+export async function reportFeature1087NavigationFailure(
+  miniProgram: MiniProgram,
+  source: Page,
+  cached: Record<string, unknown>,
+) {
+  const startedAt = Date.now()
+  const deadline = startedAt + 2_000
+  type Observation<T> = { status: 'fulfilled', value: T } | { status: 'rejected', error: string } | { status: 'timed-out' }
+  async function observe<T>(request: (timeout: number) => Promise<T>): Promise<Observation<T>> {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    try {
+      return await Promise.race([
+        Promise.resolve().then(() => {
+          const remaining = deadline - Date.now()
+          return remaining > 0 ? request(remaining) : undefined
+        }).then(value => Date.now() < deadline
+          ? { status: 'fulfilled' as const, value: value as T }
+          : { status: 'timed-out' as const }, (error: unknown) => {
+          try {
+            return { status: 'rejected' as const, error: String(error) }
+          }
+          catch {
+            return { status: 'rejected' as const, error: '<unprintable>' }
+          }
+        }),
+        new Promise<{ status: 'timed-out' }>((resolve) => {
+          timer = setTimeout(resolve, Math.max(0, deadline - Date.now()), { status: 'timed-out' })
+        }),
+      ])
+    }
+    finally {
+      clearTimeout(timer)
+    }
+  }
+  const current = observe(timeout => miniProgram.currentPage({ timeout, retries: 1, pageStackFallback: false, appFunctionFallback: false }))
+  const target = current.then(async (result) => {
+    if (result.status !== 'fulfilled') {
+      return undefined
+    }
+    const page = result.value
+    const state = await observe(timeout => page.callMethodWithOptions('_snapshot', { fallback: false, timeout }))
+    return { route: page.path, query: page.query, snapshot: state }
+  })
+  const [sourceResult, currentResult, nativeResult, targetResult] = await Promise.all([
+    observe(timeout => source.callMethodWithOptions('_snapshot', { fallback: false, timeout })),
+    current,
+    observe(timeout => miniProgram.evaluateWithOptions(() => getCurrentPages().map(page => ({
+      route: page.route,
+      query: { ...page.options },
+    })), { timeout })),
+    target,
+  ])
+  writeNavigationDiagnostic('failure', {
+    startedAt,
+    finishedAt: Date.now(),
+    budgetMs: 2_000,
+    cached,
+    source: { route: source.path, query: source.query, snapshot: sourceResult },
+    currentPage: currentResult.status === 'fulfilled'
+      ? { status: 'fulfilled', route: currentResult.value.path, query: currentResult.value.query }
+      : currentResult,
+    target: targetResult,
+    nativePages: nativeResult,
+  })
 }
