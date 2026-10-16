@@ -180,24 +180,6 @@ export async function captureDevProcessTree(rootPid: number, isRootHeld: () => b
   return identities.filter((identity): identity is DevProcessIdentity => identity != null)
 }
 
-/** Windows 与 macOS 批量核验内核身份；缺少身份字段不能当作退出。 */
-export async function readDevProcessIdentities(pids: number[]): Promise<Map<number, DevProcessIdentity | undefined>> {
-  if (process.platform === 'darwin') {
-    return readDarwinManagedProcessIdentities(pids)
-  }
-  if (process.platform !== 'win32') {
-    return new Map(await Promise.all(pids.map(async pid => [pid, await readManagedProcessIdentity(pid)] as const)))
-  }
-  const entries = await readWindowsProcesses(pids)
-  return new Map(pids.map((pid) => {
-    const entry = entries.find(entry => entry.pid === pid)
-    if (entry && !entry.identity) {
-      throw inspectionError()
-    }
-    return [pid, entry?.identity]
-  }))
-}
-
 /** ESRCH 才证明进程消失；权限或其他检查错误不能转换成退出成功。 */
 export function isDevProcessAlive(pid: number) {
   try {
@@ -210,6 +192,24 @@ export function isDevProcessAlive(pid: number) {
     }
     throw error
   }
+}
+
+/** 批量核验身份；Windows 残留行只有独立 ESRCH 退出证据才能解除，不能仅因字段缺失而成功。 */
+export async function readDevProcessIdentities(pids: number[]): Promise<Map<number, DevProcessIdentity | undefined>> {
+  if (process.platform === 'darwin') {
+    return readDarwinManagedProcessIdentities(pids)
+  }
+  if (process.platform !== 'win32') {
+    return new Map(await Promise.all(pids.map(async pid => [pid, await readManagedProcessIdentity(pid)] as const)))
+  }
+  const entries = await readWindowsProcesses(pids)
+  return new Map(pids.map((pid) => {
+    const entry = entries.find(entry => entry.pid === pid)
+    if (entry && !entry.identity && isDevProcessAlive(pid)) {
+      throw inspectionError()
+    }
+    return [pid, entry?.identity]
+  }))
 }
 
 /** 只终止本轮已核验的 PID；不用 /T 在派发时扩大到未登记的后代。 */

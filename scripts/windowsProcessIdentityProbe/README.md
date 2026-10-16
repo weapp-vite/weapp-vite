@@ -18,7 +18,11 @@ PID 与创建时间精确一致，路径却被替换字符改变。独立的合�
 不是通用 CIM provider 的独立 oracle。登记身份、退出观察、外部树保留断言和后代收尾
 统一通过 `readDevProcessIdentities` 按本次 PID 集合批量查询，由该子系统选择各平台 provider。
 登记校验、完整身份必需、`sameManagedProcess` 精确比较、外部子进程句柄及原期限保持不变；
-查询错误仍失败，不转换成退出。
+查询错误和行包络解析失败仍失败，不转换成退出。成功查询中的 Windows 残留行若缺少完整身份，
+须经同一 PID 的零信号探针取得明确 `ESRCH` 才判定退出；存活进程继续拒绝，权限及其他探针
+错误原样传播。Node 的 Windows 实现通过
+[GetExitCodeProcess / WaitForSingleObject](https://github.com/nodejs/node/blob/v22.23.3/deps/uv/src/win/process.c#L1321-L1340)
+核验零信号存活检查；这里不补发终止信号、不重试查询，也不从不完整身份获得清理权限。
 
 独立 native/CIM 精确兼容对照仍由 `e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts`
 和本目录的 `checkProcessRows.ts` 在真实 Windows 上执行。复用清理子系统查询不证明
