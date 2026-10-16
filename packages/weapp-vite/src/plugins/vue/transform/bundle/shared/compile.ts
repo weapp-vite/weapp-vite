@@ -6,12 +6,11 @@ import { compileJsxFile, compileVueFile, resolveVueSfcHmrSignatures, resolveVueS
 import { storeVueSfcHmrSignatures } from '../../../../../runtime/storeVueSfcHmrSignatures'
 import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
-import { compilerSnapshotSourceId, getCompilerSourceSnapshot, readCompilerInput } from '../../../../utils/sourceSnapshot'
+import { readCompilerInput } from '../../../../utils/sourceSnapshot'
 import { readAndParseSfc } from '../../../../utils/vueSfc'
-import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
 import { createCompilerAppShellSignature } from '../../appShell'
 import { createCompileVueFileOptions, resolveSfcStylePreprocessOptions } from '../../compileOptions'
-import { applyComponentResolutionDependencies, getVueCompilationDependencies } from '../../componentResolutionDependencies'
+import { applyComponentResolutionDependencies, syncVueCompilationDependencies } from '../../componentResolutionDependencies'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { resolvePageLayoutPlan } from '../../pageLayout'
 import { isVueStyleOnlyDirtyReasonSummary, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource } from '../../plugin/shared'
@@ -64,10 +63,7 @@ export async function compileVueLikeFile(options: {
     ? await compileVueFile(source, filename, compileOptions)
     : await compileJsxFile(source, filename, compileOptions)
   applyComponentResolutionDependencies(result, compileOptions)
-  const scriptDependencies = getVueCompilationDependencies(result)
-  addNormalizedWatchFiles(pluginCtx, scriptDependencies)
-  const sources = getCompilerSourceSnapshot(configService)
-  ctx.moduleGraphService.replaceEntryDependencies(filename, 'script', scriptDependencies, id => compilerSnapshotSourceId(sources, id))
+  syncVueCompilationDependencies({ ctx, pluginCtx, filename, result, configService })
   if (resolvedPageLayoutPlan) {
     setVueBundlePageLayoutPlan(result, resolvedPageLayoutPlan)
   }

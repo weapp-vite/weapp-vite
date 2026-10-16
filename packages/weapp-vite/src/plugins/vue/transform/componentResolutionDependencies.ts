@@ -1,5 +1,10 @@
+import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { CompileVueFileOptions, VueTransformResult } from 'wevu/compiler'
+import type { CompilerContext } from '../../../context'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { syncVueSfcStyleDependencies } from '../../utils/invalidateEntry'
+import { compilerSnapshotSourceId, getCompilerSourceSnapshot } from '../../utils/sourceSnapshot'
+import { addNormalizedWatchFiles } from '../../utils/watchFiles'
 
 type HostCompilationMeta = NonNullable<VueTransformResult['meta']> & {
   componentResolutionDeps?: string[]
@@ -25,4 +30,40 @@ export function getVueCompilationDependencies(result: VueTransformResult): strin
     ...(meta?.nativeSlotContextDeps ?? []),
     ...(meta?.componentResolutionDeps ?? []),
   ].map(id => normalizeFsResolvedId(id)))]
+}
+
+/** 完整编译结果由同一入口替换所有依赖域，避免 bundle 刷新遗留旧的外部块。 */
+export function syncVueCompilationDependencies(options: {
+  ctx: CompilerContext
+  pluginCtx: any
+  filename: string
+  result: VueTransformResult
+  configService: NonNullable<CompilerContext['configService']>
+  styleBlocks?: SFCStyleBlock[]
+}) {
+  const { ctx, pluginCtx, filename, result, configService } = options
+  const styleBlocks = options.styleBlocks ?? result.meta?.styleBlocks as SFCStyleBlock[] | undefined
+  const styleDependencies = syncVueSfcStyleDependencies(ctx, filename, styleBlocks)
+  addNormalizedWatchFiles(pluginCtx, styleDependencies)
+  ctx.moduleGraphService.replaceEntryDependencies(filename, 'style', styleDependencies)
+
+  const externalSources = result.meta?.sfcSrcDeps ?? []
+  addNormalizedWatchFiles(pluginCtx, externalSources)
+  if (configService.isDev) {
+    const styleBindings = ctx.runtimeState.build.hmr.vueEntryStyleBindings
+    if (externalSources.length) {
+      styleBindings.set(filename, { sources: externalSources, expressions: result.meta?.cssVars })
+    }
+    else {
+      styleBindings.delete(filename)
+    }
+  }
+
+  const jsxDependencies = result.meta?.jsxDependencies ?? []
+  addNormalizedWatchFiles(pluginCtx, jsxDependencies)
+  ctx.moduleGraphService.replaceEntryDependencies(filename, 'jsx', jsxDependencies)
+  const scriptDependencies = getVueCompilationDependencies(result)
+  addNormalizedWatchFiles(pluginCtx, scriptDependencies)
+  const sources = getCompilerSourceSnapshot(configService)
+  ctx.moduleGraphService.replaceEntryDependencies(filename, 'script', scriptDependencies, id => compilerSnapshotSourceId(sources, id))
 }

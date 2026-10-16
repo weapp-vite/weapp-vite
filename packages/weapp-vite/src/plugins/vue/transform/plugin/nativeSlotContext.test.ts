@@ -426,12 +426,16 @@ describe('native slot context dependency invalidation', () => {
   })
 
   it.each(['transform', 'bundle'] as const)('retains barrel invalidation after JSON-only refresh through %s with native context disabled', async (mode) => {
-    const parent = '<script>import { defineComponent } from "wevu"; import { Child } from "./barrel.ts"; export default defineComponent({ components: { Child } })</script><template><Child /></template><json>{ "styleIsolation": "isolated" }</json>'
+    const parent = '<script>import { defineComponent } from "wevu"; import { Child } from "./barrel.ts"; export default defineComponent({ components: { Child } })</script><template src="./view-one.html"></template><style src="./theme-one.css"></style><json>{ "styleIsolation": "isolated" }</json>'
     const fixture = await setup({
       'Parent.vue': parent,
       'barrel.ts': 'export { default as Child } from "./First.vue"',
       'First.vue': '<template><text>first</text></template>',
       'Second.vue': '<template><text>second</text></template>',
+      'view-one.html': '<view><Child /><text>template-one</text></view>',
+      'view-two.html': '<view><Child /><text>template-two</text></view>',
+      'theme-one.css': '.one { color: red; }',
+      'theme-two.css': '.two { color: blue; }',
     }, async ({ ctx }) => {
       ctx.configService.weappViteConfig.vue!.template!.nativeSlotContext = false
     })
@@ -453,11 +457,34 @@ describe('native slot context dependency invalidation', () => {
       usingComponents: { child: '/Second' },
     })
 
+    const swapped = updatedParent.replace('view-one.html', 'view-two.html').replace('theme-one.css', 'theme-two.css')
+    fixture.change('Parent.vue', swapped)
+    fixture.ctx.runtimeState.build.hmr.dirtyVueEntryIds.add(fixture.filename)
+    await (mode === 'bundle' ? fixture.refreshBundle() : fixture.transform(swapped))
+    expect(fixture.cached().result.template).toContain('template-two')
+    const graph = fixture.ctx.moduleGraphService
+    for (const oldInput of ['view-one.html', 'theme-one.css']) {
+      expect(graph.collectAffectedEntries(path.join(root, oldInput))).not.toContain(fixture.filename)
+    }
+    for (const newInput of ['view-two.html', 'theme-two.css']) {
+      expect(graph.collectAffectedEntries(path.join(root, newInput))).toContain(fixture.filename)
+    }
+    expect(fixture.ctx.runtimeState.css.dependencyToImporters.get(path.join(root, 'theme-one.css'))).toBeUndefined()
+    expect(fixture.ctx.runtimeState.css.dependencyToImporters.get(path.join(root, 'theme-two.css'))).toContain(fixture.filename)
+
+    fixture.change('view-two.html', '<view><Child /><text>template-two-updated</text></view>')
+    await (mode === 'bundle' ? fixture.refreshBundle() : fixture.transform(swapped))
+    expect(fixture.cached().result.template).toContain('template-two-updated')
+
     const withoutChild = '<template><text>removed</text></template>'
     fixture.change('Parent.vue', withoutChild)
     fixture.ctx.runtimeState.build.hmr.dirtyVueEntryIds.add(fixture.filename)
     await (mode === 'bundle' ? fixture.refreshBundle() : fixture.transform(withoutChild))
     expect(fixture.ctx.moduleGraphService.collectAffectedEntries(barrel)).not.toContain(fixture.filename)
+    for (const removedInput of ['view-two.html', 'theme-two.css']) {
+      expect(graph.collectAffectedEntries(path.join(root, removedInput))).not.toContain(fixture.filename)
+    }
+    expect(fixture.ctx.runtimeState.build.hmr.vueEntryStyleBindings.has(fixture.filename)).toBe(false)
   })
 
   it.each([
