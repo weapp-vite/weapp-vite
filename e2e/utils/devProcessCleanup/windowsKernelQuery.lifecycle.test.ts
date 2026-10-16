@@ -74,16 +74,29 @@ it.runIf(process.platform === 'win32')('preserves a compiler failure without poi
     await copyFile(process.execPath, executable)
     const source = `
       import assert from 'node:assert/strict';
-      import { readdir } from 'node:fs/promises';
+      import { access, readdir } from 'node:fs/promises';
       import { tmpdir } from 'node:os';
       import { join } from 'node:path';
       import { queryWindowsKernelProcesses } from ${JSON.stringify(new URL('./windowsKernelQuery.ts', import.meta.url).href)};
       import { parseWindowsProcessRows } from ${JSON.stringify(new URL('./windowsProcessRows.ts', import.meta.url).href)};
       const systemRoot = process.env.SystemRoot;
-      process.env.SystemRoot = join(tmpdir(), 'missing-framework');
+      const missingRoot = join(tmpdir(), 'missing-framework');
+      await assert.rejects(access(missingRoot), { code: 'ENOENT' });
+      process.env.SystemRoot = missingRoot;
       try {
         await assert.rejects(queryWindowsKernelProcesses([process.pid]), error => {
-          assert.equal(error.cause?.code, 'ENOENT');
+          // Windows 的缺失命令可经 cmd.exe 以非零退出报告，不承诺 Unix errno。
+          assert.ok(error instanceof Error, error);
+          assert.ok(error.cause instanceof Error, error);
+          assert.equal(error.cause.failed, true, error);
+          if (error.cause.exitCode === undefined) {
+            assert.equal(error.cause.code, 'ENOENT', error);
+          } else {
+            assert.ok(Number.isInteger(error.cause.exitCode), error);
+            assert.notEqual(error.cause.exitCode, 0, error);
+          }
+          assert.equal(error.cause.timedOut, false, error);
+          assert.equal(error.cause.signal, undefined, error);
           return true;
         });
         assert.deepEqual(await readdir(tmpdir()), []);
