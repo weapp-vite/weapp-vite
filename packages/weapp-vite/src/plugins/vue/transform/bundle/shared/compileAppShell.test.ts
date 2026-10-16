@@ -5,6 +5,8 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createModuleGraphService } from '../../../../../moduleGraph'
+import { createRuntimeState } from '../../../../../runtime/runtimeState'
 import { createCompilerAppShellSignature } from '../../appShell'
 import { refreshCompiledVueEntryCacheInDev } from './compile'
 
@@ -56,7 +58,10 @@ describe('bundle page cache app shell inputs', () => {
       filename,
       cached,
       appShell,
-      ctx: {} as CompilerContext,
+      ctx: {
+        moduleGraphService: createModuleGraphService(),
+        runtimeState: createRuntimeState(),
+      } as CompilerContext,
       pluginCtx: { emitFile: vi.fn() },
       configService: {
         isDev: true,

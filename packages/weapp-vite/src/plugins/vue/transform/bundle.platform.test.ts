@@ -5,6 +5,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createModuleGraphService } from '../../../moduleGraph'
+import { createRuntimeState } from '../../../runtime/runtimeState'
 import { scanWxml } from '../../../wxml'
 import * as wxmlHandleModule from '../../../wxml/handle'
 import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../utils/scriptlessComponent'
@@ -1042,6 +1043,7 @@ export default {
     const ctx = {
       configService,
       moduleGraphService: createModuleGraphService(),
+      runtimeState: createRuntimeState(),
       scanService: {
         independentSubPackageMap: new Map(),
       },

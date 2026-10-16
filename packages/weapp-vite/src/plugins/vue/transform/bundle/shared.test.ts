@@ -2,7 +2,8 @@ import type { CompilerContext } from '../../../../context'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveVueSfcHmrSignatures, resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
 import { createModuleGraphService } from '../../../../moduleGraph'
-import { compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, getVueBundlePageLayoutPlan, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { createRuntimeState } from '../../../../runtime/runtimeState'
+import { compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, getVueBundlePageLayoutPlan, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -749,13 +750,8 @@ describe('emitSharedVueEntryAssets', () => {
   })
 
   it('stores block signatures during the initial dev bundle compilation', async () => {
-    const hmr = {
-      vueEntryHasTemplate: new Map(),
-      vueEntrySfcSignatures: new Map(),
-      vueEntryTailwindContentSignatures: new Map(),
-      vueEntryTailwindTemplateContentSignatures: new Map(),
-      vueEntryTailwindScriptContentSignatures: new Map(),
-    }
+    const runtimeState = createRuntimeState()
+    const { hmr } = runtimeState.build
     const filename = '/project/src/components/card.vue'
 
     await compileVueLikeFile({
@@ -763,11 +759,7 @@ describe('emitSharedVueEntryAssets', () => {
       filename,
       ctx: {
         moduleGraphService: createModuleGraphService(),
-        runtimeState: {
-          build: {
-            hmr,
-          },
-        },
+        runtimeState,
       } as unknown as CompilerContext,
       pluginCtx: { emitFile: vi.fn() },
       isPage: false,
@@ -990,22 +982,17 @@ describe('emitSharedVueEntryAssets', () => {
       code: 'Page({ refreshed: true })',
     })
 
-    const dirtyVueEntryIds = new Set(['/project/src/pages/index/index.vue'])
+    const runtimeState = createRuntimeState()
+    const { hmr } = runtimeState.build
+    const { dirtyVueEntryIds } = hmr
+    dirtyVueEntryIds.add('/project/src/pages/index/index.vue')
+    hmr.profile.dirtyReasonSummary = ['entry-style-only:1']
     const result = await refreshCompiledVueEntryCacheInDev({
       filename: '/project/src/pages/index/index.vue',
       cached,
       ctx: {
         moduleGraphService: createModuleGraphService(),
-        runtimeState: {
-          build: {
-            hmr: {
-              dirtyVueEntryIds,
-              profile: {
-                dirtyReasonSummary: ['entry-style-only:1'],
-              },
-            },
-          },
-        },
+        runtimeState,
         autoImportService: {
           resolve: () => undefined,
         },
@@ -1108,8 +1095,9 @@ describe('emitSharedVueEntryAssets', () => {
       isPage: false,
       refreshToken: 1,
     } as any
-    const dirtyVueEntryIds = new Set(['D:\\project\\src\\app.vue'])
-    const vueEntrySfcSignatures = new Map()
+    const runtimeState = createRuntimeState()
+    const { dirtyVueEntryIds, vueEntrySfcSignatures } = runtimeState.build.hmr
+    dirtyVueEntryIds.add('D:\\project\\src\\app.vue')
     readFileMock.mockResolvedValue(appSource)
     compileVueFileMock.mockResolvedValue({
       template: '<view />',
@@ -1121,18 +1109,7 @@ describe('emitSharedVueEntryAssets', () => {
       cached,
       ctx: {
         moduleGraphService: createModuleGraphService(),
-        runtimeState: {
-          build: {
-            hmr: {
-              dirtyVueEntryIds,
-              vueEntryHasTemplate: new Map(),
-              vueEntrySfcSignatures,
-              vueEntryTailwindContentSignatures: new Map(),
-              vueEntryTailwindTemplateContentSignatures: new Map(),
-              vueEntryTailwindScriptContentSignatures: new Map(),
-            },
-          },
-        },
+        runtimeState,
         autoImportService: {
           resolve: () => undefined,
         },
@@ -1189,6 +1166,7 @@ describe('emitSharedVueEntryAssets', () => {
       cached,
       ctx: {
         moduleGraphService: createModuleGraphService(),
+        runtimeState: createRuntimeState(),
         autoImportService: {
           resolve: () => undefined,
         },
@@ -1369,41 +1347,6 @@ describe('emitSharedVueEntryAssets', () => {
       ]),
       pathExists,
     })).resolves.toBeUndefined()
-  })
-
-  it('loads fallback page entry compilation through shared read-and-compile flow', async () => {
-    readFileMock.mockResolvedValue('<view>{{title}}</view>')
-    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
-      transformed: true,
-      code: 'Page({ loaded: true })',
-    })
-
-    const result = await loadFallbackPageEntryCompilation({
-      entryFilePath: '/project/src/pages/demo/index.vue',
-      ctx: {
-        moduleGraphService: createModuleGraphService(),
-        autoImportService: {
-          resolve: () => undefined,
-        },
-      } as any,
-      pluginCtx: { emitFile: vi.fn() },
-      configService: {
-        isDev: true,
-        platform: 'weapp',
-        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
-        weappViteConfig: {},
-      } as any,
-      compileOptionsState: {
-        reExportResolutionCache: new Map(),
-        classStyleRuntimeWarned: { value: false },
-      },
-    })
-
-    expect(readFileMock).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', 'utf8')
-    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
-    expect(result.source).toBe('<view>{{title}}</view>')
-    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
-    expect(result.result.script).toBe('Page({ loaded: true })')
   })
 
   it('emits fallback page bundle assets through shared entry and page flows', async () => {
