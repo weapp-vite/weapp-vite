@@ -34,7 +34,11 @@ vi.mock('node:fs/promises', async (original) => {
         fixture.events.push('report')
       }
       await actual.writeFile(...args)
-      if (['error.txt', 'report.md'].includes(path.basename(file))) {
+      const relativeToFixture = path.relative(fixture.root, path.resolve(file))
+      if (['error.txt', 'report.md'].includes(path.basename(file))
+        && relativeToFixture !== ''
+        && !relativeToFixture.startsWith('..')
+        && !path.isAbsolute(relativeToFixture)) {
         fixture.completed = true
       }
     }),
@@ -126,7 +130,7 @@ async function runBenchmark() {
   await import('../packages/weapp-vite/scripts/benchmark-auto-import-hmr')
   await vi.waitFor(() => {
     expect(fixture.completed).toBe(true)
-  })
+  }, { timeout: 30_000 })
 }
 
 async function readFailureEvidence(): Promise<unknown> {
