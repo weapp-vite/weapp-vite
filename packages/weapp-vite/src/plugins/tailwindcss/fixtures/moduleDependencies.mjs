@@ -3,7 +3,8 @@ import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { compileTailwindV4Source, loadTailwindV4DesignSystem } from '@weapp-tailwindcss/engine'
+import { pathToFileURL } from 'node:url'
+import { compileTailwindV4Source, loadTailwindV4DesignSystem, loadTailwindV4NodeModule } from '@weapp-tailwindcss/engine'
 import { createCompiler } from 'weapp-tailwindcss/core'
 import { resolveTailwindV4Source } from 'weapp-tailwindcss/generator'
 
@@ -16,9 +17,16 @@ async function run() {
       for (const phase of ['initial', 'introduced']) {
         for (const spelling of ['native', 'posix']) {
           const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'tailwind-module-dependencies-')))
-          const observation = { kind, identity, phase, spelling }
+          const observation = { kind, identity, phase, spelling, node: process.version }
           let operation = 'setup'
           let resolvedSource
+          const shape = value => ({
+            type: typeof value,
+            keys: value && Object.keys(value),
+            defaultType: typeof value?.default,
+            defaultKeys: value?.default && Object.keys(value.default),
+            nestedDefaultType: typeof value?.default?.default,
+          })
           const compiler = createCompiler({ appType: 'weapp-vite', tailwindcssBasedir: root, cssPreflight: false })
           try {
             await mkdir(path.join(root, 'src'))
@@ -93,6 +101,22 @@ async function run() {
                     .replaceAll(root.replaceAll('\\', '/'), '<fixture>')
                     .replaceAll(process.cwd().replaceAll('\\', '/'), '<repository>')
                     .replaceAll(os.tmpdir().replaceAll('\\', '/'), '<temporary>')
+                }
+              }
+              observation.requireCache = Object.values(require.cache)
+                .filter(entry => entry?.filename?.startsWith(root))
+                .map(entry => ({ file: path.relative(root, entry.filename).replaceAll('\\', '/'), loaded: entry.loaded, exports: shape(entry.exports) }))
+              const loader = await loadTailwindV4NodeModule([source.projectRoot, source.base])
+              for (const [name, load] of [
+                ['relativeLoader', () => loader.loadModule(`./${kind}.ts`, source.base, () => {})],
+                ['nativeImport', () => import(`${pathToFileURL(path.join(root, 'src', `${kind}.ts`)).href}?diagnostic=${Date.now()}`)],
+              ]) {
+                try {
+                  const value = await load()
+                  observation[name] = shape(name === 'relativeLoader' ? value.module : value)
+                }
+                catch (cause) {
+                  observation[name] = String(cause).replaceAll(root, '<fixture>')
                 }
               }
             }
