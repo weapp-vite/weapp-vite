@@ -325,8 +325,8 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       sourceOptions,
       target: resolved.generatorTarget,
       scanSources: true,
-      // 一次性构建不预建后续增量候选缓存；持久宿主继续复用同一编译根。
-      incrementalCache: persistentWatch,
+      // 编译会话拥有增量状态；额外候选缓存会在 generate 返回后异步重读模块。
+      incrementalCache: false,
       bareArbitraryValues: resolved.options.arbitraryValues?.bareArbitraryValues,
       styleOptions: typeof resolved.options.generator === 'object'
         ? resolved.options.generator.styleOptions
@@ -612,7 +612,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       id: rootId,
       target: resolved.generatorTarget,
       scanSources: true,
-      incrementalCache: persistentWatch,
+      incrementalCache: false,
       sourceOptions: {
         ...configuredSource,
         cssEntries: [],

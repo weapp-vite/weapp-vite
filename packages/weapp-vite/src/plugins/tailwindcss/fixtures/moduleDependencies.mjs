@@ -43,17 +43,19 @@ async function run() {
             await writeFile(path.join(root, 'src/page.ts'), `export const utility = '${kind === 'config' ? 'w-probe' : 'plugin-probe'}'`)
             const css = '@import "tailwindcss" source(none); @source "./*.ts";'
             const format = file => spelling === 'posix' ? file.replaceAll('\\', '/') : file
-            const request = { id: 'root', sourceOptions: { projectRoot: format(root), cssEntries: [format(entry)] }, scanSources: true, target: 'weapp' }
+            const request = { id: 'root', sourceOptions: { projectRoot: format(root), cssEntries: [format(entry)] }, scanSources: true, target: 'weapp', incrementalCache: false }
             if (phase === 'introduced') {
               await writeFile(entry, css)
               operation = 'baseline'
-              await compiler.generate(request)
+              const baseline = await compiler.generate(request)
+              observation.entryId = baseline.dependencies.find(file => path.resolve(file) === path.resolve(entry))
             }
             await writeFile(entry, `${css} @${kind} "${identity === 'junction' ? '../module-alias' : '.'}/${kind}.ts";`)
             await writeFile(dependency, moduleSource(137))
             if (phase === 'introduced') {
-              observation.entryInvalidation = compiler.invalidate([format(entry)]).includes(request.id)
+              observation.entryInvalidation = compiler.invalidate([observation.entryId ?? format(entry)]).includes(request.id)
             }
+            delete observation.entryId
             operation = 'resolve-source'
             const resolved = await resolveTailwindV4Source(request.sourceOptions)
             resolvedSource = resolved
