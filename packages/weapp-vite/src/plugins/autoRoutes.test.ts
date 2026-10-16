@@ -397,8 +397,7 @@ describe('auto-routes plugin alias fallback', () => {
 
     expect(chokidarWatchMock).toHaveBeenCalledWith(
       expect.arrayContaining([
-        '/virtual/project/src/views',
-        '/virtual/project/src/pkgA/screens',
+        '/virtual/project/src',
       ]),
       expect.any(Object),
     )
