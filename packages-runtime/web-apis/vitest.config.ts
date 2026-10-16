@@ -6,12 +6,13 @@ import { createProjectCoverage } from '../../vitest.coverage.ts'
 const packageDir = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineProject({
+  root: packageDir,
   test: {
     globals: true,
     environment: 'node',
     include: [
-      path.join(packageDir, 'src/**/*.test.ts'),
-      path.join(packageDir, 'test/**/*.test.ts'),
+      'src/**/*.test.ts',
+      'test/**/*.test.ts',
     ],
     coverage: createProjectCoverage('packages-runtime/web-apis', {
       all: true,
@@ -19,7 +20,7 @@ export default defineProject({
         '**/dist/**',
         '**/*.test.ts',
       ],
-      include: [path.join(packageDir, 'src/**/*.ts')],
+      include: ['src/**/*.ts'],
     }),
   },
 })
