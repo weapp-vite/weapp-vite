@@ -55,7 +55,7 @@
     "tsx": "4.23.15",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "~5.0.4"
+    "vitest": "~5.0.5"
   },
   "publishConfig": {
     "access": "public",

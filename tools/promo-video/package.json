@@ -14,12 +14,12 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@remotion/bundler": "4.0.535",
-    "@remotion/cli": "4.0.535",
-    "@remotion/renderer": "4.0.535",
+    "@remotion/bundler": "4.0.536",
+    "@remotion/cli": "4.0.536",
+    "@remotion/renderer": "4.0.536",
     "react": "catalog:",
     "react-dom": "19.3.1",
-    "remotion": "4.0.535",
+    "remotion": "4.0.536",
     "sharp": "catalog:"
   },
   "devDependencies": {
