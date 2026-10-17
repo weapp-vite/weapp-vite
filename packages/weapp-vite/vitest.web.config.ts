@@ -56,7 +56,7 @@ export default defineProject({
     include: webTestFiles,
     exclude: projectTestExcludes,
     globals: true,
-    globalSetup: ['../../vitest.globalSetup.mjs'],
+    globalSetup: [path.resolve(packageDir, '../../vitest.globalSetup.mjs')],
     fileParallelism: false,
     hookTimeout: 60_000,
     testTimeout: 120_000,

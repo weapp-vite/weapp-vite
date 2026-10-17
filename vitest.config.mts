@@ -184,7 +184,7 @@ const projects = [
 export default defineConfig(() => {
   return {
     test: {
-      globalSetup: ['./vitest.globalSetup.mjs'],
+      globalSetup: [path.resolve(ROOT_DIR, 'vitest.globalSetup.mjs')],
       maxWorkers: workspaceMaxWorkers,
       projects,
       sharedViteServer: false,
