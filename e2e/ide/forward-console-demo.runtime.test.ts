@@ -7,6 +7,7 @@ import {
   startForwardConsole,
 } from 'weapp-ide-cli'
 import { launchAutomator } from '../utils/automator'
+import { runCleanupSteps } from '../utils/cleanupSteps'
 import {
   cleanupTrackedDevProcesses,
   startDevProcess,
@@ -157,20 +158,32 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
   let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
 
   async function cleanupTestState() {
-    if (originalIndexTs) {
-      await fs.writeFile(INDEX_TS, originalIndexTs, 'utf8').catch(() => {})
-    }
-    if (originalIndexWxml) {
-      await fs.writeFile(INDEX_WXML, originalIndexWxml, 'utf8').catch(() => {})
-    }
-    await forwardConsoleSession?.close().catch(() => {})
-    forwardConsoleSession = undefined
-    miniProgram?.disconnect?.()
-    miniProgram = undefined
-    await devProcess?.stop().catch(() => {})
-    devProcess = undefined
-    await cleanupTrackedDevProcesses()
-    await cleanupResidualIdeProcesses()
+    await runCleanupSteps([
+      { label: 'restore forward-console script', run: async () => {
+        if (originalIndexTs) {
+          await fs.writeFile(INDEX_TS, originalIndexTs, 'utf8')
+        }
+      } },
+      { label: 'restore forward-console template', run: async () => {
+        if (originalIndexWxml) {
+          await fs.writeFile(INDEX_WXML, originalIndexWxml, 'utf8')
+        }
+      } },
+      { label: 'close forward-console subscription', run: async () => {
+        await forwardConsoleSession?.close()
+        forwardConsoleSession = undefined
+      } },
+      { label: 'disconnect forward-console automator', run: async () => {
+        await miniProgram?.disconnect?.()
+        miniProgram = undefined
+      } },
+      { label: 'stop forward-console dev process', run: async () => {
+        await devProcess?.stop()
+        devProcess = undefined
+      } },
+      { label: 'release tracked dev processes', run: cleanupTrackedDevProcesses },
+      { label: 'release owned IDE resources', run: cleanupResidualIdeProcesses },
+    ])
   }
 
   beforeAll(async () => {

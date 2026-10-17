@@ -9,6 +9,7 @@ import process from 'node:process'
 import Connection from './Connection'
 import { launchHeadlessAutomator } from './headless'
 import { endWith, extendDeep, isEmpty, isRelative, isWindows, waitUntil } from './internal/compat'
+import { attachCliDiagnostics } from './launcher/diagnostics'
 import { acquireAutomatorPortLease } from './launcher/portLease'
 import { spawnWechatCli } from './launcher/process'
 import { enableAutomatorViaHttp, extractWechatDevtoolsServicePort } from './launcher/wechatCliFallback'
@@ -25,18 +26,18 @@ const LEGACY_RUNTIME_PROVIDER_ENV = 'WEAPP_VITE_E2E_RUNTIME_PROVIDER'
 let localhostListenPatched = false
 
 function retainPortLeaseUntilSessionClose(miniProgram: MiniProgram, portLease: AutomatorPortLease) {
-  let released = false
+  let released: Promise<void> | undefined
   const release = async () => {
-    if (released) {
-      return
-    }
-    released = true
-    await portLease.release()
+    released ??= portLease.release().catch((error: unknown) => {
+      released = undefined
+      throw error
+    })
+    await released
   }
 
   const target = miniProgram as Omit<MiniProgram, 'close' | 'disconnect'> & {
     close?: () => Promise<void>
-    disconnect?: () => void
+    disconnect?: () => Promise<void>
   }
   const rawClose = target.close
   const rawDisconnect = target.disconnect
@@ -45,24 +46,23 @@ function retainPortLeaseUntilSessionClose(miniProgram: MiniProgram, portLease: A
   }
 
   if (typeof rawDisconnect === 'function') {
+    let disconnecting: Promise<void> | undefined
     target.disconnect = function disconnectWithPortLeaseRelease() {
-      try {
-        return rawDisconnect.call(this)
-      }
-      finally {
-        void release()
-      }
+      disconnecting ??= (async () => {
+        await rawDisconnect.call(this)
+        await release()
+      })().catch((error: unknown) => {
+        disconnecting = undefined
+        throw error
+      })
+      return disconnecting
     }
   }
 
   if (typeof rawClose === 'function') {
     target.close = async function closeWithPortLeaseRelease() {
-      try {
-        return await rawClose.call(this)
-      }
-      finally {
-        await release()
-      }
+      await rawClose.call(this)
+      await release()
     }
   }
 
@@ -168,7 +168,7 @@ export default class Launcher {
         catch (error) {
           scope.recordFailure(error)
           scope.throwIfAborted()
-          if (!isRecoverableOperationError(error) || attempt >= attempts) {
+          if (error instanceof AggregateError || !isRecoverableOperationError(error) || attempt >= attempts) {
             throw error
           }
         }
@@ -182,10 +182,40 @@ export default class Launcher {
     const portLease = await scope.step(() => acquireAutomatorPortLease(options.port), { stage: 'port-lease', disposeLate: lease => lease.release() })
     const rawReleaseLease = portLease.release.bind(portLease)
     let releasedLease: Promise<void> | undefined
-    portLease.release = () => releasedLease ??= rawReleaseLease()
-    const disownLease = scope.own(() => portLease.release(), 'port-lease')
+    portLease.release = () => releasedLease ??= rawReleaseLease().catch((error: unknown) => {
+      releasedLease = undefined
+      throw error
+    })
+    const connectionTasks: Promise<MiniProgram>[] = []
+    const disconnectingConnections = new WeakMap<MiniProgram, Promise<void>>()
+    const disconnectConnection = (program: MiniProgram): Promise<void> => {
+      const pending = disconnectingConnections.get(program)
+      if (pending) {
+        return pending
+      }
+      const closing = Promise.resolve(program.disconnect?.()).catch((error: unknown) => {
+        disconnectingConnections.delete(program)
+        throw error
+      })
+      disconnectingConnections.set(program, closing)
+      return closing
+    }
+    const releaseConnectionsAndLease = async () => {
+      const results = await Promise.allSettled(connectionTasks)
+      const cleanup = await Promise.allSettled(results.map(result => result.status === 'fulfilled' ? disconnectConnection(result.value) : Promise.resolve()))
+      const errors = cleanup.filter(result => result.status === 'rejected').map(result => result.reason)
+      if (errors.length) {
+        throw new AggregateError(errors, 'Automator connections did not finish closing; port lease retained')
+      }
+      await portLease.release()
+    }
+    const disownLease = scope.own(releaseConnectionsAndLease, 'port-lease')
     let releasePortLeaseOnExit = true
     let releaseChild = async () => {}
+    let diagnoseFailure = (error: unknown): unknown => error
+    let failure: unknown
+    let failed = false
+    let result: MiniProgram | undefined
     try {
       const port = portLease.port
       if (!cliPath) {
@@ -210,6 +240,7 @@ export default class Launcher {
       let httpFallbackError: unknown = null
       let targetPort = port
       const cli = spawnWechatCli(cliPath, args, cwd, scope)
+      diagnoseFailure = error => attachCliDiagnostics(error, cli, [ticket, account])
       releaseChild = cli.release
       let miniProgram: MiniProgram | null = null
       let lastConnectError: unknown = null
@@ -248,38 +279,50 @@ export default class Launcher {
           if (connectTimeout <= 0) {
             return false
           }
-          const candidate = await scope.step(() => this.connectTool({
-            signal: scope.signal,
-            timeout: Math.min(3_000, connectTimeout),
-            wsEndpoint: `ws://127.0.0.1:${targetPort}`,
-          }), { stage: 'websocket', disposeLate: program => program.disconnect() })
-          let releasedCandidate = false
+          const candidate = await scope.step(() => {
+            const connecting = this.connectTool({
+              signal: scope.signal,
+              timeout: Math.min(3_000, connectTimeout),
+              wsEndpoint: `ws://127.0.0.1:${targetPort}`,
+            })
+            connectionTasks.push(connecting)
+            return connecting
+          }, { stage: 'websocket', disposeLate: disconnectConnection })
+          let releasedCandidate: Promise<void> | undefined
           const releaseCandidate = () => {
-            if (!releasedCandidate) {
-              releasedCandidate = true
-              candidate.disconnect()
-            }
+            return releasedCandidate ??= disconnectConnection(candidate).catch((error: unknown) => {
+              releasedCandidate = undefined
+              throw error
+            })
           }
           const disownCandidate = scope.own(releaseCandidate, 'websocket')
           try {
             const checkVersionTimeout = resolveRemainingTimeout()
             if (checkVersionTimeout <= 0) {
-              releaseCandidate()
+              await scope.step(releaseCandidate)
               return false
             }
             await scope.step(() => candidate.checkVersion(Math.min(VERSION_CHECK_TIMEOUT, checkVersionTimeout)), { stage: 'version' })
             if (typeof candidate.waitForAppReady === 'function') {
               const appReadyTimeout = resolveRemainingTimeout()
               if (appReadyTimeout <= 0) {
-                releaseCandidate()
+                await scope.step(releaseCandidate)
                 return false
               }
               await scope.step(() => candidate.waitForAppReady(appReadyTimeout), { stage: 'app-ready' })
             }
           }
           catch (error) {
+            try {
+              await scope.step(releaseCandidate)
+            }
+            catch (cleanupError) {
+              if (cleanupError !== error) {
+                throw new AggregateError([error, cleanupError], 'Automator validation and connection cleanup failed', { cause: error })
+              }
+              throw error
+            }
             disownCandidate()
-            releaseCandidate()
             lastConnectError = error
             if (isRecoverableOperationError(error)) {
               return false
@@ -293,7 +336,7 @@ export default class Launcher {
           lastConnectError = error
           scope.recordFailure(error)
           scope.throwIfAborted()
-          if (!isRecoverableOperationError(error)) {
+          if (error instanceof AggregateError || !isRecoverableOperationError(error)) {
             throw error
           }
           return false
@@ -321,16 +364,45 @@ export default class Launcher {
         wsEndpoint: `ws://127.0.0.1:${targetPort}`,
       } satisfies ILauncherSessionMetadata)
       releasePortLeaseOnExit = !retainPortLeaseUntilSessionClose(resolvedMiniProgram, portLease)
-      disownLease()
-      return resolvedMiniProgram
-    }
-    finally {
-      await releaseChild()
-      if (releasePortLeaseOnExit) {
+      if (!releasePortLeaseOnExit) {
         disownLease()
-        await portLease.release()
+      }
+      result = resolvedMiniProgram
+    }
+    catch (error) {
+      failed = true
+      failure = diagnoseFailure(error)
+    }
+    const cleanupErrors: unknown[] = []
+    try {
+      await scope.step(releaseChild)
+    }
+    catch (error) {
+      if (!failed || error !== failure) {
+        cleanupErrors.push(error)
       }
     }
+    if (releasePortLeaseOnExit) {
+      try {
+        await scope.step(releaseConnectionsAndLease)
+        disownLease()
+      }
+      catch (error) {
+        if ((!failed || error !== failure) && !cleanupErrors.includes(error)) {
+          cleanupErrors.push(error)
+        }
+      }
+    }
+    if (cleanupErrors.length) {
+      if (failed) {
+        throw new AggregateError([failure, ...cleanupErrors], 'Automator launch and resource cleanup failed', { cause: failure })
+      }
+      throw new AggregateError(cleanupErrors, 'Automator launch resource cleanup failed')
+    }
+    if (failed) {
+      throw failure
+    }
+    return result
   }
 
   async connect(options: IConnectOptions) {

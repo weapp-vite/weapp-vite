@@ -581,3 +581,20 @@ it('resolves symbolic channel selections separately before sharing canonical ses
   }
   expect(nightly.miniProgram.disconnect).toHaveBeenCalledExactlyOnceWith()
 })
+
+it('retains owned MCP sessions for retry when async disconnection fails', async () => {
+  const fixture = createMiniProgram()
+  const manager = new RuntimeSessionManager(workspaceRoot, {
+    connectMiniProgram: vi.fn().mockResolvedValue(fixture.miniProgram),
+  })
+  const input = { projectPath: demoProjectPath, installationId: 'async-cleanup' }
+  await manager.withPage(input, async page => expect(page).toBe(fixture.page))
+  const failure = new Error('socket close unconfirmed')
+  fixture.miniProgram.disconnect.mockRejectedValueOnce(failure)
+
+  await expect(manager.dispose()).rejects.toMatchObject({ errors: [failure] })
+  await manager.dispose()
+  expect(fixture.miniProgram.disconnect).toHaveBeenCalledTimes(2)
+  await manager.dispose()
+  expect(fixture.miniProgram.disconnect).toHaveBeenCalledTimes(2)
+})

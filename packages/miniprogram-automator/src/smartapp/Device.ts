@@ -99,7 +99,13 @@ export default class SmartappDevice {
   }
 
   async close() {
-    await this.driver.close?.()
-    this.driver.miniProgram?.disconnect()
+    const results = await Promise.allSettled([
+      Promise.resolve().then(() => this.driver.close?.()),
+      Promise.resolve().then(() => this.driver.miniProgram?.disconnect()),
+    ])
+    const errors = results.filter(result => result.status === 'rejected').map(result => result.reason)
+    if (errors.length) {
+      throw new AggregateError(errors, 'Smartapp device cleanup failed')
+    }
   }
 }

@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   resolveProjectAutomatorPort,
 } from 'weapp-ide-cli'
+import { runCleanupSteps } from '../utils/cleanupSteps'
 import {
   cleanupTrackedDevProcesses,
   startDevProcess,
@@ -246,6 +247,7 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
       const { devProcess, session } = await openTemplateDevProcess(templateCase)
       let miniProgram: any
       let runtimeErrors: ReturnType<typeof attachRuntimeErrorCollector> | undefined
+      let operationError: unknown
       try {
         miniProgram = session.miniProgram
         if (templateCase.name === 'weapp-vite-plugin-template') {
@@ -296,6 +298,7 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
         return
       }
       catch (error) {
+        operationError = error
         lastError = error
         const canRetry = isTemplateRuntimeInfraError(error) || isTemplateProtocolTimeout(error)
         if (attempt >= 2 || !canRetry) {
@@ -304,19 +307,18 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
         process.stdout.write(`[warn] [template-dev-open-all] retry runtime template=${templateCase.name} reason=${error instanceof Error ? error.message : String(error)}\n`)
       }
       finally {
-        runtimeErrors?.dispose()
-        try {
-          miniProgram?.disconnect?.()
-        }
-        catch {}
-        await devProcess?.dev.stop().catch(() => {})
-        await closeSharedMiniProgram(
-          projectRoot,
-          port,
-        ).catch(() => {})
-        if (!USE_PRESTARTED_TEMPLATE_DEV) {
-          await cleanupResidualIdeProcesses()
-        }
+        await runCleanupSteps([
+          { label: 'detach template runtime logs', run: () => runtimeErrors?.dispose() },
+          { label: 'disconnect template automator', run: async () => { await miniProgram?.disconnect?.() } },
+          { label: 'stop template dev process', run: async () => { await devProcess?.dev.stop() } },
+          { label: 'close owned template window', run: async () => { await closeSharedMiniProgram(projectRoot, port) } },
+          ...(!USE_PRESTARTED_TEMPLATE_DEV ? [{ label: 'release template IDE resources', run: cleanupResidualIdeProcesses }] : []),
+        ]).catch((cleanupError: unknown) => {
+          if (operationError !== undefined) {
+            throw new AggregateError([operationError, cleanupError], 'Template runtime and cleanup failed')
+          }
+          throw cleanupError
+        })
         await delay(2_000)
       }
     }

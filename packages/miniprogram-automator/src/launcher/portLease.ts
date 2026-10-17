@@ -39,7 +39,7 @@ function isProcessAlive(pid: number) {
 }
 
 async function removePortLock(leasePath: string) {
-  await fs.rm(leasePath, { force: true }).catch(() => {})
+  await fs.rm(leasePath, { force: true })
 }
 
 async function removeStalePortLock(leasePath: string) {
@@ -82,18 +82,20 @@ async function createPortLock(port: number) {
 }
 
 function createLease(port: number, leasePath?: string): AutomatorPortLease {
-  let released = false
+  let releasing: Promise<void> | undefined
   return {
     path: leasePath,
     port,
-    release: async () => {
-      if (released) {
-        return
-      }
-      released = true
-      if (leasePath) {
-        await removePortLock(leasePath)
-      }
+    release: () => {
+      releasing ??= (async () => {
+        if (leasePath) {
+          await removePortLock(leasePath)
+        }
+      })().catch((error: unknown) => {
+        releasing = undefined
+        throw error
+      })
+      return releasing
     },
   }
 }

@@ -2,7 +2,7 @@
  * @file 自动化端口租约测试。
  */
 import fs from 'node:fs/promises'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { acquireAutomatorPortLease } from './portLease'
 
 const activeLeases: Array<{ release: () => Promise<void> }> = []
@@ -36,5 +36,23 @@ describe('automator port lease', () => {
     await lease.release()
 
     await expect(fs.access(lease.path!)).rejects.toThrow()
+  })
+
+  it('retains a failed release for retry and shares concurrent cleanup', async () => {
+    const lease = await acquireAutomatorPortLease()
+    activeLeases.push(lease)
+    const error = new Error('lock removal denied')
+    const remove = vi.spyOn(fs, 'rm').mockRejectedValueOnce(error)
+    try {
+      const first = lease.release()
+      expect(lease.release()).toBe(first)
+      await expect(first).rejects.toBe(error)
+      await expect(fs.access(lease.path!)).resolves.toBeUndefined()
+      await lease.release()
+      await expect(fs.access(lease.path!)).rejects.toThrow()
+    }
+    finally {
+      remove.mockRestore()
+    }
   })
 })

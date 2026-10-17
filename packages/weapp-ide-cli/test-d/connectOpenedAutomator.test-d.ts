@@ -5,6 +5,6 @@ import { connectOpenedAutomator } from 'weapp-ide-cli'
 expectType<Promise<MiniProgram>>(connectOpenedAutomator({ projectPath: 'fixture' }))
 connectOpenedAutomator({ projectPath: 'fixture', port: 19201 }).then((program) => {
   expectType<Promise<void>>(program.close())
-  expectType<void>(program.disconnect())
+  expectType<Promise<void>>(program.disconnect())
 })
 expectError(connectOpenedAutomator({ port: 19201 }))

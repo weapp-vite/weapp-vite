@@ -1051,6 +1051,13 @@
           "scene": null
         },
         {
+          "name": "issue-1234 automator 0.13 compatibility",
+          "pathName": "pages/issue-1234/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/issue-1186/index",
           "pathName": "pages/issue-1186/index",
           "query": "",

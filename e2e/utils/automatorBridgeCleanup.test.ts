@@ -86,6 +86,42 @@ describe('bridge snapshot failure cleanup', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
+  it('stops scheduling after a watcher close failure and retries its release before removing files', async () => {
+    const failure = new Error('watcher close unconfirmed')
+    closeWatcher.mockImplementationOnce(() => {
+      throw failure
+    })
+    await expect(snapshot.cleanup?.()).rejects.toBe(failure)
+    expect(closeWatcher).toHaveBeenCalledOnce()
+    expect(vi.getTimerCount()).toBe(0)
+    expect(fs.existsSync(snapshot.path)).toBe(true)
+    fs.writeFileSync(path.join(project, 'dist', 'later.js'), 'must not be mirrored')
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(fs.existsSync(path.join(snapshot.path, 'later.js'))).toBe(false)
+    await snapshot.cleanup?.()
+    expect(closeWatcher).toHaveBeenCalledTimes(2)
+    expect(fs.existsSync(snapshot.path)).toBe(false)
+  })
+
+  it('retries a failed watcher stop on disconnect without closing the owned window', async () => {
+    const failure = new Error('watcher close unconfirmed')
+    closeWatcher.mockImplementationOnce(() => {
+      throw failure
+    })
+    const close = vi.fn(async () => {})
+    const disconnect = vi.fn(async () => {})
+    const session = attachBridgeWrapperSyncCleanup({ close, disconnect }, snapshot)
+    await expect(session.disconnect()).rejects.toBe(failure)
+    expect(closeWatcher).toHaveBeenCalledOnce()
+    expect(vi.getTimerCount()).toBe(0)
+    await session.disconnect()
+    await session.disconnect()
+    expect(closeWatcher).toHaveBeenCalledTimes(2)
+    expect(disconnect).toHaveBeenCalledTimes(2)
+    expect(close).not.toHaveBeenCalled()
+    expect(fs.existsSync(snapshot.path)).toBe(true)
+  })
+
   it('retries a failed removal on the next session close instead of marking it complete', async () => {
     const remove = vi.spyOn(fs.promises, 'rm').mockRejectedValueOnce(new Error('file busy'))
     const session = attachBridgeWrapperSyncCleanup({ close: vi.fn(async () => {}) }, snapshot)
@@ -131,5 +167,35 @@ describe('bridge snapshot failure cleanup', () => {
     expect(fs.existsSync(snapshot.path)).toBe(true)
     await session.close()
     expect(fs.existsSync(snapshot.path)).toBe(false)
+  })
+
+  it('stops watching immediately and shares disconnect confirmation without deleting the owned snapshot', async () => {
+    const barrier = Promise.withResolvers<void>()
+    const disconnect = vi.fn(() => barrier.promise)
+    const session = attachBridgeWrapperSyncCleanup({ close: vi.fn(async () => {}), disconnect }, snapshot)
+    const first = session.disconnect()
+    const second = session.disconnect()
+    expect(second).toBe(first)
+    expect(closeWatcher).toHaveBeenCalled()
+    expect(disconnect).toHaveBeenCalledOnce()
+    const finished = vi.fn()
+    void second.then(finished)
+    await Promise.resolve()
+    expect(finished).not.toHaveBeenCalled()
+    expect(fs.existsSync(snapshot.path)).toBe(true)
+    barrier.resolve()
+    await Promise.all([first, second])
+    expect(fs.existsSync(snapshot.path)).toBe(true)
+  })
+
+  it('retries unconfirmed disconnects while preserving the snapshot and stopped watcher', async () => {
+    const disconnect = vi.fn().mockRejectedValueOnce(new Error('socket close unconfirmed')).mockResolvedValue(undefined)
+    const session = attachBridgeWrapperSyncCleanup({ close: vi.fn(async () => {}), disconnect }, snapshot)
+    await expect(session.disconnect()).rejects.toThrow('socket close unconfirmed')
+    expect(closeWatcher).toHaveBeenCalled()
+    expect(fs.existsSync(snapshot.path)).toBe(true)
+    await session.disconnect()
+    expect(disconnect).toHaveBeenCalledTimes(2)
+    expect(fs.existsSync(snapshot.path)).toBe(true)
   })
 })

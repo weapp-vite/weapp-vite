@@ -89,7 +89,7 @@ function getNormalizedTargetFile() {
 export function resolveGithubIssuesScopedTargetFile(targetFile = getNormalizedTargetFile()) {
   const normalizedTarget = targetFile.replaceAll('\\', '/')
   const targetName = normalizedTarget.split('/').at(-1) ?? ''
-  return /^github-issues\.runtime\..+\.test\.ts$/.test(targetName)
+  return /^github-issues\.runtime\..+\.test\.ts$/.test(targetName) || targetName === 'issue-1234-automator.runtime.test.ts'
     ? normalizedTarget
     : undefined
 }
@@ -725,14 +725,21 @@ async function closeMiniProgramSafely(miniProgram: any) {
   if (!miniProgram) {
     return
   }
-  await runAutomatorOp('close mini program', () => miniProgram.close(), {
-    timeoutMs: 6_000,
-    retries: 1,
-  }).catch(() => {
-    if (typeof miniProgram?.disconnect === 'function') {
-      miniProgram.disconnect()
+  try {
+    await runAutomatorOp('close mini program', () => miniProgram.close(), {
+      timeoutMs: 6_000,
+      retries: 1,
+    })
+  }
+  catch (error) {
+    try {
+      await miniProgram.disconnect?.()
     }
-  })
+    catch (disconnectError) {
+      throw new AggregateError([error, disconnectError], 'Shared mini program close and disconnect failed')
+    }
+    throw error
+  }
 }
 
 function stripAutomatorOverlay(wxml: string) {
@@ -1127,19 +1134,25 @@ export async function closeSharedMiniProgram(options: CloseSharedMiniProgramOpti
   if (!sharedSession) {
     return
   }
-  const miniProgram = sharedSession.clear()
-  sharedSession = null
-  await closeMiniProgramSafely(miniProgram)
+  const closingSession = sharedSession
+  await closeMiniProgramSafely(closingSession.session)
+  closingSession.clear()
+  if (sharedSession === closingSession) {
+    sharedSession = null
+  }
   if (resolveRuntimeProviderName() === 'devtools') {
     await cleanupResidualIdeProcesses()
   }
 }
 
-export function disconnectSharedMiniProgram(options: CloseSharedMiniProgramOptions = {}) {
+export async function disconnectSharedMiniProgram(options: CloseSharedMiniProgramOptions = {}) {
   if (shouldDeferSharedMiniProgramClose(options)) {
     return
   }
-  sharedSession = null
+  if (sharedSession) {
+    await sharedSession.session.disconnect()
+    sharedSession = null
+  }
 }
 
 export async function getSharedMiniProgram(_ctx?: { skip: (message?: string) => void }) {
@@ -1161,7 +1174,8 @@ export async function releaseSharedMiniProgram(miniProgram: any) {
     return
   }
   const owner = sharedSessionOwners.get(miniProgram)
-  await closeMiniProgramSafely(owner ? owner.clear() : miniProgram)
+  await closeMiniProgramSafely(owner ? owner.session : miniProgram)
+  owner?.clear()
 }
 
 export async function callCurrentPageMethod<T = any>(miniProgram: any, methodName: string, ...args: any[]): Promise<T> {
@@ -1198,8 +1212,10 @@ async function restartSharedMiniProgram(ctx?: { skip: (message?: string) => void
   if (!recoveringSession) {
     return await getSharedMiniProgram(ctx)
   }
+  let closed = false
   try {
-    await closeMiniProgramSafely(recoveringSession.clear())
+    await closeMiniProgramSafely(recoveringSession.session)
+    closed = true
     if (resolveRuntimeProviderName() === 'devtools') {
       await cleanupResidualIdeProcesses()
     }
@@ -1214,7 +1230,10 @@ async function restartSharedMiniProgram(ctx?: { skip: (message?: string) => void
     return recoveringSession.session
   }
   catch (error) {
-    sharedSession = null
+    if (closed) {
+      recoveringSession.clear()
+      sharedSession = null
+    }
     throw error
   }
 }

@@ -61,8 +61,8 @@ describe('e2e app: github-issues / slot fallback compiler off', { concurrent: fa
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
-  afterAll(() => {
-    disconnectSharedMiniProgram()
+  afterAll(async () => {
+    await disconnectSharedMiniProgram()
   })
 
   it('renders plain slot fallback independently from scopedSlotsCompiler', async (ctx) => {

@@ -32,7 +32,7 @@ function resolveWindowsBatchSpawn(cliPath: string, args: string[]) {
 /** 只持有本次 CLI 子进程句柄；退出后不通过旧 PID 查找或终止宿主。 */
 export function spawnWechatCli(cliPath: string, args: string[], cwd: string, scope: OperationLifecycle) {
   scope.throwIfAborted()
-  const state = { error: null as unknown, success: false, exited: false, output: '' }
+  const state = { error: null as unknown, success: false, exited: false, output: '', outputTruncated: false }
   const bootstrapArgs = resolveWechatDevtoolsBootstrapArgs(args)
   const target = shouldUseWindowsCommandShell(cliPath) ? resolveWindowsBatchSpawn(cliPath, bootstrapArgs) : { file: cliPath, args: bootstrapArgs }
   const child = spawn(target.file, target.args, {
@@ -60,7 +60,9 @@ export function spawnWechatCli(cliPath: string, args: string[], cwd: string, sco
     state.error = error
   })
   const output = (chunk: unknown) => {
-    state.output = (state.output + String(chunk)).slice(-32_768)
+    const combined = state.output + String(chunk)
+    state.outputTruncated ||= combined.length > 32_768
+    state.output = combined.slice(-32_768)
   }
   child.stdout?.on('data', output)
   child.stderr?.on('data', output)

@@ -1,7 +1,8 @@
 import type { AutomatorSessionOptions, MiniProgramEventMap, MiniProgramLike } from './automator-session'
 import { inspect } from 'node:util'
 import logger, { colors } from '../logger'
-import { acquireConsoleMiniProgram as acquireSharedMiniProgram, closeSharedMiniProgram, connectConsoleMiniProgram as connectMiniProgram, releaseSharedMiniProgram, resolveAutomatorSessionOptions } from './automator-session'
+import { acquireConsoleMiniProgram as acquireSharedMiniProgram, closeOwnedSharedMiniProgram, closeSharedMiniProgram, connectConsoleMiniProgram as connectMiniProgram, releaseSharedMiniProgram, resolveAutomatorSessionOptions } from './automator-session'
+import { refreshOpenedMiniProgramConsoleLog } from './forwardConsole/refresh'
 
 export type ForwardConsoleLogLevel = 'debug' | 'log' | 'info' | 'warn' | 'error'
 
@@ -229,10 +230,24 @@ async function acquireForwardConsoleMiniProgram(options: ForwardConsoleOptions) 
     }
     catch (error) {
       lastError = error
+      const cleanupErrors: unknown[] = []
       if (miniProgram) {
-        releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
+        try {
+          await releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
+        }
+        catch (cleanupError) {
+          cleanupErrors.push(cleanupError)
+        }
       }
-      await closeSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
+      try {
+        await closeSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
+      }
+      catch (cleanupError) {
+        cleanupErrors.push(cleanupError)
+      }
+      if (cleanupErrors.length) {
+        throw new AggregateError([error, ...cleanupErrors], 'Forward console setup and connection cleanup failed', { cause: error })
+      }
       if (attempt < ENABLE_LOG_RETRY_TIMES) {
         await sleep(ENABLE_LOG_RETRY_DELAY_MS)
       }
@@ -240,19 +255,6 @@ async function acquireForwardConsoleMiniProgram(options: ForwardConsoleOptions) 
   }
 
   throw lastError instanceof Error ? lastError : new Error(String(lastError))
-}
-
-async function refreshOpenedMiniProgramConsoleLog(options: ForwardConsoleOptions) {
-  const miniProgram = await connectMiniProgram({
-    ...options,
-    openedOnly: true,
-  })
-  try {
-    await enableMiniProgramConsoleLog(miniProgram)
-  }
-  finally {
-    miniProgram.disconnect()
-  }
 }
 
 function startEnableLogRefresh(
@@ -267,7 +269,7 @@ function startEnableLogRefresh(
   const timer = setInterval(() => {
     void miniProgram.enableLog(ENABLE_LOG_TIMEOUT_MS).catch(() => {})
     if (refreshOpenedSession) {
-      void refreshOpenedMiniProgramConsoleLog(options).catch(() => {})
+      void refreshOpenedMiniProgramConsoleLog(options, enableMiniProgramConsoleLog).catch(() => {})
     }
   }, ENABLE_LOG_REFRESH_INTERVAL_MS)
 
@@ -313,9 +315,11 @@ export async function startForwardConsole(options: ForwardConsoleOptions): Promi
   let stopEnableLogRefresh: (() => void) | undefined
   let auxiliaryMiniProgram: MiniProgramLike | undefined
   let auxiliaryTimer: ReturnType<typeof setTimeout> | undefined
-  const closeSession = async () => {
-    if (closed) {
-      return
+  let closing: Promise<void> | undefined
+  let sharedReleased = false
+  const closeSession = (): Promise<void> => {
+    if (closing) {
+      return closing
     }
     closed = true
     if (auxiliaryTimer) {
@@ -326,15 +330,41 @@ export async function startForwardConsole(options: ForwardConsoleOptions): Promi
     stopEnableLogRefresh = undefined
     detachMiniProgramListener(miniProgram, 'console', onConsole)
     detachMiniProgramListener(miniProgram, 'exception', onException)
-    if (auxiliaryMiniProgram) {
-      detachMiniProgramListener(auxiliaryMiniProgram, 'console', onConsole)
-      detachMiniProgramListener(auxiliaryMiniProgram, 'exception', onException)
-      auxiliaryMiniProgram.disconnect()
-      auxiliaryMiniProgram = undefined
-    }
-    if (usesSharedSession) {
-      releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
-    }
+    closing = (async () => {
+      const errors: unknown[] = []
+      if (auxiliaryMiniProgram) {
+        detachMiniProgramListener(auxiliaryMiniProgram, 'console', onConsole)
+        detachMiniProgramListener(auxiliaryMiniProgram, 'exception', onException)
+        try {
+          await auxiliaryMiniProgram.disconnect()
+          auxiliaryMiniProgram = undefined
+        }
+        catch (error) {
+          errors.push(error)
+        }
+      }
+      if (usesSharedSession) {
+        try {
+          if (sharedReleased) {
+            await closeOwnedSharedMiniProgram(options, miniProgram)
+          }
+          else {
+            sharedReleased = true
+            await releaseSharedMiniProgram(options.projectPath, options.sessionId || options.port, options)
+          }
+        }
+        catch (error) {
+          errors.push(error)
+        }
+      }
+      if (errors.length) {
+        throw new AggregateError(errors, 'Forward console session cleanup failed')
+      }
+    })().catch((error: unknown) => {
+      closing = undefined
+      throw error
+    })
+    return closing
   }
 
   miniProgram.on('console', onConsole)
@@ -348,7 +378,7 @@ export async function startForwardConsole(options: ForwardConsoleOptions): Promi
           openedOnly: true,
         })
         if (closed) {
-          openedMiniProgram.disconnect()
+          await openedMiniProgram.disconnect()
           return
         }
         auxiliaryMiniProgram = openedMiniProgram

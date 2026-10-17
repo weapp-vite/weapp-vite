@@ -2,6 +2,36 @@ import { describe, expect, it, vi } from 'vitest'
 import { attachManagedProjectSession } from './managedProjectSession'
 
 describe('managed project session', () => {
+  it('keeps every disconnect caller pending until the socket close is confirmed', async () => {
+    const barrier = Promise.withResolvers<void>()
+    const disconnect = vi.fn(() => barrier.promise)
+    const closeOwner = vi.fn(async () => {})
+    const session = attachManagedProjectSession({ close: vi.fn(), disconnect }, closeOwner)
+    const first = session.disconnect()
+    const second = session.disconnect()
+    expect(second).toBe(first)
+    const closing = session.close()
+    await Promise.resolve()
+    expect(closeOwner).not.toHaveBeenCalled()
+    barrier.resolve()
+    await Promise.all([first, second, closing])
+    expect(disconnect).toHaveBeenCalledOnce()
+    expect(closeOwner).toHaveBeenCalledOnce()
+  })
+
+  it('rechecks an unconfirmed disconnect before allowing subsequent cleanup to complete', async () => {
+    const failure = new Error('socket close unconfirmed')
+    const disconnect = vi.fn().mockRejectedValueOnce(failure).mockResolvedValue(undefined)
+    const closeOwner = vi.fn(async () => {})
+    const session = attachManagedProjectSession({ close: vi.fn(), disconnect }, closeOwner)
+    await expect(session.disconnect()).rejects.toBe(failure)
+    expect(closeOwner).not.toHaveBeenCalled()
+    await session.close()
+    await session.disconnect()
+    expect(disconnect).toHaveBeenCalledTimes(2)
+    expect(closeOwner).toHaveBeenCalledOnce()
+  })
+
   it('closes the owned window after disconnect and shares concurrent cleanup', async () => {
     const rawClose = vi.fn()
     const disconnect = vi.fn()

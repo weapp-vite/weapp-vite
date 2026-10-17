@@ -34,19 +34,21 @@ describe('headless automator lifecycle contract', () => {
     return projectPath
   }
 
-  it('exposes synchronous idempotent disconnect without closing another project', async () => {
+  it('starts disconnect synchronously and shares its completion without closing another project', async () => {
     const launcher = new Launcher()
     const first = await launcher.launch({ projectPath: createProject(), runtimeProvider: 'headless' })
     const second = await launcher.launch({ projectPath: createProject(), runtimeProvider: 'headless' })
     try {
-      expect(first.disconnect()).toBeUndefined()
-      first.disconnect()
-      await first.close()
+      const pending = first.disconnect()
+      expect(pending).toBeInstanceOf(Promise)
+      expect(first.disconnect()).toBe(pending)
       await expect(first.currentPage()).rejects.toThrow(/closed/i)
+      await pending
+      await first.close()
       const page = await second.reLaunch('/pages/detail/index')
       expect(await (await page.$('#title')).text()).toBe('detail')
       await second.close()
-      expect(second.disconnect()).toBeUndefined()
+      await expect(second.disconnect()).resolves.toBeUndefined()
     }
     finally {
       await first.close()
