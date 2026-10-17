@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'pathe'
 import { rolldown } from 'rolldown'
@@ -75,29 +75,40 @@ describe('native component HMR dependency boundaries', () => {
     }
   })
 
-  it('accepts only matching native component tokens from known executable entries', () => {
-    const root = '/project'
-    const component = '/project/src/counter.js'
-    const owner = '/project/src/page.js'
-    const options = { root, entryIds: new Set([component, owner]) }
-    const token = createSidecarSourceSpecifier(owner, 'src/counter.js', 'using-component')
-    const patch = { type: 'Patch' as const, code: 'updated();', filename: 'update.js', changedIds: [token] }
-    expect(isSafeJavaScriptPatch([component], patch, [], options)).toBe(true)
-    expect(isSafeJavaScriptPatch([component], patch, [], { ...options, srcRoot: '/project/other-source' })).toBe(false)
-    expect(isSafeJavaScriptPatch([component], patch, [], { ...options, entryIds: new Set([owner]) })).toBe(false)
-    expect(isSafeJavaScriptPatch([owner], patch, [], options)).toBe(false)
-    expect(isSafeJavaScriptPatch([component], patch)).toBe(false)
-    expect(isSafeJavaScriptPatch([component], patch, ['entry-mixed-config:1'], options)).toBe(false)
-    expect(isSafeJavaScriptPatch([component], { type: 'FullReload', reason: 'unaccepted dependency' }, [], options)).toBe(false)
-    for (const kind of ['json', 'template', 'layout'] as const) {
-      expect(isSafeJavaScriptPatch([component], { ...patch, changedIds: [createSidecarSourceSpecifier(owner, component, kind)] }, [], options)).toBe(false)
+  it('accepts only matching native component tokens from known executable entries', async () => {
+    // 使用真实物理根目录，避免 /project 在 Windows 上缺少盘符并只解析出部分父路径。
+    const root = await realpath(await mkdtemp(path.join(tmpdir(), 'stateful-component-boundary-')))
+    try {
+      const srcRoot = path.join(root, 'src')
+      const component = path.join(srcRoot, 'counter.js')
+      const owner = path.join(srcRoot, 'page.js')
+      await mkdir(srcRoot)
+      await writeFile(component, 'Component({})')
+      await writeFile(owner, 'Page({})')
+      const options = { root, entryIds: new Set([component, owner]) }
+      const token = createSidecarSourceSpecifier(owner, 'src/counter.js', 'using-component')
+      const patch = { type: 'Patch' as const, code: 'updated();', filename: 'update.js', changedIds: [token] }
+      expect(isSafeJavaScriptPatch([component], patch, [], options)).toBe(true)
+      expect(isSafeJavaScriptPatch([component], patch, [], { ...options, srcRoot: path.join(root, 'other-source') })).toBe(false)
+      expect(isSafeJavaScriptPatch([component], patch, [], { ...options, entryIds: new Set([owner]) })).toBe(false)
+      expect(isSafeJavaScriptPatch([owner], patch, [], options)).toBe(false)
+      expect(isSafeJavaScriptPatch([component], patch)).toBe(false)
+      expect(isSafeJavaScriptPatch([component], patch, ['entry-mixed-config:1'], options)).toBe(false)
+      expect(isSafeJavaScriptPatch([component], { type: 'FullReload', reason: 'unaccepted dependency' }, [], options)).toBe(false)
+      for (const kind of ['json', 'template', 'layout'] as const) {
+        expect(isSafeJavaScriptPatch([component], { ...patch, changedIds: [createSidecarSourceSpecifier(owner, component, kind)] }, [], options)).toBe(false)
+      }
+      for (const file of ['unknown.js', 'counter.vue', 'counter.tsx', 'counter.json']) {
+        const source = path.join(srcRoot, file)
+        const sourceToken = createSidecarSourceSpecifier(owner, source, 'using-component')
+        expect(isStatefulHmrBoundary(sourceToken, srcRoot, options.entryIds)).toBe(false)
+        expect(isSafeJavaScriptPatch([source], { ...patch, changedIds: [sourceToken] }, [], options)).toBe(false)
+      }
+      const vue = path.join(srcRoot, 'counter.vue')
+      expect(isStatefulHmrBoundary(createSidecarSourceSpecifier(owner, vue, 'using-component'), srcRoot, [vue])).toBe(false)
     }
-    for (const source of ['/project/src/unknown.js', '/project/src/counter.vue', '/project/src/counter.tsx', '/project/src/counter.json']) {
-      const sourceToken = createSidecarSourceSpecifier(owner, source, 'using-component')
-      expect(isStatefulHmrBoundary(sourceToken, '/project/src', options.entryIds)).toBe(false)
-      expect(isSafeJavaScriptPatch([source], { ...patch, changedIds: [sourceToken] }, [], options)).toBe(false)
+    finally {
+      await rm(root, { force: true, recursive: true })
     }
-    const vue = '/project/src/counter.vue'
-    expect(isStatefulHmrBoundary(createSidecarSourceSpecifier(owner, vue, 'using-component'), '/project/src', [vue])).toBe(false)
   })
 })

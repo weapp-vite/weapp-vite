@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
 import { resolveRealpath, withRealpathScope } from '../../utils/realpathScope'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { CompilerHmrHost, compilerSourceId } from './hmr'
 
 const roots: string[] = []
@@ -25,7 +26,8 @@ it('shares physical source identity with entry resolution only within a synchron
   writeFileSync(file, 'Page({})')
   const native = vi.spyOn(realpathSync, 'native')
   withRealpathScope(() => {
-    const entrySource = resolveRealpath(file).replaceAll('\\', '/')
+    // 入口解析先归一 Vite 文件路径；Windows 原生分隔符不能另造一个缓存 key。
+    const entrySource = resolveRealpath(normalizeFsResolvedId(file)).replaceAll('\\', '/')
     expect(compilerSourceId(file)).toBe(entrySource)
     expect(native).toHaveBeenCalledTimes(1)
   })
