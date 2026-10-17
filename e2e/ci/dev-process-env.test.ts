@@ -2,15 +2,24 @@ import { EventEmitter } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fixtureWindowsProcessRows } from '../utils/testSupport/windowsProcessRows'
 
-const { execaMock } = vi.hoisted(() => {
+const { execaMock, windowsKernelQueryMock } = vi.hoisted(() => {
   return {
     execaMock: vi.fn(),
+    windowsKernelQueryMock: vi.fn(),
   }
 })
 
 vi.mock('execa', () => {
   return {
     execa: execaMock,
+  }
+})
+
+vi.mock('../utils/devProcessCleanup/windowsKernelQuery', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/devProcessCleanup/windowsKernelQuery')>()
+  return {
+    ...actual,
+    queryWindowsKernelProcesses: windowsKernelQueryMock,
   }
 })
 
@@ -202,20 +211,18 @@ describe('dev process env isolation', () => {
         })
       }
 
-      if (command === 'powershell.exe') {
-        return Promise.resolve({
-          exitCode: 0,
-          signal: undefined,
-          stdout: fixtureWindowsProcessRows([{
-            ProcessId: 12345,
-            ParentProcessId: 1,
-            ExecutablePath: 'C:\\node.exe',
-            Started: '2026-10-07T01:00:00.0000000Z',
-          }]),
-        })
-      }
-
       return child
+    })
+    windowsKernelQueryMock.mockResolvedValue({
+      exitCode: 0,
+      signal: undefined,
+      stdout: fixtureWindowsProcessRows([{
+        ProcessId: 12345,
+        ParentProcessId: 1,
+        ExecutablePath: 'C:\\node.exe',
+        Started: '2026-10-07T01:00:00.0000000Z',
+      }]),
+      stderr: '',
     })
 
     let isFirstPidCheck = true
