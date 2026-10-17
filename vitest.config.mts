@@ -146,6 +146,7 @@ const projects = [
         'e2e/scripts/suiteRunner/process.test.ts',
         'e2e/utils/agentAcceptanceLifecycle.test.ts',
         'e2e/utils/automator.cli-bridge.test.ts',
+        'e2e/utils/automatorBridgeFiles.test.ts',
         'e2e/utils/automator.test.ts',
         'e2e/utils/automatorCliProcess.test.ts',
         'e2e/utils/automatorWarmup.test.ts',

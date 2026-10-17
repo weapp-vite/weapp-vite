@@ -26,17 +26,13 @@ export function bindWxmlDependencyWatch(ctx: WatchContext, server: ViteDevServer
   externalOwners.set(ctx, external)
   const unobserve = observeWxmlDependencies(ctx, (files) => {
     external.clear()
-    const internal: string[] = []
     for (const file of files) {
       const relative = root ? path.relative(root, file) : ''
       if (root && (relative === '..' || relative.startsWith('../') || path.isAbsolute(relative))) {
         external.add(file)
       }
-      else {
-        internal.push(file)
-      }
     }
-    server.watcher.add(internal)
+    // 根内输入已由 Vite 递归观察；重复 add 会留下 close 后仍在运行的异步注册。
     if (!external.size || server.config?.server.watch === null) {
       return
     }

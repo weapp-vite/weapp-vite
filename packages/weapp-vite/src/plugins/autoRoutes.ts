@@ -16,6 +16,7 @@ import {
   resolveAutoRoutesMatcherContext,
 } from '../runtime/autoRoutesPlugin/shared'
 import { publishAutoRoutesTopology, registerAutoRoutesTopologySource } from '../runtime/autoRoutesPlugin/topology'
+import { createAutoRoutesWatchDirectoryRegistry } from '../runtime/autoRoutesPlugin/watchDirectories'
 import { createSidecarWatchOptions } from '../runtime/watch/options'
 import { recordHmrProfileDuration, recordHmrProfileOperation } from '../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
@@ -320,7 +321,9 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       servingSubscribers.set(subscriberId, watcherSubscriber)
     }
 
-    const watcher = chokidar.watch(watchDirs, createSidecarWatchOptions(configService, {
+    const watchDirectories = createAutoRoutesWatchDirectoryRegistry()
+    // 源目录作为持久锚点，页面根目录整体删除后仍能观察其恢复。
+    const watcher = chokidar.watch(watchDirectories.add([...watchDirs, configService.absoluteSrcRoot]), createSidecarWatchOptions(configService, {
       ignoreInitial: true,
       persistent: true,
       awaitWriteFinish: {
@@ -342,7 +345,10 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     const controller: AutoRoutesWatcherController = {
       ownsFile: ownsTopologyFile,
       addWatchTargets(paths) {
-        watcher.add(paths)
+        const additions = watchDirectories.add(paths)
+        if (additions.length > 0) {
+          watcher.add(additions)
+        }
       },
       subscribers,
       servingSubscribers,

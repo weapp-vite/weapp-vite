@@ -1,9 +1,10 @@
-import { mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { runInNewContext } from 'node:vm'
 import { dev } from 'rolldown/experimental'
 import { expect, it, vi } from 'vitest'
+import { renameAtomicFile } from '../../../../../scripts/utils/atomicRename'
 import { CompilerHmrHost, compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 
@@ -147,7 +148,7 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
     for (const [index, utility] of ['py-6.5', 'py-7.5'].entries()) {
       record('edit:start', { index })
       await writeFile(`${entry}.pending`, source(utility))
-      await rename(`${entry}.pending`, entry)
+      await renameAtomicFile(`${entry}.pending`, entry)
       record('edit:renamed', { index })
       await vi.waitFor(() => expect(batches.length).toBe(index + 1), { timeout: 10_000 })
       record('patch:observed', { index, count: batches.length })

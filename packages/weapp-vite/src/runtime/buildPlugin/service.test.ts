@@ -14,6 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { attachDevModuleGraphHost } from '../../moduleGraph/host'
 import { createModuleGraphService } from '../../moduleGraph/service'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
+import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { createGenerateBundleHook } from '../../plugins/core/lifecycle/emit/generate'
 import { registerManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
 import { readCompilerInput, withCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
@@ -366,8 +367,8 @@ const runVueStyleSnapshotMock: typeof import('./vueStyleSnapshot').withVueStyleD
   })
 }
 
-async function createAppShellSnapshotHarness(before: boolean | undefined) {
-  const root = path.normalize(realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-app-shell-snapshot-'))))
+async function createAppShellSnapshotHarness(before: boolean | undefined, duringInitialBuild?: (ctx: CompilerContext, appId: string) => Promise<void>) {
+  const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-app-shell-snapshot-'))))
   const appId = path.join(root, 'app.vue')
   const pageIds = ['first.vue', 'second.vue'].map(name => path.join(root, 'pages', name))
   const componentId = path.join(root, 'components/plain.vue')
@@ -388,8 +389,13 @@ async function createAppShellSnapshotHarness(before: boolean | undefined) {
   if (before !== undefined) {
     ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appId, before)
   }
+  else {
+    // 模拟首构预捕获解析失败、交回原生构建诊断的路径，保留未知代际的契约。
+    vueStyleSnapshotMock.mockImplementationOnce(async (_ctx, _entries, _files, run) => await run({ forceFullRescan: true }))
+  }
   const allIds = [appId, ...pageIds, componentId]
   for (const id of allIds) {
+    expect(compilerSourceId(id)).toBe(id)
     ctx.runtimeState.build.hmr.resolvedEntryMap.set(id, { id })
     ctx.runtimeState.build.hmr.loadedEntrySet.add(id)
   }
@@ -398,7 +404,10 @@ async function createAppShellSnapshotHarness(before: boolean | undefined) {
   }
   ctx.runtimeState.build.hmr.entriesMap.set(componentId, { path: componentId, type: 'component' })
   ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([appId]))
-  buildMock.mockResolvedValueOnce(watcher).mockResolvedValue({ output: [] })
+  buildMock.mockImplementationOnce(async () => {
+    await duringInitialBuild?.(ctx, appId)
+    return watcher
+  }).mockResolvedValue({ output: [] })
   const firstBuild = createBuildService(ctx).build({ skipNpm: true })
   await watcher.subscribed
   watcher.emit('START')
@@ -1673,6 +1682,63 @@ describe('runtime buildPlugin service', () => {
     expect(touchMock).not.toHaveBeenCalled()
   })
 
+  it.each([false, true])('pins initial App shell input and commits that generation when source changes during build (before=%s)', async (before) => {
+    const reads: string[] = []
+    const source = (present: boolean) => `<script setup>const marker = 'app'</script>${present ? '<template><view><slot /></view></template>' : ''}`
+    const scenario = await createAppShellSnapshotHarness(before, async (ctx, appId) => {
+      reads.push(await readCompilerInput(ctx.configService, appId))
+      await fs.writeFile(appId, source(!before))
+      reads.push(await readCompilerInput(ctx.configService, appId))
+      // 其他 resolver 的较新观测不能成为本次已发布页面的应用壳版本。
+      ctx.runtimeState.build.hmr.vueEntryHasTemplate.set(appId, !before)
+    })
+    try {
+      expect(reads).toEqual([source(before), source(before)])
+      await scenario.update(source(!before))
+      for (const id of scenario.pageIds) {
+        expect(scenario.ctx.runtimeState.build.hmr.dirtyEntryReasons.get(id)).toBe('dependency')
+        expect(scenario.ctx.runtimeState.build.hmr.loadedEntrySet.has(id)).toBe(false)
+      }
+      expect(scenario.ctx.runtimeState.build.hmr.dirtyEntrySet.has(scenario.componentId)).toBe(false)
+      expect(scenario.ctx.runtimeState.build.hmr.loadedEntrySet.has(scenario.componentId)).toBe(true)
+    }
+    finally {
+      await scenario.close()
+    }
+  })
+
+  it('keeps App shell fixture IDs canonical when native realpath uses a different directory spelling', async () => {
+    const root = path.normalize(realpathSync.native(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-app-shell-identity-'))))
+    const physicalRoot = path.join(root, 'physical')
+    const canonicalRoot = path.join(root, 'canonical')
+    await fs.ensureDir(physicalRoot)
+    await fs.symlink(physicalRoot, canonicalRoot, 'junction')
+    const native = realpathSync.native
+    const nativePath = vi.spyOn(realpathSync, 'native').mockImplementation((file) => {
+      const resolved = path.normalize(native(file))
+      const relative = path.relative(physicalRoot, resolved)
+      return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+        ? path.join(canonicalRoot, relative)
+        : resolved
+    })
+    const temporaryRoot = vi.spyOn(fs, 'mkdtemp').mockResolvedValueOnce(physicalRoot)
+    let scenario: Awaited<ReturnType<typeof createAppShellSnapshotHarness>> | undefined
+    try {
+      // 模拟 Windows 短路径与 native 物理路径拥有不同拼写，文件仍指向同一目录。
+      expect(path.normalize(realpathSync(physicalRoot))).not.toBe(path.normalize(realpathSync.native(physicalRoot)))
+      scenario = await createAppShellSnapshotHarness(false)
+      expect(scenario.appId).toBe(path.join(canonicalRoot, 'app.vue'))
+      await scenario.update(scenario.appSource(true))
+      expect(scenario.pageIds.every(id => scenario.ctx.runtimeState.build.hmr.dirtyEntrySet.has(id))).toBe(true)
+    }
+    finally {
+      await scenario?.close()
+      temporaryRoot.mockRestore()
+      nativePath.mockRestore()
+      await fs.remove(root)
+    }
+  })
+
   it.each([false, true])('invalidates page scripts when an App shell template changes presence (before=%s)', async (before) => {
     const scenario = await createAppShellSnapshotHarness(before)
     const { appId, appSource, pageIds, componentId, ctx } = scenario
@@ -1837,7 +1903,7 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
-  it('does not infer App shell presence from an unobserved initial generation', async () => {
+  it('does not infer App shell presence when initial input capture failed', async () => {
     const scenario = await createAppShellSnapshotHarness(undefined)
     try {
       await scenario.update(scenario.appSource(true))

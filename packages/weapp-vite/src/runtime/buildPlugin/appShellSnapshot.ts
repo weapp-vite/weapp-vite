@@ -3,10 +3,28 @@ import { getCompilerSourceSnapshot, readCompilerSourceSnapshot } from '../../plu
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../plugins/utils/vueSfc'
 import { hasAppShellTemplate, isAppVueFile } from '../../plugins/vue/transform/appShell'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { withVueStyleDependencySnapshot } from './vueStyleSnapshot'
 
 export interface AppShellSnapshot {
   appId: string
   hasTemplate: boolean
+}
+
+/** 首构的应用壳分析、页面编译和成功提交共用固定输入；中途保存交给下一串行快照。 */
+export async function withInitialAppShellSnapshot<T>(
+  ctx: MutableCompilerContext,
+  run: () => Promise<T>,
+  onDrift: (files: Array<{ file: string, event: 'update' | 'delete' }>) => void,
+) {
+  const appId = ctx.scanService?.appEntry?.path
+  const { configService, moduleGraphService } = ctx
+  if (!appId || !isAppVueFile(appId) || !configService || !moduleGraphService || configService.weappLibConfig?.enabled) {
+    return await run()
+  }
+  return await withVueStyleDependencySnapshot({ runtimeState: ctx.runtimeState, configService, moduleGraphService }, [], [], run, onDrift, {
+    entries: [appId],
+    resolveAffectedEntries: async () => [],
+  })
 }
 
 async function readAppShellPresence(ctx: MutableCompilerContext, appId: string) {
@@ -20,7 +38,7 @@ async function readAppShellPresence(ctx: MutableCompilerContext, appId: string) 
   return hasAppShellTemplate({ template: descriptor.template?.content })
 }
 
-/** 写出成功后优先提交本代固定输入，首构建沿用实际观测；不重新读取磁盘或借用较新的观测。 */
+/** 写出成功后优先提交本代固定输入，未捕获时沿用实际观测；不重新读取磁盘或借用较新的观测。 */
 export async function captureAppShellSnapshot(ctx: MutableCompilerContext, fallbackAppId?: string): Promise<AppShellSnapshot | undefined> {
   const path = ctx.scanService?.appEntry?.path ?? fallbackAppId
   if (!path || !isAppVueFile(path) || ctx.configService?.weappLibConfig?.enabled) {

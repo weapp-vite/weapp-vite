@@ -1,24 +1,27 @@
 param([uint32]$RootProcessId, [switch]$Warm)
 
 $ErrorActionPreference = 'Stop'
-[Console]::Error.WriteLine('process-tree:script-enter')
+$diagnosticStopwatch = [Diagnostics.Stopwatch]::StartNew()
+[Console]::Error.WriteLine("process-tree:script-enter elapsedMs=$($diagnosticStopwatch.ElapsedMilliseconds)")
 
-$assemblyPath = Join-Path ([IO.Path]::GetTempPath()) 'weapp-vite-edit-sequence-process-tree-v2.dll'
+$assemblyPath = Join-Path ([IO.Path]::GetTempPath()) 'weapp-vite-edit-sequence-process-tree-v3.dll'
 
 # 直接读取内核进程快照，避免 WMI/CIM provider 的冷启动进入采样路径。
 if (Test-Path -LiteralPath $assemblyPath) {
-  [Console]::Error.WriteLine('process-tree:helper-cache-hit')
+  [Console]::Error.WriteLine("process-tree:helper-cache-hit elapsedMs=$($diagnosticStopwatch.ElapsedMilliseconds)")
   Add-Type -Path $assemblyPath
 }
 else {
-  [Console]::Error.WriteLine('process-tree:helper-compile')
+  [Console]::Error.WriteLine("process-tree:helper-compile elapsedMs=$($diagnosticStopwatch.ElapsedMilliseconds)")
   $temporaryAssemblyPath = "$assemblyPath.$PID.tmp"
   Add-Type -ReferencedAssemblies System.Core.dll -OutputAssembly $temporaryAssemblyPath -TypeDefinition @'
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Text;
 
 public static class EditSequenceProcessTree {
   [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -40,6 +43,28 @@ public static class EditSequenceProcessTree {
     public uint ProcessId;
     public uint ParentProcessId;
     public long WorkingSetSize;
+  }
+
+  // 固定协议只含三个整数，避免通用 PowerShell 对象序列化进入有期限的采样路径。
+  public static string ToJson(Observation[] observations) {
+    var json = new StringBuilder("[");
+    for (var index = 0; index < observations.Length; index++) {
+      if (index > 0) {
+        json.Append(',');
+      }
+      var row = observations[index];
+      json.Append("{\"ProcessId\":").Append(row.ProcessId.ToString(CultureInfo.InvariantCulture));
+      json.Append(",\"ParentProcessId\":").Append(row.ParentProcessId.ToString(CultureInfo.InvariantCulture));
+      json.Append(",\"WorkingSetSize\":").Append(row.WorkingSetSize.ToString(CultureInfo.InvariantCulture));
+      json.Append('}');
+    }
+    return json.Append(']').ToString();
+  }
+
+  public static string ReadJson(uint rootProcessId, Stopwatch stopwatch) {
+    var observations = Read(rootProcessId);
+    Console.Error.WriteLine("process-tree:query-complete elapsedMs=" + stopwatch.ElapsedMilliseconds.ToString(CultureInfo.InvariantCulture));
+    return ToJson(observations.ToArray());
   }
 
   [DllImport("kernel32.dll", SetLastError = true)]
@@ -112,11 +137,12 @@ public static class EditSequenceProcessTree {
   }
 }
 
-[Console]::Error.WriteLine('process-tree:helper-ready')
+[Console]::Error.WriteLine("process-tree:helper-ready elapsedMs=$($diagnosticStopwatch.ElapsedMilliseconds)")
 if ($Warm) {
   return
 }
 
-$observations = [EditSequenceProcessTree]::Read($RootProcessId)
-[Console]::Error.WriteLine('process-tree:query-complete')
-ConvertTo-Json -InputObject @($observations) -Compress
+$json = [EditSequenceProcessTree]::ReadJson($RootProcessId, $diagnosticStopwatch)
+[Console]::Error.WriteLine("process-tree:json-serialized elapsedMs=$($diagnosticStopwatch.ElapsedMilliseconds)")
+[Console]::Out.WriteLine($json)
+[Console]::Error.WriteLine("process-tree:json-output-written elapsedMs=$($diagnosticStopwatch.ElapsedMilliseconds)")

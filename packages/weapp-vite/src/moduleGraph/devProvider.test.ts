@@ -137,27 +137,6 @@ describe('dev module graph provider', () => {
     }
   })
 
-  it('subscribes external WXML inputs to the provider and releases only its listener', async () => {
-    const runtimeState = createRuntimeState()
-    const dependency = '/external/transform-rules.json'
-    runtimeState.wxmlProcessing.references.set(dependency, 1)
-    const unrelated = vi.fn()
-    runtimeState.wxmlProcessing.listeners.add(unrelated)
-    const provider = await createDevModuleGraphProvider({
-      moduleGraphService: createModuleGraphService(),
-      runtimeState,
-    } as any, {}, vi.fn())
-    expect(watcher.add).toHaveBeenCalledWith([dependency])
-    expect(runtimeState.wxmlProcessing.listeners.size).toBe(2)
-    for (const listener of runtimeState.wxmlProcessing.listeners) {
-      listener(['/external/late-rules.json'])
-    }
-    expect(watcher.add).toHaveBeenCalledWith(['/external/late-rules.json'])
-    await provider.close()
-    await provider.close()
-    expect(runtimeState.wxmlProcessing.listeners).toEqual(new Set([unrelated]))
-  })
-
   it('borrows a host graph without creating or closing a second Vite server', async () => {
     const moduleGraphService = createModuleGraphService()
     const ctx = { moduleGraphService, runtimeState: createRuntimeState() }

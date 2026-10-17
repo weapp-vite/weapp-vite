@@ -61,7 +61,7 @@ function debugTemplateE2E(templateName: string, phase: string, detail?: string) 
 export interface TemplateE2EOptions {
   context: TestContext
   acceptance: TemplateDomRoute[]
-  buildPlatform?: string
+  buildPlatform?: 'weapp' | 'alipay' | 'tt'
   distRoot?: string
   ideProjectRoot?: string
   jsFormat?: 'cjs' | 'esm'
@@ -183,13 +183,13 @@ export function normalizeWxmlForSnapshot(wxml: string) {
       `aria-controls="c9814c17--t_tabs_0_panel_${index}"`
     ))
     // Normalize tdesign tabs panel ids.
-    .replace(/id="([0-9a-f]{8})--t_tabs_0_panel_(\d+)"/g, (_match, _id, index) => {
-      const mapped = {
+    .replace(/id="([0-9a-f]{8})--t_tabs_0_panel_(\d+)"/g, (_match, _id, index: string) => {
+      const mapped: Record<string, string> = {
         0: '723fc055',
         1: '1b31d0d4',
         2: '063b76de',
-      }[index]
-      return mapped ? `id="${mapped}--t_tabs_0_panel_${index}"` : `id="c9814c17--t_tabs_0_panel_${index}"`
+      }
+      return mapped[index] ? `id="${mapped[index]}--t_tabs_0_panel_${index}"` : `id="c9814c17--t_tabs_0_panel_${index}"`
     })
     // Normalize scoped id hash prefixes generated for user-defined ids in components.
     .replace(/id="([0-9a-f]{8})--(?!t_)([^"]+)"/g, (_match, _id, suffix) => (
@@ -523,7 +523,7 @@ function resolvePages(config: Record<string, any>) {
   return pages
 }
 
-async function runBuild(templateRoot: string, jsFormat?: 'cjs' | 'esm', platform = 'weapp') {
+async function runBuild(templateRoot: string, jsFormat?: 'cjs' | 'esm', platform: 'weapp' | 'alipay' | 'tt' = 'weapp') {
   const packageJsonPath = path.resolve(templateRoot, 'package.json')
   const packageJson = await readJson<Record<string, any>>(packageJsonPath)
   const hasDependencies = packageJson?.dependencies && Object.keys(packageJson.dependencies).length > 0
