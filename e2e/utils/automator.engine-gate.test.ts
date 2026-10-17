@@ -9,11 +9,14 @@ const mocks = vi.hoisted(() => ({
   target: vi.fn(),
   httpBuild: vi.fn(),
   reset: vi.fn(),
+  runtimePort: vi.fn(),
+  setRuntimePort: vi.fn(),
 }))
 vi.mock('execa', () => ({ execa: mocks.execa }))
 vi.mock('../../packages/weapp-ide-cli/src/cli/managedProjectGate', () => ({ ensureManagedWechatProject: mocks.gate }))
 vi.mock('../../packages/weapp-ide-cli/src/cli/engine', () => ({ runWechatIdeEngineBuildByHttp: mocks.httpBuild }))
 vi.mock('../../packages/weapp-ide-cli/src/cli/http', () => ({ openWechatIdeProjectByHttp: vi.fn(), resetWechatIdeFileUtilsByHttp: mocks.reset }))
+vi.mock('../../packages/weapp-ide-cli/src/cli/wechatDevtoolsRuntimePort', () => ({ getRuntimeWechatDevtoolsServicePort: mocks.runtimePort, setRuntimeWechatDevtoolsServicePort: mocks.setRuntimePort }))
 vi.mock('./devtoolsSelection', () => ({ resolveSelectedWechatDevtools: mocks.target, assertSelectedWechatDevtoolsRuntime: vi.fn() }))
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'fixture' }))
 
@@ -34,6 +37,7 @@ describe('raw engine build managed project gate', () => {
     mocks.target.mockResolvedValue(target)
     mocks.httpBuild.mockRejectedValue(new Error('Cannot GET /engine/build'))
     mocks.reset.mockResolvedValue(undefined)
+    mocks.runtimePort.mockReturnValue(undefined)
   })
 
   afterEach(() => {
@@ -67,6 +71,24 @@ describe('raw engine build managed project gate', () => {
     expect(events).toEqual(['project-confirmed', 'engine-build'])
     expect(mocks.target).toHaveBeenCalledExactlyOnceWith(target.cliPath)
     expect(mocks.execa).toHaveBeenCalledExactlyOnceWith(target.cliPath, ['engine', 'build', projectPath], {
+      cwd: undefined,
+      reject: false,
+      timeout: 70_000,
+      cancelSignal: undefined,
+      killDescendants: true,
+    })
+  })
+
+  it('pins the managed refresh fallback to the active DevTools service port', async () => {
+    mocks.runtimePort.mockReturnValue(16325)
+    const pending = refreshMiniProgramProjectIndex(projectPath, 'fixture', {
+      cliPath: target.cliPath,
+      allowCliEngineBuildFallback: true,
+      engineBuildFallbackSettleMs: 0,
+    })
+    await vi.runAllTimersAsync()
+    await pending
+    expect(mocks.execa).toHaveBeenCalledExactlyOnceWith(target.cliPath, ['engine', 'build', projectPath, '--port=16325'], {
       cwd: undefined,
       reject: false,
       timeout: 70_000,

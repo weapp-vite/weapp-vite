@@ -12,7 +12,7 @@ import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/
 import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from '../../packages/weapp-ide-cli/src/cli/http'
 import { ensureManagedWechatProject } from '../../packages/weapp-ide-cli/src/cli/managedProjectGate'
 import { importManagedDevtoolsProject } from '../../packages/weapp-ide-cli/src/cli/projectImport'
-import { setRuntimeWechatDevtoolsServicePort } from '../../packages/weapp-ide-cli/src/cli/wechatDevtoolsRuntimePort'
+import { getRuntimeWechatDevtoolsServicePort, setRuntimeWechatDevtoolsServicePort } from '../../packages/weapp-ide-cli/src/cli/wechatDevtoolsRuntimePort'
 import { cleanupManagedWechatProjects, closeManagedWechatProject, MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { normalizeRuntimeConsoleText } from '../ide/runtimeErrors'
 import { extractWechatDevtoolsServicePort } from './automator.cli-bridge'
@@ -2259,10 +2259,11 @@ async function runWechatIdeEngineBuildByRuntimeHttp(projectPath: string, project
 
 async function confirmManagedEngineBuildProject(cliPath: string, projectPath: string, lifecycle?: AutomatorLaunchLifecycle) {
   if (!process.env[MANAGED_PROJECT_JOURNAL_ENV]?.trim()) {
-    return
+    return undefined
   }
+  let target: Awaited<ReturnType<typeof resolveSelectedWechatDevtools>>
   try {
-    const target = await resolveSelectedWechatDevtools(cliPath)
+    target = await resolveSelectedWechatDevtools(cliPath)
     await ensureManagedWechatProject(target, projectPath, { signal: lifecycle?.signal })
   }
   catch (error) {
@@ -2271,6 +2272,7 @@ async function confirmManagedEngineBuildProject(cliPath: string, projectPath: st
     throw new ManagedEngineBuildGateError(error)
   }
   lifecycle?.throwIfAborted()
+  return target
 }
 
 export async function refreshMiniProgramProjectIndex(
@@ -2335,8 +2337,13 @@ export async function refreshMiniProgramProjectIndex(
         return
       }
       const cliPath = resolveWechatCliPath(options.cliPath)
-      await confirmManagedEngineBuildProject(cliPath, projectPath, lifecycle)
-      const build = () => execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
+      const target = await confirmManagedEngineBuildProject(cliPath, projectPath, lifecycle)
+      const buildArgs = ['engine', 'build', path.resolve(projectPath)]
+      const runtimePort = target && getRuntimeWechatDevtoolsServicePort(target)
+      if (runtimePort) {
+        buildArgs.push(`--port=${runtimePort}`)
+      }
+      const build = () => execa(cliPath, buildArgs, {
         cwd: options.cwd,
         reject: false,
         timeout: lifecycle?.remainingMs(70_000) ?? 70_000,
@@ -2391,8 +2398,13 @@ export async function prebuildAutomatorProjectIndex(
 
   const cliPath = resolveWechatCliPath(options.cliPath)
   process.stdout.write(`[info] [runtime:launch-step] prebuild-start project=${project}\n`)
-  await confirmManagedEngineBuildProject(cliPath, projectPath, lifecycle)
-  const build = () => execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
+  const target = await confirmManagedEngineBuildProject(cliPath, projectPath, lifecycle)
+  const buildArgs = ['engine', 'build', path.resolve(projectPath)]
+  const runtimePort = target && getRuntimeWechatDevtoolsServicePort(target)
+  if (runtimePort) {
+    buildArgs.push(`--port=${runtimePort}`)
+  }
+  const build = () => execa(cliPath, buildArgs, {
     cwd: options.cwd,
     reject: false,
     timeout: lifecycle?.remainingMs(70_000) ?? 70_000,
