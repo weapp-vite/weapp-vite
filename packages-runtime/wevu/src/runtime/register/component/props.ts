@@ -19,11 +19,12 @@ type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string } }
 
 export function createPropsSync(options: {
   restOptions: Record<string, any>
+  nativeSlotContext: boolean
   propsAliases?: Record<string, string>
   propsDerivedKeys?: string[]
   userObservers?: Record<string, any>
 }) {
-  const { restOptions, propsAliases, propsDerivedKeys, userObservers } = options
+  const { restOptions, nativeSlotContext, propsAliases, propsDerivedKeys, userObservers } = options
   const propKeys = restOptions.properties && typeof restOptions.properties === 'object'
     ? Object.keys(restOptions.properties as any)
     : []
@@ -334,6 +335,7 @@ export function createPropsSync(options: {
       injectedObservers[key] = function __wevu_prop_observer(this: InternalRuntimeState, newValue: unknown) {
         if (
           (!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+          && nativeSlotContext
           && key === WEVU_NATIVE_DECLARATION_ADDRESS_PROP
         ) {
           updateNativeDeclarationAddress(this, newValue)
@@ -348,6 +350,7 @@ export function createPropsSync(options: {
   const finalObservers: Record<string, any> = {
     // 地址 observer 必须先于通配/组合用户 observer，避免同步创建的后代看到旧索引。
     ...((!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+      && nativeSlotContext
       && propKeySet.has(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)
       ? { [WEVU_NATIVE_DECLARATION_ADDRESS_PROP]: undefined }
       : {}),
@@ -357,7 +360,7 @@ export function createPropsSync(options: {
     const existing = finalObservers[key]
     if (typeof existing === 'function') {
       finalObservers[key] = function chainedObserver(this: InternalRuntimeState, ...args: any[]) {
-        if (key === WEVU_NATIVE_DECLARATION_ADDRESS_PROP) {
+        if (nativeSlotContext && key === WEVU_NATIVE_DECLARATION_ADDRESS_PROP) {
           injected.apply(this, args)
           existing.apply(this, args)
         }

@@ -1,5 +1,6 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
+import type { ReExportResolutionCache } from '../../../../../utils/reExport'
 import type { ResolvedAppShell } from '../../appShell'
 import type { CompileVueFileResolvedOptions } from '../../compileOptions'
 import type { ResolvedPageLayoutPlan } from '../../pageLayout'
@@ -40,10 +41,11 @@ export interface VueBundleState {
   pluginCtx: any
   compilationCache: Map<string, CompilationCacheEntry>
   appShell?: ResolvedAppShell
-  reExportResolutionCache: Map<string, Map<string, string | undefined>>
+  reExportResolutionCache: ReExportResolutionCache
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
   componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
+  nativeSlotContextCache?: CompileVueFileResolvedOptions['nativeSlotContextCache']
 }
 
 export interface ClassStyleWxsAsset {
@@ -52,9 +54,10 @@ export interface ClassStyleWxsAsset {
 }
 
 export interface VueBundleCompileOptionsState {
-  reExportResolutionCache: Map<string, Map<string, string | undefined>>
+  reExportResolutionCache: ReExportResolutionCache
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
   componentMetaCache?: CompileVueFileResolvedOptions['componentMetaCache']
+  nativeSlotContextCache?: CompileVueFileResolvedOptions['nativeSlotContextCache']
   emitResolvedComponentEntries?: boolean
 }

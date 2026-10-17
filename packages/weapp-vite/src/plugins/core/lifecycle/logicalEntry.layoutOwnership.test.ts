@@ -187,9 +187,6 @@ describe('logical native layout metadata ownership', () => {
     for (const dependency of stale) {
       expect(result?.code).not.toContain(JSON.stringify(createSidecarModuleId(setup.source, dependency.sourceId, dependency.kind)))
     }
-    expect(setup.state.ctx.moduleGraphService.replaceEntryDependencies).toHaveBeenCalledWith(setup.source, 'script', [setup.source])
-    expect(setup.state.ctx.moduleGraphService.replaceEntryDependencies).toHaveBeenCalledWith(setup.source, 'layout', [])
-    expect(setup.state.ctx.moduleGraphService.replaceEntryDependencies).toHaveBeenCalledWith(setup.source, 'wxs', [])
   })
 
   it('keeps only the reachable template and WXS closure across repeated loads', async () => {

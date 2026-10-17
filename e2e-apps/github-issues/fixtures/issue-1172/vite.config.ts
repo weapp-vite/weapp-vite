@@ -5,6 +5,6 @@ export default defineConfig({
   build: { target: 'es2019' },
   weapp: {
     srcRoot: 'src',
-    vue: { template: { scopedSlotsRequireProps: true } },
+    vue: { template: { scopedSlotsRequireProps: true, nativeSlotContext: true } },
   },
 })

@@ -87,6 +87,7 @@ describe('runtime: register component helpers', () => {
     const instance: any = { __wevuProps: propsProxy }
     const { finalObservers } = createPropsSync({
       restOptions: { properties: { foo: null } },
+      nativeSlotContext: false,
     })
 
     finalObservers.foo.call(instance, 2)
@@ -103,6 +104,7 @@ describe('runtime: register component helpers', () => {
     }
     const { finalObservers } = createPropsSync({
       restOptions: { properties: { foo: null } },
+      nativeSlotContext: false,
     })
 
     finalObservers.foo.call(instance, false, true)

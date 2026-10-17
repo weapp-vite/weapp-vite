@@ -1,15 +1,46 @@
 import type { BuildGraphContext, DevModuleNode, DevServerGraphHost } from './types'
+import { readlinkSync } from 'node:fs'
+import path from 'node:path'
 import { resolveRealpath, withRealpathScope } from '../utils/realpathScope'
-import { normalizeFsResolvedId } from '../utils/resolvedId'
+import { isSkippableResolvedId, normalizeFsResolvedId } from '../utils/resolvedId'
 import { parseLogicalEntryId, parseSidecarModuleId, parseSidecarSourceRequest } from './protocol'
 
 export function normalizeSourceId(id: string) {
-  const normalized = normalizeFsResolvedId(id).split('?')[0]!
+  const normalized = normalizeFsResolvedId(id)
+  if (isSkippableResolvedId(normalized)) {
+    return normalized
+  }
   try {
     return normalizeFsResolvedId(resolveRealpath(normalized))
   }
   catch {
-    return normalized
+    if (!path.isAbsolute(normalized) && path.win32.isAbsolute(normalized)) {
+      return normalized
+    }
+    // 叶子符号链接在目标删除后仍保留目标路径；不缓存身份，重建后继续观察新目标。
+    let candidate = normalized
+    let links: Set<string> | undefined
+    for (;;) {
+      let target: string
+      try {
+        target = readlinkSync(candidate)
+      }
+      catch {
+        break
+      }
+      links ??= new Set<string>()
+      if (links.has(candidate)) {
+        return normalized
+      }
+      links.add(candidate)
+      candidate = path.resolve(path.dirname(candidate), target)
+    }
+    try {
+      return normalizeFsResolvedId(path.join(resolveRealpath(path.dirname(candidate)), path.basename(candidate)))
+    }
+    catch {
+      return normalizeFsResolvedId(candidate)
+    }
   }
 }
 

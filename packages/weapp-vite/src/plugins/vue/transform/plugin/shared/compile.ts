@@ -8,8 +8,8 @@ import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
-import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
 import { hasAppShellTemplate, resolveAppShellLayout } from '../../appShell'
+import { applyComponentResolutionDependencies, syncVueCompilationDependencies } from '../../componentResolutionDependencies'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { registerVueTemplateToken, resolveVueOutputBase } from '../../shared'
 import { buildWeappVueStyleRequests } from '../../styleRequest'
@@ -132,9 +132,11 @@ export async function compileTransformEntryResult(options: {
   compileJsxFile: (source: string, filename: string, options: CompileVueFileOptions) => Promise<VueTransformResult>
 }) {
   const { transformedSource, filename, compileOptions, compileVueFile, compileJsxFile } = options
-  return filename.endsWith('.vue')
+  const result = filename.endsWith('.vue')
     ? await compileVueFile(transformedSource, filename, compileOptions)
     : await compileJsxFile(transformedSource, filename, compileOptions)
+  applyComponentResolutionDependencies(result, compileOptions)
+  return result
 }
 
 export async function finalizeTransformCompiledResult(options: {
@@ -144,6 +146,7 @@ export async function finalizeTransformCompiledResult(options: {
   source: string
   autoRoutesSignature?: string
   result: VueTransformResult
+  styleBlocks?: SFCStyleBlock[]
   compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean, autoRoutesSignature?: string, refreshToken?: number, styleIndependentSignature?: string, pageLayoutSignature?: string, appShellSignature?: string }>
   styleIndependentSignature?: string
   pageLayoutSignature: string
@@ -198,25 +201,7 @@ export async function finalizeTransformCompiledResult(options: {
     registerVueTemplateToken(ctx, filename, result.template)
   }
 
-  if (Array.isArray(result.meta?.sfcSrcDeps)) {
-    addNormalizedWatchFiles(pluginCtx, result.meta.sfcSrcDeps)
-    ctx.moduleGraphService.replaceEntryDependencies(filename, 'style', result.meta.sfcSrcDeps)
-  }
-  if (configService.isDev) {
-    const styleBindings = ctx.runtimeState.build.hmr.vueEntryStyleBindings
-    if (result.meta?.sfcSrcDeps?.length) {
-      styleBindings.set(filename, {
-        sources: result.meta.sfcSrcDeps,
-        expressions: result.meta.cssVars,
-      })
-    }
-    else {
-      styleBindings.delete(filename)
-    }
-  }
-  const jsxDependencies = result.meta?.jsxDependencies ?? []
-  addNormalizedWatchFiles(pluginCtx, jsxDependencies)
-  ctx.moduleGraphService.replaceEntryDependencies(filename, 'jsx', jsxDependencies)
+  syncVueCompilationDependencies({ ctx, pluginCtx, filename, result, configService, styleBlocks: options.styleBlocks })
 
   await finalizeTransformEntryScript({
     result: transformResult,

@@ -110,6 +110,8 @@ export interface TransformContext {
   htmlTagToWxmlTagClass: boolean
   scopedSlotsCompiler: ScopedSlotsCompilerMode
   scopedSlotsRequireProps: boolean
+  nativeSlotContext: boolean
+  nativeSlotContextTags?: ReadonlySet<string>
   slotSingleRootNoWrapper: boolean
   slotFallbackWrapper: ResolvedSlotFallbackWrapperConfig
   slotFallbackWrapperComponent?: SlotFallbackWrapperComponentAsset
@@ -210,6 +212,10 @@ export interface TemplateCompileOptions {
   htmlTagToWxmlTagClass?: boolean
   scopedSlotsCompiler?: ScopedSlotsCompilerMode
   scopedSlotsRequireProps?: boolean
+  /** 显式启用微信原生普通插槽的声明上下文协议；默认关闭。 */
+  nativeSlotContext?: boolean
+  /** 上下文分析后需要声明协议的组件标签；未提供时保守保留全部 wevu 组件。@internal */
+  nativeSlotContextTags?: ReadonlySet<string>
   slotSingleRootNoWrapper?: boolean
   slotFallbackWrapper?: SlotFallbackWrapperConfig
   slotFallbackWrapperStrategy?: SlotFallbackWrapperStrategy

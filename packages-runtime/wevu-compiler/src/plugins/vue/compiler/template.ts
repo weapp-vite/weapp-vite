@@ -150,6 +150,8 @@ export function compileVueTemplateToWxml(
       htmlTagToWxmlTagClass: options?.htmlTagToWxmlTagClass ?? true,
       scopedSlotsCompiler: options?.scopedSlotsCompiler ?? 'auto',
       scopedSlotsRequireProps,
+      nativeSlotContext: options?.nativeSlotContext === true,
+      nativeSlotContextTags: options?.nativeSlotContextTags,
       slotSingleRootNoWrapper,
       slotFallbackWrapper,
       slotFallbackWrapperComponent,

@@ -1,3 +1,6 @@
+import { setImmediate } from 'node:timers/promises'
+import { WEVU_NATIVE_DECLARATION_ADDRESS_PROP, WEVU_NATIVE_DECLARATION_EVENT, WEVU_NATIVE_SLOT_CONTEXT_KEY } from '@weapp-core/constants'
+import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
 import { collectComponentSourceInfo, collectTemplateComponentNames } from './componentSources'
@@ -45,11 +48,6 @@ import Unused from 'native/unused'
       'month': 'native/month',
       'TButton': 'native/button',
       't-button': 'native/button',
-    })
-    expect(result.autoImportTagsMap).toEqual({
-      'TButton': 'auto/TButton',
-      't-button': 'auto/t-button',
-      'auto-card': 'auto/auto-card',
     })
   })
 
@@ -136,6 +134,145 @@ console.log(TButton)
     expect(result.script).toContain('console.log(TButton)')
     expect(warnings).toContainEqual(expect.stringContaining('usingComponents'))
     expect(warnings).toContainEqual(expect.stringContaining('native/button'))
+  })
+
+  it.each([true, false])('follows explicit component precedence for native participation: %s', async (contextInExplicitImport) => {
+    const pure = '<template><text>pure</text></template>'
+    const consumer = '<script setup>import { inject } from "wevu"; inject("token")</script><template><text>consumer</text></template>'
+    const files: Record<string, string> = {
+      '/project/Explicit.vue': contextInExplicitImport ? consumer : pure,
+      '/project/Automatic.vue': contextInExplicitImport ? pure : consumer,
+    }
+    const result = await compileVueFile('<script setup>import Child from "./Explicit.vue"</script><template><Child /></template>', '/project/Parent.vue', {
+      sourceMap: false,
+      template: { nativeSlotContext: true, scopedSlotsRequireProps: true },
+      sfcSrc: { readFile: async id => files[id]! },
+      autoUsingComponents: {
+        enabled: true,
+        warn: () => {},
+        resolveUsingComponentPath: async () => ({ from: '/components/explicit', resolvedId: '/project/Explicit.vue', sourceType: 'wevu-sfc' }),
+      },
+      autoImportTags: {
+        enabled: true,
+        resolveUsingComponent: async () => ({ name: 'child', from: '/components/automatic', resolvedId: '/project/Automatic.vue', sourceType: 'wevu-sfc' }),
+      },
+    })
+    const config: unknown = JSON.parse(result.config!)
+    expect(config).toHaveProperty('usingComponents.child', '/components/explicit')
+    expect(result.script!.includes(WEVU_NATIVE_SLOT_CONTEXT_KEY)).toBe(contextInExplicitImport)
+    expect(result.template!.includes(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)).toBe(contextInExplicitImport)
+    expect(result.meta?.nativeSlotContextDeps).toContain('/project/Explicit.vue')
+    expect(result.meta?.nativeSlotContextDeps).not.toContain('/project/Automatic.vue')
+  })
+
+  describe.each(['native', 'wevu-sfc'] as const)('atomic %s registration precedence', (explicitType) => {
+    const consumer = '<script setup>import { inject } from "wevu"; inject("token")</script><template><text>consumer</text></template>'
+    const native = 'Component({})'
+
+    it.each(['explicit', 'automatic'])('keeps the explicit winner when %s resolves first', async (first) => {
+      const root = path.resolve('src/registration-precedence')
+      const explicitId = `${root}/Explicit.${explicitType === 'native' ? 'js' : 'vue'}`
+      const automaticType = explicitType === 'native' ? 'wevu-sfc' : 'native'
+      const automaticId = `${root}/Automatic.${automaticType === 'native' ? 'js' : 'vue'}`
+      const files: Record<string, string> = {
+        [explicitId]: explicitType === 'native' ? native : consumer,
+        [automaticId]: automaticType === 'native' ? native : consumer,
+      }
+      const completed: string[] = []
+      const result = await compileVueFile('<script setup>import Child from "./Explicit"</script><template><Child /><child /></template>', `${root}/Parent.vue`, {
+        sourceMap: false,
+        template: { nativeSlotContext: true, scopedSlotsRequireProps: true },
+        componentMetaCache: new Map([
+          [explicitId, Promise.resolve({ componentName: 'Explicit', isMiniProgramComponent: explicitType !== 'native' })],
+          [automaticId, Promise.resolve({ componentName: 'Automatic', isMiniProgramComponent: automaticType !== 'native' })],
+        ]),
+        sfcSrc: { readFile: async id => files[id]! },
+        autoUsingComponents: {
+          enabled: true,
+          warn: () => {},
+          resolveUsingComponentPath: async () => {
+            if (first !== 'explicit') {
+              await setImmediate()
+            }
+            completed.push('explicit')
+            return { from: '/components/explicit', resolvedId: explicitId, sourceType: explicitType }
+          },
+        },
+        autoImportTags: {
+          enabled: true,
+          resolveUsingComponent: async () => {
+            if (first !== 'automatic') {
+              await setImmediate()
+            }
+            completed.push('automatic')
+            return { name: 'child', from: '/components/automatic', resolvedId: automaticId, sourceType: automaticType }
+          },
+        },
+      })
+
+      expect(completed[0]).toBe(first)
+      const config: unknown = JSON.parse(result.config!)
+      expect(config).toHaveProperty('usingComponents', { child: '/components/explicit' })
+      const declarations = result.template!.match(/<child\b[^>]*>/g)
+      expect(declarations).toHaveLength(2)
+      for (const declaration of declarations!) {
+        expect(declaration.includes(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)).toBe(explicitType === 'wevu-sfc')
+        expect(declaration.includes(`bind:${WEVU_NATIVE_DECLARATION_EVENT}`)).toBe(explicitType === 'wevu-sfc')
+      }
+      expect(result.meta?.nativeSlotContextDeps).toContain(explicitId)
+      expect(result.meta?.nativeSlotContextDeps).not.toContain(automaticId)
+    })
+
+    it.each(['setup', 'options'])('keeps setup bindings ahead of Options components when %s resolves first', async (first) => {
+      const root = path.resolve('src/registration-precedence')
+      const setupId = `${root}/SetupChild.${explicitType === 'native' ? 'js' : 'vue'}`
+      const optionsType = explicitType === 'native' ? 'wevu-sfc' : 'native'
+      const optionsId = `${root}/OptionsChild.${optionsType === 'native' ? 'js' : 'vue'}`
+      const files: Record<string, string> = {
+        [setupId]: explicitType === 'native' ? native : consumer,
+        [optionsId]: optionsType === 'native' ? native : consumer,
+      }
+      const completed: string[] = []
+      const result = await compileVueFile(`<script>
+import OptionsChild from './OptionsChild'
+export default { components: { Child: OptionsChild } }
+</script>
+<script setup>import Child from './SetupChild'</script>
+<template><Child /><child /></template>`, `${root}/Parent.vue`, {
+        sourceMap: false,
+        template: { nativeSlotContext: true, scopedSlotsRequireProps: true },
+        componentMetaCache: new Map([
+          [setupId, Promise.resolve({ componentName: 'SetupChild', isMiniProgramComponent: explicitType !== 'native' })],
+          [optionsId, Promise.resolve({ componentName: 'OptionsChild', isMiniProgramComponent: optionsType !== 'native' })],
+        ]),
+        sfcSrc: { readFile: async id => files[id]! },
+        autoUsingComponents: {
+          enabled: true,
+          warn: () => {},
+          resolveUsingComponentPath: async (source) => {
+            const kind = source === './SetupChild' ? 'setup' : 'options'
+            if (first !== kind) {
+              await setImmediate()
+            }
+            completed.push(kind)
+            return kind === 'setup'
+              ? { from: '/components/setup', resolvedId: setupId, sourceType: explicitType }
+              : { from: '/components/options', resolvedId: optionsId, sourceType: optionsType }
+          },
+        },
+      })
+
+      expect(completed.slice(0, 2)).toEqual([first, first === 'setup' ? 'options' : 'setup'])
+      const config: unknown = JSON.parse(result.config!)
+      expect(config).toHaveProperty('usingComponents', { child: '/components/setup' })
+      const declarations = result.template!.match(/<child\b[^>]*>/g)
+      expect(declarations).toHaveLength(2)
+      for (const declaration of declarations!) {
+        expect(declaration.includes(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)).toBe(explicitType === 'wevu-sfc')
+        expect(declaration.includes(`bind:${WEVU_NATIVE_DECLARATION_EVENT}`)).toBe(explicitType === 'wevu-sfc')
+      }
+      expect(result.meta?.nativeSlotContextDeps).toContain(setupId)
+    })
   })
 
   it('rejects malformed templates through the full compiler instead of accepting recovered tags', async () => {

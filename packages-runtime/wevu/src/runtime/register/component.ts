@@ -134,8 +134,11 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     ...(userOptions as any),
   }
 
+  const nativeSlotContext = (!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+    && (mpOptions as Record<string, unknown>)[WEVU_NATIVE_SLOT_CONTEXT_KEY] === true
   const { attachWevuPropKeys, directPropsDerivedKeys, syncWevuPropsFromInstance, syncWevuPropsFromValues, finalObservers } = createPropsSync({
     restOptions,
+    nativeSlotContext,
     propsAliases,
     propsDerivedKeys,
     userObservers,
@@ -203,8 +206,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     syncWevuPropsFromInstance,
     syncWevuPropsFromValues,
     directPropsDerivedKeys,
-    nativeSlotContext: (!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
-      && (mpOptions as Record<string, unknown>)[WEVU_NATIVE_SLOT_CONTEXT_KEY] === true,
+    nativeSlotContext,
     isPage,
     vueLifecycles,
     getRuntimeOwnerLabel,

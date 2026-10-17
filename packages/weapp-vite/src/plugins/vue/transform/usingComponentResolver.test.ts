@@ -1,3 +1,4 @@
+import type * as EntryResolve from '../../../utils/entryResolve'
 import { describe, expect, it, vi } from 'vitest'
 import { resolveUsingComponentReference } from './usingComponentResolver'
 
@@ -7,14 +8,18 @@ const pathExistsCachedMock = vi.hoisted(() => vi.fn(async () => true))
 const readFileCachedMock = vi.hoisted(() => vi.fn(async () => 'export {}'))
 const usingComponentFromResolvedFileMock = vi.hoisted(() => vi.fn((value: string | undefined) => value ? `/using${value}` : undefined))
 
-vi.mock('../../../utils/entryResolve', () => ({
-  createCachedEntryResolveOptions: vi.fn((_configService: any, options?: any) => ({
-    kind: options?.kind,
-    exists: vi.fn(),
-    stat: vi.fn(),
-  })),
-  resolveEntryPath: resolveEntryPathMock,
-}))
+vi.mock('../../../utils/entryResolve', async (importOriginal) => {
+  const actual = await importOriginal<typeof EntryResolve>()
+  return {
+    ...actual,
+    createCachedEntryResolveOptions: vi.fn((_configService: unknown, options?: { kind?: string }) => ({
+      kind: options?.kind,
+      exists: vi.fn(),
+      stat: vi.fn(),
+    })),
+    resolveEntryPath: resolveEntryPathMock,
+  }
+})
 
 vi.mock('../../../utils/reExport', () => ({
   resolveReExportedName: resolveReExportedNameMock,

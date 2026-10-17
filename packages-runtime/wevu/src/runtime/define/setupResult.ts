@@ -72,10 +72,7 @@ export function applySetupResult(
   runtime: any,
   target: any,
   result: any,
-  options?: { includeFunctionsInState?: boolean, functionPropPaths?: Set<string> },
 ) {
-  const includeFunctionsInState = Boolean(options?.includeFunctionsInState)
-  const functionPropPaths = options?.functionPropPaths
   const methods = runtime?.methods ?? Object.create(null)
   const state = runtime?.state ?? Object.create(null)
   const setupState = runtime?.setupState ?? Object.create(null)
@@ -113,9 +110,7 @@ export function applySetupResult(
       const bound = (...args: any[]) => (val as any).apply(runtime?.proxy ?? runtime, args)
       ;(methods as any)[key] = bound
       ;(state as any)[key] = bound
-      if (includeFunctionsInState || functionPropPaths?.has(key)) {
-        ;(setupState as any)[key] = bound
-      }
+      rawSetupState[key] = bound
       methodsChanged = true
     }
     else {
@@ -137,7 +132,7 @@ export function applySetupResult(
         }
       }
       if (!preservesAccessor) {
-        ;(setupState as any)[key] = val
+        rawSetupState[key] = val
       }
     }
   })
