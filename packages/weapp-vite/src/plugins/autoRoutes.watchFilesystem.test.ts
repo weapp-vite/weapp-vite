@@ -64,6 +64,33 @@ it.each(['page-directory', 'pages-root'])('publishes pages when snapshots redisc
     snapshot()
     const watcher = watch.mock.results[0]!.value as ReturnType<typeof chokidar.watch>
     await new Promise<void>(resolve => watcher.once('ready', resolve))
+    // ready 只保证首次扫描完成，libuv polling 的首个 stat 样本仍可能尚未建立。
+    // 用非路由文件的公开 add 事件确认父目录已实际轮询，关键页面仍只写入一次。
+    const pollingFiles = new Set([path.join(root, 'src/polling-ready.txt'), path.join(pages, 'polling-ready.txt')].map(normalizeWatchPath))
+    const observedPollingFiles = new Set<string>()
+    const observePollingFile = (file: string) => {
+      const normalized = normalizeWatchPath(file)
+      if (pollingFiles.has(normalized)) {
+        observedPollingFiles.add(normalized)
+      }
+    }
+    watcher.on('add', observePollingFile)
+    try {
+      for (const file of pollingFiles) {
+        writeFileSync(file, 'polling-ready')
+      }
+      await expect.poll(() => {
+        for (const file of pollingFiles) {
+          if (!observedPollingFiles.has(file)) {
+            markDirectoryMutation(path.dirname(file))
+          }
+        }
+        return observedPollingFiles.size
+      }, { timeout: 10_000 }).toBe(pollingFiles.size)
+    }
+    finally {
+      watcher.off('add', observePollingFile)
+    }
     expect(changes).toEqual([])
     for (const stage of ['new', 'restored']) {
       // 同一轮文件保存后立刻构建快照，不能靠额外等待让物理 watcher 抢先发现。

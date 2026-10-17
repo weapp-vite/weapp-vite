@@ -4,6 +4,7 @@ import type {
   HeadlessTestingPageSnapshot,
 } from '@mpcore/simulator'
 import type { RoleQueryOptions, TextMatcher } from './helpers'
+import { createMiniProgramTreeSnapshot } from '../snapshot/tree'
 import {
   accessibleName,
   collectElements,
@@ -11,57 +12,13 @@ import {
   implicitRole,
   matchesText,
 } from './helpers'
+import { MiniProgramNode } from './node'
 
 export type { RoleQueryOptions, TextMatcher } from './helpers'
-
-export class MiniProgramNode {
-  constructor(
-    private readonly owner: MiniProgramScreen,
-    readonly nodeId: string,
-  ) {}
-
-  private get current() {
-    return this.owner.resolveNode(this.nodeId)
-  }
-
-  get attributes() {
-    return { ...this.current.attrs }
-  }
-
-  get dataset() {
-    return Object.fromEntries(
-      Object.entries(this.current.attrs)
-        .filter(([key]) => key.startsWith('data-'))
-        .map(([key, value]) => [
-          key.slice('data-'.length).replace(/-([a-z])/g, (_match, char: string) => char.toUpperCase()),
-          value,
-        ]),
-    )
-  }
-
-  get isConnected() {
-    return this.owner.hasNode(this.nodeId)
-  }
-
-  get role() {
-    return implicitRole(this.current)
-  }
-
-  get tagName() {
-    return this.current.tag
-  }
-
-  get textContent() {
-    return this.current.text
-  }
-
-  getAttribute(name: string) {
-    return this.current.attrs[name]
-  }
-}
+export { MiniProgramNode } from './node'
 
 export class MiniProgramScreen {
-  private currentSnapshot: HeadlessTestingPageSnapshot
+  private snapshotStore: { current: HeadlessTestingPageSnapshot }
   private readonly rootNodeId?: string
 
   constructor(
@@ -69,8 +26,12 @@ export class MiniProgramScreen {
     snapshot: HeadlessTestingPageSnapshot,
     rootNodeId?: string,
   ) {
-    this.currentSnapshot = snapshot
+    this.snapshotStore = { current: snapshot }
     this.rootNodeId = rootNodeId
+  }
+
+  private get currentSnapshot() {
+    return this.snapshotStore.current
   }
 
   private get root() {
@@ -135,10 +96,12 @@ export class MiniProgramScreen {
   }
 
   hasNode(nodeId: string) {
+    this.page.assertActive()
     return Boolean(findNodeById(this.currentSnapshot.root, nodeId))
   }
 
   resolveNode(nodeId: string) {
+    this.page.assertActive()
     const node = findNodeById(this.currentSnapshot.root, nodeId)
     if (!node) {
       throw new Error('The mini-program node is no longer present in the rendered tree.')
@@ -147,11 +110,19 @@ export class MiniProgramScreen {
   }
 
   async refresh() {
-    this.currentSnapshot = await this.page.snapshot()
+    this.snapshotStore.current = await this.page.snapshot()
   }
 
   within(node: MiniProgramNode) {
-    return new MiniProgramScreen(this.page, this.currentSnapshot, node.nodeId)
+    this.resolveNode(node.nodeId)
+    const screen = new MiniProgramScreen(this.page, this.currentSnapshot, node.nodeId)
+    screen.snapshotStore = this.snapshotStore
+    return screen
+  }
+
+  /** 返回用于断言的稳定语义树，不包含页面数据与内部节点身份。 */
+  snapshot() {
+    return createMiniProgramTreeSnapshot(this.root)
   }
 
   queryAllByText(matcher: TextMatcher) {

@@ -29,6 +29,7 @@ import { cloneAppLaunchOptions, createAppLaunchOptions } from '../host/appLaunch
 import { invokePreparedNavigationApi } from '../host/wx/navigation'
 import { bindStartupNavigation, StartupNavigationQueue } from '../host/wx/startupNavigation'
 import { RuntimeKernel } from '../kernel'
+import { RuntimeRenderQueue } from '../kernel/renderQueue'
 import { createMiniProgramHostConfig } from '../project/hostConfig'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
@@ -232,9 +233,17 @@ export class BrowserHeadlessSession {
     scopeId: string
   }>()
 
-  private renderRequestPending = false
-  private renderInProgress = false
-  private readonly renderRequestCallbacks: Array<() => void> = []
+  private readonly renderQueue = new RuntimeRenderQueue({
+    isClosed: () => this.kernel.isClosed,
+    onError: error => this.kernel.diagnostics.record('exception', [error]),
+    render: () => {
+      if (this.currentPageInstance) {
+        this.renderCurrentPage()
+      }
+      return this.onRender?.()
+    },
+  })
+
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
@@ -418,8 +427,7 @@ export class BrowserHeadlessSession {
       failure = { error }
     }
     this.canvasContexts.clear()
-    this.renderRequestCallbacks.length = 0
-    this.renderRequestPending = false
+    this.renderQueue.close()
     this.appLifecycle.close()
     this.routeEvents.close()
     this.wxState.close()
@@ -972,46 +980,7 @@ export class BrowserHeadlessSession {
 
   requestRender(callback?: () => void) {
     this.assertActive()
-    if (callback) {
-      this.renderRequestCallbacks.push(callback)
-    }
-    if (this.renderRequestPending) {
-      return
-    }
-    this.renderRequestPending = true
-    if (this.renderInProgress) {
-      return
-    }
-    Promise.resolve().then(async () => {
-      if (this.kernel.isClosed) {
-        return
-      }
-      this.renderRequestPending = false
-      this.renderInProgress = true
-      const callbacks = this.renderRequestCallbacks.splice(0)
-      try {
-        if (this.currentPageInstance) {
-          this.renderCurrentPage()
-        }
-        const rendered = this.onRender?.()
-        if (rendered && typeof (rendered as PromiseLike<unknown>).then === 'function') {
-          await rendered
-        }
-        for (const cb of callbacks) {
-          if (this.kernel.isClosed) {
-            break
-          }
-          cb()
-        }
-      }
-      finally {
-        this.renderInProgress = false
-        if (this.renderRequestPending && !this.kernel.isClosed) {
-          this.renderRequestPending = false
-          this.requestRender()
-        }
-      }
-    })
+    this.renderQueue.request(callback)
   }
 
   callScopeMethod(scopeId: string | null, methodName: string, event: Record<string, any>) {

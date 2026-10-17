@@ -1,0 +1,24 @@
+{
+  "libVersion": "3.17.3",
+  "setting": {
+    "urlCheck": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "issue-1235-component-reentry",
+          "pathName": "pages/index/index",
+          "query": "",
+          "launchMode": "default"
+        },
+        {
+          "name": "issue-1235-unloaded-page",
+          "pathName": "pages/empty/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}

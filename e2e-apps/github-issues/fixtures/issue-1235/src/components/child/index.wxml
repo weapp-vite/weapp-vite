@@ -1,0 +1,1 @@
+<button id="emit-{{row}}" bindtap="emit">{{row}}</button>
