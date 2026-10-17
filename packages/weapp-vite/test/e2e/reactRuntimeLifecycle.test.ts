@@ -1,3 +1,5 @@
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { afterEach, expect, it, vi } from 'vitest'
 
 type Hook = () => void | Promise<void>
@@ -41,8 +43,10 @@ async function loadSuite(launch: () => Promise<MockSession>, provider = 'devtool
   vi.doMock('../../../../e2e/utils/ide-devtools-cleanup', () => ({ cleanupResidualIdeProcesses: cleanup }))
   vi.doMock('../../../../e2e/utils/runtimeProvider', () => ({ resolveRuntimeProviderName: () => provider }))
   vi.doMock('../../../../e2e/ide/reactRuntimeDom', () => ({}))
-  const suiteModule = '../../../../e2e/ide/react-runtime-spike.runtime.test'
-  await import(suiteModule)
+  // 使用文件 URL 并绕过 Vite 的动态 import 解析。根级 `pnpm test` 使用
+  // `--configLoader bundle` 时，会把无法静态分析的相对路径解析到 `/e2e`。
+  const suiteModule = pathToFileURL(path.resolve(import.meta.dirname, '../../../..', 'e2e/ide/react-runtime-spike.runtime.test.ts')).href
+  await import(/* @vite-ignore */ suiteModule)
   return { ...hooks, cleanup }
 }
 
