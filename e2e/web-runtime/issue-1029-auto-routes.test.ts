@@ -19,6 +19,13 @@ interface WebFixtureHost {
   }>
 }
 
+interface WebNavigationHost {
+  wx: {
+    navigateTo: (options: { url: string }) => Promise<{ errMsg: string }>
+    navigateBack: (options: { delta: number }) => Promise<{ errMsg: string }>
+  }
+}
+
 const ROOT = path.resolve(import.meta.dirname, '../..')
 
 let project: string
@@ -88,6 +95,14 @@ describe('issue #1029: shared named routes on the Web target', { concurrent: fal
     await writeFile(profileFile, profileSource)
     const declaration = path.join(project, '.weapp-vite/typed-router.d.ts')
     const page = await browser!.newPage()
+    const reloads: Array<{ change: string, triggeredBy?: string }> = []
+    let sourceChange: string | undefined
+    page.on('websocket', socket => socket.on('framereceived', ({ payload }) => {
+      const message = JSON.parse(payload.toString()) as { type: string, triggeredBy?: string }
+      if (message.type === 'full-reload' && sourceChange) {
+        reloads.push({ change: sourceChange, triggeredBy: message.triggeredBy?.replace(project, '<project>') })
+      }
+    }))
     const errors: string[] = []
     page.on('pageerror', error => errors.push(error.message))
     const activePage = page.locator('[data-weapp-page-active="true"]')
@@ -127,6 +142,7 @@ describe('issue #1029: shared named routes on the Web target', { concurrent: fal
       await expect.poll(() => activePage.locator('#route-redirect').textContent()).toBe('yes')
 
       const source = await readFile(externalFile, 'utf8')
+      sourceChange = 'metadata'
       await writeFile(externalFile, source.replace('meta: { title: \'个人资料\'', 'meta: { title: \'Web external metadata\', webRevision: true'))
       await dev.waitFor(expect.poll(readRoutes, { timeout: 45_000 }).toContainEqual({
         name: 'profile',
@@ -141,6 +157,7 @@ describe('issue #1029: shared named routes on the Web target', { concurrent: fal
 
       const movedDirectory = path.join(path.dirname(profileDirectory), 'moved')
       const movedRoute = ISSUE_1029_PROFILE.replace('/profile/', '/moved/')
+      sourceChange = 'rename'
       await rename(profileDirectory, movedDirectory)
       await dev.waitFor(expect.poll(readRoutes, { timeout: 45_000 }).toContainEqual({
         name: 'profile',
@@ -156,11 +173,13 @@ describe('issue #1029: shared named routes on the Web target', { concurrent: fal
       await activePage.locator('#go-back').click()
       await expect.poll(() => activePage.locator('#route-title').textContent()).toBe('首页')
 
+      sourceChange = 'remove'
       await rm(movedDirectory, { recursive: true })
       await dev.waitFor(expect.poll(readRoutes, { timeout: 45_000 }).toEqual([
         { name: 'home', path: ISSUE_1029_HOME, title: '首页' },
       ]), 'Web route removal refreshes')
       await expect.poll(() => readFile(declaration, 'utf8')).not.toContain('"profile"')
+      sourceChange = 'add'
       await mkdir(movedDirectory, { recursive: true })
       await writeFile(path.join(movedDirectory, 'index.vue'), profileSource)
       await dev.waitFor(expect.poll(readRoutes, { timeout: 45_000 }).toContainEqual({
@@ -172,6 +191,7 @@ describe('issue #1029: shared named routes on the Web target', { concurrent: fal
       await activePage.locator('#open-profile').click()
       await expect.poll(() => activePage.locator('#route-title').textContent()).toBe('Web external metadata')
       expect(errors).toEqual([])
+      expect(reloads.map(message => message.change), JSON.stringify(reloads)).toEqual(['metadata', 'rename', 'remove', 'add'])
     }
     catch (error) {
       try {
@@ -180,6 +200,87 @@ describe('issue #1029: shared named routes on the Web target', { concurrent: fal
       catch {
         // 诊断辅助代码失败时仍传播原场景的首个异常。
       }
+      throw error
+    }
+    finally {
+      await page.close()
+      await dev.stop(5_000)
+    }
+  }, 180_000)
+
+  it('discovers added and deleted pages without virtual route imports in the browser', async () => {
+    project = await createIssue1029Project()
+    const src = path.join(project, 'src')
+    await rm(src, { recursive: true })
+    await mkdir(path.join(src, 'pages/home'), { recursive: true })
+    await writeFile(path.join(src, 'app.vue'), '<script setup lang="ts">defineAppJson({ entryPagePath: "pages/home/index" })</script>')
+    await writeFile(path.join(src, 'pages/home/index.vue'), '<script setup lang="ts">definePage({ name: "home" })</script><template><view id="plain-home">home</view></template>')
+    const newDirectory = path.join(src, 'pages/new')
+    const declaration = path.join(project, '.weapp-vite/typed-router.d.ts')
+    const page = await browser!.newPage()
+    const activePage = page.locator('[data-weapp-page-active="true"]')
+    const errors: string[] = []
+    const routeImports: string[] = []
+    const reloads: string[] = []
+    let sourceChange = 'initial'
+    let loadCount = 0
+    page.on('load', () => {
+      loadCount++
+    })
+    page.on('pageerror', error => errors.push(error.message))
+    page.on('request', (request) => {
+      const pathname = decodeURIComponent(new URL(request.url()).pathname)
+      if (/(?:weapp-vite|wevu).*auto-routes/.test(pathname)) {
+        routeImports.push(pathname)
+      }
+    })
+    page.on('websocket', socket => socket.on('framereceived', ({ payload }) => {
+      const message = JSON.parse(payload.toString()) as { type: string }
+      if (message.type === 'full-reload') {
+        reloads.push(sourceChange)
+      }
+    }))
+    const dev = startDevProcess(process.execPath, [path.join(ROOT, 'packages/weapp-vite/bin/weapp-vite.js'), 'dev', project, '--platform', 'web', '--host', '127.0.0.1'], {
+      cwd: ROOT,
+      env: { ...createWebDevServerEnv(createDevProcessEnv()), WEAPP_WEB_PORT: '0' },
+      all: true,
+    })
+    try {
+      await dev.waitFor(expect.poll(() => resolveWebDevServerUrl(dev.getOutput()), { timeout: 90_000 }).toBeTypeOf('string'), 'Web discovery server starts')
+      await page.goto(new URL(ISSUE_1029_HOME, resolveWebDevServerUrl(dev.getOutput())!).href)
+      await expect.poll(() => activePage.locator('#plain-home').textContent()).toBe('home')
+      const initialLoads = loadCount
+      sourceChange = 'create'
+      await mkdir(newDirectory, { recursive: true })
+      await writeFile(path.join(newDirectory, 'index.vue'), '<script setup lang="ts">definePage({ name: "new-page" })</script><template><view id="plain-new">new page</view></template>')
+      await dev.waitFor(expect.poll(() => loadCount, { timeout: 30_000 }).toBe(initialLoads + 1), 'discovered page refresh reaches browser')
+      await expect.poll(() => activePage.locator('#plain-home').textContent()).toBe('home')
+      await expect.poll(() => readFile(declaration, 'utf8')).toContain('/pages/new/index')
+      expect(await page.evaluate(() => (globalThis as unknown as WebNavigationHost).wx.navigateTo({ url: '/pages/new/index' }))).toEqual({ errMsg: 'navigateTo:ok' })
+      await expect.poll(() => activePage.locator('#plain-new').textContent()).toBe('new page')
+      await page.evaluate(() => (globalThis as unknown as WebNavigationHost).wx.navigateBack({ delta: 1 }))
+      await expect.poll(() => activePage.locator('#plain-home').textContent()).toBe('home')
+
+      sourceChange = 'delete'
+      await rm(newDirectory, { recursive: true })
+      await dev.waitFor(expect.poll(() => loadCount, { timeout: 30_000 }).toBe(initialLoads + 2), 'deleted page refresh reaches browser')
+      await expect.poll(() => activePage.locator('#plain-home').textContent()).toBe('home')
+      await expect.poll(() => readFile(declaration, 'utf8')).not.toContain('/pages/new/index')
+      expect(await page.evaluate(async () => {
+        try {
+          await (globalThis as unknown as WebNavigationHost).wx.navigateTo({ url: '/pages/new/index' })
+          return 'unexpected success'
+        }
+        catch (error) {
+          return (error as { errMsg: string }).errMsg
+        }
+      })).toContain('navigateTo:fail')
+      expect(reloads).toEqual(['create', 'delete'])
+      expect(routeImports).toEqual([])
+      expect(errors).toEqual([])
+    }
+    catch (error) {
+      await captureIssue1029WebFailure({ page, root: ROOT, project, error, pageErrors: errors, devOutput: dev.getOutput() })
       throw error
     }
     finally {

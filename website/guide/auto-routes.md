@@ -174,6 +174,10 @@ export default defineConfig({
 
 新增或删除这些文件（例如 `pages/foo/index.wxss`、`pages/foo/index.ts`）都会同步更新路由清单。
 
+Web 开发模式中，页面新增、删除和重命名会在路由清单更新后触发刷新，同一份路由结果不会因重复文件事件再次重置导航。使用 `include` 筛选页面时，未匹配的普通模块仍按 Vite 的规则处理更新和删除后的恢复。
+
+页面发现从 Web 服务启动时开始监听，不要求业务代码导入 `wevu/auto-routes` 或 `weapp-vite/auto-routes`。未显式配置 `pages` 列表时，新建页面会在自动刷新后可导航，删除页面也会同步移出路由清单。
+
 路由识别规则：
 
 - 默认扫描主包 `pages/**`，以及已声明分包 root 下的 `pages/**`，不会把任意 `**/pages/**` 都视为页面目录；也可以通过 `include` 改成任意 glob / 正则；
