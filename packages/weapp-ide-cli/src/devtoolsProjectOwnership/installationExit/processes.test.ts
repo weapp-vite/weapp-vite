@@ -35,8 +35,9 @@ async function executable(file: string) {
 
 function denyImageResolution(code: 'EACCES' | 'EPERM', ...files: string[]) {
   const realpath = fs.realpath
+  const denied = new Set(files.map(file => path.normalize(file)))
   vi.spyOn(fs, 'realpath').mockImplementation(async (file) => {
-    if (files.includes(String(file))) {
+    if (denied.has(path.normalize(String(file)))) {
       throw Object.assign(new Error('Permission denied'), { code })
     }
     return realpath(file)
