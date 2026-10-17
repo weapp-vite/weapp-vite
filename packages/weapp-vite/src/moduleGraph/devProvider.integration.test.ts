@@ -217,7 +217,7 @@ describe('dev module graph provider integration', () => {
     }
   })
 
-  it('observes a later registered existing sibling without another directory mutation', async () => {
+  it.each([false, true])('observes a later registered existing sibling without another directory mutation (polling: %s)', async (usePolling) => {
     const root = await realpath(await mkdtemp(path.join(tmpdir(), 'weapp-vite-wxml-late-input-')))
     temporaryDirectories.push(root)
     const project = path.join(root, 'project')
@@ -229,7 +229,11 @@ describe('dev module graph provider integration', () => {
     runtimeState.wxmlProcessing.references.set(normalizeSourceId(initial), 1)
     const ctx = {
       runtimeState,
-      configService: { cwd: project, outDir: path.join(project, 'dist') },
+      configService: {
+        cwd: project,
+        outDir: path.join(project, 'dist'),
+        inlineConfig: { build: { watch: { chokidar: { usePolling, interval: 50 } } } },
+      },
       moduleGraphService: createModuleGraphService(),
     } as unknown as MutableCompilerContext
     const onChange = vi.fn()
