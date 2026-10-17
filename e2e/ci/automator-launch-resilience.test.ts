@@ -2073,6 +2073,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     let wrapperProjectPath = ''
     let initialConfig = ''
     let initialConfigMtime = 0
+    let appConfigAtBootstrap: unknown
     connectedMiniProgram.enableLog.mockImplementationOnce(async () => {
       const consoleListener = connectedMiniProgram.on.mock.calls.find(([event]) => event === 'console')?.[1] as (entry: unknown) => void
       consoleListener({ type: 'info', args: ['snapshot startup evidence'] })
@@ -2094,11 +2095,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
         },
       })
       expect(readJson(path.join(wrapperProjectPath, 'project.config.json'))).toMatchObject({ simulatorType: 'wechat' })
-      expect(readJson(path.join(wrapperProjectPath, 'app.json'))).toEqual({
-        pages: ['pages/index/index'],
-        subPackages: [],
-        window: { navigationBarTitleText: 'real app' },
-      })
+      appConfigAtBootstrap = readJson(path.join(wrapperProjectPath, 'app.json'))
       expect(readJson(path.join(wrapperProjectPath, 'project.private.config.json'))).toMatchObject({
         condition: {
           miniprogram: {
@@ -2113,7 +2110,6 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
       }
     })
     connectMock.mockResolvedValueOnce(connectedMiniProgram)
-    const copyFileSyncSpy = vi.spyOn(fs, 'copyFileSync')
 
     const { launchAutomator } = await import('../utils/automator')
     const launchedMiniProgram = await launchAutomator({
@@ -2135,11 +2131,11 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
     expect(runWechatIdeEngineBuildByHttpMock).not.toHaveBeenCalled()
     expect(connectedMiniProgram.__rawCompile).not.toHaveBeenCalled()
-    const realAppConfigCopy = copyFileSyncSpy.mock.calls.findIndex(([, target]) => {
-      return target === path.join(wrapperProjectPath, 'app.json')
+    expect(appConfigAtBootstrap).toEqual({
+      pages: ['pages/index/index'],
+      subPackages: [],
+      window: { navigationBarTitleText: 'real app' },
     })
-    expect(realAppConfigCopy).toBeGreaterThanOrEqual(0)
-    expect(copyFileSyncSpy.mock.invocationCallOrder[realAppConfigCopy]).toBeLessThan(execaMock.mock.invocationCallOrder[0]!)
   })
 
   it('keeps compileType plugin projects on their original roots in bridge mode', async () => {

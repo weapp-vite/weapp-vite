@@ -82,6 +82,7 @@ describe('e2e suite manifest', () => {
   })
 
   it.each([
+    'ide/issue-1234-automator.runtime.test.ts',
     'ide/auto-routes-define-app-json.runtime.test.ts',
     'ide/script-setup-external-src.runtime.test.ts',
     'ide/issue-1058-template-tags.runtime.test.ts',
@@ -102,8 +103,10 @@ describe('e2e suite manifest', () => {
     'ide/github-issues.runtime.issue1015.test.ts',
     'ide/issue-1126-1128.test.ts',
     'ide/issue-1172.test.ts',
+    'ide/issue-1174.native-slot-opt-in.test.ts',
     'ide/issue-1182-production-mount.runtime.test.ts',
     'ide/issue-1185-sibling-entry.runtime.test.ts',
+    'ide/issue-1235-component-reentry.runtime.test.ts',
     'ide/issue-997-rebuild.runtime.test.ts',
     'ide/issue-1029-auto-routes.runtime.test.ts',
     'ide/issue-1082-confirmation.runtime.test.ts',

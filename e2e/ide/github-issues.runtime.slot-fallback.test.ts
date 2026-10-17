@@ -28,8 +28,8 @@ describe('e2e app: github-issues / slot fallback', { concurrent: false }, () => 
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
-  afterAll(() => {
-    disconnectSharedMiniProgram()
+  afterAll(async () => {
+    await disconnectSharedMiniProgram()
   })
 
   it('issue #520: renders slots passed to resolver-imported wevu components', async (ctx) => {

@@ -7,7 +7,7 @@ import { createDomAcceptance } from '../utils/domAcceptance'
 import { buildIssueRegressionProject, createIssueRegressionProject } from '../utils/issueRegressionProject'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { assertIssue1172Artifacts, ROUTES } from './issue1172/artifacts'
-import { absentNode, exportedOwnerNodes, isolationNodes, keyedNodes, lifecycleNodes, nativeNodes, nestingNodes, primaryNodes, tapButton, textNode, unprojectedNodes } from './issue1172/dom'
+import { absentNode, exportedOwnerNodes, isolationNodes, keyedNodes, leafNodes, lifecycleNodes, nativeNodes, nestingNodes, primaryNodes, providerNode, tapButton, textNode, unprojectedNodes } from './issue1172/dom'
 
 const FIXTURE = 'e2e-apps/github-issues/fixtures/issue-1172'
 const layout = resolveRuntimeProviderName() === 'devtools'
@@ -54,14 +54,26 @@ describe.each([
   }, 60_000)
 
   it('1172.primary', async (context) => {
+    const computedNodes = (count: number) => [
+      providerNode('computed-provider', count),
+      textNode('computed-watched-count', `watched:${count}`),
+      ...leafNodes('computed-internal', 'computed-provider', count),
+      ...leafNodes('computed-projected', 'computed-provider', count),
+    ]
     const dom = createDomAcceptance(context, FIXTURE, [
-      { id: 'initial', route: ROUTES.primary, action: '同步注入普通插槽宿主并由宿主确认对象、ref 和函数身份', nodes: primaryNodes(0) },
+      { id: 'initial', route: ROUTES.primary, action: '首次挂载时 computed 链可读取 setup 绑定并向普通和投影消费者提供同一上下文', nodes: [...primaryNodes(0), ...computedNodes(30)] },
       { id: 'incremented', route: ROUTES.primary, action: '点击 Leaf 调用 Provider action，双方渲染同一 ref 的更新', nodes: primaryNodes(1) },
+      { id: 'wrapped-action', route: ROUTES.primary, action: '无直接上下文 API 的中间组件保留首次注入，其子组件更新同一 Provider', nodes: primaryNodes(2) },
+      { id: 'computed-action', route: ROUTES.primary, action: '投影消费者更新 computed 链提供的 ref，普通消费者同步更新且不影响其他 Provider', nodes: [...primaryNodes(2), ...computedNodes(31)] },
     ])
     const page = await miniProgram!.reLaunch(ROUTES.primary)
     await dom.check('initial', miniProgram!, page)
     await tapButton(page, 'increment-primary')
     await dom.check('incremented', miniProgram!, page)
+    await tapButton(page, 'increment-wrapped-primary')
+    await dom.check('wrapped-action', miniProgram!, page)
+    await tapButton(page, 'increment-computed-projected')
+    await dom.check('computed-action', miniProgram!, page)
   })
 
   it('1172.isolation', async (context) => {

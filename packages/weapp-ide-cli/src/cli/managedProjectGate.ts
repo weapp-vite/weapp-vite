@@ -92,7 +92,7 @@ export async function ensureManagedWechatProject(
       timeout: 120_000,
     })
     // 任务父进程继续持有项目；这里仅归还为建立所有权创建的连接。
-    program.disconnect()
+    await program.disconnect()
     options.signal?.throwIfAborted()
     const confirmed = await findConfirmedProject(journalPath, target, resolvedProjectPath)
     if (!confirmed) {

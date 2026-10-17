@@ -128,13 +128,36 @@ defineOptions({ behaviors: [i18n.behavior] })
 
 `weapp.vue.template.scopedSlotsRequireProps` 默认 `false`，普通插槽仍使用增强方案。设为 `true` 时，无 scoped props 的内容保留原生 `<slot>`。
 
-微信目标下，编译后的 Wevu Provider 和 Leaf 使用默认 `setupLifecycle: 'attached'` 时，`<Provider><Leaf /></Provider>` 中的 Leaf 会在 setup 前同步关联最近的插槽承载者。Leaf 的 `inject()` 能取得 Provider 提供的原始对象、ref 和方法；点击调用 action 会更新双方共享状态。具名、普通节点包裹、嵌套和多实例场景遵循同一规则，卸载重建不会沿用旧上下文。
+原生插槽上下文协议由独立的 `weapp.vue.template.nativeSlotContext` 控制，默认 `false`，**仅在微信小程序目标（`weapp`）下生效**。7.5.0 引入的该能力改为显式开启：在微信目标下，需要时同时配置 `scopedSlotsRequireProps: true` 与 `nativeSlotContext: true`。未配置或显式关闭时，不生成协议标记、声明属性及插槽事件，也不为普通组件注册协议方法、observer 或清理回调；普通 `provide/inject` 与增强插槽语义不变。
+
+支付宝、抖音、百度和 Web 等其他目标即使配置 `nativeSlotContext: true`，也不会启用此协议或生成对应声明属性、事件接收与清理代码，不能获得这里描述的原生插槽最近 Provider 上下文继承。普通 `provide/inject` 和增强插槽仍遵循各平台既有语义。以下启用示例仅适用于微信小程序目标：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    vue: {
+      template: {
+        scopedSlotsRequireProps: true,
+        nativeSlotContext: true,
+      },
+    },
+  },
+})
+```
+
+开启后，编译器会跳过可静态确认与上下文无关的纯展示组件、仅使用 `ref` 的组件及其纯容器，同时移除对应声明属性。直接或间接使用上下文的组件、插槽转发者，以及拥有相关子组件的中间 Wevu 组件仍参与协议；无法确认源码或动态调用行为时保守保留。判断依据包含组件和组合函数依赖，依赖变化时会重新编译引用方，不能仅按当前文件是否导入 `provide/inject` 裁剪。
+
+普通 `<script>` 中跨实例共享的对象/ref 及跨模块共享值不能仅凭初始值判定安全，异步函数和生成器也保守参与；每个实例新建的纯值仍可裁剪。循环解构的默认值和计算键保留实际执行语义，但不会延长 `inject()` 的有效实例上下文。显式组件注册覆盖自动导入时，生成路径和原生/Wevu 身份来自同一个注册结果；仅更新 JSON 不会丢失 barrel 等宿主解析依赖。
+
+显式开启后，微信目标下编译的 Wevu Provider 和 Leaf 使用默认 `setupLifecycle: 'attached'` 时，`<Provider><Leaf /></Provider>` 中的 Leaf 会在 setup 前同步关联最近的插槽承载者。Leaf 的 `inject()` 能取得 Provider 提供的原始对象、ref 和方法；点击调用 action 会更新双方共享状态。具名、普通节点包裹、嵌套和多实例场景遵循同一规则，卸载重建不会沿用旧上下文。
 
 这条协议不新增包装节点，不复制注入值，不修改原生 `Component.export` / `selectOwnerComponent()`。显式 `setupLifecycle: 'created'` 或 attached 前的公开实例恢复仍按原时机执行 setup，不提供该保证；未经 Wevu 编译的原生/第三方组件也不自动成为注入承载者。
 
 内层 Wevu Provider 即使使用过滤后的 `export()` / `expose()`，其普通模板子组件（含 Options API 局部注册别名）和原生插槽子组件仍共享内层上下文；外部选择器只看到该 Provider 的公开导出，内部父链不依赖公开导出对象。
 
-已验证环境：微信 DevTools Stable `2.02.2608080`（基础库 `3.17.2`、`3.13.2`）和 `2.02.2608060`（基础库 `3.17.2`），并保留 mpcore 回归；这些结果不代替其他版本组合或真机验证。其他小程序平台及 Web 目标不启用此协议，构建时裁剪其声明属性、事件接收与清理代码，不能由微信或 headless 结果推断支持。`false` / augmented 和实际 scoped props 继续使用既有增强插槽路径。
+已验证环境：微信 DevTools Stable `2.02.2608080`（基础库 `3.17.2`、`3.13.2`）和 `2.02.2608060`（基础库 `3.17.2`），并保留 mpcore 回归；这些结果不代替其他版本组合或真机验证，也不能由微信或 headless 结果推断其他平台支持。`false` / augmented 和实际 scoped props 继续使用既有增强插槽路径。
 
 ## 具名插槽透传 wrapper
 

@@ -1,4 +1,4 @@
-import type { ModuleNode, ViteDevServer } from 'vite'
+import type { EnvironmentModuleNode, ModuleNode, ViteDevServer } from 'vite'
 import type { ConfigService } from '../runtime/config/types'
 import {
   WEVU_AUTO_ROUTES_MODULE_ID,
@@ -210,10 +210,10 @@ export function resolveAutoRoutesHotUpdateAction(
  * Web 路由表在创建 router 时完成快照，必须越过 SFC 自接受边界重新加载入口。
  * 入口排在前面，避免依赖失效先将生成的入口降为仅更新时间戳的软失效。
  */
-export function collectAutoRoutesReloadModules(modules: ReadonlySet<ModuleNode>): ModuleNode[] {
+export function collectAutoRoutesReloadModules(modules: ReadonlySet<EnvironmentModuleNode>): EnvironmentModuleNode[] {
   const pending = [...modules]
   const visited = new Set(pending)
-  const reloadModules = new Set<ModuleNode>()
+  const reloadModules = new Set<EnvironmentModuleNode>()
   for (const module of pending) {
     if (module.importers.size === 0) {
       reloadModules.add(module)

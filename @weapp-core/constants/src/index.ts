@@ -25,6 +25,9 @@ export const REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME = '__wvRGI__'
 export const WEAPP_VITE_IMPORT_META_ENV_KEY = '__weappViteImportMetaEnv'
 export const WEAPP_VITE_EXTERNAL_OUTPUT_DIRECTORY = 'weapp_vite_external'
 
+/** 无头测试后端不支持所请求的自动化协议。 */
+export const HEADLESS_PROTOCOL_UNSUPPORTED = 'HEADLESS_PROTOCOL_UNSUPPORTED'
+
 export const DEFAULT_MCP_HOST = '127.0.0.1'
 export const DEFAULT_MCP_PORT = 3088
 export const DEFAULT_MCP_ENDPOINT = '/mcp'

@@ -1,0 +1,4 @@
+{
+  "pages": ["pages/index/index", "pages/empty/index"],
+  "window": { "navigationBarTitleText": "组件事件重入回归" }
+}

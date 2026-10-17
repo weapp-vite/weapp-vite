@@ -529,6 +529,57 @@ describe('resolveVueTemplatePlatformOptions', () => {
     })
   })
 
+  it.each(['resolvedId', 'relative from'] as const)('resolves descendant auto components relative to their importer via %s', async (kind) => {
+    const root = '/project/src/pages/index.vue'
+    const descendant = '/project/src/components/nested/Wrapper.vue'
+    const autoImportResolve = vi.fn(() => ({
+      kind: 'resolver',
+      value: {
+        name: 'Child',
+        from: './Child',
+        ...(kind === 'resolvedId' ? { resolvedId: './Child.vue' } : {}),
+      },
+    }))
+    resolveEntryPathMock.mockImplementation(async (value: string) => `${value}.vue`)
+    // 只提供本回归使用的自动导入服务和编译配置。
+    const ctx = { autoImportService: { resolve: autoImportResolve } } as unknown as CompilerContext
+    const configService = {
+      platform: 'weapp',
+      outputExtensions: {},
+      absoluteSrcRoot: '/project/src',
+      weappViteConfig: {},
+      relativeOutputPath: (id: string) => id.replace('/project/src/', ''),
+    } as unknown as CompilerContext['configService']
+    const options = createCompileVueFileOptions(
+      ctx,
+      {},
+      root,
+      true,
+      false,
+      configService,
+      { reExportResolutionCache: new Map(), classStyleRuntimeWarned: { value: false } },
+    )
+
+    await expect(options.autoImportTags.resolveUsingComponent('Child')).resolves.toMatchObject({
+      from: '/pages/Child',
+      resolvedId: '/project/src/pages/Child.vue',
+      sourceType: 'wevu-sfc',
+    })
+    await expect(options.autoImportTags.resolveUsingComponent('Child', descendant)).resolves.toMatchObject({
+      from: '/components/nested/Child',
+      resolvedId: '/project/src/components/nested/Child.vue',
+      sourceType: 'wevu-sfc',
+    })
+    await expect(options.autoImportTags.resolveUsingComponent('Child', root)).resolves.toMatchObject({
+      from: '/pages/Child',
+      resolvedId: '/project/src/pages/Child.vue',
+    })
+    expect(autoImportResolve.mock.calls).toEqual([
+      ['Child', '/project/src/pages/index'],
+      ['Child', '/project/src/components/nested/Wrapper'],
+    ])
+  })
+
   it('maps external resolver SFCs to stable output paths during compilation', async () => {
     const resolvedVueEntry = '/project/node_modules/@wot-ui/ui/components/wd-button/wd-button.vue'
     const externalComponentEntryMap = new Map<string, string>()

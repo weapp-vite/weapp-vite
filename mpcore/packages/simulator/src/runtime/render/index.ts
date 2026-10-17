@@ -16,11 +16,11 @@ import { createPageRenderPass, createRenderPass, isRenderPassStale, markPageTree
 import { isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
 import { wxsScopeData } from '../../view/wxs'
 import { runComponentLifecycle } from '../componentInstance'
-import { flushComponentAttachments, flushComponentReady, hasPendingComponentAttachments, isComponentAttached } from '../componentInstance/attachment'
+import { flushComponentAttachments, flushComponentReady, hasPendingComponentAttachments } from '../componentInstance/attachment'
 import { hasPendingComponentConstruction, isComponentConstructing } from '../componentInstance/construction'
-import { flushDiscardedComponentReady, scheduleDiscardedComponentReady } from '../componentInstance/discardedReady'
+import { flushDiscardedComponentReady } from '../componentInstance/discardedReady'
 import { syncComponentProperties } from '../componentInstance/propertyBindings'
-import { syncComponentRelations } from '../componentInstance/relations'
+import { reconcileRemovedComponents } from '../componentInstance/reconcileRemoved'
 import { isPageBeforeReady } from '../pageLifecycle'
 import { getRuntimeWxsLoader } from '../wxs'
 import {
@@ -552,22 +552,7 @@ function reconcileRuntimePageTree(
     }
     const canFinalize = !pageAttaching && !hasPendingComponentAttachments(instances)
     // 挂载回调返回后才派发 detached；此时仍可读取旧关系，随后再解除双方关系。
-    const removed = canFinalize
-      ? [...context.componentCache].filter(([scopeId]) => scopeId.startsWith(`${pageScopeId}/`) && !renderPass.seenComponentScopes.has(scopeId))
-      : []
-    for (const [scopeId, instance] of removed) {
-      if (isComponentAttached(instance)) {
-        runComponentLifecycle(instance, 'detached')
-      }
-      else {
-        scheduleDiscardedComponentReady(context.componentCache, scopeId, instance)
-      }
-    }
-    const relationsChanged = canFinalize && syncComponentRelations(context.componentCache, renderPass.seenComponentScopes, pageScopeId)
-    for (const [scopeId] of removed) {
-      context.componentCache.delete(scopeId)
-      context.componentScopes.delete(scopeId)
-    }
+    const relationsChanged = canFinalize && reconcileRemovedComponents(context.componentCache, context.componentScopes, renderPass.seenComponentScopes, pageScopeId)
 
     if (pageAttached || attached || relationsChanged) {
       continue

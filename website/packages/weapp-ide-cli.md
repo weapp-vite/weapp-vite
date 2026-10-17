@@ -299,6 +299,8 @@ HTTP 服务端口和 automator 会话都绑定选定安装。另一安装的配�
 
 本仓库真实 IDE E2E 自动解析并固定本轮安装，核对实际宿主及 runtime 版本；不会自动安装工具。不同 worktree 的 E2E 使用同机同用户的排他租约，冲突报告 `Runtime busy`，应等待持有者结束。普通 CLI 的宿主变更同样参与协调，已建立的多项目连接不长期占用此租约。自动恢复不清共享缓存、不退出账号；只释放本任务登记的资源。
 
+macOS 安装退出核验直接使用系统报告的映像路径，避免无关进程的受保护或已删除文件阻塞清理。当前磁盘路径被替换也不会覆盖原映像的归属判断；PID、启动时间、端口和任务登记仍须通过校验。
+
 ### 6) opened-session helper
 
 除了官方 CLI 透传，`weapp-ide-cli` 现在也提供面向已打开 DevTools 会话的 Tool 域 helper，可优先复用当前会话完成以下操作：
@@ -318,6 +320,27 @@ HTTP 服务端口和 automator 会话都绑定选定安装。另一安装的配�
 - `wv ide ticket:refresh`
 
 `weapp-ide-cli` 更偏底层 helper 与官方能力对齐，`wv ide` 更适合日常开发调试。
+
+### 7) 程序化 automator 与异步断开
+
+`connectOpenedAutomator()` 返回的会话提供公开 `send(method, params?, { timeout }?)` 与 `CDP().enable/sendCommand/listProtocol/onEvent`，用于调用已连接 DevTools 支持的自动化和调试协议。`onEvent` 返回取消订阅函数；可用域和命令以目标宿主 `listProtocol()` 的结果为准。
+
+```ts
+import { connectOpenedAutomator } from 'weapp-ide-cli'
+
+const miniProgram = await connectOpenedAutomator({ projectPath: '.' })
+try {
+  console.log(await miniProgram.send('Tool.getInfo', {}, { timeout: 3_000 }))
+  console.log(await miniProgram.CDP().listProtocol({ timeout: 3_000 }))
+}
+finally {
+  await miniProgram.disconnect()
+}
+```
+
+`disconnect()` 现在返回 `Promise<void>`，调用时立即停止订阅并拒绝未完成请求，等待 WebSocket 关闭后完成。迁移同步清理回调时应返回或 `await` 此 Promise；超时和清理失败继续抛出。它只释放本连接，保留已打开项目窗口；需要关闭本任务受管窗口时使用相应会话的 `close()`，并等待窗口 owner 完成确认。MCP、日志转发及命令结束清理均等待各自持有的连接，不重新启动 IDE。
+
+headless 会话的 `send` 仅适配 `Tool.getInfo`、`App.getCurrentPage/getPageStack/callFunction/callWxMethod`；`CDP()` 和其他原始协议明确报告 `HEADLESS_PROTOCOL_UNSUPPORTED`。触摸接口使用标准 `changedTouches`，旧 `changeTouches` 仍兼容，同时传入以标准字段为准。
 
 ## 语言切换
 

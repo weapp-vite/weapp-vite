@@ -3,12 +3,13 @@ import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { resolveRuntimeCompilerCli, selectClassicRuntimeHost } from '../../packages/weapp-vite/scripts/consumerRuntimeHost.mjs'
 import { launchAutomator, reconnectAutomator } from '../utils/automator'
+import { runCleanupSteps } from '../utils/cleanupSteps'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
-import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualDevtoolsProcesses, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
@@ -173,24 +174,26 @@ for (const host of hosts) {
 
     afterAll(async () => {
       observeRuntime = undefined
-      try {
-        await disconnectAutomatorSession()
-      }
-      catch {}
-      miniProgram = undefined
-      try {
-        await devProcess?.stop(5_000)
-      }
-      catch {}
-      devProcess = undefined
-      if (originalNativeSource) {
-        await fs.writeFile(NATIVE_SOURCE, originalNativeSource, 'utf8')
-      }
-      if (originalPrivateConfig) {
-        await fs.writeFile(PRIVATE_CONFIG, originalPrivateConfig, 'utf8')
-      }
-      await cleanupResidualDevProcesses()
-      await cleanupResidualIdeProcesses()
+      await runCleanupSteps([
+        { label: 'classic runtime session', run: disconnectAutomatorSession },
+        { label: 'classic dev process', run: async () => {
+          const ownedDevProcess = devProcess
+          devProcess = undefined
+          await ownedDevProcess?.stop(5_000)
+        } },
+        { label: 'classic native source', run: async () => {
+          if (originalNativeSource) {
+            await fs.writeFile(NATIVE_SOURCE, originalNativeSource, 'utf8')
+          }
+        } },
+        { label: 'classic private config', run: async () => {
+          if (originalPrivateConfig) {
+            await fs.writeFile(PRIVATE_CONFIG, originalPrivateConfig, 'utf8')
+          }
+        } },
+        { label: 'classic residual dev resources', run: cleanupResidualDevProcesses },
+        { label: 'classic residual IDE resources', run: cleanupResidualDevtoolsProcesses },
+      ])
     })
 
     it('uses direct output and reloads the page instead of preserving its state', async (ctx) => {

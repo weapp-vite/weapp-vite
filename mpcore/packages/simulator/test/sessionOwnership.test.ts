@@ -47,15 +47,15 @@ describe('HeadlessSession project ownership', () => {
     let closed = 0
     first.on('close', () => closed++)
     try {
-      expect(first.disconnect()).toBeUndefined()
-      first.disconnect()
+      await first.disconnect()
+      await first.disconnect()
       await first.close()
       expect(closed).toBe(1)
       await expect(first.currentPage()).rejects.toThrow(/closed/i)
       const page = await second.reLaunch('/pages/detail/index')
       expect(page.path).toBe('pages/detail/index')
       await second.close()
-      expect(second.disconnect()).toBeUndefined()
+      await second.disconnect()
     }
     finally {
       await first.close()

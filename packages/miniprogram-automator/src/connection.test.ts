@@ -88,6 +88,41 @@ describe('Connection', () => {
     expect(connection.prefersAppServicePageMethod).toBe(false)
   })
 
+  it('shares the disposal promise when a close observer reenters disposal', async () => {
+    const { default: Connection } = await import('./Connection')
+    const transport = new FakeTransport()
+    const connection = new Connection(transport as any)
+    let reentered: Promise<void> | undefined
+    connection.on('close', () => {
+      reentered = connection.dispose()
+    })
+
+    const closing = connection.dispose()
+
+    expect(reentered).toBe(closing)
+    await closing
+    expect(transport.close).toHaveBeenCalledOnce()
+  })
+
+  it('closes the transport even when a close observer throws and reports both failures', async () => {
+    const { default: Connection } = await import('./Connection')
+    const transport = new FakeTransport()
+    const connection = new Connection(transport as any)
+    const observerFailure = new Error('close observer failed')
+    const transportFailure = new Error('socket close unconfirmed')
+    connection.on('close', () => {
+      throw observerFailure
+    })
+    transport.close.mockRejectedValueOnce(transportFailure)
+
+    const closing = connection.dispose()
+
+    expect(transport.close).toHaveBeenCalledOnce()
+    await expect(closing).rejects.toMatchObject({ errors: [observerFailure, transportFailure], cause: observerFailure })
+    await connection.dispose()
+    expect(transport.close).toHaveBeenCalledTimes(2)
+  })
+
   it('rejects protocol errors and pending callbacks on close', async () => {
     const { default: Connection } = await import('./Connection')
     const transport = new FakeTransport()
@@ -103,6 +138,57 @@ describe('Connection', () => {
     const pending = connection.send('Tool.close')
     transport.emit('close')
     await expect(pending).rejects.toThrow('Connection closed')
+  })
+
+  it.each(['', null, 0, false, { detail: ['failure'] }])('preserves a protocol error message %j and its cause', async (message) => {
+    const { default: Connection } = await import('./Connection')
+    const transport = new FakeTransport()
+    const connection = new Connection(transport as any)
+    const pending = connection.send('App.callFunction')
+    const error = { message, code: 'HOST_FAILURE' }
+    transport.emit('message', JSON.stringify({ id: 'fixed-id', error }))
+    await expect(pending).rejects.toMatchObject({ message: typeof message === 'string' ? message : JSON.stringify(message), cause: error })
+    await connection.dispose()
+  })
+
+  it('rejects pending work immediately while concurrent disposal waits for the same transport', async () => {
+    const { default: Connection } = await import('./Connection')
+    const transport = new FakeTransport()
+    let finish!: () => void
+    transport.close.mockImplementation(() => new Promise<void>((resolve) => {
+      finish = resolve
+    }))
+    const connection = new Connection(transport as any)
+    const request = connection.send('Tool.getInfo')
+    const rejected = expect(request).rejects.toThrow('Connection closed')
+    const closing = connection.dispose()
+    expect(connection.dispose()).toBe(closing)
+    await rejected
+    let finished = false
+    void closing.then(() => {
+      finished = true
+    })
+    await Promise.resolve()
+    expect(finished).toBe(false)
+    finish()
+    await closing
+    expect(transport.close).toHaveBeenCalledOnce()
+  })
+
+  it('notifies natural connection closure once and immediately rejects further protocol work', async () => {
+    const { default: Connection } = await import('./Connection')
+    const transport = new FakeTransport()
+    const connection = new Connection(transport as any)
+    const closed = vi.fn()
+    connection.on('close', closed)
+    const pending = connection.send('Tool.getInfo')
+    const rejected = expect(pending).rejects.toThrow('Connection closed')
+    transport.emit('close')
+    transport.emit('close')
+    await rejected
+    await expect(connection.send('App.getCurrentPage')).rejects.toThrow('Connection closed')
+    await connection.dispose()
+    expect(closed).toHaveBeenCalledOnce()
   })
 
   it.each(['2.02.2608080', '2.02.2610082'])('reads async method results through AppService while keeping element queries native in %s', async (version) => {

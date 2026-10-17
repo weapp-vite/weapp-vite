@@ -125,6 +125,20 @@ describe('automator warmup readiness', () => {
     expect(appendIdeReportEvent).toHaveBeenLastCalledWith(expect.objectContaining({ level: 'error', startupProtocol: expect.objectContaining({ state: 'unresolved' }) }))
   })
 
+  it('preserves the readiness failure when socket closure also fails', async () => {
+    vi.useFakeTimers()
+    const disconnectFailure = new Error('socket close unconfirmed')
+    const miniProgram = {
+      disconnect: vi.fn(async () => { throw disconnectFailure }),
+      currentPage: vi.fn(async () => await new Promise(() => {})),
+    }
+    const pending = warmupMiniProgramRoute(miniProgram, '/pages/example/index', 'fixture', { allowRelaunch: false })
+    const assertion = expect(pending).rejects.toMatchObject({ errors: [expect.objectContaining({ message: expect.stringContaining('Timeout in read current page') }), disconnectFailure] })
+    await vi.advanceTimersByTimeAsync(2_000)
+    await assertion
+    expect(miniProgram.disconnect).toHaveBeenCalledOnce()
+  })
+
   it.each([true, false])('retains startup evidence until launch retries finish (recovered=%s)', async (recovered) => {
     vi.useFakeTimers()
     const route = '/pages/example/index'

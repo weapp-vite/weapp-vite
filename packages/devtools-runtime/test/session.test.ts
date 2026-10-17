@@ -174,6 +174,32 @@ describe('devtools runtime shared sessions', () => {
     expect(miniProgram.close).not.toHaveBeenCalled()
   })
 
+  it('keeps a closing shared connection registered until disposal succeeds and retries failures', async () => {
+    const miniProgram = createMiniProgram()
+    const hooks = { connectMiniProgram: vi.fn(async () => miniProgram) }
+    const projectPath = 'async-cleanup-fixture'
+    await acquireSharedMiniProgram(hooks, { projectPath })
+    let finish!: () => void
+    miniProgram.disconnect.mockImplementationOnce(() => new Promise<void>((resolve) => {
+      finish = resolve
+    }))
+    const first = closeSharedMiniProgram(projectPath)
+    const second = closeSharedMiniProgram(projectPath)
+    await Promise.resolve()
+    expect(getSharedMiniProgramSessionCount()).toBe(1)
+    expect(miniProgram.disconnect).toHaveBeenCalledOnce()
+    finish()
+    await Promise.all([first, second])
+    expect(getSharedMiniProgramSessionCount()).toBe(0)
+
+    await acquireSharedMiniProgram(hooks, { projectPath })
+    miniProgram.disconnect.mockRejectedValueOnce(new Error('close unconfirmed'))
+    await expect(closeSharedMiniProgram(projectPath)).rejects.toThrow('close unconfirmed')
+    expect(getSharedMiniProgramSessionCount()).toBe(1)
+    await closeSharedMiniProgram(projectPath)
+    expect(getSharedMiniProgramSessionCount()).toBe(0)
+  })
+
   it('resets shared sessions when runner fails', async () => {
     const miniProgram = createMiniProgram()
     const hooks = {
@@ -190,5 +216,45 @@ describe('devtools runtime shared sessions', () => {
 
     expect(miniProgram.disconnect).toHaveBeenCalledTimes(1)
     expect(getSharedMiniProgramSessionCount()).toBe(0)
+  })
+
+  it('never lends a closing session again after failed disposal and reconnects only after confirmation', async () => {
+    const previous = createMiniProgram()
+    const replacement = createMiniProgram()
+    const hooks = { connectMiniProgram: vi.fn().mockResolvedValueOnce(previous).mockResolvedValueOnce(replacement) }
+    const options = { projectPath: 'failed-close-acquire-fixture' }
+    await acquireSharedMiniProgram(hooks, options)
+    const failure = new Error('socket closure unconfirmed')
+    previous.disconnect.mockRejectedValueOnce(failure).mockRejectedValueOnce(failure)
+
+    await expect(closeSharedMiniProgram(options.projectPath)).rejects.toBe(failure)
+    await expect(acquireSharedMiniProgram(hooks, options)).rejects.toBe(failure)
+    expect(hooks.connectMiniProgram).toHaveBeenCalledOnce()
+
+    let finish!: () => void
+    previous.disconnect.mockImplementationOnce(() => new Promise<void>((resolve) => {
+      finish = resolve
+    }))
+    const recovered = acquireSharedMiniProgram(hooks, options)
+    await vi.waitFor(() => expect(previous.disconnect).toHaveBeenCalledTimes(3))
+    expect(hooks.connectMiniProgram).toHaveBeenCalledOnce()
+    finish()
+    await expect(recovered).resolves.toBe(replacement)
+    expect(hooks.connectMiniProgram).toHaveBeenCalledTimes(2)
+    await closeSharedMiniProgram(options.projectPath)
+  })
+
+  it.each([false, true])('preserves runner and async cleanup failures for shared=%s', async (sharedSession) => {
+    const program = createMiniProgram()
+    const failure = new Error('runner failed')
+    const cleanupFailure = new Error('socket unconfirmed')
+    program.disconnect.mockRejectedValueOnce(cleanupFailure)
+    const hooks = { connectMiniProgram: vi.fn(async () => program) }
+    await expect(withMiniProgram(hooks, { projectPath: '/project-a', sharedSession }, async () => {
+      throw failure
+    })).rejects.toMatchObject({ errors: [failure, cleanupFailure], cause: failure })
+    if (sharedSession) {
+      await closeSharedMiniProgram('/project-a')
+    }
   })
 })

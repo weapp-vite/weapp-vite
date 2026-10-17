@@ -23,7 +23,8 @@ interface ProtocolResponse {
   id?: string
   method?: string
   error?: {
-    message?: string
+    message?: unknown
+    [key: string]: unknown
   }
   result?: any
   params?: any
@@ -42,6 +43,7 @@ const APP_SERVICE_PAGE_METHOD_VERSIONS = new Set(['2.02.2608070', '2.02.2608080'
 /** Connection 的实现。 */
 export default class Connection extends EventEmitter {
   private disposed = false
+  private disposing?: Promise<void>
   private callbacks = new Map<string, PendingCallback>()
   private useAppServicePageProtocol = false
   private useAppServicePageMethod = false
@@ -83,15 +85,50 @@ export default class Connection extends EventEmitter {
     })
   }
 
-  dispose() {
-    if (this.disposed) {
-      return
+  dispose(): Promise<void> {
+    if (this.disposing) {
+      return this.disposing
     }
-    this.disposed = true
-    this.onClose()
+    let resolve!: () => void
+    let reject!: (reason: unknown) => void
+    this.disposing = new Promise<void>((done, fail) => {
+      resolve = done
+      reject = fail
+    }).catch((error: unknown) => {
+      this.disposing = undefined
+      throw error
+    })
+    const errors: unknown[] = []
+    try {
+      this.onClose()
+    }
+    catch (error) {
+      errors.push(error)
+    }
     this.transport.off('message', this.onMessage)
     this.transport.off('close', this.onClose)
-    this.transport.close()
+    const finish = () => {
+      if (errors.length === 1) {
+        reject(errors[0])
+      }
+      else if (errors.length) {
+        reject(new AggregateError(errors, 'Connection close notification and transport cleanup failed', { cause: errors[0] }))
+      }
+      else {
+        resolve()
+      }
+    }
+    try {
+      void Promise.resolve(this.transport.close()).then(finish, (error: unknown) => {
+        errors.push(error)
+        finish()
+      })
+    }
+    catch (error) {
+      errors.push(error)
+      finish()
+    }
+    return this.disposing
   }
 
   /** 根据 DevTools 版本选择稳定的 Page 协议实现。 */
@@ -125,18 +162,26 @@ export default class Connection extends EventEmitter {
     this.callbacks.delete(id)
     clearTimeout(callback.timeout)
     if (error) {
-      callback.reject(new Error(error.message || closeErrTip))
+      const message = typeof error.message === 'string'
+        ? error.message
+        : error.message === undefined ? closeErrTip : JSON.stringify(error.message)
+      callback.reject(new Error(message, { cause: error }))
       return
     }
     callback.resolve(result)
   }
 
   private onClose = () => {
+    if (this.disposed) {
+      return
+    }
+    this.disposed = true
     for (const callback of this.callbacks.values()) {
       clearTimeout(callback.timeout)
       callback.reject(new Error(closeErrTip))
     }
     this.callbacks.clear()
+    this.emit('close')
   }
 
   static create(url: string, timeout = CONNECT_TIMEOUT, signal?: AbortSignal) {

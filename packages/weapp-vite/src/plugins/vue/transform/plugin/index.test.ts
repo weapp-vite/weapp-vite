@@ -1,4 +1,6 @@
+import type * as ResolvedIdModule from '../../../../utils/resolvedId'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createModuleGraphService } from '../../../../moduleGraph'
 import { createSidecarSourceSpecifier } from '../../../../moduleGraph/protocol'
 import { resolveAppShellForCompilation } from '../appShell'
 
@@ -49,9 +51,10 @@ vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
   }
 })
 
-vi.mock('../../../../utils/resolvedId', () => ({
-  normalizeFsResolvedId: normalizeFsResolvedIdMock,
-}))
+vi.mock('../../../../utils/resolvedId', async (importOriginal) => {
+  const actual = await importOriginal<typeof ResolvedIdModule>()
+  return { ...actual, normalizeFsResolvedId: normalizeFsResolvedIdMock }
+})
 
 vi.mock('../../index', () => ({
   VUE_PLUGIN_NAME: 'weapp-vite:vue',
@@ -192,9 +195,12 @@ describe('createVueTransformPlugin lifecycle', () => {
       options.compilationCache.set('/project/src/card.vue', cached)
       return { code: 'transformed', map: null }
     })
+    const moduleGraphService = createModuleGraphService()
+    moduleGraphService.replaceEntryDependencies('/project/src/card.vue', 'script', ['/project/src/external.html'])
+    moduleGraphService.recordChangedFile('/project/src/external.html', 'update')
     const plugin = createVueTransformPlugin({
       configService: { cwd: '/project', weappLibConfig: { enabled: true } },
-      moduleGraphService: { getPendingChanges: () => [{ file: '/project/src/external.html', event: 'update' }] },
+      moduleGraphService,
     } as any)
     await getHookHandler(plugin.transform as any).call({}, cached.source, '/project/src/card.vue')
     if (lifecycle === 'snapshot') {
@@ -320,6 +326,7 @@ describe('createVueTransformPlugin lifecycle', () => {
     const profile = {}
     const plugin = createVueTransformPlugin({
       configService: { absoluteSrcRoot: '/project/src' },
+      moduleGraphService: createModuleGraphService(),
       runtimeState: {
         build: {
           hmr: {
@@ -352,6 +359,7 @@ describe('createVueTransformPlugin lifecycle', () => {
     const { createVueTransformPlugin } = await import('./index')
     const plugin = createVueTransformPlugin({
       configService: { absoluteSrcRoot: '/project/src' },
+      moduleGraphService: createModuleGraphService(),
     } as any)
 
     await expect(plugin.handleHotUpdate!({ file: '/project/src/layouts/default.vue' } as any)).resolves.toEqual([])

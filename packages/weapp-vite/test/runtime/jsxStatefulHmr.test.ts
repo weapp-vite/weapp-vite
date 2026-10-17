@@ -86,6 +86,11 @@ function createBundleRuntime(root: string) {
     getImporters(id: string) {
       return runInContext(`globalThis.__rolldown_runtime__.getImporters(${JSON.stringify(id)})`, context) as string[]
     },
+    callPageMethod(id: string, method: string, state: Record<string, number>) {
+      // VM 边界只收窄本 fixture 导出的 Options API 方法，执行后断言真实状态变化。
+      const handler = runInContext(`globalThis.__rolldown_runtime__.loadExports(${JSON.stringify(id)}).default.methods[${JSON.stringify(method)}]`, context) as (this: Record<string, number>) => void
+      handler.call(state)
+    },
     getVersion() {
       return runInContext(`globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].getVersion()`, context) as number
     },
@@ -157,6 +162,15 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     runtime = createBundleRuntime(path.join(cwd, 'dist'))
     runtime.load('app.js')
     runtime.load(`${route}.js`)
+    const handlerState = { count: 0, islandCount: 0 }
+    const handlerName = demo ? 'increaseIslandCount' : 'increment'
+    const countKey = demo ? 'islandCount' : 'count'
+    const assertHandlerStep = (step: number) => {
+      const previous = handlerState[countKey]
+      runtime!.callPageMethod(path.relative(cwd, source), handlerName, handlerState)
+      expect(handlerState[countKey]).toBe(previous + step)
+    }
+    assertHandlerStep(1)
     // 编译器 cwd 与 Vite root 不同时，首包依赖图仍须使用引擎的模块 ID。
     expect(runtime.getImporters(path.relative(cwd, shared))).toContain(path.relative(cwd, source))
     await expect.poll(() => runtime!.requests.some(request =>
@@ -174,6 +188,7 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     }, { timeout: 30_000 }).toBeGreaterThan(0)
     const sharedVersion = runtime.getVersion()
     runtime.assertHealthy()
+    assertHandlerStep(1)
     await saveSource(source, page.replace('initial-page', 'updated-page').replace(initialStep, updatedStep))
     await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain('updated-page')
     await expect.poll(() => {
@@ -183,8 +198,11 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     }, { timeout: 30_000 }).toBeGreaterThan(sharedVersion)
     expect(await fs.readFile(path.join(cwd, 'dist/__weapp_vite_hmr/update.js'), 'utf8')).toContain(updatedStep)
     runtime.assertHealthy()
+    assertHandlerStep(2)
     // 源码 transform 继续拥有共享 JSX；恢复也必须由实际客户端执行并确认。
     expect(ctx.moduleGraphService.getEntryDependencies(source)).toContainEqual({ kind: 'jsx', sourceId: shared })
+    const componentSource = path.join(cwd, demo ? 'src/components/info-card/index.vue' : 'src/components/card.vue')
+    expect(ctx.moduleGraphService.collectAffectedEntries(componentSource, 'script')).toContain(source)
     let version = runtime.getVersion()
     for (const [file, content, marker] of [
       [shared, sharedWith('restored-shared'), 'restored-shared'],
@@ -199,6 +217,7 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
       }, { timeout: 30_000 }).toBeGreaterThan(version)
       version = runtime.getVersion()
       expect(ctx.runtimeState.build.hmr).toBe(hmrState)
+      assertHandlerStep(file === source ? 1 : 2)
     }
     await new Promise(resolve => setTimeout(resolve, 2_000))
     expect(createHash('sha256').update(await fs.readFile(controlPath)).digest('hex')).toBe(controlHash)

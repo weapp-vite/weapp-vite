@@ -8,6 +8,7 @@ import type {
 import type { ResolvedWechatDevtoolsTarget, WechatDevtoolsSelectionOptions } from '../devtoolsTarget'
 import {
   acquireSharedMiniProgram as acquireRuntimeSharedMiniProgram,
+  closeOwnedSharedMiniProgram,
   closeSharedMiniProgram,
   getSharedMiniProgramSessionCount,
   releaseSharedMiniProgram,
@@ -142,7 +143,7 @@ async function connectMiniProgramWithDiagnostics(options: AutomatorSessionOption
     signal: options.signal,
     disposeLate: (result) => {
       if (result.kind === 'result') {
-        result.value.disconnect()
+        return result.value.disconnect()
       }
     },
     createCancelError: result => createWechatIdeLoginRequiredExitError(
@@ -257,6 +258,7 @@ export async function acquireSharedMiniProgram(options: AutomatorSessionOptions)
 }
 
 export {
+  closeOwnedSharedMiniProgram,
   closeSharedMiniProgram,
   getSharedMiniProgramSessionCount,
   releaseSharedMiniProgram,

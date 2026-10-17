@@ -1,0 +1,10 @@
+<view id="issue1235-page">
+  <view wx:if="{{visible}}">
+    <reentry-child wx:for="{{rows}}" wx:key="*this" id="child-{{item}}" row="{{item}}" bindfoo="onFoo" />
+  </view>
+  <text id="issue1235-count">{{received.length}}</text>
+  <text id="issue1235-summary">{{summary}}</text>
+  <text id="issue1235-order">{{rows[0]}},{{rows[1]}}</text>
+  <text id="issue1235-visible">{{visible ? 'visible' : 'hidden'}}</text>
+  <text id="issue1235-handler">{{handlerReplaced ? 'replacement' : 'original'}}</text>
+</view>

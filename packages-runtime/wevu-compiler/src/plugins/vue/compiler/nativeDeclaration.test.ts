@@ -19,6 +19,7 @@ function compile(source: string, options?: TemplateCompileOptions) {
   const result = compileVueTemplateToWxml(source, 'native-declaration.vue', {
     platform: getMiniProgramTemplatePlatform('weapp'),
     scopedSlotsRequireProps: true,
+    nativeSlotContext: true,
     wevuComponentTags: ['Provider', 'Inner', 'Leaf'],
     ...options,
   })
@@ -135,6 +136,17 @@ function byLabel(elements: RenderedElement[]) {
 }
 
 describe('native declaration occurrence identity', () => {
+  it.each([undefined, false])('omits native declaration bindings without explicit opt-in: %s', (nativeSlotContext) => {
+    const result = compileVueTemplateToWxml('<Provider v-for="item in items" :key="item.id"><Leaf /><slot /></Provider>', 'native-declaration.vue', {
+      nativeSlotContext,
+      wevuComponentTags: ['Provider', 'Leaf'],
+    })
+    expect(result.diagnostics).toEqual([])
+    expect(declarations(evaluate(result, { items: [{ id: 'first' }, { id: 'second' }] }))).toEqual([])
+    expect(result.code).not.toContain(WEVU_NATIVE_DECLARATION_EVENT)
+    expect(result.code).not.toContain(WEVU_NATIVE_SLOT_PARENT_DATASET_ATTR)
+  })
+
   it.each(['field', 'complex'] as const)('keeps shadowed keyed loops isolated and stable on moves: %s', (keyKind) => {
     const key = keyKind === 'field' ? 'item.id' : 'keyOf(item)'
     const result = compile(`<Provider v-for="(item, i) in groups" :key="${key}" :label="item.label">

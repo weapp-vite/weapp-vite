@@ -8,7 +8,7 @@ expectAssignable<AutomatorSessionOptions>({ projectPath: 'fixture', cliPath: 'cl
 expectAssignable<AutomatorSessionOptions>({ projectPath: 'fixture', runtimeProvider: 'headless' })
 expectAssignable<StartWeappIdeMcpServerOptions>({ cliPath: 'cli' })
 expectType<Promise<void>>(closeSharedMiniProgram('fixture', 'worker', { installationId: target.installationId }))
-expectType<void>(releaseSharedMiniProgram('fixture', 'worker', { installationId: target.installationId }))
+expectType<Promise<void>>(releaseSharedMiniProgram('fixture', 'worker', { installationId: target.installationId }))
 resolveAutomatorSessionOptions({ projectPath: 'fixture', sharedSession: true }).then((resolved) => {
   expectType<string>(resolved.installationId)
   expectType<ResolvedWechatDevtoolsTarget | undefined>(resolved.target)

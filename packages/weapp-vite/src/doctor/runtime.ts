@@ -9,13 +9,13 @@ import { inspectDoctorCli, inspectDoctorListener, readDoctorHostVersions, readDo
 interface DoctorSession {
   currentPage: () => Promise<{ path: string } | null>
   toolInfo: () => Promise<unknown>
-  disconnect: () => void
+  disconnect: () => Promise<void>
 }
 
 const stages: DoctorRuntimeStage[] = ['cli-executable', 'service-listener', 'login-query', 'login-state', 'project-connection', 'tool-info', 'host-version', 'sdk-version', 'current-page', 'session-release']
 
 /** 每个探针保留局部上限，并受同一个总 deadline 约束。 */
-async function probeStep<T>(scope: OperationLifecycle, stage: DoctorRuntimeStage, cap: number, run: (signal: AbortSignal, timeout: number) => Promise<T>, disposeLate?: (value: T) => void) {
+async function probeStep<T>(scope: OperationLifecycle, stage: DoctorRuntimeStage, cap: number, run: (signal: AbortSignal, timeout: number) => Promise<T>, disposeLate?: (value: T) => void | Promise<void>) {
   const phase = new OperationLifecycle(scope.remainingMs(cap), stage, scope.signal)
   return await scope.step(() => phase.run(() => phase.step(() => run(phase.signal, phase.remainingMs()), { stage, disposeLate })), { stage })
 }
@@ -92,19 +92,17 @@ export async function probeDoctorRuntime(cwd: string, target: MpPlatform, port?:
         }
         return evidence
       }
-      let released = false
+      let releasing: Promise<void> | undefined
       const release = () => {
-        if (released) {
-          return
-        }
-        released = true
-        try {
-          session.disconnect()
+        releasing ??= (async () => {
+          await session.disconnect()
           record('session-release', 'passed', 'disconnected')
-        }
-        catch {
+        })().catch((error: unknown) => {
+          releasing = undefined
           record('session-release', 'failed', 'disconnect-failed')
-        }
+          throw error
+        })
+        return releasing
       }
       scope.own(release, 'doctor-websocket')
       const checks: string[] = []
@@ -142,7 +140,7 @@ export async function probeDoctorRuntime(cwd: string, target: MpPlatform, port?:
         ])
       }
       finally {
-        release()
+        await scope.step(release, { stage: 'session-release' })
       }
       for (const stage of ['host-version', 'sdk-version'] as const) {
         if (facts.find(fact => fact.stage === stage)?.status === 'not-run') {

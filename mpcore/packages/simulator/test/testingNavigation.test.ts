@@ -189,12 +189,14 @@ describe('testing navigation diagnostics', () => {
       vi.runAllTimers()
       expect(committed).not.toHaveBeenCalled()
 
-      await miniProgram.close()
+      await expect(miniProgram.close()).rejects.toBe(unloadError)
       expect(homeUnloaded).toHaveBeenCalledTimes(1)
       expect(detailUnloaded).toHaveBeenCalledTimes(1)
     }
     finally {
-      await miniProgram.close()
+      await miniProgram.close().catch((error: unknown) => {
+        expect(error).toBe(unloadError)
+      })
       vi.useRealTimers()
     }
   })

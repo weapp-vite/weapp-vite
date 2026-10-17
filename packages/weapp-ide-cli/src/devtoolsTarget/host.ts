@@ -19,8 +19,8 @@ function ownershipError(message: string) {
 }
 
 function normalize(value: string, platform: NodeJS.Platform) {
-  const normalized = value.replaceAll('\\', '/').replace(/\/$/, '')
-  return platform === 'win32' ? normalized.toLowerCase() : normalized
+  const normalized = platform === 'win32' ? value.replaceAll('\\', '/').toLowerCase() : value
+  return normalized.replace(/\/$/, '')
 }
 
 /** 复用宿主归属检查的安装根规则，不能把 app.asar 当作可执行文件目录。 */

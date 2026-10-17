@@ -66,6 +66,12 @@ describe('github-issues targeted fixture route scope', () => {
     expect(config.weapp.npm.enable).toBe(false)
   })
 
+  it('builds the automator compatibility fixture with its shared warmup route', async () => {
+    const config = await readFixtureConfig('ide/issue-1234-automator.runtime.test.ts')
+    expect(config.weapp.autoRoutes).toEqual({ include: ['pages/block-slot/**', 'pages/issue-1234/**'] })
+    expect(config.weapp.npm.enable).toBe(false)
+  })
+
   it.each([
     'ide/github-issues.runtime.unregistered.test.ts',
     'ide\\github-issues.runtime.unregistered.test.ts',

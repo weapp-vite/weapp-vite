@@ -2,44 +2,63 @@ import type { HeadlessWxAppHideOptions, HeadlessWxLaunchOptions } from '../../ho
 import type { HeadlessProjectDescriptor } from '../../project'
 import type { HeadlessSession } from '../../runtime'
 import type { HeadlessTestingWaitOptions } from '../pageWait'
+import type { HeadlessTestingCDP } from './cdp'
+import type { HeadlessTestingEvaluator, HeadlessTestingProtocolOptions, HeadlessTestingToolInfo } from './protocol'
 import { HeadlessTestingPageHandle } from '../pageHandle'
 import { resolveTestingPagePath } from '../pagePath'
+import { createHeadlessTestingCDP } from './cdp'
+import { HeadlessTestingNavigation } from './navigation'
+import { sendHeadlessTestingProtocol } from './protocol'
 import { HeadlessTestingScopeHandle } from './scope'
 import { normalizeNonEmptyInput, normalizeRoute, pollUntil, runWithTimeout } from './shared'
 
+export type { HeadlessTestingCDP, HeadlessTestingCDPEventListener } from './cdp'
+export * from './protocol'
 export { HeadlessTestingScopeHandle } from './scope'
 
-export interface HeadlessTestingProtocolOptions {
-  timeout?: number
-}
-
-export type HeadlessTestingEvaluator<T = unknown> = ((...args: any[]) => T | PromiseLike<T>) | string
-
-export interface HeadlessTestingToolInfo {
-  version: 'mpcore-simulator'
-}
-
 export class HeadlessTestingSessionHandle {
-  private readonly pendingNavigations = new Set<(error: unknown) => void>()
+  private readonly navigation: HeadlessTestingNavigation
+  private disconnection?: Promise<void>
+  private cdp?: HeadlessTestingCDP
 
   constructor(
     private readonly project: HeadlessProjectDescriptor,
     private readonly session: HeadlessSession,
   ) {
-    this.session.on('close', () => {
-      for (const reject of this.pendingNavigations) {
-        reject(new Error('The headless testing session closed before navigation completed.'))
+    this.navigation = new HeadlessTestingNavigation(session)
+  }
+
+  close(): Promise<void> {
+    return this.disconnect()
+  }
+
+  /** 先保存共享结果，再同步开始关闭，覆盖关闭监听器内的重入调用。 */
+  disconnect(): Promise<void> {
+    if (!this.disconnection) {
+      let resolve!: () => void
+      let reject!: (error: unknown) => void
+      this.disconnection = new Promise<void>((accept, fail) => {
+        resolve = accept
+        reject = fail
+      })
+      try {
+        this.session.close()
+        resolve()
       }
-    })
+      catch (error) {
+        reject(error)
+      }
+    }
+    return this.disconnection
   }
 
-  async close() {
-    this.disconnect()
+  async send<T = unknown>(method: string, params: Record<string, unknown> = {}, options: HeadlessTestingProtocolOptions = {}): Promise<T> {
+    this.session.assertActive()
+    return await sendHeadlessTestingProtocol<T>(this, method, params, options)
   }
 
-  /** 无头会话独占本地 runtime；同步释放与 automator 的连接清理契约一致。 */
-  disconnect(): void {
-    this.session.close()
+  CDP(): HeadlessTestingCDP {
+    return this.cdp ??= createHeadlessTestingCDP(this, () => this.session.assertActive())
   }
 
   async toolInfo(): Promise<HeadlessTestingToolInfo> {
@@ -157,35 +176,35 @@ export class HeadlessTestingSessionHandle {
   }
 
   async reLaunch(route: string) {
-    await this.invokeNavigation('reLaunch', {
+    await this.navigation.invoke('reLaunch', {
       url: route,
     })
     return await this.requireCurrentPage('reLaunch', route)
   }
 
   async navigateTo(route: string) {
-    await this.invokeNavigation('navigateTo', {
+    await this.navigation.invoke('navigateTo', {
       url: route,
     })
     return await this.requireCurrentPage('navigateTo', route)
   }
 
   async redirectTo(route: string) {
-    await this.invokeNavigation('redirectTo', {
+    await this.navigation.invoke('redirectTo', {
       url: route,
     })
     return await this.requireCurrentPage('redirectTo', route)
   }
 
   async navigateBack(delta = 1) {
-    await this.invokeNavigation('navigateBack', {
+    await this.navigation.invoke('navigateBack', {
       delta,
     })
     return await this.currentPage()
   }
 
   async switchTab(route: string) {
-    await this.invokeNavigation('switchTab', {
+    await this.navigation.invoke('switchTab', {
       url: route,
     })
     return await this.requireCurrentPage('switchTab', route)
@@ -245,36 +264,6 @@ export class HeadlessTestingSessionHandle {
 
   async triggerRouteDone(options?: Record<string, any>) {
     this.session.triggerRouteDone(options)
-  }
-
-  private invokeNavigation(methodName: string, options: { url?: string, delta?: number }) {
-    return new Promise<void>((resolve, reject) => {
-      const rejectNavigation = (error: unknown) => {
-        this.pendingNavigations.delete(rejectNavigation)
-        reject(error)
-      }
-      this.pendingNavigations.add(rejectNavigation)
-      try {
-        this.session.callWxMethod(methodName, {
-          ...options,
-          success: () => {
-            this.pendingNavigations.delete(rejectNavigation)
-            resolve()
-          },
-          fail: (error: unknown) => {
-            const details = error && typeof error === 'object' ? error as { errMsg?: unknown, message?: unknown } : undefined
-            const reason = typeof details?.errMsg === 'string'
-              ? details.errMsg
-              : typeof details?.message === 'string' ? details.message : String(error)
-            const target = options.url ? ` route "${options.url}"` : ''
-            rejectNavigation(new Error(`Failed to ${methodName}${target} through the headless wx runtime: ${reason}`, { cause: error }))
-          },
-        })
-      }
-      catch (error) {
-        rejectNavigation(error)
-      }
-    })
   }
 
   private async requireCurrentPage(methodName: string, route: string) {

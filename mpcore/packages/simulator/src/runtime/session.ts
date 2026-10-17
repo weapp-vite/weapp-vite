@@ -28,6 +28,7 @@ import { cloneAppLaunchOptions, createAppLaunchOptions } from '../host/appLaunch
 import { invokePreparedNavigationApi } from '../host/wx/navigation'
 import { bindStartupNavigation, StartupNavigationQueue } from '../host/wx/startupNavigation'
 import { RuntimeKernel } from '../kernel'
+import { RuntimeRenderQueue } from '../kernel/renderQueue'
 import { loadProject } from '../project'
 import { createMiniProgramHostConfig } from '../project/hostConfig'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
@@ -230,8 +231,16 @@ export class HeadlessSession {
     scopeId: string
   }>()
 
-  private renderRequestPending = false
-  private readonly renderRequestCallbacks: Array<() => void> = []
+  private readonly renderQueue = new RuntimeRenderQueue({
+    isClosed: () => this.kernel.isClosed,
+    onError: error => this.kernel.diagnostics.record('exception', [error]),
+    render: () => {
+      if (this.currentPageInstance) {
+        this.renderCurrentPage()
+      }
+    },
+  })
+
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
@@ -410,8 +419,7 @@ export class HeadlessSession {
       failure = { error }
     }
     this.canvasContexts.clear()
-    this.renderRequestCallbacks.length = 0
-    this.renderRequestPending = false
+    this.renderQueue.close()
     this.appLifecycle.close()
     this.routeEvents.close()
     this.wxState.close()
@@ -615,24 +623,7 @@ export class HeadlessSession {
 
   requestRender(callback?: () => void) {
     this.assertActive()
-    if (callback) {
-      this.renderRequestCallbacks.push(callback)
-    }
-    if (this.renderRequestPending) {
-      return
-    }
-    this.renderRequestPending = true
-    Promise.resolve().then(() => {
-      if (this.kernel.isClosed) {
-        return
-      }
-      this.renderRequestPending = false
-      const callbacks = this.renderRequestCallbacks.splice(0)
-      if (this.currentPageInstance) {
-        this.renderCurrentPage()
-      }
-      callbacks.forEach(cb => cb())
-    })
+    this.renderQueue.request(callback)
   }
 
   getScopeSnapshot(scopeId: string) {

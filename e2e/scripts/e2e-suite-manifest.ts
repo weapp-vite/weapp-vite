@@ -102,6 +102,7 @@ export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
 ] as const
 const IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET = new Set<string>(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
 const IDE_GITHUB_ISSUES_PATTERNS = [
+  'ide/issue-1234-automator.runtime.test.ts',
   'ide/wxml-transform.runtime.test.ts',
   'ide/wxml-transform-watch.runtime.test.ts',
   'ide/wevu-runtime.pruning.test.ts',
@@ -123,8 +124,10 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-1015-css-hmr.runtime.test.ts',
   'ide/issue-1126-1128.test.ts',
   'ide/issue-1172.test.ts',
+  'ide/issue-1174.native-slot-opt-in.test.ts',
   'ide/issue-1182-production-mount.runtime.test.ts',
   'ide/issue-1185-sibling-entry.runtime.test.ts',
+  'ide/issue-1235-component-reentry.runtime.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
@@ -263,6 +266,7 @@ const IDE_GATE_TESTS = [
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/issue-1234-automator.runtime.test.ts',
   'ide/app-shell-presence.hmr.runtime.test.ts',
   'ide/script-setup-external-src.runtime.test.ts',
   'ide/issue-1058-template-tags.runtime.test.ts',
@@ -295,8 +299,10 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/github-issues.runtime.issue1015.test.ts',
   'ide/issue-1126-1128.test.ts',
   'ide/issue-1172.test.ts',
+  'ide/issue-1174.native-slot-opt-in.test.ts',
   'ide/issue-1182-production-mount.runtime.test.ts',
   'ide/issue-1185-sibling-entry.runtime.test.ts',
+  'ide/issue-1235-component-reentry.runtime.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes.runtime.test.ts',
   'ide/issue-1034-auto-routes-hmr.runtime.test.ts',

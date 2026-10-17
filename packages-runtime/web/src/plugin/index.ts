@@ -175,6 +175,14 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
   }
 
   const scan = (context: WebPluginContext) => {
+    const graph = devServer?.moduleGraph
+    // 先撤销旧拓扑响应，避免扫描期间的浏览器重验证通过缓存跳过 load。
+    for (const id of SCAN_VIRTUAL_MODULE_IDS) {
+      const module = graph?.getModuleById(id)
+      if (module) {
+        graph?.invalidateModule(module)
+      }
+    }
     const result = scanQueue.then(async () => {
       const nextState = createEmptyScanState()
       await scanProject({
@@ -193,7 +201,6 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           nextComponentImportIdMap.set(component.importId, component.script)
         }
       }
-      const graph = devServer?.moduleGraph
       const files = graph ? new Set<string>() : undefined
       if (files) {
         for (const snapshot of [state, nextState]) {
@@ -208,16 +215,10 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           }
         }
       }
-      // 虚拟模块始终读取最后一次完整快照，不暴露扫描过程中的空映射。
+      // 源模块始终读取最后一次完整快照，不暴露扫描过程中的空映射。
       state = nextState
       componentImportIdMap = nextComponentImportIdMap
       if (graph && files) {
-        for (const id of SCAN_VIRTUAL_MODULE_IDS) {
-          const module = graph.getModuleById(id)
-          if (module) {
-            graph.invalidateModule(module)
-          }
-        }
         // 入口失效不会向下传播；脚本、模板和合成样式同样属于扫描快照。
         for (const file of files) {
           const modules = graph.getModulesByFile(file)
@@ -342,9 +343,11 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     },
     async load(this: WebPluginContext, id: string) {
       if (id === ENTRY_ID) {
+        await scanQueue
         return generateEntryModule(state.scanResult, root, wxssOptions, options)
       }
       if (id === RESOLVED_AUTO_ROUTES_ID) {
+        await scanQueue
         return generateAutoRoutesModule(state.scanResult)
       }
       if (hasQuery(id, TEMPLATE_QUERY)) {

@@ -7,11 +7,11 @@ import { join } from 'pathe'
 import { bindAttachmentBindingScope, runWithAttachmentBindingUpdates } from '../../host/attachmentBindingUpdates'
 import { attachComponentPage, isComponentPageAttaching } from '../../host/componentPageAttachment'
 import { runComponentLifecycle, runComponentPageLifetime } from '../../runtime/componentInstance'
-import { flushComponentAttachments, flushComponentReady, hasPendingComponentAttachments, isComponentAttached } from '../../runtime/componentInstance/attachment'
+import { flushComponentAttachments, flushComponentReady, hasPendingComponentAttachments } from '../../runtime/componentInstance/attachment'
 import { hasPendingComponentConstruction, isComponentConstructing } from '../../runtime/componentInstance/construction'
-import { flushDiscardedComponentReady, scheduleDiscardedComponentReady } from '../../runtime/componentInstance/discardedReady'
+import { flushDiscardedComponentReady } from '../../runtime/componentInstance/discardedReady'
 import { syncComponentProperties } from '../../runtime/componentInstance/propertyBindings'
-import { syncComponentRelations } from '../../runtime/componentInstance/relations'
+import { reconcileRemovedComponents } from '../../runtime/componentInstance/reconcileRemoved'
 import { isPageBeforeReady } from '../../runtime/pageLifecycle'
 import { bindComponentEventHost, mergeComponentEventRoot, orderComponentAttachmentScopes, registerComponentEventNode } from '../../view/componentEvent'
 import { selectConditionalChildren } from '../../view/conditionalChildren'
@@ -555,22 +555,7 @@ function reconcileBrowserPageTree(
     }
     const canFinalize = !pageAttaching && !hasPendingComponentAttachments(instances)
     // 挂载回调返回后才派发 detached；此时仍可读取旧关系，随后再解除双方关系。
-    const removed = canFinalize
-      ? [...context.componentCache].filter(([scopeId]) => scopeId.startsWith(`${pageScopeId}/`) && !renderPass.seenComponentScopes.has(scopeId))
-      : []
-    for (const [scopeId, instance] of removed) {
-      if (isComponentAttached(instance)) {
-        runComponentLifecycle(instance, 'detached')
-      }
-      else {
-        scheduleDiscardedComponentReady(context.componentCache, scopeId, instance)
-      }
-    }
-    const relationsChanged = canFinalize && syncComponentRelations(context.componentCache, renderPass.seenComponentScopes, pageScopeId)
-    for (const [scopeId] of removed) {
-      context.componentCache.delete(scopeId)
-      context.componentScopes.delete(scopeId)
-    }
+    const relationsChanged = canFinalize && reconcileRemovedComponents(context.componentCache, context.componentScopes, renderPass.seenComponentScopes, pageScopeId)
 
     if (pageAttached || attached || relationsChanged) {
       continue

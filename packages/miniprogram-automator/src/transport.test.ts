@@ -41,4 +41,41 @@ describe('Transport', () => {
     expect(ws.close).not.toHaveBeenCalled()
     expect(onClose).toHaveBeenCalledTimes(1)
   })
+
+  it('shares pending disposal and confirms socket closure before resolving', async () => {
+    const ws = new FakeWebSocket()
+    const transport = new Transport(ws as any)
+    const closing = transport.close()
+    expect(closing).toBeInstanceOf(Promise)
+    expect(transport.close()).toBe(closing)
+    let finished = false
+    void closing.then(() => {
+      finished = true
+    })
+    await Promise.resolve()
+    expect(finished).toBe(false)
+    ws.emit('close')
+    await closing
+    expect(finished).toBe(true)
+    expect(ws.terminate).toHaveBeenCalledOnce()
+    await transport.close()
+  })
+
+  it('bounds missing close acknowledgements and permits confirmation after a late close', async () => {
+    vi.useFakeTimers()
+    try {
+      const ws = new FakeWebSocket()
+      const transport = new Transport(ws as any)
+      const failure = expect(transport.close()).rejects.toMatchObject({ code: 'DEVTOOLS_DISCONNECT_TIMEOUT' })
+      await vi.advanceTimersByTimeAsync(2_000)
+      await failure
+      expect(vi.getTimerCount()).toBe(0)
+      ws.emit('close')
+      await transport.close()
+      expect(ws.terminate).toHaveBeenCalledOnce()
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
 })

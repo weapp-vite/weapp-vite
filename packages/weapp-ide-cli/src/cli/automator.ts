@@ -225,14 +225,14 @@ export async function connectOpenedAutomator(options: AutomatorOptions): Promise
       stage: 'connect',
       disposeLate: (program) => {
         if (program && typeof program === 'object' && 'disconnect' in program && typeof program.disconnect === 'function') {
-          program.disconnect()
+          return program.disconnect()
         }
       },
     })
     if (process.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL) {
       // 借用连接不授予窗口关闭权限，窗口仍由创建者持有的 journal 回收。
       miniProgram.close = async () => {
-        miniProgram.disconnect()
+        await miniProgram.disconnect()
       }
     }
     return miniProgram

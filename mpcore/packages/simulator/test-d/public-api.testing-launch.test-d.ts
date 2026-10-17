@@ -9,7 +9,7 @@ import { launch } from '..'
 const synchronousOptions: HeadlessTestingLaunchOptions = {
   onSessionCreated(session) {
     expectType<HeadlessTestingSessionHandle>(session)
-    expectType<void>(session.disconnect())
+    expectType<Promise<void>>(session.disconnect())
     expectType<Promise<void>>(session.close())
   },
   configureSession(session) {

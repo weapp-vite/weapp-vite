@@ -1,5 +1,7 @@
+import type { HeadlessTestingDispatchEventInit, HeadlessTestingNodeEventInit, HeadlessTestingNodeValueEventInit, HeadlessTestingTouchEventInit } from './nodeEvents'
 import { createMiniProgramEventPayload, resolveMiniProgramEventBinding } from './eventBinding'
 import { collectNodeDataset } from './nodeDataset'
+import { collectNodeText, serializeNode } from './nodeSerialization'
 import { queryInspectionSelectorAll, querySelectorAll } from './selectors'
 import { queryInspectionXPathElements, queryXPathElements } from './xpath'
 
@@ -13,27 +15,7 @@ interface DomNodeLike {
   type?: string
 }
 
-export interface HeadlessTestingNodeEventInit {
-  currentTarget?: {
-    dataset?: Record<string, unknown>
-    id?: string
-  }
-  dataset?: Record<string, unknown>
-  detail?: unknown
-  id?: string
-  mark?: Record<string, unknown>
-  target?: {
-    dataset?: Record<string, unknown>
-    id?: string
-  }
-}
-
-export interface HeadlessTestingNodeValueEventInit extends HeadlessTestingNodeEventInit {
-  detail?: {
-    value?: string
-    [key: string]: unknown
-  }
-}
+export type { HeadlessTestingDispatchEventInit, HeadlessTestingNodeEventInit, HeadlessTestingNodeValueEventInit, HeadlessTestingTouch, HeadlessTestingTouchEventInit } from './nodeEvents'
 
 interface HeadlessTestingNodeInteractionHandlers {
   assertActive?: () => void
@@ -45,53 +27,11 @@ interface HeadlessTestingNodeInteractionHandlers {
   projectionOnly?: boolean
 }
 
-function escapeText(text: string) {
-  return text
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-}
-
 function createValueEventDetail(value: string, detail?: HeadlessTestingNodeValueEventInit['detail']) {
   return {
     value,
     ...(detail ?? {}),
   }
-}
-
-function escapeAttribute(value: string) {
-  return escapeText(value).replaceAll('"', '&quot;')
-}
-
-function serializeNode(node: DomNodeLike): string {
-  if (node.type === 'text') {
-    return escapeText(node.data ?? '')
-  }
-
-  if (node.type !== 'tag') {
-    return (node.children ?? []).map(serializeNode).join('')
-  }
-
-  if (node.name === 'page') {
-    return (node.children ?? [])
-      .filter(child => !(child.type === 'tag' && (child.name === 'import' || child.name === 'wxs')))
-      .map(serializeNode)
-      .join('')
-  }
-
-  const attrs = Object.entries(node.attribs ?? {})
-    .filter(([key]) => !key.startsWith('data-sim-'))
-    .map(([key, value]) => ` ${key}="${escapeAttribute(value)}"`)
-    .join('')
-  const children = (node.children ?? []).map(serializeNode).join('')
-  return `<${node.name ?? ''}${attrs}>${children}</${node.name ?? ''}>`
-}
-
-function collectText(node: DomNodeLike): string {
-  if (node.type === 'text') {
-    return node.data ?? ''
-  }
-  return (node.children ?? []).map(collectText).join('')
 }
 
 function resolvePageScopeId(scopeId?: string | null) {
@@ -203,7 +143,7 @@ export class HeadlessTestingNodeHandle {
 
   async text() {
     this.assertActive()
-    return collectText(this.node)
+    return collectNodeText(this.node)
   }
 
   async tagName() {
@@ -274,6 +214,26 @@ export class HeadlessTestingNodeHandle {
 
   async tap(event: HeadlessTestingNodeEventInit = {}) {
     return await this.trigger('tap', event)
+  }
+
+  async touchstart(event: HeadlessTestingTouchEventInit = {}) {
+    return await this.trigger('touchstart', event)
+  }
+
+  async touchmove(event: HeadlessTestingTouchEventInit = {}) {
+    return await this.trigger('touchmove', event)
+  }
+
+  async touchend(event: HeadlessTestingTouchEventInit = {}) {
+    return await this.trigger('touchend', event)
+  }
+
+  async dispatchEvent({ eventName, $: selector, ...event }: HeadlessTestingDispatchEventInit) {
+    const target = selector ? await this.$(selector) : this
+    if (!target) {
+      throw new Error(`No node matching "${selector}" was found for dispatchEvent in headless testing runtime.`)
+    }
+    return await target.trigger(eventName, event)
   }
 
   async input(value: string, event: HeadlessTestingNodeValueEventInit = {}) {

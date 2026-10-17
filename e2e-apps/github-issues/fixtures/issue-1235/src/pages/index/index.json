@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "reentry-child": "/components/child/index"
+  }
+}

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { fs } from '@weapp-core/shared/fs'
-import { compilerSourceId, getCompilerHmrHostByConfig } from '../compilerPlugin/hmr'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { compilerSourceId, getCompilerHmrHostByConfig, getCompilerRawSnapshot } from '../compilerPlugin/hmr'
 
 interface CompilerSourceSnapshot {
   sources: ReadonlyMap<string, string | null>
@@ -36,12 +37,18 @@ export async function captureCompilerNativeScriptInputs<T>(
   }
 }
 
+/** 冻结输入沿用捕获时的 alias 绑定，不从后续磁盘改指推断旧批次身份。 */
+export function compilerSnapshotSourceId(sources: ReadonlyMap<string, string | null> | undefined, id: string): string {
+  const binding = sources && getCompilerRawSnapshot(sources)?.bindings.get(normalizeFsResolvedId(id))
+  return binding?.target ?? compilerSourceId(id)
+}
+
 function observeNativeInput(owner: object, id: string, source: string): string {
   const collector = nativeInputs.get(owner)
   if (!collector) {
     return source
   }
-  const sourceId = compilerSourceId(id)
+  const sourceId = compilerSnapshotSourceId(snapshots.get(owner)?.sources, id)
   if (/\.[cm]?[jt]s$/.test(sourceId) && collector.accepts(sourceId)) {
     collector.versions.set(sourceId, compilerNativeScriptVersion(source))
   }
@@ -88,7 +95,7 @@ export async function withCompilerSourceSnapshot<T>(
 }
 
 export function readCompilerSourceSnapshot(sources: ReadonlyMap<string, string | null> | undefined, id: string): string | undefined {
-  const source = sources?.get(compilerSourceId(id))
+  const source = sources?.get(compilerSnapshotSourceId(sources, id))
   if (source === null) {
     throw new Error(`Source removed from compiler snapshot: ${id}`)
   }

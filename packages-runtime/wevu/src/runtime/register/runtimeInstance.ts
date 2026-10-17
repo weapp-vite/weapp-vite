@@ -19,6 +19,7 @@ import {
   WEVU_EXPOSED_KEY,
   WEVU_HOOKS_KEY,
   WEVU_HOST_COMMIT_PROMISE_KEY,
+  WEVU_NATIVE_SLOT_CONTEXT_KEY,
   WEVU_ON_BEFORE_UNMOUNT_HOOK,
   WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY,
   WEVU_PARENT_INSTANCE_KEY,
@@ -778,15 +779,6 @@ function mountRuntimeInstanceWithContext<D extends object, C extends ComputedDef
   }
   syncNativeOwnerId()
 
-  const watchStops = watchMap
-    ? registerWatches(runtimeWithDefaults, watchMap, target, {
-        deferMissingSourceBaseline: Boolean(setup),
-      })
-    : []
-  if (watchStops.length) {
-    target[WEVU_WATCH_STOPS_KEY] = watchStops
-  }
-
   if (setup) {
     runRuntimeSetupPhase({
       target,
@@ -796,6 +788,16 @@ function mountRuntimeInstanceWithContext<D extends object, C extends ComputedDef
       runtimeProxy: runtimeProxy as Record<string, any>,
       setup,
     })
+  }
+
+  const watchStops = watchMap
+    ? registerWatches(runtimeWithDefaults, watchMap, target)
+    : []
+  if (watchStops.length) {
+    target[WEVU_WATCH_STOPS_KEY] = watchStops
+  }
+
+  if (setup) {
     if ((import.meta as ImportMetaWithEnv).env?.PROD !== true && typeof getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]?.trackWevuComponent === 'function') {
       const initialReactiveSetupSnapshot: Record<string, unknown> = {}
       for (const [key, value] of Object.entries(runtimeWithDefaults.setupState ?? {})) {
@@ -810,9 +812,6 @@ function mountRuntimeInstanceWithContext<D extends object, C extends ComputedDef
     }
     if (!options?.deferSetData) {
       refreshOwnerSnapshot()
-    }
-    for (const stop of watchStops) {
-      stop.resume()
     }
   }
   else if (
@@ -1005,6 +1004,7 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
       }
     },
     ...((!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+      && target[WEVU_NATIVE_SLOT_CONTEXT_KEY] === true
       ? [() => releaseNativeDeclaration(target, options?.preserveNativeDeclarationChildren)]
       : []),
     () => runtimeCapabilityRegistry.scopedSlots?.teardown(target),

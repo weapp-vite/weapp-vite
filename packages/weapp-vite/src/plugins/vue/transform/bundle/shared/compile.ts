@@ -10,6 +10,7 @@ import { readCompilerInput } from '../../../../utils/sourceSnapshot'
 import { readAndParseSfc } from '../../../../utils/vueSfc'
 import { createCompilerAppShellSignature } from '../../appShell'
 import { createCompileVueFileOptions, resolveSfcStylePreprocessOptions } from '../../compileOptions'
+import { applyComponentResolutionDependencies, syncVueCompilationDependencies } from '../../componentResolutionDependencies'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { resolvePageLayoutPlan } from '../../pageLayout'
 import { isVueStyleOnlyDirtyReasonSummary, resolveDirtyVueEntryId, resolveTransformAutoRoutesSource } from '../../plugin/shared'
@@ -61,6 +62,8 @@ export async function compileVueLikeFile(options: {
   const result = filename.endsWith('.vue')
     ? await compileVueFile(source, filename, compileOptions)
     : await compileJsxFile(source, filename, compileOptions)
+  applyComponentResolutionDependencies(result, compileOptions)
+  syncVueCompilationDependencies({ ctx, pluginCtx, filename, result, configService })
   if (resolvedPageLayoutPlan) {
     setVueBundlePageLayoutPlan(result, resolvedPageLayoutPlan)
   }

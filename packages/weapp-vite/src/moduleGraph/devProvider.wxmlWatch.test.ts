@@ -2,6 +2,7 @@ import type { Plugin } from 'vite'
 import { EventEmitter } from 'node:events'
 import { expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtime/runtimeState'
+import { beginWxmlDependencies } from '../wxml/processing/dependencies'
 import { createDevModuleGraphProvider } from './devProvider'
 import { createModuleGraphService } from './service'
 
@@ -32,15 +33,18 @@ it('subscribes external WXML inputs to the provider and releases only its listen
   const runtimeState = createRuntimeState()
   const dependency = '/external/transform-rules.json'
   const lateDependency = '/external/late-rules.json'
-  runtimeState.wxmlProcessing.references.set(dependency, 1)
   const unrelated = vi.fn()
   runtimeState.wxmlProcessing.listeners.add(unrelated)
   const onChange = vi.fn()
-  const provider = await createDevModuleGraphProvider({
+  const ctx = {
     moduleGraphService: createModuleGraphService(),
     runtimeState,
-    configService: { cwd: '/project' },
-  } as any, {}, onChange)
+    configService: { cwd: '/project', outDir: '/project/dist' },
+  } as any
+  const initial = beginWxmlDependencies(ctx, 'main', false)
+  initial.template('initial.wxml')(dependency)
+  initial.commit()
+  const provider = await createDevModuleGraphProvider(ctx, {}, onChange)
   try {
     expect(externalWatcher.add).toHaveBeenCalledExactlyOnceWith('/external')
     expect(runtimeState.wxmlProcessing.listeners.size).toBe(2)
@@ -51,9 +55,9 @@ it('subscribes external WXML inputs to the provider and releases only its listen
     await (plugin.hotUpdate as any).call({ environment: { name: 'client' } }, { type: 'update', file: dependency, read })
     expect(read).not.toHaveBeenCalled()
     expect(onChange).toHaveBeenCalledOnce()
-    for (const listener of runtimeState.wxmlProcessing.listeners) {
-      listener([lateDependency])
-    }
+    const replacement = beginWxmlDependencies(ctx, 'main', false)
+    replacement.template('late.wxml')(lateDependency)
+    replacement.commit()
     externalWatcher.emit('all', 'change', dependency)
     externalWatcher.emit('all', 'add', lateDependency)
     expect(onChange.mock.calls.map(([change]) => change)).toEqual([

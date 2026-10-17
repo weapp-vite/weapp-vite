@@ -5,10 +5,12 @@ import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../..
 import { CompilerDiagnosticError } from '../../../../types/diagnostics'
 import { parseJsLike } from '../../../../utils/babel'
 import { getMiniProgramTemplatePlatform } from '../../compiler/template'
+import { usesNativeDeclarationContext } from '../../compiler/template/nativeDeclaration'
 import { generateScopedId } from '../scopedId'
 import { collectComponentSourceInfo } from './componentSources'
 import { compileConfigPhase } from './config'
 import { finalizeResult } from './finalize'
+import { analyzeNativeSlotContext } from './nativeSlotContext/index'
 import { applyCompilerTemplateWrappers, mergeCompilerLayoutUsingComponents } from './pageLayout'
 import { parseVueFile } from './parse'
 import { resolveSetupPropConflicts } from './propsProjection'
@@ -68,6 +70,28 @@ export async function compileVueFile(
     autoImportTags,
     nativeScriptAnalysis: parsed.nativeScriptAnalysis,
   })
+
+  if (!parsed.isAppFile && usesNativeDeclarationContext({
+    platform: options?.template?.platform ?? getMiniProgramTemplatePlatform(),
+    scopedSlotsRequireProps: options?.template?.scopedSlotsRequireProps ?? options?.template?.scopedSlotsCompiler !== 'augmented',
+    nativeSlotContext: options?.template?.nativeSlotContext === true,
+  })) {
+    const participation = await analyzeNativeSlotContext({
+      descriptor: parsed.descriptor,
+      filename,
+      options,
+      components: componentSourceInfo,
+    })
+    options = {
+      ...options,
+      template: {
+        ...options?.template,
+        nativeSlotContext: participation.required,
+        nativeSlotContextTags: participation.tags,
+      },
+    }
+    result.meta!.nativeSlotContextDeps = participation.dependencies
+  }
 
   const scriptCompiled = parsed.descriptor.script || parsed.descriptor.scriptSetup
     ? compileScript(parsed.descriptorForCompile, {

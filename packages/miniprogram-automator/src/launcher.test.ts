@@ -274,7 +274,7 @@ describe('Launcher', () => {
     vi.useFakeTimers()
     try {
       const { default: Launcher } = await loadLauncherModule()
-      const child = Object.assign(new EventEmitter(), { unref: vi.fn() })
+      const child = Object.assign(new EventEmitter(), { unref: vi.fn(), stdout: new PassThrough(), stderr: new PassThrough() })
       spawnMock.mockReturnValue(child)
       const release = vi.fn(async () => {})
       acquirePortLeaseMock.mockImplementation(async () => ({ port: 9420, release }))
@@ -289,7 +289,10 @@ describe('Launcher', () => {
       vi.spyOn(launcher as any, 'connectTool').mockResolvedValueOnce({
         checkVersion,
         disconnect,
-        waitForAppReady: () => new Promise(() => {}),
+        waitForAppReady: () => {
+          child.stderr.write('CLI diagnostics before app-ready timeout\n')
+          return new Promise(() => {})
+        },
       })
       const result = launcher.launch({ cliPath: 'cli', projectPath: '.', timeout: 100 }).catch(error => error)
       await vi.advanceTimersByTimeAsync(100)
@@ -297,6 +300,7 @@ describe('Launcher', () => {
         code: 'DEVTOOLS_OPERATION_TIMEOUT',
         operation: { attempts: 2, elapsedMs: 100, remainingMs: 0, stage: 'app-ready' },
       })
+      expect((await result).message).toContain('CLI diagnostics before app-ready timeout')
       expect(checkVersion).toHaveBeenCalledWith(20)
       expect(disconnect).toHaveBeenCalledOnce()
       expect(release).toHaveBeenCalledTimes(2)
@@ -336,7 +340,7 @@ describe('Launcher', () => {
     await result.close()
 
     expect(rawClose).toHaveBeenCalledTimes(2)
-    expect(rawDisconnect).toHaveBeenCalledTimes(2)
+    expect(rawDisconnect).toHaveBeenCalledOnce()
     expect(release).toHaveBeenCalledTimes(1)
   })
 
@@ -361,10 +365,10 @@ describe('Launcher', () => {
 
     expect(release).not.toHaveBeenCalled()
 
-    result.disconnect()
-    result.disconnect()
+    await result.disconnect()
+    await result.disconnect()
 
-    expect(rawDisconnect).toHaveBeenCalledTimes(2)
+    expect(rawDisconnect).toHaveBeenCalledOnce()
     expect(release).toHaveBeenCalledTimes(1)
   })
 
@@ -474,6 +478,48 @@ describe('Launcher', () => {
     expect(disconnect).toHaveBeenCalledTimes(1)
     expect(secondCandidate.checkVersion).toHaveBeenCalledTimes(1)
     expect(result).toEqual(secondCandidate)
+  })
+
+  it('preserves validation and disconnect errors without retrying another connection', async () => {
+    const { default: Launcher } = await loadLauncherModule()
+    spawnMock.mockReturnValue(Object.assign(new EventEmitter(), { unref: vi.fn() }))
+    const primary = new Error('Extension context invalidated.')
+    const cleanup = new Error('socket closure unconfirmed')
+    const release = vi.fn(async () => {})
+    acquirePortLeaseMock.mockResolvedValueOnce({ port: 9420, release })
+    const launcher = new Launcher()
+    const connectTool = vi.spyOn(launcher as any, 'connectTool').mockResolvedValue({
+      checkVersion: vi.fn(async () => { throw primary }),
+      disconnect: vi.fn(async () => { throw cleanup }),
+    })
+
+    const error = await launcher.launch({ cliPath: 'cli', projectPath: '.' }).catch(error => error)
+
+    expect(error).toBeInstanceOf(AggregateError)
+    expect(error.cause).toMatchObject({ errors: [primary, cleanup], cause: primary })
+    expect(error.errors[1]).toMatchObject({ errors: [cleanup] })
+    expect(connectTool).toHaveBeenCalledOnce()
+    expect(acquirePortLeaseMock).toHaveBeenCalledOnce()
+    expect(release).not.toHaveBeenCalled()
+  })
+
+  it('preserves a launch failure when lease removal also fails', async () => {
+    const { default: Launcher } = await loadLauncherModule()
+    const cleanup = new Error('lease removal failed')
+    acquirePortLeaseMock.mockResolvedValueOnce({
+      port: 9420,
+      release: vi.fn(async () => {
+        throw cleanup
+      }),
+    })
+    const launcher = new Launcher()
+
+    const error = await launcher.launch({ cliPath: 'cli' }).catch(error => error)
+
+    expect(error).toBeInstanceOf(AggregateError)
+    expect(error.errors).toEqual([error.cause, cleanup])
+    expect(error.cause.message).toBe('projectPath is not provided')
+    expect(acquirePortLeaseMock).toHaveBeenCalledOnce()
   })
 
   it('keeps waiting for websocket readiness after cli exits with code 0', async () => {
@@ -606,7 +652,7 @@ describe('Launcher', () => {
         .flat()
         .map(value => value instanceof Error ? `${value.message}\n${value.stack ?? ''}` : String(value))
         .join('\n')
-      expect(error.message).toBe('WeChat DevTools HTTP automator fallback returned unsupported response')
+      expect(error.message).toBe('WeChat DevTools HTTP automator fallback returned unsupported response\ncli output:\nIDE server started successfully, listening on http://127.0.0.1:9420')
       expect(String(error)).not.toContain(opaqueToken)
       expect(error.cause).toBeUndefined()
       expect(loggedOutput).not.toContain(opaqueToken)
