@@ -1,5 +1,42 @@
 # @weapp-core/constants
 
+## 0.4.0
+
+### Minor Changes
+
+- feat(automator): 完整吸收官方 miniprogram-automator 0.13.0 的公开协议、CDP、触摸字段和诊断能力。新增 `MiniProgram.send()`、共享连接的 `CDP()` 及可取消事件订阅；`changedTouches` 优先于保留的弃用别名 `changeTouches`，启动失败附带脱敏、有界的 CLI 输出。
+
+  `Transport.close()`、`Connection.dispose()`、`MiniProgram.disconnect()` 与共享会话释放方法的返回值改为 `Promise<void>`，调用方应使用 `await` 确认关闭完成。断开立即拒绝未决 RPC，避免上游清理回归；并发清理共享结果，超时或释放失败保留资源归属及重试机会，同时保留业务错误与清理错误。
+
+  headless 同步触摸传递、异步断开和已有真实语义的五个公开协议，CDP 与其他协议明确报告 `HEADLESS_PROTOCOL_UNSUPPORTED`。同步 IDE CLI、MCP、日志、doctor 与重连的等待边界及迁移文档。
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@vitejs/devtools, @vitejs/devtools-kit, eslint, happy-dom, sass, sass-embedded。命名 catalog 变更键：无。
+
+- chore(deps): 升级兼容的 AI SDK、Vue 类型工具及构建依赖，同步脚手架依赖目录和应用模板。TypeScript 保持 6.0.3，截图比较算法及既有 Vite、Rolldown 兼容补丁保持原有契约。
+
+  升级 pnpm、Bun 和 Rust JSON 序列化依赖，并迁移 repoctl 发布说明分类补丁；沿用上游已有的发布 PR 去重修复。
+
+- chore(deps): 升级 Vue、React、Vitest、Rolldown、Oxc 与 AI SDK 等兼容依赖，同步应用、模板和脚手架 catalog。
+
+  迁移 Rolldown 1.2.14 兼容补丁，并对齐 Rust Oxc 0.154.0；保留 Vite 8.3.4、DevTools/Kit 0.7.6、TypeScript 6.0.3 和截图比较语义，p-queue 更新至兼容的 9.3.5。
+
+  默认 catalog 变更键：@icebreakers/eslint-config, @vue/compiler-core, @vue/compiler-dom, devframe, happy-dom, oxc-parser, postcss, react, rolldown, vue, weapp-tailwindcss, zod。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- chore(deps): 刷新兼容范围内的运行时与构建依赖。
+
+  升级 AI SDK、TanStack Vue Query、Rollup、weapp-tailwindcss 及其 engine；VS Code 扩展的打包检查脚本改用 adm-zip 自带类型的运行时包。p-queue 与 pixelmatch 保持兼容版本，TypeScript 不在本轮升级范围内。默认 catalog 变更键为 weapp-tailwindcss，命名 catalog 变更键为 weapp-tailwindcss-fixed（均升级至 5.6.3）。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.vitest
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.vitest
+  - @weapp-agent/cli：dependencies.@ai-sdk/anthropic、dependencies.@ai-sdk/openai、dependencies.@ai-sdk/openai-compatible、dependencies.ai
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - @weapp-vite/eslint：devDependencies.vitest
+
 ## 0.3.1
 
 ### Patch Changes
