@@ -1,5 +1,60 @@
 # @wevu/compiler
 
+## 7.6.0
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@vitejs/devtools, @vitejs/devtools-kit, eslint, happy-dom, sass, sass-embedded。命名 catalog 变更键：无。
+
+- chore(deps): 升级兼容的 AI SDK、Vue 类型工具及构建依赖，同步脚手架依赖目录和应用模板。TypeScript 保持 6.0.3，截图比较算法及既有 Vite、Rolldown 兼容补丁保持原有契约。
+
+  升级 pnpm、Bun 和 Rust JSON 序列化依赖，并迁移 repoctl 发布说明分类补丁；沿用上游已有的发布 PR 去重修复。
+
+- chore(deps): 升级 Vue、React、Vitest、Rolldown、Oxc 与 AI SDK 等兼容依赖，同步应用、模板和脚手架 catalog。
+
+  迁移 Rolldown 1.2.14 兼容补丁，并对齐 Rust Oxc 0.154.0；保留 Vite 8.3.4、DevTools/Kit 0.7.6、TypeScript 6.0.3 和截图比较语义，p-queue 更新至兼容的 9.3.5。
+
+  默认 catalog 变更键：@icebreakers/eslint-config, @vue/compiler-core, @vue/compiler-dom, devframe, happy-dom, oxc-parser, postcss, react, rolldown, vue, weapp-tailwindcss, zod。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- chore(deps): 刷新兼容范围内的运行时与构建依赖。
+
+  升级 AI SDK、TanStack Vue Query、Rollup、weapp-tailwindcss 及其 engine；VS Code 扩展的打包检查脚本改用 adm-zip 自带类型的运行时包。p-queue 与 pixelmatch 保持兼容版本，TypeScript 不在本轮升级范围内。默认 catalog 变更键为 weapp-tailwindcss，命名 catalog 变更键为 weapp-tailwindcss-fixed（均升级至 5.6.3）。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.vitest
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.vitest
+  - @weapp-agent/cli：dependencies.@ai-sdk/anthropic、dependencies.@ai-sdk/openai、dependencies.@ai-sdk/openai-compatible、dependencies.ai
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - @weapp-vite/eslint：devDependencies.vitest
+
+- perf(compiler): 普通 JS、TS 和 Vue SFC 编译按需加载 Vue JSX 转换器，减少无 JSX 构建的提前初始化开销，并保留 JSX、TSX 转换结果、错误传播和 sourcemap 行为。
+
+- fix(wevu): 将原生插槽上下文协议改为默认关闭的显式选项
+
+  新增 `weapp.vue.template.nativeSlotContext`，默认 `false`，与保留原生插槽的 `scopedSlotsRequireProps` 独立。未开启时不再生成原生上下文标记、声明属性及插槽事件，也不向普通组件注册对应方法、observer 或清理回调，避免未使用该能力的组件承担协议开销。
+
+  需要继续使用 7.5.0 引入的微信原生插槽最近 Provider 上下文能力时，同时设置 `nativeSlotContext: true` 和 `scopedSlotsRequireProps: true`。开启后仅为可能参与上下文传递的组件保留协议，纯展示、仅使用 `ref` 的组件及其纯容器不再注入；保留 Provider、Consumer、组合函数、插槽转发及必要的中间组件链，并在相关源码变化后重新计算。普通 `provide/inject`、增强插槽及其他平台行为保持不变。
+
+  完善开启后的静态分析：保留可能通过 getter、属性解构或不透明调用读取上下文的组件；正确识别 Options API、双脚本作用域、普通响应式辅助函数和 HTML 标签映射中的纯用法。符号链接目标删除、重建以及 barrel 重导出改指后，重新计算引用方，编译冻结快照与实时解析不会混用。
+
+  对跨模块及普通脚本中跨实例共享的可变值保持保守，避免通过其他模块或公开组件实例安装 getter 后丢失最近 Provider。循环解构按完整默认值和计算键分析，异步函数和生成器不再被误当作普通同步返回值。每实例新建的纯值继续裁剪；复用同轮已完成的数据证明，避免共享数据图导致重复展开。
+
+  组件注册原子选择最终路径、类型和静态元数据，明确 `<script setup>` 优先于 Options API、显式注册优先于自动导入，不再因异步解析完成顺序改变原生/Wevu 身份。
+
+  组件的协议参与状态在开发期间变化时，stateful HMR 会请求完整重建，避免新 `setup` 沿用缺少协议方法和属性的旧原生实例。
+
+  修复 Options API `provide()` 和 watch 过早读取未安装的 setup 状态、方法或 inject 绑定，以及 setup 返回值重复安装导致 computed 对象和方法身份分离的问题。现在只安装一次绑定，再执行 `provide()` 和注册 watch；字符串 watch handler 可引用 setup 方法，首次回调读取完整状态。setup 与 Options API 提供同名 key 时以后者为准。该修复同时覆盖开关关闭、显式开启和增强插槽路径。
+
+- fix(weapp-vite): 补齐构建插件所属包的 Babel core 与 MCP server 宿主依赖，修复关闭自动 peer 安装和依赖提升时的严格消费者安装失败，并以真实发布包验证 TypeScript/CommonJS、Vue JSX 转换及 MCP Node adapter 加载。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.4.0
+  - @weapp-core/shared@3.3.0
+  - @weapp-vite/ast@7.6.0
+  - rolldown-require@2.0.36
+
 ## 7.5.0
 
 ### Minor Changes
