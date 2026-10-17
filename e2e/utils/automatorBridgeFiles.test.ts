@@ -52,6 +52,29 @@ describe('bridge wrapper file mirroring', () => {
     expect(remove).not.toHaveBeenCalled()
   })
 
+  it.each(['EEXIST', 'EPERM'])('preserves the last complete file when replacement fails with %s', (code) => {
+    const previous = '<view>before</view>'
+    fs.writeFileSync(source, previous)
+    copyDistEntryForBridgeWrapper(source, target, false)
+    fs.writeFileSync(source, '<view>after!</view>')
+    const failure = Object.assign(new Error('replacement denied'), { code })
+    vi.spyOn(fs, 'renameSync').mockImplementation(() => {
+      throw failure
+    })
+
+    let caught: unknown
+    try {
+      copyDistEntryForBridgeWrapper(source, target, false)
+    }
+    catch (error) {
+      caught = error
+    }
+
+    expect(caught).toBe(failure)
+    expect(fs.readFileSync(target, 'utf8')).toBe(previous)
+    expect(fs.readdirSync(root).sort()).toEqual(['source', 'wrapper'])
+  })
+
   it('copies changed descendants without touching unchanged scripts and removes stale descendants', () => {
     fs.mkdirSync(source)
     fs.writeFileSync(path.join(source, 'app.js'), 'App({})')
@@ -64,7 +87,9 @@ describe('bridge wrapper file mirroring', () => {
 
     copyDistEntryForBridgeWrapper(source, target, true)
 
-    expect(copy).toHaveBeenCalledExactlyOnceWith(path.join(source, 'index.wxml'), path.join(target, 'index.wxml'))
+    expect(copy).toHaveBeenCalledTimes(1)
+    expect(copy.mock.calls[0]?.[0]).toBe(path.join(source, 'index.wxml'))
+    expect(copy.mock.calls[0]?.[1]).toContain(path.join(target, '.index.wxml.weapp-vite-sync-'))
     expect(fs.readFileSync(path.join(target, 'app.js'), 'utf8')).toBe('App({})')
     expect(fs.existsSync(path.join(target, 'stale.json'))).toBe(false)
   })

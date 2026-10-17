@@ -80,7 +80,7 @@ function captureProcessDiagnostics(child: ChildProcess, started: number, timings
   let pending = ''
   let discardLine = false
   const recordPhase = (line: string) => {
-    const match = /^process-tree:(script-enter|helper-cache-hit|helper-compile|helper-ready|query-complete|json-pipeline-returned)(?: elapsedMs=(\d+(?:\.\d+)?))?$/.exec(line)
+    const match = /^process-tree:(script-enter|helper-cache-hit|helper-compile|helper-ready|query-complete|json-serialized|json-output-written)(?: elapsedMs=(\d+(?:\.\d+)?))?$/.exec(line)
     if (!match || timings.phases.length >= 16) {
       return
     }

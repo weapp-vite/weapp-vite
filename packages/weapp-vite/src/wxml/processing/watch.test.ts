@@ -33,10 +33,28 @@ function fixture(disabled = false) {
 }
 
 describe('WXML dependency watcher ownership', () => {
+  it('leaves root dependencies with the host through publication, removal and teardown', async () => {
+    const { close, ctx, internal, server } = fixture()
+    await close.ready
+    const missing = '/project/missing-rules.json'
+    try {
+      // 缺失输入保留订阅以等待恢复，但不能反复创建与宿主根监听重叠的异步注册。
+      for (const files of [[internal, missing], [missing], [internal, missing], []]) {
+        for (const listener of ctx.runtimeState.wxmlProcessing.listeners) {
+          listener(files)
+        }
+      }
+    }
+    finally {
+      await close()
+    }
+    expect(server.watcher.add).not.toHaveBeenCalled()
+  })
+
   it('watches only exact external inputs through shallow parents and preserves user options', async () => {
     const { watcher, userIgnored, server, ctx, internal, external, onChange, close } = fixture()
     await close.ready
-    expect(server.watcher.add).toHaveBeenCalledExactlyOnceWith([internal])
+    expect(server.watcher.add).not.toHaveBeenCalled()
     expect(watcher.add).toHaveBeenCalledExactlyOnceWith('/inputs')
     const options = watchMock.mock.calls[0]![1]
     expect(options).toMatchObject({ depth: 0, ignoreInitial: true, usePolling: true, interval: 30 })

@@ -4,6 +4,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
+import { createAutoRoutesTopologyDiagnostics } from '../utils/autoRoutesTopologyDiagnostics'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -102,39 +103,51 @@ describe('classic automatic route topology output runtime', { concurrent: false 
     await expect.poll(async () => (await readFile(path.join(project, 'dist/app.js'), 'utf8')).includes(marker), { timeout: 30_000 }).toBe(true)
     const directory = path.join(project, 'src/pages/topology-added')
     const vueDirectory = path.join(project, 'src/pages/topology-vue')
+    const diagnostics = createAutoRoutesTopologyDiagnostics({ project, profilePath, routes: [route, vueRoute], getDevOutput: () => dev!.getOutput() })
     for (const stage of ['added', 'removed', 'restored']) {
+      diagnostics.record(stage, 'begin')
       const present = stage !== 'removed'
       const publication = createDevBuildCompletion(dev, {
         completed: '小程序已重新构建',
         source: { file: path.join(vueDirectory, 'index.vue'), profilePath },
       })
-      if (present) {
-        await mkdir(directory, { recursive: true })
-        await writeFile(path.join(directory, 'index.json'), '{}\n')
-        await writeFile(path.join(directory, 'index.wxml'), '<view id="topology-result">{{message}}</view>\n')
-        await writeFile(path.join(directory, 'index.js'), `Page({ data: { message: '${stage}' } })\n`)
-        await mkdir(vueDirectory, { recursive: true })
-        await writeFile(path.join(vueDirectory, 'index.vue'), `<template><view id="topology-vue-result">${stage}</view></template>\n`)
+      diagnostics.record(stage, 'publication-captured')
+      try {
+        if (present) {
+          await mkdir(directory, { recursive: true })
+          await writeFile(path.join(directory, 'index.json'), '{}\n')
+          await writeFile(path.join(directory, 'index.wxml'), '<view id="topology-result">{{message}}</view>\n')
+          await writeFile(path.join(directory, 'index.js'), `Page({ data: { message: '${stage}' } })\n`)
+          await mkdir(vueDirectory, { recursive: true })
+          await writeFile(path.join(vueDirectory, 'index.vue'), `<template><view id="topology-vue-result">${stage}</view></template>\n`)
+        }
+        else {
+          await rm(directory, { recursive: true })
+          await rm(vueDirectory, { recursive: true })
+        }
+        // 不触碰 App 触发补偿构建；只靠本轮页面源文件变化发布路由和完整页面。
+        await publication.wait()
+        diagnostics.record(stage, 'publication-complete')
+        await expect.poll(async () => {
+          const config = JSON.parse(await readFile(path.join(project, 'dist/app.json'), 'utf8')) as { pages: string[] }
+          const outputs = await Promise.all([route, vueRoute].flatMap(pageRoute => ['js', 'json', 'wxml'].map(extension => access(path.join(project, `dist/${pageRoute}.${extension}`))
+            .then(() => true, (error) => {
+              if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+                throw error
+              }
+              return false
+            }))))
+          // emptyOutDir 的中间态不能算删除完成，App 脚本也必须随完整产物恢复。
+          const app = await readFile(path.join(project, 'dist/app.js'), 'utf8')
+          return { registered: [route, vueRoute].map(pageRoute => config.pages.includes(pageRoute)), outputs, appUpdated: app.includes(marker) }
+        }, { timeout: 30_000 }).toEqual({ registered: [present, present], outputs: Array.from({ length: 6 }).fill(present), appUpdated: true })
+        diagnostics.record(stage, 'complete')
       }
-      else {
-        await rm(directory, { recursive: true })
-        await rm(vueDirectory, { recursive: true })
+      catch (error) {
+        diagnostics.record(stage, 'failure')
+        await diagnostics.captureFailure(stage, error)
+        throw error
       }
-      // 不触碰 App 触发补偿构建；只靠本轮页面源文件变化发布路由和完整页面。
-      await publication.wait()
-      await expect.poll(async () => {
-        const config = JSON.parse(await readFile(path.join(project, 'dist/app.json'), 'utf8')) as { pages: string[] }
-        const outputs = await Promise.all([route, vueRoute].flatMap(pageRoute => ['js', 'json', 'wxml'].map(extension => access(path.join(project, `dist/${pageRoute}.${extension}`))
-          .then(() => true, (error) => {
-            if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-              throw error
-            }
-            return false
-          }))))
-        // emptyOutDir 的中间态不能算删除完成，App 脚本也必须随完整产物恢复。
-        const app = await readFile(path.join(project, 'dist/app.js'), 'utf8')
-        return { registered: [route, vueRoute].map(pageRoute => config.pages.includes(pageRoute)), outputs, appUpdated: app.includes(marker) }
-      }, { timeout: 30_000 }).toEqual({ registered: [present, present], outputs: Array.from({ length: 6 }).fill(present), appUpdated: true })
     }
     // 路由拓扑改变需要完整 AppService 装载；两种 provider 共用最终恢复产物，不重复启动 IDE。
     host = await launchAutoRoutesProject(project, `/${route}`, ['#topology-result'], true)

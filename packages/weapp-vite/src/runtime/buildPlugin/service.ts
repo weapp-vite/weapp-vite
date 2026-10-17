@@ -62,7 +62,7 @@ import { syncProjectSupportFiles } from '../supportFiles'
 import { watchAssetSources } from '../watch/assets'
 import { createSidecarWatchOptions } from '../watch/options'
 import { retainWatcherService } from '../watcherPlugin'
-import { captureAppShellSnapshot, resolveAppShellSnapshotChange } from './appShellSnapshot'
+import { captureAppShellSnapshot, resolveAppShellSnapshotChange, withInitialAppShellSnapshot } from './appShellSnapshot'
 import { createDevBuildWatcher } from './devBuildWatcher'
 import { captureEntryTopology } from './entryTopology'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
@@ -1985,10 +1985,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           try {
             await ctx.autoRoutesService?.ensureFresh()
             const routeSignature = ctx.autoRoutesService?.getSignature()
-            await build(createSnapshotBuildConfig(snapshotBuildOptions))
-            emittedAutoRoutesSignature = routeSignature
-            emittedEntryTopology = captureEntryTopology(ctx)
-            emittedAppShellSnapshot = await captureAppShellSnapshot(ctx)
+            await withInitialAppShellSnapshot(ctx, async () => {
+              await build(createSnapshotBuildConfig(snapshotBuildOptions))
+              emittedAutoRoutesSignature = routeSignature
+              emittedEntryTopology = captureEntryTopology(ctx)
+              emittedAppShellSnapshot = await captureAppShellSnapshot(ctx)
+            }, (changes) => {
+              for (const change of changes) {
+                scheduleSnapshotBuild({ ...change, forceFullRescan: true }, performance.now())
+              }
+            })
             devBuildWatcher!.emitEvent({ code: 'END' })
             return devBuildWatcher!.watcher
           }

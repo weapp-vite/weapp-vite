@@ -123,6 +123,7 @@ function renderTemplatePage() {
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
   await fs.remove(DIST_ROOT)
+  await fs.remove(TEMPLATE_DIST_ROOT)
 })
 
 afterEach(async () => {
@@ -143,13 +144,13 @@ describe('app shell HMR (dev watch)', { concurrent: false }, () => {
     })
 
     try {
+      await dev.waitForInitialBuild()
       await dev.waitFor(waitForFileContains(APP_SHELL_WXML_DIST, INITIAL_APP_SHELL_MARKER), 'initial app shell emitted')
       await dev.waitFor(waitForFileContains(APP_SHELL_JSON_DIST, '"component": true'), 'initial app shell json emitted')
       await dev.waitFor(waitForFileNotExists(APP_WXML_DIST), 'app.wxml is not emitted for app shell')
       await dev.waitFor(waitForFileContains(PAGE_WXML_DIST, APP_SHELL_LAYOUT_WRAPPER), 'page wrapped with app shell and layout')
       await dev.waitFor(waitForPageUsingAppShell(), 'page json references app shell component')
 
-      await sleep(1_000)
       await replaceFileByRename(APP_VUE_PATH, updatedAppSource)
 
       await dev.waitFor(waitForFileContains(APP_SHELL_WXML_DIST, updateMarker), 'app shell template updates after app.vue edit')
@@ -188,11 +189,12 @@ describe('app shell HMR (dev watch)', { concurrent: false }, () => {
     })
 
     try {
+      // 先等待本轮构建，避免旧产物满足断言后在初始化期间修改源码。
+      await dev.waitForInitialBuild()
       await dev.waitFor(waitForFileContains(TEMPLATE_PAGE_WXML_DIST, `<weapp-layout-default ${SLOT_OWNER_ATTR}>`), 'initial template page emitted without app shell')
       await dev.waitFor(waitForFileNotExists(TEMPLATE_APP_SHELL_WXML_DIST), 'initial template app shell is absent')
       await dev.waitFor(waitForFileNotContains(TEMPLATE_PAGE_WXML_DIST, '<weapp-app-shell'), 'initial template page is not wrapped with app shell')
       expect(renderTemplatePage()).not.toContain('class="happy"')
-      await sleep(1_000)
 
       await replaceFileByRename(TEMPLATE_APP_VUE_PATH, appSourceWithShell)
 
