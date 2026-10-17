@@ -6,13 +6,19 @@ import { cleanupResidualDevProcesses } from './dev-process-cleanup'
 import { createChild, createProcessTreeFixture } from './devProcessCleanupFixture'
 
 const execaMock = vi.hoisted(() => vi.fn())
+const kernelQueryMock = vi.hoisted(() => vi.fn())
 vi.mock('execa', () => ({ execa: execaMock }))
 vi.mock('./devProcessDiagnostics', () => ({ createDevProcessDiagnostics: () => ({ write() {}, flush() {} }) }))
+vi.mock('./devProcessCleanup/windowsKernelQuery', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./devProcessCleanup/windowsKernelQuery')>()
+  return { ...actual, queryWindowsKernelProcesses: kernelQueryMock }
+})
 
 const fixtures = new Set<ReturnType<typeof createProcessTreeFixture>>()
 
 function mockProcessTree() {
   const fixture = createProcessTreeFixture(execaMock)
+  kernelQueryMock.mockImplementation(fixture.queryWindows)
   fixtures.add(fixture)
   return fixture
 }
@@ -93,6 +99,7 @@ describe('dev process cleanup ownership', () => {
     const kill = vi.spyOn(process, 'kill').mockImplementation(() => true)
     await cleanupResidualDevProcesses()
     expect(execaMock).not.toHaveBeenCalled()
+    expect(kernelQueryMock).not.toHaveBeenCalled()
     expect(kill).not.toHaveBeenCalled()
   })
 
@@ -207,7 +214,6 @@ describe('dev process cleanup ownership', () => {
       ['taskkill', ['/PID', '62', '/PID', '61', '/F'], expect.objectContaining({ reject: false })],
     ])
     expect(execaMock.mock.calls.some(([command]) => command === 'ps')).toBe(false)
-    expect(execaMock.mock.calls.filter(([command]) => command === 'powershell.exe')).toHaveLength(2)
     expect([...fixture.processes.keys()]).toEqual([71, 72])
     if (trace) {
       expect(output.mock.calls.some(([line]) => String(line).includes('"stage":"dev-kernel-snapshot","event":"begin"'))).toBe(true)
@@ -241,7 +247,6 @@ describe('dev process cleanup ownership', () => {
     const stopping = dev.stop(100)
     await vi.advanceTimersByTimeAsync(0)
     expect(disconnect).toHaveBeenCalledOnce()
-    expect(execaMock.mock.calls.filter(([command]) => command === 'powershell.exe')).toHaveLength(1)
     await vi.advanceTimersByTimeAsync(100)
     await vi.runAllTimersAsync()
     await stopping
@@ -259,7 +264,6 @@ describe('dev process cleanup ownership', () => {
     const dev = startDevProcess('node', ['fixture.js'])
     expect(await settleCleanup(dev.stop(100))).toMatchObject({ status: 'rejected', reason: expect.any(Error) })
     expect(fixture.signals).toEqual([])
-    expect(execaMock.mock.calls.filter(([command]) => command === 'powershell.exe')).toHaveLength(1)
     fixture.unknownIdentityPids.clear()
     expect(await settleCleanup(cleanupTrackedDevProcesses(100))).toEqual({ status: 'fulfilled', value: undefined })
     expect([...fixture.processes.keys()]).toEqual([71, 72])

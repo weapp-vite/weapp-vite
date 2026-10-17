@@ -32,6 +32,12 @@ Vite 默认 realpath 项目 root，但此前编译会话在宿主解析前开始
 node packages/weapp-vite/scripts/diagnose-native-host-paths.mjs
 ```
 
-该命令描述未经框架适配的 Node/文件系统能力，不代表已修好 Node 本身。正常门禁保留 canonical fs.watch、有效依赖链接、实际框架构建/监听、目录别名和 preserveSymlinks 回归。未经适配的失败输入没有改写为通过或忽略返回值。
+该命令描述未经框架适配的 Node/文件系统能力，不代表已修好 Node 本身。正常门禁在 canonical 路径上等待 Vite watcher 的 `ready`，再单次创建文件并核验原生事件与文件内容；不把下一次事件循环视为 `fs.watch` 已就绪，不启用 polling，也不延长事件等待预算。有效依赖链接、实际框架构建/监听、目录别名和 preserveSymlinks 回归继续保留。未经适配的原始 Node 失败输入仍由诊断命令报告，没有改写为通过或忽略返回值。
 
 本机修复后的声明/会话/库构建监听回归、公开类型、重建和打包 Vite 消费链已通过；打包消费包含 dev/build-watch/stateful 与库组件 headless 挂载、点击、重入。Windows 新 HEAD 门禁和真实 DevTools 最终验收仍需分别完成，历史结果不能代替新 HEAD。
+
+原生四文件 runtime 回归的三个混合发布/恢复边界，在写入前捕获 profile 游标与源通知时钟，逐文件核对本轮 `sourceEvents`；被取代批次的 `incomplete` 记录只提供通知溯源，不能证明发布完成，关联 `failed` 记录仍失败。夹具随后通过独占 stdin/stdout 的 nonce 回执等待现有宿主插件 `api.whenSettled()`，再执行原有单次重连；可见文件、control 变化、profile `complete`、trace `batch-end` 和客户端 `initialReady` 均不能单独替代该边界。观察器保留 30 秒期限及进程退出/发布失败传播，不改变生产调度或重叠更新的完整重建策略。最终脚本保存仍必须在同一 VM 内推进版本并将点击计数从 1 变为 3；每轮都须独立执行当前 HEAD 的 headless 验证，不能沿用历史通过结果。
+
+该通道的 EOF 会主动触发 CLI 关闭，因此 teardown 必须先等待 `dev.stop()` 完成受管进程树的身份登记与停止，再结束父侧输入。提前结束输入会让根进程退出与身份采集竞争；遇到身份不明仍应拒绝清理，不能将这类失败当作成功退出。
+
+Native Inspector 的人工 `target.json` 输入在性能计时区间之外等待：以持久化文件为事实源，每 50 ms 最多发起一次读取，不依赖原生文件通知是否送达；这不改变 HMR watcher。输入缺失时继续等待，畸形、超限、错误 session 或读取权限错误仍立即拒绝；成功、失败与原有 120 秒期限结束后均停止后续读取并释放定时器，不延长操作员输入期限。

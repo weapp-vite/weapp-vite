@@ -1,13 +1,17 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { PassThrough } from 'node:stream'
+import { pathToFileURL } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator, reconnectAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDevBuildCompletion } from '../utils/devBuildCompletion'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { renameAtomicFile } from '../utils/hmrAtomicRename'
-import { createNativeBatchProject, NATIVE_BATCH_CLI, NATIVE_BATCH_STEPS, readNativeBatchDiagnostics, readNativeBatchOutput, readNativeBatchSources, writeNativeBatch } from '../utils/nativeBatchProject'
+import { createNativeBatchProject, NATIVE_BATCH_CLI, NATIVE_BATCH_EXTENSIONS, NATIVE_BATCH_STEPS, readNativeBatchDiagnostics, readNativeBatchOutput, readNativeBatchSources, writeNativeBatch } from '../utils/nativeBatchProject'
+import { NATIVE_BATCH_SETTLEMENT_PREFIX } from '../utils/nativeBatchSettlementPlugin'
 import { createNativeBatchSourceNotification } from '../utils/nativeBatchSourceNotification'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
@@ -24,6 +28,7 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
   let disposeTransport: (() => void) | undefined
   let lateScriptSave: Promise<void> | undefined
   const stateful = runtime === 'stateful-experimental'
+  const settlementInput = stateful ? new PassThrough() : undefined
   const notification = createNativeBatchSourceNotification(() => {
     const file = path.join(project, 'src/pages/index/index.js')
     lateScriptSave = (async () => {
@@ -33,6 +38,20 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     // 原断言会读取该失败；流回调不能提前产生未处理的 rejection。
     void lateScriptSave.catch(() => {})
   })
+
+  function capturePublication() {
+    return createDevBuildCompletion(dev!, settlementInput
+      ? {
+          snapshot: {
+            files: NATIVE_BATCH_EXTENSIONS.map(extension => path.join(project, `src/pages/index/index.${extension}`)),
+            profilePath: path.join(project, '.weapp-vite/hmr-profile.jsonl'),
+            requestSettlement: (id) => {
+              settlementInput.write(`${NATIVE_BATCH_SETTLEMENT_PREFIX}${JSON.stringify({ id })}\n`)
+            },
+          },
+        }
+      : { completed: '小程序已重新构建' })
+  }
 
   async function connect() {
     return await launchAutomator({
@@ -49,10 +68,24 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
   beforeAll(async () => {
     project = await createNativeBatchProject(runtime)
     source = await readNativeBatchSources(project)
+    if (stateful) {
+      const config = path.join(project, 'weapp-vite.config.ts')
+      const plugin = pathToFileURL(path.resolve(import.meta.dirname, '../utils/nativeBatchSettlementPlugin.ts')).href
+      await writeFile(config, `import { nativeBatchSettlementPlugin } from ${JSON.stringify(plugin)}\n${(await readFile(config, 'utf8')).replace('defineConfig({', 'defineConfig({\n  plugins: [nativeBatchSettlementPlugin()],')}`)
+    }
     dev = startDevProcess(process.execPath, [NATIVE_BATCH_CLI, 'dev', '--non-interactive'], {
       cwd: project,
-      env: { ...createDevProcessEnv(), ...(stateful ? { WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE: '1' } : {}) },
+      env: {
+        ...createDevProcessEnv(),
+        ...(stateful
+          ? {
+              WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE: '1',
+              WEAPP_VITE_HMR_PROFILE_JSON: path.join(project, '.weapp-vite/hmr-profile.jsonl'),
+            }
+          : {}),
+      },
       ...(stateful ? { stdout: ['pipe', notification.stream] as const } : {}),
+      ...(settlementInput ? { input: settlementInput } : {}),
       all: true,
     })
     await dev.waitForInitialBuild()
@@ -66,7 +99,11 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
       project,
       disposeTransport,
       closeSession: async () => { await miniProgram?.close() },
-      stopDev: async () => { await dev?.stop() },
+      stopDev: async () => {
+        // EOF 会主动触发 CLI 退出；先完成受管进程身份登记与停止，再释放父侧输入。
+        await dev?.stop()
+        settlementInput?.end()
+      },
     })
   }, 60_000)
 
@@ -95,6 +132,7 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
       await expect.poll(() => miniProgram!.evaluate(() => (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__.getTransportState().initialReady), { timeout: 30_000 }).toBe(true)
       const controlFile = path.join(project, 'dist/__weapp_vite_hmr/control.js')
       const previousControl = await readFile(controlFile, 'utf8')
+      const publication = capturePublication()
       notification.arm()
       // 各文件只保存一次；脚本在父进程收到真实通知后保存，不阻塞监听或改变轮询参数。
       for (const extension of ['json', 'wxss', 'wxml'] as const) {
@@ -104,6 +142,7 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
       }
       await expect.poll(() => notification.triggered, { timeout: 30_000 }).toBe(true)
       await lateScriptSave
+      await publication.wait()
       await expect.poll(() => readNativeBatchOutput(project, step.marker), { timeout: 30_000 }).toEqual({ js: true, wxml: true, wxss: true, json: true })
       await expect.poll(() => readFile(controlFile, 'utf8'), { timeout: 30_000 }).not.toBe(previousControl)
       disposeTransport?.()
@@ -121,7 +160,9 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
       // 完整恢复同一会话的初始输入与发布基线，再运行原重复保存断言。
       const restored = NATIVE_BATCH_STEPS[0]
       const controlBeforeRestore = await readFile(controlFile, 'utf8')
+      const restoration = capturePublication()
       await writeNativeBatch(project, source, restored, true)
+      await restoration.wait()
       await expect.poll(() => readNativeBatchOutput(project, restored.marker), { timeout: 30_000 }).toEqual({ js: true, wxml: true, wxss: true, json: true })
       await expect.poll(() => readFile(controlFile, 'utf8'), { timeout: 30_000 }).not.toBe(controlBeforeRestore)
       disposeTransport?.()
@@ -177,7 +218,9 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
       if (index) {
         const controlFile = path.join(project, 'dist/__weapp_vite_hmr/control.js')
         const previousControl = stateful ? await readFile(controlFile, 'utf8') : undefined
+        const publication = capturePublication()
         await writeNativeBatch(project, source, step, index % 2 === 0)
+        await publication.wait()
         await expect.poll(() => readNativeBatchOutput(project, step.marker), { timeout: 30_000 }).toEqual({ js: true, wxml: true, wxss: true, json: true })
         if (stateful) {
           // 混合原生 JS 与 sidecar 按现有契约完整重载，必须交付新的构建身份。

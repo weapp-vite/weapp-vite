@@ -1,6 +1,5 @@
 import process from 'node:process'
 import { withPowerShellUtf8Output } from '../../../packages/weapp-ide-cli/src/utils/powershell'
-import { windowsKernelProcessQuery } from './windowsKernelQuery'
 import { serializeWindowsProcessRows } from './windowsProcessRows'
 
 const wirePrefix = 'WEAPP_DEV_QUERY_V2'
@@ -41,11 +40,6 @@ function wrapWindowsQuery(query: string, trace: boolean) {
 export function createWindowsProcessQueryCommand(filter: string, trace: boolean) {
   const query = `@(Get-CimInstance Win32_Process${filter} | Select-Object ProcessId,ParentProcessId,ExecutablePath,@{Name='Started';Expression={if ($null -ne $_.CreationDate) {$_.CreationDate.ToUniversalTime().ToString('o')} else {$null}}})`
   return wrapWindowsQuery(`$weappQueryRows=${query}`, trace)
-}
-
-/** 生产清理共用内核快照 provider，诊断仍保留原阶段与完整包络。 */
-export function createWindowsKernelProcessQueryCommand(pids: readonly number[] | undefined, trace: boolean) {
-  return wrapWindowsQuery(windowsKernelProcessQuery(pids), trace)
 }
 
 function readWindowsQueryTrace(stderr: string) {

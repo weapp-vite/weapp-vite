@@ -38,18 +38,7 @@ function publishBridgeWrapperFile(sourcePath: string, targetPath: string, source
     fs.copyFileSync(sourcePath, tempPath)
     fs.chmodSync(tempPath, sourceStat.mode)
     fs.utimesSync(tempPath, sourceStat.atime, sourceStat.mtime)
-    try {
-      fs.renameSync(tempPath, targetPath)
-    }
-    catch (error) {
-      const code = (error as NodeJS.ErrnoException).code
-      if (code !== 'EEXIST' && code !== 'EPERM') {
-        throw error
-      }
-      // 某些 Windows 文件系统不允许 rename 覆盖已存在文件；降级时仍保持完整文件发布。
-      fs.rmSync(targetPath, { force: true })
-      fs.renameSync(tempPath, targetPath)
-    }
+    fs.renameSync(tempPath, targetPath)
   }
   finally {
     if (safeStat(tempPath)) {

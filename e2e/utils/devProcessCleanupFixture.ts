@@ -55,6 +55,18 @@ export function createProcessTreeFixture(execaMock: Mock) {
     afterDiscovery: undefined as (() => void) | undefined,
     afterSignal: undefined as ((pid: number, signal: string | number) => void) | undefined,
     drainOutput: true,
+    queryWindows(pids?: readonly number[]) {
+      const entries = [...processes.values()].filter(entry => !pids || pids.includes(entry.pid))
+      if (entries.some(entry => state.unknownIdentityPids.has(entry.pid))) {
+        return Promise.resolve({ exitCode: 1, stdout: '', stderr: 'Process inspection failed' })
+      }
+      const stdout = fixtureWindowsProcessRows(entries.map(entry => ({ ProcessId: entry.pid, ParentProcessId: entry.ppid, ExecutablePath: entry.executable, Started: entry.started })))
+      state.identityReads.push(...entries.map(entry => ({ ...entry })))
+      if (!pids) {
+        state.afterDiscovery?.()
+      }
+      return Promise.resolve({ exitCode: 0, stdout, stderr: '' })
+    },
     finish() {
       processes.delete(61)
       processes.delete(62)
@@ -91,24 +103,6 @@ export function createProcessTreeFixture(execaMock: Mock) {
   execaMock.mockImplementation((command: string, args: string[]) => {
     if (command === 'node') {
       return owned.child
-    }
-    if (command === 'powershell.exe') {
-      const script = args.at(-1) ?? ''
-      const selection = /\[WeappDevProcessSnapshot\]::Capture\((\$null|\[uint32\[\]\]@\((?:\d+(?:,\d+)*)?\))\)/.exec(script)
-      if (!selection || !script.includes('ParentProcessId') || !script.includes('ExecutablePath')) {
-        throw new Error('Unexpected process fixture kernel query')
-      }
-      const selected = selection[1] === '$null' ? [] : selection[1]!.slice('[uint32[]]@('.length, -1).split(',').filter(Boolean).map(Number)
-      const entries = [...processes.values()].filter(entry => !selected.length || selected.includes(entry.pid))
-      if (entries.some(entry => state.unknownIdentityPids.has(entry.pid))) {
-        return Promise.resolve({ exitCode: 1, stdout: '', stderr: 'Process inspection failed' })
-      }
-      const stdout = fixtureWindowsProcessRows(entries.map(entry => ({ ProcessId: entry.pid, ParentProcessId: entry.ppid, ExecutablePath: entry.executable, Started: entry.started })))
-      state.identityReads.push(...entries.map(entry => ({ ...entry })))
-      if (!selected.length) {
-        state.afterDiscovery?.()
-      }
-      return Promise.resolve({ exitCode: 0, stdout })
     }
     if (command === 'taskkill') {
       if (args.includes('/T') || args.at(-1) !== '/F') {

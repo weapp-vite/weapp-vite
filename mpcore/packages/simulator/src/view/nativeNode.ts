@@ -1,7 +1,11 @@
 import type { HeadlessWx } from '../host/wx/api'
 import type { HeadlessPageInstance } from '../runtime/pageInstance'
+import type { MiniProgramEventBinding } from './eventBinding'
+import type { ResolveNativeFormComponent } from './nativeForm'
 import type { HeadlessTestingNodeEventInit } from './nodeHandle'
+import { getNativeNodeOwner, visitNativeNodeEventBindings } from './componentEvent'
 import { createMiniProgramEventPayload, resolveMiniProgramEventBinding } from './eventBinding'
+import { prepareNativeFormSubmit } from './nativeForm'
 import { collectNodeDataset } from './nodeDataset'
 import { resolveNativeScrollBounds } from './nodeGeometry'
 
@@ -125,6 +129,7 @@ export function dispatchNativeNodeEvent(
   wx: HeadlessWx,
   resolveMethod: (scopeId: string | null, method: string) => (event: Record<string, unknown>) => unknown,
   onHandlerResult?: (result: unknown) => void,
+  resolveComponent?: ResolveNativeFormComponent,
 ) {
   if (eventName === 'scroll' && node.name === 'scroll-view') {
     const detail = event.detail as { scrollTop?: unknown, scrollLeft?: unknown } | undefined
@@ -148,29 +153,45 @@ export function dispatchNativeNodeEvent(
   }
   let current: HeadlessNativeNode | null | undefined = node
   let navigator: HeadlessNativeNode | undefined
-  let handlers: Array<{ node: HeadlessNativeNode, call: (event: Record<string, unknown>) => unknown }> | undefined
+  let button: HeadlessNativeNode | undefined
+  const origin = getNativeNodeOwner(node)?.target ?? node
+  let handlers: Array<{ event: Record<string, unknown>, call: (event: Record<string, unknown>) => unknown }> | undefined
   let handled = false
+  const collectHandler = (scopeId: string | null, target: Pick<HeadlessNativeNode, 'attribs' | 'dataset'>, binding: MiniProgramEventBinding) => {
+    if (binding.method) {
+      const call = resolveMethod(scopeId, binding.method)
+      handlers ??= []
+      handlers.push({ event: createMiniProgramEventPayload(target, 'tap', event, origin), call })
+      handled = true
+    }
+  }
   while (current) {
     if (!navigator && current.name === 'navigator') {
       navigator = current
     }
-    const binding = resolveMiniProgramEventBinding(current.attribs, 'tap')
-    if (binding?.method) {
-      const call = resolveMethod(current.attribs?.['data-sim-scope'] ?? null, binding.method)
-      handlers ??= []
-      handlers.push({ node: current, call })
-      handled = true
+    if (!button && current.name === 'button') {
+      button = current
     }
-    if (binding?.stopAfter) {
+    if (visitNativeNodeEventBindings(current, 'tap', collectHandler)) {
       handled = true
       break
     }
     current = current.parent
   }
   // 先固定可达路径及其所有者，再执行可能移除组件或同步导航的回调。
+  const submit = button
+    ? prepareNativeFormSubmit(button, `page:${page.route}`, event, resolveMethod, resolveComponent)
+    : undefined
   if (handlers) {
     for (const handler of handlers) {
-      const result = handler.call(createMiniProgramEventPayload(handler.node, 'tap', event, node))
+      const result = handler.call(handler.event)
+      onHandlerResult?.(result)
+    }
+  }
+  if (submit) {
+    handled = true
+    if (submit.call) {
+      const result = submit.call(submit.event)
       onHandlerResult?.(result)
     }
   }

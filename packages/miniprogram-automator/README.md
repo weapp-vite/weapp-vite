@@ -221,6 +221,14 @@ finally {
 
 headless provider 保留同名 `CDP()` 入口，调用会明确报告 `HEADLESS_PROTOCOL_UNSUPPORTED`，不提供 inspector 后端。原始 `send` 仅支持 `Tool.getInfo`、`App.getCurrentPage`、`App.getPageStack`、`App.callFunction`、`App.callWxMethod`；其他协议明确报不支持。headless 的异步断开释放独占运行时，其结果不能证明真实 IDE 窗口已关闭。
 
+### 4.11 Headless 原生控件边界
+
+`Launcher.launch({ platform: 'wechat', runtimeProvider: 'headless', projectPath })` 使用 simulator 的真实渲染树与原生事件模型。未禁用的 `button form-type="submit"` 可以触发表单默认提交，无需额外调用业务 submit 方法；`rich-text` 的结构化节点和 HTML 内容可以通过通用 `text()` 观察，更新和清空均反映在渲染结果中。
+
+一次原生分发在后续监听器同步失败时，仍等待此前已启动的异步处理。单一错误原样抛出；同步和异步处理同时失败时，以 `AggregateError.errors` 保留各错误，并以原同步错误作为 `cause`。
+
+表单保留组件/插槽归属，字段值来自当前渲染绑定；未绑定输入的宿主状态、自定义 `wx://form-field` 值导出、reset、真实 `formId` 上报不在此能力范围内。富文本内容保持惰性，不作为 WXML 执行；`attr('nodes')` 仍返回字符串表示。Headless 通过不等于微信 IDE 或真机通过，不能替代目标宿主验收。
+
 ## 5. 主要导出
 
 | 导出                      | 说明                                     |

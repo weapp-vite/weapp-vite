@@ -1,4 +1,3 @@
-import { ChildProcess } from 'node:child_process'
 import path from 'node:path'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,8 +7,13 @@ import { captureDevProcessTree, isDevProcessAlive, UnconfirmedDevProcessTreeErro
 
 const filesystem = vi.hoisted(() => ({ readFile: vi.fn(), readlink: vi.fn(), readdir: vi.fn() }))
 const execute = vi.hoisted(() => vi.fn())
+const systemExecute = vi.hoisted(() => vi.fn())
 vi.mock('node:fs/promises', () => ({ default: filesystem }))
-vi.mock('execa', () => ({ execa: execute }))
+vi.mock('execa', () => ({ execa: systemExecute }))
+vi.mock('./windowsKernelQuery', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./windowsKernelQuery')>()
+  return { ...actual, queryWindowsKernelProcesses: execute }
+})
 
 interface ProcessStat {
   pid: number
@@ -87,9 +91,6 @@ describe('dev process snapshot identity', () => {
       { pid: 62, executable: 'fixture-node.exe', started: child.Started },
       { pid: 61, executable: 'fixture-node.exe', started: root.Started },
     ])
-    expect(execute).toHaveBeenCalledTimes(2)
-    expect(execute.mock.calls.every(([command]) => command === 'powershell.exe')).toBe(true)
-    expect(execute.mock.calls[1]![1].at(-1)).toContain('::Capture([uint32[]]@(62))')
   })
 
   it('preserves a traced Windows inspection timeout before any owned process is signalled', async () => {
@@ -110,8 +111,6 @@ describe('dev process snapshot identity', () => {
     try {
       await expect(cleanup(0)).rejects.toMatchObject({ message: 'Dev process inspection failed: exitCode=none, signal=SIGTERM, timedOut=true.' })
       expect(execute).toHaveBeenCalledOnce()
-      expect(execute.mock.calls[0]![0]).toBe('powershell.exe')
-      expect(execute.mock.calls[0]![2]).toMatchObject({ timeout: 30_000, reject: false, windowsHide: true })
       expect(kill).not.toHaveBeenCalled()
       expect(disconnect).not.toHaveBeenCalled()
       const diagnostic = output.mock.calls.map(([chunk]) => String(chunk)).find(line => line.startsWith('[e2e-cleanup-query] '))
@@ -214,30 +213,6 @@ describe('dev process snapshot identity', () => {
     expect(execute).toHaveBeenCalledTimes(3)
     expect(kill).not.toHaveBeenCalled()
     expect(disconnect).not.toHaveBeenCalled()
-  })
-
-  it.each([undefined, '1'])('preserves Windows identity with the same default transport when trace=%s', async (trace) => {
-    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
-    vi.stubEnv('WEAPP_VITE_E2E_CLEANUP_TRACE', trace)
-    vi.spyOn(process.stdout, 'write').mockReturnValue(true)
-    const root = { ProcessId: 61, ParentProcessId: 1, Started: '2026-10-08T00:00:00.0000200Z', ExecutablePath: '节点 with space.exe' }
-    const stdout = fixtureWindowsProcessRows([root])
-    const child = new ChildProcess()
-    const subprocess = Object.assign(Promise.resolve({ exitCode: 0, stdout }), { nodeChildProcess: child })
-    execute.mockReturnValueOnce(subprocess)
-    try {
-      const captured = captureDevProcessTree(61, () => true)
-      expect(child.listenerCount('spawn')).toBe(trace === '1' ? 1 : 0)
-      child.emit('spawn')
-      child.emit('close', 0, null)
-      expect(await captured).toEqual([{ pid: 61, executable: root.ExecutablePath, started: root.Started }])
-      expect(execute).toHaveBeenCalledOnce()
-      expect(execute.mock.calls[0]![0]).toBe('powershell.exe')
-      expect(execute.mock.calls[0]![2]).toEqual({ timeout: 30_000, reject: false, windowsHide: true })
-    }
-    finally {
-      vi.unstubAllEnvs()
-    }
   })
 
   it('keeps native 100ns generation ordering separate from the legacy identity string', async () => {

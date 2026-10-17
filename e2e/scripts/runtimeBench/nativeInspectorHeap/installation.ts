@@ -1,8 +1,7 @@
 import type { NativeInspectorHeapIdentity } from './protocol'
-import { watch } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { clearTimeout, setTimeout } from 'node:timers'
+import { clearInterval, clearTimeout, setInterval, setTimeout } from 'node:timers'
 import { createNativeInspectorHeapCollector } from './index'
 import { isRecord } from './protocol'
 
@@ -13,15 +12,14 @@ export async function readNativeInspectorTarget(filePath: string, sessionId: str
   return new Promise((resolve, reject) => {
     let settled = false
     let reading = false
-    let changed = false
-    let watcher: ReturnType<typeof watch> | undefined
+    let poll: ReturnType<typeof setInterval> | undefined
     let timer: ReturnType<typeof setTimeout> | undefined
     const finish = (error?: unknown, targetUrl?: string) => {
       if (settled) {
         return
       }
       settled = true
-      watcher?.close()
+      clearInterval(poll)
       clearTimeout(timer)
       if (error) {
         reject(error)
@@ -32,11 +30,9 @@ export async function readNativeInspectorTarget(filePath: string, sessionId: str
     }
     const read = async () => {
       if (reading || settled) {
-        changed = true
         return
       }
       reading = true
-      changed = false
       try {
         const text = await fs.readFile(filePath, 'utf8')
         if (text.length > 65_536) {
@@ -55,17 +51,12 @@ export async function readNativeInspectorTarget(filePath: string, sessionId: str
       }
       finally {
         reading = false
-        if (changed && !settled) {
-          void read()
-        }
       }
     }
-    watcher = watch(path.dirname(filePath), (_event, name) => {
-      if (name === path.basename(filePath)) {
-        void read()
-      }
-    })
-    watcher.once('error', finish)
+    // 人工输入文件在计时区间外等待；定期读取持久化输入，不依赖可能遗漏的原生通知。
+    poll = setInterval(() => {
+      void read()
+    }, 50)
     timer = setTimeout(() => finish(new Error('Native Inspector Console installation input timed out')), timeoutMs)
     void read()
   })

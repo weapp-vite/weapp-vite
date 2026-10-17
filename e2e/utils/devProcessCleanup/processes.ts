@@ -8,11 +8,10 @@ import { readDarwinManagedProcessIdentities } from '../../../packages/weapp-ide-
 import { readManagedProcessIdentity, sameManagedProcess } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/processIdentity'
 import { resolveWechatInspectionTimeout } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { traceCleanupStage } from '../cleanupTrace'
-import { windowsLegacyProcessStarted } from './windowsKernelQuery'
+import { queryWindowsKernelProcesses, windowsLegacyProcessStarted } from './windowsKernelQuery'
 import { parseWindowsProcessRows } from './windowsProcessRows'
 import { collectWindowsProcessTree, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
-import { traceWindowsQueryChild } from './windowsQueryChildTrace'
-import { createWindowsKernelProcessQueryCommand, reportWindowsQueryTrace } from './windowsQueryTrace'
+import { reportWindowsQueryTrace } from './windowsQueryTrace'
 
 export { type DevProcessCandidate, UnconfirmedDevProcessTreeError } from './windowsProcessTree'
 
@@ -26,18 +25,12 @@ async function readWindowsProcesses(pids?: number[]): Promise<ProcessEntry[]> {
   if (pids?.length === 0) {
     return []
   }
-  const timeoutMs = resolveWechatInspectionTimeout('win32')
+  const timeoutMs = resolveWechatInspectionTimeout('win32', 10_000)
   const trace = process.env.WEAPP_VITE_E2E_CLEANUP_TRACE === '1'
-  const result = await traceCleanupStage(pids ? 'dev-kernel-identities' : 'dev-kernel-snapshot', () => {
-    const startedMs = trace ? performance.now() : 0
-    const subprocess = execa('powershell.exe', [
-      '-NoProfile',
-      '-NonInteractive',
-      '-Command',
-      createWindowsKernelProcessQueryCommand(pids, trace),
-    ], { timeout: timeoutMs, reject: false, windowsHide: true })
-    return trace ? traceWindowsQueryChild(pids ? 'identities' : 'snapshot', subprocess, startedMs) : subprocess
-  }, { processCount: pids?.length, timeoutMs })
+  const result = await traceCleanupStage(pids ? 'dev-kernel-identities' : 'dev-kernel-snapshot', () => queryWindowsKernelProcesses(pids, trace), {
+    processCount: pids?.length,
+    timeoutMs,
+  })
   if (trace) {
     reportWindowsQueryTrace(pids ? 'identities' : 'snapshot', result)
   }
@@ -187,24 +180,6 @@ export async function captureDevProcessTree(rootPid: number, isRootHeld: () => b
   return identities.filter((identity): identity is DevProcessIdentity => identity != null)
 }
 
-/** Windows 与 macOS 批量核验内核身份；缺少身份字段不能当作退出。 */
-export async function readDevProcessIdentities(pids: number[]): Promise<Map<number, DevProcessIdentity | undefined>> {
-  if (process.platform === 'darwin') {
-    return readDarwinManagedProcessIdentities(pids)
-  }
-  if (process.platform !== 'win32') {
-    return new Map(await Promise.all(pids.map(async pid => [pid, await readManagedProcessIdentity(pid)] as const)))
-  }
-  const entries = await readWindowsProcesses(pids)
-  return new Map(pids.map((pid) => {
-    const entry = entries.find(entry => entry.pid === pid)
-    if (entry && !entry.identity) {
-      throw inspectionError()
-    }
-    return [pid, entry?.identity]
-  }))
-}
-
 /** ESRCH 才证明进程消失；权限或其他检查错误不能转换成退出成功。 */
 export function isDevProcessAlive(pid: number) {
   try {
@@ -219,12 +194,30 @@ export function isDevProcessAlive(pid: number) {
   }
 }
 
+/** 批量核验身份；Windows 残留行只有独立 ESRCH 退出证据才能解除，不能仅因字段缺失而成功。 */
+export async function readDevProcessIdentities(pids: number[]): Promise<Map<number, DevProcessIdentity | undefined>> {
+  if (process.platform === 'darwin') {
+    return readDarwinManagedProcessIdentities(pids)
+  }
+  if (process.platform !== 'win32') {
+    return new Map(await Promise.all(pids.map(async pid => [pid, await readManagedProcessIdentity(pid)] as const)))
+  }
+  const entries = await readWindowsProcesses(pids)
+  return new Map(pids.map((pid) => {
+    const entry = entries.find(entry => entry.pid === pid)
+    if (entry && !entry.identity && isDevProcessAlive(pid)) {
+      throw inspectionError()
+    }
+    return [pid, entry?.identity]
+  }))
+}
+
 /** 只终止本轮已核验的 PID；不用 /T 在派发时扩大到未登记的后代。 */
 export async function killWindowsDevProcesses(pids: number[]) {
   if (!pids.length) {
     return
   }
-  const timeoutMs = resolveWechatInspectionTimeout('win32')
+  const timeoutMs = resolveWechatInspectionTimeout('win32', 10_000)
   const result = await traceCleanupStage('dev-taskkill', () => execa('taskkill', [...pids.flatMap(pid => ['/PID', String(pid)]), '/F'], {
     reject: false,
     stdin: 'ignore',

@@ -51,7 +51,7 @@ it.each([
   await expect(readNativeInspectorTarget(filePath, 'current-session')).rejects.toThrow()
 })
 
-it('closes the watcher when installation input times out', async () => {
+it('stops waiting when installation input times out', async () => {
   const filePath = await input()
   await expect(readNativeInspectorTarget(filePath, 'current-session', 10)).rejects.toThrow('installation input timed out')
   await fs.writeFile(filePath, JSON.stringify({ sessionId: 'current-session', targetUrl: 'late-target' }))

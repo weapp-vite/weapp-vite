@@ -31,6 +31,19 @@ export default defineConfig({
     tsconfig: false,
   },
   optimizeDeps: {
+    include: [
+      '@shikijs/engine-javascript',
+      '@shikijs/langs/css',
+      '@shikijs/langs/html',
+      '@shikijs/langs/javascript',
+      '@shikijs/langs/json',
+      '@shikijs/langs/xml',
+      '@shikijs/themes/github-dark-default',
+      '@shikijs/themes/github-light-default',
+      'shiki/core',
+      'tailwind-merge',
+      'tailwind-variants',
+    ],
     rolldownOptions: {
       // Vite 的依赖扫描不继承 oxc 配置，避免扫描无关应用的 solution references。
       tsconfig: false,

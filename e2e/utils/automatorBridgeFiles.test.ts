@@ -52,18 +52,27 @@ describe('bridge wrapper file mirroring', () => {
     expect(remove).not.toHaveBeenCalled()
   })
 
-  it('publishes changed files with one atomic rename', () => {
-    fs.writeFileSync(source, '<view>before</view>')
+  it.each(['EEXIST', 'EPERM'])('preserves the last complete file when replacement fails with %s', (code) => {
+    const previous = '<view>before</view>'
+    fs.writeFileSync(source, previous)
     copyDistEntryForBridgeWrapper(source, target, false)
     fs.writeFileSync(source, '<view>after!</view>')
-    const rename = vi.spyOn(fs, 'renameSync')
+    const failure = Object.assign(new Error('replacement denied'), { code })
+    vi.spyOn(fs, 'renameSync').mockImplementation(() => {
+      throw failure
+    })
 
-    copyDistEntryForBridgeWrapper(source, target, false)
+    let caught: unknown
+    try {
+      copyDistEntryForBridgeWrapper(source, target, false)
+    }
+    catch (error) {
+      caught = error
+    }
 
-    expect(rename).toHaveBeenCalledTimes(1)
-    expect(rename.mock.calls[0]?.[1]).toBe(target)
-    expect(rename.mock.calls[0]?.[0]).toContain('.weapp-vite-sync-')
-    expect(fs.readFileSync(target, 'utf8')).toBe('<view>after!</view>')
+    expect(caught).toBe(failure)
+    expect(fs.readFileSync(target, 'utf8')).toBe(previous)
+    expect(fs.readdirSync(root).sort()).toEqual(['source', 'wrapper'])
   })
 
   it('copies changed descendants without touching unchanged scripts and removes stale descendants', () => {

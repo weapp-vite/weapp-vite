@@ -27,7 +27,17 @@ export function usePreviewShadow(
   } | null = null
   let stopPointer = () => {}
 
+  function preventBrowserDefaults(event: Event) {
+    const origin = event.target instanceof Element
+      ? event.target
+      : event.target instanceof Node ? event.target.parentElement : null
+    if (event.type === 'submit' || origin?.closest('rich-text a, form button')) {
+      event.preventDefault()
+    }
+  }
+
   function handleScreenClick(event: Event) {
+    preventBrowserDefaults(event)
     const target = resolveTapTarget(event.target)
     if (!target) {
       return
@@ -97,6 +107,8 @@ export function usePreviewShadow(
 
     previewShadowRoot = previewHost.value.attachShadow({ mode: 'open' })
     previewShadowRoot.addEventListener('click', handleScreenClick)
+    previewShadowRoot.addEventListener('auxclick', preventBrowserDefaults)
+    previewShadowRoot.addEventListener('submit', preventBrowserDefaults)
     renderPreviewMarkup(markup.value)
 
     if (previewStage.value) {
@@ -122,6 +134,8 @@ export function usePreviewShadow(
 
   onBeforeUnmount(() => {
     previewShadowRoot?.removeEventListener('click', handleScreenClick)
+    previewShadowRoot?.removeEventListener('auxclick', preventBrowserDefaults)
+    previewShadowRoot?.removeEventListener('submit', preventBrowserDefaults)
     previewStageObserver?.disconnect()
     stopResizeDrag(() => {})
   })

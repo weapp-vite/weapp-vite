@@ -12,6 +12,22 @@ PID 与创建时间精确一致，路径却被替换字符改变。独立的合�
 和完整 UTF-16 行传输合同。
 下面的历史比较描述原运行，不把编码修复当作进程查询超时的唯一根因。
 
+## Dev 进程树清理合同与独立身份对照
+
+`e2e/utils/dev-process.cleanup.integration.test.ts` 验证受管树退出及同命令外部树保留，
+不是通用 CIM provider 的独立 oracle。登记身份、退出观察、外部树保留断言和后代收尾
+统一通过 `readDevProcessIdentities` 按本次 PID 集合批量查询，由该子系统选择各平台 provider。
+登记校验、完整身份必需、`sameManagedProcess` 精确比较、外部子进程句柄及原期限保持不变；
+查询错误和行包络解析失败仍失败，不转换成退出。成功查询中的 Windows 残留行若缺少完整身份，
+须经同一 PID 的零信号探针取得明确 `ESRCH` 才判定退出；存活进程继续拒绝，权限及其他探针
+错误原样传播。Node 的 Windows 实现通过
+[GetExitCodeProcess / WaitForSingleObject](https://github.com/nodejs/node/blob/v22.23.3/deps/uv/src/win/process.c#L1321-L1340)
+核验零信号存活检查；这里不补发终止信号、不重试查询，也不从不完整身份获得清理权限。
+
+独立 native/CIM 精确兼容对照仍由 `e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts`
+和本目录的 `checkProcessRows.ts` 在真实 Windows 上执行。复用清理子系统查询不证明
+通用 CIM 或操作系统查询延迟已解决，也不能替代这些独立检查。
+
 ## Provider 清理的定向复现
 
 同一 workflow 的 `Provider cleanup query` 在 Windows Node 22/24 上运行原有
@@ -59,6 +75,8 @@ node --import tsx scripts/windowsProcessIdentityProbe/checkSelfWriter.ts
 ```
 
 在独立 Windows Node 22/24 runner 上运行该入口。它只派发一次新 Node 进程，第一项主动身份查询为生产 journal writer 自查；随后核对缓存，并通过旧 CIM 读取器验证双向精确身份。报告位于 `.tmp/windows-journal-self-writer/report.json`，不保存原始可执行路径，不启动 IDE，不清理任何宿主。外层三十秒 supervisor 包含模块加载、首次自查和后续 CIM 对照；每个生产查询的预算仍为十秒，不能覆盖或扩大。
+
+直接创建真实子 journal 的 E2E 初始化钩子同样使用三十秒外层监督预算，为十秒身份查询及前后初始化保留独立的监督期限。这不放宽生产查询，也不将真实查询超时判为通过；修改钩子后仍须通过对应 Windows CI 场景，独立诊断不能替代。
 
 这项检查只证明当前自有 Node writer 的观测，不证明操作系统从未预热，也不能替代任意宿主、跨权限或退出竞争验证。生产变更只用于 writer 自查；通用宿主与旧锁读取、身份精确比较及失败阻断保持原契约。下面的四组历史诊断继续用于解释边界，不能将其结果泛化成所有宿主已通过。
 

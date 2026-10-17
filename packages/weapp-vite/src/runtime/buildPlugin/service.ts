@@ -1971,7 +1971,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : undefined
     const releaseAutoRoutesTopology = target === 'app'
       ? subscribeAutoRoutesTopology(ctx, ({ file, event, topologyChanged, receivedAtMs = performance.now() }) => {
-          if (topologyChanged) {
+          // 其他事件的扫描可能已发现该页面；构建图尚未登记时，仍须由 native 发布基线接收本轮真实通知。
+          if (topologyChanged || ctx.autoRoutesService?.getSignature() !== emittedAutoRoutesSignature) {
             scheduleSnapshotBuild({ event, file, forceFullRescan: true }, receivedAtMs)
           }
           else {

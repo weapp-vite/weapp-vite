@@ -122,6 +122,27 @@ async function cleanupFixtureProcesses(evidence: string, ownerToken: string) {
 }
 
 describe.skipIf(process.platform === 'win32')('Ubuntu release stage deadline', () => {
+  it.each(['Z', 'X'])('recognizes terminal state %s without treating an unreadable live process as exited', async (state) => {
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'release-proc-state-'))
+    temporaryDirectories.push(directory)
+    const processDirectory = path.join(directory, '17')
+    await fs.mkdir(processDirectory)
+    const environment = path.join(processDirectory, 'environ')
+    const stat = path.join(processDirectory, 'stat')
+    await fs.writeFile(environment, 'FIXTURE_OWNER_TOKEN=owned\0', { mode: 0o000 })
+    const readProcessFile = (file: string) => fs.readFile(path.join(directory, path.relative('/proc', file)), 'utf8')
+    await expect(fs.readFile(environment)).rejects.toMatchObject({ code: 'EACCES' })
+    await fs.writeFile(stat, `17 (fixture) ${state} 1 17`)
+    await expect(readLinuxProcessState(17, 'owned', readProcessFile)).resolves.toBe('zombie')
+    await fs.writeFile(stat, '17 (fixture) S 1 17')
+    await expect(readLinuxProcessState(17, 'owned', readProcessFile)).rejects.toMatchObject({ code: 'EACCES' })
+    await fs.chmod(environment, 0o600)
+    await expect(readLinuxProcessState(17, 'owned', readProcessFile)).resolves.toBe('running')
+    await expect(readLinuxProcessState(17, 'another-owner', readProcessFile)).resolves.toBe('foreign')
+    await fs.rm(processDirectory, { recursive: true })
+    await expect(readLinuxProcessState(17, 'owned', readProcessFile)).resolves.toBe('gone')
+  })
+
   it('uses the remaining shared budget for later stages and reserves forced termination time', async () => {
     const fixture = await createDeadlineFixture()
     expect((await fixture.run('verify', 1000)).exitCode).toBe(0)

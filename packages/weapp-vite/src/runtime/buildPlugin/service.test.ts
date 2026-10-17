@@ -2395,6 +2395,67 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
+  it.each([
+    { event: 'create', arrival: 'pending' },
+    { event: 'delete', arrival: 'pending' },
+    { event: 'create', arrival: 'building' },
+    { event: 'delete', arrival: 'building' },
+  ] as const)('publishes a late route $event already discovered by scanning ($arrival snapshot)', async ({ event, arrival }) => {
+    const { ctx, watcher } = await startClassicSnapshotContext()
+    const first = '/project/src/pages/topology-added/index.ts'
+    const late = '/project/src/pages/topology-vue/index.vue'
+    ctx.configService.weappViteConfig.autoRoutes = true
+    ctx.configService.weappViteConfig.hmr = { profileJson: true }
+    ctx.autoRoutesService = {
+      handleFileChange: vi.fn(async () => false),
+      getSignature: () => 'scanned-route-version',
+    }
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    ctx.moduleGraphService.invalidate = vi.fn(() => new Set<string>())
+    const publication = Promise.withResolvers<void>()
+    const sources: string[][] = []
+    buildMock.mockImplementation(async () => {
+      sources.push(ctx.runtimeState.build.hmr.profile.sourceEvents?.map((source: { file: string }) => source.file) ?? [])
+      if (sources.length === 1 && arrival === 'building') {
+        await publication.promise
+      }
+      return { output: [] }
+    })
+    try {
+      publishAutoRoutesTopology(ctx, { event, file: first, topologyChanged: true })
+      if (arrival === 'building') {
+        await waitForMockCalls(buildMock, 2)
+      }
+      // 扫描已包含本轮完整拓扑，第二个物理事件不再改变服务签名，构建图仍没有它。
+      publishAutoRoutesTopology(ctx, { event, file: late, topologyChanged: false })
+      await waitForTimers()
+      if (arrival === 'building') {
+        expect(buildMock).toHaveBeenCalledTimes(2)
+        expect(appendFileMock).not.toHaveBeenCalled()
+      }
+      publication.resolve()
+      const snapshots = arrival === 'building' ? 2 : 1
+      await waitForMockCalls(appendFileMock, snapshots)
+      const profiles = appendFileMock.mock.calls.map(([, content]) => JSON.parse(content) as HmrProfileJsonSample)
+      expect(profiles).toHaveLength(snapshots)
+      expect(profiles.every(profile => profile.status === 'complete')).toBe(true)
+      expect(profiles.flatMap(profile => profile.sourceEvents?.map(source => source.file) ?? [])).toEqual([first, late])
+      expect(sources).toEqual(arrival === 'building' ? [[first], [late]] : [[first, late]])
+      expect(buildMock).toHaveBeenCalledTimes(snapshots + 1)
+
+      // native 已发布该版本后，无图的重复或无关通知不得再打开 snapshot。
+      publishAutoRoutesTopology(ctx, { event, file: late, topologyChanged: false })
+      publishAutoRoutesTopology(ctx, { event, file: '/project/src/pages/helpers.ts', topologyChanged: false })
+      await waitForTimers()
+      expect(buildMock).toHaveBeenCalledTimes(snapshots + 1)
+      expect(appendFileMock).toHaveBeenCalledTimes(snapshots)
+    }
+    finally {
+      publication.resolve()
+      await watcher.close()
+    }
+  })
+
   it('preserves ordinary source work when route parsing finds no topology change', async () => {
     const { ctx, watcher, onChange } = await startClassicSnapshotContext()
     const file = '/project/src/pages/logs/helpers.ts'

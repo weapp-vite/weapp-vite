@@ -2,7 +2,10 @@ import type { HeadlessProjectDescriptor } from '../project'
 import type { HeadlessPageInstance } from '../runtime'
 import path from 'node:path'
 import { parseDocument } from 'htmlparser2'
+import { setNativePickerValue } from './nativeForm'
 import { isDatasetAttribute, toDatasetKey } from './nodeDataset'
+import { linkRenderedParents } from './renderedTree'
+import { renderRichTextNodes } from './richText'
 import { interpolateTemplateText } from './templateText'
 
 interface DomNodeLike {
@@ -50,8 +53,10 @@ function isMustacheOnly(value: string) {
   return trimmed.startsWith('{{') && trimmed.endsWith('}}') && !trimmed.includes('{{', 2)
 }
 
-function visitDom(node: DomNodeLike, visitor: (node: DomNodeLike) => void) {
-  visitor(node)
+function visitDom(node: DomNodeLike, visitor: (node: DomNodeLike) => boolean | void) {
+  if (visitor(node) === false) {
+    return
+  }
   for (const child of node.children ?? []) {
     visitDom(child, visitor)
   }
@@ -59,6 +64,10 @@ function visitDom(node: DomNodeLike, visitor: (node: DomNodeLike) => void) {
 
 function interpolateDomTree(root: DomNodeLike, data: Record<string, unknown>) {
   visitDom(root, (node) => {
+    const richText = node.type === 'tag' && node.name === 'rich-text'
+    if (richText) {
+      node.children = []
+    }
     if (typeof node.data === 'string') {
       node.data = interpolateTemplateText(node.data, data)
     }
@@ -68,6 +77,12 @@ function interpolateDomTree(root: DomNodeLike, data: Record<string, unknown>) {
         const resolvedValue = isMustacheOnly(value)
           ? resolveRawValueByPath(data, value.trim().slice(2, -2))
           : interpolateTemplate(value, data)
+        if (key === 'value') {
+          setNativePickerValue(node, resolvedValue)
+        }
+        if (richText && key === 'nodes') {
+          node.children = renderRichTextNodes(resolvedValue)
+        }
         node.attribs[key] = String(resolvedValue ?? '')
         if (isDatasetAttribute(key)) {
           dataset ??= {}
@@ -75,6 +90,9 @@ function interpolateDomTree(root: DomNodeLike, data: Record<string, unknown>) {
         }
       }
       node.dataset = dataset
+    }
+    if (richText) {
+      return false
     }
   })
 }
@@ -124,12 +142,13 @@ export function renderPageTree(project: HeadlessProjectDescriptor, page: Headles
     throw new Error(`Missing template in headless runtime: ${templatePath}`)
   }
   const document = parseDocument(`<page>${templateSource}</page>`, {
-    xmlMode: false,
+    xmlMode: true,
     decodeEntities: false,
     recognizeSelfClosing: true,
   }) as unknown as DomNodeLike
 
   interpolateDomTree(document, page.data)
+  linkRenderedParents(document)
 
   return {
     root: document,

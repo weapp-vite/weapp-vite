@@ -18,10 +18,10 @@ beforeEach(async () => {
   for (const [key, value] of Object.entries(machine.environment)) {
     vi.stubEnv(key, value)
   }
-  // 真实嵌套 journal 的冷身份核验属于 fixture 准备，不占后续进程/管道行为的 1 秒预算。
+  // 监督钩子覆盖十秒身份查询及后续 I/O；底层查询和后续业务任务预算均不放宽。
   const journal = await createManagedWechatProjectJournal(path.dirname(machine.journalPath), machine.journalPath)
   vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, journal)
-})
+}, 30_000)
 afterEach(async () => {
   try {
     await machine.dispose()
