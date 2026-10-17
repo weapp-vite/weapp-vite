@@ -1,9 +1,8 @@
-name: Refresh DeepWiki
+name: Monitor DeepWiki
 
 on:
   schedule:
-    # GitHub cron has no continuous "every 8 days" expression. Run daily and
-    # let the public DeepWiki index date enforce the eight-day interval.
+    # Read the public index daily; the DeepWiki badge manages refresh requests.
     - cron: '17 3 * * *'
   workflow_dispatch:
 
@@ -15,16 +14,16 @@ permissions:
   contents: read
 
 jobs:
-  refresh:
-    name: Refresh weapp-vite DeepWiki
+  monitor:
+    name: Monitor weapp-vite DeepWiki
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
 
     steps:
-      - name: Check out main
+      - name: Check out the selected ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.ref }}
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
@@ -35,13 +34,33 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install browser automation dependencies
-        run: |
-          pnpm install --frozen-lockfile --ignore-scripts
-          pnpm exec playwright install --with-deps chromium
+      - name: Install monitor dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Read current main commit
-        run: echo "MAIN_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process'
+          import { appendFileSync } from 'node:fs'
+          import process from 'node:process'
 
-      - name: Refresh DeepWiki when due
+          const remoteMain = execFileSync('git', ['ls-remote', '--exit-code', 'origin', 'refs/heads/main'], { encoding: 'utf8' }).trim()
+          const mainSha = remoteMain.match(/^([0-9a-f]{40})\s+refs\/heads\/main$/i)?.[1]
+          if (!mainSha) {
+            throw new Error('Unable to read the current main commit from origin')
+          }
+          appendFileSync(process.env.GITHUB_ENV, `MAIN_SHA=${mainSha}\n`)
+          NODE
+
+      - name: Monitor DeepWiki index
         run: node .github/scripts/refresh-deepwiki.mjs
+
+      - name: Upload DeepWiki index status
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: deepwiki-monitor-${{ github.run_id }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: .tmp/deepwiki-monitor/status.json
+          if-no-files-found: ignore
+          retention-days: 7
