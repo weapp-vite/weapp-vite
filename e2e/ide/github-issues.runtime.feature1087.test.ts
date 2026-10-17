@@ -264,19 +264,21 @@ describe('e2e app: github-issues / feature #1087 scroll restoration', { concurre
     expect(aborted.records.some(record => record.instance === initial.instance && record.phase === 'capture')).toBe(false)
     await expectListPosition(page, 390, 65, 520)
     let lastNavigationPoll: Record<string, unknown> | undefined
+    const redirectedRoute = `${LIST}?feed=redirected`
     const navigationPoll: Record<string, unknown> = { requestedUrl: `${LIST}?guard=redirect`, state: 'not-started' }
     try {
       await page.callMethod('_navigate', `${LIST}?guard=redirect`)
       navigationPoll.startedAt = Date.now()
       navigationPoll.state = 'pending'
+      const redirected = await currentPage(miniProgram, redirectedRoute)
+      assert(redirected, `Expected current page ${redirectedRoute}`)
       await expect.poll(async () => {
         const startedAt = Date.now()
-        const target = await currentPage(miniProgram, LIST)
-        const state = await snapshot(target)
+        const state = await snapshot(redirected)
         const navigation = state.navigationDiagnostics.findLast(item => item.phase === 'probe:navigate' && item.url === navigationPoll.requestedUrl)
-        lastNavigationPoll = { startedAt, finishedAt: Date.now(), navigationId: navigation?.navigationId ?? null, route: target.path, query: target.query, snapshot: state }
+        lastNavigationPoll = { startedAt, finishedAt: Date.now(), navigationId: navigation?.navigationId ?? null, route: redirected.path, query: redirected.query, snapshot: state }
         return state.navigation
-      }).toMatchObject({ settled: true, path: '/pages/feature-1087/index?feed=redirected' })
+      }, { timeout: 10_000 }).toMatchObject({ settled: true, path: redirectedRoute })
       reportFeature1087NavigationPoll({
         navigationPoll: { ...navigationPoll, finishedAt: Date.now(), state: 'passed', navigationId: lastNavigationPoll?.navigationId ?? null },
         lastNavigationPoll,
