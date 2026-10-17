@@ -1,3 +1,5 @@
+import type { ChildProcess } from 'node:child_process'
+import type { EventEmitter } from 'node:events'
 import { Buffer } from 'node:buffer'
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
@@ -55,6 +57,120 @@ const windowsRuntimeReady = globalThis.process.platform === 'win32'
     })()
   : Promise.resolve()
 
+interface ProcessDiagnostics {
+  phases: { phase: string, elapsedMs?: number, receivedMs?: number }[]
+  execStartedMs?: number
+  execReturnedMs?: number
+  spawnMs?: number
+  stdoutEndMs?: number
+  stdoutCloseMs?: number
+  errorMs?: number
+  exit?: { receivedMs?: number, code?: number | null, signal?: string | null }
+  close?: { receivedMs?: number, code?: number | null, signal?: string | null }
+}
+
+function safeMilliseconds(value: number) {
+  return Number.isFinite(value) && value >= 0 && value <= Number.MAX_SAFE_INTEGER ? value : undefined
+}
+
+/** 仅保留有界的白名单阶段和进程事件；不读取 stdout，也不输出原始诊断内容。 */
+function captureProcessDiagnostics(child: ChildProcess, started: number, timings: ProcessDiagnostics) {
+  const removers: (() => void)[] = []
+  const offset = () => safeMilliseconds(Math.round(performance.now() - started))
+  let pending = ''
+  let discardLine = false
+  const recordPhase = (line: string) => {
+    const match = /^process-tree:(script-enter|helper-cache-hit|helper-compile|helper-ready|query-complete|json-pipeline-returned)(?: elapsedMs=(\d+(?:\.\d+)?))?$/.exec(line)
+    if (!match || timings.phases.length >= 16) {
+      return
+    }
+    const elapsedMs = match[2] === undefined ? undefined : safeMilliseconds(Number(match[2]))
+    if (match[2] !== undefined && elapsedMs === undefined) {
+      return
+    }
+    timings.phases.push({ phase: match[1]!, elapsedMs, receivedMs: offset() })
+  }
+  const capture = (chunk: Buffer | string) => {
+    const text = String(chunk)
+    let start = 0
+    while (start < text.length) {
+      const end = text.indexOf('\n', start)
+      const part = text.slice(start, end === -1 ? undefined : end)
+      if (!discardLine) {
+        if (pending.length + part.length > 256) {
+          pending = ''
+          discardLine = true
+        }
+        else {
+          pending += part
+        }
+      }
+      if (end === -1) {
+        break
+      }
+      if (!discardLine) {
+        recordPhase(pending.replace(/\r$/, ''))
+      }
+      pending = ''
+      discardLine = false
+      start = end + 1
+    }
+  }
+  const status = (code: unknown, signal: unknown) => ({
+    receivedMs: offset(),
+    code: code === null ? null : typeof code === 'number' && Number.isInteger(code) && code >= 0 && code <= 0xFFFFFFFF ? code : undefined,
+    signal: signal === null ? null : typeof signal === 'string' && ['SIGTERM', 'SIGKILL', 'SIGINT', 'SIGABRT', 'SIGBREAK', 'SIGHUP', 'SIGQUIT'].includes(signal) ? signal : undefined,
+  })
+  const listen = <T extends unknown[]>(emitter: EventEmitter, event: string, listener: (...args: T) => void) => {
+    emitter.on(event, listener)
+    removers.push(() => emitter.off(event, listener))
+  }
+  try {
+    if (child.stderr) {
+      listen(child.stderr, 'data', capture)
+      listen(child.stderr, 'end', () => {
+        if (!discardLine) {
+          recordPhase(pending.replace(/\r$/, ''))
+        }
+        pending = ''
+      })
+    }
+    if (child.stdout) {
+      listen(child.stdout, 'end', () => {
+        timings.stdoutEndMs = offset()
+      })
+      listen(child.stdout, 'close', () => {
+        timings.stdoutCloseMs = offset()
+      })
+    }
+    listen(child, 'spawn', () => {
+      timings.spawnMs = offset()
+    })
+    listen(child, 'error', () => {
+      timings.errorMs = offset()
+    })
+    listen(child, 'exit', (code: unknown, signal: unknown) => {
+      timings.exit = status(code, signal)
+    })
+    listen(child, 'close', (code: unknown, signal: unknown) => {
+      timings.close = status(code, signal)
+    })
+  }
+  catch {
+    // 被动诊断登记失败不改变采样结果或原始错误。
+  }
+  return () => {
+    for (const remove of removers) {
+      try {
+        remove()
+      }
+      catch {
+        // 每个订阅独立释放，诊断收尾不能覆盖原始错误。
+      }
+    }
+  }
+}
+
 export async function observeProcessTree(rootPid: number) {
   if (!Number.isSafeInteger(rootPid) || rootPid <= 0 || rootPid > 0xFFFFFFFF) {
     throw new Error('Invalid process-tree root PID')
@@ -64,29 +180,26 @@ export async function observeProcessTree(rootPid: number) {
     await windowsRuntimeReady
   }
   const started = performance.now()
-  let stderr = ''
+  const timings: ProcessDiagnostics = { phases: [] }
   let removeDiagnostics: (() => void) | undefined
   try {
     const script = windows ? await readFile(new URL('./windowsProcessTree.ps1', import.meta.url), 'utf8') : undefined
     // 编码整个固定脚本与已校验的 PID，避免路径空格、引号或终端编码参与命令解析。
     const encoded = script ? Buffer.from(`& {\n${script}\n} -RootProcessId ${rootPid}`, 'utf16le').toString('base64') : undefined
+    timings.execStartedMs = safeMilliseconds(Math.round(performance.now() - started))
     const query = exec(windows ? 'powershell.exe' : 'ps', windows
       ? ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded!]
       : ['-axo', 'pid=,ppid=,rss='], { timeout: 10_000, throwOnError: true })
-    if (windows && query.process?.stderr) {
-      const stream = query.process.stderr
-      const capture = (chunk: Buffer | string) => {
-        stderr = (stderr + String(chunk)).slice(-1_024)
-      }
-      stream.on('data', capture)
-      removeDiagnostics = () => stream.off('data', capture)
+    timings.execReturnedMs = safeMilliseconds(Math.round(performance.now() - started))
+    if (windows && query.process) {
+      removeDiagnostics = captureProcessDiagnostics(query.process, started, timings)
     }
     const result = await query
     return { ...summarizeProcessTree(parseProcessMemory(result.stdout, process.platform), rootPid), observationMs: performance.now() - started }
   }
   catch (cause) {
-    const phases = [...stderr.matchAll(/process-tree:(script-enter|helper-cache-hit|helper-compile|helper-ready|query-complete)/g)].map(match => match[1])
-    throw new Error(`Process-tree memory observation failed on ${process.platform} after ${Math.round(performance.now() - started)}ms; phases=${JSON.stringify(phases)}`, { cause })
+    const phases = timings.phases.map(event => event.phase)
+    throw new Error(`Process-tree memory observation failed on ${process.platform} after ${Math.round(performance.now() - started)}ms; phases=${JSON.stringify(phases)}${windows ? `; timings=${JSON.stringify(timings)}` : ''}`, { cause })
   }
   finally {
     removeDiagnostics?.()
