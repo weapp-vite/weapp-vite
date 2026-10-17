@@ -193,7 +193,16 @@ export default class Element {
   }
 
   async dispatchEvent(options: IEventOptions) {
-    await this.send('Element.dispatchEvent', normalizeTouchOptions(options))
+    const payload = normalizeTouchOptions(options)
+    // 部分 DevTools 版本的 Element.dispatchEvent 会忽略触摸数组并重建默认触点。
+    // 触摸事件在当前元素上没有额外选择器或 detail 时，复用原生触摸协议可保留坐标。
+    if (!payload.$ && !payload.detail && (payload.eventName === 'touchstart' || payload.eventName === 'touchmove' || payload.eventName === 'touchend')
+      && (payload.touches !== undefined || payload.changedTouches !== undefined)) {
+      const { eventName, ...touchOptions } = payload
+      await this.send(`Element.${eventName}`, touchOptions)
+      return
+    }
+    await this.send('Element.dispatchEvent', payload)
   }
 
   protected async _property(name: string | string[]) {

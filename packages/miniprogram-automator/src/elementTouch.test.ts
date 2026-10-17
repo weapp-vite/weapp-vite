@@ -12,10 +12,25 @@ describe('touch event protocol compatibility', () => {
     expect(options).toEqual({ touches: [touch], changeTouches: [touch] })
   })
 
-  it('prefers changedTouches, including an empty array, in dispatchEvent', async () => {
+  it('preserves changedTouches for touch dispatches, including an empty array', async () => {
     const send = vi.fn(async () => ({}))
     const element = new Element({ send } as any, { elementId: 'touch-node', pageId: 7, tagName: 'view' }, new Map())
     await element.dispatchEvent({ eventName: 'touchend', changedTouches: [], changeTouches: [{ identifier: 1 }] })
-    expect(send).toHaveBeenCalledWith('Element.dispatchEvent', { elementId: 'touch-node', pageId: 7, eventName: 'touchend', changedTouches: [] })
+    expect(send).toHaveBeenCalledWith('Element.touchend', { elementId: 'touch-node', pageId: 7, changedTouches: [] })
+  })
+
+  it('keeps generic dispatchEvent for selector and detail semantics', async () => {
+    const send = vi.fn(async () => ({}))
+    const element = new Element({ send } as any, { elementId: 'touch-node', pageId: 7, tagName: 'view' }, new Map())
+    await element.dispatchEvent({ eventName: 'touchstart', $: '#child', touches: [], changedTouches: [], detail: { source: 'test' } })
+    expect(send).toHaveBeenCalledWith('Element.dispatchEvent', {
+      elementId: 'touch-node',
+      pageId: 7,
+      eventName: 'touchstart',
+      $: '#child',
+      touches: [],
+      changedTouches: [],
+      detail: { source: 'test' },
+    })
   })
 })
