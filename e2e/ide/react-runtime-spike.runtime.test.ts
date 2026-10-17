@@ -24,7 +24,6 @@ if (HOST !== 'wv' && HOST !== 'vite' && HOST !== 'vite-plus') {
 const DIST_ROOT = path.resolve(APP_ROOT, 'dist')
 const PAGE_READY_TIMEOUT = 20_000
 const STARTUP_READY_TIMEOUT = 15_000
-const STARTUP_ATTEMPTS = 3
 
 let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
 const runtimeProvider = resolveRuntimeProviderName()
@@ -87,48 +86,35 @@ async function waitForReactRuntimePageReady(
   throw new Error(`Timed out waiting React runtime page ${route}; lastResult=${JSON.stringify(lastResult)}`)
 }
 
-async function closeReactRuntimeSpikeAutomator(app: Awaited<ReturnType<typeof launchAutomator>> | undefined) {
-  try {
-    await app?.close()
-  }
-  catch {}
-}
-
 async function launchReactRuntimeSpikeAutomator() {
-  let lastError: unknown
+  const app = await launchAutomator({
+    projectPath: APP_ROOT,
+    engineBuildFallbackSettleMs: 5_000,
+    maxLaunchRetries: 7,
+    refreshProjectAfterConnect: true,
+    skipRelaunchPageRootCheck: true,
+    skipWarmup: true,
+  })
 
-  for (let attempt = 1; attempt <= STARTUP_ATTEMPTS; attempt += 1) {
-    const app = await launchAutomator({
-      projectPath: APP_ROOT,
-      engineBuildFallbackSettleMs: 5_000,
-      maxLaunchRetries: 7,
-      refreshProjectAfterConnect: true,
-      skipRelaunchPageRootCheck: true,
-      skipWarmup: true,
-    })
-
-    try {
-      await app.reLaunch('/pages/index/index')
-      await waitForReactRuntimePageReady(
-        app,
-        '/pages/index/index',
-        result => Array.isArray(result?.data?.root?.cn),
-        STARTUP_READY_TIMEOUT,
-      )
-      return app
-    }
-    catch (error) {
-      lastError = error
-      const message = error instanceof Error ? error.message : String(error)
-      process.stdout.write(`[react-runtime-spike:start-retry] attempt=${attempt}/${STARTUP_ATTEMPTS} reason=${message.replace(/\s+/g, ' ').slice(0, 240)}\n`)
-      await closeReactRuntimeSpikeAutomator(app)
-      if (attempt < STARTUP_ATTEMPTS && runtimeProvider === 'devtools') {
-        await cleanupResidualIdeProcesses().catch(() => {})
-      }
-    }
+  try {
+    await app.reLaunch('/pages/index/index')
+    await waitForReactRuntimePageReady(
+      app,
+      '/pages/index/index',
+      result => Array.isArray(result?.data?.root?.cn),
+      STARTUP_READY_TIMEOUT,
+    )
+    return app
   }
-
-  throw lastError instanceof Error ? lastError : new Error(String(lastError ?? 'React runtime spike startup failed'))
+  catch (error) {
+    try {
+      await app.close()
+    }
+    catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], 'React runtime startup failed and its session cleanup did not complete', { cause: error })
+    }
+    throw error
+  }
 }
 
 describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
@@ -157,8 +143,12 @@ describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
   }, 360_000)
 
   afterAll(async () => {
-    await closeReactRuntimeSpikeAutomator(miniProgram)
-    miniProgram = undefined
+    try {
+      await miniProgram?.close()
+    }
+    finally {
+      miniProgram = undefined
+    }
   })
 
   it('renders React hooks and dispatches host events through generic WXML', async (context) => {

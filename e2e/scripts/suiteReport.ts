@@ -110,14 +110,14 @@ function toAbsoluteReportPath(targetPath: string) {
 
 function toRepoRelativePath(targetPath: string) {
   const relative = normalizeSlash(path.relative(ROOT_DIR, toAbsoluteReportPath(targetPath)))
-  if (!relative || relative.startsWith('..')) {
+  if (!relative || path.isAbsolute(relative) || relative.startsWith('..')) {
     return `<external>/${path.basename(targetPath)}`
   }
   return relative
 }
 
 function renderRelativeMarkdownLink(reportDir: string, targetPath: string) {
-  if (targetPath.startsWith('<external>/')) {
+  if (targetPath.startsWith('<external>/') || toRepoRelativePath(reportDir).startsWith('<external>/')) {
     return `\`${targetPath}\``
   }
   const absolute = toAbsoluteReportPath(targetPath)
@@ -125,7 +125,7 @@ function renderRelativeMarkdownLink(reportDir: string, targetPath: string) {
   return `[${path.basename(targetPath)}](./${relative})`
 }
 
-function renderSuiteReportMarkdown(payload: SuiteReportPayload) {
+function renderSuiteReportMarkdown(payload: SuiteReportPayload, reportDir: string) {
   const lines = [
     `# ${payload.suiteName} 汇总报告`,
     '',
@@ -157,7 +157,7 @@ function renderSuiteReportMarkdown(payload: SuiteReportPayload) {
       }
       else {
         for (const artifact of task.artifacts) {
-          lines.push(`  - ${artifact.kind}：${renderRelativeMarkdownLink(payload.reportDir, artifact.indexPath)}`)
+          lines.push(`  - ${artifact.kind}：${renderRelativeMarkdownLink(reportDir, artifact.indexPath)}`)
         }
       }
     }
@@ -177,7 +177,7 @@ function renderSuiteReportMarkdown(payload: SuiteReportPayload) {
       continue
     }
     for (const artifact of task.artifacts) {
-      lines.push(`  - ${artifact.kind}：${renderRelativeMarkdownLink(payload.reportDir, artifact.indexPath)}`)
+      lines.push(`  - ${artifact.kind}：${renderRelativeMarkdownLink(reportDir, artifact.indexPath)}`)
     }
   }
   lines.push('')
@@ -248,7 +248,7 @@ export function createSuiteReport(
 
   fs.writeFileSync(
     path.join(reportDir, markdownFile),
-    renderSuiteReportMarkdown(sanitizeAcceptanceValue(payload)),
+    renderSuiteReportMarkdown(sanitizeAcceptanceValue(payload), reportDir),
     'utf8',
   )
   fs.writeFileSync(
