@@ -526,90 +526,97 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       }
     },
 
-    async hotUpdate(context) {
-      if (this.environment.name !== 'client') {
-        return
-      }
-      const webRuntime = resolvedConfig?.weappVite?.runtime === 'web'
-      if (context.type !== 'update') {
-        const watcher = ctx.runtimeState.watcher.sidecarWatcherMap.get(ROUTE_WATCHER_KEY)
-        // 路由 watcher 扫描完成后统一通知 App，避免 Vite 提前刷新后再次重置页面。
-        if (webRuntime && isAutoRoutesWatcherController(watcher)
-          && watcher.servingSubscribers.get('web') === watcherSubscriber
-          && watcher.ownsFile(context.file) && service.isRouteFile(context.file)) {
-          return []
+    hotUpdate: {
+      // 共享路由先刷新，Web consumer 才能在本轮 HMR 发布完整入口。
+      order: 'pre',
+      async handler(context) {
+        if (this.environment.name !== 'client') {
+          return
         }
-        return
-      }
-      const moduleGraph = this.environment.moduleGraph
-      const changedSource = normalizeFsResolvedId(context.file)
-      const topologyChanged = webRuntime && autoRoutesTopologyDirtyEntries.delete(changedSource)
-      const declarationOwners = new Set(service.getPageDeclarationOwners(changedSource))
-      const routeFile = service.isRouteFile(context.file)
-      const hotUpdateAction = resolveAutoRoutesHotUpdateAction(resolvedConfig?.command, {
-        isRouteFile: routeFile,
-        isPagesRelatedPath: routeFile ? false : isPagesRelatedPath(context.file),
-      })
-      if (!hotUpdateAction.shouldHandle && !topologyChanged) {
-        return
-      }
-      let didChangeRoutes = false
-      if (hotUpdateAction.shouldUpdateRouteFile) {
-        didChangeRoutes = await service.handleFileChange(context.file, 'update')
-        startRouteFileWatcher()
-        for (const owner of service.getPageDeclarationOwners(changedSource)) {
-          declarationOwners.add(owner)
+        const webRuntime = resolvedConfig?.weappVite?.runtime === 'web'
+        if (context.type !== 'update') {
+          const watcher = ctx.runtimeState.watcher.sidecarWatcherMap.get(ROUTE_WATCHER_KEY)
+          // 路由 watcher 扫描完成后统一通知 App，避免 Vite 提前刷新后再次重置页面。
+          if (webRuntime && isAutoRoutesWatcherController(watcher)
+            && watcher.servingSubscribers.get('web') === watcherSubscriber
+            && watcher.ownsFile(context.file) && service.isRouteFile(context.file)) {
+            return []
+          }
+          return
         }
-      }
+        const moduleGraph = this.environment.moduleGraph
+        const changedSource = normalizeFsResolvedId(context.file)
+        const topologyChanged = webRuntime && autoRoutesTopologyDirtyEntries.delete(changedSource)
+        const declarationOwners = new Set(service.getPageDeclarationOwners(changedSource))
+        const routeFile = service.isRouteFile(context.file)
+        const hotUpdateAction = resolveAutoRoutesHotUpdateAction(resolvedConfig?.command, {
+          isRouteFile: routeFile,
+          isPagesRelatedPath: routeFile ? false : isPagesRelatedPath(context.file),
+        })
+        if (!hotUpdateAction.shouldHandle && !topologyChanged) {
+          return
+        }
+        let didChangeRoutes = false
+        if (hotUpdateAction.shouldUpdateRouteFile) {
+          didChangeRoutes = await service.handleFileChange(context.file, 'update')
+          if (webRuntime && didChangeRoutes) {
+            ctx.scanService?.markDirty()
+          }
+          startRouteFileWatcher()
+          for (const owner of service.getPageDeclarationOwners(changedSource)) {
+            declarationOwners.add(owner)
+          }
+        }
 
-      declarationOwners.delete(changedSource)
-      if (
-        resolvedConfig?.command === 'serve'
-        && routeFile
-        && !didChangeRoutes
-        && declarationOwners.size === 0
-      ) {
-        return
-      }
+        declarationOwners.delete(changedSource)
+        if (
+          resolvedConfig?.command === 'serve'
+          && routeFile
+          && !didChangeRoutes
+          && declarationOwners.size === 0
+        ) {
+          return
+        }
 
-      const signature = webRuntime ? service.getSignature() : undefined
-      const reloadRoutes = webRuntime
-        && (servedRouteSignature === undefined ? topologyChanged : signature !== servedRouteSignature)
-      const modules = new Set<EnvironmentModuleNode>(!webRuntime || reloadRoutes
-        ? AUTO_ROUTES_RESOLVED_IDS
-            .map(id => moduleGraph.getModuleById(id))
-            .filter((module): module is EnvironmentModuleNode => Boolean(module))
-        : context.modules)
-      for (const owner of declarationOwners) {
-        const ownerModules = moduleGraph.getModulesByFile(owner)
-        if (ownerModules) {
-          for (const module of ownerModules) {
+        const signature = webRuntime ? service.getSignature() : undefined
+        const reloadRoutes = webRuntime
+          && (servedRouteSignature === undefined ? topologyChanged : signature !== servedRouteSignature)
+        const modules = new Set<EnvironmentModuleNode>(!webRuntime || reloadRoutes
+          ? AUTO_ROUTES_RESOLVED_IDS
+              .map(id => moduleGraph.getModuleById(id))
+              .filter((module): module is EnvironmentModuleNode => Boolean(module))
+          : context.modules)
+        for (const owner of declarationOwners) {
+          const ownerModules = moduleGraph.getModulesByFile(owner)
+          if (ownerModules) {
+            for (const module of ownerModules) {
+              modules.add(module)
+            }
+            continue
+          }
+          const ownerModule = moduleGraph.getModuleById(owner)
+          if (ownerModule) {
+            modules.add(ownerModule)
+          }
+        }
+        if (topologyChanged) {
+          for (const module of context.modules) {
             modules.add(module)
           }
-          continue
         }
-        const ownerModule = moduleGraph.getModuleById(owner)
-        if (ownerModule) {
-          modules.add(ownerModule)
+        if (modules.size > 0) {
+          if (reloadRoutes) {
+            servedRouteSignature = signature
+            return collectAutoRoutesReloadModules(modules)
+          }
+          return [...modules]
         }
-      }
-      if (topologyChanged) {
-        for (const module of context.modules) {
-          modules.add(module)
-        }
-      }
-      if (modules.size > 0) {
-        if (reloadRoutes) {
-          servedRouteSignature = signature
-          return collectAutoRoutesReloadModules(modules)
-        }
-        return [...modules]
-      }
 
-      return context.modules.filter((module) => {
-        return module.id !== null
-          && (AUTO_ROUTES_RESOLVED_IDS.includes(module.id) || declarationOwners.has(normalizeFsResolvedId(module.id)))
-      })
+        return context.modules.filter((module) => {
+          return module.id !== null
+            && (AUTO_ROUTES_RESOLVED_IDS.includes(module.id) || declarationOwners.has(normalizeFsResolvedId(module.id)))
+        })
+      },
     },
 
     async closeBundle() {

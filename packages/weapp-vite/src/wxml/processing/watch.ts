@@ -6,13 +6,14 @@ import { once } from 'node:events'
 import { watch } from 'chokidar'
 import path from 'pathe'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { observeWxmlDependencies } from './dependencies'
+import { isWxmlDependency, observeWxmlDependencies } from './dependencies'
 
 type WatchContext = Pick<CompilerContext, 'runtimeState'> & Partial<Pick<CompilerContext, 'configService'>>
 const externalOwners = new WeakMap<WatchContext, Set<string>>()
 
 export function ownsExternalWxmlWatch(ctx: WatchContext, file: string) {
-  return externalOwners.get(ctx)?.has(normalizeFsResolvedId(file)) ?? false
+  const normalized = normalizeFsResolvedId(file)
+  return (externalOwners.get(ctx)?.has(normalized) ?? false) && isWxmlDependency(ctx, normalized)
 }
 
 /** 根外输入按父目录浅层监听，保留删除后的路径身份；根内输入继续由 Vite 监听。 */
@@ -25,7 +26,7 @@ export function bindWxmlDependencyWatch(ctx: WatchContext, server: ViteDevServer
   let ready: Promise<unknown> = Promise.resolve()
   externalOwners.set(ctx, external)
   const unobserve = observeWxmlDependencies(ctx, (files) => {
-    external.clear()
+    // 初始通知是快照，后续通知仅包含新增路径；有效性始终以引用账本为准。
     for (const file of files) {
       const relative = root ? path.relative(root, file) : ''
       if (root && (relative === '..' || relative.startsWith('../') || path.isAbsolute(relative))) {
@@ -42,14 +43,19 @@ export function bindWxmlDependencyWatch(ctx: WatchContext, server: ViteDevServer
         ...options,
         ignoreInitial: true,
         depth: 0,
-        // 只观察已登记文件和直接父目录，不递归扫描根外目录或把兄弟文件变成输入。
+        // 提前安装同层文件监听，避免后登记的现存兄弟文件在首次保存前仍未被订阅。
+        // 兄弟文件仅是物理监听对象，只有引用账本中的精确路径才会触发重建。
         ignored: [
           ...(Array.isArray(options.ignored) ? options.ignored : options.ignored ? [options.ignored] : []),
-          file => !external.has(normalizeFsResolvedId(file)) && !parents.has(normalizeFsResolvedId(file)),
+          (file, stats) => {
+            const normalized = normalizeFsResolvedId(file)
+            return !parents.has(normalized)
+              && (!parents.has(path.dirname(normalized)) || Boolean(stats?.isDirectory()))
+          },
         ],
       }).on('all', (event, file) => {
         const normalized = normalizeFsResolvedId(file)
-        if (!external.has(normalized)) {
+        if (!external.has(normalized) || !isWxmlDependency(ctx, normalized)) {
           return
         }
         if (event === 'add' || event === 'change' || event === 'unlink') {

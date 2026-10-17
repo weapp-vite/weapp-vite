@@ -4,6 +4,7 @@ import type { CompilerContext } from '../../context'
 import { EventEmitter } from 'node:events'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../../runtime/runtimeState'
+import { beginWxmlDependencies } from './dependencies'
 import { bindWxmlDependencyWatch, ownsExternalWxmlWatch } from './watch'
 
 const { watchMock } = vi.hoisted(() => ({ watchMock: vi.fn() }))
@@ -22,11 +23,14 @@ function fixture(disabled = false) {
     config: { root: '/project', server: { watch: disabled ? null : { usePolling: true, interval: 30, ignored: userIgnored } }, logger: { error: vi.fn() } },
     watcher: { add: vi.fn() },
   }
-  const ctx = { runtimeState: createRuntimeState(), configService: { cwd: '/project' } } as unknown as CompilerContext
+  const ctx = { runtimeState: createRuntimeState(), configService: { cwd: '/project', outDir: '/project/dist' } } as unknown as CompilerContext
   const internal = '/project/rules.json'
   const external = '/inputs/rules.json'
-  ctx.runtimeState.wxmlProcessing.references.set(internal, 1)
-  ctx.runtimeState.wxmlProcessing.references.set(external, 1)
+  const initial = beginWxmlDependencies(ctx, 'main', false)
+  const register = initial.template('initial.wxml')
+  register(internal)
+  register(external)
+  initial.commit()
   const onChange = vi.fn()
   const close = bindWxmlDependencyWatch(ctx, server as unknown as ViteDevServer, onChange)
   return { watcher, userIgnored, server, ctx, internal, external, onChange, close }
@@ -62,10 +66,12 @@ describe('WXML dependency watcher ownership', () => {
     const ignored = options.ignored[1]
     expect(ignored('/inputs')).toBe(false)
     expect(ignored(external)).toBe(false)
-    expect(ignored('/inputs/unrelated.json')).toBe(true)
-    expect(ignored('/inputs/nested')).toBe(true)
+    expect(ignored('/inputs/unrelated.json')).toBe(false)
+    expect(ignored('/inputs/nested', { isDirectory: () => true })).toBe(true)
+    expect(ignored('/inputs/nested/rules.json')).toBe(true)
     expect(ownsExternalWxmlWatch(ctx, external)).toBe(true)
     expect(ownsExternalWxmlWatch(ctx, internal)).toBe(false)
+    expect(ownsExternalWxmlWatch(ctx, '/inputs/unrelated.json')).toBe(false)
     watcher.emit('all', 'unlink', external)
     watcher.emit('all', 'add', external)
     watcher.emit('all', 'change', '/inputs/unrelated.json')
@@ -81,9 +87,9 @@ describe('WXML dependency watcher ownership', () => {
     await close.ready
     const unrelated = vi.fn()
     ctx.runtimeState.wxmlProcessing.listeners.add(unrelated)
-    for (const listener of ctx.runtimeState.wxmlProcessing.listeners) {
-      listener(['/inputs/next.json'])
-    }
+    const replacement = beginWxmlDependencies(ctx, 'main', false)
+    replacement.template('next.wxml')('/inputs/next.json')
+    replacement.commit()
     watcher.emit('all', 'change', external)
     watcher.emit('all', 'change', '/inputs/next.json')
     expect(onChange).toHaveBeenCalledExactlyOnceWith({ event: 'update', file: '/inputs/next.json' })
@@ -94,6 +100,35 @@ describe('WXML dependency watcher ownership', () => {
     expect(ownsExternalWxmlWatch(ctx, '/inputs/next.json')).toBe(false)
     watcher.emit('all', 'change', '/inputs/next.json')
     expect(onChange).toHaveBeenCalledOnce()
+  })
+
+  it('preserves previous owners on incremental registration and releases only replaced templates', async () => {
+    const { watcher, ctx, external, onChange, close } = fixture()
+    await close.ready
+    try {
+      const next = '/inputs/next.json'
+      const partial = beginWxmlDependencies(ctx, 'main', true)
+      partial.template('next.wxml')(next)
+      partial.commit()
+      expect(ownsExternalWxmlWatch(ctx, external)).toBe(true)
+      expect(ownsExternalWxmlWatch(ctx, next)).toBe(true)
+      watcher.emit('all', 'change', external)
+      watcher.emit('all', 'change', next)
+      expect(onChange).toHaveBeenCalledTimes(2)
+
+      const replacement = beginWxmlDependencies(ctx, 'main', true)
+      replacement.template('initial.wxml')
+      replacement.commit()
+      expect(ownsExternalWxmlWatch(ctx, external)).toBe(false)
+      expect(ownsExternalWxmlWatch(ctx, next)).toBe(true)
+      watcher.emit('all', 'change', external)
+      watcher.emit('all', 'change', next)
+      expect(onChange).toHaveBeenCalledTimes(3)
+      expect(watcher.add).toHaveBeenCalledExactlyOnceWith('/inputs')
+    }
+    finally {
+      await close()
+    }
   })
 
   it('respects disabled host watching', async () => {
