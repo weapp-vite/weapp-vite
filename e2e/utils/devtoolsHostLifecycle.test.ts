@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   identity: vi.fn(),
   quit: vi.fn(),
   resolve: vi.fn(),
+  servicePort: vi.fn(),
   inspectExited: vi.fn(),
 }))
 vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host', () => ({
@@ -17,6 +18,7 @@ vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host', () => 
 }))
 vi.mock('../../packages/weapp-ide-cli/src/devtoolsTarget', () => ({ resolveWechatDevtoolsTarget: mocks.resolve }))
 vi.mock('../../packages/weapp-ide-cli/src/devtoolsTarget/host', () => ({ resolveWechatDevtoolsInstallationRoot: () => '/tmp/selected.app' }))
+vi.mock('../../packages/weapp-ide-cli/src/cli/wechatDevtoolsSettings', () => ({ detectWechatDevtoolsServicePort: mocks.servicePort }))
 vi.mock('../../packages/weapp-ide-cli/src/cli/run-wechat-cli', () => ({ runWechatCliCommand: mocks.quit }))
 vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/installationExit/processes', () => ({ inspectExitedWechatInstallation: mocks.inspectExited }))
 
@@ -41,6 +43,7 @@ beforeEach(async () => {
   mocks.resolve.mockResolvedValue(target)
   mocks.identity.mockResolvedValue(undefined)
   mocks.quit.mockResolvedValue(undefined)
+  mocks.servicePort.mockResolvedValue({ servicePort: 16325, servicePortEnabled: true })
   mocks.inspectExited.mockResolvedValue(undefined)
 })
 
@@ -86,7 +89,7 @@ describe('DevTools host lifecycle ownership', () => {
       await fs.rm(path.join(profileDir, 'SingletonLock'))
     })
     await quitClaimedDevtoolsHost(lease!, { timeoutMs: 1_000, pollIntervalMs: 1 })
-    expect(mocks.quit).toHaveBeenCalledWith(['quit'], expect.objectContaining({ target, timeout: 30_000 }))
+    expect(mocks.quit).toHaveBeenCalledWith(['quit', '--port=16325'], expect.objectContaining({ target, timeout: 30_000 }))
     expect(mocks.inspectExited).toHaveBeenCalledWith(target)
   })
 

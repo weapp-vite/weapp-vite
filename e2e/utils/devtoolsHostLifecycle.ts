@@ -7,6 +7,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 // eslint-disable-next-line e18e/ban-dependencies -- Windows 宿主身份只能通过 PowerShell 的 CIM 进程清单核验。
 import { execa } from 'execa'
 import { runWechatCliCommand } from '../../packages/weapp-ide-cli/src/cli/run-wechat-cli'
+import { detectWechatDevtoolsServicePort } from '../../packages/weapp-ide-cli/src/cli/wechatDevtoolsSettings'
 import { readManagedProcessIdentity, sameManagedProcess } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
 import { resolveWechatDevtoolsTarget } from '../../packages/weapp-ide-cli/src/devtoolsTarget'
 import { resolveWechatDevtoolsInstallationRoot } from '../../packages/weapp-ide-cli/src/devtoolsTarget/host'
@@ -177,7 +178,11 @@ export async function quitClaimedDevtoolsHost(lease: DevtoolsHostLease, options:
   if (before.state !== 'selected') {
     throw new Error(`Cannot quit a WeChat DevTools host that is ${before.state}; ownership is not proven.`)
   }
-  await runWechatCliCommand(['quit'], { target: lease.target, timeout: HOST_WAIT_TIMEOUT_MS })
+  const detected = await detectWechatDevtoolsServicePort({ target: lease.target })
+  const quitArgs = detected.servicePort && detected.servicePortEnabled !== false
+    ? ['quit', `--port=${detected.servicePort}`]
+    : ['quit']
+  await runWechatCliCommand(quitArgs, { target: lease.target, timeout: HOST_WAIT_TIMEOUT_MS })
   const deadline = Date.now() + timeoutMs
   let lastError: unknown
   while (Date.now() < deadline) {
