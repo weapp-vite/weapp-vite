@@ -182,6 +182,8 @@ describe('managed automator launch', () => {
     controller.abort(reason)
     await Promise.resolve()
     expect(settled).toBe(false)
+    expect(mocks.close).not.toHaveBeenCalled()
+    expect(mocks.release).not.toHaveBeenCalled()
     receipt.resolve()
     await closeStarted.promise
     expect(mocks.confirm).toHaveBeenCalledExactlyOnceWith({ openedProjectWindow: true, port: options.port })
@@ -227,6 +229,8 @@ describe('managed automator launch', () => {
     await started.promise
     await vi.advanceTimersByTimeAsync(100)
     expect(settled).toBe(false)
+    expect(mocks.close).not.toHaveBeenCalled()
+    expect(mocks.release).not.toHaveBeenCalled()
     receipt.resolve()
     await vi.advanceTimersByTimeAsync(1000)
     expect(mocks.confirm).toHaveBeenCalledExactlyOnceWith({ openedProjectWindow: true, port: options.port })

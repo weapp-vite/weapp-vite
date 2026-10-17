@@ -1,6 +1,6 @@
 interface ManagedSession {
   close: (...args: any[]) => Promise<any>
-  disconnect: (...args: any[]) => any
+  disconnect: (...args: any[]) => void | Promise<void>
 }
 
 const projectOwners = new WeakMap<object, () => Promise<void>>()
@@ -14,14 +14,24 @@ export function getManagedProjectSessionOwner(session: object) {
 export function attachManagedProjectSession<T extends ManagedSession>(session: T, closeProject: () => Promise<void>): T {
   projectOwners.set(session, closeProject)
   let closing: Promise<void> | undefined
-  let disconnected = false
+  let disconnectPromise: Promise<void> | undefined
   const disconnect = session.disconnect.bind(session)
   session.disconnect = (...args: any[]) => {
-    if (disconnected) {
-      return
+    if (!disconnectPromise) {
+      try {
+        disconnectPromise = Promise.resolve(disconnect(...args)).catch((error: unknown) => {
+          disconnectPromise = undefined
+          throw error
+        })
+      }
+      catch (error) {
+        disconnectPromise = Promise.reject(error).catch((failure: unknown) => {
+          disconnectPromise = undefined
+          throw failure
+        })
+      }
     }
-    disconnected = true
-    return disconnect(...args)
+    return disconnectPromise
   }
   session.close = () => {
     closing ??= (async () => {

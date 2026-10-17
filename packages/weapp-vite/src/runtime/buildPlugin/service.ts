@@ -3,6 +3,7 @@ import type PQueue from 'p-queue'
 import type {
   RolldownOutput,
   RolldownWatcher,
+  RolldownWatcherEvent,
 } from 'rolldown'
 import type { InlineConfig } from 'vite'
 import type { BuildTarget, CompilerContext, MutableCompilerContext } from '../../context'
@@ -16,6 +17,7 @@ import type { StatefulHmrOutputFile } from '../statefulHmr/outputWriter'
 import type { StatefulHmrProfileHandoff } from '../statefulHmr/profile'
 import type { AppShellSnapshot } from './appShellSnapshot'
 import type { DevBuildWatcherController } from './devBuildWatcher'
+import type { DevWatcherSession } from './devWatcherSession'
 import { randomUUID } from 'node:crypto'
 import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
@@ -64,6 +66,7 @@ import { createSidecarWatchOptions } from '../watch/options'
 import { retainWatcherService } from '../watcherPlugin'
 import { captureAppShellSnapshot, resolveAppShellSnapshotChange, withInitialAppShellSnapshot } from './appShellSnapshot'
 import { createDevBuildWatcher } from './devBuildWatcher'
+import { createDevWatcherSession } from './devWatcherSession'
 import { captureEntryTopology } from './entryTopology'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
@@ -1373,7 +1376,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     return buildEvents
   }
 
-  async function startDev(target: BuildTarget, restartDev: (target: BuildTarget) => Promise<RolldownWatcher>): Promise<RolldownWatcher> {
+  async function startDev(target: BuildTarget, restartDev: (target: BuildTarget) => Promise<RolldownWatcher>, classicOwner: DevWatcherSession): Promise<RolldownWatcher> {
     debug?.(`[${target}] dev build watcher start`)
     checkWorkersOptions(target, configService, scanService)
     const configuredHmrRuntime = configService.weappViteConfig.hmr?.runtime
@@ -1596,6 +1599,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let emittedEntryTopology: ReadonlyMap<string, string> | undefined
     let emittedAppShellSnapshot: AppShellSnapshot | undefined
     const devBuildWatcher = target === 'app' ? (statefulBuildEvents ?? createDevBuildWatcher()) : undefined
+    const classicSession = target === 'app' && (!statefulBuildEvents || classicOwner.hasOwnership) ? classicOwner : undefined
 
     function markSnapshotEntriesFullDirty() {
       for (const entryId of ctx.runtimeState.build.hmr.resolvedEntryMap.keys()) {
@@ -2050,7 +2054,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       ? path.join(configService.outDir, `app.${styleExtension}`)
       : undefined
 
-    watcher.on('event', (e) => {
+    const onWatcherEvent = (e: RolldownWatcherEvent) => {
       if (devWatcherClosed) {
         return
       }
@@ -2068,15 +2072,23 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         void (async () => {
           const shouldRestart = shouldRestartDevBuild(target)
           if (shouldRestart) {
-            await runPluginProjectRestart(ctx as CompilerContext, async () => {
-              await watcher.close()
-              if (isPluginProjectClosing(ctx as CompilerContext)) {
+            const restart = () => runPluginProjectRestart(ctx as CompilerContext, async () => {
+              if (classicSession) {
+                await classicSession.stopGeneration(watcher)
+              }
+              else {
+                await watcher.close()
+              }
+              if (classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext)) {
                 return
               }
               logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
               ctx.moduleGraphService.resetSession()
               resetRuntimeStateForFreshBuild(ctx.runtimeState)
               await configService.load(configService.loadOptions)
+              if (classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext)) {
+                return
+              }
               try {
                 if (!configService.pluginOnly) {
                   const supportFiles = await syncProjectSupportFiles(ctx)
@@ -2089,14 +2101,20 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 const message = error instanceof Error ? error.message : String(error)
                 logger.warn(`[prepare] 自动同步 .weapp-vite 支持文件失败：${message}`)
               }
+              if (classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext)) {
+                return
+              }
               await scanService.loadAppEntry()
               scanService.loadSubPackages()
-              if (isPluginProjectClosing(ctx as CompilerContext)) {
+              if (classicSession?.isClosing || isPluginProjectClosing(ctx as CompilerContext)) {
                 return
               }
               await restartDev(target)
-              logger.success('Vite 配置已重新加载，小程序开发构建已重启。')
+              if (!classicSession?.isClosing && !isPluginProjectClosing(ctx as CompilerContext)) {
+                logger.success('Vite 配置已重新加载，小程序开发构建已重启。')
+              }
             })
+            await (classicSession ? classicSession.restart(restart) : restart())
             resolveWatcher(e)
             return
           }
@@ -2134,7 +2152,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           rejectWatcher(e)
         }
       }
-    })
+    }
+    if (!classicSession) {
+      watcher.on('event', onWatcherEvent)
+    }
     if (target !== 'app') {
       await promise
     }
@@ -2298,9 +2319,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (watcherService.rollupWatcherMap.get(watcherRoot) !== watcher) {
       watcherService.setRollupWatcher(watcher, watcherRoot)
     }
+    if (classicSession) {
+      // 初次 END 可以在订阅时回放；先登记完整代际，再允许配置重启消费该事件。
+      await classicSession.own(watcher)
+      watcher.on('event', onWatcherEvent)
+    }
     return watcher
   }
-  async function runDev(target: BuildTarget): Promise<RolldownWatcher> {
+  async function runDev(target: BuildTarget, classicOwner = createDevWatcherSession()): Promise<RolldownWatcher> {
     const session = {}
     activeDevSession = session
     const releaseSession = () => {
@@ -2309,8 +2335,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         ctx.moduleGraphService.resetSession()
       }
     }
+    classicOwner.setCleanup(releaseSession)
     try {
-      const watcher = await startDev(target, runDev)
+      const watcher = await startDev(target, nextTarget => runDev(nextTarget, classicOwner), classicOwner)
+      if (classicOwner.hasOwnership) {
+        await classicOwner.own(watcher)
+        return watcher
+      }
       // 递归降级或重启已经把所有权交给新会话，旧关闭回调不能清空新图。
       if (activeDevSession !== session) {
         return watcher

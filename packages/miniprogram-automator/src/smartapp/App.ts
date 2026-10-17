@@ -86,6 +86,6 @@ export default class SmartappApp {
   }
 
   async close() {
-    this.miniProgram?.disconnect()
+    await this.miniProgram?.disconnect()
   }
 }

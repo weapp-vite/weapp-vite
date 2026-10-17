@@ -16,6 +16,7 @@
 - 提供 `Launcher` 用于启动、连接和复用 DevTools 会话
 - 支持按平台选择自动化后端，默认微信，百度智能小程序提供轻量 TypeScript runtime
 - 支持截图、输入、滚动、点击、页面跳转等自动化操作
+- 对齐官方 0.13.0 的公开 `send()`、`CDP()` 和可等待断开接口
 - 默认输出现代 ESM 与完整类型声明
 - 内置二维码打印与解码辅助能力，便于配合登录、连接流程调试
 - 支持 headless 自动化启动入口
@@ -157,6 +158,69 @@ else {
 
 空结果、缺失字段、字符串、负数、非有限数值或已用量超过分配量都会报错；连接超时与其他协议错误原样传播，不会转换为不支持或零内存。每次调用重新探测，不缓存旧会话的能力结果，也不主动触发 GC。该指标仅覆盖 AppService JS 堆，不是 renderer/native 内存、进程 RSS、峰值或可归因的组件独占内存。实际可用性取决于连接的 DevTools/基础库，仍须在目标宿主确认；headless 不提供真实 IDE 堆证据。
 
+### 4.8 原始协议与 CDP
+
+`send(method, params?, { timeout }?)` 公开原始自动化协议入口，返回宿主原始结果；超时、断开和协议错误继续抛出。错误消息为对象时会序列化展示，错误对象保留原始协议信息。
+
+```ts
+const info = await miniProgram.send('Tool.getInfo', {}, { timeout: 3_000 })
+console.log(info)
+
+const cdp = miniProgram.CDP()
+await cdp.enable({ timeout: 3_000 })
+const protocol = await cdp.listProtocol()
+console.log(protocol)
+await cdp.sendCommand('Runtime', 'enable')
+const unsubscribe = cdp.onEvent((domain, event, params) => {
+  if (domain === 'Runtime' && event === 'consoleAPICalled') {
+    console.log(params)
+  }
+})
+try {
+  console.log(await cdp.sendCommand('Runtime', 'evaluate', {
+    expression: '40 + 2',
+    returnByValue: true,
+  }, { timeout: 3_000 }))
+}
+finally {
+  unsubscribe()
+}
+```
+
+同一连接的 `CDP()` 共享启用状态，并发启用只发起一次初始化，失败后可重试。`sendCommand` 和 `listProtocol` 自动等待启用；可选超时包含初始化所用时间。`onEvent` 返回可重复调用的取消订阅函数，断开连接自动移除本连接注册的监听。结构化日志和堆探测复用同一 CDP 通道；重复 `enableLog` 仍会刷新日志订阅。实际域、命令和结果由目标 DevTools 决定，可先用 `listProtocol()` 查询。
+
+### 4.9 触摸事件字段
+
+`touchstart`、`touchmove`、`touchend` 和 `dispatchEvent` 均接受标准字段 `changedTouches`，会将触点坐标和触点数组交给页面事件处理器。
+
+```ts
+const point = { identifier: 1, pageX: 40, pageY: 60, clientX: 40, clientY: 60 }
+await button?.touchstart({ touches: [point], changedTouches: [point] })
+await button?.touchend({ touches: [], changedTouches: [point] })
+await button?.dispatchEvent({ eventName: 'touchstart', touches: [point], changedTouches: [point] })
+```
+
+旧拼写 `changeTouches` 保留为 deprecated 别名，发送前统一转换为 `changedTouches`；同时传入时以 `changedTouches` 为准。
+
+### 4.10 异步断开与迁移
+
+`MiniProgram.disconnect()`、`Connection.dispose()` 和 `Transport.close()` 现在返回 `Promise<void>`。调用时立即拒绝未完成 RPC、停止事件订阅并终止本连接，Promise 等待 socket 实际关闭；独立关闭默认最多等待 2 秒。并发调用共享同次清理结果，超时会报告关闭未确认，后续可重新确认迟到的关闭。启动失败清理仍使用启动操作剩余的总预算。
+
+原来在同步清理回调或 `finally` 中直接调用 `disconnect()` 的代码，应迁移到可等待的调用链，返回或等待 Promise。`process.on('exit')` 无法等待异步清理，应在主动退出或信号处理流程中先 `await disconnect()`：
+
+```ts
+try {
+  console.log(await miniProgram.currentPage())
+}
+finally {
+  await miniProgram.disconnect()
+}
+```
+
+`disconnect()` 只断开连接；关闭受管项目窗口仍由持有窗口 owner 的会话 `close()` 负责。重连复用已有窗口的 endpoint，不重新启动 IDE。清理失败会抛出，调用方不能据此记录端口租约、窗口或快照已释放。
+
+headless provider 保留同名 `CDP()` 入口，调用会明确报告 `HEADLESS_PROTOCOL_UNSUPPORTED`，不提供 inspector 后端。原始 `send` 仅支持 `Tool.getInfo`、`App.getCurrentPage`、`App.getPageStack`、`App.callFunction`、`App.callWxMethod`；其他协议明确报不支持。headless 的异步断开释放独占运行时，其结果不能证明真实 IDE 窗口已关闭。
+
 ## 5. 主要导出
 
 | 导出                      | 说明                                     |
@@ -186,3 +250,5 @@ pnpm --filter @weapp-vite/miniprogram-automator typecheck
 微信 DevTools 的 `launch` / `connect` 使用一次总 `timeout`（默认 30 秒）。路径准备、端口租约、HTTP 适配、WebSocket、版本与 App ready 均消耗剩余预算，自动重试不重置 deadline。可传 `signal` 取消；成功后连接归调用方管理。
 
 失败保留 `cause`，`error.operation` 包含阶段、最后成功阶段、耗时、剩余预算、尝试次数、未退出操作数量及本次资源清理状态。清理 `pending` 表示在预算内未确认退出，不能当作资源已释放。迟到连接只断开自身 WebSocket；启动器只终止持有句柄的 CLI 子进程，不据此认领 IDE 宿主或清理其他项目。无需在 App ready 后再固定等待五秒。
+
+启动失败还会附加捕获的 CLI stdout/stderr 尾部输出，最多保留 32,768 个字符，截断时明确标记，并隐藏凭据。输出诊断保留原始 `cause`、错误分类和总预算信息。

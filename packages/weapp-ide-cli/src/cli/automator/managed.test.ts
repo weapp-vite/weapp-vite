@@ -105,9 +105,42 @@ describe('managed automator port ownership', () => {
     expect(mocks.lease).toHaveBeenCalledExactlyOnceWith(options.port)
     expect(mocks.begin.mock.invocationCallOrder[0]).toBeLessThan(mocks.start.mock.invocationCallOrder[0]!)
     expect(mocks.release).not.toHaveBeenCalled()
-    connected.disconnect()
-    await Promise.resolve()
+    await connected.disconnect()
     expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
+  it('holds the lease until socket closure and retries a failed release', async () => {
+    const program = createProgram()
+    let finish!: () => void
+    vi.mocked(program.disconnect).mockImplementationOnce(() => new Promise<void>((resolve) => {
+      finish = resolve
+    }))
+    const connected = await launchManagedAutomator({ ...options, launcher: { connect: vi.fn(async () => program) } as any, scope: createScope(), target })
+    const failure = new Error('lease removal failed')
+    mocks.release.mockRejectedValueOnce(failure)
+    const pending = connected.disconnect()
+    const rejected = expect(pending).rejects.toBe(failure)
+    expect(connected.disconnect()).toBe(pending)
+    expect(mocks.release).not.toHaveBeenCalled()
+    finish()
+    await rejected
+    expect(mocks.release).toHaveBeenCalledOnce()
+    await connected.disconnect()
+    expect(mocks.release).toHaveBeenCalledTimes(2)
+  })
+
+  it('attempts owned window cleanup after disconnect failure and preserves both errors', async () => {
+    const owner = createOwner()
+    const disconnectFailure = new Error('socket close unconfirmed')
+    const windowFailure = new Error('window close unconfirmed')
+    mocks.begin.mockResolvedValue(owner)
+    const program = createProgram()
+    vi.mocked(program.disconnect).mockRejectedValue(disconnectFailure)
+    owner.close.mockRejectedValue(windowFailure)
+    const connected = await launchManagedAutomator({ ...options, launcher: { connect: vi.fn(async () => program) } as any, scope: createScope(), target })
+    await expect(connected.close()).rejects.toMatchObject({ errors: [disconnectFailure, windowFailure] })
+    expect(owner.close).toHaveBeenCalledOnce()
+    expect(mocks.release).not.toHaveBeenCalled()
   })
 
   it('releases the port lease when agent startup fails', async () => {
@@ -120,6 +153,24 @@ describe('managed automator port ownership', () => {
     await expect(launchManagedAutomator({ ...options, launcher: { connect: vi.fn() } as any, scope, target })).rejects.toBe(failure)
     expect(owner.fail).toHaveBeenCalledExactlyOnceWith(failure)
     expect(owner.close).toHaveBeenCalledOnce()
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
+  it('keeps composite lifecycle ownership when failed window cleanup cannot confirm closure', async () => {
+    const scope = createScope()
+    const owner = createOwner()
+    const primary = new Error('agent start failed')
+    const cleanup = new Error('window close unconfirmed')
+    mocks.begin.mockResolvedValue(owner)
+    mocks.start.mockRejectedValue(primary)
+    owner.close.mockRejectedValue(cleanup)
+
+    await expect(launchManagedAutomator({ ...options, launcher: { connect: vi.fn() } as any, scope, target })).rejects.toMatchObject({ errors: [primary, cleanup], cause: primary })
+    const releaseOwned = scope.own.mock.calls[0][0] as () => Promise<void>
+    await expect(releaseOwned()).rejects.toMatchObject({ errors: [cleanup] })
+    expect(mocks.release).not.toHaveBeenCalled()
+    owner.close.mockResolvedValueOnce(undefined)
+    await releaseOwned()
     expect(mocks.release).toHaveBeenCalledOnce()
   })
 

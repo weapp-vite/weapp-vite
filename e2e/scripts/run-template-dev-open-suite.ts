@@ -61,7 +61,7 @@ async function runTemplateCase(
       }),
       `${templateCase.name} automator ready`,
     )
-    session.miniProgram.disconnect()
+    await session.miniProgram.disconnect()
     return await runVitest({
       ...process.env,
       WEAPP_VITE_E2E_IDE_HMR_COMPANION: '0',

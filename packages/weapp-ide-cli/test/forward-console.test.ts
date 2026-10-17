@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const acquireSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const closeSharedMiniProgramMock = vi.hoisted(() => vi.fn())
+const closeOwnedSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const connectMiniProgramMock = vi.hoisted(() => vi.fn())
 const releaseSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
@@ -15,6 +16,7 @@ vi.mock('../src/cli/automator-session', () => ({
   resolveAutomatorSessionOptions: async (options: unknown) => options,
   acquireConsoleMiniProgram: acquireSharedMiniProgramMock,
   closeSharedMiniProgram: closeSharedMiniProgramMock,
+  closeOwnedSharedMiniProgram: closeOwnedSharedMiniProgramMock,
   connectConsoleMiniProgram: connectMiniProgramMock,
   releaseSharedMiniProgram: releaseSharedMiniProgramMock,
 }))
@@ -63,6 +65,8 @@ describe('forwardConsole', () => {
     acquireSharedMiniProgramMock.mockReset()
     closeSharedMiniProgramMock.mockReset()
     closeSharedMiniProgramMock.mockResolvedValue(undefined)
+    closeOwnedSharedMiniProgramMock.mockReset()
+    closeOwnedSharedMiniProgramMock.mockResolvedValue(undefined)
     connectMiniProgramMock.mockReset()
     releaseSharedMiniProgramMock.mockReset()
     loggerMock.info.mockReset()
@@ -263,6 +267,39 @@ describe('forwardConsole', () => {
     expect(miniProgram.off).toHaveBeenCalledTimes(2)
     expect(releaseSharedMiniProgramMock).toHaveBeenCalledWith('/tmp/demo', undefined, expect.objectContaining({ projectPath: '/tmp/demo' }))
     expect(miniProgram.close).not.toHaveBeenCalled()
+  })
+
+  it('retries failed disposal without releasing another shared reference', async () => {
+    const miniProgram = createMiniProgramMock()
+    acquireSharedMiniProgramMock.mockResolvedValue(miniProgram)
+    const failure = new Error('socket closure unconfirmed')
+    releaseSharedMiniProgramMock.mockRejectedValueOnce(failure)
+    const { startForwardConsole } = await import('../src/cli/forwardConsole')
+    const session = await startForwardConsole({ projectPath: 'fixture-project' })
+
+    await expect(session.close()).rejects.toMatchObject({ errors: [failure] })
+    await session.close()
+
+    expect(releaseSharedMiniProgramMock).toHaveBeenCalledOnce()
+    expect(closeOwnedSharedMiniProgramMock).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ projectPath: 'fixture-project' }), miniProgram)
+  })
+
+  it('preserves refresh and disconnection failures from the same opened session', async () => {
+    const miniProgram = createMiniProgramMock()
+    const primary = new Error('enable log failed')
+    const cleanup = new Error('socket closure unconfirmed')
+    const enableLog = vi.fn(async () => {
+      throw primary
+    })
+    miniProgram.disconnect.mockRejectedValueOnce(cleanup)
+    connectMiniProgramMock.mockResolvedValueOnce(miniProgram)
+    const { refreshOpenedMiniProgramConsoleLog } = await import('../src/cli/forwardConsole/refresh')
+
+    await expect(refreshOpenedMiniProgramConsoleLog({ projectPath: 'fixture-project' }, enableLog)).rejects.toMatchObject({ errors: [primary, cleanup], cause: primary })
+
+    expect(connectMiniProgramMock).toHaveBeenCalledExactlyOnceWith({ projectPath: 'fixture-project', openedOnly: true })
+    expect(enableLog).toHaveBeenCalledExactlyOnceWith(miniProgram)
+    expect(miniProgram.disconnect).toHaveBeenCalledOnce()
   })
 
   it('waits for App.enableLog before reporting ready', async () => {

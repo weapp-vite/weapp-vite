@@ -63,24 +63,55 @@ export function attachBridgeWrapperSyncCleanup(miniProgram: any, snapshot: Bridg
       stopped = true
     }
   }
+  const pendingMethods = new Map<string, Promise<unknown>>()
   for (const methodName of ['close', 'disconnect']) {
     const rawMethod = miniProgram?.[methodName]
     if (typeof rawMethod !== 'function') {
       continue
     }
-    miniProgram[methodName] = async (...args: any[]) => {
-      let completed = false
-      try {
-        const result = await rawMethod.apply(miniProgram, args)
-        completed = true
-        return result
+    miniProgram[methodName] = (...args: any[]) => {
+      const pending = pendingMethods.get(methodName)
+      if (pending) {
+        return pending
       }
-      finally {
-        stopSync()
-        if (methodName === 'close' && completed) {
-          await cleanup()
+      const operation = (async () => {
+        const errors: unknown[] = []
+        try {
+          stopSync()
         }
-      }
+        catch (error) {
+          errors.push(error)
+        }
+        let completed = false
+        let result: unknown
+        try {
+          result = await rawMethod.apply(miniProgram, args)
+          completed = true
+        }
+        catch (error) {
+          errors.push(error)
+        }
+        if (methodName === 'close' && completed) {
+          try {
+            await cleanup()
+          }
+          catch (error) {
+            errors.push(error)
+          }
+        }
+        if (errors.length === 1) {
+          throw errors[0]
+        }
+        if (errors.length) {
+          throw new AggregateError(errors, 'Automator snapshot cleanup failed')
+        }
+        return result
+      })().catch((error: unknown) => {
+        pendingMethods.delete(methodName)
+        throw error
+      })
+      pendingMethods.set(methodName, operation)
+      return operation
     }
   }
   return miniProgram

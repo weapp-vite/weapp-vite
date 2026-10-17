@@ -2,7 +2,7 @@ import { connectOpenedAutomator, launchAutomator, promptRetryKeypress, resolvePr
 import logger, { colors } from '../../logger'
 
 interface DisconnectableMiniProgram {
-  disconnect: () => void
+  disconnect: () => Promise<void>
   screenshot?: (options?: { timeout?: number }) => Promise<unknown>
 }
 
@@ -19,8 +19,8 @@ function formatReuseOpenedWechatIdePrompt() {
   return `目标项目已在微信开发者工具中打开，已跳过重复打开。按 ${highlightedRetryKeys} 重新连接目标项目（保留现有窗口）。`
 }
 
-function disconnectMiniProgram(miniProgram: DisconnectableMiniProgram) {
-  miniProgram.disconnect()
+async function disconnectMiniProgram(miniProgram: DisconnectableMiniProgram) {
+  await miniProgram.disconnect()
 }
 
 function withTimeout<T>(task: Promise<T>, timeoutMs: number) {
@@ -59,7 +59,7 @@ async function openWechatIdeByAutomator(projectPath: string, options: OpenWechat
     timeout: OPEN_AUTOMATOR_TIMEOUT,
     trustProject: options.trustProject !== false,
   }) as DisconnectableMiniProgram
-  disconnectMiniProgram(miniProgram)
+  await disconnectMiniProgram(miniProgram)
 }
 
 async function connectOpenedProject(projectPath: string): Promise<OpenedProjectConnectionResult> {
@@ -80,7 +80,7 @@ async function connectOpenedProject(projectPath: string): Promise<OpenedProjectC
     return { status: 'connected', miniProgram }
   }
   catch {
-    disconnectMiniProgram(miniProgram)
+    await disconnectMiniProgram(miniProgram)
     return { status: 'unhealthy' }
   }
 }
@@ -109,7 +109,7 @@ export async function tryReuseOpenedWechatIde(
   }
 
   const { miniProgram } = connection
-  disconnectMiniProgram(miniProgram)
+  await disconnectMiniProgram(miniProgram)
   if (options.promptReopen === false) {
     logger.info('目标项目已在微信开发者工具中打开，已跳过重复打开。')
     return {
@@ -149,7 +149,7 @@ export async function reopenOpenedWechatIde(
 ) {
   const connection = await connectOpenedProject(projectPath)
   if (connection.status === 'connected') {
-    disconnectMiniProgram(connection.miniProgram)
+    await disconnectMiniProgram(connection.miniProgram)
     logger.info('目标项目已在微信开发者工具中打开，当前命令将重新连接以刷新最新构建产物，保留现有窗口。')
   }
   else if (connection.status === 'unhealthy') {

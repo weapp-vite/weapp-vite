@@ -1,6 +1,7 @@
 import type { HeadlessTestingNodeEventInit } from './nodeHandle'
 import { collectEventBindings, resolveEventBindingPhases } from './eventBindingParser'
 import { collectNodeDataset } from './nodeDataset'
+import { readTouchEventPayload } from './nodeEvents'
 
 export interface MiniProgramEventBinding {
   method: string
@@ -29,6 +30,7 @@ export function createMiniProgramEventPayload(
   const nodeId = node.attribs?.id ?? ''
   const isOrigin = node === origin
   return {
+    ...readTouchEventPayload(event),
     bubbles: false,
     capturePhase: false,
     composed: false,

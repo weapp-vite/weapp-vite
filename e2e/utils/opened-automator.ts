@@ -32,14 +32,21 @@ function formatOpenedAutomatorError(error: unknown) {
   return error instanceof Error ? error.message : String(error ?? 'unknown')
 }
 
-async function closeStaleMiniProgram(miniProgram: unknown) {
+class OpenedAutomatorCleanupError extends AggregateError {}
+
+async function closeStaleMiniProgram(miniProgram: unknown, failure: unknown) {
   if (!miniProgram || typeof miniProgram !== 'object') {
     return
   }
 
   const disconnect = Reflect.get(miniProgram, 'disconnect')
   if (typeof disconnect === 'function') {
-    await Promise.resolve(disconnect.call(miniProgram)).catch(() => {})
+    try {
+      await disconnect.call(miniProgram)
+    }
+    catch (error) {
+      throw new OpenedAutomatorCleanupError([failure, error], 'Opened automator failed and socket closure remains unconfirmed')
+    }
   }
 }
 
@@ -101,7 +108,7 @@ export async function waitForOpenedAutomator(
         await miniProgram.enableLog(appReadyTimeoutMs, { structured: true })
       }
       catch (error) {
-        await closeStaleMiniProgram(miniProgram)
+        await closeStaleMiniProgram(miniProgram, error)
         throw new Error(`Opened automator runtime log subscription failed: ${formatOpenedAutomatorError(error)}`, { cause: error })
       }
       if (!skipAppReady) {
@@ -110,7 +117,7 @@ export async function waitForOpenedAutomator(
         }
         catch (error) {
           lastError = error
-          await closeStaleMiniProgram(miniProgram)
+          await closeStaleMiniProgram(miniProgram, error)
           await delay(intervalMs)
           continue
         }
@@ -125,6 +132,9 @@ export async function waitForOpenedAutomator(
       }
     }
     catch (error) {
+      if (error instanceof OpenedAutomatorCleanupError) {
+        throw error
+      }
       lastError = error
     }
     await delay(intervalMs)

@@ -70,3 +70,11 @@ pnpm --filter weapp-vite build
 ## IDE 恢复与窗口保留
 
 打开项目、刷新索引或截图重试失败时，CLI 会保留现有开发者工具窗口，只重试目标项目连接；不会自动退出整个应用或按进程名终止宿主。`--no-open-recovery` 可禁用打开后的自动重试。需要真正关闭窗口时，请在 IDE 中明确选择目标项目；`wv close` 失败会返回非零退出码，不会升级为系统级退出。
+
+## 自动化连接清理与 CDP
+
+程序化使用 `@weapp-vite/miniprogram-automator` 或 `weapp-ide-cli` 时，`disconnect()` 返回 `Promise<void>`。同步清理回调应改为返回或 `await miniProgram.disconnect()`；调用时立即拒绝未完成 RPC 并停止订阅，Promise 等待 WebSocket 关闭。独立关闭最多等待 2 秒，超时表示关闭未确认，不能记录窗口、端口租约或快照已经释放。连接断开只影响本连接，受管窗口由持有 owner 的会话 `close()` 确认关闭；重连复用原窗口和 endpoint。
+
+SDK 的公开 `send(method, params?, { timeout }?)` 可调用原始自动化协议。`CDP()` 提供 `enable`、`sendCommand(domain, method, params?, options?)`、`listProtocol` 和返回取消订阅函数的 `onEvent`；具体域和命令依赖目标 DevTools。headless 只适配 `Tool.getInfo`、`App.getCurrentPage/getPageStack/callFunction/callWxMethod`，CDP 和其他协议明确报告 `HEADLESS_PROTOCOL_UNSUPPORTED`，不构造真实 IDE 调试证据。
+
+触摸脚本使用标准 `changedTouches` 字段；旧 `changeTouches` 仍兼容，同时传入时以标准字段为准。启动失败诊断会附加已脱敏的 CLI 输出尾部，截断有明确标记；结合原始 `cause` 与 `operation` 阶段、预算和清理状态定位失败。

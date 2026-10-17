@@ -74,6 +74,7 @@ describe('github issues runtime shared relaunch helper', () => {
       'ide/github-issues.runtime.aggregate.compiler.test.ts',
     )).toBe('ide/github-issues.runtime.aggregate.compiler.test.ts')
     expect(resolveGithubIssuesScopedTargetFile('ide/app-lifecycle.test.ts')).toBeUndefined()
+    expect(resolveGithubIssuesScopedTargetFile('ide/issue-1234-automator.runtime.test.ts')).toBe('ide/issue-1234-automator.runtime.test.ts')
     expect(resolveGithubIssuesScopedTargetFile('')).toBeUndefined()
   })
 

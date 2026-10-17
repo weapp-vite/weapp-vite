@@ -82,6 +82,7 @@ describe('e2e suite manifest', () => {
   })
 
   it.each([
+    'ide/issue-1234-automator.runtime.test.ts',
     'ide/auto-routes-define-app-json.runtime.test.ts',
     'ide/script-setup-external-src.runtime.test.ts',
     'ide/issue-1058-template-tags.runtime.test.ts',

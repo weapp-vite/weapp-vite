@@ -1,9 +1,16 @@
-import type { IConnectOptions, ILaunchOptions, OperationDiagnostics, OperationErrorCategory } from '@weapp-vite/miniprogram-automator'
+import type { IConnectOptions, ILaunchOptions, MiniProgram, OperationDiagnostics, OperationErrorCategory, Transport } from '@weapp-vite/miniprogram-automator'
 import { classifyOperationError, Connection, OperationLifecycle, readWechatLoginState } from '@weapp-vite/miniprogram-automator'
 import { OperationLifecycle as LightweightOperationLifecycle, readWechatLoginState as readLightweightLoginState } from '@weapp-vite/miniprogram-automator/operation'
 import { expectType } from 'tsd'
 
 const controller = new AbortController()
+declare const program: MiniProgram
+declare const connection: Connection
+declare const transport: Transport
+expectType<Promise<void>>(program.disconnect())
+expectType<Promise<void>>(program.close())
+expectType<Promise<void>>(connection.dispose())
+expectType<Promise<void>>(transport.close())
 const connect: IConnectOptions = { wsEndpoint: 'ws://localhost', signal: controller.signal, timeout: 100 }
 const launch: ILaunchOptions = { signal: controller.signal, timeout: 100 }
 expectType<AbortSignal | undefined>(connect.signal)

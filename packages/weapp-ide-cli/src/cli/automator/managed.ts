@@ -37,12 +37,50 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
   })
   const rawReleasePortLease = portLease.release.bind(portLease)
   let releasedPortLease: Promise<void> | undefined
-  portLease.release = () => releasedPortLease ??= rawReleasePortLease()
-  const disownPortLease = scope.own(() => portLease.release(), 'automator-port-lease')
-  let releasePortLeaseOnExit = true
+  portLease.release = () => releasedPortLease ??= rawReleasePortLease().catch((error: unknown) => {
+    releasedPortLease = undefined
+    throw error
+  })
   let intent: Awaited<ReturnType<typeof beginManagedWechatProject>>
   let program: MiniProgram | undefined
+  let allowCleanup!: () => void
+  const acquisitionSettled = new Promise<void>((resolve) => {
+    allowCleanup = resolve
+  })
+  let cleaning: Promise<void> | undefined
+  const cleanupLaunch = () => cleaning ??= (async () => {
+    // 官方回执或连接可能迟于取消到达；先等待启动路径停止登记资源，再统一清理。
+    await acquisitionSettled
+    const errors: unknown[] = []
+    let disconnected = !program
+    try {
+      await program?.disconnect()
+      disconnected = true
+    }
+    catch (error) {
+      errors.push(error)
+    }
+    let projectClosed = !intent
+    try {
+      await intent?.close()
+      projectClosed = true
+    }
+    catch (error) {
+      errors.push(error)
+    }
+    if (disconnected && projectClosed) {
+      await portLease.release().catch(error => errors.push(error))
+    }
+    if (errors.length) {
+      throw new AggregateError(errors, 'Managed DevTools session cleanup failed')
+    }
+  })().catch((error: unknown) => {
+    cleaning = undefined
+    throw error
+  })
+  let disownPortLease = () => {}
   try {
+    disownPortLease = scope.own(cleanupLaunch, 'automator-port-lease')
     intent = await beginManagedWechatProject({ target, projectPath, port })
     if (!intent) {
       throw new Error('DEVTOOLS_MANAGED_PROJECT_JOURNAL_REQUIRED: managed launch requires a project ownership journal.')
@@ -87,43 +125,52 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
     const connectedProgram = program
     const ownedIntent = intent
     const rawDisconnect = (connectedProgram.disconnect as (...args: any[]) => any).bind(connectedProgram)
+    let disconnecting: Promise<void> | undefined
     connectedProgram.disconnect = (...args: any[]) => {
-      try {
-        return rawDisconnect(...args)
-      }
-      finally {
-        void portLease.release()
-      }
+      disconnecting ??= (async () => {
+        await rawDisconnect(...args)
+        await portLease.release()
+      })().catch((error: unknown) => {
+        disconnecting = undefined
+        throw error
+      })
+      return disconnecting
     }
     let closing: Promise<void> | undefined
     connectedProgram.close = async () => {
       closing ??= (async () => {
+        const errors: unknown[] = []
+        let disconnected = false
         try {
-          connectedProgram.disconnect()
+          await connectedProgram.disconnect()
+          disconnected = true
         }
-        finally {
-          try {
-            await ownedIntent.close()
-          }
-          finally {
-            await portLease.release()
-          }
+        catch (error) {
+          errors.push(error)
+        }
+        let projectClosed = false
+        try {
+          await ownedIntent.close()
+          projectClosed = true
+        }
+        catch (error) {
+          errors.push(error)
+        }
+        if (disconnected && projectClosed) {
+          await portLease.release().catch(error => errors.push(error))
+        }
+        if (errors.length) {
+          throw new AggregateError(errors, 'Managed DevTools session cleanup failed')
         }
       })().finally(() => { closing = undefined })
       return await closing
     }
-    releasePortLeaseOnExit = false
     disownPortLease()
+    allowCleanup()
     return connectedProgram
   }
   catch (error) {
     const errors = [error]
-    try {
-      program?.disconnect()
-    }
-    catch (disconnectError) {
-      errors.push(disconnectError)
-    }
     if (intent) {
       try {
         await intent.fail(error)
@@ -131,16 +178,14 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
       catch (recordError) {
         errors.push(recordError)
       }
-      try {
-        await intent.close()
-      }
-      catch (closeError) {
-        errors.push(closeError)
-      }
     }
-    if (releasePortLeaseOnExit) {
+    allowCleanup()
+    try {
+      await cleanupLaunch()
       disownPortLease()
-      await portLease.release().catch(releaseError => errors.push(releaseError))
+    }
+    catch (cleanupError) {
+      errors.push(...(cleanupError instanceof AggregateError ? cleanupError.errors : [cleanupError]))
     }
     if (errors.length > 1) {
       throw new AggregateError(errors, 'Managed DevTools launch failed and project cleanup did not complete.', { cause: error })
