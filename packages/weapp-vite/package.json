@@ -167,7 +167,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "peerDependencies": {
-    "@vitejs/devtools-kit": "^0.7.6"
+    "@vitejs/devtools-kit": "^0.8.0"
   },
   "peerDependenciesMeta": {
     "@vitejs/devtools-kit": {
@@ -251,6 +251,7 @@
     "@devframes/hub": "1.2.5",
     "@devframes/hub-ui": "1.2.5",
     "@modelcontextprotocol/client": "^2.3.1",
+    "@vitejs/devtools": "catalog:",
     "@vitejs/devtools-kit": "catalog:",
     "oxc-parser": "catalog:",
     "oxc-walker": "catalog:",
