@@ -129,20 +129,18 @@ it.each(operations)('%s observes junction replacement in the next operation', (o
   expect(native.mock.calls.filter(([source]) => source === aliasFile)).toHaveLength(3)
 })
 
-it.each(operations)('%s refreshes missing, created, deleted and restored files between operations', (operation) => {
+it.each(operations)('%s keeps linked dependencies reachable while targets are missing, deleted and restored', (operation) => {
   const { aliasFile, first, owner } = linkedFixture()
   const file = `${first}/value.ts`
   const { service } = bindLinkedBuildGraph(aliasFile, owner)
-  const native = vi.spyOn(realpathSync, 'native')
 
-  expect(service[operation](file)).toEqual(new Set())
+  expect(service[operation](file)).toEqual(new Set([owner]))
   writeSource(first, 'value.ts')
   expect(service[operation](file)).toEqual(new Set([owner]))
   unlinkSync(file)
-  expect(service[operation](file)).toEqual(new Set())
+  expect(service[operation](file)).toEqual(new Set([owner]))
   writeSource(first, 'value.ts')
   expect(service[operation](file)).toEqual(new Set([owner]))
-  expect(native.mock.calls.filter(([source]) => source === aliasFile)).toHaveLength(4)
 })
 
 it('releases the affected-entry scope when the build graph throws', () => {

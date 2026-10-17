@@ -2,10 +2,32 @@ import type { AstEngineName } from '../ast'
 import { parseJsLikeWithEngine } from '@weapp-vite/ast'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from './babel'
 
-export interface ReExportResolutionCache {
-  get: (file: string) => Map<string, string | undefined> | undefined
-  set: (file: string, value: Map<string, string | undefined>) => unknown
+interface ExportName {
+  type: string
+  name?: string
+  value?: string
 }
+
+interface ExportSpecifier {
+  type: string
+  local?: ExportName
+  exported?: ExportName
+}
+
+interface ExportNode {
+  type: string
+  source?: { type: string, value: string }
+  specifiers?: ExportSpecifier[]
+}
+
+interface ReExportFacts {
+  source: string
+  named: Map<string, { source: string, imported: string }>
+  exportAll: string[]
+}
+
+/** 仅缓存当前源码的导出事实，目标地址始终由本轮 resolver 决定。 */
+export type ReExportResolutionCache = Map<string, ReExportFacts>
 
 export interface ResolveReExportOptions {
   /**
@@ -17,9 +39,9 @@ export interface ResolveReExportOptions {
    */
   readFile: (file: string) => Promise<string>
   /**
-   * 缓存：key 为 exporter 文件路径，value 为该文件导出的 name -> resolved file。
+   * 缓存当前源码的导出声明，不缓存递归目标或未解析的目标。
    */
-  cache: Map<string, Map<string, string | undefined>>
+  cache: ReExportResolutionCache
   /**
    * AST 引擎。
    * @default 'babel'
@@ -32,26 +54,22 @@ export interface ResolveReExportOptions {
   maxDepth?: number
 }
 
-function getExportedName(spec: any) {
-  const exported = spec?.exported
-  if (!exported) {
-    return undefined
+function getSpecifierName(name: ExportName | undefined) {
+  if (name?.type === 'Identifier') {
+    return name.name
   }
-  if (exported.type === 'Identifier') {
-    return exported.name as string
-  }
-  if (exported.type === 'StringLiteral') {
-    return exported.value as string
+  if (name?.type === 'StringLiteral' || name?.type === 'Literal') {
+    return name.value
   }
   return undefined
 }
 
-function getSourceValue(node: any) {
+function getSourceValue(node: ExportNode) {
   const source = node?.source
   if (!source || (source.type !== 'StringLiteral' && source.type !== 'Literal')) {
     return undefined
   }
-  return source.value as string
+  return source.value
 }
 
 export function getReExportCacheKey(file: string, astEngine?: AstEngineName) {
@@ -65,98 +83,99 @@ function parseModuleForReExport(code: string, astEngine?: AstEngineName) {
       filename: 'inline.ts',
     })
   }
-  return babelParse(code, BABEL_TS_MODULE_PARSER_OPTIONS).program as any
+  return babelParse(code, BABEL_TS_MODULE_PARSER_OPTIONS).program
+}
+
+async function readReExportFacts(exporterFile: string, options: ResolveReExportOptions) {
+  const cacheKey = getReExportCacheKey(exporterFile, options.astEngine)
+  let source: string
+  try {
+    source = await options.readFile(exporterFile)
+  }
+  catch {
+    options.cache.delete(cacheKey)
+    return undefined
+  }
+  const cached = options.cache.get(cacheKey)
+  if (cached?.source === source) {
+    return cached
+  }
+  const facts: ReExportFacts = { source, named: new Map(), exportAll: [] }
+  try {
+    // Babel 与 Oxc 在此仅消费共同的静态导出字段。
+    const ast = parseModuleForReExport(source, options.astEngine) as unknown as { body: ExportNode[] }
+    for (const node of ast.body) {
+      const source = getSourceValue(node)
+      if (!source) {
+        continue
+      }
+      if (node?.type === 'ExportNamedDeclaration') {
+        for (const spec of node.specifiers ?? []) {
+          if (spec?.type !== 'ExportSpecifier') {
+            continue
+          }
+          const name = getSpecifierName(spec.exported)
+          const imported = getSpecifierName(spec.local)
+          if (name && imported) {
+            facts.named.set(name, { source, imported })
+          }
+        }
+      }
+      else if (node?.type === 'ExportAllDeclaration') {
+        facts.exportAll.push(source)
+      }
+    }
+  }
+  catch {
+    // 无法解析的版本也可缓存，但下一版源码必须重新解析。
+  }
+  options.cache.set(cacheKey, facts)
+  return facts
 }
 
 async function resolveReExportedInternal(
   exporterFile: string,
   exportName: string,
   depth: number,
-  visited: Set<string>,
+  visited: Map<string, number>,
   options: ResolveReExportOptions,
 ): Promise<string | undefined> {
-  if (depth <= 0) {
+  const key = `${exporterFile}\0${exportName}`
+  if (depth <= 0 || (visited.get(key) ?? 0) >= depth) {
     return undefined
   }
-  if (visited.has(exporterFile)) {
+  visited.set(key, depth)
+  const facts = await readReExportFacts(exporterFile, options)
+  if (!facts) {
     return undefined
   }
-  visited.add(exporterFile)
-
-  const cacheKey = getReExportCacheKey(exporterFile, options.astEngine)
-  let entry = options.cache.get(cacheKey)
-  if (!entry) {
-    entry = new Map()
-    options.cache.set(cacheKey, entry)
-  }
-
-  if (entry.has(exportName)) {
-    return entry.get(exportName)
-  }
-
-  let code: string
-  try {
-    code = await options.readFile(exporterFile)
-  }
-  catch {
-    entry.set(exportName, undefined)
-    return undefined
-  }
-
-  let ast: any
-  try {
-    ast = parseModuleForReExport(code, options.astEngine)
-  }
-  catch {
-    entry.set(exportName, undefined)
-    return undefined
-  }
-
-  const exportAllSources: string[] = []
-
-  for (const node of (ast.body as any[]) ?? []) {
-    if (node?.type === 'ExportNamedDeclaration') {
-      const source = getSourceValue(node)
-      if (!source) {
-        continue
-      }
-      for (const spec of node.specifiers ?? []) {
-        if (spec?.type !== 'ExportSpecifier') {
-          continue
-        }
-        const exportedName = getExportedName(spec)
-        if (!exportedName || exportedName !== exportName) {
-          continue
-        }
-        const resolved = await options.resolveId(source, exporterFile)
-        if (resolved) {
-          entry.set(exportName, resolved)
-          return resolved
-        }
+  const binding = facts.named.get(exportName)
+  if (binding) {
+    const resolved = await options.resolveId(binding.source, exporterFile)
+    if (!resolved) {
+      return undefined
+    }
+    if (binding.imported !== 'default') {
+      return resolveReExportedInternal(resolved, binding.imported, depth - 1, visited, options)
+    }
+    if (/\.(?:[cm]?ts|[cm]?js)$/.test(resolved)) {
+      const target = await readReExportFacts(resolved, options)
+      if (target?.named.has('default')) {
+        return resolveReExportedInternal(resolved, 'default', depth - 1, visited, options)
       }
     }
-
-    if (node?.type === 'ExportAllDeclaration') {
-      const source = getSourceValue(node)
-      if (source) {
-        exportAllSources.push(source)
-      }
-    }
+    return resolved
   }
-
-  for (const source of exportAllSources) {
+  for (const source of facts.exportAll) {
     const hopId = await options.resolveId(source, exporterFile)
     if (!hopId) {
       continue
     }
     const nested = await resolveReExportedInternal(hopId, exportName, depth - 1, visited, options)
     if (nested) {
-      entry.set(exportName, nested)
       return nested
     }
   }
-
-  entry.set(exportName, undefined)
   return undefined
 }
 
@@ -166,5 +185,5 @@ export async function resolveReExportedName(
   options: ResolveReExportOptions,
 ) {
   const maxDepth = options.maxDepth ?? 4
-  return resolveReExportedInternal(exporterFile, exportName, maxDepth, new Set<string>(), options)
+  return resolveReExportedInternal(exporterFile, exportName, maxDepth, new Map(), options)
 }

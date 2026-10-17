@@ -10,6 +10,7 @@ import type { WevuDefaults } from '../../../../types/wevu'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { ResolveSfcBlockSrcOptions } from '../../../utils/vueSfc'
 import type { TemplateCompileOptions, TemplateCompileResult } from '../../compiler/template'
+import type { NativeSlotContextAnalysisCache } from './nativeSlotContext/index'
 
 export interface ResolvedUsingComponentInfo {
   from?: string
@@ -49,6 +50,8 @@ export interface VueTransformResult {
     sfcSrcDeps?: string[]
     /** 模板和脚本外部块的编译输入，变化时必须失效完整编译结果。@internal */
     sfcSrcCompilationDeps?: string[]
+    /** 原生插槽上下文分析读取的源码依赖，变化时必须重新编译引用方。@internal */
+    nativeSlotContextDeps?: string[]
     /** 已解析样式中的 CSS 变量表达式快照。@internal */
     cssVars?: string[]
     styleBlocks?: SFCStyleBlock[]
@@ -184,4 +187,6 @@ export interface CompileVueFileOptions {
    * 缓存被当前 SFC 引用的 Vue 组件静态元信息，避免重复读取和解析同一组件。
    */
   componentMetaCache?: Map<string, Promise<VueSfcStaticComponentMeta>>
+  /** 原生插槽上下文分析的单文件事实缓存，不缓存传递闭包。@internal */
+  nativeSlotContextCache?: NativeSlotContextAnalysisCache
 }

@@ -10,7 +10,7 @@ import {
   WEVU_PARENT_INSTANCE_KEY,
   WEVU_PROVIDES_KEY,
 } from '@weapp-core/constants'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { onScopeDispose, ref, toRaw } from '../reactivity'
 import { createApp } from './app'
 import { createWevuComponentDefinition, getWevuComponentLifecycleDefinition } from './define'
@@ -79,6 +79,67 @@ describe('native declaration context lifecycle', () => {
     for (const host of hosts.splice(0).reverse()) {
       teardownRuntimeInstance(host.target, { skipHooks: true })
     }
+  })
+
+  it.each([undefined, false, 'true', 1])('keeps native context absent and ordinary owner injection working for marker %s', (marker) => {
+    const options = marker === undefined ? {} : { [WEVU_NATIVE_SLOT_CONTEXT_KEY]: marker }
+    const token = Symbol('ordinary-owner')
+    const context = { count: ref(0) }
+    const triggerEvent = vi.fn()
+    const owner = createHost(getWevuComponentLifecycleDefinition(createWevuComponentDefinition({
+      ...options,
+      setup: () => provide(token, context),
+    }))!)
+    owner.target.triggerEvent = triggerEvent
+    attach(owner)
+
+    for (const props of [{}, { props: { label: String } }, { properties: { label: { type: String, value: '' } } }]) {
+      let injected: typeof context | undefined
+      const definition = getWevuComponentLifecycleDefinition(createWevuComponentDefinition({
+        ...options,
+        ...props,
+        setup: () => {
+          injected = inject(token)
+        },
+      }))!
+      expect(definition.methods).not.toHaveProperty(WEVU_NATIVE_SLOT_PARENT_METHOD)
+      expect(definition.methods).not.toHaveProperty(WEVU_NATIVE_DECLARATION_METHOD)
+      expect(definition.properties).not.toHaveProperty(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)
+      expect(definition.observers).not.toHaveProperty(WEVU_NATIVE_DECLARATION_ADDRESS_PROP)
+
+      const child = createHost(definition, owner)
+      child.target.selectOwnerComponent = () => owner.target
+      child.target.triggerEvent = triggerEvent
+      attach(child)
+      expect(injected).toBe(context)
+      expect(child.target[WEVU_PARENT_INSTANCE_KEY]).toBe(owner.target)
+      definition.lifetimes.detached.call(child.target)
+      expect(child.target[WEVU_PARENT_INSTANCE_KEY]).toBeUndefined()
+      expect(child.target[WEVU_PROVIDES_KEY]).toBeUndefined()
+      expect(injected).toBe(context)
+    }
+    owner.definition.lifetimes.detached.call(owner.target)
+    expect(triggerEvent).not.toHaveBeenCalled()
+  })
+
+  it.each([undefined, false])('does not initialize declaration state from an authored address prop for marker %s', (marker) => {
+    const address = ['authored', '']
+    const observed: unknown[] = []
+    const definition = getWevuComponentLifecycleDefinition(createWevuComponentDefinition({
+      ...(marker === undefined ? {} : { [WEVU_NATIVE_SLOT_CONTEXT_KEY]: marker }),
+      properties: { [WEVU_NATIVE_DECLARATION_ADDRESS_PROP]: { type: Array, value: [] } },
+      observers: {
+        [WEVU_NATIVE_DECLARATION_ADDRESS_PROP](value: unknown) {
+          observed.push(value)
+        },
+      },
+    }))!
+    const target: InternalRuntimeState = { properties: {}, setData() {} }
+    const keys = Reflect.ownKeys(target)
+    definition.observers[WEVU_NATIVE_DECLARATION_ADDRESS_PROP].call(target, address)
+
+    expect(observed).toEqual([address])
+    expect(Reflect.ownKeys(target)).toEqual(keys)
   })
 
   it('injects the nearest unprojected declaration with exact identity through a filtered native owner', () => {

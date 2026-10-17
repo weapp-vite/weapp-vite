@@ -213,11 +213,12 @@ export function registerComponentDefinition<D extends object, C extends Computed
       return result.runtime?.proxy
     },
   }
-  if (!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp') {
+  if (
+    (!(import.meta as ImportMetaWithEnv).env?.PLATFORM || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp')
+    && nativeSlotContext
+  ) {
     methods[WEVU_NATIVE_SLOT_PARENT_METHOD] = receiveNativeSlotParent
-    if (nativeSlotContext) {
-      methods[WEVU_NATIVE_DECLARATION_METHOD] = receiveNativeDeclaration
-    }
+    methods[WEVU_NATIVE_DECLARATION_METHOD] = receiveNativeDeclaration
   }
 
   const componentDefinition = {

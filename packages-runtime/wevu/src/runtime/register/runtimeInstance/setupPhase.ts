@@ -13,12 +13,11 @@ import {
   WEVU_EXPOSED_KEY,
   WEVU_PROP_KEYS_KEY,
 } from '@weapp-core/constants'
-import { effectScope, isReactive, shallowReactive, toRaw } from '../../../reactivity'
+import { effectScope, shallowReactive } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
-import { preserveSetupAccessor } from '../../define/setupResult'
+import { applySetupResult } from '../../define/setupResult'
 import { normalizeEmitEventName } from '../../emit'
 import { getCurrentInstance, getCurrentSetupContext, setCurrentInstance, setCurrentSetupContext } from '../../hooks'
-import { hasTrackableSetupBinding } from '../../setupTracking'
 import { runSetupFunction } from '../setup'
 import {
   attachRuntimeSlots,
@@ -240,35 +239,8 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   setCurrentSetupContext(context)
   try {
     const result = instanceScope.run(() => runSetupFunction(setup, props, context))
-    let methodsChanged = false
     if (result && typeof result === 'object') {
-      const setupResult = result as Record<string, unknown>
-      const runtimeSetupState = (runtime as any).setupState && typeof (runtime as any).setupState === 'object'
-        ? (isReactive((runtime as any).setupState) ? toRaw((runtime as any).setupState) : (runtime as any).setupState)
-        : Object.create(null)
-      Object.keys(setupResult).forEach((key) => {
-        const val = setupResult[key]
-        const preservesAccessor = preserveSetupAccessor(runtimeSetupState, setupResult, key)
-        if (typeof val === 'function' && !preservesAccessor) {
-          const bound = (...args: any[]) => (val as any).apply((runtime as any).proxy, args)
-          ;(runtime.methods as any)[key] = bound
-          ;(runtime.state as any)[key] = bound
-          ;(runtimeSetupState as any)[key] = bound
-          methodsChanged = true
-        }
-        else {
-          if (hasTrackableSetupBinding(val)) {
-            ;(runtime as any).__wevu_trackSetupReactiveKey?.(key)
-          }
-          ;(runtime.state as any)[key] = val
-          if (!preservesAccessor) {
-            ;(runtimeSetupState as any)[key] = val
-          }
-        }
-      })
-    }
-    if (methodsChanged) {
-      ;(runtime as any).__wevu_touchSetupMethodsVersion?.()
+      applySetupResult(runtimeWithDefaults, target, result)
     }
   }
   finally {

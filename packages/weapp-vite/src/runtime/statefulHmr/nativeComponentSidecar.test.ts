@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import path from 'pathe'
 import { expect, it } from 'vitest'
 import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
+import { isStatefulHmrBoundary } from './boundaries'
 import { getNativeComponentSidecarSource, isChangedNativeComponentSidecar } from './nativeComponentSidecar'
 
 it('compares component ownership by filesystem identity across root aliases', async () => {
@@ -18,6 +19,10 @@ it('compares component ownership by filesystem identity across root aliases', as
     const sidecar = createSidecarSourceSpecifier(path.join(aliasRoot, 'src/page.js'), alias, 'using-component')
     const entries = [alias]
     expect(getNativeComponentSidecarSource(sidecar, aliasRoot, entries)).toBe(source)
+    expect(isStatefulHmrBoundary(sidecar, path.join(aliasRoot, 'src'), entries)).toBe(true)
+    expect(isStatefulHmrBoundary(sidecar, path.join(aliasRoot, 'src'), [source])).toBe(true)
+    expect(isStatefulHmrBoundary(sidecar, path.join(aliasRoot, 'other'), entries)).toBe(false)
+    expect(isStatefulHmrBoundary(sidecar, path.join(aliasRoot, 'src'), [])).toBe(false)
     expect(isChangedNativeComponentSidecar(sidecar, [alias], {
       root: aliasRoot,
       srcRoot: path.join(aliasRoot, 'src'),

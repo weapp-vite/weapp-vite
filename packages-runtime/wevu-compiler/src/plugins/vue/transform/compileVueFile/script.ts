@@ -17,6 +17,7 @@ import { createJsxDiagnostics } from '../../../jsx/compileJsx/diagnostics'
 import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from '../../../jsx/compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from '../../../jsx/compileJsx/template'
 import { getMiniProgramTemplatePlatform } from '../../compiler/template'
+import { usesNativeDeclarationContext } from '../../compiler/template/nativeDeclaration'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
 import { generateScopedId } from '../scopedId'
 import { transformScript } from '../script'
@@ -399,10 +400,11 @@ export async function compileScriptPhase(
       cssModules: precomputedScriptPhaseInfo?.cssModules,
       stabilizeCssVarsRuntime: options?.stabilizeCssVarsRuntime,
       relaxStructuredTypeOnlyProps,
-      nativeSlotContext: !isAppFile
-        && (options?.template?.platform ?? getMiniProgramTemplatePlatform()).name === 'wechat'
-        && options?.template?.platform?.nativeSlotContext !== false
-        && (options?.template?.scopedSlotsRequireProps ?? options?.template?.scopedSlotsCompiler !== 'augmented'),
+      nativeSlotContext: !isAppFile && usesNativeDeclarationContext({
+        platform: options?.template?.platform ?? getMiniProgramTemplatePlatform(),
+        scopedSlotsRequireProps: options?.template?.scopedSlotsRequireProps ?? options?.template?.scopedSlotsCompiler !== 'augmented',
+        nativeSlotContext: options?.template?.nativeSlotContext === true,
+      }),
       scopedSlotHostProperties: !isAppFile
         && options?.isPage !== true
         && Boolean(

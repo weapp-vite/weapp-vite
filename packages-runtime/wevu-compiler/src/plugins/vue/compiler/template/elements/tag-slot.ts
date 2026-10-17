@@ -565,7 +565,7 @@ function renderPlainSlotOutlet(node: ElementNode, context: TransformContext, tra
   if (nameAttr) {
     slotAttrs.push(nameAttr)
   }
-  if (context.platform.name === 'wechat' && context.platform.nativeSlotContext !== false && context.scopedSlotsRequireProps) {
+  if (usesNativeDeclarationContext(context)) {
     slotAttrs.push(`bind:${WEVU_NATIVE_SLOT_PARENT_EVENT}="${WEVU_NATIVE_SLOT_PARENT_METHOD}"`)
     slotAttrs.push(nativeSlotParentAttribute(context))
   }
@@ -747,7 +747,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   if (nameAttr) {
     slotAttrs.push(nameAttr)
   }
-  if (!slotPropsExp && context.platform.name === 'wechat' && context.platform.nativeSlotContext !== false && context.scopedSlotsRequireProps) {
+  if (!slotPropsExp && usesNativeDeclarationContext(context)) {
     slotAttrs.push(`bind:${WEVU_NATIVE_SLOT_PARENT_EVENT}="${WEVU_NATIVE_SLOT_PARENT_METHOD}"`)
     slotAttrs.push(nativeSlotParentAttribute(context))
   }

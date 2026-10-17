@@ -14,15 +14,16 @@ import { generateExpression, parseBabelExpressionFile } from './expression/parse
 import { registerRuntimeBindingAst } from './expression/runtimeBinding'
 import { renderMustache } from './mustache'
 
-export function usesNativeDeclarationContext(context: TransformContext) {
-  return context.platform.name === 'wechat'
+export function usesNativeDeclarationContext(context: Pick<TransformContext, 'platform' | 'scopedSlotsRequireProps' | 'nativeSlotContext'>) {
+  return context.nativeSlotContext === true
+    && context.platform.name === 'wechat'
     && context.platform.nativeSlotContext !== false
     && context.scopedSlotsRequireProps
 }
 
 /** 避免循环参数遮蔽祖先或编译器内建标识符，源码引用通过已有别名重写处理。 */
 export function normalizeNativeForAliases(info: ForParseResult, context: TransformContext) {
-  if (!usesNativeDeclarationContext(context) || !context.wevuComponentTags?.size) {
+  if (!usesNativeDeclarationContext(context) || !(context.nativeSlotContextTags ?? context.wevuComponentTags)?.size) {
     return
   }
   const outerNames = new Set(context.forStack.flatMap(scope => [scope.item, scope.index, scope.key, ...Object.keys(scope.itemAliases ?? {})]))
@@ -80,7 +81,7 @@ function createLoopIdentity(info: ForParseResult): t.Expression {
 }
 
 export function createNativeDeclaration(node: ElementNode, context: TransformContext): NativeDeclarationScope | undefined {
-  if (!usesNativeDeclarationContext(context) || !context.wevuComponentTags?.has(node.tag)) {
+  if (!usesNativeDeclarationContext(context) || !(context.nativeSlotContextTags ?? context.wevuComponentTags)?.has(node.tag)) {
     return undefined
   }
   // 结构指令克隆保留 loc，条件切换与遍历次数不会分配新的声明站点。

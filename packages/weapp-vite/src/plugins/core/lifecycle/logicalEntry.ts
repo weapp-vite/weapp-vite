@@ -19,6 +19,7 @@ import { withRealpathScope } from '../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { collectComponentEntries } from '../../utils/analyze'
 import { pathExists as pathExistsCached } from '../../utils/cache'
+import { compilerSnapshotSourceId, getCompilerSourceSnapshot } from '../../utils/sourceSnapshot'
 
 function resolveEntryRecord(state: CorePluginState, sourceId: string) {
   const relativeBase = removeExtensionDeep(state.ctx.configService.relativeAbsoluteSrcRoot(sourceId))
@@ -139,7 +140,7 @@ async function collectLogicalEntryDependencies(
   ownerId: string,
   entryType: LogicalEntryType,
 ) {
-  const pendingDependencies = state.ctx.moduleGraphService.getEntryDependencies(ownerId)
+  const pendingDependencies = state.ctx.moduleGraphService.getEntryDependencies(ownerId, { preserveAliases: true })
   const record = resolveEntryRecord(state, ownerId)
   // 共享 layout 的发现占位记录携带父页面上下文，不能作为 layout 的配置所有者。
   const entry = entryType === 'layout' && !ownsLayoutMetadata(state, record, ownerId) ? undefined : record
@@ -193,16 +194,24 @@ async function collectLogicalEntryDependencies(
     ? await state.ctx.jsonService.read(effectiveJsonPath)
     : declaredJson
   dependencies.push(...await collectComponentDependencies(state, pluginContext, ownerId, componentJson))
-  withRealpathScope(() => {
+  return withRealpathScope(() => {
+    const sources = getCompilerSourceSnapshot(state.ctx.configService)
     for (const kind of ['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
       state.ctx.moduleGraphService.replaceEntryDependencies(
         ownerId,
         kind,
         dependencies.filter(dependency => dependency.kind === kind).map(dependency => dependency.sourceId),
+        id => compilerSnapshotSourceId(sources, id),
       )
     }
+    for (const dependency of dependencies) {
+      dependency.sourceId = compilerSnapshotSourceId(sources, dependency.sourceId)
+    }
+    // 编译器读取的外部脚本、组件解析输入和插槽元数据仍保留图中的失效边。
+    // 包装模块只导入自身脚本，避免后发现的编译依赖改变不执行注册的 HMR 入口。
+    const scriptOwnerId = compilerSnapshotSourceId(sources, ownerId)
+    return dependencies.filter(dependency => dependency.kind !== 'script' || dependency.sourceId === scriptOwnerId)
   })
-  return dependencies
 }
 
 export function createLogicalEntryResolveHook(state: CorePluginState) {

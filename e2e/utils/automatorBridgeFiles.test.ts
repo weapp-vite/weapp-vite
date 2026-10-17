@@ -52,6 +52,20 @@ describe('bridge wrapper file mirroring', () => {
     expect(remove).not.toHaveBeenCalled()
   })
 
+  it('publishes changed files with one atomic rename', () => {
+    fs.writeFileSync(source, '<view>before</view>')
+    copyDistEntryForBridgeWrapper(source, target, false)
+    fs.writeFileSync(source, '<view>after!</view>')
+    const rename = vi.spyOn(fs, 'renameSync')
+
+    copyDistEntryForBridgeWrapper(source, target, false)
+
+    expect(rename).toHaveBeenCalledTimes(1)
+    expect(rename.mock.calls[0]?.[1]).toBe(target)
+    expect(rename.mock.calls[0]?.[0]).toContain('.weapp-vite-sync-')
+    expect(fs.readFileSync(target, 'utf8')).toBe('<view>after!</view>')
+  })
+
   it('copies changed descendants without touching unchanged scripts and removes stale descendants', () => {
     fs.mkdirSync(source)
     fs.writeFileSync(path.join(source, 'app.js'), 'App({})')
@@ -64,7 +78,9 @@ describe('bridge wrapper file mirroring', () => {
 
     copyDistEntryForBridgeWrapper(source, target, true)
 
-    expect(copy).toHaveBeenCalledExactlyOnceWith(path.join(source, 'index.wxml'), path.join(target, 'index.wxml'))
+    expect(copy).toHaveBeenCalledTimes(1)
+    expect(copy.mock.calls[0]?.[0]).toBe(path.join(source, 'index.wxml'))
+    expect(copy.mock.calls[0]?.[1]).toContain(path.join(target, '.index.wxml.weapp-vite-sync-'))
     expect(fs.readFileSync(path.join(target, 'app.js'), 'utf8')).toBe('App({})')
     expect(fs.existsSync(path.join(target, 'stale.json'))).toBe(false)
   })

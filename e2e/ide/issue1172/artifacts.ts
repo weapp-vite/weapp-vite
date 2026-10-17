@@ -11,6 +11,7 @@ export const ROUTES = {
   exportedOwner: '/pages/exported-owner/index',
   unprojected: '/pages/unprojected/index',
   keyed: '/pages/keyed/index',
+  plain: '/pages/plain/index',
 }
 
 /** 检查宿主所需页面文件以及原生和增强插槽的实际产物边界。 */

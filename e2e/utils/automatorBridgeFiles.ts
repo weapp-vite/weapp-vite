@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import process from 'node:process'
 
 export function safeStat(targetPath: string) {
   try {
@@ -22,6 +23,38 @@ export function safeReadDirectory(directoryPath: string) {
       return undefined
     }
     throw error
+  }
+}
+
+let bridgeSyncTempSequence = 0
+
+function publishBridgeWrapperFile(sourcePath: string, targetPath: string, sourceStat: fs.Stats) {
+  const tempPath = path.join(
+    path.dirname(targetPath),
+    `.${path.basename(targetPath)}.weapp-vite-sync-${process.pid}-${bridgeSyncTempSequence += 1}.tmp`,
+  )
+  try {
+    // 先在同一目录写完整文件，再一次 rename 发布，避免 IDE watcher 读到截断内容。
+    fs.copyFileSync(sourcePath, tempPath)
+    fs.chmodSync(tempPath, sourceStat.mode)
+    fs.utimesSync(tempPath, sourceStat.atime, sourceStat.mtime)
+    try {
+      fs.renameSync(tempPath, targetPath)
+    }
+    catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if (code !== 'EEXIST' && code !== 'EPERM') {
+        throw error
+      }
+      // 某些 Windows 文件系统不允许 rename 覆盖已存在文件；降级时仍保持完整文件发布。
+      fs.rmSync(targetPath, { force: true })
+      fs.renameSync(tempPath, targetPath)
+    }
+  }
+  finally {
+    if (safeStat(tempPath)) {
+      fs.rmSync(tempPath, { force: true })
+    }
   }
 }
 
@@ -66,9 +99,8 @@ export function copyDistEntryForBridgeWrapper(sourcePath: string, targetPath: st
     if (targetStat && !targetStat.isFile()) {
       fs.rmSync(targetPath, { recursive: true, force: true })
     }
-    fs.copyFileSync(sourcePath, targetPath)
     if (sourceStat?.isFile()) {
-      fs.utimesSync(targetPath, sourceStat.atime, sourceStat.mtime)
+      publishBridgeWrapperFile(sourcePath, targetPath, sourceStat)
     }
   }
   catch (error) {

@@ -1,4 +1,5 @@
 import { parseLogicalEntryId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
+import { normalizeSourceId } from '../../moduleGraph/traversal'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { getNativeComponentSidecarSource } from './nativeComponentSidecar'
 
@@ -14,14 +15,19 @@ export function isStatefulHmrBoundary(id: string, srcRoot: string, entryIds?: It
   if (!sidecar && delegatedComponentEntryIds.has(normalizeFsResolvedId(id))) {
     return false
   }
+  const nativeComponentSource = sidecar?.kind === 'script'
+    ? undefined
+    : getNativeComponentSidecarSource(id, srcRoot, entryIds)
   const sourceId = sidecar?.kind === 'script'
     ? sidecar.sourceId
-    : getNativeComponentSidecarSource(id, srcRoot, entryIds) ?? (id.includes('?') ? undefined : id)
+    : nativeComponentSource ?? (id.includes('?') ? undefined : id)
   if (!sourceId) {
     return false
   }
-  const normalizedSourceId = normalizeFsResolvedId(sourceId)
-  const normalizedSrcRoot = normalizeFsResolvedId(srcRoot).replace(/\/$/, '')
+  // 原生组件摘要已解析物理路径，根目录和入口也必须使用同一身份；普通模块保持原有快路径。
+  const normalizeBoundaryId = nativeComponentSource ? normalizeSourceId : normalizeFsResolvedId
+  const normalizedSourceId = nativeComponentSource ?? normalizeFsResolvedId(sourceId)
+  const normalizedSrcRoot = normalizeBoundaryId(srcRoot).replace(/\/$/, '')
   if (
     !normalizedSourceId.startsWith(`${normalizedSrcRoot}/`)
     || !/\.(?:[cm]?[jt]sx?|vue)$/.test(normalizedSourceId)
@@ -32,7 +38,7 @@ export function isStatefulHmrBoundary(id: string, srcRoot: string, entryIds?: It
     return true
   }
   for (const entryId of entryIds) {
-    if (normalizeFsResolvedId(entryId) === normalizedSourceId) {
+    if (normalizeBoundaryId(entryId) === normalizedSourceId) {
       return true
     }
   }

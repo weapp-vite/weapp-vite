@@ -116,7 +116,7 @@ export async function emitCompiledVueEntryAssets(
   filename: string,
   cached: CompilationCacheEntry,
 ) {
-  const { ctx, pluginCtx, reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache, componentMetaCache } = state
+  const { ctx, pluginCtx, reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache, componentMetaCache, nativeSlotContextCache } = state
   const { configService } = ctx
   if (!configService) {
     return
@@ -127,6 +127,7 @@ export async function emitCompiledVueEntryAssets(
     classStyleRuntimeWarned,
     compileOptionsCache,
     componentMetaCache,
+    nativeSlotContextCache,
     emitResolvedComponentEntries: false,
   }
   const {

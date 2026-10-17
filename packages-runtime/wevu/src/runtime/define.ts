@@ -271,10 +271,6 @@ function createComponentDefinition(
           }
         : setData
   const resolvedSetData = resolveScopedSlotHostSetData(mpOptions, rawResolvedSetData)
-  const setupFunctionPropKeys = new Set(
-    functionPropPaths
-      .filter(path => !path.includes('.')),
-  )
 
   const normalizedMpOptions = normalizeProps(mpOptions, props, mpOptions.properties)
   const initialDataContext = resolveInitialDataContext(normalizedMpOptions.properties, methods)
@@ -290,9 +286,6 @@ function createComponentDefinition(
       }
       const publicInstance = (ctx as any)?.proxy ?? (ctx as any)?.instance ?? Object.create(null)
       const injected = resolveOptionsApiInjections(injectOptions, publicInstance)
-      if (provideOptions != null) {
-        applyOptionsApiProvide(provideOptions, publicInstance)
-      }
       const setupResult = typeof setup === 'function'
         ? runSetupFunction(setup as any, props as Record<string, any>, ctx as any) as Record<string, any> | void
         : undefined
@@ -301,12 +294,11 @@ function createComponentDefinition(
         ...(cssModules ?? {}),
       }, setupResult)
       if (ctx && Object.keys(result).length) {
-        applySetupResult((ctx as any).runtime, (ctx as any).instance, result, {
-          includeFunctionsInState: allowFunctionProps === true,
-          functionPropPaths: allowFunctionProps === false ? undefined : setupFunctionPropKeys,
-        })
+        applySetupResult(ctx.runtime, ctx.instance, result)
       }
-      return result
+      if (provideOptions != null) {
+        applyOptionsApiProvide(provideOptions, publicInstance)
+      }
     }) satisfies DefineComponentOptions<ComponentPropsOptions, any, any, any, any>['setup']
     : undefined
 

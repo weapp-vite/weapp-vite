@@ -2,12 +2,15 @@ import type { Plugin } from 'vite'
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
+import type { ReExportResolutionCache } from '../../../../utils/reExport'
 import type { createPageEntryMatcher } from '../../../wevu'
 import type { ResolvedAppShell } from '../appShell'
 import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import { fs } from '@weapp-core/shared/fs'
 import { parseSidecarSourceMetadata } from '../../../../moduleGraph/protocol'
+import { normalizeSourceId } from '../../../../moduleGraph/traversal'
 import { createHmrProfileEventId, recordHmrProfileDuration, recordHmrProfileOperation } from '../../../../utils/hmrProfile'
+import { withRealpathScope } from '../../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { VUE_PLUGIN_NAME } from '../../index'
@@ -52,8 +55,12 @@ export function invalidateComponentMetaCache(
   componentMetaCache: NonNullable<CompileVueFileResolvedOptions['componentMetaCache']>,
   id: string,
 ) {
-  componentMetaCache.delete(id)
-  componentMetaCache.delete(normalizeFsResolvedId(id))
+  const sourceId = normalizeSourceId(id)
+  for (const key of componentMetaCache.keys()) {
+    if (normalizeSourceId(key) === sourceId) {
+      componentMetaCache.delete(key)
+    }
+  }
 }
 
 export function createVueTransformPlugin(ctx: CompilerContext, options: { react?: boolean } = {}): Plugin {
@@ -62,9 +69,10 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
   let scanDirtySynced = false
   let isBundledDev = false
-  const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
+  const reExportResolutionCache: ReExportResolutionCache = new Map()
   const compileOptionsCache = new Map<string, CompileVueFileResolvedOptions>()
   const componentMetaCache: NonNullable<CompileVueFileResolvedOptions['componentMetaCache']> = new Map()
+  const nativeSlotContextCache: NonNullable<CompileVueFileResolvedOptions['nativeSlotContextCache']> = new Map()
   const styleBlocksCache = new Map<string, SFCStyleBlock[]>()
   const styleRefreshTokens = new Map<string, number | string>()
   const scopedSlotModules = new Map<string, string>()
@@ -75,6 +83,8 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     // 编译选项包含 warn/resolve/emitFile，生命周期只能到当前 bundle 结束。
     compileOptionsCache.clear()
     componentMetaCache.clear()
+    nativeSlotContextCache.clear()
+    reExportResolutionCache.clear()
     pageMatcher = null
     scanDirtySynced = false
   }
@@ -95,24 +105,35 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
   }
 
   function invalidateSourceFile(file: string) {
-    const normalizedId = normalizeFsResolvedId(file)
-    invalidateComponentMetaCache(componentMetaCache, normalizedId)
-    invalidateExternalSfcCompilation(normalizedId, compilationCache)
-    const isLayout = handleTransformLayoutInvalidation(normalizedId, {
-      configService: ctx.configService,
-      compilationCache,
-      styleBlocksCache,
-      styleRefreshTokens,
-      isLayoutFile,
-      invalidateResolvedPageLayoutsCache,
+    return withRealpathScope(() => {
+      const normalizedId = normalizeFsResolvedId(file)
+      invalidateComponentMetaCache(componentMetaCache, normalizedId)
+      const sourceId = normalizeSourceId(file)
+      for (const key of nativeSlotContextCache.keys()) {
+        if (normalizeSourceId(key) === sourceId) {
+          nativeSlotContextCache.delete(key)
+        }
+      }
+      for (const dependency of invalidateExternalSfcCompilation(normalizedId, compilationCache, ctx.moduleGraphService)) {
+        componentMetaCache.delete(dependency)
+        nativeSlotContextCache.delete(dependency)
+      }
+      const isLayout = handleTransformLayoutInvalidation(normalizedId, {
+        configService: ctx.configService,
+        compilationCache,
+        styleBlocksCache,
+        styleRefreshTokens,
+        isLayoutFile,
+        invalidateResolvedPageLayoutsCache,
+      })
+      const isVue = handleTransformVueFileInvalidation(normalizedId, {
+        compilationCache,
+        styleBlocksCache,
+        styleRefreshTokens,
+        existsSync: fs.existsSync,
+      })
+      return isLayout || isVue
     })
-    const isVue = handleTransformVueFileInvalidation(normalizedId, {
-      compilationCache,
-      styleBlocksCache,
-      styleRefreshTokens,
-      existsSync: fs.existsSync,
-    })
-    return isLayout || isVue
   }
 
   return {
@@ -134,6 +155,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
       emittedScopedSlotChunks.clear()
       compileOptionsCache.clear()
       componentMetaCache.clear()
+      nativeSlotContextCache.clear()
 
       updateAppShell(await resolveAppShellForCompilation(ctx, this))
       await preloadNativeLayoutEntries({
@@ -211,6 +233,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
           reExportResolutionCache,
           compileOptionsCache,
           componentMetaCache,
+          nativeSlotContextCache,
           styleBlocksCache,
           styleRefreshTokens,
           scopedSlotModules,
@@ -237,6 +260,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
         reExportResolutionCache,
         compileOptionsCache,
         componentMetaCache,
+        nativeSlotContextCache,
         classStyleRuntimeWarned,
       })
     },

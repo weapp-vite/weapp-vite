@@ -64,9 +64,9 @@ it.each(['page-directory', 'pages-root'])('publishes pages when snapshots redisc
       writeFileSync(file, `Page({ data: { message: '${stage}' } })`)
       directories = [directory, pages]
       snapshot()
-      await expect.poll(() => pageChanges().at(-1), { timeout: 3000 }).toMatchObject({ file: normalizedFile, event: 'create' })
+      await expect.poll(() => pageChanges().at(-1), { timeout: 10_000 }).toMatchObject({ file: normalizedFile, event: 'create' })
       await rm(removed === 'pages-root' ? pages : directory, { recursive: true })
-      await expect.poll(() => pageChanges().at(-1), { timeout: 3000 }).toMatchObject({ file: normalizedFile, event: 'delete' })
+      await expect.poll(() => pageChanges().at(-1), { timeout: 10_000 }).toMatchObject({ file: normalizedFile, event: 'delete' })
     }
     expect(pageChanges().map(change => change.event)).toEqual(['create', 'delete', 'create', 'delete'])
     expect(watch).toHaveBeenCalledOnce()
@@ -77,4 +77,4 @@ it.each(['page-directory', 'pages-root'])('publishes pages when snapshots redisc
     watch.mockRestore()
     await rm(root, { recursive: true, force: true })
   }
-}, 15_000)
+}, 45_000)

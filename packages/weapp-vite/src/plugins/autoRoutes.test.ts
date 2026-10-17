@@ -1,4 +1,4 @@
-import type { HmrContext, Plugin, PluginContext, ResolvedConfig, ViteDevServer } from 'vite'
+import type { HotUpdateOptions, Plugin, PluginContext, ResolvedConfig, ViteDevServer } from 'vite'
 import chokidar from 'chokidar'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -110,6 +110,14 @@ function createPlugin(overrides: Record<string, unknown> = {}) {
     packageRoot: ctx.configService.packageInfo.rootPath,
     ctx,
   }
+}
+
+async function runHotUpdate(plugin: Plugin, context: Partial<HotUpdateOptions>, environment = 'client') {
+  const hook = typeof plugin.hotUpdate === 'function' ? plugin.hotUpdate : plugin.hotUpdate!.handler
+  return await hook.call({ environment: { name: environment, moduleGraph: context.server?.moduleGraph } } as any, {
+    type: 'update',
+    ...context,
+  } as HotUpdateOptions)
 }
 
 describe('auto-routes plugin alias fallback', () => {
@@ -728,7 +736,6 @@ describe('auto-routes plugin alias fallback', () => {
     const {
       plugin,
       getPageDeclarationOwners,
-      handleFileChange,
       isRouteFile,
     } = createPlugin()
     isRouteFile.mockImplementation((id: string) => id === externalPageScript)
@@ -739,7 +746,7 @@ describe('auto-routes plugin alias fallback', () => {
       command: 'serve',
     } as unknown as ResolvedConfig)
 
-    const result = await plugin.handleHotUpdate?.({
+    const result = await runHotUpdate(plugin, {
       file: externalPageScript,
       modules: [],
       server: {
@@ -751,10 +758,8 @@ describe('auto-routes plugin alias fallback', () => {
           }),
         },
       },
-    } as unknown as HmrContext)
+    } as unknown as HotUpdateOptions)
 
-    expect(handleFileChange).toHaveBeenCalledTimes(1)
-    expect(handleFileChange).toHaveBeenCalledWith(externalPageScript, 'update')
     expect(result).toEqual([virtualModule, ...ownerModules])
   })
 
@@ -910,12 +915,79 @@ describe('auto-routes plugin alias fallback', () => {
     expect(handleFileChange).not.toHaveBeenCalledWith('C:\\virtual\\project\\src\\components\\card\\index.ts', 'rename')
   })
 
-  it('handleHotUpdate returns virtual module for route file updates in serve mode and filters fallback in build mode', async () => {
+  it('reloads the first discovered Web route without virtual imports and preserves repeated-snapshot HMR', async () => {
+    const appEntry = '/virtual/project/src/app.vue'
+    const entryModule = { id: 'virtual:web-entry', importers: new Set() }
+    const appModule = { id: appEntry, importers: new Set([entryModule]) }
+    const { plugin, isRouteFile, handleFileChange } = createPlugin({ scanService: { appEntry: { path: appEntry } } })
+    const createdPage = '/virtual/project/src/pages/new/index.vue'
+    isRouteFile.mockImplementation(file => file === createdPage)
+    handleFileChange.mockResolvedValueOnce(true).mockResolvedValue(false)
+    const emit = vi.fn()
+    const server = {
+      moduleGraph: { getModuleById: vi.fn(() => undefined), invalidateModule: vi.fn() },
+      watcher: { emit },
+    }
+    plugin.configResolved?.({ command: 'serve', weappVite: { runtime: 'web' } } as any)
+    plugin.configureServer?.(server as any)
+    await plugin.buildStart?.call({ meta: { watchMode: true }, addWatchFile: vi.fn() } as any)
+    const watcher = chokidarWatchMock.mock.results.at(-1)!.value
+    const addHandler = watcher.on.mock.calls.find(([event]: [string]) => event === 'add')![1]
+    const context = { file: appEntry, modules: [appModule], server } as unknown as HotUpdateOptions
+
+    await plugin.watchChange?.(createdPage, { event: 'create' } as any)
+    addHandler(createdPage)
+    await vi.waitFor(() => expect(emit).toHaveBeenCalledWith('change', appEntry))
+    expect(await runHotUpdate(plugin, context)).toEqual([entryModule, appModule])
+
+    emit.mockClear()
+    handleFileChange.mockResolvedValue(true)
+    addHandler('/virtual/project/src/pages/new/index.vue')
+    await vi.waitFor(() => expect(emit).toHaveBeenCalledWith('change', appEntry))
+    expect(await runHotUpdate(plugin, context)).toEqual([appModule])
+    await plugin.closeBundle?.()
+  })
+
+  it.each(['create', 'delete'] as const)('defers Web route %s only while its route watcher owns publication', async (type) => {
+    const { plugin, ctx, getWatchDirectories, isRouteFile } = createPlugin()
+    plugin.configResolved?.({ command: 'serve', weappVite: { runtime: 'web' } } as any)
+    const context = { type, file: '/virtual/project/src/pages/profile/index.vue', modules: [] }
+    isRouteFile.mockImplementation((file: string) => file === context.file)
+    expect(await runHotUpdate(plugin, context)).toBeUndefined()
+
+    getWatchDirectories.mockReturnValue(['/virtual/project/src/pages'])
+    await plugin.buildStart?.call({ meta: { watchMode: false } } as any)
+    expect(await runHotUpdate(plugin, context)).toEqual([])
+    expect(await runHotUpdate(plugin, context, 'ssr')).toBeUndefined()
+    expect(await runHotUpdate(plugin, { ...context, file: '/virtual/project/src/components/card.vue' })).toBeUndefined()
+
+    ctx.configService.weappViteConfig.autoRoutes = false
+    expect(await runHotUpdate(plugin, context)).toBeUndefined()
+    ctx.configService.weappViteConfig.autoRoutes = true
+    await plugin.closeBundle?.()
+    expect(await runHotUpdate(plugin, context)).toBeUndefined()
+  })
+
+  it.each(['create', 'delete'] as const)('preserves Vite %s recovery for non-route modules under a selective include watch root', async (type) => {
+    const { plugin, ctx, getWatchDirectories } = createPlugin()
+    ctx.configService.weappViteConfig.autoRoutes = { include: /^pages\/.*\/index$/ }
+    plugin.configResolved?.({ command: 'serve', weappVite: { runtime: 'web' } } as any)
+    getWatchDirectories.mockReturnValue(['/virtual/project/src'])
+    await plugin.buildStart?.call({ meta: { watchMode: false } } as any)
+
+    expect(await runHotUpdate(plugin, {
+      type,
+      file: '/virtual/project/src/components/widget.ts',
+      modules: [{ id: '/virtual/project/src/app.ts' }] as any,
+    })).toBeUndefined()
+    await plugin.closeBundle?.()
+  })
+
+  it('returns virtual modules for route updates and filters fallback modules in build mode', async () => {
     const virtualModule = { id: '\0weapp-vite:auto-routes' }
     const {
       plugin,
       isRouteFile,
-      handleFileChange,
     } = createPlugin()
 
     plugin.configResolved?.({
@@ -923,7 +995,7 @@ describe('auto-routes plugin alias fallback', () => {
     } as any)
     isRouteFile.mockImplementation((id: string) => id.endsWith('/pages/home/index.ts'))
 
-    const served = await plugin.handleHotUpdate?.({
+    const served = await runHotUpdate(plugin, {
       file: '/virtual/project/src/pages/home/index.ts',
       server: {
         moduleGraph: {
@@ -932,11 +1004,9 @@ describe('auto-routes plugin alias fallback', () => {
       },
       modules: [],
     } as any)
-    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/home/index.ts', 'update')
     expect(served).toEqual([virtualModule])
 
-    handleFileChange.mockClear()
-    const ignoredServeUpdate = await plugin.handleHotUpdate?.({
+    const ignoredServeUpdate = await runHotUpdate(plugin, {
       file: '/virtual/project/src/pages/home/style.scss',
       server: {
         moduleGraph: {
@@ -946,14 +1016,13 @@ describe('auto-routes plugin alias fallback', () => {
       modules: [],
     } as any)
     expect(ignoredServeUpdate).toBeUndefined()
-    expect(handleFileChange).not.toHaveBeenCalled()
 
     plugin.configResolved?.({
       command: 'build',
     } as any)
     isRouteFile.mockImplementation((id: string) => id.endsWith('app.json'))
 
-    const buildFiltered = await plugin.handleHotUpdate?.({
+    const buildFiltered = await runHotUpdate(plugin, {
       file: '/virtual/project/src/app.json',
       server: {
         moduleGraph: {
@@ -978,7 +1047,7 @@ describe('auto-routes plugin alias fallback', () => {
     } as any)
     isRouteFile.mockReturnValue(true)
 
-    const result = await plugin.handleHotUpdate?.({
+    const result = await runHotUpdate(plugin, {
       file: '/virtual/project/src/pages/home/index.vue',
       server: {
         moduleGraph: {
@@ -988,18 +1057,17 @@ describe('auto-routes plugin alias fallback', () => {
       modules: [],
     } as any)
 
-    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/home/index.vue', 'update')
     expect(result).toBeUndefined()
   })
 
-  it('returns undefined for unrelated handleHotUpdate files', async () => {
-    const { plugin, isRouteFile, handleFileChange } = createPlugin()
+  it('leaves unrelated hot-update files to Vite', async () => {
+    const { plugin, isRouteFile } = createPlugin()
     plugin.configResolved?.({
       command: 'serve',
     } as any)
     isRouteFile.mockReturnValue(false)
 
-    const result = await plugin.handleHotUpdate?.({
+    const result = await runHotUpdate(plugin, {
       file: '/virtual/project/src/components/card/index.ts',
       server: {
         moduleGraph: {
@@ -1010,6 +1078,5 @@ describe('auto-routes plugin alias fallback', () => {
     } as any)
 
     expect(result).toBeUndefined()
-    expect(handleFileChange).not.toHaveBeenCalled()
   })
 })

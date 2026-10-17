@@ -173,7 +173,7 @@ describe('load entry identity scope', () => {
     expect(resolveLoadEntryIdentity(coreState(state), request).physicalSourceId).toBe(second)
   })
 
-  it('retries a missing selected source after it is created behind a junction', async () => {
+  it('refreshes a selected source through creation and junction retargeting', async () => {
     const project = path.join(root, 'project')
     const link = path.join(root, 'workspace')
     await mkdir(project)
@@ -183,10 +183,26 @@ describe('load entry identity scope', () => {
     state.ctx.configService.weappViteConfig.autoRoutes.extensions = ['ts']
     state.ctx.runtimeState.autoRoutes.pageSourceFiles.add(request)
 
-    expect(resolveLoadEntryIdentity(coreState(state), request).physicalSourceId).toBe(request)
+    // 缺失源码仍保留路由选择；物理身份可由已存在的父目录规范化。
+    expect(resolveLoadEntryIdentity(coreState(state), request)).toMatchObject({
+      selectedPageSource: request,
+      isSelectedPageSource: true,
+    })
     const physical = normalizeSourceId(await source('project/later.ts'))
-    expect(physical).not.toBe(request)
-    expect(resolveLoadEntryIdentity(coreState(state), request).physicalSourceId).toBe(physical)
+    expect(resolveLoadEntryIdentity(coreState(state), request)).toMatchObject({
+      physicalSourceId: physical,
+      selectedPageSource: request,
+      isSelectedPageSource: true,
+    })
+
+    const retargeted = normalizeSourceId(await source('replacement/later.ts'))
+    await unlink(link)
+    await symlink(path.dirname(retargeted), link, 'junction')
+    expect(resolveLoadEntryIdentity(coreState(state), request)).toMatchObject({
+      physicalSourceId: retargeted,
+      selectedPageSource: request,
+      isSelectedPageSource: true,
+    })
   })
 
   it('releases the identity scope before calling the asynchronous entry loader', async () => {

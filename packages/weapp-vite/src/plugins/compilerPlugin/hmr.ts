@@ -1,9 +1,9 @@
 import type { CompilerContext } from '../../context'
 import type { CompilerRawBinding, CompilerRawRead } from './rawInputs'
-import path from 'node:path'
 import { HmrCompilerHost } from '@weapp-vite/hmr'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
-import { resolveRealpath, withRealpathScope } from '../../utils/realpathScope'
+import { normalizeSourceId } from '../../moduleGraph/traversal'
+import { withRealpathScope } from '../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { captureCompilerRawBinding } from './rawInputs'
 
@@ -25,20 +25,7 @@ export function getCompilerRawSnapshot(sources: ReadonlyMap<string, string | nul
 
 /** 统一扫描器与模块图中的符号链接身份，删除事件沿用父目录的真实路径。 */
 export function compilerSourceId(id: string): string {
-  if (!path.isAbsolute(id) && path.win32.isAbsolute(id)) {
-    return normalizeFsResolvedId(id)
-  }
-  try {
-    return normalizeFsResolvedId(resolveRealpath(id))
-  }
-  catch {
-    try {
-      return normalizeFsResolvedId(path.join(resolveRealpath(path.dirname(id)), path.basename(id)))
-    }
-    catch {
-      return normalizeFsResolvedId(id)
-    }
-  }
+  return normalizeSourceId(id)
 }
 
 export class CompilerHmrHost extends HmrCompilerHost {

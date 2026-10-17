@@ -2,6 +2,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
   WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY,
   WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY,
+  WEVU_NATIVE_DECLARATION_METHOD,
 } from '@weapp-core/constants'
 import { devtoolsTemplateCacheSource } from './devtoolsTemplateCache'
 import { nativeInstanceDefaultsSource } from './nativeInstanceDefaults'
@@ -425,6 +426,12 @@ globalThis[bridgeKey] = {
     const moduleId = runtime.currentModuleId || runtime.registrationModuleId || 'Component';
     if (!runtime.applyingPatch && runtime.patchedModules.has(moduleId)) {
       return decorateWevuComponent(definition, moduleId);
+    }
+    const previous = definitions.get(moduleId);
+    if (runtime.applyingPatch && previous
+      && (typeof previous.methods?.[${JSON.stringify(WEVU_NATIVE_DECLARATION_METHOD)}] === 'function')
+        !== (typeof definition.methods?.[${JSON.stringify(WEVU_NATIVE_DECLARATION_METHOD)}] === 'function')) {
+      throw new Error('Native slot context participation changed; a full rebuild is required for native component registration.');
     }
     definitions.set(moduleId, definition);
     if (typeof refresh === 'function') wevuRefreshes.set(moduleId, refresh);
