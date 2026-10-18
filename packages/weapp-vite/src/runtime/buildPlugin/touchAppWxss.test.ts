@@ -2,7 +2,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fs } from '@weapp-core/shared/fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { touchExistingAppStyle } from './touchAppWxss'
+import { touchExistingAppStyle, touchExistingOutputStyles } from './touchAppWxss'
 
 describe('existing app style refresh', () => {
   const roots: string[] = []
@@ -42,5 +42,31 @@ describe('existing app style refresh', () => {
     vi.spyOn(fs, 'utimes').mockRejectedValue(failure)
     await expect(touchExistingAppStyle(output)).rejects.toBe(failure)
     expect(await fs.readFile(output, 'utf8')).toBe('complete original styles')
+  })
+
+  it('touches only published page and component styles, leaving app wxss to its own policy', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-style-refresh-'))
+    roots.push(root)
+    const page = path.join(root, 'pages/home/index.wxss')
+    const component = path.join(root, 'components/card/index.wxss')
+    const app = path.join(root, 'app.wxss')
+    await Promise.all([
+      fs.outputFile(page, '.page {}'),
+      fs.outputFile(component, '.card {}'),
+      fs.outputFile(app, '.app {}'),
+    ])
+    const before = await Promise.all([fs.stat(page), fs.stat(component), fs.stat(app)])
+    await new Promise(resolve => setTimeout(resolve, 5))
+    const touched = await touchExistingOutputStyles(root, [
+      'pages/home/index.wxss',
+      'components\\card\\index.wxss',
+      'app.wxss',
+      'pages/home/index.js',
+    ], 'wxss')
+    const after = await Promise.all([fs.stat(page), fs.stat(component), fs.stat(app)])
+    expect([...touched].sort()).toEqual([page, component].sort())
+    expect(after[0].mtimeMs).toBeGreaterThan(before[0].mtimeMs)
+    expect(after[1].mtimeMs).toBeGreaterThan(before[1].mtimeMs)
+    expect(after[2].mtimeMs).toBe(before[2].mtimeMs)
   })
 })

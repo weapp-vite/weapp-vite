@@ -74,7 +74,7 @@ import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shoul
 import { assertPluginProjectOutput, createPluginProjectSession, isPluginProjectClosing, runPluginProjectRestart, setPluginProjectBuildOptions } from './pluginProject'
 import { createSnapshotBuildConfig } from './snapshotConfig'
 import { refreshSnapshotSources } from './snapshotSources'
-import { resolveTouchAppWxssEnabled, touchExistingAppStyle } from './touchAppWxss'
+import { resolveTouchAppWxssEnabled, touchExistingAppStyle, touchExistingOutputStyles } from './touchAppWxss'
 import { withVueStyleDependencySnapshot } from './vueStyleSnapshot'
 import { observeWorkerSources, ownsWorkerSource } from './workerPlan'
 import { checkWorkersOptions } from './workers'
@@ -2128,6 +2128,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             })
             logger.success(formatHmrLogLine(durationMs))
             shouldLogSlowHmrTip()
+            const { styleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
+            const emittedStyleSuffix = `.${styleExtension.replace(/^\./, '')}`
+            const emittedStyleFiles = Array.from(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames)
+              .filter((fileName) => {
+                const normalized = fileName.replaceAll('\\', '/')
+                return normalized.endsWith(emittedStyleSuffix) && normalized !== `app${emittedStyleSuffix}`
+              })
+            if (emittedStyleFiles.length > 0) {
+              await touchExistingOutputStyles(configService.outDir, emittedStyleFiles, styleExtension)
+            }
             if (appWxssPath && shouldTouchAppWxss()) {
               await touchExistingAppStyle(appWxssPath)
             }

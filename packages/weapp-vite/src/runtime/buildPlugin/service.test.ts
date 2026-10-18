@@ -47,6 +47,7 @@ const syncProjectConfigToOutputMock = vi.hoisted(() => vi.fn(async () => {}))
 const generateLibDtsMock = vi.hoisted(() => vi.fn(async () => {}))
 const createSharedBuildConfigMock = vi.hoisted(() => vi.fn(() => ({ shared: true })))
 const touchMock = vi.hoisted(() => vi.fn(async () => {}))
+const touchOutputStylesMock = vi.hoisted(() => vi.fn(async () => new Set<string>()))
 const checkWorkersOptionsMock = vi.hoisted(() => vi.fn())
 const loggerInfoMock = vi.hoisted(() => vi.fn())
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
@@ -185,6 +186,7 @@ vi.mock('../sharedBuildConfig', () => ({
 vi.mock('./touchAppWxss', async importOriginal => ({
   ...await importOriginal<typeof import('./touchAppWxss')>(),
   touchExistingAppStyle: touchMock,
+  touchExistingOutputStyles: touchOutputStylesMock,
 }))
 
 vi.mock('./workers', () => ({
@@ -1124,6 +1126,31 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.runtimeState.build.npmBuilt).toBe(true)
     expect(touchMock).not.toHaveBeenCalled()
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(expect.any(Object), '/')
+  })
+
+  it('touches the page stylesheet emitted by an asset-only rebuild', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+    await flushAsyncTasks()
+
+    ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.add('pages/logs/index.wxss')
+    watcher.emit('START')
+    watcher.emit('END')
+    await waitForMockCalls(touchOutputStylesMock, 1)
+
+    expect(touchOutputStylesMock).toHaveBeenCalledWith(
+      '/project/dist',
+      ['pages/logs/index.wxss'],
+      'wxss',
+    )
   })
 
   it.each([false, true])('keeps one Tailwind output refresh owner when managed=%s', async (managed) => {
