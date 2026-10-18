@@ -37,6 +37,7 @@ import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../utils/sourcemap'
 import { bindHostLifecycle } from '../../vite/lifecycle'
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
+import { touchExistingOutputStyles } from '../buildPlugin/touchAppWxss'
 import { watchAssetSources } from '../watch/assets'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
 import { installIdeAssetWatch } from './assetWatch'
@@ -967,6 +968,13 @@ class StatefulHmrSession {
     const commitOwnership = prepareOutputOwnership(this.ctx, outDir, output.map(item => item.fileName), !replaceOwnership, removedAssets, 'stateful-hmr')
     const write = async () => {
       await writeStatefulHmrOutput(outDir, output, initialPublicAssets, removedAssets)
+      if (kind === 'refresh') {
+        await touchExistingOutputStyles(
+          outDir,
+          output.map(item => item.fileName),
+          resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
+        )
+      }
       await commitOwnership()
     }
     const pending = this.diagnostics ? this.diagnostics.write({ kind, batchId }, output, write) : write()

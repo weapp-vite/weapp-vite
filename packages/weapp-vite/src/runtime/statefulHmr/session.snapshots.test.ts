@@ -49,6 +49,11 @@ const harness = vi.hoisted(() => ({
   markPayloadDelivered: vi.fn<(filename: string) => Promise<void>>(),
   closeAdapter: vi.fn<() => Promise<void>>(),
   closeServer: vi.fn<() => Promise<void>>(),
+  touchExistingOutputStyles: vi.fn<(
+    outDir: string,
+    fileNames: Iterable<string>,
+    styleExtension: string,
+  ) => Promise<Set<string>>>(),
 }))
 
 vi.mock('vite', async importOriginal => ({
@@ -56,6 +61,7 @@ vi.mock('vite', async importOriginal => ({
   createServer: harness.createServer,
 }))
 vi.mock('./outputWriter', () => ({ writeStatefulHmrOutput: harness.writeOutput }))
+vi.mock('../buildPlugin/touchAppWxss', () => ({ touchExistingOutputStyles: harness.touchExistingOutputStyles }))
 vi.mock('../../plugins/asset/prune', () => ({ pruneOwnedAssetFiles: vi.fn(async () => {}) }))
 vi.mock('./viteAdapter', () => ({
   StatefulHmrViteAdapter: class {
@@ -203,6 +209,20 @@ function writtenAssets() {
 }
 
 describe('stateful snapshot output transactions', () => {
+  it('touches refreshed stylesheet outputs after the atomic write', async () => {
+    const session = await start()
+    session.rebuild.mockResolvedValue(snapshot('blue'))
+
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(harness.touchExistingOutputStyles).toHaveBeenCalledOnce()
+    const [outDir, fileNames, styleExtension] = harness.touchExistingOutputStyles.mock.calls[0]!
+    expect(outDir).toBe(path.join(root, 'dist'))
+    expect([...fileNames]).toContain(`${route}.wxss`)
+    expect(styleExtension).toBe('wxss')
+  })
+
   it('keeps settlement pending through a debounced refresh and its final output write', async () => {
     const session = await start()
     const rebuilt = Promise.withResolvers<StatefulHmrSnapshot>()
@@ -602,6 +622,7 @@ describe('stateful snapshot output transactions', () => {
     harness.initialOutput = true
     harness.nativeSettlement.mockReset().mockResolvedValue()
     harness.writeOutput.mockReset().mockResolvedValue()
+    harness.touchExistingOutputStyles.mockReset().mockResolvedValue(new Set())
     harness.beforeInitialReady.mockReset().mockResolvedValue()
     harness.beforeFullPrepare.mockReset().mockResolvedValue()
     harness.registerBundleModules.mockReset().mockResolvedValue(1)
