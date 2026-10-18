@@ -70,6 +70,13 @@ async function recreateExistingStyle(filename: string) {
         moved = false
       }
       catch (restoreError) {
+        // 原生构建器可能在两次重命名之间接管并替换文件；此时临时文件
+        // 已被并发清理，保留宿主刚写入的文件并结束本轮触发即可。
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT'
+          && (restoreError as NodeJS.ErrnoException).code === 'ENOENT') {
+          moved = false
+          return false
+        }
         throw new AggregateError([error, restoreError], `无法恢复样式文件：${filename}`)
       }
     }

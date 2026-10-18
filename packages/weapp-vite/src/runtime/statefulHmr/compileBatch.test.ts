@@ -63,6 +63,26 @@ it('preserves frozen snapshot assets and releases preparations when a later tran
   expect(dispose).toHaveBeenCalledOnce()
 })
 
+it('keeps snapshot styles authoritative when compiler preparation also returns the same asset', async () => {
+  const result = await compile(
+    {
+      output: [{ type: 'asset', fileName: 'pages/imported/index.wxss', source: '.imported { color: #456; }' }],
+      componentPageGlobalStyleRoutes: [],
+      glassEaselAnalysisByOwner: new Map(),
+    },
+    {
+      assets: [{ fileName: 'pages/imported/index.wxss', code: '@import "../../styles/theme.wxss";' }],
+    },
+  )
+
+  expect(result.snapshot?.output).toEqual([{
+    type: 'asset',
+    fileName: 'pages/imported/index.wxss',
+    source: '.imported { color: #456; }',
+  }])
+  await result.dispose()
+})
+
 it('attributes sequential preparation work to the captured input without changing the snapshot', async () => {
   let now = 10
   vi.spyOn(performance, 'now').mockImplementation(() => now)

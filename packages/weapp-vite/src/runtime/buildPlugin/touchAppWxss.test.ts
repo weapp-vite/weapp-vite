@@ -4,6 +4,14 @@ import { fs } from '@weapp-core/shared/fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { touchExistingAppStyle, touchExistingOutputStyles } from './touchAppWxss'
 
+const renameMock = vi.hoisted(() => vi.fn())
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
+  renameMock.mockImplementation(actual.rename)
+  return { ...actual, rename: renameMock }
+})
+
 describe('existing app style refresh', () => {
   const roots: string[] = []
 
@@ -72,5 +80,25 @@ describe('existing app style refresh', () => {
     expect(await fs.readFile(component, 'utf8')).toBe('.card {}')
     const remainingTemporaryFiles = (await fs.readdir(root)).filter(file => file.includes('.weapp-vite-style-'))
     expect(remainingTemporaryFiles).toEqual([])
+  })
+
+  it('survives a host replacement between the atomic rename steps', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-style-refresh-race-'))
+    roots.push(root)
+    const page = path.join(root, 'pages/home/index.wxss')
+    await fs.outputFile(page, '.page { color: red; }')
+    const enoent = Object.assign(new Error('style was replaced'), { code: 'ENOENT' })
+    const defaultRename = renameMock.getMockImplementation()!
+    renameMock
+      .mockImplementationOnce(defaultRename)
+      .mockImplementationOnce(async () => {
+        await fs.writeFile(page, '.page { color: blue; }')
+        throw enoent
+      })
+      .mockRejectedValueOnce(enoent)
+
+    await expect(touchExistingOutputStyles(root, ['pages/home/index.wxss'], 'wxss')).resolves.toEqual(new Set([page]))
+    expect(await fs.readFile(page, 'utf8')).toBe('.page { color: blue; }')
+    expect((await fs.readdir(path.join(root, 'pages/home'))).some(file => file.includes('.weapp-vite-style-'))).toBe(false)
   })
 })

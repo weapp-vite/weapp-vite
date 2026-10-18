@@ -64,11 +64,14 @@ export async function compileHmrBatch(options: CompileHmrBatchOptions) {
     const snapshot = builtSnapshot ? { ...builtSnapshot, output: [...builtSnapshot.output] } : undefined
     if (snapshot && compilerAssets.length) {
       const styleExtension = resolveOutputExtensions(ctx.configService.outputExtensions).styleExtension
-      const styles = compilerAssets.filter(asset => asset.fileName.endsWith(`.${styleExtension}`))
-      snapshot.output = [
-        ...snapshot.output.filter(asset => !styles.some(style => style.fileName === asset.fileName)),
-        ...styles.map(asset => ({ type: 'asset' as const, fileName: asset.fileName, source: asset.code })),
-      ]
+      const snapshotFileNames = new Set(snapshot.output.map(asset => asset.fileName))
+      const styles = compilerAssets.filter(asset => asset.fileName.endsWith(`.${styleExtension}`) && !snapshotFileNames.has(asset.fileName))
+      if (styles.length) {
+        snapshot.output = [
+          ...snapshot.output,
+          ...styles.map(asset => ({ type: 'asset' as const, fileName: asset.fileName, source: asset.code })),
+        ]
+      }
     }
     if (snapshot) {
       profile?.begin('template-transform')
