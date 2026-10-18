@@ -1,4 +1,6 @@
 import type { MpPlatform } from '../../types'
+import { randomUUID } from 'node:crypto'
+import { rename } from 'node:fs/promises'
 import { supportsMiniProgramAutoTouchAppStyle } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
@@ -46,10 +48,48 @@ export async function touchExistingAppStyle(filename: string) {
 }
 
 /**
+ * 通过同目录原子重命名重新发出宿主文件事件，同时保留 bundler 已写入的内容。
+ *
+ * 微信开发者工具对部分 WXSS 只更新时间戳不会重新构建 CSSOM；临时文件与目标
+ * 文件位于同一目录，避免跨设备复制，也不在这里生成或改写构建内容。
+ */
+async function recreateExistingStyle(filename: string) {
+  const temporary = `${filename}.weapp-vite-style-${randomUUID()}.tmp`
+  let moved = false
+  try {
+    await rename(filename, temporary)
+    moved = true
+    await rename(temporary, filename)
+    moved = false
+    return await touchExistingAppStyle(filename)
+  }
+  catch (error) {
+    if (moved) {
+      try {
+        await rename(temporary, filename)
+        moved = false
+      }
+      catch (restoreError) {
+        throw new AggregateError([error, restoreError], `无法恢复样式文件：${filename}`)
+      }
+    }
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return false
+    }
+    throw error
+  }
+  finally {
+    if (!moved) {
+      await fs.rm(temporary, { force: true }).catch(() => {})
+    }
+  }
+}
+
+/**
  * 让微信开发者工具重新读取本轮原生构建发布的样式资产。
  *
- * 原生 bundler 已经负责写入内容；这里仅更新已存在文件的元数据，避免
- * 直接写回构建产物，同时覆盖页面和分包样式（而不是只刷新 app.wxss）。
+ * 原生 bundler 已经负责写入内容；这里仅重新发布已存在文件，避免直接写回
+ * 构建产物，同时覆盖页面和分包样式（而不是只刷新 app.wxss）。
  */
 export async function touchExistingOutputStyles(
   outDir: string,
@@ -72,6 +112,6 @@ export async function touchExistingOutputStyles(
       files.add(target)
     }
   }
-  await Promise.all(Array.from(files, fileName => touchExistingAppStyle(fileName)))
+  await Promise.all(Array.from(files, fileName => recreateExistingStyle(fileName)))
   return files
 }
