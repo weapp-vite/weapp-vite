@@ -6,9 +6,13 @@ import { getNativeComponentSidecarSource } from './nativeComponentSidecar'
 export function isStatefulHmrBoundary(id: string, srcRoot: string, entryIds?: Iterable<string>, delegatedComponentEntryIds: ReadonlySet<string> = new Set()): boolean {
   const logicalEntry = parseLogicalEntryId(id)
   if (logicalEntry) {
-    return logicalEntry.type === 'component'
-      && delegatedComponentEntryIds.has(normalizeFsResolvedId(logicalEntry.sourceId))
-      && isStatefulHmrBoundary(logicalEntry.sourceId, srcRoot, entryIds)
+    if (logicalEntry.type === 'component') {
+      return delegatedComponentEntryIds.has(normalizeFsResolvedId(logicalEntry.sourceId))
+        && isStatefulHmrBoundary(logicalEntry.sourceId, srcRoot, entryIds)
+    }
+    // 页面、应用和布局 logical entry 是其物理执行入口的自接收边界；
+    // 组件仍需由 delegatedComponentEntryIds 显式授权，避免改变组件注册语义。
+    return isStatefulHmrBoundary(logicalEntry.sourceId, srcRoot, entryIds)
   }
   const sidecar = parseSidecarSourceRequest(id)
   // 组件源码仅导出 options 时，更新必须继续传播到实际执行注册的 logical entry。

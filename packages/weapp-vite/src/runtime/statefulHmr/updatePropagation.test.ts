@@ -85,6 +85,21 @@ describe('stateful HMR executed importer propagation', () => {
     expect(prepared.boundaries.map(item => item.boundary).sort()).toEqual(['left', 'right'])
   })
 
+  it('accepts updates at a root logical entry boundary', () => {
+    const { runtime, register } = fixture({ logicalPage: ['source'], source: [] })
+    register('source', 1)
+    register('logicalPage', 'page', hot => hot.accept())
+    runtime.initModule('source')
+    runtime.initModule('logicalPage')
+
+    const prepared = runtime.prepareUpdate(['source'])
+
+    expect(prepared.updateSet).toEqual(['source', 'logicalPage'])
+    expect(prepared.boundaries.map(({ boundary, acceptedVia }) => ({ boundary, acceptedVia }))).toEqual([
+      { boundary: 'logicalPage', acceptedVia: 'logicalPage' },
+    ])
+  })
+
   it('rejects missing factories before evicting any executed module', () => {
     const { runtime, register } = fixture({ owner: ['source'], source: [] })
     runtime.registerModule('source', { exports: 1 })

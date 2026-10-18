@@ -151,7 +151,7 @@ describe('Vue component dependency digests', () => {
       expect(script.accepted.has(childEntry)).toBe(true)
       expect(template.codes.get(digestId)).not.toBe(initial.codes.get(digestId))
       expect(template.accepted.has(digestId)).toBe(false)
-      expect(template.accepted.has(parentEntry)).toBe(false)
+      expect(template.accepted.has(parentEntry)).toBe(true)
     }
     finally {
       await rm(root, { recursive: true, force: true })

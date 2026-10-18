@@ -68,7 +68,7 @@ describe('native component HMR dependency boundaries', () => {
       expect(graph!.componentImports).toContain(component)
       expect(accepted.has(component)).toBe(true)
       expect(accepted.has(token)).toBe(true)
-      expect(accepted.has(parentEntry)).toBe(false)
+      expect(accepted.has(parentEntry)).toBe(true)
     }
     finally {
       await rm(root, { force: true, recursive: true })
