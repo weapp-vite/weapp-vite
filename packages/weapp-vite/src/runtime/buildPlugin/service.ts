@@ -45,6 +45,7 @@ import {
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
 import { isAppVueFile } from '../../plugins/vue/transform/appShell'
+import { changeFileExtension } from '../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration, resolveActiveHmrProfileJsonPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
@@ -2130,7 +2131,15 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             shouldLogSlowHmrTip()
             const { styleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
             const emittedStyleSuffix = `.${styleExtension.replace(/^\./, '')}`
-            const emittedStyleFiles = Array.from(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames)
+            const emittedStyleFileNames = new Set(ctx.runtimeState.build.hmr.lastEmittedChunkFileNames)
+            const profileFile = ctx.runtimeState.build.hmr.profile.file
+            const normalizedProfileFile = typeof profileFile === 'string' ? profileFile.replaceAll('\\', '/') : undefined
+            if (normalizedProfileFile && watchedCssSuffixes.some(suffix => normalizedProfileFile.endsWith(suffix))) {
+              emittedStyleFileNames.add(configService.relativeOutputPath(
+                changeFileExtension(normalizedProfileFile, styleExtension),
+              ))
+            }
+            const emittedStyleFiles = Array.from(emittedStyleFileNames)
               .filter((fileName) => {
                 const normalized = fileName.replaceAll('\\', '/')
                 return normalized.endsWith(emittedStyleSuffix) && normalized !== `app${emittedStyleSuffix}`

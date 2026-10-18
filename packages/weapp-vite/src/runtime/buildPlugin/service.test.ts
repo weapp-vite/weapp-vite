@@ -1153,6 +1153,34 @@ describe('runtime buildPlugin service', () => {
     )
   })
 
+  it('derives the page stylesheet from a CSS importer profile when output tracking is empty', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    ctx.configService.relativeOutputPath = (file: string) => file.replace('/project/src/', '')
+    const service = createBuildService(ctx)
+
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+    await flushAsyncTasks()
+
+    ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.clear()
+    watcher.emit('START')
+    ctx.runtimeState.build.hmr.profile.file = '/project/src/pages/logs/index.css'
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['css-importer:1']
+    watcher.emit('END')
+    await waitForMockCalls(touchOutputStylesMock, 1)
+
+    expect(touchOutputStylesMock).toHaveBeenCalledWith(
+      '/project/dist',
+      ['pages/logs/index.wxss'],
+      'wxss',
+    )
+  })
+
   it.each([false, true])('keeps one Tailwind output refresh owner when managed=%s', async (managed) => {
     const watcher = createManualWatcher()
     buildMock
