@@ -1,6 +1,6 @@
 import os from 'node:os'
-import path from 'node:path'
 import { fs } from '@weapp-core/shared/fs'
+import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { touchExistingAppStyle, touchExistingOutputStyles } from './touchAppWxss'
 
