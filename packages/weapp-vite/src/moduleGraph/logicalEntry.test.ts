@@ -97,6 +97,15 @@ describe('logical entry module source', () => {
     }, [])).not.toContain('export default')
   })
 
+  it('adds a stable self-accept boundary for stateful root entries', () => {
+    const page = { sourceId: '/project/src/pages/home/index.ts', type: 'page' as const }
+    const component = { sourceId: '/project/src/components/card.ts', type: 'component' as const }
+
+    expect(createLogicalEntryModuleCode(page, [], { includeStatefulHmrAccept: true }))
+      .toContain('if (import.meta.hot) import.meta.hot.accept();')
+    expect(createLogicalEntryModuleCode(component, [], { includeStatefulHmrAccept: true })).not.toContain('import.meta.hot.accept')
+  })
+
   it('keeps Vue component registration owned by each logical entry', () => {
     const entry = {
       sourceId: '/workspace/node_modules/ui/components/video-preview.vue',

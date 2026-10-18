@@ -11,6 +11,7 @@ export interface LogicalEntryDependency {
 export function createLogicalEntryModuleCode(
   entry: LogicalEntryRequest,
   dependencies: Iterable<LogicalEntryDependency>,
+  options: { includeStatefulHmrAccept?: boolean } = {},
 ) {
   const source = JSON.stringify(entry.sourceId)
   const isVueLikeEntry = /\.(?:vue|jsx|tsx)$/.test(entry.sourceId)
@@ -38,6 +39,9 @@ export function createLogicalEntryModuleCode(
     imports.push(`import ${JSON.stringify(dependencyId)};`)
   }
   imports.push(`export * from ${source};`)
+  if (options.includeStatefulHmrAccept && entry.type !== 'component') {
+    imports.push('if (import.meta.hot) import.meta.hot.accept();')
+  }
   return `${imports.join('\n')}\n`
 }
 

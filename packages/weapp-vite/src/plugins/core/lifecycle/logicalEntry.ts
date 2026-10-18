@@ -14,6 +14,7 @@ import {
   resolveVirtualModuleId,
 } from '../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../moduleGraph/traversal'
+import { resolveHmrRuntimeDecision } from '../../../runtime/hmrRuntime'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry, isTemplate } from '../../../utils'
 import { withRealpathScope } from '../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -271,7 +272,13 @@ export function createLogicalEntryLoadHook(state: CorePluginState) {
         }
       }
       return {
-        code: createLogicalEntryModuleCode(logicalEntry, dependencies),
+        code: createLogicalEntryModuleCode(logicalEntry, dependencies, {
+          includeStatefulHmrAccept: state.ctx.configService.isDev && resolveHmrRuntimeDecision({
+            platform: state.ctx.configService.platform,
+            configured: state.ctx.configService.weappViteConfig?.hmr?.runtime,
+            compileHotReLoad: state.ctx.configService.projectPrivateConfig?.setting?.compileHotReLoad,
+          }).runtime === 'stateful-experimental',
+        }),
         moduleSideEffects: 'no-treeshake',
       }
     }
