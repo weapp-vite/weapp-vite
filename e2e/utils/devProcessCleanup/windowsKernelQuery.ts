@@ -86,7 +86,7 @@ export async function queryWindowsKernelProcesses(pids?: readonly number[], trac
     throw new Error('Windows kernel inspection is only available on Windows.')
   }
   const startedMs = performance.now()
-  const deadline = startedMs + resolveWechatInspectionTimeout('win32', 10_000)
+  const deadline = startedMs + resolveWechatInspectionTimeout('win32')
   const args = trace ? ['--trace'] : []
   args.push(pids ? '--pids' : '--all')
   if (pids) {

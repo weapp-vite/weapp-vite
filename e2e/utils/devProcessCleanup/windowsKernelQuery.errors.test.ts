@@ -45,6 +45,11 @@ it('preserves the query timeout and directory-removal failure together', async (
       return remove(target, options)
     })
     const failure: unknown = await queryWindowsKernelProcesses([61]).catch((error: unknown) => error)
+    const compilerCall = execute.mock.calls.find(([command]) => basename(String(command)) === 'csc.exe')
+    expect(compilerCall).toBeDefined()
+    expect(compilerCall![2]).toMatchObject({ timeout: expect.any(Number) })
+    expect(compilerCall![2].timeout).toBeGreaterThan(10_000)
+    expect(compilerCall![2].timeout).toBeLessThanOrEqual(30_000)
     expect(failure).toBeInstanceOf(AggregateError)
     const aggregate = failure as AggregateError
     expect(aggregate.errors).toHaveLength(2)
