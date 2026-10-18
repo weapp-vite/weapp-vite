@@ -23,7 +23,7 @@ import { getWxmlWatchFiles, isWxmlDependency } from '../../../wxml/processing/de
 import { isManagedCompilerEntry } from '../../compilerPluginRegistry'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { isReactStaticTemplateSource } from '../../react'
-import { isManagedTailwindcssEntry } from '../../tailwindcssMarker'
+import { getManagedTailwindcssEntries, isManagedTailwindcssEntry } from '../../tailwindcssMarker'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
 import { extractCssImportDependencies } from '../../utils/invalidateEntry/cssGraph'
@@ -416,7 +416,9 @@ async function processChangedFile(
     })
   }
   const markAppEntryForTailwindContent = async () => {
-    if (event !== 'update' || pathKind.isStyle || pathKind.configSuffix || !compilerContentExtensions.has(pathKind.extension)) {
+    // 删除受 Tailwind 扫描的源码同样会改变候选集合；宿主已在本钩子之前捕获 tombstone，
+    // 因此需要沿用 update 的内容失效路径，触发一次新的编译器样式快照。
+    if ((event !== 'update' && event !== 'create' && event !== 'delete') || pathKind.isStyle || pathKind.configSuffix || !compilerContentExtensions.has(pathKind.extension)) {
       return false
     }
     if (vueEntryUpdateInspector) {
@@ -442,15 +444,21 @@ async function processChangedFile(
       return false
     }
     const styleEntry = await findCssEntry(appEntryId, ctx.configService.platform)
-    if (!styleEntry.path) {
+    const stylePaths = styleEntry.path ? [styleEntry.path] : getManagedTailwindcssEntries(ctx)
+    if (!stylePaths.length) {
       return false
     }
-    const isManagedTailwindcssStyle = isManagedTailwindcssEntry(ctx, styleEntry.path)
-    const isTailwindStyle = await isTailwindAppStyleSource(styleEntry.path)
-    if (!isManagedCompilerEntry(ctx, styleEntry.path) && !isTailwindStyle) {
+    const styleOwnership = await Promise.all(stylePaths.map(async stylePath => ({
+      isManagedTailwindcss: isManagedTailwindcssEntry(ctx, stylePath),
+      isManagedCompiler: isManagedCompilerEntry(ctx, stylePath),
+      isTailwind: await isTailwindAppStyleSource(stylePath),
+    })))
+    if (!styleOwnership.some(({ isManagedTailwindcss, isManagedCompiler, isTailwind }) => isManagedTailwindcss || isManagedCompiler || isTailwind)) {
       return false
     }
-    const contentReason = isManagedTailwindcssStyle || isTailwindStyle ? 'tailwind-content' : 'compiler-content'
+    const contentReason = styleOwnership.some(({ isManagedTailwindcss, isTailwind }) => isManagedTailwindcss || isTailwind)
+      ? 'tailwind-content'
+      : 'compiler-content'
     if (
       concreteChangedEntryId !== appEntryId
       && (loadedEntrySet.has(concreteChangedEntryId) || resolvedEntryMap.has(concreteChangedEntryId))

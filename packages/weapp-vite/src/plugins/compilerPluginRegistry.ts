@@ -71,6 +71,10 @@ export function hasManagedCompilerEntriesByProvider(ctx: CompilerContext, provid
   return (registry.get(ctx)?.get(provider)?.entries.size ?? 0) > 0
 }
 
+export function getManagedCompilerEntriesByProvider(ctx: CompilerContext, provider: string) {
+  return [...registry.get(ctx)?.get(provider)?.entries ?? []]
+}
+
 export function createManagedCompilerEntryMarker() {
   return MANAGED_COMPILER_ENTRY_MARKER
 }

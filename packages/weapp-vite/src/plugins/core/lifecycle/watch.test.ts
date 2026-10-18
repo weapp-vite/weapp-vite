@@ -6,6 +6,7 @@ import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { attachDevModuleGraphHost } from '../../../moduleGraph/host'
 import { createModuleGraphService } from '../../../moduleGraph/service'
 import { storeVueSfcHmrSignatures } from '../../../runtime/storeVueSfcHmrSignatures'
+import { registerManagedTailwindcssEntries } from '../../tailwindcssMarker'
 import { createBuildStartHook, createWatchChangeHook } from './watch'
 
 const invalidateFileCacheMock = vi.hoisted(() => vi.fn())
@@ -837,6 +838,52 @@ describe('core lifecycle watch hook', () => {
       'entry-direct:1',
       'tailwind-content:2',
     ])
+  })
+
+  it.each(['create', 'delete'] as const)('marks %s Tailwind content so the compiler can refresh utilities', async (event) => {
+    const appEntryId = '/project/src/app.ts'
+    const pageEntryId = '/project/src/pages/hmr/index.ts'
+    findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
+    vi.spyOn(fs, 'readFile').mockResolvedValue('@import "tailwindcss";')
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [appEntryId, { id: appEntryId }],
+        [pageEntryId, { id: pageEntryId }],
+      ]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event })
+
+    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId, 'weapp')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
+    expect(invalidateSharedStyleCacheMock).toHaveBeenCalledTimes(1)
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(event === 'create'
+      ? ['entry-direct:1', 'tailwind-content:2']
+      : ['tailwind-content:1'])
+  })
+
+  it('uses standalone configured Tailwind CSS entries when the app has no style sidecar', async () => {
+    const appEntryId = '/project/src/app.ts'
+    const contentId = '/project/src/pages/hmr/index.ts'
+    const standaloneStyle = '/project/styles/theme.css'
+    findCssEntryMock.mockResolvedValue({ path: null })
+    vi.spyOn(fs, 'readFile').mockResolvedValue('@import "tailwindcss";')
+    const state = createState({
+      resolvedEntryMap: new Map([[appEntryId, { id: appEntryId }]]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    registerManagedTailwindcssEntries(state.ctx, [standaloneStyle])
+    const hook = createWatchChangeHook(state)
+
+    await hook(contentId, { event: 'update' })
+
+    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId, 'weapp')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
+    expect(invalidateSharedStyleCacheMock).toHaveBeenCalledTimes(1)
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['tailwind-content:1'])
+    expect(fs.readFile).toHaveBeenCalledWith(standaloneStyle, 'utf8')
   })
 
   it('skips Tailwind content hmr when app style is not a Tailwind source', async () => {

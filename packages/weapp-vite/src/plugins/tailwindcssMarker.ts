@@ -1,7 +1,7 @@
 import type { CompilerContext, MutableCompilerContext } from '../context'
 import fs from 'node:fs'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
-import { hasManagedCompilerEntriesByProvider, isManagedCompilerEntry, isManagedCompilerEntryByProvider, registerManagedCompilerEntries } from './compilerPluginRegistry'
+import { getManagedCompilerEntriesByProvider, hasManagedCompilerEntriesByProvider, isManagedCompilerEntry, isManagedCompilerEntryByProvider, registerManagedCompilerEntries } from './compilerPluginRegistry'
 
 const MANAGED_TAILWINDCSS_ENTRY_MARKER_PREFIX = '.__weapp_vite_managed_tailwindcss_entry_'
 const MANAGED_TAILWINDCSS_ENTRY_MARKER_SUFFIX = '__{--weapp-vite-managed-tailwindcss-entry:1}'
@@ -24,6 +24,10 @@ export function registerManagedTailwindcssEntries(ctx: CompilerContext, entries:
 
 export function hasManagedTailwindcssEntries(ctx: MutableCompilerContext) {
   return hasManagedCompilerEntriesByProvider(ctx as CompilerContext, 'tailwindcss')
+}
+
+export function getManagedTailwindcssEntries(ctx: CompilerContext) {
+  return getManagedCompilerEntriesByProvider(ctx, 'tailwindcss')
 }
 
 export function isManagedTailwindcssEntry(ctx: CompilerContext, id: string) {
