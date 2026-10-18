@@ -18,7 +18,7 @@ import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeGlassEaselBundle, createGlassEaselAnalyzeResult } from '../../analyze/glassEasel'
 import { refreshGlassEaselNativeScripts } from '../../analyze/glassEasel/nativeScripts'
-import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
+import { createLogicalEntryId, createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
 import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
 import { createRuntimeState } from '../runtimeState'
@@ -903,6 +903,29 @@ describe('stateful snapshot output transactions', () => {
     expect(session.rebuild).toHaveBeenCalledOnce()
     expect(writtenAssets()).toContainEqual(expect.objectContaining({ source: expect.stringContaining('color: blue') }))
     expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('routes compiler-owned style sidecar entry patches through a snapshot refresh', async () => {
+    const page = path.join(root, 'src/pages/index.vue')
+    const style = path.join(root, 'src/pages/index.css')
+    const logicalPage = createLogicalEntryId(page, 'page')
+    const session = await start(snapshot('red'), [page], {}, new Map(), undefined, (ctx) => {
+      ctx.moduleGraphService.collectAffectedEntries = () => new Set([page])
+    })
+    getCompilerHmrHost(session.ctx).seed(style, '.page {}')
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+
+    session.sourceChange(style, 'update', ['style-sidecar:1'])
+    expect(harness.callbacks!.onPatch([page], {
+      type: 'Patch',
+      code: 'void 0',
+      filename: 'update.js',
+      changedIds: [logicalPage],
+    })).toBe(false)
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(session.rebuild).toHaveBeenCalledOnce()
+    expect(delta).not.toHaveBeenCalled()
   })
 
   it.each(['success', 'failure'] as const)('tracks the input captured before a full native publication (%s)', async (outcome) => {

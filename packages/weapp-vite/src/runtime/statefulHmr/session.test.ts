@@ -223,6 +223,7 @@ describe('stateful hmr session', () => {
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.tsx', ['entry-direct:1'])).toBe(true)
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.vue', ['entry-direct:1'])).toBe(false)
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.vue', ['entry-style-only:1'])).toBe(true)
+    expect(requiresStatefulHmrSnapshot('/project/src/pages/index.vue', ['style-sidecar:1'])).toBe(true)
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index.ts', ['tailwind-content:2'])).toBe(true)
     expect(requiresStatefulHmrSnapshot('/project/src/pages/index/view.tsx', ['react-template:1'])).toBe(true)
   })
@@ -233,6 +234,7 @@ describe('stateful hmr session', () => {
       'tailwind-content:2',
     ])).toBe(true)
     expect(shouldUseStatefulHmrSnapshotOnly(['entry-style-only:1'])).toBe(true)
+    expect(shouldUseStatefulHmrSnapshotOnly(['style-sidecar:1'])).toBe(true)
     expect(shouldUseStatefulHmrSnapshotOnly(['entry-json-only:1'])).toBe(true)
     expect(shouldUseStatefulHmrSnapshotOnly([
       'entry-direct:1',

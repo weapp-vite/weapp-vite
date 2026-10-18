@@ -521,7 +521,21 @@ class StatefulHmrSession {
         return
       }
     }
-    if (getCompilerHmrHost(this.ctx).ownsDependency(normalizedFile) || dirtyReasonSummary.some(reason => isCompilerContentDirtyReason(reason) || reason.startsWith('entry-mixed-asset:'))) {
+    if (getCompilerHmrHost(this.ctx).ownsDependency(normalizedFile)) {
+      // 编译器拥有的样式依赖会先触发资产快照，随后 DevEngine 可能以其页面源码
+      // 作为 changed file 交付一个包装入口补丁。将样式侧车原因转移到受影响入口，
+      // 让该补丁走同一快照路径，避免逻辑入口在无 importer 时被错误执行。
+      if (dirtyReasonSummary.length) {
+        for (const entry of affectedEntries) {
+          const previous = this.sourceDirtyReasons.get(entry)?.reasons ?? []
+          this.sourceDirtyReasons.set(entry, {
+            reasons: [...new Set([...previous, ...dirtyReasonSummary])],
+          })
+        }
+      }
+      return
+    }
+    if (dirtyReasonSummary.some(reason => isCompilerContentDirtyReason(reason) || reason.startsWith('entry-mixed-asset:'))) {
       // 同批次的视觉资产由原生更新回调交付，不能提前启动独立快照。
       return
     }
@@ -1372,7 +1386,7 @@ function isUnsafeStatefulHmrReason(reason: string, allowCompilerContent = false)
   if (allowCompilerContent && isCompilerContentDirtyReason(reason)) {
     return false
   }
-  return /^(?:entry-json-only|entry-local-asset|entry-style-only|entry-mixed-config|react-template|compiler-content|tailwind-content):/.test(reason)
+  return /^(?:entry-json-only|entry-local-asset|entry-style-only|entry-mixed-config|style-sidecar|react-template|compiler-content|tailwind-content):/.test(reason)
 }
 
 /** 编译 provider 触发的内容变化使用统一 reason 前缀，保留旧 Tailwind reason 兼容。 */
@@ -1382,10 +1396,10 @@ export function isCompilerContentDirtyReason(reason: string): boolean {
 
 export function shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary: string[]): boolean {
   const hasAssetOnlyEntry = dirtyReasonSummary.some(reason =>
-    /^(?:entry-json-only|entry-local-asset|entry-style-only):/.test(reason),
+    /^(?:entry-json-only|entry-local-asset|entry-style-only|style-sidecar):/.test(reason),
   )
   return hasAssetOnlyEntry && dirtyReasonSummary.every(reason =>
-    /^(?:entry-json-only|entry-local-asset|entry-style-only|compiler-content|tailwind-content):/.test(reason),
+    /^(?:entry-json-only|entry-local-asset|entry-style-only|style-sidecar|compiler-content|tailwind-content):/.test(reason),
   )
 }
 
