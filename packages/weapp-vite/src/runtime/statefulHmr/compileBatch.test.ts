@@ -83,6 +83,58 @@ it('keeps snapshot styles authoritative when compiler preparation also returns t
   await result.dispose()
 })
 
+it('keeps snapshot styles authoritative when compiler preparation returns the same asset', async () => {
+  const preparationAsset = { fileName: 'app.wxss', code: '.after{}' }
+  const result = await compileHmrBatch({
+    ctx: { configService: { outputExtensions: { wxml: 'wxml', wxss: 'wxss' } } } as CompilerContext,
+    input: { revision: 1, changedFiles: ['page.vue'], sources: new Map() },
+    needsSnapshot: true,
+    patches: [],
+    prepareProviders: async () => [{ assets: [preparationAsset] }],
+    rebuild: async () => ({ output: [{ type: 'asset', fileName: 'app.wxss', source: '.before{}' }] }),
+    sourcemap: false,
+  })
+
+  expect(result.snapshot?.output).toEqual([{ type: 'asset', fileName: 'app.wxss', source: '.before{}' }])
+  expect(result.compilerAssets).toEqual([preparationAsset])
+  await result.dispose()
+})
+
+it('adds compiler styles that are missing from a style snapshot', async () => {
+  const result = await compileHmrBatch({
+    ctx: { configService: { outputExtensions: { wxml: 'wxml', wxss: 'wxss' } } } as CompilerContext,
+    input: { revision: 1, changedFiles: ['src/theme.css'], sources: new Map() },
+    needsSnapshot: true,
+    patches: [],
+    prepareProviders: async () => [{ assets: [{ fileName: 'app.wxss', code: '.generated{}' }] }],
+    rebuild: async () => ({ output: [{ type: 'asset', fileName: 'pages/index.wxml', source: '<view />' }] }),
+    sourcemap: false,
+  })
+
+  expect(result.snapshot?.output).toEqual([
+    { type: 'asset', fileName: 'pages/index.wxml', source: '<view />' },
+    { type: 'asset', fileName: 'app.wxss', source: '.generated{}' },
+  ])
+  await result.dispose()
+})
+
+it('does not publish compiler styles for a script-only batch', async () => {
+  const result = await compileHmrBatch({
+    ctx: { configService: { outputExtensions: { wxml: 'wxml', wxss: 'wxss' } } } as CompilerContext,
+    input: { revision: 1, changedFiles: ['src/page.ts'], sources: new Map() },
+    needsSnapshot: false,
+    mergeCompilerStyles: false,
+    patches: [],
+    prepareProviders: async () => [{ assets: [{ fileName: 'app.wxss', code: '.stale{}' }] }],
+    rebuild: async () => ({ output: [] }),
+    sourcemap: false,
+  })
+
+  expect(result.snapshot).toBeUndefined()
+  expect(result.compilerAssets).toEqual([])
+  await result.dispose()
+})
+
 it('attributes sequential preparation work to the captured input without changing the snapshot', async () => {
   let now = 10
   vi.spyOn(performance, 'now').mockImplementation(() => now)

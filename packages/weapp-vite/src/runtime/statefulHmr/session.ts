@@ -734,6 +734,11 @@ class StatefulHmrSession {
     // 编译器扫描依赖不代表接管了原生资产写出；非脚本资源仍走固定输入快照。
     const needsSnapshot = files.some(file => requiresStatefulHmrSnapshot(file)) || (!getCompilerHmrHost(this.ctx).enabled && allowCompilerContentPatch) || (dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))
       && (!getCompilerHmrHost(this.ctx).enabled || getCompilerHmrHost(this.ctx).hasVisualChanges(files, input)))
+    const mergeCompilerStyles = shouldMergeStatefulHmrCompilerStyles(
+      files,
+      dirtyReasonSummary,
+      resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
+    )
     const patches = (compilerOnly && !files.some(file => /\.module\.[^.]+$/.test(file)) ? [] : updates).filter(item => item.update.type === 'Patch').map(item => ({ ...item, update: { ...item.update } }))
     let scriptFacts: ReturnType<StatefulHmrViteAdapter['captureGlassEaselScriptUpdates']> | undefined
     try {
@@ -773,6 +778,7 @@ class StatefulHmrSession {
             prepareProviders,
             rebuild: (files, sources) => sources ? this.snapshots.rebuild(files, sources) : this.snapshots.rebuild(files),
             sourcemap: Boolean(this.server.config.build.sourcemap),
+            mergeCompilerStyles,
             onPreparationStage: this.diagnostics
               ? observation => this.diagnostics!.preparation(input.revision, files, observation)
               : undefined,
@@ -1388,6 +1394,14 @@ export function requiresStatefulHmrSnapshot(file: string, dirtyReasonSummary: st
 
 export function isStatefulHmrAssetFile(file: string): boolean {
   return !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
+}
+
+export function shouldMergeStatefulHmrCompilerStyles(files: readonly string[], dirtyReasonSummary: readonly string[], styleExtension = 'wxss'): boolean {
+  const sourceStyleExtensions = new Set(['css', 'acss', 'scss', 'sass', 'less', 'styl', 'stylus', 'pcss', 'postcss', 'sss', styleExtension.toLowerCase()])
+  if (files.some(file => sourceStyleExtensions.has(path.extname(file).slice(1).toLowerCase()))) {
+    return true
+  }
+  return dirtyReasonSummary.some(reason => /^(?:style-sidecar|css-importer|css-importer-fallback|entry-style-only|compiler-content|tailwind-content|entry-mixed-asset):/.test(reason))
 }
 
 function isUnsafeStatefulHmrReason(reason: string, allowCompilerContent = false): boolean {
