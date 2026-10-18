@@ -159,16 +159,6 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
 
   async function cleanupTestState() {
     await runCleanupSteps([
-      { label: 'restore forward-console script', run: async () => {
-        if (originalIndexTs) {
-          await fs.writeFile(INDEX_TS, originalIndexTs, 'utf8')
-        }
-      } },
-      { label: 'restore forward-console template', run: async () => {
-        if (originalIndexWxml) {
-          await fs.writeFile(INDEX_WXML, originalIndexWxml, 'utf8')
-        }
-      } },
       { label: 'close forward-console subscription', run: async () => {
         await forwardConsoleSession?.close()
         forwardConsoleSession = undefined
@@ -183,6 +173,16 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
       } },
       { label: 'release tracked dev processes', run: cleanupTrackedDevProcesses },
       { label: 'release owned IDE resources', run: cleanupResidualIdeProcesses },
+      { label: 'restore forward-console script', run: async () => {
+        if (originalIndexTs) {
+          await fs.writeFile(INDEX_TS, originalIndexTs, 'utf8')
+        }
+      } },
+      { label: 'restore forward-console template', run: async () => {
+        if (originalIndexWxml) {
+          await fs.writeFile(INDEX_WXML, originalIndexWxml, 'utf8')
+        }
+      } },
     ])
   }
 
@@ -215,17 +215,17 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
   }, 240_000)
 
   afterEach(async () => {
+    await forwardConsoleSession?.close().catch(() => {})
+    forwardConsoleSession = undefined
+    await devProcess?.stop().catch(() => {})
+    devProcess = undefined
+    await cleanupTrackedDevProcesses()
     if (originalIndexTs) {
       await fs.writeFile(INDEX_TS, originalIndexTs, 'utf8').catch(() => {})
     }
     if (originalIndexWxml) {
       await fs.writeFile(INDEX_WXML, originalIndexWxml, 'utf8').catch(() => {})
     }
-    await forwardConsoleSession?.close().catch(() => {})
-    forwardConsoleSession = undefined
-    await devProcess?.stop().catch(() => {})
-    devProcess = undefined
-    await cleanupTrackedDevProcesses()
   }, 60_000)
 
   afterAll(async () => {
