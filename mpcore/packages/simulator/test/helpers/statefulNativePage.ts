@@ -13,20 +13,27 @@ function createExternalNpmPageFiles(): Array<[string, string]> {
       exports.patched = mode => mode === 'dark' ? 'npm-dark' : 'npm-light';
     `],
     ['pages/external/index.json', '{}'],
-    ['pages/external/index.wxml', '<view id="mode" bindtap="switchMode">当前模式 {{mode}} 切换模式</view>'],
+    ['pages/external/index.wxml', '<view id="mode" bindtap="switchMode">当前模式 {{mode}} 切换模式</view><view id="vendor-marker">{{vendorMarker}}</view><view id="vendor-calls">{{vendorCalls}}</view>'],
     ['pages/external/index.js', `
       require('../../hmr-runtime.js');
       const runtime = globalThis.__rolldown_runtime__;
       const bridge = globalThis.__WEAPP_VITE_STATEFUL_HMR_BRIDGE__;
       function register(patched) {
         const external = require('../../miniprogram_npm/mode-helper/index');
+        const definitionMarker = patched ? 'runtime-vendor-hmr-updated' : 'runtime-vendor-hmr-baseline';
         bridge.Page({
-          data: { mode: 'light' },
+          data: { mode: 'light', vendorMarker: definitionMarker, vendorCalls: 0 },
           switchMode() {
-            this.setData({ mode: patched ? external.patched(this.data.mode) : external.next(this.data.mode) });
+            this.setData({
+              mode: patched ? external.patched(this.data.mode) : external.next(this.data.mode),
+              vendorCalls: this.data.vendorCalls + 1
+            });
           },
-          patchPage() { applyUpdate(true); },
-          restorePage() { applyUpdate(false); }
+          readVendorState() {
+            return { mode: this.data.mode, calls: this.data.vendorCalls, marker: this.data.vendorMarker, definitionMarker };
+          },
+          patchPage() { return applyUpdate(true); },
+          restorePage() { return applyUpdate(false); }
         });
       }
       function applyUpdate(patched) {
@@ -35,6 +42,8 @@ function createExternalNpmPageFiles(): Array<[string, string]> {
         runtime.currentModuleId = 'pages/external/index.js';
         try { register(patched); }
         finally { runtime.currentModuleId = previous; bridge.endUpdate(); }
+        // endUpdate 先排队复位生命周期抑制，FIFO 栅栏只等待该轮收尾，不延迟或重复导航。
+        return new Promise(resolve => setTimeout(resolve, 0));
       }
       runtime.registrationModuleId = 'pages/external/index.js';
       bridge.installNative('Page', Page);

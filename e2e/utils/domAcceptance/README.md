@@ -16,6 +16,12 @@ const tabbarNode = {
 
 每次采集都读取当前页面并核对路由和只读 `pageId`，完成查询后再次核对。HMR 或同路由重建导致身份变化时，丢弃本次证据并重试；缺少真实页面身份时失败。headless 的身份绑定底层页面实例，重新创建测试 handle 不改变身份。调用方传入的旧 handle 只用于核对预期路由，不能作为当前界面的证据来源。
 
+## 布局与可见性证据
+
+真实 IDE 的未投影节点可能同时返回零尺寸和 `null` 计算样式。报告保留这些原始值；尺寸任一边为零时，按现有节点面积契约判定不可见。尺寸必须有限且非负，`display`、`visibility`、`opacity` 三个观测键必须完整；已返回的字符串不能是空白，数值 opacity 必须在 `[0, 1]` 内。
+
+正面积节点缺少任一计算样式时仍判定证据不足，不能用 `null` 推断不可见或补默认 CSS。显式样式期望仍逐项比较，`null` 不能满足字符串或响应式长度期望。采集与序列化回放共用同一可见性判断，原失败报告保持原样，修复后需重新运行对应 IDE 场景。
+
 ## HMR 操作来源
 
 真实 IDE 热更新后，`getCurrentPages()` 返回的 AppService 路由对象可能仍持有旧方法，而原生 `Page.callMethod` 已执行更新后的页面定义。需要验证当前原生页面行为的 HMR 操作应读取 `currentPage({ appFunctionFallback: false })`，并调用 `callMethodWithOptions(method, { fallback: false })`，使协议失败直接暴露。`routeOnly: true` 明确选择 AppService 路由对象，不能替代原生页面身份验收。
