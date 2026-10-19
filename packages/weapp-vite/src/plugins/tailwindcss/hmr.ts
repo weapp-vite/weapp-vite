@@ -203,7 +203,24 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     const listener = (file: string) => {
       void added(file).catch(error => currentServer.config.logger.error(String(error)))
     }
+    const updateMatchedSource = (file: string, deleted: boolean) => {
+      const sourceId = compilerSourceId(file)
+      if (![...roots.values()].some(root => root.matches?.(file))) {
+        return false
+      }
+      // 初始 Tailwind 来源通常已被原生入口捕获，compiler dependency watcher
+      // 会跳过这类文件；仍需刷新宿主中的文本，才能让下一次 snapshot 看到脚本的新候选。
+      if (nativeDependencies.has(sourceId) || host.isNativeSource(file)) {
+        captureFile(file, deleted)
+        notifyContentChange(file)
+        return true
+      }
+      return false
+    }
     const updateDiscovered = (file: string, deleted: boolean) => {
+      if (updateMatchedSource(file, deleted)) {
+        return
+      }
       if (discoveredSources.has(compilerSourceId(file)) && !nativeDependencies.has(compilerSourceId(file)) && !host.isNativeSource(file)) {
         captureFile(file, deleted)
         notifyContentChange(file)

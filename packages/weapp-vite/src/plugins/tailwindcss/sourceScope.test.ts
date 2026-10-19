@@ -85,6 +85,31 @@ it('captures a newly added source file outside the explicit Tailwind source entr
   })
 })
 
+it('refreshes an initially discovered native source before a content snapshot', async () => {
+  await withProject(async (root, compiler) => {
+    const entry = path.join(root, 'src/app.css')
+    const source = path.join(root, 'src/shared.ts')
+    await writeFile(entry, '@import "tailwindcss" source(none); @source "./shared.ts";')
+    await writeFile(source, 'export const utility = "h-[19px]"')
+    const request: CompilerGenerateRequest = { id: 'native-source', sourceOptions: { projectRoot: root, cssEntries: [entry] }, scanSources: true, target: 'weapp' }
+    const generated = await compiler.generate(request)
+    const { adapter, host, watcher, httpServer, onSourceChange } = createAdapter(root, compiler)
+    host.captureNative(source, await readFile(source, 'utf8'))
+    host.onDependencyChange = vi.fn()
+    try {
+      await adapter.rememberRoot(0, request, generated)
+      await writeFile(source, 'export const utility = "h-[23px]"')
+      watcher.emit('change', source)
+      await vi.waitFor(() => expect(host.onDependencyChange).toHaveBeenCalledWith(source))
+      expect(host.readSource(source)).toContain('23px')
+      expect(onSourceChange).toHaveBeenCalledWith(source, ['tailwind-content:1'])
+    }
+    finally {
+      httpServer.emit('close')
+    }
+  })
+})
+
 it.each(['entry', 'memory', 'cwd', 'base'] as const)('keeps the compiler-resolved %s scope for initial discovery and later additions', async (kind) => {
   await withProject(async (root, compiler) => {
     const entry = path.join(root, 'src/app.css')
