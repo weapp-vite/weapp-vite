@@ -3,7 +3,9 @@ import type { SuiteTask } from './suiteRunner'
 import path from 'node:path'
 import process from 'node:process'
 import fg from 'fast-glob'
-import { MANAGED_PROJECT_MAX_WINDOWS_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+// 只读取环境变量常量；直接依赖 ownership 入口会在冻结普通 CI 计划时加载
+// @weapp-vite/devtools-runtime，而该包由 build job 产出，计划 job 不应依赖它。
+import { MANAGED_PROJECT_MAX_WINDOWS_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/constants'
 import { TEMPLATE_DEV_OPEN_CASES } from '../ide/template-dev-open-cases'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { HMR_GUARD_ALL_TESTS, HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
