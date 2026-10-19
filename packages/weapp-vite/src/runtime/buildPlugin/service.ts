@@ -1328,16 +1328,26 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let statefulBuildEvents: DevBuildWatcherController | undefined
   let statefulWatcherClosed = false
   const statefulRestartTasks = new Set<Promise<void>>()
+  let statefulRestartQueue = Promise.resolve()
   let stopStatefulWatcher: (() => Promise<void>) | undefined
 
   async function trackStatefulRestart(restart: () => Promise<void>) {
-    const task = restart()
+    // 旧会话关闭期间，DevEngine 可能重复报告同一批不兼容更新。串行执行
+    // 这些回调，避免 Rolldown 收到重叠的停止/启动请求；排队回调仍会读取
+    // 最新配置，能够恢复上一次重启期间到达的源码更新。
+    const task = statefulRestartQueue
+      .catch(() => {})
+      .then(restart)
+    statefulRestartQueue = task
     statefulRestartTasks.add(task)
     try {
       await task
     }
     finally {
       statefulRestartTasks.delete(task)
+      if (statefulRestartQueue === task) {
+        statefulRestartQueue = Promise.resolve()
+      }
     }
   }
 

@@ -875,6 +875,36 @@ describe('runtime buildPlugin service', () => {
     expect(graph.collectAffectedEntries(dependency)).toEqual(new Set())
   })
 
+  it('serializes overlapping stateful restarts before starting the next session', async () => {
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    const entered = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    let generation = 0
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockImplementation(async () => {
+      const current = ++generation
+      if (current === 2) {
+        entered.resolve()
+        await release.promise
+      }
+      return { close: vi.fn(async () => {}) }
+    })
+
+    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+    const restart = runStatefulHmrDevMock.mock.calls[0]![2] as () => Promise<void>
+    const first = restart()
+    await entered.promise
+    const second = restart()
+    await Promise.resolve()
+    expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(2)
+
+    release.resolve()
+    await Promise.all([first, second])
+    expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(3)
+    await watcher.close()
+  })
+
   it('releases stateful graph ownership after publication startup failure', async () => {
     const graph = createModuleGraphService()
     const ctx = createMockContext({ moduleGraphService: graph })
