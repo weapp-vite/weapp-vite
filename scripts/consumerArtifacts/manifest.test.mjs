@@ -8,10 +8,11 @@ it('binds every candidate archive to the builder identity and detects tampering'
   const directory = await mkdtemp(path.join(os.tmpdir(), 'consumer-artifact-'))
   try {
     const identity = { commit: 'a'.repeat(40), os: process.platform, arch: process.arch, builderNodeMajor: '24', packageManager: 'pnpm', lockfileHash: 'digest' }
-    const expectedPackages = { 'weapp-vite': '1', 'wevu': '1' }
-    await writeFile(path.join(directory, 'consumer-tarballs.json'), JSON.stringify({ schemaVersion: 1, packages: { 'weapp-vite': { file: 'vite.tgz', version: '1' }, 'wevu': { file: 'wevu.tgz', version: '1' } } }))
+    const expectedPackages = { 'weapp-vite': '1', 'wevu': '1', '@weapp-vite/react': '1' }
+    await writeFile(path.join(directory, 'consumer-tarballs.json'), JSON.stringify({ schemaVersion: 1, packages: { 'weapp-vite': { file: 'vite.tgz', version: '1' }, 'wevu': { file: 'wevu.tgz', version: '1' }, '@weapp-vite/react': { file: 'react.tgz', version: '1' } } }))
     await writeFile(path.join(directory, 'vite.tgz'), 'candidate')
     await writeFile(path.join(directory, 'wevu.tgz'), 'runtime')
+    await writeFile(path.join(directory, 'react.tgz'), 'react')
     await createConsumerArtifact(directory, directory, { pack: false, identity, expectedPackages })
     await expect(verifyConsumerArtifact(directory, directory, identity, expectedPackages)).resolves.toMatchObject({ identity })
     await expect(verifyConsumerArtifact(directory, directory, { ...identity, commit: 'b'.repeat(40) }, expectedPackages)).rejects.toThrow('identity')

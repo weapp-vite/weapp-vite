@@ -10,6 +10,7 @@ import { packConsumerTarballs } from '../../packages/weapp-vite/scripts/consumer
 
 const digest = value => createHash('sha256').update(value).digest('hex')
 const fileDigest = async filename => digest(await readFile(filename))
+const consumerEntryPackages = ['weapp-vite', 'wevu', '@weapp-vite/react']
 
 /** 消费者 Node 可以不同，源码、平台、架构及构建 Node 必须与冻结的打包身份一致。 */
 export async function consumerIdentity(root, commit = process.env.BUILD_ARTIFACT_EXPECTED_COMMIT || process.env.GITHUB_SHA) {
@@ -37,7 +38,7 @@ async function packedFiles(directory) {
 export async function consumerClosure(root) {
   const listing = await execa('pnpm', ['--recursive', 'list', '--depth', '-1', '--json'], { cwd: root })
   const projects = new Map(JSON.parse(listing.stdout).map(project => [project.name, project.path]))
-  const pending = ['weapp-vite', 'wevu']
+  const pending = [...consumerEntryPackages]
   const closure = {}
   while (pending.length) {
     const name = pending.pop()
