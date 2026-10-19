@@ -1,5 +1,5 @@
 import type { SuiteReportPayload, SuiteTaskReportEntry } from '../suiteReport'
-import type { VerificationPlan } from './types'
+import type { VerificationPlan, VerificationTiming } from './types'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { validateTaskAcceptance } from '../domAcceptanceReport/task'
@@ -42,6 +42,7 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
     throw new Error('Full distributed acceptance requires a clean, known checkout')
   }
   const reports = values.map(value => verificationSuiteReportSchema.parse(value))
+  const timings = reports.flatMap(report => (report.timings ?? []) as VerificationTiming[])
   if (reports.length !== plan.shardTotal) {
     throw new Error('Missing or duplicate verification shard reports')
   }
@@ -122,6 +123,7 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
     strict: plan.strict,
     coverage: 'complete',
     acceptance: 'passed',
+    timings,
     tasks,
     summary: { artifactCount: tasks.reduce((sum, task) => sum + task.artifacts.length, 0), failedCount: 0, passedCount: expected.length, taskCount: tasks.length, plannedCount: expected.length, executedCount: expected.length, blockedCount: 0, skippedCount: 0, notExecutedCount: 0, outOfScopeCount: tasks.length - expected.length },
   }

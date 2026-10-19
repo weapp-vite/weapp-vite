@@ -38,6 +38,7 @@ export interface SuiteTaskReportEntry {
 }
 
 export interface SuiteReportContext extends AcceptanceIdentity {
+  timings?: VerificationTiming[]
   partial: boolean
   strict: boolean
   plannedTasks: Array<{ label: string, outOfScopeReason?: string }>
@@ -47,6 +48,7 @@ export interface SuiteReportContext extends AcceptanceIdentity {
 }
 
 export interface SuiteReportPayload {
+  timings?: VerificationTiming[]
   schemaVersion?: 2
   toolVersion?: number
   execution?: VerificationExecution
@@ -232,6 +234,7 @@ export function createSuiteReport(
     schemaVersion: 2,
     toolVersion: VERIFICATION_TOOL_VERSION,
     ...(context.execution ? { execution: context.execution } : {}),
+    ...(context.timings ? { timings: context.timings } : {}),
     excludedProjects: excludedE2EProjects(),
     generatedAt: now.toISOString(),
     suiteName,
