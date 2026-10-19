@@ -72,10 +72,13 @@ export async function readDarwinProcessStates(): Promise<DarwinProcessState[]> {
 }
 
 /** 已删除可执行文件无法经 proc_pidpath 读取时，核验全部 program-text 映像而非猜测首项。 */
-export async function readDarwinTextImages(pid: number): Promise<string[]> {
+export async function readDarwinTextImages(pid: number, timeoutMs: number = options.timeout): Promise<string[]> {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) {
+    throw new Error('Installation-exit recovery cannot inspect executable text images without a positive timeout.')
+  }
   // lsof 与 ps 不构成原子快照；字段完整仅证明本次输出完整，不能补全内核未提供的映射。
-  const result = await execa('/usr/sbin/lsof', ['-nP', '-a', '-p', String(pid), '-d', 'txt', '-F0pftn'], options)
-  if (result.exitCode !== 0 || result.stderr?.trim()) {
+  const result = await execa('/usr/sbin/lsof', ['-nP', '-a', '-p', String(pid), '-d', 'txt', '-F0pftn'], { ...options, timeout: Math.min(options.timeout, timeoutMs) })
+  if (result.exitCode !== 0 || result.timedOut || result.signal || result.stderr?.trim()) {
     throw new Error(`Installation-exit recovery cannot inspect all executable text images for PID ${pid}.`, {
       cause: { exitCode: result.exitCode, stderr: result.stderr?.trim() },
     })

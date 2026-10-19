@@ -50,6 +50,24 @@ describe('macOS read-only kernel inventory primitives', () => {
     command.mockResolvedValue(success('p21\0\nftxt\0tREG\0n/old executable\0\nftxt\0tREG\0n/another mapping\0\n'))
     expect(await readDarwinTextImages(21)).toEqual(['/old executable', '/another mapping'])
     expect(command).toHaveBeenCalledWith('/usr/sbin/lsof', ['-nP', '-a', '-p', '21', '-d', 'txt', '-F0pftn'], expect.any(Object))
+    expect(command.mock.calls[0]![2]).toMatchObject({ timeout: 10_000 })
+  })
+
+  it('caps text-image inspection at the remaining budget and rejects an exhausted budget before dispatch', async () => {
+    command.mockResolvedValue(success('p21\0\nftxt\0tREG\0n/path\0\n'))
+    await readDarwinTextImages(21, 750)
+    expect(command.mock.calls[0]![2]).toMatchObject({ timeout: 750 })
+    await readDarwinTextImages(21, 20_000)
+    expect(command.mock.calls[1]![2]).toMatchObject({ timeout: 10_000 })
+    for (const timeout of [0, -1, Number.NaN, 0.5]) {
+      await expect(readDarwinTextImages(21, timeout)).rejects.toThrow('positive timeout')
+    }
+    expect(command).toHaveBeenCalledTimes(2)
+  })
+
+  it.each([{ timedOut: true }, { signal: 'SIGTERM' }])('rejects interrupted text-image inspection despite a complete-looking result (%j)', async (interrupted) => {
+    command.mockResolvedValue({ ...success('p21\0\nftxt\0tREG\0n/path\0\n'), ...interrupted })
+    await expect(readDarwinTextImages(21, 750)).rejects.toThrow('cannot inspect all executable text images')
   })
 
   // macOS 的 LC_ALL=C、-F0pftn 实测：中文按 UTF-8 字节转义，字面反斜杠翻倍。
