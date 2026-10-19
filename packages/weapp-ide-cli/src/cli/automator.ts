@@ -6,6 +6,7 @@ import process from 'node:process'
 import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
 import { OperationLifecycle } from '@weapp-vite/miniprogram-automator/operation'
 import { readCustomConfig } from '../config/custom'
+import { MANAGED_PROJECT_JOURNAL_ENV } from '../devtoolsProjectOwnership/journal/constants'
 import { assertWechatDevtoolsHost, assertWechatDevtoolsPort } from '../devtoolsTarget'
 import { resolveAutomatorSessionOptions } from './automator/context'
 import { isRetryableAutomatorLaunchError } from './automator/errors'
@@ -58,28 +59,29 @@ async function launchSelectedAutomator(options: AutomatorOptions) {
       const launcher = new Launcher()
       let lastError: unknown = null
       let bootstrapResult: Awaited<ReturnType<typeof bootstrapWechatDevtoolsSettings>> | undefined
+      if (process.env[MANAGED_PROJECT_JOURNAL_ENV]?.trim()) {
+        const { launchManagedAutomator } = await import('./automator/managed')
+        managedLaunch = launchManagedAutomator({
+          launcher,
+          scope,
+          target: target!,
+          projectPath: path.resolve(projectPath),
+          sourceProjectPath: projectPath,
+          port: port ?? resolveProjectAutomatorPort(projectPath),
+          sessionId,
+          trustProject: resolvedTrustProject,
+          persistAsDefaultSession: options.persistAsDefaultSession,
+          preserveProjectRoot: options.preserveProjectRoot,
+        })
+        return await managedLaunch
+      }
+
       const resolvedProject = options.preserveProjectRoot
         ? {
             projectPath: path.resolve(projectPath),
             sourceProjectPath: path.resolve(projectPath),
           }
         : await scope.step(() => resolveAutomatorProjectPath(projectPath), { stage: 'project' })
-
-      if (process.env.WEAPP_IDE_MANAGED_PROJECT_JOURNAL) {
-        const { launchManagedAutomator } = await import('./automator/managed')
-        managedLaunch = launchManagedAutomator({
-          launcher,
-          scope,
-          target: target!,
-          projectPath: resolvedProject.projectPath,
-          sourceProjectPath: projectPath,
-          port: port ?? resolveProjectAutomatorPort(resolvedProject.projectPath),
-          sessionId,
-          trustProject: resolvedTrustProject,
-          persistAsDefaultSession: options.persistAsDefaultSession,
-        })
-        return await managedLaunch
-      }
 
       if (config.autoBootstrapDevtools !== false) {
         bootstrapResult = await scope.step(() => bootstrapWechatDevtoolsSettings({

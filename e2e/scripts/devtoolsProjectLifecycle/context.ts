@@ -7,7 +7,7 @@ import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
 import { launchAutomator } from '../../../packages/weapp-ide-cli/src/cli/automator'
-import { readManagedWechatProjectRecords } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { isManagedWechatProjectFullyReleased, readManagedWechatProjectRecords } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { isManagedPortClosed } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
 import { assertSelectedWechatDevtoolsRuntime } from '../../utils/devtoolsSelection'
 
@@ -159,7 +159,7 @@ async function assertOwnedWindowDestruction(record: ManagedWechatProjectRecord) 
 
 export async function assertSessionReleased(session: Pick<SessionEvidence, 'id' | 'journalPath' | 'port'>) {
   const record = (await readManagedWechatProjectRecords(session.journalPath)).find(value => value.id === session.id)
-  assert(record && record.state === 'released', 'Project owner must reach the released state')
+  assert(record && isManagedWechatProjectFullyReleased(record), 'Project owner and snapshot must both reach the released state')
   assert.equal(record.port, session.port, 'Released project must retain its original automator port')
   const windowClose = await assertOwnedWindowDestruction(record)
   assert(await isManagedPortClosed(session.port), 'Released project automator port must be closed')
@@ -168,8 +168,12 @@ export async function assertSessionReleased(session: Pick<SessionEvidence, 'id' 
 
 export async function assertJournalReleased(journalPath: string) {
   const records = await readManagedWechatProjectRecords(journalPath)
-  assert(records.every(record => record.state === 'released'), 'Lifecycle journal still contains active or unresolved projects')
+  assert(records.every(isManagedWechatProjectFullyReleased), 'Lifecycle journal still contains active or unresolved project resources')
   return await Promise.all(records.map(async (record) => {
+    if (record.releasedReason === 'not-started') {
+      assert(record.snapshot?.state === 'removed' && !record.snapshot.dispatchedAt && record.openedProjectWindow === undefined, 'Unused reservation must retain its unstarted snapshot evidence')
+      return { id: record.id, state: record.state, releasedReason: record.releasedReason, reservedPort: record.port, portUsage: 'unused-reservation' as const }
+    }
     if (record.openedProjectWindow) {
       const windowClose = await assertOwnedWindowDestruction(record)
       assert(record.port && await isManagedPortClosed(record.port), 'Released lifecycle journal still has an open owned port')

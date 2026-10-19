@@ -2,6 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { acquireMachineE2ELease } from '../../../packages/devtools-runtime/src/lease/machine'
+import { isManagedWechatProjectFullyReleased } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { createManagedWechatProjectJournal, MANAGED_PROJECT_JOURNAL_ENV, readManagedWechatProjectRecords } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
 
 export interface IsolatedMachineLease {
@@ -25,7 +26,7 @@ export async function createIsolatedMachineLease(): Promise<IsolatedMachineLease
     dispose: async () => {
       // 子进程与故意保留的子 scope 必须先由测试收尾，失败时不删除剩余证据。
       await scope.seal()
-      if ((await readManagedWechatProjectRecords(journalPath)).some(record => record.state !== 'released')) {
+      if ((await readManagedWechatProjectRecords(journalPath)).some(record => !isManagedWechatProjectFullyReleased(record))) {
         throw new Error('Isolated machine fixture still has unreleased project records.')
       }
       await scope.complete()

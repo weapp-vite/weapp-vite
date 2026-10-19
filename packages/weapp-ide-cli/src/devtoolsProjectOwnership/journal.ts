@@ -11,6 +11,7 @@ import { installationExitRecoverySchema } from './installationExit/schema'
 import { MANAGED_PROJECT_JOURNAL_ENV } from './journal/constants'
 import { createManagedChildJournal, initializeManagedJournalScope, managedJournalPrefix, resolveManagedJournalScope } from './journal/scope'
 import { readManagedJournalWriterIdentity } from './journal/writerIdentity'
+import { managedSnapshotSchema } from './snapshot/schema'
 import { managedWindowCloseSchema } from './windowClose/schema'
 
 export { MANAGED_PROJECT_JOURNAL_ENV } from './journal/constants'
@@ -41,7 +42,8 @@ const recordSchema = z.object({
   updatedAt: z.string().min(1),
   closeAcknowledgedAt: z.string().min(1).optional(),
   windowClose: managedWindowCloseSchema.optional(),
-  releasedReason: z.enum(['borrowed', 'project-closed', 'installation-exited']).optional(),
+  releasedReason: z.enum(['borrowed', 'project-closed', 'installation-exited', 'not-started']).optional(),
+  snapshot: managedSnapshotSchema.optional(),
   installationExitRecovery: installationExitRecoverySchema.optional(),
   error: z.string().optional(),
 }).refine(record => record.releasedReason === 'installation-exited'
@@ -65,7 +67,9 @@ export async function readManagedRecord(journalPath: string, id: string): Promis
     throw new Error('Managed DevTools journal record is not a regular file.')
   }
   const record = recordSchema.parse(JSON.parse(await fs.readFile(file, 'utf8')) as unknown)
-  if (record.id !== id || record.journalPath !== journalPath || !path.isAbsolute(record.projectPath)) {
+  if (record.id !== id || record.journalPath !== journalPath || !path.isAbsolute(record.projectPath)
+    || (record.snapshot && (record.projectPath !== path.join(journalPath, 'snapshots', id)
+      || !path.isAbsolute(record.snapshot.sourceProjectPath) || record.snapshot.sourceProjectPath === record.projectPath))) {
     throw new Error('Managed DevTools journal identity does not match its task directory.')
   }
   return record

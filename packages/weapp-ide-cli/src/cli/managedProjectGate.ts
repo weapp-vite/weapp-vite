@@ -4,6 +4,7 @@ import path from 'node:path'
 import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
 import { assertManagedInstallation, inspectManagedProjectHost, sameManagedProcess } from '../devtoolsProjectOwnership/host'
 import { readManagedRecord, readManagedWechatProjectRecords, resolveManagedJournal, withManagedJournalLock, writeManagedRecord } from '../devtoolsProjectOwnership/journal'
+import { isManagedWechatProjectFullyReleased } from '../devtoolsProjectOwnership/snapshot'
 
 interface ManagedProjectGateOptions {
   signal?: AbortSignal
@@ -19,7 +20,9 @@ function sameTarget(first: ResolvedWechatDevtoolsTarget, second: ResolvedWechatD
 async function findConfirmedProject(journalPath: string, target: ResolvedWechatDevtoolsTarget, projectPath: string) {
   const records = await withManagedJournalLock(journalPath, async (scopeRoot) => {
     const scopeRecords = await readManagedWechatProjectRecords(scopeRoot)
-    if (scopeRecords.some(record => ['starting', 'unconfirmed', 'closing', 'failed'].includes(record.state))) {
+    if (scopeRecords.some(record => ['starting', 'unconfirmed', 'closing', 'failed'].includes(record.state)
+      || (record.state === 'released' && !isManagedWechatProjectFullyReleased(record))
+      || (record.state === 'borrowed' && record.snapshot?.state !== undefined && record.snapshot.state !== 'removed'))) {
       throw new Error('Managed DevTools journal contains unresolved ownership or cleanup; refusing a project mutation.')
     }
     // 根作用域只负责阻断；项目复用仍限定调用者明确持有的日志子树。

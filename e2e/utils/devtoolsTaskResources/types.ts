@@ -6,7 +6,8 @@ export type ResourceObservation<T> = { status: 'observed', value: T } | { status
 export type TaskResourcePhase = 'before-task' | 'before-cleanup' | 'after-cleanup'
 export type WrapperResourceEventType = 'snapshot-created' | 'watcher-started' | 'watcher-stopped' | 'watcher-error' | 'snapshot-deleted' | 'snapshot-delete-error' | 'watcher-stop-error'
 
-export type TaskResourceJournalRecord = Omit<ManagedWechatProjectRecord, 'ownerToken' | 'installationExitRecovery'> & {
+export type TaskResourceJournalRecord = Omit<ManagedWechatProjectRecord, 'ownerToken' | 'installationExitRecovery' | 'snapshot'> & {
+  snapshot?: Omit<NonNullable<ManagedWechatProjectRecord['snapshot']>, 'token'> & { tokenSha256: string }
   installationExitRecovery?: Omit<NonNullable<ManagedWechatProjectRecord['installationExitRecovery']>, 'recoveryScopeId' | 'journalScopeId'> & {
     recoveryScopeSha256: string
     journalScopeSha256: string
@@ -88,7 +89,7 @@ export interface TaskResourceReport {
     events: WrapperResourceEvent[]
     gaps: string[]
   }
-  registeredPorts: ResourceObservation<Array<{ port: number, recordId: string, state: ManagedWechatProjectRecord['state'], closureEvidence: 'domain-cleanup-return' | 'installation-exit-recovery' | 'borrowed-preserved' | 'not-proven' }>>
+  registeredPorts: ResourceObservation<Array<{ port: number, recordId: string, state: ManagedWechatProjectRecord['state'], closureEvidence: 'domain-cleanup-return' | 'installation-exit-recovery' | 'borrowed-preserved' | 'unused-reservation' | 'not-proven' }>>
   cleanup: {
     scope: { status: 'not-attempted' | 'succeeded' | 'failed', error?: string }
     host: { status: 'not-attempted' | 'succeeded' | 'failed', evidence?: DevtoolsHostExitEvidence, error?: string }
