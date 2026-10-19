@@ -38,3 +38,5 @@ pnpm exec eslint scripts/verificationTelemetry vitest.config.mts e2e/scripts/run
 ```
 
 微型 smoke 使用真实 Vitest 命令、原生 blob 与真实阈值失败验证时序，不是框架 E2E，也不计入性能样本。候选四分片集成另核验四个真实 shard、native merge、不重跑 case、原 100% 阈值及 Vite 原生 emit 后的 schema2 产物。
+
+本地完整验证采样由外部 `verificationBenchmark` 采集器运行此基线工作树。基线只保留同字节的任务执行观察依赖和 Vitest reporter；只有明确设置专用采样环境时才启用，原任务图、命令、测试发现、覆盖率阈值和 DOM reporter 均保留。采集器实现与 CLI 留在候选侧，不能将观察输出本身当作完整通过证明。

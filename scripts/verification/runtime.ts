@@ -4,20 +4,23 @@ import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 正式 IDE 验收复用现有受管 runner 和跨平台退出状态。
 import { execa } from 'execa'
+import { hasVerificationSourceChanges } from './generatedEvidence.ts'
 
 /** 全量真实 IDE 验收只允许同步且干净的主线工作树。 */
 export async function fullRuntimeBlock(root: string): Promise<string | undefined> {
   try {
-    const git = async (args: string[]) => (await execa('git', args, { cwd: root })).stdout.trim()
-    const [branch, head, main, dirty, commonGitDirectory] = await Promise.all([
+    const git = async (args: string[]) => (await execa('git', args, { cwd: root })).stdout
+    const [branch, head, main, trackedChanges, untrackedFiles, commonGitDirectory] = await Promise.all([
       git(['branch', '--show-current']),
       git(['rev-parse', 'HEAD']),
       git(['rev-parse', 'origin/main']),
-      git(['status', '--porcelain']),
+      git(['status', '--porcelain', '--untracked-files=no']),
+      git(['ls-files', '--others', '--exclude-standard', '-z']),
       git(['rev-parse', '--path-format=absolute', '--git-common-dir']),
     ])
-    const [actualRoot, primaryRoot] = await Promise.all([realpath(root), realpath(path.dirname(commonGitDirectory))])
-    if (branch !== 'main' || head !== main || dirty || actualRoot !== primaryRoot) {
+    const [actualRoot, primaryRoot] = await Promise.all([realpath(root), realpath(path.dirname(commonGitDirectory.trim()))])
+    const dirty = hasVerificationSourceChanges(trackedChanges, untrackedFiles)
+    if (branch.trim() !== 'main' || head.trim() !== main.trim() || dirty || actualRoot !== primaryRoot) {
       return '正式真实 IDE 全量验收必须在干净 main 工作树、HEAD == origin/main 时执行；当前只能提供局部证据'
     }
   }

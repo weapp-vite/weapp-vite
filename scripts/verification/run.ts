@@ -10,6 +10,10 @@ export type TaskExecutor = (task: VerificationTask, signal?: AbortSignal) => Pro
 
 export function createTaskExecutor(root: string, jsonOutput = false): TaskExecutor {
   return async (task, signal) => {
+    if (process.env.WEAPP_VITE_VERIFICATION_LOCAL_DIR) {
+      const { executeLocalTask } = await import('../verificationBenchmark/localTask.mjs')
+      return await executeLocalTask(root, task, signal, jsonOutput)
+    }
     let output = ''
     const destination = jsonOutput ? process.stderr : process.stdout
     const subprocess = execa(task.command, task.args, {

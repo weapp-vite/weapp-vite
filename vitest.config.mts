@@ -4,6 +4,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import YAML from 'yaml'
+import { localReporters } from './scripts/verificationBenchmark/localReporterConfig.mjs'
 import { baselineVitestTelemetry } from './scripts/verificationTelemetry/vitest.mjs'
 
 const ROOT_DIR = path.dirname(fileURLToPath(new URL(import.meta.url)))
@@ -187,9 +188,11 @@ const projects = [
 ]
 
 export default defineConfig(() => {
+  const telemetry = baselineVitestTelemetry(ROOT_DIR)
   return {
     test: {
-      ...baselineVitestTelemetry(ROOT_DIR),
+      ...telemetry,
+      reporters: localReporters(telemetry.reporters),
       globalSetup: [path.resolve(ROOT_DIR, 'vitest.globalSetup.mjs')],
       maxWorkers: workspaceMaxWorkers,
       projects,
