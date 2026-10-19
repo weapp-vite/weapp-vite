@@ -71,6 +71,10 @@ export async function executeLocalTask(root, task, signal, jsonOutput) {
       receipt.artifacts = createBuildArtifactManifest(root, buildEnv)
       await localSave(path.join(directory, 'artifacts/latest.json'), receipt.artifacts)
     }
+    else if (result.exitCode === 0 && receipt.preparedArtifacts) {
+      verifyBuildArtifactManifest(root, receipt.preparedArtifacts.value, buildEnv)
+      assert.deepEqual(createBuildArtifactManifest(root, buildEnv), receipt.preparedArtifacts.value, 'Prepared artifact inventory changed inside a consumer')
+    }
     assert(localIdentity(root, runId).fingerprint === before.fingerprint, 'Source changed inside a local verification task')
     if (result.exitCode === 0 && task.id === 'dist-sync:weapp-vite') {
       process.stderr.write('dist sync: rebuilt weapp-vite before downstream validation\n')
