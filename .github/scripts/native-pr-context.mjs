@@ -1,6 +1,7 @@
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { readNativePrWorkload, selectNativePrWorkload } from './native-pr-workload.mjs'
 import { matchesFilters, resolvePrContext } from './pr-context.mjs'
 
 /** 原生 PR 运行绑定触发事件中的提交，审批等待不能把旧运行改测新提交。 */
@@ -34,6 +35,7 @@ export async function resolveNativePrContext({ repository, runId, runAttempt = 1
     || context.headRepository !== pull.head.repo.full_name || context.checkoutSha !== driverSha) {
     throw new Error('PR changed while waiting for approval; approve the new run')
   }
+  const workload = await readNativePrWorkload(context.checkoutSha, profiles, get)
   const files = []
   for (let page = 1; ; page++) {
     const rows = await get(`/pulls/${event.number}/files?per_page=100&page=${page}`)
@@ -46,14 +48,15 @@ export async function resolveNativePrContext({ repository, runId, runAttempt = 1
     }
   }
   const paths = files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean))
-  const selections = Object.fromEntries(Object.entries(profiles).map(([name, profile]) => [name, matchesFilters([context.baseRef], profile.baseBranches)
+  const pathSelections = Object.fromEntries(Object.entries(profiles).map(([name, profile]) => [name, matchesFilters([context.baseRef], profile.baseBranches)
     && (files.length >= 3000 || matchesFilters(paths, profile.paths))]))
+  const selection = selectNativePrWorkload(context, profiles, pathSelections, workload)
   const current = await get(`/pulls/${event.number}`)
   const base = await get(`/git/ref/heads/${encodeURIComponent(context.baseRef)}`)
   if (current.state !== 'open' || current.head.sha !== context.headSha || current.base.sha !== context.baseSha || base.object?.sha !== context.baseSha) {
     throw new Error('PR changed while selecting checks; approve the new run')
   }
-  return { ...context, event: 'pull_request', selections }
+  return { ...context, event: 'pull_request', ...selection }
 }
 
 /** 子流程只投影固定上下文，不重新请求 PR，也不重复发布 artifact 或提交状态。 */
@@ -116,8 +119,10 @@ async function main() {
   await mkdir('.tmp/pr-context', { recursive: true })
   await writeFile('.tmp/pr-context/context.json', `${JSON.stringify(context, null, 2)}\n`)
   await outputs(context)
-  const rows = Object.entries(profiles).map(([name, profile]) => `| ${profile.name} | ${context.selections[name] ? 'Selected' : 'Skipped by path/branch filters'} |`)
-  await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Approved PR #${context.prNumber}\n\nHEAD: \`${context.headSha}\`\n\nBASE: \`${context.baseSha}\`\n\nMERGE: \`${context.checkoutSha}\`\n\n| Check | Selection |\n| --- | --- |\n${rows.join('\n')}\n`)
+  const rows = Object.entries(profiles).map(([name, profile]) => `| ${profile.name} | ${context.selections[name] ? 'Selected' : 'Skipped by path/branch filters'} | ${context.selectionSources[name]} |`)
+  const benchmark = context.benchmarkWorkload
+  const receipt = benchmark ? `\n\nBenchmark workload: \`${benchmark.id}\`\n\nManifest SHA-256: \`${benchmark.manifest.sha256}\`` : ''
+  await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Approved PR #${context.prNumber}\n\nHEAD: \`${context.headSha}\`\n\nBASE: \`${context.baseSha}\`\n\nMERGE: \`${context.checkoutSha}\`${receipt}\n\n| Check | Selection | Source |\n| --- | --- | --- |\n${rows.join('\n')}\n`)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

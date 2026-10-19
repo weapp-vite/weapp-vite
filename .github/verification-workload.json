@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "draft": false,
+  "id": "verification-speedup-v1",
+  "pullRequests": [1239, 1242],
+  "baseBranch": "main",
+  "profiles": [
+    "ci",
+    "ci-policy",
+    "ci-e2e",
+    "ci-create-weapp-vite",
+    "ci-acceptance-http",
+    "ci-acceptance",
+    "ci-dimina",
+    "ci-vite-host-consumer",
+    "ci-vscode-extension",
+    "ci-tutorial-e2e",
+    "deploy-website",
+    "native-addon-correctness",
+    "ci-performance",
+    "wevu-runtime-size"
+  ]
+}

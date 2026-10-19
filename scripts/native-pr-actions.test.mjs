@@ -1,8 +1,11 @@
 /* eslint-disable no-template-curly-in-string -- GitHub Actions 表达式必须按字面量核验。 */
+import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
 import { projectPrContext, resolveNativePrContext, validateNativePrContext } from '../.github/scripts/native-pr-context.mjs'
+import { NATIVE_PR_WORKLOAD_PATH, readNativePrWorkload } from '../.github/scripts/native-pr-workload.mjs'
 
 const repository = 'example/project'
 const headSha = 'a'.repeat(40)
@@ -15,15 +18,24 @@ const profiles = {
   smoke: { paths: ['packages/**'], baseBranches: ['main'], checkoutMode: 'head' },
   excluded: { paths: [], baseBranches: ['release/**'], checkoutMode: 'merge' },
 }
+const workload = { schemaVersion: 1, draft: false, id: 'verification-test-v1', pullRequests: [1239, 1242], baseBranch: 'main', profiles: ['smoke'] }
+
+function workloadBlob(value) {
+  const bytes = Buffer.from(typeof value === 'string' ? value : JSON.stringify(value))
+  return { type: 'file', path: NATIVE_PR_WORKLOAD_PATH, encoding: 'base64', content: bytes.toString('base64'), sha: createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex') }
+}
 
 function fixture() {
-  const state = { pull, files: [{ filename: 'docs/renamed.md', previous_filename: 'packages/old.ts' }], baseSha }
+  const state = { pull, files: [{ filename: 'docs/renamed.md', previous_filename: 'packages/old.ts' }], baseSha, workload }
   const get = vi.fn(async (pathname) => {
     if (pathname === '/pulls/42') {
       return state.pull
     }
-    if (pathname === '/git/ref/heads/main') {
+    if (pathname === `/git/ref/heads/${encodeURIComponent(state.pull.base.ref)}`) {
       return { object: { sha: state.baseSha } }
+    }
+    if (pathname === `/contents/${NATIVE_PR_WORKLOAD_PATH}?ref=${driverSha}`) {
+      return workloadBlob(state.workload)
     }
     if (pathname === `/git/commits/${driverSha}`) {
       return { sha: driverSha, parents: [{ sha: baseSha }, { sha: headSha }] }
@@ -98,6 +110,82 @@ describe('native PR approval context', () => {
       expect(() => validateNativePrContext(context, { ...run, ...change }, repository)).toThrow('Untrusted native PR context')
     }
   })
+
+  it('keeps ordinary PR selections unchanged and adds only explicitly approved workload profiles', async () => {
+    const { options, get, state } = fixture()
+    state.files = [{ filename: 'docs/guide.md' }]
+    const ordinary = await resolveNativePrContext(options, get)
+    expect(ordinary).not.toHaveProperty('benchmarkWorkload')
+    expect(ordinary.pathSelections).toEqual(ordinary.selections)
+    state.workload = { ...workload, pullRequests: [42] }
+    const active = await resolveNativePrContext(options, get)
+    expect(active.pathSelections).toEqual({ ci: true, smoke: false, excluded: false })
+    expect(active.selections).toEqual({ ci: true, smoke: true, excluded: false })
+    expect(active.selectionSources).toEqual({ ci: 'path', smoke: 'workload', excluded: 'skipped' })
+    expect(active.benchmarkWorkload).toMatchObject({ id: workload.id, baseBranch: 'main', profiles: ['smoke'], manifest: { path: NATIVE_PR_WORKLOAD_PATH, blobSha: workloadBlob(state.workload).sha } })
+    expect(active.benchmarkWorkload.manifest.sha256).toBe(createHash('sha256').update(JSON.stringify(state.workload)).digest('hex'))
+  })
+
+  it('records both selection sources and freezes manifest bytes before the final HEAD guard', async () => {
+    const { options, get, state } = fixture()
+    state.workload = { ...workload, pullRequests: [42] }
+    const context = await resolveNativePrContext(options, get)
+    expect(context.selectionSources.smoke).toBe('path+workload')
+    expect(get).toHaveBeenCalledWith(`/contents/${NATIVE_PR_WORKLOAD_PATH}?ref=${driverSha}`)
+    const moving = async (pathname) => {
+      const result = await get(pathname)
+      if (pathname.startsWith('/contents/')) {
+        state.pull = { ...pull, head: { ...pull.head, sha: 'd'.repeat(40) } }
+      }
+      return result
+    }
+    await expect(resolveNativePrContext(options, moving)).rejects.toThrow('while selecting checks')
+  })
+
+  it('requires retargeting active PRs instead of silently dropping incompatible branch checks', async () => {
+    const { options, get, state } = fixture()
+    state.workload = { ...workload, pullRequests: [42], baseBranch: 'next' }
+    await expect(resolveNativePrContext(options, get)).rejects.toThrow('requires base next; retarget')
+    state.workload = { ...workload, pullRequests: [42], profiles: ['excluded'] }
+    await expect(resolveNativePrContext(options, get)).rejects.toThrow('profile excluded does not apply to base main; retarget')
+  })
+
+  it.each([
+    { draft: true },
+    { id: '' },
+    { unexpected: true },
+    { baseBranch: '*' },
+    { pullRequests: [] },
+    { pullRequests: [42, 42] },
+    { pullRequests: [0] },
+    { profiles: [] },
+    { profiles: ['unknown'] },
+    { profiles: ['smoke', 'smoke'] },
+  ])('rejects malformed workload policy %j before scheduling checks', async (change) => {
+    const { options, get, state } = fixture()
+    state.workload = { ...workload, ...change }
+    await expect(resolveNativePrContext(options, get)).rejects.toThrow('Invalid benchmark workload manifest')
+  })
+
+  it('rejects malformed JSON and mismatched immutable blob bytes', async () => {
+    await expect(readNativePrWorkload(driverSha, profiles, async () => workloadBlob('{'))).rejects.toThrow()
+    const blob = workloadBlob(workload)
+    await expect(readNativePrWorkload(driverSha, profiles, async () => ({ ...blob, sha: 'd'.repeat(40) }))).rejects.toThrow('blob identity mismatch')
+    await expect(readNativePrWorkload(driverSha, profiles, async () => ({ ...blob, content: `${blob.content}!` }))).rejects.toThrow('Invalid benchmark workload blob')
+  })
+
+  it('hashes original manifest bytes including indentation and CRLF instead of reserializing JSON', async () => {
+    const source = `${JSON.stringify(workload, null, 2).replaceAll('\n', '\r\n')}\r\n`
+    const receipt = await readNativePrWorkload(driverSha, profiles, async () => workloadBlob(source))
+    expect(receipt.manifest.sha256).toBe(createHash('sha256').update(source).digest('hex'))
+    expect(receipt.manifest.sha256).not.toBe(createHash('sha256').update(JSON.stringify(workload)).digest('hex'))
+  })
+
+  it('keeps the reviewed repository workload exact instead of automatically including future profiles', async () => {
+    const actual = JSON.parse(await readFile(new URL(`../${NATIVE_PR_WORKLOAD_PATH}`, import.meta.url), 'utf8'))
+    const configured = JSON.parse(await readFile(new URL('../.github/pr-checks.json', import.meta.url), 'utf8'))
+    expect(actual).toEqual({ schemaVersion: 1, draft: false, id: 'verification-speedup-v1', pullRequests: [1239, 1242], baseBranch: 'main', profiles: Object.keys(configured) })
+  })
 })
 
 describe('native approval workflow graph', () => {
@@ -130,6 +218,9 @@ describe('native approval workflow graph', () => {
       const wrapper = await read(`${name}.yml`)
       expect(wrapper.jobs.validation.uses).toBe(check.uses)
       expect(wrapper.jobs['pr-context'].with.profile).toBe(name)
+      if (profiles[name].paths.length) {
+        expect(profiles[name].paths).toEqual(expect.arrayContaining(['.github/scripts/native-pr-workload.mjs', NATIVE_PR_WORKLOAD_PATH]))
+      }
     }
     expect(checks['nightly-performance']).toBeUndefined()
   })
