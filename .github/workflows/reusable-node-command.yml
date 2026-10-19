@@ -91,6 +91,42 @@ on:
         required: false
         type: string
         default: ''
+      lint_command:
+        required: false
+        type: string
+        default: ''
+      test_command:
+        required: false
+        type: string
+        default: ''
+      contracts_command:
+        required: false
+        type: string
+        default: ''
+      timing_artifact_name:
+        required: false
+        type: string
+        default: ''
+      consume_aux_artifact:
+        required: false
+        type: string
+        default: ''
+      aux_artifact_path:
+        required: false
+        type: string
+        default: .tmp/verification-plan
+      build_artifact_scope:
+        required: false
+        type: string
+        default: ''
+      build_artifact_node_major:
+        required: false
+        type: string
+        default: ''
+      consumer_tarballs:
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -102,68 +138,76 @@ jobs:
     env:
       TURBO_TOKEN: ${{ inputs.pr_number == '' && secrets.TURBO_TOKEN || '' }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: ${{ startsWith(inputs.node_version, '22') && '22' || '24' }}
+      BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: ${{ inputs.build_artifact_node_major || (startsWith(inputs.node_version, '22') && '22' || startsWith(inputs.node_version, '26') && '26' || '24') }}
       BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ inputs.checkout_ref || github.sha }}
       PR_BASE_SHA: ${{ inputs.base_sha }}
       PR_HEAD_REF: ${{ inputs.head_ref }}
       WEAPP_VITE_E2E_EXCLUDE_PROJECTS: ${{ inputs.e2e_exclude_projects }}
+      BUILD_ARTIFACT_EXPECTED_SCOPE: ${{ inputs.build_artifact_scope }}
+      WEAPP_VITE_CONSUMER_TARBALLS: ${{ inputs.consumer_tarballs }}
 
     steps:
       - name: Enable Git long paths on Windows
         if: runner.os == 'Windows'
         shell: bash
         run: git config --system core.longpaths true
-
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.checkout_ref || github.sha }}
           fetch-depth: ${{ inputs.pr_number != '' && '0' || inputs.fetch_depth }}
           persist-credentials: false
-
       - name: Fetch frozen PR base
         if: inputs.base_sha != ''
         shell: bash
         env:
           PR_BASE_SHA: ${{ inputs.base_sha }}
         run: git fetch --no-tags origin "$PR_BASE_SHA"
-
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ inputs.node_version }}
-
+      - name: Restore trusted workspace task cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ runner.arch }}-${{ env.REPOCTL_RELEASE_NODE_VERSION }}-${{ env.REPOCTL_RELEASE_PNPM_VERSION }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}-${{ inputs.checkout_ref || github.sha }}
+          restore-keys: turbo-${{ runner.os }}-${{ runner.arch }}-${{ env.REPOCTL_RELEASE_NODE_VERSION }}-${{ env.REPOCTL_RELEASE_PNPM_VERSION }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}-
       - name: Install Bun runtime
         if: inputs.bun_version != ''
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: ${{ inputs.bun_version }}
-
       - if: inputs.build_command != '' && inputs.consume_build_artifact == ''
         uses: ./.github/actions/refresh-workspace-deps
         with:
           build-command: ${{ inputs.build_command }}
-
       - name: Download workspace build artifact
         if: inputs.consume_build_artifact != ''
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ inputs.consume_build_artifact }}
           path: .
-
       - name: Refresh workspace links after artifact restore
         if: inputs.consume_build_artifact != ''
         shell: bash
         run: |
           pnpm install --frozen-lockfile --ignore-scripts
           node scripts/verify-build-artifact-manifest.mjs
-
+      - name: Download auxiliary verification artifact
+        if: inputs.consume_aux_artifact != ''
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ inputs.consume_aux_artifact }}
+          path: ${{ inputs.aux_artifact_path }}
+      - name: Verify immutable consumer archives
+        if: inputs.consumer_tarballs != ''
+        run: node scripts/consumerArtifacts/manifest.mjs verify "${{ inputs.consumer_tarballs }}"
       - name: Create workspace build artifact manifest
         if: inputs.build_artifact_name != ''
         shell: bash
         run: |
           export GITHUB_SHA="$BUILD_ARTIFACT_EXPECTED_COMMIT"
           node scripts/create-build-artifact-manifest.mjs
-
       - name: Install Playwright browsers and system dependencies
         if: inputs.install_playwright && runner.os == 'Linux'
         run: |
@@ -171,11 +215,36 @@ jobs:
             sudo sed -i '\#azure.archive.ubuntu.com#d' /etc/apt/apt-mirrors.txt
           fi
           pnpm exec playwright install --with-deps ${{ inputs.playwright_browsers }}
-
       - name: Install Playwright browsers
         if: inputs.install_playwright && runner.os != 'Linux'
         run: pnpm exec playwright install ${{ inputs.playwright_browsers }}
-
+      - name: Run lint phase
+        if: inputs.lint_command != ''
+        shell: bash
+        env:
+          E2E_PLATFORM: ${{ inputs.e2e_platform }}
+        run: |-
+          node .github/scripts/ci-timing.mjs start lint
+          trap 'phase_exit=$?; node .github/scripts/ci-timing.mjs finish lint "$phase_exit"; exit "$phase_exit"' EXIT
+          ${{ inputs.lint_command }}
+      - name: Run test phase
+        if: inputs.test_command != ''
+        shell: bash
+        env:
+          E2E_PLATFORM: ${{ inputs.e2e_platform }}
+        run: |-
+          node .github/scripts/ci-timing.mjs start test
+          trap 'phase_exit=$?; node .github/scripts/ci-timing.mjs finish test "$phase_exit"; exit "$phase_exit"' EXIT
+          ${{ inputs.test_command }}
+      - name: Run contracts phase
+        if: inputs.contracts_command != ''
+        shell: bash
+        env:
+          E2E_PLATFORM: ${{ inputs.e2e_platform }}
+        run: |-
+          node .github/scripts/ci-timing.mjs start contracts
+          trap 'phase_exit=$?; node .github/scripts/ci-timing.mjs finish contracts "$phase_exit"; exit "$phase_exit"' EXIT
+          ${{ inputs.contracts_command }}
       - name: Run command
         shell: bash
         env:
@@ -186,12 +255,13 @@ jobs:
             printf 'Effective file descriptor limit: '
             ulimit -n || true
           fi
+          node .github/scripts/ci-timing.mjs start main
+          trap 'phase_exit=$?; node .github/scripts/ci-timing.mjs finish main "$phase_exit"; exit "$phase_exit"' EXIT
           if [[ -n "$PR_BASE_SHA" ]]; then
             export GITHUB_BASE_REF="$PR_BASE_SHA"
             export GITHUB_HEAD_REF="$PR_HEAD_REF"
           fi
           ${{ inputs.main_command }}
-
       - name: Upload coverage reports to Codecov
         if: inputs.upload_codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
@@ -201,7 +271,6 @@ jobs:
           override_branch: ${{ inputs.head_ref || github.ref_name }}
         env:
           CODECOV_TOKEN: ${{ inputs.pr_number == '' && secrets.CODECOV_TOKEN || '' }}
-
       - name: Upload artifact
         if: ${{ !cancelled() && inputs.artifact_name != '' && inputs.artifact_path != '' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -210,7 +279,6 @@ jobs:
           include-hidden-files: true
           path: ${{ inputs.artifact_path }}
           if-no-files-found: warn
-
       - name: Upload workspace build artifact
         if: ${{ success() && inputs.build_artifact_name != '' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -231,3 +299,16 @@ jobs:
             mpcore/packages/*/bin/**
             .tmp/build-artifact-manifest.json
           if-no-files-found: error
+      - name: Upload CI stage timings
+        if: ${{ !cancelled() && inputs.timing_artifact_name != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ inputs.timing_artifact_name }}
+          path: .tmp/ci-timings.json
+          if-no-files-found: error
+      - name: Save trusted workspace task cache
+        if: ${{ success() && inputs.pr_number == '' && github.ref_name == github.event.repository.default_branch }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ runner.arch }}-${{ env.REPOCTL_RELEASE_NODE_VERSION }}-${{ env.REPOCTL_RELEASE_PNPM_VERSION }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}-${{ inputs.checkout_ref || github.sha }}

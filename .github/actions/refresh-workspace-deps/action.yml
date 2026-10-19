@@ -11,8 +11,13 @@ runs:
   steps:
     - name: Build workspace artifacts
       shell: bash
-      run: ${{ inputs.build-command }}
-
+      run: |-
+        node .github/scripts/ci-timing.mjs start build
+        trap 'phase_exit=$?; node .github/scripts/ci-timing.mjs finish build "$phase_exit"; exit "$phase_exit"' EXIT
+        ${{ inputs.build-command }}
     - name: Refresh injected workspace dependencies
       shell: bash
-      run: pnpm install --frozen-lockfile --ignore-scripts
+      run: |-
+        node .github/scripts/ci-timing.mjs start refresh-links
+        trap 'phase_exit=$?; node .github/scripts/ci-timing.mjs finish refresh-links "$phase_exit"; exit "$phase_exit"' EXIT
+        pnpm install --frozen-lockfile --ignore-scripts

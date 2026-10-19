@@ -1,9 +1,12 @@
+import type { PlannedTaskCase } from './domAcceptanceReport/taskCases'
 import type { AcceptanceIdentity, AcceptanceStatus } from './domAcceptanceReport/types'
+import type { VerificationExecution, VerificationTiming } from './verification/types'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { excludedE2EProjects } from '../../scripts/e2eProjectScope'
 import { createAcceptanceIdentity, sanitizeAcceptanceValue } from './domAcceptanceReport/helpers'
+import { VERIFICATION_TOOL_VERSION } from './verification/types'
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
 const REPORTS_ROOT_DIR = path.join(ROOT_DIR, 'docs/reports')
@@ -30,15 +33,23 @@ export interface SuiteTaskReportEntry {
   reason?: string
   runtimeVersions?: Array<{ version: string, baseLibraryVersion: string | null, installationId: string }>
   runtimeBlocker?: SuiteRuntimeBlocker
+  definitionHash?: string
+  timings?: VerificationTiming[]
 }
 
 export interface SuiteReportContext extends AcceptanceIdentity {
   partial: boolean
   strict: boolean
   plannedTasks: Array<{ label: string, outOfScopeReason?: string }>
+  execution?: VerificationExecution
+  taskDefinitions?: Record<string, string>
+  plannedCases?: Record<string, PlannedTaskCase[]>
 }
 
 export interface SuiteReportPayload {
+  schemaVersion?: 2
+  toolVersion?: number
+  execution?: VerificationExecution
   excludedProjects: string[]
   generatedAt: string
   jsonFile: string
@@ -192,6 +203,12 @@ export function createSuiteReport(
   reportsRootDir = REPORTS_ROOT_DIR,
   context: SuiteReportContext = { ...createAcceptanceIdentity(), strict: false, partial: false, plannedTasks: taskResults },
 ) {
+  if (new Set(taskResults.map(task => task.label)).size !== taskResults.length
+    || new Set(context.plannedTasks.map(task => task.label)).size !== context.plannedTasks.length
+    || taskResults.some(task => !context.plannedTasks.some(planned => planned.label === task.label)
+      || !Number.isFinite(task.durationMs) || task.durationMs < 0)) {
+    throw new Error('Suite report contains duplicate, unplanned or invalid task results')
+  }
   const { date, time } = formatDateParts(now)
   const reportSlug = `${date}-${time}-${sanitizeFileStem(suiteName)}-${randomUUID().slice(0, 8)}-suite-report`
   const reportDir = path.join(reportsRootDir, reportSlug)
@@ -207,11 +224,14 @@ export function createSuiteReport(
     }
     const result = resultsByLabel.get(task.label)
     return result
-      ? { ...result, status: result.status ?? (result.exitCode === 0 ? 'passed' : 'failed') }
+      ? { ...result, definitionHash: context.taskDefinitions?.[task.label] ?? result.definitionHash, status: result.status ?? (result.exitCode === 0 ? 'passed' : 'failed') }
       : { label: task.label, status: 'not-executed', reason: 'Task was not executed in this run', artifacts: [], durationMs: 0, exitCode: 1 }
   })
   const hasIncomplete = tasks.some(task => task.status !== 'passed' && task.status !== 'out-of-scope')
   const payload: SuiteReportPayload = {
+    schemaVersion: 2,
+    toolVersion: VERIFICATION_TOOL_VERSION,
+    ...(context.execution ? { execution: context.execution } : {}),
     excludedProjects: excludedE2EProjects(),
     generatedAt: now.toISOString(),
     suiteName,

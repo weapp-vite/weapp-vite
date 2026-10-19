@@ -10,6 +10,8 @@ import { createIsolatedMachineLease } from '../../utils/testSupport/machineLease
 import { getIdeExhaustiveTasks, IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS, IDE_GITHUB_ISSUES_AGGREGATE_LABEL, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS } from '../e2e-suite-manifest'
 import { createSuiteReport } from '../suiteReport'
 import { runTaskSuite as runTaskSuiteWithOptions } from '../suiteRunner'
+import { currentVerificationProfile } from '../verification/profile'
+import { evaluateAcceptanceCase, summarizeAcceptanceCases } from './helpers'
 import { validateTaskAcceptance } from './task'
 
 let machine: IsolatedMachineLease
@@ -91,6 +93,61 @@ describe('strict IDE suite acceptance', () => {
     })
     expect(report.coverage).toBe('partial')
     expect(report.acceptance).toBe('incomplete')
+  })
+
+  it('rejects duplicate, unplanned and invalid task results before writing a report', () => {
+    const result = { label: 'selected', artifacts: [], durationMs: 1, exitCode: 0 }
+    const context = { ...identity, strict: false, partial: false, plannedTasks: [{ label: 'selected' }] }
+    expect(() => createSuiteReport([result, result], 'unit', undefined, temporaryRoot(), context)).toThrow('duplicate')
+    expect(() => createSuiteReport([{ ...result, label: 'other' }], 'unit', undefined, temporaryRoot(), context)).toThrow('unplanned')
+    expect(() => createSuiteReport([{ ...result, durationMs: Number.NaN }], 'unit', undefined, temporaryRoot(), context)).toThrow('invalid')
+    expect(() => createSuiteReport([result], 'unit', undefined, temporaryRoot(), { ...context, plannedTasks: [context.plannedTasks[0]!, context.plannedTasks[0]!] })).toThrow('duplicate')
+  })
+
+  it.each(['shard', 'ad-hoc'] as const)('keeps %s reports partial while only an explicit shard can finish successfully', async (scope) => {
+    const label = 'unit-accepted-task'
+    const startedAt = '2026-10-19T00:00:00.000Z'
+    const finishedAt = '2026-10-19T00:00:02.000Z'
+    const cases = [evaluateAcceptanceCase({
+      id: 'mount',
+      file: `e2e/${label}`,
+      name: 'mounts',
+      state: 'passed',
+      startedAt: Date.parse(startedAt),
+      finishedAt: Date.parse(finishedAt),
+      acceptance: {
+        fixture: 'e2e-apps/example',
+        provider: 'headless',
+        checkpoints: [{ id: 'mounted', route: '/pages/index/index', action: 'mount', nodes: [{ selector: '.title', text: 'Ready' }] }],
+        evidence: [{ id: 'mounted', route: 'pages/index/index', source: 'headless-logical-tree', capturedAt: '2026-10-19T00:00:01.000Z', nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
+      },
+    })]
+    const file = path.join(temporaryRoot(), 'acceptance.json')
+    fs.writeFileSync(file, JSON.stringify({
+      schemaVersion: 1,
+      ...identity,
+      invocationId: 'unit-invocation',
+      taskLabel: label,
+      template: null,
+      provider: 'headless',
+      strict: true,
+      startedAt,
+      finishedAt,
+      status: 'passed',
+      errors: [],
+      environment: { nodeVersion: process.version, ideVersion: null, baseLibraryVersion: null },
+      cases,
+      summary: summarizeAcceptanceCases(cases),
+    }))
+    const task: SuiteTask = { label, command: 'node', args: [], env: { WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless' }, artifacts: [{ kind: 'dom-acceptance-report', indexPath: file }] }
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const execution = { scope, status: 'incomplete' as const, profile: currentVerificationProfile('ci-full'), assignedTasks: [label], startedAt, finishedAt }
+    const context = { ...identity, strict: true, partial: true, plannedTasks: [task], execution, plannedCases: { [label]: [{ file: `e2e/${label}`, name: 'mounts' }] } }
+    const code = await runTaskSuite('unit-shard', [task], { runTask: async () => 0, writeReport: false, reportContext: context })
+    expect(code).toBe(scope === 'shard' ? 0 : 1)
+    const report = createSuiteReport([{ label, exitCode: 0, durationMs: 1, artifacts: [] }], 'unit', undefined, temporaryRoot(), context)
+    expect(report).toMatchObject({ coverage: 'partial', acceptance: 'incomplete' })
   })
 
   it('does not accept a zero exit code without case reports, even with allow-failures', async () => {
