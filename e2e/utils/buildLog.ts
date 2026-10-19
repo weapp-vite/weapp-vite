@@ -1,14 +1,17 @@
 /* eslint-disable e18e/ban-dependencies -- e2e 构建日志采集需要 execa 驱动 CLI，并使用 shared fs 清理构建产物。 */
+import type { PackageJson } from 'pkg-types'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { stripVTControlCharacters } from 'node:util'
 import { fs as fsExtra } from '@weapp-core/shared/node'
 import { execa } from 'execa'
+import { resolveNpmBuildCandidateDependenciesSync } from '../../packages/weapp-vite/src/runtime/npmPlugin/service/dependencies'
 import { appendIdeReportEvent, resolveReportProjectPath } from './ideWarningReport'
 import { resolveJsFormatConfigOverride } from './jsFormat'
 
-const WARN_PATTERN = /\[warn\]/i
-const ERROR_PATTERN = /\[error\]/i
+const WARN_PATTERN = /\[warn\]|^\s*WARN(?=\s|$)/i
+const ERROR_PATTERN = /\[error\]|^\s*ERROR(?=\s|$)/i
 const CARRIAGE_RETURN_AT_EOL_PATTERN = /\r$/
 const MINIPROGRAM_NPM_EEXIST_PATTERN = /EEXIST: file already exists, mkdir .*miniprogram_npm/
 const PRINTED_SKIP_NPM_GUARDS = new Set<string>()
@@ -35,7 +38,7 @@ interface BuildCommandOptions {
 
 interface DependencyMeta {
   count: number
-  source: 'dependencies' | 'none'
+  source: 'dependencies' | 'npm-candidates' | 'none'
 }
 
 const BUILD_ENV_STRIP_PREFIXES = [
@@ -79,7 +82,8 @@ async function removeDirWithRetry(target: string, retries = 3) {
 }
 
 function collectLineStats(line: string, stats: BuildLogStats, project: string, label: string) {
-  if (WARN_PATTERN.test(line)) {
+  const levelLine = stripVTControlCharacters(line)
+  if (WARN_PATTERN.test(levelLine)) {
     stats.warn += 1
     appendIdeReportEvent({
       source: 'build',
@@ -91,7 +95,7 @@ function collectLineStats(line: string, stats: BuildLogStats, project: string, l
       text: line,
     })
   }
-  if (ERROR_PATTERN.test(line)) {
+  if (ERROR_PATTERN.test(levelLine)) {
     stats.error += 1
     appendIdeReportEvent({
       source: 'build',
@@ -141,14 +145,20 @@ function readDependencyMeta(projectRoot: string): DependencyMeta {
 
   try {
     const raw = fs.readFileSync(packageJsonPath, 'utf-8')
-    const pkg = JSON.parse(raw) as Record<string, any>
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return { count: 0, source: 'none' }
+    }
+    const pkg = parsed as PackageJson
     const dependencies = pkg?.dependencies && typeof pkg.dependencies === 'object'
       ? Object.keys(pkg.dependencies)
       : []
-    if (dependencies.length > 0) {
+    const npmCandidates = resolveNpmBuildCandidateDependenciesSync({ configService: { cwd: projectRoot } }, pkg)
+    const guardedDependencies = new Set([...dependencies, ...npmCandidates])
+    if (guardedDependencies.size > 0) {
       return {
-        count: dependencies.length,
-        source: 'dependencies',
+        count: guardedDependencies.size,
+        source: npmCandidates.length > 0 ? 'npm-candidates' : 'dependencies',
       }
     }
   }
