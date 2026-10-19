@@ -21,6 +21,10 @@ import { createWeappModeSequence } from './weappModeScenarios'
 
 const argumentsList = process.argv.slice(2)
 const run = beginSequenceRun()
+// 512 页框架资源序列包含一次初始构建和 14 轮增量/全新实例对照；
+// stateful 在受限 CI runner 上每轮需要约 38 秒。总时限必须覆盖完整观测，
+// 不能在最后一轮前取消并把超时误报为资源或运行时失败。
+const FULL_FRAMEWORK_SEQUENCE_TIMEOUT_MS = 900_000
 const candidate = await observeSequenceCandidate(path.resolve(import.meta.dirname, '../..'), argumentsList.includes('--require-clean'))
 const engineIndex = argumentsList.indexOf('--engine')
 const engine = engineIndex < 0 ? 'compiler' : argumentsList[engineIndex + 1]
@@ -84,7 +88,7 @@ await preserveSequenceReport(async () => {
             }, {
               maxSteps: 120,
               maxFiles: fullFramework ? 1024 : undefined,
-              timeoutMs: resourceSequence ? 600_000 : 60_000,
+              timeoutMs: resourceSequence ? FULL_FRAMEWORK_SEQUENCE_TIMEOUT_MS : 60_000,
               onStep: step => entry.steps.push(step),
             })
             if (resourceSequence) {

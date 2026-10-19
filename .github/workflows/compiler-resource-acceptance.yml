@@ -91,7 +91,7 @@ jobs:
               compiler: 'seven paired trials; complete compile time, sampled allocation, retained heap and process peak RSS',
               resources: '512 SFCs, 14 cycles; forced-GC worker heap, process-tree RSS and exact resource counts',
               profiling: 'same-runner serial off/on/on/off; two independent pairs; edit-to-observation includes headless runtime and output scans, not pure HMR latency',
-              sequenceTimeoutMs: 600000,
+              sequenceTimeoutMs: 900000,
               workerRequestTimeoutMs: 180000,
               profileOverheadBudgetPercent: Number(process.env.PROFILE_OVERHEAD_PERCENT),
               runtime: 'mpcore headless JavaScript semantics only',
