@@ -4,6 +4,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import YAML from 'yaml'
+import { baselineVitestTelemetry } from './scripts/verificationTelemetry/vitest.mjs'
 
 const ROOT_DIR = path.dirname(fileURLToPath(new URL(import.meta.url)))
 const WORKSPACE_FILE = path.resolve(ROOT_DIR, 'pnpm-workspace.yaml')
@@ -188,6 +189,7 @@ const projects = [
 export default defineConfig(() => {
   return {
     test: {
+      ...baselineVitestTelemetry(ROOT_DIR),
       globalSetup: [path.resolve(ROOT_DIR, 'vitest.globalSetup.mjs')],
       maxWorkers: workspaceMaxWorkers,
       projects,

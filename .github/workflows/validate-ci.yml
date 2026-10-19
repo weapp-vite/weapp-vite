@@ -81,6 +81,7 @@ jobs:
       artifact_name: dependency-contracts-${{ matrix.os }}-node-${{ matrix.node-version }}
       artifact_path: .tmp/dependency-contracts
       upload_codecov: true
+      verification_telemetry: true
     secrets: inherit
 
   build-release-pr:
@@ -123,6 +124,7 @@ jobs:
       artifact_name: dependency-contracts-${{ matrix.os }}-node-${{ matrix.node-version }}
       artifact_path: .tmp/dependency-contracts
       upload_codecov: true
+      verification_telemetry: true
     secrets: inherit
 
   build-full:
@@ -192,6 +194,7 @@ jobs:
       artifact_name: dependency-contracts-${{ matrix.os }}-node-${{ matrix.node-version }}
       artifact_path: .tmp/dependency-contracts
       upload_codecov: true
+      verification_telemetry: true
     secrets: inherit
 
   weapi-compat-pr:

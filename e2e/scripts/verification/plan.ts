@@ -140,7 +140,7 @@ export async function createVerificationPlan(options: {
     ...(strict && !task.outOfScopeReason ? { cases: await readPlannedTaskCases(task, options.profile.provider === 'headless' ? 'headless' : 'devtools') } : {}),
     ...(task.acceptanceTemplates ? { acceptanceTemplates: task.acceptanceTemplates } : {}),
   })))
-  const loads = Array.from({ length: options.shards }).fill(0)
+  const loads = Array.from<number>({ length: options.shards }).fill(0)
   for (const task of planned.filter(task => !task.outOfScopeReason).sort((left, right) => right.estimatedDurationMs - left.estimatedDurationMs || left.label.localeCompare(right.label))) {
     const target = loads.indexOf(Math.min(...loads))
     task.shardIndex = target + 1

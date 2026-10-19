@@ -1,0 +1,1205 @@
+{
+  ".github/workflows/validate-ci.yml": {
+    "pr-context": {
+      "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "profile": "ci"
+      }
+    },
+    "build-pr": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && !startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))",
+      "name": "Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "os": "ubuntu-latest",
+              "node-version": 22,
+              "timeout_minutes": 40,
+              "build_pkgs_script": "build:pkgs:ci",
+              "build_script": "build:ci",
+              "lint_script": "lint",
+              "main_command": "pnpm lint\npnpm build:ci\npnpm test:coverage\npnpm test:dependency-contracts\n"
+            },
+            {
+              "os": "ubuntu-latest",
+              "node-version": 24,
+              "timeout_minutes": 25,
+              "build_pkgs_script": "build:pkgs:ci",
+              "build_script": "build:ci",
+              "lint_script": "lint",
+              "main_command": "pnpm build:pkgs:ci\npnpm test:types\npnpm test:dependency-contracts\n"
+            },
+            {
+              "os": "windows-latest",
+              "node-version": 22,
+              "timeout_minutes": 40,
+              "build_pkgs_script": "build:pkgs:ci:windows",
+              "build_script": "build:ci:windows",
+              "lint_script": "lint:ci:windows",
+              "main_command": "pnpm build:ci:windows\npnpm test:dependency-contracts\n"
+            },
+            {
+              "os": "macos-latest",
+              "node-version": 22,
+              "timeout_minutes": 40,
+              "build_pkgs_script": "build:pkgs:ci:macos",
+              "build_script": "build:ci:macos",
+              "lint_script": "lint",
+              "main_command": "pnpm build:ci:macos\npnpm test:dependency-contracts\n"
+            }
+          ]
+        },
+        "max-parallel": 4
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": "${{ matrix.timeout_minutes }}",
+        "build_command": "",
+        "main_command": "${{ matrix.main_command }}",
+        "artifact_name": "dependency-contracts-${{ matrix.os }}-node-${{ matrix.node-version }}",
+        "artifact_path": ".tmp/dependency-contracts",
+        "upload_codecov": true
+      }
+    },
+    "build-release-pr": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))",
+      "name": "Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "os": "ubuntu-latest",
+              "node-version": 22,
+              "timeout_minutes": 40,
+              "build_script": "build:ci",
+              "lint_script": "lint"
+            },
+            {
+              "os": "ubuntu-latest",
+              "node-version": 24,
+              "timeout_minutes": 40,
+              "build_script": "build:ci",
+              "lint_script": "lint"
+            }
+          ]
+        },
+        "max-parallel": 2
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": "${{ matrix.timeout_minutes }}",
+        "build_command": "",
+        "main_command": "pnpm ${{ matrix.lint_script }}\npnpm ${{ matrix.build_script }}\npnpm test:dependency-contracts\npnpm test:coverage\n",
+        "artifact_name": "dependency-contracts-${{ matrix.os }}-node-${{ matrix.node-version }}",
+        "artifact_path": ".tmp/dependency-contracts",
+        "upload_codecov": true
+      }
+    },
+    "build-full": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')",
+      "name": "Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "include": [
+            {
+              "os": "ubuntu-latest",
+              "node-version": 22,
+              "timeout_minutes": 40,
+              "build_pkgs_script": "build:pkgs:ci",
+              "build_script": "build:ci",
+              "lint_script": "lint"
+            },
+            {
+              "os": "ubuntu-latest",
+              "node-version": 24,
+              "timeout_minutes": 40,
+              "build_pkgs_script": "build:pkgs:ci",
+              "build_script": "build:ci",
+              "lint_script": "lint"
+            },
+            {
+              "os": "windows-latest",
+              "node-version": 22,
+              "timeout_minutes": 90,
+              "build_pkgs_script": "build:pkgs:ci:windows",
+              "build_script": "build:ci:windows",
+              "lint_script": "lint:ci:windows"
+            },
+            {
+              "os": "windows-latest",
+              "node-version": 24,
+              "timeout_minutes": 90,
+              "build_pkgs_script": "build:pkgs:ci:windows",
+              "build_script": "build:ci:windows",
+              "lint_script": "lint:ci:windows"
+            },
+            {
+              "os": "macos-latest",
+              "node-version": 22,
+              "timeout_minutes": 60,
+              "build_pkgs_script": "build:pkgs:ci:macos",
+              "build_script": "build:ci:macos",
+              "lint_script": "lint"
+            },
+            {
+              "os": "macos-latest",
+              "node-version": 24,
+              "timeout_minutes": 60,
+              "build_pkgs_script": "build:pkgs:ci:macos",
+              "build_script": "build:ci:macos",
+              "lint_script": "lint"
+            }
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": "${{ matrix.timeout_minutes }}",
+        "build_command": "pnpm ${{ matrix.build_pkgs_script }}",
+        "main_command": "pnpm ${{ matrix.lint_script }}\npnpm ${{ matrix.build_script }}\npnpm test:dependency-contracts\npnpm test:coverage\n",
+        "artifact_name": "dependency-contracts-${{ matrix.os }}-node-${{ matrix.node-version }}",
+        "artifact_path": ".tmp/dependency-contracts",
+        "upload_codecov": true
+      }
+    },
+    "weapi-compat-pr": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true')",
+      "name": "Weapi Compatibility Guard (Node 24)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "24",
+        "timeout_minutes": 15,
+        "main_command": "pnpm --filter @weapp-core/api catalog:check\npnpm --filter @weapp-core/api docs:check\npnpm --filter @weapp-core/api lint\npnpm --filter @weapp-core/api typecheck\npnpm --filter @weapp-core/api typecheck:test\npnpm --filter @weapp-core/api structure:check\npnpm --filter @weapp-core/api strict-alias:check\npnpm --filter @weapp-core/api coverage:check\npnpm --filter @weapp-core/api test\npnpm --filter @weapp-core/api test:types\npnpm --filter @weapp-core/api report:api\npnpm --filter @wevu/api lint\npnpm --filter @wevu/api typecheck\npnpm --filter @wevu/api typecheck:test\npnpm --filter @wevu/api test\npnpm --filter @wevu/api test:types\ngit diff --exit-code -- \\\n  @weapp-core/api/README.md \\\n  @weapp-core/api/src/core/apiCatalog.ts \\\n  @weapp-core/api/src/core/types.ts \\\n  @weapp-core/api/src/index.ts \\\n  @weapp-core/api/types/index.d.ts \\\n  @weapp-core/api/reports/api-compat \\\n  packages-runtime/weapi/types/index.d.ts\n"
+      }
+    },
+    "weapi-compat-full": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')",
+      "name": "Weapi Compatibility Guard (Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 15,
+        "main_command": "pnpm --filter @weapp-core/api catalog:check\npnpm --filter @weapp-core/api docs:check\npnpm --filter @weapp-core/api lint\npnpm --filter @weapp-core/api typecheck\npnpm --filter @weapp-core/api typecheck:test\npnpm --filter @weapp-core/api structure:check\npnpm --filter @weapp-core/api strict-alias:check\npnpm --filter @weapp-core/api coverage:check\npnpm --filter @weapp-core/api test\npnpm --filter @weapp-core/api test:types\npnpm --filter @weapp-core/api report:api\npnpm --filter @wevu/api lint\npnpm --filter @wevu/api typecheck\npnpm --filter @wevu/api typecheck:test\npnpm --filter @wevu/api test\npnpm --filter @wevu/api test:types\ngit diff --exit-code -- \\\n  @weapp-core/api/README.md \\\n  @weapp-core/api/src/core/apiCatalog.ts \\\n  @weapp-core/api/src/core/types.ts \\\n  @weapp-core/api/src/index.ts \\\n  @weapp-core/api/types/index.d.ts \\\n  @weapp-core/api/reports/api-compat \\\n  packages-runtime/weapi/types/index.d.ts\n"
+      }
+    }
+  },
+  ".github/workflows/validate-ci-e2e.yml": {
+    "pr-context": {
+      "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "profile": "ci-e2e"
+      }
+    },
+    "native-compiler-batch-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'native-compiler-batch')",
+      "name": "Native Compiler Batch Diagnostic (${{ matrix.os }} / Node 24)",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "24",
+        "timeout_minutes": 20,
+        "build_command": "pnpm exec turbo run build --filter=weapp-vite...",
+        "main_command": "pnpm vitest run packages/weapp-vite/src/runtime/statefulHmr/compilerBatch.native.test.ts packages/weapp-vite/src/plugins/tailwindcss/contentInvalidation.test.ts packages/weapp-vite/src/plugins/tailwindcss/moduleDependencies.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/native-compiler-batch-report.json",
+        "artifact_name": "native-compiler-batch-${{ matrix.os }}-node-24-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/native-compiler-batch-report.json"
+      }
+    },
+    "windows-dev-cleanup-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-dev-cleanup')",
+      "name": "Dev Process Cleanup Shard Diagnostic (Windows / Node ${{ matrix.node-version }} / shard ${{ matrix.shard }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "node-version": 22,
+              "shard": 3
+            },
+            {
+              "node-version": 22,
+              "shard": 1
+            },
+            {
+              "node-version": 24,
+              "shard": 1
+            }
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "windows-latest",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 40,
+        "build_command": "pnpm build:ci:windows",
+        "main_command": "pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=${{ matrix.shard }} --shard-total=4",
+        "e2e_platform": "weapp",
+        "artifact_name": "windows-dev-cleanup-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": "docs/reports/*-e2e-ci-full-*-suite-report/**"
+      }
+    },
+    "windows-process-narrow-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-process-narrow')",
+      "name": "Suite Runner Process Diagnostic (Windows / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "windows-latest",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 15,
+        "build_command": "pnpm exec turbo run build --filter=weapp-ide-cli...",
+        "main_command": "pnpm exec cross-env NODE_DEBUG=weapp-ide-journal-writer pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/suiteRunner/process.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-process-narrow-report.json",
+        "artifact_name": "windows-process-narrow-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/windows-process-narrow-report.json"
+      }
+    },
+    "plugin-watch-readiness-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'plugin-watch-readiness')",
+      "name": "Plugin Watch Readiness (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 20,
+        "build_command": "pnpm exec turbo run build --filter=weapp-vite...",
+        "main_command": "pnpm vitest run packages/weapp-vite/test/vite-plugin-project.test.ts --reporter=default --reporter=json --outputFile=.tmp/plugin-watch-readiness-report.json",
+        "artifact_name": "plugin-watch-readiness-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/plugin-watch-readiness-report.json"
+      }
+    },
+    "runtime-publication-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'runtime-publication')",
+      "name": "Runtime Publication Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 30,
+        "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...",
+        "main_command": "pnpm vitest run e2e/utils/devBuildCompletion.test.ts e2e/utils/hmrOutputDiagnostics.test.ts e2e/scripts/e2e-suite-manifest.test.ts e2e/scripts/hmr-guard-manifest.test.ts\npnpm exec vitest run --config scripts/vitest.config.mjs scripts/workspace-hmr/statefulArtifactMeasurement.test.ts scripts/workspace-hmr/statefulArtifactMeasurement.deadline.test.ts scripts/workspace-hmr/statefulAuditClient.test.ts scripts/workspace-hmr/statefulAuditUpdate.test.ts scripts/e2e-diagnostic-workflow.test.ts scripts/repoctl-release-workflow.test.ts scripts/utils/atomicRename.test.ts scripts/editSequence/buildSources.test.ts scripts/editSequence/frameworkSources.test.ts\npnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/auto-import-vue-sfc.test.ts e2e/ci/external-linked-vue-component.hmr.test.ts\npnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/issue-1134-native-topology.runtime.test.ts e2e/ide/script-setup-external-src.runtime.test.ts e2e/ide/issue-1015-css-hmr.runtime.test.ts e2e/ide/issue-1140-mode-cache.runtime.test.ts e2e/ide/issue-1058-template-tags.runtime.test.ts\n",
+        "e2e_platform": "weapp",
+        "artifact_name": "runtime-publication-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": "docs/reports/dom-acceptance/**"
+      }
+    },
+    "lifecycle-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'lifecycle')",
+      "name": "HMR Lifecycle Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 30,
+        "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...",
+        "main_command": "pnpm vitest run packages/weapp-vite/src/utils/watchDependencies.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotInputs.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotBuild.integration.test.ts scripts/editSequence/processTree.test.ts scripts/editSequence/processTree.windows.integration.test.ts scripts/editSequence/processObserver.test.ts scripts/editSequence/processObserverClose.test.ts scripts/editSequence/worker.test.ts scripts/utils/atomicRename.test.ts scripts/editSequence/buildSources.test.ts scripts/editSequence/frameworkSources.test.ts\npnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/edit-sequence.test.ts --reporter=default --reporter=json --outputFile=.tmp/hmr-lifecycle-report.json\n",
+        "e2e_platform": "weapp",
+        "artifact_name": "hmr-lifecycle-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/hmr-lifecycle-report.json"
+      }
+    },
+    "shared-layout-windows-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'shared-layout-windows')",
+      "name": "Shared Layout HMR Diagnostic (Windows / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "windows-latest",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 30,
+        "build_command": "pnpm build:pkgs:ci:windows",
+        "main_command": "pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/hmr-layout-shared-template-wxs.test.ts",
+        "e2e_platform": "weapp"
+      }
+    },
+    "simulator-browser": {
+      "if": "${{ needs.pr-context.outputs.should_run == 'true' && !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}",
+      "needs": [
+        "pr-context",
+        "miniapp-e2e-build-pr",
+        "miniapp-e2e-build-full"
+      ],
+      "name": "Simulator Browser E2E (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "node-version": "${{ fromJSON(needs.pr-context.outputs.is_pr == 'true' && '[22]' || '[22,24]') }}"
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 20,
+        "consume_build_artifact": "miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build",
+        "install_playwright": true,
+        "main_command": "pnpm --filter @mpcore/simulator test:e2e",
+        "artifact_name": "simulator-browser-${{ matrix.os }}-node-${{ matrix.node-version }}",
+        "artifact_path": "docs/reports/simulator-browser/**"
+      }
+    },
+    "ide-dom-headless": {
+      "if": "${{ needs.pr-context.outputs.should_run == 'true' && !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}",
+      "needs": [
+        "pr-context",
+        "miniapp-e2e-build-pr",
+        "miniapp-e2e-build-full"
+      ],
+      "name": "IDE DOM Headless (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "node-version": "${{ fromJSON(needs.pr-context.outputs.is_pr == 'true' && '[22]' || '[22,24]') }}"
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 30,
+        "consume_build_artifact": "miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build",
+        "main_command": "pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts e2e/utils/devProcessCleanup/processes.test.ts e2e/utils/dev-process.cleanup.test.ts e2e/utils/devProcessCleanup/windowsProcessTree.test.ts e2e/utils/devProcessCleanup/windowsProcessRows.test.ts e2e/utils/devProcessCleanup/windowsQueryTrace.test.ts\npnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless\n",
+        "artifact_name": "ide-dom-headless-${{ matrix.os }}-node-${{ matrix.node-version }}",
+        "artifact_path": "docs/reports/dom-acceptance/**\ndocs/reports/*-e2e-ide-dom-headless-*-suite-report/**\n"
+      }
+    },
+    "shared-compiler-hosts": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && ((needs.pr-context.outputs.is_pr == 'true' || github.event_name == 'workflow_dispatch') && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Shared Compiler Hosts (${{ matrix.os }} / Node 24)",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "pnpm --filter weapp-vite... --filter @mpcore/simulator... build",
+        "main_command": "node integrations/shared-hmr-tailwind/prepare.mjs\nnode integrations/shared-hmr-tailwind/verify-install.mjs\nnode integrations/shared-hmr-tailwind/verify-isolated.mjs\nnode integrations/shared-hmr-tailwind/run-taro.mjs --build\npnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/shared-taro-hmr.runtime.test.ts\n",
+        "artifact_name": "shared-compiler-hosts-${{ matrix.os }}",
+        "artifact_path": "docs/reports/dom-acceptance/**\n.tmp/shared-hosts/artifacts.json\n"
+      }
+    },
+    "ide-dom-acceptance-internal": {
+      "if": "${{ needs.pr-context.outputs.should_run == 'true' && !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}",
+      "needs": [
+        "pr-context",
+        "miniapp-e2e-build-pr",
+        "miniapp-e2e-build-full"
+      ],
+      "name": "IDE DOM Acceptance Contracts (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "node-version": "${{ fromJSON(needs.pr-context.outputs.is_pr == 'true' && '[22]' || '[22,24]') }}"
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 15,
+        "consume_build_artifact": "miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build",
+        "main_command": "node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/github-issues --platform weapp\nnode packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/template-wevu-regression --platform weapp\nnode --import tsx scripts/check-e2e-ide-shared-launch.ts\nnode --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check\npnpm vitest run -c e2e/vitest.e2e.internal.config.ts --maxWorkers=1 --no-file-parallelism\n",
+        "artifact_name": "dom-acceptance-inventory-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": "e2e/dom-acceptance-inventory.json\ne2e/dom-acceptance-inventory.md\n"
+      }
+    },
+    "miniapp-platform-build-gate": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Miniapp Platform Build Gate (Ubuntu / Node 22)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "22",
+        "timeout_minutes": 30,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm e2e:platform:build"
+      }
+    },
+    "miniapp-e2e-build-pr": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Miniapp Build Artifact (${{ matrix.os }} / Node 22 / weapp)",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "platform": "weapp",
+              "os": "ubuntu-latest",
+              "build-command": "pnpm build:pkgs:ci"
+            },
+            {
+              "platform": "weapp",
+              "os": "windows-latest",
+              "build-command": "pnpm build:pkgs:ci:windows"
+            },
+            {
+              "platform": "weapp",
+              "os": "macos-latest",
+              "build-command": "pnpm build:pkgs:ci:macos"
+            }
+          ]
+        },
+        "max-parallel": 3
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "22",
+        "timeout_minutes": 40,
+        "build_command": "${{ matrix.build-command }}",
+        "main_command": "node -e \"console.log('workspace build artifact ready')\"",
+        "build_artifact_name": "miniapp-${{ matrix.os }}-node-22-weapp-build"
+      }
+    },
+    "miniapp-e2e-ci-pr": {
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "needs": [
+        "pr-context",
+        "miniapp-e2e-build-pr"
+      ],
+      "name": "Miniapp E2E PR (${{ matrix.os }} / Node 22 / ${{ matrix.platform }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "platform": "weapp",
+              "os": "ubuntu-latest"
+            },
+            {
+              "platform": "weapp",
+              "os": "windows-latest"
+            },
+            {
+              "platform": "weapp",
+              "os": "macos-latest"
+            }
+          ]
+        },
+        "max-parallel": 3
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "22",
+        "timeout_minutes": 40,
+        "main_command": "${{ matrix.os == 'windows-latest' && 'pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:pr' || 'pnpm e2e:ci:pr' }}",
+        "e2e_platform": "weapp",
+        "increase_ulimit": true,
+        "consume_build_artifact": "miniapp-${{ matrix.os }}-node-22-weapp-build",
+        "artifact_name": "miniapp-e2e-ci-pr-${{ matrix.os }}-node-22",
+        "artifact_path": "docs/reports/*-e2e-ci-pr-*-suite-report/**"
+      }
+    },
+    "miniapp-hmr-ci-pr": {
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "needs": [
+        "pr-context",
+        "miniapp-e2e-build-pr"
+      ],
+      "name": "Miniapp HMR Guard (${{ matrix.os }} / Node 22 / weapp)",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "os": "ubuntu-latest",
+              "build-command": "pnpm build:pkgs:ci",
+              "timeout_minutes": 35
+            }
+          ]
+        },
+        "max-parallel": 1
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "22",
+        "timeout_minutes": "${{ matrix.timeout_minutes }}",
+        "main_command": "pnpm e2e:hmr:guard:smoke",
+        "e2e_platform": "weapp",
+        "increase_ulimit": true,
+        "consume_build_artifact": "miniapp-${{ matrix.os }}-node-22-weapp-build"
+      }
+    },
+    "miniapp-e2e-build-full": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Miniapp Nightly Build Artifact (${{ matrix.os }} / Node ${{ matrix.node-version }} / weapp)",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "platform": "weapp",
+              "os": "ubuntu-latest",
+              "node-version": 22,
+              "build-command": "pnpm build:pkgs:ci"
+            },
+            {
+              "platform": "weapp",
+              "os": "windows-latest",
+              "node-version": 22,
+              "build-command": "pnpm build:pkgs:ci:windows"
+            },
+            {
+              "platform": "weapp",
+              "os": "macos-latest",
+              "node-version": 22,
+              "build-command": "pnpm build:pkgs:ci:macos"
+            },
+            {
+              "platform": "weapp",
+              "os": "ubuntu-latest",
+              "node-version": 24,
+              "build-command": "pnpm build:pkgs:ci"
+            },
+            {
+              "platform": "weapp",
+              "os": "windows-latest",
+              "node-version": 24,
+              "build-command": "pnpm build:pkgs:ci:windows"
+            },
+            {
+              "platform": "weapp",
+              "os": "macos-latest",
+              "node-version": 24,
+              "build-command": "pnpm build:pkgs:ci:macos"
+            }
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 40,
+        "build_command": "${{ matrix.build-command }}",
+        "main_command": "node -e \"console.log('workspace build artifact ready')\"",
+        "build_artifact_name": "miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build"
+      }
+    },
+    "bun-build-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'bun-cli')",
+      "name": "Bun Build Artifact (${{ matrix.os }} / Node 22)",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "os": "ubuntu-latest",
+              "build-command": "pnpm build:pkgs:ci"
+            },
+            {
+              "os": "windows-latest",
+              "build-command": "pnpm build:pkgs:ci:windows"
+            },
+            {
+              "os": "macos-latest",
+              "build-command": "pnpm build:pkgs:ci:macos"
+            }
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "22",
+        "timeout_minutes": 40,
+        "build_command": "${{ matrix.build-command }}",
+        "main_command": "node -e \"console.log('Bun workspace build artifact ready')\"",
+        "build_artifact_name": "miniapp-${{ matrix.os }}-node-22-weapp-build"
+      }
+    },
+    "bun-cli": {
+      "if": "${{ needs.pr-context.outputs.should_run == 'true' && !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success' || needs.bun-build-diagnostic.result == 'success') }}",
+      "needs": [
+        "pr-context",
+        "miniapp-e2e-build-pr",
+        "miniapp-e2e-build-full",
+        "bun-build-diagnostic"
+      ],
+      "name": "Bun CLI (${{ matrix.os }} / Bun ${{ matrix.bun-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "bun-version": [
+            "1.4.2",
+            "latest"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "22",
+        "bun_version": "${{ matrix.bun-version }}",
+        "timeout_minutes": 15,
+        "consume_build_artifact": "miniapp-${{ matrix.os }}-node-22-weapp-build",
+        "main_command": "bun --version\npnpm e2e:bun\n",
+        "artifact_name": "bun-cli-${{ matrix.os }}-${{ matrix.bun-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/bun-cli/**\ndocs/reports/*-e2e-bun-*-suite-report/**\n"
+      }
+    },
+    "miniapp-e2e-ci-full": {
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "needs": [
+        "pr-context",
+        "miniapp-e2e-build-full"
+      ],
+      "name": "Miniapp E2E Nightly (${{ matrix.os }} / Node ${{ matrix.node-version }} / shard ${{ matrix.shard }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 12,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "node-version": [
+            22,
+            24
+          ],
+          "shard": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 40,
+        "main_command": "pnpm e2e:ci:full -- --shard-index=${{ matrix.shard }} --shard-total=4",
+        "e2e_platform": "weapp",
+        "increase_ulimit": true,
+        "consume_build_artifact": "miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build",
+        "artifact_name": "miniapp-e2e-ci-full-${{ matrix.os }}-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}",
+        "artifact_path": "docs/reports/*-e2e-ci-full-*-suite-report/**"
+      }
+    },
+    "miniapp-hmr-ci-full": {
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "needs": [
+        "pr-context",
+        "miniapp-e2e-build-full"
+      ],
+      "name": "Miniapp HMR Guard (${{ matrix.os }} / Node ${{ matrix.node-version }} / weapp)",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "include": [
+            {
+              "os": "ubuntu-latest",
+              "node-version": 22,
+              "build-command": "pnpm build:pkgs:ci",
+              "timeout_minutes": 35
+            },
+            {
+              "os": "windows-latest",
+              "node-version": 22,
+              "build-command": "pnpm build:pkgs:ci:windows",
+              "timeout_minutes": 50
+            },
+            {
+              "os": "macos-latest",
+              "node-version": 22,
+              "build-command": "pnpm build:pkgs:ci:macos",
+              "timeout_minutes": 35
+            },
+            {
+              "os": "ubuntu-latest",
+              "node-version": 24,
+              "build-command": "pnpm build:pkgs:ci",
+              "timeout_minutes": 35
+            },
+            {
+              "os": "windows-latest",
+              "node-version": 24,
+              "build-command": "pnpm build:pkgs:ci:windows",
+              "timeout_minutes": 50
+            },
+            {
+              "os": "macos-latest",
+              "node-version": 24,
+              "build-command": "pnpm build:pkgs:ci:macos",
+              "timeout_minutes": 35
+            }
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": "${{ matrix.timeout_minutes }}",
+        "main_command": "pnpm e2e:ci:hmr",
+        "e2e_platform": "weapp",
+        "increase_ulimit": true,
+        "consume_build_artifact": "miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build"
+      }
+    },
+    "web-e2e-baseline-pr": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Web E2E Baseline (Node 24)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "macos-latest",
+        "node_version": "24",
+        "timeout_minutes": 35,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm e2e:web",
+        "install_playwright": true,
+        "artifact_name": "web-runtime-visual-pr",
+        "artifact_path": ".tmp/web-runtime-visual/**\n.tmp/web-runtime-diagnostics/**\n.tmp/uview-plus-compat/web/**\n.tmp/wot-ui-compat/web/**\n"
+      }
+    },
+    "web-project-builds": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Web Project Builds (Node 24)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "24",
+        "timeout_minutes": 45,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm e2e:web:build-projects"
+      }
+    },
+    "web-browser-smoke": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Web Browser Smoke (Firefox / WebKit / Node 24)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "24",
+        "timeout_minutes": 45,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm e2e:web:browser-smoke",
+        "install_playwright": true,
+        "playwright_browsers": "firefox webkit"
+      }
+    },
+    "workspace-hmr-pr": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr') && !startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))",
+      "name": "Workspace HMR Changed Projects (Node 24)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "24",
+        "timeout_minutes": 60,
+        "fetch_depth": 0,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm audit:hmr:changed",
+        "increase_ulimit": true,
+        "artifact_name": "workspace-hmr-pr",
+        "artifact_path": ".tmp/workspace-hmr/**"
+      }
+    },
+    "workspace-hmr-nightly": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr'))",
+      "name": "Workspace HMR Nightly Full (Node 24)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "24",
+        "timeout_minutes": 120,
+        "fetch_depth": 0,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm audit:hmr:nightly",
+        "increase_ulimit": true,
+        "artifact_name": "workspace-hmr-nightly",
+        "artifact_path": ".tmp/workspace-hmr/**"
+      }
+    },
+    "web-e2e-baseline-full": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Web E2E Baseline (Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "macos-latest",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 35,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm e2e:web",
+        "install_playwright": true,
+        "artifact_name": "web-runtime-visual-node-${{ matrix.node-version }}",
+        "artifact_path": ".tmp/web-runtime-visual/**\n.tmp/web-runtime-diagnostics/**\n.tmp/uview-plus-compat/web/**\n.tmp/wot-ui-compat/web/**\n"
+      }
+    }
+  }
+}
