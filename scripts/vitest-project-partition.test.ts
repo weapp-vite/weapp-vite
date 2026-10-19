@@ -2,6 +2,7 @@ import path from 'node:path'
 import { glob } from 'tinyglobby'
 import { loadConfigFromFile, mergeConfig } from 'vite'
 import { describe, expect, it } from 'vitest'
+import { parallelFixtureTests } from '../packages/weapp-vite/vitest/partition'
 
 describe('compiler test project partition', () => {
   it('executes the complete file set once while preserving watch tests in the serial project', async () => {
@@ -24,7 +25,12 @@ describe('compiler test project partition', () => {
     expect([...new Set([...fast, ...serial])].sort()).toEqual(expected.sort())
     expect(config.test.projects.find(project => project.test.name === 'weapp-vite-serial')?.test.fileParallelism).toBe(false)
     for (const file of expected.filter(file => file.startsWith('test/'))) {
-      expect(serial.has(file), `${file} must retain serial execution`).toBe(true)
+      if (parallelFixtureTests.includes(file)) {
+        expect(fast.has(file), `${file} has isolated inputs`).toBe(true)
+      }
+      else {
+        expect(serial.has(file), `${file} must retain serial execution`).toBe(true)
+      }
     }
     expect(serial.has('src/plugins/core/lifecycle/watch.test.ts')).toBe(true)
   })

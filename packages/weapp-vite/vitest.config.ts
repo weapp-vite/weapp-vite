@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
 import { createProjectCoverage } from '../../vitest.coverage.ts'
+import { parallelFixtureTests } from './vitest/partition.ts'
 
 const projectTestIncludes = [
   'test/**/*.test.ts',
@@ -172,7 +173,6 @@ export default defineProject({
       },
     ],
     globals: true,
-    globalSetup: [path.resolve(packageDir, '../../vitest.globalSetup.mjs')],
     hookTimeout: 60_000,
     sharedViteServer: false,
     testTimeout: 120_000,
@@ -184,10 +184,13 @@ export default defineProject({
           sequence: {
             groupOrder: 100,
           },
-          include: projectTestIncludes,
+          include: [
+            ...projectTestIncludes.filter(pattern => pattern.startsWith('src/')),
+            ...parallelFixtureTests,
+          ],
           exclude: [
             ...projectTestExcludes,
-            ...serialTestFiles,
+            ...serialTestFiles.filter(pattern => pattern.startsWith('src/')),
           ],
           // @ts-ignore
           coverage: createProjectCoverage('packages/weapp-vite/fast', sharedCoverageOptions),
@@ -200,7 +203,8 @@ export default defineProject({
           sequence: {
             groupOrder: 101,
           },
-          exclude: projectTestExcludes,
+          globalSetup: [path.resolve(packageDir, '../../vitest.globalSetup.mjs')],
+          exclude: [...projectTestExcludes, ...parallelFixtureTests],
           include: serialTestFiles,
           fileParallelism: false,
           // @ts-ignore

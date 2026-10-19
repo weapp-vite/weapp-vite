@@ -14,6 +14,7 @@ const configFiles = [
   'vitest.coverage.ts',
   'packages/weapp-vite/vitest.config.ts',
   'packages/weapp-vite/vitest.web.config.ts',
+  'packages/weapp-vite/vitest/partition.ts',
 ]
 const setupProbe = `import fs from 'node:fs/promises'
 export default async function setup() {
@@ -70,7 +71,7 @@ describe('Vitest checkout cleanup isolation', () => {
         ...context.projects.flatMap(project => project.config.globalSetup),
       ])]
       expect(setupPaths.map(file => path.normalize(file)))
-        .toEqual([path.join(checkoutRoot, setupFilename)])
+        .toEqual(mode === 'workspace' ? [] : [path.join(checkoutRoot, setupFilename)])
       expect(context.projects.length).toBeGreaterThan(0)
 
       // 用临时探针执行解析后的入口，避免调用真实仓库的 fixture 清理。
@@ -79,7 +80,12 @@ describe('Vitest checkout cleanup isolation', () => {
         await setup.default()
       }
 
-      await expect(fs.access(path.join(checkoutRoot, markerFilename))).rejects.toMatchObject({ code: 'ENOENT' })
+      if (mode === 'workspace') {
+        expect(await fs.readFile(path.join(checkoutRoot, markerFilename), 'utf8')).toBe('preserve another checkout\n')
+      }
+      else {
+        await expect(fs.access(path.join(checkoutRoot, markerFilename))).rejects.toMatchObject({ code: 'ENOENT' })
+      }
       expect(await fs.readFile(path.join(parentRoot, markerFilename), 'utf8'))
         .toBe('preserve another checkout\n')
     }

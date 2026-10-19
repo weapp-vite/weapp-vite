@@ -132,6 +132,7 @@ export async function createTurboFixture() {
     await write('.npmrc', 'manage-package-manager-versions=false\n')
     await write('tsconfig.json', '{}\n')
     await write('tsconfig.base.json', '{}\n')
+    await write('vitest.coverage.ts', 'export {}\n')
     await write('scripts/vite/vueOxcTsconfigGuard.ts', 'export const guard = "initial"\n')
     await write('e2e-apps/shared/appLifecycle/observer.ts', 'export const observer = "initial"\n')
     await write('e2e/utils/requestClientsRealHostTraceRuntime.ts', 'export const hostTrace = "initial"\n')
@@ -162,6 +163,7 @@ export async function createTurboFixture() {
           'build': 'node build.mjs',
           'lint': prefix === 'packages/agent-cli' ? 'node lint.mjs' : 'node --version',
           'test': 'node --version',
+          'test:pure': 'node pure.mjs',
           'typecheck': 'node --version',
           'test:types': 'node --version',
           'test:types:check': 'node check.mjs',
@@ -171,6 +173,7 @@ export async function createTurboFixture() {
       await write(`${prefix}/README.md`, '# Library\n')
       await write(`${prefix}/build.mjs`, buildScript)
       await write(`${prefix}/check.mjs`, checkScript)
+      await write(`${prefix}/pure.mjs`, 'import { appendFile, mkdir, readFile } from "node:fs/promises"\nawait readFile("src/index.js")\nawait mkdir(".runs", { recursive: true })\nawait appendFile(".runs/pure", "run\\n")\n')
       if (prefix === 'packages/agent-cli') {
         await write(`${prefix}/lint.mjs`, agentLintScript)
       }

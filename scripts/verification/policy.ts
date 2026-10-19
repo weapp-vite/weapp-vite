@@ -1,4 +1,4 @@
 import type { SelectionMode } from './types.ts'
 
-/** 首轮仅观测缩选；单独启用经过回归验证的 affected 策略。 */
-export const DEFAULT_SELECTION: SelectionMode = 'shadow'
+/** 默认使用已审计的影响范围；未知输入仍保守扩大，shadow 可显式观测。 */
+export const DEFAULT_SELECTION: SelectionMode = 'affected'

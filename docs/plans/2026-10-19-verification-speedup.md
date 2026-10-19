@@ -11,7 +11,7 @@ pnpm verify --base origin/main --mode review
 pnpm verify --mode full
 ```
 
-计划入口只读计算验证范围。quick 提供定向反馈，review 增加类型契约、消费者与相关 runtime，full 复用正式全量入口。报告明确保留剩余验收，局部通过不能代替完整通过。
+计划入口只读计算验证范围。quick 提供定向反馈，review 增加类型契约、消费者与相关 runtime，full 复用正式全量入口。报告明确保留剩余验收，局部通过不能代替完整通过。第三批默认启用 affected，仍可用 `--selection shadow` 观察建议；未知输入继续保守扩大范围。
 
 影响范围覆盖完整 workspace、四类本地依赖、Turbo 显式依赖与跨目录输入。暂存、未暂存、未跟踪、删除和重命名均参与计算。全局配置、lockfile、未知输入或无法取得可信基线时保守扩大范围；执行前核对计划输入指纹。
 

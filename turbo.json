@@ -59,6 +59,15 @@
       ],
       "outputs": []
     },
+    "test:pure": {
+      "cache": true,
+      "dependsOn": ["^test:pure"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/vitest.coverage.ts"
+      ],
+      "outputs": []
+    },
     "test:types": {
       "cache": false,
       "dependsOn": [

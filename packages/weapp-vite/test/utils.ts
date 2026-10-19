@@ -4,6 +4,7 @@ import { cp, lstat, mkdir, mkdtemp, readlink, realpath, rm, symlink } from 'node
 import { fdir } from 'fdir'
 import path from 'pathe'
 import { rebaseTempConfigExtends } from '../../../scripts/testFixtures/configExtends'
+import { syncManagedTsconfigBootstrapFiles } from '../../../vitest.globalSetup.mjs'
 import { resetCompilerContext } from '../src/context/getInstance'
 import { createCompilerContext } from '../src/createContext'
 
@@ -153,28 +154,40 @@ export async function createTempFixtureProject(
     ...extraIgnored,
   ])
 
-  await cp(fixtureSource, tempDir, {
-    dereference: true,
-    force: true,
-    recursive: true,
-    filter: (src) => {
-      const relative = path.relative(fixtureSource, src).replaceAll('\\', '/')
-      if (!relative) {
-        return true
-      }
-      return !Array.from(ignored).some((entry) => {
-        return relative === entry || relative.startsWith(`${entry}/`)
-      })
-    },
-  })
+  try {
+    await cp(fixtureSource, tempDir, {
+      dereference: true,
+      force: true,
+      recursive: true,
+      filter: (src) => {
+        const relative = path.relative(fixtureSource, src).replaceAll('\\', '/')
+        return !relative || !Array.from(ignored).some(entry => relative === entry || relative.startsWith(`${entry}/`))
+      },
+    })
+    await rebaseTempConfigExtends(fixtureSource, tempDir)
+    await ensureWorkspacePackageLink(tempDir)
+    await syncManagedTsconfigBootstrapFiles(tempDir)
+  }
+  catch (error) {
+    try {
+      await rm(tempDir, { recursive: true, force: true })
+    }
+    catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], '临时 fixture 初始化及回收均失败', { cause: error })
+    }
+    throw error
+  }
 
-  await rebaseTempConfigExtends(fixtureSource, tempDir)
-  await ensureWorkspacePackageLink(tempDir)
+  let cleaning: Promise<void> | undefined
 
   return {
     tempDir,
-    cleanup: async () => {
-      await rm(tempDir, { recursive: true, force: true })
+    cleanup: () => {
+      cleaning ??= rm(tempDir, { recursive: true, force: true }).catch((error: unknown) => {
+        cleaning = undefined
+        throw error
+      })
+      return cleaning
     },
   }
 }
@@ -185,13 +198,14 @@ export async function createTestCompilerContext(
   const key = options.key ?? `vitest-context-${++contextCounter}`
   if (options.cwd) {
     await ensureWorkspacePackageLink(options.cwd)
+    await syncManagedTsconfigBootstrapFiles(options.cwd)
   }
   resetCompilerContext(key)
   const ctx = await createCompilerContext({ ...options, key })
 
   const dispose = async () => {
     try {
-      ctx.watcherService?.closeAll()
+      await ctx.watcherService?.closeAll()
     }
     finally {
       resetCompilerContext(key)
@@ -202,5 +216,37 @@ export async function createTestCompilerContext(
     ctx,
     dispose,
     key,
+  }
+}
+
+/** 先释放本实例 compiler/watchers，再删除它独占的 fixture 目录。 */
+export async function createIsolatedCompilerFixture(fixtureSource: string, prefix: string, options: Partial<LoadConfigOptions> = {}) {
+  const project = await createTempFixtureProject(fixtureSource, prefix)
+  try {
+    const context = await createTestCompilerContext({ ...options, cwd: project.tempDir })
+    let cleaning: Promise<void> | undefined
+    return {
+      ctx: context.ctx,
+      tempDir: project.tempDir,
+      dispose: () => {
+        cleaning ??= (async () => {
+          await context.dispose()
+          await project.cleanup()
+        })().catch((error: unknown) => {
+          cleaning = undefined
+          throw error
+        })
+        return cleaning
+      },
+    }
+  }
+  catch (error) {
+    try {
+      await project.cleanup()
+    }
+    catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], 'compiler fixture 初始化及回收均失败', { cause: error })
+    }
+    throw error
   }
 }
