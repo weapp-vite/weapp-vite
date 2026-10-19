@@ -533,6 +533,83 @@ describe('runtime MCP tools', () => {
       },
     })
   })
+
+  it('preserves the selected component receiver after updating its state', async () => {
+    const fixture = createMiniProgram()
+    const other = createElement({ state: { label: 'other', calls: 0 } })
+    const element = createElement({
+      state: { label: 'initial', calls: 0 },
+      setData: vi.fn(function (this: ElementFixture, patch: Record<string, unknown>) {
+        expect(this).toBe(element)
+        Object.assign(this.state, patch)
+      }),
+      callMethod: vi.fn(function (this: ElementFixture, method: string, value: string) {
+        expect(this).toBe(element)
+        const previous = this.state.label
+        this.state.calls += 1
+        this.setData({ label: value })
+        return { method, previous, label: this.state.label }
+      }),
+    })
+    fixture.page.$.mockImplementation(async (...args: unknown[]) => args[0] === '#probe' ? element : other)
+    mocks.acquireSharedMiniProgram.mockResolvedValue(fixture.miniProgram)
+    const { tools } = createRuntimeToolRegistry()
+
+    await getTool(tools, 'weapp_runtime_update_component_state')({
+      projectPath: 'apps/demo',
+      selector: '#probe',
+      data: { label: 'set-by-mcp' },
+    })
+    const result = await getTool(tools, 'weapp_runtime_invoke_component')({
+      projectPath: 'apps/demo',
+      selector: '#probe',
+      method: 'mark',
+      args: ['component-method'],
+    })
+
+    expect(readStructuredResult(result)).toMatchObject({
+      result: { method: 'mark', previous: 'set-by-mcp', label: 'component-method' },
+    })
+    expect(element.state).toEqual({ label: 'component-method', calls: 1 })
+    expect(other.state).toEqual({ label: 'other', calls: 0 })
+    expect(element.callMethod).toHaveBeenCalledExactlyOnceWith('mark', 'component-method')
+    expect(fixture.page.$).toHaveBeenNthCalledWith(1, '#probe', { fallback: false })
+    expect(fixture.page.$).toHaveBeenNthCalledWith(2, '#probe', { fallback: false })
+    expect(fixture.page.callMethod).not.toHaveBeenCalled()
+  })
+
+  it.each(['sync', 'async'] as const)('does not retry a component method after a %s failure with side effects', async (failureMode) => {
+    const fixture = createMiniProgram()
+    const failure = new Error('component-method-failed')
+    const element = createElement({
+      attempts: 0,
+      callMethod: vi.fn(function (this: ElementFixture) {
+        expect(this).toBe(element)
+        this.attempts += 1
+        if (failureMode === 'async') {
+          return Promise.reject(failure)
+        }
+        throw failure
+      }),
+    })
+    fixture.page.$.mockResolvedValue(element)
+    mocks.acquireSharedMiniProgram.mockResolvedValue(fixture.miniProgram)
+    const { tools } = createRuntimeToolRegistry()
+
+    const result = await getTool(tools, 'weapp_runtime_invoke_component')({
+      projectPath: 'apps/demo',
+      selector: '#probe',
+      method: 'failOnce',
+      args: ['component-method'],
+    })
+
+    expect(result).toMatchObject({ isError: true, content: [{ type: 'text', text: 'component-method-failed' }] })
+    expect(element.attempts).toBe(1)
+    expect(element.callMethod).toHaveBeenCalledExactlyOnceWith('failOnce', 'component-method')
+    expect(fixture.page.$).toHaveBeenCalledExactlyOnceWith('#probe', { fallback: false })
+    expect(fixture.page.callMethod).not.toHaveBeenCalled()
+    expect(fixture.miniProgram.reLaunch).not.toHaveBeenCalled()
+  })
 })
 
 it('keeps MCP manager ownership and page state separate for installations of one project', async () => {

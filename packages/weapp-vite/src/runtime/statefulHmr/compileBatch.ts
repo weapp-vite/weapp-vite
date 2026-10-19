@@ -6,6 +6,7 @@ import type { StatefulHmrDevEngineBatch } from './viteAdapter'
 import { Buffer } from 'node:buffer'
 import { HmrPreparationCleanupError } from '@weapp-vite/hmr'
 import { withTailwindSnapshotGeneration } from '../../plugins/tailwindcss/generation'
+import { requiresImportedTailwindSnapshot, withImportedTailwindSnapshot } from '../../plugins/tailwindcss/importedPreparation'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { createStatefulHmrPatchImportResolver } from './patchModule'
 import { bundleHmrCode, prepareHmrPatch } from './patchPreparation'
@@ -25,7 +26,7 @@ interface CompileHmrBatchOptions {
 
 /** 将固定输入编译成待交付结果，不推进磁盘或客户端状态。 */
 export async function compileHmrBatch(options: CompileHmrBatchOptions) {
-  const { ctx, input, needsSnapshot, patches, prepareProviders, rebuild, sourcemap, onPreparationStage } = options
+  const { ctx, input, patches, prepareProviders, rebuild, sourcemap, onPreparationStage } = options
   const files = [...input.changedFiles]
   const profile = createHmrPreparationProfiler(onPreparationStage)
   let preparations: WeappCompilerHmrPreparation[]
@@ -53,6 +54,7 @@ export async function compileHmrBatch(options: CompileHmrBatchOptions) {
     return disposal
   }
   try {
+    const needsSnapshot = options.needsSnapshot || requiresImportedTailwindSnapshot(preparations)
     const compilerAssets = preparations.flatMap(preparation => preparation.assets ?? [])
     const styleExtension = compilerAssets.length
       ? resolveOutputExtensions(ctx.configService.outputExtensions).styleExtension
@@ -64,7 +66,7 @@ export async function compileHmrBatch(options: CompileHmrBatchOptions) {
       profile?.begin('snapshot-build')
     }
     const builtSnapshot = needsSnapshot
-      ? await withTailwindSnapshotGeneration(input, preparations, () => input.sources.size ? rebuild(files, input.sources) : rebuild(files))
+      ? await withImportedTailwindSnapshot(preparations, () => withTailwindSnapshotGeneration(input, preparations, () => input.sources.size ? rebuild(files, input.sources) : rebuild(files)), input.sources)
       : undefined
     profile?.finish()
     // 原生输出可能仅暴露 getter；批次转换使用自己的容器，保留构建器快照。

@@ -43,10 +43,10 @@ class TailwindPreparationScope {
 
 /** 同一活跃入口拓扑复用 compiler facade，保留 shared prepare 的 signature 缓存。 */
 export class TailwindRootLifecycle {
-  private readonly owners = new Map<number, Owner>()
+  private readonly owners = new Map<number | string, Owner>()
   private scope: TailwindPreparationScope | undefined
 
-  remember(index: number, id: string) {
+  remember(index: number | string, id: string) {
     if (this.owners.get(index)?.id === id) {
       return
     }
@@ -60,7 +60,7 @@ export class TailwindRootLifecycle {
     return this.scope
   }
 
-  remove(index: number) {
+  remove(index: number | string) {
     const owner = this.owners.get(index)
     if (owner) {
       owner.active = false

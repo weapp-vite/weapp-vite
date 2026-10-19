@@ -4,6 +4,7 @@ import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrSnapshotBatch } from './snapshotScheduler'
 import { getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { withTailwindSnapshotGeneration } from '../../plugins/tailwindcss/generation'
+import { withImportedTailwindSnapshot } from '../../plugins/tailwindcss/importedPreparation'
 
 interface SnapshotPreparation {
   input?: WeappCompilerHmrRequest
@@ -40,7 +41,7 @@ export async function withStatefulHmrSnapshotPreparation<T>(
     if (!batch.isSuperseded()) {
       result = await consume({
         input,
-        rebuild: () => withTailwindSnapshotGeneration(input, preparations, () => rebuild([...input.changedFiles], input.sources)),
+        rebuild: () => withImportedTailwindSnapshot(preparations, () => withTailwindSnapshotGeneration(input, preparations, () => rebuild([...input.changedFiles], input.sources)), input.sources),
       })
     }
   }

@@ -109,7 +109,14 @@ async function fixture() {
   const host = getCompilerHmrHost(ctx)
   const record = observed.current!
   const change = (file = source, event = 'update') => handler(manager!.watchChange).call(pluginContext, file, { event })
-  const transform = (name = 'owner', code = '@import "./app.css"; .author { color: red; }') => handler(manager!.transform).call(pluginContext, code, path.join(root, `src/${name}.css`), {})
+  const transform = async (name = 'owner', code = '@import "./app.css"; .author { color: red; }') => {
+    const transformed = await handler(manager!.transform).call(pluginContext, code, path.join(root, `src/${name}.css`), {})
+    const bundle = { 'app.wxss': { type: 'asset', fileName: 'app.wxss', source: transformed?.code ?? code } } as OutputBundle
+    await handler(manager!.generateBundle).call(pluginContext, {}, bundle, false)
+    await handler(output!.generateBundle).call(pluginContext, {}, bundle, false)
+    // 生命周期断言检查真实 owner 最终输出，不能把 pre hook 的占位当成 CSS。
+    return { ...transformed, code: String((bundle['app.wxss'] as any).source) }
+  }
   return { record, source, entry, css, change, disk, transform, memory: () => host.prepare(host.freeze([source])) }
 }
 

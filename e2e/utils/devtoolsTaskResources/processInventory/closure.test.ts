@@ -82,13 +82,13 @@ describe('bounded resource inventory closure', () => {
   })
 
   it('does not infer a transient new process was unrelated after it disappears before inspection', async () => {
-    inventories(initial, withNew(row(44)), initial)
+    inventories(initial, withNew(row(44)), initial, initial, initial)
     expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
       uninspectedNewProcessCount: 1,
       installationRssBytes: { status: 'unavailable' },
       newProcesses: [{ pid: 44, classification: 'unclassified', imageSource: 'not-verified' }],
     } })
-    expect(mocks.paths).toHaveBeenCalledTimes(1)
+    expect(mocks.paths.mock.calls.map(call => call[0])).toEqual([[11, 22, 33], [44]])
   })
 
   it('keeps a newly observed zero-RSS zombie as an unverifiable new identity', async () => {
