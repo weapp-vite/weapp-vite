@@ -3,6 +3,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { isDeepStrictEqual } from 'node:util'
 import { queryDomElements } from './query'
 import { assertResponsiveCalcStyle, assertResponsiveStyle } from './styles'
+import { readDomVisibility } from './visibility'
 
 export function normalizeDomRoute(route: string) {
   return route.replace(/^\/+|\/+$/g, '')
@@ -200,8 +201,7 @@ export async function captureDomCheckpoint(
             const visibility = await element.style('visibility')
             const opacity = await element.style('opacity')
             node.styles = { ...node.styles, display, visibility, opacity }
-            assertEqual(node.size.width > 0 && node.size.height > 0 && display !== 'none'
-              && visibility !== 'hidden' && visibility !== 'collapse' && Number(opacity) > 0, expected.visible, `${expected.selector} visible`)
+            assertEqual(readDomVisibility(node, expected.selector), expected.visible, `${expected.selector} visible`)
           }
           nodes.push(node)
         }

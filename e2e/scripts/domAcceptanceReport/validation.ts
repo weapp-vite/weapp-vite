@@ -2,6 +2,7 @@ import type { DomAcceptance } from '../../utils/domAcceptance/types'
 import { isDeepStrictEqual } from 'node:util'
 import { z } from 'zod'
 import { assertResponsiveCalcStyle, assertResponsiveStyle } from '../../utils/domAcceptance/styles'
+import { readDomVisibility } from '../../utils/domAcceptance/visibility'
 import { runtimeDiagnosticSchema } from './runtimeDiagnostics'
 import { selectedAcceptanceCases } from './selectedCases'
 
@@ -27,7 +28,7 @@ const expectation = z.object({
 const node = z.object({
   text: z.string().optional(),
   attributes: strings.optional(),
-  styles: strings.optional(),
+  styles: z.record(z.string(), z.string().nullable()).optional(),
   size: z.object({ width: z.number().finite().nonnegative(), height: z.number().finite().nonnegative() }).optional(),
 })
 export const serializedPlan = z.object({
@@ -94,15 +95,7 @@ export function assertSerializedDomEvidence(plan: DomAcceptance) {
           }
         }
         if (expected.visible !== undefined) {
-          if (!captured.size || !captured.styles || ['display', 'visibility', 'opacity'].some(key => typeof captured.styles?.[key] !== 'string')) {
-            throw new Error(`Serialized DOM evidence missing layout: ${checkpoint.id}`)
-          }
-          const { display, visibility, opacity } = captured.styles
-          if (!display || !visibility || !opacity || !Number.isFinite(Number(opacity)) || Number(opacity) < 0 || Number(opacity) > 1) {
-            throw new Error(`Serialized DOM evidence invalid computed visibility: ${checkpoint.id}`)
-          }
-          equal(captured.size.width > 0 && captured.size.height > 0 && display !== 'none'
-            && visibility !== 'hidden' && visibility !== 'collapse' && Number(opacity) > 0, expected.visible, `${checkpoint.id} visibility`)
+          equal(readDomVisibility(captured, checkpoint.id), expected.visible, `${checkpoint.id} visibility`)
         }
       }
     }

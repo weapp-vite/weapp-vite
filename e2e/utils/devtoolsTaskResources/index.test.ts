@@ -73,7 +73,29 @@ beforeEach(async () => {
   await fs.mkdir(options.journalPath)
   await initializeManagedJournalScope(options.journalPath)
   mocks.journal.mockResolvedValue([])
-  mocks.processes.mockResolvedValue({ status: 'observed', value: { installationRssBytes: { status: 'observed', value: 100 }, verifiedMemberRssBytes: 100 } as InstallationProcessSample })
+  mocks.processes.mockResolvedValue({ status: 'observed', value: {
+    samplingStartedAt: '2026-10-20T00:00:00.000Z',
+    samplingCompletedAt: '2026-10-20T00:00:00.100Z',
+    installationRoot: path.join(directory, 'selected-installation.app'),
+    installationRssBytes: { status: 'observed', value: 100 },
+    verifiedMemberRssBytes: 100,
+    processes: [],
+    unclassifiedProcessCount: 0,
+    missingIdentityCount: 0,
+    uninspectedNewProcessCount: 0,
+    verifiedNewForeignProcessCount: 0,
+    newSelectedProcessCount: 0,
+    identityChangedProcessCount: 0,
+    newProcesses: [],
+    inventoryRoundCount: 1,
+    inventoryBudgetExhausted: false,
+    fallbackBudgetExhausted: false,
+    samplingBudgetMs: 10_000,
+    rssAnchor: 'initial-ps-inventory-only; later-rows-never-replace-or-add-rss',
+    semantics: 'point-in-time-rss-not-peak',
+    coverage: 'selected-installation-inventory-and-descendants',
+    atomicity: 'non-atomic-ps-and-kernel-path-samples; seconds-resolution-start-time-is-not-ownership-proof',
+  } satisfies InstallationProcessSample })
 })
 afterEach(async () => {
   vi.restoreAllMocks()

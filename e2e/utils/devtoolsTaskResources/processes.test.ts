@@ -54,7 +54,7 @@ describe('IDE task installation RSS sampling', () => {
     mocks.paths.mockResolvedValue(new Map([[11, executable], [22, `${executable} Helper`], [33, null]]))
     mocks.images.mockResolvedValue([foreignImage])
     const sample = await sampleInstallationProcesses(target, 'darwin')
-    expect(mocks.images).toHaveBeenCalledExactlyOnceWith(33)
+    expect(mocks.images).toHaveBeenCalledExactlyOnceWith(33, expect.any(Number))
     expect(sample).toMatchObject({ status: 'observed', value: { unclassifiedProcessCount: 0, installationRssBytes: { status: 'observed' } } })
     expect(JSON.stringify(sample)).not.toContain(foreignImage)
   })
@@ -99,21 +99,23 @@ describe('IDE task installation RSS sampling', () => {
   })
 
   it('reports newly appeared processes as uninspected rather than claiming a complete inventory', async () => {
-    inventories(initial, initial, `${initial}\n${row(44)}`)
+    inventories(initial, initial, `${initial}\n${row(44)}`, `${initial}\n${row(44)}`, `${initial}\n${row(44)}`)
     expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
       uninspectedNewProcessCount: 1,
       installationRssBytes: { status: 'unavailable' },
     } })
   })
 
-  it('stops dispatching fallback work when its shared start budget is exhausted', async () => {
+  it('stops dispatching inspection work when its shared budget is exhausted', async () => {
     inventories(initial, initial, initial)
-    mocks.paths.mockResolvedValue(new Map([[11, executable], [22, `${executable} Helper`], [33, null]]))
-    vi.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(10_001)
-    expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
-      fallbackBudgetExhausted: true,
-      installationRssBytes: { status: 'unavailable' },
-    } })
+    let now = 0
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    mocks.paths.mockImplementation(async () => {
+      now = 10_001
+      return new Map([[11, executable], [22, `${executable} Helper`], [33, null]])
+    })
+    expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'unavailable', reason: expect.stringContaining('shared process inspection budget') })
+    expect(mocks.ps).toHaveBeenCalledTimes(1)
     expect(mocks.images).not.toHaveBeenCalled()
   })
 

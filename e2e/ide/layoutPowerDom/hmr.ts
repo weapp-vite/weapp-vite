@@ -76,5 +76,5 @@ export async function captureLayoutPageState(miniProgram: any, label: string) {
     project: 'apps/layout-power-demo',
     text: JSON.stringify({ label, state, nativeState }),
   })
-  return state
+  return { nativePage, nativeState, state }
 }

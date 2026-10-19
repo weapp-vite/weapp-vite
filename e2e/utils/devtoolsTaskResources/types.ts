@@ -22,6 +22,15 @@ export interface WrapperResourceEvent {
   error?: string
 }
 
+export interface NewProcessObservation {
+  pid: number
+  parentPid: number
+  started: string
+  firstSeenRound: number
+  classification: 'verified-foreign' | 'installation-image' | 'descendant' | 'identity-changed' | 'unclassified'
+  imageSource: 'kernel-path' | 'text-images' | 'not-verified'
+}
+
 export interface InstallationProcessSample {
   samplingStartedAt: string
   samplingCompletedAt: string
@@ -32,6 +41,15 @@ export interface InstallationProcessSample {
   unclassifiedProcessCount: number
   missingIdentityCount: number
   uninspectedNewProcessCount: number
+  verifiedNewForeignProcessCount: number
+  newSelectedProcessCount: number
+  identityChangedProcessCount: number
+  newProcesses: NewProcessObservation[]
+  inventoryRoundCount: number
+  inventoryBudgetExhausted: boolean
+  inventoryInspectionError?: string
+  samplingBudgetMs: 10000
+  rssAnchor: 'initial-ps-inventory-only; later-rows-never-replace-or-add-rss'
   fallbackBudgetExhausted: boolean
   semantics: 'point-in-time-rss-not-peak'
   coverage: 'selected-installation-inventory-and-descendants'
