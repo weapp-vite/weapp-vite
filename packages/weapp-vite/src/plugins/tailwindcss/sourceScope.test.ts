@@ -39,7 +39,11 @@ async function withProject(run: (root: string, compiler: Compiler) => Promise<vo
 }
 
 function createAdapter(root: string, compiler: Compiler) {
-  const ctx = { configService: { cwd: root, absoluteSrcRoot: path.join(root, 'src'), outDir: path.join(root, 'dist'), relativeOutputPath: () => 'app.wxss' } } as CompilerContext
+  const onSourceChange = vi.fn()
+  const ctx = {
+    configService: { cwd: root, absoluteSrcRoot: path.join(root, 'src'), outDir: path.join(root, 'dist'), relativeOutputPath: () => 'app.wxss' },
+    onStatefulHmrSourceChange: onSourceChange,
+  } as unknown as CompilerContext
   const host = getCompilerHmrHost(ctx)
   const adapter = createTailwindHmrAdapter(ctx, {
     compiler: async () => compiler,
@@ -51,7 +55,7 @@ function createAdapter(root: string, compiler: Compiler) {
   const httpServer = new EventEmitter()
   const logger = { error: vi.fn() }
   adapter.configureServer({ watcher, httpServer, config: { logger } } as unknown as ViteDevServer)
-  return { adapter, host, watcher, httpServer, logger }
+  return { adapter, host, watcher, httpServer, logger, onSourceChange }
 }
 
 it('captures a newly added source file outside the explicit Tailwind source entries', async () => {
@@ -101,7 +105,7 @@ it.each(['entry', 'memory', 'cwd', 'base'] as const)('keeps the compiler-resolve
           : { projectRoot: root, cwd: 'secondary', base: 'content', cssEntries: [entry] }
     const request: CompilerGenerateRequest = { id: kind, sourceOptions, scanSources: true, target: 'weapp' }
     const generated = await compiler.generate(request)
-    const { adapter, host, watcher, httpServer, logger } = createAdapter(root, compiler)
+    const { adapter, host, watcher, httpServer, logger, onSourceChange } = createAdapter(root, compiler)
     vi.mocked(resolveProjectSourceFiles).mockClear()
     try {
       await adapter.rememberRoot(0, request, generated)
@@ -121,6 +125,7 @@ it.each(['entry', 'memory', 'cwd', 'base'] as const)('keeps the compiler-resolve
       watcher.emit('add', added)
       await vi.waitFor(() => expect(host.onDependencyChange).toHaveBeenCalledWith(added))
       expect(host.onDependencyChange).toHaveBeenCalledTimes(1)
+      expect(onSourceChange).toHaveBeenCalledWith(added, ['tailwind-content:1'])
       expect(host.readSource(ignored)).toBeUndefined()
       expect(logger.error).not.toHaveBeenCalled()
       expect(vi.mocked(resolveProjectSourceFiles).mock.calls.at(-1)![0]!.sources).toEqual(sources)
@@ -139,7 +144,7 @@ it.each(['entry', 'memory', 'cwd', 'base'] as const)('keeps the compiler-resolve
 
 it('preserves source(none), explicit external sources and multiple CSS roots', async () => {
   await withProject(async (root, compiler) => {
-    const { adapter, host, watcher, httpServer, logger } = createAdapter(root, compiler)
+    const { adapter, host, watcher, httpServer, logger, onSourceChange } = createAdapter(root, compiler)
     const automatic = path.join(root, 'src/automatic.html')
     await writeFile(automatic, '<view class="w-[91px]"/>')
     try {
@@ -171,6 +176,9 @@ it('preserves source(none), explicit external sources and multiple CSS roots', a
         await vi.waitFor(() => expect(host.onDependencyChange).toHaveBeenCalledWith(source))
       }
       expect(host.onDependencyChange).toHaveBeenCalledTimes(2)
+      expect(onSourceChange).toHaveBeenCalledTimes(2)
+      expect(onSourceChange).toHaveBeenNthCalledWith(1, path.join(root, 'content', 'added.html'), ['tailwind-content:1'])
+      expect(onSourceChange).toHaveBeenNthCalledWith(2, path.join(root, 'secondary', 'added.html'), ['tailwind-content:1'])
       expect(logger.error).not.toHaveBeenCalled()
     }
     finally {

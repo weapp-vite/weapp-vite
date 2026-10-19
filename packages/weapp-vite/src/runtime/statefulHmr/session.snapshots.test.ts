@@ -615,6 +615,27 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
+  it('retains compiler content reasons when a duplicate watcher reports no reason', async () => {
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    const session = await start()
+    const compiler = getCompilerHmrHost(session.ctx)
+    compiler.register('scan-only-provider', async () => ({
+      assets: [{ fileName: styleFile, code: '.probe { color: blue; }' }],
+    }))
+    const file = path.join(root, 'src/page.js')
+    // Core watch classifies the source as compiler content; a second watcher can
+    // report the same path without a reason before DevEngine delivers the patch.
+    session.sourceChange(file, 'update', ['tailwind-content:1'])
+    session.sourceChange(file, 'update', [])
+    expect(harness.callbacks!.onPatch([file], { type: 'Patch', code: 'void 0', filename: 'update.js' })).toBe(true)
+    await vi.advanceTimersByTimeAsync(50)
+    await session.whenSettled()
+    expect(delta).toHaveBeenCalledOnce()
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
+  })
+
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()

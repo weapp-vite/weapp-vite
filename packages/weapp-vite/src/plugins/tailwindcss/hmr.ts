@@ -128,6 +128,14 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     }
   }
 
+  function notifyContentChange(file: string) {
+    // 新增内容文件不会经过 Rolldown 的 watchChange 钩子；先登记 Tailwind
+    // 内容失效原因，再让状态化引擎交付 compiler-only 批次。更新已发现文件
+    // 也复用这条路径，避免空 reason 覆盖同批次的内容失效标记。
+    ctx.onStatefulHmrSourceChange?.(file, ['tailwind-content:1'])
+    host.onDependencyChange?.(file)
+  }
+
   function configureServer(currentServer: ViteDevServer) {
     if (disposed) {
       return
@@ -188,7 +196,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
         captureFile(file, false)
         discoveredSources.add(compilerSourceId(file))
         host.seed(file, host.readSource(file) ?? null)
-        host.onDependencyChange?.(file)
+        notifyContentChange(file)
         return
       }
     }
@@ -198,7 +206,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     const updateDiscovered = (file: string, deleted: boolean) => {
       if (discoveredSources.has(compilerSourceId(file)) && !nativeDependencies.has(compilerSourceId(file)) && !host.isNativeSource(file)) {
         captureFile(file, deleted)
-        host.onDependencyChange?.(file)
+        notifyContentChange(file)
       }
     }
     const changed = (file: string) => updateDiscovered(file, false)

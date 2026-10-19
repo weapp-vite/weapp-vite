@@ -486,10 +486,15 @@ class StatefulHmrSession {
       this.requestFullBuild([normalizedFile])
       return
     }
-    const previousReasons = this.sourceDirtyReasons.get(normalizedFile)?.reasons ?? []
-    this.sourceDirtyReasons.set(normalizedFile, {
-      reasons: [...new Set([...previousReasons, ...dirtyReasonSummary])],
-    })
+    if (dirtyReasonSummary.length) {
+      // 有分类的后续事件代表同一文件的最新语义，应替换旧分类。
+      this.sourceDirtyReasons.set(normalizedFile, { reasons: [...dirtyReasonSummary] })
+    }
+    else if (!this.sourceDirtyReasons.has(normalizedFile)) {
+      // 其他 watcher 可能只报告文件变化而没有分类原因；不能抹掉同一批次
+      // 已由核心 watch hook 登记的 Tailwind/compiler 内容失效。
+      this.sourceDirtyReasons.set(normalizedFile, { reasons: [] })
+    }
     if (this.publicAssetSources.matchesPath(normalizedFile)) {
       this.requestSnapshotRefresh([normalizedFile])
       return
