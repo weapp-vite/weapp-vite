@@ -14,12 +14,14 @@
   "mode": "full",
   "base": "origin/main",
   "jobs": 4,
-  "cachePolicy": "warm-paired-serial",
+  "cachePolicy": "build-warm-serial-cohort-v1",
   "inputPolicy": "framework-tree-v2"
 }
 ```
 
-必须先提交源码，使用相同的基线/候选观察 hook，并按相同缓存准备过程交替串行采集至少三对。`cachePolicy` 是本轮实际遵守的缓存准备策略名称，采集器不会清理共享缓存；原始 Turbo 实际/缓存命中状态全部保留。正式 full 真实 IDE 仍遵守原有“干净主工作区、main、HEAD 与 origin/main 一致”的入口约束，以及最新稳定 IDE、登录和机器租约要求；采样入口不放宽这些限制。未满足条件的运行保留非成功样本，不能用于提速验收。
+必须先提交源码，使用相同的基线/候选观察 hook，并按相同缓存准备过程串行采集两侧各至少三轮。完整本地与真实 IDE 采样均遵守“干净主工作区、main、HEAD 与 origin/main 一致”的约束：共同观测基线先合入 main 并完成三轮，优化合入 main 后再完成候选三轮。记录这一执行顺序；不能回切旧提交或改写远端引用来补采，也不能将两组顺序采样称为交替采样。最新稳定 IDE、登录和机器租约要求保持完整；采样入口不放宽这些限制。未满足条件的运行保留非成功样本，不能用于提速验收。
+
+`cachePolicy` 是本轮实际遵守的缓存准备策略名称，采集器不会清理共享缓存。示例策略在每侧合入 main 后先执行一次相同的 `pnpm build:pkgs`，随后连续完成三轮；只预热包构建，不声称全链路已经预热。若要比较全链路热缓存，每侧先额外执行一轮完整验证并排除该预热轮。保留原始 Turbo 实际执行与缓存命中证据，不清理其他任务的共享缓存。两侧共同使用相同 CPU、worker、构建预算及内存可用量探针；共同资源修正不计入被测提速。
 
 输入使用与 CI 同一 `framework-tree-v2` 完整 Git tree 策略和显式 JSON 投影，拒绝手填 `inputFiles` 或覆盖命令。采集前冻结真实 verify 计划、资源预算、正式 suite 清单与严格 IDE case/template 清单；执行期间逐任务保留原命令、完整日志、真实退出状态、Turbo dry graph/actual summary、实际 Vitest 文件与全部 case 状态。仅专用采集模式追加 observer reporter，ESLint/stylelint 只增加 JSON 格式及独占输出位置，保留原范围、跳过策略和失败阈值。
 
