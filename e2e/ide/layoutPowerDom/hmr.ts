@@ -34,6 +34,20 @@ export async function waitForHmrVersion(miniProgram: any, expected: number) {
 }
 
 export async function captureLayoutPageState(miniProgram: any, label: string) {
+  const nativePage = await miniProgram.currentPage({ appFunctionFallback: false })
+  const nativeOptions = { fallback: false, timeout: 2_500 }
+  const readNativeState = async () => {
+    const data = await nativePage.data(undefined, nativeOptions)
+    return {
+      currentLayout: data.currentLayout,
+      runtimeEvents: data.runtimeEvents,
+      e2eRuntimeVendorMarker: data.e2eRuntimeVendorMarker,
+    }
+  }
+  const before = await readNativeState()
+  // Stable IDE 的方法协议跨 Runtime registry 传递 objectId；显式在 AppService 内执行一次公开页面方法。
+  const methodResult = await nativePage.callMethodWithOptions('runE2E', { ...nativeOptions, routeOnly: true })
+  const after = await readNativeState()
   const state = await miniProgram.evaluate((bridgeKey: string) => {
     const pages = getCurrentPages() as any[]
     const page = pages[pages.length - 1]
@@ -42,8 +56,11 @@ export async function captureLayoutPageState(miniProgram: any, label: string) {
     return {
       route: page?.route,
       pageId: page?.__wxWebviewId__ ?? page?.__webviewId__,
-      dataMarker: page?.data?.e2eRuntimeVendorMarker,
-      result: page?.runE2E?.(),
+      data: {
+        currentLayout: page?.data?.currentLayout,
+        runtimeEvents: page?.data?.runtimeEvents,
+        e2eRuntimeVendorMarker: page?.data?.e2eRuntimeVendorMarker,
+      },
       tracked: tracked.map((entry: any) => ({
         moduleId: entry.moduleId,
         count: entry.count,
@@ -63,18 +80,18 @@ export async function captureLayoutPageState(miniProgram: any, label: string) {
       })),
     }
   }, WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)
-  const nativePage = await miniProgram.currentPage({ appFunctionFallback: false })
-  const nativeState = {
-    pageId: nativePage.pageId,
-    result: await nativePage.callMethodWithOptions('runE2E', { fallback: false, timeout: 2_500 }),
-  }
+  const nativeState = { pageId: nativePage.pageId, before, after }
   appendIdeReportEvent({
     source: 'runtime',
     kind: 'message',
     level: 'info',
     channel: 'hmr-diagnostics',
     project: 'apps/layout-power-demo',
-    text: JSON.stringify({ label, state, nativeState }),
+    text: JSON.stringify({ label, state, nativeState, methodResult }),
   })
-  return { nativePage, nativeState, state }
+  expect(String(state.pageId), 'AppService 与原生协议必须指向同一页面').toBe(String(nativeState.pageId))
+  expect(after, '只读方法不能改写原生页面状态').toEqual(before)
+  expect(state.data, '方法调用后的 AppService 状态必须与原生页面一致').toEqual(before)
+  expect(methodResult).toMatchObject({ currentLayout: before.currentLayout, marker: before.e2eRuntimeVendorMarker })
+  return { nativePage, nativeState, state, methodResult }
 }
