@@ -71,8 +71,12 @@ export function stableProcess(row: ProcessRow, current: ProcessRow | undefined) 
   return current !== undefined && sameProcessIdentity(row, current) && !row.zombie
 }
 
-/** 复用正式映像核验；新身份与初始身份均只查询一次，最多四个 fallback 并发。 */
-export async function inspectResourceRows(rows: ProcessRow[], deadline: number) {
+/** 复用正式映像核验；首个后验清单先交给新增身份核验，再运行最多四个并发 fallback。 */
+export async function inspectResourceRows(
+  rows: ProcessRow[],
+  deadline: number,
+  afterKernel?: (rows: ProcessRow[], images: Map<number, string[]>) => Promise<void>,
+) {
   const paths = await readDarwinKernelPaths(rows.map(row => row.pid), remainingProcessBudget(deadline))
   const afterRows = await readResourceRows(deadline)
   const after = new Map(afterRows.map(row => [row.pid, row]))
@@ -90,6 +94,7 @@ export async function inspectResourceRows(rows: ProcessRow[], deadline: number) 
       pending.push(row)
     }
   }
+  await afterKernel?.(afterRows, new Map(images))
   let fallbackBudgetExhausted = false
   for (let offset = 0; offset < pending.length; offset += 4) {
     if (Date.now() >= deadline) {
