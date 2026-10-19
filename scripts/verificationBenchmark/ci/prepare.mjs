@@ -23,7 +23,7 @@ async function discoverRuntime(artifacts, download, context, configuration) {
       const { directory } = await download(artifact.name)
       const files = await artifactFiles(directory)
       const suiteFiles = files.filter(file => /(?:^|\/)[^/]+-suite-report\/index\.json$/u.test(file))
-      const acceptanceFiles = files.filter(file => /(?:^|\/)dom-acceptance\/.+\/index\.json$/u.test(file))
+      const acceptanceFiles = files.filter(isRuntimeAcceptanceFile)
       assert(suiteFiles.length === 1 && acceptanceFiles.length > 0, 'Missing or duplicate strict suite/DOM reports')
       const suite = JSON.parse(await readFile(path.join(directory, suiteFiles[0]), 'utf8'))
       const acceptance = await Promise.all(acceptanceFiles.map(async file => JSON.parse(await readFile(path.join(directory, file), 'utf8'))))
@@ -48,6 +48,14 @@ async function discoverRuntime(artifacts, download, context, configuration) {
     gaps.push({ id: 'runtime', reason: 'No complete strict runtime checkpoints with actual matching full Node/pnpm/build toolchain identity' })
   }
   return { evidence, gaps }
+}
+
+/**
+ * 真实 DOM runner 为每次调用写出 UUID 命名的验收 JSON，而不是汇总 index.json。
+ * 只接受受管 artifact 内 dom-acceptance 目录下的 JSON，避免把诊断文件混入范围。
+ */
+export function isRuntimeAcceptanceFile(file) {
+  return /(?:^|\/)dom-acceptance\/.+\.json$/u.test(file)
 }
 
 /** discovery 只生成待审草稿，不把一次发现或预期列表当作正式性能样本。 */

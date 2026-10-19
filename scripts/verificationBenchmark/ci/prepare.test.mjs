@@ -5,7 +5,7 @@ import { classifyCoverageScope, coverageScopePolicy } from '../../verificationTe
 import { coverageLogicalScope } from '../../verificationTelemetry/logicalCoverage.mjs'
 import { collectCiEvidence } from '../ci.mjs'
 import { fixture, time } from './fixture.mjs'
-import { prepareCiBenchmark } from './prepare.mjs'
+import { isRuntimeAcceptanceFile, prepareCiBenchmark } from './prepare.mjs'
 
 function discoveryFixture() {
   const value = fixture()
@@ -36,6 +36,13 @@ function discoveryFixture() {
   }
   return value
 }
+
+it('recognizes per-invocation DOM acceptance reports emitted by the headless runner', () => {
+  expect(isRuntimeAcceptanceFile('dom-acceptance/run-id/0277f749-f8a7-4250-a088-3ba889333b27.json')).toBe(true)
+  expect(isRuntimeAcceptanceFile('dom-acceptance/run-id/index.json')).toBe(true)
+  expect(isRuntimeAcceptanceFile('dom-acceptance/run-id/report.txt')).toBe(false)
+  expect(isRuntimeAcceptanceFile('suite-report/index.json')).toBe(false)
+})
 
 it('prepares a reviewable immutable input/topology contract using actual successful evidence', async () => {
   const value = discoveryFixture()
