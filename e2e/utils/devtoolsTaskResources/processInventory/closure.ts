@@ -1,5 +1,6 @@
-import type { NewProcessObservation } from '../types'
+import type { NewProcessObservation, ProcessIdentityChangeObservation, ProcessIdentityGapCause, ProcessInventoryLocation } from '../types'
 import type { ProcessRow } from './index'
+import { processIdentityMetadata } from './evidence'
 import { insideInstallation, inspectResourceRows, sameProcessIdentity, stableProcess } from './index'
 
 interface TrackedProcess {
@@ -56,6 +57,8 @@ export function createResourceInventory(options: {
   const known = new Map(options.initial.map(row => [row.pid, { row, absent: false }]))
   const newProcesses = new Map<number, NewProcess>()
   const changed = new Set<number>()
+  const identityChanges = new Map<number, ProcessIdentityChangeObservation>()
+  const identityGaps = new Map<number, ProcessIdentityGapCause[]>()
   const images = new Map<number, string[]>()
   let final = new Map(options.initial.map(row => [row.pid, row]))
   let inventoryRoundCount = 1
@@ -63,15 +66,41 @@ export function createResourceInventory(options: {
   let fallbackBudgetExhausted = false
   let inventoryInspectionError: string | undefined
 
-  function observe(rows: ProcessRow[], round: number) {
+  function recordIdentityGap(pid: number, reason: ProcessIdentityGapCause['reason'], firstObserved: ProcessInventoryLocation) {
+    const causes = identityGaps.get(pid) ?? []
+    if (!causes.some(cause => cause.reason === reason)) {
+      causes.push({ reason, firstObserved })
+      identityGaps.set(pid, causes)
+    }
+  }
+
+  function observe(rows: ProcessRow[], round: number, location: ProcessInventoryLocation) {
     const next = new Map(rows.map(row => [row.pid, row]))
     for (const [pid, previous] of known) {
       const current = next.get(pid)
       if (!current) {
         previous.absent = true
+        recordIdentityGap(pid, 'process-absent', location)
       }
       else if (previous.absent || !sameProcessIdentity(previous.row, current)) {
         changed.add(pid)
+        recordIdentityGap(pid, 'identity-changed', location)
+        if (!identityChanges.has(pid)) {
+          const reasons: ProcessIdentityChangeObservation['reasons'] = []
+          if (previous.absent) {
+            reasons.push('returned-after-absence')
+          }
+          if (previous.row.started !== current.started) {
+            reasons.push('started-changed')
+          }
+          if (previous.row.parentPid !== current.parentPid) {
+            reasons.push('parent-changed')
+          }
+          if (previous.row.zombie !== current.zombie) {
+            reasons.push('zombie-changed')
+          }
+          identityChanges.set(pid, { ...processIdentityMetadata(previous.row), changedTo: processIdentityMetadata(current), reasons, firstObserved: location })
+        }
       }
     }
     for (const row of rows) {
@@ -110,7 +139,7 @@ export function createResourceInventory(options: {
     }
     try {
       const inspection = await inspectResourceRows(pending.map(entry => entry.row), options.deadline, async (rows, kernelImages) => {
-        observe(rows, round)
+        observe(rows, round, { round, phase: 'after-kernel' })
         for (const [pid, executableImages] of kernelImages) {
           images.set(pid, executableImages)
         }
@@ -120,8 +149,8 @@ export function createResourceInventory(options: {
           }
         }
         classifyInspected()
-      })
-      observe(inspection.finalRows, round)
+      }, round)
+      observe(inspection.finalRows, round, { round, phase: 'after-fallback' })
       fallbackBudgetExhausted ||= inspection.fallbackBudgetExhausted
       for (const [pid, executableImages] of inspection.images) {
         images.set(pid, executableImages)
@@ -147,7 +176,7 @@ export function createResourceInventory(options: {
       for (const [pid, executableImages] of kernelImages) {
         images.set(pid, executableImages)
       }
-      observe(rows, 1)
+      observe(rows, 1, { round: 1, phase: 'after-kernel' })
       // 复用原第 2 轮预算；先绑定新身份，再等待初始 null-path 的 lsof fallback。
       await inspectPending(2)
     },
@@ -155,7 +184,7 @@ export function createResourceInventory(options: {
       for (const [pid, executableImages] of initialImages) {
         images.set(pid, executableImages)
       }
-      observe(rows, inventoryRoundCount)
+      observe(rows, inventoryRoundCount, { round: 1, phase: 'after-fallback' })
       // 已经前后核验的外国身份后来退出不抹除证据；从未核验的退出条目仍未知。
       classifyInspected()
       for (let round = inventoryRoundCount + 1; round <= 3 && !inventoryInspectionError && !inventoryBudgetExhausted; round++) {
@@ -174,6 +203,8 @@ export function createResourceInventory(options: {
       return {
         final,
         changedProcessPids: changed,
+        identityGaps,
+        identityChangedProcesses: [...identityChanges.values()],
         newProcesses: observations,
         verifiedNewForeignProcessCount: observations.filter(entry => entry.classification === 'verified-foreign').length,
         newSelectedProcessCount: observations.filter(entry => entry.classification === 'installation-image' || entry.classification === 'descendant').length,

@@ -105,11 +105,27 @@ describe('first-observation process identity capture', () => {
   it('rejects a verified PID that disappears and returns with the same seconds-resolution identity', async () => {
     const later = withNew(row(44))
     inventories(initial, later, later, initial, later)
-    expect(await sampleInstallationProcesses(target, 'darwin')).toMatchObject({ status: 'observed', value: {
+    const sample = await sampleInstallationProcesses(target, 'darwin')
+    expect(sample).toMatchObject({ status: 'observed', value: {
       installationRssBytes: { status: 'unavailable' },
       identityChangedProcessCount: 1,
-      newProcesses: [{ pid: 44, classification: 'identity-changed' }],
+      newProcesses: [{ pid: 44, firstSeenRound: 1, classification: 'identity-changed' }],
     } })
+    if (sample.status !== 'observed') {
+      throw new Error(sample.reason)
+    }
+    const identity = { pid: 44, parentPid: 1, started: 'Mon Oct 19 10:00:00 2026', zombie: false }
+    expect(sample.value.identityChangedProcesses).toEqual([{
+      ...identity,
+      changedTo: identity,
+      reasons: ['returned-after-absence'],
+      firstObserved: { round: 1, phase: 'after-fallback' },
+    }])
+    expect(sample.value.identityChangedProcesses).toHaveLength(sample.value.identityChangedProcessCount)
+    expect(sample.value.unclassifiedProcesses).toHaveLength(sample.value.unclassifiedProcessCount)
+    expect(sample.value.missingIdentities).toHaveLength(sample.value.missingIdentityCount)
+    expect(mocks.ps).toHaveBeenCalledTimes(5)
+    expect(mocks.paths.mock.calls.map(call => call[0])).toEqual([[11, 22, 33], [44]])
   })
 
   it('does not infer foreign ownership from a foreign image and an unknown parent before the process exits', async () => {

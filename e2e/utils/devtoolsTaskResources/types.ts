@@ -32,6 +32,34 @@ export interface NewProcessObservation {
   imageSource: 'kernel-path' | 'text-images' | 'not-verified'
 }
 
+export interface ProcessIdentityMetadata {
+  pid: number
+  parentPid: number
+  started: string
+  zombie: boolean
+}
+
+export interface ProcessInventoryLocation {
+  round: number
+  phase: 'initial' | 'after-kernel' | 'fallback' | 'after-fallback'
+}
+
+export interface ProcessIdentityGapCause {
+  reason: 'process-absent' | 'identity-changed' | 'zombie' | 'kernel-path-unverifiable' | 'text-images-query-failed' | 'text-images-empty' | 'text-images-invalid' | 'fallback-budget-exhausted'
+  firstObserved: ProcessInventoryLocation
+}
+
+export interface ProcessIdentityGapObservation extends ProcessIdentityMetadata {
+  final: ProcessIdentityMetadata | null
+  causes: ProcessIdentityGapCause[]
+}
+
+export interface ProcessIdentityChangeObservation extends ProcessIdentityMetadata {
+  changedTo: ProcessIdentityMetadata
+  reasons: Array<'returned-after-absence' | 'started-changed' | 'parent-changed' | 'zombie-changed'>
+  firstObserved: ProcessInventoryLocation
+}
+
 export interface InstallationProcessSample {
   samplingStartedAt: string
   samplingCompletedAt: string
@@ -46,6 +74,9 @@ export interface InstallationProcessSample {
   newSelectedProcessCount: number
   identityChangedProcessCount: number
   newProcesses: NewProcessObservation[]
+  unclassifiedProcesses: ProcessIdentityGapObservation[]
+  missingIdentities: ProcessIdentityGapObservation[]
+  identityChangedProcesses: ProcessIdentityChangeObservation[]
   inventoryRoundCount: number
   inventoryBudgetExhausted: boolean
   inventoryInspectionError?: string

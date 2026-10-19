@@ -1,3 +1,4 @@
+import type { ProcessIdentityGapCause } from '../types'
 import path from 'node:path'
 // eslint-disable-next-line e18e/ban-dependencies -- 只采样系统进程元数据，不读取命令行或环境变量。
 import { execa } from 'execa'
@@ -76,14 +77,20 @@ export async function inspectResourceRows(
   rows: ProcessRow[],
   deadline: number,
   afterKernel?: (rows: ProcessRow[], images: Map<number, string[]>) => Promise<void>,
+  round = 1,
 ) {
   const paths = await readDarwinKernelPaths(rows.map(row => row.pid), remainingProcessBudget(deadline))
   const afterRows = await readResourceRows(deadline)
   const after = new Map(afterRows.map(row => [row.pid, row]))
   const images = new Map<number, string[]>()
   const pending: ProcessRow[] = []
+  const imageGaps = new Map<number, ProcessIdentityGapCause>()
   for (const row of rows) {
     if (!stableProcess(row, after.get(row.pid))) {
+      imageGaps.set(row.pid, {
+        reason: row.zombie ? 'zombie' : after.has(row.pid) ? 'identity-changed' : 'process-absent',
+        firstObserved: { round, phase: row.zombie ? 'initial' : 'after-kernel' },
+      })
       continue
     }
     const executable = paths.get(row.pid)
@@ -93,12 +100,18 @@ export async function inspectResourceRows(
     else if (executable === null) {
       pending.push(row)
     }
+    else {
+      imageGaps.set(row.pid, { reason: 'kernel-path-unverifiable', firstObserved: { round, phase: 'after-kernel' } })
+    }
   }
   await afterKernel?.(afterRows, new Map(images))
   let fallbackBudgetExhausted = false
   for (let offset = 0; offset < pending.length; offset += 4) {
     if (Date.now() >= deadline) {
       fallbackBudgetExhausted = true
+      for (const row of pending.slice(offset)) {
+        imageGaps.set(row.pid, { reason: 'fallback-budget-exhausted', firstObserved: { round, phase: 'fallback' } })
+      }
       break
     }
     await Promise.all(pending.slice(offset, offset + 4).map(async (row) => {
@@ -107,12 +120,16 @@ export async function inspectResourceRows(
         if (textImages.length && textImages.every(validProcessImage)) {
           images.set(row.pid, textImages)
         }
+        else {
+          imageGaps.set(row.pid, { reason: textImages.length ? 'text-images-invalid' : 'text-images-empty', firstObserved: { round, phase: 'fallback' } })
+        }
       }
       catch {
+        imageGaps.set(row.pid, { reason: 'text-images-query-failed', firstObserved: { round, phase: 'fallback' } })
         // 未知归属始终保留缺口；不根据查询失败或后续退出推断其先前属于外国进程。
       }
     }))
   }
   const finalRows = await readResourceRows(deadline)
-  return { paths, images, afterRows, finalRows, fallbackBudgetExhausted }
+  return { paths, images, imageGaps, afterRows, finalRows, fallbackBudgetExhausted }
 }
