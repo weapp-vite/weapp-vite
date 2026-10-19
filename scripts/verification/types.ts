@@ -24,6 +24,8 @@ export interface ResourceBudget {
   cpuBudget: number
   totalMemoryBytes: number
   freeMemoryBytes: number
+  availableMemoryBytes: number
+  availableMemorySource: 'injected' | 'os-freemem' | 'darwin-memory-pressure'
   jobs: number
   workersPerTask: number
   buildConcurrency: number
