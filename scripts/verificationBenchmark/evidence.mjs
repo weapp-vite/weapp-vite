@@ -44,6 +44,10 @@ export function runtimeScope(report, acceptanceReports) {
     }
     invocations.add(value.invocationId)
     for (const item of value.cases) {
+      if (item.state === 'skipped' && item.status === 'skipped' && !item.acceptance && item.violations.length === 0) {
+        entries.push([`source-skip:${value.template ?? ''}:${item.file}:${item.name}`, [], 'skipped'])
+        continue
+      }
       if (item.status !== 'passed' || !item.acceptance) {
         throw new Error('Acceptance evidence contains an unexecuted or failed checkpoint')
       }

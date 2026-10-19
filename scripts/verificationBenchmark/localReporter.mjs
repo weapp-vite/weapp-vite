@@ -25,7 +25,8 @@ export function validateLocalVitest(report) {
 export default class LocalVerificationReporter {
   plannedFiles = []
   collected = []
-  onInit() {
+  onInit(context) {
+    assert(context.config.allowOnly === false, 'Complete local evidence requires the native Vitest focus guard')
     this.root = process.env.WEAPP_VITE_VERIFICATION_LOCAL_ROOT
     this.directory = process.env.WEAPP_VITE_VERIFICATION_LOCAL_DIR
     this.runId = process.env.WEAPP_VITE_VERIFICATION_LOCAL_RUN

@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { configDefaults, defineConfig } from 'vitest/config'
 import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
-import { localReporters } from '../scripts/verificationBenchmark/localReporterConfig.mjs'
+import { localReporters, localTestPolicy } from '../scripts/verificationBenchmark/localReporterConfig.mjs'
 import { ensureIdeWarningReportEnv } from './utils/ideWarningReport.ts'
 import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
 
@@ -31,5 +31,6 @@ export default defineConfig({
     globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts'), DEVTOOLS_GLOBAL_SETUP],
     setupFiles: [DOM_SETUP_FILE, DEVTOOLS_SETUP_FILE],
     reporters: localReporters(['default', DOM_REPORTER]),
+    ...localTestPolicy(),
   },
 })
