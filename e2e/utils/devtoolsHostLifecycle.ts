@@ -1,4 +1,4 @@
-import type { ManagedWechatHostIdentity } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/types'
+import type { ManagedWechatHostIdentity, ManagedWechatInstallationExitEvidence } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/types'
 import type { ResolvedWechatDevtoolsTarget } from '../../packages/weapp-ide-cli/src/devtoolsTarget'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -34,6 +34,15 @@ export interface DevtoolsHostLease {
 export interface QuitClaimedDevtoolsHostOptions {
   pollIntervalMs?: number
   timeoutMs?: number
+}
+
+export interface DevtoolsHostExitEvidence {
+  checkedAt: string
+  before: DevtoolsHostSnapshot
+  after: DevtoolsHostSnapshot
+  quitDispatched: boolean
+  exitedHostIdentities: ManagedWechatHostIdentity[]
+  installationInspection?: ManagedWechatInstallationExitEvidence['processInspection']
 }
 
 function lockDirectories(target: ResolvedWechatDevtoolsTarget) {
@@ -165,15 +174,26 @@ async function assertClaimedHostGone(lease: DevtoolsHostLease, identities: Manag
       throw new Error('WeChat DevTools quit returned but a claimed host process is still alive.')
     }
   }
+  return current
+}
+
+async function inspectClaimedInstallationExit(lease: DevtoolsHostLease): Promise<DevtoolsHostExitEvidence['installationInspection']> {
+  if (process.platform === 'darwin' && lease.target.appPath.includes('/Contents/')) {
+    const { inspectExitedWechatInstallation } = await import('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/installationExit/processes')
+    return inspectExitedWechatInstallation(lease.target)
+  }
 }
 
 /** 调用官方 quit，并等待锁、宿主 PID 与 macOS 安装进程清单全部消失。 */
-export async function quitClaimedDevtoolsHost(lease: DevtoolsHostLease, options: QuitClaimedDevtoolsHostOptions = {}) {
+export async function quitClaimedDevtoolsHost(lease: DevtoolsHostLease, options: QuitClaimedDevtoolsHostOptions = {}): Promise<DevtoolsHostExitEvidence> {
   const timeoutMs = options.timeoutMs ?? HOST_WAIT_TIMEOUT_MS
   const pollIntervalMs = options.pollIntervalMs ?? HOST_POLL_INTERVAL_MS
   const before = await inspectDevtoolsHost(lease.target)
   if (before.state === 'cold') {
-    return
+    // 共享锁已经消失不证明安装 helper 退出；只读核验，不再拉起 CLI 或增加退出权限。
+    const installationInspection = await inspectClaimedInstallationExit(lease)
+    const after = await assertClaimedHostGone(lease, [])
+    return { checkedAt: new Date().toISOString(), before, after, quitDispatched: false, exitedHostIdentities: [], installationInspection }
   }
   if (before.state !== 'selected') {
     throw new Error(`Cannot quit a WeChat DevTools host that is ${before.state}; ownership is not proven.`)
@@ -187,12 +207,9 @@ export async function quitClaimedDevtoolsHost(lease: DevtoolsHostLease, options:
   let lastError: unknown
   while (Date.now() < deadline) {
     try {
-      await assertClaimedHostGone(lease, before.identities)
-      if (process.platform === 'darwin' && lease.target.appPath.includes('/Contents/')) {
-        const { inspectExitedWechatInstallation } = await import('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/installationExit/processes')
-        await inspectExitedWechatInstallation(lease.target)
-      }
-      return
+      const after = await assertClaimedHostGone(lease, before.identities)
+      const installationInspection = await inspectClaimedInstallationExit(lease)
+      return { checkedAt: new Date().toISOString(), before, after, quitDispatched: true, exitedHostIdentities: before.identities, installationInspection }
     }
     catch (error) {
       lastError = error

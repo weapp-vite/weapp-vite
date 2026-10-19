@@ -1,7 +1,8 @@
 /* eslint-disable e18e/ban-dependencies -- suite runner 需要 execa 保留跨平台命令参数并正确解析 Windows pnpm.cmd。 */
 import type { Options } from 'execa'
 import type { MachineE2EChildScope, MachineE2ELease, MachineE2ELeaseOptions } from '../../packages/devtools-runtime/src/lease/machine'
-import type { DevtoolsHostLease } from '../utils/devtoolsHostLifecycle'
+import type { DevtoolsHostExitEvidence, DevtoolsHostLease } from '../utils/devtoolsHostLifecycle'
+import type { TaskResourceRecorder } from '../utils/devtoolsTaskResources'
 import type { SuiteReportContext, SuiteRuntimeBlocker, SuiteTaskArtifact } from './suiteReport'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -12,6 +13,8 @@ import { MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/de
 import { claimDevtoolsHost, DEVTOOLS_HOST_CLAIMED_ENV, quitClaimedDevtoolsHost } from '../utils/devtoolsHostLifecycle'
 import { createDevtoolsProjectJournal } from '../utils/devtoolsProcessOwnership'
 import { cleanupDevtoolsCommandScope } from '../utils/devtoolsScopeCleanup'
+import { createTaskResourceRecorder } from '../utils/devtoolsTaskResources'
+import { TASK_RESOURCE_EVENT_ERROR_MARKER } from '../utils/devtoolsTaskResources/wrappers'
 import { E2E_RUNTIME_PROVIDER_ENV, resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_REPORT_DIR_ENV, ACCEPTANCE_ROOT, ACCEPTANCE_RUN_ID_ENV, ACCEPTANCE_SHA_ENV, ACCEPTANCE_TASK_ENV, createAcceptanceIdentity, DOM_ACCEPTANCE_ENV, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { validateTaskAcceptance } from './domAcceptanceReport/task'
@@ -34,6 +37,7 @@ export interface SuiteTask {
   unsafeRuntimeReason?: string
   runtimeVersions?: Array<{ version: string, baseLibraryVersion: string | null, installationId: string }>
   runtimeBlocker?: SuiteRuntimeBlocker
+  resourceEvidenceErrors?: string[]
   nonInteractive?: boolean
   devtoolsLaunchSkipped?: boolean
   env?: Record<string, string>
@@ -128,10 +132,14 @@ function createTaskArtifactCollector() {
   let unsafeRuntimeReason: string | undefined
   let runtimeBlocker: SuiteRuntimeBlocker | undefined
   const runtimeVersions: NonNullable<SuiteTask['runtimeVersions']> = []
+  const resourceEvidenceErrors: string[] = []
 
   function collectFromText(text: string) {
     const lines = text.split(NEWLINE_SPLIT_PATTERN)
     for (const line of lines) {
+      if (line.startsWith(TASK_RESOURCE_EVENT_ERROR_MARKER)) {
+        resourceEvidenceErrors.push(line.slice(TASK_RESOURCE_EVENT_ERROR_MARKER.length).trim())
+      }
       if (/DEVTOOLS_LOGIN_REQUIRED|WechatIdeLoginRequiredError|检测到微信开发者工具登录状态失效|\[runtime:launch-login\]/.test(line)) {
         runtimeBlocker ??= { code: 'needs-login', reason: line.trim() }
       }
@@ -180,6 +188,7 @@ function createTaskArtifactCollector() {
   return {
     artifacts,
     runtimeVersions,
+    resourceEvidenceErrors,
     get unsafeRuntimeReason() { return unsafeRuntimeReason },
     get runtimeBlocker() { return runtimeBlocker },
     collectFromText,
@@ -443,6 +452,7 @@ async function defaultRunTask(task: SuiteTask, signal: AbortSignal) {
       task.unsafeRuntimeReason ??= collector.unsafeRuntimeReason
       task.runtimeVersions = collector.runtimeVersions
       task.runtimeBlocker = collector.runtimeBlocker
+      task.resourceEvidenceErrors = collector.resourceEvidenceErrors
       task.artifacts = collector.artifacts
       task.devtoolsLaunchSkipped = collector.devtoolsLaunchSkipped
       child.stdout?.destroy()
@@ -631,6 +641,7 @@ async function runOwnedTaskSuite(
     let childScope: MachineE2EChildScope | undefined
     let processStopError: OwnedCommandShutdownError | undefined
     let devtoolsHostLease: DevtoolsHostLease | undefined
+    let resources: TaskResourceRecorder | undefined
 
     try {
       journalPath = await createDevtoolsProjectJournal()
@@ -656,10 +667,16 @@ async function runOwnedTaskSuite(
       await options.beforeEachTask?.(task)
       signal.throwIfAborted()
       if (isDevtoolsVitestTask(task)) {
+        if (writeReport) {
+          resources = createTaskResourceRecorder({ ...reportContext, suiteName, taskLabel: task.label, taskIndex, journalPath, childScope, env: task.env })
+          await resources.initialize()
+          task.env = { ...task.env, ...resources.environment }
+        }
         // 只在任务启动前认领冷宿主；已有或无法核验的宿主会阻断本 lane，避免继续累积 renderer。
         // 上一宿主已在 task 收尾退出，新宿主必须执行自己的 global setup 登录预检。
         devtoolsHostLease = await claimDevtoolsHost(task.env?.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH ?? process.env.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH)
         if (devtoolsHostLease) {
+          await resources?.beforeTask(devtoolsHostLease)
           task.env = {
             ...task.env,
             [DEVTOOLS_HOST_CLAIMED_ENV]: '1',
@@ -688,7 +705,9 @@ async function runOwnedTaskSuite(
       reason = message
       blocked = true
       if (processStopError || (error as { code?: string }).code === 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH') {
-        options.onUnsafeRuntime?.(message)
+        task.unsafeRuntimeReason ??= message
+        // 即使调用方允许普通失败继续，未知宿主或未停止的命令也必须在 runner 内停止后续 task。
+        resourceCleanupFailed = true
       }
       console.error(`[${suiteName}] task crashed: ${task.label}`)
       console.error(message)
@@ -696,11 +715,22 @@ async function runOwnedTaskSuite(
     finally {
       if (journalPath) {
         const cleanupErrors: unknown[] = []
+        let scopeError: unknown
+        let hostError: unknown
+        let hostExit: DevtoolsHostExitEvidence | undefined
+        const observationErrors: string[] = []
+        try {
+          await resources?.beforeCleanup()
+        }
+        catch (error) {
+          observationErrors.push(`before-cleanup resource observation: ${error instanceof Error ? error.message : String(error)}`)
+        }
         if (processStopError) {
           try {
             await childScope?.seal()
           }
           catch (error) {
+            scopeError = error
             cleanupErrors.push(error)
           }
         }
@@ -708,14 +738,16 @@ async function runOwnedTaskSuite(
           await cleanupDevtoolsCommandScope(childScope, journalPath)
         }
         catch (error) {
+          scopeError = scopeError === undefined ? error : new AggregateError([scopeError, error], 'Child scope sealing and cleanup both failed')
           cleanupErrors.push(error)
         }
         try {
           if (devtoolsHostLease) {
-            await quitClaimedDevtoolsHost(devtoolsHostLease)
+            hostExit = await quitClaimedDevtoolsHost(devtoolsHostLease)
           }
         }
         catch (error) {
+          hostError = error
           cleanupErrors.push(error)
         }
         if (cleanupErrors.length) {
@@ -726,6 +758,25 @@ async function runOwnedTaskSuite(
           exitCode = 1
           reason = [reason, `DevTools resource cleanup failed: ${message}`].filter(Boolean).join('; ')
           console.error(`[${suiteName}] ${reason}`)
+        }
+        let resourceResult: { indexPath?: string, errors: string[] } | undefined
+        try {
+          resourceResult = await resources?.finish({ scopeError, hostError, hostExit }, [...observationErrors, ...(task.resourceEvidenceErrors ?? [])])
+        }
+        catch (error) {
+          resourceResult = { errors: [...observationErrors, `resource attachment: ${error instanceof Error ? error.message : String(error)}`] }
+        }
+        if (resourceResult?.indexPath) {
+          task.artifacts = [...(task.artifacts ?? []), { kind: 'ide-task-resource-report', indexPath: resourceResult.indexPath }]
+        }
+        if (resourceResult?.errors.length) {
+          const message = `IDE task resource evidence incomplete: ${resourceResult.errors.join('; ')}`
+          console.error(`[${suiteName}] ${message}`)
+          if (reportContext.strict) {
+            blocked = true
+            exitCode = 1
+            reason = [reason, message].filter(Boolean).join('; ')
+          }
         }
       }
       stopHeartbeat()
