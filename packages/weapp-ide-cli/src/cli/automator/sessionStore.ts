@@ -17,7 +17,8 @@ interface PersistedAutomatorSession extends AutomatorSessionIdentity {
 
 const SESSION_DIRECTORY = path.join(os.tmpdir(), 'weapp-vite-automator-sessions')
 
-function resolveAutomatorSessionFilePath(options: AutomatorSessionIdentity) {
+/** 内部工具复用会话键；不从包入口公开缓存路径契约。 */
+export function resolveAutomatorSessionFilePath(options: AutomatorSessionIdentity) {
   const key = JSON.stringify([options.installationId, path.resolve(options.projectPath), options.sessionId?.trim() || null, options.port || null])
   return path.join(SESSION_DIRECTORY, `${createHash('sha256').update(key).digest('hex')}.json`)
 }

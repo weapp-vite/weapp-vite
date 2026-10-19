@@ -5,8 +5,11 @@ import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { resolveProjectAutomatorPort } from 'weapp-ide-cli'
+import { persistOpenedAutomatorSession, resolveProjectAutomatorPort, resolveWechatDevtoolsTarget } from 'weapp-ide-cli'
+import { resolveAutomatorSessionFilePath } from '../../packages/weapp-ide-cli/src/cli/automator/sessionStore'
 import { launchAutomator } from '../utils/automator'
+import { resolveWechatCliPath } from '../utils/devtoolsCli'
+import { createDoctorSessionCacheOwner } from '../utils/doctorSessionCache'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { createIssue1074Project, ISSUE_1074_CLI } from '../utils/issue1074Project'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
@@ -14,6 +17,7 @@ import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 describe('issue #1074: Doctor runtime fixture', () => {
   let project: string
   let host: Awaited<ReturnType<typeof launchAutomator>> | undefined
+  let sessionCache: ReturnType<typeof createDoctorSessionCacheOwner> | undefined
   beforeAll(async () => {
     project = await createIssue1074Project()
     await execa(process.execPath, [ISSUE_1074_CLI, 'build'], { cwd: project })
@@ -32,6 +36,7 @@ describe('issue #1074: Doctor runtime fixture', () => {
   }, 120_000)
   afterAll(async () => {
     await host?.close()
+    await sessionCache?.cleanup()
     if (project) {
       await rm(project, { recursive: true, force: true })
     }
@@ -50,8 +55,17 @@ describe('issue #1074: Doctor runtime fixture', () => {
     page = await host!.reLaunch('/isolated/index')
     await acceptance.check('independent', host!, page)
     if (resolveRuntimeProviderName() === 'devtools') {
-      const session = Reflect.get(host!, '__WEAPP_VITE_SESSION_METADATA') as { port: number }
-      const probe = await execa(process.execPath, [ISSUE_1074_CLI, 'doctor', '--runtime', '--runtime-port', String(session.port), '--format', 'json'], { cwd: project, reject: false })
+      const session = Reflect.get(host!, '__WEAPP_VITE_SESSION_METADATA') as { projectPath: string, port: number, wsEndpoint: string }
+      const cliPath = resolveWechatCliPath()
+      const target = await resolveWechatDevtoolsTarget({ cliPath })
+      const identity = { ...session, installationId: target.installationId }
+      sessionCache = createDoctorSessionCacheOwner(resolveAutomatorSessionFilePath(identity), identity)
+      await sessionCache.persist(() => persistOpenedAutomatorSession({
+        ...session,
+        cliPath,
+        runtimeProvider: 'devtools',
+      }))
+      const probe = await execa(process.execPath, [ISSUE_1074_CLI, 'doctor', '--runtime', '--runtime-cli', cliPath, '--runtime-port', String(session.port), '--format', 'json'], { cwd: project, reject: false })
       const report = JSON.parse(probe.stdout) as DoctorReport
       expect(report.coverage, probe.stderr).toContainEqual(expect.objectContaining({ layer: 'runtime', status: 'complete' }))
       expect(report.runtime.weapp.route).toBe('isolated/index')
