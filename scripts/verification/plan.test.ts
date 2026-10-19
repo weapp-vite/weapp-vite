@@ -7,6 +7,7 @@ import { createVerificationPlan } from './plan.ts'
 import { DEFAULT_SELECTION } from './policy.ts'
 import { getResourceBudget } from './resources.ts'
 import { scriptTestInventory } from './toolTests.ts'
+import { readWorkspace } from './workspace.ts'
 
 const packages: WorkspacePackage[] = [
   { name: 'library', directory: 'packages/library', scripts: { 'build': 'tsdown', 'test': 'vitest run', 'typecheck': 'tsc --noEmit', 'test:types:check': 'tsd' }, dependencies: [], extraInputs: [] },
@@ -60,6 +61,48 @@ it('falls back conservatively for unclassified files and delegates full tests wi
     const full = await createVerificationPlan({ root, changes: changes([]), packages, resources, mode: 'full' })
     expect(full.tasks.find(task => task.id === 'tests')?.args).toContain('test')
     expect(full.tasks.some(task => task.id === 'pure')).toBe(false)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('keeps the full quick scope when cross-directory inputs have no trusted owner mapping', async () => {
+  const root = await createPlanRoot()
+  try {
+    for (const file of ['scripts/unmapped.ts', 'e2e/new-kind/input.json', 'test/fixture-projects/unmapped/input.wxml', 'skills/unmapped/SKILL.md']) {
+      const plan = await createVerificationPlan({ root, changes: changes([file]), packages, resources, mode: 'quick', selection: 'affected' })
+      expect(plan.affected).toEqual(['consumer', 'library'])
+      expect(plan.suggested).toEqual(plan.affected)
+      expect(plan.selected).toEqual(plan.affected)
+      expect(plan.tasks.map(item => item.id)).toEqual(expect.arrayContaining(['test:library', 'test:consumer']))
+      expect(plan.warnings).toContain(`未映射的跨目录输入触发保守全范围: ${file}`)
+      expect(plan.remaining.length).toBeGreaterThan(0)
+    }
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('narrows mapped Turbo cross-directory inputs in quick and expands their consumers in review', async () => {
+  const root = await createPlanRoot()
+  try {
+    await writeFile(path.join(root, 'packages/library/turbo.json'), JSON.stringify({
+      extends: ['//'],
+      tasks: { build: { inputs: ['$TURBO_ROOT$/scripts/shared/**'] } },
+    }))
+    const input = { root, changes: changes(['scripts/shared/config.ts']), packages: await readWorkspace(root), resources, selection: 'affected' as const }
+    const quick = await createVerificationPlan({ ...input, mode: 'quick' })
+    expect(quick.affected).toEqual(['consumer', 'library'])
+    expect(quick.suggested).toEqual(['library'])
+    expect(quick.selected).toEqual(['library'])
+    expect(quick.tasks.some(item => item.id === 'test:library')).toBe(true)
+    expect(quick.tasks.some(item => item.id === 'test:consumer')).toBe(false)
+    expect(quick.warnings.some(warning => warning.includes('未映射'))).toBe(false)
+    const review = await createVerificationPlan({ ...input, mode: 'review' })
+    expect(review.selected).toEqual(['consumer', 'library'])
+    expect(review.tasks.some(item => item.id === 'test:consumer')).toBe(true)
   }
   finally {
     await rm(root, { recursive: true, force: true })
