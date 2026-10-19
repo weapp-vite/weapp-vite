@@ -26,7 +26,7 @@ it('finishes an asynchronous observable check', async () => {
 it.skip('preserves the original declared skip', () => {})
 `)
     const config = path.join(directory, 'vitest.config.mjs')
-    await writeFile(config, `export default { test: { include: ['sample.test.mjs'], reporters: ['default', ${JSON.stringify(reporter)}] } }\n`)
+    await writeFile(config, `export default { test: { allowOnly: false, include: ['sample.test.mjs'], reporters: ['default', ${JSON.stringify(reporter)}] } }\n`)
     const env = { ...process.env, WEAPP_VITE_VERIFICATION_LOCAL_ROOT: directory, WEAPP_VITE_VERIFICATION_LOCAL_DIR: reportDirectory, WEAPP_VITE_VERIFICATION_LOCAL_RUN: 'smoke', WEAPP_VITE_VERIFICATION_LOCAL_TASK: 'tests', WEAPP_VITE_VERIFICATION_LOCAL_INVOCATION: 'task-smoke' }
     for (const key of Object.keys(env).filter(key => key.startsWith('VITEST'))) {
       delete env[key]
@@ -62,6 +62,15 @@ it.skip('preserves the original declared skip', () => {})
         changed.reason = 'interrupted'
       }
       expect(() => validateLocalVitest(changed)).toThrow()
+    }
+    for (const focus of ['describe.only', 'it.only']) {
+      await writeFile(testFile, `import { describe, expect, it } from 'vitest'
+${focus === 'describe.only' ? 'describe.only' : 'describe'}('focused suite', () => {
+  ${focus === 'it.only' ? 'it.only' : 'it'}('runs selected', () => expect(true).toBe(true))
+})
+describe('ordinary suite', () => it('must remain in full scope', () => expect(true).toBe(true)))
+`)
+      await expect(execute(process.execPath, [vitest, 'run', '--root', directory, '--config', config, '--maxWorkers=1'], { cwd: root, env })).rejects.toMatchObject({ code: 1 })
     }
   }
   finally {
