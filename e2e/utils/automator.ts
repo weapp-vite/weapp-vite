@@ -27,6 +27,7 @@ import { registerAutomatorReconnect } from './automatorReconnect'
 import { resolveWechatCliPath } from './devtoolsCli'
 import { createDevtoolsProjectJournal, ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 import { assertSelectedWechatDevtoolsRuntime, resolveSelectedWechatDevtools } from './devtoolsSelection'
+import { createWrapperWatcherId, recordWrapperResourceEvent } from './devtoolsTaskResources/wrappers'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 import {
   appendIdeReportEvent,
@@ -1087,6 +1088,7 @@ function startBridgeWrapperDistSync(
   const preserveRoots = options.preserveRoots ?? []
   const pendingPaths = new Set<string>()
   let watcher: fs.FSWatcher | undefined
+  let watcherId: string | undefined
   let timer: NodeJS.Timeout | undefined
   let reconcileTimer: NodeJS.Timeout | undefined
   let closed = false
@@ -1098,8 +1100,15 @@ function startBridgeWrapperDistSync(
       timer = undefined
     }
     pendingPaths.clear()
-    watcher?.close()
+    try {
+      watcher?.close()
+    }
+    catch (error) {
+      recordWrapperResourceEvent('watcher-stop-error', wrapperRoot, watcherId, error)
+      throw error
+    }
     watcher = undefined
+    watcherId = undefined
   }
 
   const closeSync = () => {
@@ -1175,14 +1184,20 @@ function startBridgeWrapperDistSync(
     if (!nextWatcher) {
       return
     }
-    nextWatcher.on('error', () => {
+    const nextWatcherId = createWrapperWatcherId()
+    nextWatcher.on('close', () => recordWrapperResourceEvent('watcher-stopped', wrapperRoot, nextWatcherId))
+    nextWatcher.on('error', (error) => {
+      recordWrapperResourceEvent('watcher-error', wrapperRoot, nextWatcherId, error)
       if (watcher === nextWatcher) {
         watcher = undefined
+        watcherId = undefined
       }
       syncSnapshot()
     })
     nextWatcher.unref()
     watcher = nextWatcher
+    watcherId = nextWatcherId
+    recordWrapperResourceEvent('watcher-started', wrapperRoot, nextWatcherId)
   }
 
   // Node 20+ 支持递归监听；单个根 watcher 覆盖新增子目录，避免逐目录注册和关闭的成本。
@@ -1281,6 +1296,7 @@ export function prepareAutomatorBridgeWrapperProject(
     .slice(0, 16)
   const wrapperRoot = path.join(AUTOMATOR_BRIDGE_WRAPPER_ROOT, hash)
   copyBridgeWrapperDistSnapshot(distRoot, wrapperRoot)
+  recordWrapperResourceEvent('snapshot-created', wrapperRoot)
 
   const pluginRoot = normalizeProjectRelativeRoot(projectConfig.pluginRoot)
   const preserveRoots = pluginRoot ? [pluginRoot] : []
@@ -1312,7 +1328,14 @@ export function prepareAutomatorBridgeWrapperProject(
   const stopSync = startBridgeWrapperDistSync(distRoot, wrapperRoot, { preserveRoots })
   const cleanup = createRetryableCleanup(async () => {
     stopSync()
-    await fs.promises.rm(wrapperRoot, { recursive: true, force: true })
+    try {
+      await fs.promises.rm(wrapperRoot, { recursive: true, force: true })
+      recordWrapperResourceEvent('snapshot-deleted', wrapperRoot)
+    }
+    catch (error) {
+      recordWrapperResourceEvent('snapshot-delete-error', wrapperRoot, undefined, error)
+      throw error
+    }
   })
 
   return {
@@ -2641,6 +2664,7 @@ async function connectAutomatorViaCliBridge(
     }
     return result
   })
+  lifecycle.throwIfAborted()
 
   const rawStdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
   if (!rawStdout) {
