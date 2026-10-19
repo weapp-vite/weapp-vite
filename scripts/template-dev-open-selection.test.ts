@@ -1,7 +1,11 @@
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TEMPLATE_DEV_OPEN_CASES } from '../e2e/ide/template-dev-open-cases'
 import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
 import { DEVTOOLS_SELECTION_ENV_KEYS, selectWechatE2EInstallation } from '../e2e/utils/devtoolsCli'
+import { E2E_TARGET_FILE_ENV } from '../e2e/utils/vitestTargetFile'
+
+const templateCase = TEMPLATE_DEV_OPEN_CASES[0]!
 
 const mocks = vi.hoisted(() => ({
   cleanup: vi.fn(),
@@ -34,7 +38,8 @@ beforeEach(() => {
   for (const key of DEVTOOLS_SELECTION_ENV_KEYS) {
     vi.stubEnv(key, undefined)
   }
-  vi.stubEnv('WEAPP_VITE_E2E_TEMPLATE', 'weapp-vite-plugin-template')
+  vi.stubEnv('WEAPP_VITE_E2E_TEMPLATE', templateCase.name)
+  vi.stubEnv(E2E_TARGET_FILE_ENV, undefined)
   vi.stubEnv('WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK', '1')
   mocks.execa.mockResolvedValue({ exitCode: 0 })
   mocks.stop.mockResolvedValue(undefined)
@@ -52,11 +57,26 @@ describe('template dev-open selection environment', () => {
     expect(mocks.start).toHaveBeenCalledTimes(1)
     expect(mocks.start.mock.calls[0]![0]).toBe('pnpm')
     expect(mocks.start.mock.calls[0]![1]).toEqual(expect.arrayContaining(['exec', 'wv', 'dev', '-o']))
+    expect(mocks.start.mock.calls[0]![2].cwd).toBe(templateCase.root)
     const childEnv = mocks.start.mock.calls[0]![2].env as NodeJS.ProcessEnv
     expect(childEnv.WEAPP_IDE_CLI_PATH).toBe(cliPath.trim())
     expect(childEnv.WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH).toBeUndefined()
     expect(mocks.resolveTarget).not.toHaveBeenCalled()
     expect(mocks.stop).toHaveBeenCalledTimes(1)
+    expect(mocks.execa).toHaveBeenCalledOnce()
+    expect(mocks.execa.mock.calls[0]![2].env.WEAPP_VITE_E2E_TEMPLATE).toBe(templateCase.name)
+  })
+
+  it('rejects an unknown template filter before touching IDE resources', async () => {
+    vi.stubEnv('WEAPP_VITE_E2E_TEMPLATE', 'missing-template-dev-open-case')
+
+    await expect(import('../e2e/scripts/run-template-dev-open-suite'))
+      .rejects
+      .toThrow('Unknown template dev:open case: missing-template-dev-open-case')
+
+    for (const action of [mocks.cleanup, mocks.login, mocks.start, mocks.execa]) {
+      expect(action).not.toHaveBeenCalled()
+    }
   })
 
   it.each([
