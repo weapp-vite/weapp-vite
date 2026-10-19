@@ -28,6 +28,12 @@ try {
     'miniprogram-api-typings': repositoryWorkspace.catalog['miniprogram-api-typings'],
     'rolldown': repositoryWorkspace.catalog.rolldown,
     'tailwindcss': repositoryWorkspace.catalogs.tailwind4.tailwindcss,
+    ...('@weapp-vite/react' in candidates
+      ? {
+          'react': repositoryWorkspace.catalog.react,
+          'react-reconciler': repositoryWorkspace.catalog['react-reconciler'],
+        }
+      : {}),
   }
   assert(Object.values(consumerPeers).every(value => typeof value === 'string' && value.length > 0), 'Consumer peers must come from repository catalogs')
   await writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'weapp-vite-host-dependency-compatibility', private: true, type: 'module', dependencies: { ...candidates, typescript: '6.0.3' }, devDependencies: consumerPeers }, null, 2))
