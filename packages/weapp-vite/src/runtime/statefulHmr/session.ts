@@ -449,7 +449,7 @@ class StatefulHmrSession {
   }
 
   handleSourceUpdate(file: string, dirtyReasonSummary: string[] = [], sourceEvent?: HmrProfileSourceEvent): void {
-    if (this.closed || this.restarting) {
+    if (this.closed || this.restarting || this.restartTimer || this.restartHandoff) {
       return
     }
     const normalizedFile = normalizeFsResolvedId(path.isAbsolute(file) ? file : path.resolve(this.server.config.root, file))
@@ -466,7 +466,7 @@ class StatefulHmrSession {
     this.profile?.source(normalizedFile, sourceEvent)
     this.settlementRevision += 1
     if (this.restartHandoff) {
-      // 已验证快照等待交接期间又有输入变化，保留旧宿主并重新验证完整批次。
+      // 入口图交接已经停止旧引擎；后续事件由新会话的初始扫描读取，不能再投递回旧引擎。
       this.restartHandoff.invalidate()
       this.restartHandoff = undefined
       if (this.restartTimer) {
