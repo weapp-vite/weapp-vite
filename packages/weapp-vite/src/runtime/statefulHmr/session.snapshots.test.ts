@@ -319,20 +319,12 @@ describe('stateful snapshot output transactions', () => {
     session.restart.mockImplementationOnce(() => restarted.promise)
     session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, child] })
     session.refresh()
-    // The snapshot is ready, but the restart handoff intentionally waits one
-    // tick so the old engine can settle before the host is replaced.
-    await vi.advanceTimersByTimeAsync(50)
-    expect(session.rebuild).toHaveBeenCalledOnce()
-
-    // A watcher event in that gap belongs to the replacement session. Sending
-    // it back to the retiring engine would race its shutdown and cancel a
-    // Rolldown build.
-    session.sourceChange(path.join(root, 'src/app.json'), 'update', ['entry-graph-changed'])
-    await vi.advanceTimersByTimeAsync(40)
-    expect(session.rebuild).toHaveBeenCalledOnce()
-
-    await vi.advanceTimersByTimeAsync(100)
+    await vi.advanceTimersByTimeAsync(140)
     expect(session.restart).toHaveBeenCalledOnce()
+
+    // The replacement callback reloads the latest source state. Scheduling a
+    // second build on the retiring session would race its engine shutdown.
+    session.sourceChange(path.join(root, 'src/app.json'), 'update', ['entry-graph-changed'])
     await vi.advanceTimersByTimeAsync(200)
 
     expect(session.rebuild).toHaveBeenCalledOnce()
@@ -355,11 +347,13 @@ describe('stateful snapshot output transactions', () => {
     native.resolve()
   })
 
-  it('ignores edits after topology handoff begins and keeps the old host until restart', async () => {
+  it('validates edits arriving before topology handoff and keeps the old host after a failed replacement snapshot', async () => {
     const page = path.join(root, 'src/page.js')
     const child = path.join(root, 'src/child.js')
     const session = await start(snapshot('red'), [page])
     session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, child] })
+      .mockRejectedValueOnce(new Error('invalid new component'))
+      .mockResolvedValue({ ...snapshot('green'), entryIds: [page, child] })
     harness.writeOutput.mockClear()
     session.refresh()
     await vi.advanceTimersByTimeAsync(50)
@@ -367,7 +361,11 @@ describe('stateful snapshot output transactions', () => {
     expect(session.restart).not.toHaveBeenCalled()
     session.sourceChange(path.join(root, 'src/child.js'))
     await vi.advanceTimersByTimeAsync(200)
-    expect(session.rebuild).toHaveBeenCalledOnce()
+    expect(session.rebuild).toHaveBeenCalledTimes(2)
+    expect(session.restart).not.toHaveBeenCalled()
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    session.sourceChange(path.join(root, 'src/child.js'))
+    await vi.advanceTimersByTimeAsync(200)
     expect(session.restart).toHaveBeenCalledOnce()
     expect(harness.writeOutput).not.toHaveBeenCalled()
   })
