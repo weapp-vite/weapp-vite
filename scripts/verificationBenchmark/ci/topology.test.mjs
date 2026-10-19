@@ -119,6 +119,33 @@ it('allows identical display names when all possible source needs are identical'
   expect((await generateCiTopology(['Approve', 'Tests'].map(successful), read)).needs.Tests).toEqual(['Approve'])
 })
 
+it('uses a unique executed sibling to disambiguate mutually exclusive reusable branches', async () => {
+  const branchA = '.github/workflows/branch-a.yml'
+  const branchB = '.github/workflows/branch-b.yml'
+  const read = sources({
+    [root]: {
+      a: { name: 'Platform', uses: uses(branchA) },
+      b: { name: 'Platform', uses: uses(branchB) },
+    },
+    [branchA]: {
+      setup: { name: 'Setup A', uses: uses(runner) },
+      tests: { name: 'Tests', needs: 'setup', uses: uses(runner) },
+    },
+    [branchB]: {
+      setup: { name: 'Setup B', uses: uses(runner) },
+      tests: { name: 'Tests', needs: 'setup', uses: uses(runner) },
+    },
+    [runner]: { run: {} },
+  })
+  const jobs = [
+    successful('Platform / Setup A / run'),
+    successful('Platform / Tests / run'),
+    skipped('Platform / Setup B / run'),
+  ]
+  const result = await generateCiTopology(jobs, read)
+  expect(result.needs['Platform / Tests / run']).toEqual(['Platform / Setup A / run'])
+})
+
 it('retains prerequisites through skipped dependencies without inventing an execution duration', async () => {
   const read = sources({ [root]: { approval: {}, optional: { needs: 'approval' }, report: { needs: 'optional', if: 'always()' } } })
   const result = await generateCiTopology([successful('approval'), skipped('optional'), successful('report')], read)

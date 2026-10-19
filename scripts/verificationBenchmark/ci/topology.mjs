@@ -157,6 +157,25 @@ function dependencyResolver(matches) {
   return match => [...new Set(prerequisites(match.node, match.labels.slice(0, -1)))].sort()
 }
 
+/**
+ * 相同显示名的 reusable 分支可能只有一个条件分支实际执行。
+ * 只有同一 invocation 存在唯一的成功兄弟证据时才允许消歧，避免把
+ * 缺失或重复的执行误判成某个分支的拓扑。
+ */
+function activeBranchCandidate(candidates, matches) {
+  const scored = candidates.map((candidate) => {
+    const owner = candidate.node.path.at(-2) ?? candidate.node
+    const needs = owner.needs.map(id => owner.invocation.jobs.get(id)).filter(Boolean)
+    return {
+      candidate,
+      executed: needs.filter(node => matches.some(match => match.node.path.includes(node) && match.job.conclusion === 'success')).length,
+    }
+  })
+  const max = Math.max(...scored.map(value => value.executed))
+  const winners = scored.filter(value => value.executed === max)
+  return max > 0 && winners.length === 1 ? winners[0].candidate : null
+}
+
 function validateActualCycles(needs) {
   const pending = new Set(Object.keys(needs))
   while (pending.size) {
@@ -180,7 +199,12 @@ export async function generateCiTopology(jobs, readSource, root = '.github/workf
   for (const [name, candidates] of [...executed.entries()].sort(([left], [right]) => left.localeCompare(right))) {
     const alternatives = candidates.map(dependencies)
     if (alternatives.some(value => !same(value, alternatives[0]))) {
-      throw new Error(`Ambiguous needs in frozen source for actual CI job: ${name}`)
+      const active = activeBranchCandidate(candidates, matches)
+      if (!active) {
+        throw new Error(`Ambiguous needs in frozen source for actual CI job: ${name}`)
+      }
+      entries.push([name, dependencies(active)])
+      continue
     }
     entries.push([name, alternatives[0]])
   }
