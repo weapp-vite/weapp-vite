@@ -30,7 +30,9 @@ async function packedFiles(directory) {
     assert.equal(path.dirname(await realpath(filename)), physicalDirectory, 'Packed file escaped artifact')
     files[name] = { file: entry.file, version: entry.version, sha256: await fileDigest(filename) }
   }
-  assert(files['weapp-vite'] && files.wevu, 'Missing consumer entry packages')
+  for (const name of consumerEntryPackages) {
+    assert(files[name], `Missing consumer entry package: ${name}`)
+  }
   return files
 }
 
@@ -67,7 +69,7 @@ function verifyClosure(packages, expectedPackages) {
 export async function createConsumerArtifact(root, directory, { pack = true, identity, expectedPackages } = {}) {
   if (pack) {
     assert.equal(process.versions.node.split('.')[0], '24', 'Consumer artifacts must be built on Node 24')
-    await packConsumerTarballs(root, directory)
+    await packConsumerTarballs(root, directory, consumerEntryPackages)
   }
   const manifest = { schemaVersion: 1, identity: identity ?? await consumerIdentity(root), packages: await packedFiles(directory) }
   verifyClosure(manifest.packages, expectedPackages ?? await consumerClosure(root))
