@@ -625,10 +625,11 @@ describe('stateful snapshot output transactions', () => {
       assets: [{ fileName: styleFile, code: '.probe { color: blue; }' }],
     }))
     const file = path.join(root, 'src/page.js')
-    // Core watch classifies the source as compiler content; a second watcher can
-    // report the same path without a reason before DevEngine delivers the patch.
+    // Core watch can classify the source as a mixed entry update while the
+    // Tailwind watcher reports content invalidation for the same path. Both
+    // reasons must survive until DevEngine delivers the patch.
+    session.sourceChange(file, 'update', ['entry-mixed-asset:1'])
     session.sourceChange(file, 'update', ['tailwind-content:1'])
-    session.sourceChange(file, 'update', [])
     expect(harness.callbacks!.onPatch([file], { type: 'Patch', code: 'void 0', filename: 'update.js' })).toBe(true)
     await vi.advanceTimersByTimeAsync(50)
     await session.whenSettled()

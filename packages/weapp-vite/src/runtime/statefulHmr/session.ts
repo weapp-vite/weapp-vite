@@ -486,15 +486,13 @@ class StatefulHmrSession {
       this.requestFullBuild([normalizedFile])
       return
     }
-    if (dirtyReasonSummary.length) {
-      // 有分类的后续事件代表同一文件的最新语义，应替换旧分类。
-      this.sourceDirtyReasons.set(normalizedFile, { reasons: [...dirtyReasonSummary] })
-    }
-    else if (!this.sourceDirtyReasons.has(normalizedFile)) {
-      // 其他 watcher 可能只报告文件变化而没有分类原因；不能抹掉同一批次
-      // 已由核心 watch hook 登记的 Tailwind/compiler 内容失效。
-      this.sourceDirtyReasons.set(normalizedFile, { reasons: [] })
-    }
+    const previousReasons = this.sourceDirtyReasons.get(normalizedFile)?.reasons ?? []
+    const reasons = dirtyReasonSummary.length === 0
+      ? previousReasons
+      : shouldMergeStatefulHmrDirtyReasons(previousReasons, dirtyReasonSummary)
+        ? [...new Set([...previousReasons, ...dirtyReasonSummary])]
+        : dirtyReasonSummary
+    this.sourceDirtyReasons.set(normalizedFile, { reasons })
     if (this.publicAssetSources.matchesPath(normalizedFile)) {
       this.requestSnapshotRefresh([normalizedFile])
       return
@@ -1422,6 +1420,11 @@ function isUnsafeStatefulHmrReason(reason: string, allowCompilerContent = false)
 /** 编译 provider 触发的内容变化使用统一 reason 前缀，保留旧 Tailwind reason 兼容。 */
 export function isCompilerContentDirtyReason(reason: string): boolean {
   return /^(?:compiler-content|tailwind-content):/.test(reason)
+}
+
+function shouldMergeStatefulHmrDirtyReasons(previous: readonly string[], next: readonly string[]): boolean {
+  const isVisualTransactionReason = (reason: string) => reason.startsWith('entry-mixed-asset:') || isCompilerContentDirtyReason(reason)
+  return previous.some(isVisualTransactionReason) && next.some(isVisualTransactionReason)
 }
 
 export function shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary: string[]): boolean {
