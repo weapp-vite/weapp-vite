@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMockBridgeSnapshotCleanup } from './automatorLaunchResilience/snapshotCleanup'
 
 vi.mock('../utils/devtoolsSelection', () => ({
   resolveSelectedWechatDevtools: vi.fn(async (cliPath: string) => ({ cliPath, installationId: cliPath })),
@@ -310,9 +311,15 @@ function expectBridgeWrapperProjectPath(sourceProjectPath: string, projectPath: 
 
 describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, () => {
   let sandboxRoot = ''
+  let cleanupMockBridgeSnapshots: ReturnType<typeof createMockBridgeSnapshotCleanup> | undefined
 
   beforeEach(() => {
+    cleanupMockBridgeSnapshots = undefined
     sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weapp-vite-automator-launch-'))
+    cleanupMockBridgeSnapshots = createMockBridgeSnapshotCleanup(
+      path.resolve(import.meta.dirname, '../../.tmp/e2e-ide-bridge-projects'),
+      path.resolve(import.meta.dirname, '../utils/automator.cli-bridge.ts'),
+    )
     const reportDir = path.join(sandboxRoot, 'report')
     // 默认用例显式覆盖非受管路径；受管专项用例在各自 fixture 内重新启用日志。
     vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', undefined)
@@ -352,15 +359,35 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
   })
 
   afterEach(async () => {
+    const errors: unknown[] = []
     try {
       await closeActiveMockMiniPrograms()
       expect(execaMock.mock.calls.some(([, args]) => args?.[0] === 'cache')).toBe(false)
+    }
+    catch (error) {
+      errors.push(error)
+    }
+    try {
+      for (const snapshot of cleanupMockBridgeSnapshots?.(execaMock.mock.calls) ?? []) {
+        expect(fs.existsSync(snapshot)).toBe(false)
+      }
+    }
+    catch (error) {
+      errors.push(error)
     }
     finally {
       clearLaunchEnv()
       vi.resetModules()
       vi.unstubAllEnvs()
-      fs.rmSync(sandboxRoot, { recursive: true, force: true })
+      try {
+        fs.rmSync(sandboxRoot, { recursive: true, force: true })
+      }
+      catch (error) {
+        errors.push(error)
+      }
+    }
+    if (errors.length > 0) {
+      throw new AggregateError(errors, 'Failed to clean automator launch fixtures')
     }
   })
 

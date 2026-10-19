@@ -88,9 +88,51 @@ describe('DevTools host lifecycle ownership', () => {
     mocks.quit.mockImplementationOnce(async () => {
       await fs.rm(path.join(profileDir, 'SingletonLock'))
     })
-    await quitClaimedDevtoolsHost(lease!, { timeoutMs: 1_000, pollIntervalMs: 1 })
+    const inspection = { platform: 'darwin', installationRoot: '/tmp/selected.app', checkedAt: new Date().toISOString(), selectedProcessCount: 0 }
+    mocks.inspectExited.mockResolvedValueOnce(inspection)
+    const evidence = await quitClaimedDevtoolsHost(lease!, { timeoutMs: 1_000, pollIntervalMs: 1 })
+    expect(evidence).toMatchObject({
+      before: { state: 'selected' },
+      after: { state: 'cold', identities: [] },
+      quitDispatched: true,
+      exitedHostIdentities: [{ pid: 42, started: 'first' }],
+      installationInspection: inspection,
+    })
     expect(mocks.quit).toHaveBeenCalledWith(['quit', '--port=16325'], expect.objectContaining({ target, timeout: 30_000 }))
-    expect(mocks.inspectExited).toHaveBeenCalledWith(target)
+    expect(mocks.inspectExited).toHaveBeenCalledExactlyOnceWith(target)
+    expect(mocks.identity).toHaveBeenCalledTimes(2)
+  })
+
+  it('verifies the complete installation when the claimed host is already cold without dispatching quit', async () => {
+    const { claimDevtoolsHost, quitClaimedDevtoolsHost } = await import('./devtoolsHostLifecycle')
+    const lease = await claimDevtoolsHost(cliPath)
+    const inspection = { platform: 'darwin', installationRoot: '/tmp/selected.app', checkedAt: new Date().toISOString(), selectedProcessCount: 0 }
+    mocks.inspectExited.mockResolvedValueOnce(inspection)
+    expect(await quitClaimedDevtoolsHost(lease)).toMatchObject({ before: { state: 'cold' }, after: { state: 'cold' }, quitDispatched: false, exitedHostIdentities: [], installationInspection: inspection })
+    expect(mocks.quit).not.toHaveBeenCalled()
+    expect(mocks.inspectExited).toHaveBeenCalledExactlyOnceWith(target)
+  })
+
+  it('preserves a residual installation helper when the shared host lock is already gone', async () => {
+    const { claimDevtoolsHost, quitClaimedDevtoolsHost } = await import('./devtoolsHostLifecycle')
+    const lease = await claimDevtoolsHost(cliPath)
+    const original = new Error('The selected installation still has a live helper process')
+    mocks.inspectExited.mockRejectedValueOnce(original)
+    await expect(quitClaimedDevtoolsHost(lease)).rejects.toBe(original)
+    expect(mocks.quit).not.toHaveBeenCalled()
+    expect(mocks.inspectExited).toHaveBeenCalledExactlyOnceWith(target)
+  })
+
+  it('refuses a new host that appears during the read-only cold installation check', async () => {
+    const { claimDevtoolsHost, quitClaimedDevtoolsHost } = await import('./devtoolsHostLifecycle')
+    const lease = await claimDevtoolsHost(cliPath)
+    mocks.inspectExited.mockImplementationOnce(async () => {
+      await lock('host-42')
+      mocks.identity.mockResolvedValue({ pid: 42, executable: '/tmp/selected.app/Contents/MacOS/Electron', started: 'new-host' })
+    })
+    await expect(quitClaimedDevtoolsHost(lease)).rejects.toThrow('host is still selected')
+    expect(mocks.quit).not.toHaveBeenCalled()
+    expect(await fs.readlink(path.join(profileDir, 'SingletonLock'))).toBe('host-42')
   })
 
   it('preserves an existing host when shutdown evidence is incomplete', async () => {
