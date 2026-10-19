@@ -144,9 +144,22 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
       }
       const { createTailwindV4SourceEntryMatcher, resolveProjectSourceFiles } = await import('@weapp-tailwindcss/engine')
       for (const [index, root] of roots) {
-        const sources = root.sources
-        const matches = createTailwindV4SourceEntryMatcher(sources)
+        let sources = root.sources
+        let matches = createTailwindV4SourceEntryMatcher(sources)
         if (!matches?.(file)) {
+          const sourceRoot = ctx.configService.absoluteSrcRoot ?? ctx.configService.cwd
+          const extension = path.extname(file).toLowerCase()
+          if (!isPathInside(sourceRoot, file) || !['.cjs', '.cts', '.html', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx', '.vue', '.wxml'].includes(extension)) {
+            continue
+          }
+          // Tailwind 的显式 @source 只描述初始文件；新增的项目源码仍需作为
+          // 精确条目加入当前 root，后续内容更新才能进入同一份编译快照。
+          const dynamicSource = { base: path.dirname(file), pattern: path.basename(file), negated: false }
+          sources = [...sources, dynamicSource]
+          matches = createTailwindV4SourceEntryMatcher(sources)
+        }
+        const sourceMatches = matches
+        if (!sourceMatches) {
           continue
         }
         const sourceId = compilerSourceId(file)
@@ -156,7 +169,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
           sources,
           filter: (candidate) => {
             const id = normalizeFsResolvedId(candidate)
-            return (id === sourceId || id === watchedId) && matches(candidate)
+            return (id === sourceId || id === watchedId) && sourceMatches(candidate)
           },
         })
         if (disposed || !selected.length || host.isNativeSource(file)) {
@@ -164,6 +177,13 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
         }
         if (roots.get(index) !== root) {
           continue
+        }
+        if (root.sources !== sources) {
+          root.sources = sources
+          root.matches = sourceMatches
+          root.result = { ...root.result, sources: [...root.result.sources, sources.at(-1)!] }
+          invalidation.rememberRoot(index, root.request, root.result, sourceMatches)
+          server?.watcher.add(sources.filter(source => !source.negated).map(source => source.base))
         }
         captureFile(file, false)
         discoveredSources.add(compilerSourceId(file))

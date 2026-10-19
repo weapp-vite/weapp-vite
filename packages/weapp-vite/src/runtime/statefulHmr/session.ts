@@ -486,7 +486,10 @@ class StatefulHmrSession {
       this.requestFullBuild([normalizedFile])
       return
     }
-    this.sourceDirtyReasons.set(normalizedFile, { reasons: [...dirtyReasonSummary] })
+    const previousReasons = this.sourceDirtyReasons.get(normalizedFile)?.reasons ?? []
+    this.sourceDirtyReasons.set(normalizedFile, {
+      reasons: [...new Set([...previousReasons, ...dirtyReasonSummary])],
+    })
     if (this.publicAssetSources.matchesPath(normalizedFile)) {
       this.requestSnapshotRefresh([normalizedFile])
       return

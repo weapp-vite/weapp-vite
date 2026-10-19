@@ -39,7 +39,7 @@ async function withProject(run: (root: string, compiler: Compiler) => Promise<vo
 }
 
 function createAdapter(root: string, compiler: Compiler) {
-  const ctx = { configService: { cwd: root, outDir: path.join(root, 'dist'), relativeOutputPath: () => 'app.wxss' } } as CompilerContext
+  const ctx = { configService: { cwd: root, absoluteSrcRoot: path.join(root, 'src'), outDir: path.join(root, 'dist'), relativeOutputPath: () => 'app.wxss' } } as CompilerContext
   const host = getCompilerHmrHost(ctx)
   const adapter = createTailwindHmrAdapter(ctx, {
     compiler: async () => compiler,
@@ -53,6 +53,33 @@ function createAdapter(root: string, compiler: Compiler) {
   adapter.configureServer({ watcher, httpServer, config: { logger } } as unknown as ViteDevServer)
   return { adapter, host, watcher, httpServer, logger }
 }
+
+it('captures a newly added source file outside the explicit Tailwind source entries', async () => {
+  await withProject(async (root, compiler) => {
+    const entry = path.join(root, 'src/app.css')
+    const shared = path.join(root, 'src/shared.ts')
+    const added = path.join(root, 'src/new-source.ts')
+    await writeFile(entry, '@import "tailwindcss" source(none); @source "./shared.ts";')
+    await writeFile(shared, 'export const utility = "h-[19px]"')
+    await writeFile(added, 'export const utility = "h-[23px]"')
+    const request: CompilerGenerateRequest = { id: 'dynamic-source', sourceOptions: { projectRoot: root, cssEntries: [entry] }, scanSources: true, target: 'weapp' }
+    const generated = await compiler.generate(request)
+    const { adapter, host, watcher, httpServer } = createAdapter(root, compiler)
+    host.onDependencyChange = vi.fn()
+    try {
+      await adapter.rememberRoot(0, request, generated)
+      expect(generated.css).toContain('19px')
+      watcher.emit('add', added)
+      await vi.waitFor(() => expect(host.onDependencyChange).toHaveBeenCalledWith(added))
+      const prepared = await adapter.prepare(host.freeze([added]))
+      expect(prepared.assets?.[0]?.code).toContain('19px')
+      expect(prepared.assets?.[0]?.code).toContain('23px')
+    }
+    finally {
+      httpServer.emit('close')
+    }
+  })
+})
 
 it.each(['entry', 'memory', 'cwd', 'base'] as const)('keeps the compiler-resolved %s scope for initial discovery and later additions', async (kind) => {
   await withProject(async (root, compiler) => {
