@@ -77,6 +77,7 @@ function createState(overrides: Record<string, any> = {}) {
     ctx: {
       scanService: {
         markDirty: vi.fn(),
+        loadAppEntry: vi.fn(async () => undefined),
         appEntry: undefined,
         independentSubPackageMap: new Map(),
         markIndependentDirty: vi.fn(),
@@ -855,6 +856,35 @@ describe('core lifecycle watch hook', () => {
 
     await hook(pageEntryId, { event: 'update' })
 
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([
+      'entry-direct:1',
+      'tailwind-content:2',
+    ])
+  })
+
+  it('reloads the app entry after a config change clears the scan cache', async () => {
+    const appEntryId = '/project/src/app.js'
+    const pageEntryId = '/project/src/pages/hmr/index.js'
+    findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
+    vi.spyOn(fs, 'readFile').mockResolvedValue('@import "tailwindcss";')
+    const state = createState({
+      loadedEntrySet: new Set([pageEntryId]),
+      resolvedEntryMap: new Map([[pageEntryId, { id: pageEntryId }]]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    state.ctx.scanService.markDirty = vi.fn(() => {
+      state.ctx.scanService.appEntry = undefined
+    })
+    state.ctx.scanService.loadAppEntry = vi.fn(async () => ({ path: appEntryId }))
+    state.ctx.scanService.markDirty()
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event: 'update' })
+
+    expect(state.ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
+    expect(findCssEntryMock).toHaveBeenCalledWith(appEntryId, 'weapp')
     expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
     expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([

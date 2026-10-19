@@ -437,8 +437,19 @@ async function processChangedFile(
         return false
       }
     }
-    const appEntryId = scanService.appEntry?.path
-      ? normalizeFsResolvedId(scanService.appEntry.path)
+    // 配置文件变化会使扫描服务主动清空 appEntry；后续内容变更仍需重新加载
+    // 应用入口，才能找到 Tailwind 样式入口并刷新编译器快照。
+    let appEntry = scanService.appEntry
+    if (!appEntry) {
+      try {
+        appEntry = await scanService.loadAppEntry()
+      }
+      catch {
+        return false
+      }
+    }
+    const appEntryId = appEntry?.path
+      ? normalizeFsResolvedId(appEntry.path)
       : undefined
     if (!appEntryId || appEntryId === normalizedId) {
       return false
