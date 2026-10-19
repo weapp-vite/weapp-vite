@@ -29,10 +29,8 @@ it('runs Bun CLI on all three systems against frozen workspace artifacts', async
     'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'],
     'bun-version': ['1.4.2', 'latest'],
   })
-  expect(job.needs).toEqual(['pr-context', 'miniapp-e2e-build-pr', 'miniapp-e2e-build-full', 'bun-build-diagnostic'])
+  expect(job.needs).toEqual(['pr-context', 'bun-build-diagnostic'])
   expect(job.if).toContain('needs.pr-context.outputs.should_run == \'true\'')
-  expect(job.if).toContain('needs.miniapp-e2e-build-pr.result == \'success\'')
-  expect(job.if).toContain('needs.miniapp-e2e-build-full.result == \'success\'')
   expect(job.if).toContain('needs.bun-build-diagnostic.result == \'success\'')
   const diagnostic = workflow.jobs['bun-build-diagnostic']
   expect(diagnostic.if).toContain('inputs.hmr-diagnostic == \'bun-cli\'')
@@ -45,6 +43,17 @@ it('runs Bun CLI on all three systems against frozen workspace artifacts', async
   expect(job.with.main_command).toContain('pnpm e2e:bun')
   expect(job.with.artifact_name).toContain('needs.pr-context.outputs.checkout_sha')
   expect(job.with.artifact_path).toContain('.tmp/bun-cli/**')
+  const platform = readWorkflowFixture('reusable-miniapp-platform.yml')
+  const standard = platform.jobs['bun-cli']
+  expect(standard.if).toBe('inputs.node_version == \'22\'')
+  expect(standard.needs).toEqual(['pr-context', 'build'])
+  expect(standard.strategy.matrix).toEqual({ 'bun-version': ['1.4.2', 'latest'] })
+  expect(standard.with.consume_build_artifact).toBe(platform.jobs.build.with.build_artifact_name)
+  expect(standard.with.main_command).toContain('pnpm e2e:bun')
+  for (const name of ['miniapp-platform-pr', 'miniapp-platform-full']) {
+    const platforms = workflow.jobs[name].strategy.matrix.include
+    expect(platforms.filter((row: { 'node-version': number }) => row['node-version'] === 22).map((row: { os: string }) => row.os)).toEqual(job.strategy.matrix.os)
+  }
   const reusable = parse(await readFile(path.join(ROOT, '.github/workflows/reusable-node-command.yml'), 'utf8'))
   expect(reusable.on.workflow_call.inputs.bun_version.default).toBe('')
   const install = reusable.jobs.run.steps.find((step: { name?: string }) => step.name === 'Install Bun runtime')

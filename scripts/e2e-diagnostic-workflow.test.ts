@@ -136,7 +136,7 @@ describe('bounded HMR workflow diagnosis', () => {
     })
     expect(job.with).toMatchObject({
       runs_on: 'windows-latest',
-      node_version: `\${{ matrix.node-version }}`,
+      node_version: `\${{ format('{0}', matrix.node-version) }}`,
       build_command: 'pnpm build:ci:windows',
       main_command: `pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=\${{ matrix.shard }} --shard-total=4`,
       e2e_platform: 'weapp',
@@ -199,9 +199,10 @@ describe('bounded HMR workflow diagnosis', () => {
 
   it('keeps every full OS/Node/shard combination and excludes unrelated manual work', async () => {
     const { jobs } = await workflow()
-    expect(jobs['miniapp-e2e-ci-full']?.strategy?.matrix).toEqual({ 'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'], 'node-version': [22, 24], 'shard': [1, 2, 3, 4] })
+    const child = readWorkflowFixture('reusable-miniapp-platform.yml')
+    expect(child.jobs.miniapp.strategy.matrix).toEqual({ shard: [1, 2, 3, 4] })
     const expected = ['macos-latest/22', 'macos-latest/24', 'ubuntu-latest/22', 'ubuntu-latest/24', 'windows-latest/22', 'windows-latest/24']
-    for (const name of ['miniapp-e2e-build-full', 'miniapp-hmr-ci-full']) {
+    for (const name of ['miniapp-platform-full']) {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)
     }
     for (const [name, job] of Object.entries(jobs)) {
@@ -211,7 +212,7 @@ describe('bounded HMR workflow diagnosis', () => {
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>
         condition.includes('!inputs.hmr-diagnostic || inputs.hmr-diagnostic == \'full\'')
         || condition.includes('needs.pr-context.outputs.is_pr == \'true\'')
-        || condition.includes('needs.miniapp-e2e-build-full.result == \'success\''),
+        || condition.includes('needs.bun-build-diagnostic.result == \'success\''),
       )
     }
   })

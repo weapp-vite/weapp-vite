@@ -1,0 +1,309 @@
+name: Independent Miniapp Platform
+on:
+  workflow_call:
+    inputs:
+      pr_context:
+        type: string
+        required: true
+      runs_on:
+        type: string
+        required: true
+      node_version:
+        type: string
+        required: true
+      build_command:
+        type: string
+        required: true
+      mode:
+        type: string
+        required: true
+      exclude_projects:
+        type: string
+        required: false
+        default: ''
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-frozen-pr-context.yml
+    with:
+      pr_context: ${{ inputs.pr_context }}
+      profile: ci-e2e
+  build:
+    name: Build and freeze suite plan
+    needs: pr-context
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude_projects }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ inputs.node_version }}
+      timeout_minutes: 40
+      build_command: ${{ inputs.build_command }}
+      main_command: node --version
+      build_artifact_name: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      timing_artifact_name: timing-miniapp-build-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}
+    secrets: inherit
+  plan:
+    name: Freeze complete suite plan
+    needs: pr-context
+    runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: 15
+    env:
+      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+      WEAPP_VITE_E2E_EXCLUDE_PROJECTS: ${{ inputs.exclude_projects }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ inputs.node_version }}
+      - name: Create runner profile
+        shell: bash
+        run: |
+          node -e "const fs = require('node:fs'); fs.mkdirSync('.tmp/verification-plan', { recursive: true }); fs.writeFileSync('.tmp/verification-plan/profile.json', JSON.stringify({ os: process.platform, arch: process.arch, nodeMajor: Number(process.versions.node.split('.')[0]), provider: 'none', platform: 'weapp', runnerClass: 'github-hosted' }));"
+      - name: Download verified default-branch timing history
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          VERIFICATION_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: node .github/scripts/verification-history.mjs .tmp/verification-history "${{ inputs.runs_on }}" "${{ inputs.node_version }}"
+      - name: Freeze complete task inventory and shard assignment
+        shell: bash
+        run: |-
+          node --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/profile.json --repository="${{ github.repository }}" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/history.json
+          node --import tsx e2e/scripts/verification/cli.ts plan --suite=ci-${{ inputs.mode }} --shards=4 --profile=.tmp/verification-plan/profile.json --history=.tmp/verification-plan/history.json --output=.tmp/verification-plan/plan.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: ${{ !cancelled() }}
+        with:
+          name: miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}
+          path: .tmp/verification-plan
+          if-no-files-found: error
+  simulator-browser:
+    needs:
+      - pr-context
+      - build
+    name: Simulator Browser E2E (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude_projects }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ inputs.node_version }}
+      timeout_minutes: 20
+      consume_build_artifact: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      install_playwright: true
+      main_command: pnpm --filter @mpcore/simulator test:e2e
+      artifact_name: simulator-browser-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
+      artifact_path: docs/reports/simulator-browser/**
+      build_artifact_scope: packages/weapp-vite,mpcore/packages/simulator
+      timing_artifact_name: timing-simulator-browser-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}
+    secrets: inherit
+  ide-dom-headless:
+    needs:
+      - pr-context
+      - build
+    name: IDE DOM Headless (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude_projects }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ inputs.node_version }}
+      timeout_minutes: 30
+      consume_build_artifact: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      main_command: |
+        pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts e2e/utils/devProcessCleanup/processes.test.ts e2e/utils/dev-process.cleanup.test.ts e2e/utils/devProcessCleanup/windowsProcessTree.test.ts e2e/utils/devProcessCleanup/windowsProcessRows.test.ts e2e/utils/devProcessCleanup/windowsQueryTrace.test.ts
+        pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless
+      artifact_name: ide-dom-headless-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
+      artifact_path: |
+        docs/reports/dom-acceptance/**
+        docs/reports/*-e2e-ide-dom-headless-*-suite-report/**
+      build_artifact_scope: packages/weapp-vite,mpcore/packages/simulator
+      timing_artifact_name: timing-ide-dom-headless-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}
+    secrets: inherit
+  ide-dom-acceptance-internal:
+    needs:
+      - pr-context
+      - build
+    name: IDE DOM Acceptance Contracts (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude_projects }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ inputs.node_version }}
+      timeout_minutes: 15
+      consume_build_artifact: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      main_command: |
+        node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/github-issues --platform weapp
+        node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/template-wevu-regression --platform weapp
+        node --import tsx scripts/check-e2e-ide-shared-launch.ts
+        node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check
+        pnpm vitest run -c e2e/vitest.e2e.internal.config.ts --maxWorkers=1 --no-file-parallelism
+      artifact_name: dom-acceptance-inventory-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ needs.pr-context.outputs.checkout_sha }}
+      artifact_path: |
+        e2e/dom-acceptance-inventory.json
+        e2e/dom-acceptance-inventory.md
+      build_artifact_scope: packages/weapp-vite,mpcore/packages/simulator
+      timing_artifact_name: timing-ide-dom-acceptance-internal-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}
+    secrets: inherit
+  miniapp:
+    name: Miniapp suite shard ${{ matrix.shard }}
+    needs:
+      - pr-context
+      - build
+      - plan
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - 1
+          - 2
+          - 3
+          - 4
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude_projects }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ inputs.node_version }}
+      consume_build_artifact: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      build_artifact_scope: packages/weapp-vite,mpcore/packages/simulator
+      timeout_minutes: 40
+      consume_aux_artifact: miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}
+      aux_artifact_path: .tmp/verification-plan
+      e2e_platform: weapp
+      increase_ulimit: true
+      main_command: node --import tsx e2e/scripts/run-e2e-suite.ts ci-${{ inputs.mode }} --plan=.tmp/verification-plan/plan.json --shard-index=${{ matrix.shard }}
+      artifact_name: miniapp-e2e-ci-${{ inputs.mode }}-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-${{ matrix.shard }}
+      artifact_path: docs/reports/*-e2e-ci-${{ inputs.mode }}-*-suite-report/**
+      timing_artifact_name: timing-miniapp-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}-${{ matrix.shard }}
+    secrets: inherit
+  hmr:
+    name: Miniapp HMR Guard
+    needs:
+      - pr-context
+      - build
+    if: inputs.mode == 'full' || inputs.runs_on == 'ubuntu-latest'
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude_projects }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ inputs.node_version }}
+      consume_build_artifact: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      build_artifact_scope: packages/weapp-vite,mpcore/packages/simulator
+      timeout_minutes: 50
+      main_command: ${{ inputs.mode == 'pr' && 'pnpm e2e:hmr:guard:smoke' || 'pnpm e2e:ci:hmr' }}
+      e2e_platform: weapp
+      increase_ulimit: true
+      timing_artifact_name: timing-hmr-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}
+    secrets: inherit
+  bun-cli:
+    if: inputs.node_version == '22'
+    needs:
+      - pr-context
+      - build
+    name: Bun CLI (${{ matrix.bun-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        bun-version:
+          - 1.4.2
+          - latest
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      e2e_exclude_projects: ${{ inputs.exclude_projects }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ inputs.node_version }}
+      bun_version: ${{ matrix.bun-version }}
+      timeout_minutes: 15
+      consume_build_artifact: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      main_command: |
+        bun --version
+        pnpm e2e:bun
+      artifact_name: bun-cli-${{ inputs.runs_on }}-${{ matrix.bun-version }}-${{ needs.pr-context.outputs.checkout_sha }}
+      artifact_path: |
+        .tmp/bun-cli/**
+        docs/reports/*-e2e-bun-*-suite-report/**
+      build_artifact_scope: packages/weapp-vite,mpcore/packages/simulator
+      timing_artifact_name: timing-bun-${{ inputs.runs_on }}-${{ matrix.bun-version }}-${{ inputs.mode }}
+    secrets: inherit
+  aggregate:
+    name: Require every planned miniapp task
+    needs:
+      - pr-context
+      - build
+      - plan
+      - miniapp
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.plan.result == 'success' }}
+    runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: 15
+    env:
+      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ inputs.node_version }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}
+          path: .tmp/verification-plan
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: miniapp-e2e-ci-${{ inputs.mode }}-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-*
+          path: .tmp/verification-reports
+      - name: Validate complete suite inventory
+        run: node --import tsx e2e/scripts/verification/cli.ts aggregate --plan=.tmp/verification-plan/plan.json --reports=.tmp/verification-reports --output=.tmp/verification-aggregate/report.json
+      - name: Upload complete suite verdict
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: miniapp-aggregate-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}
+          path: .tmp/verification-aggregate
+          if-no-files-found: error

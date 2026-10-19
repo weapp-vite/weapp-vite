@@ -78,8 +78,8 @@ interface Manifest {
 interface Workflow {
   jobs: Record<string, {
     if?: string
-    strategy?: { matrix?: { include?: { main_command?: string }[] } }
-    with?: { main_command?: string }
+    strategy?: { matrix?: { include?: { main_command?: string, run_types?: boolean }[] } }
+    with?: { main_command?: string, run_types?: string }
     steps?: { name?: string, shell?: string, run?: string }[]
   }>
 }
@@ -234,9 +234,12 @@ describe('public type tests in CI', () => {
     const workflow = readWorkflowFixture('ci.yml') as Workflow
     const job = workflow.jobs['build-pr']
     expect(job?.if).toContain('needs.pr-context.outputs.is_pr == \'true\'')
-    expect(job?.strategy?.matrix?.include?.some(entry => /(?:^|\n)pnpm test:types(?:\n|$)/.test(entry.main_command ?? ''))).toBe(true)
+    expect(job?.strategy?.matrix?.include?.filter(entry => entry.run_types)).toHaveLength(1)
     // eslint-disable-next-line no-template-curly-in-string -- 校验 GitHub Actions 表达式原文。
-    expect(job?.with?.main_command).toBe('${{ matrix.main_command }}')
+    expect(job?.with?.run_types).toBe('${{ matrix.run_types }}')
+    const platform = readWorkflowFixture('reusable-quality-platform.yml') as Workflow
+    expect(platform.jobs.types?.if).toBe('inputs.run_types')
+    expect(platform.jobs.types?.with?.main_command).toBe('node scripts/ciTypes.mjs')
     const reusable = parse(await readFile(path.join(root, '.github/workflows/reusable-node-command.yml'), 'utf8')) as Workflow
     const steps = Object.values(reusable.jobs).flatMap(entry => entry.steps ?? [])
     const runCommand = steps.find(step => step.name === 'Run command')
@@ -248,7 +251,7 @@ describe('public type tests in CI', () => {
     expect(commandLines[0]).toBe('if [[ \'${{ inputs.increase_ulimit && runner.os != \'Windows\' }}\' == \'true\' ]]; then')
     expect(commandLines).toContain('ulimit -n 65536 || true')
     expect(commandLines.join('\n')).toMatch(/printf 'Effective file descriptor limit: '\nulimit -n \|\| true/)
-    expect(commandLines.at(-2)).toBe('fi')
+    expect(commandLines).toContain('node .github/scripts/ci-timing.mjs start main')
     expect(steps.filter(step => step.run?.includes('ulimit -n'))).toEqual([runCommand])
   })
 })
