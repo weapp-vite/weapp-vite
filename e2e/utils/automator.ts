@@ -2782,7 +2782,7 @@ export async function launchAutomatorViaCliBridge(
   }
 }
 
-function launchAutomatorWithoutTiming(options: LaunchAutomatorOptions) {
+export function launchAutomator(options: LaunchAutomatorOptions) {
   const provider = resolveRuntimeProviderName()
   if (provider === 'headless') {
     return launchHeadlessAutomator({
@@ -3085,10 +3085,6 @@ function launchAutomatorWithoutTiming(options: LaunchAutomatorOptions) {
       diagnostics.finish(false)
     }
   })
-}
-
-export function launchAutomator(options: LaunchAutomatorOptions) {
-  return measureE2EPhase('automator-launch', () => launchAutomatorWithoutTiming(options))
 }
 
 async function assertDevtoolsLoggedInWithoutTiming(projectPath: string) {

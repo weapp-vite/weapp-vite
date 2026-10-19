@@ -9,6 +9,20 @@ function timing(invocationId: string): VerificationTiming {
 }
 
 describe('complete E2E shard evidence', () => {
+  it('preserves suite acquisition and task diagnostic timings through aggregation', async () => {
+    const plan = await freeze()
+    const suites: VerificationTiming[] = [0, 1].map(index => ({ name: 'machine-lease-acquisition', invocationId: `lease-${index}`, startedAt: now.toISOString(), durationMs: 2, status: 'passed' }))
+    const phase: VerificationTiming = { name: 'fixture-build', invocationId: 'fixture-build', startedAt: now.toISOString(), durationMs: 3, status: 'passed' }
+    const reports = shardReports(plan).map((report, index) => ({
+      ...report,
+      timings: [suites[index]!],
+      tasks: report.tasks.map(task => ({ ...task, timings: [{ ...phase, invocationId: `fixture-build-${task.label}` }] })),
+    }))
+    const report = await aggregateVerificationReports(plan, reports, { now })
+    expect(report.timings).toEqual(suites)
+    expect(report.tasks.every(task => task.timings?.[0]?.name === 'fixture-build')).toBe(true)
+  })
+
   it('declares completion only after every frozen task passes exactly once', async () => {
     const plan = await freeze()
     const shards = shardReports(plan)

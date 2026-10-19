@@ -601,15 +601,13 @@ async function runOwnedTaskSuite(
   const runTask = options.runTask ?? defaultRunTask
   const writeReport = options.writeReport ?? true
   const results: SuiteTaskResult[] = []
-  const reportContext: SuiteReportContext = {
-    ...(options.reportContext ?? {
-      ...createAcceptanceIdentity(),
-      strict: isStrictDomAcceptanceSuite(suiteName),
-      partial: false,
-      plannedTasks: tasks,
-    }),
-    timings: [...(options.reportContext?.timings ?? []), leaseTiming],
+  const reportContext: SuiteReportContext = options.reportContext ?? {
+    ...createAcceptanceIdentity(),
+    strict: isStrictDomAcceptanceSuite(suiteName),
+    partial: false,
+    plannedTasks: tasks,
   }
+  const suiteTimings = [...(reportContext.timings ?? []), leaseTiming]
   const suiteStartedAt = new Date().toISOString()
   let resourceCleanupFailed = false
   let suiteReportArtifact: SuiteTaskArtifact | undefined
@@ -823,7 +821,7 @@ async function runOwnedTaskSuite(
     finishedAt: new Date().toISOString(),
   }
   if (writeReport) {
-    const report = createSuiteReport(results, suiteName, undefined, undefined, { ...reportContext, partial: reportContext.partial || signal.aborted })
+    const report = createSuiteReport(results, suiteName, undefined, undefined, { ...reportContext, timings: suiteTimings, partial: reportContext.partial || signal.aborted })
     options.onReport?.(report)
     suiteReportArtifact = {
       kind: 'suite-report',
