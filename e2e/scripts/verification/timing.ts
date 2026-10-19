@@ -6,14 +6,20 @@ import process from 'node:process'
 
 export const E2E_TIMING_FILE_ENV = 'WEAPP_VITE_E2E_TIMING_FILE'
 
+/** 诊断写入失败不能打断测试报告或覆盖原始执行错误。 */
 export function recordE2ETiming(timing: VerificationTiming, sink?: (timing: VerificationTiming) => void) {
-  if (sink) {
-    sink(timing)
+  try {
+    if (sink) {
+      sink(timing)
+    }
+    else if (process.env[E2E_TIMING_FILE_ENV]) {
+      const file = process.env[E2E_TIMING_FILE_ENV]!
+      fs.mkdirSync(path.dirname(file), { recursive: true })
+      fs.appendFileSync(file, `${JSON.stringify(timing)}\n`)
+    }
   }
-  else if (process.env[E2E_TIMING_FILE_ENV]) {
-    const file = process.env[E2E_TIMING_FILE_ENV]!
-    fs.mkdirSync(path.dirname(file), { recursive: true })
-    fs.appendFileSync(file, `${JSON.stringify(timing)}\n`)
+  catch (error) {
+    process.stderr.write(`[e2e-timing] Failed to record ${timing.name}: ${error instanceof Error ? error.message : String(error)}\n`)
   }
 }
 
@@ -32,12 +38,7 @@ export async function measureE2EPhase<T>(name: string, operation: () => Promise<
   }
   finally {
     const timing: VerificationTiming = { name, invocationId: randomUUID(), startedAt, durationMs: Math.max(0, performance.now() - started), status }
-    try {
-      recordE2ETiming(timing, sink)
-    }
-    catch (error) {
-      process.stderr.write(`[e2e-timing] Failed to record ${name}: ${error instanceof Error ? error.message : String(error)}\n`)
-    }
+    recordE2ETiming(timing, sink)
   }
   return result
 }
