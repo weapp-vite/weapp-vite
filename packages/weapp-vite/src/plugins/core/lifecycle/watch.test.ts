@@ -840,6 +840,29 @@ describe('core lifecycle watch hook', () => {
     ])
   })
 
+  it('keeps Tailwind content invalidation when the native app entry is outside the resolved entry map', async () => {
+    const appEntryId = '/project/src/app.js'
+    const pageEntryId = '/project/src/pages/hmr/index.js'
+    findCssEntryMock.mockResolvedValue({ path: '/project/src/app.css' })
+    vi.spyOn(fs, 'readFile').mockResolvedValue('@import "tailwindcss/utilities" source(none);')
+    const state = createState({
+      loadedEntrySet: new Set([pageEntryId]),
+      resolvedEntryMap: new Map([[pageEntryId, { id: pageEntryId }]]),
+    })
+    state.ctx.scanService.appEntry = { path: appEntryId }
+    registerManagedTailwindcssEntries(state.ctx, ['/project/src/app.css'])
+    const hook = createWatchChangeHook(state)
+
+    await hook(pageEntryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(pageEntryId, 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([
+      'entry-direct:1',
+      'tailwind-content:2',
+    ])
+  })
+
   it.each(['create', 'delete'] as const)('marks %s Tailwind content so the compiler can refresh utilities', async (event) => {
     const appEntryId = '/project/src/app.ts'
     const pageEntryId = '/project/src/pages/hmr/index.ts'

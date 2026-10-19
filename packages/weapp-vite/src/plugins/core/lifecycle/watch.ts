@@ -440,7 +440,7 @@ async function processChangedFile(
     const appEntryId = scanService.appEntry?.path
       ? normalizeFsResolvedId(scanService.appEntry.path)
       : undefined
-    if (!appEntryId || appEntryId === normalizedId || !resolvedEntryMap.has(appEntryId)) {
+    if (!appEntryId || appEntryId === normalizedId) {
       return false
     }
     const styleEntry = await findCssEntry(appEntryId, ctx.configService.platform)
