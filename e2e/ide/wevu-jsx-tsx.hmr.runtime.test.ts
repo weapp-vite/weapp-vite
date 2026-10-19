@@ -129,7 +129,9 @@ describe('wevu JSX/TSX stateful HMR in real WeChat DevTools', { concurrent: fals
   }, 60_000)
 
   it('preserves instance state while replacing shared TSX and island handlers', async (context) => {
-    context.onTestFailed(() => process.stdout.write(devProcess?.getOutput().slice(-16_000) ?? ''))
+    context.onTestFailed(() => {
+      process.stdout.write(devProcess?.getOutput().slice(-16_000) ?? '')
+    })
     const sharedMarker = 'HMR-SHARED-FRAGMENT-UPDATED'
     const dom = createDomAcceptance(context, 'apps/wevu-jsx-tsx-demo', [
       { id: 'tsx:initial', route: ROUTE, action: '检查初始模板和动态岛计数', nodes: [

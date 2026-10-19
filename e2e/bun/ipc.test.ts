@@ -28,10 +28,13 @@ it.each(['waiting', 'starting'] as const)('drains Bun cleanup when IPC disconnec
     await scope.close();
   `], { stdio: ['ignore', 'pipe', 'pipe', 'ipc'] })
   let output = ''
-  child.stdout.on('data', chunk => output += String(chunk))
-  child.stderr.on('data', chunk => output += String(chunk))
   const exited = once(child, 'exit')
   try {
+    if (!child.stdout || !child.stderr) {
+      throw new Error('Bun IPC child must expose the configured stdout and stderr pipes')
+    }
+    child.stdout.on('data', chunk => output += String(chunk))
+    child.stderr.on('data', chunk => output += String(chunk))
     expect(await once(child, 'message', { signal: AbortSignal.timeout(10_000) })).toEqual(['ready', undefined])
     child.disconnect()
     expect(await Promise.race([

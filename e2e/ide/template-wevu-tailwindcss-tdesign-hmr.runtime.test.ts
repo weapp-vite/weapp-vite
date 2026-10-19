@@ -369,7 +369,9 @@ onLaunch(function (this: Record<string, unknown>) {
         { selector: '#count-label', text: '已点击 1 次' },
       ],
     }])
-    context.onTestFailed(() => process.stdout.write(devProcess?.getOutput().slice(-16000) ?? ''))
+    context.onTestFailed(() => {
+      process.stdout.write(devProcess?.getOutput().slice(-16000) ?? '')
+    })
     const initialRuntime = await startDevSession()
     const initialPage = await waitForIndexPage()
     await dom.check('background:0', miniProgram, initialPage)

@@ -55,9 +55,9 @@ it('renders Bun dev output and updated page defaults in the same runtime session
       }
     }
     finally {
-      if (dev && dev.exitCode === null && dev.signalCode === null) {
+      if (dev && dev.nodeChildProcess.exitCode === null && dev.nodeChildProcess.signalCode === null) {
         await requestBunShutdown(project, output)
-        const timer = setTimeout(() => dev?.kill('SIGTERM', { forceKillAfterDelay: 5_000 }), 10_000)
+        const timer = setTimeout(() => dev?.kill('SIGTERM'), 10_000)
         try {
           const result = await dev
           expect(result.exitCode, output).toBe(143)

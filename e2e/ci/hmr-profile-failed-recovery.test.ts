@@ -84,7 +84,9 @@ describe('profile output ownership after a failed borrowed-host build', () => {
       all: true,
       ipc: true,
     })
-    context.onTestFailed(() => process.stdout.write(dev.getOutput()))
+    context.onTestFailed(() => {
+      process.stdout.write(dev.getOutput())
+    })
     try {
       await dev.waitForOutput('PROFILE_RECOVERY_HOST_READY', 'borrowed host retains failed initial build', 30_000)
       expect(dev.getOutput()).toMatch(/Parse failure|PARSE_ERROR|Unexpected token|Expected.*but found/)
