@@ -3,6 +3,7 @@ import type { SuiteTask } from './suiteRunner'
 import path from 'node:path'
 import process from 'node:process'
 import fg from 'fast-glob'
+import { MANAGED_PROJECT_MAX_WINDOWS_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { TEMPLATE_DEV_OPEN_CASES } from '../ide/template-dev-open-cases'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { HMR_GUARD_ALL_TESTS, HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
@@ -17,6 +18,12 @@ const TASK_TIMEOUT_ENV = 'WEAPP_VITE_E2E_TASK_TIMEOUT_MS'
 const TEMPLATE_DEV_OPEN_RUNNER_LABELS = new Set([
   'ide/template-dev-open-all.runtime.test.ts',
   'ide/template-tailwindcss-dev-open-multi.runtime.test.ts',
+])
+const IDE_TWO_WINDOW_TEST_LABELS = new Set([
+  // 同时保留两个项目，验证 automator 会话和端口互不串用。
+  'ide/automator-concurrent-sessions.runtime.test.ts',
+  // 保留另一项目，验证共享宿主内的断开、关闭和重连隔离。
+  'ide/devtools-shared-host.runtime.test.ts',
 ])
 export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
 export const IDE_TDESIGN_AGGREGATE_LABEL = 'ide/template-wevu-tdesign-regression.aggregate.test.ts'
@@ -507,6 +514,12 @@ function createIdeVitestTask(filePath: string) {
     task.env = {
       ...task.env,
       [AUTOMATOR_BRIDGE_WRAPPER_ENV]: '1',
+    }
+  }
+  if (IDE_TWO_WINDOW_TEST_LABELS.has(task.label)) {
+    task.env = {
+      ...task.env,
+      [MANAGED_PROJECT_MAX_WINDOWS_ENV]: '2',
     }
   }
   return task

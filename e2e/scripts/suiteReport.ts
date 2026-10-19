@@ -17,7 +17,7 @@ const EDGE_DASH_PATTERN = /^-|-$/g
 
 export interface SuiteTaskArtifact {
   indexPath: string
-  kind: 'ide-warning-report' | 'suite-report' | 'dom-acceptance-report'
+  kind: 'ide-warning-report' | 'suite-report' | 'dom-acceptance-report' | 'ide-task-resource-report'
 }
 
 export interface SuiteRuntimeBlocker {
