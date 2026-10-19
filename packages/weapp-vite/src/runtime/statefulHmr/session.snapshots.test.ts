@@ -311,6 +311,28 @@ describe('stateful snapshot output transactions', () => {
     await session.close()
   })
 
+  it('ignores source updates after a topology restart has started', async () => {
+    const page = path.join(root, 'src/page.js')
+    const child = path.join(root, 'src/child.js')
+    const session = await start(snapshot('red'), [page])
+    const restarted = Promise.withResolvers<void>()
+    session.restart.mockImplementationOnce(() => restarted.promise)
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, child] })
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(140)
+    expect(session.restart).toHaveBeenCalledOnce()
+
+    // The replacement callback reloads the latest source state. Scheduling a
+    // second build on the retiring session would race its engine shutdown.
+    session.sourceChange(path.join(root, 'src/app.json'), 'update', ['entry-graph-changed'])
+    await vi.advanceTimersByTimeAsync(200)
+
+    expect(session.rebuild).toHaveBeenCalledOnce()
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+    restarted.resolve()
+    await session.close()
+  })
+
   it.each(['initial', 'native'] as const)('interrupts settlement on close while %s engine work remains pending', async (pending) => {
     harness.initialOutput = pending !== 'initial'
     const session = await start()

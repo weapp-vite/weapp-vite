@@ -449,7 +449,7 @@ class StatefulHmrSession {
   }
 
   handleSourceUpdate(file: string, dirtyReasonSummary: string[] = [], sourceEvent?: HmrProfileSourceEvent): void {
-    if (this.closed) {
+    if (this.closed || this.restarting) {
       return
     }
     const normalizedFile = normalizeFsResolvedId(path.isAbsolute(file) ? file : path.resolve(this.server.config.root, file))
