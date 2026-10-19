@@ -101,8 +101,12 @@ Page({
     const baseline = 'runtime-vendor-hmr-baseline'
     const updated = 'runtime-vendor-hmr-updated'
     const nativeOptions = { fallback: false }
+    const routeOptions = { routeOnly: true, fallback: false }
     const check = async (page: HeadlessTestingPageHandle, mode: string, calls: number, definitionMarker: string, marker = baseline) => {
-      await expect(page.callMethodWithOptions('readVendorState', nativeOptions)).resolves.toEqual({ mode, calls, definitionMarker, marker })
+      const nativeResult = await page.callMethodWithOptions('readVendorState', nativeOptions)
+      expect(nativeResult).toEqual({ mode, calls, definitionMarker, marker })
+      await expect(page.callMethodWithOptions('readVendorState', routeOptions)).resolves.toEqual(nativeResult)
+      expect(await page.data()).toMatchObject({ mode, vendorCalls: calls, vendorMarker: marker })
       expect(await (await page.$('#mode'))?.text()).toBe(`当前模式 ${mode} 切换模式`)
       expect(await (await page.$('#vendor-marker'))?.text()).toBe(marker)
       expect(await (await page.$('#vendor-calls'))?.text()).toBe(String(calls))
@@ -131,6 +135,7 @@ Page({
       expect(fresh.pageId).not.toBe(original.pageId)
       await check(fresh, 'light', 0, updated, updated)
       await expect(current.callMethodWithOptions('switchMode', nativeOptions)).rejects.toThrow('page is not on top of page stack')
+      await expect(current.callMethodWithOptions('switchMode', routeOptions)).resolves.toBeUndefined()
       await check(fresh, 'light', 0, updated, updated)
     }
     finally {

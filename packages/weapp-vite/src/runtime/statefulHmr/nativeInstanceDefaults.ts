@@ -1,11 +1,15 @@
 export const nativeInstanceDefaultsSource = `
 const nativeInitialDefinitions = new Map();
 const pendingNativeDefaults = new WeakMap();
-function initializeNativeInstanceDefaults(instance, moduleId, render) {
+const initializedNativeInstances = new WeakSet();
+function initializeNativeInstanceDefaults(instance, moduleId, render, lifecycleOwned = false) {
   invalidateDevtoolsTemplatePlaceholders();
   if (suppressLifecycles || wevuRefreshes.has(moduleId)) return;
   let pending = pendingNativeDefaults.get(instance);
-  if (!pending && !instanceSnapshots.has(instance)) {
+  const initialized = lifecycleOwned ? initializedNativeInstances.has(instance) : instanceSnapshots.has(instance);
+  if (!pending && !initialized) {
+    // 生命周期创建状态独立于快照；普通方法和宿主 facade 不能决定是否初始化默认值。
+    if (lifecycleOwned) initializedNativeInstances.add(instance);
     const initial = nativeInitialDefinitions.get(moduleId);
     const latest = definitions.get(moduleId);
     if (!initial || !latest || initial === latest) return;
