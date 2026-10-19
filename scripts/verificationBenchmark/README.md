@@ -54,6 +54,8 @@
 
 ## CI 时间拆分
 
+正式 CI 比较先冻结独立的 `.github/verification-workload.json`。它从原生 PR CI 已审批的根 merge tree 读取，只为清单明确点名的 PR 追加共同 profile；正常路径选择仍取并集。采集器重新读取不可变 manifest 和 profile 配置，逐项复算 `pathSelections`、`selectionSources`、最终选择及原始字节摘要，并要求实际选中的 profile 集合精确等于完整工作量。head 模式子流程的投影 context 不能替换根 merge 身份。两侧 profile 或 manifest 原始字节不同，即使局部产品用例相同也不能比较；不提供强制全跑开关或手工填写范围的捷径。
+
 使用 `node --import tsx scripts/verificationBenchmark/cli.mjs ci --repository <owner/repo> --run <run-id> --config <topology.json> --output <evidence.json>`。此命令只读 GitHub API 和下载 artifact，不批准或启动工作流。配置的 `needs` 必须逐项覆盖该轮所有实际 job 名称和依赖；有条件跳过的非适用 job 必须在 `outOfScope` 中写明原因，并与 API 的 skipped 状态一致。
 
 ```json
@@ -82,7 +84,9 @@
 }
 ```
 
-上例仅展示配置结构，`needs` 要补齐实际全图。`identity` 所有字段都必须与真实运行及下载的 `pr-context` 一致，未知字段也会拒绝。采集器核对 repository、workflow、attempt、head/base/merge，读取 merge commit 验证两个 parent，并核验 artifact 所属运行与创建时间；下载目录在成功或失败后都会清理。
+上例仅展示配置结构，`needs` 要补齐实际全图。`identity` 所有字段都必须与真实运行及下载的 `pr-context` 一致，未知字段也会拒绝。采集器核对 repository、workflow、attempt、head/base/merge，读取 merge commit 验证两个 parent。每个实际执行作业的 run/attempt 与执行区间必须属于当前轮；API 标记为新 attempt 但仍保留旧执行时间的复用作业也会拒绝。
+
+artifact 的全量 API 清单保留在 `artifactInventory`。先核对全量身份，再以当前 attempt 时间窗隔离旧归档，只允许本轮唯一且未过期的同名 artifact 进入发现或采集。下载按核验后的精确 ID 获取二进制 ZIP，核对 REST 大小、SHA-256、路径安全、解压预算及文件 CRC；不用按名称取首项的下载方式。并发引用共享同一个进行中的下载，全部下载结束后才释放本轮独占目录，成功和失败均会清理。
 
 ## 自动准备 CI 契约
 
@@ -95,6 +99,10 @@
 准备结果始终带 `draft: true`，采集器拒绝将其当作正式契约。审阅全部输入策略、实际 job 全图与逻辑范围，补齐每类执行证据后，通过 `node scripts/verificationTelemetry/contractCli.mjs finalize-contract --preparation=<preparation.json> --expected-ids=<已审计精确 ID 数组.json> --output=.github/verification-benchmark.json` 生成非草稿合约，并提交到正式采样分支。缺失 coverage、runtime 或 task-suite 任一层、存在证据缺口或 ID 清单不符时拒绝生成。discovery 不计入三轮。当前尚未完成 CI 基线/候选各三轮实测；历史成功 baseline 没有上传完整 coverage inventory、原生执行 blob 与原阈值 verdict，不能追补为完整样本。必须在两侧加入相同的附加证据采集，保留各自原执行命令及阈值，再开始六轮完整运行。普通 `ci-pr`/`ci-full` 有意使用非严格 DOM 模式，通过独立 `task-suite` 证据验证 frozen plan、所有实际 shard 及 aggregate，范围明确为 task 全集与定义，不声称 DOM case/checkpoint 完整；缺失任一实际报告继续留在 `gaps`，不能由准备演算得出提速结论。部分重跑若复用旧 attempt artifact，也不能计作完整轮次。
 
 ## CI 执行证据
+
+工作量 manifest 与本节执行契约各自承担独立约束：前者冻结共同 profile 和审批范围，后者绑定本轮实际输入、完整 job 图和执行证据。准备结果及正式契约均保存 `workload` receipt，采集时必须与不可变根 context 完全一致。
+
+每个变体的三轮正式样本必须保持同一 revision 和 `sourceFingerprint`。对固定提交使用完整的「重新运行所有作业」，为当前 attempt 重新取得审批与完整证据；不能用空提交刷新轮次，不能将只重跑失败作业、复用旧作业或旧归档的部分执行计入三轮。discovery、失败、取消和证据不完整的运行均只保留原始记录。比较前仍须完成两侧各至少三轮完整成功运行，不能用历史发现或演算补足轮次。
 
 `contract` 必须已存在于该轮冻结 merge tree 中，采集器通过不可变 Git blob 读取并核对字节身份。其结构包含 `schemaVersion: 1`、自动展开的 `inputPolicy`（兼容旧的显式 `inputFiles`，二者互斥）、资源策略 `profile`、该轮 `needs` / `outOfScope`，以及实际证据引用数组 `evidence`。不接受传入 `inputDigest` / `scopeDigest` 替代验证。每个 coverage 引用包含 `id`、`kind: "coverage"`、预期实际工具链 `profile`（`os`、`arch`、`nodeMajor`、完整 `nodeVersion` 和 `packageManager`）、预期项目/文件集合 `scope`、`plan`、`shards` 和 `verdict`；文件引用统一为 `{ "artifact": "实际 artifact 名", "file": "artifact 内相对路径" }`，每个 shard 还须提供实际 blob 相对路径 `blob`。采集器复用严格分片校验、核对实际 blob 摘要及原覆盖率阈值合并 verdict，实际集合必须与预期一致。
 

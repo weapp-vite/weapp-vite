@@ -4,7 +4,9 @@ import { readCiContract } from './ci/contract.mjs'
 import { readExecutionEvidence } from './ci/evidence.mjs'
 import { withCiRun } from './ci/github.mjs'
 import { validateCiConfiguration, validateCiContext, validateCiRun } from './ci/identity.mjs'
+import { readCiWorkload } from './ci/workload.mjs'
 import { validateSample } from './compare.mjs'
+import { evidenceDigest } from './evidence.mjs'
 
 function timestamp(value) {
   const parsed = Date.parse(value)
@@ -116,16 +118,17 @@ export function ciRunMetrics(run, jobs, deploymentStatuses, needs) {
 /** 只读采集 job 与 deployment 原始时间；不修改审批，也不启动任何验证。 */
 export async function collectCiEvidence(repository, runId, configuration, execute = execa) {
   validateCiConfiguration(configuration, repository, runId)
-  return withCiRun(repository, runId, execute, async ({ run, jobs, get, paged, download, downloads }) => {
+  return withCiRun(repository, runId, execute, async ({ run, jobs, allArtifacts, get, paged, download, downloads }) => {
     validateCiRun(run, configuration.identity)
     const deployments = await paged(`repos/${repository}/deployments?environment=pr-ci-approval&sha=${run.head_sha}`)
     const deploymentStatuses = (await Promise.all(deployments.map(deployment => paged(`repos/${repository}/deployments/${deployment.id}/statuses`)))).flat()
     const metrics = ciRunMetrics(run, jobs, deploymentStatuses, configuration)
     const contextArtifact = await download('pr-context')
     const { context, sourceFingerprint } = await validateCiContext(contextArtifact.directory, run, configuration.identity, get)
+    const workload = await readCiWorkload(context, get)
     const contract = configuration.contract ? await readCiContract(configuration.contract, context, get) : null
     const execution = contract ? await readExecutionEvidence(contract.value, context, download, configuration) : { complete: false, reason: 'Missing immutable benchmark contract' }
-    const evidence = { run, jobs, deploymentStatuses, context, artifacts: [...downloads.values()].map(value => value.artifact), contract: contract?.receipt ?? null, execution }
+    const evidence = { run, jobs, deploymentStatuses, context, workload, artifactInventory: allArtifacts, artifacts: [...downloads.values()].map(value => value.artifact), contract: contract?.receipt ?? null, execution }
     const sample = execution.complete
       ? validateSample({
           schemaVersion: 1,
@@ -134,7 +137,7 @@ export async function collectCiEvidence(repository, runId, configuration, execut
           revision: context.checkoutSha,
           sourceFingerprint,
           inputDigest: contract.inputDigest,
-          scopeDigest: execution.scopeDigest,
+          scopeDigest: evidenceDigest({ workload, execution: execution.scopeDigest }),
           profile: execution.profile,
           complete: true,
           outcome: 'passed',

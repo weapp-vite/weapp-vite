@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { frameworkInputs } from './inputs.mjs'
 import { immutableTree, relativeFile } from './tree.mjs'
@@ -18,6 +19,7 @@ export async function readCiContract(filename, context, get) {
     || ['os', 'node', 'provider', 'platform', 'runnerClass', 'cachePolicy'].some(key => typeof value.profile?.[key] !== 'string' || !value.profile[key])) {
     throw new Error('Invalid immutable benchmark contract')
   }
+  assert.deepEqual(value.workload, context.benchmarkWorkload, 'Immutable benchmark contract workload mismatch')
   if (value.inputPolicy) {
     const inputs = await frameworkInputs(entries, read, value.inputPolicy)
     return { value, inputDigest: inputs.inputDigest, receipt: { path: filename, blobSha: source.sha, checkoutSha: context.checkoutSha, ...inputs.receipt } }

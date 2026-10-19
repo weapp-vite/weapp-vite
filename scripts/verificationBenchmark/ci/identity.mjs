@@ -36,21 +36,7 @@ export function validateCiRun(run, identity) {
   }
 }
 
-export function validateArtifact(artifacts, name, run) {
-  const matches = artifacts.filter(artifact => artifact.name === name)
-  const artifact = matches[0]
-  if (matches.length !== 1 || !positiveInteger(artifact?.id) || artifact.expired !== false
-    || artifact.workflow_run?.id !== run.id || artifact.workflow_run.head_sha !== run.head_sha
-    || artifact.workflow_run.repository_id !== run.repository.id
-    || artifact.workflow_run.head_repository_id !== run.head_repository.id
-    || artifact.workflow_run.head_branch !== run.head_branch
-    || !Number.isFinite(Date.parse(artifact.created_at))
-    || Date.parse(artifact.created_at) < Date.parse(run.run_started_at)
-    || Date.parse(artifact.created_at) > Date.parse(run.updated_at)) {
-    throw new Error(`Missing, duplicated, stale or untrusted CI artifact: ${name}`)
-  }
-  return artifact
-}
+export { currentAttemptArtifacts, validateArtifact } from '../../../.github/scripts/verification-artifacts.mjs'
 
 /** 冻结 artifact 与实际 merge parent 双重绑定，不能只信 workflow 的 head SHA。 */
 export async function validateCiContext(directory, run, identity, get) {

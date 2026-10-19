@@ -4,7 +4,7 @@ import { expect, it } from 'vitest'
 import { classifyCoverageScope, coverageScopePolicy } from '../../verificationTelemetry/coveragePolicy.mjs'
 import { coverageLogicalScope } from '../../verificationTelemetry/logicalCoverage.mjs'
 import { collectCiEvidence } from '../ci.mjs'
-import { fixture } from './fixture.mjs'
+import { fixture, time } from './fixture.mjs'
 import { prepareCiBenchmark } from './prepare.mjs'
 
 function discoveryFixture() {
@@ -63,4 +63,14 @@ it('does not accept a committed discovery draft as a formal sample', async () =>
   const value = fixture()
   value.contract.draft = true
   await expect(collectCiEvidence(value.repository, 123, value.configuration, value.execute)).rejects.toThrow(/contract/u)
+})
+
+it('discovers one descriptor per current artifact while retaining old attempt metadata', async () => {
+  const value = discoveryFixture()
+  const artifact = value.artifacts.find(artifact => artifact.name.startsWith('coverage-plan-'))
+  value.artifacts.push({ ...artifact, id: 99, created_at: time(-1), expired: true })
+  const result = await prepareCiBenchmark(value.repository, 123, { profile: value.contract.profile, cohort: value.configuration.cohort }, value.execute)
+  expect(result.contract.evidence.filter(evidence => evidence.kind === 'coverage')).toHaveLength(1)
+  expect(result.receipt.artifactInventory).toHaveLength(5)
+  expect(result.receipt.downloadedArtifacts.some(artifact => artifact.id === 99)).toBe(false)
 })

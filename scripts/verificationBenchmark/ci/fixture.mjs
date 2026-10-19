@@ -1,11 +1,11 @@
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
-import path from 'node:path'
+import { writeFile } from 'node:fs/promises'
+import AdmZip from 'adm-zip'
 import { expect } from 'vitest'
 
 export const time = seconds => new Date(Date.UTC(2026, 9, 19, 0, 0, seconds)).toISOString()
-const job = (id, name, created, start, end) => ({ id, name, status: 'completed', conclusion: 'success', created_at: time(created), started_at: time(start), completed_at: time(end) })
+const job = (id, name, created, start, end) => ({ id, run_id: 123, run_attempt: 1, name, status: 'completed', conclusion: 'success', created_at: time(created), started_at: time(start), completed_at: time(end) })
 export const jobs = [job(1, 'Approve PR checks', 0, 10, 11), job(2, 'build', 11, 12, 16), job(3, 'tests', 16, 18, 24), job(4, 'lint', 11, 13, 20)]
 export const needs = { 'Approve PR checks': [], 'build': ['Approve PR checks'], 'tests': ['build'], 'lint': ['Approve PR checks'] }
 export const statuses = [{ state: 'waiting', created_at: time(1), log_url: 'https://example.test/job/1' }, { state: 'queued', created_at: time(8), log_url: 'https://example.test/job/1' }]
@@ -34,6 +34,12 @@ export function fixture() {
   const identity = { repository, prNumber: 42, runId: 123, runAttempt: 1, event: 'pull_request', workflow: run.path, headSha, baseSha, driverSha: checkoutSha, checkoutSha, checkoutMode: 'merge' }
   const context = { schemaVersion: 1, ...identity, isPr: true, headRepository: repository, headRef: 'candidate', baseRef: 'main', selections: { ci: true } }
   delete context.workflow
+  const workload = { schemaVersion: 1, draft: false, id: 'ci-test-v1', pullRequests: [42], baseBranch: 'main', profiles: ['ci'] }
+  const workloadSource = JSON.stringify(workload)
+  const blobHash = source => createHash('sha1').update(`blob ${Buffer.byteLength(source)}\0${source}`).digest('hex')
+  context.pathSelections = { ci: true }
+  context.selectionSources = { ci: 'path+workload' }
+  context.benchmarkWorkload = { schemaVersion: 1, id: workload.id, baseBranch: 'main', profiles: ['ci'], manifest: { path: '.github/verification-workload.json', blobSha: blobHash(workloadSource), sha256: createHash('sha256').update(workloadSource).digest('hex') } }
   const coverageIdentity = { commit: checkoutSha, nodeMajor: '24', nodeVersion: 'v24.18.0', packageManager: 'pnpm@11.0.0', os: 'linux', arch: 'x64', configHash: 'e'.repeat(64) }
   const inventory = [{ projectName: 'framework', file: 'packages/framework/test.ts' }]
   const data = { schemaVersion: 1, identity: coverageIdentity, shards: 1, inventory }
@@ -44,6 +50,7 @@ export function fixture() {
   const verdict = { schemaVersion: 1, status: 'passed', shards: 1, tests: 1, planHash: plan.planHash }
   const contract = {
     schemaVersion: 1,
+    workload: structuredClone(context.benchmarkWorkload),
     inputFiles: ['packages/framework/src/index.ts'],
     needs,
     outOfScope: {},
@@ -71,22 +78,25 @@ export function fixture() {
     created_at: time(20),
     workflow_run: { id: run.id, repository_id: 7, head_repository_id: 7, head_sha: headSha, head_branch: run.head_branch },
   }))
-  const configuration = { schemaVersion: 1, identity, cohort: { id: 'baseline-1', variant: 'baseline' }, contract: '.github/benchmark.json', needs, outOfScope: {} }
+  const contractPath = '.github/benchmark.json'
+  const configuration = { schemaVersion: 1, identity, cohort: { id: 'baseline-1', variant: 'baseline' }, contract: contractPath, needs, outOfScope: {} }
   const downloads = []
-  const immutableFiles = {}
+  const immutableFiles = {
+    '.github/verification-workload.json': workloadSource,
+    '.github/pr-checks.json': JSON.stringify({ ci: { paths: [], baseBranches: [], checkoutMode: 'merge' } }),
+  }
+  const actualJobs = structuredClone(jobs)
+  const archives = new Map()
   const commit = { sha: checkoutSha, tree: { sha: treeSha }, parents: [{ sha: baseSha }, { sha: headSha }] }
-  const execute = async (command, args) => {
+  const execute = async (command, args, options) => {
     expect(command).toBe('gh')
-    if (args[0] === 'run') {
-      expect(args.slice(0, 3)).toEqual(['run', 'download', '123'])
-      const name = args[args.indexOf('--name') + 1]
-      const directory = args[args.indexOf('--dir') + 1]
-      downloads.push(directory)
-      await mkdir(directory, { recursive: true })
-      for (const [file, value] of Object.entries(files[name])) {
-        await mkdir(path.dirname(path.join(directory, file)), { recursive: true })
-        await writeFile(path.join(directory, file), typeof value === 'string' ? value : JSON.stringify(value))
-      }
+    const zipMatch = /\/actions\/artifacts\/(\d+)\/zip$/u.exec(args[1])
+    if (zipMatch) {
+      expect(args[0]).toBe('api')
+      expect(options.buffer).toBe(false)
+      const filename = options.stdout.file
+      downloads.push(filename)
+      await writeFile(filename, archives.get(Number(zipMatch[1])))
       return { stdout: '' }
     }
     expect(args[0]).toBe('api')
@@ -97,9 +107,19 @@ export function fixture() {
       response = run
     }
     else if (endpoint.includes('/jobs?')) {
-      response = { jobs }
+      response = { jobs: actualJobs }
     }
     else if (endpoint.includes('/artifacts?')) {
+      for (const artifact of artifacts) {
+        const zip = new AdmZip()
+        for (const [file, value] of Object.entries(files[artifact.name] ?? {})) {
+          zip.addFile(file, Buffer.from(typeof value === 'string' ? value : JSON.stringify(value)))
+        }
+        const bytes = zip.toBuffer()
+        archives.set(artifact.id, bytes)
+        artifact.size_in_bytes = bytes.length
+        artifact.digest = `sha256:${hash(bytes)}`
+      }
       response = { artifacts }
     }
     else if (endpoint.includes('/statuses?')) {
@@ -112,7 +132,7 @@ export function fixture() {
       response = commit
     }
     else {
-      const entries = [[configuration.contract, JSON.stringify(contract)], [contract.inputFiles[0], 'export const value = 1'], ...Object.entries(immutableFiles)].map(([file, content]) => {
+      const entries = [[contractPath, JSON.stringify(contract)], [contract.inputFiles[0], 'export const value = 1'], ...Object.entries(immutableFiles)].map(([file, content]) => {
         const sha = createHash('sha1').update(`blob ${Buffer.byteLength(content)}\0${content}`).digest('hex')
         return { path: file, sha, content, type: 'blob', mode: '100644' }
       })
@@ -123,5 +143,5 @@ export function fixture() {
     }
     return { stdout: JSON.stringify(response) }
   }
-  return { repository, configuration, execute, run, context, artifacts, contract, files, downloads, commit, immutableFiles }
+  return { repository, configuration, execute, run, context, artifacts, contract, files, downloads, commit, immutableFiles, jobs: actualJobs, archives }
 }

@@ -1,7 +1,8 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { validateArtifact } from './identity.mjs'
+import { extractArtifactArchive, validateCurrentAttemptJobs } from '../../../.github/scripts/verification-artifacts.mjs'
+import { currentAttemptArtifacts, validateArtifact } from './identity.mjs'
 
 /** 只读会话统一拥有下载目录；完整运行及当前 attempt 的 artifact 才能进入采集。 */
 export async function withCiRun(repository, runId, execute, operation) {
@@ -35,26 +36,54 @@ export async function withCiRun(repository, runId, execute, operation) {
   if (new Set(artifacts.map(artifact => artifact.id)).size !== artifacts.length) {
     throw new Error('Duplicated CI artifact listing')
   }
+  const currentArtifacts = currentAttemptArtifacts(artifacts, run)
+  validateCurrentAttemptJobs(jobs, run)
   const directory = await mkdtemp(path.join(os.tmpdir(), 'verification-ci-'))
   const downloads = new Map()
+  const pending = new Map()
+  let closing = false
+  let failure
+  let result
   try {
     const download = async (name) => {
-      if (!downloads.has(name)) {
-        const artifact = validateArtifact(artifacts, name, run)
-        const target = path.join(directory, String(artifact.id))
-        await execute('gh', ['run', 'download', String(run.id), '--repo', repository, '--name', name, '--dir', target])
-        downloads.set(name, { directory: target, artifact })
+      if (closing) {
+        throw new Error('CI artifact session is closing')
       }
-      return downloads.get(name)
+      if (!pending.has(name)) {
+        pending.set(name, (async () => {
+          const artifact = validateArtifact(artifacts, name, run)
+          const target = path.join(directory, String(artifact.id))
+          const archive = path.join(directory, `${artifact.id}.zip`)
+          await execute('gh', ['api', `repos/${repository}/actions/artifacts/${artifact.id}/zip`], { stdout: { file: archive }, buffer: false })
+          await extractArtifactArchive(archive, target, artifact)
+          const value = { directory: target, artifact }
+          downloads.set(name, value)
+          return value
+        })())
+      }
+      return pending.get(name)
     }
-    const result = await operation({ run, jobs, artifacts, get, paged, download, downloads })
+    result = await operation({ run, jobs, artifacts: currentArtifacts, allArtifacts: artifacts, get, paged, download, downloads })
     const latest = await get(`repos/${repository}/actions/runs/${runId}`)
     if (['id', 'run_attempt', 'event', 'path', 'head_sha', 'run_started_at', 'updated_at', 'status', 'conclusion'].some(key => run[key] !== latest[key])) {
       throw new Error('CI run changed during evidence collection')
     }
-    return result
+  }
+  catch (error) {
+    failure = error
   }
   finally {
-    await rm(directory, { recursive: true, force: true })
+    closing = true
+    await Promise.allSettled(pending.values())
+    try {
+      await rm(directory, { recursive: true, force: true })
+    }
+    catch (error) {
+      failure = failure ? new AggregateError([failure, error], 'CI collection and temporary resource cleanup failed') : error
+    }
   }
+  if (failure) {
+    throw failure
+  }
+  return result
 }

@@ -12,6 +12,7 @@ import { discoverCoverage } from './prepareCoverage.mjs'
 import { discoverTaskSuites } from './prepareTaskSuites.mjs'
 import { generateCiTopology } from './topology.mjs'
 import { immutableTree, relativeFile } from './tree.mjs'
+import { readCiWorkload } from './workload.mjs'
 
 async function discoverRuntime(artifacts, download, context, configuration) {
   const evidence = []
@@ -54,7 +55,7 @@ export async function prepareCiBenchmark(repository, runId, options, execute = e
   assert(options && ['os', 'node', 'provider', 'platform', 'runnerClass', 'cachePolicy'].every(key => typeof options.profile?.[key] === 'string' && options.profile[key]), 'prepare requires an explicit full benchmark resource policy')
   assert(['baseline', 'candidate'].includes(options.cohort?.variant) && typeof options.cohort.id === 'string' && options.cohort.id, 'prepare requires a cohort id and variant')
   const contractPath = relativeFile(options.contract ?? '.github/verification-benchmark.json')
-  return withCiRun(repository, runId, execute, async ({ run, jobs, artifacts, get, download, downloads }) => {
+  return withCiRun(repository, runId, execute, async ({ run, jobs, artifacts, allArtifacts, get, download, downloads }) => {
     const artifact = await download('pr-context')
     const raw = JSON.parse(await readFile(path.join(artifact.directory, 'context.json'), 'utf8'))
     const identity = {
@@ -74,6 +75,7 @@ export async function prepareCiBenchmark(repository, runId, options, execute = e
     validateCiConfiguration(configuration, repository, runId)
     validateCiRun(run, identity)
     const { context, sourceFingerprint } = await validateCiContext(artifact.directory, run, identity, get)
+    const workload = await readCiWorkload(context, get)
     const tree = await immutableTree(context, get)
     const topology = await generateCiTopology(jobs, async file => (await tree.read(file)).bytes.toString('utf8'))
     Object.assign(configuration, { needs: topology.needs, outOfScope: topology.outOfScope })
@@ -87,8 +89,8 @@ export async function prepareCiBenchmark(repository, runId, options, execute = e
       kind: 'ci-benchmark-preparation',
       formalSample: false,
       configuration,
-      contract: { schemaVersion: 1, draft: true, inputPolicy: frameworkInputPolicy, profile: options.profile, needs: topology.needs, outOfScope: topology.outOfScope, evidence: [...coverage.evidence, ...runtime.evidence, ...taskSuites.evidence] },
-      receipt: { discoveryRun: identity, sourceFingerprint, treeSha: context.treeSha, workflowSources: topology.sourceFiles, inputs: inputs.receipt, inputDigest: inputs.inputDigest, downloadedArtifacts: [...downloads.values()].map(value => value.artifact) },
+      contract: { schemaVersion: 1, draft: true, workload, inputPolicy: frameworkInputPolicy, profile: options.profile, needs: topology.needs, outOfScope: topology.outOfScope, evidence: [...coverage.evidence, ...runtime.evidence, ...taskSuites.evidence] },
+      receipt: { discoveryRun: identity, sourceFingerprint, treeSha: context.treeSha, workload, workflowSources: topology.sourceFiles, inputs: inputs.receipt, inputDigest: inputs.inputDigest, artifactInventory: allArtifacts, downloadedArtifacts: [...downloads.values()].map(value => value.artifact) },
       gaps: [...coverage.gaps, ...runtime.gaps, ...taskSuites.gaps, { id: 'review', reason: 'Audit every executed job against the expected logical scopes, review/commit a complete non-draft contract before formal runs; discovery is excluded from all three-round cohorts' }],
     }
   })
