@@ -347,13 +347,11 @@ describe('stateful snapshot output transactions', () => {
     native.resolve()
   })
 
-  it('validates edits arriving before topology handoff and keeps the old host after a failed replacement snapshot', async () => {
+  it('invalidates a stale topology handoff when a source update arrives before restart', async () => {
     const page = path.join(root, 'src/page.js')
     const child = path.join(root, 'src/child.js')
     const session = await start(snapshot('red'), [page])
     session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, child] })
-      .mockRejectedValueOnce(new Error('invalid new component'))
-      .mockResolvedValue({ ...snapshot('green'), entryIds: [page, child] })
     harness.writeOutput.mockClear()
     session.refresh()
     await vi.advanceTimersByTimeAsync(50)
@@ -361,11 +359,7 @@ describe('stateful snapshot output transactions', () => {
     expect(session.restart).not.toHaveBeenCalled()
     session.sourceChange(path.join(root, 'src/child.js'))
     await vi.advanceTimersByTimeAsync(200)
-    expect(session.rebuild).toHaveBeenCalledTimes(2)
-    expect(session.restart).not.toHaveBeenCalled()
-    expect(harness.writeOutput).not.toHaveBeenCalled()
-    session.sourceChange(path.join(root, 'src/child.js'))
-    await vi.advanceTimersByTimeAsync(200)
+    expect(session.rebuild).toHaveBeenCalledOnce()
     expect(session.restart).toHaveBeenCalledOnce()
     expect(harness.writeOutput).not.toHaveBeenCalled()
   })

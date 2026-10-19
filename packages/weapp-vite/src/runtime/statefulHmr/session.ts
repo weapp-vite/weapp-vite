@@ -466,14 +466,13 @@ class StatefulHmrSession {
     this.profile?.source(normalizedFile, sourceEvent)
     this.settlementRevision += 1
     if (this.restartHandoff) {
-      // 已验证快照等待交接期间又有输入变化，保留旧宿主并重新验证完整批次。
+      // 交接窗口收到新输入时撤销过期快照，保留已排定的重启，让新会话按最新源码完整构建。
       this.restartHandoff.invalidate()
       this.restartHandoff = undefined
-      if (this.restartTimer) {
-        clearTimeout(this.restartTimer)
-        this.restartTimer = undefined
-      }
-      this.requestFullBuild([normalizedFile])
+      return
+    }
+    if (this.restartTimer) {
+      // 配置重启已排定；新会话会读取最新配置，旧会话不再消费事件。
       return
     }
     const event = this.ctx.moduleGraphService.getPendingChanges?.().find(change => change.file === normalizedFile)?.event
