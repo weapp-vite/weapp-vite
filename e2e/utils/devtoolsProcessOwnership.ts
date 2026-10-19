@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { cleanupManagedWechatProjects, MANAGED_PROJECT_JOURNAL_ENV, readManagedWechatProjectRecords } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { cleanupManagedWechatProjects, isManagedWechatProjectFullyReleased, MANAGED_PROJECT_JOURNAL_ENV, readManagedWechatProjectRecords } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { createManagedWechatProjectJournal } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal'
 
 const ownedCleanups = new Set<() => Promise<void>>()
@@ -26,7 +26,7 @@ export async function assertNoUnreleasedDevtoolsProjects(rootDirectory = JOURNAL
       throw new Error(`Managed DevTools journal root contains a non-directory task scope: ${journalPath}`)
     }
     for (const record of await readManagedWechatProjectRecords(journalPath)) {
-      if (record.state !== 'released') {
+      if (!isManagedWechatProjectFullyReleased(record)) {
         unresolved.push({
           journalPath,
           projectPath: record.projectPath,

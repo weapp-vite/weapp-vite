@@ -171,6 +171,53 @@ describe('per-task IDE resource attachment', () => {
     expect(report.status).toBe('complete')
   })
 
+  it('reports an unused reservation without claiming the reserved port was closed', async () => {
+    const now = new Date().toISOString()
+    mocks.journal.mockResolvedValue([{
+      id: 'unused-snapshot',
+      generation: 'unused-generation',
+      journalPath: options.journalPath,
+      ownerToken: randomUUID(),
+      createdAt: now,
+      state: 'released',
+      releasedReason: 'not-started',
+      port: 12345,
+      snapshot: { protocol: 'wechat-devtools-project-snapshot-v1', state: 'removed', sourceProjectPath: 'source', token: randomUUID() },
+    }])
+    const result = await (await observe()).finish({ hostExit })
+    const report = await readReport(result.indexPath)
+    expect(report.status).toBe('complete')
+    expect(report.registeredPorts).toMatchObject({ status: 'observed', value: [{ recordId: 'unused-snapshot', port: 12345, closureEvidence: 'unused-reservation' }] })
+    expect(report.windowUsage.traceDerivedManagedOverlapUpperBound).toEqual({ status: 'observed', value: 0 })
+    expect(report.windowUsage.gaps).toEqual([])
+    expect(JSON.stringify(report.registeredPorts)).not.toContain('portClosed')
+  })
+
+  it('retains pending snapshot gaps after window closure and hashes its creation token', async () => {
+    const now = new Date().toISOString()
+    const token = randomUUID()
+    mocks.journal.mockResolvedValue([{
+      id: 'owned-snapshot',
+      generation: 'snapshot-generation',
+      journalPath: options.journalPath,
+      ownerToken: randomUUID(),
+      createdAt: now,
+      state: 'released',
+      openedProjectWindow: true,
+      releasedReason: 'project-closed',
+      port: 12345,
+      windowClose: { window: { nativeClosedAt: now, webContentsDestroyedAt: now } },
+      snapshot: { protocol: 'wechat-devtools-project-snapshot-v1', state: 'ready', sourceProjectPath: 'source', token, cleanupError: 'snapshot busy' },
+    }])
+    const result = await (await observe()).finish({ hostExit })
+    const report = await readReport(result.indexPath)
+    expect(report.status).toBe('incomplete')
+    expect(report.errors.join('; ')).toContain('snapshot is not fully released')
+    expect(JSON.stringify(report)).not.toContain(token)
+    expect(report.snapshots[0]!.journal).toMatchObject({ status: 'observed', value: [{ snapshot: { tokenSha256: createHash('sha256').update(token).digest('hex') } }] })
+    expect(report.registeredPorts).toMatchObject({ status: 'observed', value: [{ closureEvidence: 'domain-cleanup-return' }] })
+  })
+
   it('hashes nested recovery scope identifiers while retaining the installation-exit receipts and evidence gaps', async () => {
     const now = new Date().toISOString()
     const recoveryScopeId = scopeToken

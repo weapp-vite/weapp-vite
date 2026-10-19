@@ -1,6 +1,6 @@
-import type { ManagedWechatHostIdentity, ManagedWechatProjectIntent, ManagedWechatProjectRecord, ManagedWechatWindowCloseEvidence, ManagedWechatWindowLogCursor, ResolvedWechatDevtoolsTarget } from 'weapp-ide-cli'
+import type { ManagedWechatHostIdentity, ManagedWechatProjectIntent, ManagedWechatProjectRecord, ManagedWechatProjectSnapshot, ManagedWechatWindowCloseEvidence, ManagedWechatWindowLogCursor, ResolvedWechatDevtoolsTarget } from 'weapp-ide-cli'
 import { expectError, expectType } from 'tsd'
-import { beginManagedWechatProject, cleanupManagedWechatProjects, closeManagedWechatProject, MANAGED_PROJECT_JOURNAL_ENV, MANAGED_PROJECT_MAX_WINDOWS_ENV, readManagedWechatProjectRecords } from 'weapp-ide-cli'
+import { beginManagedWechatProject, cleanupManagedWechatProjects, closeManagedWechatProject, isManagedWechatProjectFullyReleased, MANAGED_PROJECT_JOURNAL_ENV, MANAGED_PROJECT_MAX_WINDOWS_ENV, readManagedWechatProjectRecords } from 'weapp-ide-cli'
 
 const target: ResolvedWechatDevtoolsTarget = { cliPath: 'cli', installationId: 'stable', appPath: 'app', profileDir: 'profile' }
 expectType<'WEAPP_IDE_MANAGED_PROJECT_JOURNAL'>(MANAGED_PROJECT_JOURNAL_ENV)
@@ -33,3 +33,13 @@ expectType<string | undefined>(evidence.window?.nativeClosedAt)
 expectType<string | undefined>(evidence.window?.webContentsDestroyedAt)
 expectType<string | undefined>(evidence.failure)
 expectType<{ failure: string, cursors: ManagedWechatWindowLogCursor[] } | undefined>(evidence.logInventoryRecovery)
+
+expectType<Promise<ManagedWechatProjectIntent | undefined>>(beginManagedWechatProject({ target, projectPath: 'project', snapshotProject: true }))
+expectError(beginManagedWechatProject({ target, projectPath: 'project', snapshotProject: 'all' }))
+expectType<string>(intent.projectPath)
+expectType<Promise<void>>(intent.prepareSnapshot(async (projectPath) => {
+  expectType<string>(projectPath)
+}))
+expectType<Promise<void>>(intent.markLaunchDispatched())
+expectType<ManagedWechatProjectSnapshot | undefined>(record.snapshot)
+expectType<boolean>(isManagedWechatProjectFullyReleased(record))

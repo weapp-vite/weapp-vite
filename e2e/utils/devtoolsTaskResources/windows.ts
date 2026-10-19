@@ -2,13 +2,15 @@ import type { ManagedWechatProjectRecord } from '../../../packages/weapp-ide-cli
 import type { TaskResourceReport } from './types'
 
 /** 创建时间表示启动意图；只计算保守意图区间，绝不将其命名为原生窗口峰值。 */
-export function summarizeTaskWindows(records: Array<Pick<ManagedWechatProjectRecord, 'id' | 'createdAt' | 'openedProjectWindow' | 'releasedReason' | 'windowClose'>>, budget: string | undefined, observedAt: string): TaskResourceReport['windowUsage'] {
+export function summarizeTaskWindows(records: Array<Pick<ManagedWechatProjectRecord, 'id' | 'createdAt' | 'openedProjectWindow' | 'releasedReason' | 'windowClose'> & { snapshot?: Pick<NonNullable<ManagedWechatProjectRecord['snapshot']>, 'state' | 'dispatchedAt'> }>, budget: string | undefined, observedAt: string): TaskResourceReport['windowUsage'] {
   const gaps: string[] = []
   const boundary = Date.parse(observedAt)
   const events: Array<{ at: number, delta: number }> = []
   let invalid = false
   for (const record of records) {
-    if (record.openedProjectWindow === false || record.releasedReason === 'borrowed') {
+    if (record.openedProjectWindow === false || record.releasedReason === 'borrowed'
+      || (record.releasedReason === 'not-started' && record.snapshot?.state === 'removed'
+        && !record.snapshot.dispatchedAt && record.openedProjectWindow === undefined)) {
       continue
     }
     const start = Date.parse(record.createdAt)

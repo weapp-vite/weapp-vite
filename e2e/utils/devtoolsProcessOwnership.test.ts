@@ -6,10 +6,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { assertNoUnreleasedDevtoolsProjects, cleanupOwnedDevtoolsProcesses, createDevtoolsProjectJournal, ensureDevtoolsProjectJournal, ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 
 const { cleanupProjects, readRecords } = vi.hoisted(() => ({ cleanupProjects: vi.fn(async () => {}), readRecords: vi.fn(async () => []) }))
-vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership', () => ({
+vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership', async importOriginal => ({
+  ...await importOriginal<typeof import('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership')>(),
   cleanupManagedWechatProjects: cleanupProjects,
   readManagedWechatProjectRecords: readRecords,
-  MANAGED_PROJECT_JOURNAL_ENV: 'WEAPP_IDE_MANAGED_PROJECT_JOURNAL',
 }))
 vi.mock('../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/windowsSelfIdentity', () => ({
   // 此处验证真实磁盘 journal 的继承边界；Windows 身份查询由专项契约测试覆盖。
@@ -54,6 +54,24 @@ describe('DevTools process ownership', () => {
     const journal = await createDevtoolsProjectJournal('', root)
     journals.push(journal)
     expect(path.dirname(journal)).toBe(root)
+  })
+
+  it.each(['reserved', 'ready', 'removed'] as const)('requires a released owner snapshot to be removed before the next task: %s', async (state) => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'devtools-journal-snapshot-'))
+    roots.push(root)
+    await fs.mkdir(path.join(root, 'task-scope-previous'))
+    readRecords.mockResolvedValue([{
+      projectPath: path.join(root, 'project'),
+      state: 'released',
+      snapshot: { state },
+    }] as never)
+
+    if (state === 'removed') {
+      await expect(assertNoUnreleasedDevtoolsProjects(root)).resolves.toBeUndefined()
+    }
+    else {
+      await expect(assertNoUnreleasedDevtoolsProjects(root)).rejects.toThrow(/unresolved project ownership/)
+    }
   })
 
   it('disposes only registered resources, exactly once across close and recovery', async () => {

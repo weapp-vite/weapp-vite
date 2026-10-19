@@ -1,4 +1,3 @@
-import type { ManagedWechatProjectRecord } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/types'
 import { describe, expect, it } from 'vitest'
 import { summarizeTaskWindows } from './windows'
 
@@ -37,8 +36,20 @@ describe('IDE task window evidence', () => {
   })
 
   it('does not count explicitly borrowed connections as owned launch intents', () => {
-    const borrowed = { ...record('borrowed', 0), openedProjectWindow: false, releasedReason: 'borrowed' } satisfies Partial<ManagedWechatProjectRecord>
+    const borrowed = { ...record('borrowed', 0), openedProjectWindow: false, releasedReason: 'borrowed' } satisfies JournalWindow
     expect(summarizeTaskWindows([borrowed], undefined, at(10)).traceDerivedManagedOverlapUpperBound).toEqual({ status: 'observed', value: 0 })
+  })
+
+  it.each([undefined, at(2)])('excludes an unused reservation only when no start was dispatched: %s', (dispatchedAt) => {
+    const reservation = {
+      ...record('reservation', 0),
+      openedProjectWindow: undefined,
+      releasedReason: 'not-started',
+      snapshot: { state: 'removed', dispatchedAt },
+    } satisfies JournalWindow
+    const usage = summarizeTaskWindows([reservation], undefined, at(10))
+    expect(usage.traceDerivedManagedOverlapUpperBound).toEqual({ status: 'observed', value: dispatchedAt ? 1 : 0 })
+    expect(usage.gaps).toHaveLength(dispatchedAt ? 1 : 0)
   })
 
   it('keeps invalid journal timestamps unavailable rather than reporting zero', () => {
