@@ -8,6 +8,7 @@ import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { describe, expect, it } from 'vitest'
 import { sameManagedProcess } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/host'
+import { resolveWechatInspectionTimeout } from '../../packages/weapp-ide-cli/src/devtoolsTarget/inspection'
 import { startDevProcess } from './dev-process'
 import { readDevProcessIdentities } from './devProcessCleanup/processes'
 
@@ -67,10 +68,14 @@ async function captureTree(directory: string, expectedRootPid: number | undefine
   await waitUntil(async () => Boolean(await readRegistration(directory)), 'process tree registration')
   const registration = (await readRegistration(directory))!
   expect(registration.rootPid).toBe(expectedRootPid)
+  // Windows 首次编译内核检查器可能占满 30 秒平台预算，外层等待必须覆盖该预算。
+  const identityTimeout = process.platform === 'win32'
+    ? resolveWechatInspectionTimeout('win32') + 5_000
+    : 15_000
   const identities = await within(readDevProcessIdentities([
     registration.rootPid,
     registration.descendantPid,
-  ]), 'registered process identities')
+  ]), 'registered process identities', identityTimeout)
   const root = identities.get(registration.rootPid)
   const descendant = identities.get(registration.descendantPid)
   if (!root || !descendant) {
