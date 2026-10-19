@@ -27,6 +27,7 @@ const HMR_COMPANION_ATTEMPTS = 2
 const HMR_COMPANION_TIMEOUT_MS = 90_000
 const HMR_COMPANION_SKIP_TARGETS = new Set([
   'ide/template-dev-open-all.runtime.test.ts',
+  'ide/template-plugin-dev-open.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
 ])
 

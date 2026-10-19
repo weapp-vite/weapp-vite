@@ -55,8 +55,7 @@ async function runTemplateCase(
     const projectRoot = resolveTemplateDevOpenProjectRoot(templateCase)
     const session = await dev.waitFor(
       waitForOpenedAutomator(projectRoot, {
-        readyRoute: templateCase.assertWrapperProject ? undefined : templateCase.route,
-        skipAppReady: templateCase.assertWrapperProject,
+        readyRoute: templateCase.route,
         timeoutMs: TEMPLATE_READY_TIMEOUT_MS,
       }),
       `${templateCase.name} automator ready`,

@@ -1,8 +1,5 @@
 import type { TemplateDevOpenCase as TemplateCase } from './template-dev-open-cases'
-import { Buffer } from 'node:buffer'
-import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
-import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
@@ -54,68 +51,6 @@ function resolveTemplateProjectRoot(templateCase: TemplateCase) {
   return resolveTemplateDevOpenProjectRoot(templateCase)
 }
 
-function resolveAutomatorSessionFile(projectPath: string, port?: number) {
-  const normalizedProjectPath = path.resolve(projectPath)
-  const sessionKey = port ? `${normalizedProjectPath}#port-${port}` : normalizedProjectPath
-  const encodedProjectPath = Buffer.from(sessionKey).toString('base64url')
-  return path.join(os.tmpdir(), 'weapp-vite-automator-sessions', `${encodedProjectPath}.json`)
-}
-
-function resolveAutomatorWrapperProjectPath(projectPath: string) {
-  const sourceProjectPath = path.resolve(projectPath)
-  const distRoot = path.resolve(sourceProjectPath, 'dist')
-  const wrapperHash = createHash('sha1')
-    .update(sourceProjectPath)
-    .update('\0')
-    .update(distRoot)
-    .digest('hex')
-    .slice(0, 16)
-  return path.join(os.tmpdir(), 'weapp-ide-cli-automator-projects', wrapperHash)
-}
-
-async function removeAutomatorSessionFiles(projectPath: string) {
-  await Promise.all([
-    fs.rm(resolveAutomatorSessionFile(projectPath), { force: true }).catch(() => {}),
-    fs.rm(resolveAutomatorSessionFile(projectPath, resolveProjectAutomatorPort(projectPath)), { force: true }).catch(() => {}),
-  ])
-}
-
-async function assertPluginTemplateWrapperProject(sourceProjectPath: string, wrapperProjectPath: string) {
-  await expect(JSON.parse(await fs.readFile(path.join(wrapperProjectPath, 'project.config.json'), 'utf8'))).toMatchObject({
-    compileType: 'plugin',
-    miniprogramRoot: './',
-    pluginRoot: 'dist-plugin/',
-    srcMiniprogramRoot: './',
-    setting: {
-      packNpmManually: false,
-      packNpmRelationList: [],
-    },
-  })
-  const sourceAppConfig = JSON.parse(await fs.readFile(path.join(sourceProjectPath, 'src/app.json'), 'utf8'))
-  await expect(JSON.parse(await fs.readFile(path.join(wrapperProjectPath, 'app.json'), 'utf8'))).toMatchObject({
-    pages: sourceAppConfig.pages,
-    plugins: sourceAppConfig.plugins,
-    subPackages: [],
-  })
-  await expect(fs.access(path.join(wrapperProjectPath, 'pages/index/index.wxml'))).resolves.toBeUndefined()
-  await expect(fs.access(path.join(wrapperProjectPath, 'dist-plugin/plugin.json'))).resolves.toBeUndefined()
-  await expect(fs.access(path.join(wrapperProjectPath, 'dist-plugin/index.js'))).resolves.toBeUndefined()
-}
-
-async function waitForTemplateCaseReady(miniProgram: any, templateCase: TemplateCase, wrapperProjectPath: string) {
-  if (templateCase.assertWrapperProject) {
-    await assertPluginTemplateWrapperProject(templateCase.root, wrapperProjectPath)
-    return await miniProgram.currentPage()
-  }
-
-  return await waitForTemplatePageReady(
-    miniProgram,
-    templateCase.route,
-    templateCase.expectedText,
-    templateCase.expectedData,
-  )
-}
-
 async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
   let infraOutput = ''
   void process.dev.waitForOutput(
@@ -126,16 +61,13 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
     infraOutput = output.length > 4_000 ? output.slice(-4_000) : output
   }).catch(() => {})
 
-  if (!process.assertWrapperProject) {
-    await process.dev.waitForOutput(
-      FORWARD_CONSOLE_READY_RE,
-      `${process.name} forward console ready`,
-      FORWARD_CONSOLE_READY_TIMEOUT_MS,
-    )
-  }
+  await process.dev.waitForOutput(
+    FORWARD_CONSOLE_READY_RE,
+    `${process.name} forward console ready`,
+    FORWARD_CONSOLE_READY_TIMEOUT_MS,
+  )
   const readySession = waitForOpenedAutomator(resolveTemplateProjectRoot(process), {
-    readyRoute: process.assertWrapperProject ? undefined : process.route,
-    skipAppReady: process.assertWrapperProject,
+    readyRoute: process.route,
     timeoutMs: 120_000,
   }).catch((error) => {
     const details = infraOutput ? `\nRecent infra output:\n${infraOutput}` : ''
@@ -149,14 +81,6 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
     `${process.name} dev:open ready`,
   )
   return await readySession
-}
-
-async function cleanupTemplateAutomatorState(templateCase: TemplateCase) {
-  const projectRoot = resolveTemplateProjectRoot(templateCase)
-  await Promise.all([
-    removeAutomatorSessionFiles(projectRoot),
-    fs.rm(resolveAutomatorWrapperProjectPath(projectRoot), { force: true, recursive: true }).catch(() => {}),
-  ])
 }
 
 function startTemplateDevProcess(templateCase: TemplateCase): TemplateDevProcess {
@@ -178,7 +102,6 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
       return
     }
     await cleanupResidualIdeProcesses()
-    await Promise.all(ACTIVE_TEMPLATE_CASES.map(async templateCase => await cleanupTemplateAutomatorState(templateCase)))
   }, 60_000)
 
   afterAll(async () => {
@@ -212,55 +135,29 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
       open: async () => {
         if (USE_PRESTARTED_TEMPLATE_DEV) {
           return await waitForOpenedAutomator(projectRoot, {
-            readyRoute: templateCase.assertWrapperProject ? undefined : templateCase.route,
-            skipAppReady: templateCase.assertWrapperProject,
+            readyRoute: templateCase.route,
             timeoutMs: 120_000,
           })
         }
         await cleanupResidualIdeProcesses()
-        await cleanupTemplateAutomatorState(templateCase)
         devProcess = startTemplateDevProcess(templateCase)
         return await waitForTemplateDevOpenReady(devProcess)
       },
       run: async (session) => {
         miniProgram = session.miniProgram
-        if (templateCase.name === 'weapp-vite-plugin-template') {
-          const toolInfo = await miniProgram.toolInfo?.().catch(() => undefined)
-          if (toolInfo?.version === '2.02.2609082') {
-            ctx.skip('微信开发者工具 2.02.2609082 在插件模板 dev:open 后无法稳定解析插件页面元数据；插件构建产物与 plugin-demo/headless 覆盖仍保持启用。')
-            return
-          }
-        }
         const dom = createDomAcceptance(ctx, `templates/${templateCase.name}`, [templateDevOpenCheckpoint(templateCase)])
         runtimeErrors = attachRuntimeErrorCollector(miniProgram)
         const runtimeMarker = runtimeErrors.mark()
         const { metadata } = session
         expect(path.resolve(metadata.projectPath)).toBe(projectRoot)
         expect(metadata.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
-        const wrapperProjectPath = resolveAutomatorWrapperProjectPath(projectRoot)
-        const wrapperProjectConfig = path.join(wrapperProjectPath, 'project.config.json')
-        const usesWrapperProject = await fs.access(wrapperProjectConfig).then(() => true).catch(() => false)
-        const projectConfigPath = usesWrapperProject
-          ? wrapperProjectConfig
-          : path.join(projectRoot, 'project.config.json')
-        const projectConfig = JSON.parse(await fs.readFile(projectConfigPath, 'utf8'))
-        expect(projectConfig).toMatchObject(usesWrapperProject
-          ? {
-              miniprogramRoot: './',
-              srcMiniprogramRoot: './',
-            }
-          : templateCase.projectRoot
-            ? {
-                miniprogramRoot: 'dist',
-                srcMiniprogramRoot: 'dist',
-              }
-            : {
-                miniprogramRoot: 'dist/',
-                srcMiniprogramRoot: 'dist/',
-              })
+        const projectConfig = JSON.parse(await fs.readFile(path.join(projectRoot, 'project.config.json'), 'utf8')) as Record<string, unknown>
+        expect(projectConfig).toMatchObject(templateCase.projectRoot
+          ? { miniprogramRoot: 'dist', srcMiniprogramRoot: 'dist' }
+          : { miniprogramRoot: 'dist/', srcMiniprogramRoot: 'dist/' })
 
         try {
-          const page = await waitForTemplateCaseReady(miniProgram, templateCase, wrapperProjectPath)
+          const page = await waitForTemplatePageReady(miniProgram, templateCase.route, templateCase.expectedText, templateCase.expectedData)
           await dom.check('opened', miniProgram, page)
         }
         catch (error) {
