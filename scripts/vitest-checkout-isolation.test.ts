@@ -12,6 +12,7 @@ const markerFilename = 'fixture-cleanup-marker'
 const configFiles = [
   'vitest.config.mts',
   'vitest.coverage.ts',
+  'scripts/verificationBenchmark/localReporterConfig.mjs',
   'packages/weapp-vite/vitest.config.ts',
   'packages/weapp-vite/vitest.web.config.ts',
   'packages/weapp-vite/vitest/partition.ts',
