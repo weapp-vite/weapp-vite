@@ -278,9 +278,9 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - `lint-staged` and `.husky/pre-commit` are mandatory enforcement layers, not optional convenience tooling; when adjusting lint scope, keep both aligned so staged files fail locally before CI, including in `git worktree` directories.
 - Run needed local checks before review (`build`, `test`, `lint` scope depends on touched area).
 - Before pushing or opening a PR, run the smallest package- or path-scoped `lint` / `test` / `build` checks that cover the changed area; do not rely on `pre-commit` as a substitute for review-time verification.
-- PR 创建、更新提交和重新打开时，由 `PR CI` 原生 workflow 创建检查；所有验证必须等待 `pr-ci-approval` Environment 的人工批准。维护者从检查详情进入 `Review deployments` 批准一次后，启动本轮所有适用检查；每次新提交重新审批，旧运行取消，不得沿用旧批准改测新提交。不同 PR 可以同时验证。
-- 通过批准数量将有限 runner 资源集中到维护者关注的少数 PR；不增加全局串行锁或固定活跃 PR 上限。AI 只能批准用户或维护者选中的 PR，禁止为了“全部跑绿”批量批准无人关注的 PR，也不得批量调度手动诊断绕过准入。
-- fork PR 的仓库审核策略固定为 `all_external_contributors`，配置后回读核验；所有外部贡献者均需 GitHub 原生审核，再由指定维护者通过 `pr-ci-approval`。Environment 允许自行批准、禁止管理员绕过。
+- PR 创建、更新提交和重新打开时，由 `PR CI` 原生 workflow 创建检查；所有验证必须等待 `pr-ci-approval` Environment 批准。维护者可从检查详情进入 `Review deployments` 批准，也可明确授权 AI 通过 GitHub 原生界面或 API 代为批准指定 PR。批准后启动本轮所有适用检查；每次新提交重新审批，旧运行取消，不得沿用旧批准改测新提交。不同 PR 可以同时验证。
+- 通过批准数量将有限 runner 资源集中到维护者关注的少数 PR；不增加全局串行锁或固定活跃 PR 上限。AI 可以按用户或维护者的明确授权批准所选 PR；授权覆盖同一任务中这些 PR 的后续修复提交时，无须重复请求用户确认，但每轮仍须核验 PR、运行编号和当前 head revision，并独立提交 Environment 批准。保留可追溯的授权与审批记录，禁止为了“全部跑绿”批量批准无人关注的 PR，也不得批量调度手动诊断绕过准入。
+- fork PR 的仓库审核策略固定为 `all_external_contributors`，配置后回读核验；所有外部贡献者均需 GitHub 原生审核，再由指定维护者或其明确授权的 AI 通过 `pr-ci-approval`，AI 使用的账号仍须具备该 Environment 的审批权限。Environment 允许自行批准、禁止管理员绕过。
 - 关闭 PR 仅通过可信默认分支的 `pull_request_target: closed` 取消同一 PR 并发组，全部 job 跳过，不执行候选代码、不占 runner；重新打开后重新审批。常规运行取消后只执行必要清理，不再启动后续验证、报告或 artifact 上传；普通失败继续保留证据，完整 Nightly Performance 的证据策略保持原样。
 - 普通 PR 验证直接使用原生 job checks 展示矩阵进度和结果，不再依赖从 main 调度后的汇总状态回写。共用验证主体通过 `workflow_call` 消费统一冻结的 PR head/base/merge 上下文；候选代码只获得只读权限，评论等写入由可信主线完成报告处理。
 - 原生 PR 自动评论仅处理整体成功运行；失败、取消、拒绝及审批过期直接查看 Checks，不启动自动报告 runner。需要失败报告时，从默认分支显式运行 `gh workflow run ci-performance-comment.yml --ref main -f run-id=<运行ID>`；报告只接受已完成的原生 PR CI，下载前核验审批与冻结阶段，发布前拒绝过期提交及旧结果覆盖。
