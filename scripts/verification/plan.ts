@@ -7,7 +7,7 @@ import { DEFAULT_SELECTION } from './policy.ts'
 import { fullRuntimeBlock } from './runtime.ts'
 import { fingerprintConfiguration } from './snapshot.ts'
 import { toolchainEnvironment } from './toolchain.ts'
-import { affectedPackages, ownerOf } from './workspace.ts'
+import { analyzePackageImpact, ownerOf } from './workspace.ts'
 
 const GLOBAL_INPUTS = ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'turbo.json', 'tsconfig.json', 'tsconfig.base.json', '.npmrc', 'eslint.config.js', 'stylelint.config.js']
 const GLOBAL_PREFIXES = ['patches/', 'scripts/vite/']
@@ -58,12 +58,9 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
     && !/^(?:scripts|docs|website|skills|\.changeset|\.github|e2e|test)\//.test(file)
     && !/^(?:AGENTS(?:\.local)?\.md|README.*|LICENSE.*|\.gitignore)$/.test(file)
     && !GLOBAL_INPUTS.includes(file))
-  const affected = affectedPackages(changes.files, packages, global || unknown.length > 0)
-  const direct = new Set(changes.files.flatMap((file) => {
-    const owner = ownerOf(file, packages)
-    return [...owner ? [owner.name] : [], ...packages.filter(item => item.extraInputs.some(pattern => path.matchesGlob(file, pattern))).map(item => item.name)]
-  }))
-  const suggested = mode === 'quick' && !global && !unknown.length ? direct : affected
+  const impact = analyzePackageImpact(changes.files, packages, global || unknown.length > 0)
+  const { direct, affected } = impact
+  const suggested = mode === 'quick' && !global && !unknown.length && !impact.fallback ? direct : affected
   const selected = packages.filter(item => selection === 'shadow' || suggested.has(item.name))
   const tasks: VerificationTask[] = []
   const warnings = [...changes.warnings]
@@ -73,6 +70,9 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
   }
   if (unknown.length) {
     warnings.push(`未分类文件触发保守全范围: ${unknown.join(', ')}`)
+  }
+  if (impact.fallback) {
+    warnings.push(`未映射的跨目录输入触发保守全范围: ${impact.fallback.files.join(', ')}`)
   }
   const files = (await Promise.all(changes.files.map(async file => await existing(root, file) ? file : undefined)))
     .filter((file): file is string => file !== undefined)
