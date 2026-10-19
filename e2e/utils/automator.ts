@@ -2641,6 +2641,7 @@ async function connectAutomatorViaCliBridge(
     }
     return result
   })
+  lifecycle.throwIfAborted()
 
   const rawStdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
   if (!rawStdout) {
