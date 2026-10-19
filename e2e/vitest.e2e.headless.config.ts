@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { configDefaults, defineConfig } from 'vitest/config'
 import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
+import { localReporters, localTestPolicy } from '../scripts/verificationBenchmark/localReporterConfig.mjs'
 import { ensureIdeWarningReportEnv } from './utils/ideWarningReport.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
@@ -22,6 +23,7 @@ export default defineConfig({
     maxWorkers: resolveE2EMaxWorkers(),
     fileParallelism: false,
     setupFiles: [path.resolve(import.meta.dirname, './vitest.e2e.dom.setup.ts')],
-    reporters: ['default', path.resolve(import.meta.dirname, './scripts/domAcceptanceReport/reporter.ts')],
+    reporters: localReporters(['default', path.resolve(import.meta.dirname, './scripts/domAcceptanceReport/reporter.ts')]),
+    ...localTestPolicy(),
   },
 })

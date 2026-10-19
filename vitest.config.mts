@@ -4,6 +4,8 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import YAML from 'yaml'
+import { ROOT_REPOSITORY_TEST_GLOBS } from './scripts/verification/toolTests.ts'
+import { localReporters, localTestPolicy } from './scripts/verificationBenchmark/localReporterConfig.mjs'
 
 const ROOT_DIR = path.dirname(fileURLToPath(new URL(import.meta.url)))
 const WORKSPACE_FILE = path.resolve(ROOT_DIR, 'pnpm-workspace.yaml')
@@ -120,7 +122,7 @@ const projects = [
     // 只限制测试发现范围；保留 Vite 默认转换，让跨目录导入的 TypeScript 依赖同样完成类型剥离。
     test: {
       name: 'repo-scripts',
-      include: ['scripts/**/*.test.ts', 'integrations/shared-hmr-tailwind/hostDependencies.test.ts'],
+      include: ROOT_REPOSITORY_TEST_GLOBS,
       exclude: ['**/node_modules/**', '**/.git/**'],
     },
   },
@@ -139,6 +141,7 @@ const projects = [
         'e2e/utils/devtoolsSelection.test.ts',
         'e2e/scripts/domAcceptanceReport/helpers.test.ts',
         'e2e/scripts/domAcceptanceReport/reporter.test.ts',
+        'e2e/scripts/domAcceptanceReport/suite.test.ts',
         'e2e/scripts/domAcceptanceReport/inventory.test.ts',
         'e2e/scripts/githubIssuesRouteScope.test.ts',
         'e2e/scripts/hmr-guard-manifest.test.ts',
@@ -191,6 +194,8 @@ export default defineConfig(() => {
   return {
     test: {
       maxWorkers: workspaceMaxWorkers,
+      reporters: localReporters(),
+      ...localTestPolicy(),
       projects,
       sharedViteServer: false,
       coverage: {

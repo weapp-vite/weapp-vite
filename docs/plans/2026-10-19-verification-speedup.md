@@ -46,4 +46,10 @@ pnpm verify --mode full
 
 基础契约以默认 shadow 策略交付。隔离后续批次后，本地新增契约 15 个文件、86 项测试通过；现有 PR Actions 37 个文件、443 项测试通过；E2E 内部工具 6 个文件、140 项测试通过。范围 ESLint、actionlint 和实际计划 JSON 生成通过。
 
-CI 运行、真实 IDE 验收及三轮性能对比仍需补入对应提交和结果。在这些证据完成前，本记录不宣称已达成 30% 提速或完整验收。
+第三批已验证 constants、hmr 的纯任务首次 cache miss、第二次 cache hit，其他测试与类型检查仍实际执行。fixture 与 Vue 相关 169 项测试以及所属包类型检查通过。相同输入、12 文件、168 用例的三轮 Vue 子集配对基准中位数下降 36.6039%，范围与复现见 [基准记录](../reports/2026-10-19-local-vue-validation-speed.md)；它不代表整个本地验证的收益。
+
+第四批 TDesign 聚合在真实 Stable IDE 完成 8 个用例和 29 个 checkpoint，headless 对应 7 个用例、simulator unit 2 项和 browser 1 项通过；局部 suite 明确保持 partial，详见 [局部会话验证记录](../reports/2026-10-19-tdesign-validation-session.md)。
+
+第一批 PR 的首轮原生 CI 已完成，131 项成功、23 项按适用规则跳过、没有失败；后续提交与各批检查继续按 revision 重新审批。完整 CI 与 IDE 的三轮性能对比及合并后的主线正式全量 IDE 验收仍待完成。在这些证据完成前，本记录不宣称整体已达成 30% 提速或完成整轮交付。
+
+本地调度默认使用半数 CPU；macOS 通过限时只读内存探针估算可回收内存，并仅采用其保守折半值，探针失败时回退到系统空闲内存，避免文件缓存导致并发预算被误判为单任务。

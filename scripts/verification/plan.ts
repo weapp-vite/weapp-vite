@@ -7,6 +7,7 @@ import { DEFAULT_SELECTION } from './policy.ts'
 import { fullRuntimeBlock } from './runtime.ts'
 import { fingerprintConfiguration } from './snapshot.ts'
 import { toolchainEnvironment } from './toolchain.ts'
+import { ROOT_REPOSITORY_TEST_GLOBS, scriptTestInventory, workflowContractInventory } from './toolTests.ts'
 import { affectedPackages, ownerOf } from './workspace.ts'
 
 const GLOBAL_INPUTS = ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'turbo.json', 'tsconfig.json', 'tsconfig.base.json', '.npmrc', 'eslint.config.js', 'stylelint.config.js']
@@ -43,7 +44,7 @@ async function nearbyTests(root: string, files: string[]): Promise<string[]> {
   const candidates = files.flatMap(file => TEST_FILE.test(file)
     ? [file]
     : /\.[cm]?[jt]sx?$/.test(file)
-      ? [file.replace(/\.[^.]+$/, '.test.ts'), file.replace(/\.[^.]+$/, '.spec.ts')]
+      ? [file.replace(/\.[^.]+$/, '.test.ts'), file.replace(/\.[^.]+$/, '.spec.ts'), file.replace(/(\.[^.]+)$/, '.test$1'), file.replace(/(\.[^.]+)$/, '.spec$1')]
       : [])
   const found = await Promise.all(candidates.map(async file => await existing(root, file) ? file : undefined))
   return [...new Set(found.filter((file): file is string => file !== undefined))].sort()
@@ -160,16 +161,27 @@ export async function createVerificationPlan(options: PlanOptions): Promise<Veri
     }
   }
   const cliChanged = changes.files.some(file => file.startsWith('packages/weapp-vite/src/'))
-  const scripts = files.filter(file => file.startsWith('scripts/'))
-  const scriptTests = await nearbyTests(root, scripts)
-  if (mode !== 'full' && scripts.length) {
-    const scope = mode === 'review' || !scriptTests.length ? ['scripts'] : scriptTests
-    tasks.push({ ...task('repo-scripts', 'test', ['exec', 'vitest', 'run', '--config', 'scripts/vitest.config.mjs', ...scope, `--maxWorkers=${resources.jobs}`], '内部脚本采用独立配置；review 保留完整工具契约'), exclusive: true })
+  const scripts = changes.files.filter(file => file.startsWith('scripts/'))
+  const workflowChanged = changes.files.some(file => file.startsWith('.github/'))
+  if (mode === 'full' || scripts.length || workflowChanged) {
+    const inventory = await scriptTestInventory(root)
+    const scriptTests = mode === 'quick' ? await nearbyTests(root, scripts) : []
+    const selectedTests = new Set(mode === 'full' || (scripts.length && (mode === 'review' || !scriptTests.length)) ? inventory.all : scriptTests)
+    if (mode === 'full' || workflowChanged) {
+      for (const file of await workflowContractInventory(root, inventory.all)) {
+        selectedTests.add(file)
+      }
+    }
+    const scope = [...selectedTests].filter(file => inventory.all.includes(file) && (mode !== 'full' || !inventory.root.has(file))).sort()
+    if (scope.length) {
+      // 完整集合用目录和排除模式表达，避免 Windows 启动参数超过命令行长度限制。
+      const filters = mode === 'full'
+        ? ['scripts', ...ROOT_REPOSITORY_TEST_GLOBS.flatMap(pattern => ['--exclude', pattern])]
+        : scope.length === inventory.all.length ? ['scripts'] : scope
+      tasks.push({ ...task('repo-scripts', 'test', ['exec', 'vitest', 'run', '--config', 'scripts/vitest.config.mjs', ...filters, `--maxWorkers=${resources.jobs}`], mode === 'full' ? '补齐根测试未发现的工具契约；已有 TS 工具测试由根入口执行' : '脚本与工作流契约按文件合并去重；删除输入也保留工具验证', mode === 'full' ? ['tests'] : []), exclusive: true })
+    }
   }
-  if (mode !== 'full' && changes.files.some(file => file.startsWith('.github/'))) {
-    tasks.push({ ...task('workflow-contracts', 'test', ['run', 'test:pr-actions', `--maxWorkers=${resources.jobs}`], '工作流变更必须执行原生 PR 与审批、资源政策契约'), exclusive: true })
-  }
-  const internal = files.filter(file => /^e2e\/(?:scripts|utils)\//.test(file))
+  const internal = changes.files.filter(file => /^e2e\/(?:scripts|utils)\//.test(file))
   if (internal.length || mode === 'full') {
     const related = mode === 'quick' ? await nearbyTests(root, internal) : []
     tasks.push({ ...task('runtime:internal-contracts', 'runtime', ['exec', 'vitest', 'run', '-c', 'e2e/vitest.e2e.internal.config.ts', ...related, `--maxWorkers=${resources.jobs}`], 'E2E 工具变更运行受机器租约保护的内部契约；headless gate 不能替代', tasks.map(item => item.id)), exclusive: true })

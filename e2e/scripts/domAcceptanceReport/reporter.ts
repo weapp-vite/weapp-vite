@@ -6,6 +6,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { ACCEPTED_DEVTOOLS_VERSION_ENV, readDevtoolsVersionPolicy } from '../../utils/devtoolsSelection'
+import { createCaseTimingRecorder } from '../verification/caseTiming'
 import { evaluateExpectedErrors } from './expectedErrors'
 import {
   ACCEPTANCE_REPORT_DIR_ENV,
@@ -45,6 +46,7 @@ export default class DomAcceptanceReporter implements Reporter {
   private readonly selectedCases = readSelectedAcceptanceCases()
   private readonly cases = new Map<string, AcceptanceCaseInput>()
   private readonly startedCases = new Map<string, number>()
+  private readonly caseTimings = createCaseTimingRecorder()
   private readonly diagnostics = new RuntimeDiagnosticJournal(process.env.WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE, this.strict)
   private activeCase: string | null = null
   private readonly reportFile = path.join(
@@ -68,9 +70,11 @@ export default class DomAcceptanceReporter implements Reporter {
     this.diagnostics.collect(this.activeCase)
     this.activeCase = test.id
     this.startedCases.set(test.id, Date.now())
+    this.caseTimings.start(test.id, test.fullName)
   }
 
   onTestCaseResult(test: TestCase) {
+    this.caseTimings.complete(test.id, test.result().state === 'passed' ? 'passed' : 'failed', test.diagnostic())
     this.diagnostics.collect(test.id)
     this.activeCase = null
     this.collect(test)
@@ -88,9 +92,14 @@ export default class DomAcceptanceReporter implements Reporter {
         messages.push(...suite.errors().map(error => error.message))
       }
       for (const test of module.children.allTests()) {
+        const state = test.result().state
+        if (state === 'passed' || state === 'failed') {
+          this.caseTimings.complete(test.id, state, test.diagnostic())
+        }
         this.collect(test)
       }
     }
+    this.caseTimings.finish()
     if (reason !== 'passed') {
       messages.push(`Vitest run ended: ${reason}`)
     }

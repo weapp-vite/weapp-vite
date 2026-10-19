@@ -88,6 +88,13 @@ export async function sharedBuildPackages(root: string, fallback: string[], scri
 /** 先读取原类型任务闭包，再只执行类型节点；已准备的 build 不会被 dependsOn 重加。 */
 export async function usePreparedTypeChecks(root: string, original: VerificationTask): Promise<void> {
   const nodes = await dryBuild(root, original)
+  const unsupported = nodes.filter(node => node.command !== '<NONEXISTENT>' && !['build', 'test:types:check'].includes(node.task))
+  if (unsupported.length) {
+    throw new Error(`类型任务包含未准备的前置检查，不能省略: ${unsupported.map(node => node.taskId).join(', ')}`)
+  }
   const checks = nodes.filter(node => node.task === 'test:types:check' && node.command !== '<NONEXISTENT>')
+  if (!checks.length) {
+    throw new Error('类型任务图没有可执行的 test:types:check 节点')
+  }
   original.args = ['exec', 'turbo', 'run', 'test:types:check', ...checks.map(node => `--filter=${node.package}`), '--only', ...original.args.filter(arg => arg.startsWith('--concurrency='))]
 }

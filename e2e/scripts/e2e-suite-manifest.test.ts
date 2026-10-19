@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import devtoolsConfig from '../vitest.e2e.devtools.config'
 import parallelConfig from '../vitest.e2e.parallel.config'
 import { readTaskCases } from './domAcceptanceReport/inventory'
-import { getCiFullTasks, getCiPrTasks, getCiTasks, getDiminaTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
+import { getCiFullTasks, getCiPrTasks, getCiTasks, getDiminaTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, IDE_TDESIGN_AGGREGATE_LABEL, IDE_TDESIGN_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
   it('keeps Bun runtime checks explicit without requiring Bun in Node suites', async () => {
@@ -207,6 +207,16 @@ describe('e2e suite manifest', () => {
     expect(prTasks.filter(task => task.label === 'ci/wevu-runtime.npm-platforms.test.ts')).toHaveLength(1)
     expect(await getSuiteTasks('ci-pr')).toEqual(await getCiPrTasks())
     expect(await getSuiteTasks('ci-full')).toEqual(await getCiFullTasks())
+  })
+
+  it('shares one TDesign fixture task while preserving every child case and checkpoint', () => {
+    const root = path.resolve(import.meta.dirname, '../..')
+    const tasks = getIdeExhaustiveTasks()
+    expect(tasks.filter(task => task.label === IDE_TDESIGN_AGGREGATE_LABEL)).toHaveLength(1)
+    expect(IDE_TDESIGN_AGGREGATED_PATTERNS.every(label => tasks.every(task => task.label !== label))).toBe(true)
+    const cases = IDE_TDESIGN_AGGREGATED_PATTERNS.flatMap(label => readTaskCases(root, label))
+    expect(cases.length).toBeGreaterThan(0)
+    expect(readTaskCases(root, IDE_TDESIGN_AGGREGATE_LABEL)).toEqual(cases)
   })
 
   it('partitions the full CI list without overlap and preserves task order per shard', async () => {

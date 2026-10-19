@@ -1,12 +1,25 @@
 import type { SuiteReportPayload, SuiteTaskReportEntry } from '../suiteReport'
-import type { VerificationPlan } from './types'
+import type { VerificationPlan, VerificationTiming } from './types'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { validateTaskAcceptance } from '../domAcceptanceReport/task'
 import { assertVerificationPlan } from './plan'
 import { assertVerificationProfile } from './profile'
+import { assertE2ETimings } from './timing'
 import { VERIFICATION_TOOL_VERSION } from './types'
 import { verificationSuiteReportSchema } from './validation'
+
+/** 下载的报告属于外部输入，保留可选字段兼容并在边界校验阶段耗时。 */
+function readReportTimings(value: unknown): VerificationTiming[] {
+  if (value === undefined) {
+    return []
+  }
+  if (!Array.isArray(value)) {
+    throw new TypeError('Invalid E2E timing record')
+  }
+  assertE2ETimings(value)
+  return value
+}
 
 export async function jsonFiles(root: string): Promise<string[]> {
   const entries = await fs.readdir(root, { withFileTypes: true })
@@ -42,6 +55,8 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
     throw new Error('Full distributed acceptance requires a clean, known checkout')
   }
   const reports = values.map(value => verificationSuiteReportSchema.parse(value))
+  const timings = reports.flatMap(report => readReportTimings(report.timings))
+  assertE2ETimings([...timings, ...reports.flatMap(report => report.tasks.flatMap(task => readReportTimings(task.timings)))])
   if (reports.length !== plan.shardTotal) {
     throw new Error('Missing or duplicate verification shard reports')
   }
@@ -122,6 +137,7 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
     strict: plan.strict,
     coverage: 'complete',
     acceptance: 'passed',
+    timings,
     tasks,
     summary: { artifactCount: tasks.reduce((sum, task) => sum + task.artifacts.length, 0), failedCount: 0, passedCount: expected.length, taskCount: tasks.length, plannedCount: expected.length, executedCount: expected.length, blockedCount: 0, skippedCount: 0, notExecutedCount: 0, outOfScopeCount: tasks.length - expected.length },
   }

@@ -19,6 +19,13 @@ const TEMPLATE_DEV_OPEN_RUNNER_LABELS = new Set([
   'ide/template-tailwindcss-dev-open-multi.runtime.test.ts',
 ])
 export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
+export const IDE_TDESIGN_AGGREGATE_LABEL = 'ide/template-wevu-tdesign-regression.aggregate.test.ts'
+export const IDE_TDESIGN_AGGREGATED_PATTERNS = [
+  'ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts',
+  'ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts',
+  'ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts',
+  'ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts',
+] as const
 export const IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS = new Set([
   'ide/swan-runtime.optional.test.ts',
   'ide/template-multi-platform.swan.optional.test.ts',
@@ -33,6 +40,7 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/issue-1140-mode-cache.runtime.test.ts', '1260000'],
   ['ide/devtools-cli-workflow.runtime.test.ts', '900000'],
   ['ide/github-issues.runtime.aggregate.test.ts', '3600000'],
+  [IDE_TDESIGN_AGGREGATE_LABEL, '900000'],
   ['ide/github-issues.runtime.lifecycle.test.ts', '600000'],
   ['ide/github-issues.runtime.props.test.ts', '600000'],
   ['ide/stateful-hmr.runtime.test.ts', '900000'],
@@ -191,9 +199,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-weapp-vite-template.test.ts',
   'ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts',
   'ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts',
-  'ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts',
-  'ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts',
-  'ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts',
+  IDE_TDESIGN_AGGREGATE_LABEL,
   'ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.test.ts',
   'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
   'ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts',
@@ -621,6 +627,7 @@ export function getIdeExhaustiveTasks() {
     .filter(filePath => !isIdeHelperTest(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_MANUAL_DEVTOOLS_TEST_PATTERNS.has(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET.has(toRelativeLabel(filePath)))
+    .filter(filePath => !(IDE_TDESIGN_AGGREGATED_PATTERNS as readonly string[]).includes(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_COMPONENT_LIBRARY_PATTERN_SET.has(toRelativeLabel(filePath)))
     .map((filePath) => {
       const task = createIdeVitestTask(filePath)

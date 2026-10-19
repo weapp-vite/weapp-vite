@@ -3,7 +3,9 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { build } from 'vite'
 import { expect, it } from 'vitest'
+import { createBuildArtifactManifest, verifyBuildArtifactManifest } from '../buildArtifact/index.mjs'
 import { createCoveragePlan, mergeCoverageShards, runCoverageShard } from './index.mjs'
 
 it.each([true, false])('merges four real Vitest shards without re-executing tests and keeps original thresholds: covered=%s', async (fullyCovered) => {
@@ -24,10 +26,12 @@ it.each([true, false])('merges four real Vitest shards without re-executing test
     const plan = path.join(root, '.tmp/plan/plan.json')
     const reports = path.join(root, '.tmp/reports')
     await mkdir(reports, { recursive: true })
-    await createCoveragePlan(root, plan, 4)
+    const frozen = await createCoveragePlan(root, plan, 4)
     for (let index = 1; index <= 4; index++) {
       const directory = path.join(reports, `shard-${index}`)
-      await runCoverageShard(root, plan, index, directory)
+      const report = await runCoverageShard(root, plan, index, directory)
+      expect(report.cases).toHaveLength(1)
+      expect(report.cases[0]).toMatchObject({ name: 'branch', state: 'passed' })
       await rm(path.join(directory, 'coverage'), { recursive: true, force: true })
       await rm(path.join(directory, 'observed.json'))
     }
@@ -35,13 +39,27 @@ it.each([true, false])('merges four real Vitest shards without re-executing test
     expect(before.trim().split('\n').sort()).toEqual(['0', '1', '2', '3'])
     if (fullyCovered) {
       await mergeCoverageShards(root, plan, reports, path.join(root, 'coverage'))
+      const scope = JSON.parse(await readFile(path.join(root, 'coverage/logical-scope.json'), 'utf8'))
+      expect(scope.files).toHaveLength(4)
+      expect(scope.cases).toHaveLength(4)
     }
     else {
+      await mkdir(path.join(root, 'coverage'), { recursive: true })
+      await writeFile(path.join(root, 'coverage/shard-verdict.json'), '{"status":"passed"}')
+      await writeFile(path.join(root, 'coverage/logical-scope.json'), '{"cases":["previous-run"]}')
       await expect(mergeCoverageShards(root, plan, reports, path.join(root, 'coverage'))).rejects.toThrow('Command failed')
+      await expect(readFile(path.join(root, 'coverage/shard-verdict.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+      await expect(readFile(path.join(root, 'coverage/logical-scope.json'))).rejects.toMatchObject({ code: 'ENOENT' })
     }
     expect(await readFile(path.join(root, 'executions.txt'), 'utf8')).toBe(before)
     const coverage = JSON.parse(await readFile(path.join(root, 'coverage/coverage-summary.json'), 'utf8'))
     expect(coverage.total.branches.pct).toBe(fullyCovered ? 100 : 50)
+    await build({ root, configFile: false, logLevel: 'silent', build: { lib: { entry: path.join(root, 'source.mjs'), formats: ['es'] }, outDir: 'packages/fixture/dist', minify: false } })
+    const artifactEnv = { BUILD_ARTIFACT_EXPECTED_COMMIT: frozen.identity.commit, BUILD_ARTIFACT_PACKAGE_MANAGER: frozen.identity.packageManager }
+    const artifact = createBuildArtifactManifest(root, artifactEnv)
+    expect(artifact.schemaVersion).toBe(2)
+    expect(artifact.toolchain.actualPackageManager).toBe(frozen.identity.packageManager)
+    expect(verifyBuildArtifactManifest(root, artifact, artifactEnv)).toBe(artifact)
   }
   finally {
     if (previousCommit === undefined) {

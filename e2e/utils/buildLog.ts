@@ -4,6 +4,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fs as fsExtra } from '@weapp-core/shared/node'
 import { execa } from 'execa'
+import { measureE2EPhase } from '../scripts/verification/timing'
 import { appendIdeReportEvent, resolveReportProjectPath } from './ideWarningReport'
 import { resolveJsFormatConfigOverride } from './jsFormat'
 
@@ -181,7 +182,7 @@ export function sanitizeBuildCommandEnv(env = process.env) {
   return nextEnv
 }
 
-export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptions) {
+async function runBuildWithLogCapture(options: BuildCommandOptions) {
   const {
     cliPath,
     configFile,
@@ -295,4 +296,8 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
   finally {
     await configOverride.cleanup()
   }
+}
+
+export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptions) {
+  return await measureE2EPhase('fixture-build', () => runBuildWithLogCapture(options))
 }

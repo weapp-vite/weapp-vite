@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
 import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
+import { localReporters, localTestPolicy } from '../scripts/verificationBenchmark/localReporterConfig.mjs'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 
 export default defineConfig({
@@ -9,6 +10,8 @@ export default defineConfig({
     tsconfig: false,
   },
   test: {
+    reporters: localReporters(),
+    ...localTestPolicy(),
     globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
     include: [
       path.resolve(import.meta.dirname, './utils/webDevServer.test.ts'),

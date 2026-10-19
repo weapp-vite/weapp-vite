@@ -1,11 +1,12 @@
 import type { ChangeSet, WorkspacePackage } from './types.ts'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { expect, it } from 'vitest'
 import { createVerificationPlan } from './plan.ts'
 import { DEFAULT_SELECTION } from './policy.ts'
 import { getResourceBudget } from './resources.ts'
+import { scriptTestInventory } from './toolTests.ts'
 
 const packages: WorkspacePackage[] = [
   { name: 'library', directory: 'packages/library', scripts: { 'build': 'tsdown', 'test': 'vitest run', 'typecheck': 'tsc --noEmit', 'test:types:check': 'tsd' }, dependencies: [], extraInputs: [] },
@@ -96,6 +97,123 @@ it('routes E2E helper and runtime changes through their managed verification ent
     expect(plan.tasks.find(task => task.id === 'runtime:ci')?.args).toContain('e2e:ci')
     expect(plan.tasks.find(task => task.id === 'runtime:web')?.args).toContain('e2e:web')
     expect(plan.remaining.length).toBeGreaterThan(0)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('retains internal contracts for deleted E2E inputs and filters only surviving neighboring tests', async () => {
+  const root = await createPlanRoot()
+  try {
+    await mkdir(path.join(root, 'e2e/utils'), { recursive: true })
+    await writeFile(path.join(root, 'e2e/utils/helper.test.ts'), '')
+    const input = { root, packages, resources, selection: 'affected' as const }
+    for (const file of ['e2e/utils/helper.ts', 'e2e/scripts/deleted.test.ts', 'e2e/utils/deleted.test.ts']) {
+      for (const mode of ['quick', 'review'] as const) {
+        const plan = await createVerificationPlan({ ...input, mode, changes: changes([file]) })
+        const task = plan.tasks.find(item => item.id === 'runtime:internal-contracts')
+        expect(task).toMatchObject({
+          resource: 'machine-exclusive',
+          args: expect.arrayContaining(['e2e/vitest.e2e.internal.config.ts']),
+        })
+        expect(task?.args).not.toContain(file)
+        const filters = task!.args.slice(5).filter(arg => !arg.startsWith('-'))
+        expect(filters).toEqual(mode === 'quick' && file === 'e2e/utils/helper.ts' ? ['e2e/utils/helper.test.ts'] : [])
+      }
+    }
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+async function createToolPlanRoot() {
+  const root = await createPlanRoot()
+  const files = ['scripts/helper.test.ts', 'scripts/helper.test.mjs', 'scripts/pr-context.test.mjs', 'scripts/workflow.test.ts', 'scripts/prAdmission/context.test.mjs']
+  for (const file of files) {
+    await mkdir(path.dirname(path.join(root, file)), { recursive: true })
+    await writeFile(path.join(root, file), '')
+  }
+  const manifestFile = path.join(root, 'package.json')
+  const manifest = JSON.parse(await readFile(manifestFile, 'utf8')) as { scripts: Record<string, string> }
+  manifest.scripts['test:pr-actions'] = 'vitest run --config scripts/vitest.config.mjs scripts/pr-context.test.mjs scripts/workflow.test.ts scripts/prAdmission'
+  await writeFile(manifestFile, JSON.stringify(manifest))
+  return { root, files }
+}
+
+function plannedToolFiles(plan: Awaited<ReturnType<typeof createVerificationPlan>>, files: string[]): string[] {
+  const task = plan.tasks.find(item => item.id === 'repo-scripts')
+  if (!task) {
+    return []
+  }
+  const filters: string[] = []
+  const excludes: string[] = []
+  const args = task.args.slice(5)
+  for (let index = 0; index < args.length; index++) {
+    if (args[index] === '--exclude') {
+      excludes.push(args[++index]!)
+    }
+    else if (!args[index]!.startsWith('-')) {
+      filters.push(args[index]!)
+    }
+  }
+  return files.filter(file => filters.some(filter => file === filter || file.startsWith(`${filter}/`))
+    && !excludes.some(pattern => path.posix.matchesGlob(file, pattern))).sort()
+}
+
+it('unions script and workflow contracts once, and gives full the exact complement of root tests', async () => {
+  const { root, files } = await createToolPlanRoot()
+  try {
+    const input = { root, changes: changes(['scripts/helper.mjs', '.github/workflows/ci.yml']), packages, resources, selection: 'affected' as const }
+    const review = await createVerificationPlan({ ...input, mode: 'review' })
+    expect(plannedToolFiles(review, files)).toEqual([...files].sort())
+    expect(review.tasks.filter(item => item.id === 'repo-scripts')).toHaveLength(1)
+    expect(review.tasks.some(item => item.id === 'workflow-contracts')).toBe(false)
+
+    const full = await createVerificationPlan({ ...input, mode: 'full' })
+    const rootFiles = [...(await scriptTestInventory(root)).root]
+    const extraFiles = plannedToolFiles(full, files)
+    expect(extraFiles.filter(file => rootFiles.includes(file))).toEqual([])
+    expect([...rootFiles, ...extraFiles].sort()).toEqual([...files].sort())
+    expect(full.tasks.find(item => item.id === 'repo-scripts')?.dependencies).toEqual(['tests'])
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('keeps deleted scripts in scope and combines neighboring mjs tests with every workflow contract', async () => {
+  const { root, files } = await createToolPlanRoot()
+  try {
+    const input = { root, packages, resources, selection: 'affected' as const }
+    const deleted = await createVerificationPlan({ ...input, mode: 'quick', changes: changes(['scripts/deleted.mjs']) })
+    expect(plannedToolFiles(deleted, files)).toEqual([...files].sort())
+    const quick = await createVerificationPlan({ ...input, mode: 'quick', changes: changes(['scripts/helper.mjs', '.github/workflows/ci.yml']) })
+    expect(plannedToolFiles(quick, files)).toEqual([...files].sort())
+    const workflow = await createVerificationPlan({ ...input, mode: 'review', changes: changes(['.github/workflows/deleted.yml']) })
+    expect(plannedToolFiles(workflow, files)).toEqual(files.filter(file => !file.includes('helper')).sort())
+    const full = await createVerificationPlan({ ...input, mode: 'full', changes: changes([]) })
+    expect(plannedToolFiles(full, files)).toEqual(files.filter(file => file.endsWith('.mjs')).sort())
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('rejects workflow commands or filters that cannot be represented by the shared tool inventory', async () => {
+  const { root } = await createToolPlanRoot()
+  try {
+    const manifestFile = path.join(root, 'package.json')
+    const manifest = JSON.parse(await readFile(manifestFile, 'utf8')) as { scripts: Record<string, string> }
+    for (const script of [
+      'vitest run --config scripts/vitest.config.mjs scripts/missing.test.mjs',
+      'vitest run --config scripts/vitest.config.mjs scripts/pr-context.test.mjs && node additional-check.mjs',
+    ]) {
+      manifest.scripts['test:pr-actions'] = script
+      await writeFile(manifestFile, JSON.stringify(manifest))
+      await expect(createVerificationPlan({ root, packages, resources, mode: 'full', changes: changes(['.github/workflows/ci.yml']) })).rejects.toThrow('test:pr-actions')
+    }
   }
   finally {
     await rm(root, { recursive: true, force: true })

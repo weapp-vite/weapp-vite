@@ -595,16 +595,20 @@ async function runOwnedTaskSuite(
   options: RunSuiteOptions,
   signal: AbortSignal,
   lease: MachineE2ELease,
+  leaseTiming: VerificationTiming,
 ) {
   const failOnTaskFailure = options.failOnTaskFailure ?? true
   const runTask = options.runTask ?? defaultRunTask
   const writeReport = options.writeReport ?? true
   const results: SuiteTaskResult[] = []
-  const reportContext: SuiteReportContext = options.reportContext ?? {
-    ...createAcceptanceIdentity(),
-    strict: isStrictDomAcceptanceSuite(suiteName),
-    partial: false,
-    plannedTasks: tasks,
+  const reportContext: SuiteReportContext = {
+    ...(options.reportContext ?? {
+      ...createAcceptanceIdentity(),
+      strict: isStrictDomAcceptanceSuite(suiteName),
+      partial: false,
+      plannedTasks: tasks,
+    }),
+    timings: [...(options.reportContext?.timings ?? []), leaseTiming],
   }
   const suiteStartedAt = new Date().toISOString()
   let resourceCleanupFailed = false
@@ -682,7 +686,18 @@ async function runOwnedTaskSuite(
           }
         }
       }
-      exitCode = await measureE2EPhase('task-process', () => runTask(task, signal), recordTiming)
+      await measureE2EPhase('task-process', async () => {
+        exitCode = await runTask(task, signal)
+      }, (timing) => {
+        let status = timing.status
+        if (signal.aborted) {
+          status = 'cancelled'
+        }
+        else if (status === 'passed' && exitCode !== 0) {
+          status = 'failed'
+        }
+        recordTiming({ ...timing, status })
+      })
       signal.throwIfAborted()
       if (reportContext.strict) {
         try {
@@ -851,8 +866,19 @@ export async function runTaskSuite(
   options: RunSuiteOptions = {},
 ) {
   const signals = createSuiteSignalScope()
+  const leaseStartedAt = new Date().toISOString()
+  const leaseStarted = performance.now()
   try {
-    const code = await withMachineE2ELease(lease => runOwnedTaskSuite(suiteName, tasks, options, signals.signal, lease), options.machineLeaseOptions)
+    const code = await withMachineE2ELease((lease) => {
+      const leaseTiming: VerificationTiming = {
+        name: 'machine-lease-acquisition',
+        invocationId: randomUUID(),
+        startedAt: leaseStartedAt,
+        durationMs: performance.now() - leaseStarted,
+        status: 'passed',
+      }
+      return runOwnedTaskSuite(suiteName, tasks, options, signals.signal, lease, leaseTiming)
+    }, options.machineLeaseOptions)
     return signals.exitCode ?? code
   }
   finally {

@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { isDeepStrictEqual } from 'node:util'
+import { hasVerificationSourceChanges } from '../../../scripts/verification/generatedEvidence'
 import { assertDomAcceptanceComplete } from '../../utils/domAcceptance/checkpoint'
 import { evaluateExpectedErrors } from './expectedErrors'
 import { evaluateDiagnosticTimestamps } from './runtimeDiagnostics'
@@ -19,8 +20,6 @@ export const ACCEPTANCE_DIRTY_ENV = 'WEAPP_VITE_E2E_ACCEPTANCE_DIRTY'
 export const ACCEPTANCE_REPORT_DIR_ENV = 'WEAPP_VITE_E2E_ACCEPTANCE_REPORT_DIR'
 export const ACCEPTANCE_TASK_ENV = 'WEAPP_VITE_E2E_ACCEPTANCE_TASK'
 export const ACCEPTANCE_ROOT = path.resolve(import.meta.dirname, '../../..')
-const GENERATED_ACCEPTANCE_EVIDENCE_PREFIX = 'docs/reports/dom-acceptance/'
-const GENERATED_SUITE_REPORT_FILE = /^docs\/reports\/\d{4}-\d{2}-\d{2}-\d{6}-[\w.](?:[\w.-]*[\w.])?-suite-report\/index\.(?:md|json)$/
 
 export function isStrictDomAcceptance(env = process.env) {
   return env[DOM_ACCEPTANCE_ENV] === '1'
@@ -50,10 +49,7 @@ export function createAcceptanceIdentity(env = process.env, readGit = readGitOut
   if (env[ACCEPTANCE_DIRTY_ENV] === undefined) {
     try {
       const trackedChanges = readGit(['status', '--porcelain', '--untracked-files=no'])
-      // 只排除未跟踪的生成证据；同目录内已提交文件的变更仍属于工作区改动。
-      workingTreeDirty = Boolean(trackedChanges) || readGit(['ls-files', '--others', '--exclude-standard', '-z'])
-        .split('\0')
-        .some(file => file && !file.startsWith(GENERATED_ACCEPTANCE_EVIDENCE_PREFIX) && !GENERATED_SUITE_REPORT_FILE.test(file))
+      workingTreeDirty = hasVerificationSourceChanges(trackedChanges, readGit(['ls-files', '--others', '--exclude-standard', '-z']))
     }
     catch {
       workingTreeDirty = null
