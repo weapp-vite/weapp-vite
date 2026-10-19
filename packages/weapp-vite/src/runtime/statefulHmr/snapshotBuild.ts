@@ -11,6 +11,7 @@ import { parseSidecarSourceMetadata } from '../../moduleGraph/protocol'
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { bindTailwindSnapshotGeneration, validateTailwindSnapshotGeneration } from '../../plugins/tailwindcss/generation'
+import { validateImportedTailwindSnapshot } from '../../plugins/tailwindcss/importedPreparation'
 import { getTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import { configSuffixes } from '../../plugins/utils/invalidateEntry/shared'
@@ -207,6 +208,7 @@ export async function buildStatefulHmrSnapshot(
       }
     }
     await validateTailwindSnapshotGeneration(ctx as CompilerContext, inputFiles, consumedFiles)
+    await validateImportedTailwindSnapshot(sources, inputFiles, consumedFiles)
     const reusableInputs = inputs && coversSnapshotInputs(inputs, inputFiles) && await validateSnapshotInputs(inputs) ? inputs : undefined
     return {
       output,

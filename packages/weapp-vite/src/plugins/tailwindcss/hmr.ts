@@ -15,6 +15,9 @@ import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '..
 import { findManagedTailwindcssEntryMarker, hasManagedTailwindcssOutputMarker } from '../tailwindcssMarker'
 import { rememberTailwindGeneration } from './generation'
 import { copyGenerationValue, equalGenerationValue } from './generation/inputs'
+import { captureImportedTailwindGeneration, importedGenerationRequest } from './importedGeneration'
+import { rememberImportedTailwindPreparation } from './importedPreparation'
+import { createImportedTailwindValidation } from './importedValidation'
 import { TailwindContentInvalidation } from './invalidation'
 import { TailwindRootLifecycle } from './lifecycle'
 import { getTailwindStyleOwners, rememberTailwindStyleOwners } from './styleOwners'
@@ -33,14 +36,15 @@ interface Options {
   compiler: () => Promise<Compiler>
   render: (bundle: OutputBundle, entries: CompilerGenerateResult[], snapshot: CompilerSnapshot) => Promise<void>
   generationOptions?: () => unknown
+  importedOptions?: () => unknown
 }
 
 /** 使用上游的来源匹配和内存输入能力；宿主只保存内容版本，不提取或猜测候选。 */
 export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options) {
   const host = getCompilerHmrHost(ctx)
   const extensions = resolveOutputExtensions(ctx.configService.outputExtensions)
-  const roots = new Map<number, Root>()
-  const registrations = new Map<number, symbol>()
+  const roots = new Map<number | string, Root>()
+  const registrations = new Map<number | string, symbol>()
   const lifecycle = new TailwindRootLifecycle()
   const invalidation = new TailwindContentInvalidation({ sourceId: compilerSourceId, readSource: file => host.readSource(file) })
   let disposed = false
@@ -67,7 +71,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     }
   }
 
-  async function rememberRoot(index: number, request: CompilerGenerateRequest, result: CompilerGenerateResult, generation?: symbol) {
+  async function rememberRoot(index: number | string, request: CompilerGenerateRequest, result: CompilerGenerateResult, generation?: symbol) {
     if (disposed) {
       return
     }
@@ -244,7 +248,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     rememberTailwindStyleOwners(ctx, bundle, extensions.styleExtension)
   }
 
-  let captured = new WeakMap<WeappCompilerHmrRequest, { roots: Map<number, Root>, bundle: OutputBundle, scope: ReturnType<TailwindRootLifecycle['capture']> }>()
+  let captured = new WeakMap<WeappCompilerHmrRequest, { roots: Map<number | string, Root>, bundle: OutputBundle, scope: ReturnType<TailwindRootLifecycle['capture']>, importedOptions: unknown }>()
 
   async function prepare(request: WeappCompilerHmrRequest): Promise<WeappCompilerHmrPreparation> {
     if (disposed) {
@@ -265,7 +269,16 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
         // 仅供编译器处理的内存资产；最终文件仍由 Vite emit/write 创建。
         bundle[fileName] = { type: 'asset', fileName, source, names: [], originalFileNames: [] } as unknown as OutputAsset
       }
-      input = { roots: new Map(roots), bundle, scope: lifecycle.capture() }
+      let importedOptions: unknown
+      if ([...roots.keys()].some(index => typeof index === 'string')) {
+        try {
+          importedOptions = copyGenerationValue(options.importedOptions?.())
+        }
+        catch {
+          throw new CompilerHmrResyncError(request.changedFiles, 'Tailwind imported snapshot options cannot be frozen')
+        }
+      }
+      input = { roots: new Map(roots), bundle, scope: lifecycle.capture(), importedOptions }
       captured.set(request, input)
     }
     // 本批没有受管入口时保持休眠；后续入口属于新的输入版本。
@@ -274,10 +287,17 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     }
     const compiler = await options.compiler()
     input.scope.assertActive(request.changedFiles)
+    const hasImportedRoots = [...input.roots.keys()].some(index => typeof index === 'string')
+    const effectiveRequests = new Map<number | string, CompilerGenerateRequest>()
     const generated = await prepareTailwindRoots(input.scope.compiler(compiler), request, input.roots, {
       cwd: ctx.configService.cwd,
       sourceId: compilerSourceId,
       isOutput: file => Boolean(ctx.configService.outDir && isPathInside(ctx.configService.outDir, file)),
+      captureRequest: hasImportedRoots
+        ? async (key, effective) => {
+          effectiveRequests.set(key, await importedGenerationRequest(effective, request.sources))
+        }
+        : undefined,
       reusePreprocessedCss(file, previous, current) {
         return typeof current === 'string' && typeof previous === 'string' && file.endsWith('.vue')
           && resolveVueSfcHmrSignatures(current, file).blockSignatures?.style === resolveVueSfcHmrSignatures(previous, file).blockSignatures?.style
@@ -291,7 +311,9 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     input.scope.assertActive(request.changedFiles)
     const entries: CompilerGenerateResult[] = []
     for (const [index, entry] of generated) {
-      entries[index] = entry
+      if (typeof index === 'number') {
+        entries[index] = entry
+      }
       if (roots.get(index) === input.roots.get(index)) {
         invalidation.observeDependencies(index, entry.dependencies)
       }
@@ -299,7 +321,23 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     if (disposed) {
       throw new Error('Tailwind HMR adapter is disposed')
     }
-    const snapshot = compiler.mergeSnapshots(entries.flatMap(entry => [entry.snapshot]))
+    const snapshot = compiler.mergeSnapshots([...generated.values()].map(entry => entry.snapshot))
+    if (hasImportedRoots) {
+      const scope = input.scope
+      const owners = [...input.roots].map(([index, root]) => ({ index, root, generation: root.generation }))
+      const importedOptions = input.importedOptions
+      const validate = await createImportedTailwindValidation([...input.roots.values()], [...generated.values()], request, ctx.configService.cwd, () => {
+        scope.assertActive(request.changedFiles)
+        if (disposed || roots.size !== owners.length
+          || owners.some(owner => roots.get(owner.index) !== owner.root || registrations.get(owner.index) !== owner.generation)
+          || !equalGenerationValue(importedOptions, options.importedOptions?.())) {
+          throw new CompilerHmrResyncError(request.changedFiles, 'Tailwind imported snapshot root generation changed')
+        }
+      })
+      const preparation = createTailwindPreparation(compiler, snapshot)
+      rememberImportedTailwindPreparation(preparation, validate, request.sources, captureImportedTailwindGeneration(effectiveRequests, generated, importedOptions))
+      return preparation
+    }
     const bundle = Object.fromEntries(Object.entries(input.bundle).map(([file, output]) => [file, { ...output }])) as OutputBundle
     const canonicalStyles = new Set([...input.roots.values()].flatMap(root => [
       ...root.request.sourceOptions?.cssEntries ?? [],
@@ -325,14 +363,14 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
       throw new CompilerHmrResyncError(request.changedFiles, 'Tailwind HMR 没有可提交的样式归属，需要完整重同步。')
     }
     const preparation = createTailwindPreparation(compiler, snapshot, assets)
-    const stableRoots = [...input.roots].every(([index, root], position) => index === position
+    const stableRoots = [...input.roots].every(([index, root], position) => typeof index === 'number' && index === position
       && root.rawSources.size > 0
       && [...root.rawSources].every(([file, source]) => typeof source === 'string' && request.sources.get(file) === source))
     if (generationOptions !== undefined && stableRoots) {
       const scope = input.scope
       const owners = [...input.roots].map(([index, root]) => ({ index, generation: root.generation }))
       const currentOptions = options.generationOptions
-      rememberTailwindGeneration(preparation, request, generationOptions, [...input.roots].map(([index, root]) => ({ request: root.request, sources: root.sources, result: entries[index]! })), () => {
+      rememberTailwindGeneration(preparation, request, generationOptions, [...input.roots].flatMap(([index, root]) => typeof index === 'number' ? [{ request: root.request, sources: root.sources, result: entries[index]! }] : []), () => {
         scope.assertActive(request.changedFiles)
         if (roots.size !== owners.length || owners.some(owner => roots.get(owner.index)?.generation !== owner.generation || registrations.get(owner.index) !== owner.generation)
           || !equalGenerationValue(generationOptions, currentOptions?.())) {
@@ -343,7 +381,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     return preparation
   }
 
-  function removeRoot(index: number) {
+  function removeRoot(index: number | string) {
     registrations.delete(index)
     roots.delete(index)
     invalidation.removeRoot(index)
@@ -371,17 +409,24 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     prepare,
     rememberBundle,
     rememberRoot,
+    hasRoot: (index: number | string) => roots.has(index),
     removeRoot,
     dispose,
     watchFiles,
     deferContentInvalidation: (file: string) => invalidation.defer(file),
-    beginRootGeneration(index: number) {
+    beginRootGeneration(index: number | string) {
+      if (typeof index === 'string') {
+        // 替换先撤销旧 preparation，保留下一次磁盘生成必须 flush 的 core 失效。
+        roots.delete(index)
+        lifecycle.remove(index)
+        rebuildOwnedWatchFiles()
+      }
       const token = Symbol('tailwind-root-generation')
       registrations.set(index, token)
       return token
     },
     generateDisk: (compiler: Compiler, request: CompilerGenerateRequest) => invalidation.generateDisk(compiler, request),
-    async generateDiskRoot(compiler: Compiler, request: CompilerGenerateRequest, index: number, token: symbol) {
+    async generateDiskRoot(compiler: Compiler, request: CompilerGenerateRequest, index: number | string, token: symbol) {
       const result = await invalidation.generateDisk(compiler, request)
       if (registrations.get(index) !== token || disposed) {
         throw new CompilerHmrResyncError(request.sourceOptions?.cssEntries ?? [], 'Tailwind 编译入口在生成期间发生变化，需要完整重同步。')

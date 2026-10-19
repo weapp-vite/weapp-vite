@@ -4,6 +4,7 @@ import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrSnapshotBatch } from './snapshotScheduler'
 import { expect, it, vi } from 'vitest'
 import { compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
+import { rememberImportedTailwindPreparation } from '../../plugins/tailwindcss/importedPreparation'
 import { createRuntimeState } from '../runtimeState'
 import { withStatefulHmrSnapshotPreparation } from './snapshotPreparation'
 
@@ -172,4 +173,39 @@ it('lets the host release partial preparations once when another provider reject
   expect(dispose).toHaveBeenCalledOnce()
   expect(consume).not.toHaveBeenCalled()
   expect(app.rebuild).not.toHaveBeenCalled()
+})
+
+it.each(['before', 'after'] as const)('releases refresh preparations when imported input drifts %s the snapshot', async (timing) => {
+  const app = fixture()
+  const failure = new Error('imported input drift')
+  let drifted = timing === 'before'
+  const dispose = vi.fn()
+  const preparation = { dispose }
+  rememberImportedTailwindPreparation(preparation, () => {
+    if (drifted) {
+      throw failure
+    }
+  })
+  app.host.register('imported-tailwind', async () => preparation)
+  app.rebuild.mockImplementationOnce(async () => {
+    drifted = true
+    return app.snapshot
+  })
+  await expect(withStatefulHmrSnapshotPreparation(app.ctx, app.batch, app.rebuild, ({ rebuild }) => rebuild())).rejects.toBe(failure)
+  expect(app.rebuild).toHaveBeenCalledTimes(timing === 'before' ? 0 : 1)
+  expect(dispose).toHaveBeenCalledOnce()
+})
+
+it('preserves a native snapshot failure before later imported validation and still disposes its preparation', async () => {
+  const app = fixture()
+  const failure = new Error('native CSS pipeline failed')
+  const dispose = vi.fn()
+  const validate = vi.fn()
+  const preparation = { dispose }
+  rememberImportedTailwindPreparation(preparation, validate)
+  app.host.register('imported-tailwind', async () => preparation)
+  app.rebuild.mockRejectedValueOnce(failure)
+  await expect(withStatefulHmrSnapshotPreparation(app.ctx, app.batch, app.rebuild, ({ rebuild }) => rebuild())).rejects.toBe(failure)
+  expect(validate).toHaveBeenCalledOnce()
+  expect(dispose).toHaveBeenCalledOnce()
 })

@@ -26,11 +26,12 @@ import { isPathInside } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { labelSourceMapInput } from '../utils/sourcemap'
 import { markWeappCompilerPlugin } from './compilerPlugin'
-import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from './compilerPlugin/hmr'
+import { compilerSourceId, getCompilerHmrHost } from './compilerPlugin/hmr'
 import { processCssWithCache } from './css/shared/preprocessor'
 import { createStyleSourceMeta } from './css/styleOwnership'
 import { takeTailwindSnapshotGeneration } from './tailwindcss/generation'
 import { createTailwindHmrAdapter } from './tailwindcss/hmr'
+import { takeImportedTailwindGeneration } from './tailwindcss/importedPreparation'
 import { TailwindImportedRoots } from './tailwindcss/importedRoots'
 import { findManagedStyleImports } from './tailwindcss/imports'
 import { resolveTailwindInvalidationIds } from './tailwindcss/invalidation'
@@ -43,6 +44,7 @@ import {
   registerManagedTailwindcssEntries,
   stripManagedTailwindcssOutputMarkers,
 } from './tailwindcssMarker'
+import { getCompilerSourceSnapshot } from './utils/sourceSnapshot'
 import { parseWeappVueStyleRequest } from './vue/transform/styleRequest'
 
 const CORE_NODE_RANGE = '^22.18.0 || ^24.11.0 || >=26.0.0'
@@ -228,7 +230,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   const compilerRootIds = new Map<number, string>()
   const compilerSourceOptions = new Map<number, TailwindV4SourceOptions>()
   const compilerSnapshots = new Map<number, CompilerSnapshot>()
-  let generatedEntriesPromise: Promise<CompilerGenerateResult[]> | undefined
+  let generatedEntriesPromise: Promise<TailwindGenerationEntry[]> | undefined
   let coreModulePromise: Promise<typeof import('weapp-tailwindcss/core')> | undefined
   let compilerPromise: Promise<Compiler> | undefined
   let resolvedConfig: ResolvedConfig | undefined
@@ -334,12 +336,23 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     }
   }
 
+  async function generateRootCss(compiler: Compiler, index: number | string, request: CompilerGenerateRequest, generation?: symbol): Promise<CompilerGenerateResult | TailwindGenerationEntry> {
+    const frozen = await takeImportedTailwindGeneration(getCompilerSourceSnapshot(ctx.configService), index, request, resolved.options)
+    if (frozen) {
+      if (statefulCompiler) {
+        throw new Error('Tailwind imported snapshot cannot replace an active root generation')
+      }
+      return frozen
+    }
+    return generation
+      ? hmr.generateDiskRoot(compiler, request, index, generation)
+      : hmr.generateDisk(compiler, request)
+  }
+
   async function generateEntryCss(compiler: Compiler, index: number, request: CompilerGenerateRequest) {
     const generation = statefulCompiler ? hmr.beginRootGeneration(index) : undefined
-    const generated = generation
-      ? await hmr.generateDiskRoot(compiler, request, index, generation)
-      : await hmr.generateDisk(compiler, request)
-    if (statefulCompiler) {
+    const generated = await generateRootCss(compiler, index, request, generation)
+    if (statefulCompiler && 'root' in generated) {
       await hmr.rememberRoot(index, request, generated, generation)
     }
     compilerSnapshots.set(index, generated.snapshot)
@@ -385,10 +398,18 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
         dirtySlots.add(index)
       }
     }
+    if (event === 'delete') {
+      for (const key of importedRoots.keysForFile(compilerSourceId(normalizedId))) {
+        hmr.removeRoot(key)
+        if (compiler && await importedRoots.remove(compiler, key)) {
+          importedSources.delete(key)
+        }
+      }
+    }
     if (event === 'delete' && indexes.length > 0) {
       return
     }
-    if (compiler && !(statefulCompiler && !importedRoots.size && hmr.deferContentInvalidation(normalizedId))) {
+    if (compiler && !(statefulCompiler && importedRoots.isReady(key => hmr.hasRoot(key)) && hmr.deferContentInvalidation(normalizedId))) {
       compiler.invalidate(resolveTailwindInvalidationIds(normalizedId, [
         ...compilerSnapshots.values(),
         ...Array.from(importedSources.values(), source => source.snapshot),
@@ -576,7 +597,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
 
   function importedSourceKey(id: string) {
     const style = parseWeappVueStyleRequest(id)
-    return style ? `${style.filename}?style=${style.index}` : id.split('?')[0]!
+    return style ? `${compilerSourceId(style.filename)}?style=${style.index}` : compilerSourceId(id.split('?')[0]!)
   }
 
   async function transformImportedSource(this: any, code: string, id: string) {
@@ -599,16 +620,21 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     }
     const key = importedSourceKey(id)
     if (!imports.managed) {
-      if (importedRoots.has(key) && await importedRoots.remove(await getCompiler(), key)) {
-        importedSources.delete(key)
+      if (importedRoots.has(key)) {
+        hmr.removeRoot(key)
+        if (await importedRoots.remove(await getCompiler(), key)) {
+          importedSources.delete(key)
+        }
       }
       return null
     }
     const compiler = await getCompiler()
     const rootId = `${MANAGED_PLUGIN_NAME}:import:${key}`
     const configuredSource = createTailwindV4SourceOptions(resolved, filename)
-    const owner = importedRoots.begin(key, rootId)
-    const generated = await hmr.generateDisk(compiler, {
+    const owner = importedRoots.begin(key, rootId, [filename, key.split('?')[0]!].map(compilerSourceId))
+    importedSources.delete(key)
+    const generation = statefulCompiler ? hmr.beginRootGeneration(key) : undefined
+    const request: CompilerGenerateRequest = {
       id: rootId,
       target: resolved.generatorTarget,
       scanSources: true,
@@ -620,16 +646,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       },
       bareArbitraryValues: resolved.options.arbitraryValues?.bareArbitraryValues,
       styleOptions: typeof resolved.options.generator === 'object' ? resolved.options.generator.styleOptions : undefined,
-    })
+    }
+    const generated = await generateRootCss(compiler, key, request, generation)
     importedRoots.assertCurrent(key, owner)
-    importedSources.set(key, {
-      rootId,
-      snapshot: generated.snapshot,
-      entries: [...imports.dependencies].flatMap((file) => {
-        const index = parseManagedEntryIndex(file, entryIndex)
-        return index === undefined ? [] : [index]
-      }),
-    })
     const dependencies = new Set([...imports.dependencies, ...generated.dependencies])
     for (const dependency of dependencies) {
       this.addWatchFile(dependency)
@@ -639,6 +658,18 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     })
     const css = await stripResidualTailwindSourceDirectives(transformed.css)
     importedRoots.assertCurrent(key, owner)
+    if (statefulCompiler && 'root' in generated) {
+      await hmr.rememberRoot(key, request, generated, generation)
+      importedRoots.assertCurrent(key, owner)
+    }
+    importedSources.set(key, {
+      rootId,
+      snapshot: generated.snapshot,
+      entries: [...imports.dependencies].flatMap((file) => {
+        const index = parseManagedEntryIndex(file, entryIndex)
+        return index === undefined ? [] : [index]
+      }),
+    })
     // 导入链由同一个编译器保留源文件基准目录，生成结果再进入 Vite 的 CSS 压缩阶段。
     return {
       code: css,
@@ -651,6 +682,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     compiler: getCompiler,
     render: (bundle, entries, snapshot) => transformBundle.call({ addWatchFile() {} }, bundle, { entries, snapshot }),
     generationOptions: () => generationEligible() ? resolved.options : undefined,
+    importedOptions: () => resolved.options,
   })
 
   const managerPlugin: Plugin = {
@@ -690,9 +722,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       statefulCompiler = config.command === 'serve' && ctx.configService.platform === 'weapp' && Boolean(config.experimental?.bundledDev)
       if (statefulCompiler) {
         getCompilerHmrHost(ctx).register(MANAGED_PLUGIN_NAME, (request) => {
-          if (importedRoots.size) {
-            throw new CompilerHmrResyncError(request.changedFiles, 'Tailwind 导入式样式尚未提供可固定的产物归属，需要完整重同步。')
-          }
+          importedRoots.assertReady(key => hmr.hasRoot(key), request.changedFiles)
           return hmr.prepare(request)
         })
       }
