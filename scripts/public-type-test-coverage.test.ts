@@ -15,6 +15,8 @@ vi.mock('node:fs/promises', async (importOriginal) => {
 const root = path.resolve(import.meta.dirname, '..')
 const standardContracts = 'tsd --files "test-d/**/*.test-d.ts"'
 const jsxContracts = 'tsd --files "test-d/**/*.test-d.{ts,tsx}"'
+const pureContracts = 'pnpm run test:types:pure'
+const wevuContracts = `${jsxContracts} && tsd --files "test-d/router-named-map.test-types.ts" && pnpm run test:types:host && ${pureContracts}`
 const weappViteFixtures = [
   'auto-import-presets',
   'auto-routes-define-app-json',
@@ -34,7 +36,7 @@ const weappViteContracts = weappViteFixtures.map((fixture, index) =>
   `cd ${index === 0 ? 'test-d/' : '../'}${fixture} && tsd --files "**/*.test-d.ts"`,
 ).join(' && ')
 const packages: readonly (readonly [directory: string, build: string, check: string, prebuild?: boolean])[] = [
-  ['@weapp-core/api', '', 'tsd', true],
+  ['@weapp-core/api', '', `tsd && ${pureContracts}`, true],
   ['@weapp-core/logger', '', 'tsd --typings dist/index.d.ts --files test/index.test-d.ts'],
   ['@weapp-core/shared', '', standardContracts],
   ['@weapp-core/types', 'build', 'tsd --typings dist/index.d.mts --files "test-d/**/*.test-d.ts"'],
@@ -52,14 +54,14 @@ const packages: readonly (readonly [directory: string, build: string, check: str
   ['packages/weapp-ide-cli', 'build', standardContracts],
   ['packages/weapp-vite', '', weappViteContracts],
   ['packages-runtime/glass-easel-web-adapter', 'build', 'tsd --typings dist/index.d.mts --files test-d/public-api.test-d.ts'],
-  ['packages-runtime/i18n', 'build', standardContracts],
+  ['packages-runtime/i18n', 'build', `${standardContracts} && ${pureContracts}`],
   ['packages-runtime/json-render', 'build', jsxContracts],
   ['packages-runtime/json-render-components', 'build', standardContracts],
   ['packages-runtime/react', '', standardContracts],
   ['packages-runtime/weapi', '', 'tsd', true],
   ['packages-runtime/web', 'build', standardContracts],
-  ['packages-runtime/web-apis', '', standardContracts, true],
-  ['packages-runtime/wevu', 'build:types', `${jsxContracts} && tsd --files "test-d/router-named-map.test-types.ts"`],
+  ['packages-runtime/web-apis', '', `${standardContracts} && ${pureContracts}`, true],
+  ['packages-runtime/wevu', 'build:types', wevuContracts],
   ['packages-runtime/wevu-compiler', 'build', standardContracts],
   ['packages-runtime/wevu-query', 'build', jsxContracts],
   ['packages-runtime/wevu-test-utils', 'build', standardContracts],
@@ -109,7 +111,7 @@ async function matchingFiles(directory: string, patterns: string[]): Promise<str
   return files
 }
 
-async function collectContracts(packageRoot: string, script: string): Promise<string[]> {
+async function collectContracts(packageRoot: string, script: string, activeScripts = new Set<string>()): Promise<string[]> {
   let directory = packageRoot
   const selected = new Set<string>()
   for (const command of script.split(/\s*&&\s*/)) {
@@ -119,13 +121,33 @@ async function collectContracts(packageRoot: string, script: string): Promise<st
       continue
     }
     const tokens = command.match(/"[^"]*"|\S+/g)?.map(token => token.replace(/^"|"$/g, '')) ?? []
+    if (tokens[0] === 'pnpm') {
+      expect(tokens.slice(0, 2)).toEqual(['pnpm', 'run'])
+      expect(tokens).toHaveLength(3)
+      const name = tokens[2]!
+      expect(name).toMatch(/^test:types:(?:host|pure)$/)
+      const manifest = await readManifest(directory)
+      const nestedScript = manifest.scripts[name]
+      expect(nestedScript).toBeTypeOf('string')
+      expect(manifest.scripts[`pre${name}`]).toBeUndefined()
+      expect(manifest.scripts[`post${name}`]).toBeUndefined()
+      const key = path.join(directory, name)
+      expect(activeScripts.has(key), 'Type-test scripts must not invoke themselves recursively').toBe(false)
+      // pnpm 子脚本有独立 shell；其中的 cd 不能改变后续主脚本的目录。
+      for (const file of await collectContracts(directory, nestedScript!, new Set([...activeScripts, key]))) {
+        selected.add(path.relative(packageRoot, path.join(directory, file)).replaceAll('\\', '/'))
+      }
+      continue
+    }
     expect(tokens[0], 'The internal type check must only select and run tsd contracts').toBe('tsd')
-    const manifest = await readManifest(directory)
+    const contractDirectory = tokens[1] && !tokens[1].startsWith('-') ? path.resolve(directory, tokens[1]) : directory
+    expect(path.relative(packageRoot, contractDirectory).startsWith('..')).toBe(false)
+    const manifest = await readManifest(contractDirectory)
     const filesIndex = tokens.indexOf('--files')
     let matches: string[]
     if (filesIndex !== -1) {
       const pattern = tokens[filesIndex + 1]!
-      matches = (await matchingFiles(directory, [pattern])).filter(file => path.matchesGlob(file, pattern))
+      matches = (await matchingFiles(contractDirectory, [pattern])).filter(file => path.matchesGlob(file, pattern))
       if (pattern.includes('**')) {
         const futureFile = pattern.startsWith('test-d/') ? 'test-d/nested/future.test-d.ts' : 'nested/future.test-d.ts'
         expect(path.matchesGlob(futureFile, pattern)).toBe(true)
@@ -137,35 +159,55 @@ async function collectContracts(packageRoot: string, script: string): Promise<st
       // 与 tsd 的默认选择规则一致；.d.mts 不会被替换，必须使用显式 --files。
       const candidates = [typings.replace(/\.d\.ts$/, '.test-d.ts'), typings.replace(/\.d\.ts$/, '.test-d.tsx')]
         .map(file => file.replace(/^\.\//, ''))
-      matches = (await matchingFiles(directory, candidates)).filter(file => candidates.includes(file))
+      matches = (await matchingFiles(contractDirectory, candidates)).filter(file => candidates.includes(file))
       if (matches.length === 0) {
         const testDirectory = manifest.tsd?.directory ?? 'test-d'
         const patterns = [`${testDirectory}/**/*.ts`, `${testDirectory}/**/*.tsx`]
-        matches = (await matchingFiles(directory, patterns))
+        matches = (await matchingFiles(contractDirectory, patterns))
           .filter(file => patterns.some(pattern => path.matchesGlob(file, pattern)))
       }
     }
     expect(matches.length, `${command} must select real contracts`).toBeGreaterThan(0)
     expect(matches.filter(file => /\.d\.[cm]?ts$/.test(file)), 'Declarations must never be treated as test files').toEqual([])
     for (const file of matches) {
-      selected.add(path.relative(packageRoot, path.join(directory, file)).replaceAll('\\', '/'))
+      selected.add(path.relative(packageRoot, path.join(contractDirectory, file)).replaceAll('\\', '/'))
     }
   }
   return [...selected].sort()
 }
 
 describe('public type tests in CI', () => {
-  it.each(['tsd --files "test-d/**/*.test-d.{ts,tsx}"', 'tsd'])('selects all contracts without recursively reading unrelated package trees: %s', async (script) => {
+  it.each([
+    { script: jsxContracts, isolated: false },
+    { script: 'tsd', isolated: false },
+    { script: `${jsxContracts} && pnpm run test:types:host && ${pureContracts} && ${jsxContracts}`, isolated: true },
+  ])('selects all contracts without recursively reading unrelated package trees: $script', async ({ script, isolated }) => {
     const packageRoot = await mkdtemp(path.join(tmpdir(), 'type-contract-scope-'))
     const enumerate = vi.spyOn(filesystem, 'readdir')
     try {
       await mkdir(path.join(packageRoot, 'test-d/nested'), { recursive: true })
       await mkdir(path.join(packageRoot, 'node_modules/dependency'), { recursive: true })
-      await writeFile(path.join(packageRoot, 'package.json'), '{"types":"dist/index.d.ts","scripts":{}}')
+      await writeFile(path.join(packageRoot, 'package.json'), JSON.stringify({
+        types: 'dist/index.d.ts',
+        scripts: {
+          'test:types:host': 'tsd test-d-host --files root.test-d.ts && tsd test-d-host --files internal-runtime.test-d.ts',
+          'test:types:pure': 'cd test-d-pure && tsd --files "**/*.test-d.ts"',
+        },
+      }))
       await writeFile(path.join(packageRoot, 'test-d/nested/public.test-d.ts'), '')
       await writeFile(path.join(packageRoot, 'test-d/nested/jsx.test-d.tsx'), '')
       await writeFile(path.join(packageRoot, 'node_modules/dependency/internal.test-d.ts'), '')
+      if (isolated) {
+        for (const directory of ['test-d-host', 'test-d-pure']) {
+          await mkdir(path.join(packageRoot, directory, 'nested'), { recursive: true })
+          await writeFile(path.join(packageRoot, directory, 'package.json'), '{"types":"index.d.ts","scripts":{}}')
+        }
+        for (const file of ['test-d-host/root.test-d.ts', 'test-d-host/internal-runtime.test-d.ts', 'test-d-pure/nested/pure.test-d.ts']) {
+          await writeFile(path.join(packageRoot, file), '')
+        }
+      }
       expect(await collectContracts(packageRoot, script)).toEqual([
+        ...(isolated ? ['test-d-host/internal-runtime.test-d.ts', 'test-d-host/root.test-d.ts', 'test-d-pure/nested/pure.test-d.ts'] : []),
         'test-d/nested/jsx.test-d.tsx',
         'test-d/nested/public.test-d.ts',
       ])
@@ -191,11 +233,16 @@ describe('public type tests in CI', () => {
     expect(manifest.scripts['test:types:check']).toBe(check)
     expect(manifest.scripts['pretest:types:check']).toBeUndefined()
     expect(manifest.scripts['posttest:types:check']).toBeUndefined()
-    const contractRoot = directory === '@weapp-core/logger' ? 'test' : 'test-d'
-    const contracts = (await filesUnder(path.join(packageRoot, contractRoot)))
-      .filter(file => /\.(?:test-d|test-types)\.tsx?$/.test(file))
-      .map(file => `${contractRoot}/${file}`)
-      .sort()
+    const contractRoots = directory === '@weapp-core/logger'
+      ? ['test']
+      : (await readdir(packageRoot, { withFileTypes: true }))
+          .filter(entry => entry.isDirectory() && /^test-d(?:-|$)/.test(entry.name))
+          .map(entry => entry.name)
+    const contracts = (await Promise.all(contractRoots.map(async contractRoot =>
+      (await filesUnder(path.join(packageRoot, contractRoot)))
+        .filter(file => /\.(?:test-d|test-types)\.tsx?$/.test(file))
+        .map(file => `${contractRoot}/${file}`),
+    ))).flat().sort()
     expect(contracts.length).toBeGreaterThan(0)
     expect(await collectContracts(packageRoot, check)).toEqual(contracts)
   })
@@ -204,7 +251,7 @@ describe('public type tests in CI', () => {
     const manifest = await readManifest(path.join(root, 'packages-runtime/wevu'))
     expect(manifest.scripts.build).toBe('tsdown')
     expect(manifest.scripts['build:types']).toBe('tsdown --dts')
-    expect(manifest.scripts['test:types:check']).toBe(`${jsxContracts} && tsd --files "test-d/router-named-map.test-types.ts"`)
+    expect(manifest.scripts['test:types:check']).toBe(wevuContracts)
   })
 
   it('preserves the lib-mode fixture preparation and selects all its original contracts', async () => {
