@@ -5,6 +5,7 @@ import chokidar from 'chokidar'
 import { parseLogicalEntryId, parseSidecarModuleId } from './moduleGraph/protocol'
 import { CompilerSession } from './runtime/compilerSession'
 import { fingerprintPaths, projectInputFiles, resolveArtifactOutDir } from './testArtifact/inputs'
+import { isPathInside, normalizePath } from './utils/path'
 import { captureWatchDependencies } from './utils/watchDependencies'
 
 export interface BuildTestArtifactOptions {
@@ -138,17 +139,18 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
   let dirty = false
   let forced = false
   let closing: Promise<void> | undefined
-  const watchedInputs = () => artifactInputs.get(artifact)!.paths.filter(file => file !== artifact.miniprogramRootPath
-    && (file === artifact.sourceRootPath || !file.startsWith(`${artifact.sourceRootPath}${path.sep}`)))
+  const watchedInputs = () => [...new Map(artifactInputs.get(artifact)!.paths.map(file => [normalizePath(file), file])).values()]
+    .filter(file => !isPathInside(artifact.miniprogramRootPath, file)
+      && (normalizePath(file) === normalizePath(artifact.sourceRootPath) || !isPathInside(artifact.sourceRootPath, file)))
   let watched = watchedInputs()
   const watcher = chokidar.watch(watched, {
     ignoreInitial: true,
     ignored(file) {
-      if (watched.some(input => input === file || input.startsWith(`${file}${path.sep}`))) {
+      if (watched.some(input => isPathInside(file, input))) {
         return false
       }
       return /[/\\](?:node_modules|\.git|\.weapp-vite)(?:[/\\]|$)/.test(file)
-        || file === artifact.miniprogramRootPath || file.startsWith(`${artifact.miniprogramRootPath}${path.sep}`)
+        || isPathInside(artifact.miniprogramRootPath, file)
     },
   })
   const requestRebuild = (force: boolean): Promise<WeappViteTestArtifact> => {

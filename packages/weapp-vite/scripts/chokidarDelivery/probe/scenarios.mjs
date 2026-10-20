@@ -4,9 +4,10 @@ import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { bounded } from './native.mjs'
 import { assertOutput, closeOwner, openPublicOwner } from './public.mjs'
+import { recoveryScenarioId } from './recoveryFailure.mjs'
 
 export const scenarios = [
-  { id: 'public-missing-watch-recovery', kind: 'recovery', platform: 'win32' },
+  { id: recoveryScenarioId, kind: 'recovery', platform: 'win32' },
   { id: 'public-still-exists-watch-error', kind: 'error', missing: false },
   { id: 'public-non-windows-missing-watch-error', kind: 'error', missing: true, exclude: 'win32' },
   { id: 'shared-test-first', kind: 'shared', first: 'artifact' },
@@ -88,7 +89,13 @@ async function recovery(ctx) {
   await assertOutput(owner, 'reborn/marker.txt', 'changed-after-recovery')
   await rm(path.join(reborn, 'marker.txt'))
   await assertOutput(owner, 'reborn/marker.txt', null)
-  assert.deepEqual(errors, [])
+  try {
+    assert.deepEqual(errors, [])
+  }
+  catch (error) {
+    ctx.recoveryFailure.capture(error, errors, ctx.injectedError)
+    throw error
+  }
   Object.assign(evidence, { injectedOnce: true, factoryCompleted: true, createEmitted: true, changeEmitted: true, deleteEmitted: true })
 }
 

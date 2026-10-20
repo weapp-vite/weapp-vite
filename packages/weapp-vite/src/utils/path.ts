@@ -62,6 +62,6 @@ export function isPathInside(parent: string | undefined, target: string) {
   if (!parent) {
     return false
   }
-  const relative = path.relative(parent, target)
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+  const relative = path.relative(normalizePath(parent), normalizePath(target))
+  return relative === '' || (relative !== '..' && !relative.startsWith('../') && !path.isAbsolute(relative))
 }
