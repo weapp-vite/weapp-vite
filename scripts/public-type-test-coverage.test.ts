@@ -17,6 +17,7 @@ const root = path.resolve(import.meta.dirname, '..')
 const standardContracts = 'tsd --files "test-d/**/*.test-d.ts"'
 const jsxContracts = 'tsd --files "test-d/**/*.test-d.{ts,tsx}"'
 const pureContracts = 'cd test-d-pure && tsd --files "**/*.test-d.ts"'
+const hostContracts = 'tsd test-d-host --files root.test-d.ts && tsd test-d-host --files internal-runtime.test-d.ts'
 const wevuContracts = `${jsxContracts} && tsd --files "test-d/router-named-map.test-types.ts"`
 const weappViteFixtures = [
   'auto-import-presets',
@@ -36,7 +37,7 @@ const weappViteFixtures = [
 const weappViteContracts = weappViteFixtures.map((fixture, index) =>
   `cd ${index === 0 ? 'test-d/' : '../'}${fixture} && tsd --files "**/*.test-d.ts"`,
 ).join(' && ')
-const packages: readonly (readonly [directory: string, build: string, check: string, prebuild?: boolean, pure?: boolean])[] = [
+const packages: readonly (readonly [directory: string, build: string, check: string, prebuild?: boolean, pure?: boolean, host?: boolean])[] = [
   ['@weapp-core/api', '', 'tsd', true, true],
   ['@weapp-core/logger', '', 'tsd --typings dist/index.d.ts --files test/index.test-d.ts'],
   ['@weapp-core/shared', '', standardContracts],
@@ -62,7 +63,7 @@ const packages: readonly (readonly [directory: string, build: string, check: str
   ['packages-runtime/weapi', '', 'tsd', true],
   ['packages-runtime/web', 'build', standardContracts],
   ['packages-runtime/web-apis', '', standardContracts, true, true],
-  ['packages-runtime/wevu', 'build:types', wevuContracts, false, true],
+  ['packages-runtime/wevu', 'build:types', wevuContracts, false, true, true],
   ['packages-runtime/wevu-compiler', 'build', standardContracts],
   ['packages-runtime/wevu-query', 'build', jsxContracts],
   ['packages-runtime/wevu-test-utils', 'build', standardContracts],
@@ -122,19 +123,20 @@ describe('public type tests in CI', () => {
     expect(actual.sort()).toEqual([...packages.map(([directory]) => directory), 'e2e-apps/lib-mode'].sort())
   })
 
-  it.each(packages.map(([directory, build, check, prebuild, pure]) => ({ directory, build, check, prebuild, pure })))('$directory preserves standalone freshness and checks every real contract', async ({ directory, build, check, prebuild, pure }) => {
+  it.each(packages.map(([directory, build, check, prebuild, pure, host]) => ({ directory, build, check, prebuild, pure, host })))('$directory preserves standalone freshness and checks every real contract', async ({ directory, build, check, prebuild, pure, host }) => {
     const packageRoot = path.join(root, directory)
     const manifest = await readManifest(packageRoot)
     expect(manifest.scripts['test:types']).toBe(`${build ? `pnpm ${build} && ` : ''}pnpm run test:types:check`)
     expect(manifest.scripts['pretest:types']).toBe(prebuild ? 'pnpm build' : undefined)
-    const expectedCheck = `${check}${pure ? ' && pnpm run test:types:pure' : ''}`
+    const expectedCheck = `${check}${host ? ' && pnpm run test:types:host' : ''}${pure ? ' && pnpm run test:types:pure' : ''}`
     expect(manifest.scripts['test:types:check']).toBe(expectedCheck)
     expect(manifest.scripts['test:types:pure']).toBe(pure ? pureContracts : undefined)
+    expect(manifest.scripts['test:types:host']).toBe(host ? hostContracts : undefined)
     expect(manifest.scripts['pretest:types:check']).toBeUndefined()
     expect(manifest.scripts['posttest:types:check']).toBeUndefined()
     const contractRoot = directory === '@weapp-core/logger' ? 'test' : 'test-d'
     const contracts: string[] = []
-    for (const directory of [contractRoot, ...(pure ? ['test-d-pure'] : [])]) {
+    for (const directory of [contractRoot, ...(pure ? ['test-d-pure'] : []), ...(host ? ['test-d-host'] : [])]) {
       const files = (await filesUnder(path.join(packageRoot, directory)))
         .filter(file => /\.(?:test-d|test-types)\.tsx?$/.test(file))
         .map(file => `${directory}/${file}`)
@@ -148,7 +150,47 @@ describe('public type tests in CI', () => {
     const manifest = await readManifest(path.join(root, 'packages-runtime/wevu'))
     expect(manifest.scripts.build).toBe('tsdown')
     expect(manifest.scripts['build:types']).toBe('tsdown --dts')
-    expect(manifest.scripts['test:types:check']).toBe(`${wevuContracts} && pnpm run test:types:pure`)
+    expect(manifest.scripts['test:types:check']).toBe(`${wevuContracts} && pnpm run test:types:host && pnpm run test:types:pure`)
+  })
+
+  it('isolates wevu host entry programs from automatic globals and pure contracts', async () => {
+    const packageRoot = path.join(root, 'packages-runtime/wevu')
+    const hostRoot = path.join(packageRoot, 'test-d-host')
+    const manifest = await readManifest(hostRoot)
+    expect(manifest.types).toBe('index.d.ts')
+    expect(manifest.tsd?.compilerOptions).toEqual({
+      target: 'ES2022',
+      module: 'NodeNext',
+      moduleResolution: 'NodeNext',
+      lib: ['ES2022', 'DOM'],
+      types: [],
+      strict: true,
+      skipLibCheck: false,
+      paths: {
+        'wevu': ['../dist/index.d.mts'],
+        'wevu/internal-runtime': ['../dist/internal-runtime.d.mts'],
+      },
+    })
+    expect(await collectContracts(packageRoot, 'pnpm run test:types:host')).toEqual([
+      'test-d-host/internal-runtime.test-d.ts',
+      'test-d-host/root.test-d.ts',
+    ])
+    const pureContracts = (await filesUnder(path.join(packageRoot, 'test-d-pure')))
+      .filter(file => /\.(?:test-d|test-types)\.tsx?$/.test(file))
+      .map(file => `test-d-pure/${file}`)
+      .sort()
+    expect(await collectContracts(packageRoot, 'pnpm run test:types:pure')).toEqual(pureContracts)
+    const pureManifest = await readManifest(path.join(packageRoot, 'test-d-pure'))
+    expect(pureManifest.tsd?.compilerOptions).toMatchObject({
+      lib: ['ES2022'],
+      types: [],
+      strict: true,
+      skipLibCheck: false,
+      paths: {
+        'wevu/config': ['../dist/config.d.mts'],
+        'wevu/types': ['../dist/types.d.mts'],
+      },
+    })
   })
 
   it('preserves the lib-mode fixture preparation and selects all its original contracts', async () => {

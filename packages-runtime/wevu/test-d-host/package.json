@@ -1,0 +1,20 @@
+{
+  "type": "module",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "lib": ["ES2022", "DOM"],
+      "types": [],
+      "strict": true,
+      "skipLibCheck": false,
+      "paths": {
+        "wevu": ["../dist/index.d.mts"],
+        "wevu/internal-runtime": ["../dist/internal-runtime.d.mts"]
+      }
+    }
+  }
+}
