@@ -5,8 +5,12 @@ import { chromium } from 'playwright'
 import { build, preview } from 'vite'
 import { afterAll, beforeAll, expect, it, vi } from 'vitest'
 
+type ListeningPreviewServer = PreviewServer & {
+  resolvedUrls: NonNullable<PreviewServer['resolvedUrls']>
+}
+
 const configFile = path.resolve(import.meta.dirname, '../../packages-private/sfc-playground/vite.config.ts')
-let server: PreviewServer
+let server: ListeningPreviewServer
 let browser: Browser
 
 beforeAll(async () => {
@@ -18,7 +22,8 @@ beforeAll(async () => {
   finally {
     vi.unstubAllEnvs()
   }
-  server = await preview({ configFile, preview: { host: '127.0.0.1', port: 0, open: false } })
+  // preview 在监听及 URL 解析完成后才返回；本套件只在关闭前读取地址。
+  server = await preview({ configFile, preview: { host: '127.0.0.1', port: 0, open: false } }) as ListeningPreviewServer
   browser = await chromium.launch()
 })
 

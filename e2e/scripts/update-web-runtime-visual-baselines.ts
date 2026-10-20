@@ -164,7 +164,8 @@ async function captureScreenshot(miniProgram: MiniProgram, baseline: string) {
   let lastError: unknown
   for (let attempt = 1; attempt <= SCREENSHOT_ATTEMPTS; attempt += 1) {
     try {
-      const screenshot = await miniProgram.screenshot({ timeout: SCREENSHOT_TIMEOUT })
+      // 未传 path 时，成功截图返回协议中的 base64 字符串。
+      const screenshot = await miniProgram.screenshot({ timeout: SCREENSHOT_TIMEOUT }) as string
       return typeof screenshot === 'string'
         ? Buffer.from(screenshot, 'base64')
         : Buffer.from(screenshot)
@@ -221,10 +222,11 @@ async function main() {
 
   let miniProgram: MiniProgram | undefined
   try {
+    // launchAutomator 成功返回已连接会话，失败路径抛错。
     miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
       timeout: 90_000,
-    })
+    }) as MiniProgram
     const device = resolveDeviceMetrics(await miniProgram.evaluate(() => {
       return wx.getSystemInfoSync()
     }))

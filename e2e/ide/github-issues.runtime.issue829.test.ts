@@ -1,3 +1,4 @@
+import type { MiniProgramWithRuntimeLogs } from '../utils/automator'
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -55,7 +56,7 @@ describe('e2e app: github-issues / issue #829', { concurrent: false }, () => {
         ],
       }
     }))
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram: MiniProgramWithRuntimeLogs = await getSharedMiniProgram(ctx)
     try {
       resetAutomatorRuntimeLogs(miniProgram)
       const issuePage = await relaunchPage(miniProgram, ISSUE_ROUTE, undefined, 45_000, {

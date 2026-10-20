@@ -1,10 +1,11 @@
 import type { ResolvedWechatDevtoolsTarget } from '../../../packages/weapp-ide-cli/src/devtoolsTarget'
-import type { InstallationProcessSample, ResourceObservation } from './types'
+import type { InstallationProcessSample, ProcessIdentityGapObservation, ResourceObservation } from './types'
 import fs from 'node:fs/promises'
 import process from 'node:process'
 import { resolveWechatDevtoolsInstallationRoot } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/host'
 import { insideInstallation, inspectResourceRows, readResourceRows, stableProcess, validProcessImage } from './processInventory'
 import { createResourceInventory } from './processInventory/closure'
+import { processGapObservation } from './processInventory/evidence'
 
 export { parseResourceProcessRows } from './processInventory'
 
@@ -19,17 +20,20 @@ export async function sampleInstallationProcesses(target: ResolvedWechatDevtools
     const installationRoot = await fs.realpath(resolveWechatDevtoolsInstallationRoot(target, platform))
     const before = await readResourceRows(deadline)
     const closure = createResourceInventory({ initial: before, installationRoot, deadline })
-    const { paths, images, finalRows, fallbackBudgetExhausted } = await inspectResourceRows(before, deadline, closure.afterInitialKernel)
+    const { paths, images, imageGaps, finalRows, fallbackBudgetExhausted } = await inspectResourceRows(before, deadline, closure.afterInitialKernel)
     const inventory = await closure.close(finalRows, images)
     const { final } = inventory
     const members = new Map<number, 'installation-image' | 'descendant'>()
     let unclassifiedProcessCount = 0
     let missingIdentityCount = 0
+    const unclassifiedProcesses: ProcessIdentityGapObservation[] = []
+    const missingIdentities: ProcessIdentityGapObservation[] = []
     for (const row of before) {
       const executableImages = images.get(row.pid)
       // RSS 来自 before；后来退出不能补造当时的负归属，未知条目仍使完整 RSS 不可用。
       if (!row.zombie && !executableImages) {
         unclassifiedProcessCount++
+        unclassifiedProcesses.push(processGapObservation(row, final.get(row.pid), imageGaps.get(row.pid), inventory.identityGaps.get(row.pid)))
       }
       if (!stableProcess(row, final.get(row.pid)) || inventory.changedProcessPids.has(row.pid)) {
         continue
@@ -58,6 +62,7 @@ export async function sampleInstallationProcesses(target: ResolvedWechatDevtools
       if ((validProcessImage(kernelImage) && insideInstallation(installationRoot, kernelImage)) || executableImages?.some(image => insideInstallation(installationRoot, image)) || members.has(row.parentPid)) {
         if (!stableProcess(row, final.get(row.pid)) || !executableImages || inventory.changedProcessPids.has(row.pid)) {
           missingIdentityCount++
+          missingIdentities.push(processGapObservation(row, final.get(row.pid), imageGaps.get(row.pid), inventory.identityGaps.get(row.pid)))
         }
       }
     }
@@ -85,6 +90,9 @@ export async function sampleInstallationProcesses(target: ResolvedWechatDevtools
         : { status: 'observed', value: verifiedMemberRssBytes },
       unclassifiedProcessCount,
       missingIdentityCount,
+      unclassifiedProcesses,
+      missingIdentities,
+      identityChangedProcesses: inventory.identityChangedProcesses,
       semantics: 'point-in-time-rss-not-peak',
       uninspectedNewProcessCount: inventory.uninspectedNewProcessCount,
       verifiedNewForeignProcessCount: inventory.verifiedNewForeignProcessCount,

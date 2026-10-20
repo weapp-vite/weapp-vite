@@ -1,5 +1,6 @@
 /* eslint-disable e18e/ban-dependencies -- e2e build assertions reuse shared fs helpers to inspect generated artifacts. */
 // 新增 issue 回归必须放到 cases/，本文件仅保留尚未迁移的历史用例。
+import type { Page as PageJson } from '@weapp-core/schematics'
 import type { GithubIssuesBuildCaseContext } from './cases/types'
 import process from 'node:process'
 import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
@@ -861,7 +862,7 @@ export function registerGithubIssuesBuildLegacyCases() {
 
     const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-429/index.json')
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-429/index.wxml')
-    const pageJson = await fs.readJson(pageJsonPath)
+    const pageJson = await fs.readJson(pageJsonPath) as PageJson
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
 
     expect(pageWxml).toContain('issue-429 builtin-name auto import')
@@ -875,7 +876,7 @@ export function registerGithubIssuesBuildLegacyCases() {
 
     const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-520/index.json')
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-520/index.wxml')
-    const pageJson = await fs.readJson(pageJsonPath)
+    const pageJson = await fs.readJson(pageJsonPath) as PageJson
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
 
     expect(pageJson.usingComponents).toMatchObject({
@@ -1319,7 +1320,7 @@ export function registerGithubIssuesBuildLegacyCases() {
     const pageJsPath = path.join(DIST_ROOT, 'subpackages/item/issue-769/index.js')
     const pageMapPath = `${pageJsPath}.map`
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
-    const pageMap = JSON.parse(await fs.readFile(pageMapPath, 'utf-8')) as Parameters<typeof TraceMap>[0]
+    const pageMap = JSON.parse(await fs.readFile(pageMapPath, 'utf-8')) as ConstructorParameters<typeof TraceMap>[0]
     const sourceTs = await fs.readFile(path.join(APP_ROOT, sourceFile), 'utf-8')
     const sourceLines = sourceTs.split('\n')
     const sourceMap = new TraceMap(pageMap)
@@ -1411,7 +1412,7 @@ export function registerGithubIssuesBuildLegacyCases() {
 
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
-    const pageJson = await fs.readJson(pageJsonPath)
+    const pageJson = await fs.readJson(pageJsonPath) as PageJson
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
     const componentJs = await fs.readFile(componentJsPath, 'utf-8')
 
@@ -2089,7 +2090,7 @@ export function registerGithubIssuesBuildLegacyCases() {
 
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
-    const pageJson = await fs.readJson(pageJsonPath)
+    const pageJson = await fs.readJson(pageJsonPath) as PageJson
     const selfHostWxml = await fs.readFile(selfHostWxmlPath, 'utf-8')
     const pairedHostWxml = await fs.readFile(pairedHostWxmlPath, 'utf-8')
 
@@ -2135,7 +2136,7 @@ export function registerGithubIssuesBuildLegacyCases() {
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const nativePageJs = await fs.readFile(nativePageJsPath, 'utf-8')
     const pageWxml = stripGeneratedScopeAttrs(await fs.readFile(pageWxmlPath, 'utf-8'))
-    const pageJson = await fs.readJson(pageJsonPath)
+    const pageJson = await fs.readJson(pageJsonPath) as PageJson
 
     expect(await fs.pathExists(dialogIndexPath)).toBe(true)
     expect(pageWxml).toContain('issue-466 tdesign Dialog.confirm runtime')
@@ -2186,7 +2187,7 @@ export function registerGithubIssuesBuildLegacyCases() {
     const computedDialogComponentPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/miniprogram_npm/tdesign-miniprogram/dialog/dialog.js')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
-    const pageJson = await fs.readJson(pageJsonPath)
+    const pageJson = await fs.readJson(pageJsonPath) as PageJson
     const componentJs = await fs.readFile(componentJsPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
     const computedPkg = await fs.readFile(computedPkgPath, 'utf-8')
@@ -2255,7 +2256,7 @@ export function registerGithubIssuesBuildLegacyCases() {
     await runBuild()
 
     const managedTsconfigPath = path.join(APP_ROOT, '.weapp-vite/tsconfig.app.json')
-    const managedTsconfig = await fs.readJson(managedTsconfigPath)
+    const managedTsconfig = await fs.readJson(managedTsconfigPath) as { compilerOptions: { types: string[] } }
 
     expect(managedTsconfig.compilerOptions.types).toContain('weapp-vite/client')
     expect(managedTsconfig.compilerOptions.types).not.toContain('vite/client')

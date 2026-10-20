@@ -304,7 +304,8 @@ describe('forward-console-demo in real WeChat DevTools', { concurrent: false }, 
     }
 
     await fs.writeFile(INDEX_TS, replaceSourceLogMessage(originalIndexTs, hmrMessage), 'utf8')
-    await devProcess.waitFor(
+    // beforeAll 成功后才执行用例；afterEach 在用例结束后释放该控制器。
+    await (devProcess as ReturnType<typeof startDevProcess>).waitFor(
       waitForFileContains(HMR_UPDATE_JS, hmrMessage, 90_000),
       'forward-console demo stateful HMR delta update',
     )

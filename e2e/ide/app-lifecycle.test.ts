@@ -202,7 +202,7 @@ async function collectAppSnapshot(root: string, variant: string, dom: ReturnType
           metadata: {
             SDKVersion: systemInfo.SDKVersion,
             platform: systemInfo.platform,
-            renderer: (systemInfo as Record<string, unknown>).renderer ?? 'unknown',
+            renderer: (systemInfo as typeof systemInfo & { renderer?: unknown }).renderer ?? 'unknown',
           },
           semantics: {
             arrayAt: [1, 2].at(-1),

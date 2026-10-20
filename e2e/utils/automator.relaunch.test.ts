@@ -1,6 +1,9 @@
+import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enhanceMiniProgramRelaunch } from './automator'
 import { DevtoolsSimulatorBootLogError } from './automatorBootLogMonitor'
+
+type RelaunchMock<TPage> = (...args: Parameters<MiniProgram['reLaunch']>) => Promise<TPage>
 
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'fixture' }))
 
@@ -66,7 +69,7 @@ describe('route-scoped relaunch roots', () => {
 
   it('uses generic roots when the current page already matches another route', async () => {
     const boundary = createPage(boundaryRoute, ['view'])
-    const rawReLaunch = vi.fn(async () => boundary)
+    const rawReLaunch = vi.fn<RelaunchMock<typeof boundary>>(async () => boundary)
     const miniProgram = { reLaunch: rawReLaunch, currentPage: vi.fn(async () => boundary), close: vi.fn() }
     enhanceMiniProgramRelaunch(miniProgram, recoveryOptions)
 
@@ -81,7 +84,7 @@ describe('route-scoped relaunch roots', () => {
   it('checks the current page with generic roots when reLaunch returns a stale page handle', async () => {
     const stale = createPage(boundaryRoute, [])
     const boundary = createPage(boundaryRoute, ['view'])
-    const rawReLaunch = vi.fn(async () => stale)
+    const rawReLaunch = vi.fn<RelaunchMock<typeof stale>>(async () => stale)
     const miniProgram = { reLaunch: rawReLaunch, currentPage: vi.fn(async () => boundary), close: vi.fn() }
     enhanceMiniProgramRelaunch(miniProgram, recoveryOptions)
 
@@ -111,7 +114,7 @@ describe('route-scoped relaunch roots', () => {
 
   it('does not recover a fatal boot diagnostic as a transient metadata failure', async () => {
     const boundary = createPage(boundaryRoute, ['view'])
-    const rawReLaunch = vi.fn(async () => boundary)
+    const rawReLaunch = vi.fn<RelaunchMock<typeof boundary>>(async () => boundary)
     const miniProgram = { reLaunch: rawReLaunch, currentPage: vi.fn(async () => boundary), close: vi.fn() }
     const error = new DevtoolsSimulatorBootLogError('reLaunch', {
       file: 'startup.log',
@@ -137,7 +140,7 @@ describe('route-scoped relaunch roots', () => {
     { route: boundaryRoute, renderedSelectors: [], requiredSelector: 'view' },
   ])('still rejects $route when its required rendered root is absent', async ({ route, renderedSelectors, requiredSelector }) => {
     const page = createPage(route, renderedSelectors)
-    const rawReLaunch = vi.fn(async () => page)
+    const rawReLaunch = vi.fn<RelaunchMock<typeof page>>(async () => page)
     const miniProgram = { reLaunch: rawReLaunch, currentPage: vi.fn(async () => page), close: vi.fn() }
     enhanceMiniProgramRelaunch(miniProgram, recoveryOptions)
 

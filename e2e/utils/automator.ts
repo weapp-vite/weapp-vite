@@ -255,6 +255,10 @@ interface RuntimeLogMeta {
   closeWrapped: boolean
 }
 
+export type MiniProgramWithRuntimeLogs = MiniProgram & {
+  __weappViteRuntimeLogMeta?: RuntimeLogMeta
+}
+
 interface RelaunchPatchMeta {
   wrapped: boolean
 }

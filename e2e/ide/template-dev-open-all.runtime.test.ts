@@ -123,11 +123,11 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
     ])
   }, 180_000)
 
-  it.for(ACTIVE_TEMPLATE_CASES)('$name renders after dev:open without runtime errors', async (templateCase, ctx) => {
+  it.for(ACTIVE_TEMPLATE_CASES)('$name renders after dev:open without runtime errors', { timeout: 480_000 }, async (templateCase, ctx) => {
     const projectRoot = resolveTemplateProjectRoot(templateCase)
     const port = resolveProjectAutomatorPort(projectRoot)
     let devProcess: TemplateDevProcess | undefined
-    let miniProgram: any
+    let miniProgram: Awaited<ReturnType<typeof waitForOpenedAutomator>>['miniProgram'] | undefined
     let runtimeErrors: ReturnType<typeof attachRuntimeErrorCollector> | undefined
 
     await runTemplateCase({
@@ -176,5 +176,5 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
         ])
       },
     })
-  }, 480_000)
+  })
 })

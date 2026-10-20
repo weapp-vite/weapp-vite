@@ -1,4 +1,6 @@
 /* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI，并使用 shared fs 简化产物与 fixture 读写。 */
+import type { Component as ComponentJson, Page as PageJson } from '@weapp-core/schematics'
+import type { MpPlatform } from '@weapp-core/shared'
 import { proxyCreateProgram } from '@volar/typescript'
 import { createVueLanguagePlugin, getDefaultCompilerOptions } from '@vue/language-core'
 import { fs } from '@weapp-core/shared/node'
@@ -30,18 +32,18 @@ const HOT_COMPONENT_TIMEOUT_MS = process.platform === 'darwin'
   : process.platform === 'win32'
     ? 120_000
     : 60_000
-const SUPPORTED_PLATFORMS = [
+const SUPPORTED_PLATFORMS: readonly RuntimePlatform[] = [
   'weapp',
   // 'alipay',
   // 'tt',
-] as const
+]
 const PLATFORM_TEMPLATE_EXT: Record<RuntimePlatform, string> = {
   weapp: 'wxml',
   alipay: 'axml',
   tt: 'ttml',
 }
 
-type RuntimePlatform = (typeof SUPPORTED_PLATFORMS)[number]
+type RuntimePlatform = Extract<MpPlatform, 'weapp' | 'alipay' | 'tt'>
 
 const SELECTED_PLATFORM = process.env.E2E_PLATFORM
 const SHOULD_SKIP_UNSUPPORTED_PLATFORM = Boolean(
@@ -146,7 +148,7 @@ async function waitForUsingComponent(
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await fs.pathExists(pageJsonPath)) {
-      const pageJson = await fs.readJson(pageJsonPath)
+      const pageJson = await fs.readJson(pageJsonPath) as PageJson
       if (pageJson?.usingComponents?.[name] === value) {
         return pageJson
       }
@@ -166,7 +168,7 @@ async function waitForMissingUsingComponent(
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await fs.pathExists(pageJsonPath)) {
-      const pageJson = await fs.readJson(pageJsonPath)
+      const pageJson = await fs.readJson(pageJsonPath) as PageJson
       if (!pageJson?.usingComponents || !(name in pageJson.usingComponents)) {
         return pageJson
       }
@@ -388,14 +390,14 @@ describeAutoImportSuite('auto import local components (e2e)', { concurrent: fals
       const nativeCardKey = resolveVueComponentKey('NativeCard')
       const resolverCardKey = resolveVueComponentKey('ResolverCard')
 
-      const vuePageJson = await fs.readJson(vuePageJsonPath)
+      const vuePageJson = await fs.readJson(vuePageJsonPath) as PageJson
       expect(vuePageJson.usingComponents).toMatchObject({
         [autoCardKey]: '/components/AutoCard/index',
         [nativeCardKey]: '/components/NativeCard/index',
         [resolverCardKey]: '/components/NativeCard/index',
       })
 
-      const nativePageJson = await fs.readJson(nativePageJsonPath)
+      const nativePageJson = await fs.readJson(nativePageJsonPath) as PageJson
       if (platform !== 'alipay') {
         expect(nativePageJson.usingComponents).toMatchObject({
           [resolveNativeComponentKey(platform, 'NativeCard')]: '/components/NativeCard/index',
@@ -406,7 +408,7 @@ describeAutoImportSuite('auto import local components (e2e)', { concurrent: fals
         expect(nativePageJson.usingComponents ?? {}).toEqual({})
       }
 
-      const sfcComponentJson = await fs.readJson(sfcComponentJsonPath)
+      const sfcComponentJson = await fs.readJson(sfcComponentJsonPath) as ComponentJson
       expect(sfcComponentJson).toMatchObject({
         component: true,
       })

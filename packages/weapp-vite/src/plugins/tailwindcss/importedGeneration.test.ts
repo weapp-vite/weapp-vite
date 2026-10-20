@@ -3,7 +3,7 @@ import { mkdtemp, realpath, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, expect, it } from 'vitest'
-import { CompilerHmrResyncError } from '../compilerPlugin/hmr'
+import { CompilerHmrResyncError, compilerSourceId } from '../compilerPlugin/hmr'
 import { captureImportedTailwindGeneration, importedGenerationRequest, takeImportedGeneration } from './importedGeneration'
 
 const cleanup: (() => Promise<void>)[] = []
@@ -16,7 +16,7 @@ async function fixture() {
   cleanup.push(() => rm(root, { recursive: true, force: true }))
   const file = path.join(root, 'owner.css')
   const css = '.author { color: red; }'
-  const sources = new Map<string, string | null>([[file, css]])
+  const sources = new Map<string, string | null>([[compilerSourceId(file), css]])
   const request: CompilerGenerateRequest = { id: 'owner', target: 'weapp', sourceOptions: { projectRoot: root, cssEntries: [file] }, scanSources: true, incrementalCache: false }
   const options = { generator: { styleOptions: { isMainChunk: false } } }
   const result = { rawCss: css, css, dependencies: [file], snapshot: { classSet: new Set(), dependencies: [file], roots: [], sources: [], target: 'weapp' } } as unknown as CompilerGenerateResult
@@ -29,7 +29,7 @@ it('matches frozen CSS entry and equivalent in-memory requests without sharing m
   const app = await fixture()
   const normalized = await importedGenerationRequest(app.request, app.sources)
   expect(normalized.sourceOptions?.cssEntries).toEqual([])
-  expect(normalized.sourceOptions?.cssSources).toEqual([{ css: app.css, file: app.file, base: app.root, dependencies: [app.file] }])
+  expect(normalized.sourceOptions?.cssSources).toEqual([{ css: app.css, file: app.file, base: app.root.replaceAll('\\', '/'), dependencies: [app.file] }])
   const memory = { ...normalized, sources: [{ content: 'w-[37px]', extension: 'ts' }], scanSources: false, incrementalCache: true }
   const entry = await takeImportedGeneration(app.generation, 'owner', memory, app.sources, app.options)
   expect(entry.rawCss).toBe(app.css)
@@ -44,10 +44,10 @@ it('matches frozen CSS entry and equivalent in-memory requests without sharing m
 it('copies source content before normalization awaits and retains the full original request options', async () => {
   const app = await fixture()
   const pending = importedGenerationRequest(app.request, app.sources)
-  app.sources.set(app.file, '.author { color: blue; }')
+  app.sources.set(compilerSourceId(app.file), '.author { color: blue; }')
   app.request.sourceOptions!.base = 'changed-base'
   const normalized = await pending
-  expect(normalized.sourceOptions?.base).toBe(app.root)
+  expect(normalized.sourceOptions?.base).toBe(app.root.replaceAll('\\', '/'))
   expect(normalized.sourceOptions?.cssSources?.[0]?.css).toBe(app.css)
 })
 

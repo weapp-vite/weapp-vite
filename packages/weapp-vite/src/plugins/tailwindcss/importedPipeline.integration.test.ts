@@ -5,7 +5,7 @@ import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { build } from 'vite'
+import { build, normalizePath } from 'vite'
 import { expect, it } from 'vitest'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { createRuntimeState } from '../../runtime/runtimeState'
@@ -70,8 +70,8 @@ it('keeps native CSS publication order when imported owners finish transformatio
   await mkdir(path.join(root, 'node_modules'))
   await symlink(path.dirname(require.resolve('tailwindcss/package.json')), path.join(root, 'node_modules/tailwindcss'), 'junction')
   const entry = path.join(root, 'src/app.css')
-  const first = path.join(root, 'src/first.css')
-  const second = path.join(root, 'src/second.css')
+  const first = normalizePath(path.join(root, 'src/first.css'))
+  const second = normalizePath(path.join(root, 'src/second.css'))
   await writeFile(entry, '@import "tailwindcss/utilities" source(none); @source inline("w-[37px]");')
   await writeFile(first, '@import "./app.css"; .first-owner { color: red; }')
   await writeFile(second, '@import "./app.css"; .second-owner { color: blue; }')

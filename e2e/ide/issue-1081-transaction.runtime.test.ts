@@ -1,3 +1,4 @@
+import type { DomCheckpoint } from '../utils/domAcceptance/types'
 import { access, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -74,8 +75,8 @@ describe('issue #1081: delayed compiler transaction', () => {
     const page = await session.reLaunch(route)
     const diagnostics = createHmrRuntimeDiagnostics(session as any, fixture)
     const original = await diagnostics.initialize()
-    const version = () => session.evaluate(key => (globalThis as any)[key].getVersion(), WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)
-    await expect.poll(() => session.evaluate(key => (globalThis as any)[key].getTransportState().initialReady, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)).toBe(true)
+    const version = () => session.evaluate((key: string) => (globalThis as any)[key].getVersion(), WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)
+    await expect.poll(() => session.evaluate((key: string) => (globalThis as any)[key].getTransportState().initialReady, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)).toBe(true)
     await (await page.$('#increment'))!.tap()
     const realStyles = resolveRuntimeProviderName() === 'devtools'
     const states = [
@@ -86,7 +87,7 @@ describe('issue #1081: delayed compiler transaction', () => {
       { id: 'failed', label: 'latest', background: 'rgb(220, 252, 231)', color: 'rgb(68, 85, 102)' },
       { id: 'recovered', label: 'recovered', background: 'rgb(219, 234, 254)', color: 'rgb(68, 85, 102)' },
     ]
-    const dom = createDomAcceptance(context, fixture, states.map(state => ({
+    const dom = createDomAcceptance(context, fixture, states.map((state): DomCheckpoint => ({
       id: state.id,
       route,
       action: `检查 ${state.id} 批次的样式、文本与保留状态`,
