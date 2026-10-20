@@ -98,6 +98,7 @@ export function createWxmlComponentService(state: WxmlServiceState) {
       state.componentsMap.set(baseName, components)
     }
     invalidateAggregatedComponents(state, absPath, state.aggregatedComponentsMap)
+    invalidateAggregatedComponents(state, absPath, state.aggregatedAutoImportComponentsMap)
   }
 
   return {
