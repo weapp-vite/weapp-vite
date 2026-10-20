@@ -1,4 +1,5 @@
 /* eslint-disable ts/no-empty-object-type -- 允许空对象类型占位 */
+/* eslint-disable wevu/no-risky-api -- 本文件为 Vue 上游类型适配边界，后续按 Wevu 宿主契约收窄。 */
 import type {
   AllowedComponentProps as VueAllowedComponentProps,
   Component as VueComponent,
@@ -12,17 +13,15 @@ import type {
   MethodOptions as VueMethodOptions,
   ObjectDirective as VueObjectDirective,
   PublicProps as VuePublicProps,
-  Ref as VueRef,
-  ShallowRef as VueShallowRef,
   ShallowUnwrapRef as VueShallowUnwrapRef,
   SlotsType as VueSlotsType,
   VNode as VueVNode,
   VNodeProps as VueVNodeProps,
 } from 'vue'
+/* eslint-enable wevu/no-risky-api */
 import type { ComponentPropsOptions, ExtractDefaultPropTypes, ExtractPropTypes } from './runtime/types/props'
 
-export type Ref<T = any, S = T> = VueRef<T, S>
-export type ShallowRef<T = any, S = T> = VueShallowRef<T, S>
+export type { Ref, ShallowRef } from './types/reactivity'
 
 export type AllowedComponentProps = VueAllowedComponentProps
 export type ComponentCustomProps = VueComponentCustomProps

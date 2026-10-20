@@ -19,6 +19,8 @@ const entry = {
 
 const declarationEntry = {
   ...entry,
+  'config': './src/config/index.ts',
+  'types': './src/types/index.ts',
   'jsx-runtime': './src/jsx-runtime',
   'weapp/jsx-runtime': './src/weapp/jsx-runtime',
   'alipay/jsx-runtime': './src/alipay/jsx-runtime',

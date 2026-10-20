@@ -20,6 +20,7 @@ import type {
   MethodDefinitions,
   MiniProgramComponentPropertyOption,
 } from './runtime'
+import type { PageMeta } from './types/pageMeta'
 
 export type {
   ComponentTypeEmits,
@@ -85,15 +86,7 @@ export declare function defineOptions<
  */
 export declare function defineSlots<T extends Record<string, any> = Record<string, any>>(): T
 
-export type PageLayoutMeta = string | false | {
-  name: string
-  props?: Record<string, unknown>
-}
-
-export interface PageMeta {
-  layout?: PageLayoutMeta
-  [key: string]: unknown
-}
+export type { PageLayoutMeta, PageMeta } from './types/pageMeta'
 
 /**
  * definePageMeta 声明页面级元信息（仅类型层）。

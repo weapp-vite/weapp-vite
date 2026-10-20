@@ -883,6 +883,113 @@
         "profile": "ci-vite-host-consumer"
       }
     },
+    "chokidar-delivery-windows": {
+      "if": "needs.pr-context.outputs.should_run == 'true'",
+      "needs": "pr-context",
+      "name": "Chokidar delivery (Windows / ordinary npm)",
+      "runs-on": "windows-latest",
+      "timeout-minutes": 90,
+      "env": {
+        "CHOKIDAR_ORIGINAL_BASELINE_SHA": "80d58727ec11fccfc71f1f06edfc993e9ba264aa"
+      },
+      "steps": [
+        {
+          "name": "Check out frozen candidate",
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "./.github/actions/setup-node-pnpm",
+          "with": {
+            "node-version": "24.18.0"
+          }
+        },
+        {
+          "name": "Rebuild candidate dependency closure",
+          "uses": "./.github/actions/refresh-workspace-deps",
+          "with": {
+            "build-command": "pnpm exec turbo run build --filter=weapp-vite... --filter=rolldown-require... --force"
+          }
+        },
+        {
+          "name": "Pack candidate dependency closure",
+          "run": "node packages/weapp-vite/scripts/consumerTarballs.mjs .cache/chokidar-delivery/candidate-tarballs"
+        },
+        {
+          "name": "Record candidate archive provenance",
+          "run": "node scripts/chokidar-delivery-provenance.mjs candidate . .cache/chokidar-delivery/candidate-tarballs .cache/chokidar-delivery/candidate-provenance.json",
+          "env": {
+            "WEAPP_VITE_DELIVERY_EXPECTED_SHA": "${{ needs.pr-context.outputs.checkout_sha }}"
+          }
+        },
+        {
+          "name": "Check out original unmodified source",
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "ref": "${{ env.CHOKIDAR_ORIGINAL_BASELINE_SHA }}",
+            "path": ".cache/chokidar-delivery/original-source",
+            "persist-credentials": false
+          }
+        },
+        {
+          "name": "Install original dependency closure independently",
+          "working-directory": ".cache/chokidar-delivery/original-source",
+          "run": "pnpm install --frozen-lockfile",
+          "env": {
+            "PNPM_CONFIG_STORE_DIR": "${{ github.workspace }}/.cache/chokidar-delivery/original-store",
+            "PNPM_CONFIG_ENABLE_GLOBAL_VIRTUAL_STORE": "false"
+          }
+        },
+        {
+          "name": "Rebuild original dependency closure independently",
+          "uses": "./.github/actions/refresh-workspace-deps",
+          "with": {
+            "working-directory": ".cache/chokidar-delivery/original-source",
+            "build-command": "pnpm exec turbo run build --filter=weapp-vite... --filter=rolldown-require... --force"
+          },
+          "env": {
+            "PNPM_CONFIG_STORE_DIR": "${{ github.workspace }}/.cache/chokidar-delivery/original-store",
+            "PNPM_CONFIG_ENABLE_GLOBAL_VIRTUAL_STORE": "false"
+          }
+        },
+        {
+          "name": "Pack original dependency closure without rewriting it",
+          "working-directory": ".cache/chokidar-delivery/original-source",
+          "shell": "bash",
+          "run": "node packages/weapp-vite/scripts/consumerTarballs.mjs \"$DELIVERY_ORIGINAL_TARBALLS\"",
+          "env": {
+            "DELIVERY_ORIGINAL_TARBALLS": "${{ github.workspace }}/.cache/chokidar-delivery/original-tarballs",
+            "PNPM_CONFIG_STORE_DIR": "${{ github.workspace }}/.cache/chokidar-delivery/original-store",
+            "PNPM_CONFIG_ENABLE_GLOBAL_VIRTUAL_STORE": "false"
+          }
+        },
+        {
+          "name": "Record original archive provenance",
+          "run": "node scripts/chokidar-delivery-provenance.mjs baseline .cache/chokidar-delivery/original-source .cache/chokidar-delivery/original-tarballs .cache/chokidar-delivery/original-provenance.json",
+          "env": {
+            "WEAPP_VITE_DELIVERY_EXPECTED_SHA": "${{ env.CHOKIDAR_ORIGINAL_BASELINE_SHA }}"
+          }
+        },
+        {
+          "name": "Verify ordinary npm delivery and original negative control under the machine lease",
+          "run": "node --import tsx e2e/scripts/run-e2e-commands.ts node --import tsx packages/weapp-vite/scripts/chokidarDelivery/index.mjs --tarballs .cache/chokidar-delivery/candidate-tarballs --baseline-tarballs .cache/chokidar-delivery/original-tarballs --report .cache/chokidar-delivery/report.json"
+        },
+        {
+          "name": "Preserve delivery report and independent archive provenance",
+          "if": "${{ !cancelled() }}",
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "with": {
+            "name": "chokidar-delivery-windows-${{ needs.pr-context.outputs.checkout_sha }}",
+            "include-hidden-files": true,
+            "path": ".cache/chokidar-delivery/report.json\n.cache/chokidar-delivery/*-provenance.json\n.cache/chokidar-delivery/candidate-tarballs/**\n.cache/chokidar-delivery/original-tarballs/**\n",
+            "if-no-files-found": "warn"
+          }
+        }
+      ]
+    },
     "consumer-platform": {
       "name": "Consumer (${{ matrix.os }})",
       "needs": "pr-context",

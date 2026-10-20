@@ -9,11 +9,13 @@ export default defineConfig([
   {
     entry: {
       ...runtimeEntry,
-      cli: './src/cli.ts',
-      compiler: './src/native.ts',
+      'cli': './src/cli.ts',
+      'compiler': './src/native.ts',
+      'config-types': './src/configTypes.ts',
     },
     format: ['esm'],
-    hash: false,
+    // 声明共享 chunk 不能覆盖同名公开入口，保留原生 hash 命名隔离。
+    hash: true,
     target: 'node20',
     dts: true,
     clean: true,

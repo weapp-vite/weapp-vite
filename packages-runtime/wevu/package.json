@@ -259,6 +259,12 @@
         "types": "./dist/vue-demi.d.mts",
         "default": "./dist/dev/vue-demi.mjs"
       }
+    },
+    "./config": {
+      "types": "./dist/config.d.mts"
+    },
+    "./types": {
+      "types": "./dist/types.d.mts"
     }
   },
   "main": "./dist/index.mjs",
@@ -281,11 +287,12 @@
     "test": "vitest run",
     "test:dev": "vitest",
     "test:types": "pnpm build:types && pnpm run test:types:check",
-    "test:types:check": "tsd --files \"test-d/**/*.test-d.{ts,tsx}\" && tsd --files \"test-d/router-named-map.test-types.ts\"",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.{ts,tsx}\" && tsd --files \"test-d/router-named-map.test-types.ts\" && pnpm run test:types:pure",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test:types:pure": "cd test-d-pure && tsd --files \"**/*.test-d.ts\""
   },
   "peerDependencies": {
     "miniprogram-api-typings": "^5.0.0",
@@ -304,6 +311,7 @@
     }
   },
   "dependencies": {
+    "@vue/reactivity": "catalog:",
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-core/types": "workspace:*",

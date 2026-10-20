@@ -41,7 +41,10 @@
       "import": "./dist/compiler.mjs",
       "require": "./dist/cjs/compiler.cjs"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./types": {
+      "types": "./dist/config-types.d.mts"
+    }
   },
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/index.mjs",
@@ -64,10 +67,11 @@
     "build": "tsdown",
     "test": "vitest run",
     "test:types": "pnpm build && pnpm run test:types:check",
-    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\" && pnpm run test:types:pure",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test:types:pure": "cd test-d-pure && tsd --files \"**/*.test-d.ts\""
   },
   "publishConfig": {
     "access": "public",

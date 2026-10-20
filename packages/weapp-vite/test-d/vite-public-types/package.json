@@ -9,8 +9,19 @@
       "moduleResolution": "NodeNext",
       "target": "ES2023",
       "strict": true,
-      "paths": { "weapp-vite/vite": ["../../dist/vite.d.mts"] },
-      "types": ["node", "miniprogram-api-typings"]
+      "paths": {
+        "weapp-vite/vite": [
+          "../../dist/vite.d.mts"
+        ]
+      },
+      "types": [
+        "node"
+      ],
+      "lib": [
+        "ES2023",
+        "DOM"
+      ],
+      "skipLibCheck": false
     }
   }
 }
