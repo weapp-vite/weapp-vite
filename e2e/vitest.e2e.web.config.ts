@@ -2,12 +2,11 @@ import path from 'node:path'
 import { defineConfig } from 'vitest/config'
 import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
+import { createE2ESourceTransform } from './utils/sourceTransform.ts'
 
 export default defineConfig({
-  oxc: {
-    // E2E 清单会直接导入 app 源码，不能依赖各 app 已生成 `.weapp-vite` tsconfig。
-    tsconfig: false,
-  },
+  oxc: { exclude: /.*/ },
+  plugins: [createE2ESourceTransform()],
   test: {
     globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
     include: [
