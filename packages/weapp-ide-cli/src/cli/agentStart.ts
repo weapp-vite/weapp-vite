@@ -14,6 +14,8 @@ export interface StartWechatIdeAgentOptions {
   trustProject?: boolean
   timeout?: number
   signal?: AbortSignal
+  /** 预检完成后、命令派发前登记启动意图；钩子开始后取消仍按派发结果未知处理。 */
+  onBeforeDispatch?: () => void | Promise<void>
   /** 官方回执验证后先登记窗口所有权，再检查取消状态。 */
   onStarted?: (result: StartWechatIdeAgentResult) => void | Promise<void>
 }
@@ -127,6 +129,10 @@ export async function startWechatIdeAgent(options: StartWechatIdeAgentOptions): 
       if (options.trustProject === true) {
         argv.push('--trust-project')
       }
+      options.signal?.throwIfAborted()
+      await options.onBeforeDispatch?.()
+      // 钩子开始即跨过派发意图边界；此后取消不能撤销调用方已持久登记的意图。
+      options.signal?.throwIfAborted()
       const result = await execa(target.cliPath, argv, {
         cancelSignal: options.signal,
         timeout,

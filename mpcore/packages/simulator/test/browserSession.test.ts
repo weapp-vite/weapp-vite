@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   createBrowserHeadlessSession,
+  createBrowserProject,
   createBrowserVirtualFiles,
 } from '../src/browser'
+import { createLocalPluginLayout, localPluginLayouts, localPluginPageRoute, localPluginProvider } from './helpers/localPluginLayouts'
 
 describe('BrowserHeadlessSession', () => {
   it.each(['reLaunch', 'redirectTo', 'navigateBack'] as const)('preserves the open page stack and component state when %s onUnload throws', (method) => {
@@ -401,53 +403,40 @@ exports.named = 'async-named'
     })
   })
 
-  it('loads local plugin exports, public components, and pages', async () => {
-    const files = createBrowserVirtualFiles([
-      ['app.json', JSON.stringify({
-        pages: ['pages/index/index'],
-        plugins: {
-          hello: { provider: 'wxpluginprovider', version: 'dev' },
-        },
-      })],
-      ['app.js', 'App({})'],
-      ['pages/index/index.json', JSON.stringify({
-        usingComponents: {
-          'plugin-card': 'plugin://hello/card',
-        },
-      })],
-      ['pages/index/index.js', `
-const plugin = requirePlugin('hello')
-Page({
-  data: { answer: plugin.answer },
-  openPluginPage() {
-    return new Promise((resolve, reject) => {
-      wx.navigateTo({ url: 'plugin://hello/hello-page', success: resolve, fail: reject })
+  it.each(localPluginLayouts)('loads local plugin exports, public components, and pages from the %s layout', async (layout) => {
+    const fixture = createLocalPluginLayout(layout)
+    const files = createBrowserVirtualFiles(fixture.files)
+    const project = createBrowserProject(files, {
+      appConfigPath: `${fixture.hostRoot}app.json`,
+      miniprogramRoot: fixture.projectConfig.miniprogramRoot,
+      miniprogramRootPath: fixture.hostRoot || '.',
+      plugins: [{
+        alias: 'hello',
+        config: fixture.pluginConfig,
+        provider: localPluginProvider,
+        rootPath: 'dist-plugin',
+        virtualRoot: fixture.hostRoot ? '../dist-plugin' : 'dist-plugin',
+      }],
     })
-  },
-})
-`],
-      ['pages/index/index.wxml', '<plugin-card label="{{answer}}" />'],
-      ['__plugins__/hello/plugin.json', JSON.stringify({
-        main: 'index.js',
-        pages: { 'hello-page': 'pages/hello/index' },
-        publicComponents: { card: 'components/card/index' },
-      })],
-      ['__plugins__/hello/index.js', 'exports.answer = 42'],
-      ['__plugins__/hello/components/card/index.json', '{}'],
-      ['__plugins__/hello/components/card/index.js', 'Component({ properties: { label: Number } })'],
-      ['__plugins__/hello/components/card/index.wxml', '<view id="plugin-card">{{label}}</view>'],
-      ['__plugins__/hello/pages/hello/index.json', '{}'],
-      ['__plugins__/hello/pages/hello/index.js', 'Page({ data: { title: "plugin page" } })'],
-      ['__plugins__/hello/pages/hello/index.wxml', '<view>{{title}}</view>'],
-    ])
-    const session = createBrowserHeadlessSession({ files })
-    const page = session.reLaunch('/pages/index/index')
+    const session = createBrowserHeadlessSession({ files, project })
+    try {
+      const page = session.reLaunch('/pages/index/index')
 
-    expect(page.data.answer).toBe(42)
-    expect(session.renderCurrentPage().wxml).toContain('id="plugin-card"')
-    await page.openPluginPage()
-    expect(session.getCurrentPages().at(-1)?.route).toBe('plugin-private://wxpluginprovider/pages/hello/index')
-    expect(session.renderCurrentPage().wxml).toContain('plugin page')
+      expect(session.project.appConfigPath).toBe(layout === 'P' ? 'dist/app.json' : 'app.json')
+      expect(page.data.pluginAnswer).toBe(42)
+      expect(page.readPluginAnswer()).toBe(42)
+      expect(session.renderCurrentPage().wxml).toContain('plugin card: 42')
+      expect(page.selectComponent?.('#local-plugin-card')?.properties.label).toBe(42)
+      await page.openPluginPage()
+      expect(session.getCurrentPages().at(-1)?.route).toBe(localPluginPageRoute)
+      expect(session.getCurrentPages().at(-1)?.options).toEqual({ source: 'host' })
+      expect(session.renderCurrentPage().wxml).toContain('plugin page')
+      expect(session.navigateBack()).toBe(page)
+      expect(session.renderCurrentPage().wxml).toContain('plugin card: 42')
+    }
+    finally {
+      session.close()
+    }
   })
 
   it('supports uni event, font, and wevu proxy selector compatibility in browser runtime', () => {

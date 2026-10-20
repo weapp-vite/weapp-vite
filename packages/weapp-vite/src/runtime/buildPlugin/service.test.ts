@@ -2456,6 +2456,31 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
+  it('retains every coalesced topology source in one complete snapshot profile', async () => {
+    const { ctx, watcher } = await startClassicSnapshotContext()
+    const files = ['/project/src/pages/topology-vue/index.vue', '/project/src/pages/topology-added/index.ts']
+    ctx.configService.weappViteConfig.hmr = { profileJson: true }
+    buildMock.mockResolvedValue({ output: [] })
+    try {
+      const receivedAtMs = performance.now()
+      publishAutoRoutesTopology(ctx, {
+        file: files[1],
+        event: 'delete',
+        topologyChanged: true,
+        sourceChanges: files.map(file => ({ file, event: 'delete', receivedAtMs })),
+      })
+      await waitForMockCalls(appendFileMock, 1)
+      const profiles = appendFileMock.mock.calls.map(([, content]) => JSON.parse(content) as HmrProfileJsonSample)
+      expect(profiles).toHaveLength(1)
+      expect(profiles[0].status).toBe('complete')
+      expect(profiles[0].sourceEvents?.map(({ file, event }) => ({ file, event }))).toEqual(files.map(file => ({ file, event: 'delete' })))
+      expect(buildMock).toHaveBeenCalledTimes(2)
+    }
+    finally {
+      await watcher.close()
+    }
+  })
+
   it('replaces entry metadata when a sidecar observes changed routes before the route watcher', async () => {
     const { ctx, watcher, onChange } = await startClassicSnapshotContext()
     const file = '/project/src/pages/logs/index.json'

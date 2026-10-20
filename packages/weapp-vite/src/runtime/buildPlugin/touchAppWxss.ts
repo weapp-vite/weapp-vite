@@ -59,7 +59,19 @@ async function recreateExistingStyle(filename: string) {
     // 先复制完整字节，再用单次原子替换发布目标，避免目标路径在两次 rename
     // 之间短暂消失，宿主或诊断读取方不会观察到 ENOENT。
     await copyFile(filename, temporary)
-    await rename(temporary, filename)
+    try {
+      await rename(temporary, filename)
+    }
+    catch (error) {
+      // Windows 宿主可能在读取 WXSS 时保持目标文件句柄。此时替换目标会返回
+      // EPERM/EBUSY，但原生构建器已经写出完整内容；保留目标文件并刷新元数据，
+      // 避免把宿主的读锁误报为构建失败。
+      const code = (error as NodeJS.ErrnoException).code
+      if (code === 'EPERM' || code === 'EBUSY' || code === 'EACCES') {
+        return await touchExistingAppStyle(filename)
+      }
+      throw error
+    }
     return await touchExistingAppStyle(filename)
   }
   catch (error) {

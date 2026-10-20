@@ -15,12 +15,13 @@ import {
 } from '../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../moduleGraph/traversal'
 import { resolveHmrRuntimeDecision } from '../../../runtime/hmrRuntime'
-import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry, isTemplate } from '../../../utils'
+import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { withRealpathScope } from '../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { collectComponentEntries } from '../../utils/analyze'
 import { pathExists as pathExistsCached } from '../../utils/cache'
 import { compilerSnapshotSourceId, getCompilerSourceSnapshot } from '../../utils/sourceSnapshot'
+import { collectTemplateDependencySources } from '../../utils/templateDependencies'
 
 function resolveEntryRecord(state: CorePluginState, sourceId: string) {
   const relativeBase = removeExtensionDeep(state.ctx.configService.relativeAbsoluteSrcRoot(sourceId))
@@ -112,24 +113,11 @@ async function collectComponentDependencies(
 }
 
 function collectTemplateDependencies(state: CorePluginState, templatePath?: string) {
-  if (!templatePath) {
-    return []
-  }
   const dependencies: LogicalEntryDependency[] = []
-  const visited = new Set([normalizeFsResolvedId(templatePath)])
-  const pending = [templatePath]
-  while (pending.length) {
-    const template = pending.pop()!
-    for (const dependency of state.ctx.wxmlService?.depsMap?.get(template) ?? []) {
-      const sourceId = normalizeFsResolvedId(dependency)
-      if (visited.has(sourceId)) {
-        continue
-      }
-      visited.add(sourceId)
-      dependencies.push({ kind: isTemplate(sourceId) ? 'template' : 'wxs', sourceId })
-      if (isTemplate(sourceId)) {
-        pending.push(sourceId)
-      }
+  const sources = collectTemplateDependencySources(state.ctx.wxmlService, templatePath)
+  for (const kind of ['template', 'wxs'] as const) {
+    for (const sourceId of sources[kind]) {
+      dependencies.push({ kind, sourceId })
     }
   }
   return dependencies
@@ -147,6 +135,13 @@ async function collectLogicalEntryDependencies(
   const entry = entryType === 'layout' && !ownsLayoutMetadata(state, record, ownerId) ? undefined : record
   const dependencies: LogicalEntryDependency[] = []
   const layoutStyleSources = entryType === 'layout' ? collectLayoutStyleSources(state, ownerId) : undefined
+  const [jsonEntry, templateEntry, styleEntry] = await Promise.all([
+    findJsonEntry(ownerId),
+    findTemplateEntry(ownerId, state.ctx.configService.platform),
+    findCssEntry(ownerId, state.ctx.configService.platform),
+  ])
+  const templatePath = entry && 'templatePath' in entry ? entry.templatePath : templateEntry.path
+  const templateRoot = templatePath || (ownerId.endsWith('.vue') ? ownerId : undefined)
   const addExistingDependency = async (kind: SidecarModuleKind, sourceId?: string) => {
     if (sourceId && await pathExistsCached(sourceId)) {
       dependencies.push({ kind, sourceId: normalizeFsResolvedId(sourceId) })
@@ -165,6 +160,9 @@ async function collectLogicalEntryDependencies(
     if (dependency.kind === 'json') {
       continue
     }
+    if (templateRoot && (dependency.kind === 'template' || dependency.kind === 'wxs')) {
+      continue
+    }
     // Layout 的脚本和模板依赖按当前物理所有者重建，不能继承旧包装模块的父页面边。
     // SFC 的外部样式只保留编译器登记在当前源码上的 CSS 或 src 依赖。
     if (layoutStyleSources && (dependency.kind !== 'style'
@@ -174,22 +172,16 @@ async function collectLogicalEntryDependencies(
     await addExistingDependency(dependency.kind, dependency.sourceId)
   }
   await addExistingDependency('script', ownerId)
-  const [jsonEntry, templateEntry, styleEntry] = await Promise.all([
-    findJsonEntry(ownerId),
-    findTemplateEntry(ownerId, state.ctx.configService.platform),
-    findCssEntry(ownerId, state.ctx.configService.platform),
-  ])
   const effectiveJsonPath = entry?.jsonPath ?? jsonEntry.path
   const hasJsonEntry = await addExistingDependency('json', effectiveJsonPath)
   await addExistingDependency('json', entry && 'sitemapJsonPath' in entry ? entry.sitemapJsonPath : undefined)
   await addExistingDependency('json', entry && 'themeJsonPath' in entry ? entry.themeJsonPath : undefined)
-  const templatePath = entry && 'templatePath' in entry ? entry.templatePath : templateEntry.path
-  await addExistingDependency('template', templatePath)
+  await addExistingDependency('template', templateRoot !== ownerId ? templateRoot : undefined)
   await addExistingDependency('style', styleEntry.path)
   if (templatePath) {
     await state.ctx.wxmlService?.scan(templatePath)
   }
-  dependencies.push(...collectTemplateDependencies(state, templatePath))
+  dependencies.push(...collectTemplateDependencies(state, templateRoot))
   const declaredJson = entry?.declaredJson ?? entry?.json
   const componentJson = entryType === 'layout' && declaredJson === undefined && hasJsonEntry && effectiveJsonPath
     ? await state.ctx.jsonService.read(effectiveJsonPath)

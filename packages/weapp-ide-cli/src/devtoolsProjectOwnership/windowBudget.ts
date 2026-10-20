@@ -2,6 +2,7 @@ import type { BeginManagedWechatProjectOptions, ManagedWechatProjectRecord } fro
 import path from 'node:path'
 import process from 'node:process'
 import { MANAGED_PROJECT_MAX_WINDOWS_ENV } from './journal/constants'
+import { isManagedWechatProjectFullyReleased } from './snapshot'
 
 function maximumOwnedWindows(options: BeginManagedWechatProjectOptions) {
   const selected = options.maxOwnedWindows ?? process.env[MANAGED_PROJECT_MAX_WINDOWS_ENV] ?? 1
@@ -21,8 +22,8 @@ function sameTarget(first: ManagedWechatProjectRecord['target'], second: BeginMa
 export function checkManagedWindowBudget(records: ManagedWechatProjectRecord[], options: BeginManagedWechatProjectOptions) {
   const maximum = maximumOwnedWindows(options)
   const projectPath = path.resolve(options.projectPath)
-  if (records.some(record => record.state !== 'released'
-    && record.projectPath === projectPath && sameTarget(record.target, options.target))) {
+  if (records.some(record => !isManagedWechatProjectFullyReleased(record)
+    && (record.projectPath === projectPath || record.snapshot?.sourceProjectPath === projectPath) && sameTarget(record.target, options.target))) {
     throw new Error('Managed DevTools project already has an active session; use its existing endpoint in connect-only mode instead of starting it again.')
   }
   const owned = records.filter(record => record.state === 'owned').length

@@ -138,4 +138,56 @@ describe('script setup entry analysis', () => {
     expect(baseParse).toHaveBeenCalledTimes(2)
     expect(collectScriptSetupImportsFromCode).toHaveBeenCalledTimes(2)
   })
+
+  it('awaits import-only template scanning and replaces transitive ownership after removal', async () => {
+    const vueEntryPath = 'src/pages/import-only.vue'
+    const shared = 'src/shared/card.wxml'
+    const nested = 'src/shared/nested.wxml'
+    const wxs = 'src/shared/filter.wxs'
+    const depsMap = new Map<string, Set<string>>()
+    let finishScan: () => void = () => {}
+    const scanned = new Promise<void>((resolve) => {
+      finishScan = resolve
+    })
+    const setTokenDeps = vi.fn(async (_id: string, deps: unknown[]) => {
+      if (deps.length) {
+        await scanned
+        depsMap.set(vueEntryPath, new Set([shared]))
+        depsMap.set(shared, new Set([nested]))
+        depsMap.set(nested, new Set([shared, wxs]))
+      }
+      else {
+        depsMap.set(vueEntryPath, new Set())
+      }
+    })
+    const source = '<template><import src="../shared/card.wxml"/><template is="card"/></template>'
+    readAndParseSfc.mockResolvedValue({ descriptor: { template: { content: source } }, errors: [] })
+    const replaceEntryDependencies = vi.fn()
+    const wxmlService = {
+      depsMap,
+      tokenMap: new Map(),
+      analyze: (template: string) => ({ deps: template ? [{}] : [], components: {} }),
+      setTokenDeps,
+      setWxmlComponentsMap: vi.fn(),
+    } as unknown as CompilerContext['wxmlService']
+    const pending = apply(source, {
+      vueEntryPath,
+      wxmlService,
+      moduleGraphService: { replaceEntryDependencies } as unknown as CompilerContext['moduleGraphService'],
+    })
+    await vi.waitFor(() => expect(setTokenDeps).toHaveBeenCalledTimes(1))
+    expect(replaceEntryDependencies).not.toHaveBeenCalled()
+    finishScan()
+    await pending
+    expect(replaceEntryDependencies).toHaveBeenCalledWith(vueEntryPath, 'template', new Set([shared, nested]))
+    expect(replaceEntryDependencies).toHaveBeenCalledWith(vueEntryPath, 'wxs', new Set([wxs]))
+    await apply('<template><view>removed</view></template>', {
+      vueEntryPath,
+      wxmlService,
+      moduleGraphService: { replaceEntryDependencies } as unknown as CompilerContext['moduleGraphService'],
+    })
+    expect(replaceEntryDependencies).toHaveBeenLastCalledWith(vueEntryPath, 'wxs', new Set())
+    expect(replaceEntryDependencies).toHaveBeenCalledWith(vueEntryPath, 'template', new Set())
+    expect(wxmlService.setWxmlComponentsMap).toHaveBeenLastCalledWith(vueEntryPath, {})
+  })
 })

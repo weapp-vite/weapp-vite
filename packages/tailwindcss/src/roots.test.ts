@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node
 import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { createCompiler } from 'weapp-tailwindcss/core'
 import { prepareTailwindRoots } from './roots'
 
@@ -38,14 +38,47 @@ it.each([false, true])('filters captured inputs by the resolved CSS base (relati
     }
     sources.set(source, '<view class="w-[53px]"/>')
     const state: TailwindRootState = { request, result, rawSources: new Map([[entry, css]]) }
-    const prepared = await prepareTailwindRoots(compiler, { revision: 1, changedFiles: [source, outside], sources }, new Map([['root', state]]), {
+    const input = { revision: 1, changedFiles: [source, outside], sources }
+    const roots = new Map([['root', state]])
+    const generate = vi.spyOn(compiler, 'generate')
+    const rejected = new Error('request capture rejected')
+    await expect(prepareTailwindRoots(compiler, input, roots, {
       cwd: root,
       sourceId: file => file,
-    })
+      captureRequest() {
+        throw rejected
+      },
+    })).rejects.toBe(rejected)
+    expect(generate).not.toHaveBeenCalled()
+    const captureRequest = vi.fn()
+    const host = {
+      cwd: root,
+      sourceId: (file: string) => file,
+      captureRequest,
+    }
+    const prepared = await prepareTailwindRoots(compiler, input, roots, host)
+    await prepareTailwindRoots(compiler, input, roots, host)
+    expect(generate).toHaveBeenCalledOnce()
+    expect(captureRequest).toHaveBeenCalledTimes(2)
+    const captured = captureRequest.mock.calls[0]![1]
+    expect(captured).not.toBe(request)
+    expect(Object.isFrozen(captured)).toBe(true)
+    expect(() => {
+      captured.sourceOptions.cssSources[0].css = '.tampered {}'
+    }).toThrow(TypeError)
+    expect(() => {
+      captured.sources[0].content = 'w-[91px]'
+    }).toThrow(TypeError)
+    expect(captured.scanSources).toBe(false)
+    expect(captured.sourceOptions.cssEntries).toEqual([])
+    expect(captured.sourceOptions.cssSources).toEqual([{ file: entry, css, base: base.replaceAll('\\', '/'), dependencies: [entry] }])
+    expect(captured.sources).toContainEqual({ content: '<view class="w-[53px]"/>', extension: 'html' })
+    expect(captureRequest.mock.calls[1]![1]).toEqual(captured)
     expect(prepared.get('root')?.css).toContain('53px')
     expect(prepared.get('root')?.css).not.toContain('37px')
     expect(prepared.get('root')?.css).not.toContain('91px')
     expect(request.sourceOptions.base).toBe(relative ? 'src' : base)
+    expect(request.sourceOptions.cssEntries).toEqual([entry])
   }
   finally {
     await compiler.dispose()

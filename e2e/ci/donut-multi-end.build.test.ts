@@ -1,7 +1,10 @@
+import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
+// eslint-disable-next-line e18e/ban-dependencies -- 构建前通过正式 CLI 准备受管支持文件。
+import { execa } from 'execa'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
-import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { runWeappViteBuildWithLogCapture, sanitizeBuildCommandEnv } from '../utils/buildLog'
 import { collectRuntimeVirtualModuleReferences, readJavaScriptOutput } from '../utils/runtimeProviderOutput'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -14,7 +17,12 @@ async function readJson<T>(filePath: string) {
 
 describe('e2e app: donut-multi-end (build)', { concurrent: false }, () => {
   it('builds a WeChat Donut multi-end miniprogram fixture', async () => {
-    await runWeappViteBuildWithLogCapture({
+    await execa(process.execPath, [CLI_PATH, 'prepare'], {
+      cwd: APP_ROOT,
+      extendEnv: false,
+      env: sanitizeBuildCommandEnv(),
+    })
+    const stats = await runWeappViteBuildWithLogCapture({
       cliPath: CLI_PATH,
       projectRoot: APP_ROOT,
       platform: 'weapp',
@@ -22,6 +30,7 @@ describe('e2e app: donut-multi-end (build)', { concurrent: false }, () => {
       label: 'ci:donut-multi-end',
       skipNpm: true,
     })
+    expect(stats).toEqual({ warn: 0, error: 0 })
 
     expect(await fs.pathExists(path.join(DIST_ROOT, 'app.json'))).toBe(true)
     expect(await fs.pathExists(path.join(DIST_ROOT, 'app.miniapp.json'))).toBe(true)
@@ -129,6 +138,26 @@ describe('e2e app: donut-multi-end (build)', { concurrent: false }, () => {
     expect(indexJson.usingComponents?.['weapp-layout-default']).toContain('/layouts/default/index')
     expect(layoutsJson.usingComponents?.['weapp-layout-default']).toContain('/layouts/default/index')
     expect(layoutsJson.usingComponents?.['weapp-layout-compact']).toContain('/layouts/compact/index')
+
+    for (const layout of ['default', 'compact']) {
+      const layoutJsonPath = path.join(DIST_ROOT, `layouts/${layout}/index.json`)
+      const layoutJson = await readJson<{
+        usingComponents?: Record<string, string>
+      }>(layoutJsonPath)
+      for (const component of ['message', 'toast']) {
+        const reference = layoutJson.usingComponents?.[`t-${component}`] ?? ''
+        expect(reference).toContain(`tdesign-miniprogram/${component}/${component}`)
+        const componentRoot = reference.startsWith('/')
+          ? path.join(DIST_ROOT, reference.slice(1))
+          : reference.startsWith('.')
+            ? path.resolve(path.dirname(layoutJsonPath), reference)
+            : path.join(DIST_ROOT, 'miniprogram_npm', reference)
+        expect(path.relative(DIST_ROOT, componentRoot)).toBe(`miniprogram_npm/tdesign-miniprogram/${component}/${component}`)
+        for (const extension of ['js', 'json', 'wxml']) {
+          expect(await fs.pathExists(`${componentRoot}.${extension}`), `${layout} t-${component}.${extension}`).toBe(true)
+        }
+      }
+    }
 
     const dataWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/data/index.wxml'), 'utf8')
     const formWxml = await fs.readFile(path.join(DIST_ROOT, 'pages/form/index.wxml'), 'utf8')

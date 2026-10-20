@@ -17,7 +17,7 @@ import { createMiniProgramPackageResolver, getAncestorNodeModulesPaths } from '.
 import { cleanUrl, isHtmlEntry, isInsideDir, normalizePath, resolveFileWithExtensionsSync, resolveRuntimePolyfillPath, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport, toViteFsImport } from './path'
 import { transformScriptModule } from './register'
 import { getStableWebComponentId, scanProject } from './scan'
-import { collectSfcHmrFiles } from './sfcHmr'
+import { collectSfcHmrModules } from './sfcHmr'
 import { createEmptyScanState } from './state'
 import { createInlineStyleModule } from './styleModule'
 import { ensureWebVueSfcResult, generateWebVueSfcStyle, generateWebVueSfcTemplate, resolveWebVueSfcStyleLanguage, transformWebVueSfcScript } from './vueSfc'
@@ -456,18 +456,12 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     },
     async handleHotUpdate<Module extends object>(this: WebPluginContext, ctx: WebHmrContext<Module>) {
       const graph = devServer?.moduleGraph
-      const affected = new Set(ctx.modules)
-      if (graph) {
-        for (const file of collectSfcHmrFiles(state, cleanUrl(ctx.file))) {
-          // 在扫描替换入口快照前保留旧节点，覆盖外部块删除及样式后缀变更。
-          for (const module of graph.getModulesByFile(file) ?? []) {
-            // 图与本次 HMR 上下文来自同一 Vite server，保留宿主模块节点的具体类型。
-            affected.add(module as Module)
-          }
-        }
-      }
+      // 在扫描替换入口快照前收集有效节点，覆盖外部块删除及样式后缀变更。
+      const affected = graph
+        ? collectSfcHmrModules(state, cleanUrl(ctx.file), graph, ctx.modules)
+        : ctx.modules
       await scanChangedFile(this, ctx.file)
-      return ctx.modules || affected.size ? [...affected] : undefined
+      return ctx.modules || affected?.length ? affected : undefined
     },
     async transform(this: WebPluginContext, code: string, id: string) {
       const clean = cleanUrl(id)

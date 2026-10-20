@@ -94,18 +94,26 @@ describe('layout-power-demo runtime vendor HMR in real WeChat DevTools', { concu
     const pageJs = await assertRuntimeVendorOutputs()
     expect(pageJs).toContain(BASELINE_MARKER)
     await acceptance.check('script-preserved', miniProgram, page)
-    expect(await page.callMethod('runE2E')).toMatchObject({ currentLayout: 'poster', definitionMarker: UPDATED_MARKER, marker: BASELINE_MARKER, ok: false })
+    // 方法在 AppService 内单次执行，并与严格原生 data 和真实 DOM 共同核对旧实例状态。
+    const preservedPageState = await captureLayoutPageState(miniProgram, 'after-script-update')
+    page = preservedPageState.nativePage
+    expect(preservedPageState.methodResult).toMatchObject({ currentLayout: 'poster', definitionMarker: UPDATED_MARKER, marker: BASELINE_MARKER, ok: false })
+    expect(preservedPageState.nativeState.after).toEqual({ currentLayout: 'poster', runtimeEvents: 5, e2eRuntimeVendorMarker: BASELINE_MARKER })
     await switchRenderedLayout(page, 'command')
     await acceptance.check('script-command', miniProgram, page)
     await switchRenderedLayout(page, 'poster')
     await acceptance.check('script-new-title', miniProgram, page)
-    await captureLayoutPageState(miniProgram, 'before-new-page')
+    const activePageState = await captureLayoutPageState(miniProgram, 'before-new-page')
+    expect(activePageState.methodResult).toMatchObject({ currentLayout: 'poster', definitionMarker: UPDATED_MARKER, marker: BASELINE_MARKER, ok: false })
+    expect(activePageState.nativeState.after).toEqual({ currentLayout: 'poster', runtimeEvents: 7, e2eRuntimeVendorMarker: BASELINE_MARKER })
 
     // 此处明确验证新页面实例读取已更新定义；前面的旧实例状态检查必须先通过。
     page = await miniProgram.reLaunch(INDEX_ROUTE)
     await acceptance.check('new-page', miniProgram, page)
-    await captureLayoutPageState(miniProgram, 'after-new-page')
-    expect(await page.callMethod('runE2E')).toMatchObject({ ok: true, definitionMarker: UPDATED_MARKER, marker: UPDATED_MARKER })
+    const newPageState = await captureLayoutPageState(miniProgram, 'after-new-page')
+    page = newPageState.nativePage
+    expect(newPageState.methodResult).toMatchObject({ ok: true, definitionMarker: UPDATED_MARKER, marker: UPDATED_MARKER })
+    expect(newPageState.nativeState.after).toEqual({ currentLayout: 'default', runtimeEvents: 1, e2eRuntimeVendorMarker: UPDATED_MARKER })
     await runFeedbackRounds(acceptance, miniProgram, page, 'after-script', 1)
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)
 
@@ -113,7 +121,7 @@ describe('layout-power-demo runtime vendor HMR in real WeChat DevTools', { concu
     expect(nextTemplate).not.toBe(originalTemplate)
     await replaceFileByRename(PAGE_WXML, nextTemplate)
     await devProcess.waitFor(waitForFileContains(path.join(DIST_ROOT, 'pages/index/index.wxml'), UPDATED_DESCRIPTION, 30_000), 'layout-power template update')
-    page = await miniProgram.currentPage()
+    page = await miniProgram.currentPage({ appFunctionFallback: false })
     await acceptance.check('template-updated', miniProgram, page, 30_000)
     await assertRuntimeVendorOutputs()
 
@@ -122,7 +130,7 @@ describe('layout-power-demo runtime vendor HMR in real WeChat DevTools', { concu
     const nextStyle = `${originalCommandLayoutStyle}\n/* ${STYLE_MARKER} */\n.theme-layout--command .theme-layout__title {\n  color: #119977;\n}\n`
     await replaceFileByRename(COMMAND_LAYOUT_WXSS, nextStyle)
     await devProcess.waitFor(waitForFileContains(path.join(DIST_ROOT, 'layouts/command/index.wxss'), STYLE_MARKER, 30_000), 'layout-power style update')
-    page = await miniProgram.currentPage()
+    page = await miniProgram.currentPage({ appFunctionFallback: false })
     await acceptance.check('style-updated', miniProgram, page, 30_000)
     await assertRuntimeVendorOutputs()
     expect(devProcess.getOutput()).not.toMatch(MODULE_MISSING_RE)

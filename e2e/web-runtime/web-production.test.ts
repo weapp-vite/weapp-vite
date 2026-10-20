@@ -6,6 +6,10 @@ import { chromium } from 'playwright'
 import { build, preview } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+type ListeningPreviewServer = PreviewServer & {
+  resolvedUrls: NonNullable<PreviewServer['resolvedUrls']>
+}
+
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const WEB_ROOT = path.join(ROOT, 'packages-runtime/web')
 let consumer: string
@@ -74,7 +78,8 @@ describe('issue #984: production package runtime initialization', () => {
     })
     expect(modules.some(id => id.endsWith('/node_modules/@weapp-vite/web/dist/runtime/index.mjs'))).toBe(true)
     expect(modules.some(id => id.includes('/packages-runtime/web/src/'))).toBe(false)
-    const server = await preview({ root: consumer, configFile: false, preview: { host: '127.0.0.1', port: 0, open: false } })
+    // preview 在监听及 URL 解析完成后才返回；本用例只在关闭前读取地址。
+    const server = await preview({ root: consumer, configFile: false, preview: { host: '127.0.0.1', port: 0, open: false } }) as ListeningPreviewServer
     const page = await browser.newPage()
     const errors: string[] = []
     page.on('pageerror', error => errors.push(error.message))

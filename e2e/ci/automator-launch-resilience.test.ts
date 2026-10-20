@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest'
 import type { WechatDevtoolsHttpCommandOptions } from '../../packages/weapp-ide-cli/src/cli/http'
 import type { DevtoolsSimulatorBootDiagnostic } from '../utils/ide-devtools-logs'
 import fs from 'node:fs'
@@ -111,13 +112,14 @@ interface MockMiniProgramRuntime {
   evaluate: ReturnType<typeof vi.fn>
   on: ReturnType<typeof vi.fn>
   removeListener: ReturnType<typeof vi.fn>
-  close: ReturnType<typeof vi.fn>
-  disconnect: ReturnType<typeof vi.fn>
+  close: Mock<() => Promise<void>>
+  disconnect: Mock<() => void>
   currentPage: ReturnType<typeof vi.fn>
   reLaunch: ReturnType<typeof vi.fn>
+  waitForAppReady?: undefined
   __rawCompile: ReturnType<typeof vi.fn>
-  __rawClose: ReturnType<typeof vi.fn>
-  __rawDisconnect: ReturnType<typeof vi.fn>
+  __rawClose: Mock<() => Promise<void>>
+  __rawDisconnect: Mock<() => void>
   __rawCurrentPage: ReturnType<typeof vi.fn>
   __rawReLaunch: ReturnType<typeof vi.fn>
 }
@@ -185,7 +187,12 @@ function readJson(target: string) {
   return JSON.parse(fs.readFileSync(target, 'utf8')) as Record<string, any>
 }
 
-function createProjectFixture(projectRoot: string, appJson?: Record<string, any>, projectConfig?: Record<string, any>) {
+interface ProjectFixtureAppConfig extends Record<string, unknown> {
+  pages?: string[]
+  subPackages?: { root: string, pages: string[] }[]
+}
+
+function createProjectFixture(projectRoot: string, appJson?: ProjectFixtureAppConfig, projectConfig?: Record<string, any>) {
   writeJson(path.join(projectRoot, 'project.config.json'), {
     appid: 'wxb3d842a4a7e3440d',
     miniprogramRoot: 'dist',
@@ -199,7 +206,7 @@ function createProjectFixture(projectRoot: string, appJson?: Record<string, any>
     },
   })
   if (appJson) {
-    const resolvedAppJson = {
+    const resolvedAppJson: ProjectFixtureAppConfig & Required<Pick<ProjectFixtureAppConfig, 'subPackages'>> = {
       subPackages: [],
       ...appJson,
     }

@@ -1,0 +1,2104 @@
+{
+  ".github/workflows/validate-ci.yml": {
+    "pr-context": {
+      "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "profile": "ci"
+      }
+    },
+    "build-pr": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && !startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))",
+      "name": "Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "os": "ubuntu-latest",
+              "node-version": 22,
+              "build_command": "pnpm build:ci",
+              "lint_command": "pnpm lint",
+              "run_types": false,
+              "run_coverage": true
+            },
+            {
+              "os": "ubuntu-latest",
+              "node-version": 24,
+              "build_command": "pnpm build:pkgs:ci",
+              "lint_command": "",
+              "run_types": true,
+              "run_coverage": false
+            },
+            {
+              "os": "windows-latest",
+              "node-version": 22,
+              "build_command": "pnpm build:ci:windows",
+              "lint_command": "",
+              "run_types": false,
+              "run_coverage": false
+            },
+            {
+              "os": "macos-latest",
+              "node-version": 22,
+              "build_command": "pnpm build:ci:macos",
+              "lint_command": "",
+              "run_types": false,
+              "run_coverage": false
+            }
+          ]
+        },
+        "max-parallel": 4
+      },
+      "uses": "./.github/workflows/reusable-quality-platform.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "build_command": "${{ matrix.build_command }}",
+        "lint_command": "${{ matrix.lint_command }}",
+        "run_types": "${{ matrix.run_types }}",
+        "run_coverage": "${{ matrix.run_coverage }}"
+      },
+      "secrets": "inherit"
+    },
+    "build-release-pr": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))",
+      "name": "Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "os": "ubuntu-latest",
+              "node-version": 22,
+              "build_command": "pnpm build:ci",
+              "lint_command": "pnpm lint",
+              "run_types": false,
+              "run_coverage": true
+            },
+            {
+              "os": "ubuntu-latest",
+              "node-version": 24,
+              "build_command": "pnpm build:ci",
+              "lint_command": "pnpm lint",
+              "run_types": false,
+              "run_coverage": true
+            }
+          ]
+        },
+        "max-parallel": 2
+      },
+      "uses": "./.github/workflows/reusable-quality-platform.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "build_command": "${{ matrix.build_command }}",
+        "lint_command": "${{ matrix.lint_command }}",
+        "run_types": "${{ matrix.run_types }}",
+        "run_coverage": "${{ matrix.run_coverage }}"
+      },
+      "secrets": "inherit"
+    },
+    "build-full": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')",
+      "name": "Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 6,
+        "matrix": {
+          "include": [
+            {
+              "os": "ubuntu-latest",
+              "node-version": 22,
+              "build_command": "pnpm build:ci",
+              "lint_command": "pnpm lint",
+              "run_types": false,
+              "run_coverage": true
+            },
+            {
+              "os": "ubuntu-latest",
+              "node-version": 24,
+              "build_command": "pnpm build:ci",
+              "lint_command": "pnpm lint",
+              "run_types": false,
+              "run_coverage": true
+            },
+            {
+              "os": "windows-latest",
+              "node-version": 22,
+              "build_command": "pnpm build:ci:windows",
+              "lint_command": "pnpm lint:ci:windows",
+              "run_types": false,
+              "run_coverage": true
+            },
+            {
+              "os": "windows-latest",
+              "node-version": 24,
+              "build_command": "pnpm build:ci:windows",
+              "lint_command": "pnpm lint:ci:windows",
+              "run_types": false,
+              "run_coverage": true
+            },
+            {
+              "os": "macos-latest",
+              "node-version": 22,
+              "build_command": "pnpm build:ci:macos",
+              "lint_command": "pnpm lint",
+              "run_types": false,
+              "run_coverage": true
+            },
+            {
+              "os": "macos-latest",
+              "node-version": 24,
+              "build_command": "pnpm build:ci:macos",
+              "lint_command": "pnpm lint",
+              "run_types": false,
+              "run_coverage": true
+            }
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-quality-platform.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "build_command": "${{ matrix.build_command }}",
+        "lint_command": "${{ matrix.lint_command }}",
+        "run_types": "${{ matrix.run_types }}",
+        "run_coverage": "${{ matrix.run_coverage }}"
+      },
+      "secrets": "inherit"
+    },
+    "weapi-compat-pr": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true')",
+      "name": "Weapi Compatibility Guard (Node 24)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "24",
+        "timeout_minutes": 15,
+        "main_command": "pnpm --filter @weapp-core/api catalog:check\npnpm --filter @weapp-core/api docs:check\npnpm --filter @weapp-core/api lint\npnpm --filter @weapp-core/api typecheck\npnpm --filter @weapp-core/api typecheck:test\npnpm --filter @weapp-core/api structure:check\npnpm --filter @weapp-core/api strict-alias:check\npnpm --filter @weapp-core/api coverage:check\npnpm --filter @weapp-core/api test\npnpm --filter @weapp-core/api test:types\npnpm --filter @weapp-core/api report:api\npnpm --filter @wevu/api lint\npnpm --filter @wevu/api typecheck\npnpm --filter @wevu/api typecheck:test\npnpm --filter @wevu/api test\npnpm --filter @wevu/api test:types\ngit diff --exit-code -- \\\n  @weapp-core/api/README.md \\\n  @weapp-core/api/src/core/apiCatalog.ts \\\n  @weapp-core/api/src/core/types.ts \\\n  @weapp-core/api/src/index.ts \\\n  @weapp-core/api/types/index.d.ts \\\n  @weapp-core/api/reports/api-compat \\\n  packages-runtime/weapi/types/index.d.ts\n"
+      },
+      "secrets": "inherit"
+    },
+    "weapi-compat-full": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')",
+      "name": "Weapi Compatibility Guard (Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "${{ matrix.node-version }}",
+        "timeout_minutes": 15,
+        "main_command": "pnpm --filter @weapp-core/api catalog:check\npnpm --filter @weapp-core/api docs:check\npnpm --filter @weapp-core/api lint\npnpm --filter @weapp-core/api typecheck\npnpm --filter @weapp-core/api typecheck:test\npnpm --filter @weapp-core/api structure:check\npnpm --filter @weapp-core/api strict-alias:check\npnpm --filter @weapp-core/api coverage:check\npnpm --filter @weapp-core/api test\npnpm --filter @weapp-core/api test:types\npnpm --filter @weapp-core/api report:api\npnpm --filter @wevu/api lint\npnpm --filter @wevu/api typecheck\npnpm --filter @wevu/api typecheck:test\npnpm --filter @wevu/api test\npnpm --filter @wevu/api test:types\ngit diff --exit-code -- \\\n  @weapp-core/api/README.md \\\n  @weapp-core/api/src/core/apiCatalog.ts \\\n  @weapp-core/api/src/core/types.ts \\\n  @weapp-core/api/src/index.ts \\\n  @weapp-core/api/types/index.d.ts \\\n  @weapp-core/api/reports/api-compat \\\n  packages-runtime/weapi/types/index.d.ts\n"
+      },
+      "secrets": "inherit"
+    }
+  },
+  ".github/workflows/validate-ci-e2e.yml": {
+    "pr-context": {
+      "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "profile": "ci-e2e"
+      }
+    },
+    "native-compiler-batch-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'native-compiler-batch')",
+      "name": "Native Compiler Batch Diagnostic (${{ matrix.os }} / Node 24)",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "24",
+        "timeout_minutes": 20,
+        "build_command": "pnpm exec turbo run build --filter=weapp-vite...",
+        "main_command": "pnpm vitest run packages/weapp-vite/src/runtime/statefulHmr/compilerBatch.native.test.ts packages/weapp-vite/src/plugins/tailwindcss/contentInvalidation.test.ts packages/weapp-vite/src/plugins/tailwindcss/moduleDependencies.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/native-compiler-batch-report.json",
+        "artifact_name": "native-compiler-batch-${{ matrix.os }}-node-24-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/native-compiler-batch-report.json"
+      },
+      "secrets": "inherit"
+    },
+    "windows-dev-cleanup-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-dev-cleanup')",
+      "name": "Dev Process Cleanup Shard Diagnostic (Windows / Node ${{ matrix.node-version }} / shard ${{ matrix.shard }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "node-version": 22,
+              "shard": 3
+            },
+            {
+              "node-version": 22,
+              "shard": 1
+            },
+            {
+              "node-version": 24,
+              "shard": 1
+            }
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "windows-latest",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "timeout_minutes": 40,
+        "build_command": "pnpm build:ci:windows",
+        "main_command": "pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 pnpm e2e:ci:full -- --shard-index=${{ matrix.shard }} --shard-total=4",
+        "e2e_platform": "weapp",
+        "artifact_name": "windows-dev-cleanup-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": "docs/reports/*-e2e-ci-full-*-suite-report/**"
+      },
+      "secrets": "inherit"
+    },
+    "windows-process-narrow-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'windows-process-narrow')",
+      "name": "Suite Runner Process Diagnostic (Windows / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "windows-latest",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "timeout_minutes": 15,
+        "build_command": "pnpm exec turbo run build --filter=weapp-ide-cli...",
+        "main_command": "pnpm exec cross-env NODE_DEBUG=weapp-ide-journal-writer pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/suiteRunner/process.test.ts --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=.tmp/windows-process-narrow-report.json",
+        "artifact_name": "windows-process-narrow-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/windows-process-narrow-report.json"
+      },
+      "secrets": "inherit"
+    },
+    "plugin-watch-readiness-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'plugin-watch-readiness')",
+      "name": "Plugin Watch Readiness (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "timeout_minutes": 20,
+        "build_command": "pnpm exec turbo run build --filter=weapp-vite...",
+        "main_command": "pnpm vitest run packages/weapp-vite/test/vite-plugin-project.test.ts --reporter=default --reporter=json --outputFile=.tmp/plugin-watch-readiness-report.json",
+        "artifact_name": "plugin-watch-readiness-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/plugin-watch-readiness-report.json"
+      },
+      "secrets": "inherit"
+    },
+    "runtime-publication-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'runtime-publication')",
+      "name": "Runtime Publication Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "timeout_minutes": 30,
+        "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...",
+        "main_command": "pnpm vitest run e2e/utils/devBuildCompletion.test.ts e2e/utils/hmrOutputDiagnostics.test.ts e2e/scripts/e2e-suite-manifest.test.ts e2e/scripts/hmr-guard-manifest.test.ts\npnpm exec vitest run --config scripts/vitest.config.mjs scripts/workspace-hmr/statefulArtifactMeasurement.test.ts scripts/workspace-hmr/statefulArtifactMeasurement.deadline.test.ts scripts/workspace-hmr/statefulAuditClient.test.ts scripts/workspace-hmr/statefulAuditUpdate.test.ts scripts/e2e-diagnostic-workflow.test.ts scripts/repoctl-release-workflow.test.ts scripts/utils/atomicRename.test.ts scripts/editSequence/buildSources.test.ts scripts/editSequence/frameworkSources.test.ts\npnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/auto-import-vue-sfc.test.ts e2e/ci/external-linked-vue-component.hmr.test.ts\npnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/issue-1134-native-topology.runtime.test.ts e2e/ide/script-setup-external-src.runtime.test.ts e2e/ide/issue-1015-css-hmr.runtime.test.ts e2e/ide/issue-1140-mode-cache.runtime.test.ts e2e/ide/issue-1058-template-tags.runtime.test.ts\n",
+        "e2e_platform": "weapp",
+        "artifact_name": "runtime-publication-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": "docs/reports/dom-acceptance/**"
+      },
+      "secrets": "inherit"
+    },
+    "lifecycle-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'lifecycle')",
+      "name": "HMR Lifecycle Regression (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "timeout_minutes": 30,
+        "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@mpcore/simulator...",
+        "main_command": "pnpm vitest run packages/weapp-vite/src/utils/watchDependencies.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotInputs.test.ts packages/weapp-vite/src/runtime/statefulHmr/snapshotBuild.integration.test.ts scripts/editSequence/processTree.test.ts scripts/editSequence/processTree.windows.integration.test.ts scripts/editSequence/processObserver.test.ts scripts/editSequence/processObserverClose.test.ts scripts/editSequence/worker.test.ts scripts/utils/atomicRename.test.ts scripts/editSequence/buildSources.test.ts scripts/editSequence/frameworkSources.test.ts\npnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/edit-sequence.test.ts --reporter=default --reporter=json --outputFile=.tmp/hmr-lifecycle-report.json\n",
+        "e2e_platform": "weapp",
+        "artifact_name": "hmr-lifecycle-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/hmr-lifecycle-report.json"
+      },
+      "secrets": "inherit"
+    },
+    "shared-layout-windows-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'shared-layout-windows')",
+      "name": "Shared Layout HMR Diagnostic (Windows / Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "windows-latest",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "timeout_minutes": 30,
+        "build_command": "pnpm build:pkgs:ci:windows",
+        "main_command": "pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/hmr-layout-shared-template-wxs.test.ts",
+        "e2e_platform": "weapp"
+      },
+      "secrets": "inherit"
+    },
+    "shared-compiler-hosts": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && ((needs.pr-context.outputs.is_pr == 'true' || github.event_name == 'workflow_dispatch') && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Shared Compiler Hosts (${{ matrix.os }} / Node 24)",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "pnpm --filter weapp-vite... --filter @mpcore/simulator... build",
+        "main_command": "node integrations/shared-hmr-tailwind/prepare.mjs\nnode integrations/shared-hmr-tailwind/verify-install.mjs\nnode integrations/shared-hmr-tailwind/verify-isolated.mjs\nnode integrations/shared-hmr-tailwind/run-taro.mjs --build\npnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/shared-taro-hmr.runtime.test.ts\n",
+        "artifact_name": "shared-compiler-hosts-${{ matrix.os }}",
+        "artifact_path": "docs/reports/dom-acceptance/**\n.tmp/shared-hosts/artifacts.json\n"
+      },
+      "secrets": "inherit"
+    },
+    "miniapp-platform-build-gate": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Miniapp Platform Build Gate (Ubuntu / Node 22)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "22",
+        "timeout_minutes": 30,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm e2e:platform:build"
+      },
+      "secrets": "inherit"
+    },
+    "bun-build-diagnostic": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'bun-cli')",
+      "name": "Bun Build Artifact (${{ matrix.os }} / Node 22)",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "os": "ubuntu-latest",
+              "build-command": "pnpm build:pkgs:ci"
+            },
+            {
+              "os": "windows-latest",
+              "build-command": "pnpm build:pkgs:ci:windows"
+            },
+            {
+              "os": "macos-latest",
+              "build-command": "pnpm build:pkgs:ci:macos"
+            }
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "22",
+        "timeout_minutes": 40,
+        "build_command": "${{ matrix.build-command }}",
+        "main_command": "node -e \"console.log('Bun workspace build artifact ready')\"",
+        "build_artifact_name": "miniapp-${{ matrix.os }}-node-22-weapp-build"
+      },
+      "secrets": "inherit"
+    },
+    "web-e2e-baseline-pr": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Web E2E Baseline (Node 24)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "macos-latest",
+        "node_version": "24",
+        "timeout_minutes": 35,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm e2e:web",
+        "install_playwright": true,
+        "artifact_name": "web-runtime-visual-pr",
+        "artifact_path": ".tmp/web-runtime-visual/**\n.tmp/web-runtime-diagnostics/**\n.tmp/uview-plus-compat/web/**\n.tmp/wot-ui-compat/web/**\n"
+      },
+      "secrets": "inherit"
+    },
+    "web-project-builds": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Web Project Builds (Node 24)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "24",
+        "timeout_minutes": 45,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm e2e:web:build-projects"
+      },
+      "secrets": "inherit"
+    },
+    "web-browser-smoke": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && ((!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Web Browser Smoke (Firefox / WebKit / Node 24)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "24",
+        "timeout_minutes": 45,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm e2e:web:browser-smoke",
+        "install_playwright": true,
+        "playwright_browsers": "firefox webkit"
+      },
+      "secrets": "inherit"
+    },
+    "workspace-hmr-pr": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr') && !startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))",
+      "name": "Workspace HMR Changed Projects (Node 24)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "24",
+        "timeout_minutes": 60,
+        "fetch_depth": 0,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm audit:hmr:changed",
+        "increase_ulimit": true,
+        "artifact_name": "workspace-hmr-pr",
+        "artifact_path": ".tmp/workspace-hmr/**"
+      },
+      "secrets": "inherit"
+    },
+    "workspace-hmr-nightly": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full' || inputs.hmr-diagnostic == 'workspace-hmr'))",
+      "name": "Workspace HMR Nightly Full (Node 24)",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "ubuntu-latest",
+        "node_version": "24",
+        "timeout_minutes": 120,
+        "fetch_depth": 0,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm audit:hmr:nightly",
+        "increase_ulimit": true,
+        "artifact_name": "workspace-hmr-nightly",
+        "artifact_path": ".tmp/workspace-hmr/**"
+      },
+      "secrets": "inherit"
+    },
+    "web-e2e-baseline-full": {
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "name": "Web E2E Baseline (Node ${{ matrix.node-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "max-parallel": 3,
+        "matrix": {
+          "node-version": [
+            22,
+            24
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "macos-latest",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "timeout_minutes": 35,
+        "build_command": "pnpm build:pkgs:ci",
+        "main_command": "pnpm e2e:web",
+        "install_playwright": true,
+        "artifact_name": "web-runtime-visual-node-${{ matrix.node-version }}",
+        "artifact_path": ".tmp/web-runtime-visual/**\n.tmp/web-runtime-diagnostics/**\n.tmp/uview-plus-compat/web/**\n.tmp/wot-ui-compat/web/**\n"
+      },
+      "secrets": "inherit"
+    },
+    "miniapp-platform-pr": {
+      "name": "Miniapp (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "platform": "weapp",
+              "os": "ubuntu-latest",
+              "build-command": "pnpm build:pkgs:ci",
+              "node-version": 22
+            },
+            {
+              "platform": "weapp",
+              "os": "windows-latest",
+              "build-command": "pnpm build:pkgs:ci:windows",
+              "node-version": 22
+            },
+            {
+              "platform": "weapp",
+              "os": "macos-latest",
+              "build-command": "pnpm build:pkgs:ci:macos",
+              "node-version": 22
+            }
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-miniapp-platform.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "build_command": "${{ matrix.build-command }}",
+        "mode": "pr",
+        "exclude_projects": "${{ inputs.exclude-e2e-projects }}"
+      },
+      "secrets": "inherit"
+    },
+    "miniapp-platform-full": {
+      "name": "Miniapp (${{ matrix.os }} / Node ${{ matrix.node-version }})",
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true' && (!inputs.hmr-diagnostic || inputs.hmr-diagnostic == 'full'))",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "platform": "weapp",
+              "os": "ubuntu-latest",
+              "node-version": 22,
+              "build-command": "pnpm build:pkgs:ci"
+            },
+            {
+              "platform": "weapp",
+              "os": "windows-latest",
+              "node-version": 22,
+              "build-command": "pnpm build:pkgs:ci:windows"
+            },
+            {
+              "platform": "weapp",
+              "os": "macos-latest",
+              "node-version": 22,
+              "build-command": "pnpm build:pkgs:ci:macos"
+            },
+            {
+              "platform": "weapp",
+              "os": "ubuntu-latest",
+              "node-version": 24,
+              "build-command": "pnpm build:pkgs:ci"
+            },
+            {
+              "platform": "weapp",
+              "os": "windows-latest",
+              "node-version": 24,
+              "build-command": "pnpm build:pkgs:ci:windows"
+            },
+            {
+              "platform": "weapp",
+              "os": "macos-latest",
+              "node-version": 24,
+              "build-command": "pnpm build:pkgs:ci:macos"
+            }
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-miniapp-platform.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "${{ format('{0}', matrix.node-version) }}",
+        "build_command": "${{ matrix.build-command }}",
+        "mode": "full",
+        "exclude_projects": "${{ inputs.exclude-e2e-projects }}"
+      },
+      "secrets": "inherit"
+    },
+    "bun-cli": {
+      "if": "${{ !cancelled() && needs.pr-context.outputs.should_run == 'true' && needs.bun-build-diagnostic.result == 'success' }}",
+      "needs": [
+        "pr-context",
+        "bun-build-diagnostic"
+      ],
+      "name": "Bun CLI (${{ matrix.os }} / Bun ${{ matrix.bun-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "bun-version": [
+            "1.4.2",
+            "latest"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude-e2e-projects }}",
+        "runs_on": "${{ matrix.os }}",
+        "node_version": "22",
+        "bun_version": "${{ matrix.bun-version }}",
+        "timeout_minutes": 15,
+        "consume_build_artifact": "miniapp-${{ matrix.os }}-node-22-weapp-build",
+        "main_command": "bun --version\npnpm e2e:bun\n",
+        "artifact_name": "bun-cli-${{ matrix.os }}-${{ matrix.bun-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/bun-cli/**\ndocs/reports/*-e2e-bun-*-suite-report/**\n"
+      },
+      "secrets": "inherit"
+    }
+  },
+  ".github/workflows/validate-ci-vite-host-consumer.yml": {
+    "pr-context": {
+      "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "profile": "ci-vite-host-consumer"
+      }
+    },
+    "consumer-platform": {
+      "name": "Consumer (${{ matrix.os }})",
+      "needs": "pr-context",
+      "if": "needs.pr-context.outputs.should_run == 'true'",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "os": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-consumer-platform.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "runs_on": "${{ matrix.os }}"
+      },
+      "secrets": "inherit"
+    }
+  },
+  ".github/workflows/reusable-quality-platform.yml": {
+    "pr-context": {
+      "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "profile": "ci"
+      }
+    },
+    "build": {
+      "name": "Build packages and fixtures",
+      "needs": "pr-context",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ inputs.node_version }}",
+        "timeout_minutes": 40,
+        "build_command": "${{ inputs.build_command }}",
+        "main_command": "${{ inputs.run_coverage && 'node scripts/coverageShards/index.mjs plan --shards=4 --output=.tmp/coverage-plan/plan.json' || 'node --version' }}",
+        "build_artifact_name": "quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build",
+        "artifact_name": "${{ inputs.run_coverage && format('coverage-plan-{0}-node-{1}', inputs.runs_on, inputs.node_version) || '' }}",
+        "artifact_path": ".tmp/coverage-plan",
+        "timing_artifact_name": "timing-quality-build-${{ inputs.runs_on }}-${{ inputs.node_version }}"
+      },
+      "secrets": "inherit"
+    },
+    "lint": {
+      "name": "Lint",
+      "needs": "pr-context",
+      "if": "inputs.lint_command != ''",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ inputs.node_version }}",
+        "timeout_minutes": 40,
+        "lint_command": "${{ inputs.lint_command }}",
+        "main_command": "node --version",
+        "timing_artifact_name": "timing-lint-${{ inputs.runs_on }}-${{ inputs.node_version }}"
+      },
+      "secrets": "inherit"
+    },
+    "contracts": {
+      "name": "Dependency contracts",
+      "needs": [
+        "pr-context",
+        "build"
+      ],
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ inputs.node_version }}",
+        "timeout_minutes": 40,
+        "consume_build_artifact": "quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build",
+        "main_command": "pnpm test:dependency-contracts\nif [[ '${{ inputs.runs_on }}' == 'ubuntu-latest' && '${{ inputs.node_version }}' == '24' ]]; then\n  pnpm exec vitest run --config scripts/vitest.config.mjs scripts/coverageShards scripts/consumerArtifacts scripts/ci-timing.test.mjs scripts/ci-topology.test.mjs scripts/verification-history.test.mjs scripts/verificationBenchmark/ci/archive.test.mjs scripts/ci-types.test.mjs\nfi",
+        "artifact_name": "dependency-contracts-${{ inputs.runs_on }}-node-${{ inputs.node_version }}",
+        "artifact_path": ".tmp/dependency-contracts",
+        "timing_artifact_name": "timing-contracts-${{ inputs.runs_on }}-${{ inputs.node_version }}"
+      },
+      "secrets": "inherit"
+    },
+    "types": {
+      "name": "Public type contracts",
+      "needs": [
+        "pr-context",
+        "build"
+      ],
+      "if": "inputs.run_types",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ inputs.node_version }}",
+        "timeout_minutes": 40,
+        "consume_build_artifact": "quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "main_command": "node scripts/ciTypes.mjs",
+        "artifact_name": "type-contracts-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}",
+        "artifact_path": ".tmp/ci-type-contracts-plan.json",
+        "timing_artifact_name": "timing-types-${{ inputs.runs_on }}-${{ inputs.node_version }}"
+      },
+      "secrets": "inherit"
+    },
+    "coverage": {
+      "name": "Coverage shard ${{ matrix.shard }}",
+      "needs": [
+        "pr-context",
+        "build"
+      ],
+      "if": "inputs.run_coverage",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "shard": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ inputs.node_version }}",
+        "timeout_minutes": 40,
+        "consume_build_artifact": "quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build",
+        "consume_aux_artifact": "coverage-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}",
+        "aux_artifact_path": ".tmp/coverage-plan",
+        "main_command": "node scripts/coverageShards/index.mjs run --plan=.tmp/coverage-plan/plan.json --shard=${{ matrix.shard }} --output=.tmp/coverage-shard",
+        "artifact_name": "coverage-shard-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ matrix.shard }}",
+        "artifact_path": ".tmp/coverage-shard/manifest.json\n.tmp/coverage-shard/blob.json\n",
+        "timing_artifact_name": "timing-coverage-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ matrix.shard }}"
+      },
+      "secrets": "inherit"
+    },
+    "coverage-merge": {
+      "name": "Coverage complete inventory and thresholds",
+      "needs": [
+        "pr-context",
+        "build",
+        "coverage"
+      ],
+      "if": "${{ !cancelled() && inputs.run_coverage && needs.build.result == 'success' }}",
+      "runs-on": "${{ inputs.runs_on }}",
+      "timeout-minutes": 15,
+      "env": {
+        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "BUILD_ARTIFACT_EXPECTED_NODE_MAJOR": "${{ inputs.node_version }}",
+        "BUILD_ARTIFACT_EXPECTED_SCOPE": "packages/weapp-vite,packages-runtime/wevu"
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "./.github/actions/setup-node-pnpm",
+          "with": {
+            "node-version": "${{ inputs.node_version }}"
+          }
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "name": "quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build",
+            "path": "."
+          }
+        },
+        {
+          "name": "Verify build identity and refresh workspace links",
+          "shell": "bash",
+          "run": "pnpm install --frozen-lockfile --ignore-scripts\nnode scripts/verify-build-artifact-manifest.mjs\n"
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "name": "coverage-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}",
+            "path": ".tmp/coverage-plan"
+          }
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "pattern": "coverage-shard-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-*",
+            "path": ".tmp/coverage-reports"
+          }
+        },
+        {
+          "name": "Merge native coverage with original thresholds",
+          "run": "node scripts/coverageShards/index.mjs merge --plan=.tmp/coverage-plan/plan.json --reports=.tmp/coverage-reports --output=coverage"
+        },
+        {
+          "name": "Upload coverage reports to Codecov",
+          "uses": "codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5",
+          "with": {
+            "override_commit": "${{ needs.pr-context.outputs.head_sha }}",
+            "override_pr": "${{ needs.pr-context.outputs.pr_number }}",
+            "override_branch": "${{ needs.pr-context.outputs.head_ref }}"
+          },
+          "env": {
+            "CODECOV_TOKEN": "${{ needs.pr-context.outputs.is_pr != 'true' && secrets.CODECOV_TOKEN || '' }}"
+          }
+        },
+        {
+          "name": "Upload complete coverage verdict",
+          "if": "${{ !cancelled() }}",
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "with": {
+            "name": "coverage-complete-${{ inputs.runs_on }}-node-${{ inputs.node_version }}",
+            "path": "coverage",
+            "if-no-files-found": "error"
+          }
+        }
+      ]
+    }
+  },
+  ".github/workflows/reusable-miniapp-platform.yml": {
+    "pr-context": {
+      "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "profile": "ci-e2e"
+      }
+    },
+    "build": {
+      "name": "Build and freeze suite plan",
+      "needs": "pr-context",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ inputs.node_version }}",
+        "timeout_minutes": 40,
+        "build_command": "${{ inputs.build_command }}",
+        "main_command": "node --version",
+        "build_artifact_name": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
+        "timing_artifact_name": "timing-miniapp-build-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}"
+      },
+      "secrets": "inherit"
+    },
+    "plan": {
+      "name": "Freeze complete suite plan",
+      "needs": "pr-context",
+      "runs-on": "${{ inputs.runs_on }}",
+      "timeout-minutes": 15,
+      "env": {
+        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "WEAPP_VITE_E2E_EXCLUDE_PROJECTS": "${{ inputs.exclude_projects }}"
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "./.github/actions/setup-node-pnpm",
+          "with": {
+            "node-version": "${{ inputs.node_version }}"
+          }
+        },
+        {
+          "name": "Create runner profile",
+          "shell": "bash",
+          "run": "node -e \"const fs = require('node:fs'); fs.mkdirSync('.tmp/verification-plan', { recursive: true }); fs.writeFileSync('.tmp/verification-plan/profile.json', JSON.stringify({ os: process.platform, arch: process.arch, nodeMajor: Number(process.versions.node.split('.')[0]), provider: 'none', platform: 'weapp', runnerClass: 'github-hosted' }));\"\n"
+        },
+        {
+          "name": "Download verified default-branch timing history",
+          "shell": "bash",
+          "env": {
+            "GITHUB_TOKEN": "${{ github.token }}",
+            "VERIFICATION_DEFAULT_BRANCH": "${{ github.event.repository.default_branch }}"
+          },
+          "run": "node .github/scripts/verification-history.mjs .tmp/verification-history \"${{ inputs.runs_on }}\" \"${{ inputs.node_version }}\""
+        },
+        {
+          "name": "Freeze complete task inventory and shard assignment",
+          "shell": "bash",
+          "run": "node --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/profile.json --repository=\"${{ github.repository }}\" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/history.json\nnode --import tsx e2e/scripts/verification/cli.ts plan --suite=ci-${{ inputs.mode }} --shards=4 --profile=.tmp/verification-plan/profile.json --history=.tmp/verification-plan/history.json --output=.tmp/verification-plan/plan.json"
+        },
+        {
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "if": "${{ !cancelled() }}",
+          "with": {
+            "name": "miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}",
+            "path": ".tmp/verification-plan",
+            "if-no-files-found": "error"
+          }
+        }
+      ]
+    },
+    "simulator-browser": {
+      "needs": [
+        "pr-context",
+        "build"
+      ],
+      "name": "Simulator Browser E2E (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ inputs.node_version }}",
+        "timeout_minutes": 20,
+        "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
+        "install_playwright": true,
+        "main_command": "pnpm --filter @mpcore/simulator test:e2e",
+        "artifact_name": "simulator-browser-${{ inputs.runs_on }}-node-${{ inputs.node_version }}",
+        "artifact_path": "docs/reports/simulator-browser/**",
+        "build_artifact_scope": "packages/weapp-vite,mpcore/packages/simulator",
+        "timing_artifact_name": "timing-simulator-browser-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}"
+      },
+      "secrets": "inherit"
+    },
+    "ide-dom-headless": {
+      "needs": [
+        "pr-context",
+        "build"
+      ],
+      "name": "IDE DOM Headless (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ inputs.node_version }}",
+        "timeout_minutes": 30,
+        "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
+        "main_command": "pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts e2e/utils/devProcessCleanup/processes.test.ts e2e/utils/dev-process.cleanup.test.ts e2e/utils/devProcessCleanup/windowsProcessTree.test.ts e2e/utils/devProcessCleanup/windowsProcessRows.test.ts e2e/utils/devProcessCleanup/windowsQueryTrace.test.ts\npnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless\n",
+        "artifact_name": "ide-dom-headless-${{ inputs.runs_on }}-node-${{ inputs.node_version }}",
+        "artifact_path": "docs/reports/dom-acceptance/**\ndocs/reports/*-e2e-ide-dom-headless-*-suite-report/**\n",
+        "build_artifact_scope": "packages/weapp-vite,mpcore/packages/simulator",
+        "timing_artifact_name": "timing-ide-dom-headless-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}"
+      },
+      "secrets": "inherit"
+    },
+    "ide-dom-acceptance-internal": {
+      "needs": [
+        "pr-context",
+        "build"
+      ],
+      "name": "IDE DOM Acceptance Contracts (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ inputs.node_version }}",
+        "timeout_minutes": 15,
+        "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
+        "main_command": "node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/github-issues --platform weapp\nnode packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/template-wevu-regression --platform weapp\nnode --import tsx scripts/check-e2e-ide-shared-launch.ts\nnode --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check\npnpm vitest run -c e2e/vitest.e2e.internal.config.ts --maxWorkers=1 --no-file-parallelism\n",
+        "artifact_name": "dom-acceptance-inventory-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": "e2e/dom-acceptance-inventory.json\ne2e/dom-acceptance-inventory.md\n",
+        "build_artifact_scope": "packages/weapp-vite,mpcore/packages/simulator",
+        "timing_artifact_name": "timing-ide-dom-acceptance-internal-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}"
+      },
+      "secrets": "inherit"
+    },
+    "miniapp": {
+      "name": "Miniapp suite shard ${{ matrix.shard }}",
+      "needs": [
+        "pr-context",
+        "build",
+        "plan"
+      ],
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "shard": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ inputs.node_version }}",
+        "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
+        "build_artifact_scope": "packages/weapp-vite,mpcore/packages/simulator",
+        "timeout_minutes": 40,
+        "consume_aux_artifact": "miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}",
+        "aux_artifact_path": ".tmp/verification-plan",
+        "e2e_platform": "weapp",
+        "increase_ulimit": true,
+        "main_command": "node --import tsx e2e/scripts/run-e2e-suite.ts ci-${{ inputs.mode }} --plan=.tmp/verification-plan/plan.json --shard-index=${{ matrix.shard }}",
+        "artifact_name": "miniapp-e2e-ci-${{ inputs.mode }}-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-${{ matrix.shard }}",
+        "artifact_path": "docs/reports/*-e2e-ci-${{ inputs.mode }}-*-suite-report/**",
+        "timing_artifact_name": "timing-miniapp-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}-${{ matrix.shard }}"
+      },
+      "secrets": "inherit"
+    },
+    "hmr": {
+      "name": "Miniapp HMR Guard",
+      "needs": [
+        "pr-context",
+        "build"
+      ],
+      "if": "inputs.mode == 'full' || inputs.runs_on == 'ubuntu-latest'",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ inputs.node_version }}",
+        "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
+        "build_artifact_scope": "packages/weapp-vite,mpcore/packages/simulator",
+        "timeout_minutes": 50,
+        "main_command": "${{ inputs.mode == 'pr' && 'pnpm e2e:hmr:guard:smoke' || 'pnpm e2e:ci:hmr' }}",
+        "e2e_platform": "weapp",
+        "increase_ulimit": true,
+        "timing_artifact_name": "timing-hmr-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}"
+      },
+      "secrets": "inherit"
+    },
+    "bun-cli": {
+      "if": "inputs.node_version == '22'",
+      "needs": [
+        "pr-context",
+        "build"
+      ],
+      "name": "Bun CLI (${{ matrix.bun-version }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "bun-version": [
+            "1.4.2",
+            "latest"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "e2e_exclude_projects": "${{ inputs.exclude_projects }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "${{ inputs.node_version }}",
+        "bun_version": "${{ matrix.bun-version }}",
+        "timeout_minutes": 15,
+        "consume_build_artifact": "miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build",
+        "main_command": "bun --version\npnpm e2e:bun\n",
+        "artifact_name": "bun-cli-${{ inputs.runs_on }}-${{ matrix.bun-version }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".tmp/bun-cli/**\ndocs/reports/*-e2e-bun-*-suite-report/**\n",
+        "build_artifact_scope": "packages/weapp-vite,mpcore/packages/simulator",
+        "timing_artifact_name": "timing-bun-${{ inputs.runs_on }}-${{ matrix.bun-version }}-${{ inputs.mode }}"
+      },
+      "secrets": "inherit"
+    },
+    "aggregate": {
+      "name": "Require every planned miniapp task",
+      "needs": [
+        "pr-context",
+        "build",
+        "plan",
+        "miniapp"
+      ],
+      "if": "${{ !cancelled() && needs.build.result == 'success' && needs.plan.result == 'success' }}",
+      "runs-on": "${{ inputs.runs_on }}",
+      "timeout-minutes": 15,
+      "env": {
+        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ needs.pr-context.outputs.checkout_sha }}"
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "./.github/actions/setup-node-pnpm",
+          "with": {
+            "node-version": "${{ inputs.node_version }}"
+          }
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "name": "miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}",
+            "path": ".tmp/verification-plan"
+          }
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "pattern": "miniapp-e2e-ci-${{ inputs.mode }}-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-*",
+            "path": ".tmp/verification-reports"
+          }
+        },
+        {
+          "name": "Validate complete suite inventory",
+          "run": "node --import tsx e2e/scripts/verification/cli.ts aggregate --plan=.tmp/verification-plan/plan.json --reports=.tmp/verification-reports --output=.tmp/verification-aggregate/report.json"
+        },
+        {
+          "name": "Upload complete suite verdict",
+          "if": "${{ !cancelled() }}",
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "with": {
+            "name": "miniapp-aggregate-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}",
+            "path": ".tmp/verification-aggregate",
+            "if-no-files-found": "error"
+          }
+        }
+      ]
+    }
+  },
+  ".github/workflows/reusable-consumer-platform.yml": {
+    "pr-context": {
+      "uses": "./.github/workflows/reusable-frozen-pr-context.yml",
+      "with": {
+        "pr_context": "${{ inputs.pr_context }}",
+        "profile": "ci-vite-host-consumer"
+      }
+    },
+    "prepare": {
+      "name": "Build and pack consumer candidates",
+      "needs": "pr-context",
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react... --filter=rolldown-require... --filter=@mpcore/simulator...",
+        "main_command": "node scripts/consumerArtifacts/manifest.mjs pack .cache/node-support-tarballs",
+        "build_artifact_name": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "artifact_name": "consumer-tarballs-${{ inputs.runs_on }}",
+        "artifact_path": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-consumer-prepare-${{ inputs.runs_on }}"
+      },
+      "secrets": "inherit"
+    },
+    "node-support": {
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Published Node support (${{ matrix.node }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "node": [
+            "22.18.0",
+            "24.11.0",
+            "26.0.0",
+            "22",
+            "24"
+          ]
+        }
+      },
+      "runs-on": "${{ inputs.runs_on }}",
+      "timeout-minutes": 40,
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "./.github/actions/setup-node-pnpm",
+          "with": {
+            "node-version": "24"
+          }
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "name": "consumer-${{ inputs.runs_on }}-node-24-build",
+            "path": "."
+          }
+        },
+        {
+          "name": "Verify builder identity and refresh workspace links",
+          "shell": "bash",
+          "run": "pnpm install --frozen-lockfile --ignore-scripts\nnode scripts/verify-build-artifact-manifest.mjs"
+        },
+        {
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "with": {
+            "name": "consumer-tarballs-${{ inputs.runs_on }}",
+            "path": ".cache/node-support-tarballs"
+          }
+        },
+        {
+          "name": "Verify immutable candidate archives",
+          "run": "node scripts/consumerArtifacts/manifest.mjs verify .cache/node-support-tarballs"
+        },
+        {
+          "name": "Install browser for published Web consumption",
+          "run": "pnpm exec playwright install --with-deps chromium"
+        },
+        {
+          "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+          "with": {
+            "node-version": "${{ matrix.node }}"
+          }
+        },
+        {
+          "name": "Record actual consumer Node version",
+          "shell": "bash",
+          "run": "node -e \"process.stdout.write('REPOCTL_RELEASE_NODE_VERSION=' + process.version + '\\n')\" >> \"$GITHUB_ENV\""
+        },
+        {
+          "name": "Verify packed Dashboard public types without mini-program ambient globals",
+          "run": "node packages/weapp-vite/scripts/verify-dashboard-public-types.mjs",
+          "env": {
+            "WEAPP_VITE_CONSUMER_TARBALLS": ".cache/node-support-tarballs",
+            "WEAPP_VITE_DASHBOARD_TYPES_EVIDENCE": ".cache/dashboard-public-types.json"
+          }
+        },
+        {
+          "name": "Install and verify published native, SFC, Tailwind and Web consumers",
+          "run": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv",
+          "env": {
+            "WEAPP_VITE_CONSUMER_TARBALLS": ".cache/node-support-tarballs",
+            "WEAPP_VITE_CONSUMER_WEB": "1",
+            "WEAPP_VITE_CONSUMER_EVIDENCE": ".cache/consumer-evidence.json",
+            "WEAPP_VITE_CONSUMER_DEPENDENCIES": "1"
+          }
+        },
+        {
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "if": "${{ !cancelled() }}",
+          "with": {
+            "name": "consumer-evidence-${{ inputs.runs_on }}-${{ matrix.node }}",
+            "path": ".cache/consumer-evidence.json\n.cache/dashboard-public-types.json\n"
+          }
+        }
+      ],
+      "env": {
+        "BUILD_ARTIFACT_EXPECTED_COMMIT": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "BUILD_ARTIFACT_EXPECTED_NODE_MAJOR": "24",
+        "BUILD_ARTIFACT_EXPECTED_SCOPE": "packages/weapp-vite,packages-runtime/wevu",
+        "WEAPP_VITE_CONSUMER_TARBALLS": ".cache/node-support-tarballs"
+      }
+    },
+    "contracts": {
+      "name": "Host contracts",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "main_command": "node scripts/consumerArtifacts/contracts.mjs",
+        "timing_artifact_name": "timing-consumer-contracts-${{ inputs.runs_on }}"
+      },
+      "secrets": "inherit"
+    },
+    "dependency-compatibility": {
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Strict dependency consumer (${{ matrix.manager }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "manager": [
+            "pnpm",
+            "npm"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "",
+        "main_command": "pnpm exec cross-env WEAPP_VITE_DEPENDENCY_EVIDENCE=.cache/dependency-compatibility.json node packages/weapp-vite/scripts/verify-dependency-install.mjs ${{ matrix.manager }}",
+        "artifact_name": "dependency-compatibility-${{ inputs.runs_on }}-${{ matrix.manager }}",
+        "artifact_path": ".cache/dependency-compatibility.json",
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-dependency-${{ inputs.runs_on }}-${{ matrix.manager }}"
+      },
+      "secrets": "inherit"
+    },
+    "consumer": {
+      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Packed consumer (${{ matrix.toolchain }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "toolchain": [
+            "wv",
+            "vite",
+            "vite-plus"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "",
+        "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.toolchain }}",
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-consumer-consumer-${{ inputs.runs_on }}-${{ matrix.toolchain }}"
+      },
+      "secrets": "inherit"
+    },
+    "stateful-runtime": {
+      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Stateful runtime (${{ matrix.host }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "host": [
+            "wv",
+            "vite",
+            "vite-plus"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "",
+        "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless stateful",
+        "artifact_name": "stateful-runtime-${{ matrix.host }}",
+        "artifact_path": "docs/reports/dom-acceptance/**",
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-consumer-stateful-runtime-${{ inputs.runs_on }}-${{ matrix.host }}"
+      },
+      "secrets": "inherit"
+    },
+    "classic-runtime": {
+      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Classic runtime (${{ matrix.host }} / ${{ matrix.profile }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "host": [
+            "wv",
+            "vite",
+            "vite-plus"
+          ],
+          "profile": [
+            "classic",
+            "classic-watch"
+          ],
+          "exclude": [
+            {
+              "host": "wv",
+              "profile": "classic-watch"
+            }
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "",
+        "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless ${{ matrix.profile }}",
+        "artifact_name": "classic-runtime-${{ matrix.host }}-${{ matrix.profile }}",
+        "artifact_path": "docs/reports/dom-acceptance/**",
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-consumer-classic-runtime-${{ inputs.runs_on }}-${{ matrix.host }}-${{ matrix.profile }}"
+      },
+      "secrets": "inherit"
+    },
+    "react-runtime": {
+      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "React runtime (${{ matrix.host }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "host": [
+            "wv",
+            "vite",
+            "vite-plus"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "",
+        "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless react",
+        "artifact_name": "react-runtime-${{ matrix.host }}",
+        "artifact_path": "docs/reports/dom-acceptance/**",
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-consumer-react-runtime-${{ inputs.runs_on }}-${{ matrix.host }}"
+      },
+      "secrets": "inherit"
+    },
+    "independent-runtime": {
+      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Independent runtime (${{ matrix.host }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "host": [
+            "wv",
+            "vite",
+            "vite-plus"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "",
+        "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless independent",
+        "artifact_name": "independent-runtime-${{ matrix.host }}",
+        "artifact_path": "docs/reports/dom-acceptance/**",
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-consumer-independent-runtime-${{ inputs.runs_on }}-${{ matrix.host }}"
+      },
+      "secrets": "inherit"
+    },
+    "worker-runtime": {
+      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Worker runtime (${{ matrix.host }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "host": [
+            "wv",
+            "vite",
+            "vite-plus"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "",
+        "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless worker",
+        "artifact_name": "worker-runtime-${{ matrix.host }}",
+        "artifact_path": "docs/reports/dom-acceptance/**",
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-consumer-worker-runtime-${{ inputs.runs_on }}-${{ matrix.host }}"
+      },
+      "secrets": "inherit"
+    },
+    "plugin-runtime": {
+      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Plugin runtime (${{ matrix.host }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "host": [
+            "wv",
+            "vite",
+            "vite-plus"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "",
+        "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless plugin",
+        "artifact_name": "plugin-runtime-${{ matrix.host }}",
+        "artifact_path": "docs/reports/dom-acceptance/**",
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-consumer-plugin-runtime-${{ inputs.runs_on }}-${{ matrix.host }}"
+      },
+      "secrets": "inherit"
+    },
+    "lib-runtime": {
+      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Library runtime (${{ matrix.host }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "host": [
+            "wv",
+            "vite",
+            "vite-plus"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "",
+        "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless lib",
+        "artifact_name": "lib-runtime-${{ matrix.host }}",
+        "artifact_path": "docs/reports/dom-acceptance/**",
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-consumer-lib-runtime-${{ inputs.runs_on }}-${{ matrix.host }}"
+      },
+      "secrets": "inherit"
+    },
+    "platform-runtime": {
+      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Platform builds and runtime (${{ matrix.host }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "host": [
+            "wv",
+            "vite",
+            "vite-plus"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "",
+        "main_command": "node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless platform",
+        "artifact_name": "platform-runtime-${{ matrix.host }}",
+        "artifact_path": "docs/reports/dom-acceptance/**",
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-consumer-platform-runtime-${{ inputs.runs_on }}-${{ matrix.host }}"
+      },
+      "secrets": "inherit"
+    },
+    "web-runtime": {
+      "if": "inputs.runs_on == 'ubuntu-latest'",
+      "needs": [
+        "pr-context",
+        "prepare"
+      ],
+      "name": "Web browser runtime (${{ matrix.host }})",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "host": [
+            "wv",
+            "vite",
+            "vite-plus"
+          ]
+        }
+      },
+      "uses": "./.github/workflows/reusable-node-command.yml",
+      "with": {
+        "checkout_ref": "${{ needs.pr-context.outputs.checkout_sha }}",
+        "base_sha": "${{ needs.pr-context.outputs.base_sha }}",
+        "head_sha": "${{ needs.pr-context.outputs.head_sha }}",
+        "pr_number": "${{ needs.pr-context.outputs.pr_number }}",
+        "head_ref": "${{ needs.pr-context.outputs.head_ref }}",
+        "base_ref": "${{ needs.pr-context.outputs.base_ref }}",
+        "runs_on": "${{ inputs.runs_on }}",
+        "node_version": "24",
+        "timeout_minutes": 30,
+        "build_command": "",
+        "install_playwright": true,
+        "playwright_browsers": "chromium",
+        "main_command": "pnpm exec vitest run --config scripts/vitest.config.mjs scripts/hostCapabilityDiagnostic.test.mjs\npnpm exec cross-env WEAPP_VITE_CONSUMER_HOST_DIAGNOSTICS=1 node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless web\n",
+        "artifact_name": "web-host-capability-${{ matrix.host }}-${{ needs.pr-context.outputs.checkout_sha }}",
+        "artifact_path": ".cache/web-consumer-diagnostic/host-capability-*.json",
+        "consume_build_artifact": "consumer-${{ inputs.runs_on }}-node-24-build",
+        "build_artifact_node_major": "24",
+        "build_artifact_scope": "packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator",
+        "consume_aux_artifact": "consumer-tarballs-${{ inputs.runs_on }}",
+        "aux_artifact_path": ".cache/node-support-tarballs",
+        "consumer_tarballs": ".cache/node-support-tarballs",
+        "timing_artifact_name": "timing-consumer-web-runtime-${{ inputs.runs_on }}-${{ matrix.host }}"
+      },
+      "secrets": "inherit"
+    }
+  }
+}

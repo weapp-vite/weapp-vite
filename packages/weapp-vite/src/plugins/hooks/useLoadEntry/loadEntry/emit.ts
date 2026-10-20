@@ -18,6 +18,7 @@ import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { registerNativePageLayoutOutput } from '../../../outputFinalizer/pageLayout'
 import { readFile as readFileCached } from '../../../utils/cache'
+import { isVueEntryJsonPublisher } from '../../../utils/entryJson'
 import { syncCssImportDependencies } from '../../../utils/invalidateEntry'
 import {
   resolveNativeLayoutOutputOptions,
@@ -545,6 +546,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       jsonPath: type === 'app' ? id : jsonPath,
       json,
       type,
+      ...(isVueEntryJsonPublisher(id, type, configService) ? { publisher: 'vue' as const } : {}),
     })
   }
   if (pluginJsonPathForRegistration && pluginJsonForRegistration) {

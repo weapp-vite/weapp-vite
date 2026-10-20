@@ -1,11 +1,13 @@
-import type { ComponentMarkup } from './types'
+import type { ComponentInteraction, ComponentMarkup } from './types'
 import { renderInteractionValue } from './renderValue'
+
+type EventTargetInteraction = ComponentInteraction & Pick<Extract<ComponentInteraction, { type: 'command' }>, 'eventTarget'>
 
 function renderStringLiteral(value: string) {
   return `'${value.replaceAll('\\', '\\\\').replaceAll(`'`, `\\'`)}'`
 }
 
-function renderTargetMarkup(component: string, spec: ComponentMarkup) {
+function renderTargetMarkup(component: string, spec: ComponentMarkup & { interaction?: EventTargetInteraction }) {
   const componentEventBinding = spec.interaction?.event && spec.interaction.eventTarget !== 'parent'
     ? ` @${spec.interaction.event}="markInteraction"`
     : ''

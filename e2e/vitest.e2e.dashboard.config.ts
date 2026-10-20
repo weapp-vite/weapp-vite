@@ -1,10 +1,10 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { createE2ESourceTransform } from './utils/sourceTransform.ts'
 
 export default defineConfig({
-  oxc: {
-    tsconfig: false,
-  },
+  oxc: { exclude: /.*/ },
+  plugins: [createE2ESourceTransform()],
   test: {
     globalSetup: [path.resolve(import.meta.dirname, 'vitest.e2e.machine.global-setup.ts')],
     include: [path.resolve(import.meta.dirname, './web-runtime/dashboard-devframe.test.ts')],

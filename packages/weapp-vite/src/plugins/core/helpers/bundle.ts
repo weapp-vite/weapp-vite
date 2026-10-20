@@ -343,6 +343,9 @@ export function emitJsonAssets(this: any, state: CorePluginState) {
   const emittedSourceCache = ctx.runtimeState.json.emittedSource
 
   for (const jsonEmitFile of records.values()) {
+    if (jsonEmitFile.entry.publisher === 'vue') {
+      continue
+    }
     if (
       jsonEmitFile.entry.json
       && isObject(jsonEmitFile.entry.json)

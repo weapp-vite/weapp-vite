@@ -228,7 +228,7 @@ describeWeb('web runtime visual parity', { concurrent: false }, () => {
     webUrl = await waitForWebServerReady(devServer, logs)
     const launchOptions = PLAYWRIGHT_BUNDLED_AVAILABLE || !CHROMIUM_CHANNEL
       ? { headless: true }
-      : { headless: true, channel: CHROMIUM_CHANNEL as Parameters<typeof chromium.launch>[0]['channel'] }
+      : { headless: true, channel: CHROMIUM_CHANNEL }
     browser = await chromium.launch(launchOptions)
   })
 

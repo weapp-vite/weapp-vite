@@ -1,13 +1,13 @@
 import type { PackageJson } from 'pkg-types'
 import type { NpmBuildOptions } from '../../../types'
 import type { NpmBuildServiceOptions } from './types'
-import { copyFile } from 'node:fs/promises'
 import { fs } from '@weapp-core/shared/fs'
 import { getPackageInfo } from 'local-pkg'
 import path from 'pathe'
 import { debug } from '../../../context/shared'
 import { packageSearchOptions } from '../packageResolution'
 import { getPackNpmRelationList } from '../relations'
+import { copyDirectoryWithFilter } from './copy'
 import {
   dedupeNpmDependencies,
   hasLocalSubPackageNpmConfig,
@@ -63,31 +63,6 @@ async function resolvePackageDependencyClosure(
   return [...names]
 }
 
-async function copyDirectoryWithFilter(
-  sourceDir: string,
-  targetDir: string,
-  filter: (sourcePath: string) => boolean,
-) {
-  await fs.ensureDir(targetDir)
-  const entries = await fs.readdir(sourceDir, { withFileTypes: true })
-
-  await Promise.all(entries.map(async (entry) => {
-    const sourcePath = path.resolve(sourceDir, entry.name)
-    if (!filter(sourcePath)) {
-      return
-    }
-
-    const targetPath = path.resolve(targetDir, entry.name)
-    if (entry.isDirectory()) {
-      await copyDirectoryWithFilter(sourcePath, targetPath, filter)
-      return
-    }
-
-    await fs.ensureDir(path.dirname(targetPath))
-    await copyFile(sourcePath, targetPath)
-  }))
-}
-
 export function createNpmBuildService(options: NpmBuildServiceOptions) {
   const { ctx, builder, cache } = options
   const packageInfoPromiseCache = new Map<string, Promise<Awaited<ReturnType<typeof getPackageInfo>> | null>>()
@@ -137,9 +112,10 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
     npmDistDir: string
     options?: NpmBuildOptions
     cacheKey?: string
+    checkOutputDirectory?: boolean
     resolveFrom: string
   }) {
-    const isNpmDistMissing = !(await fs.pathExists(args.npmDistDir))
+    const isNpmDistMissing = args.checkOutputDirectory !== false && !(await fs.pathExists(args.npmDistDir))
     const isDependenciesCacheOutdate = isNpmDistMissing || await cache.checkDependenciesCacheOutdate(args.cacheKey)
     if (isDependenciesCacheOutdate) {
       await fs.remove(args.npmDistDir)
@@ -194,10 +170,11 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
       const allDependencies = await resolveBuildCandidateDependencies(pkgJson, resolveFrom)
       const mainDependencies = resolveTargetDependencies(allDependencies, resolveMainBuildDependencyPatterns(ctx))
       const sourceOutDir = hasSameDependencySet(allDependencies, mainDependencies) ? outDir : cachedSourceOutDir
+      const hasBuildOptions = typeof configService.weappViteConfig.npm?.buildOptions === 'function'
       const localSubPackageMetas = [...ctx.scanService?.subPackageMap.values() ?? []]
-        .filter(meta => Array.isArray(meta.subPackage.dependencies) && meta.subPackage.dependencies.length > 0)
+        .filter(meta => Array.isArray(meta.subPackage.dependencies) && (hasBuildOptions || meta.subPackage.dependencies.length > 0))
 
-      const sourceBuildPromise = sourceOutDir !== outDir
+      const sourceBuildPromise = !hasBuildOptions && sourceOutDir !== outDir
         ? buildTargetDependencies({
             cacheKey: '__all__',
             dependencies: allDependencies,
@@ -235,8 +212,20 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
         }))
       }
 
-      await Promise.all(localSubPackageMetas.map(async (meta) => {
+      const localSubPackageTasks = localSubPackageMetas.map(meta => async () => {
         const targetDir = path.resolve(localSubPackageOutRoot, meta.subPackage.root, npmDistDirName)
+        if (hasBuildOptions) {
+          // 回调必须接收分包最终逻辑目标；共享 builder 负责递归解析和实际输出目录的缓存。
+          await buildTargetDependencies({
+            cacheKey: meta.subPackage.root,
+            dependencies: resolveTargetDependencies(allDependencies, meta.subPackage.dependencies),
+            npmDistDir: targetDir,
+            checkOutputDirectory: false,
+            resolveFrom,
+            options,
+          })
+          return
+        }
         const isDependenciesCacheOutdate = await cache.checkDependenciesCacheOutdate(meta.subPackage.root)
         const shouldRefreshLocalSubPackageNpm = isDependenciesCacheOutdate || !(await fs.pathExists(targetDir))
         if (shouldRefreshLocalSubPackageNpm) {
@@ -260,7 +249,16 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
           })
         }
         await cache.writeDependenciesCache(meta.subPackage.root)
-      }))
+      })
+      if (hasBuildOptions) {
+        // 不同逻辑目标可以由回调映射到同一目录，逐目标完成以保持输出所有权。
+        for (const task of localSubPackageTasks) {
+          await task()
+        }
+      }
+      else {
+        await Promise.all(localSubPackageTasks.map(task => task()))
+      }
     }
 
     debug?.('buildNpm end')

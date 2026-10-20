@@ -22,7 +22,7 @@ for (const runtime of ['classic', 'stateful-experimental']) {
     let dev: ReturnType<typeof startDevProcess> | undefined
     let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
     let disposeTransport: (() => void) | undefined
-    const runtimeErrors: string[] = []
+    const runtimeErrors: unknown[] = []
 
     async function connect() {
       miniProgram = await launchAutomator({
@@ -34,11 +34,11 @@ for (const runtime of ['classic', 'stateful-experimental']) {
         warmupRoute: ROUTE,
         warmupRootSelectors: ['#issue-1015-page'],
       })
-      miniProgram.on('exception', (event) => {
+      miniProgram.on('exception', (event: { message?: unknown }) => {
         runtimeErrors.push(event.message)
         process.stdout.write(`[issue-1015-exception] ${JSON.stringify(event)}\n`)
       })
-      miniProgram.on('console', (event) => {
+      miniProgram.on('console', (event: { level?: unknown }) => {
         if (event.level === 'error') {
           process.stdout.write(`[issue-1015-console] ${JSON.stringify(event)}\n`)
         }
@@ -148,7 +148,7 @@ for (const runtime of ['classic', 'stateful-experimental']) {
           await expect.poll(async () => {
             await syncHeadlessFullBuild()
             const control = await readFile(path.join(project, 'dist', WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE), 'utf8')
-            const state = await host.evaluate((clientKey, controlKey) => {
+            const state = await host.evaluate((clientKey: string, controlKey: string) => {
               const globals = globalThis as any
               const transport = globals[clientKey]?.getTransportState?.()
               return { buildId: globals[controlKey]?.buildId, response: transport?.lastResponse?.type, phase: transport?.phase }

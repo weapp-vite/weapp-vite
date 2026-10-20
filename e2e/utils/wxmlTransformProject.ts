@@ -3,7 +3,7 @@ import { cp, mkdir, mkdtemp, readFile, realpath, rename, symlink, writeFile } fr
 import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
-import { sanitizeBuildCommandEnv } from './buildLog'
+import { sanitizeBuildCommandEnv } from './buildCommandEnv'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 

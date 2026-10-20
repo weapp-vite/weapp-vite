@@ -10,7 +10,7 @@ import { createDashboardArtifactSnapshot } from '../../packages/weapp-vite/src/d
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 
-interface DashboardWindow extends Window {
+type DashboardWindow = typeof window & {
   __dashboardSockets: WebSocket[]
 }
 

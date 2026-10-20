@@ -33,7 +33,9 @@ describe.each(['classic', 'stateful-experimental'] as const)('standalone JSON si
   }, 60_000)
 
   it('publishes edits and restoration without a script or template change', async (context) => {
-    context.onTestFailed(() => process.stdout.write(dev?.getOutput().slice(-12_000) ?? ''))
+    context.onTestFailed(() => {
+      process.stdout.write(dev?.getOutput().slice(-12_000) ?? '')
+    })
     for (const extension of ['js', 'json', 'wxml', 'wxss']) {
       expect(await readFile(path.join(project, `dist/pages/index/index.${extension}`), 'utf8')).not.toBe('')
     }

@@ -11,7 +11,9 @@ describe.each(['classic', 'stateful-experimental'] as const)('native style and t
   it('updates imported styles and publishes and revokes complete component and page outputs', async (context) => {
     const project = await createNativeProfileProject(runtime)
     const dev = startDevProcess(process.execPath, [NATIVE_BATCH_CLI, 'dev', '--non-interactive'], { cwd: project, env: createDevProcessEnv(), all: true })
-    context.onTestFailed(() => process.stdout.write(dev.getOutput()))
+    context.onTestFailed(() => {
+      process.stdout.write(dev.getOutput())
+    })
     const read = (file: string) => readFile(path.join(project, file), 'utf8')
     try {
       await dev.waitForInitialBuild()

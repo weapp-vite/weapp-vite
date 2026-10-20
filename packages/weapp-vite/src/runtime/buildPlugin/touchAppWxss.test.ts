@@ -101,4 +101,20 @@ describe('existing app style refresh', () => {
     expect(await fs.readFile(page, 'utf8')).toBe('.page { color: red; }')
     expect((await fs.readdir(path.join(root, 'pages/home'))).some(file => file.includes('.weapp-vite-style-'))).toBe(false)
   })
+
+  it('falls back to touching the target when the host temporarily locks it', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-style-refresh-locked-'))
+    roots.push(root)
+    const page = path.join(root, 'pages/home/index.wxss')
+    const content = '.page { color: blue; }'
+    await fs.outputFile(page, content)
+    const before = await fs.stat(page)
+    await new Promise(resolve => setTimeout(resolve, 5))
+    renameMock.mockRejectedValueOnce(Object.assign(new Error('target is locked'), { code: 'EPERM' }))
+
+    await expect(touchExistingOutputStyles(root, ['pages/home/index.wxss'], 'wxss')).resolves.toEqual(new Set([page]))
+    expect(await fs.readFile(page, 'utf8')).toBe(content)
+    expect((await fs.stat(page)).mtimeMs).toBeGreaterThan(before.mtimeMs)
+    expect((await fs.readdir(path.join(root, 'pages/home'))).some(file => file.includes('.weapp-vite-style-'))).toBe(false)
+  })
 })

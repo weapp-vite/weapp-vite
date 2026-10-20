@@ -22,10 +22,9 @@ it('rescans an external app style and returns its owner and synthetic CSS to Vit
   const plugin = weappWebPlugin()
   const context = { addWatchFile: vi.fn() }
   await plugin.configResolved!.call(context, { root, command: 'serve' })
-  // 本用例只观察模块身份，完整 Vite 节点契约由类型测试和宿主集成测试覆盖。
-  const ownerModule = { id: app } as ModuleNode
+  const ownerModule = { id: app, importers: new Set() } as ModuleNode
   const syntheticStyle = `${app}.css?weapp-web-sfc-style&inline`
-  const styleModule = { id: syntheticStyle } as ModuleNode
+  const styleModule = { id: syntheticStyle, importers: new Set([ownerModule]) } as ModuleNode
   const graph = new Map([[app, new Set([ownerModule])], [`${app}.css`, new Set([styleModule])]])
   const invalidateModule = vi.fn()
   plugin.configureServer!({

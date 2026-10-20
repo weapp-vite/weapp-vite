@@ -44,7 +44,7 @@ export interface DomNodeEvidence {
   nodes: Array<{
     text?: string
     attributes?: Record<string, string | undefined>
-    styles?: Record<string, string>
+    styles?: Record<string, string | null>
     size?: { width: number, height: number }
   }>
 }
@@ -75,7 +75,7 @@ export interface DomElement {
   outerWxml?: () => Promise<string>
   attribute?: (name: string) => Promise<string | undefined>
   attr?: (name: string) => Promise<string | undefined>
-  style?: (name: string) => Promise<string>
+  style?: (name: string) => Promise<string | null>
   size?: () => Promise<{ width: number, height: number }>
 }
 

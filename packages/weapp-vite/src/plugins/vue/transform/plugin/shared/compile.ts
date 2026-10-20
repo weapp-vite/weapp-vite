@@ -135,7 +135,7 @@ export async function compileTransformEntryResult(options: {
   const result = filename.endsWith('.vue')
     ? await compileVueFile(transformedSource, filename, compileOptions)
     : await compileJsxFile(transformedSource, filename, compileOptions)
-  applyComponentResolutionDependencies(result, compileOptions)
+  applyComponentResolutionDependencies(result, compileOptions, filename)
   return result
 }
 

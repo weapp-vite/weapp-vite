@@ -1,6 +1,6 @@
 import type { CompilerContext } from '../../../context'
-import { isObject } from '@weapp-core/shared'
 import path from 'pathe'
+import { resolveNpmBuildCandidateDependencyRecordSync } from '../../../runtime/npmPlugin/service/dependencies'
 import { matches } from '../../../utils'
 import { hasNpmDependencyPrefix, normalizeNpmImportLookupPath } from '../../../utils/npmImport'
 
@@ -31,6 +31,8 @@ function resolveImportee(
 export function createEntryNormalizer(
   configService: CompilerContext['configService'],
 ) {
+  const npmDependencies = resolveNpmBuildCandidateDependencyRecordSync({ configService }, configService.packageJson)
+
   return function normalizeEntry(entry: string, jsonPath: string) {
     if (PLUGIN_PROTOCOL_RE.test(entry)) {
       return entry
@@ -39,8 +41,8 @@ export function createEntryNormalizer(
     const normalizedEntry = normalizeNpmImportLookupPath(entry)
     if (
       normalizedEntry
-      && isObject(configService.packageJson.dependencies)
-      && hasNpmDependencyPrefix(configService.packageJson.dependencies, normalizedEntry)
+      && npmDependencies
+      && hasNpmDependencyPrefix(npmDependencies, normalizedEntry)
     ) {
       return `npm:${normalizedEntry}`
     }

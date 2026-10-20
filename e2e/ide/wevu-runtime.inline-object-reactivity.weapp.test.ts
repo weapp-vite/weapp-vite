@@ -1,3 +1,4 @@
+import type { MiniProgram, Page } from '@weapp-vite/miniprogram-automator'
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { createDomAcceptance } from '../utils/domAcceptance'
@@ -5,11 +6,15 @@ import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { APP_ROOT, normalizeAutomatorWxml, runBuild } from '../wevu-runtime.utils'
 import { INLINE_OBJECT_BOUND_CHECKPOINTS, INLINE_OBJECT_REPEATED_CHECKPOINTS } from './wevuRuntimeDom/reactivity'
 
+interface InlineObjectRuntimeResult {
+  qty: number
+}
+
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
-async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, label: string) {
+async function runWithTimeout<T>(factory: () => T | PromiseLike<T>, timeoutMs: number, label: string) {
   let timer: ReturnType<typeof setTimeout> | null = null
   let settled = false
   const task = Promise.resolve()
@@ -63,7 +68,7 @@ function shouldRetryAutomatorError(error: unknown) {
 
 async function runAutomatorOp<T>(
   label: string,
-  factory: () => Promise<T>,
+  factory: () => T | PromiseLike<T>,
   options: { timeoutMs?: number, retries?: number, retryDelayMs?: number } = {},
 ) {
   const {
@@ -160,7 +165,7 @@ async function closeSharedMiniProgram() {
   await closeMiniProgramSafely(miniProgram)
 }
 
-async function readPageWxml(page: any) {
+async function readPageWxml(page: Page) {
   if (typeof page?.wxml === 'function') {
     const wxml = await runAutomatorOp('read page wxml', () => page.wxml())
     return normalizeAutomatorWxml(wxml)
@@ -203,7 +208,7 @@ function tryReadQtyFromWxml(wxml: string) {
   }
 }
 
-async function waitForQty(page: any, expected: number, timeoutMs = 10_000) {
+async function waitForQty(page: Page, expected: number, timeoutMs = 10_000) {
   const start = Date.now()
   const expectedText = String(expected)
   const latest: string[] = []
@@ -272,7 +277,7 @@ async function waitForQty(page: any, expected: number, timeoutMs = 10_000) {
   throw new Error(`Timed out waiting qty=${expected}; latest=${latest.slice(-8).join(' || ')}`)
 }
 
-async function expectQtySynced(page: any, expected: number, timeoutMs = 10_000, miniProgram?: any) {
+async function expectQtySynced(page: Page, expected: number, timeoutMs = 10_000, miniProgram?: MiniProgram) {
   let qty: number
   try {
     qty = await waitForQty(page, expected, timeoutMs)
@@ -293,7 +298,7 @@ async function expectQtySynced(page: any, expected: number, timeoutMs = 10_000, 
   }
   expect(qty).toBe(expected)
   try {
-    const runtime = await runAutomatorOp('call runE2E', () => {
+    const runtime = await runAutomatorOp<InlineObjectRuntimeResult | null | undefined>('call runE2E', () => {
       if (typeof page.callMethodWithOptions === 'function') {
         return page.callMethodWithOptions('runE2E', {
           fallback: false,
@@ -317,13 +322,13 @@ async function expectQtySynced(page: any, expected: number, timeoutMs = 10_000, 
 }
 
 async function runActionsAndExpectQty(
-  page: any,
+  page: Page,
   actions: Array<'minus' | 'plus'>,
   expected: number,
   timeoutMs = 6_000,
-  miniProgram?: any,
+  miniProgram?: MiniProgram,
 ) {
-  const runtime = await runAutomatorOp('call runE2E actions', () => {
+  const runtime = await runAutomatorOp<InlineObjectRuntimeResult | null | undefined>('call runE2E actions', () => {
     if (typeof page.callMethodWithOptions === 'function') {
       return page.callMethodWithOptions('runE2E', {
         routeOnly: true,
@@ -339,7 +344,7 @@ async function runActionsAndExpectQty(
   await expectQtySynced(page, expected, timeoutMs, miniProgram)
 }
 
-async function openInlineObjectPage(miniProgram: any) {
+async function openInlineObjectPage(miniProgram: MiniProgram) {
   const page = await runAutomatorOp('reLaunch inline-object page', () => miniProgram.reLaunch('/pages/wevu-inline-object-reactivity-repro/index'), {
     timeoutMs: 18_000,
     retries: 2,

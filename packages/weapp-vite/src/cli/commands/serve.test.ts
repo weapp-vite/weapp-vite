@@ -1,4 +1,5 @@
 import type { CompilerContext } from '../../context'
+import type { MaybeStartForwardConsoleOptions } from '../forwardConsole'
 import type * as OptionsModule from '../options'
 import type { RuntimeTargets } from '../runtime'
 import { EventEmitter } from 'node:events'
@@ -6,6 +7,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import { readDashboardFileContent } from '../../dashboard/content'
@@ -231,6 +233,7 @@ function createServeActionHandler() {
 
 describe('serve cli command', () => {
   beforeEach(() => {
+    delete fakeProcess.env[MANAGED_PROJECT_JOURNAL_ENV]
     vi.clearAllMocks()
     isUiEnabledMock.mockReset().mockReturnValue(true)
     devHotkeysCloseMock.mockReset()
@@ -815,7 +818,8 @@ describe('serve cli command', () => {
     ])
   })
 
-  it('attaches forward console after opening ide during serve startup', async () => {
+  it.each([undefined, '', ' \t\n '])('attaches forward console after opening ide with unmanaged journal=%j', async (journal) => {
+    fakeProcess.env[MANAGED_PROJECT_JOURNAL_ENV] = journal
     const action = createServeActionHandler()
     maybeStartForwardConsoleMock.mockResolvedValueOnce(true)
 
@@ -912,6 +916,56 @@ describe('serve cli command', () => {
     if (connectionFails) {
       expect(loggerWarnMock).toHaveBeenCalledWith('[forwardConsole] 后台启动失败：automator log connection failed')
     }
+  })
+
+  it.each([
+    { strategy: 'cli', connectionFails: false },
+    { strategy: 'cli', connectionFails: true },
+    { strategy: 'automator', connectionFails: false },
+    { strategy: 'automator', connectionFails: true },
+  ] as const)('keeps the managed $strategy open owner exclusive when console connection fails=$connectionFails', async ({ strategy, connectionFails }) => {
+    fakeProcess.env[MANAGED_PROJECT_JOURNAL_ENV] = path.join(tmpdir(), 'weapp-vite-serve-managed-journal')
+    const action = createServeActionHandler()
+    const opened = Promise.withResolvers<void>()
+    openIdeMock.mockReturnValueOnce(opened.promise)
+    maybeStartForwardConsoleMock.mockImplementationOnce(async (options: MaybeStartForwardConsoleOptions) => {
+      if (connectionFails) {
+        await options.recoverAutomatorSession?.()
+        throw new Error('automator log connection failed')
+      }
+      return true
+    })
+
+    const actionPromise = action('/project', {
+      platform: 'weapp',
+      open: true,
+      ideOpenStrategy: strategy,
+    })
+
+    await vi.waitFor(() => expect(openIdeMock).toHaveBeenCalledTimes(1))
+    expect(maybeStartForwardConsoleMock).not.toHaveBeenCalled()
+    opened.resolve()
+    await actionPromise
+
+    if (connectionFails) {
+      await vi.waitFor(() => expect(loggerWarnMock).toHaveBeenCalledWith('[forwardConsole] 后台启动失败：automator log connection failed'))
+    }
+    expect(openIdeMock).toHaveBeenCalledTimes(1)
+    expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', expect.objectContaining({
+      openStrategy: strategy,
+      prepareAutomatorSession: strategy === 'automator',
+      useAutomatorOpen: strategy === 'automator',
+    }))
+    expect(maybeStartForwardConsoleMock).toHaveBeenCalledTimes(1)
+    expect(maybeStartForwardConsoleMock).toHaveBeenCalledWith({
+      openedOnly: true,
+      preferOpenedSession: true,
+      platform: openIdeMock.mock.calls[0]?.[0],
+      mpDistRoot: openIdeMock.mock.calls[0]?.[1],
+      cwd: '/project',
+      weappViteConfig: { analyze: { history: false } },
+    })
+    expect(openIdeMock.mock.invocationCallOrder[0]).toBeLessThan(maybeStartForwardConsoleMock.mock.invocationCallOrder[0])
   })
 
   it('keeps dev hotkeys session alive until serve shutdown signal arrives', async () => {

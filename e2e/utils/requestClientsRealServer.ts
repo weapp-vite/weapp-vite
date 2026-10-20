@@ -129,11 +129,11 @@ function createNodeRequest(url: string, method: string, headers: IncomingHttpHea
     : Readable.toWeb(req as Readable)
 
   return new Request(url, {
-    body,
+    body: body as ReadableStream<Uint8Array> | undefined,
     duplex: body ? 'half' : undefined,
     headers: headers as HeadersInit,
     method,
-  })
+  } as RequestInit & { duplex?: 'half' })
 }
 
 async function writeNodeResponse(response: Response, res: ServerResponse) {
@@ -147,7 +147,7 @@ async function writeNodeResponse(response: Response, res: ServerResponse) {
     return
   }
 
-  const nodeBody = Readable.fromWeb(response.body as ReadableStream)
+  const nodeBody = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0])
   await new Promise<void>((resolve, reject) => {
     nodeBody.once('error', reject)
     res.once('error', reject)

@@ -381,7 +381,7 @@ describeWeb('web runtime browser baseline (weapp-vite-web-demo)', { concurrent: 
     webUrl = await waitForWebServerReady(devServer, logsRef)
     const launchOptions = PLAYWRIGHT_BUNDLED_AVAILABLE || !CHROMIUM_CHANNEL
       ? { headless: true }
-      : { headless: true, channel: CHROMIUM_CHANNEL as Parameters<typeof chromium.launch>[0]['channel'] }
+      : { headless: true, channel: CHROMIUM_CHANNEL }
     browser = await chromium.launch(launchOptions)
   })
 

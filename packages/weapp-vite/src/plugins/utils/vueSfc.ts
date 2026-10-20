@@ -2,6 +2,7 @@ import type { ReadAndParseSfcOptions, ResolveSfcBlockSrcOptions } from 'wevu/com
 import type { CompilerContext } from '../../context'
 import { getSfcCheckMtime, readFile, readAndParseSfc as readSfc } from 'wevu/compiler'
 import { getCompilerHmrHostByConfig } from '../compilerPlugin/hmr'
+import { recordSfcBlockSource } from './sfcTemplateDependencies'
 import { compilerSnapshotSourceId, compilerSourceResolutionKey, getCompilerSourceResolutions, getCompilerSourceSnapshot, readCompilerInput, readCompilerSourceSnapshot } from './sourceSnapshot'
 
 export {
@@ -32,7 +33,7 @@ export function createSfcResolveSrcOptions(
 ): ResolveSfcBlockSrcOptions {
   const snapshot = getCompilerSourceSnapshot(configService)
   const host = getCompilerHmrHostByConfig(configService)
-  return {
+  const options: ResolveSfcBlockSrcOptions = {
     ...(snapshot || host?.onDependencyChange
       ? {
           readFile: async (id: string, options?: { checkMtime?: boolean }) => {
@@ -48,16 +49,27 @@ export function createSfcResolveSrcOptions(
       const resolutions = getCompilerSourceResolutions(configService)
       const key = importer && compilerSourceResolutionKey(source, compilerSnapshotSourceId(snapshot, importer))
       if (key && resolutions?.has(key)) {
-        return resolutions.get(key)
+        const resolved = resolutions.get(key)
+        if (importer) {
+          recordSfcBlockSource(options, source, importer, resolved)
+        }
+        return resolved
       }
       if (typeof pluginCtx.resolve !== 'function') {
+        if (importer) {
+          recordSfcBlockSource(options, source, importer)
+        }
         return undefined
       }
       const resolved = await pluginCtx.resolve(source, importer)
+      if (importer) {
+        recordSfcBlockSource(options, source, importer, resolved?.id)
+      }
       return resolved?.id
     },
     checkMtime: getSfcCheckMtime(configService),
   }
+  return options
 }
 
 export function createReadAndParseSfcOptions(

@@ -3,12 +3,13 @@ import type { Mock } from 'vitest'
 import type { CompilerContext } from '../../../context'
 import { realpathSync } from 'node:fs'
 import path from 'pathe'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import logger from '../../../logger'
 import { createModuleGraphService } from '../../../moduleGraph/service'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
+import { extractConfigFromVue } from '../../../utils/file/vueConfig'
 import { toPosixPath } from '../../../utils/path'
 import { clearFileCaches, invalidateFileCache } from '../../utils/cache'
 import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../utils/scriptlessComponent'
@@ -435,6 +436,27 @@ describe('createEntryLoader', () => {
     })
   })
 
+  it('uses paired Vue config for a native script without transferring template or JSON ownership', async () => {
+    const native = path.resolve('src/pages/paired/index.ts')
+    const paired = path.resolve('src/pages/paired/index.vue')
+    const template = path.resolve('src/pages/paired/index.wxml')
+    const sourceConfig = { component: false, navigationBarTitleText: 'paired native' }
+    const source = `<template><view>unused Vue template</view></template><json>${JSON.stringify(sourceConfig)}</json>`
+    mockFindVueEntry.mockResolvedValue(paired)
+    mockFindTemplateEntry.mockResolvedValue({ path: template, predictions: [] })
+    readFileMock.mockImplementation(async (id: string) => id === paired ? source : id === template ? '<view>native template</view>' : 'Page({})')
+    statMock.mockResolvedValueOnce({ mtimeMs: 1 })
+    mockExtractConfigFromVue.mockImplementation(extractConfigFromVue)
+    const { loader, registerJsonAsset, scanTemplateEntry, replaceEntryDependencies } = createLoader({ isDev: true })
+
+    await loader.call(createPluginContext(), native, 'page')
+
+    expect(registerJsonAsset).toHaveBeenCalledWith({ jsonPath: path.resolve('src/pages/paired/index.json'), type: 'page', json: sourceConfig })
+    expect(scanTemplateEntry).toHaveBeenCalledWith(template)
+    expect(replaceEntryDependencies).not.toHaveBeenCalledWith(native, 'template', expect.arrayContaining([paired]))
+    expect(mockCompileVueFile).not.toHaveBeenCalled()
+  })
+
   it.each(['jsx', 'tsx'])('discovers a %s page without attaching its source watch to the app loader', async (extension) => {
     const { loader, emitEntriesChunks } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
@@ -816,6 +838,80 @@ describe('createEntryLoader', () => {
       jsonPath: '/project/src/pages/home/index.json',
       json: config,
     }))
+  })
+
+  it.each(['json', 'macro'].flatMap(configKind =>
+    ['entry-direct:1', 'wxml-importer-import:1'].map(dirtyReason => ({ configKind, dirtyReason })),
+  ))('isolates cached Vue source config from generated bindings ($configKind, $dirtyReason)', async ({ configKind, dirtyReason }) => {
+    const { compilerCtx, loader, registerJsonAsset, runtimeState, applyAutoImports } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const entryPath = path.resolve('src/pages/auto-import-vue/index.vue')
+    const sourceConfig = {
+      component: false,
+      usingComponents: { 'manual-card': '/components/manual-card/index' },
+    }
+    const source = [
+      '<template><import src="../../shared/card.wxml"/><template is="card"/></template>',
+      configKind === 'json'
+        ? `<json>${JSON.stringify(sourceConfig)}</json>`
+        : `<script setup>definePageJson(${JSON.stringify(sourceConfig)})</script>`,
+    ].join('\n')
+    let componentsAvailable = true
+    const tags = { 'probe-card': true, 'manual-card': true }
+    const autoImportService = {
+      getVersion: () => componentsAvailable ? 1 : 2,
+      resolve: (name: string) => componentsAvailable
+        ? { value: { name, from: `/components/auto-${name}/index` } }
+        : undefined,
+    } as CompilerContext['autoImportService']
+    const wxmlService = { getAggregatedComponents: () => tags } as CompilerContext['wxmlService']
+    applyAutoImports.mockImplementation(createAutoImportAugmenter(autoImportService, wxmlService))
+    const previousStatImplementation = statMock.getMockImplementation()
+    onTestFinished(() => {
+      if (previousStatImplementation) {
+        statMock.mockImplementation(previousStatImplementation)
+      }
+      else {
+        statMock.mockReset()
+      }
+    })
+    if (configKind === 'macro') {
+      const { default: ActualMagicString } = await vi.importActual<typeof import('magic-string')>('magic-string')
+      const previousMagicStringImplementation = MagicStringMock.getMockImplementation()
+      // vi.fn 用作构造器时必须提供可构造函数。
+      // eslint-disable-next-line prefer-arrow-callback
+      MagicStringMock.mockImplementation(function (...args: unknown[]) {
+        return Reflect.construct(ActualMagicString, args)
+      })
+      onTestFinished(() => {
+        if (previousMagicStringImplementation) {
+          MagicStringMock.mockImplementation(previousMagicStringImplementation)
+        }
+      })
+    }
+    // 保持 SFC 与依赖时间戳不变，使用真实配置提取器覆盖其缓存命中路径。
+    statMock.mockResolvedValue({ mtimeMs: 1 })
+    readFileMock.mockResolvedValue(source)
+    mockExtractConfigFromVue.mockImplementation(extractConfigFromVue)
+
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect(registerJsonAsset.mock.lastCall?.[0].json.usingComponents).toEqual({
+      'manual-card': '/components/manual-card/index',
+      'probe-card': '/components/auto-probe-card/index',
+    })
+    expect.soft(await extractConfigFromVue(entryPath, { source, compilerContext: compilerCtx })).toEqual(sourceConfig)
+
+    componentsAvailable = false
+    runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyReasonSummary: [dirtyReason],
+    }
+    await loader.call(pluginCtx, entryPath, 'page')
+
+    expect.soft(mockExtractConfigFromVue).toHaveBeenCalledTimes(dirtyReason.startsWith('entry-direct:') ? 1 : 2)
+    expect.soft(registerJsonAsset.mock.lastCall?.[0].json).toEqual(sourceConfig)
+    expect.soft(await extractConfigFromVue(entryPath, { source, compilerContext: compilerCtx })).toEqual(sourceConfig)
   })
 
   it('reuses cached vue json block config when direct hmr also updates tailwind content', async () => {

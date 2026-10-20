@@ -2,6 +2,8 @@
 
 此目录只给原验证流程增加可核验的执行证据。基线保留原 job、`needs`、matrix、并发、命令、任务顺序、旧 `partitionE2ETasks` 分配和原覆盖率阈值。`baseline-topology.json` 固定这些原契约，附加输入不参与拓扑比较。
 
+拓扑回归从实际 `validate-ci.yml` 的三个质量入口判别变体：原 `reusable-node-command.yml` 使用基线快照，优化后的 `reusable-quality-platform.yml` 使用 `candidate-topology.json`，未知或混合入口直接失败。基线快照保持原样；候选快照另行冻结外层入口及 quality、miniapp、consumer 子流程的完整 job，包括原生步骤、环境、失败策略、matrix 和依赖。两侧分别检查原覆盖率成功后才生成 verdict、四分片原生合并阈值成功后才上传 Codecov 的顺序，不能把基线拓扑断言跳过后当作候选校验通过。
+
 启用方式是现有 reusable job 的 `verification_telemetry: true`。没有启用时，root Vitest 配置与 suite 入口不加载证据 reporter 或计划。候选优化流程共享逻辑范围、显式分类、资源核验、基线证据发现和合约生成 helper，其原生四分片 reporter 直接记录真实 case，不使用基线调度入口。
 
 覆盖率仍执行原样的 `pnpm test:coverage`。附加 reporter 在真实 `onTestRunStart` 冻结项目/文件清单，在真实 `onTestRunEnd` 记录每个 case 的完整名称和状态，同时保留原默认 console reporter，并启用 Vitest 原生 blob。测试结束本身不会生成通过判定；只有原 `Run command` 成功后，独立 finalizer 才核对实际清单、完整工具链、配置摘要和 blob，写出原阈值的成功 verdict。阈值失败、取消、缺失或重复执行不能产生完整证据。
