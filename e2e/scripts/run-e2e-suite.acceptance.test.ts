@@ -37,6 +37,19 @@ afterEach(() => {
 })
 
 describe('IDE full CLI acceptance policy', () => {
+  it('passes the launch callback through the formal exhaustive entry without narrowing its strict plan', async () => {
+    const beforeTaskLaunch = vi.fn()
+    const planned = await getSuiteTasks('ide-full:exhaustive')
+    await runE2ESuiteCli(['ide-full:exhaustive'], { beforeTaskLaunch })
+    expect(runTaskSuite).toHaveBeenCalledOnce()
+    const [name, tasks, options] = vi.mocked(runTaskSuite).mock.calls[0]!
+    expect(name).toBe('e2e:ide-full:exhaustive')
+    expect(options?.beforeTaskLaunch).toBe(beforeTaskLaunch)
+    expect(beforeTaskLaunch).not.toHaveBeenCalled()
+    expect(tasks.map(task => task.label)).toEqual(planned.map(task => task.label))
+    expect(options?.reportContext).toMatchObject({ strict: true, partial: false, plannedTasks: tasks })
+  })
+
   it('preserves explicitly excluded tasks as out-of-scope report entries', async () => {
     vi.stubEnv('WEAPP_VITE_E2E_EXCLUDE_PROJECTS', 'uview-plus-compat,wot-ui-compat')
     await runE2ESuiteCli(['ide-component-libraries'])
