@@ -30,7 +30,7 @@ describe('registered Vue owner final JSON assets', () => {
       path: filename,
       type: kind,
       declaredJson,
-      json: { ...declaredJson, usingComponents: { ...declaredJson.usingComponents, auto: '/components/auto' } },
+      json: { ...declaredJson, usingComponents: { ...declaredJson.usingComponents, AutoCard: '/components/auto' } },
     } as unknown as Entry
     const runtimeState = createRuntimeState()
     runtimeState.build.hmr.entriesMap.set(relativeBase, entry)
@@ -103,7 +103,7 @@ describe('registered Vue owner final JSON assets', () => {
     expect(JSON.parse(result.config!)).toEqual({ ...compilerConfig, usingComponents: { ...compilerConfig.usingComponents, ...lateBindings } })
     expect(JSON.parse(bundle[`${relativeBase}.json`]!.source)).toEqual({
       ...compilerConfig,
-      usingComponents: { auto: '/components/auto', ...compilerConfig.usingComponents, ...lateBindings },
+      usingComponents: { 'auto-card': '/components/auto', ...compilerConfig.usingComponents, ...lateBindings },
     })
     for (const generated of [`${relativeBase}.__scoped-slot-content`, WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE]) {
       expect(bundle[`${generated}.wxml`]).toBeDefined()
@@ -114,7 +114,7 @@ describe('registered Vue owner final JSON assets', () => {
     await publish(compilerResult(false))
     expect(JSON.parse(bundle[`${relativeBase}.json`]!.source)).toEqual({
       ...compilerConfig,
-      usingComponents: { auto: '/components/auto', ...compilerConfig.usingComponents },
+      usingComponents: { 'auto-card': '/components/auto', ...compilerConfig.usingComponents },
     })
     expect(emitted.filter(asset => asset.fileName === `${relativeBase}.json`)).toHaveLength(1)
     expect(entry).toEqual(originalEntry)
@@ -150,7 +150,7 @@ describe('registered Vue owner final JSON assets', () => {
       configService,
       templateExtension: 'wxml',
       jsonExtension: 'json',
-      outputExtensions: {},
+      outputExtensions: configService.outputExtensions,
       platformAssetOptions: { platform: 'weapp', templateExtension: 'wxml' },
     })
     expect(JSON.parse(bundle[`${relativeBase}.json`]!.source)).toEqual({
