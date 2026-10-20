@@ -2851,7 +2851,7 @@ importers:
         specifier: workspace:*
         version: link:../web-apis
       miniprogram-api-typings:
-        specifier: ^5.0.0
+        specifier: 'catalog:'
         version: 5.2.3
       vitest:
         specifier: '>=4.0.0'
