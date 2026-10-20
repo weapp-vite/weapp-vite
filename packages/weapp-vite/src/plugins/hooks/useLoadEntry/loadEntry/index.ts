@@ -365,7 +365,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                 config: cloneJsonValue(config),
               })
             }
-            return config
+            // 提取器缓存只保存源码配置，派生字段应写入当前加载独有的副本。
+            return cloneJsonValue(config)
           }
           finally {
             recordEntryDuration('entryVueConfigMs', vueConfigStartedAt)
