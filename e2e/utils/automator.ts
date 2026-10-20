@@ -1,5 +1,6 @@
 import type { MiniProgram, Page } from '@weapp-vite/miniprogram-automator'
 import type { HeadlessAutomatorLaunchOptions } from './automator.headless'
+import type { RelaunchFailureInput, RelaunchFailureObserver, RelaunchFailurePhase } from './automatorRelaunchFailure'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import net from 'node:net'
@@ -24,6 +25,7 @@ import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './au
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
 import { createAutomatorProjectTrust } from './automatorProjectTrust'
 import { registerAutomatorReconnect } from './automatorReconnect'
+import { observeRelaunchFailureBeforeClose, snapshotRelaunchPageIdentity } from './automatorRelaunchFailure'
 import { resolveWechatCliPath } from './devtoolsCli'
 import { createDevtoolsProjectJournal, ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 import { assertSelectedWechatDevtoolsRuntime, resolveSelectedWechatDevtools } from './devtoolsSelection'
@@ -268,6 +270,8 @@ export interface RelaunchRecoveryOptions {
   cliPath?: string
   cwd?: string
   disableSessionRecovery?: boolean
+  /** 默认关闭；仅在原流程决定关闭会话后，使用原 case 预算观察已有失败现场。 */
+  onRelaunchFailureBeforeClose?: RelaunchFailureObserver
   project: string
   projectPath?: string
   retryDelayMs?: number
@@ -330,6 +334,7 @@ interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
   onOwnedSnapshot?: (project: { projectPath: string, cliPath: string }) => Promise<void>
   /** 在桥接握手前暴露已获得的端点，不转移共享 IDE 宿主所有权。 */
   onSessionMetadata?: (metadata: { projectPath: string, wsEndpoint: string, port: number, managedProject?: { id: string, journalPath: string } }) => Promise<void>
+  onRelaunchFailureBeforeClose?: RelaunchFailureObserver
   configureHeadlessSession?: HeadlessAutomatorLaunchOptions['configureSession']
   /** HMR 验收直连构建器输出；snapshot 仅用于需要独立项目快照的验收。 */
   bridgeProjectMode?: AutomatorBridgeProjectMode
@@ -2476,18 +2481,40 @@ async function closeUnstableRelaunchSession(
   route: string,
   attempt: number,
   error: unknown,
+  failure?: RelaunchFailureInput,
 ) {
-  const reason = error instanceof Error ? error.message : String(error)
-  const text = `route=${route} attempt=${attempt} reason=${reason.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim().slice(0, 240)}`
-  process.stdout.write(`[warn] [runtime:relaunch-session-close] ${text} project=${options.project}\n`)
-  appendIdeReportEvent({
-    source: 'runtime',
-    kind: 'message',
-    project: options.project,
-    level: 'warn',
-    channel: 'relaunch-session-close',
-    text,
-  })
+  try {
+    const reason = error instanceof Error ? error.message : String(error)
+    const text = `route=${route} attempt=${attempt} reason=${reason.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim().slice(0, 240)}`
+    process.stdout.write(`[warn] [runtime:relaunch-session-close] ${text} project=${options.project}\n`)
+    appendIdeReportEvent({
+      source: 'runtime',
+      kind: 'message',
+      project: options.project,
+      level: 'warn',
+      channel: 'relaunch-session-close',
+      text,
+    })
+  }
+  catch {
+    // 关闭前诊断失败不能替换原错误或阻断原会话关闭。
+  }
+  if (failure && options.onRelaunchFailureBeforeClose) {
+    const observation = await observeRelaunchFailureBeforeClose(options.onRelaunchFailureBeforeClose, failure)
+    try {
+      appendIdeReportEvent({
+        source: 'runtime',
+        kind: 'message',
+        project: options.project,
+        level: observation.status === 'completed' ? 'info' : 'warn',
+        channel: 'relaunch-failure-observer',
+        text: `status=${observation.status}`,
+      })
+    }
+    catch {
+      // 诊断报告失败也不能阻止原会话关闭。
+    }
+  }
   try {
     await miniProgram.close?.()
   }
@@ -2514,6 +2541,8 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       let page: any = null
+      let rawReturnedPage: unknown
+      let failurePhase: RelaunchFailurePhase = 'current-route-ready'
 
       try {
         if (attempt === 1 && !options.skipPageRootCheck && !disableRelaunchCurrentReady && !routeHasQuery(route)) {
@@ -2527,7 +2556,9 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
           }
         }
 
+        failurePhase = 'devtools-log'
         options.checkDevtoolsLog?.(`raw reLaunch ${route}`)
+        failurePhase = 'raw-reLaunch'
         page = await runWithTimeout(
           () => rawReLaunch(...args),
           RELAUNCH_READY_TIMEOUT,
@@ -2536,8 +2567,13 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
         if (!page) {
           throw new Error(`reLaunch returned empty page: ${route}`)
         }
+        if (options.onRelaunchFailureBeforeClose) {
+          rawReturnedPage = snapshotRelaunchPageIdentity(page)
+        }
 
+        failurePhase = 'devtools-log'
         options.checkDevtoolsLog?.(`reLaunch ${route}`)
+        failurePhase = 'settle'
         if (RELAUNCH_SETTLE_DELAY > 0) {
           if (typeof page.waitFor === 'function') {
             await page.waitFor(RELAUNCH_SETTLE_DELAY)
@@ -2548,6 +2584,7 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
         }
 
         if (!options.skipPageRootCheck) {
+          failurePhase = 'page-root'
           const pageRoot = await waitForRelaunchPageRoot(page, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, rootSelectors)
           if (!pageRoot) {
             const currentPage = await waitForCurrentRouteReady(miniProgram, route, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, {
@@ -2570,21 +2607,45 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
         if (options.disableSessionRecovery) {
           throw error
         }
+        const failure: RelaunchFailureInput | undefined = options.onRelaunchFailureBeforeClose
+          ? {
+              originalError: error,
+              firstErrorObservedAt: new Date().toISOString(),
+              failurePhase,
+              route,
+              attempt,
+              rootSelectors,
+              rawReturnedPage,
+              fallback: { attempted: false, rootResult: 'not-checked' },
+            }
+          : undefined
         if (!isTransientDevtoolsPageMetadataError(error) && isLikelySimulatorBootErrorMessage(error instanceof Error ? error.message : String(error))) {
-          await closeUnstableRelaunchSession(miniProgram, options, route, attempt, error)
+          await closeUnstableRelaunchSession(miniProgram, options, route, attempt, error, failure)
           throw error
         }
         try {
+          const currentPageOptions = {
+            appFunctionFallback: false,
+            pageStackFallback: false,
+            retries: 1,
+            timeout: ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT,
+          } as const
+          if (failure) {
+            failure.fallback.attempted = true
+          }
           const currentPage = await runWithTimeout<Page | null>(
-            () => miniProgram.currentPage({
-              appFunctionFallback: false,
-              pageStackFallback: false,
-              retries: 1,
-              timeout: ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT,
-            }),
+            () => miniProgram.currentPage(currentPageOptions),
             ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT,
             `read current page after reLaunch ${route}`,
           )
+          if (failure) {
+            failure.observedCurrentPage = {
+              page: snapshotRelaunchPageIdentity(currentPage),
+              observedAt: new Date().toISOString(),
+              options: currentPageOptions,
+            }
+            failure.fallback.routeMatched = normalizeRouteForCompare(currentPage?.path ?? '') === normalizeRouteForCompare(route)
+          }
           if (normalizeRouteForCompare(currentPage?.path ?? '') === normalizeRouteForCompare(route)) {
             if (options.skipPageRootCheck) {
               process.stdout.write(`[info] [runtime:relaunch-current-fallback] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
@@ -2596,13 +2657,19 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
               process.stdout.write(`[info] [runtime:relaunch-fallback] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
               return currentPage ?? page
             }
+            if (failure) {
+              failure.fallback.rootResult = 'missing'
+            }
             process.stdout.write(`[warn] [runtime:relaunch-current-root-missing] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
           }
           else {
             process.stdout.write(`[info] [runtime:relaunch-current-page] route=${route} attempt=${attempt} current=${currentPage?.path ?? '<none>'}\n`)
           }
         }
-        catch {
+        catch (fallbackError) {
+          if (failure) {
+            failure.fallback.error = fallbackError
+          }
           // currentPage 在 DevTools 路由切换瞬态可能继续超时，这里进入同会话重试或最终关闭。
         }
         if (isTransientDevtoolsPageMetadataError(error) && attempt < maxAttempts) {
@@ -2611,7 +2678,7 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
           await sleep(retryDelayMs)
           continue
         }
-        await closeUnstableRelaunchSession(miniProgram, options, route, attempt, error)
+        await closeUnstableRelaunchSession(miniProgram, options, route, attempt, error, failure)
         throw error
       }
     }
@@ -2846,7 +2913,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   }
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
-  const { configureHeadlessSession: _configureHeadlessSession, onOwnedSnapshot, onSessionMetadata, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { configureHeadlessSession: _configureHeadlessSession, onOwnedSnapshot, onSessionMetadata, onRelaunchFailureBeforeClose, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const selectedCliPath = resolveWechatCliPath(rest.cliPath)
   rest.cliPath = selectedCliPath
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
@@ -3032,6 +3099,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               cliPath: rest.cliPath,
               cwd: rest.cwd,
               disableSessionRecovery: disableRelaunchSessionRecovery,
+              onRelaunchFailureBeforeClose,
               project,
               projectPath: launchProjectPath,
               rootSelectors: resolvedWarmupRoute ? warmupRootSelectors : undefined,
