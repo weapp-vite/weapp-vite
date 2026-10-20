@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { access, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { holdRemoveEntries } from './removeCooldown.mjs'
-import { bounded, deferred, turn } from './support.mjs'
+import { bounded, deferred, turn, waitForObservedEventPhase } from './support.mjs'
 
 export function createStaleFileReadGate(file) {
   const entered = deferred()
@@ -98,6 +98,7 @@ export async function verifyStaleFileRead({ chokidar, root, watched, timeoutMs, 
     await access(file)
     assert.equal(await readFile(file, 'utf8'), 'replacement file while the original native ENOENT is held')
 
+    await waitForObservedEventPhase(owner, file, evidence, timeoutMs)
     const change = owner.event('change', file, timeoutMs)
     await writeFile(file, 'replacement remains native-watchable after the old listener fails')
     await change

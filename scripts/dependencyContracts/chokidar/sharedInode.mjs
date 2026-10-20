@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile, rename, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { releaseCompletedEventPhase, turn } from './support.mjs'
+import { turn, waitForObservedEventPhase } from './support.mjs'
 
 /** 两个 owner 直接 watch 同一个真实文件，避免父目录广播掩盖失效句柄。 */
 export async function verifySharedInode({ chokidar, root, timeoutMs, open, ready, instrumentation, evidence }) {
@@ -33,7 +33,7 @@ export async function verifySharedInode({ chokidar, root, timeoutMs, open, ready
     && instrumentation.handles.some(handle => handle.path === fileLabel && handle !== oldHandle && !handle.closed)
   const secondBoundary = instrumentation.handles.length
   for (const owner of [first, second]) {
-    releaseCompletedEventPhase(owner, file, evidence)
+    await waitForObservedEventPhase(owner, file, evidence, timeoutMs)
   }
   const subsequent = [first.event('change', file, timeoutMs), second.event('change', file, timeoutMs)]
   await writeFile(file, 'the new inode must report a subsequent real change to both direct owners')
