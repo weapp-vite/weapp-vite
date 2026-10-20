@@ -5,6 +5,7 @@ import process from 'node:process'
 import { createFixture, verifyPublicResolution } from './fixture.mjs'
 import { instrumentNative } from './native.mjs'
 import { closeOwner } from './public.mjs'
+import { createRecoveryFailureObserver, describePublicError } from './recoveryFailure.mjs'
 import { exerciseScenario, nonApplicableReason, scenarios } from './scenarios.mjs'
 
 const describeError = error => ({ name: error?.name, code: error?.code, message: String(error), stack: error?.stack })
@@ -18,6 +19,7 @@ export async function runPublicScenario(id, consumerRoot) {
   const result = { id, pid: process.pid, platform: process.platform, fixture: root, status: 'failed', evidence: {}, cleanup: { nativeCleanupConfirmed: false, deletedFixture: false, forcedNativeCloses: [], errors: [] } }
   const owners = []
   const errors = []
+  const recoveryFailure = createRecoveryFailureObserver()
   let instrumentation
   let injectedError
   try {
@@ -26,11 +28,12 @@ export async function runPublicScenario(id, consumerRoot) {
     const target = path.join(root, 'src/reborn')
     injectedError = Object.assign(new Error('Injected native directory registration EPERM'), { code: 'EPERM', syscall: 'watch', path: target })
     instrumentation = instrumentNative(root, scenario.kind === 'shared' ? undefined : { target, missing: scenario.kind === 'recovery' || scenario.missing, error: injectedError })
-    await exerciseScenario({ scenario, root, owners, errors, instrumentation, injectedError, evidence: result.evidence })
+    await exerciseScenario({ scenario, root, owners, errors, instrumentation, injectedError, recoveryFailure, evidence: result.evidence })
     result.status = 'passed'
   }
   catch (error) {
     result.bodyError = { ...describeError(error), originalInjectedError: error === injectedError }
+    result.recoveryFailure = recoveryFailure.describe(error)
   }
   finally {
     for (const owner of owners) {
@@ -65,7 +68,16 @@ export async function runPublicScenario(id, consumerRoot) {
       }
       catch (error) { result.cleanup.errors.push(describeError(error)) }
     }
-    result.publicErrors = errors.map(describeError)
+    result.publicErrors = errors.map(error => describePublicError(error, injectedError))
+    if (scenario.kind === 'recovery' && result.status === 'passed') {
+      try {
+        assert.deepEqual(errors, [])
+      }
+      catch (error) {
+        result.finalPublicError = describeError(error)
+        result.status = 'failed'
+      }
+    }
     if (result.cleanup.errors.length || result.cleanup.forcedNativeCloses.length || !result.cleanup.deletedFixture) {
       result.status = 'failed'
     }

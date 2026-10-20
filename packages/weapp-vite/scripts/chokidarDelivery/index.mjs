@@ -13,7 +13,7 @@ import { nonApplicableReason, scenarios } from './probe/scenarios.mjs'
 import { invocation, normalizeReport, parseArguments } from './report.mjs'
 import { ordinaryEnvironment, runPublicWorker } from './supervisor.mjs'
 import { verifyPublicTypes } from './types.mjs'
-import { completePublicValidation, runCandidateValidation } from './validation.mjs'
+import { completePublicValidation, isOriginalRecoveryRejection, runCandidateValidation } from './validation.mjs'
 
 const options = parseArguments(process.argv.slice(2))
 assert(process.env[INHERITED_LEASE_ENV], `Public watcher delivery must borrow the formal machine lease. Run: ${invocation}`)
@@ -91,10 +91,8 @@ try {
       report.negativeControl.installation = await installConsumer(baselineRoot, baseline, true, repositoryRoot)
       const scenario = scenarios.find(item => item.kind === 'recovery')
       const result = await runWorker(lease, scenario, baselineRoot, 'baseline')
-      const rejected = result.status === 'failed' && result.code !== 0 && result.report.status === 'failed'
-        && result.report.native.injected === 1 && result.report.bodyError?.originalInjectedError === true
-        && result.report.bodyError.code === 'EPERM' && result.cleanupConfirmed
-      report.negativeControl = { ...report.negativeControl, status: rejected ? 'confirmed-rejected' : 'failed', reason: 'Original unmodified tarball must reject the same actual Windows recovery contract with the original injected EPERM.', result }
+      const rejected = isOriginalRecoveryRejection(result)
+      report.negativeControl = { ...report.negativeControl, status: rejected ? 'confirmed-rejected' : 'failed', reason: 'Original unmodified tarball must reject the actual Windows recovery contract with the original injected EPERM, directly or at the exact final zero-errors assertion.', result }
     }
     else if (options.baselineTarballs) {
       report.negativeControl.reason = 'Baseline supplied but not executed: its Windows recovery contract requires an actual Windows host.'
