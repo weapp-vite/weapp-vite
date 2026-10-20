@@ -30,7 +30,9 @@ async function packedFiles(directory) {
     assert.equal(path.dirname(await realpath(filename)), physicalDirectory, 'Packed file escaped artifact')
     files[name] = { file: entry.file, version: entry.version, sha256: await fileDigest(filename) }
   }
-  assert(files['weapp-vite'] && files.wevu, 'Missing consumer entry packages')
+  for (const name of consumerEntryPackages) {
+    assert(files[name], `Missing consumer entry package: ${name}`)
+  }
   return files
 }
 

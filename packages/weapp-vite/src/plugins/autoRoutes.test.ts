@@ -614,6 +614,15 @@ describe('auto-routes plugin alias fallback', () => {
     const webInvalidate = vi.fn()
     const nativeEmit = vi.fn()
     const webEmit = vi.fn()
+    const webSend = vi.fn()
+    let completeWebScan = () => {}
+    const webScan = new Promise<void>((resolve) => {
+      completeWebScan = resolve
+    })
+    const webWatchChange = vi.fn(async (id: string, change: { event: 'create' | 'delete' }) => {
+      await webPlugin.watchChange?.(id, change)
+      await webScan
+    })
     chokidarWatchMock.mockClear()
 
     nativePlugin.configResolved?.({
@@ -652,8 +661,11 @@ describe('auto-routes plugin alias fallback', () => {
       watcher: {
         emit: webEmit,
       },
+      pluginContainer: {
+        watchChange: webWatchChange,
+      },
       ws: {
-        send: vi.fn(),
+        send: webSend,
       },
     } as unknown as ViteDevServer)
 
@@ -670,37 +682,54 @@ describe('auto-routes plugin alias fallback', () => {
     expect(addHandler).toBeTypeOf('function')
     addHandler(externalPageScript)
 
-    await vi.waitFor(() => {
+    try {
+      await vi.waitFor(() => {
+        expect(webWatchChange).toHaveBeenCalledWith(externalPageScript, { event: 'create' })
+      })
       expect(handleFileChange).toHaveBeenCalledTimes(1)
-      for (const owner of declarationOwners) {
-        expect(nativeEmit).toHaveBeenCalledWith('change', owner)
-        expect(webEmit).toHaveBeenCalledWith('change', owner)
+      expect(webSend).not.toHaveBeenCalled()
+      expect(webEmit).not.toHaveBeenCalled()
+
+      completeWebScan()
+      await vi.waitFor(() => {
+        expect(webSend).toHaveBeenCalledExactlyOnceWith({ type: 'full-reload' })
+        for (const owner of declarationOwners) {
+          expect(nativeEmit).toHaveBeenCalledWith('change', owner)
+        }
+        expect(nativeEmit).toHaveBeenCalledWith('change', appEntry)
+      })
+      expect(handleFileChange).toHaveBeenCalledTimes(1)
+      expect(webWatchChange).toHaveBeenCalledTimes(1)
+      expect(webEmit).not.toHaveBeenCalled()
+      expect(nativeInvalidate).toHaveBeenCalledWith(nativeModule)
+      expect(webInvalidate).toHaveBeenCalledWith(webModule)
+      const cachedModule = {
+        code: '',
+        id: appEntry,
+        meta: {},
+        moduleSideEffects: false as const,
       }
-      expect(nativeEmit).toHaveBeenCalledWith('change', appEntry)
-      expect(webEmit).toHaveBeenCalledWith('change', appEntry)
-    })
-    expect(nativeInvalidate).toHaveBeenCalledWith(nativeModule)
-    expect(webInvalidate).toHaveBeenCalledWith(webModule)
-    const cachedModule = {
-      code: '',
-      id: appEntry,
-      meta: {},
-      moduleSideEffects: false as const,
-    }
-    expect(nativePlugin.shouldTransformCachedModule?.(cachedModule)).toBe(true)
-    expect(webPlugin.shouldTransformCachedModule?.(cachedModule)).toBe(true)
+      expect(nativePlugin.shouldTransformCachedModule?.(cachedModule)).toBe(true)
+      expect(webPlugin.shouldTransformCachedModule?.(cachedModule)).toBe(true)
 
-    await webPlugin.closeBundle?.()
-    expect(watcher.close).not.toHaveBeenCalled()
-    expect(ctx.runtimeState.watcher.sidecarWatcherMap.size).toBe(1)
+      await webPlugin.closeBundle?.()
+      expect(watcher.close).not.toHaveBeenCalled()
+      expect(ctx.runtimeState.watcher.sidecarWatcherMap.size).toBe(1)
 
-    const [registeredWatcher] = ctx.runtimeState.watcher.sidecarWatcherMap.values()
-    if (!registeredWatcher) {
-      throw new Error('Expected a registered auto-routes watcher')
+      const [registeredWatcher] = ctx.runtimeState.watcher.sidecarWatcherMap.values()
+      if (!registeredWatcher) {
+        throw new Error('Expected a registered auto-routes watcher')
+      }
+      await registeredWatcher.close()
+      expect(watcher.close).toHaveBeenCalledTimes(1)
+      expect(ctx.runtimeState.watcher.sidecarWatcherMap.size).toBe(0)
     }
-    await registeredWatcher.close()
-    expect(watcher.close).toHaveBeenCalledTimes(1)
-    expect(ctx.runtimeState.watcher.sidecarWatcherMap.size).toBe(0)
+    finally {
+      completeWebScan()
+      for (const registeredWatcher of ctx.runtimeState.watcher.sidecarWatcherMap.values()) {
+        await registeredWatcher.close()
+      }
+    }
   })
 
   it('closes the shared watcher when the sole Web subscriber exits', async () => {
@@ -915,37 +944,61 @@ describe('auto-routes plugin alias fallback', () => {
     expect(handleFileChange).not.toHaveBeenCalledWith('C:\\virtual\\project\\src\\components\\card\\index.ts', 'rename')
   })
 
-  it('reloads the first discovered Web route without virtual imports and preserves repeated-snapshot HMR', async () => {
+  it('awaits Web scans before reloading undiscovered routes without virtual imports across repeated publications', async () => {
     const appEntry = '/virtual/project/src/app.vue'
-    const entryModule = { id: 'virtual:web-entry', importers: new Set() }
-    const appModule = { id: appEntry, importers: new Set([entryModule]) }
     const { plugin, isRouteFile, handleFileChange } = createPlugin({ scanService: { appEntry: { path: appEntry } } })
     const createdPage = '/virtual/project/src/pages/new/index.vue'
-    isRouteFile.mockImplementation(file => file === createdPage)
-    handleFileChange.mockResolvedValueOnce(true).mockResolvedValue(false)
+    isRouteFile.mockReturnValue(false)
     const emit = vi.fn()
+    const send = vi.fn()
+    const publicationResumes: (() => void)[] = []
+    const watchChange = vi.fn(async (id: string, change: { event: 'create' | 'delete' }) => {
+      await plugin.watchChange?.(id, change)
+      await new Promise<void>(resolve => publicationResumes.push(resolve))
+    })
     const server = {
       moduleGraph: { getModuleById: vi.fn(() => undefined), invalidateModule: vi.fn() },
       watcher: { emit },
+      pluginContainer: { watchChange },
+      ws: { send },
     }
     plugin.configResolved?.({ command: 'serve', weappVite: { runtime: 'web' } } as any)
     plugin.configureServer?.(server as any)
     await plugin.buildStart?.call({ meta: { watchMode: true }, addWatchFile: vi.fn() } as any)
     const watcher = chokidarWatchMock.mock.results.at(-1)!.value
     const addHandler = watcher.on.mock.calls.find(([event]: [string]) => event === 'add')![1]
-    const context = { file: appEntry, modules: [appModule], server } as unknown as HotUpdateOptions
+    try {
+      for (let publication = 0; publication < 2; publication++) {
+        expect(isRouteFile(createdPage)).toBe(false)
+        await plugin.watchChange?.(createdPage, { event: 'create' })
+        expect(await runHotUpdate(plugin, {
+          type: 'create',
+          file: createdPage,
+          modules: [],
+          server: server as unknown as ViteDevServer,
+        })).toEqual([])
+        expect(handleFileChange).toHaveBeenCalledTimes(publication)
 
-    await plugin.watchChange?.(createdPage, { event: 'create' } as any)
-    addHandler(createdPage)
-    await vi.waitFor(() => expect(emit).toHaveBeenCalledWith('change', appEntry))
-    expect(await runHotUpdate(plugin, context)).toEqual([entryModule, appModule])
+        addHandler(createdPage)
+        await vi.waitFor(() => expect(publicationResumes).toHaveLength(publication + 1))
+        expect(watchChange).toHaveBeenNthCalledWith(publication + 1, createdPage, { event: 'create' })
+        expect(handleFileChange).toHaveBeenCalledTimes(publication + 1)
+        expect(send).toHaveBeenCalledTimes(publication)
+        expect(emit).not.toHaveBeenCalled()
 
-    emit.mockClear()
-    handleFileChange.mockResolvedValue(true)
-    addHandler('/virtual/project/src/pages/new/index.vue')
-    await vi.waitFor(() => expect(emit).toHaveBeenCalledWith('change', appEntry))
-    expect(await runHotUpdate(plugin, context)).toEqual([appModule])
-    await plugin.closeBundle?.()
+        publicationResumes[publication]!()
+        await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(publication + 1))
+        expect(send).toHaveBeenLastCalledWith({ type: 'full-reload' })
+        expect(handleFileChange).toHaveBeenCalledTimes(publication + 1)
+      }
+      expect(emit).not.toHaveBeenCalled()
+    }
+    finally {
+      for (const resume of publicationResumes) {
+        resume()
+      }
+      await plugin.closeBundle?.()
+    }
   })
 
   it.each(['create', 'delete'] as const)('defers Web route %s only while its route watcher owns publication', async (type) => {

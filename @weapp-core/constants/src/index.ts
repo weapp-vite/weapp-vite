@@ -50,6 +50,9 @@ export const WEAPP_VITE_RUNTIME_VIRTUAL_IDS = {
   template: WEAPP_VITE_RUNTIME_TEMPLATE_VIRTUAL_ID,
 } as const
 
+export const WEAPP_VITE_WEB_ENTRY_RESOLVED_MODULE_ID = '\0@weapp-vite/web/entry'
+export const WEAPP_VITE_WEB_AUTO_ROUTES_RESOLVED_MODULE_ID = '\0@weapp-vite/web/auto-routes'
+
 export const WEAPP_I18N_PUBLIC_MODULE_ID = 'weapp-vite/i18n'
 export const WEAPP_I18N_VIRTUAL_MODULE_ID = 'virtual:weapp-vite/i18n'
 export const WEAPP_I18N_RUNTIME_MARKER = '__WEAPP_VITE_I18N__'
