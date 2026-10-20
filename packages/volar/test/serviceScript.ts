@@ -3,11 +3,11 @@ import { createVueLanguagePlugin } from '@vue/language-core'
 import ts from 'typescript'
 import { createTestVueCompilerOptions } from './compilerOptions'
 
-export function getGeneratedServiceScript(source: string, skipTemplateCodegen = false) {
+export function getGeneratedServiceScript(source: string, skipTemplateCodegen = false, lib = 'wevu') {
   const languagePlugin = createVueLanguagePlugin<string>(
     ts,
     {},
-    createTestVueCompilerOptions('wevu', skipTemplateCodegen),
+    createTestVueCompilerOptions(lib, skipTemplateCodegen),
     id => id,
   )
   const root = languagePlugin.createVirtualCode?.('fixture.vue', 'vue', ts.ScriptSnapshot.fromString(source), {
