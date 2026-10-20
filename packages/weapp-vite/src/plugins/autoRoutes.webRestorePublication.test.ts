@@ -41,10 +41,10 @@ it.each(['app-first', 'source-started-first', 'source-published-first'] as const
     const pageSource = '<script setup src="@page-scripts/restored.mjs"></script><template><view>{{ message }}</view></template>'
     const sourceStarted = barrier()
     const releaseSource = barrier()
-    const updateWaiters = new Map<number, ReturnType<typeof barrier>>()
+    let nativeUpdateDone: ReturnType<typeof barrier> | undefined
+    let sourcePublicationDone: ReturnType<typeof barrier> | undefined
     const reloads: Array<{ source?: string, pages?: string[] }> = []
     const errors: unknown[] = []
-    let completedUpdates = 0
     let blockSourceUpdate = false
     let cachedConfig: { pages: string[] } | undefined
     let server: ViteDevServer | undefined
@@ -76,19 +76,20 @@ it.each(['app-first', 'source-started-first', 'source-published-first'] as const
       }
       return handleFileChange(file, event)
     })
-    const waitForUpdate = (target: number) => {
-      if (completedUpdates >= target) {
-        return Promise.resolve()
-      }
-      const done = barrier()
-      updateWaiters.set(target, done)
-      return done.promise
-    }
-    const sidecarEvent = (event: 'add' | 'unlink') => {
+    const sourceEvent = (event: 'add' | 'unlink') => {
       expect(sourceWatchers).toHaveLength(1)
       const callback = sourceWatchers[0]!.get(event)
       expect(callback).toBeTypeOf('function')
+      const done = barrier()
+      sourcePublicationDone = done
       callback!(restored)
+      return done.promise
+    }
+    const nativeEvent = (event: 'change' | 'unlink') => {
+      const done = barrier()
+      nativeUpdateDone = done
+      server!.watcher.emit(event, restored)
+      return done.promise
     }
     const transformPublishedEntry = async () => {
       const entry = await server!.transformRequest('/@weapp-vite/web/entry')
@@ -139,12 +140,21 @@ it.each(['app-first', 'source-started-first', 'source-published-first'] as const
           hmr: { port: 0 },
           async hotUpdateEnvironments(vite, hmr) {
             await Promise.all(Object.values(vite.environments).map(hmr))
-            completedUpdates += 1
-            updateWaiters.get(completedUpdates)?.release()
-            updateWaiters.delete(completedUpdates)
+            nativeUpdateDone?.release()
+            nativeUpdateDone = undefined
           },
         },
         logLevel: 'silent',
+      })
+      const watchChange = server.pluginContainer.watchChange.bind(server.pluginContainer)
+      vi.spyOn(server.pluginContainer, 'watchChange').mockImplementation(async (file, change) => {
+        const publication = file === restored && change.event !== 'update' ? sourcePublicationDone : undefined
+        await watchChange(file, change)
+        if (publication) {
+          sourcePublicationDone = undefined
+          // 宿主在 watchChange 返回后同步提交 reload；下一微任务才读取完整发布结果。
+          queueMicrotask(publication.release)
+        }
       })
       server.environments.client!.hot.send = ((payload: { type?: string, triggeredBy?: string }) => {
         if (payload.type === 'full-reload') {
@@ -159,45 +169,40 @@ it.each(['app-first', 'source-started-first', 'source-published-first'] as const
 
       // 先完整发布删除并让 Vite 收到同一物理 unlink，保留真实删除恢复的模块图。
       await rm(restored)
-      let nextUpdate = completedUpdates + 1
-      sidecarEvent('unlink')
-      await waitForUpdate(nextUpdate)
-      nextUpdate = completedUpdates + 1
-      server.watcher.emit('unlink', restored)
-      await waitForUpdate(nextUpdate)
+      await sourceEvent('unlink')
+      await nativeEvent('unlink')
       expect(service.getSnapshot().pages).toEqual(['pages/home/index'])
       expect((await transformPublishedEntry())?.code).not.toContain('/src/pages/restored/index.vue')
       reloads.length = 0
 
       await writeFile(restored, pageSource)
-      const target = completedUpdates + 2
+      let sourceUpdate: Promise<void> | undefined
       if (order === 'source-started-first') {
         blockSourceUpdate = true
-        server.watcher.emit('change', restored)
+        sourceUpdate = nativeEvent('change')
         await sourceStarted.promise
       }
       if (order === 'source-published-first') {
-        server.watcher.emit('change', restored)
-        await waitForUpdate(target - 1)
-        sidecarEvent('add')
+        await nativeEvent('change')
+        await sourceEvent('add')
       }
       else {
-        sidecarEvent('add')
-        await waitForUpdate(target - 1)
+        await sourceEvent('add')
       }
-      // App 发布后才放行 source update，两个来源必须消费同一恢复 generation。
+      // Web 快照完整发布后才放行正在处理的 source update。
       if (order === 'source-started-first') {
         releaseSource.release()
+        await sourceUpdate
       }
       else if (order === 'app-first') {
-        server.watcher.emit('change', restored)
+        await nativeEvent('change')
       }
-      await waitForUpdate(target)
       expect(errors).toEqual([])
       expect(handleChange.mock.calls.filter(([file, event]) => file === restored && event === 'update')).toHaveLength(1)
       expect(service.getSnapshot().pages).toEqual(['pages/home/index', 'pages/restored/index'])
-      expect(reloads.map(reload => path.relative(root, reload.source ?? ''))).toEqual([
-        order === 'source-published-first' ? 'src/pages/restored/index.vue' : 'src/app.vue',
+      expect(reloads).toHaveLength(1)
+      expect(reloads.map(reload => reload.source)).toEqual([
+        order === 'source-published-first' ? restored : undefined,
       ])
       expect(reloads[0]!.pages).toEqual(['pages/home/index', 'pages/restored/index'])
       expect((await transformPublishedEntry())?.code).toContain('/src/pages/restored/index.vue')
