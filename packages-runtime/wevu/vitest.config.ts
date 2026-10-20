@@ -1,14 +1,16 @@
 import path from 'node:path'
-import { defineProject } from 'vitest/config'
+import { defineConfig } from 'vitest/config'
+import { createNodeTestSourceTransform } from '../../scripts/vite/nodeTestSourceTransform.ts'
 import { createProjectCoverage } from '../../vitest.coverage.ts'
 
 const packageDir = import.meta.dirname
 
-export default defineProject({
+export default defineConfig({
   cacheDir: path.resolve(packageDir, './.vite'),
   oxc: {
-    tsconfig: false,
+    exclude: /.*/,
   },
+  plugins: [createNodeTestSourceTransform()],
   test: {
     alias: [
       {
