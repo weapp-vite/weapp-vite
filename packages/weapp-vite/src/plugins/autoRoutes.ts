@@ -600,7 +600,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     async watchChange(id, change) {
       const event = change?.event
       if (resolvedConfig?.command === 'serve'
-        && resolvedConfig.weappVite?.runtime === 'miniprogram'
+        && (resolvedConfig.weappVite?.runtime === 'web' || resolvedConfig.weappVite?.runtime === 'miniprogram')
         && (event === 'create' || event === 'delete')) {
         const watcher = ctx.runtimeState.watcher.sidecarWatcherMap.get(ROUTE_WATCHER_KEY)
         if (isAutoRoutesWatcherController(watcher)
