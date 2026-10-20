@@ -23,7 +23,6 @@ export async function runPublicScenario(id, consumerRoot) {
   try {
     await createFixture(root)
     result.resolution = verifyPublicResolution(consumerRoot)
-    process.chdir(root)
     const target = path.join(root, 'src/reborn')
     injectedError = Object.assign(new Error('Injected native directory registration EPERM'), { code: 'EPERM', syscall: 'watch', path: target })
     instrumentation = instrumentNative(root, scenario.kind === 'shared' ? undefined : { target, missing: scenario.kind === 'recovery' || scenario.missing, error: injectedError })
@@ -60,7 +59,6 @@ export async function runPublicScenario(id, consumerRoot) {
     }
     if (result.cleanup.nativeCleanupConfirmed) {
       try {
-        process.chdir(consumerRoot)
         await rm(root, { recursive: true, force: true })
         await assert.rejects(access(root), { code: 'ENOENT' })
         result.cleanup.deletedFixture = true
