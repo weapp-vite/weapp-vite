@@ -172,6 +172,8 @@ async function collectLogicalEntryDependencies(
     await addExistingDependency(dependency.kind, dependency.sourceId)
   }
   await addExistingDependency('script', ownerId)
+  // App shell 独立发布，自身模板必须越过 App 脚本的接受边界。
+  await addExistingDependency('template', entryType === 'app' && ownerId.endsWith('.vue') ? ownerId : undefined)
   const effectiveJsonPath = entry?.jsonPath ?? jsonEntry.path
   const hasJsonEntry = await addExistingDependency('json', effectiveJsonPath)
   await addExistingDependency('json', entry && 'sitemapJsonPath' in entry ? entry.sitemapJsonPath : undefined)

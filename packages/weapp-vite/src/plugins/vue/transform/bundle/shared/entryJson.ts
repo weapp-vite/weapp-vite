@@ -1,12 +1,18 @@
 import type { CompilerContext } from '../../../../../context'
 import type { Entry } from '../../../../../types'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
+import { toKebabCaseComponentName } from '../../../../../utils/json'
 import { isVueEntryJsonPublisher } from '../../../../utils/entryJson'
 
 function componentBindings(config: unknown) {
   return isObject(config) && isObject(config.usingComponents)
     ? config.usingComponents as Record<string, unknown>
     : {}
+}
+
+function canonicalComponentBindings(config: unknown) {
+  return Object.fromEntries(Object.entries(componentBindings(config))
+    .map(([name, value]) => [toKebabCaseComponentName(name), value]))
 }
 
 /** 从当前入口输入补齐模板派生绑定，不读取历史产物或改写编译器配置。 */
@@ -29,8 +35,12 @@ export function composeVueEntryJsonConfig(
   const config = compiledConfig === undefined
     ? structuredClone(entry.json ?? {}) as Record<string, unknown>
     : JSON.parse(compiledConfig) as Record<string, unknown>
-  const declaredBindings = componentBindings(entry.declaredJson)
-  const currentBindings = componentBindings(entry.json)
+  // 声明和派生绑定先沿用编译器的标签命名，避免别名回灌或复活已删除的声明。
+  const declaredBindings = canonicalComponentBindings(entry.declaredJson)
+  const currentBindings = canonicalComponentBindings(entry.json)
+  if (compiledConfig === undefined && isObject(config.usingComponents)) {
+    config.usingComponents = currentBindings
+  }
   const derivedBindings = Object.fromEntries(Object.entries(currentBindings)
     .filter(([name, value]) => declaredBindings[name] !== value))
   if (Object.keys(derivedBindings).length) {

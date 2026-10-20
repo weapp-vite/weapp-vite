@@ -7,8 +7,8 @@ function setup() {
   const entry = {
     path: 'pages/index.vue',
     type: 'page',
-    declaredJson: { component: false, usingComponents: { manual: '/manual' } },
-    json: { component: false, usingComponents: { manual: '/manual', auto: '/auto' } },
+    declaredJson: { component: false, usingComponents: { manual: '/manual' } as Record<string, string> },
+    json: { component: false, usingComponents: { manual: '/manual', auto: '/auto' } as Record<string, string> },
   }
   const entriesMap = new Map<string, Entry>([['pages/index', entry as Entry]])
   const ctx = {
@@ -48,6 +48,38 @@ describe('current Vue entry JSON composition', () => {
       navigationBarTitleText: 'selected',
       usingComponents: { auto: '/auto' },
     })
+  })
+
+  it.each([
+    ['CaseCard', 'case-card'],
+    ['PascalCard', 'pascal-card'],
+    ['MainVueCard', 'main-vue-card'],
+  ])('keeps the compiler canonical registration authoritative for %s', (name, canonicalName) => {
+    const { ctx, entry } = setup()
+    entry.json.usingComponents = { [name]: '/loader' }
+    const compilerConfig = { usingComponents: { [canonicalName]: '/compiler' } }
+    expect(JSON.parse(composeVueEntryJsonConfig(ctx, entry.path, JSON.stringify(compilerConfig))!)).toEqual(compilerConfig)
+  })
+
+  it('compares declaration bindings by canonical tag before supplementing compiler strategy results', () => {
+    const { ctx, entry } = setup()
+    entry.declaredJson.usingComponents = { CaseCard: '/declared' }
+    entry.json.usingComponents = { 'case-card': '/declared', 'AutoCard': '/auto' }
+    expect(JSON.parse(composeVueEntryJsonConfig(ctx, entry.path, '{"navigationBarTitleText":"selected"}')!)).toEqual({
+      navigationBarTitleText: 'selected',
+      usingComponents: { 'auto-card': '/auto' },
+    })
+  })
+
+  it('normalizes loader bindings when the compiler has no JSON fragment', () => {
+    const { ctx, entry } = setup()
+    entry.json.usingComponents = { CaseCard: '/auto' }
+    const before = structuredClone(entry)
+    expect(JSON.parse(composeVueEntryJsonConfig(ctx, entry.path, undefined)!)).toEqual({
+      component: false,
+      usingComponents: { 'case-card': '/auto' },
+    })
+    expect(entry).toEqual(before)
   })
 
   it('uses the current source configuration when the compiler has no JSON fragment', () => {
