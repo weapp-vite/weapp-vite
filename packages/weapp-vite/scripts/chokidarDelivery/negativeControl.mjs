@@ -14,7 +14,7 @@ export function isConfirmedBaselineRejection(result) {
   const report = result?.report
   const cleanup = report?.cleanup
   if (result?.id !== recoveryScenarioId || result.variant !== 'baseline' || report?.id !== recoveryScenarioId || report.platform !== 'win32'
-    || result.status !== 'failed' || report.status !== 'failed' || !Number.isInteger(result.code) || result.code === 0
+    || result.status !== 'failed' || report.status !== 'failed' || result.code !== 1
     || result.signal !== null || result.timedOut !== false || result.interrupted !== false || result.launchError !== undefined
     || result.scope !== 'completed' || result.cleanupConfirmed !== true || result.cleanupError !== undefined || result.sealError !== undefined
     || result.supervisorError !== undefined || result.error !== undefined || report.error !== undefined
@@ -28,7 +28,8 @@ export function isConfirmedBaselineRejection(result) {
   }
   const body = report.bodyError
   if (body?.originalInjectedError === true && body.code === 'EPERM') {
-    return true
+    return ['injectedOnce', 'factoryCompleted', 'createEmitted', 'changeEmitted', 'deleteEmitted']
+      .every(key => report.evidence?.[key] === true)
   }
   return body?.name === 'AssertionError' && body.code === 'ERR_ASSERTION' && body.originalInjectedError === false
     && report.recoveryFailure?.stage === recoveryErrorsStage && oneOriginalError(report.recoveryFailure.publicErrors)

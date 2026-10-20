@@ -73,5 +73,25 @@ describe('utils/path', () => {
       expect(isPathInside('/project/src', '/project/other/index.ts')).toBe(false)
       expect(isPathInside(undefined, '/project/src/pages/index.ts')).toBe(false)
     })
+
+    it('distinguishes dot-prefixed child names from parent traversal and sibling prefixes', () => {
+      expect(isPathInside('/project/src', '/project/src/..cache/index.ts')).toBe(true)
+      expect(isPathInside('/project/src', '/project/src/..cache')).toBe(true)
+      expect(isPathInside('/project/src', '/project/src/../outside/index.ts')).toBe(false)
+      expect(isPathInside('/project/src', '/project/src-extra/index.ts')).toBe(false)
+    })
+
+    it.each([
+      ['C:/fixture/src', String.raw`\\?\C:\fixture\src\pages\index.ts`, true],
+      [String.raw`\\?\C:\fixture\src`, 'C:/fixture/src/pages/index.ts', true],
+      ['C:/fixture/src', String.raw`\\?\C:\fixture\src-extra\index.ts`, false],
+      ['C:/fixture/src', String.raw`\\?\D:\fixture\src\index.ts`, false],
+      ['//server/share/fixture/src', String.raw`\\?\UNC\server\share\fixture\src\pages\index.ts`, true],
+      [String.raw`\\?\UNC\server\share\fixture\src`, '//server/share/fixture/src/pages/index.ts', true],
+      ['//server/share/fixture/src', String.raw`\\?\UNC\server\share\fixture\src-extra\index.ts`, false],
+      ['//server/share/fixture/src', String.raw`\\?\UNC\server\other\fixture\src\index.ts`, false],
+    ] as const)('compares equivalent device and UNC roots without crossing boundaries: %s -> %s', (parent, target, expected) => {
+      expect(isPathInside(parent, target)).toBe(expected)
+    })
   })
 })

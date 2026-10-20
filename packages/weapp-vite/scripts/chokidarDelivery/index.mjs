@@ -9,12 +9,11 @@ import { INHERITED_LEASE_ENV } from '../../../devtools-runtime/src/lease/machine
 import { createConsumerTemporaryRoot, packConsumerTarballs, readConsumerTarballs } from '../consumerTarballs.mjs'
 import { readLicenseRequirements, verifyPublishedArchive } from './artifacts.mjs'
 import { installConsumer } from './installation.mjs'
-import { isConfirmedBaselineRejection } from './negativeControl.mjs'
 import { nonApplicableReason, scenarios } from './probe/scenarios.mjs'
 import { invocation, normalizeReport, parseArguments } from './report.mjs'
 import { ordinaryEnvironment, runPublicWorker } from './supervisor.mjs'
 import { verifyPublicTypes } from './types.mjs'
-import { completePublicValidation, runCandidateValidation } from './validation.mjs'
+import { completePublicValidation, isOriginalRecoveryRejection, runCandidateValidation } from './validation.mjs'
 
 const options = parseArguments(process.argv.slice(2))
 assert(process.env[INHERITED_LEASE_ENV], `Public watcher delivery must borrow the formal machine lease. Run: ${invocation}`)
@@ -92,7 +91,7 @@ try {
       report.negativeControl.installation = await installConsumer(baselineRoot, baseline, true, repositoryRoot)
       const scenario = scenarios.find(item => item.kind === 'recovery')
       const result = await runWorker(lease, scenario, baselineRoot, 'baseline')
-      const rejected = isConfirmedBaselineRejection(result)
+      const rejected = isOriginalRecoveryRejection(result)
       report.negativeControl = { ...report.negativeControl, status: rejected ? 'confirmed-rejected' : 'failed', reason: 'Original unmodified tarball must reject the actual Windows recovery contract with the original injected EPERM, directly or at the exact final zero-errors assertion.', result }
     }
     else if (options.baselineTarballs) {

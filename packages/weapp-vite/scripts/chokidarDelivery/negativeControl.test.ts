@@ -70,6 +70,7 @@ function directlyRejectedWorker() {
   const result = failedWorker()
   change(result, 'report.bodyError', { name: 'Error', code: 'EPERM', originalInjectedError: true })
   change(result, 'report.recoveryFailure', undefined)
+  change(result, 'report.evidence', { injectedOnce: true, factoryCompleted: true, createEmitted: true, changeEmitted: true, deleteEmitted: true })
   return result
 }
 
@@ -100,6 +101,7 @@ it.each([
   ['status', 'passed'],
   ['report.status', 'passed'],
   ['code', 0],
+  ['code', 2],
   ['code', null],
   ['code', undefined],
   ['code', '1'],

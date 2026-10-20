@@ -16,7 +16,9 @@ const harness = vi.hoisted(() => ({
   bodyPass: false,
   captureRecovery: false,
   replaceCapturedError: false,
-  originalCallback: false,
+  callback: 'none' as 'none' | 'original' | 'copy',
+  throwInjected: false,
+  lateCallback: 'none' as 'none' | 'original' | 'foreign',
   events: [] as string[],
   closeCalls: 0,
   native: { closeCalls: 0, closeEvents: 0 },
@@ -90,13 +92,19 @@ vi.mock('./probe/scenarios.mjs', () => ({
         if (harness.closeError && harness.closeCalls === 2) {
           throw harness.closeError
         }
-        if (harness.lateError && harness.closeCalls === 1) {
-          errors.push(harness.lateError)
+        if (harness.closeCalls === 1) {
+          const late = harness.lateError ?? (harness.lateCallback === 'none' ? undefined : harness.lateCallback === 'original' ? injectedError : Object.assign(new Error('late unrelated error'), { code: 'EPERM' }))
+          if (late) {
+            errors.push(late)
+          }
         }
       },
     })
-    if (harness.originalCallback) {
-      errors.push(injectedError)
+    if (harness.callback !== 'none') {
+      errors.push(harness.callback === 'original' ? injectedError : Object.assign(new Error(injectedError.message), { code: 'EPERM' }))
+    }
+    if (harness.throwInjected) {
+      throw injectedError
     }
     if (harness.bodyPass) {
       return
@@ -126,7 +134,9 @@ beforeEach(async () => {
   harness.bodyPass = false
   harness.captureRecovery = false
   harness.replaceCapturedError = false
-  harness.originalCallback = false
+  harness.callback = 'none'
+  harness.throwInjected = false
+  harness.lateCallback = 'none'
   harness.events.length = 0
   harness.closeCalls = 0
   harness.native = { closeCalls: 0, closeEvents: 0 }
@@ -197,7 +207,7 @@ it('原生关闭未确认保留原错和精确应急记录，不删除 fixture',
 })
 
 it('外层只接受同一个局部 assertion 对象的边界记录，bodyError 保留 ERR_ASSERTION', async () => {
-  harness.originalCallback = true
+  harness.callback = 'original'
   harness.captureRecovery = true
   const result = await runPublicScenario('public-missing-watch-recovery', consumerRoot)
   assert.equal(result.bodyError.code, 'ERR_ASSERTION')
@@ -209,7 +219,7 @@ it('外层只接受同一个局部 assertion 对象的边界记录，bodyError �
 })
 
 it('局部断言被另一错误替换时，外层保留实际错误并拒绝发布边界记录', async () => {
-  harness.originalCallback = true
+  harness.callback = 'original'
   harness.captureRecovery = true
   harness.replaceCapturedError = true
   const result = await runPublicScenario('public-missing-watch-recovery', consumerRoot)
@@ -232,10 +242,44 @@ it('recovery body 成功后 cleanup 晚到错误使最终结果失败，且不�
 
 it('原 errorBoundary 场景仍允许既定唯一原始回调，不被 recovery 最终零错误门禁改变', async () => {
   harness.bodyPass = true
-  harness.originalCallback = true
+  harness.callback = 'original'
   const result = await runPublicScenario('public-still-exists-watch-error', consumerRoot)
   assert.equal(result.status, 'passed')
   assert.equal(result.finalPublicError, undefined)
   assert.equal(result.publicErrors.length, 1)
   assert.equal(result.publicErrors[0].originalInjectedError, true)
+})
+
+it('报告在对象仍可比较时保存原始 body 与 callback 身份', async () => {
+  harness.throwInjected = true
+  harness.callback = 'original'
+  const result = await runPublicScenario('registered-owner-failure', consumerRoot)
+  assert.equal(result.status, 'failed')
+  assert.equal(result.bodyError.code, 'EPERM')
+  assert.equal(result.bodyError.originalInjectedError, true)
+  assert.equal(result.publicErrors.length, 1)
+  assert.equal(result.publicErrors[0].originalInjectedError, true)
+  assert.equal(result.publicErrors[0].code, 'EPERM')
+  assert.equal(result.publicErrors[0].stack, result.bodyError.stack)
+})
+
+it.each(['original', 'copy'] as const)('callback=%s 不覆盖先前 body 失败或将同码副本标成原对象', async (callback) => {
+  harness.callback = callback
+  const result = await runPublicScenario('registered-owner-failure', consumerRoot)
+  assertBodyError(result)
+  assert.equal(result.publicErrors.length, 1)
+  assert.equal(result.publicErrors[0].code, 'EPERM')
+  assert.equal(result.publicErrors[0].originalInjectedError, callback === 'original')
+})
+
+it.each(['original', 'foreign'] as const)('清理期间迟到的 %s 错误保留最终数量与各自身份', async (lateCallback) => {
+  harness.throwInjected = true
+  harness.callback = 'original'
+  harness.lateCallback = lateCallback
+  const result = await runPublicScenario('registered-owner-failure', consumerRoot)
+  assert.equal(result.bodyError.originalInjectedError, true)
+  assert.equal(result.publicErrors.length, 2)
+  assert.deepEqual(result.publicErrors.map(error => error.originalInjectedError), [true, lateCallback === 'original'])
+  assert.equal(result.cleanup.nativeCleanupConfirmed, true)
+  assert.equal(result.cleanup.deletedFixture, true)
 })

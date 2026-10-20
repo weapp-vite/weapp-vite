@@ -42,6 +42,8 @@ export async function runCandidateValidation({ report, verifyTypes, runScenario,
   signal.throwIfAborted()
 }
 
+export { isConfirmedBaselineRejection as isOriginalRecoveryRejection } from './negativeControl.mjs'
+
 /** 类型与 runtime 分别汇总；任一类型失败都不得将整体验收标记为通过。 */
 export function completePublicValidation(report, nativePlatform, planned) {
   const runtimeFailed = report.results.some(item => item.status === 'failed')
