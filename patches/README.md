@@ -50,5 +50,49 @@ Release 无论成功或失败均尝试保存 `npm-publish-summary-<run_attempt>`
 `reconcile` 接口补齐缺失的 GitHub 发布记录。
 不要为绕过暂存冲突修改包版本，也不要在旧提交上重跑而误认为已使用新版实现。
 
-本次升级仅影响仓库发布维护，不改变对外包行为，不添加 changeset，也不联动
+上述发布工具升级仅影响仓库发布维护，不改变对外包行为，不添加 changeset，也不联动
 `create-weapp-vite` 版本。
+
+## Chokidar 5 监听生命周期
+
+`chokidar@5.0.0.patch` 修正目录删除重建期间的注册、扫描和文件订阅归属：
+
+- 目录先取得原生 watcher 并登记 closer，再提交 tracking 和扫描；Windows 的同步
+  `watch EPERM` 仅在报错路径严格匹配且 `lstat` 确认路径已消失时，进入既有缺失路径处理。
+- 异步目录扫描与文件 stat 绑定各自的订阅身份；旧订阅的迟到结果不能移除或重绑同路径的新文件。
+- 关闭时只取消本 owner 持有的扫描、节流与文件订阅，回收已销毁的 readdirp stream；
+  新条目成功登记后只解除捕获的旧删除节流，避免第二次删除永久漏报。
+- 文件 ADD 回调同步关闭或取消监听时，回收尚未登记的本订阅；inode 重绑复用同一个
+  文件 owner closer，在同一共享容器内更换原生句柄，保留其他 owner 的订阅与 closer。
+- 公开监听路径在初始化期间消失时，先登记父目录 fallback 的就绪槽，再结算原路径；
+  `ready` 只有在父目录原生监听器生效后发布，递归扫描子项仍由其扫描完成就绪结算。
+
+`weapp-vite` 将修补后的 Chokidar 与 `readdirp@5.1.1` 打包到 JavaScript 产物，
+使消费发布包时也使用该实现；类型声明继续引用依赖的公开类型。完整 MIT 许可证随包保存在
+`packages/weapp-vite/THIRD_PARTY_NOTICES.md`。
+
+更新或移除补丁前运行依赖合同，并在目标 Windows、macOS、Linux 环境分别保留报告：
+
+```sh
+node --import tsx scripts/dependencyContracts/chokidar/run.mjs --report .tmp/dependency-contracts/chokidar.json
+```
+
+合同覆盖真实文件事件、注册失败、删除重建、迟到 stat、共享 watcher、polling、POSIX inode 重绑
+和同步 teardown；Windows 的 inode 项明确记为不适用。macOS 上模拟 Windows 错误分类的结果
+只证明分类分支，不代表真实 Windows 已通过；跨平台通过情况以对应环境的报告为准。
+发布前还须验证打包产物实际包含补丁实现，并通过下游 dev/HMR 回归。
+
+发布消费合同通过普通 npm 安装实际 tarball，从 `weapp-vite/test` 与 `weapp-vite/vite`
+两个公开入口验证同路径的原生 acquisition、幸存 owner 的输出和末个 owner 的真实 close。
+执行方式及独立原始 tarball 反例见[发布消费合同说明](../packages/weapp-vite/scripts/chokidarDelivery/README.md)：
+
+```sh
+node --import tsx e2e/scripts/run-e2e-commands.ts node --import tsx packages/weapp-vite/scripts/chokidarDelivery/index.mjs --report .tmp/chokidar-delivery.json
+```
+
+Windows 正恢复及原始 tarball 变红必须由真实 Windows 验证；其他宿主不伪装平台，
+不适用项及未传原始归档而未执行的反例分别保留状态，不能计为通过。
+
+只有上游发布版本覆盖上述生命周期合同，且移除补丁后的跨平台合同和发布产物回归均通过时，
+才可移除补丁与配套打包策略，并同步检查第三方软件声明。补丁涉及的上游发行文件原本超过
+300 行；保留发行结构能让差分直接对应上游，便于审查和升级，因此不为本地补丁拆分模块。
