@@ -156,22 +156,55 @@ it('rejects late script completion and an older event for the same template befo
   expect(vi.getTimerCount()).toBe(0)
 })
 
+it('waits for the current config publication profile without requiring a completion log', async () => {
+  vi.useFakeTimers()
+  const dev = createProcess()
+  const originalOutput = dev.getOutput()
+  const file = path.join(tmpdir(), 'dev-publication', 'app.json')
+  const capturedAtEpochMs = performance.timeOrigin + performance.now()
+  const snapshot = { pipeline: 'stateful', profileMode: 'refresh', completionBoundary: 'output-published' }
+  // 游标之前的记录即使来源和时间相符，也不能证明本次保存已发布。
+  profile.content = `${sourceRecord(file, capturedAtEpochMs + 1, snapshot)}\n`
+  const publication = createDevBuildCompletion(dev, { source: { file, profilePath: 'profile.jsonl' } })
+  let finished = false
+  const waiting = publication.wait().then(() => {
+    finished = true
+  })
+  await vi.advanceTimersByTimeAsync(25)
+  expect(finished).toBe(false)
+
+  profile.content += `${sourceRecord(path.join(tmpdir(), 'dev-publication', 'page.js'), capturedAtEpochMs + 1, snapshot)}\n`
+  profile.content += `${sourceRecord(file, capturedAtEpochMs - 1, snapshot)}\n`
+  profile.content += `${sourceRecord(file, capturedAtEpochMs + 1, { ...snapshot, status: 'incomplete' })}\n`
+  await vi.advanceTimersByTimeAsync(25)
+  expect(finished).toBe(false)
+
+  profile.content += `${sourceRecord(file, capturedAtEpochMs + 1, snapshot)}\n`
+  await vi.advanceTimersByTimeAsync(25)
+  await waiting
+  expect(finished).toBe(true)
+  expect(dev.getOutput()).toBe(originalOutput)
+  expect(vi.getTimerCount()).toBe(0)
+})
+
 it.each([
   { status: 'failed' },
   { status: 'incomplete' },
   { correlation: 'unknown' },
+  { buildId: undefined },
   { batchId: undefined },
   { sourceEvents: [] },
   { clock: { timeOrigin: 'invalid', durations: 'performance.now' } },
-])('keeps the original deadline when the source record is not a completed correlated batch: %j', async (overrides) => {
+].flatMap(overrides => [
+  { mode: 'logged', overrides },
+  { mode: 'source', overrides },
+]))('keeps the original deadline for an invalid source record ($mode): $overrides', async ({ mode, overrides }) => {
   vi.useFakeTimers()
   const dev = createProcess()
   const file = path.join(tmpdir(), 'dev-publication', 'template.html')
   const capturedAtEpochMs = performance.timeOrigin + performance.now()
-  const publication = createDevBuildCompletion(dev, {
-    completed: 'publication complete',
-    source: { file, profilePath: 'profile.jsonl' },
-  })
+  const source = { file, profilePath: 'profile.jsonl' }
+  const publication = createDevBuildCompletion(dev, mode === 'source' ? { source } : { completed: 'publication complete', source })
   const rejected = expect(publication.wait(100)).rejects.toThrow('Timed out waiting for current dev build')
   dev.append('publication complete\n')
   profile.content += `${sourceRecord(file, capturedAtEpochMs + 1, overrides)}\n`
