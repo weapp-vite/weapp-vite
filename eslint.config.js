@@ -239,6 +239,12 @@ export default await defineEslintConfig({
         'e18e/ban-dependencies': 'off',
       },
     }, {
+      files: ['@weapp-core/shared/package.json', '@weapp-core/shared/test-d/get-value.test-d.ts'],
+      rules: {
+        // 既有公开 get 导出保留上游重载与 Options，发布声明需要同一依赖。
+        'e18e/ban-dependencies': ['warn', { allowed: ['get-value'] }],
+      },
+    }, {
       files: [
         'packages/weapp-vite/package.json',
         'packages/create-weapp-vite/package.json',
