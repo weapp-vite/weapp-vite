@@ -33,7 +33,7 @@ async function discoverRuntime(artifacts, download, context, configuration) {
         kind: 'runtime',
         scope: runtimeScope(suite, acceptance),
         suite: { artifact: artifact.name, filePattern: '**/*-suite-report/index.json', expectedCount: 1 },
-        acceptance: [{ artifact: artifact.name, filePattern: '**/dom-acceptance/**/index.json', expectedCount: acceptanceFiles.length }],
+        acceptance: [{ artifact: artifact.name, filePattern: '**/dom-acceptance/*/*.json', expectedCount: acceptanceFiles.length }],
         toolchain: { artifact: `miniapp-${suffix}-weapp-build`, file: '.tmp/build-artifact-manifest.json' },
       }
       const observed = await readExecutionEvidence({ ...configuration, evidence: [descriptor] }, context, download, configuration)
@@ -52,10 +52,10 @@ async function discoverRuntime(artifacts, download, context, configuration) {
 
 /**
  * 真实 DOM runner 为每次调用写出 UUID 命名的验收 JSON，而不是汇总 index.json。
- * 只接受受管 artifact 内 dom-acceptance 目录下的 JSON，避免把诊断文件混入范围。
+ * 只接受 dom-acceptance/<run>/<invocation>.json，排除更深层的 task-resources 等诊断。
  */
 export function isRuntimeAcceptanceFile(file) {
-  return /(?:^|\/)dom-acceptance\/.+\.json$/u.test(file)
+  return /(?:^|\/)dom-acceptance\/[^/]+\/[^/]+\.json$/u.test(file)
 }
 
 /** discovery 只生成待审草稿，不把一次发现或预期列表当作正式性能样本。 */
