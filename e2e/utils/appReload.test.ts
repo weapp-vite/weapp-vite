@@ -1,6 +1,6 @@
 import vm from 'node:vm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { captureAppReloadMarker, waitForAppReload } from './appReload'
+import { assertAppRetained, captureAppReloadMarker, waitForAppReload } from './appReload'
 
 function createHost() {
   let app: Record<string, unknown> | undefined = { applicationValue: 'preserved' }
@@ -45,6 +45,40 @@ afterEach(() => {
 })
 
 describe('App reload boundary', () => {
+  it('keeps the original visible App for a source publication with unchanged runtime outputs', async () => {
+    const host = createHost()
+    const marker = await captureAppReloadMarker(host.session)
+    await expect(assertAppRetained(host.session, marker, '.root', 'pages/index/index')).resolves.toMatchObject({ appReplaced: false, rootVisible: true })
+    expect(host.session.reLaunch).not.toHaveBeenCalled()
+    expect(host.session.compile).not.toHaveBeenCalled()
+    expect(host.session.disconnect).not.toHaveBeenCalled()
+  })
+
+  it('rejects a replaced App even when its route and native root remain visible', async () => {
+    const host = createHost()
+    const marker = await captureAppReloadMarker(host.session)
+    host.replaceApp()
+    await expect(assertAppRetained(host.session, marker, '.root', 'pages/index/index')).rejects.toThrow('Expected the original App')
+  })
+
+  it.each(['missing-app', 'missing-page', 'hidden-root', 'wrong-route'] as const)('rejects an unchanged App with %s', async (state) => {
+    const host = createHost()
+    const marker = await captureAppReloadMarker(host.session)
+    if (state === 'missing-app') {
+      vi.stubGlobal('getApp', () => undefined)
+    }
+    if (state === 'missing-page') {
+      host.setPages([])
+    }
+    if (state === 'hidden-root') {
+      host.setSize({ width: 0, height: 0 })
+    }
+    if (state === 'wrong-route') {
+      host.setPages([{ route: 'pages/another/index' }])
+    }
+    await expect(assertAppRetained(host.session, marker, '.root', 'pages/index/index')).rejects.toThrow('Expected the original App')
+  })
+
   it('marks one App without overwriting its data and independently verifies the marker', async () => {
     const host = createHost()
     const marker = await captureAppReloadMarker(host.session)
