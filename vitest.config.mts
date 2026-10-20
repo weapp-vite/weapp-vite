@@ -154,6 +154,8 @@ const projects = [
         'e2e/utils/automator.cli-bridge.test.ts',
         'e2e/utils/automatorBridgeFiles.test.ts',
         'e2e/utils/automator.test.ts',
+        'e2e/utils/automator.relaunch.test.ts',
+        'e2e/utils/automator.rootBudget.test.ts',
         'e2e/utils/automator.runtime-logs.test.ts',
         'e2e/utils/automatorBridgeCleanup.test.ts',
         'e2e/utils/automatorReconnect.test.ts',

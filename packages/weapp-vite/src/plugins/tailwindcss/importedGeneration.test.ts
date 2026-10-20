@@ -47,7 +47,7 @@ it('copies source content before normalization awaits and retains the full origi
   app.sources.set(compilerSourceId(app.file), '.author { color: blue; }')
   app.request.sourceOptions!.base = 'changed-base'
   const normalized = await pending
-  expect(normalized.sourceOptions?.base).toBe(app.root.replaceAll('\\', '/'))
+  expect(typeof normalized.sourceOptions?.base === 'string' ? compilerSourceId(normalized.sourceOptions.base) : undefined).toBe(compilerSourceId(app.root))
   expect(normalized.sourceOptions?.cssSources?.[0]?.css).toBe(app.css)
 })
 

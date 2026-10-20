@@ -9,8 +9,11 @@ import { fs as fsExtra } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import { resolveNpmBuildCandidateDependenciesSync } from '../../packages/weapp-vite/src/runtime/npmPlugin/service/dependencies'
 import { measureE2EPhase } from '../scripts/verification/timing'
+import { sanitizeBuildCommandEnv } from './buildCommandEnv'
 import { appendIdeReportEvent, resolveReportProjectPath } from './ideWarningReport'
 import { resolveJsFormatConfigOverride } from './jsFormat'
+
+export { sanitizeBuildCommandEnv } from './buildCommandEnv'
 
 const WARN_PATTERN = /\[warn\]|^\s*WARN(?=\s|$)/i
 const ERROR_PATTERN = /\[error\]|^\s*ERROR(?=\s|$)/i
@@ -42,23 +45,6 @@ interface DependencyMeta {
   count: number
   source: 'dependencies' | 'npm-candidates' | 'none'
 }
-
-const BUILD_ENV_STRIP_PREFIXES = [
-  'npm_lifecycle_',
-  'npm_package_',
-]
-
-const BUILD_ENV_STRIP_KEYS = new Set([
-  'PNPM_PACKAGE_NAME',
-  'PNPM_SCRIPT_SRC_DIR',
-  'NODE_ENV',
-  'TEST',
-  'VITEST',
-  'VITEST_MODE',
-  'VITEST_POOL_ID',
-  'VITEST_WORKER_ID',
-  'WEAPP_VITE_E2E_TARGET_FILE',
-])
 
 function createSkipNpmGuardKey(label: string, projectRoot: string, dependencyMeta: DependencyMeta) {
   return `${label}::${projectRoot}::${dependencyMeta.source}::${dependencyMeta.count}`
@@ -172,25 +158,6 @@ function readDependencyMeta(projectRoot: string): DependencyMeta {
     count: 0,
     source: 'none',
   }
-}
-
-export function sanitizeBuildCommandEnv(env = process.env) {
-  const nextEnv: Record<string, string> = {}
-
-  for (const [key, value] of Object.entries(env)) {
-    if (typeof value !== 'string') {
-      continue
-    }
-    if (BUILD_ENV_STRIP_KEYS.has(key)) {
-      continue
-    }
-    if (BUILD_ENV_STRIP_PREFIXES.some(prefix => key.startsWith(prefix))) {
-      continue
-    }
-    nextEnv[key] = value
-  }
-
-  return nextEnv
 }
 
 async function runBuildWithLogCapture(options: BuildCommandOptions) {

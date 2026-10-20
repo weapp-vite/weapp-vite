@@ -23,6 +23,7 @@ interface DevProcessController {
   waitForOutput: (matcher: string | RegExp, description: string, timeoutMs?: number) => Promise<string>
   waitForInitialBuild: (timeoutMs?: number) => Promise<string>
   getOutput: () => string
+  getBuildErrors: () => readonly string[]
   stop: (forceKillDelayMs?: number) => Promise<void>
 }
 
@@ -272,6 +273,7 @@ export function startDevProcess(
     waitForOutput,
     waitForInitialBuild: (timeoutMs?: number) => waitForOutput('小程序初次构建完成', 'mini program initial build completion', timeoutMs),
     getOutput: () => outputChunks.join(''),
+    getBuildErrors: diagnostics.getBuildErrors,
     stop,
   }
 }

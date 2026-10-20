@@ -8,22 +8,21 @@ const VITE_ERROR = /^(?:Internal server error:|Pre-transform error(?: \([^\r\n]+
 
 export function createDevProcessDiagnostics(project: string) {
   const decoder = new StringDecoder('utf8')
+  const buildErrors: string[] = []
   let pending = ''
   let errorLines: string[] = []
   let errorTimer: ReturnType<typeof setTimeout> | undefined
+
+  const recordBuildError = (text: string) => {
+    buildErrors.push(text)
+    appendIdeReportEvent({ source: 'build', kind: 'message', project, level: 'error', channel: 'dev-process', text })
+  }
 
   const flushError = () => {
     clearTimeout(errorTimer)
     errorTimer = undefined
     if (errorLines.length) {
-      appendIdeReportEvent({
-        source: 'build',
-        kind: 'message',
-        project,
-        level: 'error',
-        channel: 'dev-process',
-        text: errorLines.join('\n'),
-      })
+      recordBuildError(errorLines.join('\n'))
       errorLines = []
     }
   }
@@ -70,14 +69,20 @@ export function createDevProcessDiagnostics(project: string) {
     const build = line.match(/^\[(warn|error)\](?:\s|$)/i)
       ?? line.match(/^(?:\[[^\]\r\n]+\]\s+)?(WARN|ERROR) {2}/)
     if (build) {
+      // 严重性已单列，统一 Consola 的终端/CI 外观而不改变错误正文或命名空间。
+      const text = line.replace(/^(WARN|ERROR) {2,}/, (_prefix, level: string) => `[${level.toLowerCase()}] `)
+      const level = build[1]!.toLowerCase() as 'warn' | 'error'
+      if (level === 'error') {
+        recordBuildError(text)
+        return
+      }
       appendIdeReportEvent({
         source: 'build',
         kind: 'message',
         project,
-        level: build[1]!.toLowerCase() as 'warn' | 'error',
+        level,
         channel: 'dev-process',
-        // 严重性已单列，统一 Consola 的终端/CI 外观而不改变错误正文或命名空间。
-        text: line.replace(/^(WARN|ERROR) {2,}/, (_prefix, level: string) => `[${level.toLowerCase()}] `),
+        text,
       })
     }
   }
@@ -93,6 +98,7 @@ export function createDevProcessDiagnostics(project: string) {
   }
 
   return {
+    getBuildErrors: (): readonly string[] => [...buildErrors],
     write(chunk: string | Uint8Array) {
       append(typeof chunk === 'string' ? chunk : decoder.write(chunk))
     },
