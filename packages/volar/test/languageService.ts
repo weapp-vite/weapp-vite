@@ -5,13 +5,14 @@ import { createVueLanguagePlugin } from '@vue/language-core'
 import ts from 'typescript'
 import { createTestVueCompilerOptions } from './compilerOptions'
 
-const vueCompilerOptions = createTestVueCompilerOptions()
-
 export function normalizeFileName(fileName: string) {
   return fileName.replace(/\\/g, '/')
 }
 
-export function createVueLanguageService(files: Map<string, string>) {
+export function createVueLanguageService(
+  files: Map<string, string>,
+  options: { compilerOptions?: ts.CompilerOptions, lib?: string } = {},
+) {
   const normalizedFiles = new Map(
     [...files].map(([fileName, content]) => [normalizeFileName(fileName), content]),
   )
@@ -22,7 +23,9 @@ export function createVueLanguageService(files: Map<string, string>) {
     skipLibCheck: true,
     strict: true,
     target: ts.ScriptTarget.ESNext,
+    ...options.compilerOptions,
   }
+  const vueCompilerOptions = createTestVueCompilerOptions(options.lib)
   const languagePlugin = createVueLanguagePlugin<string>(
     ts,
     compilerOptions,
@@ -54,6 +57,22 @@ export function createVueLanguageService(files: Map<string, string>) {
     getCurrentDirectory: () => process.cwd(),
     getDefaultLibFileName: options => ts.getDefaultLibFilePath(options),
     getScriptFileNames: () => [...normalizedFiles.keys()],
+    getScriptKind(fileName) {
+      // 提供 hook 后，Volar 才会将 .vue 的虚拟脚本切换到实际 JS/TS 模式。
+      if (/\.[cm]?js$/.test(fileName)) {
+        return ts.ScriptKind.JS
+      }
+      if (fileName.endsWith('.jsx')) {
+        return ts.ScriptKind.JSX
+      }
+      if (fileName.endsWith('.tsx')) {
+        return ts.ScriptKind.TSX
+      }
+      if (fileName.endsWith('.json')) {
+        return ts.ScriptKind.JSON
+      }
+      return ts.ScriptKind.TS
+    },
     getScriptSnapshot(fileName) {
       const normalizedFileName = normalizeFileName(fileName)
       const content = normalizedFiles.get(normalizedFileName) ?? ts.sys.readFile(normalizedFileName)

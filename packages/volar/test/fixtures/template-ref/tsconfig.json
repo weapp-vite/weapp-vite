@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": [],
+    "strict": true,
+    "skipLibCheck": false,
+    "jsx": "preserve",
+    "noEmit": true
+  },
+  "include": ["./*.vue", "./platform.d.ts"],
+  "vueCompilerOptions": {
+    "lib": "wevu",
+    "plugins": ["@weapp-vite/volar"]
+  }
+}

@@ -1,4 +1,4 @@
-import type { SFCParseResult, VueLanguagePlugin } from '@vue/language-core'
+import type { SFCParseResult, VueLanguagePlugin, VueLanguagePluginReturn } from '@vue/language-core'
 import type ts from 'typescript'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -16,6 +16,7 @@ import {
   resolveScriptSetupLang,
   syncScriptBlockSource,
 } from './scriptSetup'
+import { createTemplateRefPlugin } from './templateRef'
 
 const require = createRequire(
   typeof module !== 'undefined' && module.filename
@@ -110,7 +111,7 @@ const plugin: VueLanguagePlugin = (ctx) => {
     }
   }
 
-  return {
+  const parserPlugin: VueLanguagePluginReturn = {
     name,
     version: PLUGIN_VERSION,
     order: -1,
@@ -138,6 +139,10 @@ const plugin: VueLanguagePlugin = (ctx) => {
       resolveEmbeddedJsonBlock(fileName, sfc, embeddedCode, tsModule, hasSchematicsTypes)
     },
   }
+
+  return ctx?.vueCompilerOptions
+    ? [parserPlugin, createTemplateRefPlugin(ctx.vueCompilerOptions.lib)]
+    : parserPlugin
 }
 
 export default plugin
