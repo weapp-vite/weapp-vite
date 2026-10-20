@@ -71,7 +71,7 @@ it.each([false, true])('filters captured inputs by the resolved CSS base (relati
     }).toThrow(TypeError)
     expect(captured.scanSources).toBe(false)
     expect(captured.sourceOptions.cssEntries).toEqual([])
-    expect(captured.sourceOptions.cssSources).toEqual([{ file: entry, css, base, dependencies: [entry] }])
+    expect(captured.sourceOptions.cssSources).toEqual([{ file: entry, css, base: base.replaceAll('\\', '/'), dependencies: [entry] }])
     expect(captured.sources).toContainEqual({ content: '<view class="w-[53px]"/>', extension: 'html' })
     expect(captureRequest.mock.calls[1]![1]).toEqual(captured)
     expect(prepared.get('root')?.css).toContain('53px')
