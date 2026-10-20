@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
-import { rm, writeFile } from 'node:fs/promises'
+import { Buffer } from 'node:buffer'
+import { readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { recreateAndExercise } from './registration.mjs'
-import { bounded, turn } from './support.mjs'
+import { bounded, turn, waitForObservedEventPhase } from './support.mjs'
 
 export async function closeDuringScan(chokidar, ctx) {
   const { scenario, heldRead, heldStat, instrumentation, open, timeoutMs } = ctx
@@ -45,7 +46,7 @@ export async function removeDuringStat(chokidar, ctx) {
 }
 
 export async function shared(chokidar, ctx, failSibling) {
-  const { stable, watched, stableFile, instrumentation, open, ready, timeoutMs } = ctx
+  const { stable, watched, stableFile, instrumentation, open, ready, timeoutMs, scenarioEvidence } = ctx
   const first = open(chokidar, stable)
   await ready(first)
   const stableHandle = instrumentation.handles.find(record => record.path === 'src/stable')
@@ -58,9 +59,13 @@ export async function shared(chokidar, ctx, failSibling) {
   }
   await bounded(second.watcher.close(), 'second owner closes', timeoutMs)
   assert.equal(stableHandle.closed, false, 'closing one owner preserves another owner of the same native watcher')
-  const change = first.event('change', stableFile, timeoutMs)
-  await writeFile(stableFile, 'another owner still receives this shared watcher update')
+  const changed = 'another owner still receives this shared watcher update'
+  assert.ok(Buffer.byteLength(changed) > Buffer.byteLength(await readFile(stableFile)), 'the survivor receives a longer in-place value without a truncate phase')
+  await waitForObservedEventPhase(first, stableFile, scenarioEvidence, timeoutMs)
+  const change = first.event('change', stableFile, timeoutMs, stats => stats?.size === Buffer.byteLength(changed))
+  await writeFile(stableFile, changed, { flag: 'r+' })
   await change
+  assert.equal(await readFile(stableFile, 'utf8'), changed)
   assert.deepEqual(first.errors, [])
   assert.deepEqual(second.errors, [])
   await bounded(second.watcher.close(), 'second owner repeats close', timeoutMs)
