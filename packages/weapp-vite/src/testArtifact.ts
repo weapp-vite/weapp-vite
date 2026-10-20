@@ -116,11 +116,12 @@ export async function buildTestArtifact(options: BuildTestArtifactOptions = {}) 
         sourceRootPath: ctx.configService.absoluteSrcRoot,
       } satisfies WeappViteTestArtifact
       const paths = [...dependencies, outDir]
-      // 编译期间源码变化不能使旧输出获得新的有效摘要。
+      // 先捕获待发布摘要，再校验输入；校验之后不能重新读取变化中的输入。
+      const fingerprint = await fingerprintPaths(paths)
       const discoveredStable = await Promise.all([...discoveredInputs].map(async ([file, fingerprint]) =>
         await fingerprint === await fingerprintPaths([file])))
       const stable = discoveredStable.every(Boolean) && before === await fingerprintPaths(initialInputs, [outDir])
-      artifactInputs.set(artifact, { paths, fingerprint: stable ? await fingerprintPaths(paths) : '' })
+      artifactInputs.set(artifact, { paths, fingerprint: stable ? fingerprint : '' })
       return artifact
     }
     finally {
