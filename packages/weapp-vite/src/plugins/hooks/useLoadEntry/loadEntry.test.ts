@@ -436,6 +436,27 @@ describe('createEntryLoader', () => {
     })
   })
 
+  it('uses paired Vue config for a native script without transferring template or JSON ownership', async () => {
+    const native = path.resolve('src/pages/paired/index.ts')
+    const paired = path.resolve('src/pages/paired/index.vue')
+    const template = path.resolve('src/pages/paired/index.wxml')
+    const sourceConfig = { component: false, navigationBarTitleText: 'paired native' }
+    const source = `<template><view>unused Vue template</view></template><json>${JSON.stringify(sourceConfig)}</json>`
+    mockFindVueEntry.mockResolvedValue(paired)
+    mockFindTemplateEntry.mockResolvedValue({ path: template, predictions: [] })
+    readFileMock.mockImplementation(async (id: string) => id === paired ? source : id === template ? '<view>native template</view>' : 'Page({})')
+    statMock.mockResolvedValueOnce({ mtimeMs: 1 })
+    mockExtractConfigFromVue.mockImplementation(extractConfigFromVue)
+    const { loader, registerJsonAsset, scanTemplateEntry, replaceEntryDependencies } = createLoader({ isDev: true })
+
+    await loader.call(createPluginContext(), native, 'page')
+
+    expect(registerJsonAsset).toHaveBeenCalledWith({ jsonPath: path.resolve('src/pages/paired/index.json'), type: 'page', json: sourceConfig })
+    expect(scanTemplateEntry).toHaveBeenCalledWith(template)
+    expect(replaceEntryDependencies).not.toHaveBeenCalledWith(native, 'template', expect.arrayContaining([paired]))
+    expect(mockCompileVueFile).not.toHaveBeenCalled()
+  })
+
   it.each(['jsx', 'tsx'])('discovers a %s page without attaching its source watch to the app loader', async (extension) => {
     const { loader, emitEntriesChunks } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()

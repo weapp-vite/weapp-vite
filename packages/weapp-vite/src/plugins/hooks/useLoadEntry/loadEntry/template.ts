@@ -8,6 +8,8 @@ import { fs } from '@weapp-core/shared/fs'
 import { collectScriptSetupImportsFromCode, resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../../utils/vueTemplateTags'
+import { rebaseSfcTemplateDependencies, resolveSfcTemplateSource } from '../../../utils/sfcTemplateDependencies'
+import { collectTemplateDependencySources } from '../../../utils/templateDependencies'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { resolveUsingComponentReference } from '../../../vue/transform/usingComponentResolver'
 import { createScriptSetupAnalyzer } from './scriptSetupAnalysis'
@@ -24,9 +26,12 @@ interface ResolvedScriptSetupUsingComponent {
 
 const TEMPLATE_COMPONENT_TAG_HINT_RE = /<\s*(?:[A-Z_$]|[a-z][\w$]*-)/
 const EXTERNAL_TEMPLATE_HINT_RE = /<template\b(?:[^>"']|"[^"]*"|'[^']*')+\bsrc\s*=/i
+const NATIVE_TEMPLATE_DEPENDENCY_HINT_RE = /<\s*(?:import|include|wxs|sjs|qs|jds|filter)\b/i
 
 function hasTemplateComponentTagHint(source: string) {
-  return TEMPLATE_COMPONENT_TAG_HINT_RE.test(source) || EXTERNAL_TEMPLATE_HINT_RE.test(source)
+  return TEMPLATE_COMPONENT_TAG_HINT_RE.test(source)
+    || EXTERNAL_TEMPLATE_HINT_RE.test(source)
+    || NATIVE_TEMPLATE_DEPENDENCY_HINT_RE.test(source)
 }
 
 function collectVueTemplateComponentTagInfo(template: string, filename: string) {
@@ -79,6 +84,8 @@ export async function applyScriptSetupUsingComponents(options: {
   json: any
   configService: CompilerContext['configService']
   wxmlService?: CompilerContext['wxmlService']
+  moduleGraphService?: CompilerContext['moduleGraphService']
+  ownerId?: string
   reExportResolutionCache: ReExportResolutionCache
   externalComponentEntryMap?: Map<string, string>
   scriptSetupAnalyzer?: ScriptSetupAnalyzer
@@ -91,43 +98,59 @@ export async function applyScriptSetupUsingComponents(options: {
     json,
     configService,
     wxmlService,
+    moduleGraphService,
+    ownerId = vueEntryPath,
     reExportResolutionCache,
     externalComponentEntryMap,
     scriptSetupAnalyzer = createScriptSetupAnalyzer(),
   } = options
 
+  async function publishTemplateDependencies(template: string, components: Record<string, { start: number, end: number }[]>) {
+    if (templatePath || !wxmlService) {
+      return
+    }
+    const token = wxmlService.analyze?.(template)
+    if (token) {
+      wxmlService.tokenMap?.set(vueEntryPath, token)
+      // 冷构建的自动组件合成必须等待 import/include 的递归扫描完成。
+      await wxmlService.setTokenDeps?.(vueEntryPath, token.deps)
+    }
+    wxmlService.setWxmlComponentsMap(vueEntryPath, components)
+    const dependencies = collectTemplateDependencySources(wxmlService, vueEntryPath)
+    moduleGraphService?.replaceEntryDependencies(ownerId, 'template', dependencies.template)
+    moduleGraphService?.replaceEntryDependencies(ownerId, 'wxs', dependencies.wxs)
+  }
+
   try {
     if (source !== undefined && !hasTemplateComponentTagHint(source)) {
       scriptSetupAnalyzer.discard(vueEntryPath)
+      await publishTemplateDependencies('', {})
       return
     }
 
-    const { descriptor, errors } = await readAndParseSfc(vueEntryPath, {
-      ...createReadAndParseSfcOptions(
-        pluginCtx,
-        configService,
-        source === undefined ? undefined : { source },
-      ),
-    })
+    const parseOptions = createReadAndParseSfcOptions(pluginCtx, configService, source === undefined ? undefined : { source })
+    const { descriptor, errors } = await readAndParseSfc(vueEntryPath, parseOptions)
     if (errors?.length || !descriptor?.template) {
       scriptSetupAnalyzer.discard(vueEntryPath)
+      await publishTemplateDependencies('', {})
       return
     }
+    const template = rebaseSfcTemplateDependencies(
+      descriptor.template.content,
+      resolveSfcTemplateSource(parseOptions?.resolveSrc, descriptor.template.src ?? undefined, vueEntryPath),
+      vueEntryPath,
+      configService.platform,
+    )
     const analysis = scriptSetupAnalyzer.analyze({
       filename: vueEntryPath,
-      template: descriptor.template.content,
+      template,
       scriptSetup: descriptor.scriptSetup?.content,
       astEngine: resolveAstEngine(configService.weappViteConfig),
     })
-    if (!templatePath) {
-      const tags = analysis.autoImportTags
-      if (tags.length) {
-        const components = Object.fromEntries(
-          Array.from(tags, tag => [tag, [{ start: 0, end: 0 }]]),
-        )
-        wxmlService?.setWxmlComponentsMap(vueEntryPath, components)
-      }
-    }
+    const components = Object.fromEntries(
+      analysis.autoImportTags.map(tag => [tag, [{ start: 0, end: 0 }]]),
+    )
+    await publishTemplateDependencies(template, components)
 
     const imports = analysis.imports
     if (imports.length) {
