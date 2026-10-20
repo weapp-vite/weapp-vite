@@ -6,6 +6,7 @@ import { processGapObservation } from './evidence'
 import { inspectResourceRows } from './index'
 
 const mocks = vi.hoisted(() => ({ ps: vi.fn(), paths: vi.fn(), images: vi.fn(), realpath: vi.fn() }))
+vi.mock('./darwinSnapshot', async () => ({ readDarwinSnapshot: (await import('./snapshotFixture')).createSnapshotFixture(mocks) }))
 vi.mock('execa', () => ({ execa: mocks.ps }))
 vi.mock('node:fs/promises', () => ({ default: { realpath: mocks.realpath } }))
 vi.mock('../../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/installationExit/darwinKernelPaths', () => ({ readDarwinKernelPaths: mocks.paths }))

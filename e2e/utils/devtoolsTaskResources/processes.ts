@@ -3,7 +3,7 @@ import type { InstallationProcessSample, ProcessIdentityGapObservation, Resource
 import fs from 'node:fs/promises'
 import process from 'node:process'
 import { resolveWechatDevtoolsInstallationRoot } from '../../../packages/weapp-ide-cli/src/devtoolsTarget/host'
-import { insideInstallation, inspectResourceRows, readResourceRows, stableProcess, validProcessImage } from './processInventory'
+import { completeResourceInspection, insideInstallation, readInitialResourceInventory, stableProcess, validProcessImage } from './processInventory'
 import { createResourceInventory } from './processInventory/closure'
 import { processGapObservation } from './processInventory/evidence'
 
@@ -18,9 +18,9 @@ export async function sampleInstallationProcesses(target: ResolvedWechatDevtools
     const samplingStartedAt = new Date().toISOString()
     const deadline = Date.now() + 10_000
     const installationRoot = await fs.realpath(resolveWechatDevtoolsInstallationRoot(target, platform))
-    const before = await readResourceRows(deadline)
+    const { rows: before, paths: initialPaths, afterRows } = await readInitialResourceInventory(deadline)
     const closure = createResourceInventory({ initial: before, installationRoot, deadline })
-    const { paths, images, imageGaps, finalRows, fallbackBudgetExhausted } = await inspectResourceRows(before, deadline, closure.afterInitialKernel)
+    const { paths, images, imageGaps, finalRows, fallbackBudgetExhausted } = await completeResourceInspection(before, initialPaths, afterRows, deadline, closure.afterInitialKernel)
     const inventory = await closure.close(finalRows, images)
     const { final } = inventory
     const members = new Map<number, 'installation-image' | 'descendant'>()
