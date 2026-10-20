@@ -12,6 +12,7 @@ import { emitScopedSlotAssets } from '../../scopedSlot'
 import { emitSlotFallbackWrapperComponentAsset, injectLocalSlotFallbackWrapperUsingComponentIfNeeded } from '../../slotFallbackWrapper'
 import { resolveBundleOutputExtensions } from '../outputExtensions'
 import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from '../platform'
+import { composeVueEntryJsonConfig } from './entryJson'
 
 const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 
@@ -369,7 +370,7 @@ export async function emitCompiledEntryBundleAssets(options: {
     }
   }
   const shouldEmitComponentJson = !isAppVue && !options.isPage
-  const shouldMergeJsonAsset = isAppVue || (options.isPage && !options.result.config)
+  const shouldMergePageJsonAsset = options.isPage && !options.result.config
   const jsonKind = isAppVue ? 'app' : options.isPage ? 'page' : 'component'
   const dirtyReasonSummary = hmrState?.profile?.dirtyReasonSummary
   const isStyleAssetHmr = dirtyReasonSummary?.some(item =>
@@ -428,12 +429,18 @@ export async function emitCompiledEntryBundleAssets(options: {
       })
     : undefined
 
+  // scoped slot 和 fallback wrapper 在资源阶段追加绑定，最终合成必须读取处理后的配置。
+  const currentEntryJson = isAppVue
+    ? undefined
+    : composeVueEntryJsonConfig(options.ctx, options.filename, options.result.config)
+  const shouldMergeJsonAsset = isAppVue || (currentEntryJson === undefined && shouldMergePageJsonAsset)
+
   if (options.result.config || shouldEmitComponentJson || options.isPage) {
     emitSharedVueEntryJsonAsset({
       bundle: options.bundle,
       pluginCtx: options.pluginCtx,
       relativeBase: options.relativeBase,
-      config: options.result.config,
+      config: currentEntryJson ?? options.result.config,
       meta: options.result.meta,
       outputExtensions: options.outputExtensions,
       platformAssetOptions: options.platformAssetOptions,

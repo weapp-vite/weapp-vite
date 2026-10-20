@@ -7,6 +7,8 @@ export interface JsonEmitFileEntry {
   jsonPath?: string
   json: any
   type: 'app' | 'page' | 'component' | 'plugin'
+  /** 由 Vue 编译器合成并发布最终配置，core 只保留本轮输入。 */
+  publisher?: 'vue'
 }
 
 export interface JsonEmitRecord {
