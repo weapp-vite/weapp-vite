@@ -26,6 +26,8 @@ type CompletionOptions = {
   started?: string
   source?: SourcePublication
 } | {
+  source: SourcePublication
+} | {
   snapshot: SnapshotPublication
 }
 
@@ -202,12 +204,14 @@ function captureSnapshotPublication(snapshot: SnapshotPublication) {
   }
 }
 
-/** 在编辑前记录游标；文件提前可见或上一轮完成日志都不能代替本轮发布完成。 */
+/** 在编辑前记录游标；仅来源模式以本轮已归因的完成记录为准，不要求通用完成日志。 */
 export function createDevBuildCompletion(dev: DevProcess, options: CompletionOptions) {
   const offset = dev.getOutput().length
   const sourcePublished = 'source' in options && options.source && captureSourcePublication(options.source)
   const snapshotPublished = 'snapshot' in options && captureSnapshotPublication(options.snapshot)
-  const description = 'snapshot' in options ? 'native snapshot settlement' : options.completed
+  const description = 'snapshot' in options
+    ? 'native snapshot settlement'
+    : 'completed' in options ? options.completed : 'source profile publication'
   return {
     async wait(timeoutMs = 30_000): Promise<void> {
       const completion = Promise.withResolvers<void>()
@@ -230,6 +234,9 @@ export function createDevBuildCompletion(dev: DevProcess, options: CompletionOpt
             const startedAt = options.started ? output.lastIndexOf(options.started) : -1
             published = completedAt >= 0 && completedAt > startedAt
               && (!sourcePublished || await sourcePublished.check(reads.signal))
+          }
+          else if (sourcePublished) {
+            published = await sourcePublished.check(reads.signal)
           }
           else {
             published = false
