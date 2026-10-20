@@ -1,0 +1,920 @@
+diff --git a/handler.d.ts b/handler.d.ts
+index 520571aa4f7339e1a992ebb378c74aa253173f56..084dce7eeaa00f61a3533a92227fbf8cc75a787f 100644
+--- a/handler.d.ts
++++ b/handler.d.ts
+@@ -49,7 +49,7 @@ export declare class NodeFsHandler {
+      * @param listener on fs change
+      * @returns closer for the watcher instance
+      */
+-    _watchWithNodeFs(path: string, listener: (path: string, newStats?: any) => void | Promise<void>): (() => void) | undefined;
++    _watchWithNodeFs(path: string, listener: (path: string, newStats?: any) => void | Promise<void>, throwRegistrationError?: boolean, stats?: Stats): (() => void) | undefined;
+     /**
+      * Watch a file and emit add event if warranted.
+      * @returns closer for the watcher instance
+@@ -63,8 +63,8 @@ export declare class NodeFsHandler {
+      * @param item basename of this item
+      * @returns true if no more processing is needed for this entry.
+      */
+-    _handleSymlink(entry: EntryInfo, directory: string, path: Path, item: string): Promise<boolean | undefined>;
+-    _handleRead(directory: string, initialAdd: boolean, wh: WatchHelper, target: Path | undefined, dir: Path, depth: number, throttler: Throttler): Promise<unknown> | undefined;
++    _handleSymlink(entry: EntryInfo, directory: string, path: Path, item: string, isActive?: () => boolean): Promise<boolean | undefined>;
++    _handleRead(directory: string, initialAdd: boolean, wh: WatchHelper, target: Path | undefined, dir: Path, depth: number, throttler: Throttler, isActive?: () => boolean, registerRead?: (cancel: () => void) => () => void): Promise<unknown> | undefined;
+     /**
+      * Read directory to add / remove files from `@watched` list and re-read it on change.
+      * @param dir fs path
+@@ -74,9 +74,9 @@ export declare class NodeFsHandler {
+      * @param target child path targeted for watch
+      * @param wh Common watch helpers for this path
+      * @param realpath
+-     * @returns closer for the watcher instance.
++     * @returns 用于后续异步提交的当前目录归属检查。
+      */
+-    _handleDir(dir: string, stats: Stats, initialAdd: boolean, depth: number, target: string | undefined, wh: WatchHelper, realpath: string): Promise<(() => void) | undefined>;
++    _handleDir(dir: string, stats: Stats, initialAdd: boolean, depth: number, target: string | undefined, wh: WatchHelper, realpath: string, registerCloser: (closer: () => void) => void, isActive?: () => boolean): Promise<() => boolean>;
+     /**
+      * Handle added file, directory, or glob pattern.
+      * Delegates call to _handleFile / _handleDir after checks.
+@@ -86,5 +86,5 @@ export declare class NodeFsHandler {
+      * @param depth Child path actually targeted for watch
+      * @param target Child path actually targeted for watch
+      */
+-    _addToNodeFs(path: string, initialAdd: boolean, priorWh: WatchHelper | undefined, depth: number, target?: string): Promise<string | false | undefined>;
++    _addToNodeFs(path: string, initialAdd: boolean, priorWh: WatchHelper | undefined, depth: number, target?: string, isActive?: () => boolean): Promise<string | false | undefined>;
+ }
+diff --git a/handler.js b/handler.js
+index 6b12880bfcdae186dd738a9397b53ebb5849f0ac..7888dafae22796d2a147514931677ac12d8efdd7 100644
+--- a/handler.js
++++ b/handler.js
+@@ -26,6 +26,15 @@ export const EVENTS = {
+ };
+ const EV = EVENTS;
+ const THROTTLE_MODE_WATCH = 'watch';
++// 新条目提交后只解除捕获的旧代删除节流，不能改动新代或其他动作的节流。
++const clearPreviousRemoveThrottle = (fsw, path, throttler) => {
++    if (!throttler)
++        return;
++    if (fsw._throttled.get('remove')?.get(path) === throttler)
++        throttler.clear();
++    else
++        clearTimeout(throttler.timeoutObject);
++};
+ const statMethods = { lstat, stat };
+ const KEY_LISTENERS = 'listeners';
+ const KEY_ERR = 'errHandlers';
+@@ -103,6 +112,11 @@ const delFromSet = (main, prop, item) => {
+ };
+ const isEmptySet = (val) => (val instanceof Set ? val.size === 0 : !val);
+ const FsWatchInstances = new Map();
++// 控制只随内部 closer 传递，不增加公开导出或第二份路径归属表。
++const NATIVE_SUBSCRIPTION = Symbol();
++const sameInode = (binding, stats) => binding && stats &&
++    binding.dev !== undefined && binding.ino !== undefined &&
++    binding.dev === stats.dev && binding.ino === stats.ino;
+ /**
+  * Instantiates the fs_watch interface
+  * @param path to be watched
+@@ -112,10 +126,16 @@ const FsWatchInstances = new Map();
+  * @param emitRaw emits raw event data
+  * @returns {NativeFsWatcher}
+  */
+-function createFsWatchInstance(path, options, listener, errHandler, emitRaw) {
++function createFsWatchInstance(path, options, listener, errHandler, emitRaw, isActive = () => true) {
+     const handleEvent = (rawEvent, evPath) => {
++        if (!isActive())
++            return;
+         listener(path);
++        if (!isActive())
++            return;
+         emitRaw(rawEvent, evPath, { watchedPath: path });
++        if (!isActive())
++            return;
+         // emit based on events occurring for files from a directory's watcher in
+         // case the file's watcher misses it (and rely on throttling to de-dupe)
+         if (evPath && path !== evPath) {
+@@ -136,13 +156,65 @@ function createFsWatchInstance(path, options, listener, errHandler, emitRaw) {
+  * Helper for passing fs_watch event data to a collection of listeners
+  * @param fullPath absolute path bound to fs_watch instance
+  */
+-const fsWatchBroadcast = (fullPath, listenerType, val1, val2, val3) => {
++const fsWatchBroadcast = (fullPath, listenerType, val1, val2, val3, expectedBinding) => {
+     const cont = FsWatchInstances.get(fullPath);
+     if (!cont)
+         return;
++    const isCurrent = () => FsWatchInstances.get(fullPath) === cont &&
++        (!expectedBinding || (cont.binding === expectedBinding && !expectedBinding.closed));
+     foreach(cont[listenerType], (listener) => {
+-        listener(val1, val2, val3);
++        if (isCurrent())
++            listener(val1, val2, val3);
++    });
++};
++/** 为同一个共享容器取得下一代原生句柄，发布前的回调保持失活。 */
++const createPersistentBinding = (path, fullPath, options, cont, acquireErrorHandler, stats) => {
++    const binding = {
++        watcher: undefined,
++        generation: (cont.binding?.generation || 0) + 1,
++        dev: stats?.dev,
++        ino: stats?.ino,
++        closed: false,
++        close: EMPTY_FN,
++    };
++    const isCurrent = () => FsWatchInstances.get(fullPath) === cont &&
++        cont.binding === binding && !binding.closed;
++    const broadcastError = (error) => fsWatchBroadcast(fullPath, KEY_ERR, error, undefined, undefined, binding);
++    const watcher = createFsWatchInstance(path, options,
++        (changedPath) => fsWatchBroadcast(fullPath, KEY_LISTENERS, changedPath, undefined, undefined, binding),
++        acquireErrorHandler,
++        (event, eventPath, details) => fsWatchBroadcast(fullPath, KEY_RAW, event, eventPath, details, binding),
++        isCurrent);
++    if (!watcher)
++        return;
++    binding.watcher = watcher;
++    binding.close = () => {
++        if (binding.closed)
++            return;
++        binding.closed = true;
++        watcher.close();
++    };
++    watcher.on(EV.ERROR, async (error) => {
++        if (!isCurrent())
++            return;
++        cont.watcherUnusable = true;
++        // Windows probe 自己关闭取得的 fd，await 后再次拒绝旧原生代的错误。
++        if (isWindows && error.code === 'EPERM') {
++            try {
++                const fd = await open(path, 'r');
++                await fd.close();
++                if (isCurrent())
++                    broadcastError(error);
++            }
++            catch (err) {
++                // 保留上游对不可读路径的异步 EPERM 处理。
++            }
++        }
++        else {
++            broadcastError(error);
++        }
+     });
++    return binding;
+ };
+ /**
+  * Instantiates the fs_watch interface or binds listeners
+@@ -152,15 +224,21 @@ const fsWatchBroadcast = (fullPath, listenerType, val1, val2, val3) => {
+  * @param options to be passed to fs_watch
+  * @param handlers container for event listener functions
+  */
+-const setFsWatchListener = (path, fullPath, options, handlers) => {
++const setFsWatchListener = (path, fullPath, options, handlers, registrationErrorHandler) => {
+     const { listener, errHandler, rawEmitter } = handlers;
++    const acquireErrorHandler = registrationErrorHandler || errHandler;
+     let cont = FsWatchInstances.get(fullPath);
+-    let watcher;
+     if (!options.persistent) {
+-        watcher = createFsWatchInstance(path, options, listener, errHandler, rawEmitter);
++        let active = true;
++        const watcher = createFsWatchInstance(path, options, listener, acquireErrorHandler, rawEmitter, () => active);
+         if (!watcher)
+             return;
+-        return watcher.close.bind(watcher);
++        return () => {
++            if (!active)
++                return;
++            active = false;
++            watcher.close();
++        };
+     }
+     if (cont) {
+         addAndConvert(cont, KEY_LISTENERS, listener);
+@@ -168,56 +246,78 @@ const setFsWatchListener = (path, fullPath, options, handlers) => {
+         addAndConvert(cont, KEY_RAW, rawEmitter);
+     }
+     else {
+-        watcher = createFsWatchInstance(path, options, fsWatchBroadcast.bind(null, fullPath, KEY_LISTENERS), errHandler, // no need to use broadcast here
+-        fsWatchBroadcast.bind(null, fullPath, KEY_RAW));
+-        if (!watcher)
+-            return;
+-        watcher.on(EV.ERROR, async (error) => {
+-            const broadcastErr = fsWatchBroadcast.bind(null, fullPath, KEY_ERR);
+-            if (cont)
+-                cont.watcherUnusable = true; // documented since Node 10.4.1
+-            // Workaround for https://github.com/joyent/node/issues/4337
+-            if (isWindows && error.code === 'EPERM') {
+-                try {
+-                    const fd = await open(path, 'r');
+-                    await fd.close();
+-                    broadcastErr(error);
+-                }
+-                catch (err) {
+-                    // do nothing
+-                }
+-            }
+-            else {
+-                broadcastErr(error);
+-            }
+-        });
+         cont = {
+-            listeners: listener,
+-            errHandlers: errHandler,
+-            rawEmitters: rawEmitter,
+-            watcher,
++            listeners: new Set([listener]),
++            errHandlers: new Set([errHandler]),
++            rawEmitters: new Set([rawEmitter]),
++            watcher: undefined,
++            binding: undefined,
+         };
++        const binding = createPersistentBinding(path, fullPath, options, cont, acquireErrorHandler, options.stats);
++        if (!binding)
++            return;
++        cont.binding = binding;
++        cont.watcher = binding.watcher;
+         FsWatchInstances.set(fullPath, cont);
+     }
+     // const index = cont.listeners.indexOf(listener);
+     // removes this instance's listeners and closes the underlying fs_watch
+     // instance if there are no more listeners left
+-    return () => {
++    let active = true;
++    const close = () => {
++        if (!active)
++            return;
++        active = false;
+         delFromSet(cont, KEY_LISTENERS, listener);
+         delFromSet(cont, KEY_ERR, errHandler);
+         delFromSet(cont, KEY_RAW, rawEmitter);
+         if (isEmptySet(cont.listeners)) {
+-            // Check to protect against issue gh-730.
+-            // if (cont.watcherUnusable) {
+-            cont.watcher.close();
+-            // }
+-            FsWatchInstances.delete(fullPath);
++            const binding = cont.binding;
++            cont.binding = undefined;
++            if (FsWatchInstances.get(fullPath) === cont)
++                FsWatchInstances.delete(fullPath);
++            binding?.close();
+             HANDLER_KEYS.forEach(clearItem(cont));
+             // @ts-ignore
+             cont.watcher = undefined;
+             Object.freeze(cont);
+         }
+     };
++    const isOwned = () => active && FsWatchInstances.get(fullPath) === cont && cont.binding !== undefined;
++    close[NATIVE_SUBSCRIPTION] = {
++        snapshot: () => isOwned() ? cont.binding : undefined,
++        // sibling 已重绑时，只接纳确认属于当前 inode 的成功 stat；旧失败不能越代删除。
++        accepts: (observed, stats) => isOwned() &&
++            (cont.binding === observed || sameInode(cont.binding, stats)),
++        rebind: (stats) => {
++            if (!isOwned())
++                return false;
++            const previous = cont.binding;
++            if (sameInode(previous, stats))
++                return true;
++            let failed = false;
++            let failure;
++            const replacement = createPersistentBinding(path, fullPath, options, cont, (error) => {
++                failed = true;
++                failure = error;
++            }, stats);
++            if (failed)
++                throw failure;
++            if (!replacement)
++                return false;
++            // acquisition 内若触发同步关闭，只释放新取得的句柄，不复活旧容器。
++            if (FsWatchInstances.get(fullPath) !== cont || cont.binding !== previous || isEmptySet(cont.listeners)) {
++                replacement.close();
++                return false;
++            }
++            cont.binding = replacement;
++            cont.watcher = replacement.watcher;
++            cont.watcherUnusable = false;
++            previous.close();
++            return true;
++        },
++    };
++    return close;
+ };
+ // fs_watchFile helpers
+ // object to hold per-process fs_watchFile instances
+@@ -302,15 +402,17 @@ export class NodeFsHandler {
+      * @param listener on fs change
+      * @returns closer for the watcher instance
+      */
+-    _watchWithNodeFs(path, listener) {
++    _watchWithNodeFs(path, listener, throwRegistrationError = false, stats) {
+         const opts = this.fsw.options;
+         const directory = sp.dirname(path);
+         const basename = sp.basename(path);
+-        const parent = this.fsw._getWatchedDir(directory);
+-        parent.add(basename);
++        // 文件保持原有登记协议；目录的 tracking 在 closer 归属登记后由调用者提交。
++        if (!throwRegistrationError)
++            this.fsw._getWatchedDir(directory).add(basename);
+         const absolutePath = sp.resolve(path);
+         const options = {
+             persistent: opts.persistent,
++            stats,
+         };
+         if (!listener)
+             listener = EMPTY_FN;
+@@ -324,11 +426,19 @@ export class NodeFsHandler {
+             });
+         }
+         else {
++            let registrationFailed = false;
++            let registrationError;
++            const onRegistrationError = throwRegistrationError ? (error) => {
++                registrationFailed = true;
++                registrationError = error;
++            } : undefined;
+             closer = setFsWatchListener(path, absolutePath, options, {
+                 listener,
+                 errHandler: this._boundHandleError,
+                 rawEmitter: this.fsw._emitRaw,
+-            });
++            }, onRegistrationError);
++            if (registrationFailed)
++                throw registrationError;
+         }
+         return closer;
+     }
+@@ -342,62 +452,133 @@ export class NodeFsHandler {
+         }
+         const dirname = sp.dirname(file);
+         const basename = sp.basename(file);
++        const parentPath = sp.resolve(dirname);
+         const parent = this.fsw._getWatchedDir(dirname);
+         // stats is always present
+         let prevStats = stats;
+         // if the file is already being watched, do nothing
+         if (parent.has(basename))
+             return;
+-        const listener = async (path, newStats) => {
+-            if (!this.fsw._throttle(THROTTLE_MODE_WATCH, file, 5))
++        const removePath = sp.join(dirname, basename);
++        const previousRemoveThrottle = this.fsw._throttled.get('remove')?.get(removePath);
++        let ownerActive = true;
++        let currentBinding;
++        const isCurrentBinding = (binding) => ownerActive && binding.active && currentBinding === binding &&
++            !this.fsw.closed && this.fsw._watched.get(parentPath) === parent && parent.has(basename);
++        // 文件 closer 只释放当前订阅；关闭后不能由旧回调重新注册。
++        const closeOwner = () => {
++            if (!ownerActive)
+                 return;
+-            if (!newStats || newStats.mtimeMs === 0) {
+-                try {
+-                    const newStats = await stat(file);
+-                    if (this.fsw.closed)
++            ownerActive = false;
++            const binding = currentBinding;
++            currentBinding = undefined;
++            if (binding)
++                binding.close();
++        };
++        const subscribe = () => {
++            if (!ownerActive || this.fsw.closed)
++                return;
++            // 每次文件订阅持有独立 token，原生换代不替换 owner 的订阅身份。
++            const binding = { active: false, close: EMPTY_FN };
++            let nativeControl;
++            const listener = async (path, newStats) => {
++                if (!isCurrentBinding(binding) || !this.fsw._throttle(THROTTLE_MODE_WATCH, file, 5))
++                    return;
++                const observedNative = nativeControl?.snapshot();
++                if (!newStats || newStats.mtimeMs === 0) {
++                    let currentStats;
++                    try {
++                        currentStats = await stat(file);
++                    }
++                    catch (error) {
++                        // stat 失败只属于发起时的原生代，不能删除 sibling 已重绑的新 inode。
++                        if (isCurrentBinding(binding) && (!nativeControl || nativeControl.accepts(observedNative)))
++                            this.fsw._remove(dirname, basename);
++                        return;
++                    }
++                    if (!isCurrentBinding(binding) || (nativeControl && !nativeControl.accepts(observedNative, currentStats)))
+                         return;
+                     // Check that change event was not fired because of changed only accessTime.
++                    const at = currentStats.atimeMs;
++                    const mt = currentStats.mtimeMs;
++                    if (!at || at <= mt || mt !== prevStats.mtimeMs) {
++                        this.fsw._emit(EV.CHANGE, file, currentStats);
++                    }
++                    if (!isCurrentBinding(binding))
++                        return;
++                    if ((isMacos || isLinux || isFreeBSD) && prevStats.ino !== currentStats.ino) {
++                        if (nativeControl) {
++                            try {
++                                // 共享 cont 原地换代；任何 owner 的 listener/error/raw 与 closer 均不重登记。
++                                if (!nativeControl.rebind(currentStats))
++                                    return;
++                            }
++                            catch (error) {
++                                // acquisition 错误保留原对象与原生旧代，不误走 stat 的删除分支。
++                                if (isCurrentBinding(binding))
++                                    this._boundHandleError(error);
++                                return;
++                            }
++                        }
++                        else if (!this.fsw.options.usePolling) {
++                            // 非 persistent 原生订阅不共享 cont，仍由本 owner 独立更换订阅。
++                            binding.close();
++                            prevStats = currentStats;
++                            subscribe();
++                            return;
++                        }
++                    }
++                    if (isCurrentBinding(binding))
++                        prevStats = currentStats;
++                }
++                else {
++                    // Check that change event was not fired because of changed only accessTime.
+                     const at = newStats.atimeMs;
+                     const mt = newStats.mtimeMs;
+                     if (!at || at <= mt || mt !== prevStats.mtimeMs) {
+                         this.fsw._emit(EV.CHANGE, file, newStats);
+                     }
+-                    if ((isMacos || isLinux || isFreeBSD) && prevStats.ino !== newStats.ino) {
+-                        this.fsw._closeFile(path);
++                    if (isCurrentBinding(binding))
+                         prevStats = newStats;
+-                        const closer = this._watchWithNodeFs(file, listener);
+-                        if (closer)
+-                            this.fsw._addPathCloser(path, closer);
+-                    }
+-                    else {
+-                        prevStats = newStats;
+-                    }
+-                }
+-                catch (error) {
+-                    // Fix issues where mtime is null but file is still present
+-                    this.fsw._remove(dirname, basename);
+                 }
+-                // add is about to be emitted if file not already tracked in parent
+-            }
+-            else if (parent.has(basename)) {
+-                // Check that change event was not fired because of changed only accessTime.
+-                const at = newStats.atimeMs;
+-                const mt = newStats.mtimeMs;
+-                if (!at || at <= mt || mt !== prevStats.mtimeMs) {
+-                    this.fsw._emit(EV.CHANGE, file, newStats);
+-                }
+-                prevStats = newStats;
++            };
++            const nativeCloser = this._watchWithNodeFs(file, listener, false, prevStats);
++            if (!nativeCloser)
++                return;
++            nativeControl = nativeCloser[NATIVE_SUBSCRIPTION];
++            let closed = false;
++            binding.close = () => {
++                if (closed)
++                    return;
++                closed = true;
++                binding.active = false;
++                if (currentBinding === binding)
++                    currentBinding = undefined;
++                nativeCloser();
++            };
++            if (!ownerActive || this.fsw.closed || this.fsw._watched.get(parentPath) !== parent || !parent.has(basename)) {
++                binding.close();
++                return;
+             }
++            binding.active = true;
++            currentBinding = binding;
++            return binding;
+         };
+         // kick off the watcher
+-        const closer = this._watchWithNodeFs(file, listener);
++        const binding = subscribe();
++        if (binding && isCurrentBinding(binding))
++            clearPreviousRemoveThrottle(this.fsw, removePath, previousRemoveThrottle);
+         // emit an add event if we're supposed to
+         if (!(initialAdd && this.fsw.options.ignoreInitial) && this.fsw._isntIgnored(file)) {
+-            if (!this.fsw._throttle(EV.ADD, file, 0))
+-                return;
+-            this.fsw._emit(EV.ADD, file, stats);
++            if (this.fsw._throttle(EV.ADD, file, 0))
++                this.fsw._emit(EV.ADD, file, stats);
+         }
+-        return closer;
++        // ADD listener 可同步 close/unwatch，此时只回收尚未登记的本订阅。
++        if (binding && !isCurrentBinding(binding)) {
++            closeOwner();
++            return;
++        }
++        return binding ? closeOwner : undefined;
+     }
+     /**
+      * Handle symlinks encountered while reading a dir.
+@@ -407,7 +588,7 @@ export class NodeFsHandler {
+      * @param item basename of this item
+      * @returns true if no more processing is needed for this entry.
+      */
+-    async _handleSymlink(entry, directory, path, item) {
++    async _handleSymlink(entry, directory, path, item, isActive = () => true) {
+         if (this.fsw.closed) {
+             return;
+         }
+@@ -426,6 +607,10 @@ export class NodeFsHandler {
+             }
+             if (this.fsw.closed)
+                 return;
++            if (!isActive()) {
++                this.fsw._emitReady();
++                return true;
++            }
+             if (dir.has(item)) {
+                 if (this.fsw._symlinkPaths.get(full) !== linkPath) {
+                     this.fsw._symlinkPaths.set(full, linkPath);
+@@ -446,38 +631,79 @@ export class NodeFsHandler {
+         }
+         this.fsw._symlinkPaths.set(full, true);
+     }
+-    _handleRead(directory, initialAdd, wh, target, dir, depth, throttler) {
++    _handleRead(directory, initialAdd, wh, target, dir, depth, throttler, isActive = () => true, registerRead) {
++        if (this.fsw.closed || !isActive())
++            return;
+         // Normalize the directory name on Windows
+         directory = sp.join(directory, '');
+         const throttleKey = target ? `${directory}:${target}` : directory;
+         throttler = this.fsw._throttle('readdir', throttleKey, 1000);
+         if (!throttler)
+             return;
++        let stream;
++        let finished = false;
++        let unregisterRead = EMPTY_FN;
++        let resolveRead;
++        const completion = new Promise((resolve) => {
++            resolveRead = resolve;
++        });
++        const finish = () => {
++            if (finished)
++                return false;
++            finished = true;
++            // 旧扫描只能释放仍由自己持有的节流项，不能删除新一代扫描的记录。
++            const currentThrottle = this.fsw._throttled.get('readdir')?.get(throttleKey);
++            const wasThrottled = currentThrottle === throttler ? throttler.clear() : false;
++            if (currentThrottle !== throttler)
++                clearTimeout(throttler.timeoutObject);
++            unregisterRead();
++            unregisterRead = EMPTY_FN;
++            stream = undefined;
++            resolveRead(undefined);
++            return wasThrottled;
++        };
++        const cancel = () => {
++            const ownedStream = stream;
++            finish();
++            if (ownedStream && !ownedStream.destroyed)
++                ownedStream.destroy();
++        };
++        if (registerRead) {
++            unregisterRead = registerRead(cancel);
++            if (finished) {
++                unregisterRead();
++                return completion;
++            }
++        }
+         const previous = this.fsw._getWatchedDir(wh.path);
+         const current = new Set();
+-        let stream = this.fsw._readdirp(directory, {
+-            fileFilter: (entry) => wh.filterPath(entry),
+-            directoryFilter: (entry) => wh.filterDir(entry),
+-        });
+-        if (!stream)
+-            return;
++        try {
++            stream = this.fsw._readdirp(directory, {
++                fileFilter: (entry) => wh.filterPath(entry),
++                directoryFilter: (entry) => wh.filterDir(entry),
++            });
++        }
++        catch (error) {
++            finish();
++            throw error;
++        }
++        if (!stream) {
++            finish();
++            return completion;
++        }
+         stream
+             .on(STR_DATA, async (entry) => {
+-            if (this.fsw.closed) {
+-                stream = undefined;
++            if (this.fsw.closed || !isActive())
+                 return;
+-            }
+             const item = entry.path;
+             let path = sp.join(directory, item);
+             current.add(item);
+             if (entry.stats.isSymbolicLink() &&
+-                (await this._handleSymlink(entry, directory, path, item))) {
++                (await this._handleSymlink(entry, directory, path, item, isActive))) {
+                 return;
+             }
+-            if (this.fsw.closed) {
+-                stream = undefined;
++            if (this.fsw.closed || !isActive())
+                 return;
+-            }
+             // Files that present in current directory snapshot
+             // but absent in previous are added to watch list and
+             // emit `add` event.
+@@ -485,37 +711,32 @@ export class NodeFsHandler {
+                 this.fsw._incrReadyCount();
+                 // ensure relativeness of path is preserved in case of watcher reuse
+                 path = sp.join(dir, sp.relative(dir, path));
+-                this._addToNodeFs(path, initialAdd, wh, depth + 1);
++                this._addToNodeFs(path, initialAdd, wh, depth + 1, undefined, isActive);
+             }
+         })
+-            .on(EV.ERROR, this._boundHandleError);
+-        return new Promise((resolve, reject) => {
+-            if (!stream)
+-                return reject();
+-            stream.once(STR_END, () => {
+-                if (this.fsw.closed) {
+-                    stream = undefined;
+-                    return;
+-                }
+-                const wasThrottled = throttler ? throttler.clear() : false;
+-                resolve(undefined);
+-                // Files that absent in current directory snapshot
+-                // but present in previous emit `remove` event
+-                // and are removed from @watched[directory].
+-                previous
+-                    .getChildren()
+-                    .filter((item) => {
+-                    return item !== directory && !current.has(item);
+-                })
+-                    .forEach((item) => {
++            .on(EV.ERROR, this._boundHandleError)
++            .once(STR_CLOSE, finish)
++            .once(STR_END, () => {
++            const wasThrottled = finish();
++            if (this.fsw.closed || !isActive())
++                return;
++            // Files that absent in current directory snapshot
++            // but present in previous emit `remove` event
++            // and are removed from @watched[directory].
++            previous
++                .getChildren()
++                .filter((item) => {
++                return item !== directory && !current.has(item);
++            })
++                .forEach((item) => {
++                if (!this.fsw.closed && isActive())
+                     this.fsw._remove(directory, item);
+-                });
+-                stream = undefined;
+-                // one more time for any missed in case changes came in extremely quickly
+-                if (wasThrottled)
+-                    this._handleRead(directory, false, wh, target, dir, depth, throttler);
+             });
++            // one more time for any missed in case changes came in extremely quickly
++            if (wasThrottled)
++                this._handleRead(directory, false, wh, target, dir, depth, throttler, isActive, registerRead);
+         });
++        return completion;
+     }
+     /**
+      * Read directory to add / remove files from `@watched` list and re-read it on change.
+@@ -526,34 +747,65 @@ export class NodeFsHandler {
+      * @param target child path targeted for watch
+      * @param wh Common watch helpers for this path
+      * @param realpath
+-     * @returns closer for the watcher instance.
++     * @returns 用于后续异步提交的当前目录归属检查。
+      */
+-    async _handleDir(dir, stats, initialAdd, depth, target, wh, realpath) {
+-        const parentDir = this.fsw._getWatchedDir(sp.dirname(dir));
+-        const tracked = parentDir.has(sp.basename(dir));
+-        if (!(initialAdd && this.fsw.options.ignoreInitial) && !target && !tracked) {
+-            this.fsw._emit(EV.ADD_DIR, dir, stats);
+-        }
+-        // ensure dir is tracked (harmless if redundant)
+-        parentDir.add(sp.basename(dir));
+-        this.fsw._getWatchedDir(dir);
++    async _handleDir(dir, stats, initialAdd, depth, target, wh, realpath, registerCloser, isActive = () => true) {
++        const parentPath = sp.resolve(sp.dirname(dir));
++        const basename = sp.basename(dir);
++        const tracked = this.fsw._watched.get(parentPath)?.has(basename);
++        const removePath = sp.join(sp.dirname(dir), basename);
++        const previousRemoveThrottle = !tracked ? this.fsw._throttled.get('remove')?.get(removePath) : undefined;
++        const fullPath = sp.resolve(dir);
++        let directoryEntry;
++        let active = true;
++        const reads = new Set();
++        const isCurrentDirectory = () => active && !this.fsw.closed && isActive() &&
++            directoryEntry !== undefined && this.fsw._watched.get(fullPath) === directoryEntry;
++        const registerRead = (cancel) => {
++            if (!isCurrentDirectory()) {
++                cancel();
++                return EMPTY_FN;
++            }
++            reads.add(cancel);
++            return () => { reads.delete(cancel); };
++        };
+         let throttler;
+-        let closer;
+         const oDepth = this.fsw.options.depth;
+-        if ((oDepth == null || depth <= oDepth) && !this.fsw._symlinkPaths.has(realpath)) {
+-            if (!target) {
+-                await this._handleRead(dir, initialAdd, wh, target, dir, depth, throttler);
+-                if (this.fsw.closed)
++        const shouldWatch = (oDepth == null || depth <= oDepth) && !this.fsw._symlinkPaths.has(realpath);
++        if (shouldWatch) {
++            const closer = this._watchWithNodeFs(dir, (dirPath, stats) => {
++                if (!isCurrentDirectory() || (stats && stats.mtimeMs === 0))
+                     return;
+-            }
+-            closer = this._watchWithNodeFs(dir, (dirPath, stats) => {
+-                // if current directory is removed, do nothing
+-                if (stats && stats.mtimeMs === 0)
++                this._handleRead(dirPath, false, wh, target, dir, depth, throttler, isCurrentDirectory, registerRead);
++            }, true);
++            if (!closer)
++                throw new Error('Directory watcher registration returned no closer');
++            // 原生资源必须先交给当前 watcher，扫描中的删除与关闭才能及时释放它。
++            registerCloser(() => {
++                if (!active)
+                     return;
+-                this._handleRead(dirPath, false, wh, target, dir, depth, throttler);
++                active = false;
++                try {
++                    for (const cancel of [...reads])
++                        cancel();
++                }
++                finally {
++                    reads.clear();
++                    closer();
++                }
+             });
+         }
+-        return closer;
++        this.fsw._getWatchedDir(parentPath).add(basename);
++        directoryEntry = this.fsw._getWatchedDir(dir);
++        if (shouldWatch && !tracked && isCurrentDirectory())
++            clearPreviousRemoveThrottle(this.fsw, removePath, previousRemoveThrottle);
++        if (!(initialAdd && this.fsw.options.ignoreInitial) && !target && !tracked) {
++            this.fsw._emit(EV.ADD_DIR, dir, stats);
++        }
++        if (shouldWatch && !target && isCurrentDirectory()) {
++            await this._handleRead(dir, initialAdd, wh, target, dir, depth, throttler, isCurrentDirectory, registerRead);
++        }
++        return isCurrentDirectory;
+     }
+     /**
+      * Handle added file, directory, or glob pattern.
+@@ -564,9 +816,17 @@ export class NodeFsHandler {
+      * @param depth Child path actually targeted for watch
+      * @param target Child path actually targeted for watch
+      */
+-    async _addToNodeFs(path, initialAdd, priorWh, depth, target) {
++    async _addToNodeFs(path, initialAdd, priorWh, depth, target, isActive = () => true) {
+         const ready = this.fsw._emitReady;
+-        if (this.fsw._isIgnored(path) || this.fsw.closed) {
++        // 扫描子项由当前扫描结算；公开 add 的缺失路径交给父级 fallback 后再结算。
++        const completeMissing = () => {
++            if (priorWh) {
++                ready();
++                return false;
++            }
++            return path;
++        };
++        if (this.fsw._isIgnored(path) || this.fsw.closed || !isActive()) {
+             ready();
+             return false;
+         }
+@@ -576,11 +836,13 @@ export class NodeFsHandler {
+             wh.filterDir = (entry) => priorWh.filterDir(entry);
+         }
+         // evaluate what is at the path we're being asked to watch
++        let directoryWatchPath;
++        const registerCloser = (closer) => this.fsw._addPathCloser(path, closer);
+         try {
+             const stats = await statMethods[wh.statMethod](wh.watchPath);
+             if (this.fsw.closed)
+                 return;
+-            if (this.fsw._isIgnored(wh.watchPath, stats)) {
++            if (!isActive() || this.fsw._isIgnored(wh.watchPath, stats)) {
+                 ready();
+                 return false;
+             }
+@@ -591,9 +853,18 @@ export class NodeFsHandler {
+                 const targetPath = follow ? await fsrealpath(path) : path;
+                 if (this.fsw.closed)
+                     return;
+-                closer = await this._handleDir(wh.watchPath, stats, initialAdd, depth, target, wh, targetPath);
++                if (!isActive()) {
++                    ready();
++                    return false;
++                }
++                directoryWatchPath = wh.watchPath;
++                const isCurrentDirectory = await this._handleDir(wh.watchPath, stats, initialAdd, depth, target, wh, targetPath, registerCloser, isActive);
+                 if (this.fsw.closed)
+                     return;
++                if (!isCurrentDirectory()) {
++                    ready();
++                    return false;
++                }
+                 // preserve this symlink's target path
+                 if (absPath !== targetPath && targetPath !== undefined) {
+                     this.fsw._symlinkPaths.set(absPath, targetPath);
+@@ -603,12 +874,21 @@ export class NodeFsHandler {
+                 const targetPath = follow ? await fsrealpath(path) : path;
+                 if (this.fsw.closed)
+                     return;
++                if (!isActive()) {
++                    ready();
++                    return false;
++                }
+                 const parent = sp.dirname(wh.watchPath);
+-                this.fsw._getWatchedDir(parent).add(wh.watchPath);
+-                this.fsw._emit(EV.ADD, wh.watchPath, stats);
+-                closer = await this._handleDir(parent, stats, initialAdd, depth, path, wh, targetPath);
++                directoryWatchPath = parent;
++                const isCurrentDirectory = await this._handleDir(parent, stats, initialAdd, depth, path, wh, targetPath, registerCloser, isActive);
+                 if (this.fsw.closed)
+                     return;
++                if (!isCurrentDirectory()) {
++                    ready();
++                    return false;
++                }
++                this.fsw._getWatchedDir(parent).add(wh.watchPath);
++                this.fsw._emit(EV.ADD, wh.watchPath, stats);
+                 // preserve this symlink's target path
+                 if (targetPath !== undefined) {
+                     this.fsw._symlinkPaths.set(sp.resolve(path), targetPath);
+@@ -623,9 +903,33 @@ export class NodeFsHandler {
+             return false;
+         }
+         catch (error) {
+-            if (this.fsw._handleError(error)) {
++            if (this.fsw.closed)
++                return;
++            if (!isActive()) {
+                 ready();
+-                return path;
++                return false;
++            }
++            if (isWindows && !this.fsw.options.usePolling && directoryWatchPath !== undefined &&
++                error?.code === 'EPERM' && error.syscall === 'watch' && typeof error.path === 'string' &&
++                sp.resolve(error.path) === sp.resolve(directoryWatchPath)) {
++                let missing = false;
++                try {
++                    await lstat(directoryWatchPath);
++                }
++                catch (probeError) {
++                    missing = probeError?.code === 'ENOENT' || probeError?.code === 'ENOTDIR';
++                }
++                if (this.fsw.closed)
++                    return;
++                if (!isActive()) {
++                    ready();
++                    return false;
++                }
++                if (missing)
++                    return completeMissing();
++            }
++            if (this.fsw._handleError(error)) {
++                return completeMissing();
+             }
+         }
+     }
+diff --git a/index.js b/index.js
+index f26482978d544bf39828bd152f2369d53413bc27..902a3898841bc26912bce887f88c787793e433d7 100644
+--- a/index.js
++++ b/index.js
+@@ -364,16 +364,16 @@ export class FSWatcher extends EventEmitter {
+             this._readyCount = 0;
+         this._readyCount += paths.length;
+         Promise.all(paths.map(async (path) => {
+-            const res = await this._nodeFsHandler._addToNodeFs(path, !_internal, undefined, 0, _origAdd);
+-            if (res)
+-                this._emitReady();
+-            return res;
++            return this._nodeFsHandler._addToNodeFs(path, !_internal, undefined, 0, _origAdd);
+         })).then((results) => {
+             if (this.closed)
+                 return;
+             results.forEach((item) => {
+-                if (item)
++                if (item) {
++                    // 先登记 fallback 的就绪槽，原始路径不能早于父级原生监听器发布 ready。
+                     this.add(sp.dirname(item), sp.basename(_origAdd || item));
++                    this._emitReady();
++                }
+             });
+         });
+         return this;
+@@ -794,6 +794,8 @@ export class FSWatcher extends EventEmitter {
+         let stream = readdirp(root, options);
+         this._streams.add(stream);
+         stream.once(STR_CLOSE, () => {
++            if (stream)
++                this._streams.delete(stream);
+             stream = undefined;
+         });
+         stream.once(STR_END, () => {

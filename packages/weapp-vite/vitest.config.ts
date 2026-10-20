@@ -7,6 +7,8 @@ const projectTestIncludes = [
   'test/**/*.spec.ts',
   'src/**/*.test.ts',
   'src/**/*.spec.ts',
+  'scripts/**/*.test.ts',
+  'scripts/**/*.spec.ts',
 ]
 
 const projectTestExcludes = [

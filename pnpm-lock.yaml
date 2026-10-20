@@ -431,6 +431,7 @@ overrides:
   rolldown: 1.2.14
 
 patchedDependencies:
+  chokidar@5.0.0: 624fabb94233f3ba3441242edeab366e760fcb612fe86026d179ac2ae0ee593a
   rolldown@1.2.14: 61de75b4db18dfb15bfc1a547cbf43938d0602149f61d9a2e81e14b117aeb6a0
   vite@8.3.4: a799f2052683e7ca920783450e85ecc30618b74ec208dda36304e307e699a8de
 
@@ -3508,7 +3509,7 @@ importers:
         version: 7.1.0
       chokidar:
         specifier: ^5.0.0
-        version: 5.0.0
+        version: 5.0.0(patch_hash=624fabb94233f3ba3441242edeab366e760fcb612fe86026d179ac2ae0ee593a)
       comment-json:
         specifier: 'catalog:'
         version: 5.0.0
@@ -24156,7 +24157,7 @@ snapshots:
 
   c12@3.3.4(magicast@0.5.5):
     dependencies:
-      chokidar: 5.0.0
+      chokidar: 5.0.0(patch_hash=624fabb94233f3ba3441242edeab366e760fcb612fe86026d179ac2ae0ee593a)
       confbox: 0.2.4
       defu: 6.1.7
       dotenv: 17.4.2
@@ -24322,7 +24323,7 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
-  chokidar@5.0.0:
+  chokidar@5.0.0(patch_hash=624fabb94233f3ba3441242edeab366e760fcb612fe86026d179ac2ae0ee593a):
     dependencies:
       readdirp: 5.1.1
 
@@ -29792,7 +29793,7 @@ snapshots:
 
   sass@1.105.2:
     dependencies:
-      chokidar: 5.0.0
+      chokidar: 5.0.0(patch_hash=624fabb94233f3ba3441242edeab366e760fcb612fe86026d179ac2ae0ee593a)
       immutable: 5.1.9
       source-map-js: 1.2.2
     optionalDependencies:
@@ -31069,7 +31070,7 @@ snapshots:
 
   unplugin-vue-components@32.1.0(@rspack/core@1.7.11)(esbuild@0.28.2)(rolldown@1.2.14(patch_hash=61de75b4db18dfb15bfc1a547cbf43938d0602149f61d9a2e81e14b117aeb6a0))(rollup@4.64.8)(vite@8.3.4)(vue@3.5.44(typescript@6.0.3))(webpack@5.105.0(@swc/core@1.16.18)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.30)):
     dependencies:
-      chokidar: 5.0.0
+      chokidar: 5.0.0(patch_hash=624fabb94233f3ba3441242edeab366e760fcb612fe86026d179ac2ae0ee593a)
       local-pkg: 1.2.1
       magic-string: 0.30.21
       mlly: 1.8.2
@@ -31414,7 +31415,7 @@ snapshots:
       '@vue-macros/common': 3.1.4(vue@3.5.44(typescript@6.0.3))
       '@vue/devtools-api': 8.2.1
       ast-walker-scope: 0.10.0
-      chokidar: 5.0.0
+      chokidar: 5.0.0(patch_hash=624fabb94233f3ba3441242edeab366e760fcb612fe86026d179ac2ae0ee593a)
       confbox: 0.3.1
       local-pkg: 1.2.1
       magic-string: 1.4.3
