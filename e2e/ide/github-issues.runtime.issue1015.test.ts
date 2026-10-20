@@ -18,7 +18,7 @@ interface RuntimeElementAttributeReader {
   attribute?: (name: string) => Promise<string | undefined>
 }
 
-async function readElementAttribute(element: RuntimeElementAttributeReader | undefined, name: string) {
+async function readElementAttribute(element: RuntimeElementAttributeReader | null | undefined, name: string) {
   if (typeof element?.attribute === 'function') {
     return await element.attribute(name)
   }

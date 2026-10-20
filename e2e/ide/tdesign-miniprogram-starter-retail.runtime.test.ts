@@ -495,8 +495,8 @@ describe('e2e app: tdesign-miniprogram-starter-retail', { concurrent: false }, (
   }, 30_000)
 
   it.skip('loads every page from app config without runtime errors', async () => {
-    const appConfig = await fs.readJson(APP_JSON_PATH)
-    const projectConfig = await fs.readJson(PROJECT_CONFIG_PATH)
+    const appConfig = await fs.readJson(APP_JSON_PATH) as Record<string, unknown>
+    const projectConfig = await fs.readJson(PROJECT_CONFIG_PATH) as Record<string, unknown>
     const pagePaths = filterPagesForDebug(resolvePages(appConfig))
     const tabBarPages = resolveTabBarPages(appConfig)
     const launchQueryMap = resolveLaunchQueryMap(projectConfig)

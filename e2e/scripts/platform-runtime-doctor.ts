@@ -1,4 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- 平台 CLI doctor 需要跨平台进程退出码、超时和 stdio 控制。 */
+import type { PlatformVerificationCapability } from '../platforms/verification'
 import { access, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -102,7 +103,7 @@ async function readDarwinAppVersion(appPath: string | undefined) {
 }
 
 export async function diagnosePlatformRuntime(id: string): Promise<PlatformRuntimeDiagnostic> {
-  const capability = PLATFORM_VERIFICATION_CAPABILITIES.find(item => item.id === id)
+  const capability: PlatformVerificationCapability | undefined = PLATFORM_VERIFICATION_CAPABILITIES.find(item => item.id === id)
   if (!capability) {
     throw new Error(`未知平台：${id}`)
   }

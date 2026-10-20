@@ -49,6 +49,15 @@ interface RuntimeRouteCase {
   expectedTokens: string[]
 }
 
+type RouteRunE2EEvaluation = {
+  __weappViteRouteMethodFound: true
+  value: unknown
+  routes?: never
+} | {
+  __weappViteRouteMethodFound: false
+  routes: string[]
+}
+
 export interface RuntimeMatrixCase {
   id: string
   env: Record<string, string>
@@ -258,7 +267,7 @@ async function recoverRouteLaunch(_projectPath: string, runtimeCase: RuntimeMatr
 }
 
 async function callRouteRunE2E(miniProgram: any, route: string) {
-  const result = await withLocalTimeout(miniProgram.evaluateWithOptions(`async function (route) {
+  const result = await withLocalTimeout<RouteRunE2EEvaluation | null | undefined>(miniProgram.evaluateWithOptions(`async function (route) {
     function normalizeRoute(value) {
       return String(value || '').replace(/^\\/+/, '').replace(/\\/+$/g, '');
     }

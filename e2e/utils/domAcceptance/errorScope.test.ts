@@ -31,11 +31,11 @@ describe('DOM checkpoint diagnostic scopes', () => {
   it('flushes previous errors before start and action errors before end', async () => {
     vi.mocked(flushRuntimeConsoleSessions)
       .mockImplementationOnce(async () => {
-        appendIdeReportEvent({ source: 'runtime', kind: 'message', level: 'error', text: 'previous error' })
+        appendIdeReportEvent({ source: 'runtime', kind: 'message', project: 'e2e-apps/base', level: 'error', text: 'previous error' })
       })
       .mockImplementationOnce(async () => {
         await Promise.resolve()
-        appendIdeReportEvent({ source: 'runtime', kind: 'message', level: 'error', text: 'action error' })
+        appendIdeReportEvent({ source: 'runtime', kind: 'message', project: 'e2e-apps/base', level: 'error', text: 'action error' })
       })
     await runDomCheckpointAction(createPlan(), 'case-a', 'reject', async () => {})
     expect(vi.mocked(appendIdeReportEvent).mock.calls.map(([entry]) => entry.acceptanceScope?.boundary ?? entry.text)).toEqual([

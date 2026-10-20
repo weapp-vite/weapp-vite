@@ -161,7 +161,7 @@ async function main() {
       assert.equal(owned.length, 1, 'Native Inspector sampling requires exactly one owned project')
       const resource = owned[0]!
       assert(resource.managedProject?.id && resource.wsEndpoint && resource.port, 'Native Inspector sampling requires confirmed session ownership')
-      const info = await session.run('native Inspector metadata', miniProgram => miniProgram.toolInfo())
+      const info = await session.run<Partial<Record<'version' | 'SDKVersion', unknown>> | null | undefined>('native Inspector metadata', miniProgram => miniProgram.toolInfo())
       assert(typeof info?.version === 'string' && typeof info?.SDKVersion === 'string', 'Native Inspector sampling requires actual IDE and SDK versions')
       const acceptedVersion = process.env.WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION
       const acceptedSdk = process.env.WEAPP_VITE_BENCH_NATIVE_INSPECTOR_SDK_VERSION

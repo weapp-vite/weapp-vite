@@ -18,7 +18,7 @@ describe.each([false, true])('WXML dependency watch recovery runtime (outside pr
 
   // 产物恢复必须先完成；惰性创建后同一 suite 的两个页面复用唯一宿主。
   async function ensureHost() {
-    host ??= await launchAutomator({ projectPath: project, warmupRoute: '/pages/native/index', warmupRootSelectors: ['#transform-root'] })
+    host ??= await launchAutomator({ projectPath: project, warmupRoute: '/pages/native/index', warmupRootSelectors: ['#transform-root'] }) as MiniProgram
     return host
   }
 

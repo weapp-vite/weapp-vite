@@ -1,4 +1,5 @@
 import type { OutputBundle } from 'rolldown'
+import type { UserConfig, WeappViteConfig } from 'weapp-vite'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import process from 'node:process'
@@ -415,7 +416,7 @@ function resolveGithubIssuesAutoRoutes() {
   }
 }
 
-function resolveGithubIssuesNpm() {
+function resolveGithubIssuesNpm(): NonNullable<WeappViteConfig['npm']> {
   const tdesignDialogPackageFiles = {
     exclude: [
       '**/*.d.ts',
@@ -704,7 +705,7 @@ const githubIssuesAutoRoutes = resolveGithubIssuesAutoRoutes()
 // 完整示例包含使用 i18n behavior 的页面，必须同步启用对应运行时。
 const githubIssuesI18nEnabled = issue845I18nEnabled || githubIssuesAutoRoutes === true
 
-export default defineConfig({
+export default defineConfig<UserConfig>({
   plugins: [
     ...issue724ProbePlugins,
     ...(issue779CssPrePlugin ?? []),

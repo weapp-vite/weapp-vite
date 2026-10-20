@@ -1,4 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- e2e 构建日志采集需要 execa 驱动 CLI，并使用 shared fs 清理构建产物。 */
+import type { MpPlatform } from '@weapp-core/shared'
 import type { PackageJson } from 'pkg-types'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -27,7 +28,7 @@ interface BuildCommandOptions {
   projectConfigFile?: string
   jsFormat?: 'cjs' | 'esm'
   projectRoot: string
-  platform: 'weapp' | 'alipay' | 'tt'
+  platform: MpPlatform
   cwd?: string
   label?: string
   outDir?: string

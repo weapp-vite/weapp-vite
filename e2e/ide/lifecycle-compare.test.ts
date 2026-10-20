@@ -105,7 +105,7 @@ async function callLifecyclePageMethod<T = unknown>(
   return result
 }
 
-async function waitForLifecyclePageDom(miniProgram: any, pagePath: string, timeoutMs = 15_000) {
+async function waitForLifecyclePageDom(miniProgram: MiniProgram, pagePath: string, timeoutMs = 15_000) {
   const marker = PAGE_DOM_MARKERS[pagePath]
   if (!marker) {
     throw new Error(`Missing lifecycle DOM marker for ${pagePath}`)

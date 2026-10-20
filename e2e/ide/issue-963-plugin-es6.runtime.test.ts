@@ -1,3 +1,4 @@
+import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
 import { readdir, readFile, rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -20,7 +21,7 @@ for (const mode of ['disabled', 'enabled']) {
     const es6 = mode === 'enabled'
     let project: string
     let pluginProvider: string
-    let host: Awaited<ReturnType<typeof launchAutomator>> | undefined
+    let host: MiniProgram | undefined
     const errors: string[] = []
     beforeAll(async () => {
       project = externalProject ?? await createIssue963Project(es6)
@@ -62,7 +63,7 @@ for (const mode of ['disabled', 'enabled']) {
         plugins: Record<string, { provider: string }>
       }
       pluginProvider = app.plugins['hello-plugin'].provider
-      host = await launchAutomator({ projectPath: project, bridgeProjectMode: 'direct', warmupRoute: ROUTE, warmupRootSelectors: ['#plugin-answer'] })
+      host = await launchAutomator({ projectPath: project, bridgeProjectMode: 'direct', warmupRoute: ROUTE, warmupRootSelectors: ['#plugin-answer'] }) as MiniProgram
       for (const name of ['project.config.json', 'project.private.config.json']) {
         const config = JSON.parse(await readFile(path.join(project, name), 'utf8')) as { compileType?: string, setting: { es6: boolean } }
         expect(config.setting.es6).toBe(es6)
