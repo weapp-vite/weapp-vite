@@ -45,6 +45,10 @@ export default defineConfig({
   deps: {
     onlyBundle: false,
     resolveDepSubpath: true,
+    alwaysBundle: ['chokidar', 'readdirp'],
+    dts: {
+      alwaysBundle: [],
+    },
     neverBundle: [
       '@vitejs/devtools-kit',
       '@vitejs/devtools-kit/node',
@@ -62,7 +66,6 @@ export default defineConfig({
       '@babel/preset-env',
       '@babel/preset-typescript',
       'cac',
-      'chokidar',
       'comment-json',
       'obug',
       'fdir',

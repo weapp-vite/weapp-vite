@@ -135,6 +135,7 @@
     "wv": "bin/weapp-vite.js"
   },
   "files": [
+    "THIRD_PARTY_NOTICES.md",
     "bin",
     "client.d.ts",
     "dist",
