@@ -4,6 +4,7 @@ import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { bounded } from './native.mjs'
 import { assertOutput, closeOwner, openPublicOwner } from './public.mjs'
+import { mutateAndAssertOutputs } from './publication.mjs'
 import { recoveryScenarioId } from './recoveryFailure.mjs'
 
 export const scenarios = [
@@ -50,15 +51,11 @@ async function shared(ctx) {
   assert.equal(handles.length, 1, 'Two public entry graphs must share the native Chokidar subscription')
   assert.equal(instrumentation.attempts.filter(file => file === 'src/shared').length, attemptsBefore, 'The second entry must reuse the existing native registration')
   const marker = path.join(target, 'marker.txt')
-  await writeFile(marker, 'both-public-owners')
-  for (const owner of [first, second]) {
-    await assertOutput(owner, 'shared/marker.txt', 'both-public-owners')
-  }
+  await mutateAndAssertOutputs([first, second], 'shared/marker.txt', 'both-public-owners', () => writeFile(marker, 'both-public-owners'), 'shared write')
   await closeOwner(first)
   assert.equal(initial[0].closeCalls, 0, 'First owner close cannot close the survivor native handle')
   assert.equal(initial[0].closeEvents, 0)
-  await writeFile(marker, 'surviving-public-owner')
-  await assertOutput(second, 'shared/marker.txt', 'surviving-public-owner')
+  await mutateAndAssertOutputs([second], 'shared/marker.txt', 'surviving-public-owner', () => writeFile(marker, 'surviving-public-owner'), 'survivor write')
   await closeOwner(second)
   await bounded(initial[0].closed, 'shared directory native close event')
   assert.equal(initial[0].closeCalls, 1)
@@ -82,13 +79,13 @@ async function recovery(ctx) {
   const owner = await openPublicOwner('artifact', root, owners, errors)
   assert.equal(instrumentation.injected, 1, 'Recovery must actually exercise one failed native acquisition')
   const reborn = path.join(root, 'src/reborn')
-  await mkdir(reborn)
-  await writeFile(path.join(reborn, 'marker.txt'), 'recreated-directory')
-  await assertOutput(owner, 'reborn/marker.txt', 'recreated-directory')
-  await writeFile(path.join(reborn, 'marker.txt'), 'changed-after-recovery')
-  await assertOutput(owner, 'reborn/marker.txt', 'changed-after-recovery')
-  await rm(path.join(reborn, 'marker.txt'))
-  await assertOutput(owner, 'reborn/marker.txt', null)
+  const marker = path.join(reborn, 'marker.txt')
+  await mutateAndAssertOutputs([owner], 'reborn/marker.txt', 'recreated-directory', async () => {
+    await mkdir(reborn)
+    await writeFile(marker, 'recreated-directory')
+  }, 'create')
+  await mutateAndAssertOutputs([owner], 'reborn/marker.txt', 'changed-after-recovery', () => writeFile(marker, 'changed-after-recovery'), 'change')
+  await mutateAndAssertOutputs([owner], 'reborn/marker.txt', null, () => rm(marker), 'delete')
   try {
     assert.deepEqual(errors, [])
   }
