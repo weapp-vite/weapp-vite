@@ -1,3 +1,4 @@
+import type { App as AppJson } from '@weapp-core/schematics'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -141,7 +142,7 @@ async function buildProject(root: string, label: string) {
 }
 
 async function expectAppJson(root: string) {
-  const appJson = await fs.readJson(path.join(root, 'dist/app.json'))
+  const appJson = await fs.readJson(path.join(root, 'dist/app.json')) as AppJson
   expect(appJson.pages).toEqual(['pages/index/index'])
   expect(appJson.subPackages).toEqual([
     {

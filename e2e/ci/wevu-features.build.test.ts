@@ -1,4 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI 构建。 */
+import type { App as AppJson, Component as ComponentJson } from '@weapp-core/schematics'
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import { DomUtils, parseDocument } from 'htmlparser2'
@@ -47,7 +48,7 @@ describe('e2e app: wevu-features (build)', { concurrent: false }, () => {
       }
     }
 
-    const appJson = await fs.readJson(appJsonPath)
+    const appJson = await fs.readJson(appJsonPath) as AppJson
     const indexWxml = await fs.readFile(indexWxmlPath, 'utf8')
     const indexJs = await fs.readFile(indexJsPath, 'utf8')
     const useAttrsPageWxml = await fs.readFile(useAttrsPageWxmlPath, 'utf8')
@@ -277,7 +278,7 @@ describe('e2e app: wevu-features (build)', { concurrent: false }, () => {
     const routerDynamicPageJs = await fs.readFile(routerDynamicPageJsPath, 'utf8')
     const nativeUsesVuePageWxml = await fs.readFile(nativeUsesVuePageWxmlPath, 'utf8')
     const nativeUsesVuePageJs = await fs.readFile(nativeUsesVuePageJsPath, 'utf8')
-    const nativeUsesVueComponentJson = await fs.readJson(nativeUsesVueComponentJsonPath)
+    const nativeUsesVueComponentJson = await fs.readJson(nativeUsesVueComponentJsonPath) as ComponentJson
     const nativeUsesVueComponentWxml = await fs.readFile(nativeUsesVueComponentWxmlPath, 'utf8')
     const nativeCardComponentWxml = await fs.readFile(nativeCardComponentWxmlPath, 'utf8')
     const routerStabilityPageWxml = await fs.readFile(routerStabilityPageWxmlPath, 'utf8')

@@ -1,3 +1,4 @@
+import type { MiniProgramWithRuntimeLogs } from '../utils/automator'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
@@ -23,6 +24,14 @@ let baseUrl = ''
 let serverHandle: Awaited<ReturnType<typeof startRequestClientsRealServer>> | null = null
 let sharedInfraUnavailableMessage = ''
 
+interface FormDataUploadRuntime {
+  formDataUploadPayload: string
+  formDataUploadStatus: string
+  formDataReadKind: string
+  rawFetchUploadPayload: string
+  rawFetchUploadStatus: string
+}
+
 function isLocalServerInfraError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return LOCAL_SERVER_INFRA_ERROR_PATTERNS.some(pattern => pattern.test(message))
@@ -34,12 +43,12 @@ function withBaseUrl(route: string) {
 
 async function waitForFormDataUploadRuntime(miniProgram: any, route: string, timeoutMs = 90_000) {
   const startedAt = Date.now()
-  let latest: Record<string, any> | undefined
+  let latest: FormDataUploadRuntime | undefined
   let lastError: unknown
 
   while (Date.now() - startedAt < timeoutMs) {
     try {
-      latest = await callRoutePageMethodWithOptions(miniProgram, route, '_runE2E', {
+      latest = await callRoutePageMethodWithOptions<FormDataUploadRuntime>(miniProgram, route, '_runE2E', {
         protocolTimeoutMs: 8_000,
         recoveryAttempts: 1,
         retries: 1,
@@ -120,7 +129,7 @@ describe('github-issues runtime issue #448 FormData upload', { concurrent: false
         throw new Error('Failed to launch issue-448 page')
       }
 
-      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      const activeMiniProgram: MiniProgramWithRuntimeLogs = await getSharedMiniProgram(ctx)
       await dom.check('initial', activeMiniProgram, page)
       const started = await callRoutePageMethodWithOptions(activeMiniProgram, route, '_startFormDataUploadE2E', {
         protocolTimeoutMs: 12_000,

@@ -1,4 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI 构建。 */
+import type { Page as PageJson } from '@weapp-core/schematics'
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import path from 'pathe'
@@ -27,7 +28,7 @@ describe('e2e app: template-wevu-regression auto-import dts', { concurrent: fals
     const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
     expect(await fs.pathExists(pageJsonPath)).toBe(true)
 
-    const pageJson = await fs.readJson(pageJsonPath)
+    const pageJson = await fs.readJson(pageJsonPath) as PageJson
     expect(pageJson.usingComponents).toMatchObject({
       'info-panel': '/components/InfoPanel/index',
       'status-pill': '/components/StatusPill/index',

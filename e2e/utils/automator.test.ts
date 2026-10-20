@@ -1,3 +1,4 @@
+import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -8,6 +9,8 @@ import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDe
 import { terminateOwnedCliProcess } from './automatorCliProcess'
 import { ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
+
+type RelaunchMock<TPage> = (...args: Parameters<MiniProgram['reLaunch']>) => Promise<TPage>
 
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'apps/demo' }))
 
@@ -160,7 +163,7 @@ describe('automator', () => {
     vi.useFakeTimers()
     try {
       const page = { path: '/pages/index/index', $$: vi.fn(async () => []) }
-      const rawReLaunch = vi.fn(async () => page)
+      const rawReLaunch = vi.fn<RelaunchMock<typeof page>>(async () => page)
       const miniProgram = { reLaunch: rawReLaunch, currentPage: vi.fn(async () => page), close: vi.fn() }
       enhanceMiniProgramRelaunch(miniProgram, { project: 'fixture', rootSelectors: ['#ready'] })
       const assertion = expect(miniProgram.reLaunch('/pages/index/index')).rejects.toThrow('Timed out waiting page root after reLaunch')

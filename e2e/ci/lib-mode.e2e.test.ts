@@ -1,4 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI 构建。 */
+import type { Component as ComponentJson } from '@weapp-core/schematics'
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import { fdir } from 'fdir'
@@ -95,7 +96,7 @@ describe('lib mode e2e', () => {
       else {
         expect(files).not.toContain(`${entry.base}.wxss`)
       }
-      const componentJson = await fs.readJson(path.resolve(outDir, `${entry.base}.json`))
+      const componentJson = await fs.readJson(path.resolve(outDir, `${entry.base}.json`)) as ComponentJson
       expect(componentJson.component).toBe(true)
     }
     expect(files).toContain('utils/index.js')
@@ -108,7 +109,7 @@ describe('lib mode e2e', () => {
     const setupScript = await fs.readFile(path.resolve(outDir, 'components/sfc-setup/index.js'), 'utf8')
     expect(setupScript).toContain('useAttrs')
 
-    const json = await fs.readJson(path.resolve(outDir, 'components/button/index.json'))
+    const json = await fs.readJson(path.resolve(outDir, 'components/button/index.json')) as ComponentJson
     expect(json.component).toBe(true)
   })
 

@@ -2,6 +2,8 @@ import fs from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { watchResolvedDirectory } from './watchResolvedDirectory'
 
+type WatchWithOptions = (filename: fs.PathLike, options: fs.WatchOptionsWithStringEncoding, listener: fs.WatchListener<string>) => fs.FSWatcher
+
 afterEach(() => {
   vi.restoreAllMocks()
 })
@@ -12,7 +14,7 @@ describe('watchResolvedDirectory', () => {
     const longPath = 'C:\\Users\\runneradmin\\AppData\\Local\\Temp\\fixture\\dist'
     const resolve = vi.spyOn(fs.realpathSync, 'native').mockReturnValue(longPath)
     const watcher = { close: vi.fn() } as unknown as fs.FSWatcher
-    const watch = vi.spyOn(fs, 'watch').mockReturnValue(watcher)
+    const watch = vi.spyOn(fs as { watch: WatchWithOptions }, 'watch').mockReturnValue(watcher)
     const listener = vi.fn()
 
     expect(watchResolvedDirectory(shortPath, listener, { recursive: true })).toBe(watcher)
