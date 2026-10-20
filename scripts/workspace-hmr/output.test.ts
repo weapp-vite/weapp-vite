@@ -192,9 +192,16 @@ describe('workspace HMR output snapshot races', () => {
     let appReads = 0
     let raced = false
     let observedCode: unknown
+    let now = 0
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
 
     fsHooks.beforeReaddir = async (filename) => {
-      if (filename === root && ++directoryReads === 2) {
+      if (filename !== root) {
+        return
+      }
+      // 仅在整轮扫描开始时推进逻辑时间，真实文件系统和 sleep 耗时不消耗测试预算。
+      now = directoryReads++ * 20
+      if (directoryReads === 2) {
         await mkdir(temporaryRoot)
         await writeFile(transientFile, 'transient')
       }
@@ -245,6 +252,9 @@ describe('workspace HMR output snapshot races', () => {
         fourthRead.promise.then(() => ({ kind: 'fourth-read' as const })),
         settled,
       ])).toEqual({ kind: 'fourth-read' })
+      expect(directoryReads).toBe(4)
+      expect(appReads).toBe(4)
+      expect(now).toBe(60)
       // Windows libuv 将 ERROR_DIRECTORY 映射为 ENOENT，POSIX 通常返回 ENOTDIR。
       const expectedCodes = injectedCode ? [injectedCode] : change === 'removed' ? ['ENOENT'] : ['ENOENT', 'ENOTDIR']
       expect(expectedCodes).toContain(observedCode)
