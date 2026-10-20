@@ -1,3 +1,4 @@
+/// <reference types="miniprogram-api-typings" preserve="true" />
 /* eslint-disable ts/no-namespace -- 通过单点 namespace 兼容宿主类型源，避免纯类型 namespace 在多文件间转发时被 bundler 误判为运行时导出。 */
 export declare namespace WechatMiniProgramHostNamespace {
   export import App = WechatMiniprogram.App
