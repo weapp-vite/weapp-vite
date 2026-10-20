@@ -40,14 +40,19 @@ function setup() {
     },
   } as unknown as MutableCompilerContext
   ctx.runtimeState.build.hmr.resolvedEntryMap.set(appEntry, { id: appEntry })
-  function start(runtime: 'miniprogram' | 'web' = 'miniprogram', emit?: ReturnType<typeof vi.fn>) {
+  function start(
+    runtime: 'miniprogram' | 'web' = 'miniprogram',
+    emit?: ReturnType<typeof vi.fn>,
+    hooks: { watchChange?: ReturnType<typeof vi.fn>, send?: ReturnType<typeof vi.fn> } = {},
+  ) {
     const plugin = autoRoutes(ctx)[0] as Plugin
     plugin.configResolved?.({ command: emit ? 'serve' : 'build', weappVite: { runtime } } as ResolvedConfig)
     if (emit) {
       plugin.configureServer?.({
         moduleGraph: { getModuleById: vi.fn(), invalidateModule: vi.fn() },
+        pluginContainer: { watchChange: hooks.watchChange ?? vi.fn().mockResolvedValue(undefined) },
         watcher: { emit },
-        ws: { send: vi.fn() },
+        ws: { send: hooks.send ?? vi.fn() },
       } as unknown as ViteDevServer)
     }
     plugin.buildStart?.call({} as PluginContext)
@@ -122,6 +127,8 @@ describe('auto routes topology delivery', () => {
     const consume = vi.fn()
     const nativeEmit = vi.fn()
     const webEmit = vi.fn()
+    const webWatchChange = vi.fn().mockResolvedValue(undefined)
+    const webSend = vi.fn()
     handleFileChange.mockImplementationOnce(async () => {
       changeSignature()
       return false
@@ -129,12 +136,14 @@ describe('auto routes topology delivery', () => {
     const release = subscribeAutoRoutesTopology(ctx, consume)
     try {
       start('miniprogram', nativeEmit)
-      start('web', webEmit)
+      start('web', webEmit, { watchChange: webWatchChange, send: webSend })
       start()
       event('add')(newPage)
       await vi.waitFor(() => expect(consume).toHaveBeenCalledWith({ file: newPage, event: 'create', topologyChanged: true, receivedAtMs: expect.any(Number) }))
       expect(nativeEmit).not.toHaveBeenCalled()
-      expect(webEmit).toHaveBeenCalledWith('change', appEntry)
+      await vi.waitFor(() => expect(webSend).toHaveBeenCalledWith({ type: 'full-reload' }))
+      expect(webWatchChange).toHaveBeenCalledWith(newPage, { event: 'create' })
+      expect(webEmit).not.toHaveBeenCalled()
       expect(consume).toHaveBeenCalledTimes(1)
     }
     finally {
@@ -185,8 +194,9 @@ describe('auto routes topology delivery', () => {
     const { ctx, start, event } = setup()
     const nativeEmit = vi.fn()
     const webEmit = vi.fn()
+    const webSend = vi.fn()
     const native = start('miniprogram', nativeEmit)
-    const web = start('web', webEmit)
+    const web = start('web', webEmit, { send: webSend })
     await start().closeBundle?.()
     await start('web').closeBundle?.()
     const sourceWatcher = watch.mock.results[0]!.value
@@ -195,7 +205,8 @@ describe('auto routes topology delivery', () => {
     expect(sourceWatcher.close).not.toHaveBeenCalled()
     expect(ctx.runtimeState.watcher.sidecarWatcherMap.size).toBe(1)
     event('add')(newPage)
-    await vi.waitFor(() => expect(webEmit).toHaveBeenCalledWith('change', appEntry))
+    await vi.waitFor(() => expect(webSend).toHaveBeenCalledWith({ type: 'full-reload' }))
+    expect(webEmit).not.toHaveBeenCalled()
     expect(nativeEmit).not.toHaveBeenCalled()
     await web.closeBundle?.()
     expect(sourceWatcher.close).toHaveBeenCalledOnce()
@@ -285,10 +296,209 @@ describe('auto routes topology delivery', () => {
         event: 'delete',
         topologyChanged: true,
         receivedAtMs: expect.any(Number),
+        sourceChanges: [
+          { file: newPage, event: 'delete', topologyChanged: true, receivedAtMs: expect.any(Number) },
+          { file: '/project/src/pages/added/index.js', event: 'delete', topologyChanged: true, receivedAtMs: expect.any(Number) },
+        ],
       })
     }
     finally {
       release()
+    }
+  })
+
+  it('serializes add/unlink scans and Web publication before processing the next batch', async () => {
+    vi.useFakeTimers()
+    const { ctx, start, event, handleFileChange } = setup()
+    const firstScan = Promise.withResolvers<boolean>()
+    const webScan = Promise.withResolvers<void>()
+    const webWatchChange = vi.fn().mockResolvedValue(undefined).mockImplementationOnce(() => webScan.promise)
+    const webSend = vi.fn()
+    const oldPage = '/project/src/pages/previous/index.vue'
+    const nextPage = '/project/src/pages/next/index.vue'
+    handleFileChange.mockReturnValueOnce(firstScan.promise)
+    start('web', vi.fn(), { watchChange: webWatchChange, send: webSend })
+    try {
+      event('add')(newPage)
+      event('unlink')(oldPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(handleFileChange).toHaveBeenCalledOnce()
+      expect(webWatchChange).not.toHaveBeenCalled()
+      firstScan.resolve(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(handleFileChange.mock.calls).toEqual([[newPage, 'rename'], [oldPage, 'rename']])
+      expect(webWatchChange).toHaveBeenCalledOnce()
+      expect(webSend).not.toHaveBeenCalled()
+
+      event('add')(nextPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(handleFileChange).toHaveBeenCalledTimes(2)
+      webScan.resolve()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(webWatchChange.mock.calls).toEqual([
+        [newPage, { event: 'create' }],
+        [oldPage, { event: 'delete' }],
+        [nextPage, { event: 'create' }],
+      ])
+      expect(webSend.mock.calls).toEqual([[{ type: 'full-reload' }], [{ type: 'full-reload' }]])
+      expect(handleFileChange).toHaveBeenCalledTimes(3)
+    }
+    finally {
+      firstScan.resolve(true)
+      webScan.resolve()
+      await vi.advanceTimersByTimeAsync(0)
+      await ctx.runtimeState.watcher.sidecarWatcherMap.get('__auto-routes-source-watcher__')?.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports Web publication errors and recovers on the next structural event', async () => {
+    const { ctx, start, event } = setup()
+    const webWatchChange = vi.fn().mockResolvedValue(undefined).mockRejectedValueOnce(new Error('Web scan failed'))
+    const webSend = vi.fn()
+    start('web', vi.fn(), { watchChange: webWatchChange, send: webSend })
+    try {
+      event('add')(newPage)
+      await vi.waitFor(() => expect(webSend).toHaveBeenCalledOnce())
+      expect(webSend).toHaveBeenCalledWith({
+        type: 'error',
+        err: expect.objectContaining({
+          message: expect.stringContaining('Web scan failed'),
+          id: newPage,
+          plugin: 'weapp-vite:auto-routes',
+        }),
+      })
+      event('unlink')(newPage)
+      await vi.waitFor(() => expect(webSend).toHaveBeenCalledTimes(2))
+      expect(webSend).toHaveBeenLastCalledWith({ type: 'full-reload' })
+      expect(webWatchChange.mock.calls).toEqual([[newPage, { event: 'create' }], [newPage, { event: 'delete' }]])
+    }
+    finally {
+      await ctx.runtimeState.watcher.sidecarWatcherMap.get('__auto-routes-source-watcher__')?.close()
+    }
+  })
+
+  it('revokes an in-flight Web publication and queued scans when the watcher closes', async () => {
+    vi.useFakeTimers()
+    const { ctx, start, event, handleFileChange } = setup()
+    const webScan = Promise.withResolvers<void>()
+    const webWatchChange = vi.fn(() => webScan.promise)
+    const webSend = vi.fn()
+    const serving = start('web', vi.fn(), { watchChange: webWatchChange, send: webSend })
+    try {
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(webWatchChange).toHaveBeenCalledOnce()
+      event('add')('/project/src/pages/queued/index.vue')
+      await vi.advanceTimersByTimeAsync(80)
+      await serving.closeBundle?.()
+      webScan.resolve()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(webSend).not.toHaveBeenCalled()
+      expect(handleFileChange).toHaveBeenCalledOnce()
+
+      const replacementSend = vi.fn()
+      start('web', vi.fn(), { send: replacementSend })
+      event('add', 1)(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(replacementSend).toHaveBeenCalledWith({ type: 'full-reload' })
+      expect(webSend).not.toHaveBeenCalled()
+      expect(handleFileChange).toHaveBeenCalledTimes(2)
+    }
+    finally {
+      webScan.resolve()
+      await vi.advanceTimersByTimeAsync(0)
+      await ctx.runtimeState.watcher.sidecarWatcherMap.get('__auto-routes-source-watcher__')?.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not notify a replaced Web host after its publication scan completes', async () => {
+    vi.useFakeTimers()
+    const { ctx, start, event } = setup()
+    const webScan = Promise.withResolvers<void>()
+    const previousSend = vi.fn()
+    const previousWatchChange = vi.fn(() => webScan.promise)
+    const previous = start('web', vi.fn(), { watchChange: previousWatchChange, send: previousSend })
+    try {
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(previousWatchChange).toHaveBeenCalledOnce()
+      const currentSend = vi.fn()
+      const currentWatchChange = vi.fn().mockResolvedValue(undefined)
+      start('web', vi.fn(), { watchChange: currentWatchChange, send: currentSend })
+      await previous.closeBundle?.()
+      webScan.resolve()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(previousSend).not.toHaveBeenCalled()
+      expect(currentSend).not.toHaveBeenCalled()
+      expect(currentWatchChange).not.toHaveBeenCalled()
+
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(currentWatchChange).toHaveBeenCalledWith(newPage, { event: 'create' })
+      expect(currentSend).toHaveBeenCalledWith({ type: 'full-reload' })
+      expect(previousSend).not.toHaveBeenCalled()
+    }
+    finally {
+      webScan.resolve()
+      await vi.advanceTimersByTimeAsync(0)
+      await ctx.runtimeState.watcher.sidecarWatcherMap.get('__auto-routes-source-watcher__')?.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it('revokes captured hosts when the same serving plugins configure replacement servers', async () => {
+    vi.useFakeTimers()
+    const { ctx, start, event } = setup()
+    const webScan = Promise.withResolvers<void>()
+    const previousNativeEmit = vi.fn()
+    const previousSend = vi.fn()
+    const previousWatchChange = vi.fn(() => webScan.promise)
+    const native = start('miniprogram', previousNativeEmit)
+    const web = start('web', vi.fn(), { watchChange: previousWatchChange, send: previousSend })
+    const currentNativeEmit = vi.fn()
+    const currentSend = vi.fn()
+    const currentWatchChange = vi.fn().mockResolvedValue(undefined)
+    const configureReplacement = (plugin: Plugin, emit: ReturnType<typeof vi.fn>, hooks = {
+      watchChange: vi.fn().mockResolvedValue(undefined),
+      send: vi.fn(),
+    }) => {
+      plugin.configureServer?.({
+        moduleGraph: { getModuleById: vi.fn(), invalidateModule: vi.fn() },
+        pluginContainer: { watchChange: hooks.watchChange },
+        watcher: { emit },
+        ws: { send: hooks.send },
+      } as unknown as ViteDevServer)
+      plugin.buildStart?.call({} as PluginContext)
+    }
+    try {
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(previousWatchChange).toHaveBeenCalledOnce()
+      configureReplacement(native, currentNativeEmit)
+      configureReplacement(web, vi.fn(), { watchChange: currentWatchChange, send: currentSend })
+      webScan.resolve()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(previousSend).not.toHaveBeenCalled()
+      expect(currentSend).not.toHaveBeenCalled()
+      expect(currentWatchChange).not.toHaveBeenCalled()
+      expect(previousNativeEmit).not.toHaveBeenCalled()
+      expect(currentNativeEmit).not.toHaveBeenCalled()
+
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(currentWatchChange).toHaveBeenCalledWith(newPage, { event: 'create' })
+      expect(currentSend).toHaveBeenCalledExactlyOnceWith({ type: 'full-reload' })
+      expect(currentNativeEmit).toHaveBeenCalledWith('change', appEntry)
+      expect(previousSend).not.toHaveBeenCalled()
+      expect(previousNativeEmit).not.toHaveBeenCalled()
+    }
+    finally {
+      webScan.resolve()
+      await vi.advanceTimersByTimeAsync(0)
+      await ctx.runtimeState.watcher.sidecarWatcherMap.get('__auto-routes-source-watcher__')?.close()
+      vi.useRealTimers()
     }
   })
 
@@ -300,6 +510,7 @@ describe('auto routes topology delivery', () => {
     const releaseOld = subscribeAutoRoutesTopology(ctx, oldConsume)
     start()
     event('add')(newPage)
+    await vi.waitFor(() => expect(handleFileChange).toHaveBeenCalledOnce())
     const previous = ctx.runtimeState.watcher.sidecarWatcherMap.get('__auto-routes-source-watcher__')!
     await previous.close()
     releaseOld()
