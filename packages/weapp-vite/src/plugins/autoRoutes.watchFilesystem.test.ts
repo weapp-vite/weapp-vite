@@ -53,7 +53,12 @@ it.each(['page-directory', 'pages-root'])('publishes pages when snapshots redisc
   } as unknown as MutableCompilerContext
   const watch = vi.spyOn(chokidar, 'watch')
   const changes: Array<{ file: string, event: string }> = []
-  const release = subscribeAutoRoutesTopology(ctx, change => changes.push({ ...change, file: normalizeWatchPath(change.file) }))
+  const release = subscribeAutoRoutesTopology(ctx, (change) => {
+    // 递归删除会合并发布；逐个记录来源，不能只观察批次最后一个文件。
+    for (const sourceChange of change.sourceChanges ?? [change]) {
+      changes.push({ ...sourceChange, file: normalizeWatchPath(sourceChange.file) })
+    }
+  })
   const pageChanges = () => changes.filter(change => change.file === normalizedFile)
   const snapshot = () => {
     const plugin = autoRoutes(ctx)[0] as Plugin
