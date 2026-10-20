@@ -4,12 +4,6 @@ import type { WeappIntrinsicElements } from '@weapp-core/types/weapp'
 import type { TemplateRefValue } from './types'
 
 type MiniProgramTemplateRefTagName = keyof AlipayIntrinsicElements | keyof TtIntrinsicElements | keyof WeappIntrinsicElements
-type MiniProgramTemplateRefElements = {
+export type MiniProgramTemplateRefElements = {
   [K in MiniProgramTemplateRefTagName]: TemplateRefValue
 }
-
-declare global {
-  interface HTMLElementTagNameMap extends MiniProgramTemplateRefElements {}
-}
-
-export {}
