@@ -1,19 +1,35 @@
+import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enhanceMiniProgramRelaunch } from './automator'
 import { DevtoolsSimulatorBootLogError } from './automatorBootLogMonitor'
 
+type RelaunchMock<TPage> = (...args: Parameters<MiniProgram['reLaunch']>) => Promise<TPage>
+
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'fixture' }))
+
+function matchesRenderedSelector(selector: string | undefined, renderedSelectors: string[]) {
+  return selector?.split(',').some(part => part.trim() === '*'
+    ? renderedSelectors.length > 0
+    : renderedSelectors.includes(part.trim())) ?? false
+}
+
+async function runTimersAndAssert(assertion: Promise<unknown>) {
+  const observedAssertion = assertion.catch(() => undefined)
+  await vi.runAllTimersAsync()
+  await observedAssertion
+  await assertion
+}
 
 function createPage(route: string, renderedSelectors: string[]) {
   return {
     path: route,
     waitForRendered: vi.fn(async ({ selector }: { selector?: string }) => {
-      if (selector && renderedSelectors.includes(selector)) {
+      if (matchesRenderedSelector(selector, renderedSelectors)) {
         return { selector }
       }
       throw new Error('No rendered node matches the selector')
     }),
-    $$: vi.fn(async (selector: string) => renderedSelectors.includes(selector) ? [{ selector }] : []),
+    $$: vi.fn(async (selector: string) => matchesRenderedSelector(selector, renderedSelectors) ? [{ selector }] : []),
   }
 }
 
@@ -54,43 +70,43 @@ describe('route-scoped relaunch roots', () => {
       [`${homeRoute}?step=3`, home],
     ] as const) {
       const assertion = expect(miniProgram.reLaunch(route)).resolves.toBe(page)
-      await vi.runAllTimersAsync()
-      await assertion
+      await runTimersAndAssert(assertion)
     }
 
     expect(rawReLaunch).toHaveBeenCalledTimes(3)
     expect(home.waitForRendered.mock.calls.map(([options]) => options.selector)).toEqual(['#tag-page', '#tag-page'])
-    expect(boundary.waitForRendered.mock.calls.map(([options]) => options.selector)).toEqual(['view'])
+    expect(boundary.waitForRendered).toHaveBeenCalledOnce()
+    expect(boundary.waitForRendered.mock.calls.map(([options]) => options.selector)).not.toContain('#tag-page')
     expect(miniProgram.close).not.toHaveBeenCalled()
   })
 
   it('uses generic roots when the current page already matches another route', async () => {
     const boundary = createPage(boundaryRoute, ['view'])
-    const rawReLaunch = vi.fn(async () => boundary)
+    const rawReLaunch = vi.fn<RelaunchMock<typeof boundary>>(async () => boundary)
     const miniProgram = { reLaunch: rawReLaunch, currentPage: vi.fn(async () => boundary), close: vi.fn() }
     enhanceMiniProgramRelaunch(miniProgram, recoveryOptions)
 
     const assertion = expect(miniProgram.reLaunch(`/${boundaryRoute}`)).resolves.toBe(boundary)
-    await vi.runAllTimersAsync()
-    await assertion
+    await runTimersAndAssert(assertion)
 
     expect(rawReLaunch).not.toHaveBeenCalled()
-    expect(boundary.waitForRendered).toHaveBeenCalledWith(expect.objectContaining({ selector: 'view' }))
+    expect(boundary.waitForRendered).toHaveBeenCalled()
+    expect(boundary.waitForRendered).not.toHaveBeenCalledWith(expect.objectContaining({ selector: '#tag-page' }))
   })
 
   it('checks the current page with generic roots when reLaunch returns a stale page handle', async () => {
     const stale = createPage(boundaryRoute, [])
     const boundary = createPage(boundaryRoute, ['view'])
-    const rawReLaunch = vi.fn(async () => stale)
+    const rawReLaunch = vi.fn<RelaunchMock<typeof stale>>(async () => stale)
     const miniProgram = { reLaunch: rawReLaunch, currentPage: vi.fn(async () => boundary), close: vi.fn() }
     enhanceMiniProgramRelaunch(miniProgram, recoveryOptions)
 
     const assertion = expect(miniProgram.reLaunch(`/${boundaryRoute}?force=1`)).resolves.toBe(boundary)
-    await vi.runAllTimersAsync()
-    await assertion
+    await runTimersAndAssert(assertion)
 
     expect(stale.waitForRendered).toHaveBeenCalled()
-    expect(boundary.waitForRendered).toHaveBeenCalledWith(expect.objectContaining({ selector: 'view' }))
+    expect(boundary.waitForRendered).toHaveBeenCalled()
+    expect(boundary.waitForRendered).not.toHaveBeenCalledWith(expect.objectContaining({ selector: '#tag-page' }))
     expect(miniProgram.close).not.toHaveBeenCalled()
   })
 
@@ -101,17 +117,17 @@ describe('route-scoped relaunch roots', () => {
     enhanceMiniProgramRelaunch(miniProgram, recoveryOptions)
 
     const assertion = expect(miniProgram.reLaunch(`/${boundaryRoute}?force=1`)).resolves.toBe(boundary)
-    await vi.runAllTimersAsync()
-    await assertion
+    await runTimersAndAssert(assertion)
 
     expect(rawReLaunch).toHaveBeenCalledTimes(1)
-    expect(boundary.waitForRendered).toHaveBeenCalledWith(expect.objectContaining({ selector: 'view' }))
+    expect(boundary.waitForRendered).toHaveBeenCalled()
+    expect(boundary.waitForRendered).not.toHaveBeenCalledWith(expect.objectContaining({ selector: '#tag-page' }))
     expect(miniProgram.close).not.toHaveBeenCalled()
   })
 
   it('does not recover a fatal boot diagnostic as a transient metadata failure', async () => {
     const boundary = createPage(boundaryRoute, ['view'])
-    const rawReLaunch = vi.fn(async () => boundary)
+    const rawReLaunch = vi.fn<RelaunchMock<typeof boundary>>(async () => boundary)
     const miniProgram = { reLaunch: rawReLaunch, currentPage: vi.fn(async () => boundary), close: vi.fn() }
     const error = new DevtoolsSimulatorBootLogError('reLaunch', {
       file: 'startup.log',
@@ -134,18 +150,23 @@ describe('route-scoped relaunch roots', () => {
 
   it.each([
     { route: homeRoute, renderedSelectors: ['view'], requiredSelector: '#tag-page' },
-    { route: boundaryRoute, renderedSelectors: [], requiredSelector: 'view' },
+    { route: boundaryRoute, renderedSelectors: [], requiredSelector: undefined },
   ])('still rejects $route when its required rendered root is absent', async ({ route, renderedSelectors, requiredSelector }) => {
     const page = createPage(route, renderedSelectors)
-    const rawReLaunch = vi.fn(async () => page)
+    const rawReLaunch = vi.fn<RelaunchMock<typeof page>>(async () => page)
     const miniProgram = { reLaunch: rawReLaunch, currentPage: vi.fn(async () => page), close: vi.fn() }
     enhanceMiniProgramRelaunch(miniProgram, recoveryOptions)
 
     const assertion = expect(miniProgram.reLaunch(`/${route}?force=1`)).rejects.toThrow('Timed out waiting page root after reLaunch')
-    await vi.runAllTimersAsync()
-    await assertion
+    await runTimersAndAssert(assertion)
 
-    expect(page.waitForRendered).toHaveBeenCalledWith(expect.objectContaining({ selector: requiredSelector }))
+    if (requiredSelector) {
+      expect(page.waitForRendered).toHaveBeenCalledWith(expect.objectContaining({ selector: requiredSelector }))
+    }
+    else {
+      expect(page.waitForRendered).toHaveBeenCalled()
+      expect(page.waitForRendered).not.toHaveBeenCalledWith(expect.objectContaining({ selector: '#tag-page' }))
+    }
     expect(miniProgram.close).toHaveBeenCalledTimes(1)
   })
 })

@@ -105,7 +105,7 @@ function assertPublicRuntime(entry: string, platform: Platform) {
   expect(runtime.createWevuComponent).toBeTypeOf('function')
 
   // 运行时选择公开工厂，保持未经过 SFC 编译器的消费者所需的保守能力。
-  const factories = { defineComponent: runtime.defineComponent, createWevuComponent: runtime.createWevuComponent }
+  const factories = { defineComponent: runtime.defineComponent<Record<never, never>, { count: number }>, createWevuComponent: runtime.createWevuComponent<Record<never, never>, { count: number }> }
   for (const factory of Object.values(factories)) {
     factory({ data: () => ({ count: 1 }) })
   }

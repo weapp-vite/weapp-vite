@@ -1,3 +1,4 @@
+import type { MiniProgramWithRuntimeLogs } from '../utils/automator'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -107,7 +108,7 @@ describe('e2e app: github-issues / issue #1010', { concurrent: false }, () => {
         nodes: [{ selector: step.node, text: step.text }],
       })),
     ])
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram: MiniProgramWithRuntimeLogs = await getSharedMiniProgram(ctx)
     try {
       const page = await relaunchPage(miniProgram, ISSUE_ROUTE, undefined, 30_000, {
         readiness: async (targetPage) => {

@@ -1,4 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI 构建。 */
+import type { Component as ComponentJson, Page as PageJson } from '@weapp-core/schematics'
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import path from 'pathe'
@@ -41,20 +42,20 @@ describe('e2e app: script-setup-macros-mapping (build)', { concurrent: false }, 
     const jsRuntimeObjectJsonPath = path.join(DIST_ROOT, 'components/js-runtime-object/index.json')
     const jsRuntimeObjectJsPath = path.join(DIST_ROOT, 'components/js-runtime-object/index.js')
 
-    const pageJson = await fs.readJson(pageJsonPath)
+    const pageJson = await fs.readJson(pageJsonPath) as PageJson
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf8')
     const pageJs = await fs.readFile(pageJsPath, 'utf8')
-    const nativeBadgeJson = await fs.readJson(nativeBadgeJsonPath)
+    const nativeBadgeJson = await fs.readJson(nativeBadgeJsonPath) as ComponentJson
     const nativeBadgeJs = await fs.readFile(nativeBadgeJsPath, 'utf8')
-    const tsWithDefaultsJson = await fs.readJson(tsWithDefaultsJsonPath)
+    const tsWithDefaultsJson = await fs.readJson(tsWithDefaultsJsonPath) as ComponentJson
     const tsWithDefaultsJs = await fs.readFile(tsWithDefaultsJsPath, 'utf8')
-    const tsWithDefaultsAliasJson = await fs.readJson(tsWithDefaultsAliasJsonPath)
+    const tsWithDefaultsAliasJson = await fs.readJson(tsWithDefaultsAliasJsonPath) as ComponentJson
     const tsWithDefaultsAliasJs = await fs.readFile(tsWithDefaultsAliasJsPath, 'utf8')
-    const tsRuntimeObjectJson = await fs.readJson(tsRuntimeObjectJsonPath)
+    const tsRuntimeObjectJson = await fs.readJson(tsRuntimeObjectJsonPath) as ComponentJson
     const tsRuntimeObjectJs = await fs.readFile(tsRuntimeObjectJsPath, 'utf8')
-    const jsRuntimeArrayJson = await fs.readJson(jsRuntimeArrayJsonPath)
+    const jsRuntimeArrayJson = await fs.readJson(jsRuntimeArrayJsonPath) as ComponentJson
     const jsRuntimeArrayJs = await fs.readFile(jsRuntimeArrayJsPath, 'utf8')
-    const jsRuntimeObjectJson = await fs.readJson(jsRuntimeObjectJsonPath)
+    const jsRuntimeObjectJson = await fs.readJson(jsRuntimeObjectJsonPath) as ComponentJson
     const jsRuntimeObjectJs = await fs.readFile(jsRuntimeObjectJsPath, 'utf8')
 
     expect(pageJson.usingComponents).toMatchObject({

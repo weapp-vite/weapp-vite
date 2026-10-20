@@ -1,3 +1,5 @@
+import type { Element } from '@weapp-vite/miniprogram-automator'
+import type { MiniProgramWithRuntimeLogs } from '../utils/automator'
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -37,7 +39,7 @@ describe('e2e app: github-issues / issue #868', { concurrent: false }, () => {
 
   it('renders projected keys and restores source identity in real runtime', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', IDENTITY_CHECKPOINTS)
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram: MiniProgramWithRuntimeLogs = await getSharedMiniProgram(ctx)
     try {
       resetAutomatorRuntimeLogs(miniProgram)
       const issuePage = await relaunchPage(miniProgram, ISSUE_ROUTE, undefined, 45_000, {
@@ -74,7 +76,7 @@ describe('e2e app: github-issues / issue #868', { concurrent: false }, () => {
         title: 'alpha-updated',
       })
 
-      const primitiveItems = await issuePage.$$('.issue-868-primitive')
+      const primitiveItems: Element[] = await issuePage.$$('.issue-868-primitive')
       await dom.check('updated', miniProgram, issuePage)
       expect(await Promise.all(primitiveItems.map(item => item.text()))).toEqual([
         'primitive-a',

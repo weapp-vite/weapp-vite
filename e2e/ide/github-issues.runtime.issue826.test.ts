@@ -1,3 +1,4 @@
+import type { MiniProgramWithRuntimeLogs } from '../utils/automator'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import {
@@ -44,7 +45,7 @@ describe('e2e app: github-issues / issue #826', { concurrent: false }, () => {
       action: 'reLaunch 后检查共享模块与 barrel 的执行结果',
       nodes: [{ selector: '#issue826-second-page', text: SECOND_VALUE }],
     }])
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram: MiniProgramWithRuntimeLogs = await getSharedMiniProgram(ctx)
     try {
       const indexPage = await relaunchPage(
         miniProgram,

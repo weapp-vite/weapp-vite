@@ -34,7 +34,7 @@ describe.each([
       projectPath: project,
       bridgeProjectMode: 'direct',
       warmupRoute: ROUTES.primary,
-    })
+    }) as MiniProgram
     miniProgram.on('exception', event => runtimeErrors.push(event.message))
   }, 180_000)
 

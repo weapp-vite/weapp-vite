@@ -1,4 +1,4 @@
-import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
+import type { MiniProgram, Page } from '@weapp-vite/miniprogram-automator'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -13,6 +13,12 @@ const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const LAYOUT_PAGE_WXML = path.join(DIST_ROOT, 'pages/layouts/index.wxml')
 const ROUTE = '/pages/layouts/index'
 const LEADING_SLASH_RE = /^\/+/
+
+interface LayoutPageData {
+  currentLayout?: 'default' | 'admin' | 'none'
+  __wv_page_layout_name?: string | false | null
+  __wv_page_layout_props?: Record<string, unknown> | null
+}
 
 async function runBuild() {
   await fs.remove(DIST_ROOT)
@@ -135,8 +141,8 @@ async function waitForCurrentPage(miniProgram: MiniProgram, expectedPath: string
   return null
 }
 
-async function readPageDataSnapshot(page: any) {
-  return await runAutomatorOp('read page data snapshot', () => page.data(), {
+async function readPageDataSnapshot(page: Page) {
+  return await runAutomatorOp<LayoutPageData | null | undefined>('read page data snapshot', () => page.data(), {
     timeoutMs: 15_000,
     retries: 2,
     retryDelayMs: 260,

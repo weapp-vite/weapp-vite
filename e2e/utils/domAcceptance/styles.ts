@@ -2,7 +2,7 @@ import type { DomRpxCalculation } from './types'
 
 const PIXEL_LENGTH = /^-?(?:\d+(?:\.\d+)?|\.\d+)px$/
 
-export function assertResponsiveStyle(actual: string | undefined, rpx: number, windowWidth: number | undefined, label: string) {
+export function assertResponsiveStyle(actual: string | null | undefined, rpx: number, windowWidth: number | undefined, label: string) {
   if (!Number.isFinite(windowWidth) || !windowWidth || windowWidth <= 0 || !Number.isFinite(rpx)
     || typeof actual !== 'string' || !PIXEL_LENGTH.test(actual)) {
     throw new Error(`Invalid responsive style evidence: ${label}`)
@@ -14,7 +14,7 @@ export function assertResponsiveStyle(actual: string | undefined, rpx: number, w
   }
 }
 
-export function assertResponsiveCalcStyle(actual: string | undefined, calculation: DomRpxCalculation, windowWidth: number | undefined, label: string) {
+export function assertResponsiveCalcStyle(actual: string | null | undefined, calculation: DomRpxCalculation, windowWidth: number | undefined, label: string) {
   const { value, multiply } = calculation
   if (!Number.isFinite(windowWidth) || !windowWidth || windowWidth <= 0
     || !Number.isFinite(value) || value < 8 || !Number.isFinite(multiply) || multiply <= 0

@@ -1,3 +1,4 @@
+import type { Buffer } from 'node:buffer'
 import type { TutorialCommand } from './config'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -46,7 +47,7 @@ function captureStream(
   chunks: string[],
   log: (message: string) => void,
 ) {
-  stream?.on('data', (chunk: unknown) => {
+  stream?.on('data', (chunk: Buffer | string) => {
     const text = chunk.toString()
     chunks.push(text)
     log(text)

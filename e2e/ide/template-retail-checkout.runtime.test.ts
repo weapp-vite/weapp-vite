@@ -1,3 +1,5 @@
+import type { Element, Page } from '@weapp-vite/miniprogram-automator'
+import type { DomElement } from '../utils/domAcceptance/types'
 import { access, readFile, rm } from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
@@ -159,7 +161,7 @@ describe('retail checkout and goods card contracts', { concurrent: false }, () =
       action: scenario.action,
       nodes: retailCheckoutNodes(scenario.quantity),
     }))])
-    const home = await dom.act('home-ready', () => miniProgram.reLaunch('/pages/home/home'))
+    const home = await dom.act<Page>('home-ready', () => miniProgram.reLaunch('/pages/home/home'))
     try {
       await dom.check('home-ready', miniProgram, home)
     }
@@ -214,7 +216,7 @@ describe('retail checkout and goods card contracts', { concurrent: false }, () =
         nodes: retailGoodsCardNodes('cleared'),
       },
     ])
-    const page = await dom.act('initial-card-ids', () => miniProgram.reLaunch(RETAIL_GOODS_CARD_ROUTE))
+    const page = await dom.act<Page>('initial-card-ids', () => miniProgram.reLaunch(RETAIL_GOODS_CARD_ROUTE))
     await dom.check('initial-card-ids', miniProgram, page)
     for (const variant of RETAIL_GOODS_CARD_VARIANTS) {
       await dom.act(`click-${variant}`, async () => {
@@ -232,7 +234,7 @@ describe('retail checkout and goods card contracts', { concurrent: false }, () =
       for (const kind of ['explicit', 'default'] as const) {
         const cards = await page.getElementsByXpath(retailGoodsCardSelector(variant, kind), { fallback: false })
         expect(cards).toHaveLength(1)
-        const card = cards[0]
+        const card: Element & Pick<DomElement, 'attr'> = cards[0]
         const readAttribute = card.attribute ?? card.attr
         expect(await readAttribute.call(card, 'id')).toMatch(/^goods-card-\d+$/)
       }

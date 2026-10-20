@@ -47,6 +47,8 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   ['ide/stateful-hmr.runtime.test.ts', '900000'],
   ['ide/subpackage-shared-strategy-complex.runtime.test.ts', '600000'],
   ['ide/template-dev-open-all.runtime.test.ts', '1800000'],
+  // P/W 各自串行验证首屏与完整资源收尾，不增加全局任务预算。
+  ['ide/template-plugin-dev-open.runtime.test.ts', '1260000'],
   ['ide/template-tailwindcss-dev-open-multi.runtime.test.ts', '1200000'],
   ['ide/template-tailwindcss-tdesign-hmr.runtime.test.ts', '900000'],
   ['ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts', '900000'],
@@ -189,6 +191,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/devtools-cli-workflow.runtime.test.ts',
   'ide/mcp-runtime-tools.runtime.test.ts',
   'ide/template-dev-open-all.runtime.test.ts',
+  'ide/template-plugin-dev-open.runtime.test.ts',
   'ide/template-tailwindcss-dev-open-multi.runtime.test.ts',
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
@@ -238,6 +241,7 @@ const IDE_FULL_CORE_PATTERNS = [
   'ide/stateful-hmr.runtime.test.ts',
   'ide/subpackage-shared-strategy-complex.runtime.test.ts',
   'ide/template-dev-open-all.runtime.test.ts',
+  'ide/template-plugin-dev-open.runtime.test.ts',
   'ide/template-tailwindcss-dev-open-multi.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/wevu-features.runtime.behavior.test.ts',
@@ -275,6 +279,7 @@ const IDE_GATE_TESTS = [
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/template-plugin-dev-open.runtime.test.ts',
   'ide/issue-1234-automator.runtime.test.ts',
   'ide/app-shell-presence.hmr.runtime.test.ts',
   'ide/script-setup-external-src.runtime.test.ts',

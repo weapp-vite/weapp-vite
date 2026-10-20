@@ -47,11 +47,11 @@ describe('Bun CLI / issue #1222', () => {
     }
     finally {
       try {
-        if (dev && dev.exitCode === null && dev.signalCode === null) {
+        if (dev && dev.nodeChildProcess.exitCode === null && dev.nodeChildProcess.signalCode === null) {
           if (devOutput.includes('BUN_RUNTIME ')) {
             await requestBunShutdown(project, devOutput)
           }
-          dev.kill('SIGTERM', { forceKillAfterDelay: 5_000 })
+          dev.kill('SIGTERM')
           await dev
         }
       }
@@ -83,11 +83,11 @@ describe('Bun CLI / issue #1222', () => {
       await expect(access(path.join(project, '.weapp-vite/ide-asset-watch.json'))).rejects.toMatchObject({ code: 'ENOENT' })
     }
     finally {
-      if (dev.exitCode === null && dev.signalCode === null) {
+      if (dev.nodeChildProcess.exitCode === null && dev.nodeChildProcess.signalCode === null) {
         if (output.includes('BUN_RUNTIME ')) {
           await requestBunShutdown(project, output)
         }
-        dev.kill('SIGTERM', { forceKillAfterDelay: 5_000 })
+        dev.kill('SIGTERM')
         await dev
       }
       await mkdir(path.resolve(import.meta.dirname, '../../.tmp/bun-cli'), { recursive: true })

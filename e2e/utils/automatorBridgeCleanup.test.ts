@@ -6,7 +6,7 @@ import { prepareAutomatorBridgeWrapperProject } from './automator'
 import { attachBridgeWrapperSyncCleanup, cleanupFailedBridgeLaunch } from './automatorBridgeCleanup'
 
 vi.mock('node:fs', async (importOriginal) => {
-  const original = await importOriginal<typeof import('node:fs')>()
+  const original = await importOriginal<typeof import('node:fs') & { default: typeof fs }>()
   return { ...original, default: { ...original.default } }
 })
 

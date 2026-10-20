@@ -1,6 +1,6 @@
 import type { MachineE2EChildScope } from '../../packages/devtools-runtime/src/lease/machine'
 import path from 'node:path'
-import { cleanupManagedWechatProjects, readManagedWechatProjectRecords } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { cleanupManagedWechatProjects, isManagedWechatProjectFullyReleased, readManagedWechatProjectRecords } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { resolveManagedJournalScope } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/scope'
 
 async function assertDescendantJournal(parent: string, child: string) {
@@ -25,7 +25,7 @@ export async function cleanupDevtoolsCommandScope(scope: MachineE2EChildScope | 
     await cleanupManagedWechatProjects({ journalPath: descendant.cleanupKey, scope: 'journal' })
     const after = await assertDescendantJournal(journalPath, descendant.cleanupKey)
     if (before.scopeId !== after.scopeId || before.rootPath !== after.rootPath
-      || (await readManagedWechatProjectRecords(descendant.cleanupKey)).some(record => record.state !== 'released')) {
+      || (await readManagedWechatProjectRecords(descendant.cleanupKey)).some(record => !isManagedWechatProjectFullyReleased(record))) {
       throw new Error('E2E descendant journal identity changed or its resource cleanup is incomplete.')
     }
   })

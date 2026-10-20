@@ -36,6 +36,7 @@ function setup() {
       isPageDeclarationSource: () => false,
       getPageDeclarationOwners: () => [],
       getSignature: () => String(signature),
+      getSourceFingerprint: vi.fn(() => undefined as string | undefined),
       handleFileChange,
     },
   } as unknown as MutableCompilerContext
@@ -375,6 +376,96 @@ describe('auto routes topology delivery', () => {
     }
     finally {
       await ctx.runtimeState.watcher.sidecarWatcherMap.get('__auto-routes-source-watcher__')?.close()
+    }
+  })
+
+  it('retains a failed reload receipt and retries the same source generation', async () => {
+    vi.useFakeTimers()
+    const { ctx, start, event, handleFileChange } = setup()
+    handleFileChange.mockResolvedValue(true)
+    vi.mocked(ctx.autoRoutesService!.getSourceFingerprint).mockReturnValue('same-source')
+    const failure = new Error('reload delivery failed')
+    const send = vi.fn().mockImplementationOnce(() => {
+      throw failure
+    })
+    start('web', vi.fn(), { send })
+    try {
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(send).toHaveBeenCalledTimes(2)
+      expect(send).toHaveBeenLastCalledWith({
+        type: 'error',
+        err: expect.objectContaining({
+          id: newPage,
+          message: expect.stringContaining(failure.message),
+        }),
+      })
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(send).toHaveBeenCalledTimes(3)
+      expect(send).toHaveBeenLastCalledWith({ type: 'full-reload' })
+      expect(handleFileChange).toHaveBeenCalledTimes(2)
+    }
+    finally {
+      await ctx.runtimeState.watcher.sidecarWatcherMap.get('__auto-routes-source-watcher__')?.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it('reloads changed source content even when its route signature remains unchanged', async () => {
+    vi.useFakeTimers()
+    const { ctx, start, event, handleFileChange } = setup()
+    handleFileChange.mockResolvedValue(true)
+    const fingerprint = vi.mocked(ctx.autoRoutesService!.getSourceFingerprint).mockReturnValue('first-source')
+    const send = vi.fn()
+    start('web', vi.fn(), { send })
+    try {
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(send).toHaveBeenCalledExactlyOnceWith({ type: 'full-reload' })
+      fingerprint.mockReturnValue('changed-source')
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(send.mock.calls).toEqual([[{ type: 'full-reload' }], [{ type: 'full-reload' }]])
+    }
+    finally {
+      await ctx.runtimeState.watcher.sidecarWatcherMap.get('__auto-routes-source-watcher__')?.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it.each([false, true])('does not transfer a completed receipt to a replacement server (during send: %s)', async (duringSend) => {
+    vi.useFakeTimers()
+    const { ctx, start, event, handleFileChange } = setup()
+    handleFileChange.mockResolvedValue(true)
+    vi.mocked(ctx.autoRoutesService!.getSourceFingerprint).mockReturnValue('same-source')
+    const previousSend = vi.fn()
+    const plugin = start('web', vi.fn(), { send: previousSend })
+    const currentSend = vi.fn()
+    const replaceServer = () => plugin.configureServer?.({
+      moduleGraph: { getModuleById: vi.fn(), invalidateModule: vi.fn() },
+      pluginContainer: { watchChange: vi.fn().mockResolvedValue(undefined) },
+      watcher: { emit: vi.fn() },
+      ws: { send: currentSend },
+    } as unknown as ViteDevServer)
+    if (duringSend) {
+      previousSend.mockImplementationOnce(replaceServer)
+    }
+    try {
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(previousSend).toHaveBeenCalledExactlyOnceWith({ type: 'full-reload' })
+      if (!duringSend) {
+        replaceServer()
+      }
+      event('add')(newPage)
+      await vi.advanceTimersByTimeAsync(80)
+      expect(currentSend).toHaveBeenCalledExactlyOnceWith({ type: 'full-reload' })
+      expect(previousSend).toHaveBeenCalledOnce()
+    }
+    finally {
+      await ctx.runtimeState.watcher.sidecarWatcherMap.get('__auto-routes-source-watcher__')?.close()
+      vi.useRealTimers()
     }
   })
 

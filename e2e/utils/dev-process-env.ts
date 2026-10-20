@@ -1,4 +1,4 @@
-import process from 'node:process'
+import { createWechatE2EChildEnv } from './devtoolsCli'
 
 const E2E_MACHINE_LEASE_ENV = 'WEAPP_VITE_E2E_MACHINE_LEASE'
 
@@ -12,7 +12,7 @@ interface DevProcessEnvOptions {
 
 export function createDevProcessEnv(options: DevProcessEnvOptions = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
-    ...process.env,
+    ...createWechatE2EChildEnv(),
     NODE_ENV: 'development',
   }
   if (options.usePolling !== false) {

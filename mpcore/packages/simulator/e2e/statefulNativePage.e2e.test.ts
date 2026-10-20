@@ -2,6 +2,7 @@
 import sources from 'virtual:stateful-native-page-fixture'
 import { expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
+import { resolveTestingPageMethodTarget } from '../src/testing/pageMethodTarget'
 
 it('renders independent WXSS updates and real Page bridge patches without resetting DOM state', async () => {
   const files = createBrowserVirtualFiles(sources as Array<[string, string]>)
@@ -83,7 +84,7 @@ it('renders independent WXSS updates and real Page bridge patches without resett
   }
 })
 
-it('renders mode changes from external CommonJS modules after native Page update and restoration', () => {
+it('renders mode changes from external CommonJS modules after native Page update and restoration', async () => {
   const files = createBrowserVirtualFiles(sources as Array<[string, string]>)
   const session = createBrowserHeadlessSession({ files })
   const host = document.createElement('div')
@@ -99,27 +100,69 @@ it('renders mode changes from external CommonJS modules after native Page update
     expect(method).toBe('switchMode')
     session.callScopeMethod(control.getAttribute('data-sim-scope')!, method!, {})
   }
+  const baseline = 'runtime-vendor-hmr-baseline'
+  const updated = 'runtime-vendor-hmr-updated'
+  const nativeOptions = { fallback: false }
+  const routeOptions = { routeOnly: true, fallback: false }
   try {
     const page = session.reLaunch('/pages/external/index')
     const app = session.getApp()
-    const check = (text: string) => {
+    const check = (text: string, calls: number, definitionMarker = baseline) => {
       render()
       expect(host.querySelector('#mode')?.textContent).toBe(text)
+      expect(host.querySelector('#vendor-marker')?.textContent).toBe(baseline)
+      expect(host.querySelector('#vendor-calls')?.textContent).toBe(String(calls))
+      const current = resolveTestingPageMethodTarget(page, session.getCurrentPages(), nativeOptions)!
+      expect(current).toBe(page)
+      const nativeResult = current.readVendorState()
+      expect(nativeResult).toMatchObject({ calls, definitionMarker, marker: baseline })
+      const routeTarget = resolveTestingPageMethodTarget(page, session.getCurrentPages(), routeOptions)!
+      expect(routeTarget).toBe(current)
+      expect(routeTarget.readVendorState()).toEqual(nativeResult)
+      expect(current.data).toMatchObject({ vendorCalls: calls, vendorMarker: baseline })
       expect(session.getCurrentPages()[0]).toBe(page)
       expect(session.getApp()).toBe(app)
       expect(page.route).toBe('pages/external/index')
     }
-    check('当前模式 light 切换模式')
+    check('当前模式 light 切换模式', 0)
     tap()
-    check('当前模式 dark 切换模式')
-    page.patchPage()
-    check('当前模式 dark 切换模式')
+    check('当前模式 dark 切换模式', 1)
+    const firstUpdate = page.patchPage()
+    check('当前模式 dark 切换模式', 1, updated)
+    await firstUpdate
     tap()
-    check('当前模式 npm-dark 切换模式')
-    page.restorePage()
-    check('当前模式 npm-dark 切换模式')
+    check('当前模式 npm-dark 切换模式', 2, updated)
+    const restoration = page.restorePage()
+    check('当前模式 npm-dark 切换模式', 2)
+    await restoration
     tap()
-    check('当前模式 light 切换模式')
+    check('当前模式 light 切换模式', 3)
+    const nextUpdate = page.patchPage()
+    check('当前模式 light 切换模式', 3, updated)
+    await nextUpdate
+
+    const replacement = session.reLaunch('/pages/external/index')
+    expect(replacement).not.toBe(page)
+    expect(() => resolveTestingPageMethodTarget(page, session.getCurrentPages(), nativeOptions)).toThrow('page is not on top of page stack')
+    expect(resolveTestingPageMethodTarget(page, session.getCurrentPages(), routeOptions)).toBeUndefined()
+    const current = resolveTestingPageMethodTarget(replacement, session.getCurrentPages(), nativeOptions)!
+    expect(current).toBe(replacement)
+    expect(current.readVendorState()).toEqual({ mode: 'light', calls: 0, definitionMarker: updated, marker: updated })
+    const routeTarget = resolveTestingPageMethodTarget(replacement, session.getCurrentPages(), routeOptions)!
+    expect(routeTarget).toBe(current)
+    expect(routeTarget.readVendorState()).toEqual(current.readVendorState())
+    render()
+    expect(host.querySelector('#mode')?.textContent).toBe('当前模式 light 切换模式')
+    expect(host.querySelector('#vendor-marker')?.textContent).toBe(updated)
+    expect(host.querySelector('#vendor-calls')?.textContent).toBe('0')
+    tap()
+    expect(current.readVendorState()).toEqual({ mode: 'npm-light', calls: 1, definitionMarker: updated, marker: updated })
+    expect(routeTarget.readVendorState()).toEqual(current.readVendorState())
+    expect(current.data).toMatchObject({ mode: 'npm-light', vendorCalls: 1, vendorMarker: updated })
+    render()
+    expect(host.querySelector('#mode')?.textContent).toBe('当前模式 npm-light 切换模式')
+    expect(host.querySelector('#vendor-marker')?.textContent).toBe(updated)
+    expect(host.querySelector('#vendor-calls')?.textContent).toBe('1')
   }
   finally {
     session.close()

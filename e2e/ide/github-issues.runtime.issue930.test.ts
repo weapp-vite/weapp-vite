@@ -1,3 +1,4 @@
+import type { DomCheckpoint } from '../utils/domAcceptance/types'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -18,7 +19,7 @@ interface RuntimeElementAttributeReader {
   attribute?: (name: string) => Promise<string | undefined>
 }
 
-async function readElementAttribute(element: RuntimeElementAttributeReader | undefined, name: string) {
+async function readElementAttribute(element: RuntimeElementAttributeReader | null | undefined, name: string) {
   if (typeof element?.attribute === 'function') {
     return await element.attribute(name)
   }
@@ -56,7 +57,7 @@ describe('e2e app: github-issues / issue #930', { concurrent: false }, () => {
   it('preserves native nested CSS fallbacks through dynamic overrides and restoration', async (ctx) => {
     const provider = resolveRuntimeProviderName()
     const stages = ['initial', 'updated', 'restored'] as const
-    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', stages.map(stage => ({
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', stages.map((stage): DomCheckpoint => ({
       id: `nested-vars:${stage}`,
       route: NESTED_VARS_ROUTE,
       action: stage === 'initial' ? '检查两层行高、三层圆角和渐变 fallback' : stage === 'updated' ? '点击覆盖变量后检查渲染与实际样式' : '再次点击恢复默认 fallback',
@@ -115,7 +116,7 @@ describe('e2e app: github-issues / issue #930', { concurrent: false }, () => {
   })
 
   it('keeps every compiler-owned binding live on initial and subsequent setData', async (ctx) => {
-    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ['initial', 'updated'].map(state => ({
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ['initial', 'updated'].map((state): DomCheckpoint => ({
       id: state,
       route: ISSUE_ROUTE,
       action: state === 'initial' ? '检查首屏编译器拥有的绑定' : '更新成员表达式、model、template 和 CSS 变量后检查渲染',

@@ -3,12 +3,11 @@ import { defineConfig } from 'vitest/config'
 import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
 import { localReporters, localTestPolicy } from '../scripts/verificationBenchmark/localReporterConfig.mjs'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
+import { createE2ESourceTransform } from './utils/sourceTransform.ts'
 
 export default defineConfig({
-  oxc: {
-    // E2E 清单会直接导入 app 源码，不能依赖各 app 已生成 `.weapp-vite` tsconfig。
-    tsconfig: false,
-  },
+  oxc: { exclude: /.*/ },
+  plugins: [createE2ESourceTransform()],
   test: {
     reporters: localReporters(),
     ...localTestPolicy(),

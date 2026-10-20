@@ -7,6 +7,8 @@ const options = { projectPath: 'fixture', port: 19201 }
 expectAssignable<StartWechatIdeAgentOptions>(options)
 expectAssignable<StartWechatIdeAgentOptions>({ ...options, cliPath: 'selected-cli', target, trustProject: false, timeout: 1000, signal: new AbortController().signal })
 expectType<Promise<StartWechatIdeAgentResult>>(startWechatIdeAgent(options))
+expectAssignable<StartWechatIdeAgentOptions>({ ...options, onBeforeDispatch: () => {} })
+expectType<Promise<StartWechatIdeAgentResult>>(startWechatIdeAgent({ ...options, onBeforeDispatch: async () => {} }))
 expectType<Promise<StartWechatIdeAgentResult>>(startWechatIdeAgent({ ...options, onStarted: async (result) => {
   expectType<StartWechatIdeAgentResult>(result)
 } }))
@@ -24,3 +26,4 @@ expectError(startWechatIdeAgent({ ...options, trustProject: 'true' }))
 expectError(startWechatIdeAgent({ ...options, timeout: '1000' }))
 expectError(startWechatIdeAgent({ ...options, signal: true }))
 expectError(startWechatIdeAgent({ ...options, onStarted: true }))
+expectError(startWechatIdeAgent({ ...options, onBeforeDispatch: true }))

@@ -1,3 +1,4 @@
+import type { Component as ComponentJson, Page as PageJson } from '@weapp-core/schematics'
 import { fs } from '@weapp-core/shared/node'
 // eslint-disable-next-line e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI 构建
 import { execa } from 'execa'
@@ -29,12 +30,12 @@ describe('e2e app: wevu-vue-demo (script setup macros mapping)', { concurrent: f
     const altPanelJsPath = path.join(DIST_ROOT, 'pages/vue-compat/components/CompatAltPanel.js')
     const modelInputJsPath = path.join(DIST_ROOT, 'pages/vue-compat/components/ModelInput.js')
 
-    const pageJson = await fs.readJson(pageJsonPath)
+    const pageJson = await fs.readJson(pageJsonPath) as PageJson
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
-    const panelJson = await fs.readJson(panelJsonPath)
+    const panelJson = await fs.readJson(panelJsonPath) as ComponentJson
     const panelJs = await fs.readFile(panelJsPath, 'utf-8')
-    const altPanelJson = await fs.readJson(altPanelJsonPath)
+    const altPanelJson = await fs.readJson(altPanelJsonPath) as ComponentJson
     const altPanelJs = await fs.readFile(altPanelJsPath, 'utf-8')
     const modelInputJs = await fs.readFile(modelInputJsPath, 'utf-8')
 

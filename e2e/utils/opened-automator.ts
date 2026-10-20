@@ -2,6 +2,7 @@ import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
 import { connectOpenedAutomator, resolveProjectAutomatorPort } from 'weapp-ide-cli'
 import { measureE2EPhase } from '../scripts/verification/timing'
 import { enhanceMiniProgramWithRuntimeLogs } from './automator'
+import { readWechatE2ESelection } from './devtoolsCli'
 import { resolveReportProjectPath } from './ideWarningReport'
 
 interface OpenedAutomatorSessionMetadata {
@@ -89,6 +90,7 @@ async function waitForOpenedAutomatorWithoutTiming(
     skipAppReady = false,
     timeoutMs = 120_000,
   } = options
+  const selection = readWechatE2ESelection()
   const start = Date.now()
   let lastError: unknown
   const port = resolveProjectAutomatorPort(projectPath)
@@ -97,6 +99,7 @@ async function waitForOpenedAutomatorWithoutTiming(
   while (Date.now() - start <= timeoutMs) {
     try {
       const miniProgram = await connectOpenedAutomator({
+        ...selection,
         projectPath,
         port,
         timeout: connectTimeoutMs,

@@ -9,6 +9,7 @@ import { assertMachineE2ELeaseRecoveryScope, withMachineE2ELeaseRecoveryOperatio
 import { assertManagedInstallation, isManagedPortClosed, readManagedProcessIdentity } from '../host'
 import { managedRecordPath, readManagedWechatProjectRecords, withManagedJournalLock, writeManagedRecord } from '../journal'
 import { resolveManagedJournalScope } from '../journal/scope'
+import { finalizeManagedProjectSnapshot, isManagedWechatProjectFullyReleased } from '../snapshot'
 import { inspectExitedWechatInstallation } from './processes'
 
 export interface RecoverManagedWechatProjectsAfterInstallationExitOptions {
@@ -31,6 +32,7 @@ async function fingerprint(record: ManagedWechatProjectRecord) {
 
 function canRecoverAfterExit(record: ManagedWechatProjectRecord) {
   return record.state === 'starting' || record.state === 'unconfirmed'
+    || (record.state === 'borrowed' && record.snapshot !== undefined && record.openedProjectWindow === false)
     || (record.state === 'failed' && record.openedProjectWindow === true
       && record.host !== undefined && record.port !== undefined && record.error !== undefined)
 }
@@ -64,8 +66,12 @@ async function recoverAfterExit(
     }
     const scopeRecords = await readManagedWechatProjectRecords(journalPath)
     const candidates = scopeRecords.filter(canRecoverAfterExit)
+    const pendingSnapshots = scopeRecords.filter(record => record.state === 'released' && !isManagedWechatProjectFullyReleased(record))
     if (!candidates.length) {
       await assertMachineE2ELeaseRecoveryScope(recoveryScope)
+      for (const record of pendingSnapshots) {
+        await finalizeManagedProjectSnapshot(record)
+      }
       return { recoveredRecordIds: [] }
     }
     const before = new Map(await Promise.all(records.map(async record => [record.id, await fingerprint(record)] as const)))
@@ -115,7 +121,7 @@ async function recoverAfterExit(
         throw new Error('Installation-exit recovery journal bytes changed before recording recovery.')
       }
       const previousState = record.state
-      if (previousState !== 'starting' && previousState !== 'unconfirmed' && previousState !== 'failed') {
+      if (previousState !== 'starting' && previousState !== 'unconfirmed' && previousState !== 'failed' && previousState !== 'borrowed') {
         throw new Error('Installation-exit recovery cannot replace a confirmed ownership state.')
       }
       record.installationExitRecovery = {
@@ -134,7 +140,11 @@ async function recoverAfterExit(
       record.state = 'released'
       record.releasedReason = 'installation-exited'
       await writeManagedRecord(record)
+      await finalizeManagedProjectSnapshot(record)
       recoveredRecordIds.push(record.id)
+    }
+    for (const record of pendingSnapshots) {
+      await finalizeManagedProjectSnapshot(record)
     }
     return { recoveredRecordIds }
   })

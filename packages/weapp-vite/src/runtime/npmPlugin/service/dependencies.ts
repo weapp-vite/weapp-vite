@@ -1,10 +1,15 @@
 import type { PackageJson } from 'pkg-types'
 import type { MutableCompilerContext } from '../../../context'
+import type { ConfigService } from '../../config/types'
 import { getPackageInfoSync } from 'local-pkg'
 import { getPlatformNpmDistDirName, resolveMiniPlatformWithDefault } from '../../../platform'
 import { packageSearchOptions } from '../packageResolution'
 
 const DEFAULT_NPM_STRATEGY = 'explicit'
+
+interface NpmDependencyContext {
+  configService?: Partial<Pick<ConfigService, 'cwd' | 'weappViteConfig' | 'pluginOnly'>>
+}
 
 function dedupeDependencies(dependencies: string[]) {
   return [...new Set(dependencies)]
@@ -31,11 +36,11 @@ function createDependencyRecord(dependencies: string[]) {
   ) as Record<string, string>
 }
 
-function resolveNpmStrategy(ctx: MutableCompilerContext) {
+function resolveNpmStrategy(ctx: NpmDependencyContext) {
   return ctx.configService?.weappViteConfig?.npm?.strategy ?? DEFAULT_NPM_STRATEGY
 }
 
-function resolveConfiguredDependencyPatterns(ctx: MutableCompilerContext) {
+function resolveConfiguredDependencyPatterns(ctx: NpmDependencyContext) {
   const npmConfig = ctx.configService?.weappViteConfig?.npm
   const patterns: (string | RegExp)[] = [...npmConfig?.include ?? []]
 
@@ -123,7 +128,7 @@ export function resolveTargetDependencies(
 }
 
 export function resolveNpmBuildCandidateDependenciesSync(
-  ctx: MutableCompilerContext,
+  ctx: NpmDependencyContext,
   pkgJson: PackageJson,
   resolveFrom = ctx.configService?.cwd,
 ) {
@@ -146,7 +151,7 @@ export function resolveNpmBuildCandidateDependenciesSync(
 }
 
 export function resolveNpmBuildCandidateDependencyRecordSync(
-  ctx: MutableCompilerContext,
+  ctx: NpmDependencyContext,
   pkgJson?: PackageJson,
 ) {
   if (!pkgJson) {

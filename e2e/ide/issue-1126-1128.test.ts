@@ -32,7 +32,7 @@ describe('issues #1126–1128: native runtime parity', { concurrent: false }, ()
       bridgeProjectMode: 'direct',
       warmupRoute: STYLE_ROUTE,
       warmupRootSelectors: ['button'],
-    })
+    }) as MiniProgram
     miniProgram.on('exception', event => runtimeErrors.push(event.message))
   }, 180_000)
 

@@ -365,7 +365,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                 config: cloneJsonValue(config),
               })
             }
-            return config
+            // 提取器缓存只保存源码配置，派生字段应写入当前加载独有的副本。
+            return cloneJsonValue(config)
           }
           finally {
             recordEntryDuration('entryVueConfigMs', vueConfigStartedAt)
@@ -586,6 +587,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
             json,
             configService,
             wxmlService,
+            moduleGraphService: ctx.moduleGraphService,
+            ownerId: normalizedId,
             reExportResolutionCache,
             scriptSetupAnalyzer,
             externalComponentEntryMap: ctx.runtimeState.build.hmr.externalComponentEntryMap,

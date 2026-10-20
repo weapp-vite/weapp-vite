@@ -55,6 +55,7 @@ function createPlugin(overrides: Record<string, unknown> = {}) {
       handleFileChange,
       setPageDeclarationSourceResolver,
       getSignature: vi.fn(() => 'routes'),
+      getSourceFingerprint: vi.fn(() => undefined),
     },
     runtimeState: {
       watcher: {

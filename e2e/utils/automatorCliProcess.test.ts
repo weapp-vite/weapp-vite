@@ -3,6 +3,8 @@ import process from 'node:process'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { terminateOwnedCliProcess } from './automatorCliProcess'
 
+type MutableSignalChildProcess = Omit<ChildProcess, 'signalCode'> & { signalCode: ChildProcess['signalCode'] }
+
 const { execaMock } = vi.hoisted(() => ({ execaMock: vi.fn() }))
 vi.mock('execa', () => ({ execa: execaMock }))
 
@@ -27,7 +29,7 @@ describe('owned CLI disposal', () => {
 
   it('does not probe or escalate a child that exits after TERM', async () => {
     vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
-    const child = { pid: 12345, exitCode: null, signalCode: null } as ChildProcess
+    const child = { pid: 12345, exitCode: null, signalCode: null } as MutableSignalChildProcess
     const signal = vi.spyOn(process, 'kill').mockImplementation(() => {
       child.signalCode = 'SIGTERM'
       return true
@@ -39,7 +41,7 @@ describe('owned CLI disposal', () => {
   it('rechecks the child before escalating a live owned group', async () => {
     vi.useFakeTimers()
     vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
-    const child = { pid: 12345, exitCode: null, signalCode: null } as ChildProcess
+    const child = { pid: 12345, exitCode: null, signalCode: null } as MutableSignalChildProcess
     const signal = vi.spyOn(process, 'kill').mockImplementation((_pid, value) => {
       if (value === 'SIGKILL') {
         child.signalCode = 'SIGKILL'

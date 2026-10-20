@@ -1,5 +1,6 @@
-import type { NewProcessObservation } from '../types'
+import type { NewProcessObservation, ProcessIdentityChangeObservation, ProcessIdentityGapCause, ProcessInventoryLocation } from '../types'
 import type { ProcessRow } from './index'
+import { processIdentityMetadata } from './evidence'
 import { insideInstallation, inspectResourceRows, sameProcessIdentity, stableProcess } from './index'
 
 interface TrackedProcess {
@@ -47,34 +48,59 @@ function relationToInstallation(
   return row.parentPid <= 1 || parentRelation === 'foreign' ? 'foreign' : 'unknown'
 }
 
-/** 总计最多三轮，只核验新增身份；初始 RSS、初始未知及任何身份漂移都不能被后轮覆盖。 */
-export async function closeResourceInventory(options: {
+/** 总计最多三轮；首个后验清单发现的新身份提前核验，初始 RSS 与未知不被覆盖。 */
+export function createResourceInventory(options: {
   initial: ProcessRow[]
-  after: ProcessRow[]
-  final: ProcessRow[]
-  images: Map<number, string[]>
   installationRoot: string
   deadline: number
 }) {
   const known = new Map(options.initial.map(row => [row.pid, { row, absent: false }]))
   const newProcesses = new Map<number, NewProcess>()
   const changed = new Set<number>()
-  const images = new Map(options.images)
+  const identityChanges = new Map<number, ProcessIdentityChangeObservation>()
+  const identityGaps = new Map<number, ProcessIdentityGapCause[]>()
+  const images = new Map<number, string[]>()
   let final = new Map(options.initial.map(row => [row.pid, row]))
   let inventoryRoundCount = 1
   let inventoryBudgetExhausted = false
   let fallbackBudgetExhausted = false
   let inventoryInspectionError: string | undefined
 
-  function observe(rows: ProcessRow[], round: number) {
+  function recordIdentityGap(pid: number, reason: ProcessIdentityGapCause['reason'], firstObserved: ProcessInventoryLocation) {
+    const causes = identityGaps.get(pid) ?? []
+    if (!causes.some(cause => cause.reason === reason)) {
+      causes.push({ reason, firstObserved })
+      identityGaps.set(pid, causes)
+    }
+  }
+
+  function observe(rows: ProcessRow[], round: number, location: ProcessInventoryLocation) {
     const next = new Map(rows.map(row => [row.pid, row]))
     for (const [pid, previous] of known) {
       const current = next.get(pid)
       if (!current) {
         previous.absent = true
+        recordIdentityGap(pid, 'process-absent', location)
       }
       else if (previous.absent || !sameProcessIdentity(previous.row, current)) {
         changed.add(pid)
+        recordIdentityGap(pid, 'identity-changed', location)
+        if (!identityChanges.has(pid)) {
+          const reasons: ProcessIdentityChangeObservation['reasons'] = []
+          if (previous.absent) {
+            reasons.push('returned-after-absence')
+          }
+          if (previous.row.started !== current.started) {
+            reasons.push('started-changed')
+          }
+          if (previous.row.parentPid !== current.parentPid) {
+            reasons.push('parent-changed')
+          }
+          if (previous.row.zombie !== current.zombie) {
+            reasons.push('zombie-changed')
+          }
+          identityChanges.set(pid, { ...processIdentityMetadata(previous.row), changedTo: processIdentityMetadata(current), reasons, firstObserved: location })
+        }
       }
     }
     for (const row of rows) {
@@ -88,25 +114,43 @@ export async function closeResourceInventory(options: {
     final = next
   }
 
-  observe(options.after, 1)
-  observe(options.final, 1)
-  for (let round = 2; round <= 3; round++) {
+  function classifyInspected() {
+    for (const entry of newProcesses.values()) {
+      if (!entry.inspected || !stableProcess(entry.row, final.get(entry.row.pid)) || changed.has(entry.row.pid)) {
+        continue
+      }
+      const relation = relationToInstallation(entry.row, options.installationRoot, known, images, final, changed)
+      entry.classification = relation === 'foreign' ? 'verified-foreign' : relation === 'unknown' ? 'unclassified' : relation
+    }
+  }
+
+  async function inspectPending(round: number) {
     const pending = [...newProcesses.values()].filter(entry => !entry.inspected && !changed.has(entry.row.pid) && stableProcess(entry.row, final.get(entry.row.pid)))
     if (!pending.length) {
-      break
+      return false
     }
     if (Date.now() >= options.deadline) {
       inventoryBudgetExhausted = true
-      break
+      return false
     }
     inventoryRoundCount = round
     for (const entry of pending) {
       entry.inspected = true
     }
     try {
-      const inspection = await inspectResourceRows(pending.map(entry => entry.row), options.deadline)
-      observe(inspection.afterRows, round)
-      observe(inspection.finalRows, round)
+      const inspection = await inspectResourceRows(pending.map(entry => entry.row), options.deadline, async (rows, kernelImages) => {
+        observe(rows, round, { round, phase: 'after-kernel' })
+        for (const [pid, executableImages] of kernelImages) {
+          images.set(pid, executableImages)
+        }
+        for (const entry of pending) {
+          if (kernelImages.has(entry.row.pid)) {
+            entry.imageSource = 'kernel-path'
+          }
+        }
+        classifyInspected()
+      }, round)
+      observe(inspection.finalRows, round, { round, phase: 'after-fallback' })
       fallbackBudgetExhausted ||= inspection.fallbackBudgetExhausted
       for (const [pid, executableImages] of inspection.images) {
         images.set(pid, executableImages)
@@ -117,39 +161,60 @@ export async function closeResourceInventory(options: {
           entry.imageSource = inspection.paths.get(pid) === null ? 'text-images' : 'kernel-path'
         }
       }
-      for (const entry of newProcesses.values()) {
-        if (!entry.inspected || !stableProcess(entry.row, final.get(entry.row.pid)) || changed.has(entry.row.pid)) {
-          continue
-        }
-        const relation = relationToInstallation(entry.row, options.installationRoot, known, images, final, changed)
-        entry.classification = relation === 'foreign' ? 'verified-foreign' : relation === 'unknown' ? 'unclassified' : relation
-      }
+      classifyInspected()
     }
     catch (error) {
       inventoryBudgetExhausted = Date.now() >= options.deadline
       inventoryInspectionError = error instanceof Error ? error.message : String(error)
-      break
+      return false
     }
+    return true
   }
-  const observations: NewProcessObservation[] = [...newProcesses.values()].map(entry => ({
-    pid: entry.row.pid,
-    parentPid: entry.row.parentPid,
-    started: entry.row.started,
-    firstSeenRound: entry.firstSeenRound,
-    classification: changed.has(entry.row.pid) ? 'identity-changed' : entry.classification,
-    imageSource: entry.imageSource,
-  }))
+
   return {
-    final,
-    changedProcessPids: changed,
-    newProcesses: observations,
-    verifiedNewForeignProcessCount: observations.filter(entry => entry.classification === 'verified-foreign').length,
-    newSelectedProcessCount: observations.filter(entry => entry.classification === 'installation-image' || entry.classification === 'descendant').length,
-    uninspectedNewProcessCount: observations.filter(entry => entry.classification === 'unclassified').length,
-    identityChangedProcessCount: changed.size,
-    inventoryRoundCount,
-    inventoryBudgetExhausted,
-    fallbackBudgetExhausted,
-    inventoryInspectionError,
+    async afterInitialKernel(rows: ProcessRow[], kernelImages: Map<number, string[]>) {
+      for (const [pid, executableImages] of kernelImages) {
+        images.set(pid, executableImages)
+      }
+      observe(rows, 1, { round: 1, phase: 'after-kernel' })
+      // 复用原第 2 轮预算；先绑定新身份，再等待初始 null-path 的 lsof fallback。
+      await inspectPending(2)
+    },
+    async close(rows: ProcessRow[], initialImages: Map<number, string[]>) {
+      for (const [pid, executableImages] of initialImages) {
+        images.set(pid, executableImages)
+      }
+      observe(rows, inventoryRoundCount, { round: 1, phase: 'after-fallback' })
+      // 已经前后核验的外国身份后来退出不抹除证据；从未核验的退出条目仍未知。
+      classifyInspected()
+      for (let round = inventoryRoundCount + 1; round <= 3 && !inventoryInspectionError && !inventoryBudgetExhausted; round++) {
+        if (!await inspectPending(round)) {
+          break
+        }
+      }
+      const observations: NewProcessObservation[] = [...newProcesses.values()].map(entry => ({
+        pid: entry.row.pid,
+        parentPid: entry.row.parentPid,
+        started: entry.row.started,
+        firstSeenRound: entry.firstSeenRound,
+        classification: changed.has(entry.row.pid) ? 'identity-changed' : entry.classification,
+        imageSource: entry.imageSource,
+      }))
+      return {
+        final,
+        changedProcessPids: changed,
+        identityGaps,
+        identityChangedProcesses: [...identityChanges.values()],
+        newProcesses: observations,
+        verifiedNewForeignProcessCount: observations.filter(entry => entry.classification === 'verified-foreign').length,
+        newSelectedProcessCount: observations.filter(entry => entry.classification === 'installation-image' || entry.classification === 'descendant').length,
+        uninspectedNewProcessCount: observations.filter(entry => entry.classification === 'unclassified').length,
+        identityChangedProcessCount: changed.size,
+        inventoryRoundCount,
+        inventoryBudgetExhausted,
+        fallbackBudgetExhausted,
+        inventoryInspectionError,
+      }
+    },
   }
 }

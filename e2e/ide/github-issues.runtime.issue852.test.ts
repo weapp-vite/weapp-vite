@@ -1,3 +1,5 @@
+import type { CustomElement } from '@weapp-vite/miniprogram-automator'
+import type { MiniProgramWithRuntimeLogs } from '../utils/automator'
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -50,7 +52,7 @@ describe('e2e app: github-issues / issue #852', { concurrent: false }, () => {
         { selector: '#issue852-hex', text: 'hex: 10531008' },
       ],
     }])
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram: MiniProgramWithRuntimeLogs = await getSharedMiniProgram(ctx)
     try {
       resetAutomatorRuntimeLogs(miniProgram)
       const issuePage = await relaunchPage(miniProgram, ISSUE_ROUTE, undefined, 45_000, {
@@ -65,12 +67,12 @@ describe('e2e app: github-issues / issue #852', { concurrent: false }, () => {
 
       await issuePage.waitForRendered({ selector: '#issue-852', timeout: 10_000 })
       await expect.poll(async () => {
-        const component = await issuePage.$('#issue-852-count-component', { timeout: 1_000 })
+        const component = await issuePage.$('#issue-852-count-component', { timeout: 1_000 }) as CustomElement | null
         return await component?.data('value')
       }, { timeout: 10_000 }).toBe(1_000_000)
 
       const root = await issuePage.$('#issue-852', { timeout: 5_000 })
-      const countComponent = await issuePage.$('#issue-852-count-component', { timeout: 5_000 })
+      const countComponent = await issuePage.$('#issue-852-count-component', { timeout: 5_000 }) as CustomElement | null
       const count = await countComponent?.$('#issue-852-count', { timeout: 5_000 })
       expect(root).not.toBeNull()
       expect(countComponent).not.toBeNull()

@@ -177,7 +177,7 @@ describe('e2e app: request clients request runtime (build)', { concurrent: false
     const sourceLines = sourceCode.split('\n')
     const pagePath = path.join(distRoot, 'pages/fetch/index.js')
     const pageCode = await fs.readFile(pagePath, 'utf8')
-    const pageMap = JSON.parse(await fs.readFile(`${pagePath}.map`, 'utf8')) as Parameters<typeof TraceMap>[0]
+    const pageMap = JSON.parse(await fs.readFile(`${pagePath}.map`, 'utf8')) as ConstructorParameters<typeof TraceMap>[0]
     const traceMap = new TraceMap(pageMap)
     const markers = [
       ['Page({', 'Page({'],

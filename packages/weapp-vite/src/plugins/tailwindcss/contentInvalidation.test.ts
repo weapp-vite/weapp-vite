@@ -300,7 +300,7 @@ it.each([false, true])('refreshes a managed CSS root changed through a directory
   await fresh(app.record)
 })
 
-it('flushes pending roots before imported-style generation and keeps that unsupported memory path immediate', async () => {
+it('flushes pending configured and imported roots before the next disk generation', async () => {
   const app = await fixture()
   const rootId = app.record.generations[0]!.request.id
   await writeFile(app.source, 'export const utility = "w-[53px]"')
@@ -311,10 +311,13 @@ it('flushes pending roots before imported-style generation and keeps that unsupp
   expect(app.record.invalidations.flat().map(compilerSourceId)).toContain(rootId)
   expect(app.record.generations.at(-1)!.result.classSet.has('w-[53px]')).toBe(true)
   await fresh(app.record)
+  const importedRootId = app.record.generations.at(-1)!.request.id
+  const invalidations = app.record.invalidations.length
   await writeFile(app.source, 'export const utility = "w-[71px]"')
   await app.change()
-  expect(app.record.invalidations.at(-1)?.map(compilerSourceId)).toEqual([compilerSourceId(app.source)])
+  expect(app.record.invalidations).toHaveLength(invalidations)
   await transform()
+  expect(app.record.invalidations.slice(invalidations).flat().map(compilerSourceId)).toEqual(expect.arrayContaining([compilerSourceId(rootId), compilerSourceId(importedRootId)]))
   await fresh(app.record)
   expect(app.record.generations.at(-1)!.result.classSet.has('w-[71px]')).toBe(true)
 })

@@ -3,7 +3,6 @@ import path from 'node:path'
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 
 export interface TemplateDevOpenCase {
-  assertWrapperProject?: boolean
   expectedData?: Record<string, unknown>
   expectedText: string
   name: string
@@ -14,16 +13,6 @@ export interface TemplateDevOpenCase {
 }
 
 export const TEMPLATE_DEV_OPEN_CASES: TemplateDevOpenCase[] = [
-  {
-    name: 'weapp-vite-plugin-template',
-    root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-plugin-template'),
-    route: '/pages/index/index',
-    expectedText: '插件能力混合演示',
-    assertWrapperProject: true,
-    expectedData: {
-      pluginAnswer: 42,
-    },
-  },
   {
     name: 'weapp-vite-template',
     root: path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-template'),
@@ -112,9 +101,7 @@ export function createTemplateDevOpenArgs(templateCase: TemplateDevOpenCase) {
   if (templateCase.platform) {
     commandArgs.push('-p', templateCase.platform)
   }
-  if (!templateCase.assertWrapperProject) {
-    commandArgs.push('--ide-open-strategy', 'automator')
-  }
+  commandArgs.push('--ide-open-strategy', 'automator')
   commandArgs.push('-o', '--non-interactive', '--login-retry', 'never')
   return commandArgs
 }

@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
 import { sanitizeBenchmarkDevLog } from '../../scripts/benchmarkTemplatesHmr/diagnostics'
@@ -66,8 +66,13 @@ export function createAutoRoutesTopologyDiagnostics(options: TopologyDiagnosticO
     emit(observation)
   }
 
-  return {
+  const diagnostics = {
     record,
+    async captureBuildErrors(errors: readonly string[]) {
+      if (errors.length) {
+        await diagnostics.captureFailure('build-errors', new Error(errors.join('\n\n')))
+      }
+    },
     async captureFailure(stage: string, error: unknown) {
       const capturedAt = new Date().toISOString()
       const controller = new AbortController()
@@ -147,5 +152,33 @@ export function createAutoRoutesTopologyDiagnostics(options: TopologyDiagnosticO
         controller.abort()
       }
     },
+  }
+  return diagnostics
+}
+
+/** 先独立释放已有资源并保留构建日志，不能让诊断失败覆盖原始清理错误。 */
+export async function closeAutoRoutesTopologyResources(options: {
+  host?: { close: () => Promise<unknown> }
+  dev?: { stop: () => Promise<void>, getBuildErrors: () => readonly string[] }
+  diagnostics?: Pick<ReturnType<typeof createAutoRoutesTopologyDiagnostics>, 'captureBuildErrors'>
+  project?: string
+}) {
+  const results = await Promise.allSettled([
+    Promise.resolve().then(() => options.host?.close()),
+    Promise.resolve().then(() => options.dev?.stop()),
+  ])
+  const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+  try {
+    // stop 已尝试排空尾部输出；即使清理失败，也保存当前已捕获的完整日志。
+    await options.diagnostics?.captureBuildErrors(options.dev?.getBuildErrors() ?? [])
+  }
+  catch (error) {
+    errors.push(error)
+  }
+  if (errors.length) {
+    throw new AggregateError(errors, 'Failed to close automatic route topology resources')
+  }
+  if (options.project) {
+    await rm(options.project, { recursive: true, force: true })
   }
 }

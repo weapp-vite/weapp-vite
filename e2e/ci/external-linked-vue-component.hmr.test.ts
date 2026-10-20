@@ -198,7 +198,7 @@ async function writeFixtureProject() {
     },
   }, { spaces: 2 })
   await fs.writeFile(LINK_BADGE, createComponentSource('linked-badge', 'LINKED-BADGE-V1'), 'utf8')
-  await fs.ensureSymlink(LINK_BADGE_SOURCE_ROOT, path.join(PROJECT_ROOT, 'node_modules/@e2e/linked-ui'), 'junction')
+  await fs.ensureSymlink(LINK_BADGE_SOURCE_ROOT, path.join(PROJECT_ROOT, 'node_modules/@e2e/linked-ui'))
 }
 
 async function waitForDistJsContains(marker: string, timeoutMs = 90_000) {
