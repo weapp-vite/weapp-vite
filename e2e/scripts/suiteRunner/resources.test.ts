@@ -62,6 +62,84 @@ afterEach(() => {
 })
 
 describe('suite runner task resource evidence', () => {
+  it('runs the launch hook after the cold claim and resource sample without replacing the command', async () => {
+    const tasks = [task()]
+    const original = { command: tasks[0]!.command, args: [...tasks[0]!.args] }
+    const order: string[] = []
+    mocks.initialize.mockImplementation(async () => {
+      order.push('initialize')
+    })
+    mocks.claim.mockImplementation(async () => {
+      order.push('claim')
+      return hostLease
+    })
+    mocks.beforeTask.mockImplementation(async () => {
+      order.push('before-task')
+    })
+    expect(await runTaskSuite('resource-unit', tasks, {
+      reportContext: context(tasks),
+      beforeEachTask: () => { order.push('before-each') },
+      beforeTaskLaunch: (current, signal) => {
+        order.push('before-launch')
+        expect(signal.aborted).toBe(false)
+        expect(current.env?.WEAPP_VITE_E2E_DEVTOOLS_HOST_CLAIMED).toBe('1')
+        expect(current).toMatchObject(original)
+      },
+      runTask: async (current) => {
+        order.push('run')
+        expect(current).toMatchObject(original)
+        return 0
+      },
+    })).toBe(0)
+    expect(order).toEqual(['before-each', 'initialize', 'claim', 'before-task', 'before-launch', 'run'])
+    expect(mocks.quit).toHaveBeenCalledExactlyOnceWith(hostLease)
+  })
+
+  it('cleans the claimed host and scope after a launch hook throws without starting the command', async () => {
+    const tasks = [task()]
+    const runTask = vi.fn(async () => 0)
+    expect(await runTaskSuite('resource-unit', tasks, {
+      reportContext: context(tasks),
+      beforeTaskLaunch: () => { throw new Error('launch gate failed') },
+      runTask,
+    })).toBe(1)
+    expect(runTask).not.toHaveBeenCalled()
+    expect(mocks.cleanup).toHaveBeenCalledOnce()
+    expect(mocks.quit).toHaveBeenCalledExactlyOnceWith(hostLease)
+    expect(mocks.finish).toHaveBeenCalledWith({ scopeError: undefined, hostError: undefined, hostExit }, [])
+    expect(mocks.report.mock.calls[0]![0]).toMatchObject([{ status: 'blocked', reason: 'launch gate failed' }])
+  })
+
+  it('cleans an expired launch hook without starting its command', async () => {
+    vi.useFakeTimers()
+    const tasks = [{ ...task(), env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '1000' } }]
+    const entered = Promise.withResolvers<AbortSignal>()
+    const runTask = vi.fn(async () => 0)
+    const running = runTaskSuite('resource-unit', tasks, {
+      reportContext: context(tasks),
+      beforeTaskLaunch: async (_task, signal) => {
+        entered.resolve(signal)
+        await new Promise<void>((resolve) => {
+          signal.addEventListener('abort', () => resolve(), { once: true })
+        })
+      },
+      runTask,
+    })
+    try {
+      const signal = await entered.promise
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(signal.aborted).toBe(true)
+      expect(await running).toBe(1)
+      expect(runTask).not.toHaveBeenCalled()
+      expect(mocks.cleanup).toHaveBeenCalledOnce()
+      expect(mocks.quit).toHaveBeenCalledExactlyOnceWith(hostLease)
+      expect(mocks.report.mock.calls[0]![0]).toMatchObject([{ status: 'blocked', reason: expect.stringContaining('before command launch') }])
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('links the task resource attachment and reuses the host cleanup return value', async () => {
     const tasks = [{ ...task(), env: { [MANAGED_PROJECT_MAX_WINDOWS_ENV]: '2' } }]
     expect(await runTaskSuite('resource-unit', tasks, { runTask: async () => 0, reportContext: context(tasks) })).toBe(0)
