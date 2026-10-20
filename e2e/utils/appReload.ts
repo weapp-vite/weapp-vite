@@ -93,6 +93,21 @@ function readAppReloadSnapshot(marker: AppReloadMarker, rootSelector: string): P
   })
 }
 
+/** 已确认本轮发布没有运行产物变化时，核对原 App、路由和原生根仍然有效。 */
+export async function assertAppRetained(
+  session: AppReloadSession,
+  marker: AppReloadMarker,
+  rootSelector: string,
+  route: string,
+): Promise<AppReloadSnapshot> {
+  const snapshot = await session.evaluateWithOptions(readAppReloadSnapshot, { timeout: 5_000 }, marker, rootSelector) as AppReloadSnapshot | null | undefined
+  if (snapshot?.appPresent !== true || snapshot.appReplaced !== false || snapshot.pagePresent !== true
+    || snapshot.rootVisible !== true || snapshot.route !== route) {
+    throw new Error(`Expected the original App and visible root ${rootSelector} on ${route}; latest=${JSON.stringify(snapshot)}`)
+  }
+  return snapshot
+}
+
 /** 重连后等待真正的新 App 和当前页面原生节点；不启动、编译或导航。 */
 export async function waitForAppReload(
   session: AppReloadSession,
