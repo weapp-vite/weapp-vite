@@ -1,6 +1,7 @@
 import type { CompilerContext } from '../../context'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { compilerSourceId } from '../compilerPlugin/hmr'
 import { resolveSfcTemplateSource } from './sfcTemplateDependencies'
 import { setCompilerSourceSnapshot } from './sourceSnapshot'
 import { createReadAndParseSfcOptions, createSfcResolveSrcOptions, readAndParseSfc } from './vueSfc'
@@ -16,7 +17,7 @@ describe('readAndParseSfc', () => {
       if (generation === 2) {
         resolvedId = path.resolve('src/templates/moved.html')
       }
-      setCompilerSourceSnapshot(configService, new Map([[resolvedId, template]]))
+      setCompilerSourceSnapshot(configService, new Map([[compilerSourceId(resolvedId), template]]))
       const options = createReadAndParseSfcOptions({ resolve }, configService, { source, checkMtime: false })
       const result = await readAndParseSfc(filename, options)
       expect(result.errors).toEqual([])
