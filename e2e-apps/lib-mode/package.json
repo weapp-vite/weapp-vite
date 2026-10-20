@@ -16,6 +16,13 @@
     "build:ui": "wv build --ui",
     "postinstall": "wv prepare"
   },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "paths": {}
+    }
+  },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",
     "weapp-vite": "workspace:*",
