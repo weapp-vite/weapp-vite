@@ -301,6 +301,17 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     }
   }
 
+  async function handleRouteStructureChange(
+    filePath: string,
+    event: 'create' | 'delete',
+    controller: AutoRoutesWatcherController,
+  ) {
+    const result = await applyRouteStructureChange(filePath, event, controller)
+    if (result) {
+      await publishRouteStructureChanges([result])
+    }
+  }
+
   async function processRouteStructureChangeBatch(changes: PendingRouteStructureChange[]) {
     const results: RouteStructureChangeResult[] = []
     for (const { filePath, event, controller } of changes) {
@@ -451,7 +462,14 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
         return
       }
       logger.info(`[auto-routes:watch] 新增路由文件 ${configService.relativeCwd(filePath)}`)
-      scheduleRouteStructureChange(filePath, 'create', controller)
+      if (resolvedConfig?.weappVite?.runtime === 'web') {
+        void handleRouteStructureChange(filePath, 'create', controller).catch((error) => {
+          reportRouteStructureChangeError(filePath, 'create', error, controller)
+        })
+      }
+      else {
+        scheduleRouteStructureChange(filePath, 'create', controller)
+      }
     })
 
     watcher.on('unlink', (filePath) => {
@@ -459,7 +477,14 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
         return
       }
       logger.info(`[auto-routes:watch] 删除路由文件 ${configService.relativeCwd(filePath)}`)
-      scheduleRouteStructureChange(filePath, 'delete', controller)
+      if (resolvedConfig?.weappVite?.runtime === 'web') {
+        void handleRouteStructureChange(filePath, 'delete', controller).catch((error) => {
+          reportRouteStructureChangeError(filePath, 'delete', error, controller)
+        })
+      }
+      else {
+        scheduleRouteStructureChange(filePath, 'delete', controller)
+      }
     })
 
     // 注册到 sidecarWatcherMap，由 watcherService.closeAll() 统一回收
@@ -575,6 +600,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     async watchChange(id, change) {
       const event = change?.event
       if (resolvedConfig?.command === 'serve'
+        && resolvedConfig.weappVite?.runtime === 'miniprogram'
         && (event === 'create' || event === 'delete')) {
         const watcher = ctx.runtimeState.watcher.sidecarWatcherMap.get(ROUTE_WATCHER_KEY)
         if (isAutoRoutesWatcherController(watcher)
