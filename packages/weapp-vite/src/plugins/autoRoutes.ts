@@ -4,7 +4,12 @@ import type { MutableCompilerContext } from '../context'
 import type { WeappViteRuntime } from '../pluginHost'
 import type { AutoRoutesService } from '../runtime/autoRoutesPlugin/service'
 import { realpath } from 'node:fs/promises'
-import { WEVU_AUTO_ROUTES_MODULE_ID, WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID } from '@weapp-core/constants'
+import {
+  WEAPP_VITE_WEB_AUTO_ROUTES_RESOLVED_MODULE_ID,
+  WEAPP_VITE_WEB_ENTRY_RESOLVED_MODULE_ID,
+  WEVU_AUTO_ROUTES_MODULE_ID,
+  WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID,
+} from '@weapp-core/constants'
 import chokidar from 'chokidar'
 import { mayContainPageDeclaration, stripPageDeclaration } from 'wevu/compiler'
 import { scriptExtensions, vueExtensions } from '../constants'
@@ -43,7 +48,13 @@ import { parseRequest } from './utils/parse'
  * 路由文件监听器的唯一标识，用于在 sidecarWatcherMap 中注册。
  */
 const ROUTE_WATCHER_KEY = '__auto-routes-source-watcher__'
-const AUTO_ROUTES_RESOLVED_IDS: readonly string[] = [RESOLVED_VIRTUAL_ID, WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID]
+const AUTO_ROUTES_RESOLVED_IDS: readonly string[] = [
+  RESOLVED_VIRTUAL_ID,
+  WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID,
+  // Web 的路由快照由扫描入口生成，必须一起失效并参与根入口重载。
+  WEAPP_VITE_WEB_ENTRY_RESOLVED_MODULE_ID,
+  WEAPP_VITE_WEB_AUTO_ROUTES_RESOLVED_MODULE_ID,
+]
 const AUTO_ROUTES_VUE_SUFFIXES = vueExtensions.map(extension => `.${extension}`)
 
 interface AutoRoutesWatcherSubscriber {
