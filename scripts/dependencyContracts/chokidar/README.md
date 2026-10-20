@@ -10,6 +10,10 @@ node --import tsx scripts/dependencyContracts/chokidar/run.mjs --report .tmp/dep
 
 这些契约使用真实宿主文件系统和原生 `FSWatcher` / `StatWatcher`，按确定的事件门禁暂停异步读取及旧代移除冷却。`process.platform` 覆盖只用于验证平台分支，报告保留实际平台和模拟声明，不能代替真实 Windows CI。原生 inode 更替场景仅适用于 macOS、Linux 和 FreeBSD；Windows 明确记录 `non-applicable`，不计入通过数量。
 
+所有权、重绑和恢复后的独立后续写入先经过同一个 observed-drain 检查点：在 owner 的首次 `add` 前观察精确文件 listener，保留原调用、返回 Promise 和 Error 身份；等待已观察 listener 全部结束、该文件原有 watch/change 节流自然退出，并确认一个事件循环 turn 内 epoch 不变。观察不清除计时器、不补发事件、不固定 sleep，也不改现有 stat 门禁；`cwd` 下分别按原 watch key 与相对 change key 匹配同一文件。超时、关闭或 listener 拒绝均失败，旁路观察到的拒绝独立记录为 `listenerFailures`，不伪装为 public `error`；worker 在用例完成和最终清理后均核验，不能因未调用检查点而漏报。公开 close 和读取门禁释放后，同一 observer 还须在预算内等待已登记 listener 全部结束，再生成最终失败清单；未完成时保留临时目录并报告 cleanup 失败，不能用 native close 代替异步 listener 完成证据。
+
+该检查点只用于 `atomic: false` 且未开启 `awaitWriteFinish` 的独立事件阶段，不覆盖额外的 pending-unlink/pending-write 队列，不声称操作系统未来不会再交付旧通知，也不构成高频每次 write 必发 change 的保证。专门验证旧错误、atomic 和 remove 冷却的门禁时序保持原样。恢复和共享 owner 的后续写入使用已存在文件的 `r+` 更新并核验文本严格变长，避免引入额外的 truncate 中间阶段；change 同时要求目标新内容的文件大小，随后核验最终内容，旧 stat 不能冒充目标写入通过。这不增加文件写满稳定性或截断通知重放的契约；未通过的历史运行仍保持失败。
+
 场景覆盖：
 
 - 消失目录的精确 Windows `EPERM/watch` 分类，以及 root、递归、cwd、depth、ignoreInitial 行为。

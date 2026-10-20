@@ -1,17 +1,21 @@
 import assert from 'node:assert/strict'
+import { Buffer } from 'node:buffer'
 import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { turn } from './support.mjs'
+import { turn, waitForObservedEventPhase } from './support.mjs'
 
 export async function recreateAndExercise(owner, ctx, directory = ctx.target, file = ctx.image) {
-  const { timeoutMs } = ctx
+  const { timeoutMs, scenarioEvidence } = ctx
   const add = owner.event('add', file, timeoutMs)
   await mkdir(directory, { recursive: true })
   await writeFile(file, 'recreated image')
   await add
   assert.equal(await readFile(file, 'utf8'), 'recreated image')
-  const change = owner.event('change', file, timeoutMs)
-  await writeFile(file, 'changed recreated image with a different size')
+  await waitForObservedEventPhase(owner, file, scenarioEvidence, timeoutMs)
+  const changed = 'changed recreated image with a different size'
+  assert.ok(Buffer.byteLength(changed) > Buffer.byteLength('recreated image'), 'the existing file receives a longer in-place value without a truncate phase')
+  const change = owner.event('change', file, timeoutMs, stats => stats?.size === Buffer.byteLength(changed))
+  await writeFile(file, changed, { flag: 'r+' })
   await change
   assert.equal(await readFile(file, 'utf8'), 'changed recreated image with a different size')
   const unlink = owner.event('unlink', file, timeoutMs)
