@@ -54,12 +54,14 @@ describe('suiteRunner real process and machine lease integration', () => {
     process.exitCode = undefined
     const onUnsafeRuntime = vi.fn()
     const beforeEachTask = vi.fn()
+    const beforeTaskLaunch = vi.fn()
     try {
       expect(await runTaskSuite('e2e:test', [
         { label: 'system-killed', command: process.execPath, args: ['-e', 'process.kill(process.pid, "SIGKILL")'] },
         { label: 'must-not-run', command: process.execPath, args: ['-e', 'process.exit(0)'] },
-      ], { beforeEachTask, onUnsafeRuntime, writeReport: false })).toBe(1)
+      ], { beforeEachTask, beforeTaskLaunch, onUnsafeRuntime, writeReport: false })).toBe(1)
       expect(beforeEachTask).toHaveBeenCalledTimes(1)
+      expect(beforeTaskLaunch).toHaveBeenCalledTimes(1)
       expect(onUnsafeRuntime).toHaveBeenCalledWith(expect.stringContaining('SIGKILL'))
     }
     finally {

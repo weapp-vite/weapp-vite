@@ -1,5 +1,6 @@
 import type { SuiteReportPayload } from './suiteReport'
 import type { SuiteTask } from './suiteRunner'
+import type { TaskLaunchHook } from './suiteRunner/launchBudget'
 import type { VerificationPlan } from './verification/types'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -116,6 +117,7 @@ export function orderSuiteTasks(
 }
 
 interface SuiteCallbacks {
+  beforeTaskLaunch?: TaskLaunchHook
   nonInteractive?: boolean
   onUnsafeRuntime?: (reason: string) => void
   onReport?: (report: SuiteReportPayload) => void
