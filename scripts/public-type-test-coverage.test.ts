@@ -95,17 +95,37 @@ async function filesUnder(directory: string): Promise<string[]> {
 }
 
 describe('public type tests in CI', () => {
-  it.each(['tsd --files "test-d/**/*.test-d.{ts,tsx}"', 'tsd'])('selects all contracts without recursively reading unrelated package trees: %s', async (script) => {
+  it.each([
+    { script: jsxContracts, isolated: false },
+    { script: 'tsd', isolated: false },
+    { script: `${jsxContracts} && pnpm run test:types:host && pnpm run test:types:pure && ${jsxContracts}`, isolated: true },
+  ])('selects all contracts without recursively reading unrelated package trees: $script', async ({ script, isolated }) => {
     const packageRoot = await mkdtemp(path.join(tmpdir(), 'type-contract-scope-'))
     const enumerate = vi.spyOn(filesystem, 'readdir')
     try {
       await mkdir(path.join(packageRoot, 'test-d/nested'), { recursive: true })
       await mkdir(path.join(packageRoot, 'node_modules/dependency'), { recursive: true })
-      await writeFile(path.join(packageRoot, 'package.json'), '{"types":"dist/index.d.ts","scripts":{}}')
+      await writeFile(path.join(packageRoot, 'package.json'), JSON.stringify({
+        types: 'dist/index.d.ts',
+        scripts: {
+          'test:types:host': 'tsd test-d-host --files root.test-d.ts && tsd test-d-host --files internal-runtime.test-d.ts',
+          'test:types:pure': 'cd test-d-pure && tsd --files "**/*.test-d.ts"',
+        },
+      }))
       await writeFile(path.join(packageRoot, 'test-d/nested/public.test-d.ts'), '')
       await writeFile(path.join(packageRoot, 'test-d/nested/jsx.test-d.tsx'), '')
       await writeFile(path.join(packageRoot, 'node_modules/dependency/internal.test-d.ts'), '')
+      if (isolated) {
+        for (const directory of ['test-d-host', 'test-d-pure']) {
+          await mkdir(path.join(packageRoot, directory, 'nested'), { recursive: true })
+          await writeFile(path.join(packageRoot, directory, 'package.json'), '{"types":"index.d.ts","scripts":{}}')
+        }
+        for (const file of ['test-d-host/root.test-d.ts', 'test-d-host/internal-runtime.test-d.ts', 'test-d-pure/nested/pure.test-d.ts']) {
+          await writeFile(path.join(packageRoot, file), '')
+        }
+      }
       expect(await collectContracts(packageRoot, script)).toEqual([
+        ...(isolated ? ['test-d-host/internal-runtime.test-d.ts', 'test-d-host/root.test-d.ts', 'test-d-pure/nested/pure.test-d.ts'] : []),
         'test-d/nested/jsx.test-d.tsx',
         'test-d/nested/public.test-d.ts',
       ])
@@ -134,15 +154,22 @@ describe('public type tests in CI', () => {
     expect(manifest.scripts['test:types:host']).toBe(host ? hostContracts : undefined)
     expect(manifest.scripts['pretest:types:check']).toBeUndefined()
     expect(manifest.scripts['posttest:types:check']).toBeUndefined()
-    const contractRoot = directory === '@weapp-core/logger' ? 'test' : 'test-d'
+    const expectedRoots = [directory === '@weapp-core/logger' ? 'test' : 'test-d', ...(pure ? ['test-d-pure'] : []), ...(host ? ['test-d-host'] : [])]
+    const contractRoots = directory === '@weapp-core/logger'
+      ? ['test']
+      : (await readdir(packageRoot, { withFileTypes: true }))
+          .filter(entry => entry.isDirectory() && /^test-d(?:-|$)/.test(entry.name))
+          .map(entry => entry.name)
+    expect(contractRoots.sort()).toEqual(expectedRoots.sort())
     const contracts: string[] = []
-    for (const directory of [contractRoot, ...(pure ? ['test-d-pure'] : []), ...(host ? ['test-d-host'] : [])]) {
-      const files = (await filesUnder(path.join(packageRoot, directory)))
+    for (const contractRoot of contractRoots) {
+      const files = (await filesUnder(path.join(packageRoot, contractRoot)))
         .filter(file => /\.(?:test-d|test-types)\.tsx?$/.test(file))
-        .map(file => `${directory}/${file}`)
-      expect(files.length, `${directory} must contain real contracts`).toBeGreaterThan(0)
+        .map(file => `${contractRoot}/${file}`)
+      expect(files.length, `${contractRoot} must contain real contracts`).toBeGreaterThan(0)
       contracts.push(...files)
     }
+    expect(contracts.length).toBeGreaterThan(0)
     expect(await collectContracts(packageRoot, manifest.scripts['test:types:check']!)).toEqual(contracts.sort())
   })
 
