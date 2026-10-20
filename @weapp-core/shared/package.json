@@ -110,6 +110,7 @@
     "sync": "repo release sync-npmmirror --package @weapp-core/shared"
   },
   "dependencies": {
+    "@types/set-value": "^4.0.3",
     "domhandler": "^6.0.1",
     "htmlparser2": "catalog:"
   },

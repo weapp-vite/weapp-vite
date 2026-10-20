@@ -1,4 +1,4 @@
-import type { WevuPageLayoutMap } from 'wevu'
+import type { WevuPageLayoutMap } from 'wevu/types'
 import { WEVU_PAGE_LAYOUT_SETTER_KEY } from '@weapp-core/constants'
 import { resolveMiniProgramPlatform, supportsMiniProgramRuntimeCapability } from '@weapp-core/shared'
 
