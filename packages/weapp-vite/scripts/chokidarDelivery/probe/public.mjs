@@ -15,7 +15,7 @@ export async function openPublicOwner(kind, root, owners, errors) {
     }), 'public watchTestArtifact initialization', 60_000)
     const owner = { kind, outDir, close: () => watcher.close() }
     owners.push(owner)
-    assert.equal(watcher.artifact.miniprogramRootPath, outDir)
+    assert.equal(path.resolve(watcher.artifact.miniprogramRootPath), path.resolve(outDir))
     return owner
   }
   assert.equal(kind, 'host')
