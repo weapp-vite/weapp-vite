@@ -31,7 +31,7 @@ export function isStrictDomAcceptanceSuite(suiteName: string, env = process.env)
 }
 
 function readGitOutput(args: string[]) {
-  return execFileSync('git', args, { cwd: ACCEPTANCE_ROOT, encoding: 'utf8' })
+  return execFileSync('git', ['-c', 'core.fsmonitor=false', ...args], { cwd: ACCEPTANCE_ROOT, encoding: 'utf8' })
 }
 
 export function createAcceptanceIdentity(env = process.env, readGit = readGitOutput): AcceptanceIdentity {
