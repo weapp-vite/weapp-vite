@@ -12,7 +12,7 @@ const dtsMock = vi.hoisted(() => vi.fn(() => ({ name: 'mock-dts-plugin' })))
 const resolveModuleMock = vi.hoisted(() => vi.fn())
 const createParsedCommandLineMock = vi.hoisted(() => vi.fn())
 const createVueLanguagePluginMock = vi.hoisted(() => vi.fn(() => ({})))
-const getDefaultCompilerOptionsMock = vi.hoisted(() => vi.fn(() => ({ lib: 'wevu' })))
+const getDefaultCompilerOptionsMock = vi.hoisted(() => vi.fn())
 const proxyCreateProgramMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./lib', () => ({
@@ -31,11 +31,16 @@ vi.mock('local-pkg', () => ({
   resolveModule: resolveModuleMock,
 }))
 
-vi.mock('@vue/language-core', () => ({
-  createParsedCommandLine: createParsedCommandLineMock,
-  createVueLanguagePlugin: createVueLanguagePluginMock,
-  getDefaultCompilerOptions: getDefaultCompilerOptionsMock,
-}))
+vi.mock('@vue/language-core', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@vue/language-core')>()
+  getDefaultCompilerOptionsMock.mockImplementation(() => ({ ...original.getDefaultCompilerOptions(), lib: 'wevu' }))
+  return {
+    ...original,
+    createParsedCommandLine: createParsedCommandLineMock,
+    createVueLanguagePlugin: createVueLanguagePluginMock,
+    getDefaultCompilerOptions: getDefaultCompilerOptionsMock,
+  }
+})
 
 vi.mock('@volar/typescript', () => ({
   proxyCreateProgram: proxyCreateProgramMock,
