@@ -43,6 +43,7 @@ import {
   shouldStartAutoRoutesWatcher,
   WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID,
 } from './autoRoutes.shared'
+import { createAutoRoutesWebPublication } from './autoRoutes/publication'
 import { markAppEntryForAutoRoutesTopology } from './core/lifecycle/autoRoutesTopology'
 import { parseRequest } from './utils/parse'
 
@@ -62,6 +63,7 @@ const AUTO_ROUTES_VUE_SUFFIXES = vueExtensions.map(extension => `.${extension}`)
 interface AutoRoutesWatcherSubscriber {
   readonly topologyDirtyEntries: Set<string>
   readonly devServer?: ViteDevServer
+  readonly webPublication: ReturnType<typeof createAutoRoutesWebPublication>
 }
 
 interface AutoRoutesWatcherController {
@@ -123,7 +125,7 @@ function isPageScriptTransformRequest(id: string, normalizedId: string) {
 function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutesService): Plugin {
   let resolvedConfig: ResolvedConfig | undefined
   let devServer: ViteDevServer | undefined
-  let servedRouteSignature: string | undefined
+  const webPublication = createAutoRoutesWebPublication()
   let pendingRouteStructureChanges: PendingRouteStructureChange[] = []
   let routeStructureChangeTimer: ReturnType<typeof setTimeout> | undefined
   // sidecar 可能在同一次文件操作中同时发出 add/unlink。所有扫描必须串行，
@@ -136,6 +138,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     get devServer() {
       return devServer
     },
+    webPublication,
   }
 
   function createPageDeclarationSourceResolver(pluginContext: PluginContext): Parameters<AutoRoutesService['setPageDeclarationSourceResolver']>[0] {
@@ -344,8 +347,22 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     // Web 的入口在创建 router 时会捕获路由快照。扫描完成后直接发送一次
     // full-reload，避免把 app entry 伪装成文件变更而被 Vite watcher 丢弃。
     for (const server of fullReloadServers) {
-      if (controller.servingSubscribers.get('web') === webSubscriber && webSubscriber?.devServer === server) {
+      if (controller.servingSubscribers.get('web') !== webSubscriber || webSubscriber?.devServer !== server) {
+        continue
+      }
+      const signature = service.getSignature()
+      const sources = current.map(result => ({
+        file: result.changedSource,
+        fingerprint: service.getSourceFingerprint(result.changedSource),
+      }))
+      if (!webSubscriber.webPublication.matches(signature, sources)) {
         server.ws.send({ type: 'full-reload' })
+        // 发送失败或宿主替换不能消费该快照；后续结构通知仍保留自己的发布权。
+        if (isCurrentRouteWatcher(controller)
+          && controller.servingSubscribers.get('web') === webSubscriber
+          && webSubscriber.devServer === server) {
+          webSubscriber.webPublication.commit(signature, sources)
+        }
       }
     }
     for (const [server, subscriber] of notificationServers) {
@@ -554,6 +571,9 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     },
 
     configureServer(server) {
+      if (devServer !== server) {
+        webPublication.reset()
+      }
       devServer = server
     },
 
@@ -608,7 +628,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       }
       startRouteFileWatcher()
       if (resolvedConfig?.weappVite?.runtime === 'web') {
-        servedRouteSignature ??= service.getSignature()
+        webPublication.initialize(service.getSignature())
       }
 
       return {
@@ -730,7 +750,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
 
         const signature = webRuntime ? service.getSignature() : undefined
         const reloadRoutes = webRuntime
-          && (servedRouteSignature === undefined ? topologyChanged : signature !== servedRouteSignature)
+          && (webPublication.signature === undefined ? topologyChanged : signature !== webPublication.signature)
         const modules = new Set<EnvironmentModuleNode>(!webRuntime || reloadRoutes
           ? AUTO_ROUTES_RESOLVED_IDS
               .map(id => moduleGraph.getModuleById(id))
@@ -756,7 +776,10 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
         }
         if (modules.size > 0) {
           if (reloadRoutes) {
-            servedRouteSignature = signature
+            webPublication.commit(signature!, [{
+              file: changedSource,
+              fingerprint: service.getSourceFingerprint(changedSource),
+            }])
             return collectAutoRoutesReloadModules(modules)
           }
           return [...modules]

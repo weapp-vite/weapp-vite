@@ -34,6 +34,8 @@ export interface AutoRoutesService {
   getSnapshot: () => AutoRoutes
   getReference: () => AutoRoutes
   getSignature: () => string
+  /** 返回最近完整扫描中的源码指纹；未知源码不能作为已发布的去重凭据。 */
+  getSourceFingerprint: (filePath: string) => string | undefined
   getModuleCode: () => string
   getNamedModuleCode: () => string
   getWatchFiles: () => Iterable<string>
@@ -312,6 +314,10 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
 
     getSignature() {
       return state.signature
+    },
+
+    getSourceFingerprint(filePath: string) {
+      return state.pageDeclarationFingerprints.get(normalizeFsResolvedId(filePath))
     },
 
     getModuleCode() {
