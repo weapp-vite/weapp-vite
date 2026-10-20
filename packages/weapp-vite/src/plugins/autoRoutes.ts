@@ -59,6 +59,25 @@ interface AutoRoutesWatcherController {
   close: () => void | Promise<void>
 }
 
+interface PendingRouteStructureChange {
+  filePath: string
+  event: 'create' | 'delete'
+  controller: AutoRoutesWatcherController
+}
+
+interface RouteStructureChangeResult {
+  controller: AutoRoutesWatcherController
+  changedSource: string
+  declarationOwners: Set<string>
+  didChangeRoutes: boolean
+  change: {
+    file: string
+    event: 'create' | 'delete'
+    topologyChanged: boolean
+    receivedAtMs: number
+  }
+}
+
 function isAutoRoutesWatcherController(watcher: unknown): watcher is AutoRoutesWatcherController {
   return Boolean(
     watcher
@@ -91,6 +110,8 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
   let resolvedConfig: ResolvedConfig | undefined
   let devServer: ViteDevServer | undefined
   let servedRouteSignature: string | undefined
+  let pendingDeleteChanges: PendingRouteStructureChange[] = []
+  let pendingDeleteTimer: ReturnType<typeof setTimeout> | undefined
   const autoRoutesAliasTargets = new Set<string>()
   const autoRoutesTopologyDirtyEntries = new Set<string>()
   const watcherSubscriber: AutoRoutesWatcherSubscriber = {
@@ -197,11 +218,11 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     }
   }
 
-  async function handleRouteStructureChange(
+  async function applyRouteStructureChange(
     filePath: string,
     event: 'create' | 'delete',
     controller: AutoRoutesWatcherController,
-  ) {
+  ): Promise<RouteStructureChangeResult | undefined> {
     const receivedAtMs = performance.now()
     const changedSource = normalizeFsResolvedId(filePath)
     const declarationOwners = new Set(service.getPageDeclarationOwners(changedSource))
@@ -209,7 +230,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     const didChangeRoutes = await service.handleFileChange(filePath, resolveAutoRoutesWatchChangeEvent(event))
     // 关闭或替换期间完成的扫描不再拥有 watcher、构建图和错误通知。
     if (!isCurrentRouteWatcher(controller)) {
-      return
+      return undefined
     }
     controller.addWatchTargets([...service.getWatchDirectories()])
     const change = {
@@ -218,32 +239,52 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       topologyChanged: previousSignature !== service.getSignature(),
       receivedAtMs,
     }
-    if (!didChangeRoutes) {
-      publishAutoRoutesTopology(ctx, change)
-      return
-    }
     for (const owner of service.getPageDeclarationOwners(changedSource)) {
       declarationOwners.add(owner)
     }
-    const servers = new Set<ViteDevServer>()
-    for (const subscriber of controller.servingSubscribers.values()) {
-      if (subscriber.devServer) {
-        servers.add(subscriber.devServer)
-      }
+    return { controller, changedSource, declarationOwners, didChangeRoutes, change }
+  }
+
+  async function publishRouteStructureChanges(results: RouteStructureChangeResult[]) {
+    const current = results.filter(result => isCurrentRouteWatcher(result.controller))
+    if (current.length === 0) {
+      return
     }
-    for (const server of servers) {
-      invalidateAutoRoutesVirtualModules(server, AUTO_ROUTES_RESOLVED_IDS)
+    const controller = current[0]!.controller
+    const didChangeRoutes = current.some(result => result.didChangeRoutes)
+    const servers = new Set<ViteDevServer>()
+    if (didChangeRoutes) {
+      for (const subscriber of controller.servingSubscribers.values()) {
+        if (subscriber.devServer) {
+          servers.add(subscriber.devServer)
+        }
+      }
+      for (const server of servers) {
+        invalidateAutoRoutesVirtualModules(server, AUTO_ROUTES_RESOLVED_IDS)
+      }
+      markAutoRoutesTopologyDirty(controller)
+      ctx.scanService?.markDirty()
+    }
+    // 一次递归删除通常会产生多个 unlink；全部扫描完成后只向宿主发布一次，
+    // 避免在文件集合处于中间态时启动 snapshot 构建。
+    const last = current[current.length - 1]!
+    const change = {
+      ...last.change,
+      topologyChanged: didChangeRoutes || current.some(result => result.change.topologyChanged),
+    }
+    const nativeNotified = publishAutoRoutesTopology(ctx, change)
+    if (!didChangeRoutes) {
+      return
+    }
+    const notificationFiles = new Set<string>()
+    for (const result of current) {
+      for (const owner of result.declarationOwners) {
+        if (owner !== result.changedSource) {
+          notificationFiles.add(owner)
+        }
+      }
     }
     const appEntryPath = ctx.scanService?.appEntry?.path
-    markAutoRoutesTopologyDirty(controller)
-    ctx.scanService?.markDirty()
-    const nativeNotified = publishAutoRoutesTopology(ctx, change)
-    const notificationFiles = new Set<string>()
-    for (const owner of declarationOwners) {
-      if (owner !== changedSource) {
-        notificationFiles.add(owner)
-      }
-    }
     if (appEntryPath) {
       notificationFiles.add(appEntryPath)
     }
@@ -258,6 +299,41 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
         server.watcher.emit('change', file)
       }
     }
+  }
+
+  async function processRouteStructureChangeBatch(changes: PendingRouteStructureChange[]) {
+    const results: RouteStructureChangeResult[] = []
+    for (const { filePath, event, controller } of changes) {
+      try {
+        const result = await applyRouteStructureChange(filePath, event, controller)
+        if (result) {
+          results.push(result)
+        }
+      }
+      catch (error) {
+        reportRouteStructureChangeError(filePath, event, error, controller)
+      }
+    }
+    await publishRouteStructureChanges(results)
+  }
+
+  function scheduleRouteStructureChange(filePath: string, event: 'create' | 'delete', controller: AutoRoutesWatcherController) {
+    if (event === 'create') {
+      void processRouteStructureChangeBatch([{ filePath, event, controller }])
+        .catch(error => reportRouteStructureChangeError(filePath, event, error, controller))
+      return
+    }
+    pendingDeleteChanges.push({ filePath, event, controller })
+    clearTimeout(pendingDeleteTimer)
+    // chokidar does not apply awaitWriteFinish to unlink bursts. Wait for the
+    // recursive delete to settle before scanning and publishing the topology.
+    pendingDeleteTimer = setTimeout(() => {
+      pendingDeleteTimer = undefined
+      const changes = pendingDeleteChanges
+      pendingDeleteChanges = []
+      void processRouteStructureChangeBatch(changes)
+    }, 80)
+    pendingDeleteTimer.unref?.()
   }
 
   /**
@@ -353,6 +429,13 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       subscribers,
       servingSubscribers,
       async close() {
+        if (pendingDeleteChanges.some(change => change.controller === controller)) {
+          pendingDeleteChanges = pendingDeleteChanges.filter(change => change.controller !== controller)
+          if (pendingDeleteChanges.length === 0) {
+            clearTimeout(pendingDeleteTimer)
+            pendingDeleteTimer = undefined
+          }
+        }
         releaseTopologySource()
         if (sidecarWatcherMap.get(ROUTE_WATCHER_KEY) === controller) {
           sidecarWatcherMap.delete(ROUTE_WATCHER_KEY)
@@ -368,9 +451,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
         return
       }
       logger.info(`[auto-routes:watch] 新增路由文件 ${configService.relativeCwd(filePath)}`)
-      void handleRouteStructureChange(filePath, 'create', controller).catch((error) => {
-        reportRouteStructureChangeError(filePath, 'create', error, controller)
-      })
+      scheduleRouteStructureChange(filePath, 'create', controller)
     })
 
     watcher.on('unlink', (filePath) => {
@@ -378,9 +459,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
         return
       }
       logger.info(`[auto-routes:watch] 删除路由文件 ${configService.relativeCwd(filePath)}`)
-      void handleRouteStructureChange(filePath, 'delete', controller).catch((error) => {
-        reportRouteStructureChangeError(filePath, 'delete', error, controller)
-      })
+      scheduleRouteStructureChange(filePath, 'delete', controller)
     })
 
     // 注册到 sidecarWatcherMap，由 watcherService.closeAll() 统一回收
@@ -495,11 +574,11 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
 
     async watchChange(id, change) {
       const event = change?.event
-      if (resolvedConfig?.command === 'serve' && resolvedConfig.weappVite?.runtime === 'web'
+      if (resolvedConfig?.command === 'serve'
         && (event === 'create' || event === 'delete')) {
         const watcher = ctx.runtimeState.watcher.sidecarWatcherMap.get(ROUTE_WATCHER_KEY)
         if (isAutoRoutesWatcherController(watcher)
-          && watcher.servingSubscribers.get('web') === watcherSubscriber
+          && watcher.servingSubscribers.get(resolvedConfig.weappVite?.runtime ?? 'miniprogram') === watcherSubscriber
           && watcher.ownsFile(id)) {
           // sidecar 独占结构变更；提前重扫并 add 新目录会吞掉 ignoreInitial 下的新增事件。
           return

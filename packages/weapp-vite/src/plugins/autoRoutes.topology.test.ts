@@ -130,6 +130,13 @@ describe('auto routes topology delivery', () => {
     }
   })
 
+  it('lets the sidecar own classic structural changes', async () => {
+    const { start, handleFileChange } = setup()
+    const plugin = start('miniprogram', vi.fn())
+    await plugin.watchChange?.call({} as any, newPage, { event: 'delete' })
+    expect(handleFileChange).not.toHaveBeenCalled()
+  })
+
   it('preserves a serving host through temporary snapshots when no classic consumer is attached', async () => {
     const { start, event } = setup()
     const nativeEmit = vi.fn()
@@ -245,6 +252,28 @@ describe('auto routes topology delivery', () => {
       const change = consume.mock.calls[0]![0]
       expect(change.receivedAtMs).toBeGreaterThanOrEqual(before)
       expect(change.receivedAtMs).toBeLessThanOrEqual(afterReceipt)
+    }
+    finally {
+      release()
+    }
+  })
+
+  it('coalesces recursive delete bursts before publishing topology', async () => {
+    const { ctx, start, event, handleFileChange } = setup()
+    const consume = vi.fn()
+    const release = subscribeAutoRoutesTopology(ctx, consume)
+    try {
+      start()
+      event('unlink')(newPage)
+      event('unlink')('/project/src/pages/added/index.js')
+      await vi.waitFor(() => expect(handleFileChange).toHaveBeenCalledTimes(2))
+      expect(consume).toHaveBeenCalledOnce()
+      expect(consume).toHaveBeenCalledWith({
+        file: '/project/src/pages/added/index.js',
+        event: 'delete',
+        topologyChanged: true,
+        receivedAtMs: expect.any(Number),
+      })
     }
     finally {
       release()
