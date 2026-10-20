@@ -17,7 +17,7 @@ describe('compiler test project partition', () => {
     const serial = discovered.get('weapp-vite-serial')!
     expect([...fast].filter(file => serial.has(file))).toEqual([])
 
-    const expected = await glob(['src/**/*.{test,spec}.ts', 'test/**/*.{test,spec}.ts'], {
+    const expected = await glob(['src/**/*.{test,spec}.ts', 'test/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'], {
       cwd,
       ignore: ['**/node_modules/**', '**/dist/**', '**/dist-*/**', '**/.weapp-vite/**', '**/coverage/**'],
     })
@@ -27,5 +27,7 @@ describe('compiler test project partition', () => {
       expect(serial.has(file), `${file} must retain serial execution`).toBe(true)
     }
     expect(serial.has('src/plugins/core/lifecycle/watch.test.ts')).toBe(true)
+    expect(fast.has('scripts/chokidarDelivery/validation.test.ts')).toBe(true)
+    expect(serial.has('scripts/chokidarDelivery/validation.test.ts')).toBe(false)
   })
 })
