@@ -10,7 +10,7 @@ import { packConsumerTarballs } from '../../packages/weapp-vite/scripts/consumer
 
 const digest = value => createHash('sha256').update(value).digest('hex')
 const fileDigest = async filename => digest(await readFile(filename))
-const consumerEntryPackages = ['weapp-vite', 'wevu', '@weapp-vite/react']
+export const consumerEntryPackages = ['weapp-vite', 'wevu', '@weapp-vite/react']
 
 /** 消费者 Node 可以不同，源码、平台、架构及构建 Node 必须与冻结的打包身份一致。 */
 export async function consumerIdentity(root, commit = process.env.BUILD_ARTIFACT_EXPECTED_COMMIT || process.env.GITHUB_SHA) {
@@ -67,7 +67,7 @@ function verifyClosure(packages, expectedPackages) {
 export async function createConsumerArtifact(root, directory, { pack = true, identity, expectedPackages } = {}) {
   if (pack) {
     assert.equal(process.versions.node.split('.')[0], '24', 'Consumer artifacts must be built on Node 24')
-    await packConsumerTarballs(root, directory)
+    await packConsumerTarballs(root, directory, consumerEntryPackages)
   }
   const manifest = { schemaVersion: 1, identity: identity ?? await consumerIdentity(root), packages: await packedFiles(directory) }
   verifyClosure(manifest.packages, expectedPackages ?? await consumerClosure(root))
