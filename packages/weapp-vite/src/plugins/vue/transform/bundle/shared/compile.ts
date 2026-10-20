@@ -62,7 +62,7 @@ export async function compileVueLikeFile(options: {
   const result = filename.endsWith('.vue')
     ? await compileVueFile(source, filename, compileOptions)
     : await compileJsxFile(source, filename, compileOptions)
-  applyComponentResolutionDependencies(result, compileOptions)
+  applyComponentResolutionDependencies(result, compileOptions, filename)
   syncVueCompilationDependencies({ ctx, pluginCtx, filename, result, configService })
   if (resolvedPageLayoutPlan) {
     setVueBundlePageLayoutPlan(result, resolvedPageLayoutPlan)

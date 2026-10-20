@@ -587,6 +587,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
             json,
             configService,
             wxmlService,
+            moduleGraphService: ctx.moduleGraphService,
+            ownerId: normalizedId,
             reExportResolutionCache,
             scriptSetupAnalyzer,
             externalComponentEntryMap: ctx.runtimeState.build.hmr.externalComponentEntryMap,

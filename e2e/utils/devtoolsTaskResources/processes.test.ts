@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseResourceProcessRows, sampleInstallationProcesses } from './processes'
 
 const mocks = vi.hoisted(() => ({ ps: vi.fn(), paths: vi.fn(), images: vi.fn(), realpath: vi.fn() }))
+vi.mock('./processInventory/darwinSnapshot', async () => ({ readDarwinSnapshot: (await import('./processInventory/snapshotFixture')).createSnapshotFixture(mocks) }))
 vi.mock('execa', () => ({ execa: mocks.ps }))
 vi.mock('node:fs/promises', () => ({ default: { realpath: mocks.realpath } }))
 vi.mock('../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/installationExit/darwinKernelPaths', () => ({ readDarwinKernelPaths: mocks.paths }))

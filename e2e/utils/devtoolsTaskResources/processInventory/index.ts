@@ -4,6 +4,7 @@ import path from 'node:path'
 import { execa } from 'execa'
 import { readDarwinTextImages } from '../../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/installationExit/darwin'
 import { readDarwinKernelPaths } from '../../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/installationExit/darwinKernelPaths'
+import { readDarwinSnapshot } from './darwinSnapshot'
 
 export interface ProcessRow {
   pid: number
@@ -41,7 +42,7 @@ export function remainingProcessBudget(deadline: number) {
   return remaining
 }
 
-export async function readResourceRows(deadline: number) {
+async function readResourceFrame(deadline: number) {
   const inspection = execa('/bin/ps', ['-axo', 'pid=,ppid=,rss=,stat=,lstart='], {
     timeout: remainingProcessBudget(deadline),
     reject: false,
@@ -52,7 +53,26 @@ export async function readResourceRows(deadline: number) {
   if (result.exitCode !== 0 || result.timedOut || result.signal || result.stderr?.trim() || !result.stdout.trim()) {
     throw new Error('Resource sampling could not read the process inventory.')
   }
-  return parseResourceProcessRows(result.stdout).filter(row => row.pid !== inspectorPid)
+  if (!inspectorPid || !Number.isSafeInteger(inspectorPid)) {
+    throw new Error('Resource sampling could not verify its owned ps inspector.')
+  }
+  return { stdout: result.stdout, inspectorPid }
+}
+
+export async function readResourceRows(deadline: number) {
+  const frame = await readResourceFrame(deadline)
+  return parseResourceProcessRows(frame.stdout).filter(row => row.pid !== frame.inspectorPid)
+}
+
+/** 批次首帧仍是唯一 RSS 锚点；只剔除各自持有的 ps inspector。 */
+export async function readInitialResourceInventory(deadline: number) {
+  const snapshot = await readDarwinSnapshot(deadline, () => readResourceFrame(deadline))
+  const rows = parseResourceProcessRows(snapshot.initial.stdout).filter(row => row.pid !== snapshot.initial.inspectorPid)
+  const afterRows = parseResourceProcessRows(snapshot.after.stdout).filter(row => row.pid !== snapshot.after.inspectorPid)
+  if (snapshot.paths.size !== rows.length || rows.some(row => !snapshot.paths.has(row.pid))) {
+    throw new Error('Resource sampling received incomplete batch process identities.')
+  }
+  return { rows, paths: snapshot.paths, afterRows }
 }
 
 export function insideInstallation(root: string, executable: string) {
@@ -72,15 +92,15 @@ export function stableProcess(row: ProcessRow, current: ProcessRow | undefined) 
   return current !== undefined && sameProcessIdentity(row, current) && !row.zombie
 }
 
-/** 复用正式映像核验；首个后验清单先交给新增身份核验，再运行最多四个并发 fallback。 */
-export async function inspectResourceRows(
+/** 首帧批量采集与后续有界轮次共享完全相同的稳定性、fallback 和后验门禁。 */
+export async function completeResourceInspection(
   rows: ProcessRow[],
+  paths: Map<number, string | null>,
+  afterRows: ProcessRow[],
   deadline: number,
   afterKernel?: (rows: ProcessRow[], images: Map<number, string[]>) => Promise<void>,
   round = 1,
 ) {
-  const paths = await readDarwinKernelPaths(rows.map(row => row.pid), remainingProcessBudget(deadline))
-  const afterRows = await readResourceRows(deadline)
   const after = new Map(afterRows.map(row => [row.pid, row]))
   const images = new Map<number, string[]>()
   const pending: ProcessRow[] = []
@@ -132,4 +152,16 @@ export async function inspectResourceRows(
   }
   const finalRows = await readResourceRows(deadline)
   return { paths, images, imageGaps, afterRows, finalRows, fallbackBudgetExhausted }
+}
+
+/** 复用正式映像核验；首个后验清单先交给新增身份核验，再运行最多四个并发 fallback。 */
+export async function inspectResourceRows(
+  rows: ProcessRow[],
+  deadline: number,
+  afterKernel?: (rows: ProcessRow[], images: Map<number, string[]>) => Promise<void>,
+  round = 1,
+) {
+  const paths = await readDarwinKernelPaths(rows.map(row => row.pid), remainingProcessBudget(deadline))
+  const afterRows = await readResourceRows(deadline)
+  return completeResourceInspection(rows, paths, afterRows, deadline, afterKernel, round)
 }
