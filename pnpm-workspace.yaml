@@ -57,6 +57,7 @@ catalog:
   '@vue/compiler-core': ^3.5.44
   '@vue/compiler-dom': ^3.5.44
   '@vue/babel-plugin-jsx': 3.0.0
+  '@vue/reactivity': ^3.5.44
   '@vue/language-core': ^3.3.13
   '@wot-ui/ui': 2.3.2
   antd-mini: ^3.4.3

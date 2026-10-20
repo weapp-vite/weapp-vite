@@ -5,7 +5,7 @@ import type {
   I18nLocaleFileInput,
   I18nMessages,
   I18nMessageToken,
-} from './types'
+} from './configTypes'
 import { WEAPP_I18N_RUNTIME_MARKER } from '@weapp-core/constants'
 
 const PLACEHOLDER_PATH_RE = /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i

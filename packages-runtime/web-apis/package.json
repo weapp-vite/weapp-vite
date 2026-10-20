@@ -86,10 +86,12 @@
     "test:dev": "vitest",
     "pretest:types": "pnpm build",
     "test:types": "pnpm run test:types:check",
-    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
-    "typecheck": "tsc --noEmit"
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\" && pnpm run test:types:pure",
+    "typecheck": "tsc --noEmit",
+    "test:types:pure": "cd test-d-pure && tsd --files \"**/*.test-d.ts\""
   },
   "dependencies": {
+    "@weapp-core/api": "workspace:*",
     "@weapp-core/constants": "workspace:*",
     "@wevu/api": "workspace:*"
   },

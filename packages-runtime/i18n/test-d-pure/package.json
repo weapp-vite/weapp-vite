@@ -1,0 +1,24 @@
+{
+  "name": "weapp-i18n-pure-types",
+  "type": "module",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "lib": [
+        "ES2022"
+      ],
+      "types": [],
+      "strict": true,
+      "skipLibCheck": false,
+      "paths": {
+        "@weapp-vite/i18n/types": [
+          "../dist/config-types.d.mts"
+        ]
+      }
+    }
+  }
+}

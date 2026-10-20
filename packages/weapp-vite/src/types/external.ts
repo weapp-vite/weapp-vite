@@ -22,4 +22,4 @@ export type {
   ComputedDefinitions,
   MethodDefinitions,
   Ref,
-} from 'wevu'
+} from 'wevu/types'
