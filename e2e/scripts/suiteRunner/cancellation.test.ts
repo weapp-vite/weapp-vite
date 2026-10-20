@@ -183,6 +183,65 @@ describe('suite runner cancellation ownership', () => {
     expect(mocks.cleanup).toHaveBeenCalledOnce()
   })
 
+  it('waits for an aborted launch hook to settle and refuses its late command launch', async () => {
+    const entered = Promise.withResolvers<AbortSignal>()
+    const finishHook = Promise.withResolvers<void>()
+    const beforeTaskLaunch = vi.fn(async (_task: SuiteTask, signal: AbortSignal) => {
+      entered.resolve(signal)
+      await finishHook.promise
+    })
+    const running = runTaskSuite('e2e:cancel-launch-test', tasks, { ...options, beforeTaskLaunch })
+    try {
+      const signal = await entered.promise
+      signalRunner('SIGTERM')
+      expect(signal.aborted).toBe(true)
+      expect(mocks.cleanup).not.toHaveBeenCalled()
+      expect(mocks.execa).not.toHaveBeenCalled()
+    }
+    finally {
+      finishHook.resolve()
+      expect(await running).toBe(143)
+    }
+    expect(beforeTaskLaunch).toHaveBeenCalledOnce()
+    expect(mocks.execa).not.toHaveBeenCalled()
+    expect(mocks.cleanup).toHaveBeenCalledOnce()
+  })
+
+  it('deducts the launch hook from the original command timeout', async () => {
+    const worker = childFixture()
+    const entered = Promise.withResolvers<void>()
+    const started = Promise.withResolvers<void>()
+    mocks.execa.mockImplementation(() => {
+      started.resolve()
+      return worker.child
+    })
+    const timedTask = { ...tasks[0]!, env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '1000' } }
+    const running = runTaskSuite('e2e:launch-budget-test', [timedTask], {
+      ...options,
+      beforeTaskLaunch: async () => {
+        entered.resolve()
+        await new Promise<void>(resolve => setTimeout(resolve, 400))
+      },
+    })
+    try {
+      await entered.promise
+      await vi.advanceTimersByTimeAsync(400)
+      await started.promise
+      await vi.advanceTimersByTimeAsync(599)
+      expect(worker.kill).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      expect(worker.kill.mock.calls).toEqual([['SIGTERM']])
+      expect(console.error).toHaveBeenCalledWith('[e2e] task timeout after 1.0s: owned-worker')
+    }
+    finally {
+      worker.exit()
+      await vi.advanceTimersByTimeAsync(5_000)
+      expect(await running).toBe(1)
+    }
+    expect(mocks.execa.mock.calls[0]!.slice(0, 2)).toEqual([timedTask.command, timedTask.args])
+    expect(mocks.cleanup).toHaveBeenCalledOnce()
+  })
+
   it('cancels during cleanup without closing a finished child twice or starting another task', async () => {
     const cleanupStarted = Promise.withResolvers<void>()
     const cleanupFinished = Promise.withResolvers<void>()
