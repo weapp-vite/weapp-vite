@@ -58,7 +58,7 @@ function handler(hook: any) {
   return typeof hook === 'function' ? hook : hook?.handler
 }
 
-export async function fixture(sourcemap: false | true | 'inline' | 'hidden' = false, imported = false, scoped = false) {
+export async function fixture(sourcemap: false | true | 'inline' | 'hidden' = false, imported = false, scoped = false, nativePage?: { script: string, template: string }) {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'tailwind-snapshot-generation-')))
   cleanup.push(() => rm(root, { recursive: true, force: true }))
   const src = path.join(root, 'src')
@@ -82,9 +82,9 @@ export async function fixture(sourcemap: false | true | 'inline' | 'hidden' = fa
     'src/app.json': JSON.stringify({ pages: ['pages/index/index'], navigationBarTitleText: 'initial' }),
     'src/app.css': '@import "tailwindcss/utilities" source(none); @source "./pages/**/*.{wxml,ts}"; @import "./tokens.css";',
     'src/tokens.css': '.author { color: #123456; }',
-    'src/pages/index/index.ts': 'Page({ data: { utility: "w-[37px]" } })',
+    'src/pages/index/index.ts': nativePage?.script ?? 'Page({ data: { utility: "w-[37px]" } })',
     'src/pages/index/index.json': '{}',
-    'src/pages/index/index.wxml': '<view class="w-[37px]">initial</view>',
+    'src/pages/index/index.wxml': nativePage?.template ?? '<view class="w-[37px]">initial</view>',
   }
   if (scoped) {
     files['package.json'] = JSON.stringify({ name: 'tailwind-snapshot-scoped', private: true, dependencies: { wevu: '*' } })
