@@ -1,3 +1,4 @@
+import vm from 'node:vm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { captureAppReloadMarker, waitForAppReload } from './appReload'
 
@@ -9,7 +10,7 @@ function createHost() {
   const query = {
     in: vi.fn(() => query),
     select: vi.fn(() => query),
-    fields: vi.fn(() => query),
+    fields: vi.fn((_options: unknown) => query),
     exec: vi.fn((callback: (results: unknown[]) => void) => {
       if (queryError) {
         throw queryError
@@ -96,6 +97,37 @@ describe('App reload boundary', () => {
     host.replaceApp()
     const result = await waitForAppReload(host.session, marker, '.root')
     expect(result).toEqual({ appPresent: true, appReplaced: true, pagePresent: true, rootVisible: true, route: 'pages/index/index', width: 100, height: 20 })
+    expect(host.session.reLaunch).not.toHaveBeenCalled()
+    expect(host.session.compile).not.toHaveBeenCalled()
+    expect(host.session.disconnect).not.toHaveBeenCalled()
+  })
+
+  it('creates selector options in the host realm while evaluating reload readiness', async () => {
+    const host = createHost()
+    const page = { route: 'pages/index/index' }
+    host.setPages([page])
+    host.query.fields.mockImplementation((options) => {
+      if (Object.getPrototypeOf(options) !== Object.prototype) {
+        throw new Error('An object could not be cloned.')
+      }
+      return host.query
+    })
+    host.session.evaluateWithOptions.mockImplementation(async (fn, _options, ...args) => {
+      const evaluate = vm.runInNewContext(`(${fn.toString()})`, {
+        getApp: () => host.app,
+        getCurrentPages: () => [page],
+        wx: { createSelectorQuery: () => host.query },
+        JSON,
+      }) as typeof fn
+      return evaluate(...args)
+    })
+    const marker = await captureAppReloadMarker(host.session)
+    host.replaceApp()
+    const pending = waitForAppReload(host.session, marker, '.root', 500).catch(error => error)
+    await vi.advanceTimersByTimeAsync(500)
+    expect(await pending).toEqual({ appPresent: true, appReplaced: true, pagePresent: true, rootVisible: true, route: page.route, width: 100, height: 20 })
+    expect(host.query.in).toHaveBeenCalledWith(page)
+    expect(host.query.fields).toHaveBeenCalledExactlyOnceWith({ size: true })
     expect(host.session.reLaunch).not.toHaveBeenCalled()
     expect(host.session.compile).not.toHaveBeenCalled()
     expect(host.session.disconnect).not.toHaveBeenCalled()
