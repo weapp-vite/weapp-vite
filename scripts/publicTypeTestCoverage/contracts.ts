@@ -5,7 +5,7 @@ import { expect } from 'vitest'
 export interface TypeTestManifest {
   types?: string
   scripts: Record<string, string>
-  tsd?: { directory?: string }
+  tsd?: { directory?: string, compilerOptions?: Record<string, unknown> }
 }
 
 export async function readManifest(directory: string): Promise<TypeTestManifest> {
@@ -21,6 +21,39 @@ async function matchingFiles(directory: string, patterns: string[]): Promise<str
   return files
 }
 
+function contractPath(packageRoot: string, directory: string, target: string): string {
+  const resolved = path.resolve(directory, target)
+  const relative = path.relative(packageRoot, resolved)
+  expect(relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative), 'Type contracts cannot escape the package').toBe(false)
+  return resolved
+}
+
+/** 解析仓库使用的 tsd 目录与文件选项，拒绝未建模参数，避免静默漏掉合约。 */
+function tsdSelection(packageRoot: string, directory: string, tokens: string[]) {
+  let index = 1
+  let selectedDirectory = directory
+  if (tokens[index] && !tokens[index]!.startsWith('-')) {
+    selectedDirectory = contractPath(packageRoot, directory, tokens[index++]!)
+  }
+  const patterns: string[] = []
+  let typings: string | undefined
+  while (index < tokens.length) {
+    const option = tokens[index++]!
+    expect(['--files', '--typings'], 'Unsupported tsd option or additional positional directory').toContain(option)
+    const value = tokens[index++]
+    expect(typeof value === 'string' && value.length > 0 && !value.startsWith('-'), `Missing value for tsd option: ${option}`).toBe(true)
+    contractPath(packageRoot, selectedDirectory, value!)
+    if (option === '--files') {
+      patterns.push(value!)
+    }
+    else {
+      expect(typings, 'Duplicate tsd typings option').toBeUndefined()
+      typings = value!
+    }
+  }
+  return { directory: selectedDirectory, patterns, typings }
+}
+
 /** 只展开受限的包脚本图，alias 保留调用目录，不能引入构建或生命周期命令。 */
 export async function collectContracts(packageRoot: string, script: string): Promise<string[]> {
   const selected = new Set<string>()
@@ -29,9 +62,7 @@ export async function collectContracts(packageRoot: string, script: string): Pro
     let directory = initialDirectory
     for (const command of source.split(/\s*&&\s*/)) {
       if (command.startsWith('cd ')) {
-        directory = path.resolve(directory, command.slice(3))
-        const relative = path.relative(packageRoot, directory)
-        expect(relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative), 'Type contracts cannot escape the package').toBe(false)
+        directory = contractPath(packageRoot, directory, command.slice(3))
         continue
       }
       const tokens = command.match(/"[^"]*"|\S+/g)?.map(token => token.replace(/^"|"$/g, '')) ?? []
@@ -56,35 +87,40 @@ export async function collectContracts(packageRoot: string, script: string): Pro
         continue
       }
       expect(tokens[0], 'The internal type check must only select and run tsd contracts').toBe('tsd')
-      const manifest = await readManifest(directory)
-      const filesIndex = tokens.indexOf('--files')
+      const selection = tsdSelection(packageRoot, directory, tokens)
+      const manifest = await readManifest(selection.directory)
       let matches: string[]
-      if (filesIndex !== -1) {
-        const pattern = tokens[filesIndex + 1]!
-        matches = (await matchingFiles(directory, [pattern])).filter(file => path.matchesGlob(file, pattern))
-        if (pattern.includes('**')) {
-          const futureFile = pattern.startsWith('test-d/') ? 'test-d/nested/future.test-d.ts' : 'nested/future.test-d.ts'
-          expect(path.matchesGlob(futureFile, pattern)).toBe(true)
+      if (selection.patterns.length > 0) {
+        matches = []
+        for (const pattern of selection.patterns) {
+          const selectedFiles = (await matchingFiles(selection.directory, [pattern])).filter(file => path.matchesGlob(file, pattern))
+          expect(selectedFiles.length, `${command} must select real contracts for every files option`).toBeGreaterThan(0)
+          matches.push(...selectedFiles)
+          if (pattern.includes('**')) {
+            const futureFile = pattern.startsWith('test-d/') ? 'test-d/nested/future.test-d.ts' : 'nested/future.test-d.ts'
+            expect(path.matchesGlob(futureFile, pattern)).toBe(true)
+          }
         }
       }
       else {
-        const typingsIndex = tokens.indexOf('--typings')
-        const typings = typingsIndex === -1 ? manifest.types ?? 'index.d.ts' : tokens[typingsIndex + 1]!
+        const typings = selection.typings ?? manifest.types ?? 'index.d.ts'
+        contractPath(packageRoot, selection.directory, typings)
         // 与 tsd 的默认选择规则一致；.d.mts 不会被替换，必须使用显式 --files。
         const candidates = [typings.replace(/\.d\.ts$/, '.test-d.ts'), typings.replace(/\.d\.ts$/, '.test-d.tsx')]
           .map(file => file.replace(/^\.\//, ''))
-        matches = (await matchingFiles(directory, candidates)).filter(file => candidates.includes(file))
+        matches = (await matchingFiles(selection.directory, candidates)).filter(file => candidates.includes(file))
         if (matches.length === 0) {
           const testDirectory = manifest.tsd?.directory ?? 'test-d'
+          contractPath(packageRoot, selection.directory, testDirectory)
           const patterns = [`${testDirectory}/**/*.ts`, `${testDirectory}/**/*.tsx`]
-          matches = (await matchingFiles(directory, patterns))
+          matches = (await matchingFiles(selection.directory, patterns))
             .filter(file => patterns.some(pattern => path.matchesGlob(file, pattern)))
         }
       }
       expect(matches.length, `${command} must select real contracts`).toBeGreaterThan(0)
       expect(matches.filter(file => /\.d\.[cm]?ts$/.test(file)), 'Declarations must never be treated as test files').toEqual([])
       for (const file of matches) {
-        selected.add(path.relative(packageRoot, path.join(directory, file)).replaceAll('\\', '/'))
+        selected.add(path.relative(packageRoot, contractPath(packageRoot, selection.directory, file)).replaceAll('\\', '/'))
       }
     }
   }

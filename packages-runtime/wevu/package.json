@@ -287,15 +287,15 @@
     "test": "vitest run",
     "test:dev": "vitest",
     "test:types": "pnpm build:types && pnpm run test:types:check",
-    "test:types:check": "tsd --files \"test-d/**/*.test-d.{ts,tsx}\" && tsd --files \"test-d/router-named-map.test-types.ts\" && pnpm run test:types:pure",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.{ts,tsx}\" && tsd --files \"test-d/router-named-map.test-types.ts\" && pnpm run test:types:host && pnpm run test:types:pure",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test:types:pure": "cd test-d-pure && tsd --files \"**/*.test-d.ts\""
+    "test:types:pure": "cd test-d-pure && tsd --files \"**/*.test-d.ts\"",
+    "test:types:host": "tsd test-d-host --files root.test-d.ts && tsd test-d-host --files internal-runtime.test-d.ts"
   },
   "peerDependencies": {
-    "miniprogram-api-typings": "^5.0.0",
     "vitest": ">=4.0.0"
   },
   "peerDependenciesMeta": {
@@ -318,6 +318,7 @@
     "@wevu/api": "workspace:*",
     "@wevu/compiler": "workspace:*",
     "@wevu/web-apis": "workspace:*",
+    "miniprogram-api-typings": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {
