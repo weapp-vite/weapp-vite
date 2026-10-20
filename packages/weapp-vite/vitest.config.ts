@@ -1,13 +1,14 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
 import { createProjectCoverage } from '../../vitest.coverage.ts'
-import { parallelFixtureTests } from './vitest/partition.ts'
+import { createFastTestIncludes, parallelFixtureTests, serialFixtureTestIncludes } from './vitest/partition.ts'
 
 const projectTestIncludes = [
-  'test/**/*.test.ts',
-  'test/**/*.spec.ts',
+  ...serialFixtureTestIncludes,
   'src/**/*.test.ts',
   'src/**/*.spec.ts',
+  'scripts/**/*.test.ts',
+  'scripts/**/*.spec.ts',
 ]
 
 const projectTestExcludes = [
@@ -19,43 +20,6 @@ const projectTestExcludes = [
 ]
 
 const serialTestFiles = [
-  'test/**/*.test.ts',
-  'test/**/*.spec.ts',
-  'test/asset.test.ts',
-  'test/auto-import.test.ts',
-  'test/auto.import.test.ts',
-  'test/basic.test.ts',
-  'test/build-npm.test.ts',
-  'test/build.test.ts',
-  'test/import-umd.test.ts',
-  'test/lib-mode.test.ts',
-  'test/mixjs.test.ts',
-  'test/release.test.ts',
-  'test/resolve-deps.test.ts',
-  'test/shared-chunk-modes.matrix.test.ts',
-  'test/subPackages-dependencies.test.ts',
-  'test/subPackages-shared-styles.test.ts',
-  'test/subPackages.test.ts',
-  'test/subpackage-dayjs.test.ts',
-  'test/subpackage-npm-no-main.test.ts',
-  'test/subpackage-npm-normal.test.ts',
-  'test/subpackage-root-util.test.ts',
-  'test/subpackage-shared-chunks-app.test.ts',
-  'test/tabbar-appbar.test.ts',
-  'test/watch-no-npm.test.ts',
-  'test/watch-no-subpackage.test.ts',
-  'test/watch-rebuild.test.ts',
-  'test/watch-template-rebuild.test.ts',
-  'test/watch.test.ts',
-  'test/web.test.ts',
-  'test/worker-shared.test.ts',
-  'test/wxs-project.test.ts',
-  'test/runtime/autoImportNavigationIntegration.test.ts',
-  'test/runtime/autoImportService.test.ts',
-  'test/runtime/supportFiles.integration.test.ts',
-  'test/runtime/vueTemplateAutoImport.test.ts',
-  'test/vue/transform-plugin.test.ts',
-  'test/vue/vue-watch.test.ts',
   'src/plugins/autoImport.test.ts',
   'src/plugins/wxs.test.ts',
   'src/plugins/core/lifecycle/load.test.ts',
@@ -184,13 +148,10 @@ export default defineProject({
           sequence: {
             groupOrder: 100,
           },
-          include: [
-            ...projectTestIncludes.filter(pattern => pattern.startsWith('src/')),
-            ...parallelFixtureTests,
-          ],
+          include: createFastTestIncludes(projectTestIncludes),
           exclude: [
             ...projectTestExcludes,
-            ...serialTestFiles.filter(pattern => pattern.startsWith('src/')),
+            ...serialTestFiles,
           ],
           // @ts-ignore
           coverage: createProjectCoverage('packages/weapp-vite/fast', sharedCoverageOptions),
@@ -205,7 +166,7 @@ export default defineProject({
           },
           globalSetup: [path.resolve(packageDir, '../../vitest.globalSetup.mjs')],
           exclude: [...projectTestExcludes, ...parallelFixtureTests],
-          include: serialTestFiles,
+          include: [...serialFixtureTestIncludes, ...serialTestFiles],
           fileParallelism: false,
           // @ts-ignore
           coverage: createProjectCoverage('packages/weapp-vite/serial', sharedCoverageOptions),
