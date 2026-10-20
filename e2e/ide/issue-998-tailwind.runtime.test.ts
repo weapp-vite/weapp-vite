@@ -1,3 +1,4 @@
+import type { DomCheckpoint } from '../utils/domAcceptance/types'
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -53,7 +54,7 @@ describe('issue #998: managed imports and ordinary CSS HMR', { concurrent: false
       { id: 'ordinary', utility: 'rgb(252, 231, 243)', ordinary: 'rgb(0, 0, 255)', count: '1' },
       { id: 'utility', utility: 'rgb(219, 234, 254)', ordinary: 'rgb(0, 0, 255)', count: '1' },
     ]
-    const dom = createDomAcceptance(context, 'e2e-apps/github-issues/fixtures/issue-998', states.map(state => ({
+    const dom = createDomAcceptance(context, 'e2e-apps/github-issues/fixtures/issue-998', states.map((state): DomCheckpoint => ({
       id: state.id,
       route: ROUTE,
       action: `检查 ${state.id} 阶段样式与交互状态`,

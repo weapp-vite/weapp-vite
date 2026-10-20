@@ -4,7 +4,7 @@ import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
-import { createAutoRoutesTopologyDiagnostics } from '../utils/autoRoutesTopologyDiagnostics'
+import { closeAutoRoutesTopologyResources, createAutoRoutesTopologyDiagnostics } from '../utils/autoRoutesTopologyDiagnostics'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -73,6 +73,7 @@ describe('classic automatic route topology output runtime', { concurrent: false 
   let project: string
   let dev: ReturnType<typeof startDevProcess> | undefined
   let host: Awaited<ReturnType<typeof launchAutomator>> | undefined
+  let diagnostics: ReturnType<typeof createAutoRoutesTopologyDiagnostics> | undefined
 
   async function prepareTopologyProject() {
     project = await createIssue1015Project()
@@ -94,6 +95,7 @@ describe('classic automatic route topology output runtime', { concurrent: false 
       cwd: project,
       env: { ...createDevProcessEnv(), WEAPP_GITHUB_ISSUE_1015_HMR_RUNTIME: 'classic', WEAPP_VITE_HMR_PROFILE_JSON: profilePath },
     })
+    diagnostics = createAutoRoutesTopologyDiagnostics({ project, profilePath, routes: [route, vueRoute], getDevOutput: () => dev!.getOutput() })
     await dev.waitForInitialBuild()
 
     const marker = 'automatic-route-app-script-updated'
@@ -103,7 +105,6 @@ describe('classic automatic route topology output runtime', { concurrent: false 
     await expect.poll(async () => (await readFile(path.join(project, 'dist/app.js'), 'utf8')).includes(marker), { timeout: 30_000 }).toBe(true)
     const directory = path.join(project, 'src/pages/topology-added')
     const vueDirectory = path.join(project, 'src/pages/topology-vue')
-    const diagnostics = createAutoRoutesTopologyDiagnostics({ project, profilePath, routes: [route, vueRoute], getDevOutput: () => dev!.getOutput() })
     for (const stage of ['added', 'removed', 'restored']) {
       diagnostics.record(stage, 'begin')
       const present = stage !== 'removed'
@@ -154,14 +155,7 @@ describe('classic automatic route topology output runtime', { concurrent: false 
   }
 
   afterAll(async () => {
-    const results = await Promise.allSettled([host?.close(), dev?.stop()])
-    const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
-    if (errors.length) {
-      throw new AggregateError(errors, 'Failed to close automatic route topology resources')
-    }
-    if (project) {
-      await rm(project, { recursive: true, force: true })
-    }
+    await closeAutoRoutesTopologyResources({ host, dev, diagnostics, project })
   }, 60_000)
 
   it('renders the restored page and keeps the original page reachable', async (context) => {

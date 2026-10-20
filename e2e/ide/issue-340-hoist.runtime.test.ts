@@ -60,7 +60,7 @@ async function waitForRouteDom(
   const startedAt = Date.now()
   let lastResult: Record<string, any> | null = null
   while (Date.now() - startedAt <= timeoutMs) {
-    const result = await miniProgram.evaluate((route, pageName, message) => {
+    const result = await miniProgram.evaluate((route: string, pageName: string, message: string) => {
       return new Promise((resolve) => {
         const timer = setTimeout(() => {
           resolve({
@@ -231,7 +231,7 @@ async function launchRouteWithDom(
 }
 
 async function callCurrentRouteE2E(miniProgram: any, expectedRoute: string) {
-  const result = await miniProgram.evaluate(async (route) => {
+  const result = await miniProgram.evaluate(async (route: string) => {
     const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
     const page = pages[pages.length - 1] as any
     const currentRoute = String(page?.route || page?.__route__ || page?.path || '').replace(/^\/+/, '').replace(/\/+$/g, '')

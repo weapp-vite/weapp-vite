@@ -36,8 +36,8 @@ interface Root {
 
 /** 普通候选只延迟磁盘生成的失效；CSS 与依赖仍由宿主即时交给 core。 */
 export class TailwindContentInvalidation {
-  private readonly roots = new Map<number, Root>()
-  private readonly preprocessing = new Map<number, Set<string>>()
+  private readonly roots = new Map<number | string, Root>()
+  private readonly preprocessing = new Map<number | string, Set<string>>()
   private readonly pending = new Set<string>()
 
   constructor(private readonly host: {
@@ -45,7 +45,7 @@ export class TailwindContentInvalidation {
     readSource: (file: string) => string | null | undefined
   }) {}
 
-  rememberRoot(index: number, request: CompilerGenerateRequest, result: CompilerGenerateResult, matches?: Root['matches']) {
+  rememberRoot(index: number | string, request: CompilerGenerateRequest, result: CompilerGenerateResult, matches?: Root['matches']) {
     const inputs = request.sourceOptions
     this.roots.set(index, {
       id: request.id,
@@ -62,7 +62,7 @@ export class TailwindContentInvalidation {
     this.preprocessing.set(index, new Set(files.map(this.host.sourceId)))
   }
 
-  observeDependencies(index: number, dependencies: readonly string[]) {
+  observeDependencies(index: number | string, dependencies: readonly string[]) {
     const root = this.roots.get(index)
     for (const file of dependencies) {
       root?.dependencies.add(this.host.sourceId(file))
@@ -95,7 +95,7 @@ export class TailwindContentInvalidation {
     return compiler.generate(request)
   }
 
-  removeRoot(index: number) {
+  removeRoot(index: number | string) {
     const root = this.roots.get(index)
     if (root) {
       this.pending.delete(root.id)

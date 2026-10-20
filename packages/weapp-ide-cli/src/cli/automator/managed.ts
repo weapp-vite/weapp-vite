@@ -5,6 +5,7 @@ import { acquireAutomatorPortLease } from '@weapp-vite/miniprogram-automator'
 import { beginManagedWechatProject } from '../../devtoolsProjectOwnership'
 import { assertWechatDevtoolsPort } from '../../devtoolsTarget'
 import { startWechatIdeAgent } from '../agentStart'
+import { populateAutomatorProjectSnapshot, readAutomatorProjectPlan } from '../automatorProject'
 import { importManagedDevtoolsProject } from '../projectImport'
 import { persistAutomatorSession } from './sessionStore'
 
@@ -17,30 +18,15 @@ interface ManagedAutomatorOptions {
   port: number
   sessionId?: string
   persistAsDefaultSession?: boolean
+  preserveProjectRoot?: boolean
   trustProject: boolean
 }
 
-/** 受管启动持有完整窗口回执，失败清理不受启动 deadline 的短暂宽限限制。 */
+/** 受管启动持有完整窗口回执，快照始终由持久 journal 持有。 */
 export async function launchManagedAutomator(options: ManagedAutomatorOptions): Promise<MiniProgram> {
-  const { launcher, scope, target, projectPath, sourceProjectPath, port } = options
-  await scope.step(() => importManagedDevtoolsProject({
-    cliPath: target.cliPath,
-    projectPath,
-    trusted: options.trustProject,
-    timeout: scope.remainingMs(),
-    signal: scope.signal,
-  }), { stage: 'project-import' })
-  scope.throwIfAborted()
-  const portLease = await scope.step(() => acquireAutomatorPortLease(port), {
-    stage: 'port-lease',
-    disposeLate: lease => lease.release(),
-  })
-  const rawReleasePortLease = portLease.release.bind(portLease)
-  let releasedPortLease: Promise<void> | undefined
-  portLease.release = () => releasedPortLease ??= rawReleasePortLease().catch((error: unknown) => {
-    releasedPortLease = undefined
-    throw error
-  })
+  const { launcher, scope, target, sourceProjectPath, port } = options
+  let projectPath = options.projectPath
+  let portLease: Awaited<ReturnType<typeof acquireAutomatorPortLease>> | undefined
   let intent: Awaited<ReturnType<typeof beginManagedWechatProject>>
   let program: MiniProgram | undefined
   let allowCleanup!: () => void
@@ -49,7 +35,7 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
   })
   let cleaning: Promise<void> | undefined
   const cleanupLaunch = () => cleaning ??= (async () => {
-    // 官方回执或连接可能迟于取消到达；先等待启动路径停止登记资源，再统一清理。
+    // 官方回执或复制可能迟于取消结束；先等登记停止，再使用原 owner 清理。
     await acquisitionSettled
     const errors: unknown[] = []
     let disconnected = !program
@@ -69,7 +55,7 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
       errors.push(error)
     }
     if (disconnected && projectClosed) {
-      await portLease.release().catch(error => errors.push(error))
+      await portLease?.release().catch(error => errors.push(error))
     }
     if (errors.length) {
       throw new AggregateError(errors, 'Managed DevTools session cleanup failed')
@@ -78,10 +64,41 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
     cleaning = undefined
     throw error
   })
-  let disownPortLease = () => {}
+  let disownResources = () => {}
   try {
-    disownPortLease = scope.own(cleanupLaunch, 'automator-port-lease')
-    intent = await beginManagedWechatProject({ target, projectPath, port })
+    disownResources = scope.own(cleanupLaunch, 'managed-automator-session')
+    const snapshotPlan = options.preserveProjectRoot
+      ? undefined
+      : await readAutomatorProjectPlan(projectPath)
+    scope.throwIfAborted()
+    if (snapshotPlan) {
+      intent = await beginManagedWechatProject({ target, projectPath, port, snapshotProject: true })
+      if (!intent) {
+        throw new Error('DEVTOOLS_MANAGED_PROJECT_JOURNAL_REQUIRED: managed launch requires a project ownership journal.')
+      }
+      projectPath = intent.projectPath
+      await intent.prepareSnapshot(async destination => await populateAutomatorProjectSnapshot(snapshotPlan, destination))
+      scope.throwIfAborted()
+    }
+    await scope.step(() => importManagedDevtoolsProject({
+      cliPath: target.cliPath,
+      projectPath,
+      trusted: options.trustProject,
+      timeout: scope.remainingMs(),
+      signal: scope.signal,
+    }), { stage: 'project-import' })
+    scope.throwIfAborted()
+    portLease = await scope.step(() => acquireAutomatorPortLease(port), {
+      stage: 'port-lease',
+      disposeLate: lease => lease.release(),
+    })
+    const rawReleasePortLease = portLease.release.bind(portLease)
+    let releasedPortLease: Promise<void> | undefined
+    portLease.release = () => releasedPortLease ??= rawReleasePortLease().catch((error: unknown) => {
+      releasedPortLease = undefined
+      throw error
+    })
+    intent ??= await beginManagedWechatProject({ target, projectPath, port })
     if (!intent) {
       throw new Error('DEVTOOLS_MANAGED_PROJECT_JOURNAL_REQUIRED: managed launch requires a project ownership journal.')
     }
@@ -93,6 +110,7 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
       trustProject: options.trustProject,
       signal: scope.signal,
       timeout: scope.remainingMs(),
+      ...(snapshotPlan ? { onBeforeDispatch: async () => await intent!.markLaunchDispatched() } : {}),
       onStarted: async result => await intent!.confirm({ openedProjectWindow: result.openedProjectWindow, port: result.autoPort }),
     })
     scope.throwIfAborted()
@@ -124,12 +142,13 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
     }
     const connectedProgram = program
     const ownedIntent = intent
+    const ownedPortLease = portLease
     const rawDisconnect = (connectedProgram.disconnect as (...args: any[]) => any).bind(connectedProgram)
     let disconnecting: Promise<void> | undefined
     connectedProgram.disconnect = (...args: any[]) => {
       disconnecting ??= (async () => {
         await rawDisconnect(...args)
-        await portLease.release()
+        await ownedPortLease.release()
       })().catch((error: unknown) => {
         disconnecting = undefined
         throw error
@@ -157,7 +176,7 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
           errors.push(error)
         }
         if (disconnected && projectClosed) {
-          await portLease.release().catch(error => errors.push(error))
+          await ownedPortLease.release().catch(error => errors.push(error))
         }
         if (errors.length) {
           throw new AggregateError(errors, 'Managed DevTools session cleanup failed')
@@ -165,7 +184,7 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
       })().finally(() => { closing = undefined })
       return await closing
     }
-    disownPortLease()
+    disownResources()
     allowCleanup()
     return connectedProgram
   }
@@ -182,7 +201,7 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
     allowCleanup()
     try {
       await cleanupLaunch()
-      disownPortLease()
+      disownResources()
     }
     catch (cleanupError) {
       errors.push(...(cleanupError instanceof AggregateError ? cleanupError.errors : [cleanupError]))

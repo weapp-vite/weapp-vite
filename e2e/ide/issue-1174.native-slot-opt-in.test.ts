@@ -38,7 +38,7 @@ describe.each(['default', 'disabled', 'enabled'] as const)('issue #1174: %s nati
       bridgeProjectMode: 'direct',
       warmupRoute: ROUTES.plain,
       warmupRootSelectors: ['#plain-root'],
-    })
+    }) as MiniProgram
     miniProgram.on('exception', event => runtimeErrors.push(event.message))
   }, 180_000)
 

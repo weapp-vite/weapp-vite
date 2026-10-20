@@ -3,6 +3,7 @@ import type { CompilerContext } from '../../../context'
 import type { DevShutdownScope } from '../../../devLifecycle/shutdown'
 import type { GlobalCLIOptions } from '../../types'
 import process from 'node:process'
+import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
 import { maybeStartForwardConsole } from '../../forwardConsole'
 import { openIde, resolveIdeProjectRoot } from '../../openIde'
 import { createServeMiniProgramDevActions, resolveServeIdeOpenStrategy } from './shared'
@@ -45,8 +46,9 @@ export function createServeDevelopmentActions(ctx: CompilerContext, miniBackend:
       if (shutdown.stopping) {
         return false
       }
-      if (resolveServeIdeOpenStrategy(openOptions, options.ideOpenStrategy) === 'automator') {
-        // IDE 启动由 openIde 负责；日志消费者只能连接，不能再次启动或恢复项目。
+      if (resolveServeIdeOpenStrategy(openOptions, options.ideOpenStrategy) === 'automator'
+        || process.env[MANAGED_PROJECT_JOURNAL_ENV]?.trim()) {
+        // 受管 CLI 与 automator 均由 openIde 建立会话；日志消费者不能再次启动或恢复项目。
         return await maybeStartForwardConsole({
           openedOnly: true,
           preferOpenedSession: true,

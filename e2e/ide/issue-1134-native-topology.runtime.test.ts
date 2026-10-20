@@ -72,7 +72,9 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
   }, 60_000)
 
   it('renders imported style updates and added components and routes after restoration', async (context) => {
-    context.onTestFailed(() => process.stdout.write(dev?.getOutput().slice(-24_000) ?? ''))
+    context.onTestFailed(() => {
+      process.stdout.write(dev?.getOutput().slice(-24_000) ?? '')
+    })
     const styleRoute = '/pages/imported/index'
     const optionalRoute = '/pages/optional/index'
     const colors = ['#123', '#456', '#123']

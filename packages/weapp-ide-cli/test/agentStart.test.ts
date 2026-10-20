@@ -125,7 +125,9 @@ describe('startWechatIdeAgent', () => {
     { timeout: -1 },
     { timeout: Number.POSITIVE_INFINITY },
   ])('rejects invalid options before acquiring a lease: %j', async (override) => {
-    await expect(startWechatIdeAgent({ ...options, ...override })).rejects.toBeInstanceOf(TypeError)
+    const onBeforeDispatch = vi.fn()
+    await expect(startWechatIdeAgent({ ...options, ...override, onBeforeDispatch })).rejects.toBeInstanceOf(TypeError)
+    expect(onBeforeDispatch).not.toHaveBeenCalled()
     expect(withMachineLease).not.toHaveBeenCalled()
     expect(resolveTarget).not.toHaveBeenCalled()
     expect(execute).not.toHaveBeenCalled()
@@ -135,7 +137,9 @@ describe('startWechatIdeAgent', () => {
     const failure = new Error(`${stage} failed`)
     const mock = { lease: withMachineLease, selection: resolveTarget, host: assertHost }[stage]
     mock.mockRejectedValue(failure)
-    await expect(startWechatIdeAgent(options)).rejects.toBe(failure)
+    const onBeforeDispatch = vi.fn()
+    await expect(startWechatIdeAgent({ ...options, onBeforeDispatch })).rejects.toBe(failure)
+    expect(onBeforeDispatch).not.toHaveBeenCalled()
     expect(execute).not.toHaveBeenCalled()
   })
 
@@ -150,7 +154,9 @@ describe('startWechatIdeAgent', () => {
 
   it('does not start an already cancelled request', async () => {
     const reason = new Error('cancelled by caller')
-    await expect(startWechatIdeAgent({ ...options, signal: AbortSignal.abort(reason) })).rejects.toBe(reason)
+    const onBeforeDispatch = vi.fn()
+    await expect(startWechatIdeAgent({ ...options, signal: AbortSignal.abort(reason), onBeforeDispatch })).rejects.toBe(reason)
+    expect(onBeforeDispatch).not.toHaveBeenCalled()
     expect(withMachineLease).not.toHaveBeenCalled()
     expect(execute).not.toHaveBeenCalled()
   })
@@ -163,7 +169,63 @@ describe('startWechatIdeAgent', () => {
       controller.abort(reason)
       return target
     })
-    await expect(startWechatIdeAgent({ ...options, signal: controller.signal })).rejects.toBe(reason)
+    const onBeforeDispatch = vi.fn()
+    await expect(startWechatIdeAgent({ ...options, signal: controller.signal, onBeforeDispatch })).rejects.toBe(reason)
+    expect(onBeforeDispatch).not.toHaveBeenCalled()
+    expect(execute).not.toHaveBeenCalled()
+  })
+
+  it('awaits dispatch intent after preflight and before the command and receipt', async () => {
+    const recording = Promise.withResolvers<void>()
+    const recorded = Promise.withResolvers<void>()
+    const onBeforeDispatch = vi.fn(() => {
+      expect(resolveTarget).toHaveBeenCalledOnce()
+      expect(assertHost).toHaveBeenCalledOnce()
+      expect(execute).not.toHaveBeenCalled()
+      recording.resolve()
+      return recorded.promise
+    })
+    const onStarted = vi.fn()
+    const pending = startWechatIdeAgent({ ...options, onBeforeDispatch, onStarted })
+    await recording.promise
+    expect(execute).not.toHaveBeenCalled()
+    recorded.resolve()
+    await pending
+    expect(onBeforeDispatch).toHaveBeenCalledOnce()
+    expect(assertHost.mock.invocationCallOrder[0]).toBeLessThan(onBeforeDispatch.mock.invocationCallOrder[0]!)
+    expect(onBeforeDispatch.mock.invocationCallOrder[0]).toBeLessThan(execute.mock.invocationCallOrder[0]!)
+    expect(execute.mock.invocationCallOrder[0]).toBeLessThan(onStarted.mock.invocationCallOrder[0]!)
+  })
+
+  it('does not execute the command when dispatch intent cannot be recorded', async () => {
+    const failure = new Error('dispatch journal write failed')
+    const onBeforeDispatch = vi.fn(async () => {
+      throw failure
+    })
+    await expect(startWechatIdeAgent({ ...options, onBeforeDispatch })).rejects.toBe(failure)
+    expect(onBeforeDispatch).toHaveBeenCalledOnce()
+    expect(execute).not.toHaveBeenCalled()
+  })
+
+  it('preserves recorded dispatch intent when cancellation arrives during the hook', async () => {
+    const controller = new AbortController()
+    const reason = new Error('cancelled at the dispatch intent boundary')
+    const recording = Promise.withResolvers<void>()
+    const recorded = Promise.withResolvers<void>()
+    let dispatchIntent = false
+    const onBeforeDispatch = vi.fn(async () => {
+      dispatchIntent = true
+      recording.resolve()
+      await recorded.promise
+    })
+    const pending = startWechatIdeAgent({ ...options, signal: controller.signal, onBeforeDispatch })
+    const assertion = expect(pending).rejects.toBe(reason)
+    await recording.promise
+    controller.abort(reason)
+    recorded.resolve()
+    await assertion
+    expect(dispatchIntent).toBe(true)
+    expect(onBeforeDispatch).toHaveBeenCalledOnce()
     expect(execute).not.toHaveBeenCalled()
   })
 

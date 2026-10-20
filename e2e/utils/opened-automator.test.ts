@@ -1,5 +1,7 @@
 import { EventEmitter } from 'node:events'
+import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createDevProcessEnv } from './dev-process-env'
 import { appendIdeReportEvent } from './ideWarningReport'
 import { waitForOpenedAutomator } from './opened-automator'
 
@@ -41,6 +43,41 @@ describe('opened automator', () => {
   afterEach(() => {
     vi.clearAllTimers()
     vi.useRealTimers()
+    vi.unstubAllEnvs()
+  })
+
+  it('uses the same explicit installation for the dev child and parent connector', async () => {
+    vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', 'selected-cli')
+    vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CHANNEL', 'stable')
+    vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_VERSION', '2.03.1234567')
+    vi.stubEnv('WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_CHANNEL', '')
+    vi.stubEnv('WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION', '')
+    vi.stubEnv('WEAPP_IDE_CLI_PATH', 'inherited-other-cli')
+    vi.stubEnv('WEAPP_IDE_DEVTOOLS_CHANNEL', 'rc')
+    vi.stubEnv('WEAPP_IDE_DEVTOOLS_VERSION', '1.99.1000000')
+
+    const childEnv = createDevProcessEnv({ usePolling: false })
+    expect(childEnv).toMatchObject({
+      WEAPP_IDE_CLI_PATH: 'selected-cli',
+      WEAPP_IDE_DEVTOOLS_CHANNEL: 'stable',
+      WEAPP_IDE_DEVTOOLS_VERSION: '2.03.1234567',
+    })
+    expect(process.env.WEAPP_IDE_CLI_PATH).toBe('inherited-other-cli')
+
+    const miniProgram = createSession()
+    connectOpenedAutomatorMock.mockResolvedValueOnce(miniProgram)
+    await waitForOpenedAutomator('fixture/project', { skipAppReady: true, timeoutMs: 50 })
+
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledOnce()
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith(expect.objectContaining({
+      cliPath: 'selected-cli',
+      devtoolsChannel: 'stable',
+      devtoolsVersion: '2.03.1234567',
+      projectPath: 'fixture/project',
+      port: 11074,
+    }))
+    expect(miniProgram.currentPage).not.toHaveBeenCalled()
+    expect(process.env.WEAPP_IDE_CLI_PATH).toBe('inherited-other-cli')
   })
 
   it('waits for a readable current page before returning an opened session', async () => {

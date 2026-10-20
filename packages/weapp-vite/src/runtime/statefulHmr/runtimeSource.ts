@@ -153,7 +153,6 @@ function rememberInstanceState(instance, moduleId) {
   moduleSnapshots.set(moduleId, snapshot);
 }
 function trackInstance(instance, moduleId) {
-  initializeNativeInstanceDefaults(instance, moduleId, false);
   getInstances(moduleId).add(instance);
   if (instanceSnapshots.has(instance)) return;
   const snapshot = suppressLifecycles && moduleSnapshots.get(moduleId);
@@ -167,6 +166,8 @@ function trackInstance(instance, moduleId) {
 function forgetInstance(instance, moduleId) {
   getInstances(moduleId).delete(instance);
   instanceSnapshots.delete(instance);
+  initializedNativeInstances.delete(instance);
+  pendingNativeDefaults.delete(instance);
   if (!suppressLifecycles) moduleSnapshots.delete(moduleId);
 }
 function forgetWevuInstance(instance, moduleId) {
@@ -213,18 +214,22 @@ function refreshWevuInstance(instance, moduleId) {
   if (!generations) wevuInstanceGenerations.set(instance, generations = new Map());
   generations.set(moduleId, generation);
 }
-function proxyFunction(moduleId, path, fallback) {
+function proxyFunction(moduleId, path, fallback, lifecycleOwned) {
   return function (...args) {
     if (suppressLifecycles && /(?:created|attached|ready|detached|onLoad|onShow|onHide|onUnload)$/.test(path)) return;
     const definition = definitions.get(moduleId);
     const segments = path.split('.');
     let value = definition;
     for (const segment of segments) value = value && value[segment];
-    trackInstance(this, moduleId);
+    const tracked = !lifecycleOwned || instances.get(moduleId)?.has(this);
+    if (tracked) {
+      if (!lifecycleOwned) initializeNativeInstanceDefaults(this, moduleId, false);
+      trackInstance(this, moduleId);
+    }
     try {
       return (typeof value === 'function' ? value : fallback)?.apply(this, args);
     } finally {
-      rememberInstanceState(this, moduleId);
+      if (tracked) rememberInstanceState(this, moduleId);
     }
   };
 }
@@ -233,16 +238,16 @@ function decorateObject(value, moduleId, prefix = '', trackLifecycle = false, tr
   const result = { ...value };
   for (const [key, child] of Object.entries(value)) {
     const path = prefix ? prefix + '.' + key : key;
-    if (typeof child === 'function') result[key] = proxyFunction(moduleId, path, child);
+    if (typeof child === 'function') result[key] = proxyFunction(moduleId, path, child, trackLifecycle || trackPage);
     else if (child && typeof child === 'object' && ['lifetimes', 'methods', 'pageLifetimes'].includes(key)) {
-      result[key] = decorateObject(child, moduleId, path);
+      result[key] = decorateObject(child, moduleId, path, trackLifecycle, trackPage);
     }
   }
   if (!prefix && trackPage) {
     const onLoad = result.onLoad;
     const onUnload = result.onUnload;
     result.onLoad = function (...args) {
-      initializeNativeInstanceDefaults(this, moduleId, true);
+      initializeNativeInstanceDefaults(this, moduleId, true, true);
       trackInstance(this, moduleId);
       return onLoad?.apply(this, args);
     };
@@ -262,13 +267,13 @@ function decorateObject(value, moduleId, prefix = '', trackLifecycle = false, tr
     result.lifetimes = lifetimes;
     if (trackLifecycle) {
       result.lifetimes.created = function (...args) {
-        initializeNativeInstanceDefaults(this, moduleId, false);
+        initializeNativeInstanceDefaults(this, moduleId, false, true);
         return created?.apply(this, args);
       };
     }
     if (trackLifecycle || typeof attached === 'function') {
       result.lifetimes.attached = function (...args) {
-        initializeNativeInstanceDefaults(this, moduleId, true);
+        initializeNativeInstanceDefaults(this, moduleId, true, true);
         trackInstance(this, moduleId);
         return attached?.apply(this, args);
       };

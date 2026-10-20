@@ -7,12 +7,14 @@ import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
 import { execa } from 'execa'
 import { assertManagedInstallation, inspectManagedProjectHost, isManagedPortClosed, readManagedProcessIdentity, sameManagedProcess, waitForManagedPortClosed } from './host'
 import { managedProcessToken, readManagedRecord, readManagedWechatProjectRecords, resolveManagedJournal, withManagedJournalLock, writeManagedRecord } from './journal'
+import { finalizeManagedProjectSnapshot, isManagedWechatProjectFullyReleased, managedSnapshotPath, prepareManagedProjectSnapshot } from './snapshot'
 import { checkManagedWindowBudget } from './windowBudget'
 import { captureManagedWindowClose, waitForManagedWindowClosed } from './windowClose'
 
 export * from './installationExit'
 export { MANAGED_PROJECT_JOURNAL_ENV, readManagedWechatProjectRecords } from './journal'
 export { MANAGED_PROJECT_MAX_WINDOWS_ENV } from './journal/constants'
+export { isManagedWechatProjectFullyReleased } from './snapshot'
 export type * from './types'
 
 const pendingClosures = new Map<string, Promise<void>>()
@@ -28,7 +30,7 @@ async function release(record: ManagedWechatProjectRecord, reason: ManagedWechat
   await writeManagedRecord(record)
 }
 
-async function closeRecord(record: ManagedWechatProjectRecord) {
+async function closeWindowRecord(record: ManagedWechatProjectRecord) {
   if (record.state === 'released') {
     return
   }
@@ -81,6 +83,25 @@ async function closeRecord(record: ManagedWechatProjectRecord) {
   }
 }
 
+async function closeRecord(record: ManagedWechatProjectRecord) {
+  if (isManagedWechatProjectFullyReleased(record)) {
+    return
+  }
+  if (record.state !== 'released') {
+    if (record.snapshot && !record.snapshot.dispatchedAt && record.openedProjectWindow === undefined) {
+      await release(record, 'not-started')
+    }
+    else {
+      if (record.snapshot && record.openedProjectWindow === false) {
+        throw new Error('Managed DevTools snapshot received a borrowed window receipt; preserving files until installation exit is proven.')
+      }
+      await closeWindowRecord(record)
+    }
+  }
+  // 快照删除失败不能撤销已保存的窗口销毁证据，也不能再次发送关窗。
+  await finalizeManagedProjectSnapshot(record)
+}
+
 /** 窗口销毁与连接断开分别验证；失败保留登记供后续继续观察。 */
 export function closeManagedWechatProject(options: { journalPath?: string, id: string }): Promise<void> {
   const journalPath = resolveManagedJournal(options.journalPath)
@@ -104,9 +125,12 @@ export async function beginManagedWechatProject(options: BeginManagedWechatProje
     return undefined
   }
   const id = randomUUID()
+  const projectPath = options.snapshotProject ? managedSnapshotPath(journalPath, id) : path.resolve(options.projectPath)
   await withManagedJournalLock(journalPath, async (scopeRoot) => {
     const previous = await readManagedWechatProjectRecords(scopeRoot)
-    if (previous.some(record => ['starting', 'unconfirmed', 'closing', 'failed'].includes(record.state))) {
+    if (previous.some(record => ['starting', 'unconfirmed', 'closing', 'failed'].includes(record.state)
+      || (record.state === 'released' && !isManagedWechatProjectFullyReleased(record))
+      || (record.state === 'borrowed' && record.snapshot?.state !== undefined && record.snapshot.state !== 'removed'))) {
       throw new Error('Managed DevTools journal contains unresolved ownership or cleanup; refusing another project start.')
     }
     checkManagedWindowBudget(previous, options)
@@ -119,7 +143,15 @@ export async function beginManagedWechatProject(options: BeginManagedWechatProje
       ownerToken: managedProcessToken,
       ownerPid: process.pid,
       target: { ...options.target },
-      projectPath: path.resolve(options.projectPath),
+      projectPath,
+      ...(options.snapshotProject
+        ? { snapshot: {
+            protocol: 'wechat-devtools-project-snapshot-v1' as const,
+            sourceProjectPath: path.resolve(options.projectPath),
+            token: randomUUID(),
+            state: 'reserved' as const,
+          } }
+        : {}),
       state: 'starting',
       port: options.port,
       createdAt: now,
@@ -129,11 +161,42 @@ export async function beginManagedWechatProject(options: BeginManagedWechatProje
   return {
     id,
     journalPath,
+    projectPath,
+    prepareSnapshot: async (populate) => {
+      await withManagedJournalLock(journalPath, async () => {
+        const record = await readManagedRecord(journalPath, id)
+        try {
+          await prepareManagedProjectSnapshot(record, populate)
+        }
+        catch (error) {
+          if (record.snapshot) {
+            record.snapshot.cleanupError = describe(error)
+            await writeManagedRecord(record)
+          }
+          throw error
+        }
+      })
+    },
+    markLaunchDispatched: async () => {
+      await withManagedJournalLock(journalPath, async () => {
+        const record = await readManagedRecord(journalPath, id)
+        if (record.snapshot) {
+          if (record.state !== 'starting' || record.snapshot.state !== 'ready' || record.snapshot.dispatchedAt) {
+            throw new Error('Managed DevTools snapshot is not ready for its first start dispatch.')
+          }
+          record.snapshot.dispatchedAt = new Date().toISOString()
+          await writeManagedRecord(record)
+        }
+      })
+    },
     confirm: async (result) => {
       await withManagedJournalLock(journalPath, async () => {
         const record = await readManagedRecord(journalPath, id)
         if (record.state !== 'starting' && record.state !== 'unconfirmed') {
           throw new Error('Managed DevTools start receipt was already recorded.')
+        }
+        if (record.snapshot && (!record.snapshot.dispatchedAt || record.snapshot.state !== 'ready')) {
+          throw new Error('Managed DevTools snapshot start receipt has no prepared dispatch intent.')
         }
         if (typeof result.openedProjectWindow !== 'boolean' || !Number.isInteger(result.port) || result.port <= 0 || result.port > 65535
           || (record.port !== undefined && record.port !== result.port)) {

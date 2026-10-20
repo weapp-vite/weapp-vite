@@ -6,18 +6,23 @@ import { preview } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildRuntimePruning, RUNTIME_PRUNING_ROOT } from '../utils/runtimePruning'
 
+type ListeningPreviewServer = PreviewServer & {
+  resolvedUrls: NonNullable<PreviewServer['resolvedUrls']>
+}
+
 describe('issue #1064: pruned Web production runtime', { concurrent: false }, () => {
   let browser: Browser | undefined
-  let server: PreviewServer | undefined
+  let server: ListeningPreviewServer | undefined
 
   beforeAll(async () => {
     await buildRuntimePruning('web')
+    // preview 在监听及 URL 解析完成后才返回；本套件只在关闭前读取地址。
     server = await preview({
       root: RUNTIME_PRUNING_ROOT,
       configFile: false,
       build: { outDir: 'dist/web' },
       preview: { host: '127.0.0.1', port: 0, open: false },
-    })
+    }) as ListeningPreviewServer
     browser = await chromium.launch({ channel: process.env.WEAPP_VITE_WEB_E2E_CHANNEL })
   })
 

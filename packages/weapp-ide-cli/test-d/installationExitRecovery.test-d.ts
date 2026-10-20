@@ -11,10 +11,10 @@ expectError(recoverManagedWechatProjectsAfterInstallationExit({ target, recovery
 expectError(recoverManagedWechatProjectsAfterInstallationExit({ target, recoveryScope, force: true }))
 
 declare const record: ManagedWechatProjectRecord
-expectType<'borrowed' | 'project-closed' | 'installation-exited' | undefined>(record.releasedReason)
+expectType<'borrowed' | 'project-closed' | 'installation-exited' | 'not-started' | undefined>(record.releasedReason)
 expectType<ManagedWechatInstallationExitEvidence | undefined>(record.installationExitRecovery)
 declare const evidence: ManagedWechatInstallationExitEvidence
-expectType<'starting' | 'unconfirmed' | 'failed'>(evidence.previous.state)
+expectType<'starting' | 'unconfirmed' | 'failed' | 'borrowed'>(evidence.previous.state)
 expectType<string | undefined>(evidence.previous.error)
 expectType<0>(evidence.processInspection.selectedProcessCount)
 expectType<'darwin'>(evidence.processInspection.platform)

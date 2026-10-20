@@ -62,7 +62,9 @@ describe('script setup external blocks component analysis runtime', { concurrent
   }, 60_000)
 
   it('renders external template edits, changed import paths and component removal/restoration', async (context) => {
-    context.onTestFailed(() => process.stdout.write(dev?.getOutput().slice(-24_000) ?? ''))
+    context.onTestFailed(() => {
+      process.stdout.write(dev?.getOutput().slice(-24_000) ?? '')
+    })
     const dom = createDomAcceptance(context, SCRIPT_SETUP_EXTERNAL_FIXTURE, SCRIPT_SETUP_EXTERNAL_STEPS.map(step => ({
       id: step.id,
       route: SCRIPT_SETUP_EXTERNAL_ROUTE,

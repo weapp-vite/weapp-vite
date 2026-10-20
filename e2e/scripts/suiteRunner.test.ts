@@ -326,7 +326,7 @@ describe('suiteRunner', () => {
     const autoRoutesDefineAppJsonTask = ideFullTasks.find(task => task.label === 'ide/auto-routes-define-app-json.runtime.test.ts')
     const coreHmrTask = ideExhaustiveTasks.find(task => task.label === 'ide/wevu-runtime.core-hmr.test.ts')
     const devtoolsCliWorkflowTask = ideFullTasks.find(task => task.label === 'ide/devtools-cli-workflow.runtime.test.ts')
-    const githubIssuesAggregateTasks = ideFullTasks.filter(task => IDE_GITHUB_ISSUES_AGGREGATE_LABELS.includes(task.label))
+    const githubIssuesAggregateTasks = ideFullTasks.filter(task => (IDE_GITHUB_ISSUES_AGGREGATE_LABELS as readonly string[]).includes(task.label))
     const githubIssuesIssue621Task = ideFullTasks.find(task => task.label === 'ide/github-issues.runtime.issue621.test.ts')
     const lifecycleCompareTask = ideFullTasks.find(task => task.label === 'ide/lifecycle-compare.test.ts')
     const statefulHmrTask = ideFullTasks.find(task => task.label === 'ide/stateful-hmr.runtime.test.ts')

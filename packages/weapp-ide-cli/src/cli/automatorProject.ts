@@ -106,67 +106,70 @@ async function ensureWrapperAppConfig(wrapperProjectPath: string) {
   })
 }
 
-/**
- * @description 为 DevTools automator 准备稳定的小程序根目录，避免打开瞬间跨 miniprogramRoot 读取 app.json 抖动。
- */
-export async function resolveAutomatorProjectPath(projectPath: string): Promise<AutomatorProjectResolution> {
+export interface AutomatorProjectPlan {
+  sourceProjectPath: string
+  distRoot: string
+  projectConfig: Record<string, unknown>
+}
+
+/** 只读解析布局，受管路径必须先通过窗口预算再创建快照。 */
+export async function readAutomatorProjectPlan(projectPath: string): Promise<AutomatorProjectPlan | undefined> {
   const sourceProjectPath = path.resolve(projectPath)
   const projectConfig = await readJsonObject(path.join(sourceProjectPath, 'project.config.json'))
   const miniprogramRoot = normalizeProjectRelativeRoot(projectConfig?.miniprogramRoot)
-
   if (!miniprogramRoot) {
-    return {
-      projectPath: sourceProjectPath,
-      sourceProjectPath,
-    }
+    return
   }
-  const sourceProjectConfig = projectConfig ?? {}
-
   const distRoot = path.join(sourceProjectPath, miniprogramRoot)
   if (!await pathExists(path.join(distRoot, 'app.json'))) {
-    return {
-      projectPath: sourceProjectPath,
-      sourceProjectPath,
-    }
+    return
   }
+  return { sourceProjectPath, distRoot, projectConfig: projectConfig ?? {} }
+}
 
-  const wrapperHash = createHash('sha1')
-    .update(sourceProjectPath)
-    .update('\0')
-    .update(path.resolve(distRoot))
-    .digest('hex')
-    .slice(0, 16)
-  const wrapperProjectPath = path.join(WRAPPER_ROOT, wrapperHash)
-
-  await fs.rm(wrapperProjectPath, { recursive: true, force: true })
-  await fs.mkdir(wrapperProjectPath, { recursive: true })
+/** 仅转换已分配快照的布局；目录所有权与删除由调用方持有。 */
+export async function populateAutomatorProjectSnapshot(plan: AutomatorProjectPlan, wrapperProjectPath: string) {
+  const { sourceProjectPath, distRoot, projectConfig: sourceProjectConfig } = plan
   await fs.cp(distRoot, wrapperProjectPath, {
     dereference: true,
     force: true,
     recursive: true,
   })
-
   const pluginRoot = normalizeProjectRelativeRoot(sourceProjectConfig.pluginRoot)
   if (pluginRoot) {
     await copyProjectRoot(sourceProjectPath, wrapperProjectPath, pluginRoot)
-  }
-
-  const rootPatch = {
-    compileType: sourceProjectConfig.compileType === 'plugin' ? 'plugin' : 'miniprogram',
-    miniprogramRoot: './',
-    srcMiniprogramRoot: './',
   }
   const projectPrivateConfig = await readJsonObject(path.join(sourceProjectPath, 'project.private.config.json')) ?? {}
   await writeJsonObject(
     path.join(wrapperProjectPath, 'project.config.json'),
     createWrapperProjectConfig(sourceProjectConfig, {
       ...projectPrivateConfig,
-      ...rootPatch,
+      compileType: sourceProjectConfig.compileType === 'plugin' ? 'plugin' : 'miniprogram',
+      miniprogramRoot: './',
+      srcMiniprogramRoot: './',
     }),
   )
   await fs.rm(path.join(wrapperProjectPath, 'project.private.config.json'), { force: true })
   await ensureWrapperAppConfig(wrapperProjectPath)
+}
 
+/** 为普通非受管 automator 保留既有稳定项目路径合同。 */
+export async function resolveAutomatorProjectPath(projectPath: string): Promise<AutomatorProjectResolution> {
+  const sourceProjectPath = path.resolve(projectPath)
+  const plan = await readAutomatorProjectPlan(sourceProjectPath)
+  if (!plan) {
+    return { projectPath: sourceProjectPath, sourceProjectPath }
+  }
+  const wrapperHash = createHash('sha1')
+    .update(sourceProjectPath)
+    .update('\0')
+    .update(path.resolve(plan.distRoot))
+    .digest('hex')
+    .slice(0, 16)
+  const wrapperProjectPath = path.join(WRAPPER_ROOT, wrapperHash)
+  await fs.rm(wrapperProjectPath, { recursive: true, force: true })
+  await fs.mkdir(wrapperProjectPath, { recursive: true })
+  await populateAutomatorProjectSnapshot(plan, wrapperProjectPath)
   return {
     cleanup: async () => {
       await fs.rm(wrapperProjectPath, { recursive: true, force: true })

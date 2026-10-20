@@ -10,7 +10,6 @@ const QUERY_ITEM_PATH_RE = /^\/query\/items\/[^/]+$/
 
 interface QueryRequestOption extends HeadlessWxRequestOption {
   dataType?: string
-  responseType?: string
 }
 
 function resolveQueryOrigin(baseUrl: string) {

@@ -255,6 +255,10 @@ interface RuntimeLogMeta {
   closeWrapped: boolean
 }
 
+export type MiniProgramWithRuntimeLogs = MiniProgram & {
+  __weappViteRuntimeLogMeta?: RuntimeLogMeta
+}
+
 interface RelaunchPatchMeta {
   wrapped: boolean
 }
@@ -1632,9 +1636,8 @@ function handleLaunchError(error: unknown, project: string): never {
 async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIMEOUT, rootSelectors: string[] = [], signal?: AbortSignal) {
   const start = Date.now()
   const hasExplicitRootSelectors = rootSelectors.length > 0
-  const renderedSelectors = hasExplicitRootSelectors
-    ? rootSelectors
-    : ['view', 'text', 'button', 'input', 'scroll-view', 'image', '*']
+  // 根节点是任一命中的关系；单次并集查询避免缺失首项耗尽其它根的预算。
+  const renderedSelector = hasExplicitRootSelectors ? rootSelectors.join(', ') : '*'
   const selectors = hasExplicitRootSelectors
     ? rootSelectors
     : ['page', 'body', 'weapp-app-shell', 'view']
@@ -1642,25 +1645,23 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
     signal?.throwIfAborted()
     try {
       if (typeof page?.waitForRendered === 'function') {
-        for (const selector of renderedSelectors) {
+        const remaining = Math.max(1, timeoutMs - (Date.now() - start))
+        const probeTimeout = Math.min(ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, remaining)
+        try {
+          await runWithTimeout(
+            () => page.waitForRendered({
+              selector: renderedSelector,
+              timeout: probeTimeout,
+            }),
+            probeTimeout + 500,
+            `wait rendered page node ${renderedSelector}`,
+          )
           signal?.throwIfAborted()
-          const remaining = Math.max(1, timeoutMs - (Date.now() - start))
-          const probeTimeout = Math.min(ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, remaining)
-          try {
-            await runWithTimeout(
-              () => page.waitForRendered({
-                selector,
-                timeout: probeTimeout,
-              }),
-              probeTimeout + 500,
-              `wait rendered page node ${selector}`,
-            )
-            return { selector }
-          }
-          catch {
-            signal?.throwIfAborted()
-            // 旧版 DevTools 的 Page.getElement 可能不可用，但 selectorQuery 失败时仍继续走历史探测。
-          }
+          return { selector: renderedSelector }
+        }
+        catch {
+          signal?.throwIfAborted()
+          // 旧版 DevTools 的 Page.getElement 可能不可用，但 selectorQuery 失败时仍继续走历史探测。
         }
         if (!hasExplicitRootSelectors) {
           const remaining = Math.max(1, timeoutMs - (Date.now() - start))
@@ -1673,6 +1674,7 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
               probeTimeout + 500,
               'wait rendered page wxml',
             )
+            signal?.throwIfAborted()
             if (typeof wxml === 'string' && wxml.trim() && wxml.trim() !== '<text></text>') {
               return { source: 'wxml' }
             }
@@ -1685,26 +1687,41 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
       }
       for (const selector of selectors) {
         signal?.throwIfAborted()
-        const remaining = Math.max(1, timeoutMs - (Date.now() - start))
-        const queryTimeout = Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, remaining)
-        if (typeof page?.$$ === 'function') {
-          const roots = await runWithTimeout(
-            () => page.$$(selector),
-            queryTimeout,
-            `query page roots ${selector}`,
+        try {
+          const remaining = timeoutMs - (Date.now() - start)
+          if (remaining <= 0) {
+            break
+          }
+          const queryTimeout = Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, remaining)
+          if (typeof page?.$$ === 'function') {
+            const roots = await runWithTimeout(
+              () => page.$$(selector),
+              queryTimeout,
+              `query page roots ${selector}`,
+            )
+            signal?.throwIfAborted()
+            if (Array.isArray(roots) && roots.length > 0) {
+              return roots[0]
+            }
+          }
+          signal?.throwIfAborted()
+          const singleRemaining = timeoutMs - (Date.now() - start)
+          if (singleRemaining <= 0) {
+            break
+          }
+          const root = await runWithTimeout(
+            () => page?.$(selector),
+            Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, singleRemaining),
+            `query page root ${selector}`,
           )
-          if (Array.isArray(roots) && roots.length > 0) {
-            return roots[0]
+          signal?.throwIfAborted()
+          if (root) {
+            return root
           }
         }
-        signal?.throwIfAborted()
-        const root = await runWithTimeout(
-          () => page?.$(selector),
-          queryTimeout,
-          `query page root ${selector}`,
-        )
-        if (root) {
-          return root
+        catch {
+          signal?.throwIfAborted()
+          // 无效选择器或当前项的协议错误不能阻断后续合法根；所有项共用原剩余预算。
         }
       }
     }
@@ -1720,6 +1737,7 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
       await sleep(120)
     }
   }
+  signal?.throwIfAborted()
   return null
 }
 

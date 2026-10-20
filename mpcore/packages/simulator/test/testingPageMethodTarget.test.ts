@@ -1,8 +1,10 @@
+import type { HeadlessTestingPageHandle } from '../src/testing'
 import fs from 'node:fs'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { launch } from '../src/testing'
 import { cleanupTempDirs, createBaseFixture } from './helpers'
+import { createStatefulNativePageFiles } from './helpers/statefulNativePage'
 
 describe('page method target parity', () => {
   const directories: string[] = []
@@ -78,6 +80,63 @@ Page({
       await expect(original.callMethodWithOptions('identify', { fallback: false })).rejects.toThrow('page is not on top')
       await expect(original.callMethodWithOptions('identify', { routeOnly: true })).resolves.toBeUndefined()
       expect(await (await miniProgram.currentPage())?.data('calls')).toBe(0)
+    }
+    finally {
+      await miniProgram.close()
+    }
+  })
+
+  it('binds current native methods to preserved vendor state after HMR and rejects the replaced handle', async () => {
+    const project = createBaseFixture()
+    directories.push(project)
+    for (const [file, source] of createStatefulNativePageFiles()) {
+      if (file === 'project.config.json') {
+        continue
+      }
+      const target = path.join(project, 'dist', file)
+      fs.mkdirSync(path.dirname(target), { recursive: true })
+      fs.writeFileSync(target, source)
+    }
+    const miniProgram = await launch({ projectPath: project })
+    const baseline = 'runtime-vendor-hmr-baseline'
+    const updated = 'runtime-vendor-hmr-updated'
+    const nativeOptions = { fallback: false }
+    const routeOptions = { routeOnly: true, fallback: false }
+    const check = async (page: HeadlessTestingPageHandle, mode: string, calls: number, definitionMarker: string, marker = baseline) => {
+      const nativeResult = await page.callMethodWithOptions('readVendorState', nativeOptions)
+      expect(nativeResult).toEqual({ mode, calls, definitionMarker, marker })
+      await expect(page.callMethodWithOptions('readVendorState', routeOptions)).resolves.toEqual(nativeResult)
+      expect(await page.data()).toMatchObject({ mode, vendorCalls: calls, vendorMarker: marker })
+      expect(await (await page.$('#mode'))?.text()).toBe(`当前模式 ${mode} 切换模式`)
+      expect(await (await page.$('#vendor-marker'))?.text()).toBe(marker)
+      expect(await (await page.$('#vendor-calls'))?.text()).toBe(String(calls))
+    }
+    try {
+      const original = await miniProgram.reLaunch('/pages/external/index')
+      await check(original, 'light', 0, baseline)
+      await original.callMethodWithOptions('switchMode', nativeOptions)
+      await check(original, 'dark', 1, baseline)
+      await original.callMethodWithOptions('patchPage', nativeOptions)
+      const current = (await miniProgram.currentPage())!
+      expect(current.pageId).toBe(original.pageId)
+      await check(current, 'dark', 1, updated)
+      await current.callMethodWithOptions('switchMode', nativeOptions)
+      await check(current, 'npm-dark', 2, updated)
+      await current.callMethodWithOptions('restorePage', nativeOptions)
+      await check(current, 'npm-dark', 2, baseline)
+      await current.callMethodWithOptions('switchMode', nativeOptions)
+      await check(current, 'light', 3, baseline)
+      await current.callMethodWithOptions('patchPage', nativeOptions)
+      await check(current, 'light', 3, updated)
+
+      const replacement = await miniProgram.reLaunch('/pages/external/index')
+      const fresh = (await miniProgram.currentPage())!
+      expect(fresh.pageId).toBe(replacement.pageId)
+      expect(fresh.pageId).not.toBe(original.pageId)
+      await check(fresh, 'light', 0, updated, updated)
+      await expect(current.callMethodWithOptions('switchMode', nativeOptions)).rejects.toThrow('page is not on top of page stack')
+      await expect(current.callMethodWithOptions('switchMode', routeOptions)).resolves.toBeUndefined()
+      await check(fresh, 'light', 0, updated, updated)
     }
     finally {
       await miniProgram.close()

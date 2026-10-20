@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
 import { CompilerHmrResyncError } from '@weapp-vite/hmr'
 import path from 'pathe'
+import { copyTailwindGenerationValue } from './generationValue'
 import { createTailwindSourceMatcher } from './sources/matcher'
 
 export interface TailwindRootState {
@@ -12,11 +13,13 @@ export interface TailwindRootState {
   rawSources: ReadonlyMap<string, string | null | undefined>
 }
 
-export interface TailwindRootHost {
+export interface TailwindRootHost<K = unknown> {
   cwd: string
   sourceId: (file: string) => string
   isOutput?: (file: string) => boolean
   reusePreprocessedCss?: (file: string, previous: string | null | undefined, current: string | null | undefined) => boolean
+  /** 捕获实际内存请求的独立只读副本；生成和缓存命中均调用，失败保留原始错误。 */
+  captureRequest?: (key: K, request: CompilerGenerateRequest) => void | Promise<void>
 }
 
 const caches = new WeakMap<Compiler, WeakMap<TailwindRootState, { signature: string, result: CompilerGenerateResult }>>()
@@ -26,7 +29,7 @@ export async function prepareTailwindRoots<K>(
   compiler: Compiler,
   request: HmrCompilerRequest,
   roots: ReadonlyMap<K, TailwindRootState>,
-  options: TailwindRootHost,
+  options: TailwindRootHost<K>,
 ): Promise<Map<K, CompilerGenerateResult>> {
   const cache = caches.get(compiler) ?? new WeakMap<TailwindRootState, { signature: string, result: CompilerGenerateResult }>()
   caches.set(compiler, cache)
@@ -105,14 +108,20 @@ export async function prepareTailwindRoots<K>(
     const signature = createHash('sha256').update(JSON.stringify([cssSources, entrySources, sources, [...dependencyVersions]])).digest('hex')
     const cached = cache.get(root)
     // 候选由 core 从完整内存来源提取；后续磁盘保存不能参与本次扫描。
+    let effectiveRequest: CompilerGenerateRequest = {
+      ...root.request,
+      sourceOptions: { ...sourceOptions, cssEntries: [], cssSources: [...cssSources ?? [], ...entrySources] },
+      sources,
+      scanSources: false,
+    }
+    // 先交接实际内存请求；宿主复制后即可同时覆盖生成与缓存命中的批次。
+    if (options.captureRequest) {
+      effectiveRequest = copyTailwindGenerationValue(effectiveRequest)
+      await options.captureRequest(index, effectiveRequest)
+    }
     const generated = cached?.signature === signature
       ? cached.result
-      : await compiler.generate({
-          ...root.request,
-          sourceOptions: { ...sourceOptions, cssEntries: [], cssSources: [...cssSources ?? [], ...entrySources] },
-          sources,
-          scanSources: false,
-        })
+      : await compiler.generate(effectiveRequest)
     entries.set(index, generated)
     for (const file of generated.dependencies) {
       checkDependency(file)

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { prepareAutomatorBridgeWrapperProject, resolveAutomatorBridgeProjectMode, waitForBridgeWrapperWarmupAsset } from './automator'
 
 vi.mock('node:fs', async (importOriginal) => {
-  const original = await importOriginal<typeof import('node:fs')>()
+  const original = await importOriginal<typeof import('node:fs') & { default: typeof fs }>()
   // 隔离应用层 spy；Linux 的递归 fs.watch 会调用原生模块自己的逐文件 watch。
   return { ...original, default: { ...original.default } }
 })

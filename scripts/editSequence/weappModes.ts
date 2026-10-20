@@ -1,4 +1,6 @@
 import type { RolldownWatcher } from 'rolldown'
+import type { InlineConfig } from 'vite'
+import type { WeappViteConfig } from 'weapp-vite/config'
 import type { SequenceInput } from './driver'
 import type { OutputSnapshot } from './outputCache'
 import { access, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
@@ -65,7 +67,7 @@ export class WeappModeSequenceSession {
     for (const mode of this.fresh ? ['production'] as const : config.pipeline) {
       let emitted: string[] = []
       let references: string[] = []
-      const result = await build({
+      const inlineConfig: InlineConfig & { weapp?: WeappViteConfig } = {
         root: this.root,
         configFile: false,
         mode: mode === 'dev' ? 'development' : 'production',
@@ -82,7 +84,8 @@ export class WeappModeSequenceSession {
         }],
         weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false },
         build: { outDir: this.outDir, emptyOutDir: config.emptyOutDir, minify: true, sourcemap: false, watch: mode === 'dev' ? {} : null },
-      })
+      }
+      const result = await build(inlineConfig)
       if (mode === 'dev') {
         this.watcher = result as RolldownWatcher
         const ready = Promise.withResolvers<void>()

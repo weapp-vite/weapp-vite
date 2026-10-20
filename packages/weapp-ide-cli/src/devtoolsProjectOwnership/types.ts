@@ -17,7 +17,7 @@ export interface ManagedWechatInstallationExitEvidence {
   installationId: string
   profileDir: string
   previous: {
-    state: 'starting' | 'unconfirmed' | 'failed'
+    state: 'starting' | 'unconfirmed' | 'failed' | 'borrowed'
     error?: string
     updatedAt: string
     recordSha256: string
@@ -75,6 +75,18 @@ export interface ManagedWechatWindowCloseEvidence {
   logInventoryRecovery?: { failure: string, cursors: ManagedWechatWindowLogCursor[] }
 }
 
+export interface ManagedWechatProjectSnapshot {
+  protocol: 'wechat-devtools-project-snapshot-v1'
+  sourceProjectPath: string
+  token: string
+  state: 'reserved' | 'ready' | 'removed'
+  directoryIdentity?: { dev: string, ino: string }
+  dispatchedAt?: string
+  cleanupStartedAt?: string
+  removedAt?: string
+  cleanupError?: string
+}
+
 export interface ManagedWechatProjectRecord {
   schemaVersion: 1
   id: string
@@ -94,10 +106,11 @@ export interface ManagedWechatProjectRecord {
   closeAcknowledgedAt?: string
   /** 端口退出不是窗口退出；保存所选 profile 的增量销毁证据供父任务恢复。 */
   windowClose?: ManagedWechatWindowCloseEvidence
-  releasedReason?: 'borrowed' | 'project-closed' | 'installation-exited'
+  releasedReason?: 'borrowed' | 'project-closed' | 'installation-exited' | 'not-started'
   /** 显式恢复只终结已退出安装的活资源；原启动失败与归属缺口仍保留。 */
   installationExitRecovery?: ManagedWechatInstallationExitEvidence
   error?: string
+  snapshot?: ManagedWechatProjectSnapshot
 }
 
 export interface BeginManagedWechatProjectOptions {
@@ -108,11 +121,16 @@ export interface BeginManagedWechatProjectOptions {
   journalPath?: string
   /** 当前任务根作用域最多持有一个窗口；双项目验收须显式指定两个。 */
   maxOwnedWindows?: 1 | 2
+  /** 将输入项目的布局快照持久绑定当前任务 owner。 */
+  snapshotProject?: boolean
 }
 
 export interface ManagedWechatProjectIntent {
   id: string
   journalPath: string
+  projectPath: string
+  prepareSnapshot: (populate: (projectPath: string) => Promise<void>) => Promise<void>
+  markLaunchDispatched: () => Promise<void>
   confirm: (result: { openedProjectWindow: boolean, port: number }) => Promise<void>
   fail: (error: unknown) => Promise<void>
   close: () => Promise<void>

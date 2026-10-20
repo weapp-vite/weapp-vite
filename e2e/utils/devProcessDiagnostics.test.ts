@@ -9,6 +9,26 @@ beforeEach(() => vi.clearAllMocks())
 afterEach(() => vi.useRealTimers())
 
 describe('dev process diagnostics', () => {
+  it('returns isolated build-error snapshots without changing diagnostic classification', () => {
+    const collector = createDevProcessDiagnostics('apps/demo')
+    collector.write('[warn] warning\n[mini:error] runtime failure\n[error] Build failed with 1 error:\n')
+    const snapshot = collector.getBuildErrors()
+    expect(snapshot).toEqual(['[error] Build failed with 1 error:'])
+    expect(Reflect.set(snapshot, 0, 'changed by consumer')).toBe(true)
+    collector.write('[weapp-vite] stateful HMR: rejected\nError: rejected\n    at patch (runtime.js:1:2)\n')
+    collector.flush()
+    expect(collector.getBuildErrors()).toEqual([
+      '[error] Build failed with 1 error:',
+      '[weapp-vite] stateful HMR: rejected\nError: rejected\n    at patch (runtime.js:1:2)',
+    ])
+    expect(vi.mocked(appendIdeReportEvent).mock.calls.map(([entry]) => [entry.source, entry.level])).toEqual([
+      ['build', 'warn'],
+      ['runtime', 'error'],
+      ['build', 'error'],
+      ['build', 'error'],
+    ])
+  })
+
   it('records forwarded startup errors across chunk and UTF-8 boundaries', () => {
     const collector = createDevProcessDiagnostics('apps/demo')
     const bytes = Buffer.from('[mini:error] 启动失败\r\n')

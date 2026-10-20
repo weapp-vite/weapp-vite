@@ -31,7 +31,7 @@ describe('issue #1182 production mount identity', { concurrent: false }, () => {
       expect((await stat(path.join(project, 'dist', `${route.slice(1)}.${extension}`))).isFile()).toBe(true)
     }
     launchAttempted = true
-    host = await launchAutomator({ projectPath: project, bridgeProjectMode: 'direct', warmupRoute: route })
+    host = await launchAutomator({ projectPath: project, bridgeProjectMode: 'direct', warmupRoute: route }) as MiniProgram
     host.on('exception', event => errors.push(event.message))
   }, 180_000)
 

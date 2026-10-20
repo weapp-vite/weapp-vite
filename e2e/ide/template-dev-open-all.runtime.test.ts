@@ -1,8 +1,5 @@
 import type { TemplateDevOpenCase as TemplateCase } from './template-dev-open-cases'
-import { Buffer } from 'node:buffer'
-import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
-import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
@@ -30,6 +27,7 @@ import {
   TEMPLATE_DEV_OPEN_CASES,
 } from './template-dev-open-cases'
 import { templateDevOpenCheckpoint } from './templateDevOpenDom'
+import { createTemplateDevOpenRunner } from './templateDevOpenSession'
 
 const IDE_AUTOMATOR_INFRA_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Timed out waiting for opened automator ws:\/\/127\.0\.0\.1:\d+|无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|automation websocket|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Wait timed out after \d+ ms|当前项目已完成打开流程，但尚未连接到可复用的自动化会话/i
 const FORWARD_CONSOLE_READY_RE = /\[forwardConsole\] 已连接微信开发者工具日志/
@@ -53,72 +51,6 @@ function resolveTemplateProjectRoot(templateCase: TemplateCase) {
   return resolveTemplateDevOpenProjectRoot(templateCase)
 }
 
-function resolveAutomatorSessionFile(projectPath: string, port?: number) {
-  const normalizedProjectPath = path.resolve(projectPath)
-  const sessionKey = port ? `${normalizedProjectPath}#port-${port}` : normalizedProjectPath
-  const encodedProjectPath = Buffer.from(sessionKey).toString('base64url')
-  return path.join(os.tmpdir(), 'weapp-vite-automator-sessions', `${encodedProjectPath}.json`)
-}
-
-function resolveAutomatorWrapperProjectPath(projectPath: string) {
-  const sourceProjectPath = path.resolve(projectPath)
-  const distRoot = path.resolve(sourceProjectPath, 'dist')
-  const wrapperHash = createHash('sha1')
-    .update(sourceProjectPath)
-    .update('\0')
-    .update(distRoot)
-    .digest('hex')
-    .slice(0, 16)
-  return path.join(os.tmpdir(), 'weapp-ide-cli-automator-projects', wrapperHash)
-}
-
-function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-async function removeAutomatorSessionFiles(projectPath: string) {
-  await Promise.all([
-    fs.rm(resolveAutomatorSessionFile(projectPath), { force: true }).catch(() => {}),
-    fs.rm(resolveAutomatorSessionFile(projectPath, resolveProjectAutomatorPort(projectPath)), { force: true }).catch(() => {}),
-  ])
-}
-
-async function assertPluginTemplateWrapperProject(sourceProjectPath: string, wrapperProjectPath: string) {
-  await expect(JSON.parse(await fs.readFile(path.join(wrapperProjectPath, 'project.config.json'), 'utf8'))).toMatchObject({
-    compileType: 'plugin',
-    miniprogramRoot: './',
-    pluginRoot: 'dist-plugin/',
-    srcMiniprogramRoot: './',
-    setting: {
-      packNpmManually: false,
-      packNpmRelationList: [],
-    },
-  })
-  const sourceAppConfig = JSON.parse(await fs.readFile(path.join(sourceProjectPath, 'src/app.json'), 'utf8'))
-  await expect(JSON.parse(await fs.readFile(path.join(wrapperProjectPath, 'app.json'), 'utf8'))).toMatchObject({
-    pages: sourceAppConfig.pages,
-    plugins: sourceAppConfig.plugins,
-    subPackages: [],
-  })
-  await expect(fs.access(path.join(wrapperProjectPath, 'pages/index/index.wxml'))).resolves.toBeUndefined()
-  await expect(fs.access(path.join(wrapperProjectPath, 'dist-plugin/plugin.json'))).resolves.toBeUndefined()
-  await expect(fs.access(path.join(wrapperProjectPath, 'dist-plugin/index.js'))).resolves.toBeUndefined()
-}
-
-async function waitForTemplateCaseReady(miniProgram: any, templateCase: TemplateCase, wrapperProjectPath: string) {
-  if (templateCase.assertWrapperProject) {
-    await assertPluginTemplateWrapperProject(templateCase.root, wrapperProjectPath)
-    return await miniProgram.currentPage()
-  }
-
-  return await waitForTemplatePageReady(
-    miniProgram,
-    templateCase.route,
-    templateCase.expectedText,
-    templateCase.expectedData,
-  )
-}
-
 async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
   let infraOutput = ''
   void process.dev.waitForOutput(
@@ -129,16 +61,13 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
     infraOutput = output.length > 4_000 ? output.slice(-4_000) : output
   }).catch(() => {})
 
-  if (!process.assertWrapperProject) {
-    await process.dev.waitForOutput(
-      FORWARD_CONSOLE_READY_RE,
-      `${process.name} forward console ready`,
-      FORWARD_CONSOLE_READY_TIMEOUT_MS,
-    )
-  }
+  await process.dev.waitForOutput(
+    FORWARD_CONSOLE_READY_RE,
+    `${process.name} forward console ready`,
+    FORWARD_CONSOLE_READY_TIMEOUT_MS,
+  )
   const readySession = waitForOpenedAutomator(resolveTemplateProjectRoot(process), {
-    readyRoute: process.assertWrapperProject ? undefined : process.route,
-    skipAppReady: process.assertWrapperProject,
+    readyRoute: process.route,
     timeoutMs: 120_000,
   }).catch((error) => {
     const details = infraOutput ? `\nRecent infra output:\n${infraOutput}` : ''
@@ -154,14 +83,6 @@ async function waitForTemplateDevOpenReady(process: TemplateDevProcess) {
   return await readySession
 }
 
-async function cleanupTemplateAutomatorState(templateCase: TemplateCase) {
-  const projectRoot = resolveTemplateProjectRoot(templateCase)
-  await Promise.all([
-    removeAutomatorSessionFiles(projectRoot),
-    fs.rm(resolveAutomatorWrapperProjectPath(projectRoot), { force: true, recursive: true }).catch(() => {}),
-  ])
-}
-
 function startTemplateDevProcess(templateCase: TemplateCase): TemplateDevProcess {
   return {
     ...templateCase,
@@ -173,155 +94,87 @@ function startTemplateDevProcess(templateCase: TemplateCase): TemplateDevProcess
   }
 }
 
-function isTemplateRuntimeInfraError(error: unknown) {
-  return error instanceof Error && IDE_AUTOMATOR_INFRA_RE.test(error.message)
-}
-
-function isTemplateProtocolTimeout(error: unknown) {
-  return error instanceof Error && /Latest DevTools protocol timeout|DevTools did not respond to protocol method/i.test(error.message)
-}
-
-async function openTemplateDevProcess(templateCase: TemplateCase) {
-  if (USE_PRESTARTED_TEMPLATE_DEV) {
-    const projectRoot = resolveTemplateProjectRoot(templateCase)
-    return {
-      devProcess: undefined,
-      session: await waitForOpenedAutomator(projectRoot, {
-        readyRoute: templateCase.assertWrapperProject ? undefined : templateCase.route,
-        skipAppReady: templateCase.assertWrapperProject,
-        timeoutMs: 120_000,
-      }),
-    }
-  }
-
-  let lastError: unknown
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
-    await cleanupResidualIdeProcesses()
-    await cleanupTemplateAutomatorState(templateCase)
-    const devProcess = startTemplateDevProcess(templateCase)
-    try {
-      const session = await waitForTemplateDevOpenReady(devProcess)
-      return { devProcess, session }
-    }
-    catch (error) {
-      lastError = error
-      await devProcess.dev.stop().catch(() => {})
-      const projectRoot = resolveTemplateProjectRoot(templateCase)
-      await closeSharedMiniProgram(projectRoot, resolveProjectAutomatorPort(projectRoot)).catch(() => {})
-      await cleanupResidualIdeProcesses()
-      if (attempt < 2) {
-        process.stdout.write(`[warn] [template-dev-open-all] retry dev:open template=${templateCase.name} reason=${error instanceof Error ? error.message : String(error)}\n`)
-      }
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error(String(lastError))
-}
-
 describe('all templates dev:open IDE integration', { concurrent: false }, () => {
+  const runTemplateCase = createTemplateDevOpenRunner()
+
   beforeAll(async () => {
     if (USE_PRESTARTED_TEMPLATE_DEV) {
       return
     }
     await cleanupResidualIdeProcesses()
-    await Promise.all(ACTIVE_TEMPLATE_CASES.map(async templateCase => await cleanupTemplateAutomatorState(templateCase)))
   }, 60_000)
 
   afterAll(async () => {
     if (USE_PRESTARTED_TEMPLATE_DEV) {
       return
     }
-    await cleanupTrackedDevProcesses()
-    await Promise.all(ACTIVE_TEMPLATE_CASES.map(async templateCase => await closeSharedMiniProgram(
-      resolveTemplateProjectRoot(templateCase),
-      resolveProjectAutomatorPort(resolveTemplateProjectRoot(templateCase)),
-    ).catch(() => {})))
-    await cleanupResidualIdeProcesses()
+    await runCleanupSteps([
+      { label: 'stop tracked template dev processes', run: cleanupTrackedDevProcesses },
+      ...ACTIVE_TEMPLATE_CASES.map(templateCase => ({
+        label: `close owned template window ${templateCase.name}`,
+        run: async () => {
+          await closeSharedMiniProgram(
+            resolveTemplateProjectRoot(templateCase),
+            resolveProjectAutomatorPort(resolveTemplateProjectRoot(templateCase)),
+          )
+        },
+      })),
+      { label: 'release template IDE resources', run: cleanupResidualIdeProcesses },
+    ])
   }, 180_000)
 
-  it.for(ACTIVE_TEMPLATE_CASES)('$name renders after dev:open without runtime errors', async (templateCase, ctx) => {
-    let lastError: unknown
-    let dom: ReturnType<typeof createDomAcceptance> | undefined
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
-      const projectRoot = resolveTemplateProjectRoot(templateCase)
-      const port = resolveProjectAutomatorPort(projectRoot)
-      const { devProcess, session } = await openTemplateDevProcess(templateCase)
-      let miniProgram: any
-      let runtimeErrors: ReturnType<typeof attachRuntimeErrorCollector> | undefined
-      let operationError: unknown
-      try {
-        miniProgram = session.miniProgram
-        if (templateCase.name === 'weapp-vite-plugin-template') {
-          const toolInfo = await miniProgram.toolInfo?.().catch(() => undefined)
-          if (toolInfo?.version === '2.02.2609082') {
-            ctx.skip('微信开发者工具 2.02.2609082 在插件模板 dev:open 后无法稳定解析插件页面元数据；插件构建产物与 plugin-demo/headless 覆盖仍保持启用。')
-            return
-          }
+  it.for(ACTIVE_TEMPLATE_CASES)('$name renders after dev:open without runtime errors', { timeout: 480_000 }, async (templateCase, ctx) => {
+    const projectRoot = resolveTemplateProjectRoot(templateCase)
+    const port = resolveProjectAutomatorPort(projectRoot)
+    let devProcess: TemplateDevProcess | undefined
+    let miniProgram: Awaited<ReturnType<typeof waitForOpenedAutomator>>['miniProgram'] | undefined
+    let runtimeErrors: ReturnType<typeof attachRuntimeErrorCollector> | undefined
+
+    await runTemplateCase({
+      name: templateCase.name,
+      open: async () => {
+        if (USE_PRESTARTED_TEMPLATE_DEV) {
+          return await waitForOpenedAutomator(projectRoot, {
+            readyRoute: templateCase.route,
+            timeoutMs: 120_000,
+          })
         }
-        // DOM 计划属于 case；基础设施重试仅替换连接，保留同一个验收计划。
-        dom ??= createDomAcceptance(ctx, `templates/${templateCase.name}`, [templateDevOpenCheckpoint(templateCase)])
+        await cleanupResidualIdeProcesses()
+        devProcess = startTemplateDevProcess(templateCase)
+        return await waitForTemplateDevOpenReady(devProcess)
+      },
+      run: async (session) => {
+        miniProgram = session.miniProgram
+        const dom = createDomAcceptance(ctx, `templates/${templateCase.name}`, [templateDevOpenCheckpoint(templateCase)])
         runtimeErrors = attachRuntimeErrorCollector(miniProgram)
         const runtimeMarker = runtimeErrors.mark()
         const { metadata } = session
         expect(path.resolve(metadata.projectPath)).toBe(projectRoot)
         expect(metadata.wsEndpoint).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/)
-        const wrapperProjectPath = resolveAutomatorWrapperProjectPath(projectRoot)
-        const wrapperProjectConfig = path.join(wrapperProjectPath, 'project.config.json')
-        const usesWrapperProject = await fs.access(wrapperProjectConfig).then(() => true).catch(() => false)
-        const projectConfigPath = usesWrapperProject
-          ? wrapperProjectConfig
-          : path.join(projectRoot, 'project.config.json')
-        const projectConfig = JSON.parse(await fs.readFile(projectConfigPath, 'utf8'))
-        expect(projectConfig).toMatchObject(usesWrapperProject
-          ? {
-              miniprogramRoot: './',
-              srcMiniprogramRoot: './',
-            }
-          : templateCase.projectRoot
-            ? {
-                miniprogramRoot: 'dist',
-                srcMiniprogramRoot: 'dist',
-              }
-            : {
-                miniprogramRoot: 'dist/',
-                srcMiniprogramRoot: 'dist/',
-              })
+        const projectConfig = JSON.parse(await fs.readFile(path.join(projectRoot, 'project.config.json'), 'utf8')) as Record<string, unknown>
+        expect(projectConfig).toMatchObject(templateCase.projectRoot
+          ? { miniprogramRoot: 'dist', srcMiniprogramRoot: 'dist' }
+          : { miniprogramRoot: 'dist/', srcMiniprogramRoot: 'dist/' })
 
         try {
-          const page = await waitForTemplateCaseReady(miniProgram, templateCase, wrapperProjectPath)
+          const page = await waitForTemplatePageReady(miniProgram, templateCase.route, templateCase.expectedText, templateCase.expectedData)
           await dom.check('opened', miniProgram, page)
         }
         catch (error) {
-          throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)
+          throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`, { cause: error })
         }
         expect(runtimeErrors.getSince(runtimeMarker).filter(message => !isUninspectableDevtoolsConsoleError(message))).toEqual([])
         expect(runtimeErrors.getAll().filter(message => /DevRuntime|module .* is not defined|SystemError|MiniProgramError/i.test(message))).toEqual([])
-        return
-      }
-      catch (error) {
-        operationError = error
-        lastError = error
-        const canRetry = isTemplateRuntimeInfraError(error) || isTemplateProtocolTimeout(error)
-        if (attempt >= 2 || !canRetry) {
-          throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)
-        }
-        process.stdout.write(`[warn] [template-dev-open-all] retry runtime template=${templateCase.name} reason=${error instanceof Error ? error.message : String(error)}\n`)
-      }
-      finally {
+      },
+      cleanup: async () => {
         await runCleanupSteps([
           { label: 'detach template runtime logs', run: () => runtimeErrors?.dispose() },
           { label: 'disconnect template automator', run: async () => { await miniProgram?.disconnect?.() } },
           { label: 'stop template dev process', run: async () => { await devProcess?.dev.stop() } },
           { label: 'close owned template window', run: async () => { await closeSharedMiniProgram(projectRoot, port) } },
           ...(!USE_PRESTARTED_TEMPLATE_DEV ? [{ label: 'release template IDE resources', run: cleanupResidualIdeProcesses }] : []),
-        ]).catch((cleanupError: unknown) => {
-          if (operationError !== undefined) {
-            throw new AggregateError([operationError, cleanupError], 'Template runtime and cleanup failed')
-          }
-          throw cleanupError
-        })
-        await delay(2_000)
-      }
-    }
-    throw lastError instanceof Error ? lastError : new Error(String(lastError))
-  }, 480_000)
+        ])
+      },
+    })
+  })
 })

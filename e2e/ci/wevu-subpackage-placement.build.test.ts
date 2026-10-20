@@ -1,3 +1,4 @@
+import type { App as AppJson, Page as PageJson } from '@weapp-core/schematics'
 import type { TestJsFormat } from '../utils/jsFormat'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
@@ -88,10 +89,10 @@ describe('e2e app: wevu-subpackage-placement (build)', { concurrent: false }, ()
       expect(await fs.pathExists(normalSharedChunkPath)).toBe(true)
       expect(await fs.pathExists(independentSharedChunkPath)).toBe(true)
 
-      const appJson = await fs.readJson(appJsonPath)
+      const appJson = await fs.readJson(appJsonPath) as AppJson
       const mainPageJs = await fs.readFile(mainPageJsPath, 'utf8')
       const mainPageWxml = await fs.readFile(mainPageWxmlPath, 'utf8')
-      const mainPageJson = await fs.readJson(mainPageJsonPath)
+      const mainPageJson = await fs.readJson(mainPageJsonPath) as PageJson
       const mainComponentJs = await fs.readFile(mainComponentJsPath, 'utf8')
       const mainComponentWxml = await fs.readFile(mainComponentWxmlPath, 'utf8')
       const normalEntryJs = await fs.readFile(normalEntryJsPath, 'utf8')

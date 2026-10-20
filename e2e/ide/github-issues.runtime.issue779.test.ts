@@ -1,3 +1,4 @@
+import type { MiniProgramWithRuntimeLogs } from '../utils/automator'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -55,7 +56,7 @@ describe('e2e app: github-issues / issue #779', { concurrent: false }, () => {
         styles: { 'color': 'rgb(1, 2, 3)', 'padding-top': '13px' },
       }],
     }])
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram: MiniProgramWithRuntimeLogs = await getSharedMiniProgram(ctx)
     try {
       const page = await relaunchPage(miniProgram, '/pages/issue-779/index', 'issue 779', 30_000, {
         readiness: 'wxml',

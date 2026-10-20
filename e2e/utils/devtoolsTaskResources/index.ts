@@ -1,13 +1,13 @@
 import type { MachineE2EChildScope } from '../../../packages/devtools-runtime/src/lease/machine'
 import type { DevtoolsHostExitEvidence, DevtoolsHostLease } from '../devtoolsHostLifecycle'
-import type { TaskResourcePhase, TaskResourceReport, TaskResourceSnapshot } from './types'
+import type { TaskResourceJournalRecord, TaskResourcePhase, TaskResourceReport, TaskResourceSnapshot } from './types'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { INHERITED_LEASE_ENV } from '../../../packages/devtools-runtime/src/lease/machineScope'
-import { MANAGED_PROJECT_MAX_WINDOWS_ENV, readManagedWechatProjectRecords } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { isManagedWechatProjectFullyReleased, MANAGED_PROJECT_MAX_WINDOWS_ENV, readManagedWechatProjectRecords } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { resolveManagedJournalScope } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/scope'
 import { ACCEPTANCE_ROOT, sanitizeAcceptanceValue } from '../../scripts/domAcceptanceReport/helpers'
 import { sampleInstallationProcesses } from './processes'
@@ -115,7 +115,12 @@ export function createTaskResourceRecorder(options: ResourceRecorderOptions) {
       }
       journalIdentity = before
       report.journalScope = { status: 'observed', value: { rootPath: before.rootPath, scopeSha256: createHash('sha256').update(before.scopeId).digest('hex') } }
-      snapshot.journal = { status: 'observed', value: records.map(({ ownerToken: _ownerToken, installationExitRecovery, ...record }) => {
+      snapshot.journal = { status: 'observed', value: records.map(({ ownerToken: _ownerToken, installationExitRecovery, snapshot: managedSnapshot, ...rawRecord }) => {
+        const record: TaskResourceJournalRecord = rawRecord
+        if (managedSnapshot) {
+          const { token, ...snapshotDetails } = managedSnapshot
+          record.snapshot = { ...snapshotDetails, tokenSha256: createHash('sha256').update(token).digest('hex') }
+        }
         if (!installationExitRecovery) {
           return record
         }
@@ -200,6 +205,11 @@ export function createTaskResourceRecorder(options: ResourceRecorderOptions) {
       if (final?.status === 'observed' && report.snapshots.every(snapshot => snapshot.journal.status === 'observed')) {
         report.windowUsage = summarizeTaskWindows(final.value, budget, new Date().toISOString())
         report.errors.push(...report.windowUsage.gaps)
+        for (const record of final.value) {
+          if (record.snapshot && !isManagedWechatProjectFullyReleased(record)) {
+            report.errors.push(`Managed project snapshot is not fully released: ${record.id} (${record.snapshot.state}).`)
+          }
+        }
         if (report.windowUsage.managedBudget.status === 'unavailable') {
           report.errors.push(report.windowUsage.managedBudget.reason)
         }
@@ -207,11 +217,14 @@ export function createTaskResourceRecorder(options: ResourceRecorderOptions) {
           port: record.port!,
           recordId: record.id,
           state: record.state,
-          closureEvidence: record.state === 'released' && record.releasedReason === 'borrowed'
-            ? 'borrowed-preserved'
-            : cleanup.scopeError === undefined && record.state === 'released' && record.releasedReason === 'project-closed'
-              ? 'domain-cleanup-return'
-              : record.state === 'released' && record.installationExitRecovery?.closedPorts.includes(record.port!) ? 'installation-exit-recovery' : 'not-proven',
+          closureEvidence: record.state === 'released' && record.releasedReason === 'not-started'
+            && record.snapshot?.state === 'removed' && !record.snapshot.dispatchedAt && record.openedProjectWindow === undefined
+            ? 'unused-reservation'
+            : record.state === 'released' && record.releasedReason === 'borrowed'
+              ? 'borrowed-preserved'
+              : cleanup.scopeError === undefined && record.state === 'released' && record.releasedReason === 'project-closed'
+                ? 'domain-cleanup-return'
+                : record.state === 'released' && record.installationExitRecovery?.closedPorts.includes(record.port!) ? 'installation-exit-recovery' : 'not-proven',
         })) }
         for (const port of report.registeredPorts.value) {
           if (port.closureEvidence === 'not-proven') {

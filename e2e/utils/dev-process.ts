@@ -7,12 +7,14 @@ import { execa } from 'execa'
 import { createDevProcessCleanup } from './devProcessCleanup'
 import { createDevProcessDiagnostics } from './devProcessDiagnostics'
 import { captureDevProcessOutput } from './devProcessStdio'
+import { createDevProcessTrace } from './devProcessTrace'
 import { resolveReportProjectPath } from './ideWarningReport'
 
 interface DevProcessExitInfo {
   exitCode: number | null | undefined
   signal: string | undefined
   reason: string
+  error?: unknown
 }
 
 interface DevProcessController {
@@ -21,6 +23,7 @@ interface DevProcessController {
   waitForOutput: (matcher: string | RegExp, description: string, timeoutMs?: number) => Promise<string>
   waitForInitialBuild: (timeoutMs?: number) => Promise<string>
   getOutput: () => string
+  getBuildErrors: () => readonly string[]
   stop: (forceKillDelayMs?: number) => Promise<void>
 }
 
@@ -97,35 +100,53 @@ export function startDevProcess(
     command,
     cwd: options?.cwd,
   }
-  const child = execa(command, args, {
-    ...captureDevProcessOutput(options),
-    env: options?.env ?? process.env,
-    extendEnv: false,
-  })
+  const projectPath = options?.cwd instanceof URL ? fileURLToPath(options.cwd) : options?.cwd
+  const project = resolveReportProjectPath(projectPath)
+  const trace = createDevProcessTrace(project)
+  const withTraceFailure = (error: unknown) => {
+    const traceFailure = trace?.getFailure()
+    return traceFailure ? new AggregateError([error, traceFailure], 'Dev process and output trace failed.', { cause: error }) : error
+  }
+  const spawn = () => {
+    try {
+      return execa(command, args, {
+        ...captureDevProcessOutput(options),
+        env: options?.env ?? process.env,
+        extendEnv: false,
+      })
+    }
+    catch (error) {
+      trace?.close({ reason: 'spawn-failed' })
+      throw withTraceFailure(error)
+    }
+  }
+  const child = spawn()
   let exited = false
   let stopTask: Promise<void> | undefined
+  let stopSucceeded = false
   const outputChunks: string[] = []
-  const projectPath = options?.cwd instanceof URL ? fileURLToPath(options.cwd) : options?.cwd
-  const diagnostics = createDevProcessDiagnostics(resolveReportProjectPath(projectPath))
+  const diagnostics = createDevProcessDiagnostics(project)
 
-  const appendOutput = (chunk: unknown) => {
+  const appendOutput = (stream: 'all' | 'stdout' | 'stderr', chunk: unknown) => {
     if (typeof chunk === 'string') {
+      trace?.write(stream, chunk)
       outputChunks.push(chunk)
       diagnostics.write(chunk)
       return
     }
     if (chunk instanceof Uint8Array) {
+      trace?.write(stream, chunk)
       outputChunks.push(Buffer.from(chunk).toString('utf8'))
       diagnostics.write(chunk)
     }
   }
 
   if (child.all) {
-    child.all.on('data', appendOutput)
+    child.all.on('data', chunk => appendOutput('all', chunk))
   }
   else {
-    child.stdout?.on('data', appendOutput)
-    child.stderr?.on('data', appendOutput)
+    child.stdout?.on('data', chunk => appendOutput('stdout', chunk))
+    child.stderr?.on('data', chunk => appendOutput('stderr', chunk))
   }
 
   const settledExit: Promise<DevProcessExitInfo> = child
@@ -146,6 +167,7 @@ export function startDevProcess(
         exitCode: candidate.exitCode,
         signal: candidate.signal,
         reason,
+        error,
       }
     })
 
@@ -155,18 +177,21 @@ export function startDevProcess(
         .then(value => ({ type: 'task' as const, value }))
         .catch((error: unknown) => {
           const message = error instanceof Error ? error.message : String(error)
-          throw new Error(appendRecentOutput(message, outputChunks, spawnInfo))
+          throw withTraceFailure(new Error(appendRecentOutput(message, outputChunks, spawnInfo), { cause: error }))
         }),
       settledExit.then(info => ({ type: 'exit' as const, info })),
     ])
     if (winner.type === 'task') {
+      if (trace?.getFailure()) {
+        throw trace.getFailure()
+      }
       return winner.value
     }
-    throw new Error(appendRecentOutput(
+    throw withTraceFailure(new Error(appendRecentOutput(
       `Dev process exited before ${description}: ${formatExitInfo(winner.info)}`,
       outputChunks,
       spawnInfo,
-    ))
+    ), { cause: winner.info.error }))
   }
 
   const waitForOutput = async (matcher: string | RegExp, description: string, timeoutMs = 90_000) => {
@@ -190,7 +215,7 @@ export function startDevProcess(
         break
       }
     }
-    throw new Error(appendRecentOutput(`Timed out waiting for dev output: ${description}`, outputChunks, spawnInfo))
+    throw withTraceFailure(new Error(appendRecentOutput(`Timed out waiting for dev output: ${description}`, outputChunks, spawnInfo)))
   }
 
   const cleanup = createDevProcessCleanup({
@@ -207,22 +232,39 @@ export function startDevProcess(
   })
 
   const stop = (forceKillDelayMs = 3_000) => {
+    const traceFailure = trace?.getFailure()
+    if (stopSucceeded && traceFailure) {
+      // 已完成的清理不重跑；迟到输出使后续 stop 稳定观察到新的采集失败。
+      stopSucceeded = false
+      stopTask = Promise.reject(traceFailure)
+    }
     if (!stopTask) {
       // 并发调用共享同一次清理；只有核验退出和输出排空后才撤销登记。
-      stopTask = cleanup(forceKillDelayMs).then(() => {
+      const cleanupTask = cleanup(forceKillDelayMs).then(() => {
         TRACKED_DEV_DISPOSERS.delete(stop)
       }).catch((error: unknown) => {
         stopTask = undefined
-        throw error
+        throw withTraceFailure(error)
+      })
+      stopTask = cleanupTask.then(() => {
+        if (trace?.getFailure()) {
+          throw trace.getFailure()
+        }
+        stopSucceeded = true
       })
     }
     return stopTask
   }
   TRACKED_DEV_DISPOSERS.add(stop)
 
-  void settledExit.finally(() => {
-    diagnostics.flush()
-    exited = true
+  void settledExit.then((info) => {
+    try {
+      diagnostics.flush()
+    }
+    finally {
+      trace?.close({ exitCode: info.exitCode, signal: info.signal, reason: 'process-exited' })
+      exited = true
+    }
   })
 
   return {
@@ -231,6 +273,7 @@ export function startDevProcess(
     waitForOutput,
     waitForInitialBuild: (timeoutMs?: number) => waitForOutput('小程序初次构建完成', 'mini program initial build completion', timeoutMs),
     getOutput: () => outputChunks.join(''),
+    getBuildErrors: diagnostics.getBuildErrors,
     stop,
   }
 }
