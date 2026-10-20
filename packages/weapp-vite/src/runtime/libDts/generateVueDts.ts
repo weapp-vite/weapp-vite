@@ -1,4 +1,4 @@
-import type { VueCompilerOptions } from '@vue/language-core'
+import type { RawPlugin, RawVueCompilerOptions, VueCompilerOptions } from '@vue/language-core'
 import type { ConfigService } from '../config/types'
 import type { ResolvedWeappLibEntry } from '../lib'
 import os from 'node:os'
@@ -7,8 +7,10 @@ import { fs } from '@weapp-core/shared/fs'
 import { resolveModule } from 'local-pkg'
 import path from 'pathe'
 import { waitForBuildTasks } from '../compilerSession/tasks'
+import { serializeCompilerOptions } from './compilerOptions'
 import { getVueCompilerLibOrUndefined, rewriteVueComponentTypeToWevu, shouldRewriteWevuComponentType } from './rewriteWevuComponent'
 import { ensureModuleResolution, isDtsMapOutputFile, isDtsOutputFile, normalizePath, replaceSourceMappingUrl, resolveInternalTsconfig, resolveRelativeBase, resolveVueSourceFile, runVueTsc } from './shared'
+import { resolveInternalVolarPlugins, resolveVueTscVolarPlugins } from './volar'
 
 const FILE_EXTENSION_RE = /\.[^.]+$/
 
@@ -40,7 +42,7 @@ export async function generateVueDtsWithVueTsc(
     compilerOptions: import('typescript').CompilerOptions
     files: string[]
     include: string[]
-    vueCompilerOptions: Partial<VueCompilerOptions>
+    vueCompilerOptions: RawVueCompilerOptions
   } = {
     compilerOptions: {
       declaration: true,
@@ -80,8 +82,12 @@ export async function generateVueDtsWithVueTsc(
   )
 
   try {
+    vueTsconfig.vueCompilerOptions.plugins = resolveVueTscVolarPlugins(vueTsconfig.vueCompilerOptions, configService.cwd)
     await fs.ensureDir(tempOutDir)
-    await fs.writeJson(tsconfigPath, vueTsconfig, { spaces: 2 })
+    await fs.writeJson(tsconfigPath, {
+      ...vueTsconfig,
+      compilerOptions: serializeCompilerOptions(ts, vueTsconfig.compilerOptions),
+    }, { spaces: 2 })
     await runVueTsc(vueTscBin, tsconfigPath, configService.cwd)
 
     await waitForBuildTasks(vueEntries.map(async (entry) => {
@@ -124,7 +130,7 @@ export async function generateVueDtsWithInternal(
   }
 
   const ts = await import('typescript') as typeof import('typescript')
-  const { createParsedCommandLine, createVueLanguagePlugin, getDefaultCompilerOptions } = await import('@vue/language-core')
+  const { CompilerOptionsResolver, createParsedCommandLine, createVueLanguagePlugin, getDefaultCompilerOptions } = await import('@vue/language-core')
   const { proxyCreateProgram } = await import('@volar/typescript')
 
   const internalOptions = dtsOptions?.internal
@@ -160,12 +166,22 @@ export async function generateVueDtsWithInternal(
   ensureModuleResolution(ts, compilerOptions)
 
   const baseVueOptions: VueCompilerOptions = parsedVue?.vueOptions ?? getDefaultCompilerOptions()
-  const rawVueCompilerOptions = internalOptions?.vueCompilerOptions as Partial<VueCompilerOptions> | undefined
+  const rawVueCompilerOptions = internalOptions?.vueCompilerOptions as (
+    Omit<Partial<VueCompilerOptions>, 'plugins'> & { plugins?: RawPlugin[] }
+  ) | undefined
+  const { plugins: rawPlugins, ...rawOptions } = rawVueCompilerOptions ?? {}
+  let plugins = baseVueOptions.plugins
+  if (rawPlugins !== undefined) {
+    const resolver = new CompilerOptionsResolver(ts, configHost.readFile)
+    resolver.addConfig({ plugins: rawPlugins }, normalizePath(configService.cwd))
+    plugins = resolver.plugins
+  }
   const vueCompilerOptions: VueCompilerOptions = {
     ...baseVueOptions,
     lib: 'wevu',
-    ...(rawVueCompilerOptions ?? {}),
+    ...rawOptions,
   }
+  vueCompilerOptions.plugins = resolveInternalVolarPlugins(plugins, vueCompilerOptions.lib)
   const rewriteWevuComponentType = shouldRewriteWevuComponentType(vueCompilerOptions.lib)
 
   const rootNames = Array.from(new Set([
