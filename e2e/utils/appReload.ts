@@ -70,7 +70,7 @@ function readAppReloadSnapshot(marker: AppReloadMarker, rootSelector: string): P
     snapshot.pagePresent = true
     snapshot.route = page.route
     const query = wx.createSelectorQuery().in(page)
-    query.select(rootSelector).fields({ size: true })
+    query.select(rootSelector).fields(JSON.parse(JSON.stringify({ size: true })))
     query.exec((results) => {
       try {
         // 只读查询跨过重载边界时，旧页面的尺寸不能作为新 App 已就绪的证据。
