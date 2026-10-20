@@ -13,6 +13,14 @@ const publicApi = vi.hoisted(() => ({
 }))
 
 vi.mock('./probe/public.mjs', () => publicApi)
+vi.mock('./probe/publication.mjs', () => ({
+  async mutateAndAssertOutputs(owners: unknown[], relative: string, expected: string | null, mutate: () => Promise<void>) {
+    await mutate()
+    for (const owner of owners) {
+      await publicApi.assertOutput(owner, relative, expected)
+    }
+  },
+}))
 
 let root: string
 

@@ -36,24 +36,27 @@ export default defineConfig({ weapp: ${JSON.stringify(weappOptions)}, build: { m
   }
 }
 
-export async function waitForFile(file, expected) {
-  const deadline = Date.now() + 45_000
+export async function matchesOutput(file, expected) {
+  try {
+    const value = await readFile(file, 'utf8')
+    return expected !== null && value === expected
+  }
+  catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error
+    }
+    return expected === null
+  }
+}
+
+export async function waitForFile(file, expected, { deadline = Date.now() + 45_000, signal } = {}) {
   while (Date.now() < deadline) {
-    try {
-      const value = await readFile(file, 'utf8')
-      if (expected !== null && value === expected) {
-        return
-      }
+    signal?.throwIfAborted()
+    if (await matchesOutput(file, expected)) {
+      signal?.throwIfAborted()
+      return
     }
-    catch (error) {
-      if (error.code !== 'ENOENT') {
-        throw error
-      }
-      if (expected === null) {
-        return
-      }
-    }
-    await delay(20)
+    await delay(20, undefined, { signal })
   }
   assert.fail(`Consumer output did not reach expected state: ${path.basename(file)}`)
 }

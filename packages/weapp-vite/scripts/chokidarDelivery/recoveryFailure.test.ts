@@ -30,6 +30,15 @@ vi.mock('./probe/public.mjs', () => ({
   },
   closeOwner: vi.fn(),
 }))
+vi.mock('./probe/publication.mjs', () => ({
+  async mutateAndAssertOutputs(owners: unknown[], relative: string, expected: string | null, mutate: () => Promise<void>) {
+    await mutate()
+    const { assertOutput } = await import('./probe/public.mjs')
+    for (const owner of owners) {
+      await assertOutput(owner, relative, expected)
+    }
+  },
+}))
 
 beforeEach(() => {
   injectedError = Object.assign(new Error('injected'), { code: 'EPERM' })
