@@ -1,5 +1,6 @@
 import type { SuiteReportPayload } from './suiteReport'
 import type { SuiteTask } from './suiteRunner'
+import type { TaskLaunchHook } from './suiteRunner/launchBudget'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
@@ -111,6 +112,7 @@ export function orderSuiteTasks(
 }
 
 interface SuiteCallbacks {
+  beforeTaskLaunch?: TaskLaunchHook
   nonInteractive?: boolean
   onUnsafeRuntime?: (reason: string) => void
   onReport?: (report: SuiteReportPayload) => void

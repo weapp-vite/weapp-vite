@@ -4,6 +4,7 @@ import type { MachineE2EChildScope, MachineE2ELease, MachineE2ELeaseOptions } fr
 import type { DevtoolsHostExitEvidence, DevtoolsHostLease } from '../utils/devtoolsHostLifecycle'
 import type { TaskResourceRecorder } from '../utils/devtoolsTaskResources'
 import type { SuiteReportContext, SuiteRuntimeBlocker, SuiteTaskArtifact } from './suiteReport'
+import type { TaskLaunchBudget, TaskLaunchHook } from './suiteRunner/launchBudget'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -20,6 +21,7 @@ import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_REPORT_DIR_ENV, ACCEPTANCE_ROOT, ACCEP
 import { validateTaskAcceptance } from './domAcceptanceReport/task'
 import { assertOwnedCommandStopped, OwnedCommandShutdownError, stopOwnedCommand } from './ownedE2ECommand/shutdown'
 import { createSuiteReport } from './suiteReport'
+import { prepareTaskLaunch, remainingTaskTimeoutMs } from './suiteRunner/launchBudget'
 import { createSuiteSignalScope } from './suiteRunner/signals'
 
 const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
@@ -64,6 +66,8 @@ interface RunSuiteOptions {
   machineLeaseOptions?: MachineE2ELeaseOptions
   afterAll?: () => Promise<void> | void
   beforeEachTask?: (task: SuiteTask) => Promise<void> | void
+  /** 在宿主认领、资源采样与 marker 发布后执行；必须响应取消信号并等待自身活动结束。 */
+  beforeTaskLaunch?: TaskLaunchHook
   failOnTaskFailure?: boolean
   runTask?: (task: SuiteTask, signal: AbortSignal) => Promise<number>
   stopOnTaskFailure?: boolean
@@ -387,10 +391,10 @@ export function formatSuiteArtifactsSummary(suiteName: string, artifacts: SuiteT
   return lines.join('\n')
 }
 
-async function defaultRunTask(task: SuiteTask, signal: AbortSignal) {
+async function defaultRunTask(task: SuiteTask, signal: AbortSignal, launchBudget?: TaskLaunchBudget) {
   signal.throwIfAborted()
   const collector = createTaskArtifactCollector()
-  const taskTimeoutMs = resolveTaskTimeoutMs(task)
+  const taskTimeoutMs = launchBudget ? remainingTaskTimeoutMs(launchBudget) : resolveTaskTimeoutMs(task)
 
   return await new Promise<number>((resolve, reject) => {
     const child = execa(task.command, task.args, getTaskSpawnOptions(task))
@@ -583,9 +587,9 @@ async function defaultRunTask(task: SuiteTask, signal: AbortSignal) {
         if (settled) {
           return
         }
-        console.error(`[e2e] task timeout after ${formatDuration(taskTimeoutMs)}: ${task.label}`)
+        console.error(`[e2e] task timeout after ${formatDuration(launchBudget?.timeoutMs ?? taskTimeoutMs)}: ${task.label}`)
         terminateChild()
-      }, taskTimeoutMs)
+      }, launchBudget ? Math.max(0, launchBudget.deadlineAt - Date.now()) : taskTimeoutMs)
       taskTimeoutTimer.unref?.()
     }
     if (signal.aborted) {
@@ -602,7 +606,6 @@ async function runOwnedTaskSuite(
   lease: MachineE2ELease,
 ) {
   const failOnTaskFailure = options.failOnTaskFailure ?? true
-  const runTask = options.runTask ?? defaultRunTask
   const writeReport = options.writeReport ?? true
   const results: SuiteTaskResult[] = []
   const reportContext = options.reportContext ?? {
@@ -683,7 +686,13 @@ async function runOwnedTaskSuite(
           }
         }
       }
-      exitCode = await runTask(task, signal)
+      const launchBudget = options.beforeTaskLaunch
+        ? await prepareTaskLaunch(task, signal, resolveTaskTimeoutMs(task), options.beforeTaskLaunch)
+        : undefined
+      signal.throwIfAborted()
+      exitCode = options.runTask
+        ? await options.runTask(task, signal)
+        : await defaultRunTask(task, signal, launchBudget)
       signal.throwIfAborted()
       if (reportContext.strict) {
         try {
