@@ -1,3 +1,4 @@
+import type { ComputedGetter, ComputedSetter, WritableComputedOptions } from '../types/reactivity'
 import type { ReactiveEffect } from './core'
 import type { Ref } from './ref'
 import { createComputedEffect, track, trigger } from './core'
@@ -5,8 +6,7 @@ import { markRaw } from './reactive'
 import { ReactiveFlags } from './reactive/shared'
 import { markAsRef } from './ref'
 
-export type ComputedGetter<T> = () => T
-export type ComputedSetter<T> = (value: T) => void
+export type { ComputedGetter, ComputedSetter, WritableComputedOptions } from '../types/reactivity'
 
 declare const computedBrand: unique symbol
 declare const writableComputedBrand: unique symbol
@@ -30,11 +30,6 @@ export interface ComputedRef<T = any> extends BaseComputedRef<T> {
 export interface WritableComputedRef<T, S = T> extends BaseComputedRef<T, S> {
   readonly [writableComputedBrand]: true
   value: T
-}
-
-export interface WritableComputedOptions<T> {
-  get: ComputedGetter<T>
-  set: ComputedSetter<T>
 }
 
 export function computed<T>(getter: ComputedGetter<T>): ComputedRef<T>

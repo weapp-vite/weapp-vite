@@ -1,4 +1,4 @@
-import type { Ref as VueRef, ShallowRef as VueShallowRef } from '../vue-types'
+import type { Ref as VueRef, ShallowRef as VueShallowRef } from '../types/reactivity'
 import type { ComputedRef, WritableComputedRef } from './computed'
 import type { Dep } from './core'
 import { trackEffects, triggerEffects } from './core'

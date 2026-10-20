@@ -1,4 +1,4 @@
-import type { CompileNativeI18nOptions, CompileNativeI18nResult, I18nLocaleFileInput } from './types'
+import type { CompileNativeI18nOptions, CompileNativeI18nResult, I18nLocaleFileInput } from './configTypes'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import {
@@ -77,4 +77,4 @@ export type {
   I18nLocaleFileInput,
   I18nMessageToken,
   I18nPlaceholderToken,
-} from './types'
+} from './configTypes'

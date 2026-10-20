@@ -5,19 +5,29 @@ inputs:
   build-command:
     description: Command used to build workspace artifacts before reinstalling
     required: true
+  working-directory:
+    description: Independent checkout whose artifacts and injected links are refreshed
+    required: false
+    default: .
 
 runs:
   using: composite
   steps:
     - name: Build workspace artifacts
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        CI_TIMING_SCRIPT: ${{ github.action_path }}/../../scripts/ci-timing.mjs
       run: |-
-        node .github/scripts/ci-timing.mjs start build
-        trap 'phase_exit=$?; node .github/scripts/ci-timing.mjs finish build "$phase_exit"; exit "$phase_exit"' EXIT
+        node "$CI_TIMING_SCRIPT" start build
+        trap 'phase_exit=$?; node "$CI_TIMING_SCRIPT" finish build "$phase_exit"; exit "$phase_exit"' EXIT
         ${{ inputs.build-command }}
     - name: Refresh injected workspace dependencies
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        CI_TIMING_SCRIPT: ${{ github.action_path }}/../../scripts/ci-timing.mjs
       run: |-
-        node .github/scripts/ci-timing.mjs start refresh-links
-        trap 'phase_exit=$?; node .github/scripts/ci-timing.mjs finish refresh-links "$phase_exit"; exit "$phase_exit"' EXIT
+        node "$CI_TIMING_SCRIPT" start refresh-links
+        trap 'phase_exit=$?; node "$CI_TIMING_SCRIPT" finish refresh-links "$phase_exit"; exit "$phase_exit"' EXIT
         pnpm install --frozen-lockfile --ignore-scripts

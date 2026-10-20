@@ -1,7 +1,7 @@
 import type {
   ComputedDefinitions,
   MethodDefinitions,
-} from 'wevu'
+} from 'wevu/types'
 import { defineComponent } from 'wevu'
 
 export interface WevuComponentOptions<D extends object = Record<string, any>, C extends ComputedDefinitions = ComputedDefinitions, M extends MethodDefinitions = MethodDefinitions> {
