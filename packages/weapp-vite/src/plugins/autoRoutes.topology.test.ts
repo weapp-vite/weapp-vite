@@ -55,7 +55,15 @@ function setup() {
   }
   const event = (name: string, watcherIndex = 0) => watch.mock.results[watcherIndex]!.value.on.mock.calls
     .find(([registered]) => registered === name)?.[1] as (file: string) => void
-  return { ctx, handleFileChange, start, event }
+  return {
+    ctx,
+    handleFileChange,
+    start,
+    event,
+    changeSignature: () => {
+      signature += 1
+    },
+  }
 }
 
 describe('auto routes topology delivery', () => {
@@ -110,10 +118,14 @@ describe('auto routes topology delivery', () => {
   })
 
   it('keeps Web refresh while avoiding a second native App notification', async () => {
-    const { ctx, start, event } = setup()
+    const { ctx, start, event, handleFileChange, changeSignature } = setup()
     const consume = vi.fn()
     const nativeEmit = vi.fn()
     const webEmit = vi.fn()
+    handleFileChange.mockImplementationOnce(async () => {
+      changeSignature()
+      return false
+    })
     const release = subscribeAutoRoutesTopology(ctx, consume)
     try {
       start('miniprogram', nativeEmit)

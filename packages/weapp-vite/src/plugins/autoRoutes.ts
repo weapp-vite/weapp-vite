@@ -252,8 +252,9 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     }
     const controller = current[0]!.controller
     const didChangeRoutes = current.some(result => result.didChangeRoutes)
+    const topologyChanged = didChangeRoutes || current.some(result => result.change.topologyChanged)
     const servers = new Set<ViteDevServer>()
-    if (didChangeRoutes) {
+    if (topologyChanged) {
       for (const subscriber of controller.servingSubscribers.values()) {
         if (subscriber.devServer) {
           servers.add(subscriber.devServer)
@@ -270,10 +271,10 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     const last = current[current.length - 1]!
     const change = {
       ...last.change,
-      topologyChanged: didChangeRoutes || current.some(result => result.change.topologyChanged),
+      topologyChanged,
     }
     const nativeNotified = publishAutoRoutesTopology(ctx, change)
-    if (!didChangeRoutes) {
+    if (!topologyChanged) {
       return
     }
     const notificationFiles = new Set<string>()
