@@ -2,18 +2,21 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import { waitForFile, weappOptions } from './fixture.mjs'
 import { bounded } from './native.mjs'
+import { createPublicationObserver } from './publication.mjs'
 
 /** 从普通 npm 安装的两个公开入口取得 owner，不导入维护仓库源码。 */
 export async function openPublicOwner(kind, root, owners, errors) {
   const outDir = path.join(root, '.weapp-vite', `delivery-${kind}`)
   if (kind === 'artifact') {
+    const publications = createPublicationObserver(outDir)
     const { watchTestArtifact } = await import('weapp-vite/test')
     const watcher = await bounded(watchTestArtifact({
       cwd: root,
       outDir,
       onError: error => errors.push(error),
+      onRebuilt: artifact => publications.onRebuilt(artifact),
     }), 'public watchTestArtifact initialization', 60_000)
-    const owner = { kind, outDir, close: () => watcher.close() }
+    const owner = { kind, outDir, publications, close: () => watcher.close() }
     owners.push(owner)
     assert.equal(path.resolve(watcher.artifact.miniprogramRootPath), path.resolve(outDir))
     return owner
