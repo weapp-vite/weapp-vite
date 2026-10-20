@@ -11,6 +11,9 @@ const harness = vi.hoisted(() => ({
   closeError: undefined as Error | undefined,
   nativeError: undefined as Error | undefined,
   removalError: undefined as Error | undefined,
+  throwInjected: false,
+  callback: 'none' as 'none' | 'original' | 'copy',
+  lateCallback: 'none' as 'none' | 'original' | 'foreign',
   events: [] as string[],
   closeCalls: 0,
   native: { closeCalls: 0, closeEvents: 0 },
@@ -62,12 +65,15 @@ vi.mock('./probe/native.mjs', async (importOriginal) => {
 vi.mock('./probe/scenarios.mjs', () => ({
   scenarios: [{ id: 'registered-owner-failure', kind: 'shared' }],
   nonApplicableReason: () => undefined,
-  async exerciseScenario({ owners }: { owners: { kind: string, close: () => Promise<void> }[] }) {
+  async exerciseScenario({ owners, errors, injectedError }: { owners: { kind: string, close: () => Promise<void> }[], errors: Error[], injectedError: Error }) {
     owners.push({
       kind: 'artifact',
       async close() {
         harness.events.push('close')
         harness.closeCalls++
+        if (harness.closeCalls === 1 && harness.lateCallback !== 'none') {
+          errors.push(harness.lateCallback === 'original' ? injectedError : Object.assign(new Error('late unrelated error'), { code: 'EPERM' }))
+        }
         if (harness.native.closeCalls === 0) {
           harness.native.closeCalls++
           harness.native.closeEvents++
@@ -77,6 +83,12 @@ vi.mock('./probe/scenarios.mjs', () => ({
         }
       },
     })
+    if (harness.callback !== 'none') {
+      errors.push(harness.callback === 'original' ? injectedError : Object.assign(new Error(injectedError.message), { code: 'EPERM' }))
+    }
+    if (harness.throwInjected) {
+      throw injectedError
+    }
     throw harness.bodyError
   },
 }))
@@ -89,6 +101,9 @@ beforeEach(async () => {
   harness.closeError = undefined
   harness.nativeError = undefined
   harness.removalError = undefined
+  harness.throwInjected = false
+  harness.callback = 'none'
+  harness.lateCallback = 'none'
   harness.events.length = 0
   harness.closeCalls = 0
   harness.native = { closeCalls: 0, closeEvents: 0 }
@@ -156,4 +171,38 @@ it('原生关闭未确认保留原错和精确应急记录，不删除 fixture',
   assert.equal(result.cleanup.errors.length, 1)
   assert.equal(result.cleanup.errors[0].message, String(harness.nativeError))
   assert.deepEqual(harness.events, ['fixture', 'close', 'close', 'assertClosed', 'emergencyClose', 'restore'])
+})
+
+it('报告在对象仍可比较时保存原始 body 与 callback 身份', async () => {
+  harness.throwInjected = true
+  harness.callback = 'original'
+  const result = await runPublicScenario('registered-owner-failure', consumerRoot)
+  assert.equal(result.status, 'failed')
+  assert.equal(result.bodyError.code, 'EPERM')
+  assert.equal(result.bodyError.originalInjectedError, true)
+  assert.equal(result.publicErrors.length, 1)
+  assert.equal(result.publicErrors[0].originalInjectedError, true)
+  assert.equal(result.publicErrors[0].code, 'EPERM')
+  assert.equal(result.publicErrors[0].stack, result.bodyError.stack)
+})
+
+it.each(['original', 'copy'] as const)('callback=%s 不覆盖先前 body 失败或将同码副本标成原对象', async (callback) => {
+  harness.callback = callback
+  const result = await runPublicScenario('registered-owner-failure', consumerRoot)
+  assertBodyError(result)
+  assert.equal(result.publicErrors.length, 1)
+  assert.equal(result.publicErrors[0].code, 'EPERM')
+  assert.equal(result.publicErrors[0].originalInjectedError, callback === 'original')
+})
+
+it.each(['original', 'foreign'] as const)('清理期间迟到的 %s 错误保留最终数量与各自身份', async (lateCallback) => {
+  harness.throwInjected = true
+  harness.callback = 'original'
+  harness.lateCallback = lateCallback
+  const result = await runPublicScenario('registered-owner-failure', consumerRoot)
+  assert.equal(result.bodyError.originalInjectedError, true)
+  assert.equal(result.publicErrors.length, 2)
+  assert.deepEqual(result.publicErrors.map(error => error.originalInjectedError), [true, lateCallback === 'original'])
+  assert.equal(result.cleanup.nativeCleanupConfirmed, true)
+  assert.equal(result.cleanup.deletedFixture, true)
 })

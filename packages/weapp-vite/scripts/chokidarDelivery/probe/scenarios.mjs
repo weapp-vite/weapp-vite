@@ -77,7 +77,7 @@ async function errorBoundary(ctx) {
 }
 
 async function recovery(ctx) {
-  const { root, owners, errors, instrumentation, evidence } = ctx
+  const { root, owners, errors, instrumentation, injectedError, evidence } = ctx
   const owner = await openPublicOwner('artifact', root, owners, errors)
   assert.equal(instrumentation.injected, 1, 'Recovery must actually exercise one failed native acquisition')
   const reborn = path.join(root, 'src/reborn')
@@ -88,8 +88,12 @@ async function recovery(ctx) {
   await assertOutput(owner, 'reborn/marker.txt', 'changed-after-recovery')
   await rm(path.join(reborn, 'marker.txt'))
   await assertOutput(owner, 'reborn/marker.txt', null)
-  assert.deepEqual(errors, [])
   Object.assign(evidence, { injectedOnce: true, factoryCompleted: true, createEmitted: true, changeEmitted: true, deleteEmitted: true })
+  // 负控可能完成输出恢复后才公开原始错误；只透传精确单例，其他失败仍保留断言。
+  if (errors.length === 1 && errors[0] === injectedError) {
+    throw injectedError
+  }
+  assert.deepEqual(errors, [])
 }
 
 export async function exerciseScenario(ctx) {

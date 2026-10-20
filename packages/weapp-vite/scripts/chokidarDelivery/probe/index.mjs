@@ -65,7 +65,7 @@ export async function runPublicScenario(id, consumerRoot) {
       }
       catch (error) { result.cleanup.errors.push(describeError(error)) }
     }
-    result.publicErrors = errors.map(describeError)
+    result.publicErrors = errors.map(error => ({ ...describeError(error), originalInjectedError: error === injectedError }))
     if (result.cleanup.errors.length || result.cleanup.forcedNativeCloses.length || !result.cleanup.deletedFixture) {
       result.status = 'failed'
     }
