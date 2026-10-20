@@ -5,11 +5,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { touchExistingAppStyle, touchExistingOutputStyles } from './touchAppWxss'
 
 const renameMock = vi.hoisted(() => vi.fn())
+const copyFileMock = vi.hoisted(() => vi.fn())
 
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>()
   renameMock.mockImplementation(actual.rename)
-  return { ...actual, rename: renameMock }
+  copyFileMock.mockImplementation(actual.copyFile)
+  return { ...actual, copyFile: copyFileMock, rename: renameMock }
 })
 
 describe('existing app style refresh', () => {
@@ -82,23 +84,37 @@ describe('existing app style refresh', () => {
     expect(remainingTemporaryFiles).toEqual([])
   })
 
-  it('survives a host replacement between the atomic rename steps', async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-style-refresh-race-'))
+  it('keeps the target path present while refreshing a published style', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-style-refresh-atomic-'))
     roots.push(root)
     const page = path.join(root, 'pages/home/index.wxss')
     await fs.outputFile(page, '.page { color: red; }')
-    const enoent = Object.assign(new Error('style was replaced'), { code: 'ENOENT' })
-    const defaultRename = renameMock.getMockImplementation()!
-    renameMock
-      .mockImplementationOnce(defaultRename)
-      .mockImplementationOnce(async () => {
-        await fs.writeFile(page, '.page { color: blue; }')
-        throw enoent
-      })
-      .mockRejectedValueOnce(enoent)
+    const defaultCopyFile = copyFileMock.getMockImplementation()!
+    let targetWasPresentDuringCopy = false
+    copyFileMock.mockImplementationOnce(async (source: string, temporary: string) => {
+      targetWasPresentDuringCopy = await fs.pathExists(page)
+      return defaultCopyFile(source, temporary)
+    })
 
     await expect(touchExistingOutputStyles(root, ['pages/home/index.wxss'], 'wxss')).resolves.toEqual(new Set([page]))
-    expect(await fs.readFile(page, 'utf8')).toBe('.page { color: blue; }')
+    expect(targetWasPresentDuringCopy).toBe(true)
+    expect(await fs.readFile(page, 'utf8')).toBe('.page { color: red; }')
+    expect((await fs.readdir(path.join(root, 'pages/home'))).some(file => file.includes('.weapp-vite-style-'))).toBe(false)
+  })
+
+  it('falls back to touching the target when the host temporarily locks it', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-style-refresh-locked-'))
+    roots.push(root)
+    const page = path.join(root, 'pages/home/index.wxss')
+    const content = '.page { color: blue; }'
+    await fs.outputFile(page, content)
+    const before = await fs.stat(page)
+    await new Promise(resolve => setTimeout(resolve, 5))
+    renameMock.mockRejectedValueOnce(Object.assign(new Error('target is locked'), { code: 'EPERM' }))
+
+    await expect(touchExistingOutputStyles(root, ['pages/home/index.wxss'], 'wxss')).resolves.toEqual(new Set([page]))
+    expect(await fs.readFile(page, 'utf8')).toBe(content)
+    expect((await fs.stat(page)).mtimeMs).toBeGreaterThan(before.mtimeMs)
     expect((await fs.readdir(path.join(root, 'pages/home'))).some(file => file.includes('.weapp-vite-style-'))).toBe(false)
   })
 })

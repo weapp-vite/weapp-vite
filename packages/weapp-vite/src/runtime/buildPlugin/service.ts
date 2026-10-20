@@ -1981,14 +1981,18 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         })
       : undefined
     const releaseAutoRoutesTopology = target === 'app'
-      ? subscribeAutoRoutesTopology(ctx, ({ file, event, topologyChanged, receivedAtMs = performance.now() }) => {
+      ? subscribeAutoRoutesTopology(ctx, (change) => {
+          const { topologyChanged, sourceChanges = [change] } = change
           // 其他事件的扫描可能已发现该页面；构建图尚未登记时，仍须由 native 发布基线接收本轮真实通知。
-          if (topologyChanged || ctx.autoRoutesService?.getSignature() !== emittedAutoRoutesSignature) {
-            scheduleSnapshotBuild({ event, file, forceFullRescan: true }, receivedAtMs)
-          }
-          else {
-            // 非页面脚本或原子恢复可能不改变路由，但已有依赖仍须处理原始源事件。
-            onModuleGraphChange({ file, event }, receivedAtMs)
+          const forceFullRescan = topologyChanged || ctx.autoRoutesService?.getSignature() !== emittedAutoRoutesSignature
+          for (const { file, event, receivedAtMs = performance.now() } of sourceChanges) {
+            if (forceFullRescan) {
+              scheduleSnapshotBuild({ event, file, forceFullRescan: true }, receivedAtMs)
+            }
+            else {
+              // 非页面脚本或原子恢复可能不改变路由，但已有依赖仍须处理原始源事件。
+              onModuleGraphChange({ file, event }, receivedAtMs)
+            }
           }
         })
       : undefined

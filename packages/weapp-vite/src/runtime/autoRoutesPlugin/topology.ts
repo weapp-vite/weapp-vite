@@ -1,11 +1,15 @@
 import type { MutableCompilerContext } from '../../context'
 import type { ChangeEvent } from '../../types'
 
-export interface AutoRoutesTopologyChange {
+export interface AutoRoutesTopologySourceChange {
   file: string
   event: 'create' | 'delete'
-  topologyChanged: boolean
   receivedAtMs?: number
+}
+
+export interface AutoRoutesTopologyChange extends AutoRoutesTopologySourceChange {
+  topologyChanged: boolean
+  sourceChanges?: readonly AutoRoutesTopologySourceChange[]
 }
 
 type TopologyContext = Pick<MutableCompilerContext, 'autoRoutesService' | 'configService'>
