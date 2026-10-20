@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { Worker } from 'node:worker_threads'
 // eslint-disable-next-line e18e/ban-dependencies -- 独立 Node 进程验证失败恢复与真实 Unicode 可执行文件身份。
-import { execa } from 'execa'
+import { execaSync } from 'execa'
 import { expect, it } from 'vitest'
 import { runWithCleanup } from '../runWithCleanup'
 
@@ -113,7 +113,8 @@ it.runIf(process.platform === 'win32')('preserves a compiler failure without poi
       assert.equal(rows[0].ExecutablePath, process.execPath);
       assert.deepEqual(await readdir(tmpdir()), []);
     `
-    await execa(executable, ['--import', 'tsx', '--input-type=module', '-e', source], {
+    // 异步 exit/close 事件可能早于 Windows 原生进程句柄释放；同步启动会在返回前排空关闭回调，随后才能删除复制的 exe。
+    execaSync(executable, ['--import', 'tsx', '--input-type=module', '-e', source], {
       stdin: 'ignore',
       timeout: 20_000,
       windowsHide: true,
