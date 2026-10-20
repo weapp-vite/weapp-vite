@@ -1,6 +1,6 @@
-import type { MiniProgramNetworkDefaults } from '@wevu/web-apis'
+import type { MiniProgramNetworkDefaults } from '@wevu/web-apis/network-defaults'
 import type { InlineConfig } from 'vite'
-import type { PageLayoutMeta, WevuDefaults } from 'wevu'
+import type { PageLayoutMeta, WevuConfigDefaults } from 'wevu/config'
 import type { ImportMetaDefineRegistry } from '../../utils/importMeta'
 import type {
   AlipayNpmMode,
@@ -390,7 +390,7 @@ export interface WeappVueConfig {
  */
 export interface WeappWevuConfig {
   preset?: 'performance'
-  defaults?: WevuDefaults
+  defaults?: WevuConfigDefaults
   autoSetDataPick?: boolean
   /**
    * @description 是否压缩 wevu 相关脚本输出。

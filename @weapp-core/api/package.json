@@ -40,6 +40,9 @@
       "./vitest/setup": {
         "types": "./src/vitest/setup.ts",
         "default": "./src/vitest/setup.ts"
+      },
+      "./network-options": {
+        "types": "./src/networkOptions.ts"
       }
     },
     "main": "./src/index.ts",
@@ -61,6 +64,9 @@
     "./vitest/setup": {
       "types": "./dist/vitest/setup.d.mts",
       "import": "./dist/vitest/setup.mjs"
+    },
+    "./network-options": {
+      "types": "./dist/network-options.d.mts"
     }
   },
   "main": "./dist/index.mjs",
@@ -81,7 +87,7 @@
     "test:dev": "vitest",
     "pretest:types": "pnpm build",
     "test:types": "pnpm run test:types:check",
-    "test:types:check": "tsd",
+    "test:types:check": "tsd && pnpm run test:types:pure",
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -100,7 +106,8 @@
     "prebuild": "pnpm run structure:check && pnpm run typecheck && pnpm run typecheck:test && pnpm run catalog:check && pnpm run docs:check && pnpm run strict-alias:check && pnpm run omittable-option:check && pnpm run coverage:check",
     "postbuild": "pnpm run callback-types:check && pnpm run promise-types:check",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "typecheck:test": "tsc --noEmit -p tsconfig.test.json"
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
+    "test:types:pure": "cd test-d-pure && tsd --files \"**/*.test-d.ts\""
   },
   "peerDependencies": {
     "vitest": ">=4.0.0"

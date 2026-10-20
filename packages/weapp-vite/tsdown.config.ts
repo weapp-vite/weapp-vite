@@ -47,7 +47,8 @@ export default defineConfig({
     resolveDepSubpath: true,
     alwaysBundle: ['chokidar', 'readdirp'],
     dts: {
-      alwaysBundle: [],
+      // 原生打包选项类型，避免上游 ESM 声明的无扩展名导入泄漏到 NodeNext 消费者。
+      alwaysBundle: ['vite-tsconfig-paths'],
     },
     neverBundle: [
       '@vitejs/devtools-kit',

@@ -1,7 +1,7 @@
 import type {
-  WeapiMiniProgramConnectSocketOption,
-  WeapiMiniProgramRequestOption,
-} from '@wevu/api'
+  WeapiMiniProgramRequestDefaults,
+  WeapiMiniProgramSocketDefaults,
+} from '@weapp-core/api/network-options'
 import { WEVU_WEB_APIS_NETWORK_DEFAULTS_KEY } from '@weapp-core/constants'
 
 const MINI_PROGRAM_REQUEST_OPTION_KEYS = [
@@ -17,27 +17,18 @@ const MINI_PROGRAM_REQUEST_OPTION_KEYS = [
   'redirect',
   'timeout',
   'useHighPerformanceMode',
-] as const
+] as const satisfies readonly (keyof WeapiMiniProgramRequestDefaults)[]
 
 const MINI_PROGRAM_SOCKET_OPTION_KEYS = [
   'forceCellularNetwork',
   'header',
   'perMessageDeflate',
   'timeout',
-] as const
+] as const satisfies readonly (keyof WeapiMiniProgramSocketDefaults)[]
 
-type RequestGlobalsMiniProgramOptionKey = typeof MINI_PROGRAM_REQUEST_OPTION_KEYS[number]
-type WebSocketMiniProgramOptionKey = typeof MINI_PROGRAM_SOCKET_OPTION_KEYS[number]
+export type RequestGlobalsMiniProgramOptions = WeapiMiniProgramRequestDefaults
 
-export type RequestGlobalsMiniProgramOptions = Pick<
-  Partial<WeapiMiniProgramRequestOption>,
-  RequestGlobalsMiniProgramOptionKey
->
-
-export type WebSocketMiniProgramOptions = Pick<
-  Partial<WeapiMiniProgramConnectSocketOption>,
-  WebSocketMiniProgramOptionKey
->
+export type WebSocketMiniProgramOptions = WeapiMiniProgramSocketDefaults
 
 export interface MiniProgramNetworkDefaults {
   request?: RequestGlobalsMiniProgramOptions

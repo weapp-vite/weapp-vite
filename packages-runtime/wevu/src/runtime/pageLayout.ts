@@ -1,3 +1,4 @@
+import type { WevuPageLayoutMap } from '../types/pageLayout'
 import {
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_NONE,
@@ -13,7 +14,7 @@ type PageLayoutProps = object
 
 type PageLayoutSetter = (layout: string | false, props?: PageLayoutProps) => void
 
-export interface WevuPageLayoutMap {}
+export type { WevuPageLayoutMap } from '../types/pageLayout'
 
 type ResolveTypedPageLayoutName = keyof WevuPageLayoutMap extends never
   ? string
