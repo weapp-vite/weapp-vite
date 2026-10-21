@@ -1,4 +1,5 @@
 import type { ModuleNode } from 'vite'
+import type { VueTransformResult } from 'wevu/compiler'
 import type { WebDevServer } from '../src/plugin/hostTypes'
 import { expect, it, vi } from 'vitest'
 import { collectSfcHmrModules } from '../src/plugin/sfcHmr'
@@ -29,7 +30,7 @@ it('drops detached template, CSS and file-only roots after deletion while preser
   const business = moduleNode('src/store.js')
   const graph = moduleGraph([[file, [owner, template, fileOnly]], [`${file}.css`, [style]]])
 
-  expect(collectSfcHmrModules(state, file, graph, [owner, template, style, fileOnly, business])).toEqual([owner, business])
+  expect(collectSfcHmrModules([state], file, graph, [owner, template, style, fileOnly, business])).toEqual([owner, business])
 })
 
 it('keeps template, CSS and file-only propagation paths connected to a live SFC registration', () => {
@@ -42,7 +43,7 @@ it('keeps template, CSS and file-only propagation paths connected to a live SFC 
   const fileOnly = moduleNode(null, [style])
   const graph = moduleGraph([[file, [owner, template, fileOnly]], [`${file}.css`, [style]]])
 
-  expect(collectSfcHmrModules(state, file, graph, [])).toEqual([owner, template, fileOnly, style])
+  expect(collectSfcHmrModules([state], file, graph, [])).toEqual([owner, template, fileOnly, style])
 })
 
 it('updates every owner of a shared external block and retains the directly changed module', () => {
@@ -64,7 +65,7 @@ it('updates every owner of a shared external block and retains the directly chan
     [`${files[1]}.css`, [activeStyle]],
   ])
 
-  expect(collectSfcHmrModules(state, source, graph, [external])).toEqual([external, firstOwner, secondOwner, activeStyle])
+  expect(collectSfcHmrModules([state], source, graph, [external])).toEqual([external, firstOwner, secondOwner, activeStyle])
 })
 
 it('terminates detached cycles and preserves cycles with a path to the owner', () => {
@@ -80,5 +81,46 @@ it('terminates detached cycles and preserves cycles with a path to the owner', (
   activeFirst.importers.add(activeSecond)
   const graph = moduleGraph([[file, [owner, detachedFirst, detachedSecond, activeFirst, activeSecond]]])
 
-  expect(collectSfcHmrModules(state, file, graph, [detachedFirst, activeFirst])).toEqual([activeFirst, owner, activeSecond])
+  expect(collectSfcHmrModules([state], file, graph, [detachedFirst, activeFirst])).toEqual([activeFirst, owner, activeSecond])
+})
+
+it('uses the committed restored SFC to remove detached nodes missing from the previous snapshot', () => {
+  const file = 'src/pages/restored/index.vue'
+  const previous = createEmptyScanState()
+  const restored = createEmptyScanState()
+  restored.sfcResults.set(file, {})
+  const owner = moduleNode(file)
+  const template = moduleNode(`${file}?weapp-web-sfc-template`)
+  const style = moduleNode(`${file}.css?weapp-web-sfc-style&inline`)
+  const graph = moduleGraph([[file, [owner, template]], [`${file}.css`, [style]]])
+
+  expect(collectSfcHmrModules([previous, restored], file, graph, [owner, template, style])).toEqual([owner])
+})
+
+it('retains deleted owners and their former external-block propagation paths', () => {
+  const file = 'src/components/removed.vue'
+  const source = 'src/theme.css'
+  const previous = createEmptyScanState()
+  previous.sfcResults.set(file, { meta: { sfcSrcDeps: [source] } })
+  const next = createEmptyScanState()
+  const owner = moduleNode(file)
+  const style = moduleNode(`${file}.css?weapp-web-sfc-style&inline`, [owner])
+  const external = moduleNode(source, [style])
+  const graph = moduleGraph([[file, [owner]], [`${file}.css`, [style]]])
+
+  expect(collectSfcHmrModules([previous, next], source, graph, [external])).toEqual([external, owner, style])
+})
+
+it('collects both style suffixes when a source change replaces its style language', () => {
+  const file = 'src/app.vue'
+  const previous = createEmptyScanState()
+  previous.sfcResults.set(file, { meta: { styleBlocks: [{ lang: 'scss' }] } } as VueTransformResult)
+  const next = createEmptyScanState()
+  next.sfcResults.set(file, {})
+  const owner = moduleNode(file)
+  const oldStyle = moduleNode(`${file}.scss?weapp-web-sfc-style&inline`, [owner])
+  const nextStyle = moduleNode(`${file}.css?weapp-web-sfc-style&inline`, [owner])
+  const graph = moduleGraph([[file, [owner]], [`${file}.scss`, [oldStyle]], [`${file}.css`, [nextStyle]]])
+
+  expect(collectSfcHmrModules([previous, next], file, graph, [])).toEqual([owner, oldStyle, nextStyle])
 })
