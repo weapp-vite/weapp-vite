@@ -9,7 +9,10 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { runTaskSuite } from '../../e2e/scripts/suiteRunner'
 import { taskDefinitionHash } from '../../e2e/scripts/verification/plan'
 import { resolveVerificationTopology, topologyEnvironment } from '../verification/topology.ts'
+import { useIsolatedTopologyTestEnvironment } from '../verification/topologyTestFixture.ts'
 import { identity } from './fixtures'
+
+useIsolatedTopologyTestEnvironment()
 
 const mocks = vi.hoisted(() => ({ journal: vi.fn(), cleanup: vi.fn(), scope: vi.fn() }))
 

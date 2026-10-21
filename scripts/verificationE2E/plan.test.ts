@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { assertVerificationPlan, createVerificationIdentity, createVerificationPlan, fallbackTaskDuration } from '../../e2e/scripts/verification/plan'
 import { assertVerificationProfile } from '../../e2e/scripts/verification/profile'
 import { resolveVerificationTopology } from '../verification/topology.ts'
+import { useIsolatedTopologyTestEnvironment } from '../verification/topologyTestFixture.ts'
 import { freeze, identity, now, profile, rehash, tasks } from './fixtures'
+
+useIsolatedTopologyTestEnvironment()
 
 describe('frozen E2E verification plans', () => {
   it('uses deterministic LPT weights in milliseconds without losing task order or coverage', async () => {

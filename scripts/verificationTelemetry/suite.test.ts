@@ -9,7 +9,10 @@ import { partitionE2ETasks } from '../../e2e/scripts/e2e-suite-manifest'
 import * as planApi from '../../e2e/scripts/verification/plan'
 import { currentVerificationProfile } from '../../e2e/scripts/verification/profile'
 import { resolveVerificationTopology } from '../verification/topology'
+import { useIsolatedTopologyTestEnvironment } from '../verification/topologyTestFixture'
 import { createBaselineSuitePlan, loadBaselineSuitePlan, prepareBaselineSuites, writeBaselineSuiteTelemetry } from './suite'
+
+useIsolatedTopologyTestEnvironment()
 
 const roots: string[] = []
 const identity = { runId: 'native-run-attempt-suite', commitSha: 'a'.repeat(40), workingTreeDirty: false }

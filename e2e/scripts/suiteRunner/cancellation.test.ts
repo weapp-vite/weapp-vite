@@ -1,8 +1,12 @@
+import type { SuiteReportContext } from '../suiteReport'
 import type { SuiteTask } from '../suiteRunner'
 import { EventEmitter } from 'node:events'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MANAGED_PROJECT_JOURNAL_ENV } from '../../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
+import { resolveVerificationTopology } from '../../../scripts/verification/topology'
 import { runTaskSuite } from '../suiteRunner'
+import { taskDefinitionHash } from '../verification/plan'
 
 const mocks = vi.hoisted(() => ({
   execa: vi.fn(),
@@ -25,16 +29,23 @@ vi.mock('../ownedE2ECommand/shutdown', async original => ({
   stopOwnedCommand: mocks.stop,
 }))
 
-const tasks: SuiteTask[] = [
-  { label: 'owned-worker', command: 'fixture-command', args: [] },
-  { label: 'must-not-start', command: 'fixture-command', args: [] },
-]
-const options = {
-  writeReport: false,
-  failOnTaskFailure: false,
-  stopOnTaskFailure: false,
-  reportContext: { runId: 'cancel-test', commitSha: 'fixture-commit', workingTreeDirty: false, partial: false, strict: false, plannedTasks: tasks },
+function createFixture() {
+  const tasks: SuiteTask[] = [
+    { label: 'owned-worker', command: 'fixture-command', args: [] },
+    { label: 'must-not-start', command: 'fixture-command', args: [] },
+  ]
+  return {
+    tasks,
+    options: {
+      writeReport: false,
+      failOnTaskFailure: false,
+      stopOnTaskFailure: false,
+      reportContext: { runId: 'cancel-test', commitSha: 'fixture-commit', workingTreeDirty: false, partial: false, strict: false, plannedTasks: tasks },
+    },
+  }
 }
+let tasks: SuiteTask[]
+let options: ReturnType<typeof createFixture>['options']
 type Signal = 'SIGINT' | 'SIGTERM'
 let originalHandlers: Record<Signal, ReturnType<typeof process.listeners>>
 let originalExitCode: typeof process.exitCode
@@ -61,6 +72,7 @@ function childFixture() {
 }
 
 beforeEach(() => {
+  ;({ tasks, options } = createFixture())
   originalHandlers = { SIGINT: process.listeners('SIGINT'), SIGTERM: process.listeners('SIGTERM') }
   originalExitCode = process.exitCode
   process.exitCode = undefined
@@ -92,6 +104,49 @@ afterEach(() => {
 })
 
 describe('suite runner cancellation ownership', () => {
+  it('uses invocation-owned definitions while retaining observable task state', async () => {
+    for (let index = 0; index < 2; index++) {
+      const fixture = createFixture()
+      const taskDefinitions = Object.fromEntries(fixture.tasks.map(task => [task.label, taskDefinitionHash(task)]))
+      const reportContext = { ...fixture.options.reportContext, taskDefinitions }
+      expect(await runTaskSuite('e2e:frozen-test', fixture.tasks, {
+        ...fixture.options,
+        reportContext,
+        nonInteractive: true,
+        runTask: async () => 0,
+      })).toBe(0)
+      expect(reportContext.taskDefinitions).toBe(taskDefinitions)
+      expect(fixture.tasks[0]?.nonInteractive).toBe(true)
+      expect(fixture.tasks[0]?.env?.[MANAGED_PROJECT_JOURNAL_ENV]).toBe('owned-task-journal')
+    }
+    expect(mocks.cleanup).toHaveBeenCalledTimes(4)
+  })
+
+  it.each(['task definitions', 'mixed topology'] as const)('rejects incorrect frozen %s before claiming child resources', async (kind) => {
+    const topology = resolveVerificationTopology()
+    const reportContext: SuiteReportContext = {
+      ...options.reportContext,
+      executionTopology: topology,
+      ...(kind === 'task definitions'
+        ? { taskDefinitions: { [tasks[0]!.label]: 'incorrect-hash' } }
+        : { execution: {
+            executionTopology: { ...topology, id: topology.id === 'legacy-v1' ? 'optimized-v1' : 'legacy-v1' },
+            scope: 'full',
+            status: 'passed',
+            profile: { os: 'linux', nodeMajor: 22, provider: 'none', platform: 'wechat', runnerClass: 'unit-test' },
+            assignedTasks: tasks.map(task => task.label),
+            startedAt: '2026-01-01T00:00:00.000Z',
+            finishedAt: '2026-01-01T00:00:00.000Z',
+          } }),
+    }
+    await expect(runTaskSuite('e2e:frozen-invalid', tasks, { ...options, reportContext }))
+      .rejects
+      .toThrow(kind === 'task definitions' ? 'Suite task definition differs' : 'Suite execution topology differs')
+    expect(mocks.journal).not.toHaveBeenCalled()
+    expect(mocks.scope).not.toHaveBeenCalled()
+    expect(mocks.execa).not.toHaveBeenCalled()
+  })
+
   it.each([['SIGINT', 130], ['SIGTERM', 143]] as const)('awaits child exit and journal cleanup after %s even when task failures are allowed', async (signal, code) => {
     const worker = childFixture()
     const started = Promise.withResolvers<void>()

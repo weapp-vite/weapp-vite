@@ -3,8 +3,29 @@ import { getSuiteTasks } from '../../e2e/scripts/e2e-suite-manifest.ts'
 import { fixturePartition } from '../../packages/weapp-vite/vitest/partition.ts'
 import { logicalRuntimeTaskInventory } from '../verificationBenchmark/runtimeInventory.mjs'
 import { assertVerificationTopology, AUDITED_PARALLEL_FIXTURE_TESTS, formalVerificationTopology, resolveVerificationTopology, TDESIGN_AGGREGATE_LABEL, TDESIGN_SOURCE_LABELS, TOPOLOGY_COMPARISON_PROTOCOL, TOPOLOGY_ENV, TOPOLOGY_POLICY_ENV, topologyEnvironment } from './topology.ts'
+import { isolateTopologyTestEnvironment, useIsolatedTopologyTestEnvironment } from './topologyTestFixture.ts'
+
+useIsolatedTopologyTestEnvironment()
 
 afterEach(() => vi.unstubAllEnvs())
+
+it.each([
+  {},
+  { [TOPOLOGY_ENV]: 'legacy-v1', [TOPOLOGY_POLICY_ENV]: 'inherited-policy' },
+  { [TOPOLOGY_ENV]: 'optimized-v1', [TOPOLOGY_POLICY_ENV]: '' },
+])('isolates and restores only the test topology environment: %j', (inherited) => {
+  const env: NodeJS.ProcessEnv = { ...inherited, UNRELATED: 'preserved' }
+  const original = { ...env }
+  const restore = isolateTopologyTestEnvironment(env)
+  expect(env).toEqual({ UNRELATED: 'preserved' })
+  env[TOPOLOGY_ENV] = 'test-owned'
+  env[TOPOLOGY_POLICY_ENV] = 'test-owned-policy'
+  env.UNRELATED = 'changed by test'
+  restore()
+  expect(env).toEqual({ ...original, UNRELATED: 'changed by test' })
+  restore()
+  expect(env).toEqual({ ...original, UNRELATED: 'changed by test' })
+})
 
 it('rejects unknown topology, inherited conflicts and changed policy before execution', () => {
   expect(resolveVerificationTopology(undefined, {}).id).toBe('optimized-v1')

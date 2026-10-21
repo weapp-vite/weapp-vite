@@ -7,7 +7,10 @@ import { createVerificationPlan } from './plan.ts'
 import { DEFAULT_SELECTION } from './policy.ts'
 import { getResourceBudget } from './resources.ts'
 import { scriptTestInventory } from './toolTests.ts'
+import { useIsolatedTopologyTestEnvironment } from './topologyTestFixture.ts'
 import { readWorkspace } from './workspace.ts'
+
+useIsolatedTopologyTestEnvironment()
 
 const packages: WorkspacePackage[] = [
   { name: 'library', directory: 'packages/library', scripts: { 'build': 'tsdown', 'test': 'vitest run', 'typecheck': 'tsc --noEmit', 'test:types:check': 'tsd' }, dependencies: [], extraInputs: [] },

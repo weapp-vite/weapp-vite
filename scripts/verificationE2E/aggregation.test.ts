@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { aggregateVerificationReports } from '../../e2e/scripts/verification/aggregate'
 import { collectDurationHistory } from '../../e2e/scripts/verification/history'
 import { resolveVerificationTopology } from '../verification/topology.ts'
+import { useIsolatedTopologyTestEnvironment } from '../verification/topologyTestFixture.ts'
 import { freeze, now, profile, receipt, shardReports } from './fixtures'
+
+useIsolatedTopologyTestEnvironment()
 
 function timing(invocationId: string): VerificationTiming {
   return { name: 'machine-lease-acquisition', invocationId, startedAt: now.toISOString(), durationMs: 2, status: 'passed' }

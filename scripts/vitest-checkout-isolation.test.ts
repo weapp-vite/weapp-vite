@@ -13,6 +13,7 @@ const configFiles = [
   'vitest.config.mts',
   'vitest.coverage.ts',
   'scripts/verification/toolTests.ts',
+  'scripts/verification/topology.ts',
   'scripts/verificationBenchmark/localReporterConfig.mjs',
   'scripts/verificationTelemetry/vitest.mjs',
   'scripts/verificationTelemetry/reporter.mjs',
