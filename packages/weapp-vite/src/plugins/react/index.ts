@@ -6,11 +6,8 @@ import path from 'node:path'
 import { transformWithOxc } from 'vite'
 import { baseTemplate } from './baseTemplate'
 import { validateNativeBridgeConfiguration } from './nativeBridge'
-import {
-  compileStaticReactPage,
-  hasNativeComponentBridge,
-  ReactNativeBridgeStaticError,
-} from './staticTemplate/index'
+import { compileStaticReactPage, hasNativeComponentBridge } from './staticTemplate/index'
+import { ReactStaticTemplateUnsupportedError } from './staticTemplate/types'
 
 export const REACT_PLUGIN_NAME = 'weapp-vite:react'
 const REACT_FILE_RE = /\.(?:jsx|tsx)(?:\?.*)?$/
@@ -132,10 +129,7 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
       })
     }
     catch (error) {
-      if (error instanceof ReactNativeBridgeStaticError) {
-        throw error
-      }
-      if (reactConfig.renderMode === 'static') {
+      if (reactConfig.renderMode === 'static' || !(error instanceof ReactStaticTemplateUnsupportedError)) {
         throw error
       }
       templates.set(fileName, {
@@ -182,7 +176,7 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
           transformedSource = compiled.code
         }
         catch (error) {
-          if (resolved.renderMode === 'static' || error instanceof ReactNativeBridgeStaticError) {
+          if (resolved.renderMode === 'static' || !(error instanceof ReactStaticTemplateUnsupportedError)) {
             throw error
           }
           templates.set(fileName, {

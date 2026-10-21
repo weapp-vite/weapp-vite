@@ -63,13 +63,17 @@ import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { dispatchNativeNodeEvent, syncNativeScrollViews } from '../view/nativeNode'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
+import { createTemplateRegistration } from '../view/templateRegistration'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
 import { renderBrowserPageTree } from './render'
 import { readBrowserVirtualFile } from './virtualFiles'
+import { closeBrowserWxsLoader } from './wxs'
 
 export interface BrowserHeadlessSessionOptions {
+  /** 相对小程序根目录的编译模板路径；仅在显式宿主重载时提交新版本。 */
+  compiledTemplatePaths?: readonly string[]
   files: BrowserVirtualFiles
   globals?: Record<string, unknown>
   /** 返回的 Promise 表示宿主 DOM 已提交；普通返回值按同步渲染处理。 */
@@ -222,6 +226,7 @@ export class BrowserHeadlessSession {
   private appInstance: HeadlessAppInstance | null = null
   private readonly appLifecycle = new HeadlessAppLifecycle()
   private readonly moduleLoader
+  private readonly templateRegistration
   private readonly onRender?: BrowserHeadlessSessionOptions['onRender']
   private readonly registries: HeadlessHostRegistries
   private currentPageInstance: HeadlessPageInstance | null = null
@@ -276,6 +281,7 @@ export class BrowserHeadlessSession {
     })
     this.onRender = options.onRender
     this.project = options.project ?? createBrowserProject(options.files)
+    this.templateRegistration = createTemplateRegistration(this.project.artifactSource, this.project.miniprogramRootPath, options.compiledTemplatePaths)
     this.registries = createHostRegistries()
     const rawTabBarList = Array.isArray(this.project.appConfig.tabBar?.list)
       ? this.project.appConfig.tabBar.list
@@ -463,6 +469,17 @@ export class BrowserHeadlessSession {
     const record = resolvePageDefinitionReloadRoute(this.project, route)
     const filePath = join(this.project.miniprogramRootPath, `${record.resourcePath ?? record.route}.js`)
     return this.moduleLoader.reloadPageModule(filePath, record.route)
+  }
+
+  /** 显式提交编译模板及其 import/include 依赖；不重载脚本、不导航或替换实例。 */
+  reloadTemplates(): boolean {
+    this.assertActive()
+    const changed = this.templateRegistration.reload()
+    if (changed) {
+      closeBrowserWxsLoader(this.moduleLoader)
+      this.requestRender()
+    }
+    return changed
   }
 
   getCurrentPageNavigationBarTitle() {
@@ -947,6 +964,7 @@ export class BrowserHeadlessSession {
       componentCache: this.componentCache,
       componentScopes: this.componentScopes,
       files: this.files,
+      templateSource: this.templateRegistration.artifactSource,
       moduleLoader: this.moduleLoader,
       project: this.project,
       session: {
@@ -1351,6 +1369,7 @@ export class BrowserHeadlessSession {
       componentCache: this.componentCache,
       componentScopes: this.componentScopes,
       files: this.files,
+      templateSource: this.templateRegistration.artifactSource,
       moduleLoader: this.moduleLoader,
       project: this.project,
       session: {
@@ -1479,6 +1498,7 @@ export class BrowserHeadlessSession {
       componentCache: this.componentCache,
       componentScopes: this.componentScopes,
       files: this.files,
+      templateSource: this.templateRegistration.artifactSource,
       moduleLoader: this.moduleLoader,
       project: this.project,
       session: {

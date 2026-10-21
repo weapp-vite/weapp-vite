@@ -10,7 +10,7 @@ export function resolveTemplateRegistrationFallback(
   const owners = new Set([
     ...(previous?.keys() ?? []),
     ...(current?.keys() ?? []),
-    ...(snapshot.entryIds ?? []).filter(id => id.endsWith('.vue')),
+    ...(snapshot.entryIds ?? []).filter(id => /\.(?:vue|jsx|tsx)$/.test(id)),
   ])
   const changed = [...owners].filter(owner => !previous?.get(owner) || !current?.get(owner) || previous.get(owner) !== current.get(owner))
   if (changed.length) {

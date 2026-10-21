@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { access, readFile } from 'node:fs/promises'
 import path from 'pathe'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
@@ -97,5 +97,23 @@ describe('template build: tdesign feedback layouts', { concurrent: false }, () =
     expectNoDonutFeedbackMarkers(cartPageWxml)
     expectNoDonutFeedbackMarkers(orderButtonBarWxml)
     expect(defaultLayoutWxml).not.toContain('<t-message')
+  })
+
+  it('emits complete retail media components at their declared relative paths', async () => {
+    let owner = 'pages/goods/comments/components/comments-card/index.json'
+    for (const name of ['images-videos', 'my-video']) {
+      const config = JSON.parse(await readDistFile(RETAIL_TEMPLATE_ROOT, owner)) as { usingComponents?: Record<string, unknown> }
+      const request = config.usingComponents?.[name]
+      expect(request).toBeTypeOf('string')
+      if (typeof request !== 'string') {
+        throw new TypeError(`Retail component ${name} has no declared path`)
+      }
+      expect(request.startsWith('.')).toBe(true)
+      const component = path.join(path.dirname(owner), request)
+      for (const extension of ['.js', '.json', '.wxml']) {
+        await expect(access(path.join(RETAIL_TEMPLATE_ROOT, 'dist', `${component}${extension}`))).resolves.toBeUndefined()
+      }
+      owner = `${component}.json`
+    }
   })
 })

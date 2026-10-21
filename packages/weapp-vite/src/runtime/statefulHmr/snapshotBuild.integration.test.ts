@@ -64,6 +64,38 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 }
 
 describe('stateful snapshot component metadata', () => {
+  it('collects JSX registration and signs the frozen shared template before a later save', async () => {
+    const root = await createProject()
+    await fs.writeFile(path.join(root, 'vite.config.ts'), 'export default { esbuild: { jsx: "preserve" }, weapp: { srcRoot: "src" } }')
+    const file = path.join(root, 'src/components/wevu-leaf/index.tsx')
+    const shared = path.join(root, 'src/components/wevu-leaf/shared.tsx')
+    await fs.unlink(path.join(root, 'src/components/wevu-leaf/index.vue'))
+    await fs.writeFile(file, `import { defineComponent } from 'wevu'
+import { sharedFragment } from './shared'
+export default defineComponent({ render() { return <view>{sharedFragment}</view> } })`)
+    await fs.writeFile(shared, 'export const sharedFragment = <text>frozen-shared</text>')
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const initial = await buildStatefulHmrSnapshot(options)
+    expect(initial.getInputFiles()).toContain(shared)
+    const host = getCompilerHmrHost(createCompilerContextInstance())
+    for (const input of [file, shared]) {
+      const read = readCompilerRawInput(input)!
+      host.captureRaw(input, read.source, false, read)
+    }
+    const frozen = host.freeze([])
+    await fs.writeFile(shared, 'export const sharedFragment = <text>later-shared</text>')
+    const pinned = await buildStatefulHmrSnapshot(options, undefined, undefined, frozen.sources)
+    const live = await buildStatefulHmrSnapshot(options)
+    const signature = initial.getTemplateRegistrationSignatures().get(compilerSourceId(file))
+    expect(signature).toEqual(expect.any(String))
+    expect(pinned.getTemplateRegistrationSignatures().get(compilerSourceId(file))).toBe(signature)
+    expect(live.getTemplateRegistrationSignatures().get(compilerSourceId(file))).not.toBe(signature)
+    const outputs = Array.isArray(pinned.output) ? pinned.output.flatMap(item => item.output) : 'output' in pinned.output ? pinned.output.output : []
+    const template = outputs.find(item => item.fileName === 'components/wevu-leaf/index.wxml') as OutputAsset
+    expect(String(template.source)).toContain('frozen-shared')
+    expect(String(template.source)).not.toContain('later-shared')
+  })
+
   it('signs the external template consumed by a frozen snapshot rather than a later save on disk', async () => {
     const root = await createProject()
     const file = path.join(root, 'src/components/wevu-leaf/index.vue')

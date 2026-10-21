@@ -1,3 +1,4 @@
+import type { ArtifactSource } from '../../kernel/artifactSource'
 import type { LoadWxsModule } from '../../view/wxs'
 import type { BrowserVirtualFiles } from '../virtualFiles'
 import type { BrowserRenderScope, DomNodeLike } from './types'
@@ -73,8 +74,8 @@ function interpolateTemplate(input: string, data: Record<string, any>) {
   return interpolateTemplateText(input, data, true)
 }
 
-export function readTemplateSource(files: BrowserVirtualFiles, filePath: string) {
-  const templateSource = readBrowserVirtualFile(files, filePath)
+export function readTemplateSource(files: BrowserVirtualFiles, filePath: string, artifactSource?: Pick<ArtifactSource, 'readText'>) {
+  const templateSource = artifactSource ? artifactSource.readText(filePath) : readBrowserVirtualFile(files, filePath)
   if (typeof templateSource !== 'string') {
     throw new TypeError(`Missing template in browser simulator runtime: ${filePath}`)
   }
@@ -85,12 +86,12 @@ export function parseTemplateDocument(templateSource: string) {
   return parseWxsTemplateDocument(templateSource) as unknown as DomNodeLike
 }
 
-export function prepareTemplateRenderState(files: BrowserVirtualFiles, root: DomNodeLike, filePath: string, projectRoot: string, loadWxs: LoadWxsModule) {
+export function prepareTemplateRenderState(files: BrowserVirtualFiles, root: DomNodeLike, filePath: string, projectRoot: string, loadWxs: LoadWxsModule, artifactSource?: Pick<ArtifactSource, 'readText'>) {
   return createImportedTemplateState(root, filePath, (owner, source) => {
     const resolved = normalize(source.startsWith('/')
       ? join(projectRoot, source.slice(1))
       : join(dirname(owner), source))
-    const document = parseTemplateDocument(readTemplateSource(files, resolved))
+    const document = parseTemplateDocument(readTemplateSource(files, resolved, artifactSource))
     return { filePath: resolved, root: document.children?.[0] ?? document }
   }, (owner, node) => {
     const source = node.attribs?.src

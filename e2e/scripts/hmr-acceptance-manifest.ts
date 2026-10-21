@@ -27,8 +27,8 @@ export const HMR_ACCEPTANCE_SCENARIOS: HmrAcceptanceScenario[] = [
   },
   {
     id: 'jsx-and-sibling-script-updates',
-    expectations: ['stateful'],
-    capabilityIds: ['script-patch'],
+    expectations: ['stateful', 'classic-fallback'],
+    capabilityIds: ['script-patch', 'native-registration'],
     ide: ['ide/wevu-jsx-tsx.hmr.runtime.test.ts', 'ide/issue-1034-auto-routes-hmr.runtime.test.ts'],
     headless: ['ide/wevu-jsx-tsx.hmr.runtime.test.ts', 'ide/issue-1034-auto-routes-hmr.runtime.test.ts'],
   },

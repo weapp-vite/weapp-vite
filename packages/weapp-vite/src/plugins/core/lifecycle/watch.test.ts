@@ -2081,12 +2081,12 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     expect(state.ctx.runtimeState.build.hmr.dirtyVueEntryIds).toEqual(new Set([pageEntry]))
   })
 
-  it('marks React static template owners for a stateful snapshot refresh', async () => {
+  it.each(['auto', 'static', 'dynamic'] as const)('marks React %s template owners with the same capability boundary', async (renderMode) => {
     const dependencyId = '/project/src/pages/react/view.tsx'
     const pageEntry = '/project/src/pages/react/index.ts'
     collectAffectedEntriesMock.mockReturnValue(new Set([pageEntry]))
     const state = createState()
-    state.ctx.configService.weappViteConfig.react = true
+    state.ctx.configService.weappViteConfig.react = { renderMode }
     state.ctx.onStatefulHmrSourceChange = vi.fn()
     const hook = createWatchChangeHook(state)
 

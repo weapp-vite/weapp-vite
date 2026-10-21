@@ -209,6 +209,27 @@ describe('automator runtime diagnostic lifecycle', () => {
     expect(appendIdeReportEvent).toHaveBeenCalledWith(expect.objectContaining({ source: 'runtime', channel: 'launch', level: 'error', text: expect.stringContaining('bootstrap failed') }))
   })
 
+  it('forwards declared compiled templates unchanged to the headless launch', async () => {
+    vi.stubEnv('WEAPP_VITE_E2E_RUNTIME_PROVIDER', 'headless')
+    const compiledTemplatePaths = ['pages/index/index.wxml', 'components/card/index.wxml'] as const
+    const configureHeadlessSession = vi.fn()
+    const session = createSession()
+    vi.mocked(launchHeadlessAutomator).mockResolvedValue(session as any)
+    const launched = await launchAutomator({
+      projectPath: 'e2e-apps/base',
+      configureHeadlessSession,
+      headlessCompiledTemplatePaths: compiledTemplatePaths,
+    })
+    expect(launchHeadlessAutomator).toHaveBeenCalledExactlyOnceWith({
+      projectPath: 'e2e-apps/base',
+      configureSession: configureHeadlessSession,
+      compiledTemplatePaths,
+      onSessionCreated: expect.any(Function),
+    })
+    expect(vi.mocked(launchHeadlessAutomator).mock.calls[0]![0].compiledTemplatePaths).toBe(compiledTemplatePaths)
+    await launched.close()
+  })
+
   it('retains startup journal entries after in-memory reset and does not duplicate listeners', async () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     const session = createSession()

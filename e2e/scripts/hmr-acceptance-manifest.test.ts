@@ -244,6 +244,20 @@ describe('HMR semantic acceptance inventory', () => {
     })
   })
 
+  it.each([['ide-hmr', 'devtools'], ['ide-hmr-headless', 'headless']] as const)('keeps TSX script support and compiled template fallback distinct in %s', async (suite, provider) => {
+    const task = (await getSuiteTasks(suite)).find(task => task.label === 'ide/wevu-jsx-tsx.hmr.runtime.test.ts')!
+    const cases = await readPlannedTaskCases(task, provider)
+    expect(cases.map(item => item.name)).toEqual([
+      'wevu JSX/TSX capability HMR in real WeChat DevTools > preserves state across repeated TSX handler updates and restores',
+      'wevu JSX/TSX capability HMR in real WeChat DevTools > automatically reloads shared and page TSX template changes through sticky classic',
+    ])
+    expect(HMR_ACCEPTANCE_SCENARIOS.find(item => item.id === 'jsx-and-sibling-script-updates')).toMatchObject({
+      expectations: ['stateful', 'classic-fallback'],
+      capabilityIds: ['script-patch', 'native-registration'],
+    })
+    expect(HMR_ACCEPTANCE_CAPABILITY_COVERAGE.find(item => item.capabilityId === 'native-registration')!.runtimeScenarios).toContain('jsx-and-sibling-script-updates')
+  })
+
   it.each([['ide-hmr', 'devtools'], ['ide-hmr-headless', 'headless']] as const)('keeps both CSS modes and the schema fallback companion in %s', async (suite, provider) => {
     const task = (await getSuiteTasks(suite)).find(task => task.label === 'ide/issue-1015-css-hmr.runtime.test.ts')!
     const cases = await readPlannedTaskCases(task, provider)
@@ -272,6 +286,7 @@ describe('HMR semantic acceptance inventory', () => {
       'packages/weapp-vite/test/wevu-app-runtime-hmr.test.ts',
       'packages/weapp-vite/src/runtime/statefulHmr/templateRegistration.test.ts',
       'packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/templateRegistration.test.ts',
+      'packages-runtime/wevu-compiler/src/plugins/jsx/templateRegistration.test.ts',
     ]) {
       expect(hmrFilters).toContain(file)
       expect(fs.existsSync(path.join(ROOT, file))).toBe(true)

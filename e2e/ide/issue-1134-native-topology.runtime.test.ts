@@ -74,7 +74,7 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     profilePath = path.join(project, '.tmp/hmr-profile.jsonl')
     dev = startDevProcess(process.execPath, [NATIVE_BATCH_CLI, 'dev', '--non-interactive'], { cwd: project, env: { ...createDevProcessEnv(), WEAPP_VITE_HMR_PROFILE_JSON: profilePath }, all: true })
     await dev.waitForInitialBuild()
-    publication = createNativeHmrPublication(project, dev, runtime, ['config-json', 'entry-topology'], profilePath)
+    publication = createNativeHmrPublication(project, dev, runtime, ['config-json'], profilePath)
     miniProgram = await connect()
   }, 180_000)
 
@@ -97,6 +97,7 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     const computed = ['rgb(17, 34, 51)', 'rgb(68, 85, 102)', 'rgb(17, 34, 51)']
     const dom = createDomAcceptance(context, NATIVE_PROFILE_FIXTURE, [
       ...colors.map((_color, index) => ({ id: `style-${index}`, route: styleRoute, action: '检查样式导入链更新及恢复', nodes: [{ selector: '.imported', text: 'baseline', ...(resolveRuntimeProviderName() === 'devtools' ? { styles: { color: computed[index]! } } : {}) }] })),
+      { id: 'component-registered', route, action: '单独注册组件后检查自动重载及原有页面', nodes: [{ selector: '.plain', text: 'baseline' }] },
       { id: 'component-added', route, action: '检查新增组件真实渲染', nodes: [{ selector: '.plain', text: 'baseline' }, { selector: '#optional-component', text: 'optional-component' }] },
       { id: 'route-added', route: optionalRoute, action: '检查新增页面真实导航', nodes: [{ selector: '.optional', text: 'baseline' }] },
       { id: 'restored', route, action: '撤销组件与页面后恢复原页面', nodes: [{ selector: '.plain', text: 'baseline' }] },
@@ -119,11 +120,23 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     const app = JSON.parse(appConfig) as { pages: string[] }
     // 沿用既有导航次数，在保存前进入目标页，后续断言只能观察自动重载。
     await miniProgram!.reLaunch(route)
-    const componentReload = await captureAppReloadMarker(miniProgram!)
-    const componentPublication = publication.capture(path.join(project, 'src/pages/plain/index.json'))
-    await saveNativeProfileSource(project, 'pages/plain/index.wxml', `${template}<optional-card id="optional-component" />`)
+    // 配置注册与模板引用是两次保存；先验收独立 JSON 更新，冻结首次降级的准确原因。
+    // 连续先写 WXML 可能让不安全模板补丁先于 JSON 准入，不能把两个批次假设成一次配置更新。
+    const registrationReload = await captureAppReloadMarker(miniProgram!)
+    const registrationPublication = publication.capture(path.join(project, 'src/pages/plain/index.json'))
     await saveNativeProfileSource(project, 'pages/plain/index.json', JSON.stringify({ usingComponents: { 'optional-card': '/components/optional/index' } }))
     await expect.poll(() => hasNativeProfileEntry(project, 'components/optional/index'), { timeout: 30_000 }).toEqual([true, true, true])
+    await registrationPublication.wait()
+    expect(JSON.parse(await read('dist/pages/plain/index.json')) as { usingComponents?: Record<string, string> }).toMatchObject({ usingComponents: { 'optional-card': '/components/optional/index' } })
+    expect(await read('dist/pages/plain/index.wxml')).not.toContain('optional-card')
+    await reconnect(registrationReload)
+    await assertRuntimeConfig(app.pages, { 'optional-card': '/components/optional/index' })
+    const registered = await miniProgram!.currentPage()
+    await dom.check('component-registered', miniProgram!, registered)
+    expect(await registered.$('#optional-component')).toBeNull()
+    const componentReload = await captureAppReloadMarker(miniProgram!)
+    const componentPublication = publication.capture(path.join(project, 'src/pages/plain/index.wxml'))
+    await saveNativeProfileSource(project, 'pages/plain/index.wxml', `${template}<optional-card id="optional-component" />`)
     await expect.poll(() => read('dist/pages/plain/index.wxml'), { timeout: 30_000 }).toContain('optional-card')
     // 原生写出没有文件集合原子性；新页面可见时 runtime 文件仍可能在重写。
     await componentPublication.wait()

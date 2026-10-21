@@ -7,6 +7,7 @@ import path from 'pathe'
 import { expect, it, vi } from 'vitest'
 import { createCompilerContext } from '../../src/createContext'
 import logger from '../../src/logger'
+import { getHmrRuntimeSession } from '../../src/runtime/hmrRuntimeSession'
 import { saveSource } from '../helpers/saveSource'
 
 function createBundleRuntime(root: string) {
@@ -100,7 +101,7 @@ function createBundleRuntime(root: string) {
   }
 }
 
-it.each(['minimal', 'demo'] as const)('updates %s shared JSX and page handlers without replacing the active DevEngine build', async (fixture) => {
+it.each(['minimal', 'demo'] as const)('keeps %s handlers stateful and transfers compiled JSX changes to classic', async (fixture) => {
   const root = path.resolve(import.meta.dirname, '../../../..')
   const fixtureParent = path.join(root, '.tmp/jsx-stateful-probe')
   await fs.ensureDir(fixtureParent)
@@ -153,7 +154,8 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     await fs.writeFile(shared, sharedSource)
     await fs.writeFile(path.join(cwd, 'src/components/card.vue'), '<script setup>defineProps({title:String})</script><template><view>{{title}}</view></template>')
     ctx = await createCompilerContext({ cwd, isDev: true, syncSupportFiles: false, emitDefaultAutoImportOutputs: false })
-    await ctx.buildService.build({ skipNpm: true })
+    const publicWatcher = await ctx.buildService.build({ skipNpm: true })
+    const session = getHmrRuntimeSession(ctx)
     const hmrState = ctx.runtimeState.build.hmr
     const componentEntries = hmrState.externalComponentEntryMap
     expect(componentEntries.size).toBeGreaterThan(0)
@@ -177,50 +179,52 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
       request.payloads?.includes('app.js') && request.payloads.includes(`${route}.js`),
     ), { timeout: 30_000 }).toBe(true)
     await expect.poll(() => runtime!.isInitialReady(), { timeout: 30_000 }).toBe(true)
-    await saveSource(shared, sharedWith('updated-shared'))
-    await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain('updated-shared')
+    const initialVersion = runtime.getVersion()
+    await saveSource(source, page.replace(initialStep, updatedStep))
+    await expect.poll(() => {
+      runtime!.assertHealthy()
+      expect(errors).toEqual([])
+      return runtime!.getVersion()
+    }, { timeout: 30_000 }).toBeGreaterThan(initialVersion)
+    expect(await fs.readFile(output, 'utf8')).toContain('initial-page')
     expect(ctx.runtimeState.build.hmr).toBe(hmrState)
     expect(ctx.runtimeState.build.hmr.externalComponentEntryMap).toBe(componentEntries)
-    await expect.poll(() => {
-      runtime!.assertHealthy()
-      expect(errors).toEqual([])
-      return runtime!.getVersion()
-    }, { timeout: 30_000 }).toBeGreaterThan(0)
-    const sharedVersion = runtime.getVersion()
+    expect(session.phase).toBe('stateful')
+    expect(session.fallback).toBeUndefined()
+    expect(createHash('sha256').update(await fs.readFile(controlPath)).digest('hex')).toBe(controlHash)
     runtime.assertHealthy()
-    assertHandlerStep(1)
-    await saveSource(source, page.replace('initial-page', 'updated-page').replace(initialStep, updatedStep))
-    await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain('updated-page')
-    await expect.poll(() => {
-      runtime!.assertHealthy()
-      expect(errors).toEqual([])
-      return runtime!.getVersion()
-    }, { timeout: 30_000 }).toBeGreaterThan(sharedVersion)
     expect(await fs.readFile(path.join(cwd, 'dist/__weapp_vite_hmr/update.js'), 'utf8')).toContain(updatedStep)
-    runtime.assertHealthy()
     assertHandlerStep(2)
-    // 源码 transform 继续拥有共享 JSX；恢复也必须由实际客户端执行并确认。
     expect(ctx.moduleGraphService.getEntryDependencies(source)).toContainEqual({ kind: 'jsx', sourceId: shared })
     const componentSource = path.join(cwd, demo ? 'src/components/info-card/index.vue' : 'src/components/card.vue')
     expect(ctx.moduleGraphService.collectAffectedEntries(componentSource, 'script')).toContain(source)
-    let version = runtime.getVersion()
+
+    // VM 不模拟 IDE 完整重载；保留真实客户端直到宿主完成能力切换，再验证 classic 原生产物。
+    const statefulVersion = runtime.getVersion()
+    await saveSource(shared, sharedWith('updated-shared'))
+    await expect.poll(() => session.phase, { timeout: 30_000 }).toBe('classic')
+    await session.whenSettled()
+    runtime.close()
+    expect(runtime.getVersion()).toBe(statefulVersion)
+    expect(session.fallback).toMatchObject({ code: 'native-registration', files: [source] })
+    await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain('updated-shared')
+    expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(publicWatcher)
+
+    await saveSource(source, page.replace('initial-page', 'updated-page').replace(initialStep, updatedStep))
+    await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain('updated-page')
+    expect(await fs.readFile(output, 'utf8')).toContain('updated-shared')
+    expect(session.phase).toBe('classic')
+    // A→B→A 恢复仍由已移交的原生 watcher 构建，不能重新激活旧 stateful 引擎。
     for (const [file, content, marker] of [
       [shared, sharedWith('restored-shared'), 'restored-shared'],
       [source, page, 'initial-page'],
+      [shared, sharedSource, 'initial-shared'],
     ]) {
       await saveSource(file, content)
       await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain(marker)
-      await expect.poll(() => {
-        runtime.assertHealthy()
-        expect(errors).toEqual([])
-        return runtime.getVersion()
-      }, { timeout: 30_000 }).toBeGreaterThan(version)
-      version = runtime.getVersion()
-      expect(ctx.runtimeState.build.hmr).toBe(hmrState)
-      assertHandlerStep(file === source ? 1 : 2)
+      expect(session.phase).toBe('classic')
+      expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(publicWatcher)
     }
-    await new Promise(resolve => setTimeout(resolve, 2_000))
-    expect(createHash('sha256').update(await fs.readFile(controlPath)).digest('hex')).toBe(controlHash)
     expect(errors).toEqual([])
   }
   finally {

@@ -336,6 +336,8 @@ interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
   onSessionMetadata?: (metadata: { projectPath: string, wsEndpoint: string, port: number, managedProject?: { id: string, journalPath: string } }) => Promise<void>
   onRelaunchFailureBeforeClose?: RelaunchFailureObserver
   configureHeadlessSession?: HeadlessAutomatorLaunchOptions['configureSession']
+  /** 编译模板按宿主注册代际固定；普通原生模板保留独立刷新能力。 */
+  headlessCompiledTemplatePaths?: HeadlessAutomatorLaunchOptions['compiledTemplatePaths']
   /** HMR 验收直连构建器输出；snapshot 仅用于需要独立项目快照的验收。 */
   bridgeProjectMode?: AutomatorBridgeProjectMode
   disableRelaunchSessionRecovery?: boolean
@@ -2895,6 +2897,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   if (provider === 'headless') {
     return launchHeadlessAutomator({
       configureSession: options.configureHeadlessSession,
+      compiledTemplatePaths: options.headlessCompiledTemplatePaths,
       projectPath: options.projectPath!,
       onSessionCreated(session) {
         enhanceMiniProgramWithRuntimeLogs(session, resolveReportProjectPath(options.projectPath!))
@@ -2913,7 +2916,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   }
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
-  const { configureHeadlessSession: _configureHeadlessSession, onOwnedSnapshot, onSessionMetadata, onRelaunchFailureBeforeClose, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { configureHeadlessSession: _configureHeadlessSession, headlessCompiledTemplatePaths: _headlessCompiledTemplatePaths, onOwnedSnapshot, onSessionMetadata, onRelaunchFailureBeforeClose, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const selectedCliPath = resolveWechatCliPath(rest.cliPath)
   rest.cliPath = selectedCliPath
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)

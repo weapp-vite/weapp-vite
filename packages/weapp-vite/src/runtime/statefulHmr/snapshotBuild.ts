@@ -251,7 +251,7 @@ export async function buildStatefulHmrSnapshot(
       getInputFiles: () => [...inputFiles].filter(file => path.isAbsolute(file)),
       getInputs: () => reusableInputs,
       getNativeScriptVersions: () => nativeScriptVersions,
-      getTemplateRegistrationSignatures: () => new Map(ctx.runtimeState.build.hmr.vueTemplateRegistrationSignatures),
+      getTemplateRegistrationSignatures: () => new Map(ctx.runtimeState.build.hmr.templateRegistrationSignatures),
       getNativeScriptDrift: createSnapshotNativeScriptDriftProbe(sources, nativeScriptVersions),
       getChildSources: () => ({
         files: [...new Set([...ctx.runtimeState.build.independent.watchFiles.values()].flatMap(files => [...files]).concat(getWorkerSources(ctx).files))],

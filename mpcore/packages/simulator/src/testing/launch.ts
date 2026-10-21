@@ -3,6 +3,8 @@ import { createHeadlessSession } from '../runtime'
 import { HeadlessTestingSessionHandle } from './sessionHandle'
 
 export interface HeadlessTestingLaunchOptions {
+  /** 相对小程序根目录的编译模板路径；普通查询不得提交尚未注册的模板。 */
+  compiledTemplatePaths?: readonly string[]
   projectPath: string
   configureSession?: (session: HeadlessSession) => void | Promise<void>
   onSessionCreated?: (session: HeadlessTestingSessionHandle) => void | Promise<void>
@@ -20,6 +22,7 @@ function resolveInitialRoute(session: ReturnType<typeof createHeadlessSession>) 
 
 export async function launch(options: HeadlessTestingLaunchOptions) {
   const session = createHeadlessSession({
+    compiledTemplatePaths: options.compiledTemplatePaths,
     projectPath: options.projectPath,
   })
   const handle = new HeadlessTestingSessionHandle(session.project, session)

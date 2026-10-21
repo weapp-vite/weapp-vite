@@ -32,8 +32,9 @@ import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { ENTRY_GRAPH_CHANGE_REASON } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
 import { prepareOutputOwnership } from '../../plugins/outputFinalizer/ownership'
-import { isReactStaticTemplateSource } from '../../plugins/react'
+import { isReactHmrTemplateSource, resolveReactTemplateHmrCapability } from '../../plugins/react/hmr'
 import { setTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
+import { readCompilerInputSync } from '../../plugins/utils/sourceSnapshot'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../utils/sourcemap'
@@ -555,8 +556,24 @@ class StatefulHmrSession {
       this.requestServerRestart()
       return
     }
-    if (isReactStaticTemplateSource(this.ctx.configService?.weappViteConfig?.react, normalizedFile)) {
-      this.requestClassic({ code: 'patch-shape', message: 'React 静态模板变化需要重新建立完整注册。', files: [normalizedFile] })
+    const react = this.ctx.configService?.weappViteConfig?.react
+    if (isReactHmrTemplateSource(react, normalizedFile)) {
+      if (event === 'delete') {
+        this.requestClassic({ code: 'entry-topology', message: 'React 模板依赖已删除，需要 classic 重新建立依赖图。', files: [normalizedFile] })
+        return
+      }
+      let fallback: HmrRuntimeFallbackReason
+      try {
+        fallback = resolveReactTemplateHmrCapability(react, normalizedFile, readCompilerInputSync(this.ctx.configService!, normalizedFile))!.fallback
+      }
+      catch (error) {
+        // 来源还包括 Tailwind 的同步 watcher；真实编译错误必须进入构建诊断，不能逃逸或伪装成回退成功。
+        const failure = error instanceof Error ? error : new Error(String(error))
+        this.buildEvents.emitEvent({ code: 'ERROR', error: failure, result: undefined as never })
+        this.server.config.logger.error('[weapp-vite] React HMR capability analysis failed', { error: failure })
+        return
+      }
+      this.requestClassic(fallback)
       return
     }
     const fallback = resolveStatefulHmrInputFallback({
@@ -790,12 +807,11 @@ class StatefulHmrSession {
     }
     const isCompilerDependency = (file: string) => compilerHmrHost.ownsDependency(file)
       && (isStatefulHmrAssetFile(file) || (!this.emittedSourceIds.has(file) && !this.entryIds.has(file) && !compilerHmrHost.isNativeSource(file)))
-    let needsCompilerNoopSnapshot = false
+    const isCompilerNativeVue = (file: string) => file.endsWith('.vue') && compilerHmrHost.ownsDependency(file) && compilerHmrHost.isNativeSource(file)
     if (output.type === 'Noop') {
       // 原批次仍负责恢复原生脚本账本，编译器只接管其中实际拥有的依赖。
       const sources = this.nativeScriptInputs.capture(files, file => compilerHmrHost.readSource(file))
       this.clearRestoredNativeScripts(new Map(this.unpersistedNativeScripts), sources)
-      const isCompilerNativeVue = (file: string) => file.endsWith('.vue') && compilerHmrHost.ownsDependency(file) && compilerHmrHost.isNativeSource(file)
       const unknownBaselines = files.filter(file => isCompilerNativeVue(file)
         && (!this.nativeVueBaselines.has(compilerSourceId(file)) || typeof compilerHmrHost.readSource(file) !== 'string'))
       if (unknownBaselines.length) {
@@ -804,8 +820,6 @@ class StatefulHmrSession {
       }
       files = files.filter((file) => {
         const nativeVisualChange = isCompilerNativeVue(file) && compilerHmrHost.hasVisualChanges([file])
-        // Noop 只描述脚本交付；已确认的视觉输入仍由同一冻结批次编译和校验注册。
-        needsCompilerNoopSnapshot ||= nativeVisualChange
         return nativeVisualChange || isCompilerDependency(file)
       })
     }
@@ -820,6 +834,8 @@ class StatefulHmrSession {
     }))
     const input = getCompilerHmrHost(this.ctx).freeze(files)
     this.diagnostics?.input(input)
+    // Patch/Noop 只描述脚本交付；冻结源码中的视觉变化仍须编译并校验注册。
+    const needsNativeVueSnapshot = files.some(file => isCompilerNativeVue(file) && compilerHmrHost.hasVisualChanges([file], input))
 
     const allowCompilerContentPatch = dirtyReasonSummary.some(isCompilerContentDirtyReason)
     if (!compilerOnly && !updates.every(({ update }) => isSafeJavaScriptPatch(
@@ -853,7 +869,7 @@ class StatefulHmrSession {
     }
     this.diagnostics?.delivery('captured', input.revision, files)
     // 编译器扫描依赖不代表接管了原生资产写出；非脚本资源仍走固定输入快照。
-    const needsSnapshot = needsCompilerNoopSnapshot || files.some(file => requiresStatefulHmrSnapshot(file)) || (!getCompilerHmrHost(this.ctx).enabled && allowCompilerContentPatch) || (dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))
+    const needsSnapshot = needsNativeVueSnapshot || files.some(file => requiresStatefulHmrSnapshot(file)) || (!getCompilerHmrHost(this.ctx).enabled && allowCompilerContentPatch) || (dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))
       && (!getCompilerHmrHost(this.ctx).enabled || getCompilerHmrHost(this.ctx).hasVisualChanges(files, input)))
     const mergeCompilerStyles = shouldMergeStatefulHmrCompilerStyles(
       files,
@@ -1394,14 +1410,12 @@ class StatefulHmrSession {
 export function shouldRestartStatefulHmrServer(
   files: Iterable<string>,
   configFileDependencies: Iterable<string> = [],
-  react?: Parameters<typeof isReactStaticTemplateSource>[0],
 ): boolean {
   const normalizedConfigDependencies = new Set(
     Array.from(configFileDependencies, dependency => normalizeFsResolvedId(dependency)),
   )
   return Array.from(files).some(file =>
-    normalizedConfigDependencies.has(normalizeFsResolvedId(file))
-    || isReactStaticTemplateSource(react, file),
+    normalizedConfigDependencies.has(normalizeFsResolvedId(file)),
   )
 }
 

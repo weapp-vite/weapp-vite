@@ -12,6 +12,7 @@ import { WEAPP_REACT_EVENT_METHOD_NAME } from '@weapp-core/constants'
 import { escapeWxmlAttribute, escapeWxmlText } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { compileStaticStyle } from './style'
+import { ReactStaticTemplateUnsupportedError } from './types'
 
 const HOST_TAGS: Record<string, string> = {
   Button: 'button',
@@ -48,7 +49,7 @@ interface ResolvedTag {
 
 function readTagName(node: JSXElement['openingElement']['name'], context: StaticTemplateRenderContext): ResolvedTag {
   if (!t.isJSXIdentifier(node)) {
-    throw new Error('static template 暂不支持 member/namespaced JSX tag')
+    throw new ReactStaticTemplateUnsupportedError('static template 暂不支持 member/namespaced JSX tag')
   }
   const tag = HOST_TAGS[node.name]
   if (tag) {
@@ -62,7 +63,7 @@ function readTagName(node: JSXElement['openingElement']['name'], context: Static
     context.usedNativeComponents.add(nativeTag)
     return { kind: 'native', tag: nativeTag }
   }
-  throw new Error(`static template 暂不支持动态组件 <${node.name}>`)
+  throw new ReactStaticTemplateUnsupportedError(`static template 暂不支持动态组件 <${node.name}>`)
 }
 
 function readAttributeExpression(attribute: JSXAttribute) {
@@ -126,7 +127,7 @@ function compileAttributes(
   let hasEvent = false
   for (const attribute of element.openingElement.attributes) {
     if (!t.isJSXAttribute(attribute) || !t.isJSXIdentifier(attribute.name)) {
-      throw new Error('static template 暂不支持 JSX spread 或动态属性名')
+      throw new ReactStaticTemplateUnsupportedError('static template 暂不支持 JSX spread 或动态属性名')
     }
     const name = attribute.name.name
     if (name === 'key') {
@@ -139,7 +140,7 @@ function compileAttributes(
       continue
     }
     if (EVENT_PROP_RE.test(name)) {
-      throw new Error(`static template 暂不支持事件 ${name}`)
+      throw new ReactStaticTemplateUnsupportedError(`static template 暂不支持事件 ${name}`)
     }
     const expression = readAttributeExpression(attribute)
     if (!expression) {
@@ -194,7 +195,7 @@ function compileStaticChildren(
       if (value !== undefined) {
         return escapeWxmlText(String(value))
       }
-      throw new Error('static template 的容器节点暂不支持动态结构表达式')
+      throw new ReactStaticTemplateUnsupportedError('static template 的容器节点暂不支持动态结构表达式')
     }
     return ''
   }).join('')
@@ -223,7 +224,7 @@ function compileStaticElement(element: JSXElement, context: StaticTemplateRender
   let content: string
   if (hasDynamicText) {
     if (children.some(child => t.isJSXElement(child) || t.isJSXFragment(child))) {
-      throw new Error(`static template 的 <${tag}> 不支持动态文本与元素子节点混用`)
+      throw new ReactStaticTemplateUnsupportedError(`static template 的 <${tag}> 不支持动态文本与元素子节点混用`)
     }
     bindingFields.add('text')
     content = `{{slots.${slot}.text}}`
@@ -240,7 +241,7 @@ function compileStaticElement(element: JSXElement, context: StaticTemplateRender
 
   const attributeSegment = attributes.length > 0 ? ` ${attributes.join(' ')}` : ''
   if (resolvedTag.kind === 'slot' && children.length > 0) {
-    throw new Error('static template 的 <Slot> 不支持子节点')
+    throw new ReactStaticTemplateUnsupportedError('static template 的 <Slot> 不支持子节点')
   }
   const template = element.openingElement.selfClosing
     ? `<${tag}${attributeSegment} />`

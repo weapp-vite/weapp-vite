@@ -199,10 +199,10 @@ export function emitSharedVueEntryAssets(options: {
   } = options
   const isAppVue = APP_VUE_LIKE_FILE_RE.test(filename)
 
-  if (configService.isDev && filename.endsWith('.vue')) {
+  if (configService.isDev && /\.(?:vue|jsx|tsx)$/.test(filename)) {
     const hmr = ctx.runtimeState.build.hmr
-    hmr.vueTemplateRegistrationSignatures ??= new Map()
-    hmr.vueTemplateRegistrationSignatures.set(normalizeFsResolvedId(filename), result.meta?.templateRegistrationSignature)
+    hmr.templateRegistrationSignatures ??= new Map()
+    hmr.templateRegistrationSignatures.set(normalizeFsResolvedId(filename), result.meta?.templateRegistrationSignature)
   }
 
   if (result.template && !isAppVue) {

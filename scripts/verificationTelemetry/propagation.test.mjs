@@ -70,6 +70,7 @@ it('transports the ordinary optimized default through every nested workflow and 
   expect(assertTopologyGraph(actual, 'optimized-v1')).toEqual([
     'reusable-consumer-platform:node-support',
     'reusable-miniapp-platform:aggregate',
+    'reusable-miniapp-platform:ide-dom-headless-aggregate',
     'reusable-miniapp-platform:plan',
     'reusable-node-command:run',
     'reusable-quality-platform:coverage-merge',
@@ -83,7 +84,7 @@ it.each(['optimized-v1', 'legacy-v1'])('keeps an explicit %s identity through th
 
 it('freezes the derived baseline as explicit legacy while the candidate inherits the optimized default', () => {
   expect(assertTopologyGraph(graphWithJobs(snapshots.baseline), 'legacy-v1', true)).toHaveLength(7)
-  expect(assertTopologyGraph(graphWithJobs(snapshots.candidate), 'optimized-v1')).toHaveLength(6)
+  expect(assertTopologyGraph(graphWithJobs(snapshots.candidate), 'optimized-v1')).toHaveLength(7)
 })
 
 const transports = files.flatMap(file => Object.entries(actual[file].jobs).flatMap(([id, job]) => {

@@ -29,6 +29,18 @@ describe('compiled template capability admission', () => {
     expect(resolveTemplateRegistrationFallback(undefined, { entryIds: ['src/pages/native/index.ts'] })).toBeUndefined()
   })
 
+  it.each(['jsx', 'tsx'])('rejects a missing %s compiler registration contract before publishing', (extension) => {
+    const entry = `src/pages/compiled/index.${extension}`
+    expect(resolveTemplateRegistrationFallback(undefined, { entryIds: [entry] })).toMatchObject({
+      code: 'native-registration',
+      files: [entry],
+    })
+    expect(resolveTemplateRegistrationFallback(new Map(), {
+      entryIds: [entry],
+      templateRegistrationSignatures: new Map([[entry, undefined]]),
+    })).toMatchObject({ code: 'native-registration', files: [entry] })
+  })
+
   it('compares frozen snapshots without following mutation of a later compiler generation', () => {
     const live = new Map(previous)
     const frozen = new Map(live)

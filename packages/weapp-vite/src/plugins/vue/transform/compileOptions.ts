@@ -18,6 +18,7 @@ import { toPosixPath } from '../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
 import { resolveRelativeOutputFileNameWithExtension } from '../../utils/outputFileName'
+import { readCompilerInputSync } from '../../utils/sourceSnapshot'
 import { createSfcResolveSrcOptions } from '../../utils/vueSfc'
 import { createCompilerAppShellSignature, toCompilerAppShell } from './appShell'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
@@ -423,6 +424,7 @@ function buildCompileVueFileOptions(
       mergeStrategy: jsonConfig?.mergeStrategy,
     },
     sfcSrc: createSfcResolveSrcOptions(pluginCtx, configService),
+    jsx: { readFile: (filename: string) => readCompilerInputSync(configService, filename) },
     wevuDefaults,
     minify: wevuMinify,
     sourceMap,

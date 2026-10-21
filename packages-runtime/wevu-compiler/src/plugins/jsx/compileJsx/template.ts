@@ -62,7 +62,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
   const context = createJsxCompileContext(options)
   context.filename = filename
   context.bindingManifest.sourceFile = options?.bindingManifestSourceFile ?? filename
-  context.moduleResolver = createJsxModuleResolver(context.warnings)
+  context.moduleResolver = createJsxModuleResolver(context.warnings, options?.jsx?.readFile)
   collectImportedBindings(ast, context)
 
   const { renderExpression } = analysis.analyzeJsxAst(ast, context)
@@ -115,7 +115,7 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
   const context = createJsxCompileContext(options)
   context.filename = filename
   context.bindingManifest.sourceFile = options?.bindingManifestSourceFile ?? filename
-  context.moduleResolver = createJsxModuleResolver(context.warnings)
+  context.moduleResolver = createJsxModuleResolver(context.warnings, options?.jsx?.readFile)
   collectImportedBindings(ast, context)
 
   const { renderExpression, autoComponentContext } = analysis.analyzeJsxAst(ast, context)

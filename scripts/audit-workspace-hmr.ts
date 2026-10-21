@@ -3,7 +3,6 @@ import type { WorkspaceHmrAuditBudget } from './workspace-hmr/auditDeadline'
 import type { WorkspaceHmrBaseline, WorkspaceHmrThresholds } from './workspace-hmr/baseline'
 import type { ClassicFallbackDeliveryEvidence } from './workspace-hmr/classicFallback'
 import type { WorkspaceHmrDeliveryContract, WorkspaceHmrExpectedDelivery } from './workspace-hmr/delivery'
-import type { DynamicReactDeliveryEvidence, DynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
 import type { DistFileSnapshot } from './workspace-hmr/output'
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
 import { execFile as execFileCallback } from 'node:child_process'
@@ -35,9 +34,8 @@ import { WorkspaceHmrClassicFallback } from './workspace-hmr/classicFallback'
 import { inspectClassicPublication, inspectRetiredClassicTransport } from './workspace-hmr/classicPublication'
 import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable } from './workspace-hmr/cleanup'
 import { assertWorkspaceHmrDelivery, expectedWorkspaceHmrDelivery, orderWorkspaceHmrScenarios, planWorkspaceHmrScenarios } from './workspace-hmr/delivery'
-import { prepareDynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
 import { listFiles, snapshotDist, waitForInitialDistSnapshot, waitForStableDistSnapshot } from './workspace-hmr/output'
-import { isDynamicReactTemplateOutput } from './workspace-hmr/reactTemplate'
+import { isDynamicReactTemplateOutput, resolveReactTemplateScenarioCapability, waitForReactTemplateScriptOutput } from './workspace-hmr/reactTemplate'
 import { renderWorkspaceHmrExecution, summarizeWorkspaceHmrExecution } from './workspace-hmr/report'
 import {
   injectReactTemplateMarker,
@@ -92,7 +90,8 @@ interface ScenarioCase {
   mutate: (source: string, marker: string) => string
   statefulClient?: boolean
   statefulTemplate?: boolean
-  dynamicReactEntry?: string
+  classicFallbackReason?: string
+  reactScriptEntry?: string
 }
 
 interface HmrProfileSample {
@@ -177,7 +176,7 @@ interface ProjectResult {
   error?: string
 }
 
-type WorkspaceHmrDeliveryEvidence = DynamicReactDeliveryEvidence | ClassicFallbackDeliveryEvidence
+type WorkspaceHmrDeliveryEvidence = ClassicFallbackDeliveryEvidence
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
@@ -641,7 +640,11 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       throw new Error('No discovered HMR scenario produced an initial output.')
     }
     const plannedScenarios = planWorkspaceHmrScenarios(project.hmrRuntime, runnableScenarios)
-    result.scenarios = result.scenarios.map((scenario, index) => ({ ...scenario, expectedDelivery: plannedScenarios[index]!.expectedDelivery }))
+    result.scenarios = result.scenarios.map((scenario, index) => ({
+      ...scenario,
+      expectedDelivery: plannedScenarios[index]!.expectedDelivery,
+      expectedFallbackReason: plannedScenarios[index]!.expectedFallbackReason,
+    }))
     result.startupMs = performance.now() - startupStart
     const warmupScenario = runnableScenarios.find(scenario => !scenario.statefulTemplate)
     const warmup = warmupScenario && await warmupProjectHmr(project, warmupScenario, profilePath, distRoot)
@@ -706,13 +709,13 @@ async function warmupProjectHmr(
   }
 
   const expectedDelivery = expectedWorkspaceHmrDelivery(project.hmrRuntime, false, Boolean(scenario.statefulTemplate))
-  const mutation = await prepareScenarioMutation(project, scenario)
+  await prepareScenarioMutation(project, scenario)
   const profileLineCount = await countJsonlLines(profilePath)
   let delivery: WorkspaceHmrDeliveryEvidence | undefined
   let restore: WorkspaceHmrDeliveryEvidence | undefined
   try {
     await writeScenarioSource(scenario.sourcePath, updated)
-    delivery = await waitForScenarioMutation(project, scenario, mutation, expectedMarker, true)
+    delivery = await waitForScenarioMutation(project, scenario, expectedMarker, true)
     assertWorkspaceHmrDelivery({ expectedDelivery, deliveryEvidence: delivery, actualMode: classicFallbacks.get(project.root)?.actualMode ?? (project.hmrRuntime === 'stateful' ? 'stateful-experimental' : 'classic') })
     await acknowledgeScenarioArtifact(project, scenario)
     if (project.hmrRuntime === 'standard') {
@@ -768,6 +771,7 @@ async function auditScenario(
     output: formatProjectPath(scenario.outputPath),
     marker,
     expectedDelivery,
+    expectedFallbackReason: expectedDelivery === 'classic-fallback' ? scenario.classicFallbackReason ?? 'native-registration' : undefined,
   }
 
   if (updated === original) {
@@ -778,7 +782,7 @@ async function auditScenario(
   }
 
   try {
-    const mutation = await prepareScenarioMutation(project, scenario)
+    await prepareScenarioMutation(project, scenario)
     const previousControl = result.expectedDelivery === 'classic-fallback'
       ? parseStatefulHmrControlSource(await readFile(path.join(distRoot, '__weapp_vite_hmr/control.js'), 'utf8'))
       : undefined
@@ -786,7 +790,7 @@ async function auditScenario(
     const before = await snapshotDist(distRoot)
     const startedAt = performance.now()
     await writeScenarioSource(scenario.sourcePath, updated)
-    const delivery = await waitForScenarioMutation(project, scenario, mutation, expectedMarker, true, (event) => {
+    const delivery = await waitForScenarioMutation(project, scenario, expectedMarker, true, (event) => {
       transport.push(event)
       if (transport.length > 32) {
         transport.shift()
@@ -825,7 +829,7 @@ async function auditScenario(
         throw new Error('Classic transition restoration did not remain classic.')
       }
       await writeScenarioSource(scenario.sourcePath, updated)
-      result.repeatDelivery = await waitForScenarioMutation(project, scenario, undefined, expectedMarker, true)
+      result.repeatDelivery = await waitForScenarioMutation(project, scenario, expectedMarker, true)
       if (result.repeatDelivery?.delivery !== 'classic') {
         throw new Error('Classic transition repeated save did not remain classic.')
       }
@@ -922,15 +926,15 @@ async function discoverScenarios(project: ProjectCase, requireOutputs = false): 
 async function createReactTemplateScenario(project: ProjectCase, sourcePath: string, requireOutput: boolean): Promise<ScenarioCase> {
   const templateOutput = resolveReactTemplateOutputPath(project, sourcePath)
   const dynamic = await isDynamicReactTemplateOutput(templateOutput, requireOutput)
+  const capability = resolveReactTemplateScenarioCapability(await readFile(sourcePath, 'utf8'), sourcePath, requireOutput ? dynamic : undefined, project.hmrRuntime)
+  const scriptEntry = path.join(path.dirname(templateOutput), 'index.js')
   return {
     id: 'react-template',
     label: dynamic ? 'React TSX dynamic-render script' : 'React TSX static template',
     sourcePath,
-    outputPath: dynamic ? resolveHmrScriptOutputPath(project, path.join(path.dirname(sourcePath), 'index.ts')) : templateOutput,
-    statefulClient: dynamic && project.hmrRuntime === 'stateful',
-    dynamicReactEntry: dynamic && project.hmrRuntime === 'stateful'
-      ? path.join(path.dirname(templateOutput), 'index.js')
-      : undefined,
+    outputPath: dynamic ? scriptEntry : templateOutput,
+    ...capability,
+    reactScriptEntry: dynamic ? scriptEntry : undefined,
     mutate: injectReactTemplateMarker,
   }
 }
@@ -1043,21 +1047,7 @@ function resolveOutputPath(project: ProjectCase, sourcePath: string, outputExt: 
 
 async function prepareScenarioMutation(project: ProjectCase, scenario: ScenarioCase) {
   if (await settleClassicFallback(project)) {
-    return undefined
-  }
-  if (scenario.dynamicReactEntry) {
-    if (scenario.id !== 'react-template' || !scenario.statefulClient) {
-      throw new Error('Full-reload delivery is restricted to explicit stateful dynamic React scenarios.')
-    }
-    const client = statefulHmrAuditClients.get(project.root) ?? new StatefulHmrAuditClient()
-    statefulHmrAuditClients.set(project.root, client)
-    return await prepareDynamicReactMutation({
-      client,
-      distRoot: project.distRoot,
-      entryFile: scenario.dynamicReactEntry,
-      timeoutMs: scenarioTimeoutMs,
-      classicFallback: (marker, contains, budget) => waitForClassicScenarioMutation(project, scenario, marker, contains, budget),
-    })
+    return
   }
   if (scenario.statefulClient || scenario.statefulTemplate) {
     await prepareStatefulHmrAuditClient(project)
@@ -1067,7 +1057,6 @@ async function prepareScenarioMutation(project: ProjectCase, scenario: ScenarioC
 async function waitForScenarioMutation(
   project: ProjectCase,
   scenario: ScenarioCase,
-  mutation: DynamicReactMutation | undefined,
   marker: string,
   contains: boolean,
   onEvent?: (event: StatefulHmrAuditEvent) => void,
@@ -1080,14 +1069,6 @@ async function waitForScenarioMutation(
     onEvent?.({ type: 'classic' })
     onObserved?.()
     return classic
-  }
-  if (scenario.dynamicReactEntry) {
-    if (!mutation) {
-      throw new Error('Dynamic React mutation is missing its pre-mutation build identity.')
-    }
-    const delivery = await mutation.waitForDelivery(marker, contains, onEvent, budget)
-    onObserved?.()
-    return delivery
   }
   if (scenario.statefulClient) {
     await publishStatefulHmrUpdate(project, scenario.outputPath, marker, contains, budget, onEvent)
@@ -1110,7 +1091,17 @@ async function waitForScenarioMutation(
     isClassicFallback: signal => settleClassicFallback(project, { ...budget, signal }),
     onEvent,
     measure: async (signal) => {
-      if (contains) {
+      if (scenario.reactScriptEntry) {
+        await waitForReactTemplateScriptOutput({
+          entryFile: scenario.reactScriptEntry,
+          distRoot: project.distRoot,
+          marker,
+          contains,
+          ...budget,
+          signal,
+        })
+      }
+      else if (contains) {
         await waitForFileContains(scenario.outputPath, marker, remaining(), signal)
       }
       else {
@@ -1137,16 +1128,15 @@ async function acknowledgeScenarioArtifact(project: ProjectCase, scenario: Scena
 
 async function restoreScenarioMutation(project: ProjectCase, scenario: ScenarioCase, source: string, marker: string) {
   let preparationError: unknown
-  const mutation = await prepareScenarioMutation(project, scenario).catch((error) => {
+  await prepareScenarioMutation(project, scenario).catch((error) => {
     preparationError = error
-    return undefined
   })
   // 即使当前构建无法读取，也先恢复源码；缺失构建身份不能被当作恢复验收通过。
   await writeScenarioSource(scenario.sourcePath, source)
   if (preparationError) {
     throw preparationError
   }
-  const delivery = await waitForScenarioMutation(project, scenario, mutation, marker, false)
+  const delivery = await waitForScenarioMutation(project, scenario, marker, false)
   await acknowledgeScenarioArtifact(project, scenario)
   return delivery
 }
@@ -1183,7 +1173,7 @@ async function waitForClassicScenarioMutation(project: ProjectCase, scenario: Sc
   if (!fallback?.requested) {
     return undefined
   }
-  const output = scenario.dynamicReactEntry ?? (scenario.statefulClient
+  const output = scenario.reactScriptEntry ?? (scenario.statefulClient
     ? resolveHmrScriptOutputPath({ ...project, hmrRuntime: 'standard' }, scenario.sourcePath)
     : scenario.outputPath)
   const readOutput = path.extname(output) === '.js'

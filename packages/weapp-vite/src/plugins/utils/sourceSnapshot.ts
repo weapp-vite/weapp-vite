@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { fs } from '@weapp-core/shared/fs'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { compilerSourceId, getCompilerHmrHostByConfig, getCompilerRawSnapshot } from '../compilerPlugin/hmr'
@@ -119,11 +120,11 @@ export function readCompilerSourceSnapshot(sources: ReadonlyMap<string, string |
   return source
 }
 
-export async function readCompilerInput(owner: object, id: string, read?: (file: string) => Promise<string>): Promise<string> {
+function createCompilerInputObserver(owner: object, id: string) {
   const observers = inputObservers.get(owner)
   const observed = [...(observers ?? [])]
   const observedId = observers ? compilerSnapshotSourceId(snapshots.get(owner)?.sources, id) : id
-  const observe = (source: string) => {
+  return (source: string) => {
     if (inputObservers.get(owner) === observers) {
       for (const callback of observed) {
         if (observers?.has(callback)) {
@@ -133,6 +134,25 @@ export async function readCompilerInput(owner: object, id: string, read?: (file:
     }
     return observeNativeInput(owner, id, source)
   }
+}
+
+/** 同步 JSX 展开沿用同一冻结输入和依赖登记，不能从后续磁盘版本重建模板。 */
+export function readCompilerInputSync(owner: object, id: string): string {
+  const observe = createCompilerInputObserver(owner, id)
+  const pinned = readCompilerSourceSnapshot(snapshots.get(owner)?.sources, id)
+  if (pinned !== undefined) {
+    return observe(pinned)
+  }
+  const source = readFileSync(id, 'utf8')
+  const host = getCompilerHmrHostByConfig(owner)
+  if (host?.onDependencyChange) {
+    host.captureRaw(id, source)
+  }
+  return observe(source)
+}
+
+export async function readCompilerInput(owner: object, id: string, read?: (file: string) => Promise<string>): Promise<string> {
+  const observe = createCompilerInputObserver(owner, id)
   const pinned = readCompilerSourceSnapshot(snapshots.get(owner)?.sources, id)
   if (pinned !== undefined) {
     return observe(pinned)

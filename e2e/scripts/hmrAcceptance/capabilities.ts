@@ -68,9 +68,9 @@ export const HMR_ACCEPTANCE_CAPABILITY_COVERAGE: HmrCapabilityCoverage[] = [
   },
   {
     capabilityId: 'native-registration',
-    unit: [`${RUNTIME}/statefulHmr/patchModule.test.ts`, `${RUNTIME}/statefulHmr/viteAdapter.test.ts`, `${RUNTIME}/statefulHmr/templateRegistration.test.ts`, 'packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/templateRegistration.test.ts'],
+    unit: [`${RUNTIME}/statefulHmr/patchModule.test.ts`, `${RUNTIME}/statefulHmr/viteAdapter.test.ts`, `${RUNTIME}/statefulHmr/templateRegistration.test.ts`, 'packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/templateRegistration.test.ts', 'packages-runtime/wevu-compiler/src/plugins/jsx/templateRegistration.test.ts'],
     build: [],
-    runtimeScenarios: ['unsupported-capability-classic-transition', 'compiled-template-registration-fallback', 'tailwind-template-registration-and-local-priority'],
+    runtimeScenarios: ['unsupported-capability-classic-transition', 'compiled-template-registration-fallback', 'tailwind-template-registration-and-local-priority', 'jsx-and-sibling-script-updates'],
     runtime: 'planned',
   },
   {

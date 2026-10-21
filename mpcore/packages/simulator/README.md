@@ -13,6 +13,7 @@
 - 提供测试页面/会话句柄上的 `waitForSelector()`、`waitForText()`、`waitForTextGone()`、`waitForData()`、`waitForCurrentPage()` 等轮询等待方法
 - 测试会话句柄提供与 `miniprogram-automator` 对齐的 `toolInfo()`，headless provider 返回稳定的 simulator 标识
 - Node/browser session 的 `reloadPageDefinition(route)` 显式更新已加载页面的入口定义，返回源码字节是否变化；测试会话句柄返回 `Promise<boolean>`。它保留 App、当前页面和共享依赖缓存，不自动导航；需要新页面时再调用 `reLaunch()`。失败会恢复模块缓存及注册表，但不会撤销业务脚本已经执行的任意副作用。普通导航不自动重载脚本。
+- Node/browser session 与测试 `launch()` 接受 `compiledTemplatePaths`，声明相对小程序根目录的编译 WXML 输出。创建会话时冻结这些模板及递归 `import/include` 依赖，形成全局注册图；原生模板引用同一依赖时也读取该依赖的注册版本，图外的原生 WXML 仍实时读取。普通查询、数据更新、脚本重载和导航都不会提交新模板。`reloadTemplates()` 显式提交整批新版本，返回是否变化，测试句柄返回 `Promise<boolean>`；缺失任意模板或依赖路径超出小程序根目录时保留整批旧版本和 WXS 缓存。成功提交新版本后清除本会话的 WXS 缓存，内联 WXS 随新模板重新加载。它保留当前页面、组件及 App 实例，适合由宿主注册生命周期调用；classic 重启可通过新建会话重新注册模板。
 - `disconnect()` 同步开始释放独占运行时并返回可等待的 Promise；并发、重入与后续调用共享关闭结果，关闭失败会保留在该 Promise 中
 - 提供原生形状的 `wx.onAppShow/offAppShow/onAppHide/offAppHide`；Node/browser session 与测试句柄通过 `triggerAppShow(options?)`、`triggerAppHide({ reason })` 显式驱动应用前后台事件，普通页面导航不会伪造应用切换
 - 测试入口 `launch({ configureSession })` 会在执行 `app.js` 前等待配置完成，可安装测试宿主能力；配置失败会关闭会话，默认 request 仍受既有 mock / strict mock 策略约束，不自动开放真实网络

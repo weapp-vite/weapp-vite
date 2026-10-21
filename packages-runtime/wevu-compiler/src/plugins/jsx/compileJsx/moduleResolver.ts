@@ -7,7 +7,12 @@ import { BABEL_TS_MODULE_PARSER_OPTIONS, parse } from '../../../utils/babel'
 
 const EXTENSIONS = ['', '.tsx', '.jsx', '.ts', '.js'] as const
 
-function resolveFile(source: string, importer: string) {
+function isMissingFile(error: unknown) {
+  return Boolean(error && typeof error === 'object' && 'code' in error
+    && ['ENOENT', 'ENOTDIR', 'EISDIR'].includes(String(error.code)))
+}
+
+function resolveFile(source: string, importer: string, readSource: (filename: string) => string) {
   if (!source.startsWith('.')) {
     return undefined
   }
@@ -15,23 +20,27 @@ function resolveFile(source: string, importer: string) {
   for (const extension of EXTENSIONS) {
     const candidate = `${base}${extension}`
     try {
-      if (readFileSync(candidate, 'utf8') !== undefined) {
+      if (readSource(candidate) !== undefined) {
         return candidate
       }
     }
-    catch {
-      continue
+    catch (error) {
+      if (!isMissingFile(error)) {
+        throw error
+      }
     }
   }
   for (const extension of EXTENSIONS) {
     const candidate = path.join(base, `index${extension}`)
     try {
-      if (readFileSync(candidate, 'utf8') !== undefined) {
+      if (readSource(candidate) !== undefined) {
         return candidate
       }
     }
-    catch {
-      continue
+    catch (error) {
+      if (!isMissingFile(error)) {
+        throw error
+      }
     }
   }
   return undefined
@@ -128,13 +137,16 @@ function collectExports(ast: File) {
   return { locals, exports, reexports }
 }
 
-export function createJsxModuleResolver(warnings?: string[]): JsxModuleResolver {
+export function createJsxModuleResolver(
+  warnings?: string[],
+  readSource: (filename: string) => string = filename => readFileSync(filename, 'utf8'),
+): JsxModuleResolver {
   const cache = new Map<string, { code: string, exports: ReturnType<typeof collectExports> }>()
   const active = new Set<string>()
   const dependencies = new Set<string>()
 
   function read(filename: string) {
-    const code = readFileSync(filename, 'utf8')
+    const code = readSource(filename)
     const cached = cache.get(filename)
     if (cached?.code === code) {
       return cached.exports
@@ -164,7 +176,7 @@ export function createJsxModuleResolver(warnings?: string[]): JsxModuleResolver 
       if (!forwarded) {
         return undefined
       }
-      const target = resolveFile(forwarded.source, filename)
+      const target = resolveFile(forwarded.source, filename, readSource)
       if (target) {
         dependencies.add(target)
       }
@@ -176,7 +188,7 @@ export function createJsxModuleResolver(warnings?: string[]): JsxModuleResolver 
   }
 
   function resolveImport(filename: string, source: string, importedName: string) {
-    const target = resolveFile(source, filename)
+    const target = resolveFile(source, filename, readSource)
     if (!target) {
       return undefined
     }

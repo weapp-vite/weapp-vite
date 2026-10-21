@@ -8,6 +8,10 @@ const wrapperSuite = 'automator-bridge-wrapper-hmr.runtime.test.ts'
 const additionalHmrSuites = ['forward-console-demo.runtime.test.ts']
 const ideRoot = path.resolve(import.meta.dirname, '../ide')
 const launchDelegates: Record<string, { module: string, factory: string }> = {
+  'wevu-jsx-tsx.hmr.runtime.test.ts': {
+    module: './statefulHmrDom/jsxSession',
+    factory: 'createJsxHmrSession',
+  },
   'hmr-compiled-template-fallback.runtime.test.ts': {
     module: './statefulHmrDom/templateFallbackSession',
     factory: 'createTemplateFallbackSession',

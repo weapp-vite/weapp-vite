@@ -187,6 +187,11 @@ export class HeadlessTestingSessionHandle {
     return this.session.reloadPageDefinition(route)
   }
 
+  /** 显式提交宿主编译模板；不隐式重载脚本或导航。 */
+  async reloadTemplates(): Promise<boolean> {
+    return this.session.reloadTemplates()
+  }
+
   async navigateTo(route: string) {
     await this.navigation.invoke('navigateTo', {
       url: route,

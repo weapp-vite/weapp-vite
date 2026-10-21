@@ -22,7 +22,7 @@ import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/res
 import { getWxmlWatchFiles, isWxmlDependency } from '../../../wxml/processing/dependencies'
 import { isManagedCompilerEntry } from '../../compilerPluginRegistry'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
-import { isReactStaticTemplateSource } from '../../react'
+import { isReactHmrTemplateSource } from '../../react/hmr'
 import { getManagedTailwindcssEntries, isManagedTailwindcssEntry } from '../../tailwindcssMarker'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
@@ -355,8 +355,8 @@ async function processChangedFile(
       importerGraphAffectedEntryIds.add(entryId)
     }
   }
-  const isReactStaticTemplateUpdate = event === 'update'
-    && isReactStaticTemplateSource(configService.weappViteConfig?.react, normalizedId)
+  const isReactTemplateUpdate = event === 'update'
+    && isReactHmrTemplateSource(configService.weappViteConfig?.react, normalizedId)
   const isScriptModuleSidecar = pathKind.isScriptModuleSidecar
   const concreteChangedEntryId = isAppVueFile(normalizedId) && scanService.appEntry?.path
     ? normalizeFsResolvedId(scanService.appEntry.path)
@@ -677,7 +677,7 @@ async function processChangedFile(
       ? 'metadata'
       : (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct'
     const directDirtyCause = sidecarDirtyCause
-      ?? (isReactStaticTemplateUpdate
+      ?? (isReactTemplateUpdate
         ? 'react-template'
         : isJsonOnlyVueEntryUpdate
           ? isAutoRoutesStaleAppEntry ? 'entry-auto-routes' : 'entry-json-only'
@@ -698,7 +698,7 @@ async function processChangedFile(
       markEntryDirtyWithCause(
         entryId,
         'dependency',
-        isReactStaticTemplateUpdate ? 'react-template' : 'importer-graph',
+        isReactTemplateUpdate ? 'react-template' : 'importer-graph',
       )
     }
   }

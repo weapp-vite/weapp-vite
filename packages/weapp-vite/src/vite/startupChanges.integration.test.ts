@@ -1,4 +1,5 @@
 import type { ViteDevServer } from 'vite'
+import { statSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -57,7 +58,47 @@ it.each(['entry-validation', 'initial-build'] as const)('keeps source saves admi
   let phase = 'initial-files'
   let watcherServer: ViteDevServer | undefined
   let watcherReady = false
+  const startedAt = performance.now()
   const hotUpdates: Array<{ file: string, matchesAppConfig: boolean }> = []
+  const targetEvents: Array<Record<string, unknown>> = []
+  let droppedTargetEvents = 0
+  const normalizeTargetPath = (file: string) => {
+    const resolved = path.resolve(file)
+    return process.platform === 'win32' ? resolved.toLowerCase() : resolved
+  }
+  const matchesTarget = (file: string) => normalizeTargetPath(file) === normalizeTargetPath(appConfig)
+  const targetState = () => {
+    let fileState: Record<string, unknown>
+    try {
+      const { size, atimeMs, mtimeMs, ctimeMs, dev, ino } = statSync(appConfig)
+      fileState = { size, atimeMs, mtimeMs, ctimeMs, dev, ino }
+    }
+    catch (error) {
+      fileState = { errorCode: (error as NodeJS.ErrnoException).code }
+    }
+    const watcher = watcherServer?.watcher as (ViteDevServer['watcher'] & {
+      _throttled?: Map<string, Map<string, { count?: number }>>
+    }) | undefined
+    const throttles: Array<{ action: string, count?: number }> = []
+    for (const [action, entries] of watcher?._throttled ?? []) {
+      for (const [file, entry] of entries) {
+        const base = action === 'change' ? watcher?.options.cwd ?? process.cwd() : process.cwd()
+        if (matchesTarget(path.resolve(base, file))) {
+          throttles.push({ action, count: entry.count })
+        }
+      }
+    }
+    return { elapsedMs: performance.now() - startedAt, fileState, throttles, watcherReady, watcherClosed: watcher?.closed }
+  }
+  const recordTargetEvent = (event: string, details?: Record<string, unknown>) => {
+    if (targetEvents.length >= 32) {
+      droppedTargetEvents++
+      return
+    }
+    targetEvents.push({ event, phase, ...details, ...targetState() })
+  }
+  let beforeSave: ReturnType<typeof targetState> | undefined
+  let afterSave: ReturnType<typeof targetState> | undefined
   onTestFailed(() => {
     process.stderr.write(`[startup-save-admission] ${JSON.stringify({
       stage,
@@ -65,6 +106,11 @@ it.each(['entry-validation', 'initial-build'] as const)('keeps source saves admi
       watcherReady,
       serverRootMatchesFixture: watcherServer && path.resolve(watcherServer.config.root) === root,
       hotUpdates,
+      beforeSave,
+      afterSave,
+      failureState: targetState(),
+      targetEvents,
+      droppedTargetEvents,
     })}\n`)
   })
   const pause = async () => {
@@ -101,6 +147,20 @@ it.each(['entry-validation', 'initial-build'] as const)('keeps source saves admi
           order: 'pre',
           async handler(host) {
             watcherServer = host
+            host.watcher.on('raw', (event, file, details: unknown) => {
+              const watchedPath = details && typeof details === 'object' && 'watchedPath' in details && typeof details.watchedPath === 'string'
+                ? details.watchedPath
+                : undefined
+              if ((typeof file === 'string' && matchesTarget(file))
+                || (watchedPath && (matchesTarget(watchedPath) || (typeof file === 'string' && matchesTarget(path.resolve(watchedPath, file)))))) {
+                recordTargetEvent('raw', { rawEvent: event, file: path.basename(String(file)), watchedPath: watchedPath && path.basename(watchedPath) })
+              }
+            })
+            host.watcher.on('change', (file, stats) => {
+              if (matchesTarget(file)) {
+                recordTargetEvent('change', { emittedSize: stats?.size, emittedMtimeMs: stats?.mtimeMs })
+              }
+            })
             phase = 'watcher-initial-scan'
             await waitForStartupWatcherReady(host.watcher)
             watcherReady = true
@@ -122,6 +182,7 @@ it.each(['entry-validation', 'initial-build'] as const)('keeps source saves admi
             hotUpdates.shift()
           }
           if (matchesAppConfig) {
+            recordTargetEvent('hot-update')
             observed.resolve()
           }
         },
@@ -131,7 +192,9 @@ it.each(['entry-validation', 'initial-build'] as const)('keeps source saves admi
       throw new Error('Startup completed before the admission gate')
     })])
     phase = 'saving-source-during-admission-gate'
+    beforeSave = targetState()
     await writeFile(appConfig, '{"pages":["pages/home/index"],"window":{"navigationBarTitleText":"saved-during-startup"}}')
+    afterSave = targetState()
     // 等到真实宿主消费文件事件，再释放扫描或首构，排除保存碰巧落在就绪后的假通过。
     phase = 'waiting-for-real-hot-update'
     await observed.promise

@@ -1,4 +1,5 @@
 import type { HeadlessComponentDefinition } from '../../host'
+import type { ArtifactSource } from '../../kernel/artifactSource'
 import type { HeadlessProjectDescriptor } from '../../project/createProjectDescriptor'
 import type { HeadlessComponentInstance } from '../../runtime/componentInstance'
 import type { MiniProgramEventBinding } from '../../view/eventBinding'
@@ -63,6 +64,7 @@ export interface BrowserRendererContext {
   componentCache: Map<string, HeadlessComponentInstance>
   componentScopes: Map<string, BrowserRenderScope>
   files: BrowserVirtualFiles
+  templateSource?: Pick<ArtifactSource, 'readText'>
   moduleLoader: BrowserModuleLoader
   project: HeadlessProjectDescriptor
   session: {

@@ -3,6 +3,7 @@ import type { StaticTemplateCompileResult, StaticTemplateRoot } from './types'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, generate, parse } from '@weapp-vite/ast'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { renderStaticTemplate } from './render'
+import { ReactStaticTemplateUnsupportedError } from './types'
 
 const REACT_RUNTIME_MODULE_ID = '@weapp-vite/react'
 
@@ -126,11 +127,11 @@ export function compileStaticReactPage(
       ? findFunctionDeclaration(ast, componentName)
       : findFirstFunctionDeclaration(ast)
     if (!component) {
-      throw new Error(`未找到直接 return JSX 的 static template 组件${componentName ? ` ${componentName}` : ''}`)
+      throw new ReactStaticTemplateUnsupportedError(`未找到直接 return JSX 的 static template 组件${componentName ? ` ${componentName}` : ''}`)
     }
     const root = findReturnedTemplate(component)
     if (!root) {
-      throw new Error(`static template 组件 ${componentName ?? component.id?.name ?? ''} 必须直接 return JSX`)
+      throw new ReactStaticTemplateUnsupportedError(`static template 组件 ${componentName ?? component.id?.name ?? ''} 必须直接 return JSX`)
     }
 
     const context = {

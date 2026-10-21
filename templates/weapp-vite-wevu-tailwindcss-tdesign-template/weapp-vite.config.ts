@@ -36,14 +36,16 @@ export default defineConfig({
         'tdesign-miniprogram': {
           exclude: [
             '**/*.d.ts',
-            '**/type.js',
             'common/shared/**',
           ],
           include: [
             'button/**',
             'common/**',
+            'config-provider/**',
             'icon/**',
             'loading/**',
+            'locale/zh_CN.js',
+            'miniprogram_npm/dayjs/**',
             'miniprogram_npm/tslib/**',
             'mixins/**',
             'tag/**',

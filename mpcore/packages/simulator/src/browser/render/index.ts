@@ -465,7 +465,7 @@ function reconcileBrowserPageTree(
     const routeRecord = context.project.routes.find(item => item.route === route)
     const resourcePath = routeRecord?.resourcePath ?? route
     const templatePath = join(context.project.miniprogramRootPath, `${resourcePath}.wxml`)
-    const templateSource = readTemplateSource(context.files, templatePath)
+    const templateSource = readTemplateSource(context.files, templatePath, context.templateSource)
     const document = parseTemplateDocument(templateSource)
     const pageScopeId = `page:${route}`
     const pageScope: BrowserRenderScope = {
@@ -485,7 +485,7 @@ function reconcileBrowserPageTree(
     context.componentScopes.set(pageScopeId, pageScope)
     const renderPass = createPageRenderPass(page, context.componentCache)
     const root = (document.children ?? [])[0] ?? document
-    const templateRenderState = prepareTemplateRenderState(context.files, root, templatePath, context.project.miniprogramRootPath, getBrowserWxsLoader(context.moduleLoader, context.files))
+    const templateRenderState = prepareTemplateRenderState(context.files, root, templatePath, context.project.miniprogramRootPath, getBrowserWxsLoader(context.moduleLoader, context.files), context.templateSource)
     const renderedRoot = renderNodeTree(
       root,
       pageScope,

@@ -12,6 +12,7 @@ import { transformScript } from '../vue/transform/script'
 import { createJsxDiagnostics } from './compileJsx/diagnostics'
 import { injectDynamicIslandRuntime, stripRenderOptionFromScript } from './compileJsx/script'
 import { compileJsxTemplateAndCollectComponents } from './compileJsx/template'
+import { createJsxTemplateRegistrationSignature } from './templateRegistration'
 
 const LEADING_DOT_RE = /^\./
 const SETUP_CALL_RE = /\bsetup\s*\(/
@@ -240,6 +241,12 @@ export async function compileJsxFile(
       hasSetupOption: SETUP_CALL_RE.test(normalizedScriptSource),
       jsonMacroHash: scriptMacroHash,
       jsxDynamicIslands: dynamicIslands,
+      templateRegistrationSignature: createJsxTemplateRegistrationSignature({
+        template: compiledTemplateStr,
+        inlineExpressions,
+        classStyleBindings,
+        dynamicIslands,
+      }),
       ...(transformedScript.componentStyleOptions ? { componentStyleOptions: transformedScript.componentStyleOptions } : {}),
       ...(transformedScript.runtimeCapabilities
         ? { runtimeCapabilities: transformedScript.runtimeCapabilities }

@@ -42,6 +42,7 @@ import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { dispatchNativeNodeEvent, syncNativeScrollViews } from '../view/nativeNode'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
+import { createTemplateRegistration } from '../view/templateRegistration'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createAppInstance } from './appInstance'
 import { HeadlessAppLifecycle } from './appLifecycle'
@@ -65,9 +66,12 @@ import {
   deriveMenuButtonBoundingClientRect,
   deriveWindowInfo,
 } from './systemInfo'
+import { closeRuntimeWxsLoader } from './wxs'
 import { createHeadlessWxState } from './wxState'
 
 export interface HeadlessSessionOptions {
+  /** 相对小程序根目录的编译模板路径；仅在显式宿主重载时提交新版本。 */
+  compiledTemplatePaths?: readonly string[]
   globals?: Record<string, unknown>
   project?: HeadlessProjectDescriptor
   projectPath?: string
@@ -215,6 +219,7 @@ export class HeadlessSession {
   private appInstance: HeadlessAppInstance | null = null
   private readonly appLifecycle = new HeadlessAppLifecycle()
   private readonly moduleLoader
+  private readonly templateRegistration
   private readonly routeEvents = new HeadlessRouteEvents(
     callback => this.requestRender(callback),
     page => this.currentPageInstance === page && !this.kernel.isClosed,
@@ -263,6 +268,7 @@ export class HeadlessSession {
       throw new Error('Headless runtime requires projectPath or project.')
     }
     this.project = options.project ?? loadProject(options.projectPath!)
+    this.templateRegistration = createTemplateRegistration(this.project.artifactSource, this.project.miniprogramRootPath, options.compiledTemplatePaths)
     this.wxState = createHeadlessWxState(this.kernel.scheduler, {
       strictMocks: options.strictHostMocks,
       readPackageFile: createPackageAssetReader(relative => this.project.artifactSource.readText(path.join(this.project.miniprogramRootPath, relative))),
@@ -502,6 +508,17 @@ export class HeadlessSession {
     return this.moduleLoader.reloadPageModule(filePath, record.route)
   }
 
+  /** 显式提交编译模板及其 import/include 依赖；不重载脚本、不导航或替换实例。 */
+  reloadTemplates(): boolean {
+    this.assertActive()
+    const changed = this.templateRegistration.reload()
+    if (changed) {
+      closeRuntimeWxsLoader(this.moduleLoader)
+      this.requestRender()
+    }
+    return changed
+  }
+
   getWx() {
     this.assertActive()
     return this.moduleLoader.wx
@@ -573,7 +590,7 @@ export class HeadlessSession {
     const current = this.requireCurrentPage('renderCurrentPage()')
     const rendered = renderRuntimePageTree({
       changedPageKeys: current.__lastChangedKeys__ ?? [],
-      artifactSource: this.project.artifactSource,
+      artifactSource: this.templateRegistration.artifactSource,
       componentCache: this.componentCache,
       componentScopes: this.componentScopes,
       moduleLoader: this.moduleLoader,

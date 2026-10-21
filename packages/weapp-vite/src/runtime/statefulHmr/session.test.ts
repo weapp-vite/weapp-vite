@@ -180,8 +180,7 @@ describe('stateful hmr session', () => {
     expect(shouldRestartStatefulHmrServer(['/project/src/app.css'], configDependencies)).toBe(false)
     expect(shouldRestartStatefulHmrServer(['/project/weapp-vite.config.ts'], configDependencies)).toBe(true)
     expect(shouldRestartStatefulHmrServer(['C:\\project\\shared.config.ts'], ['C:/project/shared.config.ts'])).toBe(true)
-    expect(shouldRestartStatefulHmrServer(['/project/src/pages/index/view.tsx'], [], true)).toBe(true)
-    expect(shouldRestartStatefulHmrServer(['/project/src/pages/index/view.tsx'], [], { renderMode: 'dynamic' })).toBe(false)
+    expect(shouldRestartStatefulHmrServer(['/project/src/pages/index/view.tsx'])).toBe(false)
   })
 
   it('only rebuilds affected dependencies missing from the DevEngine graph', () => {

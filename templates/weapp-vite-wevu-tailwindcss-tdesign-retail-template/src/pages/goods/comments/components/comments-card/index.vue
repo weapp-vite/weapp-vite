@@ -33,7 +33,7 @@ defineComponentJson({
   component: true,
   usingComponents: {
     't-rate': 'tdesign-miniprogram/rate/rate',
-    'images-videos': './components/images-videos',
+    'images-videos': './components/images-videos/index',
     't-image': '/components/webp-image/index',
   },
 })

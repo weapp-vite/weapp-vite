@@ -10,6 +10,7 @@ const transition: ScenarioResult = {
   source: 'src/page.vue',
   output: 'dist/page.wxml',
   expectedDelivery: 'classic-fallback',
+  expectedFallbackReason: 'native-registration',
   actualMode: 'classic',
   deliveryEvidence: { delivery: 'classic', reason: 'native-registration' },
   restoreDelivery: { delivery: 'classic' },
@@ -64,6 +65,31 @@ describe('workspace HMR delivery admission and impact measurement', () => {
     expect(planWorkspaceHmrScenarios('standard', [{ id: 'template', statefulTemplate: true }])[0]?.expectedDelivery).toBe('classic')
   })
 
+  it('freezes a React template capability reason after supported native scripts and styles', () => {
+    const planned = planWorkspaceHmrScenarios('stateful', [
+      { id: 'react-template', statefulTemplate: true, classicFallbackReason: 'patch-shape' },
+      { id: 'native-script' },
+      { id: 'native-style' },
+    ])
+    expect(planned.map(({ id, expectedDelivery, expectedFallbackReason }) => [id, expectedDelivery, expectedFallbackReason])).toEqual([
+      ['native-script', 'stateful', undefined],
+      ['native-style', 'stateful', undefined],
+      ['react-template', 'classic-fallback', 'patch-shape'],
+    ])
+    expect(() => assertWorkspaceHmrDelivery({
+      expectedDelivery: 'classic-fallback',
+      expectedFallbackReason: 'patch-shape',
+      actualMode: 'classic',
+      deliveryEvidence: { delivery: 'classic', reason: 'patch-shape' },
+    })).not.toThrow()
+    expect(() => assertWorkspaceHmrDelivery({
+      expectedDelivery: 'classic-fallback',
+      expectedFallbackReason: 'patch-shape',
+      actualMode: 'stateful-experimental',
+      deliveryEvidence: { delivery: 'full-reload', reason: 'patch-shape' },
+    })).toThrow('declared capability')
+  })
+
   it('keeps existing baseline plus delta limits for the same-mode companion', () => {
     const evaluation = evaluateWorkspaceHmrThresholds([project({ ...transition, steadyClassicImpact: impact(5) })], {
       baseline: {
@@ -79,6 +105,7 @@ describe('workspace HMR delivery admission and impact measurement', () => {
   })
 
   it.each([
+    { expectedFallbackReason: undefined },
     { classicPublication: undefined },
     { restoreDelivery: undefined },
     { repeatDelivery: undefined },
@@ -93,6 +120,14 @@ describe('workspace HMR delivery admission and impact measurement', () => {
     const scenario = { ...transition, expectedDelivery: 'stateful' as const, impact: impact(1) }
     expect(() => assertWorkspaceHmrDelivery(scenario)).toThrow('unexpectedly switched')
     expect(evaluateWorkspaceHmrThresholds([project(scenario)]).issues).toMatchObject([{ metric: 'delivery-evidence' }])
+  })
+
+  it('rejects a stateful full rebuild as evidence of a supported incremental update', () => {
+    expect(() => assertWorkspaceHmrDelivery({
+      expectedDelivery: 'stateful',
+      actualMode: 'stateful-experimental',
+      deliveryEvidence: { delivery: 'full-reload' },
+    })).toThrow('unexpectedly switched')
   })
 
   it('keeps normal classic and stateful impact checks unchanged', () => {

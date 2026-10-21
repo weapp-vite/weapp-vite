@@ -201,7 +201,10 @@ export async function inspectClassicPublication(root: string, platform: 'weapp' 
         onopentag(name, attributes) {
           const target = attributes.src ?? (name === 'import-sjs' ? attributes.from : undefined)
           if (['import', 'include', 'wxs', 'sjs', 'import-sjs'].includes(name) && target) {
-            requireFile(resolve(file, target))
+            const request = ['import', 'include'].includes(name) && !target.endsWith(extensions.template)
+              ? `${target}${extensions.template}`
+              : target
+            requireFile(resolve(file, request))
           }
         },
       }, { xmlMode: true })

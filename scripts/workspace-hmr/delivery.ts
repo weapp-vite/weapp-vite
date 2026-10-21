@@ -4,6 +4,7 @@ export type WorkspaceHmrExpectedDelivery = 'stateful' | 'classic' | 'classic-fal
 
 export interface WorkspaceHmrDeliveryContract {
   expectedDelivery?: WorkspaceHmrExpectedDelivery
+  expectedFallbackReason?: string
   actualMode?: 'stateful-experimental' | 'classic'
   deliveryEvidence?: { delivery: string, reason?: string }
   classicPublication?: { files: Array<{ path: string, hash: string, size: number }>, checkedFileCount: number, transport: 'retired-410' | 'connection-refused' }
@@ -23,25 +24,26 @@ export function orderWorkspaceHmrScenarios<T extends { statefulTemplate?: boolea
 }
 
 /** 一次冻结整套计划，意外回退和重试都不能改变尚未执行场景的能力预期。 */
-export function planWorkspaceHmrScenarios<T extends { statefulTemplate?: boolean }>(mode: 'standard' | 'stateful', scenarios: T[]) {
+export function planWorkspaceHmrScenarios<T extends { statefulTemplate?: boolean, classicFallbackReason?: string }>(mode: 'standard' | 'stateful', scenarios: T[]) {
   let classic = mode === 'standard'
   return orderWorkspaceHmrScenarios(scenarios).map((scenario) => {
     const expectedDelivery = expectedWorkspaceHmrDelivery(mode, classic, Boolean(scenario.statefulTemplate))
     classic ||= expectedDelivery === 'classic-fallback'
-    return { ...scenario, expectedDelivery }
+    const expectedFallbackReason = expectedDelivery === 'classic-fallback' ? scenario.classicFallbackReason ?? 'native-registration' : undefined
+    return { ...scenario, expectedDelivery, expectedFallbackReason }
   })
 }
 
 export function assertWorkspaceHmrDelivery(contract: WorkspaceHmrDeliveryContract): void {
-  if (contract.expectedDelivery === 'stateful' && contract.actualMode !== 'stateful-experimental') {
+  if (contract.expectedDelivery === 'stateful' && (contract.actualMode !== 'stateful-experimental' || contract.deliveryEvidence?.delivery === 'full-reload')) {
     throw new Error('A declared stateful scenario unexpectedly switched to classic.')
   }
   if (contract.expectedDelivery === 'classic' && contract.actualMode !== 'classic') {
     throw new Error('A declared classic scenario did not remain classic.')
   }
   if (contract.expectedDelivery === 'classic-fallback' && (contract.actualMode !== 'classic'
-    || contract.deliveryEvidence?.delivery !== 'classic' || contract.deliveryEvidence.reason !== 'native-registration')) {
-    throw new Error('Compiled template mutation did not perform its declared native-registration classic fallback.')
+    || !contract.expectedFallbackReason || contract.deliveryEvidence?.delivery !== 'classic' || contract.deliveryEvidence.reason !== contract.expectedFallbackReason)) {
+    throw new Error('Template mutation did not perform its declared capability classic fallback.')
   }
 }
 

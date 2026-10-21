@@ -276,10 +276,10 @@ export function renderBrowserComponentTemplate(
   renderPass: RenderPass,
 ) {
   const templatePath = join(context.project.miniprogramRootPath, componentEntry.templatePath)
-  const componentTemplate = readTemplateSource(context.files, templatePath)
+  const componentTemplate = readTemplateSource(context.files, templatePath, context.templateSource)
   const componentDocument = parseTemplateDocument(componentTemplate)
   const componentRoot = (componentDocument.children ?? [])[0] ?? componentDocument
-  const templateRenderState = prepareTemplateRenderState(context.files, componentRoot, templatePath, context.project.miniprogramRootPath, getBrowserWxsLoader(context.moduleLoader, context.files))
+  const templateRenderState = prepareTemplateRenderState(context.files, componentRoot, templatePath, context.project.miniprogramRootPath, getBrowserWxsLoader(context.moduleLoader, context.files), context.templateSource)
   return renderNodeTree(
     componentRoot,
     componentScope,

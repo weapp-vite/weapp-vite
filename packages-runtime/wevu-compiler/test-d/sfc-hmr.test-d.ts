@@ -6,6 +6,7 @@ import type {
 } from '@wevu/compiler'
 import {
   classifyVueSfcBlockChanges,
+  compileJsxFile,
   compileVueFile,
   resolveVueSfcHmrSignatures,
 } from '@wevu/compiler'
@@ -22,6 +23,17 @@ void compileVueFile(
 ).then((compiled) => {
   expectType<string[] | undefined>(compiled.meta?.cssVars)
   expectType<string[] | undefined>(compiled.meta?.sfcSrcCompilationDeps)
+  expectType<string | undefined>(compiled.meta?.templateRegistrationSignature)
+})
+
+void compileJsxFile(
+  'export default { render() { return <view /> } }',
+  'src/components/card.tsx',
+  { jsx: { readFile: (filename) => {
+    expectType<string>(filename)
+    return 'export const shared = <text />'
+  } } },
+).then((compiled) => {
   expectType<string | undefined>(compiled.meta?.templateRegistrationSignature)
 })
 

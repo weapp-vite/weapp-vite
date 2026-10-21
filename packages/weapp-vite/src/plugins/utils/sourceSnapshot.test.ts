@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { expect, it } from 'vitest'
-import { captureCompilerNativeScriptInputs, getCompilerSourceSnapshot, observeCompilerInputs, readCompilerInput, setCompilerSourceSnapshot, withCompilerSourceSnapshot } from './sourceSnapshot'
+import { captureCompilerNativeScriptInputs, getCompilerSourceSnapshot, observeCompilerInputs, readCompilerInput, readCompilerInputSync, setCompilerSourceSnapshot, withCompilerSourceSnapshot } from './sourceSnapshot'
 
 it('restores nested source versions after success and failure without losing empty inputs', async () => {
   const owner = {}
@@ -24,6 +24,21 @@ it('removes only the temporary snapshot when no outer version exists', async () 
     throw new Error('failed build')
   })).rejects.toThrow('failed build')
   expect(getCompilerSourceSnapshot(owner)).toBeUndefined()
+})
+
+it('uses the same frozen JSX source and observers for synchronous compiler reads', () => {
+  const owner = {}
+  const file = '/project/shared.tsx'
+  const removed = '/project/removed.tsx'
+  setCompilerSourceSnapshot(owner, new Map<string, string | null>([[file, ''], [removed, null]]))
+  const values: Array<[string, string]> = []
+  const close = observeCompilerInputs(owner, (id, source) => values.push([id, source]))
+  expect(readCompilerInputSync(owner, file)).toBe('')
+  expect(() => readCompilerInputSync(owner, removed)).toThrow('Source removed from compiler snapshot:')
+  expect(values).toEqual([[file, '']])
+  close()
+  expect(readCompilerInputSync(owner, file)).toBe('')
+  expect(values).toEqual([[file, '']])
 })
 
 it('captures the exact returned pinned and raw native inputs without retaining source text', async () => {

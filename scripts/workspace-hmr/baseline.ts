@@ -3,6 +3,7 @@ import type {
   ImpactFile,
   ProjectResult,
   ScenarioResult,
+  ThresholdEvaluation,
   ThresholdIssue,
   ThresholdOverrideEnv,
   WorkspaceHmrBaseline,

@@ -73,10 +73,10 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ inputs.node_version }}
-      - name: Create runner profile
+      - name: Create runner profiles
         shell: bash
         run: |
-          node -e "const fs = require('node:fs'); fs.mkdirSync('.tmp/verification-plan', { recursive: true }); fs.writeFileSync('.tmp/verification-plan/profile.json', JSON.stringify({ os: process.platform, arch: process.arch, nodeMajor: Number(process.versions.node.split('.')[0]), provider: 'none', platform: 'weapp', runnerClass: 'github-hosted' }));"
+          node -e "const fs = require('node:fs'); fs.mkdirSync('.tmp/verification-plan', { recursive: true }); const profile = { os: process.platform, arch: process.arch, nodeMajor: Number(process.versions.node.split('.')[0]), provider: 'none', platform: 'weapp', runnerClass: 'github-hosted' }; fs.writeFileSync('.tmp/verification-plan/profile.json', JSON.stringify(profile)); fs.writeFileSync('.tmp/verification-plan/headless-profile.json', JSON.stringify({ ...profile, provider: 'headless' }));"
       - name: Download verified default-branch timing history
         shell: bash
         env:
@@ -88,6 +88,8 @@ jobs:
         run: |-
           node --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/profile.json --repository="${{ github.repository }}" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/history.json
           node --import tsx e2e/scripts/verification/cli.ts plan --suite=ci-${{ inputs.mode }} --shards=4 --profile=.tmp/verification-plan/profile.json --history=.tmp/verification-plan/history.json --output=.tmp/verification-plan/plan.json
+          node --import tsx e2e/scripts/verification/cli.ts history --input=.tmp/verification-history --profile=.tmp/verification-plan/headless-profile.json --repository="${{ github.repository }}" --workflow=.github/workflows/ci-e2e.yml --output=.tmp/verification-plan/headless-history.json
+          node --import tsx e2e/scripts/verification/cli.ts plan --suite=ide-dom-headless --shards=2 --profile=.tmp/verification-plan/headless-profile.json --history=.tmp/verification-plan/headless-history.json --output=.tmp/verification-plan/ide-dom-headless.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: ${{ !cancelled() }}
         with:
@@ -124,7 +126,14 @@ jobs:
     needs:
       - pr-context
       - build
-    name: IDE DOM Headless (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})
+      - plan
+    name: IDE DOM Headless shard ${{ matrix.shard }} (${{ inputs.runs_on }} / Node ${{ inputs.node_version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - 1
+          - 2
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       verification_topology: ${{ inputs.verification_topology }}
@@ -139,16 +148,56 @@ jobs:
       node_version: ${{ inputs.node_version }}
       timeout_minutes: 30
       consume_build_artifact: miniapp-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-weapp-build
+      consume_aux_artifact: miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}
+      aux_artifact_path: .tmp/verification-plan
       main_command: |
         pnpm vitest run -c e2e/vitest.e2e.utils.config.ts e2e/utils/devProcessCleanup/windowsKernelQuery.test.ts e2e/utils/devProcessCleanup/processes.test.ts e2e/utils/dev-process.cleanup.test.ts e2e/utils/devProcessCleanup/windowsProcessTree.test.ts e2e/utils/devProcessCleanup/windowsProcessRows.test.ts e2e/utils/devProcessCleanup/windowsQueryTrace.test.ts
-        pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless
-      artifact_name: ide-dom-headless-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
+        pnpm exec cross-env WEAPP_VITE_E2E_CLEANUP_TRACE=1 node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless --plan=.tmp/verification-plan/ide-dom-headless.json --shard-index=${{ matrix.shard }}
+      artifact_name: ide-dom-headless-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-${{ matrix.shard }}
       artifact_path: |
         docs/reports/dom-acceptance/**
         docs/reports/*-e2e-ide-dom-headless-*-suite-report/**
       build_artifact_scope: packages/weapp-vite,mpcore/packages/simulator
-      timing_artifact_name: timing-ide-dom-headless-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}
+      timing_artifact_name: timing-ide-dom-headless-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ inputs.mode }}-${{ matrix.shard }}
     secrets: inherit
+  ide-dom-headless-aggregate:
+    name: Require every planned headless DOM case
+    needs:
+      - pr-context
+      - build
+      - plan
+      - ide-dom-headless
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.plan.result == 'success' }}
+    runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: 15
+    env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
+      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ inputs.node_version }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: miniapp-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}
+          path: .tmp/verification-plan
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: ide-dom-headless-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-shard-*
+          path: .tmp/ide-dom-headless-reports
+      - name: Validate complete headless DOM inventory and evidence
+        run: node --import tsx e2e/scripts/verification/cli.ts aggregate --plan=.tmp/verification-plan/ide-dom-headless.json --reports=.tmp/ide-dom-headless-reports --output=.tmp/ide-dom-headless-aggregate/report.json
+      - name: Upload complete headless DOM verdict
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ide-dom-headless-aggregate-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ inputs.mode }}
+          path: .tmp/ide-dom-headless-aggregate
+          if-no-files-found: error
   ide-dom-acceptance-internal:
     needs:
       - pr-context

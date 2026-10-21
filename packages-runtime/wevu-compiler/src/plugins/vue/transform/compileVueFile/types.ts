@@ -41,7 +41,7 @@ export interface VueTransformResult {
     pageMeta?: JsonMergeContext['pageMeta']
     /** @internal */
     componentStyleOptions?: ComponentStyleOptions
-    /** 已解析模板输入和生成结构的注册签名；包含外部模板块。@internal */
+    /** 已解析模板和计算绑定的注册签名；包含外部模板与静态 JSX 展开。@internal */
     templateRegistrationSignature?: string
     /** @internal */
     runtimeCapabilities?: WevuRuntimeCapabilityMetadata
@@ -184,6 +184,10 @@ export interface CompileVueFileOptions {
     mergeStrategy?: JsonMergeStrategy
   }
   sfcSrc?: ResolveSfcBlockSrcOptions
+  /** JSX/TSX 跨文件静态展开的同步源码读取；未提供时读取磁盘。 */
+  jsx?: {
+    readFile: (filename: string) => string
+  }
   wevuDefaults?: WevuDefaults
   /**
    * 缓存被当前 SFC 引用的 Vue 组件静态元信息，避免重复读取和解析同一组件。

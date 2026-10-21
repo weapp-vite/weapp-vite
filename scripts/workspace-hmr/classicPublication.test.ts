@@ -48,6 +48,21 @@ describe('classic full publication closure', () => {
     await expect(inspectClassicPublication(root)).rejects.toThrow(/missing/)
   })
 
+  it.each(['import', 'include'])('resolves explicit and extensionless template references in %s', async (tag) => {
+    await write('pages/index.wxml', `<${tag} src="../templates/base"/><${tag} src="../templates/base.wxml"/><view/>`)
+    await expect(inspectClassicPublication(root)).resolves.toBeDefined()
+    await rm(path.join(root, 'templates/base.wxml'))
+    await write('templates/base', '<view/>')
+    await expect(inspectClassicPublication(root)).rejects.toThrow('missing templates/base.wxml')
+  })
+
+  it.each(['import', 'include'])('does not append another extension to a missing explicit %s reference', async (tag) => {
+    await write('pages/index.wxml', `<${tag} src="../templates/base.wxml"/><view/>`)
+    await rm(path.join(root, 'templates/base.wxml'))
+    await write('templates/base.wxml.wxml', '<view/>')
+    await expect(inspectClassicPublication(root)).rejects.toThrow('missing templates/base.wxml')
+  })
+
   it('examines unreferenced emitted files too, so stale stateful code cannot hide outside app imports', async () => {
     await write('orphan.js', '// weapp-vite-stateful-build:old\nvoid 0;')
     await expect(inspectClassicPublication(root)).rejects.toThrow('stateful client')
