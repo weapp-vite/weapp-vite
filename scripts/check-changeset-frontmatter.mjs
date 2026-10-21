@@ -1,6 +1,6 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join, posix, resolve } from 'node:path'
+import { posix, resolve } from 'node:path'
 import process from 'node:process'
+import { readChangesetInput } from './changesetFrontmatter/input.mjs'
 
 function resolveRoot() {
   const rootIndex = process.argv.indexOf('--root')
@@ -10,8 +10,8 @@ function resolveRoot() {
   return process.cwd()
 }
 
-const ROOT = resolveRoot()
-const CHANGESET_DIR = join(ROOT, '.changeset')
+const staged = process.argv.includes('--staged')
+const input = readChangesetInput(resolveRoot(), staged)
 const badFiles = []
 const unknownPackageIssues = []
 const invalidSummaryFiles = []
@@ -29,7 +29,7 @@ function stripPackagePatternValue(line) {
 }
 
 function collectWorkspacePatterns() {
-  const content = readFileSync(join(ROOT, 'pnpm-workspace.yaml'), 'utf8')
+  const content = input.read('pnpm-workspace.yaml')
   const patterns = []
   let inPackages = false
 
@@ -74,15 +74,13 @@ function collectPackageDirsFromPattern(pattern) {
   const prefix = normalizedPattern.slice(0, starIndex)
   const suffix = normalizedPattern.slice(starIndex + 1)
   const baseDir = prefix.endsWith('/') ? prefix.slice(0, -1) : posix.dirname(prefix)
-  const basePath = join(ROOT, baseDir)
 
-  if (!existsSync(basePath)) {
+  if (!input.exists(baseDir)) {
     return []
   }
 
-  return readdirSync(basePath, { withFileTypes: true })
-    .filter(entry => entry.isDirectory())
-    .map(entry => `${baseDir}/${entry.name}${suffix}`.replaceAll('\\', '/'))
+  return input.directories(baseDir)
+    .map(name => `${baseDir}/${name}${suffix}`.replaceAll('\\', '/'))
 }
 
 function collectWorkspacePackageNames() {
@@ -96,12 +94,12 @@ function collectWorkspacePackageNames() {
         continue
       }
 
-      const packageJsonPath = join(ROOT, relativeDir, 'package.json')
-      if (!existsSync(packageJsonPath)) {
+      const packageJsonPath = `${relativeDir}/package.json`
+      if (!input.exists(packageJsonPath)) {
         continue
       }
 
-      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'))
+      const packageJson = JSON.parse(input.read(packageJsonPath))
       if (typeof packageJson.name === 'string' && packageJson.name) {
         packageNames.add(packageJson.name)
       }
@@ -146,15 +144,11 @@ function extractChangesetPackages(content) {
   return [...packages]
 }
 
-const workspacePackageNames = collectWorkspacePackageNames()
+const workspacePackageNames = staged && input.changesets.length === 0 ? new Set() : collectWorkspacePackageNames()
 
-for (const entry of readdirSync(CHANGESET_DIR, { withFileTypes: true })) {
-  if (!entry.isFile() || !entry.name.endsWith('.md') || entry.name === 'README.md') {
-    continue
-  }
-
-  const filePath = join(CHANGESET_DIR, entry.name)
-  const content = readFileSync(filePath, 'utf8')
+for (const name of input.changesets) {
+  const entry = { name }
+  const content = input.read(`.changeset/${name}`).replaceAll('\r\n', '\n')
 
   if (!content.startsWith('---\n')) {
     badFiles.push(entry.name)
@@ -211,4 +205,4 @@ if (badFiles.length > 0 || unknownPackageIssues.length > 0 || invalidSummaryFile
   process.exit(1)
 }
 
-console.log('[changeset-frontmatter] check passed (.changeset)')
+console.log(`[changeset-frontmatter] check passed (.changeset${staged ? ' staged index' : ''})`)
