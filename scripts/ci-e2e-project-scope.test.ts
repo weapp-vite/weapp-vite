@@ -2,6 +2,7 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
+import { readVerificationTopologyVariant } from './workflowFixture.mjs'
 
 interface Workflow {
   on: Record<string, { inputs: Record<string, unknown> }>
@@ -36,8 +37,9 @@ describe('manual CI E2E project scope', () => {
     for (const [name, job] of jobs) {
       expect(job.with?.e2e_exclude_projects, name).toBe('${{ inputs.exclude-e2e-projects }}')
     }
-    for (const name of ['miniapp-platform-pr', 'miniapp-platform-full']) {
-      expect(shared.jobs[name]?.with?.exclude_projects).toBe('${{ inputs.exclude-e2e-projects }}')
+    const baseline = readVerificationTopologyVariant() === 'baseline'
+    for (const name of baseline ? ['miniapp-e2e-build-pr', 'miniapp-e2e-build-full', 'miniapp-e2e-ci-pr', 'miniapp-e2e-ci-full'] : ['miniapp-platform-pr', 'miniapp-platform-full']) {
+      expect(shared.jobs[name]?.with?.[baseline ? 'e2e_exclude_projects' : 'exclude_projects']).toBe('${{ inputs.exclude-e2e-projects }}')
     }
     const child = await readWorkflow('reusable-miniapp-platform.yml')
     for (const [name, job] of Object.entries(child.jobs).filter(([, job]) => job.uses === './.github/workflows/reusable-node-command.yml')) {

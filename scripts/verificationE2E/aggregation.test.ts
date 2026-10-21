@@ -155,7 +155,7 @@ it('preserves the frozen topology and rejects mixed or missing shard topology', 
   reports[0]!.execution.executionTopology = resolveVerificationTopology('optimized-v1')
   await expect(aggregateVerificationReports(plan, reports, { now })).rejects.toThrow('topology mismatch')
   reports[0]!.execution.executionTopology = undefined!
-  await expect(aggregateVerificationReports(plan, reports, { now })).rejects.toThrow()
+  await expect(aggregateVerificationReports(plan, reports, { now })).rejects.toThrow('Missing or invalid frozen verification topology')
 })
 
 it('preserves the resource artifact kind emitted by the actual IDE runner at the strict schema boundary', async () => {

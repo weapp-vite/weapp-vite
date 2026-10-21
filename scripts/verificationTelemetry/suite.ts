@@ -10,6 +10,7 @@ import { aggregateVerificationReports } from '../../e2e/scripts/verification/agg
 import { assertVerificationPlan, createVerificationIdentity, createVerificationPlan, resolveVerificationTasks, verificationHash } from '../../e2e/scripts/verification/plan'
 import { currentVerificationProfile } from '../../e2e/scripts/verification/profile'
 import { verificationPlanSchema } from '../../e2e/scripts/verification/validation'
+import { assertVerificationTopology } from '../verification/topology.ts'
 
 const suites = new Set(['ci-pr', 'ci-full', 'ide-dom-headless'])
 
@@ -62,6 +63,10 @@ export async function writeBaselineSuiteTelemetry(plan: VerificationPlan, report
     || !report.execution || report.commitSha !== plan.commitSha || report.runId !== plan.runId
     || report.execution.status !== 'passed') {
     throw new Error('Baseline suite execution differs from its frozen legacy assignment')
+  }
+  assertVerificationTopology(report.execution.executionTopology)
+  if (verificationHash(report.execution.executionTopology) !== verificationHash(plan.executionTopology)) {
+    throw new Error('Baseline suite execution topology differs from its frozen plan')
   }
   const tasks = report.tasks.filter(task => assignedLabels.includes(task.label))
   const shard: SuiteReportPayload = {

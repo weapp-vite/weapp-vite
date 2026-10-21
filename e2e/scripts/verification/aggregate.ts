@@ -2,6 +2,7 @@ import type { SuiteReportPayload, SuiteTaskReportEntry } from '../suiteReport'
 import type { VerificationPlan, VerificationTiming } from './types'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { assertVerificationTopology } from '../../../scripts/verification/topology.ts'
 import { validateTaskAcceptance } from '../domAcceptanceReport/task'
 import { assertVerificationPlan, verificationHash } from './plan'
 import { assertVerificationProfile } from './profile'
@@ -68,6 +69,7 @@ export async function aggregateVerificationReports(plan: VerificationPlan, value
   for (const report of reports) {
     const execution = report.execution
     assertVerificationProfile(plan.profile, execution.profile)
+    assertVerificationTopology(execution.executionTopology)
     if (verificationHash(execution.executionTopology) !== verificationHash(plan.executionTopology)) {
       throw new Error('Shard verification topology mismatch')
     }

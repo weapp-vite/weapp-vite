@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { parse } from 'yaml'
+import { verificationTopologyVariant } from './verificationTelemetry/topology.mjs'
 
 /** 从实际包装入口追踪共用验证主体，保留原入口参数和调度策略供契约测试核验。 */
 export function readWorkflowFixture(name) {
@@ -25,4 +26,9 @@ export function readWorkflowGraph(name, workflows = new Map()) {
     }
   }
   return workflows
+}
+
+/** 从实际质量入口读取拓扑，未知配置不能隐式省略另一侧断言。 */
+export function readVerificationTopologyVariant() {
+  return verificationTopologyVariant(readWorkflowFixture('validate-ci.yml'))
 }
