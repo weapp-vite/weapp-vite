@@ -131,6 +131,23 @@ describe('classic native publication transaction', () => {
     expect(run.generation()?.fingerprint).toBe(first?.fingerprint)
   })
 
+  it('publishes only the changed metadata and native reload signal after final content pruning', async () => {
+    const run = fixture()
+    await run.generate(bundle())
+    await run.write()
+    const previousGeneration = run.generation()
+    run.rebuild()
+    const output = bundle()
+    output['pages/home/index.wxml'] = { type: 'asset', fileName: 'pages/home/index.wxml', source: '<view>updated template</view>' }
+    await run.generate(output)
+    expect(Object.keys(output).sort()).toEqual(['app.js', 'pages/home/index.wxml'])
+    expect(run.generation()).toBe(previousGeneration)
+    await run.write()
+    expect(run.generation()?.fingerprint).not.toBe(previousGeneration?.fingerprint)
+    expect(run.ctx.runtimeState.build.output.emittedSource.get('pages/home/index.js')).toBe((bundle()['pages/home/index.js'] as OutputChunk).code)
+    expect(run.ctx.runtimeState.build.output.emittedSource.get('pages/home/index.wxml')).toBe('<view>updated template</view>')
+  })
+
   it.each(['abandoned native write', 'ownership failure', 'public failure'])('replays all pruned bytes after %s', async (failure) => {
     const run = fixture()
     await run.generate(bundle())

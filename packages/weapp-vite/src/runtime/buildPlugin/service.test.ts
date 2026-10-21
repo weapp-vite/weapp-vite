@@ -364,6 +364,9 @@ const HMR_PAGE_ID = '/project/src/pages/logs/index.ts'
 const HMR_OTHER_PAGE_ID = '/project/src/pages/about/index.ts'
 const HMR_INCREMENTAL_OUTPUTS = ['pages/logs/index.js', 'pages/logs/index.wxml']
 const HMR_FULL_OUTPUTS = [...HMR_INCREMENTAL_OUTPUTS, 'shared-dependency.js', 'shared-logic.js']
+// 此处只观察 core generate：classic 元数据批次保留原生脚本供最终转换。
+// 无变化最终产物的去重由 outputFinalizer/classicPublication.test.ts 覆盖。
+const HMR_METADATA_CORE_OUTPUTS = HMR_FULL_OUTPUTS
 
 const runVueStyleSnapshotMock: typeof import('./vueStyleSnapshot').withVueStyleDependencySnapshot = async (ctx, _entries, _files, run, _onDrift, preparation) => {
   if (!preparation) {
@@ -1656,7 +1659,7 @@ describe('runtime buildPlugin service', () => {
 
     expect(await emitSharedChunkSnapshot(ctx)).toEqual(HMR_INCREMENTAL_OUTPUTS)
     expect(await emitSharedChunkSnapshot(ctx, { affectedSharedChunks: true })).toEqual(HMR_FULL_OUTPUTS)
-    expect(await emitSharedChunkSnapshot(ctx, { metadataOnly: true })).toEqual(['pages/logs/index.wxml'])
+    expect(await emitSharedChunkSnapshot(ctx, { metadataOnly: true })).toEqual(HMR_METADATA_CORE_OUTPUTS)
   })
 
   it('keeps incremental context B output unchanged while context A holds a full snapshot', async () => {
@@ -2022,7 +2025,7 @@ describe('runtime buildPlugin service', () => {
     expect(buildMock).toHaveBeenCalledTimes(1)
   })
 
-  it('runs a stable narrow metadata snapshot build for direct sidecar updates', async () => {
+  it('keeps sidecar invalidation narrow while retaining native metadata chunks for publication', async () => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
     const emitted = Promise.withResolvers<string[]>()
@@ -2059,7 +2062,7 @@ describe('runtime buildPlugin service', () => {
 
     moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
     await waitForMockCalls(buildMock, 2)
-    expect(await emitted.promise).toEqual(['pages/logs/index.wxml'])
+    expect(await emitted.promise).toEqual(HMR_METADATA_CORE_OUTPUTS)
 
     expect(buildMock).toHaveBeenCalledTimes(2)
     expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
@@ -2720,7 +2723,7 @@ describe('runtime buildPlugin service', () => {
     moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
     moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/about/index.wxss' })
     await waitForMockCalls(buildMock, 2)
-    expect(await emitted.promise).toEqual(['pages/logs/index.wxml'])
+    expect(await emitted.promise).toEqual(HMR_METADATA_CORE_OUTPUTS)
 
     expect(buildMock).toHaveBeenCalledTimes(2)
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([

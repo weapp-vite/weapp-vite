@@ -3,6 +3,7 @@ import { rm } from 'node:fs/promises'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSnapshotTemplateFixture } from '../../../test/snapshotTemplates/fixture'
+import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 
 const harness = vi.hoisted(() => ({
   build: vi.fn(),
@@ -105,6 +106,11 @@ describe('classic template snapshot source freshness', () => {
 
   it('replays a failed batch with the next request even after output caches were populated', async () => {
     const fixture = await createFixture()
+    const previousSources = new Map(fixture.ctx.runtimeState.build.output.emittedSource)
+    const outputRoot = path.resolve(fixture.ctx.configService.outDir)
+    const generations = getHmrRuntimeSession(fixture.ctx).outputGenerations
+    const previousGeneration = structuredClone(generations.get(outputRoot))
+    expect(previousGeneration).toBeDefined()
     fixture.controls.failAfterRender = true
     await fixture.save('shared/card.wxml', '<template name="card"><view>card retry</view></template>')
     fixture.update('shared/card.wxml')
@@ -113,7 +119,8 @@ describe('classic template snapshot source freshness', () => {
     expect(fixture.controls.failAfterRender).toBe(false)
     expect(fixture.bundles).toHaveLength(1)
     expect(fixture.writes).toHaveLength(1)
-    expect(fixture.ctx.runtimeState.build.output.emittedSource.get('shared/card.wxml')).toContain('card retry')
+    expect(fixture.ctx.runtimeState.build.output.emittedSource).toEqual(previousSources)
+    expect(generations.get(outputRoot)).toEqual(previousGeneration)
     expect(await fixture.readOutput('shared/card.wxml')).toBe(fixture.files['shared/card.wxml'])
     expect(await fixture.readOutput('pages/unrelated/index.wxml')).toBe(fixture.files['pages/unrelated/index.wxml'])
     await fixture.save('shared/partial.wxml', '<view>partial next request</view>')
@@ -124,6 +131,10 @@ describe('classic template snapshot source freshness', () => {
     expect(await fixture.readOutput('shared/card.wxml')).toContain('card retry')
     expect(await fixture.readOutput('shared/partial.wxml')).toBe('<view>partial next request</view>')
     expect(await fixture.readOutput('pages/unrelated/index.wxml')).toBe(fixture.files['pages/unrelated/index.wxml'])
+    expect(fixture.ctx.runtimeState.build.output.emittedSource.get('shared/card.wxml')).toContain('card retry')
+    expect(fixture.ctx.runtimeState.build.output.emittedSource.get('shared/partial.wxml')).toBe('<view>partial next request</view>')
+    expect(generations.get(outputRoot)).toBeDefined()
+    expect(generations.get(outputRoot)?.fingerprint).not.toBe(previousGeneration?.fingerprint)
     expect(fixture.failures).toHaveLength(1)
     expect(fixture.failures[0]).toBe(failure)
   })
