@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { cp, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 // eslint-disable-next-line e18e/ban-dependencies -- npm 消费安装必须正确解析各平台启动器。
@@ -74,7 +74,13 @@ export async function installConsumer(consumerRoot, candidates, baseline, reposi
     assert.equal(upstream.version, '5.0.0', 'Baseline runtime must resolve the original registry Chokidar version')
     originalChokidar = { version: upstream.version, entry: path.relative(consumerRoot, entry).replaceAll('\\', '/') }
   }
-  await cp(new URL('./probe/', import.meta.url), path.join(consumerRoot, 'probe'), { recursive: true })
+  const probeRoot = new URL('./probe/', import.meta.url)
+  const probeHarness = []
+  for (const file of (await readdir(probeRoot)).filter(file => file.endsWith('.mjs')).sort()) {
+    const contents = await readFile(new URL(file, probeRoot))
+    probeHarness.push({ file, bytes: contents.length, sha256: hash(contents) })
+  }
+  await cp(probeRoot, path.join(consumerRoot, 'probe'), { recursive: true })
   await mkdir(path.join(consumerRoot, 'projects'))
-  return { archive: { version: manifest.version, sha256: hash(await readFile(archive)) }, workspaceClosure, npmArguments, provenance, installedFiles, exports, tree, originalChokidar, stdout: installation.stdout, stderr: installation.stderr }
+  return { probeHarness, archive: { version: manifest.version, sha256: hash(await readFile(archive)) }, workspaceClosure, npmArguments, provenance, installedFiles, exports, tree, originalChokidar, stdout: installation.stdout, stderr: installation.stderr }
 }

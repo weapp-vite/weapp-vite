@@ -4,6 +4,7 @@ import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { bounded } from './native.mjs'
 import { assertOutput, closeOwner, openPublicOwner } from './public.mjs'
+import { getDeliveryTrace } from './trace.mjs'
 
 export const scenarios = [
   { id: 'public-missing-watch-recovery', kind: 'recovery', platform: 'win32' },
@@ -81,12 +82,21 @@ async function recovery(ctx) {
   const owner = await openPublicOwner('artifact', root, owners, errors)
   assert.equal(instrumentation.injected, 1, 'Recovery must actually exercise one failed native acquisition')
   const reborn = path.join(root, 'src/reborn')
+  const trace = getDeliveryTrace(root)
+  trace?.record('mutation.enter', { operation: 'mkdir', file: trace.file(reborn) })
   await mkdir(reborn)
+  trace?.record('mutation.completed', { operation: 'mkdir', file: trace.file(reborn) })
+  trace?.record('mutation.enter', { operation: 'create', file: 'src/reborn/marker.txt' })
   await writeFile(path.join(reborn, 'marker.txt'), 'recreated-directory')
+  trace?.record('mutation.completed', { operation: 'create', file: 'src/reborn/marker.txt' })
   await assertOutput(owner, 'reborn/marker.txt', 'recreated-directory')
+  trace?.record('mutation.enter', { operation: 'change', file: 'src/reborn/marker.txt' })
   await writeFile(path.join(reborn, 'marker.txt'), 'changed-after-recovery')
+  trace?.record('mutation.completed', { operation: 'change', file: 'src/reborn/marker.txt' })
   await assertOutput(owner, 'reborn/marker.txt', 'changed-after-recovery')
+  trace?.record('mutation.enter', { operation: 'unlink', file: 'src/reborn/marker.txt' })
   await rm(path.join(reborn, 'marker.txt'))
+  trace?.record('mutation.completed', { operation: 'unlink', file: 'src/reborn/marker.txt' })
   await assertOutput(owner, 'reborn/marker.txt', null)
   Object.assign(evidence, { injectedOnce: true, factoryCompleted: true, createEmitted: true, changeEmitted: true, deleteEmitted: true })
   // 负控可能完成输出恢复后才公开原始错误；只透传精确单例，其他失败仍保留断言。

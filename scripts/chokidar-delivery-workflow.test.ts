@@ -34,6 +34,25 @@ const independentStore = {
 }
 
 describe('Windows ordinary npm watcher delivery workflow', () => {
+  it('keeps full validation as the default and forwards an explicit trace-only dispatch', () => {
+    const entry = parse(readFileSync(new URL('../.github/workflows/ci-vite-host-consumer.yml', import.meta.url), 'utf8'))
+    const reusable = parse(readFileSync(new URL('../.github/workflows/validate-ci-vite-host-consumer.yml', import.meta.url), 'utf8'))
+    expect(entry.on.workflow_dispatch.inputs['chokidar-delivery-diagnostic']).toMatchObject({ required: false, default: false, type: 'boolean' })
+    expect(entry.jobs.validation.with.chokidar_delivery_diagnostic).toBe('${{ inputs.chokidar-delivery-diagnostic || false }}')
+    expect(reusable.on.workflow_call.inputs.chokidar_delivery_diagnostic).toEqual({ required: false, type: 'boolean', default: false })
+    const validationJobs = Object.entries(reusable.jobs).filter(([name]) => name !== 'pr-context')
+    expect(validationJobs).toHaveLength(18)
+    for (const [name, value] of validationJobs) {
+      const candidate = value as { if: string }
+      expect(candidate.if).toBe(name === 'chokidar-delivery-windows'
+        ? 'needs.pr-context.outputs.should_run == \'true\''
+        : 'needs.pr-context.outputs.should_run == \'true\' && !inputs.chokidar_delivery_diagnostic')
+    }
+    expect(step('Verify ordinary npm delivery and original negative control under the machine lease').env).toEqual({
+      WEAPP_VITE_DELIVERY_TRACE: '${{ inputs.chokidar_delivery_diagnostic && \'1\' || \'0\' }}',
+    })
+  })
+
   it('freezes the candidate and original source independently on an actual Windows worker', () => {
     expect(job.if).toBe('needs.pr-context.outputs.should_run == \'true\'')
     expect(job.needs).toBe('pr-context')

@@ -5,6 +5,10 @@ on:
       pr_context:
         required: true
         type: string
+      chokidar_delivery_diagnostic:
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
   pull-requests: read
@@ -77,6 +81,8 @@ jobs:
           WEAPP_VITE_DELIVERY_EXPECTED_SHA: ${{ env.CHOKIDAR_ORIGINAL_BASELINE_SHA }}
       - name: Verify ordinary npm delivery and original negative control under the machine lease
         run: node --import tsx e2e/scripts/run-e2e-commands.ts node --import tsx packages/weapp-vite/scripts/chokidarDelivery/index.mjs --tarballs .cache/chokidar-delivery/candidate-tarballs --baseline-tarballs .cache/chokidar-delivery/original-tarballs --report .cache/chokidar-delivery/report.json
+        env:
+          WEAPP_VITE_DELIVERY_TRACE: ${{ inputs.chokidar_delivery_diagnostic && '1' || '0' }}
       - name: Preserve delivery report and independent archive provenance
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -91,7 +97,7 @@ jobs:
           if-no-files-found: warn
 
   node-support:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Published Node support (${{ matrix.os }} / Node ${{ matrix.node }})
     strategy:
@@ -140,7 +146,7 @@ jobs:
             .cache/dashboard-public-types.json
 
   dependency-compatibility:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Strict dependency consumer (${{ matrix.os }} / ${{ matrix.manager }})
     strategy:
@@ -166,7 +172,7 @@ jobs:
     secrets: inherit
 
   react-host-paths:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: React host paths (${{ matrix.os }})
     strategy:
@@ -189,7 +195,7 @@ jobs:
     secrets: inherit
 
   watch-validation:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Watch validation (${{ matrix.os }})
     strategy:
@@ -216,7 +222,7 @@ jobs:
     secrets: inherit
 
   route-topology:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Route topology (${{ matrix.os }})
     strategy:
@@ -242,7 +248,7 @@ jobs:
     secrets: inherit
 
   host-paths:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Host paths (${{ matrix.os }})
     strategy:
@@ -268,7 +274,7 @@ jobs:
     secrets: inherit
 
   native-path-controls:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Native path controls (${{ matrix.os }})
     strategy:
@@ -295,7 +301,7 @@ jobs:
     secrets: inherit
 
   consumer:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Packed consumer (${{ matrix.toolchain }})
     strategy:
@@ -318,7 +324,7 @@ jobs:
     secrets: inherit
 
   stateful-runtime:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Stateful runtime (${{ matrix.host }})
     strategy:
@@ -343,7 +349,7 @@ jobs:
     secrets: inherit
 
   classic-runtime:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Classic runtime (${{ matrix.host }} / ${{ matrix.profile }})
     strategy:
@@ -372,7 +378,7 @@ jobs:
     secrets: inherit
 
   react-runtime:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: React runtime (${{ matrix.host }})
     strategy:
@@ -397,7 +403,7 @@ jobs:
     secrets: inherit
 
   independent-runtime:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Independent runtime (${{ matrix.host }})
     strategy:
@@ -422,7 +428,7 @@ jobs:
     secrets: inherit
 
   worker-runtime:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Worker runtime (${{ matrix.host }})
     strategy:
@@ -447,7 +453,7 @@ jobs:
     secrets: inherit
 
   plugin-runtime:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Plugin runtime (${{ matrix.host }})
     strategy:
@@ -472,7 +478,7 @@ jobs:
     secrets: inherit
 
   lib-runtime:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Library runtime (${{ matrix.host }})
     strategy:
@@ -497,7 +503,7 @@ jobs:
     secrets: inherit
 
   platform-runtime:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Platform builds and runtime (${{ matrix.host }})
     strategy:
@@ -522,7 +528,7 @@ jobs:
     secrets: inherit
 
   web-runtime:
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     needs: pr-context
     name: Web browser runtime (${{ matrix.host }})
     strategy:

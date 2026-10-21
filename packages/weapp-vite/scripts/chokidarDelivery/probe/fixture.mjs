@@ -2,8 +2,10 @@ import assert from 'node:assert/strict'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
+import { deliveryBuildTracePlugin } from './trace.mjs'
 
 export const weappOptions = {
   platform: 'weapp',
@@ -15,11 +17,14 @@ export const weappOptions = {
 }
 
 export async function createFixture(root) {
+  const trace = process.env.WEAPP_VITE_DELIVERY_TRACE === '1'
+  const traceSource = trace ? `const deliveryBuildTracePlugin = ${deliveryBuildTracePlugin.toString()}\n` : ''
+  const tracePlugins = trace ? 'plugins: [deliveryBuildTracePlugin(import.meta.dirname)], ' : ''
   const files = {
     'package.json': JSON.stringify({ name: 'weapp-vite-host-watcher-delivery', private: true, type: 'module' }),
     'project.config.json': JSON.stringify({ miniprogramRoot: '.weapp-vite/delivery-host' }),
     'vite.config.mjs': `import { defineConfig } from 'weapp-vite'
-export default defineConfig({ weapp: ${JSON.stringify(weappOptions)}, build: { minify: false } })
+${traceSource}export default defineConfig({ ${tracePlugins}weapp: ${JSON.stringify(weappOptions)}, build: { minify: false } })
 `,
     'src/app.js': 'App({})',
     'src/app.json': JSON.stringify({ pages: ['pages/index/index'] }),
@@ -36,11 +41,12 @@ export default defineConfig({ weapp: ${JSON.stringify(weappOptions)}, build: { m
   }
 }
 
-export async function waitForFile(file, expected) {
+export async function waitForFile(file, expected, observe) {
   const deadline = Date.now() + 45_000
   while (Date.now() < deadline) {
     try {
       const value = await readFile(file, 'utf8')
+      observe?.({ exists: true, text: value })
       if (expected !== null && value === expected) {
         return
       }
@@ -49,6 +55,7 @@ export async function waitForFile(file, expected) {
       if (error.code !== 'ENOENT') {
         throw error
       }
+      observe?.({ exists: false })
       if (expected === null) {
         return
       }
