@@ -4,6 +4,10 @@ import { aggregateVerificationReports } from '../../e2e/scripts/verification/agg
 import { collectDurationHistory } from '../../e2e/scripts/verification/history'
 import { freeze, now, profile, receipt, shardReports } from './fixtures'
 
+function timing(invocationId: string): VerificationTiming {
+  return { name: 'machine-lease-acquisition', invocationId, startedAt: now.toISOString(), durationMs: 2, status: 'passed' }
+}
+
 describe('complete E2E shard evidence', () => {
   it('preserves suite acquisition and task diagnostic timings through aggregation', async () => {
     const plan = await freeze()
@@ -26,6 +30,55 @@ describe('complete E2E shard evidence', () => {
     const report = await aggregateVerificationReports(plan, shards, { now })
     expect(report).toMatchObject({ coverage: 'complete', acceptance: 'passed', execution: { scope: 'full', status: 'passed' }, summary: { taskCount: 4, executedCount: 4 } })
   })
+
+  it('preserves every shard root timing and the original per-task timings', async () => {
+    const plan = await freeze()
+    const shards = shardReports(plan).map((report, index) => ({
+      ...report,
+      timings: [timing(`lease-${index}`)],
+      tasks: report.tasks.map(task => ({ ...task, timings: [timing(`task-${task.label}`)] })),
+    }))
+    const report = await aggregateVerificationReports(plan, shards, { now })
+    expect(report.timings).toEqual(shards.flatMap(shard => shard.timings))
+    expect(report.tasks.map(task => task.timings)).toEqual(plan.tasks.map(task => [timing(`task-${task.label}`)]))
+  })
+
+  it.each(['root-array', 'task-array', 'root-invalid', 'task-invalid', 'root-duplicate', 'task-duplicate', 'root-task-duplicate'])(
+    'rejects %s timing evidence across the entire downloaded report set',
+    async (fault) => {
+      const plan = await freeze()
+      const shards = shardReports(plan).map((report, index) => ({
+        ...report,
+        timings: [timing(`lease-${index}`)],
+        tasks: report.tasks.map(task => ({ ...task, timings: [timing(`task-${task.label}`)] })),
+      }))
+      const first = shards[0]!
+      const second = shards[1]!
+      let reports: unknown[] = shards
+      if (fault === 'root-array') {
+        reports = [{ ...first, timings: {} }, second]
+      }
+      if (fault === 'task-array') {
+        reports = [{ ...first, tasks: first.tasks.map(task => ({ ...task, timings: {} })) }, second]
+      }
+      if (fault === 'root-invalid') {
+        first.timings[0]!.durationMs = Number.NaN
+      }
+      if (fault === 'task-invalid') {
+        first.tasks[0]!.timings[0]!.durationMs = -1
+      }
+      if (fault === 'root-duplicate') {
+        second.timings = structuredClone(first.timings)
+      }
+      if (fault === 'task-duplicate') {
+        second.tasks[0]!.timings = structuredClone(first.tasks[0]!.timings)
+      }
+      if (fault === 'root-task-duplicate') {
+        second.tasks[0]!.timings = structuredClone(first.timings)
+      }
+      await expect(aggregateVerificationReports(plan, reports, { now })).rejects.toThrow('Invalid E2E timing record')
+    },
+  )
 
   it.each(['missing', 'duplicate', 'sha', 'run', 'provider', 'plan', 'status', 'schema', 'tool', 'summary', 'definition', 'assignment', 'task'])(
     'rejects %s shard evidence',

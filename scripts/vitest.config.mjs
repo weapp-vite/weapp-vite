@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config'
+import { SCRIPT_TEST_GLOBS } from './verification/toolTests.ts'
 import { localReporters, localTestPolicy } from './verificationBenchmark/localReporterConfig.mjs'
 
 export default defineConfig({
@@ -8,6 +9,6 @@ export default defineConfig({
     reporters: localReporters(),
     ...localTestPolicy(),
     environment: 'node',
-    include: ['scripts/**/*.test.mjs', 'scripts/**/*.test.ts'],
+    include: SCRIPT_TEST_GLOBS,
   },
 })

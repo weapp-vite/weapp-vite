@@ -99,3 +99,32 @@ it('inherits real shared and consumer build policies while delegating negative f
   expect(plan.tasks.find(task => task.id === 'types')?.args).toEqual(expect.arrayContaining(['--only', '--filter=weapp-vite-lib-mode-e2e']))
   expect(plan.warnings.some(warning => warning.includes('正负例'))).toBe(true)
 })
+
+it('refuses to discard an additional type prerequisite when reusing prepared builds', async () => {
+  const fixture = await createTurboFixture()
+  try {
+    const turbo = JSON.parse(await fixture.read('turbo.json')) as { tasks: Record<string, { dependsOn?: string[] }> }
+    turbo.tasks['prepare:types'] = {}
+    turbo.tasks['test:types:check']!.dependsOn!.push('prepare:types')
+    await fixture.write('turbo.json', JSON.stringify(turbo))
+    const manifest = JSON.parse(await fixture.read('packages/library/package.json')) as { scripts: Record<string, string> }
+    manifest.scripts['prepare:types'] = 'node --version'
+    await fixture.write('packages/library/package.json', JSON.stringify(manifest))
+    const original: VerificationTask = {
+      id: 'types',
+      kind: 'types',
+      command: 'pnpm',
+      directory: '.',
+      dependencies: [],
+      reason: 'fixture',
+      args: ['exec', 'turbo', 'run', 'test:types:check', '--filter=@cache-fixture/library'],
+      env: { TURBO_TELEMETRY_DISABLED: '1' },
+    }
+    const originalArgs = [...original.args]
+    await expect(usePreparedTypeChecks(fixture.root, original)).rejects.toThrow('未准备的前置检查')
+    expect(original.args).toEqual(originalArgs)
+  }
+  finally {
+    await fixture.cleanup()
+  }
+})

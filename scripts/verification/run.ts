@@ -84,7 +84,7 @@ export async function runVerification(plan: VerificationPlan, execute: TaskExecu
   const launch = (task: VerificationTask) => {
     pending.delete(task.id)
     const begin = performance.now()
-    const work = (async () => {
+    const work = Promise.resolve().then(async () => {
       try {
         const result = await execute(task, options.signal)
         if (task.evidence && !result.execution) {
@@ -98,7 +98,7 @@ export async function runVerification(plan: VerificationPlan, execute: TaskExecu
       finally {
         running.delete(task.id)
       }
-    })()
+    })
     running.set(task.id, work)
   }
   while (pending.size || running.size) {

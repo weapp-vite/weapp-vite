@@ -1,5 +1,6 @@
 import type { TestCase, TestModule } from 'vitest/node'
 import type { DomAcceptance } from '../../utils/domAcceptance/types'
+import type { VerificationTiming } from '../verification/types'
 import type { AcceptanceReport } from './types'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -44,14 +45,14 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function createTest(state: 'passed' | 'skipped' | 'pending', name = 'renders title'): TestCase {
+function createTest(state: 'passed' | 'skipped' | 'pending', name = 'renders title', timing?: { startTime: number, duration: number }): TestCase {
   const startTime = Date.now()
   const acceptance: DomAcceptance = {
     fixture: 'e2e-apps/base',
     provider: 'devtools',
     runtime: { ideVersion: '2.02.2608060', baseLibraryVersion: '3.17.2' },
     checkpoints: [{ id: 'mount', action: 'launch', route: 'pages/index/index', nodes: [{ selector: '.title', text: 'Ready' }] }],
-    evidence: [{ id: 'mount', route: 'pages/index/index', source: 'devtools-page-frame', capturedAt: new Date().toISOString(), nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
+    evidence: [{ id: 'mount', route: 'pages/index/index', source: 'devtools-page-frame', capturedAt: new Date(timing ? timing.startTime + timing.duration / 2 : Date.now()).toISOString(), nodes: [{ selector: '.title', query: 'css', count: 1, nodes: [{ text: 'Ready' }] }] }],
   }
   return {
     id: name,
@@ -59,7 +60,7 @@ function createTest(state: 'passed' | 'skipped' | 'pending', name = 'renders tit
     module: { relativeModuleId: 'e2e/ide/example.test.ts' },
     result: () => ({ state }),
     meta: () => ({ domAcceptance: acceptance }),
-    diagnostic: () => ({ startTime }),
+    diagnostic: () => timing ?? ({ startTime, duration: 0 }),
   } as unknown as TestCase
 }
 
@@ -79,6 +80,52 @@ function readReports() {
 }
 
 describe('Vitest DOM reporter lifecycle', () => {
+  it('records actual worker durations when ready and result callbacks arrive late', () => {
+    const origin = Date.parse('2026-10-19T00:00:00.000Z')
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(origin)
+      const timingFile = path.join(reportDir, 'timings.jsonl')
+      vi.stubEnv('WEAPP_VITE_E2E_TIMING_FILE', timingFile)
+      const reporter = new DomAcceptanceReporter()
+      const form = createTest('passed', 'tdesign > form', { startTime: origin + 100, duration: 1_620 })
+      const layout = createTest('passed', 'tdesign > layout', { startTime: origin + 3_900, duration: 1_994 })
+      vi.setSystemTime(origin + 50)
+      reporter.onTestCaseReady(form)
+      vi.setSystemTime(origin + 3_550)
+      reporter.onTestCaseResult(form)
+      vi.setSystemTime(origin + 5_900)
+      reporter.onTestCaseReady(layout)
+      vi.setSystemTime(origin + 5_991)
+      reporter.onTestCaseResult(layout)
+      vi.setSystemTime(origin + 7_000)
+      reporter.onTestRunEnd([createModule([form, layout])], [], 'passed')
+      const timings = fs.readFileSync(timingFile, 'utf8').trim().split('\n').map(line => JSON.parse(line) as VerificationTiming)
+      expect(timings.map(({ name, durationMs }) => [name, durationMs])).toEqual([
+        ['case:tdesign > form', 1_620],
+        ['case:tdesign > layout', 1_994],
+        ['case-group:tdesign', 3_614],
+      ])
+      expect(timings[0]?.startedAt).toBe(new Date(origin + 100).toISOString())
+      expect(timings[1]?.startedAt).toBe(new Date(origin + 3_900).toISOString())
+      expect(() => assertAcceptanceReportPassed(readReports()[0], { runId: 'test-run', commitSha })).not.toThrow()
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('uses final diagnostics when a completed case result callback was not delivered', () => {
+    const timingFile = path.join(reportDir, 'timings.jsonl')
+    vi.stubEnv('WEAPP_VITE_E2E_TIMING_FILE', timingFile)
+    const reporter = new DomAcceptanceReporter()
+    const test = createTest('passed', 'tdesign > completed')
+    reporter.onTestCaseReady(test)
+    reporter.onTestRunEnd([createModule([test])], [], 'passed')
+    const timings = fs.readFileSync(timingFile, 'utf8').trim().split('\n').map(line => JSON.parse(line) as VerificationTiming)
+    expect(timings.map(({ status, durationMs }) => [status, durationMs])).toEqual([['passed', 0], ['passed', 0]])
+  })
+
   it('explains runtime failures when all DOM checkpoints passed', () => {
     const reporter = new DomAcceptanceReporter()
     const test = createTest('passed')

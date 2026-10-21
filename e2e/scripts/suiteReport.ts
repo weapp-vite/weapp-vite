@@ -6,6 +6,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { excludedE2EProjects } from '../../scripts/e2eProjectScope'
 import { createAcceptanceIdentity, sanitizeAcceptanceValue } from './domAcceptanceReport/helpers'
+import { assertE2ETimings } from './verification/timing'
 import { VERIFICATION_TOOL_VERSION } from './verification/types'
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
@@ -205,6 +206,7 @@ export function createSuiteReport(
   reportsRootDir = REPORTS_ROOT_DIR,
   context: SuiteReportContext = { ...createAcceptanceIdentity(), strict: false, partial: false, plannedTasks: taskResults },
 ) {
+  assertE2ETimings([...(context.timings ?? []), ...taskResults.flatMap(task => task.timings ?? [])])
   if (new Set(taskResults.map(task => task.label)).size !== taskResults.length
     || new Set(context.plannedTasks.map(task => task.label)).size !== context.plannedTasks.length
     || taskResults.some(task => !context.plannedTasks.some(planned => planned.label === task.label)

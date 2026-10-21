@@ -8,6 +8,39 @@ vi.mock('../ideWarningReport', () => ({ appendIdeReportEvent: vi.fn() }))
 afterEach(() => vi.unstubAllEnvs())
 
 describe('DOM checkpoint console completion', () => {
+  it.each([true, false])('preserves a failed DOM assertion when the final flush also fails (DOM passes: %s)', async (passes) => {
+    vi.stubEnv('WEAPP_VITE_E2E_RUNTIME_PROVIDER', 'devtools')
+    const context = { task: { id: 'case-flush-failure', meta: {} }, onTestFinished: vi.fn() } as unknown as TestContext
+    const acceptance = createDomAcceptance(context, 'e2e-apps/base', [{
+      id: 'ready',
+      route: 'pages/index/index',
+      action: 'render',
+      nodes: [{ selector: '.result', text: 'ready' }],
+    }])
+    const page = {
+      pageId: 1,
+      path: 'pages/index/index',
+      $$: async () => [{ text: async () => passes ? 'ready' : 'wrong' }],
+    }
+    const flushError = new Error('final console inspection failed')
+    const flushConsole = vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(flushError)
+    const session = { currentPage: async () => page, flushConsole }
+    const dispose = registerRuntimeConsoleSession(session, 'e2e-apps/base')
+    try {
+      const checking = acceptance.check('ready', session, page, 0)
+      if (passes) {
+        await expect(checking).rejects.toBe(flushError)
+      }
+      else {
+        await expect(checking).rejects.toThrow('received "wrong"')
+      }
+      expect(flushConsole).toHaveBeenCalledTimes(2)
+    }
+    finally {
+      dispose()
+    }
+  })
+
   it.each([true, false])('waits for inspection before returning a checkpoint (DOM passes: %s)', async (passes) => {
     vi.stubEnv('WEAPP_VITE_E2E_RUNTIME_PROVIDER', 'devtools')
     const context = { task: { id: 'case-a', meta: {} }, onTestFinished: vi.fn() } as unknown as TestContext

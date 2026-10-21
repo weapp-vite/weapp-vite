@@ -1,17 +1,16 @@
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
-import { launchAutomator } from '../utils/automator'
-import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDomAcceptance } from '../utils/domAcceptance'
+import { withFixtureCaseScope } from '../utils/fixtureCaseScope'
+import { flushRuntimeConsoleSessions } from '../utils/runtimeConsoleSessions'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 import { classText, dashboardNodes, layoutNodes, TDESIGN_FIXTURE, xpathClass } from './tdesignDom'
+import { closeTdesignRegressionSession, getTdesignRegressionSession } from './tdesignRegressionSession'
 import {
-  createTemplateWevuTdesignRegressionLaunchOptions,
   relaunchTemplateWevuTdesignRegressionPage,
 } from './template-wevu-tdesign-regression.shared'
 
-const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const INDEX_PAGE_JS = path.join(DIST_ROOT, 'pages/index/index.js')
@@ -22,28 +21,10 @@ const ROUTES = [
 ]
 const FEEDBACK_SELECTOR_WARNING = '未找到组件,请检查selector是否正确'
 
-async function runBuild() {
-  await fs.rm(DIST_ROOT, { recursive: true, force: true })
-  await runWeappViteBuildWithLogCapture({
-    cliPath: CLI_PATH,
-    projectRoot: TEMPLATE_ROOT,
-    platform: 'weapp',
-    cwd: TEMPLATE_ROOT,
-    label: 'ide:template-wevu-tdesign-regression-runtime-errors',
-  })
-}
-
 let sharedMiniProgram: any = null
-let sharedBuildPrepared = false
 
 async function getSharedMiniProgram() {
-  if (!sharedBuildPrepared) {
-    await runBuild()
-    sharedBuildPrepared = true
-  }
-  if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator(createTemplateWevuTdesignRegressionLaunchOptions(TEMPLATE_ROOT))
-  }
+  sharedMiniProgram ??= await getTdesignRegressionSession()
   return sharedMiniProgram
 }
 
@@ -51,9 +32,8 @@ async function closeSharedMiniProgram() {
   if (!sharedMiniProgram) {
     return
   }
-  const miniProgram = sharedMiniProgram
   sharedMiniProgram = null
-  await miniProgram.close()
+  await closeTdesignRegressionSession()
 }
 
 function attachConsoleWarningCollector(miniProgram: any) {
@@ -85,6 +65,24 @@ function attachConsoleWarningCollector(miniProgram: any) {
   }
 }
 
+function attachCaseCollectors(miniProgram: any) {
+  const collector = attachRuntimeErrorCollector(miniProgram)
+  const warningCollector = attachConsoleWarningCollector(miniProgram)
+  return {
+    collector,
+    warningCollector,
+    dispose() {
+      warningCollector.dispose()
+      collector.dispose()
+    },
+  }
+}
+
+function verifyCaseCollectors({ collector, warningCollector }: ReturnType<typeof attachCaseCollectors>) {
+  expect(collector.getAll()).toEqual([])
+  expect(warningCollector.getSince(0)).toEqual([])
+}
+
 describe('e2e app: template-wevu-tdesign-regression runtime errors', { concurrent: false }, () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
@@ -96,24 +94,21 @@ describe('e2e app: template-wevu-tdesign-regression runtime errors', { concurren
       { id: 'layouts', route: '/pages/layouts/index', action: '打开布局页，检查当前状态和三个布局选项', nodes: layoutNodes },
     ])
     const miniProgram = await getSharedMiniProgram()
-    const collector = attachRuntimeErrorCollector(miniProgram)
-    const warningCollector = attachConsoleWarningCollector(miniProgram)
-
-    try {
-      for (const route of ROUTES) {
-        const marker = collector.mark()
-        const warningMarker = warningCollector.mark()
-        const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, route, 'runtime errors')
-        await page.waitFor(300)
-        await acceptance.check(route === '/pages/index/index' ? 'dashboard' : 'layouts', miniProgram, page)
-        expect(collector.getSince(marker)).toEqual([])
-        expect(warningCollector.getSince(warningMarker)).toEqual([])
-      }
-    }
-    finally {
-      warningCollector.dispose()
-      collector.dispose()
-    }
+    await withFixtureCaseScope({
+      flush: flushRuntimeConsoleSessions,
+      attach: () => attachCaseCollectors(miniProgram),
+      verify: verifyCaseCollectors,
+      run: async ({ collector, warningCollector }) => {
+        for (const route of ROUTES) {
+          const marker = collector.mark()
+          const warningMarker = warningCollector.mark()
+          const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, route, 'runtime errors')
+          await acceptance.check(route === '/pages/index/index' ? 'dashboard' : 'layouts', miniProgram, page)
+          expect(collector.getSince(marker)).toEqual([])
+          expect(warningCollector.getSince(warningMarker)).toEqual([])
+        }
+      },
+    })
   })
 
   it('does not emit runtime console errors when homepage layout toast is triggered', async (ctx) => {
@@ -123,34 +118,32 @@ describe('e2e app: template-wevu-tdesign-regression runtime errors', { concurren
       { id: 'toast-closed', route: '/pages/index/index', action: 'Toast 自动关闭后保留刷新结果', nodes: [...dashboardNodes(true), { selector: xpathClass('t-toast__text'), query: 'xpath', count: 0 }] },
     ])
     const miniProgram = await getSharedMiniProgram()
-    const collector = attachRuntimeErrorCollector(miniProgram)
-    const warningCollector = attachConsoleWarningCollector(miniProgram)
+    await withFixtureCaseScope({
+      flush: flushRuntimeConsoleSessions,
+      attach: () => attachCaseCollectors(miniProgram),
+      verify: verifyCaseCollectors,
+      run: async ({ collector, warningCollector }) => {
+        const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, '/pages/index/index', 'runtime errors')
 
-    try {
-      const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, '/pages/index/index', 'runtime errors')
+        await page.waitFor(300)
 
-      await page.waitFor(300)
+        const marker = collector.mark()
+        const warningMarker = warningCollector.mark()
+        const initialRefreshSeed = await page.data('refreshSeed')
+        await acceptance.check('initial', miniProgram, page)
+        const result = await page.callMethod('runLayoutToastE2E')
+        await acceptance.check('refreshed', miniProgram, page)
+        await acceptance.check('toast-closed', miniProgram, page)
 
-      const marker = collector.mark()
-      const warningMarker = warningCollector.mark()
-      const initialRefreshSeed = await page.data('refreshSeed')
-      await acceptance.check('initial', miniProgram, page)
-      const result = await page.callMethod('runLayoutToastE2E')
-      await acceptance.check('refreshed', miniProgram, page)
-      await acceptance.check('toast-closed', miniProgram, page)
+        expect(result).toMatchObject({
+          refreshSeed: expect.any(Number),
+        })
+        expect(result.refreshSeed).not.toBe(initialRefreshSeed)
 
-      expect(result).toMatchObject({
-        refreshSeed: expect.any(Number),
-      })
-      expect(result.refreshSeed).not.toBe(initialRefreshSeed)
-
-      expect(collector.getSince(marker)).toEqual([])
-      expect(warningCollector.getSince(warningMarker)).toEqual([])
-    }
-    finally {
-      warningCollector.dispose()
-      collector.dispose()
-    }
+        expect(collector.getSince(marker)).toEqual([])
+        expect(warningCollector.getSince(warningMarker)).toEqual([])
+      },
+    })
   })
 
   it('emits homepage KpiBoard scoped slot items without runtime errors', async (ctx) => {
@@ -158,26 +151,24 @@ describe('e2e app: template-wevu-tdesign-regression runtime errors', { concurren
       { id: 'scoped-slot-items', route: '/pages/index/index', action: '检查作用域插槽实际渲染的四组标签与值', nodes: dashboardNodes() },
     ])
     const miniProgram = await getSharedMiniProgram()
-    const collector = attachRuntimeErrorCollector(miniProgram)
-    const warningCollector = attachConsoleWarningCollector(miniProgram)
+    await withFixtureCaseScope({
+      flush: flushRuntimeConsoleSessions,
+      attach: () => attachCaseCollectors(miniProgram),
+      verify: verifyCaseCollectors,
+      run: async ({ collector, warningCollector }) => {
+        const marker = collector.mark()
+        const warningMarker = warningCollector.mark()
+        const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, '/pages/index/index', 'runtime errors')
+        await acceptance.check('scoped-slot-items', miniProgram, page)
 
-    try {
-      const marker = collector.mark()
-      const warningMarker = warningCollector.mark()
-      const page = await relaunchTemplateWevuTdesignRegressionPage(ctx, miniProgram, '/pages/index/index', 'runtime errors')
-      await acceptance.check('scoped-slot-items', miniProgram, page)
+        const scopedSlotWxml = await fs.readFile(INDEX_SCOPED_SLOT_WXML, 'utf8')
+        const pageJs = await fs.readFile(INDEX_PAGE_JS, 'utf8')
 
-      const scopedSlotWxml = await fs.readFile(INDEX_SCOPED_SLOT_WXML, 'utf8')
-      const pageJs = await fs.readFile(INDEX_PAGE_JS, 'utf8')
-
-      expect(scopedSlotWxml).toContain('data-kpi-board-scope-label')
-      expect(pageJs).toContain('label: "今日访问"')
-      expect(collector.getSince(marker)).toEqual([])
-      expect(warningCollector.getSince(warningMarker)).toEqual([])
-    }
-    finally {
-      warningCollector.dispose()
-      collector.dispose()
-    }
+        expect(scopedSlotWxml).toContain('data-kpi-board-scope-label')
+        expect(pageJs).toContain('label: "今日访问"')
+        expect(collector.getSince(marker)).toEqual([])
+        expect(warningCollector.getSince(warningMarker)).toEqual([])
+      },
+    })
   })
 })

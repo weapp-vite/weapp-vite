@@ -7,7 +7,7 @@ import process from 'node:process'
 import ts from 'typescript'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createIsolatedMachineLease } from '../../utils/testSupport/machineLease'
-import { getIdeExhaustiveTasks, IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS, IDE_GITHUB_ISSUES_AGGREGATE_LABEL, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS } from '../e2e-suite-manifest'
+import { getIdeExhaustiveTasks, IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS, IDE_GITHUB_ISSUES_AGGREGATE_LABEL, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, IDE_TDESIGN_AGGREGATE_LABEL, IDE_TDESIGN_AGGREGATED_PATTERNS } from '../e2e-suite-manifest'
 import { createSuiteReport } from '../suiteReport'
 import { runTaskSuite as runTaskSuiteWithOptions } from '../suiteRunner'
 import { currentVerificationProfile } from '../verification/profile'
@@ -102,6 +102,27 @@ describe('strict IDE suite acceptance', () => {
     expect(() => createSuiteReport([{ ...result, label: 'other' }], 'unit', undefined, temporaryRoot(), context)).toThrow('unplanned')
     expect(() => createSuiteReport([{ ...result, durationMs: Number.NaN }], 'unit', undefined, temporaryRoot(), context)).toThrow('invalid')
     expect(() => createSuiteReport([result], 'unit', undefined, temporaryRoot(), { ...context, plannedTasks: [context.plannedTasks[0]!, context.plannedTasks[0]!] })).toThrow('duplicate')
+    const timing = { name: 'build', invocationId: 'unique', startedAt: '2026-10-19T00:00:00.000Z', durationMs: 1, status: 'passed' as const }
+    expect(() => createSuiteReport([{ ...result, timings: [timing] }], 'unit', undefined, temporaryRoot(), { ...context, timings: [timing] })).toThrow('Invalid E2E timing')
+    expect(() => createSuiteReport([{ ...result, timings: [{ ...timing, durationMs: Number.NaN }] }], 'unit', undefined, temporaryRoot(), context)).toThrow('Invalid E2E timing')
+  })
+
+  it('records machine acquisition separately from actual tasks and preserves the caller context', async () => {
+    const task: SuiteTask = { label: 'unit-task', command: 'node', args: [] }
+    const context = { ...identity, strict: false, partial: false, plannedTasks: [task] }
+    let captured: ReturnType<typeof createSuiteReport> | undefined
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    await runTaskSuite('unit-timing', [task], {
+      runTask: async () => 0,
+      reportContext: context,
+      onReport: (report) => {
+        captured = report
+        temporaryRoots.push(report.reportDir)
+      },
+    })
+    expect(captured?.timings).toEqual([expect.objectContaining({ name: 'machine-lease-acquisition', status: 'passed' })])
+    expect(captured!.timings![0]!.durationMs).toBeGreaterThanOrEqual(0)
+    expect(context).not.toHaveProperty('timings')
   })
 
   it.each(['shard', 'ad-hoc'] as const)('keeps %s reports partial while only an explicit shard can finish successfully', async (scope) => {
@@ -174,15 +195,18 @@ describe('strict IDE suite acceptance', () => {
     expect(new Set(templateTask?.acceptanceTemplates).size).toBe(templateTask?.acceptanceTemplates?.length)
   })
 
-  it('requires aggregate imports to match every manifest child', () => {
+  it.each([
+    [IDE_GITHUB_ISSUES_AGGREGATE_LABEL, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS],
+    [IDE_TDESIGN_AGGREGATE_LABEL, IDE_TDESIGN_AGGREGATED_PATTERNS],
+  ])('requires %s imports to match every manifest child', (label, children) => {
     const e2eRoot = path.resolve(import.meta.dirname, '../..')
-    const aggregate = path.resolve(e2eRoot, IDE_GITHUB_ISSUES_AGGREGATE_LABEL)
+    const aggregate = path.resolve(e2eRoot, label)
     const ast = ts.createSourceFile(aggregate, fs.readFileSync(aggregate, 'utf8'), ts.ScriptTarget.Latest, true)
     const importedTests = ast.statements
       .filter(ts.isImportDeclaration)
       .map(node => ts.isStringLiteral(node.moduleSpecifier) ? node.moduleSpecifier.text : '')
       .filter(value => value.endsWith('.test'))
       .map(value => path.relative(e2eRoot, path.resolve(path.dirname(aggregate), `${value}.ts`)).replaceAll('\\', '/'))
-    expect(importedTests.sort()).toEqual([...IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS].sort())
+    expect(importedTests.sort()).toEqual([...children].sort())
   })
 })

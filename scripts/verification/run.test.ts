@@ -54,6 +54,20 @@ it('keeps independent failure evidence while blocking dependent tasks', async ()
   await expect(runVerification(plan([task('a', ['b']), task('b', ['a'])]), async () => ({ exitCode: 0 }))).rejects.toThrow('循环')
 })
 
+it('registers the running slot before an executor can throw synchronously', async () => {
+  const launched: string[] = []
+  const report = await runVerification(plan([task('broken'), task('dependent', ['broken']), task('independent')]), (item) => {
+    launched.push(item.id)
+    if (item.id === 'broken') {
+      throw new Error('command resolution failed')
+    }
+    return Promise.resolve({ exitCode: 0 })
+  })
+  expect(launched).toEqual(['broken', 'independent'])
+  expect(report.results.map(item => [item.id, item.status])).toEqual([['broken', 'failed'], ['dependent', 'blocked'], ['independent', 'passed']])
+  expect(report.results[0]?.error).toBe('command resolution failed')
+})
+
 it('reports partial coverage and cancels work before launching on an aborted signal', async () => {
   const controller = new AbortController()
   controller.abort()

@@ -6,6 +6,7 @@ import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 使用跨平台启动器运行 Vitest，避免 Windows 的 .cmd 解析差异。
 import { execa } from 'execa'
+import { coverageLogicalScope } from '../verificationTelemetry/logicalCoverage.mjs'
 import { coverageIdentity, digestFile, hash, normalizeInventory, readJson, verifyCoveragePlan, verifyCoverageShards } from './contracts.mjs'
 
 const reporter = fileURLToPath(new URL('./reporter.mjs', import.meta.url))
@@ -40,6 +41,7 @@ export async function runCoverageShard(root, planPath, index, output) {
   await mkdir(output, { recursive: true })
   const observedPath = path.join(output, 'observed.json')
   const blob = path.join(output, 'blob.json')
+  await Promise.all([observedPath, blob, path.join(output, 'manifest.json')].map(file => rm(file, { force: true })))
   const startedAt = performance.now()
   const result = await execa('pnpm', ['exec', 'vitest', 'run', ...baseArguments, `--config=${shardConfig}`, '--coverage.enabled', '--coverage.reporter=json', `--shard=${index}/${plan.shards}`, '--reporter=default', '--reporter=blob', `--reporter=${reporter}`, `--outputFile.blob=${blob}`, `--coverage.reportsDirectory=${path.join(output, 'coverage')}`], { cwd: root, stdio: 'inherit', reject: false, env: { COVERAGE_SHARD_REPORT: observedPath } })
   let observed = { inventory: [], passed: false }
@@ -51,7 +53,7 @@ export async function runCoverageShard(root, planPath, index, output) {
       throw error
     }
   }
-  const report = { schemaVersion: 1, identity, planHash: plan.planHash, index, status: result.exitCode === 0 && observed.passed ? 'passed' : 'failed', inventory: observed.inventory, durationMs: performance.now() - startedAt, blobHash: result.exitCode === 0 ? await digestFile(blob) : null }
+  const report = { schemaVersion: 1, identity, planHash: plan.planHash, index, status: result.exitCode === 0 && observed.passed ? 'passed' : 'failed', inventory: observed.inventory, cases: observed.cases ?? [], durationMs: performance.now() - startedAt, blobHash: result.exitCode === 0 ? await digestFile(blob) : null }
   await save(path.join(output, 'manifest.json'), report)
   assert.equal(report.status, 'passed', `Coverage shard ${index} failed`)
   return report
@@ -59,11 +61,13 @@ export async function runCoverageShard(root, planPath, index, output) {
 
 export async function mergeCoverageShards(root, planPath, reportsDirectory, output) {
   root = await realpath(root)
+  await Promise.all(['logical-scope.json', 'shard-verdict.json'].map(file => rm(path.join(output, file), { force: true })))
   const plan = await readJson(planPath)
   const entries = await readdir(reportsDirectory, { withFileTypes: true })
   const directories = entries.filter(entry => entry.isDirectory()).map(entry => path.join(reportsDirectory, entry.name))
   const reports = await Promise.all(directories.map(directory => readJson(path.join(directory, 'manifest.json'))))
   verifyCoverageShards(plan, reports, await coverageIdentity(root))
+  const logicalScope = coverageLogicalScope(plan, reports)
   const blobs = path.join(root, '.tmp/coverage-merge-blobs')
   await rm(blobs, { recursive: true, force: true })
   await mkdir(blobs, { recursive: true })
@@ -73,6 +77,7 @@ export async function mergeCoverageShards(root, planPath, reportsDirectory, outp
     await copyFile(filename, path.join(blobs, `shard-${reports[index].index}.json`))
   }
   await execa('pnpm', ['exec', 'vitest', ...baseArguments, `--merge-reports=${blobs}`, '--coverage.enabled', '--coverage.reporter=text', '--coverage.reporter=json', '--coverage.reporter=json-summary', '--coverage.reporter=lcov', `--coverage.reportsDirectory=${output}`], { cwd: root, stdio: 'inherit' })
+  await save(path.join(output, 'logical-scope.json'), logicalScope)
   await save(path.join(output, 'shard-verdict.json'), { schemaVersion: 1, planHash: plan.planHash, shards: reports.length, tests: plan.inventory.length, status: 'passed' })
 }
 

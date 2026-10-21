@@ -190,6 +190,46 @@ describe('suiteRunner', () => {
     expect(runTask).toHaveBeenCalledTimes(3)
   })
 
+  it.each([
+    { result: 0, phaseStatus: 'passed', taskStatus: 'passed' },
+    { result: 7, phaseStatus: 'failed', taskStatus: 'failed' },
+    { error: new Error('original process failure'), phaseStatus: 'failed', taskStatus: 'blocked' },
+    { error: new DOMException('original process abort', 'AbortError'), phaseStatus: 'cancelled', taskStatus: 'blocked' },
+    { result: 0, interrupt: true, phaseStatus: 'cancelled', taskStatus: 'blocked' },
+  ] as const)('records $phaseStatus task-process timing while preserving the task result', async (scenario) => {
+    const reports: Array<ReturnType<typeof createSuiteReport>> = []
+    const originalInterruptHandlers = new Set(process.listeners('SIGINT'))
+    try {
+      const exitCode = await runTaskSuite('e2e:process-timing-unit', [{ label: 'task', command: 'node', args: [] }], {
+        runTask: async () => {
+          if ('error' in scenario) {
+            throw scenario.error
+          }
+          if ('interrupt' in scenario) {
+            const handlers = process.listeners('SIGINT').filter(handler => !originalInterruptHandlers.has(handler))
+            expect(handlers).toHaveLength(1)
+            ;(handlers[0] as () => void)()
+          }
+          return scenario.result
+        },
+        onReport: report => reports.push(report),
+      })
+      const taskExitCode = 'error' in scenario || 'interrupt' in scenario ? 1 : scenario.result
+      expect(exitCode).toBe('interrupt' in scenario ? 130 : taskExitCode === 0 ? 0 : 1)
+      const task = reports[0]!.tasks[0]!
+      expect(task).toMatchObject({ exitCode: taskExitCode, status: scenario.taskStatus })
+      expect(task.timings?.find(timing => timing.name === 'task-process')?.status).toBe(scenario.phaseStatus)
+      if ('error' in scenario && scenario.error) {
+        expect(task.reason).toBe(scenario.error.message)
+      }
+    }
+    finally {
+      for (const report of reports) {
+        fs.rmSync(report.reportDir, { recursive: true, force: true })
+      }
+    }
+  })
+
   it('quits a claimed host even when project cleanup fails', async () => {
     const hostLease = { target: {}, initial: { state: 'cold', identities: [] }, claimedAt: 'now' }
     mocks.claimHost.mockResolvedValue(hostLease)

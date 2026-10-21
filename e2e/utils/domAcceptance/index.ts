@@ -56,12 +56,16 @@ export function createDomAcceptance(context: TestContext, fixture: string, check
         plan.runtime = runtime
       }
       await flushRuntimeConsoleSessions()
-      let evidence
+      let evidence!: Awaited<ReturnType<typeof captureDomCheckpoint>>
+      let failed = false
+      let failure: unknown
       try {
         evidence = await measureE2EPhase(`checkpoint:${fixture}:${id}`, () => captureDomCheckpoint(session, page, checkpoint, plan.provider, timeout))
       }
       catch (error) {
-        const failure: NonNullable<DomAcceptance['failures']>[number] = { checkpoint: id }
+        failed = true
+        failure = error
+        const diagnostic: NonNullable<DomAcceptance['failures']>[number] = { checkpoint: id }
         if (plan.provider === 'devtools' && session.screenshot) {
           try {
             const root = path.resolve(import.meta.dirname, '../../..')
@@ -69,18 +73,27 @@ export function createDomAcceptance(context: TestContext, fixture: string, check
             const screenshot = path.join(directory, `${randomUUID()}.png`)
             await fs.mkdir(directory, { recursive: true })
             await session.screenshot({ path: screenshot })
-            failure.screenshot = path.relative(root, screenshot).replaceAll('\\', '/')
+            diagnostic.screenshot = path.relative(root, screenshot).replaceAll('\\', '/')
           }
           catch (screenshotError) {
-            failure.screenshotError = screenshotError instanceof Error ? screenshotError.message : String(screenshotError)
+            diagnostic.screenshotError = screenshotError instanceof Error ? screenshotError.message : String(screenshotError)
           }
         }
         plan.failures ??= []
-        plan.failures.push(failure)
-        throw error
+        plan.failures.push(diagnostic)
       }
-      finally {
+      try {
         await flushRuntimeConsoleSessions()
+      }
+      catch (error) {
+        // flush 已记录 console-inspection 诊断，DOM 首错仍应保留。
+        if (!failed) {
+          failed = true
+          failure = error
+        }
+      }
+      if (failed) {
+        throw failure
       }
       if (closed || context.task.meta.domAcceptance !== plan) {
         throw new Error('DOM checkpoint completed after its case ended')
