@@ -5,6 +5,10 @@ on:
       pr_context:
         required: true
         type: string
+      chokidar_delivery_diagnostic:
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
   pull-requests: read
@@ -74,6 +78,8 @@ jobs:
         env:
           WEAPP_VITE_DELIVERY_EXPECTED_SHA: ${{ env.CHOKIDAR_ORIGINAL_BASELINE_SHA }}
       - name: Verify ordinary npm delivery and original negative control under the machine lease
+        env:
+          WEAPP_VITE_DELIVERY_TRACE: ${{ inputs.chokidar_delivery_diagnostic && '1' || '0' }}
         run: node --import tsx e2e/scripts/run-e2e-commands.ts node --import tsx packages/weapp-vite/scripts/chokidarDelivery/index.mjs --tarballs .cache/chokidar-delivery/candidate-tarballs --baseline-tarballs .cache/chokidar-delivery/original-tarballs --report .cache/chokidar-delivery/report.json
       - name: Preserve delivery report and independent archive provenance
         if: ${{ !cancelled() }}
@@ -91,7 +97,7 @@ jobs:
   consumer-platform:
     name: Consumer (${{ matrix.os }})
     needs: pr-context
-    if: needs.pr-context.outputs.should_run == 'true'
+    if: needs.pr-context.outputs.should_run == 'true' && !inputs.chokidar_delivery_diagnostic
     strategy:
       fail-fast: false
       matrix:

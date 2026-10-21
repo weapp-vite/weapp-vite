@@ -8,6 +8,11 @@ on:
         required: false
         default: ''
         type: string
+      chokidar-delivery-diagnostic:
+        description: Run only the ordinary npm Windows delivery job with an observation trace
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: vite-host-consumer-${{ inputs.pr-number || github.ref || github.run_id }}
@@ -34,4 +39,5 @@ jobs:
     uses: ./.github/workflows/validate-ci-vite-host-consumer.yml
     with:
       pr_context: ${{ needs.pr-context.outputs.pr_context }}
+      chokidar_delivery_diagnostic: ${{ inputs.chokidar-delivery-diagnostic || false }}
     secrets: inherit
