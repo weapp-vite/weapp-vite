@@ -6,6 +6,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { observeFileListeners } from './eventPhase.mjs'
+import { assertNativeWatcherClosed, observeNativeWatcher } from './nativeWatcher.mjs'
 
 export { waitForObservedEventPhase } from './eventPhase.mjs'
 
@@ -60,21 +61,7 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
     try {
       beforeWatch?.(file, attempt)
       const native = originalWatch.call(this, filename, ...args)
-      const closed = deferred()
-      const record = { path: relative(file), native, closed: false, closeCalls: 0, closeEvents: 0, closePromise: closed.promise, afterPublicClose: publicCloseStarted }
-      const originalClose = native.close
-      native.close = function (...closeArgs) {
-        record.closeCalls++
-        return originalClose.apply(this, closeArgs)
-      }
-      native.once('close', () => {
-        record.closeEvents++
-        record.closed = true
-        closed.resolve()
-      })
-      native.on('error', (error) => {
-        record.lastError = { code: error.code, message: error.message }
-      })
+      const record = observeNativeWatcher(native, { path: relative(file), afterPublicClose: publicCloseStarted })
       handles.push(record)
       attempt.result = 'acquired'
       return native
@@ -118,10 +105,9 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
     attempts,
     markPublicClose() { publicCloseStarted = true },
     async assertAllClosed(timeoutMs, exactlyOnce = false) {
-      await bounded(Promise.all(handles.map(record => record.closePromise)), 'all exact native fs.watch close events', timeoutMs)
-      assert.equal(handles.filter(record => !record.closed).length, 0, 'public close must terminate every acquired native handle')
-      if (exactlyOnce) {
-        assert.ok(handles.every(record => record.closeCalls === 1 && record.closeEvents === 1), 'each acquired native handle closes exactly once, including repeated public close')
+      await bounded(Promise.all(handles.map(record => record.closePromise)), 'all exact native fs.watch close completions', timeoutMs)
+      for (const record of handles) {
+        assertNativeWatcherClosed(record, exactlyOnce)
       }
       await bounded(Promise.all(pollingHandles.map(record => record.stopPromise)), 'all exact native fs.watchFile stop events', timeoutMs)
       assert.equal(pollingHandles.filter(record => !record.stopped).length, 0, 'public close must stop every acquired polling watcher')
@@ -158,7 +144,20 @@ export function installNativeInstrumentation({ root, platform, beforeWatch, prom
         actualPlatform,
         selectedPlatform: platform === 'native' ? actualPlatform : platform,
         attempts,
-        handles: handles.map(({ path: watchedPath, closed, closeCalls, closeEvents, afterPublicClose, lastError }) => ({ path: watchedPath, closed, closeCalls, closeEvents, afterPublicClose, lastError })),
+        handles: handles.map(({ path: watchedPath, closed, closeCalls, closeEvents, nativeCloseRequests, nativeCloseCompletions, nativeCloseOrigin, errorEvents, termination, observationErrors, afterPublicClose, lastError }) => ({
+          path: watchedPath,
+          closed,
+          closeCalls,
+          closeEvents,
+          nativeCloseRequests,
+          nativeCloseCompletions,
+          nativeCloseOrigin,
+          errorEvents,
+          termination,
+          observationErrors: observationErrors.map(error => String(error)),
+          afterPublicClose,
+          lastError,
+        })),
         pollingHandles: pollingHandles.map(({ path: watchedPath, stopped, afterPublicClose }) => ({ path: watchedPath, stopped, afterPublicClose })),
         pollingReleases,
       }

@@ -22,6 +22,7 @@ export async function runOwnedE2ECommand(command: string, args: string[], option
     const journalPath = await createDevtoolsProjectJournal()
     const childScope = await lease.createChildScope({ cleanupKey: journalPath })
     const commandErrors: unknown[] = []
+    let commandExitError: Error | undefined
     let exitCode = 1
     try {
       if (!options.signal?.aborted) {
@@ -36,6 +37,13 @@ export async function runOwnedE2ECommand(command: string, args: string[], option
         })
         const result = await waitForOwnedCommand(child, options.signal)
         exitCode = result.exitCode ?? 1
+        if (exitCode !== 0 || result.signal) {
+          commandExitError = Object.assign(new Error(`E2E command exited unsuccessfully (exit code: ${result.exitCode ?? 'unavailable'}, signal: ${result.signal ?? 'none'}).`, { cause: result }), {
+            name: 'OwnedCommandExitError',
+            exitCode: result.exitCode,
+            signal: result.signal,
+          })
+        }
       }
     }
     catch (error) {
@@ -55,7 +63,11 @@ export async function runOwnedE2ECommand(command: string, args: string[], option
       await cleanupDevtoolsCommandScope(childScope, journalPath)
     }
     catch (error) {
-      throw new AggregateError([...commandErrors, error], 'E2E command project cleanup is incomplete; stop the acceptance lane.')
+      throw new AggregateError(
+        [...commandErrors, ...(commandExitError ? [commandExitError] : []), error],
+        'E2E command project cleanup is incomplete; stop the acceptance lane.',
+        { cause: error },
+      )
     }
     if (commandErrors.length) {
       throw commandErrors[0]

@@ -22,11 +22,14 @@ node --import tsx scripts/dependencyContracts/chokidar/run.mjs --report .tmp/dep
 - 两个 public owner 共享原生 watcher，兄弟注册失败或关闭一个 owner 后，另一个仍收到真实变更。
 - 文件与目录在旧 remove 冷却未释放时重新创建并再次删除；atomic unlink/add 保持一个 change。
 - 旧文件监听回调的真实 ENOENT 延迟返回，不得移除同路径的新代文件。
-- 真实 inode 更替后的原生重新绑定、polling 的 change/unlink/add/change 和实际 stop 事件，以及同步 ADD/ready 回调中的 close/unwatch。
+- 真实 inode 更替后的原生重新绑定：同一 fixture 文件系统内、watched 目录外预先准备替换文件，订阅后先排空已观察的旧事件，再登记匹配替换文件 dev/ino/size 的 change waiter 并执行 rename；原 inode 的迟到事件不能代替重绑证据。第二次写入使用更长的 `r+` 内容并核验新大小与最终文本。
+- polling 的 change/unlink/add/change 和实际 stop 事件，以及同步 ADD/ready 回调中的 close/unwatch。
 - 两个 owner 直接监听同一真实文件，在真实 rename 替换 inode 后共享一个新原生 handle，双方收到随后真实 write 的 change；全程禁止父目录 watcher，旧 handle 与最终新 handle 均只关闭一次。该项和单 owner inode 项在 Windows 均明确记录 `non-applicable`。
 - 同一个共享原生代的两个 stat 同步派发后，先冻结一个 sibling 的真实 ENOENT，另一 sibling 取得新 inode 并完成 rebind；释放原 Error 后，两者均不能发布 unlink/add，且继续收到随后真实 write。门禁只控制原生读取及交还，不人工调用 watcher 回调。
 - 共享 inode rebind 后关闭并重复关闭一个 owner，新 handle 由幸存 owner 保持；后续真实 write 仍发布 change，末个 owner 关闭时每个 native handle 只 close 一次。新增两个 inode 边界在 Windows 同样明确记录 `non-applicable`。
 
-通过要求 public close 幂等完成，所有实际取得的原生 handle 发出 `close`、所有 polling watcher 发出 `stop`，worker 删除自己的临时目录，并恢复所有 fs、platform 和局部门禁 mock 后释放借用登记。报告包含安装版本及 `index.js`、`handler.js`、`package.json` 哈希，worker 必须与 supervisor 一致。
+通过要求 public close 幂等完成，并分别核验公开 `close` 事件和每个实际取得的 FSEvent 原生关闭完成。观察器捕获 `fs.watch` 返回时的同一个 `_handle`，保留其原生 close 的 receiver、参数、返回与原回调，只旁路记录真实 native close callback；不补发任何事件。正常路径仍同时要求一个公开 `close` 事件和一次原生关闭完成。Node 在底层 watch 错误后直接关闭 FSEvent、释放 `_handle`，明确不发公开 `close`；该路径必须同时具有同一捕获 handle 的实际关闭完成、原生错误和 wrapper 释放证据，不能单凭 error 或 `_handle === null` 通过。共享 inode 场景仍要求每个 native wrapper 的公开 close 调用和事件均恰好一次。报告分开记录公开调用/事件、原生请求/完成、终结路径和观察错误；重复、错误 receiver、替换 handle、原回调失败、未完成或未知/recursive native shape 均失败。未知形状也保留已取得的 wrapper 登记及精确 close 途径，不丢失资源、不自动视为已终结。
+
+此外，所有 polling watcher 必须发出 `stop`，worker 删除自己的临时目录，并恢复所有 fs、platform 和局部门禁 mock 后释放借用登记。报告包含安装版本及 `index.js`、`handler.js`、`package.json` 哈希，worker 必须与 supervisor 一致。
 
 超时、中断、强制收尾、缺失资源证据或删除失败均不得计为通过。supervisor 不修补 worker 临时目录；清理无法确认时停止后续场景，封存独立 scope 并保留报告和现场，交由按精确所有权的恢复流程处理。
