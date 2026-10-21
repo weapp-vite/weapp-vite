@@ -42,7 +42,8 @@ function row(values: unknown[], pid: number): WindowsRow {
 
 // 本地 Unix 无法证明 Windows Interop；Windows CI 用同一仍持有的 worker 核验旧身份精度。
 it.runIf(process.platform === 'win32')('matches the held worker CIM identity with full and filtered native snapshots', async () => {
-  const timeout = resolveWechatInspectionTimeout('win32', 10_000)
+  // 兼容性参照仍会冷启动 PowerShell/CIM，沿用正式查询策略，不能套用内核快照的耗时假设。
+  const timeout = resolveWechatInspectionTimeout('win32')
   const nativeQuery = async (label: 'snapshot' | 'identities', pids: number[] | undefined, trace = false) => {
     const result = await queryWindowsKernelProcesses(pids, trace)
     reportWindowsQueryTrace(label, result)

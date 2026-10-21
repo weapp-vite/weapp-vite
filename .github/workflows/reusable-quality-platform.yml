@@ -1,0 +1,217 @@
+name: Independent Quality Platform
+on:
+  workflow_call:
+    inputs:
+      pr_context:
+        type: string
+        required: true
+      runs_on:
+        type: string
+        required: true
+      node_version:
+        type: string
+        required: true
+      build_command:
+        type: string
+        required: true
+      lint_command:
+        type: string
+        required: false
+        default: ''
+      run_types:
+        type: boolean
+        required: false
+        default: false
+      run_coverage:
+        type: boolean
+        required: false
+        default: false
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-frozen-pr-context.yml
+    with:
+      pr_context: ${{ inputs.pr_context }}
+      profile: ci
+  build:
+    name: Build packages and fixtures
+    needs: pr-context
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ inputs.node_version }}
+      timeout_minutes: 40
+      build_command: ${{ inputs.build_command }}
+      main_command: ${{ inputs.run_coverage && 'node scripts/coverageShards/index.mjs plan --shards=4 --output=.tmp/coverage-plan/plan.json' || 'node --version' }}
+      build_artifact_name: quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build
+      artifact_name: ${{ inputs.run_coverage && format('coverage-plan-{0}-node-{1}', inputs.runs_on, inputs.node_version) || '' }}
+      artifact_path: .tmp/coverage-plan
+      timing_artifact_name: timing-quality-build-${{ inputs.runs_on }}-${{ inputs.node_version }}
+    secrets: inherit
+  lint:
+    name: Lint
+    needs: pr-context
+    if: inputs.lint_command != ''
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ inputs.node_version }}
+      timeout_minutes: 40
+      lint_command: ${{ inputs.lint_command }}
+      main_command: node --version
+      timing_artifact_name: timing-lint-${{ inputs.runs_on }}-${{ inputs.node_version }}
+    secrets: inherit
+  contracts:
+    name: Dependency contracts
+    needs:
+      - pr-context
+      - build
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ inputs.node_version }}
+      timeout_minutes: 40
+      consume_build_artifact: quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build
+      main_command: |-
+        pnpm test:dependency-contracts
+        if [[ '${{ inputs.runs_on }}' == 'ubuntu-latest' && '${{ inputs.node_version }}' == '24' ]]; then
+          pnpm exec vitest run --config scripts/vitest.config.mjs scripts/coverageShards scripts/consumerArtifacts scripts/ci-timing.test.mjs scripts/ci-topology.test.mjs scripts/verification-history.test.mjs scripts/verificationBenchmark/ci/archive.test.mjs scripts/ci-types.test.mjs
+        fi
+      artifact_name: dependency-contracts-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
+      artifact_path: .tmp/dependency-contracts
+      timing_artifact_name: timing-contracts-${{ inputs.runs_on }}-${{ inputs.node_version }}
+    secrets: inherit
+  types:
+    name: Public type contracts
+    needs:
+      - pr-context
+      - build
+    if: inputs.run_types
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ inputs.node_version }}
+      timeout_minutes: 40
+      consume_build_artifact: quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      main_command: node scripts/ciTypes.mjs
+      artifact_name: type-contracts-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
+      artifact_path: .tmp/ci-type-contracts-plan.json
+      timing_artifact_name: timing-types-${{ inputs.runs_on }}-${{ inputs.node_version }}
+    secrets: inherit
+  coverage:
+    name: Coverage shard ${{ matrix.shard }}
+    needs:
+      - pr-context
+      - build
+    if: inputs.run_coverage
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - 1
+          - 2
+          - 3
+          - 4
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: ${{ inputs.node_version }}
+      timeout_minutes: 40
+      consume_build_artifact: quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build
+      consume_aux_artifact: coverage-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
+      aux_artifact_path: .tmp/coverage-plan
+      main_command: node scripts/coverageShards/index.mjs run --plan=.tmp/coverage-plan/plan.json --shard=${{ matrix.shard }} --output=.tmp/coverage-shard
+      artifact_name: coverage-shard-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-${{ matrix.shard }}
+      artifact_path: |
+        .tmp/coverage-shard/manifest.json
+        .tmp/coverage-shard/blob.json
+      timing_artifact_name: timing-coverage-${{ inputs.runs_on }}-${{ inputs.node_version }}-${{ matrix.shard }}
+    secrets: inherit
+  coverage-merge:
+    name: Coverage complete inventory and thresholds
+    needs:
+      - pr-context
+      - build
+      - coverage
+    if: ${{ !cancelled() && inputs.run_coverage && needs.build.result == 'success' }}
+    runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: 15
+    env:
+      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+      BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: ${{ inputs.node_version }}
+      BUILD_ARTIFACT_EXPECTED_SCOPE: packages/weapp-vite,packages-runtime/wevu
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ inputs.node_version }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: quality-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-build
+          path: .
+      - name: Verify build identity and refresh workspace links
+        shell: bash
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          node scripts/verify-build-artifact-manifest.mjs
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: coverage-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
+          path: .tmp/coverage-plan
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: coverage-shard-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-*
+          path: .tmp/coverage-reports
+      - name: Merge native coverage with original thresholds
+        run: node scripts/coverageShards/index.mjs merge --plan=.tmp/coverage-plan/plan.json --reports=.tmp/coverage-reports --output=coverage
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5
+        with:
+          override_commit: ${{ needs.pr-context.outputs.head_sha }}
+          override_pr: ${{ needs.pr-context.outputs.pr_number }}
+          override_branch: ${{ needs.pr-context.outputs.head_ref }}
+        env:
+          CODECOV_TOKEN: ${{ needs.pr-context.outputs.is_pr != 'true' && secrets.CODECOV_TOKEN || '' }}
+      - name: Upload complete coverage verdict
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: coverage-complete-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
+          path: coverage
+          if-no-files-found: error

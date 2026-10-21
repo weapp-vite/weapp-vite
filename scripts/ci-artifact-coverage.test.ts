@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { glob } from 'tinyglobby'
 import { describe, expect, it } from 'vitest'
-import { readWorkflowFixture } from './workflowFixture.mjs'
+import { readWorkflowFixture, readWorkflowGraph } from './workflowFixture.mjs'
 
 interface WorkflowStep {
   name?: string
@@ -26,7 +26,7 @@ function splitPatterns(value: unknown) {
 
 describe('CI artifact coverage', () => {
   it('prepares imported fixture support files after restoring package artifacts and before internal tests', async () => {
-    const workflow = await readWorkflow('ci-e2e.yml')
+    const workflow = await readWorkflow('reusable-miniapp-platform.yml')
     const job = workflow.jobs['ide-dom-acceptance-internal']
     expect(job.with?.consume_build_artifact).toBeTruthy()
     const commands = splitPatterns(job.with?.main_command)
@@ -40,7 +40,7 @@ describe('CI artifact coverage', () => {
   })
 
   it('generates and checks the current source inventory before tests and uploads both reports', async () => {
-    const workflow = await readWorkflow('ci-e2e.yml')
+    const workflow = await readWorkflow('reusable-miniapp-platform.yml')
     const job = workflow.jobs['ide-dom-acceptance-internal']
     const commands = splitPatterns(job.with?.main_command)
     const inventoryIndex = commands.indexOf('node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check')
@@ -72,7 +72,6 @@ describe('CI artifact coverage', () => {
       '@weapp-core/*/bin/**',
       'mpcore/packages/*/bin/**',
       '.tmp/build-artifact-manifest.json',
-      '.tmp/verification-telemetry/plans/**',
     ])
   })
 
@@ -90,10 +89,8 @@ describe('CI artifact coverage', () => {
     const reusable = await readWorkflow('reusable-node-command.yml')
     const steps = Object.values(reusable.jobs).flatMap(job => job.steps ?? [])
     const upload = steps.find(step => step.name === 'Upload artifact')
-    const workflow = await readWorkflow('ci-e2e.yml')
-    const reportPatterns = Object.values(workflow.jobs)
-      .filter(job => job.with?.artifact_path)
-      .flatMap(job => splitPatterns(job.with?.artifact_path))
+    const workflows = readWorkflowGraph('ci-e2e.yml') as Map<string, Workflow>
+    const reportPatterns = [...workflows.values()].flatMap(workflow => Object.values(workflow.jobs)).filter(job => job.with?.artifact_path).flatMap(job => splitPatterns(job.with?.artifact_path))
     const reports = [
       '.tmp/hmr-lifecycle-report.json',
       '.tmp/shared-hosts/artifacts.json',

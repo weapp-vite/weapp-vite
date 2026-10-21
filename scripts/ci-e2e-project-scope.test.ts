@@ -36,6 +36,14 @@ describe('manual CI E2E project scope', () => {
     for (const [name, job] of jobs) {
       expect(job.with?.e2e_exclude_projects, name).toBe('${{ inputs.exclude-e2e-projects }}')
     }
+    for (const name of ['miniapp-platform-pr', 'miniapp-platform-full']) {
+      expect(shared.jobs[name]?.with?.exclude_projects).toBe('${{ inputs.exclude-e2e-projects }}')
+    }
+    const child = await readWorkflow('reusable-miniapp-platform.yml')
+    for (const [name, job] of Object.entries(child.jobs).filter(([, job]) => job.uses === './.github/workflows/reusable-node-command.yml')) {
+      expect(job.with?.e2e_exclude_projects, name).toBe('${{ inputs.exclude_projects }}')
+    }
+    expect(child.jobs.plan?.env?.WEAPP_VITE_E2E_EXCLUDE_PROJECTS).toBe('${{ inputs.exclude_projects }}')
   })
 
   it('exports scope as environment data for all commands and their descendants', async () => {

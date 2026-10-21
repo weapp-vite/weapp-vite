@@ -8,14 +8,12 @@ on:
 permissions:
   contents: read
   pull-requests: read
-
 jobs:
   pr-context:
     uses: ./.github/workflows/reusable-frozen-pr-context.yml
     with:
       pr_context: ${{ inputs.pr_context }}
       profile: ci
-
   build-pr:
     needs: pr-context
     if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && !startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))
@@ -26,64 +24,39 @@ jobs:
         include:
           - os: ubuntu-latest
             node-version: 22
-            timeout_minutes: 40
-            build_pkgs_script: build:pkgs:ci
-            build_script: build:ci
-            lint_script: lint
-            main_command: |
-              pnpm lint
-              pnpm build:ci
-              pnpm test:coverage
-              pnpm test:dependency-contracts
+            build_command: pnpm build:ci
+            lint_command: pnpm lint
+            run_types: false
+            run_coverage: true
           - os: ubuntu-latest
             node-version: 24
-            timeout_minutes: 25
-            build_pkgs_script: build:pkgs:ci
-            build_script: build:ci
-            lint_script: lint
-            main_command: |
-              pnpm build:pkgs:ci
-              pnpm test:types
-              pnpm test:dependency-contracts
+            build_command: pnpm build:pkgs:ci
+            lint_command: ''
+            run_types: true
+            run_coverage: false
           - os: windows-latest
             node-version: 22
-            timeout_minutes: 40
-            build_pkgs_script: build:pkgs:ci:windows
-            build_script: build:ci:windows
-            lint_script: lint:ci:windows
-            main_command: |
-              pnpm build:ci:windows
-              pnpm test:dependency-contracts
+            build_command: pnpm build:ci:windows
+            lint_command: ''
+            run_types: false
+            run_coverage: false
           - os: macos-latest
             node-version: 22
-            timeout_minutes: 40
-            build_pkgs_script: build:pkgs:ci:macos
-            build_script: build:ci:macos
-            lint_script: lint
-            main_command: |
-              pnpm build:ci:macos
-              pnpm test:dependency-contracts
+            build_command: pnpm build:ci:macos
+            lint_command: ''
+            run_types: false
+            run_coverage: false
       max-parallel: 4
-    uses: ./.github/workflows/reusable-node-command.yml
+    uses: ./.github/workflows/reusable-quality-platform.yml
     with:
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      pr_context: ${{ inputs.pr_context }}
       runs_on: ${{ matrix.os }}
-      node_version: '${{ matrix.node-version }}'
-      timeout_minutes: ${{ matrix.timeout_minutes }}
-      # Each PR command owns its single build stage; avoid a second package build in setup.
-      build_command: ''
-      main_command: ${{ matrix.main_command }}
-      artifact_name: dependency-contracts-${{ matrix.os }}-node-${{ matrix.node-version }}
-      artifact_path: .tmp/dependency-contracts
-      upload_codecov: true
-      verification_telemetry: true
+      node_version: ${{ format('{0}', matrix.node-version) }}
+      build_command: ${{ matrix.build_command }}
+      lint_command: ${{ matrix.lint_command }}
+      run_types: ${{ matrix.run_types }}
+      run_coverage: ${{ matrix.run_coverage }}
     secrets: inherit
-
   build-release-pr:
     needs: pr-context
     if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true' && startsWith(needs.pr-context.outputs.head_ref, 'release/pnpm-version'))
@@ -94,109 +67,82 @@ jobs:
         include:
           - os: ubuntu-latest
             node-version: 22
-            timeout_minutes: 40
-            build_script: build:ci
-            lint_script: lint
+            build_command: pnpm build:ci
+            lint_command: pnpm lint
+            run_types: false
+            run_coverage: true
           - os: ubuntu-latest
             node-version: 24
-            timeout_minutes: 40
-            build_script: build:ci
-            lint_script: lint
+            build_command: pnpm build:ci
+            lint_command: pnpm lint
+            run_types: false
+            run_coverage: true
       max-parallel: 2
-    uses: ./.github/workflows/reusable-node-command.yml
+    uses: ./.github/workflows/reusable-quality-platform.yml
     with:
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      pr_context: ${{ inputs.pr_context }}
       runs_on: ${{ matrix.os }}
-      node_version: '${{ matrix.node-version }}'
-      timeout_minutes: ${{ matrix.timeout_minutes }}
-      # The full build below owns package artifacts; do not build them again during setup.
-      build_command: ''
-      main_command: |
-        pnpm ${{ matrix.lint_script }}
-        pnpm ${{ matrix.build_script }}
-        pnpm test:dependency-contracts
-        pnpm test:coverage
-      artifact_name: dependency-contracts-${{ matrix.os }}-node-${{ matrix.node-version }}
-      artifact_path: .tmp/dependency-contracts
-      upload_codecov: true
-      verification_telemetry: true
+      node_version: ${{ format('{0}', matrix.node-version) }}
+      build_command: ${{ matrix.build_command }}
+      lint_command: ${{ matrix.lint_command }}
+      run_types: ${{ matrix.run_types }}
+      run_coverage: ${{ matrix.run_coverage }}
     secrets: inherit
-
   build-full:
     needs: pr-context
     if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 6
       matrix:
         include:
           - os: ubuntu-latest
             node-version: 22
-            timeout_minutes: 40
-            build_pkgs_script: build:pkgs:ci
-            build_script: build:ci
-            lint_script: lint
+            build_command: pnpm build:ci
+            lint_command: pnpm lint
+            run_types: false
+            run_coverage: true
           - os: ubuntu-latest
             node-version: 24
-            timeout_minutes: 40
-            build_pkgs_script: build:pkgs:ci
-            build_script: build:ci
-            lint_script: lint
+            build_command: pnpm build:ci
+            lint_command: pnpm lint
+            run_types: false
+            run_coverage: true
           - os: windows-latest
             node-version: 22
-            # Windows 安装与串行 lint/build 约 25 分钟，coverage 还需 35 分钟以上；总预算包含收尾。
-            timeout_minutes: 90
-            build_pkgs_script: build:pkgs:ci:windows
-            build_script: build:ci:windows
-            lint_script: lint:ci:windows
+            build_command: pnpm build:ci:windows
+            lint_command: pnpm lint:ci:windows
+            run_types: false
+            run_coverage: true
           - os: windows-latest
             node-version: 24
-            timeout_minutes: 90
-            build_pkgs_script: build:pkgs:ci:windows
-            build_script: build:ci:windows
-            lint_script: lint:ci:windows
-          # 完整质量命令之外还包含依赖安装及 pnpm 缓存压缩上传，job 预算需覆盖收尾。
+            build_command: pnpm build:ci:windows
+            lint_command: pnpm lint:ci:windows
+            run_types: false
+            run_coverage: true
           - os: macos-latest
             node-version: 22
-            timeout_minutes: 60
-            build_pkgs_script: build:pkgs:ci:macos
-            build_script: build:ci:macos
-            lint_script: lint
+            build_command: pnpm build:ci:macos
+            lint_command: pnpm lint
+            run_types: false
+            run_coverage: true
           - os: macos-latest
             node-version: 24
-            timeout_minutes: 60
-            build_pkgs_script: build:pkgs:ci:macos
-            build_script: build:ci:macos
-            lint_script: lint
-    uses: ./.github/workflows/reusable-node-command.yml
+            build_command: pnpm build:ci:macos
+            lint_command: pnpm lint
+            run_types: false
+            run_coverage: true
+    uses: ./.github/workflows/reusable-quality-platform.yml
     with:
-      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
-      base_sha: ${{ needs.pr-context.outputs.base_sha }}
-      head_sha: ${{ needs.pr-context.outputs.head_sha }}
-      pr_number: ${{ needs.pr-context.outputs.pr_number }}
-      head_ref: ${{ needs.pr-context.outputs.head_ref }}
-      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      pr_context: ${{ inputs.pr_context }}
       runs_on: ${{ matrix.os }}
-      node_version: '${{ matrix.node-version }}'
-      timeout_minutes: ${{ matrix.timeout_minutes }}
-      build_command: pnpm ${{ matrix.build_pkgs_script }}
-      main_command: |
-        pnpm ${{ matrix.lint_script }}
-        pnpm ${{ matrix.build_script }}
-        pnpm test:dependency-contracts
-        pnpm test:coverage
-      artifact_name: dependency-contracts-${{ matrix.os }}-node-${{ matrix.node-version }}
-      artifact_path: .tmp/dependency-contracts
-      upload_codecov: true
-      verification_telemetry: true
+      node_version: ${{ format('{0}', matrix.node-version) }}
+      build_command: ${{ matrix.build_command }}
+      lint_command: ${{ matrix.lint_command }}
+      run_types: ${{ matrix.run_types }}
+      run_coverage: ${{ matrix.run_coverage }}
     secrets: inherit
-
   weapi-compat-pr:
     needs: pr-context
     if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr == 'true')
@@ -238,7 +184,6 @@ jobs:
           @weapp-core/api/reports/api-compat \
           packages-runtime/weapi/types/index.d.ts
     secrets: inherit
-
   weapi-compat-full:
     needs: pr-context
     if: needs.pr-context.outputs.should_run == 'true' && (needs.pr-context.outputs.is_pr != 'true')
@@ -247,7 +192,9 @@ jobs:
       fail-fast: false
       max-parallel: 3
       matrix:
-        node-version: [22, 24]
+        node-version:
+          - 22
+          - 24
     uses: ./.github/workflows/reusable-node-command.yml
     with:
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
@@ -257,7 +204,7 @@ jobs:
       head_ref: ${{ needs.pr-context.outputs.head_ref }}
       base_ref: ${{ needs.pr-context.outputs.base_ref }}
       runs_on: ubuntu-latest
-      node_version: '${{ matrix.node-version }}'
+      node_version: ${{ matrix.node-version }}
       timeout_minutes: 15
       main_command: |
         pnpm --filter @weapp-core/api catalog:check

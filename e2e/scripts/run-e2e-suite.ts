@@ -8,7 +8,6 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { splitWechatDevtoolsSelectionArgs } from 'weapp-ide-cli'
 import { excludedE2EProjects, isExcludedE2EProject } from '../../scripts/e2eProjectScope'
-import { loadBaselineSuitePlan, writeBaselineSuiteTelemetry } from '../../scripts/verificationTelemetry/suite'
 import { withWechatE2ESelectionEnvironment } from '../utils/devtoolsCli'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { createAcceptanceIdentity, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
@@ -168,7 +167,6 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
     console.log(`[e2e:${mode}] excluded projects: ${excludedProjects.join(', ')}`)
   }
   const plannedTasks = [...tasks]
-  const telemetryPlan = await loadBaselineSuitePlan(mode, tasks, { filtered: Boolean(filter || from || rollFrom || process.env.WEAPP_VITE_E2E_TEMPLATE || planFile) })
 
   if (tasks.length === 0) {
     console.error(`Unknown e2e suite: ${mode}`)
@@ -223,22 +221,16 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
   }
 
   const cleanupHooks = createIdeSuiteCleanupHooks(tasks)
-  let actualReport: SuiteReportPayload | undefined
-  const result = await runTaskSuite(`e2e:${mode}${shardLabel.replace('/', '-')}`, tasks, {
+  return await runTaskSuite(`e2e:${mode}${shardLabel.replace('/', '-')}`, tasks, {
     ...cleanupHooks,
     ...callbacks,
-    onReport(report) {
-      actualReport = report
-      callbacks.onReport?.(report)
-    },
     failOnTaskFailure: !allowFailures,
     stopOnTaskFailure: !allowFailures && shouldStopIdeSuiteAfterTaskFailure(tasks),
     reportContext: {
-      ...(frozenPlan || telemetryPlan ? { runId: (frozenPlan ?? telemetryPlan)!.runId, commitSha: (frozenPlan ?? telemetryPlan)!.commitSha, workingTreeDirty: (frozenPlan ?? telemetryPlan)!.workingTreeDirty } : createAcceptanceIdentity()),
+      ...(frozenPlan ? { runId: frozenPlan.runId, commitSha: frozenPlan.commitSha, workingTreeDirty: frozenPlan.workingTreeDirty } : createAcceptanceIdentity()),
       strict: isStrictDomAcceptanceSuite(mode),
       partial: Boolean(filter || from || shardIndex || shardTotal || process.env.WEAPP_VITE_E2E_TEMPLATE),
       plannedTasks: frozenPlan ? tasks : plannedTasks,
-      ...(telemetryPlan ? { taskDefinitions: Object.fromEntries(telemetryPlan.tasks.map(task => [task.label, task.definitionHash])), plannedCases: Object.fromEntries(telemetryPlan.tasks.filter(task => task.cases).map(task => [task.label, task.cases!])) } : {}),
       ...(frozenPlan
         ? {
             taskDefinitions: Object.fromEntries(frozenPlan.tasks.map(task => [task.label, task.definitionHash])),
@@ -248,10 +240,6 @@ async function runSelectedE2ESuiteCli(args: string[], callbacks: SuiteCallbacks)
         : {}),
     },
   })
-  if (telemetryPlan && result === 0 && actualReport) {
-    await writeBaselineSuiteTelemetry(telemetryPlan, actualReport, Number(shardIndex || 1), tasks.filter(task => !task.outOfScopeReason).map(task => task.label))
-  }
-  return result
 }
 
 /** 选择仅在本轮 suite 生效，失败与取消同样恢复调用方环境。 */

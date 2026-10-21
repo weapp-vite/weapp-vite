@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import YAML from 'yaml'
 import { localReporters, localTestPolicy } from './scripts/verificationBenchmark/localReporterConfig.mjs'
-import { baselineVitestTelemetry } from './scripts/verificationTelemetry/vitest.mjs'
 
 const ROOT_DIR = path.dirname(fileURLToPath(new URL(import.meta.url)))
 const WORKSPACE_FILE = path.resolve(ROOT_DIR, 'pnpm-workspace.yaml')
@@ -193,11 +192,9 @@ const projects = [
 ]
 
 export default defineConfig(() => {
-  const telemetry = baselineVitestTelemetry(ROOT_DIR)
   return {
     test: {
-      ...telemetry,
-      reporters: localReporters(telemetry.reporters),
+      reporters: localReporters(),
       ...localTestPolicy(),
       globalSetup: [path.resolve(ROOT_DIR, 'vitest.globalSetup.mjs')],
       maxWorkers: workspaceMaxWorkers,

@@ -1,0 +1,540 @@
+name: Independent Consumer Platform
+on:
+  workflow_call:
+    inputs:
+      pr_context:
+        type: string
+        required: true
+      runs_on:
+        type: string
+        required: true
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  pr-context:
+    uses: ./.github/workflows/reusable-frozen-pr-context.yml
+    with:
+      pr_context: ${{ inputs.pr_context }}
+      profile: ci-vite-host-consumer
+  prepare:
+    name: Build and pack consumer candidates
+    needs: pr-context
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react... --filter=rolldown-require... --filter=@mpcore/simulator...
+      main_command: node scripts/consumerArtifacts/manifest.mjs pack .cache/node-support-tarballs
+      build_artifact_name: consumer-${{ inputs.runs_on }}-node-24-build
+      artifact_name: consumer-tarballs-${{ inputs.runs_on }}
+      artifact_path: .cache/node-support-tarballs
+      timing_artifact_name: timing-consumer-prepare-${{ inputs.runs_on }}
+    secrets: inherit
+  node-support:
+    needs:
+      - pr-context
+      - prepare
+    name: Published Node support (${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node:
+          - 22.18.0
+          - 24.11.0
+          - 26.0.0
+          - '22'
+          - '24'
+    runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.pr-context.outputs.checkout_sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: consumer-${{ inputs.runs_on }}-node-24-build
+          path: .
+      - name: Verify builder identity and refresh workspace links
+        shell: bash
+        run: |-
+          pnpm install --frozen-lockfile --ignore-scripts
+          node scripts/verify-build-artifact-manifest.mjs
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: consumer-tarballs-${{ inputs.runs_on }}
+          path: .cache/node-support-tarballs
+      - name: Verify immutable candidate archives
+        run: node scripts/consumerArtifacts/manifest.mjs verify .cache/node-support-tarballs
+      - name: Install browser for published Web consumption
+        run: pnpm exec playwright install --with-deps chromium
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Record actual consumer Node version
+        shell: bash
+        run: node -e "process.stdout.write('REPOCTL_RELEASE_NODE_VERSION=' + process.version + '\n')" >> "$GITHUB_ENV"
+      - name: Verify packed Dashboard public types without mini-program ambient globals
+        run: node packages/weapp-vite/scripts/verify-dashboard-public-types.mjs
+        env:
+          WEAPP_VITE_CONSUMER_TARBALLS: .cache/node-support-tarballs
+          WEAPP_VITE_DASHBOARD_TYPES_EVIDENCE: .cache/dashboard-public-types.json
+      - name: Install and verify published native, SFC, Tailwind and Web consumers
+        run: node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv
+        env:
+          WEAPP_VITE_CONSUMER_TARBALLS: .cache/node-support-tarballs
+          WEAPP_VITE_CONSUMER_WEB: '1'
+          WEAPP_VITE_CONSUMER_WEB_DIAGNOSTICS: '1'
+          WEAPP_VITE_CONSUMER_EVIDENCE: .cache/consumer-evidence.json
+          WEAPP_VITE_CONSUMER_DEPENDENCIES: '1'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: ${{ !cancelled() }}
+        with:
+          name: consumer-evidence-${{ inputs.runs_on }}-${{ matrix.node }}
+          path: |
+            .cache/consumer-evidence.json
+            .cache/dashboard-public-types.json
+            .cache/web-consumer-diagnostic/wv.json
+    env:
+      BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
+      BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: '24'
+      BUILD_ARTIFACT_EXPECTED_SCOPE: packages/weapp-vite,packages-runtime/wevu
+      WEAPP_VITE_CONSUMER_TARBALLS: .cache/node-support-tarballs
+  contracts:
+    name: Host contracts
+    needs:
+      - pr-context
+      - prepare
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      main_command: node scripts/consumerArtifacts/contracts.mjs
+      timing_artifact_name: timing-consumer-contracts-${{ inputs.runs_on }}
+    secrets: inherit
+  dependency-compatibility:
+    needs:
+      - pr-context
+      - prepare
+    name: Strict dependency consumer (${{ matrix.manager }})
+    strategy:
+      fail-fast: false
+      matrix:
+        manager:
+          - pnpm
+          - npm
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: ''
+      main_command: pnpm exec cross-env WEAPP_VITE_DEPENDENCY_EVIDENCE=.cache/dependency-compatibility.json node packages/weapp-vite/scripts/verify-dependency-install.mjs ${{ matrix.manager }}
+      artifact_name: dependency-compatibility-${{ inputs.runs_on }}-${{ matrix.manager }}
+      artifact_path: .cache/dependency-compatibility.json
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      timing_artifact_name: timing-dependency-${{ inputs.runs_on }}-${{ matrix.manager }}
+    secrets: inherit
+  consumer:
+    if: inputs.runs_on == 'ubuntu-latest'
+    needs:
+      - pr-context
+      - prepare
+    name: Packed consumer (${{ matrix.toolchain }})
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain:
+          - wv
+          - vite
+          - vite-plus
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: ''
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.toolchain }}
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      timing_artifact_name: timing-consumer-consumer-${{ inputs.runs_on }}-${{ matrix.toolchain }}
+    secrets: inherit
+  stateful-runtime:
+    if: inputs.runs_on == 'ubuntu-latest'
+    needs:
+      - pr-context
+      - prepare
+    name: Stateful runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - wv
+          - vite
+          - vite-plus
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: ''
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless stateful
+      artifact_name: stateful-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      timing_artifact_name: timing-consumer-stateful-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
+    secrets: inherit
+  classic-runtime:
+    if: inputs.runs_on == 'ubuntu-latest'
+    needs:
+      - pr-context
+      - prepare
+    name: Classic runtime (${{ matrix.host }} / ${{ matrix.profile }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - wv
+          - vite
+          - vite-plus
+        profile:
+          - classic
+          - classic-watch
+        exclude:
+          - host: wv
+            profile: classic-watch
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: ''
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless ${{ matrix.profile }}
+      artifact_name: classic-runtime-${{ matrix.host }}-${{ matrix.profile }}
+      artifact_path: docs/reports/dom-acceptance/**
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      timing_artifact_name: timing-consumer-classic-runtime-${{ inputs.runs_on }}-${{ matrix.host }}-${{ matrix.profile }}
+    secrets: inherit
+  react-runtime:
+    if: inputs.runs_on == 'ubuntu-latest'
+    needs:
+      - pr-context
+      - prepare
+    name: React runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - wv
+          - vite
+          - vite-plus
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: ''
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless react
+      artifact_name: react-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      timing_artifact_name: timing-consumer-react-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
+    secrets: inherit
+  independent-runtime:
+    if: inputs.runs_on == 'ubuntu-latest'
+    needs:
+      - pr-context
+      - prepare
+    name: Independent runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - wv
+          - vite
+          - vite-plus
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: ''
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless independent
+      artifact_name: independent-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      timing_artifact_name: timing-consumer-independent-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
+    secrets: inherit
+  worker-runtime:
+    if: inputs.runs_on == 'ubuntu-latest'
+    needs:
+      - pr-context
+      - prepare
+    name: Worker runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - wv
+          - vite
+          - vite-plus
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: ''
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless worker
+      artifact_name: worker-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      timing_artifact_name: timing-consumer-worker-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
+    secrets: inherit
+  plugin-runtime:
+    if: inputs.runs_on == 'ubuntu-latest'
+    needs:
+      - pr-context
+      - prepare
+    name: Plugin runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - wv
+          - vite
+          - vite-plus
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: ''
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless plugin
+      artifact_name: plugin-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      timing_artifact_name: timing-consumer-plugin-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
+    secrets: inherit
+  lib-runtime:
+    if: inputs.runs_on == 'ubuntu-latest'
+    needs:
+      - pr-context
+      - prepare
+    name: Library runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - wv
+          - vite
+          - vite-plus
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: ''
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless lib
+      artifact_name: lib-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      timing_artifact_name: timing-consumer-lib-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
+    secrets: inherit
+  platform-runtime:
+    if: inputs.runs_on == 'ubuntu-latest'
+    needs:
+      - pr-context
+      - prepare
+    name: Platform builds and runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - wv
+          - vite
+          - vite-plus
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: ''
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless platform
+      artifact_name: platform-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      timing_artifact_name: timing-consumer-platform-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
+    secrets: inherit
+  web-runtime:
+    if: inputs.runs_on == 'ubuntu-latest'
+    needs:
+      - pr-context
+      - prepare
+    name: Web browser runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - wv
+          - vite
+          - vite-plus
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
+      base_sha: ${{ needs.pr-context.outputs.base_sha }}
+      head_sha: ${{ needs.pr-context.outputs.head_sha }}
+      pr_number: ${{ needs.pr-context.outputs.pr_number }}
+      head_ref: ${{ needs.pr-context.outputs.head_ref }}
+      base_ref: ${{ needs.pr-context.outputs.base_ref }}
+      runs_on: ${{ inputs.runs_on }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: ''
+      install_playwright: true
+      playwright_browsers: chromium
+      main_command: |
+        pnpm exec vitest run --config scripts/vitest.config.mjs scripts/hostCapabilityDiagnostic.test.mjs
+        pnpm exec cross-env WEAPP_VITE_CONSUMER_HOST_DIAGNOSTICS=1 node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless web
+      artifact_name: web-host-capability-${{ matrix.host }}-${{ needs.pr-context.outputs.checkout_sha }}
+      artifact_path: .cache/web-consumer-diagnostic/host-capability-*.json
+      consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
+      build_artifact_node_major: '24'
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
+      consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
+      aux_artifact_path: .cache/node-support-tarballs
+      consumer_tarballs: .cache/node-support-tarballs
+      timing_artifact_name: timing-consumer-web-runtime-${{ inputs.runs_on }}-${{ matrix.host }}
+    secrets: inherit

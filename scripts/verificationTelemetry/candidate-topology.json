@@ -1690,7 +1690,8 @@
             "WEAPP_VITE_CONSUMER_TARBALLS": ".cache/node-support-tarballs",
             "WEAPP_VITE_CONSUMER_WEB": "1",
             "WEAPP_VITE_CONSUMER_EVIDENCE": ".cache/consumer-evidence.json",
-            "WEAPP_VITE_CONSUMER_DEPENDENCIES": "1"
+            "WEAPP_VITE_CONSUMER_DEPENDENCIES": "1",
+            "WEAPP_VITE_CONSUMER_WEB_DIAGNOSTICS": "1"
           }
         },
         {
@@ -1698,7 +1699,7 @@
           "if": "${{ !cancelled() }}",
           "with": {
             "name": "consumer-evidence-${{ inputs.runs_on }}-${{ matrix.node }}",
-            "path": ".cache/consumer-evidence.json\n.cache/dashboard-public-types.json\n"
+            "path": ".cache/consumer-evidence.json\n.cache/dashboard-public-types.json\n.cache/web-consumer-diagnostic/wv.json\n"
           }
         }
       ],
