@@ -106,11 +106,42 @@ describe('outer E2E command ownership', () => {
     expect(mocks.cleanup).toHaveBeenCalledOnce()
   })
 
-  it.each([0, 7])('rejects incomplete cleanup even when the child returns %s', async (exitCode) => {
+  it.each([
+    { exitCode: 7, signal: undefined, expectedCode: 7 },
+    { exitCode: undefined, signal: 'SIGTERM', expectedCode: 1 },
+  ])('returns the child exit code after successful cleanup ($exitCode, $signal)', async ({ exitCode, signal, expectedCode }) => {
+    mocks.execute.mockResolvedValue({ exitCode, signal })
+    expect(await runOwnedE2ECommand('node', ['runner'])).toBe(expectedCode)
+    expect(mocks.cleanup).toHaveBeenCalledOnce()
+  })
+
+  it('rejects incomplete cleanup even when the child succeeds', async () => {
     const failure = new Error('window is still present')
-    mocks.execute.mockResolvedValue({ exitCode })
     mocks.cleanup.mockRejectedValue(failure)
-    await expect(runOwnedE2ECommand('node', ['runner'])).rejects.toMatchObject({ errors: [failure] })
+    await expect(runOwnedE2ECommand('node', ['runner'])).rejects.toMatchObject({ errors: [failure], cause: failure })
+  })
+
+  it.each([
+    { exitCode: 7, signal: undefined },
+    { exitCode: undefined, signal: 'SIGTERM' },
+  ])('preserves the child exit result and cleanup cause ($exitCode, $signal)', async ({ exitCode, signal }) => {
+    const commandCause = new Error('native command failed')
+    const commandResult = Object.assign(new Error('child command exited', { cause: commandCause }), { exitCode, signal })
+    const originalCause = new Error('native cleanup was not confirmed')
+    const failure = new Error('window is still present', { cause: originalCause })
+    mocks.execute.mockResolvedValue(commandResult)
+    mocks.cleanup.mockRejectedValue(failure)
+    const aggregate = await runOwnedE2ECommand('node', ['runner']).catch((error: unknown) => error)
+    expect(aggregate).toBeInstanceOf(AggregateError)
+    const { errors, cause } = aggregate as AggregateError
+    expect(errors).toHaveLength(2)
+    expect(errors[0]).toBeInstanceOf(Error)
+    expect(errors[0]).toMatchObject({ name: 'OwnedCommandExitError', exitCode, signal })
+    expect(errors[0].cause).toBe(commandResult)
+    expect(commandResult.cause).toBe(commandCause)
+    expect(errors[1]).toBe(failure)
+    expect(cause).toBe(failure)
+    expect(failure.cause).toBe(originalCause)
   })
 
   it('preserves command and cleanup failures together', async () => {
@@ -118,7 +149,13 @@ describe('outer E2E command ownership', () => {
     const cleanup = new Error('cleanup failed')
     mocks.execute.mockRejectedValue(command)
     mocks.cleanup.mockRejectedValue(cleanup)
-    await expect(runOwnedE2ECommand('node', ['runner'])).rejects.toMatchObject({ errors: [command, cleanup] })
+    const aggregate = await runOwnedE2ECommand('node', ['runner']).catch((error: unknown) => error)
+    expect(aggregate).toBeInstanceOf(AggregateError)
+    const { errors, cause } = aggregate as AggregateError
+    expect(errors).toHaveLength(2)
+    expect(errors[0]).toBe(command)
+    expect(errors[1]).toBe(cleanup)
+    expect(cause).toBe(cleanup)
   })
 
   it('does not allocate a command or journal for an already aborted request', async () => {

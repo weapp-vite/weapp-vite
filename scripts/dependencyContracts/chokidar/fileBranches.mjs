@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { Buffer } from 'node:buffer'
 import { readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { bounded, deferred, turn, waitForObservedEventPhase } from './support.mjs'
@@ -6,30 +7,37 @@ import { bounded, deferred, turn, waitForObservedEventPhase } from './support.mj
 async function verifyInode({ chokidar, root, watched, timeoutMs, open, ready, instrumentation, evidence }) {
   assert.ok(['darwin', 'linux', 'freebsd'].includes(instrumentation.actualPlatform), 'native inode branch requires darwin/linux/freebsd; another native host is a diagnostic limitation')
   const file = path.join(watched, 'inode-file.txt')
-  const replacement = path.join(watched, 'inode-replacement.tmp')
+  const replacement = path.join(root, 'inode-replacement.tmp')
   await writeFile(file, 'original inode')
+  // 在订阅前准备同一文件系统的替换文件，避免准备写入与待验证的 rename 竞争。
+  await writeFile(replacement, 'replacement inode with a distinct size')
+  const originalStats = await stat(file)
+  const replacementStats = await stat(replacement)
   const owner = open(chokidar, watched, { atomic: false })
   await ready(owner)
   const relative = path.relative(root, file).replaceAll('\\', '/')
   const originalHandle = instrumentation.handles.find(record => record.path === relative)
   assert.ok(originalHandle, 'original file has a real native handle')
-  const originalStats = await stat(file)
-  await writeFile(replacement, 'replacement inode with a distinct size')
-  const firstChange = owner.event('change', file, timeoutMs)
+  await waitForObservedEventPhase(owner, file, evidence, timeoutMs)
+  const firstChange = owner.event('change', file, timeoutMs, stats => stats?.dev === replacementStats.dev && stats?.ino === replacementStats.ino && stats?.size === replacementStats.size)
   await rename(replacement, file)
   await firstChange
-  const replacementStats = await stat(file)
-  assert.notEqual(replacementStats.ino, originalStats.ino, 'real rename replaced the actual inode')
+  const renamedStats = await stat(file)
+  assert.equal(renamedStats.dev, replacementStats.dev, 'real rename preserves the prepared replacement device')
+  assert.equal(renamedStats.ino, replacementStats.ino, 'real rename installs the prepared replacement inode')
+  assert.notEqual(renamedStats.ino, originalStats.ino, 'real rename replaced the actual inode')
   await bounded(originalHandle.closePromise, 'inode replacement closes the old native file handle', timeoutMs)
   const live = instrumentation.handles.filter(record => record.path === relative && !record.closed)
   assert.equal(live.length, 1, 'inode replacement acquired exactly one live native file handle')
   assert.notEqual(live[0], originalHandle)
   evidence.push({ checkpoint: 'real-inode-rebind', passed: true, actualPlatform: instrumentation.actualPlatform })
   await waitForObservedEventPhase(owner, file, evidence, timeoutMs)
-  const secondChange = owner.event('change', file, timeoutMs)
-  await writeFile(file, 'the rebound native file watcher observes this second change')
+  const changed = 'the rebound native file watcher observes this second change'
+  assert.ok(Buffer.byteLength(changed) > replacementStats.size, 'the rebound file receives a longer in-place value without a truncate phase')
+  const secondChange = owner.event('change', file, timeoutMs, stats => stats?.size === Buffer.byteLength(changed))
+  await writeFile(file, changed, { flag: 'r+' })
   await secondChange
-  assert.equal(await readFile(file, 'utf8'), 'the rebound native file watcher observes this second change')
+  assert.equal(await readFile(file, 'utf8'), changed)
   assert.deepEqual(owner.errors, [])
   evidence.push({ checkpoint: 'second-change-after-real-inode-rebind', passed: true })
 }
@@ -108,9 +116,12 @@ async function verifySynchronousAddCancel({ chokidar, root, watched, timeoutMs, 
     assert.equal(nativeHandle.closed, false, 'synchronous cancellation preserves the other native owner')
     const transientBoundary = transient.events.length
     await waitForObservedEventPhase(shared, file, evidence, timeoutMs)
-    const sharedChange = shared.event('change', file, timeoutMs)
-    await writeFile(file, `shared owner still observes update after synchronous ${phase} ${mode}`)
+    const changed = `shared owner still observes update after synchronous ${phase} ${mode}`
+    assert.ok(Buffer.byteLength(changed) > Buffer.byteLength('initial shared file'), 'the shared owner receives a longer in-place value without a truncate phase')
+    const sharedChange = shared.event('change', file, timeoutMs, stats => stats?.size === Buffer.byteLength(changed))
+    await writeFile(file, changed, { flag: 'r+' })
     await sharedChange
+    assert.equal(await readFile(file, 'utf8'), changed, 'the surviving shared owner observes the final written value')
     const barrier = path.join(watched, `sync-${phase}-${mode}-barrier.txt`)
     const barrierAdded = shared.event('add', barrier, timeoutMs)
     await writeFile(barrier, 'public event barrier after the shared file update')
