@@ -38,6 +38,9 @@ describe('DeepWiki index and refresh policy', () => {
     { ...index, href: `${index.href}z` },
     { ...index, href: index.href.replace('https:', 'http:') },
     { ...index, href: index.href.replace('github.com', 'github.com:8443') },
+    { ...index, href: index.href.replace('github.com', 'user:password@github.com') },
+    { ...index, href: `${index.href}?tracking=ignored` },
+    { ...index, href: `${index.href}#fragment` },
     { ...index, href: '' },
     { ...index, href: `${index.href}${'a'.repeat(40)}` },
   ])('rejects malformed or unrelated public index status: %j', (row) => {
@@ -51,6 +54,15 @@ describe('DeepWiki index and refresh policy', () => {
     expect(refreshDecision(`${parsed.sha}${'a'.repeat(32)}`, parsed, now).status).toBe('current')
     expect(validateMainSha(` ${mainSha.toUpperCase()} `)).toBe(mainSha)
     expect(() => validateMainSha('a'.repeat(39))).toThrow('full Git commit SHA')
+  })
+
+  it('rejects a future index before refresh and accepts a canonical trailing slash', async () => {
+    expect(parseIndexStatus({ ...index, href: `${index.href}/` }, now).sha).toBe('e85305ab')
+    expect(() => parseIndexStatus(index, Date.UTC(2026, 9, 8))).toThrow('future')
+    const adapter = adapterFixture()
+    adapter.waitForIndex.mockResolvedValue({ ...index, text: 'Last indexed: 22 October 2026 (e85305)' })
+    expect(await refreshDeepWiki({ adapter, mainSha, now })).toMatchObject({ status: 'failed', reason: expect.stringContaining('future') })
+    expect(adapter.clickOfficialRefreshControl).not.toHaveBeenCalled()
   })
 
   it('does not treat an ordinary navigation sign-in link as a blocking login page', () => {

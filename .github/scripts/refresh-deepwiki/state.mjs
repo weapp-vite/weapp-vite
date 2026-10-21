@@ -10,8 +10,8 @@ export function validateMainSha(value) {
   return sha
 }
 
-export function parseIndexStatus({ text, href }) {
-  const invalidStatus = () => new Error('Unable to read the public DeepWiki index status')
+export function parseIndexStatus({ text, href }, now = Date.now()) {
+  const invalidStatus = () => new Error('The public DeepWiki index row has inconsistent date and SHA metadata')
   let url
   try {
     url = new URL(href)
@@ -19,7 +19,7 @@ export function parseIndexStatus({ text, href }) {
   catch {
     throw invalidStatus()
   }
-  const sha = url.pathname.startsWith(repositoryPath) ? url.pathname.slice(repositoryPath.length) : ''
+  const sha = url.pathname.startsWith(repositoryPath) ? url.pathname.slice(repositoryPath.length).replace(/\/$/, '') : ''
   const row = text.trim().match(/^Last indexed:([^()]+)\(([0-9a-f]{6,40})\)$/i)
   const dateText = row?.[1]?.trim()
   const displayedSha = row?.[2]?.toLowerCase()
@@ -32,10 +32,12 @@ export function parseIndexStatus({ text, href }) {
         year: 'numeric',
         timeZone: 'UTC',
       }).format(new Date(indexedAt))
-  if (url.origin !== 'https://github.com' || url.username || url.password
-    || !/^[0-9a-f]{7,40}$/i.test(sha) || !displayedSha || !sha.toLowerCase().startsWith(displayedSha)
-    || canonicalDate?.toLowerCase() !== dateText?.toLowerCase()) {
+  if (url.origin !== 'https://github.com' || url.username || url.password || url.search || url.hash
+    || !/^[0-9a-f]{7,40}$/i.test(sha) || !displayedSha || !sha.toLowerCase().startsWith(displayedSha)) {
     throw invalidStatus()
+  }
+  if (canonicalDate?.toLowerCase() !== dateText?.toLowerCase() || indexedAt > now) {
+    throw new Error('The public DeepWiki index date is invalid or in the future')
   }
   return { sha: sha.toLowerCase(), indexedAt, dateText }
 }

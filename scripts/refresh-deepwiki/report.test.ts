@@ -35,10 +35,12 @@ describe('DeepWiki evidence provenance', () => {
 
   it('uploads hidden diagnostics only from the owned directory after failure and skips cancellation', async () => {
     const workflow = readWorkflowFixture('refresh-deepwiki.yml') as {
-      jobs: { refresh: { steps: { uses?: string, if?: string, with?: Record<string, unknown> }[] } }
+      jobs: { deepwiki: { steps: { name?: string, uses?: string, if?: string, with?: Record<string, unknown> }[] } }
     }
-    const upload = workflow.jobs.refresh.steps.find(step => step.uses?.startsWith('actions/upload-artifact@'))
-    expect(upload?.if).toBe('failure() && !cancelled()')
+    expect(workflow.jobs.deepwiki.steps.filter(step => step.name === 'Preserve unsuccessful refresh evidence')).toHaveLength(1)
+    const upload = workflow.jobs.deepwiki.steps.find(step => step.name === 'Preserve unsuccessful refresh evidence')
+    expect(upload?.uses).toMatch(/^actions\/upload-artifact@[0-9a-f]{40}$/)
+    expect(upload?.if).toBe('failure() && !cancelled() && github.event_name == \'workflow_dispatch\' && inputs.mode == \'refresh\'')
     expect(upload?.with?.path).toBe('.tmp/deepwiki-refresh/')
     expect(upload?.with?.['include-hidden-files']).toBe(true)
     const rootDirectory = await temporaryDirectory()

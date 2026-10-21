@@ -1,27 +1,14 @@
 import process from 'node:process'
-
-import { chromium } from 'playwright'
-import { resultExitCode, runDeepWiki } from './refresh-deepwiki/index.mjs'
-import { createPageAdapter } from './refresh-deepwiki/page.mjs'
-import { createReporter } from './refresh-deepwiki/report.mjs'
-
-const report = createReporter({ rootDirectory: '.tmp/deepwiki-refresh', summaryPath: process.env.GITHUB_STEP_SUMMARY })
+import { runDeepWikiCommand } from './deepwiki/command.mjs'
 
 try {
-  const result = await runDeepWiki({
-    launch: () => chromium.launch({ headless: true }),
-    createAdapter: createPageAdapter,
-    report,
+  process.exitCode = await runDeepWikiCommand({
+    args: process.argv.slice(2),
     mainSha: process.env.MAIN_SHA,
+    summaryPath: process.env.GITHUB_STEP_SUMMARY,
   })
-  process.exitCode = resultExitCode(result)
 }
-catch (error) {
+catch {
+  console.error('::error::Unable to run the selected DeepWiki operation')
   process.exitCode = 1
-  await report({
-    status: 'failed',
-    reason: error.message,
-    error: { name: error.name, message: error.message, ...(error.cleanupError ? { cleanupError: error.cleanupError } : {}) },
-    ...(error.refreshResult ? { refreshResult: error.refreshResult } : {}),
-  })
 }

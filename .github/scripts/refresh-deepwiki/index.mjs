@@ -26,7 +26,7 @@ export async function refreshDeepWiki({ adapter, mainSha, now = Date.now() }) {
       const gate = identityGate(pageState)
       return gate?.scope === 'page' ? blocked(gate.reason, pageState) : failed('Unable to observe the public DeepWiki index status within 30000ms', pageState, error)
     }
-    const index = parseIndexStatus(row)
+    const index = parseIndexStatus(row, now)
     const decision = refreshDecision(sha, index, now)
     if (decision.status !== 'due') {
       return { ...decision, mainSha: sha, index, pageState }
