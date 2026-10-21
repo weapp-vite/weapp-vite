@@ -3,6 +3,7 @@ set -e
 
 repo_root="$(git rev-parse --show-toplevel)"
 node "$repo_root/scripts/dom-inventory-policy.mjs"
+node "$repo_root/scripts/check-changeset-frontmatter.mjs" --staged --root "$repo_root"
 
 workspace_root="$repo_root"
 
@@ -21,3 +22,6 @@ fi
 "$workspace_root/node_modules/.bin/lint-staged" \
   --config "$repo_root/lint-staged.config.js" \
   --cwd "$repo_root"
+
+# 自动修复会更新索引，提交前再核验最终暂存内容。
+node "$repo_root/scripts/check-changeset-frontmatter.mjs" --staged --root "$repo_root"

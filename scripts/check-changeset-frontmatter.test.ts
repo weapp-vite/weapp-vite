@@ -5,6 +5,9 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { it } from 'vitest'
+import { registerStagedChangesetTests } from './changesetFrontmatter/test/staged'
+
+registerStagedChangesetTests()
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const scriptPath = path.join(repoRoot, 'scripts/check-changeset-frontmatter.mjs')
