@@ -1,12 +1,40 @@
+import type { SuiteTask } from './suiteRunner'
 import fs from 'node:fs'
 import path from 'node:path'
+import process from 'node:process'
 import { describe, expect, it } from 'vitest'
+import { resolveVerificationTopology, topologyEnvironment } from '../../scripts/verification/topology'
+import { isolateTopologyTestEnvironment, useIsolatedTopologyTestEnvironment } from '../../scripts/verification/topologyTestFixture'
 import devtoolsConfig from '../vitest.e2e.devtools.config'
 import parallelConfig from '../vitest.e2e.parallel.config'
 import { readTaskCases } from './domAcceptanceReport/inventory'
 import { getCiFullTasks, getCiPrTasks, getCiTasks, getDiminaTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, IDE_TDESIGN_AGGREGATE_LABEL, IDE_TDESIGN_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
+function withFrozenTopology<T extends SuiteTask>(tasks: T[]) {
+  return tasks.map(task => ({ ...task, env: { ...task.env, ...topologyEnvironment(resolveVerificationTopology()) } }))
+}
+
+useIsolatedTopologyTestEnvironment()
+
 describe('e2e suite manifest', () => {
+  it.each(['legacy-v1', 'optimized-v1'] as const)('projects the complete %s identity onto the full factory definition', async (id) => {
+    const restore = isolateTopologyTestEnvironment()
+    try {
+      const topology = resolveVerificationTopology(id)
+      const definitions: SuiteTask[] = getWebTasks()
+      Object.assign(process.env, topologyEnvironment(topology))
+      const expected = definitions.map(task => ({
+        ...task,
+        env: { ...task.env, ...topologyEnvironment(topology) },
+      }))
+      expect(await getSuiteTasks('web')).toEqual(expected)
+      expect(await getSuiteTasks('web', { topology: id })).toEqual(expected)
+    }
+    finally {
+      restore()
+    }
+  })
+
   it('keeps Bun runtime checks explicit without requiring Bun in Node suites', async () => {
     const tasks = await getSuiteTasks('bun')
     expect(tasks).toHaveLength(1)
@@ -69,7 +97,7 @@ describe('e2e suite manifest', () => {
   })
 
   it('registers Dimina as an explicit suite outside the ordinary Web baseline', async () => {
-    expect(await getSuiteTasks('dimina')).toEqual(getDiminaTasks())
+    expect(await getSuiteTasks('dimina')).toEqual(withFrozenTopology(getDiminaTasks()))
     expect(getWebTasks().some(task => task.label.includes('dimina'))).toBe(false)
   })
 
@@ -175,11 +203,11 @@ describe('e2e suite manifest', () => {
   })
 
   it('registers the web suite as a standalone entry', async () => {
-    expect(await getSuiteTasks('web')).toEqual(getWebTasks())
+    expect(await getSuiteTasks('web')).toEqual(withFrozenTopology(getWebTasks()))
   })
 
   it('registers component library IDE coverage as a standalone entry', async () => {
-    expect(await getSuiteTasks('ide-component-libraries')).toEqual(getIdeComponentLibraryTasks())
+    expect(await getSuiteTasks('ide-component-libraries')).toEqual(withFrozenTopology(getIdeComponentLibraryTasks()))
   })
 
   it('runs the github issue aggregate once with a bridge wrapper', () => {
@@ -205,8 +233,8 @@ describe('e2e suite manifest', () => {
     expect(prTasks.some(task => task.label === 'ci/github-issues.issue1035.build.test.ts')).toBe(true)
     expect(prTasks.filter(task => task.label === 'ci/template-multi-platform-sfc.hmr.test.ts')).toHaveLength(1)
     expect(prTasks.filter(task => task.label === 'ci/wevu-runtime.npm-platforms.test.ts')).toHaveLength(1)
-    expect(await getSuiteTasks('ci-pr')).toEqual(await getCiPrTasks())
-    expect(await getSuiteTasks('ci-full')).toEqual(await getCiFullTasks())
+    expect(await getSuiteTasks('ci-pr')).toEqual(withFrozenTopology(await getCiPrTasks()))
+    expect(await getSuiteTasks('ci-full')).toEqual(withFrozenTopology(await getCiFullTasks()))
   })
 
   it('shares one TDesign fixture task while preserving every child case and checkpoint', () => {
@@ -233,8 +261,8 @@ describe('e2e suite manifest', () => {
   })
 
   it('registers runtime and visual component library entries separately', async () => {
-    expect(await getSuiteTasks('ide-component-libraries:visual')).toEqual(getIdeComponentLibraryVisualTasks())
-    expect(await getSuiteTasks('ide-component-libraries:visual-full')).toEqual(getIdeComponentLibraryVisualFullTasks())
+    expect(await getSuiteTasks('ide-component-libraries:visual')).toEqual(withFrozenTopology(getIdeComponentLibraryVisualTasks()))
+    expect(await getSuiteTasks('ide-component-libraries:visual-full')).toEqual(withFrozenTopology(getIdeComponentLibraryVisualFullTasks()))
     expect(getIdeComponentLibraryTasks()[0]?.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE).toBe('runtime')
     expect(getIdeComponentLibraryVisualTasks()[0]?.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE).toBe('visual')
     expect(getIdeComponentLibraryVisualFullTasks()[0]?.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE).toBe('visual-full')

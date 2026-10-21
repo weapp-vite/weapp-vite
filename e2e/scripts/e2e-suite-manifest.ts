@@ -6,6 +6,7 @@ import fg from 'fast-glob'
 // 只读取环境变量常量；直接依赖 ownership 入口会在冻结普通 CI 计划时加载
 // @weapp-vite/devtools-runtime，而该包由 build job 产出，计划 job 不应依赖它。
 import { MANAGED_PROJECT_MAX_WINDOWS_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership/journal/constants'
+import { resolveVerificationTopology, TDESIGN_AGGREGATE_LABEL, TDESIGN_SOURCE_LABELS, topologyEnvironment } from '../../scripts/verification/topology.ts'
 import { TEMPLATE_DEV_OPEN_CASES } from '../ide/template-dev-open-cases'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { HMR_GUARD_ALL_TESTS, HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
@@ -28,13 +29,8 @@ const IDE_TWO_WINDOW_TEST_LABELS = new Set([
   'ide/devtools-shared-host.runtime.test.ts',
 ])
 export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
-export const IDE_TDESIGN_AGGREGATE_LABEL = 'ide/template-wevu-tdesign-regression.aggregate.test.ts'
-export const IDE_TDESIGN_AGGREGATED_PATTERNS = [
-  'ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts',
-  'ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts',
-  'ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts',
-  'ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts',
-] as const
+export const IDE_TDESIGN_AGGREGATE_LABEL = TDESIGN_AGGREGATE_LABEL
+export const IDE_TDESIGN_AGGREGATED_PATTERNS = TDESIGN_SOURCE_LABELS
 export const IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS = new Set([
   'ide/swan-runtime.optional.test.ts',
   'ide/template-multi-platform.swan.optional.test.ts',
@@ -400,7 +396,8 @@ const CI_PR_PATTERNS = [
 ] as const
 export const SKIP_CI_HMR_GUARD_ENV = 'WEAPP_VITE_E2E_CI_SKIP_HMR_GUARD'
 
-interface SuiteTaskFactoryOptions {
+export interface SuiteTaskFactoryOptions {
+  topology?: string
   skipDiskBackedDevProbe?: boolean
 }
 
@@ -637,7 +634,8 @@ export async function getCiFullTasks(options: SuiteTaskFactoryOptions = {}) {
   }
 }
 
-export function getIdeExhaustiveTasks() {
+export function getIdeExhaustiveTasks(options: SuiteTaskFactoryOptions = {}) {
+  const topology = resolveVerificationTopology(options.topology)
   const tasks = fg.sync('ide/**/*.test.ts', {
     cwd: ROOT,
     absolute: true,
@@ -647,7 +645,10 @@ export function getIdeExhaustiveTasks() {
     .filter(filePath => !isIdeHelperTest(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_MANUAL_DEVTOOLS_TEST_PATTERNS.has(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET.has(toRelativeLabel(filePath)))
-    .filter(filePath => !(IDE_TDESIGN_AGGREGATED_PATTERNS as readonly string[]).includes(toRelativeLabel(filePath)))
+    .filter((filePath) => {
+      const label = toRelativeLabel(filePath)
+      return topology.id === 'legacy-v1' ? label !== IDE_TDESIGN_AGGREGATE_LABEL : !(IDE_TDESIGN_AGGREGATED_PATTERNS as readonly string[]).includes(label)
+    })
     .filter(filePath => !IDE_COMPONENT_LIBRARY_PATTERN_SET.has(toRelativeLabel(filePath)))
     .map((filePath) => {
       const task = createIdeVitestTask(filePath)
@@ -983,6 +984,8 @@ export async function listE2ESuites() {
   }))
 }
 
-export async function getSuiteTasks(mode: string) {
-  return await E2E_SUITES[mode]?.tasks() ?? []
+export async function getSuiteTasks(mode: string, options: SuiteTaskFactoryOptions = {}) {
+  const topology = resolveVerificationTopology(options.topology)
+  const tasks = await E2E_SUITES[mode]?.tasks({ ...options, topology: topology.id }) ?? []
+  return tasks.map(task => ({ ...task, env: { ...task.env, ...topologyEnvironment(topology) } }))
 }

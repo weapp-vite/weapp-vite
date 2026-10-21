@@ -3,6 +3,7 @@ import { setImmediate } from 'node:timers/promises'
 import { expect, it } from 'vitest'
 import { getResourceBudget } from './resources.ts'
 import { runVerification } from './run.ts'
+import { resolveVerificationTopology } from './topology.ts'
 
 function task(id: string, dependencies: string[] = [], exclusive = false): VerificationTask {
   return { id, kind: 'test', command: 'node', args: [], directory: '.', dependencies, reason: 'fixture', exclusive }
@@ -11,6 +12,7 @@ function plan(tasks: VerificationTask[]): VerificationPlan {
   return {
     version: 1,
     fingerprint: 'planned-inputs',
+    executionTopology: resolveVerificationTopology(),
     mode: 'review',
     selection: 'affected',
     suggested: [],

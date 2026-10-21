@@ -11,6 +11,8 @@
   "schemaVersion": 1,
   "id": "baseline-1",
   "variant": "baseline",
+  "comparisonProtocol": "same-main-topology-v1",
+  "topology": "legacy-v1",
   "mode": "full",
   "base": "origin/main",
   "jobs": 4,
@@ -19,7 +21,15 @@
 }
 ```
 
-必须先提交源码，使用相同的基线/候选观察 hook，并按相同缓存准备过程串行采集两侧各至少三轮。完整本地与真实 IDE 采样均遵守“干净主工作区、main、HEAD 与 origin/main 一致”的约束：共同观测基线先合入 main 并完成三轮，优化合入 main 后再完成候选三轮。记录这一执行顺序；不能回切旧提交或改写远端引用来补采，也不能将两组顺序采样称为交替采样。最新稳定 IDE、登录和机器租约要求保持完整；采样入口不放宽这些限制。未满足条件的运行保留非成功样本，不能用于提速验收。
+必须先提交并合入全部共同源码，完整本地与真实 IDE 采样均遵守“干净主工作区、main、HEAD 与 origin/main 一致”的约束。`same-main-topology-v1` 比较合并后同一个最终 main 的重建拓扑；它不能重建已经错过的历史基线，也不能称为历史提交的实测。两侧必须保持相同 revision、sourceFingerprint、输入、完整逻辑范围、实际工具链、资源和缓存过程，各串行至少三轮成功样本。记录执行顺序，不能回切旧提交、改写远端引用或把顺序采样称为交替采样。最新稳定 IDE、登录和机器租约要求保持完整；缺失条件保留非成功样本，不能用于提速验收。
+
+正式配置必须显式设置 `comparisonProtocol: "same-main-topology-v1"`，baseline 只能为 `topology: "legacy-v1"`，candidate 只能为 `topology: "optimized-v1"`。策略不属于资源 profile 或逻辑 scope；versioned policy digest 和独立 executionTopology 贯穿计划、实际 child 环境、任务 receipt、suite execution 与样本。未知策略、继承冲突、缺失身份或混合策略均拒绝。历史通用比较格式继续兼容，但不能作为此新协议的样本。
+
+本地采集的 `frozen.json` 与 runtime 输出旁的 `.frozen.json` 在启动前保存完整任务定义、拓扑身份和实际命令，仅记录两项拓扑环境变量；采集后回读其摘要并由样本引用。所有正式 child suite（包括嵌套 HMR）必须报告启动前冻结的 task definition hash，缺失 hash 不得按兼容默认值视为通过。保存原始输入、frozen receipt、全部报告和样本，不能覆盖已有正式轮次。
+
+采集 API 在启动前以独占写入保留每个输出的 `.capture.json` 轮次声明，并把路径、摘要和 run ID 绑定到样本；结束时再次核验摘要。runtime 每轮归档四个路径：样本、`.inputs.json`、`.frozen.json` 和 `.capture.json`。任一路径已存在时立即拒绝，后续输入、冻结回执与最终样本也各自独占写入，防止并发覆盖。本地采集同样独占输出及 `.capture.json`，原始输入、冻结回执和日志在独占创建的 run ID 目录中保留。失败后不删除声明或已有证据，重试必须选择新的输出；这项输出保护不替代 E2E 机器租约。输出名不能使用 `.inputs.json`、`.frozen.json`、`.capture.json` 这些保留后缀。
+
+仅有两个成对切点：legacy 全部 fixture 串行且 exhaustive TDesign 四个源文件分别执行；optimized 只把已审阅十四个隔离 fixture 文件移入 fast，TDesign 使用一个 aggregate child。最终 globalSetup 的 body/placement、完整 full 任务、调度器、owner/清理和观察器两侧共同，不恢复固定等待。完整任务清单只允许精确 TD4→1 展开，其他任务、非适用项、case 与 checkpoint 不得消失。这两个切点不保证全链路必达 30%；未达标时依据本轮实际 phase 定位，不能添加基线等待。
 
 `cachePolicy` 是本轮实际遵守的缓存准备策略名称，采集器不会清理共享缓存。示例策略在每侧合入 main 后先执行一次相同的 `pnpm build:pkgs`，随后连续完成三轮；只预热包构建，不声称全链路已经预热。若要比较全链路热缓存，每侧先额外执行一轮完整验证并排除该预热轮。保留原始 Turbo 实际执行与缓存命中证据，不清理其他任务的共享缓存。两侧共同使用相同 CPU、worker、构建预算及内存可用量探针；共同资源修正不计入被测提速。
 
@@ -155,6 +165,8 @@ await writeFile('.tmp/runtime-toolchain.json', `${JSON.stringify(manifest, null,
   "schemaVersion": 1,
   "id": "baseline-1",
   "variant": "baseline",
+  "comparisonProtocol": "same-main-topology-v1",
+  "topology": "legacy-v1",
   "suite": "ide-full:exhaustive",
   "cachePolicy": "warm",
   "toolchain": ".tmp/runtime-toolchain.json",

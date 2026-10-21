@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { glob } from 'tinyglobby'
 import { describe, expect, it } from 'vitest'
-import { readWorkflowFixture, readWorkflowGraph } from './workflowFixture.mjs'
+import { readVerificationTopologyVariant, readWorkflowFixture, readWorkflowGraph } from './workflowFixture.mjs'
 
 interface WorkflowStep {
   name?: string
@@ -26,7 +26,7 @@ function splitPatterns(value: unknown) {
 
 describe('CI artifact coverage', () => {
   it('prepares imported fixture support files after restoring package artifacts and before internal tests', async () => {
-    const workflow = await readWorkflow('reusable-miniapp-platform.yml')
+    const workflow = await readWorkflow(readVerificationTopologyVariant() === 'baseline' ? 'validate-ci-e2e.yml' : 'reusable-miniapp-platform.yml')
     const job = workflow.jobs['ide-dom-acceptance-internal']
     expect(job.with?.consume_build_artifact).toBeTruthy()
     const commands = splitPatterns(job.with?.main_command)
@@ -40,7 +40,7 @@ describe('CI artifact coverage', () => {
   })
 
   it('generates and checks the current source inventory before tests and uploads both reports', async () => {
-    const workflow = await readWorkflow('reusable-miniapp-platform.yml')
+    const workflow = await readWorkflow(readVerificationTopologyVariant() === 'baseline' ? 'validate-ci-e2e.yml' : 'reusable-miniapp-platform.yml')
     const job = workflow.jobs['ide-dom-acceptance-internal']
     const commands = splitPatterns(job.with?.main_command)
     const inventoryIndex = commands.indexOf('node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check')
@@ -72,6 +72,7 @@ describe('CI artifact coverage', () => {
       '@weapp-core/*/bin/**',
       'mpcore/packages/*/bin/**',
       '.tmp/build-artifact-manifest.json',
+      '.tmp/verification-telemetry/plans/**',
     ])
   })
 

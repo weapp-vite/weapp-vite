@@ -2,7 +2,11 @@ import type { VerificationTiming } from '../../e2e/scripts/verification/types'
 import { describe, expect, it } from 'vitest'
 import { aggregateVerificationReports } from '../../e2e/scripts/verification/aggregate'
 import { collectDurationHistory } from '../../e2e/scripts/verification/history'
+import { resolveVerificationTopology } from '../verification/topology.ts'
+import { useIsolatedTopologyTestEnvironment } from '../verification/topologyTestFixture.ts'
 import { freeze, now, profile, receipt, shardReports } from './fixtures'
+
+useIsolatedTopologyTestEnvironment()
 
 function timing(invocationId: string): VerificationTiming {
   return { name: 'machine-lease-acquisition', invocationId, startedAt: now.toISOString(), durationMs: 2, status: 'passed' }
@@ -145,4 +149,24 @@ describe('complete E2E shard evidence', () => {
     expect(collectDurationHistory([{ receipt, reports: [{ ...full, coverage: 'partial' }] }], options).tasks).toEqual({})
     expect(collectDurationHistory([{ receipt, reports: [{ ...full, workingTreeDirty: true }] }], options).tasks).toEqual({})
   })
+})
+
+it('preserves the frozen topology and rejects mixed or missing shard topology', async () => {
+  const plan = await freeze({ topology: 'legacy-v1' })
+  const reports = shardReports(plan)
+  expect((await aggregateVerificationReports(plan, reports, { now })).execution?.executionTopology).toEqual(plan.executionTopology)
+  reports[0]!.execution.executionTopology = resolveVerificationTopology('optimized-v1')
+  await expect(aggregateVerificationReports(plan, reports, { now })).rejects.toThrow('topology mismatch')
+  reports[0]!.execution.executionTopology = undefined!
+  await expect(aggregateVerificationReports(plan, reports, { now })).rejects.toThrow('Missing or invalid frozen verification topology')
+})
+
+it('preserves the resource artifact kind emitted by the actual IDE runner at the strict schema boundary', async () => {
+  const plan = await freeze()
+  const reports = shardReports(plan)
+  const report = reports[0]!
+  const artifacts: Array<{ kind: 'ide-task-resource-report', indexPath: string }> = [{ kind: 'ide-task-resource-report', indexPath: 'docs/reports/ide-task-resources/owned-task.json' }]
+  const changed = { ...report, tasks: report.tasks.map((task, index) => index === 0 ? { ...task, artifacts } : task), summary: { ...report.summary, artifactCount: 1 } }
+  const aggregate = await aggregateVerificationReports(plan, [changed, reports[1]!], { now })
+  expect(aggregate.tasks[0]?.artifacts).toEqual(artifacts)
 })

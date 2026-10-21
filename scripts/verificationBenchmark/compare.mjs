@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { assertVerificationTopology, TOPOLOGY_COMPARISON_PROTOCOL } from '../verification/topology.ts'
 
 const outcomes = ['passed', 'failed', 'partial', 'cancelled', 'blocked']
 const profiles = ['os', 'node', 'provider', 'platform', 'runnerClass', 'cachePolicy']
@@ -16,6 +17,16 @@ export function validateSample(sample) {
   if (sample?.schemaVersion !== 1 || !['baseline', 'candidate'].includes(sample.variant)
     || !outcomes.includes(sample.outcome) || !sample.id || !sample.revision) {
     throw new Error('Invalid benchmark sample identity')
+  }
+  if (sample.comparisonProtocol !== undefined && sample.comparisonProtocol !== TOPOLOGY_COMPARISON_PROTOCOL) {
+    throw new Error('Unknown benchmark comparison protocol')
+  }
+  if (sample.executionTopology !== undefined || sample.comparisonProtocol) {
+    assertVerificationTopology(sample.executionTopology)
+  }
+  if (sample.comparisonProtocol === TOPOLOGY_COMPARISON_PROTOCOL
+    && sample.executionTopology.id !== (sample.variant === 'baseline' ? 'legacy-v1' : 'optimized-v1')) {
+    throw new Error('Benchmark cohort has the wrong reviewed topology')
   }
   for (const key of ['inputDigest', 'scopeDigest', 'sourceFingerprint']) {
     if (!/^[a-f\d]{64}$/u.test(sample[key])) {
@@ -82,6 +93,12 @@ export function compareSamples(samples, { minimumSamples = 3, targetReduction = 
     scope = sample.scopeDigest
   }
   const successful = samples.filter(sample => sample.outcome === 'passed')
+  const protocol = samples.find(sample => sample.comparisonProtocol)?.comparisonProtocol
+  if (protocol && (samples.some(sample => sample.comparisonProtocol !== protocol)
+    || new Set(successful.map(sample => `${sample.revision}:${sample.sourceFingerprint}`)).size !== 1
+    || new Set(successful.map(sample => sample.executionTopology.policyDigest)).size !== 1)) {
+    throw new Error('Topology comparison requires one final revision, source and reviewed policy on both sides')
+  }
   const cohorts = Object.fromEntries(['baseline', 'candidate'].map((variant) => {
     const cohort = successful.filter(sample => sample.variant === variant)
     if (cohort.length < minimumSamples) {
@@ -92,6 +109,7 @@ export function compareSamples(samples, { minimumSamples = 3, targetReduction = 
     }
     return [variant, {
       revision: cohort[0].revision,
+      ...(protocol ? { executionTopology: cohort[0].executionTopology } : {}),
       samples: cohort.map(sample => sample.id),
       medians: Object.fromEntries(metrics.map(key => [key, median(cohort.map(sample => sample.metrics[key]))])),
     }]
@@ -99,7 +117,8 @@ export function compareSamples(samples, { minimumSamples = 3, targetReduction = 
   const reduction = 1 - cohorts.candidate.medians.executionMs / cohorts.baseline.medians.executionMs
   return {
     schemaVersion: 1,
-    identityDigest: createHash('sha256').update(`${identity}:${scope}`).digest('hex'),
+    ...(protocol ? { comparisonProtocol: protocol } : {}),
+    identityDigest: createHash('sha256').update(`${identity}:${scope}${protocol ? `:${protocol}:${successful[0].executionTopology.policyDigest}` : ''}`).digest('hex'),
     inputDigest: successful[0].inputDigest,
     scopeDigest: scope,
     profile: successful[0].profile,

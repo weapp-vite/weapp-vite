@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
-import { readWorkflowFixture } from './workflowFixture.mjs'
+import { readVerificationTopologyVariant, readWorkflowFixture } from './workflowFixture.mjs'
 
 interface WorkflowJob {
   if?: string
@@ -87,6 +87,7 @@ describe('bounded HMR workflow diagnosis', () => {
     expect(job.strategy?.['fail-fast']).toBe(false)
     expect(job.strategy?.matrix).toEqual({ os: ['ubuntu-latest', 'windows-latest', 'macos-latest'] })
     expect(job.with).toEqual({
+      verification_topology: `\${{ inputs.verification_topology }}`,
       checkout_ref: `\${{ needs.pr-context.outputs.checkout_sha }}`,
       base_sha: `\${{ needs.pr-context.outputs.base_sha }}`,
       head_sha: `\${{ needs.pr-context.outputs.head_sha }}`,
@@ -202,7 +203,11 @@ describe('bounded HMR workflow diagnosis', () => {
     const child = readWorkflowFixture('reusable-miniapp-platform.yml')
     expect(child.jobs.miniapp.strategy.matrix).toEqual({ shard: [1, 2, 3, 4] })
     const expected = ['macos-latest/22', 'macos-latest/24', 'ubuntu-latest/22', 'ubuntu-latest/24', 'windows-latest/22', 'windows-latest/24']
-    for (const name of ['miniapp-platform-full']) {
+    const baseline = readVerificationTopologyVariant() === 'baseline'
+    if (baseline) {
+      expect(jobs['miniapp-e2e-ci-full']?.strategy?.matrix).toEqual({ 'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'], 'node-version': [22, 24], 'shard': [1, 2, 3, 4] })
+    }
+    for (const name of baseline ? ['miniapp-e2e-build-full', 'miniapp-hmr-ci-full'] : ['miniapp-platform-full']) {
       expect(jobs[name]?.strategy?.matrix.include?.map(row => `${row.os}/${row['node-version']}`).sort()).toEqual(expected)
     }
     for (const [name, job] of Object.entries(jobs)) {
@@ -212,7 +217,8 @@ describe('bounded HMR workflow diagnosis', () => {
       expect(job.if, `${name} must stay outside a bounded diagnostic run`).toSatisfy((condition: string) =>
         condition.includes('!inputs.hmr-diagnostic || inputs.hmr-diagnostic == \'full\'')
         || condition.includes('needs.pr-context.outputs.is_pr == \'true\'')
-        || condition.includes('needs.bun-build-diagnostic.result == \'success\''),
+        || condition.includes('needs.bun-build-diagnostic.result == \'success\'')
+        || (baseline && condition.includes('needs.miniapp-e2e-build-pr.result == \'success\'') && condition.includes('needs.miniapp-e2e-build-full.result == \'success\'')),
       )
     }
   })

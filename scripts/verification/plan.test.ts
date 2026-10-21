@@ -7,7 +7,10 @@ import { createVerificationPlan } from './plan.ts'
 import { DEFAULT_SELECTION } from './policy.ts'
 import { getResourceBudget } from './resources.ts'
 import { scriptTestInventory } from './toolTests.ts'
+import { useIsolatedTopologyTestEnvironment } from './topologyTestFixture.ts'
 import { readWorkspace } from './workspace.ts'
+
+useIsolatedTopologyTestEnvironment()
 
 const packages: WorkspacePackage[] = [
   { name: 'library', directory: 'packages/library', scripts: { 'build': 'tsdown', 'test': 'vitest run', 'typecheck': 'tsc --noEmit', 'test:types:check': 'tsd' }, dependencies: [], extraInputs: [] },
@@ -257,6 +260,26 @@ it('rejects workflow commands or filters that cannot be represented by the share
       await writeFile(manifestFile, JSON.stringify(manifest))
       await expect(createVerificationPlan({ root, packages, resources, mode: 'full', changes: changes(['.github/workflows/ci.yml']) })).rejects.toThrow('test:pr-actions')
     }
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('freezes topology separately while preserving all original full commands, scope and resources', async () => {
+  const root = await createPlanRoot()
+  try {
+    const input = { root, changes: changes([]), packages, resources, mode: 'full' as const }
+    const legacy = await createVerificationPlan({ ...input, topology: 'legacy-v1' })
+    const optimized = await createVerificationPlan({ ...input, topology: 'optimized-v1' })
+    expect(legacy.fingerprint).not.toBe(optimized.fingerprint)
+    expect(legacy.executionTopology.policyDigest).toBe(optimized.executionTopology.policyDigest)
+    const commands = (plan: typeof legacy) => plan.tasks.map(({ env: _env, ...task }) => task)
+    expect(commands(legacy)).toEqual(commands(optimized))
+    expect(legacy.resources).toEqual(optimized.resources)
+    expect(legacy.selected).toEqual(optimized.selected)
+    expect(legacy.tasks.every(task => task.env?.WEAPP_VITE_VERIFICATION_TOPOLOGY === 'legacy-v1')).toBe(true)
+    expect(optimized.tasks.every(task => task.env?.WEAPP_VITE_VERIFICATION_TOPOLOGY === 'optimized-v1')).toBe(true)
   }
   finally {
     await rm(root, { recursive: true, force: true })

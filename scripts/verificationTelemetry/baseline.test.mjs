@@ -82,3 +82,23 @@ it.each(['command', 'environment', 'failure policy'])('detects a candidate nativ
   }
   expect(workflowTopology(workflow, 'candidate')).not.toEqual(expected)
 })
+
+it.each(['command', 'environment', 'failure policy', 'telemetry'])('detects a baseline native job bypass through its %s', async (change) => {
+  const frozen = JSON.parse(await fs.readFile(new URL('./baseline-topology.json', import.meta.url), 'utf8'))
+  const expected = frozen['.github/workflows/reusable-node-command.yml']
+  const workflow = { jobs: structuredClone(expected) }
+  const job = workflow.jobs.run
+  if (change === 'command') {
+    job.steps.find(step => step.name === 'Run command').run = 'node --version'
+  }
+  else if (change === 'environment') {
+    job.env.BUILD_ARTIFACT_EXPECTED_COMMIT = 'unverified'
+  }
+  else if (change === 'telemetry') {
+    job.env.WEAPP_VITE_VERIFICATION_TELEMETRY = '0'
+  }
+  else {
+    job['continue-on-error'] = true
+  }
+  expect(workflowTopology(workflow, 'baseline')).not.toEqual(expected)
+})

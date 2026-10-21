@@ -2,6 +2,10 @@ name: Independent Quality Platform
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       pr_context:
         type: string
         required: true
@@ -40,6 +44,7 @@ jobs:
     needs: pr-context
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -62,6 +67,7 @@ jobs:
     if: inputs.lint_command != ''
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -82,6 +88,7 @@ jobs:
       - build
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -109,6 +116,7 @@ jobs:
     if: inputs.run_types
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -141,6 +149,7 @@ jobs:
           - 4
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -170,6 +179,7 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     timeout-minutes: 15
     env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
       BUILD_ARTIFACT_EXPECTED_COMMIT: ${{ needs.pr-context.outputs.checkout_sha }}
       BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: ${{ inputs.node_version }}
       BUILD_ARTIFACT_EXPECTED_SCOPE: packages/weapp-vite,packages-runtime/wevu

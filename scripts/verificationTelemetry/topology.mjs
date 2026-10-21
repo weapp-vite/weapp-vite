@@ -12,10 +12,8 @@ export function verificationTopologyVariant(workflow) {
   return variants[0]
 }
 
-/** 基线保留原投影；候选同时冻结原生 job 的步骤、环境和失败策略。 */
+/** 两侧同时冻结完整 job，包括步骤、环境、遥测输入与失败策略。 */
 export function workflowTopology(workflow, variant) {
   assert(['baseline', 'candidate'].includes(variant), 'Unknown verification topology variant')
-  return Object.fromEntries(Object.entries(workflow.jobs).map(([id, job]) => [id, Object.fromEntries(Object.entries(job)
-    .filter(([key]) => variant === 'candidate' || ['name', 'if', 'needs', 'strategy', 'uses', 'runs-on', 'with'].includes(key))
-    .map(([key, value]) => [key, key === 'with' ? Object.fromEntries(Object.entries(value).filter(([input]) => input !== 'verification_telemetry')) : value]))]))
+  return structuredClone(workflow.jobs)
 }

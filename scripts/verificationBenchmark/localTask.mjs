@@ -7,6 +7,7 @@ import process from 'node:process'
 import { execa } from 'execa'
 import { createBuildArtifactManifest, verifyBuildArtifactManifest } from '../buildArtifact/index.mjs'
 import { readTurboEvidence } from '../verification/evidence.ts'
+import { resolveVerificationTopology, TOPOLOGY_ENV, topologyEnvironment } from '../verification/topology.ts'
 import { localIdentity } from './localFiles.mjs'
 import { localDigest, localDocument, localRelative, localSave } from './localIo.mjs'
 import { localDryGraph, localTurboSummary, validateLocalTurbo } from './localTurbo.mjs'
@@ -24,9 +25,12 @@ export async function executeLocalTask(root, task, signal, jsonOutput) {
   const taskDirectory = path.join(directory, 'tasks', invocationId)
   await mkdir(taskDirectory, { recursive: true })
   const before = localIdentity(root, runId)
+  const executionTopology = resolveVerificationTopology(task.env?.[TOPOLOGY_ENV])
+  const effectiveTopology = topologyEnvironment(executionTopology)
+  assert.deepEqual(Object.fromEntries(Object.keys(effectiveTopology).map(key => [key, task.env?.[key]])), effectiveTopology, 'Local task topology differs from its frozen plan')
   const env = { ...task.env, WEAPP_VITE_VERIFICATION_LOCAL_TASK: task.id, WEAPP_VITE_VERIFICATION_LOCAL_INVOCATION: invocationId }
   const buildEnv = { BUILD_ARTIFACT_EXPECTED_COMMIT: before.commitSha, BUILD_ARTIFACT_PACKAGE_MANAGER: process.env.WEAPP_VITE_VERIFICATION_LOCAL_PNPM }
-  const receipt = { schemaVersion: 1, runId, taskId: task.id, invocationId, nodeVersion: process.version, sourceFingerprint: before.fingerprint, command: task.command, args: task.args, effectiveArgs: [...task.args], directory: task.directory, startedAt: new Date().toISOString() }
+  const receipt = { schemaVersion: 1, runId, taskId: task.id, invocationId, nodeVersion: process.version, sourceFingerprint: before.fingerprint, executionTopology, effectiveTopology, command: task.command, args: task.args, effectiveArgs: [...task.args], directory: task.directory, startedAt: new Date().toISOString() }
   let output = ''
   let stderr = ''
   let result

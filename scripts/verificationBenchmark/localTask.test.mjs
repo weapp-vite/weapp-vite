@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { afterEach, expect, it, vi } from 'vitest'
+import { resolveVerificationTopology, topologyEnvironment } from '../verification/topology.ts'
 import { main } from './cli.mjs'
 import { captureVerificationSample } from './localCapture.mjs'
 import { executeLocalTask } from './localTask.mjs'
@@ -35,7 +36,7 @@ process.stderr.write('diagnostic\\n')
   for (const [key, value] of Object.entries({ ROOT: root, DIR: directory, RUN: 'task-fixture', MODE: 'full', PNPM: 'pnpm@12.11.2' })) {
     vi.stubEnv(`WEAPP_VITE_VERIFICATION_LOCAL_${key}`, value)
   }
-  const task = (id, kind, args, dependencies = []) => ({ id, kind, command: process.execPath, args, dependencies, directory: '.' })
+  const task = (id, kind, args, dependencies = []) => ({ id, kind, command: process.execPath, args, dependencies, directory: '.', env: topologyEnvironment(resolveVerificationTopology()) })
   return { root, directory, task }
 }
 
@@ -54,6 +55,7 @@ it('observes real child completion, refreshes legal types builds and verifies ar
   const names = await readdir(path.join(directory, 'tasks'))
   const receipts = await Promise.all(names.map(async name => JSON.parse(await readFile(path.join(directory, 'tasks', name, 'receipt.json'), 'utf8'))))
   expect(receipts).toHaveLength(4)
+  expect(receipts.every(item => item.executionTopology.id === 'optimized-v1' && item.effectiveTopology.WEAPP_VITE_VERIFICATION_TOPOLOGY === 'optimized-v1')).toBe(true)
   const build = receipts.find(item => item.taskId === 'build')
   expect(await readFile(path.join(root, build.stdout.path), 'utf8')).toBe('built artifact\n')
   expect(await readFile(path.join(root, build.stderr.path), 'utf8')).toBe('diagnostic\n')
@@ -90,4 +92,16 @@ it('routes the public local CLI and refuses arbitrary commands, hand-picked inpu
   await expect(captureVerificationSample({ ...config, inputFiles: ['only-one.ts'] }, '.tmp/sample.json')).rejects.toThrow(/configuration/)
   vi.stubEnv('WEAPP_VITE_E2E_CI_SKIP_HMR_GUARD', '1')
   await expect(captureVerificationSample(config, '.tmp/sample.json')).rejects.toThrow(/partial filters/)
+})
+
+it('records and actually passes the frozen topology to its child, rejecting inherited conflicts before launch', async () => {
+  const { root, directory, task } = await fixture()
+  const child = { ...task('topology', 'test', ['-e', 'process.stdout.write(process.env.WEAPP_VITE_VERIFICATION_TOPOLOGY)']), env: topologyEnvironment(resolveVerificationTopology('legacy-v1')) }
+  expect(await executeLocalTask(root, child, undefined, false)).toMatchObject({ exitCode: 0 })
+  const [name] = await readdir(path.join(directory, 'tasks'))
+  const receipt = JSON.parse(await readFile(path.join(directory, 'tasks', name, 'receipt.json'), 'utf8'))
+  expect(receipt.executionTopology.id).toBe('legacy-v1')
+  expect(await readFile(path.join(root, receipt.stdout.path), 'utf8')).toBe('legacy-v1')
+  vi.stubEnv('WEAPP_VITE_VERIFICATION_TOPOLOGY', 'optimized-v1')
+  await expect(executeLocalTask(root, child, undefined, false)).rejects.toThrow('inherited')
 })

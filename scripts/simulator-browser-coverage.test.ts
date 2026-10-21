@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import simulatorConfig from '../mpcore/packages/simulator/vitest.e2e.config'
-import { readWorkflowFixture } from './workflowFixture.mjs'
+import { readVerificationTopologyVariant, readWorkflowFixture } from './workflowFixture.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
 const simulatorRoot = path.join(root, 'mpcore/packages/simulator')
@@ -31,7 +31,7 @@ describe('simulator browser CI coverage', () => {
   })
 
   it('runs the browser suite through the cloud CI entry', async () => {
-    const workflow = readWorkflowFixture('reusable-miniapp-platform.yml') as Workflow
+    const workflow = readWorkflowFixture(readVerificationTopologyVariant() === 'baseline' ? 'validate-ci-e2e.yml' : 'reusable-miniapp-platform.yml') as Workflow
     expect(workflow.jobs['simulator-browser']?.with?.main_command).toBe('pnpm --filter @mpcore/simulator test:e2e')
     const manifest = JSON.parse(await readFile(path.join(simulatorRoot, 'package.json'), 'utf8')) as { scripts: Record<string, string> }
     expect(manifest.scripts['test:e2e']).toMatch(/(?:--config|-c) (?:\.\/)?vitest\.e2e\.config\.ts(?: |$)/)

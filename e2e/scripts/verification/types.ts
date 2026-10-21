@@ -1,6 +1,9 @@
+import type { VerificationTopology } from '../../../scripts/verification/topology.ts'
 import type { PlannedTaskCase } from '../domAcceptanceReport/taskCases'
 
 export const VERIFICATION_TOOL_VERSION = 1
+export const SUITE_TASK_ARTIFACT_KINDS = ['ide-warning-report', 'suite-report', 'dom-acceptance-report', 'ide-task-resource-report'] as const
+export type SuiteTaskArtifactKind = typeof SUITE_TASK_ARTIFACT_KINDS[number]
 
 export interface VerificationProfile {
   os: 'darwin' | 'linux' | 'win32'
@@ -32,6 +35,7 @@ export interface VerificationPlan {
   suite: string
   strict: boolean
   profile: VerificationProfile
+  executionTopology: VerificationTopology
   sourceDigest: string
   shardTotal: number
   tasks: PlannedVerificationTask[]
@@ -39,6 +43,7 @@ export interface VerificationPlan {
 }
 
 export interface VerificationExecution {
+  executionTopology?: VerificationTopology
   scope: 'full' | 'shard' | 'ad-hoc'
   status: 'passed' | 'failed' | 'cancelled' | 'incomplete'
   profile: VerificationProfile

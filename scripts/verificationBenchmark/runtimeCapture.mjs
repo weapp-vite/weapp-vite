@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { glob, lstat, mkdir, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { glob, lstat, mkdir, readdir, readFile, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
@@ -8,17 +8,19 @@ import process from 'node:process'
 import { execa } from 'execa'
 import { verificationSuiteReportSchema } from '../../e2e/scripts/verification/validation.ts'
 import { createBuildArtifactManifest, verifyBuildArtifactManifest } from '../buildArtifact/index.mjs'
+import { formalVerificationTopology, topologyEnvironment } from '../verification/topology.ts'
+import { reserveCaptureOutput, writeCaptureJson } from './captureOutput.mjs'
 import { validateSample } from './compare.mjs'
 import { artifactSnapshot, evidenceDigest, runtimeScope } from './evidence.mjs'
 import { LOCAL_FRAMEWORK_INPUT_POLICY, localFrameworkInputs } from './localFramework.mjs'
-import { assertRuntimeCaseInventory, assertRuntimeTaskInventory, createRuntimeInventory } from './runtimeInventory.mjs'
+import { assertRuntimeCaseInventory, assertRuntimeTaskInventory, createRuntimeInventory, logicalRuntimeTaskInventory } from './runtimeInventory.mjs'
 
 const suites = {
   'ide-full': ['e2e:ide:full', 'node --import tsx ./e2e/scripts/run-sleep-inhibited-e2e-suite.ts ide-full'],
   'ide-full:exhaustive': ['e2e:ide:full:exhaustive', 'node --import tsx ./e2e/scripts/run-sleep-inhibited-e2e-suite.ts "ide-full:exhaustive"'],
 }
 const partialEnvironment = ['TASK_FILTER', 'TASK_FROM', 'TASK_ROLL_FROM', 'SHARD_INDEX', 'SHARD_TOTAL', 'TEMPLATE', 'TARGET_FILE', 'EXCLUDE_PROJECTS', 'ACCEPTANCE_CASES']
-const configurationKeys = ['schemaVersion', 'id', 'variant', 'cachePolicy', 'suite', 'toolchain', 'inputPolicy', 'artifactDirectories']
+const configurationKeys = ['schemaVersion', 'id', 'variant', 'cachePolicy', 'suite', 'toolchain', 'inputPolicy', 'artifactDirectories', 'topology', 'comparisonProtocol']
 const suitePath = /^docs\/reports\/\d{4}-\d{2}-\d{2}-\d{6}-[\w.](?:[\w.-]*[\w.])?-suite-report\/index\.json$/u
 
 function configuration(config) {
@@ -102,6 +104,7 @@ async function executionEvidence(root, config, stdout, identity, previousReports
   const report = verificationSuiteReportSchema.parse(suite.value)
   assert(report.runId === identity.runId && report.commitSha === identity.commitSha
     && Array.isArray(report.excludedProjects) && report.excludedProjects.length === 0, 'Runtime benchmark identity or full task scope differs')
+  assert.deepEqual(report.execution.executionTopology, identity.executionTopology, 'Runtime report topology differs from the frozen capture')
   assertRuntimeTaskInventory(report, inventory)
   within(report.generatedAt, start, end)
   within(report.execution.startedAt, start, end)
@@ -127,7 +130,8 @@ async function executionEvidence(root, config, stdout, identity, previousReports
     files.push(`${prefix}${file.replaceAll('\\', '/')}`)
   }
   assert.deepEqual(files.sort(), acceptance.map(value => value.path).sort(), 'Runtime benchmark must include all fresh DOM evidence exactly once')
-  const scope = runtimeScope(report, acceptance.map(document => document.value))
+  const cases = runtimeScope(report, acceptance.map(document => document.value))
+  const scope = config.comparisonProtocol ? { tasks: logicalRuntimeTaskInventory(inventory), cases } : cases
   const profile = actualRuntimeProfile(report, acceptance, toolchain, config.cachePolicy)
   return { scope, profile, suite, acceptance }
 }
@@ -135,22 +139,24 @@ async function executionEvidence(root, config, stdout, identity, previousReports
 /** 只调用正式完整 suite；本轮原始报告、工具链和前后输入共同决定样本是否成立。 */
 export async function captureRuntimeSample(config, output, root = process.cwd()) {
   const [script, expectedScript] = configuration(config)
+  const executionTopology = formalVerificationTopology(config)
   const outputRelative = path.relative(root, path.resolve(root, output)).replaceAll('\\', '/')
   root = await realpath(root)
   relativeFile(outputRelative, '.tmp/')
   await mkdir(path.dirname(path.join(root, outputRelative)), { recursive: true })
   assert(path.relative(await realpath(path.dirname(path.join(root, outputRelative))), path.dirname(path.join(root, outputRelative))) === '', 'Runtime sample output escapes its workspace')
-  await rm(path.join(root, outputRelative), { force: true })
   const inputReceiptRelative = `${outputRelative}.inputs.json`
-  await rm(path.join(root, inputReceiptRelative), { force: true })
+  const frozenRelative = `${outputRelative}.frozen.json`
+  const runId = `benchmark-${randomUUID()}`
+  const reservationPath = await reserveCaptureOutput(path.join(root, outputRelative), [path.join(root, inputReceiptRelative), path.join(root, frozenRelative)], { id: config.id, variant: config.variant, runId, executionTopology })
+  const reservation = await readDocument(root, path.relative(root, reservationPath).replaceAll('\\', '/'), '.tmp/')
   const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
   assert(manifest.scripts?.[script] === expectedScript, 'Runtime benchmark must launch an unchanged existing formal suite script')
-  const runId = `benchmark-${randomUUID()}`
   const before = await localFrameworkInputs(root)
-  const identity = { runId, commitSha: before.commitSha }
-  await writeFile(path.join(root, inputReceiptRelative), `${JSON.stringify({ schemaVersion: 1, ...before }, null, 2)}\n`)
+  const identity = { runId, commitSha: before.commitSha, executionTopology }
+  await writeCaptureJson(path.join(root, inputReceiptRelative), { schemaVersion: 1, ...before })
   const inputReceipt = await readDocument(root, inputReceiptRelative, '.tmp/')
-  const inventory = await createRuntimeInventory(root, config.suite)
+  const inventory = await createRuntimeInventory(root, config.suite, executionTopology)
   const pnpm = (await execa('pnpm', ['--version'], { cwd: root })).stdout.trim()
   assert(/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/u.test(pnpm), 'Cannot identify the actual pnpm toolchain')
   const buildEnvironment = { BUILD_ARTIFACT_EXPECTED_COMMIT: before.commitSha, BUILD_ARTIFACT_PACKAGE_MANAGER: `pnpm@${pnpm}` }
@@ -166,14 +172,17 @@ export async function captureRuntimeSample(config, output, root = process.cwd())
     }
     return []
   }))
-  const env = { ...process.env, WEAPP_VITE_E2E_ACCEPTANCE_RUN_ID: runId, WEAPP_VITE_E2E_ACCEPTANCE_SHA: before.commitSha, WEAPP_VITE_E2E_REPORT_MARKERS: '1', WEAPP_VITE_E2E_RUNNER_CLASS: 'local' }
+  const env = { ...process.env, ...topologyEnvironment(executionTopology), WEAPP_VITE_E2E_ACCEPTANCE_RUN_ID: runId, WEAPP_VITE_E2E_ACCEPTANCE_SHA: before.commitSha, WEAPP_VITE_E2E_REPORT_MARKERS: '1', WEAPP_VITE_E2E_RUNNER_CLASS: 'local' }
   delete env.WEAPP_VITE_E2E_ACCEPTANCE_DIRTY
+  const args = ['run', script, `--topology=${executionTopology.id}`]
+  await writeCaptureJson(path.join(root, frozenRelative), { schemaVersion: 1, runId, suite: config.suite, executionTopology, revision: before.commitSha, sourceFingerprint: before.sourceFingerprint, inputDigest: before.inputDigest, cachePolicy: config.cachePolicy, command: 'pnpm', args, effectiveTopology: topologyEnvironment(executionTopology), inventory, toolchain: { report: toolchain.path, digest: toolchain.digest } })
+  const frozen = await readDocument(root, frozenRelative, '.tmp/')
   const start = Date.now()
   const begin = performance.now()
   let result
   let launchError
   try {
-    result = await execa('pnpm', ['run', script], { cwd: root, env, stdout: ['pipe', 'inherit'], stderr: ['pipe', 'inherit'], reject: false })
+    result = await execa('pnpm', args, { cwd: root, env, stdout: ['pipe', 'inherit'], stderr: ['pipe', 'inherit'], reject: false })
   }
   catch (error) {
     launchError = error.message
@@ -183,9 +192,13 @@ export async function captureRuntimeSample(config, output, root = process.cwd())
   const end = Date.now()
   const after = await localFrameworkInputs(root)
   const currentInputReceipt = await readDocument(root, inputReceiptRelative, '.tmp/')
+  const currentFrozen = await readDocument(root, frozenRelative, '.tmp/')
+  const currentReservation = await readDocument(root, reservation.path, '.tmp/')
   const currentToolchain = await readDocument(root, config.toolchain, '.tmp/')
   assert(before.sourceFingerprint === after.sourceFingerprint && before.inputDigest === after.inputDigest
     && inputReceipt.digest === currentInputReceipt.digest
+    && frozen.digest === currentFrozen.digest
+    && reservation.digest === currentReservation.digest
     && toolchain.digest === currentToolchain.digest
     && evidenceDigest(artifacts) === evidenceDigest(createBuildArtifactManifest(root, buildEnvironment))
     && evidenceDigest(prepared) === evidenceDigest(await artifactSnapshot(root, config.artifactDirectories)), 'Source, framework input or prepared artifact changed during sampling')
@@ -194,6 +207,7 @@ export async function captureRuntimeSample(config, output, root = process.cwd())
   const raw = { acceptance: [] }
   try {
     observed = await executionEvidence(root, config, result.stdout ?? '', identity, previousReports, artifacts, inventory, start, end, raw)
+    assert((await readDocument(root, reservation.path, '.tmp/')).digest === reservation.digest, 'Runtime benchmark capture reservation changed during finalization')
   }
   catch (caught) {
     error = [error, caught.message].filter(Boolean).join('; ')
@@ -204,6 +218,8 @@ export async function captureRuntimeSample(config, output, root = process.cwd())
     schemaVersion: 1,
     id: config.id,
     variant: config.variant,
+    comparisonProtocol: config.comparisonProtocol,
+    executionTopology,
     revision: before.commitSha,
     sourceFingerprint: before.sourceFingerprint,
     inputDigest: before.inputDigest,
@@ -212,8 +228,8 @@ export async function captureRuntimeSample(config, output, root = process.cwd())
     outcome: complete ? 'passed' : cancelled ? 'cancelled' : result.exitCode === 0 ? 'partial' : 'failed',
     profile: observed?.profile ?? { os: artifacts.os, arch: artifacts.arch, node: artifacts.toolchain.nodeVersion, packageManager: artifacts.toolchain.actualPackageManager, provider: 'devtools', platform: 'weapp', runnerClass: 'local', cachePolicy: config.cachePolicy },
     metrics: { executionMs, approvalWaitMs: 0, schedulingWaitMs: 0, runnerMs: executionMs },
-    evidence: { runId, inputs: { report: inputReceipt.path, digest: inputReceipt.digest }, suite: raw.suite && { report: raw.suite.path, digest: raw.suite.digest }, acceptance: raw.acceptance.map(value => ({ report: value.path, digest: value.digest, invocationId: value.value.invocationId })), toolchain: { report: toolchain.path, digest: toolchain.digest }, artifacts: { files: artifacts.files, digest: evidenceDigest(artifacts.checksums) }, error, exitCode: result.exitCode },
+    evidence: { runId, reservation: { report: reservation.path, digest: reservation.digest, runId }, inputs: { report: inputReceipt.path, digest: inputReceipt.digest }, frozen: { report: frozen.path, digest: frozen.digest }, suite: raw.suite && { report: raw.suite.path, digest: raw.suite.digest }, acceptance: raw.acceptance.map(value => ({ report: value.path, digest: value.digest, invocationId: value.value.invocationId })), toolchain: { report: toolchain.path, digest: toolchain.digest }, artifacts: { files: artifacts.files, digest: evidenceDigest(artifacts.checksums) }, error, exitCode: result.exitCode },
   })
-  await writeFile(path.join(root, outputRelative), `${JSON.stringify(sample, null, 2)}\n`)
+  await writeCaptureJson(path.join(root, outputRelative), sample)
   return sample
 }

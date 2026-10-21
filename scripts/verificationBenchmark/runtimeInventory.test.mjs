@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
 import { getSuiteTasks } from '../../e2e/scripts/e2e-suite-manifest.ts'
+import { taskDefinitionHash } from '../../e2e/scripts/verification/plan.ts'
 import { assertRuntimeCaseInventory, assertRuntimeTaskInventory } from './runtimeInventory.mjs'
 
 async function formalReport() {
@@ -69,3 +70,27 @@ it('requires all formal cases and templates and rejects DOM evidence for a non-a
   expect(() => assertRuntimeCaseInventory(planned, [{ ...reports[0], template: 'two' }, reports[1]])).toThrow(/template set/)
   expect(() => assertRuntimeCaseInventory({ outOfScopeReason: 'non-applicable' }, reports)).toThrow(/cannot contain/)
 })
+
+it.each(['missing-actual', 'invalid-frozen', 'missing-frozen', 'changed-non-applicable'])(
+  'rejects %s task definitions instead of treating a missing hash as a compatibility default',
+  async (fault) => {
+    const { report, inventory } = await formalReport()
+    const frozen = inventory.map(task => ({ ...task, definitionHash: taskDefinitionHash(task) }))
+    report.tasks.forEach((task, index) => task.definitionHash = frozen[index].definitionHash)
+    if (fault === 'missing-actual') {
+      delete report.tasks[0].definitionHash
+    }
+    if (fault === 'invalid-frozen') {
+      frozen[0].definitionHash = ''
+      report.tasks[0].definitionHash = ''
+    }
+    if (fault === 'missing-frozen') {
+      frozen[0].definitionHash = undefined
+      report.tasks[0].definitionHash = undefined
+    }
+    if (fault === 'changed-non-applicable') {
+      report.tasks.find(task => task.status === 'out-of-scope').definitionHash = 'f'.repeat(64)
+    }
+    expect(() => assertRuntimeTaskInventory(report, frozen)).toThrow('task definition')
+  },
+)

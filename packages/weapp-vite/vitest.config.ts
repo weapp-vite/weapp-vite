@@ -1,7 +1,9 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
 import { createProjectCoverage } from '../../vitest.coverage.ts'
-import { createFastTestIncludes, parallelFixtureTests, serialFixtureTestIncludes } from './vitest/partition.ts'
+import { createFastTestIncludes, fixturePartition, serialFixtureTestIncludes } from './vitest/partition.ts'
+
+const parallelFixtureTests = fixturePartition().parallel
 
 const projectTestIncludes = [
   ...serialFixtureTestIncludes,

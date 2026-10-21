@@ -10,6 +10,7 @@ import { aggregateVerificationReports } from '../../e2e/scripts/verification/agg
 import { assertVerificationPlan, createVerificationIdentity, createVerificationPlan, resolveVerificationTasks, verificationHash } from '../../e2e/scripts/verification/plan'
 import { currentVerificationProfile } from '../../e2e/scripts/verification/profile'
 import { verificationPlanSchema } from '../../e2e/scripts/verification/validation'
+import { assertVerificationTopology, resolveVerificationTopology } from '../verification/topology.ts'
 
 const suites = new Set(['ci-pr', 'ci-full', 'ide-dom-headless'])
 
@@ -20,8 +21,9 @@ async function writeJson(file: string, value: unknown) {
 
 /** 只冻结原 partitionE2ETasks 的分配，不以新 planner 改变基线任务顺序或归属。 */
 export async function createBaselineSuitePlan(options: Parameters<typeof createVerificationPlan>[0]) {
-  const tasks = options.tasks ?? await resolveVerificationTasks(options.suite)
-  const initial = await createVerificationPlan({ ...options, tasks })
+  const topology = resolveVerificationTopology(options.topology)
+  const tasks = options.tasks ?? await resolveVerificationTasks(options.suite, topology.id)
+  const initial = await createVerificationPlan({ ...options, topology: topology.id, tasks })
   const assignments = new Map(Array.from({ length: options.shards }, (_, index) => partitionE2ETasks(tasks, { index, total: options.shards }).map(task => [task.label, index + 1] as const)).flat())
   const { planHash: _initialHash, ...content } = initial
   content.tasks = content.tasks.map(task => ({ ...task, shardIndex: task.outOfScopeReason ? 0 : assignments.get(task.label)! }))
@@ -35,22 +37,32 @@ export async function prepareBaselineSuites(root: string, mode: 'pr' | 'full', e
   if (!['pr', 'full'].includes(mode) || !env.GITHUB_RUN_ID || !env.GITHUB_RUN_ATTEMPT) {
     throw new Error('Baseline telemetry requires a native run identity and explicit pr/full mode')
   }
+  const topology = resolveVerificationTopology(undefined, env)
   for (const suite of [mode === 'pr' ? 'ci-pr' : 'ci-full', 'ide-dom-headless']) {
     const identity = createVerificationIdentity({ ...env, [ACCEPTANCE_RUN_ID_ENV]: `${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}-${suite}` })
-    const plan = await createBaselineSuitePlan({ suite, shards: suite === 'ci-full' ? 4 : 1, profile: currentVerificationProfile(suite, env), identity })
+    const plan = await createBaselineSuitePlan({ suite, topology: topology.id, shards: suite === 'ci-full' ? 4 : 1, profile: currentVerificationProfile(suite, env), identity })
     await writeJson(path.join(root, '.tmp/verification-telemetry/plans', `${suite}.json`), plan)
   }
 }
 
-export async function loadBaselineSuitePlan(suite: string, tasks: SuiteTask[], options: { filtered?: boolean, root?: string, env?: NodeJS.ProcessEnv } = {}) {
-  if ((options.env ?? process.env).WEAPP_VITE_VERIFICATION_TELEMETRY !== '1' || !suites.has(suite)) {
+export async function loadBaselineSuitePlan(suite: string, tasks: SuiteTask[], options: { filtered?: boolean, topology?: string, root?: string, env?: NodeJS.ProcessEnv } = {}) {
+  const env = options.env ?? process.env
+  if (env.WEAPP_VITE_VERIFICATION_TELEMETRY !== '1' || !suites.has(suite)) {
     return undefined
   }
   if (options.filtered) {
     throw new Error('Formal baseline telemetry cannot record an ad-hoc suite selection')
   }
+  if (!env.GITHUB_RUN_ID || !env.GITHUB_RUN_ATTEMPT) {
+    throw new Error('Baseline telemetry requires the current native run and attempt')
+  }
   const plan = verificationPlanSchema.parse(JSON.parse(await fs.readFile(path.join(options.root ?? ACCEPTANCE_ROOT, '.tmp/verification-telemetry/plans', `${suite}.json`), 'utf8')))
-  assertVerificationPlan(plan, { suite, tasks, profile: currentVerificationProfile(suite, options.env), identity: createVerificationIdentity(options.env) })
+  if (plan.runId !== `${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}-${suite}`
+    || (env[ACCEPTANCE_RUN_ID_ENV] && env[ACCEPTANCE_RUN_ID_ENV] !== plan.runId)) {
+    throw new Error('Baseline suite plan belongs to another native run or attempt')
+  }
+  const topology = resolveVerificationTopology(options.topology, env)
+  assertVerificationPlan(plan, { suite, tasks, topology: topology.id, profile: currentVerificationProfile(suite, env), identity: createVerificationIdentity(env) })
   return plan
 }
 
@@ -62,6 +74,10 @@ export async function writeBaselineSuiteTelemetry(plan: VerificationPlan, report
     || !report.execution || report.commitSha !== plan.commitSha || report.runId !== plan.runId
     || report.execution.status !== 'passed') {
     throw new Error('Baseline suite execution differs from its frozen legacy assignment')
+  }
+  assertVerificationTopology(report.execution.executionTopology)
+  if (verificationHash(report.execution.executionTopology) !== verificationHash(plan.executionTopology)) {
+    throw new Error('Baseline suite execution topology differs from its frozen plan')
   }
   const tasks = report.tasks.filter(task => assignedLabels.includes(task.label))
   const shard: SuiteReportPayload = {

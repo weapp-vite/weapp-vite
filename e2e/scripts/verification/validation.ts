@@ -1,6 +1,21 @@
 import { z } from 'zod'
+import { assertVerificationTopology } from '../../../scripts/verification/topology.ts'
 import { verificationProfileSchema } from './profile'
-import { VERIFICATION_TOOL_VERSION } from './types'
+import { SUITE_TASK_ARTIFACT_KINDS, VERIFICATION_TOOL_VERSION } from './types'
+
+const topologySchema = z.object({
+  id: z.enum(['legacy-v1', 'optimized-v1']),
+  policy: z.literal('verification-topology-v1'),
+  policyDigest: z.string().regex(/^[a-f0-9]{64}$/),
+}).strict().refine((value) => {
+  try {
+    assertVerificationTopology(value)
+    return true
+  }
+  catch {
+    return false
+  }
+}, 'Verification topology policy mismatch')
 
 export const verificationPlanSchema = z.object({
   schemaVersion: z.literal(1),
@@ -13,6 +28,7 @@ export const verificationPlanSchema = z.object({
   suite: z.string().min(1),
   strict: z.boolean(),
   profile: verificationProfileSchema,
+  executionTopology: topologySchema,
   sourceDigest: z.string().regex(/^[a-f0-9]{64}$/),
   shardTotal: z.number().int().positive(),
   historySources: z.array(z.string()),
@@ -49,6 +65,7 @@ export const historyReceiptSchema = z.object({
 }).strict()
 
 export const verificationExecutionSchema = z.object({
+  executionTopology: topologySchema.optional(),
   scope: z.enum(['full', 'shard', 'ad-hoc']),
   status: z.enum(['passed', 'failed', 'cancelled', 'incomplete']),
   profile: verificationProfileSchema,
@@ -88,7 +105,7 @@ export const verificationSuiteReportSchema = z.object({
     durationMs: z.number().finite().nonnegative(),
     exitCode: z.number().int(),
     status: z.enum(['passed', 'failed', 'blocked', 'skipped', 'not-executed', 'out-of-scope']),
-    artifacts: z.array(z.object({ kind: z.enum(['ide-warning-report', 'suite-report', 'dom-acceptance-report']), indexPath: z.string().min(1) })),
+    artifacts: z.array(z.object({ kind: z.enum(SUITE_TASK_ARTIFACT_KINDS), indexPath: z.string().min(1) })),
   }).passthrough()),
 }).passthrough().superRefine((report, context) => {
   const count = (status: string) => report.tasks.filter(task => task.status === status).length

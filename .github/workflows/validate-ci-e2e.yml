@@ -2,6 +2,10 @@ name: Validate CI E2E
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       pr_context:
         required: true
         type: string
@@ -37,6 +41,7 @@ jobs:
           - macos-latest
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -68,6 +73,7 @@ jobs:
             shard: 1
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -96,6 +102,7 @@ jobs:
           - 24
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -128,6 +135,7 @@ jobs:
           - 24
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -160,6 +168,7 @@ jobs:
           - 24
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -197,6 +206,7 @@ jobs:
           - 24
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -227,6 +237,7 @@ jobs:
           - 24
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -254,6 +265,7 @@ jobs:
           - macos-latest
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -282,6 +294,7 @@ jobs:
     name: Miniapp Platform Build Gate (Ubuntu / Node 22)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -311,6 +324,7 @@ jobs:
             build-command: pnpm build:pkgs:ci:macos
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -331,6 +345,7 @@ jobs:
     name: Web E2E Baseline (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -357,6 +372,7 @@ jobs:
     name: Web Project Builds (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -376,6 +392,7 @@ jobs:
     name: Web Browser Smoke (Firefox / WebKit / Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -397,6 +414,7 @@ jobs:
     name: Workspace HMR Changed Projects (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -420,6 +438,7 @@ jobs:
     name: Workspace HMR Nightly Full (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -450,6 +469,7 @@ jobs:
           - 24
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -492,6 +512,7 @@ jobs:
             node-version: 22
     uses: ./.github/workflows/reusable-miniapp-platform.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       runs_on: ${{ matrix.os }}
       node_version: ${{ format('{0}', matrix.node-version) }}
@@ -533,6 +554,7 @@ jobs:
             build-command: pnpm build:pkgs:ci:macos
     uses: ./.github/workflows/reusable-miniapp-platform.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       runs_on: ${{ matrix.os }}
       node_version: ${{ format('{0}', matrix.node-version) }}
@@ -558,6 +580,7 @@ jobs:
           - latest
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}

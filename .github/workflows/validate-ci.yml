@@ -2,6 +2,10 @@ name: Validate CI
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       pr_context:
         required: true
         type: string
@@ -49,6 +53,7 @@ jobs:
       max-parallel: 4
     uses: ./.github/workflows/reusable-quality-platform.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       runs_on: ${{ matrix.os }}
       node_version: ${{ format('{0}', matrix.node-version) }}
@@ -80,6 +85,7 @@ jobs:
       max-parallel: 2
     uses: ./.github/workflows/reusable-quality-platform.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       runs_on: ${{ matrix.os }}
       node_version: ${{ format('{0}', matrix.node-version) }}
@@ -135,6 +141,7 @@ jobs:
             run_coverage: true
     uses: ./.github/workflows/reusable-quality-platform.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       pr_context: ${{ inputs.pr_context }}
       runs_on: ${{ matrix.os }}
       node_version: ${{ format('{0}', matrix.node-version) }}
@@ -149,6 +156,7 @@ jobs:
     name: Weapi Compatibility Guard (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}
@@ -197,6 +205,7 @@ jobs:
           - 24
     uses: ./.github/workflows/reusable-node-command.yml
     with:
+      verification_topology: ${{ inputs.verification_topology }}
       checkout_ref: ${{ needs.pr-context.outputs.checkout_sha }}
       base_sha: ${{ needs.pr-context.outputs.base_sha }}
       head_sha: ${{ needs.pr-context.outputs.head_sha }}

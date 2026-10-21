@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
-import { readWorkflowFixture } from './workflowFixture.mjs'
+import { readVerificationTopologyVariant, readWorkflowFixture } from './workflowFixture.mjs'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const expression = (value: string) => `$${'{{'} ${value} }}`
@@ -29,7 +29,8 @@ it('runs Bun CLI on all three systems against frozen workspace artifacts', async
     'os': ['ubuntu-latest', 'windows-latest', 'macos-latest'],
     'bun-version': ['1.4.2', 'latest'],
   })
-  expect(job.needs).toEqual(['pr-context', 'bun-build-diagnostic'])
+  const baseline = readVerificationTopologyVariant() === 'baseline'
+  expect(job.needs).toEqual(baseline ? ['pr-context', 'miniapp-e2e-build-pr', 'miniapp-e2e-build-full', 'bun-build-diagnostic'] : ['pr-context', 'bun-build-diagnostic'])
   expect(job.if).toContain('needs.pr-context.outputs.should_run == \'true\'')
   expect(job.if).toContain('needs.bun-build-diagnostic.result == \'success\'')
   const diagnostic = workflow.jobs['bun-build-diagnostic']
@@ -50,9 +51,9 @@ it('runs Bun CLI on all three systems against frozen workspace artifacts', async
   expect(standard.strategy.matrix).toEqual({ 'bun-version': ['1.4.2', 'latest'] })
   expect(standard.with.consume_build_artifact).toBe(platform.jobs.build.with.build_artifact_name)
   expect(standard.with.main_command).toContain('pnpm e2e:bun')
-  for (const name of ['miniapp-platform-pr', 'miniapp-platform-full']) {
+  for (const name of baseline ? ['miniapp-e2e-build-pr', 'miniapp-e2e-build-full'] : ['miniapp-platform-pr', 'miniapp-platform-full']) {
     const platforms = workflow.jobs[name].strategy.matrix.include
-    expect(platforms.filter((row: { 'node-version': number }) => row['node-version'] === 22).map((row: { os: string }) => row.os)).toEqual(job.strategy.matrix.os)
+    expect(platforms.filter((row: { 'node-version'?: number }) => (row['node-version'] ?? 22) === 22).map((row: { os: string }) => row.os)).toEqual(job.strategy.matrix.os)
   }
   const reusable = parse(await readFile(path.join(ROOT, '.github/workflows/reusable-node-command.yml'), 'utf8'))
   expect(reusable.on.workflow_call.inputs.bun_version.default).toBe('')

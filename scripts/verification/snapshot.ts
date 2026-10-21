@@ -19,6 +19,8 @@ export async function fingerprintConfiguration(root: string, packages: Workspace
     'vitest.config.mts',
     'vitest.coverage.ts',
     'vitest.globalSetup.mjs',
+    'scripts/verification/topology.ts',
+    'packages/weapp-vite/vitest/partition.ts',
     ...packages.flatMap(item => ['package.json', 'turbo.json', 'vitest.config.ts', 'vitest.config.mts', 'tsconfig.json']
       .map(file => `${item.directory}/${file}`)),
   ]

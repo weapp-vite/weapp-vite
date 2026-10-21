@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { glob } from 'tinyglobby'
 import { loadConfigFromFile, mergeConfig } from 'vite'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createFastTestIncludes, parallelFixtureTests, serialFixtureTestIncludes } from '../packages/weapp-vite/vitest/partition'
 
 describe('compiler test project partition', () => {
@@ -54,4 +54,36 @@ describe('compiler test project partition', () => {
     expect(fast.has('scripts/chokidarDelivery/validation.test.ts')).toBe(true)
     expect(serial.has('scripts/chokidarDelivery/validation.test.ts')).toBe(false)
   })
+})
+
+it('keeps the complete discovered fixture union and final setup placement in both topologies', async () => {
+  const cwd = path.resolve(import.meta.dirname, '../packages/weapp-vite')
+  const inventories = []
+  const setups = []
+  try {
+    for (const topology of ['legacy-v1', 'optimized-v1']) {
+      vi.stubEnv('WEAPP_VITE_VERIFICATION_TOPOLOGY', topology)
+      const loaded = await loadConfigFromFile({ command: 'serve', mode: 'test' }, path.join(cwd, 'vitest.config.ts'))
+      const config = loaded!.config as { test: { projects: Array<{ test: { name: string, include: string[], exclude: string[], globalSetup?: string[], fileParallelism?: boolean } }> } }
+      const projects = await Promise.all(config.test.projects.map(async project => ({
+        ...project.test,
+        files: await glob(mergeConfig(config, project).test.include, { cwd, ignore: mergeConfig(config, project).test.exclude }),
+      })))
+      const fast = projects.find(project => project.name === 'weapp-vite-fast')!
+      const serial = projects.find(project => project.name === 'weapp-vite-serial')!
+      expect(fast.files.filter(file => serial.files.includes(file))).toEqual([])
+      expect(serial.fileParallelism).toBe(false)
+      expect(serial.files).toContain('src/plugins/core/lifecycle/watch.test.ts')
+      expect(parallelFixtureTests.every(file => topology === 'legacy-v1' ? serial.files.includes(file) && !fast.files.includes(file) : fast.files.includes(file) && !serial.files.includes(file))).toBe(true)
+      inventories.push([...fast.files, ...serial.files].sort())
+      setups.push(projects.map(project => project.globalSetup ?? []))
+    }
+    expect(inventories[0]).toEqual(inventories[1])
+    expect(setups[0]).toEqual(setups[1])
+    expect(setups[0]?.[0]).toEqual([])
+    expect(setups[0]?.[1]).toEqual([path.resolve(cwd, '../../vitest.globalSetup.mjs')])
+  }
+  finally {
+    vi.unstubAllEnvs()
+  }
 })

@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
 import { collectContracts, readManifest } from './publicTypeTestCoverage/contracts'
 import { workspaceTypeTestPackages } from './turboCacheContract/fixture'
-import { readWorkflowFixture } from './workflowFixture.mjs'
+import { readVerificationTopologyVariant, readWorkflowFixture } from './workflowFixture.mjs'
 
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>()
@@ -247,9 +247,18 @@ describe('public type tests in CI', () => {
     const workflow = readWorkflowFixture('ci.yml') as Workflow
     const job = workflow.jobs['build-pr']
     expect(job?.if).toContain('needs.pr-context.outputs.is_pr == \'true\'')
-    expect(job?.strategy?.matrix?.include?.filter(entry => entry.run_types)).toHaveLength(1)
-    // eslint-disable-next-line no-template-curly-in-string -- 校验 GitHub Actions 表达式原文。
-    expect(job?.with?.run_types).toBe('${{ matrix.run_types }}')
+    if (readVerificationTopologyVariant() === 'baseline') {
+      const roles = job?.strategy?.matrix?.include?.filter(entry => entry.main_command?.split('\n').includes('pnpm test:types'))
+      expect(roles).toHaveLength(1)
+      expect(roles?.[0]?.main_command).toContain('pnpm build:pkgs:ci\npnpm test:types\npnpm test:dependency-contracts')
+      // eslint-disable-next-line no-template-curly-in-string -- 校验实际基线矩阵命令入口。
+      expect(job?.with?.main_command).toBe('${{ matrix.main_command }}')
+    }
+    else {
+      expect(job?.strategy?.matrix?.include?.filter(entry => entry.run_types)).toHaveLength(1)
+      // eslint-disable-next-line no-template-curly-in-string -- 校验 GitHub Actions 表达式原文。
+      expect(job?.with?.run_types).toBe('${{ matrix.run_types }}')
+    }
     const platform = readWorkflowFixture('reusable-quality-platform.yml') as Workflow
     expect(platform.jobs.types?.if).toBe('inputs.run_types')
     expect(platform.jobs.types?.with?.main_command).toBe('node scripts/ciTypes.mjs')

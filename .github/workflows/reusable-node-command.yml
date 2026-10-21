@@ -3,6 +3,10 @@ name: Reusable Node Command
 on:
   workflow_call:
     inputs:
+      verification_topology:
+        required: false
+        type: string
+        default: optimized-v1
       runs_on:
         required: true
         type: string
@@ -127,6 +131,10 @@ on:
         type: string
         required: false
         default: ''
+      verification_telemetry:
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -136,6 +144,7 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     timeout-minutes: ${{ inputs.timeout_minutes }}
     env:
+      WEAPP_VITE_VERIFICATION_TOPOLOGY: ${{ inputs.verification_topology }}
       TURBO_TOKEN: ${{ inputs.pr_number == '' && secrets.TURBO_TOKEN || '' }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
       BUILD_ARTIFACT_EXPECTED_NODE_MAJOR: ${{ inputs.build_artifact_node_major || (startsWith(inputs.node_version, '22') && '22' || startsWith(inputs.node_version, '26') && '26' || '24') }}
@@ -145,6 +154,7 @@ jobs:
       WEAPP_VITE_E2E_EXCLUDE_PROJECTS: ${{ inputs.e2e_exclude_projects }}
       BUILD_ARTIFACT_EXPECTED_SCOPE: ${{ inputs.build_artifact_scope }}
       WEAPP_VITE_CONSUMER_TARBALLS: ${{ inputs.consumer_tarballs }}
+      WEAPP_VITE_VERIFICATION_TELEMETRY: ${{ inputs.verification_telemetry && '1' || '' }}
 
     steps:
       - name: Enable Git long paths on Windows
@@ -199,6 +209,9 @@ jobs:
         with:
           name: ${{ inputs.consume_aux_artifact }}
           path: ${{ inputs.aux_artifact_path }}
+      - name: Pack local consumer archives with common immutable provenance
+        if: inputs.consumer_tarballs != '' && inputs.consume_aux_artifact == ''
+        run: node scripts/consumerArtifacts/manifest.mjs pack "${{ inputs.consumer_tarballs }}"
       - name: Verify immutable consumer archives
         if: inputs.consumer_tarballs != ''
         run: node scripts/consumerArtifacts/manifest.mjs verify "${{ inputs.consumer_tarballs }}"
@@ -208,6 +221,9 @@ jobs:
         run: |
           export GITHUB_SHA="$BUILD_ARTIFACT_EXPECTED_COMMIT"
           node scripts/create-build-artifact-manifest.mjs
+      - name: Freeze baseline verification evidence plans
+        if: inputs.verification_telemetry && inputs.build_artifact_name != ''
+        run: node --import tsx scripts/verificationTelemetry/cli.mjs prepare-suites --mode=${{ inputs.pr_number != '' && 'pr' || 'full' }}
       - name: Install Playwright browsers and system dependencies
         if: inputs.install_playwright && runner.os == 'Linux'
         run: |
@@ -262,6 +278,9 @@ jobs:
             export GITHUB_HEAD_REF="$PR_HEAD_REF"
           fi
           ${{ inputs.main_command }}
+      - name: Finalize original coverage threshold verdict
+        if: success() && inputs.verification_telemetry
+        run: node scripts/verificationTelemetry/cli.mjs finalize-coverage --if-present --command-succeeded
       - name: Upload coverage reports to Codecov
         if: inputs.upload_codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
@@ -298,6 +317,7 @@ jobs:
             @weapp-core/*/bin/**
             mpcore/packages/*/bin/**
             .tmp/build-artifact-manifest.json
+            .tmp/verification-telemetry/plans/**
           if-no-files-found: error
       - name: Upload CI stage timings
         if: ${{ !cancelled() && inputs.timing_artifact_name != '' }}
@@ -305,6 +325,42 @@ jobs:
         with:
           name: ${{ inputs.timing_artifact_name }}
           path: .tmp/ci-timings.json
+          if-no-files-found: error
+      - name: Upload baseline coverage plan
+        if: success() && inputs.verification_telemetry && contains(inputs.main_command, 'pnpm test:coverage')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: coverage-plan-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
+          include-hidden-files: true
+          path: .tmp/verification-telemetry/coverage/plan.json
+          if-no-files-found: error
+      - name: Upload baseline native coverage execution
+        if: success() && inputs.verification_telemetry && contains(inputs.main_command, 'pnpm test:coverage')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: coverage-shard-${{ inputs.runs_on }}-node-${{ inputs.node_version }}-1
+          include-hidden-files: true
+          path: |
+            .tmp/verification-telemetry/coverage/manifest.json
+            .tmp/verification-telemetry/coverage/blob.json
+          if-no-files-found: error
+      - name: Upload baseline original coverage threshold verdict
+        if: success() && inputs.verification_telemetry && contains(inputs.main_command, 'pnpm test:coverage')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: coverage-complete-${{ inputs.runs_on }}-node-${{ inputs.node_version }}
+          include-hidden-files: true
+          path: |
+            .tmp/verification-telemetry/coverage/shard-verdict.json
+            .tmp/verification-telemetry/coverage/logical-scope.json
+          if-no-files-found: error
+      - name: Upload baseline suite execution evidence
+        if: success() && inputs.verification_telemetry && (contains(inputs.main_command, 'e2e:ci:pr') || contains(inputs.main_command, 'e2e:ci:full') || contains(inputs.main_command, 'ide-dom-headless'))
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: verification-suite-${{ inputs.artifact_name }}
+          include-hidden-files: true
+          path: .tmp/verification-telemetry/suite/
           if-no-files-found: error
       - name: Save trusted workspace task cache
         if: ${{ success() && inputs.pr_number == '' && github.ref_name == github.event.repository.default_branch }}

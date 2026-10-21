@@ -4,6 +4,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { createBuildArtifactManifest, verifyBuildArtifactManifest } from '../buildArtifact/index.mjs'
 import { redactReport } from '../verification/report.ts'
+import { assertVerificationTopology, topologyEnvironment } from '../verification/topology.ts'
 import { classifyCoverageScope } from '../verificationTelemetry/coveragePolicy.mjs'
 import { localDocument, localRelative, localText, localWithin } from './localIo.mjs'
 import { validateLocalVitest } from './localReporter.mjs'
@@ -12,10 +13,13 @@ import { validateLocalTurbo } from './localTurbo.mjs'
 
 /** 验证 full 原始顶层报告，partial 与缺失任务不能包装为完整样本。 */
 export function validateLocalFull(plan, report, frozen) {
+  assertVerificationTopology(frozen.executionTopology)
+  assert.deepEqual(plan.executionTopology, frozen.executionTopology, 'Local full plan topology changed')
+  assert.deepEqual(report.executionTopology, frozen.executionTopology, 'Local full report topology changed')
   assert(plan.mode === 'full' && report.mode === 'full' && report.status === 'passed'
     && report.version === 1 && plan.fingerprint === frozen.fingerprint && report.fingerprint === frozen.fingerprint
     && plan.remaining.length === 0 && report.remaining.length === 0, 'Local benchmark needs an actual complete full verification report')
-  const semantics = value => ({ version: value.version, fingerprint: value.fingerprint, mode: value.mode, selection: value.selection, tasks: value.tasks, selected: value.selected, remaining: value.remaining })
+  const semantics = value => ({ version: value.version, fingerprint: value.fingerprint, mode: value.mode, selection: value.selection, executionTopology: value.executionTopology, tasks: value.tasks, selected: value.selected, remaining: value.remaining })
   assert.deepEqual(semantics(plan), semantics(frozen), 'Local verification plan changed after freezing')
   const planned = plan.tasks.map(task => task.id).sort()
   assert(planned.length && new Set(planned).size === planned.length, 'Local full plan has empty or duplicate tasks')
@@ -66,6 +70,8 @@ export async function collectLocalEvidence(root, directory, frozen, inventories,
     assert(task && !seenTasks.has(task.id) && receipt.schemaVersion === 1 && receipt.runId === identity.runId
       && receipt.sourceFingerprint === identity.fingerprint && receipt.nodeVersion === process.version && receipt.exitCode === 0 && !receipt.cancelled
       && !receipt.signal && !receipt.error, 'Local task receipt is failed, duplicate or belongs to another run')
+    assert.deepEqual(receipt.executionTopology, frozen.executionTopology, 'Local task receipt topology changed')
+    assert.deepEqual(receipt.effectiveTopology, topologyEnvironment(frozen.executionTopology), 'Local task effective topology changed')
     seenTasks.add(task.id)
     assert.deepEqual([receipt.command, receipt.args, receipt.directory], [task.command, task.args, task.directory], 'Local observer changed the original command')
     localWithin(receipt.startedAt, start, end)

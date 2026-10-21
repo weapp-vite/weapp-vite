@@ -89,9 +89,6 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
 
   it('maps every expanded workload to the complete aggregate consumer graph', async () => {
     const reusable = parse(readFileSync(new URL('../.github/workflows/validate-ci-vite-host-consumer.yml', import.meta.url), 'utf8'))
-    if (!reusable.jobs['consumer-platform']) {
-      return
-    }
     const child = parse(readFileSync(new URL('../.github/workflows/reusable-consumer-platform.yml', import.meta.url), 'utf8'))
     const { consumerContractGroups } = await import(new URL('./consumerArtifacts/contracts.mjs', import.meta.url).href) as { consumerContractGroups: Record<string, string[]> }
     expect(consumerContractGroups).toEqual({
@@ -104,6 +101,25 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
     const runtimeProfiles = ['stateful', 'classic', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform', 'web']
     const runtimeJobs = runtimeProfiles.map(profile => `${profile}-runtime`)
     expect([...Object.keys(consumerContractGroups), 'node-support', 'dependency-compatibility', 'consumer', ...runtimeJobs].sort()).toEqual([...expandedConsumerJobs].sort())
+    if (!reusable.jobs['consumer-platform']) {
+      for (const [name, files] of Object.entries(consumerContractGroups)) {
+        const expanded = reusable.jobs[name]
+        expect(expanded.strategy.matrix.os).toEqual(['ubuntu-latest', 'windows-latest', 'macos-latest'])
+        expect(expanded.with.checkout_ref).toBe('${{ needs.pr-context.outputs.checkout_sha }}')
+        for (const file of files) {
+          expect(expanded.with.main_command).toContain(file.replace('packages/weapp-vite/', ''))
+        }
+      }
+      expect(reusable.jobs['node-support'].strategy.matrix.node).toEqual(['22.18.0', '24.11.0', '26.0.0', '22', '24'])
+      expect(reusable.jobs['node-support'].steps.find((item: Step) => item.name === 'Verify immutable locally built consumer archives').run).toBe('node scripts/consumerArtifacts/manifest.mjs verify .cache/node-support-tarballs')
+      for (const name of runtimeJobs) {
+        const expanded = reusable.jobs[name]
+        expect(expanded.with.runs_on).toBe('ubuntu-latest')
+        expect(expanded.strategy.matrix.host).toEqual(['wv', 'vite', 'vite-plus'])
+        expect(expanded.with.consumer_tarballs).toBe('.cache/node-support-tarballs')
+      }
+      expect(reusable.jobs['classic-runtime'].strategy.matrix.exclude).toEqual([{ host: 'wv', profile: 'classic-watch' }])
+    }
     expect(Object.keys(child.jobs).sort()).toEqual(['pr-context', 'prepare', 'node-support', 'contracts', 'dependency-compatibility', 'consumer', ...runtimeJobs].sort())
     expect(child.jobs['pr-context']).toMatchObject({
       uses: './.github/workflows/reusable-frozen-pr-context.yml',
